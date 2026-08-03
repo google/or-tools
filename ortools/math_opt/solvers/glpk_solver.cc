@@ -65,10 +65,10 @@
 #include "ortools/math_opt/solvers/message_callback_data.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/callback_validator.h"
+#include "ortools/port/sysinfo.h"
 #include "ortools/third_party_solvers/glpk/glpk_env_deleter.h"
 #include "ortools/third_party_solvers/glpk/glpk_formatters.h"
 #include "ortools/util/solve_interrupter.h"
-#include "third_party/gloop/base/sysinfo.h"
 
 namespace operations_research {
 namespace math_opt {

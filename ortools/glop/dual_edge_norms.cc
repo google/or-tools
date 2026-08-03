@@ -13,10 +13,17 @@
 
 #include "ortools/glop/dual_edge_norms.h"
 
+#include <cmath>
 #include <cstdlib>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "ortools/glop/basis_representation.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/permutation.h"
+#include "ortools/lp_data/scattered_vector.h"
+#include "ortools/util/stats.h"
 
 namespace operations_research {
 namespace glop {

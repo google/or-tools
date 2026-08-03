@@ -77,7 +77,7 @@ public class TspCircuitBoard {
   // [START euclidean_distance]
   /// @brief Compute Euclidean distance matrix from locations array.
   /// @details It uses an array of locations and computes the Euclidean distance between any two
-  ///     locations.
+  ///   locations.
   private static long[][] computeEuclideanDistanceMatrix(int[][] locations) {
     // Calculate distance matrix using Euclidean distance.
     long[][] distanceMatrix = new long[locations.length][locations.length];

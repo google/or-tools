@@ -50,6 +50,7 @@
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/solver_interface.h"
+#include "ortools/math_opt/core/sorted.h"
 #include "ortools/math_opt/core/sparse_submatrix.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/infeasible_subsystem.pb.h"
@@ -428,7 +429,8 @@ absl::Status GScipSolver::UpdateLinearConstraints(
 absl::Status GScipSolver::AddQuadraticConstraints(
     const google::protobuf::Map<int64_t, QuadraticConstraintProto>&
         quadratic_constraints) {
-  for (const auto& [id, constraint] : quadratic_constraints) {
+  for (const auto id : SortedMapKeys(quadratic_constraints)) {
+    const QuadraticConstraintProto& constraint = quadratic_constraints.at(id);
     GScipQuadraticRange range{
         .lower_bound = constraint.lower_bound(),
         .upper_bound = constraint.upper_bound(),
@@ -467,7 +469,8 @@ absl::Status GScipSolver::AddQuadraticConstraints(
 absl::Status GScipSolver::AddIndicatorConstraints(
     const google::protobuf::Map<int64_t, IndicatorConstraintProto>&
         indicator_constraints) {
-  for (const auto& [id, constraint] : indicator_constraints) {
+  for (const auto id : SortedMapKeys(indicator_constraints)) {
+    const IndicatorConstraintProto& constraint = indicator_constraints.at(id);
     if (!constraint.has_indicator_id()) {
       gtl::InsertOrDie(&indicator_constraints_, id, std::nullopt);
       continue;
@@ -580,7 +583,8 @@ GScipSolver::ProcessSosProto(const SosConstraintProto& sos_constraint) {
 absl::Status GScipSolver::AddSos1Constraints(
     const google::protobuf::Map<int64_t, SosConstraintProto>&
         sos1_constraints) {
-  for (const auto& [id, constraint] : sos1_constraints) {
+  for (const auto id : SortedMapKeys(sos1_constraints)) {
+    const SosConstraintProto& constraint = sos1_constraints.at(id);
     ABSL_ASSIGN_OR_RETURN((auto [sos_data, slack_handler]),
                           ProcessSosProto(constraint));
     ABSL_ASSIGN_OR_RETURN(
@@ -595,7 +599,8 @@ absl::Status GScipSolver::AddSos1Constraints(
 absl::Status GScipSolver::AddSos2Constraints(
     const google::protobuf::Map<int64_t, SosConstraintProto>&
         sos2_constraints) {
-  for (const auto& [id, constraint] : sos2_constraints) {
+  for (const auto id : SortedMapKeys(sos2_constraints)) {
+    const SosConstraintProto& constraint = sos2_constraints.at(id);
     ABSL_ASSIGN_OR_RETURN((auto [sos_data, slack_handler]),
                           ProcessSosProto(constraint));
     ABSL_ASSIGN_OR_RETURN(

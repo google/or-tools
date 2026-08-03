@@ -137,13 +137,6 @@ else()
   )
 endif()
 
-# Link option
-#if(MSVC)
-#  list(APPEND OR_TOOLS_LINK_OPTIONS
-#   "/WHOLEARCHIVE:${PROJECT_NAME}"
-#  )
-#endif()
-
 ################
 ##  C++ Test  ##
 ################
@@ -580,7 +573,6 @@ function(generate_proto_library)
    target_compile_options(${PROTO_NAME}_proto PUBLIC ${OR_TOOLS_COMPILE_OPTIONS})
    target_link_libraries(${PROTO_NAME}_proto PUBLIC protobuf::libprotobuf ${PROTO_LINK_LIBRARIES})
    add_library(${PROJECT_NAMESPACE}::${PROTO_NAME}_proto ALIAS ${PROTO_NAME}_proto)
-   #message(FATAL_ERROR "Proto target alias: ${PROJECT_NAMESPACE}::${PROTO_NAME}_proto")
 endfunction()
 
 # Generate Protobuf cpp sources
@@ -694,23 +686,9 @@ endif()
 # Generate sub library to avoid to have too many symbols
 if(BUILD_CORE)
   set(CORE_SRCS)
-  foreach(SUBPROJECT IN ITEMS
-    base
-    port
-    util
-
-    algorithms
-    graph_base
-    graph
-    bop
-    glop
-    ${PDLP_DIR}
-    sat
-    set_cover
-    lp_data
-    third_party_solvers
-    linear_solver
-    )
+  foreach(SUBPROJECT IN ITEMS base port util algorithms graph_base graph
+    bop glop ${PDLP_DIR} sat set_cover third_party_solvers lp_data linear_solver
+  )
     add_subdirectory(ortools/${SUBPROJECT})
     list(APPEND CORE_SRCS $<TARGET_OBJECTS:ortools_${SUBPROJECT}>)
   endforeach()

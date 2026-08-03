@@ -35,7 +35,6 @@ target_link_libraries(${NAME} PRIVATE
   ortools::ortools_core
   ortools::math_opt_proto
   $<$<BOOL:${USE_COINOR}>:Coin::Cbc>)
-#add_library(${PROJECT_NAMESPACE}::gurobi ALIAS ${NAME})
 
 ortools_cxx_library(
   NAME

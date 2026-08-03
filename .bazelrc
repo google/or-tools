@@ -20,6 +20,9 @@ build --flag_alias=with_xpress=//ortools/linear_solver:with_xpress
 # Enable absl::string_view support in @googletest
 build --define absl=1
 
+# disable perfcounter in @google_benchmark
+build --define pfm=0
+
 # Fix the python version
 build --@rules_python//python/config_settings:python_version=3.12
 
