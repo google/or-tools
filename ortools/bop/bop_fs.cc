@@ -27,7 +27,6 @@
 #include "absl/random/distributions.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
 #include "ortools/bop/boolean_problem.h"
@@ -47,7 +46,6 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
-#include "ortools/sat/symmetry.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -115,21 +113,6 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::SynchronizeIfNeeded(
   // Create the sat_solver if not already done.
   if (!sat_solver_) {
     sat_solver_ = std::make_unique<sat::SatSolver>();
-
-    // Add in symmetries.
-    if (problem_state.GetParameters()
-            .exploit_symmetry_in_sat_first_solution()) {
-      std::vector<std::unique_ptr<SparsePermutation>> generators;
-      FindLinearBooleanProblemSymmetries(problem_state.original_problem(),
-                                         &generators);
-      std::unique_ptr<sat::SymmetryPropagator> propagator(
-          new sat::SymmetryPropagator);
-      for (int i = 0; i < generators.size(); ++i) {
-        propagator->AddSymmetry(std::move(generators[i]));
-      }
-      sat_solver_->AddPropagator(propagator.get());
-      sat_solver_->TakePropagatorOwnership(std::move(propagator));
-    }
   }
 
   const BopOptimizerBase::Status load_status =
