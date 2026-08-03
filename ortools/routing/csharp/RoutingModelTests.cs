@@ -235,7 +235,8 @@ public class RoutingModelTest
 
             int transitCallbackIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) =>
                                                                        {
-                                                                           var fromNode = manager.IndexToNode(fromIndex);
+                                                                           var fromNode =
+                                                                               manager.IndexToNode(fromIndex);
                                                                            var toNode = manager.IndexToNode(toIndex);
                                                                            return Math.Abs(toNode - fromNode);
                                                                        });

@@ -23,7 +23,7 @@ from google3.util.operations_research.routing.python import pywraprouting
 ### New (pybind11)
 
 ```python
-from google3.util.operations_research.constraint_solver.python import constraint_solver
+from google3.ortools.constraint_solver.python import constraint_solver
 from google3.util.operations_research.routing.python import routing
 ```
 
@@ -71,9 +71,9 @@ Legacy Method               | New Method
 ## Solver, Variables, and Constraints
 
 The `constraint_solver` module (often imported as `from
-google3.util.operations_research.constraint_solver.python import
-constraint_solver`) also sees significant API changes, particularly in how
-variables are created and constraints are added.
+google3.ortools.constraint_solver.python import constraint_solver`) also sees
+significant API changes, particularly in how variables are created and
+constraints are added.
 
 ### Variable Creation
 

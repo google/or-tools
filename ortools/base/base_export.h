@@ -33,7 +33,7 @@
 #else
 #define OR_ROUTING_DLL __declspec(dllimport)
 #endif  // defined(OR_ROUTING_EXPORT)
-#endif  // _MSC_VER && OR_BUILD_DLL
+#endif  // defined(_MSC_VER) && defined(OR_BUILD_DLL)
 
 #ifndef OR_DLL
 #define OR_DLL

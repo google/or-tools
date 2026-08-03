@@ -43,6 +43,7 @@
 #include "ortools/graph_base/graph.h"
 #include "ortools/graph_base/iterators.h"
 #include "ortools/graph_base/util.h"
+#include "ortools/util/bitset.h"
 
 ABSL_FLAG(bool, minimize_permutation_support_size, false,
           "Tweak the algorithm to try and minimize the support size"
@@ -455,6 +456,19 @@ absl::Status GraphSymmetryFinder::FindSymmetries(
     std::vector<std::unique_ptr<SparsePermutation>>* generators,
     std::vector<int>* factorized_automorphism_group_size,
     TimeLimit* time_limit) {
+  if (DEBUG_MODE) {
+    SparseBitset<int> neighbors;
+    for (int i = 0; i < graph_.num_nodes(); ++i) {
+      neighbors.ClearAndResize(graph_.num_nodes());
+      for (const int j : graph_.OutgoingArcs(i)) {
+        const int head = graph_.Head(j);
+        DCHECK(!neighbors[head]) << "GraphSymmetryFinder does not support "
+                                    "multi-arcs, but we found one between "
+                                 << i << " and " << head;
+        neighbors.Set(head);
+      }
+    }
+  }
   // Initialization.
   time_limit_ = time_limit == nullptr ? &dummy_time_limit_ : time_limit;
   IF_STATS_ENABLED(stats_.initialization_time.StartTimer());

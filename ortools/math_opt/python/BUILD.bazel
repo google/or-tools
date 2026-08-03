@@ -63,12 +63,12 @@ py_library(
         ":objectives",
         ":quadratic_constraints",
         ":variables",
+        "//ortools/math_opt:model_py_pb2",
+        "//ortools/math_opt:model_update_py_pb2",
         "//ortools/math_opt/elemental/python:cpp_elemental",
         "//ortools/math_opt/elemental/python:enums",
         "//ortools/math_opt/python/elemental",
         requirement("typing-extensions"),
-        "//ortools/math_opt:model_py_pb2",
-        "//ortools/math_opt:model_update_py_pb2",
     ],
 )
 
@@ -383,8 +383,8 @@ py_library(
         ":model",
         ":result",
         ":variables",
-        requirement("immutabledict"),
         "//ortools/math_opt:infeasible_subsystem_py_pb2",
+        requirement("immutabledict"),
     ],
 )
 

@@ -306,6 +306,8 @@ void TspLibParser::ParseNodeCoord(absl::Span<const std::string> words) {
   CHECK_LE(3, words.size()) << words[0];
   CHECK_GE(4, words.size()) << words[4];
   const int node(atoi32(words[0]) - 1);
+  CHECK_LT(node, size_);
+  CHECK_GE(node, 0);
   coords_[node].x = strings::ParseLeadingDoubleValue(words[1].c_str(), 0);
   coords_[node].y = strings::ParseLeadingDoubleValue(words[2].c_str(), 0);
   if (4 == words.size()) {

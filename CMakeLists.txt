@@ -107,8 +107,7 @@ include(CMakeDependentOption)
 # Optional components (enabled by default)
 
 # Core contains (base,port,util,graph*,algorithms,bop,glop,pdlp,sat,set_cover,lp_data,linear_solver)
-# TODO(mizux): move out linear_solver from core.
-#option(BUILD_CORE "Build ortools core" ON)
+# TODO(user): move out linear_solver from core.
 set(BUILD_CORE ON)
 message(STATUS "Build Core: ${BUILD_CORE}")
 option(BUILD_PACKING "Build the packing solver" ON)

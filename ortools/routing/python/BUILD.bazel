@@ -84,11 +84,11 @@ py_test(
     srcs = ["routing_test.py"],
     deps = [
         ":routing",
+        "//ortools/constraint_solver:search_stats_py_pb2",  # buildcleaner: keep: OSS export
+        "//ortools/constraint_solver/python:constraint_solver",
         "//ortools/util/python:piecewise_linear_function",  # buildcleaner: keep: OSS export
         "//ortools/util/python:sorted_interval_list",  # buildcleaner: keep: OSS export
         requirement("absl-py"),
-        "//ortools/constraint_solver:search_stats_py_pb2",  # buildcleaner: keep: OSS export
-        "//ortools/constraint_solver/python:constraint_solver",
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
     ],
@@ -100,10 +100,10 @@ py_test(
     srcs = ["dimension_test.py"],
     deps = [
         ":routing",
+        "//ortools/constraint_solver/python:constraint_solver",  # buildcleaner: keep: OSS export
         "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",  # buildcleaner: keep: OSS export
         requirement("absl-py"),
-        "//ortools/constraint_solver/python:constraint_solver",  # buildcleaner: keep: OSS export
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",  # buildcleaner: keep: OSS export
     ],
@@ -115,10 +115,10 @@ py_test(
     srcs = ["index_manager_test.py"],
     deps = [
         ":routing",
+        "//ortools/constraint_solver/python:constraint_solver",  # buildcleaner: keep: OSS export
         "//ortools/util/python:piecewise_linear_function",  # buildcleaner: keep: OSS export
         "//ortools/util/python:sorted_interval_list",  # buildcleaner: keep: OSS export
         requirement("absl-py"),
-        "//ortools/constraint_solver/python:constraint_solver",  # buildcleaner: keep: OSS export
     ],
 )
 
@@ -129,11 +129,11 @@ py_test(
     tags = ["noci"],
     deps = [
         ":routing",
+        "//ortools/constraint_solver/python:constraint_solver",  # buildcleaner: keep: OSS export
         "//ortools/util:optional_boolean_py_pb2",
         "//ortools/util/python:piecewise_linear_function",  # buildcleaner: keep: OSS export
         "//ortools/util/python:sorted_interval_list",
         requirement("absl-py"),
-        "//ortools/constraint_solver/python:constraint_solver",  # buildcleaner: keep: OSS export
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",  # buildcleaner: keep: OSS export
     ],

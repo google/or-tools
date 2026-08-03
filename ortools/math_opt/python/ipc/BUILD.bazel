@@ -22,11 +22,11 @@ py_library(
     visibility = ["//examples/service:__subpackages__"],
     deps = [
         ":proto_converter",
+        "//ortools/math_opt:rpc_py_pb2",
         "//ortools/math_opt/python:mathopt",
         "//ortools/service/v1:optimization_py_pb2",
         "@protobuf//:protobuf_python",
         requirement("requests"),
-        "//ortools/math_opt:rpc_py_pb2",
     ],
 )
 

@@ -48,6 +48,7 @@ absl::Status LoadGurobiDynamicLibrary(
     std::vector<absl::string_view> potential_paths);
 
 // clang-format off
+// NOLINTBEGIN(whitespace/line_length)
 
 // The list of #define and extern std::function<> below is generated directly
 // from gurobi_c.h via parse_header.py
@@ -117,30 +118,30 @@ absl::Status LoadGurobiDynamicLibrary(
 OR_DLL extern std::function<int(GRBmodel *model, const char *attrname)> GRBisattravailable;
 OR_DLL extern std::function<int(GRBmodel *model, const char *attrname, int *valueP)> GRBgetintattr;
 OR_DLL extern std::function<int(GRBmodel *model, const char *attrname, int newvalue)> GRBsetintattr;
-OR_DLL extern std::function<int(GRBmodel *model, const char *attrname,int element, int *valueP)> GRBgetintattrelement;
-OR_DLL extern std::function<int(GRBmodel *model, const char *attrname,int element, int newvalue)> GRBsetintattrelement;
-OR_DLL extern std::function<int(GRBmodel *model, const char *attrname,int first, int len, int *values)> GRBgetintattrarray;
-OR_DLL extern std::function<int(GRBmodel *model, const char *attrname,int first, int len, int *newvalues)> GRBsetintattrarray;
-OR_DLL extern std::function<int(GRBmodel *model, const char *attrname,int len, int *ind, int *newvalues)> GRBsetintattrlist;
-OR_DLL extern std::function<int(GRBmodel *model, const char *attrname,int element, char *valueP)> GRBgetcharattrelement;
-OR_DLL extern std::function<int(GRBmodel *model, const char *attrname,int element, char newvalue)> GRBsetcharattrelement;
-OR_DLL extern std::function<int(GRBmodel *model, const char *attrname,int first, int len, char *values)> GRBgetcharattrarray;
-OR_DLL extern std::function<int(GRBmodel *model, const char *attrname,int first, int len, char *newvalues)> GRBsetcharattrarray;
-OR_DLL extern std::function<int(GRBmodel *model, const char *attrname,int len, int *ind, char *newvalues)> GRBsetcharattrlist;
+OR_DLL extern std::function<int(GRBmodel *model, const char *attrname, int element, int *valueP)> GRBgetintattrelement;
+OR_DLL extern std::function<int(GRBmodel *model, const char *attrname, int element, int newvalue)> GRBsetintattrelement;
+OR_DLL extern std::function<int(GRBmodel *model, const char *attrname, int first, int len, int *values)> GRBgetintattrarray;
+OR_DLL extern std::function<int(GRBmodel *model, const char *attrname, int first, int len, int *newvalues)> GRBsetintattrarray;
+OR_DLL extern std::function<int(GRBmodel *model, const char *attrname, int len, int *ind, int *newvalues)> GRBsetintattrlist;
+OR_DLL extern std::function<int(GRBmodel *model, const char *attrname, int element, char *valueP)> GRBgetcharattrelement;
+OR_DLL extern std::function<int(GRBmodel *model, const char *attrname, int element, char newvalue)> GRBsetcharattrelement;
+OR_DLL extern std::function<int(GRBmodel *model, const char *attrname, int first, int len, char *values)> GRBgetcharattrarray;
+OR_DLL extern std::function<int(GRBmodel *model, const char *attrname, int first, int len, char *newvalues)> GRBsetcharattrarray;
+OR_DLL extern std::function<int(GRBmodel *model, const char *attrname, int len, int *ind, char *newvalues)> GRBsetcharattrlist;
 OR_DLL extern std::function<int(GRBmodel *model, const char *attrname, double *valueP)> GRBgetdblattr;
 OR_DLL extern std::function<int(GRBmodel *model, const char *attrname, double newvalue)> GRBsetdblattr;
-OR_DLL extern std::function<int(GRBmodel *model, const char *attrname,int element, double *valueP)> GRBgetdblattrelement;
-OR_DLL extern std::function<int(GRBmodel *model, const char *attrname,int element, double newvalue)> GRBsetdblattrelement;
-OR_DLL extern std::function<int(GRBmodel *model, const char *attrname,int first, int len, double *values)> GRBgetdblattrarray;
-OR_DLL extern std::function<int(GRBmodel *model, const char *attrname,int first, int len, double *newvalues)> GRBsetdblattrarray;
-OR_DLL extern std::function<int(GRBmodel *model, const char *attrname,int len, int *ind, double *newvalues)> GRBsetdblattrlist;
+OR_DLL extern std::function<int(GRBmodel *model, const char *attrname, int element, double *valueP)> GRBgetdblattrelement;
+OR_DLL extern std::function<int(GRBmodel *model, const char *attrname, int element, double newvalue)> GRBsetdblattrelement;
+OR_DLL extern std::function<int(GRBmodel *model, const char *attrname, int first, int len, double *values)> GRBgetdblattrarray;
+OR_DLL extern std::function<int(GRBmodel *model, const char *attrname, int first, int len, double *newvalues)> GRBsetdblattrarray;
+OR_DLL extern std::function<int(GRBmodel *model, const char *attrname, int len, int *ind, double *newvalues)> GRBsetdblattrlist;
 OR_DLL extern std::function<int(GRBmodel *model, const char *attrname, char **valueP)> GRBgetstrattr;
 OR_DLL extern std::function<int(GRBmodel *model, const char *attrname, const char *newvalue)> GRBsetstrattr;
-OR_DLL extern std::function<int(GRBmodel *model,int (GUROBI_STDCALL *cb)(CB_ARGS),void  *usrdata)> GRBsetcallbackfunc;
+OR_DLL extern std::function<int(GRBmodel *model, int (GUROBI_STDCALL *cb)(CB_ARGS), void  *usrdata)> GRBsetcallbackfunc;
 OR_DLL extern std::function<int(void *cbdata, int where, int what, void *resultP)> GRBcbget;
 OR_DLL extern std::function<int(void *cbdata, const double *solution, double *objvalP)> GRBcbsolution;
-OR_DLL extern std::function<int(void *cbdata, int cutlen, const int *cutind, const double *cutval,char cutsense, double cutrhs)> GRBcbcut;
-OR_DLL extern std::function<int(void *cbdata, int lazylen, const int *lazyind,const double *lazyval, char lazysense, double lazyrhs)> GRBcblazy;
+OR_DLL extern std::function<int(void *cbdata, int cutlen, const int *cutind, const double *cutval, char cutsense, double cutrhs)> GRBcbcut;
+OR_DLL extern std::function<int(void *cbdata, int lazylen, const int *lazyind, const double *lazyval, char lazysense, double lazyrhs)> GRBcblazy;
 #define GRB_INT_ATTR_NUMCONSTRS "NumConstrs"
 #define GRB_INT_ATTR_NUMVARS "NumVars"
 #define GRB_INT_ATTR_NUMSOS "NumSOS"
@@ -414,7 +415,7 @@ OR_DLL extern std::function<int(void *cbdata, int lazylen, const int *lazyind,co
 #define GRB_FEASRELAX_LINEAR 0
 #define GRB_FEASRELAX_QUADRATIC 1
 #define GRB_FEASRELAX_CARDINALITY 2
-OR_DLL extern std::function<int(GRBmodel *model, int *numnzP, int *vbeg, int *vind,double *vval, int start, int len)> GRBgetvars;
+OR_DLL extern std::function<int(GRBmodel *model, int *numnzP, int *vbeg, int *vind, double *vval, int start, int len)> GRBgetvars;
 OR_DLL extern std::function<int(GRBmodel *model)> GRBoptimize;
 OR_DLL extern std::function<int(GRBmodel *model)> GRBcomputeIIS;
 #define MALLOCCB_ARGS size_t size, void *syscbusrdata
@@ -424,21 +425,21 @@ OR_DLL extern std::function<int(GRBmodel *model)> GRBcomputeIIS;
 #define THREADCREATECB_ARGS void **threadP, void (*start_routine)(void *), void *arg, void *syscbusrdata
 #define THREADJOINCB_ARGS void *thread, void *syscbusrdata
 OR_DLL extern std::function<int(GRBmodel *model, const char *filename)> GRBwrite;
-OR_DLL extern std::function<int(GRBenv *env, GRBmodel **modelP, const char *Pname, int numvars,double *obj, double *lb, double *ub, char *vtype,char **varnames)> GRBnewmodel;
-OR_DLL extern std::function<int(GRBmodel *model, int numnz, int *vind, double *vval,double obj, double lb, double ub, char vtype,const char *varname)> GRBaddvar;
-OR_DLL extern std::function<int(GRBmodel *model, int numvars, int numnz,int *vbeg, int *vind, double *vval,double *obj, double *lb, double *ub, char *vtype,char **varnames)> GRBaddvars;
-OR_DLL extern std::function<int(GRBmodel *model, int numnz, int *cind, double *cval,char sense, double rhs, const char *constrname)> GRBaddconstr;
-OR_DLL extern std::function<int(GRBmodel *model, int numconstrs, int numnz,int *cbeg, int *cind, double *cval,char *sense, double *rhs, char **constrnames)> GRBaddconstrs;
-OR_DLL extern std::function<int(GRBmodel *model, int numnz, int *cind, double *cval,double lower, double upper, const char *constrname)> GRBaddrangeconstr;
-OR_DLL extern std::function<int(GRBmodel *model, int numsos, int nummembers, int *types,int *beg, int *ind, double *weight)> GRBaddsos;
-OR_DLL extern std::function<int(GRBmodel *model, const char *name,int resvar, int nvars, const int *vars,double constant)> GRBaddgenconstrMax;
-OR_DLL extern std::function<int(GRBmodel *model, const char *name,int resvar, int nvars, const int *vars,double constant)> GRBaddgenconstrMin;
-OR_DLL extern std::function<int(GRBmodel *model, const char *name,int resvar, int argvar)> GRBaddgenconstrAbs;
-OR_DLL extern std::function<int(GRBmodel *model, const char *name,int resvar, int nvars, const int *vars)> GRBaddgenconstrAnd;
-OR_DLL extern std::function<int(GRBmodel *model, const char *name,int resvar, int nvars, const int *vars)> GRBaddgenconstrOr;
-OR_DLL extern std::function<int(GRBmodel *model, const char *name,int binvar, int binval, int nvars, const int *vars,const double *vals, char sense, double rhs)> GRBaddgenconstrIndicator;
-OR_DLL extern std::function<int(GRBmodel *model, int numlnz, int *lind, double *lval,int numqnz, int *qrow, int *qcol, double *qval,char sense, double rhs, const char *QCname)> GRBaddqconstr;
-OR_DLL extern std::function<int(GRBmodel *model, int numqnz, int *qrow, int *qcol,double *qval)> GRBaddqpterms;
+OR_DLL extern std::function<int(GRBenv *env, GRBmodel **modelP, const char *Pname, int numvars, double *obj, double *lb, double *ub, char *vtype, char **varnames)> GRBnewmodel;
+OR_DLL extern std::function<int(GRBmodel *model, int numnz, int *vind, double *vval, double obj, double lb, double ub, char vtype, const char *varname)> GRBaddvar;
+OR_DLL extern std::function<int(GRBmodel *model, int numvars, int numnz, int *vbeg, int *vind, double *vval, double *obj, double *lb, double *ub, char *vtype, char **varnames)> GRBaddvars;
+OR_DLL extern std::function<int(GRBmodel *model, int numnz, int *cind, double *cval, char sense, double rhs, const char *constrname)> GRBaddconstr;
+OR_DLL extern std::function<int(GRBmodel *model, int numconstrs, int numnz, int *cbeg, int *cind, double *cval, char *sense, double *rhs, char **constrnames)> GRBaddconstrs;
+OR_DLL extern std::function<int(GRBmodel *model, int numnz, int *cind, double *cval, double lower, double upper, const char *constrname)> GRBaddrangeconstr;
+OR_DLL extern std::function<int(GRBmodel *model, int numsos, int nummembers, int *types, int *beg, int *ind, double *weight)> GRBaddsos;
+OR_DLL extern std::function<int(GRBmodel *model, const char *name, int resvar, int nvars, const int *vars, double constant)> GRBaddgenconstrMax;
+OR_DLL extern std::function<int(GRBmodel *model, const char *name, int resvar, int nvars, const int *vars, double constant)> GRBaddgenconstrMin;
+OR_DLL extern std::function<int(GRBmodel *model, const char *name, int resvar, int argvar)> GRBaddgenconstrAbs;
+OR_DLL extern std::function<int(GRBmodel *model, const char *name, int resvar, int nvars, const int *vars)> GRBaddgenconstrAnd;
+OR_DLL extern std::function<int(GRBmodel *model, const char *name, int resvar, int nvars, const int *vars)> GRBaddgenconstrOr;
+OR_DLL extern std::function<int(GRBmodel *model, const char *name, int binvar, int binval, int nvars, const int *vars, const double *vals, char sense, double rhs)> GRBaddgenconstrIndicator;
+OR_DLL extern std::function<int(GRBmodel *model, int numlnz, int *lind, double *lval, int numqnz, int *qrow, int *qcol, double *qval, char sense, double rhs, const char *QCname)> GRBaddqconstr;
+OR_DLL extern std::function<int(GRBmodel *model, int numqnz, int *qrow, int *qcol, double *qval)> GRBaddqpterms;
 OR_DLL extern std::function<int(GRBmodel *model, int len, int *ind)> GRBdelvars;
 OR_DLL extern std::function<int(GRBmodel *model, int len, int *ind)> GRBdelconstrs;
 OR_DLL extern std::function<int(GRBmodel *model, int len, int *ind)> GRBdelsos;
@@ -697,7 +698,7 @@ OR_DLL extern std::function<int(GRBmodel *model)> GRBfreemodel;
 #define GRB_PHASE_MIP_SEARCH 1
 #define GRB_PHASE_MIP_IMPROVE 2
 OR_DLL extern std::function<void(GRBmodel *model)> GRBterminate;
-OR_DLL extern std::function<int(GRBmodel *model, int index, int priority, double weight,double abstol, double reltol, const char *name,double constant, int lnz, int *lind, double *lval)> GRBsetobjectiven;
+OR_DLL extern std::function<int(GRBmodel *model, int index, int priority, double weight, double abstol, double reltol, const char *name, double constant, int lnz, int *lind, double *lval)> GRBsetobjectiven;
 OR_DLL extern std::function<int(GRBenv *env, const char *paramname, int *valueP)> GRBgetintparam;
 OR_DLL extern std::function<int(GRBenv *env, const char *paramname, double *valueP)> GRBgetdblparam;
 OR_DLL extern std::function<int(GRBenv *env, const char *paramname, char *valueP)> GRBgetstrparam;
@@ -730,6 +731,7 @@ OR_DLL extern std::function<char *(void)> GRBplatform;
 #define GRB_BATCH_FAILED 4
 #define GRB_BATCH_COMPLETED 5
 
+// NOLINTEND(whitespace/line_length)
 // clang-format on
 }  // namespace operations_research
 
