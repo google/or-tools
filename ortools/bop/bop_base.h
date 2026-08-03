@@ -24,11 +24,12 @@
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
+#include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_solution.h"
 #include "ortools/bop/bop_types.h"
 #include "ortools/lp_data/lp_types.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/stats.h"
@@ -117,7 +118,7 @@ inline std::ostream& operator<<(std::ostream& os,
 // information that the solver learned about it at a given time.
 class ProblemState {
  public:
-  explicit ProblemState(const sat::LinearBooleanProblem& problem);
+  explicit ProblemState(const LinearBooleanProblem& problem);
 
   // This type is neither copyable nor movable.
   ProblemState(const ProblemState&) = delete;
@@ -206,7 +207,7 @@ class ProblemState {
   // Returns the original problem. Note that the current problem might be
   // different, e.g. fixed variables, but equivalent, i.e. a solution to one
   // should be a solution to the other too.
-  const sat::LinearBooleanProblem& original_problem() const {
+  const LinearBooleanProblem& original_problem() const {
     return original_problem_;
   }
 
@@ -231,7 +232,7 @@ class ProblemState {
   void SynchronizationDone();
 
  private:
-  const sat::LinearBooleanProblem& original_problem_;
+  const LinearBooleanProblem& original_problem_;
   BopParameters parameters_;
   int64_t update_stamp_;
   util_intops::StrongVector<VariableIndex, bool> is_fixed_;
@@ -252,10 +253,10 @@ class ProblemState {
 // with the problem state in order to get a more constrained problem to be used
 // by the next called optimizer.
 struct LearnedInfo {
-  explicit LearnedInfo(const sat::LinearBooleanProblem& problem)
+  explicit LearnedInfo(const LinearBooleanProblem& problem)
       : fixed_literals(),
         solution(problem, "AllZero"),
-        lower_bound(std::numeric_limits<int64_t>::min()),
+        lower_bound(kint64min),
         lp_values(),
         binary_clauses() {}
 
@@ -263,7 +264,7 @@ struct LearnedInfo {
   // to reduce the number of creation / deletion of objects.
   void Clear() {
     fixed_literals.clear();
-    lower_bound = std::numeric_limits<int64_t>::min();
+    lower_bound = kint64min;
     lp_values.clear();
     binary_clauses.clear();
   }

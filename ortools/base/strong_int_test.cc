@@ -24,13 +24,14 @@
 #include "absl/container/node_hash_map.h"
 #include "absl/flags/marshalling.h"
 #include "absl/hash/hash_testing.h"
+#include "absl/log/log.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "absl/strings/substitute.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/logging.h"
 
 namespace util_intops {
 namespace {

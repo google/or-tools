@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <string>
 
+#include "ortools/base/base_export.h"
 #include "ortools/base/file.h"
 
 // This file defines some IO interfaces to compatible with Google
@@ -30,7 +31,7 @@ namespace recordio {
 //   data is not compressed.
 // - Payload, possibly compressed. See RecordWriter::Compress()
 //   and RecordReader::Uncompress.
-class RecordWriter {
+class OR_DLL RecordWriter {
  public:
   // Magic number when reading and writing protocol buffers.
   static const int kMagicNumber;

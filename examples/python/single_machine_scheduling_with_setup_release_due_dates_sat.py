@@ -15,8 +15,9 @@
 """Single machine jobshop with setup times, release dates and due dates."""
 
 from typing import Sequence
-from absl import app
-from absl import flags
+
+from absl import app, flags
+
 from ortools.sat.python import cp_model
 
 # ----------------------------------------------------------------------------

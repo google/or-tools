@@ -16,14 +16,16 @@
 
 from collections.abc import Sequence
 
-from absl import app
-from absl import flags
+from absl import app, flags
 
 from ortools.linear_solver.python import model_builder
 
 _INPUT = flags.DEFINE_string("input", "", "Input file to load and solve.")
 _PARAMS = flags.DEFINE_string("params", "", "Solver parameters in string format.")
 _SOLVER = flags.DEFINE_string("solver", "sat", "Solver type to solve the model with.")
+_TIME_LIMIT = flags.DEFINE_float(
+    "time_limit", -1, "Time limit in seconds for the solver. -1 means no limit."
+)
 
 
 def main(argv: Sequence[str]) -> None:
@@ -52,6 +54,10 @@ def main(argv: Sequence[str]) -> None:
         print(f"Cannot create solver with name '{_SOLVER.value}'")
         return
 
+    # Set time limit.
+    if _TIME_LIMIT.value > 0:
+        solver.set_time_limit_in_seconds(_TIME_LIMIT.value)
+
     # Set parameters.
     if _PARAMS.value:
         solver.set_solver_specific_parameters(_PARAMS.value)
@@ -60,7 +66,8 @@ def main(argv: Sequence[str]) -> None:
     solver.enable_output(True)
 
     # And solve.
-    solver.solve(model)
+    status = solver.solve(model)
+    print(f"Status: {status}")
 
 
 if __name__ == "__main__":

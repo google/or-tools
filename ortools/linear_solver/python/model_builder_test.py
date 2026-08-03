@@ -12,20 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Callable, Mapping
 import math
+import os
 import sys
+from collections.abc import Callable, Mapping
 from typing import Any, Union
 
-from absl.testing import absltest
-from absl.testing import parameterized
 import numpy as np
 import numpy.testing as np_testing
 import pandas as pd
-
-import os
-
+from absl.testing import absltest, parameterized
 from google.protobuf import text_format
+
 from ortools.linear_solver import linear_solver_pb2
 from ortools.linear_solver.python import model_builder as mb
 from ortools.linear_solver.python import model_builder_helper as mbh
@@ -204,6 +202,23 @@ ENDATA
         self.assertEqual(1, model.var_from_index(0).lower_bound)
         self.assertEqual(42, model.var_from_index(0).upper_bound)
         self.assertEqual("x", model.var_from_index(0).name)
+
+    def test_highs_log_callback_receives_logs_when_enabled(self):
+        model = mb.Model()
+        x = model.new_num_var(0.0, math.inf, "x")
+        y = model.new_num_var(0.0, math.inf, "y")
+        model.add(x + y <= 10.0)
+        model.maximize(1.0 * x + 2.0 * y)
+
+        solver = mb.Solver("highs")
+        if not solver.solver_is_supported():
+            return
+        log_lines = []
+        solver.log_callback = log_lines.append
+        solver.enable_output(True)
+        self.assertEqual(solver.solve(model), mb.SolveStatus.OPTIMAL)
+        self.assertNotEmpty(log_lines, "Log callback should receive output")
+        self.assertIn("Model", "".join(log_lines))
 
     def test_class_api(self):
         model = mb.Model()
@@ -504,7 +519,7 @@ ENDATA
 
         for j in range(total_unique_products):
             for i in range(len(standalone_features)):
-                v[i, j] = model.new_bool_var(f"v_{(i,j)}")
+                v[i, j] = model.new_bool_var(f"v_{(i, j)}")
                 model.add(
                     v[i, j]
                     == (

@@ -18,9 +18,9 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/linked_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/time/time.h"
-#include "ortools/base/linked_hash_map.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/solvers/gurobi/g_gurobi.h"
@@ -35,7 +35,7 @@ namespace math_opt {
 struct GurobiCallbackInput {
   SolverInterface::Callback user_cb;
   SolverInterface::MessageCallback message_cb;
-  const gtl::linked_hash_map<int64_t, int>& variable_ids;
+  const absl::linked_hash_map<int64_t, int>& variable_ids;
   int num_gurobi_vars = 0;
   // events[i] indicates if we should run user_cb when Gurobi's callback is
   // triggered with where=i. See:

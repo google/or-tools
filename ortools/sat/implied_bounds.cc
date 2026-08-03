@@ -29,11 +29,8 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
-#include "absl/meta/type_traits.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -279,11 +276,11 @@ bool ImpliedBounds::ProcessIntegerTrail(Literal first_decision) {
 
 void ElementEncodings::Add(IntegerVariable var,
                            const std::vector<ValueLiteralPair>& encoding,
-                           int exactly_one_index) {
+                           int key) {
   if (!var_to_index_to_element_encodings_.contains(var)) {
     element_encoded_variables_.push_back(var);
   }
-  var_to_index_to_element_encodings_[var][exactly_one_index] = encoding;
+  var_to_index_to_element_encodings_[var][key] = encoding;
 }
 
 const absl::btree_map<int, std::vector<ValueLiteralPair>>&

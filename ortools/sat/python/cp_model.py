@@ -39,24 +39,19 @@ Additional methods for solving CP-SAT models:
 
 * [`Constraint`](#cp_model.Constraint): A few utility methods for modifying
   constraints created by `CpModel`.
-* [`LinearExpr`](#lineacp_model.LinearExpr): Methods for creating constraints
+* [`LinearExpr`](#cp_model.LinearExpr): Methods for creating constraints
   and the objective from large arrays of coefficients.
 
 Other methods and functions listed are primarily used for developing OR-Tools,
 rather than for solving specific optimization problems.
 """
 
-from collections.abc import Callable, Iterable, Sequence
 import copy
 import threading
 import time
-from typing import (
-    Any,
-    Optional,
-    Union,
-    overload,
-)
 import warnings
+from collections.abc import Callable, Iterable, Sequence
+from typing import Any, Optional, Union, overload
 
 import numpy as np
 import pandas as pd
@@ -90,7 +85,6 @@ INT32_MIN = -(2**31)
 INT32_MAX = 2**31 - 1
 
 # CpSolver status (exported to avoid importing cp_model_cp2).
-UNKNOWN = cmh.CpSolverStatus.UNKNOWN
 UNKNOWN = cmh.CpSolverStatus.UNKNOWN
 MODEL_INVALID = cmh.CpSolverStatus.MODEL_INVALID
 FEASIBLE = cmh.CpSolverStatus.FEASIBLE
@@ -184,7 +178,7 @@ _IndexOrSeries = Union[pd.Index, pd.Series]
 
 
 # Helper functions.
-enable_warnings = False
+
 
 # warnings.deprecated is python3.13+. Not compatible with Open Source (3.10+).
 # pylint: disable=g-bare-generic
@@ -193,13 +187,12 @@ def deprecated(message: str) -> Callable[[Callable], Callable]:
 
     def deprecated_decorator(func) -> Callable:
         def deprecated_func(*args, **kwargs):
-            if enable_warnings:
-                warnings.warn(
-                    f"{func.__name__} is a deprecated function. {message}",
-                    category=DeprecationWarning,
-                    stacklevel=2,
-                )
-                warnings.simplefilter("default", DeprecationWarning)
+            warnings.warn(
+                f"{func.__name__} is a deprecated function. {message}",
+                category=DeprecationWarning,
+                stacklevel=2,
+            )
+            warnings.simplefilter("default", DeprecationWarning)
             return func(*args, **kwargs)
 
         return deprecated_func
@@ -211,13 +204,12 @@ def deprecated_method(func, old_name: str) -> Callable:
     """Wrapper that warns about a deprecated method."""
 
     def deprecated_func(*args, **kwargs) -> Any:
-        if enable_warnings:
-            warnings.warn(
-                f"{old_name} is a deprecated function. Use {func.__name__} instead.",
-                category=DeprecationWarning,
-                stacklevel=2,
-            )
-            warnings.simplefilter("default", DeprecationWarning)
+        warnings.warn(
+            f"{old_name} is a deprecated function. Use {func.__name__} instead.",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        warnings.simplefilter("default", DeprecationWarning)
         return func(*args, **kwargs)
 
     return deprecated_func
@@ -348,7 +340,9 @@ class CpModel(cmh.CpBaseModel):
         return (
             IntVar(self.model_proto)
             .with_name(name)
-            .with_domain(sorted_interval_list.Domain(lb, ub))
+            .with_domain(
+                sorted_interval_list.Domain(lb, ub)
+            )  # pyrefly: ignore[bad-argument-type]
         )
 
     def new_int_var_from_domain(
@@ -479,7 +473,8 @@ class CpModel(cmh.CpBaseModel):
     ) -> Constraint:
         """Adds the constraint: `lb <= linear_expr <= ub`."""
         return self.add_linear_expression_in_domain(
-            linear_expr, sorted_interval_list.Domain(lb, ub)
+            linear_expr,
+            sorted_interval_list.Domain(lb, ub),  # pyrefly: ignore[bad-argument-type]
         )
 
     def add_linear_expression_in_domain(
@@ -529,7 +524,10 @@ class CpModel(cmh.CpBaseModel):
     # General Integer Constraints.
 
     @overload
-    def add_all_different(self, expressions: Iterable[LinearExprT]) -> Constraint: ...
+    def add_all_different(
+        self, expressions: Iterable[LinearExprT]
+    ) -> Constraint:  # pyrefly: ignore[inconsistent-overload]
+        ...
 
     @overload
     def add_all_different(self, *expressions: LinearExprT) -> Constraint: ...
@@ -836,6 +834,18 @@ class CpModel(cmh.CpBaseModel):
           ValueError: if min_level > 0
         """
 
+        if max_level < min_level:
+            raise ValueError("Reservoir constraint must have a max_level >= min_level")
+
+        if max_level < 0:
+            raise ValueError("Reservoir constraint must have a max_level >= 0")
+
+        if min_level > 0:
+            raise ValueError("Reservoir constraint must have a min_level <= 0")
+
+        if not times:
+            raise ValueError("Reservoir constraint must have a non-empty times array")
+
         return self._add_reservoir(
             times,
             level_changes,
@@ -929,7 +939,10 @@ class CpModel(cmh.CpBaseModel):
         return self.add_bool_and(b).only_enforce_if(a)
 
     @overload
-    def add_bool_or(self, literals: Iterable[LiteralT]) -> Constraint: ...
+    def add_bool_or(
+        self, literals: Iterable[LiteralT]
+    ) -> Constraint:  # pyrefly: ignore[inconsistent-overload]
+        ...
 
     @overload
     def add_bool_or(self, *literals: LiteralT) -> Constraint: ...
@@ -941,7 +954,10 @@ class CpModel(cmh.CpBaseModel):
         )
 
     @overload
-    def add_at_least_one(self, literals: Iterable[LiteralT]) -> Constraint: ...
+    def add_at_least_one(
+        self, literals: Iterable[LiteralT]
+    ) -> Constraint:  # pyrefly: ignore[inconsistent-overload]
+        ...
 
     @overload
     def add_at_least_one(self, *literals: LiteralT) -> Constraint: ...
@@ -953,7 +969,10 @@ class CpModel(cmh.CpBaseModel):
         )
 
     @overload
-    def add_at_most_one(self, literals: Iterable[LiteralT]) -> Constraint: ...
+    def add_at_most_one(
+        self, literals: Iterable[LiteralT]
+    ) -> Constraint:  # pyrefly: ignore[inconsistent-overload]
+        ...
 
     @overload
     def add_at_most_one(self, *literals: LiteralT) -> Constraint: ...
@@ -965,7 +984,10 @@ class CpModel(cmh.CpBaseModel):
         )
 
     @overload
-    def add_exactly_one(self, literals: Iterable[LiteralT]) -> Constraint: ...
+    def add_exactly_one(
+        self, literals: Iterable[LiteralT]
+    ) -> Constraint:  # pyrefly: ignore[inconsistent-overload]
+        ...
 
     @overload
     def add_exactly_one(self, *literals: LiteralT) -> Constraint: ...
@@ -977,7 +999,10 @@ class CpModel(cmh.CpBaseModel):
         )
 
     @overload
-    def add_bool_and(self, literals: Iterable[LiteralT]) -> Constraint: ...
+    def add_bool_and(
+        self, literals: Iterable[LiteralT]
+    ) -> Constraint:  # pyrefly: ignore[inconsistent-overload]
+        ...
 
     @overload
     def add_bool_and(self, *literals: LiteralT) -> Constraint: ...
@@ -989,7 +1014,10 @@ class CpModel(cmh.CpBaseModel):
         )
 
     @overload
-    def add_bool_xor(self, literals: Iterable[LiteralT]) -> Constraint: ...
+    def add_bool_xor(
+        self, literals: Iterable[LiteralT]
+    ) -> Constraint:  # pyrefly: ignore[inconsistent-overload]
+        ...
 
     @overload
     def add_bool_xor(self, *literals: LiteralT) -> Constraint: ...
@@ -1011,7 +1039,7 @@ class CpModel(cmh.CpBaseModel):
         )
 
     @overload
-    def add_min_equality(
+    def add_min_equality(  # pyrefly: ignore[inconsistent-overload]
         self, target: LinearExprT, expressions: Iterable[LinearExprT]
     ) -> Constraint: ...
 
@@ -1027,7 +1055,7 @@ class CpModel(cmh.CpBaseModel):
         )
 
     @overload
-    def add_max_equality(
+    def add_max_equality(  # pyrefly: ignore[inconsistent-overload]
         self, target: LinearExprT, expressions: Iterable[LinearExprT]
     ) -> Constraint: ...
 
@@ -1577,12 +1605,14 @@ class CpModel(cmh.CpBaseModel):
         self._set_objective(obj, maximize=True)
 
     def has_objective(self) -> bool:
+        """Returns true if the model has an objective (integer or floating point)."""
         return (
             self.model_proto.has_objective()
             or self.model_proto.has_floating_point_objective()
         )
 
     def clear_objective(self):
+        """Clears the objective of the model."""
         self.model_proto.clear_objective()
         self.model_proto.clear_floating_point_objective()
 
@@ -1650,7 +1680,10 @@ class CpModel(cmh.CpBaseModel):
     def add_hint(self, var: IntVar, value: int) -> None: ...
 
     @overload
-    def add_hint(self, literal: BoolVarT, value: bool) -> None: ...
+    def add_hint(
+        self, literal: BoolVarT, value: bool
+    ) -> None:  # pyrefly: ignore[inconsistent-overload]
+        ...
 
     def add_hint(self, var, value) -> None:
         """Adds 'var == value' as a hint to the solver."""
@@ -1951,10 +1984,10 @@ class CpSolver:
             self._checked_response
         )
 
-    def status_name(self, status: Optional[Any] = None) -> str:
+    def status_name(self, status: Optional[cmh.CpSolverStatus] = None) -> str:
         """Returns the name of the status returned by solve()."""
         if status is None:
-            status = self._checked_response.status()
+            status = self._checked_response.status
         return status.name
 
     def solution_info(self) -> str:
@@ -2016,9 +2049,9 @@ class CpSolver:
 
     @deprecated("Use solve() method instead.")
     def Solve(
-        self, model: CpModel, callback: "CpSolverSolutionCallback" = None
+        self, model: CpModel, solution_callback: "CpSolverSolutionCallback" = None
     ) -> cmh.CpSolverStatus:
-        return self.solve(model, callback)
+        return self.solve(model, solution_callback)
 
     @deprecated("Use solution_info() method instead.")
     def SolutionInfo(self) -> str:
@@ -2133,7 +2166,7 @@ class CpSolverSolutionCallback(cmh.SolutionCallback):
         return self.BooleanValue(lit)
 
     def value(self, expression: LinearExprT) -> int:
-        """Evaluates an linear expression in the current solution.
+        """Evaluates a linear expression in the current solution.
 
         Args:
             expression: a linear expression of the model.
@@ -2150,13 +2183,13 @@ class CpSolverSolutionCallback(cmh.SolutionCallback):
         return self.Value(expression)
 
     def float_value(self, expression: LinearExprT) -> float:
-        """Evaluates an linear expression in the current solution.
+        """Evaluates a linear expression in the current solution.
 
         Args:
             expression: a linear expression of the model.
 
         Returns:
-            An integer value equal to the evaluation of the linear expression
+            A float value equal to the evaluation of the linear expression
             against the current solution.
 
         Raises:
@@ -2226,7 +2259,7 @@ class CpSolverSolutionCallback(cmh.SolutionCallback):
 
     @property
     def deterministic_time(self) -> float:
-        """Returns the determistic time in seconds since the creation of the solver."""
+        """Returns the deterministic time in seconds since the creation of the solver."""
         if not self.has_response():
             raise RuntimeError("solve() has not been called.")
         return self.DeterministicTime()

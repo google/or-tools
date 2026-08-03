@@ -22,8 +22,8 @@ distribute().
 Usage: python magic_sequence_distribute.py NUMBER
 """
 
-from absl import app
-from absl import flags
+from absl import app, flags
+
 from ortools.constraint_solver import pywrapcp
 
 FLAGS = flags.FLAGS

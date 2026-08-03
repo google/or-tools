@@ -56,6 +56,7 @@
 #include <iosfwd>
 #include <limits>
 #include <ostream>  // NOLINT
+#include <unordered_map>
 
 #include "absl/base/attributes.h"
 #include "absl/base/port.h"
@@ -168,6 +169,10 @@ class StrongIndex {
     return static_cast<ValType>(value_);
   }
 
+  explicit constexpr operator ValueType() const {  // Needed for util::graph.
+    return static_cast<ValueType>(value_);
+  }
+
   constexpr ThisType operator+() const { return ThisType(value_); }
   constexpr ThisType operator-() const { return ThisType(-value_); }
 
@@ -221,6 +226,10 @@ class StrongInt64 {
   template <typename ValType>  // Needed for StrongVector.
   constexpr ValType value() const {
     return static_cast<ValType>(value_);
+  }
+
+  explicit constexpr operator ValueType() const {  // Needed for util::graph.
+    return static_cast<ValueType>(value_);
   }
 
   INCREMENT_AND_DECREMENT_OPERATORS;
@@ -403,13 +412,13 @@ struct numeric_limits<operations_research::StrongIndex<Tag>> {
       numeric_limits<NativeTypeT>::tinyness_before;
   // NOLINTEND(google3-readability-class-member-naming)
 
-  static constexpr StrongIntT(min)() {
+  static constexpr StrongIntT min() {
     return StrongIntT(numeric_limits<NativeTypeT>::min());
   }
   static constexpr StrongIntT lowest() {
     return StrongIntT(numeric_limits<NativeTypeT>::lowest());
   }
-  static constexpr StrongIntT(max)() {
+  static constexpr StrongIntT max() {
     return StrongIntT(numeric_limits<NativeTypeT>::max());
   }
   static constexpr StrongIntT epsilon() { return StrongIntT(); }
@@ -462,13 +471,13 @@ struct numeric_limits<operations_research::StrongInt64<Tag>> {
       numeric_limits<NativeTypeT>::tinyness_before;
   // NOLINTEND(google3-readability-class-member-naming)
 
-  static constexpr StrongIntT(min)() {
+  static constexpr StrongIntT min() {
     return StrongIntT(numeric_limits<NativeTypeT>::min());
   }
   static constexpr StrongIntT lowest() {
     return StrongIntT(numeric_limits<NativeTypeT>::lowest());
   }
-  static constexpr StrongIntT(max)() {
+  static constexpr StrongIntT max() {
     return StrongIntT(numeric_limits<NativeTypeT>::max());
   }
   static constexpr StrongIntT epsilon() { return StrongIntT(); }

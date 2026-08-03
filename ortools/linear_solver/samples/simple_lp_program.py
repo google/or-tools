@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Minimal example to call the GLOP solver."""
+
 # [START program]
 # [START import]
 from ortools.linear_solver import pywraplp

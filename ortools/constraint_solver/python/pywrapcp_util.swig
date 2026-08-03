@@ -18,9 +18,9 @@
 // It can only be interpreted in the context of ./constraint_solver.swig, where
 // it is included.
 %{
+#include "ortools/constraint_solver/local_search.h"
 #include <string>
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
 using std::string;
 
 %}

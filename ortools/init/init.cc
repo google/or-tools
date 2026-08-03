@@ -15,11 +15,11 @@
 
 #include <string>
 
-#include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
 #include "absl/log/globals.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/third_party_solvers/gurobi_environment.h"

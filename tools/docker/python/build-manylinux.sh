@@ -196,9 +196,9 @@ function test_wheel() {
     "ortools/linear_solver/samples/simple_lp_program.py"
     "ortools/linear_solver/samples/simple_mip_program.py"
     "ortools/sat/samples/simple_sat_program.py"
-    "ortools/constraint_solver/samples/tsp.py"
-    "ortools/constraint_solver/samples/vrp.py"
-    "ortools/constraint_solver/samples/cvrptw_break.py"
+    "ortools/routing/samples/tsp.py"
+    "ortools/routing/samples/vrp.py"
+    "ortools/routing/samples/cvrptw_break.py"
   )
 
   # Run all the specified test scripts using the current environment.

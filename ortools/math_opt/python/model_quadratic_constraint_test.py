@@ -18,12 +18,9 @@ import math
 from typing import Dict, Tuple
 
 from absl.testing import absltest
-from ortools.math_opt import model_pb2
-from ortools.math_opt import model_update_pb2
-from ortools.math_opt import sparse_containers_pb2
-from ortools.math_opt.python import model
-from ortools.math_opt.python import quadratic_constraints
-from ortools.math_opt.python import variables
+
+from ortools.math_opt import model_pb2, model_update_pb2, sparse_containers_pb2
+from ortools.math_opt.python import model, quadratic_constraints, variables
 from ortools.math_opt.python.testing import compare_proto
 
 

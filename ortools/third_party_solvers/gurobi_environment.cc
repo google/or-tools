@@ -19,11 +19,12 @@
 #include <vector>
 
 #include "absl/base/no_destructor.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
 #include "ortools/third_party_solvers/dynamic_library.h"
 
 namespace operations_research {
@@ -338,13 +339,13 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
   std::vector<std::string> potential_paths;
   // clang-format off
   const std::vector<absl::string_view> kGurobiVersions = {
-      "1300",
+      "1301", "1300",
       "1203", "1202", "1201", "1200",
       "1103", "1102", "1101", "1100",
       "1003", "1002", "1001", "1000",
-      "952",  "951",  "950",
-      "911", "910", "903",  "902",
-      "811",  "801", "752"};
+      "952", "951", "950",
+      "911", "910", "903", "902",
+      "811", "801", "752"};
   // clang-format on
   potential_paths.reserve(kGurobiVersions.size() * 3);
 
@@ -402,10 +403,17 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
 #endif
   }
 
-#if defined(__GNUC__)  // path in linux64 gurobi/optimizer docker image.
-  for (const absl::string_view version :
-       {"12.0.2", "12.0.1", "12.0.0", "11.0.3", "11.0.2", "11.0.1", "11.0.0",
-        "10.0.3", "10.0.2", "10.0.1", "10.0.0", "9.5.2", "9.5.1", "9.5.0"}) {
+// path in linux64 gurobi/optimizer docker image.
+#if defined(__GNUC__)
+  // clang-format off
+  for (const absl::string_view version : {
+      "13.0.1", "13.0.0",
+      "12.0.3", "12.0.2", "12.0.1", "12.0.0",
+      "11.0.3", "11.0.2", "11.0.1", "11.0.0",
+      "10.0.3", "10.0.2", "10.0.1", "10.0.0",
+      "9.5.2", "9.5.1", "9.5.0"
+      }) {
+    // clang-format on
     potential_paths.push_back(
         absl::StrCat("/opt/gurobi/linux64/lib/libgurobi.so.", version));
   }

@@ -18,10 +18,10 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/linked_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/time/time.h"
-#include "ortools/base/linked_hash_map.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/solvers/gscip/gscip.h"
@@ -33,7 +33,7 @@ namespace operations_research::math_opt {
 
 struct GScipSolverConstraintData {
   SolverInterface::Callback user_callback = nullptr;
-  const gtl::linked_hash_map<int64_t, SCIP_VAR*>* variables = nullptr;
+  const absl::linked_hash_map<int64_t, SCIP_VAR*>* variables = nullptr;
   const SparseVectorFilterProto* variable_node_filter = nullptr;
   const SparseVectorFilterProto* variable_solution_filter = nullptr;
   absl::Time solve_start_time = absl::UnixEpoch();

@@ -29,21 +29,22 @@
 // The purpose of the example is to demonstrates how to write local
 // search operators and local search filters.
 
-#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <random>
 #include <utility>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_format.h"
+#include "absl/time/time.h"
 #include "absl/types/span.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/map_util.h"
-#include "ortools/base/types.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/local_search.h"
 #include "ortools/util/bitset.h"
 
 ABSL_FLAG(int, symbols_per_card, 8, "Number of symbols per card.");

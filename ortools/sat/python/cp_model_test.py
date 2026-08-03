@@ -18,9 +18,9 @@ import itertools
 import sys
 import time
 
-from absl.testing import absltest
 import numpy as np
 import pandas as pd
+from absl.testing import absltest
 
 from ortools.sat.python import cp_model
 from ortools.sat.python import cp_model_helper as cmh
@@ -69,7 +69,7 @@ class SolutionFloatValue(cp_model.CpSolverSolutionCallback):
         self.__value = self.float_value(self.__expr)
 
     @property
-    def value(self) -> float:
+    def value(self) -> float:  # pyrefly: ignore[bad-override]
         return self.__value
 
 
@@ -982,7 +982,12 @@ class CpModelTest(absltest.TestCase):
                 x,
                 0,
                 [2, 3],
-                [(0, 0, 0), (0, 1, 1), (2, 2), (2, 3, 3)],
+                [
+                    (0, 0, 0),
+                    (0, 1, 1),
+                    (2, 2),
+                    (2, 3, 3),
+                ],  # pyrefly: ignore[bad-argument-type]
             )
         with self.assertRaises(ValueError):
             model.add_automaton(
@@ -1182,6 +1187,7 @@ class CpModelTest(absltest.TestCase):
         status = solver.Solve(model)
         self.assertEqual(status, cp_model.OPTIMAL)
         self.assertEqual(solver.objective_value, 1.0)
+        self.assertEqual(solver.status_name(), solver.status_name(status))
 
     def test_division(self) -> None:
         model = cp_model.CpModel()
@@ -1417,6 +1423,14 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(canonical_expr2.coeffs[0], 1)
         self.assertEqual(canonical_expr2.coeffs[1], 2)
         self.assertEqual(canonical_expr2.offset, 2)
+
+    def test_prettyprint_model_proto(self) -> None:
+        model = cp_model.CpModel()
+        model.new_int_var(0, 4, "x")
+        self.assertEqual(
+            cmh.prettyprint_model_proto(model.proto),
+            'variables { name: "x" domain: [0, 4] }\n',
+        )
 
     def test_absent_interval(self) -> None:
         model = cp_model.CpModel()
@@ -1886,7 +1900,7 @@ class CpModelTest(absltest.TestCase):
         solver.parameters.num_workers = 1
         status = solver.solve(model)
         self.assertEqual(cp_model.OPTIMAL, status)
-        self.assertEqual(solver.num_booleans, 0)
+        self.assertEqual(solver.num_booleans, 1)
         self.assertEqual(solver.num_conflicts, 0)
         self.assertEqual(solver.num_branches, 0)
         self.assertGreater(solver.wall_time, 0.0)

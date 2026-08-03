@@ -28,6 +28,7 @@
 #include "absl/time/time.h"
 #include "ortools/algorithms/binary_search.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/base/types.h"
 
 namespace operations_research {
 namespace {
@@ -151,7 +152,7 @@ absl::StatusOr<int64_t> NChooseK(int64_t n, int64_t k) {
     k = n - k;
   }
   if (k == 0) return 1;
-  if (n < std::numeric_limits<uint32_t>::max() &&
+  if (n < kuint32max &&
       !NChooseKIntermediateComputationOverflowsInt<uint32_t>(n, k)) {
     return static_cast<int64_t>(InternalChoose<uint32_t>(n, k));
   }

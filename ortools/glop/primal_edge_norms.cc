@@ -56,7 +56,7 @@ void PrimalEdgeNorms::Clear() {
 }
 
 bool PrimalEdgeNorms::NeedsBasisRefactorization() const {
-  if (pricing_rule_ != GlopParameters ::STEEPEST_EDGE) return false;
+  if (pricing_rule_ != GlopParameters::STEEPEST_EDGE) return false;
   return recompute_edge_squared_norms_;
 }
 

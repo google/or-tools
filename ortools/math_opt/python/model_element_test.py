@@ -14,19 +14,15 @@
 
 """Tests for adding and removing "Elements" (see Elemental) from the model."""
 
-from collections.abc import Callable
 import dataclasses
+from collections.abc import Callable
 from typing import Generic, Iterator, Protocol, TypeVar, Union
 
-from absl.testing import absltest
-from absl.testing import parameterized
-from ortools.math_opt.python import indicator_constraints
-from ortools.math_opt.python import linear_constraints
-from ortools.math_opt.python import model
-from ortools.math_opt.python import objectives
-from ortools.math_opt.python import quadratic_constraints
-from ortools.math_opt.python import variables
+from absl.testing import absltest, parameterized
 
+from ortools.math_opt.python import (indicator_constraints, linear_constraints,
+                                     model, objectives, quadratic_constraints,
+                                     variables)
 
 T = TypeVar("T")
 

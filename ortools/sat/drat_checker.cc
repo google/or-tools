@@ -19,20 +19,20 @@
 #include <cstdint>
 #include <cstdlib>
 #include <fstream>  // NOLINT
-#include <limits>
 #include <string>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/types/span.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -136,7 +136,7 @@ void DratChecker::DeleteClause(absl::Span<const Literal> clause) {
     Clause& existing_clause = clauses_[*it];
     existing_clause.num_copies -= 1;
     if (existing_clause.num_copies == 0) {
-      DCHECK(existing_clause.deleted_index == std::numeric_limits<int>::max());
+      DCHECK(existing_clause.deleted_index == kint32max);
       existing_clause.deleted_index = clauses_.size() - 1;
       if (clauses_.back().num_literals >= 2) {
         clauses_[ClauseIndex(clauses_.size() - 2)].deleted_clauses.push_back(
@@ -279,7 +279,7 @@ void DratChecker::Init() {
     if (clause.num_literals >= 2) {
       // Don't watch the literals of the deleted clauses right away, instead
       // watch them when these clauses become 'undeleted' in backward checking.
-      if (clause.deleted_index == std::numeric_limits<int>::max()) {
+      if (clause.deleted_index == kint32max) {
         WatchClause(clause_index);
       }
     } else if (clause.num_literals == 1) {

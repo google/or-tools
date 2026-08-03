@@ -14,6 +14,7 @@
 
 # [START program]
 """Solves a simple assignment problem."""
+
 # [START import]
 from ortools.sat.python import cp_model
 

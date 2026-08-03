@@ -331,24 +331,21 @@ inline void AddConditionalSum3LowerOrEqual(
 // a == b.
 //
 // ABSL_DEPRECATED("Use linear constraint API instead")
-inline std::function<void(Model*)> Equality(IntegerVariable a,
-                                            IntegerVariable b) {
-  return [=](Model* model) {
-    auto* precedences = model->GetOrCreate<PrecedencesPropagator>();
-    precedences->AddPrecedence(a, b);
-    precedences->AddPrecedence(b, a);
-  };
+inline void AddEquality(IntegerVariable a, IntegerVariable b, Model* model) {
+  auto* precedences = model->GetOrCreate<PrecedencesPropagator>();
+  precedences->AddPrecedence(a, b);
+  precedences->AddPrecedence(b, a);
 }
 
 // is_le => (a + offset <= b).
 //
 // ABSL_DEPRECATED("Use linear constraint API instead")
-inline std::function<void(Model*)> ConditionalLowerOrEqualWithOffset(
-    IntegerVariable a, IntegerVariable b, int64_t offset, Literal is_le) {
-  return [=](Model* model) {
-    PrecedencesPropagator* p = model->GetOrCreate<PrecedencesPropagator>();
-    p->AddConditionalPrecedenceWithOffset(a, b, IntegerValue(offset), is_le);
-  };
+inline void AddConditionalLowerOrEqualWithOffset(IntegerVariable a,
+                                                 IntegerVariable b,
+                                                 int64_t offset, Literal is_le,
+                                                 Model* model) {
+  PrecedencesPropagator* p = model->GetOrCreate<PrecedencesPropagator>();
+  p->AddConditionalPrecedenceWithOffset(a, b, IntegerValue(offset), is_le);
 }
 
 }  // namespace sat

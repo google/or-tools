@@ -26,6 +26,7 @@
 #include "absl/container/btree_set.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/bitset.h"
@@ -588,7 +589,7 @@ bool ComputeAllVariablesFromPrimaryVariables(
         (*solution)[var] = sum_of_free_variables / coeff_of_var;
       } break;
       case ConstraintProto::kLinMax: {
-        int64_t max = std::numeric_limits<int64_t>::min();
+        int64_t max = kint64min;
         for (const auto& expr : ct.lin_max().exprs()) {
           int64_t expr_value = expr.offset();
           for (int j = 0; j < expr.vars_size(); ++j) {

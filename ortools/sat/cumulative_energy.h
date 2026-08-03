@@ -18,6 +18,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/sat/2d_orthogonal_packing.h"
 #include "ortools/sat/integer.h"
@@ -136,7 +137,7 @@ class CumulativeDualFeasibleEnergyConstraint : public PropagatorInterface {
   bool FindAndPropagateConflict(IntegerValue window_start,
                                 IntegerValue window_end);
 
-  ModelRandomGenerator* random_;
+  absl::BitGenRef random_;
   SharedStatistics* shared_stats_;
   OrthogonalPackingInfeasibilityDetector opp_infeasibility_detector_;
   const AffineExpression capacity_;

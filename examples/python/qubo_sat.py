@@ -15,7 +15,9 @@
 """Solves a Qubo program using the CP-SAT solver."""
 
 from typing import List, Sequence
+
 from absl import app
+
 from ortools.sat.python import cp_model
 
 RAW_DATA: List[List[float]] = [

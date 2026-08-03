@@ -12,9 +12,12 @@
 # limitations under the License.
 
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_go//proto:def.bzl", "go_proto_library")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -38,19 +41,26 @@ py_proto_library(
 cc_library(
     name = "affine_relation",
     hdrs = ["affine_relation.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
-        "//ortools/base",
         "//ortools/base:iterator_adaptors",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
 cc_library(
     name = "filelineiter",
     hdrs = ["filelineiter.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
-        "//ortools/base",
+        "//ortools/base:bzip2file",
         "//ortools/base:file",
+        "//ortools/base:gzipfile",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
@@ -58,6 +68,8 @@ cc_library(
     name = "bitset",
     srcs = ["bitset.cc"],
     hdrs = ["bitset.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log:check",
@@ -68,29 +80,35 @@ cc_library(
     name = "cached_log",
     srcs = ["cached_log.cc"],
     hdrs = ["cached_log.h"],
-    deps = [
-        "//ortools/base",
-    ],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = ["@abseil-cpp//absl/log:check"],
 )
 
 cc_library(
     name = "zvector",
     hdrs = ["zvector.h"],
-    deps = [
-        "//ortools/base",
-        "@abseil-cpp//absl/log:check",
-    ],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = ["@abseil-cpp//absl/log:check"],
 )
 
 cc_library(
     name = "permutation",
     hdrs = ["permutation.h"],
-    deps = ["//ortools/base"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+    ],
 )
 
 cc_library(
     name = "saturated_arithmetic",
     hdrs = ["saturated_arithmetic.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":bitset",
         "//ortools/base:types",
@@ -103,19 +121,17 @@ cc_library(
     name = "piecewise_linear_function",
     srcs = ["piecewise_linear_function.cc"],
     hdrs = ["piecewise_linear_function.h"],
-    copts = select({
-        "@platforms//os:windows": ["/Zc:preprocessor"],
-        "//conditions:default": [],
-    }),
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":saturated_arithmetic",
-        "//ortools/base",
         "//ortools/base:dump_vars",
         "//ortools/base:mathutil",
         "//ortools/base:types",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/strings:string_view",
@@ -126,18 +142,24 @@ cc_library(
     name = "rational_approximation",
     srcs = ["rational_approximation.cc"],
     hdrs = ["rational_approximation.h"],
-    deps = ["//ortools/base"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = ["@abseil-cpp//absl/log:check"],
 )
 
 cc_library(
     name = "sorted_interval_list",
     srcs = ["sorted_interval_list.cc"],
     hdrs = ["sorted_interval_list.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":saturated_arithmetic",
-        "//ortools/base",
         "//ortools/base:types",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/types:span",
@@ -147,17 +169,22 @@ cc_library(
 cc_library(
     name = "string_array",
     hdrs = ["string_array.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = ["@abseil-cpp//absl/strings"],
 )
 
 cc_library(
     name = "tuple_set",
     hdrs = ["tuple_set.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
-        "//ortools/base",
-        "//ortools/base:hash",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/hash",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -165,14 +192,16 @@ cc_library(
     name = "stats",
     srcs = ["stats.cc"],
     hdrs = ["stats.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
-        "//ortools/base",
         "//ortools/base:timer",
         "//ortools/port:sysinfo",
         "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
         "@abseil-cpp//absl/time",
     ],
 )
@@ -181,11 +210,16 @@ cc_library(
     name = "time_limit",
     srcs = ["time_limit.cc"],
     hdrs = ["time_limit.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":running_stat",
         "//ortools/base:base_export",
+        "//ortools/base:threadpool",
         "//ortools/base:timer",
         "//ortools/base:types",
+        "//ortools/base/macros:buildenv",
+        "//ortools/base/macros:os_support",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/flags:flag",
@@ -202,9 +236,12 @@ cc_library(
     name = "sigint",
     srcs = ["sigint.cc"],
     hdrs = ["sigint.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
-        "//ortools/base",
-        "//ortools/port:os",
+        "//ortools/base:threadpool",
+        "//ortools/base/macros:os_support",
+        "@abseil-cpp//absl/log",
     ],
 )
 
@@ -213,14 +250,14 @@ cc_library(
     srcs = ["fp_utils.cc"],
     hdrs = ["fp_utils.h"],
     # -frounding-math is needed for code that uses IEEE-754 rounding modes.
-    # You must also set this flag if you depend on this target and use
-    # its methods related to IEEE-754 rounding modes.
+    # You must also set this flag if you depend on this target and use its methods related to
+    # IEEE-754 rounding modes.
     copts = select({
-        "@platforms//os:linux": ["-frounding-math"],
-        "@platforms//os:macos": ["-frounding-math"],
-        "@platforms//os:windows": [],
-        "//conditions:default": ["-frounding-math"],
-    }),
+        "@rules_cc//cc/compiler:clang": ["-frounding-math"],
+        "@rules_cc//cc/compiler:gcc": ["-frounding-math"],
+        "//conditions:default": [],
+    }) + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":bitset",
         "@abseil-cpp//absl/base",
@@ -232,8 +269,10 @@ cc_library(
 cc_library(
     name = "monoid_operation_tree",
     hdrs = ["monoid_operation_tree.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
-        "//ortools/base",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:str_format",
     ],
 )
@@ -241,20 +280,31 @@ cc_library(
 cc_library(
     name = "return_macros",
     hdrs = ["return_macros.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+    ],
 )
 
 cc_library(
     name = "running_stat",
     hdrs = ["running_stat.h"],
-    deps = ["//ortools/base"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = ["@abseil-cpp//absl/log:check"],
 )
 
 cc_library(
     name = "proto_tools",
     srcs = ["proto_tools.cc"],
     hdrs = ["proto_tools.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:murmur",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/numeric:int128",
@@ -266,38 +316,28 @@ cc_library(
     ],
 )
 
-proto_library(
-    name = "int128_proto",
-    srcs = ["int128.proto"],
-)
-
-cc_proto_library(
-    name = "int128_cc_proto",
-    deps = [":int128_proto"],
-)
-
-py_proto_library(
-    name = "int128_py_pb2",
-    deps = [":int128_proto"],
-)
-
 # helper library for the swig wrappers.
-
 cc_library(
     name = "functions_swig_helpers",
     hdrs = ["functions_swig_helpers.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
 )
 
 cc_library(
     name = "functions_swig_test_helpers",
-    testonly = 1,
+    testonly = True,
     hdrs = ["functions_swig_test_helpers.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
 )
 
 cc_library(
     name = "range_minimum_query",
     hdrs = ["range_minimum_query.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":bitset",
         "@abseil-cpp//absl/log:check",
@@ -308,30 +348,25 @@ cc_library(
     name = "range_query_function",
     srcs = ["range_query_function.cc"],
     hdrs = ["range_query_function.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":range_minimum_query",
-        "//ortools/base",
         "//ortools/base:types",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
 cc_library(
     name = "rev",
     hdrs = ["rev.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
-        "//ortools/base",
         "//ortools/base:strong_vector",
         "@abseil-cpp//absl/container:flat_hash_map",
-    ],
-)
-
-cc_library(
-    name = "vector_or_function",
-    hdrs = ["vector_or_function.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":flat_matrix",
-        "//ortools/base",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
@@ -341,16 +376,22 @@ cc_library(
     name = "qap_reader",
     srcs = ["qap_reader.cc"],
     hdrs = ["qap_reader.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":filelineiter",
+        "//ortools/base:types",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
 cc_library(
     name = "sort",
     hdrs = ["sort.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
 )
 
@@ -358,59 +399,97 @@ cc_library(
     name = "file_util",
     srcs = ["file_util.cc"],
     hdrs = ["file_util.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
-        "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:gzipstring",
-        "//ortools/base:recordio",
-        "//ortools/base:status_macros",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_builder",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
         "@protobuf",
     ],
 )
 
+proto_library(
+    name = "file_util_test_proto",
+    testonly = True,
+    srcs = ["file_util_test.proto"],
+)
+
+proto_library(
+    name = "status_proto",
+    srcs = ["status.proto"],
+)
+
+cc_proto_library(
+    name = "status_cc_proto",
+    deps = [":status_proto"],
+)
+
+java_proto_library(
+    name = "status_java_proto",
+    deps = [":status_proto"],
+)
+
+py_proto_library(
+    name = "status_py_pb2",
+    deps = [":status_proto"],
+)
+
+go_proto_library(
+    name = "status_go_proto",
+    protos = [":status_proto"],
+)
+
+cc_proto_library(
+    name = "file_util_test_cc_proto",
+    testonly = True,
+    deps = [":file_util_test_proto"],
+)
+
+
 cc_library(
     name = "random_engine",
     hdrs = ["random_engine.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
 )
 
 cc_library(
     name = "integer_pq",
     hdrs = ["integer_pq.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
-    deps = ["//ortools/base"],
-)
-
-cc_library(
-    name = "string_util",
-    srcs = ["string_util.cc"],
-    hdrs = ["string_util.h"],
-    deps = [
-        "//ortools/base",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:str_format",
-    ],
+    deps = ["@abseil-cpp//absl/log:check"],
 )
 
 cc_library(
     name = "adaptative_parameter_value",
     hdrs = ["adaptative_parameter_value.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
 )
 
 cc_library(
     name = "lazy_mutable_copy",
     hdrs = ["lazy_mutable_copy.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
 )
 
 cc_library(
     name = "logging",
     srcs = ["logging.cc"],
     hdrs = ["logging.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":time_limit",
@@ -423,76 +502,78 @@ cc_library(
 cc_library(
     name = "testing_utils",
     hdrs = ["testing_utils.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        "@abseil-cpp//absl/log",
+    ],
 )
 
 cc_library(
     name = "strong_integers",
     hdrs = ["strong_integers.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "@abseil-cpp//absl/base:core_headers",
-        "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
 cc_library(
     name = "status_macros",
     hdrs = ["status_macros.h"],
-    deps = ["//ortools/base:status_macros"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = ["@abseil-cpp//absl/status:status_macros"],
 )
 
 cc_library(
     name = "fp_roundtrip_conv",
     srcs = ["fp_roundtrip_conv.cc"],
     hdrs = ["fp_roundtrip_conv.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
-        "//ortools/base:logging",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
 cc_library(
     name = "flat_matrix",
     hdrs = ["flat_matrix.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = ["@abseil-cpp//absl/types:span"],
 )
 
 cc_library(
     name = "fp_roundtrip_conv_testing",
-    testonly = 1,
+    testonly = True,
     hdrs = ["fp_roundtrip_conv_testing.h"],
-    deps = ["@abseil-cpp//absl/strings"],
-)
-
-cc_library(
-    name = "aligned_memory",
-    srcs = ["aligned_memory_internal.h"],
-    hdrs = ["aligned_memory.h"],
-    deps = ["//ortools/base:mathutil"],
-)
-
-cc_library(
-    name = "vector_sum",
-    srcs = ["vector_sum_internal.h"],
-    hdrs = ["vector_sum.h"],
-    deps = [
-        ":aligned_memory",
-        "@abseil-cpp//absl/base:core_headers",
-        "@abseil-cpp//absl/types:span",
-    ],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = ["@abseil-cpp//absl/strings:string_view"],
 )
 
 cc_library(
     name = "parse_proto",
     srcs = ["parse_proto.cc"],
     hdrs = ["parse_proto.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
         "@protobuf",
     ],
 )
@@ -500,6 +581,8 @@ cc_library(
 cc_library(
     name = "fixed_shape_binary_tree",
     hdrs = ["fixed_shape_binary_tree.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":strong_integers",
         "@abseil-cpp//absl/log:check",
@@ -511,13 +594,15 @@ cc_library(
     name = "solve_interrupter",
     srcs = ["solve_interrupter.cc"],
     hdrs = ["solve_interrupter.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
-        "//ortools/base:intops",
-        "//ortools/base:linked_hash_map",
-        "//ortools/base:logging",
+        "//ortools/base:strong_int",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/container:linked_hash_map",
         "@abseil-cpp//absl/functional:any_invocable",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/synchronization",
     ],
 )
@@ -525,6 +610,8 @@ cc_library(
 cc_library(
     name = "dense_set",
     hdrs = ["dense_set.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
@@ -534,5 +621,55 @@ cc_library(
 cc_library(
     name = "scheduling",
     hdrs = ["scheduling.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = ["@abseil-cpp//absl/log:check"],
+)
+
+cc_library(
+    name = "status_streaming",
+    srcs = ["status_streaming.cc"],
+    hdrs = ["status_streaming.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":status_cc_proto",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings:cord",
+        "@abseil-cpp//absl/strings:string_view",
+        "@abseil-cpp//absl/types:source_location",
+    ],
+)
+
+cc_library(
+    name = "random_subset",
+    hdrs = ["random_subset.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        "//ortools/base:types",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "data_path_resolver",
+    srcs = ["data_path_resolver.cc"],
+    hdrs = ["data_path_resolver.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    defines = ["ORTOOLS_USE_RUNFILES=1"],
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
+        "@rules_cc//cc/runfiles",
+    ],
 )

@@ -24,8 +24,8 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
+#include "absl/types/source_location.h"
 #include "google/protobuf/repeated_ptr_field.h"
-#include "ortools/base/source_location.h"
 
 namespace operations_research::math_opt {
 

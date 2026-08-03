@@ -15,6 +15,7 @@
 import math
 
 from absl.testing import absltest
+
 from ortools.math_opt.python import bounded_expressions
 
 _BAD_BOOL_ERROR = "two-sided or ranged"

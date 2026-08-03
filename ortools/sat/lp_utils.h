@@ -18,22 +18,41 @@
 
 #include <stdint.h>
 
+#include <cmath>
 #include <limits>
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
-#include "ortools/lp_data/lp_data.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research {
 namespace sat {
+
+// Returns the highest x such that 2^x <= value.
+// This is meant to be called with non-negative value.
+inline int HighestPowerOfTwoAtOrBelow(double value) {
+  CHECK_GE(value, 0.0);
+  int exp;
+  std::frexp(value, &exp);
+  return exp > 0 ? exp - 1 : 0;
+}
+
+// Returns the lowest x such that value <= 2^x.
+// This is meant to be called with non-negative value.
+inline int LowestPowerOfTwoAtOrAbove(double value) {
+  CHECK_GE(value, 0.0);
+  int exp;
+  const double left = std::frexp(value, &exp);
+  if (left == 0.5) return exp - 1;
+  return exp;
+}
 
 // Returns the smallest factor f such that f * abs(x) is integer modulo the
 // given tolerance relative to f (we use f * tolerance). It is only looking
@@ -95,7 +114,7 @@ struct ConstraintScaler {
   // below and decide when there are too high and report an error separately.
   absl::Status ScaleAndAddConstraint(
       absl::Span<const int> vars, absl::Span<const double> coeffs,
-      double lower_bound, double upper_bound, absl::string_view name,
+      double ct_lower_bound, double ct_upper_bound, absl::string_view name,
       absl::Span<const IntegerVariableProto* const> var_domains,
       ConstraintProto* constraint);
 
@@ -114,6 +133,11 @@ struct ConstraintScaler {
   double max_absolute_rhs_error = 0.0;
   double max_scaling_factor = 0.0;
   double min_scaling_factor = std::numeric_limits<double>::infinity();
+
+  // Statistics for enforcement extraction.
+  int num_enforcements = 0;
+  int num_integer_enforcements = 0;
+  double max_enforcement_magnitude = 0.0;
 
   // Parameters. Whether we ignore or copy the mp_constraint.name() field.
   bool keep_names = false;
@@ -147,11 +171,34 @@ struct ConstraintScaler {
 std::vector<double> ScaleContinuousVariables(double scaling, double max_bound,
                                              MPModelProto* mp_model);
 
+// Scales with a power of two so that all continuous variable domain are
+// as big as possible while staying in [-max_bound, max_bound].
+//
+// We use "wanted_precision" to compute a maximum scaling needed per variables
+// so that if a variable only appear with really low coefficients in all
+// constraints, we don't need to scale it too much.
+std::vector<double> ScaleContinuousVariablesUpToMaxBound(
+    double max_bound, double wanted_precision, MPModelProto* mp_model,
+    SolverLogger* logger);
+
 // This simple step helps and should be done first. Returns false if the model
 // is trivially infeasible because of crossing bounds.
 bool MakeBoundsOfIntegerVariablesInteger(const SatParameters& params,
                                          MPModelProto* mp_model,
                                          SolverLogger* logger);
+
+// If a variable only appear in >= constraint (resp. <=) it is sometime possible
+// to compute a bound such that any value above it will just always satisfy all
+// constraints, so there is no point looking for such high value.
+//
+// Doing this before scaling can reduce the domain of variables and help.
+//
+// TODO(user): This should probably be done within a fixed-point loop and
+// mixed with bound propagation. Doing a single pass can still help remove
+// all [0, infinity) variable on models like uccase7.mps for instance.
+void RestrictBoundsWithDualReasoning(const SatParameters& params,
+                                     MPModelProto* mp_model,
+                                     SolverLogger* logger);
 
 // This function changes bounds of variables or constraints that have a
 // magnitude greater than mip_max_valid_magnitude.
@@ -231,17 +278,6 @@ double ComputeTrueObjectiveLowerBound(
     const CpModelProto& model_proto_with_floating_point_objective,
     const CpObjectiveProto& integer_objective,
     int64_t inner_integer_objective_lower_bound);
-
-// Converts an integer program with only binary variables to a Boolean
-// optimization problem. Returns false if the problem didn't contains only
-// binary integer variable, or if the coefficients couldn't be converted to
-// integer with a good enough precision.
-bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
-                                               LinearBooleanProblem* problem);
-
-// Converts a Boolean optimization problem to its lp formulation.
-void ConvertBooleanProblemToLinearProgram(const LinearBooleanProblem& problem,
-                                          glop::LinearProgram* lp);
 
 }  // namespace sat
 }  // namespace operations_research

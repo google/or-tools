@@ -18,6 +18,7 @@ This file is an implementation detail and not part of the MathOpt public API.
 """
 
 from typing import Protocol
+
 from ortools.math_opt.python.elemental import elemental
 
 

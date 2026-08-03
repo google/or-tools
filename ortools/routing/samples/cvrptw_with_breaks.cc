@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // Capacitated Vehicle Routing Problem with Time Windows and Breaks.
 // A description of the Capacitated Vehicle Routing Problem with Time Windows
 // can be found here:
@@ -33,34 +32,37 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/globals.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/types.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_enums.pb.h"
-#include "ortools/constraint_solver/routing_index_manager.h"
-#include "ortools/constraint_solver/routing_parameters.h"
-#include "ortools/constraint_solver/routing_parameters.pb.h"
+#include "ortools/constraint_solver/interval.h"
+#include "ortools/routing/enums.pb.h"
+#include "ortools/routing/index_manager.h"
+#include "ortools/routing/parameters.h"
+#include "ortools/routing/parameters.pb.h"
 #include "ortools/routing/parsers/cvrptw_lib.h"
+#include "ortools/routing/routing.h"
+#include "ortools/routing/types.h"
 
 using operations_research::Assignment;
-using operations_research::DefaultRoutingSearchParameters;
-using operations_research::FirstSolutionStrategy;
-using operations_research::GetSeed;
 using operations_research::IntervalVar;
-using operations_research::LocationContainer;
-using operations_research::RandomDemand;
-using operations_research::RoutingDimension;
-using operations_research::RoutingIndexManager;
-using operations_research::RoutingModel;
-using operations_research::RoutingNodeIndex;
-using operations_research::RoutingSearchParameters;
-using operations_research::ServiceTimePlusTransition;
 using operations_research::Solver;
+using operations_research::routing::DefaultRoutingSearchParameters;
+using operations_research::routing::Dimension;
+using operations_research::routing::FirstSolutionStrategy;
+using operations_research::routing::GetSeed;
+using operations_research::routing::IndexManager;
+using operations_research::routing::LocationContainer;
+using operations_research::routing::Model;
+using operations_research::routing::NodeIndex;
+using operations_research::routing::RandomDemand;
+using operations_research::routing::RoutingSearchParameters;
+using operations_research::routing::ServiceTimePlusTransition;
 
 ABSL_FLAG(int, vrp_orders, 100, "Nodes in the problem.");
 ABSL_FLAG(int, vrp_vehicles, 20,
@@ -76,6 +78,7 @@ const char* kCapacity = "Capacity";
 
 int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   CHECK_LT(0, absl::GetFlag(FLAGS_vrp_orders))
       << "Specify an instance size greater than 0.";
   CHECK_LT(0, absl::GetFlag(FLAGS_vrp_vehicles))
@@ -83,10 +86,10 @@ int main(int argc, char** argv) {
   // VRP of size absl::GetFlag(FLAGS_vrp_size).
   // Nodes are indexed from 0 to absl::GetFlag(FLAGS_vrp_orders), the starts and
   // ends of the routes are at node 0.
-  const RoutingIndexManager::NodeIndex kDepot(0);
-  RoutingIndexManager manager(absl::GetFlag(FLAGS_vrp_orders) + 1,
-                              absl::GetFlag(FLAGS_vrp_vehicles), kDepot);
-  RoutingModel routing(manager);
+  const NodeIndex kDepot(0);
+  IndexManager manager(absl::GetFlag(FLAGS_vrp_orders) + 1,
+                       absl::GetFlag(FLAGS_vrp_vehicles), kDepot);
+  Model routing(manager);
   RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
   CHECK(google::protobuf::TextFormat::MergeFromString(
       absl::GetFlag(FLAGS_routing_search_parameters), &parameters));
@@ -131,10 +134,8 @@ int main(int argc, char** argv) {
   const int64_t kHorizon = 24 * 3600;
   ServiceTimePlusTransition time(
       kTimePerDemandUnit,
-      [&demand](RoutingNodeIndex i, RoutingNodeIndex j) {
-        return demand.Demand(i, j);
-      },
-      [&locations](RoutingNodeIndex i, RoutingNodeIndex j) {
+      [&demand](NodeIndex i, NodeIndex j) { return demand.Demand(i, j); },
+      [&locations](NodeIndex i, NodeIndex j) {
         return locations.ManhattanTime(i, j);
       });
   routing.AddDimension(
@@ -142,7 +143,7 @@ int main(int argc, char** argv) {
         return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
       }),
       kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/false, kTime);
-  RoutingDimension* const time_dimension = routing.GetMutableDimension(kTime);
+  Dimension* const time_dimension = routing.GetMutableDimension(kTime);
 
   // Adding time windows.
   std::mt19937 randomizer(
@@ -176,7 +177,7 @@ int main(int argc, char** argv) {
     if (node >= routing.nodes()) {
       service_times[node] = 0;
     } else {
-      const RoutingIndexManager::NodeIndex index(node);
+      const NodeIndex index(node);
       service_times[node] = kTimePerDemandUnit * demand.Demand(index, index);
     }
   }
@@ -210,14 +211,14 @@ int main(int argc, char** argv) {
 
   // Adding penalty costs to allow skipping orders.
   const int64_t kPenalty = 10000000;
-  const RoutingIndexManager::NodeIndex kFirstNodeAfterDepot(1);
-  for (RoutingIndexManager::NodeIndex order = kFirstNodeAfterDepot;
-       order < routing.nodes(); ++order) {
+  const NodeIndex kFirstNodeAfterDepot(1);
+  for (NodeIndex order = kFirstNodeAfterDepot; order < routing.nodes();
+       ++order) {
     std::vector<int64_t> orders(1, manager.NodeToIndex(order));
     routing.AddDisjunction(orders, kPenalty);
   }
 
-  // Solve, returns a solution if any (owned by RoutingModel).
+  // Solve, returns a solution if any (owned by Model).
   const Assignment* solution = routing.SolveWithParameters(parameters);
   if (solution != nullptr) {
     LOG(INFO) << "Breaks: ";
@@ -230,7 +231,8 @@ int main(int argc, char** argv) {
         LOG(INFO) << break_interval.Var()->name() << " unperformed";
       }
     }
-    DisplayPlan(manager, routing, *solution, false, 0, 0, {kCapacity, kTime});
+    operations_research::routing::DisplayPlan(manager, routing, *solution,
+                                              false, 0, 0, {kCapacity, kTime});
   } else {
     LOG(INFO) << "No solution found.";
   }

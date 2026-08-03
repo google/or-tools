@@ -16,10 +16,9 @@ import math
 from typing import Dict, Tuple
 
 from absl.testing import absltest
-from ortools.math_opt.python import bounded_expressions
-from ortools.math_opt.python import model
-from ortools.math_opt.python import normalized_inequality
-from ortools.math_opt.python import variables
+
+from ortools.math_opt.python import (bounded_expressions, model,
+                                     normalized_inequality, variables)
 
 
 class NormalizedLinearInequalityTest(absltest.TestCase):

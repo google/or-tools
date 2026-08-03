@@ -30,9 +30,6 @@
 #include "ortools/sat/util.h"
 #include "ortools/util/stats.h"
 
-#if !defined(__PORTABLE_PLATFORM__)
-#endif  // __PORTABLE_PLATFORM__
-
 namespace operations_research {
 namespace sat {
 

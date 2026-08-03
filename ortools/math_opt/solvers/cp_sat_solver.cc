@@ -33,6 +33,7 @@
 #include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
@@ -44,7 +45,7 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/protoutil.h"
-#include "ortools/base/status_macros.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/proto_solver/proto_utils.h"
 #include "ortools/linear_solver/proto_solver/sat_proto_solver.h"
@@ -63,7 +64,6 @@
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/callback_validator.h"
-#include "ortools/port/proto_utils.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/solve_interrupter.h"
 
@@ -180,7 +180,7 @@ std::vector<std::string> SetSolveParameters(
   if (parameters.lp_algorithm() != LP_ALGORITHM_UNSPECIFIED) {
     warnings.push_back(
         absl::StrCat("Setting lp_algorithm (was set to ",
-                     ProtoEnumToString(parameters.lp_algorithm()),
+                     LPAlgorithmProto_Name(parameters.lp_algorithm()),
                      ") is not supported for CP_SAT solver"));
   }
   if (parameters.presolve() != EMPHASIS_UNSPECIFIED) {
@@ -196,13 +196,13 @@ std::vector<std::string> SetSolveParameters(
         break;
       default:
         LOG(FATAL) << "Presolve emphasis: "
-                   << ProtoEnumToString(parameters.presolve())
+                   << EmphasisProto_Name(parameters.presolve())
                    << " unknown, error setting CP-SAT parameters";
     }
   }
   if (parameters.scaling() != EMPHASIS_UNSPECIFIED) {
     warnings.push_back(absl::StrCat("Setting the scaling (was set to ",
-                                    ProtoEnumToString(parameters.scaling()),
+                                    EmphasisProto_Name(parameters.scaling()),
                                     ") is not supported for CP_SAT solver"));
   }
   if (parameters.cuts() != EMPHASIS_UNSPECIFIED) {
@@ -223,13 +223,13 @@ std::vector<std::string> SetSolveParameters(
       case EMPHASIS_VERY_HIGH:
         break;
       default:
-        LOG(FATAL) << "Cut emphasis: " << ProtoEnumToString(parameters.cuts())
+        LOG(FATAL) << "Cut emphasis: " << EmphasisProto_Name(parameters.cuts())
                    << " unknown, error setting CP-SAT parameters";
     }
   }
   if (parameters.heuristics() != EMPHASIS_UNSPECIFIED) {
     warnings.push_back(absl::StrCat("Setting the heuristics (was set to ",
-                                    ProtoEnumToString(parameters.heuristics()),
+                                    EmphasisProto_Name(parameters.heuristics()),
                                     ") is not supported for CP_SAT solver"));
   }
   sat_parameters.MergeFrom(parameters.cp_sat());
@@ -315,7 +315,7 @@ absl::StatusOr<TerminationProto> GetTermination(
           absl::StrCat("cp-sat solver returned MODEL_INVALID, details: ",
                        response.status_str()));
     case MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS:
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "invalid cp-sat parameters: " << response.status_str();
     default:
       return absl::InternalError(
@@ -485,9 +485,10 @@ void CpSatCallbacks::UpdateMipStatsFromNewSolution(
 
 absl::StatusOr<std::unique_ptr<SolverInterface>> CpSatSolver::New(
     const ModelProto& model, const InitArgs&) {
-  RETURN_IF_ERROR(ModelIsSupported(model, kCpSatSupportedStructures, "CP-SAT"));
-  ASSIGN_OR_RETURN(MPModelProto cp_sat_model,
-                   MathOptModelToMPModelProto(model));
+  ABSL_RETURN_IF_ERROR(
+      ModelIsSupported(model, kCpSatSupportedStructures, "CP-SAT"));
+  ABSL_ASSIGN_OR_RETURN(MPModelProto cp_sat_model,
+                        MathOptModelToMPModelProto(model));
   std::vector variable_ids(model.variables().ids().begin(),
                            model.variables().ids().end());
   std::vector linear_constraint_ids(model.linear_constraints().ids().begin(),
@@ -504,11 +505,11 @@ absl::StatusOr<SolveResultProto> CpSatSolver::Solve(
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, const Callback cb,
     const SolveInterrupter* absl_nullable interrupter) {
-  RETURN_IF_ERROR(ModelSolveParametersAreSupported(
+  ABSL_RETURN_IF_ERROR(ModelSolveParametersAreSupported(
       model_parameters, kCpSatSupportedStructures, "CP-SAT"));
   const absl::Time start = absl::Now();
 
-  RETURN_IF_ERROR(CheckRegisteredCallbackEvents(
+  ABSL_RETURN_IF_ERROR(CheckRegisteredCallbackEvents(
       callback_registration,
       /*supported_events=*/{CALLBACK_EVENT_MIP_SOLUTION, CALLBACK_EVENT_MIP}));
   if (callback_registration.add_lazy_constraints()) {
@@ -585,16 +586,16 @@ absl::StatusOr<SolveResultProto> CpSatSolver::Solve(
                            events, cp_sat_model_.maximize());
 
   // CP-SAT returns "infeasible" for inverted bounds.
-  RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
+  ABSL_RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
 
   const MPSolutionResponse response = SatSolveProto(
       std::move(req), &interrupt_solve, logging_callback,
       callbacks.MakeSolutionCallback(), callbacks.MakeBestBoundCallback());
-  RETURN_IF_ERROR(callbacks.error()) << "error in callback";
-  ASSIGN_OR_RETURN(*result.mutable_termination(),
-                   GetTermination(local_interrupter.IsInterrupted(),
-                                  /*maximize=*/cp_sat_model_.maximize(),
-                                  /*used_cutoff=*/used_cutoff, response));
+  ABSL_RETURN_IF_ERROR(callbacks.error()) << "error in callback";
+  ABSL_ASSIGN_OR_RETURN(*result.mutable_termination(),
+                        GetTermination(local_interrupter.IsInterrupted(),
+                                       /*maximize=*/cp_sat_model_.maximize(),
+                                       /*used_cutoff=*/used_cutoff, response));
   const SparseVectorFilterProto& var_values_filter =
       model_parameters.variable_values_filter();
   auto add_solution =

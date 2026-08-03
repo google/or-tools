@@ -13,6 +13,7 @@
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
 
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
@@ -21,9 +22,10 @@ cc_library(
     testonly = 1,
     srcs = ["base_solver_test.cc"],
     hdrs = ["base_solver_test.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:gmock",
-        "//ortools/base:linked_hash_map",
         "//ortools/math_opt/cpp:math_opt",
         "@abseil-cpp//absl/log",
     ],
@@ -34,16 +36,16 @@ cc_library(
     testonly = 1,
     srcs = ["callback_tests.cc"],
     hdrs = ["callback_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
     data = [
         "//ortools/math_opt/solver_tests/testdata:23588.mps",
     ],
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_solver_test",
         ":test_models",
-        "//ortools/base",
         "//ortools/base:gmock",
         "//ortools/base:map_util",
-        "//ortools/base:status_macros",
         "//ortools/gurobi:gurobi_stdout_matchers",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:parameters_cc_proto",
@@ -54,12 +56,15 @@ cc_library(
         "//ortools/port:scoped_std_stream_capture",
         "//ortools/util:fp_roundtrip_conv",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/synchronization",
         "@abseil-cpp//absl/types:span",
+        "@rules_cc//cc/runfiles",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
@@ -70,21 +75,24 @@ cc_library(
     testonly = 1,
     srcs = ["status_tests.cc"],
     hdrs = ["status_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
     data = [
         "//ortools/math_opt/solver_tests/testdata:23588.mps",
     ],
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":test_models",
-        "//ortools/base",
         "//ortools/base:gmock",
-        "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/io:mps_converter",
         "//ortools/port:proto_utils",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/time",
+        "@rules_cc//cc/runfiles",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
@@ -95,6 +103,8 @@ cc_library(
     testonly = 1,
     srcs = ["lp_tests.cc"],
     hdrs = ["lp_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_solver_test",
         "//ortools/base:gmock",
@@ -111,19 +121,43 @@ cc_library(
 )
 
 cc_library(
+    name = "min_cost_flow_tests",
+    testonly = 1,
+    srcs = ["min_cost_flow_tests.cc"],
+    hdrs = ["min_cost_flow_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        "//ortools/base:gmock",
+        "//ortools/math_opt/cpp:matchers",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/port:proto_utils",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@abseil-cpp//absl/strings",
+    ],
+    # Make sure the tests are included when using --dynamic_mode=off.
+    alwayslink = 1,
+)
+
+cc_library(
     name = "lp_incomplete_solve_tests",
     testonly = 1,
     srcs = ["lp_incomplete_solve_tests.cc"],
     hdrs = ["lp_incomplete_solve_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":test_models",
-        "//ortools/base",
         "//ortools/base:gmock",
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt:result_cc_proto",
         "//ortools/math_opt:solution_cc_proto",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
@@ -135,8 +169,11 @@ cc_library(
     testonly = 1,
     srcs = ["invalid_input_tests.cc"],
     hdrs = ["invalid_input_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_solver_test",
+        ":test_models",
         "//ortools/base:gmock",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
@@ -157,6 +194,11 @@ cc_test(
     name = "unregistered_solver_test",
     size = "small",
     srcs = ["unregistered_solver_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    # SCIP depends on strerror_r() returning a `char*` which is GNU
+    # specific. Android returns an `int`.
+    tags = ["no_test_android"],
     deps = [
         "//ortools/base:gmock",
         "//ortools/base:gmock_main",
@@ -171,9 +213,10 @@ cc_library(
     testonly = 1,
     srcs = ["mip_tests.cc"],
     hdrs = ["mip_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_solver_test",
-        "//ortools/base",
         "//ortools/base:gmock",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
@@ -189,14 +232,16 @@ cc_library(
     testonly = 1,
     srcs = ["ip_model_solve_parameters_tests.cc"],
     hdrs = ["ip_model_solve_parameters_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_solver_test",
         "//ortools/base:gmock",
-        "//ortools/base:status_macros",
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/port:proto_utils",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
@@ -208,6 +253,8 @@ cc_library(
     testonly = 1,
     srcs = ["ip_multiple_solutions_tests.cc"],
     hdrs = ["ip_multiple_solutions_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:gmock",
         "//ortools/math_opt/cpp:matchers",
@@ -224,6 +271,8 @@ cc_library(
     testonly = 1,
     srcs = ["lp_model_solve_parameters_tests.cc"],
     hdrs = ["lp_model_solve_parameters_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_solver_test",
         ":test_models",
@@ -241,15 +290,17 @@ cc_library(
     testonly = 1,
     srcs = ["lp_parameter_tests.cc"],
     hdrs = ["lp_parameter_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:gmock",
-        "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
     ],
@@ -262,6 +313,8 @@ cc_library(
     testonly = 1,
     srcs = ["lp_initial_basis_tests.cc"],
     hdrs = ["lp_initial_basis_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_solver_test",
         "//ortools/base:gmock",
@@ -279,26 +332,30 @@ cc_library(
     testonly = 1,
     srcs = ["ip_parameter_tests.cc"],
     hdrs = ["ip_parameter_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
     data = [
         "//ortools/math_opt/solver_tests/testdata:23588.mps",
         "//ortools/math_opt/solver_tests/testdata:beavma.mps",
     ],
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":test_models",
-        "//ortools/base",
         "//ortools/base:gmock",
-        "//ortools/base:status_macros",
+        "//ortools/base:log_severity",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/io:mps_converter",
         "//ortools/port:proto_utils",
         "//ortools/util:testing_utils",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/time",
         "@abseil-cpp//absl/types:span",
+        "@rules_cc//cc/runfiles",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
@@ -309,12 +366,13 @@ cc_library(
     testonly = 1,
     srcs = ["multi_objective_tests.cc"],
     hdrs = ["multi_objective_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
     data = [
         "//ortools/math_opt/solver_tests/testdata:23588.mps",
     ],
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:gmock",
-        "//ortools/base:status_macros",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
         "//ortools/math_opt:result_cc_proto",
@@ -324,9 +382,11 @@ cc_library(
         "//ortools/port:proto_utils",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings:string_view",
         "@abseil-cpp//absl/time",
+        "@rules_cc//cc/runfiles",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
@@ -337,12 +397,14 @@ cc_library(
     testonly = 1,
     srcs = ["qp_tests.cc"],
     hdrs = ["qp_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
-        "//ortools/base",
         "//ortools/base:gmock",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/port:proto_utils",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
     ],
@@ -355,6 +417,8 @@ cc_library(
     testonly = 1,
     srcs = ["qc_tests.cc"],
     hdrs = ["qc_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:gmock",
         "//ortools/math_opt/cpp:matchers",
@@ -373,6 +437,8 @@ cc_library(
     testonly = 1,
     srcs = ["second_order_cone_tests.cc"],
     hdrs = ["second_order_cone_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:gmock",
         "//ortools/math_opt/cpp:matchers",
@@ -391,6 +457,8 @@ cc_library(
     testonly = 1,
     srcs = ["logical_constraint_tests.cc"],
     hdrs = ["logical_constraint_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:gmock",
         "//ortools/math_opt:model_update_cc_proto",
@@ -411,9 +479,14 @@ cc_library(
     testonly = 1,
     srcs = ["test_models.cc"],
     hdrs = ["test_models.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/math_opt/cpp:math_opt",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -421,13 +494,21 @@ cc_library(
 cc_test(
     name = "test_models_test",
     srcs = ["test_models_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    # SCIP depends on strerror_r() returning a `char*` which is GNU
+    # specific. Android returns an `int`.
+    tags = ["no_test_android"],
     deps = [
         ":test_models",
         "//ortools/base:gmock_main",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/solvers:cp_sat_solver",
         "//ortools/math_opt/solvers:glop_solver",
         "//ortools/math_opt/solvers:gscip_solver",
+        "//ortools/math_opt/solvers:min_cost_flow_solver",
+        "//ortools/math_opt/testing:stream",
     ],
 )
 
@@ -436,18 +517,23 @@ cc_library(
     testonly = True,
     srcs = ["generic_tests.cc"],
     hdrs = ["generic_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":test_models",
         "//ortools/base:gmock",
-        "//ortools/base:logging",
+        "//ortools/base:types",
         "//ortools/gurobi:gurobi_stdout_matchers",
         "//ortools/math_opt/core:inverted_bounds",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/port:proto_utils",
         "//ortools/port:scoped_std_stream_capture",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/synchronization",
@@ -462,6 +548,8 @@ cc_library(
     testonly = 1,
     srcs = ["infeasible_subsystem_tests.cc"],
     hdrs = ["infeasible_subsystem_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:gmock",
         "//ortools/gurobi:gurobi_stdout_matchers",

@@ -14,12 +14,12 @@
 #include "ortools/util/range_query_function.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
-#include <memory>
 #include <utility>
 #include <vector>
 
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
 #include "ortools/base/types.h"
 #include "ortools/util/range_minimum_query.h"
 
@@ -197,7 +197,7 @@ class CachedRangeMinMaxIndexFunction : public RangeMinMaxIndexFunction {
   CachedRangeMinMaxIndexFunction& operator=(
       const CachedRangeMinMaxIndexFunction&) = delete;
 
-  inline int64_t RangeMinArgument(int64_t from, int64_t to) const override {
+  int64_t RangeMinArgument(int64_t from, int64_t to) const override {
     DCHECK_LE(domain_start_, from);
     DCHECK_LT(from, to);
     DCHECK_LE(to, domain_end_);
@@ -205,7 +205,7 @@ class CachedRangeMinMaxIndexFunction : public RangeMinMaxIndexFunction {
                                                    to - domain_start_) +
            domain_start_;
   }
-  inline int64_t RangeMaxArgument(int64_t from, int64_t to) const override {
+  int64_t RangeMaxArgument(int64_t from, int64_t to) const override {
     DCHECK_LE(domain_start_, from);
     DCHECK_LT(from, to);
     DCHECK_LE(to, domain_end_);

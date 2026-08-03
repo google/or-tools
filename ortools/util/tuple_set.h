@@ -35,12 +35,14 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "ortools/base/hash.h"
-#include "ortools/base/logging.h"
+#include "absl/hash/hash.h"
+#include "absl/log/check.h"
+#include "absl/types/span.h"
 
 namespace operations_research {
 // ----- Main IntTupleSet class -----
@@ -48,7 +50,7 @@ class IntTupleSet {
  public:
   // Creates an empty tuple set with a fixed length for all tuples.
   explicit IntTupleSet(int arity);
-  // Copy constructor (it actually does a lazy copy, see toplevel comment).
+  // Copy constructor (it actually does a lazy copy, see top level comment).
   IntTupleSet(const IntTupleSet& set);  // NOLINT
   ~IntTupleSet();
 
@@ -66,8 +68,8 @@ class IntTupleSet {
   int Insert3(int64_t v0, int64_t v1, int64_t v2);
   int Insert4(int64_t v0, int64_t v1, int64_t v2, int64_t v3);
   // Inserts the tuples.
-  void InsertAll(const std::vector<std::vector<int64_t> >& tuples);
-  void InsertAll(const std::vector<std::vector<int> >& tuples);
+  void InsertAll(const std::vector<std::vector<int64_t>>& tuples);
+  void InsertAll(const std::vector<std::vector<int>>& tuples);
 
   // Checks if the tuple is in the set.
   bool Contains(const std::vector<int>& tuple) const;
@@ -122,7 +124,7 @@ class IntTupleSet {
     // Maps a tuple's fingerprint to the list of tuples with this
     // fingerprint, represented by their start index in the
     // flat_tuples_ vector.
-    absl::flat_hash_map<int64_t, std::vector<int> > tuple_fprint_to_index_;
+    absl::flat_hash_map<int64_t, std::vector<int>> tuple_fprint_to_index_;
   };
 
   // Used to represent a light representation of a tuple.
@@ -212,30 +214,33 @@ bool IntTupleSet::Data::Contains(const std::vector<T>& candidate) const {
   return false;
 }
 
+namespace details {
+
+template <class T>
+struct HashWrapper {
+  absl::Span<const T> view;
+  template <typename H>
+  friend H AbslHashValue(H h, const HashWrapper& wrap) {
+    for (const T value : wrap.view) {
+      h = H::combine(std::move(h), static_cast<uint64_t>(value));
+    }
+    return h;
+  }
+};
+
+}  // namespace details
+
 template <class T>
 int64_t IntTupleSet::Data::Fingerprint(const std::vector<T>& tuple) const {
   switch (arity_) {
     case 0:
-      return 0;
+      return absl::HashOf();
     case 1:
-      return tuple[0];
-    case 2: {
-      uint64_t x = tuple[0];
-      uint64_t y = uint64_t{0xe08c1d668b756f82};
-      uint64_t z = tuple[1];
-      mix(x, y, z);
-      return z;
-    }
-    default: {
-      uint64_t x = tuple[0];
-      uint64_t y = uint64_t{0xe08c1d668b756f82};
-      for (int i = 1; i < tuple.size(); ++i) {
-        uint64_t z = tuple[i];
-        mix(x, y, z);
-        x = z;
-      }
-      return x;
-    }
+      return absl::HashOf(static_cast<uint64_t>(tuple[0]));
+    case 2:
+      return absl::HashOf(std::pair<uint64_t, uint64_t>(tuple[0], tuple[1]));
+    default:
+      return absl::HashOf(details::HashWrapper<T>{absl::MakeConstSpan(tuple)});
   }
 }
 
@@ -327,7 +332,7 @@ inline bool IntTupleSet::Contains(const std::vector<int64_t>& tuple) const {
 }
 
 inline void IntTupleSet::InsertAll(
-    const std::vector<std::vector<int> >& tuples) {
+    const std::vector<std::vector<int>>& tuples) {
   data_ = data_->CopyIfShared();
   for (int i = 0; i < tuples.size(); ++i) {
     Insert(tuples[i]);
@@ -335,7 +340,7 @@ inline void IntTupleSet::InsertAll(
 }
 
 inline void IntTupleSet::InsertAll(
-    const std::vector<std::vector<int64_t> >& tuples) {
+    const std::vector<std::vector<int64_t>>& tuples) {
   data_ = data_->CopyIfShared();
   for (int i = 0; i < tuples.size(); ++i) {
     Insert(tuples[i]);

@@ -30,6 +30,7 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/old_precedences_propagator.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
@@ -476,11 +477,11 @@ TEST(PrecedencesPropagatorTest, ConditionalPrecedencesOnFixedLiteral) {
   // We then add a Boolean variable and fix it.
   // This will trigger a propagation.
   BooleanVariable b = model.Add(NewBooleanVariable());
-  model.Add(ClauseConstraint({Literal(b, true)}));  // Fix b To true.
+  AddClauseConstraint({Literal(b, true)}, &model);  // Fix b To true.
 
   // We now add a conditional precedences using the fixed variable.
   // This used to not be taken into account.
-  model.Add(ConditionalLowerOrEqualWithOffset(y, x, 0, Literal(b, true)));
+  AddConditionalLowerOrEqualWithOffset(y, x, 0, Literal(b, true), &model);
 
   EXPECT_EQ(SatSolver::FEASIBLE, SolveIntegerProblemWithLazyEncoding(&model));
   EXPECT_EQ(model.Get(Value(x)), model.Get(Value(y)));
@@ -960,7 +961,7 @@ TEST(GreaterThanAtLeastOneOfDetectorTest, AddGreaterThanAtLeastOneOf) {
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
   const Literal lit_b = Literal(model.Add(NewBooleanVariable()), true);
   const Literal lit_c = Literal(model.Add(NewBooleanVariable()), true);
-  model.Add(ClauseConstraint({lit_a, lit_b, lit_c}));
+  AddClauseConstraint({lit_a, lit_b, lit_c}, &model);
 
   auto* repository = model.GetOrCreate<ConditionalLinear2Bounds>();
   repository->Add(lit_a, LinearExpression2::Difference(d, a), 2,
@@ -991,7 +992,7 @@ TEST(GreaterThanAtLeastOneOfDetectorTest,
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
   const Literal lit_b = Literal(model.Add(NewBooleanVariable()), true);
   const Literal lit_c = Literal(model.Add(NewBooleanVariable()), true);
-  model.Add(ClauseConstraint({lit_a, lit_b, lit_c}));
+  AddClauseConstraint({lit_a, lit_b, lit_c}, &model);
 
   auto* repository = model.GetOrCreate<ConditionalLinear2Bounds>();
   repository->Add(lit_a, LinearExpression2(a, d, -1, 1), 2,

@@ -128,11 +128,11 @@ TEST(PrimalSolutionDeathTest, GetObjectiveValueWrongModel) {
       Objective::Auxiliary(&model_b, model_b.AddAuxiliaryObjective(1));
   // This is a documented corner case where we don't CHECK the model.
   EXPECT_EQ(solution.get_objective_value(p_b), 1.0);
-  EXPECT_DEATH(solution.get_objective_value(o_b), "");
+  EXPECT_DEATH_IF_SUPPORTED(solution.get_objective_value(o_b), "");
 
   solution.variable_values.insert({v_a, 3.0});
-  EXPECT_DEATH(solution.get_objective_value(p_b), "");
-  EXPECT_DEATH(solution.get_objective_value(o_b), "");
+  EXPECT_DEATH_IF_SUPPORTED(solution.get_objective_value(p_b), "");
+  EXPECT_DEATH_IF_SUPPORTED(solution.get_objective_value(o_b), "");
 }
 
 TEST(PrimalRayTest, ProtoRoundTripTest) {

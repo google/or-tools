@@ -15,12 +15,12 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/log_severity.h"
 #include "absl/log/globals.h"
 #include "absl/log/log.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/graph/generic_max_flow.h"
-#include "ortools/graph/graph.h"
+#include "ortools/graph_base/graph.h"
 
 namespace operations_research {
 

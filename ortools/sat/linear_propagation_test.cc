@@ -106,7 +106,7 @@ TEST(WeightedSumTest, LevelZeroPropagation) {
   EXPECT_EQ(model.Get(UpperBound(sum)), 9 + 2 * 7 + 3 * 8);
 
   // Setting this leave only a slack of 2.
-  model.Add(LowerOrEqual(sum, 19));
+  AddLowerOrEqual(sum, 19, &model);
   EXPECT_EQ(SatSolver::FEASIBLE, model.GetOrCreate<SatSolver>()->Solve());
   EXPECT_BOUNDS_EQ(vars[0], 4, 6);    // coeff = 1, slack = 2
   EXPECT_BOUNDS_EQ(vars[1], -3, -2);  // coeff = 2, slack = 1
@@ -126,7 +126,7 @@ TEST(WeightedSumTest, LevelZeroPropagationWithNegativeNumbers) {
   EXPECT_EQ(model.Get(UpperBound(sum)), 0);
 
   // Setting this leave only a slack of 5 which is not an exact multiple of 3.
-  model.Add(LowerOrEqual(sum, -40));
+  AddLowerOrEqual(sum, -40, &model);
   EXPECT_EQ(SatSolver::FEASIBLE, model.GetOrCreate<SatSolver>()->Solve());
   EXPECT_BOUNDS_EQ(vars[0], -5, -4);
   EXPECT_BOUNDS_EQ(vars[1], -6, -5);

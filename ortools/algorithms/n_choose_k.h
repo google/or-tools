@@ -27,8 +27,8 @@ namespace operations_research {
 // n.
 //
 // NOTE(user): If you need a variation of this, ask the authors: it's very easy
-// to add. E.g., other int types, other behaviors (e.g., return
-// std::numeric_limits<int64_t>::max() on overflow, etc).
+// to add. E.g., other int types, other behaviors (e.g., return kint64max on
+// overflow, etc).
 absl::StatusOr<int64_t> NChooseK(int64_t n, int64_t k);
 }  // namespace operations_research
 

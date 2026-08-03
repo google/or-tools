@@ -26,7 +26,6 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/model.h"
@@ -138,52 +137,6 @@ bool BooleanLinearExpressionIsCanonical(
 // coefficients using simple heuristics.
 void SimplifyCanonicalBooleanLinearConstraint(
     std::vector<LiteralWithCoeff>* cst, Coefficient* rhs);
-
-// Holds a set of boolean linear constraints in canonical form:
-// - The constraint is a linear sum of LiteralWithCoeff <= rhs.
-// - The linear sum satisfies the properties described in
-//   ComputeBooleanLinearExpressionCanonicalForm().
-//
-// TODO(user): Simplify further the constraints.
-//
-// TODO(user): Remove the duplication between this and what the sat solver
-// is doing in AddLinearConstraint() which is basically the same.
-//
-// TODO(user): Remove duplicate constraints? some problems have them, and
-// this is not ideal for the symmetry computation since it leads to a lot of
-// symmetries of the associated graph that are not useful.
-class CanonicalBooleanLinearProblem {
- public:
-  CanonicalBooleanLinearProblem() = default;
-
-  // This type is neither copyable nor movable.
-  CanonicalBooleanLinearProblem(const CanonicalBooleanLinearProblem&) = delete;
-  CanonicalBooleanLinearProblem& operator=(
-      const CanonicalBooleanLinearProblem&) = delete;
-
-  // Adds a new constraint to the problem. The bounds are inclusive.
-  // Returns false in case of a possible overflow or if the constraint is
-  // never satisfiable.
-  //
-  // TODO(user): Use a return status to distinguish errors if needed.
-  bool AddLinearConstraint(bool use_lower_bound, Coefficient lower_bound,
-                           bool use_upper_bound, Coefficient upper_bound,
-                           std::vector<LiteralWithCoeff>* cst);
-
-  // Getters. All the constraints are guaranteed to be in canonical form.
-  int NumConstraints() const { return constraints_.size(); }
-  Coefficient Rhs(int i) const { return rhs_[i]; }
-  const std::vector<LiteralWithCoeff>& Constraint(int i) const {
-    return constraints_[i];
-  }
-
- private:
-  bool AddConstraint(absl::Span<const LiteralWithCoeff> cst,
-                     Coefficient max_value, Coefficient rhs);
-
-  std::vector<Coefficient> rhs_;
-  std::vector<std::vector<LiteralWithCoeff>> constraints_;
-};
 
 // Encode a constraint sum term <= rhs, where each term is a positive
 // Coefficient times a literal. This class allows efficient modification of the

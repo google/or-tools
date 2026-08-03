@@ -179,7 +179,6 @@ CpModelProto PresolveOneConstraint(const CpModelProto& initial_model,
   PresolveContext context(&model, &presolved_model, &mapping_model);
   CpModelPresolver presolver(&context, &mapping);
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
   presolver.PresolveOneConstraint(constraint_index);
   presolver.RemoveEmptyConstraints();
   for (int i = 0; i < presolved_model.variables_size(); ++i) {
@@ -3559,6 +3558,7 @@ TEST(PresolveCpModelTest, AffineBooleanProduct) {
   params.set_keep_all_feasible_solutions_in_presolve(true);
   params.set_permute_variable_randomly(false);
   params.set_cp_model_probing_level(0);
+  params.set_max_domain_size_for_linear2_expansion(0);
   const CpModelProto presolved_model = PresolveForTest(initial_model, params);
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
@@ -3596,6 +3596,7 @@ TEST(PresolveCpModelTest, EnforcedAffineBooleanProduct) {
   params.set_keep_all_feasible_solutions_in_presolve(true);
   params.set_permute_variable_randomly(false);
   params.set_cp_model_probing_level(0);
+  params.set_max_domain_size_for_linear2_expansion(0);
   const CpModelProto presolved_model = PresolveForTest(initial_model, params);
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
@@ -4972,7 +4973,6 @@ TEST(PresolveCpModelTest, DetectDifferentVariablesAndAddNoOverlap) {
   std::vector<int> mapping;
   CpModelPresolver presolver(&context, &mapping);
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
   presolver.DetectDifferentVariables();
   context.WriteVariableDomainsToProto();
 
@@ -6889,7 +6889,8 @@ TEST(FindDuplicateConstraintsTest, BasicTest) {
     }
   )pb");
 
-  std::vector<std::pair<int, int>> duplicates = FindDuplicateConstraints(model);
+  std::vector<std::pair<int, int>> duplicates =
+      FindDuplicateConstraints(model, false, true);
   EXPECT_THAT(duplicates,
               ::testing::ElementsAre(std::make_pair(1, 0), std::make_pair(2, 0),
                                      std::make_pair(3, 0)));
@@ -6910,7 +6911,8 @@ TEST(FindDuplicateConstraintsTest, LinearConstraintParallelToObjective) {
     }
   )pb");
 
-  std::vector<std::pair<int, int>> duplicates = FindDuplicateConstraints(model);
+  std::vector<std::pair<int, int>> duplicates =
+      FindDuplicateConstraints(model, false, true);
   EXPECT_THAT(duplicates,
               ::testing::ElementsAre(std::make_pair(0, kObjectiveConstraint)));
 }
@@ -7399,8 +7401,12 @@ TEST(PresolveCpModelTest, ReduceDomainsInInverse) {
     variables { domain: [ 0, 2 ] }
     constraints {
       inverse {
-        f_direct: [ 0, 1, 2 ]
-        f_inverse: [ 3, 4, 5 ]
+        f_expr_direct: { vars: 0 coeffs: 1 }
+        f_expr_direct: { vars: 1 coeffs: 1 }
+        f_expr_direct: { vars: 2 coeffs: 1 }
+        f_expr_inverse: { vars: 3 coeffs: 1 }
+        f_expr_inverse: { vars: 4 coeffs: 1 }
+        f_expr_inverse: { vars: 5 coeffs: 1 }
       }
     }
   )pb");
@@ -8456,7 +8462,6 @@ TEST(PresolveCpModelTest, DuplicateColumns) {
   CpModelPresolver presolver(&context, &mapping);
 
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
   presolver.DetectDuplicateColumns();
   context.WriteVariableDomainsToProto();
 

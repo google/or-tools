@@ -25,6 +25,7 @@
 
 #include "absl/base/attributes.h"
 #include "absl/log/check.h"
+#include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/enforcement_helper.h"
@@ -81,6 +82,14 @@ struct IntervalDefinition {
     return start == other.start && end == other.end && size == other.size &&
            is_present == other.is_present;
   }
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const IntervalDefinition& i) {
+    absl::Format(&sink, "start=%v end=%v size=%v is_present=%v", i.start, i.end,
+                 i.size,
+                 i.is_present.has_value() ? absl::StrCat(i.is_present.value())
+                                          : "always");
+  }
 };
 
 // Helper class shared by the propagators that manage a given list of tasks.
@@ -109,6 +118,12 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   // Returns true if and only if all the enforcement literals are true.
   bool IsEnforced() const;
 
+  // Returns true if the search branching strategy is FIXED_SEARCH and if the
+  // SAT solver has not made any backtrack yet. In this case the scheduling
+  // search heuristics is strong enough to allow skipping some scheduling
+  // propagators.
+  bool FixedSearchFirstSolutionMode() const;
+
   // This is a propagator so we can "cache" all the intervals relevant
   // information. This gives good speedup. Note however that the info is stale
   // except if a bound was pushed by this helper or if this was called. We run
@@ -123,6 +138,7 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   // This is used by NoOverlap2DConstraintHelper, which registers itself but
   // does not register its x and y SchedulingConstraintHelpers.
   void SetEnforcementId(EnforcementId id) { enforcement_id_ = id; }
+  void RecomputeCache(int t) { recompute_cache_.Set(t); }
 
   // Resets the class to the same state as if it was constructed with
   // the given subset of tasks from other (and the same enforcement literals).
@@ -243,6 +259,9 @@ class SchedulingConstraintHelper : public PropagatorInterface {
 
   // Returns a string with the current task bounds.
   std::string TaskDebugString(int t) const;
+
+  // Same as TaskDebugString() with also the affine expression.
+  std::string FullTaskDebugString(int t) const;
 
   // Sorts and returns the tasks in corresponding order at the time of the call.
   // Note that we do not mean strictly-increasing/strictly-decreasing, there
@@ -366,7 +385,22 @@ class SchedulingConstraintHelper : public PropagatorInterface {
 
   // Registers the given propagator id to be called if any of the tasks
   // in this class change. Note that we do not watch size max though.
+  //
+  // Note that experiment showed that it is not really worth it to try to only
+  // wake a propagator if only a specific subset of the interval bounds changed.
+  // It seems that this actually affect a really low percentage of Propagate()
+  // calls (when only irrelevant bound changes). And it has a non-negligeable
+  // cost for the extra tracking.
   void WatchAllTasks(int id);
+
+  // Helper function to register a given scheduling propagator.
+  //
+  // Most scheduling propagators just call WatchAllTasks() and can be registered
+  // in the same way. In particular, since the helper is actually the one that
+  // will add them to the propagation queue, function like
+  // watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass() do not change
+  // anything and do not need to be called.
+  void Register(PropagatorInterface* propagator, int priority);
 
   // Sometimes, typically for no_overlap_2d, we can use the variables that are
   // fixed at current decision level to define a scheduling sub-problem. For
@@ -465,6 +499,7 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   RootLevelLinear2Bounds* root_level_lin2_bounds_;
   EnforcementHelper& enforcement_helper_;
   EnforcementId enforcement_id_;
+  bool fixed_search_;
 
   FixedCapacityVector<TaskTime> scratch_task_time_vector1_;
   FixedCapacityVector<TaskTime> scratch_task_time_vector2_;
@@ -637,6 +672,8 @@ class SchedulingDemandHelper {
   // Init all decomposed energies. It needs probing to be finished. This happens
   // after the creation of the helper.
   void InitDecomposedEnergies();
+
+  std::string TaskDebugString(int t) const;
 
  private:
   IntegerValue SimpleEnergyMin(int t) const;

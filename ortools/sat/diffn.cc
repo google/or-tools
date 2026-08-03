@@ -32,6 +32,7 @@
 #include "absl/log/vlog_is_on.h"
 #include "absl/numeric/bits.h"
 #include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/2d_distances_propagator.h"
 #include "ortools/sat/2d_mandatory_overlap_propagator.h"
 #include "ortools/sat/2d_orthogonal_packing.h"
@@ -150,9 +151,9 @@ void AddDiffnCumulativeRelationOnX(
                   integer_trail->LowerBound(min_start_var).value())));
     const std::vector<int64_t> coeffs = {-capacity.coeff.value(), -1, 1};
     // TODO(user): is the conditional really needed?
-    model->Add(ConditionalWeightedSumGreaterOrEqual(
+    AddConditionalWeightedSumGreaterOrEqual(
         enforcement_literals, {capacity.var, min_start_var, max_end_var},
-        coeffs, capacity.constant.value()));
+        coeffs, capacity.constant.value(), model);
   }
 
   SchedulingDemandHelper* demands =
@@ -327,11 +328,19 @@ void AddNonOverlappingRectangles(
             repository->End(x[i]), repository->Start(x[j]));
         const Literal x_ji = repository->GetOrCreatePrecedenceLiteral(
             repository->End(x[j]), repository->Start(x[i]));
-        if ((integer_trail->LowerBound(repository->Size(x[i])) > 0 ||
-             integer_trail->LowerBound(repository->Size(x[j])) > 0) &&
-            !AddAtMostOne(enforcement_literals, {x_ij, x_ji}, model)) {
-          sat_solver->NotifyThatModelIsUnsat();
-          return;
+        if (((integer_trail->LowerBound(repository->Size(x[i])) > 0 ||
+              integer_trail->LowerBound(repository->Size(x[j])) > 0))) {
+          std::vector<Literal> enforcement = enforcement_literals;
+          if (repository->IsOptional(x[i])) {
+            enforcement.push_back(repository->PresenceLiteral(x[i]));
+          }
+          if (repository->IsOptional(x[j])) {
+            enforcement.push_back(repository->PresenceLiteral(x[j]));
+          }
+          if (!AddAtMostOne(enforcement, {x_ij, x_ji}, model)) {
+            sat_solver->NotifyThatModelIsUnsat();
+            return;
+          }
         }
 
         // At most one of these two y options is true if the sizes are fixed or
@@ -341,10 +350,18 @@ void AddNonOverlappingRectangles(
         const Literal y_ji = repository->GetOrCreatePrecedenceLiteral(
             repository->End(y[j]), repository->Start(y[i]));
         if ((integer_trail->LowerBound(repository->Size(y[i])) > 0 ||
-             integer_trail->LowerBound(repository->Size(y[j])) > 0) &&
-            !AddAtMostOne(enforcement_literals, {y_ij, y_ji}, model)) {
-          sat_solver->NotifyThatModelIsUnsat();
-          return;
+             integer_trail->LowerBound(repository->Size(y[j])) > 0)) {
+          std::vector<Literal> enforcement = enforcement_literals;
+          if (repository->IsOptional(y[i])) {
+            enforcement.push_back(repository->PresenceLiteral(y[i]));
+          }
+          if (repository->IsOptional(y[j])) {
+            enforcement.push_back(repository->PresenceLiteral(y[j]));
+          }
+          if (!AddAtMostOne(enforcement, {y_ij, y_ji}, model)) {
+            sat_solver->NotifyThatModelIsUnsat();
+            return;
+          }
         }
 
         // At least one of the 4 options is true if all boxes are present.
@@ -361,7 +378,7 @@ void AddNonOverlappingRectangles(
         if (repository->IsOptional(y[j])) {
           clause.push_back(repository->PresenceLiteral(y[j]).Negated());
         }
-        model->Add(EnforcedClause(enforcement_literals, clause));
+        AddEnforcedClause(enforcement_literals, clause, model);
         if (sat_solver->ModelIsUnsat()) return;
       }
     }
@@ -482,7 +499,7 @@ std::optional<NonOverlappingRectanglesEnergyPropagator::Conflict>
 NonOverlappingRectanglesEnergyPropagator::FindConflict(
     std::vector<RectangleInRange> active_box_ranges) {
   const auto rectangles_with_too_much_energy =
-      FindRectanglesWithEnergyConflictMC(active_box_ranges, *random_, 1.0, 0.8);
+      FindRectanglesWithEnergyConflictMC(active_box_ranges, random_, 1.0, 0.8);
 
   if (rectangles_with_too_much_energy.conflicts.empty() &&
       rectangles_with_too_much_energy.candidates.empty()) {
@@ -499,11 +516,11 @@ NonOverlappingRectanglesEnergyPropagator::FindConflict(
   absl::InlinedVector<Rectangle, kSampleSize> sampled_rectangles;
   std::sample(rectangles_with_too_much_energy.conflicts.begin(),
               rectangles_with_too_much_energy.conflicts.end(),
-              std::back_inserter(sampled_rectangles), 5, *random_);
+              std::back_inserter(sampled_rectangles), 5, random_);
   std::sample(rectangles_with_too_much_energy.candidates.begin(),
               rectangles_with_too_much_energy.candidates.end(),
               std::back_inserter(sampled_rectangles),
-              kSampleSize - sampled_rectangles.size(), *random_);
+              kSampleSize - sampled_rectangles.size(), random_);
   std::sort(sampled_rectangles.begin(), sampled_rectangles.end(),
             [](const Rectangle& a, const Rectangle& b) {
               const bool larger = std::make_pair(a.SizeX(), a.SizeY()) >
@@ -884,9 +901,10 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   boxes_to_propagate_.clear();
   reduced_overlapping_boxes_.clear();
   int work_done = boxes.size();
-  for (int i = 0; i < events_overlapping_boxes_.size(); ++i) {
-    work_done += events_overlapping_boxes_[i].size();
-    SplitDisjointBoxes(*x, events_overlapping_boxes_[i], &disjoint_boxes_);
+  for (const absl::Span<const int> overlapping_boxes :
+       events_overlapping_boxes_) {
+    work_done += overlapping_boxes.size();
+    SplitDisjointBoxes(*x, overlapping_boxes, &disjoint_boxes_);
     for (const absl::Span<const int> sub_boxes : disjoint_boxes_) {
       // Boxes are sorted in a stable manner in the Split method.
       // Note that we do not use reduced_overlapping_boxes_ directly so that
@@ -912,8 +930,8 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
     if (!x_.ResetFromSubset(*x, boxes)) return false;
 
     // Collect the common overlapping coordinates of all boxes.
-    IntegerValue lb(std::numeric_limits<int64_t>::min());
-    IntegerValue ub(std::numeric_limits<int64_t>::max());
+    IntegerValue lb(kint64min);
+    IntegerValue ub(kint64max);
     for (const int b : boxes) {
       lb = std::max(lb, y->StartMax(b));
       ub = std::min(ub, y->EndMin(b) - 1);
@@ -1003,7 +1021,7 @@ bool NonOverlappingRectanglesDisjunctivePropagator::Propagate() {
   // mode. So we will not redo some propagation in slow mode that was already
   // done by the fast mode.
   const bool fast_propagation = watcher_->GetCurrentId() == fast_id_;
-  for (const auto subset : helper_->connected_components().AsVectorOfSpan()) {
+  for (const auto subset : helper_->connected_components()) {
     if (!FindBoxesThatMustOverlapAHorizontalLineAndPropagate(fast_propagation,
                                                              subset)) {
       return false;
@@ -1012,7 +1030,7 @@ bool NonOverlappingRectanglesDisjunctivePropagator::Propagate() {
   // We can actually swap dimensions to propagate vertically.
   if (!helper_->SynchronizeAndSetDirection(true, true, true)) return false;
 
-  for (const auto subset : helper_->connected_components().AsVectorOfSpan()) {
+  for (const auto subset : helper_->connected_components()) {
     if (!FindBoxesThatMustOverlapAHorizontalLineAndPropagate(fast_propagation,
                                                              subset)) {
       return false;
@@ -1048,15 +1066,14 @@ bool RectanglePairwisePropagator::Propagate() {
   num_calls_++;
   std::vector<PairwiseRestriction> restrictions;
 
-  for (int component_index = 0;
-       component_index < helper_->connected_components().size();
-       ++component_index) {
+  for (const absl::Span<const int> component :
+       helper_->connected_components()) {
     horizontal_zero_area_boxes_.clear();
     vertical_zero_area_boxes_.clear();
     point_zero_area_boxes_.clear();
     fixed_non_zero_area_boxes_.clear();
     non_fixed_non_zero_area_boxes_.clear();
-    for (int b : helper_->connected_components()[component_index]) {
+    for (const int b : component) {
       if (!helper_->IsPresent(b)) continue;
       const auto [x_size_max, y_size_max] = helper_->GetBoxSizesMax(b);
       ItemWithVariableSize box = helper_->GetItemWithVariableSize(b);

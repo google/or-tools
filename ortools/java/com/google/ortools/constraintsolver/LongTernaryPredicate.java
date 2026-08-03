@@ -14,12 +14,11 @@
 package com.google.ortools.constraintsolver;
 
 /**
- * Represents a predicate (boolean-valued function) uppon
- * three {@code long}-valued operands. This is the {@code long}-consuming primitive type
- * specialization of {@link Predicate}.
+ * Represents a predicate (boolean-valued function) uppon three {@code long}-valued operands. This
+ * is the {@code long}-consuming primitive type specialization of {@link Predicate}.
  *
- * <p>This is a functional interface
- * whose functional method is {@link #test(long, long, long)}.
+ * <p>This is a functional interface whose functional method is {@link #test(long, long, long)}.
+ *
  * @see Predicate
  */
 @FunctionalInterface
@@ -30,17 +29,14 @@ public interface LongTernaryPredicate {
    * @param left the first operand
    * @param center the second operand
    * @param right the third operand
-   * @return {@code true} if the input argument matches the predicate,
-   * otherwise {@code false}
+   * @return {@code true} if the input argument matches the predicate, otherwise {@code false}
    */
   boolean test(long left, long center, long right);
 
   /**
-   * Returns a predicate that represents the logical negation of this
-   * predicate.
+   * Returns a predicate that represents the logical negation of this predicate.
    *
-   * @return a predicate that represents the logical negation of this
-   * predicate
+   * @return a predicate that represents the logical negation of this predicate
    */
   default LongTernaryPredicate negate() {
     return (left, center, right) -> !test(left, center, right);

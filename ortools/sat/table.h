@@ -28,9 +28,9 @@ namespace sat {
 // all literals in the corresponding line of the literal_tuples matrix are true.
 // This constraint assumes that exactly one literal per column of the
 // literal_tuples matrix is true.
-std::function<void(Model*)> LiteralTableConstraint(
+void AddLiteralTableConstraint(
     absl::Span<const std::vector<Literal>> literal_tuples,
-    absl::Span<const Literal> line_literals);
+    absl::Span<const Literal> line_literals, Model* model);
 
 }  // namespace sat
 }  // namespace operations_research

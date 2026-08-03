@@ -25,6 +25,7 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/glop/variables_info.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -112,8 +113,8 @@ class LbTreeSearch {
     IntegerValue false_objective;
 
     // Points to adjacent nodes in the tree. Large if no connection.
-    NodeIndex true_child = NodeIndex(std::numeric_limits<int32_t>::max());
-    NodeIndex false_child = NodeIndex(std::numeric_limits<int32_t>::max());
+    NodeIndex true_child = NodeIndex(kint32max);
+    NodeIndex false_child = NodeIndex(kint32max);
 
     // Indicates if this nodes was removed from the tree.
     bool is_deleted = false;
@@ -187,7 +188,7 @@ class LbTreeSearch {
   // Model singleton class used here.
   const std::string name_;
   TimeLimit* time_limit_;
-  ModelRandomGenerator* random_;
+  absl::BitGenRef random_;
   SatSolver* sat_solver_;
   IntegerEncoder* integer_encoder_;
   Trail* trail_;

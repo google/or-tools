@@ -16,8 +16,9 @@
 
 import math
 from typing import Sequence
-from absl import app
-from absl import flags
+
+from absl import app, flags
+
 from ortools.sat.python import cp_model
 
 _NUM_ROBOTS = flags.DEFINE_integer("num_robots", 8, "Number of robots to place.")

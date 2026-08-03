@@ -12,24 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from absl.testing import absltest
+
+from ortools.math_opt import (parameters_pb2, result_pb2, rpc_pb2,
+                              solution_pb2, sparse_containers_pb2)
+from ortools.math_opt.python import mathopt
+from ortools.math_opt.python.ipc import proto_converter
+from ortools.math_opt.python.testing import compare_proto
 from ortools.service.v1 import optimization_pb2
 from ortools.service.v1.mathopt import model_pb2 as api_model_pb2
 from ortools.service.v1.mathopt import parameters_pb2 as api_parameters_pb2
 from ortools.service.v1.mathopt import result_pb2 as api_result_pb2
 from ortools.service.v1.mathopt import solution_pb2 as api_solution_pb2
-from ortools.service.v1.mathopt import solver_resources_pb2 as api_solver_resources_pb2
-from ortools.service.v1.mathopt import (
-    sparse_containers_pb2 as api_sparse_containers_pb2,
-)
-from absl.testing import absltest
-from ortools.math_opt import parameters_pb2
-from ortools.math_opt import result_pb2
-from ortools.math_opt import rpc_pb2
-from ortools.math_opt import solution_pb2
-from ortools.math_opt import sparse_containers_pb2
-from ortools.math_opt.python import mathopt
-from ortools.math_opt.python.ipc import proto_converter
-from ortools.math_opt.python.testing import compare_proto
+from ortools.service.v1.mathopt import \
+    solver_resources_pb2 as api_solver_resources_pb2
+from ortools.service.v1.mathopt import \
+    sparse_containers_pb2 as api_sparse_containers_pb2
 
 
 def _simple_request() -> rpc_pb2.SolveRequest:

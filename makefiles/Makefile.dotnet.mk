@@ -162,7 +162,7 @@ endif
 	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" clean -c Release -v minimal
 endef
 
-DOTNET_SAMPLES := init algorithms graph constraint_solver linear_solver sat util
+DOTNET_SAMPLES := init algorithms graph constraint_solver linear_solver routing sat util
 $(foreach sample,$(DOTNET_SAMPLES),$(eval $(call dotnet-sample-target,$(sample))))
 
 # Examples
@@ -307,7 +307,7 @@ endif
 	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" clean -c Release -v minimal
 endef
 
-DOTNET_TESTS := init algorithms graph constraint_solver linear_solver sat util
+DOTNET_TESTS := init algorithms graph constraint_solver linear_solver routing sat util
 $(foreach test,$(DOTNET_TESTS),$(eval $(call dotnet-test-target,$(test))))
 
 ####################

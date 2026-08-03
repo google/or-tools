@@ -13,7 +13,10 @@
 # limitations under the License.
 
 import os
+
 from absl.testing import absltest
+
+from ortools.scheduling import rcpsp_pb2
 from ortools.scheduling.python import rcpsp
 
 
@@ -28,7 +31,7 @@ class RcpspTest(absltest.TestCase):
             filename = f"../../../{data}"
         parser = rcpsp.RcpspParser()
         self.assertTrue(parser.parse_file(filename))
-        problem = parser.problem()
+        problem: rcpsp_pb2.RCPSP = parser.problem()
         self.assertLen(problem.resources, 4)
         self.assertLen(problem.tasks, 32)
 

@@ -16,7 +16,6 @@
 
 #include <cstdint>
 #include <initializer_list>
-#include <limits>
 #include <list>
 #include <optional>
 #include <string>
@@ -25,13 +24,15 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/linked_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/linked_hash_map.h"
-#include "ortools/base/status_macros.h"
+#include "ortools/base/status_builder.h"
+#include "ortools/base/types.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 
@@ -44,7 +45,7 @@ namespace math_opt {
 // The following invariants are enforced:
 //  * Ids must be unique and increasing (in insertion order).
 //  * Ids are non-negative.
-//  * Ids are not equal to std::numeric_limits<int64_t>::max()
+//  * Ids are not equal to kint64max
 //  * Ids removed are never reused.
 //  * Names must be either empty or unique when built with check_names=true.
 class IdNameBiMap {
@@ -99,7 +100,7 @@ class IdNameBiMap {
   inline absl::Status SetNextFreeId(int64_t new_next_free_id);
 
   // Iteration order is in increasing id order.
-  const gtl::linked_hash_map<int64_t, std::string>& id_to_name() const {
+  const absl::linked_hash_map<int64_t, std::string>& id_to_name() const {
     return id_to_name_;
   }
 
@@ -120,7 +121,7 @@ class IdNameBiMap {
 
   // Pointer stability for name strings and iterating in insertion order are
   // both needed (so we do not use flat_hash_map).
-  gtl::linked_hash_map<int64_t, std::string> id_to_name_;
+  absl::linked_hash_map<int64_t, std::string> id_to_name_;
   std::optional<absl::flat_hash_map<absl::string_view, int64_t>>
       nonempty_name_to_id_;
 };
@@ -149,13 +150,13 @@ struct ModelSummary {
 
 absl::Status IdNameBiMap::Insert(const int64_t id, std::string name) {
   if (id < next_free_id_) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "expected id=" << id
            << " to be at least next_free_id_=" << next_free_id_
            << " (ids should be nonnegative and inserted in strictly increasing "
               "order)";
   }
-  if (id == std::numeric_limits<int64_t>::max()) {
+  if (id == kint64max) {
     return absl::InvalidArgumentError("id of max(int64_t) is not allowed");
   }
   next_free_id_ = id + 1;
@@ -167,7 +168,7 @@ absl::Status IdNameBiMap::Insert(const int64_t id, std::string name) {
   if (nonempty_name_to_id_.has_value() && !name_view.empty()) {
     const auto [it, success] = nonempty_name_to_id_->insert({name_view, id});
     if (!success) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "duplicate name inserted: " << name_view;
     }
   }
@@ -177,7 +178,7 @@ absl::Status IdNameBiMap::Insert(const int64_t id, std::string name) {
 absl::Status IdNameBiMap::Erase(const int64_t id) {
   const auto it = id_to_name_.find(id);
   if (it == id_to_name_.end()) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "cannot delete missing id " << id;
   }
   const absl::string_view name_view(it->second);
@@ -214,13 +215,13 @@ absl::Status IdNameBiMap::SetNextFreeId(const int64_t new_next_free_id) {
   if (!Empty()) {
     const int64_t largest_id = id_to_name_.back().first;
     if (new_next_free_id <= largest_id) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "new_next_free_id=" << new_next_free_id
              << " must be greater than largest_id=" << largest_id;
     }
   } else {
     if (new_next_free_id < 0) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "new_next_free_id=" << new_next_free_id
              << " must be nonnegative";
     }
@@ -244,10 +245,10 @@ absl::Status UpdateBiMapFromMappedData(
     const absl::Span<const int64_t> deleted_ids,
     const google::protobuf::Map<int64_t, DataProto>& proto_map,
     IdNameBiMap& bimap) {
-  RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing2(deleted_ids))
+  ABSL_RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing2(deleted_ids))
       << "invalid deleted ids";
   for (const int64_t id : deleted_ids) {
-    RETURN_IF_ERROR(bimap.Erase(id));
+    ABSL_RETURN_IF_ERROR(bimap.Erase(id));
   }
   std::vector<int64_t> new_ids;
   new_ids.reserve(proto_map.size());
@@ -256,7 +257,7 @@ absl::Status UpdateBiMapFromMappedData(
   }
   absl::c_sort(new_ids);
   for (const int64_t id : new_ids) {
-    RETURN_IF_ERROR(bimap.Insert(id, proto_map.at(id).name()));
+    ABSL_RETURN_IF_ERROR(bimap.Insert(id, proto_map.at(id).name()));
   }
   return absl::OkStatus();
 }

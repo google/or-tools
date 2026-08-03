@@ -30,6 +30,7 @@
 #include "gtest/gtest.h"
 #include "ortools/algorithms/binary_search.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/2d_orthogonal_packing_testing.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer_base.h"
@@ -125,8 +126,8 @@ TEST(DualFeasibilityFunctionTest, Dff2IsMaximal) {
 TEST(DualFeasibilityFunctionTest, DffPowerOfTwo) {
   absl::BitGen random;
   for (int k = 0; k < 61; k++) {
-    TestMaximalDff<RoundingDualFeasibleFunctionPowerOfTwo>(
-        random, 100, std::numeric_limits<int64_t>::max() / 2, k);
+    TestMaximalDff<RoundingDualFeasibleFunctionPowerOfTwo>(random, 100,
+                                                           kint64max / 2, k);
   }
 }
 

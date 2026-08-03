@@ -14,17 +14,17 @@
 #ifndef ORTOOLS_SAT_2D_RECTANGLE_PRESOLVE_H_
 #define ORTOOLS_SAT_2D_RECTANGLE_PRESOLVE_H_
 
+#include <array>
 #include <tuple>
 #include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "absl/container/flat_hash_map.h"
-#include "absl/container/inlined_vector.h"
 #include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer_base.h"
+#include "ortools/sat/util.h"
 
 namespace operations_research {
 namespace sat {
@@ -190,11 +190,21 @@ class Neighbours {
       absl::Span<const Rectangle> rectangles,
       absl::Span<const std::tuple<int, EdgePosition, int>> neighbors)
       : size_(rectangles.size()) {
+    int total_neighbors_per_position[4] = {0};
     for (const auto& [box_index, edge, neighbor] : neighbors) {
-      neighbors_[edge][box_index].push_back(neighbor);
+      total_neighbors_per_position[edge]++;
+    }
+    CompactVectorVectorBuilder<int, int> builders[4];
+    for (int edge = 0; edge < 4; ++edge) {
+      builders[edge].ReserveNumItems(total_neighbors_per_position[edge]);
+    }
+    for (const auto& [box_index, edge, neighbor] : neighbors) {
+      builders[edge].Add(box_index, neighbor);
     }
     for (int edge = 0; edge < 4; ++edge) {
-      for (auto& [box_index, neighbors] : neighbors_[edge]) {
+      neighbors_[edge].ResetFromBuilder(builders[edge], size_);
+      for (int box_index = 0; box_index < size_; ++box_index) {
+        absl::Span<int> neighbors = neighbors_[edge][box_index];
         absl::c_sort(neighbors, [&rectangles, edge](int a, int b) {
           return CompareClockwise(static_cast<EdgePosition>(edge))(
               rectangles[a], rectangles[b]);
@@ -208,16 +218,11 @@ class Neighbours {
   // Neighbors are sorted in the clockwise order.
   absl::Span<const int> GetSortedNeighbors(int rectangle_index,
                                            EdgePosition edge) const {
-    if (auto it = neighbors_[edge].find(rectangle_index);
-        it != neighbors_[edge].end()) {
-      return it->second;
-    } else {
-      return {};
-    }
+    return neighbors_[edge][rectangle_index];
   }
 
  private:
-  absl::flat_hash_map<int, absl::InlinedVector<int, 3>> neighbors_[4];
+  CompactVectorVector<int, int> neighbors_[4];
   int size_;
 };
 
@@ -233,24 +238,65 @@ std::vector<std::vector<int>> SplitInConnectedComponents(
 // union of rectangles, the path is a subset of the union of all the rectangle's
 // edges.
 struct ShapePath {
-  // The two vectors should have exactly the same size.
+  // The two vectors have exactly the same size, representing a closed cyclic
+  // loop. The last point conceptually connects back to the first point.
   std::vector<std::pair<IntegerValue, IntegerValue>> step_points;
   // touching_box_index[i] contains the index of the unique interior rectangle
   // touching the segment step_points[i]->step_points[(i+1)%size].
   std::vector<int> touching_box_index;
 };
 
+// Represents a single contiguous orthogonal shape (a connected component of
+// rectangles) defined by its outer envelope and any internal voids.
+//
+// Topological orientation ("solid on right"):
+// - `boundary`: The exterior envelope, traced in clockwise order.
+// - `holes`: The internal voids, naturally traced in counter-clockwise
+//   order to maintain the interior solid mass on the right side of the path.
 struct SingleShape {
   ShapePath boundary;
   std::vector<ShapePath> holes;
 };
 
-// Given a set of rectangles, split it into connected components and transform
-// each individual set into a shape described by its boundary and holes paths.
+// Given a set of non-overlapping rectangles, splits them into connected
+// components with two rectangles being connected if they share a side of
+// non-zero length and transforms each set into a shape described by its
+// boundary and hole paths. Then, for each component, convert the set of
+// rectangles into a single shape with a boundary and zero or more holes.
+//
+// Note that if two rectangles touch only at a single diagonal point, there are
+// two possible ways to continue the contour. We make the choice of continuing
+// on the same rectangle it was touching before the pinch-point.
 std::vector<SingleShape> BoxesToShapes(absl::Span<const Rectangle> rectangles,
                                        const Neighbours& neighbours);
 
-std::vector<Rectangle> CutShapeIntoRectangles(SingleShape shapes);
+// Given a single shape, returns a set of non-overlapping rectangles that
+// is a paving of the shape. This function always returns the minimum possible
+// number of rectangles that can exactly pave the shape.
+std::vector<Rectangle> CutShapeIntoRectangles(const SingleShape& shapes);
+
+struct PolygonCut {
+  std::pair<IntegerValue, IntegerValue> start;
+  std::pair<IntegerValue, IntegerValue> end;
+  int start_index;
+  int end_index;
+};
+
+// A different representation of a shape. The two vectors must have the same
+// size. The first one contains the points of the shape and the second one
+// contains the index of the next point in the shape.
+//
+// Note that we code in this file is only correct for shapes with points
+// connected only by horizontal or vertical lines.
+struct FlatShape {
+  std::vector<std::pair<IntegerValue, IntegerValue>> points;
+  std::vector<int> next;
+};
+
+// Exposed for testing, documented on the .cc file.
+FlatShape BuildFlatShape(const SingleShape& shape);
+std::array<std::vector<PolygonCut>, 4> GetPotentialPolygonCuts(
+    FlatShape& shape);
 
 }  // namespace sat
 }  // namespace operations_research

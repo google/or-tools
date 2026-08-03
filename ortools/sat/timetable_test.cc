@@ -21,10 +21,10 @@
 
 #include "absl/container/btree_map.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/cumulative.h"
 #include "ortools/sat/integer.h"
@@ -32,7 +32,7 @@
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/precedences.h"
+#include "ortools/sat/old_precedences_propagator.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/scheduling_helpers.h"
@@ -219,8 +219,8 @@ TEST(TimeTablingSolve, FindAll) {
     demand_exprs[i] = AffineExpression(IntegerValue(demands[i]));
   }
 
-  model.Add(Cumulative(/*enforcement_literals=*/{}, intervals, demand_exprs,
-                       capacity_expr));
+  AddCumulative(/*enforcement_literals=*/{}, intervals, demand_exprs,
+                capacity_expr, &model);
 
   int num_solutions_found = 0;
   auto* integer_trail = model.GetOrCreate<IntegerTrail>();
@@ -267,8 +267,8 @@ TEST(TimeTablingSolve, FindAllWithVaryingCapacity) {
       demand_exprs[i] = AffineExpression(IntegerValue(demands[i]));
     }
 
-    model.Add(Cumulative(/*enforcement_literals=*/{}, intervals, demand_exprs,
-                         capacity_expr));
+    AddCumulative(/*enforcement_literals=*/{}, intervals, demand_exprs,
+                  capacity_expr, &model);
 
     int num_solutions_found = 0;
     auto* integer_trail = model.GetOrCreate<IntegerTrail>();
@@ -308,8 +308,8 @@ TEST(TimeTablingSolve, FindAllWithVaryingCapacity) {
     demand_exprs[i] = AffineExpression(IntegerValue(demands[i]));
   }
 
-  model.Add(Cumulative(/*enforcement_literals=*/{}, intervals, demand_exprs,
-                       capacity_expr));
+  AddCumulative(/*enforcement_literals=*/{}, intervals, demand_exprs,
+                capacity_expr, &model);
 
   int num_solutions_found = 0;
   auto* integer_trail = model.GetOrCreate<IntegerTrail>();
@@ -359,8 +359,8 @@ TEST(TimeTablingSolve, FindAllWithOptionals) {
     demand_exprs[i] = AffineExpression(IntegerValue(demands[i]));
   }
 
-  model.Add(Cumulative(/*enforcement_literals=*/{}, intervals, demand_exprs,
-                       capacity_expr));
+  AddCumulative(/*enforcement_literals=*/{}, intervals, demand_exprs,
+                capacity_expr, &model);
 
   int num_solutions_found = 0;
   auto* integer_trail = model.GetOrCreate<IntegerTrail>();
@@ -406,11 +406,10 @@ TEST(ReservoirTest, FindAllParenthesis) {
     times[i] = vars[i];
     deltas[i] = IntegerValue((i % 2 == 1) ? -1 : 1);
   }
-  const Literal true_lit =
-      model.GetOrCreate<IntegerEncoder>()->GetTrueLiteral();
+  const Literal true_lit = model.GetOrCreate<TrivialLiterals>()->TrueLiteral();
   std::vector<Literal> all_true(size, true_lit);
 
-  model.Add(AllDifferentOnBounds(vars));
+  AddAllDifferentOnBounds(vars, &model);
   AddReservoirConstraint(/*enforcement_literals=*/{}, times, deltas, all_true,
                          0, size, &model);
 
@@ -467,7 +466,7 @@ TEST(ReservoirTest, FindAllParenthesisWithOptionality) {
     present[i] = Literal(model.Add(NewBooleanVariable()), true);
   }
 
-  model.Add(AllDifferentOnBounds(vars));
+  AddAllDifferentOnBounds(vars, &model);
   AddReservoirConstraint(/*enforcement_literals=*/{}, times, deltas, present, 0,
                          size, &model);
 
@@ -513,8 +512,7 @@ TEST(ReservoirTest, VariableLevelChange) {
     times[i] = IntegerValue(i);
     deltas[i] = model.Add(NewIntegerVariable(-1, 1));
   }
-  const Literal true_lit =
-      model.GetOrCreate<IntegerEncoder>()->GetTrueLiteral();
+  const Literal true_lit = model.GetOrCreate<TrivialLiterals>()->TrueLiteral();
   std::vector<Literal> all_true(size, true_lit);
 
   const int min_level = 0;
@@ -568,7 +566,7 @@ TEST(ReservoirTimeTablingTest, WithUnassignedEnforcementLiteral) {
   for (int i = 0; i < 4; ++i) {
     times.push_back(AffineExpression(i + 1));
     deltas.push_back(AffineExpression(i + 2));
-    presences.push_back(model.GetOrCreate<IntegerEncoder>()->GetTrueLiteral());
+    presences.push_back(model.GetOrCreate<TrivialLiterals>()->TrueLiteral());
   }
   const Literal b = Literal(model.Add(NewBooleanVariable()), true);
   // Always false is enforced (sum(deltas) = 2+3+4+5 > 10).

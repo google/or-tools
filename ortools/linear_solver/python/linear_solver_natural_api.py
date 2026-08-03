@@ -99,12 +99,12 @@ class LinearExpr:
 
         Args:
           coeffs: A dictionary of variables' coefficients. It is a defaultdict that
-              initializes the new values to 0 by default.
+            initializes the new values to 0 by default.
           multiplier: The current accumulated multiplier to apply to this
-              expression.
+            expression.
           stack: A list to append to if the current expression is composed of
-              sub-expressions. The elements of the stack are pair tuples
-              (multiplier, linear_expression).
+            sub-expressions. The elements of the stack are pair tuples (multiplier,
+            linear_expression).
         """
         raise NotImplementedError
 

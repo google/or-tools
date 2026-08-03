@@ -14,7 +14,7 @@
 set_property(SOURCE linear_solver.swig PROPERTY CPLUSPLUS ON)
 set_property(SOURCE linear_solver.swig PROPERTY SWIG_MODULE_NAME pywraplp)
 set_property(SOURCE linear_solver.swig PROPERTY COMPILE_DEFINITIONS
-  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
+  ${OR_TOOLS_COMPILE_DEFINITIONS})
 swig_add_library(pywraplp
   TYPE MODULE
   LANGUAGE python
@@ -68,7 +68,7 @@ target_link_libraries(model_builder_helper_pybind11 PRIVATE
   Eigen3::Eigen)
 add_library(${PROJECT_NAMESPACE}::model_builder_helper_pybind11 ALIAS model_builder_helper_pybind11)
 
-if(BUILD_TESTING)
+if(BUILD_PYTHON_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)
     add_python_test(FILE_NAME ${FILE_NAME})

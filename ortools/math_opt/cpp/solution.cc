@@ -20,10 +20,9 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/sparse_containers.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/solution.pb.h"
@@ -200,13 +199,13 @@ absl::StatusOr<Basis> Basis::FromProto(const ModelStorageCPtr model,
 absl::Status Basis::CheckModelStorage(
     const ModelStorageCPtr expected_storage) const {
   for (const auto& [v, _] : variable_status) {
-    RETURN_IF_ERROR(
+    ABSL_RETURN_IF_ERROR(
         internal::CheckModelStorage(/*storage=*/v.storage(),
                                     /*expected_storage=*/expected_storage))
         << "invalid variable " << v << " in variable_status";
   }
   for (const auto& [c, _] : constraint_status) {
-    RETURN_IF_ERROR(
+    ABSL_RETURN_IF_ERROR(
         internal::CheckModelStorage(/*storage=*/c.storage(),
                                     /*expected_storage=*/expected_storage))
         << "invalid constraint " << c << " in constraint_status";

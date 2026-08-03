@@ -14,15 +14,14 @@
 
 """Driver to test binaries with a script."""
 
-from collections.abc import Sequence
 import os
 import re
 import shlex
 import subprocess
 import sys
+from collections.abc import Sequence
 
-from tools.testing import bintest_matchers
-from tools.testing import bintest_run_utils
+from tools.testing import bintest_matchers, bintest_run_utils
 
 
 class ScriptError(Exception):

@@ -611,6 +611,10 @@ bool TimeTablingPerTask::SweepTask(int task_id, IntegerValue initial_start_min,
         helper_->ResetReason();
         const IntegerValue time = std::max(start_max, profile_[rec_id].start);
         AddProfileReason(task_id, time, time + 1, CapacityMax());
+        if (capacity_.var != kNoIntegerVariable) {
+          helper_->AddIntegerReason(
+              integer_trail_->UpperBoundAsLiteral(capacity_.var));
+        }
         if (!helper_->PushIntegerLiteralIfTaskPresent(
                 task_id, demands_->Demands()[task_id].LowerOrEqual(new_max))) {
           return false;

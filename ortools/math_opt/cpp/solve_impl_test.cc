@@ -484,6 +484,51 @@ TEST(SolveImplTest, FailingSolve) {
       StatusIs(absl::StatusCode::kInternal, "solve failed"));
 }
 
+// Test calling Solve() with a solver that returns an invalid SolveResult. We
+// expect an absl::InternalError.
+//
+// Note that core/solver.cc already validates the SolveResultProto; thus this
+// type of error can only happen for RPC where the RPC server would not return a
+// result from a core/solver.cc.
+TEST(SolveImplTest, InvalidResult) {
+  BasicLp basic_lp;
+
+  SolveArguments args;
+  args.parameters.enable_output = true;
+
+  args.model_parameters =
+      ModelSolveParameters::OnlySomePrimalVariables({basic_lp.a});
+
+  BaseSolverFactoryMock factory_mock;
+  BaseSolverMock solver;
+  {
+    InSequence s;
+
+    EXPECT_CALL(
+        factory_mock,
+        Call(SOLVER_TYPE_GLOP, EquivToProto(basic_lp.model.ExportModel()), _))
+        .WillOnce(
+            Return(ByMove(std::make_unique<DelegatingBaseSolver>(&solver))));
+
+    ASSERT_OK_AND_ASSIGN(const ModelSolveParametersProto model_parameters,
+                         args.model_parameters.Proto());
+    SolveResultProto invalid_result = basic_lp.OptimalResult({basic_lp.a});
+    invalid_result.mutable_termination()->set_reason(
+        TERMINATION_REASON_UNSPECIFIED);
+    EXPECT_CALL(solver, Solve(SolveArgsAre(
+                            EquivToProto(args.parameters.Proto()),
+                            EquivToProto(model_parameters), Eq(nullptr),
+                            EquivToProto(args.callback_registration.Proto()),
+                            Eq(nullptr), Eq(nullptr))))
+        .WillOnce(Return(invalid_result));
+  }
+
+  ASSERT_THAT(
+      SolveImpl(factory_mock.AsStdFunction(), basic_lp.model, SolverType::kGlop,
+                args, /*user_canceller=*/nullptr, /*remove_names=*/false),
+      StatusIs(absl::StatusCode::kInternal, HasSubstr("invalid termination")));
+}
+
 TEST(SolveImplTest, WrongModelInModelParameters) {
   BasicLp basic_lp;
   BasicLp other_basic_lp;
@@ -714,6 +759,45 @@ TEST(ComputeInfeasibleSubsystemImplTest, FailingSolve) {
           factory_mock.AsStdFunction(), lp.model, SolverType::kGlop, args,
           /*user_canceller=*/nullptr, /*remove_names=*/false),
       StatusIs(absl::StatusCode::kInternal, "infeasible subsystem failed"));
+}
+
+TEST(ComputeInfeasibleSubsystemImplTest, InvalidResult) {
+  BasicInfeasibleLp lp;
+
+  ComputeInfeasibleSubsystemArguments args;
+  args.parameters.enable_output = true;
+
+  SolveInterrupter interrupter;
+  args.interrupter = &interrupter;
+
+  args.message_callback = [](absl::Span<const std::string>) {};
+
+  BaseSolverFactoryMock factory_mock;
+  BaseSolverMock solver;
+  {
+    InSequence s;
+
+    EXPECT_CALL(factory_mock,
+                Call(SOLVER_TYPE_GLOP, EquivToProto(lp.model.ExportModel()), _))
+        .WillOnce(
+            Return(ByMove(std::make_unique<DelegatingBaseSolver>(&solver))));
+
+    ComputeInfeasibleSubsystemResultProto invalid_result =
+        lp.InfeasibleResult();
+    invalid_result.set_feasibility(FEASIBILITY_STATUS_UNSPECIFIED);
+    EXPECT_CALL(solver,
+                ComputeInfeasibleSubsystem(ComputeInfeasibleSubsystemArgsAre(
+                    EquivToProto(args.parameters.Proto()), Ne(nullptr),
+                    Eq(&interrupter))))
+        .WillOnce(Return(invalid_result));
+  }
+
+  ASSERT_THAT(ComputeInfeasibleSubsystemImpl(factory_mock.AsStdFunction(),
+                                             lp.model, SolverType::kGlop, args,
+                                             /*user_canceller=*/nullptr,
+                                             /*remove_names=*/false),
+              StatusIs(absl::StatusCode::kInternal,
+                       HasSubstr("feasibility must be specified")));
 }
 
 TEST(ComputeInfeasibleSubsystemImplTest, UserCancellation) {

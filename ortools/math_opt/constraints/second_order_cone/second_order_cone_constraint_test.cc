@@ -13,17 +13,16 @@
 
 #include "ortools/math_opt/constraints/second_order_cone/second_order_cone_constraint.h"
 
-#include <optional>
 #include <sstream>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "absl/strings/str_cat.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/strong_int.h"
+#include "ortools/math_opt/constraints/second_order_cone/storage.h"
 #include "ortools/math_opt/constraints/util/model_util.h"
+#include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/storage/model_storage.h"
 #include "ortools/math_opt/storage/sparse_coefficient_map.h"
 

@@ -20,11 +20,13 @@
 
 #include "absl/cleanup/cleanup.h"
 #include "absl/status/status.h"
+#include "absl/status/status_builder.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/status_builder.h"
+#include "ortools/base/types.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/result.pb.h"
@@ -80,18 +82,18 @@ absl::StatusOr<SolveResultProto> ParseMathOptSolveOutput(
   // that a SolveResultProto can be parsed, then return them.
   if (code == 0) {
     if (status_msg_str != nullptr) {
-      return util::AbortedErrorBuilder()
+      return ortools::AbortedErrorBuilder()
              << "expected status_msg_str to be null on OK solve, but was: "
              << status_msg_str;
     }
     if (solve_result_size > 0 && solve_result_bytes == nullptr) {
-      return util::AbortedErrorBuilder()
+      return ortools::AbortedErrorBuilder()
              << "expected solve_result_bytes to be not null on OK solve with "
                 "positive solve_result_size: "
              << solve_result_size;
     }
-    if (solve_result_size > std::numeric_limits<int>::max()) {
-      return util::AbortedErrorBuilder()
+    if (solve_result_size > kint32max) {
+      return ortools::AbortedErrorBuilder()
              << "solve_result_size should be at most INT_MAX but found: "
              << solve_result_size;
     }
@@ -106,20 +108,21 @@ absl::StatusOr<SolveResultProto> ParseMathOptSolveOutput(
   // message is present and that there is no SolveResultProto information, then
   // return a Status error.
   if (status_msg_str == nullptr) {
-    return util::AbortedErrorBuilder() << "on solver failure with nonzero code "
-                                       << static_cast<absl::StatusCode>(code)
-                                       << " error message should not be null";
+    return ortools::AbortedErrorBuilder()
+           << "on solver failure with nonzero code "
+           << static_cast<absl::StatusCode>(code)
+           << " error message should not be null";
   }
   absl::Status underlying_failure(static_cast<absl::StatusCode>(code),
                                   status_msg_str);
   if (solve_result_size > 0) {
-    return util::AbortedErrorBuilder()
+    return ortools::AbortedErrorBuilder()
            << "solve_result_size should be 0 on failure but was: "
            << solve_result_size
            << "; underlying failure was: " << underlying_failure;
   }
   if (solve_result_bytes != nullptr) {
-    return util::AbortedErrorBuilder()
+    return ortools::AbortedErrorBuilder()
            << "solve_result_bytes should be nullptr on failure but was not"
            << "; underlying failure was: " << underlying_failure;
   }
@@ -153,9 +156,8 @@ TEST(ParseMathOptSolveOutputTest,
 TEST(ParseMathOptSolveOutputTest, CodeOkButResultMessageSizeTooLargeAborts) {
   const std::string fake_solve_result = "fakey fakey fakey";
   EXPECT_THAT(
-      ParseMathOptSolveOutput(
-          0, fake_solve_result.data(),
-          static_cast<size_t>(std::numeric_limits<int>::max()) + 1, nullptr),
+      ParseMathOptSolveOutput(0, fake_solve_result.data(),
+                              static_cast<size_t>(kint32max) + 1, nullptr),
       StatusIs(absl::StatusCode::kAborted,
                HasSubstr("solve_result_size should be at most INT_MAX")));
 }
@@ -292,8 +294,7 @@ TEST(MathOptSolveTest, NullModelWithNonzeroSizeError) {
 TEST(MathOptSolveTest, ModelProtoTooBigError) {
   std::string fake_model;
   EXPECT_THAT(
-      MathOptSolveCpp(fake_model.data(),
-                      static_cast<size_t>(std::numeric_limits<int>::max()) + 1),
+      MathOptSolveCpp(fake_model.data(), static_cast<size_t>(kint32max) + 1),
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("max int")));
 }
 

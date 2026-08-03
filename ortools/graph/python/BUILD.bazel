@@ -20,6 +20,8 @@
 
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
 
+package(default_visibility = ["//visibility:public"])
+
 pybind_extension(
     name = "linear_sum_assignment",
     srcs = ["linear_sum_assignment.cc"],

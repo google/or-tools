@@ -18,7 +18,6 @@
 
 #include <deque>
 #include <functional>
-#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
@@ -26,8 +25,10 @@
 #include "absl/base/attributes.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/enforcement_helper.h"
 #include "ortools/sat/integer.h"
@@ -35,8 +36,8 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
-#include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/rev.h"
 #include "ortools/util/strong_integers.h"
@@ -58,7 +59,7 @@ namespace sat {
 class ConstraintPropagationOrder {
  public:
   ConstraintPropagationOrder(
-      ModelRandomGenerator* random, TimeLimit* time_limit,
+      absl::BitGenRef random, TimeLimit* time_limit,
       std::function<absl::Span<const IntegerVariable>(int)> id_to_vars)
       : random_(random),
         time_limit_(time_limit),
@@ -116,7 +117,7 @@ class ConstraintPropagationOrder {
 
     int best_id = 0;
     int best_num_vars = 0;
-    int best_degree = std::numeric_limits<int>::max();
+    int best_degree = kint32max;
     int64_t work_done = 0;
     const int size = ids_.size();
     const auto var_has_entry = var_has_entry_.const_view();
@@ -205,7 +206,7 @@ class ConstraintPropagationOrder {
   }
 
  public:
-  ModelRandomGenerator* random_;
+  absl::BitGenRef random_;
   TimeLimit* time_limit_;
   std::function<absl::Span<const IntegerVariable>(int)> id_to_vars_func_;
 
@@ -238,6 +239,11 @@ class LinearPropagator : public PropagatorInterface,
   ~LinearPropagator() override;
   bool Propagate() final;
   void SetLevel(int level) final;
+
+  // In FIXED_SEARCH and until the first backtrack, Propagate() does not fully
+  // propagate in order to be faster. In this case, completes the propagation
+  // and disables the "fast propagation" mode. Otherwise does nothing.
+  bool PropagateAll();
 
   std::string LazyReasonName() const override { return "LinearPropagator"; }
 
@@ -286,6 +292,7 @@ class LinearPropagator : public PropagatorInterface,
   // Called when the lower bound of a variable changed. The id is the constraint
   // id that caused this change or -1 if it comes from an external source.
   void OnVariableChange(IntegerVariable var, IntegerValue lb, int id);
+  void AddVarConstraintsToQueue(IntegerVariable var);
 
   // Returns false on conflict.
   ABSL_MUST_USE_RESULT bool PropagateOneConstraint(int id);
@@ -313,8 +320,11 @@ class LinearPropagator : public PropagatorInterface,
   void SetPropagatedBy(IntegerVariable var, int id);
   std::string ConstraintDebugString(int id);
 
+  void PushPendingLin2Bounds();
+
   // External class needed.
   Trail* trail_;
+  SatSolver* sat_solver_;
   IntegerTrail* integer_trail_;
   EnforcementPropagator* enforcement_propagator_;
   EnforcementHelper* enforcement_helper_;
@@ -323,8 +333,10 @@ class LinearPropagator : public PropagatorInterface,
   RevIntRepository* rev_int_repository_;
   RevIntegerValueRepository* rev_integer_value_repository_;
   EnforcedLinear2Bounds* precedences_;
+  Linear2Indices* lin2_indices_;
   Linear2BoundsFromLinear3* linear3_bounds_;
-  ModelRandomGenerator* random_;
+
+  absl::BitGenRef random_;
   SharedStatistics* shared_stats_ = nullptr;
   const int watcher_id_;
 
@@ -360,6 +372,13 @@ class LinearPropagator : public PropagatorInterface,
   Bitset64<int> in_queue_;
   std::deque<int> propagation_queue_;
 
+  // Whether to only propagate linear constraints with exactly one non-fixed
+  // variable. This only applies before the first conflict is detected.
+  bool only_propagate_unit_linear_;
+
+  // Lin3 constraint that need to be processed to push lin2 bounds.
+  SparseBitset<int> lin3_ids_;
+
   // This only contain constraint that currently push some bounds.
   ConstraintPropagationOrder order_;
 
@@ -389,6 +408,18 @@ class LinearPropagator : public PropagatorInterface,
   std::vector<DissasembleQueueEntry> disassemble_queue_;
   std::vector<DissasembleQueueEntry> disassemble_branch_;
   std::vector<std::pair<IntegerVariable, IntegerValue>> disassemble_candidates_;
+
+  // We cache once and for all the 3 lin2 with affine bound that are "implied"
+  // by a linear3.
+  //
+  // TODO(user): We "waste" memory for non-linear3 constraints, but then this is
+  // not much more than ConstraintInfo that we already keep for each constraint.
+  struct Lin2AffineBoundsCache {
+    LinearExpression2Index indices[3];
+    IntegerValue gcds[3];
+    AffineExpression affine_ubs[3];
+  };
+  std::vector<Lin2AffineBoundsCache> id_to_lin2_cache_;
 
   // This is used to update the deterministic time.
   int64_t num_terms_for_dtime_update_ = 0;

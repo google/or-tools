@@ -12,13 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import copy
+
 from absl.testing import absltest
+
 from ortools.util.python import sorted_interval_list as sil
 
 
 class SortedIntervalListTest(absltest.TestCase):
+
+    def testEmptyDomain(self):
+        empty_domain = sil.Domain.empty()
+        self.assertEqual(0, empty_domain.size())
+        self.assertTrue(empty_domain.is_empty())
+        self.assertEqual(str(empty_domain), "[]")
 
     def testCtorAndGetter(self):
         bool_domain = sil.Domain(0, 1)
@@ -29,7 +36,7 @@ class SortedIntervalListTest(absltest.TestCase):
         self.assertEqual(str(bool_domain), "[0,1]")
 
     def testFromValues(self):
-        domain = sil.Domain.FromValues([1, 3, -5, 5])
+        domain = sil.Domain.from_values([1, 3, -5, 5])
         self.assertEqual(4, domain.size())
         self.assertEqual(-5, domain.min())
         self.assertEqual(5, domain.max())
@@ -88,6 +95,34 @@ class SortedIntervalListTest(absltest.TestCase):
         self.assertEqual([10, 15], d2.flattened_intervals())
         self.assertEqual([10, 20], d3.flattened_intervals())
 
+    def testContinuousMultiplicationByCoeff(self):
+        d1 = sil.Domain(0, 5)
+        d2 = d1.continuous_multiplication_by(2)
+        self.assertEqual([0, 5], d1.flattened_intervals())
+        self.assertEqual([0, 10], d2.flattened_intervals())
+
+    def testContinuousMultiplicationByDomain(self):
+        d1 = sil.Domain(0, 5)
+        d2 = sil.Domain(1, 2)
+        d3 = d1.continuous_multiplication_by(d2)
+        self.assertEqual([0, 5], d1.flattened_intervals())
+        self.assertEqual([1, 2], d2.flattened_intervals())
+        self.assertEqual([0, 10], d3.flattened_intervals())
+
+    def testDivisionBy(self):
+        d1 = sil.Domain(0, 10)
+        d2 = d1.division_by(2)
+        self.assertEqual([0, 10], d1.flattened_intervals())
+        self.assertEqual([0, 5], d2.flattened_intervals())
+
+    def testDivisionBySuperset(self):
+        d1 = sil.Domain(0, 10)
+        d2 = sil.Domain(2, 3)
+        d3 = d1.division_by_superset(d2)
+        self.assertEqual([0, 10], d1.flattened_intervals())
+        self.assertEqual([2, 3], d2.flattened_intervals())
+        self.assertEqual([0, 5], d3.flattened_intervals())
+
     def testComplement(self):
         d1 = sil.Domain(-9223372036854775808, 5)
         d2 = d1.complement()
@@ -98,15 +133,40 @@ class SortedIntervalListTest(absltest.TestCase):
         self.assertTrue(sil.Domain(0, 4).overlaps_with(sil.Domain(0, 4)))
         self.assertFalse(sil.Domain(0, 2).overlaps_with(sil.Domain(3, 5)))
         self.assertFalse(
-            sil.Domain.from_values({1, 3, 5}).overlaps_with(
-                sil.Domain.from_values({0, 2, 4})
+            sil.Domain.from_values([1, 3, 5]).overlaps_with(
+                sil.Domain.from_values([0, 2, 4])
             )
         )
         self.assertTrue(
-            sil.Domain.from_values({1, 2, 3, 5}).overlaps_with(
-                sil.Domain.from_values({0, 2, 4})
+            sil.Domain.from_values([1, 2, 3, 5]).overlaps_with(
+                sil.Domain.from_values([0, 2, 4])
             )
         )
+
+    def testPositiveModuloBySuperset(self):
+        d1 = sil.Domain(1, 10)
+        d2 = sil.Domain(2, 3)
+        d3 = d1.positive_modulo_by_superset(d2)
+        self.assertEqual([1, 10], d1.flattened_intervals())
+        self.assertEqual([2, 3], d2.flattened_intervals())
+        self.assertEqual([0, 2], d3.flattened_intervals())
+
+    def testValueAt(self):
+        d = sil.Domain.from_flat_intervals([1, 3])
+        self.assertEqual(d.value_at_or_after(0), 1)
+        self.assertEqual(d.value_at_or_before(4), 3)
+
+    def testValues(self):
+        d = sil.Domain.from_flat_intervals([-1, 2, 4, 5])
+        self.assertEqual(d.values(), [-1, 0, 1, 2, 4, 5])
+
+    def testEq(self):
+        d1 = sil.Domain(0, 5)
+        d2 = sil.Domain(0, 5)
+        d3 = sil.Domain(0, 6)
+        self.assertIsNot(d1, d2)
+        self.assertEqual(d1, d2)
+        self.assertNotEqual(d1, d3)
 
     def testStr(self):
         d1 = sil.Domain(0, 5)

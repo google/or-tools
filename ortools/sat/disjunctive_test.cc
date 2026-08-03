@@ -22,19 +22,21 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/old_precedences_propagator.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
@@ -392,9 +394,9 @@ void AddDisjunctiveTimeDecomposition(
       if (repository->IsOptional(var)) {
         presence_condition.push_back(repository->PresenceLiteral(var));
       }
-      model->Add(ReifiedBoolAnd(presence_condition, presence_at_time.back()));
+      AddReifiedBoolAnd(presence_condition, presence_at_time.back(), model);
     }
-    model->Add(AtMostOneConstraint(presence_at_time));
+    AddAtMostOneConstraint(presence_at_time, model);
 
     // Abort if UNSAT.
     if (model->GetOrCreate<SatSolver>()->ModelIsUnsat()) return;

@@ -15,7 +15,9 @@
 """Solves a simple shift scheduling problem."""
 
 from typing import Sequence
+
 from absl import app
+
 from ortools.sat.python import cp_model
 
 

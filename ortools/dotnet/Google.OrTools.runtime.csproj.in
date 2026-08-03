@@ -97,13 +97,14 @@
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::random_seed_sequences>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::raw_hash_set>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::raw_logging_internal>>
+      $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::source_location>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::spinlock_wait>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::stacktrace>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::status>>
+      $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::status_builder>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::statusor>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::str_format_internal>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::strerror>>
-      $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::string_view>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::strings>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::strings_internal>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::symbolize>>
@@ -136,6 +137,17 @@
       $<@need_unix_scip_lib@:;$<TARGET_SONAME_FILE:SCIP::libscip>>
       $<@need_windows_scip_lib@:;$<TARGET_FILE:SCIP::libscip>>
 
+
+      $<@need_unix_ortools_lib@:;$<TARGET_SONAME_FILE:ortools_core>>
+      $<@need_windows_ortools_lib@:;$<TARGET_FILE:ortools_core>>
+      $<@need_unix_ortools_lib@:;$<TARGET_SONAME_FILE:ortools_math_opt>>
+      $<@need_windows_ortools_lib@:;$<TARGET_FILE:ortools_math_opt>>
+      $<@need_unix_ortools_lib@:;$<TARGET_SONAME_FILE:ortools_packing>>
+      $<@need_windows_ortools_lib@:;$<TARGET_FILE:ortools_packing>>
+      $<@need_unix_ortools_lib@:;$<TARGET_SONAME_FILE:ortools_routing>>
+      $<@need_windows_ortools_lib@:;$<TARGET_FILE:ortools_routing>>
+      $<@need_unix_ortools_lib@:;$<TARGET_SONAME_FILE:ortools_scheduling>>
+      $<@need_windows_ortools_lib@:;$<TARGET_FILE:ortools_scheduling>>
       $<@need_unix_ortools_lib@:;$<TARGET_SONAME_FILE:ortools>>
       $<@need_windows_ortools_lib@:;$<TARGET_FILE:ortools>>
     ">

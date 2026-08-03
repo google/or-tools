@@ -25,16 +25,14 @@ Can we schedule the tests so that the power consumption of each power supply is
 always below its maximum power, and the total makespan is minimized?
 """
 
-from collections.abc import Sequence
 import io
+from collections.abc import Sequence
 from typing import Dict, Tuple
 
-from absl import app
-from absl import flags
 import pandas as pd
+from absl import app, flags
 
 from ortools.sat.python import cp_model
-
 
 _PARAMS = flags.DEFINE_string(
     "params",

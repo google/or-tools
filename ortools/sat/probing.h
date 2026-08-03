@@ -17,12 +17,10 @@
 #include <cstdint>
 #include <functional>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
-#include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -35,6 +33,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
@@ -118,9 +117,21 @@ class Prober {
   // Statistics.
   // They are reset each time ProbleBooleanVariables() is called.
   // Note however that we do not reset them on a call to ProbeOneVariable().
-  int num_decisions() const { return num_decisions_; }
-  int num_new_literals_fixed() const { return num_new_literals_fixed_; }
-  int num_new_binary_clauses() const { return num_new_binary_; }
+  int64_t num_decisions() const { return counters_.num_decisions; }
+  int64_t num_new_literals_fixed() const {
+    return counters_.num_new_literals_fixed;
+  }
+  int64_t num_new_binary_clauses() const { return counters_.num_new_binary; }
+
+  int64_t num_total_new_binary() const {
+    return counters_.num_total_new_binary;
+  }
+  int64_t num_total_new_integer_bounds() const {
+    return counters_.num_total_new_integer_bounds;
+  }
+  int64_t num_total_new_literals_fixed() const {
+    return counters_.num_total_new_literals_fixed;
+  }
 
   // Register a callback that will be called on each "propagation".
   // One can inspect the VariablesAssignment to see what are the inferred
@@ -137,17 +148,17 @@ class Prober {
   bool FixProbedDnfLiterals(
       absl::Span<const std::vector<Literal>> dnf,
       const absl::btree_set<LiteralIndex>& propagated_literals, DnfType type,
-      ClauseId dnf_clause_id, absl::Span<const Literal> dnf_clause_literals);
+      const SatClause* dnf_clause);
 
   // Computes the LRAT proof that `propagated_lit` can be fixed to true, and
   // fixes it. `conjunctions` must have the property described for
-  // DnfType::kAtLeastOneCombination. `clause_ids` must contain the IDs of the
-  // LRAT clauses "conjunctions[i] => propagated_lit" (some IDs can be
-  // kNoClauseId, if a conjunction contains `propagated_lit`). Deletes all
-  // `clause_ids` and replaces these IDs with kNoClauseId values.
+  // DnfType::kAtLeastOneCombination. `clauses` must contain the LRAT clauses
+  // "conjunctions[i] => propagated_lit" (some clauses can be kNullClausePtr, if
+  // a conjunction contains `propagated_lit`). Deletes all `clauses` and
+  // replaces these with kNullClausePtr values.
   bool FixLiteralImpliedByAnAtLeastOneCombinationDnf(
       absl::Span<const std::vector<Literal>> conjunctions,
-      absl::Span<ClauseId> clause_ids, Literal propagated_lit);
+      absl::Span<ClausePtr> clauses, Literal propagated_lit);
 
   // Model owned classes.
   const Trail& trail_;
@@ -159,10 +170,9 @@ class Prober {
   TimeLimit* time_limit_;
   BinaryImplicationGraph* implication_graph_;
   ClauseManager* clause_manager_;
-  ClauseIdGenerator* clause_id_generator_;
+  SharedStatistics* shared_stats_;
   LratProofHandler* lrat_proof_handler_;
   TrailCopy* trail_copy_;
-  const bool drat_enabled_;
 
   // To detect literal x that must be true because b => x and not(b) => x.
   // When probing b, we add all propagated literal to propagated, and when
@@ -179,21 +189,25 @@ class Prober {
   absl::btree_map<IntegerVariable, IntegerValue> new_propagated_bounds_;
   absl::btree_map<IntegerVariable, IntegerValue> always_propagated_bounds_;
 
-  absl::flat_hash_map<std::pair<Literal, Literal>, ClauseId>
-      tmp_binary_clause_ids_;
-  std::vector<ClauseId> tmp_clause_ids_;
+  std::vector<ClausePtr> tmp_proof_;
   std::vector<Literal> tmp_literals_;
-  CompactVectorVector<int, ClauseId> tmp_dnf_clause_ids_;
+  CompactVectorVector<int, ClausePtr> tmp_dnf_clauses_;
 
   // Probing statistics.
-  int num_decisions_ = 0;
-  int num_new_holes_ = 0;
-  int num_new_binary_ = 0;
-  int num_new_integer_bounds_ = 0;
-  int num_new_literals_fixed_ = 0;
-  int num_lrat_clauses_ = 0;
-  int num_lrat_proof_clauses_ = 0;
-  int num_unneeded_lrat_clauses_ = 0;
+  struct Counters {
+    int64_t num_decisions = 0;
+    int64_t num_new_holes = 0;
+    int64_t num_new_binary = 0;
+    int64_t num_new_integer_bounds = 0;
+    int64_t num_new_literals_fixed = 0;
+    int64_t num_total_new_binary = 0;
+    int64_t num_total_new_integer_bounds = 0;
+    int64_t num_total_new_literals_fixed = 0;
+    int64_t num_lrat_clauses = 0;
+    int64_t num_lrat_proof_clauses = 0;
+    int64_t num_unneeded_lrat_clauses = 0;
+  };
+  Counters counters_;
 
   std::function<void(Literal decision)> callback_ = nullptr;
 
@@ -389,9 +403,9 @@ class FailedLiteralProbing {
   // Fixes all the literals in to_fix_, and finish propagation.
   bool ProcessLiteralsToFix();
 
-  // Deletes the temporary LRAT clauses in trail_implication_clauses_ for all
-  // trail indices greater than the current trail index.
-  void DeleteTemporaryLratImplicationsAfterBacktrack();
+  // Resizes trail_implication_clauses_ to the current or given trail index.
+  void ClearTrailImplicationClausesAfterBacktrack();
+  void ClearTrailImplicationClausesStartingFrom(int trail_index);
 
   SatSolver* sat_solver_;
   BinaryImplicationGraph* implication_graph_;
@@ -399,7 +413,6 @@ class FailedLiteralProbing {
   const Trail& trail_;
   const VariablesAssignment& assignment_;
   ClauseManager* clause_manager_;
-  ClauseIdGenerator* clause_id_generator_;
   LratProofHandler* lrat_proof_handler_;
   int binary_propagator_id_;
   int clause_propagator_id_;
@@ -418,8 +431,6 @@ class FailedLiteralProbing {
 
   // We delay fixing of already assigned literals once we go back to level 0.
   std::vector<Literal> to_fix_;
-  // For each literal in to_fix_, the ID of the corresponding LRAT unit clause.
-  std::vector<ClauseId> to_fix_unit_id_;
   // The literals for which we want to extract "last_decision => l" clauses.
   std::vector<Literal> binary_clauses_to_extract_;
 
@@ -427,14 +438,14 @@ class FailedLiteralProbing {
   // been extracted, with 'd' the decision at the same level as 'l'.
   std::vector<bool> binary_clause_extracted_;
 
-  // For each literal on the trail, the ID of the LRAT clause stating that this
-  // literal is implied by the previous decisions on the trail (or kNoClauseId
-  // if there is no such clause), plus a Boolean indicating whether this clause
-  // is temporary (i.e., is not an extracted binary clause).
-  std::vector<std::pair<ClauseId, bool>> trail_implication_clauses_;
+  // For each literal on the trail, the LRAT clause stating that this literal is
+  // implied by the previous decisions on the trail (or kNullClausePtr if there
+  // is no such clause). Clause pointers corresponding to SatClause* denote
+  // temporary LRAT clauses (i.e., which are not extracted binary clauses).
+  std::vector<ClausePtr> trail_implication_clauses_;
 
   // Temporary data structures used for LRAT proofs.
-  std::vector<ClauseId> tmp_clause_ids_;
+  std::vector<ClausePtr> tmp_proof_;
   SparseBitset<BooleanVariable> tmp_mark_;
   std::vector<int> tmp_heap_;
   std::vector<Literal> tmp_marked_literals_;

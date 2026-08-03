@@ -1,0 +1,24 @@
+name: 'Number of cores'
+description: 'Retrieve the number of cores for the current host'
+outputs:
+  cores:
+    description: "Number of cores"
+    value: ${{ steps.get-num-cores.outputs.cores }}
+runs:
+  using: "composite"
+  steps:
+    - id: get-num-cores
+      shell: bash
+      run: |
+        if [[ "$RUNNER_OS" == "Linux" ]]; then
+          CORES=$(nproc)
+        elif [[ "$RUNNER_OS" == "macOS" ]]; then
+          CORES=$(sysctl -n hw.ncpu)
+        elif [[ "$RUNNER_OS" == "Windows" ]]; then
+          CORES=$NUMBER_OF_PROCESSORS
+        else
+          echo "Unknown OS. Defaulting to 2 cores."
+          CORES=2
+        fi
+        echo "Detected $CORES cores"
+        echo "cores=$(echo $CORES)" >> $GITHUB_OUTPUT

@@ -15,20 +15,18 @@
 
 #include <cstdint>
 #include <initializer_list>
-#include <limits>
 #include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "google/protobuf/text_format.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/strong_int.h"
-#include "ortools/base/types.h"
 #include "ortools/math_opt/core/sparse_vector.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"

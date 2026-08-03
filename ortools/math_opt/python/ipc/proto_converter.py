@@ -20,9 +20,10 @@ ortools/math_opt/.*.proto.
 """
 
 from google.protobuf import message
-from ortools.service.v1 import optimization_pb2
+
 from ortools.math_opt import rpc_pb2
 from ortools.math_opt.python import normalize
+from ortools.service.v1 import optimization_pb2
 
 _UNSUPPORTED_SOLVER_SPECIFIC_PARAMETERS = (
     "gscip",

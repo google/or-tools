@@ -1,0 +1,43 @@
+name: 'Remote caching'
+description: 'Use Google Cloud Storage as a backend for remote caching'
+inputs:
+  credentials_json:
+    required: true
+    type: string
+  enable:
+    description: "Enable auth (and caching)"
+    # By default, secrets are not passed to workflows triggered from forks, including Dependabot.
+    default: ${{ !github.event.pull_request.head.repo.fork }}
+  set_cmake_sccache_launcher:
+    default: false
+  set_home_bazelrc:
+    default: false
+runs:
+  using: "composite"
+  steps:
+    - uses: 'google-github-actions/auth@v3'
+      if: inputs.enable == 'true'
+      with:
+        credentials_json: ${{inputs.credentials_json}}
+    - name: Install sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.10
+      if: inputs.enable == 'true' && inputs.set_cmake_sccache_launcher == 'true'
+      env:
+        SCCACHE_GCS_KEY_PATH: ${{env.GOOGLE_GHA_CREDS_PATH}}
+    - name: Set caching env vars for CMake
+      if: inputs.enable == 'true' && inputs.set_cmake_sccache_launcher == 'true'
+      shell: bash
+      run: |
+        echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+        echo "SCCACHE_GCS_BUCKET=or-tools-github-remote-caching" >> $GITHUB_ENV
+        echo "SCCACHE_GCS_KEY_PREFIX=cmake" >> $GITHUB_ENV
+        echo "SCCACHE_GCS_RW_MODE=READ_WRITE" >> $GITHUB_ENV
+        echo "CMAKE_C_COMPILER_LAUNCHER=${{env.SCCACHE_PATH}}" >> $GITHUB_ENV
+        echo "CMAKE_CXX_COMPILER_LAUNCHER=${{env.SCCACHE_PATH}}" >> $GITHUB_ENV
+    - name: Install HOME .bazel_rc
+      if: inputs.enable == 'true' && inputs.set_home_bazelrc == 'true'
+      shell: bash
+      run: |
+        echo "Installing remote cache in workspace 'user.bazelrc'"
+        echo "common --google_default_credentials" >> ./user.bazelrc
+        echo "common --remote_cache=https://storage.googleapis.com/or-tools-github-remote-caching" >> ./user.bazelrc

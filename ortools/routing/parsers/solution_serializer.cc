@@ -48,12 +48,12 @@ RoutingOutputFormat RoutingOutputFormatFromString(std::string_view format) {
 
 // Helper for FromSplitRoutes.
 namespace {
-std::vector<RoutingSolution::Route> RoutesFromVector(
+std::vector<Solution::Route> RoutesFromVector(
     absl::Span<const std::vector<int64_t>> routes,
     std::optional<int64_t> depot = std::nullopt);
 }  // namespace
 
-std::vector<std::vector<int64_t>> RoutingSolution::SplitRoutes(
+std::vector<std::vector<int64_t>> Solution::SplitRoutes(
     absl::Span<const int64_t> solution, int64_t separator) {
   // The solution vector separates routes by -1: split this vector into a vector
   // per route, where the other helpers can make the rest of the way to a proper
@@ -74,7 +74,7 @@ std::vector<std::vector<int64_t>> RoutingSolution::SplitRoutes(
   return routes;
 }
 
-RoutingSolution RoutingSolution::FromSplitRoutes(
+Solution Solution::FromSplitRoutes(
     absl::Span<const std::vector<int64_t>> routes,
     std::optional<int64_t> depot) {
   std::vector<int64_t> total_demands(routes.size(), -1);
@@ -83,7 +83,7 @@ RoutingSolution RoutingSolution::FromSplitRoutes(
   return {RoutesFromVector(routes, depot), total_demands, total_distances};
 }
 
-int64_t RoutingSolution::NumberOfNonemptyRoutes() const {
+int64_t Solution::NumberOfNonemptyRoutes() const {
   int64_t num_nonempty_routes = 0;
   for (const Route& route : routes_) {
     if (!route.empty()) num_nonempty_routes++;
@@ -91,8 +91,8 @@ int64_t RoutingSolution::NumberOfNonemptyRoutes() const {
   return num_nonempty_routes;
 }
 
-void RoutingSolution::WriteToSolutionFile(RoutingOutputFormat format,
-                                          const std::string& file_name) const {
+void Solution::WriteToSolutionFile(RoutingOutputFormat format,
+                                   const std::string& file_name) const {
   File* file;
   CHECK_OK(file::Open(file_name, "w", &file, file::Defaults()))
       << "Could not open the solution file '" << file_name << "'";
@@ -102,13 +102,13 @@ void RoutingSolution::WriteToSolutionFile(RoutingOutputFormat format,
   CHECK_OK(file->Close(file::Defaults()));
 }
 
-std::string RoutingSolution::SerializeToTSPLIBString() const {
+std::string Solution::SerializeToTSPLIBString() const {
   std::string tour_out;
   for (const Route& route : routes_) {
     if (route.empty()) continue;
 
     for (const Event& event : route) {
-      if (event.type != RoutingSolution::Event::Type::kEnd) {
+      if (event.type != Solution::Event::Type::kEnd) {
         absl::StrAppendFormat(&tour_out, "%d\n", event.arc.head());
       }
     }
@@ -117,7 +117,7 @@ std::string RoutingSolution::SerializeToTSPLIBString() const {
   return tour_out;
 }
 
-std::string RoutingSolution::SerializeToTSPLIBSolutionFile() const {
+std::string Solution::SerializeToTSPLIBSolutionFile() const {
   // Determine the number of nodes as the maximum index of a node in the
   // solution, plus one (due to TSPLIB being 1-based and C++ 0-based).
   int64_t number_of_nodes = 0;
@@ -146,10 +146,10 @@ std::string RoutingSolution::SerializeToTSPLIBSolutionFile() const {
 }
 
 namespace {
-std::string SerializeRouteToCVRPLIBString(const RoutingSolution::Route& route);
+std::string SerializeRouteToCVRPLIBString(const Solution::Route& route);
 }  // namespace
 
-std::string RoutingSolution::SerializeToCVRPLIBString() const {
+std::string Solution::SerializeToCVRPLIBString() const {
   std::string tour_out;  // The complete solution.
   int route_index = 1;   // Index of the route being written.
 
@@ -166,13 +166,13 @@ std::string RoutingSolution::SerializeToCVRPLIBString() const {
   return tour_out;
 }
 
-std::string RoutingSolution::SerializeToCVRPLIBSolutionFile() const {
+std::string Solution::SerializeToCVRPLIBSolutionFile() const {
   std::string tour_out = SerializeToCVRPLIBString();
   absl::StrAppendFormat(&tour_out, "Cost %d", total_cost_);
   return tour_out;
 }
 
-std::string RoutingSolution::SerializeToCARPLIBString() const {
+std::string Solution::SerializeToCARPLIBString() const {
   std::string tour_out;             // The complete solution.
   int64_t num_out_route = 1;        // Index of the route being written.
   int64_t num_iteration_route = 0;  // Index of the route being considered.
@@ -181,25 +181,25 @@ std::string RoutingSolution::SerializeToCARPLIBString() const {
   for (const Route& route : routes_) {
     std::string current_route;
 
-    for (const RoutingSolution::Event& event : route) {
+    for (const Solution::Event& event : route) {
       std::string type;
       switch (event.type) {
-        case RoutingSolution::Event::Type::kStart:
+        case Solution::Event::Type::kStart:
           ABSL_FALLTHROUGH_INTENDED;
-        case RoutingSolution::Event::Type::kEnd:
+        case Solution::Event::Type::kEnd:
           CHECK_EQ(event.arc.tail(), event.arc.head());
           depot = event.arc.tail();
           type = "D";
           break;
-        case RoutingSolution::Event::Type::kServeArc:
-        case RoutingSolution::Event::Type::kServeEdge:
+        case Solution::Event::Type::kServeArc:
+        case Solution::Event::Type::kServeEdge:
           ABSL_FALLTHROUGH_INTENDED;
-        case RoutingSolution::Event::Type::kServeNode:
+        case Solution::Event::Type::kServeNode:
           // The only difference is in the arc: when serving a node, both the
           // head and the tail are the node being served.
           type = "S";
           break;
-        case RoutingSolution::Event::Type::kTransit:
+        case Solution::Event::Type::kTransit:
           // Not present in CARPLIB output.
           break;
       }
@@ -215,9 +215,9 @@ std::string RoutingSolution::SerializeToCARPLIBString() const {
     if (!route.empty()) {
       const int64_t day = 1;
       const int64_t num_events = std::count_if(
-          route.begin(), route.end(), [](const RoutingSolution::Event& event) {
+          route.begin(), route.end(), [](const Solution::Event& event) {
             // Bare transitions are not output in CARPLIB, don't count them.
-            return event.type != RoutingSolution::Event::Type::kTransit;
+            return event.type != Solution::Event::Type::kTransit;
           });
 
       absl::StrAppendFormat(
@@ -236,7 +236,7 @@ std::string RoutingSolution::SerializeToCARPLIBString() const {
   return tour_out;
 }
 
-std::string RoutingSolution::SerializeToCARPLIBSolutionFile() const {
+std::string Solution::SerializeToCARPLIBSolutionFile() const {
   std::string solution;
   absl::StrAppendFormat(&solution, "%d\n", total_cost_);
   absl::StrAppendFormat(&solution, "%d\n", NumberOfNonemptyRoutes());
@@ -245,7 +245,7 @@ std::string RoutingSolution::SerializeToCARPLIBSolutionFile() const {
   return solution;
 }
 
-std::string RoutingSolution::SerializeToNEARPLIBString() const {
+std::string Solution::SerializeToNEARPLIBString() const {
   std::string tour_out;     // The complete solution.
   int64_t route_index = 1;  // Index of the route being written.
 
@@ -257,9 +257,8 @@ std::string RoutingSolution::SerializeToNEARPLIBString() const {
 
     // Skip empty routes.
     if (route.size() <= 1) continue;
-    if (route.size() == 2 &&
-        route[0].type == RoutingSolution::Event::Type::kStart &&
-        route[1].type == RoutingSolution::Event::Type::kEnd)
+    if (route.size() == 2 && route[0].type == Solution::Event::Type::kStart &&
+        route[1].type == Solution::Event::Type::kEnd)
       continue;
 
     // Print the nodes that are traversed only when they are a depot or some end
@@ -269,24 +268,24 @@ std::string RoutingSolution::SerializeToNEARPLIBString() const {
     // arcs/edges is continued or should start over.
     // Only set current_node when a sequence should be continued (e.g., not
     // when only traversing an arc/edge).
-    for (const RoutingSolution::Event& event : route) {
+    for (const Solution::Event& event : route) {
       switch (event.type) {
-        case RoutingSolution::Event::Type::kStart:
+        case Solution::Event::Type::kStart:
           // Always start at the depot.
           CHECK_EQ(event.arc.tail(), event.arc.head());
           current_node = event.arc.tail();
           absl::StrAppendFormat(&current_route, "%d", event.arc.tail() + 1);
           break;
-        case RoutingSolution::Event::Type::kEnd:
+        case Solution::Event::Type::kEnd:
           // Always print the end depot.
           CHECK_EQ(event.arc.tail(), event.arc.head());
           if (current_node != event.arc.tail()) {
             absl::StrAppendFormat(&current_route, " %d", event.arc.tail() + 1);
           }
           break;
-        case RoutingSolution::Event::Type::kServeArc:
+        case Solution::Event::Type::kServeArc:
           ABSL_FALLTHROUGH_INTENDED;
-        case RoutingSolution::Event::Type::kServeEdge:
+        case Solution::Event::Type::kServeEdge:
           CHECK(!event.arc_name.empty())
               << "Arc " << event.arc.tail() << "-" << event.arc.head()
               << " does not have a name in the solution object.";
@@ -307,12 +306,12 @@ std::string RoutingSolution::SerializeToNEARPLIBString() const {
           }
           current_node = event.arc.head();
           break;
-        case RoutingSolution::Event::Type::kServeNode:
+        case Solution::Event::Type::kServeNode:
           CHECK_EQ(event.arc.tail(), event.arc.head());
           absl::StrAppendFormat(&current_route, " N%d", event.arc.head() + 1);
           current_node = event.arc.head();
           break;
-        case RoutingSolution::Event::Type::kTransit:
+        case Solution::Event::Type::kTransit:
           current_node = -2;
           break;
       }
@@ -328,7 +327,7 @@ std::string RoutingSolution::SerializeToNEARPLIBString() const {
   return tour_out;
 }
 
-std::string RoutingSolution::SerializeToNEARPLIBSolutionFile() const {
+std::string Solution::SerializeToNEARPLIBSolutionFile() const {
   const std::string date =
       absl::FormatTime("%B %d, %E4Y", absl::Now(), absl::LocalTimeZone());
 
@@ -348,14 +347,13 @@ std::string RoutingSolution::SerializeToNEARPLIBSolutionFile() const {
 }
 
 namespace {
-RoutingSolution::Route RouteFromVector(
-    absl::Span<const int64_t> route_int,
-    std::optional<int64_t> depot = std::nullopt);
+Solution::Route RouteFromVector(absl::Span<const int64_t> route_int,
+                                std::optional<int64_t> depot = std::nullopt);
 
-std::vector<RoutingSolution::Route> RoutesFromVector(
+std::vector<Solution::Route> RoutesFromVector(
     absl::Span<const std::vector<int64_t>> routes,
     std::optional<int64_t> depot) {
-  std::vector<RoutingSolution::Route> solution_routes;
+  std::vector<Solution::Route> solution_routes;
   solution_routes.reserve(routes.size());
   for (const std::vector<int64_t>& route : routes) {
     // TODO(user): explore merging RouteFromVector in this function.
@@ -364,37 +362,37 @@ std::vector<RoutingSolution::Route> RoutesFromVector(
   return solution_routes;
 }
 
-RoutingSolution::Route RouteFromVector(absl::Span<const int64_t> route_int,
-                                       std::optional<int64_t> forced_depot) {
+Solution::Route RouteFromVector(absl::Span<const int64_t> route_int,
+                                std::optional<int64_t> forced_depot) {
   // One route in input: from the node indices, create a Route object (not yet
   // a RoutingSolution one).
-  RoutingSolution::Route route;
+  Solution::Route route;
 
   // If no depot is given, guess one.
   int64_t depot =
       (forced_depot.has_value()) ? forced_depot.value() : route_int[0];
 
-  route.emplace_back(
-      RoutingSolution::Event{/*type=*/RoutingSolution::Event::Type::kStart,
-                             /*demand_id=*/-1, /*arc=*/Arc{depot, depot}});
+  route.emplace_back(Solution::Event{/*type=*/Solution::Event::Type::kStart,
+                                     /*demand_id=*/-1,
+                                     /*arc=*/Arc{depot, depot}});
   for (int64_t i = 0; i < route_int.size() - 1; ++i) {
     int64_t tail = route_int[i];
     int64_t head = route_int[i + 1];
-    route.emplace_back(RoutingSolution::Event{
-        RoutingSolution::Event::Type::kTransit, -1, Arc{tail, head}});
+    route.emplace_back(
+        Solution::Event{Solution::Event::Type::kTransit, -1, Arc{tail, head}});
   }
-  route.emplace_back(RoutingSolution::Event{RoutingSolution::Event::Type::kEnd,
-                                            -1, Arc{depot, depot}});
+  route.emplace_back(
+      Solution::Event{Solution::Event::Type::kEnd, -1, Arc{depot, depot}});
 
   return route;
 }
 
-std::string SerializeRouteToCVRPLIBString(const RoutingSolution::Route& route) {
+std::string SerializeRouteToCVRPLIBString(const Solution::Route& route) {
   // Before serializing the route, make some tests to check that the hypotheses
   // are respected (otherwise, the output of the function is highly likely
   // pure garbage).
-  const RoutingSolution::Event& first_event = route[0];
-  CHECK(first_event.type == RoutingSolution::Event::Type::kStart)
+  const Solution::Event& first_event = route[0];
+  CHECK(first_event.type == Solution::Event::Type::kStart)
       << "The route does not begin with a Start event to indicate "
          "the depot.";
   const int64_t depot = first_event.arc.tail();
@@ -406,7 +404,7 @@ std::string SerializeRouteToCVRPLIBString(const RoutingSolution::Route& route) {
   std::string current_route;
 
   for (int64_t i = 1; i < route.size() - 1; ++i) {
-    const RoutingSolution::Event& event = route[i];
+    const Solution::Event& event = route[i];
 
     // Ignore the depot, as CVRPLIB doesn't output the depot in the routes
     // (all routes implicitly start and end at the depot).
@@ -419,8 +417,8 @@ std::string SerializeRouteToCVRPLIBString(const RoutingSolution::Route& route) {
   // Last event: end at a depot. Due to the strange way CVRPLIB
   // outputs nodes, the depot must be the same at the beginning and the
   // end of the route.
-  const RoutingSolution::Event& last_event = route.back();
-  if (last_event.type == RoutingSolution::Event::Type::kEnd) {
+  const Solution::Event& last_event = route.back();
+  if (last_event.type == Solution::Event::Type::kEnd) {
     CHECK_EQ(depot, last_event.arc.tail());
     CHECK_EQ(last_event.arc.tail(), last_event.arc.head());
   } else {

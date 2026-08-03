@@ -3,6 +3,7 @@ The following examples showcase how to use the different Operations Research
 libraries.
 
 ## Examples list
+
 - Constraint Solver examples:
   - cryptarithm.cc Demonstrates the use of basic modeling objects
     (integer variables, arithmetic constraints and expressions,

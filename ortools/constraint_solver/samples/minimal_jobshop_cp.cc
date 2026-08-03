@@ -22,11 +22,14 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/log_severity.h"
 #include "absl/log/globals.h"
 #include "absl/log/log.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/log_severity.h"
+#include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/interval.h"
+#include "ortools/constraint_solver/sequence_var.h"
 
 // Solve a job shop problem:
 

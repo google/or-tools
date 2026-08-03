@@ -15,17 +15,19 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/container_logging.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/parse_test_proto.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -71,6 +73,33 @@ TEST(BoolVarTest, TestApi) {
   const BoolVar f = cp_model.FalseVar();
   ASSERT_EQ(Domain(0), IntVar(f).Domain());
   EXPECT_EQ(f.DebugString(), "false");
+}
+
+TEST(BoolVarTest, IsConstant) {
+  CpModelBuilder cp_model;
+  const BoolVar t = cp_model.TrueVar();
+  EXPECT_TRUE(t.IsFixedToTrue());
+  EXPECT_FALSE(t.IsFixedToFalse());
+  EXPECT_FALSE(t.Not().IsFixedToTrue());
+  EXPECT_TRUE(t.Not().IsFixedToFalse());
+
+  const BoolVar f = cp_model.FalseVar();
+  EXPECT_FALSE(f.IsFixedToTrue());
+  EXPECT_TRUE(f.IsFixedToFalse());
+  EXPECT_TRUE(f.Not().IsFixedToTrue());
+  EXPECT_FALSE(f.Not().IsFixedToFalse());
+
+  const BoolVar b1 = cp_model.NewBoolVar();
+  EXPECT_FALSE(b1.IsFixedToTrue());
+  EXPECT_FALSE(b1.IsFixedToFalse());
+
+  const BoolVar b2 = b1.Not();
+  EXPECT_FALSE(b2.IsFixedToTrue());
+  EXPECT_FALSE(b2.IsFixedToFalse());
+
+  const BoolVar b3 = b2.Not();
+  EXPECT_FALSE(b3.IsFixedToTrue());
+  EXPECT_FALSE(b3.IsFixedToFalse());
 }
 
 TEST(IntVarTest, NullAPI) {
@@ -424,6 +453,10 @@ TEST(CpModelTest, TestBoolOr) {
   ASSERT_EQ(1, cp_model.Proto().constraints_size());
   EXPECT_EQ(3, cp_model.Proto().constraints(0).bool_or().literals_size());
   ASSERT_EQ(1, cp_model.Proto().constraints(0).enforcement_literal_size());
+
+  cp_model.AddBoolOr({b1}).AddLiteral(b2.Not()).AddLiterals({b3, b4});
+  ASSERT_EQ(2, cp_model.Proto().constraints_size());
+  EXPECT_EQ(4, cp_model.Proto().constraints(1).bool_or().literals_size());
 }
 
 TEST(CpModelTest, TestAtMostOne) {
@@ -431,9 +464,14 @@ TEST(CpModelTest, TestAtMostOne) {
   const BoolVar b1 = cp_model.NewBoolVar().WithName("b1");
   const BoolVar b2 = cp_model.NewBoolVar().WithName("b2");
   const BoolVar b3 = cp_model.NewBoolVar().WithName("b3");
+  const BoolVar b4 = cp_model.NewBoolVar().WithName("b4");
   cp_model.AddAtMostOne({b1, b2.Not(), b3});
   ASSERT_EQ(1, cp_model.Proto().constraints_size());
   EXPECT_EQ(3, cp_model.Proto().constraints(0).at_most_one().literals_size());
+
+  cp_model.AddAtMostOne({b1}).AddLiteral(b2.Not()).AddLiterals({b3, b4});
+  ASSERT_EQ(2, cp_model.Proto().constraints_size());
+  EXPECT_EQ(4, cp_model.Proto().constraints(1).at_most_one().literals_size());
 }
 
 TEST(CpModelTest, TestExactlyOne) {
@@ -441,9 +479,14 @@ TEST(CpModelTest, TestExactlyOne) {
   const BoolVar b1 = cp_model.NewBoolVar().WithName("b1");
   const BoolVar b2 = cp_model.NewBoolVar().WithName("b2");
   const BoolVar b3 = cp_model.NewBoolVar().WithName("b3");
+  const BoolVar b4 = cp_model.NewBoolVar().WithName("b4");
   cp_model.AddExactlyOne({b1, b2.Not(), b3});
   ASSERT_EQ(1, cp_model.Proto().constraints_size());
   EXPECT_EQ(3, cp_model.Proto().constraints(0).exactly_one().literals_size());
+
+  cp_model.AddExactlyOne({b1}).AddLiteral(b2.Not()).AddLiterals({b3, b4});
+  ASSERT_EQ(2, cp_model.Proto().constraints_size());
+  EXPECT_EQ(4, cp_model.Proto().constraints(1).exactly_one().literals_size());
 }
 
 TEST(CpModelTest, TestBoolAnd) {
@@ -456,6 +499,10 @@ TEST(CpModelTest, TestBoolAnd) {
   ASSERT_EQ(1, cp_model.Proto().constraints_size());
   EXPECT_EQ(4, cp_model.Proto().constraints(0).bool_and().literals_size());
   EXPECT_EQ(0, cp_model.Proto().constraints(0).enforcement_literal_size());
+
+  cp_model.AddBoolAnd({b1}).AddLiteral(b2).AddLiterals({b3, b4});
+  ASSERT_EQ(2, cp_model.Proto().constraints_size());
+  EXPECT_EQ(4, cp_model.Proto().constraints(1).bool_and().literals_size());
 }
 
 TEST(CpModelTest, TestBoolXor) {
@@ -468,6 +515,10 @@ TEST(CpModelTest, TestBoolXor) {
   ASSERT_EQ(1, cp_model.Proto().constraints_size());
   EXPECT_EQ(4, cp_model.Proto().constraints(0).bool_xor().literals_size());
   EXPECT_EQ(0, cp_model.Proto().constraints(0).enforcement_literal_size());
+
+  cp_model.AddBoolXor({b1}).AddLiteral(b2).AddLiterals({b3, b4});
+  ASSERT_EQ(2, cp_model.Proto().constraints_size());
+  EXPECT_EQ(4, cp_model.Proto().constraints(1).bool_xor().literals_size());
 }
 
 TEST(CpModelTest, TestLinearizedBoolAndEqual) {
@@ -567,8 +618,7 @@ TEST(CpModelTest, TestGreaterOrEqual) {
   EXPECT_EQ(0, cp_model.Proto().constraints(0).linear().vars(0));
   EXPECT_EQ(1, cp_model.Proto().constraints(0).linear().coeffs(0));
   EXPECT_EQ(10, cp_model.Proto().constraints(0).linear().domain(0));
-  EXPECT_EQ(std::numeric_limits<int64_t>::max(),
-            cp_model.Proto().constraints(0).linear().domain(1));
+  EXPECT_EQ(kint64max, cp_model.Proto().constraints(0).linear().domain(1));
 }
 
 TEST(CpModelTest, TestGreater) {
@@ -580,8 +630,7 @@ TEST(CpModelTest, TestGreater) {
   EXPECT_EQ(0, cp_model.Proto().constraints(0).linear().vars(0));
   EXPECT_EQ(1, cp_model.Proto().constraints(0).linear().coeffs(0));
   EXPECT_EQ(11, cp_model.Proto().constraints(0).linear().domain(0));
-  EXPECT_EQ(std::numeric_limits<int64_t>::max(),
-            cp_model.Proto().constraints(0).linear().domain(1));
+  EXPECT_EQ(kint64max, cp_model.Proto().constraints(0).linear().domain(1));
 }
 
 TEST(CpModelTest, TestLessOrEqual) {
@@ -592,8 +641,7 @@ TEST(CpModelTest, TestLessOrEqual) {
   EXPECT_EQ(1, cp_model.Proto().constraints(0).linear().vars_size());
   EXPECT_EQ(0, cp_model.Proto().constraints(0).linear().vars(0));
   EXPECT_EQ(1, cp_model.Proto().constraints(0).linear().coeffs(0));
-  EXPECT_EQ(std::numeric_limits<int64_t>::min(),
-            cp_model.Proto().constraints(0).linear().domain(0));
+  EXPECT_EQ(kint64min, cp_model.Proto().constraints(0).linear().domain(0));
   EXPECT_EQ(10, cp_model.Proto().constraints(0).linear().domain(1));
 }
 
@@ -605,8 +653,7 @@ TEST(CpModelTest, TestLess) {
   EXPECT_EQ(1, cp_model.Proto().constraints(0).linear().vars_size());
   EXPECT_EQ(0, cp_model.Proto().constraints(0).linear().vars(0));
   EXPECT_EQ(1, cp_model.Proto().constraints(0).linear().coeffs(0));
-  EXPECT_EQ(std::numeric_limits<int64_t>::min(),
-            cp_model.Proto().constraints(0).linear().domain(0));
+  EXPECT_EQ(kint64min, cp_model.Proto().constraints(0).linear().domain(0));
   EXPECT_EQ(9, cp_model.Proto().constraints(0).linear().domain(1));
 }
 
@@ -637,12 +684,10 @@ TEST(CpModelTest, TestNotEqual) {
   EXPECT_EQ(1, cp_model.Proto().constraints(0).linear().vars(1));
   EXPECT_EQ(1, cp_model.Proto().constraints(0).linear().coeffs(0));
   EXPECT_EQ(-1, cp_model.Proto().constraints(0).linear().coeffs(1));
-  EXPECT_EQ(std::numeric_limits<int64_t>::min(),
-            cp_model.Proto().constraints(0).linear().domain(0));
+  EXPECT_EQ(kint64min, cp_model.Proto().constraints(0).linear().domain(0));
   EXPECT_EQ(-1, cp_model.Proto().constraints(0).linear().domain(1));
   EXPECT_EQ(1, cp_model.Proto().constraints(0).linear().domain(2));
-  EXPECT_EQ(std::numeric_limits<int64_t>::max(),
-            cp_model.Proto().constraints(0).linear().domain(3));
+  EXPECT_EQ(kint64max, cp_model.Proto().constraints(0).linear().domain(3));
 }
 
 TEST(CpModelTest, TestAllDifferent) {
@@ -882,7 +927,7 @@ TEST(CpModelTest, TestForbiddenAssignments) {
 
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver(
-      [&](const CpSolverResponse& r) { num_solutions++; }));
+      [&](const CpSolverResponse&) { num_solutions++; }));
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
   EXPECT_EQ(num_solutions, 4 * 4 * 4 - 3);
 }
@@ -1192,7 +1237,8 @@ TEST(CpModelTest, TestNoOverlap) {
   IntVar z_start = cp_model.NewIntVar({0, 20});
   IntVar z_end = cp_model.NewIntVar({0, 20});
   const IntervalVar z = cp_model.NewIntervalVar(z_start, 5, z_end);
-  cp_model.AddNoOverlap({x, y, z});
+  NoOverlapConstraint ct = cp_model.AddNoOverlap({x, y});
+  ct.AddInterval(z);
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: 0 domain: 20 }
     variables { domain: 0 domain: 20 }
@@ -1407,7 +1453,7 @@ TEST(CpModelTest, Min) {
 
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver(
-      [&](const CpSolverResponse& r) { num_solutions++; }));
+      [&](const CpSolverResponse&) { num_solutions++; }));
 
   const CpSolverResponse& response = SolveCpModel(cp_model.Build(), &model);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
@@ -1457,7 +1503,7 @@ TEST(CpModelTest, Min2) {
 
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver(
-      [&](const CpSolverResponse& r) { num_solutions++; }));
+      [&](const CpSolverResponse&) { num_solutions++; }));
 
   const CpSolverResponse& response = SolveCpModel(cp_model.Build(), &model);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
@@ -1511,7 +1557,7 @@ TEST(CpModelTest, Max) {
 
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver(
-      [&](const CpSolverResponse& r) { num_solutions++; }));
+      [&](const CpSolverResponse&) { num_solutions++; }));
 
   const CpSolverResponse& response = SolveCpModel(cp_model.Build(), &model);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
@@ -1566,7 +1612,7 @@ TEST(CpModelTest, MinExpression) {
 
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver(
-      [&](const CpSolverResponse& r) { num_solutions++; }));
+      [&](const CpSolverResponse&) { num_solutions++; }));
 
   const CpSolverResponse& response = SolveCpModel(cp_model.Build(), &model);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
@@ -1621,7 +1667,7 @@ TEST(CpModelTest, MaxExpression) {
 
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver(
-      [&](const CpSolverResponse& r) { num_solutions++; }));
+      [&](const CpSolverResponse&) { num_solutions++; }));
 
   const CpSolverResponse& response = SolveCpModel(cp_model.Build(), &model);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
@@ -1971,6 +2017,47 @@ TEST(Hints, HintObjectiveValue) {
   EXPECT_THAT(response.solve_log(),
               HasSubstr("The solution hint is complete and is feasible. Its "
                         "objective value is 28."));
+}
+
+TEST(CpModelTest, TestChaining) {
+  CpModelBuilder cp_model;
+  const BoolVar bool_var = cp_model.NewBoolVar();
+  const IntVar int_var = cp_model.NewIntVar({0, 10});
+  const LinearExpr expr = int_var;
+  const IntervalVar interval_var = cp_model.NewIntervalVar(0, 10, 10);
+
+  // Circuit
+  cp_model.AddCircuitConstraint().AddArc(0, 1, bool_var).AddArc(1, 0, bool_var);
+
+  // MultipleCircuit
+  cp_model.AddMultipleCircuitConstraint()
+      .AddArc(0, 1, bool_var)
+      .AddArc(1, 0, bool_var);
+
+  // Table
+  cp_model.AddAllowedAssignments({int_var}).AddTuple({0}).AddTuple({1});
+
+  // Reservoir
+  cp_model.AddReservoirConstraint(0, 10).AddEvent(expr, 5).AddOptionalEvent(
+      expr, -5, bool_var);
+
+  // Automaton
+  cp_model.AddAutomaton({int_var}, 0, {1})
+      .AddTransition(0, 1, 0)
+      .AddTransition(1, 0, 1);
+
+  // NoOverlap
+  cp_model.AddNoOverlap().AddInterval(interval_var).AddInterval(interval_var);
+
+  // NoOverlap2D
+  cp_model.AddNoOverlap2D()
+      .AddRectangle(interval_var, interval_var)
+      .AddRectangle(interval_var, interval_var);
+
+  // Cumulative
+  cp_model.AddCumulative(10)
+      .AddDemand(interval_var, 5)
+      .AddDemand(interval_var, 5);
 }
 
 }  // namespace

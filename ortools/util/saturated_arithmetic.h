@@ -51,16 +51,14 @@ namespace operations_research {
 
 // Checks if x is equal to the min or the max value of an int64_t.
 inline bool AtMinOrMaxInt64(int64_t x) {
-  return x == std::numeric_limits<int64_t>::min() ||
-         x == std::numeric_limits<int64_t>::max();
+  return x == kint64min || x == kint64max;
 }
 
 // Note(user): -kint64min != kint64max, but kint64max == ~kint64min.
 inline int64_t CapOpp(int64_t v) { return v == kint64min ? ~v : -v; }
 
 inline int64_t CapAbs(int64_t v) {
-  return v == kint64min ? std::numeric_limits<int64_t>::max()
-                        : (v < 0 ? -v : v);
+  return v == kint64min ? kint64max : (v < 0 ? -v : v);
 }
 
 // ---------- Overflow utility functions ----------
@@ -331,7 +329,7 @@ inline void CapSubFrom(int64_t amount, int64_t* target) {
 
 inline int64_t CapProd(int64_t x, int64_t y) {
 #if defined(__GNUC__) && defined(__x86_64__)
-  // On x86_64, the product of two 64-bit registeres is a 128-bit integer,
+  // On x86_64, the product of two 64-bit registers is a 128-bit integer,
   // stored in two 64-bit registers. It's the carry flag that is set when the
   // result exceeds 64 bits, not the overflow flag. We therefore have to resort
   // to the assembly-based version of the code.

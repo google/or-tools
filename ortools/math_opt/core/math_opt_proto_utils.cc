@@ -19,17 +19,17 @@
 #include <functional>
 #include <limits>
 #include <optional>
-#include <string>
 
 #include "absl/base/optimization.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_builder.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model.pb.h"
@@ -68,26 +68,6 @@ ProblemStatusProto GetProblemStatus(const SolveResultProto& solve_result) {
   problem_status.set_primal_or_dual_infeasible(
       solve_result.solve_stats().problem_status().primal_or_dual_infeasible());
   return problem_status;
-}
-
-void RemoveSparseDoubleVectorZeros(SparseDoubleVectorProto& sparse_vector) {
-  CHECK_EQ(sparse_vector.ids_size(), sparse_vector.values_size());
-  // Keep track of the next index that has not yet been used for a non zero
-  // value.
-  int next = 0;
-  for (const auto [id, value] : MakeView(sparse_vector)) {
-    // Se use `!(== 0.0)` here so that we keep NaN values for which both `v ==
-    // 0` and `v != 0` returns false.
-    if (!(value == 0.0)) {
-      sparse_vector.set_ids(next, id);
-      sparse_vector.set_values(next, value);
-      ++next;
-    }
-  }
-  // At the end of the iteration, `next` contains the index of the first unused
-  // index. This means it contains the number of used elements.
-  sparse_vector.mutable_ids()->Truncate(next);
-  sparse_vector.mutable_values()->Truncate(next);
 }
 
 SparseVectorFilterPredicate::SparseVectorFilterPredicate(
@@ -395,10 +375,10 @@ absl::Status ModelIsSupported(const ModelProto& model,
                                 const SupportType support) -> absl::Status {
     switch (support) {
       case SupportType::kNotSupported:
-        return util::InvalidArgumentErrorBuilder()
+        return ortools::InvalidArgumentErrorBuilder()
                << solver_name << " does not support " << structure;
       case SupportType::kNotImplemented:
-        return util::UnimplementedErrorBuilder()
+        return ortools::UnimplementedErrorBuilder()
                << "MathOpt does not currently support " << solver_name
                << " models with " << structure;
       case SupportType::kSupported:
@@ -557,11 +537,11 @@ absl::Status ModelSolveParametersAreSupported(
       case SupportType::kSupported:
         return absl::OkStatus();
       case SupportType::kNotSupported:
-        return util::InvalidArgumentErrorBuilder()
+        return ortools::InvalidArgumentErrorBuilder()
                << structure << " is not supported as " << solver_name
                << " does not support multiple objectives";
       case SupportType::kNotImplemented:
-        return util::UnimplementedErrorBuilder()
+        return ortools::UnimplementedErrorBuilder()
                << structure
                << " is not supported as MathOpt does not currently support "
                << solver_name << " models with multiple objectives";
@@ -569,12 +549,12 @@ absl::Status ModelSolveParametersAreSupported(
     return absl::OkStatus();
   };
   if (model_parameters.has_primary_objective_parameters()) {
-    RETURN_IF_ERROR(validate_support(
+    ABSL_RETURN_IF_ERROR(validate_support(
         "ModelSolveParametersProto.primary_objective_parameters",
         support_menu.multi_objectives));
   }
   if (!model_parameters.auxiliary_objective_parameters().empty()) {
-    RETURN_IF_ERROR(validate_support(
+    ABSL_RETURN_IF_ERROR(validate_support(
         "ModelSolveParametersProto.auxiliary_objective_parameters",
         support_menu.multi_objectives));
   }

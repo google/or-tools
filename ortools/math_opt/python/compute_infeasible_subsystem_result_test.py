@@ -13,10 +13,10 @@
 # limitations under the License.
 
 from absl.testing import absltest
+
 from ortools.math_opt import infeasible_subsystem_pb2
-from ortools.math_opt.python import compute_infeasible_subsystem_result
-from ortools.math_opt.python import model
-from ortools.math_opt.python import result
+from ortools.math_opt.python import (compute_infeasible_subsystem_result,
+                                     model, result)
 from ortools.math_opt.python.testing import compare_proto
 
 _ModelSubsetBounds = compute_infeasible_subsystem_result.ModelSubsetBounds

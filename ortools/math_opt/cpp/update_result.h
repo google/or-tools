@@ -14,6 +14,8 @@
 #ifndef ORTOOLS_MATH_OPT_CPP_UPDATE_RESULT_H_
 #define ORTOOLS_MATH_OPT_CPP_UPDATE_RESULT_H_
 
+#include <ostream>
+
 #include "ortools/math_opt/model_update.pb.h"
 
 namespace operations_research::math_opt {
@@ -27,6 +29,8 @@ struct UpdateResult {
   // had to be recreated.
   bool did_update;
 };
+
+std::ostream& operator<<(std::ostream& out, const UpdateResult& result);
 
 }  // namespace operations_research::math_opt
 

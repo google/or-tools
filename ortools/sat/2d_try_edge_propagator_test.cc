@@ -107,7 +107,7 @@ class TryEdgeRectanglePropagatorForTest : public TryEdgeRectanglePropagator {
           new_x_min.has_value() ? *new_x_min
                                 : box.bounding_area.x_max - box.x_size;
       std::vector<int> minimum_boxes =
-          GetMinimumProblemWithPropagation(box_index, new_x_min_value);
+          GetMinimumProblemWithPropagation(box_index, new_x_min);
       std::vector<RectangleInRange> minimum_problem;
       RectangleInRange box_to_propagate;
       for (const int reduced_box_index : minimum_boxes) {

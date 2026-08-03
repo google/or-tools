@@ -23,10 +23,9 @@ linear_solver/samples/simple_lp_program.py).
 import numpy as np
 import scipy.sparse
 
-from ortools.pdlp import solve_log_pb2
-from ortools.pdlp import solvers_pb2
-from ortools.pdlp.python import pdlp
 from ortools.init.python import init
+from ortools.pdlp import solve_log_pb2, solvers_pb2
+from ortools.pdlp.python import pdlp
 
 
 def simple_lp() -> pdlp.QuadraticProgram:

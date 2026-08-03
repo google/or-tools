@@ -156,6 +156,9 @@ void Search(std::function<bool(int, int)> graph,
     // Otherwise, do the recursive step.
     if (new_candidate_size == 0) {
       *stop = callback(*current_clique);
+      if (*stop) {
+        return;
+      }
     } else {
       if (new_first_candidate_index < new_candidate_size) {
         Search(graph, callback, new_candidates.data(),
@@ -188,11 +191,9 @@ void Search(std::function<bool(int, int)> graph,
 
 class FindAndEliminate {
  public:
-  FindAndEliminate(std::function<bool(int, int)> graph, int node_count,
+  FindAndEliminate(std::function<bool(int, int)> graph,
                    std::function<bool(const std::vector<int>&)> callback)
-      : graph_(std::move(graph)),
-        node_count_(node_count),
-        callback_(std::move(callback)) {}
+      : graph_(std::move(graph)), callback_(std::move(callback)) {}
 
   bool GraphCallback(int node1, int node2) {
     if (visited_.find(
@@ -219,7 +220,6 @@ class FindAndEliminate {
 
  private:
   std::function<bool(int, int)> graph_;
-  int node_count_;
   std::function<bool(const std::vector<int>&)> callback_;
   absl::flat_hash_set<std::pair<int, int>> visited_;
 };
@@ -243,7 +243,7 @@ void FindCliques(std::function<bool(int, int)> graph, int node_count,
 
 void CoverArcsByCliques(std::function<bool(int, int)> graph, int node_count,
                         std::function<bool(const std::vector<int>&)> callback) {
-  FindAndEliminate cache(std::move(graph), node_count, std::move(callback));
+  FindAndEliminate cache(std::move(graph), std::move(callback));
   std::unique_ptr<int[]> initial_candidates(new int[node_count]);
   std::vector<int> actual;
 

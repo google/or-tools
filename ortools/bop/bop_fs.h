@@ -118,7 +118,7 @@ class LinearRelaxation : public BopOptimizerBase {
   // Updates the time limit and returns the status of the solve.
   // Note that when the solve is incremental, the preprocessor is deactivated,
   // and the dual simplex is used.
-  glop::ProblemStatus Solve(bool incremental_solve, TimeLimit* time_limit);
+  glop::SolveStatus Solve(bool incremental_solve, TimeLimit* time_limit);
 
   // Computes and returns a better best bound using strong branching, i.e.
   // doing a what-if analysis on each variable v: compute the best bound when

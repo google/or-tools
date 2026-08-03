@@ -38,7 +38,9 @@ https://github.com/google/or-tools/blob/master/examples/csharp/wedding_optimal_c
 
 import time
 from typing import Sequence
+
 from absl import app
+
 from ortools.sat.python import cp_model
 
 

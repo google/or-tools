@@ -30,7 +30,7 @@ Specific algorithms for paths:
   acyclic graphs. If you have such a graph, this implementation is likely to be
   the fastest. Unlike most implementations, these algorithms have two interfaces
   : a "simple" one (list of edges and weights) and a standard one (taking as
-  input a graph data structure from [`//ortools/graph/graph.h`][graph_h]).
+  input a graph data structure from [`//ortools/graph_base/graph.h`][graph_h]).
 * [`dag_constrained_shortest_path.`][dag_constrained_shortest_path_h]: shortest
   paths on directed acyclic graphs with resource constraints.
 * [`hamiltonian_path.h`][hamiltonian_path_h]: entry point for computing minimum
@@ -158,8 +158,8 @@ node.
     memory loads.
 
 -   `StaticGraph<>`: More memory and speed efficient than `ListGraph<>`, but
-    requires calling `Build()` once after adding all nodes and arcs. Iterating
-    outgoing arcs requires only `2` memory loads.
+    requires building after adding all nodes and arcs. Iterating outgoing arcs
+    requires only `2` memory loads.
 
 -   `ReverseArcListGraph<>` adds reverse arcs to `ListGraph<>`. Iterating
     neighboring arcs for a node requires `O(degree)` memory loads.
@@ -201,7 +201,7 @@ node.
 You can find some canonical examples in [`samples`][samples].
 
 <!-- Links used throughout the document. -->
-[graph_h]: ../graph/graph.h
+[graph_h]: ../graph_base/graph.h
 [bounded_dijkstra_h]: ../graph/bounded_dijkstra.h
 [bidirectional_dijkstra_h]: ../graph/bidirectional_dijkstra.h
 [shortest_paths_h]: ../graph/shortest_paths.h
@@ -216,4 +216,4 @@ You can find some canonical examples in [`samples`][samples].
 [max_flow_h]: ../graph/max_flow.h
 [min_cost_flow_h]: ../graph/min_cost_flow.h
 [samples]: ../graph/samples/
-[graph]: ../graph/
+[graph]: ../graph_base/

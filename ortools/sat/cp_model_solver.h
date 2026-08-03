@@ -68,14 +68,12 @@ std::string CpSolverResponseStats(const CpSolverResponse& response,
  */
 CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model);
 
-#if !defined(__PORTABLE_PLATFORM__)
 /**
  * Solves the given CpModelProto with the given sat parameters as string in JSon
  * format, and returns an instance of CpSolverResponse.
  */
 CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
                                      absl::string_view params);
-#endif  // !__PORTABLE_PLATFORM__
 
 /**
  * Creates a solution observer with the model with

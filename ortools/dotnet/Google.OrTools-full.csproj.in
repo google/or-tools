@@ -89,6 +89,10 @@
       <Link>pdlp/%(Filename)%(Extension)</Link>
     </Compile>
 
+    <Compile Include="@DOTNET_PROJECT_DIR@/ortools/routing/*.cs">
+      <Link>routing/%(Filename)%(Extension)</Link>
+    </Compile>
+
     <Compile Include="@DOTNET_PROJECT_DIR@/ortools/sat/*.cs">
       <Link>sat/%(Filename)%(Extension)</Link>
     </Compile>
@@ -168,6 +172,11 @@
     </Content>
     <Content Include="@PROJECT_SOURCE_DIR@/ortools/pdlp/*.proto">
       <PackagePath>content/pdlp</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="@PROJECT_SOURCE_DIR@/ortools/routing/*.proto">
+      <PackagePath>content/routing</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

@@ -17,6 +17,7 @@
 
 #include <cstdlib>
 #include <cstring>
+
 #if defined(__GNUC__)  // Linux or Mac OS X.
 #include <signal.h>
 #endif  // __GNUC__
@@ -27,18 +28,16 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "absl/log/check.h"
-#include "absl/log/flags.h"
-#include "absl/log/initialize.h"
+#include "absl/log/globals.h"
 #include "absl/log/log.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/init_google.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/path.h"
 #include "ortools/base/timer.h"
 #include "ortools/flatzinc/cp_model_fz_solver.h"
@@ -47,15 +46,16 @@
 #include "ortools/sat/model.h"
 #include "ortools/util/logging.h"
 
-constexpr bool kOrToolsMode = true;
+constexpr bool kMinizincDefaultIoMode = true;
+constexpr bool kMinizincDefaultSearchMode = true;
 
 ABSL_FLAG(double, time_limit, 0, "time limit in seconds.");
 ABSL_FLAG(bool, search_all_solutions, false, "Search for all solutions.");
 ABSL_FLAG(bool, display_all_solutions, false,
           "Display all improving solutions.");
-ABSL_FLAG(bool, free_search, !kOrToolsMode,
+ABSL_FLAG(bool, free_search, false,
           "If false, the solver must follow the defined search."
-          "If true, other search are allowed.");
+          "If true, and if the number of threads is 1, uses free search.");
 ABSL_FLAG(int, threads, 0, "Number of threads the solver will use.");
 ABSL_FLAG(bool, statistics, false, "Print solver statistics after search.");
 ABSL_FLAG(bool, read_from_stdin, false,
@@ -66,14 +66,16 @@ ABSL_FLAG(std::string, fz_model_name, "stdin",
 ABSL_FLAG(std::string, params, "", "SatParameters as a text proto.");
 ABSL_FLAG(bool, fz_logging, false,
           "Print logging information from the flatzinc interpreter.");
-ABSL_FLAG(bool, ortools_mode, kOrToolsMode,
-          "Display solutions in the flatzinc format");
+ABSL_FLAG(bool, minizinc_io_mode, kMinizincDefaultIoMode,
+          "Display solutions in the flatzinc format.");
+ABSL_FLAG(bool, minizinc_search_mode, kMinizincDefaultSearchMode,
+          "Use the minizinc search specification.");
 ABSL_FLAG(bool, fz_check_all_solutions, DEBUG_MODE,
-          "Checks all solutions returned by the solver.");
+          "Check all solutions returned by the solver.");
 ABSL_FLAG(bool, ignore_redundant_constraints, false,
-          "Ignore redundant constraints.");
+          "EXPERIMENTAL: Ignore redundant constraints.");
 ABSL_FLAG(bool, ignore_symmetry_breaking_constraints, false,
-          "Ignore symmetry breaking constraints.");
+          "EXPERIMENTAL: Ignore symmetry breaking constraints.");
 
 namespace operations_research {
 namespace fz {
@@ -116,7 +118,7 @@ std::vector<char*> FixAndParseParameters(int* argc, char*** argv) {
       (*argv)[i] = time_param;
       use_time_param = true;
     }
-    if (kOrToolsMode) {
+    if (kMinizincDefaultIoMode) {
       if (strcmp((*argv)[i], "-v") == 0) {
         (*argv)[i] = logging_param;
       }
@@ -204,7 +206,7 @@ void LogInFlatzincFormat(const std::string& multi_line_input) {
     return;
   }
   const absl::string_view flatzinc_prefix =
-      absl::GetFlag(FLAGS_ortools_mode) ? "%% " : "";
+      absl::GetFlag(FLAGS_minizinc_io_mode) ? "%% " : "";
   const std::vector<absl::string_view> lines =
       absl::StrSplit(multi_line_input, '\n');
   for (const absl::string_view& line : lines) {
@@ -239,7 +241,7 @@ int main(int argc, char** argv) {
   operations_research::sat::Model sat_model;
   operations_research::SolverLogger* logger =
       sat_model.GetOrCreate<operations_research::SolverLogger>();
-  if (absl::GetFlag(FLAGS_ortools_mode)) {
+  if (absl::GetFlag(FLAGS_minizinc_io_mode)) {
     logger->EnableLogging(absl::GetFlag(FLAGS_fz_logging));
     // log_to_stdout is disabled later.
     logger->AddInfoLoggingCallback(
@@ -261,22 +263,23 @@ int main(int argc, char** argv) {
   parameters.search_all_solutions = absl::GetFlag(FLAGS_search_all_solutions);
   parameters.use_free_search = absl::GetFlag(FLAGS_free_search);
   parameters.log_search_progress =
-      absl::GetFlag(FLAGS_fz_logging) || !absl::GetFlag(FLAGS_ortools_mode);
+      absl::GetFlag(FLAGS_fz_logging) || !absl::GetFlag(FLAGS_minizinc_io_mode);
   parameters.random_seed = absl::GetFlag(FLAGS_fz_seed);
   parameters.display_statistics = absl::GetFlag(FLAGS_statistics);
   parameters.number_of_threads = absl::GetFlag(FLAGS_threads);
   parameters.max_time_in_seconds =
       absl::GetFlag(FLAGS_time_limit) - absl::ToInt64Seconds(parse_duration);
-  parameters.ortools_mode = absl::GetFlag(FLAGS_ortools_mode);
+  parameters.minizinc_io_mode = absl::GetFlag(FLAGS_minizinc_io_mode);
+  parameters.minizinc_search_mode = absl::GetFlag(FLAGS_minizinc_search_mode);
   parameters.check_all_solutions = absl::GetFlag(FLAGS_fz_check_all_solutions);
 
   operations_research::SolverLogger solution_logger;
   solution_logger.SetLogToStdOut(true);
-  solution_logger.EnableLogging(parameters.ortools_mode);
+  solution_logger.EnableLogging(parameters.minizinc_io_mode);
 
   if (absl::GetFlag(FLAGS_time_limit) > 0 &&
       parse_duration > absl::Seconds(absl::GetFlag(FLAGS_time_limit))) {
-    if (parameters.ortools_mode) {
+    if (parameters.minizinc_io_mode) {
       SOLVER_LOG(&solution_logger, "%% TIMEOUT");
     }
     if (parameters.log_search_progress) {

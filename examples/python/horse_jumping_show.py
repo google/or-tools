@@ -72,8 +72,10 @@ competitions:
 """
 
 import dataclasses
-from absl import app
+
 import numpy as np
+from absl import app
+
 from ortools.sat.python import cp_model
 
 

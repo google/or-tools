@@ -16,16 +16,12 @@ import io
 from typing import Dict, List, Union
 
 from absl.testing import absltest
+
 from ortools.math_opt.core.python import solver as core_solver
-from ortools.math_opt.python import linear_constraints
-from ortools.math_opt.python import message_callback
-from ortools.math_opt.python import model
-from ortools.math_opt.python import model_parameters
-from ortools.math_opt.python import parameters
-from ortools.math_opt.python import result
-from ortools.math_opt.python import solve
-from ortools.math_opt.python import sparse_containers
-from ortools.math_opt.python import variables
+from ortools.math_opt.python import (linear_constraints, message_callback,
+                                     model, model_parameters, parameters,
+                                     result, solve, sparse_containers,
+                                     variables)
 from ortools.util.python import solve_interrupter
 
 VarOrConstraintDict = Union[
@@ -74,6 +70,31 @@ class SolveTest(absltest.TestCase):
         mod.add_variable(lb=1.0, ub=-1.0, name="x1")
         with self.assertRaisesRegex(ValueError, "variables.*lower_bound > upper_bound"):
             solve.solve(mod, parameters.SolverType.GLOP)
+
+    def test_min_cost_flow_solve(self) -> None:
+        mod = model.Model()
+        ab = mod.add_variable(lb=0.0, ub=11.0, is_integer=False)
+        bc = mod.add_variable(lb=0.0, ub=12.0, is_integer=False)
+
+        mod.add_linear_constraint(ab == 10.0)
+        mod.add_linear_constraint(bc - ab == 0.0)
+        mod.add_linear_constraint(-bc == -10.0)
+
+        mod.minimize(2.0 * ab + 3.0 * bc)
+
+        res = solve.solve(mod, parameters.SolverType.MIN_COST_FLOW)
+        self.assertEqual(
+            res.termination.reason,
+            result.TerminationReason.OPTIMAL,
+            msg=res.termination,
+        )
+        self.assertAlmostEqual(50.0, res.termination.objective_bounds.primal_bound)
+        self.assertGreaterEqual(len(res.solutions), 1)
+        assert res.solutions[0].primal_solution is not None
+        self.assertAlmostEqual(50.0, res.solutions[0].primal_solution.objective_value)
+        self._assert_dict_almost_equal(
+            {ab: 10.0, bc: 10.0}, res.solutions[0].primal_solution.variable_values
+        )
 
     def test_lp_solve(self) -> None:
         mod = model.Model(name="test_model")

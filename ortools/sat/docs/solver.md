@@ -54,15 +54,16 @@ solve_with_time_limit_sample_sat()
 #include <stdlib.h>
 
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
-#include "absl/base/log_severity.h"
+#include "ortools/base/log_severity.h"
+#include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
+#include "ortools/util/sorted_interval_list.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -110,7 +111,7 @@ int main(int argc, char* argv[]) {
 ### Specifying the time limit in Java
 
 ```java
-// Snippet from ortools/sat/samples/SolveWithTimeLimitSampleSat.java
+// Snippet from ortools/sat/samples/java/SolveWithTimeLimitSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -328,14 +329,15 @@ solve_and_print_intermediate_solutions_sample_sat()
 #include <stdlib.h>
 
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
-#include "absl/base/log_severity.h"
+#include "ortools/base/log_severity.h"
+#include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
+#include "ortools/util/sorted_interval_list.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
-#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -382,7 +384,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/SolveAndPrintIntermediateSolutionsSampleSat.java
+// Snippet from ortools/sat/samples/java/SolveAndPrintIntermediateSolutionsSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -692,15 +694,16 @@ To search for all solutions, a parameter of the SAT solver must be changed.
 #include <stdlib.h>
 
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
-#include "absl/base/log_severity.h"
+#include "ortools/base/log_severity.h"
+#include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
+#include "ortools/util/sorted_interval_list.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -752,7 +755,7 @@ As in Python, CpSolver.solve() must be called after setting the correct
 parameter.
 
 ```java
-// Snippet from ortools/sat/samples/SearchForAllSolutionsSampleSat.java
+// Snippet from ortools/sat/samples/java/SearchForAllSolutionsSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -1022,19 +1025,17 @@ limit, and setting that bool to true.
 // Snippet from ortools/sat/samples/stop_after_n_solutions_sample_sat.cc
 #include <stdlib.h>
 
-#include <atomic>
-
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
-#include "absl/base/log_severity.h"
+#include "ortools/base/log_severity.h"
+#include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
+#include "ortools/util/sorted_interval_list.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/util/sorted_interval_list.h"
-#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -1089,7 +1090,7 @@ Stopping search is performed by calling stopSearch() inside of
 CpSolverSolutionCallback.onSolutionCallback().
 
 ```java
-// Snippet from ortools/sat/samples/StopAfterNSolutionsSampleSat.java
+// Snippet from ortools/sat/samples/java/StopAfterNSolutionsSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;

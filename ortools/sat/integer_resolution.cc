@@ -22,6 +22,7 @@
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/log/vlog_is_on.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/sat/clause.h"
@@ -45,10 +46,8 @@ IntegerConflictResolution::IntegerConflictResolution(Model* model)
       params_(*model->GetOrCreate<SatParameters>()) {
   trail_->SetConflictResolutionFunction(
       [this](std::vector<Literal>* conflict,
-             std::vector<Literal>* reason_used_to_infer_the_conflict,
-             std::vector<SatClause*>* subsumed_clauses) {
-        ComputeFirstUIPConflict(conflict, reason_used_to_infer_the_conflict,
-                                subsumed_clauses);
+             std::vector<Literal>* reason_used_to_infer_the_conflict) {
+        ComputeFirstUIPConflict(conflict, reason_used_to_infer_the_conflict);
       });
   integer_trail_->UseNewConflictResolution();
 }
@@ -60,7 +59,6 @@ IntegerConflictResolution::~IntegerConflictResolution() {
       {"IntegerConflictResolution/num_expansions", num_expansions_});
   stats.push_back({"IntegerConflictResolution/num_conflicts_at_wrong_level",
                    num_conflicts_at_wrong_level_});
-  stats.push_back({"IntegerConflictResolution/num_subsumed", num_subsumed_});
   stats.push_back({"IntegerConflictResolution/num_conflict_literals",
                    num_conflict_literals_});
   stats.push_back({"IntegerConflictResolution/num_associated",
@@ -89,8 +87,6 @@ IntegerConflictResolution::~IntegerConflictResolution() {
     stats.push_back({"Comparison/num_loose", comparison_num_loose_});
     stats.push_back(
         {"Comparison/old_sum_of_literals", comparison_old_sum_of_literals_});
-    stats.push_back(
-        {"Comparison/old_num_subsumed", comparison_old_num_subsumed_});
   }
 
   shared_stats_->AddStats(stats);
@@ -124,9 +120,8 @@ IntegerValue IntegerConflictResolution::RelaxBoundIfHoles(IntegerVariable var,
   return value;
 }
 
-void IntegerConflictResolution::AddToQueue(
-    GlobalTrailIndex source_index, const IntegerReason& reason,
-    std::vector<SatClause*>* subsumed_clauses) {
+void IntegerConflictResolution::AddToQueue(GlobalTrailIndex source_index,
+                                           const IntegerReason& reason) {
   ++num_expansions_;
 
   // If we have a linear reason with slack, check to see if we can relax the
@@ -211,11 +206,11 @@ void IntegerConflictResolution::AddToQueue(
       if (info.level == 0) continue;
       if (tmp_bool_index_seen_[info.trail_index]) continue;
 
-      subsumed_clauses->clear();
       tmp_bool_index_seen_.Set(info.trail_index);
 
       const GlobalTrailIndex index{info.level, info.trail_index};
       tmp_queue_.push_back(index);
+      DCHECK_LT(tmp_queue_.back(), source_index);
     }
   }
   for (const IntegerLiteral i_lit : reason.integer_literals) {
@@ -244,10 +239,11 @@ void IntegerConflictResolution::AddToQueue(
       data.in_queue = true;
       tmp_queue_.push_back(
           integer_trail_->GlobalIndexAt(data.int_index_in_queue));
+      DCHECK_LT(tmp_queue_.back(), source_index);
     }
 
-    CHECK_LT(integer_trail_->GlobalIndexAt(data.int_index_in_queue),
-             source_index);
+    DCHECK_LT(integer_trail_->GlobalIndexAt(data.int_index_in_queue),
+              source_index);
 
     // In all case, we need the bound at the time.
     // in some rare case, we have reason.index_at_propagation <
@@ -257,10 +253,13 @@ void IntegerConflictResolution::AddToQueue(
       ++num_possibly_non_optimal_reason_;
     }
 
+    // No need to relax further than this in the code below.
+    data.bound = std::max(data.bound, integer_trail_->LevelZeroLowerBound(var));
+
     IntegerValue required_bound =
         integer_trail_->IntegerLiteralAtIndex(data.int_index_in_queue).bound;
-
     CHECK_GE(required_bound, data.bound);
+
     if (slack > 0 && required_bound > data.bound) {
       CHECK_GT(reason.coeffs[i], 0);
       IntegerValue delta = FloorRatio(slack, reason.coeffs[i]);
@@ -298,6 +297,7 @@ void IntegerConflictResolution::ProcessIntegerLiteral(
     data.in_queue = true;
     tmp_queue_.push_back(
         integer_trail_->GlobalIndexAt(data.int_index_in_queue));
+    DCHECK_LT(tmp_queue_.back(), source_index);
   }
 
   data.bound = std::max(data.bound, i_lit.bound);
@@ -306,19 +306,32 @@ void IntegerConflictResolution::ProcessIntegerLiteral(
       << " " << i_lit.bound;
 }
 
+void IntegerConflictResolution::MarkAllAssociatedLiterals(
+    absl::Span<const Literal> literals) {
+  for (const Literal l : literals) {
+    for (const IntegerLiteral i_lit : integer_encoder_->GetIntegerLiterals(l)) {
+      // The std::max() is for the corner case of more than one
+      // integer literal on the same variable.
+      //
+      // TODO(user): we should probably make sure this never happen
+      // instead.
+      tmp_var_to_settled_lb_[i_lit.var] =
+          std::max(tmp_var_to_settled_lb_[i_lit.var], i_lit.bound);
+      ++num_associated_integer_for_literals_in_conflict_;
+    }
+  }
+}
+
 void IntegerConflictResolution::ComputeFirstUIPConflict(
     std::vector<Literal>* conflict,
-    std::vector<Literal>* reason_used_to_infer_the_conflict,
-    std::vector<SatClause*>* subsumed_clauses) {
+    std::vector<Literal>* reason_used_to_infer_the_conflict) {
   const int old_conflict_size = conflict->size();
   if (old_conflict_size > 0) {
     comparison_old_sum_of_literals_ += old_conflict_size;
-    comparison_old_num_subsumed_ += subsumed_clauses->size();
   }
 
   conflict->clear();
   reason_used_to_infer_the_conflict->clear();
-  subsumed_clauses->clear();
 
   // WARNING: This is not valid after further GetIntegerReason() calls.
   const IntegerReason& starting_conflict = integer_trail_->IntegerConflict();
@@ -329,13 +342,15 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
   const int num_i_vars = integer_trail_->NumIntegerVariables().value();
   int_data_.clear();
   int_data_.resize(num_i_vars);
-  // Note the +1 in case we create a new 1-UIP boolean.
-  tmp_bool_index_seen_.ClearAndResize(trail_->Index() + 1);
+  // Note the we need some slack because we enqueue a new decision if we see a
+  // boolean already assigned to true.
+  constexpr int kSizeSlack = 100;
+  tmp_bool_index_seen_.ClearAndResize(trail_->Index() + kSizeSlack);
   tmp_var_to_settled_lb_.assign(num_i_vars, kMinIntegerValue);
 
   tmp_queue_.clear();
   AddToQueue(GlobalTrailIndex{trail_->CurrentDecisionLevel(), trail_->Index()},
-             starting_conflict, subsumed_clauses);
+             starting_conflict);
   std::make_heap(tmp_queue_.begin(), tmp_queue_.end());
 
   // We will expand Booleans as long as we don't have first UIP.
@@ -386,6 +401,7 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
             data.int_index_in_queue = previous_index;
             tmp_queue_.push_back(
                 integer_trail_->GlobalIndexAt(data.int_index_in_queue));
+            DCHECK_LT(tmp_queue_.back(), top_index);
             CHECK_LE(
                 data.bound,
                 integer_trail_->IntegerLiteralAtIndex(data.int_index_in_queue)
@@ -412,6 +428,15 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
       // integer_literal. This can be disabled, but it should lead to better
       // reason hopefully.
       if (is_only_one_left_at_top_level || uip_found) {
+        // We don't want trivial literal here.
+        //
+        // TODO(user): Deal with literal falling in holes? the situation is
+        // not clear.
+        const IntegerLiteral needed_lit =
+            IntegerLiteral::GreaterOrEqual(i_lit.var, bound_to_explain);
+        DCHECK(!integer_trail_->IsTrueAtLevelZero(needed_lit));
+        DCHECK(!integer_trail_->IsTrueAtLevelZero(needed_lit.Negated()));
+
         // We only need to explain var >= bound_to_explain.
         // We have the explanation for i_lit.
         IntegerValue associated_bound;
@@ -419,16 +444,32 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
             integer_encoder_->SearchForLiteralAtOrAfter(
                 IntegerLiteral::GreaterOrEqual(i_lit.var, bound_to_explain),
                 &associated_bound);
-        if (lit_index != kNoLiteralIndex &&
-            associated_bound >= bound_to_explain &&
-            associated_bound <= i_lit.bound) {
+
+        if (lit_index == kNoLiteralIndex) {
+          IntegerValue test_bound;
+          const LiteralIndex test_index =
+              integer_encoder_->SearchForLiteralAtOrBefore(
+                  IntegerLiteral::GreaterOrEqual(i_lit.var, bound_to_explain),
+                  &test_bound);
+          if (test_index != kNoLiteralIndex && test_bound == bound_to_explain) {
+            LOG(FATAL) << top_index.level << " BUG " << i_lit.var
+                       << " >= " << bound_to_explain
+                       << " Not AtOrAfter, but at or before return"
+                       << Literal(test_index) << " var >=" << test_bound
+                       << " | " << integer_trail_->VarDebugString(i_lit.var);
+          }
+        }
+
+        if (lit_index != kNoLiteralIndex && associated_bound <= i_lit.bound) {
+          CHECK_GE(associated_bound, bound_to_explain);
           const Literal lit(lit_index);
 
           IntegerValue test_bound;
           const LiteralIndex test_index =
               integer_encoder_->SearchForLiteralAtOrBefore(i_lit, &test_bound);
-          if (test_index != kNoLiteralIndex)
+          if (test_index != kNoLiteralIndex) {
             CHECK_LE(associated_bound, test_bound);
+          }
 
           // Lets do more sanity_check before just using this literal.
           // Instead. Since we output it right away. we should be good.
@@ -445,9 +486,6 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
             const GlobalTrailIndex new_top{info.level, info.trail_index};
             tmp_bool_index_seen_.Set(info.trail_index);
 
-            // TODO(user): Not sure some corner cases still allow subsumption.
-            subsumed_clauses->clear();
-
             data.bound = kMinIntegerValue;
             top_index = new_top;
             ++num_associated_literal_use_;
@@ -458,36 +496,45 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
                    top_index.level > sat_solver_->AssumptionLevel() &&
                    is_only_one_left_at_top_level && !uip_found) {
           // Lets create a new associated literal and use it as the UIP.
+          // Note that we should always create a new fresh literal here.
           //
           // TODO(user): Note that we disabled this with assumptions otherwise
           // we might have a core with new literal !
+          const int num_bools = trail_->NumVariables();
           const Literal new_lit =
               integer_encoder_->GetOrCreateAssociatedLiteral(
                   IntegerLiteral::GreaterOrEqual(i_lit.var, bound_to_explain));
+          CHECK_EQ(new_lit.Variable().value(), num_bools);
 
-          // This should always be true.
-          // TODO(user): Why is it assigned sometimes and not always?
-          if (!trail_->Assignment().LiteralIsAssigned(new_lit)) {
-            // Using a decision should work as we will backtrack right away.
-            trail_->EnqueueSearchDecision(new_lit);
+          // TODO(user): This can happen is some rare corner case, we just skip.
+          if (!trail_->Assignment().LiteralIsFalse(new_lit)) {
+            // The literal can be true if we have other encoding literal at true
+            // that implies it. However, if we only have an integer literal that
+            // implies it, the "integer_encoder_" do not have access to
+            // integer_trail_ (it should probably be split) and it cannot set it
+            // to true.
+            if (!trail_->Assignment().LiteralIsAssigned(new_lit)) {
+              // Using a decision should work as we will backtrack right away.
+              trail_->EnqueueSearchDecision(new_lit);
+              if (trail_->Index() >= tmp_bool_index_seen_.size()) {
+                tmp_bool_index_seen_.Resize(trail_->Index() + kSizeSlack);
+              }
+            }
+
+            // It should be true.
+            CHECK(trail_->Assignment().LiteralIsTrue(new_lit));
+
+            const auto& info = trail_->Info(new_lit.Variable());
+            CHECK_GE(info.level, top_index.level);
+            CHECK_EQ((*trail_)[info.trail_index], new_lit);
+            const GlobalTrailIndex new_top{info.level, info.trail_index};
+
+            tmp_bool_index_seen_.Set(info.trail_index);
+            data.bound = kMinIntegerValue;
+
+            top_index = new_top;
+            ++num_created_1uip_bool_;
           }
-
-          // It should be true.
-          CHECK(trail_->Assignment().LiteralIsTrue(new_lit))
-              << associated_bound << " " << bound_to_explain << " "
-              << i_lit.bound << " " << lit_index << " new " << new_lit;
-
-          const auto& info = trail_->Info(new_lit.Variable());
-          CHECK_GE(info.level, top_index.level);
-          CHECK_EQ((*trail_)[info.trail_index], new_lit);
-          const GlobalTrailIndex new_top{info.level, info.trail_index};
-
-          tmp_bool_index_seen_.Set(info.trail_index);
-          subsumed_clauses->clear();
-          data.bound = kMinIntegerValue;
-
-          top_index = new_top;
-          ++num_created_1uip_bool_;
         }
       }
     }
@@ -518,48 +565,35 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
             // This one will always stay in the conflict, even after
             // minimization. So we can use it to minimize the conflict and avoid
             // some further expansion.
-            for (const Literal l :
-                 implications_->GetAllImpliedLiterals(literal)) {
-              for (const IntegerLiteral i_lit :
-                   integer_encoder_->GetIntegerLiterals(l)) {
-                // The std::max() is for the corner case of more than one
-                // integer literal on the same variable.
-                //
-                // TODO(user): we should probably make sure this never happen
-                // instead.
-                tmp_var_to_settled_lb_[i_lit.var] =
-                    std::max(tmp_var_to_settled_lb_[i_lit.var], i_lit.bound);
-                ++num_associated_integer_for_literals_in_conflict_;
-              }
-            }
+            MarkAllAssociatedLiterals(
+                implications_->GetAllImpliedLiterals(literal));
           } else {
-            // This assumes no-one call GetAllImpliedLiterals() while we
-            // run this algorithm, and that the info stays valid as we create
-            // new literal.
+            // This assumes no-one else call
+            // GetAllImpliedLiterals()/GetNewlyImpliedLiterals() while we run
+            // this algorithm, and that the info stays valid as we create new
+            // literal.
             if (implications_->LiteralIsImplied(literal)) {
               ++num_binary_minimization_;
               continue;
             }
+
+            // We are about to add this literal to the conflict, mark all the
+            // literal implied using binary implication only as no need to be
+            // expanded further. Note that we don't need to expand already
+            // expanded literals in the binary implication graph.
+            MarkAllAssociatedLiterals(
+                implications_->GetNewlyImpliedLiterals(literal));
           }
+        } else {
+          // This literal is staying in the final conflict. If it has
+          // associated integer_literal, then these integer literals will be
+          // true for all the subsequent resolution. We can exploit that.
+          MarkAllAssociatedLiterals({literal});
         }
 
         // Note that we will fill conflict in reverse order of GlobalTrailIndex.
         // So the first-UIP will be first, this is required by the sat solver.
         conflict->push_back(literal.Negated());
-
-        // This literal is staying in the final conflict. If it has associated
-        // integer_literal, then these integer literals will be true for all the
-        // subsequent resolution. We can exploit that.
-        for (const IntegerLiteral i_lit :
-             integer_encoder_->GetIntegerLiterals(literal)) {
-          // The std::max() is for the corner case of more than one integer
-          // literal on the same variable.
-          // TODO(user): we should probably make sure this never happen instead.
-          tmp_var_to_settled_lb_[i_lit.var] =
-              std::max(tmp_var_to_settled_lb_[i_lit.var], i_lit.bound);
-          ++num_associated_integer_for_literals_in_conflict_;
-        }
-
         continue;
       }
 
@@ -585,33 +619,17 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
 
     // Expand.
     //
-    // TODO(user): There is probably a faster way to recover the heap propety
+    // TODO(user): There is probably a faster way to recover the heap property
     // than doing it one by one.
     const int old_size = tmp_queue_.size();
     AddToQueue(top_index,
-               integer_trail_->GetIntegerReason(top_index, needed_bound),
-               subsumed_clauses);
+               integer_trail_->GetIntegerReason(top_index, needed_bound));
     for (int i = old_size + 1; i <= tmp_queue_.size(); ++i) {
       std::push_heap(tmp_queue_.begin(), tmp_queue_.begin() + i);
-    }
-
-    // Subsumption ?
-    // We will check at the end, but also filter the list each time we have
-    // a new Boolean in the conflict.
-    if (top_index.IsBoolean()) {
-      // Tricky: info.type might not be the same as AssignmentType().
-      const Literal literal = (*trail_)[top_index.bool_index];
-      if (trail_->AssignmentType(literal.Variable()) ==
-          clauses_propagator_->PropagatorId()) {
-        const AssignmentInfo& info = trail_->Info(literal.Variable());
-        SatClause* clause = clauses_propagator_->ReasonClause(info.trail_index);
-        subsumed_clauses->push_back(clause);
-      }
     }
   }
 
   num_conflict_literals_ += conflict->size();
-  FilterSubsumedClauses(conflict, subsumed_clauses);
 
   if (old_conflict_size > 0) {
     if (conflict->size() < old_conflict_size) {
@@ -622,28 +640,6 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
       ++comparison_num_same_;
     }
   }
-}
-
-void IntegerConflictResolution::FilterSubsumedClauses(
-    std::vector<Literal>* conflict, std::vector<SatClause*>* subsumed_clauses) {
-  tmp_bool_seen_.ClearAndResize(BooleanVariable(trail_->NumVariables()));
-  for (const Literal l : *conflict) tmp_bool_seen_.Set(l.Variable());
-
-  int new_size = 0;
-  for (SatClause* clause : *subsumed_clauses) {
-    int intersection_size = 0;
-    for (const Literal l : clause->AsSpan()) {
-      if (tmp_bool_seen_[l.Variable()]) {
-        ++intersection_size;
-        if (intersection_size == conflict->size()) {
-          (*subsumed_clauses)[new_size++] = clause;
-          break;
-        }
-      }
-    }
-  }
-  subsumed_clauses->resize(new_size);
-  num_subsumed_ += new_size;
 }
 
 std::string IntegerConflictResolution::DebugGlobalIndex(

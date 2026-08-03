@@ -21,9 +21,9 @@
 %include "stdint.i"
 %include "std_string.i"
 
-// Don't break on ABSL_DEPRECATED macro.
-%define ABSL_DEPRECATED(msg)
-%enddef
+// absl does not export their SWIG support.
+#define ABSL_DEPRECATED(msg)
+#define ABSL_MUST_USE_RESULT
 
 #ifdef SWIGPYTHON
 

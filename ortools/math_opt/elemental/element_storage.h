@@ -50,7 +50,8 @@ class DenseElementStorage {
     if (exists(id)) {
       return elements_[id];
     }
-    return util::InvalidArgumentErrorBuilder() << "no element with id " << id;
+    return ortools::InvalidArgumentErrorBuilder()
+           << "no element with id " << id;
   }
 
   int64_t next_id() const { return size(); }
@@ -84,7 +85,8 @@ class SparseElementStorage {
     if (const auto it = elements_.find(id); it != elements_.end()) {
       return it->second;
     }
-    return util::InvalidArgumentErrorBuilder() << "no element with id " << id;
+    return ortools::InvalidArgumentErrorBuilder()
+           << "no element with id " << id;
   }
 
   int64_t next_id() const { return next_id_; }

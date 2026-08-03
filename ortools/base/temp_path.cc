@@ -13,11 +13,15 @@
 
 #include "ortools/base/temp_path.h"
 
+#include <string>
 #include <utility>
 
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
+#include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "ortools/base/file.h"
 #include "ortools/base/filesystem.h"
 
 namespace file {

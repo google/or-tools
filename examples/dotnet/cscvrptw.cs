@@ -14,6 +14,7 @@
 using System;
 using System.Collections.Generic;
 using Google.OrTools.ConstraintSolver;
+using Google.OrTools.Routing;
 
 /// <summary>
 ///   Sample showing how to model and solve a capacitated vehicle routing
@@ -71,7 +72,7 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows
     /// </summary>
     class Manhattan
     {
-        public Manhattan(RoutingIndexManager manager, Position[] locations, int coefficient)
+        public Manhattan(IndexManager manager, Position[] locations, int coefficient)
         {
             this.manager_ = manager;
             this.locations_ = locations;
@@ -91,7 +92,7 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows
                    coefficient_;
         }
 
-        private readonly RoutingIndexManager manager_;
+        private readonly IndexManager manager_;
         private readonly Position[] locations_;
         private readonly int coefficient_;
     };
@@ -102,7 +103,7 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows
     /// </summary>
     class Demand
     {
-        public Demand(RoutingIndexManager manager, int[] order_demands)
+        public Demand(IndexManager manager, int[] order_demands)
         {
             this.manager_ = manager;
             this.order_demands_ = order_demands;
@@ -118,7 +119,7 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows
             return 0;
         }
 
-        private readonly RoutingIndexManager manager_;
+        private readonly IndexManager manager_;
         private readonly int[] order_demands_;
     };
 
@@ -234,21 +235,21 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows
         // Finalizing model
         int number_of_locations = locations_.Length;
 
-        RoutingIndexManager manager =
-            new RoutingIndexManager(number_of_locations, number_of_vehicles, vehicle_starts_, vehicle_ends_);
-        RoutingModel model = new RoutingModel(manager);
+        IndexManager manager =
+            new IndexManager(number_of_locations, number_of_vehicles, vehicle_starts_, vehicle_ends_);
+        Model model = new Model(manager);
 
         // Setting up dimensions
         const int big_number = 100000;
         Manhattan manhattan_callback = new Manhattan(manager, locations_, 1);
         model.AddDimension(model.RegisterTransitCallback(manhattan_callback.Call), big_number, big_number, false,
                            "time");
-        RoutingDimension time_dimension = model.GetDimensionOrDie("time");
+        Dimension time_dimension = model.GetDimensionOrDie("time");
 
         Demand demand_callback = new Demand(manager, order_demands_);
         model.AddDimension(model.RegisterUnaryTransitCallback(demand_callback.Call), 0, vehicle_capacity_, true,
                            "capacity");
-        RoutingDimension capacity_dimension = model.GetDimensionOrDie("capacity");
+        Dimension capacity_dimension = model.GetDimensionOrDie("capacity");
 
         // Setting up vehicles
         Manhattan[] cost_callbacks = new Manhattan[number_of_vehicles];
@@ -271,8 +272,7 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows
         }
 
         // Solving
-        RoutingSearchParameters search_parameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        RoutingSearchParameters search_parameters = RoutingGlobals.DefaultRoutingSearchParameters();
         search_parameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.AllUnperformed;
 
         Console.WriteLine("Search...");

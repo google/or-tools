@@ -30,15 +30,6 @@ class Status {
 
     // The LU factorization of the current basis couldn't be computed.
     ERROR_LU = 1,
-
-    // The current variable values are out of their bound modulo the tolerance.
-    ERROR_BOUND = 2,
-
-    // A pointer argument was NULL when it shouldn't be.
-    ERROR_NULL = 3,
-
-    // The linear program is invalid or it does not have the required format.
-    ERROR_INVALID_PROBLEM = 4,
   };
 
   // Creates a "successful" status.
@@ -64,30 +55,6 @@ class Status {
 
 // Returns the string representation of the ErrorCode enum.
 std::string GetErrorCodeString(Status::ErrorCode error_code);
-
-// Macro to simplify error propagation between function returning Status.
-#define GLOP_RETURN_IF_ERROR(function_call)        \
-  do {                                             \
-    Status return_status = function_call;          \
-    if (!return_status.ok()) return return_status; \
-  } while (false)
-
-// Macro to simplify the creation of an error.
-#define GLOP_RETURN_AND_LOG_ERROR(error_code, message)                     \
-  do {                                                                     \
-    std::string error_message = message;                                   \
-    LOG(ERROR) << GetErrorCodeString(error_code) << ": " << error_message; \
-    return Status(error_code, error_message);                              \
-  } while (false)
-
-// Macro to check that a pointer argument is not null.
-#define GLOP_RETURN_ERROR_IF_NULL(arg)                                \
-  if (arg == nullptr) {                                               \
-    const std::string variable_name = #arg;                           \
-    std::string error_message = variable_name + " must not be null."; \
-    LOG(DFATAL) << error_message;                                     \
-    return Status(Status::ERROR_NULL, error_message);                 \
-  }
 
 }  // namespace glop
 }  // namespace operations_research

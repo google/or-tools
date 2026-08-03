@@ -21,6 +21,7 @@
 
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -51,25 +52,16 @@ class IntegerConflictResolution {
   // TODO(user): Support LRAT proof, at least for pure Boolean problems.
   void ComputeFirstUIPConflict(
       std::vector<Literal>* conflict,
-      std::vector<Literal>* reason_used_to_infer_the_conflict,
-      std::vector<SatClause*>* subsumed_clauses);
+      std::vector<Literal>* reason_used_to_infer_the_conflict);
 
  private:
   // Returns the list of integer_literals associated with an index.
   absl::Span<const IntegerLiteral> IndexToIntegerLiterals(
       GlobalTrailIndex index);
 
-  // Remove from subsumed_clauses the one that are not subsumed.
-  // It is a bit hard to track down cardinality during our various optim, so
-  // this is easier to make sure we are correct. I rescan the subsumed_clauses
-  // candidates a second time, which isn't too bad.
-  void FilterSubsumedClauses(std::vector<Literal>* conflict,
-                             std::vector<SatClause*>* subsumed_clauses);
-
   // Adds to our processing queue the reason for source_index.
   // This is also called for the initial conflict, with a dummy source_index.
-  void AddToQueue(GlobalTrailIndex source_index, const IntegerReason& reason,
-                  std::vector<SatClause*>* subsumed_clauses);
+  void AddToQueue(GlobalTrailIndex source_index, const IntegerReason& reason);
 
   // Updates int_data_[i_lit.var] and add an entry to the queue if needed.
   void ProcessIntegerLiteral(GlobalTrailIndex source_index,
@@ -79,6 +71,10 @@ class IntegerConflictResolution {
   // fall into a hole of the domain, we actually only need var >= smaller_value.
   // This returns that smaller value.
   IntegerValue RelaxBoundIfHoles(IntegerVariable var, IntegerValue value);
+
+  // Marks all integer literals associated to one of the given Boolean literals
+  // as "no need to be expanded further".
+  void MarkAllAssociatedLiterals(absl::Span<const Literal> literals);
 
   // Debugging function to print info about a GlobalTrailIndex.
   std::string DebugGlobalIndex(GlobalTrailIndex index);
@@ -99,7 +95,6 @@ class IntegerConflictResolution {
   // Information about the current content of our tmp_queue_ and our conflict
   // resolution.
   SparseBitset<int> tmp_bool_index_seen_;
-  SparseBitset<BooleanVariable> tmp_bool_seen_;
   std::vector<IntegerLiteral> tmp_integer_literals_;
   util_intops::StrongVector<IntegerVariable, IntegerValue>
       tmp_var_to_settled_lb_;
@@ -109,7 +104,7 @@ class IntegerConflictResolution {
     // Whether this variable was added in the queue.
     // If false, index_in_queue will be the index to re-add it with.
     bool in_queue = false;
-    int int_index_in_queue = std::numeric_limits<int>::max();
+    int int_index_in_queue = kint32max;
 
     // We only need var >= bound in the current conflict resolution.
     // Note that we have: integer_trail_[int_index_in_queue] >= bound.
@@ -120,7 +115,6 @@ class IntegerConflictResolution {
   // Stats.
   int64_t num_conflicts_at_wrong_level_ = 0;
   int64_t num_expansions_ = 0;
-  int64_t num_subsumed_ = 0;
   int64_t num_conflict_literals_ = 0;
   int64_t num_associated_integer_for_literals_in_conflict_ = 0;
   int64_t num_associated_literal_use_ = 0;
@@ -137,7 +131,6 @@ class IntegerConflictResolution {
   int64_t comparison_num_same_ = 0;
   int64_t comparison_num_loose_ = 0;
   int64_t comparison_old_sum_of_literals_ = 0;
-  int64_t comparison_old_num_subsumed_ = 0;
 };
 
 }  // namespace operations_research::sat

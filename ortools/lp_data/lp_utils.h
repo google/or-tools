@@ -20,6 +20,7 @@
 #include <cstdlib>
 
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/base/accurate_sum.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/permutation.h"

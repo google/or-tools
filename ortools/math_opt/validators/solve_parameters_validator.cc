@@ -14,15 +14,14 @@
 #include "ortools/math_opt/validators/solve_parameters_validator.h"
 
 #include <cmath>
-#include <string>
 
 #include "absl/status/status.h"
-#include "absl/status/statusor.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "ortools/base/protoutil.h"
-#include "ortools/base/status_macros.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/util/status_macros.h"
 
@@ -36,7 +35,7 @@ namespace {
 absl::Status ValidateEmphasisProtoParameter(
     const EmphasisProto value, const absl::string_view field_name) {
   if (!EmphasisProto_IsValid(value)) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "Unknown enum value for SolverParameters." << field_name << " = "
            << value;
   }
@@ -52,7 +51,7 @@ absl::Status ValidateSolveParameters(const SolveParametersProto& parameters) {
         util_time::DecodeGoogleApiProto(parameters.time_limit()),
         _ << "invalid SolveParameters.time_limit");
     if (time_limit < absl::ZeroDuration()) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "SolveParameters.time_limit = " << time_limit << " < 0";
     }
   }
@@ -80,19 +79,19 @@ absl::Status ValidateSolveParameters(const SolveParametersProto& parameters) {
     }
   }
   if (parameters.has_node_limit() && parameters.node_limit() < 0) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "SolveParameters.node_limit = " << parameters.node_limit()
            << " should be nonnegative.";
   }
 
   if (parameters.has_solution_limit() && parameters.solution_limit() <= 0) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "SolveParameters.solution_limit = " << parameters.solution_limit()
            << " should be positive.";
   }
 
   if (!std::isfinite(parameters.cutoff_limit())) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "SolveParameters.cutoff_limit should be finite (and not NaN) but "
               "was: "
            << parameters.cutoff_limit();
@@ -107,18 +106,18 @@ absl::Status ValidateSolveParameters(const SolveParametersProto& parameters) {
   }
   if (parameters.has_solution_pool_size() &&
       parameters.solution_pool_size() <= 0) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "SolveParameters.solution_pool_size must be positive if set, but "
               "was set to: "
            << parameters.solution_pool_size();
   }
   if (!LPAlgorithmProto_IsValid(parameters.lp_algorithm())) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "Unknown enum value for SolverParameters.lp_algorithm = "
            << parameters.lp_algorithm();
   }
 #define VALIDATE_EMPHASIS(property) \
-  RETURN_IF_ERROR(                  \
+  ABSL_RETURN_IF_ERROR(             \
       ValidateEmphasisProtoParameter(parameters.property(), #property))
   VALIDATE_EMPHASIS(presolve);
   VALIDATE_EMPHASIS(cuts);

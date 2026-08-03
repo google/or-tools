@@ -13,8 +13,9 @@
 # limitations under the License.
 
 from absl.testing import absltest
-from ortools.util.python import pybind_solve_interrupter_testing
-from ortools.util.python import solve_interrupter
+
+from ortools.util.python import (pybind_solve_interrupter_testing,
+                                 solve_interrupter)
 
 
 class SolveInterrupterTest(absltest.TestCase):
@@ -33,6 +34,14 @@ class SolveInterrupterTest(absltest.TestCase):
         target = solve_interrupter.SolveInterrupter()
         source.add_trigger_target(target)
         source.interrupt()
+        self.assertTrue(source.interrupted)
+        self.assertTrue(target.interrupted)
+
+    def test_add_target_triggered_interrupter(self) -> None:
+        source = solve_interrupter.SolveInterrupter()
+        target = solve_interrupter.SolveInterrupter()
+        source.interrupt()
+        source.add_trigger_target(target)
         self.assertTrue(source.interrupted)
         self.assertTrue(target.interrupted)
 

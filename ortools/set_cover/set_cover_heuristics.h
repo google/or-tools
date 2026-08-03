@@ -14,15 +14,21 @@
 #ifndef ORTOOLS_SET_COVER_SET_COVER_HEURISTICS_H_
 #define ORTOOLS_SET_COVER_SET_COVER_HEURISTICS_H_
 
+#include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/adjustable_k_ary_heap.h"
+#include "ortools/base/types.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_invariant.h"
 #include "ortools/set_cover/set_cover_model.h"
@@ -31,55 +37,75 @@ namespace operations_research {
 
 // Solver classes for the weighted set covering problem.
 //
-// The solution procedure is based on the general scheme known as local search.
-// Once a solution exists, it is improved by modifying it slightly, for example
-// by flipping a binary variable, so as to minimize the cost.
-// But first, we have to generate a first solution that is as good as possible.
+// The solution procedure is based on the general scheme known as local
+// search. Once a solution exists, it is improved by modifying it slightly,
+// for example by flipping a binary variable, so as to minimize the cost.
+// But first, we have to generate an initial solution that is as good as
+// possible.
 //
-// The first solution is then improved by using local search descent, which
+// The initial solution is then improved by using local search descent, which
 // eliminates the S_j's that have no interest in the solution.
 //
 // A mix of the guided local search (GLS) and Tabu Search (TS) metaheuristic
 // is also provided.
 //
-// The term 'focus' hereafter means a subset of the S_j's designated by their
-// indices. Focus make it possible to run the algorithms on the corresponding
-// subproblems.
+// The term 'focus' hereafter means a subset of the S_j's designated by
+// their indices. Focus make it possible to run the algorithms on the
+// corresponding subproblems.
 
 // Base class for all set cover solution generators. This is almost an
 // interface.
-class SetCoverSolutionGenerator {
+
+class SetCoverOptimizer {
  public:
   // By default, the maximum number of iterations is set to infinity, and the
   // maximum time in seconds is set to infinity as well (and the time limit is
   // not yet implemented).
-  SetCoverSolutionGenerator(
-      SetCoverInvariant* inv,
-      SetCoverInvariant::ConsistencyLevel consistency_level,
-      absl::string_view class_name, absl::string_view name)
+  SetCoverOptimizer(SetCoverInvariant* inv,
+                    SetCoverInvariant::ConsistencyLevel consistency_level,
+                    absl::string_view class_name, absl::string_view name)
       : run_time_(absl::ZeroDuration()),
         consistency_level_(consistency_level),
         inv_(inv),
+        subset_priority_fn_(&DefaultSubsetMarginalImpactFn),
         class_name_(class_name),
         name_(name),
-        time_limit_in_seconds_(std::numeric_limits<double>::infinity()),
-        max_iterations_(std::numeric_limits<int64_t>::max()) {}
+        time_limit_(absl::InfiniteDuration()),
+        max_iterations_(kint64max) {}
 
-  virtual ~SetCoverSolutionGenerator() = default;
+  virtual ~SetCoverOptimizer() = default;
 
   void SetName(const absl::string_view name) { name_ = name; }
 
   SetCoverInvariant* inv() const { return inv_; }
 
+  // Sets the function used to compute the priority of a subset.
+  // The priority of a subset is the expected marginal impact of selecting it,
+  // defined as the number of newly covered elements divided by the cost of the
+  // subset, if the said subset is selected.
+  // It is possible for the priority to be negative. This is an easy way to
+  // discard subsets for some particular heuristics.
+  void SetSubsetPriorityFunction(
+      std::function<double(SetCoverInvariant*, SubsetIndex)>
+          subset_priority_fn) {
+    subset_priority_fn_ = subset_priority_fn;
+  }
+
+  // Computes the priority of a subset using the function set by the
+  // SetSubsetPriorityFunction() method.
+  double ComputeSubsetPriority(SubsetIndex subset) const {
+    return subset_priority_fn_(inv_, subset);
+  }
+
   // Resets the limits to their default values.
-  virtual SetCoverSolutionGenerator& ResetLimits() {
-    time_limit_in_seconds_ = std::numeric_limits<double>::infinity();
-    max_iterations_ = std::numeric_limits<int64_t>::max();
+  virtual SetCoverOptimizer& ResetLimits() {
+    time_limit_ = absl::InfiniteDuration();
+    max_iterations_ = kint64max;
     return *this;
   }
 
   // Sets the maximum number of iterations.
-  SetCoverSolutionGenerator& SetMaxIterations(int64_t max_iterations) {
+  SetCoverOptimizer& SetMaxIterations(int64_t max_iterations) {
     max_iterations_ = max_iterations;
     return *this;
   }
@@ -87,23 +113,13 @@ class SetCoverSolutionGenerator {
   // Returns the maximum number of iterations.
   int64_t max_iterations() const { return max_iterations_; }
 
-  // Sets the time limit in seconds.
-  SetCoverSolutionGenerator& SetTimeLimitInSeconds(double seconds) {
-    time_limit_in_seconds_ = seconds;
+  // Sets the time limit.
+  SetCoverOptimizer& SetTimeLimit(absl::Duration time_limit) {
+    time_limit_ = time_limit;
     return *this;
   }
 
   absl::Duration run_time() const { return run_time_; }
-
-  // Returns the total elapsed runtime in seconds.
-  double run_time_in_seconds() const {
-    return absl::ToDoubleSeconds(run_time_);
-  }
-
-  // Returns the total elapsed runtime in microseconds.
-  double run_time_in_microseconds() const {
-    return absl::ToInt64Microseconds(run_time_);
-  }
 
   // Returns the name of the heuristic.
   std::string name() const { return name_; }
@@ -116,15 +132,15 @@ class SetCoverSolutionGenerator {
 
   // Virtual methods that must be implemented by derived classes.
 
-  // Computes the next full solution taking into account all the subsets.
-  virtual bool NextSolution() = 0;
+  // Computes the next solution taking into account all the subsets.
+  virtual bool Optimize() = 0;
 
   // Computes the next partial solution considering only the subsets whose
   // indices are in focus.
-  virtual bool NextSolution(absl::Span<const SubsetIndex> focus) = 0;
+  virtual bool Optimize(absl::Span<const SubsetIndex> focus) = 0;
 
   // Same as above, but with a vector of Booleans as focus.
-  virtual bool NextSolution(const SubsetBoolVector& in_focus) = 0;
+  virtual bool Optimize(const SubsetBoolVector& in_focus) = 0;
 
   bool CheckInvariantConsistency() const;
 
@@ -133,8 +149,8 @@ class SetCoverSolutionGenerator {
   SetCoverModel* model() const { return inv_->model(); }
   BaseInt num_subsets() const { return model()->num_subsets(); }
 
-  // The time limit in seconds.
-  double time_limit_in_seconds() const { return time_limit_in_seconds_; }
+  // Returns the time limit as an absl::Duration.
+  absl::Duration time_limit() const { return time_limit_; }
 
   // run_time_ is an abstract duration for the time spent in NextSolution().
   absl::Duration run_time_;
@@ -143,8 +159,20 @@ class SetCoverSolutionGenerator {
   SetCoverInvariant::ConsistencyLevel consistency_level_;
 
  private:
+  // The default function used to compute the marginal impact of a subset.
+  static double DefaultSubsetMarginalImpactFn(SetCoverInvariant* inv,
+                                              SubsetIndex subset) {
+    return inv->num_free_elements()[subset] /
+           inv->model()->subset_costs()[subset];
+  }
+
   // The data structure that will maintain the invariant for the model.
   SetCoverInvariant* inv_;
+
+  // The function used to compute the marginal impact of a subset, defined as
+  // the number of newly covered elements divided by the cost of the subset, if
+  // the said subset is selected.
+  std::function<double(SetCoverInvariant*, SubsetIndex)> subset_priority_fn_;
 
   // The name of the solution generator class. Cannot be changed by the user.
   std::string class_name_;
@@ -153,75 +181,90 @@ class SetCoverSolutionGenerator {
   // by default, but can be changed by the user.
   std::string name_;
 
-  // The time limit in seconds.
-  double time_limit_in_seconds_;
+  // The time limit as an absl::Duration.
+  absl::Duration time_limit_;
 
   // The maximum number of iterations.
   int64_t max_iterations_;
 };
 
-// Now we define two classes that are used to implement the solution
-// generators. The first one uses a vector of subset indices as focus, while
+// Now we define two classes that are used to implement the optimizers.
+// The first one uses a vector of subset indices as focus, while
 // the second one uses a vector of Booleans. This makes the declaration of the
 // solution generators shorter, more readable and improves type correctness.
 
 // The class of solution generators that use a vector of subset indices as
 // focus, with a transformation from a vector of Booleans to a vector of
 // subset indices if needed.
-class SubsetListBasedSolutionGenerator : public SetCoverSolutionGenerator {
+class SubsetListBasedOptimizer : public SetCoverOptimizer {
  public:
-  explicit SubsetListBasedSolutionGenerator(
+  explicit SubsetListBasedOptimizer(
       SetCoverInvariant* inv,
       SetCoverInvariant::ConsistencyLevel consistency_level,
       absl::string_view class_name, absl::string_view name)
-      : SetCoverSolutionGenerator(inv, consistency_level, class_name, name) {}
+      : SetCoverOptimizer(inv, consistency_level, class_name, name) {}
 
-  bool NextSolution(absl::Span<const SubsetIndex> _) override { return false; }
-
-  bool NextSolution() final { return NextSolution(model()->all_subsets()); }
-
-  bool NextSolution(const SubsetBoolVector& in_focus) final {
-    return NextSolution(MakeSubsetIndexSpan(in_focus));
+  bool Optimize(absl::Span<const SubsetIndex> focus) final {
+    return OptimizeImpl(focus);
   }
+
+  bool Optimize() final { return Optimize(model()->all_subsets()); }
+
+  bool Optimize(const SubsetBoolVector& in_focus) final {
+    return Optimize(MakeSubsetIndexSpan(in_focus));
+  }
+
+ protected:
+  // Hook for the Template Method Pattern. Subclasses override this to implement
+  // their specific optimization logic.
+  virtual bool OptimizeImpl(absl::Span<const SubsetIndex> focus) = 0;
 
  private:
   // Converts a vector of Booleans to a vector of subset indices.
   // TODO(user): this should not be, but a better iterator system should be
   // implemented.
-  absl::Span<const SubsetIndex> MakeSubsetIndexSpan(
+  std::vector<SubsetIndex> MakeSubsetIndexSpan(
       const SubsetBoolVector& in_focus) {
     std::vector<SubsetIndex> result;
     result.reserve(in_focus.size());
     SubsetIndex i(0);
-    for (const auto bit : in_focus) {
+    for (const bool bit : in_focus) {
       if (bit) {
         result.push_back(i);
       }
+      ++i;
     }
-    return absl::MakeConstSpan(result);
+    return result;
   }
 };
 
-// The class of solution generators that use a vector of Booleans as focus,
+// The class of optimizers that use a vector of Booleans as focus,
 // with a transformation from a vector of subset indices to a vector of
 // Booleans if needed.
-class BoolVectorBasedSolutionGenerator : public SetCoverSolutionGenerator {
+class BoolVectorBasedOptimizer : public SetCoverOptimizer {
  public:
-  explicit BoolVectorBasedSolutionGenerator(
+  explicit BoolVectorBasedOptimizer(
       SetCoverInvariant* inv,
       SetCoverInvariant::ConsistencyLevel consistency_level,
       absl::string_view class_name, absl::string_view name)
-      : SetCoverSolutionGenerator(inv, consistency_level, class_name, name) {}
+      : SetCoverOptimizer(inv, consistency_level, class_name, name) {}
 
-  bool NextSolution(const SubsetBoolVector& _) override { return false; }
-
-  bool NextSolution(absl::Span<const SubsetIndex> focus) final {
-    return NextSolution(MakeBoolVector(focus, num_subsets()));
+  bool Optimize(const SubsetBoolVector& in_focus) final {
+    return OptimizeImpl(in_focus);
   }
 
-  bool NextSolution() final {
-    return NextSolution(SubsetBoolVector(num_subsets(), true));
+  bool Optimize(absl::Span<const SubsetIndex> focus) final {
+    return Optimize(MakeBoolVector(focus, num_subsets()));
   }
+
+  bool Optimize() final {
+    return Optimize(SubsetBoolVector(num_subsets(), true));
+  }
+
+ protected:
+  // Hook for the Template Method Pattern. Subclasses override this to implement
+  // their specific optimization logic.
+  virtual bool OptimizeImpl(const SubsetBoolVector& in_focus) = 0;
 
  private:
   // Converts a vector of subset indices to a vector of Booleans.
@@ -242,42 +285,40 @@ class BoolVectorBasedSolutionGenerator : public SetCoverSolutionGenerator {
 // using local search.
 
 // The consistency level is maintained up to kFreeAndUncovered.
-class TrivialSolutionGenerator : public SubsetListBasedSolutionGenerator {
+class TrivialSolutionGenerator : public SubsetListBasedOptimizer {
  public:
   explicit TrivialSolutionGenerator(SetCoverInvariant* inv)
       : TrivialSolutionGenerator(inv, "TrivialGenerator") {}
 
   TrivialSolutionGenerator(SetCoverInvariant* inv, absl::string_view name)
-      : SubsetListBasedSolutionGenerator(
+      : SubsetListBasedOptimizer(
             inv, SetCoverInvariant::ConsistencyLevel::kFreeAndUncovered,
             "TrivialGenerator", name) {}
 
-  using SubsetListBasedSolutionGenerator::NextSolution;
-  bool NextSolution(absl::Span<const SubsetIndex> focus) final;
+  bool OptimizeImpl(absl::Span<const SubsetIndex> focus) override;
 };
 
-// A slightly more complicated but better way to compute a first solution is
+// A slightly more complicated but better way to compute an initial solution is
 // to select columns randomly. Less silly than the previous one, and
 // provides much better results.
 // TODO(user): make it possible to use other random generators. Idea: bias
 // the generator towards the columns with the least marginal costs.
 
 // The consistency level is maintained up to kFreeAndUncovered.
-class RandomSolutionGenerator : public SubsetListBasedSolutionGenerator {
+class RandomSolutionGenerator : public SubsetListBasedOptimizer {
  public:
   explicit RandomSolutionGenerator(SetCoverInvariant* inv)
       : RandomSolutionGenerator(inv, "RandomGenerator") {}
 
   RandomSolutionGenerator(SetCoverInvariant* inv, absl::string_view name)
-      : SubsetListBasedSolutionGenerator(
+      : SubsetListBasedOptimizer(
             inv, SetCoverInvariant::ConsistencyLevel::kFreeAndUncovered,
             "RandomGenerator", name) {}
 
-  using SubsetListBasedSolutionGenerator::NextSolution;
-  bool NextSolution(absl::Span<const SubsetIndex> focus) final;
+  bool OptimizeImpl(absl::Span<const SubsetIndex> focus) override;
 };
 
-// The first solution is obtained using the Chvatal heuristic, that
+// The initial solution is obtained using the Chvatal heuristic, that
 // guarantees that the solution is at most 1 + log(n) times the optimal
 // value. Vasek Chvatal, 1979. A greedy heuristic for the set-covering
 // problem. Mathematics of Operations Research, 4(3):233-235, 1979.
@@ -298,18 +339,37 @@ class RandomSolutionGenerator : public SubsetListBasedSolutionGenerator {
 // https://doi.org/10.1145/1871437.1871501.
 
 // The consistency level is maintained up to kFreeAndUncovered.
-class GreedySolutionGenerator : public SubsetListBasedSolutionGenerator {
+class GreedySolutionOptimizer : public SubsetListBasedOptimizer {
  public:
-  explicit GreedySolutionGenerator(SetCoverInvariant* inv)
-      : GreedySolutionGenerator(inv, "GreedyGenerator") {}
+  explicit GreedySolutionOptimizer(SetCoverInvariant* inv)
+      : GreedySolutionOptimizer(inv, "GreedyOptimizer") {}
 
-  GreedySolutionGenerator(SetCoverInvariant* inv, absl::string_view name)
-      : SubsetListBasedSolutionGenerator(
+  GreedySolutionOptimizer(SetCoverInvariant* inv, absl::string_view name)
+      : SubsetListBasedOptimizer(
             inv, SetCoverInvariant::ConsistencyLevel::kFreeAndUncovered,
-            "GreedyGenerator", name) {}
+            "GreedyOptimizer", name) {}
 
-  using SubsetListBasedSolutionGenerator::NextSolution;
-  bool NextSolution(absl::Span<const SubsetIndex> focus) final;
+  bool OptimizeImpl(absl::Span<const SubsetIndex> focus) override;
+};
+
+// LazyGreedySolutionOptimizer is a variant of the standard greedy approach
+// that minimizes priority re-evaluations.
+// Priorities are *only* computed for a subset when it's selected as the
+// locally best choice, instead of being re-evaluated for all subsets at every
+// iteration. This is more efficient for dense problems or when the priority
+// function is expensive, significantly reducing the total number of expensive
+// evaluations.
+class LazyGreedySolutionOptimizer : public SubsetListBasedOptimizer {
+ public:
+  explicit LazyGreedySolutionOptimizer(SetCoverInvariant* inv)
+      : LazyGreedySolutionOptimizer(inv, "GreedyOptimizer") {}
+
+  LazyGreedySolutionOptimizer(SetCoverInvariant* inv, absl::string_view name)
+      : SubsetListBasedOptimizer(
+            inv, SetCoverInvariant::ConsistencyLevel::kFreeAndUncovered,
+            "LazyGreedyOptimizer", name) {}
+
+  bool OptimizeImpl(absl::Span<const SubsetIndex> focus) override;
 };
 
 // Solution generator based on the degree of elements.
@@ -321,18 +381,17 @@ class GreedySolutionGenerator : public SubsetListBasedSolutionGenerator {
 // are also updated and set to zero.
 
 // The consistency level is maintained up to kFreeAndUncovered.
-class ElementDegreeSolutionGenerator : public BoolVectorBasedSolutionGenerator {
+class ElementDegreeSolutionGenerator : public BoolVectorBasedOptimizer {
  public:
   explicit ElementDegreeSolutionGenerator(SetCoverInvariant* inv)
       : ElementDegreeSolutionGenerator(inv, "ElementDegreeGenerator") {}
 
   ElementDegreeSolutionGenerator(SetCoverInvariant* inv, absl::string_view name)
-      : BoolVectorBasedSolutionGenerator(
+      : BoolVectorBasedOptimizer(
             inv, SetCoverInvariant::ConsistencyLevel::kFreeAndUncovered,
             "ElementDegreeGenerator", name) {}
 
-  using BoolVectorBasedSolutionGenerator::NextSolution;
-  bool NextSolution(const SubsetBoolVector& in_focus) final;
+  bool OptimizeImpl(const SubsetBoolVector& in_focus) override;
 };
 
 // Solution generator based on the degree of elements.
@@ -344,23 +403,38 @@ class ElementDegreeSolutionGenerator : public BoolVectorBasedSolutionGenerator {
 
 // Because the number of uncovered elements is computed on-demand, the
 // consistency level only needs to be set to kCostAndCoverage.
-class LazyElementDegreeSolutionGenerator
-    : public BoolVectorBasedSolutionGenerator {
+class LazyElementDegreeSolutionGenerator : public BoolVectorBasedOptimizer {
  public:
   explicit LazyElementDegreeSolutionGenerator(SetCoverInvariant* inv)
       : LazyElementDegreeSolutionGenerator(inv, "LazyElementDegreeGenerator") {}
 
   LazyElementDegreeSolutionGenerator(SetCoverInvariant* inv,
                                      absl::string_view name)
-      : BoolVectorBasedSolutionGenerator(
+      : BoolVectorBasedOptimizer(
             inv, SetCoverInvariant::ConsistencyLevel::kCostAndCoverage,
             "LazyElementDegreeGenerator", name) {}
 
-  using BoolVectorBasedSolutionGenerator::NextSolution;
-  bool NextSolution(const SubsetBoolVector& in_focus) final;
+  bool OptimizeImpl(const SubsetBoolVector& in_focus) override;
+
+  // Sets the number of random passes to be performed before after the main
+  // heuristic. This is used to generate diverse solutions.
+  // If set to 0, no random passes are performed.
+  void SetNumRandomPasses(int num_random_passes) {
+    num_random_passes_ = num_random_passes;
+    SetName(num_random_passes == 0
+                ? "LazyElementDegreeGenerator"
+                : absl::StrCat("LazyElementDegreeGeneratorRandom(",
+                               num_random_passes, ")"));
+  }
+
+  // Returns the number of random passes to be performed. Default value is 0.
+  int64_t num_random_passes() const { return num_random_passes_; }
+
+ private:
+  int64_t num_random_passes_ = 0;
 };
 
-// Once we have a first solution to the problem, there may be (most often,
+// Once we have an initial solution to the problem, there may be (most often,
 // there are) elements in E that are covered several times. To decrease the
 // total cost, SteepestSearch tries to eliminate some redundant S_j's from
 // the solution or equivalently, to flip some x_j's from 1 to 0. the
@@ -368,18 +442,17 @@ class LazyElementDegreeSolutionGenerator
 // direction, taking the S_j with the largest total cost.
 
 // The consistency level is maintained up to kFreeAndUncovered.
-class SteepestSearch : public BoolVectorBasedSolutionGenerator {
+class SteepestSearch : public BoolVectorBasedOptimizer {
  public:
   explicit SteepestSearch(SetCoverInvariant* inv)
       : SteepestSearch(inv, "SteepestSearch") {}
 
   SteepestSearch(SetCoverInvariant* inv, absl::string_view name)
-      : BoolVectorBasedSolutionGenerator(
+      : BoolVectorBasedOptimizer(
             inv, SetCoverInvariant::ConsistencyLevel::kFreeAndUncovered,
             "SteepestSearch", name) {}
 
-  using BoolVectorBasedSolutionGenerator::NextSolution;
-  bool NextSolution(const SubsetBoolVector& in_focus) final;
+  bool OptimizeImpl(const SubsetBoolVector& in_focus) override;
 };
 
 // Lazy Steepest Search is a variant of Steepest Search that does not use
@@ -387,18 +460,17 @@ class SteepestSearch : public BoolVectorBasedSolutionGenerator {
 // priorities are computed when needed. It is faster to compute because
 // there are relatively few subsets in the solution, because the cardinality
 // of the solution is bounded by the number of elements.
-class LazySteepestSearch : public BoolVectorBasedSolutionGenerator {
+class LazySteepestSearch : public BoolVectorBasedOptimizer {
  public:
   explicit LazySteepestSearch(SetCoverInvariant* inv)
       : LazySteepestSearch(inv, "LazySteepestSearch") {}
 
   LazySteepestSearch(SetCoverInvariant* inv, absl::string_view name)
-      : BoolVectorBasedSolutionGenerator(
+      : BoolVectorBasedOptimizer(
             inv, SetCoverInvariant::ConsistencyLevel::kCostAndCoverage,
             "LazySteepestSearch", name) {}
 
-  using BoolVectorBasedSolutionGenerator::NextSolution;
-  bool NextSolution(const SubsetBoolVector& in_focus) final;
+  bool OptimizeImpl(const SubsetBoolVector& in_focus) override;
 };
 
 // A Tabu list is a fixed-sized set with FIFO replacement. It is expected to
@@ -473,13 +545,13 @@ class TabuList {
 // 2 (1): 4–32. doi:10.1287/ijoc.2.1.4.
 
 // The consistency level is maintained up to kFreeAndUncovered.
-class GuidedTabuSearch : public SubsetListBasedSolutionGenerator {
+class GuidedTabuSearch : public SubsetListBasedOptimizer {
  public:
   explicit GuidedTabuSearch(SetCoverInvariant* inv)
       : GuidedTabuSearch(inv, "GuidedTabuSearch") {}
 
   GuidedTabuSearch(SetCoverInvariant* inv, absl::string_view name)
-      : SubsetListBasedSolutionGenerator(
+      : SubsetListBasedOptimizer(
             inv, SetCoverInvariant::ConsistencyLevel::kFreeAndUncovered,
             "GuidedTabuSearch", name),
         lagrangian_factor_(kDefaultLagrangianFactor),
@@ -494,8 +566,7 @@ class GuidedTabuSearch : public SubsetListBasedSolutionGenerator {
   // Initializes the Guided Tabu Search algorithm.
   void Initialize();
 
-  using SubsetListBasedSolutionGenerator::NextSolution;
-  bool NextSolution(absl::Span<const SubsetIndex> focus) final;
+  bool OptimizeImpl(absl::Span<const SubsetIndex> focus) override;
 
   // TODO(user): re-introduce this is the code. It was used to favor
   // subsets with the same marginal costs but that would cover more
@@ -565,13 +636,13 @@ class GuidedTabuSearch : public SubsetListBasedSolutionGenerator {
 // Colchester, UK, July, 1997.
 
 // The consistency level is maintained up to kRedundancy.
-class GuidedLocalSearch : public SubsetListBasedSolutionGenerator {
+class GuidedLocalSearch : public SubsetListBasedOptimizer {
  public:
   explicit GuidedLocalSearch(SetCoverInvariant* inv)
       : GuidedLocalSearch(inv, "GuidedLocalSearch") {}
 
   GuidedLocalSearch(SetCoverInvariant* inv, absl::string_view name)
-      : SubsetListBasedSolutionGenerator(
+      : SubsetListBasedOptimizer(
             inv, SetCoverInvariant::ConsistencyLevel::kRedundancy,
             "GuidedLocalSearch", name),
         epsilon_(kDefaultEpsilon),
@@ -582,8 +653,7 @@ class GuidedLocalSearch : public SubsetListBasedSolutionGenerator {
   // Initializes the Guided Local Search algorithm.
   void Initialize();
 
-  using SubsetListBasedSolutionGenerator::NextSolution;
-  bool NextSolution(absl::Span<const SubsetIndex> focus) final;
+  bool OptimizeImpl(absl::Span<const SubsetIndex> focus) override;
 
  private:
   // Setters and getters for the Guided Local Search algorithm parameters.
@@ -616,11 +686,63 @@ class GuidedLocalSearch : public SubsetListBasedSolutionGenerator {
 
   // The priority heap used to select the subset with the maximum priority
   // to be updated.
-  AdjustableKAryHeap<float, SubsetIndex::ValueType, 2, true> priority_heap_;
+  AdjustableKAryHeap<float, SubsetIndex, 2, true> priority_heap_;
 
   // The utility heap used to select the subset with the maximum utility to
   // be penalized.
-  AdjustableKAryHeap<float, SubsetIndex::ValueType, 2, true> utility_heap_;
+  AdjustableKAryHeap<float, SubsetIndex, 2, true> utility_heap_;
+};
+
+// CliqueGuidedLNS is a variant of Large Neighborhood Search that finds cliques
+// in the intersection graph of the subsets. Starting from a solution, it
+// computes of selected subsets. It then deselects all the subsets in the
+// clique, and run LazyElementDegree and LazySteepestSearch on the non-covered
+// elements.
+
+// The consistency level is maintained up to kFreeAndUncovered.
+class CliqueGuidedLNS : public SubsetListBasedOptimizer {
+ public:
+  explicit CliqueGuidedLNS(SetCoverInvariant* inv)
+      : CliqueGuidedLNS(inv, "CliqueGuidedLNS") {}
+
+  CliqueGuidedLNS(SetCoverInvariant* inv, absl::string_view name)
+      : SubsetListBasedOptimizer(
+            inv, SetCoverInvariant::ConsistencyLevel::kFreeAndUncovered,
+            "CliqueGuidedLNS", name),
+        max_num_cliques_(kDefaultNumCliques),
+        max_clique_size_(kDefaultMaxCliqueSize) {}
+
+  bool OptimizeImpl(absl::Span<const SubsetIndex> focus) override;
+
+  // Setter and getter for the maximum number of cliques to be generated. This
+  // limits the running time.
+  CliqueGuidedLNS& SetMaxNumCliques(int max_num_cliques) {
+    max_num_cliques_ = max_num_cliques;
+    return *this;
+  }
+  int GetMaxNumCliques() const { return max_num_cliques_; }
+
+  // Setter and getter for the maximum clique size. In some cases, the clique
+  // can be almost as large (90%) as the number of subsets in the problem,
+  // making the computation time prohibitive, and defeating the local search
+  // aspect of the algorithm.
+  CliqueGuidedLNS& SetMaxCliqueSize(int max_clique_size) {
+    max_clique_size_ = max_clique_size;
+    return *this;
+  }
+  int GetMaxCliqueSize() const { return max_clique_size_; }
+
+  // Returns for the maximum clique size generated. This is useful to tune the
+  // parameter max_clique_size.
+  int max_clique_size_generated() const { return max_clique_size_generated_; }
+
+ private:
+  static constexpr BaseInt kDefaultNumCliques = 100;
+  static constexpr BaseInt kDefaultMaxCliqueSize = 2000;
+
+  BaseInt max_num_cliques_;
+  BaseInt max_clique_size_;
+  BaseInt max_clique_size_generated_ = 0;
 };
 
 // Randomly clears a proportion num_subsets variables in the solution.
@@ -653,6 +775,71 @@ std::vector<SubsetIndex> ClearMostCoveredElements(BaseInt num_subsets,
 std::vector<SubsetIndex> ClearMostCoveredElements(
     absl::Span<const SubsetIndex> focus, BaseInt num_subsets,
     SetCoverInvariant* inv);
+
+// Internal functions, not part of the public API. Declared here for testing
+// purposes.
+namespace internal {
+std::vector<size_t> ComputeSegmentStarts(
+    absl::Span<const ElementIndex> elements_sorted_by_degree,
+    const SparseRowView& rows);
+std::vector<int32_t> GenerateFirstNPrimes(int32_t n);
+}  // namespace internal
+
+// Computes a lower bound of the set cover instance and element dual values
+// using a dual ascent algorithm, with num_random_passes random permutations of
+// elements. Reports the maximum (i.e. best) lower bound found.
+// The first pass is deterministic, with a step of 1. The following passes are
+// use a random permutation of the elements, with a step equal to one prime
+// number for each pass.
+// When use_full_randomization is true, the permutation is fully random at each
+// pass. It is 5% to 10% slower than the ither method.
+// TODO(user): Implement the volume method to improve the lower bound.
+class DualAscentOptimizer : public SubsetListBasedOptimizer {
+ public:
+  explicit DualAscentOptimizer(SetCoverInvariant* inv)
+      : DualAscentOptimizer(inv, "DualAscentLB") {}
+
+  DualAscentOptimizer(SetCoverInvariant* inv, absl::string_view name)
+      : SubsetListBasedOptimizer(
+            inv, SetCoverInvariant::ConsistencyLevel::kInconsistent,
+            "DualAscentLB", name),
+        num_random_passes_(0),
+        use_full_randomization_(false) {}
+
+  DualAscentOptimizer& SetNumRandomPasses(int num_random_passes) {
+    num_random_passes_ = num_random_passes;
+    return *this;
+  }
+
+  int num_random_passes() const { return num_random_passes_; }
+
+  DualAscentOptimizer& UseFullRandomization(bool use_full_randomization) {
+    use_full_randomization_ = use_full_randomization;
+    return *this;
+  }
+
+  bool use_full_randomization() const { return use_full_randomization_; }
+
+  bool OptimizeImpl(absl::Span<const SubsetIndex> focus) override;
+
+ private:
+  int num_random_passes_;
+  bool use_full_randomization_;
+};
+
+// Computes a clique in the intersection graph of the subsets, starting from
+// the given subset.
+std::vector<SubsetIndex> ComputeClique(
+    const SetCoverInvariant& inv, SubsetIndex subset,
+    int max_clique_size = kint32max,
+    absl::Duration max_duration = absl::Milliseconds(100));
+
+// Returns a vector of weights for each subset in the model.
+// The weight is equal to the size of the subset if size > 2, 0 otherwise.
+// The first element of the pair is true if at least one weight is > 0.
+std::pair<bool, std::vector<double>> GetSubsetWeights(
+    const SetCoverModel& model);
+
 }  // namespace operations_research
 
 #endif  // ORTOOLS_SET_COVER_SET_COVER_HEURISTICS_H_

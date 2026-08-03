@@ -13,17 +13,15 @@
 # limitations under the License.
 
 """The solution to an optimization problem defined by Model in model.py."""
+
 import dataclasses
 import enum
 from typing import Dict, Optional, TypeVar
 
 from ortools.math_opt import solution_pb2
-from ortools.math_opt.python import linear_constraints
-from ortools.math_opt.python import model
-from ortools.math_opt.python import objectives
-from ortools.math_opt.python import quadratic_constraints
-from ortools.math_opt.python import sparse_containers
-from ortools.math_opt.python import variables
+from ortools.math_opt.python import (linear_constraints, model, objectives,
+                                     quadratic_constraints, sparse_containers,
+                                     variables)
 
 
 @enum.unique

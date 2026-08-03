@@ -17,8 +17,7 @@
 import random
 from typing import Sequence
 
-from absl import app
-from absl import flags
+from absl import app, flags
 
 from ortools.sat.python import cp_model
 

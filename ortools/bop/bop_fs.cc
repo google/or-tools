@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
@@ -28,26 +27,25 @@
 #include "absl/random/distributions.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
+#include "ortools/bop/boolean_problem.h"
+#include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_solution.h"
 #include "ortools/bop/bop_types.h"
 #include "ortools/bop/bop_util.h"
+#include "ortools/bop/lp_utils.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
-#include "ortools/sat/boolean_problem.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/clause.h"
-#include "ortools/sat/lp_utils.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
-#include "ortools/sat/symmetry.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -115,21 +113,6 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::SynchronizeIfNeeded(
   // Create the sat_solver if not already done.
   if (!sat_solver_) {
     sat_solver_ = std::make_unique<sat::SatSolver>();
-
-    // Add in symmetries.
-    if (problem_state.GetParameters()
-            .exploit_symmetry_in_sat_first_solution()) {
-      std::vector<std::unique_ptr<SparsePermutation>> generators;
-      sat::FindLinearBooleanProblemSymmetries(problem_state.original_problem(),
-                                              &generators);
-      std::unique_ptr<sat::SymmetryPropagator> propagator(
-          new sat::SymmetryPropagator);
-      for (int i = 0; i < generators.size(); ++i) {
-        propagator->AddSymmetry(std::move(generators[i]));
-      }
-      sat_solver_->AddPropagator(propagator.get());
-      sat_solver_->TakePropagatorOwnership(std::move(propagator));
-    }
   }
 
   const BopOptimizerBase::Status load_status =
@@ -207,7 +190,7 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::Optimize(
 
   if (sat_status == sat::SatSolver::INFEASIBLE) {
     if (policy_ != Policy::kNotGuided) abort_ = true;
-    if (problem_state.upper_bound() != std::numeric_limits<int64_t>::max()) {
+    if (problem_state.upper_bound() != kint64max) {
       // As the solution in the state problem is feasible, it is proved optimal.
       learned_info->lower_bound = problem_state.upper_bound();
       return BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
@@ -259,15 +242,14 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
   const int kMaxNumConflicts = 10;
   int64_t best_cost = problem_state.solution().IsFeasible()
                           ? problem_state.solution().GetCost()
-                          : std::numeric_limits<int64_t>::max();
+                          : kint64max;
   int64_t remaining_num_conflicts =
       parameters.max_number_of_conflicts_in_random_solution_generation();
   int64_t old_num_failures = 0;
 
   // Optimization: Since each Solve() is really fast, we want to limit as
   // much as possible the work around one.
-  bool objective_need_to_be_overconstrained =
-      (best_cost != std::numeric_limits<int64_t>::max());
+  bool objective_need_to_be_overconstrained = (best_cost != kint64max);
 
   bool solution_found = false;
   while (remaining_num_conflicts > 0 && !time_limit->LimitReached()) {
@@ -286,7 +268,7 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
               true, sat::Coefficient(best_cost) - 1, sat_propagator_)) {
         // The solution is proved optimal (if any).
         learned_info->lower_bound = best_cost;
-        return best_cost == std::numeric_limits<int64_t>::max()
+        return best_cost == kint64max
                    ? BopOptimizerBase::INFEASIBLE
                    : BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
       }
@@ -320,9 +302,8 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
     } else if (sat_status == sat::SatSolver::INFEASIBLE) {
       // The solution is proved optimal (if any).
       learned_info->lower_bound = best_cost;
-      return best_cost == std::numeric_limits<int64_t>::max()
-                 ? BopOptimizerBase::INFEASIBLE
-                 : BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
+      return best_cost == kint64max ? BopOptimizerBase::INFEASIBLE
+                                    : BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
     }
 
     // The number of failure is a good approximation of the number of conflicts.
@@ -348,9 +329,8 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
   if (sat_propagator_->ModelIsUnsat()) {
     // The solution is proved optimal (if any).
     learned_info->lower_bound = best_cost;
-    return best_cost == std::numeric_limits<int64_t>::max()
-               ? BopOptimizerBase::INFEASIBLE
-               : BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
+    return best_cost == kint64max ? BopOptimizerBase::INFEASIBLE
+                                  : BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
   }
 
   ExtractLearnedInfoFromSatSolver(sat_propagator_, learned_info);
@@ -410,8 +390,8 @@ BopOptimizerBase::Status LinearRelaxation::SynchronizeIfNeeded(
   num_fixed_variables_ = num_fixed_variables;
   if (!lp_model_loaded_) {
     lp_model_.Clear();
-    sat::ConvertBooleanProblemToLinearProgram(problem_state.original_problem(),
-                                              &lp_model_);
+    ConvertBooleanProblemToLinearProgram(problem_state.original_problem(),
+                                         &lp_model_);
     lp_model_loaded_ = true;
   }
   for (VariableIndex var(0); var < problem_state.is_fixed().size(); ++var) {
@@ -479,28 +459,28 @@ BopOptimizerBase::Status LinearRelaxation::Optimize(
     return sync_status;
   }
 
-  const glop::ProblemStatus lp_status = Solve(false, time_limit);
+  const glop::SolveStatus lp_status = Solve(false, time_limit);
   VLOG(1) << "                          LP: "
           << absl::StrFormat("%.6f", lp_solver_.GetObjectiveValue())
-          << "   status: " << GetProblemStatusString(lp_status);
+          << "   status: " << lp_status;
 
-  if (lp_status == glop::ProblemStatus::OPTIMAL ||
-      lp_status == glop::ProblemStatus::IMPRECISE) {
+  if (lp_status.Is<glop::SolveStatus::Optimal>() ||
+      lp_status.Is<glop::SolveStatus::Imprecise>()) {
     ++num_full_solves_;
     problem_already_solved_ = true;
   }
 
-  if (lp_status == glop::ProblemStatus::INIT) {
+  if (lp_status.Is<glop::SolveStatus::Init>()) {
     return BopOptimizerBase::LIMIT_REACHED;
   }
-  if (lp_status != glop::ProblemStatus::OPTIMAL &&
-      lp_status != glop::ProblemStatus::IMPRECISE &&
-      lp_status != glop::ProblemStatus::PRIMAL_FEASIBLE) {
+  if (!lp_status.Is<glop::SolveStatus::Optimal>() &&
+      !lp_status.Is<glop::SolveStatus::Imprecise>() &&
+      !lp_status.Is<glop::SolveStatus::PrimalFeasible>()) {
     return BopOptimizerBase::ABORT;
   }
   learned_info->lp_values = lp_solver_.variable_values();
 
-  if (lp_status == glop::ProblemStatus::OPTIMAL) {
+  if (lp_status.Is<glop::SolveStatus::Optimal>()) {
     // The lp returns the objective with the offset and scaled, so we need to
     // unscale it and then remove the offset.
     double lower_bound = lp_solver_.GetObjectiveValue();
@@ -537,8 +517,8 @@ BopOptimizerBase::Status LinearRelaxation::Optimize(
 //              parameter objective_lower_limit / objective_upper_limit. That
 //              can be used when a feasible solution is known, or when the false
 //              best bound is computed.
-glop::ProblemStatus LinearRelaxation::Solve(bool incremental_solve,
-                                            TimeLimit* time_limit) {
+glop::SolveStatus LinearRelaxation::Solve(bool incremental_solve,
+                                          TimeLimit* time_limit) {
   GlopParameters glop_params;
   if (incremental_solve) {
     glop_params.set_use_dual_simplex(true);
@@ -548,9 +528,7 @@ glop::ProblemStatus LinearRelaxation::Solve(bool incremental_solve,
   }
   NestedTimeLimit nested_time_limit(time_limit, time_limit->GetTimeLeft(),
                                     parameters_.lp_max_deterministic_time());
-  const glop::ProblemStatus lp_status = lp_solver_.SolveWithTimeLimit(
-      lp_model_, nested_time_limit.GetTimeLimit());
-  return lp_status;
+  return lp_solver_.Solve(lp_model_, nested_time_limit.GetTimeLimit());
 }
 
 double LinearRelaxation::ComputeLowerBoundUsingStrongBranching(
@@ -593,20 +571,20 @@ double LinearRelaxation::ComputeLowerBoundUsingStrongBranching(
 
     // Set to true.
     lp_model_.SetVariableBounds(col, 1.0, 1.0);
-    const glop::ProblemStatus status_true = Solve(true, time_limit);
+    const glop::SolveStatus status_true = Solve(true, time_limit);
     // TODO(user): Deal with PRIMAL_INFEASIBLE, DUAL_INFEASIBLE and
     //              INFEASIBLE_OR_UNBOUNDED statuses. In all cases, if the
     //              original lp was feasible, this means that the variable can
     //              be fixed to the other bound.
-    if (status_true == glop::ProblemStatus::OPTIMAL ||
-        status_true == glop::ProblemStatus::DUAL_FEASIBLE) {
+    if (status_true.Is<glop::SolveStatus::Optimal>() ||
+        status_true.Is<glop::SolveStatus::DualFeasible>()) {
       objective_true = lp_solver_.GetObjectiveValue();
 
       // Set to false.
       lp_model_.SetVariableBounds(col, 0.0, 0.0);
-      const glop::ProblemStatus status_false = Solve(true, time_limit);
-      if (status_false == glop::ProblemStatus::OPTIMAL ||
-          status_false == glop::ProblemStatus::DUAL_FEASIBLE) {
+      const glop::SolveStatus status_false = Solve(true, time_limit);
+      if (status_false.Is<glop::SolveStatus::Optimal>() ||
+          status_false.Is<glop::SolveStatus::DualFeasible>()) {
         objective_false = lp_solver_.GetObjectiveValue();
 
         // Compute the new min.

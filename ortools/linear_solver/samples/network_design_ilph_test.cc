@@ -13,11 +13,11 @@
 
 #include "ortools/linear_solver/samples/network_design_ilph.h"
 
-#include "absl/base/log_severity.h"
 #include "absl/status/status.h"
 #include "absl/time/time.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/path.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/routing/parsers/capacity_planning.pb.h"
@@ -28,11 +28,11 @@ namespace {
 
 TEST(ProtoToProblemTest, TransformC33) {
   CapacityPlanningInstance request;
-  ::absl::Status status = ReadFile(
-      file::JoinPathRespectAbsolute(
-          ::testing::SrcDir(), "google3/third_party/operations_research_data/",
-          "MULTICOM_FIXED_CHARGE_NETWORK_DESIGN/C/c33.dow"),
-      &request);
+  ::absl::Status status =
+      ReadFile(file::JoinPathRespectAbsolute(
+                   ::testing::SrcDir(), "operations_research_data/",
+                   "MULTICOM_FIXED_CHARGE_NETWORK_DESIGN/C/c33.dow"),
+               &request);
   EXPECT_OK(status);
   CapacityPlanningProblem problem;
   status = Convert(request, &problem);

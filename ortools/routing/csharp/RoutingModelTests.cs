@@ -1,0 +1,267 @@
+// Copyright 2010-2025 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+using System;
+using System.Linq;
+using Xunit;
+using Google.OrTools.ConstraintSolver;
+using Google.OrTools.Routing;
+
+namespace Google.OrTools.Tests
+{
+public class RoutingModelTest
+{
+    private sealed class ConstantRouteConstraintCallback : RouteConstraintCallback
+    {
+        private readonly long value_;
+
+        public ConstantRouteConstraintCallback(long value)
+        {
+            value_ = value;
+        }
+
+        public override RouteConstraintResult Evaluate(long[] route)
+        {
+            return new RouteConstraintResult { is_satisfied = true, cost = value_ };
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SimpleLambdaCallback(bool callGC)
+    {
+        // Create Routing Index Manager
+        IndexManager manager = new IndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        Assert.NotNull(manager);
+        // Create Routing Model.
+        Model routing = new Model(manager);
+        Assert.NotNull(routing);
+        // Create a distance callback.
+        int transitCallbackIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) =>
+                                                                   {
+                                                                       // Convert from routing variable Index to
+                                                                       // distance matrix NodeIndex.
+                                                                       var fromNode = manager.IndexToNode(fromIndex);
+                                                                       var toNode = manager.IndexToNode(toIndex);
+                                                                       return Math.Abs(toNode - fromNode);
+                                                                   });
+        // Define cost of each arc.
+        routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
+        if (callGC)
+        {
+            GC.Collect();
+        }
+        // Setting first solution heuristic.
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
+        searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
+        Assignment solution = routing.SolveWithParameters(searchParameters);
+        // 0 --(+1)-> 1 --(+1)-> 2 --(+1)-> 3 --(+1)-> 4 --(+4)-> 0 := +8
+        Assert.Equal(8, solution.ObjectiveValue());
+    }
+
+    [Fact]
+    public void TestTransitMatrix()
+    {
+        // Create Routing Index Manager
+        IndexManager manager = new IndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        Assert.NotNull(manager);
+        // Create Routing Model.
+        Model routing = new Model(manager);
+        Assert.NotNull(routing);
+        // Create a distance callback.
+        long[][] matrix = new long[][] {
+            new long[] { 1, 1, 1, 1, 1 }, new long[] { 1, 1, 1, 1, 1 }, new long[] { 1, 1, 1, 1, 1 },
+            new long[] { 1, 1, 1, 1, 1 }, new long[] { 1, 1, 1, 1, 1 },
+        };
+        int transitCallbackIndex = routing.RegisterTransitMatrix(matrix);
+        // Define cost of each arc.
+        routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
+        // Setting first solution heuristic.
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
+        searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
+        Assignment solution = routing.SolveWithParameters(searchParameters);
+        // 0 --(+1)-> 1 --(+1)-> 2 --(+1)-> 3 --(+1)-> 4 --(+1)-> 0 := +5
+        Assert.Equal(5, solution.ObjectiveValue());
+    }
+
+    [Fact]
+    public void TestTransitCallback()
+    {
+        // Create Routing Index Manager
+        IndexManager manager = new IndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        Assert.NotNull(manager);
+        // Create Routing Model.
+        Model routing = new Model(manager);
+        Assert.NotNull(routing);
+        // Create a distance callback.
+        int transitCallbackIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) =>
+                                                                   {
+                                                                       // Convert from routing variable Index to
+                                                                       // distance matrix NodeIndex.
+                                                                       var fromNode = manager.IndexToNode(fromIndex);
+                                                                       var toNode = manager.IndexToNode(toIndex);
+                                                                       return Math.Abs(toNode - fromNode);
+                                                                   });
+        // Define cost of each arc.
+        routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
+        // Setting first solution heuristic.
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
+        searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
+        Assignment solution = routing.SolveWithParameters(searchParameters);
+        Assert.Equal(8, solution.ObjectiveValue());
+    }
+
+    [Fact]
+    public void TestMatrixDimension()
+    {
+        // Create Routing Index Manager
+        IndexManager manager = new IndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        Assert.NotNull(manager);
+        // Create Routing Model.
+        Model routing = new Model(manager);
+        Assert.NotNull(routing);
+        // Create a distance callback.
+        long[][] matrix = new long[][] {
+            new long[] { 1, 1, 1, 1, 1 }, new long[] { 1, 1, 1, 1, 1 }, new long[] { 1, 1, 1, 1, 1 },
+            new long[] { 1, 1, 1, 1, 1 }, new long[] { 1, 1, 1, 1, 1 },
+        };
+        IntBoolPair result = routing.AddMatrixDimension(matrix,
+                                                        /*capacity=*/10,
+                                                        /*fix_start_cumul_to_zero=*/true, "Dimension");
+        // Define cost of each arc.
+        routing.SetArcCostEvaluatorOfAllVehicles(result.first);
+        // Setting first solution heuristic.
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
+        searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
+        Assignment solution = routing.SolveWithParameters(searchParameters);
+        // 0 --(+1)-> 1 --(+1)-> 2 --(+1)-> 3 --(+1)-> 4 --(+1)-> 0 := +5
+        Assert.Equal(5, solution.ObjectiveValue());
+    }
+
+    [Fact]
+    public void TestUnaryTransitVector()
+    {
+        // Create Routing Index Manager
+        IndexManager manager = new IndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        Assert.NotNull(manager);
+        // Create Routing Model.
+        Model routing = new Model(manager);
+        Assert.NotNull(routing);
+        // Create a distance callback.
+        long[] vector = { 1, 1, 1, 1, 1 };
+        int transitCallbackIndex = routing.RegisterUnaryTransitVector(vector);
+        // Define cost of each arc.
+        routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
+        // Setting first solution heuristic.
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
+        searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
+        Assignment solution = routing.SolveWithParameters(searchParameters);
+        // 0 --(+1)-> 1 --(+1)-> 2 --(+1)-> 3 --(+1)-> 4 --(+1)-> 0 := +5
+        Assert.Equal(5, solution.ObjectiveValue());
+    }
+
+    [Fact]
+    public void TestUnaryTransitCallback()
+    {
+        // Create Routing Index Manager
+        IndexManager manager = new IndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        Assert.NotNull(manager);
+        // Create Routing Model.
+        Model routing = new Model(manager);
+        Assert.NotNull(routing);
+        // Create a distance callback.
+        int transitCallbackIndex = routing.RegisterUnaryTransitCallback((long fromIndex) =>
+                                                                        {
+                                                                            // Convert from routing variable Index to
+                                                                            // distance matrix NodeIndex.
+                                                                            var fromNode =
+                                                                                manager.IndexToNode(fromIndex);
+                                                                            return fromNode + 1;
+                                                                        });
+        // Define cost of each arc.
+        routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
+        // Setting first solution heuristic.
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
+        searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
+        Assignment solution = routing.SolveWithParameters(searchParameters);
+        // 0 --(+1)-> 1 --(+2)-> 2 --(+3)-> 3 --(+4)-> 4 --(+5)-> 0 := +15
+        Assert.Equal(15, solution.ObjectiveValue());
+    }
+
+    [Fact]
+    public void TestVectorDimension()
+    {
+        // Create Routing Index Manager
+        IndexManager manager = new IndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        Assert.NotNull(manager);
+        // Create Routing Model.
+        Model routing = new Model(manager);
+        Assert.NotNull(routing);
+        // Create a distance callback.
+        long[] vector = new long[] { 1, 1, 1, 1, 1 };
+        IntBoolPair result = routing.AddVectorDimension(vector,
+                                                        /*capacity=*/10,
+                                                        /*fix_start_cumul_to_zero=*/true, "Dimension");
+        // Define cost of each arc.
+        routing.SetArcCostEvaluatorOfAllVehicles(result.first);
+        // Setting first solution heuristic.
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
+        searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
+        Assignment solution = routing.SolveWithParameters(searchParameters);
+        // 0 --(+1)-> 1 --(+1)-> 2 --(+1)-> 3 --(+1)-> 4 --(+1)-> 0 := +5
+        Assert.Equal(5, solution.ObjectiveValue());
+    }
+
+    [Fact]
+    public void TestAddRouteConstraint()
+    {
+        long SolveObjective(bool addRouteConstraint)
+        {
+            IndexManager manager = new IndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+            Assert.NotNull(manager);
+            Model routing = new Model(manager);
+            Assert.NotNull(routing);
+
+            int transitCallbackIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) =>
+                                                                       {
+                                                                           var fromNode =
+                                                                               manager.IndexToNode(fromIndex);
+                                                                           var toNode = manager.IndexToNode(toIndex);
+                                                                           return Math.Abs(toNode - fromNode);
+                                                                       });
+            routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
+
+            if (addRouteConstraint)
+            {
+                routing.AddRouteConstraint(new ConstantRouteConstraintCallback(10),
+                                           /*costs_are_homogeneous_across_vehicles=*/true);
+            }
+
+            RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
+            searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
+            Assignment solution = routing.SolveWithParameters(searchParameters);
+            return solution.ObjectiveValue();
+        }
+
+        long baselineObjective = SolveObjective(addRouteConstraint: false);
+        long constrainedObjective = SolveObjective(addRouteConstraint: true);
+
+        Assert.Equal(8, baselineObjective);
+        Assert.Equal(18, constrainedObjective);
+    }
+}
+
+// TODO(user): Add tests for Routing[Cost|Vehicle|Resource]ClassIndex
+
+} // namespace Google.OrTools.Tests

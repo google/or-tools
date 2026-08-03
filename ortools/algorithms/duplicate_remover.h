@@ -27,7 +27,7 @@
 
 namespace operations_research {
 
-// This class offers an alternative to gtl::linked_hash_set<> which is:
+// This class offers an alternative to absl::linked_hash_set<> which is:
 // - stateless: it works directly on a vector<int> or any similar container,
 //   without storing extra data anywhere;
 // - faster when the number of unique values is 5K or above.

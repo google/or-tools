@@ -20,15 +20,11 @@
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_types.h"
-#include "ortools/sat/boolean_problem.pb.h"
 
 namespace operations_research {
 namespace bop {
-
-using ::operations_research::sat::LinearBooleanConstraint;
-using ::operations_research::sat::LinearBooleanProblem;
-using ::operations_research::sat::LinearObjective;
 
 //------------------------------------------------------------------------------
 // BopSolution

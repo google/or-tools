@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
-#include <numeric>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <utility>
@@ -29,7 +29,6 @@
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -241,6 +240,7 @@ struct IntegerLiteral {
   }
 
   std::string DebugString() const {
+    if (var == kNoIntegerVariable) return IsAlwaysTrue() ? "<true>" : "<false>";
     return VariableIsPositive(var)
                ? absl::StrCat("I", var.value() / 2, ">=", bound.value())
                : absl::StrCat("I", var.value() / 2, "<=", -bound.value());
@@ -405,12 +405,24 @@ struct LinearExpression2 {
   AffineExpression GetAffineLowerBound(int var_index, IntegerValue expr_lb,
                                        IntegerValue other_var_lb) const;
 
+  // If `this` >= `lb` is of the form k*(t2 - t1) >= k*delta_t with k > 0,
+  // returns delta_t. Otherwise, returns nullopt. The variables in `t1` and `t2`
+  // must be `NegationOf(vars[0])` and `vars[1]`, respectively. coeffs[0] and
+  // coeffs[1] must be positive.
+  std::optional<IntegerValue> GetDifferenceLowerBound(IntegerValue lb,
+                                                      AffineExpression t2,
+                                                      AffineExpression t1);
+
   // Divides the expression by the gcd of both coefficients, and returns it.
   // Note that we always return something >= 1 even if both coefficients are
   // zero.
   IntegerValue DivideByGcd();
 
   bool IsCanonicalized() const;
+  bool IsCanonicalizedAndGcdReduced() const {
+    return IsCanonicalized() &&
+           std::gcd(coeffs[0].value(), coeffs[1].value()) <= 1;
+  }
 
   // Makes sure expr and -expr have the same canonical representation by
   // negating the expression of it is in the non-canonical form. Returns true if
@@ -510,6 +522,8 @@ class BestBinaryRelationBounds {
   std::pair<AddResult, AddResult> Add(LinearExpression2 expr, IntegerValue lb,
                                       IntegerValue ub);
 
+  std::pair<IntegerValue, IntegerValue> GetBounds(LinearExpression2 expr) const;
+
   // Returns the known status of expr <= bound.
   RelationStatus GetStatus(LinearExpression2 expr, IntegerValue lb,
                            IntegerValue ub) const;
@@ -536,34 +550,6 @@ class BestBinaryRelationBounds {
 // we just store a single domain for both var and its negation.
 struct IntegerDomains
     : public util_intops::StrongVector<PositiveOnlyIndex, Domain> {};
-
-// A model singleton used for debugging. If this is set in the model, then we
-// can check that various derived constraint do not exclude this solution (if it
-// is a known optimal solution for instance).
-struct DebugSolution {
-  void Clear() {
-    proto_values.clear();
-    ivar_has_value.clear();
-    ivar_values.clear();
-  }
-
-  // This is the value of all proto variables.
-  // It should be of the same size of the PRESOLVED model and should correspond
-  // to a solution to the presolved model.
-  std::vector<int64_t> proto_values;
-
-  IntegerValue inner_objective_value = kMinIntegerValue;
-
-  // This is filled from proto_values at load-time, and using the
-  // cp_model_mapping, we cache the solution of the integer variables that are
-  // mapped. Note that it is possible that not all integer variable are mapped.
-  //
-  // TODO(user): When this happen we should be able to infer the value of these
-  // derived variable in the solution. For now, we only do that for the
-  // objective variable.
-  util_intops::StrongVector<IntegerVariable, bool> ivar_has_value;
-  util_intops::StrongVector<IntegerVariable, IntegerValue> ivar_values;
-};
 
 // A value and a literal.
 struct ValueLiteralPair {

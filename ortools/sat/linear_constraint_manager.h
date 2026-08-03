@@ -282,7 +282,7 @@ class LinearConstraintManager {
   // If a debug solution has been loaded, this checks if the given constraint
   // cut it or not. Returns true if and only if everything is fine and the cut
   // does not violate the loaded solution.
-  bool DebugCheckConstraint(const LinearConstraint& cut);
+  bool DebugCheckConstraint(const LinearConstraint& cut, bool only_check_ub);
 
   // Getter "ReducedCosts" API for cuts.
   // One need to call CacheReducedCostsInfo() before accessing this, otherwise

@@ -15,14 +15,20 @@
 # some generic utilities for SWIG python.
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
+load("@pybind11_bazel//:build_defs.bzl", "pybind_extension", "pybind_library")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
+
+package(default_visibility = ["//visibility:public"])
 
 cc_library(
-    name = "sorted_interval_list_doc",
+    name = "sorted_interval_list_doc_cc",
     hdrs = ["sorted_interval_list_doc.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
 )
 
@@ -31,7 +37,18 @@ pybind_extension(
     srcs = ["sorted_interval_list.cc"],
     visibility = ["//visibility:public"],
     deps = [
-        ":sorted_interval_list_doc",
+        ":sorted_interval_list_doc_cc",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+pybind_library(
+    name = "sorted_interval_list_deps",
+    srcs = ["sorted_interval_list.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":sorted_interval_list_doc_cc",
         "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/strings",
     ],
@@ -46,13 +63,34 @@ py_test(
     ],
 )
 
+pybind_extension(
+    name = "piecewise_linear_function",
+    srcs = ["piecewise_linear_function.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/util:piecewise_linear_function",
+    ],
+)
+
+pybind_library(
+    name = "piecewise_linear_function_deps",
+    srcs = ["piecewise_linear_function.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/util:piecewise_linear_function",
+    ],
+)
+
 cc_library(
     name = "py_solve_interrupter_lib",
     srcs = ["py_solve_interrupter.cc"],
     hdrs = ["py_solve_interrupter.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     # This library is not meant to be consumed end users; only by C++ code of
     # Clif libraries that needs a SolverInterrupter.
     visibility = [
+        "//ortools/math_opt:__subpackages__",
         "//ortools/math_opt/core/python:__subpackages__",
         "//ortools/math_opt/python:__subpackages__",
     ],
@@ -61,6 +99,7 @@ cc_library(
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/synchronization",
     ],
 )
@@ -70,6 +109,8 @@ cc_library(
     testonly = True,
     srcs = ["py_solve_interrupter_testing.cc"],
     hdrs = ["py_solve_interrupter_testing.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":py_solve_interrupter_lib",
         "@abseil-cpp//absl/base:nullability",
@@ -122,5 +163,98 @@ py_test(
         ":pybind_solve_interrupter_testing",
         ":solve_interrupter",
         requirement("absl-py"),
+    ],
+)
+
+cc_library(
+    name = "wrappers",
+    srcs = ["wrappers.cc"],
+    hdrs = ["wrappers.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    visibility = ["//visibility:public"],
+    deps = [
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:die_if_null",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@protobuf",
+    ],
+)
+
+cc_binary(
+    name = "gen_wrappers_test_message_pybind11",
+    testonly = True,
+    srcs = ["gen_wrappers_test_message_pybind11.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":wrappers",
+        "//ortools/util/testdata:wrappers_test_message_cc_proto",
+        "@abseil-cpp//absl/flags:parse",
+        "@abseil-cpp//absl/flags:usage",
+        "@abseil-cpp//absl/log:die_if_null",
+        "@abseil-cpp//absl/log:initialize",
+        "@abseil-cpp//absl/strings",  # IWYU pragma: keep
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+genrule(
+    name = "run_gen_wrappers_test_message_pybind11",
+    testonly = True,
+    outs = ["wrappers_test_message_pybind11.h"],
+    cmd = "$(location :gen_wrappers_test_message_pybind11) > $@",
+    tools = [":gen_wrappers_test_message_pybind11"],
+)
+
+cc_library(
+    name = "wrappers_test_message_pybind11",
+    testonly = True,
+    hdrs = ["wrappers_test_message_pybind11.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+)
+
+pybind_extension(
+    name = "wrappers_test_message_extension",
+    testonly = True,
+    srcs = ["wrappers_test_message_extension.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":wrappers_test_message_pybind11",
+        "//ortools/port:proto_utils",
+        "//ortools/util/testdata:wrappers_test_message_cc_proto",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+py_test(
+    name = "wrappers_test_message_test",
+    srcs = ["wrappers_test_message_test.py"],
+    deps = [
+        ":wrappers_test_message_extension",
+        requirement("absl-py"),
+    ],
+)
+
+py_library(
+    name = "status_streaming",
+    srcs = ["status_streaming.py"],
+    deps = ["//ortools/util:status_py_pb2"],
+)
+
+py_test(
+    name = "status_streaming_test",
+    srcs = ["status_streaming_test.py"],
+    deps = [
+        ":status_streaming",
+        requirement("absl-py"),
+        "//ortools/util:status_py_pb2",
     ],
 )

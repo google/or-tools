@@ -14,6 +14,7 @@
 
 # [START program]
 """Solves a multiple knapsack problem using the CP-SAT solver."""
+
 # [START import]
 from ortools.sat.python import cp_model
 

@@ -19,15 +19,13 @@
 #include "absl/log/check.h"
 #include "google/protobuf/text_format.h"
 #include "gtest/gtest.h"
+#include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_types.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace bop {
 namespace {
-
-using ::operations_research::sat::LinearBooleanProblem;
 
 // Tests Bop solutions using a problem with no constraints.
 // The solution is always feasible, but the cost can vary.

@@ -20,6 +20,8 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/log.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 

@@ -248,7 +248,7 @@ else
 endif
 endef
 
-CPP_SAMPLES := algorithms graph glop constraint_solver linear_solver math_opt model_builder pdlp routing sat set_cover
+CPP_SAMPLES := algorithms graph graph_base glop constraint_solver linear_solver math_opt model_builder pdlp routing sat set_cover
 $(foreach sample,$(CPP_SAMPLES),$(eval $(call cpp-sample-target,$(sample))))
 
 # Examples
@@ -603,6 +603,7 @@ detect_cpp:
 	@echo USE_COINOR = $(USE_COINOR)
 	@echo USE_SCIP = $(USE_SCIP)
 	@echo USE_GLPK = $(USE_GLPK)
+	@echo USE_HIGHS = $(USE_HIGHS)
 	@echo USE_CPLEX = $(USE_CPLEX)
 ifdef GLPK_ROOT
 	@echo GLPK_ROOT = $(GLPK_ROOT)

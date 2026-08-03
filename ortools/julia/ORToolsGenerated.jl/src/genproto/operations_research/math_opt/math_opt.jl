@@ -3,6 +3,7 @@ module math_opt
 import ..google
 import ..operations_research
 
+include("xpress_pb.jl")
 include("osqp_pb.jl")
 include("sparse_containers_pb.jl")
 include("glpk_pb.jl")

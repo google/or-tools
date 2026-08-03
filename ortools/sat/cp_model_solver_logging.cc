@@ -41,23 +41,26 @@ std::string ExtractSubSolverName(const std::string& improvement_info) {
   return improvement_info;
 }
 
-std::string ProgressMessage(absl::string_view event_or_solution_count,
+std::string ProgressMessage(absl::string_view log_prefix,
+                            absl::string_view event_or_solution_count,
                             double time_in_seconds, double obj_best,
                             double obj_lb, double obj_ub,
                             absl::string_view solution_info) {
   const std::string obj_next =
       obj_lb <= obj_ub ? absl::StrFormat("next:[%.9g,%.9g]", obj_lb, obj_ub)
                        : "next:[]";
-  return absl::StrFormat("#%-5s %6.2fs best:%-5.9g %-15s %s",
+  return absl::StrFormat("%s#%-5s %6.2fs best:%-5.9g %-15s %s", log_prefix,
                          event_or_solution_count, time_in_seconds, obj_best,
                          obj_next, solution_info);
 }
 
-std::string SatProgressMessage(absl::string_view event_or_solution_count,
+std::string SatProgressMessage(absl::string_view log_prefix,
+                               absl::string_view event_or_solution_count,
                                double time_in_seconds,
                                absl::string_view solution_info) {
-  return absl::StrFormat("#%-5s %6.2fs %s", event_or_solution_count,
-                         time_in_seconds, solution_info);
+  return absl::StrFormat("%s#%-5s %6.2fs %s", log_prefix,
+                         event_or_solution_count, time_in_seconds,
+                         solution_info);
 }
 
 }  // namespace
@@ -65,7 +68,8 @@ std::string SatProgressMessage(absl::string_view event_or_solution_count,
 void SolverProgressLogger::UpdateProgress(const SolverStatusChangeInfo& info) {
   if (info.solved) {
     SOLVER_LOG(logger_,
-               SatProgressMessage("Done", wall_timer_.Get(), info.change_info));
+               SatProgressMessage(log_prefix_, "Done", wall_timer_.Get(),
+                                  info.change_info));
     return;
   }
   if (info.new_best_solution) {
@@ -74,23 +78,23 @@ void SolverProgressLogger::UpdateProgress(const SolverStatusChangeInfo& info) {
     num_solutions_++;
     if (is_optimization_) {
       RegisterSolutionFound(info.change_info, num_solutions_);
-      SOLVER_LOG(logger_,
-                 ProgressMessage(
-                     absl::StrCat(num_solutions_), wall_timer_.Get(),
-                     info.best_objective_value, info.cur_objective_value_lb,
-                     info.cur_objective_value_ub, info.change_info));
+      SOLVER_LOG(logger_, ProgressMessage(
+                              log_prefix_, absl::StrCat(num_solutions_),
+                              wall_timer_.Get(), info.best_objective_value,
+                              info.cur_objective_value_lb,
+                              info.cur_objective_value_ub, info.change_info));
       return;
     } else {
       SOLVER_LOG(logger_,
-                 SatProgressMessage(absl::StrCat(num_solutions_),
+                 SatProgressMessage(log_prefix_, absl::StrCat(num_solutions_),
                                     wall_timer_.Get(), info.change_info));
     }
   }
   if (info.new_lower_bound || info.new_upper_bound) {
     logger_->ThrottledLog(
         bounds_logging_id_,
-        ProgressMessage("Bound", wall_timer_.Get(), info.best_objective_value,
-                        info.cur_objective_value_lb,
+        ProgressMessage(log_prefix_, "Bound", wall_timer_.Get(),
+                        info.best_objective_value, info.cur_objective_value_lb,
                         info.cur_objective_value_ub, info.change_info));
     RegisterObjectiveBoundImprovement(info.change_info);
   }

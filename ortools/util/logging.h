@@ -137,10 +137,10 @@ class PresolveTimer {
   // Track the work done (which is also the deterministic time).
   // By default we want a limit of around 1 deterministic seconds.
   void AddToWork(double dtime) { work_ += dtime; }
-  void TrackSimpleLoop(int size) { work_ += 5e-9 * size; }
-  void TrackHashLookups(int size) { work_ += 5e-8 * size; }
-  void TrackFastLoop(int size) { work_ += 1e-9 * size; }
-  bool WorkLimitIsReached() const { return work_ >= 1.0; }
+  void TrackSimpleLoop(int size) { work_int_ += 5 * size; }
+  void TrackHashLookups(int size) { work_int_ += 50 * size; }
+  void TrackFastLoop(int size) { work_int_ += size; }
+  bool WorkLimitIsReached() const { return deterministic_time() >= 1.0; }
 
   // Extra stats=value to display at the end.
   // We filter value of zero to have less clutter.
@@ -162,7 +162,7 @@ class PresolveTimer {
     log_when_override_ = value;
   };
 
-  double deterministic_time() const { return work_; }
+  double deterministic_time() const { return work_ + 1e-9 * work_int_; }
   double wtime() const { return timer_.Get(); }
 
  private:
@@ -175,6 +175,7 @@ class PresolveTimer {
 
   bool override_logging_ = false;
   bool log_when_override_ = false;
+  int64_t work_int_ = 0;
   double work_ = 0.0;
   std::vector<std::pair<std::string, int64_t>> counters_;
   std::vector<std::string> extra_infos_;

@@ -1,0 +1,391 @@
+// Copyright 2010-2025 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Proto describing a solution crush procedure.
+
+syntax = "proto3";
+
+package operations_research.sat;
+
+// clang-format off
+option csharp_namespace = "Google.OrTools.Sat";
+option go_package = "github.com/google/or-tools/ortools/sat/proto/cpmodel";
+option java_package = "com.google.ortools.sat";
+option java_multiple_files = true;
+option java_outer_classname = "CpModelProtobuf";
+// clang-format on
+
+import "ortools/sat/cp_model.proto";
+
+// Resizes the solution to contain `new_size` variables. Does not change the
+// value of existing variables, and does not set any value for the new
+// variables.
+message Resize {
+  int64 new_size = 1;
+}
+
+// Sets the value of `literal` to "`var`'s value <=/==/>= `value`". Does nothing
+// if `literal` already has a value.
+message MaybeSetLiteralToOrderEncoding {
+  enum Relation {
+    LESS_THAN_OR_EQUAL = 0;
+    EQUAL = 1;
+    GREATER_THAN_OR_EQUAL = 2;
+  }
+  int32 literal = 1;
+  int32 var = 2;
+  int64 value = 3;
+  Relation relation = 4;
+}
+
+// Sets the value of `var` to 1 if the value of at least one literal in
+// `clause` is equal to 1 (or to 0 otherwise). `clause` must be a list of
+// literal indices.
+message SetVarToClause {
+  int32 var = 1;
+  repeated int32 clause = 2;
+}
+
+// Sets the value of `var` to 1 if the value of all the literals in
+// `conjunction` is 1 (or to 0 otherwise). `conjunction` must be a list of
+// literal indices.
+message SetVarToConjunction {
+  int32 var = 1;
+  repeated int32 conjunction = 2;
+}
+
+// Sets the value of `var` to `value` if the value of the given linear
+// expression is not in `domain` (or does nothing otherwise). `linear` must be
+// a list of (variable index, coefficient) pairs.
+message SetVarToValueIfLinearConstraintViolated {
+  int32 var = 1;
+  int64 value = 2;
+  LinearConstraintProto linear_constraint = 3;
+}
+
+// Sets the value of `var` to the value `expr` if the value of all
+// `condition_lits` is true (in particular if `condition_lits` is empty).
+message SetVarToLinearExpressionIf {
+  int32 var = 1;
+  LinearExpressionProto expr = 2;
+  repeated int32 condition_lits = 3;
+}
+
+// Sets the value of `var` to `value_if_true` if the value of all the
+// `condition_lits` literals is true (in particular if `condition_lits` is
+// empty), and to `value_if_false` otherwise.
+message SetVarToConditionalValue {
+  int32 var = 1;
+  repeated int32 condition_lits = 2;
+  int64 value_if_true = 3;
+  int64 value_if_false = 4;
+}
+
+// If one literal does not have a value, and the other one does, sets the
+// value of the latter to the value of the former. If both literals have a
+// value, sets the value of `lit1` to the value of `lit2`.
+message MakeLiteralsEqual {
+  int32 lit1 = 1;
+  int32 lit2 = 2;
+}
+
+// If `var` already has a value, updates it to be within the given domain.
+// Otherwise, if the domain is fixed, sets the value of `var` to this fixed
+// value. Otherwise does nothing.
+message SetOrUpdateVarToDomain {
+  int32 var = 1;
+  repeated int64 domain = 2;
+}
+
+// If `var` already has a value, updates it to be within the given domain.
+// There are 3 cases to consider:
+// 1/ The hinted value is in domain. Nothing to do.
+// 2/ The hinted value is not in the domain, and there is an escape value.
+//    Update the hinted value to the escape value, and update the encoding
+//    literals to reflect the new value of `var`.
+// 3/ The hinted value is not in the domain, and there is no escape value.
+//    Update the hinted value to be in the domain by pushing it in the given
+//    direction, and update the encoding literals to reflect the new value
+message SetOrUpdateVarToDomainWithOptionalEscapeValue {
+  int32 var = 1;
+  repeated int64 domain = 2;
+  optional int64 unique_escape_value = 3;
+  bool push_down_when_not_in_domain = 4;
+  // A map from values to their encoding literal.
+  map<int64, int32> encoding = 5;
+}
+
+// Decrements the value of `lit` and increments the value of `dominating_lit`
+// if their values are equal to 1 and 0, respectively.
+message UpdateLiteralsWithDominance {
+  int32 lit = 1;
+  int32 dominating_lit = 2;
+}
+
+// Decrements the value of `var * coeff` by the minimum amount necessary to be
+// in [`min_value`, `max_value`], and increments the value of one or more
+// `dominating_terms` by the same total amount (or less if it is not possible
+// to exactly match this amount), while staying within their respective
+// domains. As of July 2026, all coefficients must be either 1 or -1.
+//
+// `min_value` must be the minimum value of `var * coeff`'s current domain D,
+// and `max_value` must be in D.
+message UpdateTermsWithDominance {
+  int32 var = 1;
+  int64 coeff = 2;
+  int64 min_value = 3;
+  int64 max_value = 4;
+
+  message TermWithDomain {
+    int32 var = 1;
+    int64 coeff = 2;
+    repeated int64 domain = 3;
+  }
+  repeated TermWithDomain dominating_terms = 5;
+}
+
+// If `var`'s value != `value` finds another variable in the orbit of `var`
+// that can take that value, and permute the solution (using the symmetry
+// `generators`) so that this other variable is at position var. If no other
+// variable can be found, does nothing.
+message MaybeUpdateVarWithSymmetriesToValue {
+  int32 var = 1;
+  int64 value = 2;
+  repeated SparsePermutationProto generators = 3;
+}
+
+// A row of an orbitope.
+message OrbitopeRow {
+  repeated int32 literals = 1;
+}
+
+// If at most one literal in `orbitope[row]` is equal to `value`, and if this
+// literal is in a column 'col' > `pivot_col`, swaps the value of all the
+// literals in columns 'col' and `pivot_col` (if they all have a value).
+// Otherwise does nothing.
+message MaybeSwapOrbitopeColumns {
+  repeated OrbitopeRow orbitope_rows = 1;
+  int32 row = 2;
+  int32 pivot_col = 3;
+  bool value = 4;
+}
+
+// Sorts the columns of `orbitope` so that the values in the given `row` are
+// in increasing order from left to right. Does nothing if any variable in
+// `row` does not have a value.
+message SortOrbitopeColumns {
+  repeated OrbitopeRow orbitope_rows = 1;
+  int32 row = 2;
+}
+
+// Sets the value of the i-th variable in `vars` so that the given constraint
+// "dotproduct(coeffs, vars values) = rhs" is satisfied, if all the other
+// variables have a value, and if the constraint is enforced (otherwise it
+// sets the unset variables to their `default_values`). i is equal to
+// `var_index` if set. Otherwise it is the index of the variable without a
+// value (if there is not exactly one, this method does nothing).
+message SetVarToLinearConstraintSolution {
+  repeated int32 enforcement_lits = 1;
+  optional int32 var_index = 2;
+  repeated int32 vars = 3;
+  repeated int64 default_values = 4;
+  repeated int64 coeffs = 5;
+  int64 rhs = 6;
+}
+
+// Sets the value of the variables in `level_vars` and in `circuit` if all the
+// variables in `reservoir` have a value. This assumes that there is one level
+// variable and one circuit node per element in `reservoir` (in the same
+// order) -- plus one last node representing the start and end of the circuit.
+message SetReservoirCircuitVars {
+  ReservoirConstraintProto reservoir = 1;
+  int64 min_level = 2;
+  int64 max_level = 3;
+  repeated int32 level_vars = 4;
+  CircuitConstraintProto circuit = 5;
+}
+
+// Sets the value of `var` to "`time_i`'s value <= `time_j`'s value &&
+// `active_i`'s value == true && `active_j`'s value == true".
+message SetVarToReifiedPrecedenceLiteral {
+  int32 var = 1;
+  LinearExpressionProto time_i = 2;
+  LinearExpressionProto time_j = 3;
+  int32 active_i = 4;
+  int32 active_j = 5;
+}
+
+// Sets the value of `div_var` and `prod_var` if all the variables in the
+// IntMod `ct` constraint have a value, assuming that this "target = x % m"
+// constraint is expanded into "div_var = x / m", "prod_var = div_var * m",
+// and "target = x - prod_var" constraints. If `ct` is not enforced, sets the
+// values of `div_var` and `prod_var` to `default_div_value` and
+// `default_prod_value`, respectively.
+message SetIntModExpandedVars {
+  ConstraintProto ct = 1;
+  int32 div_var = 2;
+  int32 prod_var = 3;
+  int64 default_div_value = 4;
+  int64 default_prod_value = 5;
+}
+
+// Sets the value of as many variables in `prod_vars` as possible (depending
+// on how many expressions in `int_prod` have a value), assuming that the
+// `int_prod` constraint "target = x_0 * x_1 * ... * x_n" is expanded into
+// "prod_var_1 = x_0 * x1",
+// "prod_var_2 = prod_var_1 * x_2",
+//  ...,
+// "prod_var_(n-1) = prod_var_(n-2) * x_(n-1)",
+// and "target = prod_var_(n-1) * x_n" constraints.
+message SetIntProdExpandedVars {
+  LinearArgumentProto int_prod = 1;
+  repeated int32 prod_vars = 2;
+}
+
+// Sets the value of `enforcement_lits` if all the variables in `lin_max`
+// have a value, assuming that the `lin_max` constraint "target = max(x_0,
+// x_1, ..., x_(n-1))" is expanded into "enforcement_lits[i] => target <= x_i"
+// constraints, with at most one enforcement value equal to true.
+// `enforcement_lits` must have as many elements as `lin_max`.
+message SetLinMaxExpandedVars {
+  LinearArgumentProto lin_max = 1;
+  repeated int32 enforcement_lits = 2;
+}
+
+// Sets the value of `state_vars` and `transition_vars` if all the variables
+// in `automaton` have a value.
+message SetAutomatonExpandedVars {
+  // Represents `var` = "automaton is in state `state` at time `time`".
+  message StateVar {
+    int32 var = 1;
+    int32 time = 2;
+    int64 state = 3;
+  }
+
+  // Represents `var` = "automaton takes the transition labeled
+  // `transition_label` from state `transition_tail` at time `time`".
+  message TransitionVar {
+    int32 var = 1;
+    int32 time = 2;
+    int64 transition_tail = 3;
+    int64 transition_label = 4;
+  }
+
+  AutomatonConstraintProto automaton = 1;
+  repeated StateVar state_vars = 2;
+  repeated TransitionVar transition_vars = 3;
+}
+
+// Sets the value of the `new_row_lits` literals if all the variables in
+// `column_vars` and `existing_row_lits` have a value. For each `row_lits`,
+// `column_values` must have the same size as `column_vars`. This method
+// assumes that exactly one of `existing_row_lits` and `new_row_lits` must be
+// true.
+message SetTableExpandedVars {
+  // Represents `lit` = "for all i, the value of the i-th column var of a table
+  // constraint is in the `var_values`[i] set (unless this set is empty).".
+  message TableRowLiteral {
+    int32 lit = 1;
+    repeated int32 vars = 2;
+    repeated int64 values = 3;
+  }
+  repeated int32 column_vars = 1;
+  repeated int32 existing_row_lits = 2;
+  repeated TableRowLiteral new_row_lits = 3;
+}
+
+// Sets the value of `bucket_lits` if all the variables in `linear` have a
+// value, assuming that they are expanded from the complex linear constraint
+// (i.e. one whose domain has two or more intervals). The value of
+// `bucket_lits`[i] is set to 1 iff the value of the linear expression is in
+// the i-th interval of the domain.
+message SetLinearWithComplexDomainExpandedVars {
+  LinearConstraintProto linear = 1;
+  repeated int32 bucket_lits = 2;
+}
+
+// Given a list of N disjoint packing areas (each described by a union of
+// rectangles) and a list of M boxes (described by their x and y intervals),
+// sets the value of the literals in `box_in_area_lits` with whether the box i
+// intersects area j.
+message AssignVariableToPackingArea {
+  message Rectangle {
+    int64 x_min = 1;
+    int64 x_max = 2;
+    int64 y_min = 3;
+    int64 y_max = 4;
+  };
+  message Rectangles {
+    repeated Rectangle rectangles = 1;
+  }
+
+  message BoxInAreaLiteral {
+    int32 box_index = 1;
+    int32 area_index = 2;
+    int32 literal = 3;
+  };
+
+  repeated Rectangles areas = 1;
+  repeated ConstraintProto x_intervals = 2;
+  repeated ConstraintProto y_intervals = 3;
+  repeated BoxInAreaLiteral box_in_area_lits = 4;
+}
+
+// Remap the variable indices.
+message RemapVariables {
+  // Mapping from old to new variable indices. A removed variable is "mapped" to
+  // a negative index. Two old variables can be mapped to the same new variable.
+  // The mapping must be dense in [0, max(old_to_new_mapping)].
+  repeated int32 old_to_new_mapping = 1;
+}
+
+message SolutionCrushStep {
+  oneof step {
+    Resize resize = 1;
+    MaybeSetLiteralToOrderEncoding maybe_set_literal_to_order_encoding = 2;
+    SetVarToClause set_var_to_clause = 3;
+    SetVarToConjunction set_var_to_conjunction = 4;
+    SetVarToValueIfLinearConstraintViolated
+        set_var_to_value_if_linear_constraint_violated = 5;
+    SetVarToLinearExpressionIf set_var_to_linear_expression_if = 6;
+    SetVarToConditionalValue set_var_to_conditional_value = 7;
+    MakeLiteralsEqual make_literals_equal = 8;
+    SetOrUpdateVarToDomain set_or_update_var_to_domain = 9;
+    SetOrUpdateVarToDomainWithOptionalEscapeValue
+        set_or_update_var_to_domain_with_optional_escape_value = 10;
+    UpdateLiteralsWithDominance update_literals_with_dominance = 11;
+    UpdateTermsWithDominance update_terms_with_dominance = 12;
+    MaybeUpdateVarWithSymmetriesToValue
+        maybe_update_var_with_symmetries_to_value = 13;
+    MaybeSwapOrbitopeColumns maybe_swap_orbitope_columns = 14;
+    SortOrbitopeColumns sort_orbitope_columns = 26;
+    SetVarToLinearConstraintSolution set_var_to_linear_constraint_solution = 15;
+    SetReservoirCircuitVars set_reservoir_circuit_vars = 16;
+    SetVarToReifiedPrecedenceLiteral set_var_to_reified_precedence_literal = 17;
+    SetIntModExpandedVars set_int_mod_expanded_vars = 18;
+    SetIntProdExpandedVars set_int_prod_expanded_vars = 19;
+    SetLinMaxExpandedVars set_lin_max_expanded_vars = 20;
+    SetAutomatonExpandedVars set_automaton_expanded_vars = 21;
+    SetTableExpandedVars set_table_expanded_vars = 22;
+    SetLinearWithComplexDomainExpandedVars
+        set_linear_with_complex_domain_expanded_vars = 23;
+    AssignVariableToPackingArea assign_variable_to_packing_area = 24;
+    RemapVariables remap_variables = 25;
+  }
+}
+
+// TODO(user): store the symmetry generators here, instead of in
+// MaybeUpdateVarWithSymmetriesToValue, to avoid possible duplicates?
+message SolutionCrushProto {
+  repeated SolutionCrushStep steps = 1;
+}

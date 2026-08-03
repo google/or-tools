@@ -15,9 +15,10 @@
 """Cluster 40 cities in 4 equal groups to minimize sum of crossed distances."""
 
 from typing import Sequence
-from absl import app
-from ortools.sat.python import cp_model
 
+from absl import app
+
+from ortools.sat.python import cp_model
 
 distance_matrix = [
     # fmt:off

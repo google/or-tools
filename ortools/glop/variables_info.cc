@@ -121,7 +121,8 @@ void VariablesInfo::ResetStatusInfo() {
 
 void VariablesInfo::InitializeFromBasisState(ColIndex first_slack_col,
                                              ColIndex num_new_cols,
-                                             const BasisState& state) {
+                                             const BasisState& state,
+                                             ColIndex num_free_values) {
   ResetStatusInfo();
 
   const ColIndex num_cols = lower_bounds_.size();
@@ -169,6 +170,14 @@ void VariablesInfo::InitializeFromBasisState(ColIndex first_slack_col,
           UpdateToNonBasicStatus(col, upper_bounds_[col] == kInfinity
                                           ? DefaultVariableStatus(col)
                                           : status);
+        }
+        break;
+      case VariableStatus::FREE:
+        if (lower_bounds_[col] == upper_bounds_[col]) {
+          UpdateToNonBasicStatus(col, VariableStatus::FIXED_VALUE);
+        } else {
+          UpdateToNonBasicStatus(
+              col, col < num_free_values ? status : DefaultVariableStatus(col));
         }
         break;
       default:

@@ -13,11 +13,11 @@
 
 #include <cstdlib>
 
+#include "absl/log/check.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/graph/generic_max_flow.h"
-#include "ortools/graph/graph.h"
 #include "ortools/graph/min_cost_flow.h"
+#include "ortools/graph_base/graph.h"
 
 namespace operations_research {
 

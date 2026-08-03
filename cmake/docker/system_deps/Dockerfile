@@ -8,7 +8,7 @@ RUN pacman -Syu --noconfirm git base-devel cmake
 
 # Get all dependencies from the package manager
 RUN pacman -Syu --noconfirm \
- abseil-cpp protobuf re2 eigen \
+ eigen \
  coin-or-cbc coin-or-clp \
  glpk \
  scip \

@@ -17,12 +17,10 @@
 import math
 
 import numpy as np
-
 from absl.testing import absltest
-from ortools.math_opt import model_pb2
-from ortools.math_opt import model_update_pb2
-from ortools.math_opt.elemental.python import cpp_elemental
-from ortools.math_opt.elemental.python import enums
+
+from ortools.math_opt import model_pb2, model_update_pb2
+from ortools.math_opt.elemental.python import cpp_elemental, enums
 from ortools.math_opt.python.testing import compare_proto
 
 _VARIABLE = enums.ElementType.VARIABLE

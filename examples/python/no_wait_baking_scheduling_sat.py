@@ -23,8 +23,7 @@ We are scheduling a full day of baking:
 import collections
 from typing import List, Sequence, Tuple
 
-from absl import app
-from absl import flags
+from absl import app, flags
 
 from ortools.sat.python import cp_model
 

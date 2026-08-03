@@ -25,6 +25,7 @@
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/solver_tests/base_solver_test.h"
+#include "ortools/math_opt/solver_tests/test_models.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -77,7 +78,7 @@ class MessageCallbackTest
 
 // Parameters for CallbackTest.
 struct CallbackTestParams {
-  CallbackTestParams(SolverType solver_type, bool integer_variables,
+  CallbackTestParams(SolverType solver_type, TestModelClass model_class,
                      bool add_lazy_constraints, bool add_cuts,
                      absl::flat_hash_set<CallbackEvent> supported_events,
                      std::optional<SolveParameters> all_solutions,
@@ -86,8 +87,8 @@ struct CallbackTestParams {
   // The solver to test.
   SolverType solver_type;
 
-  // True if the tests should be performed with integer variables.
-  bool integer_variables;
+  // The model class to use for tests.
+  TestModelClass model_class;
 
   // If the solver supports adding lazy constraints at the MIP_SOLUTION event.
   bool add_lazy_constraints;
@@ -106,6 +107,9 @@ struct CallbackTestParams {
   // that we can run a custom cut on this problem. Not setting this value will
   // result in the test on adding cuts at event kMipNode not running.
   std::optional<SolveParameters> reaches_cut_callback;
+
+  // Returns true if model_class uses integer variables (i.e., is `kIp`).
+  bool uses_integer_variables() const;
 
   friend std::ostream& operator<<(std::ostream& out,
                                   const CallbackTestParams& params);

@@ -18,7 +18,7 @@
 #include <deque>
 #include <vector>
 
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
 
 namespace operations_research {
 

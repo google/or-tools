@@ -19,11 +19,9 @@
 import collections
 import time
 
-from absl import app
-from absl import flags
+from absl import app, flags
 
 from ortools.sat.python import cp_model
-
 
 _PROBLEM = flags.DEFINE_integer("problem", 2, "Problem id to solve.")
 _BREAK_SYMMETRIES = flags.DEFINE_boolean(
@@ -359,7 +357,7 @@ def collect_valid_slabs_dp(
 def steel_mill_slab_with_valid_slabs(problem_id: int, break_symmetries: bool) -> None:
     """Solves the Steel Mill Slab Problem."""
     ### Load problem.
-    (num_slabs, capacities, num_colors, orders) = build_problem(problem_id)
+    num_slabs, capacities, num_colors, orders = build_problem(problem_id)
 
     num_orders = len(orders)
     num_capacities = len(capacities)
@@ -495,7 +493,7 @@ def steel_mill_slab_with_valid_slabs(problem_id: int, break_symmetries: bool) ->
 def steel_mill_slab_with_column_generation(problem_id: int) -> None:
     """Solves the Steel Mill Slab Problem."""
     ### Load problem.
-    (num_slabs, capacities, _, orders) = build_problem(problem_id)
+    num_slabs, capacities, _, orders = build_problem(problem_id)
 
     num_orders = len(orders)
     num_capacities = len(capacities)

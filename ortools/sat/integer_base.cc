@@ -16,12 +16,13 @@
 #include <algorithm>
 #include <cstdint>
 #include <numeric>
+#include <optional>
 #include <tuple>
 #include <utility>
 #include <vector>
 
 #include "absl/log/check.h"
-#include "ortools/util/bitset.h"
+#include "ortools/base/mathutil.h"
 
 namespace operations_research::sat {
 
@@ -167,8 +168,41 @@ AffineExpression LinearExpression2::GetAffineLowerBound(
   // x + ceil(b / a) * y >= ceil((expr_lb + residual * y_lb) / a)
   const IntegerValue ceil_coeff_ratio = CeilRatio(other_coeff, coeff);
   const IntegerValue residual = coeff * ceil_coeff_ratio - other_coeff;
+  const IntegerValue term = CapProdI(residual, other_var_lb);
+  if (AtMinOrMaxInt64I(term)) return AffineExpression(kMinIntegerValue);
+  const IntegerValue nominator = CapAddI(expr_lb, term);
+  if (AtMinOrMaxInt64I(nominator)) return AffineExpression(kMinIntegerValue);
   return AffineExpression(other_var, -ceil_coeff_ratio,
-                          CeilRatio(expr_lb + residual * other_var_lb, coeff));
+                          CeilRatio(nominator, coeff));
+}
+
+std::optional<IntegerValue> LinearExpression2::GetDifferenceLowerBound(
+    IntegerValue lb, AffineExpression t2, AffineExpression t1) {
+  DCHECK_EQ(vars[0], NegationOf(t1.var));
+  DCHECK_EQ(vars[1], t2.var);
+  DCHECK_GT(coeffs[0], 0);
+  DCHECK_GT(coeffs[1], 0);
+  DCHECK_GT(t1.coeff, 0);
+  DCHECK_GT(t2.coeff, 0);
+  // We have
+  //   a.x + b.y >= lb
+  //   t1 = c.(-x) + d
+  //   t2 = e.y + f
+  // with a, b, c, d > 0. This can be rewritten as:
+  //   -(a / c) * (t1 - d) + (b / e) * (t2 - f) >= lb
+  // If a / c and b / e are integer and equal to k, then we get:
+  //   -k * (t1 - d) + k * (t2 - f) >= lb
+  // which yields:
+  //   t2 >= t1 + (lb / k) + f - d
+  if (coeffs[0] % t1.coeff != 0 || coeffs[1] % t2.coeff != 0) {
+    return std::nullopt;
+  }
+  const IntegerValue ke = coeffs[0] / t1.coeff;
+  const IntegerValue ks = coeffs[1] / t2.coeff;
+  if (ks != ke) {
+    return std::nullopt;
+  }
+  return MathUtil::CeilOfRatio(lb, ks) + t2.constant - t1.constant;
 }
 
 void LinearExpression2::MakeVariablesPositive() {
@@ -266,6 +300,23 @@ BestBinaryRelationBounds::GetSortedNonTrivialBounds() const {
   }
   std::sort(root_relations_sorted.begin(), root_relations_sorted.end());
   return root_relations_sorted;
+}
+
+std::pair<IntegerValue, IntegerValue> BestBinaryRelationBounds::GetBounds(
+    LinearExpression2 expr) const {
+  expr.SimpleCanonicalization();
+  const IntegerValue gcd = expr.DivideByGcd();
+  const bool negated = expr.NegateForCanonicalization();
+  const auto it = best_bounds_.find(expr);
+  if (it != best_bounds_.end()) {
+    const auto [known_lb, known_ub] = it->second;
+    if (negated) {
+      return {CapProdI(-known_ub, gcd), CapProdI(-known_lb, gcd)};
+    } else {
+      return {CapProdI(known_lb, gcd), CapProdI(known_ub, gcd)};
+    }
+  }
+  return {kMinIntegerValue, kMaxIntegerValue};
 }
 
 }  // namespace operations_research::sat

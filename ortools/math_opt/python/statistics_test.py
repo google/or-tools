@@ -15,8 +15,8 @@
 import math
 
 from absl.testing import absltest
-from ortools.math_opt.python import model
-from ortools.math_opt.python import statistics
+
+from ortools.math_opt.python import model, statistics
 
 
 class RangeTest(absltest.TestCase):

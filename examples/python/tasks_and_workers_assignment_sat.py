@@ -15,7 +15,9 @@
 """Tasks and workers to group assignment to average sum(cost) / #workers."""
 
 from typing import Sequence
+
 from absl import app
+
 from ortools.sat.python import cp_model
 
 

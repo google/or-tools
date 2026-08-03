@@ -20,7 +20,7 @@
 
 #include "absl/base/attributes.h"
 #include "absl/log/check.h"
-#include "ortools/base/logging.h"
+#include "absl/log/log.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/linear_solver/glop_utils.h"
@@ -146,8 +146,8 @@ MPSolver::ResultStatus GLOPInterface::Solve(const MPSolverParameters& param) {
   std::unique_ptr<TimeLimit> time_limit =
       TimeLimit::FromParameters(lp_solver_.GetParameters());
   time_limit->RegisterExternalBooleanAsLimit(&interrupt_solver_);
-  const glop::ProblemStatus status =
-      lp_solver_.SolveWithTimeLimit(linear_program_, time_limit.get());
+  const glop::SolveStatus status =
+      lp_solver_.Solve(linear_program_, *time_limit);
 
   // The solution must be marked as synchronized even when no solution exists.
   sync_status_ = SOLUTION_SYNCHRONIZED;

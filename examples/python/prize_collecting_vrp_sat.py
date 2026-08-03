@@ -15,9 +15,10 @@
 """Simple prize collecting VRP problem with a max distance."""
 
 from typing import Sequence
-from absl import app
-from ortools.sat.python import cp_model
 
+from absl import app
+
+from ortools.sat.python import cp_model
 
 DISTANCE_MATRIX = [
     # fmt:off

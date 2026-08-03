@@ -23,8 +23,7 @@ Admissible moves are one step in one of the 6 directions:
 
 from typing import Dict, Sequence, Tuple
 
-from absl import app
-from absl import flags
+from absl import app, flags
 
 from ortools.sat.python import cp_model
 

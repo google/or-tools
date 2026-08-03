@@ -25,8 +25,10 @@
 #include <string>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/math_opt/solvers/gscip/gscip.h"
 #include "ortools/math_opt/solvers/gscip/gscip_ext.h"

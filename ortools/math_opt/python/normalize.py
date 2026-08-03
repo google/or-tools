@@ -21,9 +21,8 @@
 
 
 """Utility functions for normalizing proto3 message objects in Python."""
-from google.protobuf import duration_pb2
-from google.protobuf import descriptor
-from google.protobuf import message
+
+from google.protobuf import descriptor, duration_pb2, message
 
 
 def math_opt_normalize_proto(protobuf_message: message.Message) -> None:

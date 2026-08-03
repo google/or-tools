@@ -20,9 +20,6 @@
 #include <string>
 #include <vector>
 
-#if !defined(__PORTABLE_PLATFORM__)
-#include "ortools/base/helpers.h"
-#endif  // !defined(__PORTABLE_PLATFORM__)
 #include "absl/flags/declare.h"
 #include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
@@ -34,10 +31,19 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/base_export.h"
 #include "ortools/base/hash.h"
+#include "ortools/base/macros/os_support.h"
 #include "ortools/base/options.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/sorted_interval_list.h"
+
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+static_assert(operations_research::kTargetOsSupportsFile);
+#include "ortools/base/helpers.h"
+#else
+static_assert(!operations_research::kTargetOsSupportsFile);
+#endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
 
 #ifndef SWIG
 OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_dump_models);
@@ -167,12 +173,7 @@ void FillDomainInProto(int64_t value, ProtoWithDomain* proto) {
 // Reads a Domain from the domain field of a proto.
 template <typename ProtoWithDomain>
 Domain ReadDomainFromProto(const ProtoWithDomain& proto) {
-#if defined(__PORTABLE_PLATFORM__)
-  return Domain::FromFlatIntervals(
-      {proto.domain().begin(), proto.domain().end()});
-#else
   return Domain::FromFlatSpanOfIntervals(proto.domain());
-#endif
 }
 
 // Returns the list of values in a given domain.
@@ -195,24 +196,11 @@ std::vector<int64_t> AllValuesInDomain(const ProtoWithDomain& proto) {
 inline double ScaleObjectiveValue(const CpObjectiveProto& proto,
                                   int64_t value) {
   double result = static_cast<double>(value);
-  if (value == std::numeric_limits<int64_t>::min())
-    result = -std::numeric_limits<double>::infinity();
-  if (value == std::numeric_limits<int64_t>::max())
-    result = std::numeric_limits<double>::infinity();
+  if (value == kint64min) result = -std::numeric_limits<double>::infinity();
+  if (value == kint64max) result = std::numeric_limits<double>::infinity();
   result += proto.offset();
   if (proto.scaling_factor() == 0) return result;
   return proto.scaling_factor() * result;
-}
-
-// Similar to ScaleObjectiveValue() but uses the integer version.
-inline int64_t ScaleInnerObjectiveValue(const CpObjectiveProto& proto,
-                                        int64_t value) {
-  if (proto.integer_scaling_factor() == 0) {
-    return value + proto.integer_before_offset();
-  }
-  return (value + proto.integer_before_offset()) *
-             proto.integer_scaling_factor() +
-         proto.integer_after_offset();
 }
 
 // Removes the objective scaling and offset from the given value.
@@ -223,6 +211,31 @@ inline double UnscaleObjectiveValue(const CpObjectiveProto& proto,
     result /= proto.scaling_factor();
   }
   return result - proto.offset();
+}
+
+// Transforms an inner objective value to an "outer" one (original value before
+// presolve). Note that the "outer" objective here refers to the integer
+// expression of the objective before presolve, but not counting the objective
+// offset and/or scaling. So this is not completely in the user-domain.
+inline int64_t PostsolveInnerObjectiveValue(const CpObjectiveProto& proto,
+                                            int64_t value) {
+  if (proto.integer_scaling_factor() == 0) {
+    return value + proto.integer_before_offset();
+  }
+  return (value + proto.integer_before_offset()) *
+             proto.integer_scaling_factor() +
+         proto.integer_after_offset();
+}
+
+// Inverse of PostsolveInnerObjectiveValue(). See the comments above.
+inline int64_t PresolveInnerObjectiveValue(const CpObjectiveProto& proto,
+                                           int64_t value) {
+  if (proto.integer_scaling_factor() == 0) {
+    return value - proto.integer_before_offset();
+  }
+  return (value - proto.integer_after_offset()) /
+             proto.integer_scaling_factor() -
+         proto.integer_before_offset();
 }
 
 // Computes the "inner" objective of a response that contains a solution.
@@ -337,7 +350,8 @@ uint64_t FingerprintExpression(const LinearExpressionProto& lin, uint64_t seed);
 uint64_t FingerprintModel(const CpModelProto& model,
                           uint64_t seed = kDefaultFingerprintSeed);
 
-#if !defined(__PORTABLE_PLATFORM__)
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
+static_assert(kTargetOsSupportsProtoDescriptor);
 
 // We register a few custom printers to display variables and linear
 // expression on one line. This is especially nice for variables where it is
@@ -357,24 +371,38 @@ uint64_t FingerprintModel(const CpModelProto& model,
 //   }
 // }
 void SetupTextFormatPrinter(google::protobuf::TextFormat::Printer* printer);
-#endif  // !defined(__PORTABLE_PLATFORM__)
+#else
+static_assert(!kTargetOsSupportsProtoDescriptor);
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR
+
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
+template <class M>
+std::string PrettyPrintModelProto([[maybe_unused]] const M& proto) {
+  std::string proto_string;
+  google::protobuf::TextFormat::Printer printer;
+  SetupTextFormatPrinter(&printer);
+  printer.PrintToString(proto, &proto_string);
+  return proto_string;
+}
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR
 
 template <class M>
-bool WriteModelProtoToFile(const M& proto, absl::string_view filename) {
-#if defined(__PORTABLE_PLATFORM__)
-  return false;
-#else   // !defined(__PORTABLE_PLATFORM__)
+bool WriteModelProtoToFile([[maybe_unused]] const M& proto,
+                           [[maybe_unused]] absl::string_view filename) {
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
+  static_assert(kTargetOsSupportsProtoDescriptor);
   if (absl::EndsWith(filename, "txt") ||
       absl::EndsWith(filename, "textproto")) {
-    std::string proto_string;
-    google::protobuf::TextFormat::Printer printer;
-    SetupTextFormatPrinter(&printer);
-    printer.PrintToString(proto, &proto_string);
-    return file::SetContents(filename, proto_string, file::Defaults()).ok();
+    return file::SetContents(filename, PrettyPrintModelProto(proto),
+                             file::Defaults())
+        .ok();
   } else {
     return file::SetBinaryProto(filename, proto, file::Defaults()).ok();
   }
-#endif  // !defined(__PORTABLE_PLATFORM__)
+#else   // defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
+  static_assert(!kTargetOsSupportsProtoDescriptor);
+  return false;
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR
 }
 
 // hashing support.
@@ -437,6 +465,10 @@ bool ConvertCpModelProtoToWCnf(const CpModelProto& cp_model, std::string* out);
 
 // We assume delta >= 0 and we only use the low bit of delta.
 int CombineSeed(int base_seed, int64_t delta);
+
+// The largest possible value of ConstraintProto::constraint_case.
+constexpr ConstraintProto::ConstraintCase kLargestConstraintType =
+    ConstraintProto::ConstraintCase::kDummyConstraint;
 
 }  // namespace sat
 }  // namespace operations_research

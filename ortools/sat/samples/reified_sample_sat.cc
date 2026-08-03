@@ -14,10 +14,10 @@
 // [START program]
 #include <stdlib.h>
 
-#include "absl/base/log_severity.h"
 #include "absl/log/globals.h"
 #include "absl/types/span.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/sat/cp_model.h"
 
 namespace operations_research {

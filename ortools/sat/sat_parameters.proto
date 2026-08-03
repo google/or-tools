@@ -16,15 +16,17 @@ syntax = "proto2";
 
 package operations_research.sat;
 
+// clang-format off
 option csharp_namespace = "Google.OrTools.Sat";
 option go_package = "github.com/google/or-tools/ortools/sat/proto/satparameters";
 option java_package = "com.google.ortools.sat";
 option java_multiple_files = true;
+// clang-format on
 
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 356
+// NEXT TAG: 370
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -172,6 +174,13 @@ message SatParameters {
   // conflicts before we will consider backjumping.
   optional int32 chronological_backtrack_min_conflicts = 332 [default = 1000];
 
+  // Advanced usage. When assumptions are used and ASSUMPTION_UNSAT is returned,
+  // the solver will try to learn something if possible. However, to do this,
+  // the current state of the solver will be backtracked, which make it
+  // impossible to do custom analysis of the last conflict. It is possible to
+  // turn that off, so that on ASSUMPTION_UNSAT, the trail is left untouched.
+  optional bool learn_on_assumptions_unsat = 364 [default = true];
+
   // ==========================================================================
   // Clause database management
   // ==========================================================================
@@ -186,7 +195,7 @@ message SatParameters {
   // Note that this doesn't include the "protected" clauses.
   optional int32 clause_cleanup_target = 13 [default = 0];
 
-  // During a cleanup, if clause_cleanup_target is 0, we will delete the
+  // During a cleanup, if clause_cleanup_target is 0, we will keep the
   // clause_cleanup_ratio of "deletable" clauses instead of aiming for a fixed
   // target of clauses to keep.
   optional double clause_cleanup_ratio = 190 [default = 0.5];
@@ -501,11 +510,20 @@ message SatParameters {
   // Whether we presolve the cp_model before solving it.
   optional bool cp_model_presolve = 86 [default = true];
 
+  // Whether we try to solve the cp_model without presolve, in parallel of the
+  // presolve. This only has an effect if cp_model_presolve is true, and
+  // num_workers > 1.
+  optional bool cp_model_direct_solve = 369 [default = false];
+
   // How much effort do we spend on probing. 0 disables it completely.
   optional int32 cp_model_probing_level = 110 [default = 2];
 
   // Whether we also use the sat presolve when cp_model_presolve is true.
   optional bool cp_model_use_sat_presolve = 93 [default = true];
+
+  // Whether to use a simplified pure sat presolve only when cp_model_presolve
+  // is true. Crashes if the model is not pure SAT.
+  optional bool cp_model_pure_sat_presolve = 360 [default = false];
 
   // If we try to load at most ones and exactly ones constraints when running
   // the pure SAT presolve. Or if we just ignore them.
@@ -585,6 +603,14 @@ message SatParameters {
   // interval) need to be expanded, there is a couple of way to do that.
   optional bool encode_complex_linear_constraint_with_integer = 223
       [default = false];
+
+  // Depending on the model, a variable with a "complex" domain like
+  // [0][2,5][7][9] is encoded with a domain of [0, 9] + a bunch of Booleans
+  // that are only used to enforce the holes. This presolve rule try to detect
+  // such case and remove these Booleans. Note that it actually does more than
+  // this, and in general try to remove "encoding" Boolean that are not really
+  // used.
+  optional bool detect_encoded_complex_domain = 357 [default = true];
 
   // During presolve, we use a maximum clique heuristic to merge together
   // no-overlap constraints or at most one constraints. This code can be slow,
@@ -672,8 +698,10 @@ message SatParameters {
   optional double inprocessing_minimization_dtime = 275 [default = 1.0];
   optional bool inprocessing_minimization_use_conflict_analysis = 297
       [default = true];
-  optional bool inprocessing_minimization_use_all_orderings = 298
-      [default = false];
+
+  // The number of ordering to try each time we vivify a clause.
+  // This allow to spend more effort on vivivication if needed.
+  optional int32 num_ordering_in_vivification = 356 [default = 1];
 
   // Whether we use the algorithm described in "Clausal Congruence closure",
   // Armin Biere, Katalin Fazekas, Mathias Fleury, Nils Froleyks, 2024.
@@ -681,10 +709,22 @@ message SatParameters {
   // Note that we only have a basic version currently.
   optional bool inprocessing_use_congruence_closure = 342 [default = true];
 
+  // Experimental. We don't have LRAT support for this. Recovers a "circuit"
+  // structure based on the gate detection used by congruence closure, and try
+  // to detect more equivalence via sampling. This is like the custom SAT
+  // sweeping done on a logic circuit with binary gates.
+  optional bool inprocessing_detect_and_sweep_circuit = 362 [default = false];
+
   // Whether we use the SAT sweeping algorithm described in "Clausal Equivalence
   // Sweeping", Armin Biere, Katalin Fazekas, Mathias Fleury, Nils Froleyks,
   // 2025.
   optional bool inprocessing_use_sat_sweeping = 354 [default = false];
+
+  // Whether we perform transitive reduction of the binary implication graph.
+  // This might reduce the number of implication significantly, but it might
+  // also loose some structure used by our detection algorithm like the logical
+  // gates detection.
+  optional bool inprocessing_use_transitive_reduction = 361 [default = true];
 
   // ==========================================================================
   // Multithread
@@ -806,51 +846,33 @@ message SatParameters {
 
   // If true, inferred clauses are checked with an LRAT checker as they are
   // learned, in presolve (reduced to trivial simplifications if
-  // cp_model_presolve is false), and in each worker. As of December 2025, this
+  // cp_model_presolve is false), and in each worker. As of February 2026, this
   // only works with pure SAT problems, with
-  //  - cp_model_presolve = false,
+  //  - cp_model_pure_sat_presolve = true if cp_model_presolve = true,
   //  - linearization_level <= 1,
-  //  - symmetry_level <= 1.
+  //  - symmetry_level <= 1,
+  //  - use_chronological_backtracking = false,
+  //  - inprocessing_use_sat_sweeping = false.
   optional bool check_lrat_proof = 344 [default = false];
 
   // If true, and if output_lrat_proof is true and the problem is UNSAT, check
   // that the merged proof file is valid, i.e., that clause sharing between
   // workers is correct. This checks each inferred clause, so you might want to
-  // disable check_lrat_proof to avoid redundant work. As of November 2025, this
-  // only works for pure SAT problems, with num_workers = 1.
+  // disable check_lrat_proof to avoid redundant work. As of February 2026, this
+  // only works for pure SAT problems.
   optional bool check_merged_lrat_proof = 352 [default = false];
 
   // If true, an LRAT proof that all the clauses inferred by the solver are
   // valid is output to several files (one for presolve -- reduced to trivial
   // simplifications if cp_model_presolve is false, one per worker, and one for
-  // the merged proof). As of December 2025, this only works for pure SAT
+  // the merged proof). As of February 2026, this only works for pure SAT
   // problems, with
-  //  - cp_model_presolve = false,
+  //  - cp_model_pure_sat_presolve = true if cp_model_presolve = true,
   //  - linearization_level <= 1,
-  //  - symmetry_level <= 1.
+  //  - symmetry_level <= 1,
+  //  - use_chronological_backtracking = false,
+  //  - inprocessing_use_sat_sweeping = false.
   optional bool output_lrat_proof = 345 [default = false];
-
-  // If true, and if the problem is UNSAT, a DRAT proof of this UNSAT property
-  // is checked after the solver has finished. As of November 2025, this only
-  // works for pure SAT problems, with
-  //  - num_workers = 1,
-  //  - cp_model_presolve = false,
-  //  - linearization_level <= 1,
-  //  - symmetry_level <= 1.
-  optional bool check_drat_proof = 346 [default = false];
-
-  // If true, a DRAT proof that all the clauses inferred by the solver are valid
-  // is output to a file. As of December 2025, this only works for pure SAT
-  // problems, with
-  //  - num_workers = 1,
-  //  - cp_model_presolve = false,
-  //  - linearization_level <= 1,
-  //  - symmetry_level <= 1.
-  optional bool output_drat_proof = 347 [default = false];
-
-  // The maximum time allowed to check the DRAT proof (this can take more time
-  // than the solve itself). Only used if check_drat_proof is true.
-  optional double max_drat_time_in_seconds = 348 [default = inf];
 
   // ==========================================================================
   // Debugging parameters
@@ -1190,11 +1212,23 @@ message SatParameters {
 
     // Randomized search. Used to increase entropy in the search.
     RANDOMIZED_SEARCH = 8;
+
+    // This is a lightweight search heuristic that tries to shave variable
+    // domains and literals in a round-robin fashion at decision level 0.
+    // Note that unlike the dedicated shaving subsolver using assumptions, if
+    // the search restarts, we simply move to the next candidate without
+    // guaranteeing a fixed amount of effort is spent on the current one.
+    ROUND_ROBIN_SHAVING_SEARCH = 9;
   }
+
   optional SearchBranching search_branching = 82 [default = AUTOMATIC_SEARCH];
 
   // Conflict limit used in the phase that exploit the solution hint.
   optional int32 hint_conflict_limit = 153 [default = 10];
+
+  // Try first to use the hint as assumption in the phase that exploit the
+  // solution hint. This should be way faster if the hint is completable.
+  optional bool try_hint_as_assumptions = 363 [default = true];
 
   // If true, the solver tries to repair the solution given in the hint. This
   // search terminates after the 'hint_conflict_limit' is reached and the solver
@@ -1221,17 +1255,28 @@ message SatParameters {
   // upper bound of a variable are infeasible) to the probing search. (<= 0
   // disables it).
   optional double shaving_deterministic_time_in_probing_search = 204
-      [default = 0.001];
+      [default = 0.05];
 
   // Specifies the amount of deterministic time spent of each try at shaving a
   // bound in the shaving search.
   optional double shaving_search_deterministic_time = 205 [default = 0.1];
+
+  // Specify the search heuristic used in the shaving search.
+  optional bool shaving_search_use_random_search = 366 [default = false];
+
+  // Number of conflicts between restarts in the shaving search.
+  // If <= 0, we use the default restart policy.
+  optional int32 shaving_search_restart_limit = 367 [default = 10];
 
   // Specifies the threshold between two modes in the shaving procedure.
   // If the range of the variable/objective is less than this threshold, then
   // the shaving procedure will try to remove values one by one. Otherwise, it
   // will try to remove one range at a time.
   optional int64 shaving_search_threshold = 290 [default = 64];
+
+  // For the objective, we prefer to try as much as possible to increase the
+  // current best bound. Except if the range is "large".
+  optional int64 objective_shaving_search_threshold = 368 [default = 1000];
 
   // If true, search will search in ascending max objective value (when
   // minimizing) starting from the lower bound of the objective.
@@ -1278,11 +1323,11 @@ message SatParameters {
   // on some problems.
   optional int32 binary_search_num_conflicts = 99 [default = -1];
 
-  // This has no effect if optimize_with_core is false. If true, use a different
-  // core-based algorithm similar to the max-HS algo for max-SAT. This is a
-  // hybrid MIP/CP approach and it uses a MIP solver in addition to the CP/SAT
-  // one. This is also related to the PhD work of tobyodavies@
-  // "Automatic Logic-Based Benders Decomposition with MiniZinc"
+  // This requires setting optimize_with_core to true. If true, use a different
+  // core-based algorithm similar to the max-HS algo for max-SAT. This uses an
+  // inner CP-SAT solver to solve a linear subproblem extracted from the main
+  // one. This is related to the PhD work of tobyodavies@ "Automatic Logic-Based
+  // Benders Decomposition with MiniZinc"
   // http://aaai.org/ocs/index.php/AAAI/AAAI17/paper/view/14489
   optional bool optimize_with_max_hs = 85 [default = false];
 
@@ -1339,10 +1384,6 @@ message SatParameters {
   // How long violation_ls should wait before perturbating a solution.
   optional int32 violation_ls_perturbation_period = 249 [default = 100];
 
-  // Probability of using compound move search each restart.
-  // TODO(user): Add reference to paper when published.
-  optional double violation_ls_compound_move_probability = 259 [default = 0.5];
-
   // Enables shared tree search.
   // If positive, start this many complete worker threads to explore a shared
   // search tree. These workers communicate objective bounds and simple decision
@@ -1367,6 +1408,12 @@ message SatParameters {
   // If true, shared tree workers share their target phase when returning an
   // assigned subtree for the next worker to use.
   optional bool shared_tree_worker_enable_phase_sharing = 304 [default = true];
+
+  // If true, shared tree workers will propagate all constraints after enqueuing
+  // each decision, otherwise they will only propagate at root and leaf nodes on
+  // their assigned subtree.
+  optional bool shared_tree_worker_propagate_intermediate_nodes = 365
+      [default = false];
 
   // How many open leaf nodes should the shared tree maintain per worker.
   optional double shared_tree_open_leaves_per_worker = 281 [default = 2.0];
@@ -1803,8 +1850,8 @@ message SatParameters {
   optional bool detect_linearized_product = 277 [default = false];
 
   // This should be better on integer problems.
-  // But it is still work in progress.
-  optional bool use_new_integer_conflict_resolution = 336 [default = false];
+  // We only trigger it if there is a least 10 non-binary variables.
+  optional bool use_new_integer_conflict_resolution = 336 [default = true];
 
   // If true, and during integer conflict resolution (icr) the 1-UIP is an
   // integer literal for which we do not have an associated Boolean. Create one.
@@ -1841,6 +1888,17 @@ message SatParameters {
   // are quite frequent, and if we detect this, we will scale such variable
   // domain by 2 to make it implied integer.
   optional bool mip_automatically_scale_variables = 166 [default = true];
+
+  // If true, both mip_var_scaling and mip_scale_large_domain are ignored.
+  // Instead, we scale any floating point variable by a power of two so that
+  // its domain is the largest that fit in [-mip_max_bound, mip_max_bound].
+  // Note that any domain already larger than this is ignored.
+  optional bool mip_scale_to_max_bound = 358 [default = false];
+
+  // If true, use dual-reasoning to try to restrict the domains of the variable
+  // before we scale the model to integer. This can help with the scaling
+  // significantly.
+  optional bool mip_presolve_restrict_bounds = 359 [default = true];
 
   // If one try to solve a MIP model with CP-SAT, because we assume all variable
   // to be integer after scaling, we will not necessarily have the correct

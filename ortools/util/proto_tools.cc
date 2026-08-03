@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/optimization.h"
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/message.h"

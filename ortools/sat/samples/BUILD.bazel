@@ -14,14 +14,13 @@
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_go//go:def.bzl", "go_binary")
-load("@rules_java//java:java_binary.bzl", "java_binary")
 load("@rules_python//python:py_test.bzl", "py_test")
-load("//tools/testing:bintest.bzl", "bintest")
 
 py_test(
     name = "all_different_except_zero_sample_sat_py3",
     srcs = ["all_different_except_zero_sample_sat.py"],
     main = "all_different_except_zero_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -30,11 +29,12 @@ cc_test(
     srcs = ["assignment_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -43,6 +43,7 @@ py_test(
     name = "assignment_sat_py3",
     srcs = ["assignment_sat.py"],
     main = "assignment_sat.py",
+    tags = ["noci"],
     deps = [
         requirement("pandas"),
         "//ortools/sat/python:cp_model",
@@ -54,11 +55,12 @@ cc_test(
     srcs = ["assignment_groups_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/types:span",
@@ -69,6 +71,7 @@ py_test(
     name = "assignment_groups_sat_py3",
     srcs = ["assignment_groups_sat.py"],
     main = "assignment_groups_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -77,11 +80,12 @@ cc_test(
     srcs = ["assignment_task_sizes_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/strings:str_format",
     ],
@@ -99,11 +103,12 @@ cc_test(
     srcs = ["assignment_teams_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/strings:str_format",
     ],
@@ -113,6 +118,7 @@ py_test(
     name = "assignment_teams_sat_py3",
     srcs = ["assignment_teams_sat.py"],
     main = "assignment_teams_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -121,12 +127,13 @@ cc_test(
     srcs = ["assumptions_sample_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/util:sorted_interval_list",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/types:span",
     ],
@@ -146,6 +153,7 @@ py_test(
     name = "assumptions_sample_sat_py3",
     srcs = ["assumptions_sample_sat.py"],
     main = "assumptions_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -154,11 +162,12 @@ cc_test(
     srcs = ["binpacking_problem_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -183,6 +192,7 @@ py_test(
     name = "bin_packing_sat_py3",
     srcs = ["bin_packing_sat.py"],
     main = "bin_packing_sat.py",
+    tags = ["noci"],
     deps = [
         requirement("pandas"),
         "//ortools/sat/python:cp_model",
@@ -201,8 +211,8 @@ cc_test(
     srcs = ["bool_or_sample_sat.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/types:span",
     ],
@@ -218,6 +228,7 @@ py_test(
     name = "bool_or_sample_sat_py3",
     srcs = ["bool_or_sample_sat.py"],
     main = "bool_or_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -236,6 +247,7 @@ py_test(
     name = "boolean_product_sample_sat_py3",
     srcs = ["boolean_product_sample_sat.py"],
     main = "boolean_product_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -244,13 +256,14 @@ cc_test(
     srcs = ["channeling_sample_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:model",
         "//ortools/sat:sat_parameters_cc_proto",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/types:span",
     ],
@@ -272,6 +285,7 @@ py_test(
     name = "channeling_sample_sat_py3",
     srcs = ["channeling_sample_sat.py"],
     main = "channeling_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -280,12 +294,13 @@ cc_test(
     srcs = ["clone_model_sample_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/util:sorted_interval_list",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -302,14 +317,15 @@ cc_test(
     srcs = ["cp_is_fun_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:model",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:sorted_interval_list",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -318,6 +334,7 @@ py_test(
     name = "cp_is_fun_sat_py3",
     srcs = ["cp_is_fun_sat.py"],
     main = "cp_is_fun_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -326,12 +343,13 @@ cc_test(
     srcs = ["cp_sat_example.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/util:sorted_interval_list",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -347,6 +365,7 @@ py_test(
     name = "cumulative_variable_profile_sample_sat_py3",
     srcs = ["cumulative_variable_profile_sample_sat.py"],
     main = "cumulative_variable_profile_sample_sat.py",
+    tags = ["noci"],
     deps = [
         requirement("absl-py"),
         requirement("pandas"),
@@ -359,13 +378,14 @@ cc_test(
     srcs = ["earliness_tardiness_cost_sample_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:model",
         "//ortools/sat:sat_parameters_cc_proto",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/types:span",
     ],
@@ -395,10 +415,11 @@ cc_test(
     srcs = ["interval_sample_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/util:sorted_interval_list",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -416,6 +437,7 @@ py_test(
     name = "interval_sample_sat_py3",
     srcs = ["interval_sample_sat.py"],
     main = "interval_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -438,11 +460,12 @@ cc_test(
     srcs = ["minimal_jobshop_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/strings:str_format",
     ],
@@ -452,6 +475,7 @@ py_test(
     name = "minimal_jobshop_sat_py3",
     srcs = ["minimal_jobshop_sat.py"],
     main = "minimal_jobshop_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -460,9 +484,10 @@ cc_test(
     srcs = ["literal_sample_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -480,6 +505,7 @@ py_test(
     name = "literal_sample_sat_py3",
     srcs = ["literal_sample_sat.py"],
     main = "literal_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -488,11 +514,12 @@ cc_test(
     srcs = ["multiple_knapsack_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/strings:str_format",
     ],
@@ -502,6 +529,7 @@ py_test(
     name = "multiple_knapsack_sat_py3",
     srcs = ["multiple_knapsack_sat.py"],
     main = "multiple_knapsack_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -510,10 +538,13 @@ cc_test(
     srcs = ["non_linear_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
+        "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
-        "@abseil-cpp//absl/base:log_severity",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -530,14 +561,15 @@ cc_test(
     srcs = ["nqueens_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:model",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:sorted_interval_list",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/strings",
     ],
@@ -556,6 +588,7 @@ py_test(
     name = "nqueens_sat_py3",
     srcs = ["nqueens_sat.py"],
     main = "nqueens_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -564,14 +597,15 @@ cc_test(
     srcs = ["nurses_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:model",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:time_limit",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/strings:str_format",
     ],
@@ -590,6 +624,7 @@ py_test(
     name = "nurses_sat_py3",
     srcs = ["nurses_sat.py"],
     main = "nurses_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -598,10 +633,11 @@ cc_test(
     srcs = ["optional_interval_sample_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/util:sorted_interval_list",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -619,6 +655,7 @@ py_test(
     name = "optional_interval_sample_sat_py3",
     srcs = ["optional_interval_sample_sat.py"],
     main = "optional_interval_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -627,13 +664,14 @@ cc_test(
     srcs = ["no_overlap_sample_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:model",
         "//ortools/util:sorted_interval_list",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/types:span",
     ],
@@ -653,6 +691,7 @@ py_test(
     name = "no_overlap_sample_sat_py3",
     srcs = ["no_overlap_sample_sat.py"],
     main = "no_overlap_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -660,6 +699,7 @@ py_test(
     name = "overlapping_intervals_sample_sat_py3",
     srcs = ["overlapping_intervals_sample_sat.py"],
     main = "overlapping_intervals_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -668,12 +708,13 @@ cc_test(
     srcs = ["rabbits_and_pheasants_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/util:sorted_interval_list",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -707,12 +748,13 @@ cc_test(
     srcs = ["ranking_sample_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/util:sorted_interval_list",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/types:span",
     ],
@@ -732,6 +774,7 @@ py_test(
     name = "ranking_sample_sat_py3",
     srcs = ["ranking_sample_sat.py"],
     main = "ranking_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -740,8 +783,8 @@ cc_test(
     srcs = ["reified_sample_sat.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/types:span",
     ],
@@ -765,11 +808,12 @@ cc_test(
     srcs = ["schedule_requests_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/strings:str_format",
     ],
@@ -779,6 +823,7 @@ py_test(
     name = "schedule_requests_sat_py3",
     srcs = ["schedule_requests_sat.py"],
     main = "schedule_requests_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -786,6 +831,7 @@ py_test(
     name = "scheduling_with_calendar_sample_sat_py3",
     srcs = ["scheduling_with_calendar_sample_sat.py"],
     main = "scheduling_with_calendar_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -794,14 +840,15 @@ cc_test(
     srcs = ["search_for_all_solutions_sample_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:model",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:sorted_interval_list",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -821,6 +868,7 @@ py_test(
     name = "search_for_all_solutions_sample_sat_py3",
     srcs = ["search_for_all_solutions_sample_sat.py"],
     main = "search_for_all_solutions_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -828,6 +876,7 @@ py_test(
     name = "sequences_in_no_overlap_sample_sat_py3",
     srcs = ["sequences_in_no_overlap_sample_sat.py"],
     main = "sequences_in_no_overlap_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -836,12 +885,13 @@ cc_test(
     srcs = ["simple_sat_program.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/util:sorted_interval_list",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -860,6 +910,7 @@ py_test(
     name = "simple_sat_program_py3",
     srcs = ["simple_sat_program.py"],
     main = "simple_sat_program.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -868,13 +919,14 @@ cc_test(
     srcs = ["solution_hinting_sample_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:model",
         "//ortools/util:sorted_interval_list",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -883,6 +935,7 @@ py_test(
     name = "soft_constraints_sat_py3",
     srcs = ["soft_constraints_sat.py"],
     main = "soft_constraints_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -900,6 +953,7 @@ py_test(
     name = "solution_hinting_sample_sat_py3",
     srcs = ["solution_hinting_sample_sat.py"],
     main = "solution_hinting_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -908,13 +962,14 @@ cc_test(
     srcs = ["solve_and_print_intermediate_solutions_sample_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:model",
         "//ortools/util:sorted_interval_list",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -942,14 +997,15 @@ cc_test(
     srcs = ["step_function_sample_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:model",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:sorted_interval_list",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/types:span",
     ],
@@ -971,6 +1027,7 @@ py_test(
     name = "step_function_sample_sat_py3",
     srcs = ["step_function_sample_sat.py"],
     main = "step_function_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -979,14 +1036,15 @@ cc_test(
     srcs = ["solve_with_time_limit_sample_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:model",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:sorted_interval_list",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -1007,6 +1065,7 @@ py_test(
     name = "solve_with_time_limit_sample_sat_py3",
     srcs = ["solve_with_time_limit_sample_sat.py"],
     main = "solve_with_time_limit_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -1015,7 +1074,7 @@ cc_test(
     srcs = ["stop_after_n_solutions_sample_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
@@ -1023,7 +1082,8 @@ cc_test(
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:sorted_interval_list",
         "//ortools/util:time_limit",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -1032,6 +1092,7 @@ py_test(
     name = "stop_after_n_solutions_sample_sat_py3",
     srcs = ["stop_after_n_solutions_sample_sat.py"],
     main = "stop_after_n_solutions_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -1039,548 +1100,6 @@ py_test(
     name = "transitions_in_no_overlap_sample_sat_py3",
     srcs = ["transitions_in_no_overlap_sample_sat.py"],
     main = "transitions_in_no_overlap_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
-)
-
-java_binary(
-    name = "AssignmentGroupsSat",
-    srcs = ["AssignmentGroupsSat.java"],
-    main_class = "com.google.ortools.sat.samples.AssignmentGroupsSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "AssignmentGroupsSatTest",
-    srcs = ["AssignmentGroupsSatTest.bintest"],
-    named_data = {"AssignmentGroupsSat": ":AssignmentGroupsSat"},
-)
-
-java_binary(
-    name = "AssignmentSat",
-    srcs = ["AssignmentSat.java"],
-    main_class = "com.google.ortools.sat.samples.AssignmentSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "AssignmentSatTest",
-    srcs = ["AssignmentSatTest.bintest"],
-    named_data = {"AssignmentSat": ":AssignmentSat"},
-)
-
-java_binary(
-    name = "AssignmentTaskSizesSat",
-    srcs = ["AssignmentTaskSizesSat.java"],
-    main_class = "com.google.ortools.sat.samples.AssignmentTaskSizesSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "AssignmentTaskSizesSatTest",
-    srcs = ["AssignmentTaskSizesSatTest.bintest"],
-    named_data = {"AssignmentTaskSizesSat": ":AssignmentTaskSizesSat"},
-)
-
-java_binary(
-    name = "AssignmentTeamsSat",
-    srcs = ["AssignmentTeamsSat.java"],
-    main_class = "com.google.ortools.sat.samples.AssignmentTeamsSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "AssignmentTeamsSatTest",
-    srcs = ["AssignmentTeamsSatTest.bintest"],
-    named_data = {"AssignmentTeamsSat": ":AssignmentTeamsSat"},
-)
-
-java_binary(
-    name = "AssumptionsSampleSat",
-    srcs = ["AssumptionsSampleSat.java"],
-    main_class = "com.google.ortools.sat.samples.AssumptionsSampleSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "AssumptionsSampleSatTest",
-    srcs = ["AssumptionsSampleSatTest.bintest"],
-    named_data = {"AssumptionsSampleSat": ":AssumptionsSampleSat"},
-)
-
-java_binary(
-    name = "BinPackingProblemSat",
-    srcs = ["BinPackingProblemSat.java"],
-    main_class = "com.google.ortools.sat.samples.BinPackingProblemSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "BinPackingProblemSatTest",
-    srcs = ["BinPackingProblemSatTest.bintest"],
-    named_data = {"BinPackingProblemSat": ":BinPackingProblemSat"},
-)
-
-java_binary(
-    name = "BoolOrSampleSat",
-    srcs = ["BoolOrSampleSat.java"],
-    main_class = "com.google.ortools.sat.samples.BoolOrSampleSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-    ],
-)
-
-bintest(
-    name = "BoolOrSampleSatTest",
-    srcs = ["BoolOrSampleSatTest.bintest"],
-    named_data = {"BoolOrSampleSat": ":BoolOrSampleSat"},
-)
-
-java_binary(
-    name = "ChannelingSampleSat",
-    srcs = ["ChannelingSampleSat.java"],
-    main_class = "com.google.ortools.sat.samples.ChannelingSampleSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat:sat_parameters_java_proto",
-    ],
-)
-
-bintest(
-    name = "ChannelingSampleSatTest",
-    srcs = ["ChannelingSampleSatTest.bintest"],
-    named_data = {"ChannelingSampleSat": ":ChannelingSampleSat"},
-)
-
-java_binary(
-    name = "CloneModelSampleSat",
-    srcs = ["CloneModelSampleSat.java"],
-    main_class = "com.google.ortools.sat.samples.CloneModelSampleSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "CloneModelSampleSatTest",
-    srcs = ["CloneModelSampleSatTest.bintest"],
-    named_data = {"CloneModelSampleSat": ":CloneModelSampleSat"},
-)
-
-java_binary(
-    name = "CpIsFunSat",
-    srcs = ["CpIsFunSat.java"],
-    main_class = "com.google.ortools.sat.samples.CpIsFunSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "CpIsFunSatTest",
-    srcs = ["CpIsFunSatTest.bintest"],
-    named_data = {"CpIsFunSat": ":CpIsFunSat"},
-)
-
-java_binary(
-    name = "CpSatExample",
-    srcs = ["CpSatExample.java"],
-    main_class = "com.google.ortools.sat.samples.CpSatExample",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "CpSatExampleTest",
-    srcs = ["CpSatExampleTest.bintest"],
-    named_data = {"CpSatExample": ":CpSatExample"},
-)
-
-java_binary(
-    name = "EarlinessTardinessCostSampleSat",
-    srcs = ["EarlinessTardinessCostSampleSat.java"],
-    main_class = "com.google.ortools.sat.samples.EarlinessTardinessCostSampleSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat:sat_parameters_java_proto",
-    ],
-)
-
-bintest(
-    name = "EarlinessTardinessCostSampleSatTest",
-    srcs = ["EarlinessTardinessCostSampleSatTest.bintest"],
-    named_data = {"EarlinessTardinessCostSampleSat": ":EarlinessTardinessCostSampleSat"},
-)
-
-java_binary(
-    name = "IntervalSampleSat",
-    srcs = ["IntervalSampleSat.java"],
-    main_class = "com.google.ortools.sat.samples.IntervalSampleSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-    ],
-)
-
-bintest(
-    name = "IntervalSampleSatTest",
-    srcs = ["IntervalSampleSatTest.bintest"],
-    named_data = {"IntervalSampleSat": ":IntervalSampleSat"},
-)
-
-java_binary(
-    name = "LiteralSampleSat",
-    srcs = ["LiteralSampleSat.java"],
-    main_class = "com.google.ortools.sat.samples.LiteralSampleSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-    ],
-)
-
-bintest(
-    name = "LiteralSampleSatTest",
-    srcs = ["LiteralSampleSatTest.bintest"],
-    named_data = {"LiteralSampleSat": ":LiteralSampleSat"},
-)
-
-java_binary(
-    name = "MinimalJobshopSat",
-    srcs = ["MinimalJobshopSat.java"],
-    main_class = "com.google.ortools.sat.samples.MinimalJobshopSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "MinimalJobshopSatTest",
-    srcs = ["MinimalJobshopSatTest.bintest"],
-    named_data = {"MinimalJobshopSat": ":MinimalJobshopSat"},
-)
-
-java_binary(
-    name = "MultipleKnapsackSat",
-    srcs = ["MultipleKnapsackSat.java"],
-    main_class = "com.google.ortools.sat.samples.MultipleKnapsackSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "MultipleKnapsackSatTest",
-    srcs = ["MultipleKnapsackSatTest.bintest"],
-    named_data = {"MultipleKnapsackSat": ":MultipleKnapsackSat"},
-)
-
-java_binary(
-    name = "NQueensSat",
-    srcs = ["NQueensSat.java"],
-    main_class = "com.google.ortools.sat.samples.NQueensSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "NQueensSatTest",
-    srcs = ["NQueensSatTest.bintest"],
-    named_data = {"NQueensSat": ":NQueensSat"},
-)
-
-java_binary(
-    name = "NoOverlapSampleSat",
-    srcs = ["NoOverlapSampleSat.java"],
-    main_class = "com.google.ortools.sat.samples.NoOverlapSampleSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "NoOverlapSampleSatTest",
-    srcs = ["NoOverlapSampleSatTest.bintest"],
-    named_data = {"NoOverlapSampleSat": ":NoOverlapSampleSat"},
-)
-
-java_binary(
-    name = "NonLinearSat",
-    srcs = ["NonLinearSat.java"],
-    main_class = "com.google.ortools.sat.samples.NonLinearSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "NonLinearSatTest",
-    srcs = ["NonLinearSatTest.bintest"],
-    named_data = {"NonLinearSat": ":NonLinearSat"},
-)
-
-java_binary(
-    name = "NursesSat",
-    srcs = ["NursesSat.java"],
-    main_class = "com.google.ortools.sat.samples.NursesSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "NursesSatTest",
-    srcs = ["NursesSatTest.bintest"],
-    named_data = {"NursesSat": ":NursesSat"},
-)
-
-java_binary(
-    name = "OptionalIntervalSampleSat",
-    srcs = ["OptionalIntervalSampleSat.java"],
-    main_class = "com.google.ortools.sat.samples.OptionalIntervalSampleSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-    ],
-)
-
-bintest(
-    name = "OptionalIntervalSampleSatTest",
-    srcs = ["OptionalIntervalSampleSatTest.bintest"],
-    named_data = {"OptionalIntervalSampleSat": ":OptionalIntervalSampleSat"},
-)
-
-java_binary(
-    name = "RabbitsAndPheasantsSat",
-    srcs = ["RabbitsAndPheasantsSat.java"],
-    main_class = "com.google.ortools.sat.samples.RabbitsAndPheasantsSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "RabbitsAndPheasantsSatTest",
-    srcs = ["RabbitsAndPheasantsSatTest.bintest"],
-    named_data = {"RabbitsAndPheasantsSat": ":RabbitsAndPheasantsSat"},
-)
-
-java_binary(
-    name = "RankingSampleSat",
-    srcs = ["RankingSampleSat.java"],
-    main_class = "com.google.ortools.sat.samples.RankingSampleSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "RankingSampleSatTest",
-    srcs = ["RankingSampleSatTest.bintest"],
-    named_data = {"RankingSampleSat": ":RankingSampleSat"},
-)
-
-java_binary(
-    name = "ReifiedSampleSat",
-    srcs = ["ReifiedSampleSat.java"],
-    main_class = "com.google.ortools.sat.samples.ReifiedSampleSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-    ],
-)
-
-bintest(
-    name = "ReifiedSampleSatTest",
-    srcs = ["ReifiedSampleSatTest.bintest"],
-    named_data = {"ReifiedSampleSat": ":ReifiedSampleSat"},
-)
-
-java_binary(
-    name = "ScheduleRequestsSat",
-    srcs = ["ScheduleRequestsSat.java"],
-    main_class = "com.google.ortools.sat.samples.ScheduleRequestsSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "ScheduleRequestsSatTest",
-    srcs = ["ScheduleRequestsSatTest.bintest"],
-    named_data = {"ScheduleRequestsSat": ":ScheduleRequestsSat"},
-)
-
-java_binary(
-    name = "SearchForAllSolutionsSampleSat",
-    srcs = ["SearchForAllSolutionsSampleSat.java"],
-    main_class = "com.google.ortools.sat.samples.SearchForAllSolutionsSampleSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "SearchForAllSolutionsSampleSatTest",
-    srcs = ["SearchForAllSolutionsSampleSatTest.bintest"],
-    named_data = {"SearchForAllSolutionsSampleSat": ":SearchForAllSolutionsSampleSat"},
-)
-
-java_binary(
-    name = "SimpleSatProgram",
-    srcs = ["SimpleSatProgram.java"],
-    main_class = "com.google.ortools.sat.samples.SimpleSatProgram",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "SimpleSatProgramTest",
-    srcs = ["SimpleSatProgramTest.bintest"],
-    named_data = {"SimpleSatProgram": ":SimpleSatProgram"},
-)
-
-java_binary(
-    name = "SolutionHintingSampleSat",
-    srcs = ["SolutionHintingSampleSat.java"],
-    main_class = "com.google.ortools.sat.samples.SolutionHintingSampleSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "SolutionHintingSampleSatTest",
-    srcs = ["SolutionHintingSampleSatTest.bintest"],
-    named_data = {"SolutionHintingSampleSat": ":SolutionHintingSampleSat"},
-)
-
-java_binary(
-    name = "SolveAndPrintIntermediateSolutionsSampleSat",
-    srcs = ["SolveAndPrintIntermediateSolutionsSampleSat.java"],
-    main_class = "com.google.ortools.sat.samples.SolveAndPrintIntermediateSolutionsSampleSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "SolveAndPrintIntermediateSolutionsSampleSatTest",
-    srcs = ["SolveAndPrintIntermediateSolutionsSampleSatTest.bintest"],
-    named_data = {"SolveAndPrintIntermediateSolutionsSampleSat": ":SolveAndPrintIntermediateSolutionsSampleSat"},
-)
-
-java_binary(
-    name = "SolveWithTimeLimitSampleSat",
-    srcs = ["SolveWithTimeLimitSampleSat.java"],
-    main_class = "com.google.ortools.sat.samples.SolveWithTimeLimitSampleSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "SolveWithTimeLimitSampleSatTest",
-    srcs = ["SolveWithTimeLimitSampleSatTest.bintest"],
-    named_data = {"SolveWithTimeLimitSampleSat": ":SolveWithTimeLimitSampleSat"},
-)
-
-java_binary(
-    name = "StepFunctionSampleSat",
-    srcs = ["StepFunctionSampleSat.java"],
-    main_class = "com.google.ortools.sat.samples.StepFunctionSampleSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat:sat_parameters_java_proto",
-        "//ortools/util/java:sorted_interval_list",
-    ],
-)
-
-bintest(
-    name = "StepFunctionSampleSatTest",
-    srcs = ["StepFunctionSampleSatTest.bintest"],
-    named_data = {"StepFunctionSampleSat": ":StepFunctionSampleSat"},
-)
-
-java_binary(
-    name = "StopAfterNSolutionsSampleSat",
-    srcs = ["StopAfterNSolutionsSampleSat.java"],
-    main_class = "com.google.ortools.sat.samples.StopAfterNSolutionsSampleSat",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-    ],
-)
-
-bintest(
-    name = "StopAfterNSolutionsSampleSatTest",
-    srcs = ["StopAfterNSolutionsSampleSatTest.bintest"],
-    named_data = {"StopAfterNSolutionsSampleSat": ":StopAfterNSolutionsSampleSat"},
 )

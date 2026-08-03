@@ -14,7 +14,6 @@
 #include "ortools/sat/clause.h"
 
 #include <algorithm>
-#include <memory>
 #include <numeric>
 #include <optional>
 #include <vector>
@@ -26,6 +25,7 @@
 #include "ortools/base/gmock.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/strong_integers.h"
 
@@ -43,32 +43,6 @@ auto LiteralsAre(Args... literals) {
 template <typename... Args>
 auto UnorderedLiteralsAre(Args... literals) {
   return ::testing::UnorderedElementsAre(Literal(literals)...);
-}
-
-TEST(SatClauseTest, BasicAllocation) {
-  std::unique_ptr<SatClause> clause(SatClause::Create(Literals({+1, -2, +4})));
-  EXPECT_EQ(3, clause->size());
-  EXPECT_EQ(Literal(+1), clause->FirstLiteral());
-  EXPECT_EQ(Literal(-2), clause->SecondLiteral());
-}
-
-struct TestSatClause {
-#ifdef _MSC_VER
-  // MSVC doesn't allow to overflow at the word boundary.
-  unsigned int is_learned : 1;
-  unsigned int is_attached : 1;
-#else
-  bool is_learned : 1;
-  bool is_attached : 1;
-#endif
-  unsigned int size : 30;
-
-  // We test that Literal literals[0]; does not increase the size.
-};
-
-TEST(SatClauseTest, ClassSize) {
-  EXPECT_EQ(4, sizeof(TestSatClause));
-  EXPECT_EQ(4, sizeof(SatClause));
 }
 
 BinaryClause MakeBinaryClause(int a, int b) {
@@ -286,7 +260,7 @@ TEST(BinaryImplicationGraphTest, BasicCliqueDetection) {
   for (const std::vector<Literal>& at_most_one : at_most_ones) {
     EXPECT_TRUE(graph->AddAtMostOne(at_most_one));
   }
-  graph->TransformIntoMaxCliques(&at_most_ones);
+  EXPECT_TRUE(graph->TransformIntoMaxCliques(&at_most_ones));
   EXPECT_THAT(at_most_ones[0], LiteralsAre(+1, +2, +3));
   EXPECT_TRUE(at_most_ones[1].empty());
   EXPECT_TRUE(at_most_ones[2].empty());
@@ -305,7 +279,7 @@ TEST(BinaryImplicationGraphTest, CliqueDetectionAndDuplicates) {
   }
 
   // Here we do not change the clique.
-  graph->TransformIntoMaxCliques(&at_most_ones);
+  EXPECT_TRUE(graph->TransformIntoMaxCliques(&at_most_ones));
   EXPECT_THAT(at_most_ones,
               ElementsAre(LiteralsAre(+1, +2), LiteralsAre(+2, +2)));
 
@@ -432,24 +406,6 @@ TEST(BinaryImplicationGraphTest, DetectEquivalencePropagateThings) {
   EXPECT_TRUE(graph->AddAtMostOne(Literals({-4, -1, +2, +3})));
   EXPECT_TRUE(graph->AddAtMostOne(Literals({-3, -1, +2, +4})));
   EXPECT_TRUE(graph->DetectEquivalences());
-}
-
-void TryAmoEquivalences(absl::Span<const std::vector<int>> cliques) {
-  Model model;
-  auto* trail = model.GetOrCreate<Trail>();
-  auto* graph = model.GetOrCreate<BinaryImplicationGraph>();
-  trail->Resize(1000);
-  graph->Resize(1000);
-  for (const auto& clique : cliques) {
-    std::vector<Literal> literals;
-    for (const int i : clique) {
-      literals.push_back(Literal(i));
-    }
-    if (!graph->AddAtMostOne(literals)) {
-      return;
-    }
-  }
-  graph->DetectEquivalences();
 }
 
 }  // namespace

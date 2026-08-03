@@ -16,7 +16,8 @@
 #include <cstdint>
 
 #include "absl/status/status.h"
-#include "ortools/base/status_macros.h"
+#include "absl/status/status_macros.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/infeasible_subsystem.pb.h"
 #include "ortools/math_opt/result.pb.h"
@@ -32,7 +33,8 @@ absl::Status CheckMapKeys(
     const IdNameBiMap& universe) {
   for (const auto& [id, unused] : bounds_map) {
     if (!universe.HasId(id)) {
-      return util::InvalidArgumentErrorBuilder() << "unrecognized id: " << id;
+      return ortools::InvalidArgumentErrorBuilder()
+             << "unrecognized id: " << id;
     }
   }
   return absl::OkStatus();
@@ -41,8 +43,8 @@ absl::Status CheckMapKeys(
 absl::Status CheckRepeatedIds(
     const google::protobuf::RepeatedField<int64_t>& ids,
     const IdNameBiMap& universe) {
-  RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing(ids));
-  RETURN_IF_ERROR(CheckIdsSubset(ids, universe));
+  ABSL_RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing(ids));
+  ABSL_RETURN_IF_ERROR(CheckIdsSubset(ids, universe));
   return absl::OkStatus();
 }
 
@@ -50,29 +52,30 @@ absl::Status CheckRepeatedIds(
 
 absl::Status ValidateModelSubset(const ModelSubsetProto& model_subset,
                                  const ModelSummary& model_summary) {
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       CheckMapKeys(model_subset.variable_bounds(), model_summary.variables))
       << "bad ModelSubsetProto.variable_bounds";
-  RETURN_IF_ERROR(CheckRepeatedIds(model_subset.variable_integrality(),
-                                   model_summary.variables))
+  ABSL_RETURN_IF_ERROR(CheckRepeatedIds(model_subset.variable_integrality(),
+                                        model_summary.variables))
       << "bad ModelSubsetProto.variable_integrality";
-  RETURN_IF_ERROR(CheckMapKeys(model_subset.linear_constraints(),
-                               model_summary.linear_constraints))
+  ABSL_RETURN_IF_ERROR(CheckMapKeys(model_subset.linear_constraints(),
+                                    model_summary.linear_constraints))
       << "bad ModelSubsetProto.linear_constraints";
-  RETURN_IF_ERROR(CheckMapKeys(model_subset.quadratic_constraints(),
-                               model_summary.quadratic_constraints))
+  ABSL_RETURN_IF_ERROR(CheckMapKeys(model_subset.quadratic_constraints(),
+                                    model_summary.quadratic_constraints))
       << "bad ModelSubsetProto.quadratic_constraints";
-  RETURN_IF_ERROR(CheckRepeatedIds(model_subset.second_order_cone_constraints(),
-                                   model_summary.second_order_cone_constraints))
+  ABSL_RETURN_IF_ERROR(
+      CheckRepeatedIds(model_subset.second_order_cone_constraints(),
+                       model_summary.second_order_cone_constraints))
       << "bad ModelSubsetProto.second_order_cone_constraints";
-  RETURN_IF_ERROR(CheckRepeatedIds(model_subset.sos1_constraints(),
-                                   model_summary.sos1_constraints))
+  ABSL_RETURN_IF_ERROR(CheckRepeatedIds(model_subset.sos1_constraints(),
+                                        model_summary.sos1_constraints))
       << "bad ModelSubsetProto.sos1_constraints";
-  RETURN_IF_ERROR(CheckRepeatedIds(model_subset.sos2_constraints(),
-                                   model_summary.sos2_constraints))
+  ABSL_RETURN_IF_ERROR(CheckRepeatedIds(model_subset.sos2_constraints(),
+                                        model_summary.sos2_constraints))
       << "bad ModelSubsetProto.sos2_constraints";
-  RETURN_IF_ERROR(CheckRepeatedIds(model_subset.indicator_constraints(),
-                                   model_summary.indicator_constraints))
+  ABSL_RETURN_IF_ERROR(CheckRepeatedIds(model_subset.indicator_constraints(),
+                                        model_summary.indicator_constraints))
       << "bad ModelSubsetProto.indicator_constraints";
   return absl::OkStatus();
 }
@@ -80,9 +83,9 @@ absl::Status ValidateModelSubset(const ModelSubsetProto& model_subset,
 absl::Status ValidateComputeInfeasibleSubsystemResult(
     const ComputeInfeasibleSubsystemResultProto& result,
     const ModelSummary& model_summary) {
-  RETURN_IF_ERROR(ValidateComputeInfeasibleSubsystemResultNoModel(result));
+  ABSL_RETURN_IF_ERROR(ValidateComputeInfeasibleSubsystemResultNoModel(result));
   if (result.feasibility() == FEASIBILITY_STATUS_INFEASIBLE) {
-    RETURN_IF_ERROR(
+    ABSL_RETURN_IF_ERROR(
         ValidateModelSubset(result.infeasible_subsystem(), model_summary));
   }
   return absl::OkStatus();
@@ -90,19 +93,19 @@ absl::Status ValidateComputeInfeasibleSubsystemResult(
 
 absl::Status ValidateComputeInfeasibleSubsystemResultNoModel(
     const ComputeInfeasibleSubsystemResultProto& result) {
-  RETURN_IF_ERROR(ValidateFeasibilityStatus(result.feasibility()))
+  ABSL_RETURN_IF_ERROR(ValidateFeasibilityStatus(result.feasibility()))
       << "bad ComputeInfeasibleSubsystemResultProto.feasibility";
   if (result.feasibility() != FEASIBILITY_STATUS_INFEASIBLE) {
     // Check that the `infeasible_subsystem` is empty by validating against an
     // empty ModelSummary.
     if (!ValidateModelSubset(result.infeasible_subsystem(), ModelSummary())
              .ok()) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "nonempty infeasible_subsystem with feasibility status: "
              << FeasibilityStatusProto_Name(result.feasibility());
     }
     if (result.is_minimal()) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "is_minimal is true with feasibility status: "
              << FeasibilityStatusProto_Name(result.feasibility());
     }

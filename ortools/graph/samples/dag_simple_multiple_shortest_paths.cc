@@ -11,12 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
+// [START imports]
 #include <iostream>
 #include <vector>
 
 #include "absl/strings/str_join.h"
 #include "ortools/base/init_google.h"
 #include "ortools/graph/dag_shortest_path.h"
+// [END imports]
 
 int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);
@@ -45,3 +48,4 @@ int main(int argc, char** argv) {
   }
   return 0;
 }
+// [END program]

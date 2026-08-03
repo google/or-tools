@@ -45,30 +45,31 @@ TEST(AddAndProveInferredClauseByEnumerationTest, XorEquivalence) {
   Model model;
   auto* params = model.GetOrCreate<SatParameters>();
   params->set_check_lrat_proof(true);
-  params->set_check_drat_proof(true);
   std::unique_ptr<LratProofHandler> lrat =
       LratProofHandler::MaybeCreate(&model);
 
-  // Lets create ids for all these clauses.
-  auto* id_generator = model.GetOrCreate<ClauseIdGenerator>();
-  std::vector<ClauseId> clause_ids;
+  // Lets create ClausePtrs for all these clauses.
+  std::vector<ClausePtr> clauses_for_proof;
   for (int i = 0; i < clauses.size(); ++i) {
-    const ClauseId id = id_generator->GetNextId();
-    clause_ids.push_back(id);
-    lrat->AddProblemClause(id, clauses[i]);
+    const ClausePtr clause = ClausePtr(clauses[i]);
+    clauses_for_proof.push_back(clause);
+    lrat->AddProblemClause(clause);
   }
   lrat->EndProblemClauses();
 
   // This should be enough to prove equivalence.
   {
-    std::vector<Literal> to_prove = {b.Negated(), a};
-    EXPECT_NE(kNoClauseId, lrat->AddAndProveInferredClauseByEnumeration(
-                               to_prove, clause_ids, clauses));
+    EXPECT_TRUE(lrat->AddAndProveInferredClauseByEnumeration(
+        ClausePtr(b.Negated(), a), clauses_for_proof));
   }
   {
-    std::vector<Literal> to_prove = {a.Negated(), b};
-    EXPECT_NE(kNoClauseId, lrat->AddAndProveInferredClauseByEnumeration(
-                               to_prove, clause_ids, clauses));
+    EXPECT_TRUE(lrat->AddAndProveInferredClauseByEnumeration(
+        ClausePtr(a.Negated(), b), clauses_for_proof));
+  }
+  for (const ClausePtr clause : clauses_for_proof) {
+    if (clause.IsSatClausePtr()) {
+      delete clause.GetSatClause();
+    }
   }
 }
 

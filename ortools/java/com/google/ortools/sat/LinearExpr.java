@@ -13,8 +13,6 @@
 
 package com.google.ortools.sat;
 
-import com.google.ortools.sat.LinearExpressionProto;
-
 /** A linear expression (sum (ai * xi) + b). It specifies methods to help parsing the expression. */
 public interface LinearExpr extends LinearArgument {
   /** Returns the number of terms (excluding the constant one) in this expression. */

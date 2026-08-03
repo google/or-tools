@@ -176,7 +176,7 @@ rjava_%: \
 	cd $(TEMP_JAVA_DIR)$S$1$S$$* && "$(MVN_BIN)" exec:java $(ARGS)
 endef
 
-JAVA_SAMPLES := init algorithms graph constraint_solver linear_solver sat util
+JAVA_SAMPLES := init algorithms graph constraint_solver linear_solver routing sat util
 $(foreach sample,$(JAVA_SAMPLES),$(eval $(call java-sample-target,$(sample),$(subst _,,$(sample)))))
 
 # Examples
@@ -275,7 +275,7 @@ rjava_%: \
 	cd $(TEMP_JAVA_DIR)$S$1$S$$* && "$(MVN_BIN)" test $(ARGS)
 endef
 
-JAVA_TESTS := init algorithms graph constraint_solver linear_solver sat util
+JAVA_TESTS := init algorithms graph constraint_solver linear_solver routing sat util
 $(foreach test,$(JAVA_TESTS),$(eval $(call java-test-target,$(test))))
 
 ####################

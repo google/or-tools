@@ -21,13 +21,13 @@
 #include <vector>
 
 #include "absl/base/thread_annotations.h"
+#include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
 #include "absl/strings/str_cat.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/synchronization/notification.h"
 #include "ortools/base/iterator_adaptors.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/threadpool.h"
 
 namespace operations_research {
@@ -265,10 +265,10 @@ BidirectionalDijkstra<GraphType, DistanceType>::SetToSetShortestPath(
         dir == FORWARD ? sources : destinations;
     CHECK(queue_[dir].empty());
     QCHECK_EQ(reached_nodes_[dir].size(), 0);
-    if (DEBUG_MODE) {
-      for (bool b : is_reached_[dir]) QCHECK(!b);
-      for (bool b : is_settled_[dir]) QCHECK(!b);
-    }
+#ifndef NDEBUG
+    for (bool b : is_reached_[dir]) QCHECK(!b);
+    for (bool b : is_settled_[dir]) QCHECK(!b);
+#endif
     for (const NodeDistance& src : srcs) {
       CHECK_GE(src.node, 0);
       CHECK_LT(src.node, graph_[dir]->num_nodes());

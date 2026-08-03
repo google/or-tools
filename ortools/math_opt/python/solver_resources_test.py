@@ -15,6 +15,7 @@
 """Unit tests for solver_resources."""
 
 from absl.testing import absltest
+
 from ortools.math_opt import rpc_pb2
 from ortools.math_opt.python import solver_resources
 from ortools.math_opt.python.testing import compare_proto

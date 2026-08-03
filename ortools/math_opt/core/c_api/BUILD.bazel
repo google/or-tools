@@ -14,14 +14,20 @@
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
 load("//tools/testing:bintest.bzl", "bintest")
+
+package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "solver",
     srcs = ["solver.cc"],
     hdrs = ["solver.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
+        "//ortools/base:types",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt:result_cc_proto",
@@ -29,6 +35,8 @@ cc_library(
         "//ortools/util:solve_interrupter",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_builder",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
     ],
 )
@@ -36,16 +44,20 @@ cc_library(
 cc_test(
     name = "solver_test",
     srcs = ["solver_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":solver",
         "//ortools/base:gmock_main",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
+        "//ortools/base:types",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:result_cc_proto",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:glop_solver",
         "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_builder",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings:string_view",
     ],
@@ -54,6 +66,8 @@ cc_test(
 cc_test(
     name = "solver_port_c_test",
     srcs = ["solver_port_c_test.c"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":solver",
         "//ortools/math_opt/solvers:glop_solver",
@@ -63,6 +77,8 @@ cc_test(
 cc_binary(
     name = "cpp_example",
     srcs = ["cpp_example.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":solver",
         "//ortools/base",

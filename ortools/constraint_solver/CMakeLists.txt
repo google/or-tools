@@ -22,7 +22,7 @@ set_target_properties(${NAME} PROPERTIES
   )
 if(MSVC AND BUILD_SHARED_LIBS)
   target_compile_definitions(${NAME} PUBLIC "OR_BUILD_DLL")
-  target_compile_definitions(${NAME} PRIVATE "OR_EXPORT")
+  target_compile_definitions(${NAME} PRIVATE "OR_ROUTING_EXPORT")
 endif()
 target_include_directories(${NAME} PRIVATE
   ${PROJECT_SOURCE_DIR}
@@ -34,5 +34,8 @@ target_link_libraries(${NAME} PRIVATE
   absl::strings
   absl::str_format
   protobuf::libprotobuf
-  ${PROJECT_NAMESPACE}::ortools_proto)
+  ortools::ortools_core
+  ortools::routing_proto
+)
+add_dependencies(ortools_constraint_solver ortools::routing_proto)
 #add_library(${PROJECT_NAMESPACE}::constraint_solver ALIAS ${NAME})

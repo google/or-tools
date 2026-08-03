@@ -14,7 +14,6 @@
 #include "ortools/routing/parsers/solution_serializer.h"
 
 #include <cstdint>
-#include <cstdio>
 #include <string>
 #include <vector>
 
@@ -24,8 +23,8 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/helpers.h"
-#include "ortools/base/mutable_memfile.h"
 #include "ortools/base/options.h"
+#include "ortools/base/temp_file.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
 namespace operations_research::routing {
@@ -34,18 +33,13 @@ namespace {
 using testing::MatchesRegex;
 
 TEST(RoutingSolutionSerializerTest, RoutingSolutionEventComparison) {
-  RoutingSolution::Event t1 = {RoutingSolution::Event::Type::kStart, 0,
-                               Arc{0, 0}};
-  RoutingSolution::Event t2 = {RoutingSolution::Event::Type::kStart, 0,
-                               Arc{0, 0}};  // Same as t1.
-  RoutingSolution::Event t3 = {RoutingSolution::Event::Type::kEnd, 0,
-                               Arc{0, 0}};
-  RoutingSolution::Event t4 = {RoutingSolution::Event::Type::kStart, 1,
-                               Arc{0, 0}};
-  RoutingSolution::Event t5 = {RoutingSolution::Event::Type::kStart, 0,
-                               Arc{1, 0}};
-  RoutingSolution::Event t6 = {RoutingSolution::Event::Type::kStart, 0,
-                               Arc{0, 1}};
+  Solution::Event t1 = {Solution::Event::Type::kStart, 0, Arc{0, 0}};
+  Solution::Event t2 = {Solution::Event::Type::kStart, 0,
+                        Arc{0, 0}};  // Same as t1.
+  Solution::Event t3 = {Solution::Event::Type::kEnd, 0, Arc{0, 0}};
+  Solution::Event t4 = {Solution::Event::Type::kStart, 1, Arc{0, 0}};
+  Solution::Event t5 = {Solution::Event::Type::kStart, 0, Arc{1, 0}};
+  Solution::Event t6 = {Solution::Event::Type::kStart, 0, Arc{0, 1}};
   EXPECT_EQ(t1, t1);
   EXPECT_EQ(t1, t2);
   EXPECT_NE(t1, t3);
@@ -98,20 +92,15 @@ TEST(RoutingSolutionSerializerTest, ParseNearplibString) {
 TEST(RoutingSolutionSerializerTest, FromSplitRoutesWithOneRoute) {
   // Specifically test RouteFromVector in the implementation.
   const std::vector<std::vector<int64_t>> routes{{0, 1, 3, 0}};
-  const RoutingSolution result = RoutingSolution::FromSplitRoutes(routes);
+  const Solution result = Solution::FromSplitRoutes(routes);
 
-  const RoutingSolution expected_output = RoutingSolution{
-      std::vector<RoutingSolution::Route>{RoutingSolution::Route{
-          RoutingSolution::Event{RoutingSolution::Event::Type::kStart, -1,
-                                 Arc{0, 0}},
-          RoutingSolution::Event{RoutingSolution::Event::Type::kTransit, -1,
-                                 Arc{0, 1}},
-          RoutingSolution::Event{RoutingSolution::Event::Type::kTransit, -1,
-                                 Arc{1, 3}},
-          RoutingSolution::Event{RoutingSolution::Event::Type::kTransit, -1,
-                                 Arc{3, 0}},
-          RoutingSolution::Event{RoutingSolution::Event::Type::kEnd, -1,
-                                 Arc{0, 0}},
+  const Solution expected_output = Solution{
+      std::vector<Solution::Route>{Solution::Route{
+          Solution::Event{Solution::Event::Type::kStart, -1, Arc{0, 0}},
+          Solution::Event{Solution::Event::Type::kTransit, -1, Arc{0, 1}},
+          Solution::Event{Solution::Event::Type::kTransit, -1, Arc{1, 3}},
+          Solution::Event{Solution::Event::Type::kTransit, -1, Arc{3, 0}},
+          Solution::Event{Solution::Event::Type::kEnd, -1, Arc{0, 0}},
       }},
       std::vector<int64_t>{-1},
       std::vector<int64_t>{-1},
@@ -125,31 +114,22 @@ TEST(RoutingSolutionSerializerTest, FromSplitRoutesWithTwoRoutes) {
       {0, 1, 3, 0},
       {0, 2, 0},
   };
-  const RoutingSolution result = RoutingSolution::FromSplitRoutes(routes);
+  const Solution result = Solution::FromSplitRoutes(routes);
 
-  const RoutingSolution expected_output = {RoutingSolution{
-      std::vector<RoutingSolution::Route>{
-          RoutingSolution::Route{
-              RoutingSolution::Event{RoutingSolution::Event::Type::kStart, -1,
-                                     Arc{0, 0}},
-              RoutingSolution::Event{RoutingSolution::Event::Type::kTransit, -1,
-                                     Arc{0, 1}},
-              RoutingSolution::Event{RoutingSolution::Event::Type::kTransit, -1,
-                                     Arc{1, 3}},
-              RoutingSolution::Event{RoutingSolution::Event::Type::kTransit, -1,
-                                     Arc{3, 0}},
-              RoutingSolution::Event{RoutingSolution::Event::Type::kEnd, -1,
-                                     Arc{0, 0}},
+  const Solution expected_output = {Solution{
+      std::vector<Solution::Route>{
+          Solution::Route{
+              Solution::Event{Solution::Event::Type::kStart, -1, Arc{0, 0}},
+              Solution::Event{Solution::Event::Type::kTransit, -1, Arc{0, 1}},
+              Solution::Event{Solution::Event::Type::kTransit, -1, Arc{1, 3}},
+              Solution::Event{Solution::Event::Type::kTransit, -1, Arc{3, 0}},
+              Solution::Event{Solution::Event::Type::kEnd, -1, Arc{0, 0}},
           },
-          RoutingSolution::Route{
-              RoutingSolution::Event{RoutingSolution::Event::Type::kStart, -1,
-                                     Arc{0, 0}},
-              RoutingSolution::Event{RoutingSolution::Event::Type::kTransit, -1,
-                                     Arc{0, 2}},
-              RoutingSolution::Event{RoutingSolution::Event::Type::kTransit, -1,
-                                     Arc{2, 0}},
-              RoutingSolution::Event{RoutingSolution::Event::Type::kEnd, -1,
-                                     Arc{0, 0}},
+          Solution::Route{
+              Solution::Event{Solution::Event::Type::kStart, -1, Arc{0, 0}},
+              Solution::Event{Solution::Event::Type::kTransit, -1, Arc{0, 2}},
+              Solution::Event{Solution::Event::Type::kTransit, -1, Arc{2, 0}},
+              Solution::Event{Solution::Event::Type::kEnd, -1, Arc{0, 0}},
           },
       },
       std::vector<int64_t>{-1, -1},
@@ -164,15 +144,15 @@ TEST(RoutingSolutionSerializerTest, SolutionToTsplib) {
   const std::string expected_output =
       "0[\r\n]+1[\r\n]+2[\r\n]+3[\r\n]+0[\r\n]+-1[\r\n]+"
       "0[\r\n]+4[\r\n]+5[\r\n]+6[\r\n]+0[\r\n]+-1[\r\n]+";
-  EXPECT_THAT(RoutingSolution::FromSplitRoutes(
-                  RoutingSolution::SplitRoutes(solution, -1), 0)
+  EXPECT_THAT(Solution::FromSplitRoutes(Solution::SplitRoutes(solution, -1), 0)
                   .SerializeToString(RoutingOutputFormat::kTSPLIB),
               MatchesRegex(expected_output));
 }
 
 TEST(RoutingSolutionSerializerTest, SolutionToTsplibFile) {
-  const std::string file_name{std::tmpnam(nullptr)};
-  RegisteredMutableMemFile registered(file_name);
+  ASSERT_OK_AND_ASSIGN(
+      const std::string file_name,
+      file::MakeTempFilename(::testing::TempDir(), "sol_tsplib"));
 
   const std::vector<std::vector<int64_t>> solution_vector{{0, 1, 2, 3, 0},
                                                           {0, 4, 5, 6, 0}};
@@ -186,8 +166,7 @@ TEST(RoutingSolutionSerializerTest, SolutionToTsplibFile) {
       "0[\r\n]+4[\r\n]+5[\r\n]+6[\r\n]+0[\r\n]+-1[\r\n]+"
       "EOF";
 
-  RoutingSolution solution =
-      RoutingSolution::FromSplitRoutes(solution_vector, 0);
+  Solution solution = Solution::FromSplitRoutes(solution_vector, 0);
   solution.SetName("Test name");
   solution.WriteToSolutionFile(RoutingOutputFormat::kTSPLIB, file_name);
   std::string written_solution;
@@ -202,22 +181,19 @@ TEST(RoutingSolutionSerializerTest, SolutionToCvrplib) {
       "Route #1: 1 2[\r\n]+"
       "Route #2: 3 4 5[\r\n]+";
 
-  EXPECT_THAT(RoutingSolution::FromSplitRoutes(
-                  RoutingSolution::SplitRoutes(solution, -1), 1)
+  EXPECT_THAT(Solution::FromSplitRoutes(Solution::SplitRoutes(solution, -1), 1)
                   .SerializeToString(RoutingOutputFormat::kCVRPLIB),
               MatchesRegex(expected_output));
 }
 
 TEST(RoutingSolutionSerializerTest, SolutionToCvrplibInvalidNoStart) {
-  const std::vector<RoutingSolution::Route> routes = {
-      RoutingSolution::Route{
-          RoutingSolution::Event{RoutingSolution::Event::Type::kTransit, -1,
-                                 Arc{0, 1}},
-          RoutingSolution::Event{RoutingSolution::Event::Type::kEnd, -1,
-                                 Arc{0, 0}},
+  const std::vector<Solution::Route> routes = {
+      Solution::Route{
+          Solution::Event{Solution::Event::Type::kTransit, -1, Arc{0, 1}},
+          Solution::Event{Solution::Event::Type::kEnd, -1, Arc{0, 0}},
       },
   };
-  const RoutingSolution solution{routes, {4}, {4}};
+  const Solution solution{routes, {4}, {4}};
   std::string solution_str;
 
   EXPECT_DEATH(
@@ -226,15 +202,13 @@ TEST(RoutingSolutionSerializerTest, SolutionToCvrplibInvalidNoStart) {
 }
 
 TEST(RoutingSolutionSerializerTest, SolutionToCvrplibInvalidNoEnd) {
-  const std::vector<RoutingSolution::Route> routes = {
-      RoutingSolution::Route{
-          RoutingSolution::Event{RoutingSolution::Event::Type::kStart, -1,
-                                 Arc{0, 0}},
-          RoutingSolution::Event{RoutingSolution::Event::Type::kTransit, -1,
-                                 Arc{0, 1}},
+  const std::vector<Solution::Route> routes = {
+      Solution::Route{
+          Solution::Event{Solution::Event::Type::kStart, -1, Arc{0, 0}},
+          Solution::Event{Solution::Event::Type::kTransit, -1, Arc{0, 1}},
       },
   };
-  const RoutingSolution solution{routes, {4}, {4}};
+  const Solution solution{routes, {4}, {4}};
   std::string solution_str;
 
   EXPECT_DEATH(
@@ -250,8 +224,7 @@ TEST(RoutingSolutionSerializerTest, SolutionToCvrplibDepot0Dimacs) {
       "Route #1: 1 4[\r\n]+"
       "Route #2: 3 2 5[\r\n]+";
 
-  EXPECT_THAT(RoutingSolution::FromSplitRoutes(
-                  RoutingSolution::SplitRoutes(solution, -1), 0)
+  EXPECT_THAT(Solution::FromSplitRoutes(Solution::SplitRoutes(solution, -1), 0)
                   .SerializeToString(RoutingOutputFormat::kCVRPLIB),
               MatchesRegex(expected_output));
 }
@@ -264,15 +237,15 @@ TEST(RoutingSolutionSerializerTest, SolutionToCvrplibDepot1Dimacs) {
       "Route #1: 1 4[\r\n]+"
       "Route #2: 3 2 5[\r\n]+";
 
-  EXPECT_THAT(RoutingSolution::FromSplitRoutes(
-                  RoutingSolution::SplitRoutes(solution, -1), 1)
+  EXPECT_THAT(Solution::FromSplitRoutes(Solution::SplitRoutes(solution, -1), 1)
                   .SerializeToString(RoutingOutputFormat::kCVRPLIB),
               MatchesRegex(expected_output));
 }
 
 TEST(RoutingSolutionSerializerTest, SolutionToCvrplibFile) {
-  const std::string file_name{std::tmpnam(nullptr)};
-  RegisteredMutableMemFile registered(file_name);
+  ASSERT_OK_AND_ASSIGN(
+      const std::string file_name,
+      file::MakeTempFilename(::testing::TempDir(), "sol_cvrplib"));
 
   const std::vector<std::vector<int64_t>> solution_vector{{0, 1, 2, 3, 0},
                                                           {0, 4, 5, 6, 0}};
@@ -281,8 +254,7 @@ TEST(RoutingSolutionSerializerTest, SolutionToCvrplibFile) {
       "Route #2: 4 5 6[\r\n]+"
       "Cost 4857";
 
-  RoutingSolution solution =
-      RoutingSolution::FromSplitRoutes(solution_vector, 0);
+  Solution solution = Solution::FromSplitRoutes(solution_vector, 0);
   solution.SetTotalCost(4857);
   solution.WriteToSolutionFile(RoutingOutputFormat::kCVRPLIB, file_name);
   std::string written_solution;
@@ -290,11 +262,11 @@ TEST(RoutingSolutionSerializerTest, SolutionToCvrplibFile) {
   EXPECT_THAT(written_solution, MatchesRegex(expected_output));
 }
 
-RoutingSolution MakeTestArcRoutingInstance() {
-  using Event = RoutingSolution::Event;
+Solution MakeTestArcRoutingInstance() {
+  using Event = Solution::Event;
   using Type = Event::Type;
-  return {std::vector<RoutingSolution::Route>{
-              RoutingSolution::Route{
+  return {std::vector<Solution::Route>{
+              Solution::Route{
                   Event{Type::kStart, 0, Arc{0, 0}},
                   Event{Type::kServeArc, 12, Arc{4, 10}, "A1"},
                   Event{Type::kServeArc, 21, Arc{10, 8}, "A2"},
@@ -303,7 +275,7 @@ RoutingSolution MakeTestArcRoutingInstance() {
                   Event{Type::kServeArc, 2, Arc{3, 0}, "A5"},
                   Event{Type::kEnd, 0, Arc{0, 0}},
               },
-              RoutingSolution::Route{
+              Solution::Route{
                   Event{Type::kStart, 0, Arc{0, 0}},
                   Event{Type::kServeArc, 5, Arc{0, 11}, "A6"},
                   Event{Type::kServeArc, 14, Arc{5, 6}, "A7"},
@@ -312,7 +284,7 @@ RoutingSolution MakeTestArcRoutingInstance() {
                   Event{Type::kServeArc, 4, Arc{9, 0}, "A10"},
                   Event{Type::kEnd, 0, Arc{0, 0}},
               },
-              RoutingSolution::Route{
+              Solution::Route{
                   Event{Type::kStart, 0, Arc{0, 0}},
                   Event{Type::kServeArc, 13, Arc{11, 4}, "A11"},
                   Event{Type::kServeArc, 9, Arc{2, 3}, "A12"},
@@ -321,7 +293,7 @@ RoutingSolution MakeTestArcRoutingInstance() {
                   Event{Type::kServeArc, 11, Arc{4, 5}, "A15"},
                   Event{Type::kEnd, 0, Arc{0, 0}},
               },
-              RoutingSolution::Route{
+              Solution::Route{
                   Event{Type::kStart, 0, Arc{0, 0}},
                   Event{Type::kServeArc, 15, Arc{11, 5}, "A16"},
                   Event{Type::kServeArc, 16, Arc{6, 7}, "A17"},
@@ -330,7 +302,7 @@ RoutingSolution MakeTestArcRoutingInstance() {
                   Event{Type::kServeArc, 1, Arc{1, 0}, "A20"},
                   Event{Type::kEnd, 0, Arc{0, 0}},
               },
-              RoutingSolution::Route{
+              Solution::Route{
                   Event{Type::kStart, 0, Arc{0, 0}},
                   Event{Type::kServeArc, 17, Arc{11, 6}, "A21"},
                   Event{Type::kServeArc, 3, Arc{6, 0}, "A22"},
@@ -344,11 +316,11 @@ RoutingSolution MakeTestArcRoutingInstance() {
           30.84};
 }
 
-RoutingSolution MakeTestEdgeNodeArcRoutingInstance() {
-  using Event = RoutingSolution::Event;
+Solution MakeTestEdgeNodeArcRoutingInstance() {
+  using Event = Solution::Event;
   using Type = Event::Type;
-  return {std::vector<RoutingSolution::Route>{
-              RoutingSolution::Route{
+  return {std::vector<Solution::Route>{
+              Solution::Route{
                   Event{Type::kStart, 0, Arc{0, 0}},
                   Event{Type::kTransit, -1, Arc{0, 4}},
                   Event{Type::kServeEdge, 12, Arc{4, 10}, "E1"},
@@ -359,7 +331,7 @@ RoutingSolution MakeTestEdgeNodeArcRoutingInstance() {
                   Event{Type::kServeArc, 2, Arc{3, 0}, "A4"},
                   Event{Type::kEnd, 0, Arc{0, 0}},
               },
-              RoutingSolution::Route{
+              Solution::Route{
                   Event{Type::kStart, 0, Arc{0, 0}},
                   Event{Type::kServeEdge, 5, Arc{0, 11}, "E5"},
                   Event{Type::kTransit, -1, Arc{11, 5}},
@@ -370,7 +342,7 @@ RoutingSolution MakeTestEdgeNodeArcRoutingInstance() {
                   Event{Type::kServeEdge, 4, Arc{9, 0}, "E9"},
                   Event{Type::kEnd, 0, Arc{0, 0}},
               },
-              RoutingSolution::Route{
+              Solution::Route{
                   Event{Type::kStart, 0, Arc{0, 0}},
                   Event{Type::kTransit, -1, Arc{0, 11}},
                   Event{Type::kServeArc, 13, Arc{11, 4}, "A10"},
@@ -384,7 +356,7 @@ RoutingSolution MakeTestEdgeNodeArcRoutingInstance() {
                   Event{Type::kTransit, -1, Arc{5, 0}},
                   Event{Type::kEnd, 0, Arc{0, 0}},
               },
-              RoutingSolution::Route{
+              Solution::Route{
                   Event{Type::kStart, 0, Arc{0, 0}},
                   Event{Type::kTransit, -1, Arc{0, 11}},
                   Event{Type::kServeNode, 15, Arc{11, 11}},
@@ -395,7 +367,7 @@ RoutingSolution MakeTestEdgeNodeArcRoutingInstance() {
                   Event{Type::kServeEdge, 1, Arc{1, 0}, "E17"},
                   Event{Type::kEnd, 0, Arc{0, 0}},
               },
-              RoutingSolution::Route{
+              Solution::Route{
                   Event{Type::kStart, 0, Arc{0, 0}},
                   Event{Type::kTransit, -1, Arc{0, 11}},
                   Event{Type::kServeNode, 17, Arc{11, 11}},
@@ -425,16 +397,17 @@ TEST(RoutingSolutionSerializerTest, CarpSolutionToCarplib) {
       "\\(S 18,8,10\\) \\(S 20,10,9\\) \\(S 1,2,1\\) \\(D 0,1,1\\)[\r\n]+"
       "0 1 5 2 41 4 \\(D 0,1,1\\) \\(S 17,12,7\\) \\(S 3,7,1\\) \\(D 0,1,1\\)";
 
-  const RoutingSolution solution = MakeTestArcRoutingInstance();
+  const Solution solution = MakeTestArcRoutingInstance();
   EXPECT_THAT(solution.SerializeToString(RoutingOutputFormat::kCARPLIB),
               MatchesRegex(expected_solution_output));
 }
 
 TEST(RoutingSolutionSerializerTest, CarpSolutionToCarplibFile) {
-  const std::string file_name{std::tmpnam(nullptr)};
-  RegisteredMutableMemFile registered(file_name);
+  ASSERT_OK_AND_ASSIGN(
+      const std::string file_name,
+      file::MakeTempFilename(::testing::TempDir(), "sol_carp_carplib"));
 
-  RoutingSolution solution = MakeTestArcRoutingInstance();
+  Solution solution = MakeTestArcRoutingInstance();
   const std::string expected_output =
       "7[\r\n]+"
       "5[\r\n]+"
@@ -468,16 +441,17 @@ TEST(RoutingSolutionSerializerTest, NearpSolutionToCarplib) {
       "\\(S 18,8,10\\) \\(S 20,10,9\\) \\(S 1,2,1\\) \\(D 0,1,1\\)[\r\n]+"
       "0 1 5 2 41 4 \\(D 0,1,1\\) \\(S 17,12,12\\) \\(S 3,7,7\\) \\(D 0,1,1\\)";
 
-  const RoutingSolution solution = MakeTestEdgeNodeArcRoutingInstance();
+  const Solution solution = MakeTestEdgeNodeArcRoutingInstance();
   EXPECT_THAT(solution.SerializeToString(RoutingOutputFormat::kCARPLIB),
               MatchesRegex(expected_solution_output));
 }
 
 TEST(RoutingSolutionSerializerTest, NearpSolutionToCarplibFile) {
-  const std::string file_name{std::tmpnam(nullptr)};
-  RegisteredMutableMemFile registered(file_name);
+  ASSERT_OK_AND_ASSIGN(
+      const std::string file_name,
+      file::MakeTempFilename(::testing::TempDir(), "sol_nearp_carplib"));
 
-  RoutingSolution solution = MakeTestEdgeNodeArcRoutingInstance();
+  Solution solution = MakeTestEdgeNodeArcRoutingInstance();
   const std::string expected_output =
       "7[\r\n]+"
       "5[\r\n]+"
@@ -507,16 +481,17 @@ TEST(RoutingSolutionSerializerTest, CarpSolutionToNearplib) {
       "Route #4 : 1 12-A16-6 7-A17-8-A18-10-A19-9 2-A20-1[\r\n]+"
       "Route #5 : 1 12-A21-7-A22-1";
 
-  const RoutingSolution solution = MakeTestArcRoutingInstance();
+  const Solution solution = MakeTestArcRoutingInstance();
   EXPECT_THAT(solution.SerializeToString(RoutingOutputFormat::kNEARPLIB),
               MatchesRegex(expected_solution_output));
 }
 
 TEST(RoutingSolutionSerializerTest, CarpSolutionToNearplibFile) {
-  const std::string file_name{std::tmpnam(nullptr)};
-  RegisteredMutableMemFile registered(file_name);
+  ASSERT_OK_AND_ASSIGN(
+      const std::string file_name,
+      file::MakeTempFilename(::testing::TempDir(), "sol_carp_nearplib"));
 
-  RoutingSolution solution = MakeTestArcRoutingInstance();
+  Solution solution = MakeTestArcRoutingInstance();
   const std::string date =
       absl::FormatTime("%B %d, %E4Y", absl::Now(), absl::LocalTimeZone());
   const std::string expected_output =
@@ -555,16 +530,17 @@ TEST(RoutingSolutionSerializerTest, NearpSolutionToNearplib) {
   // Route #1 : 1 5-E1-11-A2-N9 2-E3-4-A4-1
   // Route #3 : 1 12-A10-5 3-E11-4 2-A12-N3 5-E13-6 1
 
-  const RoutingSolution solution = MakeTestEdgeNodeArcRoutingInstance();
+  const Solution solution = MakeTestEdgeNodeArcRoutingInstance();
   EXPECT_THAT(solution.SerializeToString(RoutingOutputFormat::kNEARPLIB),
               MatchesRegex(expected_solution_output));
 }
 
 TEST(RoutingSolutionSerializerTest, NearpSolutionToNearplibFile) {
-  const std::string file_name{std::tmpnam(nullptr)};
-  RegisteredMutableMemFile registered(file_name);
+  ASSERT_OK_AND_ASSIGN(
+      const std::string file_name,
+      file::MakeTempFilename(::testing::TempDir(), "sol_nearp_nearplib"));
 
-  RoutingSolution solution = MakeTestEdgeNodeArcRoutingInstance();
+  Solution solution = MakeTestEdgeNodeArcRoutingInstance();
   const std::string date =
       absl::FormatTime("%B %d, %E4Y", absl::Now(), absl::LocalTimeZone());
   const std::string expected_output =

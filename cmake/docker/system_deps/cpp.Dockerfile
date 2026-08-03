@@ -15,6 +15,9 @@ RUN cmake -S. -Bbuild -DBUILD_DEPS=OFF \
  -DUSE_GLPK=ON \
  -DUSE_HIGHS=OFF \
  -DUSE_SCIP=ON \
+ -DBUILD_absl=ON \
+ -DBUILD_Protobuf=ON \
+ -DBUILD_re2=ON \
  -DBUILD_googletest=ON
 RUN cmake --build build --target all -v
 RUN cmake --build build --target install

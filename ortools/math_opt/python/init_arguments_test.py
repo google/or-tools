@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from absl.testing import absltest
+
 from ortools.math_opt import parameters_pb2
 from ortools.math_opt.python import init_arguments
 from ortools.math_opt.python.testing import compare_proto

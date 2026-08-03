@@ -39,15 +39,18 @@
 #ifndef ORTOOLS_BASE_DUMP_VARS_H_
 #define ORTOOLS_BASE_DUMP_VARS_H_
 
+#include <cstddef>
+#include <iterator>
 #include <optional>
 #include <ostream>
 #include <sstream>
 #include <string>
+#include <string_view>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
-#include "absl/container/inlined_vector.h"
-#include "ortools/base/strong_vector.h"
+#include "ortools/base/strong_int.h"
 
 /* need extra level to force extra eval */
 #define DUMP_FOR_EACH_N0(F)
@@ -110,42 +113,44 @@
 namespace operations_research::base {
 namespace internal_dump_vars {
 
-// needed by routing
 template <typename T>
-std::ostream& operator<<(std::ostream& os,
-                         const ::absl::InlinedVector<T, 8>& vec) {
-  for (T it : vec) {
-    os << ::std::to_string(it) << ',';
+decltype(auto) FormatValue(const T& val) {
+  if constexpr (std::is_floating_point_v<std::remove_cvref_t<T>>) {
+    return ::std::to_string(val);
+  } else {
+    return val;
   }
-  return os;
 }
 
-// needed by algorithms tests
 template <typename T>
-std::ostream& operator<<(std::ostream& os, const ::std::vector<T>& vec) {
-  for (T it : vec) {
-    os << ::std::to_string(it) << ',';
+concept Range = requires(T& t) {
+  { std::begin(t) } -> std::input_iterator;
+  { std::end(t) } -> std::sentinel_for<decltype(std::begin(t))>;
+};
+
+template <typename T>
+  requires Range<T> && (!std::is_convertible_v<T, std::string_view>)
+std::ostream& operator<<(std::ostream& os, const T& t) {
+  for (const auto& value : t) {
+    os << FormatValue(value) << ',';
   }
   return os;
 }
 
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const ::std::optional<T>& opt) {
-  if (opt.has_value())
-    os << ::std::to_string(opt.value());
-  else
+  if (opt.has_value()) {
+    os << FormatValue(opt.value());
+  } else {
     os << "(none)";
+  }
   return os;
 }
 
-// needed by graph tests
 template <typename T, typename U>
 std::ostream& operator<<(std::ostream& os,
-                         const ::util_intops::StrongVector<T, U>& vec) {
-  for (U it : vec) {
-    os << ::std::to_string(it) << ',';
-  }
-  return os;
+                         const util_intops::StrongInt<T, U>& t) {
+  return os << t.value();
 }
 
 using DumpNames = ::std::vector<::std::string>;
@@ -155,12 +160,12 @@ struct print_fields {
 
   template <class T>
   void operator()(const T& t) {
-    os << names[n++] << kv_sep << t;
+    os << names[n++] << kv_sep << FormatValue(t);
   }
 
   template <class T1, class T2, class... Ts>
   void operator()(const T1& t1, const T2& t2, const Ts&... ts) {
-    os << names[n++] << kv_sep << t1 << field_sep;
+    os << names[n++] << kv_sep << FormatValue(t1) << field_sep;
     (*this)(t2, ts...);
   }
 

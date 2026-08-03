@@ -1,13 +1,15 @@
-Linux                                            | macOS                                            | Windows
------------------------------------------------- | ------------------------------------------------ | -------
-[![Status][linux_dotnet_svg]][linux_dotnet_link] | [![Status][macos_dotnet_svg]][macos_dotnet_link] | [![Status][windows_dotnet_svg]][windows_dotnet_link]
+| amd64 Linux | arm64 macOS | amd64 macOS | amd64 Windows |
+| :---: | :---: | :---: | :---: |
+| [![Status][linux_dotnet_svg]][linux_dotnet_link] | [![Status][arm64_macos_dotnet_svg]][arm64_macos_dotnet_link] | [![Status][amd64_macos_dotnet_svg]][amd64_macos_dotnet_link] | [![Status][windows_dotnet_svg]][windows_dotnet_link] |
 
-[linux_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/cmake_linux_dotnet.yml/badge.svg?branch=main
-[linux_dotnet_link]: https://github.com/google/or-tools/actions/workflows/cmake_linux_dotnet.yml
-[macos_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/cmake_macos_dotnet.yml/badge.svg?branch=main
-[macos_dotnet_link]: https://github.com/google/or-tools/actions/workflows/cmake_macos_dotnet.yml
-[windows_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/cmake_windows_dotnet.yml/badge.svg?branch=main
-[windows_dotnet_link]: https://github.com/google/or-tools/actions/workflows/cmake_windows_dotnet.yml
+[linux_dotnet_svg]: ./../../../../actions/workflows/amd64_linux_cmake_dotnet.yml/badge.svg?branch=main
+[linux_dotnet_link]: ./../../../../actions/workflows/amd64_linux_cmake_dotnet.yml
+[arm64_macos_dotnet_svg]: ./../../../../actions/workflows/arm64_macos_cmake_dotnet.yml/badge.svg?branch=main
+[arm64_macos_dotnet_link]: ./../../../../actions/workflows/arm64_macos_cmake__dotnet.yml
+[amd64_macos_dotnet_svg]: ./../../../../actions/workflows/amd64_macos_cmake_dotnet.yml/badge.svg?branch=main
+[amd64_macos_dotnet_link]: ./../../../../actions/workflows/amd64_macos_cmake__dotnet.yml
+[windows_dotnet_svg]: ./../../../../actions/workflows/amd64_windows_cmake_dotnet.yml/badge.svg?branch=main
+[windows_dotnet_link]: ./../../../../actions/workflows/amd64_windows_cmake_dotnet.yml
 
 # Introduction
 

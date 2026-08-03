@@ -17,7 +17,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
-#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
@@ -26,11 +25,12 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -42,6 +42,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -191,6 +192,15 @@ void AddExtraSchedulingPropagators(SatParameters& new_params) {
   new_params.set_no_overlap_2d_boolean_relations_limit(100);
 }
 
+void AddLightSchedulingPropagators(SatParameters& new_params) {
+  new_params.set_exploit_all_precedences(true);
+  new_params.set_use_area_energetic_reasoning_in_no_overlap_2d(true);
+  new_params.set_use_energetic_reasoning_in_no_overlap_2d(true);
+  new_params.set_use_hard_precedences_in_cumulative(true);
+  new_params.set_use_overload_checker_in_cumulative(true);
+  new_params.set_use_strong_propagation_in_disjunctive(true);
+}
+
 // We want a random tie breaking among variables with equivalent values.
 struct NoisyInteger {
   int64_t value;
@@ -224,7 +234,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructUserSearchStrategy(
   return [&view, &parameters, random, strategies]() {
     for (const DecisionStrategyProto& strategy : strategies) {
       int candidate_ref = -1;
-      int64_t candidate_value = std::numeric_limits<int64_t>::max();
+      int64_t candidate_value = kint64max;
 
       // TODO(user): Improve the complexity if this becomes an issue which
       // may be the case if we do a fixed_search.
@@ -296,7 +306,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructUserSearchStrategy(
       }
 
       // Check if one active variable has been found.
-      if (candidate_value == std::numeric_limits<int64_t>::max()) continue;
+      if (candidate_value == kint64max) continue;
 
       // Pick the winner when decisions are randomized.
       if (randomize_decision) {
@@ -564,7 +574,15 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
     new_params.set_optimize_with_core(true);
     new_params.set_optimize_with_max_hs(true);
-    strategies["max_hs"] = new_params;
+    new_params.set_initial_polarity(SatParameters::POLARITY_RANDOM);
+    new_params.set_preferred_variable_order(SatParameters::IN_RANDOM_ORDER);
+    new_params.set_random_polarity_ratio(0.3);
+    new_params.set_random_branches_ratio(0.3);
+
+    new_params.set_linearization_level(0);
+    strategies["max_hs_no_lp"] = new_params;
+    new_params.set_linearization_level(2);
+    strategies["max_hs_max_lp"] = new_params;
   }
 
   {
@@ -598,7 +616,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     strategies["objective_lb_search"] = new_params;
 
     if (base_params.use_dual_scheduling_heuristics()) {
-      AddExtraSchedulingPropagators(new_params);
+      AddLightSchedulingPropagators(new_params);
     }
     new_params.set_linearization_level(2);
     strategies["objective_lb_search_max_lp"] = new_params;
@@ -610,15 +628,20 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_cp_model_presolve(true);
     new_params.set_cp_model_probing_level(0);
     new_params.set_symmetry_level(0);
-    if (base_params.use_dual_scheduling_heuristics()) {
-      AddExtraSchedulingPropagators(new_params);
-    }
-
+    new_params.set_use_dynamic_precedence_in_disjunctive(true);
     strategies["objective_shaving"] = new_params;
 
     new_params.set_linearization_level(0);
     strategies["objective_shaving_no_lp"] = new_params;
 
+    // TODO(user): These are really slow, we should probably tune them.
+    // For now we only add them where we already have a slow LP.
+    // Note that this is the same logic for "objective_lb_search" above.
+    // Note: using light scheduling here has a negative impact on some of the
+    // scheduling problems (proving time for mmlib50_5010_1.mm).
+    if (base_params.use_dual_scheduling_heuristics()) {
+      AddExtraSchedulingPropagators(new_params);
+    }
     new_params.set_linearization_level(2);
     strategies["objective_shaving_max_lp"] = new_params;
   }
@@ -649,12 +672,10 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
     new_params.set_use_probing_search(true);
     new_params.set_at_most_one_max_expansion_size(2);
-    // Use a small deterministic time to avoid spending too much time on
-    // shaving by default. The probing workers will increase it as needed.
-    new_params.set_shaving_search_deterministic_time(0.001);
     if (base_params.use_dual_scheduling_heuristics()) {
-      AddExtraSchedulingPropagators(new_params);
+      AddLightSchedulingPropagators(new_params);
     }
+    new_params.set_cut_level(0);
     strategies["probing"] = new_params;
 
     new_params.set_linearization_level(0);
@@ -662,9 +683,46 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
 
     // We want to spend more time on the LP here.
     new_params.set_linearization_level(2);
+    new_params.set_cut_level(1);
     new_params.set_add_lp_constraints_lazily(false);
     new_params.set_root_lp_iterations(100'000);
     strategies["probing_max_lp"] = new_params;
+  }
+
+  {
+    SatParameters new_params = base_params;
+    new_params.set_search_branching(SatParameters::ROUND_ROBIN_SHAVING_SEARCH);
+    new_params.set_cut_level(0);
+    new_params.set_shaving_search_deterministic_time(0.0);
+    strategies["shaving"] = new_params;
+
+    new_params.set_linearization_level(0);
+    strategies["shaving_no_lp"] = new_params;
+
+    // We want to spend more time on the LP here.
+    new_params.set_linearization_level(2);
+    new_params.set_cut_level(1);
+    new_params.set_add_lp_constraints_lazily(false);
+    new_params.set_root_lp_iterations(100'000);
+    strategies["shaving_max_lp"] = new_params;
+  }
+
+  {
+    SatParameters new_params = base_params;
+    new_params.set_search_branching(SatParameters::ROUND_ROBIN_SHAVING_SEARCH);
+    new_params.set_cut_level(0);
+    new_params.set_shaving_search_restart_limit(0);
+    strategies["shaving_dt"] = new_params;
+
+    new_params.set_linearization_level(0);
+    strategies["shaving_dt_no_lp"] = new_params;
+
+    // We want to spend more time on the LP here.
+    new_params.set_linearization_level(2);
+    new_params.set_cut_level(1);
+    new_params.set_add_lp_constraints_lazily(false);
+    new_params.set_root_lp_iterations(100'000);
+    strategies["shaving_dt_max_lp"] = new_params;
   }
 
   // Search variation.
@@ -748,6 +806,17 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     SatParameters new_params = base_params;
     new_params.set_use_shared_tree_search(true);
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+
+    // SharedTreeWorkers use assumptions, which artificially reduces the LBD
+    // of learned clauses, reduce the cleanup LBD threshold to compensate, but
+    // enable protection so we still keep good clauses for a while.
+    new_params.set_clause_cleanup_lbd_bound(2);
+    new_params.set_clause_cleanup_lbd_tier1(3);
+    new_params.set_clause_cleanup_lbd_tier2(4);
+    // Shared tree workers aim to keep specialized clause databases, clean up
+    // more aggressively.
+    new_params.set_clause_cleanup_period(base_params.clause_cleanup_period() /
+                                         2);
 
     // These settings don't make sense with shared tree search, turn them off as
     // they can break things.
@@ -842,11 +911,11 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
 //   - Fast restart in randomized search
 //   - Different propatation levels for scheduling constraints
 std::vector<SatParameters> GetFullWorkerParameters(
-    const SatParameters& base_params, const CpModelProto& cp_model,
-    int num_already_present, SubsolverNameFilter* filter) {
+    const CpModelProto& cp_model, SolverLogger* logger,
+    SatParameters* base_params, SubsolverNameFilter* name_filter) {
   // Defines a set of named strategies so it is easier to read in one place
   // the one that are used. See below.
-  const auto strategies = GetNamedParameters(base_params);
+  const auto strategies = GetNamedParameters(*base_params);
 
   // We only use a "fixed search" worker if some strategy is specified or
   // if we have a scheduling model.
@@ -861,12 +930,12 @@ std::vector<SatParameters> GetFullWorkerParameters(
   std::vector<std::string> names;
 
   // Starts by adding user specified ones.
-  for (const std::string& name : base_params.extra_subsolvers()) {
+  for (const std::string& name : base_params->extra_subsolvers()) {
     names.push_back(name);
   }
 
   // We use the default if empty.
-  if (base_params.subsolvers().empty()) {
+  if (base_params->subsolvers().empty()) {
     // Note that the order is important as the list can be truncated.
     names.push_back("default_lp");
     names.push_back("fixed");
@@ -879,24 +948,25 @@ std::vector<SatParameters> GetFullWorkerParameters(
       // we prefer the less confusing name.
       names.push_back("max_lp");
     }
-    names.push_back("quick_restart");
-    names.push_back("reduced_costs");
     names.push_back("quick_restart_no_lp");
+    names.push_back("reduced_costs");
+    names.push_back("shaving_no_lp");
     names.push_back("pseudo_costs");
     names.push_back("lb_tree_search");
-    names.push_back("probing");
+    names.push_back("probing_no_lp");
     names.push_back("objective_lb_search");
     names.push_back("objective_shaving_no_lp");
+    names.push_back("quick_restart");
     names.push_back("objective_shaving_max_lp");
+    names.push_back("shaving_max_lp");
     names.push_back("probing_max_lp");
-    names.push_back("probing_no_lp");
     names.push_back("objective_lb_search_no_lp");
     names.push_back("objective_lb_search_max_lp");
     if (cp_model.has_symmetry()) {
       names.push_back("max_lp");
     }
   } else {
-    for (const std::string& name : base_params.subsolvers()) {
+    for (const std::string& name : base_params->subsolvers()) {
       // Hack for flatzinc. At the time of parameter setting, the objective is
       // not expanded. So we do not know if core is applicable or not.
       if (name == "core_or_no_lp") {
@@ -915,7 +985,7 @@ std::vector<SatParameters> GetFullWorkerParameters(
   // Remove the names that should be ignored.
   int new_size = 0;
   for (const std::string& name : names) {
-    if (filter->Keep(name)) {
+    if (name_filter->Keep(name)) {
       names[new_size++] = name;
     }
   }
@@ -933,8 +1003,7 @@ std::vector<SatParameters> GetFullWorkerParameters(
     }
     // As of November 2025, we don't support any LP reasoning when producing an
     // UNSAT proof.
-    if ((params.check_lrat_proof() || params.output_lrat_proof() ||
-         params.check_drat_proof() || params.output_drat_proof()) &&
+    if ((params.check_lrat_proof() || params.output_lrat_proof()) &&
         params.linearization_level() > 1) {
       continue;
     }
@@ -986,7 +1055,7 @@ std::vector<SatParameters> GetFullWorkerParameters(
     // Add this strategy.
     params.set_name(name);
     params.set_random_seed(CombineSeed(
-        base_params.random_seed(), static_cast<int64_t>(result.size()) + 1));
+        base_params->random_seed(), static_cast<int64_t>(result.size()) + 1));
     result.push_back(params);
   }
 
@@ -994,37 +1063,99 @@ std::vector<SatParameters> GetFullWorkerParameters(
   //
   // TODO(user): Actually make sure the gap num_workers <-> num_heuristics is
   // contained.
-  if (base_params.interleave_search()) return result;
+  if (base_params->interleave_search()) return result;
 
   // Apply the logic for how many we keep.
-  int num_to_keep = base_params.num_full_subsolvers();
-  if (num_to_keep == 0) {
-    // Derive some automatic number to leave room for LS/LNS and other
-    // strategies not taken into account here.
-    const int num_available =
-        std::max(0, base_params.num_workers() - num_already_present);
-
-    const auto heuristic_num_workers = [](int num_workers) {
-      DCHECK_GE(num_workers, 0);
-      if (num_workers == 1) return 1;
-      if (num_workers <= 4) return num_workers - 1;
-      if (num_workers <= 8) return num_workers - 2;
-      if (num_workers <= 16) return num_workers - (num_workers / 4 + 1);
-      return num_workers - (num_workers / 2 - 3);
-    };
-
-    num_to_keep = heuristic_num_workers(num_available);
+  // Compute the number of shared tree workers.
+  int num_shared_tree_workers = base_params->shared_tree_num_workers();
+  const int num_workers = base_params->num_workers();
+  const bool has_objective =
+      cp_model.has_objective() && !cp_model.objective().vars().empty();
+  if (cp_model.assumptions().empty()) {
+    // Set the number of shared tree workers if it was not set.
+    // Note: it has to be done after presolve, as presolve might empty
+    // the objective.
+    if (num_shared_tree_workers == -1) {
+      if (has_objective) {
+        // We reserve 24 workers for the main solver (full solvers and
+        // first_solution solvers or interleaved solvers), and then we split the
+        // rest between the main solver and the shared tree search.
+        num_shared_tree_workers = std::max((num_workers - 24) / 2, 0);
+      } else {
+        // We target 4 shared tree workers with 16 workers, and a growth rate
+        // after 16 workers of 3/4.
+        num_shared_tree_workers = std::max((num_workers - 8) / 2, 0) +
+                                  std::max((num_workers - 16) / 4, 0);
+      }
+      // We need at least 4 workers for the shared tree search to be efficient.
+      if (num_shared_tree_workers >= 4) {
+        base_params->set_shared_tree_num_workers(num_shared_tree_workers);
+        SOLVER_LOG(logger, "Setting number of shared tree workers to ",
+                   num_shared_tree_workers);
+      } else {
+        base_params->set_shared_tree_num_workers(0);
+        SOLVER_LOG(logger, "Not using shared tree search");
+      }
+    } else if (num_shared_tree_workers == 0) {
+      SOLVER_LOG(logger, "Shared tree search is disabled");
+    } else {
+      SOLVER_LOG(logger, "Using ", num_shared_tree_workers,
+                 " shared tree workers");
+    }
+  } else if (base_params->shared_tree_num_workers() > 0) {
+    base_params->set_shared_tree_num_workers(0);
+    SOLVER_LOG(logger,
+               "Not using shared tree search as the model has assumptions");
   }
 
-  if (result.size() > num_to_keep) {
-    result.resize(std::max(0, num_to_keep));
-  } else if (!result.empty() && num_to_keep >= 0) {
+  DCHECK_GE(num_shared_tree_workers, 0);
+  int target_subsolver_size = base_params->num_full_subsolvers();
+  const bool force_num_full_subsolvers = target_subsolver_size > 0;
+  if (target_subsolver_size == 0) {
+    // Derive some automatic number to leave room for LS/LNS and other
+    // strategies not taken into account here.
+    const auto heuristic_num_workers = [has_objective](int num_workers) {
+      DCHECK_GE(num_workers, 0);
+      if (has_objective) {
+        if (num_workers == 1) return 1;
+        if (num_workers <= 4) return num_workers - 1;
+        if (num_workers <= 8) return num_workers - 2;
+        if (num_workers <= 16) return num_workers - (num_workers / 4 + 1);
+        return num_workers - (num_workers / 2) + 4;
+      } else {
+        if (num_workers == 1) return 1;
+        if (num_workers <= 4) return num_workers - 1;
+        if (num_workers <= 8) return num_workers - 2;
+        if (num_workers <= 16) return num_workers - (num_workers / 4);
+        return num_workers - (num_workers / 4);
+      }
+    };
+    target_subsolver_size =
+        std::max(0, heuristic_num_workers(base_params->num_workers()) -
+                        num_shared_tree_workers);
+  } else {
+    // We cap the number of subsolvers by the number of workers.
+    target_subsolver_size =
+        std::min(target_subsolver_size, base_params->num_workers());
+  }
+
+  if (result.size() > target_subsolver_size) {
+    result.resize(std::max(0, target_subsolver_size));
+  } else if (!result.empty() && force_num_full_subsolvers) {
     // If we have less parameters, duplicate the first one until we have enough.
     // This is a bit hacky but easily allow to do experiment with n times the
     // same subsolver.
-    while (result.size() < num_to_keep) {
+    while (result.size() < target_subsolver_size) {
       result.push_back(result[0]);
     }
+  }
+
+  // Add shared tree workers if asked.
+  for (int i = 0; i < num_shared_tree_workers; ++i) {
+    SatParameters params = strategies.at("shared_tree");
+    params.set_random_seed(CombineSeed(
+        base_params->random_seed(), static_cast<int64_t>(result.size()) + 1));
+    result.push_back(params);
   }
 
   return result;
@@ -1142,7 +1273,7 @@ SubsolverNameFilter::SubsolverNameFilter(const SatParameters& params) {
     // Still add first solution solvers.
     filter_patterns_.push_back("fj*");
     filter_patterns_.push_back("fs*");
-    filter_patterns_.push_back("*lns");
+    filter_patterns_.push_back("lns*");
   }
 }
 

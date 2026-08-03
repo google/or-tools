@@ -33,10 +33,10 @@ Other methods and functions listed are primarily used for developing OR-Tools,
 rather than for solving specific optimization problems.
 """
 
-from collections.abc import Callable
 import math
 import numbers
 import typing
+from collections.abc import Callable
 from typing import Optional, Union
 
 import numpy as np

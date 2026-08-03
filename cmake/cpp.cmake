@@ -11,10 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if(NOT BUILD_CXX)
-  return()
-endif()
-
 # Check primitive types
 option(CHECK_TYPE "Check primitive type size" OFF)
 if(CHECK_TYPE)
@@ -54,15 +50,14 @@ set(OR_TOOLS_LINK_OPTIONS)
 
 if(MSVC AND BUILD_SHARED_LIBS)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "OR_BUILD_DLL")
-  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "OR_PROTO_DLL=__declspec(dllimport)")
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "OR_ORTOOLS_PROTO_DLL=__declspec(dllimport)")
  else()
-  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "OR_PROTO_DLL=")
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "OR_ORTOOLS_PROTO_DLL=")
 endif()
 
 # Optional built-in components
 if(BUILD_MATH_OPT)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_MATH_OPT")
-  set(MATH_OPT_DIR math_opt)
 endif()
 # Optional solvers
 if(USE_BOP)
@@ -79,9 +74,6 @@ if(USE_GLOP)
 endif()
 if(USE_GLPK)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_GLPK")
-endif()
-if(USE_GUROBI)
-  set(GUROBI_DIR gurobi)
 endif()
 if(USE_HIGHS)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_HIGHS")
@@ -145,13 +137,6 @@ else()
   )
 endif()
 
-# Link option
-if(MSVC)
-  list(APPEND OR_TOOLS_LINK_OPTIONS
-   "/WHOLEARCHIVE:${PROJECT_NAME}"
-  )
-endif()
-
 ################
 ##  C++ Test  ##
 ################
@@ -177,7 +162,7 @@ endif()
 #     GTest::gtest_main
 # )
 function(ortools_cxx_test)
-  set(options "")
+  set(options "DISABLED")
   set(oneValueArgs "NAME")
   set(multiValueArgs
     "SOURCES;COMPILE_DEFINITIONS;COMPILE_OPTIONS;LINK_LIBRARIES;LINK_OPTIONS")
@@ -187,7 +172,7 @@ function(ortools_cxx_test)
     "${multiValueArgs}"
     ${ARGN}
   )
-  if(NOT BUILD_TESTING)
+  if(NOT BUILD_CXX_TESTING)
     return()
   endif()
 
@@ -201,9 +186,8 @@ function(ortools_cxx_test)
 
   add_executable(${TEST_NAME} "")
   target_sources(${TEST_NAME} PRIVATE ${TEST_SOURCES})
-  target_include_directories(${TEST_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
   target_compile_definitions(${TEST_NAME} PRIVATE ${TEST_COMPILE_DEFINITIONS})
-  target_compile_features(${TEST_NAME} PRIVATE cxx_std_17)
+  target_compile_features(${TEST_NAME} PRIVATE cxx_std_20)
   target_compile_options(${TEST_NAME} PRIVATE ${TEST_COMPILE_OPTIONS})
   target_link_libraries(${TEST_NAME} PRIVATE
     ${PROJECT_NAMESPACE}::ortools
@@ -229,6 +213,11 @@ function(ortools_cxx_test)
     COMMAND ${TEST_NAME}
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   )
+  if(TEST_DISABLED)
+    set_tests_properties(cxx_${TEST_NAME} PROPERTIES
+      DISABLED TRUE
+  )
+  endif()
   message(STATUS "Configuring test ${TEST_NAME} ...DONE")
 endfunction()
 
@@ -241,37 +230,44 @@ endfunction()
 # NAME: CMake target name
 # SOURCES: List of source files
 # [TYPE]: SHARED, STATIC or INTERFACE
-# [COMPILE_DEFINITIONS]: List of private compile definitions
-# [COMPILE_OPTIONS]: List of private compile options
+# [COMPILE_DEFINITIONS]: List of **public** compile definitions
+# [COMPILE_OPTIONS]: List of **public** compile options
 # [LINK_LIBRARIES]: List of **public** libraries to use when linking
-# note: ortools::ortools is always linked to the target
-# [LINK_OPTIONS]: List of private link options
+# [LOCAL_COMPILE_DEFINITIONS]: List of private compile definitions
+# [LOCAL_COMPILE_OPTIONS]: List of private compile options
+# [LOCAL_LINK_OPTIONS]: List of private link options
+# [TESTING]: option flag if this library is only used to build test.
+# [NO_INSTALL]: option flag to remove library from the install set
 # e.g.:
 # ortools_cxx_library(
 #   NAME
-#     foo_bar_library
+#     foo_bar
 #   SOURCES
-#     bar_library.cc
-#     ${PROJECT_SOURCE_DIR}/ortools/foo/bar_library.cc
+#     bar.cc
+#     ${PROJECT_SOURCE_DIR}/ortools/foo/bar.cc
 #   TYPE
 #     SHARED
+#   COMPILE_DEFINITIONS
+#     OR_BUILD_DLL
 #   LINK_LIBRARIES
 #     GTest::gmock
 #     GTest::gtest_main
+#   LOCAL_COMPILE_DEFINITIONS
+#     OR_FOOBAR_EXPORT
 #   TESTING
 # )
 function(ortools_cxx_library)
-  set(options "TESTING")
+  set(options "TESTING;NO_INSTALL")
   set(oneValueArgs "NAME;TYPE")
   set(multiValueArgs
-    "SOURCES;COMPILE_DEFINITIONS;COMPILE_OPTIONS;LINK_LIBRARIES;LINK_OPTIONS")
+    "SOURCES;COMPILE_DEFINITIONS;COMPILE_OPTIONS;LINK_OPTIONS;LINK_LIBRARIES;LOCAL_COMPILE_DEFINITIONS;LOCAL_COMPILE_OPTIONS;LOCAL_LINK_OPTIONS")
   cmake_parse_arguments(LIBRARY
     "${options}"
     "${oneValueArgs}"
     "${multiValueArgs}"
     ${ARGN}
   )
-  if(LIBRARY_TESTING AND NOT BUILD_TESTING)
+  if(LIBRARY_TESTING AND NOT BUILD_CXX_TESTING)
     return()
   endif()
 
@@ -284,29 +280,69 @@ function(ortools_cxx_library)
   message(STATUS "Configuring library ${LIBRARY_NAME} ...")
 
   add_library(${LIBRARY_NAME} ${LIBRARY_TYPE} "")
+  set_target_properties(${LIBRARY_NAME} PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF
+    POSITION_INDEPENDENT_CODE ON)
+
+
   if(LIBRARY_TYPE STREQUAL "INTERFACE")
-    target_include_directories(${LIBRARY_NAME} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
-    target_link_libraries(${LIBRARY_NAME} INTERFACE ${PROJECT_NAMESPACE}::ortools ${LIBRARY_LINK_LIBRARIES})
+    target_include_directories(${LIBRARY_NAME} INTERFACE
+      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
+      $<INSTALL_INTERFACE:include>
+    )
+    target_compile_features(${LIBRARY_NAME} INTERFACE cxx_std_20)
+    target_compile_definitions(${LIBRARY_NAME} INTERFACE ${LIBRARY_COMPILE_DEFINITIONS})
+    target_compile_options(${LIBRARY_NAME} INTERFACE ${LIBRARY_COMPILE_OPTIONS})
+    target_link_options(${LIBRARY_NAME} INTERFACE ${LIBRARY_LINK_OPTIONS})
+    target_link_libraries(${LIBRARY_NAME} INTERFACE ${LIBRARY_LINK_LIBRARIES})
   else()
+    target_include_directories(${LIBRARY_NAME} PUBLIC
+      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
+      $<INSTALL_INTERFACE:include>
+    )
+    target_compile_features(${LIBRARY_NAME} PUBLIC cxx_std_20)
+    target_compile_definitions(${LIBRARY_NAME} PUBLIC ${LIBRARY_COMPILE_DEFINITIONS})
+    target_compile_options(${LIBRARY_NAME} PUBLIC ${LIBRARY_COMPILE_OPTIONS})
+    target_link_options(${LIBRARY_NAME} PUBLIC ${LIBRARY_LINK_OPTIONS})
+    target_link_libraries(${LIBRARY_NAME} PUBLIC ${LIBRARY_LINK_LIBRARIES})
+
     target_sources(${LIBRARY_NAME} PRIVATE ${LIBRARY_SOURCES})
-    target_include_directories(${LIBRARY_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-    target_compile_definitions(${LIBRARY_NAME} PRIVATE ${LIBRARY_COMPILE_DEFINITIONS})
-    target_compile_features(${LIBRARY_NAME} PRIVATE cxx_std_17)
-    target_compile_options(${LIBRARY_NAME} PRIVATE ${LIBRARY_COMPILE_OPTIONS})
-    target_link_libraries(${LIBRARY_NAME} PUBLIC ${PROJECT_NAMESPACE}::ortools ${LIBRARY_LINK_LIBRARIES})
-    target_link_options(${LIBRARY_NAME} PRIVATE ${LIBRARY_LINK_OPTIONS})
+    target_compile_definitions(${LIBRARY_NAME} PRIVATE ${LIBRARY_LOCAL_COMPILE_DEFINITIONS})
+    target_compile_options(${LIBRARY_NAME} PRIVATE ${LIBRARY_LOCAL_COMPILE_OPTIONS})
+    target_link_options(${LIBRARY_NAME} PRIVATE ${LIBRARY_LOCAL_LINK_OPTIONS})
   endif()
 
   include(GNUInstallDirs)
   if(APPLE)
     set_target_properties(${LIBRARY_NAME} PROPERTIES
-      INSTALL_RPATH "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+      INSTALL_RPATH "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path"
+      # Apple Clang don't support version x.y.z with z > 255
+      VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+    )
   elseif(UNIX)
     cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
       BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
       OUTPUT_VARIABLE libdir_relative_path)
     set_target_properties(${LIBRARY_NAME} PROPERTIES
-      INSTALL_RPATH "$ORIGIN/${libdir_relative_path}:$ORIGIN")
+      INSTALL_RPATH "$ORIGIN/${libdir_relative_path}:$ORIGIN"
+      VERSION ${PROJECT_VERSION}
+    )
+  endif()
+  set_target_properties(${LIBRARY_NAME} PROPERTIES
+    SOVERSION ${PROJECT_VERSION_MAJOR}
+  )
+  if(NOT LIBRARY_NO_INSTALL)
+    install(TARGETS ${LIBRARY_NAME}
+      EXPORT ortoolsTargets
+      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
   endif()
   add_library(${PROJECT_NAMESPACE}::${LIBRARY_NAME} ALIAS ${LIBRARY_NAME})
   message(STATUS "Configuring library ${LIBRARY_NAME} ...DONE")
@@ -320,9 +356,10 @@ endfunction()
 # SOURCES: List of source files
 # [COMPILE_DEFINITIONS]: List of private compile definitions
 # [COMPILE_OPTIONS]: List of private compile options
-# [LINK_LIBRARIES]: List of **public** libraries to use when linking
-# note: ortools::ortools is always linked to the target
+# [LINK_LIBRARIES]: List of private libraries to use when linking
 # [LINK_OPTIONS]: List of private link options
+# [TESTING]: option flag if this library is only used to build test.
+# [NO_INSTALL]: option flag to remove library from the install set
 # e.g.:
 # ortools_cxx_binary(
 #   NAME
@@ -331,12 +368,14 @@ endfunction()
 #     bar_binary.cc
 #     ${PROJECT_SOURCE_DIR}/ortools/foo/bar_binary.cc
 #   LINK_LIBRARIES
+#     ortools::ortools
 #     GTest::gmock
 #     GTest::gtest_main
 #   TESTING
+#   NO_INSTALL
 # )
 function(ortools_cxx_binary)
-  set(options "TESTING")
+  set(options "TESTING;NO_INSTALL")
   set(oneValueArgs "NAME")
   set(multiValueArgs
     "SOURCES;COMPILE_DEFINITIONS;COMPILE_OPTIONS;LINK_LIBRARIES;LINK_OPTIONS")
@@ -346,7 +385,7 @@ function(ortools_cxx_binary)
     "${multiValueArgs}"
     ${ARGN}
   )
-  if(BINARY_TESTING AND NOT BUILD_TESTING)
+  if(BINARY_TESTING AND NOT BUILD_CXX_TESTING)
     return()
   endif()
 
@@ -360,11 +399,10 @@ function(ortools_cxx_binary)
 
   add_executable(${BINARY_NAME} ${BINARY_TYPE} "")
   target_sources(${BINARY_NAME} PRIVATE ${BINARY_SOURCES})
-  target_include_directories(${BINARY_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
   target_compile_definitions(${BINARY_NAME} PRIVATE ${BINARY_COMPILE_DEFINITIONS})
-  target_compile_features(${BINARY_NAME} PRIVATE cxx_std_17)
+  target_compile_features(${BINARY_NAME} PRIVATE cxx_std_20)
   target_compile_options(${BINARY_NAME} PRIVATE ${BINARY_COMPILE_OPTIONS})
-  target_link_libraries(${BINARY_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools ${BINARY_LINK_LIBRARIES})
+  target_link_libraries(${BINARY_NAME} PRIVATE ${BINARY_LINK_LIBRARIES})
   target_link_options(${BINARY_NAME} PRIVATE ${BINARY_LINK_OPTIONS})
 
   include(GNUInstallDirs)
@@ -377,6 +415,12 @@ function(ortools_cxx_binary)
       OUTPUT_VARIABLE libdir_relative_path)
     set_target_properties(${BINARY_NAME} PROPERTIES
       INSTALL_RPATH "$ORIGIN/${libdir_relative_path}:$ORIGIN")
+  endif()
+  if(NOT BINARY_NO_INSTALL)
+    install(TARGETS ${BINARY_NAME}
+      EXPORT ortoolsTargets
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
   endif()
   add_executable(${PROJECT_NAMESPACE}::${BINARY_NAME} ALIAS ${BINARY_NAME})
   message(STATUS "Configuring binary ${BINARY_NAME} ...DONE")
@@ -400,7 +444,7 @@ find_package(Python3 COMPONENTS Interpreter)
 #     "BINTEST_foo_bar_data=$(CMAKE_CURRENT_SOURCE_DIR)/foo_bar_data.txt"
 # )
 function(ortools_cxx_bintest)
-  set(options "")
+  set(options "DISABLED")
   set(oneValueArgs "NAME;SCRIPT")
   set(multiValueArgs "ENVIRONMENT")
   cmake_parse_arguments(BINTEST
@@ -429,6 +473,11 @@ function(ortools_cxx_bintest)
   set_tests_properties(${BINTEST_NAME} PROPERTIES
     ENVIRONMENT "${BINTEST_ENVIRONMENT}"
   )
+  if(BINTEST_DISABLED)
+    set_tests_properties(${BINTEST_NAME} PROPERTIES
+      DISABLED TRUE
+  )
+  endif()
   message(STATUS "Configuring bintest ${BINTEST_NAME} ...DONE")
 endfunction()
 
@@ -446,15 +495,15 @@ foreach(dir IN LISTS protobuf_dirs)
 endforeach()
 
 # Generate C++ OBJECT library from proto files,
-# e.g
+# e.g to generate an object library ortools_foo_proto
 # generate_proto_library(
 #   NAME
-#     ortools_proto
+#     ortools_foo
 #   FILES
 #     ortools/foo/foo.proto
 #     ortools/bar/bar.proto
 #  LINK_LIBRARIES
-#     ortools::ortools_proto
+#     ortools::ortools_core
 #   NO_ALIAS
 # )
 function(generate_proto_library)
@@ -467,83 +516,85 @@ function(generate_proto_library)
     "${multiValueArgs}"
     ${ARGN}
   )
+  if(NOT PROTO_NAME)
+    message(FATAL_ERROR "no NAME provided")
+  endif()
+  string(TOUPPER ${PROTO_NAME} PROTO_UPPER_NAME)
 
- if(NOT PROTOC_PRG)
-   message(FATAL_ERROR "protoc binary not found.")
- endif()
+  if(NOT PROTOC_PRG)
+    message(FATAL_ERROR "protoc binary not found.")
+  endif()
 
- # Generate proto C++ files.
- set(PROTO_HDRS)
- set(PROTO_SRCS)
- foreach(PROTO_FILE IN LISTS PROTO_FILES)
-   #message(STATUS "protoc proto(cc): ${PROTO_FILE}")
-   get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
-   get_filename_component(PROTO_NAME_WE ${PROTO_FILE} NAME_WE)
-   set(PROTO_HDR ${PROJECT_BINARY_DIR}/${PROTO_DIR}/${PROTO_NAME_WE}.pb.h)
-   set(PROTO_SRC ${PROJECT_BINARY_DIR}/${PROTO_DIR}/${PROTO_NAME_WE}.pb.cc)
-   #message(STATUS "protoc hdr: ${PROTO_HDR}")
-   #message(STATUS "protoc src: ${PROTO_SRC}")
-   add_custom_command(
-     OUTPUT ${PROTO_SRC} ${PROTO_HDR}
-     COMMAND ${PROTOC_PRG}
-     "--proto_path=${PROJECT_SOURCE_DIR}"
-     ${PROTO_DIRS}
-     "--cpp_out=dllexport_decl=OR_PROTO_DLL:${PROJECT_BINARY_DIR}"
-     ${PROTO_FILE}
-     DEPENDS ${PROTO_FILE} ${PROTOC_PRG}
-     COMMENT "Generate C++ protocol buffer for ${PROTO_FILE}"
-     VERBATIM)
-   list(APPEND PROTO_HDRS ${PROTO_HDR})
-   list(APPEND PROTO_SRCS ${PROTO_SRC})
- endforeach()
+  # Generate proto C++ files.
+  set(PROTO_HDRS)
+  set(PROTO_SRCS)
+  foreach(PROTO_FILE IN LISTS PROTO_FILES)
+    #message(STATUS "protoc proto(cc): ${PROTO_FILE}")
+    get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
+    get_filename_component(PROTO_NAME_WE ${PROTO_FILE} NAME_WE)
+    set(PROTO_HDR ${PROJECT_BINARY_DIR}/${PROTO_DIR}/${PROTO_NAME_WE}.pb.h)
+    set(PROTO_SRC ${PROJECT_BINARY_DIR}/${PROTO_DIR}/${PROTO_NAME_WE}.pb.cc)
+    #message(STATUS "protoc hdr: ${PROTO_HDR}")
+    #message(STATUS "protoc src: ${PROTO_SRC}")
+    add_custom_command(
+      OUTPUT ${PROTO_SRC} ${PROTO_HDR}
+      COMMAND ${PROTOC_PRG}
+      "--proto_path=${PROJECT_SOURCE_DIR}"
+      ${PROTO_DIRS}
+      "--cpp_out=dllexport_decl=OR_${PROTO_UPPER_NAME}_PROTO_DLL:${PROJECT_BINARY_DIR}"
+      ${PROTO_FILE}
+      DEPENDS ${PROTO_FILE} ${PROTOC_PRG}
+      COMMENT "Generate C++ protocol buffer for ${PROTO_FILE}"
+      VERBATIM)
+    list(APPEND PROTO_HDRS ${PROTO_HDR})
+    list(APPEND PROTO_SRCS ${PROTO_SRC})
+  endforeach()
 
- # Create library
- add_library(${PROTO_NAME}_proto OBJECT ${PROTO_SRCS} ${PROTO_HDRS})
- target_compile_features(${PROTO_NAME}_proto PUBLIC $<IF:$<CXX_COMPILER_ID:MSVC>,cxx_std_20,cxx_std_17>)
- if(MSVC)
-   set_target_properties(${PROTO_NAME}_proto PROPERTIES CXX_STANDARD 20)
- else()
-   set_target_properties(${PROTO_NAME}_proto PROPERTIES CXX_STANDARD 17)
- endif()
- set_target_properties(${PROTO_NAME}_proto PROPERTIES
-   CXX_STANDARD_REQUIRED ON
-   CXX_EXTENSIONS OFF
-   POSITION_INDEPENDENT_CODE ON)
- target_include_directories(${PROTO_NAME}_proto PRIVATE
-   ${PROJECT_SOURCE_DIR}
-   ${PROJECT_BINARY_DIR}
-   #$<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_INCLUDE_DIRECTORIES>
- )
- target_compile_definitions(${PROTO_NAME}_proto PUBLIC ${OR_TOOLS_COMPILE_DEFINITIONS})
- if(MSVC AND BUILD_SHARED_LIBS)
-  target_compile_definitions(${PROTO_NAME}_proto INTERFACE "OR_PROTO_DLL=__declspec(dllimport)")
-  target_compile_definitions(${PROTO_NAME}_proto PRIVATE "OR_PROTO_DLL=__declspec(dllexport)")
- else()
-  target_compile_definitions(${PROTO_NAME}_proto PUBLIC "OR_PROTO_DLL=")
-endif()
- target_compile_options(${PROTO_NAME}_proto PUBLIC ${OR_TOOLS_COMPILE_OPTIONS})
- target_link_libraries(${PROTO_NAME}_proto PUBLIC protobuf::libprotobuf ${PROTO_LINK_LIBRARIES})
- add_library(${PROJECT_NAMESPACE}::${PROTO_NAME}_proto ALIAS ${PROTO_NAME}_proto)
- #message(FATAL_ERROR "Proto target alias: ${PROJECT_NAMESPACE}::${PROTO_NAME}_proto")
+  # Create library
+  add_library(${PROTO_NAME}_proto OBJECT ${PROTO_SRCS} ${PROTO_HDRS})
+  target_compile_features(${PROTO_NAME}_proto PUBLIC cxx_std_20)
+  set_target_properties(${PROTO_NAME}_proto PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF
+    POSITION_INDEPENDENT_CODE ON)
+  target_include_directories(${PROTO_NAME}_proto PRIVATE
+    ${PROJECT_SOURCE_DIR}
+    ${PROJECT_BINARY_DIR}
+    #$<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_INCLUDE_DIRECTORIES>
+  )
+  target_compile_definitions(${PROTO_NAME}_proto PUBLIC ${OR_TOOLS_COMPILE_DEFINITIONS})
+  if(MSVC AND BUILD_SHARED_LIBS)
+   target_compile_definitions(${PROTO_NAME}_proto INTERFACE "OR_${PROTO_UPPER_NAME}_PROTO_DLL=__declspec(dllimport)")
+   target_compile_definitions(${PROTO_NAME}_proto PRIVATE "OR_${PROTO_UPPER_NAME}_PROTO_DLL=__declspec(dllexport)")
+  else()
+   target_compile_definitions(${PROTO_NAME}_proto PUBLIC "OR_${PROTO_UPPER_NAME}_PROTO_DLL=")
+  endif()
+   target_compile_options(${PROTO_NAME}_proto PUBLIC ${OR_TOOLS_COMPILE_OPTIONS})
+   target_link_libraries(${PROTO_NAME}_proto PUBLIC protobuf::libprotobuf ${PROTO_LINK_LIBRARIES})
+   add_library(${PROJECT_NAMESPACE}::${PROTO_NAME}_proto ALIAS ${PROTO_NAME}_proto)
 endfunction()
 
 # Generate Protobuf cpp sources
 set(OR_TOOLS_PROTO_FILES)
-file(GLOB_RECURSE OR_TOOLS_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
-  "ortools/algorithms/*.proto"
-  "ortools/bop/*.proto"
-  "ortools/constraint_solver/*.proto"
-  "ortools/glop/*.proto"
-  "ortools/graph/*.proto"
-  "ortools/linear_solver/*.proto"
-  "ortools/packing/*.proto"
-  "ortools/sat/*.proto"
-  "ortools/scheduling/*.proto"
-  "ortools/set_cover/*.proto"
-  "ortools/util/*.proto"
-  )
+if(BUILD_CORE)
+  file(GLOB_RECURSE CORE_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
+    "ortools/base/*.proto"
+    "ortools/port/*.proto"
+    "ortools/util/*.proto"
+    "ortools/algorithms/*.proto"
+    "ortools/graph_base/*.proto"
+    "ortools/graph/*.proto"
+    "ortools/bop/*.proto"
+    "ortools/glop/*.proto"
+    "ortools/sat/*.proto"
+    "ortools/set_cover/*.proto"
+    "ortools/linear_solver/*.proto")
+  list(APPEND OR_TOOLS_PROTO_FILES ${CORE_PROTO_FILES})
+endif()
 if(USE_PDLP OR BUILD_MATH_OPT)
-  file(GLOB_RECURSE PDLP_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR} "ortools/pdlp/*.proto")
+  file(GLOB_RECURSE PDLP_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
+    "ortools/pdlp/*.proto")
   list(APPEND OR_TOOLS_PROTO_FILES ${PDLP_PROTO_FILES})
 endif()
 
@@ -552,14 +603,37 @@ generate_proto_library(
   NAME ortools
   FILES ${OR_TOOLS_PROTO_FILES})
 
+# Packing
+if(BUILD_PACKING)
+  file(GLOB_RECURSE PACKING_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
+    "ortools/packing/*.proto")
+  generate_proto_library(
+    NAME packing
+    FILES ${PACKING_PROTO_FILES}
+    LINK_LIBRARIES ${PROJECT_NAMESPACE}::ortools_proto)
+endif()
+
 # Routing proto
-file(GLOB_RECURSE ROUTING_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
-  "ortools/routing/parsers/*.proto"
-)
-generate_proto_library(
-  NAME routing
-  FILES ${ROUTING_PROTO_FILES}
-  LINK_LIBRARIES ${PROJECT_NAMESPACE}::ortools_proto)
+if(BUILD_ROUTING)
+  file(GLOB_RECURSE ROUTING_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
+    "ortools/constraint_solver/*.proto"
+    "ortools/routing/*.proto"
+    "ortools/routing/parsers/*.proto")
+  generate_proto_library(
+    NAME routing
+    FILES ${ROUTING_PROTO_FILES}
+    LINK_LIBRARIES ${PROJECT_NAMESPACE}::ortools_proto)
+endif()
+
+# Scheduling
+if(BUILD_SCHEDULING)
+  file(GLOB_RECURSE SCHEDULING_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
+    "ortools/scheduling/*.proto")
+  generate_proto_library(
+    NAME scheduling
+    FILES ${SCHEDULING_PROTO_FILES}
+    LINK_LIBRARIES ${PROJECT_NAMESPACE}::ortools_proto)
+endif()
 
 # MathOpt proto
 if(BUILD_MATH_OPT)
@@ -576,48 +650,30 @@ endif()
 ###############
 ##  ORTOOLS  ##
 ###############
-# Main Target
-add_library(${PROJECT_NAME} "")
-# Compile options
-if(MSVC)
-  set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
-else()
-  set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 17)
-endif()
-set_target_properties(${PROJECT_NAME} PROPERTIES
-  CXX_STANDARD_REQUIRED ON
-  CXX_EXTENSIONS OFF)
-target_compile_features(${PROJECT_NAME} PUBLIC
-  $<IF:$<CXX_COMPILER_ID:MSVC>,cxx_std_20,cxx_std_17>)
-target_compile_definitions(${PROJECT_NAME} PUBLIC ${OR_TOOLS_COMPILE_DEFINITIONS})
-if(MSVC AND BUILD_SHARED_LIBS)
-  target_compile_definitions(${PROJECT_NAME} PRIVATE OR_EXPORT)
-endif()
-target_compile_options(${PROJECT_NAME} PUBLIC ${OR_TOOLS_COMPILE_OPTIONS})
-target_link_options(${PROJECT_NAME} INTERFACE ${OR_TOOLS_LINK_OPTIONS})
-# Properties
-if(NOT APPLE)
-  set_target_properties(${PROJECT_NAME} PROPERTIES
-    VERSION ${PROJECT_VERSION})
-else()
-  # Clang don't support version x.y.z with z > 255
-  set_target_properties(${PROJECT_NAME} PROPERTIES
-    INSTALL_RPATH "@loader_path"
-    VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
-endif()
-set_target_properties(${PROJECT_NAME} PROPERTIES
-  SOVERSION ${PROJECT_VERSION_MAJOR}
-  POSITION_INDEPENDENT_CODE ON
-  INTERFACE_POSITION_INDEPENDENT_CODE ON
-  INTERFACE_${PROJECT_NAME}_MAJOR_VERSION ${PROJECT_VERSION_MAJOR}
-  COMPATIBLE_INTERFACE_STRING ${PROJECT_NAME}_MAJOR_VERSION
-)
 
-# Includes
-target_include_directories(${PROJECT_NAME} INTERFACE
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
-  $<INSTALL_INTERFACE:include>
+add_subdirectory(ortools/init)
+# Main Target
+ortools_cxx_library(
+  NAME
+    ortools
+  TYPE
+    SHARED
+  SOURCES
+    $<TARGET_OBJECTS:ortools_init>
+  COMPILE_DEFINITIONS
+    ${OR_TOOLS_COMPILE_DEFINITIONS}
+  COMPILE_OPTIONS
+    ${OR_TOOLS_COMPILE_OPTIONS}
+  LINK_OPTIONS
+    ${OR_TOOLS_LINK_OPTIONS}
+  LINK_LIBRARIES
+    absl::flags
+    absl::strings
+    protobuf::libprotobuf
+)
+set_target_properties(ortools PROPERTIES
+  INTERFACE_ortools_MAJOR_VERSION ${PROJECT_VERSION_MAJOR}
+  COMPATIBLE_INTERFACE_STRING ortools_MAJOR_VERSION
 )
 # Xcode fails to build if library doesn't contains at least one source file.
 if(XCODE)
@@ -627,99 +683,128 @@ if(XCODE)
   target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/version.cpp)
 endif()
 
-# Add ${PROJECT_NAMESPACE}::ortools_proto to libortools
-target_sources(${PROJECT_NAME} PRIVATE
-  $<TARGET_OBJECTS:${PROJECT_NAMESPACE}::ortools_proto>)
-add_dependencies(${PROJECT_NAME} ${PROJECT_NAMESPACE}::ortools_proto)
+# Generate sub library to avoid to have too many symbols
+if(BUILD_CORE)
+  set(CORE_SRCS)
+  foreach(SUBPROJECT IN ITEMS base port util algorithms graph_base graph
+    bop glop ${PDLP_DIR} sat set_cover third_party_solvers lp_data linear_solver
+  )
+    add_subdirectory(ortools/${SUBPROJECT})
+    list(APPEND CORE_SRCS $<TARGET_OBJECTS:ortools_${SUBPROJECT}>)
+  endforeach()
 
-# Add ${PROJECT_NAMESPACE}::routing_proto to libortools
-target_sources(${PROJECT_NAME} PRIVATE
-  $<TARGET_OBJECTS:${PROJECT_NAMESPACE}::routing_proto>)
-add_dependencies(${PROJECT_NAME} ${PROJECT_NAMESPACE}::routing_proto)
+  if(USE_GLPK)
+    add_subdirectory(ortools/third_party_solvers/glpk)
+    list(APPEND CORE_SRCS $<TARGET_OBJECTS:ortools_glpk>)
+  endif()
+
+  add_subdirectory(ortools/linear_solver/wrappers)
+  list(APPEND CORE_SRCS $<TARGET_OBJECTS:ortools_linear_solver_wrappers>)
+
+  add_subdirectory(ortools/linear_solver/proto_solver)
+  list(APPEND CORE_SRCS $<TARGET_OBJECTS:ortools_linear_solver_proto_solver>)
+
+  ortools_cxx_library(
+    NAME
+      ortools_core
+    TYPE
+      SHARED
+    SOURCES
+      ${CORE_SRCS}
+      $<TARGET_OBJECTS:ortools_proto>
+    COMPILE_DEFINITIONS
+      ${OR_TOOLS_COMPILE_DEFINITIONS}
+    COMPILE_OPTIONS
+      ${OR_TOOLS_COMPILE_OPTIONS}
+    LOCAL_COMPILE_DEFINITIONS
+      OR_EXPORT
+    LINK_LIBRARIES
+      ${CMAKE_DL_LIBS}
+      ZLIB::ZLIB
+      BZip2::BZip2
+      ${ABSL_DEPS}
+      protobuf::libprotobuf
+      ${RE2_DEPS}
+      ${COINOR_DEPS}
+      ${CPLEX_DEPS}
+      ${GLPK_DEPS}
+      ${HIGHS_DEPS}
+      ${PDLP_DEPS}
+      ${SCIP_DEPS}
+      Threads::Threads
+  )
+  if(WIN32)
+    target_link_libraries(ortools_core PUBLIC psapi.lib ws2_32.lib)
+  endif()
+  if(XCODE)
+    file(GENERATE
+      OUTPUT ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/core_version.cpp
+      CONTENT "namespace {char* core_version = \"${PROJECT_VERSION}\";}")
+    target_sources(ortools_core PRIVATE
+      ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/core_version.cpp)
+  endif()
+  target_link_libraries(ortools PUBLIC ortools_core)
+endif()
 
 if(BUILD_MATH_OPT)
-  # Add ${PROJECT_NAMESPACE}::math_opt_proto to libortools
-  target_sources(${PROJECT_NAME} PRIVATE
-    $<TARGET_OBJECTS:${PROJECT_NAMESPACE}::math_opt_proto>)
-  add_dependencies(${PROJECT_NAME} ${PROJECT_NAMESPACE}::math_opt_proto)
+  add_subdirectory(ortools/gurobi)
+  add_subdirectory(ortools/math_opt)
+  if(XCODE)
+    file(GENERATE
+      OUTPUT ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/math_opt_version.cpp
+      CONTENT "namespace {char* math_opt_version = \"${PROJECT_VERSION}\";}")
+    target_sources(ortools_math_opt PRIVATE
+      ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/math_opt_version.cpp)
+  endif()
+  target_link_libraries(ortools PUBLIC ortools_math_opt)
 endif()
 
-foreach(SUBPROJECT IN ITEMS
- base
- init
- algorithms
- graph
- constraint_solver
- linear_solver
- bop
- glop
- ${GUROBI_DIR}
- ${PDLP_DIR}
- sat
- lp_data
- packing
- scheduling
- set_cover
- port
- third_party_solvers
- util)
-  add_subdirectory(ortools/${SUBPROJECT})
-  #target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_${SUBPROJECT})
-  target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_${SUBPROJECT}>)
-  add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_${SUBPROJECT})
-endforeach()
-
-if(USE_GLPK)
-  add_subdirectory(ortools/third_party_solvers/glpk)
-  #target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_glpk)
-  target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_glpk>)
-  add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_glpk)
+if(BUILD_PACKING)
+  add_subdirectory(ortools/packing)
+  target_link_libraries(ortools PUBLIC ortools_packing)
 endif()
 
-if(BUILD_MATH_OPT)
-  add_subdirectory(ortools/${MATH_OPT_DIR})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_math_opt)
+if(BUILD_ROUTING)
+  add_subdirectory(ortools/constraint_solver)
+  add_subdirectory(ortools/routing)
+  add_subdirectory(ortools/routing/parsers)
+  ortools_cxx_library(
+    NAME
+      ortools_routing
+    TYPE
+      SHARED
+    SOURCES
+      $<TARGET_OBJECTS:routing_proto>
+      $<TARGET_OBJECTS:ortools_constraint_solver>
+      $<TARGET_OBJECTS:ortools_routing_solver>
+      $<TARGET_OBJECTS:ortools_routing_parsers>
+    COMPILE_DEFINITIONS
+      ${OR_TOOLS_COMPILE_DEFINITIONS}
+    COMPILE_OPTIONS
+      ${OR_TOOLS_COMPILE_OPTIONS}
+    LINK_LIBRARIES
+      ortools::ortools_core
+  )
+  if(MSVC AND BUILD_SHARED_LIBS)
+    target_compile_definitions(ortools_routing PUBLIC "OR_ROUTING_PROTO_DLL=__declspec(dllimport)")
+  else()
+    target_compile_definitions(ortools_routing PUBLIC "OR_ROUTING_PROTO_DLL=")
+  endif()
+
+  if(XCODE)
+    file(GENERATE
+      OUTPUT ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/routing_version.cpp
+      CONTENT "namespace {char* routing_version = \"${PROJECT_VERSION}\";}")
+    target_sources(ortools_routing PRIVATE
+      ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/routing_version.cpp)
+  endif()
+  target_link_libraries(ortools PUBLIC ortools_routing)
 endif()
 
-add_subdirectory(ortools/linear_solver/wrappers)
-target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_linear_solver_wrappers>)
-add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_linear_solver_wrappers)
-
-add_subdirectory(ortools/linear_solver/proto_solver)
-target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_linear_solver_proto_solver>)
-add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_linear_solver_proto_solver)
-
-add_subdirectory(ortools/routing/parsers)
-target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_routing_parsers>)
-add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_routing_parsers)
-
-# Dependencies
-if(APPLE)
-  set_target_properties(${PROJECT_NAME} PROPERTIES
-    INSTALL_RPATH "@loader_path")
-elseif(UNIX)
-  set_target_properties(${PROJECT_NAME} PROPERTIES
-    INSTALL_RPATH "$ORIGIN")
+if(BUILD_SCHEDULING)
+  add_subdirectory(ortools/scheduling)
+  target_link_libraries(ortools PUBLIC ortools_scheduling)
 endif()
-target_link_libraries(${PROJECT_NAME} PUBLIC
-  ${CMAKE_DL_LIBS}
-  ZLIB::ZLIB
-  BZip2::BZip2
-  ${ABSL_DEPS}
-  protobuf::libprotobuf
-  ${RE2_DEPS}
-  ${COINOR_DEPS}
-  ${CPLEX_DEPS}
-  ${GLPK_DEPS}
-  ${HIGHS_DEPS}
-  ${PDLP_DEPS}
-  ${SCIP_DEPS}
-  Threads::Threads)
-if(WIN32)
-  target_link_libraries(${PROJECT_NAME} PUBLIC psapi.lib ws2_32.lib)
-endif()
-# ALIAS
-add_library(${PROJECT_NAMESPACE}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 ###############
 ## Doc rules ##
@@ -774,14 +859,6 @@ include(GenerateExportHeader)
 GENERATE_EXPORT_HEADER(${PROJECT_NAME})
 install(FILES ${PROJECT_BINARY_DIR}/${PROJECT_NAME}_export.h
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
-install(TARGETS ${PROJECT_NAME}
-  EXPORT ${PROJECT_NAME}Targets
-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  )
 
 install(EXPORT ${PROJECT_NAME}Targets
   NAMESPACE ${PROJECT_NAMESPACE}::
@@ -861,6 +938,10 @@ install(DIRECTORY ortools/constraint_solver/docs/
   DESTINATION "${CMAKE_INSTALL_DOCDIR}/constraint_solver"
   FILES_MATCHING
   PATTERN "*.md")
+install(DIRECTORY ortools/routing/docs/
+  DESTINATION "${CMAKE_INSTALL_DOCDIR}/routing"
+  FILES_MATCHING
+  PATTERN "*.md")
 endif()
 
 ##################
@@ -889,6 +970,10 @@ function(add_cxx_sample)
     "${multiValueArgs}"
     ${ARGN}
   )
+  if(NOT BUILD_CXX_SAMPLES)
+    return()
+  endif()
+
   if(NOT SAMPLE_FILE_NAME)
     message(FATAL_ERROR "no FILE_NAME provided")
   endif()
@@ -906,7 +991,6 @@ function(add_cxx_sample)
   endif()
 
   add_executable(${SAMPLE_NAME} ${SAMPLE_FILE_NAME})
-  target_include_directories(${SAMPLE_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
   target_compile_features(${SAMPLE_NAME} PRIVATE cxx_std_17)
   target_link_libraries(${SAMPLE_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
 
@@ -923,7 +1007,7 @@ function(add_cxx_sample)
   endif()
   install(TARGETS ${SAMPLE_NAME})
 
-  if(BUILD_TESTING)
+  if(BUILD_CXX_TESTING)
     add_test(
       NAME cxx_${COMPONENT_NAME}_${SAMPLE_NAME}
       COMMAND ${SAMPLE_NAME})
@@ -957,6 +1041,10 @@ function(add_cxx_example)
     "${multiValueArgs}"
     ${ARGN}
   )
+  if(NOT BUILD_CXX_EXAMPLES)
+    return()
+  endif()
+
   if(NOT EXAMPLE_FILE_NAME)
     message(FATAL_ERROR "no FILE_NAME provided")
   endif()
@@ -973,7 +1061,6 @@ function(add_cxx_example)
   endif()
 
   add_executable(${EXAMPLE_NAME} ${EXAMPLE_FILE_NAME})
-  target_include_directories(${EXAMPLE_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
   target_compile_features(${EXAMPLE_NAME} PRIVATE cxx_std_17)
   target_link_libraries(${EXAMPLE_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
 
@@ -990,7 +1077,7 @@ function(add_cxx_example)
   endif()
   install(TARGETS ${EXAMPLE_NAME})
 
-  if(BUILD_TESTING)
+  if(BUILD_CXX_TESTING)
     add_test(
       NAME cxx_${COMPONENT_NAME}_${EXAMPLE_NAME}
       COMMAND ${EXAMPLE_NAME})

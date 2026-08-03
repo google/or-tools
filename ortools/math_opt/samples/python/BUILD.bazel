@@ -14,13 +14,19 @@
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:py_binary.bzl", "py_binary")
 
+package(default_visibility = ["//visibility:public"])
+
 py_binary(
     name = "tsp",
     srcs = ["tsp.py"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     deps = [
+        "//ortools/math_opt/python:mathopt",
         requirement("absl-py"),
         requirement("svgwrite"),
-        "//ortools/math_opt/python:mathopt",
     ],
 )
 
@@ -28,8 +34,9 @@ py_binary(
     name = "basic_example",
     srcs = ["basic_example.py"],
     deps = [
-        requirement("absl-py"),
         "//ortools/math_opt/python:mathopt",
+        "//ortools/math_opt/solvers:gscip_solver",
+        requirement("absl-py"),
     ],
 )
 
@@ -37,8 +44,9 @@ py_binary(
     name = "linear_programming",
     srcs = ["linear_programming.py"],
     deps = [
-        requirement("absl-py"),
         "//ortools/math_opt/python:mathopt",
+        "//ortools/math_opt/solvers:glop_solver",
+        requirement("absl-py"),
     ],
 )
 
@@ -46,8 +54,9 @@ py_binary(
     name = "integer_programming",
     srcs = ["integer_programming.py"],
     deps = [
-        requirement("absl-py"),
         "//ortools/math_opt/python:mathopt",
+        "//ortools/math_opt/solvers:gscip_solver",
+        requirement("absl-py"),
     ],
 )
 
@@ -55,8 +64,9 @@ py_binary(
     name = "advanced_linear_programming",
     srcs = ["advanced_linear_programming.py"],
     deps = [
-        requirement("absl-py"),
         "//ortools/math_opt/python:mathopt",
+        "//ortools/math_opt/solvers:glop_solver",
+        requirement("absl-py"),
     ],
 )
 
@@ -64,38 +74,56 @@ py_binary(
     name = "cutting_stock",
     srcs = ["cutting_stock.py"],
     deps = [
-        requirement("absl-py"),
         "//ortools/math_opt/python:mathopt",
+        "//ortools/math_opt/solvers:cp_sat_solver",
+        "//ortools/math_opt/solvers:glop_solver",
+        requirement("absl-py"),
     ],
 )
 
 py_binary(
     name = "facility_lp_benders",
     srcs = ["facility_lp_benders.py"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     deps = [
+        "//ortools/math_opt/python:mathopt",
+        "//ortools/math_opt/solvers:glop_solver",
+        "//ortools/math_opt/solvers:glpk_solver",
+        "//ortools/math_opt/solvers:pdlp_solver",
         requirement("absl-py"),
         requirement("numpy"),
-        "//ortools/math_opt/python:mathopt",
     ],
 )
 
 py_binary(
     name = "linear_regression",
     srcs = ["linear_regression.py"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     deps = [
+        "//ortools/math_opt/python:mathopt",
+        "//ortools/math_opt/solvers:pdlp_solver",
         requirement("absl-py"),
         requirement("numpy"),
-        "//ortools/math_opt/python:mathopt",
     ],
 )
 
 py_binary(
     name = "smallest_circle",
     srcs = ["smallest_circle.py"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     deps = [
+        "//ortools/math_opt/python:mathopt",
         requirement("absl-py"),
         requirement("numpy"),
-        "//ortools/math_opt/python:mathopt",
     ],
 )
 
@@ -103,8 +131,9 @@ py_binary(
     name = "spillover",
     srcs = ["spillover.py"],
     deps = [
-        requirement("absl-py"),
         "//ortools/math_opt/python:mathopt",
+        "//ortools/math_opt/solvers:glop_solver",
+        requirement("absl-py"),
     ],
 )
 
@@ -112,25 +141,38 @@ py_binary(
     name = "time_indexed_scheduling",
     srcs = ["time_indexed_scheduling.py"],
     deps = [
-        requirement("absl-py"),
         "//ortools/math_opt/python:mathopt",
+        "//ortools/math_opt/solvers:gscip_solver",
+        requirement("absl-py"),
     ],
 )
 
 py_binary(
     name = "writing_seminar",
     srcs = ["writing_seminar.py"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     deps = [
-        requirement("absl-py"),
         "//ortools/math_opt/python:mathopt",
+        "//ortools/math_opt/solvers:cp_sat_solver",
+        "//ortools/math_opt/solvers:glop_solver",
+        "//ortools/math_opt/solvers:gscip_solver",
+        "//ortools/math_opt/solvers:highs_solver",
+        requirement("absl-py"),
     ],
 )
 
 py_binary(
     name = "hierarchical_objectives",
     srcs = ["hierarchical_objectives.py"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     deps = [
-        requirement("absl-py"),
         "//ortools/math_opt/python:mathopt",
+        requirement("absl-py"),
     ],
 )

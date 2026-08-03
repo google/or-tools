@@ -301,7 +301,10 @@ struct CallbackResult {
   // AddLazyConstraint() to modifying this directly.
   std::vector<GeneratedLinearConstraint> new_constraints;
 
-  // A solution or partially defined solution to give to the solver.
+  // A list of solutions (or partially defined solutions) to suggest to the
+  // solver. Some solvers (e.g. gurobi) will try and convert a partial solution
+  // into a full solution. Use only for CallbackEvent::kMipNode or
+  // CallbackEvent::kMipSolution.
   std::vector<VariableMap<double>> suggested_solutions;
 };
 

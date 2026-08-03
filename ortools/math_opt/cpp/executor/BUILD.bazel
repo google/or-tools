@@ -1,0 +1,122 @@
+# Copyright 2010-2025 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "executor_init_args",
+    hdrs = ["executor_init_args.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/util:solve_interrupter",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
+cc_library(
+    name = "solve_executor",
+    hdrs = ["solve_executor.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":executor_init_args",
+        "//ortools/math_opt/cpp:math_opt",
+        "@abseil-cpp//absl/status:statusor",
+    ],
+)
+
+cc_library(
+    name = "time_limit_util",
+    srcs = ["time_limit_util.cc"],
+    hdrs = ["time_limit_util.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        "//ortools/math_opt/cpp:math_opt",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
+cc_test(
+    name = "time_limit_util_test",
+    srcs = ["time_limit_util_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":time_limit_util",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/cpp:math_opt",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
+cc_library(
+    name = "local_solve_executor",
+    srcs = ["local_solve_executor.cc"],
+    hdrs = ["local_solve_executor.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":executor_init_args",
+        ":solve_executor",
+        ":time_limit_util",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/util:solve_interrupter",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/status:status_macros",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
+cc_test(
+    name = "local_solve_executor_test",
+    srcs = ["local_solve_executor_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":local_solve_executor",
+        ":solve_executor_tests",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/solvers:glop_solver",
+        "//ortools/math_opt/solvers:gscip_solver",
+    ],
+)
+
+cc_library(
+    name = "solve_executor_tests",
+    testonly = True,
+    srcs = ["solve_executor_tests.cc"],
+    hdrs = ["solve_executor_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":solve_executor",
+        "//ortools/base:gmock",
+        "//ortools/math_opt/cpp:matchers",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/port:scoped_std_stream_capture",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+    ],
+)

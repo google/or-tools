@@ -16,19 +16,18 @@
 #include "ortools/third_party_solvers/xpress_environment.h"
 
 #include <cstdlib>
-// NOLINTNEXTLINE(build/c++17)
-#include <filesystem>
+#include <filesystem>  //NOLINT
 #include <functional>
 #include <string>
 #include <vector>
 
 #include "absl/base/call_once.h"
 #include "absl/base/const_init.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/synchronization/mutex.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/third_party_solvers/dynamic_library.h"
 
@@ -308,21 +307,22 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath) {
       if (!XPRSgetversionnumbers ||
           XPRSgetversionnumbers(&major, &minor, &build) != 0)
         *xpress_load_status =
-            util::StatusBuilder(absl::StatusCode::kNotFound)
+            ortools::NotFoundErrorBuilder()
             << "Xpress optimizer library too old, need at least version "
             << XPVERSION;
       else if (major < XPVERSION)
-        *xpress_load_status = util::StatusBuilder(absl::StatusCode::kNotFound)
+        *xpress_load_status = ortools::NotFoundErrorBuilder()
                               << "Xpress optimizer library version " << major
                               << " too old, need at least version "
                               << XPVERSION;
       else
         *xpress_load_status = absl::OkStatus();
     } else {
-      *xpress_load_status = absl::NotFoundError(
-          absl::StrCat("Could not find the Xpress shared library. Looked in: [",
-                       absl::StrJoin(canonical_paths, "', '"),
-                       "]. Please check environment variable XPRESSDIR"));
+      *xpress_load_status =
+          ortools::NotFoundErrorBuilder()
+          << "Could not find the Xpress shared library. Looked in: ["
+          << absl::StrJoin(canonical_paths, "', '")
+          << "]. Please check environment variable XPRESSDIR";
     }
   });
   xpresspath.clear();

@@ -34,7 +34,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/log_severity.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -46,8 +45,9 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/init_google.h"
-#include "ortools/graph/graph.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/graph/shortest_paths.h"
+#include "ortools/graph_base/graph.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -306,12 +306,10 @@ class NetworkRoutingDataBuilder {
     data->set_name(name);
 
     data->set_num_nodes(size);
-    int num_arcs = 0;
     for (int i = 0; i < size - 1; ++i) {
       for (int j = i + 1; j < size; ++j) {
         if (network_[i][j]) {
           data->AddArc(i, j, max_capacity_);
-          num_arcs++;
         }
       }
     }

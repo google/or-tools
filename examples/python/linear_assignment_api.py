@@ -20,7 +20,9 @@ modified so the optimum solution is unique.
 """
 
 from typing import Sequence
+
 from absl import app
+
 from ortools.graph.python import linear_sum_assignment
 
 

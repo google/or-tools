@@ -38,7 +38,6 @@ namespace operations_research::math_opt {
 Elemental::Elemental(std::string model_name, std::string primary_objective_name)
     : model_name_(std::move(model_name)),
       primary_objective_name_(std::move(primary_objective_name)) {
-  // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
   ForEachIndex<AllAttrs::kNumAttrTypes>([this]<int attr_type_index>() {
     using Descriptor = AllAttrs::TypeDescriptor<attr_type_index>;
     for (const auto a : Descriptor::Enumerate()) {
@@ -90,15 +89,12 @@ bool Elemental::DeleteElementUntyped(const ElementType e, int64_t id) {
   for (auto& [unused, diff] : diffs_->UpdateAndGetAll()) {
     diff->DeleteElement(e, id);
   }
-  // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
   AllAttrs::ForEachAttr([this, e, id]<typename AttrType>(AttrType a) {
-    ForEachIndex<GetAttrKeySize<AttrType>()>(
-        // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
-        [&]<int i>() {
-          if (GetElementTypes(a)[i] == e) {
-            UpdateAttrOnElementDeleted<AttrType, i>(a, id);
-          }
-        });
+    ForEachIndex<GetAttrKeySize<AttrType>()>([&]<int i>() {
+      if (GetElementTypes(a)[i] == e) {
+        UpdateAttrOnElementDeleted<AttrType, i>(a, id);
+      }
+    });
     // If `a` is element-valued, we need to remove all keys that refer to the
     // deleted element.
     if constexpr (is_element_id_v<ValueTypeFor<AttrType>>) {

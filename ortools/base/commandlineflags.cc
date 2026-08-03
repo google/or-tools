@@ -13,6 +13,9 @@
 
 #include "ortools/base/commandlineflags.h"
 
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
+
 // We add this method to tell the linker to include these symbols.
 void CommandLineFlagsUnusedMethod() {
   const char kUsage[] = "Unused";

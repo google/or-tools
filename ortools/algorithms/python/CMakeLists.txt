@@ -31,7 +31,7 @@ endif()
 target_link_libraries(knapsack_solver_pybind11 PRIVATE ${PROJECT_NAMESPACE}::ortools)
 add_library(${PROJECT_NAMESPACE}::knapsack_solver_pybind11 ALIAS knapsack_solver_pybind11)
 
-if(BUILD_TESTING)
+if(BUILD_PYTHON_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")
   if(NOT USE_SCIP)
     list(FILTER PYTHON_SRCS EXCLUDE REGEX "knapsack_solver_test.py$")

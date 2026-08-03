@@ -39,7 +39,7 @@ if(UNIX AND NOT APPLE AND NOT (CMAKE_SYSTEM_NAME STREQUAL "OpenBSD"))
     list(APPEND CMAKE_SWIG_FLAGS "-DSWIGWORDSIZE32")
   endif()
 endif()
-list(APPEND CMAKE_SWIG_FLAGS "-DOR_DLL=")
+list(APPEND CMAKE_SWIG_FLAGS "-DOR_DLL=" "-DOR_INIT_DLL=" "-DOR_ROUTING_DLL=")
 
 # Find Python 3
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
@@ -149,12 +149,12 @@ file(GLOB_RECURSE OR_TOOLS_PROTO_PY_FILES RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/graph/*.proto"
   "ortools/linear_solver/*.proto"
   "ortools/packing/*.proto"
+  "ortools/routing/*.proto"
   "ortools/sat/*.proto"
   "ortools/scheduling/*.proto"
   "ortools/set_cover/*.proto"
   "ortools/util/*.proto"
   )
-list(REMOVE_ITEM OR_TOOLS_PROTO_PY_FILES "ortools/constraint_solver/demon_profiler.proto")
 
 if(BUILD_MATH_OPT)
   file(GLOB_RECURSE MATH_OPT_PROTO_PY_FILES RELATIVE ${PROJECT_SOURCE_DIR}
@@ -257,7 +257,7 @@ function(add_python_test)
     set(COMPONENT_NAME ${TEST_COMPONENT_NAME})
   endif()
 
-  if(BUILD_TESTING)
+  if(BUILD_PYTHON_TESTING)
     add_test(
       NAME python_${COMPONENT_NAME}_${TEST_NAME}
       COMMAND ${VENV_Python3_EXECUTABLE} -m pytest ${TEST_FILE_NAME}
@@ -284,6 +284,7 @@ foreach(SUBPROJECT IN ITEMS
  linear_solver
  ${PDLP_DIR}
  constraint_solver
+ routing
  sat
  scheduling
  set_cover
@@ -310,10 +311,12 @@ file(GENERATE
   OUTPUT ${PYTHON_PROJECT_DIR}/__init__.py
   INPUT ${PROJECT_BINARY_DIR}/python/__init__.py.in)
 
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/../pybind11_abseil/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/algorithms/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/algorithms/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/bop/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/constraint_solver/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/constraint_solver/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/glop/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/graph/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/graph/python/__init__.py CONTENT "")
@@ -322,7 +325,6 @@ file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/init/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/linear_solver/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/linear_solver/python/__init__.py CONTENT "")
 if(BUILD_MATH_OPT)
-  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/../pybind11_abseil/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/core/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/core/python/__init__.py CONTENT "")
@@ -346,6 +348,9 @@ if(USE_PDLP OR BUILD_MATH_OPT)
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/pdlp/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/pdlp/python/__init__.py CONTENT "")
 endif()
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/routing/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/routing/python/__init__.py CONTENT "")
+
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/colab/__init__.py CONTENT "")
@@ -411,11 +416,11 @@ file(COPY
   ortools/sat/python/cp_model.py
   DESTINATION ${PYTHON_PROJECT_DIR}/sat/python)
 file(COPY
-  ortools/sat/colab/flags.py
   ortools/sat/colab/visualization.py
   DESTINATION ${PYTHON_PROJECT_DIR}/sat/colab)
 file(COPY
   ortools/util/python/solve_interrupter.py
+  ortools/util/python/status_streaming.py
   DESTINATION ${PYTHON_PROJECT_DIR}/util/python)
 
 # Adds py.typed to make typed packages.
@@ -572,13 +577,14 @@ add_custom_command(
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_seed_sequences>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::raw_hash_set>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::raw_logging_internal>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::source_location>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::spinlock_wait>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::stacktrace>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::status>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::status_builder>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::statusor>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::str_format_internal>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::strerror>>
-    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::string_view>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::strings>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::strings_internal>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::symbolize>>
@@ -645,6 +651,16 @@ add_custom_command(
 
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:${is_ortools_shared},copy,true>
+    $<${need_unix_ortools_lib}:$<TARGET_SONAME_FILE:${PROJECT_NAMESPACE}::ortools_core>>
+    $<${need_windows_ortools_lib}:$<TARGET_FILE:${PROJECT_NAMESPACE}::ortools_core>>
+    $<${need_unix_ortools_lib}:$<TARGET_SONAME_FILE:${PROJECT_NAMESPACE}::ortools_math_opt>>
+    $<${need_windows_ortools_lib}:$<TARGET_FILE:${PROJECT_NAMESPACE}::ortools_math_opt>>
+    $<${need_unix_ortools_lib}:$<TARGET_SONAME_FILE:${PROJECT_NAMESPACE}::ortools_packing>>
+    $<${need_windows_ortools_lib}:$<TARGET_FILE:${PROJECT_NAMESPACE}::ortools_packing>>
+    $<${need_unix_ortools_lib}:$<TARGET_SONAME_FILE:${PROJECT_NAMESPACE}::ortools_routing>>
+    $<${need_windows_ortools_lib}:$<TARGET_FILE:${PROJECT_NAMESPACE}::ortools_routing>>
+    $<${need_unix_ortools_lib}:$<TARGET_SONAME_FILE:${PROJECT_NAMESPACE}::ortools_scheduling>>
+    $<${need_windows_ortools_lib}:$<TARGET_FILE:${PROJECT_NAMESPACE}::ortools_scheduling>>
     $<${need_unix_ortools_lib}:$<TARGET_SONAME_FILE:${PROJECT_NAMESPACE}::ortools>>
     $<${need_windows_ortools_lib}:$<TARGET_FILE:${PROJECT_NAMESPACE}::ortools>>
     ${PYTHON_PROJECT}/.libs
@@ -674,6 +690,8 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:pywrapcp> ${PYTHON_PROJECT}/constraint_solver
   COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:constraint_solver_pybind11> ${PYTHON_PROJECT}/constraint_solver/python
+  COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:pywraplp> ${PYTHON_PROJECT}/linear_solver
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:model_builder_helper_pybind11> ${PYTHON_PROJECT}/linear_solver/python
@@ -693,17 +711,23 @@ add_custom_command(
    $<IF:$<TARGET_EXISTS:pdlp_pybind11>,copy,true>
    $<$<TARGET_EXISTS:pdlp_pybind11>:$<TARGET_FILE:pdlp_pybind11>> ${PYTHON_PROJECT}/pdlp/python
   COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:pywraprouting> ${PYTHON_PROJECT}/routing
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:routing_pybind11> ${PYTHON_PROJECT}/routing/python
+  COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:cp_model_helper_pybind11> ${PYTHON_PROJECT}/sat/python
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:rcpsp_pybind11> ${PYTHON_PROJECT}/scheduling/python
    COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:set_cover_pybind11> ${PYTHON_PROJECT}/set_cover/python
   COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:piecewise_linear_function_pybind11> ${PYTHON_PROJECT}/util/python
+  COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:sorted_interval_list_pybind11> ${PYTHON_PROJECT}/util/python
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:solve_interrupter_pybind11> ${PYTHON_PROJECT}/util/python
   COMMAND ${CMAKE_COMMAND} -E
-   $<IF:$<BOOL:${BUILD_TESTING}>,copy,true>
+  $<IF:$<BOOL:${BUILD_PYTHON_TESTING}>,copy,true>
    $<$<TARGET_EXISTS:solve_interrupter_testing_pybind11>:$<TARGET_FILE:solve_interrupter_testing_pybind11>> ${PYTHON_PROJECT}/util/python
   COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/pybind11_timestamp
   MAIN_DEPENDENCY
@@ -715,6 +739,9 @@ add_custom_command(
     max_flow_pybind11
     min_cost_flow_pybind11
     pywrapcp
+    constraint_solver_pybind11
+    pywraprouting
+    routing_pybind11
     pywraplp
     model_builder_helper_pybind11
     $<$<BOOL:${BUILD_MATH_OPT}>:math_opt_core_pybind11>
@@ -724,6 +751,7 @@ add_custom_command(
     cp_model_helper_pybind11
     rcpsp_pybind11
     set_cover_pybind11
+    piecewise_linear_function_pybind11
     sorted_interval_list_pybind11
     solve_interrupter_pybind11
     $<TARGET_NAME_IF_EXISTS:solve_interrupter_testing_pybind11>
@@ -755,14 +783,19 @@ add_custom_command(
   COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.max_flow --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.min_cost_flow --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.constraint_solver.pywrapcp --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.constraint_solver.python.constraint_solver --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.linear_solver.pywraplp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.linear_solver.python.model_builder_helper --output .
   COMMAND ${stubgen_EXECUTABLE} -p pybind11_abseil.status --output .
+  COMMAND ${stubgen_EXECUTABLE} -p pybind11_abseil.absl_casters --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.math_opt.core.python.solver --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.pdlp.python.pdlp --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.routing.pywraprouting --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.routing.python.routing --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.sat.python.cp_model_helper --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.scheduling.python.rcpsp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.set_cover.python.set_cover --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.util.python.piecewise_linear_function --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.util.python.sorted_interval_list --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.util.python.pybind_solve_interrupter --output .
   COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/stub_timestamp
@@ -843,7 +876,7 @@ if(BUILD_VENV)
     VERBATIM)
 endif()
 
-if(BUILD_TESTING)
+if(BUILD_PYTHON_TESTING)
   configure_file(
     ${PROJECT_SOURCE_DIR}/ortools/init/python/version_test.py.in
     ${PROJECT_BINARY_DIR}/python/version_test.py
@@ -949,7 +982,7 @@ function(add_python_sample)
     set(COMPONENT_NAME ${SAMPLE_COMPONENT_NAME})
   endif()
 
-  if(BUILD_TESTING)
+  if(BUILD_PYTHON_TESTING)
     add_test(
       NAME python_${COMPONENT_NAME}_${SAMPLE_NAME}
       COMMAND ${VENV_Python3_EXECUTABLE} ${SAMPLE_FILE_NAME}
@@ -999,7 +1032,7 @@ if(NOT EXAMPLE_FILE_NAME)
     set(COMPONENT_NAME ${EXAMPLE_COMPONENT_NAME})
   endif()
 
-  if(BUILD_TESTING)
+  if(BUILD_PYTHON_TESTING)
     add_test(
       NAME python_${COMPONENT_NAME}_${EXAMPLE_NAME}
       COMMAND ${VENV_Python3_EXECUTABLE} ${EXAMPLE_FILE_NAME}

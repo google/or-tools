@@ -12,14 +12,17 @@
 # limitations under the License.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
 cc_library(
     name = "model_storage_types",
     hdrs = ["model_storage_types.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
-        "//ortools/base:intops",
+        "//ortools/base:strong_int",
         "//ortools/math_opt/elemental:elements",
     ],
 )
@@ -27,11 +30,15 @@ cc_library(
 cc_library(
     name = "range",
     hdrs = ["range.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
 )
 
 cc_library(
     name = "iterators",
     hdrs = ["iterators.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [":range"],
 )
 
@@ -39,9 +46,11 @@ cc_library(
     name = "sparse_coefficient_map",
     srcs = ["sparse_coefficient_map.cc"],
     hdrs = ["sparse_coefficient_map.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model_storage_types",
-        "//ortools/base:intops",
+        "//ortools/base:strong_int",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_map",
@@ -53,10 +62,12 @@ cc_library(
     name = "sparse_matrix",
     srcs = ["sparse_matrix.cc"],
     hdrs = ["sparse_matrix.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model_storage_types",
-        "//ortools/base:intops",
         "//ortools/base:map_util",
+        "//ortools/base:strong_int",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_map",
@@ -69,6 +80,8 @@ cc_library(
 cc_library(
     name = "linear_expression_data",
     hdrs = ["linear_expression_data.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":sparse_coefficient_map",
         "//ortools/math_opt:sparse_containers_cc_proto",
@@ -80,10 +93,12 @@ cc_library(
 cc_library(
     name = "update_trackers",
     hdrs = ["update_trackers.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model_storage_types",
-        "//ortools/base:intops",
         "//ortools/base:stl_util",
+        "//ortools/base:strong_int",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
@@ -95,10 +110,12 @@ cc_library(
     name = "variable_storage",
     srcs = ["variable_storage.cc"],
     hdrs = ["variable_storage.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model_storage_types",
         ":range",
-        "//ortools/base:intops",
+        "//ortools/base:strong_int",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
@@ -114,12 +131,14 @@ cc_library(
     name = "objective_storage",
     srcs = ["objective_storage.cc"],
     hdrs = ["objective_storage.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":range",
         ":sparse_coefficient_map",
         ":sparse_matrix",
-        "//ortools/base:intops",
         "//ortools/base:map_util",
+        "//ortools/base:strong_int",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
@@ -138,11 +157,13 @@ cc_library(
     name = "linear_constraint_storage",
     srcs = ["linear_constraint_storage.cc"],
     hdrs = ["linear_constraint_storage.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model_storage_types",
         ":range",
         ":sparse_matrix",
-        "//ortools/base:intops",
+        "//ortools/base:strong_int",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
@@ -160,11 +181,13 @@ cc_library(
 cc_library(
     name = "atomic_constraint_storage",
     hdrs = ["atomic_constraint_storage.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model_storage_types",
         ":range",
-        "//ortools/base:intops",
         "//ortools/base:map_util",
+        "//ortools/base:strong_int",
         "//ortools/math_opt/core:sorted",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_map",
@@ -174,22 +197,17 @@ cc_library(
     ],
 )
 
-config_setting(
-    name = "storage_v2",
-    define_values = {"mathopt_storage_v2": "1"},
-)
-
 cc_library(
     name = "model_storage",
     srcs = select({
-        ":storage_v2": [],
         "//conditions:default": ["model_storage.cc"],
     }),
     hdrs = ["model_storage.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
     defines = select({
-        ":storage_v2": ["MATHOPT_STORAGE_V2"],
         "//conditions:default": [],
     }),
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":atomic_constraint_storage",
         ":iterators",
@@ -198,8 +216,7 @@ cc_library(
         ":objective_storage",
         ":update_trackers",
         ":variable_storage",
-        "//ortools/base:intops",
-        "//ortools/base:status_macros",
+        "//ortools/base:strong_int",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
@@ -218,62 +235,11 @@ cc_library(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/memory",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/types:span",
-    ] + select({
-        ":storage_v2": [":model_storage_v2"],
-        "//conditions:default": [],
-    }),
-)
-
-cc_library(
-    name = "model_storage_v2",
-    srcs = ["model_storage_v2.cc"],
-    hdrs = ["model_storage_v2.h"],
-    deps = [
-        ":atomic_constraint_storage",
-        ":atomic_constraints_v2",
-        ":model_storage_types",
-        "//ortools/base:status_macros",
-        "//ortools/math_opt:model_cc_proto",
-        "//ortools/math_opt:model_update_cc_proto",
-        "//ortools/math_opt:sparse_containers_cc_proto",
-        "//ortools/math_opt/constraints/indicator:storage",
-        "//ortools/math_opt/constraints/quadratic:storage",
-        "//ortools/math_opt/constraints/sos:storage",
-        "//ortools/math_opt/elemental",
-        "//ortools/math_opt/elemental:attr_key",
-        "//ortools/math_opt/elemental:attributes",
-        "//ortools/math_opt/elemental:derived_data",
-        "//ortools/math_opt/elemental:elements",
-        "@abseil-cpp//absl/algorithm:container",
-        "@abseil-cpp//absl/base:nullability",
-        "@abseil-cpp//absl/container:flat_hash_map",
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/memory",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings:string_view",
-        "@abseil-cpp//absl/types:span",
-    ],
-)
-
-cc_library(
-    name = "atomic_constraints_v2",
-    hdrs = ["atomic_constraints_v2.h"],
-    deps = [
-        ":atomic_constraint_storage",
-        ":model_storage_types",
-        "//ortools/math_opt/constraints/indicator:storage",
-        "//ortools/math_opt/constraints/quadratic:storage",
-        "//ortools/math_opt/elemental",
-        "//ortools/math_opt/elemental:attr_key",
-        "//ortools/math_opt/elemental:attributes",
-        "//ortools/math_opt/elemental:derived_data",
-        "//ortools/math_opt/elemental:elements",
-        "@abseil-cpp//absl/log:check",
     ],
 )
 
@@ -281,6 +247,8 @@ cc_library(
     name = "model_storage_item",
     srcs = ["model_storage_item.cc"],
     hdrs = ["model_storage_item.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model_storage",
         "//ortools/math_opt/elemental:elements",

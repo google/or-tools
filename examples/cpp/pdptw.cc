@@ -46,7 +46,6 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
@@ -55,15 +54,18 @@
 #include "absl/strings/string_view.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/timer.h"
-#include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_enums.pb.h"
-#include "ortools/constraint_solver/routing_index_manager.h"
-#include "ortools/constraint_solver/routing_parameters.h"
-#include "ortools/constraint_solver/routing_parameters.pb.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/routing/enums.pb.h"
+#include "ortools/routing/index_manager.h"
+#include "ortools/routing/parameters.h"
+#include "ortools/routing/parameters.pb.h"
 #include "ortools/routing/parsers/lilim_parser.h"
 #include "ortools/routing/parsers/simple_graph.h"
+#include "ortools/routing/routing.h"
+#include "ortools/routing/types.h"
 
 ABSL_FLAG(std::string, pdp_file, "",
           "File containing the Pickup and Delivery Problem to solve.");
@@ -80,7 +82,8 @@ ABSL_FLAG(std::string, routing_model_parameters, "",
           "Text proto RoutingModelParameters (possibly partial) that will "
           "override the DefaultRoutingModelParameters()");
 
-namespace operations_research {
+namespace operations_research::routing {
+namespace {
 
 // Returns the list of variables to use for the Tabu metaheuristic.
 // The current list is:
@@ -183,12 +186,11 @@ void SetupModel(const routing::LiLimParser& parser,
   const RoutingDimension& time_dimension = model->GetDimensionOrDie("time");
   Solver* const solver = model->solver();
   for (int node = 0; node < num_nodes; ++node) {
-    const int64_t index =
-        manager.NodeToIndex(RoutingIndexManager::NodeIndex(node));
+    const int64_t index = manager.NodeToIndex(NodeIndex(node));
     if (const std::optional<int> delivery = parser.GetDelivery(node);
         delivery.has_value()) {
       const int64_t delivery_index =
-          manager.NodeToIndex(RoutingIndexManager::NodeIndex(delivery.value()));
+          manager.NodeToIndex(NodeIndex(delivery.value()));
       solver->AddConstraint(solver->MakeEquality(
           model->VehicleVar(index), model->VehicleVar(delivery_index)));
       solver->AddConstraint(
@@ -231,8 +233,7 @@ void SetupModel(const routing::LiLimParser& parser,
   }
 
   // Adding penalty costs to allow skipping orders.
-  for (RoutingIndexManager::NodeIndex order(1); order < model->nodes();
-       ++order) {
+  for (NodeIndex order(1); order < model->nodes(); ++order) {
     std::vector<int64_t> orders(1, manager.NodeToIndex(order));
     model->AddDisjunction(orders,
                           MathUtil::Round<int64_t>(scaling_factor * kPenalty));
@@ -291,6 +292,7 @@ std::string VerboseOutput(const RoutingModel& model,
   }
   return output;
 }
+}  // namespace
 
 // Builds and solves a model from a file in the format defined by Li & Lim
 // (https://www.sintef.no/projectweb/top/pdptw/li-lim-benchmark/documentation/).
@@ -305,8 +307,7 @@ bool LoadAndSolve(absl::string_view pdp_file,
   // Build pickup and delivery model.
   const int num_nodes = parser.NumberOfNodes();
   const int num_vehicles = parser.NumberOfVehicles();
-  const RoutingIndexManager::NodeIndex depot =
-      RoutingIndexManager::NodeIndex(parser.Depot());
+  const NodeIndex depot = NodeIndex(parser.Depot());
   RoutingIndexManager manager(num_nodes, num_vehicles, depot);
   RoutingModel model(manager, model_parameters);
   SetupModel(parser, manager, &model, &search_parameters);
@@ -337,8 +338,7 @@ bool LoadAndSolve(absl::string_view pdp_file,
       if (!model.IsEnd(node) && !model.IsStart(node) &&
           assignment->Value(model.NextVar(node)) == node) {
         skipped_nodes++;
-        for (RoutingModel::DisjunctionIndex disjunction :
-             model.GetDisjunctionIndices(node)) {
+        for (DisjunctionIndex disjunction : model.GetDisjunctionIndices(node)) {
           total_penalty += model.GetDisjunctionPenalty(disjunction);
         }
       }
@@ -354,23 +354,25 @@ bool LoadAndSolve(absl::string_view pdp_file,
   return false;
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
+
+namespace o_r = ::operations_research::routing;
 
 int main(int argc, char** argv) {
   absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   InitGoogle(argv[0], &argc, &argv, true);
-  operations_research::RoutingModelParameters model_parameters =
-      operations_research::DefaultRoutingModelParameters();
+  o_r::RoutingModelParameters model_parameters =
+      o_r::DefaultRoutingModelParameters();
   model_parameters.set_reduce_vehicle_cost_model(
       absl::GetFlag(FLAGS_reduce_vehicle_cost_model));
   CHECK(google::protobuf::TextFormat::MergeFromString(
       absl::GetFlag(FLAGS_routing_model_parameters), &model_parameters));
-  operations_research::RoutingSearchParameters search_parameters =
-      operations_research::DefaultRoutingSearchParameters();
+  o_r::RoutingSearchParameters search_parameters =
+      o_r::DefaultRoutingSearchParameters();
   CHECK(google::protobuf::TextFormat::MergeFromString(
       absl::GetFlag(FLAGS_routing_search_parameters), &search_parameters));
-  if (!operations_research::LoadAndSolve(absl::GetFlag(FLAGS_pdp_file),
-                                         model_parameters, search_parameters)) {
+  if (!o_r::LoadAndSolve(absl::GetFlag(FLAGS_pdp_file), model_parameters,
+                         search_parameters)) {
     LOG(INFO) << "Error solving " << absl::GetFlag(FLAGS_pdp_file);
   }
   return EXIT_SUCCESS;

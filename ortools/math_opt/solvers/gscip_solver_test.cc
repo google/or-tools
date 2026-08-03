@@ -21,6 +21,7 @@
 #include "absl/status/statusor.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/macros/os.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/solver_tests/callback_tests.h"
@@ -37,6 +38,7 @@
 #include "ortools/math_opt/solver_tests/qp_tests.h"
 #include "ortools/math_opt/solver_tests/second_order_cone_tests.h"
 #include "ortools/math_opt/solver_tests/status_tests.h"
+#include "ortools/math_opt/solver_tests/test_models.h"
 #include "ortools/math_opt/solvers/gscip/gscip_parameters.h"
 #include "ortools/math_opt/testing/param_name.h"
 #include "ortools/port/scoped_std_stream_capture.h"
@@ -98,10 +100,23 @@ std::vector<QpTestParameters> GetGscipQpTestParameters() {
                            /*supports_qp_incrementalism=*/false,
                            /*use_integer_variables=*/true)};
 }
+// In WASM we fail because of an assertion due to SCIP trying to change the
+// rounding mode to SCIP_ROUND_DOWNWARDS in scip/src/scip/intervalarith.c.
+//
+// Note that it seems to not reproduce in `-c opt`.
+#if defined(ORTOOLS_TARGET_OS_IS_EMSCRIPTEN)
+static_assert(kTargetOs == TargetOs::kEmscripten);  // See comment below.
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(SimpleQpTest);
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(IncrementalQpTest);
+#else   // ORTOOLS_TARGET_OS_IS_EMSCRIPTEN
+// Make sure we include the header the defines ORTOOLS_TARGET_OS_IS_EMSCRIPTEN
+// by asserting the constexpr from the same header is defined.
+static_assert(kTargetOs != TargetOs::kEmscripten);
 INSTANTIATE_TEST_SUITE_P(GscipSimpleQpTest, SimpleQpTest,
                          ValuesIn(GetGscipQpTestParameters()));
 INSTANTIATE_TEST_SUITE_P(GscipIncrementalQpTest, IncrementalQpTest,
                          ValuesIn(GetGscipQpTestParameters()));
+#endif  // ORTOOLS_TARGET_OS_IS_EMSCRIPTEN
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(QpDualsTest);
 
 std::vector<QcTestParameters> GetGscipQcTestParameters() {
@@ -116,10 +131,19 @@ std::vector<QcTestParameters> GetGscipQcTestParameters() {
                            /*supports_incremental_variable_deletions=*/false,
                            /*use_integer_variables=*/true)};
 }
+// In WASM we fail because of an assertion due to SCIP trying to change the
+// rounding mode to SCIP_ROUND_DOWNWARDS in scip/src/scip/intervalarith.c.
+#if defined(ORTOOLS_TARGET_OS_IS_EMSCRIPTEN)
+static_assert(kTargetOs == TargetOs::kEmscripten);  // See comment above.
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(SimpleQcTest);
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(IncrementalQcTest);
+#else   // ORTOOLS_TARGET_OS_IS_EMSCRIPTEN
+static_assert(kTargetOs != TargetOs::kEmscripten);  // See comment above.
 INSTANTIATE_TEST_SUITE_P(GscipSimpleQcTest, SimpleQcTest,
                          ValuesIn(GetGscipQcTestParameters()));
 INSTANTIATE_TEST_SUITE_P(GscipIncrementalQcTest, IncrementalQcTest,
                          ValuesIn(GetGscipQcTestParameters()));
+#endif  // ORTOOLS_TARGET_OS_IS_EMSCRIPTEN
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(QcDualsTest);
 
 SecondOrderConeTestParameters GetGscipSecondOrderConeTestParameters() {
@@ -154,10 +178,9 @@ INSTANTIATE_TEST_SUITE_P(GscipIncrementalLogicalConstraintTest,
                          IncrementalLogicalConstraintTest,
                          Values(GetGscipLogicalConstraintTestParameters()));
 
-INSTANTIATE_TEST_SUITE_P(
-    GScipInvalidInputTest, InvalidInputTest,
-    Values(InvalidInputTestParameters(SolverType::kGscip,
-                                      /*use_integer_variables=*/true)));
+INSTANTIATE_TEST_SUITE_P(GScipInvalidInputTest, InvalidInputTest,
+                         Values(InvalidInputTestParameters(
+                             SolverType::kGscip, TestModelClass::kIp)));
 
 SolveParameters StopBeforeOptimal() {
   return {.node_limit = 1,
@@ -217,7 +240,8 @@ InvalidParameterTestParams MakeGScipBadParams() {
   // TODO(b/168069105): for solver specific errors, we should collect all
   //  errors, not just the first. Then set int_param "parallel/maxnthreads" to
   //  -4 (an invalid value).
-  return InvalidParameterTestParams(SolverType::kGscip, std::move(parameters),
+  return InvalidParameterTestParams(SolverType::kGscip, TestModelClass::kIp,
+                                    std::move(parameters),
                                     {"SCIP error code -12"});
 }
 
@@ -250,8 +274,7 @@ SolveParameters ReachEventNode() {
 
 INSTANTIATE_TEST_SUITE_P(
     GscipCallbackTest, CallbackTest,
-    Values(CallbackTestParams(SolverType::kGscip,
-                              /*integer_variables=*/true,
+    Values(CallbackTestParams(SolverType::kGscip, TestModelClass::kIp,
                               /*add_lazy_constraints=*/true,
                               /*add_cuts=*/true,
                               /*supported_events=*/
@@ -299,25 +322,22 @@ INSTANTIATE_TEST_SUITE_P(
     GscipGenericTest, GenericTest,
     Values(GenericTestParameters(SolverType::kGscip,
                                  /*support_interrupter=*/true,
-                                 /*integer_variables=*/false,
+                                 TestModelClass::kLp,
                                  /*expected_log=*/"[optimal solution found]"),
            GenericTestParameters(SolverType::kGscip,
                                  /*support_interrupter=*/true,
-                                 /*integer_variables=*/true,
+                                 TestModelClass::kIp,
                                  /*expected_log=*/"[optimal solution found]")));
 
 INSTANTIATE_TEST_SUITE_P(GscipInfeasibleSubsystemTest, InfeasibleSubsystemTest,
                          testing::Values(InfeasibleSubsystemTestParameters(
                              {.solver_type = SolverType::kGscip})));
 
-#ifdef OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
-// TODO(b/207472017): Enable this test once the issue of warning/error messages
-// redirection has been addressed.
-TEST(GScipSolverTest, DISABLED_WarningsDuringModelBuilding) {
+TEST(GScipSolverTest, WarningsDuringModelBuilding) {
   // Using an unknown parameters triggers calls to SCIPerrorMessage() and before
   // return of SCIP_PARAMETERUNKNOWN error.
   GScipParameters gscip_params;
-  (*gscip_params.mutable_bool_params())["unknown"] = false;
+  (*gscip_params.mutable_bool_params())["the_unknown"] = false;
   Model model;
   ScopedStdStreamCapture stdout_capture(CapturedStream::kStdout);
   ScopedStdStreamCapture stderr_capture(CapturedStream::kStderr);
@@ -325,11 +345,11 @@ TEST(GScipSolverTest, DISABLED_WarningsDuringModelBuilding) {
       Solve(model, SolverType::kGscip, {.parameters = {.gscip = gscip_params}});
   EXPECT_EQ(std::move(stdout_capture).StopCaptureAndReturnContents(), "");
   EXPECT_EQ(std::move(stderr_capture).StopCaptureAndReturnContents(), "");
-  // TODO(b/207474460): Update the test to validate that the offending parameter
-  // is listed in the error (it is not at the time of writing this).
-  EXPECT_THAT(result, StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(result,
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       AllOf(HasSubstr("SCIP_PARAMETERUNKNOWN"),
+                             HasSubstr("parameter <the_unknown> unknown"))));
 }
-#endif  // OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
 
 TEST(GScipSolverTest, InvalidCoefficient) {
   Model model;

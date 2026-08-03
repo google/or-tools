@@ -1,0 +1,1 @@
+RUN: $(prize_collecting_vrp_py3)

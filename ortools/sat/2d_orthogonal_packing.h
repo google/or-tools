@@ -23,6 +23,7 @@
 #include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/base/constant_divisor.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/bitset.h"
@@ -35,7 +36,7 @@ struct OrthogonalPackingOptions {
   bool use_dff_f0 = true;
   bool use_dff_f2 = true;
   int brute_force_threshold = 6;
-  int dff2_max_number_of_parameters_to_check = std::numeric_limits<int>::max();
+  int dff2_max_number_of_parameters_to_check = kint32max;
 };
 
 class OrthogonalPackingResult {
@@ -322,7 +323,7 @@ class RoundingDualFeasibleFunctionPowerOfTwo {
     DCHECK_GE(log2_k_, 0);
     DCHECK_LT(log2_k_, 63);
     DCHECK_LE(2 * (1 << log2_k), max_x_);
-    DCHECK_LE(max_x_, std::numeric_limits<int64_t>::max() / 2);
+    DCHECK_LE(max_x_, kint64max / 2);
   }
 
   IntegerValue operator()(IntegerValue x) const {

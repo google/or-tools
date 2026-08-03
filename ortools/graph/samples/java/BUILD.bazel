@@ -1,0 +1,129 @@
+# Copyright 2010-2025 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@rules_java//java:java_binary.bzl", "java_binary")
+load("//tools/testing:bintest.bzl", "bintest")
+
+package(default_visibility = ["//visibility:public"])
+
+java_binary(
+    name = "AssignmentLinearSumAssignment",
+    srcs = ["AssignmentLinearSumAssignment.java"],
+    main_class = "com.google.ortools.graph.samples.AssignmentLinearSumAssignment",
+    deps = [
+        "//ortools/graph/java:graph",
+        "//ortools/java/com/google/ortools:Loader",
+    ],
+)
+
+bintest(
+    name = "AssignmentLinearSumAssignmentTest",
+    srcs = [":AssignmentLinearSumAssignmentTest.bintest"],
+    named_data = {"AssignmentLinearSumAssignment": ":AssignmentLinearSumAssignment"},
+)
+
+java_binary(
+    name = "AssignmentMinFlow",
+    srcs = ["AssignmentMinFlow.java"],
+    main_class = "com.google.ortools.graph.samples.AssignmentMinFlow",
+    deps = [
+        "//ortools/graph/java:graph",
+        "//ortools/java/com/google/ortools:Loader",
+    ],
+)
+
+bintest(
+    name = "AssignmentMinFlowTest",
+    srcs = [":AssignmentMinFlowTest.bintest"],
+    named_data = {"AssignmentMinFlow": ":AssignmentMinFlow"},
+)
+
+java_binary(
+    name = "BalanceMinFlow",
+    srcs = ["BalanceMinFlow.java"],
+    main_class = "com.google.ortools.graph.samples.BalanceMinFlow",
+    deps = [
+        "//ortools/graph/java:graph",
+        "//ortools/java/com/google/ortools:Loader",
+    ],
+)
+
+bintest(
+    name = "BalanceMinFlowTest",
+    srcs = [":BalanceMinFlowTest.bintest"],
+    named_data = {"BalanceMinFlow": ":BalanceMinFlow"},
+)
+
+java_binary(
+    name = "SimpleMaxFlowProgram",
+    srcs = ["SimpleMaxFlowProgram.java"],
+    main_class = "com.google.ortools.graph.samples.SimpleMaxFlowProgram",
+    deps = [
+        "//ortools/graph/java:graph",
+        "//ortools/java/com/google/ortools:Loader",
+    ],
+)
+
+bintest(
+    name = "SimpleMaxFlowProgramTest",
+    srcs = [":SimpleMaxFlowProgramTest.bintest"],
+    named_data = {"SimpleMaxFlowProgram": ":SimpleMaxFlowProgram"},
+)
+
+java_binary(
+    name = "SimpleMinCostFlowProgram",
+    srcs = ["SimpleMinCostFlowProgram.java"],
+    main_class = "com.google.ortools.graph.samples.SimpleMinCostFlowProgram",
+    deps = [
+        "//ortools/graph/java:graph",
+        "//ortools/java/com/google/ortools:Loader",
+    ],
+)
+
+bintest(
+    name = "SimpleMinCostFlowProgramTest",
+    srcs = [":SimpleMinCostFlowProgramTest.bintest"],
+    named_data = {"SimpleMinCostFlowProgram": ":SimpleMinCostFlowProgram"},
+)
+
+java_binary(
+    name = "FlowExample",
+    srcs = ["FlowExample.java"],
+    main_class = "com.google.ortools.graph.samples.FlowExample",
+    deps = [
+        "//ortools/graph/java:graph",
+        "//ortools/java/com/google/ortools:Loader",
+    ],
+)
+
+bintest(
+    name = "FlowExampleTest",
+    srcs = [":FlowExampleTest.bintest"],
+    named_data = {"FlowExample": ":FlowExample"},
+)
+
+java_binary(
+    name = "LinearAssignmentAPI",
+    srcs = ["LinearAssignmentAPI.java"],
+    main_class = "com.google.ortools.graph.samples.LinearAssignmentAPI",
+    deps = [
+        "//ortools/graph/java:graph",
+        "//ortools/java/com/google/ortools:Loader",
+    ],
+)
+
+bintest(
+    name = "LinearAssignmentAPITest",
+    srcs = [":LinearAssignmentAPITest.bintest"],
+    named_data = {"LinearAssignmentAPI": ":LinearAssignmentAPI"},
+)
