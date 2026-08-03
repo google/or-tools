@@ -2259,12 +2259,13 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
       }
     }
 
-    if (has_no_overlap_or_cumulative && name_filter.Keep("ls_scheduling")) {
+    if (shared->scheduling_relaxation != nullptr &&
+        name_filter.Keep("ls_scheduling")) {
       interleaved_subsolvers.push_back(
           std::make_unique<SchedulingLocalSearchSolver>(
               "ls_scheduling", SubSolver::INCOMPLETE, shared->model_proto,
-              params, shared->time_limit, shared->response,
-              shared->stat_tables));
+              params, shared->time_limit, shared->response, shared->stat_tables,
+              shared->scheduling_relaxation.get()));
     }
 
     if (num_ls_lin > 0) {
@@ -2630,7 +2631,7 @@ class CpModelSolver {
     return CopyInputProto();
   }
 
-  void Solve() {
+  virtual void Solve() {
     if (Presolve()) {
       InitializeDebugSolutionFromHint();
       // Note that this needs to be done before SharedClasses are created.
@@ -3452,6 +3453,14 @@ class DirectSolverThread : public CpModelSolver {
     CHECK(Initialize());
     thread_pool_ = std::make_unique<ThreadPool>(/*num_threads=*/1);
     thread_pool_->Schedule([this] { Solve(); });
+  }
+
+  void Solve() override {
+    CpModelSolver::Solve();
+    if (shared_response_manager_->ProblemIsSolved()) {
+      // Let's not waste time in presolve if the problem is solved.
+      global_model_->GetOrCreate<ModelSharedTimeLimit>()->Stop();
+    }
   }
 
   // Returns a response if the time limit is reached, if the problem is solved,

@@ -31,11 +31,9 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
-#include "ortools/base/log_severity.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/clause.h"
-#include "ortools/sat/debug_solution.h"
 #include "ortools/sat/encoding.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -48,6 +46,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -479,7 +478,7 @@ bool CoreBasedOptimizer::ProcessSolution() {
 
   // Test that the current objective value fall in the requested objective
   // domain, which could potentially have holes.
-  if (!integer_trail_->InitialVariableDomain(objective_var_)
+  if (!integer_trail_->LevelZeroDomain(objective_var_)
            .Contains(objective.value())) {
     return true;
   }
@@ -764,8 +763,8 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
       const int num_bools = sat_solver_->NumVariables();
       const int num_fixed = sat_solver_->NumFixedVariables();
       model_->GetOrCreate<SharedResponseManager>()->UpdateInnerObjectiveBounds(
-          absl::StrFormat("bool_%s (num_cores=%d [%s] a=%u d=%d "
-                          "fixed=%d/%d clauses=%s)",
+          absl::StrFormat("%s (num_cores=%d [%s] a=%u d=%d "
+                          "fixed=%d/%d clauses=%s, bool encoding)",
                           model_->Name(), iter, previous_core_info,
                           encoder.nodes().size(), max_depth, num_fixed,
                           num_bools, FormatCounter(clauses_->num_clauses())),
@@ -985,7 +984,7 @@ void CoreBasedOptimizer::PresolveObjectiveWithAtMostOne(
       weights[lit] = new_weight;
       weights[lit.NegatedIndex()] = 0;
       if (new_weight > 0) {
-        // TODO(user): While we autorize this to be in future at most one, it
+        // TODO(user): While we authorize this to be in future at most one, it
         // will not appear in the "literal" list. We might also want to continue
         // until we reached the fix point.
         is_candidate[lit.NegatedIndex()] = true;

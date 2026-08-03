@@ -790,6 +790,342 @@ TEST(ConstraintViolationTest, LastUpdateViolationChanges) {
   EXPECT_THAT(ls.last_update_violation_changes(), ElementsAre(1));
 }
 
+// Simple test to check that empty active field and all-1 active fields are
+// encoded correctly, because they are special cases.
+TEST(ConstraintViolationTest, ReservoirEmptyOrAllOneActive) {
+  for (const bool empty_active_field : {true, false}) {
+    CpModelProto model = ParseTestProto(R"pb(
+      variables { domain: [ 0, 10 ] }
+      variables { domain: [ 0, 10 ] }
+      variables { domain: [ 1, 1 ] }
+      constraints {
+        reservoir {
+          min_level: 0
+          max_level: 1
+          time_exprs {
+            vars: [ 0 ]
+            coeffs: [ 1 ]
+            offset: 0
+          }
+          time_exprs {
+            vars: [ 1 ]
+            coeffs: [ 1 ]
+            offset: 0
+          }
+          level_changes { offset: 2 }
+          level_changes { offset: -1 }
+          active_literals: [ 2, 2 ]
+        }
+      }
+    )pb");
+    SatParameters params;
+    TimeLimit time_limit;
+    if (empty_active_field) {
+      model.mutable_constraints(0)
+          ->mutable_reservoir()
+          ->clear_active_literals();
+    }
+    LsEvaluator ls(model, params, &time_limit);
+
+    // If t0 = 1, t1 = 2:
+    // level after event 0 is 2 -> exceeds max_level=1 -> violated!
+    ls.ComputeAllViolations({1, 2});
+    EXPECT_EQ(ls.SumOfViolations(), 1);
+
+    // If t0 = 2, t1 = 1:
+    // t1 first: level is -1 -> violates min_level=0 -> violated!
+    ls.ComputeAllViolations({2, 1});
+    EXPECT_EQ(ls.SumOfViolations(), 1);
+  }
+}
+
+TEST(ConstraintViolationTest, ReservoirFixedChanges) {
+  const CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }    # t0: var 0
+    variables { domain: [ 0, 10 ] }    # t1: var 1
+    variables { domain: [ -10, 10 ] }  # d0: var 2
+    variables { domain: [ -10, 10 ] }  # d1: var 3
+    variables { domain: [ 0, 1 ] }     # a0: var 4
+    variables { domain: [ 0, 1 ] }     # a1: var 5
+    constraints {
+      reservoir {
+        min_level: -2
+        max_level: 5
+        time_exprs {
+          vars: [ 0 ]
+          coeffs: [ 1 ]
+          offset: 0
+        }
+        time_exprs {
+          vars: [ 1 ]
+          coeffs: [ 1 ]
+          offset: 0
+        }
+        level_changes {
+          vars: [ 2 ]
+          coeffs: [ 1 ]
+          offset: 0
+        }
+        level_changes {
+          vars: [ 3 ]
+          coeffs: [ 1 ]
+          offset: 0
+        }
+        active_literals: [ 4, 5 ]
+      }
+    }
+  )pb");
+  SatParameters params;
+  TimeLimit time_limit;
+  LsEvaluator ls(model, params, &time_limit);
+
+  // 1. Feasible case: t0 = 1, t1 = 3, d0 = 3, d1 = -4, a0 = 1, a1 = 1.
+  // Profile: 3@1, -1@3.
+  ls.ComputeAllViolations({1, 3, 3, -4, 1, 1});
+  EXPECT_EQ(ls.SumOfViolations(), 0);
+
+  // 2. Max level violation: t0 = 1, t1 = 3, d0 = 7, d1 = -4, a0 = 1, a1 = 1.
+  // Profile: 7@1, 3@3.
+  // Duration: 3 - 1 = 2.
+  // Violation: 2 (overload) * 2 (duration) = 4.
+  ls.ComputeAllViolations({1, 3, 7, -4, 1, 1});
+  EXPECT_EQ(ls.SumOfViolations(), 4);
+
+  // 3. Min level violation: t0 = 1, t1 = 3, d0 = -4, d1 = 3, a0 = 1, a1 = 1.
+  // Profile: -4@1, -1@3.
+  // Duration: 3 - 1 = 2.
+  // Violation: 2 (underload) * 2 (duration) = 4.
+  ls.ComputeAllViolations({1, 3, -4, 3, 1, 1});
+  EXPECT_EQ(ls.SumOfViolations(), 4);
+
+  // 4. Inactive events: t0 = 1, t1 = 3, d0 = 7, d1 = -4, a0 = 0, a1 = 1.
+  // Profile: -4@3.
+  // Event 0 is inactive, so its level change is ignored.
+  // Level at t=3: -4 (below min_level=-2 by 2).
+  // Time profile check ignores after t=3 -> 0 violation.
+  // Final level check -> 2 violation.
+  // Total violation: 2.
+  ls.ComputeAllViolations({1, 3, 7, -4, 0, 1});
+  EXPECT_EQ(ls.SumOfViolations(), 2);
+}
+
+TEST(ConstraintViolationTest, ReservoirExhaustiveThreeEvents) {
+  const CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }    # t0
+    variables { domain: [ 0, 10 ] }    # t1
+    variables { domain: [ 0, 10 ] }    # t2
+    variables { domain: [ -20, 20 ] }  # d0
+    variables { domain: [ -20, 20 ] }  # d1
+    variables { domain: [ -20, 20 ] }  # d2
+    variables { domain: [ 0, 1 ] }     # a0
+    variables { domain: [ 0, 1 ] }     # a1
+    variables { domain: [ 0, 1 ] }     # a2
+    constraints {
+      reservoir {
+        min_level: 0
+        max_level: 10
+        time_exprs {
+          vars: [ 0 ]
+          coeffs: [ 1 ]
+          offset: 0
+        }
+        time_exprs {
+          vars: [ 1 ]
+          coeffs: [ 1 ]
+          offset: 0
+        }
+        time_exprs {
+          vars: [ 2 ]
+          coeffs: [ 1 ]
+          offset: 0
+        }
+        level_changes {
+          vars: [ 3 ]
+          coeffs: [ 1 ]
+          offset: 0
+        }
+        level_changes {
+          vars: [ 4 ]
+          coeffs: [ 1 ]
+          offset: 0
+        }
+        level_changes {
+          vars: [ 5 ]
+          coeffs: [ 1 ]
+          offset: 0
+        }
+        active_literals: [ 6, 7, 8 ]
+      }
+    }
+  )pb");
+  SatParameters params;
+  TimeLimit time_limit;
+  LsEvaluator ls(model, params, &time_limit);
+
+  // t0 = 1, t1 = 3, t2 = 6, d0 = 12, d1 = -4, d2 = -3, a0 = 1, a1 = 1, a2 = 1.
+  // Profile: 12@1, 8@3, 5@6.
+  // Interval [1, 3): level=12, overload=2, duration=2. Violation = 4.
+  // Interval [3, 6): level=8, no overload.
+  ls.ComputeAllViolations({1, 3, 6, 12, -4, -3, 1, 1, 1});
+  EXPECT_EQ(ls.SumOfViolations(), 4);
+
+  // If a1 = 0 (event 1 inactive):
+  // Profile: 12@1, 9@6.
+  // Active events at t=1, t=6.
+  // Interval [1, 6): level=12, overload=2, duration=5. Violation = 10.
+  ls.ComputeAllViolations({1, 3, 6, 12, -4, -3, 1, 0, 1});
+  EXPECT_EQ(ls.SumOfViolations(), 10);
+}
+
+TEST(ConstraintViolationTest, ReservoirFinalLevelViolation) {
+  const CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }  # t0: var 0
+    variables { domain: [ 0, 10 ] }  # t1: var 1
+    constraints {
+      reservoir {
+        min_level: 0
+        max_level: 10
+        time_exprs {
+          vars: [ 0 ]
+          coeffs: [ 1 ]
+          offset: 0
+        }
+        time_exprs {
+          vars: [ 1 ]
+          coeffs: [ 1 ]
+          offset: 0
+        }
+        level_changes { offset: 4 }
+        level_changes { offset: 7 }
+      }
+    }
+  )pb");
+  SatParameters params;
+  TimeLimit time_limit;
+  LsEvaluator ls(model, params, &time_limit);
+
+  // t0 = 1, t1 = 3.
+  // Profile: 4@1, 11@3.
+  // Final level lies outside max_level bounds (11 > 10).
+  // Time-profile violation: 0 (since t=3 is the last event).
+  // Final level violation: 1 (overload).
+  // Total violation: 1.
+  ls.ComputeAllViolations({1, 3});
+  EXPECT_EQ(ls.SumOfViolations(), 1);
+
+  // If min_level is violated at the end:
+  // d0 = -4, d1 = 1, min_level = -2.
+  // Profile: -4@1, -3@3.
+  // Final level is -3 which is below min_level=-2 by 1.
+  // Time-profile violation: 4 (overload on interval [1, 3) is 2 * 2 = 4).
+  // Final level violation: 1 (underload).
+  // Total violation: 5.
+  const CpModelProto model_min = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      reservoir {
+        min_level: -2
+        max_level: 10
+        time_exprs {
+          vars: [ 0 ]
+          coeffs: [ 1 ]
+          offset: 0
+        }
+        time_exprs {
+          vars: [ 1 ]
+          coeffs: [ 1 ]
+          offset: 0
+        }
+        level_changes { offset: -4 }
+        level_changes { offset: 1 }
+      }
+    }
+  )pb");
+  LsEvaluator ls_min(model_min, params, &time_limit);
+  ls_min.ComputeAllViolations({1, 3});
+  EXPECT_EQ(ls_min.SumOfViolations(), 5);
+}
+
+TEST(ConstraintViolationTest, ScalarProductConstraint) {
+  // We store the x and y expression lists inside a single CpModelProto (in two
+  // lin_max constraints) so that we can parse everything at once and extract
+  // them to test CompiledScalarProductConstraint directly.
+  // Scalar product:
+  // x0 * y0 + x1 * y1 = solution[0] * 5 + solution[1] * solution[2]
+  // min_value = 10, max_value = 20
+  const CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      lin_max {
+        exprs {
+          vars: [ 0 ]
+          coeffs: [ 1 ]
+        }
+        exprs {
+          vars: [ 1 ]
+          coeffs: [ 1 ]
+        }
+      }
+    }
+    constraints {
+      lin_max {
+        exprs { offset: 5 }
+        exprs {
+          vars: [ 2 ]
+          coeffs: [ 1 ]
+        }
+      }
+    }
+  )pb");
+  std::vector<int> enforcement_literals = {3};
+  const auto& x_exprs = model.constraints(0).lin_max().exprs();
+  const auto& y_exprs = model.constraints(1).lin_max().exprs();
+  std::vector<LinearExpressionProto> x(x_exprs.begin(), x_exprs.end());
+  std::vector<LinearExpressionProto> y(y_exprs.begin(), y_exprs.end());
+
+  // Constraint: var_3 -> (10 <= var_0 * 5 + var_1 * var_2 <= 20).
+  CompiledScalarProductConstraint ct(enforcement_literals, x, y, 10, 20);
+
+  // Scalar product: 2 * 5 + 3 * 4 = 22. Violation is 22 - 20 = 2.
+  EXPECT_EQ(ct.ComputeViolation({2, 3, 4, 1}), 2);
+
+  // Same, not enforced. No violation.
+  EXPECT_EQ(ct.ComputeViolation({2, 3, 4, 0}), 0);
+
+  // Scalar product: 1 * 5 + 1 * 3 = 8. Violation is 10 - 8 = 2.
+  EXPECT_EQ(ct.ComputeViolation({1, 1, 3, 1}), 2);
+
+  // Scalar product: 2 * 5 + 2 * 3 = 16. No violation.
+  EXPECT_EQ(ct.ComputeViolation({2, 2, 3, 1}), 0);
+
+  // Test incremental updates.
+  // Start with solution {2, 2, 3, 1}. Scalar product = 16. No violation.
+  ct.InitializeViolation({2, 2, 3, 1});
+  EXPECT_EQ(ct.violation(), 0);
+
+  // Move var 0 from 2 to 3, new solution is {3, 2, 3, 1}.
+  // New scalar product: 3 * 5 + 2 * 3 = 21. New violation: 21 - 20 = 1.
+  EXPECT_EQ(ct.ViolationDelta(0, 2, {3, 2, 3, 1}), 1);
+  ct.PerformMove(0, 2, {3, 2, 3, 1});
+  EXPECT_EQ(ct.violation(), 1);
+
+  // Move var 1 from 2 to 1, new solution is {3, 1, 3, 1}.
+  // New scalar product: 18. New violation: 0.
+  EXPECT_EQ(ct.ViolationDelta(1, 2, {3, 1, 3, 1}), -1);
+  ct.PerformMove(1, 2, {3, 1, 3, 1});
+  EXPECT_EQ(ct.violation(), 0);
+
+  // Move var 0 from 3 to 1, new solution is {1, 1, 3, 1}.
+  // New scalar product: 8. New violation: 10 - 8 = 2.
+  EXPECT_EQ(ct.ViolationDelta(0, 3, {1, 1, 3, 1}), 2);
+  ct.PerformMove(0, 3, {1, 1, 3, 1});
+  EXPECT_EQ(ct.violation(), 2);
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

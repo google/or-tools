@@ -28,6 +28,7 @@
 #include <functional>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/types/span.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -42,7 +43,6 @@
 #include "ortools/sat/sat_inprocessing.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
-#include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
@@ -212,7 +212,7 @@ std::function<BooleanOrIntegerLiteral()> FollowHint(
 // ask the (i+1)-th. If every heuristic returned kNoLiteralIndex,
 // returns kNoLiteralIndex.
 std::function<BooleanOrIntegerLiteral()> SequentialSearch(
-    std::vector<std::function<BooleanOrIntegerLiteral()>> heuristics);
+    const std::vector<std::function<BooleanOrIntegerLiteral()>>& heuristics);
 
 // Changes the value of the given decision by 'var_selection_heuristic'. We try
 // to see if the decision is "associated" with an IntegerVariable, and if it is

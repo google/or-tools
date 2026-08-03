@@ -807,6 +807,19 @@ class SatSolver {
   std::string StatusString(Status status) const;
   std::string RunningStatisticsString() const;
 
+  // Make sure each clause is "canonicalized" with respect to equivalent
+  // literals. This assumes that the ClausePtr as ownership of its memory.
+  //
+  // TODO(user): The literals are a bit redudant with what is stored in clause.
+  // Clean up.
+  //
+  // TODO(user): Maybe we should do that on each reason before we use them in
+  // conflict analysis/minimization, but it might be a bit costly.
+  //
+  // Returns false if the "canonicalized" clause is trivially true.
+  bool RemoveRedundantLiteralFromConflict(ClausePtr& clause,
+                                          std::vector<Literal>& literals);
+
   // This is used by the old non-model constructor.
   Model* model_;
   std::unique_ptr<Model> owned_model_;
@@ -893,6 +906,7 @@ class SatSolver {
 
   // Temporary member used when adding clauses.
   std::vector<Literal> tmp_literals_;
+
   // Temporary members used when adding LRAT inferred clauses.
   std::vector<ClausePtr> tmp_proof_;
   std::vector<ClausePtr> tmp_proof_for_1uip_;

@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/random/random.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/lp_data/lp_types.h"

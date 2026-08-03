@@ -41,7 +41,6 @@
 #include "ortools/base/log_severity.h"
 #include "ortools/base/macros/buildenv.h"
 #include "ortools/base/macros/os_support.h"
-#include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/version.h"  // IWYU pragma: keep
 #include "ortools/graph_base/connected_components.h"
@@ -49,7 +48,6 @@
 #include "ortools/sat/clause.h"
 #include "ortools/sat/continuous_prober.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_postsolve.h"
@@ -81,6 +79,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/scheduling_model.h"
 #include "ortools/sat/stat_tables.h"
 #include "ortools/sat/symmetry_util.h"
 #include "ortools/sat/synchronization.h"
@@ -453,11 +452,8 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
       m->TakeOwnership(lp_constraints[c]);
     }
     // Load the constraint.
-    if (!lp_constraints[c]->AddLinearConstraint(
-            std::move(relaxation.linear_constraints[i]))) {
-      m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
-      return kNoIntegerVariable;
-    }
+    lp_constraints[c]->AddLinearConstraint(
+        std::move(relaxation.linear_constraints[i]));
   }
 
   // Dispatch every cut generator to its LinearProgrammingConstraint.
@@ -1505,7 +1501,7 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
     auto* integer_trail = model->GetOrCreate<IntegerTrail>();
     const Domain user_domain = ReadDomainFromProto(model_proto.objective());
     const Domain automatic_domain =
-        integer_trail->InitialVariableDomain(objective_var);
+        integer_trail->LevelZeroDomain(objective_var);
     VLOG(3) << "Objective offset:" << model_proto.objective().offset()
             << " scaling_factor:" << model_proto.objective().scaling_factor();
     VLOG(3) << "Automatic internal objective domain: " << automatic_domain;
@@ -2181,6 +2177,13 @@ SharedClasses::SharedClasses(const CpModelProto* proto, Model* global_model)
       progress_logger(global_model->GetOrCreate<SolverProgressLogger>()),
       lrat_proof_status(global_model->GetOrCreate<SharedLratProofStatus>()) {
   const SatParameters& params = *global_model->GetOrCreate<SatParameters>();
+  SchedulingRelaxation rel = DetectSchedulingProblems(*proto);
+  if (!rel.problems.empty()) {
+    scheduling_relaxation =
+        std::make_unique<SchedulingRelaxation>(std::move(rel));
+  } else {
+    scheduling_relaxation = nullptr;
+  }
 
   if (params.share_level_zero_bounds()) {
     bounds = std::make_unique<SharedBoundsManager>(*proto);

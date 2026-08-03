@@ -88,6 +88,19 @@ LinearExpressionProto NegatedLinearExpression(LinearExpressionProto a) {
   return result;
 }
 
+LinearExpressionProto LiteralToLinearExpression(int ref) {
+  LinearExpressionProto result;
+  if (RefIsPositive(ref)) {
+    result.add_vars(ref);
+    result.add_coeffs(1);
+  } else {
+    result.add_vars(PositiveRef(ref));
+    result.add_coeffs(-1);
+    result.set_offset(1);
+  }
+  return result;
+}
+
 int64_t ExprMin(const LinearExpressionProto& expr, const CpModelProto& model) {
   int64_t result = expr.offset();
   for (int i = 0; i < expr.vars_size(); ++i) {
@@ -1327,6 +1340,9 @@ int64_t CompiledNoOverlap2dConstraint::ComputeViolationWhenEnforced(
     }
     box_is_active_[i] = true;
     rectangles_[i] = ComputeRectangle(i, solution);
+    if (rectangles_[i].SizeX() < 0 || rectangles_[i].SizeY() < 0) {
+      continue;
+    }
 
     rectangles.push_back(rectangles_[i]);
     rectangles_indices.push_back(i);
@@ -2017,6 +2033,119 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
           std::move(is_active), std::move(times), std::move(demands)));
       break;
     }
+    case ConstraintProto::ConstraintCase::kReservoir: {
+      const ReservoirConstraintProto& reservoir = ct.reservoir();
+      std::vector<int> enforcement_literals;
+      for (const int lit : ct.enforcement_literal()) {
+        enforcement_literals.push_back(lit);
+      }
+      std::vector<LinearExpressionProto> times;
+      for (const LinearExpressionProto& time : reservoir.time_exprs()) {
+        times.push_back(time);
+      }
+      const bool all_events_are_active = std::all_of(
+          reservoir.active_literals().begin(),
+          reservoir.active_literals().end(), [this](int lit) {
+            return ExprMin(LiteralToLinearExpression(lit), cp_model_) == 1;
+          });
+      std::vector<std::optional<int>> is_active;
+      if (reservoir.active_literals().empty() || all_events_are_active) {
+        is_active.resize(reservoir.time_exprs_size(), std::nullopt);
+      } else {
+        for (const int lit : reservoir.active_literals()) {
+          is_active.push_back(lit);
+        }
+      }
+
+      // Upper bound capacity side: level <= max_level
+      if (reservoir.max_level() < kint64max) {
+        LinearExpressionProto max_capacity;
+        CHECK_GE(reservoir.max_level(), 0);
+        max_capacity.set_offset(reservoir.max_level());
+        std::vector<LinearExpressionProto> demands;
+        for (const LinearExpressionProto& demand : reservoir.level_changes()) {
+          demands.push_back(demand);
+        }
+        constraints_.emplace_back(new CompiledReservoirConstraint(
+            enforcement_literals, max_capacity, is_active, times,
+            std::move(demands)));
+      }
+
+      // Lower bound capacity side: -level <= -min_level
+      if (reservoir.min_level() > kint64min) {
+        LinearExpressionProto min_capacity;
+        CHECK_LE(reservoir.min_level(), 0);
+        min_capacity.set_offset(-reservoir.min_level());
+        std::vector<LinearExpressionProto> demands;
+        for (const LinearExpressionProto& demand : reservoir.level_changes()) {
+          demands.push_back(NegatedLinearExpression(demand));
+        }
+        constraints_.emplace_back(new CompiledReservoirConstraint(
+            enforcement_literals, min_capacity, is_active, times,
+            std::move(demands)));
+      }
+
+      // Final level constraint: min_level <= final_level <= max_level.
+      //
+      // CompiledReservoirConstraint only looks at the profile until the last
+      // event. Doing this captures all infeasibilities of cumulative and
+      // no-overlap constraints, because the final level is always 0.
+      // A reservoir constraint is allowed to have its final level be any value
+      // between min and max level, so we need to show some penalty when the
+      // final level is out of range.
+      // Adding a fake 0-change event at time kint64max would force
+      // CompiledReservoirConstraint to consider the final level, but the
+      // resulting penalty would almost always overflow, and capping it to
+      // kint64max would still leave the local search without any direction of
+      // improvement.
+      // Constraining the final level separately avoids these problems.
+      //
+      // In the following encoding, mind that AddLinearExpression() absorbs
+      // fixed variables, no need to remove fixed active*demand terms.
+      // TODO(user): share more code between the special cases.
+      if (reservoir.active_literals().empty() || all_events_are_active) {
+        // All active_literals are 1, use a linear expression.
+        const Domain domain(reservoir.min_level(), reservoir.max_level());
+        const int ct_index = linear_evaluator_.NewConstraint(domain);
+        for (const int lit : ct.enforcement_literal()) {
+          linear_evaluator_.AddEnforcementLiteral(ct_index, lit);
+        }
+        for (const LinearExpressionProto& expr : reservoir.level_changes()) {
+          linear_evaluator_.AddLinearExpression(ct_index, expr, 1);
+        }
+      } else if (std::all_of(reservoir.level_changes().begin(),
+                             reservoir.level_changes().end(),
+                             [](const LinearExpressionProto& level_change) {
+                               return level_change.vars().empty();
+                             })) {
+        // All levels changes are fixed, use a linear expression.
+        const Domain domain(reservoir.min_level(), reservoir.max_level());
+        const int ct_index = linear_evaluator_.NewConstraint(domain);
+        for (const int lit : ct.enforcement_literal()) {
+          linear_evaluator_.AddEnforcementLiteral(ct_index, lit);
+        }
+        const size_t num_events = reservoir.time_exprs_size();
+        for (size_t e = 0; e < num_events; ++e) {
+          LinearExpressionProto active_literal =
+              LiteralToLinearExpression(reservoir.active_literals(e));
+          linear_evaluator_.AddLinearExpression(
+              ct_index, active_literal, reservoir.level_changes(e).offset());
+        }
+      } else {
+        std::vector<LinearExpressionProto> demands;
+        std::vector<LinearExpressionProto> actives;
+        const int num_events = reservoir.time_exprs_size();
+        for (int e = 0; e < num_events; ++e) {
+          demands.push_back(reservoir.level_changes(e));
+          actives.push_back(
+              LiteralToLinearExpression(reservoir.active_literals(e)));
+        }
+        constraints_.emplace_back(new CompiledScalarProductConstraint(
+            enforcement_literals, std::move(actives), std::move(demands),
+            reservoir.min_level(), reservoir.max_level()));
+      }
+      break;
+    }
     case ConstraintProto::ConstraintCase::kNoOverlap2D: {
       const auto& x_intervals = ct.no_overlap_2d().x_intervals();
       const auto& y_intervals = ct.no_overlap_2d().y_intervals();
@@ -2566,6 +2695,109 @@ std::vector<int> CompiledReservoirConstraint::UsedVariables(
   }
   for (const int var : capacity_.vars()) {
     result.push_back(PositiveRef(var));
+  }
+  gtl::STLSortAndRemoveDuplicates(&result);
+  result.shrink_to_fit();
+  return result;
+}
+
+int64_t CompiledScalarProductConstraint::ComputeViolation(
+    absl::Span<const int64_t> solution) {
+  for (const int lit : enforcement_literals_) {
+    if (!LiteralValue(lit, solution)) {
+      violation_ = 0;
+      return 0;
+    }
+  }
+
+  current_sum_ = 0;
+  const int num_positions = x_.size();
+  for (int p = 0; p < num_positions; ++p) {
+    value_products_[p] =
+        ExprValue(x_[p], solution) * ExprValue(y_[p], solution);
+    current_sum_ += value_products_[p];
+  }
+  violation_ = 0;
+  if (current_sum_ > max_value_) {
+    violation_ = current_sum_ - max_value_;
+  } else if (current_sum_ < min_value_) {
+    violation_ = min_value_ - current_sum_;
+  }
+  return violation_;
+}
+
+int64_t CompiledScalarProductConstraint::IncrementalViolation(
+    int var, absl::Span<const int64_t> solution) {
+  for (const int lit : enforcement_literals_) {
+    if (!LiteralValue(lit, solution)) return 0;
+  }
+
+  int64_t new_sum = current_sum_;
+  CHECK(RefIsPositive(var));
+  for (const int p : dense_index_to_positions_[var_to_dense_index_.at(var)]) {
+    const int64_t new_prod =
+        ExprValue(x_[p], solution) * ExprValue(y_[p], solution);
+    // Remove old product and add new product separately to avoid overflows.
+    new_sum -= value_products_[p];
+    new_sum += new_prod;
+  }
+
+  int64_t violation = 0;
+  if (new_sum > max_value_) {
+    violation = new_sum - max_value_;
+  } else if (new_sum < min_value_) {
+    violation = min_value_ - new_sum;
+  }
+  return violation;
+}
+
+void CompiledScalarProductConstraint::AppendVariablesForPosition(
+    int p, std::vector<int>* result) const {
+  for (const int var : x_[p].vars()) {
+    result->push_back(PositiveRef(var));
+  }
+  for (const int var : y_[p].vars()) {
+    result->push_back(PositiveRef(var));
+  }
+}
+
+void CompiledScalarProductConstraint::InitializeDenseIndexToPositions() {
+  CpModelProto unused;
+  int num_dense_indices = 0;
+  for (const int var : UsedVariables(unused)) {
+    var_to_dense_index_[var] = num_dense_indices++;
+  }
+  if (var_to_dense_index_.empty()) return;
+
+  CompactVectorVector<int, int> position_to_dense_indices;
+  position_to_dense_indices.reserve(x_.size());
+  const int num_positions = x_.size();
+  std::vector<int> result;
+  for (int p = 0; p < num_positions; ++p) {
+    result.clear();
+    AppendVariablesForPosition(p, &result);
+
+    // Remap and add.
+    for (int& var : result) {
+      var = var_to_dense_index_.at(var);
+    }
+    gtl::STLSortAndRemoveDuplicates(&result);
+    position_to_dense_indices.Add(result);
+  }
+
+  dense_index_to_positions_.ResetFromTranspose(position_to_dense_indices,
+                                               num_dense_indices);
+}
+
+std::vector<int> CompiledScalarProductConstraint::UsedVariables(
+    const CpModelProto& /*model_proto*/) const {
+  std::vector<int> result;
+  const int num_positions = x_.size();
+  for (int p = 0; p < num_positions; ++p) {
+    AppendVariablesForPosition(p, &result);
+  }
+  for (const int lit : enforcement_literals_) {
+    result.push_back(PositiveRef(lit));
   }
   gtl::STLSortAndRemoveDuplicates(&result);
   result.shrink_to_fit();

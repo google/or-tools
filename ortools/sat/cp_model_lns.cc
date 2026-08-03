@@ -54,7 +54,6 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/presolve_context.h"
 #include "ortools/sat/rins.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/subsolver.h"
@@ -67,6 +66,10 @@
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
+
+ABSL_FLAG(
+    bool, cp_model_dump_components, false,
+    "DEBUG ONLY. When set to true, dump one file per connected component.");
 
 namespace operations_research {
 namespace sat {
@@ -482,6 +485,60 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   // TODO(user): Exploit connected component while generating fragments.
   // TODO(user): Do not generate fragment not touching the objective.
   if (!shared_response_->LoggingIsEnabled()) return;
+
+  // Dump each components.
+  if (components_.size() > 1 && absl::GetFlag(FLAGS_cp_model_dump_components)) {
+    absl::SetFlag(&FLAGS_cp_model_dump_components, false);  // only once
+    int component_index = 0;
+    for (const absl::Span<const int> component : components_) {
+      // Some precomputation.
+      int num_in_obj = 0;
+      std::vector<bool> in_compo(num_variables, false);
+      for (const int var : component) {
+        in_compo[var] = true;
+        if (is_in_objective_[var]) num_in_obj++;
+      }
+
+      // Copy the model for dumping.
+      //
+      // The variables indices are the one of the full-model, we rely on
+      // presolve to simplify this to a single component.
+      CpModelProto copy;
+      *copy.mutable_variables() = model_proto_with_only_variables_.variables();
+
+      // Copy only relevant constraints.
+      for (const ConstraintProto& constraint :
+           simplified_model_proto_->constraints()) {
+        bool keep = true;
+        for (const int var : UsedVariables(constraint)) {
+          if (!in_compo[var]) {
+            keep = false;
+            break;
+          }
+        }
+        if (!keep) continue;
+        *copy.add_constraints() = constraint;
+      }
+
+      // Copy objective subpart (without any offset nor scaling though)
+      const auto& vars = simplified_model_proto_->objective().vars();
+      const auto& coeffs = simplified_model_proto_->objective().coeffs();
+      const int num_terms = vars.size();
+      for (int i = 0; i < num_terms; ++i) {
+        if (!in_compo[vars[i]]) continue;
+        copy.mutable_objective()->add_vars(vars[i]);
+        copy.mutable_objective()->add_coeffs(coeffs[i]);
+      }
+
+      std::string filename =
+          absl::StrCat("/tmp/compo_", component_index, ".pb.txt");
+      LOG(INFO) << "Dumping simple component model with " << component.size()
+                << " variables and " << num_in_obj
+                << " objective variable, to '" << filename << "'.";
+      CHECK(WriteModelProtoToFile(copy, filename));
+      ++component_index;
+    }
+  }
 
   std::vector<int> component_sizes;
   for (const absl::Span<const int> component : components_) {
@@ -2155,6 +2212,8 @@ Neighborhood LocalBranchingLpBasedNeighborhoodGenerator::Generate(
     local_cp_model.mutable_objective()->set_integer_after_offset(0);
     local_cp_model.mutable_objective()->set_integer_scaling_factor(0);
   }
+
+  local_cp_model.set_name("lb_relax_lns_lp");
 
   // Dump?
   if (absl::GetFlag(FLAGS_cp_model_dump_submodels)) {

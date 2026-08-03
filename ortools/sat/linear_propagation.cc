@@ -39,6 +39,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
@@ -352,14 +353,14 @@ bool LinearPropagator::PropagateAll() {
 }
 
 // Adds a new constraint to the propagator.
-bool LinearPropagator::AddConstraint(
+void LinearPropagator::AddConstraint(
     absl::Span<const Literal> enforcement_literals,
     absl::Span<const IntegerVariable> vars,
     absl::Span<const IntegerValue> coeffs, IntegerValue upper_bound) {
-  if (vars.empty()) return true;
+  if (vars.empty()) return;
   if (trail_->CurrentDecisionLevel() == 0) {
     for (const Literal l : enforcement_literals) {
-      if (trail_->Assignment().LiteralIsFalse(l)) return true;
+      if (trail_->Assignment().LiteralIsFalse(l)) return;
     }
   }
 
@@ -514,14 +515,6 @@ bool LinearPropagator::AddConstraint(
       watcher_->WatchLowerBound(var, watcher_id_);
     }
   }
-
-  // Propagate this new constraint.
-  // TODO(user): Do we want to do that?
-  //
-  // Tricky: we cannot just call PropagateOneConstraint(id) if some variable
-  // bounds where modified since the last time we propagated, otherwise we
-  // might wrongly detect cycles for instance.
-  return Propagate();
 }
 
 absl::Span<IntegerValue> LinearPropagator::GetCoeffs(

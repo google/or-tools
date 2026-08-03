@@ -27,6 +27,7 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/scheduling_model.h"
 #include "ortools/sat/stat_tables.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
@@ -65,6 +66,7 @@ struct SharedClasses {
   std::unique_ptr<SharedIncompleteSolutionManager> incomplete_solutions;
   std::unique_ptr<SharedClausesManager> clauses;
   std::unique_ptr<SharedLinear2Bounds> linear2_bounds;
+  std::unique_ptr<SchedulingRelaxation> scheduling_relaxation;
 
   // call local_model->Register() on most of the class here, this allow to
   // more easily depends on one of the shared class deep within the solver.

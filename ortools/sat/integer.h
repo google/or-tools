@@ -31,10 +31,12 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
@@ -118,7 +120,7 @@ class TrivialLiterals {
 // will automatically be fixed on the next restart.
 //
 // Note that for integer literal, we already remove all "stale" entry, however
-// this is still needed to properly update the InitialVariableDomain().
+// this is still needed to properly update the LevelZeroDomain().
 //
 // TODO(user): we should update the initial domain right away, but this as
 // some complication to clean up first.
@@ -616,7 +618,7 @@ class IntegerTrail final : public SatPropagator {
 
   // Returns the initial domain of the given variable. Note that the min/max
   // are updated with level zero propagation, but not holes.
-  const Domain& InitialVariableDomain(IntegerVariable var) const;
+  const Domain& LevelZeroDomain(IntegerVariable var) const;
 
   // Useful for debugging the solver.
   std::string VarDebugString(IntegerVariable var) const;

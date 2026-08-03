@@ -423,7 +423,7 @@ LinearProgrammingConstraint::~LinearProgrammingConstraint() {
   shared_stats_->AddStats(stats);
 }
 
-bool LinearProgrammingConstraint::AddLinearConstraint(LinearConstraint ct) {
+void LinearProgrammingConstraint::AddLinearConstraint(LinearConstraint ct) {
   DCHECK(!lp_constraint_is_registered_);
   bool added = false;
   bool folded = false;
@@ -436,21 +436,16 @@ bool LinearProgrammingConstraint::AddLinearConstraint(LinearConstraint ct) {
     const LinearConstraint& new_ct = info.constraint;
     const absl::Span<const IntegerVariable> vars = new_ct.VarsAsSpan();
     if (!info.ub_is_trivial) {
-      if (!linear_propagator_->AddConstraint({}, vars, new_ct.CoeffsAsSpan(),
-                                             new_ct.ub)) {
-        return false;
-      }
+      linear_propagator_->AddConstraint({}, vars, new_ct.CoeffsAsSpan(),
+                                        new_ct.ub);
     }
     if (!info.lb_is_trivial) {
       tmp_vars_.assign(vars.begin(), vars.end());
       for (IntegerVariable& var : tmp_vars_) var = NegationOf(var);
-      if (!linear_propagator_->AddConstraint(
-              {}, tmp_vars_, new_ct.CoeffsAsSpan(), -new_ct.lb)) {
-        return false;
-      }
+      linear_propagator_->AddConstraint({}, tmp_vars_, new_ct.CoeffsAsSpan(),
+                                        -new_ct.lb);
     }
   }
-  return true;
 }
 
 void LinearProgrammingConstraint::RegisterWith(Model* model) {
@@ -2816,7 +2811,27 @@ bool LinearProgrammingConstraint::PropagateExactLpReason() {
                   obj_scale, tmp_cols_, tmp_coeffs_, objective_infinity_norm_));
     CHECK(AddProductTo(-obj_scale, integer_objective_offset_, &rc_ub));
 
+    // This will need to be added to the final constraint.
     extra_term = {objective_cp_, -obj_scale};
+
+    // Corner case if extra_term is actually already in the LP !
+    //
+    // This needs to be fixed otherwise the logic of AdjustNewLinearConstraint()
+    // is just wrong. Even if ConvertToLinearConstraint() properly handle the
+    // case of having objective_cp_ already in the rest of the constraint.
+    if (PositiveVariable(objective_cp_) < mirror_lp_variable_.size()) {
+      const ColIndex col = mirror_lp_variable_[PositiveVariable(objective_cp_)];
+      if (col != glop::kInvalidCol && col < integer_variables_.size() &&
+          integer_variables_[col.value()] == PositiveVariable(objective_cp_)) {
+        extra_term = std::nullopt;
+
+        // Otherwise we should have objective_cp_is_part_of_lp_.
+        CHECK(!VariableIsPositive(objective_cp_));
+        if (!tmp_scattered_vector_.Add(col, obj_scale)) {
+          return true;  // Overflow: abort.
+        }
+      }
+    }
   }
 
   // TODO(user): It seems when the LP as a single variable and the equation is

@@ -27,6 +27,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/random/distributions.h"
+#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -458,7 +459,7 @@ void ConstructFixedSearchStrategy(SearchHeuristics* h, Model* model) {
 std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
     const CpModelProto& cp_model_proto,
     absl::Span<const IntegerVariable> variable_mapping,
-    std::function<BooleanOrIntegerLiteral()> instrumented_strategy,
+    const std::function<BooleanOrIntegerLiteral()>& instrumented_strategy,
     Model* model) {
   std::vector<int> ref_to_display;
   for (int i = 0; i < cp_model_proto.variables_size(); ++i) {
@@ -745,6 +746,21 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     strategies["fixed_max_lp"] = new_params;
   }
 
+  // Alternating automatic and less strict fixed search.
+  {
+    SatParameters new_params = base_params;
+    new_params.set_search_branching(SatParameters::ALT_FIXED_SEARCH);
+    strategies["alt_fixed"] = new_params;
+
+    new_params.set_linearization_level(0);
+    strategies["alt_fixed_no_lp"] = new_params;
+
+    new_params.set_linearization_level(2);
+    new_params.set_add_lp_constraints_lazily(false);
+    new_params.set_root_lp_iterations(100'000);
+    strategies["alt_fixed_max_lp"] = new_params;
+  }
+
   // Portfolio search.
   {
     SatParameters new_params = base_params;
@@ -941,13 +957,7 @@ std::vector<SatParameters> GetFullWorkerParameters(
     names.push_back("fixed");
     names.push_back("core");
     names.push_back("no_lp");
-    if (cp_model.has_symmetry()) {
-      names.push_back("max_lp_sym");
-    } else {
-      // If there is no symmetry, max_lp_sym and max_lp are the same, but
-      // we prefer the less confusing name.
-      names.push_back("max_lp");
-    }
+    names.push_back("max_lp_sym");  // See below for fallback to max_lp.
     names.push_back("quick_restart_no_lp");
     names.push_back("reduced_costs");
     names.push_back("shaving_no_lp");
@@ -969,13 +979,18 @@ std::vector<SatParameters> GetFullWorkerParameters(
     for (const std::string& name : base_params->subsolvers()) {
       // Hack for flatzinc. At the time of parameter setting, the objective is
       // not expanded. So we do not know if core is applicable or not.
-      if (name == "core_or_no_lp") {
+      const std::string prefix = "core_or_";
+      if (absl::StartsWith(name, prefix)) {
         if (!cp_model.has_objective() ||
             cp_model.objective().vars_size() <= 1) {
-          names.push_back("no_lp");
+          names.push_back(name.substr(prefix.size()));
         } else {
           names.push_back("core");
         }
+      } else if (name == "max_lp_sym" && !cp_model.has_symmetry()) {
+        // If there is no symmetry, max_lp_sym and max_lp are the same, but
+        // we prefer the less confusing name.
+        names.push_back("max_lp");
       } else {
         names.push_back(name);
       }

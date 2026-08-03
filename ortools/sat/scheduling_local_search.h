@@ -251,7 +251,8 @@ class SchedulingLocalSearchSolver : public SubSolver {
                               const SatParameters& params,
                               ModelSharedTimeLimit* shared_time_limit,
                               SharedResponseManager* shared_response,
-                              SharedStatTables* stat_tables);
+                              SharedStatTables* stat_tables,
+                              const SchedulingRelaxation* relaxation);
 
   SchedulingLocalSearchSolver(const SchedulingLocalSearchSolver&) = delete;
   SchedulingLocalSearchSolver& operator=(const SchedulingLocalSearchSolver&) =
@@ -268,24 +269,23 @@ class SchedulingLocalSearchSolver : public SubSolver {
     if (IsDone()) return false;
     if (shared_response_->ProblemIsSolved()) return false;
     if (shared_time_limit_->LimitReached()) return false;
-    if (relaxation_.problems_and_mappings.empty()) return false;
-    if (absl::c_all_of(
-            relaxation_.problems_and_mappings,
-            [](const SchedulingProblemAndMapping& problem_and_mapping) {
-              return problem_and_mapping.problem.tasks.size() < 3;
-            })) {
+    if (relaxation_.problems.empty()) return false;
+    if (absl::c_all_of(relaxation_.problems,
+                       [](const SchedulingProblem& problem) {
+                         return problem.tasks.size() < 3;
+                       })) {
       return false;
     }
     return shared_response_->HasFeasibleSolution();
   }
 
  private:
-  CpModelProto input_model_proto_;
+  const CpModelProto& input_model_proto_;
   SatParameters params_;
-  SharedTimeLimit* shared_time_limit_;
+  ModelSharedTimeLimit* shared_time_limit_;
   SharedResponseManager* shared_response_;
   SharedStatTables* stat_tables_;
-  SchedulingRelaxation relaxation_;
+  const SchedulingRelaxation& relaxation_;
   std::vector<std::unique_ptr<SchedulingLocalSearch>> local_search_solvers_;
 };
 

@@ -428,8 +428,7 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
         //
         // TODO(user): do not create domain with a complexity that is too
         // large?
-        const Domain old_domain =
-            integer_trail_->InitialVariableDomain(prev_var);
+        const Domain old_domain = integer_trail_->LevelZeroDomain(prev_var);
         const Domain new_domain = old_domain.IntersectionWith(
             Domain(ub_min.value() + 1, lb_max.value() - 1).Complement());
         if (new_domain != old_domain) {

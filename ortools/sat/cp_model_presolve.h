@@ -529,7 +529,7 @@ CpSolverStatus PresolveCpModel(PresolveContext* context,
 // presolve where constraints have been canonicalized.
 std::vector<std::pair<int, int>> FindDuplicateConstraints(
     const CpModelProto& model_proto, bool ignore_enforcement,
-    bool ignore_linear_domain);
+    bool ignore_linear_domain, bool ignore_target_of_expression);
 
 }  // namespace sat
 }  // namespace operations_research

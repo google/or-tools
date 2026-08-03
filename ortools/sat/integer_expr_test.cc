@@ -23,6 +23,7 @@
 #include "absl/container/btree_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
@@ -692,7 +693,7 @@ TEST(LinMinTest, CheckEnumerateAllSolutionsWithoutEnforcementLiteral) {
 // otherwise returns true and the expected domains value. This is slow and
 // work in O(product of domain(a).size() * domain(b).size())!.
 bool TestProductPropagation(const IntegerTrail& trail,
-                            std::vector<IntegerVariable> vars,
+                            absl::Span<const IntegerVariable> vars,
                             std::vector<IntegerValue>* expected_mins,
                             std::vector<IntegerValue>* expected_maxs) {
   const IntegerValue min_a = trail.LowerBound(vars[0]);
@@ -816,6 +817,56 @@ TEST(ProductConstraintTest, RandomCases) {
   // whereas our propagator doesn't see that!
   LOG(INFO) << "Num imperfect: " << num_non_perfect << " / " << num_tests;
   EXPECT_LT(num_non_perfect, num_tests / 2);
+}
+
+Domain RandomDomain(absl::BitGenRef random, int limit) {
+  int64_t min = absl::Uniform<int>(random, -limit, limit);
+  int64_t max = absl::Uniform<int>(random, -limit, limit);
+  if (min > max) std::swap(min, max);
+  return Domain(min, max);
+}
+
+TEST(SquareConstraintTest, RandomCases) {
+  absl::BitGen random;
+  const int num_tests = 1000;
+  for (int i = 0; i < num_tests; ++i) {
+    Model model;
+    IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
+    const IntegerVariable square =
+        model.Add(NewIntegerVariable(RandomDomain(random, 200)));
+    const IntegerVariable x =
+        model.Add(NewIntegerVariable(RandomDomain(random, 20)));
+
+    // Manually compute the bounds.
+    int count = 0;
+    int64_t min_s = kint64max;
+    int64_t max_s = kint64min;
+    int64_t min_x = kint64max;
+    int64_t max_x = kint64min;
+    const Domain s_domain = integer_trail->LevelZeroDomain(square);
+    for (const int64_t x_value : integer_trail->LevelZeroDomain(x).Values()) {
+      const int64_t s_value = x_value * x_value;
+      if (s_domain.Contains(s_value)) {
+        ++count;
+        min_x = std::min(min_x, x_value);
+        max_x = std::max(max_x, x_value);
+        min_s = std::min(min_s, s_value);
+        max_s = std::max(max_s, s_value);
+      }
+    }
+
+    AddProductConstraint({}, x, x, square, &model);
+    const bool result = model.GetOrCreate<SatSolver>()->Propagate();
+    if (count == 0) {
+      EXPECT_FALSE(result);
+    } else {
+      EXPECT_TRUE(result);
+      EXPECT_EQ(integer_trail->LowerBound(x), min_x);
+      EXPECT_EQ(integer_trail->UpperBound(x), max_x);
+      EXPECT_EQ(integer_trail->LowerBound(square), min_s);
+      EXPECT_EQ(integer_trail->UpperBound(square), max_s);
+    }
+  }
 }
 
 TEST(ProductConstraintTest, RestrictedProductDomainPosPos) {
@@ -2186,6 +2237,32 @@ TEST(SquareConstraintTest,
   const CpSolverResponse reference_response =
       SolveAndCheck(reference_model, "", &reference_solutions);
   EXPECT_EQ(reference_response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(solutions, reference_solutions);
+}
+
+TEST(SquareConstraintTest, CheckEnumerateAllSolutionsAllSign) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { name: 'x' domain: -15 domain: 15 }
+    variables { name: 'y' domain: -10 domain: 100 }
+    constraints {
+      int_prod {
+        target { vars: 1 coeffs: 1 }
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 0 coeffs: 1 }
+      }
+    }
+  )pb");
+  absl::btree_set<std::vector<int>> solutions;
+  const CpSolverResponse response =
+      SolveAndCheck(initial_model, "", &solutions);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+
+  absl::btree_set<std::vector<int>> reference_solutions;
+  for (int x = -15; x <= 15; ++x) {
+    if (x * x >= -10 & x * x <= 100) {
+      reference_solutions.insert({x, x * x});
+    }
+  }
   EXPECT_EQ(solutions, reference_solutions);
 }
 

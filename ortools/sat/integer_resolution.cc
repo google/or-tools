@@ -30,6 +30,7 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
 
@@ -71,15 +72,19 @@ IntegerConflictResolution::~IntegerConflictResolution() {
   stats.push_back({"IntegerConflictResolution/num_possibly_non_optimal_reason",
                    num_possibly_non_optimal_reason_});
   stats.push_back(
-      {"IntegerConflictResolution/num_slack_usage", num_slack_usage_});
-  stats.push_back(
-      {"IntegerConflictResolution/num_slack_relax", num_slack_relax_});
-  stats.push_back(
       {"IntegerConflictResolution/num_holes_relax", num_holes_relax_});
   stats.push_back(
       {"IntegerConflictResolution/num_new_1uip_bools", num_created_1uip_bool_});
   stats.push_back({"IntegerConflictResolution/num_binary_minimizations",
                    num_binary_minimization_});
+
+  // Linear slack usage.
+  stats.push_back(
+      {"IntegerConflictResolution/linear_slack/num_usage", num_slack_usage_});
+  stats.push_back(
+      {"IntegerConflictResolution/linear_slack/num_relax", num_slack_relax_});
+  stats.push_back({"IntegerConflictResolution/linear_slack/num_increase",
+                   num_slack_increase_});
 
   if (comparison_old_sum_of_literals_ > 0) {
     stats.push_back({"Comparison/num_win", comparison_num_win_});
@@ -120,9 +125,28 @@ IntegerValue IntegerConflictResolution::RelaxBoundIfHoles(IntegerVariable var,
   return value;
 }
 
-void IntegerConflictResolution::AddToQueue(GlobalTrailIndex source_index,
-                                           const IntegerReason& reason) {
+IntegerConflictResolution::IntegerVariableData&
+IntegerConflictResolution::MutableIntData(IntegerVariable var) {
+  if (!touched_int_data_[var]) {
+    touched_int_data_.Set(var);
+    int_data_[var] = IntegerVariableData();
+    int_data_[var].settled_bound = integer_trail_->LevelZeroLowerBound(var);
+  }
+  return int_data_[var];
+}
+
+void IntegerConflictResolution::ExpandAndAddReasonToQueue(
+    GlobalTrailIndex source_index, const IntegerReason& reason,
+    std::optional<IntegerValue> bound) {
   ++num_expansions_;
+  if (source_index.IsInteger()) {
+    IntegerVariableData& data = MutableIntData(
+        integer_trail_->IntegerLiteralAtIndex(source_index.integer_index).var);
+    CHECK_EQ(data.slack_ptr, kNoListIndex);
+    CHECK_LE(reason.index_at_propagation, source_index.integer_index);
+    CHECK_GE(source_index.integer_index,
+             integer_trail_->NumIntegerVariables().value());
+  }
 
   // If we have a linear reason with slack, check to see if we can relax the
   // reason and have more slack, because we don't need to explain the stronger
@@ -131,18 +155,17 @@ void IntegerConflictResolution::AddToQueue(GlobalTrailIndex source_index,
   // TODO(user): Skip for the first AddToQueue() that correspond to a conflict.
   // Or handle properly, for now, we never have !vars.empty() for conflicts.
   IntegerValue slack = reason.slack;
-  if (!reason.vars.empty()) {
+  if (!reason.vars.empty() && reason.propagated_i_lit.IsValid()) {
     const IntegerLiteral propagated_i_lit = reason.propagated_i_lit;
     const IntegerVariable var = propagated_i_lit.var;
 
     IntegerValue needed_bound = kMaxIntegerValue;
     if (source_index.IsInteger()) {
-      CHECK_LE(reason.index_at_propagation, source_index.integer_index);
       CHECK_EQ(var,
                integer_trail_->IntegerLiteralAtIndex(source_index.integer_index)
                    .var);
-      IntegerVariableData& data = int_data_[var];
-      needed_bound = data.bound;
+      CHECK_NE(bound, std::nullopt);
+      needed_bound = *bound;
     } else {
       // Currently the only other case where we have a linear reason is for
       // associated literals, in which case, we just need to explain the
@@ -193,7 +216,8 @@ void IntegerConflictResolution::AddToQueue(GlobalTrailIndex source_index,
   // Reset.
   // As we explain var >= bound, we might need var >= lower_bound.
   for (const IntegerLiteral i_lit : IndexToIntegerLiterals(source_index)) {
-    IntegerVariableData& data = int_data_[i_lit.var];
+    IntegerVariableData& data = MutableIntData(i_lit.var);
+    ConsumeSlack(i_lit.var, i_lit.bound);
     if (i_lit.bound >= data.bound) {
       data.bound = kMinIntegerValue;
     }
@@ -218,32 +242,48 @@ void IntegerConflictResolution::AddToQueue(GlobalTrailIndex source_index,
   }
 
   // Deal with linear reason.
-  // TODO(user): The support for that could be improved.
-  // In particular, we can sort in order to process slack in a good heuristic
-  // order.
   if (reason.vars.empty()) return;
+
+  // List of variable that can be relaxed using this linear reason "slak".
+  struct Relax {
+    IntegerVariable var;
+    IntegerValue coeff;
+    IntegerValue required_bound;
+  };
+  std::vector<Relax> relaxable;
 
   const int size = reason.vars.size();
   const IntegerVariable to_ignore =
       PositiveVariable(reason.propagated_i_lit.var);
   for (int i = 0; i < size; ++i) {
     const IntegerVariable var = reason.vars[i];
+    CHECK_GT(reason.coeffs[i], 0);
     if (PositiveVariable(var) == to_ignore) continue;
 
-    IntegerVariableData& data = int_data_[var];
-    if (!data.in_queue) {
-      data.int_index_in_queue = integer_trail_->GetFirstIndexBefore(
-          var, source_index, data.int_index_in_queue);
-      if (data.int_index_in_queue < 0) continue;  // root level.
+    IntegerVariableData& data = MutableIntData(var);
+    UpdateData(var, source_index, data);
 
-      data.in_queue = true;
-      tmp_queue_.push_back(
-          integer_trail_->GlobalIndexAt(data.int_index_in_queue));
-      DCHECK_LT(tmp_queue_.back(), source_index);
+    // No need to relax further than this in the code below.
+    data.bound = std::max(data.bound, data.settled_bound);
+    DCHECK_GE(data.bound, integer_trail_->LevelZeroLowerBound(var));
+
+    const IntegerValue required_bound =
+        data.int_index_in_queue < 0
+            ? integer_trail_->LevelZeroLowerBound(var)
+            : integer_trail_->IntegerLiteralAtIndex(data.int_index_in_queue)
+                  .bound;
+    if (data.settled_bound >= required_bound) {
+      // We can increase the slack since we already have a high bound in the
+      // reason. In all case, no need to add to the queue.
+      if (data.settled_bound > required_bound) {
+        ++num_slack_increase_;
+        slack = CapAddI(slack, CapProdI(reason.coeffs[i],
+                                        (data.settled_bound - required_bound)));
+      }
+      continue;
     }
-
-    DCHECK_LT(integer_trail_->GlobalIndexAt(data.int_index_in_queue),
-              source_index);
+    CHECK_GE(required_bound, data.bound);
+    AddToQueueIfNotThere(data);
 
     // In all case, we need the bound at the time.
     // in some rare case, we have reason.index_at_propagation <
@@ -253,25 +293,72 @@ void IntegerConflictResolution::AddToQueue(GlobalTrailIndex source_index,
       ++num_possibly_non_optimal_reason_;
     }
 
-    // No need to relax further than this in the code below.
-    data.bound = std::max(data.bound, integer_trail_->LevelZeroLowerBound(var));
+    if (required_bound == data.bound) continue;
 
-    IntegerValue required_bound =
-        integer_trail_->IntegerLiteralAtIndex(data.int_index_in_queue).bound;
-    CHECK_GE(required_bound, data.bound);
+    // This might be relaxable, add for later processing.
+    //
+    // Tricky: the slack can be increased further during this loop, so we can't
+    // use it here and need two passes.
+    relaxable.push_back({var, reason.coeffs[i], required_bound});
+  }
 
-    if (slack > 0 && required_bound > data.bound) {
-      CHECK_GT(reason.coeffs[i], 0);
-      IntegerValue delta = FloorRatio(slack, reason.coeffs[i]);
-      delta = std::min(delta, CapSubI(required_bound, data.bound));
-      if (delta > 0) {
-        ++num_slack_usage_;
-        required_bound -= delta;
-        slack -= reason.coeffs[i] * delta;
+  // Delay the slack consumption.
+  //
+  // TODO(user): If all the slack can just be consumed up to the data.bound,
+  // we could avoid filling the more complex "slack" entries, and just relax
+  // the bound right away. Same if we just have a single relaxable entry.
+  SlackIndex index(-1);
+  for (const auto& [var, coeff, required_bound] : relaxable) {
+    IntegerVariableData& data = MutableIntData(var);
+
+    // Invariant checks.
+    DCHECK_GT(required_bound, data.bound);
+    DCHECK_GE(data.bound, data.settled_bound);
+    DCHECK_GT(coeff, 0);
+
+    if (coeff <= slack) {
+      if (index == -1) {  // Lazy initialization
+        index = SlackIndex(linear_slacks_.size());
+        linear_slacks_.push_back(slack);
       }
+      const SlackListIndex next(linked_list_buffer_.size());
+      linked_list_buffer_.push_back({coeff, index, data.slack_ptr});
+      data.slack_ptr = next;
+    } else {
+      data.bound = required_bound;
     }
+  }
+}
 
-    data.bound = required_bound;
+void IntegerConflictResolution::UpdateData(IntegerVariable var,
+                                           GlobalTrailIndex source_index,
+                                           IntegerVariableData& data) {
+  DCHECK_GE(data.settled_bound, integer_trail_->LevelZeroLowerBound(var));
+  if (!data.in_queue) {
+    data.int_index_in_queue = integer_trail_->GetFirstIndexBefore(
+        var, source_index, data.int_index_in_queue);
+  } else {
+    CHECK_GE(data.int_index_in_queue, 0);
+    CHECK_EQ(data.int_index_in_queue,
+             integer_trail_->GetFirstIndexBefore(var, source_index,
+                                                 data.int_index_in_queue));
+  }
+
+  // TODO(user): remove the -1 and keep "var" index for root level?
+  if (data.int_index_in_queue >= 0) {
+    // Basic checks.
+    CHECK_LT(integer_trail_->GlobalIndexAt(data.int_index_in_queue),
+             source_index);
+  }
+}
+
+void IntegerConflictResolution::AddToQueueIfNotThere(
+    IntegerVariableData& data) {
+  CHECK_GE(data.int_index_in_queue, 0);
+  if (!data.in_queue) {
+    data.in_queue = true;
+    tmp_queue_.push_back(
+        integer_trail_->GlobalIndexAt(data.int_index_in_queue));
   }
 }
 
@@ -282,25 +369,16 @@ void IntegerConflictResolution::ProcessIntegerLiteral(
 
   DCHECK_GE(i_lit.var, 0);
   DCHECK_LT(i_lit.var, int_data_.size());
-  if (i_lit.bound <= tmp_var_to_settled_lb_[i_lit.var]) return;
   if (i_lit.bound <= integer_trail_->LevelZeroLowerBound(i_lit.var)) return;
   DCHECK_LE(i_lit.bound, integer_trail_->LowerBound(i_lit.var));
 
-  IntegerVariableData& data = int_data_[i_lit.var];
-
-  if (!data.in_queue) {
-    // Initialize if we never saw it before.
-    data.int_index_in_queue = integer_trail_->GetFirstIndexBefore(
-        i_lit.var, source_index, data.int_index_in_queue);
-
-    if (data.int_index_in_queue < 0) return;  // root level.
-    data.in_queue = true;
-    tmp_queue_.push_back(
-        integer_trail_->GlobalIndexAt(data.int_index_in_queue));
-    DCHECK_LT(tmp_queue_.back(), source_index);
-  }
+  IntegerVariableData& data = MutableIntData(i_lit.var);
+  UpdateData(i_lit.var, source_index, data);
+  if (i_lit.bound <= data.settled_bound) return;
+  AddToQueueIfNotThere(data);
 
   data.bound = std::max(data.bound, i_lit.bound);
+  CHECK_NE(data.bound, kMinIntegerValue);
   CHECK_LE(data.bound,
            integer_trail_->IntegerLiteralAtIndex(data.int_index_in_queue).bound)
       << " " << i_lit.bound;
@@ -315,11 +393,69 @@ void IntegerConflictResolution::MarkAllAssociatedLiterals(
       //
       // TODO(user): we should probably make sure this never happen
       // instead.
-      tmp_var_to_settled_lb_[i_lit.var] =
-          std::max(tmp_var_to_settled_lb_[i_lit.var], i_lit.bound);
+      IntegerVariableData& data = MutableIntData(i_lit.var);
+      data.settled_bound = std::max(data.settled_bound, i_lit.bound);
       ++num_associated_integer_for_literals_in_conflict_;
     }
   }
+}
+
+// In this initial implementation, we just consume as much slack as possible.
+// But not more than the current needed bound without slack.
+//
+// TODO(user): only consume up to next bound?
+void IntegerConflictResolution::ConsumeSlack(IntegerVariable var,
+                                             IntegerValue threshold) {
+  IntegerVariableData& data = MutableIntData(var);
+  if (!data.in_queue) {
+    CHECK_EQ(data.slack_ptr, kNoListIndex);
+    return;
+  }
+  if (data.slack_ptr == kNoListIndex) return;
+
+  CHECK_GE(data.int_index_in_queue,
+           integer_trail_->NumIntegerVariables().value());
+  const IntegerValue needed =
+      integer_trail_->IntegerLiteralAtIndex(data.int_index_in_queue).bound;
+
+  if (needed <= data.settled_bound) {
+    data.bound = kMinIntegerValue;
+    data.slack_ptr = kNoListIndex;
+    return;
+  }
+  CHECK_LE(data.bound, needed);
+
+  if (needed <= threshold) {
+    data.bound = needed;
+    data.slack_ptr = kNoListIndex;
+    return;
+  }
+
+  data.bound = std::max(data.bound, data.settled_bound);
+
+  IntegerValue best = needed - std::max(data.bound, threshold);
+  SlackListIndex next = data.slack_ptr;
+  while (next != kNoListIndex) {
+    const auto [coeff, index, n] = linked_list_buffer_[next];
+    next = n;
+    best = std::min(best, linear_slacks_[index] / coeff);
+  }
+
+  // Consume the correct amount from all linear slacks.
+  if (best > 0) {
+    ++num_slack_usage_;
+    next = data.slack_ptr;
+    while (next != kNoListIndex) {
+      const auto [coeff, index, n] = linked_list_buffer_[next];
+      next = n;
+      linear_slacks_[index] -= coeff * best;
+    }
+  }
+
+  // Remove the slack from that variable data and update the required bound
+  // for the explanation.
+  data.slack_ptr = kNoListIndex;
+  data.bound = needed - best;
 }
 
 void IntegerConflictResolution::ComputeFirstUIPConflict(
@@ -337,20 +473,24 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
   const IntegerReason& starting_conflict = integer_trail_->IntegerConflict();
   if (starting_conflict.empty()) return;
 
-  // Clear data.
-  // TODO(user): Sparse clear.
+  // Sparse clear data.
   const int num_i_vars = integer_trail_->NumIntegerVariables().value();
-  int_data_.clear();
+  touched_int_data_.ClearAndResize(IntegerVariable(num_i_vars));
   int_data_.resize(num_i_vars);
+
   // Note the we need some slack because we enqueue a new decision if we see a
   // boolean already assigned to true.
   constexpr int kSizeSlack = 100;
   tmp_bool_index_seen_.ClearAndResize(trail_->Index() + kSizeSlack);
-  tmp_var_to_settled_lb_.assign(num_i_vars, kMinIntegerValue);
+
+  // Used to relax linear reasons.
+  linear_slacks_.clear();
+  linked_list_buffer_.clear();
 
   tmp_queue_.clear();
-  AddToQueue(GlobalTrailIndex{trail_->CurrentDecisionLevel(), trail_->Index()},
-             starting_conflict);
+  ExpandAndAddReasonToQueue(
+      GlobalTrailIndex{trail_->CurrentDecisionLevel(), trail_->Index()},
+      starting_conflict, std::nullopt);
   std::make_heap(tmp_queue_.begin(), tmp_queue_.end());
 
   // We will expand Booleans as long as we don't have first UIP.
@@ -374,55 +514,53 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
     if (top_index.IsInteger()) {
       const IntegerLiteral i_lit =
           integer_trail_->IntegerLiteralAtIndex(top_index.integer_index);
-      IntegerVariableData& data = int_data_[i_lit.var];
-      const IntegerValue bound_to_explain = data.bound;
-      CHECK(data.in_queue);
-      CHECK_EQ(data.int_index_in_queue, top_index.integer_index);
-      CHECK_LE(data.bound, i_lit.bound);
+      IntegerVariableData& data = MutableIntData(i_lit.var);
+      ConsumeSlack(i_lit.var);
 
-      // Skip until next time we need this variable.
-      if (data.bound <= tmp_var_to_settled_lb_[i_lit.var] ||
-          data.bound <= integer_trail_->LevelZeroLowerBound(i_lit.var) ||
-          data.int_index_in_queue < num_i_vars) {
-        data.in_queue = false;
+      CHECK(data.in_queue);
+      data.in_queue = false;
+      CHECK_GE(data.int_index_in_queue, num_i_vars);
+
+      // We shouldn't see this again.
+      if (i_lit.bound <= data.settled_bound) {
         data.bound = kMinIntegerValue;
         continue;
       }
 
       const int previous_index =
           integer_trail_->PreviousTrailIndex(top_index.integer_index);
-      if (data.bound < i_lit.bound) {
-        if (previous_index >= 0) {
-          const IntegerLiteral previous_i_lit =
-              integer_trail_->IntegerLiteralAtIndex(previous_index);
-          if (data.bound <= previous_i_lit.bound) {
-            // The previous integer entry can explain our data.bound,
-            // re-enqueue until next time.
-            data.int_index_in_queue = previous_index;
-            tmp_queue_.push_back(
-                integer_trail_->GlobalIndexAt(data.int_index_in_queue));
-            DCHECK_LT(tmp_queue_.back(), top_index);
-            CHECK_LE(
-                data.bound,
-                integer_trail_->IntegerLiteralAtIndex(data.int_index_in_queue)
-                    .bound);
-            std::push_heap(tmp_queue_.begin(), tmp_queue_.end());
-            continue;
-          }
-        } else {
-          // Remove.
-          // This variable shouldn't be needed anymore.
-          data.int_index_in_queue = previous_index;
-          data.in_queue = false;
-          data.bound = kMinIntegerValue;
-          continue;
-        }
+      const IntegerValue previous_bound =
+          integer_trail_->IntegerLiteralAtIndex(previous_index).bound;
+      CHECK_GE(previous_index, 0);
+
+      const IntegerValue bound_to_explain = data.bound;
+      CHECK_EQ(data.int_index_in_queue, top_index.integer_index);
+
+      // Skip until next time we need this variable.
+      if (data.bound <= data.settled_bound) {
+        data.bound = kMinIntegerValue;
+        continue;
+      }
+
+      CHECK_LE(data.bound, i_lit.bound);
+      if (data.bound < i_lit.bound && data.bound <= previous_bound) {
+        // The previous integer entry can explain our data.bound,
+        // re-enqueue until next time.
+        data.in_queue = true;
+        data.int_index_in_queue = previous_index;
+        tmp_queue_.push_back(
+            integer_trail_->GlobalIndexAt(data.int_index_in_queue));
+        DCHECK_LT(tmp_queue_.back(), top_index);
+        CHECK_LE(data.bound,
+                 integer_trail_->IntegerLiteralAtIndex(data.int_index_in_queue)
+                     .bound);
+        std::push_heap(tmp_queue_.begin(), tmp_queue_.end());
+        continue;
       }
 
       // We are going to expand the reason at top_index, clear the data for
       // future reasons.
       data.int_index_in_queue = previous_index;
-      data.in_queue = false;
 
       // Optional. Try to see if we have a good enough associated
       // integer_literal. This can be disabled, but it should lead to better
@@ -603,18 +741,20 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
           << DebugGlobalIndex(top_index)
           << " before: " << DebugGlobalIndex(tmp_queue_.front());
       reason_used_to_infer_the_conflict->push_back(literal);
-    } else {
-      // Skip stale integer entry.
-      const IntegerLiteral i_lit =
-          integer_trail_->IntegerLiteralAtIndex(top_index.integer_index);
-      if (tmp_var_to_settled_lb_[i_lit.var] >= i_lit.bound) continue;
     }
 
     std::optional<IntegerValue> needed_bound;
     if (top_index.IsInteger()) {
       const IntegerVariable var =
           integer_trail_->IntegerLiteralAtIndex(top_index.integer_index).var;
-      needed_bound = RelaxBoundIfHoles(var, int_data_[var].bound);
+
+      ConsumeSlack(var);
+      IntegerVariableData& data = MutableIntData(var);
+      needed_bound = RelaxBoundIfHoles(var, data.bound);
+      data.bound = kMinIntegerValue;
+
+      // Skip stale integer entry.
+      if (data.settled_bound >= needed_bound) continue;
     }
 
     // Expand.
@@ -622,8 +762,9 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
     // TODO(user): There is probably a faster way to recover the heap property
     // than doing it one by one.
     const int old_size = tmp_queue_.size();
-    AddToQueue(top_index,
-               integer_trail_->GetIntegerReason(top_index, needed_bound));
+    ExpandAndAddReasonToQueue(
+        top_index, integer_trail_->GetIntegerReason(top_index, needed_bound),
+        needed_bound);
     for (int i = old_size + 1; i <= tmp_queue_.size(); ++i) {
       std::push_heap(tmp_queue_.begin(), tmp_queue_.begin() + i);
     }

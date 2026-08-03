@@ -909,7 +909,7 @@ IntegerVariable IntegerTrail::AddIntegerVariable(const Domain& domain) {
   return var;
 }
 
-const Domain& IntegerTrail::InitialVariableDomain(IntegerVariable var) const {
+const Domain& IntegerTrail::LevelZeroDomain(IntegerVariable var) const {
   const PositiveOnlyIndex index = GetPositiveOnlyIndex(var);
   if (VariableIsPositive(var)) return (*domains_)[index];
   temp_domain_ = (*domains_)[index].Negation();
@@ -917,7 +917,7 @@ const Domain& IntegerTrail::InitialVariableDomain(IntegerVariable var) const {
 }
 
 std::string IntegerTrail::VarDebugString(IntegerVariable var) const {
-  return absl::StrCat(var, " root:", InitialVariableDomain(var).ToString(),
+  return absl::StrCat(var, " root:", LevelZeroDomain(var).ToString(),
                       " current:[", LowerBound(var), ",", UpperBound(var), "]");
 }
 
@@ -1354,7 +1354,7 @@ bool IntegerTrail::RootLevelEnqueue(IntegerLiteral i_lit) {
   // Update the level-zero bound in any case.
   integer_trail_[i_lit.var.value()].bound = i_lit.bound;
 
-  // Make sure we will update InitialVariableDomain() when we are back
+  // Make sure we will update LevelZeroDomain() when we are back
   // at level zero.
   delayed_to_fix_->integer_literal_to_fix.push_back(i_lit);
 

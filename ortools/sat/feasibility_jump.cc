@@ -553,7 +553,7 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
       if (SolutionIsFeasible(input_model_proto_, input_solution)) {
         auto pointers = PushAndMaybeCombineSolution(
             shared_response_, input_model_proto_, input_solution,
-            absl::StrCat(name(), "_", state_->options.name(), "(",
+            absl::StrCat(name(), "_", state_->options.name(), " (",
                          OneLineStats(), ")"),
             state_->base_solution);
         // If we pushed a new solution, we use it as a new "base" so that we

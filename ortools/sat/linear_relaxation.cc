@@ -380,7 +380,7 @@ void LinearizeComplexLinear1(Model* m, const CpModelProto& model_proto,
       var_to_lin1_builder);
   TimeLimit* time_limit = m->GetOrCreate<TimeLimit>();
   for (IntegerVariable var(0); var < var_to_lin1.size(); ++var) {
-    const Domain var_domain = integer_trail->InitialVariableDomain(var);
+    const Domain var_domain = integer_trail->LevelZeroDomain(var);
     if (var_to_lin1[var].size() < 2) continue;
     const IntegerValue lb = integer_trail->LevelZeroLowerBound(var);
     const IntegerValue ub = integer_trail->LevelZeroUpperBound(var);
@@ -1879,14 +1879,16 @@ void AddIntProdCutGenerator(const ConstraintProto& ct, int linearization_level,
   AffineExpression x = mapping->Affine(ct.int_prod().exprs(0));
   AffineExpression y = mapping->Affine(ct.int_prod().exprs(1));
 
-  IntegerTrail* const integer_trail = m->GetOrCreate<IntegerTrail>();
-  IntegerValue x_lb = integer_trail->LowerBound(x);
-  IntegerValue x_ub = integer_trail->UpperBound(x);
-  IntegerValue y_lb = integer_trail->LowerBound(y);
-  IntegerValue y_ub = integer_trail->UpperBound(y);
-
   // We currently only support variables with non-negative domains.
+  //
+  // TODO(user): do something about it, as if this happened, these constraints
+  // will not appear in the LP at all !
+  IntegerTrail* const integer_trail = m->GetOrCreate<IntegerTrail>();
+  const IntegerValue x_lb = integer_trail->LowerBound(x);
+  const IntegerValue x_ub = integer_trail->UpperBound(x);
   if (x_lb < 0 && x_ub > 0) return;
+  const IntegerValue y_lb = integer_trail->LowerBound(y);
+  const IntegerValue y_ub = integer_trail->UpperBound(y);
   if (y_lb < 0 && y_ub > 0) return;
 
   // Change signs to return to the case where all variables are a domain
@@ -1906,65 +1908,48 @@ void AddIntProdCutGenerator(const ConstraintProto& ct, int linearization_level,
 
 void AppendSquareRelaxation(const ConstraintProto& ct, Model* m,
                             LinearRelaxation* relaxation) {
+  // Constraint is square == x * x.
   if (HasEnforcementLiteral(ct)) return;
   auto* mapping = m->GetOrCreate<CpModelMapping>();
-  IntegerTrail* const integer_trail = m->GetOrCreate<IntegerTrail>();
+  const AffineExpression square = mapping->Affine(ct.int_prod().target());
+  const AffineExpression x = mapping->Affine(ct.int_prod().exprs(0));
 
-  // Constraint is square == x * x.
-  AffineExpression square = mapping->Affine(ct.int_prod().target());
-  AffineExpression x = mapping->Affine(ct.int_prod().exprs(0));
-  IntegerValue x_lb = integer_trail->LowerBound(x);
-  IntegerValue x_ub = integer_trail->UpperBound(x);
-
+  auto* integer_trail = m->GetOrCreate<IntegerTrail>();
+  const IntegerValue x_lb = integer_trail->LevelZeroLowerBound(x);
+  const IntegerValue x_ub = integer_trail->LevelZeroUpperBound(x);
   if (x_lb == x_ub) return;
-
-  // We currently only support variables with non-negative domains.
-  if (x_lb < 0 && x_ub > 0) return;
-
-  // Change the sigh of x if its domain is non-positive.
-  if (x_ub <= 0) {
-    x = x.Negated();
-    const IntegerValue tmp = x_ub;
-    x_ub = -x_lb;
-    x_lb = -tmp;
-  }
 
   // Check for potential overflows.
   if (x_ub > (int64_t{1} << 31)) return;
-  DCHECK_GE(x_lb, 0);
+  if (x_lb < -(int64_t{1} << 31)) return;
 
   relaxation->linear_constraints.push_back(
-      ComputeHyperplanAboveSquare(x, square, x_lb, x_ub, m));
+      ComputeHyperplanAboveSquare(x, square, x_lb, x_ub));
 
   relaxation->linear_constraints.push_back(
-      ComputeHyperplanBelowSquare(x, square, x_lb, m));
+      ComputeHyperplanBelowSquare(x, square, x_lb));
+
   // TODO(user): We could add all or some below_hyperplans.
   if (x_lb + 1 < x_ub) {
-    // The hyperplan will use x_ub - 1 and x_ub.
+    // The hyperplan will be x_ub - 1 and x_ub.
     relaxation->linear_constraints.push_back(
-        ComputeHyperplanBelowSquare(x, square, x_ub - 1, m));
+        ComputeHyperplanBelowSquare(x, square, x_ub - 1));
   }
 }
 
 void AddSquareCutGenerator(const ConstraintProto& ct, int linearization_level,
                            Model* m, LinearRelaxation* relaxation) {
+  // Constraint is square == x * x.
   if (HasEnforcementLiteral(ct)) return;
   auto* mapping = m->GetOrCreate<CpModelMapping>();
-  IntegerTrail* const integer_trail = m->GetOrCreate<IntegerTrail>();
-
-  // Constraint is square == x * x.
   const AffineExpression square = mapping->Affine(ct.int_prod().target());
-  AffineExpression x = mapping->Affine(ct.int_prod().exprs(0));
-  const IntegerValue x_lb = integer_trail->LowerBound(x);
-  const IntegerValue x_ub = integer_trail->UpperBound(x);
+  const AffineExpression x = mapping->Affine(ct.int_prod().exprs(0));
 
-  // We currently only support variables with non-negative domains.
-  if (x_lb < 0 && x_ub > 0) return;
-
-  // Change the sigh of x if its domain is non-positive.
-  if (x_ub <= 0) {
-    x = x.Negated();
-  }
+  // Not need if range is not bigger than 1.
+  auto* integer_trail = m->GetOrCreate<IntegerTrail>();
+  const IntegerValue x_lb = integer_trail->LevelZeroLowerBound(x);
+  const IntegerValue x_ub = integer_trail->LevelZeroUpperBound(x);
+  if (x_lb + 1 >= x_ub) return;
 
   relaxation->cut_generators.push_back(
       CreateSquareCutGenerator(square, x, linearization_level, m));
@@ -1990,7 +1975,7 @@ void AddAllDiffRelaxationAndCutGenerator(const ConstraintProto& ct,
           Domain(integer_trail->FixedValue(expr).value()));
     } else {
       union_of_domains = union_of_domains.UnionWith(
-          integer_trail->InitialVariableDomain(expr.var)
+          integer_trail->LevelZeroDomain(expr.var)
               .MultiplicationBy(expr.coeff.value())
               .AdditionWith(Domain(expr.constant.value())));
     }

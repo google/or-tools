@@ -1269,20 +1269,18 @@ TEST(SolveIntegerProblemWithLazyEncodingTest, Unsat) {
             SatSolver::Status::INFEASIBLE);
 }
 
-TEST(IntegerTrailTest, InitialVariableDomainIsUpdated) {
+TEST(IntegerTrailTest, LevelZeroDomainIsUpdated) {
   Model model;
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
   const IntegerVariable var =
       integer_trail->AddIntegerVariable(IntegerValue(0), IntegerValue(1000));
-  EXPECT_EQ(integer_trail->InitialVariableDomain(var), Domain(0, 1000));
-  EXPECT_EQ(integer_trail->InitialVariableDomain(NegationOf(var)),
-            Domain(-1000, 0));
+  EXPECT_EQ(integer_trail->LevelZeroDomain(var), Domain(0, 1000));
+  EXPECT_EQ(integer_trail->LevelZeroDomain(NegationOf(var)), Domain(-1000, 0));
 
   EXPECT_TRUE(integer_trail->Enqueue(
       IntegerLiteral::GreaterOrEqual(var, IntegerValue(7)), {}, {}));
-  EXPECT_EQ(integer_trail->InitialVariableDomain(var), Domain(7, 1000));
-  EXPECT_EQ(integer_trail->InitialVariableDomain(NegationOf(var)),
-            Domain(-1000, -7));
+  EXPECT_EQ(integer_trail->LevelZeroDomain(var), Domain(7, 1000));
+  EXPECT_EQ(integer_trail->LevelZeroDomain(NegationOf(var)), Domain(-1000, -7));
 }
 
 TEST(IntegerTrailTest, AppendNewBounds) {

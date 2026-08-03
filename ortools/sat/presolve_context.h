@@ -420,9 +420,6 @@ class PresolveContext {
   bool ExpressionIsAffineBoolean(const LinearExpressionProto& expr) const;
   int LiteralForExpressionMax(const LinearExpressionProto& expr) const;
 
-  // Returns true iff the expr is of the form 1 * var + 0.
-  bool ExpressionIsSingleVariable(const LinearExpressionProto& expr) const;
-
   // Returns true iff the expr is a literal (x or not(x)).
   bool ExpressionIsALiteral(const LinearExpressionProto& expr,
                             int* literal = nullptr) const;

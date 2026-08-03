@@ -51,6 +51,7 @@ void AddReservoirConstraint(absl::Span<const Literal> enforcement_literals,
 // full horizon, we could have taken < t with no behavior change.
 class ReservoirTimeTabling : public PropagatorInterface {
  public:
+  ~ReservoirTimeTabling() override;
   ReservoirTimeTabling(absl::Span<const Literal> enforcement_literals,
                        absl::Span<const AffineExpression> times,
                        absl::Span<const AffineExpression> deltas,
@@ -100,13 +101,21 @@ class ReservoirTimeTabling : public PropagatorInterface {
   // Model class.
   const VariablesAssignment& assignment_;
   const IntegerTrail& integer_trail_;
+  SharedStatistics* shared_stats_;
   EnforcementHelper& enforcement_helper_;
   EnforcementId enforcement_id_;
 
   // Temporary data.
-  std::vector<Literal> literal_reason_;
-  std::vector<IntegerLiteral> integer_reason_;
-  std::vector<ProfileRectangle> profile_;
+  FixedCapacityVector<Literal> literal_reason_;
+  FixedCapacityVector<IntegerLiteral> integer_reason_;
+  FixedCapacityVector<ProfileRectangle> profile_;
+
+  // Counters.
+  int64_t num_calls_ = 0;
+  int64_t num_explanations_ = 0;
+  int64_t num_conflicts_ = 0;
+  int64_t num_time_increases_ = 0;
+  int64_t num_time_decreases_ = 0;
 };
 
 // A strongly quadratic version of Time Tabling filtering. This propagator

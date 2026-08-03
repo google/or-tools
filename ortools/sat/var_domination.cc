@@ -1433,6 +1433,27 @@ void ScanModelForDualBoundStrengthening(
             false, context, ct.linear(), min_activity, max_activity, c);
         break;
       }
+      case ConstraintProto::kCumulative: {
+        for (const auto& demand : ct.cumulative().demands()) {
+          for (int i = 0; i < demand.vars().size(); ++i) {
+            if (demand.coeffs(i) > 0) {
+              dual_bound_strengthening->CannotIncrease({demand.vars(i)}, c);
+            } else {
+              dual_bound_strengthening->CannotDecrease({demand.vars(i)}, c);
+            }
+          }
+        }
+        for (int i = 0; i < ct.cumulative().capacity().vars().size(); ++i) {
+          if (ct.cumulative().capacity().coeffs(i) > 0) {
+            dual_bound_strengthening->CannotDecrease(
+                {ct.cumulative().capacity().vars(i)}, c);
+          } else {
+            dual_bound_strengthening->CannotIncrease(
+                {ct.cumulative().capacity().vars(i)}, c);
+          }
+        }
+        break;
+      }
       default:
         // We cannot infer anything if we don't know the constraint.
         // TODO(user): Handle enforcement better here.

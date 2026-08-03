@@ -18,6 +18,7 @@
 #include <cmath>
 #include <string>
 
+#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/cp_model_search.h"
@@ -215,8 +216,13 @@ std::string ValidateParameters(const SatParameters& params) {
   if (!params.subsolvers().empty() || !params.extra_subsolvers().empty()) {
     const auto strategies = GetNamedParameters(params);
     for (const std::string& subsolver : params.subsolvers()) {
-      if (subsolver == "core_or_no_lp") continue;  // Used by fz free search.
-      if (!strategies.contains(subsolver)) {
+      const std::string prefix = "core_or_";
+      if (absl::StartsWith(subsolver, prefix)) {
+        const std::string alt = subsolver.substr(prefix.size());
+        if (!strategies.contains(alt)) {
+          return absl::StrCat("subsolver \'", alt, "\' is not valid");
+        }
+      } else if (!strategies.contains(subsolver)) {
         return absl::StrCat("subsolver \'", subsolver, "\' is not valid");
       }
     }

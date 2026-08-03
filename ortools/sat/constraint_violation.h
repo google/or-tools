@@ -816,7 +816,7 @@ class CompiledReservoirConstraint : public CompiledConstraint {
   std::vector<int> UsedVariables(const CpModelProto& model_proto) const final;
 
   std::string DebugString() const final {
-    return absl::StrCat("CompiledReservoirConstrain, capacity=", capacity_);
+    return absl::StrCat("CompiledReservoirConstraint, capacity=", capacity_);
   }
 
  private:
@@ -856,6 +856,64 @@ class CompiledReservoirConstraint : public CompiledConstraint {
   int64_t capacity_value_;
   std::vector<int64_t> time_values_;
   std::vector<int64_t> demand_values_;
+};
+
+// This encodes a scalar product constraint:
+//   min_value <= sum(x_i * y_i) <= max_value
+// where x_i and y_i are each linear expressions.
+class CompiledScalarProductConstraint : public CompiledConstraint {
+ public:
+  CompiledScalarProductConstraint(std::vector<int> enforcement_literals,
+                                  std::vector<LinearExpressionProto> x,
+                                  std::vector<LinearExpressionProto> y,
+                                  int64_t min_value, int64_t max_value)
+      : enforcement_literals_(std::move(enforcement_literals)),
+        x_(std::move(x)),
+        y_(std::move(y)),
+        min_value_(min_value),
+        max_value_(max_value) {
+    value_products_.resize(x_.size(), 0);
+    InitializeDenseIndexToPositions();
+  }
+
+  ~CompiledScalarProductConstraint() final = default;
+
+  std::string DebugString() const final {
+    return absl::StrCat("CompiledScalarProductConstraint, domain=[", min_value_,
+                        ", ", max_value_, "]");
+  }
+
+  int64_t ComputeViolation(absl::Span<const int64_t> solution) final;
+
+  void PerformMove(int /*var*/, int64_t /*old_value*/,
+                   absl::Span<const int64_t> solution_with_new_value) final {
+    ComputeViolation(solution_with_new_value);
+  }
+
+  int64_t ViolationDelta(
+      int var, int64_t /*old_value*/,
+      absl::Span<const int64_t> solution_with_new_value) final {
+    return IncrementalViolation(var, solution_with_new_value) - violation_;
+  }
+
+  std::vector<int> UsedVariables(const CpModelProto& model_proto) const final;
+
+ private:
+  int64_t IncrementalViolation(int var, absl::Span<const int64_t> solution);
+  void InitializeDenseIndexToPositions();
+  void AppendVariablesForPosition(int p, std::vector<int>* result) const;
+
+  const std::vector<int> enforcement_literals_;
+  const std::vector<LinearExpressionProto> x_;
+  const std::vector<LinearExpressionProto> y_;
+  const int64_t min_value_;
+  const int64_t max_value_;
+
+  absl::flat_hash_map<int, int> var_to_dense_index_;
+  CompactVectorVector<int, int> dense_index_to_positions_;
+
+  int64_t current_sum_ = 0;
+  std::vector<int64_t> value_products_;
 };
 
 }  // namespace sat

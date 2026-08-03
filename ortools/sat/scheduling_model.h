@@ -20,11 +20,11 @@
 #include <utility>
 #include <vector>
 
-#include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/util.h"
@@ -46,6 +46,13 @@ struct SchedulingProblem {
     std::vector<int> tasks_that_must_complete_before_this;
     int64_t min_start = 0;
 
+    // JSSP Constraint Mappings
+    int main_interval = -1;
+    std::vector<int> alternative_intervals;
+    std::vector<int> unconditional_intervals;
+    AffineExpr start_time_expr;
+    std::vector<int> presence_literals;
+
     template <typename Sink>
     friend void AbslStringify(Sink& sink, const Task& task) {
       absl::Format(
@@ -58,6 +65,22 @@ struct SchedulingProblem {
   std::vector<Task> tasks;
 
   enum Type { kMinimizeMakespan, kSatisfaction } type;
+
+  // Job sequences (grouping tasks by job sequence)
+  struct Job {
+    std::vector<int> task_indices;
+  };
+  std::vector<Job> jobs;
+
+  // Bidirectional Mapping Maps
+  std::vector<int> interval_to_task_index;
+  std::vector<int> interval_to_job;
+  std::vector<int> interval_to_main_interval;
+
+  // Objective / Makespan
+  std::optional<AffineExpr> makespan_expr;
+  int makespan_interval = -1;
+  std::vector<int> redundant_cumulative;
 
   template <typename Sink>
   friend void AbslStringify(Sink& sink, const SchedulingProblem& problem) {
@@ -77,46 +100,23 @@ struct SchedulingProblem {
   }
 };
 
-// The description of a scheduling problem and a mapping allowing to compute the
-// solution to the problem from the solution of the CpModelProto it was
-// extracted from.
-struct SchedulingProblemAndMapping {
-  SchedulingProblem problem;
-
-  struct AffineExpr {
-    int var;  // The variable in the CpModelProto.
-    int64_t coeff;
-    int64_t offset;
-  };
-  std::vector<AffineExpr> task_to_start_time_model_var;
-  std::optional<AffineExpr> makespan_expr;
-  std::vector<std::vector<int>> task_to_presence_literals;
-
-  struct TaskIntervalVars {
-    // Conditional intervals that map 1:1 with `compatible_machine`.
-    std::vector<int> alternative_intervals;
-
-    // Unconditional intervals (e.g., dummies used for precedence routing).
-    std::vector<int> unconditional_intervals;
-  };
-  std::vector<TaskIntervalVars> task_to_intervals;
-};
-
 // A relaxation of the CpModelProto as a set of independent scheduling problems
 // that are only potentially connected through the objective function.
 struct SchedulingRelaxation {
-  std::vector<SchedulingProblemAndMapping> problems_and_mappings;
+  std::vector<SchedulingProblem> problems;
 
   struct RelaxedObjective {
     // `var_in_problem_makespan` must match at least one of the
     // makespan_expr.var. If it matches the makespan_expr of several
-    // problems_and_mappings, one must pick the largest value to get the
+    // problems, one must pick the largest value to get the
     // objective value of the relaxation.
     std::vector<int> var_in_problem_makespan;
     std::vector<int64_t> coeff;
     int64_t offset;
   };
   RelaxedObjective relaxed_objective;
+
+  std::string ToString(const CpModelProto* model_proto = nullptr) const;
 };
 
 // Detects all the scheduling sub-problems in the model and returns a set of
@@ -232,6 +232,9 @@ CompactVectorVector<int> PartitionByIncomparability(
 CompactVectorVector<int> PartitionByIncomparabilityExact(
     const GraphForPartition& graph);
 bool ProbableSplitExists(const GraphForPartition& graph);
+
+std::vector<int> DetectRedundantCumulativeConstraints(
+    const CpModelProto& model_proto, const SchedulingProblem& structure);
 
 }  // namespace sat
 }  // namespace operations_research
