@@ -405,19 +405,16 @@ class LinearCoolingSchedule : public CoolingSchedule {
 
 // Returns a cooling schedule based on the given input parameters.
 std::unique_ptr<CoolingSchedule> MakeCoolingSchedule(
-    const Model& model, const SimulatedAnnealingAcceptanceStrategy& sa_params,
-    const NeighborAcceptanceCriterion::SearchState& final_search_state,
-    std::mt19937_64* absl_nonnull rnd) {
-  const auto [initial_temperature, final_temperature] =
-      GetSimulatedAnnealingTemperatures(model, sa_params, rnd);
-
-  switch (sa_params.cooling_schedule_strategy()) {
+    CoolingScheduleStrategy::Value strategy, double initial_value,
+    double final_value,
+    const NeighborAcceptanceCriterion::SearchState& final_search_state) {
+  switch (strategy) {
     case CoolingScheduleStrategy::EXPONENTIAL:
       return std::make_unique<ExponentialCoolingSchedule>(
-          final_search_state, initial_temperature, final_temperature);
+          final_search_state, initial_value, final_value);
     case CoolingScheduleStrategy::LINEAR:
       return std::make_unique<LinearCoolingSchedule>(
-          final_search_state, initial_temperature, final_temperature);
+          final_search_state, initial_value, final_value);
     default:
       LOG(DFATAL) << "Unsupported cooling schedule strategy.";
       return nullptr;
@@ -450,6 +447,50 @@ class SimulatedAnnealingAcceptanceCriterion
   std::unique_ptr<CoolingSchedule> cooling_schedule_;
   std::mt19937_64& rnd_;
   std::uniform_real_distribution<double> probability_distribution_;
+};
+
+// Threshold accepting deterministic annealing acceptance criterion.
+class ThresholdAcceptingDeterministicAnnealingAcceptanceCriterion
+    : public NeighborAcceptanceCriterion {
+ public:
+  explicit ThresholdAcceptingDeterministicAnnealingAcceptanceCriterion(
+      std::unique_ptr<CoolingSchedule> cooling_schedule)
+      : cooling_schedule_(std::move(cooling_schedule)) {}
+
+  bool Accept(const SearchState& search_state,
+              const Assignment* absl_nonnull candidate,
+              const Assignment* absl_nonnull reference) override {
+    double threshold = cooling_schedule_->GetTemperature(search_state);
+    return candidate->ObjectiveValue() - threshold <=
+           reference->ObjectiveValue();
+  }
+
+ private:
+  std::unique_ptr<CoolingSchedule> cooling_schedule_;
+};
+
+// Record-to-record travel deterministic annealing acceptance criterion.
+class RecordToRecordTravelDeterministicAnnealingAcceptanceCriterion
+    : public NeighborAcceptanceCriterion {
+ public:
+  explicit RecordToRecordTravelDeterministicAnnealingAcceptanceCriterion(
+      int64_t deviation, int64_t initial_record)
+      : deviation_(deviation), record_(initial_record) {}
+
+  bool Accept(
+      [[maybe_unused]] const SearchState& search_state,
+      const Assignment* absl_nonnull candidate,
+      [[maybe_unused]] const Assignment* absl_nonnull reference) override {
+    return candidate->ObjectiveValue() - deviation_ <= record_;
+  }
+
+  void OnBestSolutionFound(Assignment* absl_nonnull reference) override {
+    record_ = reference->ObjectiveValue();
+  }
+
+ private:
+  int64_t deviation_;
+  int64_t record_;
 };
 
 // Acceptance criterion in which a candidate assignment is accepted when it has
@@ -1179,8 +1220,9 @@ AdaptiveRandomWalkRemovalRuinProcedure::AdaptiveRandomWalkRemovalRuinProcedure(
       weakening_factor_(weakening_factor),
       random_choice_(0, 1) {
   // Initialize the walk lengths to a reasonable value.
+  const int num_visits = model->Size() - model->vehicles();
   const int base_walk_length =
-      std::ceil(std::log(model->Size() - model->vehicles()));
+      num_visits > 0 ? std::ceil(std::log(num_visits)) : 0;
   walk_lengths_.resize(model->Size(), base_walk_length);
 
   OnReferenceSolutionUpdated(reference_assignment);
@@ -1490,19 +1532,43 @@ std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
     IteratedLocalSearchEventManager* absl_nonnull event_manager,
     const AcceptanceStrategy& acceptance_strategy,
     const NeighborAcceptanceCriterion::SearchState& final_search_state,
-    std::mt19937_64* absl_nonnull rnd) {
+    std::mt19937_64* absl_nonnull rnd, int64_t initial_best_solution_cost) {
   std::unique_ptr<NeighborAcceptanceCriterion> criterion = nullptr;
 
   switch (acceptance_strategy.strategy_case()) {
-    case AcceptanceStrategy::kGreedyDescent:
+    case AcceptanceStrategy::kGreedyDescent: {
       criterion = std::make_unique<GreedyDescentAcceptanceCriterion>(
           acceptance_strategy.greedy_descent().late_acceptance_window());
       break;
-    case AcceptanceStrategy::kSimulatedAnnealing:
-      criterion = std::make_unique<SimulatedAnnealingAcceptanceCriterion>(
-          MakeCoolingSchedule(model, acceptance_strategy.simulated_annealing(),
-                              final_search_state, rnd),
-          rnd);
+      case AcceptanceStrategy::kSimulatedAnnealing:
+        const SimulatedAnnealingAcceptanceStrategy& sa_params =
+            acceptance_strategy.simulated_annealing();
+        const auto [initial_temperature, final_temperature] =
+            GetSimulatedAnnealingTemperatures(model, sa_params, rnd);
+        criterion = std::make_unique<SimulatedAnnealingAcceptanceCriterion>(
+            MakeCoolingSchedule(sa_params.cooling_schedule_strategy(),
+                                initial_temperature, final_temperature,
+                                final_search_state),
+            rnd);
+    } break;
+    case AcceptanceStrategy::kThresholdAcceptingDeterministicAnnealing:
+      criterion = std::make_unique<
+          ThresholdAcceptingDeterministicAnnealingAcceptanceCriterion>(
+          MakeCoolingSchedule(
+              acceptance_strategy.threshold_accepting_deterministic_annealing()
+                  .cooling_schedule_strategy(),
+              acceptance_strategy.threshold_accepting_deterministic_annealing()
+                  .initial_threshold(),
+              acceptance_strategy.threshold_accepting_deterministic_annealing()
+                  .final_threshold(),
+              final_search_state));
+      break;
+    case AcceptanceStrategy::kRecordToRecordTravelDeterministicAnnealing:
+      criterion = std::make_unique<
+          RecordToRecordTravelDeterministicAnnealingAcceptanceCriterion>(
+          acceptance_strategy.record_to_record_travel_deterministic_annealing()
+              .deviation(),
+          initial_best_solution_cost);
       break;
     case AcceptanceStrategy::kAllNodesPerformed:
       criterion = std::make_unique<AllNodesPerformedAcceptanceCriterion>(model);
@@ -1529,19 +1595,21 @@ std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
     IteratedLocalSearchEventManager* absl_nonnull event_manager,
     const AcceptancePolicy& acceptance_policy,
     const NeighborAcceptanceCriterion::SearchState& final_search_state,
-    std::mt19937_64* absl_nonnull rnd) {
+    std::mt19937_64* absl_nonnull rnd, int64_t initial_best_solution_cost) {
   // The composition rule is ignored if there is only one strategy.
   DCHECK_GE(acceptance_policy.strategies().size(), 1);
   if (acceptance_policy.strategies().size() == 1) {
-    return MakeNeighborAcceptanceCriterion(model, event_manager,
-                                           acceptance_policy.strategies(0),
-                                           final_search_state, rnd);
+    return MakeNeighborAcceptanceCriterion(
+        model, event_manager, acceptance_policy.strategies(0),
+        final_search_state, rnd, initial_best_solution_cost);
   }
 
   std::vector<std::unique_ptr<NeighborAcceptanceCriterion>> criteria;
+  criteria.reserve(acceptance_policy.strategies().size());
   for (const AcceptanceStrategy& strategy : acceptance_policy.strategies()) {
     criteria.push_back(MakeNeighborAcceptanceCriterion(
-        model, event_manager, strategy, final_search_state, rnd));
+        model, event_manager, strategy, final_search_state, rnd,
+        initial_best_solution_cost));
   }
 
   std::unique_ptr<NeighborAcceptanceCriterion> criterion = nullptr;

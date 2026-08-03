@@ -383,7 +383,7 @@ std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
     IteratedLocalSearchEventManager* absl_nonnull event_manager,
     const AcceptancePolicy& acceptance_policy,
     const NeighborAcceptanceCriterion::SearchState& final_search_state,
-    std::mt19937_64* absl_nonnull rnd);
+    std::mt19937_64* absl_nonnull rnd, int64_t initial_best_solution_cost);
 
 // Returns initial and final simulated annealing temperatures according to the
 // given simulated annealing input parameters.

@@ -3310,9 +3310,10 @@ bool LPCumulFilter::Accept(const Assignment* delta,
       status = mp_optimizer_.ComputeCumuls(next_accessor, {}, nullptr, nullptr,
                                            nullptr);
     }
-    DCHECK(status != DimensionSchedulingStatus::FEASIBLE)
+    LOG_IF(WARNING, status == DimensionSchedulingStatus::FEASIBLE)
         << "FEASIBLE without filtering objective cost should be OPTIMAL";
-    return status == DimensionSchedulingStatus::OPTIMAL;
+    return status == DimensionSchedulingStatus::OPTIMAL ||
+           status == DimensionSchedulingStatus::FEASIBLE;
   }
 
   DimensionSchedulingStatus status =
@@ -3538,8 +3539,12 @@ bool ResourceGroupAssignmentFilter::FinalizeAcceptPath(
         return false;
       }
     } else if (IsVarSynced(start)) {
-      DCHECK_EQ(vehicle_to_resource_class_assignment_costs_[v].size(), 1);
-      route_cost = vehicle_to_resource_class_assignment_costs_[v][0];
+      // Necessary to avoid b/533262519.
+      // TODO(user): Figure out the conditions under which this can happen.
+      if (!vehicle_to_resource_class_assignment_costs_[v].empty()) {
+        DCHECK_EQ(vehicle_to_resource_class_assignment_costs_[v].size(), 1);
+        route_cost = vehicle_to_resource_class_assignment_costs_[v][0];
+      }
     }
     CapAddTo(route_cost, &delta_cost_without_transit_);
     if (delta_cost_without_transit_ > objective_max) {
