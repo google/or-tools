@@ -1930,7 +1930,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
   // entries we process. We randomize the base_rows so that on the next calls
   // we do not do exactly the same if we can't process many base row.
   int64_t dtime_num_entries = 0;
-  std::shuffle(base_rows.begin(), base_rows.end(), random_);
+  StableShuffle(base_rows.begin(), base_rows.end(), random_);
 
   std::vector<double> weights;
   util_intops::StrongVector<RowIndex, bool> used_rows;

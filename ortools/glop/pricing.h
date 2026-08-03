@@ -23,6 +23,7 @@
 #include "absl/random/random.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/random_engine.h"
 #include "ortools/util/stats.h"
 
 namespace operations_research {
@@ -203,8 +204,8 @@ inline Index DynamicMaximum<Index>::RandomizeIfManyChoices(Index best) {
   equivalent_choices_.push_back(best);
   stats_.random_choices.Add(equivalent_choices_.size());
 
-  return equivalent_choices_[std::uniform_int_distribution<int>(
-      0, equivalent_choices_.size() - 1)(random_)];
+  return equivalent_choices_[
+      StableUniformIndex(random_, equivalent_choices_.size())];
 }
 
 template <typename Index>

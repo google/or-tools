@@ -2153,9 +2153,8 @@ void RevisedSimplex::ChooseLeavingVariableRow(
     // Break the ties randomly.
     if (!equivalent_leaving_choices_.empty()) {
       equivalent_leaving_choices_.push_back(*leaving_row);
-      *leaving_row =
-          equivalent_leaving_choices_[std::uniform_int_distribution<int>(
-              0, equivalent_leaving_choices_.size() - 1)(random_)];
+      *leaving_row = equivalent_leaving_choices_[
+          StableUniformIndex(random_, equivalent_leaving_choices_.size())];
     }
 
     // Since we took care of the bound-flip at the beginning, at this point
@@ -2897,7 +2896,7 @@ AbnormalityStatus RevisedSimplex::PrimalPolish(TimeLimit& time_limit) {
 
     // Pick a random one and remove it from the list.
     const int index =
-        std::uniform_int_distribution<int>(0, candidates.size() - 1)(random_);
+        static_cast<int>(StableUniformIndex(random_, candidates.size()));
     const ColIndex entering_col = candidates[index];
     std::swap(candidates[index], candidates.back());
     candidates.pop_back();
@@ -3050,7 +3049,7 @@ AbnormalityStatus RevisedSimplex::DualPolish(TimeLimit& time_limit) {
 
     // Pick a random one and remove it from the list.
     const int index =
-        std::uniform_int_distribution<int>(0, candidates.size() - 1)(random_);
+        static_cast<int>(StableUniformIndex(random_, candidates.size()));
     const RowIndex leaving_row = candidates[index];
     std::swap(candidates[index], candidates.back());
     candidates.pop_back();

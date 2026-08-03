@@ -3718,6 +3718,7 @@ cc_library(
         ":integer_base",
         ":util",
         "//ortools/lp_data:lp_types",
+        "//ortools/util:random_engine",
         "//ortools/util:strong_integers",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",

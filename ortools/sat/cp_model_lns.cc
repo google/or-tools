@@ -805,11 +805,10 @@ TimePartition PartitionIndicesAroundRandomTimeWindow(
   std::sort(start_end_indices.begin(), start_end_indices.end());
   const int relaxed_size = std::floor(difficulty * start_end_indices.size());
 
-  std::uniform_int_distribution<int> random_var(
-      0, start_end_indices.size() - relaxed_size - 1);
   // TODO(user): Consider relaxing more than one time window
   // intervals. This seems to help with Giza models.
-  const int random_start_index = random_var(random);
+  const int random_start_index = static_cast<int>(StableUniformIndex(
+      random, start_end_indices.size() - relaxed_size));
 
   // We want to minimize the time window relaxed, so we now sort the interval
   // after the first selected intervals by end value.
@@ -1579,7 +1578,7 @@ void GetRandomSubset(double relative_size, std::vector<T>* base,
 
   // TODO(user): we could generate this more efficiently than using random
   // shuffle.
-  std::shuffle(base->begin(), base->end(), random);
+  StableShuffle(base->begin(), base->end(), random);
   const int target_size = std::round(relative_size * base->size());
   base->resize(target_size);
 }
@@ -1612,7 +1611,7 @@ Neighborhood RelaxRandomConstraintsGenerator::Generate(
     for (int c = 0; c < num_active_constraints; ++c) {
       active_constraints[c] = c;
     }
-    std::shuffle(active_constraints.begin(), active_constraints.end(), random);
+    StableShuffle(active_constraints.begin(), active_constraints.end(), random);
 
     const int num_model_vars = helper_.ModelProto().variables_size();
     std::vector<bool> visited_variables_set(num_model_vars, false);
@@ -1692,7 +1691,7 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
       }
       // We always randomize to change the partial subgraph explored
       // afterwards.
-      std::shuffle(random_variables.begin(), random_variables.end(), random);
+      StableShuffle(random_variables.begin(), random_variables.end(), random);
       for (const int var : random_variables) {
         if (relaxed_variables.size() < target_size) {
           visited_variables.push_back(var);
@@ -1882,7 +1881,7 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
       random_variables.assign(
           helper_.ConstraintToVar()[constraint_index].begin(),
           helper_.ConstraintToVar()[constraint_index].end());
-      std::shuffle(random_variables.begin(), random_variables.end(), random);
+      StableShuffle(random_variables.begin(), random_variables.end(), random);
       for (const int var : random_variables) {
         if (visited_variables_set[var]) continue;
         visited_variables_set[var] = true;
@@ -3026,8 +3025,8 @@ Neighborhood RoutingFullPathNeighborhoodGenerator::Generate(
 
   // Relax all variables, if possible, of one random path.
   const int path_index = absl::Uniform<int>(random, 0, all_paths.size());
-  std::shuffle(all_paths[path_index].begin(), all_paths[path_index].end(),
-               random);
+  StableShuffle(all_paths[path_index].begin(), all_paths[path_index].end(),
+                random);
   while (relaxed_variables.size() < num_variables_to_relax &&
          !all_paths[path_index].empty()) {
     relaxed_variables.insert(all_paths[path_index].back());
@@ -3036,7 +3035,7 @@ Neighborhood RoutingFullPathNeighborhoodGenerator::Generate(
 
   // Relax more variables until the target is reached.
   if (relaxed_variables.size() < num_variables_to_relax) {
-    std::shuffle(all_path_variables.begin(), all_path_variables.end(), random);
+    StableShuffle(all_path_variables.begin(), all_path_variables.end(), random);
     while (relaxed_variables.size() < num_variables_to_relax) {
       relaxed_variables.insert(all_path_variables.back());
       all_path_variables.pop_back();

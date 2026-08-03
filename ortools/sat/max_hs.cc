@@ -110,7 +110,7 @@ SatSolver::Status HittingSetOptimizer::FindMultipleCoresForMaxHs(
 
     // The order of assumptions do not matter.
     // Randomizing it should improve diversity.
-    std::shuffle(assumptions.begin(), assumptions.end(), *random_);
+    StableShuffle(assumptions.begin(), assumptions.end(), *random_);
 
     const SatSolver::Status result =
         ResetAndSolveIntegerProblem(assumptions, model_);

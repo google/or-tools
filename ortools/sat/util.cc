@@ -829,7 +829,7 @@ class CliqueDecomposition {
     if (absl::Bernoulli(random_, 0.5)) {
       std::reverse(decomposition_.begin(), decomposition_.end());
     } else {
-      std::shuffle(decomposition_.begin(), decomposition_.end(), random_);
+      StableShuffle(decomposition_.begin(), decomposition_.end(), random_);
     }
 
     int out_index = 0;

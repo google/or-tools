@@ -109,10 +109,11 @@ ContinuousProber::ContinuousProber(const CpModelProto& model_proto,
                ShavingStats::kRateWindowSizeMax));
   int_shaving_.limit_update_frequency = ShavingStats::kUpdateFrequency;
 
-  std::shuffle(bool_vars_to_probe_.begin(), bool_vars_to_probe_.end(), random_);
-  std::shuffle(int_vars_to_probe_.begin(), int_vars_to_probe_.end(), random_);
-  std::shuffle(bool_vars_to_shave_.begin(), bool_vars_to_shave_.end(), random_);
-  std::shuffle(int_vars_to_shave_.begin(), int_vars_to_shave_.end(), random_);
+  StableShuffle(bool_vars_to_probe_.begin(), bool_vars_to_probe_.end(), random_);
+  StableShuffle(int_vars_to_probe_.begin(), int_vars_to_probe_.end(), random_);
+  StableShuffle(bool_vars_to_shave_.begin(), bool_vars_to_shave_.end(),
+                random_);
+  StableShuffle(int_vars_to_shave_.begin(), int_vars_to_shave_.end(), random_);
 
   CompactVectorVector<int, int> orbits;
   std::vector<int> var_to_orbit_index;
@@ -147,7 +148,7 @@ void ContinuousProber::CompactAndShuffleBooleanVariables(
     }
   }
   bool_vars.resize(new_size);
-  std::shuffle(bool_vars.begin(), bool_vars.end(), random_);
+  StableShuffle(bool_vars.begin(), bool_vars.end(), random_);
 }
 
 void ContinuousProber::CompactAndShuffleIntegerVariables(
@@ -159,7 +160,7 @@ void ContinuousProber::CompactAndShuffleIntegerVariables(
     }
   }
   int_vars.resize(new_size);
-  std::shuffle(int_vars.begin(), int_vars.end(), random_);
+  StableShuffle(int_vars.begin(), int_vars.end(), random_);
 }
 
 #define RETURN_IF_VALUE(fun)                                           \

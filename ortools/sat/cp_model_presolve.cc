@@ -4857,7 +4857,7 @@ void CpModelPresolver::FindBigAtMostOneAndLinearOverlap(
 
     // We will just greedily compute a big block with a random order.
     // TODO(user): We could sort by match with the full constraint instead.
-    std::shuffle(linear_cts.begin(), linear_cts.end(), context_->random());
+    StableShuffle(linear_cts.begin(), linear_cts.end(), context_->random());
     for (const int c : linear_cts) {
       const ConstraintProto& ct = context_->Constraint(c);
       const int num_terms = ct.linear().vars().size();
@@ -5076,7 +5076,7 @@ void CpModelPresolver::FindBigVerticalLinearOverlap(
 
     // For determinism.
     std::sort(linear_cts.begin(), linear_cts.end());
-    std::shuffle(linear_cts.begin(), linear_cts.end(), context_->random());
+    StableShuffle(linear_cts.begin(), linear_cts.end(), context_->random());
 
     // Now it is almost the same algo as for FindBigHorizontalLinearOverlap().
     // We greedily compute a "common" rectangle using the first constraint
@@ -6422,7 +6422,7 @@ void CpModelPresolver::PresolveToFixPoint() {
   // In September 2019, experiment on the flatzinc problems shows no changes in
   // the results. We should actually count the number of rules triggered.
   if (context_->params().permute_presolve_constraint_order()) {
-    std::shuffle(queue.begin(), queue.end(), context_->random());
+    StableShuffle(queue.begin(), queue.end(), context_->random());
   } else {
     if (queue.size() > context_->NumVariables()) {
       // We do a radix-sort if there are more constraints than variables, it can
@@ -7561,7 +7561,7 @@ void CpModelPresolver::MaybePermuteVariablesRandomly(
   const int n = postsolve_mapping_->size();
   std::vector<int> perm(n);
   std::iota(perm.begin(), perm.end(), 0);
-  std::shuffle(perm.begin(), perm.end(), context_->random());
+  StableShuffle(perm.begin(), perm.end(), context_->random());
   for (int i = 0; i < context_->NumVariables(); ++i) {
     if (mapping[i] != -1) mapping[i] = perm[mapping[i]];
   }

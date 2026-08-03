@@ -63,6 +63,7 @@ cc_library(
     deps = [
         "//ortools/lp_data:lp_types",
         "//ortools/util:bitset",
+        "//ortools/util:random_engine",
         "//ortools/util:stats",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
@@ -169,6 +170,7 @@ cc_library(
         ":update_row",
         ":variables_info",
         "//ortools/lp_data:lp_types",
+        "//ortools/util:random_engine",
         "//ortools/util:stats",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log",
@@ -219,6 +221,7 @@ cc_library(
         "//ortools/lp_data:scattered_vector",
         "//ortools/lp_data:sparse",
         "//ortools/util:bitset",
+        "//ortools/util:random_engine",
         "//ortools/util:stats",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",

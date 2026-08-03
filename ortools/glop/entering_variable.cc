@@ -27,6 +27,7 @@
 #include "ortools/glop/update_row.h"
 #include "ortools/glop/variables_info.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/util/random_engine.h"
 #include "ortools/util/stats.h"
 
 namespace operations_research {
@@ -216,9 +217,8 @@ ColIndex EnteringVariable::DualChooseEnteringColumn(
   // Break the ties randomly.
   if (!equivalent_entering_choices_.empty()) {
     equivalent_entering_choices_.push_back(entering_col);
-    entering_col =
-        equivalent_entering_choices_[std::uniform_int_distribution<int>(
-            0, equivalent_entering_choices_.size() - 1)(random_)];
+    entering_col = equivalent_entering_choices_[
+        StableUniformIndex(random_, equivalent_entering_choices_.size())];
     IF_STATS_ENABLED(
         stats_.num_perfect_ties.Add(equivalent_entering_choices_.size()));
   }

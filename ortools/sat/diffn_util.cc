@@ -407,7 +407,7 @@ absl::Span<int> FilterBoxesAndRandomize(
     boxes[new_size++] = b;
   }
   if (new_size == 0) return {};
-  std::shuffle(&boxes[0], &boxes[0] + new_size, random);
+  StableShuffle(&boxes[0], &boxes[0] + new_size, random);
   return {&boxes[0], new_size};
 }
 

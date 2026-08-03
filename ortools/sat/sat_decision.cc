@@ -231,7 +231,7 @@ void SatDecisionPolicy::FlipCurrentPolarity() {
 void SatDecisionPolicy::RandomizeCurrentPolarity() {
   const int num_variables = var_polarity_.size().value();
   for (BooleanVariable var; var < num_variables; ++var) {
-    var_polarity_.Set(var, std::uniform_int_distribution<int>(0, 1)(random_));
+    var_polarity_.Set(var, StableUniformIndex(random_, 2));
   }
 }
 
@@ -286,7 +286,7 @@ void SatDecisionPolicy::InitializeVariableOrdering() {
       std::reverse(tmp_variables_.begin(), tmp_variables_.end());
       break;
     case SatParameters::IN_RANDOM_ORDER:
-      std::shuffle(tmp_variables_.begin(), tmp_variables_.end(), random_);
+      StableShuffle(tmp_variables_.begin(), tmp_variables_.end(), random_);
       break;
   }
 
@@ -390,16 +390,14 @@ Literal SatDecisionPolicy::NextBranch() {
   // Choose the variable.
   BooleanVariable var;
   const double ratio = parameters_.random_branches_ratio();
-  auto zero_to_one = [this]() {
-    return std::uniform_real_distribution<double>()(random_);
-  };
+  auto zero_to_one = [this]() { return StableUniformDouble(random_); };
   if (ratio != 0.0 && zero_to_one() < ratio) {
     while (true) {
       // TODO(user): This may not be super efficient if almost all the
       // variables are assigned.
-      std::uniform_int_distribution<int> index_dist(0,
-                                                    var_ordering_.Size() - 1);
-      var = var_ordering_.QueueElement(index_dist(random_)).var;
+      const int index = static_cast<int>(
+          StableUniformIndex(random_, var_ordering_.Size()));
+      var = var_ordering_.QueueElement(index).var;
       if (!trail_.Assignment().VariableIsAssigned(var)) break;
       pq_need_update_for_var_at_trail_index_.Set(trail_.Info(var).trail_index);
       var_ordering_.Remove(var.value());
@@ -419,7 +417,7 @@ Literal SatDecisionPolicy::NextBranch() {
   // Choose its polarity (i.e. True of False).
   const double random_ratio = parameters_.random_polarity_ratio();
   if (random_ratio != 0.0 && zero_to_one() < random_ratio) {
-    return Literal(var, std::uniform_int_distribution<int>(0, 1)(random_));
+    return Literal(var, StableUniformIndex(random_, 2));
   }
 
   if (has_forced_polarity_[var]) return Literal(var, forced_polarity_[var]);

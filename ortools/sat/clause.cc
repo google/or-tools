@@ -3108,8 +3108,8 @@ BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
     // TODO(user): Prefer more fractional variables.
     const int max_graph_size = 1024;
     if (fractional_literals.size() > max_graph_size) {
-      std::shuffle(fractional_literals.begin(), fractional_literals.end(),
-                   random_);
+      StableShuffle(fractional_literals.begin(), fractional_literals.end(),
+                    random_);
       fractional_literals.resize(max_graph_size);
     }
 

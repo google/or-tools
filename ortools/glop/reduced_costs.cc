@@ -30,6 +30,7 @@
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/random_engine.h"
 #include "ortools/util/stats.h"
 
 namespace operations_research {
@@ -247,8 +248,7 @@ void ReducedCosts::PerturbCosts() {
   cost_perturbations_.AssignToZero(matrix_.num_cols());
   for (ColIndex col(0); col < structural_size; ++col) {
     const Fractional objective = objective_[col];
-    const Fractional magnitude =
-        (1.0 + std::uniform_real_distribution<double>()(random_)) *
+    const Fractional magnitude = (1.0 + StableUniformDouble(random_)) *
         (parameters_.relative_cost_perturbation() * std::abs(objective) +
          parameters_.relative_max_cost_perturbation() * max_cost_magnitude);
     DCHECK_GE(magnitude, 0.0);
