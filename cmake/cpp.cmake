@@ -337,7 +337,7 @@ function(ortools_cxx_library)
   )
   if(NOT LIBRARY_NO_INSTALL)
     install(TARGETS ${LIBRARY_NAME}
-      EXPORT ortoolsTargets
+      EXPORT ${PROJECT_NAME}Targets
       INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -418,7 +418,7 @@ function(ortools_cxx_binary)
   endif()
   if(NOT BINARY_NO_INSTALL)
     install(TARGETS ${BINARY_NAME}
-      EXPORT ortoolsTargets
+      EXPORT ${PROJECT_NAME}Targets
       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
   endif()
