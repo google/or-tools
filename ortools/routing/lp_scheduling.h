@@ -432,12 +432,10 @@ class GlopWrapper : public LinearSolverWrapper {
     return DimensionSchedulingStatus::OPTIMAL;
   }
   int64_t GetObjectiveValue() const override {
-    return MathUtil::Round<int64_t>(lp_solver_.GetObjectiveValue());
+    return CappedRound(lp_solver_.GetObjectiveValue());
   }
   int64_t GetVariableValue(int index) const override {
-    const double value_double = GetValueDouble(glop::ColIndex(index));
-    return (value_double >= kint64max) ? kint64max
-                                       : MathUtil::Round<int64_t>(value_double);
+    return CappedRound(GetValueDouble(glop::ColIndex(index)));
   }
   bool SolutionIsInteger() const override {
     return linear_program_.SolutionIsInteger(lp_solver_.variable_values(),
@@ -458,6 +456,9 @@ class GlopWrapper : public LinearSolverWrapper {
  private:
   double GetValueDouble(glop::ColIndex index) const {
     return lp_solver_.variable_values()[index];
+  }
+  int64_t CappedRound(double value) const {
+    return (value >= kint64max) ? kint64max : MathUtil::Round<int64_t>(value);
   }
 
   const bool is_relaxation_;

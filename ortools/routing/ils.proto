@@ -342,6 +342,30 @@ message SimulatedAnnealingAcceptanceStrategy {
   bool automatic_temperatures = 4 [default = false];
 }
 
+// Acceptance strategy in which a candidate solution is accepted if the
+// difference between its cost and the current reference solution cost is less
+// than a threshold. The threshold decreases as the search progresses according
+// to a cooling schedule strategy.
+message ThresholdAcceptingDeterministicAnnealingAcceptanceStrategy {
+  // Determines the speed at which the threshold changes from initial to final.
+  CoolingScheduleStrategy.Value cooling_schedule_strategy = 1
+      [default = EXPONENTIAL];
+
+  // The initial threshold. See CoolingScheduleStrategy for its usage.
+  double initial_threshold = 2 [default = 100.0];
+
+  // The final threshold. See CoolingScheduleStrategy for its usage.
+  double final_threshold = 3 [default = 0.01];
+}
+
+// We call `record` the cost of the best solution found so far. A candidate
+// solution is accepted if its cost is no more than `record + deviation`.
+message RecordToRecordTravelDeterministicAnnealingAcceptanceStrategy {
+  // Defines the increase in cost allowed with respect to the best found
+  // solution.
+  int64 deviation = 1 [default = 100];
+}
+
 // Acceptance strategy in which a solution is accepted only if all nodes
 // are performed. Disjunctions are respected when several nodes can be
 // performed.
@@ -383,6 +407,10 @@ message AcceptanceStrategy {
     AllNodesPerformedAcceptanceStrategy all_nodes_performed = 3;
     MoreNodesPerformedAcceptanceStrategy more_nodes_performed = 4;
     AbsencesBasedAcceptanceStrategy absences_based = 5;
+    ThresholdAcceptingDeterministicAnnealingAcceptanceStrategy
+        threshold_accepting_deterministic_annealing = 6;
+    RecordToRecordTravelDeterministicAnnealingAcceptanceStrategy
+        record_to_record_travel_deterministic_annealing = 7;
   }
 }
 

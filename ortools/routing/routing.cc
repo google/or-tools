@@ -3886,6 +3886,8 @@ const Assignment* Model::SolveWithIteratedLocalSearch(
   DecisionBuilder* perturbation_db = MakePerturbationDecisionBuilder(
       parameters, this, &event_manager, &rnd, last_accepted_solution,
       [this]() { return CheckLimit(time_buffer_); }, filter_manager);
+  perturbation_db =
+      solver_->Compose(perturbation_db, CreateSolutionFinalizer(parameters));
 
   // TODO(user): This lambda can probably be refactored into a function as a
   // similar version in used in another place.
@@ -3921,13 +3923,13 @@ const Assignment* Model::SolveWithIteratedLocalSearch(
       MakeNeighborAcceptanceCriterion(
           *this, &event_manager,
           ils_parameters.reference_solution_acceptance_policy(),
-          final_search_state, &rnd);
+          final_search_state, &rnd, best_solution->ObjectiveValue());
 
   std::unique_ptr<NeighborAcceptanceCriterion> best_acceptance_criterion =
       MakeNeighborAcceptanceCriterion(
           *this, &event_manager,
           ils_parameters.best_solution_acceptance_policy(), final_search_state,
-          &rnd);
+          &rnd, best_solution->ObjectiveValue());
 
   const bool improve_perturbed_solution =
       ils_parameters.improve_perturbed_solution();
@@ -3963,6 +3965,8 @@ const Assignment* Model::SolveWithIteratedLocalSearch(
     if (best_acceptance_criterion->Accept({elapsed_time, explored_solutions},
                                           neighbor_solution, best_solution)) {
       best_solution->CopyIntersection(neighbor_solution);
+      reference_acceptance_criterion->OnBestSolutionFound(best_solution);
+      best_acceptance_criterion->OnBestSolutionFound(best_solution);
     }
 
     if (reference_acceptance_criterion->Accept(

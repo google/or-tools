@@ -617,6 +617,50 @@ std::vector<std::string> FindErrorsInIteratedLocalSearchParameters(
           }
           break;
         }
+        case AcceptanceStrategy::kThresholdAcceptingDeterministicAnnealing: {
+          const std::string ta_prefix =
+              StrCat("`", name,
+                     "_acceptance_policy.strategies.threshold_accepting_"
+                     "deterministic_annealing.");
+          const ThresholdAcceptingDeterministicAnnealingAcceptanceStrategy&
+              ta_params = acceptance_strategy
+                              .threshold_accepting_deterministic_annealing();
+
+          if (ta_params.cooling_schedule_strategy() ==
+              CoolingScheduleStrategy::UNSET) {
+            errors.emplace_back(StrCat(
+                "Invalid value for ", ta_prefix, "cooling_schedule_strategy`: ",
+                CoolingScheduleStrategy::Value_Name(
+                    ta_params.cooling_schedule_strategy())));
+          }
+
+          if (!(ta_params.initial_threshold() >= ta_params.final_threshold())) {
+            errors.emplace_back(
+                StrCat(ta_prefix, "initial_threshold` cannot be lower than ",
+                       ta_prefix, "final_threshold`."));
+          }
+
+          if (!(ta_params.final_threshold() >= 0.0)) {
+            errors.emplace_back(
+                StrCat(ta_prefix, "final_threshold` cannot be negative."));
+          }
+          break;
+        }
+        case AcceptanceStrategy::kRecordToRecordTravelDeterministicAnnealing: {
+          const std::string rt_prefix =
+              StrCat("`", name,
+                     "_acceptance_policy.strategies.record_to_record_travel_"
+                     "deterministic_annealing.");
+          const RecordToRecordTravelDeterministicAnnealingAcceptanceStrategy&
+              rt_params =
+                  acceptance_strategy
+                      .record_to_record_travel_deterministic_annealing();
+          if (rt_params.deviation() < 0) {
+            errors.emplace_back(
+                StrCat(rt_prefix, "deviation` cannot be negative."));
+          }
+          break;
+        }
         case AcceptanceStrategy::kGreedyDescent:
         case AcceptanceStrategy::kAllNodesPerformed:
         case AcceptanceStrategy::kMoreNodesPerformed:

@@ -24,7 +24,6 @@
 #include <cstdlib>
 #include <deque>
 #include <functional>
-#include <limits>
 #include <map>
 #include <memory>
 #include <optional>
@@ -35,6 +34,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/attributes.h"
 #include "absl/base/nullability.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
@@ -56,6 +56,7 @@
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/reversible_data.h"
 #include "ortools/graph/christofides.h"
 #include "ortools/routing/enums.pb.h"
 #include "ortools/routing/heuristic_parameters.pb.h"
@@ -1425,11 +1426,15 @@ class GlobalCheapestInsertionFilteredHeuristic::NodeEntryQueue {
       return std::tie(insert_after, node_to_insert, vehicle) <
              std::tie(other.insert_after, other.node_to_insert, other.vehicle);
     }
+    // Fields ordered for cache-friendly comparisons without padding waste.
+    // bucket and value are compared first in operator<, followed by vehicle.
+    // Layout: value(8) + bucket(4)+vehicle(4) + node_to_insert(8) +
+    //         insert_after(8) = 32 bytes, no padding.
     int64_t value;
+    int bucket;
+    int vehicle;
     int64_t node_to_insert;
     int64_t insert_after;
-    int vehicle;
-    int bucket;
   };
 
   explicit NodeEntryQueue(int num_nodes)
@@ -1480,7 +1485,7 @@ class GlobalCheapestInsertionFilteredHeuristic::NodeEntryQueue {
   void PushInsertion(int64_t node, int64_t insert_after, int vehicle,
                      int bucket, int64_t value) {
     entries_[insert_after].entries.push_back(
-        {value, node, insert_after, vehicle, bucket});
+        {value, bucket, vehicle, node, insert_after});
     touched_entries_.Set(insert_after);
   }
 
@@ -4387,11 +4392,11 @@ bool SavingsFilteredHeuristic::ComputeSavings() {
         costed_after_nodes.resize(saving_neighbors);
       }
       adjacency_lists[before_node].resize(costed_after_nodes.size());
-      std::transform(costed_after_nodes.begin(), costed_after_nodes.end(),
-                     adjacency_lists[before_node].begin(),
-                     [](std::pair<int64_t, int64_t> cost_and_node) {
-                       return cost_and_node.second;
-                     });
+      absl::c_transform(costed_after_nodes,
+                        adjacency_lists[before_node].begin(),
+                        [](std::pair<int64_t, int64_t> cost_and_node) {
+                          return cost_and_node.second;
+                        });
     }
     if (savings_params_.add_reverse_arcs()) {
       AddSymmetricArcsToAdjacencyLists(&adjacency_lists);
