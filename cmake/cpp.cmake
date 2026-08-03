@@ -563,7 +563,18 @@ function(generate_proto_library)
     ${PROJECT_BINARY_DIR}
     #$<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_INCLUDE_DIRECTORIES>
   )
-  target_compile_definitions(${PROTO_NAME}_proto PUBLIC ${OR_TOOLS_COMPILE_DEFINITIONS})
+  # OR_TOOLS_COMPILE_DEFINITIONS contains the import definition used by
+  # consumers of the generated proto library. Do not also pass it when
+  # compiling the proto objects themselves: MSVC otherwise sees both
+  # dllimport and dllexport, with dllimport winning because of command-line
+  # ordering, and rejects definitions of generated static data members.
+  set(PROTO_COMPILE_DEFINITIONS ${OR_TOOLS_COMPILE_DEFINITIONS})
+  if(MSVC AND BUILD_SHARED_LIBS)
+    list(FILTER PROTO_COMPILE_DEFINITIONS EXCLUDE REGEX
+         "^OR_${PROTO_UPPER_NAME}_PROTO_DLL=")
+  endif()
+  target_compile_definitions(${PROTO_NAME}_proto PUBLIC
+                             ${PROTO_COMPILE_DEFINITIONS})
   if(MSVC AND BUILD_SHARED_LIBS)
    target_compile_definitions(${PROTO_NAME}_proto INTERFACE "OR_${PROTO_UPPER_NAME}_PROTO_DLL=__declspec(dllimport)")
    target_compile_definitions(${PROTO_NAME}_proto PRIVATE "OR_${PROTO_UPPER_NAME}_PROTO_DLL=__declspec(dllexport)")
