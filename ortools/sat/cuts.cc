@@ -2192,10 +2192,9 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(AffineExpression z,
 LinearConstraint ComputeHyperplanAboveSquare(AffineExpression x,
                                              AffineExpression square,
                                              IntegerValue x_lb,
-                                             IntegerValue x_ub, Model* model) {
+                                             IntegerValue x_ub) {
   const IntegerValue above_slope = x_ub + x_lb;
-  LinearConstraintBuilder above_hyperplan(model, kMinIntegerValue,
-                                          -x_lb * x_ub);
+  LinearConstraintBuilder above_hyperplan(kMinIntegerValue, -x_lb * x_ub);
   above_hyperplan.AddTerm(square, 1);
   above_hyperplan.AddTerm(x, -above_slope);
   return above_hyperplan.Build();
@@ -2203,10 +2202,9 @@ LinearConstraint ComputeHyperplanAboveSquare(AffineExpression x,
 
 LinearConstraint ComputeHyperplanBelowSquare(AffineExpression x,
                                              AffineExpression square,
-                                             IntegerValue x_value,
-                                             Model* model) {
+                                             IntegerValue x_value) {
   const IntegerValue below_slope = 2 * x_value + 1;
-  LinearConstraintBuilder below_hyperplan(model, -x_value - x_value * x_value,
+  LinearConstraintBuilder below_hyperplan(-x_value - x_value * x_value,
                                           kMaxIntegerValue);
   below_hyperplan.AddTerm(square, 1);
   below_hyperplan.AddTerm(x, -below_slope);
@@ -2228,20 +2226,18 @@ CutGenerator CreateSquareCutGenerator(AffineExpression y, AffineExpression x,
     }
     const IntegerValue x_ub = integer_trail->LevelZeroUpperBound(x);
     const IntegerValue x_lb = integer_trail->LevelZeroLowerBound(x);
-    DCHECK_GE(x_lb, 0);
-
     if (x_lb == x_ub) return true;
 
     // Check for potential overflows.
     if (x_ub > (int64_t{1} << 31)) return true;
-    DCHECK_GE(x_lb, 0);
-    manager->AddCut(ComputeHyperplanAboveSquare(x, y, x_lb, x_ub, model),
+    if (x_lb < -(int64_t{1} << 31)) return true;
+
+    manager->AddCut(ComputeHyperplanAboveSquare(x, y, x_lb, x_ub),
                     "SquareUpper");
 
     const IntegerValue x_floor =
         static_cast<int64_t>(std::floor(x.LpValue(manager->LpValues())));
-    manager->AddCut(ComputeHyperplanBelowSquare(x, y, x_floor, model),
-                    "SquareLower");
+    manager->AddCut(ComputeHyperplanBelowSquare(x, y, x_floor), "SquareLower");
     return true;
   };
 
@@ -2585,14 +2581,14 @@ void SumOfAllDiffLowerBounder::Add(const AffineExpression& expr, int num_exprs,
     if (expr.coeff > 0) {
       int count = 0;
       for (const IntegerValue value :
-           integer_trail.InitialVariableDomain(expr.var).Values()) {
+           integer_trail.LevelZeroDomain(expr.var).Values()) {
         min_values_.insert(expr.ValueAt(value));
         if (++count >= num_exprs) break;
       }
     } else {
       int count = 0;
       for (const IntegerValue value :
-           integer_trail.InitialVariableDomain(expr.var).Negation().Values()) {
+           integer_trail.LevelZeroDomain(expr.var).Negation().Values()) {
         min_values_.insert(-expr.ValueAt(value));
         if (++count >= num_exprs) break;
       }
@@ -2642,6 +2638,9 @@ void TryToGenerateAllDiffCut(
     TopNCuts& top_n_cuts, Model* model) {
   const int num_exprs = sorted_exprs_lp.size();
 
+  // TODO(user): check if it is worth to compute the best possible
+  // required_min_sum/required_max_sum for small number of variables using
+  // SimpleMinCostFlow to match variables with domain values.
   std::vector<AffineExpression> current_set_exprs;
   SumOfAllDiffLowerBounder diff_mins;
   SumOfAllDiffLowerBounder negated_diff_maxes;
@@ -2661,8 +2660,18 @@ void TryToGenerateAllDiffCut(
     std::string max_suffix;
     const IntegerValue required_max_sum =
         -negated_diff_maxes.GetBestLowerBound(max_suffix);
-    if (required_max_sum == std::numeric_limits<IntegerValue>::max()) continue;
-    DCHECK_LE(required_min_sum, required_max_sum);
+    if (required_max_sum >= kMaxIntegerValue ||
+        required_min_sum <= kMinIntegerValue) {
+      continue;
+    }
+    if (required_min_sum > required_max_sum) {
+      // This can happen for infeasible problems. For example, if we have three
+      // boolean variables b1, b2, b3 and v with a domain [0,2][10], we will
+      // have:
+      // required_min_sum = max(0 + 1 + 2 + 3, 0 + 1 + 2 + 10) = 13
+      // required_max_sum = min(10 + 1 + 0 - 1, 10 + 2 + 1 + 0) = 10
+      continue;
+    }
     if (sum < ToDouble(required_min_sum) - kMinCutViolation ||
         sum > ToDouble(required_max_sum) + kMinCutViolation) {
       LinearConstraintBuilder cut(model, required_min_sum, required_max_sum);

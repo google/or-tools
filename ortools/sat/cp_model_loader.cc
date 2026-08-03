@@ -715,9 +715,7 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
       if (encoding.size() < exo_proto_literals.size()) {
         VLOG(2) << "X" << var.value() << " has " << encoding.size()
                 << " implied values, and a domain of size "
-                << m->GetOrCreate<IntegerTrail>()
-                       ->InitialVariableDomain(var)
-                       .Size();
+                << m->GetOrCreate<IntegerTrail>()->LevelZeroDomain(var).Size();
         continue;
       }
 
@@ -1415,10 +1413,9 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
         ct.linear().domain(0) != min_sum && ct.linear().domain(0) != max_sum &&
         encoder->VariableIsFullyEncoded(vars[0]) &&
         encoder->VariableIsFullyEncoded(vars[1])) {
-      VLOG(3) << "Load AC version of " << ct << ", var0 domain = "
-              << integer_trail->InitialVariableDomain(vars[0])
-              << ", var1 domain = "
-              << integer_trail->InitialVariableDomain(vars[1]);
+      VLOG(3) << "Load AC version of " << ct
+              << ", var0 domain = " << integer_trail->LevelZeroDomain(vars[0])
+              << ", var1 domain = " << integer_trail->LevelZeroDomain(vars[1]);
       return LoadEquivalenceAC(mapping->Literals(ct.enforcement_literal()),
                                IntegerValue(coeffs[0]), vars[0],
                                IntegerValue(coeffs[1]), vars[1],
@@ -1431,10 +1428,9 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
         single_value != min_sum && single_value != max_sum &&
         encoder->VariableIsFullyEncoded(vars[0]) &&
         encoder->VariableIsFullyEncoded(vars[1])) {
-      VLOG(3) << "Load NAC version of " << ct << ", var0 domain = "
-              << integer_trail->InitialVariableDomain(vars[0])
-              << ", var1 domain = "
-              << integer_trail->InitialVariableDomain(vars[1])
+      VLOG(3) << "Load NAC version of " << ct
+              << ", var0 domain = " << integer_trail->LevelZeroDomain(vars[0])
+              << ", var1 domain = " << integer_trail->LevelZeroDomain(vars[1])
               << ", value = " << single_value;
       return LoadEquivalenceNeqAC(mapping->Literals(ct.enforcement_literal()),
                                   IntegerValue(coeffs[0]), vars[0],

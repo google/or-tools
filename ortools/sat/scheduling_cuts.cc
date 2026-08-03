@@ -305,12 +305,11 @@ std::vector<int64_t> FindPossibleDemands(const EnergyEvent& event,
       possible_demands.push_back(
           integer_trail->FixedValue(event.demand).value());
     } else {
-      if (integer_trail->InitialVariableDomain(event.demand.var).Size() >
-          1000000) {
+      if (integer_trail->LevelZeroDomain(event.demand.var).Size() > 1000000) {
         return {};
       }
       for (const int64_t var_value :
-           integer_trail->InitialVariableDomain(event.demand.var).Values()) {
+           integer_trail->LevelZeroDomain(event.demand.var).Values()) {
         possible_demands.push_back(event.demand.ValueAt(var_value).value());
       }
     }

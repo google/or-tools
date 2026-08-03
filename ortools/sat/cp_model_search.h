@@ -101,7 +101,7 @@ void ConstructFixedSearchStrategy(SearchHeuristics* h, Model* model);
 std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
     const CpModelProto& cp_model_proto,
     absl::Span<const IntegerVariable> variable_mapping,
-    std::function<BooleanOrIntegerLiteral()> instrumented_strategy,
+    const std::function<BooleanOrIntegerLiteral()>& instrumented_strategy,
     Model* model);
 
 // Returns all the named set of parameters known to the solver. This include our

@@ -439,7 +439,10 @@ class FixedModuloPropagator : public PropagatorInterface {
 };
 
 // Propagates x * x = s.
-// TODO(user): Only works for x nonnegative.
+//
+// Note that contrary to the ProductPropagator, this one will always propagate
+// the bounds as tightly as possible. In particular, it will always make sure
+// that s is in [a * a, b * b] with proper squares as bounds.
 class SquarePropagator : public PropagatorInterface {
  public:
   SquarePropagator(absl::Span<const Literal> enforcement_literals,
@@ -559,17 +562,8 @@ inline void AddWeightedSumLowerOrEqual(
   }
 
   if (params.new_linear_propagation()) {
-    const bool ok = model->GetOrCreate<LinearPropagator>()->AddConstraint(
+    model->GetOrCreate<LinearPropagator>()->AddConstraint(
         enforcement_literals, vars, coefficients, IntegerValue(upper_bound));
-    if (!ok) {
-      auto* sat_solver = model->GetOrCreate<SatSolver>();
-      if (sat_solver->CurrentDecisionLevel() == 0) {
-        sat_solver->NotifyThatModelIsUnsat();
-      } else {
-        LOG(FATAL) << "We currently do not support adding conflicting "
-                      "constraint at positive level.";
-      }
-    }
   } else {
     IntegerSumLE* constraint =
         new IntegerSumLE(enforcement_literals, vars, coefficients,
@@ -765,22 +759,15 @@ inline void AddIsEqualToMinOf(
 }
 
 // Adds the constraint: a * b = p.
+// Note that we have a special case when a == b (i.e. square propagator).
 inline void AddProductConstraint(absl::Span<const Literal> enforcement_literals,
                                  AffineExpression a, AffineExpression b,
                                  AffineExpression p, Model* model) {
-  const IntegerTrail& integer_trail = *model->GetOrCreate<IntegerTrail>();
   // TODO(user): return early if constraint is never enforced.
   if (a == b) {
-    if (integer_trail.LowerBound(a) >= 0) {
-      model->TakeOwnership(
-          new SquarePropagator(enforcement_literals, a, p, model));
-      return;
-    }
-    if (integer_trail.UpperBound(a) <= 0) {
-      model->TakeOwnership(
-          new SquarePropagator(enforcement_literals, a.Negated(), p, model));
-      return;
-    }
+    model->TakeOwnership(
+        new SquarePropagator(enforcement_literals, a, p, model));
+    return;
   }
   model->TakeOwnership(
       new ProductPropagator(enforcement_literals, a, b, p, model));

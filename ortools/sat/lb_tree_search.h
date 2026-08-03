@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"

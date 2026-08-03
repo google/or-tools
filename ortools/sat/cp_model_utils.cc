@@ -1211,5 +1211,15 @@ bool IsAffineIntAbs(const ConstraintProto& ct) {
   return left_coeff == -right_coeff;
 }
 
+AffineExpr GetAffineExpr(const LinearExpressionProto& expr) {
+  CHECK_LE(expr.vars_size(), 1);
+  if (expr.vars().empty()) {
+    return AffineExpr{.var = -1, .coeff = 0, .offset = expr.offset()};
+  }
+  const int64_t coeff = expr.coeffs().empty() ? 1 : expr.coeffs(0);
+  return AffineExpr{
+      .var = expr.vars(0), .coeff = coeff, .offset = expr.offset()};
+}
+
 }  // namespace sat
 }  // namespace operations_research

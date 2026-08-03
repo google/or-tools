@@ -17,7 +17,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <limits>
 #include <numeric>
 #include <utility>
 #include <vector>
@@ -1246,18 +1245,32 @@ SquarePropagator::SquarePropagator(
   GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
   enforcement_id_ = enforcement_helper_.Register(enforcement_literals, watcher,
                                                  RegisterWith(watcher));
-  CHECK_GE(integer_trail_.LevelZeroLowerBound(x), 0);
 }
 
 // Propagation from x to s: s in [min_x * min_x, max_x * max_x].
 // Propagation from s to x: x in [ceil(sqrt(min_s)), floor(sqrt(max_s))].
 bool SquarePropagator::Propagate() {
   const IntegerValue min_x = integer_trail_.LowerBound(x_);
-  const IntegerValue min_s = integer_trail_.LowerBound(s_);
-  const IntegerValue min_x_square = CapProdI(min_x, min_x);
   const IntegerValue max_x = integer_trail_.UpperBound(x_);
+
+  // If x can change sign, min_x_square is zero and we don't need a reason.
+  // Otherwise it depends on the sign.
+  IntegerValue min_x_square(0);
+  IntegerLiteral min_x_square_reason = IntegerLiteral::TrueLiteral();
+  if (min_x > 0) {
+    min_x_square = CapProdI(min_x, min_x);
+    min_x_square_reason = x_.GreaterOrEqual(min_x);
+  } else if (max_x < 0) {
+    min_x_square = CapProdI(max_x, max_x);
+    min_x_square_reason = x_.LowerOrEqual(max_x);
+  }
+
+  const IntegerValue max_x_magnitude =
+      std::max(IntTypeAbs(max_x), IntTypeAbs(min_x));
+  const IntegerValue max_x_square = CapProdI(max_x_magnitude, max_x_magnitude);
+
+  const IntegerValue min_s = integer_trail_.LowerBound(s_);
   const IntegerValue max_s = integer_trail_.UpperBound(s_);
-  const IntegerValue max_x_square = CapProdI(max_x, max_x);
 
   const EnforcementStatus status = enforcement_helper_.Status(enforcement_id_);
   if (status == EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT) {
@@ -1267,45 +1280,96 @@ bool SquarePropagator::Propagate() {
       return enforcement_helper_.PropagateWhenFalse(
           enforcement_id_,
           /*literal_reason=*/{},
-          {x_.GreaterOrEqual(min_x), s_.LowerOrEqual(min_x_square - 1)});
+          {min_x_square_reason, s_.LowerOrEqual(min_x_square - 1)});
     }
     if (min_s > max_x_square) {
       return enforcement_helper_.PropagateWhenFalse(
           enforcement_id_,
           /*literal_reason=*/{},
-          {x_.LowerOrEqual(max_x), s_.GreaterOrEqual(max_x_square + 1)});
+          {x_.LowerOrEqual(max_x_magnitude),
+           x_.GreaterOrEqual(-max_x_magnitude),
+           s_.GreaterOrEqual(max_x_square + 1)});
     }
     // Otherwise we cannot propagate anything since the enforcement is unknown.
     return true;
   }
 
   if (status != EnforcementStatus::IS_ENFORCED) return true;
+
+  // We can always make sure the lower bound of s is a proper square.
+  if (min_s > 0) {
+    const IntegerValue new_x_min(CeilSquareRoot(min_s.value()));
+    const IntegerValue proper_s_min = new_x_min * new_x_min;
+    if (proper_s_min > min_s) {
+      if (!enforcement_helper_.SafeEnqueue(enforcement_id_,
+                                           s_.GreaterOrEqual(proper_s_min),
+                                           {s_.GreaterOrEqual(min_s)})) {
+        return false;
+      }
+    }
+  }
+
+  // Same for the upper bound of s.
+  if (max_s > 0) {
+    const IntegerValue new_x_max(FloorSquareRoot(max_s.value()));
+    const IntegerValue proper_s_max = new_x_max * new_x_max;
+    if (proper_s_max < max_s) {
+      if (!enforcement_helper_.SafeEnqueue(enforcement_id_,
+                                           s_.LowerOrEqual(proper_s_max),
+                                           {s_.LowerOrEqual(max_s)})) {
+        return false;
+      }
+    }
+  }
+
   if (min_x_square > min_s) {
     if (!enforcement_helper_.SafeEnqueue(enforcement_id_,
                                          s_.GreaterOrEqual(min_x_square),
-                                         {x_.GreaterOrEqual(min_x)})) {
+                                         {min_x_square_reason})) {
       return false;
     }
   } else if (min_x_square < min_s) {
-    const IntegerValue new_min(CeilSquareRoot(min_s.value()));
-    if (!enforcement_helper_.SafeEnqueue(
-            enforcement_id_, x_.GreaterOrEqual(new_min),
-            {s_.GreaterOrEqual((new_min - 1) * (new_min - 1) + 1)})) {
-      return false;
+    const IntegerValue new_x_min(CeilSquareRoot(min_s.value()));
+    if (min_x > -new_x_min) {
+      if (!enforcement_helper_.SafeEnqueue(
+              enforcement_id_, x_.GreaterOrEqual(new_x_min),
+              {x_.GreaterOrEqual(-new_x_min + 1),
+               s_.GreaterOrEqual((new_x_min - 1) * (new_x_min - 1) + 1)})) {
+        return false;
+      }
+    }
+    if (max_x < new_x_min) {
+      if (!enforcement_helper_.SafeEnqueue(
+              enforcement_id_, x_.LowerOrEqual(-new_x_min),
+              {x_.LowerOrEqual(new_x_min - 1),
+               s_.GreaterOrEqual((new_x_min - 1) * (new_x_min - 1) + 1)})) {
+        return false;
+      }
     }
   }
+
   if (max_x_square < max_s) {
-    if (!enforcement_helper_.SafeEnqueue(enforcement_id_,
-                                         s_.LowerOrEqual(max_x_square),
-                                         {x_.LowerOrEqual(max_x)})) {
+    if (!enforcement_helper_.SafeEnqueue(
+            enforcement_id_, s_.LowerOrEqual(max_x_square),
+            {x_.LowerOrEqual(max_x_magnitude),
+             x_.GreaterOrEqual(-max_x_magnitude)})) {
       return false;
     }
   } else if (max_x_square > max_s) {
-    const IntegerValue new_max(FloorSquareRoot(max_s.value()));
-    if (!enforcement_helper_.SafeEnqueue(
-            enforcement_id_, x_.LowerOrEqual(new_max),
-            {s_.LowerOrEqual(CapProdI(new_max + 1, new_max + 1) - 1)})) {
-      return false;
+    const IntegerValue new_x_max(FloorSquareRoot(max_s.value()));
+    if (max_x > new_x_max) {
+      if (!enforcement_helper_.SafeEnqueue(
+              enforcement_id_, x_.LowerOrEqual(new_x_max),
+              {s_.LowerOrEqual(CapProdI(new_x_max + 1, new_x_max + 1) - 1)})) {
+        return false;
+      }
+    }
+    if (min_x < -new_x_max) {
+      if (!enforcement_helper_.SafeEnqueue(
+              enforcement_id_, x_.GreaterOrEqual(-new_x_max),
+              {s_.LowerOrEqual(CapProdI(new_x_max + 1, new_x_max + 1) - 1)})) {
+        return false;
+      }
     }
   }
 

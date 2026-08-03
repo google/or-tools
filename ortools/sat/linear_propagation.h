@@ -247,11 +247,11 @@ class LinearPropagator : public PropagatorInterface,
 
   std::string LazyReasonName() const override { return "LinearPropagator"; }
 
-  // Adds a new constraint to the propagator.
-  // We support adding constraint at a positive level:
-  //  - This will push new propagation right away.
-  //  - This will returns false if the constraint is currently a conflict.
-  bool AddConstraint(absl::Span<const Literal> enforcement_literals,
+  // Adds a new constraint to the propagator. We support adding constraint at a
+  // positive level. Note that this will not trigger any propagation.
+  //
+  // You can call Propagate() after loading the constraint if needed.
+  void AddConstraint(absl::Span<const Literal> enforcement_literals,
                      absl::Span<const IntegerVariable> vars,
                      absl::Span<const IntegerValue> coeffs,
                      IntegerValue upper_bound);

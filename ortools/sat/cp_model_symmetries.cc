@@ -161,6 +161,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
 
   const int num_variables = problem.variables_size();
   typename Graph::Builder builder;
+  std::vector<std::pair<int, int>> all_arcs;
 
   // Each node will be created with a given color. Two nodes of different color
   // can never be send one into another by a symmetry. The first element of
@@ -174,6 +175,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
     CONSTRAINT_NODE,
     VAR_LIN_EXPR_NODE,
     DOMAIN_NODE,
+    MULTI_ARC_NODE,
   };
   IdGenerator color_id_generator;
   initial_equivalence_classes->clear();
@@ -225,8 +227,8 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   // with a given coefficient.
   absl::flat_hash_map<std::pair<int64_t, int64_t>, int> coefficient_nodes;
   auto get_coefficient_node =
-      [&new_node_from_id, &builder, &coefficient_nodes, &color_id_generator,
-       &tmp_color, color_id_for_coeff_minus_one](int var, int64_t coeff) {
+      [&new_node_from_id, &tmp_color, &coefficient_nodes, &color_id_generator,
+       &all_arcs, color_id_for_coeff_minus_one](int var, int64_t coeff) {
         const int var_node = var;
         DCHECK(RefIsPositive(var));
 
@@ -249,7 +251,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
           color_id = color_id_generator.GetId(tmp_color);
         }
         const int secondary_node = new_node_from_id(color_id);
-        builder.AddArc(var_node, secondary_node);
+        all_arcs.emplace_back(var_node, secondary_node);
         insert.first->second = secondary_node;
         return secondary_node;
       };
@@ -274,7 +276,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   // node. This makes sure that any permutation that touch a variable, must
   // permute its coefficient nodes accordingly.
   absl::flat_hash_set<std::pair<int, int>> implications;
-  auto get_implication_node = [&new_node_from_id, &builder, &coefficient_nodes,
+  auto get_implication_node = [&new_node_from_id, &all_arcs, &coefficient_nodes,
                                color_id_for_coeff_one,
                                color_id_for_coeff_minus_one](int ref) {
     const int var = PositiveRef(ref);
@@ -284,23 +286,24 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
     if (!insert.second) return insert.first->second;
     const int secondary_node = new_node_from_id(
         coeff == 1 ? color_id_for_coeff_one : color_id_for_coeff_minus_one);
-    builder.AddArc(var, secondary_node);
+    all_arcs.emplace_back(var, secondary_node);
     insert.first->second = secondary_node;
     return secondary_node;
   };
-  auto add_implication = [&get_implication_node, &builder, &implications](
+  auto add_implication = [&get_implication_node, &all_arcs, &implications](
                              int ref_a, int ref_b) {
     const auto insert = implications.insert({ref_a, ref_b});
     if (!insert.second) return;
-    builder.AddArc(get_implication_node(ref_a), get_implication_node(ref_b));
+    all_arcs.emplace_back(get_implication_node(ref_a),
+                          get_implication_node(ref_b));
 
     // Always add the other side.
     implications.insert({NegatedRef(ref_b), NegatedRef(ref_a)});
-    builder.AddArc(get_implication_node(NegatedRef(ref_b)),
-                   get_implication_node(NegatedRef(ref_a)));
+    all_arcs.emplace_back(get_implication_node(NegatedRef(ref_b)),
+                          get_implication_node(NegatedRef(ref_a)));
   };
 
-  auto make_linear_expr_node = [&new_node, &builder, &get_coefficient_node](
+  auto make_linear_expr_node = [&new_node, &all_arcs, &get_coefficient_node](
                                    const LinearExpressionProto& expr,
                                    const std::vector<int64_t>& color) {
     std::vector<int64_t> local_color = color;
@@ -312,7 +315,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
       const int var_node = PositiveRef(ref);
       const int64_t coeff =
           RefIsPositive(ref) ? expr.coeffs(i) : -expr.coeffs(i);
-      builder.AddArc(get_coefficient_node(var_node, coeff), local_node);
+      all_arcs.emplace_back(get_coefficient_node(var_node, coeff), local_node);
     }
     return local_node;
   };
@@ -339,6 +342,38 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
     const int constraint_node = initial_equivalence_classes->size();
     std::vector<int64_t> color = {CONSTRAINT_NODE,
                                   constraint.constraint_case()};
+
+    auto add_unordered_linear_argument_node =
+        [&make_linear_expr_node, &all_arcs, &shared_linear_expr_node,
+         constraint_node](const LinearArgumentProto& linear_argument,
+                          const std::vector<int64_t>& color) {
+          const int target_node =
+              make_linear_expr_node(linear_argument.target(), color);
+          CHECK_EQ(constraint_node, target_node);
+
+          for (int i = 0; i < linear_argument.exprs_size(); ++i) {
+            const LinearExpressionProto& expr = linear_argument.exprs(i);
+            all_arcs.emplace_back(shared_linear_expr_node(expr), target_node);
+          }
+        };
+
+    auto add_ordered_linear_argument2_node =
+        [&make_linear_expr_node, &all_arcs, &shared_linear_expr_node,
+         constraint_node](const LinearArgumentProto& linear_argument2,
+                          const std::vector<int64_t>& color) {
+          const int target_node =
+              make_linear_expr_node(linear_argument2.target(), color);
+          CHECK_EQ(constraint_node, target_node);
+          CHECK_EQ(linear_argument2.exprs_size(), 2);
+          {
+            const LinearExpressionProto& expr = linear_argument2.exprs(0);
+            all_arcs.emplace_back(shared_linear_expr_node(expr), target_node);
+          }
+          {
+            const LinearExpressionProto& expr = linear_argument2.exprs(1);
+            all_arcs.emplace_back(target_node, shared_linear_expr_node(expr));
+          }
+        };
 
     switch (constraint.constraint_case()) {
       case ConstraintProto::CONSTRAINT_NOT_SET:
@@ -385,14 +420,14 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
             color.push_back(value);
           }
           positive_node = new_node(color);
-          builder.AddArc(positive_node, constraint_node);
+          all_arcs.emplace_back(positive_node, constraint_node);
 
           color = {DOMAIN_NODE};
           for (const int64_t value : domain.Negation().FlattenedIntervals()) {
             color.push_back(value);
           }
           negative_node = new_node(color);
-          builder.AddArc(negative_node, constraint_node);
+          all_arcs.emplace_back(negative_node, constraint_node);
         }
 
         // TODO(user): We can use the same trick as for the implications to
@@ -404,13 +439,13 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
           const int variable_node = constraint.linear().vars(i);
           const int64_t coeff = constraint.linear().coeffs(i);
           if (coeff > 0) {
-            builder.AddArc(get_coefficient_node(variable_node, coeff),
-                           positive_node);
+            all_arcs.emplace_back(get_coefficient_node(variable_node, coeff),
+                                  positive_node);
           } else {
             DCHECK_LT(coeff, 0);
             DCHECK(!only_positive_coefficients);
-            builder.AddArc(get_coefficient_node(variable_node, -coeff),
-                           negative_node);
+            all_arcs.emplace_back(get_coefficient_node(variable_node, -coeff),
+                                  negative_node);
           }
         }
         break;
@@ -419,14 +454,14 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         CHECK_EQ(constraint_node, new_node(color));
         for (const LinearExpressionProto& expr :
              constraint.all_diff().exprs()) {
-          builder.AddArc(shared_linear_expr_node(expr), constraint_node);
+          all_arcs.emplace_back(shared_linear_expr_node(expr), constraint_node);
         }
         break;
       }
       case ConstraintProto::kBoolOr: {
         CHECK_EQ(constraint_node, new_node(color));
         for (const int ref : constraint.bool_or().literals()) {
-          builder.AddArc(get_literal_node(ref), constraint_node);
+          all_arcs.emplace_back(get_literal_node(ref), constraint_node);
         }
         break;
       }
@@ -441,21 +476,21 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
 
         CHECK_EQ(constraint_node, new_node(color));
         for (const int ref : constraint.at_most_one().literals()) {
-          builder.AddArc(get_literal_node(ref), constraint_node);
+          all_arcs.emplace_back(get_literal_node(ref), constraint_node);
         }
         break;
       }
       case ConstraintProto::kExactlyOne: {
         CHECK_EQ(constraint_node, new_node(color));
         for (const int ref : constraint.exactly_one().literals()) {
-          builder.AddArc(get_literal_node(ref), constraint_node);
+          all_arcs.emplace_back(get_literal_node(ref), constraint_node);
         }
         break;
       }
       case ConstraintProto::kBoolXor: {
         CHECK_EQ(constraint_node, new_node(color));
         for (const int ref : constraint.bool_xor().literals()) {
-          builder.AddArc(get_literal_node(ref), constraint_node);
+          all_arcs.emplace_back(get_literal_node(ref), constraint_node);
         }
         break;
       }
@@ -463,7 +498,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         if (constraint.enforcement_literal_size() > 1) {
           CHECK_EQ(constraint_node, new_node(color));
           for (const int ref : constraint.bool_and().literals()) {
-            builder.AddArc(get_literal_node(ref), constraint_node);
+            all_arcs.emplace_back(get_literal_node(ref), constraint_node);
           }
           break;
         }
@@ -475,20 +510,18 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         }
         break;
       }
-      case ConstraintProto::kLinMax: {
-        const LinearExpressionProto& target_expr =
-            constraint.lin_max().target();
-
-        const int target_node = make_linear_expr_node(target_expr, color);
-        CHECK_EQ(constraint_node, target_node);
-
-        for (int i = 0; i < constraint.lin_max().exprs_size(); ++i) {
-          const LinearExpressionProto& expr = constraint.lin_max().exprs(i);
-          builder.AddArc(shared_linear_expr_node(expr), target_node);
-        }
-
+      case ConstraintProto::kLinMax:
+        add_unordered_linear_argument_node(constraint.lin_max(), color);
         break;
-      }
+      case ConstraintProto::kIntProd:
+        add_unordered_linear_argument_node(constraint.int_prod(), color);
+        break;
+      case ConstraintProto::kIntDiv:
+        add_ordered_linear_argument2_node(constraint.int_div(), color);
+        break;
+      case ConstraintProto::kIntMod:
+        add_ordered_linear_argument2_node(constraint.int_mod(), color);
+        break;
       case ConstraintProto::kInterval: {
         static constexpr int kFixedIntervalColor = 0;
         static constexpr int kNonFixedIntervalColor = 1;
@@ -524,8 +557,8 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
 
           // Make sure that if one node is mapped to another one, its other two
           // components are the same.
-          builder.AddArc(start_node, end_node);
-          builder.AddArc(end_node, size_node);
+          all_arcs.emplace_back(start_node, end_node);
+          all_arcs.emplace_back(end_node, size_node);
         }
         interval_constraint_index_to_node[constraint_index] = constraint_node;
         break;
@@ -536,8 +569,8 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         // here and in a bunch of other places.
         CHECK_EQ(constraint_node, new_node(color));
         for (const int interval : constraint.no_overlap().intervals()) {
-          builder.AddArc(interval_constraint_index_to_node.at(interval),
-                         constraint_node);
+          all_arcs.emplace_back(interval_constraint_index_to_node.at(interval),
+                                constraint_node);
         }
         break;
       }
@@ -552,18 +585,22 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         const int node_x = new_node(local_color);
         const int node_y = new_node(local_color);
         local_color.pop_back();
-        builder.AddArc(constraint_node, node_x);
-        builder.AddArc(constraint_node, node_y);
+        all_arcs.emplace_back(constraint_node, node_x);
+        all_arcs.emplace_back(constraint_node, node_y);
         local_color.push_back(1);
         for (int i = 0; i < size; ++i) {
           const int box_node = new_node(local_color);
-          builder.AddArc(box_node, constraint_node);
+          all_arcs.emplace_back(box_node, constraint_node);
           const int x = constraint.no_overlap_2d().x_intervals(i);
           const int y = constraint.no_overlap_2d().y_intervals(i);
-          builder.AddArc(interval_constraint_index_to_node.at(x), node_x);
-          builder.AddArc(interval_constraint_index_to_node.at(x), box_node);
-          builder.AddArc(interval_constraint_index_to_node.at(y), node_y);
-          builder.AddArc(interval_constraint_index_to_node.at(y), box_node);
+          all_arcs.emplace_back(interval_constraint_index_to_node.at(x),
+                                node_x);
+          all_arcs.emplace_back(interval_constraint_index_to_node.at(x),
+                                box_node);
+          all_arcs.emplace_back(interval_constraint_index_to_node.at(y),
+                                node_y);
+          all_arcs.emplace_back(interval_constraint_index_to_node.at(y),
+                                box_node);
         }
         break;
       }
@@ -575,17 +612,18 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         std::vector<int64_t> capacity_color = color;
         capacity_color.push_back(0);
         CHECK_EQ(constraint_node, new_node(capacity_color));
-        builder.AddArc(constraint_node,
-                       make_linear_expr_node(ct.capacity(), capacity_color));
+        all_arcs.emplace_back(
+            constraint_node,
+            make_linear_expr_node(ct.capacity(), capacity_color));
 
         std::vector<int64_t> task_color = color;
         task_color.push_back(1);
         for (int i = 0; i < ct.intervals().size(); ++i) {
           const int task_node =
               make_linear_expr_node(ct.demands(i), task_color);
-          builder.AddArc(task_node, constraint_node);
-          builder.AddArc(task_node,
-                         interval_constraint_index_to_node.at(ct.intervals(i)));
+          all_arcs.emplace_back(task_node, constraint_node);
+          all_arcs.emplace_back(
+              task_node, interval_constraint_index_to_node.at(ct.intervals(i)));
         }
         break;
       }
@@ -607,13 +645,15 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         const int num_events = ct.time_exprs_size();
         for (int i = 0; i < num_events; ++i) {
           const int event_node = new_node(event_color);
-          builder.AddArc(event_node, constraint_node);
-          builder.AddArc(shared_linear_expr_node(ct.time_exprs(i)), event_node);
-          builder.AddArc(event_node,
-                         shared_linear_expr_node(ct.level_changes(i)));
+          all_arcs.emplace_back(event_node, constraint_node);
+          all_arcs.emplace_back(shared_linear_expr_node(ct.time_exprs(i)),
+                                event_node);
+          all_arcs.emplace_back(event_node,
+                                shared_linear_expr_node(ct.level_changes(i)));
 
           if (!ct.active_literals().empty()) {
-            builder.AddArc(get_literal_node(ct.active_literals(i)), event_node);
+            all_arcs.emplace_back(get_literal_node(ct.active_literals(i)),
+                                  event_node);
           }
         }
         break;
@@ -646,25 +686,29 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
           // To make the graph directed, we add two arcs on the head but not on
           // the tail.
           if (!constraint.enforcement_literal().empty()) {
-            builder.AddArc(constraint_node, arc_node);
+            all_arcs.emplace_back(constraint_node, arc_node);
           }
-          builder.AddArc(tail_node, arc_node);
-          builder.AddArc(arc_node, get_literal_node(literal));
-          builder.AddArc(arc_node, head_node);
+          all_arcs.emplace_back(tail_node, arc_node);
+          all_arcs.emplace_back(arc_node, get_literal_node(literal));
+          all_arcs.emplace_back(arc_node, head_node);
         }
         break;
       }
-      default: {
-        // If the model contains any non-supported constraints, return an empty
-        // graph.
-        //
-        // TODO(user): support other types of constraints. Or at least, we
-        // could associate to them an unique node so that their variables can
-        // appear in no symmetry.
-        VLOG(1) << "Unsupported constraint type "
-                << ConstraintCaseName(constraint.constraint_case());
+      case ConstraintProto::kRoutes:
+        // TODO(user): Implement this.
+      case ConstraintProto::kElement:
+      case ConstraintProto::kTable:
+      case ConstraintProto::kAutomaton:
+      case ConstraintProto::kInverse:
+      case ConstraintProto::kDummyConstraint:
+        // Those constraints should be expanded during presolve, so we will
+        // probably be still able to detect the symmetries of the problem after
+        // this is done.
+        SOLVER_LOG(logger,
+                   "[Symmetry] Aborting symmetry computation because of "
+                   "unsupported constraint type: ",
+                   ConstraintCaseName(constraint.constraint_case()));
         return nullptr;
-      }
     }
 
     // For enforcement, we use a similar trick than for the implications.
@@ -677,34 +721,48 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         CHECK_LT(constraint_node, initial_equivalence_classes->size());
       }
       for (const int ref : constraint.enforcement_literal()) {
-        builder.AddArc(constraint_node, get_literal_node(ref));
+        all_arcs.emplace_back(constraint_node, get_literal_node(ref));
       }
     }
   }
 
+  // The symmetry detection code does not support multi-arcs. We can easily
+  // work-around this limitation by replacing a multi-arc with an intermediate
+  // node colored by its multiplicity.
+  absl::c_sort(all_arcs);
+  builder.ReserveArcs(all_arcs.size());
+
+  std::pair<int, int> current_arc = {-1, -1};
+  int multiplicity = 0;
+
+  auto flush_arc = [&](int tail, int head, int count) {
+    if (count == 1) {
+      builder.AddArc(tail, head);
+    } else {
+      const int intermediate_node =
+          new_node_from_id(color_id_generator.GetId({MULTI_ARC_NODE, count}));
+      builder.AddArc(tail, intermediate_node);
+      builder.AddArc(intermediate_node, head);
+    }
+  };
+
+  for (const auto& arc : all_arcs) {
+    if (arc == current_arc) {
+      multiplicity++;
+    } else {
+      if (multiplicity > 0) {
+        flush_arc(current_arc.first, current_arc.second, multiplicity);
+      }
+      current_arc = arc;
+      multiplicity = 1;
+    }
+  }
+  if (multiplicity > 0) {
+    flush_arc(current_arc.first, current_arc.second, multiplicity);
+  }
+
   auto graph = std::move(builder).Build(nullptr);
   DCHECK_EQ(graph->num_nodes(), initial_equivalence_classes->size());
-
-  // TODO(user): The symmetry code does not officially support multi-arcs. And
-  // we shouldn't have any as long as there is no duplicates variable in our
-  // constraints (but of course, we can't always guarantee that). That said,
-  // because the symmetry code really only look at the degree, it works as long
-  // as the maximum degree is bounded by num_nodes.
-  const int num_nodes = graph->num_nodes();
-  std::vector<int> in_degree(num_nodes, 0);
-  std::vector<int> out_degree(num_nodes, 0);
-  for (int i = 0; i < num_nodes; ++i) {
-    out_degree[i] = graph->OutDegree(i);
-    for (const int head : (*graph)[i]) {
-      in_degree[head]++;
-    }
-  }
-  for (int i = 0; i < num_nodes; ++i) {
-    if (in_degree[i] >= num_nodes || out_degree[i] >= num_nodes) {
-      SOLVER_LOG(logger, "[Symmetry] Too many multi-arcs in symmetry code.");
-      return nullptr;
-    }
-  }
 
   // Because this code is running during presolve, a lot a variable might have
   // no edges. We do not want to detect symmetries between these.

@@ -865,7 +865,7 @@ int64_t EvaluateSingleVariableExpression(const LinearExpressionProto& expr,
 }
 
 template <class ExpressionList>
-int GetFirstVar(ExpressionList exprs) {
+int GetFirstVar(const ExpressionList& exprs) {
   for (const LinearExpressionProto& expr : exprs) {
     for (const int var : expr.vars()) {
       DCHECK(RefIsPositive(var));
@@ -8429,8 +8429,7 @@ void CpModelPresolver::RunPropagatorsForConstraint(const ConstraintProto& ct) {
       // Restrict variable domain.
       bool changed = false;
       if (!context_->IntersectDomainWith(
-              proto_var,
-              integer_trail->InitialVariableDomain(mapping->Integer(var)),
+              proto_var, integer_trail->LevelZeroDomain(mapping->Integer(var)),
               &changed)) {
         return;
       }
@@ -8675,7 +8674,7 @@ void CpModelPresolver::Probe() {
     if (!mapping->IsBoolean(var)) {
       bool changed = false;
       if (!context_->IntersectDomainWith(
-              var, integer_trail->InitialVariableDomain(mapping->Integer(var)),
+              var, integer_trail->LevelZeroDomain(mapping->Integer(var)),
               &changed)) {
         return;
       }
@@ -10071,14 +10070,31 @@ void CpModelPresolver::SplitNoOverlapAndCumulativeConstraints() {
         is_no_overlap ? ct.no_overlap().intervals()
                       : ct.cumulative().intervals();
     intervals.reserve(interval_indices.size());
+    bool has_complex_enforced_interval = false;
     for (const int interval : interval_indices) {
       const ConstraintProto& interval_ct = context_->Constraint(interval);
+      if (!interval_ct.enforcement_literal().empty()) {
+        const LinearExpressionProto& start = interval_ct.interval().start();
+        const LinearExpressionProto& end = interval_ct.interval().end();
+        if (start.vars().size() != 1 || end.vars().size() != 1 ||
+            start.coeffs(0) != end.coeffs(0) || start.vars(0) != end.vars(0) ||
+            start.offset() > end.offset()) {
+          has_complex_enforced_interval = true;
+        }
+      }
       intervals.push_back(IndexedInterval{
           .index = interval,
           .start = context_->MinOf(interval_ct.interval().start()),
           .end = context_->MaxOf(interval_ct.interval().end()),
       });
     }
+
+    // TODO(user): Handle the case of non-trivial intervals with enforcement.
+    // The problem is that the code below implicitly assume that for an
+    // interval, start <= end, which is not necessarily true if the interval is
+    // not performed.
+    if (has_complex_enforced_interval) continue;
+
     const auto components =
         IntervalsNonOverlappingComponents(intervals, precedences);
 
@@ -11153,7 +11169,7 @@ void CpModelPresolver::DetectDuplicateColumns() {
   absl::flat_hash_map<int, int, ColumnHashForDuplicateDetection,
                       ColumnEqForDuplicateDetection>
       duplicates(
-          /*capacity=*/num_vars,
+          /*reservation_size=*/num_vars,
           ColumnHashForDuplicateDetection(&var_to_columns),
           ColumnEqForDuplicateDetection(&var_to_columns));
   CompactVectorVectorBuilder<int, int> rep_to_dups_builder;
@@ -11358,7 +11374,7 @@ void CpModelPresolver::DetectDuplicateConstraints() {
   // usage is not biased by duplicate constraints.
   const std::vector<std::pair<int, int>> duplicates = FindDuplicateConstraints(
       context_->WorkingModel(), /*ignore_enforcement=*/false,
-      /*ignore_linear_domain=*/true);
+      /*ignore_linear_domain=*/true, /*ignore_target_of_expression=*/true);
   timer.AddCounter("duplicates", duplicates.size());
   for (const auto& [dup, rep] : duplicates) {
     // Note that it is important to look at the type of the representative in
@@ -11405,6 +11421,64 @@ void CpModelPresolver::DetectDuplicateConstraints() {
           "duplicate: linear constraint parallel to objective");
       const Domain d = ReadDomainFromProto(context_->Constraint(dup).linear());
       if (!context_->RestrictObjectiveDomain(d)) return;
+    }
+
+    // Deal with A = F(exprs) and B = F(exprs) which implies A <=> B.
+    const LinearExpressionProto* a = nullptr;
+    const LinearExpressionProto* b = nullptr;
+    if (type == ConstraintProto::kIntProd) {
+      a = &context_->Constraint(rep).int_prod().target();
+      b = &context_->Constraint(dup).int_prod().target();
+    } else if (type == ConstraintProto::kLinMax) {
+      a = &context_->Constraint(rep).lin_max().target();
+      b = &context_->Constraint(dup).lin_max().target();
+    } else if (type == ConstraintProto::kIntMod) {
+      a = &context_->Constraint(rep).int_mod().target();
+      b = &context_->Constraint(dup).int_mod().target();
+    } else if (type == ConstraintProto::kIntDiv) {
+      a = &context_->Constraint(rep).int_div().target();
+      b = &context_->Constraint(dup).int_div().target();
+    }
+    if (a != nullptr) {
+      // If they are equal, we fall back to the default case.
+      if (!LinearExpressionProtosAreExactlyEqual(*a, *b)) {
+        const std::string rule_name = absl::StrCat(
+            "duplicate: new equivalence via X = Y = ",
+            ConstraintCaseName(context_->Constraint(rep).constraint_case()),
+            "(vars)");
+
+        // We don't know what to do if there are enforcement.
+        //
+        // The code is still correct for the case of longer linear, but I am not
+        // sure it is always a simplification. In any case, it shouldn't
+        // happened often as in most situation our "targets" should be linear1.
+        if (!context_->Constraint(rep).enforcement_literal().empty() ||
+            (a->vars().size() > 1 && !b->vars().empty()) ||
+            (b->vars().size() > 1 && !a->vars().empty())) {
+          context_->UpdateRuleStats(absl::StrCat("TODO ", rule_name));
+          continue;
+        }
+
+        // TODO(user): Do substitution right away? that would require some
+        // refactoring as our code to handle complex u X + v Y = rhs is not so
+        // easy to use.
+        auto* linear = context_->AddConstraint()->mutable_linear();
+        linear->add_domain(0);
+        linear->add_domain(0);
+        AddLinearExpressionToLinearConstraint(*a, 1, linear);
+        AddLinearExpressionToLinearConstraint(*b, -1, linear);
+
+        // Note that we clear the duplicate constraint below.
+        context_->UpdateRuleStats(rule_name);
+
+        // This make sure that if we have a long-linear and a constant for
+        // instance, we keep the constant = f(vars) and not the other one. Note
+        // that b always correspond to the "dup" constraint.
+        if (b->vars().size() < a->vars().size()) {
+          *context_->MutableConstraint(rep) = context_->Constraint(dup);
+          context_->UpdateConstraintVariableUsage(rep);
+        }
+      }
     }
 
     // Remove the duplicate constraint.
@@ -11454,7 +11528,8 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
   const std::vector<std::pair<int, int>> duplicates_without_enforcement =
       FindDuplicateConstraints(context_->WorkingModel(),
                                /*ignore_enforcement=*/true,
-                               /*ignore_linear_domain=*/false);
+                               /*ignore_linear_domain=*/false,
+                               /*ignore_target_of_expression=*/false);
   timer.AddCounter("without_enforcements",
                    duplicates_without_enforcement.size());
   for (const auto& [dup, rep] : duplicates_without_enforcement) {
@@ -11724,7 +11799,7 @@ void CpModelPresolver::DetectDifferentVariables() {
 
   // Process the fact "v1 - v2 \in Domain".
   const auto process_difference = [&different_vars, &offsets](int v1, int v2,
-                                                              Domain d) {
+                                                              const Domain& d) {
     Domain exclusion = d.Complement().PartAroundZero();
     if (exclusion.IsEmpty()) return;
     if (v1 == v2) return;
@@ -13475,15 +13550,6 @@ void CpModelPresolver::MaybeRemoveLinkingVariable(int var, int c_linear1,
   context_->UpdateConstraintVariableUsage(c_linear);
 }
 
-// Special case: if a literal l appear in exactly two constraints:
-// - l => var in domain1
-// - not(l) => var in domain2
-// then we know that domain(var) is included in domain1 U domain2,
-// and that the literal l can be removed (and determined at postsolve).
-//
-// TODO(user): This could be generalized further to linear of size > 1 if for
-// example the terms are the same.
-//
 // We wait for the model expansion to take place in order to avoid removing
 // encoding that will later be re-created during expansion.
 void CpModelPresolver::LookAtVariableWithDegreeTwo(int var) {
@@ -13493,6 +13559,62 @@ void CpModelPresolver::LookAtVariableWithDegreeTwo(int var) {
   if (context_->IsFixed(var)) return;
   if (!context_->ModelIsExpanded()) return;
 
+  // Special case for X = prod(var, var) and var = max(Y, -Y).
+  if (!context_->CanBeUsedAsLiteral(var)) {
+    int c_square = -1;
+    int c_abs = -1;
+    CHECK_EQ(context_->VarToConstraints(var).size(), 2);
+    for (const int c : context_->VarToConstraints(var)) {
+      if (c < 0) break;
+      const ConstraintProto& ct = context_->Constraint(c);
+      if (ct.constraint_case() == ConstraintProto::kIntProd &&
+          ct.int_prod().exprs().size() == 2 &&
+          ExpressionContainsSingleRef(ct.int_prod().exprs(0)) &&
+          ct.int_prod().exprs(0).vars(0) == var &&
+          LinearExpressionProtosAreExactlyEqual(ct.int_prod().exprs(0),
+                                                ct.int_prod().exprs(1))) {
+        // We detectect target = var ^ 2.
+        c_square = c;
+      } else if (ct.constraint_case() == ConstraintProto::kLinMax &&
+                 ExpressionContainsSingleRef(ct.lin_max().target()) &&
+                 ct.lin_max().target().vars(0) == var &&
+                 ct.lin_max().exprs().size() == 2 &&
+                 ct.lin_max().exprs(0).vars().size() <= 1 &&
+                 LinearExpressionProtosAreEqual(ct.lin_max().exprs(0),
+                                                ct.lin_max().exprs(1), -1)) {
+        // We detected +/- var = abs(y_expr).
+        //
+        // Note that we only do that if y_expr is not a complex expression
+        // otherwise we might not have properly "transferred" the domain of var
+        // onto the one of y_expr, and we might not be able to just remove the
+        // constraint. That said if the int_prod target is simple, that should
+        // still work as we should transfer the domain of var there.
+        c_abs = c;
+      }
+    }
+    if (c_square == -1 || c_abs == -1) return;
+    context_->UpdateRuleStats(
+        "degree2: removed intermediate abs() variable in X = abs(Y) ^ 2");
+
+    // Replace var by y_expr in c_square.
+    const LinearExpressionProto y_expr =
+        context_->Constraint(c_abs).lin_max().exprs(0);
+    LinearArgumentProto* mutable_sq =
+        context_->MutableConstraint(c_square)->mutable_int_prod();
+    *(mutable_sq->mutable_exprs(0)) = y_expr;
+    *(mutable_sq->mutable_exprs(1)) = y_expr;
+    context_->UpdateConstraintVariableUsage(c_square);
+
+    // Copy abs() to the mapping proto and clear it.
+    context_->NewMappingConstraint(context_->Constraint(c_abs), __FILE__,
+                                   __LINE__);
+    context_->ClearConstraint(c_abs);
+    context_->UpdateConstraintVariableUsage(c_abs);
+    context_->MarkVariableAsRemoved(var);
+    return;
+  }
+
+  // Special case for lit => var \in Domain and var in linear.
   if (!context_->CanBeUsedAsLiteral(var)) {
     int c_linear1 = -1;
     int c_linear = -1;
@@ -13513,6 +13635,15 @@ void CpModelPresolver::LookAtVariableWithDegreeTwo(int var) {
     return;
   }
 
+  // Special case: if a literal l appear in exactly two constraints:
+  // - l => var in domain1
+  // - not(l) => var in domain2
+  // then we know that domain(var) is included in domain1 U domain2,
+  // and that the literal l can be removed (and determined at postsolve).
+  //
+  // TODO(user): This could be generalized further to linear of size > 1 if for
+  // example the terms are the same.
+  //
   // TODO(user): If var is in objective, we might be able to tighten domains.
   // ex: enf => x \in [0, 1]
   //     not(enf) => x \in [1, 2]
@@ -15390,14 +15521,17 @@ struct ConstraintHashForDuplicateDetection {
   const CpModelProto& cp_model;
   bool ignore_enforcement;
   bool ignore_linear_domain;
+  bool ignore_target_of_expression;
   ConstraintProto objective_constraint;
 
   ConstraintHashForDuplicateDetection(const CpModelProto* working_model,
                                       bool ignore_enforcement,
-                                      bool ignore_linear_domain)
+                                      bool ignore_linear_domain,
+                                      bool ignore_target_of_expression)
       : cp_model(*working_model),
         ignore_enforcement(ignore_enforcement),
         ignore_linear_domain(ignore_linear_domain),
+        ignore_target_of_expression(ignore_target_of_expression),
         objective_constraint(
             CopyObjectiveForDuplicateDetection(cp_model.objective())) {}
 
@@ -15456,6 +15590,18 @@ struct ConstraintHashForDuplicateDetection {
         if (ignore_enforcement) {
           copy.mutable_enforcement_literal()->Clear();
         }
+        // TODO(user): Hash directly.
+        if (ignore_target_of_expression) {
+          if (ct.constraint_case() == ConstraintProto::kIntProd) {
+            copy.mutable_int_prod()->clear_target();
+          } else if (ct.constraint_case() == ConstraintProto::kLinMax) {
+            copy.mutable_lin_max()->clear_target();
+          } else if (ct.constraint_case() == ConstraintProto::kIntDiv) {
+            copy.mutable_int_div()->clear_target();
+          } else if (ct.constraint_case() == ConstraintProto::kIntMod) {
+            copy.mutable_int_mod()->clear_target();
+          }
+        }
         return absl::HashOf(copy.SerializeAsString());
     }
   }
@@ -15465,14 +15611,17 @@ struct ConstraintEqForDuplicateDetection {
   const CpModelProto& cp_model;
   bool ignore_enforcement;
   bool ignore_linear_domain;
+  bool ignore_target_of_expression;
   ConstraintProto objective_constraint;
 
   ConstraintEqForDuplicateDetection(const CpModelProto* working_model,
                                     bool ignore_enforcement,
-                                    bool ignore_linear_domain)
+                                    bool ignore_linear_domain,
+                                    bool ignore_target_of_expression)
       : cp_model(*working_model),
         ignore_enforcement(ignore_enforcement),
         ignore_linear_domain(ignore_linear_domain),
+        ignore_target_of_expression(ignore_target_of_expression),
         objective_constraint(
             CopyObjectiveForDuplicateDetection(cp_model.objective())) {}
 
@@ -15494,6 +15643,21 @@ struct ConstraintEqForDuplicateDetection {
         return false;
       }
     }
+    auto compare_linear_argument = [this](const LinearArgumentProto& a,
+                                          const LinearArgumentProto& b) {
+      if (!ignore_target_of_expression) {
+        if (!LinearExpressionProtosAreExactlyEqual(a.target(), b.target())) {
+          return false;
+        }
+      }
+      if (a.exprs().size() != b.exprs().size()) return false;
+      for (int i = 0; i < a.exprs().size(); ++i) {
+        if (!LinearExpressionProtosAreExactlyEqual(a.exprs(i), b.exprs(i))) {
+          return false;
+        }
+      }
+      return true;
+    };
     switch (ct_a.constraint_case()) {
       case ConstraintProto::kLinear:
         // As above, we ignore domain for linear constraint, because if the rest
@@ -15520,19 +15684,21 @@ struct ConstraintEqForDuplicateDetection {
         return absl::MakeSpan(ct_a.exactly_one().literals()) ==
                absl::MakeSpan(ct_b.exactly_one().literals());
       case ConstraintProto::kInterval: {
-        auto compare_linear_expression = [](const LinearExpressionProto& a,
-                                            const LinearExpressionProto& b) {
-          return absl::MakeSpan(a.vars()) == absl::MakeSpan(b.vars()) &&
-                 absl::MakeSpan(a.coeffs()) == absl::MakeSpan(b.coeffs()) &&
-                 a.offset() == b.offset();
-        };
-        return compare_linear_expression(ct_a.interval().start(),
-                                         ct_b.interval().start()) &&
-               compare_linear_expression(ct_a.interval().size(),
-                                         ct_b.interval().size()) &&
-               compare_linear_expression(ct_a.interval().end(),
-                                         ct_b.interval().end());
+        return LinearExpressionProtosAreExactlyEqual(ct_a.interval().start(),
+                                                     ct_b.interval().start()) &&
+               LinearExpressionProtosAreExactlyEqual(ct_a.interval().size(),
+                                                     ct_b.interval().size()) &&
+               LinearExpressionProtosAreExactlyEqual(ct_a.interval().end(),
+                                                     ct_b.interval().end());
       }
+      case ConstraintProto::kIntProd:
+        return compare_linear_argument(ct_a.int_prod(), ct_b.int_prod());
+      case ConstraintProto::kLinMax:
+        return compare_linear_argument(ct_a.lin_max(), ct_b.lin_max());
+      case ConstraintProto::kIntDiv:
+        return compare_linear_argument(ct_a.int_div(), ct_b.int_div());
+      case ConstraintProto::kIntMod:
+        return compare_linear_argument(ct_a.int_mod(), ct_b.int_mod());
       default:
         // Slow (hopefully comparably rare) path.
         ConstraintProto copy_a = ct_a;
@@ -15552,19 +15718,20 @@ struct ConstraintEqForDuplicateDetection {
 
 std::vector<std::pair<int, int>> FindDuplicateConstraints(
     const CpModelProto& model_proto, bool ignore_enforcement,
-    bool ignore_linear_domain) {
+    bool ignore_linear_domain, bool ignore_target_of_expression) {
   std::vector<std::pair<int, int>> result;
 
   // We use a map hash that uses the underlying constraint to compute the hash
   // and the equality for the indices.
   absl::flat_hash_map<int, int, ConstraintHashForDuplicateDetection,
                       ConstraintEqForDuplicateDetection>
-      equiv_constraints(
-          model_proto.constraints_size(),
-          ConstraintHashForDuplicateDetection{&model_proto, ignore_enforcement,
-                                              ignore_linear_domain},
-          ConstraintEqForDuplicateDetection{&model_proto, ignore_enforcement,
-                                            ignore_linear_domain});
+      equiv_constraints(model_proto.constraints_size(),
+                        ConstraintHashForDuplicateDetection{
+                            &model_proto, ignore_enforcement,
+                            ignore_linear_domain, ignore_target_of_expression},
+                        ConstraintEqForDuplicateDetection{
+                            &model_proto, ignore_enforcement,
+                            ignore_linear_domain, ignore_target_of_expression});
 
   // Create a special representative for the linear objective.
   if (model_proto.has_objective() && !ignore_enforcement) {
@@ -15618,14 +15785,16 @@ void CpModelPresolver::DetectUnenforcedEnforcedLinearPair() {
   // and the equality for the indices.
   const bool ignore_enforcement = true;
   const bool ignore_linear_domain = true;
+  const bool ignore_target_of_expression = false;
   absl::flat_hash_map<int, int, ConstraintHashForDuplicateDetection,
                       ConstraintEqForDuplicateDetection>
-      equiv_constraints(
-          model_proto.constraints_size(),
-          ConstraintHashForDuplicateDetection{&model_proto, ignore_enforcement,
-                                              ignore_linear_domain},
-          ConstraintEqForDuplicateDetection{&model_proto, ignore_enforcement,
-                                            ignore_linear_domain});
+      equiv_constraints(model_proto.constraints_size(),
+                        ConstraintHashForDuplicateDetection{
+                            &model_proto, ignore_enforcement,
+                            ignore_linear_domain, ignore_target_of_expression},
+                        ConstraintEqForDuplicateDetection{
+                            &model_proto, ignore_enforcement,
+                            ignore_linear_domain, ignore_target_of_expression});
 
   // First pass, add all non-enforced linear.
   timer.TrackSimpleLoop(num_constraints);

@@ -51,8 +51,8 @@ TEST(ProbeBooleanVariablesTest, IntegerBoundInference) {
   Prober* prober = model.GetOrCreate<Prober>();
   prober->ProbeBooleanVariables(/*deterministic_time_limit=*/1.0);
   auto* integer_trail = model.GetOrCreate<IntegerTrail>();
-  EXPECT_EQ("[2,9]", integer_trail->InitialVariableDomain(b).ToString());
-  EXPECT_EQ("[0,4][7,10]", integer_trail->InitialVariableDomain(c).ToString());
+  EXPECT_EQ("[2,9]", integer_trail->LevelZeroDomain(b).ToString());
+  EXPECT_EQ("[0,4][7,10]", integer_trail->LevelZeroDomain(c).ToString());
 }
 
 TEST(FailedLiteralProbingRoundTest, TrivialExample) {
@@ -61,7 +61,7 @@ TEST(FailedLiteralProbingRoundTest, TrivialExample) {
   const Literal b(model.Add(NewBooleanVariable()), true);
   const Literal c(model.Add(NewBooleanVariable()), true);
 
-  // Setting a to false will result in a constradiction, so a must be true.
+  // Setting a to false will result in a contradiction, so a must be true.
   AddClauseConstraint({a, b, c}, &model);
   // AddImplication({a.Negated()}, IntegerLiteral::TrueLiteral(), &model);
   AddClauseConstraint({b.Negated(), c}, &model);

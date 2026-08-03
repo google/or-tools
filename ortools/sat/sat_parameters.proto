@@ -1219,6 +1219,12 @@ message SatParameters {
     // the search restarts, we simply move to the next candidate without
     // guaranteeing a fixed amount of effort is spent on the current one.
     ROUND_ROBIN_SHAVING_SEARCH = 9;
+
+    // Alternate between fixed and automatic_search, with the probability of
+    // using the fixed search starting at 1.0 and decaying.
+    // The rationale is that the user defined search is usually good for
+    // starting the search, but not great for continuing it.
+    ALT_FIXED_SEARCH = 10;
   }
 
   optional SearchBranching search_branching = 82 [default = AUTOMATIC_SEARCH];

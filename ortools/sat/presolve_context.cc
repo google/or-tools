@@ -477,11 +477,6 @@ int PresolveContext::LiteralForExpressionMax(
   return RefIsPositive(ref) == (expr.coeffs(0) > 0) ? ref : NegatedRef(ref);
 }
 
-bool PresolveContext::ExpressionIsSingleVariable(
-    const LinearExpressionProto& expr) const {
-  return expr.offset() == 0 && expr.vars_size() == 1 && expr.coeffs(0) == 1;
-}
-
 bool PresolveContext::ExpressionIsALiteral(const LinearExpressionProto& expr,
                                            int* literal) const {
   if (expr.vars_size() != 1) return false;

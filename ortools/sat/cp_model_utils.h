@@ -68,6 +68,23 @@ inline int EnforcementLiteral(const ConstraintProto& ct) {
   return ct.enforcement_literal(0);
 }
 
+struct AffineExpr {
+  int var;  // The variable in the CpModelProto.
+  int64_t coeff;
+  int64_t offset;
+
+  bool operator==(const AffineExpr& o) const {
+    return var == o.var && coeff == o.coeff && offset == o.offset;
+  }
+  bool operator!=(const AffineExpr& o) const { return !(*this == o); }
+  template <typename H>
+  friend H AbslHashValue(H h, const AffineExpr& expr) {
+    return H::combine(std::move(h), expr.var, expr.coeff, expr.offset);
+  }
+};
+
+AffineExpr GetAffineExpr(const LinearExpressionProto& expr);
+
 // Returns the gcd of the given LinearExpressionProto.
 // Specifying the second argument will take the gcd with it.
 int64_t LinearExpressionGcd(const LinearExpressionProto& expr, int64_t gcd = 0);
@@ -245,6 +262,7 @@ int64_t ComputeInnerObjective(const CpObjectiveProto& objective,
                               absl::Span<const int64_t> solution);
 
 // Returns true if a linear expression can be reduced to a single ref.
+// That is -var or +var.
 bool ExpressionContainsSingleRef(const LinearExpressionProto& expr);
 
 // Checks if the expression is affine or constant.
@@ -305,10 +323,19 @@ bool SafeAddLinearExpressionToLinearConstraint(
 // Returns if a constraint is of the form y = lin_max(x, -x).
 bool IsAffineIntAbs(const ConstraintProto& ct);
 
-// Returns true iff a == b * b_scaling.
+// Returns true iff a == b * b_scaling. Note that this rely on a hash-map and
+// does not care about the order of the terms.
 bool LinearExpressionProtosAreEqual(const LinearExpressionProto& a,
                                     const LinearExpressionProto& b,
                                     int64_t b_scaling = 1);
+
+// Contrary to LinearExpressionProtosAreEqual(), this does not use hash_map.
+inline bool LinearExpressionProtosAreExactlyEqual(
+    const LinearExpressionProto& a, const LinearExpressionProto& b) {
+  return absl::MakeSpan(a.vars()) == absl::MakeSpan(b.vars()) &&
+         absl::MakeSpan(a.coeffs()) == absl::MakeSpan(b.coeffs()) &&
+         a.offset() == b.offset();
+}
 
 // Returns true if there exactly one variable appearing in all the expressions.
 template <class ExpressionList>

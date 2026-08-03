@@ -376,7 +376,7 @@ std::function<BooleanOrIntegerLiteral()> ShaveModelBooleanVariables(
 }
 
 std::function<BooleanOrIntegerLiteral()> SequentialSearch(
-    std::vector<std::function<BooleanOrIntegerLiteral()>> heuristics) {
+    const std::vector<std::function<BooleanOrIntegerLiteral()>>& heuristics) {
   if (DEBUG_MODE) {
     for (const auto& h : heuristics) {
       DCHECK(h != nullptr);
@@ -1589,6 +1589,33 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
   };
 }
 
+std::function<BooleanOrIntegerLiteral()> AlternateTwoHeuristicsWithDecay(
+    const std::function<BooleanOrIntegerLiteral()>& start_heuristic,
+    const std::function<BooleanOrIntegerLiteral()>& end_heuristic, double decay,
+    Model* model) {
+  SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
+  auto* random = model->GetOrCreate<ModelRandomGenerator>();
+
+  std::vector<std::function<BooleanOrIntegerLiteral()>> policies;
+  double start_probability = 1.0;
+  bool use_start_heuristic = true;
+
+  return [=, start_heuristic = start_heuristic]() mutable {
+    if (start_heuristic == nullptr) return end_heuristic();
+
+    if (sat_solver->CurrentDecisionLevel() == 0) {
+      if (start_probability >= 0.05) {
+        use_start_heuristic = absl::Bernoulli(*random, start_probability);
+        start_probability *= decay;
+      } else {
+        use_start_heuristic = false;
+      }
+    }
+
+    return use_start_heuristic ? start_heuristic() : end_heuristic();
+  };
+}
+
 std::function<BooleanOrIntegerLiteral()> FollowHint(
     absl::Span<const BooleanOrIntegerVariable> vars,
     absl::Span<const IntegerValue> values, Model* model) {
@@ -1653,6 +1680,28 @@ std::function<bool()> RestartEveryKFailures(int k, SatSolver* solver) {
   };
 }
 
+std::function<bool()> RestartEveryKFailureThenGivenPolicy(
+    int max_num_conflicts, int max_num_fixed_restarts,
+    const std::function<bool()>& fallback_policy, Model* model) {
+  bool reset_at_next_call = true;
+  int next_num_failures = 0;
+  int num_restarts = 0;
+  SatSolver* solver = model->GetOrCreate<SatSolver>();
+
+  return [=, fallback_policy = fallback_policy]() mutable {
+    if (num_restarts >= max_num_fixed_restarts) return fallback_policy();
+
+    if (reset_at_next_call) {
+      next_num_failures = solver->num_failures() + max_num_conflicts;
+      reset_at_next_call = false;
+      ++num_restarts;
+    } else if (solver->num_failures() >= next_num_failures) {
+      reset_at_next_call = true;
+    }
+    return reset_at_next_call;
+  };
+}
+
 std::function<bool()> RestartAfterDeterministicTime(double deterministic_time,
                                                     TimeLimit* time_limit) {
   bool reset_at_next_call = true;
@@ -1678,7 +1727,7 @@ std::function<bool()> SatSolverRestartPolicy(Model* model) {
 namespace {
 
 std::function<BooleanOrIntegerLiteral()> WrapIntegerLiteralHeuristic(
-    std::function<IntegerLiteral()> f) {
+    const std::function<IntegerLiteral()>& f) {
   return [f]() { return BooleanOrIntegerLiteral(f()); };
 }
 
@@ -1889,6 +1938,35 @@ void ConfigureSearchHeuristics(Model* model) {
         heuristics.restart_policies.push_back(SatSolverRestartPolicy(model));
       }
 
+      return;
+    }
+    case SatParameters::ALT_FIXED_SEARCH: {
+      const int kNumFixedRestarts = 50;
+      const int kNumFixedConflicts = 50;
+      const double kTargetTransition = 0.05;
+      const double kDecay =
+          std::pow(kTargetTransition, 1.0 / kNumFixedRestarts);
+      // Do a portfolio with the default sat heuristics.
+      std::function<BooleanOrIntegerLiteral()> fixed_search =
+          heuristics.user_search != nullptr
+              ? SequentialSearch({heuristics.user_search,
+                                  SatSolverHeuristic(model),
+                                  heuristics.fixed_search})
+              : (heuristics.heuristic_search != nullptr
+                     ? SequentialSearch({heuristics.heuristic_search,
+                                         SatSolverHeuristic(model),
+                                         heuristics.fixed_search})
+                     : nullptr);
+      std::function<BooleanOrIntegerLiteral()> auto_search =
+          IntegerValueSelectionHeuristic(
+              SequentialSearch(
+                  {SatSolverHeuristic(model), heuristics.fixed_search}),
+              model);
+      heuristics.decision_policies = {AlternateTwoHeuristicsWithDecay(
+          fixed_search, auto_search, kDecay, model)};
+      heuristics.restart_policies = {RestartEveryKFailureThenGivenPolicy(
+          kNumFixedConflicts, kNumFixedRestarts, SatSolverRestartPolicy(model),
+          model)};
       return;
     }
   }

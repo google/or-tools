@@ -75,7 +75,7 @@ int64_t GetExprMin(const LinearExpressionProto& expr,
 
 struct IntervalAffine {
   int interval_index;
-  SchedulingProblemAndMapping::AffineExpr affine;
+  AffineExpr affine;
 
   bool operator<(const IntervalAffine& o) const {
     return std::tie(affine.var, affine.coeff, interval_index, affine.offset) <
@@ -136,31 +136,29 @@ struct VariableBoundsGroup {
 
 // Detects a makespan as a variable that is made to precede the end of all tasks
 // by using precedence constraints.
-std::optional<SchedulingProblemAndMapping::AffineExpr>
-DetectMakespanFromPrecedenceGraph(
+std::optional<AffineExpr> DetectMakespanFromPrecedenceGraph(
     const std::vector<VariableBoundsGroup>& grouped_bounds,
-    const SchedulingProblemAndMapping& problem_and_mapping,
-    int64_t problem_start) {
-  SparseBitset<int> visited(problem_and_mapping.problem.tasks.size());
+    const SchedulingProblem& problem, int64_t problem_start) {
+  SparseBitset<int> visited(problem.tasks.size());
   std::vector<int> stack;
 
   for (const VariableBoundsGroup& group : grouped_bounds) {
     if (group.coeff <= 0) continue;
 
     std::vector<int> explicitly_bounded_tasks;
-    for (int t = 0; t < problem_and_mapping.problem.tasks.size(); ++t) {
-      const auto& task_intervals = problem_and_mapping.task_to_intervals[t];
+    for (int t = 0; t < problem.tasks.size(); ++t) {
+      const auto& task = problem.tasks[t];
 
       auto is_bounded = [&](int idx) {
         return absl::c_binary_search(group.bounded_intervals, idx);
       };
 
       bool is_task_bounded = false;
-      if (absl::c_any_of(task_intervals.unconditional_intervals, is_bounded)) {
+      if (absl::c_any_of(task.unconditional_intervals, is_bounded)) {
         is_task_bounded = true;
-      } else if (!task_intervals.alternative_intervals.empty()) {
+      } else if (!task.alternative_intervals.empty()) {
         is_task_bounded = true;
-        for (int alt : task_intervals.alternative_intervals) {
+        for (int alt : task.alternative_intervals) {
           if (!is_bounded(alt)) {
             is_task_bounded = false;
             break;
@@ -183,8 +181,8 @@ DetectMakespanFromPrecedenceGraph(
       stack.pop_back();
       reached_count++;
 
-      for (int prev : problem_and_mapping.problem.tasks[curr]
-                          .tasks_that_must_complete_before_this) {
+      for (int prev :
+           problem.tasks[curr].tasks_that_must_complete_before_this) {
         if (!visited[prev]) {
           visited.Set(prev);
           stack.push_back(prev);
@@ -192,11 +190,11 @@ DetectMakespanFromPrecedenceGraph(
       }
     }
 
-    if (reached_count == problem_and_mapping.problem.tasks.size()) {
+    if (reached_count == problem.tasks.size()) {
       const int64_t exact_offset =
           group.max_offset == kint64min ? problem_start : group.max_offset;
 
-      return SchedulingProblemAndMapping::AffineExpr{
+      return AffineExpr{
           .var = group.var, .coeff = group.coeff, .offset = exact_offset};
     }
   }
@@ -310,7 +308,7 @@ absl::flat_hash_map<int, int> BuildTasksAndIntervalMapping(
     const std::vector<std::vector<int>>& task_to_intervals,
     const absl::flat_hash_map<int, int>& interval_to_machine,
     const absl::flat_hash_set<int>& barrier_intervals, int64_t problem_start,
-    SchedulingProblemAndMapping* problem_and_mapping) {
+    SchedulingProblem* problem) {
   absl::flat_hash_map<int, int> interval_to_task_index;
 
   absl::flat_hash_map<int, std::vector<int>> start_var_to_intervals;
@@ -329,10 +327,15 @@ absl::flat_hash_map<int, int> BuildTasksAndIntervalMapping(
       continue;
     }
 
-    const int task_idx = problem_and_mapping->problem.tasks.size();
-    auto& task = problem_and_mapping->problem.tasks.emplace_back();
-    problem_and_mapping->task_to_intervals.push_back({});
-    auto& task_intervals = problem_and_mapping->task_to_intervals.back();
+    const int task_idx = problem->tasks.size();
+    auto& task = problem->tasks.emplace_back();
+    task.main_interval = alts[0];
+    for (int interval_idx : alts) {
+      if (model_proto.constraints(interval_idx).enforcement_literal().empty()) {
+        task.main_interval = interval_idx;
+        break;
+      }
+    }
     std::vector<int> presence_literals;
 
     for (int interval_idx : alts) {
@@ -341,9 +344,9 @@ absl::flat_hash_map<int, int> BuildTasksAndIntervalMapping(
 
       const bool is_conditional = !ct.enforcement_literal().empty();
       if (is_conditional) {
-        task_intervals.alternative_intervals.push_back(interval_idx);
+        task.alternative_intervals.push_back(interval_idx);
       } else {
-        task_intervals.unconditional_intervals.push_back(interval_idx);
+        task.unconditional_intervals.push_back(interval_idx);
       }
 
       auto it = interval_to_machine.find(interval_idx);
@@ -355,7 +358,7 @@ absl::flat_hash_map<int, int> BuildTasksAndIntervalMapping(
                                                    : kint32max);
       }
     }
-    problem_and_mapping->task_to_presence_literals.push_back(presence_literals);
+    task.presence_literals = presence_literals;
 
     const auto& first_interval = model_proto.constraints(alts[0]).interval();
     task.min_start =
@@ -364,9 +367,8 @@ absl::flat_hash_map<int, int> BuildTasksAndIntervalMapping(
 
     if (first_interval.start().vars().size() == 1) {
       int base_start_var = first_interval.start().vars(0);
-      problem_and_mapping->task_to_start_time_model_var.push_back(
-          {base_start_var, first_interval.start().coeffs(0),
-           first_interval.start().offset() - problem_start});
+      task.start_time_expr = {base_start_var, first_interval.start().coeffs(0),
+                              first_interval.start().offset() - problem_start};
 
       if (auto it = start_var_to_intervals.find(base_start_var);
           it != start_var_to_intervals.end()) {
@@ -387,17 +389,17 @@ absl::flat_hash_map<int, int> BuildTasksAndIntervalMapping(
             // intervals distinct end variables, so we cannot check
             // IsSameExpr(end).
             if (IsSameExpr(dummy_interval.start(), first_interval.start())) {
-              task_intervals.unconditional_intervals.push_back(i);
+              task.unconditional_intervals.push_back(i);
               interval_to_task_index[i] = task_idx;
             }
           }
         }
       }
     } else if (first_interval.start().vars().empty()) {
-      problem_and_mapping->task_to_start_time_model_var.push_back(
-          {0, 0, first_interval.start().offset() - problem_start});
+      task.start_time_expr = {0, 0,
+                              first_interval.start().offset() - problem_start};
     } else {
-      problem_and_mapping->task_to_start_time_model_var.push_back({0, 1, 0});
+      task.start_time_expr = {0, 1, 0};
     }
   }
   return interval_to_task_index;
@@ -413,7 +415,7 @@ void ExtractDirectTaskPrecedences(
     const CpModelProto& model_proto,
     const std::vector<std::pair<int, int>>& interval_precedences,
     const absl::flat_hash_map<int, int>& interval_to_task_index,
-    SchedulingProblemAndMapping* problem_and_mapping) {
+    SchedulingProblem* problem) {
   CompactVectorVectorBuilder<int> builder;
   builder.ReserveNumItems(interval_precedences.size());
   for (const auto& precedence : interval_precedences) {
@@ -425,20 +427,18 @@ void ExtractDirectTaskPrecedences(
   SparseBitset<int> visited(model_proto.constraints_size());
   std::vector<int> stack;
 
-  for (int task_idx = 0; task_idx < problem_and_mapping->problem.tasks.size();
-       ++task_idx) {
+  for (int task_idx = 0; task_idx < problem->tasks.size(); ++task_idx) {
     visited.ResetAllToFalse();
     stack.clear();
 
-    const auto& task_intervals =
-        problem_and_mapping->task_to_intervals[task_idx];
+    const auto& task = problem->tasks[task_idx];
 
     // Seed DFS from ALL intervals properly mapped to the task
-    for (int interval_idx : task_intervals.alternative_intervals) {
+    for (int interval_idx : task.alternative_intervals) {
       stack.push_back(interval_idx);
       visited.Set(interval_idx);
     }
-    for (const int interval_idx : task_intervals.unconditional_intervals) {
+    for (const int interval_idx : task.unconditional_intervals) {
       stack.push_back(interval_idx);
       visited.Set(interval_idx);
     }
@@ -456,7 +456,7 @@ void ExtractDirectTaskPrecedences(
           int target_task_idx = it->second;
 
           if (target_task_idx != task_idx) {
-            problem_and_mapping->problem.tasks[target_task_idx]
+            problem->tasks[target_task_idx]
                 .tasks_that_must_complete_before_this.push_back(task_idx);
           }
           continue;  // Stop DFS gracefully at task boundaries
@@ -470,22 +470,22 @@ void ExtractDirectTaskPrecedences(
     }
   }
 
-  for (int i = 0; i < problem_and_mapping->problem.tasks.size(); ++i) {
-    gtl::STLSortAndRemoveDuplicates(&problem_and_mapping->problem.tasks[i]
-                                         .tasks_that_must_complete_before_this);
+  for (int i = 0; i < problem->tasks.size(); ++i) {
+    gtl::STLSortAndRemoveDuplicates(
+        &problem->tasks[i].tasks_that_must_complete_before_this);
   }
 }
 
 }  // namespace
 
-SchedulingProblemAndMapping BuildSchedulingProblemAndMapping(
+SchedulingProblem BuildSchedulingProblem(
     const std::vector<std::vector<int>>& machine_to_intervals,
     const std::vector<std::vector<int>>& task_to_intervals,
     const std::vector<std::pair<int, int>>& interval_precedences,
     const BestBinaryRelationBounds& vars_precedences,
     const CpModelProto& model_proto) {
   const int64_t problem_start = 0;
-  SchedulingProblemAndMapping problem_and_mapping;
+  SchedulingProblem problem;
 
   absl::flat_hash_map<int, int> interval_to_machine;
   for (int m = 0; m < machine_to_intervals.size(); ++m) {
@@ -498,7 +498,7 @@ SchedulingProblemAndMapping BuildSchedulingProblemAndMapping(
   const std::vector<IntervalAffine> barriers =
       DetectImplicitBarrierMakespans(model_proto);
   absl::flat_hash_set<int> barrier_indices;
-  std::optional<SchedulingProblemAndMapping::AffineExpr> proven_makespan;
+  std::optional<AffineExpr> proven_makespan;
 
   for (const auto& b : barriers) {
     barrier_indices.insert(b.interval_index);
@@ -515,16 +515,16 @@ SchedulingProblemAndMapping BuildSchedulingProblemAndMapping(
   absl::flat_hash_map<int, int> interval_to_task_index =
       BuildTasksAndIntervalMapping(model_proto, task_to_intervals,
                                    interval_to_machine, barrier_indices,
-                                   problem_start, &problem_and_mapping);
+                                   problem_start, &problem);
 
   // --- 4. Extract Direct Task Precedences ---
   ExtractDirectTaskPrecedences(model_proto, interval_precedences,
-                               interval_to_task_index, &problem_and_mapping);
+                               interval_to_task_index, &problem);
 
   // --- 5. Fallback: Precedence Graph Makespan Detection ---
   if (!proven_makespan.has_value()) {
     if (auto graph_result = DetectMakespanFromPrecedenceGraph(
-            extracted_bounds, problem_and_mapping, problem_start)) {
+            extracted_bounds, problem, problem_start)) {
       proven_makespan = *graph_result;
     }
   }
@@ -546,24 +546,126 @@ SchedulingProblemAndMapping BuildSchedulingProblemAndMapping(
   }
 
   if (proven_makespan.has_value()) {
-    problem_and_mapping.makespan_expr = *proven_makespan;
-    problem_and_mapping.makespan_expr->offset -= problem_start;
+    problem.makespan_expr = *proven_makespan;
+    problem.makespan_expr->offset -= problem_start;
 
-    problem_and_mapping.problem.type =
-        makespan_is_minimized ? SchedulingProblem::kMinimizeMakespan
-                              : SchedulingProblem::kSatisfaction;
+    problem.type = makespan_is_minimized ? SchedulingProblem::kMinimizeMakespan
+                                         : SchedulingProblem::kSatisfaction;
 
     VLOG(2) << "Makespan detected: I" << proven_makespan->var << " * "
             << proven_makespan->coeff << " + "
             << proven_makespan->offset - problem_start
             << (makespan_is_minimized ? " (minimized)"
                                       : " (not on the objective)");
+
+    for (const auto& b : barriers) {
+      if (b.affine == *proven_makespan) {
+        problem.makespan_interval = b.interval_index;
+        break;
+      }
+    }
+    if (problem.makespan_interval == -1) {
+      for (int c = 0; c < model_proto.constraints_size(); ++c) {
+        if (model_proto.constraints(c).constraint_case() ==
+            ConstraintProto::kInterval) {
+          if (GetAffineExpr(model_proto.constraints(c).interval().start()) ==
+              *proven_makespan) {
+            problem.makespan_interval = c;
+            break;
+          }
+        }
+      }
+    }
   } else {
     VLOG(2) << "Could not map any variable to a makespan.";
-    problem_and_mapping.problem.type = SchedulingProblem::kSatisfaction;
+    problem.type = SchedulingProblem::kSatisfaction;
   }
 
-  return problem_and_mapping;
+  // --- 7. Trace Job Chains & Bidirectional Mapping Mappings ---
+  std::vector<int> task_successors_count(problem.tasks.size(), 0);
+  std::vector<std::vector<int>> task_predecessors(problem.tasks.size());
+  for (int t = 0; t < problem.tasks.size(); ++t) {
+    for (int pred : problem.tasks[t].tasks_that_must_complete_before_this) {
+      task_successors_count[pred]++;
+      task_predecessors[t].push_back(pred);
+    }
+  }
+
+  std::vector<int> last_tasks;
+  for (int t = 0; t < problem.tasks.size(); ++t) {
+    if (task_successors_count[t] == 0) {
+      last_tasks.push_back(t);
+    }
+  }
+  absl::c_sort(last_tasks);
+
+  absl::flat_hash_set<int> visited;
+  for (int head : last_tasks) {
+    if (!visited.insert(head).second) continue;
+    std::vector<int> chain = {head};
+    int curr = head;
+    while (true) {
+      int prev = -1;
+      for (int pred : task_predecessors[curr]) {
+        if (visited.insert(pred).second) {
+          prev = pred;
+          break;
+        }
+      }
+      if (prev == -1) break;
+      chain.push_back(prev);
+      curr = prev;
+    }
+    std::reverse(chain.begin(), chain.end());
+    problem.jobs.push_back(SchedulingProblem::Job{std::move(chain)});
+  }
+
+  for (int t = 0; t < problem.tasks.size(); ++t) {
+    if (visited.insert(t).second) {
+      problem.jobs.push_back(SchedulingProblem::Job{{t}});
+    }
+  }
+
+  absl::c_sort(problem.jobs, [](const SchedulingProblem::Job& a,
+                                const SchedulingProblem::Job& b) {
+    if (a.task_indices.empty() || b.task_indices.empty())
+      return a.task_indices.size() < b.task_indices.size();
+    return a.task_indices[0] < b.task_indices[0];
+  });
+
+  const int total_intervals = model_proto.constraints_size();
+  problem.interval_to_job.assign(total_intervals, -1);
+  problem.interval_to_task_index.assign(total_intervals, -1);
+  problem.interval_to_main_interval.assign(total_intervals, -1);
+
+  for (int j = 0; j < problem.jobs.size(); ++j) {
+    for (int t_idx = 0; t_idx < problem.jobs[j].task_indices.size(); ++t_idx) {
+      const int task_index = problem.jobs[j].task_indices[t_idx];
+      const auto& task = problem.tasks[task_index];
+
+      problem.interval_to_job[task.main_interval] = j;
+      problem.interval_to_task_index[task.main_interval] = task_index;
+      problem.interval_to_main_interval[task.main_interval] =
+          task.main_interval;
+
+      for (int alt : task.alternative_intervals) {
+        problem.interval_to_job[alt] = j;
+        problem.interval_to_task_index[alt] = task_index;
+        problem.interval_to_main_interval[alt] = task.main_interval;
+      }
+      for (int main_idx : task.unconditional_intervals) {
+        problem.interval_to_job[main_idx] = j;
+        problem.interval_to_task_index[main_idx] = task_index;
+        problem.interval_to_main_interval[main_idx] = task.main_interval;
+      }
+    }
+  }
+
+  // --- 8. Detect Redundant Cumulative Constraints ---
+  problem.redundant_cumulative =
+      DetectRedundantCumulativeConstraints(model_proto, problem);
+
+  return problem;
 }
 
 std::vector<std::pair<int, int>> DetectIntervalPrecedences(
@@ -858,17 +960,15 @@ SchedulingRelaxation DetectSchedulingProblems(const CpModelProto& model_proto) {
   std::vector<int> num_choices_per_problem;
   for (int i = 0; i < per_component_data.size(); ++i) {
     const PerComponentData& data = per_component_data[i];
-    relaxation.problems_and_mappings.emplace_back(
-        BuildSchedulingProblemAndMapping(
-            data.machine_to_intervals, data.task_to_intervals, data.precedences,
-            precedences, model_proto));
-    const SchedulingProblemAndMapping& problem_and_mapping =
-        relaxation.problems_and_mappings.back();
+    relaxation.problems.emplace_back(BuildSchedulingProblem(
+        data.machine_to_intervals, data.task_to_intervals, data.precedences,
+        precedences, model_proto));
+    const SchedulingProblem& problem = relaxation.problems.back();
 
     int num_machines = 0;
     int num_precedences = 0;
     int num_choices = 0;
-    for (const auto& task : problem_and_mapping.problem.tasks) {
+    for (const auto& task : problem.tasks) {
       for (int m : task.compatible_machine) {
         num_machines = std::max(num_machines, m + 1);
       }
@@ -876,31 +976,21 @@ SchedulingRelaxation DetectSchedulingProblems(const CpModelProto& model_proto) {
       num_choices += task.compatible_machine.size();
     }
 
-    if (problem_and_mapping.problem.tasks.size() < 3 || num_machines < 2) {
-      relaxation.problems_and_mappings.pop_back();
+    if (problem.tasks.size() < 3 || num_machines < 2) {
+      relaxation.problems.pop_back();
       continue;
     }
     num_machines_per_problem.push_back(num_machines);
     num_precedences_per_problem.push_back(num_precedences);
     num_choices_per_problem.push_back(num_choices);
-    if (relaxation.problems_and_mappings.back().makespan_expr.has_value()) {
-      makespan_vars.insert(
-          relaxation.problems_and_mappings.back().makespan_expr->var);
+    if (relaxation.problems.back().makespan_expr.has_value()) {
+      makespan_vars.insert(relaxation.problems.back().makespan_expr->var);
     }
   }
 
-  VLOG(2) << "Detected " << relaxation.problems_and_mappings.size()
-          << " job-shop sub-problems:";
-  for (int i = 0; i < relaxation.problems_and_mappings.size(); ++i) {
-    const SchedulingProblemAndMapping& problem_and_mapping =
-        relaxation.problems_and_mappings[i];
-    VLOG(2) << "  " << i << ": " << problem_and_mapping.problem.tasks.size()
-            << " tasks, " << num_machines_per_problem[i] << " machines, "
-            << num_precedences_per_problem[i] << " precedences and "
-            << num_choices_per_problem[i] << " task-machine choices.";
-  }
+  VLOG(2) << "Detected " << relaxation.ToString(&model_proto);
 
-  if (relaxation.problems_and_mappings.empty()) {
+  if (relaxation.problems.empty()) {
     return relaxation;
   }
 
@@ -927,11 +1017,10 @@ SchedulingRelaxation DetectSchedulingProblems(const CpModelProto& model_proto) {
   return relaxation;
 }
 
-bool VerifySingleSchedulingProblem(
-    const SchedulingProblemAndMapping& relaxation,
-    absl::Span<const int64_t> solution) {
-  VLOG(2) << "Verifying Scheduling problem with "
-          << relaxation.problem.tasks.size() << " tasks.";
+bool VerifySingleSchedulingProblem(const SchedulingProblem& problem,
+                                   absl::Span<const int64_t> solution) {
+  VLOG(2) << "Verifying Scheduling problem with " << problem.tasks.size()
+          << " tasks.";
 
   auto lit_value = [&solution](int lit) {
     DCHECK_NE(lit, kint32max);
@@ -941,15 +1030,14 @@ bool VerifySingleSchedulingProblem(
   };
 
   // First, check task precedences.
-  for (int task_idx = 0; task_idx < relaxation.problem.tasks.size();
-       ++task_idx) {
-    const SchedulingProblem::Task& task = relaxation.problem.tasks[task_idx];
+  for (int task_idx = 0; task_idx < problem.tasks.size(); ++task_idx) {
+    const SchedulingProblem::Task& task = problem.tasks[task_idx];
 
     // Skip if the task is not present.
     bool is_present = false;
     int active_machine_idx = 0;
     for (int a = 0; a < task.compatible_machine.size(); ++a) {
-      int lit = relaxation.task_to_presence_literals[task_idx][a];
+      int lit = task.presence_literals[a];
       if (lit == kint32max || lit_value(lit)) {
         active_machine_idx = a;
         is_present = true;
@@ -958,20 +1046,17 @@ bool VerifySingleSchedulingProblem(
     }
     if (!is_present) continue;
 
-    const int start_time_var =
-        relaxation.task_to_start_time_model_var[task_idx].var;
+    const int start_time_var = task.start_time_expr.var;
     const int64_t start_time =
-        solution[start_time_var] *
-            relaxation.task_to_start_time_model_var[task_idx].coeff +
-        relaxation.task_to_start_time_model_var[task_idx].offset;
+        solution[start_time_var] * task.start_time_expr.coeff +
+        task.start_time_expr.offset;
 
     for (int before_task : task.tasks_that_must_complete_before_this) {
       bool before_is_present = false;
       int before_active_machine_idx = 0;
-      for (int a = 0;
-           a < relaxation.problem.tasks[before_task].compatible_machine.size();
+      for (int a = 0; a < problem.tasks[before_task].compatible_machine.size();
            ++a) {
-        int lit = relaxation.task_to_presence_literals[before_task][a];
+        int lit = problem.tasks[before_task].presence_literals[a];
         if (lit == kint32max || lit_value(lit)) {
           before_active_machine_idx = a;
           before_is_present = true;
@@ -981,15 +1066,15 @@ bool VerifySingleSchedulingProblem(
       if (!before_is_present) continue;
 
       const int before_task_end_var =
-          relaxation.task_to_start_time_model_var[before_task].var;
+          problem.tasks[before_task].start_time_expr.var;
       const int64_t before_task_end_time =
           solution[before_task_end_var] *
-              relaxation.task_to_start_time_model_var[before_task].coeff +
-          relaxation.task_to_start_time_model_var[before_task].offset +
-          relaxation.problem.tasks[before_task]
+              problem.tasks[before_task].start_time_expr.coeff +
+          problem.tasks[before_task].start_time_expr.offset +
+          problem.tasks[before_task]
               .duration_for_machine[before_active_machine_idx];
       if (start_time < before_task_end_time) {
-        VLOG(2) << "Task " << relaxation.problem.tasks[before_task]
+        VLOG(2) << "Task " << problem.tasks[before_task]
                 << " does not complete before task " << task;
         return false;
       }
@@ -997,7 +1082,7 @@ bool VerifySingleSchedulingProblem(
   }
 
   int num_machines = 0;
-  for (const auto& t : relaxation.problem.tasks) {
+  for (const auto& t : problem.tasks) {
     for (int m : t.compatible_machine) {
       num_machines = std::max(num_machines, m + 1);
     }
@@ -1006,14 +1091,13 @@ bool VerifySingleSchedulingProblem(
   // Now, check that at no time a machine is used by more than one task.
   std::vector<std::vector<std::pair<int64_t, int64_t>>> machine_intervals(
       num_machines);
-  for (int task_idx = 0; task_idx < relaxation.problem.tasks.size();
-       ++task_idx) {
-    const SchedulingProblem::Task& task = relaxation.problem.tasks[task_idx];
+  for (int task_idx = 0; task_idx < problem.tasks.size(); ++task_idx) {
+    const SchedulingProblem::Task& task = problem.tasks[task_idx];
 
     bool is_present = false;
     int active_machine_idx = 0;
     for (int a = 0; a < task.compatible_machine.size(); ++a) {
-      int lit = relaxation.task_to_presence_literals[task_idx][a];
+      int lit = task.presence_literals[a];
       if (lit == kint32max || lit_value(lit)) {
         active_machine_idx = a;
         is_present = true;
@@ -1022,12 +1106,10 @@ bool VerifySingleSchedulingProblem(
     }
     if (!is_present) continue;
 
-    const int start_time_var =
-        relaxation.task_to_start_time_model_var[task_idx].var;
+    const int start_time_var = task.start_time_expr.var;
     const int64_t start_time =
-        solution[start_time_var] *
-            relaxation.task_to_start_time_model_var[task_idx].coeff +
-        relaxation.task_to_start_time_model_var[task_idx].offset;
+        solution[start_time_var] * task.start_time_expr.coeff +
+        task.start_time_expr.offset;
 
     const int64_t end_time =
         start_time + task.duration_for_machine[active_machine_idx];
@@ -1238,9 +1320,8 @@ bool VerifySchedulingRelaxation(const SchedulingRelaxation& relaxation,
                                 absl::Span<const int64_t> solution,
                                 int64_t* relaxed_objective_value) {
   // First, check task precedences.
-  for (const SchedulingProblemAndMapping& problem_and_mapping :
-       relaxation.problems_and_mappings) {
-    if (!VerifySingleSchedulingProblem(problem_and_mapping, solution)) {
+  for (const SchedulingProblem& problem : relaxation.problems) {
+    if (!VerifySingleSchedulingProblem(problem, solution)) {
       return false;
     }
   }
@@ -1252,28 +1333,23 @@ bool VerifySchedulingRelaxation(const SchedulingRelaxation& relaxation,
 
     int64_t var_lower_bound = kint64min;
 
-    for (const auto& problem_and_mapping : relaxation.problems_and_mappings) {
-      if (!problem_and_mapping.makespan_expr.has_value() ||
-          problem_and_mapping.makespan_expr->var != var) {
+    for (const auto& problem : relaxation.problems) {
+      if (!problem.makespan_expr.has_value() ||
+          problem.makespan_expr->var != var) {
         continue;
       }
       // 1. Calculate the true local makespan directly from the tasks
       int64_t problem_makespan = 0;
-      for (int task_idx = 0;
-           task_idx < problem_and_mapping.problem.tasks.size(); ++task_idx) {
-        const int start_time_var =
-            problem_and_mapping.task_to_start_time_model_var[task_idx].var;
+      for (int task_idx = 0; task_idx < problem.tasks.size(); ++task_idx) {
+        const SchedulingProblem::Task& task = problem.tasks[task_idx];
+        const int start_time_var = task.start_time_expr.var;
         const int64_t start_time =
-            solution[start_time_var] *
-                problem_and_mapping.task_to_start_time_model_var[task_idx]
-                    .coeff +
-            problem_and_mapping.task_to_start_time_model_var[task_idx].offset;
+            solution[start_time_var] * task.start_time_expr.coeff +
+            task.start_time_expr.offset;
 
-        const SchedulingProblem::Task& task =
-            problem_and_mapping.problem.tasks[task_idx];
         int active_machine_idx = 0;
         for (int a = 0; a < task.compatible_machine.size(); ++a) {
-          int lit = problem_and_mapping.task_to_presence_literals[task_idx][a];
+          int lit = task.presence_literals[a];
           if (lit == kint32max) {
             active_machine_idx = a;
             break;
@@ -1287,17 +1363,15 @@ bool VerifySchedulingRelaxation(const SchedulingRelaxation& relaxation,
           }
         }
 
-        int64_t duration = problem_and_mapping.problem.tasks[task_idx]
-                               .duration_for_machine[active_machine_idx];
+        int64_t duration = task.duration_for_machine[active_machine_idx];
         problem_makespan = std::max(problem_makespan, start_time + duration);
       }
 
       // 2. Translate the local task makespan to the global variable space.
       // global_var * coeff + offset >= problem_makespan
       // global_var >= (problem_makespan - offset) / coeff
-      const int64_t diff =
-          problem_makespan - problem_and_mapping.makespan_expr->offset;
-      const int64_t local_coeff = problem_and_mapping.makespan_expr->coeff;
+      const int64_t diff = problem_makespan - problem.makespan_expr->offset;
+      const int64_t local_coeff = problem.makespan_expr->coeff;
 
       // Use integer ceiling division to ensure the lower bound remains
       // strictly valid (assuming local_coeff > 0 for a minimize makespan
@@ -1768,6 +1842,205 @@ CompactVectorVector<int> IntervalsNonOverlappingComponents(
   }
 
   return result;
+}
+
+std::vector<int> DetectRedundantCumulativeConstraints(
+    const CpModelProto& model, const SchedulingProblem& structure) {
+  std::vector<int> redundant_cumulative_indices;
+
+  struct SchedulingConstraints {
+    std::vector<int> no_overlap_constraints;
+    std::vector<int> no_overlap_2d_constraints;
+    std::vector<int> cumulative_constraints;
+    std::vector<int> interval_constraints;
+  };
+  SchedulingConstraints scheduling_constraints;
+  for (int c = 0; c < model.constraints_size(); ++c) {
+    switch (model.constraints(c).constraint_case()) {
+      case ConstraintProto::kNoOverlap:
+        scheduling_constraints.no_overlap_constraints.push_back(c);
+        break;
+      case ConstraintProto::kNoOverlap2D:
+        scheduling_constraints.no_overlap_2d_constraints.push_back(c);
+        break;
+      case ConstraintProto::kCumulative:
+        scheduling_constraints.cumulative_constraints.push_back(c);
+        break;
+      case ConstraintProto::kInterval:
+        scheduling_constraints.interval_constraints.push_back(c);
+        break;
+      default:
+        break;
+    }
+  }
+  if (scheduling_constraints.cumulative_constraints.empty()) return {};
+
+  // Map each interval constraint index to the machines (no_overlap) containing
+  // it.
+  absl::flat_hash_map<int, std::vector<int>> interval_to_machines;
+  for (const int c : scheduling_constraints.no_overlap_constraints) {
+    for (int i : model.constraints(c).no_overlap().intervals()) {
+      interval_to_machines[i].push_back(c);
+    }
+  }
+  for (const int c : scheduling_constraints.no_overlap_2d_constraints) {
+    for (int i : model.constraints(c).no_overlap_2d().x_intervals()) {
+      interval_to_machines[i].push_back(c);
+    }
+    for (int i : model.constraints(c).no_overlap_2d().y_intervals()) {
+      interval_to_machines[i].push_back(c);
+    }
+  }
+
+  const auto& interval_to_main = structure.interval_to_main_interval;
+
+  // Map each main interval to all its alternative intervals in the model.
+  absl::flat_hash_map<int, std::vector<int>> main_to_alts;
+  for (int i : scheduling_constraints.interval_constraints) {
+    if (i >= 0 && i < interval_to_main.size()) {
+      const int main_i = interval_to_main[i];
+      if (main_i >= 0) {
+        main_to_alts[main_i].push_back(i);
+      }
+    }
+  }
+
+  // Helper to check if a LinearExpressionProto is constant.
+  auto GetConstantOpt =
+      [](const LinearExpressionProto& expr) -> std::optional<int64_t> {
+    if (expr.vars_size() == 0) return expr.offset();
+    return std::nullopt;
+  };
+
+  // Scan all cumulative constraints in the model.
+  for (const int c : scheduling_constraints.cumulative_constraints) {
+    const auto& cumulative = model.constraints(c).cumulative();
+
+    const auto capacity_opt = GetConstantOpt(cumulative.capacity());
+    if (!capacity_opt.has_value()) continue;
+    const int64_t capacity = capacity_opt.value();
+    if (capacity <= 0) continue;
+
+    // Check that demands are constant.
+    bool all_demands_constant = true;
+    for (const auto& demand : cumulative.demands()) {
+      if (!GetConstantOpt(demand).has_value()) {
+        all_demands_constant = false;
+        break;
+      }
+    }
+    if (!all_demands_constant) continue;
+
+    // Retrieve unique machines that all intervals in cumulative constraint can
+    // run on.
+    absl::flat_hash_set<int> unique_machines;
+    bool has_unmapped_interval = false;
+
+    for (int i = 0; i < cumulative.intervals_size(); ++i) {
+      const int interval_index = cumulative.intervals(i);
+      // Skip the makespan interval if it is included in cumulative
+      if (interval_index == structure.makespan_interval) {
+        continue;
+      }
+      if (interval_index < 0 || interval_index >= interval_to_main.size()) {
+        has_unmapped_interval = true;
+        break;
+      }
+
+      const int main_i = interval_to_main[interval_index];
+      if (main_i < 0) {
+        has_unmapped_interval = true;
+        break;
+      }
+
+      const auto& alts = main_to_alts[main_i];
+      for (int alt : alts) {
+        auto it = interval_to_machines.find(alt);
+        if (it != interval_to_machines.end()) {
+          for (int mach : it->second) {
+            unique_machines.insert(mach);
+          }
+        }
+      }
+    }
+
+    if (has_unmapped_interval) continue;
+
+    // The cumulative constraint is redundant if the capacity is greater than or
+    // equal to the total number of disjunctive machines that these intervals
+    // can execute on.
+    if (unique_machines.size() <= capacity && !unique_machines.empty()) {
+      redundant_cumulative_indices.push_back(c);
+    }
+  }
+
+  return redundant_cumulative_indices;
+}
+
+std::string SchedulingRelaxation::ToString(
+    const CpModelProto* /*model_proto*/) const {
+  std::string details = absl::StrCat(
+      "Number of Discovered Sub-problems: ", problems.size(), "\n\n");
+
+  for (int i = 0; i < problems.size(); ++i) {
+    const SchedulingProblem& problem = problems[i];
+    absl::StrAppend(&details, "Sub-problem ", i, ": ", problem.tasks.size(),
+                    " tasks\n");
+    if (problem.jobs.empty()) {
+      for (int t = 0; t < problem.tasks.size(); ++t) {
+        const SchedulingProblem::Task& task = problem.tasks[t];
+        absl::StrAppend(&details, "  Task ", t);
+        if (!task.unconditional_intervals.empty()) {
+          absl::StrAppend(&details, " |  main_interval: [",
+                          absl::StrJoin(task.unconditional_intervals, ", "),
+                          "]");
+        }
+        if (!task.alternative_intervals.empty()) {
+          absl::StrAppend(&details, " | alternatives: [",
+                          absl::StrJoin(task.alternative_intervals, ", "), "]");
+        }
+        absl::StrAppend(&details, "\n");
+      }
+      absl::StrAppend(&details, "\n");
+    } else {
+      absl::StrAppend(
+          &details, "  Number of Discovered Jobs: ", problem.jobs.size(), "\n");
+      for (int j = 0; j < problem.jobs.size(); ++j) {
+        const SchedulingProblem::Job& job = problem.jobs[j];
+        absl::StrAppend(&details, "  Job ", j, ": ", job.task_indices.size(),
+                        " tasks\n");
+        for (int t = 0; t < job.task_indices.size(); ++t) {
+          const int task_index = job.task_indices[t];
+          const auto& task = problem.tasks[task_index];
+          absl::StrAppend(&details, "    Task ", t,
+                          " -> main_interval: ", task.main_interval);
+          if (!task.alternative_intervals.empty()) {
+            absl::StrAppend(&details, " | alternatives: [",
+                            absl::StrJoin(task.alternative_intervals, ", "),
+                            "]");
+          }
+          absl::StrAppend(&details, "\n");
+        }
+      }
+      absl::StrAppend(&details, "\n");
+    }
+
+    absl::StrAppend(&details, "  Redundant Cumulative Constraints (",
+                    problem.redundant_cumulative.size(),
+                    "): ", absl::StrJoin(problem.redundant_cumulative, ", "),
+                    "\n");
+
+    if (problem.makespan_expr.has_value()) {
+      absl::StrAppend(
+          &details, "  Makespan Variable: ", problem.makespan_expr->var, "\n");
+    } else {
+      absl::StrAppend(&details, "  Makespan Variable: -1\n");
+    }
+    absl::StrAppend(&details,
+                    "  Makespan Interval: ", problem.makespan_interval, "\n");
+  }
+  absl::StrAppend(&details, "========================================\n");
+  return details;
 }
 
 }  // namespace sat

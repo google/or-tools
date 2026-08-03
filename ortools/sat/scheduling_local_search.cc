@@ -1172,8 +1172,7 @@ SchedulingLocalSearch::LocalSearchResult SchedulingLocalSearch::Solve(
 namespace {
 
 std::vector<int64_t> ComputeCpSatSolutionFromSchedulingSolution(
-    const SchedulingProblemAndMapping& problem_and_mapping,
-    const CpModelProto& input_model_proto,
+    const SchedulingProblem& problem, const CpModelProto& input_model_proto,
     absl::Span<const int64_t> scheduling_solution,
     absl::Span<const int> active_machine_indices,
     absl::Span<const int64_t> original_solution) {
@@ -1198,15 +1197,15 @@ std::vector<int64_t> ComputeCpSatSolutionFromSchedulingSolution(
     }
   };
 
-  for (int i = 0; i < problem_and_mapping.problem.tasks.size(); ++i) {
+  for (int i = 0; i < problem.tasks.size(); ++i) {
     const int64_t new_start = scheduling_solution[i];
     const int active_machine_idx = active_machine_indices[i];
 
     // 2. Explicitly set all intervals' optional presence booleans
     // based on the dynamically provided machine choices.
-    const SchedulingProblem::Task& task = problem_and_mapping.problem.tasks[i];
+    const SchedulingProblem::Task& task = problem.tasks[i];
     for (int a = 0; a < task.compatible_machine.size(); ++a) {
-      const int lit = problem_and_mapping.task_to_presence_literals[i][a];
+      const int lit = task.presence_literals[a];
       if (lit == kint32max) continue;
 
       const bool should_be_true = (a == active_machine_idx);
@@ -1217,18 +1216,16 @@ std::vector<int64_t> ComputeCpSatSolutionFromSchedulingSolution(
       }
     }
 
-    const int64_t duration = problem_and_mapping.problem.tasks[i]
-                                 .duration_for_machine[active_machine_idx];
+    const int64_t duration = task.duration_for_machine[active_machine_idx];
     const int64_t new_end = new_start + duration;
     new_makespan = std::max(new_makespan, new_end);
 
     // 3. Set interval start, end, and size variables
-    const auto& task_intervals = problem_and_mapping.task_to_intervals[i];
 
     // 3a. Repair the specific active alternative interval
-    if (active_machine_idx < task_intervals.alternative_intervals.size()) {
+    if (active_machine_idx < task.alternative_intervals.size()) {
       const int active_interval_idx =
-          task_intervals.alternative_intervals[active_machine_idx];
+          task.alternative_intervals[active_machine_idx];
       const auto& interval =
           input_model_proto.constraints(active_interval_idx).interval();
 
@@ -1238,7 +1235,7 @@ std::vector<int64_t> ComputeCpSatSolutionFromSchedulingSolution(
     }
 
     // 3b. Repair all main/shared intervals
-    for (const int main_idx : task_intervals.unconditional_intervals) {
+    for (const int main_idx : task.unconditional_intervals) {
       const auto& interval = input_model_proto.constraints(main_idx).interval();
 
       assign_expr(interval.start(), new_start);
@@ -1248,9 +1245,8 @@ std::vector<int64_t> ComputeCpSatSolutionFromSchedulingSolution(
   }
 
   // 4. Update Makespan if present
-  if (problem_and_mapping.makespan_expr.has_value()) {
-    const auto& [makespan_var, coeff, offset] =
-        problem_and_mapping.makespan_expr.value();
+  if (problem.makespan_expr.has_value()) {
+    const auto& [makespan_var, coeff, offset] = problem.makespan_expr.value();
 
     DCHECK_GE(makespan_var, 0);
     new_solution[makespan_var] = (new_makespan - offset) / coeff;
@@ -1262,27 +1258,28 @@ std::vector<int64_t> ComputeCpSatSolutionFromSchedulingSolution(
 }  // namespace
 
 SchedulingLocalSearchSolver::SchedulingLocalSearchSolver(
-    const absl::string_view name, SubSolver::SubsolverType type,
+    absl::string_view name, SubSolver::SubsolverType type,
     const CpModelProto& input_model_proto, const SatParameters& params,
     ModelSharedTimeLimit* shared_time_limit,
-    SharedResponseManager* shared_response, SharedStatTables* stat_tables)
+    SharedResponseManager* shared_response, SharedStatTables* stat_tables,
+    const SchedulingRelaxation* relaxation)
     : SubSolver(name, type),
       input_model_proto_(input_model_proto),
       params_(params),
       shared_time_limit_(shared_time_limit),
       shared_response_(shared_response),
-      stat_tables_(stat_tables) {
-  relaxation_ = DetectSchedulingProblems(input_model_proto_);
-  for (const auto& problem_and_mapping : relaxation_.problems_and_mappings) {
+      stat_tables_(stat_tables),
+      relaxation_(*relaxation) {
+  for (const auto& problem : relaxation_.problems) {
     local_search_solvers_.emplace_back(
-        std::make_unique<SchedulingLocalSearch>(problem_and_mapping.problem));
+        std::make_unique<SchedulingLocalSearch>(problem));
   }
 }
 
 std::function<void()> SchedulingLocalSearchSolver::GenerateTask(
     int64_t task_id) {
   return [this, task_id]() {
-    if (relaxation_.problems_and_mappings.empty()) return;
+    if (relaxation_.problems.empty()) return;
     TimeLimit task_time_limit;
     shared_time_limit_->UpdateLocalLimit(&task_time_limit);
     // Create a random number generator whose seed depends both on the task_id
@@ -1293,35 +1290,27 @@ std::function<void()> SchedulingLocalSearchSolver::GenerateTask(
     std::seed_seq seed{low, high, params_.random_seed()};
     random_engine_t random(seed);
     const int problem_index =
-        absl::Uniform<int>(random, 0, relaxation_.problems_and_mappings.size());
-    if (relaxation_.problems_and_mappings[problem_index].problem.tasks.size() <
-        3)
-      return;
-    const SchedulingProblemAndMapping& problem_and_mapping =
-        relaxation_.problems_and_mappings[problem_index];
+        absl::Uniform<int>(random, 0, relaxation_.problems.size());
+    if (relaxation_.problems[problem_index].tasks.size() < 3) return;
+    const SchedulingProblem& problem = relaxation_.problems[problem_index];
     const auto base_solution =
         shared_response_->SolutionPool().GetSolutionToImprove(random);
     if (base_solution == nullptr) return;
 
     std::vector<int64_t> scheduling_solution;
-    scheduling_solution.reserve(
-        problem_and_mapping.task_to_start_time_model_var.size());
-    for (int i = 0; i < problem_and_mapping.task_to_start_time_model_var.size();
-         ++i) {
-      const auto& [var, coeff, offset] =
-          problem_and_mapping.task_to_start_time_model_var[i];
+    scheduling_solution.reserve(problem.tasks.size());
+    for (int i = 0; i < problem.tasks.size(); ++i) {
+      const auto& [var, coeff, offset] = problem.tasks[i].start_time_expr;
       scheduling_solution.push_back(
           base_solution->variable_values[var] * coeff + offset);
     }
 
-    std::vector<int> active_machine_indices(
-        problem_and_mapping.problem.tasks.size(), 0);
-    for (int i = 0; i < problem_and_mapping.problem.tasks.size(); ++i) {
-      const SchedulingProblem::Task& task =
-          problem_and_mapping.problem.tasks[i];
+    std::vector<int> active_machine_indices(problem.tasks.size(), 0);
+    for (int i = 0; i < problem.tasks.size(); ++i) {
+      const SchedulingProblem::Task& task = problem.tasks[i];
       int active_idx = 0;
       for (int a = 0; a < task.compatible_machine.size(); ++a) {
-        int lit = problem_and_mapping.task_to_presence_literals[i][a];
+        int lit = task.presence_literals[a];
         if (lit == kint32max) {
           // A single machine choice, no enforcement needed.
           active_idx = a;
@@ -1346,6 +1335,7 @@ std::function<void()> SchedulingLocalSearchSolver::GenerateTask(
     DCHECK_LE(relaxed_objective_value,
               ComputeInnerObjective(input_model_proto_.objective(),
                                     base_solution->variable_values));
+
     SchedulingLocalSearch& local_search_solver =
         *local_search_solvers_[problem_index];
 
@@ -1359,7 +1349,7 @@ std::function<void()> SchedulingLocalSearchSolver::GenerateTask(
 
     std::vector<int64_t> new_solution =
         ComputeCpSatSolutionFromSchedulingSolution(
-            problem_and_mapping, input_model_proto_, result.start_mins,
+            problem, input_model_proto_, result.start_mins,
             result.active_machine_indices, base_solution->variable_values);
 
     if (SolutionIsFeasible(input_model_proto_, new_solution)) {
