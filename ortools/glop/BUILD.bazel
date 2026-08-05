@@ -37,6 +37,24 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "rank_one_update_test",
+    size = "small",
+    srcs = ["rank_one_update_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":rank_one_update",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data:lp_test_utils",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:scattered_vector",
+        "//ortools/lp_data:sparse",
+        "//ortools/lp_data:sparse_column",
+        "//ortools/util:fp_utils",
+    ],
+)
+
 cc_library(
     name = "pricing",
     hdrs = ["pricing.h"],
@@ -91,6 +109,27 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "basis_representation_test",
+    size = "small",
+    srcs = ["basis_representation_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":basis_representation",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_types_testing",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:permutation",
+        "//ortools/lp_data:scattered_vector",
+        "//ortools/lp_data:sparse",
+        "//ortools/util:fp_utils",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random:distributions",
+    ],
+)
+
 cc_library(
     name = "variables_info",
     srcs = ["variables_info.cc"],
@@ -101,6 +140,19 @@ cc_library(
         "//ortools/lp_data:lp_types",
         "//ortools/lp_data:sparse",
         "@abseil-cpp//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "variables_info_test",
+    size = "small",
+    srcs = ["variables_info_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":variables_info",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:sparse",
     ],
 )
 
@@ -137,6 +189,18 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "parameters_validation_test",
+    size = "small",
+    srcs = ["parameters_validation_test.cc"],
+    deps = [
+        ":parameters_cc_proto",
+        ":parameters_validation",
+        "//ortools/base:gmock_main",
+        "@protobuf",
+    ],
+)
+
 cc_library(
     name = "reduced_costs",
     srcs = ["reduced_costs.cc"],
@@ -159,6 +223,22 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random:bit_gen_ref",
+    ],
+)
+
+cc_test(
+    name = "reduced_costs_test",
+    size = "small",
+    srcs = ["reduced_costs_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":basis_representation",
+        ":reduced_costs",
+        ":variables_info",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:sparse",
+        "@abseil-cpp//absl/random",
     ],
 )
 
@@ -195,6 +275,49 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "preprocessor_test",
+    size = "small",
+    srcs = ["preprocessor_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":parameters_cc_proto",
+        ":preprocessor",
+        ":preprocessor_testing",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data",
+        "//ortools/lp_data:lp_parser",
+        "//ortools/lp_data:lp_test_utils",
+        "//ortools/lp_data:lp_types",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+cc_test(
+    name = "preprocessor_random_test",
+    size = "medium",
+    srcs = ["preprocessor_random_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lp_solver",
+        "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
+        "//ortools/lp_data",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_types_testing",
+        "//ortools/lp_data:sparse_column",
+        "//ortools/util:fp_utils",
+        "@abseil-cpp//absl/functional:overload",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
 cc_library(
     name = "markowitz",
     srcs = ["markowitz.cc"],
@@ -217,6 +340,24 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "markowitz_test",
+    size = "small",
+    srcs = ["markowitz_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":markowitz",
+        "//ortools/base:gmock_main",
+        "//ortools/graph_base:iterators",
+        "//ortools/lp_data:lp_test_utils",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:permutation",
+        "//ortools/lp_data:sparse",
+        "//ortools/lp_data:sparse_column",
+        "@abseil-cpp//absl/random:distributions",
+    ],
+)
+
 cc_library(
     name = "dual_edge_norms",
     srcs = ["dual_edge_norms.cc"],
@@ -232,6 +373,27 @@ cc_library(
         "//ortools/lp_data:scattered_vector",
         "//ortools/util:stats",
         "//ortools/util:time_limit",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "dual_edge_norms_test",
+    size = "small",
+    srcs = ["dual_edge_norms_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":basis_representation",
+        ":dual_edge_norms",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data:lp_test_utils",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:permutation",
+        "//ortools/lp_data:scattered_vector",
+        "//ortools/lp_data:sparse",
+        "//ortools/util:fp_utils",
     ],
 )
 
@@ -290,6 +452,75 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "revised_simplex_test",
+    size = "small",
+    timeout = "moderate",
+    srcs = ["revised_simplex_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":parameters_cc_proto",
+        ":preprocessor",
+        ":preprocessor_testing",
+        ":revised_simplex",
+        ":variables_info",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data",
+        "//ortools/lp_data:lp_parser",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_types_testing",
+        "//ortools/lp_data:scattered_vector",
+        "//ortools/lp_data:sparse_row",
+        "//ortools/util:fp_utils",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+# Same test as revised_simplex_test but with different flags.
+cc_test(
+    name = "revised_simplex_test_coverage",
+    size = "small",
+    timeout = "moderate",
+    srcs = ["revised_simplex_test.cc"],
+    args = [
+        "--simplex_display_numbers_as_fractions",
+        "--v=1",
+    ],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":parameters_cc_proto",
+        ":preprocessor",
+        ":preprocessor_testing",
+        ":revised_simplex",
+        ":variables_info",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data",
+        "//ortools/lp_data:lp_parser",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_types_testing",
+        "//ortools/lp_data:scattered_vector",
+        "//ortools/lp_data:sparse_row",
+        "//ortools/util:fp_utils",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
 cc_library(
     name = "initial_basis",
     srcs = ["initial_basis.cc"],
@@ -306,6 +537,21 @@ cc_library(
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "initial_basis_test",
+    size = "small",
+    srcs = ["initial_basis_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":initial_basis",
+        ":parameters_cc_proto",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:sparse",
+        "@abseil-cpp//absl/random",
     ],
 )
 
@@ -333,6 +579,25 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "variable_values_test",
+    size = "small",
+    srcs = ["variable_values_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":basis_representation",
+        ":dual_edge_norms",
+        ":parameters_cc_proto",
+        ":pricing",
+        ":variable_values",
+        ":variables_info",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:sparse",
+        "@abseil-cpp//absl/random",
+    ],
+)
+
 cc_library(
     name = "update_row",
     srcs = ["update_row.cc"],
@@ -351,6 +616,42 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "update_row_test",
+    size = "small",
+    srcs = ["update_row_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":basis_representation",
+        ":update_row",
+        ":variables_info",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data:lp_test_utils",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:sparse",
+        "@abseil-cpp//absl/log:check",
+    ],
+)
+
+cc_binary(
+    name = "update_row_benchmark",
+    testonly = True,
+    srcs = ["update_row_benchmark.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":basis_representation",
+        ":update_row",
+        ":variables_info",
+        "//ortools/base:benchmark_main",
+        "//ortools/lp_data:lp_test_utils",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:sparse",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:distributions",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -386,6 +687,32 @@ cc_library(
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
         "@protobuf",
+    ],
+)
+
+cc_test(
+    name = "lp_solver_test",
+    size = "small",
+    srcs = ["lp_solver_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lp_solver",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data",
+        "//ortools/lp_data:lp_parser",
+        "//ortools/lp_data:lp_test_utils",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_types_testing",
+        "//ortools/lp_data:proto_utils",
+        "//ortools/port:scoped_std_stream_capture",
+        "//ortools/util:file_util",
+        "//ortools/util:fp_utils",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
     ],
 )
 
@@ -431,6 +758,28 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "lu_factorization_test",
+    size = "small",
+    srcs = ["lu_factorization_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lu_factorization",
+        "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
+        "//ortools/graph_base:iterators",
+        "//ortools/lp_data:lp_test_utils",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_types_testing",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:permutation",
+        "//ortools/lp_data:sparse",
+        "//ortools/lp_data:sparse_column",
+        "//ortools/util:fp_utils",
+        "@abseil-cpp//absl/random:bit_gen_ref",
     ],
 )
 
