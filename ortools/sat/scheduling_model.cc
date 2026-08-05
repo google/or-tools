@@ -1977,6 +1977,15 @@ std::vector<int> DetectRedundantCumulativeConstraints(
   return redundant_cumulative_indices;
 }
 
+bool SchedulingRelaxation::HasRedundantConstraints() const {
+  for (const SchedulingProblem& problem : problems) {
+    if (!problem.redundant_cumulative.empty()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 std::string SchedulingRelaxation::ToString(
     const CpModelProto* /*model_proto*/) const {
   std::string details = absl::StrCat(

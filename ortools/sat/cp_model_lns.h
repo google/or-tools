@@ -36,6 +36,7 @@
 #include "ortools/sat/cp_model_solver_helpers.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/scheduling_model.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
@@ -106,12 +107,13 @@ struct Neighborhood {
 // the bounds of the base problem with the external world.
 class NeighborhoodGeneratorHelper : public SubSolver {
  public:
-  NeighborhoodGeneratorHelper(CpModelProto const* model_proto,
-                              SatParameters const* parameters,
-                              SharedResponseManager* shared_response,
-                              ModelSharedTimeLimit* global_time_limit,
-                              SharedBoundsManager* shared_bounds = nullptr,
-                              SharedClausesManager* shared_clauses = nullptr);
+  NeighborhoodGeneratorHelper(
+      CpModelProto const* model_proto, SatParameters const* parameters,
+      SharedResponseManager* shared_response,
+      ModelSharedTimeLimit* global_time_limit,
+      SharedBoundsManager* shared_bounds = nullptr,
+      SharedClausesManager* shared_clauses = nullptr,
+      const SchedulingRelaxation* scheduling_relaxation = nullptr);
 
   // SubSolver interface.
   bool TaskIsAvailable() override { return false; }
@@ -152,6 +154,10 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // constant, and if it is a decision variable, or if
   // focus_on_decision_variables is false.
   bool IsActive(int var) const ABSL_SHARED_LOCKS_REQUIRED(graph_mutex_);
+
+  const SchedulingRelaxation* scheduling_relaxation() const {
+    return scheduling_relaxation_;
+  }
 
   // Returns the list of "active" variables.
   std::vector<int> ActiveVariables() const {
@@ -350,6 +356,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   SharedClausesManager* shared_clauses_;
   ModelSharedTimeLimit* global_time_limit_;
   SharedResponseManager* shared_response_;
+  const SchedulingRelaxation* scheduling_relaxation_ = nullptr;
 
   // Arena holding the memory of the CpModelProto* of this class. This saves the
   // destruction cost that can take time on problem with millions of

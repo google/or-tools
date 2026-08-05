@@ -30,6 +30,7 @@
 #include "absl/numeric/bits.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
+#include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/helpers.h"
@@ -39,6 +40,7 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/logging.h"
 
 namespace operations_research::sat {
 
@@ -49,6 +51,8 @@ std::string BinaryCircuit::DebugString() const {
   // All these case should be easily simplifiable.
   int num_todo = 0;
   for (const BinaryGate& gate : gates) {
+    if (gate.target == BinaryGate::kConstraintTarget) continue;
+
     depths[gate.target] = std::max(depths[gate.target], depths[gate.a] + 1);
     depths[gate.target] = std::max(depths[gate.target], depths[gate.b] + 1);
     max_depth = std::max(max_depth, depths[gate.target]);
@@ -674,6 +678,79 @@ void ReduceGates(BinaryCircuit* circuit) {
   *circuit = extractor.Extract(circuit->outputs);
 }
 
+BinaryCircuit ConvertInnerNodeToInputs(const BinaryCircuit& circuit,
+                                       absl::Span<const int> new_inputs) {
+  // We will need a big remapping.
+  std::vector<int> mapping(circuit.num_vars, -1);
+  int new_index = 0;
+  for (int i = 0; i < circuit.num_inputs; ++i) mapping[i] = new_index++;
+  for (const int i : new_inputs) {
+    if (mapping[i] != -1) continue;  // Already seen.
+    mapping[i] = new_index++;
+  }
+  const int new_num_inputs = new_index;
+  for (int i = 0; i < mapping.size(); ++i) {
+    if (mapping[i] == -1) {
+      mapping[i] = new_index++;
+    }
+  }
+  CHECK_EQ(new_index, circuit.num_vars);
+
+  // IMPORTANT special case: If one of the new_inputs is a negation of another
+  // variable then we want any dependency on the other variabe to be the
+  // negation of that input instead !
+  std::vector<int> rewrite_as_negation(circuit.num_vars, -1);
+  for (BinaryGate gate : circuit.gates) {
+    if (gate.a == gate.b && mapping[gate.target] <= new_num_inputs) {
+      const int subtype = (gate.type & 1) + 2 * ((gate.type >> 3) & 1);
+      if (subtype == 0b01) {
+        rewrite_as_negation[gate.a] = gate.target;
+      }
+    }
+  }
+
+  BinaryCircuit new_circuit;
+  new_circuit.num_vars = circuit.num_vars;
+  new_circuit.num_inputs = new_num_inputs;
+
+  // Now remap the gates.
+  for (BinaryGate gate : circuit.gates) {
+    // We remove constraint for now.
+    if (gate.type == BinaryGate::kConstraintTarget) continue;
+    if (mapping[gate.target] <= new_num_inputs) continue;  // Remove.
+
+    // First rewrite as negation !
+    if (rewrite_as_negation[gate.target] != -1) {
+      gate.a = gate.b = rewrite_as_negation[gate.target];
+      gate.type = 0b0001;
+      CHECK(mapping[gate.a] <= new_num_inputs);
+    }
+
+    gate.target = mapping[gate.target];
+    gate.a = mapping[gate.a];
+    gate.b = mapping[gate.b];
+    new_circuit.gates.push_back(gate);
+  }
+
+  new_circuit.outputs.reserve(circuit.outputs.size());
+  for (const int out : circuit.outputs) {
+    new_circuit.outputs.push_back(mapping[out]);
+  }
+
+  // Update the mapping.
+  new_circuit.reverse_mapping.resize(new_circuit.num_vars);
+  for (int i = 0; i < new_circuit.num_vars; ++i) {
+    new_circuit.reverse_mapping[mapping[i]] = circuit.reverse_mapping[i];
+  }
+  new_circuit.mapping = circuit.mapping;
+  for (int& node : new_circuit.mapping) {
+    if (node == -1) continue;
+    node = mapping[node];
+  }
+
+  return new_circuit;
+}
+
 // In order to reduce the amount of nodes, we "expand" all node with a single
 // usage of their output. That result in node that are still a Boolean function
 // with one output, but can have a lot more than 2 inputs.
@@ -818,6 +895,8 @@ std::string ToBenchFile(const BinaryCircuit& circuit) {
 
 SubcircuitExtractor::SubcircuitExtractor(const BinaryCircuit& circuit)
     : mitter_(circuit) {
+  CHECK_EQ(circuit.reverse_mapping.size(), circuit.num_vars);
+
   // Do some precomputation.
   CompactVectorVectorBuilder<int, int> dependency_builder;
   for (const BinaryGate& gate : circuit.gates) {
@@ -846,13 +925,21 @@ BinaryCircuit SubcircuitExtractor::Extract(absl::Span<const int> new_outputs) {
 
   queue_.clear();
   seen_.assign(mitter_.num_vars, false);
+  int num_duplicate_outputs = 0;
   for (const int index : new_outputs) {
     if (!seen_[index]) {
       seen_[index] = true;
       queue_.push_back(index);
       subproblem.outputs.push_back(index);  // Will be remapped below
+    } else {
+      ++num_duplicate_outputs;
+      subproblem.outputs.push_back(index);
     }
   }
+  if (num_duplicate_outputs > 0) {
+    VLOG(2) << num_duplicate_outputs << " duplicate outputs !";
+  }
+
   absl::c_make_heap(queue_);
 
   // Follow the dependency to the new inputs.
@@ -965,7 +1052,7 @@ BinaryCircuit ConstructMitter(const BinaryCircuit& circuit_a,
   }
   mitter.num_vars += circuit_b.num_vars - circuit_b.num_inputs;
 
-  // Lets create new gate for the output "differences";
+  // Let's create new gate for the output "differences";
   // These are the new inputs.
   mitter.outputs.clear();
   for (int i = 0; i < num_outputs; ++i) {
@@ -979,6 +1066,364 @@ BinaryCircuit ConstructMitter(const BinaryCircuit& circuit_a,
   // We re-initialize it.
   mitter.ResetBooleanMapping();
   return mitter;
+}
+
+BinaryCircuit ConstructDecomposition(int m, const BinaryCircuit& circuit) {
+  BinaryCircuit result;
+
+  const int n = circuit.num_inputs;
+  CHECK_LT(m, n);
+  result.num_inputs = n + (n - m);
+  result.num_vars = result.num_inputs;
+
+  // Evaluate f(a, b).
+  std::vector<int> input_map(n);
+  for (int i = 0; i < n; ++i) {
+    input_map[i] = i;
+  }
+  const std::vector<int> outputs_a_b =
+      AppendCircuit(input_map, circuit, &result);
+
+  // Evaluate f(0, b).
+  for (int i = 0; i < n; ++i) {
+    input_map[i] = i < m ? -1 : i;
+  }
+  const std::vector<int> outputs_0_b =
+      AppendCircuit(input_map, circuit, &result);
+
+  // Evaluate f(a, b2).
+  for (int i = 0; i < n; ++i) {
+    input_map[i] = i < m ? i : n + (i - m);
+  }
+  const std::vector<int> outputs_a_b2 =
+      AppendCircuit(input_map, circuit, &result);
+
+  // Evaluate f(0, b2).
+  for (int i = 0; i < n; ++i) {
+    input_map[i] = i < m ? -1 : n + (i - m);
+  }
+  const std::vector<int> outputs_0_b2 =
+      AppendCircuit(input_map, circuit, &result);
+
+  // Constraint f(0, b) to be f(0, b2).
+  const int num_outputs = circuit.outputs.size();
+  for (int i = 0; i < num_outputs; ++i) {
+    result.gates.emplace_back(0b1001, BinaryGate::kConstraintTarget,
+                              outputs_0_b[i], outputs_0_b2[i]);
+  }
+
+  // The new output is f(a,b) != f(a, b2).
+  for (int i = 0; i < num_outputs; ++i) {
+    result.gates.emplace_back(0b0110, result.num_vars, outputs_a_b[i],
+                              outputs_a_b2[i]);
+    result.outputs.push_back(result.num_vars);
+    ++result.num_vars;
+  }
+
+  result.ResetBooleanMapping();
+  return result;
+}
+
+bool SampleDecomposition(int m, const BinaryCircuit& circuit) {
+  const int n = m + circuit.outputs.size();  // new inputs.
+  if (n >= 20) return false;
+  if (circuit.outputs.size() >= 64) return false;
+
+  // The function g().
+  int num_seen = 0;
+  std::vector<bool> g_seen((1 << n), false);
+  std::vector<uint64_t> g_values(1 << n);
+
+  FixedCapacityVector<uint64_t> values;
+  FixedCapacityVector<uint64_t> m_values;
+  values.ClearAndReserve(circuit.num_vars);
+  m_values.ClearAndReserve(circuit.num_vars);
+
+  // We can sample 64 bits at the time.
+  const int num_samples = 1 << 20;
+  absl::BitGen random;
+  for (int start = 0; start < num_samples; ++start) {
+    for (int i = 0; i < circuit.num_inputs; ++i) {
+      values[i] = absl::Uniform<uint64_t>(random);
+      if (i >= m) {
+        m_values[i] = values[i];
+      } else {
+        m_values[i] = 0;
+      }
+    }
+
+    // We evaluate both f(m_input, other_inputs) and f(0, other_inputs) at the
+    // same time.
+    for (const auto& [type, target, a, b] : circuit.gates) {
+      values[target] = CombineGate2(type, values[a], values[b]);
+      m_values[target] = CombineGate2(type, m_values[a], m_values[b]);
+    }
+
+    // Reconstruct the 64 evaluation of g().
+    for (uint64_t pos = 0; pos < 64; ++pos) {
+      uint64_t g_input = 0;
+      uint64_t g_output = 0;
+      int k = 0;
+      int l = 0;
+      for (int i = 0; i < m; ++i) {
+        g_input |= ((values[i] >> pos) & 1) << k;
+        k++;
+      }
+      for (const int o : circuit.outputs) {
+        g_input |= ((m_values[o] >> pos) & 1) << k;
+        g_output |= ((values[o] >> pos) & 1) << l;
+        k++;
+        l++;
+      }
+      DCHECK_EQ(k, n);
+      DCHECK_EQ(l, circuit.outputs.size());
+      if (!g_seen[g_input]) {
+        ++num_seen;
+        g_seen[g_input] = true;
+        g_values[g_input] = g_output;
+      } else {
+        if (g_values[g_input] != g_output) {
+          LOG(INFO) << "Not decomposable ! " << FormatCounter(64 * start) << " "
+                    << std::bitset<20>(g_input) << " "
+                    << std::bitset<20>(g_output) << " was "
+                    << std::bitset<20>(g_values[g_input]);
+          return false;
+        }
+      }
+    }
+  }
+
+  LOG(INFO) << "Seems decomposable " << FormatCounter(num_seen) << "/ "
+            << FormatCounter(1 << n) << " #samples "
+            << FormatCounter(64 * num_samples);
+  return true;
+}
+
+bool RecoverNWayAddition(const BinaryCircuit& circuit) {
+  if (circuit.outputs.size() >= 64) return false;
+
+  FixedCapacityVector<uint64_t> values;
+  values.ClearAndReserve(circuit.num_vars);
+
+  // First find out the mapping input bit -> output bit.
+  std::vector<int64_t> mapping(circuit.num_inputs);
+  for (int input_pos = 0; input_pos < circuit.num_inputs; ++input_pos) {
+    for (int i = 0; i < circuit.num_inputs; ++i) {
+      if (i == input_pos) {
+        values[i] = 1;
+      } else {
+        values[i] = 0;
+      }
+    }
+    for (const auto& [type, target, a, b] : circuit.gates) {
+      values[target] = CombineGate2(type, values[a], values[b]);
+    }
+
+    // Fecth the output of f(1_i);
+    int k = 0;
+    int64_t out = 0;
+    for (const int o : circuit.outputs) {
+      out |= (values[o] & 1) << k++;
+    }
+
+    mapping[input_pos] = out;
+    LOG(INFO) << input_pos << " -> " << std::bitset<20>(out);
+  }
+
+  // Does the circuit is sum of mapping[i] ??
+  const int num_samples = 1 << 16;
+  absl::BitGen random;
+  for (int start = 0; start < num_samples; ++start) {
+    for (int i = 0; i < circuit.num_inputs; ++i) {
+      values[i] = absl::Uniform<uint64_t>(random);
+    }
+    for (const auto& [type, target, a, b] : circuit.gates) {
+      values[target] = CombineGate2(type, values[a], values[b]);
+    }
+
+    // Reconstruct the 64 evaluation of g().
+    for (uint64_t pos = 0; pos < 64; ++pos) {
+      int64_t out_sum = 0;
+      for (int i = 0; i < circuit.num_inputs; ++i) {
+        if ((values[i] >> pos) & 1) {
+          out_sum += mapping[i];
+        }
+      }
+      out_sum &= (1 << circuit.outputs.size()) - 1;
+
+      int k = 0;
+      uint64_t out = 0;
+      for (const int o : circuit.outputs) {
+        out |= ((values[o] >> pos) & 1) << k++;
+      }
+
+      if (out != out_sum) {
+        LOG(INFO) << "Not equal to simple sum, output differs: "
+                  << std::bitset<20>(out) << " " << std::bitset<20>(out_sum);
+        return false;
+      }
+    }
+  }
+
+  LOG(INFO) << "Circuit seems like simple sum on "
+            << FormatCounter(64 * num_samples) << " samples";
+  return true;
+}
+
+// Generates an n-bit adder circuit that computes output = (A + B) mod (2^n).
+// Input layout:  A = [0, n), B = [n, 2*n)
+// Output layout: Sum bits [S_0, S_1, ..., S_{n-1}]
+BinaryCircuit MakeNBitAdder(int n) {
+  BinaryCircuit circuit;
+  if (n <= 0) return circuit;
+
+  circuit.num_inputs = 2 * n;
+
+  // Track the next variable index to allocate.
+  int next_var = circuit.num_inputs;
+
+  // Helper lambda to create a gate and push it to the circuit.
+  auto add_gate = [&](uint8_t type, int a, int b) -> int {
+    int target = next_var++;
+    circuit.gates.emplace_back(type, target, a, b);
+    return target;
+  };
+
+  // We will maintain the carry bit across bit positions.
+  int carry = -1;
+
+  for (int i = 0; i < n; ++i) {
+    int a_i = i;      // Bit i of input A
+    int b_i = n + i;  // Bit i of input B
+
+    if (i == 0) {
+      // Half-adder for bit 0
+      // Sum bit: S_0 = A_0 ^ B_0 (XOR -> 0b0110)
+      int sum_i = add_gate(0b0110, a_i, b_i);
+      circuit.outputs.push_back(sum_i);
+
+      // Carry bit: C_0 = A_0 & B_0 (AND -> 0b1000)
+      carry = add_gate(0b1000, a_i, b_i);
+    } else {
+      // Full-adder for bit i > 0
+      // 1. xor_ab = A_i ^ B_i
+      int xor_ab = add_gate(0b0110, a_i, b_i);
+
+      // 2. Sum bit: S_i = xor_ab ^ C_{i-1}
+      int sum_i = add_gate(0b0110, xor_ab, carry);
+      circuit.outputs.push_back(sum_i);
+
+      // 3. and_ab = A_i & B_i
+      int and_ab = add_gate(0b1000, a_i, b_i);
+
+      // 4. and_carry = xor_ab & C_{i-1}
+      int and_carry = add_gate(0b1000, xor_ab, carry);
+
+      // 5. Next Carry: C_i = and_ab | and_carry (OR -> 0b1110)
+      carry = add_gate(0b1110, and_ab, and_carry);
+    }
+  }
+
+  circuit.num_vars = next_var;
+  circuit.ResetBooleanMapping();
+  return circuit;
+}
+
+std::vector<int> AppendCircuit(absl::Span<const int> input_map,
+                               const BinaryCircuit& circuit,
+                               BinaryCircuit* result) {
+  CHECK_EQ(input_map.size(), circuit.num_inputs);
+
+  const int n = circuit.num_inputs;
+  const int new_start = result->num_vars - n;
+  const auto remap = [n, new_start, input_map](int index) {
+    if (index < n) return input_map[index];
+    return new_start + index;
+  };
+  for (const BinaryGate& gate : circuit.gates) {
+    const int a = remap(gate.a);
+    const int b = remap(gate.b);
+    const int t = remap(gate.target);
+    CHECK_EQ(t, result->num_vars++);
+
+    // -1 means input is always zero.
+    int type = gate.type;
+    if (a == -1) type = (type & 1) * 3 + (type & 4) * 3;
+    if (b == -1) type = (type & 3) + (type & 3) * 4;
+
+    result->gates.emplace_back(type, t, (a < 0 ? 0 : a), (b < 0 ? 0 : b));
+  }
+  std::vector<int> outputs;
+  outputs.reserve(circuit.outputs.size());
+  for (const int o : circuit.outputs) {
+    outputs.push_back(remap(o));
+  }
+  return outputs;
+}
+
+std::vector<BinaryCircuit> GetNWayAdditionSubmodels(
+    const BinaryCircuit& circuit) {
+  std::vector<BinaryCircuit> result;
+  result.reserve(circuit.num_inputs);
+
+  const BinaryCircuit adder = MakeNBitAdder(circuit.outputs.size());
+
+  std::vector<int> input_map;
+  const int n = circuit.num_inputs;
+  for (int number = 0; number < circuit.num_inputs; ++number) {
+    BinaryCircuit local_mitter;
+    local_mitter.num_inputs = n;
+    local_mitter.num_vars = local_mitter.num_inputs;
+
+    // Evaluate f(0, a_i, b).
+    input_map.assign(n, -1);
+    for (int i = number; i < input_map.size(); ++i) {
+      input_map[i] = i;
+    }
+    const std::vector<int> outputs_full =
+        AppendCircuit(input_map, circuit, &local_mitter);
+    CHECK_EQ(outputs_full.size(), circuit.outputs.size());
+
+    // Evaluate f(0, a_i, 0).
+    input_map.assign(n, -1);
+    input_map[number] = number;
+    const std::vector<int> outputs_single =
+        AppendCircuit(input_map, circuit, &local_mitter);
+    CHECK_EQ(outputs_single.size(), circuit.outputs.size());
+
+    // Evaluate f(0, 0, b).
+    input_map.assign(n, -1);
+    for (int i = number + 1; i < input_map.size(); ++i) {
+      input_map[i] = i;
+    }
+    const std::vector<int> outputs_suffix =
+        AppendCircuit(input_map, circuit, &local_mitter);
+    CHECK_EQ(outputs_suffix.size(), circuit.outputs.size());
+
+    // Add outputs_single with outputs_suffix.
+    input_map.assign(2 * circuit.outputs.size(), -1);
+    for (int i = 0; i < input_map.size(); ++i) {
+      input_map[i] = i < outputs_single.size()
+                         ? outputs_single[i]
+                         : outputs_suffix[i - outputs_single.size()];
+    }
+    const std::vector<int> outputs_adder =
+        AppendCircuit(input_map, adder, &local_mitter);
+    CHECK_EQ(outputs_adder.size(), circuit.outputs.size());
+
+    // The new output is output_full != outputs_adder.
+    for (int i = 0; i < circuit.outputs.size(); ++i) {
+      local_mitter.gates.emplace_back(0b0110, local_mitter.num_vars,
+                                      outputs_full[i], outputs_adder[i]);
+      local_mitter.outputs.push_back(local_mitter.num_vars);
+      ++local_mitter.num_vars;
+    }
+
+    local_mitter.ResetBooleanMapping();
+    result.push_back(local_mitter);
+  }
+
+  return result;
 }
 
 // TODO(user): If one call proved all potential equivalences, we can stop.
@@ -1225,10 +1670,35 @@ void RemoveEquivalences(absl::Span<const std::pair<Literal, Literal>> equiv,
   }
 
   // Remap outputs that are equal to their representative.
+  int num_negated_output = 0;
+  std::vector<int> negation_of(circuit->num_vars, -1);
   for (int& out_ref : circuit->outputs) {
     if (representative[out_ref] == kNoLiteralIndex) continue;
     const Literal lit(representative[out_ref]);
-    if (lit.IsPositive()) out_ref = circuit->mapping[lit.Variable()];
+    const int var = circuit->mapping[lit.Variable()];
+    if (lit.IsPositive()) {
+      out_ref = var;
+    } else {
+      if (negation_of[var] == -1) {
+        circuit->reverse_mapping.push_back(circuit->reverse_mapping[out_ref]);
+
+        // Lets create a new gate to at least directly depend on the
+        // representative.
+        ++num_negated_output;
+        BinaryGate gate;
+        gate.type = 0b0001;
+        gate.target = circuit->num_vars++;
+        gate.a = gate.b = var;
+        negation_of[var] = gate.target;
+        circuit->gates.push_back(gate);
+      }
+      out_ref = negation_of[var];
+    }
+  }
+
+  if (num_negated_output > 0) {
+    VLOG(2) << "Warning: " << num_negated_output
+            << " unary gate still needed for negated output";
   }
 
   if (num_extra_equivalences > 0) {

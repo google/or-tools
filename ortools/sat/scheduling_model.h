@@ -116,6 +116,7 @@ struct SchedulingRelaxation {
   };
   RelaxedObjective relaxed_objective;
 
+  bool HasRedundantConstraints() const;
   std::string ToString(const CpModelProto* model_proto = nullptr) const;
 };
 

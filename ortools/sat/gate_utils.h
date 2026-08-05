@@ -402,6 +402,12 @@ void RemoveEquivalences(absl::Span<const std::pair<Literal, Literal>> equiv,
                         BinaryCircuit* circuit,
                         absl::Span<const Literal> extra_fixing = {});
 
+// Given a list of nodes that are not already inputs, remove the gates defining
+// them, and reorder everything so that they are considered as new inputs.
+// They will appear after the original circuit inputs.
+BinaryCircuit ConvertInnerNodeToInputs(const BinaryCircuit& circuit,
+                                       absl::Span<const int> new_inputs);
+
 // Constructs a problem to prove the equivalence of both circuits,
 // the num_inputs and the outputs size must be equivalent.
 // This will create a new circuit where the output are 1 iff the output of
@@ -411,6 +417,54 @@ void RemoveEquivalences(absl::Span<const std::pair<Literal, Literal>> equiv,
 // the new output is one, and show infeasibility.
 BinaryCircuit ConstructMitter(const BinaryCircuit& circuit_a,
                               const BinaryCircuit& circuit_b);
+
+// Append a copy of the given circuit into a "result" circuit we are currently
+// constructing.
+//
+// The input i of the circuit will be wired to input_map[i] of the initial
+// result circuit. And an input_map[i] of -1 is a special case that means that
+// input will be set to zero.
+//
+// This will append new gates and "local variable" at the end of the result
+// circuit.
+//
+// Returns the set of outputs indices of "circuit" in the new space.
+std::vector<int> AppendCircuit(absl::Span<const int> input_map,
+                               const BinaryCircuit& circuit,
+                               BinaryCircuit* result);
+
+// For a binary circuit of n inputs, see if n can be decomposed
+// in (a, b) with the size of a being m, such that f(a, b) = g(a, f(0, b)).
+//
+// The first function use sampling to see if this seem to be the case and to
+// "reconstruct" g(). This is a bit flawed because with random sampling we will
+// probably not cover the full domain of g(). For multi-addition, for instance,
+// to recover the output zero, we would need to try the all zero input, which
+// will not happen with random input.
+//
+// The second function create a kind of mitter circuit to prove that a g() exist
+// without having to describe it. For that we construct a circuit with m + 2 *
+// (n - m) inputs. That evaluate f(a, b), f(a, b'), f(0, b), f(0, b'). that
+// forces f(0, b) to be f(0, b'). And test that f(a, b) != f(a, b').
+bool SampleDecomposition(int m, const BinaryCircuit& circuit);
+BinaryCircuit ConstructDecomposition(int m, const BinaryCircuit& circuit);
+
+// Generates an n-bit adder circuit that computes output = (A + B) mod (2^n).
+// Input layout:  A = [0, n), B = [n, 2*n)
+// Output layout: Sum bits [S_0, S_1, ..., S_{n-1}]
+BinaryCircuit MakeNBitAdder(int n);
+
+// See if the circuit look like sum_i(bit_i * table[i]).
+//
+// The first function just check it with sampling.
+//
+// The second function dump num_input model to prove that this is the case.
+// If there is n input bits, we have n models
+// where each show that f(0, a_i, suffix) = f(0, a_i, 0) + f(0, 0, suffix).
+// The models are easier and easier to solve.
+bool RecoverNWayAddition(const BinaryCircuit& circuit);
+std::vector<BinaryCircuit> GetNWayAdditionSubmodels(
+    const BinaryCircuit& circuit);
 
 // Output a "dot" file representation of the given circuit. This tries to
 // simplify the final graph by removing all intermediate node that are used only

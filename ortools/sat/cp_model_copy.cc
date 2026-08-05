@@ -240,7 +240,7 @@ bool ModelCopy::CreateVariablesFromDomains(absl::Span<const Domain> domains) {
 // way to remind contributor to not forget this.
 bool ModelCopy::ImportAndSimplifyConstraints(
     const CpModelProto& in_model, bool first_copy,
-    std::function<bool(int)> active_constraints) {
+    const std::function<bool(int)>& active_constraints) {
   const bool ignore_names = params_.ignore_names();
 
   // If first_copy is true, we reorder the scheduling constraint to be sure they
@@ -274,6 +274,7 @@ bool ModelCopy::ImportAndSimplifyConstraints(
       }
     }
     for (int c = 0; c < in_model.constraints_size(); ++c) {
+      if (active_constraints != nullptr && !active_constraints(c)) continue;
       const ConstraintProto& ct = in_model.constraints(c);
       if (ct.constraint_case() != ConstraintProto::kBoolOr) {
         LOG(FATAL) << error_msg;
@@ -1994,10 +1995,12 @@ void VariableDomains::Set(int var, Domain d) {
 DenseModelCopy::DenseModelCopy(absl::string_view name,
                                const CpModelProto& input_model_proto,
                                SharedBoundsManager* shared_bounds,
-                               SharedClausesManager* shared_clauses)
+                               SharedClausesManager* shared_clauses,
+                               std::function<bool(int)> active_constraints)
     : input_model_proto_(input_model_proto),
       shared_clauses_(shared_clauses),
       shared_bounds_(shared_bounds),
+      active_constraints_(std::move(active_constraints)),
       shared_bounds_id_(
           shared_bounds == nullptr ? 0 : shared_bounds->RegisterNewId(name)),
       model_proto_(input_model_proto) {
@@ -2144,7 +2147,9 @@ bool DenseModelCopy::ApplyVariableMapping() {
   if (!copier.CreateVariablesFromDomains(input_var_domains_)) {
     return false;
   }
-  if (!copier.ImportAndSimplifyConstraints(input_model_proto_)) {
+  if (!copier.ImportAndSimplifyConstraints(input_model_proto_,
+                                           /*first_copy=*/false,
+                                           active_constraints_)) {
     return false;
   }
   if (!copier.ImportEverythingExceptVariablesConstraintsAndHint(

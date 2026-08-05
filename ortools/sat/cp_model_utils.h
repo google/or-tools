@@ -497,6 +497,10 @@ int CombineSeed(int base_seed, int64_t delta);
 constexpr ConstraintProto::ConstraintCase kLargestConstraintType =
     ConstraintProto::ConstraintCase::kDummyConstraint;
 
+// kLargestConstraintType should be less than 2^kConstraintTypeBitSize.
+constexpr int kConstraintTypeBitSize = 5;
+static_assert(kLargestConstraintType < (1 << kConstraintTypeBitSize));
+
 }  // namespace sat
 }  // namespace operations_research
 

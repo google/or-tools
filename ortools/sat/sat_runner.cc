@@ -245,11 +245,11 @@ void SetInterleavedWorkers(SatParameters* parameters) {
   if (parameters->num_workers() == 1) {
     parameters->set_interleave_search(true);
     parameters->set_use_rins_lns(false);
-    parameters->add_subsolvers("default_lp");
+    parameters->add_subsolvers("no_lp");
     parameters->add_subsolvers("max_lp");
-    parameters->add_subsolvers("quick_restart");
-    parameters->add_subsolvers("core_or_no_lp");  // no_lp if no objective.
-    parameters->set_num_violation_ls(1);          // Off if no objective.
+    parameters->add_subsolvers("quick_restart_no_lp");
+    parameters->add_subsolvers("core_or_shaving_no_lp");
+    parameters->set_num_violation_ls(1);  // Off if no objective.
   }
 }
 

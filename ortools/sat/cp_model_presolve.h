@@ -366,6 +366,14 @@ class CpModelPresolver {
   void TryToSimplifyDomain(int var);
 
   void LookAtVariableWithDegreeTwo(int var);
+
+  void PresolveVarOnlyInIntProdAndLinMax(int var, int int_prod_ct_index,
+                                         int lin_max_ct_index);
+  void PresolveVarOnlyInLinearAndLinear(int var, int linear1_ct_index,
+                                        int linear2_ct_index);
+  void PresolveVarOnlyInLinMaxAndLinear(int var, int lin_max_ct_index,
+                                        int linear_ct_index);
+
   void ProcessVariableInTwoAtMostOrExactlyOne(int var);
 
   bool MergeCliqueConstraintsHelper(std::vector<std::vector<Literal>>& cliques,

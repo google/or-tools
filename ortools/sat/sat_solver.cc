@@ -1117,7 +1117,8 @@ bool SatSolver::ProcessCurrentConflict(
 }
 
 bool SatSolver::RemoveRedundantLiteralFromConflict(
-    ClausePtr& clause, std::vector<Literal>& literals) {
+    ClausePtr& clause, std::vector<Literal>& literals,
+    bool delete_old_lrat_clause) {
   bool some_change = false;
   tmp_proof_.clear();
   for (Literal& lit : literals) {
@@ -1148,9 +1149,11 @@ bool SatSolver::RemoveRedundantLiteralFromConflict(
     DCHECK_NE(new_clause, clause);
     tmp_proof_.push_back(clause);
     lrat_proof_handler_->AddInferredClause(new_clause, tmp_proof_);
-    lrat_proof_handler_->DeleteClause(clause, /*delete_sat_clause=*/false);
+    if (delete_old_lrat_clause) {
+      lrat_proof_handler_->DeleteClause(clause, /*delete_sat_clause=*/false);
+    }
   }
-  if (clause.IsSatClausePtr()) {
+  if (delete_old_lrat_clause && clause.IsSatClausePtr()) {
     delete clause.GetSatClause();
   }
   clause = new_clause;
@@ -1824,7 +1827,7 @@ void SatSolver::MaybeLearnOnAssumptionUnsat() {
   ProveIncompatibleDecisions(trail_->FailingClause(),
                              /*need_failing_clause=*/true);
 
-  // Corner case: as we resolve the conflict, we migth show unsat!
+  // Corner case: as we resolve the conflict, we might show unsat!
   if (incompatible_decisions_.decisions.empty()) {
     model_is_unsat_ = true;
     return;
@@ -1857,23 +1860,29 @@ void SatSolver::MaybeLearnOnAssumptionUnsat() {
   if (parameters_->learn_on_assumptions_unsat() &&
       incompatible_decisions_.decisions.size() <=
           parameters_->clause_cleanup_lbd_bound()) {
-    // Tricky. The ownership will be transferred to the ClauseManager.
-    incompatible_decisions_.underlying_memory.release();
-
     // Remove assumptions that have potentially a different representative.
     absl::Span<const Literal> span =
         incompatible_decisions_.clause_ptr.GetLiterals();
     tmp_literals_.assign(span.begin(), span.end());
+    ClausePtr learned_clause = incompatible_decisions_.clause_ptr;
+    // Do not delete incompatible_decisions_.clause_ptr from the LRAT proof if
+    // some redundant literals are removed, because it can be used in further
+    // proofs when returned by GetLastIncompatibleDecisionsAsClausePtr(). It
+    // will be deleted lazily in the next ProveIncompatibleDecisions() call (if
+    // any).
     const bool ok = RemoveRedundantLiteralFromConflict(
-        incompatible_decisions_.clause_ptr, tmp_literals_);
+        learned_clause, tmp_literals_, /*delete_old_lrat_clause=*/false);
 
     // Because of the way we handle assumptions, we just backtrack to level
     // zero before learning the clause.
     if (ok) {
+      if (learned_clause == incompatible_decisions_.clause_ptr) {
+        // Tricky. The ownership will be transferred to the ClauseManager.
+        incompatible_decisions_.underlying_memory.release();
+      }
       BacktrackAndPropagateReimplications(0);
       AddLearnedClauseAndEnqueueUnitPropagation(
-          incompatible_decisions_.clause_ptr,
-          incompatible_decisions_.clause_ptr.GetLiterals(), true,
+          learned_clause, learned_clause.GetLiterals(), true,
           std::numeric_limits<int>::max());
     }
   }

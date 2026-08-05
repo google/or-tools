@@ -39,6 +39,7 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/restart.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/scheduling_model.h"
 #include "ortools/sat/stat_tables.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
@@ -396,10 +397,12 @@ class FeasibilityJumpSolver : public SubSolver {
       ModelSharedTimeLimit* shared_time_limit,
       SharedResponseManager* shared_response,
       SharedBoundsManager* shared_bounds, SharedClausesManager* shared_clauses,
-      SharedLsSolutionRepository* shared_hints, SharedStatTables* stat_tables)
+      SharedLsSolutionRepository* shared_hints, SharedStatTables* stat_tables,
+      std::function<bool(int)> active_constraints = nullptr)
       : SubSolver(name, type),
         input_model_proto_(input_model_proto),
-        dense_model_(name, input_model_proto, shared_bounds, shared_clauses),
+        dense_model_(name, input_model_proto, shared_bounds, shared_clauses,
+                     std::move(active_constraints)),
         params_(std::move(params)),
         states_(std::move(ls_states)),
         shared_time_limit_(shared_time_limit),
@@ -554,6 +557,7 @@ class FeasibilityJumpSolver : public SubSolver {
   bool time_limit_crossed_ = false;
 
   std::unique_ptr<LsEvaluator> evaluator_;
+  const SchedulingRelaxation* scheduling_relaxation_ = nullptr;
   std::vector<bool> var_occurs_in_non_linear_constraint_;
 
   // The jumps for the `dense_model_` variables.

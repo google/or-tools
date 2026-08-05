@@ -1075,9 +1075,8 @@ class SchedulingSearchHeuristicHelper {
     interval_index--;
     if (successors_.empty()) return;
     for (const IntervalVariable j : successors_[i]) {
-      // TODO(user): fails with ortools/examples/cpp:jobshop_sat_ft06 but
-      // only in the open source export. Investigate why.
-      // DCHECK_GT(num_non_fixed_predecessors_[j], 0);
+      if (IntervalIsAbsentOrFixed(j)) continue;
+      DCHECK_GT(num_non_fixed_predecessors_[j], 0);
       num_non_fixed_predecessors_[j]--;
       if (num_non_fixed_predecessors_[j] == 0 &&
           !added_to_intervals_with_only_fixed_predecessors_[j]) {

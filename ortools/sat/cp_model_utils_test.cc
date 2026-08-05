@@ -393,6 +393,12 @@ TEST(LargestConstraintTypeTest, IsCorrect) {
       << "kLargestConstraintType (" << kLargestConstraintType
       << ") does not match the largest field number in the 'constraint' oneof ("
       << max_field_number << "). Please update the constant.";
+
+  EXPECT_LT(kLargestConstraintType, 1 << kConstraintTypeBitSize)
+      << "kLargestConstraintType (" << kLargestConstraintType
+      << ") is not less than 2^kConstraintTypeBitSize ("
+      << (1 << kConstraintTypeBitSize)
+      << "). Please update kConstraintTypeBitSize.";
 }
 
 }  // namespace

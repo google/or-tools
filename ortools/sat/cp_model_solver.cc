@@ -34,6 +34,7 @@
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -1500,6 +1501,15 @@ class LnsSolver : public SubSolver {
                              fixed_values)) {
           return;
         }
+        absl::flat_hash_set<int> ignored_constraints;
+        if (local_params.lns_ignore_redundant_constraints() &&
+            helper_->scheduling_relaxation() != nullptr) {
+          for (const auto& problem :
+               helper_->scheduling_relaxation()->problems) {
+            ignored_constraints.insert(problem.redundant_cumulative.begin(),
+                                       problem.redundant_cumulative.end());
+          }
+        }
         ModelCopy copier(&lns_fragment, &local_model, variable_mapping);
         if (!copier.ImportVariables(neighborhood.delta)) return;
 
@@ -1512,8 +1522,19 @@ class LnsSolver : public SubSolver {
         }
 
         // Copy and simplify the constraints from the initial model.
-        if (!copier.ImportAndSimplifyConstraints(helper_->ModelProto())) {
-          return;
+        if (!ignored_constraints.empty()) {
+          if (!copier.ImportAndSimplifyConstraints(helper_->ModelProto())) {
+            return;
+          }
+        } else {
+          auto active_constraints = [&ignored_constraints](int c) {
+            return !ignored_constraints.contains(c);
+          };
+          if (!copier.ImportAndSimplifyConstraints(helper_->ModelProto(),
+                                                   /*first_copy=*/false,
+                                                   active_constraints)) {
+            return;
+          }
         }
 
         // Copy and simplify the constraints from the delta model.
@@ -1921,7 +1942,6 @@ class LnsSolver : public SubSolver {
 
 void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   const SatParameters& params = *global_model->GetOrCreate<SatParameters>();
-  if (global_model->GetOrCreate<TimeLimit>()->LimitReached()) return;
 
   // If specified by the user, we might disable some parameters based on their
   // name.
@@ -1971,7 +1991,8 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   // Synchronize() is called before any LNS neighborhood solvers.
   auto unique_helper = std::make_unique<NeighborhoodGeneratorHelper>(
       &shared->model_proto, &params, shared->response, shared->time_limit,
-      shared->bounds.get(), shared->clauses.get());
+      shared->bounds.get(), shared->clauses.get(),
+      shared->scheduling_relaxation.get());
   NeighborhoodGeneratorHelper* helper = unique_helper.get();
   subsolvers.push_back(std::move(unique_helper));
 
@@ -2210,6 +2231,22 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     }
   }
 
+  // Active constraints management for feasibility jump and violation LS.
+  std::function<bool(int)> active_constraints = nullptr;
+  if (shared->scheduling_relaxation != nullptr &&
+      shared->scheduling_relaxation->HasRedundantConstraints() &&
+      params.feasibility_jump_ignore_redundant_constraints()) {
+    absl::flat_hash_set<int> ignored_constraints;
+    for (const auto& problem : shared->scheduling_relaxation->problems) {
+      for (int c : problem.redundant_cumulative) {
+        ignored_constraints.insert(c);
+      }
+    }
+    active_constraints = [ignored_constraints](int constraint_index) {
+      return !ignored_constraints.contains(constraint_index);
+    };
+  }
+
   // Add violation LS workers.
   //
   // Compared to LNS, these are not re-entrant, so we need to schedule the
@@ -2255,7 +2292,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
                 ls_name, SubSolver::INCOMPLETE, shared->model_proto,
                 local_params, states, shared->time_limit, shared->response,
                 shared->bounds.get(), shared->clauses.get(), shared->ls_hints,
-                shared->stat_tables));
+                shared->stat_tables, active_constraints));
       }
     }
 
@@ -2282,7 +2319,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
                 lin_ls_name, SubSolver::INCOMPLETE, shared->model_proto,
                 local_params, lin_states, shared->time_limit, shared->response,
                 shared->bounds.get(), shared->clauses.get(), shared->ls_hints,
-                shared->stat_tables));
+                shared->stat_tables, active_constraints));
       }
     }
   }
@@ -2343,7 +2380,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
                 local_params.name(), SubSolver::FIRST_SOLUTION,
                 shared->model_proto, local_params, states, shared->time_limit,
                 shared->response, shared->bounds.get(), shared->clauses.get(),
-                shared->ls_hints, shared->stat_tables));
+                shared->ls_hints, shared->stat_tables, active_constraints));
       } else {
         first_solution_full_subsolvers.push_back(
             std::make_unique<FullProblemSolver>(
@@ -2700,6 +2737,7 @@ class CpModelSolver {
   std::vector<int64_t> debug_solution_from_hint_;
 
   std::string* log_string_;
+  std::atomic<bool> subsolvers_launched_ = false;
 };
 
 void CpModelSolver::InitializeSolverLogger() {
@@ -3391,28 +3429,31 @@ void CpModelSolver::LoadPresolvedModel() {
 }
 
 void CpModelSolver::SolvePresolvedModel() {
-  if (!model_->GetOrCreate<TimeLimit>()->LimitReached()) {
-#if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
-    static_assert(operations_research::kTargetOsSupportsThreads);
-    if (params_.num_workers() > 1 || params_.interleave_search() ||
-        !params_.subsolvers().empty() || !params_.filter_subsolvers().empty() ||
-        params_.use_ls_only()) {
-      SolveCpModelParallel(shared_.get(), model_);
-#else   // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
-    static_assert(!operations_research::kTargetOsSupportsThreads);
-    if (/* DISABLES CODE */ (false)) {
-      // We ignore the multithreading parameter in this case.
-#endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
-    } else {
-      shared_response_manager_->SetUpdateGapIntegralOnEachChange(true);
+  if (model_->GetOrCreate<TimeLimit>()->LimitReached()) return;
+  // It is assumed that, from now on, the model's TimeLimit is only accessed via
+  // the SharedTimeLimit, in a thread safe manner.
+  subsolvers_launched_ = true;
 
-      // To avoid duplicating code, the single-thread version reuse most of
-      // the multi-thread architecture.
-      std::vector<std::unique_ptr<SubSolver>> subsolvers;
-      subsolvers.push_back(std::make_unique<FullProblemSolver>(
-          "main", params_, /*split_in_chunks=*/false, shared_.get()));
-      LaunchSubsolvers(model_, shared_.get(), subsolvers, {});
-    }
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+  static_assert(operations_research::kTargetOsSupportsThreads);
+  if (params_.num_workers() > 1 || params_.interleave_search() ||
+      !params_.subsolvers().empty() || !params_.filter_subsolvers().empty() ||
+      params_.use_ls_only()) {
+    SolveCpModelParallel(shared_.get(), model_);
+#else   // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+  static_assert(!operations_research::kTargetOsSupportsThreads);
+  if (/* DISABLES CODE */ (false)) {
+    // We ignore the multithreading parameter in this case.
+#endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+  } else {
+    shared_response_manager_->SetUpdateGapIntegralOnEachChange(true);
+
+    // To avoid duplicating code, the single-thread version reuse most of
+    // the multi-thread architecture.
+    std::vector<std::unique_ptr<SubSolver>> subsolvers;
+    subsolvers.push_back(std::make_unique<FullProblemSolver>(
+        "main", params_, /*split_in_chunks=*/false, shared_.get()));
+    LaunchSubsolvers(model_, shared_.get(), subsolvers, {});
   }
 }
 
@@ -3468,7 +3509,11 @@ class DirectSolverThread : public CpModelSolver {
   // this case the DefaultCpModelSolver should stop too and return this
   // response. Otherwise, returns nullopt.
   std::optional<CpSolverResponse> Stop() {
-    const bool limit_reached = shared_time_limit_->LimitReached();
+    // The model's TimeLimit can be used directly before the subsolvers are
+    // launched. This could cause a data race here if we accessed it via the
+    // SharedTimeLimit wrapper, from another thread.
+    const bool limit_reached =
+        subsolvers_launched_ && shared_time_limit_->LimitReached();
     shared_time_limit_->Stop();
     thread_pool_.reset();
 
