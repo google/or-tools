@@ -67,15 +67,16 @@ if(BUILD_ZLIB)
   FetchContent_Declare(
     ZLIB
     GIT_REPOSITORY "https://github.com/madler/ZLIB.git"
-    GIT_TAG "v1.3.1"
+    GIT_TAG "v1.3.2"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
-    PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/ZLIB-v1.3.1.patch"
+    #PATCH_COMMAND git apply --ignore-whitespace
+    #"${CMAKE_CURRENT_LIST_DIR}/../../patches/ZLIB-v1.3.2.patch"
     OVERRIDE_FIND_PACKAGE
     SYSTEM
   )
-  set(ZLIB_BUILD_EXAMPLES OFF)
+  set(ZLIB_BUILD_TESTING OFF)
+  set(ZLIB_BUILD_STATIC OFF)
   FetchContent_MakeAvailable(ZLIB)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
