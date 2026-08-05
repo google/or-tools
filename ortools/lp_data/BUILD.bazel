@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("//bazel:compilation_flags.bzl", "SAFE_FP_CODE")
@@ -68,6 +69,19 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "permutation_test",
+    size = "small",
+    srcs = ["permutation_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lp_types",
+        ":permutation",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/random",
+    ],
+)
+
 cc_library(
     name = "scattered_vector",
     hdrs = ["scattered_vector.h"],
@@ -95,6 +109,37 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "sparse_vector_test",
+    size = "small",
+    srcs = ["sparse_vector_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lp_types",
+        ":permutation",
+        ":sparse_vector",
+        "//ortools/base:gmock_main",
+        "//ortools/util:strong_integers",
+    ],
+)
+
+cc_binary(
+    name = "sparse_vector_benchmark",
+    testonly = True,
+    srcs = ["sparse_vector_benchmark.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lp_types",
+        ":sparse_vector",
+        "//ortools/base:benchmark_main",
+        "//ortools/util:strong_integers",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random:distributions",
+        "@google_benchmark//:benchmark",
+    ],
+)
+
 cc_library(
     name = "sparse_column",
     srcs = ["sparse_column.cc"],
@@ -110,6 +155,19 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "sparse_column_test",
+    size = "small",
+    srcs = ["sparse_column_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lp_types",
+        ":permutation",
+        ":sparse_column",
+        "//ortools/base:gmock_main",
+    ],
+)
+
 cc_library(
     name = "sparse_row",
     hdrs = ["sparse_row.h"],
@@ -118,6 +176,19 @@ cc_library(
     deps = [
         ":sparse_vector",
         "//ortools/base:strong_vector",
+    ],
+)
+
+cc_test(
+    name = "sparse_row_test",
+    size = "small",
+    srcs = ["sparse_row_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lp_types",
+        ":permutation",
+        ":sparse_row",
+        "//ortools/base:gmock_main",
     ],
 )
 
@@ -142,6 +213,41 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "sparse_test",
+    size = "small",
+    srcs = ["sparse_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lp_test_utils",
+        ":lp_types",
+        ":lp_utils",
+        ":permutation",
+        ":sparse",
+        ":sparse_column",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+    ],
+)
+
+cc_binary(
+    name = "sparse_benchmark",
+    testonly = True,
+    srcs = ["sparse_benchmark.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lp_test_utils",
+        ":lp_types",
+        ":lp_utils",
+        ":sparse",
+        "//ortools/base:benchmark_main",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@google_benchmark//:benchmark",
+    ],
+)
+
 cc_library(
     name = "matrix_scaler",
     srcs = ["matrix_scaler.cc"],
@@ -162,6 +268,25 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+cc_test(
+    name = "matrix_scaler_test",
+    size = "small",
+    srcs = ["matrix_scaler_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lp_types",
+        ":matrix_scaler",
+        ":sparse",
+        ":sparse_column",
+        "//ortools/base:gmock_main",
+        "//ortools/base:strong_vector",
+        "//ortools/glop:parameters_cc_proto",
+        "//ortools/util:fp_utils",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
     ],
 )
 
@@ -192,6 +317,26 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "lp_data_test",
+    size = "small",
+    srcs = ["lp_data_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lp_data",
+        ":lp_parser",
+        ":lp_types",
+        ":permutation",
+        ":sparse",
+        ":sparse_column",
+        "//ortools/base:gmock_main",
+        "//ortools/glop:parameters_cc_proto",
+        "//ortools/util:fp_utils",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
 cc_library(
     name = "lp_data_utils",
     srcs = ["lp_data_utils.cc"],
@@ -206,6 +351,25 @@ cc_library(
         "//ortools/glop:parameters_cc_proto",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "lp_data_utils_test",
+    size = "small",
+    srcs = ["lp_data_utils_test.cc"],
+    deps = [
+        ":lp_data",
+        ":lp_data_utils",
+        ":lp_parser",
+        ":lp_test_utils",
+        ":lp_types",
+        ":lp_types_testing",
+        ":scattered_vector",
+        "//ortools/base:gmock_main",
+        "//ortools/base:strong_vector",
+        "//ortools/glop:revised_simplex",
+        "//ortools/util:time_limit",
     ],
 )
 
@@ -226,6 +390,37 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "lp_utils_test",
+    size = "small",
+    srcs = ["lp_utils_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lp_types",
+        ":lp_utils",
+        ":permutation",
+        ":scattered_vector",
+        ":sparse_column",
+        "//ortools/base:gmock_main",
+        "//ortools/util:fp_utils",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_binary(
+    name = "lp_utils_benchmark",
+    srcs = ["lp_utils_benchmark.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lp_types",
+        ":lp_utils",
+        "//ortools/base:benchmark_main",
+        "@abseil-cpp//absl/log:check",
+        "@google_benchmark//:benchmark",
+    ],
+)
+
 cc_library(
     name = "matrix_utils",
     srcs = ["matrix_utils.cc"],
@@ -238,6 +433,22 @@ cc_library(
         ":sparse_column",
         "//ortools/base:hash",
         "@abseil-cpp//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "matrix_utils_test",
+    size = "small",
+    srcs = ["matrix_utils_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lp_test_utils",
+        ":lp_types",
+        ":matrix_utils",
+        ":sparse",
+        ":sparse_column",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/random:distributions",
     ],
 )
 
@@ -264,6 +475,22 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "lp_parser_test",
+    srcs = ["lp_parser_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lp_data",
+        ":lp_parser",
+        ":lp_types",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
 cc_library(
     name = "lp_print_utils",
     srcs = ["lp_print_utils.cc"],
@@ -280,6 +507,18 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "lp_print_utils_test",
+    size = "small",
+    srcs = ["lp_print_utils_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lp_print_utils",
+        ":lp_types",
+        "//ortools/base:gmock_main",
+    ],
+)
+
 cc_library(
     name = "proto_utils",
     srcs = ["proto_utils.cc"],
@@ -293,6 +532,20 @@ cc_library(
         ":sparse_column",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "@abseil-cpp//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "proto_utils_test",
+    size = "small",
+    srcs = ["proto_utils_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lp_data",
+        ":lp_types",
+        ":proto_utils",
+        "//ortools/base:gmock_main",
+        "//ortools/linear_solver:linear_solver_cc_proto",
     ],
 )
 
@@ -385,6 +638,23 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "lp_decomposer_test",
+    size = "small",
+    srcs = ["lp_decomposer_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lp_data",
+        ":lp_decomposer",
+        ":lp_parser",
+        ":lp_types",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
 cc_library(
     name = "lp_types_testing",
     testonly = True,
@@ -395,5 +665,42 @@ cc_library(
     deps = [
         ":lp_types",
         "//ortools/base:gmock",
+    ],
+)
+
+cc_library(
+    name = "lp_test_utils",
+    testonly = 1,
+    srcs = ["lp_test_utils.cc"],
+    hdrs = ["lp_test_utils.h"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lp_types",
+        ":sparse",
+        ":sparse_column",
+        "//ortools/base:strong_vector",
+        "//ortools/util:fp_utils",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random:distributions",
+    ],
+)
+
+cc_binary(
+    name = "triangular_benchmark",
+    testonly = True,
+    srcs = ["triangular_benchmark.cc"],
+    copts = SAFE_FP_CODE,
+    linkstatic = 1,
+    deps = [
+        ":lp_test_utils",
+        ":lp_types",
+        ":lp_utils",
+        ":sparse",
+        "//ortools/base:benchmark_main",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random:distributions",
+        "@google_benchmark//:benchmark",
     ],
 )
