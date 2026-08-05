@@ -405,7 +405,8 @@ class PresolveContext {
   //
   // This uses affine relation and regroup duplicate/fixed terms.
   bool CanonicalizeLinearConstraint(ConstraintProto* ct,
-                                    bool* is_impossible = nullptr);
+                                    bool* is_impossible = nullptr,
+                                    bool* is_trivial = nullptr);
   bool CanonicalizeLinearExpression(absl::Span<const int> enforcements,
                                     LinearExpressionProto* expr);
 

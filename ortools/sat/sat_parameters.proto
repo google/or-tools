@@ -1382,6 +1382,14 @@ message SatParameters {
   optional int32 feasibility_jump_max_expanded_constraint_size = 264
       [default = 500];
 
+  // Whether feasibility jump solver ignores redundant constraints from
+  // scheduling relaxation.
+  optional bool feasibility_jump_ignore_redundant_constraints = 715
+      [default = true];
+
+  // Whether LNS ignores redundant constraints from scheduling relaxation.
+  optional bool lns_ignore_redundant_constraints = 716 [default = true];
+
   // This will create incomplete subsolvers (that are not LNS subsolvers)
   // that use the feasibility jump code to find improving solution, treating
   // the objective improvement as a hard constraint.

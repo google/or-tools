@@ -2763,9 +2763,11 @@ bool CanonicalizeLinearExpressionNoContext(absl::Span<const int> enforcements,
 }  // namespace
 
 bool PresolveContext::CanonicalizeLinearConstraint(ConstraintProto* ct,
-                                                   bool* is_impossible) {
+                                                   bool* is_impossible,
+                                                   bool* is_trivial) {
   int64_t offset = 0;
-  if (is_impossible) *is_impossible = false;
+  if (is_impossible != nullptr) *is_impossible = false;
+  if (is_trivial != nullptr) *is_trivial = false;
   const bool result = CanonicalizeLinearExpressionInternal(
       ct->enforcement_literal(), ct->mutable_linear(), &offset, &tmp_terms_,
       this);
@@ -2775,13 +2777,16 @@ bool PresolveContext::CanonicalizeLinearConstraint(ConstraintProto* ct,
       ReadDomainFromProto(ct->linear()).AdditionWith(Domain(-offset));
   const Domain tight_domain = implied.IntersectionWith(original_domain);
   if (tight_domain.IsEmpty()) {
-    if (is_impossible) *is_impossible = true;
+    if (is_impossible != nullptr) *is_impossible = true;
     // Canonicalization is not the right place to handle unsat constraints.
     // Let's just replace the domain by one that is overflow-safe.
     const Domain bad_domain = Domain(implied.Max() + 1, implied.Max() + 2);
     FillDomainInProto(bad_domain, ct->mutable_linear());
   } else {
     FillDomainInProto(tight_domain, ct->mutable_linear());
+  }
+  if (is_trivial != nullptr && implied.IsIncludedIn(original_domain)) {
+    *is_trivial = true;
   }
   return result;
 }

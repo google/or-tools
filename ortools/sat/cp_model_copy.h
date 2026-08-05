@@ -219,7 +219,7 @@ class ModelCopy {
   // This allow to be more efficient later in a few preprocessing steps.
   ABSL_MUST_USE_RESULT bool ImportAndSimplifyConstraints(
       const CpModelProto& in_model, bool first_copy = false,
-      std::function<bool(int)> active_constraints = nullptr);
+      const std::function<bool(int)>& active_constraints = nullptr);
 
   // Imports and write the objective.
   ABSL_MUST_USE_RESULT bool ImportObjective(const CpModelProto& in_model);
@@ -456,9 +456,12 @@ class VariableDomains {
 // which can be dynamically updated when new bounds or equivalences are found.
 class DenseModelCopy {
  public:
+  // active_constraints() will be used in the initial copy of the
+  // input_model_proto into the dense model.
   DenseModelCopy(absl::string_view name, const CpModelProto& input_model_proto,
                  SharedBoundsManager* shared_bounds,
-                 SharedClausesManager* shared_clauses);
+                 SharedClausesManager* shared_clauses,
+                 std::function<bool(int)> active_constraints = nullptr);
 
   // The timestamp of the shared bounds and equivalences used to compute this
   // dense model copy.
@@ -497,6 +500,7 @@ class DenseModelCopy {
   const CpModelProto& input_model_proto_;
   SharedClausesManager* shared_clauses_;
   SharedBoundsManager* shared_bounds_;
+  const std::function<bool(int)> active_constraints_;
   const int shared_bounds_id_;
 
   // Timestamps of the data used to compute the fields below.

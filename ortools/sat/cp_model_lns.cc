@@ -56,6 +56,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/rins.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/scheduling_model.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
@@ -78,14 +79,16 @@ NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
     CpModelProto const* model_proto, SatParameters const* parameters,
     SharedResponseManager* shared_response,
     ModelSharedTimeLimit* global_time_limit, SharedBoundsManager* shared_bounds,
-    SharedClausesManager* shared_clauses)
+    SharedClausesManager* shared_clauses,
+    const SchedulingRelaxation* scheduling_relaxation)
     : SubSolver("neighborhood_helper", HELPER),
       parameters_(*parameters),
       model_proto_(*model_proto),
       shared_bounds_(shared_bounds),
       shared_clauses_(shared_clauses),
       global_time_limit_(global_time_limit),
-      shared_response_(shared_response) {
+      shared_response_(shared_response),
+      scheduling_relaxation_(scheduling_relaxation) {
   // Initialize proto memory.
   local_arena_storage_.assign(Neighborhood::kDefaultArenaSizePerVariable *
                                   model_proto_.variables_size(),
@@ -330,12 +333,32 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
     // them efficiently.
     simplified_model_proto_ =
         google::protobuf::Arena::Create<CpModelProto>(local_arena_.get());
+    absl::flat_hash_set<int> ignored_constraints;
+    if (parameters_.lns_ignore_redundant_constraints() &&
+        scheduling_relaxation_ != nullptr &&
+        scheduling_relaxation_->HasRedundantConstraints()) {
+      for (const auto& problem : scheduling_relaxation_->problems) {
+        for (int c : problem.redundant_cumulative) {
+          ignored_constraints.insert(c);
+        }
+      }
+    }
     ModelCopy copier(simplified_model_proto_, &local_model, mapping);
 
     // When the model is unsat, we abort any update.
     // This shouldn't matter as it should be dealt with elsewhere.
     if (!copier.ImportVariables(model_proto_with_only_variables_)) return;
-    if (!copier.ImportAndSimplifyConstraints(model_proto_)) return;
+    if (ignored_constraints.empty()) {
+      if (!copier.ImportAndSimplifyConstraints(model_proto_)) return;
+    } else {
+      auto active_constraints = [&ignored_constraints](int c) {
+        return !ignored_constraints.contains(c);
+      };
+      if (!copier.ImportAndSimplifyConstraints(
+              model_proto_, /*first_copy=*/false, active_constraints)) {
+        return;
+      }
+    }
     if (!copier.ImportObjective(model_proto_)) return;
     if (!copier.FinishCopy(model_proto_)) return;
   }

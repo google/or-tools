@@ -810,7 +810,7 @@ class SatSolver {
   // Make sure each clause is "canonicalized" with respect to equivalent
   // literals. This assumes that the ClausePtr as ownership of its memory.
   //
-  // TODO(user): The literals are a bit redudant with what is stored in clause.
+  // TODO(user): The literals are a bit redundant with what is stored in clause.
   // Clean up.
   //
   // TODO(user): Maybe we should do that on each reason before we use them in
@@ -818,7 +818,8 @@ class SatSolver {
   //
   // Returns false if the "canonicalized" clause is trivially true.
   bool RemoveRedundantLiteralFromConflict(ClausePtr& clause,
-                                          std::vector<Literal>& literals);
+                                          std::vector<Literal>& literals,
+                                          bool delete_old_lrat_clause = true);
 
   // This is used by the old non-model constructor.
   Model* model_;

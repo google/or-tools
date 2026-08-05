@@ -2232,7 +2232,10 @@ bool CpModelPresolver::PresolveIntMod(int c, ConstraintProto* ct) {
   if (target.vars().size() == 1 && expr.vars().size() == 1 &&
       context_->DomainOf(expr.vars(0)).Size() < 100 && context_->IsFixed(mod) &&
       context_->VariableIsUniqueAndRemovable(target.vars(0)) &&
-      target.vars(0) != expr.vars(0)) {
+      target.vars(0) != expr.vars(0) &&
+      // Note: the fringe case where both the target and the expression are
+      // not used elsewhere confuses the postsolve.
+      !context_->VariableIsUniqueAndRemovable(expr.vars(0))) {
     const int64_t fixed_mod = context_->FixedValue(mod);
     std::vector<int64_t> values;
     const Domain dom = context_->DomainOf(target.vars(0));
@@ -2344,10 +2347,17 @@ bool CpModelPresolver::CanonicalizeLinear(ConstraintProto* ct, bool* changed) {
   }
 
   bool is_impossible = false;
-  *changed = context_->CanonicalizeLinearConstraint(ct, &is_impossible);
+  bool is_trivial = false;
+  *changed =
+      context_->CanonicalizeLinearConstraint(ct, &is_impossible, &is_trivial);
   if (is_impossible) {
     *changed = true;
     return MarkConstraintAsFalse(ct, "linear: never in domain");
+  }
+  if (is_trivial) {
+    *changed = true;
+    context_->UpdateRuleStats("linear: always true");
+    return RemoveConstraint(ct);
   }
   *changed |= DivideLinearByGcd(ct);
 
@@ -13479,6 +13489,11 @@ void CpModelPresolver::MaybeRemoveLinkingVariable(int var, int c_linear1,
     }
   }
 
+  if (num_terms == 1) {
+    // Will be handled elsewhere.
+    return;
+  }
+
   // If the constraint is not trivial when the linear1 is not enforced, we
   // only remove var if we don't add too many non-zeros.
   const bool is_trivial_when_not_enforced = implied.IsIncludedIn(relaxed_rhs);
@@ -13550,90 +13565,108 @@ void CpModelPresolver::MaybeRemoveLinkingVariable(int var, int c_linear1,
   context_->UpdateConstraintVariableUsage(c_linear);
 }
 
-// We wait for the model expansion to take place in order to avoid removing
-// encoding that will later be re-created during expansion.
-void CpModelPresolver::LookAtVariableWithDegreeTwo(int var) {
-  CHECK(RefIsPositive(var));
-  if (context_->ModelIsUnsat()) return;
-  if (context_->params().keep_all_feasible_solutions_in_presolve()) return;
-  if (context_->IsFixed(var)) return;
-  if (!context_->ModelIsExpanded()) return;
-
-  // Special case for X = prod(var, var) and var = max(Y, -Y).
-  if (!context_->CanBeUsedAsLiteral(var)) {
-    int c_square = -1;
-    int c_abs = -1;
-    CHECK_EQ(context_->VarToConstraints(var).size(), 2);
-    for (const int c : context_->VarToConstraints(var)) {
-      if (c < 0) break;
-      const ConstraintProto& ct = context_->Constraint(c);
-      if (ct.constraint_case() == ConstraintProto::kIntProd &&
-          ct.int_prod().exprs().size() == 2 &&
-          ExpressionContainsSingleRef(ct.int_prod().exprs(0)) &&
-          ct.int_prod().exprs(0).vars(0) == var &&
-          LinearExpressionProtosAreExactlyEqual(ct.int_prod().exprs(0),
-                                                ct.int_prod().exprs(1))) {
-        // We detectect target = var ^ 2.
-        c_square = c;
-      } else if (ct.constraint_case() == ConstraintProto::kLinMax &&
-                 ExpressionContainsSingleRef(ct.lin_max().target()) &&
-                 ct.lin_max().target().vars(0) == var &&
-                 ct.lin_max().exprs().size() == 2 &&
-                 ct.lin_max().exprs(0).vars().size() <= 1 &&
-                 LinearExpressionProtosAreEqual(ct.lin_max().exprs(0),
-                                                ct.lin_max().exprs(1), -1)) {
-        // We detected +/- var = abs(y_expr).
-        //
-        // Note that we only do that if y_expr is not a complex expression
-        // otherwise we might not have properly "transferred" the domain of var
-        // onto the one of y_expr, and we might not be able to just remove the
-        // constraint. That said if the int_prod target is simple, that should
-        // still work as we should transfer the domain of var there.
-        c_abs = c;
-      }
-    }
-    if (c_square == -1 || c_abs == -1) return;
-    context_->UpdateRuleStats(
-        "degree2: removed intermediate abs() variable in X = abs(Y) ^ 2");
-
-    // Replace var by y_expr in c_square.
-    const LinearExpressionProto y_expr =
-        context_->Constraint(c_abs).lin_max().exprs(0);
-    LinearArgumentProto* mutable_sq =
-        context_->MutableConstraint(c_square)->mutable_int_prod();
-    *(mutable_sq->mutable_exprs(0)) = y_expr;
-    *(mutable_sq->mutable_exprs(1)) = y_expr;
-    context_->UpdateConstraintVariableUsage(c_square);
-
-    // Copy abs() to the mapping proto and clear it.
-    context_->NewMappingConstraint(context_->Constraint(c_abs), __FILE__,
-                                   __LINE__);
-    context_->ClearConstraint(c_abs);
-    context_->UpdateConstraintVariableUsage(c_abs);
-    context_->MarkVariableAsRemoved(var);
+void CpModelPresolver::PresolveVarOnlyInIntProdAndLinMax(int var,
+                                                         int int_prod_ct_index,
+                                                         int lin_max_ct_index) {
+  if (context_->CanBeUsedAsLiteral(var)) return;
+  if (!context_->Constraint(int_prod_ct_index).enforcement_literal().empty()) {
     return;
   }
+  if (!context_->Constraint(lin_max_ct_index).enforcement_literal().empty()) {
+    return;
+  }
+
+  DCHECK_EQ(context_->Constraint(int_prod_ct_index).constraint_case(),
+            ConstraintProto::kIntProd);
+  CHECK_EQ(context_->Constraint(lin_max_ct_index).constraint_case(),
+           ConstraintProto::kLinMax);
+
+  const LinearArgumentProto& int_prod =
+      context_->Constraint(int_prod_ct_index).int_prod();
+  const LinearArgumentProto& lin_max =
+      context_->Constraint(lin_max_ct_index).lin_max();
+
+  // We only handle the case:
+  // - target = +/- var ^ 2;
+  // - +/- var = abs(y_expr).
+  //
+  // Note that we only do that if y_expr is not a complex expression
+  // otherwise we might not have properly "transferred" the domain of var
+  // onto the one of y_expr, and we might not be able to just remove the
+  // constraint. That said if the int_prod target is simple, that should
+  // still work as we should transfer the domain of var there.
+  if (int_prod.exprs().size() != 2) return;
+  if (!ExpressionContainsSingleRef(int_prod.exprs(0))) return;
+  if (int_prod.exprs(0).vars(0) != var) return;
+  if (!LinearExpressionProtosAreExactlyEqual(int_prod.exprs(0),
+                                             int_prod.exprs(1))) {
+    return;
+  }
+
+  if (!ExpressionContainsSingleRef(lin_max.target())) return;
+  if (lin_max.target().vars(0) != var) return;
+  if (lin_max.exprs().size() != 2) return;
+  if (lin_max.exprs(0).vars().size() > 1) return;
+  if (!LinearExpressionProtosAreEqual(lin_max.exprs(0), lin_max.exprs(1), -1)) {
+    return;
+  }
+
+  context_->UpdateRuleStats(
+      "degree2: removed intermediate abs() variable in X = abs(Y) ^ 2");
+
+  // Replace var by y_expr in c_square.
+  const LinearExpressionProto y_expr = lin_max.exprs(0);
+  LinearArgumentProto* mutable_sq =
+      context_->MutableConstraint(int_prod_ct_index)->mutable_int_prod();
+  *(mutable_sq->mutable_exprs(0)) = y_expr;
+  *(mutable_sq->mutable_exprs(1)) = y_expr;
+  context_->UpdateConstraintVariableUsage(int_prod_ct_index);
+
+  // Copy abs() to the mapping proto and clear it.
+  context_->NewMappingConstraint(context_->Constraint(lin_max_ct_index),
+                                 __FILE__, __LINE__);
+  context_->ClearConstraint(lin_max_ct_index);
+  context_->UpdateConstraintVariableUsage(lin_max_ct_index);
+  context_->MarkVariableAsRemoved(var);
+}
+
+void CpModelPresolver::PresolveVarOnlyInLinearAndLinear(int var,
+                                                        int linear1_ct_index,
+                                                        int linear2_ct_index) {
+  DCHECK_EQ(context_->Constraint(linear1_ct_index).constraint_case(),
+            ConstraintProto::kLinear);
+  DCHECK_EQ(context_->Constraint(linear2_ct_index).constraint_case(),
+            ConstraintProto::kLinear);
+
+  const int smallest_linear_idx =
+      context_->Constraint(linear1_ct_index).linear().vars().size() <
+              context_->Constraint(linear2_ct_index).linear().vars().size()
+          ? linear1_ct_index
+          : linear2_ct_index;
+  const int largest_linear_idx = smallest_linear_idx == linear1_ct_index
+                                     ? linear2_ct_index
+                                     : linear1_ct_index;
 
   // Special case for lit => var \in Domain and var in linear.
-  if (!context_->CanBeUsedAsLiteral(var)) {
-    int c_linear1 = -1;
-    int c_linear = -1;
-    CHECK_EQ(context_->VarToConstraints(var).size(), 2);
-    for (const int c : context_->VarToConstraints(var)) {
-      if (c < 0) break;
-      const ConstraintProto& ct = context_->Constraint(c);
-      if (ct.constraint_case() != ConstraintProto::kLinear) continue;
-      if (ct.linear().vars().size() == 1 && ct.linear().vars(0) == var) {
-        c_linear1 = c;
-      } else {
-        c_linear = c;
-      }
+  if (!context_->CanBeUsedAsLiteral(var) &&
+      context_->Constraint(smallest_linear_idx).linear().vars().size() == 1) {
+    MaybeRemoveLinkingVariable(var, smallest_linear_idx, largest_linear_idx);
+    // Stop if we removed the variable or one of the constraints.
+    if (context_->VariableWasRemoved(var)) {
+      return;
     }
-    if (c_linear1 == -1) return;
-    if (c_linear == -1) return;
-    MaybeRemoveLinkingVariable(var, c_linear1, c_linear);
-    return;
+    if (context_->Constraint(smallest_linear_idx).constraint_case() !=
+        ConstraintProto::kLinear) {
+      return;
+    }
+    if (context_->Constraint(largest_linear_idx).constraint_case() !=
+        ConstraintProto::kLinear) {
+      return;
+    }
   }
+
+  const ConstraintProto& linear1 = context_->Constraint(linear1_ct_index);
+  const ConstraintProto& linear2 = context_->Constraint(linear2_ct_index);
 
   // Special case: if a literal l appear in exactly two constraints:
   // - l => var in domain1
@@ -13649,57 +13682,239 @@ void CpModelPresolver::LookAtVariableWithDegreeTwo(int var) {
   //     not(enf) => x \in [1, 2]
   // The x can be removed from one place. Maybe just do <=> not in [0,1] with
   // dual code?
-  if (context_->VarToConstraints(var).size() != 2) return;
-
-  bool abort = false;
-  int ct_var = -1;
-  Domain union_of_domain;
-  int num_positive = 0;
-  for (const int c : context_->VarToConstraints(var)) {
-    if (c < 0) {
-      abort = true;
-      break;
-    }
-    const ConstraintProto& ct = context_->Constraint(c);
-    if (ct.enforcement_literal().size() != 1 ||
-        PositiveRef(ct.enforcement_literal(0)) != var ||
-        ct.constraint_case() != ConstraintProto::kLinear ||
-        ct.linear().vars().size() != 1) {
-      abort = true;
-      break;
-    }
-    if (ct.enforcement_literal(0) == var) ++num_positive;
-    if (ct_var != -1 && PositiveRef(ct.linear().vars(0)) != ct_var) {
-      abort = true;
-      break;
-    }
-    ct_var = PositiveRef(ct.linear().vars(0));
-    union_of_domain = union_of_domain.UnionWith(
-        ReadDomainFromProto(ct.linear())
-            .InverseMultiplicationBy(RefIsPositive(ct.linear().vars(0))
-                                         ? ct.linear().coeffs(0)
-                                         : -ct.linear().coeffs(0)));
+  if (linear1.linear().vars().size() != 1) return;
+  if (linear2.linear().vars().size() != 1) return;
+  if (linear1.enforcement_literal().size() != 1) return;
+  if (linear2.enforcement_literal().size() != 1) return;
+  if (PositiveRef(linear1.enforcement_literal(0)) != var) return;
+  if (PositiveRef(linear2.enforcement_literal(0)) != var) return;
+  if (linear2.enforcement_literal(0) !=
+      NegatedRef(linear1.enforcement_literal(0))) {
+    return;
   }
-  if (abort) return;
-  if (num_positive != 1) return;
-  if (!context_->IntersectDomainWith(ct_var, union_of_domain)) return;
+  if (linear2.linear().vars(0) != linear1.linear().vars(0)) {
+    return;
+  }
 
+  const int ct_var = linear1.linear().vars(0);
+  if (ct_var == var) return;
+  DCHECK(RefIsPositive(ct_var));
+  const Domain linear1_domain =
+      ReadDomainFromProto(linear1.linear())
+          .InverseMultiplicationBy(linear1.linear().coeffs(0));
+  const Domain linear2_domain =
+      ReadDomainFromProto(linear2.linear())
+          .InverseMultiplicationBy(linear2.linear().coeffs(0));
+
+  const Domain union_domain = linear1_domain.UnionWith(linear2_domain);
+  if (!context_->IntersectDomainWith(ct_var, union_domain)) return;
+
+  const Domain ct_var_domain = context_->DomainOf(ct_var);
+  if (!linear1_domain.OverlapsWith(ct_var_domain) ||
+      !linear2_domain.OverlapsWith(ct_var_domain) ||
+      ct_var_domain.IsIncludedIn(linear1_domain) ||
+      ct_var_domain.IsIncludedIn(linear2_domain)) {
+    // One of the constraints is unsat or trivial. This code is complicated
+    // enough and this should be rare, so let's leave it to the general case.
+    return;
+  }
   context_->UpdateRuleStats("variables: removable enforcement literal");
 
-  // For determinism.
-  const auto& set = context_->VarToConstraints(var);
-  std::vector<int> constraint_indices_to_remove(set.begin(), set.end());
-  absl::c_sort(constraint_indices_to_remove);
+  const auto& ct_var_constraints = context_->VarToConstraints(ct_var);
+  if (ct_var_constraints.size() == 2) {
+    // The integer variable is also not used elsewhere else. Fix it, otherwise
+    // the postsolve will complain that nothing is fixing the value of this
+    // variable.
+    if (!context_->IntersectDomainWith(ct_var, Domain(linear1_domain.Min()))) {
+      return;
+    }
+    const int lit = linear1.enforcement_literal(0);
+    if (!context_->IntersectDomainWith(
+            PositiveRef(lit), RefIsPositive(lit) ? Domain(1) : Domain(0))) {
+      return;
+    }
+    return;
+  }
 
   // Note(user): Only one constraint should be enough given how the postsolve
   // work. However that will not work for the case where we postsolve by solving
-  // the mapping model (debug_postsolve_with_full_solver:true).
-  for (const int c : constraint_indices_to_remove) {
-    context_->NewMappingConstraint(context_->Constraint(c), __FILE__, __LINE__);
-    context_->ClearConstraint(c);
-    context_->UpdateConstraintVariableUsage(c);
+  // the mapping model (debug_postsolve_with_full_solver:true). Moreover, the
+  // postsolve works better if the mapping constraints are non-ambiguous.
+  ConstraintProto* mapping_ct1 =
+      context_->NewMappingConstraint(__FILE__, __LINE__);
+  mapping_ct1->mutable_linear()->add_vars(ct_var);
+  mapping_ct1->mutable_linear()->add_coeffs(1);
+  mapping_ct1->add_enforcement_literal(linear1.enforcement_literal(0));
+  FillDomainInProto(linear1_domain, mapping_ct1->mutable_linear());
+  ConstraintProto* mapping_ct2 =
+      context_->NewMappingConstraint(__FILE__, __LINE__);
+  mapping_ct2->mutable_linear()->add_vars(ct_var);
+  mapping_ct2->mutable_linear()->add_coeffs(1);
+  mapping_ct2->add_enforcement_literal(linear2.enforcement_literal(0));
+  // Make sure we have
+  //   enf => x \in d1
+  //   not(enf) => x \in d2
+  // with d1 disjoint of d1.
+  FillDomainInProto(
+      linear2_domain.IntersectionWith(linear1_domain.Complement()),
+      mapping_ct2->mutable_linear());
+  for (const int ct_index : {linear1_ct_index, linear2_ct_index}) {
+    context_->ClearConstraint(ct_index);
+    context_->UpdateConstraintVariableUsage(ct_index);
   }
   context_->MarkVariableAsRemoved(var);
+}
+
+void CpModelPresolver::PresolveVarOnlyInLinMaxAndLinear(int var,
+                                                        int lin_max_ct_index,
+                                                        int linear_ct_index) {
+  // Special case for var only appearing in
+  // - var = expr,
+  // - target = lin_max(var, ...).
+  //
+  // we presolve as
+  //   target = lin_max(expr, ...).
+  //   expr \in Domain(var).
+  DCHECK_EQ(context_->Constraint(linear_ct_index).constraint_case(),
+            ConstraintProto::kLinear);
+  DCHECK_EQ(context_->Constraint(lin_max_ct_index).constraint_case(),
+            ConstraintProto::kLinMax);
+  if (!context_->Constraint(linear_ct_index).enforcement_literal().empty()) {
+    return;
+  }
+
+  const LinearArgumentProto& lin_max =
+      context_->Constraint(lin_max_ct_index).lin_max();
+  const LinearConstraintProto& linear =
+      context_->Constraint(linear_ct_index).linear();
+
+  if (linear.domain().size() != 2) return;
+  if (linear.domain(0) != linear.domain(1)) return;
+
+  if (absl::c_linear_search(lin_max.target().vars(), var)) return;
+  if (absl::c_any_of(
+          context_->Constraint(lin_max_ct_index).enforcement_literal(),
+          [var](int lit) { return PositiveRef(lit) == var; })) {
+    return;
+  }
+  DCHECK(
+      absl::c_any_of(lin_max.exprs(), [var](const LinearExpressionProto& expr) {
+        return absl::c_linear_search(expr.vars(), var);
+      }));
+  DCHECK(absl::c_linear_search(linear.vars(), var));
+
+  const int equality_var_index =
+      absl::c_find(linear.vars(), var) - linear.vars().begin();
+  const int64_t equality_coeff = linear.coeffs(equality_var_index);
+  if (std::abs(equality_coeff) != 1) return;
+  if (context_->DomainOf(var).NumIntervals() != 1) {
+    // Avoid creating linears with complex domains.
+    return;
+  }
+
+  LinearArgumentProto* mutable_lin_max =
+      context_->MutableConstraint(lin_max_ct_index)->mutable_lin_max();
+  for (int i = 0; i < mutable_lin_max->exprs().size(); ++i) {
+    LinearExpressionProto* expr = mutable_lin_max->mutable_exprs(i);
+    int64_t var_coeff = 0;
+    int new_size = 0;
+    for (int j = 0; j < expr->vars_size(); ++j) {
+      if (expr->vars(j) == var) {
+        var_coeff = expr->coeffs(j);
+      } else {
+        expr->set_vars(new_size, expr->vars(j));
+        expr->set_coeffs(new_size, expr->coeffs(j));
+        ++new_size;
+      }
+    }
+    if (new_size != expr->vars_size()) {
+      expr->mutable_vars()->Truncate(new_size);
+      expr->mutable_coeffs()->Truncate(new_size);
+    }
+    if (var_coeff != 0) {
+      const int64_t multiplier = -var_coeff * equality_coeff;
+      for (int j = 0; j < linear.vars().size(); ++j) {
+        if (linear.vars(j) == var) {
+          continue;
+        }
+        expr->add_vars(linear.vars(j));
+        expr->add_coeffs(linear.coeffs(j) * multiplier);
+      }
+      expr->set_offset(expr->offset() - linear.domain(0) * multiplier);
+      context_->CanonicalizeLinearExpression(
+          context_->Constraint(lin_max_ct_index).enforcement_literal(), expr);
+    }
+  }
+  context_->NewMappingConstraint(context_->Constraint(linear_ct_index),
+                                 __FILE__, __LINE__);
+
+  ConstraintProto* mut_lin = context_->MutableConstraint(linear_ct_index);
+  int new_size = 0;
+  for (int i = 0; i < mut_lin->linear().vars_size(); ++i) {
+    if (mut_lin->linear().vars(i) != var) {
+      mut_lin->mutable_linear()->set_vars(new_size, mut_lin->linear().vars(i));
+      mut_lin->mutable_linear()->set_coeffs(new_size,
+                                            mut_lin->linear().coeffs(i));
+      ++new_size;
+    }
+  }
+  mut_lin->mutable_linear()->mutable_vars()->Truncate(new_size);
+  mut_lin->mutable_linear()->mutable_coeffs()->Truncate(new_size);
+  const Domain linear_domain =
+      context_->DomainOf(var)
+          .MultiplicationBy(-equality_coeff)
+          .AdditionWith(Domain(mut_lin->linear().domain(0)));
+  FillDomainInProto(linear_domain, mut_lin->mutable_linear());
+
+  // There is a good chance that the linear constraint is trivial now. Let's
+  // handle it here instead of waiting for the fixpoint.
+  bool changed = false;
+  if (!CanonicalizeLinear(mut_lin, &changed)) return;
+
+  context_->UpdateConstraintVariableUsage(lin_max_ct_index);
+  context_->UpdateConstraintVariableUsage(linear_ct_index);
+  context_->MarkVariableAsRemoved(var);
+  context_->UpdateRuleStats(
+      "degree2: removed intermediate variable in lin_max and equality");
+}
+
+// We wait for the model expansion to take place in order to avoid removing
+// encoding that will later be re-created during expansion.
+void CpModelPresolver::LookAtVariableWithDegreeTwo(int var) {
+  CHECK(RefIsPositive(var));
+  if (context_->ModelIsUnsat()) return;
+  if (context_->params().keep_all_feasible_solutions_in_presolve()) return;
+  if (context_->IsFixed(var)) return;
+  if (!context_->ModelIsExpanded()) return;
+
+  const auto& constraints = context_->VarToConstraints(var);
+  CHECK_EQ(constraints.size(), 2);
+
+  // For determinism.
+  auto it = constraints.begin();
+  int c1 = *it;
+  int c2 = *(++it);
+  if (c1 > c2) std::swap(c1, c2);
+  if (c1 < 0) return;
+
+  constexpr int s = kConstraintTypeBitSize;
+  const int case_index = (context_->Constraint(c1).constraint_case() << s) +
+                         context_->Constraint(c2).constraint_case();
+
+  switch (case_index) {
+    case (ConstraintProto::kIntProd << s) + ConstraintProto::kLinMax:
+      return PresolveVarOnlyInIntProdAndLinMax(var, c1, c2);
+    case (ConstraintProto::kLinMax << s) + ConstraintProto::kIntProd:
+      return PresolveVarOnlyInIntProdAndLinMax(var, c2, c1);
+    case (ConstraintProto::kLinear << s) + ConstraintProto::kLinear:
+      return PresolveVarOnlyInLinearAndLinear(var, c1, c2);
+    case (ConstraintProto::kLinMax << s) + ConstraintProto::kLinear:
+      return PresolveVarOnlyInLinMaxAndLinear(var, c1, c2);
+    case (ConstraintProto::kLinear << s) + ConstraintProto::kLinMax:
+      return PresolveVarOnlyInLinMaxAndLinear(var, c2, c1);
+    default:
+      break;
+  }
 }
 
 namespace {
