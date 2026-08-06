@@ -117,6 +117,7 @@ cc_test(
     deps = [
         ":basis_representation",
         "//ortools/base:gmock_main",
+        "//ortools/lp_data:lp_test_utils",
         "//ortools/lp_data:lp_types",
         "//ortools/lp_data:lp_types_testing",
         "//ortools/lp_data:lp_utils",

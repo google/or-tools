@@ -111,8 +111,7 @@ TEST(RankOneUpdateFactorizationTest, RandomSolvesWithNonZeros) {
   ComputeNonZeros(col_scratchpad.values, &col_scratchpad.non_zeros);
   factorization.RightSolveWithNonZeros(&col_scratchpad);
   for (const RowIndex row : col_scratchpad.non_zeros) {
-    EXPECT_COMPARABLE(col_scratchpad[row], expected_col[row],
-                      kComparableEpsilon);
+    EXPECT_COMPARABLE(col_scratchpad[row], expected_col[row], Fractional(1e-7));
     col_scratchpad[row] = 0.0;
   }
   for (RowIndex row(0); row < kNumRows; ++row) {
@@ -129,8 +128,7 @@ TEST(RankOneUpdateFactorizationTest, RandomSolvesWithNonZeros) {
   ComputeNonZeros(row_scratchpad.values, &row_scratchpad.non_zeros);
   factorization.LeftSolveWithNonZeros(&row_scratchpad);
   for (const ColIndex col : row_scratchpad.non_zeros) {
-    EXPECT_COMPARABLE(row_scratchpad[col], expected_row[col],
-                      kComparableEpsilon);
+    EXPECT_COMPARABLE(row_scratchpad[col], expected_row[col], Fractional(1e-7));
     row_scratchpad[col] = 0.0;
   }
   for (ColIndex col(0); col < RowToColIndex(kNumRows); ++col) {

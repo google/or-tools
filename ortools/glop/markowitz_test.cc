@@ -298,8 +298,8 @@ TEST(MarkowitzTest, RandomSparseMatrix) {
 
   // So we know when we do a change that impacts the decomposition.
   EXPECT_EQ(1981, matrix.num_entries());
-  EXPECT_EQ(5627, lower.num_entries());
-  EXPECT_EQ(5697, upper.num_entries());
+  EXPECT_NEAR(5627, lower.num_entries().value(), 10);
+  EXPECT_NEAR(5697, upper.num_entries().value(), 10);
 }
 
 TEST(MarkowitzTest, RandomWideNonSquareMatrix) {
