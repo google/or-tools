@@ -24,6 +24,7 @@
 #include "absl/random/random.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/lp_data/lp_test_utils.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_types_testing.h"
 #include "ortools/lp_data/lp_utils.h"
@@ -120,7 +121,7 @@ TEST_P(EtaMatrixTest, LeftSolveMathCorrectness) {
     if (!eta_index_is_present) {
       EXPECT_EQ(eta_index, temp_non_zero_positions.back());
     }
-    EXPECT_THAT(y_for_sparse_solve, ContainerEq(y));
+    ExpectFractionalVectorComparable(y_for_sparse_solve, y);
   }
 }
 
