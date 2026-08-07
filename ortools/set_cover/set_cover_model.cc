@@ -153,6 +153,9 @@ SetCoverModel SetCoverModel::GenerateRandomModelFrom(
         ++num_tries;
       } while (num_tries < kMaxTries &&
                subset_already_contains_element[element]);
+      if (subset_already_contains_element[element]) {
+        continue;
+      }
       ++model.num_nonzeros_;
       model.columns_[subset].push_back(element);
       subset_already_contains_element[element] = true;
@@ -194,6 +197,9 @@ SetCoverModel SetCoverModel::GenerateRandomModelFrom(
             ++num_tries;
           } while (num_tries < kMaxTries &&
                    element_already_in_subset[subset_index]);
+          if (element_already_in_subset[subset_index]) {
+            continue;
+          }
           ++model.num_nonzeros_;
           model.columns_[subset_index].push_back(element);
           element_already_in_subset[subset_index] = true;
