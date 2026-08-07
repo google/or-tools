@@ -15,6 +15,7 @@ package com.google.ortools.routing;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -323,6 +324,37 @@ public final class RoutingModelTest {
 
     Assignment solution = model.solve(null);
     assertEquals(8, solution.objectiveValue());
+  }
+
+  @Test
+  public void testAllowedVehicles() {
+    final IndexManager manager = new IndexManager(2, 2, 0);
+    assertNotNull(manager);
+    final Model model = new Model(manager);
+    assertNotNull(model);
+
+    // out of range vehicle index is allowed.
+    model.setAllowedVehiclesForIndex(new int[] {13}, 1);
+    assertFalse(model.isVehicleAllowedForIndex(0, 1));
+    assertFalse(model.isVehicleAllowedForIndex(1, 1));
+    assertTrue(model.isVehicleAllowedForIndex(13, 1));
+
+    // empty array means any vehicles are allowed.
+    model.setAllowedVehiclesForIndex(new int[] {}, 1);
+    assertTrue(model.isVehicleAllowedForIndex(0, 1));
+    assertTrue(model.isVehicleAllowedForIndex(1, 1));
+    assertTrue(model.isVehicleAllowedForIndex(42, 1));
+
+    // only allow first vehicle for node 1.
+    model.setAllowedVehiclesForIndex(new int[] {0}, 1);
+    assertTrue(model.isVehicleAllowedForIndex(0, 1));
+    assertFalse(model.isVehicleAllowedForIndex(1, 1));
+    assertFalse(model.isVehicleAllowedForIndex(2, 1));
+
+    final Assignment solution = model.solve(null);
+    assertNotNull(solution);
+    assertEquals(1, solution.value(model.nextVar(model.start(0))));
+    assertEquals(2, model.getVehicleClassesCount());
   }
 
   @Test
