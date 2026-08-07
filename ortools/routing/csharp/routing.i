@@ -449,7 +449,6 @@ using Domain = Google.OrTools.Util.Domain;
 %unignore Model::RegisterUnaryTransitVector;
 %unignore Model::ResourceVar;
 %unignore Model::RestoreAssignment;
-%unignore Model::SetAllowedVehiclesForIndex;
 %unignore Model::SetAllowedVehiclesForIndex(const std::vector<int>&, int64_t);
 %unignore Model::SetAmortizedCostFactorsOfAllVehicles;
 %unignore Model::SetAmortizedCostFactorsOfVehicle;

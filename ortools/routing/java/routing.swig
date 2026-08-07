@@ -347,7 +347,13 @@ import java.util.function.LongUnaryOperator;
 
 %rename (restoreAssignment) Model::RestoreAssignment;
 %rename (routesToAssignment) Model::RoutesToAssignment;
-%rename (setAllowedVehiclesForIndex) Model::SetAllowedVehiclesForIndex;
+%rename (setAllowedVehiclesForIndex) Model::SetAllowedVehiclesForIndex(const std::vector<int>&, int64_t);
+%extend Model {
+  void SetAllowedVehiclesForIndex(const std::vector<int>& vehicles,
+                                  int64_t index) {
+    $self->SetAllowedVehiclesForIndex(absl::Span<const int>(vehicles), index);
+  }
+}
 %rename (setAmortizedCostFactorsOfAllVehicles) Model::SetAmortizedCostFactorsOfAllVehicles;
 %rename (setAmortizedCostFactorsOfVehicle) Model::SetAmortizedCostFactorsOfVehicle;
 %rename (setArcCostEvaluatorOfAllVehicles) Model::SetArcCostEvaluatorOfAllVehicles;

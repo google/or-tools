@@ -260,6 +260,38 @@ public class RoutingModelTest
         Assert.Equal(8, baselineObjective);
         Assert.Equal(18, constrainedObjective);
     }
+
+    [Fact]
+    public void TestAllowedVehicles()
+    {
+        IndexManager manager = new IndexManager(2, 2, 0);
+        Assert.NotNull(manager);
+        Model model = new Model(manager);
+        Assert.NotNull(model);
+
+        // out of range vehicle index is allowed.
+        model.SetAllowedVehiclesForIndex(new int[] { 13 }, 1);
+        Assert.False(model.IsVehicleAllowedForIndex(0, 1));
+        Assert.False(model.IsVehicleAllowedForIndex(1, 1));
+        Assert.True(model.IsVehicleAllowedForIndex(13, 1));
+
+        // empty array means any vehicles are allowed.
+        model.SetAllowedVehiclesForIndex(new int[] { }, 1);
+        Assert.True(model.IsVehicleAllowedForIndex(0, 1));
+        Assert.True(model.IsVehicleAllowedForIndex(1, 1));
+        Assert.True(model.IsVehicleAllowedForIndex(42, 1));
+
+        // only allow first vehicle for node 1.
+        model.SetAllowedVehiclesForIndex(new int[] { 0 }, 1);
+        Assert.True(model.IsVehicleAllowedForIndex(0, 1));
+        Assert.False(model.IsVehicleAllowedForIndex(1, 1));
+        Assert.False(model.IsVehicleAllowedForIndex(2, 1));
+
+        Assignment solution = model.Solve(null);
+        Assert.NotNull(solution);
+        Assert.Equal(1, solution.Value(model.NextVar(model.Start(0))));
+        Assert.Equal(2, model.GetVehicleClassesCount());
+    }
 }
 
 // TODO(user): Add tests for Routing[Cost|Vehicle|Resource]ClassIndex
