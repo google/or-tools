@@ -43,8 +43,8 @@ using ::testing::ContainerEq;
 // const inline arrays.
 template <int NumCols, int NumRows>
 struct ExpectedSolution {
-  double primal_values[NumCols];
-  double dual_values[NumRows];
+  double primal_values[NumCols > 0 ? NumCols : 1];
+  double dual_values[NumRows > 0 ? NumRows : 1];
 };
 
 template <int NumCols, int NumRows>

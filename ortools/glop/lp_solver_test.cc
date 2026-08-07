@@ -57,12 +57,12 @@ template <int NumCols, int NumRows>
 struct ExpectedSolution {
   ProblemStatus status;
   double objective_value;
-  double solution_value[NumCols];
-  double reduced_cost[NumCols];
-  double dual_value[NumRows];
-  double activity[NumRows];
-  VariableStatus variable_status[NumCols];
-  ConstraintStatus constraint_status[NumRows];
+  double solution_value[NumCols > 0 ? NumCols : 1];
+  double reduced_cost[NumCols > 0 ? NumCols : 1];
+  double dual_value[NumRows > 0 ? NumRows : 1];
+  double activity[NumRows > 0 ? NumRows : 1];
+  VariableStatus variable_status[NumCols > 0 ? NumCols : 1];
+  ConstraintStatus constraint_status[NumRows > 0 ? NumRows : 1];
 };
 
 template <int NumCols, int NumRows>
