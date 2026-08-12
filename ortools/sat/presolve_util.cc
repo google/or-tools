@@ -630,12 +630,16 @@ int ActivityBoundHelper::RemoveEnforcementThatMakesConstraintTrivial(
     // Compute min_max activity when enf_lit is false.
     int64_t min_activity = non_amo_min_activity;
     int64_t max_activity = non_amo_max_activity;
+    bool aborted = false;
     for (const int i : tmp_boolean_terms_in_some_amo_) {
       const int ref = boolean_terms[i].first;
       const int64_t coeff = boolean_terms[i].second;
       // This is not supposed to happen after PresolveEnforcement(), so we
       // just abort in this case.
-      if (ref == enf_lit || ref == NegatedRef(enf_lit)) break;
+      if (ref == enf_lit || ref == NegatedRef(enf_lit)) {
+        aborted = true;
+        break;
+      }
 
       const bool is_true = AppearInTriggeredAmo(NegatedRef(ref));
       const bool is_false = AppearInTriggeredAmo(ref);
@@ -643,7 +647,10 @@ int ActivityBoundHelper::RemoveEnforcementThatMakesConstraintTrivial(
       if (work > kMaxWork) return log_work();
 
       // Similarly, this is not supposed to happen after PresolveEnforcement().
-      if (is_true && is_false) break;
+      if (is_true && is_false) {
+        aborted = true;
+        break;
+      }
 
       if (is_false) continue;
       if (is_true) {
@@ -658,9 +665,11 @@ int ActivityBoundHelper::RemoveEnforcementThatMakesConstraintTrivial(
       }
     }
 
-    if (Domain(min_activity, max_activity)
-            .AdditionWith(other_terms)
-            .IsIncludedIn(rhs)) {
+    // The two aborts above leave min/max_activity missing the remaining terms,
+    // so the bounds are not valid and must not be used to remove an enforcement.
+    if (!aborted && Domain(min_activity, max_activity)
+                        .AdditionWith(other_terms)
+                        .IsIncludedIn(rhs)) {
       tmp_set_.insert(enf_lit);
     }
   }
