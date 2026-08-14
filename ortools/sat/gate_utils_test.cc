@@ -15,6 +15,7 @@
 
 #include <array>
 #include <bitset>
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
@@ -273,6 +274,95 @@ TEST(ReduceTest, Random) {
     EXPECT_EQ(response.status(), INFEASIBLE);
   }
 }
+
+TEST(NWayCircuitTest, GenerationAndChecking) {
+  const int m = 14;
+  const uint32_t mask = (1 << m) - 1;
+  absl::BitGen random;
+  std::vector<uint32_t> constants(100);
+  for (int i = 0; i < constants.size(); ++i) {
+    constants[i] = absl::Uniform<uint32_t>(random) % mask;
+  }
+
+  // This do not check the constant are really respected though, but it exercise
+  // the recover function too.
+  CHECK(RecoverNWayAddition(BuildPopcountCarryChainCircuit(m, constants)));
+  CHECK(RecoverNWayAddition(
+      BuildColumnWiseLinearCombinationCircuit(m, constants)));
+  CHECK(RecoverNWayAddition(BuildDaddaKoggeStoneCircuit(m, constants)));
+}
+
+// Evaluates a BinaryCircuit given input bit values (0 or 1).
+// Returns the circuit output as an uint32_t integer.
+uint32_t EvaluateCircuit(const BinaryCircuit& circuit,
+                         const std::vector<uint8_t>& inputs) {
+  std::vector<uint8_t> var_values(circuit.num_vars, 0);
+
+  // Set input values
+  for (int i = 0; i < circuit.num_inputs; ++i) {
+    var_values[i] = inputs[i] & 1;
+  }
+
+  // Gates are topologically sorted, so we can evaluate sequentially
+  for (const auto& gate : circuit.gates) {
+    uint8_t val_a = var_values[gate.a];
+    uint8_t val_b = var_values[gate.b];
+    uint8_t bit_index = val_a + 2 * val_b;
+    var_values[gate.target] = (gate.type >> bit_index) & 1;
+  }
+
+  // Reconstruct output integer from output bits
+  uint32_t result = 0;
+  for (size_t k = 0; k < circuit.outputs.size(); ++k) {
+    uint8_t bit = var_values[circuit.outputs[k]];
+    result |= (static_cast<uint32_t>(bit) << k);
+  }
+
+  return result;
+}
+
+// Parametrized Test Suite to test all circuit builder implementations
+class CircuitTest : public ::testing::TestWithParam<BinaryCircuit (*)(
+                        int, absl::Span<const uint32_t>)> {};
+
+TEST_P(CircuitTest, CorrectnessOnRandomAndEdgeCases) {
+  auto build_circuit_fn = GetParam();
+
+  // Test parameters: 5 inputs, 8-bit output
+  const int n = 5;
+  const int m = 8;
+  const uint32_t mask = (1U << m) - 1;
+  const std::vector<uint32_t> constants = {3, 15, 42, 128, 255};
+
+  BinaryCircuit circuit = build_circuit_fn(m, constants);
+
+  // Exhaustively test all 2^n = 32 input bit combinations
+  for (int mask_in = 0; mask_in < (1 << n); ++mask_in) {
+    std::vector<uint8_t> inputs(n);
+    uint32_t expected_sum = 0;
+
+    for (int i = 0; i < n; ++i) {
+      inputs[i] = (mask_in >> i) & 1;
+      if (inputs[i]) {
+        expected_sum += constants[i];
+      }
+    }
+    expected_sum &= mask;  // Modulo 2^m
+
+    uint32_t actual_sum = EvaluateCircuit(circuit, inputs);
+    EXPECT_EQ(actual_sum, expected_sum)
+        << "Failed for input bitmask: " << mask_in;
+  }
+}
+
+// Instantiate tests for all 4 implementations. [Gemini test]
+INSTANTIATE_TEST_SUITE_P(
+    LinearCombinationCircuits, CircuitTest,
+    ::testing::Values(
+        BuildColumnWiseLinearCombinationCircuit,  // Sequential Accumulator
+        BuildPopcountCarryChainCircuit,           // Popcount Carry Chain
+        BuildDaddaKoggeStoneCircuit               // Dadda + Kogge-Stone Adder
+        ));
 
 }  // namespace
 }  // namespace operations_research::sat

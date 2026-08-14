@@ -368,6 +368,28 @@ struct BinaryCircuit {
     }
   }
 
+  // Create a new intermediate node which is the target of f(a,b).
+  int AddGate(SmallBitset type, int a, int b) {
+    const int target = num_vars++;
+    gates.emplace_back(type, target, a, b);
+    return target;
+  }
+  int AddCopyOf(int a) {
+    const int target = num_vars++;
+    gates.emplace_back(0b1010, target, a, 0);
+    return target;
+  }
+  int AddNegationOf(int a) {
+    const int target = num_vars++;
+    gates.emplace_back(0b0101, target, a, 0);
+    return target;
+  }
+  int AddConstant(bool at_true) {
+    const int target = num_vars++;
+    gates.emplace_back(at_true ? 0b1111 : 0b0000, target, 0, 0);
+    return target;
+  }
+
   // Inputs are in [0, num_inputs). The targets are in [0, num_vars).
   int num_inputs = 0;
   int num_vars = 0;
@@ -454,7 +476,7 @@ BinaryCircuit ConstructDecomposition(int m, const BinaryCircuit& circuit);
 // Output layout: Sum bits [S_0, S_1, ..., S_{n-1}]
 BinaryCircuit MakeNBitAdder(int n);
 
-// See if the circuit look like sum_i(bit_i * table[i]).
+// See if the circuit look like sum_i(bit_i * constants[i]).
 //
 // The first function just check it with sampling.
 //
@@ -462,9 +484,48 @@ BinaryCircuit MakeNBitAdder(int n);
 // If there is n input bits, we have n models
 // where each show that f(0, a_i, suffix) = f(0, a_i, 0) + f(0, 0, suffix).
 // The models are easier and easier to solve.
-bool RecoverNWayAddition(const BinaryCircuit& circuit);
+bool RecoverNWayAddition(const BinaryCircuit& circuit,
+                         int num_samples = 1 << 10);
 std::vector<BinaryCircuit> GetNWayAdditionSubmodels(
     const BinaryCircuit& circuit);
+
+// Various circuit implementation of a "n-way adder". These return a circuit
+// that compute the m-bit sum (sum_i inputs[i] * constants[i]), where the
+// constants are m-bit wide.
+//
+// From a verification perspective, The BuildPopcountCarryChainCircuit() is the
+// best as it is less sensible to permutations of the inputs. The other are
+// smaller and less deep, they are more for circuit generation and testing.
+BinaryCircuit BuildPopcountCarryChainCircuit(
+    int m, absl::Span<const uint32_t> constants);
+BinaryCircuit BuildColumnWiseLinearCombinationCircuit(
+    int m, absl::Span<const uint32_t> constants);
+BinaryCircuit BuildDaddaKoggeStoneCircuit(int m,
+                                          absl::Span<const uint32_t> constants);
+
+// Returns a list of intermediate nodes, each of the form (node n, term_n) and
+// for which the output of the circuit seem to be equivalent to
+//     f(input) = f'(input) + value_n * term_n.
+// Where f'() is the same as f(), but all gates consuming node n receive zero
+// instead, and value_n is the value of node n in f(input).
+std::vector<std::pair<int, uint64_t>> SampleForAdditionCandidates(
+    const BinaryCircuit& circuit, int num_samples = 1 << 10);
+
+// TODO(user): rather than encoding the addition in an order dependent way
+// we could use CP-SAT direct model for the mitter (to try). But we will loose
+// the LRAT proof though.
+struct AdditionDecompositionResult {
+  BinaryCircuit reduced_circuit;
+  BinaryCircuit final_circuit;
+
+  // The final circuit is constructed by adding sum input_i * term_i to the
+  // output of the reduced circuit.
+  std::vector<std::pair<int, uint64_t>> input_term_pairs;
+};
+AdditionDecompositionResult ValidateAdditionCandidates(
+    absl::Span<const std::pair<int, uint64_t>> candidates,
+    const BinaryCircuit& circuit,
+    const std::function<CpSolverResponse(const CpModelProto& cp_model)>& solve);
 
 // Output a "dot" file representation of the given circuit. This tries to
 // simplify the final graph by removing all intermediate node that are used only

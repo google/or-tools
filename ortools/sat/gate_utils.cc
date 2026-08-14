@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <bit>
 #include <bitset>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <string>
@@ -23,6 +24,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -1199,7 +1201,7 @@ bool SampleDecomposition(int m, const BinaryCircuit& circuit) {
   return true;
 }
 
-bool RecoverNWayAddition(const BinaryCircuit& circuit) {
+bool RecoverNWayAddition(const BinaryCircuit& circuit, int num_samples) {
   if (circuit.outputs.size() >= 64) return false;
 
   FixedCapacityVector<uint64_t> values;
@@ -1231,7 +1233,6 @@ bool RecoverNWayAddition(const BinaryCircuit& circuit) {
   }
 
   // Does the circuit is sum of mapping[i] ??
-  const int num_samples = 1 << 16;
   absl::BitGen random;
   for (int start = 0; start < num_samples; ++start) {
     for (int i = 0; i < circuit.num_inputs; ++i) {
@@ -1270,6 +1271,716 @@ bool RecoverNWayAddition(const BinaryCircuit& circuit) {
   return true;
 }
 
+std::vector<std::pair<int, uint64_t>> SampleForAdditionCandidates(
+    const BinaryCircuit& circuit, int num_samples) {
+  // Starts with all nodes as candidate.
+  // The second member of the pair will be set on the first iteration below.
+  std::vector<std::pair<int, uint64_t>> candidates(circuit.num_vars);
+  for (int i = 0; i < circuit.num_vars; ++i) {
+    candidates[i] = {i, 0};
+  }
+
+  FixedCapacityVector<uint64_t> values;
+  FixedCapacityVector<uint64_t> other_values;
+  values.ClearAndReserve(circuit.num_vars);
+  other_values.ClearAndReserve(circuit.num_vars);
+
+  const uint64_t mask = (1 << circuit.outputs.size()) - 1;
+
+  absl::BitGen random;
+  for (int start = 0; start < num_samples; ++start) {
+    for (int i = 0; i < circuit.num_inputs; ++i) {
+      values[i] = absl::Uniform<uint64_t>(random);
+    }
+    for (const auto& [type, target, a, b] : circuit.gates) {
+      values[target] = CombineGate2(type, values[a], values[b]);
+    }
+
+    uint64_t out[64];
+    for (int pos = 0; pos < 64; ++pos) {
+      out[pos] = 0;
+      for (int k = 0; k < circuit.outputs.size(); ++k) {
+        const int o = circuit.outputs[k];
+        out[pos] |= ((values[o] >> pos) & 1) << k;
+      }
+    }
+
+    int new_size = 0;
+    int gate_start_index = 0;
+    for (auto [node, term] : candidates) {
+      // Evaluate as if node took the opposite value.
+      other_values[node] = ~values[node];
+      for (int i = gate_start_index; i < circuit.gates.size(); ++i) {
+        const auto& [type, target, a, b] = circuit.gates[i];
+        if (target <= node) {
+          gate_start_index = i;  // Gates are in order.
+          continue;
+        }
+        const uint64_t v_a = a < node ? values[a] : other_values[a];
+        const uint64_t v_b = b < node ? values[b] : other_values[b];
+        other_values[target] = CombineGate2(type, v_a, v_b);
+      }
+
+      bool ok = true;
+      for (int pos = 0; pos < 64; ++pos) {
+        uint64_t other_out = 0;
+        for (int k = 0; k < circuit.outputs.size(); ++k) {
+          const int o = circuit.outputs[k];
+          other_out |= (((o < node ? values[o] : other_values[o]) >> pos) & 1)
+                       << k;
+        }
+
+        const uint64_t candidate_term =
+            (((values[node] >> pos) & 1) ? out[pos] - other_out
+                                         : other_out - out[pos]) &
+            mask;
+        if (start == 0 && pos == 0) {
+          term = candidate_term;
+        } else if (term != candidate_term) {
+          VLOG(2) << "removing " << node << " samples: " << start << " is "
+                  << std::bitset<20>(candidate_term) << " was "
+                  << std::bitset<20>(term);
+          ok = false;
+          break;
+        }
+      }
+
+      if (ok) {
+        candidates[new_size++] = {node, term};
+      }
+    }
+    candidates.resize(new_size);
+  }
+
+  LOG(INFO) << "Candidates after sampling: " << candidates.size();
+  for (const auto [node, term] : candidates) {
+    VLOG(2) << node << " " << std::bitset<20>(term);
+  }
+  return candidates;
+}
+
+// == Adpated from Gemini  ===========================================
+
+// Truth table bitmasks for 2-input binary gates
+constexpr uint8_t kAnd = 0b1000;  // a AND b
+constexpr uint8_t kXor = 0b0110;  // a XOR b
+constexpr uint8_t kOr = 0b1110;   // a OR b
+
+// Computes output = sum_{i=0}^{n-1} (input[i] * constants[i]) mod 2^m
+// processing column by column (bits 0 to m-1) using 3-to-2 and 2-to-2
+// compressor trees.
+//
+// Note(user): Apperently this is Dadda/Wallace addition.
+BinaryCircuit BuildColumnWiseLinearCombinationCircuit(
+    int m, absl::Span<const uint32_t> constants) {
+  const int n = constants.size();
+
+  BinaryCircuit circuit;
+  circuit.num_inputs = n;
+  circuit.num_vars = n;  // Inputs x_0 ... x_{n-1}
+
+  if (n == 0 || m == 0) {
+    circuit.ResetBooleanMapping();
+    return circuit;
+  }
+
+  // Carries generated from column k that need to be added in column k+1
+  std::vector<int> carries_in;
+  std::vector<int> final_outputs(m);
+
+  for (int k = 0; k < m; ++k) {
+    // 1. Gather all bit-k contributions from the input terms (x_i *
+    // constants[i])
+    std::vector<int> current_column_bits;
+    for (int i = 0; i < n; ++i) {
+      if ((constants[i] >> k) & 1) {
+        current_column_bits.push_back(i);  // x_i * 1 = x_i
+      }
+    }
+
+    // 2. Add incoming carries from column k - 1
+    current_column_bits.insert(current_column_bits.end(), carries_in.begin(),
+                               carries_in.end());
+    carries_in.clear();
+
+    // 3. Compress current column down to a single output bit (final_outputs[k])
+    //    using Full Adders (3->2) and Half Adders (2->2).
+    while (current_column_bits.size() > 1) {
+      std::vector<int> next_column_bits;
+
+      size_t i = 0;
+      // Use 3-to-2 Full Adders wherever 3 bits are available
+      while (i + 2 < current_column_bits.size()) {
+        int a = current_column_bits[i];
+        int b = current_column_bits[i + 1];
+        int c = current_column_bits[i + 2];
+
+        // Full-adder sum: a ^ b ^ c
+        int a_xor_b = circuit.AddGate(kXor, a, b);
+        int sum = circuit.AddGate(kXor, a_xor_b, c);
+
+        // Full-adder carry: (a & b) | (c & (a ^ b))
+        int a_and_b = circuit.AddGate(kAnd, a, b);
+        int c_and_xor = circuit.AddGate(kAnd, c, a_xor_b);
+        int carry = circuit.AddGate(kOr, a_and_b, c_and_xor);
+
+        next_column_bits.push_back(sum);
+        carries_in.push_back(carry);  // Sent to column k + 1
+        i += 3;
+      }
+
+      // Use a 2-to-2 Half Adder if 2 bits remain
+      if (i + 1 < current_column_bits.size()) {
+        int a = current_column_bits[i];
+        int b = current_column_bits[i + 1];
+
+        int sum = circuit.AddGate(kXor, a, b);
+        int carry = circuit.AddGate(kAnd, a, b);
+
+        next_column_bits.push_back(sum);
+        carries_in.push_back(carry);  // Sent to column k + 1
+        i += 2;
+      }
+
+      // Pass forward any leftover single bit
+      if (i < current_column_bits.size()) {
+        next_column_bits.push_back(current_column_bits[i]);
+      }
+
+      current_column_bits = std::move(next_column_bits);
+    }
+
+    // If the column has at least one bit, it becomes the output bit.
+    // Otherwise, bit k is 0 (encoded as a constant gate 0b0000).
+    if (!current_column_bits.empty()) {
+      final_outputs[k] = current_column_bits[0];
+    } else {
+      final_outputs[k] = circuit.AddGate(0b0000, 0, 0);
+    }
+  }
+
+  circuit.outputs = final_outputs;
+  circuit.ResetBooleanMapping();
+  return circuit;
+}
+
+// == Adapted from Gemini ======================================================
+// Note(user): I asked for a different implementation of the n-way adder, which
+// should be more robust to the input order, which is important for easy of
+// verification.
+
+// Helper to add two multi-bit integer vectors A and B.
+std::vector<int> AddIntegers(BinaryCircuit& circuit, const std::vector<int>& A,
+                             const std::vector<int>& B) {
+  constexpr uint8_t kAnd = 0b1000;
+  constexpr uint8_t kXor = 0b0110;
+  constexpr uint8_t kOr = 0b1110;
+
+  size_t len = std::max(A.size(), B.size());
+  std::vector<int> sum;
+  int carry = -1;
+
+  for (size_t i = 0; i < len || carry != -1; ++i) {
+    int a = (i < A.size()) ? A[i] : -1;
+    int b = (i < B.size()) ? B[i] : -1;
+
+    // Filter out missing inputs (e.g. if one vector is shorter)
+    if (a == -1 && b == -1) {
+      sum.push_back(carry);
+      carry = -1;
+      break;
+    }
+    if (a == -1) {
+      a = b;
+      b = -1;
+    }
+
+    if (b == -1) {
+      if (carry == -1) {
+        sum.push_back(a);
+      } else {
+        // Half-adder with carry
+        sum.push_back(circuit.AddGate(kXor, a, carry));
+        carry = circuit.AddGate(kAnd, a, carry);
+      }
+    } else {
+      if (carry == -1) {
+        sum.push_back(circuit.AddGate(kXor, a, b));
+        carry = circuit.AddGate(kAnd, a, b);
+      } else {
+        // Full-adder
+        int a_xor_b = circuit.AddGate(kXor, a, b);
+        sum.push_back(circuit.AddGate(kXor, a_xor_b, carry));
+
+        int a_and_b = circuit.AddGate(kAnd, a, b);
+        int carry_and_xor = circuit.AddGate(kAnd, carry, a_xor_b);
+        carry = circuit.AddGate(kOr, a_and_b, carry_and_xor);
+      }
+    }
+  }
+
+  return sum;
+}
+
+// Computes the total integer sum of a list of single-bit variables via a binary
+// addition tree.
+std::vector<int> TotalPopCount(BinaryCircuit& circuit,
+                               const std::vector<int>& bits) {
+  if (bits.empty()) return {};
+
+  // Each bit is initially a 1-bit integer vector [bit]
+  std::vector<std::vector<int>> current_terms;
+  current_terms.reserve(bits.size());
+  for (int b : bits) {
+    current_terms.push_back({b});
+  }
+
+  // Reduce down to a single multi-bit integer
+  while (current_terms.size() > 1) {
+    std::vector<std::vector<int>> next_terms;
+    next_terms.reserve((current_terms.size() + 1) / 2);
+
+    for (size_t i = 0; i < current_terms.size(); i += 2) {
+      if (i + 1 < current_terms.size()) {
+        next_terms.push_back(
+            AddIntegers(circuit, current_terms[i], current_terms[i + 1]));
+      } else {
+        next_terms.push_back(current_terms[i]);
+      }
+    }
+    current_terms = std::move(next_terms);
+  }
+
+  return current_terms[0];
+}
+
+// Computes output = sum_{i=0}^{n-1} (input[i] * constants[i]) mod 2^m
+// using explicit multi-bit integer popcounts per bit stage.
+BinaryCircuit BuildPopcountCarryChainCircuit(
+    int m, absl::Span<const uint32_t> constants) {
+  const int n = constants.size();
+  BinaryCircuit circuit;
+  circuit.num_inputs = n;
+  circuit.num_vars = circuit.num_inputs;
+
+  if (n == 0 || m == 0) {
+    circuit.ResetBooleanMapping();
+    return circuit;
+  }
+
+  // Multi-bit integer carry vector from stage k - 1
+  std::vector<int> carry_integer;
+  std::vector<int> final_outputs(m);
+
+  for (int k = 0; k < m; ++k) {
+    // 1. Gather all input bits contributing to column k
+    std::vector<int> bits_in_col;
+    for (int i = 0; i < n; ++i) {
+      if ((constants[i] >> k) & 1) {
+        bits_in_col.push_back(i);  // x_i
+      }
+    }
+
+    // 2. Total count of set bits in this column
+    std::vector<int> col_sum = TotalPopCount(circuit, bits_in_col);
+
+    // 3. Add the multi-bit integer carry from previous stage: S_k = col_sum +
+    // carry_integer
+    std::vector<int> total_sum = AddIntegers(circuit, col_sum, carry_integer);
+
+    if (total_sum.empty()) {
+      // If 0 bits, output is 0
+      final_outputs[k] = circuit.AddGate(0b0000, 0, 0);
+      carry_integer.clear();
+    } else {
+      // 4. Bit 0 of total_sum is output bit k
+      final_outputs[k] = total_sum[0];
+
+      // 5. Bits [1...end] form the multi-bit carry integer for stage k + 1
+      carry_integer.assign(total_sum.begin() + 1, total_sum.end());
+    }
+  }
+
+  circuit.outputs = final_outputs;
+  circuit.ResetBooleanMapping();
+  return circuit;
+}
+
+// == Adapted form Gemini, mainly for experiment on circuit efficiency =========
+
+// Helper struct to represent a 2-operand Kogge-Stone prefix node
+struct PrefixNode {
+  int g;  // Generate bit
+  int p;  // Propagate bit
+};
+
+// Adds two m-bit vectors A and B modulo 2^m using a Kogge-Stone Parallel Prefix
+// Adder. Depth: O(log m)
+std::vector<int> AddKoggeStone(BinaryCircuit& circuit,
+                               const std::vector<int>& A,
+                               const std::vector<int>& B, int m) {
+  if (m == 0) return {};
+
+  // 1. Initial Generate (g_i = a_i AND b_i) and Propagate (p_i = a_i XOR b_i)
+  // signals
+  std::vector<PrefixNode> current(m);
+  for (int i = 0; i < m; ++i) {
+    current[i].g = circuit.AddGate(kAnd, A[i], B[i]);
+    current[i].p = circuit.AddGate(kXor, A[i], B[i]);
+  }
+
+  // 2. Prefix tree computation: O(log2 m) depth
+  for (int stride = 1; stride < m; stride *= 2) {
+    std::vector<PrefixNode> next = current;
+    for (int i = stride; i < m; ++i) {
+      // g_new = g_i OR (p_i AND g_{i-stride})
+      int p_and_g = circuit.AddGate(kAnd, current[i].p, current[i - stride].g);
+      next[i].g = circuit.AddGate(kOr, current[i].g, p_and_g);
+
+      // p_new = p_i AND p_{i-stride}
+      next[i].p = circuit.AddGate(kAnd, current[i].p, current[i - stride].p);
+    }
+    current = std::move(next);
+  }
+
+  // 3. Final Sum computation
+  // sum_0 = p_0 = a_0 XOR b_0
+  // sum_i = p_i XOR g_{i-1} (for i > 0)
+  std::vector<int> sum(m);
+  sum[0] = circuit.AddGate(kXor, A[0], B[0]);
+  for (int i = 1; i < m; ++i) {
+    // Initial p_i before prefix combining
+    int initial_p_i = circuit.AddGate(kXor, A[i], B[i]);
+    sum[i] = circuit.AddGate(kXor, initial_p_i, current[i - 1].g);
+  }
+
+  return sum;
+}
+
+// Computes output = sum_{i=0}^{n-1} (input[i] * constants[i]) mod 2^m
+// using a Dadda Tree reduction followed by a Kogge-Stone adder.
+// Total Depth: O(log n + log m)
+BinaryCircuit BuildDaddaKoggeStoneCircuit(
+    int m, absl::Span<const uint32_t> constants) {
+  const int n = constants.size();
+  BinaryCircuit circuit;
+  circuit.num_inputs = n;
+  circuit.num_vars = n;  // Inputs x_0 ... x_{n-1}
+
+  if (n == 0 || m == 0) {
+    circuit.ResetBooleanMapping();
+    return circuit;
+  }
+
+  // 1. Group bits by column weight k (for k in [0, m-1])
+  std::vector<std::vector<int>> columns(m);
+  for (int i = 0; i < n; ++i) {
+    for (int k = 0; k < m; ++k) {
+      if ((constants[i] >> k) & 1) {
+        columns[k].push_back(i);  // Contribution x_i
+      }
+    }
+  }
+
+  // 2. Calculate Dadda reduction sequence profile: 2, 3, 4, 6, 9, 13, 19, 28,
+  // ...
+  std::vector<int> dadda_profile = {2};
+  while (dadda_profile.back() < n) {
+    dadda_profile.push_back(dadda_profile.back() * 3 / 2);
+  }
+
+  // 3. Perform parallel Dadda Tree reduction down to at most 2 bits per column
+  for (int p = static_cast<int>(dadda_profile.size()) - 1; p >= 0; --p) {
+    int target_height = dadda_profile[p];
+
+    for (int k = 0; k < m; ++k) {
+      while (columns[k].size() > target_height) {
+        if (columns[k].size() - target_height >= 2) {
+          // Use a Full Adder (3-to-2 compressor)
+          int a = columns[k][0];
+          int b = columns[k][1];
+          int c = columns[k][2];
+          columns[k].erase(columns[k].begin(), columns[k].begin() + 3);
+
+          // Full-adder sum stays in column k
+          int a_xor_b = circuit.AddGate(kXor, a, b);
+          int sum = circuit.AddGate(kXor, a_xor_b, c);
+          columns[k].push_back(sum);
+
+          // Full-adder carry goes to column k+1 (if within mod 2^m bounds)
+          int a_and_b = circuit.AddGate(kAnd, a, b);
+          int c_and_xor = circuit.AddGate(kAnd, c, a_xor_b);
+          int carry = circuit.AddGate(kOr, a_and_b, c_and_xor);
+
+          if (k + 1 < m) {
+            columns[k + 1].push_back(carry);
+          }
+        } else if (columns[k].size() - target_height == 1) {
+          // Use a Half Adder (2-to-2 compressor)
+          int a = columns[k][0];
+          int b = columns[k][1];
+          columns[k].erase(columns[k].begin(), columns[k].begin() + 2);
+
+          int sum = circuit.AddGate(kXor, a, b);
+          int carry = circuit.AddGate(kAnd, a, b);
+
+          columns[k].push_back(sum);
+          if (k + 1 < m) {
+            columns[k + 1].push_back(carry);
+          }
+        }
+      }
+    }
+  }
+
+  // 4. Extract Vector A and Vector B (at most 2 bits per column)
+  std::vector<int> A(m);
+  std::vector<int> B(m);
+  int zero_var = -1;
+
+  for (int k = 0; k < m; ++k) {
+    if (!columns[k].empty()) {
+      A[k] = columns[k][0];
+    } else {
+      if (zero_var == -1) zero_var = circuit.AddConstant(false);
+      A[k] = zero_var;
+    }
+
+    if (columns[k].size() >= 2) {
+      B[k] = columns[k][1];
+    } else {
+      if (zero_var == -1) zero_var = circuit.AddConstant(false);
+      B[k] = zero_var;
+    }
+  }
+
+  // 5. Compute final sum using Kogge-Stone Parallel Prefix Adder
+  circuit.outputs = AddKoggeStone(circuit, A, B, m);
+  circuit.ResetBooleanMapping();
+  return circuit;
+}
+
+// =======================================================
+
+AdditionDecompositionResult ValidateAdditionCandidates(
+    absl::Span<const std::pair<int, uint64_t>> candidates,
+    const BinaryCircuit& circuit,
+    const std::function<CpSolverResponse(const CpModelProto& cp_model)>&
+        solve) {
+  const int m = circuit.outputs.size();
+  const BinaryCircuit adder = MakeNBitAdder(m);
+  LOG(INFO) << "Initial circuit " << circuit.DebugString();
+
+  // Lets skip the outputs, it is harder to reason about otherwise.
+  // And also I believe our model the verify that indeed one the output bit
+  // is in linear dependence with the output is broken, so we don't
+  // mark them as such.
+  std::vector<bool> is_output(circuit.num_vars, false);
+  for (const int o : circuit.outputs) is_output[o] = true;
+
+  int index = 0;
+  BinaryCircuit current = circuit;
+  current.ResetBooleanMapping();
+  std::vector<std::pair<int, uint64_t>> validated;
+  for (const auto& [node, term] : candidates) {
+    if (is_output[node]) continue;
+    BinaryCircuit next = current;
+
+    // Lets make all gates using "node" take zero as input, and propagate
+    // constants.
+    bool skip = false;
+    std::vector<bool> value_is_zero(next.num_vars, false);
+    std::vector<bool> value_is_one(next.num_vars, false);
+    value_is_zero[node] = true;
+    for (auto& [type, target, a, b] : next.gates) {
+      if (target == node && (type == 0b0000 || type == 0b1111)) {
+        skip = true;
+        break;
+      }
+      if (value_is_zero[a]) a = 0, type = (type & 1) * 3 + (type & 4) * 3;
+      if (value_is_one[a])
+        a = 0, type = ((type & 2) >> 1) * 3 + ((type & 8) >> 1) * 3;
+      if (value_is_zero[b]) b = 0, type = (type & 3) + (type & 3) * 4;
+      if (value_is_one[b]) b = 0, type = ((type >> 2) & 3) * 5;
+      if (type == 0b0000) value_is_zero[target] = true;
+      if (type == 0b1111) value_is_one[target] = true;
+    }
+    if (skip) {
+      VLOG(2) << index++ << "/" << candidates.size() << ": " << node << " "
+              << std::bitset<20>(term)
+              << "At zero or one, skipping without changes";
+      continue;
+    }
+
+    // Once we show that current = simplified + node * term, we can try to
+    // simplify "simplified" next !
+    // Note that since we process gate in topo order, the value of node
+    // will never change again in our "simplified" circuit.
+    BinaryCircuit simplified = next;
+
+    // Now create the node * "term" inputs.
+    std::vector<int> adder_input;
+    adder_input = next.outputs;
+    adder_input.resize(m);
+    for (int k = 0; k < m; ++k) {
+      if ((term >> k) & 1) {
+        adder_input.push_back(next.AddCopyOf(node));
+      } else {
+        adder_input.push_back(next.AddConstant(false));
+      }
+    }
+
+    // Add an adder which is the new output.
+    next.outputs = AppendCircuit(adder_input, adder, &next);
+
+    // copy the other outputs afterwards.
+    next.outputs.insert(next.outputs.end(),
+                        absl::MakeSpan(current.outputs).subspan(m).begin(),
+                        absl::MakeSpan(current.outputs).subspan(m).end());
+
+    next.ResetBooleanMapping();
+    VLOG(1) << next.DebugString();
+
+    // Now construct and check equivalence via mitter.
+    const BinaryCircuit mitter = ConstructMitter(next, current);
+    const CpModelProto proto =
+        ConstructCpModelFromBinaryCircuit(mitter, /*enforce_one_output=*/true);
+    const CpSolverResponse response = solve(proto);
+
+    if (response.status() == CpSolverStatus::INFEASIBLE) {
+      validated.push_back({node, term});
+      // current = next;
+      current = simplified;
+      LOG(INFO) << "Validated    " << ++index << "/" << candidates.size()
+                << ": " << node << " " << std::bitset<20>(term) << " "
+                << response.wall_time() << "s";
+    } else {
+      LOG(INFO) << "Wrong sample " << ++index << "/" << candidates.size()
+                << ": " << node << " " << std::bitset<20>(term) << " "
+                << response.wall_time() << "s";
+    }
+  }
+
+  // Because we process them in order, these should not be fixed.
+  LOG(INFO) << "Final stats: " << validated.size();
+
+  // Lets construct a final circuit that should be equivalent to the first one
+  // by construction (but it will be hard to prove directly).
+  BinaryCircuit final = current;
+  AdditionDecompositionResult result;
+
+  // Deal with the constant bit of the outputs.
+  uint64_t constant_out = 0;
+  {
+    std::vector<bool> fixed_at_0(current.num_vars, false);
+    std::vector<bool> fixed_at_1(current.num_vars, false);
+    for (const auto& [type, target, a, b] : current.gates) {
+      if (type == 0b0000) fixed_at_0[target] = true;
+      if (type == 0b1111) fixed_at_1[target] = true;
+    }
+    for (int k = 0; k < current.outputs.size(); ++k) {
+      const int o = current.outputs[k];
+      if (fixed_at_0[o]) {
+      } else if (fixed_at_1[o]) {
+        constant_out |= (uint64_t{1} << k);
+      } else {
+        LOG(INFO) << "output " << k << " not constant.";
+        validated.push_back({o, 1 << k});
+      }
+    }
+  }
+  LOG(INFO) << "Constant out: " << std::bitset<20>(constant_out);
+
+  // Preprocess to simplify and canonicalize the adder.
+  uint64_t offset = constant_out;
+  const uint64_t mask = m == 64 ? ~uint64_t{0} : (uint64_t{1} << m) - 1;
+  for (auto& [node, term] : validated) {
+    const uint64_t negated = -term & mask;
+    if (absl::popcount(negated) < absl::popcount(term)) {
+      offset += term;
+      term = negated;
+      node = final.AddNegationOf(node);
+    }
+  }
+  offset &= mask;
+  if (offset != 0) {
+    // Add as constant.
+    //
+    // TODO(user): that might mess up a bit the "tree" in our adder. Can we
+    // integrate such constant term more efficiently ?
+    LOG(INFO) << "offset: " << std::bitset<20>(offset);
+    validated.push_back({final.AddConstant(true), offset});
+  }
+  result.reduced_circuit = final;
+
+  // To simplify further equivalence checking as much as possible, we want
+  // to sort the outputs by their dependency on the input.
+  std::vector<std::bitset<500>> input_dependency(final.num_vars);
+  for (int i = 0; i < final.num_inputs; ++i) {
+    input_dependency[i].set(i);
+  }
+  for (const auto& [type, target, a, b] : final.gates) {
+    if (type == 0b0000) continue;
+    if (type == 0b1111) continue;
+    if (type == 0b1010 || type == 0b0101) {
+      input_dependency[target] = input_dependency[a];
+      continue;
+    }
+    if (type == 0b0011 || type == 0b1100) {
+      input_dependency[target] = input_dependency[b];
+      continue;
+    }
+    input_dependency[target] = input_dependency[a] | input_dependency[b];
+  }
+
+  // This should improve stability across circuit, and the adder input
+  // that are the same should hopefully be consumed in the same way.
+  absl::c_stable_sort(validated,
+                      [&input_dependency](const std::pair<int, uint64_t>& a,
+                                          const std::pair<int, uint64_t>& b) {
+                        if (a.second == b.second)
+                          return input_dependency[a.first].to_string() <
+                                 input_dependency[b.first].to_string();
+                        return a.second < b.second;
+                      });
+
+  // Lets display some summary
+  absl::btree_map<uint64_t, int> count_map;
+
+  std::vector<int> input_map;
+  std::vector<uint32_t> constants;
+  input_map.reserve(validated.size());
+  constants.reserve(validated.size());
+  for (const auto [node, term] : validated) {
+    input_map.push_back(node);
+    constants.push_back(term);
+    count_map[term]++;
+  }
+  for (const auto [term, count] : count_map) {
+    LOG(INFO) << std::bitset<20>(term) << ": " << count;
+  }
+
+  // Here we prefer a "nway" encoding that is less sensible to input order.
+  const BinaryCircuit nway_adder = BuildPopcountCarryChainCircuit(m, constants);
+  LOG(INFO) << "nway_adder " << nway_adder.DebugString();
+  {
+    // For info. Samller circuit, but harder ot verify.
+    LOG(INFO)
+        << "Basic version "
+        << BuildColumnWiseLinearCombinationCircuit(m, constants).DebugString();
+    LOG(INFO) << "Dada version "
+              << BuildDaddaKoggeStoneCircuit(m, constants).DebugString();
+  }
+
+  final.outputs = AppendCircuit(input_map, nway_adder, &final);
+  final.ResetBooleanMapping();
+  LOG(INFO) << final.DebugString();
+
+  result.final_circuit = final;
+  result.input_term_pairs = validated;
+  return result;
+}
+
 // Generates an n-bit adder circuit that computes output = (A + B) mod (2^n).
 // Input layout:  A = [0, n), B = [n, 2*n)
 // Output layout: Sum bits [S_0, S_1, ..., S_{n-1}]
@@ -1278,16 +1989,7 @@ BinaryCircuit MakeNBitAdder(int n) {
   if (n <= 0) return circuit;
 
   circuit.num_inputs = 2 * n;
-
-  // Track the next variable index to allocate.
-  int next_var = circuit.num_inputs;
-
-  // Helper lambda to create a gate and push it to the circuit.
-  auto add_gate = [&](uint8_t type, int a, int b) -> int {
-    int target = next_var++;
-    circuit.gates.emplace_back(type, target, a, b);
-    return target;
-  };
+  circuit.num_vars = circuit.num_inputs;
 
   // We will maintain the carry bit across bit positions.
   int carry = -1;
@@ -1299,32 +2001,31 @@ BinaryCircuit MakeNBitAdder(int n) {
     if (i == 0) {
       // Half-adder for bit 0
       // Sum bit: S_0 = A_0 ^ B_0 (XOR -> 0b0110)
-      int sum_i = add_gate(0b0110, a_i, b_i);
+      const int sum_i = circuit.AddGate(0b0110, a_i, b_i);
       circuit.outputs.push_back(sum_i);
 
       // Carry bit: C_0 = A_0 & B_0 (AND -> 0b1000)
-      carry = add_gate(0b1000, a_i, b_i);
+      carry = circuit.AddGate(0b1000, a_i, b_i);
     } else {
       // Full-adder for bit i > 0
       // 1. xor_ab = A_i ^ B_i
-      int xor_ab = add_gate(0b0110, a_i, b_i);
+      const int xor_ab = circuit.AddGate(0b0110, a_i, b_i);
 
       // 2. Sum bit: S_i = xor_ab ^ C_{i-1}
-      int sum_i = add_gate(0b0110, xor_ab, carry);
+      const int sum_i = circuit.AddGate(0b0110, xor_ab, carry);
       circuit.outputs.push_back(sum_i);
 
       // 3. and_ab = A_i & B_i
-      int and_ab = add_gate(0b1000, a_i, b_i);
+      const int and_ab = circuit.AddGate(0b1000, a_i, b_i);
 
       // 4. and_carry = xor_ab & C_{i-1}
-      int and_carry = add_gate(0b1000, xor_ab, carry);
+      const int and_carry = circuit.AddGate(0b1000, xor_ab, carry);
 
       // 5. Next Carry: C_i = and_ab | and_carry (OR -> 0b1110)
-      carry = add_gate(0b1110, and_ab, and_carry);
+      carry = circuit.AddGate(0b1110, and_ab, and_carry);
     }
   }
 
-  circuit.num_vars = next_var;
   circuit.ResetBooleanMapping();
   return circuit;
 }

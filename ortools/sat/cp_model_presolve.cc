@@ -1631,7 +1631,9 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
   // - The target domain covers all the possible range of the rhs.
   // This can be done whether or not there are enforcement literals, even if
   // they are used in the target or the rhs.
-  if (ExpressionContainsSingleRef(ct->int_prod().target()) &&
+  // TODO(user): support enforced int_prod in the postsolve.
+  if (!HasEnforcementLiteral(*ct) &&
+      ExpressionContainsSingleRef(ct->int_prod().target()) &&
       context_->VariableIsUniqueAndRemovable(ct->int_prod().target().vars(0)) &&
       std::abs(ct->int_prod().target().coeffs(0)) == 1) {
     const LinearExpressionProto& target = ct->int_prod().target();
@@ -4569,7 +4571,8 @@ bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
     if (context_->params().presolve_substitution_level() <= 0) continue;
 
     // Only consider substitution that reduce the number of entries.
-    const bool is_in_objective = context_->VarToConstraints(var).contains(-1);
+    const bool is_in_objective =
+        context_->VarToConstraints(var).contains(kObjectiveConstraint);
     {
       int col_size = context_->VarToConstraints(var).size();
       if (is_in_objective) col_size--;
@@ -13725,7 +13728,9 @@ void CpModelPresolver::PresolveVarOnlyInLinearAndLinear(int var,
     // The integer variable is also not used elsewhere else. Fix it, otherwise
     // the postsolve will complain that nothing is fixing the value of this
     // variable.
-    if (!context_->IntersectDomainWith(ct_var, Domain(linear1_domain.Min()))) {
+    const Domain valid_domain = linear1_domain.IntersectionWith(ct_var_domain);
+    DCHECK(!valid_domain.IsEmpty());
+    if (!context_->IntersectDomainWith(ct_var, Domain(valid_domain.Min()))) {
       return;
     }
     const int lit = linear1.enforcement_literal(0);

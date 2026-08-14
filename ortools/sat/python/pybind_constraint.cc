@@ -27,6 +27,7 @@
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "google/protobuf/arena.h"
 #include "ortools/base/types.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -73,11 +74,25 @@ enum class LinearArgumentConstraint {
   kProd,
 };
 
+namespace {
+
+template <typename T>
+std::shared_ptr<T> MakeSoloArenaShared() {
+  auto arena = std::make_shared<google::protobuf::Arena>();
+  auto* result = google::protobuf::Arena::Create<T>(arena.get());
+  // Return an aliasing shared pointer that keeps the arena alive, but points
+  // to result.
+  return std::shared_ptr<T>(std::move(arena), result);
+}
+
+}  // namespace
+
 class CpBaseModel : public std::enable_shared_from_this<CpBaseModel> {
  public:
   explicit CpBaseModel(std::shared_ptr<CpModelProto> model_proto)
-      : model_proto_(model_proto == nullptr ? std::make_shared<CpModelProto>()
-                                            : model_proto),
+      : model_proto_(model_proto == nullptr
+                         ? MakeSoloArenaShared<CpModelProto>()
+                         : model_proto),
         numpy_bool_type_(py::dtype::of<bool>().attr("type").cast<py::type>()) {
     if (model_proto != nullptr) RebuildConstantMap();
   }

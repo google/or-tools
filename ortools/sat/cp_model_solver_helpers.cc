@@ -1095,6 +1095,10 @@ void FillConditionalLinear2Bounds(const CpModelProto& model_proto,
       const Domain implied_var_domain =
           ReadDomainFromProto(ct.linear())
               .InverseMultiplicationBy(ct.linear().coeffs(0));
+      if (implied_var_domain.IsEmpty()) {
+        // Can happen in some non-presolved models.
+        continue;
+      }
       for (int i = 0; i < 2; ++i) {
         const Literal lit1 = mapping->Literal(ct.enforcement_literal(i));
         const Literal lit2 = mapping->Literal(ct.enforcement_literal(1 - i));

@@ -948,22 +948,42 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
     // it.
     const IntegerValue line_to_use_for_reason = FindCanonicalValue(lb, ub);
 
+    auto add_presence_reason_on_y_if_not_redundant_with_x = [x, y](int box) {
+      if (!y->IsOptional(box)) return;
+      if (!y->IsPresent(box)) {
+        // We should only reach this code for non-present boxes if it shares the
+        // enforcement with x.
+        DCHECK(!x->IsPresent(box));
+        DCHECK_EQ(x->PresenceLiteral(box), y->PresenceLiteral(box));
+        return;
+      }
+      if (!x->IsOptional(box) ||
+          x->PresenceLiteral(box) != y->PresenceLiteral(box)) {
+        // Presence literal is not redundant with the reason for x.
+        y->AddPresenceReason(box);
+      }
+    };
+
     // Make sure we always add the reason for the line when propagating x.
     x_.SetExtraExplanationForItemCallback(
-        [&boxes, y, line_to_use_for_reason](
+        [&boxes, y, line_to_use_for_reason,
+         add_presence_reason_on_y_if_not_redundant_with_x](
             absl::Span<const int> items, std::vector<Literal>* literal_reason,
             std::vector<IntegerLiteral>* integer_reason) {
           y->ResetReason();
           if (items.size() > 5) {
             // Build an explanation for all the boxes intersecting the line.
             for (const int t : items) {
-              y->AddStartMaxReason(boxes[t], line_to_use_for_reason);
-              y->AddEndMinReason(boxes[t], line_to_use_for_reason + 1);
+              const int box = boxes[t];
+              add_presence_reason_on_y_if_not_redundant_with_x(box);
+              y->AddStartMaxReason(box, line_to_use_for_reason);
+              y->AddEndMinReason(box, line_to_use_for_reason + 1);
             }
           } else {
             // For small problems we can build a stronger explanation that only
             // requires that each box must overlap on y with all the others.
             for (int i = 0; i < items.size(); ++i) {
+              add_presence_reason_on_y_if_not_redundant_with_x(boxes[items[i]]);
               for (int j = i + 1; j < items.size(); ++j) {
                 const int t = items[i];
                 const int u = items[j];

@@ -1736,13 +1736,19 @@ class LnsSolver : public SubSolver {
         // since we currently do not use the other ones past the presolve.
         //
         // TODO(user): We could however fix it in the LNS Helper!
+
+        // We also need to disable it in the debug solution checker since we
+        // might have found a different solution from the debug one.
+        const bool is_using_debug_solution =
+            DEBUG_MODE && !shared_->response->DebugSolution().empty();
         if (data.status == CpSolverStatus::OPTIMAL &&
             !solution_values.empty() && neighborhood.is_simple &&
             shared_->bounds != nullptr &&
             !neighborhood.variables_that_can_be_fixed_to_local_optimum
                  .empty() &&
             !helper_->VariablesTouchSymmetries(
-                neighborhood.variables_that_can_be_fixed_to_local_optimum)) {
+                neighborhood.variables_that_can_be_fixed_to_local_optimum) &&
+            !is_using_debug_solution) {
           display_lns_info = true;
           shared_->bounds->FixVariablesFromPartialSolution(
               solution_values,
@@ -3405,14 +3411,11 @@ void CpModelSolver::LoadPresolvedModel() {
   // we might not have the same behavior as the initial search that follow the
   // hint will be infeasible, so the activities of the variables will be
   // different.
-  bool hint_feasible_after_presolve;
-  if (!params_.enumerate_all_solutions()) {
-    hint_feasible_after_presolve = SolutionHintIsCompleteAndFeasible(
-        *presolved_model_proto_, logger_, shared_response_manager_);
-  } else {
-    hint_feasible_after_presolve = SolutionHintIsCompleteAndFeasible(
-        *presolved_model_proto_, logger_, nullptr);
-  }
+  const bool import_hint_as_solution =
+      !params_.enumerate_all_solutions() && debug_solution_from_hint_.empty();
+  const bool hint_feasible_after_presolve = SolutionHintIsCompleteAndFeasible(
+      *presolved_model_proto_, logger_,
+      import_hint_as_solution ? shared_response_manager_ : nullptr);
 
   if (hint_feasible_before_presolve_ && !hint_feasible_after_presolve &&
       params_.debug_crash_if_presolve_breaks_hint()) {
