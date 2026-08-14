@@ -153,10 +153,13 @@ bool IsIntervalFixedSize(const IntervalConstraintProto& interval) {
 // described in GraphSymmetryFinder::FindSymmetries(). The classes must be dense
 // in [0, num_classes) and any symmetry will only map nodes with the same class
 // between each other.
+//
+// We abort and return nullptr as soon as the graph dimension are bigger than
+// both max_num_nodes and max_num_arcs.
 template <typename Graph>
 std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
     const CpModelProto& problem, std::vector<int>* initial_equivalence_classes,
-    SolverLogger* logger) {
+    int64_t max_num_nodes, int64_t max_num_arcs, SolverLogger* logger) {
   CHECK(initial_equivalence_classes != nullptr);
 
   const int num_variables = problem.variables_size();
@@ -338,6 +341,15 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   // Add constraints to the graph.
   for (int constraint_index = 0; constraint_index < problem.constraints_size();
        ++constraint_index) {
+    if (all_arcs.size() > max_num_arcs &&
+        initial_equivalence_classes->size() > max_num_nodes) {
+      SOLVER_LOG(logger, "[Symmetry] Graph too large, too many arcs (> ",
+                 FormatCounter(max_num_arcs), ") and too many nodes (> ",
+                 FormatCounter(max_num_nodes),
+                 "). Skipping. You can use "
+                 "symmetry_level:3 or more to force it.");
+      return nullptr;
+    }
     const ConstraintProto& constraint = problem.constraints(constraint_index);
     const int constraint_node = initial_equivalence_classes->size();
     std::vector<int64_t> color = {CONSTRAINT_NODE,
@@ -812,22 +824,18 @@ void FindCpModelSymmetries(
   typedef GraphSymmetryFinder::Graph Graph;
 
   std::vector<int> equivalence_classes;
+  const int64_t max_num_nodes =
+      params.symmetry_level() < 3 ? int64_t{1'000'000} : kint64max;
+  const int64_t max_num_arcs =
+      params.symmetry_level() < 3 ? int64_t{1'000'000} : kint64max;
   std::unique_ptr<Graph> graph(GenerateGraphForSymmetryDetection<Graph>(
-      problem, &equivalence_classes, logger));
+      problem, &equivalence_classes, max_num_nodes, max_num_arcs, logger));
   if (graph == nullptr) return;
 
   SOLVER_LOG(logger, "[Symmetry] Graph for symmetry has ",
              FormatCounter(graph->num_nodes()), " nodes and ",
              FormatCounter(graph->num_arcs()), " arcs.");
   if (graph->num_nodes() == 0) return;
-
-  if (params.symmetry_level() < 3 && graph->num_nodes() > 1e6 &&
-      graph->num_arcs() > 1e6) {
-    SOLVER_LOG(logger,
-               "[Symmetry] Graph too large. Skipping. You can use "
-               "symmetry_level:3 or more to force it.");
-    return;
-  }
 
   std::unique_ptr<TimeLimit> time_limit = TimeLimit::FromDeterministicTime(
       params.symmetry_detection_deterministic_time_limit());

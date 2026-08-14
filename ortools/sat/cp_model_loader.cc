@@ -809,6 +809,7 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
   std::vector<int> tmp_heads;
   for (int c = 0; c < model_proto.constraints_size(); ++c) {
     const ConstraintProto& ct = model_proto.constraints(c);
+    if (!ct.enforcement_literal().empty()) continue;
     if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
       process_exactly_one(ct.exactly_one().literals(),
                           absl::StrCat("exactly_one(", c, ")"));

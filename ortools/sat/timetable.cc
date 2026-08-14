@@ -602,7 +602,7 @@ bool TimeTablingPerTask::BuildProfile() {
 }
 
 void TimeTablingPerTask::ReverseProfile() {
-  // We keep the sentinels inchanged.
+  // We keep the sentinels unchanged.
   std::reverse(profile_.begin() + 1, profile_.end() - 1);
   for (int i = 1; i + 1 < profile_.size(); ++i) {
     profile_[i].start = -profile_[i].start;
@@ -720,7 +720,6 @@ bool TimeTablingPerTask::SweepTask(int task_id, IntegerValue initial_start_min,
       // Compute the next minimum start and end times of task_id. The variables
       // are not updated yet.
       new_start_min = profile_[rec_id + 1].start;  // i.e. profile_[rec_id].end
-      limit = std::max(limit, new_start_min + size_min);
       if (profile_[rec_id].start < initial_end_min) {
         explanation_start_time = std::min(new_start_min, initial_end_min) - 1;
       }
@@ -732,6 +731,10 @@ bool TimeTablingPerTask::SweepTask(int task_id, IntegerValue initial_start_min,
             std::min(explanation_start_time, new_start_min - 1);
         break;
       }
+
+      // If we had the sentinel we would have hit break in the if above, so
+      // we can compute this without overflow.
+      limit = std::max(limit, new_start_min + size_min);
     }
   }
 

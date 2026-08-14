@@ -266,7 +266,11 @@ bool DisjunctiveWithTwoItems::Propagate() {
   if (helper_->IsAbsent(0) || helper_->IsAbsent(1)) return true;
 
   // We can't propagate anything for two intervals if neither are present.
-  if (!helper_->IsPresent(0) && !helper_->IsPresent(0)) return true;
+  if (!helper_->IsPresent(0) && !helper_->IsPresent(1)) return true;
+
+  if (helper_->SizeMin(0) == 0 && helper_->SizeMin(1) == 0) {
+    return true;
+  }
 
   // Note that this propagation also take care of the "overload checker" part.
   // It also propagates as much as possible, even in the presence of task with
@@ -287,6 +291,11 @@ bool DisjunctiveWithTwoItems::Propagate() {
     helper_->ResetReason();
     helper_->AddPresenceReason(task_before);
     helper_->AddPresenceReason(task_after);
+    if (helper_->SizeMin(0) != 0) {
+      helper_->AddSizeMinReason(0, 1);
+    } else {
+      helper_->AddSizeMinReason(1, 1);
+    }
     helper_->AddReasonForBeingBeforeAssumingNoOverlap(task_before, task_after);
     helper_->AddReasonForBeingBeforeAssumingNoOverlap(task_after, task_before);
     return helper_->ReportConflict();

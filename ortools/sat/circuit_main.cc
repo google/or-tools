@@ -48,14 +48,23 @@ ABSL_FLAG(std::string, circuit2, "/tmp/circuit2.bench",
           "topologically.");
 
 ABSL_FLAG(bool, decompose, false,
-          "Just decompose the circuit assuming the output is (normal out, "
-          "debug_in, debug_out)");
-ABSL_FLAG(int, decompose_num_debug_in, 448, "Size of debug in");
-ABSL_FLAG(int, decompose_num_debug_out, 14, "Size of debug out");
+          "Just decompose the circuit assuming the output is (normal_out, "
+          "debug_out)");
+ABSL_FLAG(int, decompose_num_initial_outputs, 20, "Size of initial output");
 
 ABSL_FLAG(std::string, nway_adder, "",
           "If non-empty, try to show that the given circuit is equivalent to a "
           "n-way adder");
+
+ABSL_FLAG(std::string, recover_nway_adder_inputs, "",
+          "If non-empty, try to recover the nodes that can be converted to and "
+          "addition on the output.");
+
+ABSL_FLAG(std::string, dump_prefix, "", "Add as prefix of some dump filename");
+
+ABSL_FLAG(
+    bool, count_common_outputs, false,
+    "If true, display how many output are equivalent between two circuit");
 
 namespace operations_research::sat {
 
@@ -147,9 +156,11 @@ void FixSomeInputs(BinaryCircuit& circuit) {
 bool ModelIsInfeasible(const CpModelProto& proto) {
   LOG(INFO) << "Verifying equivalences with CP-SAT ...";
   SatParameters params;
-  params.set_num_workers(8);
-  params.set_num_full_subsolvers(8);
+  params.set_num_workers(32);
+  params.set_num_full_subsolvers(32);
   params.add_subsolvers("no_lp");
+  params.set_inprocessing_dtime_ratio(0.4);
+  params.set_shared_tree_num_workers(0);
   params.set_log_search_progress(false);
   const CpSolverResponse response = SolveWithParameters(proto, params);
   return response.status() == CpSolverStatus::INFEASIBLE;
@@ -243,34 +254,25 @@ void OptimizeCircuit(std::string name, BinaryCircuit& circuit) {
   }
 }
 
-// From a base circuit (in) -> (out1, out2, out3)
+// From a base circuit (in) -> (out1, out2)
 // We extract a few subcircuits:
 struct CircuitDecomposition {
   BinaryCircuit goal;             // (in) -> (out1)
-  BinaryCircuit setup;            // (in) -> (out2)
-  BinaryCircuit hard;             // (in) -> (out3);
-  BinaryCircuit simplified_goal;  // (in, out3) -> (out1)
-  BinaryCircuit link;             // (in, out2) -> (out3)
+  BinaryCircuit hard;             // (in) -> (out2);
+  BinaryCircuit simplified_goal;  // (in, out2) -> (out1)
 };
-
-CircuitDecomposition DebugExtractSubpart(int num_debug_in, int num_debug_out,
-                                         const std::string& name,
-                                         BinaryCircuit& circuit) {
+CircuitDecomposition SimplerDecomposition(int num_original_outputs,
+                                          absl::string_view name,
+                                          BinaryCircuit& circuit) {
   circuit.ResetBooleanMapping();
+  LOG(INFO) << "DECOMPOSING " << circuit.DebugString();
 
-  // Split output in 3.
-  const int num_normal_out =
-      circuit.outputs.size() - num_debug_in - num_debug_out;
+  // Split output in 2.
   const absl::Span<const int> all_outputs = circuit.outputs;
-  const absl::Span<const int> out1 = all_outputs.subspan(0, num_normal_out);
-  const absl::Span<const int> out2 =
-      all_outputs.subspan(num_normal_out, num_debug_in);
-  const absl::Span<const int> out3 =
-      all_outputs.subspan(out1.size() + out2.size());
-
-  LOG(INFO) << "SIZES " << out1.size() << " " << out2.size() << " "
-            << out3.size();
-  LOG(INFO) << circuit.DebugString();
+  const absl::Span<const int> out1 =
+      all_outputs.subspan(0, num_original_outputs);
+  const absl::Span<const int> out2 = all_outputs.subspan(num_original_outputs);
+  LOG(INFO) << "SIZES " << out1.size() << " " << out2.size();
 
   // Extract subcircuits.
   CircuitDecomposition result;
@@ -282,43 +284,27 @@ CircuitDecomposition DebugExtractSubpart(int num_debug_in, int num_debug_out,
     OptimizeCircuit(absl::StrCat("goal", name), result.goal);
   }
 
-  // Setup.
-  {
-    SubcircuitExtractor extractor(circuit);
-    result.setup = extractor.Extract(out2);
-    OptimizeCircuit(absl::StrCat("setup", name), result.setup);
-  }
-
   // Hard.
   {
     SubcircuitExtractor extractor(circuit);
-    result.hard = extractor.Extract(out3);
+    result.hard = extractor.Extract(out2);
     OptimizeCircuit(absl::StrCat("hard", name), result.hard);
   }
 
   // Simplified goal.
   {
-    BinaryCircuit temp = ConvertInnerNodeToInputs(circuit, out3);
-    SubcircuitExtractor extractor(temp);
-    result.simplified_goal =
-        extractor.Extract(absl::MakeSpan(temp.outputs).subspan(0, 20));
-    OptimizeCircuit(absl::StrCat("simplied_goal", name),
-                    result.simplified_goal);
-  }
-
-  // Link.
-  {
     BinaryCircuit temp = ConvertInnerNodeToInputs(circuit, out2);
     SubcircuitExtractor extractor(temp);
-    result.link = extractor.Extract(
-        absl::MakeSpan(temp.outputs).subspan(out1.size() + out2.size()));
-    OptimizeCircuit(absl::StrCat("link", name), result.link);
+    result.simplified_goal = extractor.Extract(
+        absl::MakeSpan(temp.outputs).subspan(0, num_original_outputs));
+    OptimizeCircuit(absl::StrCat("simplied_goal", name),
+                    result.simplified_goal);
   }
 
   return result;
 }
 
-void DumpMitter(const std::string& name, BinaryCircuit a, BinaryCircuit b,
+void DumpMitter(absl::string_view name, BinaryCircuit a, BinaryCircuit b,
                 bool verify = false) {
   a.ResetBooleanMapping();
   b.ResetBooleanMapping();
@@ -383,28 +369,95 @@ void Run(std::string filename1, std::string filename2) {
     return;
   }
 
+  if (!absl::GetFlag(FLAGS_recover_nway_adder_inputs).empty()) {
+    const BinaryCircuit circuit =
+        FromBenchFile(absl::GetFlag(FLAGS_recover_nway_adder_inputs));
+    LOG(INFO) << circuit.DebugString();
+    const auto candidates = SampleForAdditionCandidates(circuit);
+
+    const auto cp_sat_solve = [](const CpModelProto& proto) {
+      SatParameters params;
+      params.set_log_search_progress(false);
+      params.set_catch_sigint_signal(false);
+      params.set_num_workers(16);
+      params.set_num_full_subsolvers(16);
+      params.set_inprocessing_dtime_ratio(0.5);
+      params.add_subsolvers("no_lp");
+      return SolveWithParameters(proto, params);
+    };
+
+    std::string prefix = absl::GetFlag(FLAGS_dump_prefix);
+    if (!prefix.empty()) absl::StrAppend(&prefix, "_");
+
+    auto result = ValidateAdditionCandidates(candidates, circuit, cp_sat_solve);
+    {
+      // This can be used to investigate how much of the adder inputs are in
+      // common.
+      BinaryCircuit setup_circuit = result.reduced_circuit;
+      setup_circuit.outputs.clear();
+      for (const auto [node, unused] : result.input_term_pairs) {
+        setup_circuit.outputs.push_back(node);
+      }
+      setup_circuit.ResetBooleanMapping();
+      OptimizeCircuit(absl::StrCat(prefix, "setup"), setup_circuit);
+    }
+
+    OptimizeCircuit(absl::StrCat(prefix, "final"), result.final_circuit);
+    return;
+  }
+
   BinaryCircuit circuit1 = FromBenchFile(filename1);
   BinaryCircuit circuit2 = FromBenchFile(filename2);
 
+  // Simpler decomposition.
   if (absl::GetFlag(FLAGS_decompose)) {
-    const int num_debug_in = absl::GetFlag(FLAGS_decompose_num_debug_in);
-    const int num_debug_out = absl::GetFlag(FLAGS_decompose_num_debug_out);
+    const int num_initial_outputs =
+        absl::GetFlag(FLAGS_decompose_num_initial_outputs);
     const CircuitDecomposition decomp1 =
-        DebugExtractSubpart(num_debug_in, num_debug_out, "A", circuit1);
+        SimplerDecomposition(num_initial_outputs, "A", circuit1);
     const CircuitDecomposition decomp2 =
-        DebugExtractSubpart(num_debug_in, num_debug_out, "B", circuit2);
+        SimplerDecomposition(num_initial_outputs, "B", circuit2);
 
     DumpMitter("goal", decomp1.goal, decomp2.goal);
     DumpMitter("simplified_goal", decomp1.simplified_goal,
                decomp2.simplified_goal, /*verify=*/true);
-    DumpMitter("setup", decomp1.setup, decomp2.setup, /*verify=*/true);
     DumpMitter("hard", decomp1.hard, decomp2.hard);
-    DumpMitter("link", decomp1.link, decomp2.link);
     return;
   }
 
   OptimizeCircuit("circuit1", circuit1);
   OptimizeCircuit("circuit2", circuit2);
+
+  if (absl::GetFlag(FLAGS_count_common_outputs)) {
+    SubcircuitExtractor extract1(circuit1);
+    SubcircuitExtractor extract2(circuit2);
+    const int m = std::min(circuit1.outputs.size(), circuit2.outputs.size());
+    if (circuit1.outputs.size() != circuit2.outputs.size()) {
+      LOG(INFO) << "WARNING: Circuit do not have the same number of outputs, "
+                   "testing only the first ones!";
+    }
+    int num_in_common = 0;
+    for (int k = 0; k < m; ++k) {
+      circuit1.ResetBooleanMapping();
+      circuit2.ResetBooleanMapping();
+      BinaryCircuit a = circuit1;
+      a.outputs = {circuit1.outputs[k]};
+      BinaryCircuit b = circuit2;
+      b.outputs = {circuit2.outputs[k]};
+      BinaryCircuit mitter = ConstructMitter(a, b);
+      const CpModelProto proto = ConstructCpModelFromBinaryCircuit(
+          mitter, /*enforce_one_output=*/true);
+      if (ModelIsInfeasible(proto)) {
+        ++num_in_common;
+        LOG(INFO) << k << " equiv";
+      } else {
+        LOG(INFO) << k << " not_equiv";
+      }
+    }
+    LOG(INFO) << num_in_common << "/" << m << " outputs in common";
+    return;
+  }
+
   BinaryCircuit mitter = ConstructMitter(circuit1, circuit2);
 
   {

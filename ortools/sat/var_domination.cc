@@ -1407,6 +1407,8 @@ void ScanModelForDualBoundStrengthening(
     }
   }
 
+  std::vector<int> tmp_refs;
+
   const int num_constraints = cp_model.constraints_size();
   for (int c = 0; c < num_constraints; ++c) {
     const ConstraintProto& ct = cp_model.constraints(c);
@@ -1456,8 +1458,16 @@ void ScanModelForDualBoundStrengthening(
       }
       default:
         // We cannot infer anything if we don't know the constraint.
-        // TODO(user): Handle enforcement better here.
-        dual_bound_strengthening->CannotMove(context.ConstraintToVars(c), c);
+        if (ct.enforcement_literal().empty()) {
+          // Faster code path, but equivalent to the one below.
+          dual_bound_strengthening->CannotMove(context.ConstraintToVars(c), c);
+        } else {
+          tmp_refs.clear();
+          GetReferencesUsedByConstraint(ct, &tmp_refs, &tmp_refs);
+          for (const int ref : tmp_refs) {
+            dual_bound_strengthening->CannotMove({PositiveRef(ref)}, c);
+          }
+        }
         break;
     }
   }

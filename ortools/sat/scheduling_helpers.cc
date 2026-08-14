@@ -1015,7 +1015,10 @@ bool SchedulingDemandHelper::CacheAllEnergyValues() {
 
 IntegerValue SchedulingDemandHelper::DemandMin(int t) const {
   DCHECK_LT(t, demands_.size());
-  return integer_trail_->LowerBound(demands_[t]);
+  // Subtle: in CpModelProto the demand cannot be negative. But when we build
+  // the cumulative relaxation of a no_overlap_2d, sizes of optional intervals
+  // can be negative.
+  return std::max(integer_trail_->LowerBound(demands_[t]), IntegerValue(0));
 }
 
 IntegerValue SchedulingDemandHelper::DemandMax(int t) const {

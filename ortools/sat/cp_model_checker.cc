@@ -1840,7 +1840,7 @@ class ConstraintChecker {
     for (int i = 0; i < num_variables; i++) {
       const int64_t time = LinearExpressionValue(ct.reservoir().time_exprs(i));
       if (!has_active_variables ||
-          Value(ct.reservoir().active_literals(i)) == 1) {
+          LiteralIsTrue(ct.reservoir().active_literals(i))) {
         const int64_t level =
             LinearExpressionValue(ct.reservoir().level_changes(i));
         deltas[time] += level;
