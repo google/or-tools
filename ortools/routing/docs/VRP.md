@@ -13,10 +13,10 @@ Solution:
 
 Samples:
 
-*   [vrp.cc](../samples/vrp.cc)
-*   [vrp.py](../samples/vrp.py)
-*   [Vrp.java](../samples/java/Vrp.java)
-*   [Vrp.cs](../samples/Vrp.cs)
+*   [vrp.cc](/ortools/constraint_solver/samples/vrp.cc)
+*   [vrp.py](/ortools/constraint_solver/samples/vrp.py)
+*   [Vrp.java](/ortools/routing/samples/java/Vrp.java)
+*   [Vrp.cs](/ortools/constraint_solver/samples/Vrp.cs)
 
 ## Global Span Constraints
 Data Problem:
@@ -27,10 +27,10 @@ Solution:
 
 Samples:
 
-*   [vrp_global_span.cc](../samples/vrp_global_span.cc)
-*   [vrp_global_span.py](../samples/vrp_global_span.py)
-*   [VrpGlobalSpan.java](../samples/java/VrpGlobalSpan.java)
-*   [VrpGlobalSpan.cs](../samples/VrpGlobalSpan.cs)
+*   [vrp_global_span.cc](/ortools/constraint_solver/samples/vrp_global_span.cc)
+*   [vrp_global_span.py](/ortools/constraint_solver/samples/vrp_global_span.py)
+*   [VrpGlobalSpan.java](/ortools/routing/samples/java/VrpGlobalSpan.java)
+*   [VrpGlobalSpan.cs](/ortools/constraint_solver/samples/VrpGlobalSpan.cs)
 
 ## Capacity Constraints
 Data Problem:
@@ -41,10 +41,10 @@ Solution:
 
 Samples:
 
-*   [vrp_capacity.cc](../samples/vrp_capacity.cc)
-*   [vrp_capacity.py](../samples/vrp_capacity.py)
-*   [VrpCapacity.java](../samples/java/VrpCapacity.java)
-*   [VrpCapacity.cs](../samples/VrpCapacity.cs)
+*   [vrp_capacity.cc](/ortools/constraint_solver/samples/vrp_capacity.cc)
+*   [vrp_capacity.py](/ortools/constraint_solver/samples/vrp_capacity.py)
+*   [VrpCapacity.java](/ortools/routing/samples/java/VrpCapacity.java)
+*   [VrpCapacity.cs](/ortools/constraint_solver/samples/VrpCapacity.cs)
 
 ## Drop Nodes Constraints
 Data Problem:
@@ -55,10 +55,10 @@ Solution:
 
 Samples:
 
-*   [vrp_drop_nodes.cc](../samples/vrp_drop_nodes.cc)
-*   [vrp_drop_nodes.py](../samples/vrp_drop_nodes.py)
-*   [VrpDropNodes.java](../samples/java/VrpDropNodes.java)
-*   [VrpDropNodes.cs](../samples/VrpDropNodes.cs)
+*   [vrp_drop_nodes.cc](/ortools/constraint_solver/samples/vrp_drop_nodes.cc)
+*   [vrp_drop_nodes.py](/ortools/constraint_solver/samples/vrp_drop_nodes.py)
+*   [VrpDropNodes.java](/ortools/routing/samples/java/VrpDropNodes.java)
+*   [VrpDropNodes.cs](/ortools/constraint_solver/samples/VrpDropNodes.cs)
 
 ## Multiple Starts Ends
 Data Problem:
@@ -69,10 +69,10 @@ Solution:
 
 Samples:
 
-*   [vrp_starts_ends.cc](../samples/vrp_starts_ends.cc)
-*   [vrp_starts_ends.py](../samples/vrp_starts_ends.py)
-*   [VrpStartsEnds.java](../samples/java/VrpStartsEnds.java)
-*   [VrpStartsEnds.cs](../samples/VrpStartsEnds.cs)
+*   [vrp_starts_ends.cc](/ortools/constraint_solver/samples/vrp_starts_ends.cc)
+*   [vrp_starts_ends.py](/ortools/constraint_solver/samples/vrp_starts_ends.py)
+*   [VrpStartsEnds.java](/ortools/routing/samples/java/VrpStartsEnds.java)
+*   [VrpStartsEnds.cs](/ortools/constraint_solver/samples/VrpStartsEnds.cs)
 
 ## Time Window Constraints
 Data Problem:
@@ -83,10 +83,10 @@ Solution:
 
 Samples:
 
-*   [vrp_time_windows.cc](../samples/vrp_time_windows.cc)
-*   [vrp_time_windows.py](../samples/vrp_time_windows.py)
-*   [VrpTimeWindows.java](../samples/java/VrpTimeWindows.java)
-*   [VrpTimeWindows.cs](../samples/VrpTimeWindows.cs)
+*   [vrp_time_windows.cc](/ortools/constraint_solver/samples/vrp_time_windows.cc)
+*   [vrp_time_windows.py](/ortools/constraint_solver/samples/vrp_time_windows.py)
+*   [VrpTimeWindows.java](/ortools/routing/samples/java/VrpTimeWindows.java)
+*   [VrpTimeWindows.cs](/ortools/constraint_solver/samples/VrpTimeWindows.cs)
 
 ## Resource Constraints
 Data Problem:
@@ -97,7 +97,7 @@ Solution:
 
 Samples:
 
-*   [vrp_resources.cc](../samples/vrp_resources.cc)
-*   [vrp_resources.py](../samples/vrp_resources.py)
-*   [VrpResources.java](../samples/java/VrpResources.java)
-*   [VrpResources.cs](../samples/VrpResources.cs)
+*   [vrp_resources.cc](/ortools/constraint_solver/samples/vrp_resources.cc)
+*   [vrp_resources.py](/ortools/constraint_solver/samples/vrp_resources.py)
+*   [VrpResources.java](/ortools/routing/samples/java/VrpResources.java)
+*   [VrpResources.cs](/ortools/constraint_solver/samples/VrpResources.cs)

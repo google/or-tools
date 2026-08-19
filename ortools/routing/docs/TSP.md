@@ -14,10 +14,10 @@ Solution:
 
 Samples:
 
-*   [tsp.cc](../samples/tsp.cc)
-*   [tsp.py](../samples/tsp.py)
-*   [Tsp.java](../samples/java/Tsp.java)
-*   [Tsp.cs](../samples/Tsp.cs)
+*   [tsp.cc](/ortools/routing/samples/tsp.cc)
+*   [tsp.py](/ortools/routing/samples/tsp.py)
+*   [Tsp.java](/ortools/routing/samples/java/Tsp.java)
+*   [Tsp.cs](/ortools/routing/samples/Tsp.cs)
 
 ## Using Distance Matrix
 Data Problem:
@@ -28,7 +28,7 @@ Solution:
 
 Samples:
 
-*   [tsp_distance_matrix.cc](../samples/tsp_distance_matrix.cc)
-*   [tsp_distance_matrix.py](../samples/tsp_distance_matrix.py)
-*   [TspDistanceMatrix.java](../samples/java/TspDistanceMatrix.java)
-*   [TspDistanceMatrix.cs](../samples/TspDistanceMatrix.cs)
+*   [tsp_distance_matrix.cc](/ortools/routing/samples/tsp_distance_matrix.cc)
+*   [tsp_distance_matrix.py](/ortools/routing/samples/tsp_distance_matrix.py)
+*   [TspDistanceMatrix.java](/ortools/routing/samples/java/TspDistanceMatrix.java)
+*   [TspDistanceMatrix.cs](/ortools/routing/samples/TspDistanceMatrix.cs)

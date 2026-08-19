@@ -201,19 +201,19 @@ node.
 You can find some canonical examples in [`samples`][samples].
 
 <!-- Links used throughout the document. -->
-[graph_h]: ../graph_base/graph.h
-[bounded_dijkstra_h]: ../graph/bounded_dijkstra.h
-[bidirectional_dijkstra_h]: ../graph/bidirectional_dijkstra.h
-[shortest_paths_h]: ../graph/shortest_paths.h
-[dag_shortest_path_h]: ../graph/dag_shortest_path.h
-[dag_constrained_shortest_path_h]: ../graph/dag_constrained_shortest_path.h
-[hamiltonian_path_h]: ../graph/hamiltonian_path.h
-[eulerian_path_h]: ../graph/eulerian_path.h
-[connected_components_h]: ../graph/connected_components.h
-[strongly_connected_components_h]: ../graph/strongly_connected_components.h
-[cliques_h]: ../graph/cliques.h
-[linear_assignment_h]: ../graph/linear_assignment.h
-[max_flow_h]: ../graph/max_flow.h
-[min_cost_flow_h]: ../graph/min_cost_flow.h
+[graph_h]: /ortools/graph_base/graph.h
+[bounded_dijkstra_h]: /ortools/graph/bounded_dijkstra.h
+[bidirectional_dijkstra_h]: /ortools/graph/bidirectional_dijkstra.h
+[shortest_paths_h]: /ortools/graph/shortest_paths.h
+[dag_shortest_path_h]: /ortools/graph/dag_shortest_path.h
+[dag_constrained_shortest_path_h]: /ortools/graph/dag_constrained_shortest_path.h
+[hamiltonian_path_h]: /ortools/graph/hamiltonian_path.h
+[eulerian_path_h]: /ortools/graph/eulerian_path.h
+[connected_components_h]: /ortools/graph/connected_components.h
+[strongly_connected_components_h]: /ortools/graph/strongly_connected_components.h
+[cliques_h]: /ortools/graph/cliques.h
+[linear_assignment_h]: /ortools/graph/linear_assignment.h
+[max_flow_h]: /ortools/graph/max_flow.h
+[min_cost_flow_h]: /ortools/graph/min_cost_flow.h
 [samples]: ../graph/samples/
-[graph]: ../graph_base/
+[graph]: /ortools/graph_base/

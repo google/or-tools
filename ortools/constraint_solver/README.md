@@ -10,20 +10,20 @@ a technology issued from AI and used in operations research.
 
 To begin, skim:
 
-*   [constraint_solver.h](../constraint_solver/constraint_solver.h):
+*   [constraint_solver.h](/ortools/constraint_solver/constraint_solver.h):
     Declaration of the core objects for the constraint solver.
 
 ### Parameters
 
-* [solver_parameters.proto](../constraint_solver/solver_parameters.proto):
+* [solver_parameters.proto](/ortools/constraint_solver/solver_parameters.proto):
 This file contains protocol buffers for all parameters of the CP solver.
-* [search_limit.proto](../constraint_solver/search_limit.proto):
+* [search_limit.proto](/ortools/constraint_solver/search_limit.proto):
 Holds parameters to limit the search space within the CP solver, which is
 important for performance.
 
 ### Solution
 
-*   [assignment.proto](../constraint_solver/assignment.proto):
+*   [assignment.proto](/ortools/constraint_solver/assignment.proto):
     Holds the solution of a CP problem.
 
 ## Routing solver
