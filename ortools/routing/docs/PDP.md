@@ -13,10 +13,10 @@ Solution with the default Policy (ANY):
 
 Samples:
 
-*   [vrp_pickup_delivery.cc](../samples/vrp_pickup_delivery.cc)
-*   [vrp_pickup_delivery.py](../samples/vrp_pickup_delivery.py)
-*   [VrpPickupDelivery.java](../samples/java/VrpPickupDelivery.java)
-*   [VrpPickupDelivery.cs](../samples/VrpPickupDelivery.cs)
+*   [vrp_pickup_delivery.cc](/ortools/routing/samples/vrp_pickup_delivery.cc)
+*   [vrp_pickup_delivery.py](/ortools/routing/samples/vrp_pickup_delivery.py)
+*   [VrpPickupDelivery.java](/ortools/routing/samples/java/VrpPickupDelivery.java)
+*   [VrpPickupDelivery.cs](/ortools/routing/samples/VrpPickupDelivery.cs)
 
 ### FIFO Policy
 Solution with the FIFO Policy:
@@ -24,10 +24,10 @@ Solution with the FIFO Policy:
 
 Samples:
 
-*   [vrp_pickup_delivery_fifo.cc](../samples/vrp_pickup_delivery_fifo.cc)
-*   [vrp_pickup_delivery_fifo.py](../samples/vrp_pickup_delivery_fifo.py)
-*   [VrpPickupDeliveryFifo.java](../samples/java/VrpPickupDeliveryFifo.java)
-*   [VrpPickupDeliveryFifo.cs](../samples/VrpPickupDeliveryFifo.cs)
+*   [vrp_pickup_delivery_fifo.cc](/ortools/routing/samples/vrp_pickup_delivery_fifo.cc)
+*   [vrp_pickup_delivery_fifo.py](/ortools/routing/samples/vrp_pickup_delivery_fifo.py)
+*   [VrpPickupDeliveryFifo.java](/ortools/routing/samples/java/VrpPickupDeliveryFifo.java)
+*   [VrpPickupDeliveryFifo.cs](/ortools/routing/samples/VrpPickupDeliveryFifo.cs)
 
 ### LIFO Policy
 Solution with the LIFO Policy:
@@ -35,7 +35,7 @@ Solution with the LIFO Policy:
 
 Samples:
 
-*   [vrp_pickup_delivery_lifo.cc](../samples/vrp_pickup_delivery_lifo.cc)
-*   [vrp_pickup_delivery_lifo.py](../samples/vrp_pickup_delivery_lifo.py)
-*   [VrpPickupDeliveryLifo.java](../samples/java/VrpPickupDeliveryLifo.java)
-*   [VrpPickupDeliveryLifo.cs](../samples/VrpPickupDeliveryLifo.cs)
+*   [vrp_pickup_delivery_lifo.cc](/ortools/routing/samples/vrp_pickup_delivery_lifo.cc)
+*   [vrp_pickup_delivery_lifo.py](/ortools/routing/samples/vrp_pickup_delivery_lifo.py)
+*   [VrpPickupDeliveryLifo.java](/ortools/routing/samples/java/VrpPickupDeliveryLifo.java)
+*   [VrpPickupDeliveryLifo.cs](/ortools/routing/samples/VrpPickupDeliveryLifo.cs)
