@@ -28,8 +28,6 @@ runs:
       if: inputs.enable == 'true' && inputs.set_cmake_sccache_launcher == 'true'
       shell: bash
       run: |
-        echo "SCCACHE_LOG=debug" >> $GITHUB_ENV
-        echo "SCCACHE_NO_DAEMON=1" >> $GITHUB_ENV
         echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
         echo "SCCACHE_GCS_BUCKET=or-tools-github-remote-caching" >> $GITHUB_ENV
         echo "SCCACHE_GCS_KEY_PREFIX=cmake" >> $GITHUB_ENV
