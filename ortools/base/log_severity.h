@@ -17,9 +17,9 @@
 #include "absl/base/log_severity.h"
 
 #ifndef NDEBUG
-const bool DEBUG_MODE = true;
+constexpr bool DEBUG_MODE = true;
 #else
-const bool DEBUG_MODE = false;
+constexpr bool DEBUG_MODE = false;
 #endif
 
 #endif  // ORTOOLS_BASE_LOG_SEVERITY_H_
