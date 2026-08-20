@@ -6,6 +6,9 @@ on:
     branches:
       - ci
       - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 concurrency:
