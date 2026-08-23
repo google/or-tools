@@ -172,7 +172,7 @@ def _add_enforced_linear_constraint_to_helper(
         helper.set_enforced_constraint_lower_bound(c.index, bounded_expr.lower_bound)
         helper.set_enforced_constraint_upper_bound(c.index, bounded_expr.upper_bound)
         if name is not None:
-            helper.set_constraint_name(c.index, name)
+            helper.set_enforced_constraint_name(c.index, name)
         return c
 
     raise TypeError(f"invalid type={type(bounded_expr).__name__!r}")
@@ -941,16 +941,24 @@ class Model:
         ct.indicator_variable = ivar
         ct.indicator_value = ivalue
         if name:
-            self.__helper.set_constraint_name(ct.index, name)
+            self.__helper.set_enforced_constraint_name(ct.index, name)
         if mbn.is_a_number(linear_expr):
-            self.__helper.set_constraint_lower_bound(ct.index, lb - linear_expr)
-            self.__helper.set_constraint_upper_bound(ct.index, ub - linear_expr)
+            self.__helper.set_enforced_constraint_lower_bound(
+                ct.index, lb - linear_expr
+            )
+            self.__helper.set_enforced_constraint_upper_bound(
+                ct.index, ub - linear_expr
+            )
         elif isinstance(linear_expr, LinearExpr):
             flat_expr = mbh.FlatExpr(linear_expr)
             # pylint: disable=protected-access
-            self.__helper.set_constraint_lower_bound(ct.index, lb - flat_expr.offset)
-            self.__helper.set_constraint_upper_bound(ct.index, ub - flat_expr.offset)
-            self.__helper.add_terms_to_constraint(
+            self.__helper.set_enforced_constraint_lower_bound(
+                ct.index, lb - flat_expr.offset
+            )
+            self.__helper.set_enforced_constraint_upper_bound(
+                ct.index, ub - flat_expr.offset
+            )
+            self.__helper.add_terms_to_enforced_constraint(
                 ct.index, flat_expr.vars, flat_expr.coeffs
             )
         else:
