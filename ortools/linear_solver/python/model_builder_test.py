@@ -1794,6 +1794,109 @@ class ModelBuilderProtoTest(absltest.TestCase):
         model.maximize(x.sum())
         self.assertEqual(str(expected), str(model.export_to_proto()))
 
+    def test_add_enforced_linear_constraint_without_regular_constraint(self):
+        # add_enforced_linear_constraint used to write the indicator constraint
+        # through the regular constraint setters using the enforced index. With
+        # no regular constraint at that index this addressed out-of-range memory
+        # and crashed the interpreter; check it now produces a well-formed
+        # indicator constraint and no spurious regular constraint.
+        expected = linear_solver_pb2.MPModelProto()
+        text_format.Parse(
+            """
+    variable {
+      lower_bound: 0
+      upper_bound: 10
+      is_integer: true
+      name: "x"
+    }
+    variable {
+      lower_bound: 0
+      upper_bound: 1
+      is_integer: true
+      name: "z"
+    }
+    general_constraint {
+      name: "ind"
+      indicator_constraint {
+        var_index: 1
+        var_value: 1
+        constraint {
+          lower_bound: 3
+          upper_bound: 8
+          var_index: 0
+          coefficient: 1
+        }
+      }
+    }
+    """,
+            expected,
+        )
+        model = mb.Model()
+        x = model.new_int_var(0, 10, "x")
+        z = model.new_bool_var("z")
+        model.add_enforced_linear_constraint(x, z, True, lb=3, ub=8, name="ind")
+        self.assertEqual(str(expected), str(model.export_to_proto()))
+
+    def test_add_enforced_linear_constraint_keeps_prior_constraint(self):
+        # With a regular constraint already present at the enforced index, the
+        # misrouted setters silently overwrote that constraint's name, bounds
+        # and terms and left the indicator constraint empty. Check the regular
+        # constraint is untouched and the indicator constraint carries its own
+        # bounds and terms.
+        expected = linear_solver_pb2.MPModelProto()
+        text_format.Parse(
+            """
+    variable {
+      lower_bound: 0
+      upper_bound: 10
+      is_integer: true
+      name: "x"
+    }
+    variable {
+      lower_bound: 0
+      upper_bound: 10
+      is_integer: true
+      name: "y"
+    }
+    variable {
+      lower_bound: 0
+      upper_bound: 1
+      is_integer: true
+      name: "z"
+    }
+    constraint {
+      lower_bound: 0
+      upper_bound: 5
+      name: "reg"
+      var_index: 0
+      var_index: 1
+      coefficient: 1
+      coefficient: 1
+    }
+    general_constraint {
+      name: "ind"
+      indicator_constraint {
+        var_index: 2
+        var_value: 1
+        constraint {
+          lower_bound: 3
+          upper_bound: 8
+          var_index: 0
+          coefficient: 1
+        }
+      }
+    }
+    """,
+            expected,
+        )
+        model = mb.Model()
+        x = model.new_int_var(0, 10, "x")
+        y = model.new_int_var(0, 10, "y")
+        z = model.new_bool_var("z")
+        model.add_linear_constraint(x + y, lb=0, ub=5, name="reg")
+        model.add_enforced_linear_constraint(x, z, True, lb=3, ub=8, name="ind")
+        self.assertEqual(str(expected), str(model.export_to_proto()))
+
 
 class SolverTest(parameterized.TestCase):
     _solvers = (
