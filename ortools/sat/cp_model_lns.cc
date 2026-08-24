@@ -3114,5 +3114,13 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
   return neighborhood;
 }
 
+bool NeighborhoodGenerator::SolveData::operator<(const SolveData& o) const {
+  return std::tie(status, difficulty, deterministic_limit, deterministic_time,
+                  initial_best_objective, base_objective, new_objective) <
+         std::tie(o.status, o.difficulty, o.deterministic_limit,
+                  o.deterministic_time, o.initial_best_objective,
+                  o.base_objective, o.new_objective);
+}
+
 }  // namespace sat
 }  // namespace operations_research

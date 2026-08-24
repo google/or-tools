@@ -1421,21 +1421,39 @@ bool DivisionPropagator::Propagate() {
     const IntegerValue max_denom = integer_trail_.UpperBound(denom_);
     const IntegerValue min_div = integer_trail_.LowerBound(div_);
     const IntegerValue max_div = integer_trail_.UpperBound(div_);
+
+    const IntegerValue max_possible_div =
+        (max_num >= 0) ? (max_num / min_denom) : (max_num / max_denom);
+
+    const IntegerValue min_possible_div =
+        (min_num >= 0) ? (min_num / max_denom) : (min_num / min_denom);
+
     // If the bounds of num / denom and div are disjoint, the enforcement must
     // be false. TODO(user): relax the reason in a better way.
-    if (min_num / max_denom > max_div) {
+    if (min_possible_div > max_div) {
+      std::vector<IntegerLiteral> integer_reason = {
+          num_.GreaterOrEqual(min_num), div_.LowerOrEqual(max_div)};
+      if (min_num >= 0) {
+        integer_reason.push_back(denom_.LowerOrEqual(max_denom));
+        integer_reason.push_back(denom_.GreaterOrEqual(1));
+      } else {
+        integer_reason.push_back(denom_.GreaterOrEqual(min_denom));
+      }
       return enforcement_helper_.PropagateWhenFalse(
-          enforcement_id_,
-          /*literal_reason=*/{},
-          {num_.GreaterOrEqual(min_num), denom_.LowerOrEqual(max_denom),
-           div_.LowerOrEqual(max_div)});
+          enforcement_id_, /*literal_reason=*/{}, integer_reason);
     }
-    if (max_num / min_denom < min_div) {
+
+    if (max_possible_div < min_div) {
+      std::vector<IntegerLiteral> integer_reason = {
+          num_.LowerOrEqual(max_num), div_.GreaterOrEqual(min_div)};
+      if (max_num >= 0) {
+        integer_reason.push_back(denom_.GreaterOrEqual(min_denom));
+      } else {
+        integer_reason.push_back(denom_.LowerOrEqual(max_denom));
+        integer_reason.push_back(denom_.GreaterOrEqual(1));
+      }
       return enforcement_helper_.PropagateWhenFalse(
-          enforcement_id_,
-          /*literal_reason=*/{},
-          {num_.LowerOrEqual(max_num), denom_.GreaterOrEqual(min_denom),
-           div_.GreaterOrEqual(min_div)});
+          enforcement_id_, /*literal_reason=*/{}, integer_reason);
     }
     // Otherwise we cannot propagate anything since the enforcement is unknown.
     return true;

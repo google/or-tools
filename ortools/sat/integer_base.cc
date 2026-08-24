@@ -319,4 +319,9 @@ std::pair<IntegerValue, IntegerValue> BestBinaryRelationBounds::GetBounds(
   return {kMinIntegerValue, kMaxIntegerValue};
 }
 
+bool LinearExpression2::operator<(const LinearExpression2& o) const {
+  return std::tie(vars[0], vars[1], coeffs[0], coeffs[1]) <
+         std::tie(o.vars[0], o.vars[1], o.coeffs[0], o.coeffs[1]);
+}
+
 }  // namespace operations_research::sat

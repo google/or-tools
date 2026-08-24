@@ -1279,6 +1279,9 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
         if (assignment.LiteralIsFalse(l)) continue;
         if (!set_all_left_to_false && assignment.LiteralIsTrue(l)) {
           set_all_left_to_false = true;
+          // Everything must be set to false now, including any previously
+          // detected trivializer.
+          trivializer = kNoBooleanVariable;
           continue;
         }
         at_most_one_buffer_[new_local_end++] = l;

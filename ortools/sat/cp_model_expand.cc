@@ -977,6 +977,28 @@ void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context,
   const int index_var = index.vars(0);
   const LinearExpressionProto& target = element.linear_target();
 
+  bool has_out_of_bounds = false;
+  for (const int64_t v : context->DomainOf(index_var).Values()) {
+    const int64_t index_value = AffineExpressionValueAt(index, v);
+    if (index_value < 0 || index_value >= element.exprs_size()) {
+      has_out_of_bounds = true;
+      break;
+    }
+  }
+
+  if (has_out_of_bounds) {
+    DCHECK(!ct->enforcement_literal().empty())
+        << "Unenforced element constraint with out of bounds index";
+    ConstraintProto* index_in_domain_ct = context->AddEnforcedConstraint(ct);
+    index_in_domain_ct->mutable_linear()->add_domain(0);
+    index_in_domain_ct->mutable_linear()->add_domain(element.exprs_size() - 1);
+    AddLinearExpressionToLinearConstraint(index, 1,
+                                          index_in_domain_ct->mutable_linear());
+    context->CanonicalizeLinearConstraint(index_in_domain_ct);
+    context->UpdateRuleStats(
+        "element: expanded enforced index domain with a linear");
+  }
+
   // Uniqueness is only valid if presolve is on.
   const bool presolve_is_on = context->params().cp_model_presolve();
 
@@ -1025,6 +1047,10 @@ void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context,
 
         // Element expansion.
         const int64_t index_value = AffineExpressionValueAt(index, v);
+        if (index_value < 0 || index_value >= element.exprs_size()) {
+          // Handled by the has_out_of_bounds logic above.
+          continue;
+        }
         const LinearExpressionProto& expr = ct->element().exprs(index_value);
         ConstraintProto* const imply = context->AddEnforcedConstraint(ct);
         imply->add_enforcement_literal(literal);
@@ -1070,8 +1096,10 @@ void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context,
         const int64_t index_lit =
             context->GetOrCreateVarValueEncoding(index_var, v);
         const int64_t index_value = AffineExpressionValueAt(index, v);
-        DCHECK_GE(index_value, 0);
-        DCHECK_LT(index_value, ct->element().exprs_size());
+        if (index_value < 0 || index_value >= ct->element().exprs_size()) {
+          // Handled by the has_out_of_bounds logic above.
+          continue;
+        }
         const LinearExpressionProto& expr = ct->element().exprs(index_value);
 
         ConstraintProto* const imply = context->AddEnforcedConstraint(ct);
@@ -1110,8 +1138,12 @@ void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context,
       {}, ct->mutable_element()->mutable_linear_target());
   for (const int64_t v : reduced_index_var_domain.Values()) {
     const int64_t index_value = AffineExpressionValueAt(index, v);
-    DCHECK_GE(index_value, 0);
-    DCHECK_LT(index_value, element.exprs_size());
+
+    if (index_value < 0 || index_value >= element.exprs_size()) {
+      // Handled by the has_out_of_bounds logic above.
+      continue;
+    }
+
     context->CanonicalizeLinearExpression(
         {}, ct->mutable_element()->mutable_exprs(index_value));
     const LinearExpressionProto& expr = element.exprs(index_value);

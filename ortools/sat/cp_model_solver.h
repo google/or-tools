@@ -15,6 +15,7 @@
 #define ORTOOLS_SAT_CP_MODEL_SOLVER_H_
 
 #include <functional>
+#include <memory>
 #include <string>
 
 #include "absl/flags/declare.h"
@@ -131,6 +132,20 @@ std::function<SatParameters(Model*)> NewSatParameters(
 
 /// Stops the current search.
 void StopSearch(Model* model);
+
+class SubSolver;
+struct SharedClasses;
+
+// A factory to instantiate a custom subsolver, given the presolved model.
+using SubsolverFactory =
+    std::function<std::unique_ptr<SubSolver>(SharedClasses*)>;
+
+// Registers a factory to add a custom subsolver to the parallel search
+// portfolio.
+//
+// The factory will be invoked after presolve.
+// Note: This API is experimental and may change in future.
+std::function<void(Model*)> NewSubsolver(SubsolverFactory factory);
 
 }  // namespace sat
 }  // namespace operations_research

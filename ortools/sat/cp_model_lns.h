@@ -469,14 +469,7 @@ class NeighborhoodGenerator {
     int task_id = 0;
 
     // This is just used to construct a deterministic order for the updates.
-    bool operator<(const SolveData& o) const {
-      return std::tie(status, difficulty, deterministic_limit,
-                      deterministic_time, initial_best_objective,
-                      base_objective, new_objective) <
-             std::tie(o.status, o.difficulty, o.deterministic_limit,
-                      o.deterministic_time, o.initial_best_objective,
-                      o.base_objective, o.new_objective);
-    }
+    bool operator<(const SolveData& o) const;
   };
 
   // Generates a "local" subproblem for the given seed.
