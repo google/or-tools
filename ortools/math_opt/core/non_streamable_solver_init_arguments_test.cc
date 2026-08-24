@@ -16,7 +16,6 @@
 #include <memory>
 #include <utility>
 
-#include "absl/base/attributes.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/math_opt/parameters.pb.h"
@@ -47,7 +46,7 @@ class FakeNonStreamableInitArguments : public NonStreamableSolverInitArguments {
   // Incremented each time Clone() is called.
   //
   // This member is thread local to not prevent executing tests in parallel.
-  ABSL_CONST_INIT static thread_local int num_clones_;
+  static thread_local int num_clones_;
 
  private:
   SolverTypeProto solver_type_;
