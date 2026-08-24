@@ -541,11 +541,11 @@ if(BUILD_protobuf_matchers)
   FetchContent_Declare(
     protobuf-matchers
     GIT_REPOSITORY https://github.com/inazarenko/protobuf-matchers.git
-    GIT_TAG v0.1.1
+    GIT_TAG v0.1.2
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-matchers-v0.1.1.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-matchers-v0.1.2.patch"
     SYSTEM
   )
   FetchContent_MakeAvailable(protobuf-matchers)

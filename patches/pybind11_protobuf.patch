@@ -1,147 +1,31 @@
-diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 2139dc0..df3f30a 100644
---- a/CMakeLists.txt
-+++ b/CMakeLists.txt
-@@ -27,58 +27,64 @@ include(CTest)
- # ============================================================================
- # Find Python
+diff --git a/pybind11_protobuf/proto_cast_util.cc b/pybind11_protobuf/proto_cast_util.cc
+index 5ca857b..8b00a4e 100644
+--- a/pybind11_protobuf/proto_cast_util.cc
++++ b/pybind11_protobuf/proto_cast_util.cc
+@@ -355,7 +355,7 @@ class PythonDescriptorPoolWrapper {
+     // the Python DescriptorPool.
  
--find_package(Python COMPONENTS Interpreter Development)
-+find_package(Python3 COMPONENTS Interpreter Development.Module)
+     // Find a file by file name.
+-    bool FindFileByName(const std::string& filename,
++    bool FindFileByName(StringViewArg filename,
+                         FileDescriptorProto* output) override {
+       try {
+         auto file = pool_.attr("FindFileByName")(filename);
+@@ -371,7 +371,7 @@ class PythonDescriptorPoolWrapper {
+     }
  
- # ============================================================================
- # Build dependencies
-+include(FetchContent)
+     // Find the file that declares the given fully-qualified symbol name.
+-    bool FindFileContainingSymbol(const std::string& symbol_name,
++    bool FindFileContainingSymbol(StringViewArg symbol_name,
+                                   FileDescriptorProto* output) override {
+       try {
+         auto file = pool_.attr("FindFileContainingSymbol")(symbol_name);
+@@ -389,7 +389,7 @@ class PythonDescriptorPoolWrapper {
  
--if(USE_SYSTEM_ABSEIL)
--  # Version omitted, as absl only allows EXACT version matches
--  set(_absl_package_args REQUIRED)
--else()
--  set(_absl_package_args 20230125)
--endif()
--if(USE_SYSTEM_PROTOBUF)
--  set(_protobuf_package_args 4.23.3 REQUIRED)
--else()
--  set(_protobuf_package_args 4.23.3)
--endif()
--if(USE_SYSTEM_PYBIND)
--  set(_pybind11_package_args 2.11.1 REQUIRED)
--else()
--  set(_pybind11_package_args 2.11.1)
-+message(CHECK_START "Checking for external dependencies")
-+list(APPEND CMAKE_MESSAGE_INDENT "  ")
-+
-+if(NOT TARGET absl::base)
-+  if(USE_SYSTEM_ABSEIL)
-+    # Version omitted, as absl only allows EXACT version matches
-+    set(_absl_package_args REQUIRED)
-+  else()
-+    set(_absl_package_args 20230125)
-+  endif()
-+  FetchContent_Declare(
-+    absl
-+    GIT_REPOSITORY "https://github.com/abseil/abseil-cpp.git"
-+    GIT_TAG 20230125.3
-+    FIND_PACKAGE_ARGS ${_absl_package_args} NAMES absl)
-+  set(ABSL_PROPAGATE_CXX_STD ON)
-+  set(ABSL_ENABLE_INSTALL ON)
-+  FetchContent_MakeAvailable(absl)
- endif()
- 
--set(ABSL_PROPAGATE_CXX_STD ON)
--set(ABSL_ENABLE_INSTALL ON)
-+if(NOT TARGET protobuf::libprotobuf)
-+  if(USE_SYSTEM_PROTOBUF)
-+    set(_protobuf_package_args 4.23.3 REQUIRED)
-+  else()
-+    set(_protobuf_package_args 4.23.3)
-+  endif()
-+  FetchContent_Declare(
-+    Protobuf
-+    GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
-+    GIT_TAG v23.3
-+    GIT_SUBMODULES ""
-+    FIND_PACKAGE_ARGS ${_protobuf_package_args} NAMES protobuf)
-+  set(protobuf_BUILD_TESTS OFF CACHE INTERNAL "")
-+  FetchContent_MakeAvailable(Protobuf)
-+endif()
- 
--include(FetchContent)
--FetchContent_Declare(
--  absl
--  GIT_REPOSITORY "https://github.com/abseil/abseil-cpp.git"
--  GIT_TAG 20230125.3
--  FIND_PACKAGE_ARGS ${_absl_package_args} NAMES absl)
--
--# cmake-format: off
--FetchContent_Declare(
--  Protobuf
--  GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
--  GIT_TAG v23.3
--  GIT_SUBMODULES ""
--  FIND_PACKAGE_ARGS ${_protobuf_package_args} NAMES protobuf)
--set(protobuf_BUILD_TESTS OFF CACHE INTERNAL "")
--# cmake-format: on
--
--FetchContent_Declare(
--  pybind11
--  GIT_REPOSITORY "https://github.com/pybind/pybind11.git"
--  GIT_TAG v2.11.1
--  FIND_PACKAGE_ARGS ${_pybind11_package_args} NAMES pybind11)
-+if(NOT TARGET pybind11::pybind11_headers)
-+  if(USE_SYSTEM_PYBIND)
-+    set(_pybind11_package_args 2.11.1 REQUIRED)
-+  else()
-+    set(_pybind11_package_args 2.11.1)
-+  endif()
-+  FetchContent_Declare(
-+    pybind11
-+    GIT_REPOSITORY "https://github.com/pybind/pybind11.git"
-+    GIT_TAG v2.11.1
-+    FIND_PACKAGE_ARGS ${_pybind11_package_args} NAMES pybind11)
-+  FetchContent_MakeAvailable(pybind11)
-+endif()
- 
--message(CHECK_START "Checking for external dependencies")
--list(APPEND CMAKE_MESSAGE_INDENT "  ")
--FetchContent_MakeAvailable(absl Protobuf pybind11)
- list(POP_BACK CMAKE_MESSAGE_INDENT)
-+message(CHECK_PASS "found")
- 
- # ============================================================================
- # pybind11_proto_utils pybind11 extension module
-@@ -87,8 +93,10 @@ pybind11_add_module(
-   pybind11_protobuf/proto_utils.h)
- 
- target_link_libraries(
--  pybind11_proto_utils PRIVATE absl::strings protobuf::libprotobuf
--                               ${Python_LIBRARIES})
-+  pybind11_proto_utils PRIVATE
-+    absl::strings
-+    protobuf::libprotobuf
-+    Python3::Module)
- 
- target_include_directories(
-   pybind11_proto_utils PRIVATE ${PROJECT_SOURCE_DIR} ${protobuf_INCLUDE_DIRS}
-@@ -116,10 +124,11 @@ target_link_libraries(
-   absl::optional
-   protobuf::libprotobuf
-   pybind11::pybind11
--  ${Python_LIBRARIES})
-+  Python3::Module)
- 
- target_include_directories(
-   pybind11_native_proto_caster
-+  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-   PRIVATE ${PROJECT_SOURCE_DIR} ${protobuf_INCLUDE_DIRS} ${protobuf_SOURCE_DIR}
-           ${pybind11_INCLUDE_DIRS})
- 
-@@ -143,7 +152,7 @@ target_link_libraries(
-   absl::optional
-   protobuf::libprotobuf
-   pybind11::pybind11
--  ${Python_LIBRARIES})
-+  Python3::Module)
- 
- target_include_directories(
-   pybind11_wrapped_proto_caster
+     // Find the file which defines an extension extending the given message type
+     // with the given field number.
+-    bool FindFileContainingExtension(const std::string& containing_type,
++    bool FindFileContainingExtension(StringViewArg containing_type,
+                                      int field_number,
+                                      FileDescriptorProto* output) override {
+       try {
