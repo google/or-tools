@@ -352,6 +352,7 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_absl}>,copy,true>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::base>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::base_cpu_detect>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::city>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::civil_time>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::cord>>
@@ -361,7 +362,6 @@ add_custom_command(
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::cordz_info>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::crc32c>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::crc_cord_state>>
-    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::crc_cpu_detect>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::crc_internal>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::debugging_internal>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::decode_rust_punycode>>
@@ -382,6 +382,7 @@ add_custom_command(
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_usage>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::flags_usage_internal>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::graphcycles_internal>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::hardening>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::hash>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::hashtablez_sampler>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::int128>>
