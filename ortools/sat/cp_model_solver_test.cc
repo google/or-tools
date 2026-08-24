@@ -13,7 +13,10 @@
 
 #include "ortools/sat/cp_model_solver.h"
 
+#include <atomic>
 #include <cstdint>
+#include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -31,6 +34,7 @@
 #include "ortools/sat/lp_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/subsolver.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research {
@@ -5474,6 +5478,50 @@ TEST(CpModelSolverTest, LratProofIsValidForRandom3Sat) {
   }
   LOG(INFO) << "num_infeasible: " << num_infeasible;
   EXPECT_GT(num_infeasible, 0);
+}
+
+class MockCountingSubsolver : public SubSolver {
+ public:
+  MockCountingSubsolver(std::atomic<int>* task_count,
+                        std::atomic<int>* sync_count)
+      : SubSolver("mock_counting", SubSolver::HELPER),
+        task_count_(task_count),
+        sync_count_(sync_count) {}
+
+  void Synchronize() override { ++(*sync_count_); }
+
+  bool TaskIsAvailable() override { return !task_generated_.load(); }
+
+  std::function<void()> GenerateTask(int64_t /*task_id*/) override {
+    task_generated_.store(true);
+    return [this]() { ++(*task_count_); };
+  }
+
+ private:
+  std::atomic<int>* const task_count_;
+  std::atomic<int>* const sync_count_;
+  std::atomic<bool> task_generated_{false};
+};
+
+TEST(CpModelSolverTest, AddSubsolverGeneratesAndRunsTask) {
+  std::atomic<int> task_count{0};
+  std::atomic<int> sync_count{0};
+  const CpModelProto model_proto = Random3SatProblem(100, 3);
+  Model model;
+  SatParameters params;
+  params.set_num_workers(16);
+  params.set_interleave_search(true);
+  params.set_cp_model_presolve(false);
+  model.Add(NewSatParameters(params));
+  model.Add(NewSubsolver([&task_count, &sync_count](SharedClasses* /*shared*/) {
+    return std::make_unique<MockCountingSubsolver>(&task_count, &sync_count);
+  }));
+
+  const CpSolverResponse response = SolveCpModel(model_proto, &model);
+
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_GT(task_count.load(), 0);
+  EXPECT_GT(sync_count.load(), 0);
 }
 #else
 static_assert(!operations_research::kTargetOsSupportsThreads);

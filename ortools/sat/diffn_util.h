@@ -86,10 +86,7 @@ struct Rectangle {
                  r.x_max.value(), r.y_min.value(), r.y_max.value());
   }
 
-  bool operator==(const Rectangle& other) const {
-    return std::tie(x_min, x_max, y_min, y_max) ==
-           std::tie(other.x_min, other.x_max, other.y_min, other.y_max);
-  }
+  bool operator==(const Rectangle& other) const = default;
 
   bool operator!=(const Rectangle& other) const { return !(other == *this); }
 
@@ -208,18 +205,12 @@ struct IndexedInterval {
   IntegerValue start;
   IntegerValue end;
 
-  bool operator==(const IndexedInterval& rhs) const {
-    return std::tie(start, end, index) ==
-           std::tie(rhs.start, rhs.end, rhs.index);
-  }
+  bool operator==(const IndexedInterval& rhs) const;
 
   // NOTE(user): We would like to use TUPLE_DEFINE_STRUCT, but sadly it doesn't
   // support //buildenv/target:non_prod.
   struct ComparatorByStartThenEndThenIndex {
-    bool operator()(const IndexedInterval& a, const IndexedInterval& b) const {
-      return std::tie(a.start, a.end, a.index) <
-             std::tie(b.start, b.end, b.index);
-    }
+    bool operator()(const IndexedInterval& a, const IndexedInterval& b) const;
   };
   struct ComparatorByStart {
     bool operator()(const IndexedInterval& a, const IndexedInterval& b) const {

@@ -1946,12 +1946,26 @@ class LnsSolver : public SubSolver {
           : helper_->ModelProto().GetArena()->SpaceUsed();
 };
 
-void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
-  const SatParameters& params = *global_model->GetOrCreate<SatParameters>();
+class PortfolioBuilder {
+ public:
+  explicit PortfolioBuilder(Model* global_model)
+      : global_model_(global_model) {}
 
-  // If specified by the user, we might disable some parameters based on their
-  // name.
-  SubsolverNameFilter name_filter(params);
+  void AddSubsolver(SubsolverFactory factory) {
+    custom_subsolver_factories_.push_back(std::move(factory));
+  }
+
+  std::vector<std::unique_ptr<SubSolver>> MakeSubsolvers(
+      SharedClasses* shared, SubsolverNameFilter& name_filter);
+
+ private:
+  Model* const global_model_;
+  std::vector<SubsolverFactory> custom_subsolver_factories_;
+};
+
+std::vector<std::unique_ptr<SubSolver>> PortfolioBuilder::MakeSubsolvers(
+    SharedClasses* shared, SubsolverNameFilter& name_filter) {
+  const SatParameters& params = *global_model_->GetOrCreate<SatParameters>();
 
   // The list of all the SubSolver that will be used in this parallel search.
   // These will be synchronized in order. Note that we will assemble this at
@@ -1971,6 +1985,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   std::vector<std::unique_ptr<SubSolver>> first_solution_full_subsolvers;
   std::vector<std::unique_ptr<SubSolver>> reentrant_interleaved_subsolvers;
   std::vector<std::unique_ptr<SubSolver>> interleaved_subsolvers;
+  std::vector<std::unique_ptr<SubSolver>> custom_subsolvers;
 
   // Add a synchronization point for the shared classes.
   subsolvers.push_back(std::make_unique<SynchronizationPoint>(
@@ -2005,9 +2020,9 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   // Add full problem solvers.
   const std::vector<SatParameters> full_worker_params = GetFullWorkerParameters(
       shared->model_proto, shared->logger,
-      global_model->GetOrCreate<SatParameters>(), &name_filter);
+      global_model_->GetOrCreate<SatParameters>(), &name_filter);
   if (params.shared_tree_num_workers() > 0) {
-    shared->InitSharedTreeManager(global_model);
+    shared->InitSharedTreeManager(global_model_);
   }
 
   for (const SatParameters& local_params : full_worker_params) {
@@ -2397,6 +2412,14 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     }
   }
 
+  // Add custom subsolvers.
+  for (const auto& factory : custom_subsolver_factories_) {
+    std::unique_ptr<SubSolver> custom_subsolver = factory(shared);
+    if (custom_subsolver != nullptr) {
+      custom_subsolvers.push_back(std::move(custom_subsolver));
+    }
+  }
+
   // Now that we are done with the logic, move all subsolver into a single
   // list. Note that the position of the "synchronization" subsolver matter.
   // Some are already in subsolvers, and we will add the gap one last.
@@ -2411,6 +2434,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   move_all(first_solution_full_subsolvers);
   move_all(reentrant_interleaved_subsolvers);
   move_all(interleaved_subsolvers);
+  move_all(custom_subsolvers);
 
   // Add a synchronization point for the gap integral that is executed last.
   // This way, after each batch, the proper deterministic time is updated and
@@ -2421,6 +2445,20 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
         "update_gap_integral",
         [shared]() { shared->response->UpdateGapIntegral(); }));
   }
+
+  return subsolvers;
+}
+
+void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
+  const SatParameters& params = *global_model->GetOrCreate<SatParameters>();
+
+  // If specified by the user, we might disable some parameters based on their
+  // name.
+  SubsolverNameFilter name_filter(params);
+
+  std::vector<std::unique_ptr<SubSolver>> subsolvers =
+      global_model->GetOrCreate<PortfolioBuilder>()->MakeSubsolvers(
+          shared, name_filter);
 
   LaunchSubsolvers(global_model, shared, subsolvers, name_filter.AllIgnored());
 }
@@ -2469,6 +2507,16 @@ std::function<void(Model*)> NewBestBoundCallback(
     const std::function<void(double)>& callback) {
   return [callback = callback](Model* model) {
     model->GetOrCreate<SharedResponseManager>()->AddBestBoundCallback(callback);
+  };
+}
+
+std::function<void(Model*)> NewSubsolver(SubsolverFactory factory) {
+  return [factory = std::move(factory)](Model* model) {
+#ifdef ORTOOLS_TARGET_OS_SUPPORTS_THREADS
+    model->GetOrCreate<PortfolioBuilder>()->AddSubsolver(factory);
+#else
+    LOG(ERROR) << "Custom subsolvers are not supported on this platform.";
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
   };
 }
 

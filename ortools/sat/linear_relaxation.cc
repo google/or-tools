@@ -2141,6 +2141,19 @@ void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
   if (ct.lin_max().target().coeffs(0) != 1) return;
   if (ct.lin_max().target().offset() != 0) return;
 
+  // Skip if the target variable appears in one of the expressions, which
+  // should only happen with presolve disabled.
+  if (absl::c_any_of(ct.lin_max().exprs(),
+                     [target_var = ct.lin_max().target().vars(0)](
+                         const LinearExpressionProto& expr) {
+                       for (const int var : expr.vars()) {
+                         if (var == target_var) return true;
+                       }
+                       return false;
+                     })) {
+    return;
+  }
+
   const IntegerVariable target =
       mapping->Integer(ct.lin_max().target().vars(0));
   std::vector<LinearExpression> exprs;

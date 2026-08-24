@@ -56,6 +56,15 @@
 namespace operations_research {
 namespace sat {
 
+bool IndexedInterval::operator==(const IndexedInterval& rhs) const {
+  return std::tie(start, end, index) == std::tie(rhs.start, rhs.end, rhs.index);
+}
+
+bool IndexedInterval::ComparatorByStartThenEndThenIndex::operator()(
+    const IndexedInterval& a, const IndexedInterval& b) const {
+  return std::tie(a.start, a.end, a.index) < std::tie(b.start, b.end, b.index);
+}
+
 bool Rectangle::IsDisjoint(const Rectangle& other) const {
   return x_min >= other.x_max || other.x_min >= x_max || y_min >= other.y_max ||
          other.y_min >= y_max;
