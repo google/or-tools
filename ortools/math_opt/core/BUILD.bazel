@@ -325,7 +325,6 @@ cc_test(
         ":non_streamable_solver_init_arguments",
         "//ortools/base:gmock_main",
         "//ortools/math_opt:parameters_cc_proto",
-        "@abseil-cpp//absl/base:core_headers",
     ],
 )
 
