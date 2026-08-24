@@ -20,6 +20,11 @@ load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
 load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 
+exports_files(
+    ["constraint_solver_helpers.swig"],
+    visibility = ["//ortools/routing/python:__pkg__"],
+)
+
 cc_library(
     name = "constraint_solver_doc",
     hdrs = ["constraint_solver_doc.h"],
