@@ -38,7 +38,7 @@ bazel_dep(name = "rules_python", version = "2.0.0")
 bazel_dep(name = "rules_shell", version = "0.6.1")
 
 # OR-Tools C++ dependencies
-bazel_dep(name = "abseil-cpp", version = "20260526.0")
+bazel_dep(name = "abseil-cpp", version = "20260817.0")
 bazel_dep(name = "bzip2", version = "1.0.8.bcr.3")
 bazel_dep(name = "eigen", version = "3.4.0.bcr.3")
 bazel_dep(name = "glpk", version = "5.0.bcr.4")
