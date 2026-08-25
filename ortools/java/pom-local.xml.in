@@ -86,13 +86,13 @@
   <dependency>
     <groupId>com.google.protobuf</groupId>
     <artifactId>protobuf-java</artifactId>
-    <version>4.33.6</version>
+    <version>4.35.1</version>
   </dependency>
   <!-- Source: https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java-util -->
   <dependency>
     <groupId>com.google.protobuf</groupId>
     <artifactId>protobuf-java-util</artifactId>
-    <version>4.33.6</version>
+    <version>4.35.1</version>
   </dependency>
   <!-- Source: https://mvnrepository.com/artifact/com.google.truth/truth -->
   <dependency>
