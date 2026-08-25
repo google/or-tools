@@ -2066,8 +2066,7 @@ std::vector<std::unique_ptr<SubSolver>> PortfolioBuilder::MakeSubsolvers(
         const SatParameters& local_params = name_to_params.at(names[i]);
         ++num_interleaved_subsolver_that_do_not_need_solution;
         reentrant_interleaved_subsolvers.push_back(
-            std::make_unique<VariablesShavingSolver>(local_params, helper,
-                                                     shared));
+            std::make_unique<VariablesShavingSolver>(local_params, shared));
         continue;
       }
     }

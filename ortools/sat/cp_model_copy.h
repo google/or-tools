@@ -40,8 +40,10 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/solution_crush.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -155,7 +157,7 @@ class ModelCopyHelper {
   // The domain in the output variable index space.
   std::vector<Domain> mapped_domains_;
 
-  // This is used temporarily to transfrom the hint during copy.
+  // This is used temporarily to transform the hint during copy.
   SolutionCrush solution_crush_;
 
   // Summary of the performed operations.
@@ -368,6 +370,24 @@ class ModelCopy {
 
   int GetTrueMappedLiteral();
 
+  // A positive only index for mapped literals. Useful for storing literals in
+  // bitsets.
+  DEFINE_STRONG_INDEX_TYPE(PositiveOnlyLitIndex);
+
+  PositiveOnlyLitIndex GetPositiveRefIndex(int lit) {
+    return PositiveOnlyLitIndex(PositiveRef(lit) * 2 +
+                                (RefIsPositive(lit) ? 0 : 1));
+  }
+
+  int GetRefFromPositiveIndex(PositiveOnlyLitIndex index) {
+    return (index.value() & 1) ? NegatedRef(index.value() / 2)
+                               : index.value() / 2;
+  }
+
+  PositiveOnlyLitIndex GetMaxIndex() {
+    return PositiveOnlyLitIndex(helper_.MappedDomains().size() * 2);
+  }
+
   ModelCopyHelper helper_;
   const SatParameters& params_;
   SolverLogger* logger_;
@@ -389,8 +409,7 @@ class ModelCopy {
   // These contain mapped literals.
   std::vector<int> temp_enforcement_literals_;
   absl::flat_hash_set<int> temp_enforcement_literals_set_;
-  std::vector<int> temp_literals_;
-  absl::flat_hash_set<int> temp_literals_set_;
+  SparseBitset<PositiveOnlyLitIndex> temp_literals_;
 
   ConstraintProto tmp_constraint_;
 

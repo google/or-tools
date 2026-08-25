@@ -95,7 +95,6 @@ class VariablesShavingSolver : public SubSolver {
   };
 
   VariablesShavingSolver(const SatParameters& local_parameters,
-                         NeighborhoodGeneratorHelper* helper,
                          SharedClasses* shared);
 
   ~VariablesShavingSolver() override;

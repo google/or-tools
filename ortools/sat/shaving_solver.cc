@@ -284,8 +284,7 @@ bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
 }
 
 VariablesShavingSolver::VariablesShavingSolver(
-    const SatParameters& local_parameters, NeighborhoodGeneratorHelper* helper,
-    SharedClasses* shared)
+    const SatParameters& local_parameters, SharedClasses* shared)
     : SubSolver(local_parameters.name(), INCOMPLETE),
       local_params_(local_parameters),
       shared_(shared),

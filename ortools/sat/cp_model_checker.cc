@@ -1100,8 +1100,9 @@ bool PossibleIntegerOverflow(const CpModelProto& model,
                              absl::Span<const int> vars,
                              absl::Span<const int64_t> coeffs, int64_t offset,
                              std::pair<int64_t, int64_t>* implied_domain) {
-  offset = std::abs(offset);
+  if (offset < kint64min / 2) return true;
   if (offset > kint64max / 2) return true;
+  offset = std::abs(offset);
 
   LinearOverflowChecker checher;
   checher.sum_min = -std::abs(offset);

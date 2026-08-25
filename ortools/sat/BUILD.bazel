@@ -272,9 +272,11 @@ cc_library(
         "//ortools/base:protobuf_util",
         "//ortools/base:types",
         "//ortools/base/macros:os_support",
+        "//ortools/util:bitset",
         "//ortools/util:logging",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
+        "//ortools/util:strong_integers",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:btree",
@@ -3751,6 +3753,7 @@ cc_library(
     visibility = [
         "//ortools/bop:__pkg__",
         "//ortools/linear_solver/proto_solver:__pkg__",
+        "//ortools/routing:__pkg__",
         "//visibility:public",
     ],
     deps = [

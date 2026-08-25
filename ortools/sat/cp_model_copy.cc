@@ -279,21 +279,22 @@ bool ModelCopy::ImportAndSimplifyConstraints(
       if (ct.constraint_case() != ConstraintProto::kBoolOr) {
         LOG(FATAL) << error_msg;
       }
-      temp_literals_.clear();
-      temp_literals_set_.clear();
+      temp_literals_.ClearAndResize(GetMaxIndex());
       for (const int enforcement_lit : ct.enforcement_literal()) {
         const int lit = NegatedRef(enforcement_lit);
-        const auto [it, inserted] = temp_literals_set_.insert(lit);
-        if (inserted) temp_literals_.push_back(lit);
+        temp_literals_.Set(GetPositiveRefIndex(lit));
       }
       for (const int lit : ct.bool_or().literals()) {
-        const auto [it, inserted] = temp_literals_set_.insert(lit);
-        if (inserted) temp_literals_.push_back(lit);
+        temp_literals_.Set(GetPositiveRefIndex(lit));
       }
-      working_model_->add_constraints()
-          ->mutable_bool_or()
-          ->mutable_literals()
-          ->Add(temp_literals_.begin(), temp_literals_.end());
+      auto* literals = working_model_->add_constraints()
+                           ->mutable_bool_or()
+                           ->mutable_literals();
+      const auto& lit_refs = temp_literals_.PositionsSetAtLeastOnce();
+      literals->Reserve(lit_refs.size());
+      for (const PositiveOnlyLitIndex idx : lit_refs) {
+        literals->Add(GetRefFromPositiveIndex(idx));
+      }
     }
     return true;
   }
@@ -679,15 +680,20 @@ void ModelCopy::FinishEnforcementCopy(ConstraintProto* ct) {
 }
 
 bool ModelCopy::FinishBoolOrCopy() {
-  if (temp_literals_.empty()) return false;
+  const auto& lit_refs = temp_literals_.PositionsSetAtLeastOnce();
+  if (lit_refs.empty()) return false;
 
-  if (temp_literals_.size() == 1) {
+  if (lit_refs.size() == 1) {
     helper_.UpdateRuleStats("bool_or: only one literal");
-    return helper_.SetMappedLiteralToTrue(temp_literals_[0]);
+    return helper_.SetMappedLiteralToTrue(GetRefFromPositiveIndex(lit_refs[0]));
   }
 
-  working_model_->add_constraints()->mutable_bool_or()->mutable_literals()->Add(
-      temp_literals_.begin(), temp_literals_.end());
+  auto* bool_or_lits =
+      working_model_->add_constraints()->mutable_bool_or()->mutable_literals();
+  bool_or_lits->Reserve(lit_refs.size());
+  for (const PositiveOnlyLitIndex idx : lit_refs) {
+    bool_or_lits->Add(GetRefFromPositiveIndex(idx));
+  }
   return true;
 }
 
@@ -703,16 +709,16 @@ bool ModelCopy::CopyFalseConstraint() {
 }
 
 bool ModelCopy::CopyBoolOr(const ConstraintProto& ct) {
-  temp_literals_.clear();
+  temp_literals_.ClearAndResize(GetMaxIndex());
   for (const int lit : temp_enforcement_literals_) {
-    temp_literals_.push_back(NegatedRef(lit));
+    temp_literals_.Set(GetPositiveRefIndex(NegatedRef(lit)));
   }
   for (const int lit : ct.bool_or().literals()) {
     if (helper_.InputIsFixed(lit)) {
       if (helper_.InputFixedLiteralIsTrue(lit)) return true;
       continue;
     }
-    temp_literals_.push_back(MapLiteral(lit));
+    temp_literals_.Set(GetPositiveRefIndex(MapLiteral(lit)));
   }
   return FinishBoolOrCopy();
 }
@@ -736,8 +742,7 @@ int LiteralToRef(Literal lit) {
 
 bool ModelCopy::CopyBoolOrWithDupSupport(const ConstraintProto& ct,
                                          int one_based_cnf_index) {
-  temp_literals_.clear();
-  temp_literals_set_.clear();
+  temp_literals_.ClearAndResize(GetMaxIndex());
   for (const int enforcement_lit : temp_enforcement_literals_) {
     // Having an enforcement literal is the same as having its negation on
     // the clause.
@@ -745,8 +750,7 @@ bool ModelCopy::CopyBoolOrWithDupSupport(const ConstraintProto& ct,
 
     // Note that we already dealt with duplicate since we should have called
     // PrepareEnforcementCopyWithDup() in this case.
-    temp_literals_set_.insert(lit);
-    temp_literals_.push_back(lit);
+    temp_literals_.Set(GetPositiveRefIndex(lit));
   }
   for (const int lit : ct.bool_or().literals()) {
     if (helper_.InputIsFixed(lit)) {
@@ -758,14 +762,12 @@ bool ModelCopy::CopyBoolOrWithDupSupport(const ConstraintProto& ct,
     }
 
     const int mapped_lit = MapLiteral(lit);
-    if (temp_literals_set_.contains(NegatedRef(mapped_lit))) {
+    if (temp_literals_[GetPositiveRefIndex(NegatedRef(mapped_lit))]) {
       helper_.UpdateRuleStats("bool_or: always true");
       return true;
     }
-    const auto [it, inserted] = temp_literals_set_.insert(mapped_lit);
-    if (inserted) temp_literals_.push_back(mapped_lit);
+    temp_literals_.Set(GetPositiveRefIndex(mapped_lit));
   }
-  DCHECK_EQ(temp_literals_.size(), temp_literals_set_.size());
   if (lrat_proof_handler_ != nullptr) {
     CHECK(variable_mapping_.empty());
     // Add the original clause as a problem clause, and its simplified version
@@ -780,17 +782,19 @@ bool ModelCopy::CopyBoolOrWithDupSupport(const ConstraintProto& ct,
     ClausePtr tmp_clause = NewClausePtr(temp_clause_);
     lrat_proof_handler_->AddProblemClause(tmp_clause, one_based_cnf_index);
 
-    if (temp_literals_.size() != temp_clause_.size()) {
+    const auto& lit_refs = temp_literals_.PositionsSetAtLeastOnce();
+    if (lit_refs.size() != temp_clause_.size()) {
       temp_proof_.clear();
       for (const Literal lit : temp_clause_) {
-        if (!temp_literals_set_.contains(LiteralToRef(lit))) {
+        if (!temp_literals_[GetPositiveRefIndex(LiteralToRef(lit))]) {
           temp_proof_.push_back(ClausePtr(lit.Negated()));
         }
       }
       temp_proof_.push_back(tmp_clause);
       temp_simplified_clause_.clear();
-      for (const int lit : temp_literals_) {
-        temp_simplified_clause_.push_back(RefToLiteral(lit));
+      for (const PositiveOnlyLitIndex idx : lit_refs) {
+        temp_simplified_clause_.push_back(
+            RefToLiteral(GetRefFromPositiveIndex(idx)));
       }
       const ClausePtr new_clause = NewClausePtr(temp_simplified_clause_);
       lrat_proof_handler_->AddInferredClause(new_clause, temp_proof_);
@@ -836,8 +840,7 @@ bool ModelCopy::CopyBoolAndWithDupSupport(const ConstraintProto& ct) {
   DCHECK(!temp_enforcement_literals_.empty());
 
   bool at_least_one_false = false;
-  temp_literals_.clear();
-  temp_literals_set_.clear();
+  temp_literals_.ClearAndResize(GetMaxIndex());
   for (const int lit : ct.bool_and().literals()) {
     if (helper_.InputIsFixed(lit)) {
       if (helper_.InputFixedLiteralIsTrue(lit)) continue;
@@ -847,7 +850,7 @@ bool ModelCopy::CopyBoolAndWithDupSupport(const ConstraintProto& ct) {
     }
 
     const int mapped_lit = MapLiteral(lit);
-    if (temp_literals_set_.contains(NegatedRef(mapped_lit))) {
+    if (temp_literals_[GetPositiveRefIndex(NegatedRef(mapped_lit))]) {
       helper_.UpdateRuleStats("bool and: => x and not(x) ");
       at_least_one_false = true;
       break;
@@ -862,15 +865,15 @@ bool ModelCopy::CopyBoolAndWithDupSupport(const ConstraintProto& ct) {
       helper_.UpdateRuleStats("bool and: x => x");
       continue;
     }
-    const auto [it, inserted] = temp_literals_set_.insert(mapped_lit);
-    if (inserted) temp_literals_.push_back(mapped_lit);
+    temp_literals_.Set(GetPositiveRefIndex(mapped_lit));
   }
 
   if (at_least_one_false) {
     return CopyFalseConstraint();
   }
 
-  if (temp_literals_.empty()) {
+  const auto& lit_refs = temp_literals_.PositionsSetAtLeastOnce();
+  if (lit_refs.empty()) {
     helper_.UpdateRuleStats("bool and: empty");
     return true;
   }
@@ -878,8 +881,11 @@ bool ModelCopy::CopyBoolAndWithDupSupport(const ConstraintProto& ct) {
   // Copy.
   ConstraintProto* new_ct = working_model_->add_constraints();
   FinishEnforcementCopy(new_ct);
-  new_ct->mutable_bool_and()->mutable_literals()->Add(temp_literals_.begin(),
-                                                      temp_literals_.end());
+  auto* bool_and_lits = new_ct->mutable_bool_and()->mutable_literals();
+  bool_and_lits->Reserve(lit_refs.size());
+  for (const PositiveOnlyLitIndex idx : lit_refs) {
+    bool_and_lits->Add(GetRefFromPositiveIndex(idx));
+  }
   return true;
 }
 
@@ -1305,27 +1311,38 @@ bool ModelCopy::CopyAtMostOne(const ConstraintProto& ct) {
     return CopyLinear(new_ct, true);
   }
   int num_true = 0;
-  temp_literals_.clear();
+  temp_literals_.ClearAndResize(GetMaxIndex());
   for (const int lit : ct.at_most_one().literals()) {
     if (helper_.InputIsFixed(lit)) {
       if (helper_.InputFixedLiteralIsTrue(lit)) num_true++;
       continue;
     }
-    temp_literals_.push_back(MapLiteral(lit));
+    if (temp_literals_[GetPositiveRefIndex(MapLiteral(lit))]) {
+      if (!helper_.SetMappedLiteralToFalse(MapLiteral(lit))) {
+        return false;
+      }
+    } else {
+      temp_literals_.Set(GetPositiveRefIndex(MapLiteral(lit)));
+    }
   }
 
   if (num_true > 1) return false;
+  const auto& lit_refs = temp_literals_.PositionsSetAtLeastOnce();
   if (num_true == 1) {
-    for (int lit : temp_literals_) {
-      if (!helper_.SetMappedLiteralToFalse(lit)) return false;
+    for (const PositiveOnlyLitIndex idx : lit_refs) {
+      if (!helper_.SetMappedLiteralToFalse(GetRefFromPositiveIndex(idx)))
+        return false;
     }
     return true;
   }
-  if (temp_literals_.size() <= 1) return true;
+  if (lit_refs.size() <= 1) return true;
 
   ConstraintProto* new_ct = working_model_->add_constraints();
-  new_ct->mutable_at_most_one()->mutable_literals()->Add(temp_literals_.begin(),
-                                                         temp_literals_.end());
+  auto* amo_literals = new_ct->mutable_at_most_one()->mutable_literals();
+  amo_literals->Reserve(lit_refs.size());
+  for (const PositiveOnlyLitIndex idx : lit_refs) {
+    amo_literals->Add(GetRefFromPositiveIndex(idx));
+  }
   return true;
 }
 
@@ -1338,30 +1355,42 @@ bool ModelCopy::CopyExactlyOne(const ConstraintProto& ct) {
     return CopyLinear(new_ct, true);
   }
   int num_true = 0;
-  temp_literals_.clear();
+  temp_literals_.ClearAndResize(GetMaxIndex());
   for (const int lit : ct.exactly_one().literals()) {
     if (helper_.InputIsFixed(lit)) {
       if (helper_.InputFixedLiteralIsTrue(lit)) num_true++;
       continue;
     }
-    temp_literals_.push_back(MapLiteral(lit));
+    if (temp_literals_[GetPositiveRefIndex(MapLiteral(lit))]) {
+      if (!helper_.SetMappedLiteralToFalse(MapLiteral(lit))) {
+        return false;
+      }
+    } else {
+      temp_literals_.Set(GetPositiveRefIndex(MapLiteral(lit)));
+    }
   }
 
   if (num_true > 1) return false;
+  const auto& lit_refs = temp_literals_.PositionsSetAtLeastOnce();
   if (num_true == 1) {
-    for (int lit : temp_literals_) {
-      if (!helper_.SetMappedLiteralToFalse(lit)) return false;
+    for (const PositiveOnlyLitIndex idx : lit_refs) {
+      if (!helper_.SetMappedLiteralToFalse(GetRefFromPositiveIndex(idx))) {
+        return false;
+      }
     }
     return true;
   }
-  if (temp_literals_.empty()) return false;
-  if (temp_literals_.size() == 1) {
-    return helper_.SetMappedLiteralToTrue(temp_literals_[0]);
+  if (lit_refs.empty()) return false;
+  if (lit_refs.size() == 1) {
+    return helper_.SetMappedLiteralToTrue(GetRefFromPositiveIndex(lit_refs[0]));
   }
 
   ConstraintProto* new_ct = working_model_->add_constraints();
-  new_ct->mutable_exactly_one()->mutable_literals()->Add(temp_literals_.begin(),
-                                                         temp_literals_.end());
+  auto* exo_literals = new_ct->mutable_exactly_one()->mutable_literals();
+  exo_literals->Reserve(lit_refs.size());
+  for (const PositiveOnlyLitIndex idx : lit_refs) {
+    exo_literals->Add(GetRefFromPositiveIndex(idx));
+  }
   return true;
 }
 
@@ -1370,19 +1399,29 @@ bool ModelCopy::CopyBoolXor(const ConstraintProto& ct) {
   FinishEnforcementCopy(new_ct);
 
   int num_true = 0;
-  temp_literals_.clear();
+  temp_literals_.ClearAndResize(GetMaxIndex());
   for (const int lit : ct.bool_xor().literals()) {
     if (helper_.InputIsFixed(lit)) {
       if (helper_.InputFixedLiteralIsTrue(lit)) num_true++;
       continue;
     }
-    temp_literals_.push_back(MapLiteral(lit));
+    if (temp_literals_[GetPositiveRefIndex(MapLiteral(lit))]) {
+      temp_literals_.Clear(GetPositiveRefIndex(MapLiteral(lit)));
+    } else {
+      temp_literals_.Set(GetPositiveRefIndex(MapLiteral(lit)));
+    }
   }
   if (num_true % 2 == 1) {
-    temp_literals_.push_back(GetTrueMappedLiteral());
+    temp_literals_.Set(GetPositiveRefIndex(GetTrueMappedLiteral()));
   }
-  new_ct->mutable_bool_xor()->mutable_literals()->Add(temp_literals_.begin(),
-                                                      temp_literals_.end());
+  const auto& lit_refs = temp_literals_.PositionsSetAtLeastOnce();
+  auto xor_literals = new_ct->mutable_bool_xor()->mutable_literals();
+  xor_literals->Reserve(lit_refs.size());
+  for (const PositiveOnlyLitIndex idx : lit_refs) {
+    if (temp_literals_[idx]) {
+      xor_literals->Add(GetRefFromPositiveIndex(idx));
+    }
+  }
   return true;
 }
 
@@ -1755,6 +1794,10 @@ void ModelCopy::ExpandNonAffineExpressions() {
       case ConstraintProto::kReservoir:
         for (LinearExpressionProto& expr :
              *ct->mutable_reservoir()->mutable_time_exprs()) {
+          MaybeExpandNonAffineExpression(&expr);
+        }
+        for (LinearExpressionProto& expr :
+             *ct->mutable_reservoir()->mutable_level_changes()) {
           MaybeExpandNonAffineExpression(&expr);
         }
         break;
