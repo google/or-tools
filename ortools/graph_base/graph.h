@@ -376,8 +376,12 @@ class BaseGraph  //
   // Allows nice range-based for loop:
   //   for (const NodeIndex node : graph.AllNodes()) { ... }
   //   for (const ArcIndex arc : graph.AllForwardArcs()) { ... }
-  IntegerRange<NodeIndex> AllNodes() const;
-  IntegerRange<ArcIndex> AllForwardArcs() const;
+  IntegerRange<NodeIndex> AllNodes() const {
+    return IntegerRange<NodeIndexType>(NodeIndexType(0), num_nodes());
+  }
+  IntegerRange<ArcIndex> AllForwardArcs() const {
+    return IntegerRange<ArcIndexType>(ArcIndexType(0), num_arcs());
+  }
 
   // Returns true if the given node is a valid node of the graph.
   bool IsNodeValid(NodeIndexType node) const {
@@ -399,6 +403,26 @@ class BaseGraph  //
   static_assert(std::numeric_limits<ArcIndexType>::is_specialized);
   static constexpr ArcIndexType kNilArc =
       std::numeric_limits<ArcIndexType>::max();
+
+  // Returns the number of outgoing arcs from the given node.
+  // This is the same complexity as `OutgoingArcs()`.
+  ArcIndexType OutDegree(NodeIndexType node) const {
+    const auto outgoing_arcs =
+        static_cast<const Impl*>(this)->OutgoingArcs(node);
+    return ArcIndexType(
+        // NOTE: `std::distance` is constant-time for random access
+        // iterators.
+        std::distance(outgoing_arcs.begin(), outgoing_arcs.end()));
+  }
+
+  // Returns the number of opposite incoming arcs to the given node.
+  // This is the same complexity as `OppositeIncomingArcs()`.
+  ArcIndexType InDegree(NodeIndexType node) const {
+    const auto opposite_incoming_arcs =
+        static_cast<const Impl*>(this)->OppositeIncomingArcs(node);
+    return ArcIndexType(std::distance(opposite_incoming_arcs.begin(),
+                                      opposite_incoming_arcs.end()));
+  }
 
  protected:
   // Functions commented when defined because they are implementation details.
@@ -657,6 +681,8 @@ class SVector {
     for (IndexT i = n; i < size_; ++i) {
       base_[static_cast<ptrdiff_t>(i)].~T();
     }
+    DCHECK_GE(n, IndexT(0));
+    DCHECK_LE(n, capacity_);
     size_ = n;
   }
 
@@ -678,6 +704,7 @@ class SVector {
     DCHECK_LE(n, max_size());
     if (n > capacity_) {
       const IndexT new_capacity = std::min(n, max_size());
+      DCHECK_GE(new_capacity, IndexT(0));
       T* new_storage = Allocate(new_capacity);
       CHECK(new_storage != nullptr);
       T* new_base = new_storage + static_cast<ptrdiff_t>(new_capacity);
@@ -686,6 +713,8 @@ class SVector {
       std::uninitialized_move(base_ - ssize, base_ + ssize, new_base - ssize);
       IndexT saved_size = size_;
       clear_and_dealloc();
+      DCHECK_GE(saved_size, IndexT(0));
+      DCHECK_LE(saved_size, new_capacity);
       size_ = saved_size;
       base_ = new_base;
       capacity_ = new_capacity;
@@ -709,6 +738,7 @@ class SVector {
       new (base_ - static_cast<ptrdiff_t>(size_) - 1) T(left);
       ++size_;
     }
+    DCHECK_LE(size_, capacity_);
   }
 
   IndexT size() const { return size_; }
@@ -764,6 +794,10 @@ class SVector {
     return capacity_ + delta;
   }
 
+  // Invariants:
+  //  - 0 <= capacity_.
+  //  - 0 <= size_ <= capacity_.
+  //  - base_ == nullptr iff capacity_ == 0.
   T* base_;          // Pointer to the element of index 0.
   IndexT size_;      // Valid index are [- size_, size_).
   IndexT capacity_;  // Reserved index are [- capacity_, capacity_).
@@ -891,17 +925,6 @@ class ListGraph : public MutableGraph<ListGraph<NodeIndexType, ArcIndexType>,
       ChasingIterator<ArcIndexType, Base::kNilArc, OutgoingArcIteratorTag>;
   using OutgoingHeadIterator = ArcHeadIterator<ListGraph, OutgoingArcIterator>;
 
-  // Graph jargon: the "degree" of a node is its number of arcs. The out-degree
-  // is the number of outgoing arcs. The in-degree is the number of incoming
-  // arcs, and is only available for some graph implementations, below.
-  //
-  // ListGraph<>::OutDegree() works in O(degree).
-  ArcIndexType OutDegree(NodeIndexType node) const {
-    ArcIndexType degree(0);
-    for (auto arc ABSL_ATTRIBUTE_UNUSED : OutgoingArcs(node)) ++degree;
-    return degree;
-  }
-
   // Allows to iterate over the forward arcs that verify Tail(arc) == node.
   // This is meant to be used as:
   //   for (const ArcIndex arc : graph.OutgoingArcs(node)) { ... }
@@ -1005,10 +1028,6 @@ class StaticGraph final
     return start_.size() - NodeIndexType(1);
   }
   ArcIndexType num_arcs() const { return head_.size(); }
-
-  ArcIndexType OutDegree(NodeIndexType node) const {
-    return DirectArcLimit(node) - start_[node];  // Works in O(1).
-  };
 
   IntegerRange<ArcIndexType> OutgoingArcs(NodeIndexType node) const {
     return IntegerRange<ArcIndexType>(start_[node], DirectArcLimit(node));
@@ -1116,18 +1135,6 @@ class ReverseArcListGraph
       ArcHeadIterator<ReverseArcListGraph, OutgoingArcIterator>;
   using IncomingArcIterator =
       ArcOppositeArcIterator<ReverseArcListGraph, OppositeIncomingArcIterator>;
-
-  // ReverseArcListGraph<>::OutDegree() and ::InDegree() work in O(degree).
-  ArcIndexType OutDegree(NodeIndexType node) const {
-    ArcIndexType degree(0);
-    for (auto arc ABSL_ATTRIBUTE_UNUSED : OutgoingArcs(node)) ++degree;
-    return degree;
-  }
-  ArcIndexType InDegree(NodeIndexType node) const {
-    ArcIndexType degree(0);
-    for (auto arc ABSL_ATTRIBUTE_UNUSED : OppositeIncomingArcs(node)) ++degree;
-    return degree;
-  }
 
   // Arc iterations functions over the arcs touching a node (see the top-level
   // comment for the different types). To be used as follows:
@@ -1301,14 +1308,6 @@ class ReverseArcStaticGraph final
     return head_[OppositeArc(arc)];
   }
 
-  // ReverseArcStaticGraph<>::OutDegree() and ::InDegree() work in O(1).
-  ArcIndexType OutDegree(NodeIndexType node) const {
-    return DirectArcLimit(node) - start_[node];
-  }
-  ArcIndexType InDegree(NodeIndexType node) const {
-    return ReverseArcLimit(node) - reverse_start_[node];
-  }
-
   // Deprecated.
   class OutgoingOrOppositeIncomingArcIterator;
   using OppositeIncomingArcIterator = IntegerRangeIterator<ArcIndexType>;
@@ -1471,22 +1470,6 @@ std::unique_ptr<GraphImpl> GraphBuilderBase<
 }  // namespace internal
 
 // BaseGraph implementation ----------------------------------------------------
-
-template <typename Impl, typename NodeIndexType, typename ArcIndexType,
-          bool HasNegativeReverseArcs>
-IntegerRange<NodeIndexType>
-BaseGraph<Impl, NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::AllNodes()
-    const {
-  return IntegerRange<NodeIndexType>(NodeIndexType(0), num_nodes());
-}
-
-template <typename Impl, typename NodeIndexType, typename ArcIndexType,
-          bool HasNegativeReverseArcs>
-IntegerRange<ArcIndexType> BaseGraph<Impl, NodeIndexType, ArcIndexType,
-                                     HasNegativeReverseArcs>::AllForwardArcs()
-    const {
-  return IntegerRange<ArcIndexType>(ArcIndexType(0), num_arcs());
-}
 
 template <typename Impl, typename NodeIndexType, typename ArcIndexType,
           bool HasNegativeReverseArcs>

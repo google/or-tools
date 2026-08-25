@@ -18,11 +18,13 @@
 #include <cstddef>
 #include <cstring>
 #include <functional>
+#include <initializer_list>
 #include <memory>
 #include <optional>
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/graph_base/hash_or_tree_container.h"
@@ -41,6 +43,11 @@ class Index {
   explicit Index(int reserve_num_objects = 0,
                  CompareOrHashT compare_or_hash = CompareOrHashT(),
                  Eq eq = Eq());
+  // Initializer list constructor and implicit conversion, e.g.,
+  // Index<std::string> idx{"a", "b", "c"}.
+  // ... and/or later: idx = {"foo", "bar"}.
+  Index(std::initializer_list<T> init,
+        CompareOrHashT compare_or_hash = CompareOrHashT(), Eq eq = Eq());
 
   int LookupOrAdd(T object) { return TryEmplace(std::move(object)).first; }
   std::optional<int> Lookup(const T& object) const {
@@ -72,7 +79,7 @@ class Index {
  private:
   // We use an indirection via unique_ptr<Impl> to make *this movable, because
   // Impl requires pointer stability of `this` across moves.
-  struct Impl;
+  class Impl;
   std::unique_ptr<Impl> impl_;
 };
 
@@ -148,6 +155,10 @@ class Index<T, CompareOrHashT, Eq>::Impl {
     }
 
    private:
+    // This is really an int. Why encode it as a char[]? Because the ObjectIndex
+    // keys are stored as std::pair<ObjectIndex, Empty> in a map (TODO below).
+    // This trick reduces the byte overhead of `Empty` to just 1 byte, instead
+    // of 4 bytes (due to padding) if we were using `int` directly.
     char index_[sizeof(ValueType)];
   };
 
@@ -231,6 +242,16 @@ Index<T, CompareOrHashT, Eq>::Index(int reserve_num_objects,
           reserve_num_objects, std::move(compare_or_hash), std::move(eq))) {}
 
 template <typename T, typename CompareOrHashT, typename Eq>
+Index<T, CompareOrHashT, Eq>::Index(std::initializer_list<T> init,
+                                    CompareOrHashT compare_or_hash, Eq eq)
+    : impl_(std::make_unique<Impl>(init.size(), std::move(compare_or_hash),
+                                   std::move(eq))) {
+  for (const auto& object : init) {
+    LookupOrAdd(object);
+  }
+}
+
+template <typename T, typename CompareOrHashT, typename Eq>
 struct Index<T, CompareOrHashT, Eq>::Impl::FunctorWrapper {
   using is_transparent = void;
 
@@ -270,7 +291,7 @@ struct Index<T, CompareOrHashT, Eq>::Impl::CompareOrHashTWrapper
                            FunctorWrapper::GetKey(b));
   }
 
-  [[no_unique_address]] CompareOrHashT compare_or_hash;
+  ABSL_ATTRIBUTE_NO_UNIQUE_ADDRESS CompareOrHashT compare_or_hash;
 };
 
 template <typename T, typename CompareOrHashT, typename Eq>
@@ -280,7 +301,7 @@ struct Index<T, CompareOrHashT, Eq>::Impl::EqWrapper : public FunctorWrapper {
     return eq(FunctorWrapper::GetKey(a), FunctorWrapper::GetKey(b));
   }
 
-  [[no_unique_address]] Eq eq;
+  ABSL_ATTRIBUTE_NO_UNIQUE_ADDRESS Eq eq;
 };
 
 }  // namespace graph

@@ -49,6 +49,7 @@
 #include "ortools/base/container_logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/graph_base/generic_graph.h"
 #include "ortools/graph_base/graph.h"
 
 namespace util {
@@ -105,6 +106,16 @@ absl::StatusOr<
     std::vector<typename util::GraphTraits<AdjacencyLists>::NodeIndex>>
 FindCycleInGraph(const AdjacencyLists& adj);
 
+// Variant that works with arbitrary node types. Returns {} if acyclic. EXAMPLE:
+//   std::vector<std::string> cycle =
+//       FindCycle(util::graph::GenericGraph<std::string>::FromEdges(
+//           {{"a", "b"}, {"b", "c"}, {"c", "a"}}));
+//   → returns {"a", "b", "c"}, or some cyclic permutation.
+template <typename Node>
+std::vector<Node> FindCycle(const util::graph::GenericGraph<Node>& g) {
+  return g.Nodes(FindCycleInGraph(g.Graph()).value());  // NOLINT
+}
+
 }  // namespace graph
 
 // [Stable]TopologicalSort[OrDie]:
@@ -118,6 +129,8 @@ FindCycleInGraph(const AdjacencyLists& adj);
 // Returns true if the graph was a DAG, and outputs the topological order in
 // "topological_order". Returns false if the graph is cyclic, and outputs the
 // detected cycle in "cycle".
+//
+// TODO(user): Migrate users to GenericGraph + FastTopologicalSort.
 template <typename T>
 ABSL_MUST_USE_RESULT bool TopologicalSort(
     const std::vector<T>& nodes, const std::vector<std::pair<T, T>>& arcs,

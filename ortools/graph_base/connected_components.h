@@ -227,12 +227,10 @@ class ConnectedComponentsFinder {
   //  - The second one populates the result, and stores each component in a set.
   //
   // RECOMMENDED:
-  // const std::vector<std::vector<T>> components =
-  //     FindConnectedComponents(NodeOrderInsideComponent::kInsertionOrder);
+  // const std::vector<std::vector<T>> components = FindConnectedComponents();
   std::vector<std::vector<T>> FindConnectedComponents(
-      // TODO(b/518640449): change default to kInsertionOrder.
       NodeOrderInsideComponent node_order_inside_component =
-          NodeOrderInsideComponent::kByValue);
+          NodeOrderInsideComponent::kInsertionOrder);
   template <typename SetT>
   void FindConnectedComponents(std::vector<SetT>* components) {
     const auto component_ids = delegate_.GetComponentIds();
