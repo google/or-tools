@@ -151,12 +151,12 @@ if(BUILD_Protobuf)
   FetchContent_Declare(
     Protobuf
     GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
-    GIT_TAG "v33.1"
+    GIT_TAG "v35.1"
     GIT_SHALLOW TRUE
     GIT_SUBMODULES ""
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v33.1.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v35.1.patch"
     OVERRIDE_FIND_PACKAGE # Make package visible for "protobuf-matchers" below
     SYSTEM
   )
@@ -271,9 +271,9 @@ if(BUILD_PYTHON)
       GIT_REPOSITORY "https://github.com/pybind/pybind11_protobuf.git"
       GIT_TAG "f02a2b7653bc50eb5119d125842a3870db95d251" # 2025/02/10
       #GIT_SHALLOW TRUE
-      #UPDATE_COMMAND git reset --hard
-      #PATCH_COMMAND git apply --ignore-whitespace
-      #"${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11_protobuf.patch"
+      UPDATE_COMMAND git reset --hard
+      PATCH_COMMAND git apply --ignore-whitespace
+      "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11_protobuf.patch"
       SYSTEM
     )
     FetchContent_MakeAvailable(pybind11_protobuf)
