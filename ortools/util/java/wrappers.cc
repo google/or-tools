@@ -425,7 +425,7 @@ class Generator {
       absl::SubstituteAndAppend(
           &out_,
           "%javamethodmodifiers RepeatedField_$0::append($1 value) "
-          "\"  "
+          "\"@com.google.errorprone.annotations.CanIgnoreReturnValue\\n  "
           "public\";\n",
           clean_name, scalar);
 
@@ -472,7 +472,7 @@ class Generator {
         &out_,
         "%javamethodmodifiers RepeatedPtrField_string::append(const "
         "std::string& value) "
-        "\"  "
+        "\"@com.google.errorprone.annotations.CanIgnoreReturnValue\\n  "
         "public\";\n");
 
     // 2. Non-template classes for repeated fields (for SWIG).
@@ -714,7 +714,7 @@ class RepeatedPtrField_string {
     long cPtr = $$jnicall;
     return this instanceof $5.Builder ? ($5.Builder)this : new $5.Builder(cPtr, false);
   }
-  %javamethodmodifiers add$1(const $3& value) "public";
+  %javamethodmodifiers add$1(const $3& value) "@com.google.errorprone.annotations.CanIgnoreReturnValue\n  public";
   $4* add$1(const $3& value) {
     *$$self->add_$2() = value;
     return $$self;
@@ -748,7 +748,7 @@ class RepeatedPtrField_string {
     long cPtr = $$jnicall;
     return this instanceof $3.Builder ? ($3.Builder)this : new $3.Builder(cPtr, false);
   }
-  %javamethodmodifiers add$0(const std::string& value) "public";
+  %javamethodmodifiers add$0(const std::string& value) "@com.google.errorprone.annotations.CanIgnoreReturnValue\n  public";
   $2* add$0(const std::string& value) {
     $$self->add_$1(value);
     return $$self;
@@ -779,7 +779,7 @@ class RepeatedPtrField_string {
     long cPtr = $$jnicall;
     return this instanceof $5.Builder ? ($5.Builder)this : new $5.Builder(cPtr, false);
   }
-  %javamethodmodifiers add$1($3 value) "public";
+  %javamethodmodifiers add$1($3 value) "@com.google.errorprone.annotations.CanIgnoreReturnValue\n  public";
   $4* add$1($3 value) {
     $$self->add_$2(value);
     return $$self;
@@ -800,7 +800,7 @@ class RepeatedPtrField_string {
   $0* get$1Builder() {
     return $$self->mutable_$2();
   }
-  %javamethodmodifiers mutable$1() "public";
+  %javamethodmodifiers mutable$1() "@com.google.errorprone.annotations.CanIgnoreReturnValue\n  public";
   $0* mutable$1() {
     return $$self->mutable_$2();
   }
@@ -809,7 +809,7 @@ class RepeatedPtrField_string {
     long cPtr = $$jnicall;
     return this instanceof $4.Builder ? ($4.Builder)this : new $4.Builder(cPtr, false);
   }
-  %javamethodmodifiers set$1(const $0& value) "public";
+  %javamethodmodifiers set$1(const $0& value) "@com.google.errorprone.annotations.CanIgnoreReturnValue\n  public";
   $3* set$1(const $0& value) {
     *$$self->mutable_$2() = value;
     return $$self;
@@ -827,7 +827,7 @@ class RepeatedPtrField_string {
     long cPtr = $$jnicall;
     return this instanceof $4.Builder ? ($4.Builder)this : new $4.Builder(cPtr, false);
   }
-  %javamethodmodifiers set$1($0 val) "public";
+  %javamethodmodifiers set$1($0 val) "@com.google.errorprone.annotations.CanIgnoreReturnValue\n  public";
   $3* set$1($0 val) {
     $$self->set_$2(val);
     return $$self;
