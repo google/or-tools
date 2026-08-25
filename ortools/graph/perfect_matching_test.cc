@@ -130,13 +130,10 @@ TEST_P(MacholWienTest, SolveHardProblem) {
 
 // Even with -c opt, a 1000x1000 Machol-Wien problem currently takes too long to
 // solve.
-#ifdef NDEBUG
-INSTANTIATE_TEST_SUITE_P(MacholWienProblems, MacholWienTest,
-                         ::testing::Values(10, 50, 100, 200));
-#else
-INSTANTIATE_TEST_SUITE_P(MacholWienProblems, MacholWienTest,
-                         ::testing::Values(10, 50));
-#endif
+INSTANTIATE_TEST_SUITE_P(
+    MacholWienProblems, MacholWienTest,
+    ::testing::ValuesIn(DEBUG_MODE ? std::vector<int>(10, 50)
+                                   : std::vector<int>{10, 50, 100, 200}));
 
 using NodeIndex = BlossomGraph::NodeIndex;
 using EdgeIndex = BlossomGraph::EdgeIndex;

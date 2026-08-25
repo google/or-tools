@@ -42,6 +42,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
@@ -2107,14 +2108,14 @@ PathCumulFilter::PathCumulFilter(const Model& routing_model,
       current_offset = std::max(current_offset, offset);
     }
   }
-#ifndef NDEBUG
-  for (int vehicle = 0; vehicle < routing_model.vehicles(); vehicle++) {
-    if (FilterWithDimensionCumulOptimizerForVehicle(vehicle)) {
-      DCHECK_NE(lp_optimizer_, nullptr);
-      DCHECK_NE(mp_optimizer_, nullptr);
+  if constexpr (DEBUG_MODE) {
+    for (int vehicle = 0; vehicle < routing_model.vehicles(); vehicle++) {
+      if (FilterWithDimensionCumulOptimizerForVehicle(vehicle)) {
+        DCHECK_NE(lp_optimizer_, nullptr);
+        DCHECK_NE(mp_optimizer_, nullptr);
+      }
     }
   }
-#endif  // NDEBUG
 }
 
 bool PathCumulFilter::PropagateTransitsAndSpans(int path) {

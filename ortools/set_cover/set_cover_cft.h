@@ -173,11 +173,11 @@ class SubmodelSolution {
 
   // Returns the list of subsets in the solution.
   const std::vector<FullModelSubsetIndex>& subsets() const {
-#ifndef NDEBUG
-    for (FullModelSubsetIndex v : subsets_) {
-      DCHECK_GE(v, FullModelSubsetIndex(0));
+    if constexpr (DEBUG_MODE) {
+      for (FullModelSubsetIndex v : subsets_) {
+        DCHECK_GE(v, FullModelSubsetIndex(0));
+      }
     }
-#endif
     return subsets_;
   }
 
@@ -234,11 +234,11 @@ class DualState {
 
   // Returns the Lagrangian multiplier vectors.
   const ElementCostVector& multipliers() const {
-#ifndef NDEBUG
-    for (Cost m : multipliers_) {
-      DCHECK_GE(m, 0.0);
+    if constexpr (DEBUG_MODE) {
+      for (Cost m : multipliers_) {
+        DCHECK_GE(m, 0.0);
+      }
     }
-#endif
     return multipliers_;
   }
 

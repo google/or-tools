@@ -33,6 +33,7 @@
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "ortools/base/base_export.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/macros/buildenv.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/types.h"

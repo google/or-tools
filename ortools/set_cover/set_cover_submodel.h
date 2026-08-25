@@ -20,6 +20,7 @@
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_model.h"
 #include "ortools/set_cover/set_cover_views.h"
@@ -142,11 +143,11 @@ class SubmodelView : public FocusModelView {
                           const ElementCostVector& best_multipliers,
                           const SubmodelSolution& best_solution, bool force) {
     DCHECK_GE(best_lower_bound, 0.0);
-#ifndef NDEBUG
-    for (const Cost m : best_multipliers) {
-      DCHECK_GE(m, 0.0);
+    if constexpr (DEBUG_MODE) {
+      for (const Cost m : best_multipliers) {
+        DCHECK_GE(m, 0.0);
+      }
     }
-#endif
     (void)best_lower_bound;
     (void)best_multipliers;
     (void)best_solution;
@@ -313,11 +314,11 @@ class CoreModel : public SetCoverModel {
                           const ElementCostVector& best_multipliers,
                           const SubmodelSolution& best_solution, bool force) {
     DCHECK_GE(best_lower_bound, 0.0);
-#ifndef NDEBUG
-    for (const Cost m : best_multipliers) {
-      DCHECK_GE(m, 0.0);
+    if constexpr (DEBUG_MODE) {
+      for (const Cost m : best_multipliers) {
+        DCHECK_GE(m, 0.0);
+      }
     }
-#endif
     (void)best_lower_bound;
     (void)best_multipliers;
     (void)best_solution;

@@ -40,6 +40,7 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/iterator_adaptors.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
@@ -1788,15 +1789,15 @@ bool LinKernighan<ignore_path_vars>::MakeNeighbor() {
     const bool success = this->ReverseChain(base, out, &chain_last) ||
                          this->ReverseChain(out, base, &chain_last);
     if (!success) {
-#ifndef NDEBUG
-      LOG(ERROR) << "ReverseChain failed: " << base << " " << out;
-      for (int node = this->StartNode(0); !this->IsPathEnd(node);
-           node = this->Next(node)) {
+      if constexpr (DEBUG_MODE) {
+        LOG(ERROR) << "ReverseChain failed: " << base << " " << out;
+        for (int node = this->StartNode(0); !this->IsPathEnd(node);
+             node = this->Next(node)) {
+          LOG(ERROR) << "node: " << node;
+        }
         LOG(ERROR) << "node: " << node;
+        DCHECK(false);
       }
-      LOG(ERROR) << "node: " << node;
-      DCHECK(false);
-#endif
     }
     const int64_t in_cost = evaluator_(base, chain_last, path);
     const int64_t out_cost = evaluator_(chain_last, out, path);

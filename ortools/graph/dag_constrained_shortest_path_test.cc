@@ -28,6 +28,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/graph_base/graph.h"
 #include "ortools/graph_base/io.h"
 #include "ortools/math_opt/cpp/math_opt.h"
@@ -667,8 +668,8 @@ TEST(ConstrainedShortestPathsOnDagWrapperTest,
 // -----------------------------------------------------------------------------
 // Debug tests.
 // -----------------------------------------------------------------------------
-#ifndef NDEBUG
 TEST(ConstrainedShortestPathOnDagTest, MinusInfWeight) {
+  if constexpr (!DEBUG_MODE) GTEST_SKIP() << "Skip in opt mode";
   const int source = 0;
   const int destination = 1;
   const int num_nodes = 2;
@@ -682,6 +683,7 @@ TEST(ConstrainedShortestPathOnDagTest, MinusInfWeight) {
 }
 
 TEST(ConstrainedShortestPathOnDagTest, NaNWeight) {
+  if constexpr (!DEBUG_MODE) GTEST_SKIP() << "Skip in opt mode";
   const int source = 0;
   const int destination = 1;
   const int num_nodes = 2;
@@ -695,6 +697,7 @@ TEST(ConstrainedShortestPathOnDagTest, NaNWeight) {
 }
 
 TEST(ConstrainedShortestPathOnDagTest, InfResource) {
+  if constexpr (!DEBUG_MODE) GTEST_SKIP() << "Skip in opt mode";
   const int source = 0;
   const int destination = 1;
   const int num_nodes = 2;
@@ -708,6 +711,7 @@ TEST(ConstrainedShortestPathOnDagTest, InfResource) {
 }
 
 TEST(ConstrainedShortestPathOnDagTest, NegativeMaxResource) {
+  if constexpr (!DEBUG_MODE) GTEST_SKIP() << "Skip in opt mode";
   const int source = 0;
   const int destination = 1;
   const int num_nodes = 2;
@@ -721,6 +725,7 @@ TEST(ConstrainedShortestPathOnDagTest, NegativeMaxResource) {
 }
 
 TEST(ConstrainedShortestPathsOnDagWrapperTest, ValidateTopologicalOrder) {
+  if constexpr (!DEBUG_MODE) GTEST_SKIP() << "Skip in opt mode";
   const int source = 0;
   const int destination = 1;
   const int num_nodes = 2;
@@ -741,7 +746,6 @@ TEST(ConstrainedShortestPathsOnDagWrapperTest, ValidateTopologicalOrder) {
                    sources, destinations, &max_resources),
                "Invalid topological order");
 }
-#endif  // NDEBUG
 
 }  // namespace
 }  // namespace operations_research

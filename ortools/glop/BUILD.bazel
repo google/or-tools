@@ -418,6 +418,7 @@ cc_library(
         ":update_row",
         ":variable_values",
         ":variables_info",
+        "//ortools/base:log_severity",
         "//ortools/base:strong_vector",
         "//ortools/graph_base:iterators",
         "//ortools/lp_data",
@@ -699,6 +700,7 @@ cc_test(
     deps = [
         ":lp_solver",
         "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
         "//ortools/lp_data",
         "//ortools/lp_data:lp_parser",
         "//ortools/lp_data:lp_test_utils",

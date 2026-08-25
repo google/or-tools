@@ -25,6 +25,7 @@
 #include "absl/random/random.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/lp_data/lp_test_utils.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
@@ -1106,8 +1107,8 @@ TEST(TriangularMatrixTest, RandomTriangularSolvesWithDiagonalOfOne) {
   }
 }
 
-#ifndef NDEBUG
 TEST(TriangularMatrixDeathTest, NonTriangularMatrix) {
+  if constexpr (!DEBUG_MODE) GTEST_SKIP() << "Skip in opt mode";
   // The matrix is the 2x2 all ones matrix.
   TriangularMatrix matrix;
   SparseColumn column;
@@ -1127,7 +1128,6 @@ TEST(TriangularMatrixDeathTest, NonTriangularMatrix) {
                                                     &rows, &rows),
                "");
 }
-#endif
 
 TEST(TriangularMatrixTest, InverseInfinityNormOfIdentity) {
   const ColIndex kNumCols(10);

@@ -22,6 +22,7 @@
 #include "absl/time/time.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover.pb.h"
 #include "ortools/set_cover/set_cover_cft.h"
@@ -154,11 +155,7 @@ TEST(SolutionProtoTest, SaveReloadTwice) {
   EXPECT_TRUE(inv.CheckConsistency(CL::kRedundancy));
 }
 
-#ifdef NDEBUG
-static constexpr int SIZE = 128;
-#else
-static constexpr int SIZE = 16;
-#endif
+static constexpr int SIZE = DEBUG_MODE ? 16 : 128;
 
 TEST(SetCoverTest, KnightsCoverCreation) {
   SetCoverModel model = KnightsCover(SIZE, SIZE).model();
@@ -258,11 +255,7 @@ TEST(SetCoverTest, KnightsCoverTrivial) {
 }
 
 TEST(SetCoverTest, KnightsCoverGreedyAndTabu) {
-#ifdef NDEBUG
-  constexpr int BoardSize = 50;
-#else
-  constexpr int BoardSize = 15;
-#endif
+  constexpr int BoardSize = DEBUG_MODE ? 15 : 50;
   KnightsCover knights(BoardSize, BoardSize);
   SetCoverModel model = knights.model();
   SetCoverInvariant inv(&model);
@@ -284,11 +277,7 @@ TEST(SetCoverTest, KnightsCoverGreedyAndTabu) {
 }
 
 TEST(SetCoverTest, KnightsCoverGreedyRandomClear) {
-#ifdef NDEBUG
-  constexpr int BoardSize = 50;
-#else
-  constexpr int BoardSize = 15;
-#endif
+  constexpr int BoardSize = DEBUG_MODE ? 15 : 50;
   KnightsCover knights(BoardSize, BoardSize);
   SetCoverModel model = knights.model();
   SetCoverInvariant inv(&model);
@@ -373,11 +362,7 @@ TEST(SetCoverTest, KnightsCoverCliqueGuidedLNS) {
 }
 
 TEST(SetCoverTest, KnightsCoverElementDegreeRandomClear) {
-#ifdef NDEBUG
-  constexpr int BoardSize = 50;
-#else
-  constexpr int BoardSize = 15;
-#endif
+  constexpr int BoardSize = DEBUG_MODE ? 15 : 50;
   KnightsCover knights(BoardSize, BoardSize);
   SetCoverModel model = knights.model();
   SetCoverInvariant inv(&model);
@@ -414,11 +399,7 @@ TEST(SetCoverTest, KnightsCoverElementDegreeRandomClear) {
 }
 
 TEST(SetCoverTest, KnightsCoverElementDegreeRadiusClear) {
-#ifdef NDEBUG
-  constexpr int BoardSize = 50;
-#else
-  constexpr int BoardSize = 15;
-#endif
+  constexpr int BoardSize = DEBUG_MODE ? 15 : 50;
   KnightsCover knights(BoardSize, BoardSize);
   SetCoverModel model = knights.model();
   SetCoverInvariant inv(&model);
@@ -464,11 +445,7 @@ TEST(SetCoverTest, KnightsCoverElementDegreeRadiusClear) {
 }
 
 TEST(SetCoverTest, DISABLED_KnightsCoverRandomClearMip) {
-#ifdef NDEBUG
-  constexpr int BoardSize = 50;
-#else
-  constexpr int BoardSize = 15;
-#endif
+  constexpr int BoardSize = DEBUG_MODE ? 15 : 50;
   KnightsCover knights(BoardSize, BoardSize);
   SetCoverModel model = knights.model();
   SetCoverInvariant inv(&model);
@@ -500,11 +477,7 @@ TEST(SetCoverTest, DISABLED_KnightsCoverRandomClearMip) {
 }
 
 TEST(SetCoverTest, KnightsCoverMip) {
-#ifdef NDEBUG
-  constexpr int BoardSize = 50;
-#else
-  constexpr int BoardSize = 15;
-#endif
+  constexpr int BoardSize = DEBUG_MODE ? 15 : 50;
   KnightsCover knights(BoardSize, BoardSize);
   SetCoverModel model = knights.model();
   SetCoverInvariant inv(&model);
@@ -519,11 +492,7 @@ TEST(SetCoverTest, KnightsCoverMip) {
 }
 
 TEST(SetCoverTest, KnightsCoverCft) {
-#ifdef NDEBUG
-  constexpr int BoardSize = 50;
-#else
-  constexpr int BoardSize = 15;
-#endif
+  constexpr int BoardSize = DEBUG_MODE ? 15 : 50;
   KnightsCover knights(BoardSize, BoardSize);
   SetCoverModel model = knights.model();
   SetCoverInvariant inv(&model);
