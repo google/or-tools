@@ -2782,6 +2782,18 @@ TRFM"""
         self.assertTrue(hasattr(model_deepcopy, "AddBoolXOr"))
         self.assertTrue(hasattr(model_deepcopy, "AddNoOverlap2D"))
 
+    def test_issue_5301(self):
+        model = cp_model.CpModel()
+        x = model.new_int_var(0, 10, "x")
+        model.add(x >= 5)
+
+        solver = cp_model.CpSolver()
+        # Changing this to 1 works. Any value >= 2 causes a permanent hang.
+        solver.parameters.num_search_workers = 8
+
+        status = solver.solve(model)
+        self.assertEqual(status, cp_model.OPTIMAL)
+
 
 if __name__ == "__main__":
     absltest.main()
