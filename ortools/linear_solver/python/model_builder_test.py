@@ -2574,6 +2574,29 @@ class ModelBuilderExamplesTest(absltest.TestCase):
         prod3 = 2 * x * 0.0
         self.assertEqual(repr(prod3), "FixedValue(0)")
 
+    def testIssue3502a(self):
+        m = mb.Model()
+        x = m.new_bool_var("x")
+        y = m.new_num_var(0.0, 10.0, "y")
+        ct = m.add_enforced_linear_constraint(y, x, True, lb=0.0, ub=3.0, name="enf")
+        self.assertEqual(ct.name, "enf")
+        self.assertEqual(ct.lower_bound, 0.0)
+        self.assertEqual(ct.upper_bound, 3.0)
+        self.assertEqual(ct.indicator_variable.index, x.index)
+        self.assertTrue(ct.indicator_value)
+
+    def testIssue3502b(self):
+        m = mb.Model()
+        yy = m.new_num_var(0.0, 10.0, "y")
+        w = m.new_num_var(0.0, 10.0, "w")
+        z = m.new_bool_var("z")
+        m.add_linear_constraint(yy, ub=2.0, name="cap")
+        m.add_enforced_linear_constraint(w, z, True, ub=3.0, name="ind")
+        m.maximize(yy)
+        s = mb.Solver("sat")
+        self.assertEqual(s.solve(m), mb.SolveStatus.OPTIMAL)
+        self.assertEqual(s.objective_value, 2.0)
+
 
 if __name__ == "__main__":
     absltest.main()

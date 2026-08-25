@@ -54,13 +54,12 @@ class PyWrapLp(unittest.TestCase):
         error = solver.LoadModelFromProto(input_proto)
         self.assertEqual(error, "")
         solver.Solve()
-        # Fill response
-        response = linear_solver_pb2.MPSolutionResponse()
-        solver.FillSolutionResponseProto(response)
-        self.assertEqual(response.objective_value, 3.0)
-        self.assertEqual(response.variable_value[0], 1.0)
-        self.assertEqual(response.variable_value[1], 1.0)
-        self.assertEqual(response.best_objective_bound, 3.0)
+        # Fill solution
+        solution = solver.FillSolutionResponseProto()
+        self.assertEqual(solution.objective_value, 3.0)
+        self.assertEqual(solution.variable_value[0], 1.0)
+        self.assertEqual(solution.variable_value[1], 1.0)
+        self.assertEqual(solution.best_objective_bound, 3.0)
 
     def test_external_api(self):
         solver = pywraplp.Solver.CreateSolver("GLOP")

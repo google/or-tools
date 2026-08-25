@@ -720,7 +720,7 @@ class Model:
         if (
             mbn.is_a_number(lower_bounds)
             and mbn.is_a_number(upper_bounds)
-            and lower_bounds > upper_bounds
+            and lower_bounds > upper_bounds  # pyrefly: ignore[unsupported-operation]
         ):
             raise ValueError(
                 f"lower_bound={lower_bounds} is greater than"
@@ -1000,7 +1000,11 @@ class Model:
         """
         if isinstance(ct, mbh.BoundedLinearExpression):
             return _add_enforced_linear_constraint_to_helper(
-                ct, self.__helper, var, value, name
+                ct,
+                self.__helper,
+                var,
+                value,
+                name,  # pyrefly: ignore[bad-argument-type]
             )
         elif (
             isinstance(ct, bool)
@@ -1241,7 +1245,7 @@ class Solver:
         if not self.__solve_helper.has_solution():
             return pd.NA
         if mbn.is_a_number(expr):
-            return expr
+            return expr  # pyrefly: ignore[bad-return]
         elif isinstance(expr, LinearExpr):
             return self.__solve_helper.expression_value(expr)
         else:
