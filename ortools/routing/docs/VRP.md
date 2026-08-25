@@ -13,10 +13,10 @@ Solution:
 
 Samples:
 
-*   [vrp.cc](/ortools/constraint_solver/samples/vrp.cc)
-*   [vrp.py](/ortools/constraint_solver/samples/vrp.py)
+*   [vrp.cc](/ortools/routing/samples/vrp.cc)
+*   [vrp.py](/ortools/routing/samples/vrp.py)
 *   [Vrp.java](/ortools/routing/samples/java/Vrp.java)
-*   [Vrp.cs](/ortools/constraint_solver/samples/Vrp.cs)
+*   [Vrp.cs](/ortools/routing/samples/Vrp.cs)
 
 ## Global Span Constraints
 Data Problem:
@@ -27,10 +27,10 @@ Solution:
 
 Samples:
 
-*   [vrp_global_span.cc](/ortools/constraint_solver/samples/vrp_global_span.cc)
-*   [vrp_global_span.py](/ortools/constraint_solver/samples/vrp_global_span.py)
+*   [vrp_global_span.cc](/ortools/routing/samples/vrp_global_span.cc)
+*   [vrp_global_span.py](/ortools/routing/samples/vrp_global_span.py)
 *   [VrpGlobalSpan.java](/ortools/routing/samples/java/VrpGlobalSpan.java)
-*   [VrpGlobalSpan.cs](/ortools/constraint_solver/samples/VrpGlobalSpan.cs)
+*   [VrpGlobalSpan.cs](/ortools/routing/samples/VrpGlobalSpan.cs)
 
 ## Capacity Constraints
 Data Problem:
@@ -41,10 +41,10 @@ Solution:
 
 Samples:
 
-*   [vrp_capacity.cc](/ortools/constraint_solver/samples/vrp_capacity.cc)
-*   [vrp_capacity.py](/ortools/constraint_solver/samples/vrp_capacity.py)
+*   [vrp_capacity.cc](/ortools/routing/samples/vrp_capacity.cc)
+*   [vrp_capacity.py](/ortools/routing/samples/vrp_capacity.py)
 *   [VrpCapacity.java](/ortools/routing/samples/java/VrpCapacity.java)
-*   [VrpCapacity.cs](/ortools/constraint_solver/samples/VrpCapacity.cs)
+*   [VrpCapacity.cs](/ortools/routing/samples/VrpCapacity.cs)
 
 ## Drop Nodes Constraints
 Data Problem:
@@ -55,10 +55,10 @@ Solution:
 
 Samples:
 
-*   [vrp_drop_nodes.cc](/ortools/constraint_solver/samples/vrp_drop_nodes.cc)
-*   [vrp_drop_nodes.py](/ortools/constraint_solver/samples/vrp_drop_nodes.py)
+*   [vrp_drop_nodes.cc](/ortools/routing/samples/vrp_drop_nodes.cc)
+*   [vrp_drop_nodes.py](/ortools/routing/samples/vrp_drop_nodes.py)
 *   [VrpDropNodes.java](/ortools/routing/samples/java/VrpDropNodes.java)
-*   [VrpDropNodes.cs](/ortools/constraint_solver/samples/VrpDropNodes.cs)
+*   [VrpDropNodes.cs](/ortools/routing/samples/VrpDropNodes.cs)
 
 ## Multiple Starts Ends
 Data Problem:
@@ -69,10 +69,10 @@ Solution:
 
 Samples:
 
-*   [vrp_starts_ends.cc](/ortools/constraint_solver/samples/vrp_starts_ends.cc)
-*   [vrp_starts_ends.py](/ortools/constraint_solver/samples/vrp_starts_ends.py)
+*   [vrp_starts_ends.cc](/ortools/routing/samples/vrp_starts_ends.cc)
+*   [vrp_starts_ends.py](/ortools/routing/samples/vrp_starts_ends.py)
 *   [VrpStartsEnds.java](/ortools/routing/samples/java/VrpStartsEnds.java)
-*   [VrpStartsEnds.cs](/ortools/constraint_solver/samples/VrpStartsEnds.cs)
+*   [VrpStartsEnds.cs](/ortools/routing/samples/VrpStartsEnds.cs)
 
 ## Time Window Constraints
 Data Problem:
@@ -83,10 +83,10 @@ Solution:
 
 Samples:
 
-*   [vrp_time_windows.cc](/ortools/constraint_solver/samples/vrp_time_windows.cc)
-*   [vrp_time_windows.py](/ortools/constraint_solver/samples/vrp_time_windows.py)
+*   [vrp_time_windows.cc](/ortools/routing/samples/vrp_time_windows.cc)
+*   [vrp_time_windows.py](/ortools/routing/samples/vrp_time_windows.py)
 *   [VrpTimeWindows.java](/ortools/routing/samples/java/VrpTimeWindows.java)
-*   [VrpTimeWindows.cs](/ortools/constraint_solver/samples/VrpTimeWindows.cs)
+*   [VrpTimeWindows.cs](/ortools/routing/samples/VrpTimeWindows.cs)
 
 ## Resource Constraints
 Data Problem:
@@ -97,7 +97,7 @@ Solution:
 
 Samples:
 
-*   [vrp_resources.cc](/ortools/constraint_solver/samples/vrp_resources.cc)
-*   [vrp_resources.py](/ortools/constraint_solver/samples/vrp_resources.py)
+*   [vrp_resources.cc](/ortools/routing/samples/vrp_resources.cc)
+*   [vrp_resources.py](/ortools/routing/samples/vrp_resources.py)
 *   [VrpResources.java](/ortools/routing/samples/java/VrpResources.java)
-*   [VrpResources.cs](/ortools/constraint_solver/samples/VrpResources.cs)
+*   [VrpResources.cs](/ortools/routing/samples/VrpResources.cs)

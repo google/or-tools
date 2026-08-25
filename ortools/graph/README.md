@@ -215,5 +215,5 @@ You can find some canonical examples in [`samples`][samples].
 [linear_assignment_h]: /ortools/graph/linear_assignment.h
 [max_flow_h]: /ortools/graph/max_flow.h
 [min_cost_flow_h]: /ortools/graph/min_cost_flow.h
-[samples]: ../graph/samples/
+[samples]: /ortools/graph/samples/
 [graph]: /ortools/graph_base/

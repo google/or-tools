@@ -78,7 +78,7 @@ for graphs with millions of nodes and fewer than 10 resources.
 
 Below, we give an example showing how to solve a constrained shortest path
 problem on a DAG. This example can be found at
-[`dag_simple_constrained_shortest_path.cc`](../samples/dag_simple_constrained_shortest_path.cc).
+[`dag_simple_constrained_shortest_path.cc`](/ortools/graph/samples/dag_simple_constrained_shortest_path.cc).
 
 In this problem, our goal is to find the shortest path from 0 to 3 (shown in
 bold red in the image) and its total length while making sure that the
@@ -109,7 +109,7 @@ and uses $$6 \leqslant L_1$$ of the first resource and $$3 \leqslant L_2$$ of
 the second resource.
 
 We solve this using `ConstrainedShortestPathsOnDag()` from
-[`dag_constrained_shortest_path.h`](../dag_constrained_shortest_path.h)
+[`dag_constrained_shortest_path.h`](/ortools/graph/dag_constrained_shortest_path.h)
 below:
 
 ```cpp
@@ -168,7 +168,7 @@ constraints have changed*, we can do better than just calling
 each run. Below, we give an example of how to do this.
 
 The code for this example can be found at
-[`dag_constrained_shortest_path_sequential.cc`](../samples/dag_constrained_shortest_path_sequential.cc).
+[`dag_constrained_shortest_path_sequential.cc`](/ortools/graph/samples/dag_constrained_shortest_path_sequential.cc).
 
 We have the following DAG:
 

@@ -134,7 +134,7 @@ juliaortools/julia/ORToolsGenerated.jl/scripts/gen_pb.jl
 ```
 
 2.  Update the package metadata
-    [`Project.toml`](../ORToolsGenerated.jl/Project.toml)
+    [`Project.toml`](/ortools/julia/ORToolsGenerated.jl/Project.toml)
     to bump its version (only update the `version` field). Use good judgment and
     try to follow [SemVer](https://semver.org/) when picking a new version.
 3.  Upload the updated code to GitHub in the
