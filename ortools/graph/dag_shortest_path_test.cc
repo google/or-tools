@@ -29,6 +29,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph_base/graph.h"
@@ -564,8 +565,8 @@ TEST(ShortestPathsOnDagWrapperTest, RandomizedStressTest) {
 }
 
 // Debug tests.
-#ifndef NDEBUG
 TEST(ShortestPathOnDagTest, MinusInfWeight) {
+  if constexpr (!DEBUG_MODE) GTEST_SKIP() << "Skip in opt mode";
   EXPECT_DEATH(
       ShortestPathsOnDag(/*num_nodes=*/2, /*arcs_with_length=*/{{0, 1, -kInf}},
                          /*source=*/0, /*destination=*/1),
@@ -573,6 +574,7 @@ TEST(ShortestPathOnDagTest, MinusInfWeight) {
 }
 
 TEST(ShortestPathOnDagTest, NaNWeight) {
+  if constexpr (!DEBUG_MODE) GTEST_SKIP() << "Skip in opt mode";
   EXPECT_DEATH(
       ShortestPathsOnDag(/*num_nodes=*/2, /*arcs_with_length=*/
                          {{0, 1, std::numeric_limits<double>::quiet_NaN()}},
@@ -581,6 +583,7 @@ TEST(ShortestPathOnDagTest, NaNWeight) {
 }
 
 TEST(ShortestPathsOnDagWrapperTest, ValidateTopologicalOrder) {
+  if constexpr (!DEBUG_MODE) GTEST_SKIP() << "Skip in opt mode";
   const int source = 0;
   const int destination = 1;
   const int num_nodes = 2;
@@ -594,7 +597,6 @@ TEST(ShortestPathsOnDagWrapperTest, ValidateTopologicalOrder) {
                    &graph, &arc_lengths, topological_order),
                "Invalid topological order");
 }
-#endif  // NDEBUG
 
 // -----------------------------------------------------------------------------
 // KShortestPathOnDagTest and KShortestPathsOnDagWrapperTest.
@@ -1091,8 +1093,8 @@ TEST(KShortestPathsOnDagWrapperTest, RandomizedStressTest) {
 }
 
 // Debug tests.
-#ifndef NDEBUG
 TEST(KShortestPathOnDagTest, MinusInfWeight) {
+  if constexpr (!DEBUG_MODE) GTEST_SKIP() << "Skip in opt mode";
   EXPECT_DEATH(
       KShortestPathsOnDag(/*num_nodes=*/2, /*arcs_with_length=*/{{0, 1, -kInf}},
                           /*source=*/0, /*destination=*/1, /*path_count=*/2),
@@ -1100,6 +1102,7 @@ TEST(KShortestPathOnDagTest, MinusInfWeight) {
 }
 
 TEST(KShortestPathOnDagTest, NaNWeight) {
+  if constexpr (!DEBUG_MODE) GTEST_SKIP() << "Skip in opt mode";
   EXPECT_DEATH(
       KShortestPathsOnDag(/*num_nodes=*/2, /*arcs_with_length=*/
                           {{0, 1, std::numeric_limits<double>::quiet_NaN()}},
@@ -1108,6 +1111,7 @@ TEST(KShortestPathOnDagTest, NaNWeight) {
 }
 
 TEST(KShortestPathsOnDagWrapperTest, ValidateTopologicalOrder) {
+  if constexpr (!DEBUG_MODE) GTEST_SKIP() << "Skip in opt mode";
   const int source = 0;
   const int destination = 1;
   const int num_nodes = 2;
@@ -1122,7 +1126,6 @@ TEST(KShortestPathsOnDagWrapperTest, ValidateTopologicalOrder) {
                    &graph, &arc_lengths, topological_order, path_count),
                "Invalid topological order");
 }
-#endif  // NDEBUG
 
 TEST(ShortestPathOnDagIncrementalTest, ChangeSources) {
   util::ListGraph<> graph(4, /*arc_capacity=*/4);

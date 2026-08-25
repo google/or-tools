@@ -14,8 +14,11 @@
 #ifndef ORTOOLS_UTIL_TESTING_UTILS_H_
 #define ORTOOLS_UTIL_TESTING_UTILS_H_
 
+#include "ortools/base/log_severity.h"
+
 namespace operations_research {
 
+inline constexpr bool kDebugMode = false;
 inline constexpr bool kAsanEnabled = false;
 inline constexpr bool kHwAsanEnabled = false;
 inline constexpr bool kMsanEnabled = false;

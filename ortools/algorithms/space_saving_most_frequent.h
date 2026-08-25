@@ -25,6 +25,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/hash/hash.h"
 #include "absl/log/check.h"
+#include "ortools/base/log_severity.h"
 
 namespace operations_research {
 
@@ -179,18 +180,18 @@ SpaceSavingMostFrequent<T, Hash, Eq>::SpaceSavingMostFrequent(int storage_size)
 // destruction.
 template <typename T, typename Hash, typename Eq>
 SpaceSavingMostFrequent<T, Hash, Eq>::~SpaceSavingMostFrequent() {
-#ifdef NDEBUG
-  bucket_alloc_.DisposeAll();
-  item_alloc_.DisposeAll();
-#else
-  while (!buckets_.empty()) {
-    auto& items = buckets_.front()->items;
-    while (!items.empty()) {
-      item_alloc_.Return(items.pop_front());
+  if constexpr (!DEBUG_MODE) {
+    bucket_alloc_.DisposeAll();
+    item_alloc_.DisposeAll();
+  } else {
+    while (!buckets_.empty()) {
+      auto& items = buckets_.front()->items;
+      while (!items.empty()) {
+        item_alloc_.Return(items.pop_front());
+      }
+      bucket_alloc_.Return(buckets_.pop_front());
     }
-    bucket_alloc_.Return(buckets_.pop_front());
   }
-#endif
 }
 
 template <typename T, typename Hash, typename Eq>

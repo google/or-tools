@@ -27,6 +27,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
@@ -649,15 +650,16 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
                         break_start_end_values_.end());
     }
     if (optimize_and_pack_) {
-// Resource variables should be bound when packing, so we don't need
-// to restore them again.
-#ifndef NDEBUG
-      for (int rg_index : model->GetDimensionResourceGroupIndices(dimension)) {
-        for (IntVar* res_var : model->ResourceVars(rg_index)) {
-          DCHECK(res_var->Bound());
+      // Resource variables should be bound when packing, so we don't need
+      // to restore them again.
+      if constexpr (DEBUG_MODE) {
+        for (int rg_index :
+             model->GetDimensionResourceGroupIndices(dimension)) {
+          for (IntVar* res_var : model->ResourceVars(rg_index)) {
+            DCHECK(res_var->Bound());
+          }
         }
       }
-#endif
     } else {
       // Add resource values to cp_values_.
       for (int rg_index : model->GetDimensionResourceGroupIndices(dimension)) {

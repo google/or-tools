@@ -33,6 +33,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/types.h"
 #include "ortools/glop/lp_solver.h"
@@ -245,9 +246,9 @@ class LinearSolverWrapper {
     const int reification_ct = AddLinearConstraint(1, 1, {});
     if (kint64min < lower_bound) {
       const int under_lower_bound = AddVariable(0, 1);
-#ifndef NDEBUG
-      SetVariableName(under_lower_bound, "under_lower_bound");
-#endif
+      if constexpr (DEBUG_MODE) {
+        SetVariableName(under_lower_bound, "under_lower_bound");
+      }
       SetCoefficient(reification_ct, under_lower_bound, 1);
       const int under_lower_bound_ct =
           AddLinearConstraint(kint64min, lower_bound - 1, weighted_variables);
@@ -255,18 +256,18 @@ class LinearSolverWrapper {
     }
     if (upper_bound < kint64max) {
       const int above_upper_bound = AddVariable(0, 1);
-#ifndef NDEBUG
-      SetVariableName(above_upper_bound, "above_upper_bound");
-#endif
+      if constexpr (DEBUG_MODE) {
+        SetVariableName(above_upper_bound, "above_upper_bound");
+      }
       SetCoefficient(reification_ct, above_upper_bound, 1);
       const int above_upper_bound_ct =
           AddLinearConstraint(upper_bound + 1, kint64max, weighted_variables);
       SetEnforcementLiteral(above_upper_bound_ct, above_upper_bound);
     }
     const int within_bounds = AddVariable(0, 1);
-#ifndef NDEBUG
-    SetVariableName(within_bounds, "within_bounds");
-#endif
+    if constexpr (DEBUG_MODE) {
+      SetVariableName(within_bounds, "within_bounds");
+    }
     SetCoefficient(reification_ct, within_bounds, 1);
     const int within_bounds_ct =
         AddLinearConstraint(lower_bound, upper_bound, weighted_variables);
@@ -524,10 +525,10 @@ class CPSatWrapper : public LinearSolverWrapper {
     const int ct = CreateNewConstraint(1, 1);
     for (int i = 0; i < starts.size(); ++i) {
       const int variable = CreateNewPositiveVariable();
-#ifndef NDEBUG
-      SetVariableName(variable,
-                      absl::StrFormat("disjoint(%ld, %ld)", index, i));
-#endif
+      if constexpr (DEBUG_MODE) {
+        SetVariableName(variable,
+                        absl::StrFormat("disjoint(%ld, %ld)", index, i));
+      }
       SetVariableBounds(variable, 0, 1);
       SetCoefficient(ct, variable, 1);
       const int window_ct = CreateNewConstraint(starts[i], ends[i]);

@@ -27,6 +27,7 @@
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
+#include "ortools/base/log_severity.h"
 
 namespace operations_research {
 // TODO(b/332475231): extend to non-floating lengths.
@@ -336,16 +337,16 @@ ShortestPathsOnDagWrapper<GraphType, ArcLengths>::ShortestPathsOnDagWrapper(
   CHECK(graph_ != nullptr);
   CHECK(arc_lengths_ != nullptr);
   CHECK_GT(num_nodes, 0) << "The graph is empty: it has no nodes";
-#ifndef NDEBUG
-  CHECK_EQ(typename GraphType::ArcIndex(arc_lengths_->size()),
-           graph_->num_arcs());
-  for (const double arc_length : *arc_lengths_) {
-    CHECK(arc_length != -kInf && !std::isnan(arc_length))
-        << absl::StrFormat("length cannot be -inf nor NaN");
+  if constexpr (DEBUG_MODE) {
+    CHECK_EQ(typename GraphType::ArcIndex(arc_lengths_->size()),
+             graph_->num_arcs());
+    for (const double arc_length : *arc_lengths_) {
+      CHECK(arc_length != -kInf && !std::isnan(arc_length))
+          << absl::StrFormat("length cannot be -inf nor NaN");
+    }
+    CHECK_OK(TopologicalOrderIsValid(*graph_, topological_order_))
+        << "Invalid topological order";
   }
-  CHECK_OK(TopologicalOrderIsValid(*graph_, topological_order_))
-      << "Invalid topological order";
-#endif
 
   // Memory allocation is done here and only once in order to avoid reallocation
   // at each call of `RunShortestPathOnDag()` for better performance.
@@ -457,16 +458,16 @@ KShortestPathsOnDagWrapper<GraphType, ArcLengths>::KShortestPathsOnDagWrapper(
   const size_t num_nodes = static_cast<size_t>(graph_->num_nodes());
   CHECK_GT(num_nodes, 0) << "The graph is empty: it has no nodes";
   CHECK_GT(path_count_, 0) << "path_count must be greater than 0";
-#ifndef NDEBUG
-  CHECK_EQ(typename GraphType::ArcIndex(arc_lengths_->size()),
-           graph_->num_arcs());
-  for (const double arc_length : *arc_lengths_) {
-    CHECK(arc_length != -kInf && !std::isnan(arc_length))
-        << absl::StrFormat("length cannot be -inf nor NaN");
+  if constexpr (DEBUG_MODE) {
+    CHECK_EQ(typename GraphType::ArcIndex(arc_lengths_->size()),
+             graph_->num_arcs());
+    for (const double arc_length : *arc_lengths_) {
+      CHECK(arc_length != -kInf && !std::isnan(arc_length))
+          << absl::StrFormat("length cannot be -inf nor NaN");
+    }
+    CHECK_OK(TopologicalOrderIsValid(*graph_, topological_order_))
+        << "Invalid topological order";
   }
-  CHECK_OK(TopologicalOrderIsValid(*graph_, topological_order_))
-      << "Invalid topological order";
-#endif
 
   // TODO(b/332475713): Optimize if reverse graph is already provided in
   // `GraphType`.
@@ -516,13 +517,13 @@ void KShortestPathsOnDagWrapper<GraphType, ArcLengths>::RunKShortestPathOnDag(
     }
   }
   reached_nodes_.clear();
-#ifndef NDEBUG
-  for (int k = 0; k < path_count_; ++k) {
-    CHECK(std::all_of(lengths_from_sources_[k].begin(),
-                      lengths_from_sources_[k].end(),
-                      [](double l) { return l == kInf; }));
+  if constexpr (DEBUG_MODE) {
+    for (int k = 0; k < path_count_; ++k) {
+      CHECK(std::all_of(lengths_from_sources_[k].begin(),
+                        lengths_from_sources_[k].end(),
+                        [](double l) { return l == kInf; }));
+    }
   }
-#endif
 
   for (const NodeIndex source : sources) {
     CheckNodeIsValid(source, *graph_);

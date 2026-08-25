@@ -39,6 +39,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/initial_basis.h"

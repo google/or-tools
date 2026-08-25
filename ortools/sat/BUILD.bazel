@@ -768,6 +768,7 @@ cc_test(
         ":synchronization",
         ":util",
         "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
         "//ortools/base:parse_test_proto",
         "//ortools/base:types",
         "//ortools/util:random_engine",

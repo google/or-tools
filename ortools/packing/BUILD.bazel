@@ -89,6 +89,7 @@ cc_binary(
         ":vector_bin_packing_parser",
         "//ortools/base",
         "//ortools/base:file",
+        "//ortools/base:log_severity",
         "//ortools/linear_solver",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",

@@ -112,6 +112,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:iterator_adaptors",
+        "//ortools/base:log_severity",
         "//ortools/base:threadpool",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log",
@@ -445,6 +446,7 @@ cc_library(
     deps = [
         ":bounded_dijkstra",
         ":shortest_paths",
+        "//ortools/base:log_severity",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:flat_hash_set",
@@ -875,6 +877,7 @@ cc_test(
         ":dag_constrained_shortest_path",
         "//ortools/base:dump_vars",
         "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
         "//ortools/graph_base:graph",
         "//ortools/graph_base:io",
         "//ortools/math_opt/cpp:math_opt",
@@ -999,6 +1002,7 @@ cc_library(
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
+        "//ortools/base:log_severity",
         "//ortools/graph_base:graph",
         "//ortools/graph_base:topologicalsorter",
         "@abseil-cpp//absl/algorithm:container",
@@ -1020,6 +1024,7 @@ cc_test(
         ":dag_shortest_path",
         "//ortools/base:dump_vars",
         "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
         "//ortools/base:strong_int",
         "//ortools/base:strong_vector",
         "//ortools/graph_base:graph",

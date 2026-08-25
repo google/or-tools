@@ -361,6 +361,7 @@ cc_test(
         ":elements",
         ":symmetry",
         "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
         "//ortools/math_opt/testing:stream",
         "@abseil-cpp//absl/hash:hash_testing",
         "@abseil-cpp//absl/meta:type_traits",

@@ -21,6 +21,7 @@
 #include "absl/strings/substitute.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_parser.h"
 #include "ortools/lp_data/lp_types.h"
@@ -1071,9 +1072,8 @@ TEST(LinearProgramTest, IsValidWithLargeValueThreshold) {
   }
 }
 
-#ifdef NDEBUG
-
 TEST(LinearProgramTest, IsValid) {
+  if constexpr (DEBUG_MODE) GTEST_SKIP() << "Runs only in opt mode";
   LinearProgram linear_program;
   EXPECT_TRUE(linear_program.IsValid());
   const Fractional infinity = std::numeric_limits<double>::infinity();
@@ -1103,26 +1103,28 @@ TEST(LinearProgramTest, IsValid) {
 }
 
 TEST(LinearProgramDeathTest, SolutionIsLPFeasibleDoesNotDieInProd) {
+  if constexpr (DEBUG_MODE) GTEST_SKIP() << "Runs only in opt mode";
   LinearProgram linear_program;
   const Fractional tolerance = 1e-7;
   EXPECT_FALSE(linear_program.SolutionIsLPFeasible({1, 2, 3}, tolerance));
 }
 
 TEST(LinearProgramDeathTest, SolutionIsIntegerDoesNotDieInProd) {
+  if constexpr (DEBUG_MODE) GTEST_SKIP() << "Runs only in opt mode";
   LinearProgram linear_program;
   const Fractional tolerance = 1e-7;
   EXPECT_FALSE(linear_program.SolutionIsInteger({1, 2, 3}, tolerance));
 }
 
 TEST(LinearProgramDeathTest, SolutionIsMIPFeasibleDoesNotDieInProd) {
+  if constexpr (DEBUG_MODE) GTEST_SKIP() << "Runs only in opt mode";
   LinearProgram linear_program;
   const Fractional tolerance = 1e-7;
   EXPECT_FALSE(linear_program.SolutionIsMIPFeasible({1, 2, 3}, tolerance));
 }
 
-#else  // NDEBUG
-
 TEST(LinearProgramDeathTest, IsValid) {
+  if constexpr (!DEBUG_MODE) GTEST_SKIP() << "Skipped in opt mode";
   LinearProgram linear_program;
   EXPECT_TRUE(linear_program.IsValid());
   const Fractional infinity = std::numeric_limits<double>::infinity();
@@ -1152,24 +1154,25 @@ TEST(LinearProgramDeathTest, IsValid) {
 }
 
 TEST(LinearProgramDeathTest, SolutionIsLPFeasibleDiesInDebug) {
+  if constexpr (!DEBUG_MODE) GTEST_SKIP() << "Skipped in opt mode";
   LinearProgram linear_program;
   const Fractional tolerance = 1e-7;
   ASSERT_DEATH(linear_program.SolutionIsLPFeasible({1, 2, 3}, tolerance), "");
 }
 
 TEST(LinearProgramDeathTest, SolutionIsIntegerDiesInDebug) {
+  if constexpr (!DEBUG_MODE) GTEST_SKIP() << "Skipped in opt mode";
   LinearProgram linear_program;
   const Fractional tolerance = 1e-7;
   ASSERT_DEATH(linear_program.SolutionIsInteger({1, 2, 3}, tolerance), "");
 }
 
 TEST(LinearProgramDeathTest, SolutionIsMIPFeasibleDiesInDebug) {
+  if constexpr (!DEBUG_MODE) GTEST_SKIP() << "Skipped in opt mode";
   LinearProgram linear_program;
   const Fractional tolerance = 1e-7;
   ASSERT_DEATH(linear_program.SolutionIsMIPFeasible({1, 2, 3}, tolerance), "");
 }
-
-#endif
 
 TEST(LinearProgramTest, AreBoundsValid) {
   const Fractional infinity = std::numeric_limits<double>::infinity();

@@ -16,6 +16,10 @@
 
 #include "absl/base/log_severity.h"
 
+// NOTE: We use 'const bool' instead of the recommended 'inline constexpr bool'
+// because that keeps us in sync with absl, as of 2026-08, and it still allows
+// users to use 'if constexpr (DEBUG_MODE)'.
+// For more details, see CL history of this comment.
 #ifndef NDEBUG
 const bool DEBUG_MODE = true;
 #else

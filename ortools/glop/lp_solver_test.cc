@@ -26,6 +26,7 @@
 #include "absl/time/time.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_parser.h"
 #include "ortools/lp_data/lp_test_utils.h"
@@ -748,9 +749,8 @@ TEST(LPSolverTest, MoveValuesInTheirBounds) {
 
 // In non-debug mode, it is possible to construct an invalid program.
 // In this case, we test that the LPSolver behaves correctly.
-#ifdef NDEBUG
-
 TEST(LPSolverTest, InvalidInput) {
+  if constexpr (DEBUG_MODE) GTEST_SKIP() << "Runs only in opt mode";
   LinearProgram linear_program;
   EXPECT_TRUE(linear_program.IsValid());
   const Fractional nan = std::numeric_limits<double>::quiet_NaN();
@@ -766,8 +766,6 @@ TEST(LPSolverTest, InvalidInput) {
   EXPECT_THAT(solver.Solve(linear_program),
               SolveStatusWith<SolveStatus::InvalidProblem>(_));
 }
-
-#endif
 
 TEST(LPSolverTest, WriteToProtoFile) {
   const std::string kLinearProgram =
@@ -817,9 +815,8 @@ TEST(LPSolverTest, TestObjectiveScaling) {
   EXPECT_THAT(solver.Solve(lp), SolveStatusWith<SolveStatus::Optimal>(_));
 }
 
-#ifdef NDEBUG
-
 TEST(LpSolverTest, InvalidPreconditionsInOptMode) {
+  if constexpr (DEBUG_MODE) GTEST_SKIP() << "Runs only in opt mode";
   LinearProgram lp;
   LPSolver solver;
 
@@ -830,8 +827,6 @@ TEST(LpSolverTest, InvalidPreconditionsInOptMode) {
   lp.CleanUp();
   EXPECT_THAT(solver.Solve(lp), SolveStatusWith<SolveStatus::Optimal>(_));
 }
-
-#endif
 
 TEST(LpSolverTest, BoundCrossingResultInInvalidModel) {
   LinearProgram lp;

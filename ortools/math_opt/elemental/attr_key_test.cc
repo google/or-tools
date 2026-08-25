@@ -23,6 +23,7 @@
 #include "absl/strings/str_cat.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/math_opt/elemental/elements.h"
 #include "ortools/math_opt/elemental/symmetry.h"
 #include "ortools/math_opt/testing/stream.h"
@@ -122,7 +123,7 @@ TEST(AttrKeyDeathTest, AddRemoveSymmetric) {
   using Sym01 = ElementSymmetry<1, 2>;
   EXPECT_THAT((AttrKey(0, 2).AddElement<1, Sym01>(1)), ElementsAre(0, 1, 2));
   EXPECT_THAT((AttrKey(0, 1).AddElement<2, Sym01>(2)), ElementsAre(0, 1, 2));
-#ifndef NDEBUG
+  if constexpr (!DEBUG_MODE) return;  // Skip the rest in opt mode.
   EXPECT_DEATH_IF_SUPPORTED(
       (AttrKey(0, 1).AddElement<1, Sym01>(2)),
       HasSubstr(
@@ -131,7 +132,6 @@ TEST(AttrKeyDeathTest, AddRemoveSymmetric) {
       (AttrKey(0, 2).AddElement<2, Sym01>(1)),
       HasSubstr(
           "AttrKey(0, 2, 1) does not have `ElementSymmetry<1, 2>` symmetry"));
-#endif
 }
 
 TEST(AttrKeyTest, ComparisonOperators) {

@@ -215,6 +215,7 @@ cc_library(
     deps = [
         ":running_stat",
         "//ortools/base:base_export",
+        "//ortools/base:log_severity",
         "//ortools/base:threadpool",
         "//ortools/base:timer",
         "//ortools/base:types",
@@ -505,6 +506,7 @@ cc_library(
     copts = ORTOOLS_DEFAULT_COPTS,
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
+        "//ortools/base:log_severity",
         "@abseil-cpp//absl/log",
     ],
 )

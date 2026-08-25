@@ -22,6 +22,7 @@
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -679,14 +680,13 @@ TEST(SharedResponseManagerTest, ProblemCanBeClosedWithJustBoundUpdates2) {
   EXPECT_TRUE(shared_response->ProblemIsSolved());
 }
 
-#ifndef NDEBUG
-
 // TODO(user): Having a check sometime fail in multithread. Understand how
 // the code can push an invalid lower bound (and still be valid). The likely
 // behavior, is that at the end of the search, when the improving problem is
 // infeasible, then we might have no guarantee that while incorporating new
 // bounds, one thread pushes the lower bound too high ?
 TEST(SharedResponseManagerDeathTest, InnerBoundMustBeValid) {
+  if constexpr (!DEBUG_MODE) GTEST_SKIP() << "Skip in opt mode";
   const CpModelProto model_proto = ParseTestProto(R"pb(
     objective: {
       vars: [ 0, 1, 2 ]
@@ -710,6 +710,7 @@ TEST(SharedResponseManagerDeathTest, InnerBoundMustBeValid) {
 }
 
 TEST(SharedResponseManagerDeathTest, OptimalCannotBeImproved) {
+  if constexpr (!DEBUG_MODE) GTEST_SKIP() << "Skip in opt mode";
   const CpModelProto model_proto = ParseTestProto(R"pb(
     objective: {
       vars: [ 0, 1, 2 ]
@@ -747,6 +748,7 @@ TEST(SharedResponseManagerDeathTest, OptimalCannotBeImproved) {
 
 TEST(SharedResponseManagerDeathTest,
      BetterSolutionMustNotArriveAfterInfeasible) {
+  if constexpr (!DEBUG_MODE) GTEST_SKIP() << "Skip in opt mode";
   const CpModelProto model_proto = ParseTestProto(R"pb(
     objective: {
       vars: [ 0, 1, 2 ]
@@ -768,8 +770,6 @@ TEST(SharedResponseManagerDeathTest,
     EXPECT_DEATH(shared_response->NewSolution({1, 0, 1}, "test2"), "");
   }
 }
-
-#endif  // NDEBUG
 
 TEST(SharedResponseManagerTest, Callback) {
   const CpModelProto model_proto = ParseTestProto(R"pb(
