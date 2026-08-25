@@ -103,8 +103,9 @@ int main(int argc, char* argv[]) {
 """Vehicle Routing example."""
 
 
-from ortools.routing import enums_pb2
 from ortools.routing.python import routing
+from ortools.routing import enums_pb2
+
 
 
 def main() -> None:

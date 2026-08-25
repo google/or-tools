@@ -2,7 +2,7 @@
 
 This document explains the design, variants, and usage of the high-performance
 Radix Sort implementations provided in
-[`multikey_radix_sort.h`](./multikey_radix_sort.h).
+[`multikey_radix_sort.h`](/ortools/algorithms/multikey_radix_sort.h).
 
 ---
 
