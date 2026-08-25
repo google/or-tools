@@ -536,14 +536,14 @@ class ClausePtr {
 
   // Returns (rep_[1], rep_[0]) as an uint64_t. Compiles down to a single
   // instruction on most architectures (https://godbolt.org/z/KdjK3aev9).
-  static inline uint64_t uint64_from_rep(std::array<Literal, 2> rep) {
+  static uint64_t uint64_from_rep(std::array<Literal, 2> rep) {
     return (static_cast<uint64_t>(rep[1].Index().value()) << 32) |
            static_cast<uint64_t>(static_cast<uint32_t>(rep[0].Index().value()));
   }
 
   // Returns rep[1] = bits_63..32, rep[0] = bits_31..0. Compiles down to a
   // single instruction on most architectures (https://godbolt.org/z/KdjK3aev9).
-  static inline std::array<Literal, 2> rep_from_uint64(uint64_t bits) {
+  static std::array<Literal, 2> rep_from_uint64(uint64_t bits) {
     return {Literal(LiteralIndex(static_cast<uint32_t>(bits))),
             Literal(LiteralIndex(static_cast<uint32_t>(bits >> 32)))};
   }

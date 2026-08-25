@@ -5355,7 +5355,7 @@ bool CpConstraintPresolver::PresolveElement(int c, ConstraintProto* ct) {
               index_var, Domain::FromValues(possible_index_var_values))) {
         return true;
       }
-      context_->UpdateRuleStats("element: reduced index domain ");
+      context_->UpdateRuleStats("element: reduced index domain");
       // If the index is fixed, this is a equality constraint.
       if (context_->IsFixed(index)) {
         ConstraintProto* const eq = context_->AddConstraint();
@@ -5422,10 +5422,32 @@ bool CpConstraintPresolver::PresolveElement(int c, ConstraintProto* ct) {
   // Detect is the element can be rewritten as a * target + b * index == c.
   if (all_constants) {
     if (context_->IsFixed(target)) {
-      // If the accessible part of the array is made of a single constant
-      // value, then we do not care about the index. And, because of the
-      // previous target domain reduction, the target is also fixed.
-      context_->UpdateRuleStats("element: one value array");
+      // If the target is fixed, the previous steps of domain reduction would
+      // have removed all expressions that could not be equal to the target if
+      // it was run to a fixpoint. But since we don't run to a fixpoint, we
+      // check each expression here.
+      const int64_t target_val = context_->FixedValue(target);
+      std::vector<int64_t> valid_index_var_values;
+
+      for (const int64_t index_var_value :
+           context_->DomainOf(index_var).Values()) {
+        const int64_t index_value =
+            AffineExpressionValueAt(index, index_var_value);
+        if (context_->FixedValue(ct->element().exprs(index_value)) ==
+            target_val) {
+          valid_index_var_values.push_back(index_var_value);
+        }
+      }
+
+      if (valid_index_var_values.size() <
+          context_->DomainOf(index_var).Size()) {
+        if (!context_->IntersectDomainWith(
+                index_var, Domain::FromValues(valid_index_var_values))) {
+          return true;
+        }
+      }
+
+      context_->UpdateRuleStats("element: fixed target and constant array");
       return RemoveConstraint(ct);
     }
     int64_t first_index_var_value;
@@ -6521,6 +6543,14 @@ bool CpConstraintPresolver::PresolveNoOverlap2D(int /*c*/,
         IntegerValue(context_->SizeMax(x_interval_index));
     const IntegerValue size_max_y =
         IntegerValue(context_->SizeMax(y_interval_index));
+    const IntegerValue size_min_x =
+        std::max(IntegerValue(0),
+                 std::min(bounding_boxes.back().SizeX(),
+                          IntegerValue(context_->SizeMin(x_interval_index))));
+    const IntegerValue size_min_y =
+        std::max(IntegerValue(0),
+                 std::min(bounding_boxes.back().SizeY(),
+                          IntegerValue(context_->SizeMin(y_interval_index))));
     if (context_->IntervalIsConstant(x_interval_index) &&
         context_->IntervalIsConstant(y_interval_index) && size_max_x > 0 &&
         size_max_y > 0) {
@@ -6534,12 +6564,10 @@ bool CpConstraintPresolver::PresolveNoOverlap2D(int /*c*/,
       fixed_item_indexes.insert(i);
     } else {
       non_fixed_bounding_boxes.push_back(bounding_boxes.back());
-      non_fixed_boxes.push_back(
-          {.box_index = i,
-           .bounding_area = bounding_boxes.back(),
-           .x_size = std::max(int64_t{0}, context_->SizeMin(x_interval_index)),
-           .y_size =
-               std::max(int64_t{0}, context_->SizeMin(y_interval_index))});
+      non_fixed_boxes.push_back({.box_index = i,
+                                 .bounding_area = bounding_boxes.back(),
+                                 .x_size = size_min_x,
+                                 .y_size = size_min_y});
     }
 
     if (x_constant && !context_->IntervalIsConstant(x_interval_index)) {
@@ -6548,12 +6576,10 @@ bool CpConstraintPresolver::PresolveNoOverlap2D(int /*c*/,
     if (y_constant && !context_->IntervalIsConstant(y_interval_index)) {
       y_constant = false;
     }
-    if (context_->SizeMax(x_interval_index) <= 0 ||
-        context_->SizeMax(y_interval_index) <= 0) {
+    if (size_max_x <= 0 || size_max_y <= 0) {
       has_zero_sized_interval = true;
     }
-    if (context_->SizeMin(x_interval_index) <= 0 ||
-        context_->SizeMin(y_interval_index) <= 0) {
+    if (size_min_x <= 0 || size_min_y <= 0) {
       has_potential_zero_sized_interval = true;
     }
   }
