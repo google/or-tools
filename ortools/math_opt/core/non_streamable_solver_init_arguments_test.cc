@@ -53,7 +53,8 @@ class FakeNonStreamableInitArguments : public NonStreamableSolverInitArguments {
   SolverTypeProto solver_type_;
 };
 
-thread_local int FakeNonStreamableInitArguments::num_clones_ = 0;
+ABSL_CONST_INIT thread_local int FakeNonStreamableInitArguments::num_clones_ =
+    0;
 
 TEST(NonStreamableSolverInitArgumentsValueTest, NonStreamableConstructor) {
   const FakeNonStreamableInitArguments fake(SOLVER_TYPE_GSCIP);
