@@ -100,9 +100,11 @@
 
 #include "absl/base/attributes.h"
 #include "absl/base/nullability.h"
+#include "absl/flags/declare.h"
 #include "absl/log/die_if_null.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
+#include "ortools/base/base_export.h"
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/dual_edge_norms.h"
 #include "ortools/glop/entering_variable.h"
@@ -125,6 +127,11 @@
 #include "ortools/util/random_engine.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/time_limit.h"
+
+OR_DLL ABSL_DECLARE_FLAG(bool, simplex_display_numbers_as_fractions);
+OR_DLL ABSL_DECLARE_FLAG(bool, simplex_stop_after_first_basis);
+OR_DLL ABSL_DECLARE_FLAG(bool, simplex_stop_after_feasibility);
+OR_DLL ABSL_DECLARE_FLAG(bool, simplex_display_stats);
 
 namespace operations_research {
 namespace glop {

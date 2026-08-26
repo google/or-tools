@@ -18,6 +18,7 @@
 #include <string>
 #include <utility>
 
+#include "absl/cleanup/cleanup.h"
 #include "absl/flags/declare.h"
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
@@ -38,12 +39,6 @@
 #include "ortools/util/file_util.h"
 #include "ortools/util/fp_utils_testing.h"
 #include "ortools/util/time_limit.h"
-
-ABSL_DECLARE_FLAG(bool, lp_dump_to_proto_file);
-ABSL_DECLARE_FLAG(bool, lp_dump_compressed_file);
-ABSL_DECLARE_FLAG(bool, lp_dump_binary_file);
-ABSL_DECLARE_FLAG(std::string, lp_dump_dir);
-ABSL_DECLARE_FLAG(std::string, lp_dump_file_basename);
 
 namespace operations_research {
 namespace glop {
@@ -809,6 +804,10 @@ TEST(LPSolverTest, WriteToProtoFile) {
   LinearProgram linear_program;
   ASSERT_TRUE(ParseLp(kLinearProgram, &linear_program));
 
+  const bool saved_flag = absl::GetFlag(FLAGS_lp_dump_to_proto_file);
+  absl::Cleanup flag_closer = [saved_flag] {
+    absl::SetFlag(&FLAGS_lp_dump_to_proto_file, saved_flag);
+  };
   absl::SetFlag(&FLAGS_lp_dump_to_proto_file, true);
   absl::SetFlag(&FLAGS_lp_dump_dir, ::testing::TempDir());
   const std::string kName = "Test";
