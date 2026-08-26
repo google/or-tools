@@ -113,8 +113,8 @@ maven.install(
     artifacts = [
         "com.google.errorprone:error_prone_type_annotations:2.46.0",
         "com.google.guava:guava:33.5.0-jre",
-        "com.google.protobuf:protobuf-java:4.32.1",
-        "com.google.protobuf:protobuf-java-util:4.32.1",
+        "com.google.protobuf:protobuf-java:4.35.1",
+        "com.google.protobuf:protobuf-java-util:4.35.1",
         "com.google.truth:truth:1.4.2",
         "com.google.truth.extensions:truth-proto-extension:1.4.2",
         "net.java.dev.jna:jna:5.14.0",
