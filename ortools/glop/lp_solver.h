@@ -19,12 +19,22 @@
 #include <utility>
 
 #include "absl/base/nullability.h"
+#include "absl/flags/declare.h"
+#include "ortools/base/base_export.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
+
+OR_DLL ABSL_DECLARE_FLAG(bool, lp_dump_to_proto_file);
+OR_DLL ABSL_DECLARE_FLAG(bool, lp_dump_compressed_file);
+OR_DLL ABSL_DECLARE_FLAG(bool, lp_dump_binary_file);
+OR_DLL ABSL_DECLARE_FLAG(int, lp_dump_file_number);
+OR_DLL ABSL_DECLARE_FLAG(std::string, lp_dump_dir);
+OR_DLL ABSL_DECLARE_FLAG(std::string, lp_dump_file_basename);
+OR_DLL ABSL_DECLARE_FLAG(std::string, glop_params);
 
 namespace operations_research {
 namespace glop {

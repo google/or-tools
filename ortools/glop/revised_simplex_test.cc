@@ -25,6 +25,7 @@
 #include "absl/algorithm/container.h"
 #include "absl/base/attributes.h"
 #include "absl/base/no_destructor.h"
+#include "absl/cleanup/cleanup.h"
 #include "absl/flags/declare.h"
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
@@ -51,7 +52,6 @@
 #include "ortools/util/fp_utils_testing.h"
 #include "ortools/util/time_limit.h"
 
-ABSL_DECLARE_FLAG(bool, simplex_stop_after_first_basis);
 ABSL_FLAG(std::optional<std::mt19937::result_type>, revised_simplex_test_seed,
           std::nullopt, "Fixed seed to use to reproduce errors.");
 
@@ -834,6 +834,10 @@ TEST(RevisedSimplexTest, Chvatalp135_81aForCoverage2) {
   GlopParameters parameters;
   parameters.set_use_scaling(false);
   parameters.set_basis_refactorization_period(1);
+  const bool saved_flag = absl::GetFlag(FLAGS_simplex_stop_after_first_basis);
+  absl::Cleanup flag_cleanup = [saved_flag]() {
+    absl::SetFlag(&FLAGS_simplex_stop_after_first_basis, saved_flag);
+  };
   absl::SetFlag(&FLAGS_simplex_stop_after_first_basis, true);
 
   const ProblemStatus kExpectedStatus = ProblemStatus::INIT;
