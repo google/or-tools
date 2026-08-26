@@ -6,6 +6,7 @@ on:
     branches:
       - ci
       - main
+      - mizux/windows
   workflow_dispatch:
 
 concurrency:
