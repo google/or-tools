@@ -18,16 +18,15 @@
 #include <ostream>
 #include <string>
 
-#include "absl/base/attributes.h"
 #include "gtest/gtest.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
 namespace operations_research::math_opt {
 
 struct MinCostFlowTestParams {
-  std::string name ABSL_REQUIRE_EXPLICIT_INIT;
+  std::string name;
 
-  SolverType solver_type ABSL_REQUIRE_EXPLICIT_INIT;
+  SolverType solver_type;
 
   // Okay to leave empty, these parameters will be applied to every test except
   // the tests where we are looking for a dual ray.
@@ -36,28 +35,24 @@ struct MinCostFlowTestParams {
   // When set, we get an InvalidArgumentError containing this string if the flow
   // problem is an LP instead of a flow problem, otherwise, we expect to solve
   // it as a generic LP.
-  std::optional<std::string> lp_not_flow_error_substring
-      ABSL_REQUIRE_EXPLICIT_INIT;
+  std::optional<std::string> lp_not_flow_error_substring;
 
   // When set, we get an InvalidArgumentError if the flow problem is a MIP
   // instead of a flow problem, otherwise, we expect to solve it as a MIP.
-  std::optional<std::string> mip_not_flow_error_substring
-      ABSL_REQUIRE_EXPLICIT_INIT;
+  std::optional<std::string> mip_not_flow_error_substring;
 
   // When set, we get InvalidArgumentError containing this string if the flow
   // problem has floating point costs, otherwise, we expect to solve it.
-  std::optional<std::string> floating_point_cost_error_substring
-      ABSL_REQUIRE_EXPLICIT_INIT;
+  std::optional<std::string> floating_point_cost_error_substring;
 
   // When set, we get InvalidArgumentError containing this string if the flow
   // problem has floating point capacities, otherwise, we expect to solve it.
-  std::optional<std::string> floating_point_capacity_error_substring
-      ABSL_REQUIRE_EXPLICIT_INIT;
+  std::optional<std::string> floating_point_capacity_error_substring;
 
   // For the case where problem is infeasible not because of imbalanced flow,
   // but because the arc capacity is insufficient. If true, we expect a dual
   // ray, otherwise, we simply expect an infeasible termination reason.
-  bool certifies_nontrivial_infeasibility ABSL_REQUIRE_EXPLICIT_INIT;
+  bool certifies_nontrivial_infeasibility = false;
   // Used only on problems where we know the problem is infeasible and we want
   // to see if we can get a dual ray. Leave blank if dual rays are not
   // supported.
@@ -65,7 +60,7 @@ struct MinCostFlowTestParams {
 
   // If true, on every successful solve, we also expect a dual feasible
   // solution.
-  bool returns_dual_solution ABSL_REQUIRE_EXPLICIT_INIT;
+  bool returns_dual_solution = false;
 };
 
 std::ostream& operator<<(std::ostream& out,

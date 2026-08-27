@@ -132,7 +132,6 @@ cc_library(
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/port:proto_utils",
-        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:status_matchers",
