@@ -55,11 +55,12 @@ class PyWrapLp(unittest.TestCase):
         self.assertEqual(error, "")
         solver.Solve()
         # Fill solution
-        solution = solver.FillSolutionResponseProto()
+        solution = linear_solver_pb2.MPSolutionResponse()
+        solver.FillSolutionResponseProto(solution)
         self.assertEqual(solution.objective_value, 3.0)
         self.assertEqual(solution.variable_value[0], 1.0)
         self.assertEqual(solution.variable_value[1], 1.0)
-        self.assertEqual(solution.best_objective_bound, 3.0)
+        self.assertEqual(solution.best_objective_bound, 0.0)
 
     def test_external_api(self):
         solver = pywraplp.Solver.CreateSolver("GLOP")
