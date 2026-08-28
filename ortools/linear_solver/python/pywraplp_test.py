@@ -47,7 +47,7 @@ class PyWrapLp(unittest.TestCase):
     def test_proto(self):
         input_proto = linear_solver_pb2.MPModelProto()
         text_format.Merge(TEXT_MODEL, input_proto)
-        solver = pywraplp.Solver.CreateSolver("CBC")
+        solver = pywraplp.Solver.CreateSolver("GLOP")
         if not solver:
             return
         # For now, create the model from the proto by parsing the proto
