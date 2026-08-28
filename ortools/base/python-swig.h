@@ -105,7 +105,7 @@ inline PyObject* PyObjFrom(const std::string& c) {
 
 template <>
 inline bool PyObjAs(PyObject* py, int* c) {
-  long i = PyInt_AsLong(py);        // NOLINT
+  long i = PyLong_AsLong(py);       // NOLINT
   if (i == -1 && PyErr_Occurred())  // TypeError or OverflowError.
     return false;                   // Not a Python int.
   if (i < std::numeric_limits<int>::min() ||
@@ -117,7 +117,7 @@ inline bool PyObjAs(PyObject* py, int* c) {
 
 template <>
 inline bool PyObjAs(PyObject* py, unsigned int* c) {
-  long i = PyInt_AsLong(py);                      // NOLINT
+  long i = PyLong_AsLong(py);                     // NOLINT
   if (i == -1 && PyErr_Occurred()) return false;  // Not a Python int.
   if (i < 0 || i > std::numeric_limits<unsigned int>::max()) return false;
   if (c) *c = static_cast<unsigned int>(i);
