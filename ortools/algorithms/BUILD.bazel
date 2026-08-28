@@ -439,6 +439,7 @@ cc_library(
         ":sparse_permutation",
         "//ortools/base:log_severity",
         "//ortools/base:murmur",
+        "//ortools/base:types",
         "//ortools/graph_base:graph",
         "//ortools/graph_base:iterators",
         "//ortools/graph_base:util",
