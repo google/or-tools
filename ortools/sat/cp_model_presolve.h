@@ -42,14 +42,14 @@
 namespace operations_research {
 namespace sat {
 
-// Replaces all the instance of a variable i (and the literals referring to it)
+// Replaces all the instances of a variable i (and the literals referring to it)
 // by mapping[i] in the given cp_model. The definition of variables i is also
 // moved to its new index.
 //
-// If mapping[i] < 0 the variable can be ignored if there are no reference to it
-// at all. If it is not possible (i.e. some field uses it), then we will use a
-// new index for it (at the end) and reverse_mapping will be updated to reflect
-// that. This is the only time we touch reverse_mapping.
+// If mapping[i] < 0 the variable can be ignored if there are no references to
+// it at all. If it is not possible (i.e. some field uses it), then we will use
+// a new index for it (at the end) and reverse_mapping will be updated to
+// reflect that. This is the only time we touch reverse_mapping.
 // The image of the mapping should be dense in [0, reverse_mapping->size()).
 //
 // If mapping[i] == mapping[j], the variables will be merged, but it will be the
@@ -61,12 +61,12 @@ void ApplyVariableMapping(absl::Span<int> mapping, CpModelProto* cp_model,
 
 // Presolves the initial content of presolved_model.
 //
-// This also creates a mapping model that encode the correspondence between the
-// two problems. This works as follow:
-// - The first variables of mapping_model are in one to one correspondence with
+// This also creates a mapping model that encodes the correspondence between the
+// two problems. This works as follows:
+// - The first variables of mapping_model are in one-to-one correspondence with
 //   the variables of the initial model.
-// - The presolved_model variables are in one to one correspondence with the
-//   variable at the indices given by postsolve_mapping in the mapping model.
+// - The presolved_model variables are in one-to-one correspondence with the
+//   variables at the indices given by postsolve_mapping in the mapping model.
 // - Fixing one of the two sets of variables and solving the model will assign
 //   the other set to a feasible solution of the other problem. Moreover, the
 //   objective value of these solutions will be the same. Note that solving such
@@ -77,15 +77,15 @@ void ApplyVariableMapping(absl::Span<int> mapping, CpModelProto* cp_model,
 // if for instance the objective is fixed, or independent from the rest of the
 // problem.
 //
-// TODO(user): Identify disconnected components and returns a vector of
-// presolved model? If we go this route, it may be nicer to store the indices
-// inside the model. We can add a IntegerVariableProto::initial_index;
+// TODO(user): Identify disconnected components and return a vector of
+// presolved models? If we go this route, it may be nicer to store the indices
+// inside the model. We can add an IntegerVariableProto::initial_index;
 class CpModelPresolver {
  public:
   CpModelPresolver(PresolveContext* context,
                    std::vector<int>* postsolve_mapping);
 
-  // We returns the status of the problem after presolve:
+  // We return the status of the problem after presolve:
   //  - UNKNOWN if everything was ok.
   //  - INFEASIBLE if the model was proven so during presolve
   //  - MODEL_INVALID if the model caused some issues, like if we are not able
@@ -95,11 +95,11 @@ class CpModelPresolver {
   // Visible for testing.
   void DetectDuplicateColumns();
 
-  // Detects variable that must take different values.
+  // Detects variables that must take different values.
   void DetectDifferentVariables();
 
  private:
-  // A simple helper that logs the rules applied so far and return INFEASIBLE.
+  // A simple helper that logs the rules applied so far and returns INFEASIBLE.
   CpSolverStatus InfeasibleStatus();
 
   // If there is a large proportion of fixed variables, remap the whole proto
@@ -129,8 +129,8 @@ class CpModelPresolver {
                                  int64_t* num_unique_terms,
                                  int64_t* num_multiple_terms);
 
-  // Remove duplicate constraints. This also merge domain of linear constraints
-  // with duplicate linear expressions.
+  // Remove duplicate constraints. This also merges domains of linear
+  // constraints with duplicate linear expressions.
   void DetectDuplicateConstraints();
   void DetectDuplicateConstraintsWithDifferentEnforcements(
       const CpModelMapping* mapping = nullptr,
@@ -141,7 +141,7 @@ class CpModelPresolver {
   // for linear constraints with different rhs.
   void DetectUnenforcedEnforcedLinearPair();
 
-  // if var only appear in
+  // If var only appears in
   // literal => var \in domain
   // var + linear_terms \in other_domain which is trivial if var is relaxed.
   //
@@ -149,7 +149,7 @@ class CpModelPresolver {
   // literal => linear_terms \in tighter_domain.
   void MaybeRemoveLinkingVariable(int var, int c_linear1, int c_linear);
 
-  // Detects if a linear constraint is "included" in another one, and do
+  // Detects if a linear constraint is "included" in another one, and does
   // related presolve.
   void DetectDominatedLinearConstraints();
 
@@ -163,8 +163,8 @@ class CpModelPresolver {
   //   ...
   //   bool_or(b1, b2, ..., bn, y, z, ...)
 
-  // Where the bi do not appear in any other constraints. When we finds this
-  // pattern, we create a new boolean variable `l` and replaces all the
+  // Where the bi do not appear in any other constraints. When we find this
+  // pattern, we create a new boolean variable `l` and replace all the
   // constraints above by three new constraints:
   //   l => x \in Domain1 U Domain2 U ... U Domainn
   //  ~l => x \in (Domain1 U Domain2 U ... U Domainn).Complement()
@@ -180,7 +180,7 @@ class CpModelPresolver {
   bool DetectEncodedComplexDomain(PresolveContext* context, ConstraintProto* ct,
                                   const Bitset64<int>& pertinent_bools);
 
-  // Precomputes info about at most one, and use it to presolve linear
+  // Precomputes info about at most one, and uses it to presolve linear
   // constraints. It can be interesting to know for a given linear constraint
   // that a subset of its variables are in at most one relation.
   void ProcessAtMostOneAndLinear();
@@ -189,10 +189,11 @@ class CpModelPresolver {
 
   // SetPPC is short for set packing, partitioning and covering constraints.
   // These are sum of booleans <=, = and >= 1 respectively.
-  // We detect inclusion of these constraint which allows a few simplifications.
+  // We detect inclusion of these constraints which allows a few
+  // simplifications.
   void ProcessSetPPC();
 
-  // Detect if one constraints has a subset of enforcement of another.
+  // Detect if one constraint has a subset of enforcement of another.
   void DetectIncludedEnforcement();
 
   // Removes dominated constraints or fixes some variables for given pair of
@@ -217,8 +218,8 @@ class CpModelPresolver {
   // transforms them into maximal cliques.
   void TransformIntoMaxCliques();
 
-  // Checks if there are any clauses that can be transformed to an at most
-  // one constraint.
+  // Checks if there are any clauses that can be transformed to an at-most-one
+  // constraint.
   void TransformClausesToExactlyOne();
 
   // Use all the detected precedences to detect if a part of a no_overlap
@@ -233,16 +234,16 @@ class CpModelPresolver {
   // variables. This "propagates" the objective like a normal linear constraint.
   bool PropagateObjective();
 
-  // Try to reformulate the objective in term of "base" variables. This is
-  // mainly useful for core based approach where having more terms in the
+  // Try to reformulate the objective in terms of "base" variables. This is
+  // mainly useful for a core-based approach where having more terms in the
   // objective (but with a same trivial lower bound) should help.
   void ExpandObjective();
 
   // This makes a big difference on the flatzinc mznc2017_aes_opt* problems.
-  // Where, with this, the core based approach can find small cores and close
+  // Where, with this, the core-based approach can find small cores and close
   // them quickly.
   //
-  // TODO(user): Is it by chance or there is a underlying deep reason? try to
+  // TODO(user): Is it by chance or is there an underlying deep reason? Try to
   // merge this with what ExpandObjective() is doing.
   void ShiftObjectiveWithExactlyOnes();
 
@@ -266,13 +267,13 @@ class CpModelPresolver {
   bool MergeNoOverlap2DConstraints();
 
   // Assumes that all [constraint_index, multiple] in block are linear
-  // constraint that contains multiple * common_part and perform the
+  // constraints that contain multiple * common_part and performs the
   // substitution.
   //
   // Returns false if the substitution cannot be performed because the equation
   // common_part = new_variable is a linear equation with potential overflow.
   //
-  // TODO(user): I would be great to change the overflow precondition so that
+  // TODO(user): It would be great to change the overflow precondition so that
   // this cannot happen by maybe taking the rhs into account?
   bool RemoveCommonPart(
       const absl::flat_hash_map<int, int64_t>& common_var_coeff_map,
@@ -280,7 +281,7 @@ class CpModelPresolver {
       ActivityBoundHelper* helper);
 
   // Try to identify many linear constraints that share a common linear
-  // expression. We have two slightly different heuristic.
+  // expression. We have two slightly different heuristics.
   //
   // TODO(user): consolidate them.
   void FindAlmostIdenticalLinearConstraints();
@@ -290,14 +291,14 @@ class CpModelPresolver {
 
   // Heuristic to merge clauses that differ in only one literal.
   // The idea is to regroup a bunch of clauses into a single bool_and.
-  // This serves a bunch of purpose:
+  // This serves a bunch of purposes:
   // - Smaller model.
   // - Stronger dual reasoning since less locks.
   // - If the negation of the rhs of the bool_and are in at most one, we will
   //   have a stronger LP relaxation.
   //
   // TODO(user): If the merge procedure is successful we might want to develop
-  // a custom propagators for such bool_and. It should in theory be more
+  // a custom propagator for such bool_and. It should in theory be more
   // efficient than the two watcher literal scheme for clauses. Investigate!
   void MergeClauses();
 
@@ -340,16 +341,17 @@ CpSolverStatus PresolveCpModel(PresolveContext* context,
 // that is the first constraint in the proto in a set of duplicate constraints.
 //
 // Empty constraints are ignored. We also do a bit more:
-// - We ignore names when comparing constraint.
+// - We ignore names when comparing constraints.
 // - For linear constraints, we ignore the domain if ignore_linear_domain is
 //   true. This is because we can just merge them if the constraints are the
 //   same.
 // - We return the special kObjectiveConstraint (< 0) representative if a linear
 //   constraint is parallel to the objective and has no enforcement literals.
-//   The domain of such constraint can just be merged with the objective domain.
+//   The domain of such constraints can just be merged with the objective
+//   domain.
 //
-// If ignore_enforcement is true, we ignore enforcement literal, This allow to
-// cover some other cases like:
+// If ignore_enforcement is true, we ignore enforcement literals. This allows
+// covering some other cases like:
 // - enforced constraint duplicate of non-enforced one.
 // - Two enforced constraints with singleton enforcement (vpphard).
 //

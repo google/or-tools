@@ -23,7 +23,6 @@ negation of `x`.
 # Snippet from ortools/sat/samples/literal_sample_sat.py
 """Code sample to demonstrate Boolean variable and literals."""
 
-
 from ortools.sat.python import cp_model
 
 
@@ -158,7 +157,6 @@ constraints. For instance, we can add a constraint Or(x, not(y)).
 ```python
 # Snippet from ortools/sat/samples/bool_or_sample_sat.py
 """Code sample to demonstrates a simple Boolean constraint."""
-
 
 from ortools.sat.python import cp_model
 
@@ -520,7 +518,6 @@ x = 1   y = 1   p = 1
 ```python
 # Snippet from ortools/sat/samples/boolean_product_sample_sat.py
 """Code sample that encodes the product of two Boolean variables."""
-
 
 from ortools.sat.python import cp_model
 

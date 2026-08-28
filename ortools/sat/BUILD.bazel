@@ -2391,6 +2391,7 @@ cc_library(
         ":sat_base",
         "//ortools/base:mathutil",
         "//ortools/base:strong_vector",
+        "//ortools/base:types",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
         "//ortools/util:strong_integers",

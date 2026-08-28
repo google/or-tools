@@ -77,7 +77,7 @@ class LratMerger {
   explicit LratMerger(Model* model);
   ~LratMerger();
 
-  // Merges the given LRAT proofs in a single one, and writes it to a file in
+  // Merges the given LRAT proofs into a single one, and writes it to a file in
   // ASCII format. The first proof must be the presolve proof. Its imported
   // clauses must be the input problem clauses. Returns true on success, false
   // otherwise.
@@ -105,7 +105,7 @@ class LratMerger {
   void RemapLiteralIndices(T& literal_indices, std::vector<Literal>* literals);
 
   // Remaps the local clause IDs in the given inferred clause to global IDs, in
-  // place. Returns true on success, false otherwise. Literals indices must be
+  // place. Returns true on success, false otherwise. Literal indices must be
   // remapped before calling this function.
   bool RemapInferredClause(int proof_index, const std::string& filename,
                            LratInferredClause& inferred_clause,

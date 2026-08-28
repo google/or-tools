@@ -2181,7 +2181,10 @@ SharedClasses::SharedClasses(const CpModelProto* proto, Model* global_model)
       progress_logger(global_model->GetOrCreate<SolverProgressLogger>()),
       lrat_proof_status(global_model->GetOrCreate<SharedLratProofStatus>()) {
   const SatParameters& params = *global_model->GetOrCreate<SatParameters>();
-  SchedulingRelaxation rel = DetectSchedulingProblems(*proto);
+  SchedulingRelaxation rel;
+  if (!time_limit->LimitReached()) {
+    rel = DetectSchedulingProblems(*proto);
+  }
   if (!rel.problems.empty()) {
     scheduling_relaxation =
         std::make_unique<SchedulingRelaxation>(std::move(rel));

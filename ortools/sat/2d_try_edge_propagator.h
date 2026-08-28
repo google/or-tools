@@ -31,8 +31,8 @@
 namespace operations_research {
 namespace sat {
 
-// Propagator that for each boxes participating in a no_overlap_2d constraint
-// try to find the leftmost valid position that is compatible with all the
+// Propagator that, for each box participating in a no_overlap_2d constraint,
+// tries to find the leftmost valid position that is compatible with all the
 // other boxes. If none is found, it will propagate a conflict. Otherwise, if
 // it is different from the current x_min, it will propagate the new x_min.
 void CreateAndRegisterTryEdgePropagator(NoOverlap2DConstraintHelper* helper,
@@ -61,8 +61,8 @@ class TryEdgeRectanglePropagator : public PropagatorInterface {
   // placed_boxes_ is a list that is only meaningful for indices for which
   // is_in_cache_[box_index] is true. After applying this condition,
   // placed_boxes_ contains a list of boxes placed at their current x_min and
-  // that does not overlap with the mandatory region of any other box in
-  // placed_boxes_. In other words, there is no point on looking for any
+  // that do not overlap with the mandatory region of any other box in
+  // placed_boxes_. In other words, there is no point in looking for any
   // propagation for this heuristic between boxes that are already in
   // placed_boxes_.
   std::vector<Rectangle> placed_boxes_;
@@ -82,7 +82,7 @@ class TryEdgeRectanglePropagator : public PropagatorInterface {
 
   // This function assumes that a propagation is found and the box with index
   // `box_index` cannot be placed to the left of new_x_min. It returns a list of
-  // indices of boxes that defines a subproblem where the propagation is still
+  // indices of boxes that define a subproblem where the propagation is still
   // valid, including `box_index` itself.
   std::vector<int> GetMinimumProblemWithPropagation(
       int box_index, std::optional<IntegerValue> new_x_min);

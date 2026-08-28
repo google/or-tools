@@ -16,6 +16,8 @@ load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_go//go:def.bzl", "go_binary")
 load("@rules_python//python:py_test.bzl", "py_test")
 
+package(default_visibility = ["//visibility:public"])
+
 py_test(
     name = "all_different_except_zero_sample_sat_py3",
     srcs = ["all_different_except_zero_sample_sat.py"],
@@ -265,7 +267,6 @@ cc_test(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
-        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -387,7 +388,6 @@ cc_test(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
-        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -603,7 +603,6 @@ cc_test(
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:model",
         "//ortools/sat:sat_parameters_cc_proto",
-        "//ortools/util:time_limit",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
@@ -1081,7 +1080,6 @@ cc_test(
         "//ortools/sat:model",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:sorted_interval_list",
-        "//ortools/util:time_limit",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",

@@ -180,7 +180,7 @@ bool LratChecker::AddClauseInternal(ClauseType type, ClausePtr ptr,
     UnitPropagationStatus last_propagation_status = kUnit;
     for (int i = 0; i < rup_clauses.size(); ++i) {
       const ClausePtr rup_clause = rup_clauses[i];
-      // Using an already proved clause to prove it again is valid but error
+      // Using an already proved clause to prove it again is valid but error-
       // prone with SatClause (we might accidentally use the new version to
       // prove it again, instead of proving the new version from the old one).
       // Hence we only allow this with the explicit RewriteClause() method.
@@ -213,7 +213,8 @@ bool LratChecker::AddClauseInternal(ClauseType type, ClausePtr ptr,
       }
       absl::flat_hash_set<ClausePtr>& resolvants = tmp_clauses_;
       resolvants.clear();
-      // Check that the unit propagation proof of each rat_clauses is correct.
+      // Check that the unit propagation proof of each of the rat_clauses is
+      // correct.
       for (const RatClauses& rat_clauses : rat_clauses) {
         const ClausePtr resolvant = rat_clauses.resolvant;
         DCHECK(type == kRewrittenClause || !EqualSatClausePtrs(resolvant, ptr));

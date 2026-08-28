@@ -30,7 +30,9 @@ The Python interface to the CP-SAT solver is implemented using two classes.
 ```python
 # Snippet from ortools/sat/samples/simple_sat_program.py
 """Simple solve."""
+
 from ortools.sat.python import cp_model
+
 
 
 def simple_sat_program():

@@ -266,10 +266,10 @@ std::vector<int> TryEdgeRectanglePropagator::GetMinimumProblemWithPropagation(
   // we tried a lot of positions, and each one overlaps with the mandatory part
   // of at least one box. We want to find the smallest set of "conflicting
   // boxes" that would still forbid every possible placement. To do that, we
-  // build a vector with, for each placement position, the list boxes that
+  // build a vector with, for each placement position, the list of boxes that
   // conflict when placing the box at that position. Then we solve
   // (approximately) a set cover problem to find the smallest set of boxes that
-  // will still makes all positions conflicting.
+  // will still make all positions conflicting.
   const RectangleInRange& box = active_box_ranges_[box_index];
 
   // We need to rerun the main propagator loop logic, but this time keeping
@@ -316,7 +316,8 @@ std::vector<int> TryEdgeRectanglePropagator::GetMinimumProblemWithPropagation(
     }
   }
 
-  // Now gather the data per box to make easier to use the set cover solver API.
+  // Now gather the data per box to make it easier to use the set cover solver
+  // API.
   // TODO(user): skip the boxes that are fixed at level zero. They do not
   // contribute to the size of the explanation (so we shouldn't minimize their
   // number) and make the SetCover problem harder to solve.
@@ -383,9 +384,9 @@ bool TryEdgeRectanglePropagator::ExplainAndPropagate(
         GetMinimumProblemWithPropagation(box_index, new_x_min);
     for (const int j : minimum_problem_with_propagator) {
       DCHECK(is_active_[j]);
-      // Important: we also add to the reason the actual box we are changing the
-      // x_min. This is important, since we don't check if there are any
-      // feasible placement before its current x_min, so it needs to be part of
+      // Important: we also add to the reason the actual box whose x_min we are
+      // changing. This is important, since we don't check if there are any
+      // feasible placements before its current x_min, so it needs to be part of
       // the reason.
       const RectangleInRange& box_reason = active_box_ranges_[j];
       const int b = box_reason.box_index;
@@ -394,8 +395,8 @@ bool TryEdgeRectanglePropagator::ExplainAndPropagate(
       helper_.AddBottomMinReason(b, box_reason.bounding_area.y_min);
 
       if (j != box_index || !new_x_min.has_value()) {
-        // We don't need to add to the reason the x_max for the box we are
-        // pushing the x_min, except if we found a conflict.
+        // We don't need to add to the reason the x_max for the box whose
+        // x_min we are pushing, except if we found a conflict.
         helper_.AddLeftMaxReason(
             b, box_reason.bounding_area.x_max - box_reason.x_size);
       }

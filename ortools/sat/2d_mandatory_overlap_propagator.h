@@ -26,7 +26,7 @@
 namespace operations_research {
 namespace sat {
 
-// Propagator that checks that no mandatory area of two boxes overlap in
+// Propagator that checks that no mandatory areas of two boxes overlap in
 // O(N * log N) time.
 void CreateAndRegisterMandatoryOverlapPropagator(
     NoOverlap2DConstraintHelper* helper, Model* model,

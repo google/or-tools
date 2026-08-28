@@ -23,6 +23,7 @@
 
 #include "absl/log/check.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/base/types.h"
 
 namespace operations_research::sat {
 
@@ -93,8 +94,7 @@ bool LinearExpression2::CanonicalizeAndUpdateBounds(IntegerValue& lb,
   const bool negated = NegateForCanonicalization();
   if (negated) {
     // We need to be able to negate without overflow.
-    CHECK_GE(lb, kMinIntegerValue);
-    CHECK_LE(ub, kMaxIntegerValue);
+    CHECK_GE(lb, -kint64max);
     std::swap(lb, ub);
     lb = -lb;
     ub = -ub;

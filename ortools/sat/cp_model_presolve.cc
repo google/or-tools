@@ -242,7 +242,7 @@ void CpModelPresolver::ProcessOneLinearWithAmo(int ct_index,
   //    20 * (AMO1 + AMO2) - [coeff in 48 to 53] >= -15
   // this is really AMO1 + AMO2 - 2 * AMO3 >= 0.
   // Maybe if we reify the AMO to exactly one, this is visible since large
-  // AMO can be rewriten with single variable (1 - extra var in exactly one).
+  // AMO can be rewritten with single variable (1 - extra var in exactly one).
   const Domain rhs = ReadDomainFromProto(ct->linear());
   if (non_boolean_domain == Domain(0) && rhs.NumIntervals() == 1 &&
       min_magnitude < max_magnitude) {
@@ -284,7 +284,7 @@ void CpModelPresolver::ProcessOneLinearWithAmo(int ct_index,
   const int64_t max_bool_activity =
       helper->ComputeMaxActivity(tmp_terms_, &conditional_maxs_);
 
-  // Detect trivially true/false constraint under these new bounds.
+  // Detect trivially true/false constraints under these new bounds.
   // TODO(user): relax rhs if only one side is trivial.
   const Domain activity = non_boolean_domain.AdditionWith(
       Domain(min_bool_activity, max_bool_activity));
@@ -316,12 +316,13 @@ void CpModelPresolver::ProcessOneLinearWithAmo(int ct_index,
 
   // Extract enforcement or fix literal.
   //
-  // TODO(user): Do not use domain fonction, can be slow.
+  // TODO(user): Do not use domain function, can be slow.
   //
   // TODO(user): Actually we might make the linear relaxation worse by
-  // extracting some of these enforcement, as those can be "lifted" booleans. We
-  // currently deal with that in RemoveEnforcementThatMakesConstraintTrivial(),
-  // but that might not be the most efficient.
+  // extracting some of these enforcements, as those can be "lifted" booleans.
+  // We currently deal with that in
+  // RemoveEnforcementThatMakesConstraintTrivial(), but that might not be the
+  // most efficient.
   //
   // TODO(user): Another reason for making the LP worse is that if we replace
   // part of the constraint via FindBig*LinearOverlap() then our activity bounds
@@ -352,7 +353,7 @@ void CpModelPresolver::ProcessOneLinearWithAmo(int ct_index,
     }
   }
 
-  // Note that both list can be non empty, if for instance we have small * X +
+  // Note that both lists can be non-empty, if for instance we have small * X +
   // big * Y + ... <= rhs and amo(X, Y). We could see that Y can never be true
   // and if X is true, then the constraint could be trivial.
   //
@@ -594,7 +595,7 @@ void ExtractClausesToContext(absl::Span<const int> amo_or_exo_still_present,
                              const ClauseContainer& container,
                              PresolveContext* context) {
   // Avoid adding bool_and already encoded in amo or exo.
-  // The algo here is fast but don't work if there is too many amo/exo, so
+  // The algo here is fast but doesn't work if there are too many amo/exo, so
   // we have a limit in place.
   SimpleDuplicateImplicationDetector already_there;
   for (const int c : amo_or_exo_still_present) {
@@ -1041,7 +1042,7 @@ void CpModelPresolver::Probe() {
     timer.AddToWork(dtime);
 
     // Note that because TransformIntoMaxCliques() extend cliques, we are ok
-    // to ignore any unmapped literal. In case of equivalent literal, we always
+    // to ignore any unmapped literal. In case of equivalent literals, we always
     // use the smaller indices as a representative, so we should be good.
     int num_new_cliques = 0;
     int64_t num_literals_after = 0;
@@ -1145,7 +1146,7 @@ bool CpModelPresolver::PresolvePureSatPart() {
   // happens in the presolve "seems" bad. That said, complexity wise, it is
   // a lot faster that what happens in the presolve though.
   //
-  // TODO(user): Add the "small" at most one constraints to the SAT presolver by
+  // TODO(user): Add the "small" at-most-one constraints to the SAT presolver by
   // expanding them to implications? that could remove a lot of clauses. Do that
   // when we are sure we don't load duplicates at_most_one/implications in the
   // solver. Ideally, the pure sat presolve could be improved to handle at most
@@ -1158,7 +1159,7 @@ bool CpModelPresolver::PresolvePureSatPart() {
   auto* graph = local_model.GetOrCreate<BinaryImplicationGraph>();
   sat_solver->SetNumVariables(num_variables);
 
-  // Fix variables if any. Because we might not have reached the presove "fixed
+  // Fix variables if any. Because we might not have reached the presolve "fixed
   // point" above, some variable in the added clauses might be fixed. We need to
   // indicate this to the SAT presolver.
   for (const int var : new_to_old_index) {
@@ -1320,7 +1321,7 @@ bool CpModelPresolver::PresolvePureSatPart() {
   SatPostsolver sat_postsolver(num_variables);
 
   // If the problem is a pure-SAT problem, we run the new SAT presolver.
-  // This takes more time but it is usually worthwile
+  // This takes more time but it is usually worthwhile.
   //
   // Note that the probing that it does is faster than the
   // ProbeAndFindEquivalentLiteral() call below, but does not do equivalence
@@ -1369,7 +1370,7 @@ bool CpModelPresolver::PresolvePureSatPart() {
 
     if (sat_solver->ModelIsUnsat()) return false;
   } else {
-    // TODO(user): BVA takes time and does not seems to help on the minizinc
+    // TODO(user): BVA takes time and does not seem to help on the minizinc
     // benchmarks. So we currently disable it, except if we are on a pure-SAT
     // problem, where we follow the default (true) or the user specified value.
     sat_params.set_presolve_use_bva(false);
@@ -1379,7 +1380,7 @@ bool CpModelPresolver::PresolvePureSatPart() {
   //
   // TODO(user): We could still do it, we just need to do in a symmetric way
   // and also update the generators to take into account the new variables. This
-  // do not seems that easy.
+  // does not seem that easy.
   if (context_->params().keep_symmetry_in_presolve()) {
     sat_params.set_presolve_use_bva(false);
   }
@@ -1466,7 +1467,7 @@ bool CpModelPresolver::PresolvePureSatPart() {
                           sat_presolver, context_);
 
   // We mark as removed any variables removed by the pure SAT presolve.
-  // This is mainly to discover or avoid bug as we might have stale entries
+  // This is mainly to discover or avoid bugs as we might have stale entries
   // in our encoding hash-map for instance.
   for (int i = 0; i < num_variables; ++i) {
     const int var = new_to_old_index[i];
@@ -1595,7 +1596,7 @@ bool CpModelPresolver::PresolvePureSatProblem() {
                                     context_->mapping_model);
 
   // We mark as removed any variables removed by the pure SAT presolve.
-  // This is mainly to discover or avoid bug as we might have stale entries
+  // This is mainly to discover or avoid bugs as we might have stale entries
   // in our encoding hash-map for instance.
   for (int var = 0; var < num_variables; ++var) {
     if (context_->VarToConstraints(var).empty()) {
@@ -1790,7 +1791,7 @@ void CpModelPresolver::ExpandObjective() {
   std::vector<int> index_to_best_c(num_nodes, -1);
   std::vector<int> index_to_best_size(num_nodes, 0);
 
-  // Lets see first if there are "tight" constraint and for which variables.
+  // Let's see first if there are "tight" constraints and for which variables.
   // We stop processing constraint if we have too many entries.
   int num_entries = 0;
   int num_propagations = 0;
@@ -1906,7 +1907,7 @@ void CpModelPresolver::ExpandObjective() {
 
   // Note(user): We assume the fixed point was already reached by the linear
   // presolve, so we don't add extra code here for that. But we still abort if
-  // some are left to cover corner cases were linear a still not propagated.
+  // some are left to cover corner cases where linear are still not propagated.
   if (num_propagations > 0) {
     context_->UpdateRuleStats("TODO objective: propagation possible!");
     return;
@@ -1914,17 +1915,17 @@ void CpModelPresolver::ExpandObjective() {
 
   // In most cases, we should have no cycle and thus a topo order.
   //
-  // In case there is a cycle, then all member of a strongly connected component
-  // must be equivalent, this is because from X to Y, if we follow the chain we
-  // will have X = non_negative_sum + Y and Y = non_negative_sum + X.
+  // In case there is a cycle, then all members of a strongly connected
+  // component must be equivalent, this is because from X to Y, if we follow the
+  // chain we will have X = non_negative_sum + Y and Y = non_negative_sum + X.
   //
   // Moreover, many shifted variables will need to be zero once we start to have
   // equivalence.
   //
-  // TODO(user): Make the fixing to zero? or at least when this happen redo
+  // TODO(user): Make the fixing to zero? or at least when this happens redo
   // a presolve pass?
   //
-  // TODO(user): Densify index to only look at variable that can be substituted
+  // TODO(user): Densify index to only look at variables that can be substituted
   // further.
   const auto topo_order = util::graph::FastTopologicalSort(index_graph);
   if (!topo_order.ok()) {
@@ -2709,7 +2710,7 @@ bool CpModelPresolver::ProcessSetPPCSubset(int subset_c, int superset_c,
     // If a linear constraint contains more than one at_most_one or exactly_one,
     // after processing one, we might no longer have an inclusion.
     //
-    // TODO(user): If we have multiple disjoint inclusion, we can propagate
+    // TODO(user): If we have multiple disjoint inclusions, we can propagate
     // more. For instance on neos-1593097.mps we basically have a
     // weighted_sum_over_at_most_one1 >= weighted_sum_over_at_most_one2.
     if (num_matches != tmp_set->size()) return true;
@@ -2865,7 +2866,8 @@ void CpModelPresolver::ProcessSetPPC() {
 
       // TODO(user): We only deal with positive var here. Ideally we should
       // match the VARIABLES of the at_most_one/exactly_one with the VARIABLES
-      // of the linear, and complement all variable to have a literal inclusion.
+      // of the linear, and complement all variables to have a literal
+      // inclusion.
       temp_literals.clear();
       for (int i = 0; i < size; ++i) {
         const int var = ct->linear().vars(i);
@@ -2957,7 +2959,7 @@ void CpModelPresolver::DetectIncludedEnforcement() {
     relevant_constraints.push_back(c);
 
     // We only deal with bool_and included in other. Not the other way around,
-    // Altough linear enforcement included in bool_and does happen.
+    // Although linear enforcement included in bool_and does happen.
     if (ct->constraint_case() == ConstraintProto::kBoolAnd) {
       detector.AddPotentialSet(storage.Add(temp_literals));
     } else {
@@ -3094,7 +3096,7 @@ bool CpModelPresolver::ProcessEncodingFromLinear(
     }
   }
   if (target_ref == kint32min || context_->CanBeUsedAsLiteral(target_ref)) {
-    // We didn't find the unique integer variable. This might have happenned
+    // We didn't find the unique integer variable. This might have happened
     // because by processing other encoding we might end up with a fully boolean
     // constraint. Just abort, it will be presolved later.
     context_->UpdateRuleStats("encoding: candidate linear is all boolean now");
@@ -3132,7 +3134,7 @@ bool CpModelPresolver::ProcessEncodingFromLinear(
   }
 
   if (context_->CanBeUsedAsLiteral(target_ref)) {
-    // If target is now a literal, lets not process it here.
+    // If target is now a literal, let's not process it here.
     context_->UpdateRuleStats("encoding: candidate linear is all boolean now");
     return true;
   }
@@ -3150,7 +3152,7 @@ bool CpModelPresolver::ProcessEncodingFromLinear(
     // For determinism.
     absl::c_sort(literals);
 
-    // If the value is not in the domain, just set all literal to false.
+    // If the value is not in the domain, just set all literals to false.
     if (!value_set.contains(value)) {
       for (const int lit : literals) {
         if (!context_->SetLiteralToFalse(lit)) return false;
@@ -3218,7 +3220,7 @@ struct ColumnEqForDuplicateDetection {
 
 // Note that our symmetry-detector will also identify full permutation group
 // for these columns, but it is better to handle that even before. We can
-// also detect variable with different domains but with indentical columns.
+// also detect variables with different domains but with identical columns.
 void CpModelPresolver::DetectDuplicateColumns() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
@@ -3228,7 +3230,7 @@ void CpModelPresolver::DetectDuplicateColumns() {
   const int num_vars = context_->NumVariables();
   const int num_constraints = context_->NumConstraints();
 
-  // Our current implementation require almost a full copy.
+  // Our current implementation requires almost a full copy.
   // First construct a transpose var to columns (constraint_index, coeff).
   CompactVectorVectorBuilder<int, std::pair<int, int64_t>>
       var_to_columns_builder;
@@ -3242,8 +3244,8 @@ void CpModelPresolver::DetectDuplicateColumns() {
   // annoying to have to deal with all kind of constraints. Maybe convert
   // bool_and to at_most_one first? We already do that in other places. Note
   // however that an at most one of size 2 means at most 2 columns can be
-  // identical. If we have a bool and with many term on the left, all column
-  // could be indentical, but we have to linearize the constraint first.
+  // identical. If we have a bool and with many terms on the left, all columns
+  // could be identical, but we have to linearize the constraint first.
   std::vector<bool> appear_in_amo(num_vars, false);
   std::vector<bool> appear_in_bool_constraint(num_vars, false);
   for (int c = 0; c < num_constraints; ++c) {
@@ -3303,7 +3305,7 @@ void CpModelPresolver::DetectDuplicateColumns() {
   CompactVectorVector<int, std::pair<int, int64_t>> var_to_columns;
   var_to_columns.ResetFromBuilder(var_to_columns_builder);
 
-  // Find duplicate columns using an hash map.
+  // Find duplicate columns using a hash map.
   // We only consider "full" columns.
   // var -> var_representative using columns hash/comparison.
   absl::flat_hash_map<int, int, ColumnHashForDuplicateDetection,
@@ -3318,9 +3320,9 @@ void CpModelPresolver::DetectDuplicateColumns() {
     if (size_seen == 0) continue;
     if (size_seen != context_->VarToConstraints(var).size()) continue;
 
-    // TODO(user): If we have duplicate columns appearing in Boolean constraint
+    // TODO(user): If we have duplicate columns appearing in Boolean constraints
     // we can only easily substitute if the sum of columns is a Boolean (i.e. if
-    // it appear in an at most one or exactly one). Otherwise we will need to
+    // it appears in an at-most-one or exactly_one). Otherwise we will need to
     // transform such constraint to linear, do that?
     if (appear_in_bool_constraint[var] && !appear_in_amo[var]) {
       context_->UpdateRuleStats(
@@ -3396,7 +3398,7 @@ void CpModelPresolver::DetectDuplicateColumns() {
     num_equivalent_classes++;
   }
 
-  // Lets rescan the model, and remove all variables, replacing them by
+  // Let's rescan the model, and remove all variables, replacing them by
   // the sum. We do that in one O(model size) pass.
   if (!var_to_remove.empty()) {
     absl::flat_hash_set<int> seen;
@@ -3612,7 +3614,7 @@ void CpModelPresolver::DetectDuplicateConstraints() {
         // Note that we clear the duplicate constraint below.
         context_->UpdateRuleStats(rule_name);
 
-        // This make sure that if we have a long-linear and a constant for
+        // This makes sure that if we have a long-linear and a constant for
         // instance, we keep the constant = f(vars) and not the other one. Note
         // that b always correspond to the "dup" constraint.
         if (b->vars().size() < a->vars().size()) {
@@ -3747,8 +3749,8 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
     // constraints liking enforcements.
     if (context_->VariableWithCostIsUniqueAndRemovable(a) &&
         context_->VariableWithCostIsUniqueAndRemovable(b)) {
-      // Both these case should be presolved before, but it is easy to deal with
-      // if we encounter them here in some corner cases. And the code after
+      // Both these cases should be presolved before, but it is easy to deal
+      // with if we encounter them here in some corner cases. And the code after
       // 'continue' uses this, in particular to update the hint.
       bool skip = false;
       if (RefIsPositive(a) == (context_->ObjectiveCoeff(PositiveRef(a)) > 0)) {
@@ -3767,7 +3769,7 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
       // are not necessarily equivalent: if a constraint is disabled by other
       // literal, we don't want to put a or b at 1 and pay an extra cost.
       //
-      // TODO(user): If a is alone, then b==1 can implies a == 1.
+      // TODO(user): If a is alone, then b==1 can imply a == 1.
       // We can also replace [(b, others) => constraint] with (b, others) <=> a.
       //
       // TODO(user): If the other enforcements are the same, we can also add
@@ -3807,7 +3809,7 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
         trail != nullptr) {
       for (int i = 0; i < 2; i++) {
         // When A and B only differ on their enforcement literals and the
-        // enforcements of constraint A implies the enforcements of constraint
+        // enforcements of constraint A imply the enforcements of constraint
         // B, then constraint A is redundant and we can remove it.
         const int c_a = i == 0 ? dup : rep;
         const int c_b = i == 0 ? rep : dup;
@@ -3916,7 +3918,7 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
           dup_ct->Clear();
           context_->UpdateConstraintVariableUsage(dup);
           // Subtle point: we need to add the implications we used back to the
-          // graph. This is because in some case the implications are only true
+          // graph. This is because in some cases the implications are only true
           // in the presence of the "duplicated" constraints.
           for (const auto& [a, b] : implications_used) {
             const int proto_lit_a = mapping->GetProtoLiteralFromLiteral(a);
@@ -4220,7 +4222,7 @@ void CpModelPresolver::DetectDifferentVariables() {
       }
 
       if (num_greater_than_one > 0) {
-        // We have one size greater than 1, lets add a no_overlap!
+        // We have one size greater than 1, let's add a no_overlap!
         //
         // TODO(user): try to remove all the quadratic boolean and their
         // corresponding linear2 ? Any Boolean not used elsewhere could be
@@ -4339,9 +4341,9 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
     }
 
     if (!LinearConstraintIsClean(ct.linear())) {
-      // This shouldn't happen except in potential corner cases were the
+      // This shouldn't happen except in potential corner cases where the
       // constraints were not canonicalized before this point. We just skip
-      // such constraint.
+      // such constraints.
       continue;
     }
 
@@ -4376,10 +4378,10 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
     int64_t min_pos_factor = kint64max;
     int64_t max_neg_factor = kint64min;
 
-    // Lets compute the implied domain of the linear expression
+    // Let's compute the implied domain of the linear expression
     // "superset - subset". Note that we actually do not need exact inclusion
-    // for this algorithm to work, but it is an heuristic to not try it with
-    // all pair of constraints.
+    // for this algorithm to work, but it is a heuristic to not try it with
+    // all pairs of constraints.
     const ConstraintProto& superset_ct = context_->Constraint(superset_c);
     const LinearConstraintProto& superset_lin = superset_ct.linear();
     int64_t diff_min_activity = 0;
@@ -4480,7 +4482,7 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
       // are the smallest possible, if one is undefined then we are guaranteed
       // to be tighter, and do not need to compute this.
       //
-      // TODO(user): can we compute the best factor that make this as tight as
+      // TODO(user): can we compute the best factor that makes this as tight as
       // possible instead? that looks doable.
       bool is_tigher = true;
       if (min_pos_factor != kint64max && max_neg_factor != kint64min) {
@@ -5077,9 +5079,9 @@ void CpModelPresolver::FindBigVerticalLinearOverlap(
     std::shuffle(linear_cts.begin(), linear_cts.end(), context_->random());
 
     // Now it is almost the same algo as for FindBigHorizontalLinearOverlap().
-    // We greedely compute a "common" rectangle using the first constraint
-    // as a "base" one. Note that if a aX + bY appear in the majority of
-    // constraint, we have a good chance to find this block since we start by
+    // We greedily compute a "common" rectangle using the first constraint
+    // as a "base" one. Note that if an aX + bY appears in the majority of
+    // constraints, we have a good chance to find this block since we start by
     // a random constraint.
     coeff_map.clear();
 
@@ -5144,7 +5146,7 @@ void CpModelPresolver::FindBigVerticalLinearOverlap(
     // about the integrality while reasoning on the sum. So we do that more
     // defensively.
     //
-    // This avoid degrading the perf a lot on the bppc miplib problems.
+    // This avoids degrading the perf a lot on the bppc miplib problems.
     int64_t min_magnitude = kint64max;
     int64_t max_magnitude = 0;
     for (const auto [unused, coeff] : coeff_map) {
@@ -5154,7 +5156,8 @@ void CpModelPresolver::FindBigVerticalLinearOverlap(
     }
     if (min_magnitude != max_magnitude && saved_nz < 1'000) continue;
 
-    // Fix multiples, currently this contain the coeff of x for each constraint.
+    // Fix multiples, currently this contains the coeff of x for each
+    // constraint.
     const int64_t base_x = coeff_map.at(x);
     for (auto& [c, multipier] : block) {
       CHECK_EQ(multipier % base_x, 0);
@@ -5173,13 +5176,13 @@ void CpModelPresolver::FindBigVerticalLinearOverlap(
   DCHECK(context_->ConstraintVariableUsageIsConsistent());
 }
 
-// Note that internally, we already split long linear into smaller chunk, so
-// it should be beneficial to identify common part between many linear
-// constraint.
+// Note that internally, we already split long linear into smaller chunks, so
+// it should be beneficial to identify a common part between many linear
+// constraints.
 //
 // Note(user): This was made to work on var-smallemery-m6j6.pb.gz, but applies
-// to quite a few miplib problem. Try to improve the heuristics and algorithm to
-// be faster and detect larger block.
+// to quite a few miplib problems. Try to improve the heuristics and algorithm
+// to be faster and detect larger blocks.
 void CpModelPresolver::FindBigHorizontalLinearOverlap(
     ActivityBoundHelper* helper) {
   if (time_limit_->LimitReached()) return;
@@ -5443,7 +5446,7 @@ void CpModelPresolver::FindAlmostIdenticalLinearConstraints() {
             }
 
             // Affine will be of size 2, but we might also have the same
-            // variable with different coeff in both constraint, in which case
+            // variable with different coeffs in both constraints, in which case
             // the linear will be of size 1.
             DCHECK_LE(to_modify->linear().vars().size(), 2);
 
@@ -5684,7 +5687,7 @@ void CpModelPresolver::MaybeRemoveLinkingVariable(int var, int c_linear1,
   // constraint should make sure that the enforcement is set to a reasonable
   // value.
   //
-  // TODO(user): make the contract on when variable are assigned during
+  // TODO(user): make the contract on when variables are assigned during
   // postsolve clearer.
   context_->NewMappingConstraint(context_->Constraint(c_linear), __FILE__,
                                  __LINE__);
@@ -6108,10 +6111,10 @@ void CpModelPresolver::ProcessVariableInTwoAtMostOrExactlyOne(int var) {
   if (c1 > c2) std::swap(c1, c2);
 
   // We can always sum the two constraints.
-  // If var appear in one and not(var) in the other, the two term cancel out to
-  // one, so we still have an <= 1 (or eventually a ==1 (see below).
+  // If var appears in one and not(var) in the other, the two terms cancel out
+  // to one, so we still have an <= 1 (or eventually a ==1 (see below).
   //
-  // Note that if the constraint are of size one, they can just be preprocessed
+  // Note that if the constraints are of size one, they can just be preprocessed
   // individually and just be removed. So we abort here as the code below
   // is incorrect if new_ct is an empty constraint.
   context_->tmp_literals.clear();
@@ -6314,7 +6317,7 @@ void CpModelPresolver::EncodeAllAffineRelations() {
     const AffineRelation::Relation r = context_->GetAffineRelation(var);
     if (r.representative == var) continue;
 
-    // TODO(user): It seems some affine relation are still removable at this
+    // TODO(user): It seems some affine relations are still removable at this
     // stage even though they should be removed inside PresolveToFixPoint().
     // Investigate. For now, we just remove such relations.
     if (context_->VariableIsNotUsedAnymore(var)) continue;
@@ -6553,7 +6556,7 @@ void CpModelPresolver::PresolveToFixPoint() {
     if (context_->params().keep_all_feasible_solutions_in_presolve()) break;
     if (!context_->WorkingModel().assumptions().empty()) break;
 
-    // Starts by the "faster" algo that exploit variables that can move freely
+    // Start with the "faster" algo that exploits variables that can move freely
     // in one direction. Or variables that are just blocked by one constraint in
     // one direction.
     for (int i = 0; i < 10; ++i) {
@@ -6569,8 +6572,8 @@ void CpModelPresolver::PresolveToFixPoint() {
       if (ProcessChangedVariables(&in_queue, &queue)) break;
 
       // It is possible we deleted some constraint, but the queue is empty.
-      // In this case we redo a pass of dual bound strenghtening as we might
-      // perform more reduction.
+      // In this case we redo a pass of dual bound strengthening as we might
+      // perform more reductions.
       //
       // TODO(user): maybe we could reach fix point directly?
       if (dual_bound_strengthening.NumDeletedConstraints() == 0) break;
@@ -6578,12 +6581,12 @@ void CpModelPresolver::PresolveToFixPoint() {
     if (!queue.empty()) continue;
 
     // Dominance reasoning will likely break symmetry.
-    // TODO(user): We can apply the one that do not break any though, or the
+    // TODO(user): We can apply the ones that do not break any though, or the
     // operations that are safe.
     if (context_->params().keep_symmetry_in_presolve()) break;
 
     // Detect & exploit dominance between variables.
-    // TODO(user): This can be slow, remove from fix-pint loop?
+    // TODO(user): This can be slow, remove from fix-point loop?
     if (num_dominance_tests++ < 2) {
       if (context_->ModelIsUnsat()) return;
       PresolveTimer timer("DetectDominanceRelations", logger_, time_limit_);
@@ -6747,7 +6750,7 @@ void CpModelPresolver::MergeClauses() {
 
     if (ct->constraint_case() != ConstraintProto::kBoolOr) continue;
 
-    // Both of these test shouldn't happen, but we have them to be safe.
+    // Both of these tests shouldn't happen, but we have them to be safe.
     if (!ct->enforcement_literal().empty()) continue;
     if (ct->bool_or().literals().size() <= 2) continue;
 
@@ -6820,7 +6823,7 @@ void CpModelPresolver::MergeClauses() {
       continue;
     }
 
-    // We have a single bool_and, lets transform it back to single bool_or.
+    // We have a single bool_and, let's transform it back to a single bool_or.
     context_->tmp_literals.clear();
     context_->tmp_literals.push_back(ct->bool_and().literals(0));
     for (const int ref : ct->enforcement_literal()) {
@@ -6860,8 +6863,8 @@ CpSolverStatus CpModelPresolver::InfeasibleStatus() {
   return CpSolverStatus::INFEASIBLE;
 }
 
-// At the end of presolve, the mapping model is initialized to contains all
-// the variable from the original model + the one created during presolve
+// At the end of presolve, the mapping model is initialized to contain all
+// the variables from the original model + the ones created during presolve
 // expand. It also contains the tightened domains.
 namespace {
 void InitializeMappingModelVariables(absl::Span<const Domain> domains,
@@ -6879,7 +6882,7 @@ void InitializeMappingModelVariables(absl::Span<const Domain> domains,
   // Overwrite the domains.
   //
   // Note that if the fixed_postsolve_mapping was not null, the mapping model
-  // should contains the original variable domains at the time the fixed mapping
+  // should contain the original variable domains at the time the fixed mapping
   // was computed.
   for (int i = 0; i < domains.size(); ++i) {
     FillDomainInProto(domains[i], mapping_proto->mutable_variables(
@@ -6909,9 +6912,9 @@ void CpModelPresolver::ExpandCpModelAndCanonicalizeConstraints() {
   ExpandCpModel(context_);
   if (context_->ModelIsUnsat()) return;
 
-  // TODO(user): Make sure we can't have duplicate in these constraint.
-  // These are due to ExpandCpModel() were we create such constraint with
-  // duplicate. The problem is that some code assumes these are presolved
+  // TODO(user): Make sure we can't have duplicates in these constraints.
+  // These are due to ExpandCpModel() where we create such constraints with
+  // duplicates. The problem is that some code assumes these are presolved
   // before being called.
   const int num_constraints = context_->NumConstraints();
   for (int c = num_constraints_before_expansion; c < num_constraints; ++c) {
@@ -7118,8 +7121,8 @@ CpSolverStatus CpModelPresolver::Presolve() {
     }
 
     // At this point, we didn't create any new variables, so the integer
-    // objective is in term of the orinal problem variables. We save it so that
-    // we can expose to the user what exact objective we are actually
+    // objective is in terms of the original problem variables. We save it so
+    // that we can expose to the user what exact objective we are actually
     // optimizing.
     *context_->mapping_model->mutable_objective() =
         context_->WorkingModel().objective();
@@ -7130,10 +7133,10 @@ CpSolverStatus CpModelPresolver::Presolve() {
     context_->LoadAndClampSolutionHint();
   }
 
-  // If there is a large proprotion of fixed variables, lets remap the model
+  // If there is a large proportion of fixed variables, let's remap the model
   // before we start the actual presolve. This is useful for LNS in particular.
   //
-  // fixed_postsolve_mapping[i] will contains the original index of the variable
+  // fixed_postsolve_mapping[i] will contain the original index of the variable
   // that will be at position i after MaybeRemoveFixedVariables(). If the
   // mapping is left empty, it will be set to the identity mapping later by
   // InitializeMappingModelVariables().
@@ -7160,7 +7163,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
     context_->WriteHintToProto();
     if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
-    // We still write back the canonical objective has we don't deal well
+    // We still write back the canonical objective as we don't deal well
     // with uninitialized domain or duplicate variables.
     if (context_->WorkingModel().has_objective()) {
       context_->WriteObjectiveToProto();
@@ -7194,7 +7197,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
     return CpSolverStatus::UNKNOWN;
   }
 
-  // Presolve all variable domain once. The PresolveToFixPoint() function will
+  // Presolve all variable domains once. The PresolveToFixPoint() function will
   // only reprocess domain that changed.
   if (context_->ModelIsUnsat()) return InfeasibleStatus();
   for (int var = 0; var < context_->NumVariables(); ++var) {
@@ -7204,7 +7207,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
     }
 
     // Try to canonicalize the domain, note that we should have detected all
-    // affine relations before, so we don't recreate "canononical" variables
+    // affine relations before, so we don't recreate "canonical" variables
     // if they already exist in the model.
     constraint_presolver_->TryToSimplifyDomain(var);
     if (context_->ModelIsUnsat()) return InfeasibleStatus();
@@ -7223,7 +7226,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
 
     // TODO(user): The presolve transformations we do after this is called might
     // result in even more presolve if we were to call this again! improve the
-    // code. See for instance plusexample_6_sat.fzn were represolving the
+    // code. See for instance plusexample_6_sat.fzn where represolving the
     // presolved problem reduces it even more.
     PresolveToFixPoint();
     DCHECK(context_->ConstraintVariableUsageIsConsistent());
@@ -7256,7 +7259,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
     // this case, it is still good to compute them early.
     if (context_->params().symmetry_level() > 0 && !context_->ModelIsUnsat() &&
         !time_limit_->LimitReached()) {
-      // Both kind of duplications might introduce a lot of symmetries and we
+      // Both kinds of duplications might introduce a lot of symmetries and we
       // want to do that before we even compute them.
       DetectDuplicateColumns();
       DetectDuplicateConstraints();
@@ -7264,7 +7267,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
         // If the presolve always keep symmetry, we compute it once and for all.
         //
         // Note that this will always create a "symmetry" message even if it is
-        // empty. We use that to know that symmetry where computed, and there is
+        // empty. We use that to know that symmetry was computed, and there is
         // none.
         if (!context_->WorkingModel().has_symmetry()) {
           DetectAndAddSymmetryToProto(context_->params(),
@@ -7317,10 +7320,10 @@ CpSolverStatus CpModelPresolver::Presolve() {
       TransformIntoMaxCliques();
     }
 
-    // Deal with pair of constraints.
+    // Deal with pairs of constraints.
     //
     // TODO(user): revisit when different transformation appear.
-    // TODO(user): merge these code instead of doing many passes?
+    // TODO(user): merge this code instead of doing many passes?
     ProcessAtMostOneAndLinear();
     DetectDuplicateConstraints();
     DetectDuplicateConstraintsWithDifferentEnforcements();
@@ -7362,8 +7365,8 @@ CpSolverStatus CpModelPresolver::Presolve() {
       if (/*DISABLES CODE*/ (false)) DetectIncludedEnforcement();
     }
 
-    // The TransformIntoMaxCliques() call above transform all bool and into
-    // at most one of size 2. This does the reverse and merge them.
+    // The TransformIntoMaxCliques() call above transforms all bool_and into
+    // at-most-one of size 2. This does the reverse and merges them.
     ConvertToBoolAnd();
 
     // Call the main presolve to remove the fixed variables and do more
@@ -7402,14 +7405,14 @@ CpSolverStatus CpModelPresolver::Presolve() {
   // don't leave any linear constraint with fixed variables.
   if (!CanonicalizeAllLinears()) return InfeasibleStatus();
 
-  // Take care of linear constraint with a complex rhs.
+  // Take care of linear constraints with a complex rhs.
   FinalExpansionForLinearConstraint(context_);
 
-  // Adds all needed affine relation to working_model.
+  // Adds all needed affine relations to working_model.
   EncodeAllAffineRelations();
   if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
-  // If we have symmetry information, lets filter it.
+  // If we have symmetry information, let's filter it.
   if (context_->WorkingModel().has_symmetry()) {
     if (!FilterOrbitOnUnusedOrFixedVariables(
             context_->MutableWorkingModelSymmetry(), context_)) {
@@ -7752,7 +7755,7 @@ bool CpModelPresolver::MaybeRemoveFixedVariables(
     postsolve_mapping->push_back(i);
   }
 
-  // Lets only do this if the proportion of fixed variables is large enough.
+  // Let's only do this if the proportion of fixed variables is large enough.
   const int num_fixed = num_vars - postsolve_mapping->size();
   if (num_fixed < 1000 || num_fixed * 2 <= num_vars) {
     postsolve_mapping->clear();

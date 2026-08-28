@@ -93,8 +93,8 @@ struct Disjoint2dPackingResult {
     std::vector<Rectangle> fixed_boxes;
     // Non-fixed boxes on the original problem to copy to this new constraint.
     std::vector<int> non_fixed_box_indexes;
-    // Area that is covered by the connected component bin represents encoded as
-    // a non-overlapping set of rectangles.
+    // Area that is covered by the connected component the bin represents,
+    // encoded as a non-overlapping set of rectangles.
     std::vector<Rectangle> bin_area;
   };
   std::vector<Bin> bins;
@@ -106,15 +106,15 @@ Disjoint2dPackingResult DetectDisjointRegionIn2dPacking(
 // Given two vectors of non-overlapping rectangles defining two regions of the
 // space: one mandatory region that must be occupied and one optional region
 // that can be occupied, try to build a vector of as few non-overlapping
-// rectangles as possible defining a region R that satisfy:
+// rectangles as possible defining a region R that satisfies:
 //   - R \subset (mandatory \union optional);
 //   - mandatory \subset R.
 //
 // The function updates the vector of `mandatory_rectangles` with `R` and
-// `optional_rectangles` with  `optional_rectangles \setdiff R`. It returns
-// true if the `mandatory_rectangles` was updated.
+// `optional_rectangles` with `optional_rectangles \setdiff R`. It returns
+// true if `mandatory_rectangles` was updated.
 //
-// This function uses a greedy algorithm that merge rectangles that share an
+// This function uses a greedy algorithm that merges rectangles that share an
 // edge.
 bool ReduceNumberofBoxesGreedy(std::vector<Rectangle>* mandatory_rectangles,
                                std::vector<Rectangle>* optional_rectangles);
@@ -147,12 +147,12 @@ void AbslStringify(Sink& sink, EdgePosition e) {
   }
 }
 
-// Given a set of non-overlapping rectangles, precompute a data-structure that
-// allow for each rectangle to find the adjacent rectangle along an edge.
+// Given a set of non-overlapping rectangles, precomputes a data-structure that
+// allows each rectangle to find the adjacent rectangle along an edge.
 //
-// Note that it only consider adjacent rectangles whose segments has a
-// intersection of non-zero size. In particular, rectangles as following are not
-// considered adjacent:
+// Note that it only considers adjacent rectangles whose segments have an
+// intersection of non-zero size. In particular, rectangles such as the
+// following are not considered adjacent:
 //
 // ********
 // ********
@@ -234,7 +234,7 @@ std::vector<std::vector<int>> SplitInConnectedComponents(
 // Generally, given a set of non-overlapping rectangles and a path that doesn't
 // cross itself, the path can be cut into segments that touch only one single
 // rectangle in the interior of the region delimited by the path. This struct
-// holds a path cut into such segments. In particular, for the contour of an
+// holds a path cut into such segments. In particular, for the contour of a
 // union of rectangles, the path is a subset of the union of all the rectangle's
 // edges.
 struct ShapePath {
@@ -261,7 +261,7 @@ struct SingleShape {
 // Given a set of non-overlapping rectangles, splits them into connected
 // components with two rectangles being connected if they share a side of
 // non-zero length and transforms each set into a shape described by its
-// boundary and hole paths. Then, for each component, convert the set of
+// boundary and hole paths. Then, for each component, converts the set of
 // rectangles into a single shape with a boundary and zero or more holes.
 //
 // Note that if two rectangles touch only at a single diagonal point, there are
@@ -286,14 +286,14 @@ struct PolygonCut {
 // size. The first one contains the points of the shape and the second one
 // contains the index of the next point in the shape.
 //
-// Note that we code in this file is only correct for shapes with points
+// Note that the code in this file is only correct for shapes with points
 // connected only by horizontal or vertical lines.
 struct FlatShape {
   std::vector<std::pair<IntegerValue, IntegerValue>> points;
   std::vector<int> next;
 };
 
-// Exposed for testing, documented on the .cc file.
+// Exposed for testing, documented in the .cc file.
 FlatShape BuildFlatShape(const SingleShape& shape);
 std::array<std::vector<PolygonCut>, 4> GetPotentialPolygonCuts(
     FlatShape& shape);

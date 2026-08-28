@@ -167,7 +167,7 @@ bool PresolveFixed2dRectangles(
   DCHECK_GT(min_x_size, 0);
   DCHECK_GT(min_y_size, 0);
 
-  // Fixed items are only useful to constraint where the non-fixed items can be
+  // Fixed items are only useful to constrain where the non-fixed items can be
   // placed. This means in particular that any part of a fixed item outside the
   // bounding box of the non-fixed items is useless. Clip them.
   int new_size = 0;
@@ -222,7 +222,7 @@ bool PresolveFixed2dRectangles(
   //  ***********                ***********
   //  ***********                ***********
   //
-  // Since less turns means less edges, this should be a good way to reduce the
+  // Since fewer turns mean fewer edges, this should be a good way to reduce the
   // number of boxes.
   if (ReduceNumberofBoxesGreedy(fixed_boxes, &optional_boxes)) {
     changed = true;
@@ -305,7 +305,7 @@ struct Edge {
 
 bool ReduceNumberofBoxesGreedy(std::vector<Rectangle>* mandatory_rectangles,
                                std::vector<Rectangle>* optional_rectangles) {
-  // The current implementation just greedly merge rectangles that shares an
+  // The current implementation just greedily merges rectangles that share an
   // edge.
   std::deque<Rectangle> rectangle_storage;
   enum class OptionalEnum { OPTIONAL, MANDATORY };
@@ -558,9 +558,10 @@ std::vector<std::vector<int>> SplitInConnectedComponents(
 
 namespace {
 // Given a list of rectangles and their neighbours graph, find the list of
-// vertical and horizontal segments that touches a single rectangle edge. Or,
-// view in another way, the pieces of an edge that is touching the empty space.
-// For example, this corresponds to the "0" segments in the example below:
+// vertical and horizontal segments that touch a single rectangle edge. Or,
+// viewed in another way, the pieces of an edge that are touching the empty
+// space. For example, this corresponds to the "0" segments in the example
+// below:
 //
 //   000000
 //   0****0    000000
@@ -963,13 +964,13 @@ void RotateShape90CW(FlatShape& shape) {
 }  // namespace
 
 // Given a polygon, this function returns all line segments that start on a
-// concave vertex and follow horizontally or vertically until it reaches the
-// border of the polygon. This function returns all such segments grouped on the
-// direction the line takes after starting in the concave vertex. Some of those
+// concave vertex and follow horizontally or vertically until they reach the
+// border of the polygon. This function returns all such segments grouped by the
+// direction the line takes after starting at the concave vertex. Some of those
 // segments start and end on a convex vertex, so they will appear twice in the
 // output. This function modifies the shape by splitting some of the path
 // segments in two. This is needed to make sure that `PolygonCut.start_index`
-// and `PolygonCut.end_index` always corresponds to points in the FlatShape,
+// and `PolygonCut.end_index` always correspond to points in the FlatShape,
 // even if they are not edges.
 std::array<std::vector<PolygonCut>, 4> GetPotentialPolygonCuts(
     FlatShape& shape) {
@@ -1106,9 +1107,9 @@ std::vector<Rectangle> CutShapeIntoRectangles(const SingleShape& shape) {
   // they are called "good diagonals" in the literature. Note that in
   // computational geometry jargon, a diagonal of a polygon is a line segment
   // that connects two non-adjacent vertices of a polygon, even in cases like
-  // ours that we are only talking of diagonals that are not "diagonal" in the
-  // usual meaning of the word: ie., horizontal or vertical segments connecting
-  // two vertices of the polygon).
+  // ours where we are only talking about diagonals that are not "diagonal" in
+  // the usual meaning of the word: ie., horizontal or vertical segments
+  // connecting two vertices of the polygon).
 
   absl::flat_hash_set<
       std::tuple<IntegerValue, IntegerValue, IntegerValue, IntegerValue>>
@@ -1138,7 +1139,7 @@ std::vector<Rectangle> CutShapeIntoRectangles(const SingleShape& shape) {
     }
   }
 
-  // The "good diagonals" are only more optimal that any cut if they are not
+  // The "good diagonals" are only more optimal than any cut if they are not
   // crossed by other cuts. To maximize their usefulness, we build a graph where
   // the good diagonals are the vertices and we add an edge every time a
   // vertical and horizontal diagonal cross. The minimum vertex cover of this
@@ -1171,7 +1172,7 @@ std::vector<Rectangle> CutShapeIntoRectangles(const SingleShape& shape) {
         good_diagonals[1][i - good_diagonals[0].size()]);
   }
 
-  // Since our data structure only allow to cut the shape according to a list
+  // Since our data structure only allows cutting the shape according to a list
   // of vertical or horizontal cuts, but not a list mixing both, we cut first
   // on the chosen horizontal good diagonals.
   CutShapeWithPolygonCuts(flat_shape, minimum_cover_horizontal_diagonals);

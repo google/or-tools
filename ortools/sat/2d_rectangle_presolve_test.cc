@@ -396,7 +396,7 @@ ContourPoint NextByClockwiseOrder(const ContourPoint& point,
 
   EdgePosition cur_edge;
   bool clockwise;
-  // Much of the code below need to know two things: in which direction we are
+  // Much of the code below needs to know two things: in which direction we are
   // going and what edge of which rectangle we are touching. For example, in the
   // "Case 4" drawing above we are going RIGHT and touching the TOP edge of the
   // current rectangle. This switch statement finds this `cur_edge`.
@@ -463,7 +463,7 @@ ContourPoint NextByClockwiseOrder(const ContourPoint& point,
       });
 
   if (it != cur_edge_neighbors.end()) {
-    // We found box in the current edge. We are in case 1.
+    // We found a box in the current edge. We are in case 1.
     result.next_box_index = *it;
     const Rectangle& next_rectangle = rectangles[*it];
     switch (point.next_direction) {
@@ -587,7 +587,7 @@ ContourPoint NextByClockwiseOrder(const ContourPoint& point,
     }
   }
 
-  // Now we must be in the case 4.
+  // Now we must be in case 4.
   result.next_box_index = point.next_box_index;
   switch (point.next_direction) {
     case EdgePosition::TOP:
@@ -613,12 +613,12 @@ ContourPoint NextByClockwiseOrder(const ContourPoint& point,
 // Returns a path delimiting a boundary of the union of a set of rectangles. It
 // should work for both the exterior boundary and the boundaries of the holes
 // inside the union. The path will start on `starting_point` and follow the
-// boundary on clockwise order.
+// boundary in clockwise order.
 //
 // `starting_point` should be a point in the boundary and `starting_box_index`
 // the index of a rectangle with one edge containing `starting_point`.
 //
-// The resulting `path` satisfy:
+// The resulting `path` satisfies:
 // - path.step_points.front() == path.step_points.back() == starting_point
 // - path.touching_box_index.front() == path.touching_box_index.back() ==
 //                                   == starting_box_index
@@ -659,7 +659,7 @@ ShapePath TraceBoundary(
     next_direction = EdgePosition::LEFT;
   } else {
     LOG(FATAL)
-        << "TraceBoundary() got a `starting_step_point` that is not in an edge "
+        << "TraceBoundary() got a `starting_step_point` that is not on an edge "
            "of the rectangle of `starting_box_index`. This is not allowed.";
   }
   const ContourPoint starting_point = {.x = starting_step_point.first,
@@ -691,7 +691,7 @@ ShapePath TraceBoundary(
       // ########++++++++
       //
       // In this case, the only way the algorithm could reach the "+" box is via
-      // the "#" box, but which is doesn't contribute to the path. The algorithm
+      // the "#" box, which doesn't contribute to the path. The algorithm
       // returns a technically correct zero-size interval, which might be useful
       // for callers that want to count the "#" box as visited, but this is not
       // our case.
@@ -1211,7 +1211,7 @@ TEST(ReduceNumberOfBoxes, RandomTestNoOptional) {
 }
 
 TEST(ReduceNumberOfBoxes, Problematic) {
-  // This example shows that we must consider diagonals that touches only on its
+  // This example shows that we must consider diagonals that touch only on their
   // extremities as "intersecting" for the bipartite graph.
   const std::vector<Rectangle> input = {
       {.x_min = 26, .x_max = 51, .y_min = 54, .y_max = 81},
@@ -1231,9 +1231,9 @@ TEST(ReduceNumberOfBoxes, Problematic) {
 // formula that the minimum number of rectangles in a partition of a polygon
 // with n vertices and h holes is n/2 + h − g − 1, where g is the number of
 // non-intersecting good diagonals. This test-case shows a polygon with 4
-// internal vertices, 1 hole and 4 non-intersecting good diagonals that includes
-// the hole. Removing the hole reduces the n/2 term by 2, decrease the h term by
-// 1, but decrease the g term by 4.
+// internal vertices, 1 hole and 4 non-intersecting good diagonals that include
+// the hole. Removing the hole reduces the n/2 term by 2, decreases the h term
+// by 1, but decreases the g term by 4.
 //
 //          ***********************
 //          ***********************

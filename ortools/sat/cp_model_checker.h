@@ -34,17 +34,17 @@ namespace sat {
 // has been presolved, we have a stricter set of properties we want to enforce.
 //
 // TODO(user): Add any needed overflow validation because we are far from
-// exhaustive. We could also run a small presolve that tighten variable bounds
-// before the overflow check to facilitate the lives of our users, but it is a
+// exhaustive. We could also run a small presolve that tightens variable bounds
+// before the overflow check to facilitate the lives of our users, but it is
 // some work to put in place.
 std::string ValidateCpModel(const CpModelProto& model,
                             bool after_presolve = false);
 
-// Some validation (in particular the floating point objective) requires to
-// read parameters.
+// Some validation (in particular the floating point objective) requires reading
+// parameters.
 //
 // TODO(user): Ideally we would have just one ValidateCpModel() function but
-// this was introduced after many users already use ValidateCpModel() without
+// this was introduced after many users already used ValidateCpModel() without
 // parameters.
 std::string ValidateInputCpModel(const SatParameters& params,
                                  const CpModelProto& model);
@@ -60,20 +60,20 @@ struct LinearOverflowChecker {
   int64_t sum_max = 0;
 };
 
-// Check if a given linear expression can create overflow. If it doesn't,
-// sets `implied_domain` to a superset of the implied domain of the expression.
-// It is exposed to test new constraints created during the presolve.
+// Checks if a given linear expression can create overflow. If it doesn't, sets
+// `implied_domain` to a superset of the implied domain of the expression.
+// This is exposed to test new constraints created during the presolve.
 bool PossibleIntegerOverflow(
     const CpModelProto& model, absl::Span<const int> vars,
     absl::Span<const int64_t> coeffs, int64_t offset = 0,
     std::pair<int64_t, int64_t>* implied_domain = nullptr);
 
 // Verifies that the given variable assignment is a feasible solution of the
-// given model. The values vector should be in one to one correspondence with
+// given model. The values vector should be in one-to-one correspondence with
 // the model.variables() list of variables.
 //
-// The last two arguments are optional and help debugging a failing constraint
-// due to presolve.
+// The last two arguments are optional and help debug a failing constraint due
+// to presolve.
 bool SolutionIsFeasible(const CpModelProto& model,
                         absl::Span<const int64_t> variable_values,
                         const CpModelProto* mapping_proto = nullptr,
@@ -85,7 +85,7 @@ bool SolutionCanBeOptimal(const CpModelProto& model,
 
 // Checks a single constraint for feasibility.
 // This has some overhead, and should only be used for debugging.
-// The full model is needed for scheduling constraints that refers to intervals.
+// The full model is needed for scheduling constraints that refer to intervals.
 bool ConstraintIsFeasible(const CpModelProto& model,
                           const ConstraintProto& constraint,
                           absl::Span<const int64_t> variable_values);
