@@ -666,7 +666,8 @@ int ActivityBoundHelper::RemoveEnforcementThatMakesConstraintTrivial(
     }
 
     // The two aborts above leave min/max_activity missing the remaining terms,
-    // so the bounds are not valid and must not be used to remove an enforcement.
+    // so the bounds are not valid and must not be used to remove an
+    // enforcement.
     if (!aborted && Domain(min_activity, max_activity)
                         .AdditionWith(other_terms)
                         .IsIncludedIn(rhs)) {
