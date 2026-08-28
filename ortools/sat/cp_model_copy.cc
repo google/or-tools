@@ -1399,28 +1399,17 @@ bool ModelCopy::CopyBoolXor(const ConstraintProto& ct) {
   FinishEnforcementCopy(new_ct);
 
   int num_true = 0;
-  temp_literals_.ClearAndResize(GetMaxIndex());
+  auto xor_literals = new_ct->mutable_bool_xor()->mutable_literals();
+  xor_literals->Reserve(ct.bool_xor().literals().size());
   for (const int lit : ct.bool_xor().literals()) {
     if (helper_.InputIsFixed(lit)) {
       if (helper_.InputFixedLiteralIsTrue(lit)) num_true++;
       continue;
     }
-    if (temp_literals_[GetPositiveRefIndex(MapLiteral(lit))]) {
-      temp_literals_.Clear(GetPositiveRefIndex(MapLiteral(lit)));
-    } else {
-      temp_literals_.Set(GetPositiveRefIndex(MapLiteral(lit)));
-    }
+    xor_literals->Add(MapLiteral(lit));
   }
   if (num_true % 2 == 1) {
-    temp_literals_.Set(GetPositiveRefIndex(GetTrueMappedLiteral()));
-  }
-  const auto& lit_refs = temp_literals_.PositionsSetAtLeastOnce();
-  auto xor_literals = new_ct->mutable_bool_xor()->mutable_literals();
-  xor_literals->Reserve(lit_refs.size());
-  for (const PositiveOnlyLitIndex idx : lit_refs) {
-    if (temp_literals_[idx]) {
-      xor_literals->Add(GetRefFromPositiveIndex(idx));
-    }
+    xor_literals->Add(GetTrueMappedLiteral());
   }
   return true;
 }
