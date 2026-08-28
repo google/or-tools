@@ -38,7 +38,7 @@ inline PyObject* PyInt_FromIndexT(const IndexT i) {
 
 // Convert IndexT to (32-bit signed) integers.
 %typemap(in) IndexT {
-  $1 = IndexT(PyInt_AsLong($input));
+  $1 = IndexT(PyLong_AsLong($input));
 }
 %typemap(out) IndexT {
   $result = PyInt_FromLong($1.value());
