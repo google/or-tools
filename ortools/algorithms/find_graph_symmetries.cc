@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <memory>
 #include <numeric>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -40,6 +41,7 @@
 #include "ortools/algorithms/dynamic_permutation.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/log_severity.h"
+#include "ortools/base/types.h"
 #include "ortools/graph_base/graph.h"
 #include "ortools/graph_base/iterators.h"
 #include "ortools/graph_base/util.h"
@@ -267,19 +269,25 @@ inline void IncrementCounterForNonSingletons(const T& nodes,
 }
 }  // namespace
 
-void GraphSymmetryFinder::RecursivelyRefinePartitionByAdjacency(
+bool GraphSymmetryFinder::RecursivelyRefinePartitionByAdjacency(
     int first_unrefined_part_index, DynamicPartition* partition) {
+  bool time_limit_reached = false;
   // Rename, for readability of the code below.
   std::vector<int>& tmp_nodes_with_nonzero_degree = tmp_stack_;
+  TimeLimitCheckEveryNCalls time_limit_check(1000, time_limit_);
 
   // This function is the main bottleneck of the whole algorithm. We count the
-  // number of blocks in the inner-most loops in num_operations. At the end we
+  // number of blocks in the innermost loops in num_operations. At the end we
   // will multiply it by a factor to have some deterministic time that we will
   // append to the deterministic time counter.
   //
   // TODO(user): We are really imprecise in our counting, but it is fine. We
   // just need a way to enforce a deterministic limit on the computation effort.
   int64_t num_operations = 0;
+  const int64_t max_num_operations =
+      std::isfinite(time_limit_->GetDeterministicTimeLeft())
+          ? static_cast<int64_t>(time_limit_->GetDeterministicTimeLeft() / 1e-8)
+          : kint64max;
 
   // Assuming that the partition was refined based on the adjacency on
   // parts [0 .. first_unrefined_part_index) already, we simply need to
@@ -299,6 +307,10 @@ void GraphSymmetryFinder::RecursivelyRefinePartitionByAdjacency(
   for (int part_index = first_unrefined_part_index;
        part_index < partition->NumParts();  // Moving target!
        ++part_index) {
+    if (num_operations > max_num_operations) {
+      time_limit_reached = true;
+      break;
+    }
     for (const bool outgoing_adjacency : adjacency_directions) {
       // Count the aggregated degree of all nodes, only looking at arcs that
       // come from/to the current part.
@@ -342,13 +354,18 @@ void GraphSymmetryFinder::RecursivelyRefinePartitionByAdjacency(
   // 2020.
   time_limit_->AdvanceDeterministicTime(1e-8 *
                                         static_cast<double>(num_operations));
+
+  return !time_limit_reached;
 }
 
-void GraphSymmetryFinder::DistinguishNodeInPartition(
+bool GraphSymmetryFinder::DistinguishNodeInPartition(
     int node, DynamicPartition* partition, std::vector<int>* new_singletons) {
   const int original_num_parts = partition->NumParts();
   partition->Refine(std::vector<int>(1, node));
-  RecursivelyRefinePartitionByAdjacency(partition->PartOf(node), partition);
+  if (!RecursivelyRefinePartitionByAdjacency(partition->PartOf(node),
+                                             partition)) {
+    return false;
+  }
 
   // Explore the newly refined parts to gather all the new singletons.
   if (new_singletons != nullptr) {
@@ -371,6 +388,7 @@ void GraphSymmetryFinder::DistinguishNodeInPartition(
       tmp_node_mask_[partition->ParentOfPart(p)] = false;
     }
   }
+  return true;
 }
 
 namespace {
@@ -537,12 +555,13 @@ absl::Status GraphSymmetryFinder::FindSymmetries(
     }
     invariant_dive_stack.push_back(
         InvariantDiveState(invariant_node, base_partition.NumParts()));
-    DistinguishNodeInPartition(invariant_node, &base_partition, nullptr);
+    const bool success =
+        DistinguishNodeInPartition(invariant_node, &base_partition, nullptr);
     VLOG(4) << "Invariant dive: invariant node = " << invariant_node
             << "; partition after: "
             << base_partition.DebugString(
                    /*sort_parts_lexicographically=*/false);
-    if (time_limit_->LimitReached()) {
+    if (!success || time_limit_->LimitReached()) {
       return absl::Status(absl::StatusCode::kDeadlineExceeded,
                           "During the invariant dive.");
     }
@@ -749,7 +768,10 @@ GraphSymmetryFinder::FindOneSuitablePermutation(
   search_states_.back().remaining_pruned_image_nodes.assign(1, root_image_node);
   {
     ScopedTimeDistributionUpdater u(&stats_.initial_search_refine_time);
-    DistinguishNodeInPartition(root_node, base_partition, &base_singletons);
+    if (!DistinguishNodeInPartition(root_node, base_partition,
+                                    &base_singletons)) {
+      return nullptr;
+    }
   }
   while (!search_states_.empty()) {
     if (time_limit_->LimitReached()) return nullptr;
@@ -777,8 +799,10 @@ GraphSymmetryFinder::FindOneSuitablePermutation(
     // was already refined on base_node, we just need to refine image_partition.
     {
       ScopedTimeDistributionUpdater u(&stats_.search_refine_time);
-      DistinguishNodeInPartition(image_node, image_partition,
-                                 &image_singletons);
+      if (!DistinguishNodeInPartition(image_node, image_partition,
+                                      &image_singletons)) {
+        return nullptr;
+      }
     }
     VLOG(4) << ss.DebugString();
     VLOG(4) << base_partition->DebugString(
@@ -968,8 +992,10 @@ GraphSymmetryFinder::FindOneSuitablePermutation(
         min_potential_mismatching_part_index);
     {
       ScopedTimeDistributionUpdater u(&stats_.search_refine_time);
-      DistinguishNodeInPartition(next_base_node, base_partition,
-                                 &base_singletons);
+      if (!DistinguishNodeInPartition(next_base_node, base_partition,
+                                      &base_singletons)) {
+        return nullptr;
+      }
     }
   }
   // We exhausted the search; we didn't find any permutation.

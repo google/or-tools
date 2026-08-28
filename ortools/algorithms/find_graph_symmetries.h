@@ -26,6 +26,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -122,7 +123,9 @@ class GraphSymmetryFinder {
   // In our use cases, we may call this in a scenario where the partition was
   // already partially refined on all parts #0...#K, then you should set
   // "first_unrefined_part_index" to K+1.
-  void RecursivelyRefinePartitionByAdjacency(int first_unrefined_part_index,
+  //
+  // Returns false if the time limit was reached.
+  bool RecursivelyRefinePartitionByAdjacency(int first_unrefined_part_index,
                                              DynamicPartition* partition);
 
   // **** Methods below are public FOR TESTING ONLY. ****
@@ -131,7 +134,9 @@ class GraphSymmetryFinder {
   // fully refined, further refine it by {node}, and propagate by adjacency.
   // Also, optionally collect all the new singletons of the partition in
   // "new_singletons", sorted by their part number in the partition.
-  void DistinguishNodeInPartition(int node, DynamicPartition* partition,
+  //
+  // Returns false if the time limit was reached.
+  bool DistinguishNodeInPartition(int node, DynamicPartition* partition,
                                   std::vector<int>* new_singletons_or_null);
 
  private:
