@@ -1376,6 +1376,7 @@ bool CpConstraintPresolver::PresolveLinMaxWhenAllBoolean(ConstraintProto* ct) {
   const int64_t target_min = context_->MinOf(target);
   const int64_t target_max = context_->MaxOf(target);
   const int target_ref = context_->LiteralForExpressionMax(target);
+  if (target_min == target_max) return false;
 
   bool min_is_reachable = false;
   std::vector<int> min_literals;
@@ -1383,13 +1384,30 @@ bool CpConstraintPresolver::PresolveLinMaxWhenAllBoolean(ConstraintProto* ct) {
   std::vector<int> max_literals;
 
   for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
-    if (!context_->ExpressionIsAffineBoolean(expr)) return false;
+    const bool is_fixed = context_->IsFixed(expr);
+    if (!context_->ExpressionIsAffineBoolean(expr) && !is_fixed) return false;
+
+    if (is_fixed) {
+      const int64_t fixed_value = context_->FixedValue(expr);
+      if (fixed_value == target_min) {
+        min_is_reachable = true;
+      } else if (fixed_value > target_max) {
+        return context_->NotifyThatModelIsUnsat(
+            "lin_max: fixed expr above maximum target value");
+      } else if (fixed_value > target_min) {
+        context_->UpdateRuleStats("lin_max: fix target");
+        (void)context_->SetLiteralToTrue(target_ref);
+        return false;
+      }
+      continue;
+    }
+
     const int64_t value_min = context_->MinOf(expr);
     const int64_t value_max = context_->MaxOf(expr);
-    const int ref = context_->LiteralForExpressionMax(expr);
 
     // Get corner case out of the way, and wait for the constraint to be
     // processed again in this case.
+    const int ref = context_->LiteralForExpressionMax(expr);
     if (value_min > target_min) {
       context_->UpdateRuleStats("lin_max: fix target");
       (void)context_->SetLiteralToTrue(target_ref);
@@ -1399,12 +1417,6 @@ bool CpConstraintPresolver::PresolveLinMaxWhenAllBoolean(ConstraintProto* ct) {
       context_->UpdateRuleStats("lin_max: fix bool expr");
       (void)context_->SetLiteralToFalse(ref);
       return false;
-    }
-
-    // expr is fixed.
-    if (value_min == value_max) {
-      if (value_min == target_min) min_is_reachable = true;
-      continue;
     }
 
     CHECK_LE(value_min, target_min);
