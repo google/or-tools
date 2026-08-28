@@ -84,6 +84,7 @@ jobs:
     - uses: actions/checkout@v7
     - uses: ./.github/actions/remote_cache
       with:
+        enable: false
         credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
         set_cmake_sccache_launcher: true
     - uses: actions/setup-java@v5
