@@ -1475,23 +1475,22 @@ bool IntegerTrail::ReasonIsValid(
   if (!ReasonIsValid(literal_reason, integer_reason)) return false;
   if (debug_checker_ == nullptr) return true;
 
-  std::vector<Literal> clause;
-  clause.assign(literal_reason.begin(), literal_reason.end());
-  std::vector<IntegerLiteral> lits = {integer_reason.begin(),
-                                      integer_reason.end()};
+  is_valid_tmp_reason_.assign(literal_reason.begin(), literal_reason.end());
+  is_valid_tmp_integer_reason_.assign(integer_reason.begin(),
+                                      integer_reason.end());
 
   const IntegerLiteral negated_i_lit =
       i_lit.IsAlwaysFalse() ? IntegerLiteral::TrueLiteral() : i_lit.Negated();
-  lits.push_back(negated_i_lit);
-  if (!debug_checker_(clause, lits)) {
+  is_valid_tmp_integer_reason_.push_back(negated_i_lit);
+  if (!debug_checker_(is_valid_tmp_reason_, is_valid_tmp_integer_reason_)) {
     LOG(INFO) << "Invalid reason for loaded solution: " << i_lit << " "
               << literal_reason << " " << integer_reason;
     return false;
   }
-  lits.pop_back();
+  is_valid_tmp_integer_reason_.pop_back();
 
-  MergeReasonInto(lits, &clause);
-  if (!debug_checker_(clause, {negated_i_lit})) {
+  MergeReasonInto(is_valid_tmp_integer_reason_, &is_valid_tmp_reason_);
+  if (!debug_checker_(is_valid_tmp_reason_, {negated_i_lit})) {
     LOG(INFO) << "Invalid reason for loaded solution after merging: " << i_lit
               << " " << literal_reason << " " << integer_reason;
     return false;
@@ -1505,17 +1504,16 @@ bool IntegerTrail::ReasonIsValid(
   if (!ReasonIsValid(literal_reason, integer_reason)) return false;
   if (debug_checker_ == nullptr) return true;
 
-  std::vector<Literal> clause;
-  clause.assign(literal_reason.begin(), literal_reason.end());
-  clause.push_back(lit);
-  if (!debug_checker_(clause, integer_reason)) {
+  is_valid_tmp_reason_.assign(literal_reason.begin(), literal_reason.end());
+  is_valid_tmp_reason_.push_back(lit);
+  if (!debug_checker_(is_valid_tmp_reason_, integer_reason)) {
     LOG(INFO) << "Invalid reason for loaded solution: " << lit << " "
               << literal_reason << " " << integer_reason;
     return false;
   }
 
-  MergeReasonInto(integer_reason, &clause);
-  if (!debug_checker_(clause, {})) {
+  MergeReasonInto(integer_reason, &is_valid_tmp_reason_);
+  if (!debug_checker_(is_valid_tmp_reason_, {})) {
     LOG(INFO) << "Invalid reason for loaded solution after merging: " << lit
               << " " << literal_reason << " " << integer_reason;
     return false;

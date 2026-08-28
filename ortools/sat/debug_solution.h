@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "absl/types/span.h"
@@ -84,6 +85,8 @@ class DebugSolution {
   ObjectiveDefinition* objective_def_;
   IntegerEncoder* encoder_;
   std::string name_;
+  mutable std::vector<std::tuple<Literal, IntegerLiteral, IntegerValue>>
+      to_print_scratch_;
 
   bool IsLookingForSolutionBetterThanDebugSolution() const {
     if (inner_objective_value_ == kMinIntegerValue) return false;

@@ -49,7 +49,7 @@ TEST(AddAndProveInferredClauseByEnumerationTest, XorEquivalence) {
   std::unique_ptr<LratProofHandler> lrat =
       LratProofHandler::MaybeCreate(&model);
 
-  // Lets create ClausePtrs for all these clauses.
+  // Let's create ClausePtrs for all these clauses.
   std::vector<ClausePtr> clauses_for_proof;
   for (int i = 0; i < clauses.size(); ++i) {
     const ClausePtr clause = ClausePtr(clauses[i]);

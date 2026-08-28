@@ -97,7 +97,7 @@ class LratChecker {
   //    * Either `clause` and `r.resolvant` have two pairs of complementary
   //      literals.
   //    * Or all the `r.rup_clauses` must become unit and eventually empty
-  //      if all the literals of `clause` and of the `r.resolvant_id` clause
+  //      if all the literals of `clause` and of the `r.resolvant` clause
   //      (minus ~p), as well as those in RUP (from condition 2), are assumed to
   //      be false (this list must be in unit propagation order, as explained
   //      above; verification stops at the first empty clause).
@@ -107,7 +107,7 @@ class LratChecker {
   // If a clause with the same pointer has already been added, this redefines
   // it. This can happen, for instance, if a unit or binary clause is inferred
   // several times (since the pointer is computed from the clause literals). To
-  // redefine a SatClause clause, use RewriteClause() instead.
+  // redefine a SatClause, use RewriteClause() instead.
   bool AddInferredClause(ClausePtr clause,
                          absl::Span<const ClausePtr> rup_clauses,
                          absl::Span<const RatClauses> rat_clauses = {});
@@ -136,8 +136,8 @@ class LratChecker {
 
   void AddStats() const;
 
-  // Returns the reason of the first failed operation, or an empty string if all
-  // operations were successful.
+  // Returns the reason for the first failed operation, or an empty string if
+  // all operations were successful.
   std::string_view error_message() const { return error_message_; }
 
  private:

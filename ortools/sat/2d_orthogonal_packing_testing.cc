@@ -210,7 +210,7 @@ GenerateItemsRectanglesWithNoPairwisePropagation(int num_rectangles,
       GenerateItemsRectanglesWithNoPairwiseConflict(rectangles, slack_factor,
                                                     random);
   bool done = false;
-  // Now run the propagator until there is no more pairwise conditions.
+  // Now run the propagator until there are no more pairwise conditions.
   do {
     std::vector<PairwiseRestriction> results;
     AppendPairwiseRestrictions(items, &results);

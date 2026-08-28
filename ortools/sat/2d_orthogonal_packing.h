@@ -54,7 +54,7 @@ class OrthogonalPackingResult {
     // Index of the item on the original sizes_x/sizes_y input.
     int index;
     // New size for item of index `i` which is smaller or equal to the initial
-    // size. The subproblem remain infeasible if every item is shrinked to its
+    // size. The subproblem remains infeasible if every item is shrunk to its
     // new size.
     IntegerValue size_x;
     IntegerValue size_y;
@@ -66,8 +66,8 @@ class OrthogonalPackingResult {
   bool HasSlack() const { return slack_ > IntegerValue(0); }
 
   enum class Coord { kCoordX, kCoordY };
-  // Use an eventual slack to reduce the size of item corresponding to the
-  // `i`-th element on GetItemsParticipatingOnConflict(). It will not use any
+  // Use an eventual slack to reduce the size of the item corresponding to the
+  // `i`-th element in GetItemsParticipatingOnConflict(). It will not use any
   // slack to reduce it beyond lower_bound. This is a no-op if HasSlack() is
   // false.
   bool TryUseSlackToReduceItemSize(int i, Coord coord,
@@ -171,7 +171,7 @@ class OrthogonalPackingInfeasibilityDetector {
   // sufficient to find a conflict. This function runs in
   // O(num_items * sqrt(bb_size)) operations.
   // All sizes must be positive values less than UINT16_MAX.
-  // The returned bitset will contain less elements than
+  // The returned bitset will contain fewer elements than
   // min(sqrt_bb_size * num_items, x_bb_size/4+1).
   void GetAllCandidatesForKForDff2(absl::Span<const IntegerValue> sizes,
                                    IntegerValue bb_size,

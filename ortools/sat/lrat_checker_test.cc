@@ -95,7 +95,7 @@ TEST(LratCheckerTest, ValidationStopsAtFirstEmptyClause) {
   checker.AddProblemClause(c5);
 
   // not(a) => ... => a proves that a is true. If the content in the middle is
-  // of the same form, not(b) => ... => b, then not(a) => not(b) => ... => b if
+  // of the same form, not(b) => ... => b, then not(a) => not(b) => ... => b is
   // sufficient to prove a.
   EXPECT_TRUE(checker.AddInferredClause(c6, {c1, c2, c3}));
   // Using unneeded clauses after that is still valid (here not(a) => not(b) =>

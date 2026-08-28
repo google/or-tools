@@ -28,7 +28,6 @@ Creating these intervals is illustrated in the following code snippets.
 # Snippet from ortools/sat/samples/interval_sample_sat.py
 """Code sample to demonstrates how to build an interval."""
 
-
 from ortools.sat.python import cp_model
 
 
@@ -2091,7 +2090,6 @@ need to take into account the case where no task is performed.
 # Snippet from ortools/sat/samples/ranking_circuit_sample_sat.py
 """Code sample to demonstrates how to rank intervals using a circuit."""
 
-
 from collections.abc import Sequence
 
 from ortools.sat.python import cp_model
@@ -2466,7 +2464,8 @@ def overlapping_interval_sample_sat():
 
   # Search and print out all solutions.
   solution_printer = VarArraySolutionPrinter(
-      [start_var_a, start_var_b, a_overlaps_b])
+      [start_var_a, start_var_b, a_overlaps_b]
+  )
   solver.solve(model, solution_printer)
 
 

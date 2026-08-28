@@ -1279,6 +1279,9 @@ class IntegerTrail final : public SatPropagator {
   std::vector<SparseBitset<IntegerVariable>*> watchers_;
   std::vector<ReversibleInterface*> reversible_classes_;
 
+  std::vector<Literal> is_valid_tmp_reason_;
+  std::vector<IntegerLiteral> is_valid_tmp_integer_reason_;
+
   mutable int64_t work_done_in_find_indices_ = 0;
 
   mutable Domain temp_domain_;

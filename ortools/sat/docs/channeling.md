@@ -31,7 +31,6 @@ These are implemented using the `OnlyEnforceIf` method as shown below.
 # Snippet from ortools/sat/samples/channeling_sample_sat.py
 """Link integer constraints together."""
 
-
 from ortools.sat.python import cp_model
 
 
@@ -533,7 +532,6 @@ variables together:
 ```python
 # Snippet from ortools/sat/samples/binpacking_problem_sat.py
 """Solves a binpacking problem using the CP-SAT solver."""
-
 
 from ortools.sat.python import cp_model
 

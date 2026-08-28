@@ -1665,16 +1665,35 @@ bool FixedDivisionPropagator::Propagate() {
     // If the bounds of a / b and c are disjoint, the enforcement must be false.
     // TODO(user): relax the reason in a better way.
     if (min_a / b_ > max_c) {
+      // Our conflict is div(a, b) > c where div rounds towards 0 (e.g.,
+      // div(-3, 2) = -1). To propagate, we want a reason bound `L` for `a` so
+      // that a >= L => div(a, b) > c.
+      // If c >= 0, L must be > 0, otherwise a=0 is a counter-example.
+      // If c < 0, L=0 is a valid bound. So to find the tightest bound, we can
+      // assume L <= 0.
+      // Thus, reasoning about positive values and noticing that the tightest
+      // bound is when the inequality becomes an equality:
+      // - If c >= 0, then floor(L/b) == c + 1. We want the smallest L, so we
+      //   choose L = (c + 1) * b.
+      // - If c < 0, we use the property that if we round towards zero,
+      //   abs(div(a, b)) == div(abs(a), abs(b)). To keep manipulating
+      //   non-negative values, we apply this to get floor(-L/b) == -(c + 1). We
+      //   want the smallest L, thus the highest (-L), so we choose
+      //   -L = -(c + 1) * b + (b - 1). Thus L = c * b + 1.
+      const IntegerValue min_a_reason =
+          max_c >= 0 ? max_c * b_ + b_ : max_c * b_ + 1;
       return enforcement_helper_.PropagateWhenFalse(
           enforcement_id_,
           /*literal_reason=*/{},
-          {a_.GreaterOrEqual(max_c * b_ + 1), c_.LowerOrEqual(max_c)});
+          {a_.GreaterOrEqual(min_a_reason), c_.LowerOrEqual(max_c)});
     }
     if (max_a / b_ < min_c) {
+      const IntegerValue max_a_reason =
+          min_c > 0 ? min_c * b_ - 1 : min_c * b_ - b_;
       return enforcement_helper_.PropagateWhenFalse(
           enforcement_id_,
           /*literal_reason=*/{},
-          {a_.LowerOrEqual(min_c * b_ - 1), c_.GreaterOrEqual(min_c)});
+          {a_.LowerOrEqual(max_a_reason), c_.GreaterOrEqual(min_c)});
     }
     // Otherwise we cannot propagate anything since the enforcement is unknown.
     return true;

@@ -110,7 +110,7 @@ bool DebugSolution::CheckClause(
   if (proto_values_.empty()) return true;
 
   bool is_satisfied = false;
-  std::vector<std::tuple<Literal, IntegerLiteral, IntegerValue>> to_print;
+  to_print_scratch_.clear();
   for (const Literal l : clause) {
     // First case, this Boolean is mapped.
     {
@@ -118,7 +118,8 @@ bool DebugSolution::CheckClause(
           mapping_->GetProtoVariableFromBooleanVariable(l.Variable());
       if (proto_var != -1) {
         CHECK_LT(proto_var, proto_values_.size());
-        to_print.push_back({l, IntegerLiteral(), proto_values_[proto_var]});
+        to_print_scratch_.push_back(
+            {l, IntegerLiteral(), proto_values_[proto_var]});
         if (proto_values_[proto_var] == (l.IsPositive() ? 1 : 0)) {
           is_satisfied = true;
           break;
@@ -136,7 +137,7 @@ bool DebugSolution::CheckClause(
         continue;
       }
       const IntegerValue value = ivar_values_[associated.var];
-      to_print.push_back({l, associated, value});
+      to_print_scratch_.push_back({l, associated, value});
 
       if (value < associated.bound) {
         all_true = false;
@@ -158,7 +159,7 @@ bool DebugSolution::CheckClause(
     }
 
     const IntegerValue value = ivar_values_[i_lit.var];
-    to_print.push_back({Literal(kNoLiteralIndex), i_lit, value});
+    to_print_scratch_.push_back({Literal(kNoLiteralIndex), i_lit, value});
 
     // This is a bit confusing, but since the i_lit in the reason are
     // not "negated", we need at least one to be FALSE, for the reason to
@@ -174,7 +175,7 @@ bool DebugSolution::CheckClause(
               << "', level=" << sat_solver_->CurrentDecisionLevel();
     LOG(INFO) << "literals (neg): " << clause;
     LOG(INFO) << "integer literals: " << integers;
-    for (const auto [l, i_lit, solution_value] : to_print) {
+    for (const auto [l, i_lit, solution_value] : to_print_scratch_) {
       if (i_lit.IsAlwaysTrue()) {
         const int proto_var =
             mapping_->GetProtoVariableFromBooleanVariable(l.Variable());

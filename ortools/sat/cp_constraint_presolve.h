@@ -55,7 +55,7 @@ class CpConstraintPresolver {
   bool PresolveExactlyOne(ConstraintProto* ct);
   bool PresolveEnforcementLiteral(ConstraintProto* ct, bool* changed);
 
-  // Regroups terms and substitute affine relations.
+  // Regroups terms and substitutes affine relations.
   // Returns true if the set of variables in the expression changed.
   bool CanonicalizeLinearExpression(const ConstraintProto& ct,
                                     LinearExpressionProto* exp);
@@ -93,8 +93,8 @@ class CpConstraintPresolver {
   //
   // Invariant about UNSAT: All these functions should abort right away if
   // context_.IsUnsat() is true. And the only way to change the status to unsat
-  // is through ABSL_MUST_USE_RESULT function that should also abort right away
-  // the current code. This way we shouldn't keep doing computation on an
+  // is through an ABSL_MUST_USE_RESULT function that should also abort the
+  // current code right away. This way we shouldn't keep doing computation on an
   // inconsistent state.
   // TODO(user): Make these public and unit test.
   bool PresolveAllDiff(ConstraintProto* ct);
@@ -148,7 +148,7 @@ class CpConstraintPresolver {
   //
   // For instance "10'001 X + 9'999 Y <= 105'000, with X, Y in [0, 100]" can
   // be rewritten as X + Y <= 10 ! This can easily happen after scaling to
-  // integer cofficient a floating point constraint.
+  // integer coefficients in a floating-point constraint.
   void TryToReduceCoefficientsOfLinearConstraint(int c, ConstraintProto* ct);
 
   // Presolve a no_overlap_2d constraint where all the non-fixed rectangles are
@@ -159,10 +159,10 @@ class CpConstraintPresolver {
       absl::Span<const Rectangle> fixed_boxes,
       absl::Span<const RectangleInRange> non_fixed_boxes, ConstraintProto* ct);
 
-  // Detects when the space where items of a no_overlap_2d constraint can placed
-  // is disjoint (ie., fixed boxes split the domain). When it is the case, we
-  // can introduce a boolean for each pair <item, component> encoding whether
-  // the item is in the component or not. Then we replace the original
+  // Detects when the space where items of a no_overlap_2d constraint can be
+  // placed is disjoint (ie., fixed boxes split the domain). When it is the
+  // case, we can introduce a boolean for each pair <item, component> encoding
+  // whether the item is in the component or not. Then we replace the original
   // no_overlap_2d constraint by one no_overlap_2d constraint for each
   // component, with the new booleans as the enforcement_literal of the
   // intervals. This is equivalent to expanding the original no_overlap_2d
@@ -194,7 +194,7 @@ class CpConstraintPresolver {
   // Used by RunPropagatorsForConstraint().
   CpModelProto tmp_model_;
 
-  // Use by TryToReduceCoefficientsOfLinearConstraint().
+  // Used by TryToReduceCoefficientsOfLinearConstraint().
   struct RdEntry {
     int64_t magnitude;
     int64_t max_variation;
@@ -212,14 +212,14 @@ class CpConstraintPresolver {
   MaxBoundedSubsetSum ub_feasible_;
   MaxBoundedSubsetSum ub_infeasible_;
 
-  // We have an hash-map of know relation between two variables.
+  // We have a hash map of known relations between two variables.
   // In particular, this will include all known precedences a <= b.
   //
   // We reuse an IntegerVariable/IntegerValue based class via
   // GetLinearExpression2FromProto() only visible in the .cc.
   //
-  // We have two versions of this map: one that only consider linear2 that
-  // are encoded as such in the model, and a more general one that consider any
+  // We have two versions of this map: one that only considers linear2 that
+  // are encoded as such in the model, and a more general one that considers any
   // linear2 that was detected by the presolve.
   BestBinaryRelationBounds known_linear2_;
   BestBinaryRelationBounds known_model_linear2_;

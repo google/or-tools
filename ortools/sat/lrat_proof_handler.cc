@@ -240,7 +240,7 @@ bool LratMerger::Merge(absl::Span<const std::string> proof_filenames) {
         switch (step.step_case()) {
           case LratProofStep::kImportedClause: {
             const int64_t local_id = step.imported_clause().clause_id();
-            // If the import is missing this step will be analyzed again, hence
+            // If the import is missing, this step will be analyzed again, hence
             // we must not modify it to avoid a double remapping.
             RemapLiteralIndices(step.imported_clause().literals(), &clause);
             std::sort(clause.begin(), clause.end());
@@ -282,7 +282,7 @@ bool LratMerger::Merge(absl::Span<const std::string> proof_filenames) {
                 WriteDeletedClauses({old_global_id});
               }
             }
-            // We found the empty clause, we don't need anymore steps.
+            // We found the empty clause, we don't need any more steps.
             if (step.inferred_clause().literals().empty()) return true;
             if (step.inferred_clause().exported() ||
                 step.inferred_clause().literals_size() <= 2) {
@@ -920,7 +920,7 @@ bool LratProofHandler::AddAndProveInferredClauseByEnumeration(
     ClausePtr new_clause, absl::Span<const ClausePtr> clauses_for_proof) {
   CHECK(!clauses_for_proof.empty());
 
-  // helper function to report some info on proof failure.
+  // Helper function to report some info on proof failure.
   const auto error = [&, this](absl::string_view message) {
     if (debug_crash_on_error_) {
       LOG(INFO) << "Proving " << new_clause.GetLiterals();
@@ -939,8 +939,8 @@ bool LratProofHandler::AddAndProveInferredClauseByEnumeration(
   };
 
   // First we count the number of variables appearing and have a separate dense
-  // index for them. The first new_clause.size() dense index are exactly the
-  // literal of the new_clause.
+  // index for them. The first new_clause.size() dense indices are exactly the
+  // literals of the new_clause.
   absl::flat_hash_map<BooleanVariable, int> to_dense_index;
   absl::Span<const Literal> new_clause_literals = new_clause.GetLiterals();
   for (const Literal lit : new_clause_literals) {
@@ -951,7 +951,7 @@ bool LratProofHandler::AddAndProveInferredClauseByEnumeration(
     }
   }
 
-  // Then any new BooleanVariable appearing get the next dense index.
+  // Then any new BooleanVariable appearing gets the next dense index.
   std::vector<Literal> relevant_literals;
   for (int i = 0; i < clauses_for_proof.size(); ++i) {
     for (const Literal lit : clauses_for_proof[i].GetLiterals()) {
@@ -974,7 +974,7 @@ bool LratProofHandler::AddAndProveInferredClauseByEnumeration(
   //    {new_clause, l0, ..., lk} for all k in [0, n) and
   //    li = relevant_literals[i] OR relevant_literals[i].Negated().
   //
-  // That give us 2^(n + 1) intermediate clauses.
+  // That gives us 2^(n + 1) intermediate clauses.
   // Their pointers will be stored in (1 << k) + binary_encoding_of_the_li.
   const int n = to_dense_index.size() - new_clause_literals.size();
   CHECK_EQ(n, relevant_literals.size());
@@ -984,7 +984,7 @@ bool LratProofHandler::AddAndProveInferredClauseByEnumeration(
 
   VLOG(2) << "Starting proof n= " << n << " " << num_intermediates;
 
-  // Any initial clause can be used to prove all the intermediates that contains
+  // Any initial clause can be used to prove all the intermediates that contain
   // it. Note that this code supports duplicate literals in the clauses.
   for (int i = 0; i < clauses_for_proof.size(); ++i) {
     bool skip = false;
@@ -1013,7 +1013,7 @@ bool LratProofHandler::AddAndProveInferredClauseByEnumeration(
     }
     if (skip) continue;
     if (k == 0) {
-      // The clause is the same as the one we try to prove! or smaller.
+      // The clause is the same as the one we try to prove! Or smaller.
       if (clause_for_proof.size() == new_clause_literals.size() &&
           clauses_for_proof[i] == new_clause) {
         return true;
@@ -1035,7 +1035,7 @@ bool LratProofHandler::AddAndProveInferredClauseByEnumeration(
     VLOG(2) << k << " " << std::bitset<8>(mask) << " "
             << std::bitset<8>(base_index);
 
-    // TODO(user): we could be faster here if it become needed.
+    // TODO(user): we could be faster here if it becomes needed.
     for (int m = 0; m < (1 << n); ++m) {
       if ((m & mask) != base_index) continue;  // not included.
       const int index = m | base_index;
@@ -1097,7 +1097,7 @@ bool LratProofHandler::AddAndProveInferredClauseByEnumeration(
         VLOG(2) << "Proven " << new_clause << "!";
       }
 
-      // Lets delete the intermediate_clauses if they were temporary.
+      // Let's delete the intermediate_clauses if they were temporary.
       if (id_need_deletion[higher1]) {
         VLOG(2) << "deleting: " << clause1 << " " << clause1.GetLiterals();
         DeleteClause(clause1);

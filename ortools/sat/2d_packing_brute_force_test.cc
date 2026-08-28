@@ -310,7 +310,7 @@ TEST(TestPreprocessing, Works) {
   EXPECT_THAT(preprocessed_items,
               testing::UnorderedPointwise(FieldEq(&PermutableItem::size_x),
                                           {20, 30, 20, 20}));
-  // Original items don't disappeared, but the order might have been changed.
+  // Original items haven't disappeared, but the order might have been changed.
   EXPECT_THAT(items,
               testing::UnorderedPointwise(FieldEq(&PermutableItem::size_x),
                                           problem.items_x_sizes));

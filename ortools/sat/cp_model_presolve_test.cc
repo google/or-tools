@@ -680,7 +680,7 @@ TEST(PresolveCpModelTest, BasicLinMaxPresolve) {
 }
 
 TEST(PresolveCpModelTest, MoreAdvancedPresolve) {
-  // We can remove variable zero from the max since it do not change the
+  // We can remove variable zero from the max since it does not change the
   // outcome.
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 10 ] }
@@ -909,7 +909,7 @@ TEST(PresolveCpModelTest, BasicLinAbsPresolveFixedTarget) {
 }
 
 TEST(PresolveCpModelTest, RemoveAbsFromUnaryLinear) {
-  // Make sure we can only remove the varibale 1 here.
+  // Make sure we can only remove the variable 1 here.
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ -20, 20 ] }
     variables { domain: [ 0, 12 ] }
@@ -4020,10 +4020,10 @@ TEST(PresolveCpModelTest, ExpandMinimizeObjectiveWithLimitingLinearEquation2) {
   )pb");
 
   // This time, we have new_obj = old_obj - 3.
-  // Note that the variable #2 is removed, but this do not remove any feasible
+  // Note that the variable #2 is removed, but this does not remove any feasible
   // solution since its value will be uniquely determined via the removed
   // constraint x0 + 2x1 + x2 = 3. The objective domain constrains x0 + 2x1
-  // to take feasible value for x3.
+  // to take feasible values for x3.
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ -10, 10 ] }
     variables { domain: [ -7, 10 ] }
@@ -4132,7 +4132,7 @@ TEST(PresolveCpModelTest, CircuitConstraint) {
 }
 
 // Fully specified circuit. This used to remove the constraint instead of
-// detecting infeasibility since some mandatory node are not in the 0 <-> 1
+// detecting infeasibility since some mandatory nodes are not in the 0 <-> 1
 // circuit.
 TEST(PresolveCpModelTest, FixedButIncompleteCircuitConstraint) {
   const CpModelProto initial_model = ParseTestProto(R"pb(

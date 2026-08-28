@@ -64,7 +64,7 @@ int64_t GetRandomNonZeroAndNonInvertible(int max_magnitude,
 }
 
 // Generate an initial linear program that will be extended later with new
-// variables and constraints that the preprocessors should be able to remove.
+// variables and constraints that the preprocessor should be able to remove.
 CpModelProto GenerateRandomBaseProblem(absl::BitGen* random) {
   CpModelProto result;
   result.set_name("Random IP");
@@ -201,7 +201,7 @@ TEST_P(RandomPreprocessorTest, SolveWithAndWithoutPresolve) {
     const std::string name =
         file::JoinPath(absl::GetFlag(FLAGS_dump_dir),
                        absl::StrCat(GetSeedEnvName(), ".pb.txt"));
-    LOG(INFO) << "Dumping  model to '" << name << "'.";
+    LOG(INFO) << "Dumping model to '" << name << "'.";
     CHECK_OK(file::SetTextProto(name, model_proto, file::Defaults()));
   }
 
@@ -218,12 +218,12 @@ TEST_P(RandomPreprocessorTest, SolveWithAndWithoutPresolve) {
               response_without.objective_value(), 1e-9);
 }
 
-// Note that because we just generate linear model, this doesn't exercise all
+// Note that because we just generate a linear model, this doesn't exercise all
 // the expansion code which is likely to lose the hint. Still it is a start.
 TEST_P(RandomPreprocessorTest, TestHintSurvivePresolve) {
   CpModelProto model_proto = GenerateRandomProblem(GetSeedEnvName());
 
-  // We only deal with feasible problem. Note that many are just INFEASIBLE, so
+  // We only deal with feasible problems. Note that many are just INFEASIBLE, so
   // maybe we should generate something smarter.
   const CpSolverResponse first_solve = Solve(model_proto);
   if (first_solve.status() != CpSolverStatus::OPTIMAL &&
@@ -244,7 +244,7 @@ TEST_P(RandomPreprocessorTest, TestHintSurvivePresolve) {
   params.set_stop_after_first_solution(true);
   const CpSolverResponse with_hint = SolveWithParameters(model_proto, params);
 
-  // Lets also test that the tightened domains contains the hint.
+  // Let's also test that the tightened domains contain the hint.
   model_proto.clear_objective();
   model_proto.clear_solution_hint();
   SatParameters tighten_params;
@@ -307,7 +307,7 @@ TEST_P(RandomPreprocessorTest, SolveDiophantineWithAndWithoutPresolve) {
     const std::string name =
         file::JoinPath(absl::GetFlag(FLAGS_dump_dir),
                        absl::StrCat(GetSeedEnvName(), ".pb.txt"));
-    LOG(INFO) << "Dumping  model to '" << name << "'.";
+    LOG(INFO) << "Dumping model to '" << name << "'.";
     CHECK_OK(file::SetTextProto(name, model_proto, file::Defaults()));
   }
 

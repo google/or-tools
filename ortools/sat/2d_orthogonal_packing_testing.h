@@ -28,8 +28,8 @@ namespace sat {
 std::vector<Rectangle> GenerateNonConflictingRectangles(int num_rectangles,
                                                         absl::BitGenRef random);
 
-// Alternative way of generating random rectangles. This one generate random
-// rectangles and try to pack them using the left-bottom-first order.
+// Alternative way of generating random rectangles. This one generates random
+// rectangles and tries to pack them using the left-bottom-first order.
 std::vector<Rectangle> GenerateNonConflictingRectanglesWithPacking(
     std::pair<IntegerValue, IntegerValue> bb, int average_num_boxes,
     absl::BitGenRef random);

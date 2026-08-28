@@ -780,7 +780,7 @@ bool CpConstraintPresolver::DivideLinMaxByGcd(int c, ConstraintProto* ct) {
   }
   if (gcd <= 1) return true;
 
-  // TODO(user): deal with all UNSAT case.
+  // TODO(user): deal with all UNSAT cases.
   // Also if the target is affine, we can canonicalize it.
   const LinearExpressionProto& target = lin_max->target();
   const int64_t old_gcd = gcd;
@@ -809,7 +809,7 @@ bool CpConstraintPresolver::DivideLinMaxByGcd(int c, ConstraintProto* ct) {
   }
   if (gcd <= 1) return true;
 
-  context_->UpdateRuleStats("lin_max: divising by gcd");
+  context_->UpdateRuleStats("lin_max: dividing by gcd");
   DivideLinearExpression(gcd, lin_max->mutable_target());
   for (LinearExpressionProto& expr : *lin_max->mutable_exprs()) {
     DivideLinearExpression(gcd, &expr);
@@ -956,9 +956,9 @@ bool CpConstraintPresolver::PropagateAndReduceAffineMax(ConstraintProto* ct) {
   }
 
   // Remove the affine_max constraint if the target is removable and if domains
-  // have been propagated without loss. For now, we known that there is no loss
-  // if the target is a single ref. Since all the expression are affine, in this
-  // case we are fine.
+  // have been propagated without loss. For now, we know that there is no loss
+  // if the target is a single ref. Since all the expressions are affine, in
+  // this case we are fine.
   if (ExpressionContainsSingleRef(target) &&
       context_->VariableIsUniqueAndRemovable(target.vars(0))) {
     context_->MarkVariableAsRemoved(target.vars(0));
@@ -1266,7 +1266,7 @@ bool CpConstraintPresolver::PresolveLinMax(int c, ConstraintProto* ct) {
   // Avoid to remove the constraint for special cases:
   // affine(x) = max(expr(x, ...), ...);
   //
-  // TODO(user): We could presolve this, but there are a few type of cases.
+  // TODO(user): We could presolve this, but there are a few types of cases.
   // for example:
   // - x = max(x + 3, ...) : infeasible.
   // - x = max(x - 2, ...) : reduce arity: x = max(...)
@@ -1389,7 +1389,7 @@ bool CpConstraintPresolver::PresolveLinMaxWhenAllBoolean(ConstraintProto* ct) {
     const int ref = context_->LiteralForExpressionMax(expr);
 
     // Get corner case out of the way, and wait for the constraint to be
-    // processed again in these case.
+    // processed again in this case.
     if (value_min > target_min) {
       context_->UpdateRuleStats("lin_max: fix target");
       (void)context_->SetLiteralToTrue(target_ref);
@@ -1537,8 +1537,8 @@ bool CpConstraintPresolver::PropagateAndReduceIntAbs(ConstraintProto* ct) {
 
   // Remove the abs constraint if the target is removable and if domains have
   // been propagated without loss.
-  // For now, we known that there is no loss if the target is a single ref.
-  // Since all the expression are affine, in this case we are fine.
+  // For now, we know that there is no loss if the target is a single ref.
+  // Since all the expressions are affine, in this case we are fine.
   if (ExpressionContainsSingleRef(target_expr) &&
       context_->VariableIsUniqueAndRemovable(target_expr.vars(0))) {
     context_->MarkVariableAsRemoved(target_expr.vars(0));
@@ -1760,7 +1760,7 @@ bool CpConstraintPresolver::PresolveIntProd(ConstraintProto* ct) {
         // terms).
         *ct->mutable_int_prod() = old_proto;
         context_->UpdateRuleStats(
-            "int_prod: enforcement or overflow prevented creating a affine "
+            "int_prod: enforcement or overflow prevented creating an affine "
             "relation");
         return true;
       }
@@ -2234,7 +2234,7 @@ bool CpConstraintPresolver::PresolveIntMod(int c, ConstraintProto* ct) {
 }
 
 // TODO(user): Now that everything has affine relations, we should maybe
-// canonicalize all linear subexpression in a generic way.
+// canonicalize all linear subexpressions in a generic way.
 bool CpConstraintPresolver::ExploitEquivalenceRelations(int c,
                                                         ConstraintProto* ct) {
   bool changed = false;
@@ -2369,7 +2369,7 @@ bool CpConstraintPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
   const int num_vars = ct->linear().vars().size();
   Domain rhs = ReadDomainFromProto(ct->linear());
 
-  // First pass. Process singleton column that are not in the objective. Note
+  // First pass. Process singleton columns that are not in the objective. Note
   // that for postsolve, it is important that we process them in the same order
   // in which they will be removed.
   for (int i = 0; i < num_vars; ++i) {
@@ -2408,8 +2408,8 @@ bool CpConstraintPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
   // values: Its minimum one and one minimizing the objective under the
   // constraint. The switch can be controlled by a single Boolean.
   //
-  // TODO(user): Cover more case like dedicated algorithm to solve for a small
-  // number of variable that are faster than the DP we use here.
+  // TODO(user): Cover more cases like dedicated algorithm to solve for a small
+  // number of variables that are faster than the DP we use here.
   if (index_to_erase.empty()) {
     int num_singletons = 0;
     for (const int var : ct->linear().vars()) {
@@ -2516,18 +2516,18 @@ bool CpConstraintPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
       const int64_t coeff = ct->linear().coeffs(i);
       CHECK(RefIsPositive(var));
 
-      // If the variable appear only in the objective and we have an equality,
+      // If the variable appears only in the objective and we have an equality,
       // we can transfer the cost to the rest of the linear expression, and
-      // remove that variable. Note that this do not remove any feasible
+      // remove that variable. Note that this does not remove any feasible
       // solution and is not a "dual" reduction.
       //
-      // Note that is similar to the substitution code in PresolveLinear() but
-      // it doesn't require the variable to be implied free since we do not
+      // Note that this is similar to the substitution code in PresolveLinear()
+      // but it doesn't require the variable to be implied free since we do not
       // remove the constraints afterwards, just the variable.
       if (!context_->VariableWithCostIsUnique(var)) continue;
       DCHECK(context_->ObjectiveMap().contains(var));
 
-      // We only support substitution that does not require to multiply the
+      // We only support substitution that does not require multiplying the
       // objective by some factor.
       //
       // TODO(user): If the objective is a single variable, we can actually
@@ -2557,7 +2557,7 @@ bool CpConstraintPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
       // TODO(user): Maybe if var has a complex domain, we might not want to
       // substitute it?
       if (context_->ObjectiveMap().size() == 1) {
-        // This make sure the domain of var is restricted and the objective
+        // This makes sure the domain of var is restricted and the objective
         // domain updated.
         if (!context_->RecomputeSingletonObjectiveDomain()) {
           return true;
@@ -2577,8 +2577,8 @@ bool CpConstraintPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
         return RemoveConstraint(ct);
       }
 
-      // On supportcase20, this transformation make the LP relaxation way worse.
-      // TODO(user): understand why.
+      // On supportcase20, this transformation makes the LP relaxation way
+      // worse. TODO(user): understand why.
       if (true) continue;
 
       // Update the objective and remove the variable from its equality
@@ -2697,13 +2697,13 @@ bool IsLinearEqualityConstraint(const ConstraintProto& ct) {
 //
 // If the gcd of all but one term is not one, we can rewrite the last term using
 // an affine representative by considering the equality modulo that gcd.
-// As an heuristic, we only test the smallest term or small primes 2, 3, and 5.
+// As a heuristic, we only test the smallest term or small primes 2, 3, and 5.
 //
 // We also handle the special case of having two non-zero literals modulo 2.
 //
 // TODO(user): Use more complex algo to detect all the cases? By splitting the
-// constraint in two, and computing the gcd of each halves, we can reduce the
-// problem to two problem of half size. So at least we can do it in O(n log n).
+// constraint in two, and computing the gcd of each half, we can reduce the
+// problem to two problems of half size. So at least we can do it in O(n log n).
 bool CpConstraintPresolver::PresolveLinearEqualityWithModulo(
     ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
@@ -2762,7 +2762,7 @@ bool CpConstraintPresolver::PresolveLinearEqualityWithModulo(
   }
 
   // TODO(user): More than one reduction might be possible, so we will need
-  // to call this again if we apply any of these reduction.
+  // to call this again if we apply any of these reductions.
   if (mod2_indices.size() == 1) {
     return AddVarAffineRepresentativeFromLinearEquality(mod2_indices[0], ct);
   }
@@ -2812,7 +2812,7 @@ bool CpConstraintPresolver::PresolveLinearOfSizeOne(ConstraintProto* ct) {
     return RemoveConstraint(ct);
   }
 
-  // This is just an implication, lets convert it right away.
+  // This is just an implication, let's convert it right away.
   if (context_->CanBeUsedAsLiteral(var)) {
     DCHECK(rhs.IsFixed());
     if (rhs.FixedValue() == 1) {
@@ -2898,7 +2898,7 @@ bool CpConstraintPresolver::PresolveLinearOfSizeTwo(ConstraintProto* ct) {
   const int64_t coeff2 = arg.coeffs(1);
   bool changed = false;
 
-  // Starts by updating our hash map of known relation.
+  // Start by updating our hash map of known relations.
   {
     const LinearExpression2 expr2 =
         GetLinearExpression2FromProto(var1, coeff1, var2, coeff2);
@@ -3085,7 +3085,7 @@ bool CpConstraintPresolver::PresolveLinear2WithBooleans(ConstraintProto* ct) {
   if (var_domain_on_true != var_domain) {
     ConstraintProto* new_ct = context_->AddEnforcedConstraint(ct);
     if (var_domain_on_false.IsIncludedIn(var_domain_on_true)) {
-      // This is true independently on the value of lit!
+      // This is true independently of the value of lit!
       context_->UpdateRuleStats("linear2: simplified one alternative");
     } else {
       new_ct->add_enforcement_literal(lit);
@@ -3099,7 +3099,7 @@ bool CpConstraintPresolver::PresolveLinear2WithBooleans(ConstraintProto* ct) {
   if (var_domain_on_false != var_domain) {
     ConstraintProto* new_ct = context_->AddEnforcedConstraint(ct);
     if (var_domain_on_true.IsIncludedIn(var_domain_on_false)) {
-      // This is true independently on the value of lit!
+      // This is true independently of the value of lit!
       context_->UpdateRuleStats("linear2: simplified one alternative");
     } else {
       new_ct->add_enforcement_literal(NegatedRef(lit));
@@ -3625,8 +3625,8 @@ bool CpConstraintPresolver::PresolveDiophantine(ConstraintProto* ct) {
 // this as y + 2z >= 2 if we can show that its relaxation is just better?
 // We should at least see that it is the same as 47y + 50 z >= 48.
 //
-// TODO(user): One easy algo is to first remove all enforcement term (even
-// non-Boolean one) before applying the algo here and then re-linearize the
+// TODO(user): One easy algo is to first remove all enforcement terms (even
+// non-Boolean ones) before applying the algo here and then re-linearize the
 // non-Boolean terms.
 void CpConstraintPresolver::TryToReduceCoefficientsOfLinearConstraint(
     int c, ConstraintProto* ct) {
@@ -3697,7 +3697,7 @@ void CpConstraintPresolver::TryToReduceCoefficientsOfLinearConstraint(
     return;
   }
 
-  // No point doing more work for constraint with all coeff at +/-1.
+  // No point doing more work for constraints with all coeffs at +/-1.
   if (max_magnitude <= 1) return;
 
   // TODO(user): All the lb/ub_feasible/infeasible class are updated in
@@ -3726,10 +3726,10 @@ void CpConstraintPresolver::TryToReduceCoefficientsOfLinearConstraint(
     gcd = std::gcd(gcd, e.magnitude);
     max_error -= e.max_variation;
 
-    // We regroup all term with the same coefficient into one.
+    // We regroup all terms with the same coefficient into one.
     //
     // TODO(user): I am not sure there is no possible simplification across two
-    // term with the same coeff, but it should be rare if it ever happens.
+    // terms with the same coeff, but it should be rare if it ever happens.
     range += e.max_variation / e.magnitude;
     if (i + 1 < rd_entries_.size() &&
         e.magnitude == rd_entries_[i + 1].magnitude) {
@@ -4169,7 +4169,7 @@ bool CpConstraintPresolver::PropagateDomainsInLinear(int ct_index,
 
     // Skip affine constraint. It is more efficient to substitute them lazily
     // when we process other constraints. Note that if we relax the fact that
-    // we substitute only equalities, we can deal with inequality of size 2
+    // we substitute only equalities, we can deal with inequalities of size 2
     // here.
     if (ct->linear().vars().size() <= 2) continue;
 
@@ -4237,7 +4237,7 @@ bool CpConstraintPresolver::PropagateDomainsInLinear(int ct_index,
     // If the domain implied by this constraint is the same as the current
     // domain of the variable, this variable is implied free. Otherwise, we
     // check if the intersection with the domain implied by another constraint
-    // make it implied free.
+    // makes it implied free.
     if (context_->DomainOf(var) != new_domain) {
       // We only do that for doubleton because we don't want the propagation to
       // be less strong. If we were to replace this variable in other constraint
@@ -4651,8 +4651,8 @@ void CpConstraintPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   // second_threshold.
   //
   // TODO(user): If 2 * min_coeff_magnitude >= bound, then the constraint can
-  // be completely rewriten to 2 * (enforcement_part) + sum var >= 2 which is
-  // what happen eventually when bound is even, but not if it is odd currently.
+  // be completely rewritten to 2 * (enforcement_part) + sum var >= 2 which is
+  // what happens eventually when bound is even, but not if it is odd currently.
   int64_t second_threshold =
       std::max(MathUtil::CeilOfRatio(threshold, int64_t{2}),
                threshold - min_coeff_magnitude);
@@ -4699,15 +4699,15 @@ void CpConstraintPresolver::ExtractEnforcementLiteralFromLinearConstraint(
 
       int64_t new_magnitude = std::abs(arg.coeffs(i));
       if (coeff > threshold) {
-        // We keep this term but reduces its coeff.
+        // We keep this term but reduce its coeff.
         // This is only for the case where only_extract_booleans == true.
         new_magnitude = threshold;
-        context_->UpdateRuleStats("linear: coefficient strenghtening");
+        context_->UpdateRuleStats("linear: coefficient strengthening");
       } else if (coeff > second_threshold && coeff < threshold) {
-        // This cover the special case where one big + on small is enough
+        // This covers the special case where one big + one small is enough
         // to satisfy the constraint, we can reduce the big.
         new_magnitude = second_threshold;
-        context_->UpdateRuleStats("linear: advanced coefficient strenghtening");
+        context_->UpdateRuleStats("linear: advanced coefficient strengthening");
       }
       if (coeff != new_magnitude) {
         if (lower_bounded) {
@@ -4842,7 +4842,7 @@ bool CpConstraintPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
   // most one constraint?
   DCHECK(!rhs_domain.IsEmpty());
   if (min_sum + min_coeff > rhs_domain.Max()) {
-    // All Boolean are false if the reified literal is true.
+    // All Booleans are false if the reified literal is true.
     context_->UpdateRuleStats("linear: negative reified and");
     const auto copy = arg;
     ct->mutable_bool_and()->clear_literals();
@@ -4853,7 +4853,7 @@ bool CpConstraintPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
     PresolveBoolAnd(ct);
     return true;
   } else if (max_sum - min_coeff < rhs_domain.Min()) {
-    // All Boolean are true if the reified literal is true.
+    // All Booleans are true if the reified literal is true.
     context_->UpdateRuleStats("linear: positive reified and");
     const auto copy = arg;
     ct->mutable_bool_and()->clear_literals();
@@ -4946,7 +4946,7 @@ bool CpConstraintPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
   } else if (num_negative == 0 && rhs_domain.Min() <= 0 &&
              rhs_domain.Max() > 0 && min_coeff > 0 && max_coeff > min_coeff &&
              rhs_domain.Max() / min_coeff == rhs_domain.Max() / max_coeff) {
-    // This cover cases like 5X + 4Y + 5Z <= 10
+    // This covers cases like 5X + 4Y + 5Z <= 10
     //
     // TODO(user): Generalize this kind of coeff strengthening to more cases.
     CHECK_EQ(min_sum, 0);
@@ -5021,9 +5021,9 @@ bool CpConstraintPresolver::PresolveSmallLinearOnBooleans(ConstraintProto* ct) {
 
   // Expand small expression into clause.
   //
-  // TODO(user): In many case, we can have a better encoding.
+  // TODO(user): In many cases, we can have a better encoding.
   // This will eventually be recovered, but sometimes we have stuff like
-  // 4x - 4y + z <= 1 which really only forbid (x == 1, y == 0) and that is
+  // 4x - 4y + z <= 1 which really only forbids (x == 1, y == 0) and that is
   // just an implication rather than two clauses. So we could be "faster".
   //
   // TODO(user): This is bad from a LP relaxation perspective.
@@ -5309,7 +5309,7 @@ bool CpConstraintPresolver::PresolveElement(int c, ConstraintProto* ct) {
       }
     }
 
-    // Cleanup the array: clear unreached expressions.
+    // Clean up the array: clear unreached expressions.
     for (int i = 0; i < ct->element().exprs_size(); ++i) {
       if (!reached_indices[i]) {
         ct->mutable_element()->mutable_exprs(i)->Clear();
@@ -5356,7 +5356,7 @@ bool CpConstraintPresolver::PresolveElement(int c, ConstraintProto* ct) {
         return true;
       }
       context_->UpdateRuleStats("element: reduced index domain");
-      // If the index is fixed, this is a equality constraint.
+      // If the index is fixed, this is an equality constraint.
       if (context_->IsFixed(index)) {
         ConstraintProto* const eq = context_->AddConstraint();
         eq->mutable_linear()->add_domain(0);
@@ -5506,7 +5506,7 @@ bool CpConstraintPresolver::PresolveElement(int c, ConstraintProto* ct) {
   // can be used multiple times in the element. So let's count the local
   // uses of each variable.
   //
-  // TODO(user): now that we used fixed values for these case, this is no longer
+  // TODO(user): now that we use fixed values for these cases, this is no longer
   // needed I think.
   absl::flat_hash_map<int, int> local_var_occurrence_counter;
   {
@@ -5653,7 +5653,7 @@ bool CpConstraintPresolver::PresolveTable(ConstraintProto* ct) {
   }
 
   // Convert to the negated table if we gain a lot of entries by doing so.
-  // Note however that currently the negated table do not propagate as much as
+  // Note however that currently the negated table does not propagate as much as
   // it could.
   if (static_cast<double>(num_tuples) > 0.7 * prod) {
     std::vector<std::vector<int64_t>> current_tuples(num_tuples);
@@ -6237,7 +6237,7 @@ bool CpConstraintPresolver::PresolveNoOverlap2DFramed(
   // All this no_overlap_2d constraint is doing is forcing at most one of
   // the non-fixed boxes to be in the `framed_region` rectangle. A
   // better representation of this is to simply enforce that the items fit
-  // that rectangle with linear constraints and add a at-most-one constraint.
+  // that rectangle with linear constraints and add an at-most-one constraint.
   std::vector<int> enforcement_literals_for_amo;
   bool has_mandatory = false;
   for (const RectangleInRange& box : non_fixed_boxes) {
@@ -7309,7 +7309,7 @@ bool CpConstraintPresolver::PresolveRoutes(ConstraintProto* ct) {
 
   if (old_size > 0 && new_size == 0) {
     // A routes constraint cannot have a self loop on 0. Therefore, if there
-    // were arcs, it means it contains non zero nodes. Without arc, the
+    // were arcs, it means it contains non-zero nodes. Without arcs, the
     // constraint is unfeasible.
     return context_->NotifyThatModelIsUnsat(
         "routes: graph with nodes and no arcs");
@@ -7393,7 +7393,7 @@ bool CpConstraintPresolver::PresolveCircuit(ConstraintProto* ct) {
     outgoing_arcs[tail].push_back(ref);
   }
 
-  // All the node must have some incoming and outgoing arcs.
+  // All the nodes must have some incoming and outgoing arcs.
   for (int i = 0; i < num_nodes; ++i) {
     if (incoming_arcs[i].empty() || outgoing_arcs[i].empty()) {
       return MarkConstraintAsFalse(ct, "circuit: node with no arcs");
@@ -7401,7 +7401,7 @@ bool CpConstraintPresolver::PresolveCircuit(ConstraintProto* ct) {
   }
 
   // Note that it is important to reach the fixed point here:
-  // One arc at true, then all other arc at false. This is because we rely
+  // One arc at true, then all other arcs at false. This is because we rely
   // on this in case the circuit is fully specified below.
   //
   // TODO(user): Use a better complexity if needed.
@@ -7513,7 +7513,7 @@ bool CpConstraintPresolver::PresolveCircuit(ConstraintProto* ct) {
       }
       for (int n = 0; n < num_nodes; ++n) {
         if (!visited[n] && !has_self_arc[n]) {
-          // We have a subircuit, but it doesn't cover all the mandatory nodes.
+          // We have a subcircuit, but it doesn't cover all the mandatory nodes.
           return MarkConstraintAsFalse(
               ct, "circuit: non-covering fixed subcircuit");
         }
@@ -7522,7 +7522,7 @@ bool CpConstraintPresolver::PresolveCircuit(ConstraintProto* ct) {
       return RemoveConstraint(ct);
     }
   } else {
-    // All self loop?
+    // All self-loops?
     if (num_true == new_size) {
       context_->UpdateRuleStats("circuit: empty circuit");
       return RemoveConstraint(ct);

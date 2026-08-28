@@ -35,9 +35,9 @@ namespace sat {
 
 // This class implements a propagator for non_overlap_2d constraints that uses
 // the Linear2Bounds to detect precedences between pairs of boxes and
-// detect a conflict if the precedences implies an overlap between the two
+// detect a conflict if the precedences imply an overlap between the two
 // boxes. For doing this efficiently, it keeps track of pairs of boxes that have
-// non-fixed precedences in the Linear2Bounds and only check those in the
+// non-fixed precedences in the Linear2Bounds and only checks those in the
 // propagation.
 class Precedences2DPropagator : public PropagatorInterface {
  public:

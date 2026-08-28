@@ -374,7 +374,6 @@ x=20 expr=60
 # Snippet from ortools/sat/samples/earliness_tardiness_cost_sample_sat.py
 """Encodes a convex piecewise linear function."""
 
-
 from ortools.sat.python import cp_model
 
 
