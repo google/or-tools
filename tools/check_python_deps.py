@@ -33,9 +33,6 @@ Follow this link for installing instructions :
 https://pypi.python.org/pypi/setuptools
 make sure you use \"""" + sys.executable + """\" during the installation""")
 
-from pkg_resources import \
-    parse_version  # pylint: disable=g-import-not-at-top,unused-import
-
 required_ortools_version = "VVVV"
 required_protobuf_version = "PROTOBUF_TAG"
 
