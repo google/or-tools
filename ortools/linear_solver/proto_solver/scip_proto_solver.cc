@@ -15,7 +15,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdint>
 #include <cstdlib>
 #include <limits>
 #include <numeric>
@@ -38,6 +37,7 @@
 #include "absl/time/time.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/types.h"
+#include "ortools/linear_solver/model_validator.h"
 #include "scip/cons_and.h"
 #include "scip/cons_disjunction.h"
 #include "scip/cons_indicator.h"
@@ -52,7 +52,6 @@
 #endif  // SCIP_VERSION_MAJOR >= 10
 #include "absl/status/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
-#include "ortools/linear_solver/model_validator.h"
 #include "ortools/linear_solver/proto_solver/scip_params.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
 #include "ortools/util/lazy_mutable_copy.h"

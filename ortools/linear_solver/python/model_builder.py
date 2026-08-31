@@ -674,7 +674,7 @@ class Model:
 
     def new_bool_var(self, name: Optional[str] = None) -> Variable:
         """Creates a 0-1 variable with the given name."""
-        return self.new_var(0, 1, True, name)  # numpy-scalars
+        return self.new_var(0, 1, True, name)
 
     def new_constant(self, value: NumberT) -> Variable:
         """Declares a constant variable."""
@@ -849,7 +849,7 @@ class Model:
 
     # Linear constraints.
 
-    def add_linear_constraint(  # pytype: disable=annotation-type-mismatch  # numpy-scalars
+    def add_linear_constraint(
         self,
         linear_expr: LinearExprT,
         lb: NumberT = -math.inf,
@@ -927,7 +927,7 @@ class Model:
 
     # Enforced Linear constraints.
 
-    def add_enforced_linear_constraint(  # pytype: disable=annotation-type-mismatch  # numpy-scalars
+    def add_enforced_linear_constraint(
         self,
         linear_expr: LinearExprT,
         ivar: "Variable",
