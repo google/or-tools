@@ -533,7 +533,7 @@ public final class ObjectiveTest {
   public void toProto_nonEmptyObjective_hasSenseOffsetAndTerms() {
     var objective = new Objective(/* priority= */ 5L, "agx", listener, modelId);
     Variable x = variables.addVariable("x");
-    var unused = variables.addVariable("y");
+    var unusedY = variables.addVariable("y");
     Variable z = variables.addVariable("z");
     objective.setMaximize(true);
     objective.setOffset(4.0);
@@ -592,7 +592,7 @@ public final class ObjectiveTest {
   public void toCompleteString_linearTermsOnly_offsetSkipped() {
     var objective = new Objective(/* priority= */ 0L, "", listener, modelId);
     Variable x = variables.addVariable("x");
-    var unused = variables.addVariable("y");
+    var unusedY = variables.addVariable("y");
     Variable z = variables.addVariable("z");
     objective.setLinearTerm(x, 2.0);
     objective.setLinearTerm(z, 3.0);

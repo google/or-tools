@@ -60,7 +60,7 @@ public final class BasisTest {
     Model model1 = new Model("test_model");
     Model model2 = new Model("test_model_2");
     Variable x = model1.addBinaryVariable("x");
-    Variable unused = model2.addVariable("y");
+    Variable unusedY = model2.addVariable("y");
     Variable z = model2.addVariable("z");
     SparseBasisStatusVector proto = SparseBasisStatusVector.newBuilder()
                                         .addIds(x.getId())
@@ -111,7 +111,7 @@ public final class BasisTest {
     Model model1 = new Model("test_model");
     Model model2 = new Model("test_model_2");
     LinearConstraint l1 = model1.addLinearConstraint("lc_1");
-    LinearConstraint unused = model2.addLinearConstraint("lc_2");
+    LinearConstraint unusedL2 = model2.addLinearConstraint("lc_2");
     LinearConstraint l3 = model2.addLinearConstraint("lc_3");
     SparseBasisStatusVector proto = SparseBasisStatusVector.newBuilder()
                                         .addIds(l1.getId())

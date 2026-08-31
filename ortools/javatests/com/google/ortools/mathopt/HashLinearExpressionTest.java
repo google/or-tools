@@ -173,7 +173,7 @@ public final class HashLinearExpressionTest {
   @Test
   public void unmodifiableTerms_update_throws() {
     var model = new Model();
-    var unused = model.addBinaryVariable();
+    @SuppressWarnings("UnnamedVariable") var unused = model.addBinaryVariable();
     var expr = new HashLinearExpression();
 
     for (Map.Entry<Variable, Double> entry : expr.unmodifiableTerms()) {
