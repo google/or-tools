@@ -30,6 +30,7 @@
 #include "ortools/base/gmock.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/glop/lp_solver.h"
+#include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_types_testing.h"
