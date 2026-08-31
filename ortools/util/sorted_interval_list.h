@@ -17,6 +17,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <optional>
 #include <ostream>
 #include <set>
 #include <string>

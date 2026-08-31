@@ -742,6 +742,7 @@ Domain Domain::SquareSuperset() const {
 }
 
 namespace {
+// Implementation of QuadraticSuperset() for a single interval.
 ClosedInterval EvaluateQuadraticProdInterval(int64_t a, int64_t b, int64_t c,
                                              int64_t d, int64_t variable_min,
                                              int64_t variable_max) {
@@ -752,8 +753,8 @@ ClosedInterval EvaluateQuadraticProdInterval(int64_t a, int64_t b, int64_t c,
   // following:
   // - variable_min;
   // - variable_max;
-  // - the closest point to the parabola extreme, rounded down;
-  // - the closest point to the parabola extreme, rounded up.
+  // - the closest domain value lower or equal to the parabola extreme;
+  // - the closest domain value higher than the parabola extreme.
 
   const absl::int128 nominator =
       -absl::int128{a} * absl::int128{d} - absl::int128{b} * absl::int128{c};
@@ -769,15 +770,22 @@ ClosedInterval EvaluateQuadraticProdInterval(int64_t a, int64_t b, int64_t c,
   int64_t min_var = std::min(at_min_x, at_max_x);
   int64_t max_var = std::max(at_min_x, at_max_x);
 
-  if (evaluated_minimum_point > variable_min &&
-      evaluated_minimum_point < variable_max) {
-    const int64_t point_at_minimum_64 =
-        static_cast<int64_t>(evaluated_minimum_point);
-    const int rounder = ((nominator > 0) == (denominator > 0) ? 1 : -1);
+  const int64_t point_at_minimum_64 =
+      static_cast<int64_t>(evaluated_minimum_point);
+  const int rounder = ((nominator > 0) == (denominator > 0) ? 1 : -1);
+
+  if (point_at_minimum_64 >= variable_min &&
+      point_at_minimum_64 <= variable_max) {
     const int64_t point1 = evaluate(point_at_minimum_64);
-    const int64_t point2 = evaluate(point_at_minimum_64 + rounder);
-    min_var = std::min(min_var, std::min(point1, point2));
-    max_var = std::max(max_var, std::max(point1, point2));
+    min_var = std::min(min_var, point1);
+    max_var = std::max(max_var, point1);
+  }
+
+  const int64_t point2_x = point_at_minimum_64 + rounder;
+  if (point2_x >= variable_min && point2_x <= variable_max) {
+    const int64_t point2 = evaluate(point2_x);
+    min_var = std::min(min_var, point2);
+    max_var = std::max(max_var, point2);
   }
 
   return ClosedInterval(min_var, max_var);
