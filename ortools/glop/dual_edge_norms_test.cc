@@ -17,6 +17,7 @@
 
 #include "gtest/gtest.h"
 #include "ortools/glop/basis_representation.h"
+#include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_test_utils.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"

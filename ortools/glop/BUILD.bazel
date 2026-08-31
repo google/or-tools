@@ -304,6 +304,7 @@ cc_test(
     copts = SAFE_FP_CODE,
     deps = [
         ":lp_solver",
+        ":parameters_cc_proto",
         "//ortools/base:gmock_main",
         "//ortools/base:log_severity",
         "//ortools/lp_data",
@@ -387,6 +388,7 @@ cc_test(
     deps = [
         ":basis_representation",
         ":dual_edge_norms",
+        ":parameters_cc_proto",
         "//ortools/base:gmock_main",
         "//ortools/lp_data:lp_test_utils",
         "//ortools/lp_data:lp_types",
@@ -771,6 +773,7 @@ cc_test(
     copts = SAFE_FP_CODE,
     deps = [
         ":lu_factorization",
+        ":parameters_cc_proto",
         "//ortools/base:gmock_main",
         "//ortools/base:log_severity",
         "//ortools/graph_base:iterators",
