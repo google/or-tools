@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
-#include "absl/strings/str_join.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "ortools/linear_solver/linear_solver.h"
 

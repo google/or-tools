@@ -65,7 +65,7 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
 
   void SetLevel(int level) final;
   bool Propagate() final;
-  bool IncrementalPropagate(const std::vector<int>& watch_indices) final;
+  bool IncrementalPropagate(absl::Span<const int> watch_indices) final;
 
  private:
   int RegisterWith(GenericLiteralWatcher* watcher);
@@ -107,6 +107,13 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   std::vector<Literal> watch_index_to_literal_;
   CompactVectorVector<int, Arc> watch_index_to_arcs_;
 
+  // Watch indices passed to IncrementalPropagate() that could not be processed
+  // right away because the enforcement status was not CAN_PROPAGATE_ENFORCEMENT
+  // or IS_ENFORCED. Only the elements in [0, rev_deferred_watch_indices_size_)
+  // are valid.
+  std::vector<int> deferred_watch_indices_;
+  int rev_deferred_watch_indices_size_ = 0;
+
   // Current partial chains of arcs that are present.
   std::vector<int> next_;  // -1 if not assigned yet.
   std::vector<int> prev_;  // -1 if not assigned yet.
@@ -137,7 +144,7 @@ class NoCyclePropagator : PropagatorInterface, ReversibleInterface {
 
   void SetLevel(int level) final;
   bool Propagate() final;
-  bool IncrementalPropagate(const std::vector<int>& watch_indices) final;
+  bool IncrementalPropagate(absl::Span<const int> watch_indices) final;
 
  private:
   void RegisterWith(GenericLiteralWatcher* watcher);
@@ -188,7 +195,7 @@ class CircuitCoveringPropagator : PropagatorInterface, ReversibleInterface {
 
   void SetLevel(int level) final;
   bool Propagate() final;
-  bool IncrementalPropagate(const std::vector<int>& watch_indices) final;
+  bool IncrementalPropagate(absl::Span<const int> watch_indices) final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:

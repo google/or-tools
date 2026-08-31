@@ -130,6 +130,7 @@ int CircuitPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   }
   watcher->RegisterReversibleClass(id, this);
   watcher->RegisterReversibleInt(id, &rev_must_be_in_cycle_size_);
+  watcher->RegisterReversibleInt(id, &rev_deferred_watch_indices_size_);
 
   // This is needed in case a Literal is used for more than one arc, we may
   // propagate it to false/true here, and it might trigger more propagation.
@@ -199,11 +200,25 @@ void CircuitPropagator::AddArc(int tail, int head, LiteralIndex literal_index) {
 }
 
 bool CircuitPropagator::IncrementalPropagate(
-    const std::vector<int>& watch_indices) {
+    absl::Span<const int> watch_indices) {
   if (!enabled_) return true;
   const EnforcementStatus status = enforcement_helper_.Status(enforcement_id_);
+  if (status == EnforcementStatus::IS_FALSE) return true;
   if (status != EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT &&
       status != EnforcementStatus::IS_ENFORCED) {
+    // We cannot propagate anything, and we can't update the internal state
+    // either because this could break invariants (e.g. at most one
+    // incoming/outgoing arc per node). Instead, we save the watch indices to
+    // process them later by calling this method again in Propagate() when we
+    // can propagate again.
+    if (rev_deferred_watch_indices_size_ + watch_indices.size() >
+        deferred_watch_indices_.size()) {
+      deferred_watch_indices_.resize(rev_deferred_watch_indices_size_ +
+                                     watch_indices.size());
+    }
+    for (const int w : watch_indices) {
+      deferred_watch_indices_[rev_deferred_watch_indices_size_++] = w;
+    }
     return true;
   }
 
@@ -253,6 +268,14 @@ bool CircuitPropagator::Propagate() {
   if (status != EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT &&
       status != EnforcementStatus::IS_ENFORCED) {
     return true;
+  }
+  if (rev_deferred_watch_indices_size_ > 0) {
+    // IncrementalPropagate() calls Propagate() again, make sure this does not
+    // result in an infinite loop.
+    const int size = rev_deferred_watch_indices_size_;
+    rev_deferred_watch_indices_size_ = 0;
+    return IncrementalPropagate(
+        absl::MakeConstSpan(deferred_watch_indices_).subspan(0, size));
   }
 
   processed_.assign(num_nodes_, false);
@@ -373,10 +396,6 @@ bool CircuitPropagator::Propagate() {
         continue;
       }
 
-      // This shouldn't happen because ExactlyOnePerRowAndPerColumn() should
-      // have executed first and propagated self_arcs_[node] to false.
-      CHECK_EQ(next_[node], -1);
-
       // We should have detected that above (miss_some_nodes == true). But we
       // still need this for corner cases where the same literal is used for
       // many arcs, and we just propagated it here.
@@ -483,7 +502,7 @@ void NoCyclePropagator::SetLevel(int level) {
 }
 
 bool NoCyclePropagator::IncrementalPropagate(
-    const std::vector<int>& watch_indices) {
+    absl::Span<const int> watch_indices) {
   for (const int w : watch_indices) {
     const Literal literal = watch_index_to_literal_[w];
     for (const auto& [tail, head] : watch_index_to_arcs_[w]) {
@@ -579,7 +598,7 @@ void CircuitCoveringPropagator::SetLevel(int level) {
 }
 
 bool CircuitCoveringPropagator::IncrementalPropagate(
-    const std::vector<int>& watch_indices) {
+    absl::Span<const int> watch_indices) {
   for (const int w : watch_indices) {
     const auto& arc = watch_index_to_arc_[w];
     fixed_arcs_.push_back(arc);

@@ -326,7 +326,7 @@ bool NoOverlap2DConstraintHelper::IsEnforced() const {
 }
 
 bool NoOverlap2DConstraintHelper::IncrementalPropagate(
-    const std::vector<int>& watch_indices) {
+    absl::Span<const int> watch_indices) {
   if (!IsEnforced()) return true;
   for (const int id : propagators_watching_) {
     watcher_->CallOnNextPropagate(id);

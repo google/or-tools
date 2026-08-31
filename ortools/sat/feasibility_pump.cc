@@ -31,6 +31,7 @@
 #include "ortools/lp_data/lp_data_utils.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/sparse_column.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -65,7 +66,8 @@ FeasibilityPump::FeasibilityPump(Model* model)
       incomplete_solutions_(model->Mutable<SharedIncompleteSolutionManager>()),
       sat_solver_(model->GetOrCreate<SatSolver>()),
       domains_(model->GetOrCreate<IntegerDomains>()),
-      mapping_(model->Get<CpModelMapping>()) {
+      mapping_(model->Get<CpModelMapping>()),
+      binary_implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()) {
   // Tweak the default parameters to make the solve incremental.
   glop::GlopParameters parameters;
   // Note(user): Primal simplex does better here since we have a limit on
@@ -604,6 +606,8 @@ bool FeasibilityPump::PropagationRounding() {
     CHECK(VariableIsPositive(var));
     const Domain& domain = (*domains_)[GetPositiveOnlyIndex(var)];
 
+    if (!sat_solver_->FinishPropagation()) return false;
+
     const IntegerValue lb = integer_trail_->LowerBound(var);
     const IntegerValue ub = integer_trail_->UpperBound(var);
     if (lb == ub) {
@@ -679,7 +683,16 @@ bool FeasibilityPump::PropagationRounding() {
           integer_encoder_->GetOrCreateLiteralAssociatedToEquality(var, value);
     }
 
-    if (!sat_solver_->FinishPropagation()) return false;
+    if (sat_solver_->Assignment().LiteralIsTrue(to_enqueue)) {
+      // This is rare, so we just abort if this turns out to be assigned to
+      // false. Maybe a better fix would be to try a different to_enqueue on the
+      // same variable.
+      continue;
+    }
+    if (sat_solver_->Assignment().LiteralIsFalse(to_enqueue)) return false;
+
+    to_enqueue = binary_implication_graph_->RepresentativeOf(to_enqueue);
+    DCHECK(!sat_solver_->Assignment().LiteralIsAssigned(to_enqueue));
     const SatSolver::Status decision_status =
         sat_solver_->EnqueueDecisionAndBacktrackOnConflict(to_enqueue);
     if (decision_status != SatSolver::Status::FEASIBLE) return false;

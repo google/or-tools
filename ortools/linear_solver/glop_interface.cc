@@ -18,13 +18,13 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/attributes.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/linear_solver/glop_utils.h"
 #include "ortools/linear_solver/linear_solver.h"
+#include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/proto_solver/glop_proto_solver.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"

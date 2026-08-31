@@ -25,6 +25,7 @@
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_data_utils.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -211,6 +212,7 @@ class FeasibilityPump {
   SatSolver* sat_solver_;
   IntegerDomains* domains_;
   const CpModelMapping* mapping_;
+  BinaryImplicationGraph* binary_implication_graph_;
 
   // Last OPTIMAL/Feasible solution found by a call to the underlying LP solver.
   bool lp_solution_is_set_ = false;

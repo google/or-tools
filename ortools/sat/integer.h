@@ -1334,7 +1334,7 @@ class PropagatorInterface {
   // - At level zero, it will not contain any indices associated with literals
   //   that were already fixed when the propagator was registered. Only the
   //   indices of the literals modified after the registration will be present.
-  virtual bool IncrementalPropagate(const std::vector<int>& /*watch_indices*/) {
+  virtual bool IncrementalPropagate(absl::Span<const int> /*watch_indices*/) {
     LOG(FATAL) << "Not implemented.";
     return false;  // Remove warning in Windows
   }

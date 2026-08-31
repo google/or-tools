@@ -224,7 +224,7 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
 
   int NumBoxes() const { return x_helper_->NumTasks(); }
 
-  bool IncrementalPropagate(const std::vector<int>& watch_indices) override;
+  bool IncrementalPropagate(absl::Span<const int> watch_indices) override;
   bool Propagate() override;
 
   // Note that the helpers are only valid until the next call to
