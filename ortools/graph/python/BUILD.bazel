@@ -18,7 +18,9 @@
 # - graph-tool: https://graph-tool.skewed.de/
 # - NetworkX: https://networkx.org/
 
+load("@pip_deps//:requirements.bzl", "requirement")
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
+load("@rules_python//python:py_test.bzl", "py_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -41,4 +43,24 @@ pybind_extension(
     srcs = ["min_cost_flow.cc"],
     visibility = ["//visibility:public"],
     deps = ["//ortools/graph:min_cost_flow"],
+)
+
+pybind_extension(
+    name = "dag_shortest_path",
+    srcs = ["dag_shortest_path.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/graph:dag_shortest_path",
+        "//ortools/graph_base:graph",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+py_test(
+    name = "dag_shortest_path_test",
+    srcs = ["dag_shortest_path_test.py"],
+    deps = [
+        ":dag_shortest_path",
+        requirement("absl-py"),
+    ],
 )

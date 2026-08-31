@@ -21,15 +21,15 @@
 // A description can also be found here:
 // http://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
 //
-// SIMPLE EXAMPLE:
+// SIMPLE EXAMPLES:
+//
+// 1) Node are dense integers in [0, num_nodes).
 //
 // Fill a vector<vector<int>> graph; representing your graph adjacency lists.
-// That is, graph[i] contains the nodes adjacent to node #i. The nodes must be
-// integers in [0, num_nodes). Then just do:
+// That is, graph[i] contains the nodes adjacent to node #i. Then just do:
 //
-// vector<vector<int>> components;
-// FindStronglyConnectedComponents(
-//     static_cast<int>(graph.size()), graph, &components);
+//    vector<vector<int>> components;
+//    FindStronglyConnectedComponents<int>(graph.size()), graph, &components);
 //
 // The nodes of each strongly connected components will be listed in each
 // subvector of components. The components appear in reverse topological order:
@@ -39,7 +39,16 @@
 // is the type used internally by the algorithm. It is why it is better to
 // convert it to int or even int32_t rather than using size_t which takes 64
 // bits.
-
+//
+// 2) Generic node types.
+//
+//    std::vector<std::pair<std::string, std::string>> edges =
+//        {{"a", "b"}, {"b", "c"}, {"c", "b"}};
+//    std::vector<std::vector<std::string>> components =
+//        GetStronglyConnectedComponents(
+//            GenericGraph<std::string>::FromEdges(edges));
+//
+//    → components = {{"b", "c"}, {"a"}}
 #ifndef UTIL_GRAPH_STRONGLY_CONNECTED_COMPONENTS_H_
 #define UTIL_GRAPH_STRONGLY_CONNECTED_COMPONENTS_H_
 
@@ -48,6 +57,20 @@
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
+#include "ortools/graph_base/generic_graph.h"
+#include "ortools/graph_base/graph.h"
+
+// Simple API that works with generic node types and returns the components.
+template <typename Node>
+std::vector<std::vector<Node>> GetStronglyConnectedComponents(
+    const util::graph::GenericGraph<Node>& graph);
+
+// Returns the component ids for each node. Nodes must be dense
+// integers spanning 0..num_nodes-1. Graph can be any adjacency list
+// representation of a graph, e.g., vector<vector<int>>, StaticGraph<>, etc,
+// in particular it must provide the number of nodes via .size().
+template <typename Graph>
+std::vector<int> FindStronglyConnectedComponentsIds(const Graph& graph);
 
 // Finds the strongly connected components of a directed graph. It is templated
 // so it can be used in many contexts. See the simple example above for the
@@ -214,7 +237,56 @@ class StronglyConnectedComponentsFinder {
   std::vector<NodeIndex> node_to_process_;
 };
 
-// Simple wrapper function for most usage.
+// =============================================================================
+// Implementation of the shortcut APIs.
+// =============================================================================
+
+template <typename Node>
+std::vector<std::vector<Node>> GetStronglyConnectedComponents(
+    const util::graph::GenericGraph<Node>& graph) {
+  class SccOutput {
+   public:
+    SccOutput(const util::graph::GenericGraph<Node>& graph,
+              std::vector<std::vector<Node>>& components)
+        : graph_(graph), components_(components) {}
+
+    void emplace_back(int const* start, int const* end) {
+      components_.push_back(graph_.Nodes(absl::MakeSpan(start, end)));
+    }
+
+   private:
+    const util::graph::GenericGraph<Node>& graph_;
+    std::vector<std::vector<Node>>& components_;
+  };
+  std::vector<std::vector<Node>> components;
+  SccOutput output(graph, components);
+  FindStronglyConnectedComponents(graph.Graph().num_nodes(), graph.Graph(),
+                                  &output);
+  return components;
+}
+
+template <typename Graph>
+std::vector<int> FindStronglyConnectedComponentsIds(const Graph& graph) {
+  using NodeIndex = typename util::GraphTraits<Graph>::NodeIndex;
+  const NodeIndex num_nodes = util::GraphTraits<Graph>::num_nodes(graph);
+  struct SccIdsOutput {
+    explicit SccIdsOutput(NodeIndex num_nodes) : component_ids(num_nodes, -1) {}
+
+    void emplace_back(NodeIndex const* start, NodeIndex const* end) {
+      for (const NodeIndex* it = start; it != end; ++it) {
+        component_ids[*it] = num_components;
+      }
+      ++num_components;
+    }
+
+    int num_components = 0;
+    std::vector<int> component_ids;
+  };
+  SccIdsOutput output(num_nodes);
+  FindStronglyConnectedComponents(num_nodes, graph, &output);
+  return output.component_ids;
+}
+
 template <typename NodeIndex, typename Graph, typename SccOutput>
 void FindStronglyConnectedComponents(const NodeIndex num_nodes,
                                      const Graph& graph,

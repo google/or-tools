@@ -62,9 +62,26 @@ endif()
 target_link_libraries(min_cost_flow_pybind11 PRIVATE ${PROJECT_NAMESPACE}::ortools)
 add_library(${PROJECT_NAMESPACE}::min_cost_flow_pybind11 ALIAS min_cost_flow_pybind11)
 
+pybind11_add_module(dag_shortest_path_pybind11 MODULE dag_shortest_path.cc)
+# note: macOS is APPLE and also UNIX !
+set_target_properties(dag_shortest_path_pybind11 PROPERTIES
+  LIBRARY_OUTPUT_NAME "dag_shortest_path")
+if(APPLE)
+  set_target_properties(dag_shortest_path_pybind11 PROPERTIES
+    SUFFIX ".so"
+    INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
+    )
+elseif(UNIX)
+  set_target_properties(dag_shortest_path_pybind11 PROPERTIES
+    INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs"
+    )
+endif()
+target_link_libraries(dag_shortest_path_pybind11 PRIVATE ${PROJECT_NAMESPACE}::ortools)
+add_library(${PROJECT_NAMESPACE}::dag_shortest_path_pybind11 ALIAS dag_shortest_path_pybind11)
+
 if(BUILD_PYTHON_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)
-    add_python_test(${FILE_NAME})
+    add_python_test(FILE_NAME ${FILE_NAME})
   endforeach()
 endif()

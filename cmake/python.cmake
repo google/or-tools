@@ -689,6 +689,8 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:min_cost_flow_pybind11> ${PYTHON_PROJECT}/graph/python
   COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:dag_shortest_path_pybind11> ${PYTHON_PROJECT}/graph/python
+  COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:pywrapcp> ${PYTHON_PROJECT}/constraint_solver
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:constraint_solver_pybind11> ${PYTHON_PROJECT}/constraint_solver/python
@@ -739,6 +741,7 @@ add_custom_command(
     linear_sum_assignment_pybind11
     max_flow_pybind11
     min_cost_flow_pybind11
+    dag_shortest_path_pybind11
     pywrapcp
     constraint_solver_pybind11
     pywraprouting

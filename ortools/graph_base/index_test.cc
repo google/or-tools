@@ -69,6 +69,13 @@ TEST(IndexTest, BasicOperationsHashable) {
   EXPECT_EQ(map.Lookup("apple"), std::nullopt);
 }
 
+TEST(IndexTest, InitializerListConstruction) {
+  Index<std::string> map = {"apple", "banana", "apple"};
+  EXPECT_THAT(map, ElementsAre("apple", "banana"));
+  map = {"a", "", "", "a"};
+  EXPECT_THAT(map, ElementsAre("a", ""));
+}
+
 TEST(IndexTest, MoveOperationsHashable) {
   Index<std::string> map;
   EXPECT_THAT(map.TryEmplace("apple"), Pair(0, true));
@@ -117,11 +124,6 @@ TEST(IndexTest, MoveOperationsHashable) {
 struct NonHashable {
   int x;
   bool operator<(const NonHashable& other) const { return x < other.x; }
-
-  template <typename Sink>
-  friend void AbslStringify(Sink& sink, const NonHashable& obj) {
-    absl::Format(&sink, "NonHashable{%d}", obj.x);
-  }
 };
 
 TEST(IndexTest, BasicOperationsNonHashable) {
@@ -139,6 +141,13 @@ TEST(IndexTest, BasicOperationsNonHashable) {
 
   EXPECT_EQ(map.Lookup(NonHashable{2}), std::nullopt);
   EXPECT_EQ(map.Lookup(NonHashable{-1}), 1);
+}
+
+TEST(IndexTest, InitializerListNonHashable) {
+  Index<NonHashable> map = {NonHashable{1}, NonHashable{-1}, NonHashable{1}};
+  EXPECT_EQ(map.size(), 2);
+  EXPECT_EQ(map[0].x, 1);
+  EXPECT_EQ(map[1].x, -1);
 }
 
 TEST(IndexTest, MoveOperationsNonHashable) {

@@ -49,6 +49,7 @@
 #include "ortools/base/container_logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/graph_base/generic_graph.h"
 #include "ortools/graph_base/graph.h"
 
 namespace util {
@@ -105,6 +106,16 @@ absl::StatusOr<
     std::vector<typename util::GraphTraits<AdjacencyLists>::NodeIndex>>
 FindCycleInGraph(const AdjacencyLists& adj);
 
+// Variant that works with arbitrary node types. Returns {} if acyclic. EXAMPLE:
+//   std::vector<std::string> cycle =
+//       FindCycle(util::graph::GenericGraph<std::string>::FromEdges(
+//           {{"a", "b"}, {"b", "c"}, {"c", "a"}}));
+//   → returns {"a", "b", "c"}, or some cyclic permutation.
+template <typename Node>
+std::vector<Node> FindCycle(const util::graph::GenericGraph<Node>& g) {
+  return g.Nodes(FindCycleInGraph(g.Graph()).value());  // NOLINT
+}
+
 }  // namespace graph
 
 // [Stable]TopologicalSort[OrDie]:
@@ -118,15 +129,18 @@ FindCycleInGraph(const AdjacencyLists& adj);
 // Returns true if the graph was a DAG, and outputs the topological order in
 // "topological_order". Returns false if the graph is cyclic, and outputs the
 // detected cycle in "cycle".
+//
+// TODO(user): Migrate users to GenericGraph + FastTopologicalSort.
 template <typename T>
-ABSL_MUST_USE_RESULT bool TopologicalSort(
-    const std::vector<T>& nodes, const std::vector<std::pair<T, T>>& arcs,
-    std::vector<T>* topological_order);
+[[nodiscard]] bool TopologicalSort(const std::vector<T>& nodes,
+                                   const std::vector<std::pair<T, T>>& arcs,
+                                   std::vector<T>* topological_order);
 // Override of the above that outputs the detected cycle.
 template <typename T>
-ABSL_MUST_USE_RESULT bool TopologicalSort(
-    const std::vector<T>& nodes, const std::vector<std::pair<T, T>>& arcs,
-    std::vector<T>* topological_order, std::vector<T>* cycle);
+[[nodiscard]] bool TopologicalSort(const std::vector<T>& nodes,
+                                   const std::vector<std::pair<T, T>>& arcs,
+                                   std::vector<T>* topological_order,
+                                   std::vector<T>* cycle);
 // OrDie() variant of the above.
 template <typename T>
 std::vector<T> TopologicalSortOrDie(const std::vector<T>& nodes,
@@ -136,12 +150,12 @@ std::vector<T> TopologicalSortOrDie(const std::vector<T>& nodes,
 // the lexicographically minimal valid order, where "lexicographic" applies to
 // the indices of the nodes.
 template <typename T>
-ABSL_MUST_USE_RESULT bool StableTopologicalSort(
+[[nodiscard]] bool StableTopologicalSort(
     const std::vector<T>& nodes, const std::vector<std::pair<T, T>>& arcs,
     std::vector<T>* topological_order);
 // Override of the above that outputs the detected cycle.
 template <typename T>
-ABSL_MUST_USE_RESULT bool StableTopologicalSort(
+[[nodiscard]] bool StableTopologicalSort(
     const std::vector<T>& nodes, const std::vector<std::pair<T, T>>& arcs,
     std::vector<T>* topological_order, std::vector<T>* cycle);
 // OrDie() variant of the above.
@@ -152,7 +166,7 @@ std::vector<T> StableTopologicalSortOrDie(
 // ______________________ END OF THE RECOMMENDED API ___________________________
 
 // DEPRECATED. Use util::graph::FindCycleInGraph() directly.
-inline ABSL_MUST_USE_RESULT std::vector<int> FindCycleInDenseIntGraph(
+[[nodiscard]] inline std::vector<int> FindCycleInDenseIntGraph(
     int num_nodes, const std::vector<std::pair<int, int>>& arcs) {
   return util::graph::FindCycleInGraph(
              util::GraphFromArcs<util::StaticGraph<int, int>>(num_nodes, arcs))
@@ -166,12 +180,12 @@ inline ABSL_MUST_USE_RESULT std::vector<int> FindCycleInDenseIntGraph(
 //   ./graph.h) and pass it to FastTopologicalSort().
 // - If you need the "stable sort" bit, contact viger@ and/or or-core-team@
 //   to see if they can create FastStableTopologicalSort().
-ABSL_MUST_USE_RESULT inline bool DenseIntTopologicalSort(
+[[nodiscard]] inline bool DenseIntTopologicalSort(
     int num_nodes, const std::vector<std::pair<int, int>>& arcs,
     std::vector<int>* topological_order);
 inline std::vector<int> DenseIntStableTopologicalSortOrDie(
     int num_nodes, const std::vector<std::pair<int, int>>& arcs);
-ABSL_MUST_USE_RESULT inline bool DenseIntStableTopologicalSort(
+[[nodiscard]] inline bool DenseIntStableTopologicalSort(
     int num_nodes, const std::vector<std::pair<int, int>>& arcs,
     std::vector<int>* topological_order);
 inline std::vector<int> DenseIntTopologicalSortOrDie(
@@ -180,7 +194,7 @@ inline std::vector<int> DenseIntTopologicalSortOrDie(
 namespace internal {
 // Internal wrapper around the *TopologicalSort classes.
 template <typename T, typename Sorter>
-ABSL_MUST_USE_RESULT bool RunTopologicalSorter(
+[[nodiscard]] bool RunTopologicalSorter(
     Sorter* sorter, const std::vector<std::pair<T, T>>& arcs,
     std::vector<T>* topological_order_or_cycle);
 
@@ -456,7 +470,7 @@ namespace internal {
 // If successful, returns true and outputs the order in "topological_order".
 // If not, returns false and outputs a cycle in "cycle" (if not null).
 template <typename T, typename Sorter>
-ABSL_MUST_USE_RESULT bool RunTopologicalSorter(
+[[nodiscard]] bool RunTopologicalSorter(
     Sorter* sorter, const std::vector<std::pair<T, T>>& arcs,
     std::vector<T>* topological_order, std::vector<T>* cycle) {
   topological_order->clear();
@@ -471,7 +485,7 @@ ABSL_MUST_USE_RESULT bool RunTopologicalSorter(
 }
 
 template <bool stable_sort = false>
-ABSL_MUST_USE_RESULT bool DenseIntTopologicalSortImpl(
+[[nodiscard]] bool DenseIntTopologicalSortImpl(
     int num_nodes, const std::vector<std::pair<int, int>>& arcs,
     std::vector<int>* topological_order) {
   DenseIntTopologicalSorterTpl<stable_sort> sorter(num_nodes);
@@ -481,9 +495,10 @@ ABSL_MUST_USE_RESULT bool DenseIntTopologicalSortImpl(
 }
 
 template <typename T, bool stable_sort = false>
-ABSL_MUST_USE_RESULT bool TopologicalSortImpl(
-    absl::Span<const T> nodes, const std::vector<std::pair<T, T>>& arcs,
-    std::vector<T>* topological_order, std::vector<T>* cycle) {
+[[nodiscard]] bool TopologicalSortImpl(absl::Span<const T> nodes,
+                                       const std::vector<std::pair<T, T>>& arcs,
+                                       std::vector<T>* topological_order,
+                                       std::vector<T>* cycle) {
   TopologicalSorter<T, stable_sort> sorter;
   for (const T& node : nodes) {
     sorter.AddNode(node);
