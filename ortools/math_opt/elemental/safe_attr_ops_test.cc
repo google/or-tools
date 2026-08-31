@@ -13,8 +13,6 @@
 
 #include "ortools/math_opt/elemental/safe_attr_ops.h"
 
-#include <cstdint>
-
 #include "absl/status/status.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"

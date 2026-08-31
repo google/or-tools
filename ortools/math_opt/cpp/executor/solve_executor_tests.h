@@ -19,6 +19,7 @@
 #include <ostream>
 #include <string>
 
+#include "absl/status/statusor.h"
 #include "gtest/gtest.h"
 #include "ortools/math_opt/cpp/executor/solve_executor.h"
 
