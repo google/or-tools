@@ -65,6 +65,6 @@ add_library(${PROJECT_NAMESPACE}::min_cost_flow_pybind11 ALIAS min_cost_flow_pyb
 if(BUILD_PYTHON_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)
-    add_python_test(${FILE_NAME})
+    add_python_test(FILE_NAME ${FILE_NAME})
   endforeach()
 endif()
