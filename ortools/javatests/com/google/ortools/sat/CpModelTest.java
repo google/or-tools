@@ -897,7 +897,7 @@ public final class CpModelTest {
       model.addEquality(entitiesOne[i], r.nextInt(numEntityTwo));
     }
     final CpSolver solver = new CpSolver();
-    CpSolverStatus unused = solver.solve(model);
+    solver.solve(model);
   }
 
   @Test

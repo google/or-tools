@@ -260,7 +260,7 @@ public final class ModelTest {
   public void deleteVariable_deleteTwice_secondDeleteIgnored() {
     var model = new Model("test_model");
     Variable x = model.addBinaryVariable("x");
-    var unused = model.addBinaryVariable("y");
+    var unusedY = model.addBinaryVariable("y");
     assertThat(model.deleteVariable(x)).isTrue();
     assertThat(model.numVariables()).isEqualTo(1);
     assertThat(model.getNextVariableId()).isEqualTo(2L);
@@ -278,7 +278,7 @@ public final class ModelTest {
     var model1 = new Model("test_model");
     Variable x1 = model1.addBinaryVariable("x");
     var model2 = new Model("test_model");
-    var unused = model2.addBinaryVariable("x");
+    var unusedX = model2.addBinaryVariable("x");
 
     assertThrows(IllegalArgumentException.class, () -> model2.deleteVariable(x1));
   }
@@ -307,7 +307,7 @@ public final class ModelTest {
     var model1 = new Model("test_model");
     Variable x1 = model1.addBinaryVariable("x");
     var model2 = new Model("test_model");
-    var unused = model2.addBinaryVariable("x");
+    var unusedX = model2.addBinaryVariable("x");
 
     assertThrows(IllegalArgumentException.class, () -> model2.checkOwned(x1));
   }
@@ -647,7 +647,7 @@ public final class ModelTest {
   public void deleteLinearConstraint_deleteTwice_secondDeleteIgnored() {
     var model = new Model("test_model");
     LinearConstraint c = model.addLinearConstraint("c");
-    var unused = model.addLinearConstraint("d");
+    var unusedD = model.addLinearConstraint("d");
     assertThat(model.deleteLinearConstraint(c)).isTrue();
     assertThat(model.numLinearConstraint()).isEqualTo(1);
     assertThat(model.getNextLinearConstraintId()).isEqualTo(2L);
@@ -665,7 +665,7 @@ public final class ModelTest {
     var model1 = new Model("test_model");
     LinearConstraint c1 = model1.addLinearConstraint("c");
     var model2 = new Model("test_model");
-    var unused = model2.addLinearConstraint("c");
+    var unusedC = model2.addLinearConstraint("c");
 
     assertThrows(IllegalArgumentException.class, () -> model2.deleteLinearConstraint(c1));
   }
@@ -694,7 +694,7 @@ public final class ModelTest {
     var model1 = new Model("test_model");
     LinearConstraint c1 = model1.addLinearConstraint("c");
     var model2 = new Model("test_model");
-    var unused = model2.addLinearConstraint("c");
+    var unusedC = model2.addLinearConstraint("c");
 
     assertThrows(IllegalArgumentException.class, () -> model2.checkOwned(c1));
   }
@@ -712,7 +712,7 @@ public final class ModelTest {
     var model = new Model("test_model");
     Variable x = model.addBinaryVariable();
     LinearConstraint c = model.addLinearConstraint("c").setTerm(x, 1.0);
-    var unused = model.addLinearConstraint("d");
+    var unusedD = model.addLinearConstraint("d");
     LinearConstraint e = model.addLinearConstraint("e").setTerm(x, 1.0);
 
     assertThat(model.getUnmodifiableColumnNonzeros(x)).containsExactly(c, e);
@@ -802,8 +802,8 @@ public final class ModelTest {
   public void toProto_withVariables_hasVariables() {
     var model = new Model("test_model");
 
-    var unused = model.addBinaryVariable("x");
-    var unused2 = model.addVariable(-1.0, 2.0, "y");
+    var unusedX = model.addBinaryVariable("x");
+    var unusedY = model.addVariable(-1.0, 2.0, "y");
 
     var expected = ModelProto.newBuilder();
     expected.setName("test_model")
@@ -824,9 +824,9 @@ public final class ModelTest {
   @Test
   public void toProto_withDeletedVariable() {
     var model = new Model("test_model");
-    var unused = model.addBinaryVariable("x");
+    var unusedX = model.addBinaryVariable("x");
     Variable y = model.addVariable(-1.0, 2.0, "y");
-    var unused2 = model.addBinaryVariable("z");
+    var unusedZ = model.addBinaryVariable("z");
     assertThat(model.deleteVariable(y)).isTrue();
 
     var expectedModelProto = ModelProto.newBuilder();
@@ -849,7 +849,7 @@ public final class ModelTest {
   public void toProto_deleteVariableTwice_modelProtoOk() {
     var model = new Model("test_model");
     Variable x = model.addBinaryVariable("x");
-    var unused = model.addBinaryVariable("y");
+    var unusedY = model.addBinaryVariable("y");
 
     assertThat(model.deleteVariable(x)).isTrue();
     assertThat(model.deleteVariable(x)).isFalse();
@@ -993,7 +993,7 @@ public final class ModelTest {
   public void toProto_deleteLinearConstraintTwice_modelProtoOk() {
     var model = new Model("test_model");
     LinearConstraint c = model.addLinearConstraint("c");
-    var unused = model.addLinearConstraint(-1.0, 2.0, "d");
+    var unusedD = model.addLinearConstraint(-1.0, 2.0, "d");
 
     assertThat(model.deleteLinearConstraint(c)).isTrue();
     assertThat(model.deleteLinearConstraint(c)).isFalse();
@@ -1273,7 +1273,7 @@ public final class ModelTest {
     var model = new Model("test_model");
 
     Model.UpdateTracker tracker = model.addTracker();
-    var unused = model.addBinaryVariable("x");
+    var unusedX = model.addBinaryVariable("x");
 
     var expectedUpdateProto = ModelUpdateProto.newBuilder();
     expectedUpdateProto.getNewVariablesBuilder()
@@ -1365,7 +1365,7 @@ public final class ModelTest {
     var model = new Model("test_model");
 
     Model.UpdateTracker tracker = model.addTracker();
-    var unused = model.addLinearConstraint("c").setLowerBound(0.0).setUpperBound(1.0);
+    var unusedC = model.addLinearConstraint("c").setLowerBound(0.0).setUpperBound(1.0);
 
     var expectedUpdateProto = ModelUpdateProto.newBuilder();
     expectedUpdateProto.getNewLinearConstraintsBuilder()
@@ -1445,7 +1445,7 @@ public final class ModelTest {
     Variable y = model.addBinaryVariable("y");
     Model.UpdateTracker tracker = model.addTracker();
 
-    var unused = model.addBinaryVariable("z");
+    var unusedZ = model.addBinaryVariable("z");
     x.setUpperBound(2.0);
     model.deleteVariable(y);
     tracker.advance();
@@ -1463,7 +1463,7 @@ public final class ModelTest {
     LinearConstraint d = model.addLinearConstraint("d").setLowerBound(0.0).setUpperBound(1.0);
     Model.UpdateTracker tracker = model.addTracker();
 
-    var unused = model.addLinearConstraint("e");
+    var unusedE = model.addLinearConstraint("e");
     c.setLowerBound(-1.0);
     model.deleteLinearConstraint(d);
     c.setTerm(x, 1.0);

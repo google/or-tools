@@ -227,7 +227,7 @@ public final class SolveInterrupterTest {
   public void chain_interruptAfter_chainedInterrupterIsInterrupted() {
     var interrupter = new SolveInterrupter();
     var dependent = new SolveInterrupter();
-    try (CallbackRemover unused = interrupter.chain(dependent)) {
+    try (CallbackRemover unusedCb = interrupter.chain(dependent)) {
       interrupter.interrupt();
     }
     assertThat(dependent.isInterrupted()).isTrue();
@@ -238,7 +238,7 @@ public final class SolveInterrupterTest {
     var interrupter = new SolveInterrupter();
     interrupter.interrupt();
     var dependent = new SolveInterrupter();
-    try (CallbackRemover unused = interrupter.chain(dependent)) {
+    try (CallbackRemover unusedCb = interrupter.chain(dependent)) {
       // Nothing to do
     }
     assertThat(dependent.isInterrupted()).isTrue();
@@ -248,7 +248,7 @@ public final class SolveInterrupterTest {
   public void chain_interruptedAfterRemovingCallback_chainedInterrupterIsNotInterrupted() {
     var interrupter = new SolveInterrupter();
     var dependent = new SolveInterrupter();
-    try (CallbackRemover unused = interrupter.chain(dependent)) {
+    try (CallbackRemover unusedCb = interrupter.chain(dependent)) {
       // Nothing to do
     }
     interrupter.interrupt();
