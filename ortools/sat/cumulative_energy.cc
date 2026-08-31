@@ -157,12 +157,12 @@ bool CumulativeEnergyConstraint::Propagate() {
       const IntegerValue new_capacity_min =
           CeilRatio(envelope - window_start * capacity_max, window_size);
 
-      // Push the new capacity min, note that this can fail if it go above the
+      // Push the new capacity min, note that this can fail if it goes above the
       // maximum capacity.
       //
       // TODO(user): We do not need the capacity max in the reason, but by using
-      // a lower one, we could maybe have propagated more the minimum capacity.
-      // investigate.
+      // a lower one, we could maybe have propagated the minimum capacity more.
+      // Investigate.
       if (new_capacity_min > integer_trail_->LowerBound(capacity_)) {
         helper_->ResetReason();
         for (int event = critical_event; event < num_events; event++) {
@@ -331,10 +331,10 @@ bool CumulativeIsAfterSubsetConstraint::Propagate() {
     // We prefer higher time in case of ties since that should reduce the
     // explanation size.
     //
-    // Note that if the energy is zero, we don't push anything. Other propagator
-    // will make sure that the end_min is greater than the end_min of any of
-    // the task considered here. TODO(user): actually, we will push using the
-    // last task, and the reason will be non-optimal, fix.
+    // Note that if the energy is zero, we don't push anything. Other
+    // propagators will make sure that the end_min is greater than the end_min
+    // of any of the tasks considered here. TODO(user): Actually, we will push
+    // using the last task, and the reason will be non-optimal, fix.
     if (energy_after_time == 0) continue;
     DCHECK_GT(saved_capa_max, 0);
     DCHECK_LT(saved_min_offset, kMaxIntegerValue);
@@ -639,8 +639,8 @@ bool CumulativeDualFeasibleEnergyConstraint::Propagate() {
     }
   }
   VLOG_EVERY_N_SEC(2, 3) << "Found " << candidates_for_conflict.size()
-                         << " intervals with potential energy conflict using a "
-                            "DFF on a problem of size "
+                         << " intervals with potential energy conflicts using"
+                            " a DFF on a problem of size "
                          << num_events << ".";
 
   if (candidates_for_conflict.empty()) {
@@ -649,7 +649,8 @@ bool CumulativeDualFeasibleEnergyConstraint::Propagate() {
   }
   // The code above is efficient for pruning the initial problem to a set of
   // windows with potential conflict, but it might produce some "overly large"
-  // windows: ie., a window that has no conflict but would show one if narrowed.
+  // windows: i.e., a window that has no conflict but would show one if
+  // narrowed.
   //
   // TODO(user): explore with using Theta-trees with a multi-valued energy
   // value.

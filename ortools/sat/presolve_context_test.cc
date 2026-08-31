@@ -818,7 +818,7 @@ TEST(PresolveContextTest, AddAffineRelation) {
   EXPECT_TRUE(context.StoreAffineRelation(0, 2, 2, 0));  // x0 = 2x2 !
 
   // A new variable is created: x4 !
-  // x0 = 2x2 get expanded into 3x1 = 10 x3, so x1 is a multiple of 10.
+  // x0 = 2x2 gets expanded into 3x1 = 10 x3, so x1 is a multiple of 10.
   EXPECT_EQ(context.GetAffineRelation(1).representative, 4);
   EXPECT_EQ(context.GetAffineRelation(1).coeff, 10);
   EXPECT_EQ(context.DomainOf(4).ToString(), "[0,33]");
@@ -886,7 +886,7 @@ TEST(PresolveContextTest, AddAffineRelationPreventOverflow) {
   EXPECT_EQ(context.GetAffineRelation(1).offset, 100000001);
   EXPECT_EQ(context.DomainOf(2).ToString(), "[0,3]");
 
-  // And x0 is in term of that one.
+  // And x0 is in terms of that one.
   EXPECT_EQ(context.GetAffineRelation(0).representative, 2);
   EXPECT_EQ(context.GetAffineRelation(0).coeff, 10);
   EXPECT_EQ(context.DomainOf(0).ToString(), "[10][20][30][40]");

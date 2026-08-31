@@ -138,8 +138,8 @@ void CreateLinMaxFromLinearsAndObjective(
     absl::Span<const int> linear_constraint_indexes,
     bool var_in_objective_is_negative, ConstraintProto* new_constraint) {
   // A variable that is in the objective with a positive coefficient and only
-  // appears in inequalities will be at the lowest value that is greater or
-  // equal than the variable domain lower bound and that does not violate any
+  // appears in inequalities will be at the lowest value that is greater than or
+  // equal to the variable domain lower bound and that does not violate any
   // bound coming from the inequalities. A similar reasoning applies for a
   // variable with a negative coefficient in the objective.
   LinearArgumentProto& lin_max = *new_constraint->mutable_lin_max();
@@ -258,14 +258,14 @@ VariableRelationships ComputeVariableRelationships(const CpModelProto& model) {
     data.is_linear_inequality = false;
     GetRelationshipForConstraint(ct, &data.deducible_vars, &data.input_vars,
                                  &data.preferred_to_deduce);
-    // Now prepare the data for the handling the case of variables that only
+    // Now prepare the data for handling the case of variables that only
     // appear in the objective and linear inequalities. There are two cases:
-    // - either the constraint that is one such linear inequality and we flag it
+    // - either the constraint is one such linear inequality and we flag it
     //   as such;
     // - if not, we flag all the variables used in this constraint as appearing
     //   in constraints that are not linear inequalities.
     if (ct.constraint_case() == ConstraintProto::kLinear &&
-        data.deducible_vars.empty() &&  // Not allowing to fix a secondary var
+        data.deducible_vars.empty() &&  // Not allowing fixing a secondary var
                                         // directly (i.e., an equality)
         ct.enforcement_literal().empty() && ct.linear().domain_size() == 2) {
       // This is the kind of inequality we might use for a lin_max
@@ -290,7 +290,8 @@ VariableRelationships ComputeVariableRelationships(const CpModelProto& model) {
         }
       }
     } else {
-      // Other kind of constraints, tagged those variables as "used elsewhere".
+      // For other kinds of constraints, tag those variables as "used
+      // elsewhere".
       for (const int var : UsedVariables(ct)) {
         var_appears_only_in_objective_and_linear.Set(var, false);
       }
@@ -299,8 +300,9 @@ VariableRelationships ComputeVariableRelationships(const CpModelProto& model) {
 
   // In the loop above, we lazily set some variables as deducible from linear
   // inequalities if they only appeared in the objective and linear inequalities
-  // when we saw the constraint, but we did not checked how they were used in
-  // following constraints. Now remove them if it was used in other constraints.
+  // when we saw the constraint, but we did not check how they were used in
+  // following constraints. Now remove them if they were used in other
+  // constraints.
   std::vector<int> deducible_vars_to_remove;
   for (int c = 0; c < model.constraints_size(); ++c) {
     deducible_vars_to_remove.clear();
@@ -362,7 +364,7 @@ VariableRelationships ComputeVariableRelationships(const CpModelProto& model) {
   // inequalities, we count how far we are from being able to deduce their
   // value. In practice, we count the number of linear inequalities in which
   // this variable appears alongside another variable that we have not decided
-  // to be primary or secondary yet. When this count reach 0, it means we can
+  // to be primary or secondary yet. When this count reaches 0, it means we can
   // create a lin_max constraint to deduce its value.
   std::vector<int> count_of_unresolved_linear_inequalities_per_var(
       model.variables_size());
@@ -384,9 +386,9 @@ VariableRelationships ComputeVariableRelationships(const CpModelProto& model) {
   // order, and if the variable can be deduced from other variables that we have
   // already decided to declare as primary or secondary, we will mark it as
   // secondary. Otherwise we will mark it as primary. In any case, after we do
-  // that, we will look at all the constraints that uses this variable and see
-  // if it allows to deduce some variable. If yes, mark the variable that can be
-  // deduced as secondary, look at the constraints that uses it, and so on until
+  // that, we will look at all the constraints that use this variable and see
+  // if it allows deducing some variable. If yes, mark the variable that can be
+  // deduced as secondary, look at the constraints that use it, and so on until
   // we reach a fixed point. The heuristic for the order is to try to process
   // first the variables that are more "useful" to be marked as primary, so it
   // allows us to mark more variables as secondary in the following.
@@ -441,7 +443,7 @@ VariableRelationships ComputeVariableRelationships(const CpModelProto& model) {
         continue;
       }
       if (data.deducible_vars.size() + data.input_vars.size() != 1) {
-        // One of it inputs are neither primary nor secondary yet, we cannot
+        // One of its inputs is neither primary nor secondary yet, we cannot
         // deduce the value of `v` using this constraint.
         continue;
       }
@@ -508,7 +510,7 @@ VariableRelationships ComputeVariableRelationships(const CpModelProto& model) {
             // Same as the test for the case `z = lin_max(x, y)` above.
             data.input_vars.clear();
           } else {
-            // This constraint fix a secondary variable, enqueue it!
+            // This constraint fixes a secondary variable, enqueue it!
             constraints_to_check.push_back(c);
           }
         }
@@ -520,7 +522,7 @@ VariableRelationships ComputeVariableRelationships(const CpModelProto& model) {
     DCHECK(constraints_to_check.empty());
     update_constraints_after_var_is_decided(v);
 
-    // Now, deduce everything that become trivially deducible until we reach a
+    // Now, deduce everything that becomes trivially deducible until we reach a
     // fixed point.
     while (!constraints_to_check.empty()) {
       const int c = constraints_to_check.back();

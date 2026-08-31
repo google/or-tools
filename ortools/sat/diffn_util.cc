@@ -265,7 +265,7 @@ bool AnalyzeIntervals(bool transpose, absl::Span<const int> local_boxes,
   }
   gtl::STLSortAndRemoveDuplicates(&starts);
 
-  // Note that for the same end_max, the order change our heuristic to
+  // Note that for the same end_max, the order changes our heuristic to
   // evaluate the max_conflict_height.
   std::sort(task_by_increasing_x_max.begin(), task_by_increasing_x_max.end());
 
@@ -375,7 +375,7 @@ bool AnalyzeIntervals(bool transpose, absl::Span<const int> local_boxes,
       conflict_height = CeilRatio(energies[j] - can_remove, width) - 1;
 
       // If the new box height is above the conflict_height, do not count
-      // it now. We only need to consider conflict involving the new box.
+      // it now. We only need to consider conflicts involving the new box.
       if (y_max - y_min > conflict_height) continue;
 
       if (VLOG_IS_ON(2)) stripes.insert({starts[j], x_max});
@@ -565,7 +565,7 @@ std::vector<int> GetIntervalArticulationPoints(
       continue;
     }
     // Still the same connected component. Was the previous "max" an
-    // articulation point ?
+    // articulation point?
     if (prev_end_max != kMinIntegerValue && interval.start >= prev_end_max) {
       // We might be re-inserting the same articulation point: guard against it.
       if (articulation_points.empty() ||
@@ -941,8 +941,8 @@ namespace {
 // the range in some way. To visualize this largest rectangle, imagine the four
 // possible extreme positions for the item in range (the four corners). This
 // rectangle is the one defined by the interior points of each position. This
-// don't use IsDisjoint() because it also works when the rectangle would be
-// malformed (it's bounding box less than twice the size).
+// does not use IsDisjoint() because it also works when the rectangle would be
+// malformed (its bounding box less than twice the size).
 bool CanConsumeEnergy(const Rectangle& rectangle,
                       const RectangleInRange& item) {
   return (rectangle.x_max > item.bounding_area.x_max - item.x_size) &&
@@ -964,7 +964,7 @@ std::array<bool, 4> GetPossibleEdgeIntersection(const Rectangle& rectangle,
 
 }  // namespace
 
-// NOMUTANTS -- This is a sanity check, it is hard to corrupt the data in an
+// NOMUTANTS -- This is a sanity check, it is hard to corrupt the data in a
 // unit test to check it will fail.
 void ProbingRectangle::ValidateInvariants() const {
   const Rectangle current_rectangle = GetCurrentRectangle();
@@ -1029,7 +1029,7 @@ void ProbingRectangle::ValidateInvariants() const {
 
     if ((touching_boundary[Edge::LEFT] && touching_boundary[Edge::RIGHT]) ||
         (touching_boundary[Edge::TOP] && touching_boundary[Edge::BOTTOM])) {
-      // We account separately for the problematic items that touches both
+      // We account separately for the problematic items that touch both
       // sides.
       continue;
     }
@@ -1070,7 +1070,7 @@ struct EdgeInfo {
 
   Direction shrink_direction;
   Direction orthogonal_shrink_direction;
-  // Lower coordinate one first (ie., BOTTOM before TOP, LEFT before RIGHT).
+  // Lower coordinate one first (i.e., BOTTOM before TOP, LEFT before RIGHT).
   OrthogonalInfo orthogonal_edges[2];
 };
 
@@ -1285,7 +1285,7 @@ void ProbingRectangle::ShrinkImpl() {
                   {current_rectangle.x_min >= range.bounding_area.x_min,
                    current_rectangle.x_max <= range.bounding_area.x_max});
     if (touching_corner[0] == touching_corner[1]) {
-      // Either it is not touching neither corners (so no length to update) or
+      // Either it is not touching either corner (so no length to update) or
       // it is touching both corners, which will be handled by the "both
       // sides" code and should not contribute to intersect_length_.
       continue;
@@ -1824,14 +1824,14 @@ struct BinaryTreeNode {
 };
 
 // A data structure to store which boxes are overlapping the current sweep line.
-// This uses a binary tree in a slight non-standard way: in a typical use of a
+// This uses a binary tree in a slightly non-standard way: in a typical use of a
 // binary tree the actual values are stored in the leaves and the intermediate
 // nodes are there just to make finding the right leaf efficient. Here we do the
 // opposite: the values are stored as high up in the tree as possible.
 // For example, for a tree of size 8 a box that occupies the y interval [0, 7]
 // will be stored as a single node at the root. In the same tree, a box that
 // occupies [3, 7] will be stored with the nodes representing the [3, 4), [4, 6)
-// and [6, 8) intervals. There is no difference on what is stored in the
+// and [6, 8) intervals. There is no difference in what is stored in the
 // intermediate nodes or on the leaves. When the sweep line moves, we don't
 // update the existing nodes on the tree. Thus, some nodes will become stale and
 // will represent boxes that no longer overlap the sweep line. Those stale nodes
@@ -1874,7 +1874,7 @@ struct SweepLineIntervalTree {
     }
   }
 
-  // We don't have global deletion method in this class, but this method
+  // We don't have a global deletion method in this class, but this method
   // checks if a single interval is fully to the left of the sweep line and
   // removes it if so, also updating its connected components.
   void RemoveNodeIfXMaxLowerOrEqual(TreeNodeIndex idx, int x_threshold) {
@@ -1976,8 +1976,8 @@ struct SweepLineIntervalTree {
     return false;
   }
 
-  // Add a new box to the sweep line. This will store it in the tree (split in
-  // log N intervals) check if it connects to one or more existing connected
+  // Add a new box to the sweep line. This will store it in the tree (split into
+  // log N intervals), check if it connects to one or more existing connected
   // components, and for each case it does, add the box that it is overlapping
   // to new_connections.
   void AddInterval(TreeNodeIndex idx, int sweep_line_x_pos, int box_index,
@@ -2000,7 +2000,7 @@ struct SweepLineIntervalTree {
                                    new_connections);
       }
     } else {
-      // We have already something fully occupying this interval.
+      // We already have something fully occupying this interval.
       if (union_find.AddEdge(node.occupying_box_index, cur_box_component)) {
         new_connections->push_back(node.occupying_box_index);
         cur_box_component = union_find.FindRoot(cur_box_component);
@@ -2083,15 +2083,15 @@ struct PostProcessedResult {
   std::pair<int32_t, int32_t> bounding_box;  // Always starting at (0,0).
 };
 
-// This function is a preprocessing function for algorithms that find overlap
+// This function is a preprocessing function for algorithms that find overlaps
 // between rectangles. It does the following:
 //  - It converts the arbitrary int64_t coordinates into a small integer by
 //    sorting the possible values and assigning them consecutive integers.
 //  - It grows zero size intervals to make them size one. This simplifies
-//    things considerably, since it is hard to reason about degenerated
+//    things considerably, since it is hard to reason about degenerate
 //    rectangles in the general algorithm.
 //
-// Note that the last point need to be done with care. Imagine the following
+// Note that the last point needs to be done with care. Imagine the following
 // example:
 //  +----------+
 //  |          |
@@ -2106,7 +2106,7 @@ struct PostProcessedResult {
 //  |          |
 //  |          |
 //  +----------+
-// Where p,q and r are points (ie, boxes of size 0x0) and p and q have the
+// Where p,q and r are points (i.e., boxes of size 0x0) and p and q have the
 // same coordinates. We replace them by the following:
 //  +----------+
 //  |          |
@@ -2295,7 +2295,7 @@ std::optional<std::pair<int, int>> FindOneIntersectionIfPresentImpl(
                              return a.x_min < b.x_min;
                            }));
 
-  // Set of box intersection the sweep line. We only store y_min, other
+  // Set of boxes intersecting the sweep line. We only store y_min, other
   // coordinates can be accessed via rectangles[index].coordinate.
   struct Element {
     mutable int index;
@@ -2312,11 +2312,11 @@ std::optional<std::pair<int, int>> FindOneIntersectionIfPresentImpl(
     const CoordinateType y_min = rectangles[i].y_min;
     const CoordinateType y_max = rectangles[i].y_max;
 
-    // TODO(user): We can handle that, but it require some changes below.
+    // TODO(user): We can handle that, but it requires some changes below.
     DCHECK_LE(y_min, y_max);
 
     // Try to add this rectangle to the set, if there is an intersection, lazily
-    // remove it if its x_max is already passed, otherwise report the
+    // remove it if its x_max has already passed, otherwise report the
     // intersection.
     auto [it, inserted] = interval_set.insert({i, y_min});
     if (!inserted) {
@@ -2332,7 +2332,7 @@ std::optional<std::pair<int, int>> FindOneIntersectionIfPresentImpl(
       }
     } else {
       // If there was no element at position y_min, we need to test if the
-      // interval before is stale or if it overlap with the new one.
+      // interval before is stale or if it overlaps with the new one.
       if (it != interval_set.begin()) {
         auto it_before = it;
         --it_before;

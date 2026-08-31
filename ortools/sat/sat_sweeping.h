@@ -44,7 +44,7 @@ namespace sat {
 // implies that `l1` and `l2` are not equivalent. This is done systematically by
 // keeping a partitioning of variables into potential clusters, and solving the
 // local model each time with the right assumptions to either refine a partition
-// or prove that a pair of literals are equivalent. This continue until we are
+// or prove that a pair of literals are equivalent. This continues until we are
 // sure to have found all the equivalences.
 //
 // [1] "Clausal Equivalence Sweeping", Armin Biere, Katalin Fazekas, Mathias
@@ -58,7 +58,7 @@ class EquivalenceSatSweeping {
         global_time_limit_(model->GetOrCreate<TimeLimit>()),
         random_(*model->GetOrCreate<ModelRandomGenerator>()) {}
 
-  // Do one round of equivalence SAT sweeping.
+  // Does one round of equivalence SAT sweeping.
   // `run_inprocessing` is a function that is called on the model before solving
   // it for the first time. It is useful to call inprocessing without creating a
   // dependency cycle.
@@ -96,7 +96,7 @@ class EquivalenceSatSweeping {
       small_model_to_big_model_;
 };
 
-// Do a full SAT sweeping on the model defined by the clauses.
+// Performs a full SAT sweeping on the model defined by the clauses.
 // The `status` of the result is either FEASIBLE, INFEASIBLE or LIMIT_REACHED.
 // If the result is LIMIT_REACHED, the returned clauses are valid, but they are
 // not exhaustive. If the result is FEASIBLE, all possible binary clauses that
@@ -105,9 +105,9 @@ class EquivalenceSatSweeping {
 // clauses that are not equivalences will be returned too, but not necessarily
 // all of them. This call increases the deterministic time of the `time_limit`.
 struct SatSweepingResult {
-  // Literals that if are set to false make the problem unsat.
+  // Literals that if set to false make the problem unsat.
   std::vector<Literal> unary_clauses;
-  // Pairs of literals that if are both set to false make the problem unsat.
+  // Pairs of literals that if both set to false make the problem unsat.
   // We filter out the clauses that are already in the input.
   std::vector<std::pair<Literal, Literal>> binary_clauses;
   // TODO(user): also return small clauses of size > 2?

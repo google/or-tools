@@ -146,10 +146,10 @@ void SchedulingConstraintHelper::RegisterWith(
     watcher->WatchIntegerVariable(starts_[t].var, id, t);
     watcher->WatchIntegerVariable(ends_[t].var, id, t);
 
-    // This class do not need to be waked up on presence change, since this is
-    // not cached. However given that we can have many propagators that use the
-    // same helper, it is nicer to only register this one, and wake up all
-    // propagator through it rather than registering all of them individually.
+    // This class does not need to be woken up on presence changes, since this
+    // is not cached. However, given that we can have many propagators that use
+    // the same helper, it is nicer to only register this one, and wake up all
+    // propagators through it rather than registering all of them individually.
     // Note that IncrementalPropagate() will do nothing if this is the only
     // change except waking up registered propagators.
     if (!IsPresent(t) && !IsAbsent(t)) {
@@ -173,7 +173,7 @@ bool SchedulingConstraintHelper::UpdateCachedValues(int t) {
   // is used elsewhere and has a domain with negative value.
   //
   // TODO(user): maybe we should just disallow size with a negative domain, but
-  // is is harder to enforce if we have a linear expression for size.
+  // it is harder to enforce if we have a linear expression for size.
   IntegerValue dmin =
       std::max(IntegerValue(0), integer_trail_->LowerBound(sizes_[t]));
   IntegerValue dmax = integer_trail_->UpperBound(sizes_[t]);
@@ -199,12 +199,12 @@ bool SchedulingConstraintHelper::UpdateCachedValues(int t) {
     return PushTaskAbsence(t);
   }
 
-  // Sometimes, for optional interval with non-optional bounds, this propagation
-  // give tighter bounds. We always consider the value assuming
-  // the interval is present.
+  // Sometimes, for optional intervals with non-optional bounds, this
+  // propagation gives tighter bounds. We always consider the value assuming the
+  // interval is present.
   //
   // Note that this is also useful in case not everything was propagated. Note
-  // also that since there is no conflict, we reach the fix point in one pass.
+  // also that since there is no conflict, we reach the fixed point in one pass.
   smin = std::max(smin, emin - dmax);
   smax = std::min(smax, emax - dmin);
   dmin = std::max(dmin, emin - smax);
@@ -333,7 +333,7 @@ bool SchedulingConstraintHelper::SynchronizeAndSetTimeDirection(
     bool is_forward) {
   SetTimeDirection(is_forward);
 
-  // If there was any backtracks since the last time this was called, we
+  // If there were any backtracks since the last time this was called, we
   // recompute our cache.
   if (sat_solver_->num_backtracks() != saved_num_backtracks_) {
     recompute_all_cache_ = true;
@@ -352,7 +352,7 @@ bool SchedulingConstraintHelper::SynchronizeAndSetTimeDirection(
       for (const int t : non_fixed_intervals_) {
         if (IsOptional(t) && IsPresent(t)) {
           // Optimization: if the interval became non-optional at root level,
-          // we can tag is as so.
+          // we can tag it as such.
           reason_for_presence_[t] = kNoLiteralIndex;
         }
         if (IsPresent(t) && StartIsFixed(t) && EndIsFixed(t) &&
@@ -387,9 +387,9 @@ IntegerValue SchedulingConstraintHelper::GetCurrentMinDistanceBetweenTasks(
 }
 
 // Note that we could call this at a positive level to propagate any literal
-// associated to task a before task b. However we only call this for task that
-// are in detectable precedence, which means the normal precedence or linear
-// propagator should have already propagated that Boolean too.
+// associated with task a before task b. However we only call this for tasks
+// that are in detectable precedence, which means the normal precedence or
+// linear propagator should have already propagated that Boolean too.
 bool SchedulingConstraintHelper::NotifyLevelZeroPrecedence(int a, int b) {
   CHECK(IsPresent(a));
   CHECK(IsPresent(b));
@@ -411,7 +411,7 @@ bool SchedulingConstraintHelper::NotifyLevelZeroPrecedence(int a, int b) {
     VLOG(2) << "new relation " << TaskDebugString(a)
             << " <= " << TaskDebugString(b);
     // TODO(user): Adding new constraint during propagation might not be the
-    // best idea as it can create some complication.
+    // best idea as it can create some complications.
     AddWeightedSumLowerOrEqual({}, {expr.vars[0], expr.vars[1]},
                                {expr.coeffs[0].value(), expr.coeffs[1].value()},
                                rhs.value(), model_);
@@ -578,7 +578,7 @@ void SchedulingConstraintHelper::AddReasonForBeingBeforeAssumingNoOverlap(
   // handle it here even if the linear2 is not known.
   //
   // TODO(user): check also the linear2 constructed with (end_before,
-  // end_after) and (start_after, start_before). Or maybe keep a index of pair
+  // end_after) and (start_after, start_before). Or maybe keep an index of pairs
   // of intervals that have non-trivial linear2 bounds and use that instead.
   {
     const auto [expr, ub] = EncodeDifferenceLowerThan(
@@ -610,7 +610,7 @@ void SchedulingConstraintHelper::AddReasonForBeingBeforeAssumingNoOverlap(
   DCHECK_LT(StartMax(before), EndMin(after));
 
   // The reason will be a linear expression greater than a value. Note that all
-  // coeff must be positive, and we will use the variable lower bound.
+  // coeffs must be positive, and we will use the variable lower bound.
   std::vector<IntegerVariable> vars;
   std::vector<IntegerValue> coeffs;
 
@@ -673,7 +673,7 @@ bool SchedulingConstraintHelper::PushIntegerLiteralIfTaskPresent(
   return integer_trail_->Enqueue(lit, literal_reason_, integer_reason_);
 }
 
-// We also run directly the precedence propagator for this variable so that when
+// We also run the precedence propagator directly for this variable so that when
 // we push an interval start for example, we have a chance to push its end.
 bool SchedulingConstraintHelper::PushIntervalBound(int t, IntegerLiteral lit) {
   if (!PushIntegerLiteralIfTaskPresent(t, lit)) return false;
@@ -757,7 +757,7 @@ bool SchedulingConstraintHelper::PushTaskOrderWhenPresent(int t_before,
 
   if (known_ub <= rhs) {
     // A better relation is already known.
-    // Sometime it is not properly propagated though.
+    // Sometimes it is not properly propagated though.
     return linear2_bounds_->MaybePropagate(index, expr, known_ub);
   }
 
@@ -794,7 +794,7 @@ bool SchedulingConstraintHelper::PushTaskOrderWhenPresent(int t_before,
     return false;
   }
 
-  // TODO(user): Updating the cache right aways seems a bit worse. Do more
+  // TODO(user): Updating the cache right away seems a bit worse. Do more
   // investigation.
   if (/* DISABLES CODE */ (false)) {
     if (!UpdateCachedValues(t_before)) return false;
@@ -812,7 +812,7 @@ bool SchedulingConstraintHelper::ReportConflict() {
 
 void SchedulingConstraintHelper::WatchAllTasks(int id) {
   // It is more efficient to enqueue the propagator
-  // when the helper Propagate() is called. This result in less entries in our
+  // when the helper Propagate() is called. This results in fewer entries in our
   // watched lists.
   propagator_ids_.push_back(id);
 }
@@ -885,7 +885,7 @@ IntegerValue ComputeEnergyMinInWindow(
     IntegerValue window_start, IntegerValue window_end) {
   if (window_end <= window_start) return IntegerValue(0);
 
-  // Returns zero if the interval do not necessarily overlap.
+  // Returns zero if the intervals do not necessarily overlap.
   if (end_min <= window_start) return IntegerValue(0);
   if (start_max >= window_end) return IntegerValue(0);
   const IntegerValue window_size = window_end - window_start;
@@ -935,7 +935,7 @@ std::string SchedulingDemandHelper::TaskDebugString(int t) const {
 }
 
 void SchedulingDemandHelper::InitDecomposedEnergies() {
-  // For the special case were demands is empty.
+  // For the special case where demands is empty.
   const int num_tasks = helper_->NumTasks();
   if (demands_.size() != num_tasks) return;
   for (int t = 0; t < num_tasks; ++t) {
@@ -1079,7 +1079,7 @@ void SchedulingDemandHelper::AddDemandMinReason(int t,
 }
 
 void SchedulingDemandHelper::AddEnergyMinReason(int t) {
-  // We prefer these reason in order.
+  // We prefer these reasons in order.
   const IntegerValue value = cached_energies_min_[t];
   if (DecomposedEnergyMin(t) >= value) {
     for (const auto [lit, fixed_size, fixed_demand] : decomposed_energies_[t]) {
@@ -1149,7 +1149,7 @@ IntegerValue SchedulingDemandHelper::EnergyMinInWindow(
       FilteredDecomposedEnergy(t), window_start, window_end);
 }
 
-// Since we usually ask way less often for the reason, we redo the computation
+// Since we usually ask far less often for the reason, we redo the computation
 // here.
 void SchedulingDemandHelper::AddEnergyMinInWindowReason(
     int t, IntegerValue window_start, IntegerValue window_end) {

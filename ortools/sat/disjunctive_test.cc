@@ -131,7 +131,7 @@ TEST(TaskSetTest, IgnoringTheLastEntry) {
 #define MIN_START(v) IntegerValue(v)
 #define MIN_DURATION(v) IntegerValue(v)
 
-// Tests that the DisjunctiveConstraint propagate how expected on the
+// Tests that the DisjunctiveConstraint propagates as expected on the
 // given input. Returns false if a conflict is detected (i.e. no feasible
 // solution).
 struct TaskWithDuration {
@@ -221,8 +221,8 @@ TEST(DisjunctiveConstraintTest, OverloadFromVilimPhd) {
 //              (-----)
 //
 // TODO(user): The problem with this test is that the other propagators do
-// propagate the same bound, but in 2 steps, whereas the edge finding do that in
-// one. To properly test this, we need to add options to deactivate some of
+// propagate the same bound, but in 2 steps, whereas the edge finding does that
+// in one. To properly test this, we need to add options to deactivate some of
 // the propagations.
 TEST(DisjunctiveConstraintTest, EdgeFindingFromVilimPhd) {
   EXPECT_TRUE(TestDisjunctivePropagation(
@@ -295,7 +295,7 @@ TEST(DisjunctiveConstraintTest, Precedences) {
   EXPECT_EQ(20, integer_trail->LowerBound(intervals->Start(ids[2])));
 }
 
-// This test should enumerate all the permutation of kNumIntervals elements.
+// This test should enumerate all the permutations of kNumIntervals elements.
 // It used to fail before CL 134067105.
 TEST(SchedulingTest, Permutations) {
   static const int kNumIntervals = 4;
@@ -492,9 +492,9 @@ TEST(DisjunctiveTest, RandomComparisonWithSimpleEncoding) {
 }
 
 TEST(DisjunctiveTest, TwoIntervalsTest) {
-  // All the way to put 2 intervals of size 4 and 3 in [0,9]. There is just
-  // two non-busy unit interval, so:
-  // - 2 possibilities with 1 hole of size 2 at beginning
+  // All the ways to put 2 intervals of size 4 and 3 in [0,9]. There are just
+  // two non-busy unit intervals, so:
+  // - 2 possibilities with 1 hole of size 2 at the beginning
   // - 2 possibilities with 1 hole of size 2 at the end.
   // - 2 possibilities with 1 hole of size 2 in the middle.
   // - 2 possibilities with 2 holes around the interval of size 3.

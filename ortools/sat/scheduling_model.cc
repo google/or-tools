@@ -91,7 +91,7 @@ struct IntervalAffine {
 };
 
 // Detects when the makespan is modeled as a physical "barrier" interval at the
-// end of a NoOverlap constraint. Returns the interval indexes (to skip during
+// end of a NoOverlap constraint. Returns the interval indices (to skip during
 // task building) alongside the affine expression of the makespan.
 std::vector<IntervalAffine> DetectImplicitBarrierMakespans(
     const CpModelProto& model_proto) {
@@ -396,10 +396,10 @@ absl::flat_hash_map<int, int> BuildTasksAndIntervalMapping(
         }
       }
     } else if (first_interval.start().vars().empty()) {
-      task.start_time_expr = {0, 0,
+      task.start_time_expr = {-1, 0,
                               first_interval.start().offset() - problem_start};
     } else {
-      task.start_time_expr = {0, 1, 0};
+      task.start_time_expr = {-1, 0, 0};
     }
   }
   return interval_to_task_index;
@@ -581,7 +581,7 @@ SchedulingProblem BuildSchedulingProblem(
     problem.type = SchedulingProblem::kSatisfaction;
   }
 
-  // --- 7. Trace Job Chains & Bidirectional Mapping Mappings ---
+  // --- 7. Trace Job Chains & Bidirectional Mappings ---
   std::vector<int> task_successors_count(problem.tasks.size(), 0);
   std::vector<std::vector<int>> task_predecessors(problem.tasks.size());
   for (int t = 0; t < problem.tasks.size(); ++t) {
@@ -859,7 +859,7 @@ SchedulingRelaxation DetectSchedulingProblems(const CpModelProto& model_proto) {
     }
   }
 
-  // Handle the intervals that appears both with b and ¬b as a task that can be
+  // Handle the intervals that appear both with b and ¬b as a task that can be
   // executed on two machines.
   for (const auto& [lit, interval_idx] : literal_to_interval) {
     if (lit < 0) continue;
@@ -1048,8 +1048,10 @@ bool VerifySingleSchedulingProblem(const SchedulingProblem& problem,
 
     const int start_time_var = task.start_time_expr.var;
     const int64_t start_time =
-        solution[start_time_var] * task.start_time_expr.coeff +
-        task.start_time_expr.offset;
+        (start_time_var < 0 || task.start_time_expr.coeff == 0)
+            ? task.start_time_expr.offset
+            : solution[start_time_var] * task.start_time_expr.coeff +
+                  task.start_time_expr.offset;
 
     for (int before_task : task.tasks_that_must_complete_before_this) {
       bool before_is_present = false;
@@ -1065,12 +1067,14 @@ bool VerifySingleSchedulingProblem(const SchedulingProblem& problem,
       }
       if (!before_is_present) continue;
 
-      const int before_task_end_var =
-          problem.tasks[before_task].start_time_expr.var;
+      const auto& before_expr = problem.tasks[before_task].start_time_expr;
+      const int64_t before_start_time =
+          (before_expr.var < 0 || before_expr.coeff == 0)
+              ? before_expr.offset
+              : solution[before_expr.var] * before_expr.coeff +
+                    before_expr.offset;
       const int64_t before_task_end_time =
-          solution[before_task_end_var] *
-              problem.tasks[before_task].start_time_expr.coeff +
-          problem.tasks[before_task].start_time_expr.offset +
+          before_start_time +
           problem.tasks[before_task]
               .duration_for_machine[before_active_machine_idx];
       if (start_time < before_task_end_time) {
@@ -1108,8 +1112,10 @@ bool VerifySingleSchedulingProblem(const SchedulingProblem& problem,
 
     const int start_time_var = task.start_time_expr.var;
     const int64_t start_time =
-        solution[start_time_var] * task.start_time_expr.coeff +
-        task.start_time_expr.offset;
+        (start_time_var < 0 || task.start_time_expr.coeff == 0)
+            ? task.start_time_expr.offset
+            : solution[start_time_var] * task.start_time_expr.coeff +
+                  task.start_time_expr.offset;
 
     const int64_t end_time =
         start_time + task.duration_for_machine[active_machine_idx];
@@ -1160,12 +1166,6 @@ CpModelProto BuildSchedulingModel(const SchedulingProblem& problem) {
 
   const int num_tasks = problem.tasks.size();
 
-  // Helper struct to unify task end expressions (var + offset)
-  struct AffineExpr {
-    int var;
-    int64_t offset;
-  };
-
   std::vector<int> task_start_vars(num_tasks);
   std::vector<AffineExpr> task_ends(num_tasks);
 
@@ -1190,7 +1190,9 @@ CpModelProto BuildSchedulingModel(const SchedulingProblem& problem) {
 
     if (num_alts == 1) {
       // Unify: End = StartVar + Duration
-      task_ends[i] = {start_var_idx, task.duration_for_machine[0]};
+      task_ends[i] = {.var = start_var_idx,
+                      .coeff = 1,
+                      .offset = task.duration_for_machine[0]};
 
       IntervalConstraintProto* interval =
           model_proto.add_constraints()->mutable_interval();
@@ -1215,7 +1217,7 @@ CpModelProto BuildSchedulingModel(const SchedulingProblem& problem) {
       int end_var_idx = model_proto.variables().size() - 1;
 
       // Unify: End = EndVar + 0
-      task_ends[i] = {end_var_idx, 0};
+      task_ends[i] = {.var = end_var_idx, .coeff = 1, .offset = 0};
 
       int64_t min_dur = task.duration_for_machine[0];
       int64_t max_dur = task.duration_for_machine[0];
@@ -1277,7 +1279,7 @@ CpModelProto BuildSchedulingModel(const SchedulingProblem& problem) {
       linear->add_vars(task_start_vars[task_idx]);
       linear->add_coeffs(1);
       linear->add_vars(task_ends[preceding_idx].var);
-      linear->add_coeffs(-1);
+      linear->add_coeffs(-task_ends[preceding_idx].coeff);
 
       linear->add_domain(task_ends[preceding_idx].offset);
       linear->add_domain(kint64max);
@@ -1302,7 +1304,7 @@ CpModelProto BuildSchedulingModel(const SchedulingProblem& problem) {
     linear->add_vars(makespan_var);
     linear->add_coeffs(1);
     linear->add_vars(task_ends[task_idx].var);
-    linear->add_coeffs(-1);
+    linear->add_coeffs(-task_ends[task_idx].coeff);
 
     linear->add_domain(task_ends[task_idx].offset);
     linear->add_domain(kint64max);
@@ -1486,9 +1488,9 @@ bool ProbableSplitExists(const GraphForPartition& graph) {
 CompactVectorVector<int> PartitionByIncomparabilityExact(
     const GraphForPartition& graph) {
   // The first step to solve this problem is to notice that the partitions must
-  // be contiguous in the topological order. Thus, we need to find right "cut"
-  // nodes to split the topological order into our partitions. To do that, we
-  // write a helper lambda that for a given node finds the last node that is
+  // be contiguous in the topological order. Thus, we need to find the right
+  // "cut" nodes to split the topological order into our partitions. To do that,
+  // we write a helper lambda that for a given node finds the last node that is
   // unreachable from it downstream in the topological order. The important
   // trick is that this last unreachable node is also a lower bound of where the
   // next cut can be made. The straightforward solution would be then to iterate
@@ -1502,13 +1504,13 @@ CompactVectorVector<int> PartitionByIncomparabilityExact(
   // avoid exploring the same region twice we keep a vector of
   // next_to_check[node] that holds how far backward from node has already been
   // checked. The advantage of searching backwards is to optimistically prove
-  // that the graph in unsplittable with a few large increments of lower_bound
+  // that the graph is unsplittable with a few large increments of lower_bound
   // or, if the graph is splittable, to quickly jump to the next split position.
 
   if (graph.num_primary_nodes == 0) {
     return CompactVectorVector<int>();
   }
-  // For simplicity, we re-index the graph so its indexes correspond to the
+  // For simplicity, we re-index the graph so its indices correspond to the
   // topological order.
   std::vector<bool> is_primary(graph.num_nodes, false);
   int last_primary_node = -1;
@@ -1697,7 +1699,7 @@ CompactVectorVector<int> IntervalsNonOverlappingComponents(
     const std::vector<std::pair<int, int>>& precedences) {
   // We want to map the problem of splitting our intervals into a pure graph
   // theory problem. To do that, we augment the precedence graph with extra
-  // nodes and edges to represent the fact that start and end times imposes a
+  // nodes and edges to represent the fact that start and end times impose a
   // precedence on the intervals.
   //
   // The construction is as follows:

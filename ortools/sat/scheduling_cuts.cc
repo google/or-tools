@@ -329,7 +329,7 @@ std::vector<int64_t> FindPossibleDemands(const EnergyEvent& event,
 //
 // In the region before the min of the makespan, we will compute a more
 // precise reachable profile and have a better estimation of the energy
-// available between two time point. the improvement can come from two sources:
+// available between two time points. The improvement can come from two sources:
 //   - subset sum indicates that the max capacity cannot be reached.
 //   - sum of demands < max capacity.
 //
@@ -487,7 +487,7 @@ void GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
         }
       }
 
-      // We can break here are any further iteration on j will hit the same
+      // We can break here as any further iteration on j will hit the same
       // issue.
       if (!cut_generated) break;
 
@@ -529,7 +529,7 @@ void GenerateCumulativeEnergeticCuts(
   //
   // The complexity of this loop is n^3. if we follow the latest research, we
   // could implement this in n log^2(n). Still, this is not visible in the
-  // profile as we only this method at the root node,
+  // profile as we only call this method at the root node.
   const double capacity_lp = capacity.LpValue(lp_values);
 
   // Compute relevant time points.
@@ -582,7 +582,7 @@ void GenerateCumulativeEnergeticCuts(
         }
       }
 
-      // We can break here are any further iteration on j will hit the same
+      // We can break here as any further iteration on j will hit the same
       // issue.
       if (!cut_generated) break;
 
@@ -663,7 +663,7 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
     TopNCuts top_n_cuts(5);
     std::vector<absl::Span<std::unique_ptr<EnergyEvent>>> disjoint_events =
         SplitEventsInIndendentSets(events);
-    // Can we pass cluster as const. It would mean sorting before.
+    // Can we pass cluster as const? It would mean sorting before.
     for (const absl::Span<std::unique_ptr<EnergyEvent>> cluster :
          disjoint_events) {
       if (makespan.has_value() && integer_trail->IsFixed(capacity)) {
@@ -809,7 +809,7 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
     }
 
     // Sort events by time.
-    // It is also important that all positive event with the same time as
+    // It is also important that all positive events with the same time as
     // negative events appear after for the correctness of the algo below.
     absl::c_stable_sort(events, [](const std::unique_ptr<TimeTableEvent>& i,
                                    const std::unique_ptr<TimeTableEvent>& j) {
@@ -875,7 +875,7 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
 
 // Cached Information about one interval.
 // Note that everything must correspond to level zero bounds, otherwise the
-// generated cut are not valid.
+// generated cuts are not valid.
 
 struct CachedIntervalData {
   CachedIntervalData(int t, SchedulingConstraintHelper* helper)
@@ -1211,7 +1211,7 @@ bool ComputeWeightedSumOfEndMinsOfOnePermutationForNoOverlap(
   return true;
 }
 
-// This functions packs all events in a cumulative of capacity 'capacity_max'
+// This function packs all events in a cumulative of capacity 'capacity_max'
 // following the given permutation. It returns the sum of end mins and the sum
 // of end mins weighted by event->energy_min.
 //
@@ -1235,7 +1235,7 @@ bool ComputeWeightedSumOfEndMinsOfOnePermutation(
   sum_of_ends = 0;
   sum_of_weighted_ends = 0;
 
-  // Quick check to see if the permutation feasible:
+  // Quick check to see if the permutation is feasible:
   // ei = events[permutation[i]], ej = events[permutation[j]], i < j
   // - start_max(ej) >= start_min(ei)
   IntegerValue demand_min_of_previous_task = 0;
@@ -1347,7 +1347,7 @@ bool ComputeWeightedSumOfEndMinsOfOnePermutation(
 }
 
 const int kCtExhaustiveTargetSize = 6;
-// This correspond to the number of permutations the system will explore when
+// This corresponds to the number of permutations the system will explore when
 // fully exploring all possible sizes and all possible permutations for up to 6
 // tasks, without any precedence.
 const int kExplorationLimit = 873;  // 1! + 2! + 3! + 4! + 5! + 6!
@@ -1516,15 +1516,15 @@ ABSL_MUST_USE_RESULT bool GenerateShortCompletionTimeCutsWithExactBound(
         break;
       }
 
-      const double unweigthed_violation =
+      const double unweighted_violation =
           (min_sum_of_ends - sum_of_ends_lp) / std::sqrt(ToDouble(i + 1));
       const double weighted_violation =
           (min_sum_of_weighted_ends - sum_of_weighted_ends_lp) /
           std::sqrt(sum_of_square_energies);
 
       // Unweighted cuts.
-      if (unweigthed_violation > weighted_violation &&
-          unweigthed_violation > kMinCutViolation) {
+      if (unweighted_violation > weighted_violation &&
+          unweighted_violation > kMinCutViolation) {
         LinearConstraintBuilder cut(model, min_sum_of_ends, kMaxIntegerValue);
         bool is_lifted = false;
         for (int j = 0; j <= i; ++j) {
@@ -1539,7 +1539,7 @@ ABSL_MUST_USE_RESULT bool GenerateShortCompletionTimeCutsWithExactBound(
       }
 
       // Weighted cuts.
-      if (weighted_violation >= unweigthed_violation &&
+      if (weighted_violation >= unweighted_violation &&
           weighted_violation > kMinCutViolation) {
         LinearConstraintBuilder cut(model, min_sum_of_weighted_ends,
                                     kMaxIntegerValue);
@@ -1637,17 +1637,17 @@ void AddEventDemandsToCapacitySubsetSum(
 // The original cut is:
 //    sum(end_min_i * size_min_i) >=
 //        (sum(size_min_i^2) + sum(size_min_i)^2) / 2
-// We strengthen this cuts by noticing that if all tasks starts after S,
+// We strengthen this cut by noticing that if all tasks start after S,
 // then replacing end_min_i by (end_min_i - S) is still valid.
 //
-// A second difference is that we lift intervals that starts before a given
+// A second difference is that we lift intervals that start before a given
 // value, but are forced to cross it. This lifting procedure implies trimming
-// interval to its part that is after the given value.
+// the interval to its part that is after the given value.
 //
 // In the case of a cumulative constraint with a capacity of C, we compute a
 // valid equation by splitting the task (size_min si, demand_min di) into di
 // tasks of size si and demand 1, that we spread across C no_overlap
-// constraint. When doing so, the lhs of the equation is the same, the first
+// constraints. When doing so, the lhs of the equation is the same, the first
 // term of the rhs is also unchanged. A lower bound of the second term of the
 // rhs is reached when the split is exact (each no_overlap sees a long demand of
 // sum(si * di / C). Thus the second term is greater or equal to
@@ -1656,13 +1656,13 @@ void AddEventDemandsToCapacitySubsetSum(
 // Sometimes, the min energy of the task i is greater than si * di.
 // Let's introduce ai the minimum energy of the task and rewrite the previous
 // equation. In that new setting, we can rewrite the cumulative transformation
-// by splitting each tasks into at least di tasks of size at least si and demand
+// by splitting each task into at least di tasks of size at least si and demand
 // 1.
 //
 // In that setting, the lhs is rewritten as sum(ai * ei) and the second term of
 // the rhs is rewritten as sum(ai) ^ 2 / (2 * C).
 //
-// The question is how to rewrite the term `sum(di * si * si). The minimum
+// The question is how to rewrite the term `sum(di * si * si)`. The minimum
 // contribution is when the task has size si and demand ai / si. (note that si
 // is the minimum size of the task, and di its minimum demand). We can
 // replace the small rectangle area term by ai * si.
@@ -1724,7 +1724,7 @@ void GenerateCompletionTimeCutsWithEnergy(
       residual_tasks.push_back(&residual_event_storage[i]);
     }
 
-    // If we have less than kCtExhaustiveTargetSize tasks, we are already
+    // If we have fewer than kCtExhaustiveTargetSize tasks, we are already
     // covered by the exhaustive cut generator.
     if (residual_tasks.size() <= kCtExhaustiveTargetSize) continue;
 
@@ -1762,10 +1762,10 @@ void GenerateCompletionTimeCutsWithEnergy(
       if (!AddTo(event->energy_min, &sum_energy)) break;
       // In the no_overlap case, we have:
       //   area = event->size_min ^ 2
-      // In the simple cumulative case, we split split the task
+      // In the simple cumulative case, we split the task
       // (demand_min, size_min) into demand_min tasks in the no_overlap case.
       //   area = event->demand_min * event->size_min * event->size_min
-      // In the cumulative case, we can have energy_min > side_min * demand_min.
+      // In the cumulative case, we can have energy_min > size_min * demand_min.
       // In that case, we use energy_min * size_min.
       if (!AddProductTo(event->energy_min, event->size_min,
                         &sum_event_contributions)) {
@@ -1785,7 +1785,7 @@ void GenerateCompletionTimeCutsWithEnergy(
 
       const IntegerValue reachable_capacity = dp.CurrentMax();
 
-      // Do we have a violated cut ?
+      // Do we have a violated cut?
       const IntegerValue large_rectangle_contrib =
           CapProdI(sum_energy, sum_energy);
       if (AtMinOrMaxInt64I(large_rectangle_contrib)) break;
@@ -1806,7 +1806,7 @@ void GenerateCompletionTimeCutsWithEnergy(
                               std::sqrt(ToDouble(sum_square_energy));
 
       // For a given start time, we only keep the best cut.
-      // The reason is that is the cut is strongly violated, we can get a
+      // The reason is that if the cut is strongly violated, we can get a
       // sequence of violated cuts as we add more tasks. These new cuts will
       // be less violated, but will not bring anything useful to the LP
       // relaxation. At the same time, this sequence of cuts can push out
@@ -1819,7 +1819,7 @@ void GenerateCompletionTimeCutsWithEnergy(
       }
     }
 
-    // We have inserted all tasks. Have we found a violated cut ?
+    // We have inserted all tasks. Have we found a violated cut?
     // If so, add the most violated one to the top_n cut container.
     if (best_end != -1) {
       LinearConstraintBuilder cut(model, best_min_contrib, kMaxIntegerValue);

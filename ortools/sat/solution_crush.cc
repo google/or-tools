@@ -693,10 +693,10 @@ void SolutionCrush::SetReservoirCircuitVars(
   for (int i = 0; i < active_event_values.size(); ++i) {
     int j = i;
     // Adjust the order of the events occurring at the same time, in the
-    // circuit, so that, at each node, the level is between `var_min` and
-    // `var_max`. For instance, if e1 = {t, +1} and e2 = {t, -1}, and if
-    // `current_level` = 0, `var_min` = -1 and `var_max` = 0, then e2 must occur
-    // before e1.
+    // circuit, so that, at each node, the level is between `min_level` and
+    // `max_level`. For instance, if e1 = {t, +1} and e2 = {t, -1}, and if
+    // `current_level` = 0, `min_level` = -1 and `max_level` = 0, then e2 must
+    // occur before e1.
     while (j < active_event_values.size() &&
            active_event_values[j].time == active_event_values[i].time &&
            (current_level + active_event_values[j].level_change < min_level ||
@@ -1083,7 +1083,7 @@ void SolutionCrush::AssignVariableToPackingArea(
     RectangleTypeAndIndex rec2 = rectangles_index[rec2_index];
     if (rec1.type == rec2.type) {
       DCHECK(rec1.type == RectangleTypeAndIndex::Type::kHintedBox);
-      VLOG(2) << "Hinted position of boxes in no_overlap_2d are overlapping";
+      VLOG(2) << "Hinted positions of boxes in no_overlap_2d are overlapping";
       return;
     }
     if (rec1.type != RectangleTypeAndIndex::Type::kHintedBox) {

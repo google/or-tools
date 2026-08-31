@@ -68,7 +68,7 @@ bool ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
   const IntegerVariable var = integer_literal.var;
 
   // Ignore any Add() with a bound worse than the level zero one.
-  // TODO(user): Check that this never happen? it shouldn't.
+  // TODO(user): Check that this never happens? It shouldn't.
   const IntegerValue root_lb = integer_trail_->LevelZeroLowerBound(var);
   if (integer_literal.bound <= root_lb) return true;
 
@@ -80,7 +80,7 @@ bool ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
 
   // We skip any IntegerLiteral referring to a variable with only two
   // consecutive possible values. This is because, once shifted this will
-  // already be a variable in [0, 1] so we shouldn't gain much by substituing
+  // already be a variable in [0, 1] so we shouldn't gain much by substituting
   // it.
   if (root_lb + 1 >= integer_trail_->LevelZeroUpperBound(var)) return true;
 
@@ -113,7 +113,7 @@ bool ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
   const auto it = bounds_.find(std::make_pair(literal.NegatedIndex(), var));
   if (it != bounds_.end()) {
     if (it->second <= root_lb) {
-      // The other bounds is worse than the new level-zero bound which can
+      // The other bound is worse than the new level-zero bound which can
       // happen because of lazy update, so here we just remove it.
       bounds_.erase(it);
     } else {
@@ -302,7 +302,7 @@ ElementEncodings::GetElementEncodedVariables() const {
 // expression pointing to a variable with domain [0,1] or [-1,0].
 // If the original variable has been removed from the model, then there are no
 // implied values from any exactly_one constraint to its domain.
-// If we are lucky, one of the literal of the exactly_one constraints, and its
+// If we are lucky, one of the literals of the exactly_one constraints, and its
 // negation are used to encode the Boolean variable of the affine.
 //
 // This may fail if exactly_one(l0, l1, l2, l3); l0 and l1 imply x = 0,
@@ -311,7 +311,7 @@ ElementEncodings::GetElementEncodedVariables() const {
 //
 // TODO(user): Consider removing this once we are more complete in our implied
 // bounds repository. Because if we can reconcile an encoding, then any of the
-// literal in the at most one should imply a value on the boolean view use in
+// literals in the at most one should imply a value on the boolean view used in
 // the size2 affine.
 std::vector<LiteralValueValue> TryToReconcileEncodings(
     const AffineExpression& size2_affine, const AffineExpression& affine,
@@ -356,7 +356,7 @@ std::vector<LiteralValueValue> TryToReconcileEncodings(
 }
 
 // Specialized case of encoding reconciliation when both variables have a domain
-// of size of 2.
+// of size 2.
 std::vector<LiteralValueValue> TryToReconcileSize2Encodings(
     const AffineExpression& left, const AffineExpression& right,
     IntegerEncoder* integer_encoder) {
@@ -592,8 +592,8 @@ void ProductDetector::ProcessTernaryClause(
   candidates_[GetKey(ternary_clause[1].Index(), ternary_clause[2].Index())]
       .push_back(ternary_clause[0].Index());
 
-  // We mark the literal of the ternary clause as seen.
-  // Only a => b with a seen need to be looked at.
+  // We mark the literals of the ternary clause as seen.
+  // Only a => b with a seen needs to be looked at.
   for (const Literal l : ternary_clause) {
     if (l.Index() >= seen_.size()) seen_.resize(l.Index() + 1);
     seen_[l.Index()] = true;
@@ -632,7 +632,7 @@ void ProductDetector::ProcessTernaryExactlyOne(
                     ternary_exo[1].NegatedIndex());
 }
 
-// TODO(user): As product are discovered, we could remove entries from our
+// TODO(user): As products are discovered, we could remove entries from our
 // hash maps!
 void ProductDetector::ProcessBinaryClause(
     absl::Span<const Literal> binary_clause) {
@@ -711,7 +711,7 @@ std::array<LiteralIndex, 2> ProductDetector::GetKey(LiteralIndex a,
 
 void ProductDetector::ProcessNewProduct(LiteralIndex p, LiteralIndex a,
                                         LiteralIndex b) {
-  // If many literal correspond to the same product, we just keep one.
+  // If many literals correspond to the same product, we just keep one.
   ++num_products_;
   products_[GetKey(a, b)] = p;
 
@@ -726,7 +726,7 @@ bool ProductDetector::ProductIsLinearizable(IntegerVariable a,
   if (a == b) return true;
   if (a == NegationOf(b)) return true;
 
-  // Otherwise, we need both a and b to be expressible as linear expression
+  // Otherwise, we need both a and b to be expressible as linear expressions
   // involving Booleans whose product is also expressible.
   if (integer_trail_->LevelZeroDomain(a).Size() != 2) return false;
   if (integer_trail_->LevelZeroDomain(b).Size() != 2) return false;
@@ -835,7 +835,7 @@ void ProductDetector::UpdateRLTMaps(
     const util_intops::StrongVector<IntegerVariable, double>& lp_values,
     IntegerVariable var1, double lp1, IntegerVariable var2, double lp2,
     IntegerVariable bound_var, double bound_lp) {
-  // we have var1 * var2 <= bound_var, and this is only useful if it is better
+  // We have var1 * var2 <= bound_var, and this is only useful if it is better
   // than the trivial bound <= var1 or <= var2.
   if (bound_lp > lp1 && bound_lp > lp2) return;
 
@@ -847,14 +847,14 @@ void ProductDetector::UpdateRLTMaps(
     it->second = bound_var;
   }
 
-  // This will increase a RLT cut violation and is a good candidate.
+  // This will increase an RLT cut violation and is a good candidate.
   if (lp1 * lp2 > bound_lp + 1e-4) {
     bool_rlt_candidates_[var1].push_back(var2);
     bool_rlt_candidates_[var2].push_back(var1);
   }
 }
 
-// TODO(user): limit work if too many ternary.
+// TODO(user): limit work if too many ternaries.
 void ProductDetector::InitializeBooleanRLTCuts(
     absl::Span<const IntegerVariable> lp_vars,
     const util_intops::StrongVector<IntegerVariable, double>& lp_values) {
@@ -864,7 +864,7 @@ void ProductDetector::InitializeBooleanRLTCuts(
   bool_rlt_ubs_.clear();
 
   // If we transform a linear constraint to sum positive_coeff * bool <= rhs.
-  // We will list all interesting multiplicative candidate for each variable.
+  // We will list all interesting multiplicative candidates for each variable.
   bool_rlt_candidates_.clear();
   const int size = ternary_clauses_with_view_.size();
   if (size == 0) return;
@@ -881,8 +881,8 @@ void ProductDetector::InitializeBooleanRLTCuts(
     if (!is_in_lp_vars_[PositiveVariable(var2)]) continue;
     if (!is_in_lp_vars_[PositiveVariable(var3)]) continue;
 
-    // If we have l1 + l2 + l3 >= 1, then for all (i, j) pair we have
-    // !li * !lj <= lk. We are looking for violation like this.
+    // If we have l1 + l2 + l3 >= 1, then for all (i, j) pairs we have
+    // !li * !lj <= lk. We are looking for violations like this.
     const double lp1 = GetLiteralLpValue(var1, lp_values);
     const double lp2 = GetLiteralLpValue(var2, lp_values);
     const double lp3 = GetLiteralLpValue(var3, lp_values);

@@ -68,8 +68,8 @@ class JumpTable {
   // Gets the current jump delta and score, recomputing if necessary.
   std::pair<int64_t, double> GetJump(int var);
 
-  // If the new optimum value and score is known, users can update it directly.
-  // e.g. after weight rescaling, or after changing a binary variable.
+  // If the new optimum value and score are known, users can update them
+  // directly. e.g. after weight rescaling, or after changing a binary variable.
   void SetJump(int var, int64_t delta, double score);
 
   // Recompute the jump for `var` when `GetJump(var)` is next called.
@@ -152,9 +152,9 @@ struct LsOptions {
   bool use_decay = true;
   bool use_compound_moves = true;
   bool start_with_random_weights = true;
-  bool use_objective = true;  // No effect if there are no objective.
+  bool use_objective = true;  // No effect if there is no objective.
 
-  // Allows to identify which options worked well.
+  // Allows identifying which options worked well.
   std::string name() const {
     std::vector<absl::string_view> parts;
     parts.reserve(5);
@@ -195,11 +195,11 @@ struct LsOptions {
   }
 };
 
-// Each FeasibilityJumpSolver work on many LsState in an interleaved parallel
+// Each FeasibilityJumpSolver works on many LsStates in an interleaved parallel
 // fashion. Each "batch of moves" will update one of these states. Restart
 // heuristics are also on a per state basis.
 //
-// This allows to not use O(problem size) per state while having a more
+// This allows avoiding O(problem size) per state while having a more
 // diverse set of heuristics.
 struct LsState {
   // Contains a value for each variable of the FeasibilityJumpSolver's
@@ -250,11 +250,11 @@ struct LsState {
   int64_t bounds_timestamp = -1;
   int64_t equivalences_timestamp = -1;
 
-  // Global counters, incremented across restart.
+  // Global counters, incremented across restarts.
   int64_t num_restarts = 0;
   int64_t num_solutions_imported = 0;
 
-  // When this reach zero, we restart / perturbate or trigger something.
+  // When this reaches zero, we restart / perturb or trigger something.
   int64_t num_batches_before_change = 0;
 
   // Used by LS to know the rank of the starting solution for this state.
@@ -269,7 +269,7 @@ struct LsState {
 // Shared set of local search states that we work on.
 //
 // Note that we can have more than one set of SharedLsStates. For instance the
-// FeasibilityJumpSolver that do not use the same linearization level do not
+// FeasibilityJumpSolvers that do not use the same linearization level do not
 // share the same set of states. This is done like this because the number of
 // weights can be different between these workers.
 class SharedLsStates {
@@ -328,7 +328,7 @@ class SharedLsStates {
     luby_counter_ = 0;
   }
 
-  // We share a global running Luby sequence for all the "restart" state.
+  // We share a global running Luby sequence for all the "restart" states.
   // Note that we randomize the parameters on each restart.
   //
   // Hack: options.use_restart is constant, so we are free to inspect it.
@@ -377,7 +377,7 @@ class SharedLsStates {
   absl::flat_hash_map<LsOptions, int> options_to_num_restarts_;
 };
 
-// Implements and heuristic similar to the one described in the paper:
+// Implements a heuristic similar to the one described in the paper:
 // "Feasibility Jump: an LP-free Lagrangian MIP heuristic", Bjørnar
 // Luteberget, Giorgio Sartor, 2023, Mathematical Programming Computation.
 //
@@ -385,7 +385,7 @@ class SharedLsStates {
 // value an integer variable should move to (its jump value). For binary, it
 // can only be swapped, so the situation is easier.
 //
-// TODO(user): If we have more than one of these solver, we might want to share
+// TODO(user): If we have more than one of these solvers, we might want to share
 // the evaluator memory between them. Right now we basically keep a copy of the
 // model and its transpose for each FeasibilityJumpSolver.
 class FeasibilityJumpSolver : public SubSolver {
@@ -471,7 +471,7 @@ class FeasibilityJumpSolver : public SubSolver {
   std::pair<int64_t, double> ComputeGeneralJump(int var);
 
   // Marks all variables whose jump value may have changed due to the last
-  // update, except for `changed var`.
+  // update, except for `changed_var`.
   void MarkJumpsThatNeedToBeRecomputed(int changed_var);
 
   // Moves.
@@ -483,11 +483,11 @@ class FeasibilityJumpSolver : public SubSolver {
                              double* score);
 
   // Increases the weight of the currently infeasible constraints.
-  // Ensures jumps remains consistent.
+  // Ensures jumps remain consistent.
   void UpdateViolatedConstraintWeights();
 
-  // Returns true if it is possible that `var` may have value that reduces
-  // weighted violation or improve the objective.
+  // Returns true if it is possible that `var` may have a value that reduces
+  // weighted violation or improves the objective.
   // Note that this is independent of the actual weights used.
   bool ShouldScan(int var) const;
 
@@ -549,7 +549,7 @@ class FeasibilityJumpSolver : public SubSolver {
 
   // Synchronization Booleans.
   //
-  // Note that we don't fully support all type of model, and we will abort by
+  // Note that we don't fully support all types of models, and we will abort by
   // setting the model_is_supported_ bool to false when we detect this.
   bool is_initialized_ = false;
   std::atomic<bool> model_is_supported_ = true;
@@ -605,7 +605,7 @@ class CompoundMoveBuilder {
   // Returns true if this var has been set in this move already,
   bool OnStack(int var) const;
 
-  // Returns the sum of scores of atomic moved pushed to this compound move.
+  // Returns the sum of scores of atomic moves pushed to this compound move.
   double Score() const {
     return stack_.empty() ? 0.0 : stack_.back().cumulative_score;
   }

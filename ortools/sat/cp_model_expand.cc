@@ -201,8 +201,8 @@ void ExpandEnforcedAtMostOneOrExactlyOneConstraint(ConstraintProto* ct, int c,
   context->UpdateConstraintVariableUsage(c);
 }
 
-// Different encoding that support general demands. This is usually a pretty bad
-// encoding, at least until we improve the solver on such models.
+// Different encoding that supports general demands. This is usually a pretty
+// bad encoding, at least until we improve the solver on such models.
 void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
                                  int64_t sum_of_negative_demand,
                                  ConstraintProto* reservoir_ct,
@@ -278,10 +278,10 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
       // - time_i <= time_j
       // - level_j == level_i + demand_j
       //
-      // TODO(user): Unfortunately we cannot share these literal between
-      // reservoir except if the set of time point is exactly the same!
-      // otherwise if we miss one, then A "after" B in one circuit do not
-      // implies that there is no C in between in another!
+      // TODO(user): Unfortunately we cannot share these literals between
+      // reservoirs except if the set of time points is exactly the same!
+      // Otherwise if we miss one, then A "after" B in one circuit does not
+      // imply that there is no C in between in another!
       const int arc_i_j = context->NewBoolVar("reservoir expansion");
       circuit->add_tails(i);
       circuit->add_heads(j);
@@ -334,7 +334,7 @@ void ExpandReservoirUsingPrecedences(bool max_level_is_constraining,
   };
 
   // Constrains the running level to be consistent at all time_exprs.
-  // For this we only add a constraint at the time a given demand take place.
+  // For this we only add a constraint at the time a given demand takes place.
   for (int i = 0; i < num_events; ++i) {
     const int active_i = is_active_literal(i);
     if (context->LiteralIsFalse(active_i)) continue;
@@ -375,8 +375,8 @@ void ExpandReservoirUsingPrecedences(bool max_level_is_constraining,
     // Add contribution from event i.
     //
     // TODO(user): Alternatively we can mark the whole constraint as enforced
-    // only if active_i is true. Experiments with both version, right now we
-    // miss enough benchmarks to conclude.
+    // only if active_i is true. Experiment with both versions; right now we
+    // lack enough benchmarks to conclude.
     AddWeightedLiteralToLinearConstraint(active_i, demand_i, new_linear,
                                          &offset);
 
@@ -439,7 +439,7 @@ void ExpandReservoir(ConstraintProto* reservoir_ct, PresolveContext* context) {
   }
 
   // If all level_changes have the same sign, we do not care about the order,
-  // just the sum. We might need to create intermediate variable for quadratic
+  // just the sum. We might need to create intermediate variables for quadratic
   // terms though.
   if (num_negatives == 0 || num_positives == 0) {
     const int true_literal = context->GetTrueLiteral();
@@ -1292,7 +1292,7 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
 //  enforcement_literals && literals[i] true => encoding[values[i]] true
 //  enforcement_literals => one of literals[i in I(j)] true || encoding[j] false
 // where I(j) = {i | values[i] = j}. This also implicitly uses the fact that
-// exactly one literals is true. Note that we will use exactly_one in the
+// exactly one literal is true. Note that we will use exactly_one in the
 // encoding if possible.
 void LinkLiteralsAndValues(absl::Span<const int> enforcement_literals,
                            absl::Span<const int> literals,
@@ -1310,8 +1310,8 @@ void LinkLiteralsAndValues(absl::Span<const int> enforcement_literals,
     encoding_lit_to_support[encoding.at(values[i])].push_back(literals[i]);
   }
 
-  // Using an exactly one convey more structure and has a better linear
-  // relaxation. Even if we could theorically infer it back from the other
+  // Using an exactly one conveys more structure and has a better linear
+  // relaxation. Even if we could theoretically infer it back from the other
   // encoding.
   for (const auto& [encoding_lit, support] : encoding_lit_to_support) {
     CHECK(!support.empty());
@@ -1392,7 +1392,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
   PropagateAutomaton(proto, *context, &reachable_states, &reachable_labels);
 
   // We will model at each time step the current automaton state using Boolean
-  // variables. We will have n+1 time step. At time zero, we start in the
+  // variables. We will have n+1 time steps. At time zero, we start in the
   // initial state, and at time n we should be in one of the final states. We
   // don't need to create Booleans at times when there is just one possible
   // state (like at time zero).
@@ -1424,7 +1424,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
       if (!enforced_domains.DomainContains(proto.exprs(time), label)) continue;
 
       still_reachable_after_domain_change.insert(head);
-      // TODO(user): if this transition correspond to just one in-state or
+      // TODO(user): if this transition corresponds to just one in-state or
       // one-out state or one variable value, we could reuse the corresponding
       // Boolean variable instead of creating a new one!
       in_states.push_back(tail);
@@ -1484,7 +1484,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
       }
     }
 
-    // Count how many time each value appear.
+    // Count how many times each value appears.
     // We use this to reuse literals if possible.
     absl::flat_hash_map<int64_t, int> in_count;
     absl::flat_hash_map<int64_t, int> transition_count;
@@ -1544,7 +1544,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
             }
           }
 
-          // Same if we have an unique transition value that correspond only to
+          // Same if we have a unique transition value that corresponds only to
           // this state.
           if (!encoding.empty() && out_to_transition[state].is_unique) {
             const int64_t unique_transition = out_to_transition[state].value;
@@ -1561,16 +1561,16 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
     }
 
     // Simple encoding. This is enough to properly enforce the constraint, but
-    // it propagate less. It creates a lot less Booleans though. Note that we
+    // it propagates less. It creates a lot fewer Booleans though. Note that we
     // use implicit "exactly one" on the encoding and do not add any extra
     // exactly one if the simple encoding is used.
     //
     // We currently decide which encoding to use depending on the number of new
     // literals needed by the "heavy" encoding compared to the number of states
     // and labels. When the automaton is small, using the full encoding is
-    // better, see for instance on rotating-workforce_Example789 were the simple
-    // encoding make the problem hard to solve but the full encoding allow the
-    // solver to solve it in a couple of seconds!
+    // better, see for instance on rotating-workforce_Example789 where the
+    // simple encoding makes the problem hard to solve but the full encoding
+    // allows the solver to solve it in a couple of seconds!
     //
     // Note that both encoding create about the same number of constraints.
     const int num_involved_variables =
@@ -1578,9 +1578,9 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
     const bool use_light_encoding = (num_tuples > num_involved_variables);
     if (use_light_encoding && !in_encoding.empty() && !encoding.empty() &&
         !out_encoding.empty()) {
-      // Part 1: If a in_state is selected, restrict the set of possible labels.
-      // We also restrict the set of possible out states, but this is not needed
-      // for correctness.
+      // Part 1: If an in_state is selected, restrict the set of possible
+      // labels. We also restrict the set of possible out states, but this is
+      // not needed for correctness.
       absl::flat_hash_map<int64_t, std::vector<int64_t>> in_to_label;
       absl::flat_hash_map<int64_t, std::vector<int64_t>> in_to_out;
       for (int i = 0; i < num_tuples; ++i) {
@@ -1703,7 +1703,7 @@ bool TableIsInCanonicalForm(ConstraintProto* ct) {
   }
   for (const LinearExpressionProto& expr : table.exprs()) {
     if (expr.offset() != 0) {
-      LOG(ERROR) << "Expression contains an non-zero offset.";
+      LOG(ERROR) << "Expression contains a non-zero offset.";
       return false;
     }
     if (expr.coeffs().size() == 1 && expr.coeffs(0) != 1) {
@@ -1746,7 +1746,7 @@ void ExpandNegativeTable(ConstraintProto* ct, PresolveContext* context) {
   }
   CompressTuples(domain_sizes, &tuples);
 
-  // For each tuple, forbid the variables values to be this tuple.
+  // For each tuple, forbid the variable values to be this tuple.
   std::vector<int> clause;
   for (const std::vector<int64_t>& tuple : tuples) {
     clause.clear();
@@ -1774,7 +1774,7 @@ void ExpandNegativeTable(ConstraintProto* ct, PresolveContext* context) {
 // table to the literals controlling if the tuples are possible or not.
 //
 // We list for each tuple the possible values the variable can take.
-// If the list is empty, then this encode "any value".
+// If the list is empty, then this encodes "any value".
 void ProcessOneCompressedColumn(
     int variable, absl::Span<const int> tuple_literals,
     absl::Span<const absl::InlinedVector<int64_t, 2>> values,
@@ -1842,8 +1842,8 @@ void ProcessOneCompressedColumn(
     // A value is supported if one tuple is still active, or a covering 'any'
     // tuple is still active, or the table can still be inactive.
     //
-    // Note that if a value only appear individually in each tuple, and the
-    // table is not enforced, then we have an exactly one. This seems to helps a
+    // Note that if a value only appears individually in each tuple, and the
+    // table is not enforced, then we have an exactly one. This seems to help a
     // bit, especially the linear relaxation.
     BoolArgumentProto* no_support =
         use_exo && !value_is_multiple.contains(value)
@@ -1972,7 +1972,7 @@ void AddSizeTwoTable(
 }
 
 // A "WCSP" (weighted constraint programming) problem is usually encoded as
-// a set of table, with one or more variable only there to carry a cost.
+// a set of tables, with one or more variables only there to carry a cost.
 //
 // If this is the case, we can do special presolving.
 bool ReduceTableInPresenceOfUniqueVariableWithCosts(
@@ -1988,8 +1988,8 @@ bool ReduceTableInPresenceOfUniqueVariableWithCosts(
     const int var = (*vars)[var_index];
 
     // We do not use VariableWithCostIsUniqueAndRemovable() since this one
-    // return false if the objective is constraining but we don't care here.
-    // Our transformation also do not loose solutions.
+    // returns false if the objective is constraining but we don't care here.
+    // Our transformation also does not lose solutions.
     if (context->VariableWithCostIsUnique(var)) {
       context->UpdateRuleStats("table: removed unused column with cost");
       only_here_and_in_objective[var_index] = true;
@@ -2093,8 +2093,8 @@ bool ReduceTableInPresenceOfUniqueVariableWithCosts(
     }
   }
 
-  // This comes from the WCSP litterature. Basically, if by fixing a variable to
-  // a value, we have only tuples with a non-zero cost, we can substract the
+  // This comes from the WCSP literature. Basically, if by fixing a variable to
+  // a value, we have only tuples with a non-zero cost, we can subtract the
   // minimum cost of these tuples and transfer it to the variable cost.
   //
   // TODO(user): Doing this before table compression can prevent good
@@ -2172,7 +2172,7 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
   // For instance, on lot_sizing_cp_pigment15c.psp, compressing the table more
   // is a lot worse (at least until we can produce better cut).
   //
-  // TODO(user): Tweak the heuristic, maybe compute the reduction achieve and
+  // TODO(user): Tweak the heuristic, maybe compute the reduction achieved and
   // decide based on that.
   std::vector<std::vector<absl::InlinedVector<int64_t, 2>>> compressed_table;
   if (compression_level > 2 ||
@@ -2220,7 +2220,7 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
     return;
   }
 
-  // Optimization. If a value is unique and appear alone in a cell, we can use
+  // Optimization. If a value is unique and appears alone in a cell, we can use
   // the encoding literal for this line tuple literal instead of creating a new
   // one.
   std::vector<bool> has_any(num_vars, false);
@@ -2429,9 +2429,9 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
 
   // Tables with two variables do not need tuple literals.
   //
-  // TODO(user): If there is an unique variable with cost, it is better to
-  // detect it. But if the detection fail, we should still call
-  // AddSizeTwoTable() unlike what happen here.
+  // TODO(user): If there is a unique variable with cost, it is better to
+  // detect it. But if the detection fails, we should still call
+  // AddSizeTwoTable() unlike what happens here.
   if (num_exprs == 2 && !context->params().detect_table_with_cost() &&
       ct->enforcement_literal().empty()) {
     AddSizeTwoTable(vars, tuples, values_per_var, context);
@@ -2488,12 +2488,12 @@ bool AllDiffShouldBeExpanded(const Domain& union_of_domains,
 //
 // TODO(user): Note that currently both encoding introduce extra solutions
 // if the constraint has some enforcement literal(). We can either fix this by
-// supporting enumeration on a subset of variable. Or add extra constraint to
-// fix all new Boolean to false if the initial constraint is not enforced.
+// supporting enumeration on a subset of variables. Or add an extra constraint
+// to fix all new Booleans to false if the initial constraint is not enforced.
 void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
                                    PresolveContext* context) {
   // TODO(user): We treat the linear of size 1 differently because we need them
-  // as is to recognize value encoding. Try to still creates needed Boolean now
+  // as is to recognize value encoding. Try to still create needed Booleans now
   // so that we can share more between the different workers. Or revisit how
   // linear1 are propagated.
   if (ct->linear().domain().size() <= 2) return;
@@ -2557,7 +2557,7 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
     context->solution_crush().SetLinearWithComplexDomainExpandedVars(
         ct->linear(), domain_literals);
 
-    // Make sure all booleans are tights when enumerating all solutions.
+    // Make sure all booleans are tight when enumerating all solutions.
     if (context->params().enumerate_all_solutions() &&
         !enforcement_literals.empty()) {
       int linear_is_enforced;
@@ -2617,7 +2617,7 @@ bool IsVarEqOrNeqValue(PresolveContext* context,
 // Expand is selected if the variable is fully encoded, or will be when
 //   expanding other constraints: index of element, table, automaton.
 //   It will check AllDiffShouldBeExpanded() before doing the actual expansion.
-// Keep is forced is the variable appears in a linear equation with at least 3
+// Keep is forced if the variable appears in a linear equation with at least 3
 // terms, and with a tight domain ( == cst).
 // TODO(user): The above rule is complex. Revisit.
 void ScanModelAndDecideAllDiffExpansion(
@@ -2831,7 +2831,7 @@ void MaybeExpandAllDiff(int c, PresolveContext* context,
         is_a_permutation ? new_ct->mutable_exactly_one()
                          : new_ct->mutable_at_most_one();
     for (const LinearExpressionProto& expr : possible_exprs) {
-      // The above propagation can remove a value after the expressions was
+      // The above propagation can remove a value after the expression was
       // added to possible_exprs.
       if (!context->DomainContains(expr, v)) continue;
 
@@ -2855,8 +2855,8 @@ void ExpandCpModel(PresolveContext* context) {
   if (context->params().disable_constraint_expansion()) return;
   if (context->ModelIsUnsat()) return;
 
-  // None of the function here need to be run twice. This is because we never
-  // create constraint that need to be expanded during presolve.
+  // None of the functions here need to be run twice. This is because we never
+  // create constraints that need to be expanded during presolve.
   if (context->ModelIsExpanded()) return;
 
   // Make sure all domains are initialized.

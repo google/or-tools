@@ -23,7 +23,6 @@
 #include "absl/flags/declare.h"
 #include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
-#include "absl/status/status.h"
 #include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -69,9 +68,12 @@ inline int EnforcementLiteral(const ConstraintProto& ct) {
 }
 
 struct AffineExpr {
-  int var;  // The variable in the CpModelProto.
-  int64_t coeff;
-  int64_t offset;
+  // The variable in the CpModelProto (-1 if constant).
+  int var = -1;
+  // Coefficient of the variable.
+  int64_t coeff = 0;
+  // Constant offset.
+  int64_t offset = 0;
 
   bool operator==(const AffineExpr& o) const {
     return var == o.var && coeff == o.coeff && offset == o.offset;
@@ -81,9 +83,23 @@ struct AffineExpr {
   friend H AbslHashValue(H h, const AffineExpr& expr) {
     return H::combine(std::move(h), expr.var, expr.coeff, expr.offset);
   }
+
+  std::string ToString() const;
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const AffineExpr& expr) {
+    sink.Append(expr.ToString());
+  }
 };
 
 AffineExpr GetAffineExpr(const LinearExpressionProto& expr);
+
+// Evaluates the minimum and maximum possible values of an affine expression
+// given the variable domains in the CpModelProto.
+int64_t GetAffineExprMin(const AffineExpr& expr,
+                         const CpModelProto& model_proto);
+int64_t GetAffineExprMax(const AffineExpr& expr,
+                         const CpModelProto& model_proto);
 
 // Returns the gcd of the given LinearExpressionProto.
 // Specifying the second argument will take the gcd with it.

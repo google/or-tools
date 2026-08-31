@@ -36,7 +36,7 @@ namespace operations_research {
 namespace sat {
 namespace {
 
-// Counts how many ways we can put two square of minimal size 1 in an n x n
+// Counts how many ways we can put two squares of minimal size 1 in an n x n
 // square.
 //
 // For n = 1, infeasible.
@@ -60,9 +60,9 @@ int CountAllTwoBoxesSolutions(int n) {
   }
 
   // The cumulative relaxation adds extra variables that are not completely
-  // fixed. So to not count too many solution with our code here, we disable
+  // fixed. So to not count too many solutions with our code here, we disable
   // that. Note that alternatively, we could have used the cp_model.proto API
-  // to do the same, and that should works even with this on.
+  // to do the same, and that should work even with this on.
   AddNonOverlappingRectangles(/*enforcement_literals=*/{}, x, y, &model);
 
   int num_solutions_found = 0;
@@ -104,7 +104,7 @@ TEST(NonOverlappingRectanglesTest, SimpleCounting) {
             /*2 1x1 square*/ 16 * 15 +
                 /*2 2x2 square*/ 2 * (5 + 3 + 4 + 4) +
                 /*3x3 and 1x1*/ 2 * 4 * 7 +
-                /*2x2 amd 1x1*/ 2 * 9 * 12);
+                /*2x2 and 1x1*/ 2 * 9 * 12);
 }
 
 TEST(NonOverlappingRectanglesTest, SimpleCountingWithOptional) {
@@ -126,9 +126,9 @@ TEST(NonOverlappingRectanglesTest, SimpleCountingWithOptional) {
       IntegerValue(3), IntegerValue(4), IntegerValue(1), l2.Index(), false));
 
   // The cumulative relaxation adds extra variables that are not completely
-  // fixed. So to not count too many solution with our code here, we disable
+  // fixed. So to not count too many solutions with our code here, we disable
   // that. Note that alternatively, we could have used the cp_model.proto API
-  // to do the same, and that should works even with this on.
+  // to do the same, and that should work even with this on.
   // TODO(user): Fix and run with add_cumulative_relaxation = true.
   AddNonOverlappingRectangles(/*enforcement_literals=*/{}, x, y, &model);
 

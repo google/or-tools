@@ -131,7 +131,7 @@ void AddDiffnCumulativeRelationOnX(
     }
     capacity = AffineExpression(CapSubI(max_end, min_start).value());
   } else {
-    // This might not work if all task are optional, since the min could be
+    // This might not work if all tasks are optional, since the min could be
     // greater than the max.
     const IntegerVariable min_start_var =
         CreateVariableAtOrAboveMinOf(y->Starts(), model);
@@ -161,8 +161,8 @@ void AddDiffnCumulativeRelationOnX(
           x, y->Sizes());
 
   // Propagator responsible for applying Timetabling filtering rule. It
-  // increases the minimum of the start variables, decrease the maximum of the
-  // end variables, and increase the minimum of the capacity variable.
+  // increases the minimum of the start variables, decreases the maximum of the
+  // end variables, and increases the minimum of the capacity variable.
   const SatParameters& params = *model->GetOrCreate<SatParameters>();
   if (params.use_timetabling_in_no_overlap_2d()) {
     TimeTablingPerTask* time_tabling =
@@ -283,14 +283,14 @@ void AddNonOverlappingRectangles(
 
   // Create all 2D "precedence" Booleans.
   //
-  // The code will be sub-optimal for optional box with non-fixed sizes as we
-  // miss some constraint in that case.
+  // The code will be sub-optimal for optional boxes with non-fixed sizes as we
+  // miss some constraints in that case.
   //  TODO(user): For now we do not deal with optional boxes with
   //  variable sizes.
   //
   // TODO(user): Like we do for 1D, one way to scale this is to only
-  // create such Boolean dynamically as we need to take a decision, and
-  // the previously created one are all assigned. It is a bit trickier
+  // create such Booleans dynamically as we need to take a decision, and
+  // the previously created ones are all assigned. It is a bit trickier
   // though because of the extra constraints between these Booleans. Maybe
   // one easy step is to create all 4 Booleans for a given pair of boxes
   // at once.
@@ -409,7 +409,7 @@ NonOverlappingRectanglesEnergyPropagator::
 }
 
 bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
-  // TODO(user): double-check/revisit the algo for box of variable sizes.
+  // TODO(user): double-check/revisit the algo for boxes of variable sizes.
   if (!helper_.IsEnforced()) return true;
   if (!helper_.SynchronizeAndSetDirection()) return false;
 
@@ -440,7 +440,7 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
   if (AtMinOrMaxInt64I(
           CapProdI(CapProdI(bounding_box.SizeX(), bounding_box.SizeY()),
                    active_box_ranges.size()))) {
-    // Avoid integer overflows if the area of the boxes get comparable with
+    // Avoid integer overflows if the area of the boxes gets comparable with
     // INT64_MAX.
     return true;
   }
@@ -455,7 +455,7 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
   num_conflicts_++;
 
   // We found a conflict, so we can afford to run the propagator again to
-  // search for a best explanation. This is specially the case since we only
+  // search for a best explanation. This is especially the case since we only
   // want to re-run it over the items that participate in the conflict, so it is
   // a much smaller problem.
   IntegerValue best_explanation_size =
@@ -510,7 +510,7 @@ NonOverlappingRectanglesEnergyPropagator::FindConflict(
 
   // Sample 10 rectangles (at least five among the ones for which we already
   // detected an energy overflow), extract an orthogonal packing subproblem for
-  // each and look for conflict. Sampling avoids making this heuristic too
+  // each and look for a conflict. Sampling avoids making this heuristic too
   // costly.
   constexpr int kSampleSize = 10;
   absl::InlinedVector<Rectangle, kSampleSize> sampled_rectangles;
@@ -557,7 +557,7 @@ NonOverlappingRectanglesEnergyPropagator::FindConflict(
         filtered_items.push_back(box);
       }
     }
-    // This check the feasibility of a related orthogonal packing problem where
+    // This checks the feasibility of a related orthogonal packing problem where
     // our rectangle is the bounding box, and we need to fit inside it a set of
     // items corresponding to the minimum intersection of the original items
     // with this bounding box.
@@ -659,7 +659,7 @@ int NonOverlappingRectanglesEnergyPropagator::RegisterWith(
 
 namespace {
 
-// We want for different propagation to reuse as much as possible the same
+// We want different propagations to reuse as much as possible the same
 // line. The idea behind this is to compute the 'canonical' line to use
 // when explaining that boxes overlap on the 'y_dim' dimension. We compute
 // the multiple of the biggest power of two that is common to all boxes.
@@ -758,9 +758,9 @@ void NonOverlappingRectanglesDisjunctivePropagator::Register(
 bool NonOverlappingRectanglesDisjunctivePropagator::
     FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
         bool fast_propagation, absl::Span<const int> requested_boxes) {
-  // When they are many fixed box that we know do not overlap, we compute
+  // When there are many fixed boxes that we know do not overlap, we compute
   // the bounding box of the others, and we can exclude all boxes outside this
-  // region. This can help, especially for some LNS neighborhood.
+  // region. This can help, especially for some LNS neighborhoods.
   int num_fixed = 0;
   int num_others = 0;
   Rectangle other_bounding_box;
@@ -775,15 +775,15 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   SchedulingConstraintHelper* x = &helper_->x_helper();
   SchedulingConstraintHelper* y = &helper_->y_helper();
 
-  // Optimization: we only initialize the set if we don't have all task here.
+  // Optimization: we only initialize the set if we don't have all tasks here.
   absl::flat_hash_set<int> requested_boxes_set;
   const bool not_all_boxes = requested_boxes.size() != helper_->NumBoxes();
   if (not_all_boxes) {
     requested_boxes_set = {requested_boxes.begin(), requested_boxes.end()};
   }
 
-  // Compute relevant boxes, the one with a mandatory part on y. Because we will
-  // need to sort it this way, we consider them by increasing start max.
+  // Compute relevant boxes, the ones with a mandatory part on y. Because we
+  // will need to sort them this way, we consider them by increasing start max.
   const auto temp = y->TaskByIncreasingNegatedStartMax();
   auto fixed_boxes = already_checked_fixed_boxes_.view();
   for (int i = temp.size(); --i >= 0;) {
@@ -791,13 +791,13 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
     if (not_all_boxes && !requested_boxes_set.contains(box)) continue;
 
     // By definition, fixed boxes are always present.
-    // Doing this check optimize a bit the case where we have many fixed boxes.
+    // Doing this check optimizes a bit the case where we have many fixed boxes.
     if (!fixed_boxes[box]) {
       // Ignore absent boxes.
       if (x->IsAbsent(box) || y->IsAbsent(box)) continue;
 
       // Ignore boxes where the relevant presence literal is only on the y
-      // dimension, or if both intervals are optionals with different literals.
+      // dimension, or if both intervals are optional with different literals.
       if (x->IsPresent(box) && !y->IsPresent(box)) continue;
       if (!x->IsPresent(box) && !y->IsPresent(box) &&
           x->PresenceLiteral(box) != y->PresenceLiteral(box)) {
@@ -805,13 +805,13 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
       }
     }
 
-    // Only consider box with a mandatory part on y.
+    // Only consider boxes with a mandatory part on y.
     const IntegerValue start_max = -temp[i].time;
     const IntegerValue end_min = y->EndMin(box);
     if (start_max < end_min) {
       boxes_data[num_boxes++] = {box, start_max, end_min};
 
-      // Optim: If many rectangle are fixed and known not to overlap, we might
+      // Optim: If many rectangles are fixed and known not to overlap, we might
       // filter them out.
       if (fixed_boxes[box]) {
         ++num_fixed;
@@ -833,11 +833,11 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
     }
   }
 
-  // We remove from boxes_data all the fixed and checked box outside the
+  // We remove from boxes_data all the fixed and checked boxes outside the
   // other_bounding_box.
   //
   // TODO(user): We could be smarter here, if we have just a few non-fixed
-  // boxes, likely their mandatory y-part do not span the whole horizon, so
+  // boxes, likely their mandatory y-parts do not span the whole horizon, so
   // we could remove any fixed boxes outside these "stripes".
   if (num_others == 0) return true;
   if (num_fixed > 0) {
@@ -857,7 +857,7 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   const auto boxes = absl::MakeSpan(boxes_data, num_boxes);
   if (boxes.size() < 2) return true;
 
-  // Optim: Abort if all rectangle can be fixed to their mandatory y +
+  // Optim: Abort if all rectangles can be fixed to their mandatory y +
   // minimum x position without any overlap.
   //
   // This is guaranteed to be O(N log N) whereas the algo below is O(N ^ 2).
@@ -897,7 +897,7 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   }
   ConstructOverlappingSets(boxes, &events_overlapping_boxes_, order_);
 
-  // Split lists of boxes into disjoint set of boxes (w.r.t. overlap).
+  // Split lists of boxes into disjoint sets of boxes (w.r.t. overlap).
   boxes_to_propagate_.clear();
   reduced_overlapping_boxes_.clear();
   int work_done = boxes.size();
@@ -938,7 +938,7 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
     }
     CHECK_LE(lb, ub);
 
-    // We want for different propagation to reuse as much as possible the same
+    // We want different propagations to reuse as much as possible the same
     // line. The idea behind this is to compute the 'canonical' line to use
     // when explaining that boxes overlap on the 'y_dim' dimension. We compute
     // the multiple of the biggest power of two that is common to all boxes.
@@ -951,8 +951,8 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
     auto add_presence_reason_on_y_if_not_redundant_with_x = [x, y](int box) {
       if (!y->IsOptional(box)) return;
       if (!y->IsPresent(box)) {
-        // We should only reach this code for non-present boxes if it shares the
-        // enforcement with x.
+        // We should only reach this code for non-present boxes if they share
+        // the enforcement with x.
         DCHECK(!x->IsPresent(box));
         DCHECK_EQ(x->PresenceLiteral(box), y->PresenceLiteral(box));
         return;
@@ -1019,9 +1019,9 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
 }
 
 // Note that we optimized this function for two main use cases:
-// - smallish problem where we don't have more than 100 boxes.
-// - large problem with many 1000s boxes, but with only a small subset that is
-//   not fixed (mainly coming from LNS).
+// - smallish problems where we don't have more than 100 boxes.
+// - large problems with many 1000s of boxes, but with only a small subset that
+//   is not fixed (mainly coming from LNS).
 bool NonOverlappingRectanglesDisjunctivePropagator::Propagate() {
   if (!helper_->IsEnforced()) return true;
   if (!helper_->SynchronizeAndSetDirection(true, true, false)) return false;

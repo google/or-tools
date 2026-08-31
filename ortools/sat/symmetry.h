@@ -51,9 +51,9 @@ namespace sat {
 // - Because it is not a decision, 'l' has been implied by a reason formed by
 //   literals assigned to true at lower trail indices.
 // - Because this is the first non-symmetric literal for 'p', the permuted
-//   reason only contains literal that are also assigned to true.
+//   reason only contains literals that are also assigned to true.
 // - Because of this, 'p(l)' is also implied by the current assignment.
-//   Of course, this assume that p is a symmetry of the full problem.
+//   Of course, this assumes that p is a symmetry of the full problem.
 //   Note that if it is already assigned to false, then we have a conflict.
 //
 // TODO(user): Implement the optimizations mentioned in the paper?
@@ -63,7 +63,7 @@ namespace sat {
 // component of a problem, our current mechanism is to fix variables to an
 // optimal solution of that component. But when we do that we cannot assume this
 // fixing was derived from the problem alone and is compatible with the
-// symmetries. Basically, this propagator will derive wrong conclusion... This
+// symmetries. Basically, this propagator will derive a wrong conclusion... This
 // should be relatively easy by just disabling propagation on some Booleans.
 class SymmetryPropagator : public SatPropagator {
  public:
@@ -102,8 +102,8 @@ class SymmetryPropagator : public SatPropagator {
   // When the loader runs the symmetry detection code, it can only take into
   // account the variables that existed at that time, even if some code paths
   // will create new booleans later. Those new booleans might not be invariant
-  // under the symmetry that were detected, which might lead this propagator to
-  // propagate wrong clauses. This method allows to specify that all literals
+  // under the symmetries that were detected, which might lead this propagator
+  // to propagate wrong clauses. This method allows to specify that all literals
   // from 0 to `num_literals-1` were known when the symmetry detection code ran.
   //
   // For example, suppose we have a model with three literals: lit0, lit1 and
@@ -172,7 +172,7 @@ class SymmetryPropagator : public SatPropagator {
                std::vector<AssignedLiteralInfo>* p_trail);
 
   // The identity permutation over all the literals.
-  // This is temporary modified to encode a sparse permutation and then always
+  // This is temporarily modified to encode a sparse permutation and then always
   // restored to the identity.
   mutable util_intops::StrongVector<LiteralIndex, Literal> tmp_literal_mapping_;
 

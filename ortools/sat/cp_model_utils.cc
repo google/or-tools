@@ -1081,7 +1081,7 @@ bool ModelIsPureSat(const CpModelProto& cp_model, int* num_clauses) {
 
 void ConvertSatCpModelProtoToClauses(
     const CpModelProto& cp_model,
-    std::function<void(const std::vector<Literal>&)> add_clause) {
+    const std::function<void(const std::vector<Literal>&)>& add_clause) {
   const int num_vars = cp_model.variables().size();
   for (int v = 0; v < num_vars; ++v) {
     const auto& domain = cp_model.variables(v).domain();
@@ -1216,9 +1216,51 @@ AffineExpr GetAffineExpr(const LinearExpressionProto& expr) {
   if (expr.vars().empty()) {
     return AffineExpr{.var = -1, .coeff = 0, .offset = expr.offset()};
   }
-  const int64_t coeff = expr.coeffs().empty() ? 1 : expr.coeffs(0);
+  CHECK_EQ(expr.coeffs().size(), 1);
   return AffineExpr{
-      .var = expr.vars(0), .coeff = coeff, .offset = expr.offset()};
+      .var = expr.vars(0), .coeff = expr.coeffs(0), .offset = expr.offset()};
+}
+
+std::string AffineExpr::ToString() const {
+  if (var < 0 || coeff == 0) {
+    return absl::StrCat(offset);
+  }
+  const std::string offset_str =
+      offset > 0 ? absl::StrCat(" + ", offset)
+                 : (offset < 0 ? absl::StrCat(" - ", -offset) : "");
+  if (coeff == 1) return absl::StrCat("X", var, offset_str);
+  if (coeff == -1) return absl::StrCat("-X", var, offset_str);
+  return absl::StrCat(coeff, " * X", var, offset_str);
+}
+
+int64_t GetAffineExprMin(const AffineExpr& expr,
+                         const CpModelProto& model_proto) {
+  DCHECK_LE(expr.var, model_proto.variables_size());
+  if (expr.var < 0) return expr.offset;
+  const auto& var_proto = model_proto.variables(expr.var);
+  CHECK(!var_proto.domain().empty());
+  if (expr.coeff >= 0) {
+    const int64_t d_min = var_proto.domain(0);
+    return expr.coeff * d_min + expr.offset;
+  } else {
+    const int64_t d_max = var_proto.domain(var_proto.domain_size() - 1);
+    return expr.coeff * d_max + expr.offset;
+  }
+}
+
+int64_t GetAffineExprMax(const AffineExpr& expr,
+                         const CpModelProto& model_proto) {
+  DCHECK_LE(expr.var, model_proto.variables_size());
+  if (expr.var < 0) return expr.offset;
+  const auto& var_proto = model_proto.variables(expr.var);
+  CHECK(!var_proto.domain().empty());
+  if (expr.coeff >= 0) {
+    const int64_t d_max = var_proto.domain(var_proto.domain_size() - 1);
+    return expr.coeff * d_max + expr.offset;
+  } else {
+    const int64_t d_min = var_proto.domain(0);
+    return expr.coeff * d_min + expr.offset;
+  }
 }
 
 }  // namespace sat

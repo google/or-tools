@@ -510,7 +510,7 @@ TEST(ReservoirExpandTest, ExpandReservoirUsingSumWithEnforcementLiteral) {
   const CpSolverResponse response =
       SolveAndCheck(initial_model, "cp_model_presolve:false", &solutions);
   EXPECT_EQ(OPTIMAL, response.status());
-  // There is a single solution when the constraint is enforced. Otherwise the
+  // There is a single solution when the constraint is enforced. Otherwise
   // all the variable values are possible.
   EXPECT_EQ(1 + 2 * 2, solutions.size());
 }
@@ -1439,7 +1439,7 @@ TEST(AutomatonExpandTest, LoopingAutomatonMultipleFinalStates) {
 }
 
 TEST(AutomatonExpandTest, LoopingAutomatonMultipleFinalStatesNegatedVariables) {
-  // These automaton accept "0*(12)+0*".
+  // This automaton accepts "0*(12)+0*".
   CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 2 ] }
     variables { domain: [ -2, 0 ] }
@@ -1498,8 +1498,8 @@ TEST(AutomatonExpandTest, LoopingAutomatonMultipleFinalStatesNegatedVariables) {
 }
 
 TEST(AutomatonExpandTest, AnotherAutomaton) {
-  // This accept everything that does not contain 4 consecutives 1 or 4
-  // consecutives 2.
+  // This accepts everything that does not contain 4 consecutive 1s or 4
+  // consecutive 2s.
   CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 2 ] }
     variables { domain: [ 0, 2 ] }

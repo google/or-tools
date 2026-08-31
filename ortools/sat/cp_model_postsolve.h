@@ -27,12 +27,12 @@ namespace sat {
 
 // Postsolves the given response using information filled by our presolver.
 //
-// This works as follow:
+// This works as follows:
 // - First we fix fixed variables of the mapping_model according to the solution
 //   of the presolved problem and the index mapping.
 // - Then, we process the mapping constraints in "reverse" order, and unit
 //   propagate each of them when necessary. By construction this should never
-//   give rise to any conflicts. And after each constraints, we should have
+//   give rise to any conflicts. And after each constraint, we should have
 //   a feasible solution to the presolved problem + all already postsolved
 //   constraints. This is the invariant we maintain.
 // - Finally, we arbitrarily fix any free variables left and update the given
@@ -48,9 +48,10 @@ void PostsolveResponse(int64_t num_variables_in_original_model,
                        absl::Span<const int> postsolve_mapping,
                        std::vector<int64_t>* solution);
 
-// Try to postsolve with a "best-effort" the reduced domain from the presolved
-// model to the user given model. See the documentation of the CpSolverResponse
-// tightened_variables field for more information on the caveats.
+// Tries to postsolve on a "best-effort" basis the reduced domains from the
+// presolved model to the user given model. See the documentation of the
+// CpSolverResponse tightened_variables field for more information on the
+// caveats.
 void FillTightenedDomainInResponse(const CpModelProto& original_model,
                                    const CpModelProto& mapping_proto,
                                    absl::Span<const int> postsolve_mapping,

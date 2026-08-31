@@ -33,14 +33,14 @@
 namespace operations_research {
 namespace sat {
 
-// Implement the SAT branching policy responsible for deciding the next Boolean
+// Implements the SAT branching policy responsible for deciding the next Boolean
 // variable to branch on, and its polarity (true or false).
 class SatDecisionPolicy {
  public:
   explicit SatDecisionPolicy(Model* model);
 
   // Notifies that more variables are now present. Note that currently this may
-  // change the current variable order because the priority queue need to be
+  // change the current variable order because the priority queue needs to be
   // reconstructed.
   void IncreaseNumVariables(int num_variables);
 
@@ -51,8 +51,8 @@ class SatDecisionPolicy {
   // this policy is not used at all.
   void ResetDecisionHeuristic();
 
-  // Returns next decision to branch upon. This shouldn't be called if all the
-  // variables are assigned.
+  // Returns the next decision to branch upon. This shouldn't be called if all
+  // the variables are assigned.
   Literal NextBranch();
 
   // Bumps the activity of all variables appearing in the conflict. All literals
@@ -86,16 +86,16 @@ class SatDecisionPolicy {
   }
 
   // Gives a hint so the solver tries to find a solution with the given literal
-  // set to true. Currently this take precedence over the phase saving heuristic
-  // and a variable with a preference will always be branched on according to
-  // this preference.
+  // set to true. Currently this takes precedence over the phase saving
+  // heuristic and a variable with a preference will always be branched on
+  // according to this preference.
   //
-  // The weight is used as a tie-breaker between variable with the same
-  // activities. Larger weight will be selected first. A weight of zero is the
+  // The weight is used as a tie-breaker between variables with the same
+  // activities. Larger weights will be selected first. A weight of zero is the
   // default value for the other variables.
   //
   // Note(user): Having a lot of different weights may slow down the priority
-  // queue operations if there is millions of variables.
+  // queue operations if there are millions of variables.
   void SetAssignmentPreference(Literal literal, float weight);
 
   // Returns the vector of the current assignment preferences.
@@ -138,7 +138,7 @@ class SatDecisionPolicy {
   // Computes an initial variable ordering.
   void InitializeVariableOrdering();
 
-  // Rescales activity value of all variables when one of them reached the max.
+  // Rescales activity values of all variables when one of them reached the max.
   void RescaleVariableActivities(double scaling_factor);
 
   // Reinitializes the initial polarity of all the variables with an index
@@ -164,8 +164,8 @@ class SatDecisionPolicy {
   const Trail& trail_;
   absl::BitGenRef random_;
 
-  // TODO(user): This is in term of proto indices. Ideally we would need
-  // CpModelMapping to map that to Booleans but this currently lead to cyclic
+  // TODO(user): This is in terms of proto indices. Ideally we would need
+  // CpModelMapping to map that to Booleans but this currently leads to cyclic
   // dependencies. For now we just assume one to one correspondence for the
   // first entries. This will only work on pure Boolean problems.
   SharedLsSolutionRepository* ls_hints_;
@@ -174,8 +174,8 @@ class SatDecisionPolicy {
   // holds the elements used by var_ordering_ (it uses pointers).
   //
   // Note that we recover the variable that a WeightedVarQueueElement refers to
-  // by its position in the queue_elements_ vector, and we can recover the later
-  // using (pointer - &queue_elements_[0]).
+  // by its position in the queue_elements_ vector, and we can recover the
+  // latter using (pointer - &queue_elements_[0]).
   struct WeightedVarQueueElement {
     // Interface for the IntegerPriorityQueue.
     int Index() const { return var.value(); }
@@ -185,10 +185,11 @@ class SatDecisionPolicy {
     //
     // Note(user): We used to also break ties using the variable index, however
     // this has two drawbacks:
-    // - On problem with many variables, this slow down quite a lot the priority
-    //   queue operations (which do as little work as possible and hence benefit
-    //   from having the majority of elements with a priority of 0).
-    // - It seems to be a bad heuristics. One reason could be that the priority
+    // - On problems with many variables, this slows down quite a lot the
+    //   priority queue operations (which do as little work as possible and
+    //   hence benefit from having the majority of elements with a priority of
+    //   0).
+    // - It seems to be a bad heuristic. One reason could be that the priority
     //   queue will automatically diversify the choice of the top variables
     //   amongst the ones with the same priority.
     //
@@ -232,20 +233,20 @@ class SatDecisionPolicy {
   // var_ordering_. Note that this is only accessed for assigned variables and
   // that for efficiency it is indexed by trail indices. If
   // pq_need_update_for_var_at_trail_index_[trail_->Info(var).trail_index] is
-  // true when we untrail var, then either var need to be inserted in the queue,
-  // or we need to notify that its priority has changed.
+  // true when we untrail var, then either var needs to be inserted in the
+  // queue, or we need to notify that its priority has changed.
   BitQueue64 pq_need_update_for_var_at_trail_index_;
 
   // Increment used to bump the variable activities.
   double variable_activity_increment_ = 1.0;
 
-  // Stores variable activity and the number of time each variable was "bumped".
-  // The later is only used with the ERWA heuristic.
+  // Stores variable activity and the number of times each variable was
+  // "bumped". The latter is only used with the ERWA heuristic.
   util_intops::StrongVector<BooleanVariable, double> activities_;
   util_intops::StrongVector<BooleanVariable, float> tie_breakers_;
   util_intops::StrongVector<BooleanVariable, int64_t> num_bumps_;
 
-  // If the polarity if forced (externally) we always use this first.
+  // If the polarity is forced (externally) we always use this first.
   Bitset64<BooleanVariable> has_forced_polarity_;
   Bitset64<BooleanVariable> forced_polarity_;
 
@@ -257,7 +258,7 @@ class SatDecisionPolicy {
 
   // Otherwise we follow var_polarity_ which is reset at the beginning of
   // each new polarity phase. This is also overwritten by phase saving.
-  // Each phase last for an arithmetically increasing number of conflicts.
+  // Each phase lasts for an arithmetically increasing number of conflicts.
   Bitset64<BooleanVariable> var_polarity_;
   bool maybe_enable_phase_saving_ = true;
   int64_t polarity_phase_ = 0;

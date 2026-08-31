@@ -58,7 +58,7 @@ class DratChecker {
   void AddProblemClause(absl::Span<const Literal> clause);
 
   // Adds a clause which is inferred from the problem clauses and the previously
-  // inferred clauses (that are have not been deleted). Inferred clauses must be
+  // inferred clauses (that have not been deleted). Inferred clauses must be
   // added after the problem clauses. Clauses with the Reverse Asymmetric
   // Tautology (RAT) property for literal l must start with this literal. The
   // given clause must not contain a literal and its negation. Must not be
@@ -115,7 +115,7 @@ class DratChecker {
     // deleted (see 'deleted_index'). If other copies are added after this
     // number reached 0, a new clause is added (because a Clause lifetime is a
     // single interval of ClauseIndex values; therefore, in order to represent a
-    // lifetime made of several intervals, several Clause are used).
+    // lifetime made of several intervals, several Clauses are used).
     int num_copies = 1;
 
     // The index in 'clauses_' from which this clause is deleted (inclusive).
@@ -193,7 +193,7 @@ class DratChecker {
   // Returns true if, by assigning all the literals of 'clause' to false, a
   // conflict can be found with boolean constraint propagation, using the non
   // deleted clauses whose index is strictly less than 'num_clauses'. If so,
-  // marks the clauses actually used in this process as needed to check to DRAT
+  // marks the clauses actually used in this process as needed to check the DRAT
   // proof.
   bool HasRupProperty(ClauseIndex num_clauses,
                       absl::Span<const Literal> clause);
@@ -262,7 +262,7 @@ class DratChecker {
   // constraint propagation, with high priority (unit clauses which are already
   // marked as needed for the proof are given higher priority than the others
   // during boolean constraint propagation. According to 'Trimming while
-  // Checking Clausal Proofs', this heuristics reduces the final number of
+  // Checking Clausal Proofs', this heuristic reduces the final number of
   // clauses that are marked as needed for the proof, and therefore the
   // verification time, in a majority of cases -- but not all).
   std::vector<LiteralToAssign> high_priority_literals_to_assign_;
@@ -276,7 +276,7 @@ class DratChecker {
   // second_watched_literal_index of each clause with at least two literals are
   // watched.
   // Invariant 2: watched literals are non-falsified if the clause is not
-  // satisfied (in more details: if a clause c is contained in
+  // satisfied (in more detail: if a clause c is contained in
   // 'watched_literals_[l]' for literal l, then either c is satisfied with
   // 'assignment_', or l is unassigned or assigned to true).
   util_intops::StrongVector<LiteralIndex, std::vector<ClauseIndex>>

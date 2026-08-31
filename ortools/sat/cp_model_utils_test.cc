@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/strings/str_format.h"
 #include "google/protobuf/descriptor.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
@@ -399,6 +400,81 @@ TEST(LargestConstraintTypeTest, IsCorrect) {
       << ") is not less than 2^kConstraintTypeBitSize ("
       << (1 << kConstraintTypeBitSize)
       << "). Please update kConstraintTypeBitSize.";
+}
+
+TEST(AffineExprTest, ToStringAndStringify) {
+  EXPECT_EQ((AffineExpr{.var = -1, .coeff = 0, .offset = 42}.ToString()), "42");
+  EXPECT_EQ((AffineExpr{.var = 5, .coeff = 0, .offset = 12}.ToString()), "12");
+  EXPECT_EQ((AffineExpr{.var = 3, .coeff = 1, .offset = 0}.ToString()), "X3");
+  EXPECT_EQ((AffineExpr{.var = 3, .coeff = 1, .offset = 5}.ToString()),
+            "X3 + 5");
+  EXPECT_EQ((AffineExpr{.var = 3, .coeff = 1, .offset = -5}.ToString()),
+            "X3 - 5");
+  EXPECT_EQ((AffineExpr{.var = 3, .coeff = -1, .offset = 0}.ToString()), "-X3");
+  EXPECT_EQ((AffineExpr{.var = 3, .coeff = -1, .offset = 5}.ToString()),
+            "-X3 + 5");
+  EXPECT_EQ((AffineExpr{.var = 3, .coeff = -1, .offset = -5}.ToString()),
+            "-X3 - 5");
+  EXPECT_EQ((AffineExpr{.var = 2, .coeff = 4, .offset = 0}.ToString()),
+            "4 * X2");
+  EXPECT_EQ((AffineExpr{.var = 2, .coeff = 4, .offset = 10}.ToString()),
+            "4 * X2 + 10");
+  EXPECT_EQ((AffineExpr{.var = 2, .coeff = 4, .offset = -10}.ToString()),
+            "4 * X2 - 10");
+  EXPECT_EQ(
+      absl::StrFormat("%v", AffineExpr{.var = 1, .coeff = 2, .offset = 3}),
+      "2 * X1 + 3");
+}
+
+TEST(AffineExprTest, EqualityAndHash) {
+  AffineExpr a{.var = 1, .coeff = 2, .offset = 3};
+  AffineExpr b{.var = 1, .coeff = 2, .offset = 3};
+  AffineExpr c{.var = 1, .coeff = 2, .offset = 4};
+  AffineExpr d{.var = 2, .coeff = 2, .offset = 3};
+  AffineExpr e{.var = 1, .coeff = 1, .offset = 3};
+
+  EXPECT_EQ(a, b);
+  EXPECT_NE(a, c);
+  EXPECT_NE(a, d);
+  EXPECT_NE(a, e);
+
+  absl::flat_hash_set<AffineExpr> expr_set;
+  expr_set.insert(a);
+  EXPECT_TRUE(expr_set.contains(b));
+  EXPECT_FALSE(expr_set.contains(c));
+}
+
+TEST(AffineExprTest, MinAndMaxEvaluation) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 2, 10 ] }
+    variables { domain: [ -5, 3 ] }
+    variables {}
+  )pb");
+
+  // Constant expression
+  AffineExpr constant_expr{.var = -1, .coeff = 0, .offset = 7};
+  EXPECT_EQ(GetAffineExprMin(constant_expr, model_proto), 7);
+  EXPECT_EQ(GetAffineExprMax(constant_expr, model_proto), 7);
+
+  // Out-of-bounds variable index
+  AffineExpr oob_expr{.var = 99, .coeff = 2, .offset = 5};
+  EXPECT_EQ(GetAffineExprMin(oob_expr, model_proto), 5);
+  EXPECT_EQ(GetAffineExprMax(oob_expr, model_proto), 5);
+
+  // Variable with empty domain
+  AffineExpr empty_domain_expr{.var = 2, .coeff = 2, .offset = 5};
+  EXPECT_EQ(GetAffineExprMin(empty_domain_expr, model_proto), 5);
+  EXPECT_EQ(GetAffineExprMax(empty_domain_expr, model_proto), 5);
+
+  // Positive coefficient: var 0 in [2, 10], 3 * X0 + 4 -> [10, 34]
+  AffineExpr pos_expr{.var = 0, .coeff = 3, .offset = 4};
+  EXPECT_EQ(GetAffineExprMin(pos_expr, model_proto), 10);
+  EXPECT_EQ(GetAffineExprMax(pos_expr, model_proto), 34);
+
+  // Negative coefficient: var 1 in [-5, 3], -2 * X1 + 1 -> [-5, 11]
+  AffineExpr neg_expr{.var = 1, .coeff = -2, .offset = 1};
+  EXPECT_EQ(GetAffineExprMin(neg_expr, model_proto), -5);
+  EXPECT_EQ(GetAffineExprMax(neg_expr, model_proto), 11);
 }
 
 }  // namespace

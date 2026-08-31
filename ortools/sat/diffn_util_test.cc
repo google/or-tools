@@ -440,7 +440,7 @@ TEST(CapacityProfileTest, ProfileWithMandatoryPart) {
                                   IntegerValue(1));
   std::vector<CapacityProfile::Rectangle> result;
 
-  // Add a dummy rectangle to test the result is cleared. result.push_bask(..);
+  // Add a dummy rectangle to test the result is cleared. result.push_back(..);
   result.push_back(
       CapacityProfile::Rectangle(IntegerValue(2), IntegerValue(3)));
 
@@ -604,7 +604,8 @@ TEST(GetMinimumOverlapTest, BasicTest) {
 
   RectangleInRange bigger =
       RectangleInRange::BiggestWithMinIntersection(r, range_ret, 7, 7);
-  // This should be a broader range but don't increase the minimum intersection.
+  // This should be a broader range but doesn't increase the minimum
+  // intersection.
   EXPECT_EQ(bigger.GetMinimumIntersection(r).Area(), 7 * 7);
   for (const auto& pos :
        {RectangleInRange::Corner::BOTTOM_LEFT,
@@ -885,7 +886,7 @@ TEST(ProbingRectangleTest, Random) {
     ReduceUntilDone(ranges, random);
     comprehensive_count += has_possible_conflict;
   }
-  LOG(INFO) << count << "/" << num_runs << " had an heuristic (out of "
+  LOG(INFO) << count << "/" << num_runs << " had a heuristic (out of "
             << comprehensive_count << " possible).";
 }
 
@@ -1179,8 +1180,8 @@ TEST(FindEmptySpaces, Random) {
         }
       }
 
-      // Check that the result is is not overlapping neither avec itself nor
-      // with the input.
+      // Check that the result is not overlapping with itself or with the
+      // input.
       absl::c_sort(all_rects, [](const Rectangle& a, const Rectangle& b) {
         return a.x_min < b.x_min;
       });
@@ -1188,7 +1189,7 @@ TEST(FindEmptySpaces, Random) {
           << "Overlap detected between empty spaces and/or occupied "
              "rectangles!";
 
-      // Check that the all bounding box area is covered.
+      // Check that the entire bounding box area is covered.
       EXPECT_EQ(occupied_area + empty_area, total_bb_area)
           << "Sum of areas does not match bounding box.";
     }

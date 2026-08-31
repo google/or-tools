@@ -34,7 +34,7 @@ namespace sat {
 
 // This postsolve is "special". If the clause is not satisfied, we fix the
 // first literal in the clause to true (even if it was fixed to false). This
-// allows to handle more complex presolve operations used by the SAT presolver.
+// allows handling more complex presolve operations used by the SAT presolver.
 //
 // Also, any "free" Boolean should be fixed to some value for the subsequent
 // postsolve steps.
@@ -50,7 +50,7 @@ void PostsolveClause(const ConstraintProto& ct, std::vector<Domain>* domains) {
         satisfied = true;
       }
     } else {
-      // We still need to assign free variable.
+      // We still need to assign free variables.
       //
       // It is important to set its value so that the literal in the clause is
       // false, so that we support the "filter_sat_postsolve_clauses" option and
@@ -120,8 +120,8 @@ void SetEnforcementLiteralToFalse(const ConstraintProto& ct,
   }
 }
 
-// Here we simply assign all non-fixed variable to a feasible value. Which
-// should always exists by construction.
+// Here we simply assign all non-fixed variables to a feasible value, which
+// should always exist by construction.
 void PostsolveLinear(const ConstraintProto& ct, std::vector<Domain>* domains) {
   int64_t fixed_activity = 0;
   const int size = ct.linear().vars().size();
@@ -140,7 +140,7 @@ void PostsolveLinear(const ConstraintProto& ct, std::vector<Domain>* domains) {
     }
   }
 
-  // Tricky: We sometime push two constraints for postsolve:
+  // Tricky: We sometimes push two constraints for postsolve:
   // 1/ l      =>   A
   // 2/ not(l) =>   B
   // if B is true, it is better to fix `l` so that the constraint 2/ is
@@ -189,23 +189,23 @@ void PostsolveLinear(const ConstraintProto& ct, std::vector<Domain>* domains) {
   // variable, we have to postsolve them one by one.
   //
   // Here we recompute the same domains as during the presolve. Everything is
-  // like if we where substituting the variable one by one:
+  // as if we were substituting the variables one by one:
   //    terms[i] + fixed_activity \in rhs_domains[i]
   // In the reverse order.
   std::vector<Domain> rhs_domains;
   rhs_domains.push_back(initial_rhs);
   for (int i = 0; i + 1 < free_vars.size(); ++i) {
-    // Note that these should be exactly the same computation as the one done
+    // Note that these should be exactly the same computation as the ones done
     // during presolve and should be exact. However, we have some tests that do
     // not comply, so we don't check exactness here. Also, as long as we don't
-    // get empty domain below, and the complexity of the domain do not explode
-    // here, we should be fine.
+    // get empty domain below, and the complexity of the domains does not
+    // explode here, we should be fine.
     Domain term = (*domains)[free_vars[i]].MultiplicationBy(-free_coeffs[i]);
     rhs_domains.push_back(term.AdditionWith(rhs_domains.back()));
   }
   std::vector<int64_t> values(free_vars.size());
   for (int i = free_vars.size() - 1; i >= 0; --i) {
-    // Choose a value for free_vars[i] that fall into rhs_domains[i] -
+    // Choose a value for free_vars[i] that falls into rhs_domains[i] -
     // fixed_activity. This will crash if the intersection is empty, but it
     // shouldn't be.
     const int var = free_vars[i];
@@ -215,9 +215,9 @@ void PostsolveLinear(const ConstraintProto& ct, std::vector<Domain>* domains) {
                               .InverseMultiplicationBy(coeff)
                               .IntersectionWith((*domains)[var]);
 
-    // TODO(user): I am not 100% that the algo here might cover all the presolve
-    // case, so if this fail, it might indicate an issue here and not in the
-    // presolve/solver code.
+    // TODO(user): I am not 100% sure that the algo here might cover all the
+    // presolve cases, so if this fails, it might indicate an issue here and not
+    // in the presolve/solver code.
     if (domain.IsEmpty()) {
       LOG(INFO) << "Empty domain while trying to assign " << var;
       for (int i = 0; i < size; ++i) {
@@ -270,13 +270,13 @@ bool LinearExpressionIsFixed(const LinearExpressionProto& expr,
 }  // namespace
 
 // Compute the max of each expression, and assign it to the target expr. We only
-// support post-solving the case where whatever the value of all expression,
+// support post-solving the case where whatever the value of all expressions,
 // there will be a valid target.
 void PostsolveLinMax(const ConstraintProto& ct, std::vector<Domain>* domains) {
   int64_t max_value = kint64min;
   for (const LinearExpressionProto& expr : ct.lin_max().exprs()) {
-    // In most case all expression are fixed, except in the corner case where
-    // one of the expression refer to the target itself !
+    // In most cases all expressions are fixed, except in the corner case where
+    // one of the expressions refers to the target itself!
     max_value = std::max(max_value, EvaluateLinearExpression(expr, *domains));
   }
 
@@ -290,7 +290,7 @@ void PostsolveLinMax(const ConstraintProto& ct, std::vector<Domain>* domains) {
   (*domains)[target.vars(0)] = Domain(max_value);
 }
 
-// We only support 2 cases:  either the index was removed, of the target, not
+// We only support 2 cases: either the index was removed, or the target, not
 // both.
 void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
   const LinearExpressionProto& index = ct.element().linear_index();
@@ -416,7 +416,7 @@ void PostsolveResponse(const int64_t num_variables_in_original_model,
   for (int i = num_constraints - 1; i >= 0; i--) {
     const ConstraintProto& ct = mapping_proto.constraints(i);
 
-    // We ignore constraint with an enforcement literal set to false. If the
+    // We ignore constraints with an enforcement literal set to false. If the
     // enforcement is still unclear, we still process this constraint.
     bool constraint_can_be_ignored = false;
     for (const int enf : ct.enforcement_literal()) {
@@ -430,8 +430,8 @@ void PostsolveResponse(const int64_t num_variables_in_original_model,
       }
     }
 
-    // Special case for enforced linear1, we don't fix variable, we just
-    // restrict the domain....
+    // Special case for enforced linear1, we don't fix variables, we just
+    // restrict the domain...
     if (ct.constraint_case() == ConstraintProto::kLinear &&
         ct.linear().vars().size() == 1 && !ct.enforcement_literal().empty()) {
       if (constraint_can_be_ignored) continue;
@@ -495,7 +495,7 @@ void PostsolveResponse(const int64_t num_variables_in_original_model,
   }
 
   // Fill the response.
-  // Maybe fix some still unfixed variable.
+  // Maybe fix some still unfixed variables.
   solution->clear();
   CHECK_LE(num_variables_in_original_model, domains.size());
   for (int i = 0; i < num_variables_in_original_model; ++i) {
@@ -532,10 +532,10 @@ void FillTightenedDomainInResponse(const CpModelProto& original_model,
   if (!search_domains.empty()) {
     if (postsolve_mapping.empty()) {
       // Currently no mapping should mean all variables are in common. This
-      // happen when presolve is disabled, but we might still have more
+      // happens when presolve is disabled, but we might still have more
       // variables due to expansion for instance.
       //
-      // There is also the corner case of presolve closing the problem,
+      // There is also the corner case of presolve closing the problem.
       CHECK_GE(search_domains.size(), num_original_vars);
       num_common_vars = num_original_vars;
       for (int i = 0; i < num_original_vars; ++i) {
@@ -573,7 +573,7 @@ void FillTightenedDomainInResponse(const CpModelProto& original_model,
         if (v1 < num_original_vars && v2 >= num_original_vars) {
           // We can reduce the domain of v1 by using the affine relation
           // and the domain of v2.
-          // We have c1 * v2 + c2 * v2 = offset;
+          // We have c1 * v1 + c2 * v2 = offset;
           const int64_t offset = lin.domain(0);
           const Domain restriction =
               Domain(offset)
@@ -590,7 +590,7 @@ void FillTightenedDomainInResponse(const CpModelProto& original_model,
 
   // Copy the names and replace domains.
   *response->mutable_tightened_variables() = original_model.variables();
-  int num_tigher_domains = 0;
+  int num_tighter_domains = 0;
   int num_empty = 0;
   int num_fixed = 0;
   for (int i = 0; i < num_original_vars; ++i) {
@@ -604,7 +604,7 @@ void FillTightenedDomainInResponse(const CpModelProto& original_model,
     const Domain original = ReadDomainFromProto(original_model.variables(i));
     if (domains[i] != original) {
       DCHECK(domains[i].IsIncludedIn(original));
-      ++num_tigher_domains;
+      ++num_tighter_domains;
     }
   }
 
@@ -612,10 +612,10 @@ void FillTightenedDomainInResponse(const CpModelProto& original_model,
   if (num_empty > 0) {
     SOLVER_LOG(logger, num_empty,
                " tightened domains are empty. This should not happen except if "
-               "we proven infeasibility or optimality.");
+               "we proved infeasibility or optimality.");
   }
   SOLVER_LOG(logger, "Filled tightened domains in the response.");
-  SOLVER_LOG(logger, "[TighteningInfo] num_tighter:", num_tigher_domains,
+  SOLVER_LOG(logger, "[TighteningInfo] num_tighter:", num_tighter_domains,
              " num_fixed:", num_fixed,
              " num_affine_reductions:", num_affine_reductions);
   SOLVER_LOG(logger,

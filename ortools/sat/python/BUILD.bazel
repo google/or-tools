@@ -20,6 +20,8 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
 
+package(default_visibility = ["//visibility:public"])
+
 # This file is generated manually by running pybind11_mkdoc on linear_expr.h
 cc_library(
     name = "linear_expr_doc",
@@ -99,7 +101,6 @@ cc_binary(
     name = "gen_proto_builder_pybind11",
     srcs = ["gen_proto_builder_pybind11.cc"],
     deps = [
-        "//ortools/base",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util/python:wrappers",
@@ -141,7 +142,6 @@ pybind_extension(
         "//ortools/sat:swig_helper",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
-        "//ortools/util/python:sorted_interval_list",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/functional:any_invocable",
         "@abseil-cpp//absl/log:check",
@@ -155,9 +155,9 @@ py_test(
     srcs = ["cp_model_helper_test.py"],
     deps = [
         ":cp_model_helper",
-        requirement("absl-py"),
-        requirement("numpy"),
         "//ortools/util/python:sorted_interval_list",
+        requirement("absl-py"),
+        requirement("numpy"),  # buildcleaner: keep
     ],
 )
 

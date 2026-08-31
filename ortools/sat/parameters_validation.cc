@@ -120,7 +120,7 @@ std::string ValidateParameters(const SatParameters& params) {
                 log2(kMaxReasonableParallelism));
 
   // TODO(user): Consider using annotations directly in the proto for these
-  // validation. It is however not open sourced.
+  // validations. It is however not open sourced.
   TEST_IN_RANGE(mip_max_activity_exponent, 1, 62);
   TEST_IN_RANGE(mip_max_bound, 0, 1e17);
   TEST_IN_RANGE(solution_pool_size, 1, kint32max);

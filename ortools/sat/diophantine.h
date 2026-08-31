@@ -29,9 +29,9 @@ namespace operations_research::sat {
 //  * * B 0 0 0 0
 //  * * * C 0 0 0
 //  .............
-// with non-zero pivots elements A, B, C, ... and the reduction is performed in
-// such a way that for a pivot P of the basis and the correspond entry x of v at
-// the end of the reduction, we have
+// with non-zero pivot elements A, B, C, ... and the reduction is performed in
+// such a way that for a pivot P of the basis and the corresponding entry x of v
+// at the end of the reduction, we have
 //     -floor(|P|/2) <= v < ceil(|P|/2).
 void ReduceModuloBasis(absl::Span<const std::vector<absl::int128>> basis,
                        int elements_to_consider, std::vector<absl::int128>& v);
@@ -43,7 +43,7 @@ void ReduceModuloBasis(absl::Span<const std::vector<absl::int128>> basis,
 // is equal to the absolute value of one of the coefficients.
 std::vector<int> GreedyFastDecreasingGcd(absl::Span<const int64_t> coeffs);
 
-// The comments here describe basic feature of the fields. See more details in
+// The comments here describe basic features of the fields. See more details in
 // the description of the function below SolveDiophantine.
 struct DiophantineSolution {
   // One of the coefficients is equal to the GCD of all coefficients.
@@ -85,25 +85,25 @@ struct DiophantineSolution {
 //  1. either empty if the gcd(coeffs[i]) does not divide rhs;
 //  2. or the sum of a special solution and an element of the kernel of the
 //     equation.
-// In case 1, the function return .has_solution = false;
+// In case 1, the function returns .has_solutions = false;
 // In case 2, if one coefficient is equal to the GCD of all (in absolute value),
 // returns .no_reformulation_needed = true. Otherwise, it behaves as follows:
 //
-// The kernel of the equation as dimension n-1.
+// The kernel of the equation has dimension n-1.
 //
-// We assume we permute the variable by index_permutation, such that the first k
-// k terms have a gcd equal to the gcd of all coefficient (it is possible to do
+// We assume we permute the variables by index_permutation, such that the first
+// k terms have a gcd equal to the gcd of all coefficients (it is possible to do
 // this with k <= 15).
 // Under this assumption, we can find:
-//  * a special solution that is entirely supported by the k first variables;
+//  * a special solution that is entirely supported by the first k variables;
 //  * a basis {b[0], b[1], ..., b[n-2]} of the kernel such that:
 //    - for i  = 0 ... k-2, b[i][j] = 0 if j > i+1;
 //    - for i >= k-1, b[i][j] = 0 if j >= k except b[i][i+1] = 1.
-// The function returns the k first coefficients of the special solution and the
-// at most k first non-zero coefficients of each elements of the basis.
+// The function returns the first k coefficients of the special solution and the
+// at most k first non-zero coefficients of each element of the basis.
 //
 // In other terms, solutions have the form, for i in [0, k):
-//  x[i] = special_solution[i] + sum(sum linear_basis[j][i] * y[j])
+//  x[i] = special_solution[i] + sum(kernel_basis[j][i] * y[j])
 // where:
 //  * y[j] is a newly created variable for 0 <= j < k - 1;
 //  * y[j] = x[index_permutation[j + 1]] otherwise.
@@ -114,12 +114,12 @@ struct DiophantineSolution {
 // of each element of the basis (see ReduceModuloBasis for more specific
 // conditions).
 //
-// Moreover, the function compute bounds for the newly created variables using
+// Moreover, the function computes bounds for the newly created variables using
 // bounds of the variables passed as input. Note that:
 //  * It can happen that a computed upper bound is lower than the corresponding
 //    lower bound. It happens when a newly created variable can be bounded on an
 //    interval containing no integer. In such a case, the function returns
-//    .has_solution = false.
+//    .has_solutions = false.
 //  * The returned bounds describe a necessary condition for
 //      x[i] in [var_lbs[i], var_ubs[i]]
 //    but not a sufficient one.

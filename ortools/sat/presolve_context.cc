@@ -58,7 +58,7 @@
 #include "ortools/util/time_limit.h"
 
 ABSL_FLAG(bool, cp_model_debug_postsolve, false,
-          "DEBUG ONLY. When set to true, the mapping_model.proto will contains "
+          "DEBUG ONLY. When set to true, the mapping_model.proto will contain "
           "file:line of the code that created that constraint. This is helpful "
           "for debugging postsolve");
 
@@ -89,7 +89,7 @@ void LazyConstraintVariableGraph::UpdateLinear1Usage(const ConstraintProto& ct,
 }
 
 void LazyConstraintVariableGraph::MaybeResizeIntervalData() {
-  // Lazy allocation so that we only do that if there are some interval.
+  // Lazy allocation so that we only do that if there are some intervals.
   const int num_constraints = constraint_to_vars_.size();
   if (constraint_to_intervals_.size() != num_constraints) {
     constraint_to_intervals_.resize(num_constraints);
@@ -118,7 +118,7 @@ void LazyConstraintVariableGraph::AddVariableUsage(int c) {
 
 #ifdef CHECK_HINT
   //  Crash if the loaded hint is infeasible for this constraint.
-  //  This is helpful to debug a wrong presolve that kill a feasible solution.
+  //  This is helpful to debug a wrong presolve that kills a feasible solution.
   if (cp_model_.has_solution_hint() && solution_crush_.SolutionIsLoaded() &&
       !ConstraintIsFeasible(cp_model_, ct, solution_crush_.GetVarValues())) {
     LOG(FATAL) << "Hint infeasible for constraint #" << c << " : "
@@ -174,7 +174,7 @@ void LazyConstraintVariableGraph::UpdateConstraintVariableUsage(int c) {
 
 #ifdef CHECK_HINT
   // Crash if the loaded hint is infeasible for this constraint.
-  // This is helpful to debug a wrong presolve that kill a feasible solution.
+  // This is helpful to debug a wrong presolve that kills a feasible solution.
   if (cp_model_.has_solution_hint() && solution_crush_.SolutionIsLoaded() &&
       !ConstraintIsFeasible(cp_model_, ct, solution_crush_.GetVarValues())) {
     LOG(FATAL) << "Hint infeasible for constraint #" << c << " : "
@@ -572,7 +572,7 @@ int64_t PresolveContext::SizeMax(int ct_ref) const {
 }
 
 // Tricky: If this variable is equivalent to another one (but not the
-// representative) and appear in just one constraint, then this constraint must
+// representative) and appears in just one constraint, then this constraint must
 // be the affine defining one. And in this case the code using this function
 // should do the proper stuff.
 bool PresolveContext::VariableIsUnique(int ref) const {
@@ -602,7 +602,7 @@ bool PresolveContext::VariableWithCostIsUniqueAndRemovable(int ref) const {
 }
 
 // Here, even if the variable is equivalent to others, if its affine defining
-// constraints where removed, then it is not needed anymore.
+// constraints were removed, then it is not needed anymore.
 bool PresolveContext::VariableIsNotUsedAnymore(int ref) const {
   return graph_.VarToConstraints(PositiveRef(ref)).empty();
 }
@@ -684,14 +684,14 @@ ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
   modified_domains.Set(var);
   if (domains_[var].IsEmpty()) {
     return NotifyThatModelIsUnsat(
-        absl::StrCat("var #", ref, " as empty domain after intersecting with ",
+        absl::StrCat("var #", ref, " has empty domain after intersecting with ",
                      domain.ToString()));
   }
 
   solution_crush_.SetOrUpdateVarToDomain(var, domains_[var]);
 
   // Propagate the domain of the representative right away.
-  // Note that the recursive call should only by one level deep.
+  // Note that the recursive call should only be one level deep.
   const AffineRelation::Relation r = GetAffineRelation(var);
   if (r.representative == var) return true;
   return IntersectDomainWith(r.representative,
@@ -710,7 +710,7 @@ ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
     } else {
       return NotifyThatModelIsUnsat(absl::StrCat(
           ProtobufShortDebugString(expr),
-          " as empty domain after intersecting with ", domain.ToString()));
+          " has empty domain after intersecting with ", domain.ToString()));
     }
   }
   if (expr.vars().size() == 1) {  // Affine
@@ -720,7 +720,7 @@ ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
                                domain_modified);
   }
 
-  // We don't do anything for longer expression for now.
+  // We don't do anything for longer expressions for now.
   return true;
 }
 
@@ -788,7 +788,7 @@ bool PresolveContext::MarkConstraintAsEquivalentToLinear(
     return MarkConstraintAsFalse(ct, reason);
   }
   const LinearExpressionProto expr_copy = expr;
-  ct->mutable_linear()->Clear();  // This clear the other one_of possibilities.
+  ct->mutable_linear()->Clear();  // This clears the other one_of possibilities.
   FillDomainInProto(intersection, ct->mutable_linear());
   AddLinearExpressionToLinearConstraint(expr_copy, 1, ct->mutable_linear());
   UpdateRuleStats(reason);
@@ -847,15 +847,15 @@ bool PresolveContext::HasUnusedAffineVariable() const {
   return false;
 }
 
-// If a Boolean variable (one with domain [0, 1]) appear in this affine
+// If a Boolean variable (one with domain [0, 1]) appears in this affine
 // equivalence class, then we want its representative to be Boolean. Note that
 // this is always possible because a Boolean variable can never be equal to a
 // multiple of another if std::abs(coeff) is greater than 1 and if it is not
-// fixed to zero. This is important because it allows to simply use the same
+// fixed to zero. This is important because it allows simply using the same
 // representative for any referenced literals.
 //
-// Note(user): When both domain contains [0,1] and later the wrong variable
-// become usable as boolean, then we have a bug. Because of that, the code
+// Note(user): When both domains contain [0,1] and later the wrong variable
+// becomes usable as boolean, then we have a bug. Because of that, the code
 // for GetLiteralRepresentative() is not as simple as it should be.
 bool PresolveContext::AddRelation(int x, int y, int64_t c, int64_t o,
                                   AffineRelation* repo) {
@@ -881,13 +881,13 @@ bool PresolveContext::AddRelation(int x, int y, int64_t c, int64_t o,
   bool allow_rep_x = m_x < m_y;
   bool allow_rep_y = m_y < m_x;
   if (m_x == m_y) {
-    // If both magnitude are the same, we prefer a positive domain.
+    // If both magnitudes are the same, we prefer a positive domain.
     // This is important so we don't use [-1, 0] as a representative for [0, 1].
     allow_rep_x = MinOf(rep_x) >= MinOf(rep_y);
     allow_rep_y = MinOf(rep_y) >= MinOf(rep_x);
   }
   if (allow_rep_x && allow_rep_y) {
-    // If both representative are okay, we force the choice to the variable
+    // If both representatives are okay, we force the choice to the variable
     // with lower index. This is needed because we have two "equivalence"
     // relations, and we want the same representative in both.
     if (rep_x < rep_y) {
@@ -955,9 +955,9 @@ void PresolveContext::RemoveNonRepresentativeAffineVariableIfUnused(int var) {
   RemoveVariableFromAffineRelation(var);
 }
 
-// We only call that for a non representative variable that is only used in
-// the kAffineRelationConstraint. Such variable can be ignored and should never
-// be seen again in the presolve.
+// We only call that for a non-representative variable that is only used in
+// the kAffineRelationConstraint. Such a variable can be ignored and should
+// never be seen again in the presolve.
 void PresolveContext::RemoveVariableFromAffineRelation(int var) {
   const int rep = GetAffineRelation(var).representative;
 
@@ -1041,7 +1041,7 @@ bool PresolveContext::CanonicalizeAffineVariable(int ref, int64_t coeff,
   // We have var = mod * X + offset.
   const int64_t offset = ProductWithModularInverse(coeff, mod, rhs);
 
-  // Lets create a new integer variable and add the affine relation.
+  // Let's create a new integer variable and add the affine relation.
   const Domain new_domain =
       DomainOf(var).AdditionWith(Domain(-offset)).InverseMultiplicationBy(mod);
   if (new_domain.IsEmpty()) {
@@ -1056,8 +1056,8 @@ bool PresolveContext::CanonicalizeAffineVariable(int ref, int64_t coeff,
   }
 
   // We make sure the new variable has a domain starting at zero to minimize
-  // future overflow issues. If it end up Boolean, it is also nice to be able to
-  // use it as such.
+  // future overflow issues. If it ends up Boolean, it is also nice to be able
+  // to use it as such.
   //
   // A potential problem with this is that it messes up the natural variable
   // order chosen by the modeler. We try to correct that when mapping variables
@@ -1164,7 +1164,7 @@ bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
     }
   }
 
-  // In this (rare) case, we need to canonicalize one of the variable that will
+  // In this (rare) case, we need to canonicalize one of the variables that will
   // become the representative for both.
   if (std::abs(a) > 1 && std::abs(b) > 1) {
     UpdateRuleStats("affine: created common representative");
@@ -1201,7 +1201,7 @@ bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
   CHECK(RefIsPositive(x));
   CHECK(RefIsPositive(y));
 
-  // Lets propagate domains first.
+  // Let's propagate domains first.
   if (!IntersectDomainWith(
           y, DomainOf(x).AdditionWith(Domain(-o)).InverseMultiplicationBy(c))) {
     return false;
@@ -1230,18 +1230,18 @@ bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
   CHECK(AddRelation(x, y, c, o, &affine_relations_));
   UpdateRuleStats("affine: new relation");
 
-  // Lets propagate again the new relation. We might as well do it as early
-  // as possible and not all call site do it.
+  // Let's propagate again the new relation. We might as well do it as early
+  // as possible and not all call sites do it.
   //
   // TODO(user): I am not sure this is needed given the propagation above.
   if (!PropagateAffineRelation(var_x)) return false;
   if (!PropagateAffineRelation(var_y)) return false;
 
-  // These maps should only contains representative, so only need to remap
+  // These maps should only contain representatives, so only need to remap
   // either x or y.
   const int rep = GetAffineRelation(x).representative;
 
-  // The domain didn't change, but this notification allows to re-process any
+  // The domain didn't change, but this notification allows re-processing any
   // constraint containing these variables. Note that we do not need to
   // retrigger a propagation of the constraint containing a variable whose
   // representative didn't change.
@@ -1285,17 +1285,17 @@ int PresolveContext::GetLiteralRepresentative(int ref) const {
 
   CHECK(CanBeUsedAsLiteral(ref));
   if (!CanBeUsedAsLiteral(r.representative)) {
-    // Note(user): This can happen is some corner cases where the affine
-    // relation where added before the variable became usable as Boolean. When
+    // Note(user): This can happen in some corner cases where the affine
+    // relations were added before the variable became usable as Boolean. When
     // this is the case, the domain will be of the form [x, x + 1] and should be
     // later remapped to a Boolean variable.
     return ref;
   }
 
   // We made sure that the affine representative can always be used as a
-  // literal. However, if some variable are fixed, we might not have only
+  // literal. However, if some variables are fixed, we might not have only
   // (coeff=1 offset=0) or (coeff=-1 offset=1) and we might have something like
-  // (coeff=8 offset=0) which is only valid for both variable at zero...
+  // (coeff=8 offset=0) which is only valid for both variables at zero...
   //
   // What is sure is that depending on the value, only one mapping can be valid
   // because r.coeff can never be zero.
@@ -1356,8 +1356,8 @@ void PresolveContext::InitializeNewDomains() {
   modified_domains.Resize(new_size);
   graph_.IncreaseNumVars(new_size);
 
-  // We mark the domain as modified so we will look at these new variable during
-  // our presolve loop.
+  // We mark the domain as modified so we will look at these new variables
+  // during our presolve loop.
   const int old_size = domains_.size();
   domains_.resize(new_size);
   for (int i = old_size; i < new_size; ++i) {
@@ -1534,13 +1534,13 @@ bool PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
     return IntersectDomainWith(var, Domain(value).Complement());
   }
 
-  // If an encoding already exist, make the two Boolean equals.
+  // If an encoding already exists, make the two Booleans equal.
   const auto [it, inserted] =
       var_map.insert(std::make_pair(value, SavedLiteral(literal)));
   if (!inserted) {
     const int previous_literal = it->second.Get(this);
 
-    // Ticky and rare: I have only observed this on the LNS of
+    // Tricky and rare: I have only observed this on the LNS of
     // radiation_m18_12_05_sat.fzn. The value was encoded, but maybe we never
     // used the involved variables / constraints, so it was removed (with the
     // encoding constraints) from the model already! We have to be careful.
@@ -1879,7 +1879,7 @@ int PresolveContext::GetOrCreateAffineValueEncoding(
 void PresolveContext::ReadObjectiveFromProto() {
   const CpObjectiveProto& obj = working_model_->objective();
 
-  // We do some small canonicalization here
+  // We do some small canonicalization here.
   objective_proto_is_up_to_date_ = false;
 
   objective_offset_ = obj.offset();
@@ -1905,7 +1905,7 @@ void PresolveContext::ReadObjectiveFromProto() {
     objective_domain_ = Domain::AllValues();
   }
 
-  // This is an upper bound of the higher magnitude that can be reach by
+  // This is an upper bound of the highest magnitude that can be reached by
   // summing an objective partial sum. Because of the model validation, this
   // shouldn't overflow, and we make sure it stays this way.
   objective_overflow_detection_ = std::abs(objective_integer_before_offset_);
@@ -1923,7 +1923,7 @@ void PresolveContext::ReadObjectiveFromProto() {
     }
 
     // We remove fixed terms as we read the objective. This can help a lot on
-    // LNS problems with a large proportions of fixed terms.
+    // LNS problems with a large proportion of fixed terms.
     if (IsFixed(var)) {
       fixed_terms += FixedValue(var) * coeff;
       continue;
@@ -1968,7 +1968,7 @@ bool PresolveContext::CanonicalizeOneObjectiveVariable(int var) {
   if (it == objective_map_.end()) return true;
   const int64_t coeff = it->second;
 
-  // If a variable only appear in objective, we can fix it!
+  // If a variable only appears in the objective, we can fix it!
   // Note that we don't care if it was in affine relation, because if none
   // of the relations are left, then we can still fix it.
   if (params_.cp_model_presolve() &&
@@ -1999,8 +1999,9 @@ bool PresolveContext::CanonicalizeOneObjectiveVariable(int var) {
 
   RemoveVariableFromObjective(var);
 
-  // After we removed the variable from the objective it might have become a
-  // unused affine. Add it to the list of variables to check so we reprocess it.
+  // After we removed the variable from the objective it might have become an
+  // unused affine variable. Add it to the list of variables to check so we
+  // reprocess it.
   modified_domains.Set(var);
 
   // Do the substitution.
@@ -2026,7 +2027,7 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
 
   // We replace each entry by its affine representative.
   // Note that the non-deterministic loop is fine, but because we iterate
-  // one the map while modifying it, it is safer to do a copy rather than to
+  // on the map while modifying it, it is safer to do a copy rather than to
   // try to handle that in one pass.
   tmp_entries_.clear();
   for (const auto& entry : objective_map_) {
@@ -2044,7 +2045,7 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
 
   // We only compute the min/max activity.
   // This doesn't require to sort to be deterministic, and should be good
-  // enough in most situation.
+  // enough in most situations.
   int64_t min_activity = 0;
   int64_t max_activity = 0;
   int64_t gcd(0);
@@ -2062,7 +2063,7 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
   Domain implied_domain(min_activity, max_activity);
 
   // This is the new domain.
-  // Note that the domain never include the offset.
+  // Note that the domain never includes the offset.
   objective_domain_ = objective_domain_.IntersectionWith(implied_domain);
 
   // Depending on the use case, we cannot do that.
@@ -2087,7 +2088,7 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
     // We update the integer offsets accordingly.
     //
     // We compute the old "a * objective_scaling_factor_ + b" offset and rewrite
-    // it in term of the new "objective_scaling_factor_".
+    // it in terms of the new "objective_scaling_factor_".
     const absl::int128 offset =
         absl::int128(objective_integer_before_offset_) *
             absl::int128(objective_integer_scaling_factor_) +
@@ -2107,9 +2108,9 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
     return NotifyThatModelIsUnsat("empty objective domain");
   }
 
-  // Detect if the objective domain do not limit the "optimal" objective value.
-  // If this is true, then we can apply any reduction that reduce the objective
-  // value without any issues.
+  // Detect if the objective domain does not limit the "optimal" objective
+  // value. If this is true, then we can apply any reduction that reduces the
+  // objective value without any issues.
   objective_domain_is_constraining_ =
       !implied_domain
            .IntersectionWith(Domain(kint64min, objective_domain_.Max()))
@@ -2278,7 +2279,7 @@ bool PresolveContext::SubstituteVariableInObjective(
     }
 
     // This is the new domain.
-    // Note that the domain never include the offset.
+    // Note that the domain never includes the offset.
     objective_domain_ = objective_domain_.IntersectionWith(implied_domain)
                             .SimplifyUsingImpliedDomain(implied_domain);
 
@@ -2286,8 +2287,8 @@ bool PresolveContext::SubstituteVariableInObjective(
       return NotifyThatModelIsUnsat("empty objective domain");
     }
 
-    // Detect if the objective domain do not limit the "optimal" objective
-    // value. If this is true, then we can apply any reduction that reduce the
+    // Detect if the objective domain does not limit the "optimal" objective
+    // value. If this is true, then we can apply any reduction that reduces the
     // objective value without any issues.
     objective_domain_is_constraining_ =
         !implied_domain
@@ -2332,7 +2333,7 @@ bool PresolveContext::ShiftCostInExactlyOne(absl::Span<const int> exactly_one,
                                             int64_t shift) {
   if (shift == 0) return true;
 
-  // We have to be careful because shifting cost like this might increase the
+  // We have to be careful because shifting costs like this might increase the
   // min/max possible activity of the sum.
   //
   // TODO(user): Be more precise with this objective_overflow_detection_ and
@@ -2383,13 +2384,13 @@ bool PresolveContext::ShiftCostInExactlyOne(absl::Span<const int> exactly_one,
     }
   }
 
-  // Note that the domain never include the offset, so we need to update it.
+  // Note that the domain never includes the offset, so we need to update it.
   if (offset != 0) AddToObjectiveOffset(offset);
 
   // When we shift the cost using an exactly one, our objective implied bounds
   // might be more or less precise. If the objective domain is not constraining
-  // (and thus just constraining the upper bound), we relax it to make sure its
-  // stay "non constraining".
+  // (and thus just constraining the upper bound), we relax it to make sure it
+  // stays "non constraining".
   //
   // TODO(user): This is a bit hacky, find a nicer way.
   if (!objective_domain_is_constraining_) {
@@ -2404,7 +2405,7 @@ void PresolveContext::WriteObjectiveToProto() const {
   objective_proto_is_up_to_date_ = true;
 
   // We need to sort the entries to be deterministic.
-  // Note that --cpu_profile shows it is slightly faster to only compare key.
+  // Note that --cpu_profile shows it is slightly faster to only compare keys.
   tmp_entries_.clear();
   tmp_entries_.reserve(objective_map_.size());
   for (const auto& entry : objective_map_) {
@@ -2514,7 +2515,7 @@ int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(
     CanonicalizeLinearConstraint(greater);
   }
 
-  // This is redundant but should improves performance.
+  // This is redundant but should improve performance.
   //
   // If GetOrCreateReifiedPrecedenceLiteral(time_j, time_i, active_j, active_i)
   // (the reverse precedence) has been called too, then we can link the two
@@ -2579,12 +2580,12 @@ void PresolveContext::LogInfo() {
 //
 // TODO(user): The model we load does not contain affine relations! But
 // ideally we should be able to remove all of them once we allow more complex
-// constraints to contains linear expression.
+// constraints to contain linear expressions.
 //
 // TODO(user): remove code duplication with cp_model_solver. Here we also do
 // not run the heuristic to decide which variable to fully encode.
 //
-// TODO(user): Maybe do not load slow to propagate constraints? for instance
+// TODO(user): Maybe do not load slow-to-propagate constraints? For instance
 // we do not use any linear relaxation here.
 bool LoadModelForProbing(PresolveContext* context, Model* local_model) {
   if (context->ModelIsUnsat()) return false;
@@ -2612,9 +2613,9 @@ bool LoadModelForPresolve(const CpModelProto& model_proto, SatParameters params,
   encoder->DisableImplicationBetweenLiteral();
   auto* mapping = local_model->GetOrCreate<CpModelMapping>();
 
-  // Important: Because the model_proto do not contains affine relation or the
-  // objective, we cannot call DetectOptionalVariables() ! This might wrongly
-  // detect optionality and derive bad conclusion.
+  // Important: Because the model_proto does not contain affine relations or the
+  // objective, we cannot call DetectOptionalVariables()! This might wrongly
+  // detect optionality and derive bad conclusions.
   LoadVariables(model_proto, /*view_all_booleans_as_integers=*/false,
                 local_model);
   ExtractEncoding(model_proto, local_model);
@@ -2686,7 +2687,7 @@ bool CanonicalizeLinearExpressionInternal(
     }
 
     // TODO(user): Avoid the quadratic loop for the corner case of many
-    // enforcement literal (this should be pretty rare though).
+    // enforcement literals (this should be pretty rare though).
     bool removed = false;
     for (const int enf : enforcements) {
       if (new_var == PositiveRef(enf)) {

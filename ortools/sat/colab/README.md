@@ -30,8 +30,8 @@ And paste the resulting url in your favorite environment, like visual studio cod
 We model the Hidato problem (https://en.wikipedia.org/wiki/Hidato).
 
 ```
-from google3.util.operations_research.sat.python import cp_model
-from google3.util.operations_research.sat.colab import visualization
+from google3.third_party.ortools.ortools.sat.python import cp_model
+from google3.third_party.ortools.ortools.sat.colab import visualization
 
 
 def BuildPairs(rows, cols):
@@ -178,8 +178,8 @@ This example demonstrates jobshop scheduling
 (https://en.wikipedia.org/wiki/Job_shop_scheduling)
 
 ```python
-from google3.util.operations_research.sat.python import cp_model
-from google3.util.operations_research.sat.colab import visualization
+from google3.third_party.ortools.ortools.sat.python import cp_model
+from google3.third_party.ortools.ortools.sat.colab import visualization
 
 def JobshopFT06():
   """Solves the ft06 jobshop from the jssp library.
@@ -262,8 +262,8 @@ exceed a max_width.
 The objective is to minimize the max end time of all jobs.
 
 ```
-from google3.util.operations_research.sat.python import cp_model
-from google3.util.operations_research.sat.colab import visualization
+from google3.third_party.ortools.ortools.sat.python import cp_model
+from google3.third_party.ortools.ortools.sat.colab import visualization
 
 
 def TwoMachineScheduling():

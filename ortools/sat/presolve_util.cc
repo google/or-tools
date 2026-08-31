@@ -222,7 +222,7 @@ bool SubstituteVariable(int var, int64_t var_coeff_in_definition,
     const int ref = ct->linear().vars(i);
     if (!RefIsPositive(ref)) return false;
     if (ref == var) {
-      // If var appear multiple time, we add all its coefficients.
+      // If var appears multiple times, we add all its coefficients.
       var_coeff += ct->linear().coeffs(i);
     }
   }
@@ -317,9 +317,9 @@ int64_t ActivityBoundHelper::ComputeActivity(
   return offset + internal_result;
 }
 
-// Use trivial heuristic for now:
+// Use a trivial heuristic for now:
 // - Sort by decreasing coeff.
-// - If belong to a chosen part, use it.
+// - If it belongs to a chosen part, use it.
 // - If not, choose biggest part left. TODO(user): compute sum of coeff in part?
 void ActivityBoundHelper::PartitionIntoAmo(
     absl::Span<const std::pair<int, int64_t>> terms) {
@@ -438,7 +438,7 @@ ActivityBoundHelper::PartitionLiteralsIntoAmo(absl::Span<const int> literals) {
     partition_[i] = num_parts++;
   }
 
-  // We have the partition, lets construct the spans now.
+  // We have the partition, let's construct the spans now.
   part_to_literals_.ResetFromFlatMapping(partition_, literals);
   DCHECK_EQ(part_to_literals_.size(), num_parts);
   return part_to_literals_.AsVectorOfSpan();
@@ -490,8 +490,8 @@ int64_t ActivityBoundHelper::ComputeMaxActivityInternal(
       const int p = partition_[i];
       const int64_t max_used = max_by_partition_[p];
 
-      // We have two cases depending if coeff was the maximum in its part or
-      // not.
+      // We have two cases depending on whether coeff was the maximum in its
+      // part or not.
       if (coeff == max_used) {
         // Use the second max.
         (*conditional)[i][0] =
@@ -646,7 +646,8 @@ int ActivityBoundHelper::RemoveEnforcementThatMakesConstraintTrivial(
       work += NumAmoForVariable(ref);
       if (work > kMaxWork) return log_work();
 
-      // Similarly, this is not supposed to happen after PresolveEnforcement().
+      // This shows that the enforcement must be false. Other presolves rule
+      // should have dealt with that, and we just abort here.
       if (is_true && is_false) {
         aborted = true;
         break;
@@ -694,7 +695,7 @@ void ClauseWithOneMissingHasher::RegisterClause(int c,
   for (const int ref : clause) {
     const Index index = IndexFromLiteral(ref);
     while (index >= literal_to_hash_.size()) {
-      // We use random value for a literal hash.
+      // We use a random value for a literal hash.
       literal_to_hash_.push_back(absl::Uniform<uint64_t>(random_));
     }
     hash ^= literal_to_hash_[index];
@@ -710,7 +711,7 @@ uint64_t ClauseWithOneMissingHasher::HashOfNegatedLiterals(
   for (const int ref : literals) {
     const Index index = IndexFromLiteral(NegatedRef(ref));
     while (index >= literal_to_hash_.size()) {
-      // We use random value for a literal hash.
+      // We use a random value for a literal hash.
       literal_to_hash_.push_back(absl::Uniform<uint64_t>(random_));
     }
     hash ^= literal_to_hash_[index];
@@ -758,7 +759,7 @@ bool FindSingleLinearDifference(const LinearConstraintProto& lin1,
       continue;
     }
 
-    // Coeff differ. Returns if we had a diff previously.
+    // Coefficients differ. Returns if we had a diff previously.
     if (*coeff1 != 0 || *coeff2 != 0) return false;
     *var1 = v1;
     *var2 = v2;

@@ -115,7 +115,7 @@ TEST(ImpliedBoundsTest, ReadBoundsFromTrail) {
   const Literal l(model.Add(NewBooleanVariable()), true);
   const IntegerVariable var(model.Add(NewIntegerVariable(0, 100)));
 
-  // Make sure l as a view.
+  // Make sure l has a view.
   const IntegerVariable view(model.Add(NewIntegerVariable(0, 1)));
   model.GetOrCreate<IntegerEncoder>()->AssociateToIntegerEqualValue(
       l, view, IntegerValue(1));
@@ -125,7 +125,7 @@ TEST(ImpliedBoundsTest, ReadBoundsFromTrail) {
   EXPECT_TRUE(sat_solver->EnqueueDecisionIfNotConflicting(l));
   EXPECT_TRUE(sat_solver->Propagate());
 
-  // Enqueue a bunch of fact.
+  // Enqueue a bunch of facts.
   auto* integer_trail = model.GetOrCreate<IntegerTrail>();
   EXPECT_TRUE(integer_trail->Enqueue(
       IntegerLiteral::GreaterOrEqual(var, IntegerValue(2)), {l.Negated()}, {}));
@@ -658,7 +658,7 @@ TEST(ProductDetectorTest, RLT) {
   // X + (1 - Y) + Z >= 1
   detector->ProcessTernaryClause(Literals({+1, -2, +3}));
 
-  // Lets choose value so that X + Z >= Y is tight.
+  // Let's choose values so that X + Z >= Y is tight.
   util_intops::StrongVector<IntegerVariable, double> lp_values(10, 0.0);
   lp_values[x] = 0.7;
   lp_values[y] = 0.9;
@@ -683,7 +683,7 @@ TEST(ProductDetectorTest, RLT) {
             NegationOf(y));
   EXPECT_EQ(detector->LiteralProductUpperBound(y, NegationOf(z)), x);
 
-  // If we change values, we might get less candidates though
+  // If we change values, we might get fewer candidates though
   lp_values[x] = 0.0;
   lp_values[y] = 0.2;
   lp_values[z] = 0.2;

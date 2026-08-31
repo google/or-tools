@@ -156,19 +156,19 @@ TEST(PostsolveResponseTest, FixedIndex) {
   EXPECT_THAT(solution, ::testing::ElementsAre(7, 3, 7, 2));
 }
 
-// Note that our postolve code is "limited" when it come to solving a single
-// linear equation since we should only encounter "simple" case.
+// Note that our postsolve code is "limited" when it comes to solving a single
+// linear equation since we should only encounter "simple" cases.
 TEST(PostsolveResponseTest, TrickyLinearCase) {
   // The equation is 2x + y = z
   //
-  // It mostly work all the time, except if we decide to make z - y not a
+  // It mostly works all the time, except if we decide to make z - y not a
   // multiple of two. This is not necessarily detected by our presolve since
   // 2 * [0, 124] is too complex to represent. Yet for any value of x and y
   // there is a possible z, but the reverse is not true, since y = 1, z = 0 is
   // not feasible.
   //
   // The presolve should deal with that by putting z first so that the
-  // postsolve code do not fail.
+  // postsolve code does not fail.
   const CpModelProto mapping_proto = ParseTestProto(R"pb(
     variables {
       name: 'x'
@@ -201,16 +201,16 @@ TEST(PostsolveResponseTest, TrickyLinearCase) {
   EXPECT_THAT(solution, ::testing::ElementsAre(0, 0, 0));
 }
 
-// This used to fail because we where computing the EXACT domain atteignable
-// by the sum of discrete domains, which have a lot of disjoint part.
+// This used to fail because we were computing the EXACT domain attainable
+// by the sum of discrete domains, which have a lot of disjoint parts.
 //
 // But our presolve was fine, because adding each of them to the loose rhs
-// domain just result in a domain with a small complexity.
+// domain just results in a domain with a small complexity.
 TEST(PostsolveResponseTest, ComplexityIssue) {
   CpModelProto mapping_proto;
 
-  // N variables such that their sum can be and even number. If we try to
-  // compute the exact domains of their sum, we are quadratic in compexity.
+  // N variables such that their sum can be an even number. If we try to
+  // compute the exact domains of their sum, we are quadratic in complexity.
   const int num_variables = 30;
   for (int i = 0; i < num_variables; ++i) {
     IntegerVariableProto* var = mapping_proto.add_variables();
@@ -248,7 +248,7 @@ TEST(FillTightenedDomainInResponseTest, BasicBehavior) {
     variables { domain: [ 0, 255 ] }
   )pb");
 
-  // We might have more variable there.
+  // We might have more variables there.
   // Also the domains might be tighter.
   const CpModelProto mapping_proto = ParseTestProto(R"pb(
     variables { domain: [ 0, 100 ] }
@@ -258,7 +258,7 @@ TEST(FillTightenedDomainInResponseTest, BasicBehavior) {
     variables { domain: [ 0, 18 ] }
   )pb");
 
-  // Lets assume the presolved mode contains 3 variables, 2 in common.
+  // Let's assume the presolved model contains 3 variables, 2 in common.
   std::vector<int> postsolve_mapping{0, 2, 4};
   std::vector<Domain> search_bounds{Domain(0, 100), Domain(0, 0), Domain(3, 7)};
 
@@ -294,7 +294,7 @@ TEST(FillTightenedDomainInResponseTest, WithAffine) {
     variables { domain: [ 0, 255 ] }
   )pb");
 
-  // We might have more variable there.
+  // We might have more variables there.
   // Also the domains might be tighter.
   const CpModelProto mapping_proto = ParseTestProto(R"pb(
     variables { domain: [ 0, 100 ] }

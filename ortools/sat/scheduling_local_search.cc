@@ -111,8 +111,8 @@ void SchedulingLocalSearch::GenerateN8Moves(
   auto is_invalid_forward_move = [&](int x, int target) {
     if (target == -1) return false;
 
-    // This check is not needed for classical JSSP where there is no precedences
-    // between operations on the same machine.
+    // This check is not needed for classical JSSP where there are no
+    // precedences between operations on the same machine.
     if (job_reachability_[x * num_tasks_ + target]) return true;
 
     for (const int js : job_successors_[x]) {
@@ -776,7 +776,7 @@ void SchedulingLocalSearch::AnalyzeSchedule(
   }
 
   // Now run a topological sort and compute the earliest start time of each
-  // task by forcing it to be equal the maximal completion time of all its
+  // task by forcing it to be equal to the maximal completion time of all its
   // predecessors.
   absl::StatusOr<std::vector<int>> maybe_topo_order =
       util::graph::FastTopologicalSort(adj);
@@ -1122,7 +1122,7 @@ SchedulingLocalSearch::LocalSearchResult SchedulingLocalSearch::Solve(
         current_machine_tasks, current_iteration, global_best_makespan, random);
 
     if (iterations_without_improvement > stagnation_limit) {
-      // To diversify the our tabu search, when the search stagnates, we
+      // To diversify our tabu search, when the search stagnates, we
       // select a random move from the candidates. The idea is older, but the
       // specific implementation is based on "Xie, J., et al., A new
       // neighborhood structure for job shop scheduling problems. International
@@ -1186,7 +1186,7 @@ std::vector<int64_t> ComputeCpSatSolutionFromSchedulingSolution(
                          int64_t target_val) {
     // The division might not be exact: our definition of SchedulingRelaxation
     // cannot enforce the start times to be a multiple of some coefficient. We
-    // might end up with a infeasible solution.
+    // might end up with an infeasible solution.
     if (expr.vars().size() == 1) {
       const int var = expr.vars(0);
       const int64_t coeff = expr.coeffs(0);
@@ -1283,7 +1283,7 @@ std::function<void()> SchedulingLocalSearchSolver::GenerateTask(
     TimeLimit task_time_limit;
     shared_time_limit_->UpdateLocalLimit(&task_time_limit);
     // Create a random number generator whose seed depends both on the task_id
-    // and on the params_.random_seed() so that changing the later will
+    // and on the params_.random_seed() so that changing the latter will
     // change the LNS behavior.
     const int32_t low = static_cast<int32_t>(task_id);
     const int32_t high = static_cast<int32_t>(task_id >> 32);

@@ -59,10 +59,10 @@ bool Vivifier::MinimizeByPropagation(bool log_info, double dtime_budget,
     sat_solver_->AdvanceDeterministicTime(time_limit_);
     if (time_limit_->GetElapsedDeterministicTime() >= threshold) break;
 
-    // Also abort if we did more than one loop over all the clause.
+    // Also abort if we did more than one loop over all the clauses.
     if (clause_manager_->NumToMinimizeIndexResets() > num_resets + 1) break;
 
-    // First minimize clauses that where never minimized before.
+    // First minimize clauses that were never minimized before.
     {
       SatClause* to_minimize = clause_manager_->NextNewClauseToMinimize();
       if (to_minimize != nullptr) {
@@ -87,7 +87,7 @@ bool Vivifier::MinimizeByPropagation(bool log_info, double dtime_budget,
       counters_.num_clauses_vivified - old_counter.num_clauses_vivified;
   last_num_literals_removed_ =
       counters_.num_removed_literals - old_counter.num_removed_literals;
-  timer.AddCounter("num_vivifed", last_num_vivified_);
+  timer.AddCounter("num_vivified", last_num_vivified_);
   timer.AddCounter("literals_removed", last_num_literals_removed_);
   timer.AddCounter("loops", clause_manager_->NumToMinimizeIndexResets());
 
@@ -130,7 +130,7 @@ bool Vivifier::SubsumptionIsInteresting(BooleanVariable variable,
                                         int max_size) {
   // TODO(user): other id should probably be safe as long as we do not delete
   // the propagators. Note that symmetry is tricky since we would need to keep
-  // the symmetric clause around in KeepAllClauseUsedToInfer().
+  // the symmetric clause around in KeepAllClausesUsedToInfer().
   const int binary_id = binary_clauses_->PropagatorId();
   const int clause_id = clause_manager_->PropagatorId();
 
@@ -201,7 +201,7 @@ bool Vivifier::RewriteClauseUsingCurrentDecisions(SatClause* clause) {
     }
   }
 
-  // In our setting, all the decision are negated literal from the clause.
+  // In our setting, all the decisions are negated literals from the clause.
   // We sort them in reverse order of level.
   CHECK_EQ(decisions_and_level.size(), sat_solver_->CurrentDecisionLevel());
   absl::c_sort(decisions_and_level, [](const std::pair<Literal, int>& a,
@@ -256,7 +256,7 @@ bool Vivifier::RewriteClauseUsingCurrentDecisions(SatClause* clause) {
     }
   }
 
-  // This should only be called when the clause get shrinked.
+  // This should only be called when the clause gets shrunk.
   //
   // TODO(user): this should be never true, except in some rare corner case
   // where we add a conflict... It should go away if we handle the conflict
@@ -288,7 +288,7 @@ bool Vivifier::TryToMinimizeClause(SatClause* clause) {
   if (clause->empty()) return true;
   ++counters_.num_clauses_vivified;
 
-  // TODO(user): Make sure clause do not contain any redundant literal before
+  // TODO(user): Make sure clause does not contain any redundant literal before
   // we try to minimize it.
   std::vector<Literal> candidate;
   candidate.reserve(clause->size());
@@ -347,7 +347,7 @@ bool Vivifier::TryToMinimizeClause(SatClause* clause) {
     // We want each literal in candidate to appear last once in our propagation
     // order. We want to do that while maximizing the reutilization of the
     // current assignment prefix, that is minimizing the number of
-    // decision/progagation we need to perform.
+    // decisions/propagations we need to perform.
     const int target_level = MoveOneUnprocessedLiteralLast(
         moved_last, sat_solver_->CurrentDecisionLevel(), &candidate);
     if (target_level == -1) break;
@@ -432,7 +432,7 @@ bool Vivifier::TryToMinimizeClause(SatClause* clause) {
 
     if (candidate.size() < clause->size()) {
       // We abort after any rewrite because in some corner case where only a
-      // subset of decision implies a true literal, the set of candidates can
+      // subset of decisions implies a true literal, the set of candidates can
       // now be wrong.
       RewriteClauseUsingCurrentDecisions(clause);
       break;
@@ -445,7 +445,7 @@ bool Vivifier::TryToMinimizeClause(SatClause* clause) {
 
   // Adding a unit clause can cause additional propagation. There is also an
   // edge case where we added the first binary clause of the model by
-  // strenghtening a normal clause.
+  // strengthening a normal clause.
   return sat_solver_->FinishPropagation();
 }
 

@@ -35,15 +35,15 @@ namespace {
 using ::operations_research::bop::LinearBooleanConstraint;
 using ::operations_research::bop::LinearBooleanProblem;
 
-// This implement the implicit contract needed by the SatCnfReader class.
+// This implements the implicit contract needed by the SatCnfReader class.
 class LinearBooleanProblemWrapper {
  public:
   explicit LinearBooleanProblemWrapper(LinearBooleanProblem* p) : problem_(p) {}
 
-  // In the new 2022 .wcnf format, we don't know the number of variable before
-  // hand (no header). So when this is called (after all the constraint have
-  // been added), we need to re-index the slack so that they are after the
-  // variable of the original problem.
+  // In the new 2022 .wcnf format, we don't know the number of variables
+  // beforehand (no header). So when this is called (after all the constraints
+  // have been added), we need to re-index the slacks so that they are after the
+  // variables of the original problem.
   void SetSizeAndPostprocess(int num_variables, int num_slacks) {
     problem_->set_num_variables(num_variables + num_slacks);
     problem_->set_original_num_variables(num_variables);
@@ -129,7 +129,7 @@ TEST(SatCnfReader, CnfFormatAsMaxSat) {
   reader.InterpretCnfAsMaxSat(true);
   LinearBooleanProblem problem = LoadCnfFile(reader, file_content);
 
-  // Note that we currently loose the objective offset of 1 due to the two
+  // Note that we currently lose the objective offset of 1 due to the two
   // clauses +1 and -1 in the original problem.
   const std::string wcnf_output =
       "p wcnf 5 2 3\n"
@@ -152,7 +152,7 @@ TEST(SatCnfReader, CnfFormatCornerCases) {
       "+1 2 +3 0\n"
       "c and can be anywhere, with 0 0 0\n"
       "-4 -5 0\n"
-      "c empty line are ignored\n"
+      "c empty lines are ignored\n"
       "\n\n\n    \n"
       "+1 0\n"
       "c same for spaces:\n"
@@ -182,10 +182,10 @@ TEST(SatCnfReader, WcnfFormat) {
   // by LinearBooleanProblemToCnfString().
   //
   // The special hard weight "109" is by convention the sum of all the soft
-  // weight + 1. It means that not satisfying an hard clause is worse than
-  // satisfying none of the soft clause. Note that this is just a "convention",
+  // weights + 1. It means that not satisfying a hard clause is worse than
+  // satisfying none of the soft clauses. Note that this is just a "convention",
   // in the way we interpret it, it doesn't really matter and must just be a
-  // different number than any of the soft weight.
+  // different number than any of the soft weights.
   std::string file_content =
       "p wcnf 5 7 109\n"
       "1 +1 +2 +3 0\n"

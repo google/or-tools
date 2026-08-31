@@ -55,18 +55,18 @@ const LiteralIndex kTrueLiteralIndex(-2);
 const LiteralIndex kFalseLiteralIndex(-3);
 
 // A literal is used to represent a variable or its negation. If it represents
-// the variable it is said to be positive. If it represent its negation, it is
+// the variable it is said to be positive. If it represents its negation, it is
 // said to be negative. We support two representations as an integer.
 //
 // The "signed" encoding of a literal is convenient for input/output and is used
-// in the cnf file format. For a 0-based variable index x, (x + 1) represent the
-// variable x and -(x + 1) represent its negation. The signed value 0 is an
+// in the cnf file format. For a 0-based variable index x, (x + 1) represents
+// the variable x and -(x + 1) represents its negation. The signed value 0 is an
 // undefined literal and this class can never contain it.
 //
 // The "index" encoding of a literal is convenient as an index to an array
 // and is the one used internally for efficiency. It is always positive or zero,
-// and for a 0-based variable index x, (x << 1) encode the variable x and the
-// same number XOR 1 encode its negation.
+// and for a 0-based variable index x, (x << 1) encodes the variable x and the
+// same number XOR 1 encodes its negation.
 class Literal {
  public:
   explicit constexpr Literal(int signed_value)
@@ -195,7 +195,7 @@ class VariablesAssignment {
     assignment_.Set(literal.Index());
   }
 
-  // Unassign the variable corresponding to the given literal.
+  // Unassigns the variable corresponding to the given literal.
   // This can only be called on an assigned variable.
   void UnassignLiteral(Literal literal) {
     DCHECK(VariableIsAssigned(literal.Variable()));
@@ -280,8 +280,8 @@ class AssignmentView {
 class SatClause {
  public:
   // Creates a sat clause. There must be at least 2 literals.
-  // Clause with one literal fix variable directly and are never constructed.
-  // Note that in practice, we use BinaryImplicationGraph for the clause of size
+  // Clauses with one literal fix variables directly and are never constructed.
+  // Note that in practice, we use BinaryImplicationGraph for clauses of size
   // 2, so this is used for size at least 3.
   static SatClause* Create(absl::Span<const Literal> literals);
 
@@ -294,8 +294,8 @@ class SatClause {
   int size() const { return size_; }
   bool empty() const { return size_ == 0; }
 
-  // We re-use the size to lazily remove clause and notify that they need to be
-  // deleted. It is why this is not called empty() to emphasis that fact. Note
+  // We re-use the size to lazily remove clauses and notify that they need to be
+  // deleted. It is why this is not called empty() to emphasize that fact. Note
   // that we never create an initially empty clause, so there is no confusion
   // with an infeasible model with an empty clause inside.
   int IsRemoved() const { return size_ == 0; }
@@ -310,7 +310,7 @@ class SatClause {
   Literal SecondLiteral() const { return literals_[1]; }
 
   // Returns the literal that was propagated to true. This only works for a
-  // clause that just propagated this literal. Otherwise, this will just returns
+  // clause that just propagated this literal. Otherwise, this will just return
   // a literal of the clause.
   Literal PropagatedLiteral() const { return literals_[0]; }
 
@@ -353,7 +353,7 @@ class SatClause {
   // where a literal is fixed iff it is assigned. Aborts and returns true if
   // they are not all false.
   //
-  // Note that the removed literal can still be accessed in the portion [size,
+  // Note that the removed literals can still be accessed in the portion [size,
   // old_size) of literals().
   bool RemoveFixedLiteralsAndTestIfTrue(const VariablesAssignment& assignment);
 
@@ -366,7 +366,7 @@ class SatClause {
 
   int32_t size_;
 
-  // This class store the literals inline, and literals_ mark the starts of the
+  // This class stores the literals inline, and literals_ marks the start of the
   // variable length portion.
   Literal literals_[0];
 };
@@ -496,7 +496,7 @@ class ClausePtr {
   SatClause* GetSatClause() const {
     DCHECK(IsSatClausePtr());
     // This is fine even if uintptr_t is smaller than uint64_t because, in this
-    // case, the extra bits are zero (see how SatClause* are IDs are created).
+    // case, the extra bits are zero (see how SatClause* IDs are created).
     const uint64_t bits = uint64_from_rep(rep_);
     const uintptr_t ptr_rep = static_cast<uintptr_t>(bits << 1);
     return absl::bit_cast<SatClause*>(ptr_rep);
@@ -580,13 +580,13 @@ struct AssignmentInfo {
   // increases each time the solver takes a search decision.
   //
   // TODO(user): We may be able to get rid of that for faster enqueues. Most of
-  // the code only need to know if this is 0 or the highest level, and for the
-  // LBD computation, the literal of the conflict are already ordered by level,
+  // the code only needs to know if this is 0 or the highest level, and for the
+  // LBD computation, the literals of the conflict are already ordered by level,
   // so we could do it fairly efficiently.
   //
   // TODO(user): We currently don't support more than 2^28 decision levels. That
-  // should be enough for most practical problem, but we should fail properly if
-  // this limit is reached.
+  // should be enough for most practical problems, but we should fail properly
+  // if this limit is reached.
   uint32_t level : 28;
 
   // The type of assignment (see AssignmentType below).
@@ -614,7 +614,7 @@ struct AssignmentType {
   static constexpr int kSearchDecision = 2;
   static constexpr int kSameReasonAs = 3;
 
-  // Propagator ids starts from there and are created dynamically.
+  // Propagator ids start from there and are created dynamically.
   static constexpr int kFirstFreePropagationId = 4;
 };
 
@@ -649,8 +649,8 @@ class Trail {
   // calls SetPropagatorId() on it.
   void RegisterPropagator(SatPropagator* propagator);
 
-  // Enqueues the assignment that make the given literal true on the trail. This
-  // should only be called on unassigned variables.
+  // Enqueues the assignment that makes the given literal true on the trail.
+  // This should only be called on unassigned variables.
   void Enqueue(Literal true_literal, int propagator_id) {
     DCHECK(!assignment_.VariableIsAssigned(true_literal.Variable()));
     trail_[current_info_.trail_index] = true_literal;
@@ -667,7 +667,7 @@ class Trail {
   }
 
   // Using this is faster as it caches all the vectors data.
-  // Warning: call to this cannot be interleaved with normal enqueue.
+  // Warning: calls to this cannot be interleaved with normal enqueue.
   // only use in hot-loops.
   class EnqueueHelper {
    public:
@@ -767,7 +767,7 @@ class Trail {
   // lenient and does not require the literal to be unassigned. If it is
   // already assigned to false, then MutableConflict() will be set appropriately
   // and this will return false otherwise this will enqueue the literal and
-  // returns true.
+  // return true.
   ABSL_MUST_USE_RESULT bool EnqueueWithStoredReason(Literal true_literal,
                                                     ClausePtr reason_clause) {
     if (assignment_.LiteralIsTrue(true_literal)) return true;
@@ -798,16 +798,16 @@ class Trail {
   // Returns the reason why this variable was assigned.
   //
   // Note that this shouldn't be called on a variable at level zero, because we
-  // don't cleanup the reason data for these variables but the underlying
+  // don't clean up the reason data for these variables but the underlying
   // clauses may have been deleted.
   //
-  // If conflict_id >= 0, this indicate that this was called as part of the
-  // first-UIP procedure. It has a few implication:
-  //  - The reason do not need to be cached and can be adapted to the current
+  // If conflict_id >= 0, this indicates that this was called as part of the
+  // first-UIP procedure. It has a few implications:
+  //  - The reasons do not need to be cached and can be adapted to the current
   //    conflict.
   //  - Some data can be reused between two calls about the same conflict.
   //  - Note however that if the reason is a simple clause, we shouldn't adapt
-  //    it because we rely on extra fact in the first UIP code where we detect
+  //    it because we rely on extra facts in the first UIP code where we detect
   //    subsumed clauses for instance.
   absl::Span<const Literal> Reason(BooleanVariable var,
                                    int64_t conflict_id = -1) const;
@@ -828,7 +828,7 @@ class Trail {
   }
 
   // If a variable was propagated with EnqueueWithSameReasonAs(), returns its
-  // reference variable. Otherwise return the given variable.
+  // reference variable. Otherwise returns the given variable.
   BooleanVariable ReferenceVarWithSameReason(BooleanVariable var) const;
 
   // This can be used to get a location at which the reason for the literal
@@ -856,7 +856,7 @@ class Trail {
     old_type_[var] = propagator_id;
   }
 
-  // On bactrack we should always do:
+  // On backtrack we should always do:
   //
   // const int target_trail_index = PrepareBacktrack(level);
   // ...
@@ -1012,7 +1012,7 @@ class Trail {
       reference_var_with_same_reason_as_;
 
   // Reason cache. Mutable since we want the API to be the same whether the
-  // reason are cached or not.
+  // reasons are cached or not.
   //
   // When a reason is computed for the first time, we change the type of the
   // variable assignment to kCachedReason so that we know that if it is needed
@@ -1029,7 +1029,7 @@ class Trail {
   //
   // TODO(user): An alternative would be to change the sign of the type. This
   // would remove the need for a separate old_type_ vector, but it requires
-  // more bits for the type filed in AssignmentInfo.
+  // more bits for the type field in AssignmentInfo.
   //
   // Note that we use a deque for the reason repository so that if we add
   // variables, the memory address of the vectors (kept in reasons_) are still
@@ -1049,8 +1049,8 @@ class Trail {
 
   // The stack of decisions taken by the solver. They are stored in [0,
   // current_decision_level_). The vector is of size num_variables_ so it can
-  // store all the decisions. This is done this way because in some situation we
-  // need to remember the previously taken decisions after a backtrack.
+  // store all the decisions. This is done this way because in some situations
+  // we need to remember the previously taken decisions after a backtrack.
   int current_decision_level_ = 0;
   std::vector<LiteralWithTrailIndex> decisions_;
 };
@@ -1066,7 +1066,7 @@ class SatPropagator {
   SatPropagator& operator=(const SatPropagator&) = delete;
   virtual ~SatPropagator() = default;
 
-  // Sets/Gets this propagator unique id.
+  // Sets/Gets this propagator's unique id.
   void SetPropagatorId(int id) { propagator_id_ = id; }
   int PropagatorId() const { return propagator_id_; }
 
@@ -1084,8 +1084,8 @@ class SatPropagator {
   // trail current decision level is already reverted before this is called.
   //
   // TODO(user): Currently this is called at each Backtrack(), but we could
-  // bundle the calls in case multiple conflict one after the other are detected
-  // even before the Propagate() call of a SatPropagator is called.
+  // bundle the calls in case multiple conflicts one after the other are
+  // detected even before the Propagate() call of a SatPropagator is called.
   //
   // TODO(user): It is not yet 100% the case, but this can be guaranteed to be
   // called with a trail index that will always be the start of a new decision
@@ -1115,9 +1115,9 @@ class SatPropagator {
   // can use trail_.GetEmptyVectorToStoreReason() if it doesn't have a memory
   // location that already contains the reason.
   //
-  // If conlict id is positive, then this is called during first UIP resolution
+  // If conflict id is positive, then this is called during first UIP resolution
   // and we will backtrack over this literal right away, so we don't need to
-  // have a span that survive more than once.
+  // have a span that survives more than once.
   virtual absl::Span<const Literal> Reason(const Trail& /*trail*/,
                                            int /*trail_index*/,
                                            int64_t /*conflict_id*/) const {
@@ -1138,8 +1138,8 @@ class SatPropagator {
 
   // Small optimization: If a propagator does not contain any "constraints"
   // there is no point calling propagate on it. Before each propagation, the
-  // solver will checks for emptiness, and construct an optimized list of
-  // propagator before looping many time over the list.
+  // solver will check for emptiness, and construct an optimized list of
+  // propagators before looping many times over the list.
   virtual bool IsEmpty() const { return false; }
 
  protected:
@@ -1150,7 +1150,7 @@ class SatPropagator {
 
 // ########################  Implementations below  ########################
 
-// TODO(user): A few of these method should be moved in a .cc
+// TODO(user): A few of these methods should be moved in a .cc
 
 inline bool SatPropagator::PropagatePreconditionsAreSatisfied(
     const Trail& trail) const {

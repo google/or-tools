@@ -50,11 +50,11 @@ class FeasibilityPump {
     max_fp_iterations_ = std::max(1, max_iter);
   }
 
-  // Add a new linear constraint to this LP.
+  // Adds a new linear constraint to this LP.
   void AddLinearConstraint(const LinearConstraint& ct);
 
-  // Set the coefficient of the variable in the objective. Calling it twice will
-  // overwrite the previous value. Note that this doesn't set the objective
+  // Sets the coefficient of the variable in the objective. Calling it twice
+  // will overwrite the previous value. Note that this doesn't set the objective
   // coefficient if the variable doesn't appear in any constraints. So this has
   // to be called after all the constraints are added.
   void SetObjectiveCoefficient(IntegerVariable ivar, IntegerValue coeff);
@@ -90,7 +90,7 @@ class FeasibilityPump {
   // rounding couldn't be finished.
   bool Round();
 
-  // Round the fractional LP solution values to nearest integer values. This
+  // Rounds the fractional LP solution values to nearest integer values. This
   // rounding always finishes so always returns true.
   bool NearestIntegerRounding();
 
@@ -101,7 +101,7 @@ class FeasibilityPump {
   //             + #upper bounded constraints with negative coeff for var.
   // Rounds the variable in the direction of lesser locks. When the
   // fractionality is low (less than 0.1), this reverts to nearest integer
-  // rounding to avoid rounding almost integer values in wrong direction.
+  // rounding to avoid rounding almost integer values in the wrong direction.
   // This rounding always finishes so always returns true.
   bool LockBasedRounding();
 
@@ -109,11 +109,11 @@ class FeasibilityPump {
   // constraints.
   bool ActiveLockBasedRounding();
 
-  // This is expensive rounding algorithm. We round variables one by one and
+  // This is an expensive rounding algorithm. We round variables one by one and
   // propagate the bounds in between. If none of the rounded values fall in
   // the continuous domain specified by lower and upper bound, we use the
   // current lower/upper bound (whichever one is closest) instead of rounding
-  // the fractional lp solution value. If both the rounded values are in the
+  // the fractional LP solution value. If both the rounded values are in the
   // domain, we round to nearest integer. This idea was presented in the paper
   // "Feasibility pump 2.0" (2009) by Matteo Fischetti, Domenico Salvagnin.
   //
@@ -150,8 +150,8 @@ class FeasibilityPump {
   void UpdateBoundsOfLpVariables();
 
   // This epsilon is related to the precision of the value returned by the LP
-  // once they have been scaled back into the CP domain. So for large domain or
-  // cost coefficient, we may have some issues.
+  // once they have been scaled back into the CP domain. So for large domains or
+  // cost coefficients, we may have some issues.
   static const double kCpEpsilon;
 
   // Initial problem in integer form.
@@ -188,7 +188,7 @@ class FeasibilityPump {
   std::vector<IntegerVariable> integer_variables_;
   absl::flat_hash_map<IntegerVariable, glop::ColIndex> mirror_lp_variable_;
 
-  // True if the variable was binary before we apply scaling.
+  // True if the variable was binary before we applied scaling.
   std::vector<bool> var_is_binary_;
 
   // The following lock information is computed only once.

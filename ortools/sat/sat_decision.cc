@@ -114,7 +114,7 @@ void SatDecisionPolicy::RephaseIfNeeded() {
   target_length_ = 0;
   has_target_polarity_.ClearAll();
 
-  // Cycle between different initial polarities. Note that we already start by
+  // Cycle between different initial polarities. Note that we already start with
   // the default polarity, and this code is reached the first time with a
   // polarity_phase_ of 1.
   switch (polarity_phase_ % 8) {
@@ -194,7 +194,7 @@ void SatDecisionPolicy::ResetInitialPolarity(int from, bool inverted) {
 
 void SatDecisionPolicy::UseLongestAssignmentAsInitialPolarity() {
   // In this special case, we just overwrite partially the current fixed
-  // polarity and reset the best best_partial_assignment_ for the next such
+  // polarity and reset the best_partial_assignment_ for the next such
   // phase.
   for (const Literal l : best_partial_assignment_) {
     var_polarity_.Set(l.Variable(), l.IsPositive());
@@ -207,7 +207,7 @@ bool SatDecisionPolicy::UseLsSolutionAsInitialPolarity() {
 
   if (ls_hints_->NumSolutions() == 0) return false;
 
-  // This is in term of proto variable.
+  // This is in terms of proto variables.
   // TODO(user): use cp_model_mapping. But this is not needed to experiment
   // on pure sat problems.
   std::shared_ptr<const SharedLsSolutionRepository::Solution> solution =
@@ -259,7 +259,7 @@ void SatDecisionPolicy::ResetActivitiesToFollowBestPartialAssignment() {
 void SatDecisionPolicy::InitializeVariableOrdering() {
   const int num_variables = activities_.size();
 
-  // First, extract the variables without activity, and add the other to the
+  // First, extract the variables without activity, and add the others to the
   // priority queue.
   var_ordering_.Clear();
   tmp_variables_.clear();
@@ -273,10 +273,10 @@ void SatDecisionPolicy::InitializeVariableOrdering() {
     }
   }
 
-  // Set the order of the other according to the parameters_.
+  // Set the order of the others according to the parameters_.
   // Note that this is just a "preference" since the priority queue will kind
   // of randomize this. However, it is more efficient than using the tie_breaker
-  // which add a big overhead on the priority queue.
+  // which adds a big overhead on the priority queue.
   //
   // TODO(user): Experiment and come up with a good set of heuristics.
   switch (parameters_.preferred_variable_order()) {
@@ -416,7 +416,7 @@ Literal SatDecisionPolicy::NextBranch() {
     }
   }
 
-  // Choose its polarity (i.e. True of False).
+  // Choose its polarity (i.e. True or False).
   const double random_ratio = parameters_.random_polarity_ratio();
   if (random_ratio != 0.0 && zero_to_one() < random_ratio) {
     return Literal(var, std::uniform_int_distribution<int>(0, 1)(random_));
@@ -479,7 +479,7 @@ void SatDecisionPolicy::Untrail(int target_trail_index) {
       const BooleanVariable var = trail_[--trail_index].Variable();
 
       // TODO(user): This heuristic can make this code quite slow because
-      // all the untrailed variable will cause a priority queue update.
+      // all the untrailed variables will cause a priority queue update.
       if (num_conflicts > 0) {
         const int64_t num_bumps = num_bumps_[var];
         double new_rate = 0.0;

@@ -44,7 +44,7 @@
 namespace operations_research {
 namespace sat {
 
-// An helper struct to sort task by time. This is used by the
+// A helper struct to sort tasks by time. This is used by the
 // SchedulingConstraintHelper but also by many scheduling propagators to sort
 // tasks.
 struct TaskTime {
@@ -57,8 +57,9 @@ struct TaskTime {
 // We have some free space in TaskTime.
 // We stick the presence_lit to save an indirection in some algo.
 //
-// TODO(user): Experiment caching more value. In particular
-// TaskByIncreasingShiftedStartMin() could tie break task for better heuristics?
+// TODO(user): Experiment caching more values. In particular
+// TaskByIncreasingShiftedStartMin() could tie break tasks for better
+// heuristics?
 struct CachedTaskBounds {
   int task_index;
   LiteralIndex presence_lit;
@@ -94,8 +95,8 @@ struct IntervalDefinition {
 
 // Helper class shared by the propagators that manage a given list of tasks.
 //
-// One of the main advantage of this class is that it allows to share the
-// vectors of tasks sorted by various criteria between propagator for a faster
+// One of the main advantages of this class is that it allows sharing the
+// vectors of tasks sorted by various criteria between propagators for faster
 // code. It is also helpful to allow in-processing: the intervals that are
 // handled by this class are not necessarily the same as the ones in the model.
 class SchedulingConstraintHelper : public PropagatorInterface {
@@ -112,19 +113,19 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   // The class will not be usable until ResetFromSubset() is called.
   //
   // TODO(user): Remove this. It is a hack because the disjunctive class needs
-  // to fetch the maximum possible number of task at construction.
+  // to fetch the maximum possible number of tasks at construction.
   SchedulingConstraintHelper(int num_tasks, Model* model);
 
   // Returns true if and only if all the enforcement literals are true.
   bool IsEnforced() const;
 
   // Returns true if the search branching strategy is FIXED_SEARCH and if the
-  // SAT solver has not made any backtrack yet. In this case the scheduling
+  // SAT solver has not made any backtracks yet. In this case the scheduling
   // search heuristics is strong enough to allow skipping some scheduling
   // propagators.
   bool FixedSearchFirstSolutionMode() const;
 
-  // This is a propagator so we can "cache" all the intervals relevant
+  // This is a propagator so we can "cache" all the relevant interval
   // information. This gives good speedup. Note however that the info is stale
   // except if a bound was pushed by this helper or if this was called. We run
   // it at the highest priority, so that will mostly be the case at the
@@ -145,12 +146,12 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   ABSL_MUST_USE_RESULT bool ResetFromSubset(
       const SchedulingConstraintHelper& other, absl::Span<const int> tasks);
 
-  // Returns the number of task.
+  // Returns the number of tasks.
   int NumTasks() const { return starts_.size(); }
 
   // Make sure the cached values are up to date. Also sets the time direction to
   // either forward/backward. This will impact all the functions below. This
-  // MUST be called at the beginning of all Propagate() call that uses this
+  // MUST be called at the beginning of all Propagate() calls that use this
   // helper.
   void SetTimeDirection(bool is_forward);
   bool CurrentTimeIsForward() const { return current_time_direction_; }
@@ -164,7 +165,7 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   // Note that for tasks with variable durations, we don't necessarily have
   // duration-min between the XXX-min and XXX-max value.
   //
-  // Remark: We use cached values for most of these function as this is faster.
+  // Remark: We use cached values for most of these functions as this is faster.
   // In practice, the cache will almost always be up to date, but not in corner
   // cases where pushing the start of one task will change values for many
   // others. This is fine as the new values will be picked up as we reach the
@@ -202,11 +203,11 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   //         ^          ^                  ^
   //        start-min   |                end-min
   //                    |
-  // We define the "shifted start min" to be the right most time such that
-  // we known that we must have min-size "energy" to the right of it if the
-  // task is present. Using it in our scheduling propagators allows to propagate
-  // more in the presence of tasks with variable size (or optional task
-  // where we also do not necessarily have start_min + size_min = end_min.
+  // We define the "shifted start min" to be the rightmost time such that
+  // we know that we must have min-size "energy" to the right of it if the
+  // task is present. Using it in our scheduling propagators allows propagating
+  // more in the presence of tasks with variable size (or optional tasks
+  // where we also do not necessarily have start_min + size_min = end_min).
   //
   // To explain this shifted start min, one must use the AddEnergyAfterReason().
   IntegerValue ShiftedStartMin(int t) const {
@@ -214,7 +215,7 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   }
 
   // As with ShiftedStartMin(), we can compute the shifted end max (that is
-  // start_max + size_min.
+  // start_max + size_min).
   IntegerValue ShiftedEndMax(int t) const {
     return -cached_negated_shifted_end_max_[t];
   }
@@ -224,26 +225,26 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   bool SizeIsFixed(int t) const;
 
   // Returns true if the corresponding fact is known for sure. A normal task is
-  // always present. For optional task for which the presence is still unknown,
-  // both of these function will return false.
+  // always present. For optional tasks for which the presence is still unknown,
+  // both of these functions will return false.
   bool IsOptional(int t) const;
   bool IsPresent(int t) const;
   bool IsAbsent(int t) const;
 
-  // Same if one already have the presence LiteralIndex of a task.
+  // Same if one already has the presence LiteralIndex of a task.
   bool IsOptional(LiteralIndex lit) const;
   bool IsPresent(LiteralIndex lit) const;
   bool IsAbsent(LiteralIndex lit) const;
 
   // Returns a value so that End(a) + dist <= Start(b).
   //
-  // TODO(user): we use this to optimize some reason, but ideally we only want
+  // TODO(user): we use this to optimize some reasons, but ideally we only want
   // to use linear2 bounds here, not bounds coming from trivial bounds. Make
   // sure we have the best possible reason.
   IntegerValue GetCurrentMinDistanceBetweenTasks(int a, int b);
 
   // We detected a precedence between two tasks at level zero.
-  // This register a new constraint and notify the linear2 root level bounds
+  // This registers a new constraint and notifies the linear2 root level bounds
   // repository. Returns false on conflict.
   //
   // TODO(user): We could also call this at positive decision level, but it is a
@@ -268,7 +269,7 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   // will be duplicate time values in these vectors.
   //
   // TODO(user): we could merge the first loop of IncrementalSort() with the
-  // loop that fill TaskTime.time at each call.
+  // loop that fills TaskTime.time at each call.
   absl::Span<const TaskTime> TaskByIncreasingStartMin();
   absl::Span<const TaskTime> TaskByDecreasingEndMax();
 
@@ -278,7 +279,7 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   absl::Span<const CachedTaskBounds> TaskByIncreasingShiftedStartMin();
   absl::Span<const CachedTaskBounds> TaskByIncreasingNegatedShiftedEndMax();
 
-  // Returns a sorted vector where each task appear twice, the first occurrence
+  // Returns a sorted vector where each task appears twice, the first occurrence
   // is at size (end_min - size_min) and the second one at (end_min).
   //
   // This is quite usage specific.
@@ -321,16 +322,16 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   // the sense that "after" can only start at the same time or later than the
   // task "before" ends.
   //
-  // Important: this assumes that the two task cannot overlap. So we can have
+  // Important: this assumes that the two tasks cannot overlap. So we can have
   // a more relaxed reason than Start(after) >= Ends(before).
   //
-  // There are actually many possibilities to explain such relation:
+  // There are actually many possibilities to explain such a relation:
   // - StartMax(before) < EndMin(after).
   // - We have a linear2: Start(after) >= End(before) - SizeMin(before);
   // - etc...
   // We try to pick the best one.
   //
-  // TODO(user): Refine the heuritic. Also consider other reason for the
+  // TODO(user): Refine the heuristic. Also consider other reasons for the
   // complex cases where Start() and End() do not use the same integer variable.
   void AddReasonForBeingBeforeAssumingNoOverlap(int before, int after);
 
@@ -388,8 +389,8 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   //
   // Note that experiment showed that it is not really worth it to try to only
   // wake a propagator if only a specific subset of the interval bounds changed.
-  // It seems that this actually affect a really low percentage of Propagate()
-  // calls (when only irrelevant bound changes). And it has a non-negligeable
+  // It seems that this actually affects a really low percentage of Propagate()
+  // calls (when only irrelevant bound changes). And it has a non-negligible
   // cost for the extra tracking.
   void WatchAllTasks(int id);
 
@@ -397,7 +398,7 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   //
   // Most scheduling propagators just call WatchAllTasks() and can be registered
   // in the same way. In particular, since the helper is actually the one that
-  // will add them to the propagation queue, function like
+  // will add them to the propagation queue, functions like
   // watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass() do not change
   // anything and do not need to be called.
   void Register(PropagatorInterface* propagator, int priority);
@@ -425,7 +426,7 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   }
 
   // TODO(user): Change the propagation loop code so that we don't stop
-  // pushing in the middle of the propagation as more advanced propagator do
+  // pushing in the middle of the propagation as more advanced propagators do
   // not handle this correctly.
   bool InPropagationLoop() const { return integer_trail_->InPropagationLoop(); }
 
@@ -433,7 +434,7 @@ class SchedulingConstraintHelper : public PropagatorInterface {
     return sat_solver_->CurrentDecisionLevel();
   }
 
-  // This increase as soon as we propagate something.
+  // This increases as soon as we propagate something.
   int64_t PropagationTimestamp() const {
     return integer_trail_->timestamp() + trail_->NumberOfEnqueues();
   }
@@ -445,7 +446,7 @@ class SchedulingConstraintHelper : public PropagatorInterface {
 
     bool operator<(TaskInfo other) const { return start_min < other.start_min; }
   };
-  // Provide scratch vector that are cleared and available for use for
+  // Provides scratch vectors that are cleared and available for use for
   // propagators inside the call to Propagate().
   FixedCapacityVector<TaskTime>& GetScratchTaskTimeVector1() {
     scratch_task_time_vector1_.ClearAndReserve(NumTasks());
@@ -461,7 +462,7 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   }
 
  private:
-  // Tricky: when a task is optional, it is possible it size min is negative,
+  // Tricky: when a task is optional, it is possible its size min is negative,
   // but we know that if a task is present, its size should be >= 0. So in the
   // reason, when we need the size_min and it is currently negative, we can just
   // ignore it and use zero instead.
@@ -527,8 +528,8 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   // These are initially of size capacity and never resized.
   //
   // TODO(user): Because of std::swap() in SetTimeDirection, we cannot mark
-  // most of them as "const" and as a result we loose some performance since
-  // the address need to be re-fetched on most access.
+  // most of them as "const" and as a result we lose some performance since
+  // the address needs to be re-fetched on most accesses.
   const int capacity_;
   const std::unique_ptr<IntegerValue[]> cached_size_min_;
   std::unique_ptr<IntegerValue[]> cached_start_min_;
@@ -559,12 +560,12 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   bool recompute_negated_shifted_end_max_ = true;
 
   // If recompute_cache_[t] is true, then we need to update all the cached
-  // value for the task t in SynchronizeAndSetTimeDirection().
+  // values for the task t in SynchronizeAndSetTimeDirection().
   bool recompute_all_cache_ = true;
   Bitset64<int> recompute_cache_;
 
   // For large problems, LNS will have a lot of fixed intervals.
-  // And fixed intervals will never changes, so there is no point recomputing
+  // And fixed intervals will never change, so there is no point recomputing
   // the cache for them.
   std::vector<int> non_fixed_intervals_;
 
@@ -578,11 +579,11 @@ class SchedulingConstraintHelper : public PropagatorInterface {
 
   SparseBitset<int> used_items_for_reason_;
 
-  // List of watcher to "wake-up" each time one of the task bounds changes.
+  // List of watchers to "wake-up" each time one of the task bounds changes.
   std::vector<int> propagator_ids_;
 };
 
-// Helper class for cumulative constraint to wrap demands and expose concept
+// Helper class for cumulative constraint to wrap demands and expose concepts
 // like energy.
 //
 // In a cumulative constraint, an interval always has a size and a demand, but
@@ -592,13 +593,13 @@ class SchedulingConstraintHelper : public PropagatorInterface {
 // TODO(user): Cache energy min and reason for the non O(1) cases.
 class SchedulingDemandHelper {
  public:
-  // Hack: this can be called with and empty demand vector as long as
+  // Hack: this can be called with an empty demand vector as long as
   // OverrideEnergies() is called to define the energies.
   SchedulingDemandHelper(absl::Span<const AffineExpression> demands,
                          SchedulingConstraintHelper* helper, Model* model);
 
   // When defined, the interval will consume this much demand during its whole
-  // duration. Some propagator only relies on the "energy" and thus never uses
+  // duration. Some propagators only rely on the "energy" and thus never use
   // this.
   IntegerValue DemandMin(int t) const;
   IntegerValue DemandMax(int t) const;
@@ -612,21 +613,21 @@ class SchedulingDemandHelper {
 
   // Adds the linearized demand (either the affine demand expression, or the
   // demand part of the decomposed energy if present) to the builder.
-  // It returns false and do not add any term to the builder.if any literal
+  // It returns false and does not add any term to the builder if any literal
   // involved has no integer view.
   ABSL_MUST_USE_RESULT bool AddLinearizedDemand(
       int t, LinearConstraintBuilder* builder) const;
 
   // The "energy" is usually size * demand, but in some non-conventional usage
-  // it might have a more complex formula. In all case, the energy is assumed
+  // it might have a more complex formula. In all cases, the energy is assumed
   // to be only consumed during the interval duration.
   //
   // Returns false if the energy can overflow and was not computed.
   //
   // IMPORTANT: One must call CacheAllEnergyValues() for the values to be
   // updated. TODO(user): this is error prone, maybe we should revisit. But if
-  // there is many alternatives, we don't want to rescan the list more than a
-  // linear number of time per propagation.
+  // there are many alternatives, we don't want to rescan the list more than a
+  // linear number of times per propagation.
   //
   // TODO(user): Add more complex EnergyMinBefore(time) once we also support
   // expressing the interval as a set of alternatives.
@@ -664,7 +665,7 @@ class SchedulingDemandHelper {
       const std::vector<std::vector<LiteralValueValue>>& energies);
   // Returns the decomposed energy terms compatible with the current literal
   // assignment. It must not be used to create reasons if not at level 0.
-  // It returns en empty vector if the decomposed energy is not available.
+  // It returns an empty vector if the decomposed energy is not available.
   //
   // Important: first value is size, second value is demand.
   std::vector<LiteralValueValue> FilteredDecomposedEnergy(int index);
@@ -693,7 +694,7 @@ class SchedulingDemandHelper {
   std::vector<IntegerValue> cached_energies_max_;
   std::vector<bool> energy_is_quadratic_;
 
-  // A representation of the energies as a set of alternative.
+  // A representation of the energies as a set of alternatives.
   // If subvector is empty, we don't have this representation.
   std::vector<std::vector<LiteralValueValue>> decomposed_energies_;
 };

@@ -38,8 +38,8 @@ SatClause* SatClause::CreateInternal(absl::Span<const Literal> literals) {
   return clause;
 }
 
-// Note that for an attached clause, removing fixed literal is okay because if
-// any of the watched literal is assigned, then the clause is necessarily true.
+// Note that for an attached clause, removing fixed literals is okay because if
+// any of the watched literals is assigned, then the clause is necessarily true.
 bool SatClause::RemoveFixedLiteralsAndTestIfTrue(
     const VariablesAssignment& assignment) {
   DCHECK(!IsRemoved());
