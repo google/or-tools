@@ -49,6 +49,27 @@ cc_library(
 )
 
 cc_library(
+    name = "generic_graph",
+    hdrs = ["generic_graph.h"],
+    deps = [
+        ":graph",
+        ":hash_or_tree_container",
+        ":index",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "generic_graph_test",
+    srcs = ["generic_graph_test.cc"],
+    deps = [
+        ":generic_graph",
+        "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
+    ],
+)
+
+cc_library(
     name = "random_graph",
     testonly = 1,
     srcs = ["random_graph.cc"],
@@ -156,6 +177,8 @@ cc_library(
     name = "strongly_connected_components",
     hdrs = ["strongly_connected_components.h"],
     deps = [
+        ":generic_graph",
+        ":graph",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
@@ -166,6 +189,7 @@ cc_library(
     srcs = ["topologicalsorter.cc"],
     hdrs = ["topologicalsorter.h"],
     deps = [
+        ":generic_graph",
         ":graph",
         "//ortools/base:container_logging",
         "//ortools/base:map_util",
@@ -199,7 +223,7 @@ cc_library(
     hdrs = ["index.h"],
     deps = [
         ":hash_or_tree_container",
-        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
