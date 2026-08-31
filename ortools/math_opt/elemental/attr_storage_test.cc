@@ -13,9 +13,7 @@
 
 #include "ortools/math_opt/elemental/attr_storage.h"
 
-#include <cstdint>
 #include <optional>
-#include <vector>
 
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"

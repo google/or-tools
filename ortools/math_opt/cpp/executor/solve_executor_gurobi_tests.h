@@ -20,10 +20,12 @@
 #include <ostream>
 #include <string>
 
+#include "absl/status/status.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/math_opt/cpp/executor/executor_init_args.h"
 #include "ortools/math_opt/cpp/executor/solve_executor.h"
+#include "ortools/math_opt/solvers/gurobi.pb.h"
 
 namespace operations_research::math_opt {
 

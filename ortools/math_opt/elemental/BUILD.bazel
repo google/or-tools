@@ -21,10 +21,7 @@ cc_library(
     hdrs = ["attributes.h"],
     copts = ORTOOLS_DEFAULT_COPTS,
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
-    visibility = [
-        "//ortools/math_opt:__subpackages__",
-        "//third_party/ortools/ortools:__subpackages__",
-    ],
+    visibility = ["//ortools:__subpackages__"],
     deps = [
         ":arrays",
         ":elements",
@@ -58,10 +55,7 @@ cc_library(
     hdrs = ["elemental.h"],
     copts = ORTOOLS_DEFAULT_COPTS,
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
-    visibility = [
-        "//ortools/math_opt:__subpackages__",
-        "//third_party/ortools/ortools:__subpackages__",
-    ],
+    visibility = ["//ortools:__subpackages__"],
     deps = [
         ":arrays",
         ":attr_key",
@@ -140,10 +134,7 @@ cc_library(
     hdrs = ["derived_data.h"],
     copts = ORTOOLS_DEFAULT_COPTS,
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
-    visibility = [
-        "//ortools/math_opt:__subpackages__",
-        "//third_party/ortools/ortools:__subpackages__",
-    ],
+    visibility = ["//ortools:__subpackages__"],
     deps = [
         ":arrays",
         ":attr_key",
@@ -335,10 +326,7 @@ cc_library(
     hdrs = ["attr_key.h"],
     copts = ORTOOLS_DEFAULT_COPTS,
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
-    visibility = [
-        "//ortools/math_opt:__subpackages__",
-        "//third_party/ortools/ortools:__subpackages__",
-    ],
+    visibility = ["//ortools:__subpackages__"],
     deps = [
         ":elements",
         ":symmetry",
