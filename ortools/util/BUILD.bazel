@@ -675,3 +675,17 @@ cc_library(
         "@rules_cc//cc/runfiles",
     ],
 )
+
+cc_library(
+    name = "strong_index_map",
+    hdrs = ["strong_index_map.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        "//ortools/base:strong_vector",
+        "//ortools/graph_base:hash_or_tree_container",
+        "//ortools/graph_base:index",
+        "@abseil-cpp//absl/base",
+    ],
+)
+
