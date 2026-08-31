@@ -597,6 +597,8 @@ void VariablesShavingSolver::CopyModelConnectedToVar(
         const int y_interval = ct.no_overlap_2d().y_intervals(i);
         if (!active_constraints(x_interval)) continue;
         if (!active_constraints(y_interval)) continue;
+        if (interval_mapping[x_interval] == -1) continue;
+        if (interval_mapping[y_interval] == -1) continue;
 
         new_no_overlap_2d->add_x_intervals(interval_mapping[x_interval]);
         new_no_overlap_2d->add_y_intervals(interval_mapping[y_interval]);
