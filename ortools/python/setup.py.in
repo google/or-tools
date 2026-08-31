@@ -68,6 +68,7 @@ setup(
             '$<TARGET_FILE_NAME:linear_sum_assignment_pybind11>',
             '$<TARGET_FILE_NAME:max_flow_pybind11>',
             '$<TARGET_FILE_NAME:min_cost_flow_pybind11>',
+            '$<TARGET_FILE_NAME:dag_shortest_path_pybind11>',
             '*.pyi'],
         '@PYTHON_PROJECT@.gscip':['*.pyi'],
         '@PYTHON_PROJECT@.constraint_solver':[
