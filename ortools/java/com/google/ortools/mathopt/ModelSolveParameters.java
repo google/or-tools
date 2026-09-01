@@ -37,8 +37,8 @@ public final class ModelSolveParameters {
    *
    * @throws IllegalArgumentException if {@code proto} refers to variables or constraints that are
    *     not in the model, or if {@code proto} is otherwise invalid (e.g. the {@link
-   *     com.google.ortools.mathopt.SparseDoubleVectorProto} for the variable values in a solution
-   *     hint contains two lists of unequal size).
+   *     com.google.ortools.mathopt.SparseDoubleVectorProto} for the variable values in a
+   *     solution hint contains two lists of unequal size).
    */
   public ModelSolveParameters(Model model, ModelSolveParametersProto proto) {
     if (proto.hasInitialBasis()) {

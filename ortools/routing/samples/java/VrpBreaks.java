@@ -29,7 +29,6 @@ import com.google.ortools.routing.IndexManager;
 import com.google.ortools.routing.Model;
 import com.google.ortools.routing.RoutingSearchParameters;
 import java.util.logging.Logger;
-
 // [END import]
 
 /** Minimal VRP with breaks. */
@@ -120,7 +119,6 @@ public final class VrpBreaks {
     }
     logger.info("Total time of all roues: " + totalTime + "min");
   }
-
   // [END solution_printer]
 
   public static void main(String[] args) {
@@ -158,7 +156,7 @@ public final class VrpBreaks {
 
     // Add Time constraint.
     // [START time_constraint]
-    boolean unused = routing.addDimension(transitCallbackIndex, 10, 180,
+    routing.addDimension(transitCallbackIndex, 10, 180,
         true, // start cumul to zero
         "Time");
     Dimension timeDimension = routing.getMutableDimension("Time");

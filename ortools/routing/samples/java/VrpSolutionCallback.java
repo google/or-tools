@@ -26,7 +26,6 @@ import com.google.ortools.routing.Model;
 import com.google.ortools.routing.RoutingSearchParameters;
 import com.google.protobuf.Duration;
 import java.util.logging.Logger;
-
 // [END import]
 
 /** Minimal VRP. */
@@ -88,7 +87,6 @@ public final class VrpSolutionCallback {
     }
     logger.info("Total distance of all routes: " + totalDistance + "m");
   }
-
   // [END solution_callback_printer]
 
   // [START solution_callback]
@@ -159,7 +157,7 @@ public final class VrpSolutionCallback {
 
     // Add Distance constraint.
     // [START distance_constraint]
-    boolean unused = routingModel.addDimension(transitCallbackIndex,
+    routingModel.addDimension(transitCallbackIndex,
         0, // no slack
         3000, // vehicle maximum travel distance
         true, // start cumul to zero

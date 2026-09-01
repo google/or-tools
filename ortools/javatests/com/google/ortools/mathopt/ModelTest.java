@@ -124,8 +124,8 @@ public final class ModelTest {
   public void addVariable4_readAttributes() {
     var model = new Model("test_model");
 
-    Variable x = model.addVariable(
-        /* lowerBound= */ -1.0, /* upperBound= */ 2.0, /* isInteger= */ true, "x");
+    Variable x =
+        model.addVariable(/* lowerBound= */ -1.0, /* upperBound=*/2.0, /*isInteger=*/true, "x");
 
     assertThat(x.getId()).isEqualTo(0);
     assertThat(x.getLowerBound()).isEqualTo(-1.0);

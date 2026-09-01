@@ -47,7 +47,7 @@ public final class LinearConstraintsTest {
     var constraints = new LinearConstraints(modelId);
 
     LinearConstraint c =
-        constraints.addLinearConstraint(/* lowerBound= */ -1.0, /* upperBound= */ 3.0, "c");
+        constraints.addLinearConstraint(/* lowerBound = */ -1.0, /* upperBound = */ 3.0, "c");
 
     assertThat(c.getLowerBound()).isEqualTo(-1.0);
     assertThat(c.getUpperBound()).isEqualTo(3.0);

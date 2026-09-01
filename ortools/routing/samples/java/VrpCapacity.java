@@ -25,7 +25,6 @@ import com.google.ortools.routing.Model;
 import com.google.ortools.routing.RoutingSearchParameters;
 import com.google.protobuf.Duration;
 import java.util.logging.Logger;
-
 // [END import]
 
 /** Minimal VRP. */
@@ -142,7 +141,7 @@ public final class VrpCapacity {
       int fromNode = manager.indexToNode(fromIndex);
       return data.demands[fromNode];
     });
-    boolean unused = routing.addDimensionWithVehicleCapacity(demandCallbackIndex,
+    routing.addDimensionWithVehicleCapacity(demandCallbackIndex,
         0, // null capacity slack
         data.vehicleCapacities, // vehicle maximum capacities
         true, // start cumul to zero

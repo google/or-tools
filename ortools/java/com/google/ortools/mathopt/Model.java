@@ -291,7 +291,6 @@ public final class Model {
   public Objective getObjective() {
     return objectives.getPrimaryObjective();
   }
-
   /**
    * Sets the primary objective to {@code linearExpression} with direction {@code isMaximize}.
    *

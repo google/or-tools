@@ -23,7 +23,6 @@ import com.google.ortools.routing.IndexManager;
 import com.google.ortools.routing.Model;
 import com.google.ortools.routing.RoutingSearchParameters;
 import java.util.logging.Logger;
-
 // [END import]
 
 /** Minimal VRP. */
@@ -93,7 +92,6 @@ public class VrpInitialRoutes {
     }
     logger.info("Maximum of the route distances: " + maxRouteDistance + "m");
   }
-
   // [END solution_printer]
 
   public static void main(String[] args) throws Exception {
@@ -132,7 +130,7 @@ public class VrpInitialRoutes {
 
     // Add Distance constraint.
     // [START distance_constraint]
-    boolean unused = routing.addDimension(transitCallbackIndex, 0, 3000,
+    routing.addDimension(transitCallbackIndex, 0, 3000,
         true, // start cumul to zero
         "Distance");
     Dimension distanceDimension = routing.getMutableDimension("Distance");

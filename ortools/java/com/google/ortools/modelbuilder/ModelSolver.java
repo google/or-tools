@@ -106,7 +106,6 @@ public final class ModelSolver {
     }
     return helper.getVariableValue(var.getIndex());
   }
-
   /**
    * Checks that the solver has found a solution, and returns the reduced cost of the given
    * variable.

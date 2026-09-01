@@ -209,7 +209,7 @@ public final class Basis {
    * <p>This is the inverse operation of {@link #basisVectorToProto(ImmutableMap)}.
    *
    * @throws IllegalArgumentException if the {@code proto} is invalid and if it has a linear
-   *     constraint ID that does not exist in {@code model}.
+   * constraint ID that does not exist in {@code model}.
    */
   public static ImmutableMap<LinearConstraint, BasisStatus> linearConstraintBasisFromProto(
       Model model, SparseBasisStatusVector proto) {

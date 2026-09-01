@@ -28,10 +28,9 @@ import com.google.ortools.routing.Model;
 import com.google.ortools.routing.RoutingSearchParameters;
 import java.util.Arrays;
 import java.util.logging.Logger;
-
 // [END import]
 
-/** Minimal VRP with Resource Constraints. */
+/** Minimal VRP with Resource Constraints.*/
 public class VrpResources {
   private static final Logger logger = Logger.getLogger(VrpResources.class.getName());
 
@@ -117,7 +116,6 @@ public class VrpResources {
     }
     logger.info("Total time of all routes: " + totalTime + "min");
   }
-
   // [END solution_printer]
 
   public static void main(String[] args) throws Exception {
@@ -155,7 +153,7 @@ public class VrpResources {
 
     // Add Time constraint.
     // [START time_constraint]
-    boolean unused = routing.addDimension(transitCallbackIndex, // transit callback
+    routing.addDimension(transitCallbackIndex, // transit callback
         30, // allow waiting time
         30, // vehicle maximum capacities
         false, // start cumul to zero

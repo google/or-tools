@@ -13,7 +13,6 @@
 
 // [START program]
 package com.google.ortools.sat.samples;
-
 // [START import]
 import static java.lang.Math.max;
 
@@ -32,7 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
-
 // [END import]
 
 /** Minimal Jobshop problem. */
@@ -43,7 +41,6 @@ public class MinimalJobshopSat {
     class Task {
       int machine;
       int duration;
-
       Task(int machine, int duration) {
         this.machine = machine;
         this.duration = duration;
@@ -151,7 +148,6 @@ public class MinimalJobshopSat {
         int taskID;
         int start;
         int duration;
-
         // Ctor
         AssignedTask(int jobID, int taskID, int start, int duration) {
           this.jobID = jobID;

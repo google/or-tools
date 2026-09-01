@@ -25,10 +25,9 @@ import com.google.ortools.routing.IndexManager;
 import com.google.ortools.routing.Model;
 import com.google.ortools.routing.RoutingSearchParameters;
 import java.util.logging.Logger;
-
 // [END import]
 
-/** Minimal Pickup & Delivery Problem (PDP). */
+/** Minimal Pickup & Delivery Problem (PDP).*/
 public class VrpPickupDelivery {
   private static final Logger logger = Logger.getLogger(VrpPickupDelivery.class.getName());
 
@@ -99,7 +98,6 @@ public class VrpPickupDelivery {
     }
     logger.info("Total Distance of all routes: " + totalDistance + "m");
   }
-
   // [END solution_printer]
 
   public static void main(String[] args) throws Exception {
@@ -138,7 +136,7 @@ public class VrpPickupDelivery {
 
     // Add Distance constraint.
     // [START distance_constraint]
-    boolean unused = routing.addDimension(transitCallbackIndex, // transit callback index
+    routing.addDimension(transitCallbackIndex, // transit callback index
         0, // no slack
         3000, // vehicle maximum travel distance
         true, // start cumul to zero
