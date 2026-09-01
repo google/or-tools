@@ -13,6 +13,9 @@
 
 package com.google.ortools.sat;
 
+import com.google.ortools.sat.ConstraintProto;
+import com.google.ortools.sat.CpModelProto;
+
 /**
  * Wrapper around a ConstraintProto.
  *

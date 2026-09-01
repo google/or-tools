@@ -13,6 +13,8 @@
 
 package com.google.ortools.sat;
 
+import com.google.ortools.sat.ReservoirConstraintProto;
+
 /**
  * Specialized reservoir constraint.
  *

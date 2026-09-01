@@ -13,6 +13,7 @@
 
 package com.google.ortools.mathopt;
 
+import com.google.ortools.mathopt.IndicatorConstraintProto;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;

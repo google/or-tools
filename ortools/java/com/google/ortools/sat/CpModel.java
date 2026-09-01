@@ -13,6 +13,22 @@
 
 package com.google.ortools.sat;
 
+import com.google.ortools.sat.AllDifferentConstraintProto;
+import com.google.ortools.sat.AutomatonConstraintProto;
+import com.google.ortools.sat.BoolArgumentProto;
+import com.google.ortools.sat.CpModelProto;
+import com.google.ortools.sat.CpObjectiveProto;
+import com.google.ortools.sat.CumulativeConstraintProto;
+import com.google.ortools.sat.DecisionStrategyProto;
+import com.google.ortools.sat.ElementConstraintProto;
+import com.google.ortools.sat.FloatObjectiveProto;
+import com.google.ortools.sat.InverseConstraintProto;
+import com.google.ortools.sat.LinearArgumentProto;
+import com.google.ortools.sat.LinearConstraintProto;
+import com.google.ortools.sat.LinearExpressionProto;
+import com.google.ortools.sat.NoOverlapConstraintProto;
+import com.google.ortools.sat.ReservoirConstraintProto;
+import com.google.ortools.sat.TableConstraintProto;
 import com.google.ortools.util.Domain;
 import java.util.Arrays;
 import java.util.LinkedHashMap;

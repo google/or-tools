@@ -13,6 +13,9 @@
 
 package com.google.ortools.sat;
 
+import com.google.ortools.sat.CircuitConstraintProto;
+import com.google.ortools.sat.CpModelProto;
+
 /**
  * Specialized circuit constraint.
  *

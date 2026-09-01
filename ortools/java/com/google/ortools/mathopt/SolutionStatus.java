@@ -13,6 +13,7 @@
 
 package com.google.ortools.mathopt;
 
+import com.google.ortools.mathopt.SolutionStatusProto;
 import java.util.EnumMap;
 import java.util.Optional;
 

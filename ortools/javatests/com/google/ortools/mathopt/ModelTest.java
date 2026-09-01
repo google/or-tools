@@ -21,6 +21,18 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.base.Joiner;
 import com.google.common.truth.StandardSubjectBuilder;
+import com.google.ortools.mathopt.IndicatorConstraintProto;
+import com.google.ortools.mathopt.LinearConstraintsProto;
+import com.google.ortools.mathopt.LinearExpressionProto;
+import com.google.ortools.mathopt.ModelProto;
+import com.google.ortools.mathopt.ModelUpdateProto;
+import com.google.ortools.mathopt.ObjectiveProto;
+import com.google.ortools.mathopt.QuadraticConstraintProto;
+import com.google.ortools.mathopt.SecondOrderConeConstraintProto;
+import com.google.ortools.mathopt.SosConstraintProto;
+import com.google.ortools.mathopt.SparseDoubleMatrixProto;
+import com.google.ortools.mathopt.SparseDoubleVectorProto;
+import com.google.ortools.mathopt.VariablesProto;
 import com.google.ortools.mathopt.testing.MathOptProtoSubject;
 import org.junit.jupiter.api.Test;
 

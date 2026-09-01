@@ -13,6 +13,8 @@
 
 package com.google.ortools.sat;
 
+import com.google.ortools.sat.CpModelProto;
+import com.google.ortools.sat.IntegerVariableProto;
 import com.google.ortools.util.Domain;
 
 /** An integer variable. */
