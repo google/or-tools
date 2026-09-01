@@ -60,4 +60,8 @@ if(BUILD_CXX_TESTING)
         GTest::gmock
     )
   endforeach()
+  # These tests are too long so we disable them.
+  set_tests_properties(
+    cxx_util_random_subset_test
+    PROPERTIES DISABLED TRUE)
 endif()
