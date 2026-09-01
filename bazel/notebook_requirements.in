@@ -6,8 +6,8 @@ plotly==5.15.0
 # Notebook
 jupyterlab==4.4.8
 notebook==7.4.2
-jupyter-server==2.17.0
-tornado==6.5.5
+jupyter-server==2.20.0
+tornado==6.5.8
 Pygments==2.19.1
 jsonschema==4.23.0
 jinja2==3.1.6
