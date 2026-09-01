@@ -15,6 +15,7 @@ package com.google.ortools.mathopt;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.ortools.mathopt.ObjectiveProto;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;

@@ -17,6 +17,8 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.google.ortools.mathopt.LinearConstraintsProto;
+import com.google.ortools.mathopt.SparseDoubleMatrixProto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

@@ -17,7 +17,9 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.google.ortools.mathopt.ModelUpdateProto;
 import com.google.ortools.mathopt.Variables.Diff;
+import com.google.ortools.mathopt.VariablesProto;
 import org.junit.jupiter.api.Test;
 
 public final class VariablesTest {

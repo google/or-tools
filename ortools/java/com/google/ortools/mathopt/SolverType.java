@@ -14,6 +14,7 @@
 package com.google.ortools.mathopt;
 
 import com.google.common.base.Verify;
+import com.google.ortools.mathopt.SolverTypeProto;
 import java.util.EnumMap;
 import java.util.Optional;
 

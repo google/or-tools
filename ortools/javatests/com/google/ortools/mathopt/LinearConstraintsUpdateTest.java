@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.ortools.mathopt.LinearConstraints.Diff;
 import com.google.ortools.mathopt.LinearConstraints.UpdateResult;
+import com.google.ortools.mathopt.ModelUpdateProto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

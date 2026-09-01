@@ -14,6 +14,8 @@
 package com.google.ortools.mathopt;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.ortools.mathopt.ModelSolveParametersProto;
+import com.google.ortools.mathopt.SolutionHintProto;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

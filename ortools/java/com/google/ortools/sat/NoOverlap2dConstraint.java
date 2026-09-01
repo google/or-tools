@@ -13,6 +13,9 @@
 
 package com.google.ortools.sat;
 
+import com.google.ortools.sat.CpModelProto;
+import com.google.ortools.sat.NoOverlap2DConstraintProto;
+
 /**
  * Specialized NoOverlap2D constraint.
  *
