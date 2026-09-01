@@ -44,7 +44,7 @@ jobs:
         with:
           credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
           set_cmake_sccache_launcher: true
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           distribution: ${{matrix.java.distrib}}
           java-version: ${{matrix.java.version}}

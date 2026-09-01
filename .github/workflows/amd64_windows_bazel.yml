@@ -32,7 +32,7 @@ jobs:
         with:
           credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
           set_home_bazelrc: true
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
           java-version: '21'
