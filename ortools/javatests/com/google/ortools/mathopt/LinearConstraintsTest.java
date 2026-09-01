@@ -47,7 +47,7 @@ public final class LinearConstraintsTest {
     var constraints = new LinearConstraints(modelId);
 
     LinearConstraint c =
-        constraints.addLinearConstraint(/* lowerBound= */ -1.0, /* upperBound= */ 3.0, "c");
+        constraints.addLinearConstraint(/* lowerBound = */ -1.0, /* upperBound = */ 3.0, "c");
 
     assertThat(c.getLowerBound()).isEqualTo(-1.0);
     assertThat(c.getUpperBound()).isEqualTo(3.0);
@@ -172,7 +172,7 @@ public final class LinearConstraintsTest {
   @Test
   public void deleteLinearConstraint_unowned_throws() {
     var constraints1 = new LinearConstraints(modelId);
-    var unused = constraints1.addLinearConstraint("c1");
+    var unusedC1 = constraints1.addLinearConstraint("c1");
     var constraints2 = new LinearConstraints(new ModelId("m2"));
     LinearConstraint c2 = constraints2.addLinearConstraint("c2");
 
@@ -222,7 +222,7 @@ public final class LinearConstraintsTest {
     Variable x = variables.addVariable("x");
     var constraints = new LinearConstraints(modelId);
     LinearConstraint c = constraints.addLinearConstraint("c").setTerm(x, 1.0);
-    var unused = constraints.addLinearConstraint("d");
+    var unusedD = constraints.addLinearConstraint("d");
     LinearConstraint e = constraints.addLinearConstraint("e").setTerm(x, 3.0);
 
     assertThat(constraints.getUnmodifiableColumnNonzeros(x)).containsExactly(c, e);
@@ -259,7 +259,7 @@ public final class LinearConstraintsTest {
     // Second model
     var modelId2 = new ModelId("m2");
     var variables2 = new Variables(modelId2);
-    var unused = variables2.addVariable("x");
+    var unusedX = variables2.addVariable("x");
     var constraints2 = new LinearConstraints(modelId2);
 
     var getColumnWrongModelException = assertThrows(

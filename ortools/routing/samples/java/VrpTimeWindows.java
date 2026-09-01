@@ -25,13 +25,11 @@ import com.google.ortools.routing.IndexManager;
 import com.google.ortools.routing.Model;
 import com.google.ortools.routing.RoutingSearchParameters;
 import java.util.logging.Logger;
-
 // [END import]
 
 /** VRPTW. */
 public class VrpTimeWindows {
   private static final Logger logger = Logger.getLogger(VrpTimeWindows.class.getName());
-
   // [START program_part1]
   // [START data_model]
   static class DataModel {
@@ -110,7 +108,6 @@ public class VrpTimeWindows {
     }
     logger.info("Total time of all routes: " + totalTime + "min");
   }
-
   // [END solution_printer]
 
   public static void main(String[] args) throws Exception {
@@ -148,7 +145,7 @@ public class VrpTimeWindows {
 
     // Add Time constraint.
     // [START time_constraint]
-    boolean unused = routing.addDimension(transitCallbackIndex, // transit callback
+    routing.addDimension(transitCallbackIndex, // transit callback
         30, // allow waiting time
         30, // vehicle maximum capacities
         false, // start cumul to zero

@@ -298,7 +298,6 @@ public final class CallbackResult {
 
   private static final class GeneratedLinearConstraint {
     final double lowerBound;
-
     /** Must not be modified. Triggers an exception otherwise. */
     final Iterable<Map.Entry<Variable, Double>> linearTerms;
 

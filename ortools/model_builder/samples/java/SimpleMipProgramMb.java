@@ -14,7 +14,6 @@
 // Minimal example to call the MIP solver.
 // [START program]
 package com.google.ortools.modelbuilder.samples;
-
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.modelbuilder.LinearExpr;
@@ -22,7 +21,6 @@ import com.google.ortools.modelbuilder.ModelBuilder;
 import com.google.ortools.modelbuilder.ModelSolver;
 import com.google.ortools.modelbuilder.SolveStatus;
 import com.google.ortools.modelbuilder.Variable;
-
 // [END import]
 
 /** Minimal Mixed Integer Programming example to showcase calling the solver. */

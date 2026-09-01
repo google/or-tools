@@ -134,7 +134,7 @@ public final class VariablesTest {
   public void diffUpdate_diffHasNewVariable() {
     Variables variables = new Variables(new ModelId(""));
     Diff diff = variables.addDiff();
-    var unused = variables.addVariable(
+    var unusedX = variables.addVariable(
         /* lowerBound= */ -1.0, /* upperBound= */ 3.5, /* isInteger= */ false, "x");
 
     ModelUpdateProto.Builder expectedUpdates = ModelUpdateProto.newBuilder();
@@ -282,7 +282,7 @@ public final class VariablesTest {
   @Test
   public void diffNewVariables_noneNew_isEmpty() {
     Variables variables = new Variables(new ModelId(""));
-    var unused = variables.addVariable("x");
+    var unusedX = variables.addVariable("x");
     Diff diff = variables.addDiff();
 
     assertThat(diff.newVariables()).isEmpty();
@@ -291,7 +291,7 @@ public final class VariablesTest {
   @Test
   public void diffNewVariables_newVarsPresent() {
     Variables variables = new Variables(new ModelId(""));
-    var unused = variables.addVariable("w");
+    var unusedW = variables.addVariable("w");
     Diff diff = variables.addDiff();
     Variable x = variables.addVariable("x");
     Variable y = variables.addVariable("y");
@@ -413,7 +413,7 @@ public final class VariablesTest {
     Variable x = variables.addVariable("x").setLowerBound(0.0).setUpperBound(1.0);
     Variable y = variables.addVariable("y").setLowerBound(2.0).setUpperBound(3.0);
     Diff diff = variables.addDiff();
-    var unused = variables.addVariable(
+    var unusedZ = variables.addVariable(
         /* lowerBound= */ 4.0, /* upperBound= */ 5.0, /* isInteger= */ false, "z");
     variables.deleteVariable(x);
     y.setInteger(true);

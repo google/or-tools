@@ -103,7 +103,9 @@ public final class ConstraintSolverTest {
     assertTrue(solver.solve(db));
   }
 
-  /** A decision builder that fails. */
+  /**
+   * A decision builder that fails.
+   */
   static class FailDecisionBuilder extends JavaDecisionBuilder {
     @Override
     public Decision next(Solver solver) throws Solver.FailException {
@@ -361,7 +363,6 @@ public final class ConstraintSolverTest {
       }
       return newSum < sum;
     }
-
     private long sum;
   }
 
@@ -369,7 +370,6 @@ public final class ConstraintSolverTest {
     public StringProperty(String initialValue) {
       value = initialValue;
     }
-
     public void setValue(String newValue) {
       value = newValue;
     }
@@ -378,7 +378,6 @@ public final class ConstraintSolverTest {
     public String toString() {
       return value;
     }
-
     private String value;
   }
 
@@ -425,7 +424,6 @@ public final class ConstraintSolverTest {
         return false;
       }
     }
-
     private int index;
   }
 
@@ -475,13 +473,11 @@ public final class ConstraintSolverTest {
     public SearchCount(AtomicInteger initialCount) {
       count = initialCount;
     }
-
     @Override
     public String get() {
       count.addAndGet(1);
       return "display callback called...";
     }
-
     private final AtomicInteger count;
   }
 

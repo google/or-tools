@@ -34,7 +34,7 @@ public class ReservoirConstraint extends Constraint {
   public ReservoirConstraint addEvent(LinearArgument time, long levelChange) {
     ReservoirConstraintProto.Builder reservoir = getBuilder().getReservoirBuilder();
     reservoir.addTimeExprs(
-        model.getLinearExpressionProtoBuilderFromLinearArgument(time, /* negate= */ false));
+        model.getLinearExpressionProtoBuilderFromLinearArgument(time, /*negate=*/false));
     reservoir.addLevelChanges(model.getLinearExpressionProtoBuilderFromLong(levelChange));
     reservoir.addActiveLiterals(model.trueLiteral().getIndex());
     return this;
@@ -62,7 +62,7 @@ public class ReservoirConstraint extends Constraint {
   public ReservoirConstraint addOptionalEvent(LinearExpr time, long levelChange, Literal isActive) {
     ReservoirConstraintProto.Builder reservoir = getBuilder().getReservoirBuilder();
     reservoir.addTimeExprs(
-        model.getLinearExpressionProtoBuilderFromLinearArgument(time, /* negate= */ false));
+        model.getLinearExpressionProtoBuilderFromLinearArgument(time, /*negate=*/false));
     reservoir.addLevelChanges(model.getLinearExpressionProtoBuilderFromLong(levelChange));
     reservoir.addActiveLiterals(isActive.getIndex());
     return this;

@@ -343,8 +343,7 @@ public final class CpModel {
     Constraint ct = new Constraint(modelBuilder);
     AllDifferentConstraintProto.Builder allDiff = ct.getBuilder().getAllDiffBuilder();
     for (LinearArgument expr : expressions) {
-      allDiff.addExprs(
-          getLinearExpressionProtoBuilderFromLinearArgument(expr, /* negate= */ false));
+      allDiff.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/false));
     }
     return ct;
   }
@@ -631,9 +630,9 @@ public final class CpModel {
   public Constraint addMinEquality(LinearArgument target, LinearArgument[] exprs) {
     Constraint ct = new Constraint(modelBuilder);
     LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
-    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /* negate= */ true));
+    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/true));
     for (LinearArgument expr : exprs) {
-      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /* negate= */ true));
+      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/true));
     }
     return ct;
   }
@@ -643,9 +642,9 @@ public final class CpModel {
       LinearArgument target, Iterable<? extends LinearArgument> exprs) {
     Constraint ct = new Constraint(modelBuilder);
     LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
-    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /* negate= */ true));
+    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/true));
     for (LinearArgument expr : exprs) {
-      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /* negate= */ true));
+      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/true));
     }
     return ct;
   }
@@ -654,10 +653,9 @@ public final class CpModel {
   public Constraint addMaxEquality(LinearArgument target, LinearArgument[] exprs) {
     Constraint ct = new Constraint(modelBuilder);
     LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
-    linMax.setTarget(
-        getLinearExpressionProtoBuilderFromLinearArgument(target, /* negate= */ false));
+    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false));
     for (LinearArgument expr : exprs) {
-      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /* negate= */ false));
+      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/false));
     }
     return ct;
   }
@@ -667,10 +665,9 @@ public final class CpModel {
       LinearArgument target, Iterable<? extends LinearArgument> exprs) {
     Constraint ct = new Constraint(modelBuilder);
     LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
-    linMax.setTarget(
-        getLinearExpressionProtoBuilderFromLinearArgument(target, /* negate= */ false));
+    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false));
     for (LinearArgument expr : exprs) {
-      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /* negate= */ false));
+      linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/false));
     }
     return ct;
   }
@@ -681,9 +678,9 @@ public final class CpModel {
     Constraint ct = new Constraint(modelBuilder);
     ct.getBuilder()
         .getIntDivBuilder()
-        .setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /* negate= */ false))
-        .addExprs(getLinearExpressionProtoBuilderFromLinearArgument(num, /* negate= */ false))
-        .addExprs(getLinearExpressionProtoBuilderFromLinearArgument(denom, /* negate= */ false));
+        .setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false))
+        .addExprs(getLinearExpressionProtoBuilderFromLinearArgument(num, /*negate=*/false))
+        .addExprs(getLinearExpressionProtoBuilderFromLinearArgument(denom, /*negate=*/false));
     return ct;
   }
 
@@ -691,10 +688,9 @@ public final class CpModel {
   public Constraint addAbsEquality(LinearArgument target, LinearArgument expr) {
     Constraint ct = new Constraint(modelBuilder);
     LinearArgumentProto.Builder linMax = ct.getBuilder().getLinMaxBuilder();
-    linMax.setTarget(
-        getLinearExpressionProtoBuilderFromLinearArgument(target, /* negate= */ false));
-    linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /* negate= */ false));
-    linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /* negate= */ true));
+    linMax.setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false));
+    linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/false));
+    linMax.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/true));
     return ct;
   }
 
@@ -704,9 +700,9 @@ public final class CpModel {
     Constraint ct = new Constraint(modelBuilder);
     ct.getBuilder()
         .getIntModBuilder()
-        .setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /* negate= */ false))
-        .addExprs(getLinearExpressionProtoBuilderFromLinearArgument(var, /* negate= */ false))
-        .addExprs(getLinearExpressionProtoBuilderFromLinearArgument(mod, /* negate= */ false));
+        .setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false))
+        .addExprs(getLinearExpressionProtoBuilderFromLinearArgument(var, /*negate=*/false))
+        .addExprs(getLinearExpressionProtoBuilderFromLinearArgument(mod, /*negate=*/false));
     return ct;
   }
 
@@ -715,8 +711,8 @@ public final class CpModel {
     Constraint ct = new Constraint(modelBuilder);
     ct.getBuilder()
         .getIntModBuilder()
-        .setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /* negate= */ false))
-        .addExprs(getLinearExpressionProtoBuilderFromLinearArgument(var, /* negate= */ false))
+        .setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false))
+        .addExprs(getLinearExpressionProtoBuilderFromLinearArgument(var, /*negate=*/false))
         .addExprs(getLinearExpressionProtoBuilderFromLong(mod));
     return ct;
   }
@@ -725,11 +721,9 @@ public final class CpModel {
   public Constraint addMultiplicationEquality(LinearArgument target, LinearArgument[] exprs) {
     Constraint ct = new Constraint(modelBuilder);
     LinearArgumentProto.Builder intProd = ct.getBuilder().getIntProdBuilder();
-    intProd.setTarget(
-        getLinearExpressionProtoBuilderFromLinearArgument(target, /* negate= */ false));
+    intProd.setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false));
     for (LinearArgument expr : exprs) {
-      intProd.addExprs(
-          getLinearExpressionProtoBuilderFromLinearArgument(expr, /* negate= */ false));
+      intProd.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(expr, /*negate=*/false));
     }
     return ct;
   }
@@ -739,10 +733,9 @@ public final class CpModel {
       LinearArgument target, LinearArgument left, LinearArgument right) {
     Constraint ct = new Constraint(modelBuilder);
     LinearArgumentProto.Builder intProd = ct.getBuilder().getIntProdBuilder();
-    intProd.setTarget(
-        getLinearExpressionProtoBuilderFromLinearArgument(target, /* negate= */ false));
-    intProd.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(left, /* negate= */ false));
-    intProd.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(right, /* negate= */ false));
+    intProd.setTarget(getLinearExpressionProtoBuilderFromLinearArgument(target, /*negate=*/false));
+    intProd.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(left, /*negate=*/false));
+    intProd.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(right, /*negate=*/false));
     return ct;
   }
 
@@ -765,9 +758,9 @@ public final class CpModel {
   public IntervalVar newIntervalVar(
       LinearArgument start, LinearArgument size, LinearArgument end, String name) {
     return new IntervalVar(modelBuilder,
-        getLinearExpressionProtoBuilderFromLinearArgument(start, /* negate= */ false),
-        getLinearExpressionProtoBuilderFromLinearArgument(size, /* negate= */ false),
-        getLinearExpressionProtoBuilderFromLinearArgument(end, /* negate= */ false), name);
+        getLinearExpressionProtoBuilderFromLinearArgument(start, /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLinearArgument(size, /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLinearArgument(end, /*negate=*/false), name);
   }
 
   /**
@@ -783,10 +776,10 @@ public final class CpModel {
    */
   public IntervalVar newFixedSizeIntervalVar(LinearArgument start, long size, String name) {
     return new IntervalVar(modelBuilder,
-        getLinearExpressionProtoBuilderFromLinearArgument(start, /* negate= */ false),
+        getLinearExpressionProtoBuilderFromLinearArgument(start, /*negate=*/false),
         getLinearExpressionProtoBuilderFromLong(size),
         getLinearExpressionProtoBuilderFromLinearArgument(
-            LinearExpr.newBuilder().add(start).add(size), /* negate= */ false),
+            LinearExpr.newBuilder().add(start).add(size), /*negate=*/false),
         name);
   }
 
@@ -818,9 +811,9 @@ public final class CpModel {
   public IntervalVar newOptionalIntervalVar(LinearArgument start, LinearArgument size,
       LinearArgument end, Literal isPresent, String name) {
     return new IntervalVar(modelBuilder,
-        getLinearExpressionProtoBuilderFromLinearArgument(start, /* negate= */ false),
-        getLinearExpressionProtoBuilderFromLinearArgument(size, /* negate= */ false),
-        getLinearExpressionProtoBuilderFromLinearArgument(end, /* negate= */ false),
+        getLinearExpressionProtoBuilderFromLinearArgument(start, /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLinearArgument(size, /*negate=*/false),
+        getLinearExpressionProtoBuilderFromLinearArgument(end, /*negate=*/false),
         isPresent.getIndex(), name);
   }
 
@@ -840,10 +833,10 @@ public final class CpModel {
   public IntervalVar newOptionalFixedSizeIntervalVar(
       LinearArgument start, long size, Literal isPresent, String name) {
     return new IntervalVar(modelBuilder,
-        getLinearExpressionProtoBuilderFromLinearArgument(start, /* negate= */ false),
+        getLinearExpressionProtoBuilderFromLinearArgument(start, /*negate=*/false),
         getLinearExpressionProtoBuilderFromLong(size),
         getLinearExpressionProtoBuilderFromLinearArgument(
-            LinearExpr.newBuilder().add(start).add(size), /* negate= */ false),
+            LinearExpr.newBuilder().add(start).add(size), /*negate=*/false),
         isPresent.getIndex(), name);
   }
 

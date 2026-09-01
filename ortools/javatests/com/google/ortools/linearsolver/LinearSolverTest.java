@@ -430,7 +430,6 @@ public final class LinearSolverTest {
     }
     assertTrue(success);
   }
-
   @Test
   public void testMPSolver_exportModelToProto() {
     final MPSolver.OptimizationProblemType problemType =

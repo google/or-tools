@@ -124,7 +124,7 @@ public final class ObjectivesTest {
   @Test
   public void addAuxiliaryObjective_withAutomaticPriorityAndExistingObjectives_priorityIsLarger() {
     var objectives = new Objectives(modelId, "");
-    var unused = objectives.addAuxiliaryObjective(5L, "");
+    var unused1 = objectives.addAuxiliaryObjective(5L, "");
     var unused2 = objectives.addAuxiliaryObjective(2L, "");
 
     AuxiliaryObjective objective = objectives.addAuxiliaryObjective("");
@@ -246,7 +246,7 @@ public final class ObjectivesTest {
   @Test
   public void auxiliaryObjectivesToProto_emptyObjectives_arePresent() {
     var objectives = new Objectives(modelId, "");
-    var unused = objectives.addAuxiliaryObjective(6L, "A");
+    var unused1 = objectives.addAuxiliaryObjective(6L, "A");
     var unused2 = objectives.addAuxiliaryObjective(4L, "B");
 
     ImmutableMap<Long, ObjectiveProto> auxObjProtos = objectives.auxiliaryObjectivesToProto();
@@ -264,7 +264,7 @@ public final class ObjectivesTest {
   public void auxiliaryObjectivesToProto_objectiveWithCoefs_isPresent() {
     var objectives = new Objectives(modelId, "");
     Variable x = variables.addVariable("x");
-    var unused = variables.addVariable("y");
+    var unusedY = variables.addVariable("y");
     Variable z = variables.addVariable("z");
     var auxA = objectives.addAuxiliaryObjective(6L, "A");
     auxA.setMaximize(true).setOffset(4.0).setLinearTerm(x, 5.5).setLinearTerm(z, -2.0);
@@ -476,7 +476,7 @@ public final class ObjectivesTest {
   @Test
   public void diffAdvance_variableCreated_advanceMovesVariableCheckpoint() {
     var objectives = new Objectives(modelId, "");
-    var unused = variables.addVariable("x");
+    var unusedX = variables.addVariable("x");
     Objective primary = objectives.getPrimaryObjective();
     Diff diff = objectives.addDiff(variables.getNextId());
     Variable y = variables.addVariable("y");
