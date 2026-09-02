@@ -312,10 +312,10 @@ class BoundedDijkstraWrapper {
       //     or ieee754 floating-point, when the machine is little endian, and
       //     when the total size of NodeDistance equals 16 bytes).
       // And here are the speeds of the BM_GridGraph benchmark (in which
-      // DistanceType=int64_t and NodeIndex=int32_t), done with benchy
-      // --runs=20: 0) BM_GridGraph<true> 9.22ms ± 5% BM_GridGraph<false> 3.19ms
-      // ± 6% 1) BM_GridGraph<true> 8.89ms ± 4%   BM_GridGraph<false> 3.07ms ±
-      // 3% 2) BM_GridGraph<true> 8.61ms ± 3%   BM_GridGraph<false> 3.13ms ± 6%
+      // DistanceType=int64_t and NodeIndex=int32_t), done with benchy --runs=20
+      // 0) BM_GridGraph<true> 9.22ms ± 5% BM_GridGraph<false> 3.19ms ± 6%
+      // 1) BM_GridGraph<true> 8.89ms ± 4%   BM_GridGraph<false> 3.07ms ± 3%
+      // 2) BM_GridGraph<true> 8.61ms ± 3%   BM_GridGraph<false> 3.13ms ± 6%
       // 3) BM_GridGraph<true> 7.85ms ± 2%   BM_GridGraph<false> 3.29ms ± 2%
       return std::tie(distance, node) < std::tie(other.distance, other.node);
     }

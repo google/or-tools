@@ -1,4 +1,4 @@
-# A flow problem with int64_t::max capacity that was triggering an issue on
+# A flow problem with int64::max capacity that was triggering an issue on
 # the 28/11/2014 (now fixed).
 nodes {
   id: 0

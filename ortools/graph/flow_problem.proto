@@ -40,7 +40,6 @@ package operations_research;
 option java_package = "com.google.ortools.graph";
 option java_multiple_files = true;
 option csharp_namespace = "Google.OrTools.Graph";
-
 message FlowArcProto {
   // A directed arc goes from a tail node to a head node.
   // Node ids must be non-negative (>= 0).
