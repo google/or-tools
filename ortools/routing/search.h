@@ -15,6 +15,7 @@
 #define ORTOOLS_ROUTING_SEARCH_H_
 
 #include <algorithm>
+#include <compare>
 #include <cstddef>
 #include <cstdint>
 #include <deque>
@@ -404,10 +405,7 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
     int64_t distance;
     int vehicle;
 
-    bool operator<(const StartEndValue& other) const {
-      return std::tie(distance, vehicle) <
-             std::tie(other.distance, other.vehicle);
-    }
+    auto operator<=>(const StartEndValue&) const = default;
   };
   struct EvaluatorCache {
     int64_t value = 0;
@@ -422,14 +420,7 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
     bool is_node_index = true;
     int index;
 
-    bool operator>(const Seed& other) const {
-      for (size_t i = 0; i < properties.size(); ++i) {
-        if (properties[i] == other.properties[i]) continue;
-        return properties[i] > other.properties[i];
-      }
-      return std::tie(vehicle, is_node_index, index) >
-             std::tie(other.vehicle, other.is_node_index, other.index);
-    }
+    bool operator>(const Seed& other) const;
   };
 
   struct SeedQueue {
@@ -562,25 +553,7 @@ class GlobalCheapestInsertionFilteredHeuristic
           bucket_(bucket) {}
     // Note: for compatibility reasons, comparator follows tie-breaking rules
     // used in the first version of GlobalCheapestInsertion.
-    bool operator<(const PairEntry& other) const {
-      // We give higher priority to insertions from lower buckets.
-      if (bucket_ != other.bucket_) {
-        return bucket_ > other.bucket_;
-      }
-      // We then compare by value, then we favor insertions (vehicle != -1).
-      // The rest of the tie-breaking is done with std::tie.
-      if (value_ != other.value_) {
-        return value_ > other.value_;
-      }
-      if ((vehicle_ == -1) ^ (other.vehicle_ == -1)) {
-        return vehicle_ == -1;
-      }
-      return std::tie(pickup_insert_after_, pickup_to_insert_,
-                      delivery_insert_after_, delivery_to_insert_, vehicle_) >
-             std::tie(other.pickup_insert_after_, other.pickup_to_insert_,
-                      other.delivery_insert_after_, other.delivery_to_insert_,
-                      other.vehicle_);
-    }
+    bool operator<(const PairEntry& other) const;
     void SetHeapIndex(int h) { heap_index_ = h; }
     int GetHeapIndex() const { return heap_index_; }
     void set_value(int64_t value) { value_ = value; }

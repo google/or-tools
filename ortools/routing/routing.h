@@ -2469,7 +2469,7 @@ class OR_ROUTING_DLL Model {
   void AppendArcCosts(const RoutingSearchParameters& parameters, int node_index,
                       std::vector<operations_research::IntVar*>* cost_elements);
   operations_research::Assignment* DoRestoreAssignment();
-  static const CostClassIndex kCostClassIndexOfZeroCost;
+  static constexpr CostClassIndex kCostClassIndexOfZeroCost = CostClassIndex(0);
   int64_t SafeGetCostClassInt64OfVehicle(int64_t vehicle) const {
     DCHECK_LT(0, vehicles_);
     return (vehicle >= 0 ? GetCostClassIndexOfVehicle(vehicle)

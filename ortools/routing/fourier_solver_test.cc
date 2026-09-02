@@ -13,7 +13,6 @@
 
 #include "ortools/routing/fourier_solver.h"
 
-#include <cstdint>
 #include <limits>
 #include <string>
 #include <tuple>
@@ -24,7 +23,6 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "benchmark/benchmark.h"
 #include "google/protobuf/duration.pb.h"
 #include "gtest/gtest.h"
 #include "ortools/util/optional_boolean.pb.h"
@@ -112,35 +110,6 @@ TEST(MaxLinearExpressionEvaluatorTest, ManyVariablesManyExpressions) {
     }
   }
 }
-
-void BM_MaxLinearExpressionEvaluator_Evaluate(benchmark::State& bench_state) {
-  const int num_variables = bench_state.range(0);
-  const int num_constraints = bench_state.range(1);
-  // Make constraints.
-  std::vector<std::vector<double>> rows;
-  for (int i = 0; i < num_constraints; ++i) {
-    std::vector<double> row;
-    row.reserve(num_variables);
-    for (int j = 0; j < num_variables; ++j) {
-      row.push_back(i + 1);
-    }
-    rows.push_back(std::move(row));
-  }
-  MaxLinearExpressionEvaluator evaluator(rows);
-  std::vector<double> values(num_variables, 0.0);
-  absl::c_iota(values, 1);
-  int64_t num_items = 0;
-  for (auto _ : bench_state) {
-    benchmark::DoNotOptimize(evaluator.Evaluate(values));
-    ++num_items;
-  }
-  bench_state.SetItemsProcessed(num_items);
-  bench_state.SetBytesProcessed(num_items * num_constraints * num_variables *
-                                sizeof(double));
-}
-
-BENCHMARK(BM_MaxLinearExpressionEvaluator_Evaluate)
-    ->RangePair(1, 1 << 8, 1, 1 << 8);
 
 using FourierSolverTest = ::testing::TestWithParam<int>;
 

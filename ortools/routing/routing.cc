@@ -70,6 +70,7 @@
 #include "ortools/graph/linear_assignment.h"
 #include "ortools/graph_base/connected_components.h"
 #include "ortools/graph_base/graph.h"
+#include "ortools/graph_base/index.h"
 #include "ortools/routing/constraints.h"
 #include "ortools/routing/decision_builders.h"
 #include "ortools/routing/enums.pb.h"
@@ -92,6 +93,7 @@
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/stats.h"
+#include "ortools/util/strong_index_map.h"
 
 namespace {
 using GraphNodeIndex = int32_t;
@@ -1205,7 +1207,7 @@ void ResourceGroup::ComputeResourceClasses() {
   resource_class_indices_.assign(resources_.size(), ResourceClassIndex(-1));
   resource_indices_per_class_.clear();
 
-  absl::flat_hash_map<ResourceClass, ResourceClassIndex> resource_class_map;
+  StrongIndexMap<ResourceClassIndex, ResourceClass> resource_classes;
   for (int r = 0; r < resources_.size(); ++r) {
     ResourceClass resource_class;
 
@@ -1224,16 +1226,12 @@ void ResourceGroup::ComputeResourceClasses() {
                            model_->ResourceVar(v, index_)->Contains(r);
     }
 
-    DCHECK_EQ(resource_indices_per_class_.size(), resource_class_map.size());
-    const ResourceClassIndex num_resource_classes(resource_class_map.size());
-    ResourceClassIndex& resource_class_index = resource_class_indices_[r];
-    resource_class_index = gtl::LookupOrInsert(
-        &resource_class_map, resource_class, num_resource_classes);
-    if (resource_class_index == num_resource_classes) {
-      // New resource class.
-      resource_indices_per_class_.push_back({});
-    }
+    DCHECK_EQ(resource_indices_per_class_.size(), resource_classes.size());
+    auto [resource_class_index, inserted] =
+        resource_classes.TryEmplace(std::move(resource_class));
+    if (inserted) resource_indices_per_class_.emplace_back();
     resource_indices_per_class_[resource_class_index].push_back(r);
+    resource_class_indices_[r] = resource_class_index;
   }
 }
 
@@ -1507,20 +1505,14 @@ void Model::FinalizeAllowedVehicles() {
   }
 }
 
-// static
-const CostClassIndex Model::kCostClassIndexOfZeroCost = CostClassIndex(0);
-
 void Model::ComputeCostClasses(const RoutingSearchParameters& /*parameters*/) {
   // Create and reduce the cost classes.
-  cost_classes_.reserve(vehicles_);
-  cost_classes_.clear();
   cost_class_index_of_vehicle_.assign(vehicles_, CostClassIndex(-1));
-  absl::flat_hash_map<CostClass, CostClassIndex> cost_class_map;
+  StrongIndexMap<CostClassIndex, CostClass> cost_classes(
+      /*reserve_num_objects=*/CostClassIndex{vehicles_});
   // Pre-insert the built-in cost class 'zero cost' with index 0.
-  const CostClass zero_cost_class(0);
-  cost_classes_.push_back(zero_cost_class);
-  DCHECK_EQ(cost_classes_[kCostClassIndexOfZeroCost].evaluator_index, 0);
-  cost_class_map[zero_cost_class] = kCostClassIndexOfZeroCost;
+  cost_classes.LookupOrAdd(CostClass(0));
+  DCHECK_EQ(cost_classes[kCostClassIndexOfZeroCost].evaluator_index, 0);
 
   // Determine the canonicalized cost class for each vehicle, and insert it as
   // a new cost class if it doesn't exist already. Building cached evaluators
@@ -1543,16 +1535,14 @@ void Model::ComputeCostClasses(const RoutingSearchParameters& /*parameters*/) {
     absl::c_sort(
         cost_class.dimension_transit_evaluator_class_and_cost_coefficient);
     // Try inserting the CostClass, if it's not already present.
-    const CostClassIndex num_cost_classes(cost_classes_.size());
-    const CostClassIndex cost_class_index =
-        gtl::LookupOrInsert(&cost_class_map, cost_class, num_cost_classes);
-    if (cost_class_index == kCostClassIndexOfZeroCost) {
+    const CostClassIndex class_index =
+        cost_classes.LookupOrAdd(std::move(cost_class));
+    if (class_index == kCostClassIndexOfZeroCost) {
       has_vehicle_with_zero_cost_class_ = true;
-    } else if (cost_class_index == num_cost_classes) {  // New cost class.
-      cost_classes_.push_back(std::move(cost_class));
     }
-    cost_class_index_of_vehicle_[vehicle] = cost_class_index;
+    cost_class_index_of_vehicle_[vehicle] = class_index;
   }
+  cost_classes_ = std::move(cost_classes).Extract();
 
   // TRICKY:
   // If some vehicle had the "zero" cost class, then we'll have homogeneous
@@ -1642,7 +1632,7 @@ struct VehicleClass {
 
 void Model::ComputeVehicleClasses() {
   vehicle_class_index_of_vehicle_.assign(vehicles_, VehicleClassIndex(-1));
-  absl::flat_hash_map<VehicleClass, VehicleClassIndex> vehicle_class_map;
+  StrongIndexMap<VehicleClassIndex, VehicleClass> vehicle_classes;
   std::vector<bool> node_is_visitable(Size(), true);
   const auto bool_vec_hash = absl::Hash<std::vector<bool>>();
   for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
@@ -1704,11 +1694,10 @@ void Model::ComputeVehicleClasses() {
     }
     DCHECK_EQ(allowed_resources_hash.size(), resource_groups_.size());
 
-    const VehicleClassIndex num_vehicle_classes(vehicle_class_map.size());
-    vehicle_class_index_of_vehicle_[vehicle] = gtl::LookupOrInsert(
-        &vehicle_class_map, vehicle_class, num_vehicle_classes);
+    vehicle_class_index_of_vehicle_[vehicle] =
+        vehicle_classes.LookupOrAdd(vehicle_class);
   }
-  num_vehicle_classes_ = vehicle_class_map.size();
+  num_vehicle_classes_ = vehicle_classes.size().value();
 }
 
 void Model::ComputeVehicleTypes() {
@@ -1727,7 +1716,7 @@ void Model::ComputeVehicleTypes() {
   vehicles_per_vehicle_class.clear();
   vehicles_per_vehicle_class.resize(GetVehicleClassesCount());
 
-  absl::flat_hash_map<int64_t, int> type_to_type_index;
+  util::graph::Index<int64_t> vehicle_types;
 
   for (int v = 0; v < vehicles_; v++) {
     const int start = manager_.IndexToNode(Start(v)).value();
@@ -1735,16 +1724,13 @@ void Model::ComputeVehicleTypes() {
     const int cost_class = GetCostClassIndexOfVehicle(v).value();
     const int64_t type = cost_class * nodes_squared + start * nodes_ + end;
 
-    const auto& vehicle_type_added = type_to_type_index.insert(
-        std::make_pair(type, type_to_type_index.size()));
-
-    const int index = vehicle_type_added.first->second;
+    const auto [index, inserted] = vehicle_types.TryEmplace(type);
 
     const int vehicle_class = GetVehicleClassIndexOfVehicle(v).value();
     const VehicleTypeContainer::VehicleClassEntry class_entry = {
         vehicle_class, GetFixedCostOfVehicle(v)};
 
-    if (vehicle_type_added.second) {
+    if (inserted) {
       // Type was not indexed yet.
       DCHECK_EQ(sorted_vehicle_classes_per_type.size(), index);
       sorted_vehicle_classes_per_type.push_back({class_entry});
@@ -7027,17 +7013,11 @@ void ComputeTransitClasses(absl::Span<const int> evaluator_indices,
   CHECK(vehicle_to_class != nullptr);
   class_evaluators->clear();
   vehicle_to_class->resize(evaluator_indices.size(), -1);
-  absl::flat_hash_map<int, int64_t> evaluator_to_class;
-  for (int i = 0; i < evaluator_indices.size(); ++i) {
-    const int evaluator_index = evaluator_indices[i];
-    const int new_class = class_evaluators->size();
-    const int evaluator_class =
-        gtl::LookupOrInsert(&evaluator_to_class, evaluator_index, new_class);
-    if (evaluator_class == new_class) {
-      class_evaluators->push_back(evaluator_index);
-    }
-    (*vehicle_to_class)[i] = evaluator_class;
+  util::graph::Index<int> evaluators;
+  for (int v = 0; v < evaluator_indices.size(); ++v) {
+    (*vehicle_to_class)[v] = evaluators.LookupOrAdd(evaluator_indices[v]);
   }
+  *class_evaluators = std::move(evaluators).Extract();
 }
 }  // namespace
 

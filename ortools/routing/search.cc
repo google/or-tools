@@ -5821,4 +5821,36 @@ DecisionBuilder* Model::MakeSelfDependentDimensionFinalizer(
       solver_->MakeLocalSearchPhase(first_solution, parameters);
   return finalizer;
 }
+
+bool CheapestInsertionFilteredHeuristic::Seed::operator>(
+    const Seed& other) const {
+  for (size_t i = 0; i < properties.size(); ++i) {
+    if (properties[i] == other.properties[i]) continue;
+    return properties[i] > other.properties[i];
+  }
+  return std::tie(vehicle, is_node_index, index) >
+         std::tie(other.vehicle, other.is_node_index, other.index);
+}
+
+bool GlobalCheapestInsertionFilteredHeuristic::PairEntry::operator<(
+    const PairEntry& other) const {
+  // We give higher priority to insertions from lower buckets.
+  if (bucket_ != other.bucket_) {
+    return bucket_ > other.bucket_;
+  }
+  // We then compare by value, then we favor insertions (vehicle != -1).
+  // The rest of the tie-breaking is done with std::tie.
+  if (value_ != other.value_) {
+    return value_ > other.value_;
+  }
+  if ((vehicle_ == -1) ^ (other.vehicle_ == -1)) {
+    return vehicle_ == -1;
+  }
+  return std::tie(pickup_insert_after_, pickup_to_insert_,
+                  delivery_insert_after_, delivery_to_insert_, vehicle_) >
+         std::tie(other.pickup_insert_after_, other.pickup_to_insert_,
+                  other.delivery_insert_after_, other.delivery_to_insert_,
+                  other.vehicle_);
+}
+
 }  // namespace operations_research::routing
