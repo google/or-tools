@@ -5,11 +5,10 @@
 The Vehicle Routing solver can be used to solve various VRP.
 
 ## Vehicle Routing Problem
-Data Problem:
-![problem](vrp.svg)
 
-Solution:
-![solution](vrp_solution.svg)
+Data Problem: ![problem](vrp.svg)
+
+Solution: ![solution](vrp_solution.svg)
 
 Samples:
 
@@ -19,11 +18,10 @@ Samples:
 *   [Vrp.cs](/ortools/routing/samples/Vrp.cs)
 
 ## Global Span Constraints
-Data Problem:
-![problem](vrp_global_span.svg)
 
-Solution:
-![solution](vrp_global_span_solution.svg)
+Data Problem: ![problem](vrp_global_span.svg)
+
+Solution: ![solution](vrp_global_span_solution.svg)
 
 Samples:
 
@@ -33,11 +31,10 @@ Samples:
 *   [VrpGlobalSpan.cs](/ortools/routing/samples/VrpGlobalSpan.cs)
 
 ## Capacity Constraints
-Data Problem:
-![problem](vrp_capacity.svg)
 
-Solution:
-![solution](vrp_capacity_solution.svg)
+Data Problem: ![problem](vrp_capacity.svg)
+
+Solution: ![solution](vrp_capacity_solution.svg)
 
 Samples:
 
@@ -47,11 +44,10 @@ Samples:
 *   [VrpCapacity.cs](/ortools/routing/samples/VrpCapacity.cs)
 
 ## Drop Nodes Constraints
-Data Problem:
-![problem](vrp_drop_nodes.svg)
 
-Solution:
-![solution](vrp_drop_nodes_solution.svg)
+Data Problem: ![problem](vrp_drop_nodes.svg)
+
+Solution: ![solution](vrp_drop_nodes_solution.svg)
 
 Samples:
 
@@ -61,11 +57,10 @@ Samples:
 *   [VrpDropNodes.cs](/ortools/routing/samples/VrpDropNodes.cs)
 
 ## Multiple Starts Ends
-Data Problem:
-![problem](vrp_starts_ends.svg)
 
-Solution:
-![solution](vrp_starts_ends_solution.svg)
+Data Problem: ![problem](vrp_starts_ends.svg)
+
+Solution: ![solution](vrp_starts_ends_solution.svg)
 
 Samples:
 
@@ -75,11 +70,10 @@ Samples:
 *   [VrpStartsEnds.cs](/ortools/routing/samples/VrpStartsEnds.cs)
 
 ## Time Window Constraints
-Data Problem:
-![problem](vrp_time_windows.svg)
 
-Solution:
-![solution](vrp_time_windows_solution.svg)
+Data Problem: ![problem](vrp_time_windows.svg)
+
+Solution: ![solution](vrp_time_windows_solution.svg)
 
 Samples:
 
@@ -89,11 +83,10 @@ Samples:
 *   [VrpTimeWindows.cs](/ortools/routing/samples/VrpTimeWindows.cs)
 
 ## Resource Constraints
-Data Problem:
-![problem](vrp_resources.svg)
 
-Solution:
-![solution](vrp_resources_solution.svg)
+Data Problem: ![problem](vrp_resources.svg)
+
+Solution: ![solution](vrp_resources_solution.svg)
 
 Samples:
 
