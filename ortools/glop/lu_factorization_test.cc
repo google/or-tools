@@ -30,7 +30,7 @@
 #include "ortools/lp_data/permutation.h"
 #include "ortools/lp_data/sparse.h"
 #include "ortools/lp_data/sparse_column.h"
-#include "ortools/util/fp_utils.h"
+#include "ortools/util/fp_utils_testing.h"
 
 namespace operations_research {
 namespace glop {
@@ -82,17 +82,22 @@ void TestLuFactorization(const SparseMatrix& matrix, Fractional det,
   lu.ComputeLowerTimesUpper(&product);
 
   EXPECT_TRUE(paq.Equals(product, kEps));
-  EXPECT_COMPARABLE(det, lu.ComputeDeterminant(), kEps);
-  EXPECT_COMPARABLE(one_norm, matrix.ComputeOneNorm(), kEps);
-  EXPECT_COMPARABLE(inv_one_norm, lu.ComputeInverseOneNorm(), kEps);
-  EXPECT_COMPARABLE(one_norm * inv_one_norm,
-                    lu.ComputeOneNormConditionNumber(wrapped_matrix.AsView()),
-                    kEps);
-  EXPECT_COMPARABLE(inf_norm, matrix.ComputeInfinityNorm(), kEps);
-  EXPECT_COMPARABLE(inv_inf_norm, lu.ComputeInverseInfinityNorm(), kEps);
-  EXPECT_COMPARABLE(
-      inf_norm * inv_inf_norm,
-      lu.ComputeInfinityNormConditionNumber(wrapped_matrix.AsView()), kEps);
+  EXPECT_THAT(lu.ComputeDeterminant(),
+              WithinSameAbsoluteOrRelativeTolerance(det, kEps));
+  EXPECT_THAT(matrix.ComputeOneNorm(),
+              WithinSameAbsoluteOrRelativeTolerance(one_norm, kEps));
+  EXPECT_THAT(lu.ComputeInverseOneNorm(),
+              WithinSameAbsoluteOrRelativeTolerance(inv_one_norm, kEps));
+  EXPECT_THAT(
+      lu.ComputeOneNormConditionNumber(wrapped_matrix.AsView()),
+      WithinSameAbsoluteOrRelativeTolerance(one_norm * inv_one_norm, kEps));
+  EXPECT_THAT(matrix.ComputeInfinityNorm(),
+              WithinSameAbsoluteOrRelativeTolerance(inf_norm, kEps));
+  EXPECT_THAT(lu.ComputeInverseInfinityNorm(),
+              WithinSameAbsoluteOrRelativeTolerance(inv_inf_norm, kEps));
+  EXPECT_THAT(
+      lu.ComputeInfinityNormConditionNumber(wrapped_matrix.AsView()),
+      WithinSameAbsoluteOrRelativeTolerance(inf_norm * inv_inf_norm, kEps));
 }
 
 TEST(LuFactorizationTest, Identity) {

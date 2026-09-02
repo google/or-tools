@@ -35,7 +35,7 @@
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_types_testing.h"
 #include "ortools/lp_data/sparse_column.h"
-#include "ortools/util/fp_utils.h"
+#include "ortools/util/fp_utils_testing.h"
 
 namespace operations_research {
 namespace glop {
@@ -201,8 +201,9 @@ TEST_P(RandomPreprocessorTest, SolveWithAndWithoutPresolve) {
             // this is very unlikely to be false because the solution is checked
             // against the initial linear program (which is const) before
             // returning a status ProblemStatus::OPTIMAL.
-            EXPECT_COMPARABLE(objective_with_presolve,
-                              objective_without_presolve, Fractional(1e-9));
+            EXPECT_THAT(objective_without_presolve,
+                        WithinSameAbsoluteOrRelativeTolerance(
+                            objective_with_presolve, Fractional(1e-9)));
           },
           [&](const SolveStatus::PrimalInfeasible&) {
             EXPECT_THAT(status_without_presolve,

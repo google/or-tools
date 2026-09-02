@@ -298,8 +298,17 @@ TEST(MarkowitzTest, RandomSparseMatrix) {
 
   // So we know when we do a change that impacts the decomposition.
   EXPECT_EQ(1981, matrix.num_entries());
-  EXPECT_NEAR(5627, lower.num_entries().value(), 10);
-  EXPECT_NEAR(5697, upper.num_entries().value(), 10);
+  // The decomposition produces slightly different fill-in on macOS vs. Linux,
+  // likely because different compilers (or architectures) perform floating
+  // point operations in a different order or use FMA instructions, leading to
+  // different tie-breaking or pivot choices during Markowitz LU factorization.
+#if defined(__APPLE__)
+  EXPECT_EQ(5633, lower.num_entries());
+  EXPECT_EQ(5704, upper.num_entries());
+#else
+  EXPECT_EQ(5627, lower.num_entries());
+  EXPECT_EQ(5697, upper.num_entries());
+#endif
 }
 
 TEST(MarkowitzTest, RandomWideNonSquareMatrix) {

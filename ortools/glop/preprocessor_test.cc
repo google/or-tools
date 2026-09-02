@@ -105,10 +105,14 @@ void CheckPreprocessorBehavior(
   solution.primal_values.assign(num_cols, initial_solution_value);
   preprocessor->RecoverSolution(solve_status, &solution);
 
-  CheckFractionalValues(solution.primal_values, NumCols,
-                        expected_solution.primal_values);
-  CheckFractionalValues(solution.dual_values, NumRows,
-                        expected_solution.dual_values);
+  EXPECT_THAT(solution.primal_values,
+              FractionalVectorComparable(
+                  DenseRow(expected_solution.primal_values,
+                           expected_solution.primal_values + NumCols)));
+  EXPECT_THAT(solution.dual_values,
+              FractionalVectorComparable(
+                  DenseColumn(expected_solution.dual_values,
+                              expected_solution.dual_values + NumRows)));
 }
 
 void CheckPreprocessorStatus(absl::string_view input_problem,

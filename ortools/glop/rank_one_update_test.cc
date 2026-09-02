@@ -16,13 +16,14 @@
 #include <random>
 
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/lp_data/lp_test_utils.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse.h"
 #include "ortools/lp_data/sparse_column.h"
-#include "ortools/util/fp_utils.h"
+#include "ortools/util/fp_utils_testing.h"
 
 namespace operations_research {
 namespace glop {
@@ -58,7 +59,8 @@ TEST(RankOneUpdateElementatyMatrixTest, RandomSolves) {
       update_matrix.RightSolve(&scratchpad);
       update_matrix.RightMultiply(&scratchpad);
       for (RowIndex row(0); row < kNumRows; ++row) {
-        EXPECT_COMPARABLE(scratchpad[row], expected[row], kComparableEpsilon);
+        EXPECT_THAT(expected[row], WithinSameAbsoluteOrRelativeTolerance(
+                                       scratchpad[row], kComparableEpsilon));
       }
 
       rhs.CopyToDenseVector(kNumRows, &scratchpad);
@@ -66,8 +68,9 @@ TEST(RankOneUpdateElementatyMatrixTest, RandomSolves) {
       update_matrix.LeftSolve(&row_scratchpad);
       update_matrix.LeftMultiply(&row_scratchpad);
       for (RowIndex row(0); row < kNumRows; ++row) {
-        EXPECT_COMPARABLE(row_scratchpad[RowToColIndex(row)], expected[row],
-                          kComparableEpsilon);
+        EXPECT_THAT(expected[row], WithinSameAbsoluteOrRelativeTolerance(
+                                       row_scratchpad[RowToColIndex(row)],
+                                       kComparableEpsilon));
       }
     }
   }
@@ -111,7 +114,8 @@ TEST(RankOneUpdateFactorizationTest, RandomSolvesWithNonZeros) {
   ComputeNonZeros(col_scratchpad.values, &col_scratchpad.non_zeros);
   factorization.RightSolveWithNonZeros(&col_scratchpad);
   for (const RowIndex row : col_scratchpad.non_zeros) {
-    EXPECT_COMPARABLE(col_scratchpad[row], expected_col[row], Fractional(1e-7));
+    EXPECT_THAT(expected_col[row], WithinSameAbsoluteOrRelativeTolerance(
+                                       col_scratchpad[row], Fractional(1e-7)));
     col_scratchpad[row] = 0.0;
   }
   for (RowIndex row(0); row < kNumRows; ++row) {
@@ -128,7 +132,8 @@ TEST(RankOneUpdateFactorizationTest, RandomSolvesWithNonZeros) {
   ComputeNonZeros(row_scratchpad.values, &row_scratchpad.non_zeros);
   factorization.LeftSolveWithNonZeros(&row_scratchpad);
   for (const ColIndex col : row_scratchpad.non_zeros) {
-    EXPECT_COMPARABLE(row_scratchpad[col], expected_row[col], Fractional(1e-7));
+    EXPECT_THAT(expected_row[col], WithinSameAbsoluteOrRelativeTolerance(
+                                       row_scratchpad[col], Fractional(1e-7)));
     row_scratchpad[col] = 0.0;
   }
   for (ColIndex col(0); col < RowToColIndex(kNumRows); ++col) {
