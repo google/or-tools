@@ -877,6 +877,7 @@ cc_test(
     copts = ORTOOLS_TEST_COPTS,
     flaky = 1,  # 2014-05-21: 102 failures over 10000 runs (forge, fastbuild).
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    tags = ["noci"],
     deps = [
         ":testing_utils",
         ":time_limit",
