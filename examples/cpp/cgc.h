@@ -44,6 +44,8 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/time/time.h"
 #include "examples/cpp/cgc_data.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 

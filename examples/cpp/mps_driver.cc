@@ -35,6 +35,7 @@
 #include "ortools/base/timer.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters.pb.h"
+#include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/mps_reader.h"

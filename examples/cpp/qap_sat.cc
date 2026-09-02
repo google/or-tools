@@ -24,6 +24,7 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/init_google.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/qap_reader.h"
 

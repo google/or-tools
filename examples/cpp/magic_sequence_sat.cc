@@ -30,6 +30,7 @@
 #include "ortools/base/init_google.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
 
 ABSL_FLAG(int, size, 50, "Size of the problem.");
 ABSL_FLAG(std::string, params, "log_search_progress:true,num_workers:8",
