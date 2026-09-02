@@ -25,6 +25,7 @@ import com.google.ortools.routing.Model;
 import com.google.ortools.routing.RoutingSearchParameters;
 import com.google.protobuf.Duration;
 import java.util.logging.Logger;
+
 // [END import]
 
 /** Minimal VRP. */

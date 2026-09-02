@@ -13,6 +13,7 @@
 
 // [START program]
 package com.google.ortools.routing.samples;
+
 // [START import]
 import static java.lang.Math.abs;
 
@@ -24,9 +25,10 @@ import com.google.ortools.routing.IndexManager;
 import com.google.ortools.routing.Model;
 import com.google.ortools.routing.RoutingSearchParameters;
 import java.util.logging.Logger;
+
 // [END import]
 
-/** Minimal Routing example to showcase calling the solver.*/
+/** Minimal Routing example to showcase calling the solver. */
 public class SimpleRoutingProgram {
   private static final Logger logger = Logger.getLogger(SimpleRoutingProgram.class.getName());
 
