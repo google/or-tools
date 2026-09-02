@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "ortools/base/init_google.h"
 #include "ortools/graph/linear_assignment.h"
 #include "ortools/graph_base/graph.h"

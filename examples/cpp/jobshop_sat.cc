@@ -50,11 +50,7 @@ ABSL_FLAG(bool, display_model, false, "Display jobshop proto before solving.");
 ABSL_FLAG(bool, display_sat_model, false, "Display sat proto before solving.");
 ABSL_FLAG(int64_t, horizon, -1, "Override horizon computation.");
 
-using operations_research::scheduling::jssp::Job;
-using operations_research::scheduling::jssp::JobPrecedence;
 using operations_research::scheduling::jssp::JsspInputProblem;
-using operations_research::scheduling::jssp::Machine;
-using operations_research::scheduling::jssp::Task;
 using operations_research::scheduling::jssp::TransitionTimeMatrix;
 
 namespace operations_research {
