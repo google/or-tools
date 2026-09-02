@@ -33,7 +33,8 @@ TEST(TspTWParserTest, LoadDataSet) {
   for (const std::string& data :
        {"ortools/routing/parsers/testdata/rc201.0",
         "ortools/routing/parsers/testdata/n20w20.001.txt",
-        "ortools/routing/parsers/testdata/n20w20.002.txt"}) {
+        "ortools/routing/parsers/testdata/"
+        "n20w20.002.txt"}) {
     TspTWParser parser;
     EXPECT_TRUE(parser.LoadFile(ortools::GetDataDependencyFilepath(data)));
     EXPECT_EQ(0, parser.depot());
