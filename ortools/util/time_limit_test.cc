@@ -415,7 +415,7 @@ TEST(TimeLimitCheckEveryNCallsTest, StickyTrue) {
     EXPECT_FALSE(checker.LimitReached());
   }
 
-  // Stays true forwever.
+  // Stays true forever.
   EXPECT_TRUE(checker.LimitReached());
   EXPECT_TRUE(checker.LimitReached());
   EXPECT_TRUE(checker.LimitReached());
