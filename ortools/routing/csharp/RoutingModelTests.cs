@@ -276,7 +276,7 @@ public class RoutingModelTest
         Assert.True(model.IsVehicleAllowedForIndex(13, 1));
 
         // empty array means any vehicles are allowed.
-        model.SetAllowedVehiclesForIndex(new int[] { }, 1);
+        model.SetAllowedVehiclesForIndex(new int[] {}, 1);
         Assert.True(model.IsVehicleAllowedForIndex(0, 1));
         Assert.True(model.IsVehicleAllowedForIndex(1, 1));
         Assert.True(model.IsVehicleAllowedForIndex(42, 1));
