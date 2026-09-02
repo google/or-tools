@@ -15,7 +15,6 @@
 #include <atomic>
 #include <cstdint>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <ostream>
 #include <utility>
@@ -37,6 +36,7 @@
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/optional_boolean.pb.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/time_limit.h"

@@ -349,6 +349,17 @@ cc_library(
     ],
 )
 
+cc_binary(
+    name = "fourier_solver_benchmark",
+    srcs = ["fourier_solver_benchmark.cc"],
+    deps = [
+        ":fourier_solver",
+        "//ortools/base:benchmark_main",
+        "@abseil-cpp//absl/algorithm:container",
+        "@google_benchmark//:benchmark",
+    ],
+)
+
 cc_test(
     name = "fourier_solver_test",
     srcs = ["fourier_solver_test.cc"],
@@ -360,7 +371,6 @@ cc_test(
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@google_benchmark//:benchmark",
         "@protobuf//:duration_cc_proto",
     ],
 )

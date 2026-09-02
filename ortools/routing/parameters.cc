@@ -706,7 +706,7 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
             << "In RoutingSearchParameters::LocalSearchNeighborhoodOperators,"
             << " field '" << field->name() << "' is not an OptionalBoolean.";
       } else {
-        const int value = ls_reflection->GetEnum(operators, field)->number();
+        const int value = ls_reflection->GetEnumValue(operators, field);
         if (!OptionalBoolean_IsValid(value) || value == 0) {
           errors.emplace_back(absl::StrFormat(
               "local_search_neighborhood_operator.%s should be set to "
