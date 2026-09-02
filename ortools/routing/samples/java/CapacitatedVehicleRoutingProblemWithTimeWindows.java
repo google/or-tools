@@ -32,8 +32,7 @@ import java.util.logging.Logger;
 
 /**
  * Sample showing how to model and solve a capacitated vehicle routing problem with time windows
- * using the swig-wrapped version of the vehicle routing library in
- * //ortools/constraint_solver.
+ * using the swig-wrapped version of the vehicle routing library in //ortools/constraint_solver.
  */
 public class CapacitatedVehicleRoutingProblemWithTimeWindows {
   private static final Logger logger =

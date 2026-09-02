@@ -116,15 +116,13 @@ class SolutionCallback:
     def __call__(self) -> None:
         objective = int(
             self._routing_model_ref().cost_var().value()
-        )  # pytype: disable=attribute-error
+        )  # pyrefly: ignore[missing-attribute]
         if not self.objectives or objective < self.objectives[-1]:
             self.objectives.append(objective)
-            print_solution(
-                self._routing_manager_ref(), self._routing_model_ref()
-            )  # pytype: disable=attribute-error
+            print_solution(self._routing_manager_ref(), self._routing_model_ref())
             self._counter += 1
         if self._counter > self._counter_limit:
-            self._routing_model_ref().solver.finish_current_search()  # pytype: disable=attribute-error
+            self._routing_model_ref().solver.finish_current_search()  # pyrefly: ignore[missing-attribute]
 
 
 # [END solution_callback]
