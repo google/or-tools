@@ -54,7 +54,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     constraint_indices_dict::Dict{String,Vector{MOI.ConstraintIndex}}
 
     # Indicator of whether an objective has been set
-    objective_set::Bool
+    is_objective_set::Bool
 
     # Store solve results
     # This structure is update after running the optimize! function
@@ -149,15 +149,15 @@ function MOI.empty!(model::Optimizer)
         ZERO_ONE_CONSTRAINT_KEY => [],
     )
 
-    model.parameters = SolveParameters()
-    model.objective_set = false
+    model.is_objective_set = false
     model.solve_result = nothing
+    model.solver_type = SolverType.SOLVER_TYPE_UNSPECIFIED
 
     return nothing
 end
 
 function MOI.is_empty(model::Optimizer)
-    return isempty(model.model) && !model.objective_set && isnothing(model.solve_result)
+    return isempty(model.model) && !model.is_objective_set && isnothing(model.solve_result)
 end
 
 function Base.isempty(model::Model)
@@ -228,14 +228,14 @@ function optionally_initialize_model_and_parameters!(model::Optimizer)::Nothing
     if MOI.is_empty(model)
         model.model = Model()
         # Re-initailize the associated metadata.
-        # TODO: b/392072219 - use emtpy! to do this after resolving this bug.
+        # TODO: b/392072219 - use empty! to do this after resolving this bug.
         model.constraint_indices_dict = Dict(
             SCALAR_SET_WITH_VARIABLE_INDEX_CONSTRAINT_KEY => [],
             SCALAR_SET_WITH_SCALAR_FUNCTION_CONSTRAINT_KEY => [],
             INTEGER_CONSTRAINT_KEY => [],
             ZERO_ONE_CONSTRAINT_KEY => [],
         )
-        model.objective_set = false
+        model.is_objective_set = false
     end
 
     if isnothing(model.parameters)
@@ -963,13 +963,13 @@ function MOI.get(model::Optimizer, ::MOI.ListOfModelAttributesSet)
 
     model_attributes_set = []
 
-    F = MOI.get(model, MOI.ObjectiveFunctionType())
-    if !isnothing(F)
-        push!(model_attributes_set, MOI.ObjectiveFunction{F}())
+    if model.is_objective_set
+        F = MOI.get(model, MOI.ObjectiveFunctionType())
+        if !isnothing(F)
+            push!(model_attributes_set, MOI.ObjectiveFunction{F}())
+        end
+        push!(model_attributes_set, MOI.ObjectiveSense())
     end
-
-    objective_sense = MOI.get(model, MOI.ObjectiveSense())
-    push!(model_attributes_set, MOI.ObjectiveSense())
 
     model_name = MOI.get(model, MOI.Name())
     if !isempty(model_name)
@@ -1054,12 +1054,13 @@ end
 
 function MOI.get(model::Optimizer, ::Type{MOI.VariableIndex}, v::String)
     if !MOI.is_empty(model) && !isempty(v)
-        variable_index = findfirst(x -> x == v, model.model.variables.names)
-        if isnothing(variable_index)
-            return nothing
-        end
+        # TODO: b/530665601 - Add a dictionary to map variable names to indices.
+        variable_indices = findall(x -> x == v, model.model.variables.names)
+        length(variable_indices) > 1 &&
+            throw(ErrorException("Multiple variables with name \"$(v)\" exist."))
+        isempty(variable_indices) && return nothing
 
-        return MOI.VariableIndex(variable_index)
+        return MOI.VariableIndex(variable_indices[1])
     end
 
     return nothing
@@ -1256,10 +1257,11 @@ function MOI.add_constraint(
     f::MOI.ScalarAffineFunction{T},
     c::SCALAR_SET,
 ) where {T<:Real}
+    # Ensure that the constant is zero else throw an error.
+    iszero(f.constant) ||
+        throw(MOI.ScalarFunctionConstantNotZero{T,typeof(f),typeof(c)}(f.constant))
+
     if !MOI.is_empty(model)
-        # Ensure that the constant is zero else throw an error.
-        iszero(f.constant) ||
-            throw(MOI.ScalarFunctionConstantNotZero{T,typeof(f),typeof(c)}(f.constant))
 
         # Retrieve the terms from `f`
         terms = f.terms
@@ -1321,14 +1323,15 @@ function MOI.get(
     model::Optimizer,
     ::MOI.ListOfConstraintIndices{MOI.VariableIndex,S},
 ) where {S<:SCALAR_SET}
-    if !MOI.is_empty(model)
-        return sort!(
-            model.constraint_indices_dict[SCALAR_SET_WITH_VARIABLE_INDEX_CONSTRAINT_KEY],
-            by = x -> x.value,
-        )
-    end
+    MOI.is_empty(model) && return MOI.ConstraintIndex{MOI.VariableIndex,S}[]
 
-    return []
+    indices = filter(
+        x -> x isa MOI.ConstraintIndex{MOI.VariableIndex,S},
+        model.constraint_indices_dict[SCALAR_SET_WITH_VARIABLE_INDEX_CONSTRAINT_KEY],
+    )
+    return Vector{MOI.ConstraintIndex{MOI.VariableIndex,S}}(
+        sort!(indices, by = x -> x.value)
+    )
 end
 
 
@@ -1337,13 +1340,16 @@ function MOI.get(
     ::MOI.ListOfConstraintIndices{MOI.ScalarAffineFunction{T},S},
 ) where {T<:Real,S<:SCALAR_SET}
     if !MOI.is_empty(model)
-        return sort!(
+        indices = filter(
+            x -> x isa MOI.ConstraintIndex{MOI.ScalarAffineFunction{T},S},
             model.constraint_indices_dict[SCALAR_SET_WITH_SCALAR_FUNCTION_CONSTRAINT_KEY],
-            by = x -> x.value,
+        )
+        return Vector{MOI.ConstraintIndex{MOI.ScalarAffineFunction{T},S}}(
+            sort!(indices, by = x -> x.value)
         )
     end
 
-    return []
+    return MOI.ConstraintIndex{MOI.ScalarAffineFunction{T},S}[]
 end
 
 function MOI.get(
@@ -1445,10 +1451,10 @@ function MOI.set(
     optionally_initialize_model_and_parameters!(model)
 
     if !iszero(f.constant)
-        throw(MOI.ScalarFunctionConstantNotZero(f.constant))
+        throw(MOI.ScalarFunctionConstantNotZero{T,MOI.ScalarAffineFunction{T},S}(f.constant))
     end
 
-    previous_fn = MOI.get(model, MOI.ConstraintFunction, c)
+    previous_fn = MOI.get(model, MOI.ConstraintFunction(), c)
 
     if isnothing(previous_fn)
         throw(ArgumentError("ConstraintIndex $(c.value) is not valid for this model."))
@@ -1678,8 +1684,6 @@ function MOI.set(
     c::MOI.ConstraintIndex{MOI.ScalarAffineFunction{T},<:Any},
     name::String,
 ) where {T<:Real}
-    in(name, model.model.linear_constraints.names) &&
-        throw(ErrorException("Constraint with name \"$(name)\" already exists."))
     model.model.linear_constraints.names[c.value] = name
 
     return nothing
@@ -1690,23 +1694,50 @@ function MOI.get(
     ::Type{MOI.ConstraintIndex{MOI.ScalarAffineFunction{T},S}},
     constraint_name::String,
 ) where {T<:Real,S<:SCALAR_SET}
-    if !MOI.is_empty(model)
-        position_index =
-            findfirst(x -> x == constraint_name, model.model.linear_constraints.names)
-        if position_index == nothing
-            return nothing
-        end
-        constraint_index = MOI.ConstraintIndex{MOI.ScalarAffineFunction{T},S}(
-            model.model.linear_constraints.ids[position_index],
-        )
+    MOI.is_empty(model) && return nothing
 
-        in(
-            constraint_index,
-            model.constraint_indices_dict[SCALAR_SET_WITH_SCALAR_FUNCTION_CONSTRAINT_KEY],
-        ) && return constraint_index
+    # TODO: b/529749451 - map constraint names to indices.
+    position_indices =
+        findall(x -> x == constraint_name, model.model.linear_constraints.names)
+    length(position_indices) > 1 &&
+        throw(ErrorException("Multiple constraints with name \"$(constraint_name)\" exist."))
+    if isempty(position_indices)
+        return nothing
     end
+    constraint_index = MOI.ConstraintIndex{MOI.ScalarAffineFunction{T},S}(
+        model.model.linear_constraints.ids[position_indices[1]],
+    )
+
+    in(
+        constraint_index,
+        model.constraint_indices_dict[SCALAR_SET_WITH_SCALAR_FUNCTION_CONSTRAINT_KEY],
+    ) && return constraint_index
 
     return nothing
+end
+
+function MOI.get(
+    model::Optimizer,
+    ::Type{MOI.ConstraintIndex},
+    constraint_name::String,
+)
+    MOI.is_empty(model) && return nothing
+
+    position_indices =
+        findall(x -> x == constraint_name, model.model.linear_constraints.names)
+    length(position_indices) > 1 &&
+        throw(ErrorException("Multiple constraints with name \"$(constraint_name)\" exist."))
+    if isempty(position_indices)
+        return nothing
+    end
+
+    idx = model.model.linear_constraints.ids[position_indices[1]]
+
+    return findfirst(
+        ci -> ci.value == idx,
+        model.constraint_indices_dict[SCALAR_SET_WITH_SCALAR_FUNCTION_CONSTRAINT_KEY],
+    ) |> (id -> isnothing(id) ? nothing :
+            model.constraint_indices_dict[SCALAR_SET_WITH_SCALAR_FUNCTION_CONSTRAINT_KEY][id])
 end
 
 function MOI.is_valid(
@@ -1780,20 +1811,24 @@ function MOI.set(model::Optimizer, ::MOI.ObjectiveSense, sense::MOI.Optimization
     if sense == MOI.MAX_SENSE
         optionally_initialize_objective!(model)
         model.model.objective.maximize = true
+        model.is_objective_set = true
     elseif sense == MOI.MIN_SENSE
         optionally_initialize_objective!(model)
         model.model.objective.maximize = false
+        model.is_objective_set = true
     else
         # ObjectiveFunction is not considered. This is a feasibility problem.
-        model.model.objective = nothing
-        model.objective_set = false
+        if !isnothing(model.model.objective)
+            reset_objective!(model)
+        end
+        model.is_objective_set = false
     end
 
     return nothing
 end
 
 function MOI.get(model::Optimizer, ::MOI.ObjectiveSense)
-    if !isnothing(model.model.objective)
+    if model.is_objective_set && !isnothing(model.model.objective)
         return model.model.objective.maximize ? MOI.MAX_SENSE : MOI.MIN_SENSE
     end
 
@@ -1812,15 +1847,8 @@ function MOI.get(model::Optimizer, ::MOI.ObjectiveFunctionType)
         elseif length(model.model.objective.quadratic_coefficients.row_ids) > 0
             # TODO: b/386359419 Add support for quadratic objectives
             return MOI.ScalarQuadraticFunction{Real}
-            # elseif length(model.model.objective.linear_coefficients.ids) > 0
-            #     return MOI.ScalarAffineFunction{Real}
         else
-            # throw(error("Failed to get objective function type; no objective function found."))
-            # The above has been commented out in favor of returning the ScalarAffineFunction
-            # by default. This function is being used in other tests and was throwing an error resulting
-            # in test failures. Other solvers, such as HiGHS seem to be returning the ScalarAffineFunction
-            # by default.
-            return MOI.ScalarAffineFunction{Real}
+            return MOI.ScalarAffineFunction{Float64}
         end
     end
 
@@ -1849,7 +1877,7 @@ function MOI.set(
     # `zero out` the existing objective function
     reset_objective!(model)
 
-    model.objective_set = true
+    model.is_objective_set = true
 
     push!(model.model.objective.linear_coefficients.ids, objective_function.value)
     push!(model.model.objective.linear_coefficients.values, one(Float64))
@@ -1858,11 +1886,13 @@ function MOI.set(
 end
 
 function MOI.get(model::Optimizer, ::MOI.ObjectiveFunction{MOI.VariableIndex})
-    if !MOI.is_empty(model) && !isnothing(model.model.objective)
+    if MOI.is_empty(model) || isnothing(model.model.objective)
+        return nothing
+    elseif MOI.get(model, MOI.ObjectiveFunctionType()) == MOI.VariableIndex
         return MOI.VariableIndex(model.model.objective.linear_coefficients.ids[1])
+    else
+        throw(InexactError(:get, MOI.VariableIndex, MOI.get(model, MOI.ObjectiveFunctionType())))
     end
-
-    return nothing
 end
 
 function MOI.set(
@@ -1876,7 +1906,7 @@ function MOI.set(
     # `zero out` the existing objective function
     reset_objective!(model)
 
-    model.objective_set = true
+    model.is_objective_set = true
 
     terms = objective_function.terms
 
@@ -1950,10 +1980,16 @@ function MOI.supports(
 end
 
 function MOI.optimize!(model::Optimizer)
-    # If the solver type is not specified, set it to GLOP by default.
+    # If the solver type is not specified, select based on problem characteristics.
+    # TODO: b/530951998 - Include this in the README.
     if model.solver_type == SolverType.SOLVER_TYPE_UNSPECIFIED
-        @error "The solver type is not specified. Please specify a solver type.\nYou can do so when building an `Optimizer` object or by setting the `BaseSolverType` attribute.\nFor instance: `Optimizer(solver_type=ORTools.SolverType.SOLVER_TYPE_CP_SAT)`.\nWith JuMP, you can do the following: `Model(() -> ORTools.Optimizer(solver_type=ORTools.SolverType.SOLVER_TYPE_CP_SAT))`."
-        return
+        has_integrality = !isempty(model.constraint_indices_dict[INTEGER_CONSTRAINT_KEY]) ||
+                          !isempty(model.constraint_indices_dict[ZERO_ONE_CONSTRAINT_KEY])
+        if has_integrality
+            model.solver_type = SolverType.SOLVER_TYPE_CP_SAT
+        else
+            model.solver_type = SolverType.SOLVER_TYPE_GLOP
+        end
     end
 
     status_msg = Ref(pointer(zeros(Int8, 1)))
@@ -2025,10 +2061,15 @@ function MOI.get(model::Optimizer, ::MOI.TerminationStatus)::MOI.TerminationStat
         return MOI.OPTIMIZE_NOT_CALLED
     end
 
-    if model.solve_result.termination.reason ==
-       TerminationReasonProto.TERMINATION_REASON_OPTIMAL
-        # It is expected that the LimitProto is LIMIT_UNSPECIFIED when the termination reason is OPTIMAL.
+    reason = model.solve_result.termination.reason
+    if reason == TerminationReasonProto.TERMINATION_REASON_OPTIMAL
         return MOI.OPTIMAL
+    elseif reason == TerminationReasonProto.TERMINATION_REASON_INFEASIBLE
+        return MOI.INFEASIBLE
+    elseif reason == TerminationReasonProto.TERMINATION_REASON_UNBOUNDED
+        return MOI.DUAL_INFEASIBLE
+    elseif reason == TerminationReasonProto.TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED
+        return MOI.INFEASIBLE_OR_UNBOUNDED
     elseif model.solve_result.termination.limit == LimitProto.LIMIT_ITERATION
         return MOI.ITERATION_LIMIT
     elseif model.solve_result.termination.limit == LimitProto.LIMIT_TIME
@@ -2135,7 +2176,7 @@ function MOI.get(model::Optimizer, attr::MOI.ObjectiveBound)
         throw(MOI.GetAttributeNotAllowed(attr))
     end
 
-    return model.solve_result.termination.objective_bounds.primal_bound
+    return model.solve_result.termination.objective_bounds.dual_bound
 end
 
 """
@@ -2203,6 +2244,9 @@ function MOI.get(model::Optimizer, attr::MOI.VariablePrimal, index::MOI.Variable
         isequal(index.value),
         model.solve_result.solutions[attr.result_index].primal_solution.variable_values.ids,
     )
+    if isnothing(variable_value_idx)
+        return 0.0
+    end
     return model.solve_result.solutions[attr.result_index].primal_solution.variable_values.values[variable_value_idx]
 end
 
@@ -2242,6 +2286,10 @@ function MOI.get(model::Optimizer, attr::MOI.ObjectiveValue)
     end
 
     MOI.check_result_index_bounds(model, attr)
+
+    if !model.is_objective_set
+        return 0.0
+    end
 
     return model.solve_result.solutions[attr.result_index].primal_solution.objective_value
 end
@@ -2293,9 +2341,9 @@ end
 function MOI.get(
     model::Optimizer,
     attr::MOI.ConstraintDual,
-    index::MOI.ConstraintIndex{MOI.VariableIndex,<:S},
+    index::MOI.ConstraintIndex{MOI.VariableIndex,S},
 ) where {S<:SCALAR_SET}
-    if isnothing(model) || isnothing(model.solve_result)
+    if isnothing(model)
         throw(
             GetConstraintDualNotAllowed(
                 "No model exists. Initialize the model and call optimize! afterwards before calling this function.",
@@ -2311,21 +2359,170 @@ function MOI.get(
         )
     end
 
+    if isempty(model.solve_result.solutions)
+        throw(
+            GetConstraintDualNotAllowed(
+                "The model contains no solutions.",
+            ),
+        )
+    end
+
     if MOI.get(model, MOI.DualStatus()) == MOI.NO_SOLUTION
         throw(
-            GetVariableDualNotAllowed(
-                "Cannot retrieve VariableDual as no dual solution was found when optimizing the defined model.",
+            GetConstraintDualNotAllowed(
+                "No dual solution was found when solving.",
             ),
         )
     end
 
     MOI.check_result_index_bounds(model, attr)
 
+    sol = model.solve_result.solutions[attr.result_index]
+    if isnothing(sol.dual_solution) || isnothing(sol.dual_solution.reduced_costs) || isnothing(sol.dual_solution.reduced_costs.ids)
+        return 0.0
+    end
+
+    var_idx = findfirst(
+        isequal(index.value),
+        sol.dual_solution.reduced_costs.ids,
+    )
+    if isnothing(var_idx)
+        return 0.0
+    end
+    rc = sol.dual_solution.reduced_costs.values[var_idx]
+    if S <: MOI.LessThan
+        return -rc
+    end
+    return rc
+end
+
+function MOI.get(
+    model::Optimizer,
+    attr::MOI.ConstraintDual,
+    index::MOI.ConstraintIndex{F,S},
+) where {F,S}
+    if isnothing(model)
+        throw(
+            GetConstraintDualNotAllowed(
+                "No model exists. Initialize the model and call optimize! afterwards before calling this function.",
+            ),
+        )
+    end
+
+    if isnothing(model.solve_result)
+        throw(
+            GetConstraintDualNotAllowed(
+                "Call optimize! on your model before calling this function.",
+            ),
+        )
+    end
+
+    if isempty(model.solve_result.solutions)
+        throw(
+            GetConstraintDualNotAllowed(
+                "The model contains no solutions.",
+            ),
+        )
+    end
+
+    if MOI.get(model, MOI.DualStatus()) == MOI.NO_SOLUTION
+        throw(
+            GetConstraintDualNotAllowed(
+                "No dual solution was found when solving.",
+            ),
+        )
+    end
+
+    MOI.check_result_index_bounds(model, attr)
+
+    sol = model.solve_result.solutions[attr.result_index]
+    if isnothing(sol.dual_solution) || isnothing(sol.dual_solution.dual_values) || isnothing(sol.dual_solution.dual_values.ids)
+        return 0.0
+    end
+
     constraint_index = findfirst(
         isequal(index.value),
-        model.solve_result.solutions[attr.result_index].dual_solution.dual_values.ids,
+        sol.dual_solution.dual_values.ids,
     )
-    return model.solve_result.solutions[attr.result_index].dual_solution.dual_values.values[constraint_index]
+    if isnothing(constraint_index)
+        return 0.0
+    end
+    dual_val = sol.dual_solution.dual_values.values[constraint_index]
+    if S <: MOI.LessThan || S <: MOI.Interval
+        return -dual_val
+    end
+    return dual_val
+end
+
+MOI.supports(::Optimizer, ::MOI.ConstraintDual, ::Type{<:MOI.ConstraintIndex}) = true
+
+"""
+Error thrown when attempting to retrieve ConstraintPrimal value when not allowed.
+"""
+struct GetConstraintPrimalNotAllowed <: MOI.NotAllowedError
+    message::String
+end
+
+MOI.supports(::Optimizer, ::MOI.ConstraintPrimal, ::Type{<:MOI.ConstraintIndex}) = true
+
+function MOI.get(
+    model::Optimizer,
+    attr::MOI.ConstraintPrimal,
+    index::MOI.ConstraintIndex{MOI.VariableIndex,S},
+) where {S<:SCALAR_SET}
+    MOI.check_result_index_bounds(model, attr)
+    return MOI.get(model, MOI.VariablePrimal(attr.result_index), MOI.VariableIndex(index.value))
+end
+
+function MOI.get(
+    model::Optimizer,
+    attr::MOI.ConstraintPrimal,
+    index::MOI.ConstraintIndex{MOI.ScalarAffineFunction{T},S},
+) where {T<:Real,S<:SCALAR_SET}
+    if isnothing(model)
+        throw(
+            GetConstraintPrimalNotAllowed(
+                "No model exists. Initialize the model and call optimize! afterwards before calling this function.",
+            ),
+        )
+    end
+
+    if isnothing(model.solve_result)
+        throw(
+            GetConstraintPrimalNotAllowed(
+                "Call optimize! on your model before calling this function.",
+            ),
+        )
+    end
+
+    if isempty(model.solve_result.solutions)
+        throw(
+            GetConstraintPrimalNotAllowed(
+                "The model contains no solutions.",
+            ),
+        )
+    end
+
+    if MOI.get(model, MOI.PrimalStatus()) == MOI.NO_SOLUTION
+        throw(
+            GetConstraintPrimalNotAllowed(
+                "No primal solution was found when solving.",
+            ),
+        )
+    end
+
+    MOI.check_result_index_bounds(model, attr)
+
+    val = 0.0
+    matrix = model.model.linear_constraint_matrix
+    row_indices = findall(isequal(index.value), matrix.row_ids)
+    for idx in row_indices
+        var_id = matrix.column_ids[idx]
+        coeff = matrix.coefficients[idx]
+        v_val = MOI.get(model, MOI.VariablePrimal(attr.result_index), MOI.VariableIndex(var_id))
+        val += coeff * v_val
+    end
+    return val
 end
 
 """
@@ -2368,8 +2565,8 @@ function MOI.get(model::Optimizer, attr::VariableReducedCost, index::MOI.Variabl
 
     if MOI.get(model, MOI.DualStatus()) == MOI.NO_SOLUTION
         throw(
-            GetVariableDualNotAllowed(
-                "Cannot retrieve VariableDual as no dual solution was found when optimizing the defined model.",
+            GetVariableReducedCostNotAllowed(
+                "No dual solution was found when solving.",
             ),
         )
     end
@@ -2411,8 +2608,8 @@ function MOI.get(model::Optimizer, attr::MOI.DualObjectiveValue)
 
     if MOI.get(model, MOI.DualStatus()) == MOI.NO_SOLUTION
         throw(
-            GetVariableDualNotAllowed(
-                "Cannot retrieve VariableDual as no dual solution was found when optimizing the defined model.",
+            GetDualObjectiveValueNotAllowed(
+                "No dual solution was found when solving.",
             ),
         )
     end
@@ -2537,8 +2734,8 @@ end
 function MOI.get(
     model::Optimizer,
     attr::MOI.ConstraintBasisStatus,
-    index::MOI.ConstraintIndex{MOI.VariableIndex,S},
-) where {S<:SCALAR_SET}
+    index::MOI.ConstraintIndex{F,S},
+) where {F,S}
     if isnothing(model) || isnothing(model.solve_result)
         throw(
             GetConstraintBasisStatusNotAllowed(
@@ -2561,10 +2758,17 @@ function MOI.get(
         isequal(index.value),
         model.solve_result.solutions[attr.result_index].basis.constraint_status.ids,
     )
+    if isnothing(constraint_index)
+        return MOI.NONBASIC
+    end
     basis_status =
         model.solve_result.solutions[attr.result_index].basis.constraint_status.values[constraint_index]
 
-    return get_MOI_basis_status(basis_status)
+    status = get_MOI_basis_status(basis_status)
+    if status == MOI.NONBASIC_AT_LOWER || status == MOI.NONBASIC_AT_UPPER
+        return MOI.NONBASIC
+    end
+    return status
 end
 
 """

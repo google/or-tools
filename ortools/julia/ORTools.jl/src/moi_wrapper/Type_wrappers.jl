@@ -162,11 +162,12 @@ const SatParameters_SharedTreeSplitStrategy = Sat.var"SatParameters.SharedTreeSp
 const SatParameters_FPRoundingMethod = Sat.var"SatParameters.FPRoundingMethod"
 
 ## Scalar Set constraints with bounds
+const SUPPORTED_REALS = Union{Float64, Float32, Int}
 const SCALAR_SET = Union{
-    MOI.GreaterThan{<:Real},
-    MOI.LessThan{<:Real},
-    MOI.EqualTo{<:Real},
-    MOI.Interval{<:Real},
+    MOI.GreaterThan{<:SUPPORTED_REALS},
+    MOI.LessThan{<:SUPPORTED_REALS},
+    MOI.EqualTo{<:SUPPORTED_REALS},
+    MOI.Interval{<:SUPPORTED_REALS},
 }
 
 ## Bounds of scalar set Constraints
