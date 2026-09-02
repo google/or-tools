@@ -270,7 +270,9 @@ SetCoverModel ReadOrlibScp(absl::string_view filename) {
     const RowEntryIndex row_size(reader.ParseNextInteger());
     for (RowEntryIndex entry(0); entry < row_size; ++entry) {
       // Correct the 1-indexing.
-      const SubsetIndex subset(reader.ParseNextInteger() - 1);
+      const int64_t raw_subset = reader.ParseNextInteger();
+      CHECK_GE(raw_subset, 1) << "Invalid 1-indexed subset index: " << raw_subset;
+      const SubsetIndex subset(raw_subset - 1);
       model.AddElementToSubset(element, subset);
     }
   }
@@ -300,7 +302,9 @@ SetCoverModel ReadOrlibRail(absl::string_view filename) {
     model.ReserveNumElementsInSubset(num_columns, subset.value());
     for (int64_t i = 0; i < num_columns; ++i) {
       // Correct the 1-indexing.
-      const ElementIndex element(reader.ParseNextInteger() - 1);
+      const int64_t raw_element = reader.ParseNextInteger();
+      CHECK_GE(raw_element, 1) << "Invalid 1-indexed element index: " << raw_element;
+      const ElementIndex element(raw_element - 1);
       model.AddElementToSubset(element, subset);
     }
   }
@@ -504,7 +508,10 @@ SubsetBoolVector ReadSetCoverSolutionText(absl::string_view filename) {
   const BaseInt cardinality(reader.ParseNextInteger());
   for (int i = 0; i < cardinality; ++i) {
     // NOTE(user): The solution is 0-indexed.
-    const SubsetIndex subset(reader.ParseNextInteger());
+    const int64_t raw_subset = reader.ParseNextInteger();
+    CHECK_GE(raw_subset, 0) << "Invalid subset index: " << raw_subset;
+    CHECK_LT(raw_subset, num_cols) << "Subset index out of range: " << raw_subset;
+    const SubsetIndex subset(raw_subset);
     solution[subset] = true;
   }
   file->Close(file::Defaults()).IgnoreError();
@@ -521,9 +528,12 @@ SubsetBoolVector ReadSetCoverSolutionProto(absl::string_view filename,
   } else {
     CHECK_OK(file::GetTextProto(filename, &message, file::Defaults()));
   }
-  solution.resize(message.num_subsets(), false);
+  const BaseInt num_subsets = message.num_subsets();
+  solution.resize(num_subsets, false);
   // NOTE(user): The solution is 0-indexed.
   for (const BaseInt subset : message.subset()) {
+    CHECK_GE(subset, 0) << "Invalid subset index: " << subset;
+    CHECK_LT(subset, num_subsets) << "Subset index out of range: " << subset;
     solution[SubsetIndex(subset)] = true;
   }
   return solution;
