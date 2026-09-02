@@ -19,6 +19,8 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
 
+package(default_visibility = ["//visibility:public"])
+
 cc_library(
     name = "doc",
     hdrs = [
@@ -45,6 +47,7 @@ pybind_extension(
         "//ortools/routing:ils_cc_proto",
         "//ortools/routing:index_manager",
         "//ortools/routing:parameters",
+        "//ortools/routing:parameters_cc_proto",
         "//ortools/routing:types",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:optional_boolean_cc_proto",

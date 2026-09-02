@@ -27,20 +27,14 @@
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/interval.h"
-#include "ortools/constraint_solver/search_stats.pb.h"
-#include "ortools/constraint_solver/solver_parameters.pb.h"
-#include "ortools/port/proto_utils.h"  // IWYU: keep
-#include "ortools/routing/enums.pb.h"
-#include "ortools/routing/heuristic_parameters.pb.h"
-#include "ortools/routing/ils.pb.h"
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
+#include "ortools/routing/parameters.pb.h"
 #include "ortools/routing/python/doc.h"                // IWYU pragma: keep
 #include "ortools/routing/python/index_manager_doc.h"  // IWYU pragma: keep. NOLINT
 #include "ortools/routing/python/parameters_doc.h"     // IWYU pragma: keep
 #include "ortools/routing/types.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/util/optional_boolean.pb.h"
 #include "ortools/util/piecewise_linear_function.h"  // IWYU pragma: keep
 #include "ortools/util/sorted_interval_list.h"
 #include "pybind11/cast.h"

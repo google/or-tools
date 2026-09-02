@@ -185,6 +185,7 @@ import com.google.ortools.constraintsolver.Constraint;
 // Map transit callback to Java @FunctionalInterface types.
 // This replaces the RoutingTransitCallback[1-2] in the Java proxy class
 %typemap(javaimports) Model %{
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 // Types from ConstraintSolver
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.DecisionBuilder;
@@ -246,9 +247,13 @@ import java.util.function.LongUnaryOperator;
 %rename (addConstantDimensionWithSlack) Model::AddConstantDimensionWithSlack;
 %rename (addVectorDimension) Model::AddVectorDimension;
 %rename (addMatrixDimension) Model::AddMatrixDimension;
+%javamethodmodifiers Model::AddDimension "@CanIgnoreReturnValue\n  public";
 %rename (addDimension) Model::AddDimension;
+%javamethodmodifiers Model::AddDimensionWithVehicleCapacity "@CanIgnoreReturnValue\n  public";
 %rename (addDimensionWithVehicleCapacity) Model::AddDimensionWithVehicleCapacity;
+%javamethodmodifiers Model::AddDimensionWithVehicleTransitAndCapacity "@CanIgnoreReturnValue\n  public";
 %rename (addDimensionWithVehicleTransitAndCapacity) Model::AddDimensionWithVehicleTransitAndCapacity;
+%javamethodmodifiers Model::AddDimensionWithVehicleTransits "@CanIgnoreReturnValue\n  public";
 %rename (addDimensionWithVehicleTransits) Model::AddDimensionWithVehicleTransits;
 
 %rename (addDisjunction) Model::AddDisjunction;
