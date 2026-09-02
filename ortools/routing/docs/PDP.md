@@ -5,8 +5,8 @@
 The Vehicle Routing solver can be used to solve various PDP.
 
 ## Pickup & Delivery Problem
-Data Problem:
-![problem](vrp_pickup_delivery.svg)
+
+Data Problem: ![problem](vrp_pickup_delivery.svg)
 
 Solution with the default Policy (ANY):
 ![solution](vrp_pickup_delivery_solution.svg)
@@ -19,6 +19,7 @@ Samples:
 *   [VrpPickupDelivery.cs](/ortools/routing/samples/VrpPickupDelivery.cs)
 
 ### FIFO Policy
+
 Solution with the FIFO Policy:
 ![solution](vrp_pickup_delivery_fifo_solution.svg)
 
@@ -30,6 +31,7 @@ Samples:
 *   [VrpPickupDeliveryFifo.cs](/ortools/routing/samples/VrpPickupDeliveryFifo.cs)
 
 ### LIFO Policy
+
 Solution with the LIFO Policy:
 ![solution](vrp_pickup_delivery_lifo_solution.svg)
 

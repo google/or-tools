@@ -6,25 +6,25 @@ to the new pybind11-based bindings (`routing`).
 
 The new bindings offer better integration with Python, including:
 
- * Compliance with PEP8 naming conventions (snake_case for methods and
-   functions).
- * Better type hinting support.
- * More pythonic APIs.
+*   Compliance with PEP8 naming conventions (snake_case for methods and
+    functions).
+*   Better type hinting support.
+*   More pythonic APIs.
 
 ## Imports
 
 ### Old (SWIG)
 
 ```python
-from google3.util.operations_research.routing import enums_pb2
-from google3.util.operations_research.routing.python import pywraprouting
+from google3.third_party.ortools.ortools.routing import enums_pb2
+from google3.third_party.ortools.ortools.routing.python import pywraprouting
 ```
 
 ### New (pybind11)
 
 ```python
 from google3.ortools.constraint_solver.python import constraint_solver
-from google3.util.operations_research.routing.python import routing
+from google3.third_party.ortools.ortools.routing.python import routing
 ```
 
 *Note: The `constraint_solver` import is often needed for types like
@@ -128,7 +128,7 @@ nested classes within the `routing` module, behaving like standard Python Enums.
 ### Legacy
 
 ```python
-from google3.util.operations_research.routing import enums_pb2
+from google3.third_party.ortools.ortools.routing import enums_pb2
 
 status = routing.Status()
 print(f"Status: {enums_pb2.RoutingSearchStatus.Value.Name(status)}")
@@ -139,7 +139,7 @@ if status == enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL:
 ### New
 
 ```python
-from google3.util.operations_research.routing.python import routing
+from google3.third_party.ortools.ortools.routing.python import routing
 
 status = routing_model.status()
 # You can access the name directly on the enum member
@@ -153,8 +153,8 @@ if status == routing.RoutingSearchStatus.ROUTING_OPTIMAL:
 ### Legacy Code
 
 ```python
-from google3.util.operations_research.routing import enums_pb2
-from google3.util.operations_research.routing.python import pywraprouting
+from google3.third_party.ortools.ortools.routing import enums_pb2
+from google3.third_party.ortools.ortools.routing.python import pywraprouting
 
 def main():
   manager = pywraprouting.IndexManager(num_locations, num_vehicles, depot)
@@ -180,7 +180,7 @@ def main():
 ### New Code
 
 ```python
-from google3.util.operations_research.routing.python import routing
+from google3.third_party.ortools.ortools.routing.python import routing
 
 def main():
   manager = routing.IndexManager(num_locations, num_vehicles, depot)

@@ -6,11 +6,10 @@ The Vehicle Routing solver can be used to solve a Travelling Salesman Problem
 (TSP).
 
 ## Using Locations
-Data Problem:
-![problem](tsp.svg)
 
-Solution:
-![solution](tsp_solution.svg)
+Data Problem: ![problem](tsp.svg)
+
+Solution: ![solution](tsp_solution.svg)
 
 Samples:
 
@@ -20,11 +19,10 @@ Samples:
 *   [Tsp.cs](/ortools/routing/samples/Tsp.cs)
 
 ## Using Distance Matrix
-Data Problem:
-![problem](tsp_distance_matrix.svg)
 
-Solution:
-![solution](tsp_distance_matrix_solution.svg)
+Data Problem: ![problem](tsp_distance_matrix.svg)
+
+Solution: ![solution](tsp_distance_matrix_solution.svg)
 
 Samples:
 
