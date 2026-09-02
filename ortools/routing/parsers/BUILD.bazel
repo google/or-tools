@@ -159,7 +159,6 @@ cc_test(
         ":carp_parser",
         "//ortools/base:gmock_main",
         "//ortools/base:log_severity",
-        "//ortools/base:path",
         "//ortools/util:data_path_resolver",
         "@abseil-cpp//absl/log:scoped_mock_log",
         "@abseil-cpp//absl/strings",
@@ -174,7 +173,9 @@ cc_library(
         ":simple_graph",
         "//ortools/base:numbers",
         "//ortools/util:filelineiter",
+        "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:linked_hash_map",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
     ],
@@ -192,7 +193,6 @@ cc_test(
         ":nearp_parser",
         ":simple_graph",
         "//ortools/base:gmock_main",
-        "//ortools/base:path",
         "//ortools/util:data_path_resolver",
     ],
 )
@@ -310,7 +310,6 @@ cc_test(
     deps = [
         ":tsptw_parser",
         "//ortools/base:gmock_main",
-        "//ortools/base:path",
         "//ortools/util:data_path_resolver",
     ],
 )
@@ -362,6 +361,7 @@ cc_library(
         "//ortools/routing",
         "//ortools/routing:index_manager",
         "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:distributions",

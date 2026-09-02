@@ -451,7 +451,7 @@ bool TspLibParser::ParseSections(absl::Span<const std::string> words) {
     }
     case COMMENT: {
       if (!comments_.empty()) {
-        comments_ += "\n";
+        comments_ += '\n';
       }
       comments_ += absl::StrJoin(words.begin() + 1, words.end(), " ");
       break;
