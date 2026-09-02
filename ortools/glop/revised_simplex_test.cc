@@ -17,16 +17,21 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <random>
 #include <string>
 #include <vector>
 
+#include "absl/algorithm/container.h"
+#include "absl/base/attributes.h"
+#include "absl/base/no_destructor.h"
 #include "absl/flags/declare.h"
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
 #include "absl/log/log.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
+#include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
@@ -43,10 +48,12 @@
 #include "ortools/lp_data/lp_types_testing.h"
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse_row.h"
-#include "ortools/util/fp_utils.h"
+#include "ortools/util/fp_utils_testing.h"
 #include "ortools/util/time_limit.h"
 
 ABSL_DECLARE_FLAG(bool, simplex_stop_after_first_basis);
+ABSL_FLAG(std::optional<std::mt19937::result_type>, revised_simplex_test_seed,
+          std::nullopt, "Fixed seed to use to reproduce errors.");
 
 namespace operations_research {
 namespace glop {
@@ -55,6 +62,114 @@ namespace {
 using ::testing::_;
 using ::testing::AnyOf;
 using ::testing::ElementsAre;
+
+// Wrapper of std::mt19937 that picks a random seed that can be fixed to
+// reproduce issues with the --revised_simplex_test_seed flag.
+//
+// It implements the UniformRandomBitGenerator named requirement so it can be
+// used where a std::mt19937 would be used. See
+// https://en.cppreference.com/cpp/named_req/UniformRandomBitGenerator.
+//
+// The `seed` should be logged and/or included in error messages of tests so
+// that the flag can be used later on to reproduce issues (it is only logged as
+// verbose log by this class). For example using SCOPED_TRACE() to make sure
+// this is only visible when the test fails:
+//
+//   RandomWithFixableSeed fixable_seed(bit_gen);
+//   SCOPED_TRACE(fixable_seed.seed);
+//   ...
+//
+// For tests with loops, they should:
+// * use a single RandomWithFixableSeed per loop,
+// * and test `seed.fixed` to only execute a single loop when the seed is fixed
+//   (as all loops would use the same seed anyway, making repetition useless),
+// for example:
+//
+//   for (int i = 0; ...; ++i) {
+//     RandomWithFixableSeed fixable_seed(bit_gen);
+//     if (fixable_seed.fixed && i >= 1) break;
+//     ...
+//     EXPECT_THAT(...) << fixable_seed.seed;
+//   }
+//
+struct RandomWithFixableSeed {
+  // The seed used to initialize the std::mt19937.
+  struct Seed {
+    // The seed value.
+    std::mt19937::result_type value ABSL_REQUIRE_EXPLICIT_INIT;
+
+    // True if the seed used has been fixed by the --revised_simplex_test_seed
+    // flag.
+    //
+    // This value is always the same as the one returned by fixed().
+    bool fixed ABSL_REQUIRE_EXPLICIT_INIT;
+
+    friend std::ostream& operator<<(std::ostream& out, const Seed& seed) {
+      out << "RandomWithFixableSeed::Seed{.value=" << seed.value
+          << ", fixed: " << (seed.fixed ? "true" : "false") << "}";
+      if (!seed.fixed) {
+        out << "; use --revised_simplex_test_seed=" << seed.value
+            << " to fix seed";
+      }
+      return out;
+    }
+  };
+
+  // UniformRandomBitGenerator API.
+  using result_type = std::mt19937::result_type;
+
+  // UniformRandomBitGenerator API.
+  static constexpr result_type min() { return std::mt19937::min(); }
+  static constexpr result_type max() { return std::mt19937::max(); }
+
+  // Uses bit_gen to generate the seed for std::mt19937 when
+  // --revised_simplex_test_seed is not set.
+  explicit RandomWithFixableSeed(absl::BitGenRef bit_gen)
+      : seed(NewSeed(bit_gen)), random(seed.value) {
+    VLOG(1) << seed;
+  }
+
+  // UniformRandomBitGenerator API.
+  result_type operator()() { return random(); }
+
+  // The seed used to initialize the std::mt19937.
+  const Seed seed;
+
+  // The random generator initialized with seed_.
+  std::mt19937 random;
+
+ private:
+  // Returns the value of --revised_simplex_test_seed.
+  //
+  // This function guarantees to always return a reference to the same constant
+  // value.
+  //
+  // This is different to absl::GetFlag() that:
+  // * returns a copy of the flag value,
+  // * and the flag value can changed (with absl::SetFlag()).
+  static const std::optional<std::mt19937::result_type>& fixed_seed() {
+    static const absl::NoDestructor<std::optional<std::mt19937::result_type>>
+        flag_value(absl::GetFlag(FLAGS_revised_simplex_test_seed));
+    return *flag_value;
+  }
+
+  static Seed NewSeed(absl::BitGenRef bit_gen) {
+    if (fixed_seed().has_value()) {
+      return Seed{
+          .value = *fixed_seed(),
+          .fixed = true,
+      };
+    }
+    return Seed{
+        .value = absl::Uniform(bit_gen, min(), max()),
+        .fixed = false,
+    };
+  }
+};
+
+// Verify that RandomWithFixableSeed implements the UniformRandomBitGenerator
+// named requirement using the corresponding concept.
+static_assert(std::uniform_random_bit_generator<RandomWithFixableSeed>);
 
 // This compares the Solve() result with the given expectation. Note that we
 // call revised_simplex->Solve() a few times with different parameters.
@@ -128,7 +243,8 @@ void CheckSolve(absl::string_view test_problem, ProblemStatus expected_status,
     if (solve_status.Is<SolveStatus::Optimal>()) {
       const double kComparisonEpsilon = sqrt(kEpsilon);
       const Fractional result = simplex->GetObjectiveValue();
-      EXPECT_COMPARABLE(expected_result, result, kComparisonEpsilon);
+      EXPECT_THAT(result, WithinSameAbsoluteOrRelativeTolerance(
+                              expected_result, kComparisonEpsilon));
     }
 
     EXPECT_NEAR(simplex->DeterministicTime(),
@@ -757,15 +873,20 @@ TEST(RevisedSimplexTest, RandomSingletonOnlyProblem) {
   // construction.
   const ColIndex kNumCols(100000);
   const RowIndex kNumRows(100);
-  std::mt19937 random(12345);
+
+  absl::BitGen bit_gen;
+  RandomWithFixableSeed fixable_seed(bit_gen);
+  SCOPED_TRACE(fixable_seed.seed);
+
   std::unique_ptr<LinearProgram> linear_program(new LinearProgram);
   for (ColIndex col(0); col < kNumCols; ++col) {
-    const RowIndex row(absl::Uniform(random, 0, kNumRows.value()));
-    const Fractional coeff = absl::Uniform<double>(random, -100.0, 100.0);
-    const Fractional objective = absl::Uniform<double>(random, -100.0, 100.0);
-    Fractional lower_bound = absl::Uniform<double>(random, -1000.0, 0.0);
-    Fractional upper_bound = absl::Uniform<double>(random, 0.0, 1000.0);
-    if (absl::Bernoulli(random, 0.1)) {
+    const RowIndex row(absl::Uniform(fixable_seed, 0, kNumRows.value()));
+    const Fractional coeff = absl::Uniform<double>(fixable_seed, -100.0, 100.0);
+    const Fractional objective =
+        absl::Uniform<double>(fixable_seed, -100.0, 100.0);
+    Fractional lower_bound = absl::Uniform<double>(fixable_seed, -1000.0, 0.0);
+    Fractional upper_bound = absl::Uniform<double>(fixable_seed, 0.0, 1000.0);
+    if (absl::Bernoulli(fixable_seed, 0.1)) {
       // Set one of the bounds to kInfinity. This makes sure the problem stays
       // bounded.
       if (objective > 0.0) {
@@ -783,7 +904,7 @@ TEST(RevisedSimplexTest, RandomSingletonOnlyProblem) {
   }
   GlopParameters parameters;
   AddSlackVariablesPreprocessor preprocessor(&parameters);
-  std::unique_ptr<TimeLimit> time_limit = TimeLimit::Infinite();
+  const std::unique_ptr<TimeLimit> time_limit = TimeLimit::Infinite();
   preprocessor.SetTimeLimit(time_limit.get());
   EXPECT_THAT(preprocessor.Run(linear_program.get()),
               PreprocessorResultIs(/*postsolve_is_needed=*/true,
@@ -793,7 +914,6 @@ TEST(RevisedSimplexTest, RandomSingletonOnlyProblem) {
   std::unique_ptr<RevisedSimplex> simplex(new RevisedSimplex);
   EXPECT_THAT(simplex->Solve(*linear_program, *time_limit),
               SolveStatusWith<SolveStatus::Optimal>(_));
-  EXPECT_COMPARABLE(-2487406689.8410878, simplex->GetObjectiveValue(), 1e-8);
 
   // This tests that UseSingletonColumnInInitialBasis() works fine and that
   // the optimal was reached without any iterations!
@@ -904,19 +1024,23 @@ TEST(RevisedSimplexTest, PrimalOrDualAlgorithmAutoSelection) {
   // Generate a random problem with a clear feasible solution (0).
   const ColIndex kNumCols(100);
   const RowIndex kNumRows(100);
-  std::mt19937 random(12345);
+
+  absl::BitGen bit_gen;
+  RandomWithFixableSeed fixable_seed(bit_gen);
+  SCOPED_TRACE(fixable_seed.seed);
+
   std::unique_ptr<LinearProgram> linear_program(new LinearProgram);
   for (ColIndex col(0); col < kNumCols; ++col) {
     EXPECT_EQ(col, linear_program->CreateNewVariable());
     linear_program->SetVariableBounds(col, 0.0, 1.0);
     linear_program->SetObjectiveCoefficient(
-        col, absl::Uniform<double>(random, -1.0, 0.0));
+        col, absl::Uniform<double>(fixable_seed, -1.0, 0.0));
   }
   for (RowIndex row(0); row < kNumRows; ++row) {
     linear_program->SetConstraintBounds(row, 0.0, 1.0);
     for (ColIndex col(0); col < kNumCols; ++col) {
-      linear_program->SetCoefficient(row, col,
-                                     absl::Uniform<double>(random, 0.0, 1.0));
+      linear_program->SetCoefficient(
+          row, col, absl::Uniform<double>(fixable_seed, 0.0, 1.0));
     }
   }
   linear_program->CleanUp();
@@ -1107,12 +1231,18 @@ void RandomTestsOfIncrementalityOnSameProblem(ColIndex num_cols,
                                               RowIndex num_rows, int num_tests,
                                               bool use_dual_simplex) {
   std::unique_ptr<LinearProgram> linear_program(new LinearProgram);
-  std::mt19937 random(12345);
+  absl::BitGen bit_gen;
   for (int test = 0; test < num_tests; ++test) {
-    std::string err(absl::StrFormat(" test no %d / %d.", test + 1, num_tests));
+    RandomWithFixableSeed fixable_seed(bit_gen);
+    if (fixable_seed.seed.fixed && test >= 1) break;
+
+    std::string err(absl::StrFormat(" test no %d / %d; %s.", test + 1,
+                                    num_tests,
+                                    absl::FormatStreamed(fixable_seed.seed)));
     // Initialize data for this test.
-    const ExpectedSolution solution = SolveRandomProblem(
-        num_cols, num_rows, linear_program.get(), random, use_dual_simplex);
+    const ExpectedSolution solution =
+        SolveRandomProblem(num_cols, num_rows, linear_program.get(),
+                           fixable_seed, use_dual_simplex);
     // Note that we've already run the preprocessor in SolveRandomProblem and
     // linear_program already has slack variables added to it. We don't need to
     // re-run it here again.
@@ -1217,12 +1347,19 @@ TEST(RevisedSimplexTest, DualIsFullyIncrementalOnRandomMediumProblems) {
 void RandomTestsOfBasisLoadOnSameProblem(ColIndex num_cols, RowIndex num_rows,
                                          int num_tests, bool use_dual_simplex) {
   std::unique_ptr<LinearProgram> linear_program(new LinearProgram);
-  std::mt19937 random(12345);
+
+  absl::BitGen bit_gen;
   for (int test = 0; test < num_tests; ++test) {
-    std::string err(absl::StrFormat(" test no %d / %d.", test + 1, num_tests));
+    RandomWithFixableSeed fixable_seed(bit_gen);
+    if (fixable_seed.seed.fixed && test >= 1) break;
+
+    std::string err(absl::StrFormat(" test no %d / %d; %s.", test + 1,
+                                    num_tests,
+                                    absl::FormatStreamed(fixable_seed.seed)));
     // Initialize data for this test.
-    const ExpectedSolution solution = SolveRandomProblem(
-        num_cols, num_rows, linear_program.get(), random, use_dual_simplex);
+    const ExpectedSolution solution =
+        SolveRandomProblem(num_cols, num_rows, linear_program.get(),
+                           fixable_seed, use_dual_simplex);
     GlopParameters parameters;
     parameters.set_use_dual_simplex(use_dual_simplex);
     std::unique_ptr<RevisedSimplex> simplex(new RevisedSimplex);
@@ -1239,7 +1376,7 @@ void RandomTestsOfBasisLoadOnSameProblem(ColIndex num_cols, RowIndex num_rows,
     //
     // Note: we need to call each time simplex->SetParameters() to reset the
     // random seed, otherwise the iterations might be slightly different.
-    for (int i = 0; i < solution.num_iterations + 2; ++i) {
+    for (int i = 0; i < solution.num_iterations + 5; ++i) {
       // Run 1 iteration of simplex to get the expected state after 1 iteration.
       const BasisState prev_state = simplex->GetState();
       simplex->SetParameters(parameters);
@@ -1300,11 +1437,10 @@ TEST(RevisedSimplexTest, DualSupportsLoadingBasisStateOnRandomTinyProblems) {
                                       true);         // Use dual simplex?
 }
 
-TEST(RevisedSimplexTest,
-     DISABLED_PrimalSupportsLoadingBasisStateOnRandomSmallProblems) {
+TEST(RevisedSimplexTest, PrimalSupportsLoadingBasisStateOnRandomSmallProblems) {
   RandomTestsOfBasisLoadOnSameProblem(ColIndex(50),  // Number of variables.
                                       RowIndex(25),  // Number of constraints.
-                                      10,            // Number of repeats.
+                                      100,           // Number of repeats.
                                       false);        // Use dual simplex?
 }
 
@@ -1335,12 +1471,17 @@ TEST(RevisedSimplexTest, DualSupportsLoadingBasisStateOnRandomMediumProblems) {
 void RandomTestsOfPrimalEqualsDual(ColIndex num_cols, RowIndex num_rows,
                                    int num_tests) {
   std::unique_ptr<LinearProgram> linear_program(new LinearProgram);
-  std::mt19937 random(12345);
+  absl::BitGen bit_gen;
   for (int test = 0; test < num_tests; ++test) {
-    std::string err(absl::StrFormat(" test no %d / %d.", test + 1, num_tests));
+    RandomWithFixableSeed fixable_seed(bit_gen);
+    if (fixable_seed.seed.fixed && test >= 1) break;
+
+    std::string err(absl::StrFormat(" test no %d / %d; %s.", test + 1,
+                                    num_tests,
+                                    absl::FormatStreamed(fixable_seed.seed)));
     // Initialize data for this test.
     const ExpectedSolution solution_primal = SolveRandomProblem(
-        num_cols, num_rows, linear_program.get(), random, false);
+        num_cols, num_rows, linear_program.get(), fixable_seed, false);
 
     std::unique_ptr<RevisedSimplex> simplex_dual(new RevisedSimplex);
     std::unique_ptr<TimeLimit> time_limit = TimeLimit::Infinite();
@@ -1383,11 +1524,16 @@ void RandomTestsOfIncrementalChanges(ColIndex num_cols, RowIndex num_rows,
                                      ColIndex add_cols, RowIndex add_rows,
                                      int num_tests, bool use_dual_simplex) {
   std::unique_ptr<LinearProgram> linear_program(new LinearProgram);
-  std::mt19937 random(12345);
+  absl::BitGen bit_gen;
   for (int test = 0; test < num_tests; ++test) {
-    std::string err(absl::StrFormat(" test no %d / %d.", test + 1, num_tests));
+    RandomWithFixableSeed fixable_seed(bit_gen);
+    if (fixable_seed.seed.fixed && test >= 1) break;
+
+    std::string err(absl::StrFormat(" test no %d / %d; %s.", test + 1,
+                                    num_tests,
+                                    absl::FormatStreamed(fixable_seed.seed)));
     // Initialize data for this test.
-    CreateRandomProblem(num_cols, num_rows, linear_program.get(), random);
+    CreateRandomProblem(num_cols, num_rows, linear_program.get(), fixable_seed);
 
     std::unique_ptr<RevisedSimplex> simplex(new RevisedSimplex);
     std::unique_ptr<TimeLimit> time_limit = TimeLimit::Infinite();
@@ -1404,18 +1550,18 @@ void RandomTestsOfIncrementalChanges(ColIndex num_cols, RowIndex num_rows,
       EXPECT_EQ(col, linear_program->CreateNewVariable());
       linear_program->SetVariableBounds(col, 0.0, 1.0);
       linear_program->SetObjectiveCoefficient(
-          col, absl::Uniform<double>(random, 0.0, 1.0));
+          col, absl::Uniform<double>(fixable_seed, 0.0, 1.0));
       for (RowIndex row(0); row < num_rows; ++row) {
-        linear_program->SetCoefficient(row, col,
-                                       absl::Uniform<double>(random, 0.0, 1.0));
+        linear_program->SetCoefficient(
+            row, col, absl::Uniform<double>(fixable_seed, 0.0, 1.0));
       }
     }
     for (RowIndex new_row(0); new_row < add_rows; ++new_row) {
       const RowIndex row(num_rows + new_row);
       linear_program->SetConstraintBounds(row, 1.0, 1.0);
       for (ColIndex col(0); col < num_cols + add_cols; ++col) {
-        linear_program->SetCoefficient(row, col,
-                                       absl::Uniform<double>(random, 0.0, 1.0));
+        linear_program->SetCoefficient(
+            row, col, absl::Uniform<double>(fixable_seed, 0.0, 1.0));
       }
     }
 
@@ -1437,7 +1583,7 @@ void RandomTestsOfIncrementalChanges(ColIndex num_cols, RowIndex num_rows,
     EXPECT_THAT(redo_status, Not(SolveStatusWith<SolveStatus::Abnormal>(_)))
         << err;
 
-    EXPECT_EQ(status, redo_status);
+    EXPECT_EQ(status, redo_status) << err;
 
     if (ProblemStatus::OPTIMAL == simplex->GetProblemStatus()) {
       EXPECT_NEAR(simplex->GetObjectiveValue(),
@@ -1714,8 +1860,12 @@ TEST(RevisedSimplexTest, BasisStateWithWrongNumberOfBasicElement) {
   const RowIndex num_rows(60);
   const ColIndex num_cols(100);
   std::unique_ptr<LinearProgram> linear_program(new LinearProgram);
-  std::mt19937 random(12345);
-  CreateRandomProblem(num_cols, num_rows, linear_program.get(), random);
+
+  absl::BitGen bit_gen;
+  RandomWithFixableSeed fixable_seed(bit_gen);
+  SCOPED_TRACE(fixable_seed.seed);
+
+  CreateRandomProblem(num_cols, num_rows, linear_program.get(), fixable_seed);
 
   BasisState saved_state;
   int initial_num_iterations;
@@ -1731,12 +1881,14 @@ TEST(RevisedSimplexTest, BasisStateWithWrongNumberOfBasicElement) {
 
   LOG(INFO) << "initial num iterations " << initial_num_iterations;
 
-  for (int test = 0; test < 50; ++test) {
+  std::vector<int> num_iterations_all_tests;
+  constexpr int kNumTests = 50;
+  for (int test = 0; test < kNumTests; ++test) {
     // We swap the status of a few random columns.
     BasisState new_state = saved_state;
     for (int i = 0; i < 5; ++i) {
       const ColIndex col =
-          ColIndex(absl::Uniform<int>(random, 0, num_cols.value()));
+          ColIndex(absl::Uniform<int>(fixable_seed, 0, num_cols.value()));
       VariableStatus& status = new_state.statuses[col];
       status = (status == VariableStatus::BASIC) ? VariableStatus::FREE
                                                  : VariableStatus::BASIC;
@@ -1749,20 +1901,33 @@ TEST(RevisedSimplexTest, BasisStateWithWrongNumberOfBasicElement) {
     EXPECT_THAT(simplex->Solve(*linear_program, *time_limit),
                 Not(SolveStatusWith<SolveStatus::Abnormal>(_)));
     const int num_iterations = simplex->GetNumberOfIterations();
+    num_iterations_all_tests.push_back(num_iterations);
     LOG(INFO) << "Test #" << test << " num_iterations: " << num_iterations;
 
     // There is no guarantee but currently the number of iterations with such
-    // small changes is small.
-    EXPECT_LT(num_iterations, initial_num_iterations / 2);
+    // small changes is small. Measurements with 5000 tests shows a poisson
+    // distribution with outliers going up to 60% of initial_num_iterations.
+    //
+    // We check after the loop that most tests have small number of iterations.
+    EXPECT_LT(num_iterations, initial_num_iterations);
   }
+
+  // Check the 80-percentile.
+  absl::c_sort(num_iterations_all_tests);
+  EXPECT_LT(num_iterations_all_tests[static_cast<int>(kNumTests * 80 / 100)],
+            initial_num_iterations / 2);
 }
 
 TEST(RevisedSimplexTest, BasisStateWithNoElement) {
   const RowIndex num_rows(60);
   const ColIndex num_cols(100);
   std::unique_ptr<LinearProgram> linear_program(new LinearProgram);
-  std::mt19937 random(12345);
-  CreateRandomProblem(num_cols, num_rows, linear_program.get(), random);
+
+  absl::BitGen bit_gen;
+  RandomWithFixableSeed fixable_seed(bit_gen);
+  SCOPED_TRACE(fixable_seed.seed);
+
+  CreateRandomProblem(num_cols, num_rows, linear_program.get(), fixable_seed);
 
   BasisState state;
   state.statuses.assign(num_cols + RowToColIndex(num_rows),

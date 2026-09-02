@@ -2353,6 +2353,8 @@ void RevisedSimplex::PrimalPhaseIChooseLeavingVariableRow(
   Fractional improvement = std::abs(reduced_cost);
   Fractional best_magnitude = 0.0;
   *leaving_row = kInvalidRow;
+  const Fractional tolerance_times_harris_ratio =
+      parameters_.harris_tolerance_ratio() * tolerance;
   while (!breakpoints.empty()) {
     const BreakPoint top = breakpoints.front();
     // TODO(user): consider using >= here. That will lead to bigger ratio and
@@ -2371,8 +2373,12 @@ void RevisedSimplex::PrimalPhaseIChooseLeavingVariableRow(
 
     // As long as the sum of primal infeasibilities is decreasing, we look for
     // pivots that are numerically more stable.
+    //
+    // We use a tolerance here as `improvement` is the derivate of the function
+    // we want to maximize. This function can have a flat spot at peak, and thus
+    // be close to zero but not exactly zero due to numerical errors.
     improvement -= top.coeff_magnitude;
-    if (improvement <= 0.0) break;
+    if (improvement <= tolerance_times_harris_ratio) break;
     std::pop_heap(breakpoints.begin(), breakpoints.end());
     breakpoints.pop_back();
   }

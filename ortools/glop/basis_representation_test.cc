@@ -24,20 +24,20 @@
 #include "absl/random/random.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/lp_data/lp_test_utils.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_types_testing.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/permutation.h"
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse.h"
-#include "ortools/util/fp_utils.h"
+#include "ortools/util/fp_utils_testing.h"
 
 namespace operations_research {
 namespace glop {
 namespace {
 
-using ::testing::ContainerEq;
+using ::testing::DoubleNear;
+using ::testing::Pointwise;
 
 // Parameterized test to test different densities of eta vectors.
 class EtaMatrixTest : public ::testing::TestWithParam<double> {
@@ -101,7 +101,9 @@ TEST_P(EtaMatrixTest, LeftSolveMathCorrectness) {
     matrix.LeftSolve(&y);
     for (ColIndex j(0); j < c.size(); ++j) {
       if (j == eta_index) {
-        EXPECT_COMPARABLE(c[j], ScalarProduct(y, eta_col), Fractional(1e-8));
+        EXPECT_THAT(
+            ScalarProduct(y, eta_col),
+            WithinSameAbsoluteOrRelativeTolerance(c[j], Fractional(1e-8)));
       } else {
         EXPECT_EQ(c[j], y[j]);
       }
@@ -121,7 +123,12 @@ TEST_P(EtaMatrixTest, LeftSolveMathCorrectness) {
     if (!eta_index_is_present) {
       EXPECT_EQ(eta_index, temp_non_zero_positions.back());
     }
-    ExpectFractionalVectorComparable(y_for_sparse_solve, y);
+    // We cannot expect exact equality because FMS is used in one version and
+    // not in the other on darwin (`armv8-a`).
+    // `SparseLeftSolve()` uses `fmsub` while `LeftSolveWithDenseEta()` uses
+    // `fneg`, `fmul` and `fadd` (and unroll the loop).
+    // ref: https://godbolt.org/z/Wjrsx7x1T.
+    EXPECT_THAT(y_for_sparse_solve.get(), Pointwise(DoubleNear(1e-8), y.get()));
   }
 }
 
@@ -146,10 +153,12 @@ TEST_P(EtaMatrixTest, RightSolveMathCorrectness) {
     matrix.RightSolve(&d);
     for (RowIndex i(0); i < d.size(); ++i) {
       if (i == ColToRowIndex(eta_index)) {
-        EXPECT_COMPARABLE(a[i], eta_col[i] * d[i], Fractional(1e-12));
+        EXPECT_THAT(eta_col[i] * d[i], WithinSameAbsoluteOrRelativeTolerance(
+                                           a[i], Fractional(1e-12)));
       } else {
-        EXPECT_COMPARABLE(a[i], d[i] + eta_col[i] * d[ColToRowIndex(eta_index)],
-                          Fractional(1e-12));
+        EXPECT_THAT(
+            d[i] + eta_col[i] * d[ColToRowIndex(eta_index)],
+            WithinSameAbsoluteOrRelativeTolerance(a[i], Fractional(1e-12)));
       }
     }
   }
@@ -192,23 +201,28 @@ TEST(BasisFactorizationTest, ConditionNumber) {
   const Fractional one_norm = 3 + f;
   const Fractional inv_one_norm = std::max(4 / e, (f + 2) / e);
   const Fractional one_cond_number = one_norm * inv_one_norm;
-  EXPECT_COMPARABLE(one_norm, factorization.ComputeOneNorm(), Fractional(1e-9));
-  EXPECT_COMPARABLE(inv_one_norm, factorization.ComputeInverseOneNorm(),
-                    Fractional(1e-9));
-  EXPECT_COMPARABLE(one_cond_number,
-                    factorization.ComputeOneNormConditionNumber(),
-                    Fractional(1e-9));
+  EXPECT_THAT(
+      factorization.ComputeOneNorm(),
+      WithinSameAbsoluteOrRelativeTolerance(one_norm, Fractional(1e-9)));
+  EXPECT_THAT(
+      factorization.ComputeInverseOneNorm(),
+      WithinSameAbsoluteOrRelativeTolerance(inv_one_norm, Fractional(1e-9)));
+  EXPECT_THAT(
+      factorization.ComputeOneNormConditionNumber(),
+      WithinSameAbsoluteOrRelativeTolerance(one_cond_number, Fractional(1e-9)));
 
   const Fractional inf_norm = std::max(Fractional(4), f + 2);
   const Fractional inv_inf_norm = (3 + f) / e;
   const Fractional inf_cond_number = one_norm * inv_one_norm;
-  EXPECT_COMPARABLE(inf_norm, factorization.ComputeInfinityNorm(),
-                    Fractional(1e-9));
-  EXPECT_COMPARABLE(inv_inf_norm, factorization.ComputeInverseInfinityNorm(),
-                    Fractional(1e-9));
-  EXPECT_COMPARABLE(inf_cond_number,
-                    factorization.ComputeInfinityNormConditionNumber(),
-                    Fractional(1e-9));
+  EXPECT_THAT(
+      factorization.ComputeInfinityNorm(),
+      WithinSameAbsoluteOrRelativeTolerance(inf_norm, Fractional(1e-9)));
+  EXPECT_THAT(
+      factorization.ComputeInverseInfinityNorm(),
+      WithinSameAbsoluteOrRelativeTolerance(inv_inf_norm, Fractional(1e-9)));
+  EXPECT_THAT(
+      factorization.ComputeInfinityNormConditionNumber(),
+      WithinSameAbsoluteOrRelativeTolerance(inf_cond_number, Fractional(1e-9)));
 }
 
 }  // namespace

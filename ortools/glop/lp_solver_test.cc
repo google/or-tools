@@ -14,6 +14,7 @@
 #include "ortools/glop/lp_solver.h"
 
 #include <atomic>
+#include <limits>
 #include <string>
 #include <utility>
 
@@ -35,7 +36,7 @@
 #include "ortools/lp_data/proto_utils.h"
 #include "ortools/port/scoped_std_stream_capture.h"
 #include "ortools/util/file_util.h"
-#include "ortools/util/fp_utils.h"
+#include "ortools/util/fp_utils_testing.h"
 #include "ortools/util/time_limit.h"
 
 ABSL_DECLARE_FLAG(bool, lp_dump_to_proto_file);
@@ -50,6 +51,7 @@ namespace {
 
 using ::testing::_;
 using ::testing::ElementsAre;
+using ::testing::ElementsAreArray;
 using ::testing::EqualsProto;
 
 // Note that double is used instead of Fractional to be able to use C-style
@@ -91,30 +93,39 @@ void CheckLPSolverWithParameters(
 
   const SolveStatus status = lp_solver.Solve(linear_program);
   EXPECT_THAT(status, SolveStatusProblemStatusIs(expected_solution.status));
-  EXPECT_COMPARABLE(expected_solution.objective_value,
-                    lp_solver.GetObjectiveValue(), kComparableEpsilon);
+  EXPECT_THAT(lp_solver.GetObjectiveValue(),
+              WithinSameAbsoluteOrRelativeTolerance(
+                  expected_solution.objective_value, kComparableEpsilon));
 
   const DenseRow& values = lp_solver.variable_values();
-  CheckFractionalValues(values, NumCols, expected_solution.solution_value);
+  EXPECT_THAT(values, FractionalVectorComparable(DenseRow(
+                          expected_solution.solution_value,
+                          expected_solution.solution_value + NumCols)));
 
   const DenseRow& reduced_costs = lp_solver.reduced_costs();
-  CheckFractionalValues(reduced_costs, NumCols, expected_solution.reduced_cost);
+  EXPECT_THAT(reduced_costs, FractionalVectorComparable(DenseRow(
+                                 expected_solution.reduced_cost,
+                                 expected_solution.reduced_cost + NumCols)));
 
   const DenseColumn& dual_values = lp_solver.dual_values();
-  CheckFractionalValues(dual_values, NumRows, expected_solution.dual_value);
+  EXPECT_THAT(dual_values, FractionalVectorComparable(DenseColumn(
+                               expected_solution.dual_value,
+                               expected_solution.dual_value + NumRows)));
 
   DenseColumn activities;
   for (RowIndex ct_id(0); ct_id < NumRows; ++ct_id) {
     const Fractional activity = lp_solver.constraint_activities()[ct_id];
     activities.push_back(activity);
   }
-  CheckFractionalValues(activities, NumRows, expected_solution.activity);
+  EXPECT_THAT(activities, FractionalVectorComparable(DenseColumn(
+                              expected_solution.activity,
+                              expected_solution.activity + NumRows)));
 
   // Check statuses.
-  CheckValues(lp_solver.variable_statuses(), NumCols,
-              expected_solution.variable_status);
-  CheckValues(lp_solver.constraint_statuses(), NumRows,
-              expected_solution.constraint_status);
+  EXPECT_THAT(lp_solver.variable_statuses(),
+              ElementsAreArray(expected_solution.variable_status, NumCols));
+  EXPECT_THAT(lp_solver.constraint_statuses(),
+              ElementsAreArray(expected_solution.constraint_status, NumRows));
 }
 
 // Tests LP solver returns ProblemStatus::OPTIMAL when the problem is empty.
@@ -326,7 +337,8 @@ TEST(LPSolverTest, MaximizeWithEmptyRow) {
   LPSolver solver;
   EXPECT_THAT(solver.Solve(linear_program),
               SolveStatusWith<SolveStatus::Optimal>(_));
-  EXPECT_COMPARABLE(10.0, solver.GetObjectiveValue(), kComparableEpsilon);
+  EXPECT_THAT(solver.GetObjectiveValue(),
+              WithinSameAbsoluteOrRelativeTolerance(10.0, kComparableEpsilon));
 }
 
 TEST(LPSolverTest, Minimize) {
@@ -451,18 +463,24 @@ TEST(LPSolverTest, MaximizeEconomicProblemNoSlack) {
   LPSolver solver;
   EXPECT_THAT(solver.Solve(linear_program),
               SolveStatusWith<SolveStatus::Optimal>(_));
-  EXPECT_COMPARABLE(6250.0, solver.GetObjectiveValue(), kComparableEpsilon);
+  EXPECT_THAT(solver.GetObjectiveValue(), WithinSameAbsoluteOrRelativeTolerance(
+                                              6250.0, kComparableEpsilon));
 
-  EXPECT_COMPARABLE(25.0, solver.variable_values()[col_x], kComparableEpsilon);
-  EXPECT_COMPARABLE(75.0, solver.variable_values()[col_y], kComparableEpsilon);
-  EXPECT_COMPARABLE(32.5, solver.dual_values()[row_r1], kComparableEpsilon);
-  EXPECT_COMPARABLE(0.75, solver.dual_values()[row_r2], kComparableEpsilon);
+  EXPECT_THAT(solver.variable_values()[col_x],
+              WithinSameAbsoluteOrRelativeTolerance(25.0, kComparableEpsilon));
+  EXPECT_THAT(solver.variable_values()[col_y],
+              WithinSameAbsoluteOrRelativeTolerance(75.0, kComparableEpsilon));
+  EXPECT_THAT(solver.dual_values()[row_r1],
+              WithinSameAbsoluteOrRelativeTolerance(32.5, kComparableEpsilon));
+  EXPECT_THAT(solver.dual_values()[row_r2],
+              WithinSameAbsoluteOrRelativeTolerance(0.75, kComparableEpsilon));
   EXPECT_EQ(VariableStatus::BASIC, solver.variable_statuses()[col_x]);
   EXPECT_EQ(VariableStatus::BASIC, solver.variable_statuses()[col_y]);
-  EXPECT_COMPARABLE(100.0, solver.constraint_activities()[row_r1],
-                    kComparableEpsilon);
-  EXPECT_COMPARABLE(4000.0, solver.constraint_activities()[row_r2],
-                    kComparableEpsilon);
+  EXPECT_THAT(solver.constraint_activities()[row_r1],
+              WithinSameAbsoluteOrRelativeTolerance(100.0, kComparableEpsilon));
+  EXPECT_THAT(
+      solver.constraint_activities()[row_r2],
+      WithinSameAbsoluteOrRelativeTolerance(4000.0, kComparableEpsilon));
 
   EXPECT_EQ(ConstraintStatus::AT_UPPER_BOUND,
             solver.constraint_statuses()[row_r1]);
@@ -498,29 +516,36 @@ TEST(LPSolverTest, MaximizeEconomicProblemAnotherFormulation) {
   LPSolver solver;
   EXPECT_THAT(solver.Solve(linear_program),
               SolveStatusWith<SolveStatus::Optimal>(_));
-  EXPECT_COMPARABLE(Fractional(6250.0), solver.GetObjectiveValue(),
-                    kComparableEpsilon);
+  EXPECT_THAT(solver.GetObjectiveValue(),
+              WithinSameAbsoluteOrRelativeTolerance(Fractional(6250.0),
+                                                    kComparableEpsilon));
 
-  EXPECT_COMPARABLE(Fractional(25.0), solver.variable_values()[col_x],
-                    kComparableEpsilon);
-  EXPECT_COMPARABLE(Fractional(75.0), solver.variable_values()[col_y],
-                    kComparableEpsilon);
-  EXPECT_COMPARABLE(Fractional(10.0),
-                    solver.variable_values()[fixed_dummy_variable],
-                    kComparableEpsilon);
-  EXPECT_COMPARABLE(Fractional(32.5), solver.dual_values()[row_r1],
-                    kComparableEpsilon);
-  EXPECT_COMPARABLE(Fractional(-0.75), solver.dual_values()[row_r2],
-                    kComparableEpsilon);
+  EXPECT_THAT(solver.variable_values()[col_x],
+              WithinSameAbsoluteOrRelativeTolerance(Fractional(25.0),
+                                                    kComparableEpsilon));
+  EXPECT_THAT(solver.variable_values()[col_y],
+              WithinSameAbsoluteOrRelativeTolerance(Fractional(75.0),
+                                                    kComparableEpsilon));
+  EXPECT_THAT(solver.variable_values()[fixed_dummy_variable],
+              WithinSameAbsoluteOrRelativeTolerance(Fractional(10.0),
+                                                    kComparableEpsilon));
+  EXPECT_THAT(solver.dual_values()[row_r1],
+              WithinSameAbsoluteOrRelativeTolerance(Fractional(32.5),
+                                                    kComparableEpsilon));
+  EXPECT_THAT(solver.dual_values()[row_r2],
+              WithinSameAbsoluteOrRelativeTolerance(Fractional(-0.75),
+                                                    kComparableEpsilon));
   EXPECT_EQ(VariableStatus::BASIC, solver.variable_statuses()[col_x]);
   EXPECT_EQ(VariableStatus::BASIC, solver.variable_statuses()[col_y]);
   EXPECT_EQ(VariableStatus::FIXED_VALUE,
             solver.variable_statuses()[fixed_dummy_variable]);
 
-  EXPECT_COMPARABLE(Fractional(100.0), solver.constraint_activities()[row_r1],
-                    kComparableEpsilon);
-  EXPECT_COMPARABLE(Fractional(-4000.0), solver.constraint_activities()[row_r2],
-                    kComparableEpsilon);
+  EXPECT_THAT(solver.constraint_activities()[row_r1],
+              WithinSameAbsoluteOrRelativeTolerance(Fractional(100.0),
+                                                    kComparableEpsilon));
+  EXPECT_THAT(solver.constraint_activities()[row_r2],
+              WithinSameAbsoluteOrRelativeTolerance(Fractional(-4000.0),
+                                                    kComparableEpsilon));
 
   EXPECT_EQ(ConstraintStatus::AT_UPPER_BOUND,
             solver.constraint_statuses()[row_r1]);
@@ -602,14 +627,16 @@ TEST(LPSolverTest, CheckSolutionOptimality) {
 
   solution.dual_values[RowIndex(1)] = epsilon / 8.0;
   EXPECT_EQ(ProblemStatus::OPTIMAL, solver.LoadAndVerifySolution(lp, solution));
-  EXPECT_COMPARABLE(solver.reduced_costs()[ColIndex(3)], -epsilon,
-                    Fractional(1e-6));
+  EXPECT_THAT(-epsilon,
+              WithinSameAbsoluteOrRelativeTolerance(
+                  solver.reduced_costs()[ColIndex(3)], Fractional(1e-6)));
 
   // The 1e-3 is to compensate the 1000 upper bound.
   solution.dual_values[RowIndex(1)] = -epsilon / 8.0 * 1e-3;
   EXPECT_EQ(ProblemStatus::OPTIMAL, solver.LoadAndVerifySolution(lp, solution));
-  EXPECT_COMPARABLE(solver.reduced_costs()[ColIndex(3)], epsilon * 1e-3,
-                    Fractional(1e-5));
+  EXPECT_THAT(epsilon * 1e-3,
+              WithinSameAbsoluteOrRelativeTolerance(
+                  solver.reduced_costs()[ColIndex(3)], Fractional(1e-5)));
 }
 
 TEST(LPSolverTest, CheckBasicSolverIncrementality) {

@@ -16,6 +16,7 @@
 #include <random>
 
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_test_utils.h"
@@ -24,7 +25,7 @@
 #include "ortools/lp_data/permutation.h"
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse.h"
-#include "ortools/util/fp_utils.h"
+#include "ortools/util/fp_utils_testing.h"
 
 namespace operations_research {
 namespace glop {
@@ -113,7 +114,8 @@ TEST(DualEdgeNormsTest, NormUpdateSeemsReasonable) {
     // The update is actually quite precise for squared norm!! however, on real
     // life linear problems, the matrix are not as well conditioned as in our
     // example.
-    EXPECT_COMPARABLE(updated_norm[row], precise_norm[row], Fractional(1e-7));
+    EXPECT_THAT(precise_norm[row], WithinSameAbsoluteOrRelativeTolerance(
+                                       updated_norm[row], Fractional(1e-7)));
     if (updated_norm[row] == precise_norm[row]) {
       ++num_exactly_equals_norm;
     }
