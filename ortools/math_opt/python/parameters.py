@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2025 Google LLC
+# Copyright 2010-2026 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -21,8 +21,8 @@ from typing import Dict, Optional
 
 from ortools.glop import parameters_pb2 as glop_parameters_pb2
 from ortools.math_opt import parameters_pb2 as math_opt_parameters_pb2
-from ortools.math_opt.solvers import (glpk_pb2, gurobi_pb2, highs_pb2,
-                                      osqp_pb2, xpress_pb2)
+from ortools.math_opt.solvers import (cplex_pb2, glpk_pb2, gurobi_pb2,
+                                      highs_pb2, osqp_pb2, xpress_pb2)
 from ortools.math_opt.solvers.gscip import gscip_pb2
 from ortools.pdlp import solvers_pb2 as pdlp_solvers_pb2
 from ortools.sat import sat_parameters_pb2
@@ -91,6 +91,8 @@ class SolverType(enum.Enum):
       * All variable lower bounds must be 0.
       * All variables and constraints must have integer bounds and costs.
       * The objective must be linear.
+    CPLEX: IBM ILOG CPLEX solver (third party). Supports LP, MIP. (other
+      problem-types are unimplemented) A fast option, but has special licensing.
   """  # fmt: skip
 
     GSCIP = math_opt_parameters_pb2.SOLVER_TYPE_GSCIP
@@ -106,6 +108,7 @@ class SolverType(enum.Enum):
     SANTORINI = math_opt_parameters_pb2.SOLVER_TYPE_SANTORINI
     XPRESS = math_opt_parameters_pb2.SOLVER_TYPE_XPRESS
     MIN_COST_FLOW = math_opt_parameters_pb2.SOLVER_TYPE_MIN_COST_FLOW
+    CPLEX = math_opt_parameters_pb2.SOLVER_TYPE_CPLEX
 
 
 def solver_type_from_proto(
@@ -309,6 +312,100 @@ def parse_glpk_parameters(
 
 
 @dataclasses.dataclass
+class CplexParameters:
+    """CPLEX specific parameters for solving.
+
+    See https://www.ibm.com/docs/en/cofz/22.1.2?topic=SS9UKU_22.1.2/com.ibm.cplex.zos.help/CPLEX/Parameters/topics/introAccess.htm
+    for a list of possible parameters.
+
+    Example use:
+      cplex = CplexParameters()
+      cplex.int_param_values['CPXPARAM_Threads'] = 8
+    """
+
+    bool_param_values: Dict[str, bool] = dataclasses.field(default_factory=dict)
+    int_param_values: Dict[str, int] = dataclasses.field(default_factory=dict)
+    long_param_values: Dict[str, int] = dataclasses.field(default_factory=dict)
+    double_param_values: Dict[str, float] = dataclasses.field(default_factory=dict)
+    string_param_values: Dict[str, str] = dataclasses.field(default_factory=dict)
+
+    def to_proto(self) -> cplex_pb2.CplexParametersProto:
+        parameters = []
+        for key, val in self.bool_param_values.items():
+            parameters.append(
+                cplex_pb2.CplexParametersProto.Parameter(
+                    parameter_bool=cplex_pb2.CplexParametersProto.ParameterBool(name=key, value=val)
+                )
+            )
+        for key, val in self.int_param_values.items():
+            parameters.append(
+                cplex_pb2.CplexParametersProto.Parameter(
+                    parameter_int32=cplex_pb2.CplexParametersProto.ParameterInt32(name=key, value=val)
+                )
+            )
+        for key, val in self.long_param_values.items():
+            parameters.append(
+                cplex_pb2.CplexParametersProto.Parameter(
+                    parameter_int64=cplex_pb2.CplexParametersProto.ParameterInt64(name=key, value=val)
+                )
+            )
+        for key, val in self.double_param_values.items():
+            parameters.append(
+                cplex_pb2.CplexParametersProto.Parameter(
+                    parameter_double=cplex_pb2.CplexParametersProto.ParameterDouble(name=key, value=val)
+                )
+            )
+        for key, val in self.string_param_values.items():
+            parameters.append(
+                cplex_pb2.CplexParametersProto.Parameter(
+                    parameter_string=cplex_pb2.CplexParametersProto.ParameterString(name=key, value=val)
+                )
+            )
+        return cplex_pb2.CplexParametersProto(parameters=parameters)
+
+
+def parse_cplex_parameters(
+    proto: cplex_pb2.CplexParametersProto,
+) -> CplexParameters:
+    """Returns the CplexParameters equivalent to the input proto."""
+    bool_param_values = {}
+    int_param_values = {}
+    long_param_values = {}
+    double_param_values = {}
+    string_param_values = {}
+
+    for param in proto.parameters:
+        if param.HasField("parameter_bool"):
+            if param.parameter_bool.name in bool_param_values:
+                raise ValueError(f"Duplicate Cplex bool parameter name: {param.parameter_bool.name}.")
+            bool_param_values[param.parameter_bool.name] = param.parameter_bool.value
+        elif param.HasField("parameter_int32"):
+            if param.parameter_int32.name in int_param_values:
+                raise ValueError(f"Duplicate Cplex int parameter name: {param.parameter_int32.name}.")
+            int_param_values[param.parameter_int32.name] = param.parameter_int32.value
+        elif param.HasField("parameter_int64"):
+            if param.parameter_int64.name in long_param_values:
+                raise ValueError(f"Duplicate Cplex long parameter name: {param.parameter_int64.name}.")
+            long_param_values[param.parameter_int64.name] = param.parameter_int64.value
+        elif param.HasField("parameter_double"):
+            if param.parameter_double.name in double_param_values:
+                raise ValueError(f"Duplicate Cplex double parameter name: {param.parameter_double.name}.")
+            double_param_values[param.parameter_double.name] = param.parameter_double.value
+        elif param.HasField("parameter_string"):
+            if param.parameter_string.name in string_param_values:
+                raise ValueError(f"Duplicate Cplex string parameter name: {param.parameter_string.name}.")
+            string_param_values[param.parameter_string.name] = param.parameter_string.value
+
+    return CplexParameters(
+        bool_param_values=bool_param_values,
+        int_param_values=int_param_values,
+        long_param_values=long_param_values,
+        double_param_values=double_param_values,
+        string_param_values=string_param_values,
+    )
+
+
+@dataclasses.dataclass
 class SolveParameters:
     """Parameters to control a single solve.
 
@@ -418,6 +515,7 @@ class SolveParameters:
     glpk: GLPK specific solve parameters.
     highs: HiGHS specific solve parameters.
     xpress: XPRESS specific solve parameters.
+    cplex: CPLEX specific solve parameters.
   """  # fmt: skip
 
     time_limit: Optional[datetime.timedelta] = None
@@ -461,6 +559,9 @@ class SolveParameters:
     xpress: xpress_pb2.XpressParametersProto = dataclasses.field(
         default_factory=xpress_pb2.XpressParametersProto
     )
+    cplex: CplexParameters = dataclasses.field(
+        default_factory=CplexParameters
+    )
 
     def to_proto(self) -> math_opt_parameters_pb2.SolveParametersProto:
         """Returns a protocol buffer equivalent to this."""
@@ -480,6 +581,7 @@ class SolveParameters:
             glpk=self.glpk.to_proto(),
             highs=self.highs,
             xpress=self.xpress,
+            cplex=self.cplex.to_proto(),
         )
         if self.time_limit is not None:
             result.time_limit.FromTimedelta(self.time_limit)
@@ -528,6 +630,7 @@ def parse_solve_parameters(
         glpk=parse_glpk_parameters(proto.glpk),
         highs=proto.highs,
         xpress=proto.xpress,
+        cplex=parse_cplex_parameters(proto.cplex),
     )
     if proto.HasField("time_limit"):
         result.time_limit = proto.time_limit.ToTimedelta()

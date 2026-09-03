@@ -1,4 +1,4 @@
-// Copyright 2010-2025 Google LLC
+// Copyright 2010-2026 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -377,8 +377,10 @@ TEST_P(StatusTest, IncompleteIpSolve) {
     GTEST_SKIP() << "Ignoring this test as Highs 1.7+ returns MODEL_INVALID";
   }
   ASSERT_OK_AND_ASSIGN(const std::unique_ptr<const Model> model, Load23588());
-  SolveArguments args = {
-      .parameters = {.enable_output = true, .node_limit = 1}};
+  SolveArguments args;
+  args.parameters = GetParam().parameters;
+  args.parameters.enable_output = true;
+  args.parameters.node_limit = 1;
   ASSERT_OK_AND_ASSIGN(const SolveResult result,
                        Solve(*model, GetParam().solver_type, args));
 

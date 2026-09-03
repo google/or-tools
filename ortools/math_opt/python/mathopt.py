@@ -71,7 +71,7 @@ from ortools.math_opt.python.model_parameters import (
     parse_objective_parameters, parse_solution_hint)
 from ortools.math_opt.python.objectives import AuxiliaryObjective, Objective
 from ortools.math_opt.python.parameters import (Emphasis, GlpkParameters,
-                                                GurobiParameters, LPAlgorithm,
+                                                GurobiParameters, CplexParameters, LPAlgorithm,
                                                 SolveParameters, SolverType,
                                                 emphasis_from_proto,
                                                 emphasis_to_proto,
@@ -79,6 +79,7 @@ from ortools.math_opt.python.parameters import (Emphasis, GlpkParameters,
                                                 lp_algorithm_to_proto,
                                                 parse_glpk_parameters,
                                                 parse_gurobi_parameters,
+                                                parse_cplex_parameters,
                                                 parse_solve_parameters,
                                                 solver_type_from_proto,
                                                 solver_type_to_proto)
