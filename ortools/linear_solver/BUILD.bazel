@@ -573,6 +573,19 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "gurobi_util_test",
+    srcs = ["gurobi_util_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":gurobi_util",
+        "//ortools/base:gmock_main",
+        "//ortools/third_party_solvers:gurobi_environment",
+        "@abseil-cpp//absl/cleanup",
+    ],
+)
+
 # Experimental. Boolean optimization problem solver.
 # This works best on MIP problem where all the variables are Boolean integers.
 cc_library(
