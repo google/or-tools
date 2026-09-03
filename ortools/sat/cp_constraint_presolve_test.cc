@@ -101,6 +101,66 @@ TEST(PresolveCpModelTest, LinMaxBasicPresolveExprs) {
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
+TEST(PresolveCpModelTest, InferAllDiffsControlsNoOverlapConversion) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [0, 2] }
+    variables { domain: [0, 2] }
+    variables { domain: [0, 2] }
+
+    constraints {
+      interval {
+        start { vars: 0 coeffs: 1 }
+        size { offset: 1 }
+        end { vars: 0 coeffs: 1 offset: 1 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 1 coeffs: 1 }
+        size { offset: 1 }
+        end { vars: 1 coeffs: 1 offset: 1 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 2 coeffs: 1 }
+        size { offset: 1 }
+        end { vars: 2 coeffs: 1 offset: 1 }
+      }
+    }
+    constraints {
+      no_overlap { intervals: [0, 1, 2] }
+    }
+  )pb");
+
+  CpModelProto presolved_model = initial_model;
+  CpModelProto mapping_model;
+  Model model;
+
+  SatParameters* params = model.GetOrCreate<SatParameters>();
+  params->set_keep_all_feasible_solutions_in_presolve(true);
+  params->set_infer_all_diffs(false);
+
+  PresolveContext context(&model, &presolved_model, &mapping_model);
+  CpConstraintPresolver presolver(&context);
+
+  context.InitializeNewDomains();
+
+  presolver.PresolveOneConstraint(3);
+  presolver.RemoveEmptyConstraints();
+
+  bool has_no_overlap = false;
+  bool has_all_diff = false;
+
+  for (const ConstraintProto& ct : presolved_model.constraints()) {
+    if (ct.has_no_overlap()) has_no_overlap = true;
+    if (ct.has_all_diff()) has_all_diff = true;
+  }
+
+  EXPECT_TRUE(has_no_overlap);
+  EXPECT_FALSE(has_all_diff);
+}
+
 TEST(PresolveCpModelTest, IntProdWithLeftConstant) {
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables {

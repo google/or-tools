@@ -6141,7 +6141,8 @@ bool CpConstraintPresolver::PresolveNoOverlap(ConstraintProto* ct) {
     }
     const int initial_num_intervals = proto->intervals().size();
     if (num_size_zero_or_one == initial_num_intervals) {
-      if (has_optional_size_one) {
+      if (has_optional_size_one ||
+          !context_->params().infer_all_diffs()) {
         // If there is only size zero or one, we can remove the size zero
         // intervals as there is no constraint on them.
         int new_size = 0;

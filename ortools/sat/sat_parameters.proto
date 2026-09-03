@@ -654,6 +654,9 @@ message SatParameters {
   //
   // This will also detect and add no_overlap constraints, if all the relations
   // x != y have "offsets" between them. I.e. x > y + offset.
+  //
+  // This also controls the presolve conversion of no_overlap constraints with
+  // mandatory unit-size intervals into all_diff constraints on their starts.
   optional bool infer_all_diffs = 233 [default = true];
 
   // Try to find large "rectangle" in the linear constraint matrix with
