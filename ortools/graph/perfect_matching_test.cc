@@ -20,10 +20,13 @@
 #include <random>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/random/random.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
-#include "ortools/base/gmock.h"
+#include "ortools/base/log_severity.h"
+#include "ortools/base/types.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/solve_mp_model.h"
 
@@ -80,21 +83,21 @@ TEST(MinCostPerfectMatchingTest, LargerBipartiteInfeasibleProblem) {
 
 TEST(MinCostPerfectMatchingTest, IntegerOverflow) {
   MinCostPerfectMatching matcher(4);
-  matcher.AddEdgeWithCost(0, 2, std::numeric_limits<int64_t>::max());
-  matcher.AddEdgeWithCost(0, 3, std::numeric_limits<int64_t>::max());
-  matcher.AddEdgeWithCost(1, 2, std::numeric_limits<int64_t>::max());
-  matcher.AddEdgeWithCost(1, 3, std::numeric_limits<int64_t>::max());
+  matcher.AddEdgeWithCost(0, 2, kint64max);
+  matcher.AddEdgeWithCost(0, 3, kint64max);
+  matcher.AddEdgeWithCost(1, 2, kint64max);
+  matcher.AddEdgeWithCost(1, 3, kint64max);
   ASSERT_EQ(matcher.Solve(), MinCostPerfectMatching::INTEGER_OVERFLOW);
 }
 
 TEST(MinCostPerfectMatchingTest, CostOverflow) {
   MinCostPerfectMatching matcher(4);
-  matcher.AddEdgeWithCost(0, 2, std::numeric_limits<int64_t>::max() / 3);
-  matcher.AddEdgeWithCost(0, 3, std::numeric_limits<int64_t>::max() / 3);
-  matcher.AddEdgeWithCost(1, 2, std::numeric_limits<int64_t>::max() / 3);
-  matcher.AddEdgeWithCost(1, 3, std::numeric_limits<int64_t>::max() / 3);
+  matcher.AddEdgeWithCost(0, 2, kint64max / 3);
+  matcher.AddEdgeWithCost(0, 3, kint64max / 3);
+  matcher.AddEdgeWithCost(1, 2, kint64max / 3);
+  matcher.AddEdgeWithCost(1, 3, kint64max / 3);
   ASSERT_EQ(matcher.Solve(), MinCostPerfectMatching::COST_OVERFLOW);
-  EXPECT_EQ(matcher.OptimalCost(), std::numeric_limits<int64_t>::max());
+  EXPECT_EQ(matcher.OptimalCost(), kint64max);
 }
 
 class MacholWienTest : public ::testing::TestWithParam<int> {};
@@ -127,13 +130,10 @@ TEST_P(MacholWienTest, SolveHardProblem) {
 
 // Even with -c opt, a 1000x1000 Machol-Wien problem currently takes too long to
 // solve.
-#ifdef NDEBUG
-INSTANTIATE_TEST_SUITE_P(MacholWienProblems, MacholWienTest,
-                         ::testing::Values(10, 50, 100, 200));
-#else
-INSTANTIATE_TEST_SUITE_P(MacholWienProblems, MacholWienTest,
-                         ::testing::Values(10, 50));
-#endif
+INSTANTIATE_TEST_SUITE_P(
+    MacholWienProblems, MacholWienTest,
+    ::testing::ValuesIn(DEBUG_MODE ? std::vector<int>(10, 50)
+                                   : std::vector<int>{10, 50, 100, 200}));
 
 using NodeIndex = BlossomGraph::NodeIndex;
 using EdgeIndex = BlossomGraph::EdgeIndex;
@@ -144,8 +144,8 @@ TEST(BlossomGraphTest, Initialization) {
   const int num_nodes = 4;
   BlossomGraph graph(num_nodes);
   CostValue increasing_cost;
-  for (NodeIndex a(0); a < num_nodes; ++a) {
-    for (NodeIndex b(a + 1); b < num_nodes; ++b) {
+  for (NodeIndex a(0); a < NodeIndex(num_nodes); ++a) {
+    for (NodeIndex b(a + NodeIndex(1)); b < NodeIndex(num_nodes); ++b) {
       graph.AddEdge(a, b, ++increasing_cost);
     }
   }
@@ -183,7 +183,7 @@ TEST(BlossomGraphTest, Initialization) {
 
   const CostValue delta =
       graph.ComputeMaxCommonTreeDualDeltaAndResetPrimalEdgeQueue();
-  EXPECT_EQ(delta, 3);
+  EXPECT_EQ(delta, CostValue(3));
   graph.UpdateAllTrees(delta);
 
   EXPECT_EQ(graph.Dual(graph.GetNode(0)), CostValue(-1));
@@ -269,8 +269,7 @@ void CheckOptimalSolution(const MinCostPerfectMatching& matcher,
   EXPECT_EQ(num_seen, matches.size());
 
   // Check that the matching returned has the correct cost.
-  std::vector<int64_t> costs(matches.size(),
-                             std::numeric_limits<int64_t>::max());
+  std::vector<int64_t> costs(matches.size(), kint64max);
   for (const Edge e : edges) {
     if (matches[e.node1] == e.node2) {
       const int rep = std::min(e.node1, e.node2);
@@ -281,7 +280,7 @@ void CheckOptimalSolution(const MinCostPerfectMatching& matcher,
   }
   int64_t actual_cost = 0;
   for (int i = 0; i < costs.size(); ++i) {
-    CHECK_NE(costs[i], std::numeric_limits<int64_t>::max());
+    CHECK_NE(costs[i], kint64max);
     actual_cost += costs[i];
   }
   EXPECT_EQ(matcher.OptimalCost(), actual_cost);

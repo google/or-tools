@@ -14,7 +14,6 @@
 #include "ortools/math_opt/core/model_summary.h"
 
 #include <cstdint>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -24,6 +23,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_text_proto.h"
+#include "ortools/base/types.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 
@@ -295,13 +295,15 @@ TEST(IdNameBiMapTest, InitializerList) {
 }
 
 TEST(IdNameBiMapDeathTest, InitializerListNotSorted) {
-  EXPECT_DEATH(IdNameBiMap({{5, ""}, {4, "not_in_order"}, {8, ""}, {9, "y"}}),
-               "strictly increasing");
+  EXPECT_DEATH_IF_SUPPORTED(
+      IdNameBiMap({{5, ""}, {4, "not_in_order"}, {8, ""}, {9, "y"}}),
+      "strictly increasing");
 }
 
 TEST(IdNameBiMapDeathTest, InitializerListDuplicates) {
-  EXPECT_DEATH(IdNameBiMap({{5, ""}, {5, "is_duplicated"}, {8, ""}, {9, "y"}}),
-               "strictly increasing");
+  EXPECT_DEATH_IF_SUPPORTED(
+      IdNameBiMap({{5, ""}, {5, "is_duplicated"}, {8, ""}, {9, "y"}}),
+      "strictly increasing");
 }
 
 TEST(IdNameBiMapTest, SetNextFreeIdNegative) {
@@ -408,7 +410,7 @@ TEST(IdNameBiMapTest, BulkUpdateDeletesMaxValueId) {
   IdNameBiMap bimap;
   ASSERT_OK(bimap.Insert(3, "a"));
   EXPECT_THAT(
-      bimap.BulkUpdate({std::numeric_limits<int64_t>::max()}, {}, {}),
+      bimap.BulkUpdate({kint64max}, {}, {}),
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("max(int64_t)")));
 }
 

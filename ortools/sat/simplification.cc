@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <deque>
-#include <limits>
 #include <utility>
 #include <vector>
 
@@ -28,15 +27,14 @@
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/base/adjustable_priority_queue-inl.h"
 #include "ortools/base/adjustable_priority_queue.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
-#include "ortools/graph/strongly_connected_components.h"
+#include "ortools/base/types.h"
+#include "ortools/graph_base/strongly_connected_components.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
-#include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -175,13 +173,10 @@ void SatPresolver::AddClause(absl::Span<const Literal> clause) {
   in_clause_to_process_.push_back(true);
   clause_to_process_.push_back(ci);
 
-  bool changed = false;
   std::vector<Literal>& clause_ref = clauses_.back();
   if (!equiv_mapping_.empty()) {
-    for (int i = 0; i < clause_ref.size(); ++i) {
-      const Literal old_literal = clause_ref[i];
-      clause_ref[i] = Literal(equiv_mapping_[clause_ref[i]]);
-      if (old_literal != clause_ref[i]) changed = true;
+    for (Literal& l : clause_ref) {
+      l = Literal(equiv_mapping_[l]);
     }
   }
   std::sort(clause_ref.begin(), clause_ref.end());
@@ -860,7 +855,7 @@ LiteralIndex SatPresolver::FindLiteralWithShortestOccurrenceListExcluding(
     const std::vector<Literal>& clause, Literal to_exclude) {
   DCHECK(!clause.empty());
   LiteralIndex result = kNoLiteralIndex;
-  int num_occurrences = std::numeric_limits<int>::max();
+  int num_occurrences = kint32max;
   for (const Literal l : clause) {
     if (l == to_exclude) continue;
     if (literal_to_clause_sizes_[l] < num_occurrences) {

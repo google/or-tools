@@ -12,6 +12,7 @@
 # limitations under the License.
 
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 
@@ -28,9 +29,7 @@ proto_library(
 
 cc_proto_library(
     name = "callback_cc_proto",
-    deps = [
-        ":callback_proto",
-    ],
+    deps = [":callback_proto"],
 )
 
 py_proto_library(
@@ -38,23 +37,29 @@ py_proto_library(
     deps = [":callback_proto"],
 )
 
+java_proto_library(
+    name = "callback_java_proto",
+    deps = [":callback_proto"],
+)
+
 proto_library(
     name = "model_proto",
     srcs = ["model.proto"],
-    deps = [
-        ":sparse_containers_proto",
-    ],
+    deps = [":sparse_containers_proto"],
 )
 
 cc_proto_library(
     name = "model_cc_proto",
-    deps = [
-        ":model_proto",
-    ],
+    deps = [":model_proto"],
 )
 
 py_proto_library(
     name = "model_py_pb2",
+    deps = [":model_proto"],
+)
+
+java_proto_library(
+    name = "model_java_proto",
     deps = [":model_proto"],
 )
 
@@ -70,13 +75,16 @@ proto_library(
 
 cc_proto_library(
     name = "model_parameters_cc_proto",
-    deps = [
-        ":model_parameters_proto",
-    ],
+    deps = [":model_parameters_proto"],
 )
 
 py_proto_library(
     name = "model_parameters_py_pb2",
+    deps = [":model_parameters_proto"],
+)
+
+java_proto_library(
+    name = "model_parameters_java_proto",
     deps = [":model_parameters_proto"],
 )
 
@@ -91,13 +99,16 @@ proto_library(
 
 cc_proto_library(
     name = "model_update_cc_proto",
-    deps = [
-        ":model_update_proto",
-    ],
+    deps = [":model_update_proto"],
 )
 
 py_proto_library(
     name = "model_update_py_pb2",
+    deps = [":model_update_proto"],
+)
+
+java_proto_library(
+    name = "model_update_java_proto",
     deps = [":model_update_proto"],
 )
 
@@ -110,8 +121,8 @@ proto_library(
         "//ortools/math_opt/solvers:gurobi_proto",
         "//ortools/math_opt/solvers:highs_proto",
         "//ortools/math_opt/solvers:osqp_proto",
-        "//ortools/math_opt/solvers/gscip:gscip_proto",
         "//ortools/math_opt/solvers:xpress_proto",
+        "//ortools/math_opt/solvers/gscip:gscip_proto",
         "//ortools/pdlp:solvers_proto",
         "//ortools/sat:sat_parameters_proto",
         "@protobuf//:duration_proto",
@@ -120,13 +131,16 @@ proto_library(
 
 cc_proto_library(
     name = "parameters_cc_proto",
-    deps = [
-        ":parameters_proto",
-    ],
+    deps = [":parameters_proto"],
 )
 
 py_proto_library(
     name = "parameters_py_pb2",
+    deps = [":parameters_proto"],
+)
+
+java_proto_library(
+    name = "parameters_java_proto",
     deps = [":parameters_proto"],
 )
 
@@ -144,9 +158,7 @@ proto_library(
 
 cc_proto_library(
     name = "result_cc_proto",
-    deps = [
-        ":result_proto",
-    ],
+    deps = [":result_proto"],
 )
 
 py_proto_library(
@@ -154,23 +166,29 @@ py_proto_library(
     deps = [":result_proto"],
 )
 
+java_proto_library(
+    name = "result_java_proto",
+    deps = [":result_proto"],
+)
+
 proto_library(
     name = "solution_proto",
     srcs = ["solution.proto"],
-    deps = [
-        ":sparse_containers_proto",
-    ],
+    deps = [":sparse_containers_proto"],
 )
 
 cc_proto_library(
     name = "solution_cc_proto",
-    deps = [
-        ":solution_proto",
-    ],
+    deps = [":solution_proto"],
 )
 
 py_proto_library(
     name = "solution_py_pb2",
+    deps = [":solution_proto"],
+)
+
+java_proto_library(
+    name = "solution_java_proto",
     deps = [":solution_proto"],
 )
 
@@ -181,9 +199,7 @@ proto_library(
 
 cc_proto_library(
     name = "sparse_containers_cc_proto",
-    deps = [
-        ":sparse_containers_proto",
-    ],
+    deps = [":sparse_containers_proto"],
 )
 
 py_proto_library(
@@ -191,23 +207,29 @@ py_proto_library(
     deps = [":sparse_containers_proto"],
 )
 
+java_proto_library(
+    name = "sparse_containers_java_proto",
+    deps = [":sparse_containers_proto"],
+)
+
 proto_library(
     name = "infeasible_subsystem_proto",
     srcs = ["infeasible_subsystem.proto"],
-    deps = [
-        ":result_proto",
-    ],
+    deps = [":result_proto"],
 )
 
 cc_proto_library(
     name = "infeasible_subsystem_cc_proto",
-    deps = [
-        ":infeasible_subsystem_proto",
-    ],
+    deps = [":infeasible_subsystem_proto"],
 )
 
 py_proto_library(
     name = "infeasible_subsystem_py_pb2",
+    deps = [":infeasible_subsystem_proto"],
+)
+
+java_proto_library(
+    name = "infeasible_subsystem_java_proto",
     deps = [":infeasible_subsystem_proto"],
 )
 
@@ -222,6 +244,7 @@ proto_library(
         ":model_update_proto",
         ":parameters_proto",
         ":result_proto",
+        "//ortools/util:status_proto",
     ],
 )
 
@@ -232,5 +255,10 @@ py_proto_library(
 
 cc_proto_library(
     name = "rpc_cc_proto",
+    deps = [":rpc_proto"],
+)
+
+java_proto_library(
+    name = "rpc_java_proto",
     deps = [":rpc_proto"],
 )

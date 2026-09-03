@@ -1,0 +1,471 @@
+# Copyright 2010-2025 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@rules_java//java:java_library.bzl", "java_library")
+
+package(default_visibility = [
+    "//ortools/javatests/com/google/ortools/mathopt:__subpackages__",
+])
+
+java_library(
+    name = "model_element",
+    srcs = ["ModelElement.java"],
+)
+
+java_library(
+    name = "model_id",
+    srcs = ["ModelId.java"],
+)
+
+java_library(
+    name = "sparse_containers",
+    srcs = ["SparseContainers.java"],
+    deps = [
+        ":model_element",
+        "//ortools/math_opt:sparse_containers_java_proto",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "variable",
+    srcs = [
+        "LinearExpressionSink.java",
+        "LinearExpressionView.java",
+        "Variable.java",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":model_element",
+        ":model_id",
+        "//ortools/math_opt:model_java_proto",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "variables",
+    srcs = [
+        "Variables.java",
+    ],
+    deps = [
+        ":model_id",
+        ":sparse_containers",
+        ":variable",
+        "//ortools/math_opt:model_java_proto",
+        "//ortools/math_opt:model_update_java_proto",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_jspecify_jspecify",
+    ],
+)
+
+java_library(
+    name = "objective",
+    srcs = [
+        "Objective.java",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":model_id",
+        ":sparse_containers",
+        ":variable",
+        "//ortools/math_opt:model_java_proto",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "auxiliary_objective",
+    srcs = ["AuxiliaryObjective.java"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":model_element",
+        ":model_id",
+        ":objective",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "indicator_constraint",
+    srcs = ["IndicatorConstraint.java"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":model_element",
+        ":model_id",
+        ":sparse_containers",
+        ":variable",
+        "//ortools/math_opt:model_java_proto",
+        "@maven//:org_jspecify_jspecify",
+    ],
+)
+
+java_library(
+    name = "indicator_constraints",
+    srcs = ["IndicatorConstraints.java"],
+    deps = [
+        ":indicator_constraint",
+        ":model_id",
+        ":variable",
+        "//ortools/math_opt:model_java_proto",
+        "//ortools/math_opt:model_update_java_proto",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_jspecify_jspecify",
+    ],
+)
+
+java_library(
+    name = "linear_constraint",
+    srcs = [
+        "LinearConstraint.java",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":model_element",
+        ":model_id",
+        ":variable",
+        "//ortools/math_opt:model_java_proto",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "merge",
+    srcs = [
+        "Merge.java",
+    ],
+    deps = [
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "linear_constraints",
+    srcs = [
+        "LinearConstraints.java",
+    ],
+    deps = [
+        ":linear_constraint",
+        ":merge",
+        ":model_id",
+        ":sparse_containers",
+        ":variable",
+        "//ortools/math_opt:model_java_proto",
+        "//ortools/math_opt:model_update_java_proto",
+        "//ortools/math_opt:sparse_containers_java_proto",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_jspecify_jspecify",
+    ],
+)
+
+java_library(
+    name = "model",
+    srcs = [
+        "Model.java",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":auxiliary_objective",
+        ":hash_linear_expression",
+        ":indicator_constraint",
+        ":indicator_constraints",
+        ":linear_constraint",
+        ":linear_constraints",
+        ":model_id",
+        ":objective",
+        ":objectives",
+        ":variable",
+        ":variables",
+        "//ortools/math_opt:model_java_proto",
+        "//ortools/math_opt:model_update_java_proto",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_jspecify_jspecify",
+    ],
+)
+
+java_library(
+    name = "util_from_proto",
+    srcs = ["UtilFromProto.java"],
+    deps = [
+        ":linear_constraint",
+        ":model",
+        ":variable",
+        "//ortools/math_opt:sparse_containers_java_proto",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "basis",
+    srcs = ["Basis.java"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":linear_constraint",
+        ":model",
+        ":model_element",
+        ":solution_status",
+        ":variable",
+        "//ortools/math_opt:solution_java_proto",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "solution_status",
+    srcs = ["SolutionStatus.java"],
+    deps = [
+        "//ortools/math_opt:solution_java_proto",
+    ],
+)
+
+java_library(
+    name = "solution",
+    srcs = ["Solution.java"],
+    deps = [
+        ":basis",
+        ":linear_constraint",
+        ":model",
+        ":solution_status",
+        ":util_from_proto",
+        ":variable",
+        "//ortools/math_opt:solution_java_proto",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "solve_result",
+    srcs = ["SolveResult.java"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":basis",
+        ":linear_constraint",
+        ":model",
+        ":solution",
+        ":solution_status",
+        ":variable",
+        "//ortools/java/com/google/ortools/util:proto_duration_conversion",
+        "//ortools/math_opt:result_java_proto",
+        "//ortools/math_opt/solvers:osqp_java_proto",
+        "//ortools/math_opt/solvers/gscip:gscip_java_proto",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_jspecify_jspecify",
+    ],
+)
+
+java_library(
+    name = "objectives",
+    srcs = ["Objectives.java"],
+    deps = [
+        ":auxiliary_objective",
+        ":model_id",
+        ":objective",
+        ":variable",
+        "//ortools/math_opt:model_java_proto",
+        "//ortools/math_opt:model_update_java_proto",
+        "//ortools/math_opt:sparse_containers_java_proto",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_jspecify_jspecify",
+    ],
+)
+
+java_library(
+    name = "solver_type",
+    srcs = ["SolverType.java"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/math_opt:parameters_java_proto",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "solve",
+    srcs = ["Solve.java"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":callback_data",
+        ":callback_registration",
+        ":callback_result",
+        ":math_opt_internal_exception",
+        ":model",
+        ":model_solve_parameters",
+        ":scoped_cpp_message_callback",
+        ":scoped_cpp_solve_callback",
+        ":solve_parameters",
+        ":solve_result",
+        ":solver_type",
+        "//ortools/java/com/google/ortools/util:scoped_swig_interrupter",
+        "//ortools/java/com/google/ortools/util:solve_interrupter",
+        "//ortools/math_opt:callback_java_proto",
+        "//ortools/math_opt:model_parameters_java_proto",
+        "//ortools/math_opt:parameters_java_proto",
+        "//ortools/math_opt:result_java_proto",
+        "//ortools/math_opt/core/java:solver_swig",  # buildcleaner: keep
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "solve_parameters",
+    srcs = ["SolveParameters.java"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/glop:parameters_java_proto",
+        "//ortools/java/com/google/ortools/util:proto_duration_conversion",
+        "//ortools/math_opt:parameters_java_proto",
+        "//ortools/math_opt/solvers:glpk_java_proto",
+        "//ortools/math_opt/solvers:gurobi_java_proto",
+        "//ortools/math_opt/solvers:highs_java_proto",
+        "//ortools/math_opt/solvers:osqp_java_proto",
+        "//ortools/math_opt/solvers:xpress_java_proto",
+        "//ortools/math_opt/solvers/gscip:gscip_java_proto",
+        "//ortools/pdlp:solvers_java_proto",
+        "//ortools/sat:sat_parameters_java_proto",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+    ],
+)
+
+java_library(
+    name = "scoped_cpp_message_callback",
+    srcs = ["ScopedCppMessageCallback.java"],
+    deps = [
+        "//ortools/math_opt/core/java:solver_swig",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_jspecify_jspecify",
+    ],
+)
+
+java_library(
+    name = "callback_event",
+    srcs = ["CallbackEvent.java"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/math_opt:callback_java_proto",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "callback_data",
+    srcs = ["CallbackData.java"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":callback_event",
+        ":model",
+        ":util_from_proto",
+        ":variable",
+        "//ortools/java/com/google/ortools/util:proto_duration_conversion",
+        "//ortools/math_opt:callback_java_proto",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "callback_registration",
+    srcs = ["CallbackRegistration.java"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":callback_event",
+        "//ortools/math_opt:callback_java_proto",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "callback_result",
+    srcs = ["CallbackResult.java"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":expressions",
+        ":sparse_containers",
+        ":variable",
+        "//ortools/math_opt:callback_java_proto",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "hash_linear_expression",
+    srcs = ["HashLinearExpression.java"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":variable",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "expressions",
+    srcs = ["Expressions.java"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":hash_linear_expression",
+        ":variable",
+    ],
+)
+
+java_library(
+    name = "scoped_cpp_solve_callback",
+    srcs = ["ScopedCppSolveCallback.java"],
+    deps = [
+        "//ortools/math_opt:callback_java_proto",
+        "//ortools/math_opt/core/java:solver_swig",
+        "@maven//:org_jspecify_jspecify",
+    ],
+)
+
+java_library(
+    name = "model_solve_parameters",
+    srcs = ["ModelSolveParameters.java"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":basis",
+        ":linear_constraint",
+        ":model",
+        ":sparse_containers",
+        ":util_from_proto",
+        ":variable",
+        "//ortools/math_opt:model_parameters_java_proto",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "math_opt_internal_exception",
+    srcs = ["MathOptInternalException.java"],
+    visibility = ["//visibility:public"],
+)
+
+java_library(
+    name = "errors",
+    srcs = ["Errors.java"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":math_opt_internal_exception",
+        "//ortools/util:status_java_proto",
+    ],
+)

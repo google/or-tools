@@ -33,7 +33,7 @@ target_link_libraries(${NAME} PRIVATE
   absl::str_format
   protobuf::libprotobuf
   ${RE2_DEPS}
-  ${PROJECT_NAMESPACE}::ortools_proto
-  ${PROJECT_NAMESPACE}::routing_proto
+  ortools::ortools_core
+  ortools::routing_proto
 )
 #add_library(${PROJECT_NAMESPACE}::routing_parsers ALIAS ${NAME})

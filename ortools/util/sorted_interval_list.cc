@@ -17,17 +17,18 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
-#include <limits>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/container/inlined_vector.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/types.h"
 #include "ortools/util/saturated_arithmetic.h"
 
@@ -85,8 +86,7 @@ void UnionOfSortedIntervals(absl::InlinedVector<ClosedInterval, 1>* intervals) {
   for (int i = 1; i < size; ++i) {
     const ClosedInterval& current = (*intervals)[i];
     const int64_t end = (*intervals)[new_size - 1].end;
-    if (end == std::numeric_limits<int64_t>::max() ||
-        current.start <= end + 1) {
+    if (end == kint64max || current.start <= end + 1) {
       (*intervals)[new_size - 1].end = std::max(current.end, end);
       continue;
     }
@@ -169,7 +169,7 @@ Domain Domain::FromValues(std::vector<int64_t> values) {
     } else {
       result.intervals_.back().end = v;
     }
-    if (result.intervals_.back().end == std::numeric_limits<int64_t>::max()) {
+    if (result.intervals_.back().end == kint64max) {
       break;
     }
   }
@@ -329,7 +329,7 @@ bool Domain::Contains(int64_t value) const {
 
 // TODO(user): Deal with overflow.
 int64_t Domain::Distance(int64_t value) const {
-  int64_t min_distance = std::numeric_limits<int64_t>::max();
+  int64_t min_distance = kint64max;
   for (const ClosedInterval interval : intervals_) {
     if (value >= interval.start && value <= interval.end) return 0;
     if (interval.start > value) {
@@ -451,6 +451,42 @@ Domain Domain::IntersectionWith(const Domain& domain) const {
     }
   }
   DCHECK(IntervalsAreSortedAndNonAdjacent(result.intervals_));
+  return result;
+}
+
+std::optional<int64_t> Domain::UniqueValueNotIn(const Domain& other) const {
+  std::optional<int64_t> result;
+  int i = 0;
+  const auto& to_exclude = other.intervals_;
+  for (auto [start, end] : intervals_) {
+    while (start <= end) {
+      // find the first interval with to_exclude[i].end >= start.
+      while (i < to_exclude.size() && to_exclude[i].end < start) ++i;
+      if (i < to_exclude.size()) {
+        DCHECK_GE(to_exclude[i].end, start);
+        if (to_exclude[i].start <= start) {
+          if (to_exclude[i].end == kint64max) return result;
+          start = to_exclude[i].end + 1;
+          continue;
+        }
+        // Notice that if end > start, there will be no overflow here.
+        if (end == start || to_exclude[i].start == start + 1) {
+          if (result != std::nullopt) return std::nullopt;
+          result = start;
+          if (to_exclude[i].end == kint64max) return result;
+          start = to_exclude[i].end + 1;
+          continue;
+        }
+        return std::nullopt;
+      } else if (end == start) {
+        if (result != std::nullopt) return std::nullopt;
+        result = start;
+        break;  // Next interval.
+      } else {
+        return std::nullopt;
+      }
+    }
+  }
   return result;
 }
 
@@ -641,19 +677,50 @@ Domain Domain::PositiveModuloBySuperset(const Domain& modulo) const {
   return ModuloHelper(-Max(), -Min(), modulo).Negation();
 }
 
-Domain Domain::PositiveDivisionBySuperset(const Domain& divisor) const {
-  if (IsEmpty()) return Domain();
-  CHECK_GT(divisor.Min(), 0);
-  return Domain(std::min(Min() / divisor.Max(), Min() / divisor.Min()),
-                std::max(Max() / divisor.Min(), Max() / divisor.Max()));
+Domain Domain::DivisionBySuperset(const Domain& divisor) const {
+  if (IsEmpty() || divisor.IsEmpty()) return Domain();
+  // The division takes its extreme values either on the extreme values of the
+  // dividend and the extreme values of the divisor or the closest the divisor
+  // can be to zero.
+  const auto positive_superset = [](int64_t lmin, int64_t lmax, int64_t rmin,
+                                    int64_t rmax) {
+    DCHECK_GT(rmin, 0);
+    DCHECK_LE(rmin, rmax);
+    return Domain(std::min(lmin / rmax, lmin / rmin),
+                  std::max(lmax / rmin, lmax / rmax));
+  };
+  const auto negative_superset = [](int64_t lmin, int64_t lmax, int64_t rmin,
+                                    int64_t rmax) {
+    DCHECK_LT(rmax, 0);
+    DCHECK_LE(rmin, rmax);
+    const auto safe_div = [](int64_t a, int64_t b) {
+      return (a == kint64min && b == -1) ? kint64max : a / b;
+    };
+    return Domain(std::min(safe_div(lmax, rmin), safe_div(lmax, rmax)),
+                  std::max(safe_div(lmin, rmax), safe_div(lmin, rmin)));
+  };
+  if (divisor.Min() == 0 && divisor.Max() == 0) {
+    return Domain();
+  }
+  if (divisor.Min() >= 0) {
+    return positive_superset(Min(), Max(), std::max(divisor.Min(), int64_t{1}),
+                             divisor.Max());
+  }
+  if (divisor.Max() <= 0) {
+    return negative_superset(Min(), Max(), divisor.Min(),
+                             std::min(divisor.Max(), int64_t{-1}));
+  }
+  return negative_superset(Min(), Max(), divisor.Min(),
+                           divisor.ValueAtOrBefore(-1))
+      .UnionWith(positive_superset(Min(), Max(), divisor.ValueAtOrAfter(1),
+                                   divisor.Max()));
 }
 
 Domain Domain::SquareSuperset() const {
   if (IsEmpty()) return Domain();
   const Domain abs_domain =
-      IntersectionWith({0, std::numeric_limits<int64_t>::max()})
-          .UnionWith(Negation().IntersectionWith(
-              {0, std::numeric_limits<int64_t>::max()}));
+      IntersectionWith({0, kint64max})
+          .UnionWith(Negation().IntersectionWith({0, kint64max}));
   if (abs_domain.Size() >= kDomainComplexityLimit) {
     Domain result;
     result.intervals_.reserve(abs_domain.NumIntervals());
@@ -675,6 +742,7 @@ Domain Domain::SquareSuperset() const {
 }
 
 namespace {
+// Implementation of QuadraticSuperset() for a single interval.
 ClosedInterval EvaluateQuadraticProdInterval(int64_t a, int64_t b, int64_t c,
                                              int64_t d, int64_t variable_min,
                                              int64_t variable_max) {
@@ -685,8 +753,8 @@ ClosedInterval EvaluateQuadraticProdInterval(int64_t a, int64_t b, int64_t c,
   // following:
   // - variable_min;
   // - variable_max;
-  // - the closest point to the parabola extreme, rounded down;
-  // - the closest point to the parabola extreme, rounded up.
+  // - the closest domain value lower or equal to the parabola extreme;
+  // - the closest domain value higher than the parabola extreme.
 
   const absl::int128 nominator =
       -absl::int128{a} * absl::int128{d} - absl::int128{b} * absl::int128{c};
@@ -702,15 +770,22 @@ ClosedInterval EvaluateQuadraticProdInterval(int64_t a, int64_t b, int64_t c,
   int64_t min_var = std::min(at_min_x, at_max_x);
   int64_t max_var = std::max(at_min_x, at_max_x);
 
-  if (evaluated_minimum_point > variable_min &&
-      evaluated_minimum_point < variable_max) {
-    const int64_t point_at_minimum_64 =
-        static_cast<int64_t>(evaluated_minimum_point);
-    const int rounder = ((nominator > 0) == (denominator > 0) ? 1 : -1);
+  const int64_t point_at_minimum_64 =
+      static_cast<int64_t>(evaluated_minimum_point);
+  const int rounder = ((nominator > 0) == (denominator > 0) ? 1 : -1);
+
+  if (point_at_minimum_64 >= variable_min &&
+      point_at_minimum_64 <= variable_max) {
     const int64_t point1 = evaluate(point_at_minimum_64);
-    const int64_t point2 = evaluate(point_at_minimum_64 + rounder);
-    min_var = std::min(min_var, std::min(point1, point2));
-    max_var = std::max(max_var, std::max(point1, point2));
+    min_var = std::min(min_var, point1);
+    max_var = std::max(max_var, point1);
+  }
+
+  const int64_t point2_x = point_at_minimum_64 + rounder;
+  if (point2_x >= variable_min && point2_x <= variable_max) {
+    const int64_t point2 = evaluate(point2_x);
+    min_var = std::min(min_var, point2);
+    max_var = std::max(max_var, point2);
   }
 
   return ClosedInterval(min_var, max_var);

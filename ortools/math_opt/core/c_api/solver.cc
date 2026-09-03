@@ -18,14 +18,15 @@
 #include <cstdlib>
 #include <cstring>
 #include <ios>
-#include <limits>
 #include <utility>
 
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_builder.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
+#include "ortools/base/types.h"
 #include "ortools/math_opt/core/solver.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/parameters.pb.h"
@@ -48,8 +49,8 @@ absl::StatusOr<std::pair<void*, size_t>> SolveImpl(
     return absl::InvalidArgumentError(
         "model cannot be null unless model_size is zero");
   }
-  if (model_size > std::numeric_limits<int>::max()) {
-    return util::InvalidArgumentErrorBuilder()
+  if (model_size > kint32max) {
+    return ortools::InvalidArgumentErrorBuilder()
            << "model_size must be at most max int, was: " << model_size;
   }
   ModelProto model;
@@ -63,16 +64,15 @@ absl::StatusOr<std::pair<void*, size_t>> SolveImpl(
   if (interrupter != nullptr) {
     solve_args.interrupter = &interrupter->cpp_interrupter;
   }
-  ASSIGN_OR_RETURN(const SolveResultProto result,
-                   Solver::NonIncrementalSolve(
-                       model, static_cast<SolverTypeProto>(solver_type),
-                       init_args, solve_args));
+  ABSL_ASSIGN_OR_RETURN(const SolveResultProto result,
+                        Solver::NonIncrementalSolve(
+                            model, static_cast<SolverTypeProto>(solver_type),
+                            init_args, solve_args));
   const size_t result_size_bytes = result.ByteSizeLong();
-  if (result_size_bytes > std::numeric_limits<int>::max()) {
-    return util::InvalidArgumentErrorBuilder()
+  if (result_size_bytes > kint32max) {
+    return ortools::InvalidArgumentErrorBuilder()
            << "cannot serialize a SolveResultProto with more than INT_MAX = "
-           << std::numeric_limits<int>::max() << "(0x" << std::hex
-           << std::numeric_limits<int>::max() << std::dec
+           << kint32max << "(0x" << std::hex << kint32max << std::dec
            << ") bytes, but solve result proto needed " << result_size_bytes
            << " bytes in binary format";
   }

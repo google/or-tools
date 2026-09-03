@@ -24,8 +24,8 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
-#include "ortools/sat/model.h"
 #include "ortools/sat/synchronization.h"
 
 namespace operations_research {

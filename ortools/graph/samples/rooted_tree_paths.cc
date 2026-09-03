@@ -11,15 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
+// [START imports]
 #include <iostream>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/str_join.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/graph/rooted_tree.h"
+// [END imports]
 
 namespace {
 
@@ -30,7 +33,7 @@ absl::Status Main() {
   //  2 is root
   //  3 -> 2
   //  4 -> 1
-  ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const operations_research::RootedTree<int> tree,
       operations_research::RootedTree<int>::Create(2, {1, 2, -1, 2, 1}));
 
@@ -56,3 +59,4 @@ int main(int argc, char** argv) {
   QCHECK_OK(Main());
   return 0;
 }
+// [END program]

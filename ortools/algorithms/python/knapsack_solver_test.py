@@ -15,6 +15,7 @@
 """knapsack_solver unittest file."""
 
 from absl.testing import absltest
+
 from ortools.algorithms.python import knapsack_solver
 
 

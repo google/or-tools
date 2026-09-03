@@ -197,6 +197,7 @@ class IntervalsRepository {
   RootLevelLinear2Bounds* root_level_bounds_;
   Linear2Bounds* linear2_bounds_;
   IntegerEncoder* integer_encoder_;
+  TrivialLiterals* trivial_literals_;
 
   // Literal indicating if the tasks is executed. Tasks that are always executed
   // will have a kNoLiteralIndex entry in this vector.
@@ -312,8 +313,8 @@ inline std::function<IntervalVariable(Model*)> NewOptionalInterval(
 
     // To not have too many solutions during enumeration, we force the
     // start at its min value for absent interval.
-    model->Add(Implication({is_present.Negated()},
-                           IntegerLiteral::LowerOrEqual(start, min_start)));
+    AddImplication({is_present.Negated()},
+                   IntegerLiteral::LowerOrEqual(start, min_start), model);
     return interval;
   };
 }

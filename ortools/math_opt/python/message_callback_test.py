@@ -16,8 +16,8 @@ import io
 import os
 
 from absl import logging
-
 from absl.testing import absltest
+
 from ortools.math_opt.python import message_callback
 
 

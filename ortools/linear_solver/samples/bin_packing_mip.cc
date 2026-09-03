@@ -13,12 +13,13 @@
 
 // [START program]
 // [START import]
+#include <cstdlib>
 #include <iostream>
 #include <memory>
-#include <numeric>
 #include <ostream>
 #include <vector>
 
+#include "absl/log/log.h"
 #include "ortools/linear_solver/linear_expr.h"
 #include "ortools/linear_solver/linear_solver.h"
 // [END import]

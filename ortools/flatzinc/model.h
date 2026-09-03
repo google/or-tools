@@ -206,6 +206,8 @@ struct Argument {
   bool HasOneValueAt(int pos) const;
   // Returns the number of object in the argument.
   int Size() const;
+  // Returns the string of the type of the argument.
+  std::string TypeString() const;
 
   Type type;
   std::vector<int64_t> values;
@@ -356,6 +358,7 @@ class Model {
                         bool defined, bool set_is_fixed = false);
   Variable* AddConstant(int64_t value);
   Variable* AddFloatConstant(double value);
+  Variable* AddSetConstant(const Domain& domain);
   // Creates and add a constraint to the model.
   void AddConstraint(absl::string_view id, std::vector<Argument> arguments,
                      bool is_domain, bool symmetry, bool redundant);

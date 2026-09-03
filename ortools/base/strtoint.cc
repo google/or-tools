@@ -15,7 +15,7 @@
 // See strtoint.h for details on how to use this component.
 #include "ortools/base/strtoint.h"
 
-#include <string>
+#include <cstdint>
 
 #include "absl/log/check.h"
 #include "absl/strings/numbers.h"

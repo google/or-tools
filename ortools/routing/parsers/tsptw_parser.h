@@ -26,7 +26,6 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
-#include "ortools/base/types.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
 namespace operations_research::routing {

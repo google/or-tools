@@ -14,7 +14,9 @@
 
 import sys
 from typing import Optional
+
 from absl.testing import absltest
+
 from tools.testing import bintest_script_runner
 
 
@@ -71,40 +73,32 @@ class BintestScriptRunnerTest(absltest.TestCase):
             self.execute_with_script_content("RUN: $(FAIL)")
 
     def test_run_and_check(self):
-        self.execute_with_script_content(
-            """
+        self.execute_with_script_content("""
 RUN: $(ECHO) foo bar baz boo
 CHECK: "foo" "baz"
 CHECK: "bar" "boo"
-"""
-        )
+""")
 
     def test_run_and_fail_match(self):
         with self.assertRaisesRegex(SystemExit, "No match for"):
-            self.execute_with_script_content(
-                """
+            self.execute_with_script_content("""
 RUN: $(ECHO) foo bar
 CHECK: "baz"
-"""
-            )
+""")
 
     def test_run_and_unquoted_check(self):
         with self.assertRaisesRegex(SystemExit, "CHECK requires quoted strings"):
-            self.execute_with_script_content(
-                """
+            self.execute_with_script_content("""
 RUN: $(ECHO) 'foo' 'bar'
 CHECK: foo
-"""
-            )
+""")
 
     def test_run_and_empty_check(self):
         with self.assertRaisesRegex(SystemExit, "missing CHECK matchers"):
-            self.execute_with_script_content(
-                """
+            self.execute_with_script_content("""
 RUN: $(ECHO) 'foo' 'bar'
 CHECK:
-"""
-            )
+""")
 
 
 if __name__ == "__main__":

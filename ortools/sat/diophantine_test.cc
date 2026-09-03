@@ -17,18 +17,18 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
-#include <limits>
 #include <numeric>
 #include <string>
 #include <vector>
 
-#include "absl/base/log_severity.h"
 #include "absl/numeric/int128.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "gtest/gtest.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/base/types.h"
 
 namespace operations_research::sat {
 
@@ -105,8 +105,7 @@ TEST_P(RandomTest, GreedyFastDecreasingGcd) {
   const int num_elements = absl::Uniform<int>(random, 1, 50);
   std::vector<int64_t> coeffs(num_elements);
   for (int i = 0; i < num_elements; ++i) {
-    coeffs[i] = UniformNonZero(random, 1 + std::numeric_limits<int64_t>::min(),
-                               std::numeric_limits<int64_t>::max());
+    coeffs[i] = UniformNonZero(random, 1 + kint64min, kint64max);
   }
   const std::vector<int> order = GreedyFastDecreasingGcd(coeffs);
   if (order.empty()) {

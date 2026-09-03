@@ -1,0 +1,452 @@
+// Copyright 2010-2025 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Protocol buffer used to parametrize an iterated local search (ILS) approach.
+// ILS is an iterative metaheuristic in which every iteration consists in
+// performing a perturbation followed by an improvement step on a reference
+// solution to generate a neighbor solution.
+// The neighbor solution is accepted as the new reference solution according
+// to an acceptance criterion.
+// The best found solution is eventually returned.
+
+edition = "2024";
+
+package operations_research.routing;
+
+import "ortools/routing/enums.proto";
+import "ortools/routing/heuristic_parameters.proto";
+
+option java_package = "com.google.ortools.routing";
+option csharp_namespace = "Google.OrTools.Routing";
+
+// Ruin strategy that removes a number of spatially close routes.
+message SpatiallyCloseRoutesRuinStrategy {
+  // Number of spatially close routes ruined at each ruin application.
+  uint32 num_ruined_routes = 3 [default = 2];
+}
+
+// Ruin strategy that removes a number of nodes by performing a random walk
+// on the underlying routing solution. More precisely, starting from a randomly
+// selected seed visit, the walk is extended by either moving within the
+// same route or by jumping to a visit served by a different neighboring
+// route. Every active visit encountered along this random walk is made
+// unperformed.
+message RandomWalkRuinStrategy {
+  // Number of visits removed during a ruin application defined on visits.
+  // Note that pickup and delivery pairs are considered as a single entity,
+  // i.e., the removal of a pickup (respectively delivery) causes the removal of
+  // the associated delivery (respectively pickup) and it counts as a single
+  // removal.
+  uint32 num_removed_visits = 7 [default = 10];
+}
+
+// Adaptive version of the RandomWalkRuinStrategy where the walk length is
+// automatically adjusted based on the cost of the local optimum found with
+// respect to the reference solution (i.e., the cost of the solution before the
+// ruin application).
+//
+// In particular, the walk length for all nodes involved in the ruin application
+// is decreased by 1 if the cost of the local optimum is greater than the cost
+// of the reference solution plus a threshold value (strengthening threshold,
+// defined as strengthening_factor * average cost of an arc in the reference
+// solution).
+//
+// On the other hand, the walk length for all nodes involved in the ruin
+// application is increased by 1 if the cost of the local optimum is greater or
+// equal than the cost of the reference solution but lower than the cost of the
+// reference solution plus a threshold value (weakening threshold, defined as
+// weakening_factor * average cost of an arc in the reference solution).
+//
+// Finally, the walk length for the nodes involved in the ruin application is
+// randomly increased or decreased by 1 with equal probability if the cost of
+// the local optimum is lower than the cost of the reference solution or it is
+// between the strengthening and weakening thresholds.
+//
+// In all cases, the walk length is never increased or decreased more than the
+// value of the seed node walk length after the update. As for the
+// RandomWalkRuinStrategy, the seed node is chosen randomly among all performed
+// visits of the underlying routing solution at every ruin application.
+//
+// Initially, the walk length for all non start/end nodes is set to ceil(log(N))
+// where N is the number of non start/end nodes in the problem instance.
+//
+// For more details, see "A Fast and Scalable Heuristic for the Solution of
+// Large-Scale Capacitated Vehicle Routing Problems", Luca Accorsi and
+// Daniele Vigo, Transportation Science 2021.
+message AdaptiveRandomWalkRuinStrategy {
+  // Factor used to compute the strengthening threshold.
+  double strengthening_factor = 1 [default = 0.375];
+  // Factor used to compute the weakening threshold.
+  double weakening_factor = 2 [default = 0.85];
+}
+
+// Ruin strategy based on the "Slack Induction by String Removals for Vehicle
+// Routing Problems" by Jan Christiaens and Greet Vanden Berghe, Transportation
+// Science 2020.
+//
+// Note that, in this implementation, the notion of "string" is replaced by
+// "sequence".
+//
+// The main idea of this ruin is to remove a number of geographically close
+// sequences of nodes. In particular, at every ruin application, a maximum
+// number max_ruined_routes of routes are disrupted. The value for
+// max_ruined_routes is defined as
+//       (4 * avg_num_removed_visits) / (1 + max_sequence_size) + 1
+// with
+// - avg_num_removed_visits: user-defined parameter ruling the average number of
+//   visits that are removed in face of several ruin applications (see also the
+//   proto message below)
+// - max_sequence_size is defined as
+//        min{max_removed_sequence_size, average_route_size}
+//   with
+//   - max_removed_sequence_size: user-defined parameter that specifies
+//     the maximum number of visits removed from a single route (see also the
+//     proto message below)
+//   - average_route_size: the average size of a non-empty route in the current
+//     solution
+//
+// The actual number of ruined routes is then obtained as
+//                  floor(U(1, max_ruined_routes + 1))
+// where U is a continuous uniform distribution of real values in the given
+// interval.
+//
+// The routes affected by the ruin procedure are selected as follows.
+// First, a non start/end seed node is randomly selected. The route serving this
+// node is the first ruined route. Then, until the required number of routes has
+// been ruined, neighbor nodes of the initial seed node are scanned and the
+// associated not yet ruined routes are disrupted. Nodes defining the selected
+// routes are designated as seed nodes for the "sequence" and "split sequence"
+// removal procedures described below.
+//
+// For every selected route, a maximum number route_max_sequence_size of nodes
+// are removed. In particular, route_max_sequence_size is defined as
+//                min{route_size, max_sequence_size}
+// with route_size being the size of the current route.
+//
+// Then, the actual number of removed nodes num_removed_nodes is defined as
+//              floor(U(1, route_max_sequence_size + 1))
+// where U is a continuous uniform distribution of real values in the given
+// interval.
+//
+// As mentioned above, the selected num_removed_nodes number of nodes is removed
+// either via the "sequence" removal or "split sequence" removal procedures. The
+// two removal procedures are executed with equal probabilities.
+//
+// The "sequence" removal procedure removes a randomly selected sequence of size
+// num_removed_nodes that includes the seed node.
+//
+// The "split sequence" removal procedure also removes a randomly selected
+// sequence of size num_removed_nodes that includes the seed node, but it can
+// possibly preserve a subsequence of contiguous nodes.
+// In particular, the procedure first selects a sequence of size
+// num_removed_nodes + num_bypassed, then num_bypassed contiguous nodes in the
+// selected sequence are preserved while the others removed.
+//
+// The definition of num_bypassed is as follows. First num_bypassed = 1. The
+// current value of num_bypassed is maintaned if
+//          U(0, 1) < bypass_factor * U(0, 1)
+// or the maximum value for num_bypassed, equal to
+//           route_size - num_removed_nodes
+// is reached. The value is incremented of a unit otherwise,
+// and the process is repeated. The value assigned to bypass_factor affects the
+// number of preserved visits (see also the proto message below).
+message SISRRuinStrategy {
+  // Maximum number of removed visits per sequence. The parameter name in the
+  // paper is L^{max} and the suggested value is 10.
+  uint32 max_removed_sequence_size = 1 [default = 10];
+
+  // Number of visits that are removed on average. The parameter name in the
+  // paper is \bar{c} and the suggested value is 10.
+  uint32 avg_num_removed_visits = 2 [default = 10];
+
+  // Value in [0, 1] ruling the number of preserved nodes in the split
+  // sequence removal. The parameter name in the paper is \alpha and the
+  // suggested value is 0.01.
+  double bypass_factor = 3 [default = 0.01];
+}
+
+// Ruin strategies, used in perturbation based on ruin and recreate approaches.
+message RuinStrategy {
+  oneof strategy {
+    SpatiallyCloseRoutesRuinStrategy spatially_close_routes = 1;
+    RandomWalkRuinStrategy random_walk = 2;
+    SISRRuinStrategy sisr = 3;
+    AdaptiveRandomWalkRuinStrategy adaptive_random_walk = 4;
+  }
+}
+
+// Parameters to customize a recreate strategy.
+message RecreateParameters {
+  oneof parameters {
+    LocalCheapestInsertionParameters local_cheapest_insertion = 1;
+    SavingsParameters savings = 2;
+    GlobalCheapestInsertionParameters global_cheapest_insertion = 3;
+  }
+}
+
+// Strategy defining how a solution is recreated.
+message RecreateStrategy {
+  FirstSolutionStrategy.Value heuristic = 1
+      [default = LOCAL_CHEAPEST_INSERTION];
+  // The selected parameters should match the chosen recreate heuristic.
+  // If not set, the default parameters from the RoutingModel are used.
+  RecreateParameters parameters = 2;
+}
+
+// The ruin composition strategies specifies how ruin are selected at every ILS
+// iteration.
+message RuinCompositionStrategy {
+  enum Value {
+    // Unspecified value.
+    UNSET = 0;
+
+    // Execute all ruin strategies sequentially in the same order provided in
+    // input.
+    RUN_ALL_SEQUENTIALLY = 1;
+
+    // Execute all ruin strategies in a random order.
+    RUN_ALL_RANDOMLY = 2;
+
+    // Execute a randomly selected ruin.
+    RUN_ONE_RANDOMLY = 3;
+  }
+}
+
+// Parameters to configure a perturbation based on a ruin and recreate approach.
+message RuinRecreateParameters {
+  // List of ruin strategies determining how a reference solution is ruined.
+  repeated RuinStrategy ruin_strategies = 1;
+
+  // The composition strategy to use when combining the given 'ruin_strategies'.
+  // Has no effect when ruin_strategies is composed of a single strategy.
+  RuinCompositionStrategy.Value ruin_composition_strategy = 2
+      [default = RUN_ALL_SEQUENTIALLY];
+
+  // Strategy defining how a reference solution is recreated.
+  RecreateStrategy recreate_strategy = 3;
+
+  // Ratio in [0, 1] of non start/end nodes to consider as neighbors for the
+  // identification of routes spatially close to a non start/end seed node.
+  //
+  // In particular, given a non start/end seed node s served by route r, we say
+  // that a route r' is spatially close to the seed node s if there is at
+  // least one non start/end node s' among the neighbors of s, such that s' is
+  // served by r'.
+  //
+  // The neighbors_ratio is coupled with the corresponding min_neighbors and
+  // max_neighbors values, defining the minimum and maximum number of neighbor
+  // nodes considered for a given seed node:
+  // num_neighbors = min(max_neighbors,
+  //          max(min_neighbors, neighbors_ratio * NUM_NON_START_END_NODES))
+  //
+  // Neighbors ratio, and minimum and maximum number of non start/end neighbor
+  // nodes for the identification of spatially close routes.
+  double route_selection_neighbors_ratio = 4 [default = 1.0];
+  uint32 route_selection_min_neighbors = 5 [default = 10];
+  uint32 route_selection_max_neighbors = 6 [default = 100];
+}
+
+// Defines how a reference solution is perturbed.
+message PerturbationStrategy {
+  enum Value {
+    // Unspecified value.
+    UNSET = 0;
+
+    // Performs a perturbation in a ruin and recreate fashion.
+    RUIN_AND_RECREATE = 1;
+  }
+}
+
+// The cooling schedule strategy defines how to compute the current simulated
+// annealing temperature t given
+// - the initial temperature t0
+// - the final temperature t1
+// - the current search progress 0 <= p <= 1
+//
+// The value of t0 and t1 is defined by the initial_temperature and
+// final_temperature in SimulatedAnnealingParameters, respectively.
+//
+// The search progress p is derived, at any given time, by the search limits.
+// In particular, p measures how far we are in the search process w.r.t. to the
+// number of explored solutions and the time limit.
+//
+// The temperature t, computed according to one of the strategies defined below,
+// together with the selected AcceptanceStrategy, is used to guide the search
+// trajectory. In particular, given a neighbor solution S', generated by the
+// the application of the perturbation and improvement step to a reference
+// solution S, we have that S will be replaced by S' iff
+//                  cost(S') + t * log(U(0, 1)) < cost(S)
+// where U(0, 1) is a random number sampled from a uniform distribution of real
+// numbers in [0, 1].
+message CoolingScheduleStrategy {
+  enum Value {
+    // Unspecified value.
+    UNSET = 0;
+
+    // Exponentially decreases the temperature as the search progresses.
+    // More precisely, t = t0 * (t1/t0)^p.
+    EXPONENTIAL = 1;
+
+    // Linearly decreases the temperature as the search progresses.
+    // More precisely, t = t0 - p * (t0 - t1).
+    LINEAR = 2;
+  }
+}
+
+// Acceptance strategy in which only improving solutions are accepted.
+//
+// Optionally, when the late acceptance window is set to a value k > 1, a
+// solution is also accepted if it is better than the solution found k
+// iterations before. See also Edmund K. Burke, Yuri Bykov, The late acceptance
+// Hill-Climbing heuristic, European Journal of Operational Research, 2017.
+message GreedyDescentAcceptanceStrategy {
+  // Specifies how many solutions in the past to consider for the late
+  // acceptance.
+  uint32 late_acceptance_window = 1 [default = 0];
+}
+
+// Acceptance strategy in which solutions are accepted with a probability that
+// depends on its quality and on the current state of the search.
+message SimulatedAnnealingAcceptanceStrategy {
+  // Determines the speed at which the temperature changes from initial to
+  // final.
+  CoolingScheduleStrategy.Value cooling_schedule_strategy = 1
+      [default = EXPONENTIAL];
+
+  // The initial temperature. See CoolingScheduleStrategy for its usage.
+  double initial_temperature = 2 [default = 100.0];
+
+  // The final temperature. See CoolingScheduleStrategy for its usage.
+  double final_temperature = 3 [default = 0.01];
+
+  // Automatically define the value for the temperatures as follows.
+  // First, a  reference temperature t is defined as
+  //           w1 * c1 + w2 * c2 + ... + wK * cK
+  // where 0 < wJ <= 1 is the fraction of vehicles of cost class J and cJ is the
+  // average arc cost for the cost class J.
+  // The value of cJ is identified by randomly sampling N arc costs for the cost
+  // class J, where N is equal to the number of instance nodes.
+  // The initial and final temperatures are then defined as
+  // - initial_temperature: 0.1 * t
+  // - final_temperature: 0.001 * t
+  bool automatic_temperatures = 4 [default = false];
+}
+
+// Acceptance strategy in which a candidate solution is accepted if the
+// difference between its cost and the current reference solution cost is less
+// than a threshold. The threshold decreases as the search progresses according
+// to a cooling schedule strategy.
+message ThresholdAcceptingDeterministicAnnealingAcceptanceStrategy {
+  // Determines the speed at which the threshold changes from initial to final.
+  CoolingScheduleStrategy.Value cooling_schedule_strategy = 1
+      [default = EXPONENTIAL];
+
+  // The initial threshold. See CoolingScheduleStrategy for its usage.
+  double initial_threshold = 2 [default = 100.0];
+
+  // The final threshold. See CoolingScheduleStrategy for its usage.
+  double final_threshold = 3 [default = 0.01];
+}
+
+// We call `record` the cost of the best solution found so far. A candidate
+// solution is accepted if its cost is no more than `record + deviation`.
+message RecordToRecordTravelDeterministicAnnealingAcceptanceStrategy {
+  // Defines the increase in cost allowed with respect to the best found
+  // solution.
+  int64 deviation = 1 [default = 100];
+}
+
+// Acceptance strategy in which a solution is accepted only if all nodes
+// are performed. Disjunctions are respected when several nodes can be
+// performed.
+message AllNodesPerformedAcceptanceStrategy {}
+
+// Acceptance strategy in which a solution is accepted only if it performs at
+// least one more node than the reference solution.
+message MoreNodesPerformedAcceptanceStrategy {}
+
+// Acceptance strategy in which a solution is accepted only if it has less
+// absences than the reference solution (see Slack Induction by String Removals
+// for Vehicle Routing Problems" Christiaens and Vanden Berghe, Transportation
+// Science 2020).
+//
+// In particular, for each node n, the number of solutions where n was not
+// performed by any route is tracked by a counter absences[n]. A candidate is
+// accepted if
+//          sum(absences[n]) < sum(absences[m])
+// with
+//          n in unperformed(candidate)
+//          m in unperformed(reference)
+//
+// The counter absences is increased after every ILS iteration for the
+// unperformed nodes in the reference solution. In addition, when
+// remove_route_with_lowest_absences is true and a new best found solution is
+// found, the route with the lowest sum of absences is removed from the
+// reference solution.
+message AbsencesBasedAcceptanceStrategy {
+  // If true, when a new best solution is found, the route with the lowest sum
+  // of absences is removed from the reference solution.
+  bool remove_route_with_lowest_absences = 1 [default = false];
+}
+
+// Determines when a candidate solution replaces another one.
+message AcceptanceStrategy {
+  oneof strategy {
+    GreedyDescentAcceptanceStrategy greedy_descent = 1;
+    SimulatedAnnealingAcceptanceStrategy simulated_annealing = 2;
+    AllNodesPerformedAcceptanceStrategy all_nodes_performed = 3;
+    MoreNodesPerformedAcceptanceStrategy more_nodes_performed = 4;
+    AbsencesBasedAcceptanceStrategy absences_based = 5;
+    ThresholdAcceptingDeterministicAnnealingAcceptanceStrategy
+        threshold_accepting_deterministic_annealing = 6;
+    RecordToRecordTravelDeterministicAnnealingAcceptanceStrategy
+        record_to_record_travel_deterministic_annealing = 7;
+  }
+}
+
+// Composition of acceptance strategies. When a single strategy is specified,
+// the composition rule is ignored.
+message AcceptancePolicy {
+  enum Composition {
+    UNSET = 0;
+    OR = 1;
+  }
+
+  Composition composition = 1;
+  repeated AcceptanceStrategy strategies = 2;
+}
+
+// Specifies the behavior of a search based on ILS.
+message IteratedLocalSearchParameters {
+  reserved 4, 5;
+
+  // Determines how a reference solution S is perturbed to obtain a neighbor
+  // solution S'.
+  PerturbationStrategy.Value perturbation_strategy = 1
+      [default = RUIN_AND_RECREATE];
+
+  // Parameters to customize a ruin and recreate perturbation.
+  RuinRecreateParameters ruin_recreate_parameters = 2;
+
+  // Determines whether solution S', obtained from the perturbation, should be
+  // optimized with a local search application.
+  bool improve_perturbed_solution = 3 [default = true];
+
+  // Determines when the neighbor solution S', possibly improved if
+  // `improve_perturbed_solution` is true, replaces the reference solution S.
+  AcceptancePolicy reference_solution_acceptance_policy = 6;
+
+  // Determines when the neighbor solution S' replaces the best solution found
+  // so far.
+  AcceptancePolicy best_solution_acceptance_policy = 7;
+}

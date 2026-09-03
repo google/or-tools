@@ -18,7 +18,6 @@
 #include <algorithm>
 #include <deque>
 #include <functional>
-#include <limits>
 #include <queue>
 #include <string>
 #include <utility>
@@ -29,7 +28,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/sat/boolean_problem.pb.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -197,7 +196,7 @@ Coefficient EncodingNode::Reduce(const SatSolver& solver) {
 void EncodingNode::ApplyWeightUpperBound(Coefficient gap, SatSolver* solver) {
   CHECK_GT(weight_, 0);
   const Coefficient num_allowed = (gap / weight_);
-  if (num_allowed > std::numeric_limits<int>::max() / 2) return;
+  if (num_allowed > kint32max / 2) return;
   const int new_size =
       std::max(0, (weight_lb_ - lb_) + static_cast<int>(num_allowed.value()));
   if (size() <= new_size) return;
@@ -704,7 +703,7 @@ bool ObjectiveEncoder::ProcessCore(absl::Span<const Literal> core,
         gtl::STLSortAndRemoveDuplicates(&adj);
       }
       const std::vector<absl::Span<int>> index_decompo =
-          AtMostOneDecomposition(graph, *random_, &buffer);
+          AtMostOneDecomposition(graph, random_, &buffer);
 
       // Convert.
       std::vector<Literal> new_order;

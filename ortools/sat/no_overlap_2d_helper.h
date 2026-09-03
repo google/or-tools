@@ -101,7 +101,8 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
   }
 
   bool IsFixed(int index) const {
-    return x_helper_->StartIsFixed(index) && x_helper_->EndIsFixed(index) &&
+    return !x_helper_->IsOptional(index) && !y_helper_->IsOptional(index) &&
+           x_helper_->StartIsFixed(index) && x_helper_->EndIsFixed(index) &&
            y_helper_->StartIsFixed(index) && y_helper_->EndIsFixed(index);
   }
 
@@ -165,6 +166,8 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
     AddYSizeMinReason(index);
   }
 
+  Rectangle GetBoxInDebugSolution(int index) const;
+
   // Push the explanation that the left edge of this box is to the right of the
   // vertical line x=lower_bound.
   //
@@ -221,6 +224,7 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
 
   int NumBoxes() const { return x_helper_->NumTasks(); }
 
+  bool IncrementalPropagate(const std::vector<int>& watch_indices) override;
   bool Propagate() override;
 
   // Note that the helpers are only valid until the next call to
@@ -245,6 +249,14 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
              absl::Span<const int> non_fixed_box_indexes);
 
   CompactVectorVector<int> connected_components_;
+
+  // The watcher indices never changes, but box indices are remapped by Reset().
+  // Note that as boxes become fixed at the root level, the corresponding entry
+  // will be set to -1 here.
+  //
+  // TODO(user): We should probably remove the entry in the watch list of the
+  // GenericLiteralWatcher too.
+  std::vector<int> watch_index_to_box_;
 
   bool axes_are_swapped_;
   std::unique_ptr<SchedulingConstraintHelper> x_helper_;

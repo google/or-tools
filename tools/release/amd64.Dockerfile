@@ -28,9 +28,9 @@ RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
-# Install Java 8 SDK
+# Install Java 21 SDK
 RUN dnf -y update \
-&& dnf -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel maven \
+&& dnf -y install java-21-openjdk java-21-openjdk-devel maven \
 && dnf clean all \
 && rm -rf /var/cache/dnf
 ENV JAVA_HOME=/usr/lib/jvm/java

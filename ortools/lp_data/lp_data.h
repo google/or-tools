@@ -23,25 +23,19 @@
 #ifndef ORTOOLS_LP_DATA_LP_DATA_H_
 #define ORTOOLS_LP_DATA_LP_DATA_H_
 
-#include <algorithm>  // for max
 #include <cmath>
 #include <cstdint>
-#include <map>
 #include <string>  // for string
 #include <vector>  // for vector
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/hash.h"
-#include "ortools/base/logging.h"  // for CHECK*
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/permutation.h"
 #include "ortools/lp_data/sparse.h"
 #include "ortools/lp_data/sparse_column.h"
-#include "ortools/util/fp_utils.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -666,8 +660,9 @@ class LinearProgram {
 // --------------------------------------------------------
 // Contains the solution of a LinearProgram as returned by a preprocessor.
 struct ProblemSolution {
-  ProblemSolution(RowIndex num_rows, ColIndex num_cols)
-      : status(ProblemStatus::OPTIMAL),
+  ProblemSolution(RowIndex num_rows, ColIndex num_cols,
+                  ProblemStatus status = ProblemStatus::OPTIMAL)
+      : status(status),
         primal_values(num_cols, 0.0),
         dual_values(num_rows, 0.0),
         variable_statuses(num_cols, VariableStatus::FREE),

@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if(BUILD_TESTING)
+if(BUILD_PYTHON_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")
   list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/solve_gurobi_test.py") # need gurobi
   list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/solve_test.py") # need OSQP

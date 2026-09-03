@@ -20,11 +20,11 @@
 #include <cstdio>
 #include <string>
 
+#include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/options.h"
 #include "ortools/graph/linear_assignment.h"
 

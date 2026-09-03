@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This .swig file exposes the code declared in ../constraint_solver.h and
-// ../constraint_solveri.h.
+// This .swig file exposes the code declared in ../constraint_solver.h.
 //
 // It is particularly complex for a swig file, mostly because it contains a
 // lot of MOE code for the export to the or-tools open-source project at
@@ -21,15 +20,15 @@
 //
 // USAGE EXAMPLES (most of which are also unit tests):
 // - ./pywrapcp_test.py
-// - ortools/python/appointments.py
-// - ortools/python/golomb8.py
-// - ortools/python/hidato_table.py
-// - ortools/python/jobshop_ft06.py
-// - ortools/python/magic_sequence_distribute.py
-// - ortools/python/rabbit_pheasant.py
-// - ortools/python/simple_meeting.py
-// - ortools/python/sudoku.py
-// - ortools/python/zebra.py
+// - examples/python/appointments.py
+// - examples/python/golomb8.py
+// - examples/python/hidato_table.py
+// - examples/python/jobshop_ft06.py
+// - examples/python/magic_sequence_distribute.py
+// - examples/python/rabbit_pheasant.py
+// - examples/python/simple_meeting.py
+// - examples/python/sudoku.py
+// - examples/python/zebra.py
 
 %include "ortools/base/base.i"
 %include "ortools/util/python/proto.i"
@@ -41,6 +40,12 @@
 %include "ortools/util/python/vector.swig"
 
 %include "ortools/constraint_solver/python/pywrapcp_util.swig"
+
+// Ignore warnings for operators like: Unreferenced %newobject *::operator -=
+#pragma SWIG nowarn=551
+#pragma SWIG nowarn=473
+// Explicit template instantiation ignored.
+#pragma SWIG nowarn=320
 
 // We *do* need to use SWIGTYPE_... type names directly, because the
 // (recommended replacement) $descriptor macro fails, as of 2019-07, with
@@ -68,6 +73,16 @@ struct FailureProtect {
 };
 
 // This #includes constraint_solver.h, and inlines some C++ helpers.
+#include "ortools/base/base_export.h"
+#include "ortools/constraint_solver/reversible_engine.h"
+#include "ortools/constraint_solver/reversible_data.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/assignment.h"
+#include "ortools/constraint_solver/interval.h"
+#include "ortools/constraint_solver/local_search.h"
+#include "ortools/constraint_solver/search.h"
+#include "ortools/constraint_solver/sequence_var.h"
+#include "ortools/constraint_solver/utilities.h"
 #include "ortools/constraint_solver/assignment.pb.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
@@ -709,6 +724,12 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 
 namespace operations_research {
 
+// ReversibleEngine: Basic API.
+%unignore ReversibleEngine;
+%unignore ReversibleEngine::ReversibleEngine;
+%unignore ReversibleEngine::~ReversibleEngine;
+%unignore ReversibleEngine::stamp;
+
 // Solver: Basic API.
 %unignore Solver;
 %unignore Solver::Solver;
@@ -1091,12 +1112,10 @@ namespace operations_research {
 // - SaveAndSetValue()
 // - SaveAndAdd()
 //
-// - ExportProfilingOverview()
 // - CurrentlyInSolve()
 // - balancing_decision()
 // - set_fail_intercept()
 // - clear_fail_intercept()
-// - demon_profiler()
 // - HasName()
 //
 // - RegisterDemon()
@@ -1107,7 +1126,6 @@ namespace operations_research {
 // - ActiveSearch()
 // - Cache()
 // - InstrumentsDemons()
-// - IsProfilingEnabled()
 // - InstrumentsVariables()
 // - NameAllVariables()
 // - model_name()
@@ -1165,10 +1183,6 @@ namespace operations_research {
 %unignore ConstraintSolverParameters::set_name_cast_variables;
 %unignore ConstraintSolverParameters::name_all_variables;
 %unignore ConstraintSolverParameters::set_name_all_variables;
-%unignore ConstraintSolverParameters::profile_propagation;
-%unignore ConstraintSolverParameters::set_profile_propagation;
-%unignore ConstraintSolverParameters::profile_file;
-%unignore ConstraintSolverParameters::set_profile_file;
 %unignore ConstraintSolverParameters::trace_propagation;
 %unignore ConstraintSolverParameters::set_trace_propagation;
 %unignore ConstraintSolverParameters::trace_search;
@@ -1858,9 +1872,15 @@ PY_PROTO_TYPEMAP(ortools.constraint_solver.solver_parameters_pb2,
 PY_PROTO_TYPEMAP(ortools.constraint_solver.search_limit_pb2,
                  RegularLimitParameters,
                  operations_research::RegularLimitParameters)
-
+%include "ortools/base/base_export.h"
+%include "ortools/constraint_solver/reversible_engine.h"
+%include "ortools/constraint_solver/reversible_data.h"
 %include "ortools/constraint_solver/constraint_solver.h"
-
+%include "ortools/constraint_solver/assignment.h"
+%include "ortools/constraint_solver/interval.h"
+%include "ortools/constraint_solver/search.h"
+%include "ortools/constraint_solver/sequence_var.h"
+%include "ortools/constraint_solver/utilities.h"
 
 // Define templates instantiation after wrapping.
 namespace operations_research {
@@ -2085,7 +2105,7 @@ namespace operations_research {
 
 }  // namespace operations_research
 
-%include "ortools/constraint_solver/constraint_solveri.h"
+%include "ortools/constraint_solver/local_search.h"
 
 %unignoreall
 

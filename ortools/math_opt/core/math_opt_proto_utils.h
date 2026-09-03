@@ -22,6 +22,7 @@
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/infeasible_subsystem.pb.h"
 #include "ortools/math_opt/model.pb.h"
@@ -73,15 +74,6 @@ inline std::optional<int64_t> FirstLinearConstraintId(
              ? std::nullopt
              : std::make_optional(linear_constraints.ids()[0]);
 }
-
-// Removes the items in the sparse double vector for all indices whose value is
-// exactly 0.0.
-//
-// NaN values are kept in place.
-//
-// The function asserts that input is a valid sparse vector, i.e. that the
-// number of values and ids match.
-void RemoveSparseDoubleVectorZeros(SparseDoubleVectorProto& sparse_vector);
 
 // A utility class that tests if a pair (id, value) should be filtered based on
 // an input SparseVectorFilterProto.

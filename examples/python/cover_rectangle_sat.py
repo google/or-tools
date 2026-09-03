@@ -15,7 +15,9 @@
 """Fill a 60x50 rectangle by a minimum number of non-overlapping squares."""
 
 from typing import Sequence
+
 from absl import app
+
 from ortools.sat.python import cp_model
 
 

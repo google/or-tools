@@ -29,11 +29,8 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
-#include "absl/meta/type_traits.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -190,7 +187,7 @@ bool ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
                                                   other_integer_literal);
       const IntegerValue other_bound = -it2->second;
       if (integer_literal.bound - other_bound > 1) {
-        const Domain old_domain = integer_trail_->InitialVariableDomain(var);
+        const Domain old_domain = integer_trail_->LevelZeroDomain(var);
         const Domain new_domain = old_domain.IntersectionWith(
             Domain(other_bound.value() + 1, integer_literal.bound.value() - 1)
                 .Complement());
@@ -279,11 +276,11 @@ bool ImpliedBounds::ProcessIntegerTrail(Literal first_decision) {
 
 void ElementEncodings::Add(IntegerVariable var,
                            const std::vector<ValueLiteralPair>& encoding,
-                           int exactly_one_index) {
+                           int key) {
   if (!var_to_index_to_element_encodings_.contains(var)) {
     element_encoded_variables_.push_back(var);
   }
-  var_to_index_to_element_encodings_[var][exactly_one_index] = encoding;
+  var_to_index_to_element_encodings_[var][key] = encoding;
 }
 
 const absl::btree_map<int, std::vector<ValueLiteralPair>>&
@@ -428,7 +425,7 @@ std::vector<LiteralValueValue> ProductDecomposer::TryToDecompose(
   }
 
   if (compatible_keys.empty()) {
-    if (integer_trail_->InitialVariableDomain(left.var).Size() == 2) {
+    if (integer_trail_->LevelZeroDomain(left.var).Size() == 2) {
       for (const auto& [index, right_encoding] : right_encodings) {
         const std::vector<LiteralValueValue> result = TryToReconcileEncodings(
             left, right, right_encoding,
@@ -438,7 +435,7 @@ std::vector<LiteralValueValue> ProductDecomposer::TryToDecompose(
         }
       }
     }
-    if (integer_trail_->InitialVariableDomain(right.var).Size() == 2) {
+    if (integer_trail_->LevelZeroDomain(right.var).Size() == 2) {
       for (const auto& [index, left_encoding] : left_encodings) {
         const std::vector<LiteralValueValue> result = TryToReconcileEncodings(
             right, left, left_encoding,
@@ -448,8 +445,8 @@ std::vector<LiteralValueValue> ProductDecomposer::TryToDecompose(
         }
       }
     }
-    if (integer_trail_->InitialVariableDomain(left.var).Size() == 2 &&
-        integer_trail_->InitialVariableDomain(right.var).Size() == 2) {
+    if (integer_trail_->LevelZeroDomain(left.var).Size() == 2 &&
+        integer_trail_->LevelZeroDomain(right.var).Size() == 2) {
       const std::vector<LiteralValueValue> result =
           TryToReconcileSize2Encodings(left, right, integer_encoder_);
       if (!result.empty()) {
@@ -731,8 +728,8 @@ bool ProductDetector::ProductIsLinearizable(IntegerVariable a,
 
   // Otherwise, we need both a and b to be expressible as linear expression
   // involving Booleans whose product is also expressible.
-  if (integer_trail_->InitialVariableDomain(a).Size() != 2) return false;
-  if (integer_trail_->InitialVariableDomain(b).Size() != 2) return false;
+  if (integer_trail_->LevelZeroDomain(a).Size() != 2) return false;
+  if (integer_trail_->LevelZeroDomain(b).Size() != 2) return false;
 
   const LiteralIndex la =
       integer_encoder_->GetAssociatedLiteral(IntegerLiteral::GreaterOrEqual(

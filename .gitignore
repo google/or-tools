@@ -109,3 +109,6 @@ DartConfiguration.tcl
 
 # Ignore Bzlmod lock file until it is more stable
 MODULE.bazel.lock
+
+# Ignore Copybara Export Data
+copybara_data.json

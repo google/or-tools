@@ -33,12 +33,15 @@
 #include "ortools/math_opt/solver_tests/lp_model_solve_parameters_tests.h"
 #include "ortools/math_opt/solver_tests/lp_parameter_tests.h"
 #include "ortools/math_opt/solver_tests/lp_tests.h"
+#include "ortools/math_opt/solver_tests/min_cost_flow_tests.h"
 #include "ortools/math_opt/solver_tests/multi_objective_tests.h"
 #include "ortools/math_opt/solver_tests/qc_tests.h"
 #include "ortools/math_opt/solver_tests/qp_tests.h"
 #include "ortools/math_opt/solver_tests/second_order_cone_tests.h"
 #include "ortools/math_opt/solver_tests/status_tests.h"
+#include "ortools/math_opt/solver_tests/test_models.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
+#include "ortools/math_opt/testing/param_name.h"
 #include "ortools/pdlp/solve_log.pb.h"
 
 namespace operations_research {
@@ -69,6 +72,20 @@ INSTANTIATE_TEST_SUITE_P(PdlpSimpleLpTest, SimpleLpTest,
                              /*ensures_primal_ray=*/true,
                              /*ensures_dual_ray=*/true,
                              /*disallows_infeasible_or_unbounded=*/false)));
+
+INSTANTIATE_TEST_SUITE_P(
+    PdlpMinCostFlowTest, MinCostFlowTest,
+    testing::Values(MinCostFlowTestParams{
+        .name = "pdlp",
+        .solver_type = math_opt::SolverType::kPdlp,
+        .lp_not_flow_error_substring = std::nullopt,
+        .mip_not_flow_error_substring = "integer variables",
+        .floating_point_cost_error_substring = std::nullopt,
+        .floating_point_capacity_error_substring = std::nullopt,
+        .certifies_nontrivial_infeasibility = true,
+        .returns_dual_solution = true,
+    }),
+    ParamName{});
 
 MultiObjectiveTestParameters GetPdlpMultiObjectiveTestParameters() {
   return MultiObjectiveTestParameters(
@@ -148,8 +165,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 INSTANTIATE_TEST_SUITE_P(PdlpInvalidInputTest, InvalidInputTest,
                          testing::Values(InvalidInputTestParameters(
-                             SolverType::kPdlp,
-                             /*use_integer_variables=*/false)));
+                             SolverType::kPdlp, TestModelClass::kLp)));
 
 INSTANTIATE_TEST_SUITE_P(
     PdlpLpParameterTest, LpParameterTest,
@@ -168,7 +184,7 @@ InvalidParameterTestParams MakeBadPdlpSpecificParams() {
   SolveParameters parameters;
   parameters.pdlp.set_major_iteration_frequency(-7);
   return InvalidParameterTestParams(
-      SolverType::kPdlp, std::move(parameters),
+      SolverType::kPdlp, TestModelClass::kLp, std::move(parameters),
       {"major_iteration_frequency must be positive"});
 }
 
@@ -177,7 +193,7 @@ InvalidParameterTestParams MakeBadCommonParamsForPdlp() {
   parameters.cuts = Emphasis::kHigh;
   parameters.lp_algorithm = LPAlgorithm::kDualSimplex;
   return InvalidParameterTestParams(
-      SolverType::kPdlp, std::move(parameters),
+      SolverType::kPdlp, TestModelClass::kLp, std::move(parameters),
       /*expected_error_substrings=*/
       {"parameter cuts not supported for PDLP",
        "parameter lp_algorithm not supported for PDLP"});
@@ -210,8 +226,7 @@ INSTANTIATE_TEST_SUITE_P(
     PdlpGenericTest, GenericTest,
     testing::Values(GenericTestParameters(
         SolverType::kPdlp,
-        /*support_interrupter=*/true,
-        /*integer_variables=*/false,
+        /*support_interrupter=*/true, TestModelClass::kLp,
         /*expected_log=*/"Termination reason: TERMINATION_REASON_OPTIMAL")));
 
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TimeLimitTest);
@@ -228,8 +243,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 INSTANTIATE_TEST_SUITE_P(
     PdlpCallbackTest, CallbackTest,
-    testing::Values(CallbackTestParams(SolverType::kPdlp,
-                                       /*integer_variables=*/false,
+    testing::Values(CallbackTestParams(SolverType::kPdlp, TestModelClass::kLp,
                                        /*add_lazy_constraints=*/false,
                                        /*add_cuts=*/false,
                                        /*supported_events=*/{},

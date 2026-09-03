@@ -20,7 +20,6 @@
 #include <string>
 #include <vector>
 
-#include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
@@ -31,10 +30,12 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/options.h"
 #include "ortools/base/timer.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters.pb.h"
+#include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/mps_reader.h"
@@ -61,13 +62,13 @@ ABSL_FLAG(std::string, params, "",
 using google::protobuf::TextFormat;
 using operations_research::FullProtocolMessageAsString;
 using operations_research::ReadFileToProto;
-using operations_research::glop::GetProblemStatusString;
+using operations_research::glop::GetSolveStatusString;
 using operations_research::glop::GlopParameters;
 using operations_research::glop::LinearProgram;
 using operations_research::glop::LPSolver;
 using operations_research::glop::MPModelProtoToLinearProgram;
 using operations_research::glop::MPSReader;
-using operations_research::glop::ProblemStatus;
+using operations_research::glop::SolveStatus;
 using operations_research::glop::ToDouble;
 
 // Parse glop parameters from the flags --params_file and --params.
@@ -130,15 +131,14 @@ int main(int argc, char* argv[]) {
     // Create the solver with the correct parameters.
     LPSolver solver;
     solver.SetParameters(parameters);
-    ProblemStatus solve_status = ProblemStatus::INIT;
 
-    std::string status_string;
+    std::string status_string = "<no status>";
     double objective_value;
     double solving_time_in_sec = 0;
     if (absl::GetFlag(FLAGS_mps_solve)) {
       ScopedWallTime timer(&solving_time_in_sec);
-      solve_status = solver.Solve(linear_program);
-      status_string = GetProblemStatusString(solve_status);
+      const SolveStatus solve_status = solver.Solve(linear_program);
+      status_string = GetSolveStatusString(solve_status);
       objective_value = ToDouble(solver.GetObjectiveValue());
     }
 

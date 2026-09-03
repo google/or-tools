@@ -15,9 +15,12 @@ syntax = "proto2";
 
 package operations_research.bop;
 
+// clang-format off
+option csharp_namespace = "Google.OrTools.Bop";
 option java_package = "com.google.ortools.bop";
 option java_multiple_files = true;
-option csharp_namespace = "Google.OrTools.Bop";
+// clang-format on
+
 // Method used to optimize a solution in Bop.
 //
 // NEXT TAG: 16
@@ -147,13 +150,6 @@ message BopParameters {
   // enough to be negligeable for most problem. Or at least support a time
   // limit.
   optional bool use_symmetry = 17 [default = false];
-
-  // If true, find and exploit symmetries in proving satisfiability in the first
-  // problem.
-  // This feature is experimental. On some problems, computing symmetries may
-  // run forever. You may also run into unforseen problems as this feature was
-  // not extensively tested.
-  optional bool exploit_symmetry_in_sat_first_solution = 40 [default = false];
 
   // The number of conflicts the SAT solver has to generate a random solution.
   optional int32 max_number_of_conflicts_in_random_solution_generation = 20

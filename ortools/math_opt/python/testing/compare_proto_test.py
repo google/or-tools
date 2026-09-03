@@ -15,6 +15,7 @@
 """Test MathOpt's custom proto test assertions."""
 
 from absl.testing import absltest
+
 from ortools.math_opt import model_pb2
 from ortools.math_opt.python import normalize
 from ortools.math_opt.python.testing import compare_proto

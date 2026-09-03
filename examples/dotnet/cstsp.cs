@@ -14,12 +14,13 @@
 using System;
 using System.Collections.Generic;
 using Google.OrTools.ConstraintSolver;
+using Google.OrTools.Routing;
 
 class Tsp
 {
     class RandomManhattan
     {
-        public RandomManhattan(RoutingIndexManager manager, int size, int seed)
+        public RandomManhattan(IndexManager manager, int size, int seed)
         {
             this.xs_ = new int[size];
             this.ys_ = new int[size];
@@ -41,17 +42,18 @@ class Tsp
 
         private readonly int[] xs_;
         private readonly int[] ys_;
-        private readonly RoutingIndexManager manager_;
+        private readonly IndexManager manager_;
     };
 
     static void Solve(int size, int forbidden, int seed)
     {
-        RoutingIndexManager manager = new RoutingIndexManager(size, 1, 0);
-        RoutingModel routing = new RoutingModel(manager);
+        IndexManager manager = new IndexManager(size, 1, 0);
+        Model routing = new Model(manager);
 
         // Setting the cost function.
         // Put a permanent callback to the distance accessor here. The callback
-        // has the following signature: ResultCallback2<int64_t, int64_t, int64_t>.
+        // has the following signature:
+        // util::functional::ResultCallbackFunctor<int64_t, int64_t, int64_t>.
         // The two arguments are the from and to node inidices.
         RandomManhattan distances = new RandomManhattan(manager, size, seed);
         routing.SetArcCostEvaluatorOfAllVehicles(routing.RegisterTransitCallback(distances.Call));
@@ -76,9 +78,8 @@ class Tsp
                                                                   { return 1; }),
                              size + 1, size + 1, true, "dummy");
 
-        // Solve, returns a solution if any (owned by RoutingModel).
-        RoutingSearchParameters search_parameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        // Solve, returns a solution if any (owned by Model).
+        RoutingSearchParameters search_parameters = RoutingGlobals.DefaultRoutingSearchParameters();
         // Setting first solution heuristic (cheapest addition).
         search_parameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
 

@@ -32,6 +32,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/logging.h"
 
 namespace operations_research {
 namespace sat {
@@ -100,7 +101,7 @@ void ConstructFixedSearchStrategy(SearchHeuristics* h, Model* model);
 std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
     const CpModelProto& cp_model_proto,
     absl::Span<const IntegerVariable> variable_mapping,
-    std::function<BooleanOrIntegerLiteral()> instrumented_strategy,
+    const std::function<BooleanOrIntegerLiteral()>& instrumented_strategy,
     Model* model);
 
 // Returns all the named set of parameters known to the solver. This include our
@@ -114,8 +115,8 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
 // Returns a list of full workers to run.
 class SubsolverNameFilter;
 std::vector<SatParameters> GetFullWorkerParameters(
-    const SatParameters& base_params, const CpModelProto& cp_model,
-    int num_already_present, SubsolverNameFilter* name_filter);
+    const CpModelProto& cp_model, SolverLogger* logger,
+    SatParameters* base_params, SubsolverNameFilter* name_filter);
 
 // Given a base set of parameter, if non-empty, this repeat them (round-robbin)
 // until we get num_params_to_generate. Note that if we don't have a multiple,

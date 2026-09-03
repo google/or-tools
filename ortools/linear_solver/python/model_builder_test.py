@@ -12,20 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Callable, Mapping
 import math
+import os
 import sys
+from collections.abc import Callable, Mapping
 from typing import Any, Union
 
-from absl.testing import absltest
-from absl.testing import parameterized
 import numpy as np
 import numpy.testing as np_testing
 import pandas as pd
-
-import os
-
+from absl.testing import absltest, parameterized
 from google.protobuf import text_format
+
 from ortools.linear_solver import linear_solver_pb2
 from ortools.linear_solver.python import model_builder as mb
 from ortools.linear_solver.python import model_builder_helper as mbh
@@ -204,6 +202,23 @@ ENDATA
         self.assertEqual(1, model.var_from_index(0).lower_bound)
         self.assertEqual(42, model.var_from_index(0).upper_bound)
         self.assertEqual("x", model.var_from_index(0).name)
+
+    def test_highs_log_callback_receives_logs_when_enabled(self):
+        model = mb.Model()
+        x = model.new_num_var(0.0, math.inf, "x")
+        y = model.new_num_var(0.0, math.inf, "y")
+        model.add(x + y <= 10.0)
+        model.maximize(1.0 * x + 2.0 * y)
+
+        solver = mb.Solver("highs")
+        if not solver.solver_is_supported():
+            return
+        log_lines = []
+        solver.log_callback = log_lines.append
+        solver.enable_output(True)
+        self.assertEqual(solver.solve(model), mb.SolveStatus.OPTIMAL)
+        self.assertNotEmpty(log_lines, "Log callback should receive output")
+        self.assertIn("Model", "".join(log_lines))
 
     def test_class_api(self):
         model = mb.Model()
@@ -504,7 +519,7 @@ ENDATA
 
         for j in range(total_unique_products):
             for i in range(len(standalone_features)):
-                v[i, j] = model.new_bool_var(f"v_{(i,j)}")
+                v[i, j] = model.new_bool_var(f"v_{(i, j)}")
                 model.add(
                     v[i, j]
                     == (
@@ -1779,6 +1794,109 @@ class ModelBuilderProtoTest(absltest.TestCase):
         model.maximize(x.sum())
         self.assertEqual(str(expected), str(model.export_to_proto()))
 
+    def test_add_enforced_linear_constraint_without_regular_constraint(self):
+        # add_enforced_linear_constraint used to write the indicator constraint
+        # through the regular constraint setters using the enforced index. With
+        # no regular constraint at that index this addressed out-of-range memory
+        # and crashed the interpreter; check it now produces a well-formed
+        # indicator constraint and no spurious regular constraint.
+        expected = linear_solver_pb2.MPModelProto()
+        text_format.Parse(
+            """
+    variable {
+      lower_bound: 0
+      upper_bound: 10
+      is_integer: true
+      name: "x"
+    }
+    variable {
+      lower_bound: 0
+      upper_bound: 1
+      is_integer: true
+      name: "z"
+    }
+    general_constraint {
+      name: "ind"
+      indicator_constraint {
+        var_index: 1
+        var_value: 1
+        constraint {
+          lower_bound: 3
+          upper_bound: 8
+          var_index: 0
+          coefficient: 1
+        }
+      }
+    }
+    """,
+            expected,
+        )
+        model = mb.Model()
+        x = model.new_int_var(0, 10, "x")
+        z = model.new_bool_var("z")
+        model.add_enforced_linear_constraint(x, z, True, lb=3, ub=8, name="ind")
+        self.assertEqual(str(expected), str(model.export_to_proto()))
+
+    def test_add_enforced_linear_constraint_keeps_prior_constraint(self):
+        # With a regular constraint already present at the enforced index, the
+        # misrouted setters silently overwrote that constraint's name, bounds
+        # and terms and left the indicator constraint empty. Check the regular
+        # constraint is untouched and the indicator constraint carries its own
+        # bounds and terms.
+        expected = linear_solver_pb2.MPModelProto()
+        text_format.Parse(
+            """
+    variable {
+      lower_bound: 0
+      upper_bound: 10
+      is_integer: true
+      name: "x"
+    }
+    variable {
+      lower_bound: 0
+      upper_bound: 10
+      is_integer: true
+      name: "y"
+    }
+    variable {
+      lower_bound: 0
+      upper_bound: 1
+      is_integer: true
+      name: "z"
+    }
+    constraint {
+      lower_bound: 0
+      upper_bound: 5
+      name: "reg"
+      var_index: 0
+      var_index: 1
+      coefficient: 1
+      coefficient: 1
+    }
+    general_constraint {
+      name: "ind"
+      indicator_constraint {
+        var_index: 2
+        var_value: 1
+        constraint {
+          lower_bound: 3
+          upper_bound: 8
+          var_index: 0
+          coefficient: 1
+        }
+      }
+    }
+    """,
+            expected,
+        )
+        model = mb.Model()
+        x = model.new_int_var(0, 10, "x")
+        y = model.new_int_var(0, 10, "y")
+        z = model.new_bool_var("z")
+        model.add_linear_constraint(x + y, lb=0, ub=5, name="reg")
+        model.add_enforced_linear_constraint(x, z, True, lb=3, ub=8, name="ind")
+        self.assertEqual(str(expected), str(model.export_to_proto()))
+
 
 class SolverTest(parameterized.TestCase):
     _solvers = (
@@ -2455,6 +2573,29 @@ class ModelBuilderExamplesTest(absltest.TestCase):
 
         prod3 = 2 * x * 0.0
         self.assertEqual(repr(prod3), "FixedValue(0)")
+
+    def testIssue3502a(self):
+        m = mb.Model()
+        x = m.new_bool_var("x")
+        y = m.new_num_var(0.0, 10.0, "y")
+        ct = m.add_enforced_linear_constraint(y, x, True, lb=0.0, ub=3.0, name="enf")
+        self.assertEqual(ct.name, "enf")
+        self.assertEqual(ct.lower_bound, 0.0)
+        self.assertEqual(ct.upper_bound, 3.0)
+        self.assertEqual(ct.indicator_variable.index, x.index)
+        self.assertTrue(ct.indicator_value)
+
+    def testIssue3502b(self):
+        m = mb.Model()
+        yy = m.new_num_var(0.0, 10.0, "y")
+        w = m.new_num_var(0.0, 10.0, "w")
+        z = m.new_bool_var("z")
+        m.add_linear_constraint(yy, ub=2.0, name="cap")
+        m.add_enforced_linear_constraint(w, z, True, ub=3.0, name="ind")
+        m.maximize(yy)
+        s = mb.Solver("sat")
+        self.assertEqual(s.solve(m), mb.SolveStatus.OPTIMAL)
+        self.assertEqual(s.objective_value, 2.0)
 
 
 if __name__ == "__main__":

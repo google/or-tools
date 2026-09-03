@@ -16,11 +16,9 @@
 
 from collections.abc import Sequence
 
-from absl import app
-from absl import flags
+from absl import app, flags
 
 from ortools.sat.python import cp_model
-
 
 _COEFF = flags.DEFINE_integer("coeff", 1, "The Pell equation coefficient.")
 _MAX_VALUE = flags.DEFINE_integer("max_value", 5000_000, "The maximum value.")

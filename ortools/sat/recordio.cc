@@ -22,15 +22,15 @@
 namespace operations_research {
 namespace sat {
 
-RecordReader::RecordReader(std::istream* istream)
-    : istream_(istream), coded_istream_(&istream_) {}
+RecordReader::RecordReader(std::istream* istream) : istream_(istream) {}
 
 bool RecordReader::ReadRecord(google::protobuf::MessageLite* record) {
   uint32_t size;
-  if (!coded_istream_.ReadVarint32(&size)) return false;
-  auto limit = coded_istream_.PushLimit(size);
-  if (!record->ParseFromCodedStream(&coded_istream_)) return false;
-  coded_istream_.PopLimit(limit);
+  google::protobuf::io::CodedInputStream coded_istream(&istream_);
+  if (!coded_istream.ReadVarint32(&size)) return false;
+  auto limit = coded_istream.PushLimit(size);
+  if (!record->ParseFromCodedStream(&coded_istream)) return false;
+  coded_istream.PopLimit(limit);
   return true;
 }
 

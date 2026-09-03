@@ -88,13 +88,12 @@ class GlopSolver : public SolverInterface {
   // Returns the ids of variables and linear constraints with inverted bounds.
   InvertedBounds ListInvertedBounds() const;
 
-  void FillSolution(glop::ProblemStatus status,
+  void FillSolution(const glop::SolveStatus& status,
                     const ModelSolveParametersProto& model_parameters,
                     SolveResultProto& solve_result);
   absl::StatusOr<SolveResultProto> MakeSolveResult(
-      glop::ProblemStatus status,
+      const glop::SolveStatus& status,
       const ModelSolveParametersProto& model_parameters,
-      const SolveInterrupter* absl_nullable interrupter,
       absl::Duration solve_time);
 
   absl::Status FillSolveStats(absl::Duration solve_time,

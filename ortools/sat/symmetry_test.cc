@@ -88,7 +88,7 @@ TEST(SymmetryPropagatorTest, BasicTest) {
   // We need a mock propagator to inject a reason.
   struct MockPropagator : SatPropagator {
     MockPropagator() : SatPropagator("MockPropagator") {}
-    bool Propagate(Trail* trail) final { return true; }
+    bool Propagate(Trail* /*trail*/) final { return true; }
     absl::Span<const Literal> Reason(const Trail& /*trail*/,
                                      int /*trail_index*/,
                                      int64_t /*conflict_id*/) const final {

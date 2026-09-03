@@ -12,18 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Callable
 import dataclasses
+from collections.abc import Callable
 from typing import Dict, Generic, Protocol, TypeVar, Union
 
-from absl.testing import absltest
-from absl.testing import parameterized
+from absl.testing import absltest, parameterized
+
 from ortools.math_opt import sparse_containers_pb2
-from ortools.math_opt.python import linear_constraints
-from ortools.math_opt.python import model
-from ortools.math_opt.python import quadratic_constraints
-from ortools.math_opt.python import sparse_containers
-from ortools.math_opt.python import variables
+from ortools.math_opt.python import (linear_constraints, model,
+                                     quadratic_constraints, sparse_containers,
+                                     variables)
 from ortools.math_opt.python.testing import compare_proto
 
 

@@ -14,7 +14,10 @@
 #ifndef ORTOOLS_UTIL_PYTHON_PY_SOLVE_INTERRUPTER_H_
 #define ORTOOLS_UTIL_PYTHON_PY_SOLVE_INTERRUPTER_H_
 
+#include <cstdint>
+#include <functional>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "absl/base/nullability.h"
@@ -40,6 +43,8 @@ class PySolveInterrupter {
   inline bool IsInterrupted() const { return interrupter_.IsInterrupted(); }
 
   // Triggers the target when this interrupter is triggered.
+  //
+  // If this interrupter is already triggered, trigger the target immediately.
   //
   // A std::weak_ptr is kept on the target. Expired std::weak_ptr are cleaned up
   // on calls to AddTriggerTarget() and RemoveTriggerTarget().
@@ -103,6 +108,12 @@ class PySolveInterrupter {
   // Interrupters to trigger when interrupter_ is triggered.
   std::vector<std::weak_ptr<PySolveInterrupter>> targets_
       ABSL_GUARDED_BY(mutex_);
+
+  // Set to true in TriggerTargets() before triggering targets_.
+  //
+  // No interrupter added to targets_ after targets_called_ has been set to true
+  // will be interrupted.
+  bool targets_called_ ABSL_GUARDED_BY(mutex_) = false;
 
   // Callback that will trigger all interrupters in target_.
   //

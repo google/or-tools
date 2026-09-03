@@ -15,20 +15,15 @@
 
 #include <stddef.h>
 
-#include <algorithm>
 #include <cstdint>
-#include <iterator>
-#include <limits>
 #include <optional>
-#include <string>
 
-#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
-#include "absl/strings/str_cat.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
+#include "ortools/base/types.h"
 #include "ortools/math_opt/core/model_summary.h"
 
 namespace operations_research::math_opt {
@@ -36,14 +31,14 @@ namespace operations_research::math_opt {
 absl::Status CheckIdsRangeAndStrictlyIncreasing(absl::Span<const int64_t> ids) {
   int64_t previous{-1};
   for (int i = 0; i < ids.size(); previous = ids[i], ++i) {
-    if (ids[i] < 0 || ids[i] == std::numeric_limits<int64_t>::max()) {
-      return util::InvalidArgumentErrorBuilder()
+    if (ids[i] < 0 || ids[i] == kint64max) {
+      return ortools::InvalidArgumentErrorBuilder()
              << "Expected ids to be nonnegative and not max(int64_t) but at "
                 "index "
              << i << " found id: " << ids[i];
     }
     if (ids[i] <= previous) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "Expected ids to be strictly increasing, but at index " << i
              << " found id: " << ids[i] << " and at index " << i - 1
              << " found id: " << ids[i - 1];
@@ -57,12 +52,13 @@ absl::Status CheckIdsSubset(absl::Span<const int64_t> ids,
                             std::optional<int64_t> upper_bound) {
   for (const int64_t id : ids) {
     if (upper_bound.has_value() && id >= *upper_bound) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "id " << id
              << " should be less than upper bound: " << *upper_bound;
     }
     if (!universe.HasId(id)) {
-      return util::InvalidArgumentErrorBuilder() << "id " << id << " not found";
+      return ortools::InvalidArgumentErrorBuilder()
+             << "id " << id << " not found";
     }
   }
   return absl::OkStatus();
@@ -75,7 +71,7 @@ absl::Status CheckIdsSubset(absl::Span<const int64_t> ids,
   for (int i = 0; i < ids.size(); ++i) {
     const int64_t id = ids[i];
     if (!universe.HasId(id)) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "Id: " << id << " (at index: " << i << ") in "
              << ids_description << " is missing from " << universe_description;
     }
@@ -88,12 +84,12 @@ absl::Status CheckIdsIdentical(absl::Span<const int64_t> first_ids,
                                absl::string_view first_description,
                                absl::string_view second_description) {
   if (first_ids.size() != second_ids.Size()) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << first_description << " has size " << first_ids.size() << ", but "
            << second_description << " has size " << second_ids.Size();
   }
-  RETURN_IF_ERROR(CheckIdsSubset(first_ids, second_ids, first_description,
-                                 second_description));
+  ABSL_RETURN_IF_ERROR(CheckIdsSubset(first_ids, second_ids, first_description,
+                                      second_description));
   return absl::OkStatus();
 }
 

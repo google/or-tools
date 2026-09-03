@@ -19,12 +19,12 @@
 #include <functional>
 #include <utility>
 
-#include "absl/base/log_severity.h"
 #include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/numeric/int128.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/log_severity.h"
 
 namespace operations_research {
 // Finds a point in [x_true, x_false) where f changes from true to false.
@@ -67,9 +67,8 @@ namespace operations_research {
 // will be a "local" inflexion point, meaning that the smallest possible move
 // of that point X to a point X' (in the x_true->x_false direction deduced from
 // the arguments) would make f(X') return false. EXAMPLES:
-// - If Point=int32_t, then the returned X verifies f(X) = true and f(X') =
-// false
-//   with X' = X + (x_true < x_false ? 1 : -1).
+// - If Point=int32_t, then the returned X verifies f(X) = true and
+//   f(X') = false with X' = X + (x_true < x_false ? 1 : -1).
 // - If Point=double, ditto with X' =  X * (1 + (x_true < x_false ? ε : -ε)),
 //   where ε = std::numeric_limits<double>::epsilon().
 //

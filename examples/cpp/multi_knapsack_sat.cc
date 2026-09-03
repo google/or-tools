@@ -24,13 +24,14 @@
 #include <string>
 #include <vector>
 
-#include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
 #include "absl/log/globals.h"
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
 
 ABSL_FLAG(int, size, 16, "scaling factor of the model");
 ABSL_FLAG(std::string, params,

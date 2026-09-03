@@ -20,9 +20,9 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 
 namespace operations_research {

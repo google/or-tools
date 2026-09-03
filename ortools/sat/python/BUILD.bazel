@@ -14,7 +14,7 @@
 # Description: python wrapping of the C++ code at ../
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
+load("@pybind11_bazel//:build_defs.bzl", "pybind_extension", "pybind_library")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//python:py_library.bzl", "py_library")
@@ -26,11 +26,62 @@ cc_library(
     hdrs = ["linear_expr_doc.h"],
 )
 
+pybind_library(
+    name = "pybind_constraint",
+    srcs = ["pybind_constraint.cc"],
+    hdrs = ["pybind_constraint.h"],
+    linkstatic = 1,
+    deps = [
+        ":linear_expr",
+        "//ortools/base:types",
+        "//ortools/port:proto_utils",
+        "//ortools/sat:cp_model_cc_proto",
+        "//ortools/sat:cp_model_utils",
+        "//ortools/util:saturated_arithmetic",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+pybind_library(
+    name = "pybind_linearexpr",
+    srcs = ["pybind_linearexpr.cc"],
+    hdrs = ["pybind_linearexpr.h"],
+    linkstatic = 1,
+    deps = [
+        ":linear_expr",
+        ":linear_expr_doc",
+        "//ortools/base:types",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/base:dynamic_annotations",
+        "@abseil-cpp//absl/functional:any_invocable",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+pybind_library(
+    name = "pybind_solver",
+    srcs = ["pybind_solver.cc"],
+    hdrs = ["pybind_solver.h"],
+    linkstatic = 1,
+    deps = [
+        ":linear_expr",
+        "//ortools/sat:cp_model_cc_proto",
+        "//ortools/sat:cp_model_utils",
+        "//ortools/sat:sat_parameters_cc_proto",
+        "//ortools/sat:swig_helper",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
 cc_library(
     name = "linear_expr",
     srcs = ["linear_expr.cc"],
     hdrs = ["linear_expr.h"],
     deps = [
+        "//ortools/base:types",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_utils",
         "//ortools/util:fp_roundtrip_conv",
@@ -44,32 +95,14 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "wrappers",
-    srcs = ["wrappers.cc"],
-    hdrs = ["wrappers.h"],
-    deps = [
-        "@abseil-cpp//absl/algorithm:container",
-        "@abseil-cpp//absl/base:nullability",
-        "@abseil-cpp//absl/container:flat_hash_map",
-        "@abseil-cpp//absl/container:flat_hash_set",
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/log:die_if_null",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/types:span",
-        "@protobuf",
-    ],
-)
-
 cc_binary(
     name = "gen_proto_builder_pybind11",
     srcs = ["gen_proto_builder_pybind11.cc"],
     deps = [
-        ":wrappers",
         "//ortools/base",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:sat_parameters_cc_proto",
+        "//ortools/util/python:wrappers",
         "@abseil-cpp//absl/flags:parse",
         "@abseil-cpp//absl/flags:usage",
         "@abseil-cpp//absl/log:die_if_null",
@@ -98,6 +131,9 @@ pybind_extension(
         ":linear_expr",
         ":linear_expr_doc",
         ":proto_builder_pybind11",
+        ":pybind_constraint",
+        ":pybind_linearexpr",
+        ":pybind_solver",
         "//ortools/port:proto_utils",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_utils",
@@ -120,6 +156,7 @@ py_test(
     deps = [
         ":cp_model_helper",
         requirement("absl-py"),
+        requirement("numpy"),
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -130,9 +167,9 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_helper",
+        "//ortools/util/python:sorted_interval_list",
         requirement("numpy"),
         requirement("pandas"),
-        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -140,6 +177,7 @@ py_test(
     name = "cp_model_test",
     size = "medium",
     srcs = ["cp_model_test.py"],
+    tags = ["noci"],  # Times out occasionally in ASAN mode.
     deps = [
         ":cp_model",
         ":cp_model_helper",

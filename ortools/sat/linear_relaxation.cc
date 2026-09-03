@@ -15,23 +15,26 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <limits>
 #include <numeric>
 #include <optional>
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/base/attributes.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/log/vlog_is_on.h"
 #include "absl/types/span.h"
 #include "google/protobuf/message.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/circuit.h"  // for ReindexArcs.
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -57,10 +60,12 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/scheduling_cuts.h"
 #include "ortools/sat/scheduling_helpers.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -209,8 +214,9 @@ void AppendRelaxationForEqualityEncoding(IntegerVariable var,
     return;
   }
 
-  // In this special case, the two constraints below can be merged into an
-  // equality: var = rhs + sum l_i * (value_i - rhs).
+  // In this special case, there is a single non-encoded value and the two
+  // constraints below can be merged into an equality: var = rhs + sum l_i *
+  // (value_i - rhs).
   if (min_not_encoded == max_not_encoded) {
     const IntegerValue rhs = min_not_encoded;
     LinearConstraintBuilder encoding_ct(&model, rhs, rhs);
@@ -319,6 +325,210 @@ void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
 
     // Note that by construction, this shouldn't be able to overflow.
     relaxation->linear_constraints.push_back(builder.Build());
+  }
+}
+
+// For now, we only look at lit => X \in [A, B]. With X in [lb, ub].
+//
+// Rather than linearizing each constraint as two linears:
+//   1/  (X - lb) >= lit * (A - lb) and
+//   2/  (ub - X) >= lit * (ub - B)
+//
+// If we have a bunch of DISJOINT interval [Ai, Bi] we can do
+//  1/   (X - lb) >= Sum li * (Ai - lb)
+//  2/   (ub - X) >= Sum li * (ub - Bi)
+//
+// This works because at most one li can be true since the interval are
+// disjoint. The linearization should be way tighter. We mark all constraints
+// used this way as "already linearized".
+//
+// TODO(user): For now we use a really basic heuristic to find one or more set
+// of disjoint intervals.
+//
+// TODO(user): Deal with more "complex" linear1, for now we just relax all
+// linear1 to simple intervals [min, max]. For instance if we have [0][3-4]
+// we will relax this to [0-4].
+//
+// TODO(user): Maybe we should just merge this with
+// AppendRelaxationForEqualityEncoding().
+void LinearizeComplexLinear1(Model* m, const CpModelProto& model_proto,
+                             std::vector<bool>* already_linearized,
+                             LinearRelaxation* relaxation) {
+  auto* mapping = m->Get<CpModelMapping>();
+  auto* integer_trail = m->Get<IntegerTrail>();
+  if (mapping == nullptr || integer_trail == nullptr) return;
+
+  // Lets regroup all interval linear one by variable.
+  CompactVectorVectorBuilder<IntegerVariable, int> var_to_lin1_builder;
+  const int num_constraints = model_proto.constraints().size();
+  for (int c = 0; c < num_constraints; ++c) {
+    const ConstraintProto& ct = model_proto.constraints(c);
+    if (ct.enforcement_literal().size() != 1) continue;
+    if (ct.constraint_case() != ConstraintProto::kLinear) continue;
+    if (ct.linear().vars().size() != 1) continue;
+    if (ct.linear().coeffs(0) != 1) continue;
+
+    const int proto_var = ct.linear().vars(0);
+    CHECK(RefIsPositive(proto_var));
+    if (!mapping->IsInteger(proto_var)) continue;
+
+    var_to_lin1_builder.Add(mapping->Integer(proto_var), c);
+  }
+
+  int num_added_constraints = 0;
+  const CompactVectorVector<IntegerVariable, int> var_to_lin1(
+      var_to_lin1_builder);
+  TimeLimit* time_limit = m->GetOrCreate<TimeLimit>();
+  for (IntegerVariable var(0); var < var_to_lin1.size(); ++var) {
+    const Domain var_domain = integer_trail->LevelZeroDomain(var);
+    if (var_to_lin1[var].size() < 2) continue;
+    const IntegerValue lb = integer_trail->LevelZeroLowerBound(var);
+    const IntegerValue ub = integer_trail->LevelZeroUpperBound(var);
+
+    VLOG(2) << "=== var " << var << " domain " << var_domain << "===";
+
+    if (time_limit->LimitReached()) return;
+
+    // We will sort by "smallest domain" first.
+    struct Lin1Info {
+      int c;        // constraint index.
+      Literal lit;  // enforcement literal
+      Domain domain;
+      // If true, then not(lit) implies var is in the complement of domain.
+      bool is_fully_reified = false;
+    };
+    std::vector<Lin1Info> infos;
+    absl::flat_hash_map<Literal, int> lit_to_info_index;
+    for (const int c : var_to_lin1[var]) {
+      const ConstraintProto& ct = model_proto.constraints(c);
+      const Domain d = ReadDomainFromProto(ct.linear());
+      VLOG(2) << mapping->Literal(ct.enforcement_literal(0)) << " " << d;
+      const Literal lit = mapping->Literal(ct.enforcement_literal(0));
+      bool is_fully_reified = false;
+      lit_to_info_index[lit] = infos.size();
+      auto it = lit_to_info_index.find(lit.Negated());
+      if (it != lit_to_info_index.end()) {
+        Lin1Info& info_negation = infos[it->second];
+        if (var_domain.IsIncludedIn(info_negation.domain.UnionWith(d))) {
+          info_negation.is_fully_reified = true;
+          is_fully_reified = true;
+        }
+      }
+      infos.push_back({c, lit, d, is_fully_reified});
+    }
+    absl::c_sort(infos, [](const Lin1Info& a, const Lin1Info& b) {
+      const IntegerValue size_a = a.domain.Max() - a.domain.Min();
+      const IntegerValue size_b = b.domain.Max() - b.domain.Min();
+      return size_a < size_b;
+    });
+
+    // We greedily collect disjoint intervals... At most 3 times.
+    for (int loop = 0; loop < 3; ++loop) {
+      if (infos.size() < 2) break;
+
+      int new_size = 0;
+      Domain current_d;
+
+      bool some_non_encoding_constraint = false;
+      bool some_non_full_encoding_constraint = false;
+      std::vector<Lin1Info> disjoints;
+      for (Lin1Info& info : infos) {
+        if (info.domain.Min() == lb && info.domain.Max() == ub) continue;
+        const Domain domain = Domain(info.domain.Min(), info.domain.Max());
+        if (domain.OverlapsWith(current_d)) {
+          infos[new_size++] = std::move(info);
+        } else {
+          const ConstraintProto& ct = model_proto.constraints(info.c);
+          current_d = current_d.UnionWith(domain);
+          some_non_full_encoding_constraint |= !info.is_fully_reified;
+          const bool ct_is_used_in_an_element_encoding =
+              info.domain.IsFixed() &&
+              relaxation->already_relaxed_implied_values.contains(
+                  {info.lit, var, info.domain.Min()});
+          disjoints.push_back(std::move(info));
+          if (!mapping->IsLinear1EncodingConstraint(&ct) &&
+              !ct_is_used_in_an_element_encoding) {
+            some_non_encoding_constraint = true;
+          }
+        }
+      }
+      infos.resize(new_size);
+      const bool is_full_domain_encoded = var_domain.IsIncludedIn(current_d);
+
+      // If we only have encoding constraint, these are already linearized
+      // by the other functions, so we don't add a constraint that is probably
+      // redundant. Otherwise, we combined it with some other constraints which
+      // should help the linear relaxation.
+      if (disjoints.size() > 2 && some_non_encoding_constraint) {
+        // Lets create the two constraints:
+        //  - literal_terms - (X-lb) <= 0
+        //  - literal_terms - (ub-X) <= 0
+        LinearConstraintBuilder lb_ct(m, kMinIntegerValue, -lb);
+        LinearConstraintBuilder ub_ct(m, kMinIntegerValue, ub);
+
+        lb_ct.AddTerm(var, IntegerValue(-1));
+        ub_ct.AddTerm(var, IntegerValue(1));
+
+        VLOG(2) << "Disjoint linear1 implications: " << disjoints.size();
+        for (const Lin1Info& info : disjoints) {
+          if (info.domain.Min() > lb) {
+            CHECK(lb_ct.AddLiteralTerm(info.lit, info.domain.Min() - lb));
+          }
+          if (info.domain.Max() < ub) {
+            CHECK(ub_ct.AddLiteralTerm(info.lit, ub - info.domain.Max()));
+          }
+          VLOG(2) << info.lit << " "
+                  << Domain(info.domain.Min(), info.domain.Max());
+        }
+
+        // These constraint might not pass our PossibleOverflow() since the
+        // max/min activity can be way larger than the domain of the encoded
+        // variable. We disable this in this case.
+        //
+        // TODO(user): the relaxation will be less powerful though. Provide a
+        // way to use them in the LP but not in cuts ? This might not be worth
+        // the effort though.
+        LinearConstraint lb_lin = lb_ct.Build();
+        if (PossibleOverflow(*integer_trail, lb_lin)) continue;
+
+        LinearConstraint ub_lin = ub_ct.Build();
+        if (PossibleOverflow(*integer_trail, ub_lin)) continue;
+
+        for (const Lin1Info& info : disjoints) {
+          (*already_linearized)[info.c] = true;
+        }
+
+        num_added_constraints += 3;
+        relaxation->linear_constraints.push_back(std::move(lb_lin));
+        relaxation->linear_constraints.push_back(std::move(ub_lin));
+
+        if (is_full_domain_encoded && !some_non_full_encoding_constraint) {
+          VLOG(2) << "Domain fully encoded, adding exactly_one constraint";
+          LinearConstraintBuilder exactly_one_ct(m, 1, 1);
+          for (const Lin1Info& info : disjoints) {
+            CHECK(exactly_one_ct.AddLiteralTerm(info.lit, IntegerValue(1)));
+          }
+          relaxation->linear_constraints.push_back(exactly_one_ct.Build());
+        } else {
+          VLOG(2) << "Not fully encoded, adding at_most_one constraint";
+          std::vector<Literal>& amo_lits =
+              relaxation->at_most_ones.emplace_back();
+          amo_lits.reserve(disjoints.size());
+          for (const Lin1Info& info : disjoints) {
+            amo_lits.push_back(info.lit);
+          }
+        }
+      }
+    }
+    VLOG(2) << "==== end ====";
+  }
+
+  if (num_added_constraints > 0 && VLOG_IS_ON(1)) {
+    auto* stats = m->Mutable<SharedStatistics>();
+    if (stats != nullptr) {
+      stats->AddStats(
+          {{"LpRelaxation/linear1_extra_encoding", num_added_constraints}});
+    }
   }
 }
 
@@ -483,7 +693,7 @@ std::vector<Literal> CreateAlternativeLiteralsWithView(
     literals.push_back(lit);
     CHECK(lc_builder.AddLiteralTerm(lit, IntegerValue(1)));
   }
-  model->Add(ExactlyOneConstraint(literals));
+  AddExactlyOneConstraint(literals, model);
   relaxation->linear_constraints.push_back(lc_builder.Build());
   return literals;
 }
@@ -1106,8 +1316,7 @@ void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
     }
     last_level_zero_bound_change_idx =
         no_overlap_helper->LastLevelZeroChangeIdx();
-    for (const auto& component :
-         no_overlap_helper->connected_components().AsVectorOfSpan()) {
+    for (const auto& component : no_overlap_helper->connected_components()) {
       AppendNoOverlap2dRelaxationForComponent(
           component, model, no_overlap_helper, manager, product_decomposer);
     }
@@ -1259,12 +1468,6 @@ void AppendLinMaxRelaxationPart2(IntegerVariable target,
   }
 }
 
-namespace {
-bool LinearizeEnforcedConstraints(Model* model) {
-  return model->GetOrCreate<SatParameters>()->linearization_level() > 1;
-}
-}  // namespace
-
 void AppendLinearConstraintRelaxation(const ConstraintProto& ct, Model* model,
                                       LinearRelaxation* relaxation,
                                       ActivityBoundHelper* activity_helper) {
@@ -1278,9 +1481,7 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& ct, Model* model,
   const IntegerValue rhs_domain_min = IntegerValue(ct.linear().domain(0));
   const IntegerValue rhs_domain_max =
       IntegerValue(ct.linear().domain(ct.linear().domain_size() - 1));
-  if (rhs_domain_min == std::numeric_limits<int64_t>::min() &&
-      rhs_domain_max == std::numeric_limits<int64_t>::max())
-    return;
+  if (rhs_domain_min == kint64min && rhs_domain_max == kint64max) return;
 
   LinearConstraintBuilder lc(model, rhs_domain_min, rhs_domain_max);
   auto* mapping = model->Get<CpModelMapping>();
@@ -1293,24 +1494,28 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& ct, Model* model,
     lc.AddTerm(int_var, IntegerValue(coeff));
   }
   if (!HasEnforcementLiteral(ct)) {
+    // Non reified version.
     relaxation->linear_constraints.push_back(lc.Build());
     return;
   }
 
-  // Reified version.
-  if (!LinearizeEnforcedConstraints(model)) return;
-
-  // We linearize fully reified constraints of size 1 all together for a given
-  // variable. But we need to process half-reified ones or constraint with
-  // more than one enforcement.
-  //
-  // TODO(user): Use cleaner "already loaded" logic, and mark as such constraint
-  // already encoded by code like AppendRelaxationForEqualityEncoding().
-  if (!mapping->IsHalfEncodingConstraint(&ct) && ct.linear().vars_size() <= 1 &&
-      ct.enforcement_literal().size() <= 1) {
+  // Already dealt with ?
+  if (ct.linear().vars().size() == 1 &&
+      mapping->IsLinear1EncodingConstraint(&ct)) {
+    ++relaxation->counters.num_skipped_linear1;
+    return;
+  }
+  if (ct.linear().vars_size() == 1 && ct.linear().domain_size() == 2 &&
+      ct.linear().domain(0) == ct.linear().domain(1) &&
+      ct.linear().coeffs(0) == 1 && ct.enforcement_literal_size() == 1 &&
+      relaxation->already_relaxed_implied_values.contains(
+          {mapping->Literal(ct.enforcement_literal(0)),
+           mapping->Integer(ct.linear().vars(0)), ct.linear().domain(0)})) {
+    ++relaxation->counters.num_skipped_linear1;
     return;
   }
 
+  // Reified version.
   AppendLinearConstraintRelaxation(ct.enforcement_literal(), lc.Build(), model,
                                    relaxation, activity_helper);
 }
@@ -1324,13 +1529,126 @@ void AppendLinearConstraintRelaxation(absl::Span<const int> enforcement,
     relaxation->linear_constraints.push_back(std::move(linear_constraint));
     return;
   }
-  if (!LinearizeEnforcedConstraints(model)) return;
+
+  // Only do that at high linearization level.
+  if (model->GetOrCreate<SatParameters>()->linearization_level() <= 1) {
+    return;
+  }
 
   auto* mapping = model->Get<CpModelMapping>();
   std::vector<Literal> enforcing_literals;
   enforcing_literals.reserve(enforcement.size());
   for (const int enforcement_ref : enforcement) {
     enforcing_literals.push_back(mapping->Literal(enforcement_ref));
+  }
+
+  bool lb_done = false;
+  bool ub_done = false;
+
+  // For multi-enforced linear1, we try to have tighter big-M.
+  // This trigger on miplib/ns1111636.mps
+  //
+  // TODO(user): Generalize to more multi-enforced constraints.
+  if (enforcing_literals.size() > 1 && linear_constraint.num_terms == 1) {
+    // The constraint is enforcements => var \in [rhs_lb, rhs_ub]
+    const IntegerVariable var = linear_constraint.vars[0];
+    const IntegerValue coeff = linear_constraint.coeffs[0];
+    IntegerValue rhs_lb;
+    IntegerValue rhs_ub;
+    if (coeff > 0) {
+      rhs_lb = CeilRatio(linear_constraint.lb, coeff);
+      rhs_ub = FloorRatio(linear_constraint.ub, coeff);
+    } else {
+      rhs_lb = CeilRatio(-linear_constraint.ub, -coeff);
+      rhs_ub = FloorRatio(-linear_constraint.lb, -coeff);
+    }
+
+    const auto* implied_bounds = model->Get<ImpliedBounds>();
+    if (implied_bounds != nullptr) {
+      const auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+      const IntegerValue root_var_lb = integer_trail->LowerBound(var);
+      const IntegerValue root_var_ub = integer_trail->UpperBound(var);
+
+      // TODO(user): We can probably be even tighter by exploiting more than
+      // the best lb/ub implied by a single literal.
+      Literal best_lb_lit;
+      Literal best_ub_lit;
+      IntegerValue best_lb = root_var_lb;
+      IntegerValue best_ub = root_var_ub;
+      for (const Literal lit : enforcing_literals) {
+        const auto [lb, ub] = implied_bounds->GetImpliedBounds(lit, var);
+        if (ub < best_ub) {
+          best_ub_lit = lit;
+          best_ub = ub;
+        }
+        if (lb > best_lb) {
+          best_lb_lit = lit;
+          best_lb = lb;
+        }
+      }
+
+      if (rhs_ub < root_var_ub && best_ub < root_var_ub) {
+        // Rather than having X <= rhs_ub + initialBigM * (sum_not_enforced)
+        //
+        // We can do X <= rhs_ub + initialBigM * Not(best_ub_lit) + tighterBigM
+        // * others;
+        const IntegerValue initialBigM = root_var_ub - rhs_ub;
+        const IntegerValue tighterBigM = best_ub - rhs_ub;
+        LinearConstraintBuilder lc(model, kMinIntegerValue, rhs_ub);
+        if (tighterBigM > 0) {
+          lc.AddTerm(var, IntegerValue(1));
+          CHECK(lc.AddLiteralTerm(best_ub_lit.Negated(), -initialBigM));
+          for (const Literal lit : enforcing_literals) {
+            if (lit == best_ub_lit) continue;
+            CHECK(lc.AddLiteralTerm(lit.Negated(), -tighterBigM));
+          }
+        } else {
+          // The basic best_ub_lit => linear1 is tighter.
+          lc.ResetBounds(kMinIntegerValue, best_ub);
+          lc.AddTerm(var, IntegerValue(1));
+          CHECK(lc.AddLiteralTerm(best_ub_lit.Negated(),
+                                  -(root_var_ub - best_ub)));
+        }
+
+        // Add the tighter constraint.
+        LinearConstraint built_ct = lc.Build();
+        if (!PossibleOverflow(*integer_trail, built_ct)) {
+          ub_done = true;
+          ++relaxation->counters.num_tighter_multi_enforced_linear1;
+          relaxation->linear_constraints.push_back(std::move(built_ct));
+        }
+      }
+
+      if (rhs_lb > root_var_lb && best_lb > root_var_lb) {
+        // X + initialBigM * (sum_not_enforced) >= rhs_lb;
+        const IntegerValue initialBigM = rhs_lb - root_var_lb;
+        const IntegerValue tighterBigM = rhs_lb - best_lb;
+
+        LinearConstraintBuilder lc(model, rhs_lb, kMaxIntegerValue);
+        if (tighterBigM > 0) {
+          lc.AddTerm(var, IntegerValue(1));
+          CHECK(lc.AddLiteralTerm(best_lb_lit.Negated(), initialBigM));
+          for (const Literal lit : enforcing_literals) {
+            if (lit == best_lb_lit) continue;
+            CHECK(lc.AddLiteralTerm(lit.Negated(), tighterBigM));
+          }
+        } else {
+          // The basic best_lb_lit => linear1 is tighter.
+          lc.ResetBounds(best_lb, kMaxIntegerValue);
+          lc.AddTerm(var, IntegerValue(1));
+          CHECK(lc.AddLiteralTerm(best_lb_lit.Negated(),
+                                  (best_lb - root_var_lb)));
+        }
+
+        // Add the tighter constraint.
+        LinearConstraint built_ct = lc.Build();
+        if (!PossibleOverflow(*integer_trail, built_ct)) {
+          lb_done = true;
+          ++relaxation->counters.num_tighter_multi_enforced_linear1;
+          relaxation->linear_constraints.push_back(std::move(built_ct));
+        }
+      }
+    }
   }
 
   // Compute min/max activity.
@@ -1364,7 +1682,7 @@ void AppendLinearConstraintRelaxation(absl::Span<const int> enforcement,
         IntegerValue(activity_helper->ComputeMaxActivity(bool_terms));
   }
 
-  if (linear_constraint.lb > min_activity) {
+  if (!lb_done && linear_constraint.lb > min_activity) {
     // And(ei) => terms >= linear_constraint.lb
     // <=> Sum_i (~ei * (linear_constraint.lb - min_activity)) + terms >=
     // rhs_domain_min
@@ -1382,7 +1700,7 @@ void AppendLinearConstraintRelaxation(absl::Span<const int> enforcement,
       relaxation->linear_constraints.push_back(std::move(built_ct));
     }
   }
-  if (linear_constraint.ub < max_activity) {
+  if (!ub_done && linear_constraint.ub < max_activity) {
     // And(ei) => terms <= linear_constraint.ub
     // <=> Sum_i (~ei * (linear_constraint.ub - max_activity)) + terms <=
     // linear_constraint.ub
@@ -1561,14 +1879,16 @@ void AddIntProdCutGenerator(const ConstraintProto& ct, int linearization_level,
   AffineExpression x = mapping->Affine(ct.int_prod().exprs(0));
   AffineExpression y = mapping->Affine(ct.int_prod().exprs(1));
 
-  IntegerTrail* const integer_trail = m->GetOrCreate<IntegerTrail>();
-  IntegerValue x_lb = integer_trail->LowerBound(x);
-  IntegerValue x_ub = integer_trail->UpperBound(x);
-  IntegerValue y_lb = integer_trail->LowerBound(y);
-  IntegerValue y_ub = integer_trail->UpperBound(y);
-
   // We currently only support variables with non-negative domains.
+  //
+  // TODO(user): do something about it, as if this happened, these constraints
+  // will not appear in the LP at all !
+  IntegerTrail* const integer_trail = m->GetOrCreate<IntegerTrail>();
+  const IntegerValue x_lb = integer_trail->LowerBound(x);
+  const IntegerValue x_ub = integer_trail->UpperBound(x);
   if (x_lb < 0 && x_ub > 0) return;
+  const IntegerValue y_lb = integer_trail->LowerBound(y);
+  const IntegerValue y_ub = integer_trail->UpperBound(y);
   if (y_lb < 0 && y_ub > 0) return;
 
   // Change signs to return to the case where all variables are a domain
@@ -1588,65 +1908,48 @@ void AddIntProdCutGenerator(const ConstraintProto& ct, int linearization_level,
 
 void AppendSquareRelaxation(const ConstraintProto& ct, Model* m,
                             LinearRelaxation* relaxation) {
+  // Constraint is square == x * x.
   if (HasEnforcementLiteral(ct)) return;
   auto* mapping = m->GetOrCreate<CpModelMapping>();
-  IntegerTrail* const integer_trail = m->GetOrCreate<IntegerTrail>();
+  const AffineExpression square = mapping->Affine(ct.int_prod().target());
+  const AffineExpression x = mapping->Affine(ct.int_prod().exprs(0));
 
-  // Constraint is square == x * x.
-  AffineExpression square = mapping->Affine(ct.int_prod().target());
-  AffineExpression x = mapping->Affine(ct.int_prod().exprs(0));
-  IntegerValue x_lb = integer_trail->LowerBound(x);
-  IntegerValue x_ub = integer_trail->UpperBound(x);
-
+  auto* integer_trail = m->GetOrCreate<IntegerTrail>();
+  const IntegerValue x_lb = integer_trail->LevelZeroLowerBound(x);
+  const IntegerValue x_ub = integer_trail->LevelZeroUpperBound(x);
   if (x_lb == x_ub) return;
-
-  // We currently only support variables with non-negative domains.
-  if (x_lb < 0 && x_ub > 0) return;
-
-  // Change the sigh of x if its domain is non-positive.
-  if (x_ub <= 0) {
-    x = x.Negated();
-    const IntegerValue tmp = x_ub;
-    x_ub = -x_lb;
-    x_lb = -tmp;
-  }
 
   // Check for potential overflows.
   if (x_ub > (int64_t{1} << 31)) return;
-  DCHECK_GE(x_lb, 0);
+  if (x_lb < -(int64_t{1} << 31)) return;
 
   relaxation->linear_constraints.push_back(
-      ComputeHyperplanAboveSquare(x, square, x_lb, x_ub, m));
+      ComputeHyperplanAboveSquare(x, square, x_lb, x_ub));
 
   relaxation->linear_constraints.push_back(
-      ComputeHyperplanBelowSquare(x, square, x_lb, m));
+      ComputeHyperplanBelowSquare(x, square, x_lb));
+
   // TODO(user): We could add all or some below_hyperplans.
   if (x_lb + 1 < x_ub) {
-    // The hyperplan will use x_ub - 1 and x_ub.
+    // The hyperplan will be x_ub - 1 and x_ub.
     relaxation->linear_constraints.push_back(
-        ComputeHyperplanBelowSquare(x, square, x_ub - 1, m));
+        ComputeHyperplanBelowSquare(x, square, x_ub - 1));
   }
 }
 
 void AddSquareCutGenerator(const ConstraintProto& ct, int linearization_level,
                            Model* m, LinearRelaxation* relaxation) {
+  // Constraint is square == x * x.
   if (HasEnforcementLiteral(ct)) return;
   auto* mapping = m->GetOrCreate<CpModelMapping>();
-  IntegerTrail* const integer_trail = m->GetOrCreate<IntegerTrail>();
-
-  // Constraint is square == x * x.
   const AffineExpression square = mapping->Affine(ct.int_prod().target());
-  AffineExpression x = mapping->Affine(ct.int_prod().exprs(0));
-  const IntegerValue x_lb = integer_trail->LowerBound(x);
-  const IntegerValue x_ub = integer_trail->UpperBound(x);
+  const AffineExpression x = mapping->Affine(ct.int_prod().exprs(0));
 
-  // We currently only support variables with non-negative domains.
-  if (x_lb < 0 && x_ub > 0) return;
-
-  // Change the sigh of x if its domain is non-positive.
-  if (x_ub <= 0) {
-    x = x.Negated();
-  }
+  // Not need if range is not bigger than 1.
+  auto* integer_trail = m->GetOrCreate<IntegerTrail>();
+  const IntegerValue x_lb = integer_trail->LevelZeroLowerBound(x);
+  const IntegerValue x_ub = integer_trail->LevelZeroUpperBound(x);
+  if (x_lb + 1 >= x_ub) return;
 
   relaxation->cut_generators.push_back(
       CreateSquareCutGenerator(square, x, linearization_level, m));
@@ -1672,7 +1975,7 @@ void AddAllDiffRelaxationAndCutGenerator(const ConstraintProto& ct,
           Domain(integer_trail->FixedValue(expr).value()));
     } else {
       union_of_domains = union_of_domains.UnionWith(
-          integer_trail->InitialVariableDomain(expr.var)
+          integer_trail->LevelZeroDomain(expr.var)
               .MultiplicationBy(expr.coeff.value())
               .AdditionWith(Domain(expr.constant.value())));
     }
@@ -1838,6 +2141,19 @@ void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
   if (ct.lin_max().target().coeffs(0) != 1) return;
   if (ct.lin_max().target().offset() != 0) return;
 
+  // Skip if the target variable appears in one of the expressions, which
+  // should only happen with presolve disabled.
+  if (absl::c_any_of(ct.lin_max().exprs(),
+                     [target_var = ct.lin_max().target().vars(0)](
+                         const LinearExpressionProto& expr) {
+                       for (const int var : expr.vars()) {
+                         if (var == target_var) return true;
+                       }
+                       return false;
+                     })) {
+    return;
+  }
+
   const IntegerVariable target =
       mapping->Integer(ct.lin_max().target().vars(0));
   std::vector<LinearExpression> exprs;
@@ -1906,6 +2222,12 @@ void AppendElementEncodingRelaxation(Model* m, LinearRelaxation* relaxation) {
       LinearConstraint lc = builder.Build();
       if (!PossibleOverflow(*integer_trail, lc)) {
         relaxation->linear_constraints.push_back(std::move(lc));
+        // Mark the linear1 constraint used as redundant for the linear
+        // relaxation.
+        for (const auto& [value, literal] : literal_value_list) {
+          relaxation->already_relaxed_implied_values.insert(
+              {literal, var, value});
+        }
       }
     }
   }
@@ -1930,11 +2252,10 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
     activity_bound_helper.AddAllAtMostOnes(model_proto);
   }
 
-  // Linearize the constraints.
-  for (const auto& ct : model_proto.constraints()) {
-    TryToLinearizeConstraint(model_proto, ct, params.linearization_level(), m,
-                             &relaxation, &activity_bound_helper);
-  }
+  // The linear1 that are loaded as part of variable encoding do not need to
+  // be linearized further.
+  const int num_constraints = model_proto.constraints().size();
+  std::vector<bool> already_linearized(num_constraints, false);
 
   // Linearize the encoding of variable that are fully encoded.
   int num_loose_equality_encoding_relaxations = 0;
@@ -1969,10 +2290,47 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
     }
   }
 
+  if (VLOG_IS_ON(1)) {
+    auto* stats = m->Mutable<SharedStatistics>();
+    if (stats != nullptr) {
+      if (num_loose_equality_encoding_relaxations > 0) {
+        stats->AddStats({{"LpRelaxation/linear1_partial_eq_encoding",
+                          num_loose_equality_encoding_relaxations}});
+      }
+      if (num_tight_equality_encoding_relaxations > 0) {
+        stats->AddStats({{"LpRelaxation/linear1_full_eq_encoding",
+                          num_tight_equality_encoding_relaxations}});
+      }
+      if (num_inequality_encoding_relaxations > 0) {
+        stats->AddStats({{"LpRelaxation/linear1_gt_encoding",
+                          num_inequality_encoding_relaxations}});
+      }
+    }
+  }
+
   // TODO(user): This is similar to AppendRelaxationForEqualityEncoding() above.
   // Investigate if we can merge the code.
   if (params.linearization_level() >= 2) {
     AppendElementEncodingRelaxation(m, &relaxation);
+  }
+
+  // Finally we try to regroup many "complex linear1" into single constraint.
+  // This is done after the "encoding" above.
+  if (params.linearization_level() > 1) {
+    LinearizeComplexLinear1(m, model_proto, &already_linearized, &relaxation);
+  }
+
+  TimeLimit* time_limit = m->GetOrCreate<TimeLimit>();
+  if (time_limit->LimitReached()) return relaxation;
+
+  TimeLimitCheckEveryNCalls time_limit_check(100, time_limit);
+  // Linearize the constraints.
+  for (int c = 0; c < num_constraints; ++c) {
+    if (time_limit_check.LimitReached()) return relaxation;
+    if (already_linearized[c]) continue;
+    const ConstraintProto& ct = model_proto.constraints(c);
+    TryToLinearizeConstraint(model_proto, ct, params.linearization_level(), m,
+                             &relaxation, &activity_bound_helper);
   }
 
   // TODO(user): I am not sure this is still needed. Investigate and explain why
@@ -1991,7 +2349,8 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
                " #tight_equality:",
                num_tight_equality_encoding_relaxations,
                " #loose_equality:", num_loose_equality_encoding_relaxations,
-               " #inequality:", num_inequality_encoding_relaxations);
+               " #inequality:", num_inequality_encoding_relaxations,
+               " #skipped_linear1:", relaxation.counters.num_skipped_linear1);
   }
   if (!relaxation.linear_constraints.empty() ||
       !relaxation.at_most_ones.empty()) {
@@ -2001,12 +2360,22 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
                relaxation.linear_constraints.size(),
                " #at_most_ones:", relaxation.at_most_ones.size());
   }
+  if (relaxation.counters.num_tighter_multi_enforced_linear1 > 0) {
+    SOLVER_LOG(logger, "[LinearRelaxation] num_tighter_multi_enforced_linear1:",
+               relaxation.counters.num_tighter_multi_enforced_linear1);
+  }
 
   // Linearize the at most one constraints. Note that we transform them
   // into maximum "at most one" first and we removes redundant ones.
-  m->GetOrCreate<BinaryImplicationGraph>()->TransformIntoMaxCliques(
-      &relaxation.at_most_ones,
-      SafeDoubleToInt64(params.merge_at_most_one_work_limit()));
+  if (!m->GetOrCreate<BinaryImplicationGraph>()->TransformIntoMaxCliques(
+          &relaxation.at_most_ones,
+          SafeDoubleToInt64(params.merge_at_most_one_work_limit()))) {
+    m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+    return relaxation;
+  }
+
+  if (time_limit->LimitReached()) return relaxation;
+
   for (const std::vector<Literal>& at_most_one : relaxation.at_most_ones) {
     if (at_most_one.empty()) continue;
 

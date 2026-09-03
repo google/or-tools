@@ -12,34 +12,41 @@
 # limitations under the License.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
+
+package(default_visibility = [
+    "//ortools/gurobi:__subpackages__",
+    "//ortools/math_opt:__subpackages__",
+])
 
 cc_library(
     name = "g_gurobi",
-    srcs = [
-        "g_gurobi.cc",
-    ],
-    hdrs = [
-        "g_gurobi.h",
+    srcs = ["g_gurobi.cc"],
+    hdrs = ["g_gurobi.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
     ],
     visibility = [
         "//ortools/gurobi:__subpackages__",
         "//ortools/math_opt:__subpackages__",
     ],
     deps = [
-        "//ortools/base:logging",
-        "//ortools/base:source_location",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/gurobi/isv_public:gurobi_isv",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
-        "//ortools/third_party_solvers:gurobi_environment",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:die_if_null",
         "@abseil-cpp//absl/log:vlog_is_on",
         "@abseil-cpp//absl/memory",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:source_location",
         "@abseil-cpp//absl/types:span",
     ],
 )

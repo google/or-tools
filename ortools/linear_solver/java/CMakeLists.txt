@@ -14,7 +14,7 @@
 set_property(SOURCE linear_solver.swig PROPERTY CPLUSPLUS ON)
 set_property(SOURCE linear_solver.swig PROPERTY SWIG_MODULE_NAME main)
 set_property(SOURCE linear_solver.swig PROPERTY COMPILE_DEFINITIONS
-  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
+  ${OR_TOOLS_COMPILE_DEFINITIONS})
 set_property(SOURCE linear_solver.swig PROPERTY COMPILE_OPTIONS
   -package ${JAVA_PACKAGE}.linearsolver)
 swig_add_library(jnilinear_solver
@@ -32,7 +32,7 @@ target_link_libraries(jnilinear_solver PRIVATE ortools::ortools)
 set_property(SOURCE modelbuilder.swig PROPERTY CPLUSPLUS ON)
 set_property(SOURCE modelbuilder.swig PROPERTY SWIG_MODULE_NAME main)
 set_property(SOURCE modelbuilder.swig PROPERTY COMPILE_DEFINITIONS
-  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
+  ${OR_TOOLS_COMPILE_DEFINITIONS})
 set_property(SOURCE modelbuilder.swig PROPERTY COMPILE_OPTIONS
   -package ${JAVA_PACKAGE}.modelbuilder)
 swig_add_library(jnimodelbuilder
@@ -47,7 +47,7 @@ set_target_properties(jnimodelbuilder PROPERTIES
   POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(jnimodelbuilder PRIVATE ortools::ortools)
 
-if(BUILD_TESTING)
+if(BUILD_JAVA_TESTING)
   file(GLOB JAVA_SRCS "*Test.java")
   foreach(FILE_NAME IN LISTS JAVA_SRCS)
     add_java_test(FILE_NAME ${FILE_NAME})

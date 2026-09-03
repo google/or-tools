@@ -17,9 +17,17 @@
 #include <cstdlib>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/glop/status.h"
+#include "ortools/glop/rank_one_update.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
+#include "ortools/lp_data/scattered_vector.h"
+#include "ortools/lp_data/sparse.h"
+#include "ortools/lp_data/sparse_column.h"
+#include "ortools/util/return_macros.h"
+#include "ortools/util/stats.h"
 
 namespace operations_research {
 namespace glop {
@@ -207,10 +215,10 @@ void BasisFactorization::Clear() {
   right_pool_mapping_.clear();
 }
 
-Status BasisFactorization::Initialize() {
+AbnormalityStatus BasisFactorization::Initialize() {
   SCOPED_TIME_STAT(&stats_);
   Clear();
-  if (IsIdentityBasis()) return Status::OK();
+  if (IsIdentityBasis()) return OkAbnormalityStatus();
   return ComputeFactorization();
 }
 
@@ -225,21 +233,22 @@ RowToColMapping BasisFactorization::ComputeInitialBasis(
 
 bool BasisFactorization::IsRefactorized() const { return num_updates_ == 0; }
 
-Status BasisFactorization::Refactorize() {
-  if (IsRefactorized()) return Status::OK();
+AbnormalityStatus BasisFactorization::Refactorize() {
+  if (IsRefactorized()) return OkAbnormalityStatus();
   return ForceRefactorization();
 }
 
-Status BasisFactorization::ForceRefactorization() {
+AbnormalityStatus BasisFactorization::ForceRefactorization() {
   SCOPED_TIME_STAT(&stats_);
   stats_.refactorization_interval.Add(num_updates_);
   Clear();
   return ComputeFactorization();
 }
 
-Status BasisFactorization::ComputeFactorization() {
+AbnormalityStatus BasisFactorization::ComputeFactorization() {
   CompactSparseMatrixView basis_matrix(&compact_matrix_, &basis_);
-  const Status status = lu_factorization_.ComputeFactorization(basis_matrix);
+  const AbnormalityStatus status =
+      lu_factorization_.ComputeFactorization(basis_matrix);
   last_factorization_deterministic_time_ =
       lu_factorization_.DeterministicTimeOfLastFactorization();
   deterministic_time_ += last_factorization_deterministic_time_;
@@ -255,7 +264,7 @@ Status BasisFactorization::ComputeFactorization() {
 //     (right_update_vector - U.column(leaving_column)).left_update_vector).U
 // new B = L.RankOneUpdateElementatyMatrix(
 //    right_update_vector - U.column(leaving_column), left_update_vector)
-Status BasisFactorization::MiddleProductFormUpdate(
+AbnormalityStatus BasisFactorization::MiddleProductFormUpdate(
     ColIndex entering_col, RowIndex leaving_variable_row) {
   const ColIndex right_index = entering_col < right_pool_mapping_.size()
                                    ? right_pool_mapping_[entering_col]
@@ -295,15 +304,17 @@ Status BasisFactorization::MiddleProductFormUpdate(
   RankOneUpdateElementaryMatrix elementary_update_matrix(
       &storage_, u_index, left_index, scalar_product);
   if (elementary_update_matrix.IsSingular()) {
-    GLOP_RETURN_AND_LOG_ERROR(Status::ERROR_LU, "Degenerate rank-one update.");
+    VLOG(1) << "Degenerate rank-one update.";
+    return AbnormalityStatus(
+        AbnormalityCause::kLuFactorizationDegenerateRankOneUpdate);
   }
   rank_one_factorization_.Update(elementary_update_matrix);
-  return Status::OK();
+  return OkAbnormalityStatus();
 }
 
-Status BasisFactorization::Update(ColIndex entering_col,
-                                  RowIndex leaving_variable_row,
-                                  const ScatteredColumn& direction) {
+AbnormalityStatus BasisFactorization::Update(ColIndex entering_col,
+                                             RowIndex leaving_variable_row,
+                                             const ScatteredColumn& direction) {
   // Note that in addition to the logic here, we also refactorize when we detect
   // numerical imprecisions. There is various tests for that during an
   // iteration.
@@ -330,13 +341,13 @@ Status BasisFactorization::Update(ColIndex entering_col,
   SCOPED_TIME_STAT(&stats_);
   ++num_updates_;
   if (use_middle_product_form_update_) {
-    GLOP_RETURN_IF_ERROR(
+    GLOP_RETURN_IF_ABNORMAL(
         MiddleProductFormUpdate(entering_col, leaving_variable_row));
   } else {
     eta_factorization_.Update(entering_col, leaving_variable_row, direction);
   }
   tau_computation_can_be_optimized_ = false;
-  return Status::OK();
+  return OkAbnormalityStatus();
 }
 
 void BasisFactorization::LeftSolve(ScatteredRow* y) const {

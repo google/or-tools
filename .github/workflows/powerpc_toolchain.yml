@@ -1,13 +1,18 @@
 # ref: https://toolchains.bootlin.com/
 name: powerpc Toolchain
 
-on: [workflow_dispatch]
+on:
+  push:
+    branches:
+      - ci
+      - main
+  workflow_dispatch:
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
   cancel-in-progress: true
 
-# Building using the github runner environement directly.
+# Building using the github runner environment directly.
 jobs:
   powerpc:
     strategy:
@@ -17,7 +22,7 @@ jobs:
     name: Linux•Toolchain ${{matrix.targets}}
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: Build env stage
       run: make --directory=cmake toolchain_${{matrix.targets}}_env
     - name: Build devel stage

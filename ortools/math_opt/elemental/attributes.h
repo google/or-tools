@@ -22,7 +22,6 @@
 #include <type_traits>
 
 #include "absl/strings/string_view.h"
-#include "ortools/base/array.h"
 #include "ortools/math_opt/elemental/arrays.h"
 #include "ortools/math_opt/elemental/elements.h"
 #include "ortools/math_opt/elemental/symmetry.h"
@@ -86,7 +85,7 @@ struct BoolAttr0TypeDescriptor
 
   enum class AttrType { kMaximize };
 
-  static constexpr auto kAttrDescriptors = gtl::to_array<AttrDescriptor>(
+  static constexpr auto kAttrDescriptors = std::to_array<AttrDescriptor>(
       {{.name = "maximize", .default_value = false, .key_types = {}}});
 };
 
@@ -100,7 +99,7 @@ struct BoolAttr1TypeDescriptor
     kIndConActivateOnZero,
   };
 
-  static constexpr auto kAttrDescriptors = gtl::to_array<AttrDescriptor>(
+  static constexpr auto kAttrDescriptors = std::to_array<AttrDescriptor>(
       {{.name = "variable_integer",
         .default_value = false,
         .key_types = {ElementType::kVariable}},
@@ -121,7 +120,7 @@ struct IntAttr0TypeDescriptor
     kObjPriority,
   };
 
-  static constexpr auto kAttrDescriptors = gtl::to_array<AttrDescriptor>({
+  static constexpr auto kAttrDescriptors = std::to_array<AttrDescriptor>({
       {.name = "objective_priority", .default_value = 0, .key_types = {}},
   });
 };
@@ -135,7 +134,7 @@ struct IntAttr1TypeDescriptor
     kAuxObjPriority,
   };
 
-  static constexpr auto kAttrDescriptors = gtl::to_array<AttrDescriptor>({
+  static constexpr auto kAttrDescriptors = std::to_array<AttrDescriptor>({
       {.name = "auxiliary_objective_priority",
        .default_value = 0,
        .key_types = {ElementType::kAuxiliaryObjective}},
@@ -149,7 +148,7 @@ struct DoubleAttr0TypeDescriptor
 
   enum class AttrType { kObjOffset };
 
-  static constexpr auto kAttrDescriptors = gtl::to_array<AttrDescriptor>(
+  static constexpr auto kAttrDescriptors = std::to_array<AttrDescriptor>(
       {{.name = "objective_offset", .default_value = 0.0, .key_types = {}}});
 };
 
@@ -171,7 +170,7 @@ struct DoubleAttr1TypeDescriptor
     kIndConUb,
   };
 
-  static constexpr auto kAttrDescriptors = gtl::to_array<AttrDescriptor>({
+  static constexpr auto kAttrDescriptors = std::to_array<AttrDescriptor>({
       {.name = "variable_lower_bound",
        .default_value = -std::numeric_limits<double>::infinity(),
        .key_types = {ElementType::kVariable}},
@@ -217,7 +216,7 @@ struct DoubleAttr2TypeDescriptor
     kIndConLinCoef
   };
 
-  static constexpr auto kAttrDescriptors = gtl::to_array<AttrDescriptor>({
+  static constexpr auto kAttrDescriptors = std::to_array<AttrDescriptor>({
       {.name = "linear_constraint_coefficient",
        .default_value = 0.0,
        .key_types = {ElementType::kLinearConstraint, ElementType::kVariable}},
@@ -244,7 +243,7 @@ struct SymmetricDoubleAttr2TypeDescriptor
     kObjQuadCoef,
   };
 
-  static constexpr auto kAttrDescriptors = gtl::to_array<AttrDescriptor>({
+  static constexpr auto kAttrDescriptors = std::to_array<AttrDescriptor>({
       {.name = "objective_quadratic_coefficient",
        .default_value = 0.0,
        .key_types = {ElementType::kVariable, ElementType::kVariable}},
@@ -262,7 +261,7 @@ struct SymmetricDoubleAttr3TypeDescriptor
     kQuadConQuadCoef,
   };
 
-  static constexpr auto kAttrDescriptors = gtl::to_array<AttrDescriptor>({
+  static constexpr auto kAttrDescriptors = std::to_array<AttrDescriptor>({
       {.name = "quadratic_constraint_quadratic_coefficient",
        .default_value = 0.0,
        .key_types = {ElementType::kQuadraticConstraint, ElementType::kVariable,
@@ -279,7 +278,7 @@ struct VariableAttr1TypeDescriptor
     kIndConIndicator,
   };
 
-  static constexpr auto kAttrDescriptors = gtl::to_array<AttrDescriptor>({
+  static constexpr auto kAttrDescriptors = std::to_array<AttrDescriptor>({
       {.name = "indicator_constraint_indicator",
        .default_value = VariableId(),
        .key_types = {ElementType::kIndicatorConstraint}},
@@ -312,7 +311,6 @@ using VariableAttr1 = VariableAttr1TypeDescriptor::AttrType;
 template <typename AttrT>
 static constexpr int GetIndexIfAttr() {
   using Tuple = AllAttrTypeDescriptors;
-  // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
   return ApplyOnIndexRange<std::tuple_size_v<Tuple>>([]<int... i>() {
     return ((std::is_same_v<std::remove_cv_t<std::remove_reference_t<AttrT>>,
                             typename std::tuple_element_t<i, Tuple>::AttrType>

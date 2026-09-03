@@ -118,6 +118,102 @@ TEST_P(SimpleLpTest, ProtoNonIncrementalSolve) {
   }
 }
 
+TEST_P(SimpleLpTest, EmptyModel) {
+  Model model;
+  ASSERT_OK_AND_ASSIGN(const SolveResult result, SimpleSolve(model));
+  EXPECT_THAT(result, IsOptimalWithSolution(0.0, {}));
+  // Highs doesn't return a dual solution for offset only problems for unknown
+  // reasons.
+  if (GetParam().supports_duals &&
+      GetParam().solver_type != SolverType::kHighs) {
+    EXPECT_THAT(result, IsOptimalWithDualSolution(0.0, {}, {}));
+  }
+}
+
+TEST_P(SimpleLpTest, OffsetOnlyMinimization) {
+  Model model;
+  model.Minimize(4.0);
+  ASSERT_OK_AND_ASSIGN(const SolveResult result, SimpleSolve(model));
+  EXPECT_THAT(result, IsOptimalWithSolution(4.0, {}));
+  // Highs doesn't return a dual solution for offset only problems for unknown
+  // reasons.
+  if (GetParam().supports_duals &&
+      GetParam().solver_type != SolverType::kHighs) {
+    EXPECT_THAT(result, IsOptimalWithDualSolution(4.0, {}, {}));
+  }
+}
+
+TEST_P(SimpleLpTest, OffsetOnlyMaximization) {
+  Model model;
+  model.Maximize(4.0);
+  ASSERT_OK_AND_ASSIGN(const SolveResult result, SimpleSolve(model));
+  EXPECT_THAT(result, IsOptimalWithSolution(4.0, {}));
+  // Highs doesn't return a dual solution for offset only problems for unknown
+  // reasons.
+  if (GetParam().supports_duals &&
+      GetParam().solver_type != SolverType::kHighs) {
+    EXPECT_THAT(result, IsOptimalWithDualSolution(4.0, {}, {}));
+  }
+}
+
+// Primal:
+// min 2x + 4
+// x >= -1
+//
+// Dual:
+// max -r + 4
+// s.t. r <= 2
+//
+// (r is the reduced cost for x).
+//
+// Optimal solution:
+//   obj = 2
+//   x* = -1
+//   r* = 2
+TEST_P(SimpleLpTest, OffsetMinimization) {
+  if (GetParam().solver_type == SolverType::kGlpk &&
+      GetParam().parameters.lp_algorithm == LPAlgorithm::kBarrier) {
+    GTEST_SKIP() << "glpk interior point buggy, errors on this problem";
+  }
+  Model model;
+  const Variable x = model.AddContinuousVariable(-1.0, kInf, "x");
+  model.Minimize(2 * x + 4);
+  ASSERT_OK_AND_ASSIGN(const SolveResult result, SimpleSolve(model));
+  EXPECT_THAT(result, IsOptimalWithSolution(2.0, {{x, -1.0}}));
+  if (GetParam().supports_duals) {
+    EXPECT_THAT(result, IsOptimalWithDualSolution(2.0, {}, {{x, 2.0}}));
+  }
+}
+
+// Primal:
+// max 2x + 4
+// x <= 2
+//
+// Dual:
+// min 2r + 4
+// s.t. r >= 2
+//
+// (r is the reduced cost for x).
+//
+// Optimal solution:
+//   obj = 8
+//   x* = 2
+//   r* = 2
+TEST_P(SimpleLpTest, OffsetMaximization) {
+  if (GetParam().solver_type == SolverType::kGlpk &&
+      GetParam().parameters.lp_algorithm == LPAlgorithm::kBarrier) {
+    GTEST_SKIP() << "glpk interior point buggy, errors on this problem";
+  }
+  Model model;
+  const Variable x = model.AddContinuousVariable(-kInf, 2.0, "x");
+  model.Maximize(2 * x + 4);
+  ASSERT_OK_AND_ASSIGN(const SolveResult result, SimpleSolve(model));
+  EXPECT_THAT(result, IsOptimalWithSolution(8.0, {{x, 2.0}}));
+  if (GetParam().supports_duals) {
+    EXPECT_THAT(result, IsOptimalWithDualSolution(8.0, {}, {{x, 2.0}}));
+  }
+}
+
 // TODO(b/184447031): change descriptions to avoid d(y, r)/d_max(y,r) and
 // go/mathopt-doc-math#dual
 

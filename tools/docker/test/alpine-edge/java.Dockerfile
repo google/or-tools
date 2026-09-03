@@ -11,8 +11,8 @@ ENTRYPOINT ["/bin/sh", "-c"]
 CMD ["/bin/sh"]
 
 # Install Java
-ENV JAVA_HOME=/usr/lib/jvm/java-1.8-openjdk
-RUN apk add --no-cache openjdk8 maven
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+RUN apk add --no-cache openjdk-21-jdk maven
 
 WORKDIR /root
 ADD or-tools_amd64_alpine-edge_java_v*.tar.gz .

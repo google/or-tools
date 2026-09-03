@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/integer_base.h"
@@ -52,7 +53,7 @@ class ZeroHalfCutHelper {
                         absl::Span<const IntegerValue> coeffs, IntegerValue lb,
                         IntegerValue ub);
   std::vector<std::vector<std::pair<glop::RowIndex, IntegerValue>>>
-  InterestingCandidates(ModelRandomGenerator* random);
+  InterestingCandidates(absl::BitGenRef random);
 
   // Visible for testing.
   void Reset(int size);

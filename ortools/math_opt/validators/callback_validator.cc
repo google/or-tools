@@ -19,12 +19,13 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "google/protobuf/duration.pb.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/model_summary.h"
@@ -36,7 +37,6 @@
 #include "ortools/math_opt/validators/scalar_validator.h"
 #include "ortools/math_opt/validators/solution_validator.h"
 #include "ortools/math_opt/validators/sparse_vector_validator.h"
-#include "ortools/port/proto_utils.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -55,7 +55,7 @@ absl::Status IsEventRegistered(
     }
   }
   return absl::InvalidArgumentError(absl::StrCat(
-      "event ", ProtoEnumToString(event),
+      "event ", CallbackEventProto_Name(event),
       " not part of the registered_events in callback_registration"));
 }
 
@@ -64,17 +64,18 @@ absl::Status ValidateGeneratedLinearConstraint(
     const bool add_cuts, const bool add_lazy_constraints,
     const ModelSummary& model_summary) {
   const auto coefficients = MakeView(linear_constraint.linear_expression());
-  RETURN_IF_ERROR(CheckIdsAndValues(
+  ABSL_RETURN_IF_ERROR(CheckIdsAndValues(
       coefficients,
       {.allow_positive_infinity = false, .allow_negative_infinity = false}))
       << "invalid linear_constraint coefficients";
-  RETURN_IF_ERROR(CheckIdsSubset(coefficients.ids(), model_summary.variables,
-                                 "cut variables", "model IDs"));
-  RETURN_IF_ERROR(CheckScalar(linear_constraint.lower_bound(),
-                              {.allow_positive_infinity = false}))
+  ABSL_RETURN_IF_ERROR(CheckIdsSubset(coefficients.ids(),
+                                      model_summary.variables, "cut variables",
+                                      "model IDs"));
+  ABSL_RETURN_IF_ERROR(CheckScalar(linear_constraint.lower_bound(),
+                                   {.allow_positive_infinity = false}))
       << "for GeneratedLinearConstraint.lower_bound";
-  RETURN_IF_ERROR(CheckScalar(linear_constraint.upper_bound(),
-                              {.allow_negative_infinity = false}))
+  ABSL_RETURN_IF_ERROR(CheckScalar(linear_constraint.upper_bound(),
+                                   {.allow_negative_infinity = false}))
       << "for GeneratedLinearConstraint.upper_bound";
   if (linear_constraint.lower_bound() == -kInf &&
       linear_constraint.upper_bound() == kInf) {
@@ -95,22 +96,15 @@ absl::Status ValidateGeneratedLinearConstraint(
   return absl::OkStatus();
 }
 
-template <typename T>
-struct ProtoEnumFormatter {
-  void operator()(std::string* const out, const T value) {
-    out->append(ProtoEnumToString(value));
-  }
-};
-
 }  // namespace
 
 absl::Status ValidateCallbackRegistration(
     const CallbackRegistrationProto& callback_registration,
     const ModelSummary& model_summary) {
-  RETURN_IF_ERROR(ValidateSparseVectorFilter(
+  ABSL_RETURN_IF_ERROR(ValidateSparseVectorFilter(
       callback_registration.mip_solution_filter(), model_summary.variables))
       << "invalid CallbackRegistrationProto.mip_solution_filter";
-  RETURN_IF_ERROR(ValidateSparseVectorFilter(
+  ABSL_RETURN_IF_ERROR(ValidateSparseVectorFilter(
       callback_registration.mip_node_filter(), model_summary.variables))
       << "invalid CallbackRegistrationProto.mip_node_filter";
   // Unfortunately the range iterator return ints and not CallbackEventProtos.
@@ -154,7 +148,7 @@ absl::Status ValidateCallbackDataProto(
     const CallbackRegistrationProto& callback_registration,
     const ModelSummary& model_summary) {
   const CallbackEventProto event = cb_data.event();
-  RETURN_IF_ERROR(IsEventRegistered(event, callback_registration))
+  ABSL_RETURN_IF_ERROR(IsEventRegistered(event, callback_registration))
       << "invalid CallbackDataProto.event for given CallbackRegistrationProto";
 
   const bool has_primal_solution = cb_data.has_primal_solution_vector();
@@ -162,18 +156,19 @@ absl::Status ValidateCallbackDataProto(
       event != CALLBACK_EVENT_MIP_NODE) {
     return absl::InvalidArgumentError(
         absl::StrCat("can't provide primal_solution_vector for event ", event,
-                     " (", ProtoEnumToString(event), ")"));
+                     " (", CallbackEventProto_Name(event), ")"));
   }
 
 #ifdef RETURN_IF_SCALAR
 #error Collision in macro definition RETURN_IF_SCALAR
 #endif
-#define RETURN_IF_SCALAR(stat, value, option)                                 \
-  do {                                                                        \
-    if (stat.has_##value()) {                                                 \
-      RETURN_IF_ERROR(CheckScalar(static_cast<double>(stat.value()), option)) \
-          << "Invalid CallbackDataProto." << #stat << "." << #value;          \
-    }                                                                         \
+#define RETURN_IF_SCALAR(stat, value, option)                        \
+  do {                                                               \
+    if (stat.has_##value()) {                                        \
+      ABSL_RETURN_IF_ERROR(                                          \
+          CheckScalar(static_cast<double>(stat.value()), option))    \
+          << "Invalid CallbackDataProto." << #stat << "." << #value; \
+    }                                                                \
   } while (false)
   const DoubleOptions nonan;
   const DoubleOptions finite = {.allow_positive_infinity = false,
@@ -212,9 +207,9 @@ absl::Status ValidateCallbackDataProto(
   RETURN_IF_SCALAR(mip_stats, cutting_planes_in_lp, noneg);
 
   // Check runtime.
-  RETURN_IF_ERROR(CheckScalar(cb_data.runtime().seconds(), noneg))
+  ABSL_RETURN_IF_ERROR(CheckScalar(cb_data.runtime().seconds(), noneg))
       << "Invalid CallbackDataProto.runtime.seconds";
-  RETURN_IF_ERROR(CheckScalar(cb_data.runtime().nanos(), noneg))
+  ABSL_RETURN_IF_ERROR(CheckScalar(cb_data.runtime().nanos(), noneg))
       << "Invalid CallbackDataProto.runtime.nanos";
 #undef RETURN_IF_SCALAR
 
@@ -227,13 +222,13 @@ absl::Status ValidateCallbackDataProto(
             event == CALLBACK_EVENT_MIP_NODE
                 ? callback_registration.mip_node_filter()
                 : callback_registration.mip_solution_filter();
-        RETURN_IF_ERROR(ValidatePrimalSolutionVector(
+        ABSL_RETURN_IF_ERROR(ValidatePrimalSolutionVector(
             cb_data.primal_solution_vector(), filter, model_summary))
             << "invalid CallbackDataProto.primal_solution_vector";
       } else if (event == CALLBACK_EVENT_MIP_SOLUTION) {
         return absl::InvalidArgumentError(
             absl::StrCat("must provide primal_solution_vector for event ",
-                         event, " (", ProtoEnumToString(event), ")"));
+                         event, " (", CallbackEventProto_Name(event), ")"));
       }
       break;
     }
@@ -269,25 +264,26 @@ absl::Status ValidateCallbackResultProto(
         callback_event != CALLBACK_EVENT_MIP_SOLUTION) {
       return absl::InvalidArgumentError(absl::StrCat(
           "invalid CallbackResultProto, can't return cuts for callback_event ",
-          callback_event, "(", ProtoEnumToString(callback_event), ")"));
+          callback_event, "(", CallbackEventProto_Name(callback_event), ")"));
     }
     for (const CallbackResultProto::GeneratedLinearConstraint& cut :
          callback_result.cuts()) {
-      RETURN_IF_ERROR(ValidateGeneratedLinearConstraint(
+      ABSL_RETURN_IF_ERROR(ValidateGeneratedLinearConstraint(
           cut, callback_registration.add_cuts(),
           callback_registration.add_lazy_constraints(), model_summary));
     }
   }
   if (!callback_result.suggested_solutions().empty()) {
-    if (callback_event != CALLBACK_EVENT_MIP_NODE) {
+    if (callback_event != CALLBACK_EVENT_MIP_NODE &&
+        callback_event != CALLBACK_EVENT_MIP_SOLUTION) {
       return absl::InvalidArgumentError(absl::StrCat(
           "invalid CallbackResultProto, can't return suggested solutions for "
           "callback_event ",
-          callback_event, "(", ProtoEnumToString(callback_event), ")"));
+          callback_event, "(", CallbackEventProto_Name(callback_event), ")"));
     }
     for (const SparseDoubleVectorProto& primal_solution_vector :
          callback_result.suggested_solutions()) {
-      RETURN_IF_ERROR(ValidatePrimalSolutionVector(
+      ABSL_RETURN_IF_ERROR(ValidatePrimalSolutionVector(
           primal_solution_vector, SparseVectorFilterProto(), model_summary))
           << "invalid CallbackResultProto.suggested_solutions";
     }
@@ -313,11 +309,13 @@ absl::Status CheckRegisteredCallbackEvents(
   std::sort(unsupported_events.begin(), unsupported_events.end());
 
   const bool plural = unsupported_events.size() >= 2;
-  return absl::InvalidArgumentError(
-      absl::StrCat("event", (plural ? "s { " : " "),
-                   absl::StrJoin(unsupported_events, ", ",
-                                 ProtoEnumFormatter<CallbackEventProto>()),
-                   (plural ? " } are" : " is"), " not supported"));
+  return absl::InvalidArgumentError(absl::StrCat(
+      "event", (plural ? "s { " : " "),
+      absl::StrJoin(unsupported_events, ", ",
+                    [](std::string* const out, const CallbackEventProto value) {
+                      absl::StrAppend(out, CallbackEventProto_Name(value));
+                    }),
+      (plural ? " } are" : " is"), " not supported"));
 }
 
 }  // namespace math_opt

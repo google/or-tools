@@ -17,8 +17,11 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
-#include "ortools/base/logging.h"
+#include "absl/strings/string_view.h"
+#include "absl/time/time.h"
+#include "ortools/math_opt/solvers/gscip/gscip.pb.h"
 
 namespace operations_research {
 

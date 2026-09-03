@@ -65,7 +65,7 @@ class ObjectiveShavingSolver : public SubSolver {
   std::atomic<bool> stop_current_chunk_;
 
   // Local singleton repository and presolved local model.
-  std::unique_ptr<Model> local_sat_model_;
+  std::unique_ptr<Model> local_model_;
   std::unique_ptr<google::protobuf::Arena> arena_;
   CpModelProto* local_proto_;
 
@@ -95,7 +95,6 @@ class VariablesShavingSolver : public SubSolver {
   };
 
   VariablesShavingSolver(const SatParameters& local_parameters,
-                         NeighborhoodGeneratorHelper* helper,
                          SharedClasses* shared);
 
   ~VariablesShavingSolver() override;

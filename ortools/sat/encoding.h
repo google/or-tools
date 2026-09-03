@@ -27,13 +27,13 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
@@ -235,7 +235,7 @@ class ObjectiveEncoder {
       : params_(*model->GetOrCreate<SatParameters>()),
         sat_solver_(model->GetOrCreate<SatSolver>()),
         implications_(model->GetOrCreate<BinaryImplicationGraph>()),
-        random_(model->GetOrCreate<ModelRandomGenerator>()) {}
+        random_(*model->GetOrCreate<ModelRandomGenerator>()) {}
 
   // Updates the encoding using the given core. The literals in the core must
   // match the order in nodes. Returns false if the model become infeasible.
@@ -273,7 +273,7 @@ class ObjectiveEncoder {
   const SatParameters& params_;
   SatSolver* sat_solver_;
   BinaryImplicationGraph* implications_;
-  ModelRandomGenerator* random_;
+  absl::BitGenRef random_;
 };
 
 }  // namespace sat

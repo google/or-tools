@@ -15,6 +15,7 @@
 #define ORTOOLS_SET_COVER_SET_COVER_READER_H_
 
 #include "absl/strings/string_view.h"
+#include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_model.h"
 
 namespace operations_research {
@@ -28,6 +29,65 @@ namespace operations_research {
 
 // Also, note that the indices in the files, when mentioned, start from 1, while
 // SetCoverModel starts from 0, The translation is done at read time.
+
+enum class SetCoverFormat {
+  EMPTY,      // returned by ParseFileFormat when the format is not recognized.
+  ORLIB,      // when "orlib" is passed to ParseFileFormat.
+  RAIL,       // when "rail" is passed to ParseFileFormat.
+  FIMI,       // when "fimi" is passed to ParseFileFormat,
+  PROTO,      // when "proto" is passed to ParseFileFormat.proto.
+  PROTO_BIN,  // when "proto_bin" is passed to ParseFileFormat.
+  TXT,        // when "txt" is passed to ParseFileFormat (for solutions only).
+};
+
+// Parses a string into a SetCoverFormat. Returns EMPTY if the format is not
+// recognized. The string is case insensitive.
+SetCoverFormat ParseFileFormat(absl::string_view format_name);
+
+// Reads a set cover problem from a file. The format is specified by the
+// SetCoverFormat. The valid formats are ORLIB, RAIL, FIMI, PROTO, PROTO_BIN.
+SetCoverModel ReadModel(absl::string_view filename, SetCoverFormat format);
+
+// Shortcut passing a string instead of a SetCoverFormat.
+inline SetCoverModel ReadModel(absl::string_view filename,
+                               absl::string_view format) {
+  return ReadModel(filename, ParseFileFormat(format));
+}
+
+// Reads a set cover solution from a file. The format is specified by the
+// SetCoverFormat. The valid formats are TXT, PROTO, PROTO_BIN.
+SubsetBoolVector ReadSolution(absl::string_view filename,
+                              SetCoverFormat format);
+
+// Shortcut passing a string instead of a SetCoverFormat.
+inline SubsetBoolVector ReadSolution(absl::string_view filename,
+                                     absl::string_view format) {
+  return ReadSolution(filename, ParseFileFormat(format));
+}
+
+// Writes a set cover problem to a file. The format is specified by the
+// SetCoverFormat. The valid formats are ORLIB, RAIL, FIMI, PROTO, PROTO_BIN.
+void WriteModel(const SetCoverModel& model, absl::string_view filename,
+                SetCoverFormat format);
+
+// Shortcut passing a string instead of a SetCoverFormat.
+inline void WriteModel(const SetCoverModel& model, absl::string_view filename,
+                       absl::string_view format) {
+  WriteModel(model, filename, ParseFileFormat(format));
+}
+
+// Writes a set cover solution to a file. The format is specified by the
+// SetCoverFormat. The valid formats are TXT, PROTO, PROTO_BIN.
+void WriteSolution(const SetCoverModel& model, const SubsetBoolVector& solution,
+                   absl::string_view filename, SetCoverFormat format);
+
+// Shortcut passing a string instead of a SetCoverFormat.
+inline void WriteSolution(const SetCoverModel& model,
+                          const SubsetBoolVector& solution,
+                          absl::string_view filename,
+                          absl::string_view format) {
+  WriteSolution(model, solution, filename, ParseFileFormat(format));
+}
 
 // Reads a rail set cover problem create by Beasley and returns a SetCoverModel.
 // The format of all of these 80 data files is:
@@ -86,6 +146,15 @@ SubsetBoolVector ReadSetCoverSolutionText(absl::string_view filename);
 // The solution is 0-indexed.
 SubsetBoolVector ReadSetCoverSolutionProto(absl::string_view filename,
                                            bool binary);
+
+// Reads a solution in the following format (space-separated):
+// cost(as a double) subset_index subset_index subset_index ...
+// The subset_indexes are not sorted, and it is not said how many there are of
+// them. The function takes a size as a parameter, and returns a vector of that
+// size (if there are subset_indexes out of range, this is an error).
+// If the file does not exist, returns a vector of false values.
+SubsetBoolVector ReadSetCoverSolutionDat(absl::string_view filename,
+                                         BaseInt num_subsets);
 
 // Writes a set cover solution to a text file.
 // The format of the file is:

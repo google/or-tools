@@ -17,9 +17,9 @@
 #include <ostream>
 #include <utility>
 
+#include "absl/log/check.h"
 #include "absl/status/statusor.h"
 #include "gtest/gtest.h"
-#include "ortools/base/logging.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
 namespace operations_research::math_opt {

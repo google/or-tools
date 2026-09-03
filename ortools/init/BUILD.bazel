@@ -12,6 +12,7 @@
 # limitations under the License.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -19,14 +20,16 @@ cc_library(
     name = "init",
     srcs = ["init.cc"],
     hdrs = ["init.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:base_export",
+        "//ortools/base:log_severity",
+        "//ortools/base:version",
         "//ortools/sat:cp_model_solver",
-        "//ortools/sat:cp_model_solver_helpers",
         "//ortools/sat:cp_model_utils",
         "//ortools/third_party_solvers:gurobi_environment",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/strings:string_view",

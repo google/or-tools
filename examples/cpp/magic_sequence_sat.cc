@@ -22,17 +22,18 @@
 #include <string>
 #include <vector>
 
-#include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
 
 ABSL_FLAG(int, size, 50, "Size of the problem.");
-ABSL_FLAG(std::string, params, "log_search_progress:true,num_search_workers:8",
+ABSL_FLAG(std::string, params, "log_search_progress:true,num_workers:8",
           "Sat parameters.");
 
 namespace operations_research {

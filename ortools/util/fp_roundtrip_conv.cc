@@ -24,12 +24,12 @@
 
 #include "absl/base/attributes.h"
 #include "absl/log/check.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/charconv.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/status_builder.h"
 
 namespace operations_research {
@@ -127,7 +127,7 @@ absl::StatusOr<double> RoundTripDoubleFormat::Parse(
   const auto result = absl::from_chars(begin, end, ret);
   if (result.ec == std::errc()) {
     if (result.ptr != end) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << '"' << absl::CEscape(str_value)
              << "\" has unexpected suffix starting at index "
              << (result.ptr - begin);
@@ -136,14 +136,14 @@ absl::StatusOr<double> RoundTripDoubleFormat::Parse(
   }
   switch (result.ec) {
     case std::errc::invalid_argument:
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << '"' << absl::CEscape(str_value) << "\" is not a valid double";
     case std::errc::result_out_of_range:
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << '"' << absl::CEscape(str_value)
              << "\" does not fit in a double precision float";
     default:
-      return util::InternalErrorBuilder()
+      return ortools::InternalErrorBuilder()
              << "parsing of \"" << absl::CEscape(str_value)
              << "\" failed with an unexpected error: "
              << std::make_error_code(result.ec).message();

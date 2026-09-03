@@ -20,13 +20,11 @@ https://yetanothermathprogrammingconsultant.blogspot.com/2021/10/2d-knapsack-pro
 
 import io
 
-from absl import app
-from absl import flags
 import numpy as np
 import pandas as pd
+from absl import app, flags
 
 from ortools.sat.python import cp_model
-
 
 _OUTPUT_PROTO = flags.DEFINE_string(
     "output_proto", "", "Output file to write the cp_model proto to."

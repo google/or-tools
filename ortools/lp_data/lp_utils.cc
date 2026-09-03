@@ -14,6 +14,7 @@
 #include "ortools/lp_data/lp_utils.h"
 
 #include <algorithm>
+#include <cmath>
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"

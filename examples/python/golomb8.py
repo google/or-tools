@@ -23,6 +23,7 @@ of the rule.
 """
 
 from absl import app
+
 from ortools.constraint_solver import pywrapcp
 
 # We disable the following warning because it is a false positive on constraints

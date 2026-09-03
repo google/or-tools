@@ -37,6 +37,7 @@
 #include "ortools/math_opt/solver_tests/qp_tests.h"
 #include "ortools/math_opt/solver_tests/second_order_cone_tests.h"
 #include "ortools/math_opt/solver_tests/status_tests.h"
+#include "ortools/math_opt/solver_tests/test_models.h"
 #include "ortools/third_party_solvers/xpress_environment.h"
 
 /** A string in the log file that indicates that the solution process
@@ -124,15 +125,13 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     XpressCallbackTest, CallbackTest,
     testing::ValuesIn(
-        {CallbackTestParams(SolverType::kXpress,
-                            /*integer_variables=*/false,
+        {CallbackTestParams(SolverType::kXpress, TestModelClass::kLp,
                             /*add_lazy_constraints=*/false,
                             /*add_cuts=*/false,
                             /*supported_events=*/{},
                             /*all_solutions=*/std::nullopt,
                             /*reaches_cut_callback*/ std::nullopt),
-         CallbackTestParams(SolverType::kXpress,
-                            /*integer_variables=*/true,
+         CallbackTestParams(SolverType::kXpress, TestModelClass::kIp,
                             /*add_lazy_constraints=*/false,
                             /*add_cuts=*/false,
                             /*supported_events=*/{},
@@ -141,17 +140,16 @@ INSTANTIATE_TEST_SUITE_P(
 
 INSTANTIATE_TEST_SUITE_P(
     XpressInvalidInputTest, InvalidInputTest,
-    testing::ValuesIn(
-        {InvalidInputTestParameters(SolverType::kXpress,
-                                    /*use_integer_variables=*/true),
-         InvalidInputTestParameters(SolverType::kXpress,
-                                    /*use_integer_variables=*/false)}));
+    testing::ValuesIn({InvalidInputTestParameters(SolverType::kXpress,
+                                                  TestModelClass::kIp),
+                       InvalidInputTestParameters(SolverType::kXpress,
+                                                  TestModelClass::kLp)}));
 
 InvalidParameterTestParams InvalidObjectiveLimitParameters() {
   SolveParameters params;
   params.objective_limit = 1.5;
   return InvalidParameterTestParams(
-      SolverType::kXpress, std::move(params),
+      SolverType::kXpress, TestModelClass::kLp, std::move(params),
       {"XpressSolver does not support objective_limit"});
 }
 
@@ -159,7 +157,7 @@ InvalidParameterTestParams InvalidBestBoundLimitParameters() {
   SolveParameters params;
   params.best_bound_limit = 1.5;
   return InvalidParameterTestParams(
-      SolverType::kXpress, std::move(params),
+      SolverType::kXpress, TestModelClass::kLp, std::move(params),
       {"XpressSolver does not support best_bound_limit"});
 }
 
@@ -167,7 +165,7 @@ InvalidParameterTestParams InvalidSolutionPoolSizeParameters() {
   SolveParameters params;
   params.solution_pool_size = 2;
   return InvalidParameterTestParams(
-      SolverType::kXpress, std::move(params),
+      SolverType::kXpress, TestModelClass::kLp, std::move(params),
       {"XpressSolver does not support solution_pool_size"});
 }
 
@@ -181,11 +179,11 @@ INSTANTIATE_TEST_SUITE_P(
     testing::ValuesIn(
         {GenericTestParameters(SolverType::kXpress,
                                /*support_interrupter=*/true,
-                               /*integer_variables=*/false,
+                               TestModelClass::kLp,
                                /*expected_log=*/OPTIMAL_SOLUTION_FOUND_LP),
          GenericTestParameters(SolverType::kXpress,
                                /*support_interrupter=*/true,
-                               /*integer_variables=*/true,
+                               TestModelClass::kIp,
                                /*expected_log=*/OPTIMAL_SOLUTION_FOUND_MIP)}));
 
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TimeLimitTest);
@@ -278,14 +276,13 @@ LogicalConstraintTestParameters GetXpressLogicalConstraintTestParameters() {
       //       solely of variables (not expressions) and it does not support
       //       duplicate entries. Many of the SOS tests construct things
       //       like this, so we skip them.
-      /*supports_sos1=*/false,
-      /*supports_sos2=*/false,
+      /*supports_sos1=*/true,
+      /*supports_sos2=*/true,
       /*supports_indicator_constraints=*/true,
       /*supports_incremental_add_and_deletes=*/false,
       /*supports_incremental_variable_deletions=*/false,
       /*supports_deleting_indicator_variables=*/false,
-      /*supports_updating_binary_variables=*/false,
-      /*supports_sos_on_expressions=*/false);
+      /*supports_updating_binary_variables=*/false);
 }
 
 INSTANTIATE_TEST_SUITE_P(

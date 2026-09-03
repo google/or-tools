@@ -22,6 +22,7 @@
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "ortools/glop/preprocessor.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
@@ -61,9 +62,10 @@ inline bool AreBoundsValid(Fractional lower_bound, Fractional upper_bound) {
 // IntegerBoundsPreprocessor
 // --------------------------------------------------------
 
-bool IntegerBoundsPreprocessor::Run(LinearProgram* linear_program) {
+glop::Preprocessor::Result IntegerBoundsPreprocessor::Run(
+    LinearProgram* linear_program) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(linear_program, false);
+  RETURN_VALUE_IF_NULL(linear_program, {.postsolve_is_needed = false});
   const Fractional tolerance = integer_solution_tolerance_;
 
   // Make integer the bounds of integer variables.
@@ -76,8 +78,8 @@ bool IntegerBoundsPreprocessor::Run(LinearProgram* linear_program) {
     const Fractional ub =
         floor(linear_program->variable_upper_bounds()[col] + tolerance);
     if (!AreBoundsValid(lb, ub)) {
-      status_ = glop::ProblemStatus::PRIMAL_INFEASIBLE;
-      return false;
+      return {.postsolve_is_needed = false,
+              .solve_status = glop::PrimalInfeasibleSolveStatus()};
     }
     if (lb != linear_program->variable_lower_bounds()[col] ||
         ub != linear_program->variable_upper_bounds()[col]) {
@@ -119,8 +121,8 @@ bool IntegerBoundsPreprocessor::Run(LinearProgram* linear_program) {
       const Fractional ub = std::floor(
           linear_program->constraint_upper_bounds()[row] + tolerance);
       if (!AreBoundsValid(lb, ub)) {
-        status_ = ProblemStatus::PRIMAL_INFEASIBLE;
-        return false;
+        return {.postsolve_is_needed = false,
+                .solve_status = glop::PrimalInfeasibleSolveStatus()};
       }
       if (lb != linear_program->constraint_lower_bounds()[row] ||
           ub != linear_program->constraint_upper_bounds()[row]) {
@@ -133,7 +135,7 @@ bool IntegerBoundsPreprocessor::Run(LinearProgram* linear_program) {
           << " constraint bounds.";
   DCHECK(linear_program->BoundsOfIntegerVariablesAreInteger(tolerance));
   DCHECK(linear_program->BoundsOfIntegerConstraintsAreInteger(tolerance));
-  return false;
+  return {.postsolve_is_needed = false};
 }
 
 // --------------------------------------------------------
@@ -145,9 +147,10 @@ bool IntegerBoundsPreprocessor::Run(LinearProgram* linear_program) {
 // probably something we want to do each time we take a branch in the mip
 // search, so probably an efficient class for this will be created at some
 // point.
-bool BoundPropagationPreprocessor::Run(LinearProgram* linear_program) {
+glop::Preprocessor::Result BoundPropagationPreprocessor::Run(
+    LinearProgram* linear_program) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(linear_program, false);
+  RETURN_VALUE_IF_NULL(linear_program, {.postsolve_is_needed = false});
   const Fractional tolerance = integer_solution_tolerance_;
 
   // Starts by adding all the row in the 'to_process' queue.
@@ -242,8 +245,8 @@ bool BoundPropagationPreprocessor::Run(LinearProgram* linear_program) {
         if (new_lb > new_ub) {
           // TODO(user): Investigate what tolerance we should use here.
           if (new_lb - tolerance > new_ub) {
-            status_ = ProblemStatus::PRIMAL_INFEASIBLE;
-            return false;
+            return {.postsolve_is_needed = false,
+                    .solve_status = glop::PrimalInfeasibleSolveStatus()};
           } else {
             // We choose the nearest integer for an integer variable, or the
             // middle value for a non-integer one.
@@ -278,15 +281,16 @@ bool BoundPropagationPreprocessor::Run(LinearProgram* linear_program) {
       integer_solution_tolerance_));
   DCHECK(linear_program->BoundsOfIntegerConstraintsAreInteger(
       integer_solution_tolerance_));
-  return false;
+  return {.postsolve_is_needed = false};
 }
 
 // --------------------------------------------------------
 // ImpliedIntegerPreprocessor
 // --------------------------------------------------------
-bool ImpliedIntegerPreprocessor::Run(LinearProgram* linear_program) {
+glop::Preprocessor::Result ImpliedIntegerPreprocessor::Run(
+    LinearProgram* linear_program) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(linear_program, false);
+  RETURN_VALUE_IF_NULL(linear_program, {.postsolve_is_needed = false});
   int64_t num_implied_integer_variables = 0;
   const Fractional tolerance = integer_solution_tolerance_;
   for (ColIndex col(0); col < linear_program->num_variables(); ++col) {
@@ -316,8 +320,8 @@ bool ImpliedIntegerPreprocessor::Run(LinearProgram* linear_program) {
       const Fractional ub =
           std::floor(linear_program->variable_upper_bounds()[col] + tolerance);
       if (!AreBoundsValid(lb, ub)) {
-        status_ = ProblemStatus::PRIMAL_INFEASIBLE;
-        return false;
+        return {.postsolve_is_needed = false,
+                .solve_status = glop::PrimalInfeasibleSolveStatus()};
       }
       linear_program->SetVariableBounds(col, lb, ub);
     }
@@ -334,7 +338,7 @@ bool ImpliedIntegerPreprocessor::Run(LinearProgram* linear_program) {
   // DCHECK(linear_program->BoundsOfIntegerConstraintsAreInteger(
   //    integer_solution_tolerance_));
 
-  return false;  // Does not require postsolve.
+  return {.postsolve_is_needed = false};  // Does not require postsolve.
 }
 
 bool ImpliedIntegerPreprocessor::AnyEqualityConstraintImpliesIntegrality(
@@ -452,10 +456,10 @@ bool ImpliedIntegerPreprocessor::VariableOccursInAtLeastOneEqualityConstraint(
 // ReduceCostOverExclusiveOrConstraintPreprocessor
 // --------------------------------------------------------
 
-bool ReduceCostOverExclusiveOrConstraintPreprocessor::Run(
+glop::Preprocessor::Result ReduceCostOverExclusiveOrConstraintPreprocessor::Run(
     LinearProgram* linear_program) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(linear_program, false);
+  RETURN_VALUE_IF_NULL(linear_program, {.postsolve_is_needed = false});
   const RowIndex num_constraints = linear_program->num_constraints();
   const SparseMatrix& transpose = linear_program->GetTransposeSparseMatrix();
   for (RowIndex row(0); row < num_constraints; ++row) {
@@ -486,7 +490,7 @@ bool ReduceCostOverExclusiveOrConstraintPreprocessor::Run(
                                          min_cost);
     }
   }
-  return false;
+  return {.postsolve_is_needed = false};
 }
 
 }  // namespace operations_research

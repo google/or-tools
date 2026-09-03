@@ -130,7 +130,7 @@ def main():
   print("MemoryUsage:", solver.MemoryUsage())
   print("SearchDepth:", solver.SearchDepth())
   print("SolveDepth:", solver.SolveDepth())
-  print("stamp:", solver.Stamp())
+  print("stamp:", solver.stamp())
   print("solver", solver)
 
 

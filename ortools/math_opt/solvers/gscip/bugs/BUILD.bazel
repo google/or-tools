@@ -12,10 +12,13 @@
 # limitations under the License.
 
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 
 cc_binary(
     name = "binary_variable_bounds",
     srcs = ["binary_variable_bounds.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/math_opt/solvers/gscip",
@@ -26,6 +29,8 @@ cc_binary(
 cc_binary(
     name = "fixed_integer_variable_bounds",
     srcs = ["fixed_integer_variable_bounds.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/math_opt/solvers/gscip",
@@ -36,6 +41,8 @@ cc_binary(
 cc_binary(
     name = "integer_to_binary_variable",
     srcs = ["integer_to_binary_variable.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/math_opt/solvers/gscip",
@@ -46,6 +53,8 @@ cc_binary(
 cc_binary(
     name = "integer_to_continuous_variable",
     srcs = ["integer_to_continuous_variable.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/math_opt/solvers/gscip",

@@ -31,11 +31,12 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/sat/clause.h"
+#include "ortools/base/types.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
@@ -72,11 +73,54 @@ struct LiteralValueValue {
   }
 };
 
+// It is convenient for loading some constraints to always have a literal for
+// some condition, even if it is trivial (true or false) in some cases. This
+// class is used to create and keep those literals.
+class TrivialLiterals {
+ public:
+  explicit TrivialLiterals(Model* model)
+      : sat_solver_(model->GetOrCreate<SatSolver>()),
+        trail_(model->GetOrCreate<Trail>()) {}
+
+  sat::Literal TrueLiteral() const {
+    CreateLiteral();
+    return *true_literal_;
+  }
+  sat::Literal FalseLiteral() const {
+    CreateLiteral();
+    return true_literal_->Negated();
+  }
+
+ private:
+  void InitializeTrueLiteral(Literal literal) {
+    CHECK(!true_literal_.has_value());
+    true_literal_ = literal;
+  }
+
+  void CreateLiteral() const {
+    if (!true_literal_.has_value()) {
+      // This should happen only in unit tests, the loader should have created
+      // the true literal via InitializeTrueLiteral().
+      CHECK_EQ(0, sat_solver_->CurrentDecisionLevel());
+      const BooleanVariable var = sat_solver_->NewBooleanVariable();
+      true_literal_ = Literal(var, true);
+      trail_->EnqueueWithUnitReason(*true_literal_);
+    }
+  }
+
+  SatSolver* sat_solver_;
+  Trail* trail_;
+  mutable std::optional<sat::Literal> true_literal_;
+
+  friend void LoadVariables(const CpModelProto& model_proto,
+                            bool view_all_booleans_as_integers, Model* m);
+};
+
 // Sometimes we propagate fact with no reason at a positive level, those
 // will automatically be fixed on the next restart.
 //
-// Note that for integer literal, we already remore all "stale" entry, however
-// this is still needed to properly update the InitialVariableDomain().
+// Note that for integer literal, we already remove all "stale" entry, however
+// this is still needed to properly update the LevelZeroDomain().
 //
 // TODO(user): we should update the initial domain right away, but this as
 // some complication to clean up first.
@@ -108,10 +152,10 @@ class IntegerEncoder {
   explicit IntegerEncoder(Model* model)
       : sat_solver_(model->GetOrCreate<SatSolver>()),
         trail_(model->GetOrCreate<Trail>()),
-        clause_id_generator_(model->GetOrCreate<ClauseIdGenerator>()),
         lrat_proof_handler_(model->Mutable<LratProofHandler>()),
         delayed_to_fix_(model->GetOrCreate<DelayedRootLevelDeduction>()),
         domains_(*model->GetOrCreate<IntegerDomains>()),
+        trivial_literals_(*model->GetOrCreate<TrivialLiterals>()),
         num_created_variables_(0) {}
 
   // This type is neither copyable nor movable.
@@ -288,28 +332,6 @@ class IntegerEncoder {
   LiteralIndex SearchForLiteralAtOrAfter(IntegerLiteral i_lit,
                                          IntegerValue* bound) const;
 
-  // Gets the literal always set to true, make it if it does not exist.
-  Literal GetTrueLiteral() {
-    if (literal_index_true_ == kNoLiteralIndex) {
-      DCHECK_EQ(0, sat_solver_->CurrentDecisionLevel());
-      const Literal literal_true =
-          Literal(sat_solver_->NewBooleanVariable(), true);
-      literal_index_true_ = literal_true.Index();
-
-      ClauseId clause_id = kNoClauseId;
-      if (lrat_proof_handler_ != nullptr) {
-        clause_id = clause_id_generator_->GetNextId();
-        // We cannot prove `literal_true` by unit propagation, but we can with a
-        // RAT inference (trivial here since there are no clauses containing the
-        // negation of the pivot `literal_true`).
-        lrat_proof_handler_->AddInferredClause(clause_id, {literal_true}, {});
-      }
-      trail_->EnqueueWithUnitReason(clause_id, literal_true);
-    }
-    return Literal(literal_index_true_);
-  }
-  Literal GetFalseLiteral() { return GetTrueLiteral().Negated(); }
-
   // Returns the set of Literal associated to IntegerLiteral of the form var >=
   // value. We make a copy, because this can be easily invalidated when calling
   // any function of this class. So it is less efficient but safer.
@@ -318,7 +340,8 @@ class IntegerEncoder {
 
   // Makes sure all element in the >= encoding are non-trivial and canonical.
   // The input variable must be positive.
-  bool UpdateEncodingOnInitialDomainChange(IntegerVariable var, Domain domain);
+  bool UpdateEncodingOnInitialDomainChange(IntegerVariable var,
+                                           const Domain& domain);
 
   // All IntegerVariable passed to the functions above must be in
   // [0, NumVariables).
@@ -339,10 +362,10 @@ class IntegerEncoder {
 
   SatSolver* sat_solver_;
   Trail* trail_;
-  ClauseIdGenerator* clause_id_generator_;
   LratProofHandler* lrat_proof_handler_;
   DelayedRootLevelDeduction* delayed_to_fix_;
   const IntegerDomains& domains_;
+  const TrivialLiterals& trivial_literals_;
 
   bool add_implications_ = true;
   int64_t num_created_variables_ = 0;
@@ -483,7 +506,7 @@ class LazyReasonInterface {
 // alternatively, push "place_holder" to the boolean trail. But for
 // non-chronological backtracking, having the assignment level here seems nice.
 struct GlobalTrailIndex {
-  constexpr static int kNoIntegerIndex = std::numeric_limits<int>::max();
+  constexpr static int kNoIntegerIndex = kint32max;
 
   int level;
   int bool_index;
@@ -595,7 +618,10 @@ class IntegerTrail final : public SatPropagator {
 
   // Returns the initial domain of the given variable. Note that the min/max
   // are updated with level zero propagation, but not holes.
-  const Domain& InitialVariableDomain(IntegerVariable var) const;
+  const Domain& LevelZeroDomain(IntegerVariable var) const;
+
+  // Useful for debugging the solver.
+  std::string VarDebugString(IntegerVariable var) const;
 
   // Takes the intersection with the current initial variable domain.
   //
@@ -639,9 +665,12 @@ class IntegerTrail final : public SatPropagator {
   // Same as above for an affine expression.
   IntegerValue LowerBound(AffineExpression expr) const;
   IntegerValue UpperBound(AffineExpression expr) const;
-  IntegerValue UpperBound(LinearExpression2 expr) const;
   bool IsFixed(AffineExpression expr) const;
   IntegerValue FixedValue(AffineExpression expr) const;
+
+  // And for a LinearExpression2 with non-negative coeffs.
+  IntegerValue LowerBound(const LinearExpression2& expr) const;
+  IntegerValue UpperBound(const LinearExpression2& expr) const;
 
   // Returns the integer literal that represent the current lower/upper bound of
   // the given integer variable.
@@ -668,8 +697,13 @@ class IntegerTrail final : public SatPropagator {
   IntegerValue LevelZeroUpperBound(AffineExpression exp) const;
 
   // Returns globally valid lower/upper bound on the given linear expression.
-  IntegerValue LevelZeroLowerBound(LinearExpression2 expr) const;
-  IntegerValue LevelZeroUpperBound(LinearExpression2 expr) const;
+  // The linear expression must have non-negative coeff, which should almost
+  // always be the case in our codebase.
+  //
+  // TODO(user): consider using another class for the few places where this is
+  // different, so that it can be enforced by the compiler instead.
+  IntegerValue LevelZeroLowerBound(const LinearExpression2& expr) const;
+  IntegerValue LevelZeroUpperBound(const LinearExpression2& expr) const;
 
   // Returns true if the variable is fixed at level 0.
   bool IsFixedAtLevelZero(IntegerVariable var) const;
@@ -1045,7 +1079,7 @@ class IntegerTrail final : public SatPropagator {
       IntegerLiteral i_lit, bool use_lazy_reason,
       absl::Span<const Literal> literal_reason,
       absl::Span<const IntegerLiteral> integer_reason,
-      int trail_index_with_same_reason = std::numeric_limits<int>::max());
+      int trail_index_with_same_reason = kint32max);
 
   // Internal implementation of the EnqueueLiteral() functions.
   ABSL_MUST_USE_RESULT bool EnqueueLiteralInternal(
@@ -1126,8 +1160,8 @@ class IntegerTrail final : public SatPropagator {
   // was added. This is only used when use_new_integer_conflict_resolution is
   // true.
   struct ExtraTrailEntry {
-    int32_t assignment_level;
-    int32_t bool_trail_index;
+    int32_t assignment_level = 0;
+    int32_t bool_trail_index = 0;
   };
   std::vector<ExtraTrailEntry> extra_trail_info_;
 
@@ -1244,6 +1278,9 @@ class IntegerTrail final : public SatPropagator {
 
   std::vector<SparseBitset<IntegerVariable>*> watchers_;
   std::vector<ReversibleInterface*> reversible_classes_;
+
+  std::vector<Literal> is_valid_tmp_reason_;
+  std::vector<IntegerLiteral> is_valid_tmp_integer_reason_;
 
   mutable int64_t work_done_in_find_indices_ = 0;
 
@@ -1595,15 +1632,25 @@ inline IntegerValue IntegerTrail::UpperBound(AffineExpression expr) const {
   return UpperBound(expr.var) * expr.coeff + expr.constant;
 }
 
-inline IntegerValue IntegerTrail::UpperBound(LinearExpression2 expr) const {
+inline IntegerValue IntegerTrail::LowerBound(
+    const LinearExpression2& expr) const {
   IntegerValue result = 0;
   for (int i = 0; i < 2; ++i) {
-    if (expr.coeffs[i] == 0) {
-      continue;
-    } else if (expr.coeffs[i] > 0) {
-      result += expr.coeffs[i] * UpperBound(expr.vars[i]);
-    } else {
+    DCHECK_GE(expr.coeffs[i], 0);
+    if (expr.coeffs[i] != 0) {
       result += expr.coeffs[i] * LowerBound(expr.vars[i]);
+    }
+  }
+  return result;
+}
+
+inline IntegerValue IntegerTrail::UpperBound(
+    const LinearExpression2& expr) const {
+  IntegerValue result = 0;
+  for (int i = 0; i < 2; ++i) {
+    DCHECK_GE(expr.coeffs[i], 0);
+    if (expr.coeffs[i] != 0) {
+      result += expr.coeffs[i] * UpperBound(expr.vars[i]);
     }
   }
   return result;
@@ -1675,10 +1722,10 @@ inline IntegerValue IntegerTrail::LevelZeroUpperBound(
 }
 
 inline IntegerValue IntegerTrail::LevelZeroLowerBound(
-    LinearExpression2 expr) const {
-  expr.SimpleCanonicalization();
+    const LinearExpression2& expr) const {
   IntegerValue result = 0;
   for (int i = 0; i < 2; ++i) {
+    DCHECK_GE(expr.coeffs[i], 0);
     if (expr.coeffs[i] != 0) {
       result += expr.coeffs[i] * LevelZeroLowerBound(expr.vars[i]);
     }
@@ -1687,10 +1734,10 @@ inline IntegerValue IntegerTrail::LevelZeroLowerBound(
 }
 
 inline IntegerValue IntegerTrail::LevelZeroUpperBound(
-    LinearExpression2 expr) const {
-  expr.SimpleCanonicalization();
+    const LinearExpression2& expr) const {
   IntegerValue result = 0;
   for (int i = 0; i < 2; ++i) {
+    DCHECK_GE(expr.coeffs[i], 0);
     if (expr.coeffs[i] != 0) {
       result += expr.coeffs[i] * LevelZeroUpperBound(expr.vars[i]);
     }
@@ -1840,40 +1887,32 @@ inline std::function<int64_t(const Model&)> Value(IntegerVariable v) {
   };
 }
 
-inline std::function<void(Model*)> GreaterOrEqual(IntegerVariable v,
-                                                  int64_t lb) {
-  return [=](Model* model) {
-    if (!model->GetOrCreate<IntegerTrail>()->Enqueue(
-            IntegerLiteral::GreaterOrEqual(v, IntegerValue(lb)),
-            std::vector<Literal>(), std::vector<IntegerLiteral>())) {
-      model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
-      VLOG(1) << "Model trivially infeasible, variable " << v
-              << " has upper bound " << model->Get(UpperBound(v))
-              << " and GreaterOrEqual() was called with a lower bound of "
-              << lb;
-    }
-  };
+inline void AddGreaterOrEqual(IntegerVariable v, int64_t lb, Model* model) {
+  if (!model->GetOrCreate<IntegerTrail>()->Enqueue(
+          IntegerLiteral::GreaterOrEqual(v, IntegerValue(lb)),
+          std::vector<Literal>(), std::vector<IntegerLiteral>())) {
+    model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+    VLOG(1) << "Model trivially infeasible, variable " << v
+            << " has upper bound " << model->Get(UpperBound(v))
+            << " and GreaterOrEqual() was called with a lower bound of " << lb;
+  }
 }
 
-inline std::function<void(Model*)> LowerOrEqual(IntegerVariable v, int64_t ub) {
-  return [=](Model* model) {
-    if (!model->GetOrCreate<IntegerTrail>()->Enqueue(
-            IntegerLiteral::LowerOrEqual(v, IntegerValue(ub)),
-            std::vector<Literal>(), std::vector<IntegerLiteral>())) {
-      model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
-      VLOG(1) << "Model trivially infeasible, variable " << v
-              << " has lower bound " << model->Get(LowerBound(v))
-              << " and LowerOrEqual() was called with an upper bound of " << ub;
-    }
-  };
+inline void AddLowerOrEqual(IntegerVariable v, int64_t ub, Model* model) {
+  if (!model->GetOrCreate<IntegerTrail>()->Enqueue(
+          IntegerLiteral::LowerOrEqual(v, IntegerValue(ub)),
+          std::vector<Literal>(), std::vector<IntegerLiteral>())) {
+    model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+    VLOG(1) << "Model trivially infeasible, variable " << v
+            << " has lower bound " << model->Get(LowerBound(v))
+            << " and LowerOrEqual() was called with an upper bound of " << ub;
+  }
 }
 
 // Fix v to a given value.
-inline std::function<void(Model*)> Equality(IntegerVariable v, int64_t value) {
-  return [=](Model* model) {
-    model->Add(LowerOrEqual(v, value));
-    model->Add(GreaterOrEqual(v, value));
-  };
+inline void AddEquality(IntegerVariable v, int64_t value, Model* model) {
+  AddLowerOrEqual(v, value, model);
+  AddGreaterOrEqual(v, value, model);
 }
 
 // TODO(user): This is one of the rare case where it is better to use Equality()
@@ -1882,50 +1921,46 @@ inline std::function<void(Model*)> Equality(IntegerVariable v, int64_t value) {
 // direction integer-bound => literal, but just literal => integer-bound? This
 // is the same as using different underlying variable for an integer literal and
 // its negation.
-inline std::function<void(Model*)> Implication(
-    absl::Span<const Literal> enforcement_literals, IntegerLiteral i) {
-  return [=](Model* model) {
-    auto* sat_solver = model->GetOrCreate<SatSolver>();
-    auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-    if (i.bound <= integer_trail->LowerBound(i.var)) {
-      // Always true! nothing to do.
-    } else if (i.bound > integer_trail->UpperBound(i.var)) {
-      // Always false.
-      std::vector<Literal> clause;
-      for (const Literal literal : enforcement_literals) {
-        clause.push_back(literal.Negated());
-      }
-      sat_solver->AddClauseDuringSearch(clause);
-    } else {
-      // TODO(user): Double check what happen when we associate a trivially
-      // true or false literal.
-      IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-      std::vector<Literal> clause{encoder->GetOrCreateAssociatedLiteral(i)};
-      for (const Literal literal : enforcement_literals) {
-        clause.push_back(literal.Negated());
-      }
-      sat_solver->AddClauseDuringSearch(clause);
+inline void AddImplication(absl::Span<const Literal> enforcement_literals,
+                           IntegerLiteral i, Model* model) {
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  if (i.bound <= integer_trail->LowerBound(i.var)) {
+    // Always true! nothing to do.
+  } else if (i.bound > integer_trail->UpperBound(i.var)) {
+    // Always false.
+    std::vector<Literal> clause;
+    for (const Literal literal : enforcement_literals) {
+      clause.push_back(literal.Negated());
     }
-  };
+    sat_solver->AddClauseDuringSearch(clause);
+  } else {
+    // TODO(user): Double check what happen when we associate a trivially
+    // true or false literal.
+    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+    std::vector<Literal> clause{encoder->GetOrCreateAssociatedLiteral(i)};
+    for (const Literal literal : enforcement_literals) {
+      clause.push_back(literal.Negated());
+    }
+    sat_solver->AddClauseDuringSearch(clause);
+  }
 }
 
 // in_interval => v in [lb, ub].
-inline std::function<void(Model*)> ImpliesInInterval(Literal in_interval,
-                                                     IntegerVariable v,
-                                                     int64_t lb, int64_t ub) {
-  return [=](Model* model) {
-    if (lb == ub) {
-      IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-      model->Add(Implication({in_interval},
-                             encoder->GetOrCreateLiteralAssociatedToEquality(
-                                 v, IntegerValue(lb))));
-      return;
-    }
-    model->Add(Implication(
-        {in_interval}, IntegerLiteral::GreaterOrEqual(v, IntegerValue(lb))));
-    model->Add(Implication({in_interval},
-                           IntegerLiteral::LowerOrEqual(v, IntegerValue(ub))));
-  };
+inline void AddImpliesInInterval(Literal in_interval, IntegerVariable v,
+                                 int64_t lb, int64_t ub, Model* model) {
+  if (lb == ub) {
+    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+    AddImplication(
+        {in_interval},
+        encoder->GetOrCreateLiteralAssociatedToEquality(v, IntegerValue(lb)),
+        model);
+    return;
+  }
+  AddImplication({in_interval},
+                 IntegerLiteral::GreaterOrEqual(v, IntegerValue(lb)), model);
+  AddImplication({in_interval},
+                 IntegerLiteral::LowerOrEqual(v, IntegerValue(ub)), model);
 }
 
 // Calling model.Add(FullyEncodeVariable(var)) will create one literal per value

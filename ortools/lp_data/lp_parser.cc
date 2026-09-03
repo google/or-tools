@@ -205,7 +205,7 @@ bool LPParser::ParseConstraint(StringPiece constraint) {
   } else {
     const RowIndex num_constraints_before_adding_variable =
         lp_->num_constraints();
-    // The constaint has a name, or there are more than variable, or the
+    // The constraint has a name, or there are more than variable, or the
     // coefficient is not 1. Thus, create and fill a new constraint.
     // We don't use SetConstraintName() because constraints named that way
     // cannot be found via FindOrCreateConstraint() (see comment on

@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -24,6 +23,9 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_format.h"
+#include "ortools/base/types.h"
+#include "ortools/bop/boolean_problem.h"
+#include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_solver.h"
 #include "ortools/bop/bop_types.h"
 #include "ortools/lp_data/lp_data.h"
@@ -33,8 +35,6 @@
 #include "ortools/lp_data/sparse.h"
 #include "ortools/lp_data/sparse_column.h"
 #include "ortools/lp_data/sparse_vector.h"
-#include "ortools/sat/boolean_problem.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/fp_utils.h"
 #include "ortools/util/strong_integers.h"
@@ -52,9 +52,6 @@ using ::operations_research::glop::LPDecomposer;
 using ::operations_research::glop::RowIndex;
 using ::operations_research::glop::SparseColumn;
 using ::operations_research::glop::SparseMatrix;
-using ::operations_research::sat::LinearBooleanConstraint;
-using ::operations_research::sat::LinearBooleanProblem;
-using ::operations_research::sat::LinearObjective;
 
 namespace {
 // TODO(user): Use an existing one or move it to util.
@@ -155,9 +152,8 @@ void BuildBooleanProblemWithIntegralConstraints(
   }
   double scaling_factor = 0.0;
   double relative_error = 0.0;
-  GetBestScalingOfDoublesToInt64(coefficients,
-                                 std::numeric_limits<int64_t>::max(),
-                                 &scaling_factor, &relative_error);
+  GetBestScalingOfDoublesToInt64(coefficients, kint64max, &scaling_factor,
+                                 &relative_error);
   const int64_t gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
   LinearObjective* const objective = boolean_problem->mutable_objective();
   objective->set_offset(linear_problem.objective_offset() * scaling_factor /
@@ -178,7 +174,7 @@ void BuildBooleanProblemWithIntegralConstraints(
 
   // If the problem was a maximization one, we need to modify the objective.
   if (linear_problem.IsMaximizationProblem()) {
-    sat::ChangeOptimizationDirection(boolean_problem);
+    ChangeOptimizationDirection(boolean_problem);
   }
 
   // Fill the Boolean initial solution.
@@ -483,7 +479,7 @@ bool IntegralProblemConverter::ConvertToBooleanProblem(
 
   // A BooleanLinearProblem is always in the minimization form.
   if (linear_problem.IsMaximizationProblem()) {
-    sat::ChangeOptimizationDirection(boolean_problem);
+    ChangeOptimizationDirection(boolean_problem);
   }
 
   if (use_initial_solution) {
@@ -630,9 +626,8 @@ void IntegralProblemConverter::ConvertAllConstraints(
         coefficients.push_back(dense_weights[var]);
       }
     }
-    GetBestScalingOfDoublesToInt64(coefficients,
-                                   std::numeric_limits<int64_t>::max(),
-                                   &scaling_factor, &relative_error);
+    GetBestScalingOfDoublesToInt64(coefficients, kint64max, &scaling_factor,
+                                   &relative_error);
     const int64_t gcd =
         ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
     max_relative_error = std::max(relative_error, max_relative_error);
@@ -650,13 +645,11 @@ void IntegralProblemConverter::ConvertAllConstraints(
       const Fractional offset_lower_bound = lower_bound - offset;
       const double offset_scaled_lower_bound =
           round(offset_lower_bound * scaling_factor - bound_error);
-      if (offset_scaled_lower_bound >=
-          static_cast<double>(std::numeric_limits<int64_t>::max())) {
+      if (offset_scaled_lower_bound >= static_cast<double>(kint64max)) {
         LOG(WARNING) << "A constraint is trivially unsatisfiable.";
         return;
       }
-      if (offset_scaled_lower_bound >
-          -static_cast<double>(std::numeric_limits<int64_t>::max())) {
+      if (offset_scaled_lower_bound > -static_cast<double>(kint64max)) {
         // Otherwise, the constraint is not needed.
         constraint->set_lower_bound(
             static_cast<int64_t>(offset_scaled_lower_bound) / gcd);
@@ -668,13 +661,11 @@ void IntegralProblemConverter::ConvertAllConstraints(
       const Fractional offset_upper_bound = upper_bound - offset;
       const double offset_scaled_upper_bound =
           round(offset_upper_bound * scaling_factor + bound_error);
-      if (offset_scaled_upper_bound <=
-          -static_cast<double>(std::numeric_limits<int64_t>::max())) {
+      if (offset_scaled_upper_bound <= -static_cast<double>(kint64max)) {
         LOG(WARNING) << "A constraint is trivially unsatisfiable.";
         return;
       }
-      if (offset_scaled_upper_bound <
-          static_cast<double>(std::numeric_limits<int64_t>::max())) {
+      if (offset_scaled_upper_bound < static_cast<double>(kint64max)) {
         // Otherwise, the constraint is not needed.
         constraint->set_upper_bound(
             static_cast<int64_t>(offset_scaled_upper_bound) / gcd);
@@ -706,9 +697,8 @@ void IntegralProblemConverter::ConvertObjective(
   double scaling_factor = 0.0;
   double max_relative_error = 0.0;
   double relative_error = 0.0;
-  GetBestScalingOfDoublesToInt64(coefficients,
-                                 std::numeric_limits<int64_t>::max(),
-                                 &scaling_factor, &relative_error);
+  GetBestScalingOfDoublesToInt64(coefficients, kint64max, &scaling_factor,
+                                 &relative_error);
   const int64_t gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
   max_relative_error = std::max(relative_error, max_relative_error);
   VLOG(1) << "objective relative error: " << relative_error;
@@ -1064,8 +1054,8 @@ void RunOneBop(const BopParameters& parameters, int problem_index,
       deterministic_time_per_variable * local_num_variables);
 
   *status = InternalSolve(problem, parameters, local_initial_solution,
-                          subproblem_time_limit.GetTimeLimit(), variable_values,
-                          objective_value, best_bound);
+                          &subproblem_time_limit.GetTimeLimit(),
+                          variable_values, objective_value, best_bound);
 }
 }  // anonymous namespace
 

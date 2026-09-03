@@ -31,8 +31,8 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/filelineiter.h"
@@ -120,8 +120,8 @@ class OpbReader {
   struct PbConstraint {
     std::vector<PbTerm> terms;
     PbConstraintType type = UNDEFINED_OPERATION;
-    int64_t rhs = std::numeric_limits<int64_t>::min();
-    int64_t soft_cost = std::numeric_limits<int64_t>::max();
+    int64_t rhs = kint64min;
+    int64_t soft_cost = kint64max;
   };
 
   // Since the problem name is not stored in the opb format, we infer it from
@@ -228,7 +228,7 @@ class OpbReader {
   std::string ValidateModel() {
     // Normalize and validate constraints.
     for (const PbConstraint& constraint : constraints_) {
-      if (constraint.rhs == std::numeric_limits<int64_t>::min()) {
+      if (constraint.rhs == kint64min) {
         return "constraint error: undefined rhs";
       }
 
@@ -338,7 +338,7 @@ class OpbReader {
       }
       if (constraint.type == GE_OPERATION) {
         lin->add_domain(constraint.rhs);
-        lin->add_domain(std::numeric_limits<int64_t>::max());
+        lin->add_domain(kint64max);
       } else if (constraint.type == EQ_OPERATION) {
         lin->add_domain(constraint.rhs);
         lin->add_domain(constraint.rhs);
@@ -346,7 +346,7 @@ class OpbReader {
         LOG(FATAL) << "Unsupported operation: " << constraint.type;
       }
 
-      if (constraint.soft_cost != std::numeric_limits<int64_t>::max()) {
+      if (constraint.soft_cost != kint64max) {
         const int violation_var_index = model->variables_size();
         IntegerVariableProto* violation_var = model->add_variables();
         violation_var->add_domain(0);
@@ -371,7 +371,7 @@ class OpbReader {
 
     if (top_cost_.has_value()) {
       CpObjectiveProto* obj = model->mutable_objective();
-      obj->add_domain(std::numeric_limits<int64_t>::min());
+      obj->add_domain(kint64min);
       obj->add_domain(top_cost_.value());
     }
   }

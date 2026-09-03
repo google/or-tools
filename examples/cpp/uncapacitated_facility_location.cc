@@ -29,14 +29,14 @@
 #include <string>
 #include <vector>
 
-#include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
+#include "absl/log/check.h"
 #include "absl/log/globals.h"
 #include "absl/log/initialize.h"
 #include "absl/random/random.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/util/random_engine.h"
 
@@ -210,6 +210,11 @@ void RunAllExamples(int32_t facilities, int32_t clients, double fix_cost) {
   LOG(INFO) << "---- Integer programming example with GLPK ----";
   UncapacitatedFacilityLocation(facilities, clients, fix_cost,
                                 MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING);
+#endif
+#if defined(USE_HIGHS)
+  LOG(INFO) << "---- Integer programming example with HiGHS ----";
+  UncapacitatedFacilityLocation(facilities, clients, fix_cost,
+                                MPSolver::HIGHS_MIXED_INTEGER_PROGRAMMING);
 #endif
 #if defined(USE_SCIP)
   LOG(INFO) << "---- Integer programming example with SCIP ----";

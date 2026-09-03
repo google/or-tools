@@ -14,8 +14,7 @@
 
 """Creates a shift scheduling problem and solves it."""
 
-from absl import app
-from absl import flags
+from absl import app, flags
 
 from ortools.sat.python import cp_model
 

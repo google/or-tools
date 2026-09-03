@@ -15,7 +15,6 @@
 
 #include <cmath>
 #include <cstdint>
-#include <functional>
 #include <limits>
 #include <random>
 #include <string>
@@ -227,29 +226,6 @@ TEST(HamiltonianPathTest, DISABLED_Gr24) {
   EXPECT_EQ(1165, ham_solver.HamiltonianCost(best_end_node));
   EXPECT_EQ("0 15 5 23 11 3 22 8 12 13 19 1 14 18 21 17 16 9 4 20 7 6 2 10 ",
             PathToString(ham_solver.HamiltonianPath(best_end_node)));
-  auto cost_lambda = [&cost_mat](int i, int j) { return cost_mat[i][j]; };
-  auto lambda_ham_solver =
-      MakeHamiltonianPathSolver<int>(kGr24Size, cost_lambda);
-  EXPECT_TRUE(lambda_ham_solver.IsRobust());
-  ComputeAndShow("Gr24", &lambda_ham_solver);
-  EXPECT_EQ(1272, lambda_ham_solver.TravelingSalesmanCost());
-  EXPECT_EQ("0 15 10 2 6 5 23 7 20 4 9 16 21 17 18 14 1 19 13 12 8 22 3 11 0 ",
-            PathToString(lambda_ham_solver.TravelingSalesmanPath()));
-  best_end_node = lambda_ham_solver.BestHamiltonianPathEndNode();
-  EXPECT_EQ(1165, lambda_ham_solver.HamiltonianCost(best_end_node));
-  EXPECT_EQ("0 15 5 23 11 3 22 8 12 13 19 1 14 18 21 17 16 9 4 20 7 6 2 10 ",
-            PathToString(lambda_ham_solver.HamiltonianPath(best_end_node)));
-  HamiltonianPathSolver<int, std::function<int(int, int)>> function_ham_solver(
-      kGr24Size, [&cost_mat](int i, int j) { return cost_mat[i][j]; });
-  EXPECT_TRUE(function_ham_solver.IsRobust());
-  ComputeAndShow("Gr24", &function_ham_solver);
-  EXPECT_EQ(1272, function_ham_solver.TravelingSalesmanCost());
-  EXPECT_EQ("0 15 10 2 6 5 23 7 20 4 9 16 21 17 18 14 1 19 13 12 8 22 3 11 0 ",
-            PathToString(function_ham_solver.TravelingSalesmanPath()));
-  best_end_node = function_ham_solver.BestHamiltonianPathEndNode();
-  EXPECT_EQ(1165, function_ham_solver.HamiltonianCost(best_end_node));
-  EXPECT_EQ("0 15 5 23 11 3 22 8 12 13 19 1 14 18 21 17 16 9 4 20 7 6 2 10 ",
-            PathToString(function_ham_solver.HamiltonianPath(best_end_node)));
 }
 
 // This is the geographic distance as defined in TSPLIB.
@@ -433,19 +409,18 @@ TEST(HamiltonianPathTest, RectangleCosts) {
 }
 
 TEST(HamiltonianPathTest, SmallAsymmetricMatrix) {
-  typedef double TestType;
   const int kAsymmetricMatrixSize = 3;
-  TestType AsymmetricMatrix[kAsymmetricMatrixSize][kAsymmetricMatrixSize] = {
+  int AsymmetricMatrix[kAsymmetricMatrixSize][kAsymmetricMatrixSize] = {
       {0, 511, 439}, {1067, 0, 1506}, {449, 960, 0}};
-  std::vector<std::vector<TestType>> cost(kAsymmetricMatrixSize);
+  std::vector<std::vector<int>> cost(kAsymmetricMatrixSize);
   for (int row = 0; row < kAsymmetricMatrixSize; ++row) {
     cost[row].resize(kAsymmetricMatrixSize);
     for (int col = 0; col < kAsymmetricMatrixSize; ++col) {
       cost[row][col] = AsymmetricMatrix[row][col];
     }
   }
-  HamiltonianPathSolver<int, std::function<int(int, int)>> ham_solver(
-      kAsymmetricMatrixSize, [&cost](int i, int j) { return cost[i][j]; });
+  HamiltonianPathSolver<int, std::vector<std::vector<int>>> ham_solver(
+      kAsymmetricMatrixSize, cost);
   EXPECT_TRUE(ham_solver.IsRobust());
   EXPECT_TRUE(ham_solver.VerifiesTriangleInequality());
   ComputeAndShow("Small asymmetric matrix", &ham_solver);
@@ -534,8 +509,8 @@ TYPED_TEST(HamiltonianPathOverflowTest, CostsWithOverflow) {
   for (int i = 0; i < kSize; ++i) {
     cost[i].resize(kSize, i == 0 ? std::numeric_limits<TypeParam>::max() : 1);
   }
-  HamiltonianPathSolver<TypeParam, std::function<TypeParam(int, int)>>
-      ham_solver(kSize, [&cost](int i, int j) { return cost[i][j]; });
+  HamiltonianPathSolver<TypeParam, std::vector<std::vector<TypeParam>>>
+      ham_solver(kSize, cost);
   EXPECT_TRUE(ham_solver.IsRobust());
   EXPECT_TRUE(ham_solver.VerifiesTriangleInequality());
   ComputeAndShow("Overflow matrix", &ham_solver);
@@ -552,8 +527,8 @@ TYPED_TEST(HamiltonianPathOverflowTest, AllMaxCosts) {
   for (int i = 0; i < kSize; ++i) {
     cost[i].resize(kSize, std::numeric_limits<TypeParam>::max());
   }
-  HamiltonianPathSolver<TypeParam, std::function<TypeParam(int, int)>>
-      ham_solver(kSize, [&cost](int i, int j) { return cost[i][j]; });
+  HamiltonianPathSolver<TypeParam, std::vector<std::vector<TypeParam>>>
+      ham_solver(kSize, cost);
   EXPECT_TRUE(ham_solver.IsRobust());
   EXPECT_TRUE(ham_solver.VerifiesTriangleInequality());
   ComputeAndShow("Overflow matrix", &ham_solver);

@@ -16,8 +16,10 @@
 #include <memory>
 #include <utility>
 
+#include "absl/base/attributes.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/math_opt/parameters.pb.h"
 
 namespace operations_research::math_opt {
 namespace {
@@ -51,7 +53,8 @@ class FakeNonStreamableInitArguments : public NonStreamableSolverInitArguments {
   SolverTypeProto solver_type_;
 };
 
-thread_local int FakeNonStreamableInitArguments::num_clones_ = 0;
+ABSL_CONST_INIT thread_local int FakeNonStreamableInitArguments::num_clones_ =
+    0;
 
 TEST(NonStreamableSolverInitArgumentsValueTest, NonStreamableConstructor) {
   const FakeNonStreamableInitArguments fake(SOLVER_TYPE_GSCIP);

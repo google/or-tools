@@ -33,9 +33,11 @@
 #include <vector>
 
 #include "absl/base/no_destructor.h"
+#include "absl/base/nullability.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
@@ -44,9 +46,7 @@
 #include "absl/time/time.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/options.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/cpp/statistics.h"
@@ -100,6 +100,8 @@ ABSL_FLAG(operations_research::math_opt::SolverType, solver_type,
 ABSL_FLAG(bool, remote, false,
           "solve by RPC instead of locally, using ~twice the time limit as the "
           "RPC deadline, requires a time limit is set, see --time_limit");
+ABSL_FLAG(std::optional<std::string>, remote_target, std::nullopt,
+          "RPC server address");
 ABSL_FLAG(operations_research::math_opt::SolveParameters, solve_parameters, {},
           "SolveParameters in text-proto format. Note that the time limit is "
           "overridden by the --time_limit flag.");
@@ -151,7 +153,7 @@ absl::StatusOr<ModelUpdateProto> ReadModelUpdate(
     case FileFormat::kMathOptText:
       return file::GetTextProto<ModelUpdateProto>(file_path, file::Defaults());
     default:
-      return util::InternalErrorBuilder() << "invalid format " << format;
+      return ortools::InternalErrorBuilder() << "invalid format " << format;
   }
 }
 
@@ -193,8 +195,8 @@ absl::StatusOr<ModelAndHint> ParseModelAndHint() {
 
   std::vector<ModelUpdateProto> model_updates;
   for (const std::string& update_file_path : update_file_paths) {
-    ASSIGN_OR_RETURN(ModelUpdateProto update,
-                     ReadModelUpdate(update_file_path, format));
+    ABSL_ASSIGN_OR_RETURN(ModelUpdateProto update,
+                          ReadModelUpdate(update_file_path, format));
     model_updates.emplace_back(std::move(update));
   }
 
@@ -206,11 +208,11 @@ absl::StatusOr<ModelAndHint> ParseModelAndHint() {
   }
 
   // Parse the problem and the updates.
-  ASSIGN_OR_RETURN(std::unique_ptr<Model> model,
-                   Model::FromModelProto(model_proto));
+  ABSL_ASSIGN_OR_RETURN(std::unique_ptr<Model> model,
+                        Model::FromModelProto(model_proto));
   for (int u = 0; u < model_updates.size(); ++u) {
     const ModelUpdateProto& update = model_updates[u];
-    RETURN_IF_ERROR(model->ApplyUpdateProto(update))
+    ABSL_RETURN_IF_ERROR(model->ApplyUpdateProto(update))
         << "failed to apply the update file: " << update_file_paths[u];
   }
   if (absl::GetFlag(FLAGS_lp_relaxation)) {
@@ -278,7 +280,8 @@ absl::Status PrintSummary(const Model& model, const SolveResult& result,
 absl::StatusOr<SolveResult> LocalOrRemoteSolve(
     const Model& model, const SolverType solver_type,
     const SolveParameters& params, const ModelSolveParameters& model_params,
-    MessageCallback msg_cb, const SolveInterrupter* const interrupter) {
+    MessageCallback msg_cb,
+    const SolveInterrupter* absl_nullable const interrupter) {
   if (absl::GetFlag(FLAGS_remote)) {
     return absl::UnimplementedError("remote not yet supported.");
   } else {
@@ -313,7 +316,7 @@ absl::Status RunSolver() {
         "a finite time limit is required when solving remotely, e.g. "
         "--time_limit=5m");
   }
-  ASSIGN_OR_RETURN(const ModelAndHint model_and_hint, ParseModelAndHint());
+  ABSL_ASSIGN_OR_RETURN(const ModelAndHint model_and_hint, ParseModelAndHint());
 
   if (absl::GetFlag(FLAGS_ranges)) {
     std::cout << "Ranges of finite non-zero values in the model:\n"
@@ -351,7 +354,7 @@ absl::Status RunSolver() {
       .integrality_tolerance = absl::GetFlag(FLAGS_integrality_tolerance),
       .nonzero_tolerance = absl::GetFlag(FLAGS_nonzero_tolerance),
   };
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       PrintSummary(*model_and_hint.model, result,
                    absl::GetFlag(FLAGS_check_solutions)
                        ? std::make_optional(feasibility_checker_options)

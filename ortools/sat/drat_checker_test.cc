@@ -15,6 +15,7 @@
 
 #include <limits>
 #include <string>
+#include <vector>
 
 #include "absl/types/span.h"
 #include "gtest/gtest.h"

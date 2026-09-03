@@ -15,9 +15,10 @@
 """MaxFlow and MinCostFlow examples."""
 
 from typing import Sequence
+
 from absl import app
-from ortools.graph.python import max_flow
-from ortools.graph.python import min_cost_flow
+
+from ortools.graph.python import max_flow, min_cost_flow
 
 
 def max_flow_api():

@@ -14,7 +14,7 @@
 set_property(SOURCE graph.i PROPERTY CPLUSPLUS ON)
 set_property(SOURCE graph.i PROPERTY SWIG_MODULE_NAME operations_research_graph)
 set_property(SOURCE graph.i PROPERTY COMPILE_DEFINITIONS
-  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
+  ${OR_TOOLS_COMPILE_DEFINITIONS})
 set_property(SOURCE graph.i PROPERTY COMPILE_OPTIONS
   -namespace ${DOTNET_PROJECT}.Graph
   -dllimport google-ortools-native)
@@ -30,7 +30,7 @@ set_target_properties(dotnet_graph PROPERTIES
   POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(dotnet_graph PRIVATE ortools::ortools)
 
-if(BUILD_TESTING)
+if(BUILD_DOTNET_TESTING)
   file(GLOB DOTNET_SRCS "*Tests.cs")
   foreach(FILE_NAME IN LISTS DOTNET_SRCS)
     add_dotnet_test(FILE_NAME ${FILE_NAME})

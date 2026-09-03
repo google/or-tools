@@ -17,10 +17,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "ortools/math_opt/model.pb.h"
-#include "ortools/math_opt/model_parameters.pb.h"
-#include "ortools/math_opt/model_update.pb.h"
-#include "ortools/math_opt/result.pb.h"
 #include "pybind11/attr.h"
 #include "pybind11/cast.h"
 #include "pybind11/gil.h"

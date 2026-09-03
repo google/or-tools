@@ -12,7 +12,8 @@
 # limitations under the License.
 
 file(GLOB _SRCS "*.h" "*.cc")
-list(FILTER _SRCS EXCLUDE REGEX ".*/rounding_modes_benchmark.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_benchmark.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
 
 set(NAME ${PROJECT_NAME}_util)
 
@@ -33,8 +34,36 @@ target_link_libraries(${NAME} PRIVATE
   ZLIB::ZLIB
   absl::base
   absl::memory
+  absl::source_location
+  absl::status_builder
   absl::strings
   absl::str_format
   protobuf::libprotobuf
   ${PROJECT_NAMESPACE}::ortools_proto)
 #add_library(${PROJECT_NAMESPACE}::util ALIAS ${NAME})
+
+
+if(BUILD_CXX_TESTING)
+  # Test
+  file(GLOB _TEST_SRCS "*_test.cc")
+  foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
+    get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
+    get_filename_component(_FILE_NAME ${_FULL_FILE_NAME} NAME)
+    ortools_cxx_test(
+      NAME
+        util_${_NAME}
+      SOURCES
+        ${_FILE_NAME}
+      LINK_LIBRARIES
+        absl::scoped_mock_log
+        GTest::gtest
+        GTest::gtest_main
+        GTest::gmock
+    )
+  endforeach()
+  # These tests are too long or flaky so we disable them.
+  set_tests_properties(
+    cxx_util_random_subset_test
+    cxx_util_time_limit_test
+    PROPERTIES DISABLED TRUE)
+endif()

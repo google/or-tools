@@ -28,12 +28,12 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/elemental/arrays.h"
 #include "ortools/math_opt/elemental/attr_key.h"
 #include "ortools/math_opt/elemental/attributes.h"
@@ -117,20 +117,9 @@ bool PyToCppEnum(PyObject* const py_enum, EnumT& cpp_enum,
 // the latter).
 template <const absl::string_view& name>
 struct AsArray {
-  constexpr AsArray() {
-#if __cplusplus >= 202002L
-    std::copy(name.begin(), name.end(), array);
-#else
-    // `std::copy` is not constexpr before C++20.
-    char* p = array;
-    for (const char c : name) {
-      *p++ = c;
-    }
-    *p = '\0';
-#endif
-  }
+  char array[name.size() + 1];
 
-  char array[name.size() + 1] = {};
+  constexpr AsArray() { std::copy(name.begin(), name.end(), array); }
 };
 
 // An RAII object that allows creating a UTF8 string from a numpy unicode
@@ -218,7 +207,7 @@ absl::Status CheckStringArray(const py::array& strings) {
   if (strings.ndim() == 1 && dtype == 'U') {
     return absl::OkStatus();
   }
-  return util::InvalidArgumentErrorBuilder()
+  return ortools::InvalidArgumentErrorBuilder()
          << "expected a 1d array of dtype U:, got " << strings.ndim()
          << "d array of dtype " << dtype;
 }
@@ -233,7 +222,7 @@ absl::Status CheckForDuplicates(const InRange& values) {
   seen.reserve(values.size());
   for (int i = 0; i < values.size(); ++i) {
     if (!seen.insert(values[i]).second) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "array has duplicates: " << values[i];
     }
   }
@@ -300,6 +289,16 @@ struct type_caster<ElementId<element_type>> {
   }
 };
 
+#if defined(PYBIND11_HAS_NATIVE_ENUM)
+// We must first disable the default pybind11 handler for enums to make our
+// specialization non-ambiguous:
+// https://pybind11.readthedocs.io/en/stable/classes.html#enumerations-and-internal-types
+template <typename AttrType>
+struct type_caster_enum_type_enabled<
+    AttrType, enable_if_t<(GetIndexIfAttr<AttrType>() >= 0)>>
+    : std::false_type {};
+#endif
+
 // Type caster for casting enum values from python enums to C++ `Elemental`
 // enums.
 template <typename AttrType>
@@ -337,7 +336,7 @@ template <typename AttrType>
 absl::Status ValidateSliceKeyIndex(const AttrType attr, const int key_index) {
   const int key_size = GetAttrKeySize<AttrType>();
   if (key_index < 0 || key_index >= key_size) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "key_index must be in [0, " << key_size
            << ") for attribute: " << attr
            << " but key_index was: " << key_index;
@@ -365,7 +364,6 @@ R ApplyOnIndex(Fn fn, const int index) {
   CHECK_GE(index, 0);
   CHECK_LT(index, n);
   std::optional<R> result;
-  // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
   ForEachIndex<n>([index, &fn, &result]<int k>() {
     if (k == index) {
       result = fn.template operator()<k>();
@@ -382,9 +380,8 @@ template <typename AttrType>
 absl::StatusOr<std::vector<AttrKeyFor<AttrType>>> DynamicSlice(
     const Elemental& e, const AttrType attr, const int key_index,
     const int element_id) {
-  RETURN_IF_ERROR(ValidateSliceKeyIndex(attr, key_index));
+  ABSL_RETURN_IF_ERROR(ValidateSliceKeyIndex(attr, key_index));
   return ApplyOnIndex<GetAttrKeySize<AttrType>()>(
-      // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
       [&e, attr, element_id]<int k>() {
         return e.Slice<k, Elemental::StatusPolicy>(attr, element_id);
       },
@@ -399,9 +396,8 @@ absl::StatusOr<int64_t> DynamicGetSliceSize(const Elemental& e,
                                             const AttrType attr,
                                             const int key_index,
                                             const int element_id) {
-  RETURN_IF_ERROR(ValidateSliceKeyIndex(attr, key_index));
+  ABSL_RETURN_IF_ERROR(ValidateSliceKeyIndex(attr, key_index));
   return ApplyOnIndex<GetAttrKeySize<AttrType>()>(
-      // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
       [&e, attr, element_id]<int k>() {
         return e.GetSliceSize<k, Elemental::StatusPolicy>(attr, element_id);
       },
@@ -436,7 +432,7 @@ absl::Status CheckForElementExistence(
     for (int j = 0; j < GetAttrKeySize<AttrType>(); ++j) {
       const auto element_type = GetElementTypes<AttrType>(attr)[j];
       if (!e.ElementExistsUntyped(element_type, key[j])) {
-        return util::InvalidArgumentErrorBuilder()
+        return ortools::InvalidArgumentErrorBuilder()
                << element_type << " id " << key[j] << " does not exist";
       }
     }
@@ -449,7 +445,7 @@ absl::StatusOr<Elemental::DiffHandle> GetDiffHandle(const Elemental& elemental,
   std::optional<Elemental::DiffHandle> handle =
       elemental.GetDiffHandle(diff_id);
   if (handle == std::nullopt) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "no diff with id: " << diff_id;
   }
   return *handle;
@@ -633,7 +629,6 @@ PYBIND11_MODULE(cpp_elemental, py_module) {
 
   // Export attribute operations.
   ForEach(
-      // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
       [&elemental]<typename Descriptor>(const Descriptor&) {
         using AttrType = typename Descriptor::AttrType;
         using ValueType = typename Descriptor::ValueType;

@@ -20,10 +20,7 @@
 #include <string>
 
 #include "absl/status/status.h"
-#include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "google/protobuf/message.h"
-#include "ortools/base/status_macros.h"
 
 // This file defines some IO interfaces for compatibility with Google
 // IO specifications.
@@ -42,6 +39,7 @@ class File {
 #endif  // SWIG
 
   explicit File(absl::string_view name);
+
   virtual ~File() = default;
 
   // Reads "size" bytes to buf from file, buff should be pre-allocated.
@@ -68,9 +66,6 @@ class File {
 
   // Writes a string to file.
   size_t WriteString(absl::string_view str);
-
-  // Inits internal data structures.
-  static void Init();
 
   // Returns the file name.
   absl::string_view filename() const;
@@ -99,50 +94,6 @@ File* OpenOrDie(absl::string_view file_name, absl::string_view mode,
 
 absl::Status Delete(absl::string_view path, Options options);
 absl::Status Exists(absl::string_view path, Options options);
-
-// ---- Content API ----
-
-absl::StatusOr<std::string> GetContents(absl::string_view path,
-                                        Options options);
-
-absl::Status GetContents(absl::string_view file_name, std::string* output,
-                         Options options);
-
-absl::Status SetContents(absl::string_view file_name,
-                         absl::string_view contents, Options options);
-
-absl::Status WriteString(File* file, absl::string_view contents,
-                         Options options);
-
-// ---- Protobuf API ----
-
-absl::Status GetTextProto(absl::string_view file_name,
-                          google::protobuf::Message* proto, Options options);
-
-template <typename T>
-absl::StatusOr<T> GetTextProto(absl::string_view file_name, Options options) {
-  T proto;
-  RETURN_IF_ERROR(GetTextProto(file_name, &proto, options));
-  return proto;
-}
-
-absl::Status SetTextProto(absl::string_view file_name,
-                          const google::protobuf::Message& proto,
-                          Options options);
-
-absl::Status GetBinaryProto(absl::string_view file_name,
-                            google::protobuf::Message* proto, Options options);
-template <typename T>
-
-absl::StatusOr<T> GetBinaryProto(absl::string_view file_name, Options options) {
-  T proto;
-  RETURN_IF_ERROR(GetBinaryProto(file_name, &proto, options));
-  return proto;
-}
-
-absl::Status SetBinaryProto(absl::string_view file_name,
-                            const google::protobuf::Message& proto,
-                            Options options);
 
 }  // namespace file
 

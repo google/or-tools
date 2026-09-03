@@ -33,10 +33,10 @@ Other methods and functions listed are primarily used for developing OR-Tools,
 rather than for solving specific optimization problems.
 """
 
-from collections.abc import Callable
 import math
 import numbers
 import typing
+from collections.abc import Callable
 from typing import Optional, Union
 
 import numpy as np
@@ -172,7 +172,7 @@ def _add_enforced_linear_constraint_to_helper(
         helper.set_enforced_constraint_lower_bound(c.index, bounded_expr.lower_bound)
         helper.set_enforced_constraint_upper_bound(c.index, bounded_expr.upper_bound)
         if name is not None:
-            helper.set_constraint_name(c.index, name)
+            helper.set_enforced_constraint_name(c.index, name)
         return c
 
     raise TypeError(f"invalid type={type(bounded_expr).__name__!r}")
@@ -674,7 +674,7 @@ class Model:
 
     def new_bool_var(self, name: Optional[str] = None) -> Variable:
         """Creates a 0-1 variable with the given name."""
-        return self.new_var(0, 1, True, name)  # numpy-scalars
+        return self.new_var(0, 1, True, name)
 
     def new_constant(self, value: NumberT) -> Variable:
         """Declares a constant variable."""
@@ -720,7 +720,7 @@ class Model:
         if (
             mbn.is_a_number(lower_bounds)
             and mbn.is_a_number(upper_bounds)
-            and lower_bounds > upper_bounds
+            and lower_bounds > upper_bounds  # pyrefly: ignore[unsupported-operation]
         ):
             raise ValueError(
                 f"lower_bound={lower_bounds} is greater than"
@@ -849,7 +849,7 @@ class Model:
 
     # Linear constraints.
 
-    def add_linear_constraint(  # pytype: disable=annotation-type-mismatch  # numpy-scalars
+    def add_linear_constraint(
         self,
         linear_expr: LinearExprT,
         lb: NumberT = -math.inf,
@@ -927,7 +927,7 @@ class Model:
 
     # Enforced Linear constraints.
 
-    def add_enforced_linear_constraint(  # pytype: disable=annotation-type-mismatch  # numpy-scalars
+    def add_enforced_linear_constraint(
         self,
         linear_expr: LinearExprT,
         ivar: "Variable",
@@ -941,16 +941,24 @@ class Model:
         ct.indicator_variable = ivar
         ct.indicator_value = ivalue
         if name:
-            self.__helper.set_constraint_name(ct.index, name)
+            self.__helper.set_enforced_constraint_name(ct.index, name)
         if mbn.is_a_number(linear_expr):
-            self.__helper.set_constraint_lower_bound(ct.index, lb - linear_expr)
-            self.__helper.set_constraint_upper_bound(ct.index, ub - linear_expr)
+            self.__helper.set_enforced_constraint_lower_bound(
+                ct.index, lb - linear_expr
+            )
+            self.__helper.set_enforced_constraint_upper_bound(
+                ct.index, ub - linear_expr
+            )
         elif isinstance(linear_expr, LinearExpr):
             flat_expr = mbh.FlatExpr(linear_expr)
             # pylint: disable=protected-access
-            self.__helper.set_constraint_lower_bound(ct.index, lb - flat_expr.offset)
-            self.__helper.set_constraint_upper_bound(ct.index, ub - flat_expr.offset)
-            self.__helper.add_terms_to_constraint(
+            self.__helper.set_enforced_constraint_lower_bound(
+                ct.index, lb - flat_expr.offset
+            )
+            self.__helper.set_enforced_constraint_upper_bound(
+                ct.index, ub - flat_expr.offset
+            )
+            self.__helper.add_terms_to_enforced_constraint(
                 ct.index, flat_expr.vars, flat_expr.coeffs
             )
         else:
@@ -992,7 +1000,11 @@ class Model:
         """
         if isinstance(ct, mbh.BoundedLinearExpression):
             return _add_enforced_linear_constraint_to_helper(
-                ct, self.__helper, var, value, name
+                ct,
+                self.__helper,
+                var,
+                value,
+                name,  # pyrefly: ignore[bad-argument-type]
             )
         elif (
             isinstance(ct, bool)
@@ -1233,7 +1245,7 @@ class Solver:
         if not self.__solve_helper.has_solution():
             return pd.NA
         if mbn.is_a_number(expr):
-            return expr
+            return expr  # pyrefly: ignore[bad-return]
         elif isinstance(expr, LinearExpr):
             return self.__solve_helper.expression_value(expr)
         else:

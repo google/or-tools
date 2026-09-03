@@ -22,12 +22,13 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/hash/hash.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/sat_base.h"
@@ -153,8 +154,7 @@ bool ApplyLiteralMapping(
 bool BooleanLinearExpressionIsCanonical(
     absl::Span<const Literal> enforcement_literals,
     absl::Span<const LiteralWithCoeff> cst) {
-  if (!std::is_sorted(enforcement_literals.begin(),
-                      enforcement_literals.end())) {
+  if (!absl::c_is_sorted(enforcement_literals)) {
     return false;
   }
   Coefficient previous(1);
@@ -218,44 +218,6 @@ Coefficient ComputeNegatedCanonicalRhs(Coefficient lower_bound,
     return max_value;
   }
   return max_value - shifted_lb;
-}
-
-bool CanonicalBooleanLinearProblem::AddLinearConstraint(
-    bool use_lower_bound, Coefficient lower_bound, bool use_upper_bound,
-    Coefficient upper_bound, std::vector<LiteralWithCoeff>* cst) {
-  // Canonicalize the linear expression of the constraint.
-  Coefficient bound_shift;
-  Coefficient max_value;
-  if (!ComputeBooleanLinearExpressionCanonicalForm(cst, &bound_shift,
-                                                   &max_value)) {
-    return false;
-  }
-  if (use_upper_bound) {
-    const Coefficient rhs =
-        ComputeCanonicalRhs(upper_bound, bound_shift, max_value);
-    if (!AddConstraint(*cst, max_value, rhs)) return false;
-  }
-  if (use_lower_bound) {
-    // We transform the constraint into an upper-bounded one.
-    for (int i = 0; i < cst->size(); ++i) {
-      (*cst)[i].literal = (*cst)[i].literal.Negated();
-    }
-    const Coefficient rhs =
-        ComputeNegatedCanonicalRhs(lower_bound, bound_shift, max_value);
-    if (!AddConstraint(*cst, max_value, rhs)) return false;
-  }
-  return true;
-}
-
-bool CanonicalBooleanLinearProblem::AddConstraint(
-    absl::Span<const LiteralWithCoeff> cst, Coefficient max_value,
-    Coefficient rhs) {
-  if (rhs < 0) return false;          // Trivially unsatisfiable.
-  if (rhs >= max_value) return true;  // Trivially satisfiable.
-  constraints_.emplace_back(cst.begin(), cst.end());
-  rhs_.push_back(rhs);
-  SimplifyCanonicalBooleanLinearConstraint(&constraints_.back(), &rhs_.back());
-  return true;
 }
 
 void MutableUpperBoundedLinearConstraint::ClearAndResize(int num_variables) {

@@ -27,6 +27,7 @@
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
+#include "ortools/math_opt/solver_tests/test_models.h"
 #include "ortools/port/proto_utils.h"
 
 namespace operations_research {
@@ -39,19 +40,19 @@ using ::testing::status::StatusIs;
 std::ostream& operator<<(std::ostream& out,
                          const InvalidInputTestParameters& params) {
   out << "{ solver_type: " << params.solver_type
-      << " use_integer_variables: " << params.use_integer_variables << " }";
+      << " model_class: " << ToString(params.model_class) << " }";
   return out;
 }
 
 InvalidParameterTest::InvalidParameterTest()
-    : model_(), x_(model_.AddContinuousVariable(0.0, 1.0, "x")) {
-  model_.Maximize(2 * x_);
-}
+    : model_(MinimalModelForTestModelClass(GetParam().model_class)) {}
 
 InvalidParameterTestParams::InvalidParameterTestParams(
-    const SolverType solver_type, SolveParameters solve_parameters,
+    const SolverType solver_type, TestModelClass model_class,
+    SolveParameters solve_parameters,
     std::vector<std::string> expected_error_substrings)
     : solver_type(solver_type),
+      model_class(model_class),
       solve_parameters(std::move(solve_parameters)),
       expected_error_substrings(std::move(expected_error_substrings)) {}
 
@@ -73,7 +74,7 @@ TEST_P(InvalidInputTest, InvalidModel) {
   model.mutable_variables()->add_lower_bounds(2.0);
   model.mutable_variables()->add_upper_bounds(3.0);
   model.mutable_variables()->add_upper_bounds(4.0);
-  model.mutable_variables()->add_integers(GetParam().use_integer_variables);
+  model.mutable_variables()->add_integers(GetParam().uses_integer_variables());
   model.mutable_variables()->add_names("x3");
 
   EXPECT_THAT(Solver::New(EnumToProto(TestedSolver()), model, /*arguments=*/{}),
@@ -96,7 +97,7 @@ TEST_P(InvalidInputTest, InvalidUpdate) {
   model.mutable_variables()->add_ids(3);
   model.mutable_variables()->add_lower_bounds(2.0);
   model.mutable_variables()->add_upper_bounds(3.0);
-  model.mutable_variables()->add_integers(GetParam().use_integer_variables);
+  model.mutable_variables()->add_integers(GetParam().uses_integer_variables());
   model.mutable_variables()->add_names("x3");
 
   ASSERT_OK_AND_ASSIGN(auto solver,

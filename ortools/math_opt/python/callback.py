@@ -21,10 +21,8 @@ import math
 from typing import Dict, List, Mapping, Optional, Set, Union
 
 from ortools.math_opt import callback_pb2
-from ortools.math_opt.python import model
-from ortools.math_opt.python import normalized_inequality
-from ortools.math_opt.python import sparse_containers
-from ortools.math_opt.python import variables
+from ortools.math_opt.python import (model, normalized_inequality,
+                                     sparse_containers, variables)
 
 
 @enum.unique
@@ -243,7 +241,7 @@ class CallbackResult:
       suggested_solutions: A list of solutions (or partially defined solutions) to
         suggest to the solver. Some solvers (e.g. gurobi) will try and convert a
         partial solution into a full solution by solving a MIP. Use only for
-        Event.MIP_NODE.
+        Event.MIP_NODE or Event.MIP_SOLUTION.
     """
 
     terminate: bool = False

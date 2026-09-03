@@ -23,7 +23,7 @@ set_target_properties(${NAME} PROPERTIES
   )
 if(MSVC AND BUILD_SHARED_LIBS)
   target_compile_definitions(${NAME} PUBLIC "OR_BUILD_DLL")
-  target_compile_definitions(${NAME} PRIVATE "OR_EXPORT")
+  target_compile_definitions(${NAME} PRIVATE "OR_INIT_EXPORT")
 endif()
 target_include_directories(${NAME} PRIVATE
   ${PROJECT_SOURCE_DIR}

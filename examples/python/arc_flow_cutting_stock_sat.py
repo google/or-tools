@@ -17,13 +17,11 @@
 import collections
 import time
 
-from absl import app
-from absl import flags
 import numpy as np
+from absl import app, flags
 
 from ortools.linear_solver.python import model_builder as mb
 from ortools.sat.python import cp_model
-
 
 _OUTPUT_PROTO = flags.DEFINE_string(
     "output_proto", "", "Output file to write the cp_model proto to."

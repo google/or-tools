@@ -2,7 +2,7 @@
 The following examples showcase how to use OrTools.
 These examples should work for any Python3.7+.
 
-We recommend that all projects you create target `Python 3.9`,
+We recommend that all projects you create target `Python 3.10` or above,
 as this allows you to keep up-to-date with the latest Python frameworks.
 
 Wherever you have `ortools` package installed, be sure to import it from your python file.

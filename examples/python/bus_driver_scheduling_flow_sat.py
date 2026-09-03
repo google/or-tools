@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -10,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """This model implements a bus driver scheduling problem.
 
 Constraints:
@@ -33,7 +35,7 @@ PARSER.add_argument("--instance", default=1, type=int, help="Instance number (1.
 PARSER.add_argument(
     "--output_proto_file",
     default="",
-    help="Output file to write the cp_model" "proto to.",
+    help="Output file to write the cp_modelproto to.",
 )
 PARSER.add_argument("--params", default="", help="Sat solver parameters.")
 

@@ -14,10 +14,11 @@
 #include "ortools/util/rational_approximation.h"
 
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <limits>
 
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
 
 namespace operations_research {
 

@@ -606,13 +606,22 @@ argument:
   std::vector<VarRefOrValue>* const arguments = $2;
   CHECK(arguments != nullptr);
   bool has_variables = false;
+  bool has_set_variables = false;
   bool has_floats = false;
+  bool has_domains = false;
   for (int i = 0; i < arguments->size(); ++i) {
     if ((*arguments)[i].variable != nullptr) {
-      has_variables = true;
+      if ((*arguments)[i].variable->domain.is_a_set) {
+        has_set_variables = true;
+      } else {
+        has_variables = true;
+      }
     }
     if ((*arguments)[i].is_float) {
       has_floats = true;
+    }
+    if ((*arguments)[i].is_domain) {
+      has_domains = true;
     }
   }
   if (has_variables) {
@@ -629,6 +638,19 @@ argument:
       }
     }
     $$ = Argument::VarRefArray(std::move(vars));
+  } else if (has_set_variables) {
+    std::vector<Variable*> vars;
+    vars.reserve(arguments->size());
+    for (int i = 0; i < arguments->size(); ++i) {
+      const VarRefOrValue data = (*arguments)[i];
+      if (data.variable != nullptr) {
+        vars.push_back(data.variable);
+      } else {
+        CHECK(data.is_domain);
+        vars.push_back(model->AddSetConstant(data.domain));
+      }
+    }
+    $$ = Argument::VarRefArray(std::move(vars));
   } else if (has_floats) {
     std::vector<double> values;
     values.reserve(arguments->size());
@@ -640,6 +662,13 @@ argument:
       }
     }
     $$ = Argument::FloatList(std::move(values));
+  } else if (has_domains) {
+    std::vector<Domain> domains;
+    domains.reserve(arguments->size());
+    for (const VarRefOrValue& data : *arguments) {
+      domains.push_back(data.domain);
+    }
+    $$ = Argument::DomainList(std::move(domains));
   } else {
     std::vector<int64_t> values;
     values.reserve(arguments->size());

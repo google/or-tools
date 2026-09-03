@@ -86,10 +86,7 @@ struct Rectangle {
                  r.x_max.value(), r.y_min.value(), r.y_max.value());
   }
 
-  bool operator==(const Rectangle& other) const {
-    return std::tie(x_min, x_max, y_min, y_max) ==
-           std::tie(other.x_min, other.x_max, other.y_min, other.y_max);
-  }
+  bool operator==(const Rectangle& other) const = default;
 
   bool operator!=(const Rectangle& other) const { return !(other == *this); }
 
@@ -208,18 +205,12 @@ struct IndexedInterval {
   IntegerValue start;
   IntegerValue end;
 
-  bool operator==(const IndexedInterval& rhs) const {
-    return std::tie(start, end, index) ==
-           std::tie(rhs.start, rhs.end, rhs.index);
-  }
+  bool operator==(const IndexedInterval& rhs) const;
 
   // NOTE(user): We would like to use TUPLE_DEFINE_STRUCT, but sadly it doesn't
   // support //buildenv/target:non_prod.
   struct ComparatorByStartThenEndThenIndex {
-    bool operator()(const IndexedInterval& a, const IndexedInterval& b) const {
-      return std::tie(a.start, a.end, a.index) <
-             std::tie(b.start, b.end, b.index);
-    }
+    bool operator()(const IndexedInterval& a, const IndexedInterval& b) const;
   };
   struct ComparatorByStart {
     bool operator()(const IndexedInterval& a, const IndexedInterval& b) const {
@@ -685,9 +676,58 @@ std::string RenderDot(std::optional<Rectangle> bb,
 
 // Given a bounding box and a list of rectangles inside that bounding box,
 // returns a list of rectangles partitioning the empty area inside the bounding
-// box.
-std::vector<Rectangle> FindEmptySpaces(
-    const Rectangle& bounding_box, std::vector<Rectangle> ocupied_rectangles);
+// box. Contrary to FindEmptySpacesHorizontally() and
+// FindEmptySpacesVertically() below, this function supports overlapping input
+// rectangles, but runs in O(N^2) time.
+std::vector<Rectangle> FindEmptySpaces(const Rectangle& bounding_box,
+                                       std::vector<Rectangle> rectangles);
+
+// Given a bounding box and a list of non-overlapping rectangles inside that
+// bounding box, returns a list of non-overlapping rectangles partitioning the
+// empty area inside the bounding box. Moreover each rectangle has both its left
+// and right edge fully touching either one single box or the bounding box. Note
+// that the input rectangles must have non-zero area.
+//
+// Example:
+//    Input
+//    +------------------------------+
+//    |                              |
+//    |                              |
+//    |                   111111111  |
+//    |                   111111111  |
+//    |                              |
+//    |  0000000                     |
+//    |  0000000                     |
+//    |                              |
+//    +------------------------------+
+//
+//    Output
+//    +------------------------------+
+//    |******************************|
+//    |******************************|
+//    |...................111111111$$|
+//    |...................111111111$$|
+//    |""""""""""""""""""""""""""""""|
+//    |@@0000000*********************|
+//    |@@0000000*********************|
+//    |..............................|
+//    +------------------------------+
+struct EmptySpace {
+  Rectangle rect;
+  // Index of the rectangle touching the left/bottom edge, or -1 for bounding
+  // box.
+  int before_idx;
+  // Index of the rectangle touching the right/top edge, or -1 for bounding
+  // box.
+  int after_idx;
+};
+std::vector<EmptySpace> FindEmptySpacesHorizontally(
+    const Rectangle& bounding_box, absl::Span<const Rectangle> rectangles);
+
+// Same as FindEmptySpacesHorizontally(), but returns vertical strips
+// partitioning the empty space instead of horizontal ones.
+std::vector<EmptySpace> FindEmptySpacesVertically(
+    const Rectangle& bounding_box, absl::Span<const Rectangle> rectangles);
 
 // Given two regions, each one of them defined by a vector of non-overlapping
 // rectangles paving them, returns a vector of non-overlapping rectangles that

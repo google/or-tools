@@ -24,8 +24,7 @@ import dataclasses
 import math
 from typing import Mapping, Optional, Union
 
-from ortools.math_opt.python import bounded_expressions
-from ortools.math_opt.python import variables
+from ortools.math_opt.python import bounded_expressions, variables
 
 _BoundedLinearExpressions = (
     variables.LowerBoundedLinearExpression,

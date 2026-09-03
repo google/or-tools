@@ -34,6 +34,7 @@
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
+#include "ortools/base/macros/os_support.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_base.h"
@@ -188,8 +189,18 @@ void GetReferencesUsedByConstraint(const ConstraintProto& ct,
       // The node expressions are not used by the constraint itself.
       break;
     case ConstraintProto::ConstraintCase::kInverse:
-      AddIndices(ct.inverse().f_direct(), variables);
-      AddIndices(ct.inverse().f_inverse(), variables);
+      if (!ct.inverse().f_direct().empty()) {
+        AddIndices(ct.inverse().f_direct(), variables);
+        AddIndices(ct.inverse().f_inverse(), variables);
+      } else {
+        for (const LinearExpressionProto& expr : ct.inverse().f_expr_direct()) {
+          AddIndices(expr.vars(), variables);
+        }
+        for (const LinearExpressionProto& expr :
+             ct.inverse().f_expr_inverse()) {
+          AddIndices(expr.vars(), variables);
+        }
+      }
       break;
     case ConstraintProto::ConstraintCase::kReservoir:
       for (const LinearExpressionProto& time : ct.reservoir().time_exprs()) {
@@ -383,8 +394,17 @@ void ApplyToAllVariableIndices(absl::FunctionRef<void(int*)> f,
     case ConstraintProto::ConstraintCase::kRoutes:
       break;
     case ConstraintProto::ConstraintCase::kInverse:
-      APPLY_TO_REPEATED_FIELD(inverse, f_direct);
-      APPLY_TO_REPEATED_FIELD(inverse, f_inverse);
+      if (!ct->inverse().f_direct().empty()) {
+        APPLY_TO_REPEATED_FIELD(inverse, f_direct);
+        APPLY_TO_REPEATED_FIELD(inverse, f_inverse);
+      } else {
+        for (int i = 0; i < ct->inverse().f_expr_direct_size(); ++i) {
+          APPLY_TO_REPEATED_FIELD(inverse, f_expr_direct(i)->mutable_vars);
+        }
+        for (int i = 0; i < ct->inverse().f_expr_inverse_size(); ++i) {
+          APPLY_TO_REPEATED_FIELD(inverse, f_expr_inverse(i)->mutable_vars);
+        }
+      }
       break;
     case ConstraintProto::ConstraintCase::kReservoir:
       for (int i = 0; i < ct->reservoir().time_exprs_size(); ++i) {
@@ -611,6 +631,7 @@ std::vector<int> UsedIntervals(const ConstraintProto& ct) {
       AddIndices(ct.no_overlap().intervals(), &used_intervals);
       break;
     case ConstraintProto::ConstraintCase::kNoOverlap2D:
+      used_intervals.reserve(2 * ct.no_overlap_2d().x_intervals_size());
       AddIndices(ct.no_overlap_2d().x_intervals(), &used_intervals);
       AddIndices(ct.no_overlap_2d().y_intervals(), &used_intervals);
       break;
@@ -830,8 +851,19 @@ uint64_t FingerprintModel(const CpModelProto& model, uint64_t seed) {
         fp = FingerprintRepeatedField(ct.routes().literals(), fp);
         break;
       case ConstraintProto::ConstraintCase::kInverse:
-        fp = FingerprintRepeatedField(ct.inverse().f_direct(), fp);
-        fp = FingerprintRepeatedField(ct.inverse().f_inverse(), fp);
+        if (!ct.inverse().f_direct().empty()) {
+          fp = FingerprintRepeatedField(ct.inverse().f_direct(), fp);
+          fp = FingerprintRepeatedField(ct.inverse().f_inverse(), fp);
+        } else {
+          for (const LinearExpressionProto& expr :
+               ct.inverse().f_expr_direct()) {
+            fp = FingerprintExpression(expr, fp);
+          }
+          for (const LinearExpressionProto& expr :
+               ct.inverse().f_expr_inverse()) {
+            fp = FingerprintExpression(expr, fp);
+          }
+        }
         break;
       case ConstraintProto::ConstraintCase::kReservoir:
         fp = FingerprintSingleField(ct.reservoir().min_level(), fp);
@@ -919,7 +951,8 @@ uint64_t FingerprintModel(const CpModelProto& model, uint64_t seed) {
   return fp;
 }
 
-#if !defined(__PORTABLE_PLATFORM__)
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
+static_assert(kTargetOsSupportsProtoDescriptor);
 namespace {
 
 // We need to print " { " instead of " {\n" to inline our variables like:
@@ -996,7 +1029,9 @@ void SetupTextFormatPrinter(google::protobuf::TextFormat::Printer* printer) {
   printer->RegisterMessagePrinter(LinearExpressionProto::descriptor(),
                                   new InlineMessagePrinter());
 }
-#endif  // !defined(__PORTABLE_PLATFORM__)
+#else
+static_assert(!kTargetOsSupportsProtoDescriptor);
+#endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
 
 namespace {
 bool ModelHasOnlyClausesAndBooleanVariables(const CpModelProto& cp_model,
@@ -1174,6 +1209,16 @@ bool IsAffineIntAbs(const ConstraintProto& ct) {
                                   ? lin_max.exprs(1).coeffs(0)
                                   : -lin_max.exprs(1).coeffs(0);
   return left_coeff == -right_coeff;
+}
+
+AffineExpr GetAffineExpr(const LinearExpressionProto& expr) {
+  CHECK_LE(expr.vars_size(), 1);
+  if (expr.vars().empty()) {
+    return AffineExpr{.var = -1, .coeff = 0, .offset = expr.offset()};
+  }
+  const int64_t coeff = expr.coeffs().empty() ? 1 : expr.coeffs(0);
+  return AffineExpr{
+      .var = expr.vars(0), .coeff = coeff, .offset = expr.offset()};
 }
 
 }  // namespace sat

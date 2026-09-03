@@ -18,11 +18,11 @@
 #ifndef ORTOOLS_MATH_OPT_ELEMENTAL_ELEMENTS_H_
 #define ORTOOLS_MATH_OPT_ELEMENTAL_ELEMENTS_H_
 
+#include <array>
 #include <ostream>
 #include <type_traits>
 
 #include "absl/strings/string_view.h"
-#include "ortools/base/array.h"
 #include "ortools/math_opt/elemental/tagged_id.h"
 
 namespace operations_research::math_opt {
@@ -34,7 +34,7 @@ enum class ElementType {
   kQuadraticConstraint,
   kIndicatorConstraint,
 };
-constexpr auto kElements = gtl::to_array(
+constexpr auto kElements = std::to_array(
     {ElementType::kVariable, ElementType::kLinearConstraint,
      ElementType::kAuxiliaryObjective, ElementType::kQuadraticConstraint,
      ElementType::kIndicatorConstraint});

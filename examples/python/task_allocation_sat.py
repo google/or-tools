@@ -19,7 +19,9 @@ cpsat-vs-mip.html
 """
 
 from typing import Sequence
+
 from absl import app
+
 from ortools.sat.python import cp_model
 
 

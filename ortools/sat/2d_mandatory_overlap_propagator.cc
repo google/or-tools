@@ -19,7 +19,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
 #include "absl/types/span.h"
 #include "ortools/sat/diffn_util.h"

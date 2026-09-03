@@ -30,7 +30,9 @@ The Python interface to the CP-SAT solver is implemented using two classes.
 ```python
 # Snippet from ortools/sat/samples/simple_sat_program.py
 """Simple solve."""
+
 from ortools.sat.python import cp_model
+
 
 
 def simple_sat_program():
@@ -78,13 +80,14 @@ and some metrics.
 #include <stdlib.h>
 
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
-#include "absl/base/log_severity.h"
+#include "ortools/base/log_severity.h"
+#include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
+#include "ortools/util/sorted_interval_list.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
-#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -130,7 +133,7 @@ The Java code implements the same interface as the Python code, with a
 **CpModel** and a **CpSolver** class.
 
 ```java
-// Snippet from ortools/sat/samples/SimpleSatProgram.java
+// Snippet from ortools/sat/samples/java/SimpleSatProgram.java
 package com.google.ortools.sat.samples;
 import com.google.ortools.Loader;
 import com.google.ortools.sat.CpSolverStatus;

@@ -23,7 +23,6 @@ negation of `x`.
 # Snippet from ortools/sat/samples/literal_sample_sat.py
 """Code sample to demonstrate Boolean variable and literals."""
 
-
 from ortools.sat.python import cp_model
 
 
@@ -45,9 +44,10 @@ literal_sample_sat()
 #include <stdlib.h>
 
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
-#include "absl/base/log_severity.h"
+#include "ortools/base/log_severity.h"
+#include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "ortools/sat/cp_model.h"
 
 namespace operations_research {
@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/LiteralSampleSat.java
+// Snippet from ortools/sat/samples/java/LiteralSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.sat.BoolVar;
@@ -158,7 +158,6 @@ constraints. For instance, we can add a constraint Or(x, not(y)).
 # Snippet from ortools/sat/samples/bool_or_sample_sat.py
 """Code sample to demonstrates a simple Boolean constraint."""
 
-
 from ortools.sat.python import cp_model
 
 
@@ -184,7 +183,7 @@ bool_or_sample_sat()
 #include <stdlib.h>
 
 #include "ortools/base/init_google.h"
-#include "absl/base/log_severity.h"
+#include "ortools/base/log_severity.h"
 #include "absl/log/globals.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.h"
@@ -216,7 +215,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/BoolOrSampleSat.java
+// Snippet from ortools/sat/samples/java/BoolOrSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -341,7 +340,7 @@ reified_sample_sat()
 #include <stdlib.h>
 
 #include "ortools/base/init_google.h"
-#include "absl/base/log_severity.h"
+#include "ortools/base/log_severity.h"
 #include "absl/log/globals.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.h"
@@ -382,7 +381,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/ReifiedSampleSat.java
+// Snippet from ortools/sat/samples/java/ReifiedSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -519,7 +518,6 @@ x = 1   y = 1   p = 1
 ```python
 # Snippet from ortools/sat/samples/boolean_product_sample_sat.py
 """Code sample that encodes the product of two Boolean variables."""
-
 
 from ortools.sat.python import cp_model
 

@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <deque>
 #include <memory>
 #include <string>
 #include <utility>
@@ -34,7 +35,6 @@
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/scheduling.h"
-#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -116,6 +116,7 @@ class TaskSet {
   int GetCriticalIndex() const { return optimized_restart_; }
 
   absl::Span<const Entry> SortedTasks() const { return sorted_tasks_; }
+  int NumEntries() const { return sorted_tasks_.size(); }
 
  private:
   FixedCapacityVector<Entry>& sorted_tasks_;
@@ -188,7 +189,6 @@ class DisjunctiveOverloadChecker : public PropagatorInterface {
   }
 
   bool Propagate() final;
-  int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   bool PropagateSubwindow(absl::Span<TaskTime> sub_window,
@@ -214,16 +214,19 @@ class DisjunctiveOverloadChecker : public PropagatorInterface {
 // propagates a lot.
 class DisjunctiveSimplePrecedences : public PropagatorInterface {
  public:
-  explicit DisjunctiveSimplePrecedences(SchedulingConstraintHelper* helper,
+  explicit DisjunctiveSimplePrecedences(bool time_direction,
+                                        SchedulingConstraintHelper* helper,
                                         Model* model = nullptr)
-      : helper_(helper), stats_("DisjunctiveSimplePrecedences", model) {}
+      : time_direction_(time_direction),
+        helper_(helper),
+        stats_("DisjunctiveSimplePrecedences", model) {}
+
   bool Propagate() final;
-  int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  bool PropagateOneDirection();
   bool Push(TaskTime before, int t);
 
+  const bool time_direction_;
   SchedulingConstraintHelper* helper_;
   PropagationStatistics stats_;
 };
@@ -239,8 +242,8 @@ class DisjunctiveDetectablePrecedences : public PropagatorInterface {
     ranks_.resize(helper->NumTasks());
     to_add_.ClearAndReserve(helper->NumTasks());
   }
+
   bool Propagate() final;
-  int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   bool PropagateWithRanks();
@@ -273,7 +276,9 @@ class CombinedDisjunctive : public PropagatorInterface {
   std::vector<std::vector<int>> task_to_disjunctives_;
   std::vector<bool> task_is_added_;
   std::vector<TaskSet> task_sets_;
-  std::vector<FixedCapacityVector<TaskSet::Entry>> task_set_storage_;
+
+  // Using a deque to avoid invalidating references.
+  std::deque<FixedCapacityVector<TaskSet::Entry>> task_set_storage_;
   std::vector<IntegerValue> end_mins_;
 };
 
@@ -284,13 +289,15 @@ class DisjunctiveNotLast : public PropagatorInterface {
       : time_direction_(time_direction),
         helper_(helper),
         stats_("DisjunctiveNotLast", model) {}
+
   bool Propagate() final;
-  int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   bool PropagateSubwindow(TaskSet& task_set,
-                          absl::Span<TaskTime> task_by_increasing_start_max,
+                          absl::Span<TaskTime> task_by_increasing_shifted_smin,
                           absl::Span<TaskTime> task_by_increasing_end_max);
+  bool Push(const TaskSet& task_set, int t, int critical_index,
+            IntegerValue end_min_of_critical_tasks);
 
   const bool time_direction_;
   SchedulingConstraintHelper* helper_;
@@ -307,8 +314,8 @@ class DisjunctiveEdgeFinding : public PropagatorInterface {
         stats_("DisjunctiveEdgeFinding", model) {
     event_size_.ClearAndReserve(helper->NumTasks());
   }
+
   bool Propagate() final;
-  int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   bool PropagateSubwindow(
@@ -348,7 +355,6 @@ class DisjunctivePrecedences : public PropagatorInterface {
   }
 
   bool Propagate() final;
-  int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   bool PropagateSubwindow(absl::Span<TaskTime> window);
@@ -377,8 +383,8 @@ class DisjunctiveWithTwoItems : public PropagatorInterface {
  public:
   explicit DisjunctiveWithTwoItems(SchedulingConstraintHelper* helper)
       : helper_(helper) {}
+
   bool Propagate() final;
-  int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   SchedulingConstraintHelper* helper_;

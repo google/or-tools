@@ -21,9 +21,9 @@
 
 #include "absl/strings/string_view.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/bop/boolean_problem.h"
+#include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_types.h"
-#include "ortools/sat/boolean_problem.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/pb_constraint.h"
 
 namespace operations_research {
@@ -38,7 +38,7 @@ namespace bop {
 // the feasibility.
 class BopSolution {
  public:
-  BopSolution(const sat::LinearBooleanProblem& problem, absl::string_view name);
+  BopSolution(const LinearBooleanProblem& problem, absl::string_view name);
 
   void SetValue(VariableIndex var, bool value) {
     recompute_cost_ = true;
@@ -66,8 +66,8 @@ class BopSolution {
   // problem cost, while internally, the algorithm works directly with the
   // integer version of the cost returned by GetCost().
   double GetScaledCost() const {
-    return sat::AddOffsetAndScaleObjectiveValue(*problem_,
-                                                sat::Coefficient(GetCost()));
+    return AddOffsetAndScaleObjectiveValue(*problem_,
+                                           sat::Coefficient(GetCost()));
   }
 
   // Returns true iff the solution is feasible.
@@ -101,7 +101,7 @@ class BopSolution {
   bool ComputeIsFeasible() const;
   int64_t ComputeCost() const;
 
-  const sat::LinearBooleanProblem* problem_;
+  const LinearBooleanProblem* problem_;
   std::string name_;
   util_intops::StrongVector<VariableIndex, bool> values_;
 

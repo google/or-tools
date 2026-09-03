@@ -21,13 +21,13 @@
 
 #include "absl/strings/string_view.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_lns.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_solution.h"
 #include "ortools/bop/bop_types.h"
 #include "ortools/glop/lp_solver.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/random_engine.h"
 #include "ortools/util/stats.h"
@@ -83,10 +83,10 @@ class PortfolioOptimizer : public BopOptimizerBase {
  private:
   BopOptimizerBase::Status SynchronizeIfNeeded(
       const ProblemState& problem_state);
-  void AddOptimizer(const sat::LinearBooleanProblem& problem,
+  void AddOptimizer(const LinearBooleanProblem& problem,
                     const BopParameters& parameters,
                     const BopOptimizerMethod& optimizer_method);
-  void CreateOptimizers(const sat::LinearBooleanProblem& problem,
+  void CreateOptimizers(const LinearBooleanProblem& problem,
                         const BopParameters& parameters,
                         const BopSolverOptimizerSet& optimizer_set);
 

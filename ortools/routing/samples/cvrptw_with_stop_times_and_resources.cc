@@ -26,33 +26,35 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/globals.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/types.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_index_manager.h"
-#include "ortools/constraint_solver/routing_parameters.h"
-#include "ortools/constraint_solver/routing_parameters.pb.h"
+#include "ortools/constraint_solver/interval.h"
+#include "ortools/routing/index_manager.h"
+#include "ortools/routing/parameters.h"
+#include "ortools/routing/parameters.pb.h"
 #include "ortools/routing/parsers/cvrptw_lib.h"
+#include "ortools/routing/routing.h"
+#include "ortools/routing/types.h"
 
 using operations_research::Assignment;
-using operations_research::DefaultRoutingSearchParameters;
-using operations_research::GetSeed;
 using operations_research::IntervalVar;
 using operations_research::IntVar;
-using operations_research::LocationContainer;
-using operations_research::RandomDemand;
-using operations_research::RoutingDimension;
-using operations_research::RoutingIndexManager;
-using operations_research::RoutingModel;
-using operations_research::RoutingNodeIndex;
-using operations_research::RoutingSearchParameters;
 using operations_research::Solver;
-using operations_research::StopServiceTimePlusTransition;
+using operations_research::routing::DefaultRoutingSearchParameters;
+using operations_research::routing::Dimension;
+using operations_research::routing::GetSeed;
+using operations_research::routing::IndexManager;
+using operations_research::routing::LocationContainer;
+using operations_research::routing::Model;
+using operations_research::routing::NodeIndex;
+using operations_research::routing::RandomDemand;
+using operations_research::routing::RoutingSearchParameters;
 
 ABSL_FLAG(int, vrp_stops, 25, "Stop locations in the problem.");
 ABSL_FLAG(int, vrp_orders_per_stop, 5, "Nodes for each stop.");
@@ -69,6 +71,7 @@ const char* kCapacity = "Capacity";
 
 int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   CHECK_LT(0, absl::GetFlag(FLAGS_vrp_stops))
       << "Specify an instance size greater than 0.";
   CHECK_LT(0, absl::GetFlag(FLAGS_vrp_orders_per_stop))
@@ -79,10 +82,10 @@ int main(int argc, char** argv) {
       absl::GetFlag(FLAGS_vrp_stops) * absl::GetFlag(FLAGS_vrp_orders_per_stop);
   // Nodes are indexed from 0 to vrp_orders, the starts and ends of the routes
   // are at node 0.
-  const RoutingIndexManager::NodeIndex kDepot(0);
-  RoutingIndexManager manager(vrp_orders + 1, absl::GetFlag(FLAGS_vrp_vehicles),
-                              kDepot);
-  RoutingModel routing(manager);
+  const NodeIndex kDepot(0);
+  IndexManager manager(vrp_orders + 1, absl::GetFlag(FLAGS_vrp_vehicles),
+                       kDepot);
+  Model routing(manager);
 
   // Setting up locations.
   const int64_t kXMax = 100000;
@@ -121,9 +124,8 @@ int main(int argc, char** argv) {
   // Adding time dimension constraints.
   const int64_t kStopTime = 300;
   const int64_t kHorizon = 24 * 3600;
-  StopServiceTimePlusTransition time(
-      kStopTime, locations,
-      [&locations](RoutingNodeIndex i, RoutingNodeIndex j) {
+  operations_research::routing::StopServiceTimePlusTransition time(
+      kStopTime, locations, [&locations](NodeIndex i, NodeIndex j) {
         return locations.ManhattanTime(i, j);
       });
   routing.AddDimension(
@@ -131,7 +133,7 @@ int main(int argc, char** argv) {
         return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
       }),
       kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/false, kTime);
-  const RoutingDimension& time_dimension = routing.GetDimensionOrDie(kTime);
+  const Dimension& time_dimension = routing.GetDimensionOrDie(kTime);
 
   // Adding time windows, for the sake of simplicty same for each stop.
   std::mt19937 randomizer(
@@ -197,22 +199,22 @@ int main(int argc, char** argv) {
 
   // Adding penalty costs to allow skipping orders.
   const int64_t kPenalty = 100000;
-  const RoutingIndexManager::NodeIndex kFirstNodeAfterDepot(1);
-  for (RoutingIndexManager::NodeIndex order = kFirstNodeAfterDepot;
-       order < routing.nodes(); ++order) {
+  const NodeIndex kFirstNodeAfterDepot(1);
+  for (NodeIndex order = kFirstNodeAfterDepot; order < routing.nodes();
+       ++order) {
     std::vector<int64_t> orders(1, manager.NodeToIndex(order));
     routing.AddDisjunction(orders, kPenalty);
   }
 
-  // Solve, returns a solution if any (owned by RoutingModel).
+  // Solve, returns a solution if any (owned by Model).
   RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
   CHECK(google::protobuf::TextFormat::MergeFromString(
       absl::GetFlag(FLAGS_routing_search_parameters), &parameters));
   const Assignment* solution = routing.SolveWithParameters(parameters);
   if (solution != nullptr) {
-    DisplayPlan(manager, routing, *solution, /*use_same_vehicle_costs=*/false,
-                /*max_nodes_per_group=*/0, /*same_vehicle_cost=*/0,
-                {kCapacity, kTime});
+    operations_research::routing::DisplayPlan(
+        manager, routing, *solution, /*use_same_vehicle_costs=*/false,
+        /*max_nodes_per_group=*/0, /*same_vehicle_cost=*/0, {kCapacity, kTime});
     LOG(INFO) << "Stop intervals:";
     for (IntervalVar* const interval : intervals) {
       if (solution->PerformedValue(interval)) {

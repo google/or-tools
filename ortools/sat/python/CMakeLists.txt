@@ -11,21 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(WRAPPERS_NAME sat_python_wrappers)
-
-add_library(${WRAPPERS_NAME} OBJECT wrappers.h wrappers.cc)
-set_target_properties(${WRAPPERS_NAME} PROPERTIES
-  POSITION_INDEPENDENT_CODE ON)
-target_include_directories(${WRAPPERS_NAME} PUBLIC
-  ${PROJECT_SOURCE_DIR}
-  ${PROJECT_BINARY_DIR})
-target_link_libraries(${WRAPPERS_NAME} PUBLIC
-  absl::memory
-  absl::synchronization
-  absl::str_format
-  protobuf::libprotobuf)
-add_library(${PROJECT_NAMESPACE}::${WRAPPERS_NAME} ALIAS ${WRAPPERS_NAME})  
-
 # gen_proto_builder_pybind11 code generator.
 add_executable(gen_proto_builder_pybind11)
 target_sources(gen_proto_builder_pybind11 PRIVATE "gen_proto_builder_pybind11.cc")
@@ -39,7 +24,7 @@ target_link_libraries(gen_proto_builder_pybind11 PRIVATE
   absl::str_format
   protobuf::libprotobuf
   ${PROJECT_NAMESPACE}::ortools_proto
-  ${PROJECT_NAMESPACE}::${WRAPPERS_NAME})
+  ${PROJECT_NAMESPACE}::util_python_wrappers)
 
 include(GNUInstallDirs)
 if(APPLE)
@@ -61,7 +46,47 @@ add_custom_command(
      COMMENT "Generate C++ proto_builder_pybind11.h"
      VERBATIM)
 
+# Linear Expression doc
+add_library(linear_expr_doc INTERFACE)
+target_include_directories(linear_expr_doc INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_library(pybind_constraint OBJECT pybind_constraint.h pybind_constraint.cc)
+set_target_properties(pybind_constraint PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(pybind_constraint PUBLIC
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>)
+target_link_libraries(pybind_constraint PRIVATE
+  ${PROJECT_NAMESPACE}::ortools
+  absl::strings
+  pybind11::module)
+
+add_library(pybind11_linearexpr OBJECT pybind_linearexpr.h pybind_linearexpr.cc)
+set_target_properties(pybind11_linearexpr PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(pybind11_linearexpr PUBLIC
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>)
+target_link_libraries(pybind11_linearexpr PRIVATE
+  ${PROJECT_NAMESPACE}::ortools
+  linear_expr_doc
+  absl::strings
+  pybind11::module)
+
+add_library(pybind11_solver OBJECT pybind_solver.h pybind_solver.cc)
+set_target_properties(pybind11_solver PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(pybind11_solver PUBLIC
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>)
+target_link_libraries(pybind11_solver PRIVATE
+  ${PROJECT_NAMESPACE}::ortools
+  absl::strings
+  pybind11::module)
+
 pybind11_add_module(cp_model_helper_pybind11 MODULE cp_model_helper.cc proto_builder_pybind11.h)
+target_sources(cp_model_helper_pybind11 PRIVATE
+  $<TARGET_OBJECTS:pybind_constraint>
+  $<TARGET_OBJECTS:pybind11_linearexpr>
+  $<TARGET_OBJECTS:pybind11_solver>
+)
 set_target_properties(cp_model_helper_pybind11 PROPERTIES
   LIBRARY_OUTPUT_NAME "cp_model_helper")
 
@@ -82,7 +107,7 @@ target_link_libraries(cp_model_helper_pybind11 PRIVATE
 target_include_directories(cp_model_helper_pybind11 PRIVATE ${protobuf_SOURCE_DIR})
 add_library(${PROJECT_NAMESPACE}::cp_model_helper_pybind11 ALIAS cp_model_helper_pybind11)
 
-if(BUILD_TESTING)
+if(BUILD_PYTHON_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)
     add_python_test(FILE_NAME ${FILE_NAME})

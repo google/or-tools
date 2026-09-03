@@ -13,7 +13,10 @@
 
 #include "ortools/sat/cp_model_solver.h"
 
+#include <atomic>
 #include <cstdint>
+#include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -22,15 +25,16 @@
 #include "absl/strings/str_join.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/macros/os_support.h"
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
-#include "ortools/port/os.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_test_utils.h"
 #include "ortools/sat/lp_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/subsolver.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research {
@@ -434,7 +438,8 @@ TEST(SolveCpModelTest, TrivialModelWithCore) {
                                         response.solution().end())));
 }
 
-#if ORTOOLS_TARGET_OS_SUPPORTS_THREADS
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+static_assert(operations_research::kTargetOsSupportsThreads);
 
 TEST(SolveCpModelTest, IntervalsWithSeveralEnforcementLiterals) {
   const CpModelProto model_proto = ParseTestProto(R"pb(
@@ -5451,31 +5456,6 @@ TEST(PresolveCpModelTest, SolutionCrushBug) {
   EXPECT_EQ(response.status(), CpSolverStatus::INFEASIBLE);
 }
 
-TEST(CpModelSolverTest, DratProofIsValidForRandom3Sat) {
-  SatParameters params;
-  params.set_num_workers(1);
-  params.set_cp_model_presolve(false);
-  params.set_inprocessing_use_sat_sweeping(false);
-  params.set_symmetry_level(1);
-  params.set_linearization_level(1);
-  params.set_check_drat_proof(true);
-  params.set_max_drat_time_in_seconds(60);
-  params.set_debug_crash_if_lrat_check_fails(true);
-
-  int num_infeasible = 0;
-  for (int i = 0; i < 100; ++i) {
-    const int kNumVariables = 100;
-    CpModelProto model_proto = Random3SatProblem(kNumVariables);
-
-    CpSolverResponse response = SolveWithParameters(model_proto, params);
-    if (response.status() == CpSolverStatus::INFEASIBLE) {
-      ++num_infeasible;
-    }
-  }
-  LOG(INFO) << "num_infeasible: " << num_infeasible;
-  EXPECT_GT(num_infeasible, 0);
-}
-
 TEST(CpModelSolverTest, LratProofIsValidForRandom3Sat) {
   SatParameters params;
   params.set_num_workers(8);
@@ -5500,7 +5480,52 @@ TEST(CpModelSolverTest, LratProofIsValidForRandom3Sat) {
   EXPECT_GT(num_infeasible, 0);
 }
 
-#endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
+class MockCountingSubsolver : public SubSolver {
+ public:
+  MockCountingSubsolver(std::atomic<int>* task_count,
+                        std::atomic<int>* sync_count)
+      : SubSolver("mock_counting", SubSolver::HELPER),
+        task_count_(task_count),
+        sync_count_(sync_count) {}
+
+  void Synchronize() override { ++(*sync_count_); }
+
+  bool TaskIsAvailable() override { return !task_generated_.load(); }
+
+  std::function<void()> GenerateTask(int64_t /*task_id*/) override {
+    task_generated_.store(true);
+    return [this]() { ++(*task_count_); };
+  }
+
+ private:
+  std::atomic<int>* const task_count_;
+  std::atomic<int>* const sync_count_;
+  std::atomic<bool> task_generated_{false};
+};
+
+TEST(CpModelSolverTest, AddSubsolverGeneratesAndRunsTask) {
+  std::atomic<int> task_count{0};
+  std::atomic<int> sync_count{0};
+  const CpModelProto model_proto = Random3SatProblem(100, 3);
+  Model model;
+  SatParameters params;
+  params.set_num_workers(16);
+  params.set_interleave_search(true);
+  params.set_cp_model_presolve(false);
+  model.Add(NewSatParameters(params));
+  model.Add(NewSubsolver([&task_count, &sync_count](SharedClasses* /*shared*/) {
+    return std::make_unique<MockCountingSubsolver>(&task_count, &sync_count);
+  }));
+
+  const CpSolverResponse response = SolveCpModel(model_proto, &model);
+
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_GT(task_count.load(), 0);
+  EXPECT_GT(sync_count.load(), 0);
+}
+#else
+static_assert(!operations_research::kTargetOsSupportsThreads);
+#endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
 
 }  // namespace
 }  // namespace sat

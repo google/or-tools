@@ -32,7 +32,7 @@ target_link_libraries(rcpsp_pybind11 PRIVATE
 target_include_directories(rcpsp_pybind11 PRIVATE ${protobuf_SOURCE_DIR})
 add_library(${PROJECT_NAMESPACE}::rcpsp_pybind11 ALIAS rcpsp_pybind11)
 
-if(BUILD_TESTING)
+if(BUILD_PYTHON_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)
     add_python_test(FILE_NAME ${FILE_NAME})

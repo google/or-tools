@@ -94,31 +94,32 @@
       "hash_map": "cpp",
       "hash_set": "cpp",
       "slist": "cpp",
-      "regex": "cpp"
+      "regex": "cpp",
     },
     "C_Cpp.clang_format_fallbackStyle": "Google",
     "C_Cpp.default.includePath": [
       "${workspaceRoot}",
-    "${workspaceRoot}/ortools/gen",
-    "${workspaceRoot}/dependencies/install/include",
+      "${workspaceRoot}/build",
+      "${workspaceRoot}/build/_deps",
     ],
     "C_Cpp.default.cppStandard": "c++20",
     "C_Cpp.default.cStandard": "c11",
     "C_Cpp.default.defines": [
       "USE_BOP",
-    "USE_GLOP",
-    "USE_CLP",
-    "USE_CBC",
-    "USE_PDLP",
-    "USE_SCIP"
+      "USE_GLOP",
+      "USE_CLP",
+      "USE_CBC",
+      "USE_HIGHS",
+      "USE_PDLP",
+      "USE_SCIP",
     ],
     "C_Cpp.clang_format_style": "Google",
     "python.formatting.provider": "black",
     "python.pythonPath": "python3",
     "python.autoComplete.extraPaths": [
       "${workspaceRoot}",
-    "${workspaceRoot}/ortools/gen",
-    "${workspaceRoot}/dependencies/sources/protobuf-3.6.1/python",
+      "${workspaceRoot}/build",
+      "${workspaceRoot}/build/_deps/protobuf-src/python",
     ],
     "[cpp]": {
       "editor.tabSize": 2,
@@ -137,8 +138,8 @@
     "git.ignoreLimitWarning": true,
     "python.analysis.extraPaths": [
       "${workspaceRoot}",
-    "${workspaceRoot}/ortools/gen",
-    "${workspaceRoot}/dependencies/sources/protobuf-3.6.1/python"
+      "${workspaceRoot}/build",
+      "${workspaceRoot}/build/_deps/protobuf-src/python",
     ],
   }
 }

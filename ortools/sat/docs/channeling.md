@@ -31,7 +31,6 @@ These are implemented using the `OnlyEnforceIf` method as shown below.
 # Snippet from ortools/sat/samples/channeling_sample_sat.py
 """Link integer constraints together."""
 
-
 from ortools.sat.python import cp_model
 
 
@@ -99,10 +98,10 @@ channeling_sample_sat()
 #include <stdlib.h>
 
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
-#include "absl/base/log_severity.h"
+#include "ortools/base/log_severity.h"
+#include "absl/log/check.h"
 #include "absl/log/globals.h"
-#include "absl/types/span.h"
+#include "absl/log/log.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -165,7 +164,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/ChannelingSampleSat.java
+// Snippet from ortools/sat/samples/java/ChannelingSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -534,7 +533,6 @@ variables together:
 # Snippet from ortools/sat/samples/binpacking_problem_sat.py
 """Solves a binpacking problem using the CP-SAT solver."""
 
-
 from ortools.sat.python import cp_model
 
 
@@ -609,9 +607,10 @@ binpacking_problem_sat()
 #include <vector>
 
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
-#include "absl/base/log_severity.h"
+#include "ortools/base/log_severity.h"
+#include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -698,7 +697,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/BinPackingProblemSat.java
+// Snippet from ortools/sat/samples/java/BinPackingProblemSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;

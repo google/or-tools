@@ -30,11 +30,11 @@
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cuts.h"
@@ -305,12 +305,11 @@ std::vector<int64_t> FindPossibleDemands(const EnergyEvent& event,
       possible_demands.push_back(
           integer_trail->FixedValue(event.demand).value());
     } else {
-      if (integer_trail->InitialVariableDomain(event.demand.var).Size() >
-          1000000) {
+      if (integer_trail->LevelZeroDomain(event.demand.var).Size() > 1000000) {
         return {};
       }
       for (const int64_t var_value :
-           integer_trail->InitialVariableDomain(event.demand.var).Values()) {
+           integer_trail->LevelZeroDomain(event.demand.var).Values()) {
         possible_demands.push_back(event.demand.ValueAt(var_value).value());
       }
     }

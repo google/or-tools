@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
@@ -551,7 +552,7 @@ TEST(SquareCutGeneratorTest, TestBelowCut) {
   square.generate_cuts(manager);
   EXPECT_EQ(1, manager->num_cuts());
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              EndsWith("-5*I0 1*I1 <= 0"));
+              StartsWith("0 <= 5*I0 -1*I1"));
 }
 
 TEST(SquareCutGeneratorTest, TestBelowCutWithOffset) {
@@ -565,7 +566,7 @@ TEST(SquareCutGeneratorTest, TestBelowCutWithOffset) {
   square.generate_cuts(manager);
   ASSERT_EQ(1, manager->num_cuts());
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              EndsWith("-6*I0 1*I1 <= -5"));
+              StartsWith("5 <= 6*I0 -1*I1"));
 }
 
 TEST(SquareCutGeneratorTest, TestNoBelowCut) {
@@ -591,7 +592,7 @@ TEST(SquareCutGeneratorTest, TestAboveCut) {
   square.generate_cuts(manager);
   ASSERT_EQ(1, manager->num_cuts());
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              StartsWith("-6 <= -5*I0 1*I1"));
+              EndsWith("5*I0 -1*I1 <= 6"));
 }
 
 TEST(SquareCutGeneratorTest, TestNearlyAboveCut) {
@@ -772,7 +773,7 @@ TEST(LinMaxCutsTest, BasicCuts1) {
   // respectively.
   // Most violated inequality is 2.
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              StartsWith("0 <= -2*I1 -1*I2 3*I3 1*I4 4*I5"));
+              EndsWith("2*I1 1*I2 -3*I3 -1*I4 -4*I5 <= 0"));
 
   InitializeLpValues({-1.0, -1.0, 2.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0},
                      &model);
@@ -1168,6 +1169,62 @@ TEST(SumOfAllDiffLowerBounderTest, DiscreteDomains) {
   std::string suffix;
   EXPECT_EQ(18, helper.GetBestLowerBound(suffix));
   EXPECT_EQ("d", suffix);
+}
+
+TEST(ComputeHyperPlaneBelowSquare, Exhaustive) {
+  const IntegerVariable x(0);
+  const IntegerVariable s(2);
+  for (int lb = -10; lb <= 10; ++lb) {
+    for (int ub = lb; ub <= 10; ++ub) {
+      for (IntegerValue location(lb); location < ub; ++location) {
+        const LinearConstraint cut = ComputeHyperplanBelowSquare(
+            AffineExpression(x), AffineExpression(s), location);
+        for (IntegerValue x_value = lb; x_value <= ub; ++x_value) {
+          const IntegerValue s_value = x_value * x_value;
+          IntegerValue line_value(0);
+          for (int i = 0; i < cut.num_terms; ++i) {
+            CHECK(cut.vars[i] == x || cut.vars[i] == s);
+            const IntegerValue point = cut.vars[i] == x ? x_value : s_value;
+            line_value += point * cut.coeffs[i];
+          }
+          EXPECT_GE(line_value, cut.lb);
+          EXPECT_LE(line_value, cut.ub);
+
+          // The line should be tight at these points.
+          if (x_value == location || x_value == location + 1) {
+            EXPECT_TRUE(line_value == cut.lb || line_value == cut.ub);
+          }
+        }
+      }
+    }
+  }
+}
+
+TEST(ComputeHyperPlaneAboveSquare, Exhaustive) {
+  const IntegerVariable x(0);
+  const IntegerVariable s(2);
+  for (int lb = -10; lb <= 10; ++lb) {
+    for (int ub = lb; ub <= 10; ++ub) {
+      const LinearConstraint cut = ComputeHyperplanAboveSquare(
+          AffineExpression(x), AffineExpression(s), lb, ub);
+      for (IntegerValue x_value = lb; x_value <= ub; ++x_value) {
+        const IntegerValue s_value = x_value * x_value;
+        IntegerValue line_value(0);
+        for (int i = 0; i < cut.num_terms; ++i) {
+          CHECK(cut.vars[i] == x || cut.vars[i] == s);
+          const IntegerValue point = cut.vars[i] == x ? x_value : s_value;
+          line_value += point * cut.coeffs[i];
+        }
+        EXPECT_GE(line_value, cut.lb);
+        EXPECT_LE(line_value, cut.ub);
+
+        // The line should be tight at these points.
+        if (x_value == lb || x_value == ub) {
+          EXPECT_TRUE(line_value == cut.lb || line_value == cut.ub);
+        }
+      }
+    }
+  }
 }
 
 }  // namespace

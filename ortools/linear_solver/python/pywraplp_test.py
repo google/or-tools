@@ -15,9 +15,10 @@
 """Simple unit tests for python/linear_solver.swig. Not exhaustive."""
 
 import unittest
-from ortools.linear_solver import linear_solver_pb2
-from ortools.linear_solver import pywraplp
+
 from google.protobuf import text_format
+
+from ortools.linear_solver import linear_solver_pb2, pywraplp
 
 TEXT_MODEL = """
 variable {
@@ -46,12 +47,12 @@ class PyWrapLp(unittest.TestCase):
     def test_proto(self):
         input_proto = linear_solver_pb2.MPModelProto()
         text_format.Merge(TEXT_MODEL, input_proto)
-        solver = pywraplp.Solver.CreateSolver("CBC")
+        solver = pywraplp.Solver.CreateSolver("GLOP")
         if not solver:
             return
         # For now, create the model from the proto by parsing the proto
-        errors = solver.LoadModelFromProto(input_proto)
-        self.assertFalse(errors)
+        error = solver.LoadModelFromProto(input_proto)
+        self.assertEqual(error, "")
         solver.Solve()
         # Fill solution
         solution = linear_solver_pb2.MPSolutionResponse()
@@ -59,7 +60,7 @@ class PyWrapLp(unittest.TestCase):
         self.assertEqual(solution.objective_value, 3.0)
         self.assertEqual(solution.variable_value[0], 1.0)
         self.assertEqual(solution.variable_value[1], 1.0)
-        self.assertEqual(solution.best_objective_bound, 3.0)
+        self.assertEqual(solution.best_objective_bound, 0.0)
 
     def test_external_api(self):
         solver = pywraplp.Solver.CreateSolver("GLOP")

@@ -20,7 +20,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/adjustable_priority_queue-inl.h"
 #include "ortools/base/adjustable_priority_queue.h"
-#include "ortools/graph/connected_components.h"
+#include "ortools/graph_base/connected_components.h"
 
 namespace operations_research {
 

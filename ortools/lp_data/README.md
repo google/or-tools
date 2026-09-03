@@ -68,19 +68,19 @@ This group of libraries handles reading and writing LP data in various formats.
 
 <!-- Links used throughout the document. -->
 
-[lp_types_h]: ../lp_data/lp_types.h
-[lp_data_h]: ../lp_data/lp_data.h
-[lp_utils_h]: ../lp_data/lp_utils.h
-[sparse_h]: ../lp_data/sparse.h
-[sparse_vector_h]: ../lp_data/sparse_vector.h
-[sparse_column_h]: ../lp_data/sparse_column.h
-[sparse_row_h]: ../lp_data/sparse_row.h
-[scattered_vector_h]: ../lp_data/scattered_vector.h
-[matrix_scaler_h]: ../lp_data/matrix_scaler.h
-[lp_decomposer_h]: ../lp_data/lp_decomposer.h
-[permutation_h]: ../lp_data/permutation.h
-[lp_parser_h]: ../lp_data/lp_parser.h
-[mps_reader_h]: ../lp_data/mps_reader.h
-[sol_reader_h]: ../lp_data/sol_reader.h
-[proto_utils_h]: ../lp_data/proto_utils.h
-[lp_print_utils_h]: ../lp_data/lp_print_utils.h
+[lp_types_h]: /ortools/lp_data/lp_types.h
+[lp_data_h]: /ortools/lp_data/lp_data.h
+[lp_utils_h]: /ortools/lp_data/lp_utils.h
+[sparse_h]: /ortools/lp_data/sparse.h
+[sparse_vector_h]: /ortools/lp_data/sparse_vector.h
+[sparse_column_h]: /ortools/lp_data/sparse_column.h
+[sparse_row_h]: /ortools/lp_data/sparse_row.h
+[scattered_vector_h]: /ortools/lp_data/scattered_vector.h
+[matrix_scaler_h]: /ortools/lp_data/matrix_scaler.h
+[lp_decomposer_h]: /ortools/lp_data/lp_decomposer.h
+[permutation_h]: /ortools/lp_data/permutation.h
+[lp_parser_h]: /ortools/lp_data/lp_parser.h
+[mps_reader_h]: /ortools/lp_data/mps_reader.h
+[sol_reader_h]: /ortools/lp_data/sol_reader.h
+[proto_utils_h]: /ortools/lp_data/proto_utils.h
+[lp_print_utils_h]: /ortools/lp_data/lp_print_utils.h

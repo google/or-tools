@@ -19,13 +19,13 @@
 #include <ostream>
 #include <vector>
 
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/io/mps_converter.h"
@@ -63,7 +63,7 @@ namespace {
 
 absl::StatusOr<std::unique_ptr<Model>> LoadMiplibInstance(
     absl::string_view name) {
-  ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const ModelProto model_proto,
       ReadMpsFile(absl::StrCat("ortools/math_opt/solver_tests/testdata/", name,
                                ".mps")));

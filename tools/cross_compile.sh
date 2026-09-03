@@ -282,23 +282,13 @@ function run_test() {
 
   cd "${BUILD_DIR}" || exit 2
   set -x
-  case ${PROJECT} in
-    glop)
-      # shellcheck disable=SC2086
-      ${RUN_CMD} bin/simple_glop_program ;;
-    or-tools)
-      for test_binary in \
-        "${BUILD_DIR}"/bin/simple_* \
-        "${BUILD_DIR}"/bin/*tsp* \
-        "${BUILD_DIR}"/bin/*vrp*; do
-        # shellcheck disable=SC2086
-        ${RUN_CMD} "${test_binary}"
-      done
-      ;;
-    *)
-      >&2 echo "Unknown PROJECT '${PROJECT}'..."
-      exit 1 ;;
-  esac
+  for test_binary in \
+    "${BUILD_DIR}"/bin/simple_* \
+    "${BUILD_DIR}"/bin/*tsp* \
+    "${BUILD_DIR}"/bin/*vrp*; do
+    # shellcheck disable=SC2086
+    ${RUN_CMD} "${test_binary}"
+  done
   set +x
 }
 
@@ -312,8 +302,7 @@ SYNOPSIS
 DESCRIPTION
 \tCross compile Google OR-Tools (or Glop) using a cross toolchain.
 
-\tYou MUST define the following variables before running this script:
-\t* PROJECT: glop or-tools
+\tYou MUST define the following variable before running this script:
 \t* TARGET:
 \t\tx86_64
 \t\taarch64(arm64) aarch64be(arm64be) (bootlin)
@@ -332,12 +321,11 @@ OPTIONS
 
 EXAMPLES
 * Using export:
-export PROJECT=glop
 export TARGET=aarch64-linux-gnu
 $0
 
 * One-liner:
-PROJECT=or-tools TARGET=aarch64 $0"
+TARGET=aarch64 $0"
 }
 
 # Main
@@ -356,7 +344,6 @@ function main() {
   declare -r BUILD_DIR="${PROJECT_DIR}/build_cross/${TARGET}"
   declare -r TOOLCHAIN_FILE=${ARCHIVE_DIR}/toolchain_${TARGET}.cmake
 
-  echo "Project: '${PROJECT}'"
   echo "Target: '${TARGET}'"
 
   echo "Project dir: '${PROJECT_DIR}'"
@@ -365,15 +352,6 @@ function main() {
   echo "toolchain file: '${TOOLCHAIN_FILE}'"
 
   declare -a CMAKE_DEFAULT_ARGS=( -G ${CMAKE_GENERATOR:-"Unix Makefiles"} -DBUILD_DEPS=ON )
-  case ${PROJECT} in
-    glop)
-      CMAKE_DEFAULT_ARGS+=( -DBUILD_CXX=OFF -DBUILD_GLOP=ON ) ;;
-    or-tools)
-      CMAKE_DEFAULT_ARGS+=( -DBUILD_CXX=ON ) ;;
-    *)
-      >&2 echo "Unknown PROJECT '${PROJECT}'..."
-      exit 1 ;;
-  esac
   declare -a CMAKE_ADDITIONAL_ARGS=()
 
   declare -a QEMU_ARGS=()

@@ -405,9 +405,9 @@ void CumulativeIsAfterSubsetConstraint::RegisterWith(
 CumulativeDualFeasibleEnergyConstraint::CumulativeDualFeasibleEnergyConstraint(
     AffineExpression capacity, SchedulingConstraintHelper* helper,
     SchedulingDemandHelper* demands, Model* model)
-    : random_(model->GetOrCreate<ModelRandomGenerator>()),
+    : random_(*model->GetOrCreate<ModelRandomGenerator>()),
       shared_stats_(model->GetOrCreate<SharedStatistics>()),
-      opp_infeasibility_detector_(*random_, shared_stats_),
+      opp_infeasibility_detector_(random_, shared_stats_),
       capacity_(capacity),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       helper_(helper),
@@ -656,7 +656,7 @@ bool CumulativeDualFeasibleEnergyConstraint::Propagate() {
   absl::InlinedVector<std::pair<IntegerValue, IntegerValue>, 3>
       sampled_candidates;
   std::sample(candidates_for_conflict.begin(), candidates_for_conflict.end(),
-              std::back_inserter(sampled_candidates), 3, *random_);
+              std::back_inserter(sampled_candidates), 3, random_);
   for (const auto& [window_start, window_end] : sampled_candidates) {
     if (!FindAndPropagateConflict(window_start, window_end)) {
       ++num_conflicts_;

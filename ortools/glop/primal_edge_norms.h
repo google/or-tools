@@ -22,7 +22,6 @@
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/update_row.h"
 #include "ortools/glop/variables_info.h"
-#include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse.h"
@@ -34,7 +33,7 @@ namespace glop {
 
 // This class maintains the primal edge squared norms (and other variants) to be
 // used in the primal pricing step. Instead of computing the needed values from
-// scractch at each iteration, it is more efficient to update them incrementally
+// scratch at each iteration, it is more efficient to update them incrementally
 // for each basis pivot applied to the simplex basis matrix B.
 //
 // Terminology:

@@ -18,16 +18,15 @@
 #include <string>
 
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/base_export.h"
 #include "ortools/base/version.h"
-#include "ortools/sat/cp_model_solver_helpers.h"
 
 namespace operations_research {
 
 /**
  * Simple structure that holds useful C++ flags to setup from non-C++ languages.
  */
-struct CppFlags {
+struct OR_INIT_DLL CppFlags {
   /**
    * @brief Controls the logging level shown on stderr.
    *
@@ -49,7 +48,7 @@ struct CppFlags {
    */
   std::string cp_model_dump_prefix;
   /**
-   * DEBUG ONLY: Dump CP-SAT models during solve.
+   * Dump CP-SAT models during solve. (DEBUG ONLY)
    *
    *  When set to true, SolveCpModel() will dump its model protos
    * (original model, presolved model, mapping model) in text  format to
@@ -58,7 +57,7 @@ struct CppFlags {
   bool cp_model_dump_models = false;
 
   /**
-   * DEBUG ONLY: Dump CP-SAT LNS models during solve.
+   * Dump CP-SAT LNS models during solve. (DEBUG ONLY)
    *
    * When set to true, solve will dump all lns models proto in text format to
    * 'FLAGS_cp_model_dump_prefix'lns_xxx.pbtxt.
@@ -66,7 +65,7 @@ struct CppFlags {
   bool cp_model_dump_submodels;
 
   /**
-   * DEBUG ONLY: Dump the CP-SAT final response found during solve.
+   * Dump the CP-SAT final response found during solve. (DEBUG ONLY)
    *
    * If true, the final response of each solve will be dumped to
    * 'FLAGS_cp_model_dump_prefix'response.pbtxt.
@@ -79,7 +78,7 @@ struct CppFlags {
  *
  * It is meant to be used once at the start of a program.
  */
-class CppBridge {
+class OR_INIT_DLL CppBridge {
  public:
   /**
    * Initialize the C++ logging layer.

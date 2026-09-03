@@ -26,10 +26,10 @@
 #include "absl/log/check.h"
 #include "absl/log/die_if_null.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/constraints/indicator/indicator_constraint.h"
 #include "ortools/math_opt/constraints/quadratic/quadratic_constraint.h"
@@ -55,8 +55,8 @@ constexpr double kInf = std::numeric_limits<double>::infinity();
 
 absl::StatusOr<std::unique_ptr<Model>> Model::FromModelProto(
     const ModelProto& model_proto) {
-  ASSIGN_OR_RETURN(absl_nonnull std::unique_ptr<ModelStorage> storage,
-                   ModelStorage::FromModelProto(model_proto));
+  ABSL_ASSIGN_OR_RETURN(absl_nonnull std::unique_ptr<ModelStorage> storage,
+                        ModelStorage::FromModelProto(model_proto));
   return std::make_unique<Model>(std::move(storage));
 }
 

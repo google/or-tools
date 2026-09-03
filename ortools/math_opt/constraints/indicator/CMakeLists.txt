@@ -23,11 +23,12 @@ target_include_directories(${NAME} PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>)
 target_link_libraries(${NAME} PRIVATE
+  absl::status_builder
   absl::strings
   ${PROJECT_NAMESPACE}::math_opt_proto)
 #install(TARGETS ${NAME} EXPORT ${PROJECT_NAME}Targets)
 
-if(BUILD_TESTING)
+if(BUILD_CXX_TESTING)
   file(GLOB _TEST_SRCS "*_test.cc")
   foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
     get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)

@@ -2,18 +2,23 @@
 
 This file describes how to use OR-Tools in python with the binary archives.
 
-OR-Tools online documentation is located at https://developers.google.com/optimization
+OR-Tools online documentation is located at
+https://developers.google.com/optimization
 
-Full installation instructions are located at https://developers.google.com/optimization/install/python/
+Full installation instructions are located at
+https://developers.google.com/optimization/install/python/
 
 These modules have been tested under:
 
-  - CentOS 7 LTS and Stream 8 (64 bit).
-  - Debian 10 and 11 (64 bit).
-  - Fedora 33 and up (64 bit).
-  - Opensuse Leap (64 bit).
-  - Ubuntu 18.04 LTS and up (64 bit).
-  - MacOS 12.5 Monterey (64 bit).
+  - AlmaLinux 9 (64-bit).
+  - Alpine Edge (64-bit).
+  - ArchLinux (64-bit).
+  - Debian 11 and up (64-bit).
+  - Fedora 40 and up (64-bit).
+  - OpenSuse Leap (64-bit).
+  - Rocky Linux 9 (64-bit)
+  - Ubuntu 20.04 LTS and up (64-bit).
+  - MacOS 12.5 Monterey (64-bit).
   - Microsoft Windows with Visual Studio 2019 and 2022 (64-bit)
 
 ## Codemap
@@ -35,15 +40,16 @@ to ensure that you are complying with it if you want to use this solver.
 
 To install the package:
 
-1. Make sure python and pip are installed
+1. Make sure Python and pip are installed
 
-2. Make sure pip is up to date:
+2. Make sure pip is up to date: the command
 
 ```shell
 python -m pip -V
 ```
 
-should return 9.0.1  otherwise, run: `python -m pip install --upgrade --user pip`
+should return 9.0.1 or a more recent version. Otherwise, update pip manually:
+`python -m pip install --upgrade --user pip`
 
 3. Fetch `ortools` from Pypi:
 

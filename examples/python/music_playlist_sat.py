@@ -29,6 +29,7 @@ the playlist must minimize this cost overall.
 from collections.abc import Sequence
 
 from absl import app
+
 from ortools.sat.python import cp_model
 
 
@@ -295,7 +296,7 @@ def Solve():
         print("Empty playlist.")
     else:
         for i in playlist:
-            (name, duration, genre) = tunes[i]
+            name, duration, genre = tunes[i]
             print(f"{i+1}. {name} ({genre}) - {duration}s")
 
 

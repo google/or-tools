@@ -24,22 +24,20 @@
 #include "absl/strings/str_format.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/threadpool.h"
+#include "ortools/bop/boolean_problem.h"
+#include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_portfolio.h"
 #include "ortools/bop/bop_solution.h"
 #include "ortools/bop/bop_types.h"
 #include "ortools/lp_data/lp_types.h"
-#include "ortools/sat/boolean_problem.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace bop {
-
-using ::operations_research::sat::LinearBooleanProblem;
 
 namespace {
 
@@ -70,7 +68,7 @@ BopSolveStatus BopSolver::SolveWithTimeLimit(TimeLimit* time_limit) {
   CHECK(time_limit != nullptr);
   SCOPED_TIME_STAT(&stats_);
 
-  absl::Status valid = sat::ValidateBooleanProblem(problem_);
+  absl::Status valid = ValidateBooleanProblem(problem_);
   if (!valid.ok()) {
     LOG(ERROR) << "Invalid Boolean problem: " << valid.message();
     return BopSolveStatus::INVALID_PROBLEM;
@@ -157,7 +155,7 @@ BopSolveStatus BopSolver::SolveWithTimeLimit(const BopSolution& first_solution,
 }
 
 double BopSolver::GetScaledBestBound() const {
-  return sat::AddOffsetAndScaleObjectiveValue(
+  return AddOffsetAndScaleObjectiveValue(
       problem_, sat::Coefficient(problem_state_.lower_bound()));
 }
 

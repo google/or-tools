@@ -16,8 +16,9 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
-#include "ortools/base/logging.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
 #include "ortools/math_opt/solvers/gscip/gscip.h"
 #include "scip/def.h"

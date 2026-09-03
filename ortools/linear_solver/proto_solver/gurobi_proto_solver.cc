@@ -15,9 +15,7 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdint>
 #include <limits>
-#include <memory>
 #include <numeric>
 #include <optional>
 #include <string>
@@ -28,6 +26,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
@@ -36,8 +35,8 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/types.h"
 #include "ortools/linear_solver/gurobi_util.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
@@ -290,7 +289,7 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
     }
   });
   if (gurobi_env == nullptr) {
-    ASSIGN_OR_RETURN(gurobi_env, GetGurobiEnv());
+    ABSL_ASSIGN_OR_RETURN(gurobi_env, GetGurobiEnv());
     gurobi_env_was_created = true;
   }
 
@@ -304,7 +303,7 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
 
 // `gurobi_env` references ther GRBenv argument.
 #define RETURN_IF_GUROBI_ERROR(x) \
-  RETURN_IF_ERROR(                \
+  ABSL_RETURN_IF_ERROR(           \
       GurobiCodeToUtilStatus(x, __FILE__, __LINE__, #x, gurobi_env));
 
   RETURN_IF_GUROBI_ERROR(GRBnewmodel(gurobi_env, &gurobi_model,
@@ -578,7 +577,7 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
     }
     const int additional_solutions = std::min(
         solution_count, std::min(request->populate_additional_solutions_up_to(),
-                                 std::numeric_limits<int32_t>::max() - 1) +
+                                 kint32max - 1) +
                             1);
     for (int i = 1; i < additional_solutions; ++i) {
       RETURN_IF_GUROBI_ERROR(

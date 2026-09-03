@@ -21,7 +21,9 @@ least k items with this color must be in that group.
 
 import math
 from typing import Sequence
+
 from absl import app
+
 from ortools.sat.python import cp_model
 
 

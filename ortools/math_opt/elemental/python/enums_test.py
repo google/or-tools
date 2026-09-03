@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from absl.testing import absltest
+
 from ortools.math_opt.elemental.python import enums
 
 

@@ -20,11 +20,13 @@
 #include "absl/base/nullability.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/synchronization/mutex.h"
-#include "ortools/base/status_macros.h"
+#include "google/protobuf/message.h"
 #include "ortools/math_opt/core/base_solver.h"
 #include "ortools/math_opt/cpp/compute_infeasible_subsystem_arguments.h"
 #include "ortools/math_opt/cpp/compute_infeasible_subsystem_result.h"
@@ -45,7 +47,7 @@ absl::StatusOr<SolveResult> CallSolve(BaseSolver& solver,
                                       const ModelStorageCPtr expected_storage,
                                       const SolveArguments& arguments,
                                       SolveInterrupter& local_canceller) {
-  RETURN_IF_ERROR(arguments.CheckModelStorage(expected_storage));
+  ABSL_RETURN_IF_ERROR(arguments.CheckModelStorage(expected_storage));
 
   BaseSolver::Callback cb = nullptr;
   absl::Mutex mutex;
@@ -57,9 +59,9 @@ absl::StatusOr<SolveResult> CallSolve(BaseSolver& solver,
       if (const absl::Status status =
               result.CheckModelStorage(expected_storage);
           !status.ok()) {
-        // Note that we use util::StatusBuilder() here as util::Annotate() is
+        // Note that we use absl::StatusBuilder() here as util::Annotate() is
         // not available in open-source code.
-        util::StatusBuilder builder(status);
+        absl::StatusBuilder builder(status);
         builder << "invalid CallbackResult returned by user callback";
 
         {  // Limit `lock` scope.
@@ -80,8 +82,11 @@ absl::StatusOr<SolveResult> CallSolve(BaseSolver& solver,
     };
   }
 
-  ASSIGN_OR_RETURN(ModelSolveParametersProto model_parameters,
-                   arguments.model_parameters.Proto());
+  ABSL_ASSIGN_OR_RETURN(ModelSolveParametersProto model_parameters,
+                        arguments.model_parameters.Proto());
+  VLOG(1) << "Solving with parameters:\n"
+          << google::protobuf::ShortFormat(model_parameters)
+          << "\nModel with: " << expected_storage->ModelSizeDebugString();
   const absl::StatusOr<SolveResultProto> solve_result_proto = solver.Solve(
       {.parameters = arguments.parameters.Proto(),
        .model_parameters = std::move(model_parameters),
@@ -95,29 +100,38 @@ absl::StatusOr<SolveResult> CallSolve(BaseSolver& solver,
   // callback instead.
   {  // Limit `lock` scope.
     const absl::MutexLock lock(mutex);
-    RETURN_IF_ERROR(cb_status);
+    ABSL_RETURN_IF_ERROR(cb_status);
   }
 
   if (!solve_result_proto.ok()) {
     return solve_result_proto.status();
   }
 
-  return SolveResult::FromProto(expected_storage, solve_result_proto.value());
+  OR_ASSIGN_OR_RETURN3(
+      SolveResult result,
+      SolveResult::FromProto(expected_storage, solve_result_proto.value()),
+      _.SetCode(absl::StatusCode::kInternal)
+          << "error building SolveResult from proto");
+  return result;
 }
 
 absl::StatusOr<ComputeInfeasibleSubsystemResult> CallComputeInfeasibleSubsystem(
     BaseSolver& solver, const ModelStorageCPtr expected_storage,
     const ComputeInfeasibleSubsystemArguments& arguments,
     SolveInterrupter& local_canceller) {
-  ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const ComputeInfeasibleSubsystemResultProto compute_result_proto,
       solver.ComputeInfeasibleSubsystem(
           {.parameters = arguments.parameters.Proto(),
            .message_callback = arguments.message_callback,
            .interrupter = arguments.interrupter}));
 
-  return ComputeInfeasibleSubsystemResult::FromProto(expected_storage,
-                                                     compute_result_proto);
+  OR_ASSIGN_OR_RETURN3(ComputeInfeasibleSubsystemResult result,
+                       ComputeInfeasibleSubsystemResult::FromProto(
+                           expected_storage, compute_result_proto),
+                       _.SetCode(absl::StatusCode::kInternal)
+                           << "error building SolveResult from proto");
+  return result;
 }
 
 }  // namespace
@@ -130,7 +144,7 @@ absl::StatusOr<SolveResult> SolveImpl(
   SolveInterrupter local_canceller;
   const ScopedSolveInterrupterCallback user_canceller_cb(
       user_canceller, [&]() { local_canceller.Interrupt(); });
-  ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const std::unique_ptr<BaseSolver> solver,
       solver_factory(EnumToProto(solver_type), model.ExportModel(remove_names),
                      &local_canceller));
@@ -146,7 +160,7 @@ absl::StatusOr<ComputeInfeasibleSubsystemResult> ComputeInfeasibleSubsystemImpl(
   SolveInterrupter local_canceller;
   const ScopedSolveInterrupterCallback user_canceller_cb(
       user_canceller, [&]() { local_canceller.Interrupt(); });
-  ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const std::unique_ptr<BaseSolver> subprocess_solver,
       solver_factory(EnumToProto(solver_type), model.ExportModel(remove_names),
                      &local_canceller));
@@ -169,9 +183,9 @@ IncrementalSolverImpl::New(
           user_canceller,
           [local_canceller]() { local_canceller->Interrupt(); });
   std::unique_ptr<UpdateTracker> update_tracker = model->NewUpdateTracker();
-  ASSIGN_OR_RETURN(ModelProto model_proto,
-                   update_tracker->ExportModel(remove_names));
-  ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(ModelProto model_proto,
+                        update_tracker->ExportModel(remove_names));
+  ABSL_ASSIGN_OR_RETURN(
       std::unique_ptr<BaseSolver> solver,
       solver_factory(EnumToProto(solver_type), std::move(model_proto),
                      local_canceller.get()));
@@ -199,8 +213,8 @@ IncrementalSolverImpl::IncrementalSolverImpl(
 
 absl::StatusOr<UpdateResult> IncrementalSolverImpl::Update() {
   // TODO: b/260337466 - Add permanent errors and concurrency protection.
-  ASSIGN_OR_RETURN(std::optional<ModelUpdateProto> model_update,
-                   update_tracker_->ExportModelUpdate(remove_names_));
+  ABSL_ASSIGN_OR_RETURN(std::optional<ModelUpdateProto> model_update,
+                        update_tracker_->ExportModelUpdate(remove_names_));
   if (!model_update.has_value()) {
     return UpdateResult(true);
   }
@@ -208,14 +222,14 @@ absl::StatusOr<UpdateResult> IncrementalSolverImpl::Update() {
   OR_ASSIGN_OR_RETURN3(const bool did_update,
                        solver_->Update(*std::move(model_update)),
                        _ << "update failed");
-  RETURN_IF_ERROR(update_tracker_->AdvanceCheckpoint());
+  ABSL_RETURN_IF_ERROR(update_tracker_->AdvanceCheckpoint());
 
   if (did_update) {
     return UpdateResult(true);
   }
 
-  ASSIGN_OR_RETURN(ModelProto model_proto,
-                   update_tracker_->ExportModel(remove_names_));
+  ABSL_ASSIGN_OR_RETURN(ModelProto model_proto,
+                        update_tracker_->ExportModel(remove_names_));
   OR_ASSIGN_OR_RETURN3(
       solver_,
       solver_factory_(EnumToProto(solver_type_), std::move(model_proto),

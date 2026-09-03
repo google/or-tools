@@ -36,6 +36,7 @@
 #include "ortools/sat/cp_model_solver_helpers.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/scheduling_model.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
@@ -47,7 +48,7 @@ namespace sat {
 
 // Neighborhood returned by Neighborhood generators.
 struct Neighborhood {
-  static constexpr int kDefaultArenaSizePerVariable = 128;
+  static constexpr int64_t kDefaultArenaSizePerVariable = 128;
 
   explicit Neighborhood(int num_variables_hint = 10)
       : arena(std::make_unique<google::protobuf::Arena>(
@@ -106,11 +107,13 @@ struct Neighborhood {
 // the bounds of the base problem with the external world.
 class NeighborhoodGeneratorHelper : public SubSolver {
  public:
-  NeighborhoodGeneratorHelper(CpModelProto const* model_proto,
-                              SatParameters const* parameters,
-                              SharedResponseManager* shared_response,
-                              ModelSharedTimeLimit* global_time_limit,
-                              SharedBoundsManager* shared_bounds = nullptr);
+  NeighborhoodGeneratorHelper(
+      CpModelProto const* model_proto, SatParameters const* parameters,
+      SharedResponseManager* shared_response,
+      ModelSharedTimeLimit* global_time_limit,
+      SharedBoundsManager* shared_bounds = nullptr,
+      SharedClausesManager* shared_clauses = nullptr,
+      const SchedulingRelaxation* scheduling_relaxation = nullptr);
 
   // SubSolver interface.
   bool TaskIsAvailable() override { return false; }
@@ -123,6 +126,9 @@ class NeighborhoodGeneratorHelper : public SubSolver {
 
   // Returns the LNS fragment where the given variables are fixed to the value
   // they take in the given solution.
+  //
+  // Note that we will first transform 'variables_to_fix' so that it contains
+  // only active variables.
   Neighborhood FixGivenVariables(const CpSolverResponse& base_solution,
                                  const Bitset64<int>& variables_to_fix) const;
 
@@ -131,10 +137,6 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   Neighborhood RelaxGivenVariables(
       const CpSolverResponse& initial_solution,
       absl::Span<const int> relaxed_variables) const;
-
-  // Returns a trivial model by fixing all active variables to the initial
-  // solution values.
-  Neighborhood FixAllVariables(const CpSolverResponse& initial_solution) const;
 
   // Returns a neighborhood that correspond to the full problem.
   Neighborhood FullNeighborhood() const;
@@ -152,6 +154,10 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // constant, and if it is a decision variable, or if
   // focus_on_decision_variables is false.
   bool IsActive(int var) const ABSL_SHARED_LOCKS_REQUIRED(graph_mutex_);
+
+  const SchedulingRelaxation* scheduling_relaxation() const {
+    return scheduling_relaxation_;
+  }
 
   // Returns the list of "active" variables.
   std::vector<int> ActiveVariables() const {
@@ -220,8 +226,12 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // Returns all the constraints indices of a given type.
   absl::Span<const int> TypeToConstraints(
       ConstraintProto::ConstraintCase type) const {
-    if (type >= type_to_constraints_.size()) return {};
-    return absl::MakeSpan(type_to_constraints_[type]);
+    return type_to_constraints_[type];
+  }
+
+  CompactVectorVector<int, int> Components() const {
+    absl::ReaderMutexLock lock(graph_mutex_);
+    return components_;
   }
 
   // Filters a vector of intervals against the initial_solution, and returns
@@ -275,6 +285,23 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // Returns a copy of the problem proto with updated domains.
   CpModelProto UpdatedModelProtoCopy() const;
 
+  // Thread-safe.
+  //
+  // VariablesTouchSymmetries() returns true iff any symmetry touches the given
+  // variables.
+  //
+  // VariablesSplitSymmetries() return true iff any symmetry is either fully
+  // included or fully excluded from the given set of variable. This is here
+  // because it is used to decide if we can close a full subproblem with LNS.
+  // Maybe there is a better place.
+  //
+  // TODO(user): right now VariablesSplitSymmetries() do not work because we
+  // will still need to disable the symmetry propagation for this component, or
+  // use a different system than fixing variables. Using
+  // VariablesTouchSymmetry() do not have this problem but is less powerful.
+  bool VariablesTouchSymmetries(absl::Span<const int> variables) const;
+  bool VariablesSplitSymmetries(absl::Span<const int> variables) const;
+
   // The initial problem.
   // Note that the domain of the variables are not updated here.
   const CpModelProto& ModelProto() const { return model_proto_; }
@@ -291,10 +318,9 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // Note: This mutex needs to be public for thread annotations.
   mutable absl::Mutex graph_mutex_;
 
-  // TODO(user): Display LNS statistics through the StatisticsString()
-  // method.
-
  private:
+  void InitializeSymmetryData();
+
   // Precompute stuff that will never change. During the execution, only the
   // domain of the variable will change, so data that only depends on the
   // constraints need to be computed just once.
@@ -306,11 +332,13 @@ class NeighborhoodGeneratorHelper : public SubSolver {
 
   // Indicates if a variable is fixed in the model.
   bool IsConstant(int var) const ABSL_SHARED_LOCKS_REQUIRED(domain_mutex_);
+  int64_t ConstantValue(int var) const
+      ABSL_SHARED_LOCKS_REQUIRED(domain_mutex_);
 
   // Returns true if the domain on the objective is constraining and we might
   // get a lower objective value at optimum without it.
   bool ObjectiveDomainIsConstraining() const
-      ABSL_SHARED_LOCKS_REQUIRED(domain_mutex_);
+      ABSL_SHARED_LOCKS_REQUIRED(domain_mutex_, graph_mutex_);
 
   // Checks if an interval is active w.r.t. the initial_solution.
   // An interval is inactive if and only if it is either unperformed in the
@@ -319,12 +347,16 @@ class NeighborhoodGeneratorHelper : public SubSolver {
                         const CpSolverResponse& initial_solution) const
       ABSL_SHARED_LOCKS_REQUIRED(domain_mutex_);
 
+  int GetRepresentative(int var) const ABSL_SHARED_LOCKS_REQUIRED(graph_mutex_);
+
   const SatParameters& parameters_;
   const CpModelProto& model_proto_;
   int shared_bounds_id_;
   SharedBoundsManager* shared_bounds_;
+  SharedClausesManager* shared_clauses_;
   ModelSharedTimeLimit* global_time_limit_;
   SharedResponseManager* shared_response_;
+  const SchedulingRelaxation* scheduling_relaxation_ = nullptr;
 
   // Arena holding the memory of the CpModelProto* of this class. This saves the
   // destruction cost that can take time on problem with millions of
@@ -340,43 +372,51 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   CpModelProto model_proto_with_only_variables_ ABSL_GUARDED_BY(domain_mutex_);
 
   // Constraints by types. This never changes.
-  std::vector<std::vector<int>> type_to_constraints_;
+  CompactVectorVector<int, int> type_to_constraints_;
 
-  // Whether a model_proto_ variable appears in the objective. This never
-  // changes.
+  // Info for VariablesSplitSymmetries(). This never changes.
+  std::vector<int> var_symmetry_partition_class_;
+  std::vector<int> size_of_symmetry_class_;
+
+  // Whether a variable appears in the simplified_model_proto_ objective.
   std::vector<bool> is_in_objective_;
-  // If a model_proto_ variable has a positive coefficient in the objective.
-  // This never changes.
+  // If a variable has a positive coefficient in the simplified_model_proto_
+  // objective.
   std::vector<bool> has_positive_objective_coefficient_;
 
   // A copy of CpModelProto where we did some basic presolving to remove all
-  // constraint that are always true. The Variable-Constraint graph is based on
-  // this model. Note that only the constraints field is present here.
+  // constraints that are always true. The Variable-Constraint graph is based on
+  // this model. Note that only the constraints and objective fields are present
+  // here.
   CpModelProto* simplified_model_proto_ ABSL_GUARDED_BY(graph_mutex_);
 
-  // Variable-Constraint graph.
+  // Variable-Constraint graph. The objective is also considered if it is
+  // constraining.
   // We replace an interval by its variables in the scheduling constraints.
-  //
-  // TODO(user): Note that the objective is not considered here. Which is fine
-  // except if the objective domain is constraining.
   CompactVectorVector<int, int> constraint_to_var_
       ABSL_GUARDED_BY(graph_mutex_);
   CompactVectorVector<int, int> var_to_constraint_
       ABSL_GUARDED_BY(graph_mutex_);
 
   // Connected components of the variable-constraint graph. If a variable is
-  // constant, it will not appear in any component and
+  // constant or non-representative, it will not appear in any component and
   // var_to_component_index_[var] will be -1.
-  std::vector<std::vector<int>> components_ ABSL_GUARDED_BY(graph_mutex_);
+  CompactVectorVector<int, int> components_ ABSL_GUARDED_BY(graph_mutex_);
   std::vector<int> var_to_component_index_ ABSL_GUARDED_BY(graph_mutex_);
 
-  // The set of active variables which is currently the list of non-constant
-  // variables. It is stored both as a list and as a set (using a Boolean
-  // vector).
+  // The set of active variables which is currently the list of non-constant,
+  // representative variables. It is stored both as a list and as a set (using a
+  // Boolean vector).
   std::vector<bool> active_variables_set_ ABSL_GUARDED_BY(graph_mutex_);
   std::vector<int> active_variables_ ABSL_GUARDED_BY(graph_mutex_);
 
-  // The list of non constant variables appearing in the objective.
+  // The representative of each variable (for the equivalence relations in the
+  // SharedClausesManager). The representative of a Boolean variable can be a
+  // negative reference. Can be empty is shared_clauses_ is null.
+  std::vector<int> var_to_representative_ ABSL_GUARDED_BY(graph_mutex_);
+
+  // The list of non constant representative variables appearing in the
+  // simplified_model_proto_ objective.
   std::vector<int> active_objective_variables_ ABSL_GUARDED_BY(graph_mutex_);
 
   std::vector<int> tmp_row_;
@@ -429,14 +469,7 @@ class NeighborhoodGenerator {
     int task_id = 0;
 
     // This is just used to construct a deterministic order for the updates.
-    bool operator<(const SolveData& o) const {
-      return std::tie(status, difficulty, deterministic_limit,
-                      deterministic_time, initial_best_objective,
-                      base_objective, new_objective) <
-             std::tie(o.status, o.difficulty, o.deterministic_limit,
-                      o.deterministic_time, o.initial_best_objective,
-                      o.base_objective, o.new_objective);
-    }
+    bool operator<(const SolveData& o) const;
   };
 
   // Generates a "local" subproblem for the given seed.
@@ -597,6 +630,24 @@ class ArcGraphNeighborhoodGenerator : public NeighborhoodGenerator {
       : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,
                         SolveData& data, absl::BitGenRef random) final;
+};
+
+// This generates a neighborhood only when the problem is split into
+// several connected components and one of them is small enough for it to be
+// considered trivial.
+class SmallComponentNeighborhoodGenerator : public NeighborhoodGenerator {
+ public:
+  explicit SmallComponentNeighborhoodGenerator(
+      NeighborhoodGeneratorHelper const* helper, absl::string_view name)
+      : NeighborhoodGenerator(name, helper) {}
+
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        SolveData& data, absl::BitGenRef random) final;
+
+  bool ReadyToGenerate() const final;
+
+ private:
+  static constexpr int kNumVarsConsideredTrivial = 40;
 };
 
 // Pick a random subset of constraint and relax all of their variables. We are a

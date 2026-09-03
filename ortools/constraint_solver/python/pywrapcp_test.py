@@ -17,9 +17,9 @@
 import sys
 
 from absl.testing import absltest
-from ortools.constraint_solver import search_limit_pb2
-from ortools.constraint_solver import solver_parameters_pb2
-from ortools.constraint_solver import pywrapcp
+
+from ortools.constraint_solver import (pywrapcp, search_limit_pb2,
+                                       solver_parameters_pb2)
 
 
 def inc_callback(i):
@@ -187,7 +187,6 @@ class PyWrapCPTest(absltest.TestCase):
             "store_names",
             "name_cast_variables",
             "name_all_variables",
-            "profile_propagation",
             "trace_propagation",
             "trace_search",
             "print_model",
@@ -203,12 +202,6 @@ class PyWrapCPTest(absltest.TestCase):
         int_params = ["trail_block_size", "array_split_size"]
         for p in int_params:
             for v in [10, 100]:
-                setattr(params, p, v)
-                self.assertEqual(getattr(params, p), v)
-
-        string_params = ["profile_file"]
-        for p in string_params:
-            for v in ["", "tmp_file"]:
                 setattr(params, p, v)
                 self.assertEqual(getattr(params, p), v)
 

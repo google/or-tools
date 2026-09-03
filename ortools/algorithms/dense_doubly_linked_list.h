@@ -16,7 +16,8 @@
 
 #include <vector>
 
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
+#include "ortools/base/log_severity.h"
 
 namespace operations_research {
 

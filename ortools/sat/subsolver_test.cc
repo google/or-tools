@@ -50,25 +50,25 @@ void TestLoopFunction() {
 
     bool TaskIsAvailable() override {
       // Note that the lock is only needed for the non-deterministic test.
-      absl::MutexLock mutex_lock(&state_->mutex);
+      absl::MutexLock mutex_lock(state_->mutex);
       return state_->num_task < state_->limit;
     }
 
     std::function<void()> GenerateTask(int64_t id) override {
       {
         // Note that the lock is only needed for the non-deterministic test.
-        absl::MutexLock mutex_lock(&state_->mutex);
+        absl::MutexLock mutex_lock(state_->mutex);
         state_->num_task++;
       }
       return [this, id] {
-        absl::MutexLock mutex_lock(&state_->mutex);
+        absl::MutexLock mutex_lock(state_->mutex);
         state_->updates.push_back(id);
       };
     }
 
     void Synchronize() override {
       // Note that the lock is only needed for the non-deterministic test.
-      absl::MutexLock mutex_lock(&state_->mutex);
+      absl::MutexLock mutex_lock(state_->mutex);
       for (const int64_t i : state_->updates) {
         state_->max_update_value = std::max(state_->max_update_value, i);
       }

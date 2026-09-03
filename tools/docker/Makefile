@@ -33,10 +33,10 @@ help:
 	@echo -e "\t${BOLD}test_archives${RESET}: Test each OR-Tools archives for all ${BOLD}<distro>${RESET} and ${BOLD}<lang>${RESET}."
 	@echo
 	@echo -e "${BOLD}PYTHON TARGETS${RESET}"
-	@echo -e "\t${BOLD}python${RESET}: Build musllinux and manylinux python 'ortools' wheel packages (3.9+)."
-	@echo -e "\t${BOLD}python_<platform>${RESET}: Build all python 'ortools' wheel packages (3.9+) for a specific platform."
-	@echo -e "\t${BOLD}python_<platform>_<step>${RESET}: Build all python 'ortools' wheel packages (3.9+) for a specific platform."
-	@echo -e "\t${BOLD}python_<target>_<step>${RESET}: Build python 'ortools' wheel packages (3.9+) for a specific target."
+	@echo -e "\t${BOLD}python${RESET}: Build musllinux and manylinux python 'ortools' wheel packages (3.10+)."
+	@echo -e "\t${BOLD}python_<platform>${RESET}: Build all python 'ortools' wheel packages (3.10+) for a specific platform."
+	@echo -e "\t${BOLD}python_<platform>_<step>${RESET}: Build all python 'ortools' wheel packages (3.10+) for a specific platform."
+	@echo -e "\t${BOLD}python_<target>_<step>${RESET}: Build python 'ortools' wheel packages (3.10+) for a specific target."
 	@echo -e "\t${BOLD}save_python_<target>${RESET}: Save python 'ortools' image."
 	@echo -e "\t${BOLD}clean_python_<target>${RESET}: Clean manylinux and musllinux python 'ortools' wheel packages."
 	@echo -e "\t${BOLD}sh_python_<target>${RESET}: Run a container using the python 'ortools' image."
@@ -54,7 +54,6 @@ help:
 	@echo -e "\t\t${BOLD}manylinux${RESET} (manylinux_2_28)"
 	@echo
 	@echo -e "\t${BOLD}<version>${RESET}:"
-	@echo -e "\t\t${BOLD}39${RESET} Python3.9"
 	@echo -e "\t\t${BOLD}310${RESET} Python3.10"
 	@echo -e "\t\t${BOLD}311${RESET} Python3.11"
 	@echo -e "\t\t${BOLD}312${RESET} Python3.12"
@@ -90,7 +89,7 @@ help:
 #	@echo -e "\t\t${BOLD}riscv64 (RISC-V 64bits, experimental)${RESET}"
 	@echo
 	@echo -e "\t${BOLD}<distro>${RESET}:"
-	@echo -e "\t\t${BOLD}almalinux-9${RESET} (latest)"
+	@echo -e "\t\t${BOLD}almalinux-10${RESET} (latest)"
 	@echo -e "\t\t${BOLD}alpine-edge${RESET} (latest)"
 	@echo -e "\t\t${BOLD}archlinux${RESET} (latest)"
 	@echo -e "\t\t${BOLD}debian-sid${RESET} (unstable)"
@@ -101,7 +100,7 @@ help:
 	@echo -e "\t\t${BOLD}fedora-41${RESET}"
 	@echo -e "\t\t${BOLD}fedora-40${RESET}"
 	@echo -e "\t\t${BOLD}opensuse-leap${RESET} (latest)"
-	@echo -e "\t\t${BOLD}rockylinux-9${RESET} (latest)"
+	@echo -e "\t\t${BOLD}rockylinux-10${RESET} (latest)"
 	@echo -e "\t\t${BOLD}ubuntu-24.10${RESET} (Ubuntu 24.10, rolling)"
 	@echo -e "\t\t${BOLD}ubuntu-24.04${RESET} (Ubuntu 24.04 LTS, latest)"
 	@echo -e "\t\t${BOLD}ubuntu-22.04${RESET} (Ubuntu 22.04 LTS)"
@@ -118,8 +117,8 @@ help:
 	@echo -e "\t${BOLD}<lang>${RESET}: Language to build"
 	@echo -e "\t\t${BOLD}cpp${RESET} C++"
 	@echo -e "\t\t${BOLD}dotnet${RESET} .Net 8.0 wrappers"
-	@echo -e "\t\t${BOLD}java${RESET} Java (JDK 8.0) wrappers"
-	@echo -e "\t\t${BOLD}python${RESET} Python 3.9+ wrappers"
+	@echo -e "\t\t${BOLD}java${RESET} Java (JDK 21) wrappers"
+	@echo -e "\t\t${BOLD}python${RESET} Python 3.10+ wrappers"
 	@echo
 	@echo -e "\te.g. 'make sh_amd64_ubuntu-22.04_cpp_build'"
 	@echo -e "\te.g. 'make amd64_ubuntu-22.04_cpp_archive'"
@@ -127,8 +126,8 @@ help:
 	@echo -e "\te.g. 'make amd64_ubuntu-22.04_cpp_test'"
 	@echo
 	@echo -e "\tnote: Few custom merge targets (e.g. ${BOLD}export${RESET}) are also provided."
-	@echo -e "\te.g. 'make amd64_almalinux-9_export'"
-	@echo -e "\te.g. 'make arm64_almalinux-9_export'"
+	@echo -e "\te.g. 'make amd64_almalinux-10_export'"
+	@echo -e "\te.g. 'make arm64_almalinux-10_export'"
 	@echo
 	@echo -e "\t${BOLD}NOCACHE=1${RESET}: use 'docker build --no-cache' when building container (default use cache)."
 	@echo -e "\t${BOLD}VERBOSE=1${RESET}: use 'docker build --progress=plain' when building container."
@@ -429,13 +428,13 @@ PLATFORMS := amd64 arm64 # riscv64
 
 # Currently supported distro
 DISTROS := \
- almalinux-9 \
+ almalinux-10 \
  alpine-edge \
  archlinux \
  debian-11 debian-12 debian-sid \
  fedora-40 fedora-41 fedora-42 \
  opensuse-leap \
- rockylinux-9 \
+ rockylinux-10 \
  ubuntu-20.04 ubuntu-22.04 ubuntu-24.04 ubuntu-24.10
 
 # List of stages

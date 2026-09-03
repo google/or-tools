@@ -25,8 +25,7 @@ see: https://en.wikipedia.org/wiki/Golomb_ruler
 
 from typing import Sequence
 
-from absl import app
-from absl import flags
+from absl import app, flags
 
 from ortools.sat.python import cp_model
 

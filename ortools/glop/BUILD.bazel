@@ -12,31 +12,56 @@
 # limitations under the License.
 
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//bazel:compilation_flags.bzl", "SAFE_FP_CODE")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
 
-package(
-    default_visibility = ["//visibility:public"],
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "rank_one_update",
+    hdrs = ["rank_one_update.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:scattered_vector",
+        "//ortools/lp_data:sparse",
+        "@abseil-cpp//absl/log:check",
+    ],
 )
 
-# Floating-point code in this directory must not be compiled with
-# dangerous optimizations. For example do not assume that FP expressions
-# are associative. This is what -fno-fast-math is for.
-SAFE_FP_CODE = select({
-    "@platforms//os:linux": ["-fno-fast-math"],
-    "@platforms//os:macos": [],  # no_fast_math is the default.
-    "@platforms//os:windows": [],  # /fp:precise is the default.
-    "//conditions:default": [],
-})
-
-# Revised Simplex LP solver.
+cc_test(
+    name = "rank_one_update_test",
+    size = "small",
+    srcs = ["rank_one_update_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":rank_one_update",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data:lp_test_utils",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:scattered_vector",
+        "//ortools/lp_data:sparse",
+        "//ortools/lp_data:sparse_column",
+        "//ortools/util:fp_utils",
+    ],
+)
 
 cc_library(
     name = "pricing",
     hdrs = ["pricing.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
-        "//ortools/lp_data:base",
+        "//ortools/lp_data:lp_types",
         "//ortools/util:bitset",
         "//ortools/util:stats",
         "@abseil-cpp//absl/log:check",
@@ -45,11 +70,342 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "pricing_test",
+    size = "small",
+    srcs = ["pricing_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":pricing",
+        "//ortools/base:gmock_main",
+        "//ortools/util:strong_integers",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
+    ],
+)
+
+cc_library(
+    name = "basis_representation",
+    srcs = ["basis_representation.cc"],
+    hdrs = ["basis_representation.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":lu_factorization",
+        ":parameters_cc_proto",
+        ":rank_one_update",
+        "//ortools/base:stl_util",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:permutation",
+        "//ortools/lp_data:scattered_vector",
+        "//ortools/lp_data:sparse",
+        "//ortools/lp_data:sparse_column",
+        "//ortools/util:return_macros",
+        "//ortools/util:stats",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "basis_representation_test",
+    size = "small",
+    srcs = ["basis_representation_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":basis_representation",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data:lp_test_utils",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_types_testing",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:permutation",
+        "//ortools/lp_data:scattered_vector",
+        "//ortools/lp_data:sparse",
+        "//ortools/util:fp_utils",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random:distributions",
+    ],
+)
+
+cc_library(
+    name = "variables_info",
+    srcs = ["variables_info.cc"],
+    hdrs = ["variables_info.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:sparse",
+        "@abseil-cpp//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "variables_info_test",
+    size = "small",
+    srcs = ["variables_info_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":variables_info",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:sparse",
+    ],
+)
+
+cc_library(
+    name = "entering_variable",
+    srcs = ["entering_variable.cc"],
+    hdrs = ["entering_variable.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":parameters_cc_proto",
+        ":reduced_costs",
+        ":status",
+        ":update_row",
+        ":variables_info",
+        "//ortools/lp_data:lp_types",
+        "//ortools/util:stats",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+    ],
+)
+
+cc_library(
+    name = "parameters_validation",
+    srcs = ["parameters_validation.cc"],
+    hdrs = ["parameters_validation.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":parameters_cc_proto",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "parameters_validation_test",
+    size = "small",
+    srcs = ["parameters_validation_test.cc"],
+    deps = [
+        ":parameters_cc_proto",
+        ":parameters_validation",
+        "//ortools/base:gmock_main",
+        "@protobuf",
+    ],
+)
+
+cc_library(
+    name = "reduced_costs",
+    srcs = ["reduced_costs.cc"],
+    hdrs = ["reduced_costs.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":basis_representation",
+        ":parameters_cc_proto",
+        ":pricing",
+        ":primal_edge_norms",
+        ":update_row",
+        ":variables_info",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:scattered_vector",
+        "//ortools/lp_data:sparse",
+        "//ortools/util:bitset",
+        "//ortools/util:stats",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+    ],
+)
+
+cc_test(
+    name = "reduced_costs_test",
+    size = "small",
+    srcs = ["reduced_costs_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":basis_representation",
+        ":reduced_costs",
+        ":variables_info",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:sparse",
+        "@abseil-cpp//absl/random",
+    ],
+)
+
+cc_library(
+    name = "preprocessor",
+    srcs = ["preprocessor.cc"],
+    hdrs = ["preprocessor.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":parameters_cc_proto",
+        "//ortools/base:iterator_adaptors",
+        "//ortools/base:strong_vector",
+        "//ortools/lp_data",
+        "//ortools/lp_data:lp_data_utils",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:matrix_scaler",
+        "//ortools/lp_data:matrix_utils",
+        "//ortools/lp_data:sparse",
+        "//ortools/lp_data:sparse_column",
+        "//ortools/util:fp_utils",
+        "//ortools/util:logging",
+        "//ortools/util:return_macros",
+        "//ortools/util:stats",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/functional:overload",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
+    ],
+)
+
+cc_test(
+    name = "preprocessor_test",
+    size = "small",
+    srcs = ["preprocessor_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":parameters_cc_proto",
+        ":preprocessor",
+        ":preprocessor_testing",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data",
+        "//ortools/lp_data:lp_parser",
+        "//ortools/lp_data:lp_test_utils",
+        "//ortools/lp_data:lp_types",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+cc_test(
+    name = "preprocessor_random_test",
+    size = "medium",
+    srcs = ["preprocessor_random_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lp_solver",
+        ":parameters_cc_proto",
+        "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
+        "//ortools/lp_data",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_types_testing",
+        "//ortools/lp_data:sparse_column",
+        "//ortools/util:fp_utils",
+        "@abseil-cpp//absl/functional:overload",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+cc_library(
+    name = "markowitz",
+    srcs = ["markowitz.cc"],
+    hdrs = ["markowitz.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":parameters_cc_proto",
+        "//ortools/base:strong_vector",
+        "//ortools/base:types",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:permutation",
+        "//ortools/lp_data:sparse",
+        "//ortools/lp_data:sparse_column",
+        "//ortools/util:stats",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+cc_test(
+    name = "markowitz_test",
+    size = "small",
+    srcs = ["markowitz_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":markowitz",
+        "//ortools/base:gmock_main",
+        "//ortools/graph_base:iterators",
+        "//ortools/lp_data:lp_test_utils",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:permutation",
+        "//ortools/lp_data:sparse",
+        "//ortools/lp_data:sparse_column",
+        "@abseil-cpp//absl/random:distributions",
+    ],
+)
+
+cc_library(
+    name = "dual_edge_norms",
+    srcs = ["dual_edge_norms.cc"],
+    hdrs = ["dual_edge_norms.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":basis_representation",
+        ":parameters_cc_proto",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:permutation",
+        "//ortools/lp_data:scattered_vector",
+        "//ortools/util:stats",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "dual_edge_norms_test",
+    size = "small",
+    srcs = ["dual_edge_norms_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":basis_representation",
+        ":dual_edge_norms",
+        ":parameters_cc_proto",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data:lp_test_utils",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:permutation",
+        "//ortools/lp_data:scattered_vector",
+        "//ortools/lp_data:sparse",
+        "//ortools/util:fp_utils",
+    ],
+)
+
 cc_library(
     name = "revised_simplex",
     srcs = ["revised_simplex.cc"],
     hdrs = ["revised_simplex.h"],
-    copts = SAFE_FP_CODE,
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":basis_representation",
         ":dual_edge_norms",
@@ -64,13 +420,12 @@ cc_library(
         ":update_row",
         ":variable_values",
         ":variables_info",
-        "//ortools/base",
+        "//ortools/base:log_severity",
         "//ortools/base:strong_vector",
-        "//ortools/base:types",
-        "//ortools/graph:iterators",
+        "//ortools/graph_base:iterators",
         "//ortools/lp_data",
-        "//ortools/lp_data:base",
         "//ortools/lp_data:lp_print_utils",
+        "//ortools/lp_data:lp_types",
         "//ortools/lp_data:lp_utils",
         "//ortools/lp_data:matrix_utils",
         "//ortools/lp_data:permutation",
@@ -84,7 +439,11 @@ cc_library(
         "//ortools/util:stats",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/functional:overload",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:die_if_null",
         "@abseil-cpp//absl/log:vlog_is_on",
@@ -93,136 +452,89 @@ cc_library(
         "@abseil-cpp//absl/random:seed_sequences",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
-# Update row.
-
-cc_library(
-    name = "update_row",
-    srcs = ["update_row.cc"],
-    hdrs = ["update_row.h"],
+cc_test(
+    name = "revised_simplex_test",
+    size = "small",
+    timeout = "moderate",
+    srcs = ["revised_simplex_test.cc"],
     copts = SAFE_FP_CODE,
     deps = [
-        ":basis_representation",
         ":parameters_cc_proto",
+        ":preprocessor",
+        ":preprocessor_testing",
+        ":revised_simplex",
         ":variables_info",
-        "//ortools/lp_data:base",
-        "//ortools/lp_data:lp_utils",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data",
+        "//ortools/lp_data:lp_parser",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_types_testing",
         "//ortools/lp_data:scattered_vector",
-        "//ortools/lp_data:sparse",
-        "//ortools/util:stats",
+        "//ortools/lp_data:sparse_row",
+        "//ortools/util:fp_utils",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/types:span",
-    ],
-)
-
-# Variables info.
-
-cc_library(
-    name = "variables_info",
-    srcs = ["variables_info.cc"],
-    hdrs = ["variables_info.h"],
-    copts = SAFE_FP_CODE,
-    deps = [
-        "//ortools/lp_data:base",
-        "//ortools/lp_data:sparse",
-        "@abseil-cpp//absl/log:check",
-    ],
-)
-
-# LU factorization of sparse matrices.
-
-cc_library(
-    name = "lu_factorization",
-    srcs = ["lu_factorization.cc"],
-    hdrs = ["lu_factorization.h"],
-    copts = SAFE_FP_CODE,
-    deps = [
-        ":markowitz",
-        ":parameters_cc_proto",
-        ":status",
-        "//ortools/lp_data:base",
-        "//ortools/lp_data:lp_utils",
-        "//ortools/lp_data:permutation",
-        "//ortools/lp_data:scattered_vector",
-        "//ortools/lp_data:sparse",
-        "//ortools/lp_data:sparse_column",
-        "//ortools/util:stats",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/types:span",
-    ],
-)
-
-cc_library(
-    name = "markowitz",
-    srcs = ["markowitz.cc"],
-    hdrs = ["markowitz.h"],
-    copts = SAFE_FP_CODE,
-    deps = [
-        ":parameters_cc_proto",
-        ":status",
-        "//ortools/base",
-        "//ortools/base:strong_vector",
-        "//ortools/lp_data:base",
-        "//ortools/lp_data:lp_utils",
-        "//ortools/lp_data:permutation",
-        "//ortools/lp_data:sparse",
-        "//ortools/lp_data:sparse_column",
-        "//ortools/util:stats",
-        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
-# Basis representations (Eta and LU).
-
-cc_library(
-    name = "basis_representation",
-    srcs = ["basis_representation.cc"],
-    hdrs = ["basis_representation.h"],
+# Same test as revised_simplex_test but with different flags.
+cc_test(
+    name = "revised_simplex_test_coverage",
+    size = "small",
+    timeout = "moderate",
+    srcs = ["revised_simplex_test.cc"],
+    args = [
+        "--simplex_display_numbers_as_fractions",
+        "--v=1",
+    ],
     copts = SAFE_FP_CODE,
     deps = [
-        ":lu_factorization",
         ":parameters_cc_proto",
-        ":rank_one_update",
-        ":status",
-        "//ortools/base",
-        "//ortools/base:stl_util",
-        "//ortools/lp_data:base",
-        "//ortools/lp_data:lp_utils",
-        "//ortools/lp_data:permutation",
+        ":preprocessor",
+        ":preprocessor_testing",
+        ":revised_simplex",
+        ":variables_info",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data",
+        "//ortools/lp_data:lp_parser",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_types_testing",
         "//ortools/lp_data:scattered_vector",
-        "//ortools/lp_data:sparse",
-        "//ortools/util:stats",
+        "//ortools/lp_data:sparse_row",
+        "//ortools/util:fp_utils",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
     ],
 )
-
-cc_library(
-    name = "rank_one_update",
-    hdrs = ["rank_one_update.h"],
-    copts = SAFE_FP_CODE,
-    deps = [
-        "//ortools/base",
-        "//ortools/lp_data:base",
-        "//ortools/lp_data:lp_utils",
-        "//ortools/lp_data:scattered_vector",
-        "//ortools/lp_data:sparse",
-    ],
-)
-
-# Initial basis.
 
 cc_library(
     name = "initial_basis",
     srcs = ["initial_basis.cc"],
     hdrs = ["initial_basis.h"],
-    copts = SAFE_FP_CODE,
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":markowitz",
-        "//ortools/lp_data",
-        "//ortools/lp_data:base",
+        "//ortools/base:types",
+        "//ortools/lp_data:lp_types",
         "//ortools/lp_data:lp_utils",
         "//ortools/lp_data:sparse",
         "//ortools/lp_data:sparse_column",
@@ -232,17 +544,277 @@ cc_library(
     ],
 )
 
-# Function status.
+cc_test(
+    name = "initial_basis_test",
+    size = "small",
+    srcs = ["initial_basis_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":initial_basis",
+        ":parameters_cc_proto",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:sparse",
+        "@abseil-cpp//absl/random",
+    ],
+)
+
+cc_library(
+    name = "variable_values",
+    srcs = ["variable_values.cc"],
+    hdrs = ["variable_values.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":basis_representation",
+        ":dual_edge_norms",
+        ":parameters_cc_proto",
+        ":pricing",
+        ":variables_info",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:scattered_vector",
+        "//ortools/lp_data:sparse",
+        "//ortools/util:stats",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "variable_values_test",
+    size = "small",
+    srcs = ["variable_values_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":basis_representation",
+        ":dual_edge_norms",
+        ":parameters_cc_proto",
+        ":pricing",
+        ":variable_values",
+        ":variables_info",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:sparse",
+        "@abseil-cpp//absl/random",
+    ],
+)
+
+cc_library(
+    name = "update_row",
+    srcs = ["update_row.cc"],
+    hdrs = ["update_row.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":basis_representation",
+        ":parameters_cc_proto",
+        ":variables_info",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:scattered_vector",
+        "//ortools/lp_data:sparse",
+        "//ortools/util:stats",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "update_row_test",
+    size = "small",
+    srcs = ["update_row_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":basis_representation",
+        ":update_row",
+        ":variables_info",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data:lp_test_utils",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:sparse",
+        "@abseil-cpp//absl/log:check",
+    ],
+)
+
+cc_binary(
+    name = "update_row_benchmark",
+    testonly = True,
+    srcs = ["update_row_benchmark.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":basis_representation",
+        ":update_row",
+        ":variables_info",
+        "//ortools/base:benchmark_main",
+        "//ortools/lp_data:lp_test_utils",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:sparse",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:distributions",
+        "@google_benchmark//:benchmark",
+    ],
+)
+
+cc_library(
+    name = "lp_solver",
+    srcs = ["lp_solver.cc"],
+    hdrs = ["lp_solver.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":parameters_cc_proto",
+        ":preprocessor",
+        ":revised_simplex",
+        ":variables_info",
+        "//ortools/base:version",
+        "//ortools/base/macros:os_support",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/lp_data",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:proto_utils",
+        "//ortools/port:proto_utils",
+        "//ortools/util:file_util",
+        "//ortools/util:fp_utils",
+        "//ortools/util:logging",
+        "//ortools/util:testing_utils",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:vlog_is_on",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@protobuf",
+    ],
+)
+
+cc_test(
+    name = "lp_solver_test",
+    size = "small",
+    srcs = ["lp_solver_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lp_solver",
+        "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
+        "//ortools/lp_data",
+        "//ortools/lp_data:lp_parser",
+        "//ortools/lp_data:lp_test_utils",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_types_testing",
+        "//ortools/lp_data:proto_utils",
+        "//ortools/port:scoped_std_stream_capture",
+        "//ortools/util:file_util",
+        "//ortools/util:fp_utils",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
+cc_library(
+    name = "primal_edge_norms",
+    srcs = ["primal_edge_norms.cc"],
+    hdrs = ["primal_edge_norms.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":basis_representation",
+        ":parameters_cc_proto",
+        ":update_row",
+        ":variables_info",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:scattered_vector",
+        "//ortools/lp_data:sparse",
+        "//ortools/util:stats",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+    ],
+)
+
+cc_library(
+    name = "lu_factorization",
+    srcs = ["lu_factorization.cc"],
+    hdrs = ["lu_factorization.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":markowitz",
+        ":parameters_cc_proto",
+        "//ortools/base:log_severity",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:permutation",
+        "//ortools/lp_data:scattered_vector",
+        "//ortools/lp_data:sparse",
+        "//ortools/lp_data:sparse_column",
+        "//ortools/util:stats",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "lu_factorization_test",
+    size = "small",
+    srcs = ["lu_factorization_test.cc"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lu_factorization",
+        ":parameters_cc_proto",
+        "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
+        "//ortools/graph_base:iterators",
+        "//ortools/lp_data:lp_test_utils",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_types_testing",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:permutation",
+        "//ortools/lp_data:sparse",
+        "//ortools/lp_data:sparse_column",
+        "//ortools/util:fp_utils",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+    ],
+)
 
 cc_library(
     name = "status",
     srcs = ["status.cc"],
     hdrs = ["status.h"],
-    copts = SAFE_FP_CODE,
-    deps = ["//ortools/base"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+    ],
 )
 
-# Glop parameters.
+cc_library(
+    name = "preprocessor_testing",
+    testonly = True,
+    srcs = ["preprocessor_testing.cc"],
+    hdrs = ["preprocessor_testing.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":preprocessor",
+        "//ortools/base:gmock",
+        "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_types_testing",
+    ],
+)
 
 proto_library(
     name = "parameters_proto",
@@ -254,200 +826,12 @@ cc_proto_library(
     deps = [":parameters_proto"],
 )
 
-py_proto_library(
-    name = "parameters_py_pb2",
+java_proto_library(
+    name = "parameters_java_proto",
     deps = [":parameters_proto"],
 )
 
-# Dual edge norms.
-
-cc_library(
-    name = "dual_edge_norms",
-    srcs = ["dual_edge_norms.cc"],
-    hdrs = ["dual_edge_norms.h"],
-    copts = SAFE_FP_CODE,
-    deps = [
-        ":basis_representation",
-        ":parameters_cc_proto",
-        "//ortools/lp_data",
-        "//ortools/lp_data:base",
-        "//ortools/lp_data:lp_utils",
-        "//ortools/lp_data:permutation",
-        "//ortools/lp_data:scattered_vector",
-        "//ortools/util:stats",
-        "//ortools/util:time_limit",
-    ],
-)
-
-# Primal edge norms.
-
-cc_library(
-    name = "primal_edge_norms",
-    srcs = ["primal_edge_norms.cc"],
-    hdrs = ["primal_edge_norms.h"],
-    copts = SAFE_FP_CODE,
-    deps = [
-        ":basis_representation",
-        ":parameters_cc_proto",
-        ":update_row",
-        ":variables_info",
-        "//ortools/lp_data",
-        "//ortools/lp_data:base",
-        "//ortools/lp_data:lp_utils",
-        "//ortools/lp_data:scattered_vector",
-        "//ortools/lp_data:sparse",
-        "//ortools/util:stats",
-        "//ortools/util:time_limit",
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/log:check",
-    ],
-)
-
-cc_library(
-    name = "reduced_costs",
-    srcs = ["reduced_costs.cc"],
-    hdrs = ["reduced_costs.h"],
-    copts = SAFE_FP_CODE,
-    deps = [
-        ":basis_representation",
-        ":parameters_cc_proto",
-        ":pricing",
-        ":primal_edge_norms",
-        ":status",
-        ":update_row",
-        ":variables_info",
-        "//ortools/lp_data",
-        "//ortools/lp_data:base",
-        "//ortools/lp_data:lp_utils",
-        "//ortools/lp_data:scattered_vector",
-        "//ortools/lp_data:sparse",
-        "//ortools/util:bitset",
-        "//ortools/util:stats",
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/random:bit_gen_ref",
-    ],
-)
-
-cc_library(
-    name = "variable_values",
-    srcs = ["variable_values.cc"],
-    hdrs = ["variable_values.h"],
-    copts = SAFE_FP_CODE,
-    deps = [
-        ":basis_representation",
-        ":dual_edge_norms",
-        ":parameters_cc_proto",
-        ":pricing",
-        ":variables_info",
-        "//ortools/lp_data:base",
-        "//ortools/lp_data:lp_utils",
-        "//ortools/lp_data:scattered_vector",
-        "//ortools/lp_data:sparse",
-        "//ortools/util:stats",
-        "@abseil-cpp//absl/base:core_headers",
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/types:span",
-    ],
-)
-
-# Primal pricing rules.
-
-cc_library(
-    name = "entering_variable",
-    srcs = ["entering_variable.cc"],
-    hdrs = ["entering_variable.h"],
-    copts = SAFE_FP_CODE,
-    deps = [
-        ":basis_representation",
-        ":parameters_cc_proto",
-        ":primal_edge_norms",
-        ":reduced_costs",
-        ":status",
-        ":update_row",
-        ":variables_info",
-        "//ortools/base:timer",
-        "//ortools/lp_data",
-        "//ortools/lp_data:base",
-        "//ortools/lp_data:lp_utils",
-        "//ortools/port:proto_utils",
-        "//ortools/util:bitset",
-        "//ortools/util:stats",
-        "@abseil-cpp//absl/random:bit_gen_ref",
-    ],
-)
-
-# Preprocessor.
-
-cc_library(
-    name = "preprocessor",
-    srcs = ["preprocessor.cc"],
-    hdrs = ["preprocessor.h"],
-    copts = SAFE_FP_CODE,
-    deps = [
-        ":parameters_cc_proto",
-        ":revised_simplex",
-        ":status",
-        "//ortools/base:iterator_adaptors",
-        "//ortools/base:strong_vector",
-        "//ortools/lp_data",
-        "//ortools/lp_data:base",
-        "//ortools/lp_data:lp_data_utils",
-        "//ortools/lp_data:lp_utils",
-        "//ortools/lp_data:matrix_scaler",
-        "//ortools/lp_data:matrix_utils",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:str_format",
-    ],
-)
-
-# LP Solver.
-
-cc_library(
-    name = "lp_solver",
-    srcs = ["lp_solver.cc"],
-    hdrs = ["lp_solver.h"],
-    copts = SAFE_FP_CODE,
-    deps = [
-        ":parameters_cc_proto",
-        ":preprocessor",
-        ":revised_simplex",
-        ":status",
-        ":variables_info",
-        "//ortools/base",
-        "//ortools/base:numbers",
-        "//ortools/base:timer",
-        "//ortools/linear_solver:linear_solver_cc_proto",
-        "//ortools/lp_data",
-        "//ortools/lp_data:base",
-        "//ortools/lp_data:lp_utils",
-        "//ortools/lp_data:proto_utils",
-        "//ortools/port:proto_utils",
-        "//ortools/util:file_util",
-        "//ortools/util:fp_utils",
-        "//ortools/util:logging",
-        "//ortools/util:testing_utils",
-        "//ortools/util:time_limit",
-        "@abseil-cpp//absl/flags:flag",
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/log:vlog_is_on",
-        "@abseil-cpp//absl/memory",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:str_format",
-        "@protobuf",
-    ],
-)
-
-# Netlib test: run Glop on all the Netlib problems.
-
-cc_library(
-    name = "parameters_validation",
-    srcs = ["parameters_validation.cc"],
-    hdrs = ["parameters_validation.h"],
-    deps = [
-        ":parameters_cc_proto",
-        "@abseil-cpp//absl/strings",
-    ],
+py_proto_library(
+    name = "parameters_py_pb2",
+    deps = [":parameters_proto"],
 )

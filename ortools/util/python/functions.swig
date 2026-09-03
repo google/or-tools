@@ -23,6 +23,10 @@
 
 %include "ortools/base/base.i"
 
+// Ignore warnings for operators like: Unreferenced %newobject *::operator -=
+#pragma SWIG nowarn=551
+#pragma SWIG nowarn=473
+
 %{
 #include <functional>
 

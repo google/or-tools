@@ -11,11 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstdlib>
 #include <limits>
 #include <string>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/solve_mp_model.h"
 

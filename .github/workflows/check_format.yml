@@ -3,8 +3,8 @@ name: Check Format
 on:
   push:
     branches:
+      - ci
       - main
-      - v99bugfix
   workflow_dispatch:
 
 concurrency:
@@ -12,11 +12,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Building using the github runner environement directly.
+  # Building using the github runner environment directly.
   clang-format:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: Fetch origin/main
       run: git fetch origin main
     - name: List of changed file(s)

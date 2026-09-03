@@ -18,12 +18,12 @@
 #include <string>
 #include <vector>
 
-#include "absl/base/log_severity.h"
 #include "absl/log/globals.h"
 #include "absl/log/log.h"
 #include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/linear_solver/linear_solver.h"
 
 namespace operations_research {
@@ -90,7 +90,7 @@ void RunAllExamples() {
     if (absl::StrContains(type_name, "HIGHS")) continue;
 // ASAN issues a warning in CBC code which cannot be avoided for now:
 // AddressSanitizer: float-cast-overflow
-// third_party/cbc/Cgl/src/CglPreProcess/CglPreProcess.cpp:1717:36
+// @cbc//Cgl/src/CglPreProcess/CglPreProcess.cpp:1717:36
 #ifdef ADDRESS_SANITIZER
     if (type_name.find("CBC") != std::string::npos) {
       continue;

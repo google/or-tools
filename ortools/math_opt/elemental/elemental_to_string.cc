@@ -120,7 +120,6 @@ std::vector<std::string> DiffDebugString(const Elemental& elemental,
     lines.push_back(absl::StrCat("  deleted: [",
                                  absl::StrJoin(deleted_elements, ", "), "]"));
   }
-  // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
   AllAttrs::ForEachAttr([&lines, &elemental, &diff]<typename Attr>(Attr attr) {
     if (diff.modified_keys(attr).empty()) {
       return;

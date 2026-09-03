@@ -16,11 +16,9 @@ import math
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
 from unittest import mock
 
-from absl.testing import absltest
-from absl.testing import parameterized
-from ortools.math_opt.python import bounded_expressions
-from ortools.math_opt.python import model
-from ortools.math_opt.python import variables
+from absl.testing import absltest, parameterized
+
+from ortools.math_opt.python import bounded_expressions, model, variables
 
 _LINEAR_TYPES = (
     "Variable",

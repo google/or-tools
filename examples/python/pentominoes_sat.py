@@ -28,11 +28,9 @@ https://web.ma.utexas.edu/users/smmg/archive/1997/radin.html
 from collections.abc import Sequence
 from typing import Dict, List
 
-from absl import app
-from absl import flags
+from absl import app, flags
 
 from ortools.sat.python import cp_model
-
 
 _PARAMS = flags.DEFINE_string(
     "params",

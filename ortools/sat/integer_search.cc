@@ -17,19 +17,25 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <random>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/log_severity.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
@@ -39,7 +45,9 @@
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/linear_programming_constraint.h"
+#include "ortools/sat/linear_propagation.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/precedences.h"
 #include "ortools/sat/probing.h"
 #include "ortools/sat/pseudo_costs.h"
 #include "ortools/sat/restart.h"
@@ -50,6 +58,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/scheduling_helpers.h"
+#include "ortools/sat/symmetry_util.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
@@ -295,8 +304,79 @@ UnassignedVarWithLowestMinAtItsMinHeuristic(
       };
 }
 
+std::function<BooleanOrIntegerLiteral()> ShaveModelIntegerVariableBounds(
+    const std::vector<IntegerVariable>& vars, Model* model) {
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
+  absl::BitGenRef random = *model->GetOrCreate<ModelRandomGenerator>();
+
+  int current_index = 0;
+  bool enable = true;
+  return [/*copy */ vars =
+              std::vector<IntegerVariable>(vars.begin(), vars.end()),
+          /*copy*/ current_index, /*copy*/ enable, integer_trail, sat_solver,
+          random = random]() mutable {
+    const int level = sat_solver->CurrentDecisionLevel();
+    if (level > 0 || !enable) return BooleanOrIntegerLiteral();
+
+    for (int i = 0; i < vars.size(); ++i) {
+      const IntegerVariable var = vars[current_index++];
+      if (current_index >= vars.size()) current_index = 0;
+
+      if (integer_trail->IsFixed(var)) continue;
+
+      const IntegerValue var_lb = integer_trail->LowerBound(var);
+      const IntegerValue var_ub = integer_trail->UpperBound(var);
+      DCHECK_LT(var_lb, var_ub);
+
+      const IntegerValue half_domain_range = (var_ub - var_lb) / 2;
+      const IntegerValue new_ub =
+          var_lb +
+          absl::LogUniform<int64_t>(random, 0, half_domain_range.value());
+
+      return BooleanOrIntegerLiteral(IntegerLiteral::LowerOrEqual(var, new_ub));
+    }
+
+    // We will disable this if all integer variables are fixed.
+    enable = false;
+    return BooleanOrIntegerLiteral();
+  };
+}
+
+std::function<BooleanOrIntegerLiteral()> ShaveModelBooleanVariables(
+    const std::vector<Literal>& literals, Model* model) {
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
+  auto* binary_implication_graph = model->GetOrCreate<BinaryImplicationGraph>();
+  int current_index = 0;
+  bool enable = true;
+  return [/*copy */ literals =
+              std::vector<Literal>(literals.begin(), literals.end()),
+          /*copy*/ current_index, /*copy*/ enable, sat_solver,
+          binary_implication_graph]() mutable {
+    const int level = sat_solver->CurrentDecisionLevel();
+    if (level > 0 || !enable) return BooleanOrIntegerLiteral();
+
+    for (int i = 0; i < literals.size(); ++i) {
+      const Literal lit = literals[current_index++];
+      if (current_index >= literals.size()) current_index = 0;
+
+      if (sat_solver->Assignment().LiteralIsAssigned(lit) ||
+          binary_implication_graph->IsRedundant(
+              Literal(lit.Variable(), true))) {
+        continue;
+      }
+
+      return BooleanOrIntegerLiteral(lit.Index());
+    }
+
+    // We will disable this if all literals are fixed.
+    enable = false;
+    return BooleanOrIntegerLiteral();
+  };
+}
+
 std::function<BooleanOrIntegerLiteral()> SequentialSearch(
-    std::vector<std::function<BooleanOrIntegerLiteral()>> heuristics) {
+    const std::vector<std::function<BooleanOrIntegerLiteral()>>& heuristics) {
   if (DEBUG_MODE) {
     for (const auto& h : heuristics) {
       DCHECK(h != nullptr);
@@ -318,7 +398,9 @@ std::function<BooleanOrIntegerLiteral()> SequentialValueSelection(
     Model* model) {
   auto* encoder = model->GetOrCreate<IntegerEncoder>();
   auto* sat_policy = model->GetOrCreate<SatDecisionPolicy>();
-  return [=]() {
+  return [encoder, sat_policy,
+          value_selection_heuristics = std::move(value_selection_heuristics),
+          var_selection_heuristic = std::move(var_selection_heuristic)]() {
     // Get the current decision.
     const BooleanOrIntegerLiteral current_decision = var_selection_heuristic();
     if (!current_decision.HasValue()) return current_decision;
@@ -416,7 +498,7 @@ std::function<BooleanOrIntegerLiteral()> IntegerValueSelectionHeuristic(
   }
 
   return SequentialValueSelection(value_selection_heuristics,
-                                  var_selection_heuristic, model);
+                                  std::move(var_selection_heuristic), model);
 }
 
 std::function<BooleanOrIntegerLiteral()> SatSolverHeuristic(Model* model) {
@@ -439,9 +521,9 @@ std::function<BooleanOrIntegerLiteral()> ShaveObjectiveLb(Model* model) {
   const IntegerVariable obj_var = objective_definition->objective_var;
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   auto* sat_solver = model->GetOrCreate<SatSolver>();
-  auto* random = model->GetOrCreate<ModelRandomGenerator>();
+  absl::BitGenRef random = *model->GetOrCreate<ModelRandomGenerator>();
 
-  return [obj_var, integer_trail, sat_solver, random]() {
+  return [obj_var, integer_trail, sat_solver, rand = random]() {
     BooleanOrIntegerLiteral result;
     const int level = sat_solver->CurrentDecisionLevel();
     if (level > 0 || obj_var == kNoIntegerVariable) return result;
@@ -450,8 +532,9 @@ std::function<BooleanOrIntegerLiteral()> ShaveObjectiveLb(Model* model) {
     const IntegerValue obj_ub = integer_trail->UpperBound(obj_var);
     if (obj_lb == obj_ub) return result;
     const IntegerValue mid = (obj_ub - obj_lb) / 2;
+    absl::BitGenRef r = rand;
     const IntegerValue new_ub =
-        obj_lb + absl::LogUniform<int64_t>(*random, 0, mid.value());
+        obj_lb + absl::LogUniform<int64_t>(r, 0, mid.value());
 
     result.integer_literal = IntegerLiteral::LowerOrEqual(obj_var, new_ub);
     return result;
@@ -479,108 +562,322 @@ std::function<BooleanOrIntegerLiteral()> PseudoCost(Model* model) {
   };
 }
 
-// A simple heuristic for scheduling models.
-std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
-    Model* model) {
-  auto* repo = model->GetOrCreate<IntervalsRepository>();
-  auto* heuristic = model->GetOrCreate<SearchHeuristics>();
-  auto* trail = model->GetOrCreate<Trail>();
-  auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  const int64_t randomization_size = std::max<int64_t>(
-      1,
-      model->GetOrCreate<SatParameters>()->search_random_variable_pool_size());
-  auto* random = model->GetOrCreate<ModelRandomGenerator>();
-
-  // To avoid to scan already fixed intervals, we use a simple reversible int.
-  auto* rev_int_repo = model->GetOrCreate<RevIntRepository>();
-  const int num_intervals = repo->NumIntervals();
-  int rev_fixed = 0;
-  bool rev_is_in_dive = false;
-  std::vector<IntervalVariable> intervals(num_intervals);
-  std::vector<IntegerValue> cached_start_mins(num_intervals);
-  for (IntervalVariable i(0); i < num_intervals; ++i) {
-    intervals[i.value()] = i;
+namespace {
+// Detects interval precedence constraints.
+class IntervalPrecedencesDetector {
+ public:
+  explicit IntervalPrecedencesDetector(Model* model)
+      : intervals_(*model->GetOrCreate<IntervalsRepository>()),
+        lin2_indices_(*model->GetOrCreate<Linear2Indices>()),
+        lin2_bounds_(*model->GetOrCreate<RootLevelLinear2Bounds>()),
+        conditional_bounds_(*model->GetOrCreate<ConditionalLinear2Bounds>()) {
+    CompactVectorVectorBuilder<IntegerVariable, IntervalVariable>
+        intervals_by_start_var_builder;
+    CompactVectorVectorBuilder<IntegerVariable, IntervalVariable>
+        intervals_by_end_var_builder;
+    for (IntervalVariable interval_var(0);
+         interval_var < intervals_.NumIntervals(); ++interval_var) {
+      const AffineExpression start = intervals_.Start(interval_var);
+      if (start.var != kNoIntegerVariable) {
+        CHECK_GT(start.coeff, 0);
+        intervals_by_start_var_builder.Add(start.var, interval_var);
+      }
+      const AffineExpression end = intervals_.End(interval_var);
+      if (end.var != kNoIntegerVariable) {
+        CHECK_GT(end.coeff, 0);
+        intervals_by_end_var_builder.Add(end.var, interval_var);
+      }
+    }
+    intervals_by_start_var_.ResetFromBuilder(intervals_by_start_var_builder,
+                                             intervals_.NumIntervals());
+    intervals_by_end_var_.ResetFromBuilder(intervals_by_end_var_builder,
+                                           intervals_.NumIntervals());
   }
 
-  // Note(user): only the model is captured for no reason.
-  return [=]() mutable {
-    struct ToSchedule {
-      // Variable to fix.
-      LiteralIndex presence = kNoLiteralIndex;
-      AffineExpression start;
-      AffineExpression end;
-
-      // Information to select best.
-      IntegerValue size_min = kMaxIntegerValue;
-      IntegerValue start_min = kMaxIntegerValue;
-      IntegerValue start_max = kMaxIntegerValue;
-      double noise = 0.5;
-
-      // We want to pack interval to the left. If two have the same start_min,
-      // we want to choose the one that will likely leave an easier problem for
-      // the other tasks.
-      bool operator<(const ToSchedule& other) const {
-        return std::tie(start_min, start_max, size_min, noise) <
-               std::tie(other.start_min, other.start_max, other.size_min,
-                        other.noise);
+  // Detects unconditional interval precedence constraints. Returns, for each
+  // interval I, the intervals J which should be fixed after it in the
+  // SchedulingSearchHeuristicHelper (this can include some precedences which
+  // are not in the original problem, such as artificial precedences between
+  // optional and non-optional intervals).
+  CompactVectorVector<IntervalVariable, IntervalVariable> DetectPrecedences() {
+    CompactVectorVectorBuilder<IntervalVariable, IntervalVariable>
+        interval_precedences_builder;
+    for (LinearExpression2Index i(0);
+         i < 2 * lin2_indices_.NumStoredPositiveLinear2(); ++i) {
+      LinearExpression2 expr = lin2_indices_.GetExpression(i);
+      if (expr.vars[0] == kNoIntegerVariable ||
+          expr.vars[1] == kNoIntegerVariable) {
+        continue;
       }
-
-      // Generating random noise can take time, so we use this function to
-      // delay it.
-      bool MightBeBetter(const ToSchedule& other) const {
-        return std::tie(start_min, start_max) <=
-               std::tie(other.start_min, other.start_max);
+      DCHECK(expr.IsCanonicalized());
+      DCHECK_GT(expr.coeffs[0], 0);
+      DCHECK_GT(expr.coeffs[1], 0);
+      const IntegerValue lb = -lin2_bounds_.LevelZeroUpperBound(NegationOf(i));
+      for (int i = 0; i < 2; ++i) {
+        // Let's look for next_interval.start >= interval.end.
+        const IntegerVariable var = expr.vars[0];
+        const IntegerVariable next_var = expr.vars[1];
+        if (NegationOf(var) >= intervals_by_end_var_.size() ||
+            next_var >= intervals_by_start_var_.size()) {
+          continue;
+        }
+        for (const IntervalVariable interval_var :
+             intervals_by_end_var_[NegationOf(var)]) {
+          const AffineExpression interval_end = intervals_.End(interval_var);
+          for (const IntervalVariable next_interval_var :
+               intervals_by_start_var_[next_var]) {
+            if (next_interval_var == interval_var) continue;
+            const AffineExpression next_interval_start =
+                intervals_.Start(next_interval_var);
+            const std::optional<IntegerValue> delta_t =
+                expr.GetDifferenceLowerBound(lb, next_interval_start,
+                                             interval_end);
+            if (delta_t.has_value() && delta_t.value() >= 0) {
+              interval_precedences_builder.Add(interval_var, next_interval_var);
+            }
+          }
+        }
+        std::swap(expr.vars[0], expr.vars[1]);
+        std::swap(expr.coeffs[0], expr.coeffs[1]);
       }
-    };
+      for (int i = 0; i < 2; ++i) {
+        // Let's look for next_interval.start > interval.start (the above code
+        // can fail to detect some precedences, depending on how the scheduling
+        // problem is modeled and/or presolved).
+        const IntegerVariable var = expr.vars[0];
+        const IntegerVariable next_var = expr.vars[1];
+        if (next_var >= intervals_by_start_var_.size() ||
+            NegationOf(var) >= intervals_by_start_var_.size()) {
+          continue;
+        }
+        for (const IntervalVariable interval_var :
+             intervals_by_start_var_[NegationOf(var)]) {
+          const AffineExpression interval_start =
+              intervals_.Start(interval_var);
+          for (const IntervalVariable next_interval_var :
+               intervals_by_start_var_[next_var]) {
+            if (next_interval_var == interval_var) continue;
+            const AffineExpression next_interval_start =
+                intervals_.Start(next_interval_var);
+            const std::optional<IntegerValue> delta_t =
+                expr.GetDifferenceLowerBound(lb, next_interval_start,
+                                             interval_start);
+            if (delta_t.has_value() && delta_t > 0) {
+              interval_precedences_builder.Add(interval_var, next_interval_var);
+            }
+          }
+        }
+        std::swap(expr.vars[0], expr.vars[1]);
+        std::swap(expr.coeffs[0], expr.coeffs[1]);
+      }
+    }
+
+    // Add artificial precedences to fix optional intervals before non-optional
+    // ones which share the same start variable. A mandatory interval can have
+    // several optional variants, with exactly one being present. In this case
+    // the above code might detect precedences only between the optional
+    // intervals. To avoid conflicts in the heuristics below, it is better to
+    // fix the optional intervals first.
+    for (const absl::Span<const IntervalVariable> intervals :
+         intervals_by_start_var_) {
+      for (const IntervalVariable interval_var : intervals) {
+        for (const IntervalVariable other_interval_var : intervals) {
+          if (interval_var == other_interval_var) continue;
+          if (!intervals_.IsOptional(interval_var) &&
+              intervals_.IsOptional(other_interval_var)) {
+            interval_precedences_builder.Add(other_interval_var, interval_var);
+          }
+        }
+      }
+    }
+
+    CompactVectorVector<IntervalVariable, IntervalVariable>
+        interval_precedences;
+    interval_precedences.ResetFromBuilder(interval_precedences_builder,
+                                          intervals_.NumIntervals());
+    for (int i = 0; i < interval_precedences.size(); ++i) {
+      interval_precedences.SortAndRemoveDuplicateValues(IntervalVariable(i));
+    }
+    return interval_precedences;
+  }
+
+  // Detects conditional precedences between intervals. Returns (J, Δt) pairs
+  // for each interval I such that if J.start >= I.start + Δt, then all the
+  // conditional precedences we know about should be satisfied.
+  CompactVectorVector<IntervalVariable,
+                      std::pair<IntervalVariable, IntegerValue>>
+  DetectConditionalPrecedences() {
+    // For each pair of intervals (I, J), the maximum start time delta from I to
+    // J in the conditional bounds of the form lit => J is after I.
+    absl::flat_hash_map<std::pair<IntervalVariable, IntervalVariable>,
+                        IntegerValue>
+        max_start_time_deltas;
+    for (int i = 0; i < conditional_bounds_.size(); ++i) {
+      Relation relation = conditional_bounds_.relation(i);
+      if (relation.expr.vars[0] == kNoIntegerVariable ||
+          relation.expr.vars[1] == kNoIntegerVariable) {
+        continue;
+      }
+      // There are four ways to interpret 'relation' as a precedence constraint
+      // between intervals: terms can be swapped and variables can be negated.
+      for (int j = 0; j < 4; ++j) {
+        if (NegationOf(relation.expr.vars[0]) <
+                intervals_by_start_var_.size() &&
+            relation.expr.vars[1] < intervals_by_start_var_.size()) {
+          for (IntervalVariable interval :
+               intervals_by_start_var_[NegationOf(relation.expr.vars[0])]) {
+            for (IntervalVariable next_interval :
+                 intervals_by_start_var_[relation.expr.vars[1]]) {
+              if (next_interval == interval) continue;
+              const std::optional<IntegerValue> start_time_delta =
+                  relation.expr.GetDifferenceLowerBound(
+                      relation.lhs, intervals_.Start(next_interval),
+                      intervals_.Start(interval));
+              if (start_time_delta.has_value() && start_time_delta > 0) {
+                auto& current_max =
+                    max_start_time_deltas[{interval, next_interval}];
+                current_max = std::max(current_max, *start_time_delta);
+              }
+            }
+          }
+        }
+        if (j == 0 || j == 2) {
+          std::swap(relation.expr.vars[0], relation.expr.vars[1]);
+          std::swap(relation.expr.coeffs[0], relation.expr.coeffs[1]);
+        } else if (j == 1) {
+          relation.expr.vars[0] = NegationOf(relation.expr.vars[0]);
+          relation.expr.vars[1] = NegationOf(relation.expr.vars[1]);
+          relation.lhs = -relation.lhs;
+          relation.rhs = -relation.rhs;
+          std::swap(relation.lhs, relation.rhs);
+        }
+      }
+    }
+    CompactVectorVectorBuilder<IntervalVariable,
+                               std::pair<IntervalVariable, IntegerValue>>
+        conditional_precedences_builder;
+    for (const auto& [start_time_delta, value] : max_start_time_deltas) {
+      conditional_precedences_builder.Add(start_time_delta.first,
+                                          {start_time_delta.second, value});
+    }
+    CompactVectorVector<IntervalVariable,
+                        std::pair<IntervalVariable, IntegerValue>>
+        conditional_precedences;
+    conditional_precedences.ResetFromBuilder(conditional_precedences_builder,
+                                             intervals_.NumIntervals());
+    return conditional_precedences;
+  }
+
+ private:
+  const IntervalsRepository& intervals_;
+  const Linear2Indices& lin2_indices_;
+  const RootLevelLinear2Bounds& lin2_bounds_;
+  const ConditionalLinear2Bounds& conditional_bounds_;
+
+  CompactVectorVector<IntegerVariable, IntervalVariable>
+      intervals_by_start_var_;
+  CompactVectorVector<IntegerVariable, IntervalVariable> intervals_by_end_var_;
+};
+
+}  // namespace
+
+class SchedulingSearchHeuristicHelper {
+ public:
+  explicit SchedulingSearchHeuristicHelper(Model* model)
+      : fixed_search_(model->GetOrCreate<SatParameters>()->search_branching() ==
+                      SatParameters::FIXED_SEARCH),
+        assignment_(model->GetOrCreate<Trail>()->Assignment()),
+        repo_(model->GetOrCreate<IntervalsRepository>()),
+        heuristic_(model->GetOrCreate<SearchHeuristics>()),
+        watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
+        integer_trail_(model->GetOrCreate<IntegerTrail>()),
+        random_(model->GetOrCreate<ModelRandomGenerator>()),
+        rev_int_repo_(model->GetOrCreate<RevIntRepository>()) {
+    if (fixed_search_) {
+      IntervalPrecedencesDetector precedences_detector(model);
+      successors_ = precedences_detector.DetectPrecedences();
+      successors_start_time_delta_ =
+          precedences_detector.DetectConditionalPrecedences();
+    }
+
+    // Fix the max size of random choices.
+    randomization_size_ =
+        std::max<int>(1, model->GetOrCreate<SatParameters>()
+                             ->search_random_variable_pool_size());
+  }
+
+  BooleanOrIntegerLiteral NextDecision() {
     std::vector<ToSchedule> top_decisions;
-    top_decisions.reserve(randomization_size);
+    top_decisions.reserve(randomization_size_);
     top_decisions.resize(1);
 
-    // Save rev_fixed before we modify it.
-    rev_int_repo->SaveState(&rev_fixed);
+    // Find out if there was any backtrack since the last call,
+    // or since the beginning of the search.
+    const bool backtrack_since_last_call = !rev_is_in_dive_;
+    if (backtrack_since_last_call) {
+      RecomputePredecessorCounts();
+    }
 
-    // TODO(user): we should also precompute fixed precedences and only fix
-    // interval that have all their predecessors fixed.
-    for (int i = rev_fixed; i < num_intervals; ++i) {
+    if (!first_call_ && backtrack_since_last_call) {
+      no_backtrack_since_start_ = false;
+      cached_start_mins_.assign(repo_->NumIntervals(), kMinIntegerValue);
+    }
+    first_call_ = false;
+    const bool use_first_solution_heuristic =
+        fixed_search_ && no_backtrack_since_start_;
+
+    for (int index = 0; index < intervals_with_only_fixed_predecessors_.size();
+         ++index) {
+      const IntervalVariable interval =
+          intervals_with_only_fixed_predecessors_[index];
+
       const ToSchedule& worst = top_decisions.back();
-      if (rev_is_in_dive && cached_start_mins[i] > worst.start_min) {
+      if (cached_start_mins_[interval] > worst.start_min) {
         continue;
       }
 
-      const IntervalVariable interval = intervals[i];
-      if (repo->IsAbsent(interval)) {
-        std::swap(intervals[i], intervals[rev_fixed]);
-        std::swap(cached_start_mins[i], cached_start_mins[rev_fixed]);
-        ++rev_fixed;
+      if (repo_->IsAbsent(interval)) {
+        ProcessAbsentOrFixedInterval(index);
         continue;
       }
 
-      const AffineExpression start = repo->Start(interval);
-      const AffineExpression end = repo->End(interval);
-      if (repo->IsPresent(interval) && integer_trail->IsFixed(start) &&
-          integer_trail->IsFixed(end)) {
-        std::swap(intervals[i], intervals[rev_fixed]);
-        std::swap(cached_start_mins[i], cached_start_mins[rev_fixed]);
-        ++rev_fixed;
+      // When using the first solution heuristic, we consider that an interval
+      // is fixed when its start is fixed. For fixed size intervals this makes
+      // no difference. For variable size intervals, we don't want to fix the
+      // end of an interval before fixing the start of the next one, since its
+      // size might depend on the start of the next interval (for instance in
+      // case of variable transition times).
+      const AffineExpression start = repo_->Start(interval);
+      const AffineExpression end = repo_->End(interval);
+      if (repo_->IsPresent(interval) && integer_trail_->IsFixed(start) &&
+          (use_first_solution_heuristic || integer_trail_->IsFixed(end))) {
+        ProcessAbsentOrFixedInterval(index);
         continue;
       }
 
       ToSchedule candidate;
-      if (repo->IsOptional(interval)) {
+      if (repo_->IsOptional(interval)) {
         // For task whose presence is still unknown, our propagators should
         // have propagated the minimum time as if it was present. So this
         // should reflect the earliest time at which this interval can be
         // scheduled.
-        const Literal lit = repo->PresenceLiteral(interval);
-        candidate.start_min = integer_trail->ConditionalLowerBound(lit, start);
-        candidate.start_max = integer_trail->ConditionalUpperBound(lit, start);
+        const Literal lit = repo_->PresenceLiteral(interval);
+        candidate.start_min = integer_trail_->ConditionalLowerBound(lit, start);
+        candidate.start_max = integer_trail_->ConditionalUpperBound(lit, start);
       } else {
-        candidate.start_min = integer_trail->LowerBound(start);
-        candidate.start_max = integer_trail->UpperBound(start);
+        candidate.start_min = integer_trail_->LowerBound(start);
+        candidate.start_max = integer_trail_->UpperBound(start);
       }
-      cached_start_mins[i] = candidate.start_min;
-      if (top_decisions.size() < randomization_size ||
+      if (use_first_solution_heuristic &&
+          cached_start_mins_[interval] > candidate.start_min) {
+        IntegerValue delta_t =
+            cached_start_mins_[interval] - candidate.start_min;
+        candidate.start_min += delta_t;
+        candidate.start_max += delta_t;
+      } else {
+        cached_start_mins_[interval] = candidate.start_min;
+      }
+      if (top_decisions.size() < randomization_size_ ||
           candidate.MightBeBetter(worst)) {
         // Finish filling candidate.
         //
@@ -588,17 +885,18 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
         // to time. This is needed to never pick the "artificial" makespan
         // interval at the end in priority compared to intervals that still
         // need to be scheduled.
+        candidate.interval = interval;
         candidate.start = start;
         candidate.end = end;
-        candidate.presence = repo->IsOptional(interval)
-                                 ? repo->PresenceLiteral(interval).Index()
+        candidate.presence = repo_->IsOptional(interval)
+                                 ? repo_->PresenceLiteral(interval).Index()
                                  : kNoLiteralIndex;
         candidate.size_min =
-            std::max(integer_trail->LowerBound(repo->Size(interval)),
-                     integer_trail->LowerBound(end) - candidate.start_min);
-        candidate.noise = absl::Uniform(*random, 0.0, 1.0);
+            std::max(integer_trail_->LowerBound(repo_->Size(interval)),
+                     integer_trail_->LowerBound(end) - candidate.start_min);
+        candidate.noise = absl::Uniform(*random_, 0.0, 1.0);
 
-        if (top_decisions.size() == randomization_size) {
+        if (top_decisions.size() == randomization_size_) {
           // Do not replace if we have a strict inequality now.
           if (worst < candidate) continue;
           top_decisions.pop_back();
@@ -612,13 +910,13 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
 
     // Setup rev_is_in_dive to be true on the next call only if there was no
     // backtrack since the previous call.
-    watcher->SetUntilNextBacktrack(&rev_is_in_dive);
+    watcher_->SetUntilNextBacktrack(&rev_is_in_dive_);
 
     const ToSchedule best =
         top_decisions.size() == 1
             ? top_decisions.front()
             : top_decisions[absl::Uniform(
-                  *random, 0, static_cast<int>(top_decisions.size()))];
+                  *random_, 0, static_cast<int>(top_decisions.size()))];
     if (top_decisions.size() > 1) {
       VLOG(2) << "Choose among " << top_decisions.size() << " "
               << best.start_min << " " << best.size_min
@@ -632,8 +930,8 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
     // Use the next_decision_override to fix in turn all the variables from
     // the selected interval.
     int num_times = 0;
-    heuristic->next_decision_override = [trail, integer_trail, best,
-                                         num_times]() mutable {
+    heuristic_->next_decision_override = [this, use_first_solution_heuristic,
+                                          best, num_times]() mutable {
       if (++num_times > 5) {
         // We have been trying to fix this interval for a while. Do we miss
         // some propagation? In any case, try to see if the heuristic above
@@ -644,34 +942,58 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
 
       // First make sure the interval is present.
       if (best.presence != kNoLiteralIndex) {
-        if (!trail->Assignment().LiteralIsAssigned(Literal(best.presence))) {
+        if (!assignment_.LiteralIsAssigned(Literal(best.presence))) {
           VLOG(3) << "assign " << best.presence;
           return BooleanOrIntegerLiteral(best.presence);
         }
-        if (trail->Assignment().LiteralIsFalse(Literal(best.presence))) {
+        if (assignment_.LiteralIsFalse(Literal(best.presence))) {
           VLOG(2) << "unperformed.";
           return BooleanOrIntegerLiteral();
         }
       }
 
       // We assume that start_min is propagated by now.
-      if (!integer_trail->IsFixed(best.start)) {
-        const IntegerValue start_min = integer_trail->LowerBound(best.start);
-        VLOG(3) << "start == " << start_min;
+      if (!integer_trail_->IsFixed(best.start)) {
+        const IntegerValue start_min = integer_trail_->LowerBound(best.start);
+        const IntegerValue cached_start_min = cached_start_mins_[best.interval];
+        VLOG(3) << "start == " << start_min
+                << " cached_start_min == " << cached_start_min;
+        if (use_first_solution_heuristic && cached_start_min > start_min) {
+          if (cached_start_min <= integer_trail_->UpperBound(best.start)) {
+            return BooleanOrIntegerLiteral(
+                best.start.GreaterOrEqual(cached_start_min));
+          } else {
+            // Our heuristic gave us a decision that is currently false! Lets
+            // fall back to other heuristic until we are called again.
+            return BooleanOrIntegerLiteral();
+          }
+        }
         return BooleanOrIntegerLiteral(best.start.LowerOrEqual(start_min));
       }
 
       // We assume that end_min is propagated by now.
-      if (!integer_trail->IsFixed(best.end)) {
-        const IntegerValue end_min = integer_trail->LowerBound(best.end);
+      // When using the first solution heuristic, do not try to fix the end
+      // variable to its lower bound (this might be a wrong decision leading to
+      // a conflict, for instance in case of variable interval sizes depending
+      // on transition times between intervals, which can only be known once the
+      // start of the next interval is fixed too).
+      if (!use_first_solution_heuristic && !integer_trail_->IsFixed(best.end)) {
+        const IntegerValue end_min = integer_trail_->LowerBound(best.end);
         VLOG(3) << "end == " << end_min;
         return BooleanOrIntegerLiteral(best.end.LowerOrEqual(end_min));
       }
 
       // Everything is fixed, detach the override.
-      const IntegerValue start = integer_trail->LowerBound(best.start);
-      VLOG(2) << "Fixed @[" << start << ","
-              << integer_trail->LowerBound(best.end) << "]"
+      const IntegerValue start = integer_trail_->LowerBound(best.start);
+      if (use_first_solution_heuristic) {
+        for (const auto& [successor, start_time_delta] :
+             successors_start_time_delta_[best.interval]) {
+          cached_start_mins_[successor] =
+              std::max(cached_start_mins_[successor], start + start_time_delta);
+        }
+      }
+      VLOG(2) << "Fixed " << best.interval << " @[" << start << ","
+              << integer_trail_->LowerBound(best.end) << "]"
               << (best.presence != kNoLiteralIndex
                       ? absl::StrCat(" presence=",
                                      Literal(best.presence).DebugString())
@@ -682,8 +1004,140 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
       return BooleanOrIntegerLiteral();
     };
 
-    return heuristic->next_decision_override();
+    return heuristic_->next_decision_override();
+  }
+
+ private:
+  struct ToSchedule {
+    IntervalVariable interval;
+    // Variable to fix.
+    LiteralIndex presence = kNoLiteralIndex;
+    AffineExpression start;
+    AffineExpression end;
+
+    // Information to select best.
+    IntegerValue size_min = kMaxIntegerValue;
+    IntegerValue start_min = kMaxIntegerValue;
+    IntegerValue start_max = kMaxIntegerValue;
+    double noise = 0.5;
+
+    // We want to pack interval to the left. If two have the same start_min,
+    // we want to choose the one that will likely leave an easier problem for
+    // the other tasks.
+    bool operator<(const ToSchedule& other) const {
+      return std::tie(start_min, start_max, size_min, noise) <
+             std::tie(other.start_min, other.start_max, other.size_min,
+                      other.noise);
+    }
+
+    // Generating random noise can take time, so we use this function to
+    // delay it.
+    bool MightBeBetter(const ToSchedule& other) const {
+      return std::tie(start_min, start_max) <=
+             std::tie(other.start_min, other.start_max);
+    }
   };
+
+  void RecomputePredecessorCounts() {
+    const int num_intervals = repo_->NumIntervals();
+    num_non_fixed_predecessors_.assign(num_intervals, 0);
+    if (!successors_.empty()) {
+      for (IntervalVariable i(0); i < num_intervals; ++i) {
+        if (IntervalIsAbsentOrFixed(i)) continue;
+        for (const IntervalVariable j : successors_[i]) {
+          num_non_fixed_predecessors_[j]++;
+        }
+      }
+    }
+    intervals_with_only_fixed_predecessors_.clear();
+    added_to_intervals_with_only_fixed_predecessors_.assign(num_intervals,
+                                                            false);
+    for (IntervalVariable i(0); i < num_intervals; ++i) {
+      if (IntervalIsAbsentOrFixed(i)) continue;
+      if (num_non_fixed_predecessors_[i] == 0) {
+        intervals_with_only_fixed_predecessors_.push_back(i);
+        added_to_intervals_with_only_fixed_predecessors_[i] = true;
+      }
+    }
+    cached_start_mins_.assign(num_intervals, kMinIntegerValue);
+  }
+
+  // Removes the interval at the given index in
+  // intervals_with_only_fixed_predecessors_ and adds the intervals whose
+  // predecessors are now all fixed or absent. Decrements interval_index to
+  // account for the removed interval.
+  void ProcessAbsentOrFixedInterval(int& interval_index) {
+    const IntervalVariable i =
+        intervals_with_only_fixed_predecessors_[interval_index];
+    std::swap(intervals_with_only_fixed_predecessors_[interval_index],
+              intervals_with_only_fixed_predecessors_.back());
+    intervals_with_only_fixed_predecessors_.pop_back();
+    interval_index--;
+    if (successors_.empty()) return;
+    for (const IntervalVariable j : successors_[i]) {
+      if (IntervalIsAbsentOrFixed(j)) continue;
+      DCHECK_GT(num_non_fixed_predecessors_[j], 0);
+      num_non_fixed_predecessors_[j]--;
+      if (num_non_fixed_predecessors_[j] == 0 &&
+          !added_to_intervals_with_only_fixed_predecessors_[j]) {
+        DCHECK(
+            !absl::c_linear_search(intervals_with_only_fixed_predecessors_, j));
+        intervals_with_only_fixed_predecessors_.push_back(j);
+        added_to_intervals_with_only_fixed_predecessors_[j] = true;
+      }
+    }
+  }
+
+  bool IntervalIsAbsentOrFixed(IntervalVariable i) const {
+    return repo_->IsAbsent(i) ||
+           (repo_->IsPresent(i) && integer_trail_->IsFixed(repo_->Start(i)) &&
+            integer_trail_->IsFixed(repo_->End(i)));
+  }
+
+  const bool fixed_search_;
+  const VariablesAssignment& assignment_;
+  IntervalsRepository* repo_;
+  SearchHeuristics* heuristic_;
+  GenericLiteralWatcher* watcher_;
+  IntegerTrail* integer_trail_;
+  ModelRandomGenerator* random_;
+  RevIntRepository* rev_int_repo_;
+
+  bool rev_is_in_dive_ = false;
+  bool first_call_ = true;
+  bool no_backtrack_since_start_ = true;
+  int randomization_size_ = 1;
+
+  // For each interval I, all the intervals J which can only be fixed once I is
+  // fixed, or absent (this can include precedences which are not in the
+  // original problem, such as artificial precedences between optional and
+  // non-optional intervals). Empty if fixed_search_ is false.
+  CompactVectorVector<IntervalVariable, IntervalVariable> successors_;
+  // For each interval I, of list of (J, Δt) pairs
+  // such that if J.start >= I.start + Δt, then all the conditional precedences
+  // we know about should be satisfied. Empty if fixed_search_ is false.
+  CompactVectorVector<IntervalVariable,
+                      std::pair<IntervalVariable, IntegerValue>>
+      successors_start_time_delta_;
+
+  // For each interval I, the number of predecessors of I which are not absent
+  // and not yet fixed and, if 0, whether it has been added to
+  // intervals_with_only_fixed_predecessors_.
+  util_intops::StrongVector<IntervalVariable, int> num_non_fixed_predecessors_;
+  util_intops::StrongVector<IntervalVariable, bool>
+      added_to_intervals_with_only_fixed_predecessors_;
+  // The intervals whose predecessors are all fixed or absent, and which are not
+  // themselves fixed or absent.
+  std::vector<IntervalVariable> intervals_with_only_fixed_predecessors_;
+
+  util_intops::StrongVector<IntervalVariable, IntegerValue> cached_start_mins_;
+};
+
+// A simple heuristic for scheduling models.
+std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
+    Model* model) {
+  auto* helper = model->GetOrCreate<SchedulingSearchHeuristicHelper>();
+  return [helper]() { return helper->NextDecision(); };
 }
 
 namespace {
@@ -1134,6 +1588,33 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
   };
 }
 
+std::function<BooleanOrIntegerLiteral()> AlternateTwoHeuristicsWithDecay(
+    const std::function<BooleanOrIntegerLiteral()>& start_heuristic,
+    const std::function<BooleanOrIntegerLiteral()>& end_heuristic, double decay,
+    Model* model) {
+  SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
+  auto* random = model->GetOrCreate<ModelRandomGenerator>();
+
+  std::vector<std::function<BooleanOrIntegerLiteral()>> policies;
+  double start_probability = 1.0;
+  bool use_start_heuristic = true;
+
+  return [=, start_heuristic = start_heuristic]() mutable {
+    if (start_heuristic == nullptr) return end_heuristic();
+
+    if (sat_solver->CurrentDecisionLevel() == 0) {
+      if (start_probability >= 0.05) {
+        use_start_heuristic = absl::Bernoulli(*random, start_probability);
+        start_probability *= decay;
+      } else {
+        use_start_heuristic = false;
+      }
+    }
+
+    return use_start_heuristic ? start_heuristic() : end_heuristic();
+  };
+}
+
 std::function<BooleanOrIntegerLiteral()> FollowHint(
     absl::Span<const BooleanOrIntegerVariable> vars,
     absl::Span<const IntegerValue> values, Model* model) {
@@ -1198,6 +1679,45 @@ std::function<bool()> RestartEveryKFailures(int k, SatSolver* solver) {
   };
 }
 
+std::function<bool()> RestartEveryKFailureThenGivenPolicy(
+    int max_num_conflicts, int max_num_fixed_restarts,
+    const std::function<bool()>& fallback_policy, Model* model) {
+  bool reset_at_next_call = true;
+  int next_num_failures = 0;
+  int num_restarts = 0;
+  SatSolver* solver = model->GetOrCreate<SatSolver>();
+
+  return [=, fallback_policy = fallback_policy]() mutable {
+    if (num_restarts >= max_num_fixed_restarts) return fallback_policy();
+
+    if (reset_at_next_call) {
+      next_num_failures = solver->num_failures() + max_num_conflicts;
+      reset_at_next_call = false;
+      ++num_restarts;
+    } else if (solver->num_failures() >= next_num_failures) {
+      reset_at_next_call = true;
+    }
+    return reset_at_next_call;
+  };
+}
+
+std::function<bool()> RestartAfterDeterministicTime(double deterministic_time,
+                                                    TimeLimit* time_limit) {
+  bool reset_at_next_call = true;
+  double deterministic_deadline = 0.0;
+  return [=]() mutable {
+    if (reset_at_next_call) {
+      deterministic_deadline =
+          time_limit->GetElapsedDeterministicTime() + deterministic_time;
+      reset_at_next_call = false;
+    } else if (time_limit->GetElapsedDeterministicTime() >=
+               deterministic_deadline) {
+      reset_at_next_call = true;
+    }
+    return reset_at_next_call;
+  };
+}
+
 std::function<bool()> SatSolverRestartPolicy(Model* model) {
   auto policy = model->GetOrCreate<RestartPolicy>();
   return [policy]() { return policy->ShouldRestart(); };
@@ -1206,7 +1726,7 @@ std::function<bool()> SatSolverRestartPolicy(Model* model) {
 namespace {
 
 std::function<BooleanOrIntegerLiteral()> WrapIntegerLiteralHeuristic(
-    std::function<IntegerLiteral()> f) {
+    const std::function<IntegerLiteral()>& f) {
   return [f]() { return BooleanOrIntegerLiteral(f()); };
 }
 
@@ -1329,6 +1849,123 @@ void ConfigureSearchHeuristics(Model* model) {
       heuristics.decision_policies = {
           RandomizeOnRestartHeuristic(/*lns_mode=*/false, model)};
       heuristics.restart_policies = {SatSolverRestartPolicy(model)};
+      return;
+    }
+    case SatParameters::ROUND_ROBIN_SHAVING_SEARCH: {
+      // Model objects.
+      auto* mapping = model->GetOrCreate<CpModelMapping>();
+      auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+      const auto& assignment = model->GetOrCreate<Trail>()->Assignment();
+
+      // Temporary storage.
+      CompactVectorVector<int, int> orbits;
+      std::vector<int> var_to_orbit_index;
+      std::vector<int> var_to_representative;
+      GetOrbitsAndRepresentatives(*mapping->ModelProto(), orbits,
+                                  var_to_orbit_index, var_to_representative);
+
+      // Collect variables and literals to shave.
+      const int num_model_vars = mapping->ModelProto()->variables_size();
+      const int num_bool_vars = mapping->NumBooleanVariables();
+      std::vector<Literal> literals;
+      std::vector<IntegerVariable> integer_vars;
+      literals.reserve(2 * num_bool_vars);
+      integer_vars.reserve(2 * (num_model_vars - num_bool_vars));
+      for (int v = 0; v < mapping->ModelProto()->variables_size(); ++v) {
+        // Skip non-representative variables in symmetry orbits.
+        if (!var_to_representative.empty() && var_to_representative[v] != v) {
+          continue;
+        }
+        if (mapping->IsBoolean(v)) {
+          const BooleanVariable bool_var = mapping->Literal(v).Variable();
+          if (assignment.LiteralIsAssigned(Literal(bool_var, true))) continue;
+          literals.push_back(Literal(bool_var, true));
+          literals.push_back(Literal(bool_var, false));
+        } else {
+          IntegerVariable var = mapping->Integer(v);
+          if (integer_trail->IsFixed(var)) continue;
+          integer_vars.push_back(var);
+          integer_vars.push_back(NegationOf(var));
+        }
+      }
+
+      const auto search = [&parameters, model, &heuristics]() {
+        return parameters.shaving_search_use_random_search()
+                   ? SequentialSearch({RandomizeOnRestartHeuristic(
+                                           /*lns_mode=*/false, model),
+                                       heuristics.fixed_search})
+                   : IntegerValueSelectionHeuristic(
+                         SequentialSearch({SatSolverHeuristic(model),
+                                           heuristics.fixed_search}),
+                         model);
+      };
+
+      const int conflict_restart_limit =
+          parameters.shaving_search_restart_limit();
+      const double dtime_restart_limit =
+          parameters.shaving_search_deterministic_time();
+      const auto restart_policy = [conflict_restart_limit, dtime_restart_limit,
+                                   model]() {
+        if (conflict_restart_limit <= 0 && dtime_restart_limit <= 0.0) {
+          return SatSolverRestartPolicy(model);
+        } else if (dtime_restart_limit <= 0.0) {
+          return RestartEveryKFailures(conflict_restart_limit,
+                                       model->GetOrCreate<SatSolver>());
+        } else if (conflict_restart_limit <= 0) {
+          return RestartAfterDeterministicTime(dtime_restart_limit,
+                                               model->GetOrCreate<TimeLimit>());
+        } else {
+          LOG(ERROR) << "Should not happen";
+          return SatSolverRestartPolicy(model);
+        }
+      };
+
+      if (!integer_vars.empty()) {
+        heuristics.decision_policies.push_back(SequentialSearch(
+            {ShaveModelIntegerVariableBounds(integer_vars, model), search()}));
+        heuristics.restart_policies.push_back(restart_policy());
+      }
+
+      if (!literals.empty()) {
+        heuristics.decision_policies.push_back(SequentialSearch(
+            {ShaveModelBooleanVariables(literals, model), search()}));
+        heuristics.restart_policies.push_back(restart_policy());
+      }
+
+      if (heuristics.decision_policies.empty()) {
+        heuristics.decision_policies.push_back(search());
+        heuristics.restart_policies.push_back(SatSolverRestartPolicy(model));
+      }
+
+      return;
+    }
+    case SatParameters::ALT_FIXED_SEARCH: {
+      const int kNumFixedRestarts = 50;
+      const int kNumFixedConflicts = 50;
+      const double kTargetTransition = 0.05;
+      const double kDecay =
+          std::pow(kTargetTransition, 1.0 / kNumFixedRestarts);
+      // Do a portfolio with the default sat heuristics.
+      std::function<BooleanOrIntegerLiteral()> fixed_search =
+          heuristics.user_search != nullptr
+              ? SequentialSearch({heuristics.user_search,
+                                  SatSolverHeuristic(model),
+                                  heuristics.fixed_search})
+              : (heuristics.heuristic_search != nullptr
+                     ? SequentialSearch({heuristics.heuristic_search,
+                                         SatSolverHeuristic(model),
+                                         heuristics.fixed_search})
+                     : nullptr);
+      std::function<BooleanOrIntegerLiteral()> auto_search =
+          IntegerValueSelectionHeuristic(
+              SequentialSearch(
+                  {SatSolverHeuristic(model), heuristics.fixed_search}),
+              model);
+      heuristics.decision_policies = {AlternateTwoHeuristicsWithDecay(
+          fixed_search, auto_search, kDecay, model)};
+      heuristics.restart_policies = {RestartEveryKFailureThenGivenPolicy(
+          kNumFixedConflicts, kNumFixedRestarts, SatSolverRestartPolicy(model),
+          model)};
       return;
     }
   }
@@ -1485,18 +2122,15 @@ bool IntegerSearchHelper::GetDecision(
   return true;
 }
 
-bool IntegerSearchHelper::TakeDecision(Literal decision,
-                                       bool use_representative) {
+bool IntegerSearchHelper::TakeDecision(Literal decision) {
   // If we are about to take a decision on a redundant literal, always
-  // prefer to branch on the representative. This should helps learn more
-  // consistent conflict.
+  // prefer to branch on the representative. This should help learn more
+  // consistent conflicts.
   //
   // TODO(user): Ideally never learn anything on redundant variable. This is
   // a bit of work.
-  if (use_representative) {
-    decision = binary_implication_graph_->RepresentativeOf(decision);
-    CHECK(!sat_solver_->Assignment().LiteralIsAssigned(decision));
-  }
+  decision = binary_implication_graph_->RepresentativeOf(decision);
+  DCHECK(!sat_solver_->Assignment().LiteralIsAssigned(decision));
 
   pseudo_costs_->BeforeTakingDecision(decision);
 
@@ -1597,6 +2231,28 @@ SatSolver::Status IntegerSearchHelper::SolveIntegerProblem() {
     // completion. So we cannot report a feasible solution.
     if (time_limit_->LimitReached()) return SatSolver::LIMIT_REACHED;
     if (decision == kNoLiteralIndex) {
+      // In FIXED_SEARCH and until the first backtrack, the linear propagator
+      // does not fully propagate in order to be faster. This can cause issues
+      // once all the decisions are taken, because there might still be some
+      // unassigned variables, or violated constraints. So do one round of full
+      // propagation before accepting that solution.
+      if (parameters_.search_branching() == SatParameters::FIXED_SEARCH) {
+        LinearPropagator* linear_propagator =
+            model_->Mutable<LinearPropagator>();
+        if (linear_propagator != nullptr &&
+            (!linear_propagator->PropagateAll() ||
+             !sat_solver_->FinishPropagation())) {
+          // Should not happen, but restart if it does (PropagateAll() disables
+          // the incomplete propagation in the linear propagator, and is a no-op
+          // after that; hence this can only happen at most once).
+          sat_solver_->Backtrack(0);
+          if (!sat_solver_->FinishPropagation()) {
+            return sat_solver_->UnsatStatus();
+          }
+          continue;
+        }
+      }
+
       // Save the current polarity of all Booleans in the solution. It will be
       // followed for the next SAT decisions. This is known to be a good policy
       // for optimization problem. Note that for decision problem we don't care
@@ -1685,436 +2341,6 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model) {
        FirstUnassignedVarAtItsMinHeuristic(all_variables, model)})};
   heuristics.restart_policies = {SatSolverRestartPolicy(model)};
   return ResetAndSolveIntegerProblem(/*assumptions=*/{}, model);
-}
-
-#define RETURN_IF_NOT_FEASIBLE(test)       \
-  const SatSolver::Status status = (test); \
-  if (status != SatSolver::FEASIBLE) return status;
-
-ContinuousProber::ContinuousProber(const CpModelProto& model_proto,
-                                   Model* model)
-    : model_(model),
-      sat_solver_(model->GetOrCreate<SatSolver>()),
-      time_limit_(model->GetOrCreate<TimeLimit>()),
-      binary_implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
-      clause_manager_(model->GetOrCreate<ClauseManager>()),
-      trail_(model->GetOrCreate<Trail>()),
-      integer_trail_(model->GetOrCreate<IntegerTrail>()),
-      encoder_(model->GetOrCreate<IntegerEncoder>()),
-      inprocessing_(model->GetOrCreate<Inprocessing>()),
-      parameters_(*(model->GetOrCreate<SatParameters>())),
-      level_zero_callbacks_(model->GetOrCreate<LevelZeroCallbackHelper>()),
-      prober_(model->GetOrCreate<Prober>()),
-      shared_response_manager_(model->Mutable<SharedResponseManager>()),
-      shared_bounds_manager_(model->Mutable<SharedBoundsManager>()),
-      random_(model->GetOrCreate<ModelRandomGenerator>()),
-      active_limit_(parameters_.shaving_search_deterministic_time()) {
-  auto* mapping = model_->GetOrCreate<CpModelMapping>();
-  absl::flat_hash_set<BooleanVariable> visited;
-
-  trail_index_at_start_of_iteration_ = trail_->Index();
-  integer_trail_index_at_start_of_iteration_ = integer_trail_->Index();
-
-  // Build variable lists.
-  // TODO(user): Ideally, we should scan the internal model. But there can be
-  // a large blowup of variables during loading, which slows down the probing
-  // part. Using model variables is a good heuristic to select 'impactful'
-  // Boolean variables.
-  for (int v = 0; v < model_proto.variables_size(); ++v) {
-    if (mapping->IsBoolean(v)) {
-      const BooleanVariable bool_var = mapping->Literal(v).Variable();
-      const auto [_, inserted] = visited.insert(bool_var);
-      if (inserted) {
-        bool_vars_.push_back(bool_var);
-      }
-    } else {
-      IntegerVariable var = mapping->Integer(v);
-      if (integer_trail_->IsFixed(var)) continue;
-      int_vars_.push_back(var);
-    }
-  }
-
-  VLOG(2) << "Start continuous probing with " << bool_vars_.size()
-          << " Boolean variables,  " << int_vars_.size()
-          << " integer variables, deterministic time limit = "
-          << time_limit_->GetDeterministicLimit() << " on " << model_->Name();
-}
-
-// Continuous probing procedure.
-// TODO(user):
-//   - sort variables before the iteration (statically or dynamically)
-//   - compress clause databases regularly (especially the implication graph)
-//   - better interleaving of the probing and shaving phases
-//   - move the shaving code directly in the probing class
-//   - probe all variables and not just the model ones
-SatSolver::Status ContinuousProber::Probe() {
-  // Backtrack to level 0 in case we are not there.
-  if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
-
-  while (!time_limit_->LimitReached()) {
-    if (parameters_.use_sat_inprocessing() &&
-        !inprocessing_->InprocessingRound()) {
-      sat_solver_->NotifyThatModelIsUnsat();
-      return sat_solver_->UnsatStatus();
-    }
-
-    // Store current statistics to detect an iteration without any improvement.
-    const int64_t initial_num_literals_fixed =
-        prober_->num_new_literals_fixed();
-    const int64_t initial_num_bounds_shaved = num_bounds_shaved_;
-    const auto& assignment = sat_solver_->Assignment();
-
-    // Probe variable bounds.
-    // TODO(user): Probe optional variables.
-    for (; current_int_var_ < int_vars_.size(); ++current_int_var_) {
-      const IntegerVariable int_var = int_vars_[current_int_var_];
-      if (integer_trail_->IsFixed(int_var)) continue;
-
-      const Literal shave_lb_literal =
-          encoder_->GetOrCreateAssociatedLiteral(IntegerLiteral::LowerOrEqual(
-              int_var, integer_trail_->LowerBound(int_var)));
-      const BooleanVariable shave_lb_var = shave_lb_literal.Variable();
-      const auto [_lb, lb_inserted] = probed_bool_vars_.insert(shave_lb_var);
-      if (lb_inserted) {
-        if (!prober_->ProbeOneVariable(shave_lb_var)) {
-          return SatSolver::INFEASIBLE;
-        }
-        num_literals_probed_++;
-      }
-
-      const Literal shave_ub_literal =
-          encoder_->GetOrCreateAssociatedLiteral(IntegerLiteral::GreaterOrEqual(
-              int_var, integer_trail_->UpperBound(int_var)));
-      const BooleanVariable shave_ub_var = shave_ub_literal.Variable();
-      const auto [_ub, ub_inserted] = probed_bool_vars_.insert(shave_ub_var);
-      if (ub_inserted) {
-        if (!prober_->ProbeOneVariable(shave_ub_var)) {
-          return SatSolver::INFEASIBLE;
-        }
-        num_literals_probed_++;
-      }
-
-      if (use_shaving_) {
-        const SatSolver::Status lb_status = ShaveLiteral(shave_lb_literal);
-        if (ReportStatus(lb_status)) return lb_status;
-
-        const SatSolver::Status ub_status = ShaveLiteral(shave_ub_literal);
-        if (ReportStatus(ub_status)) return ub_status;
-      }
-
-      RETURN_IF_NOT_FEASIBLE(PeriodicSyncAndCheck());
-    }
-
-    // Probe Boolean variables from the model.
-    for (; current_bool_var_ < bool_vars_.size(); ++current_bool_var_) {
-      const BooleanVariable& bool_var = bool_vars_[current_bool_var_];
-
-      if (assignment.VariableIsAssigned(bool_var)) continue;
-
-      const auto [_, inserted] = probed_bool_vars_.insert(bool_var);
-      if (!inserted) continue;
-
-      if (!prober_->ProbeOneVariable(bool_var)) {
-        return SatSolver::INFEASIBLE;
-      }
-      num_literals_probed_++;
-
-      const Literal literal(bool_var, true);
-      if (use_shaving_ && !assignment.LiteralIsAssigned(literal)) {
-        const SatSolver::Status true_status = ShaveLiteral(literal);
-        if (ReportStatus(true_status)) return true_status;
-        if (true_status == SatSolver::ASSUMPTIONS_UNSAT) continue;
-
-        const SatSolver::Status false_status = ShaveLiteral(literal.Negated());
-        if (ReportStatus(false_status)) return false_status;
-      }
-
-      RETURN_IF_NOT_FEASIBLE(PeriodicSyncAndCheck());
-    }
-
-    if (parameters_.use_extended_probing()) {
-      const auto at_least_one_literal_is_true =
-          [&assignment](absl::Span<const Literal> literals) {
-            for (const Literal literal : literals) {
-              if (assignment.LiteralIsTrue(literal)) {
-                return true;
-              }
-            }
-            return false;
-          };
-
-      // Probe clauses of the SAT model.
-      for (;;) {
-        const SatClause* clause = clause_manager_->NextClauseToProbe();
-        if (clause == nullptr) break;
-        if (at_least_one_literal_is_true(clause->AsSpan())) continue;
-
-        tmp_dnf_.clear();
-        for (const Literal literal : clause->AsSpan()) {
-          if (assignment.LiteralIsAssigned(literal)) continue;
-          tmp_dnf_.push_back({literal});
-        }
-        ++num_at_least_one_probed_;
-        if (!prober_->ProbeDnf("at_least_one", tmp_dnf_,
-                               Prober::DnfType::kAtLeastOne, clause)) {
-          return SatSolver::INFEASIBLE;
-        }
-
-        RETURN_IF_NOT_FEASIBLE(PeriodicSyncAndCheck());
-      }
-
-      // Probe at_most_ones of the SAT model.
-      for (;;) {
-        const absl::Span<const Literal> at_most_one =
-            binary_implication_graph_->NextAtMostOne();
-        if (at_most_one.empty()) break;
-        if (at_least_one_literal_is_true(at_most_one)) continue;
-
-        tmp_dnf_.clear();
-        tmp_literals_.clear();
-        for (const Literal literal : at_most_one) {
-          if (assignment.LiteralIsAssigned(literal)) continue;
-          tmp_dnf_.push_back({literal});
-          tmp_literals_.push_back(literal.Negated());
-        }
-        tmp_dnf_.push_back(tmp_literals_);
-        ++num_at_most_one_probed_;
-        if (!prober_->ProbeDnf("at_most_one", tmp_dnf_,
-                               Prober::DnfType::kAtLeastOneOrZero)) {
-          return SatSolver::INFEASIBLE;
-        }
-
-        RETURN_IF_NOT_FEASIBLE(PeriodicSyncAndCheck());
-      }
-
-      // Probe combinations of Booleans variables.
-      const int limit = parameters_.probing_num_combinations_limit();
-      const int max_num_bool_vars_for_pairs_probing =
-          static_cast<int>(std::sqrt(2 * limit));
-      const int num_bool_vars = bool_vars_.size();
-
-      if (num_bool_vars < max_num_bool_vars_for_pairs_probing) {
-        for (; current_bv1_ + 1 < bool_vars_.size(); ++current_bv1_) {
-          const BooleanVariable bv1 = bool_vars_[current_bv1_];
-          if (assignment.VariableIsAssigned(bv1)) continue;
-          current_bv2_ = std::max(current_bv1_ + 1, current_bv2_);
-          for (; current_bv2_ < bool_vars_.size(); ++current_bv2_) {
-            const BooleanVariable& bv2 = bool_vars_[current_bv2_];
-            if (assignment.VariableIsAssigned(bv2)) continue;
-            if (!prober_->ProbeDnf("pair_of_bool_vars",
-                                   {{Literal(bv1, false), Literal(bv2, false)},
-                                    {Literal(bv1, false), Literal(bv2, true)},
-                                    {Literal(bv1, true), Literal(bv2, false)},
-                                    {Literal(bv1, true), Literal(bv2, true)}},
-                                   Prober::DnfType::kAtLeastOneCombination)) {
-              return SatSolver::INFEASIBLE;
-            }
-            RETURN_IF_NOT_FEASIBLE(PeriodicSyncAndCheck());
-          }
-          current_bv2_ = 0;
-        }
-      } else {
-        for (; random_pair_of_bool_vars_probed_ < 10000;
-             ++random_pair_of_bool_vars_probed_) {
-          const BooleanVariable bv1 =
-              bool_vars_[absl::Uniform<int>(*random_, 0, bool_vars_.size())];
-          if (assignment.VariableIsAssigned(bv1)) continue;
-          const BooleanVariable bv2 =
-              bool_vars_[absl::Uniform<int>(*random_, 0, bool_vars_.size())];
-          if (assignment.VariableIsAssigned(bv2) || bv1 == bv2) {
-            continue;
-          }
-          if (!prober_->ProbeDnf("rnd_pair_of_bool_vars",
-                                 {{Literal(bv1, false), Literal(bv2, false)},
-                                  {Literal(bv1, false), Literal(bv2, true)},
-                                  {Literal(bv1, true), Literal(bv2, false)},
-                                  {Literal(bv1, true), Literal(bv2, true)}},
-                                 Prober::DnfType::kAtLeastOneCombination)) {
-            return SatSolver::INFEASIBLE;
-          }
-
-          RETURN_IF_NOT_FEASIBLE(PeriodicSyncAndCheck());
-        }
-      }
-
-      // Note that the product is always >= 0.
-      const int max_num_bool_vars_for_triplet_probing =
-          static_cast<int>(std::cbrt(2 * limit));
-      // We use a limit to make sure we do not overflow.
-      const int loop_limit =
-          num_bool_vars < max_num_bool_vars_for_triplet_probing
-              ? num_bool_vars * (num_bool_vars - 1) * (num_bool_vars - 2) / 2
-              : limit;
-      for (; random_triplet_of_bool_vars_probed_ < loop_limit;
-           ++random_triplet_of_bool_vars_probed_) {
-        const BooleanVariable bv1 =
-            bool_vars_[absl::Uniform<int>(*random_, 0, bool_vars_.size())];
-        if (assignment.VariableIsAssigned(bv1)) continue;
-        const BooleanVariable bv2 =
-            bool_vars_[absl::Uniform<int>(*random_, 0, bool_vars_.size())];
-        if (assignment.VariableIsAssigned(bv2) || bv1 == bv2) {
-          continue;
-        }
-        const BooleanVariable bv3 =
-            bool_vars_[absl::Uniform<int>(*random_, 0, bool_vars_.size())];
-        if (assignment.VariableIsAssigned(bv3) || bv1 == bv3 || bv2 == bv3) {
-          continue;
-        }
-        tmp_dnf_.clear();
-        for (int i = 0; i < 8; ++i) {
-          tmp_dnf_.push_back({Literal(bv1, (i & 4) > 0),
-                              Literal(bv2, (i & 2) > 0),
-                              Literal(bv3, (i & 1) > 0)});
-        }
-
-        if (!prober_->ProbeDnf("rnd_triplet_of_bool_vars", tmp_dnf_,
-                               Prober::DnfType::kAtLeastOneCombination)) {
-          return SatSolver::INFEASIBLE;
-        }
-
-        RETURN_IF_NOT_FEASIBLE(PeriodicSyncAndCheck());
-      }
-    }
-
-    // Adjust the active_limit.
-    if (use_shaving_) {
-      const double dtime = parameters_.shaving_search_deterministic_time();
-      const bool something_has_been_detected =
-          num_bounds_shaved_ != initial_num_bounds_shaved ||
-          prober_->num_new_literals_fixed() != initial_num_literals_fixed;
-      if (something_has_been_detected) {  // Reset the limit.
-        active_limit_ = dtime;
-      } else if (active_limit_ <= 128 * dtime) {  // Bump the limit.
-        active_limit_ *= 2;
-      }
-    }
-
-    // Reset all counters.
-    ++iteration_;
-    current_bool_var_ = 0;
-    current_int_var_ = 0;
-    current_bv1_ = 0;
-    current_bv2_ = 1;
-    random_pair_of_bool_vars_probed_ = 0;
-    random_triplet_of_bool_vars_probed_ = 0;
-    binary_implication_graph_->ResetAtMostOneIterator();
-    clause_manager_->ResetToProbeIndex();
-    probed_bool_vars_.clear();
-    shaved_literals_.clear();
-
-    const int new_trail_index = trail_->Index();
-    const int new_integer_trail_index = integer_trail_->Index();
-
-    // Update the use_shaving_ parameter.
-    // TODO(user): Currently, the heuristics is that we alternate shaving and
-    // not shaving, unless shaving_deterministic_time_in_probing_search is <= 0.
-    use_shaving_ =
-        parameters_.shaving_deterministic_time_in_probing_search() > 0.0;
-    trail_index_at_start_of_iteration_ = new_trail_index;
-    integer_trail_index_at_start_of_iteration_ = new_integer_trail_index;
-
-    // Remove fixed Boolean variables.
-    int new_size = 0;
-    for (int i = 0; i < bool_vars_.size(); ++i) {
-      if (!sat_solver_->Assignment().VariableIsAssigned(bool_vars_[i])) {
-        bool_vars_[new_size++] = bool_vars_[i];
-      }
-    }
-    bool_vars_.resize(new_size);
-
-    // Remove fixed integer variables.
-    new_size = 0;
-    for (int i = 0; i < int_vars_.size(); ++i) {
-      if (!integer_trail_->IsFixed(int_vars_[i])) {
-        int_vars_[new_size++] = int_vars_[i];
-      }
-    }
-    int_vars_.resize(new_size);
-  }
-  return SatSolver::LIMIT_REACHED;
-}
-
-#undef RETURN_IF_NOT_FEASIBLE
-
-SatSolver::Status ContinuousProber::PeriodicSyncAndCheck() {
-  // Check limit.
-  if (--num_test_limit_remaining_ <= 0) {
-    num_test_limit_remaining_ = kTestLimitPeriod;
-    if (time_limit_->LimitReached()) return SatSolver::LIMIT_REACHED;
-  }
-
-  // Log the state of the prober.
-  if (--num_logs_remaining_ <= 0) {
-    num_logs_remaining_ = kLogPeriod;
-    LogStatistics();
-  }
-
-  // Sync with shared storage.
-  if (--num_syncs_remaining_ <= 0) {
-    num_syncs_remaining_ = kSyncPeriod;
-    if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
-    for (const auto& cb : level_zero_callbacks_->callbacks) {
-      if (!cb()) {
-        sat_solver_->NotifyThatModelIsUnsat();
-        return SatSolver::INFEASIBLE;
-      }
-    }
-  }
-
-  return SatSolver::FEASIBLE;
-}
-
-SatSolver::Status ContinuousProber::ShaveLiteral(Literal literal) {
-  const auto [_, inserted] = shaved_literals_.insert(literal.Index());
-  if (trail_->Assignment().LiteralIsAssigned(literal) || !inserted) {
-    return SatSolver::LIMIT_REACHED;
-  }
-  num_bounds_tried_++;
-
-  const double original_dtime_limit = time_limit_->GetDeterministicLimit();
-  time_limit_->ChangeDeterministicLimit(
-      std::min(original_dtime_limit,
-               time_limit_->GetElapsedDeterministicTime() + active_limit_));
-  const SatSolver::Status status =
-      ResetAndSolveIntegerProblem({literal}, model_);
-  time_limit_->ChangeDeterministicLimit(original_dtime_limit);
-  if (ReportStatus(status)) return status;
-
-  if (status == SatSolver::ASSUMPTIONS_UNSAT) {
-    num_bounds_shaved_++;
-  }
-
-  // Important: we want to reset the solver right away, as we check for
-  // fixed variable in the main loop!
-  if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
-  return status;
-}
-
-bool ContinuousProber::ReportStatus(const SatSolver::Status status) {
-  return status == SatSolver::INFEASIBLE || status == SatSolver::FEASIBLE;
-}
-
-void ContinuousProber::LogStatistics() {
-  if (shared_response_manager_ == nullptr ||
-      shared_bounds_manager_ == nullptr) {
-    return;
-  }
-  if (VLOG_IS_ON(1)) {
-    shared_response_manager_->LogMessageWithThrottling(
-        "Probe",
-        absl::StrCat(
-            " (iterations=", iteration_, " linearization_level=",
-            parameters_.linearization_level(), " active_limit=", active_limit_,
-            " shaving=", use_shaving_, " active_bool_vars=", bool_vars_.size(),
-            " active_int_vars=", integer_trail_->NumIntegerVariables(),
-            " literals fixed/probed=", prober_->num_new_literals_fixed(), "/",
-            num_literals_probed_, " bounds shaved/tried=", num_bounds_shaved_,
-            "/", num_bounds_tried_, " new_integer_bounds=",
-            shared_bounds_manager_->NumBoundsExported("probing"),
-            " new_binary_clause=", prober_->num_new_binary_clauses(),
-            " num_at_least_one_probed=", num_at_least_one_probed_,
-            " num_at_most_one_probed=", num_at_most_one_probed_, ")"));
-  }
 }
 
 }  // namespace sat

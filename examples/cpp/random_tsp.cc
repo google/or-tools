@@ -30,7 +30,6 @@
 #include <random>
 #include <string>
 
-#include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/log/check.h"
@@ -40,11 +39,12 @@
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/text_format.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_index_manager.h"
-#include "ortools/constraint_solver/routing_parameters.h"
-#include "ortools/constraint_solver/routing_parameters.pb.h"
+#include "ortools/routing/index_manager.h"
+#include "ortools/routing/parameters.h"
+#include "ortools/routing/parameters.pb.h"
+#include "ortools/routing/routing.h"
 #include "ortools/util/random_engine.h"
 
 ABSL_FLAG(int, tsp_size, 10, "Size of Traveling Salesman Problem instance.");
@@ -61,7 +61,7 @@ ABSL_FLAG(std::string, routing_search_parameters,
           "Text proto RoutingSearchParameters (possibly partial) that will "
           "override the DefaultRoutingSearchParameters()");
 
-namespace operations_research {
+namespace operations_research::routing {
 
 // Random seed generator.
 int32_t GetSeed() {
@@ -187,13 +187,13 @@ void Tsp() {
     LOG(INFO) << "Specify an instance size greater than 0.";
   }
 }
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 int main(int argc, char** argv) {
   absl::InitializeLog();
   absl::EnableLogPrefix(false);
   absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   absl::ParseCommandLine(argc, argv);
-  operations_research::Tsp();
+  operations_research::routing::Tsp();
   return EXIT_SUCCESS;
 }

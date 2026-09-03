@@ -15,16 +15,12 @@
 
 #include <optional>
 #include <string>
-#include <type_traits>
 
 #include "absl/status/status.h"
-#include "absl/status/statusor.h"
 #include "absl/time/time.h"
 #include "google/protobuf/duration.pb.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/linked_hash_map.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/enums_testing.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/solvers/glpk.pb.h"

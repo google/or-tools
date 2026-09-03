@@ -106,7 +106,7 @@ namespace operations_research::math_opt {
 //   const std::optional<SolverType> solver_type =
 //     EnumFromString(absl::GetFlag(FLAGS_solver_type));
 //   if (!solver_type) {
-//     return util::InvalidArgumentErrorBuilder()
+//     return ortools::InvalidArgumentErrorBuilder()
 //             _ << "failed to parse --solver_type value: "
 //               << absl::GetFlag(FLAGS_solver_type);
 //   }

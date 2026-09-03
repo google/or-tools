@@ -15,13 +15,18 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <vector>
 
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
+#include "examples/cpp/fap_parser.h"
 #include "ortools/base/map_util.h"
+#include "ortools/constraint_solver/assignment.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 
 namespace operations_research {
 
@@ -37,7 +42,7 @@ bool CheckConstraintSatisfaction(
     CHECK_LT(index2, variables.size());
     const int var1 = variables[index1];
     const int var2 = variables[index2];
-    const int absolute_difference = abs(var1 - var2);
+    const int absolute_difference = std::abs(var1 - var2);
 
     if ((ct.operation == ">") && (absolute_difference <= ct.value)) {
       LOG(INFO) << "  Violation of constraint between variable " << ct.variable1

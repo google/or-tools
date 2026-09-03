@@ -31,10 +31,8 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/encoding.h"
 #include "ortools/sat/integer.h"
@@ -48,6 +46,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -220,18 +219,6 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
   // Simple linear scan algorithm to find the optimal.
   if (!sat_solver->ResetToLevelZero()) return SatSolver::INFEASIBLE;
   while (true) {
-    if (DEBUG_MODE) {
-      // The solver usually always solve a "restricted decision problem"
-      // obj < current_best. So when we have an optimal solution, then the
-      // problem is UNSAT, and any clauses we learn can break the debug
-      // solution. So we disable this checks once we found an optimal solution.
-      const DebugSolution* debug_sol = model->Get<DebugSolution>();
-      if (debug_sol && integer_trail->LowerBound(objective_var) <=
-                           debug_sol->inner_objective_value) {
-        model->GetOrCreate<DebugSolution>()->Clear();
-      }
-    }
-
     const SatSolver::Status result = search->SolveIntegerProblem();
     if (result != SatSolver::FEASIBLE) return result;
 
@@ -491,7 +478,7 @@ bool CoreBasedOptimizer::ProcessSolution() {
 
   // Test that the current objective value fall in the requested objective
   // domain, which could potentially have holes.
-  if (!integer_trail_->InitialVariableDomain(objective_var_)
+  if (!integer_trail_->LevelZeroDomain(objective_var_)
            .Contains(objective.value())) {
     return true;
   }
@@ -745,6 +732,16 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
     if (time_limit_->LimitReached()) return SatSolver::LIMIT_REACHED;
     if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
 
+    // Make sure we import everything we can.
+    auto* level_zero_callbacks = model_->GetOrCreate<LevelZeroCallbackHelper>();
+    for (const auto& cb : level_zero_callbacks->callbacks) {
+      if (!cb()) {
+        sat_solver_->NotifyThatModelIsUnsat();
+        return SatSolver::INFEASIBLE;
+      }
+    }
+    if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
+
     // Note that the objective_var_ upper bound is the one from the "improving"
     // problem, so if we have a feasible solution, it will be the best solution
     // objective value - 1.
@@ -766,8 +763,8 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
       const int num_bools = sat_solver_->NumVariables();
       const int num_fixed = sat_solver_->NumFixedVariables();
       model_->GetOrCreate<SharedResponseManager>()->UpdateInnerObjectiveBounds(
-          absl::StrFormat("bool_%s (num_cores=%d [%s] a=%u d=%d "
-                          "fixed=%d/%d clauses=%s)",
+          absl::StrFormat("%s (num_cores=%d [%s] a=%u d=%d "
+                          "fixed=%d/%d clauses=%s, bool encoding)",
                           model_->Name(), iter, previous_core_info,
                           encoder.nodes().size(), max_depth, num_fixed,
                           num_bools, FormatCounter(clauses_->num_clauses())),
@@ -987,7 +984,7 @@ void CoreBasedOptimizer::PresolveObjectiveWithAtMostOne(
       weights[lit] = new_weight;
       weights[lit.NegatedIndex()] = 0;
       if (new_weight > 0) {
-        // TODO(user): While we autorize this to be in future at most one, it
+        // TODO(user): While we authorize this to be in future at most one, it
         // will not appear in the "literal" list. We might also want to continue
         // until we reached the fix point.
         is_candidate[lit.NegatedIndex()] = true;
@@ -1160,14 +1157,23 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
         already_switched_to_linear_scan_ = true;
         std::vector<IntegerVariable> constraint_vars;
         std::vector<int64_t> constraint_coeffs;
+        int64_t objective_coeff = -1;
         for (const int index : term_indices) {
-          constraint_vars.push_back(terms_[index].var);
-          constraint_coeffs.push_back(terms_[index].weight.value());
+          if (terms_[index].var == objective_var_) {
+            objective_coeff += terms_[index].weight.value();
+          } else {
+            constraint_vars.push_back(terms_[index].var);
+            constraint_coeffs.push_back(terms_[index].weight.value());
+          }
         }
-        constraint_vars.push_back(objective_var_);
-        constraint_coeffs.push_back(-1);
-        model_->Add(WeightedSumLowerOrEqual(constraint_vars, constraint_coeffs,
-                                            -objective_offset.value()));
+        if (objective_coeff != 0) {
+          constraint_vars.push_back(objective_var_);
+          constraint_coeffs.push_back(objective_coeff);
+        }
+        if (!constraint_vars.empty()) {
+          AddWeightedSumLowerOrEqual(constraint_vars, constraint_coeffs,
+                                     -objective_offset.value(), model_);
+        }
       }
 
       return MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
@@ -1298,8 +1304,8 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
         }
         constraint_vars.push_back(new_var);
         constraint_coeffs.push_back(-1);
-        model_->Add(
-            WeightedSumLowerOrEqual(constraint_vars, constraint_coeffs, 0));
+        AddWeightedSumLowerOrEqual(constraint_vars, constraint_coeffs, 0,
+                                   model_);
       }
     }
 

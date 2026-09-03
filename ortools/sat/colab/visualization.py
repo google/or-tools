@@ -18,10 +18,9 @@
 import random
 
 try:
-    from IPython.display import display
-    from IPython.display import SVG
     import plotly.figure_factory as ff
     import svgwrite
+    from IPython.display import SVG, display
 
     correct_imports = True
 except ImportError:

@@ -27,6 +27,7 @@ but supports a much smaller set of features.
 import copy
 
 from google.protobuf import message
+
 from ortools.math_opt.python import normalize
 
 

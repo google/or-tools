@@ -23,8 +23,8 @@ ratio of appointment types.
 # overloaded sum() clashes with pytype.
 
 # [START import]
-from absl import app
-from absl import flags
+from absl import app, flags
+
 from ortools.linear_solver import pywraplp
 from ortools.sat.python import cp_model
 

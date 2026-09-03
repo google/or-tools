@@ -14,7 +14,6 @@
 #include "ortools/routing/parsers/lilim_parser.h"
 
 #include <cstdint>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -27,6 +26,7 @@
 #include "ortools/base/numbers.h"
 #include "ortools/base/options.h"
 #include "ortools/base/path.h"
+#include "ortools/base/types.h"
 #include "ortools/base/zipfile.h"
 #include "ortools/util/filelineiter.h"
 
@@ -82,7 +82,7 @@ void LiLimParser::Initialize() {
   } while (false)
 
 bool LiLimParser::ParseFile(absl::string_view file_name) {
-  const int64_t kInvalidDemand = std::numeric_limits<int64_t>::min();
+  const int64_t kInvalidDemand = kint64min;
   bool vehicles_initialized = false;
   File* file = nullptr;
   if (!file::Open(file_name, "r", &file, file::Defaults()).ok()) {

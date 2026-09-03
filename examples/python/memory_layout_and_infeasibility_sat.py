@@ -17,11 +17,9 @@
 from collections.abc import Sequence
 from typing import List
 
-from absl import app
-from absl import flags
+from absl import app, flags
 
 from ortools.sat.python import cp_model
-
 
 _OUTPUT_PROTO = flags.DEFINE_string(
     "output_proto", "", "Output file to write the cp_model proto to."

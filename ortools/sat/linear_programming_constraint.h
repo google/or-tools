@@ -23,7 +23,9 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
 #include "absl/numeric/int128.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
@@ -45,6 +47,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/sat/zero_half_cuts.h"
@@ -147,8 +150,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   ~LinearProgrammingConstraint() override;
 
   // Add a new linear constraint to this LP.
-  // Return false if we prove infeasibility of the global model.
-  bool AddLinearConstraint(LinearConstraint ct);
+  void AddLinearConstraint(LinearConstraint ct);
 
   // Set the coefficient of the variable in the objective. Calling it twice will
   // overwrite the previous value.
@@ -157,9 +159,13 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // The main objective variable should be equal to the linear sum of
   // the arguments passed to SetObjectiveCoefficient().
   void SetMainObjectiveVariable(IntegerVariable ivar) {
+    CHECK(!integer_objective_.empty());
     objective_cp_ = ivar;
     objective_cp_is_part_of_lp_ = false;
     for (const IntegerVariable var : integer_variables_) {
+      // TODO(user): it is possible that var == NegationOf(objective_cp_).
+      // Try to handle this case properly, which would remove the need to
+      // be careful with the extra_term in ConvertToLinearConstraint().
       if (var == objective_cp_) {
         objective_cp_is_part_of_lp_ = true;
         break;
@@ -376,9 +382,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
       ScatteredIntegerVector* scattered_vector,
       IntegerValue* upper_bound) const;
 
-  // Shortcut for an integer linear expression type.
-  using LinearExpression = std::vector<std::pair<glop::ColIndex, IntegerValue>>;
-
   // Converts a dense representation of a linear constraint to a sparse one
   // expressed in terms of IntegerVariable.
   void ConvertToLinearConstraint(
@@ -470,7 +473,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   std::vector<IntegerValue> tmp_coeffs_;
   std::vector<IntegerVariable> tmp_vars_;
 
-  LinearExpression integer_objective_;
+  std::vector<std::pair<glop::ColIndex, IntegerValue>> integer_objective_;
   IntegerValue integer_objective_offset_ = IntegerValue(0);
   IntegerValue objective_infinity_norm_ = IntegerValue(0);
   util_intops::StrongVector<glop::RowIndex, LinearConstraintInternal>
@@ -538,7 +541,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   ObjectiveDefinition* objective_definition_;
   SharedStatistics* shared_stats_;
   SharedResponseManager* shared_response_manager_;
-  ModelRandomGenerator* random_;
+  CpModelMapping* cp_model_mapping_;
+  absl::BitGenRef random_;
   LinearConstraintSymmetrizer* symmetrizer_;
   LinearPropagator* linear_propagator_;
 
@@ -647,6 +651,11 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // We might temporarily disable the LP propagation.
   bool enabled_ = true;
+
+  // We set that to true if all proto variable are in the LP relaxation and
+  // we are at a high enough relaxation level.
+  bool integer_solution_are_likely_feasible_ = false;
+  int num_infeasible_integer_lp_solutions_ = 0;
 
   // Logic to throttle level zero calls.
   int64_t num_root_level_skips_ = 0;

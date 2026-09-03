@@ -12,15 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Dict, Iterable, Tuple
 import unittest
+from typing import Dict, Iterable, Tuple
 
-from absl.testing import absltest
-from absl.testing import parameterized
+from absl.testing import absltest, parameterized
+
 from ortools.math_opt.elemental.python import cpp_elemental
-from ortools.math_opt.python import model
-from ortools.math_opt.python import objectives
-from ortools.math_opt.python import variables
+from ortools.math_opt.python import model, objectives, variables
 
 
 def _model_and_objective(
@@ -536,6 +534,23 @@ class AuxiliaryObjectiveTest(absltest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "Quadratic"):
             obj.set_to_expression(x * x)
+
+    def test_clear_auxiliary_objective_preserves_others(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        aux1 = mod.add_auxiliary_objective(priority=1)
+        aux2 = mod.add_auxiliary_objective(priority=2)
+        aux1.set_linear_coefficient(x, 1.0)
+        aux1.offset = 2.0
+        aux2.set_linear_coefficient(x, 3.0)
+        aux2.offset = 4.0
+
+        aux1.clear()
+
+        self.assertEqual(aux1.offset, 0.0)
+        _assert_linear_terms_equal_dict(self, aux1.linear_terms(), {})
+        self.assertEqual(aux2.offset, 4.0)
+        _assert_linear_terms_equal_dict(self, aux2.linear_terms(), {x: 3.0})
 
 
 if __name__ == "__main__":

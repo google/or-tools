@@ -33,11 +33,11 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
+#include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_solution.h"
 #include "ortools/bop/bop_types.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/encoding.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/pb_constraint.h"

@@ -15,12 +15,10 @@
 """Test normalize for mathopt protos."""
 
 from absl.testing import absltest
-from ortools.math_opt import model_parameters_pb2
-from ortools.math_opt import model_pb2
-from ortools.math_opt import model_update_pb2
-from ortools.math_opt import parameters_pb2
-from ortools.math_opt import result_pb2
-from ortools.math_opt import sparse_containers_pb2
+
+from ortools.math_opt import (model_parameters_pb2, model_pb2,
+                              model_update_pb2, parameters_pb2, result_pb2,
+                              sparse_containers_pb2)
 from ortools.math_opt.python import normalize
 from ortools.math_opt.python.testing import compare_proto
 

@@ -15,6 +15,7 @@
 
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("@rules_python//python:py_test.bzl", "py_test")
 load("//tools/testing:bintest.bzl", "bintest")
 
 package(default_visibility = ["//visibility:public"])
@@ -25,15 +26,16 @@ cc_binary(
     srcs = ["cvrptw_soft_capacity.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:log_severity",
         "//ortools/constraint_solver:cp",
-        "//ortools/constraint_solver:routing",
-        "//ortools/constraint_solver:routing_index_manager",
-        "//ortools/constraint_solver:routing_parameters",
-        "//ortools/constraint_solver:routing_parameters_cc_proto",
-        "//ortools/constraint_solver:routing_types",
+        "//ortools/routing",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:parameters_cc_proto",
+        "//ortools/routing:types",
         "//ortools/routing/parsers:cvrptw_lib",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/random",
         "@protobuf",
@@ -45,15 +47,16 @@ cc_binary(
     srcs = ["cvrptw.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:log_severity",
         "//ortools/constraint_solver:cp",
-        "//ortools/constraint_solver:routing",
-        "//ortools/constraint_solver:routing_index_manager",
-        "//ortools/constraint_solver:routing_parameters",
-        "//ortools/constraint_solver:routing_parameters_cc_proto",
-        "//ortools/constraint_solver:routing_types",
+        "//ortools/routing",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:parameters_cc_proto",
+        "//ortools/routing:types",
         "//ortools/routing/parsers:cvrptw_lib",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/random",
         "@protobuf",
@@ -72,15 +75,16 @@ cc_binary(
     srcs = ["cvrp_disjoint_tw.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:log_severity",
         "//ortools/constraint_solver:cp",
-        "//ortools/constraint_solver:routing",
-        "//ortools/constraint_solver:routing_index_manager",
-        "//ortools/constraint_solver:routing_parameters",
-        "//ortools/constraint_solver:routing_parameters_cc_proto",
-        "//ortools/constraint_solver:routing_types",
+        "//ortools/routing",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:parameters_cc_proto",
+        "//ortools/routing:types",
         "//ortools/routing/parsers:cvrptw_lib",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/random",
         "@protobuf",
@@ -108,16 +112,17 @@ cc_binary(
     srcs = ["cvrptw_with_breaks.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:log_severity",
         "//ortools/constraint_solver:cp",
-        "//ortools/constraint_solver:routing",
-        "//ortools/constraint_solver:routing_enums_cc_proto",
-        "//ortools/constraint_solver:routing_index_manager",
-        "//ortools/constraint_solver:routing_parameters",
-        "//ortools/constraint_solver:routing_parameters_cc_proto",
-        "//ortools/constraint_solver:routing_types",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:parameters_cc_proto",
+        "//ortools/routing:types",
         "//ortools/routing/parsers:cvrptw_lib",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/strings",
@@ -130,15 +135,16 @@ cc_binary(
     srcs = ["cvrptw_with_resources.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:log_severity",
         "//ortools/constraint_solver:cp",
-        "//ortools/constraint_solver:routing",
-        "//ortools/constraint_solver:routing_index_manager",
-        "//ortools/constraint_solver:routing_parameters",
-        "//ortools/constraint_solver:routing_parameters_cc_proto",
-        "//ortools/constraint_solver:routing_types",
+        "//ortools/routing",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:parameters_cc_proto",
+        "//ortools/routing:types",
         "//ortools/routing/parsers:cvrptw_lib",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/random",
         "@protobuf",
@@ -150,6 +156,7 @@ bintest(
     size = "large",
     srcs = ["cvrptw_with_resources_test.bintest"],
     named_data = {"cvrptw_with_resources": ":cvrptw_with_resources"},
+    tags = ["noci"],
 )
 
 cc_binary(
@@ -157,15 +164,16 @@ cc_binary(
     srcs = ["cvrptw_with_stop_times_and_resources.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:log_severity",
         "//ortools/constraint_solver:cp",
-        "//ortools/constraint_solver:routing",
-        "//ortools/constraint_solver:routing_index_manager",
-        "//ortools/constraint_solver:routing_parameters",
-        "//ortools/constraint_solver:routing_parameters_cc_proto",
-        "//ortools/constraint_solver:routing_types",
+        "//ortools/routing",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:parameters_cc_proto",
+        "//ortools/routing:types",
         "//ortools/routing/parsers:cvrptw_lib",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/strings",
@@ -185,15 +193,16 @@ cc_binary(
     srcs = ["cvrptw_with_refueling.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:log_severity",
         "//ortools/constraint_solver:cp",
-        "//ortools/constraint_solver:routing",
-        "//ortools/constraint_solver:routing_index_manager",
-        "//ortools/constraint_solver:routing_parameters",
-        "//ortools/constraint_solver:routing_parameters_cc_proto",
-        "//ortools/constraint_solver:routing_types",
+        "//ortools/routing",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:parameters_cc_proto",
+        "//ortools/routing:types",
         "//ortools/routing/parsers:cvrptw_lib",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/random",
         "@protobuf",
@@ -205,4 +214,800 @@ bintest(
     size = "large",
     srcs = ["cvrptw_with_refueling_test.bintest"],
     named_data = {"cvrptw_with_refueling": ":cvrptw_with_refueling"},
+)
+
+py_test(
+    name = "tsp_py3",
+    size = "medium",
+    srcs = ["tsp.py"],
+    main = "tsp.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+py_test(
+    name = "cvrp_reload_py3",
+    size = "medium",
+    srcs = ["cvrp_reload.py"],
+    main = "cvrp_reload.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+py_test(
+    name = "cvrptw_py3",
+    size = "medium",
+    srcs = ["cvrptw.py"],
+    main = "cvrptw.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+py_test(
+    name = "cvrptw_break_py3",
+    size = "medium",
+    srcs = ["cvrptw_break.py"],
+    main = "cvrptw_break.py",
+    tags = ["noci"],
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+cc_test(
+    name = "simple_routing_program_cc",
+    size = "medium",
+    srcs = ["simple_routing_program.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:log_severity",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+py_test(
+    name = "simple_routing_program_py3",
+    size = "medium",
+    srcs = ["simple_routing_program.py"],
+    main = "simple_routing_program.py",
+    deps = [
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+py_test(
+    name = "vrp_node_max_py3",
+    size = "medium",
+    srcs = ["vrp_node_max.py"],
+    main = "vrp_node_max.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+py_test(
+    name = "vrp_tokens_py3",
+    size = "medium",
+    srcs = ["vrp_tokens.py"],
+    main = "vrp_tokens.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+cc_test(
+    name = "tsp_cc",
+    size = "medium",
+    srcs = ["tsp.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:log_severity",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+cc_test(
+    name = "tsp_circuit_board_cc",
+    size = "medium",
+    srcs = ["tsp_circuit_board.cc"],
+    tags = ["noci"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:log_severity",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+py_test(
+    name = "tsp_circuit_board_py3",
+    size = "medium",
+    srcs = ["tsp_circuit_board.py"],
+    main = "tsp_circuit_board.py",
+    tags = ["noci"],
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+cc_test(
+    name = "tsp_cities_cc",
+    size = "medium",
+    srcs = ["tsp_cities.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:log_severity",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+py_test(
+    name = "tsp_cities_py3",
+    size = "medium",
+    srcs = ["tsp_cities.py"],
+    main = "tsp_cities.py",
+    deps = [
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+cc_test(
+    name = "tsp_cities_routes_cc",
+    size = "medium",
+    srcs = ["tsp_cities_routes.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:log_severity",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+cc_test(
+    name = "tsp_distance_matrix_cc",
+    size = "medium",
+    srcs = ["tsp_distance_matrix.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:log_severity",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+py_test(
+    name = "tsp_distance_matrix_py3",
+    size = "medium",
+    srcs = ["tsp_distance_matrix.py"],
+    main = "tsp_distance_matrix.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+cc_test(
+    name = "vrp_cc",
+    size = "medium",
+    srcs = ["vrp.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:log_severity",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+py_test(
+    name = "vrp_py3",
+    size = "medium",
+    srcs = ["vrp.py"],
+    main = "vrp.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+cc_test(
+    name = "vrp_breaks_cc",
+    size = "medium",
+    srcs = ["vrp_breaks.cc"],
+    tags = ["noci"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:log_severity",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+py_test(
+    name = "vrp_breaks_py3",
+    size = "medium",
+    srcs = ["vrp_breaks.py"],
+    main = "vrp_breaks.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+py_test(
+    name = "vrp_breaks_from_start_py3",
+    size = "medium",
+    srcs = ["vrp_breaks_from_start.py"],
+    main = "vrp_breaks_from_start.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+cc_test(
+    name = "vrp_capacity_cc",
+    size = "medium",
+    srcs = ["vrp_capacity.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:log_severity",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+        "@protobuf//:duration_cc_proto",
+    ],
+)
+
+py_test(
+    name = "vrp_capacity_py3",
+    size = "medium",
+    srcs = ["vrp_capacity.py"],
+    main = "vrp_capacity.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+cc_test(
+    name = "vrp_drop_nodes_cc",
+    size = "medium",
+    srcs = ["vrp_drop_nodes.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:log_severity",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+        "@protobuf//:duration_cc_proto",
+    ],
+)
+
+py_test(
+    name = "vrp_drop_nodes_py3",
+    size = "medium",
+    srcs = ["vrp_drop_nodes.py"],
+    main = "vrp_drop_nodes.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+cc_test(
+    name = "vrp_global_span_cc",
+    size = "medium",
+    srcs = ["vrp_global_span.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:log_severity",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+py_test(
+    name = "vrp_global_span_py3",
+    size = "medium",
+    srcs = ["vrp_global_span.py"],
+    main = "vrp_global_span.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+cc_test(
+    name = "vrp_initial_routes_cc",
+    size = "medium",
+    srcs = ["vrp_initial_routes.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:log_severity",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+        "@protobuf//:duration_cc_proto",
+    ],
+)
+
+py_test(
+    name = "vrp_initial_routes_py3",
+    size = "medium",
+    srcs = ["vrp_initial_routes.py"],
+    main = "vrp_initial_routes.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+py_test(
+    name = "vrp_items_to_deliver_py3",
+    size = "medium",
+    srcs = ["vrp_items_to_deliver.py"],
+    main = "vrp_items_to_deliver.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+py_test(
+    name = "vrp_nodes_indices_py3",
+    size = "medium",
+    srcs = ["vrp_nodes_indices.py"],
+    main = "vrp_nodes_indices.py",
+    deps = ["//ortools/routing/python:routing_py"],
+)
+
+cc_test(
+    name = "vrp_starts_ends_cc",
+    size = "medium",
+    srcs = ["vrp_starts_ends.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:log_severity",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+py_test(
+    name = "vrp_starts_ends_py3",
+    size = "medium",
+    srcs = ["vrp_starts_ends.py"],
+    main = "vrp_starts_ends.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+cc_test(
+    name = "vrp_pickup_delivery_cc",
+    size = "medium",
+    srcs = ["vrp_pickup_delivery.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:log_severity",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+py_test(
+    name = "vrp_pickup_delivery_py3",
+    size = "medium",
+    srcs = ["vrp_pickup_delivery.py"],
+    main = "vrp_pickup_delivery.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+cc_test(
+    name = "vrp_pickup_delivery_fifo_cc",
+    size = "medium",
+    srcs = ["vrp_pickup_delivery_fifo.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:log_severity",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+py_test(
+    name = "vrp_pickup_delivery_fifo_py3",
+    size = "medium",
+    srcs = ["vrp_pickup_delivery_fifo.py"],
+    main = "vrp_pickup_delivery_fifo.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+cc_test(
+    name = "vrp_pickup_delivery_lifo_cc",
+    size = "medium",
+    srcs = ["vrp_pickup_delivery_lifo.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:log_severity",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+py_test(
+    name = "vrp_pickup_delivery_lifo_py3",
+    size = "medium",
+    srcs = ["vrp_pickup_delivery_lifo.py"],
+    main = "vrp_pickup_delivery_lifo.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+cc_test(
+    name = "vrp_resources_cc",
+    size = "medium",
+    srcs = ["vrp_resources.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:log_severity",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+py_test(
+    name = "vrp_resources_py3",
+    size = "medium",
+    srcs = ["vrp_resources.py"],
+    main = "vrp_resources.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+cc_test(
+    name = "vrp_routes_cc",
+    size = "medium",
+    srcs = ["vrp_routes.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:log_severity",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+cc_test(
+    name = "vrp_solution_callback_cc",
+    size = "medium",
+    srcs = ["vrp_solution_callback.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:log_severity",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+        "@protobuf//:duration_cc_proto",
+    ],
+)
+
+py_test(
+    name = "vrp_solution_callback_py3",
+    size = "medium",
+    srcs = ["vrp_solution_callback.py"],
+    main = "vrp_solution_callback.py",
+    deps = [
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+cc_test(
+    name = "vrp_time_windows_cc",
+    size = "medium",
+    srcs = ["vrp_time_windows.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:log_severity",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+py_test(
+    name = "vrp_time_windows_py3",
+    size = "medium",
+    srcs = ["vrp_time_windows.py"],
+    main = "vrp_time_windows.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+py_test(
+    name = "vrp_time_windows_per_vehicles_py3",
+    size = "medium",
+    srcs = ["vrp_time_windows_per_vehicles.py"],
+    main = "vrp_time_windows_per_vehicles.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+cc_test(
+    name = "vrp_with_time_limit_cc",
+    size = "medium",
+    srcs = ["vrp_with_time_limit.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:log_severity",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+        "@protobuf//:duration_cc_proto",
+    ],
+)
+
+py_test(
+    name = "vrp_with_time_limit_py3",
+    size = "medium",
+    srcs = ["vrp_with_time_limit.py"],
+    main = "vrp_with_time_limit.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
+)
+
+cc_test(
+    name = "vrptw_store_solution_data_cc",
+    size = "medium",
+    srcs = ["vrptw_store_solution_data.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:log_severity",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+py_test(
+    name = "vrptw_store_solution_data_py3",
+    size = "medium",
+    srcs = ["vrptw_store_solution_data.py"],
+    main = "vrptw_store_solution_data.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver_py",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing_py",
+    ],
 )

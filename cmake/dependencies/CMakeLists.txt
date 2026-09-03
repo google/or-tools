@@ -67,14 +67,16 @@ if(BUILD_ZLIB)
   FetchContent_Declare(
     ZLIB
     GIT_REPOSITORY "https://github.com/madler/ZLIB.git"
-    GIT_TAG "v1.3.1"
+    GIT_TAG "v1.3.2"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
-    PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/ZLIB-v1.3.1.patch"
+    #PATCH_COMMAND git apply --ignore-whitespace
+    #"${CMAKE_CURRENT_LIST_DIR}/../../patches/ZLIB-v1.3.2.patch"
+    OVERRIDE_FIND_PACKAGE
     SYSTEM
   )
-  set(ZLIB_BUILD_EXAMPLES OFF)
+  set(ZLIB_BUILD_TESTING OFF)
+  set(ZLIB_BUILD_STATIC OFF)
   FetchContent_MakeAvailable(ZLIB)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
@@ -113,11 +115,11 @@ if(BUILD_absl)
   FetchContent_Declare(
     absl
     GIT_REPOSITORY "https://github.com/abseil/abseil-cpp.git"
-    GIT_TAG "20250814.1"
+    GIT_TAG "20260817.0"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20250814.1.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20260817.0.patch"
     OVERRIDE_FIND_PACKAGE
     SYSTEM
   )
@@ -149,12 +151,12 @@ if(BUILD_Protobuf)
   FetchContent_Declare(
     Protobuf
     GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
-    GIT_TAG "v33.1"
+    GIT_TAG "v35.1"
     GIT_SHALLOW TRUE
     GIT_SUBMODULES ""
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v33.1.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v35.1.patch"
     OVERRIDE_FIND_PACKAGE # Make package visible for "protobuf-matchers" below
     SYSTEM
   )
@@ -229,17 +231,10 @@ if(BUILD_PYTHON)
     FetchContent_Declare(
       pybind11
       GIT_REPOSITORY "https://github.com/pybind/pybind11.git"
-      #GIT_TAG "master" # COMPILE FAIL
-      #GIT_TAG "f365314" # 2025/03/24 COMPILE FAIL
-      #GIT_TAG "48eb5ad" # 2025/03/23 TEST PASS
-      # ...
-      #GIT_TAG "a1d00916" # 2024/08/15 TEST PASS
-      #GIT_TAG "bd5951b6" # 2024/08/14 TEST FAIL
-      GIT_TAG "v2.13.6" # TEST PASS with a1d00916 patch apply
-      #GIT_SHALLOW TRUE
+      #GIT_TAG "v3.0.2" # 2026/02/17
+      GIT_TAG "v3.0.1" # 2025/08/22
+      GIT_SHALLOW TRUE
       UPDATE_COMMAND git reset --hard
-      PATCH_COMMAND git apply --ignore-whitespace
-      "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11-v2.13.6.patch"
       SYSTEM
     )
     set(PYBIND11_FINDPYTHON ON)
@@ -276,9 +271,9 @@ if(BUILD_PYTHON)
       GIT_REPOSITORY "https://github.com/pybind/pybind11_protobuf.git"
       GIT_TAG "f02a2b7653bc50eb5119d125842a3870db95d251" # 2025/02/10
       #GIT_SHALLOW TRUE
-      #UPDATE_COMMAND git reset --hard
-      #PATCH_COMMAND git apply --ignore-whitespace
-      #"${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11_protobuf.patch"
+      UPDATE_COMMAND git reset --hard
+      PATCH_COMMAND git apply --ignore-whitespace
+      "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11_protobuf.patch"
       SYSTEM
     )
     FetchContent_MakeAvailable(pybind11_protobuf)
@@ -318,42 +313,16 @@ if(BUILD_HIGHS)
   FetchContent_Declare(
     highs
     GIT_REPOSITORY "https://github.com/ERGO-Code/HiGHS.git"
-    GIT_TAG        "v1.12.0"
+    GIT_TAG        "v1.15.1"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
+    #PATCH_COMMAND git apply --ignore-whitespace
+    #"${CMAKE_CURRENT_LIST_DIR}/../../patches/highs-v1.15.1.patch"
     SYSTEM
   )
   set(CI OFF) # disable CI tests
   set(BUILD_EXAMPLES OFF)
   FetchContent_MakeAvailable(highs)
-  list(POP_BACK CMAKE_MESSAGE_INDENT)
-  message(CHECK_PASS "fetched")
-endif()
-
-# ##############################################################################
-# BOOST
-# ##############################################################################
-if(BUILD_Boost)
-  message(CHECK_START "Fetching Boost")
-  list(APPEND CMAKE_MESSAGE_INDENT "  ")
-  FetchContent_Declare(
-    Boost
-    GIT_REPOSITORY "https://github.com/boostorg/boost.git"
-    GIT_TAG "boost-1.87.0"
-    GIT_SHALLOW TRUE
-    GIT_SUBMODULES_RECURSE TRUE
-    UPDATE_COMMAND git reset --hard --recurse-submodules
-    PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/boost-1.87.0.patch"
-    OVERRIDE_FIND_PACKAGE # Needed for Soplex
-    SYSTEM
-  )
-  set(BOOST_INCLUDE_LIBRARIES multiprecision serialization)
-  option(BOOST_SKIP_INSTALL_RULES NO)
-  set(BOOST_ENABLE_CMAKE ON)
-  set(BUILD_SHARED_LIBS OFF)
-  FetchContent_MakeAvailable(Boost)
-  set(BUILD_SHARED_LIBS ON)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
 endif()
@@ -367,17 +336,17 @@ if(BUILD_soplex)
   FetchContent_Declare(
     soplex
     GIT_REPOSITORY "https://github.com/scipopt/soplex.git"
-    GIT_TAG        "v8.0.0"
+    GIT_TAG        "v8.0.3"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/soplex-v8.0.0.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/soplex-v8.0.3.patch"
     SYSTEM
   )
   set(SHARED ON CACHE BOOL "Soplex param" FORCE)
   set(ZLIB ON CACHE BOOL "Soplex param" FORCE)
   set(GMP OFF CACHE BOOL "Soplex param" FORCE)
-  set(BOOST ON CACHE BOOL "Soplex param" FORCE)
+  set(BOOST OFF CACHE BOOL "Soplex param" FORCE)
   set(QUADMATH  OFF CACHE BOOL "Soplex param" FORCE)
   set(MPFR OFF CACHE BOOL "Soplex param" FORCE)
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON CACHE BOOL "Soplex param" FORCE)
@@ -398,11 +367,11 @@ if(BUILD_SCIP)
   FetchContent_Declare(
     scip
     GIT_REPOSITORY "https://github.com/scipopt/scip.git"
-    GIT_TAG        "v10.0.0"
+    GIT_TAG        "v10.0.3"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-v10.0.0.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-v10.0.3.patch"
     SYSTEM
   )
   set(SHARED ON CACHE BOOL "Scip param" FORCE)
@@ -425,7 +394,8 @@ endif()
 # ##############################################################################
 # Coinutils
 # ##############################################################################
-# Coin-OR does not support C++17/C++20 (use of 'register' storage class specifier)
+
+# Coin-OR uses the 'register' storage class specifier which requires C++11.
 set(CMAKE_CXX_STANDARD 11)
 if(WIN32)
   set(BUILD_SHARED_LIBS OFF)
@@ -533,13 +503,11 @@ if(BUILD_Cbc)
   message(CHECK_PASS "fetched")
 endif()
 
+# End of Coin-OR dependencies, setting the properties back to their previous
+# values.
+set(CMAKE_CXX_STANDARD 20)
 if(WIN32)
   set(BUILD_SHARED_LIBS ON)
-endif()
-if(MSVC)
-  set(CMAKE_CXX_STANDARD 20)
-else()
-  set(CMAKE_CXX_STANDARD 17)
 endif()
 
 ###############
@@ -559,6 +527,7 @@ if(BUILD_googletest)
     SYSTEM
   )
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  set(gtest_disable_warnings_as_errors ON CACHE BOOL "" FORCE)
   set(GTEST_HAS_ABSL ON)
   set(INSTALL_GTEST ON)
   FetchContent_MakeAvailable(googletest)
@@ -572,11 +541,11 @@ if(BUILD_protobuf_matchers)
   FetchContent_Declare(
     protobuf-matchers
     GIT_REPOSITORY https://github.com/inazarenko/protobuf-matchers.git
-    GIT_TAG v0.1.1
+    GIT_TAG v0.1.2
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-matchers-v0.1.1.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-matchers-v0.1.2.patch"
     SYSTEM
   )
   FetchContent_MakeAvailable(protobuf-matchers)
@@ -590,7 +559,7 @@ if(BUILD_benchmark)
   FetchContent_Declare(
     benchmark
     GIT_REPOSITORY https://github.com/google/benchmark.git
-    GIT_TAG v1.9.2
+    GIT_TAG v1.9.5
     GIT_SHALLOW TRUE
     #PATCH_COMMAND git apply --ignore-whitespace ""
     SYSTEM

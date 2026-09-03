@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <string>
 #include <tuple>
 #include <utility>
 #include <variant>
@@ -35,10 +36,12 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/rev.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -114,6 +117,17 @@ class Linear2Indices {
   // expression must already be canonicalized and divided by its GCD.
   LinearExpression2Index GetIndex(LinearExpression2 expr) const;
 
+  // Returns the number of positive linear2 expressions that have a potentially
+  // non-trivial bound.
+  // These expressions can be obtained with GetExpression(2 * i),
+  // for all i in [0,NumStoredPositiveLinear2()[.
+  LinearExpression2Index NumStoredPositiveLinear2() const {
+    return LinearExpression2Index(exprs_.size());
+  }
+
+  // Returns the linear expression corresponding to the given index. The index
+  // must be less than 2 * NumStoredPositiveLinear2(). Even indices correspond
+  // to positive linear expressions, and odd indices to their negation.
   LinearExpression2 GetExpression(LinearExpression2Index index) const;
 
   // Return all positive linear2 expressions that have a potentially non-trivial
@@ -199,12 +213,12 @@ class RootLevelLinear2Bounds {
   // more restricted than what was currently stored.
   std::pair<bool, bool> Add(LinearExpression2 expr, IntegerValue lb,
                             IntegerValue ub) {
+    const bool negated = expr.CanonicalizeAndUpdateBounds(lb, ub);
+    if (expr.coeffs[0] == 0 || expr.coeffs[1] == 0) return {false, false};
     if (integer_trail_->LevelZeroUpperBound(expr) <= ub &&
         integer_trail_->LevelZeroLowerBound(expr) >= lb) {
       return {false, false};
     }
-    const bool negated = expr.CanonicalizeAndUpdateBounds(lb, ub);
-    if (expr.coeffs[0] == 0 || expr.coeffs[1] == 0) return {false, false};
     const LinearExpression2Index index = lin2_indices_->AddOrGet(expr);
     bool ub_changed = AddUpperBound(index, ub);
     bool lb_changed = AddUpperBound(NegationOf(index), -lb);
@@ -216,11 +230,12 @@ class RootLevelLinear2Bounds {
 
   // Same as above, but only update the upper bound.
   bool AddUpperBound(LinearExpression2 expr, IntegerValue ub) {
-    if (integer_trail_->LevelZeroUpperBound(expr) <= ub) return false;
     expr.SimpleCanonicalization();
     if (expr.coeffs[0] == 0 || expr.coeffs[1] == 0) return false;
     const IntegerValue gcd = expr.DivideByGcd();
     ub = FloorRatio(ub, gcd);
+
+    if (integer_trail_->LevelZeroUpperBound(expr) <= ub) return false;
     return AddUpperBound(lin2_indices_->AddOrGet(expr), ub);
   }
 
@@ -292,6 +307,9 @@ class RootLevelLinear2Bounds {
   // we reach the limit. This uses GetVariablesInSimpleRelation().
   int AugmentSimpleRelations(IntegerVariable var, int work_limit);
 
+  // The expression should already be canonicalized.
+  //
+  // TODO(user): the lb argument is never used, remove?
   RelationStatus GetLevelZeroStatus(LinearExpression2 expr, IntegerValue lb,
                                     IntegerValue ub) const;
 
@@ -342,6 +360,7 @@ class TransitivePrecedencesEvaluator {
  public:
   explicit TransitivePrecedencesEvaluator(Model* model)
       : params_(model->GetOrCreate<SatParameters>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()),
         integer_trail_(model->GetOrCreate<IntegerTrail>()),
         shared_stats_(model->GetOrCreate<SharedStatistics>()),
         root_level_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()) {
@@ -382,6 +401,7 @@ class TransitivePrecedencesEvaluator {
 
  private:
   SatParameters* params_;
+  TimeLimit* time_limit_;
   IntegerTrail* integer_trail_;
   SharedStatistics* shared_stats_;
   RootLevelLinear2Bounds* root_level_bounds_;
@@ -680,13 +700,15 @@ class ReifiedLinear2Bounds {
     kAlwaysFalse,
   };
   std::variant<ReifiedBoundType, Literal, IntegerLiteral> GetEncodedBound(
-      LinearExpression2 expr, IntegerValue ub);
+      LinearExpression2Index index, const LinearExpression2& expr,
+      IntegerValue ub);
 
   std::pair<AffineExpression, IntegerValue> GetLinear3Bound(
       LinearExpression2Index lin2_index) const;
 
  private:
-  RootLevelLinear2Bounds* best_root_level_bounds_;
+  IntegerTrail* integer_trail_;
+  RootLevelLinear2Bounds* root_level_bounds_;
   Linear2Indices* lin2_indices_;
   SharedStatistics* shared_stats_;
 
@@ -733,17 +755,30 @@ class Linear2Bounds : public LazyReasonInterface {
 
   // Returns the best known upper-bound of the given LinearExpression2 at the
   // current decision level. If its explanation is needed, it can be queried
-  // with the second function.
+  // via AddReasonForUpperBoundLowerThan().
   IntegerValue UpperBound(LinearExpression2 expr) const;
   IntegerValue UpperBound(LinearExpression2Index lin2_index) const;
+
+  // Return {lb, ub} on the given expression with an already computed index.
+  std::pair<IntegerValue, IntegerValue> GetBoundsOnCanonicalizedExpression(
+      LinearExpression2Index index, const LinearExpression2& expr);
+
+  // Propagates the variables bounds from an existing linear2 <= expr_ub.
+  // Returns false on conflict.
+  //
+  // TODO(user): Ideally this shouldn't be necessary, but currently our best
+  // known linear2 might not always be propagated !! so this function do some
+  // propagation when this is the case.
+  bool MaybePropagate(LinearExpression2Index index,
+                      const LinearExpression2& expr, IntegerValue expr_ub);
 
   void AddReasonForUpperBoundLowerThan(
       LinearExpression2 expr, IntegerValue ub,
       std::vector<Literal>* literal_reason,
       std::vector<IntegerLiteral>* integer_reason) const;
 
-  RelationStatus GetStatus(LinearExpression2 expr, IntegerValue lb,
-                           IntegerValue ub) const;
+  // The given LinearExpression2 should already be canonicalized.
+  RelationStatus GetStatus(LinearExpression2 expr, IntegerValue ub) const;
 
   // Like UpperBound() but do not consider the bounds coming from
   // the individual variable bounds. This is faster.
@@ -751,13 +786,21 @@ class Linear2Bounds : public LazyReasonInterface {
 
   // Given the new linear2 bounds and its reason, inspect our various repository
   // to find the strongest way to push this new upper bound.
-  bool EnqueueLowerOrEqual(LinearExpression2 expr, IntegerValue ub,
+  //
+  // Note that the LinearExpression2 should be already canonicalized.
+  bool EnqueueLowerOrEqual(LinearExpression2Index index,
+                           const LinearExpression2& expr, IntegerValue ub,
                            absl::Span<const Literal> literal_reason,
                            absl::Span<const IntegerLiteral> integer_reason);
 
   // For LazyReasonInterface.
   std::string LazyReasonName() const final { return "Linear2Bounds"; }
   void Explain(int id, IntegerLiteral to_explain, IntegerReason* reason) final;
+
+  // Shortcut to avoid depending on Linear2Indices just for this.
+  LinearExpression2Index GetIndex(const LinearExpression2& expr) const {
+    return lin2_indices_->GetIndex(expr);
+  }
 
  private:
   IntegerTrail* integer_trail_;
@@ -771,6 +814,10 @@ class Linear2Bounds : public LazyReasonInterface {
 
   // This is used for the lazy-reason implemented in Explain().
   util_intops::StrongVector<ReasonIndex, LinearExpression2> saved_reasons_;
+
+  int64_t num_missing_propag_root_ = 0;
+  int64_t num_missing_propag_enf_ = 0;
+  int64_t num_missing_propag_lin3_ = 0;
 
   int64_t enqueue_trivial_ = 0;
   int64_t enqueue_degenerate_ = 0;
@@ -867,7 +914,7 @@ class GreaterThanAtLeastOneOfDetector {
 // This can be in a hot-loop, so we want to inline it if possible.
 inline IntegerValue Linear2Bounds::NonTrivialUpperBound(
     LinearExpression2Index lin2_index) const {
-  CHECK_NE(lin2_index, kNoLinearExpression2Index);
+  DCHECK_NE(lin2_index, kNoLinearExpression2Index);
   IntegerValue ub = kMaxIntegerValue;
   ub = std::min(ub, root_level_bounds_->GetUpperBoundNoTrail(lin2_index));
   ub = std::min(ub, enforced_bounds_->GetUpperBoundFromEnforced(lin2_index));
@@ -879,8 +926,7 @@ inline LinearExpression2Index Linear2Indices::GetIndex(
   if (expr.coeffs[0] == 0 || expr.coeffs[1] == 0) {
     return kNoLinearExpression2Index;
   }
-  DCHECK(expr.IsCanonicalized());
-  DCHECK_EQ(expr.DivideByGcd(), 1);
+  DCHECK(expr.IsCanonicalizedAndGcdReduced());
   const bool negated = expr.NegateForCanonicalization();
   auto it = expr_to_index_.find(expr);
   if (it == expr_to_index_.end()) return kNoLinearExpression2Index;

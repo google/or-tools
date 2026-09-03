@@ -32,15 +32,13 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
-#include "absl/meta/type_traits.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/lp_data/lp_types.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
@@ -353,8 +351,7 @@ ABSL_DEPRECATED("Only used in tests, this will be removed.")
 bool CutDataBuilder::ConvertToLinearConstraint(const CutData& cut,
                                                LinearConstraint* output) {
   tmp_map_.clear();
-  if (cut.rhs > absl::int128(std::numeric_limits<int64_t>::max()) ||
-      cut.rhs < absl::int128(std::numeric_limits<int64_t>::min())) {
+  if (cut.rhs > absl::int128(kint64max) || cut.rhs < absl::int128(kint64min)) {
     return false;
   }
   IntegerValue new_rhs = static_cast<int64_t>(cut.rhs);
@@ -697,7 +694,7 @@ IntegerValue GetFactorT(IntegerValue rhs_remainder, IntegerValue divisor,
   // Make sure that when we multiply the rhs or the coefficient by a factor t,
   // we do not have an integer overflow. Note that the rhs should be counted
   // in max_magnitude since we will apply f() on it.
-  IntegerValue max_t(std::numeric_limits<int64_t>::max());
+  IntegerValue max_t(kint64max);
   if (max_magnitude != 0) {
     max_t = max_t / max_magnitude;
   }
@@ -719,8 +716,7 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
   // Make sure we don't have an integer overflow below. Note that we assume that
   // divisor and the maximum coeff magnitude are not too different (maybe a
   // factor 1000 at most) so that the final result will never overflow.
-  max_scaling =
-      std::min(max_scaling, std::numeric_limits<int64_t>::max() / divisor);
+  max_scaling = std::min(max_scaling, kint64max / divisor);
 
   const IntegerValue size = divisor - rhs_remainder;
   if (max_scaling == 1 || size == 1) {
@@ -838,9 +834,7 @@ GetSuperAdditiveStrengtheningMirFunction(IntegerValue positive_rhs,
   }
 
   // We need to scale.
-  scaling =
-      std::min(scaling, IntegerValue(std::numeric_limits<int64_t>::max()) /
-                            positive_rhs);
+  scaling = std::min(scaling, IntegerValue(kint64max) / positive_rhs);
   if (scaling == 1) {
     return [](IntegerValue v) {
       if (v >= 0) return IntegerValue(0);
@@ -1681,7 +1675,7 @@ bool CoverCutHelper::TrySingleNodeFlow(const CutData& input_ct,
   // strengthening just result in all coeff at 1, so worse than our cover
   // heuristic.
   CHECK_LT(cut_.rhs, 0);
-  if (cut_.rhs <= absl::int128(std::numeric_limits<int64_t>::min())) {
+  if (cut_.rhs <= absl::int128(kint64min)) {
     return false;
   }
 
@@ -1790,7 +1784,7 @@ bool CoverCutHelper::TryWithLetchfordSouliLifting(
 
   // We don't support big rhs here.
   // Note however than since this only deal with Booleans, it is less likely.
-  if (cut_.rhs > absl::int128(std::numeric_limits<int64_t>::max())) {
+  if (cut_.rhs > absl::int128(kint64max)) {
     ++ls_stats_.num_overflow_aborts;
     return false;
   }
@@ -1833,7 +1827,7 @@ bool CoverCutHelper::TryWithLetchfordSouliLifting(
   std::vector<IntegerValue> thresholds;
   for (int i = 0; i < q; ++i) {
     // TODO(user): compute this in an overflow-safe way.
-    if (CapProd(p.value(), i + 1) >= std::numeric_limits<int64_t>::max() - 1) {
+    if (CapProd(p.value(), i + 1) >= kint64max - 1) {
       ++ls_stats_.num_overflow_aborts;
       return false;
     }
@@ -2198,10 +2192,9 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(AffineExpression z,
 LinearConstraint ComputeHyperplanAboveSquare(AffineExpression x,
                                              AffineExpression square,
                                              IntegerValue x_lb,
-                                             IntegerValue x_ub, Model* model) {
+                                             IntegerValue x_ub) {
   const IntegerValue above_slope = x_ub + x_lb;
-  LinearConstraintBuilder above_hyperplan(model, kMinIntegerValue,
-                                          -x_lb * x_ub);
+  LinearConstraintBuilder above_hyperplan(kMinIntegerValue, -x_lb * x_ub);
   above_hyperplan.AddTerm(square, 1);
   above_hyperplan.AddTerm(x, -above_slope);
   return above_hyperplan.Build();
@@ -2209,10 +2202,9 @@ LinearConstraint ComputeHyperplanAboveSquare(AffineExpression x,
 
 LinearConstraint ComputeHyperplanBelowSquare(AffineExpression x,
                                              AffineExpression square,
-                                             IntegerValue x_value,
-                                             Model* model) {
+                                             IntegerValue x_value) {
   const IntegerValue below_slope = 2 * x_value + 1;
-  LinearConstraintBuilder below_hyperplan(model, -x_value - x_value * x_value,
+  LinearConstraintBuilder below_hyperplan(-x_value - x_value * x_value,
                                           kMaxIntegerValue);
   below_hyperplan.AddTerm(square, 1);
   below_hyperplan.AddTerm(x, -below_slope);
@@ -2234,20 +2226,18 @@ CutGenerator CreateSquareCutGenerator(AffineExpression y, AffineExpression x,
     }
     const IntegerValue x_ub = integer_trail->LevelZeroUpperBound(x);
     const IntegerValue x_lb = integer_trail->LevelZeroLowerBound(x);
-    DCHECK_GE(x_lb, 0);
-
     if (x_lb == x_ub) return true;
 
     // Check for potential overflows.
     if (x_ub > (int64_t{1} << 31)) return true;
-    DCHECK_GE(x_lb, 0);
-    manager->AddCut(ComputeHyperplanAboveSquare(x, y, x_lb, x_ub, model),
+    if (x_lb < -(int64_t{1} << 31)) return true;
+
+    manager->AddCut(ComputeHyperplanAboveSquare(x, y, x_lb, x_ub),
                     "SquareUpper");
 
     const IntegerValue x_floor =
         static_cast<int64_t>(std::floor(x.LpValue(manager->LpValues())));
-    manager->AddCut(ComputeHyperplanBelowSquare(x, y, x_floor, model),
-                    "SquareLower");
+    manager->AddCut(ComputeHyperplanBelowSquare(x, y, x_floor), "SquareLower");
     return true;
   };
 
@@ -2591,14 +2581,14 @@ void SumOfAllDiffLowerBounder::Add(const AffineExpression& expr, int num_exprs,
     if (expr.coeff > 0) {
       int count = 0;
       for (const IntegerValue value :
-           integer_trail.InitialVariableDomain(expr.var).Values()) {
+           integer_trail.LevelZeroDomain(expr.var).Values()) {
         min_values_.insert(expr.ValueAt(value));
         if (++count >= num_exprs) break;
       }
     } else {
       int count = 0;
       for (const IntegerValue value :
-           integer_trail.InitialVariableDomain(expr.var).Negation().Values()) {
+           integer_trail.LevelZeroDomain(expr.var).Negation().Values()) {
         min_values_.insert(-expr.ValueAt(value));
         if (++count >= num_exprs) break;
       }
@@ -2648,6 +2638,9 @@ void TryToGenerateAllDiffCut(
     TopNCuts& top_n_cuts, Model* model) {
   const int num_exprs = sorted_exprs_lp.size();
 
+  // TODO(user): check if it is worth to compute the best possible
+  // required_min_sum/required_max_sum for small number of variables using
+  // SimpleMinCostFlow to match variables with domain values.
   std::vector<AffineExpression> current_set_exprs;
   SumOfAllDiffLowerBounder diff_mins;
   SumOfAllDiffLowerBounder negated_diff_maxes;
@@ -2667,8 +2660,18 @@ void TryToGenerateAllDiffCut(
     std::string max_suffix;
     const IntegerValue required_max_sum =
         -negated_diff_maxes.GetBestLowerBound(max_suffix);
-    if (required_max_sum == std::numeric_limits<IntegerValue>::max()) continue;
-    DCHECK_LE(required_min_sum, required_max_sum);
+    if (required_max_sum >= kMaxIntegerValue ||
+        required_min_sum <= kMinIntegerValue) {
+      continue;
+    }
+    if (required_min_sum > required_max_sum) {
+      // This can happen for infeasible problems. For example, if we have three
+      // boolean variables b1, b2, b3 and v with a domain [0,2][10], we will
+      // have:
+      // required_min_sum = max(0 + 1 + 2 + 3, 0 + 1 + 2 + 10) = 13
+      // required_max_sum = min(10 + 1 + 0 - 1, 10 + 2 + 1 + 0) = 10
+      continue;
+    }
     if (sum < ToDouble(required_min_sum) - kMinCutViolation ||
         sum > ToDouble(required_max_sum) + kMinCutViolation) {
       LinearConstraintBuilder cut(model, required_min_sum, required_max_sum);
@@ -3013,9 +3016,8 @@ CutGenerator CreateCliqueCutGenerator(
       // We need to express such "at most one" in term of the initial
       // variables, so we do not use the
       // LinearConstraintBuilder::AddLiteralTerm() here.
-      LinearConstraintBuilder builder(
-          model, IntegerValue(std::numeric_limits<int64_t>::min()),
-          IntegerValue(1));
+      LinearConstraintBuilder builder(model, IntegerValue(kint64min),
+                                      IntegerValue(1));
       for (const Literal l : at_most_one) {
         if (positive_map.contains(l.Index())) {
           builder.AddTerm(positive_map.at(l.Index()), IntegerValue(1));

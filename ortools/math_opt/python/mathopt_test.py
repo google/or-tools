@@ -18,24 +18,15 @@ import typing
 from typing import Any, List, Set, Tuple
 
 from absl.testing import absltest
-from ortools.math_opt.python import callback
-from ortools.math_opt.python import expressions
-from ortools.math_opt.python import indicator_constraints
-from ortools.math_opt.python import init_arguments
-from ortools.math_opt.python import linear_constraints
-from ortools.math_opt.python import mathopt
-from ortools.math_opt.python import message_callback
-from ortools.math_opt.python import model
-from ortools.math_opt.python import model_parameters
-from ortools.math_opt.python import objectives
-from ortools.math_opt.python import parameters
-from ortools.math_opt.python import quadratic_constraints
-from ortools.math_opt.python import result
-from ortools.math_opt.python import solution
-from ortools.math_opt.python import solve
-from ortools.math_opt.python import solver_resources
-from ortools.math_opt.python import sparse_containers
-from ortools.math_opt.python import variables
+
+from ortools.math_opt.python import (callback, expressions,
+                                     indicator_constraints, init_arguments,
+                                     linear_constraints, mathopt,
+                                     message_callback, model, model_parameters,
+                                     objectives, parameters,
+                                     quadratic_constraints, result, solution,
+                                     solve, solver_resources,
+                                     sparse_containers, variables)
 
 # This list does not contain some modules intentionally:
 #

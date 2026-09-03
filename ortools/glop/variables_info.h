@@ -82,7 +82,8 @@ class VariablesInfo {
   // columns / rows were added. Note however that one will need to update the
   // BasisState with deletions to preserve the status of unchanged columns.
   void InitializeFromBasisState(ColIndex first_slack, ColIndex num_new_cols,
-                                const BasisState& state);
+                                const BasisState& state,
+                                ColIndex num_free_values = ColIndex(0));
 
   // Changes to the FREE status any column with a BASIC status not listed in
   // the basis. Returns their number. Also makes sure all the columns listed in

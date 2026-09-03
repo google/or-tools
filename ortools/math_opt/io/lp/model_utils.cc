@@ -18,9 +18,9 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/math_opt/io/lp/lp_model.h"
 
@@ -38,12 +38,12 @@ absl::StatusOr<LpModel> ReorderVariables(
   for (const VariableIndex v_new : new_to_old.index_range()) {
     const VariableIndex v_old = new_to_old[v_new];
     if (v_old < VariableIndex(0) || v_old >= model.variables().end_index()) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "values of new_to_old be in [0," << model.variables().size()
              << "), found: " << v_old;
     }
     if (old_to_new[v_old] != kBad) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "found value: " << v_old << " twice in new_to_old";
     }
     old_to_new[v_old] = v_new;
@@ -51,14 +51,14 @@ absl::StatusOr<LpModel> ReorderVariables(
   if (!allow_skip_old) {
     for (const VariableIndex v_old : old_to_new.index_range()) {
       if (old_to_new[v_old] == kBad) {
-        return util::InvalidArgumentErrorBuilder()
+        return ortools::InvalidArgumentErrorBuilder()
                << "no new VariableIndex for old VariableIndex: " << v_old;
       }
     }
   }
   LpModel result;
   for (const VariableIndex new_var : new_to_old.index_range()) {
-    RETURN_IF_ERROR(
+    ABSL_RETURN_IF_ERROR(
         result.AddVariable(model.variables()[new_to_old[new_var]]).status())
         << "should be unreachable";
   }
@@ -67,13 +67,13 @@ absl::StatusOr<LpModel> ReorderVariables(
   for (Constraint c : model.constraints()) {
     for (auto& [unused, var] : c.terms) {
       if (old_to_new[var] == kBad) {
-        return util::InvalidArgumentErrorBuilder()
+        return ortools::InvalidArgumentErrorBuilder()
                << "variable " << var
                << " appears in a constraint but is not new_to_old";
       }
       var = old_to_new[var];
     }
-    RETURN_IF_ERROR(result.AddConstraint(c).status())
+    ABSL_RETURN_IF_ERROR(result.AddConstraint(c).status())
         << "should be unreachable";
   }
   return result;
@@ -116,7 +116,7 @@ absl::StatusOr<LpModel> PermuteVariables(
   for (const std::string& name : order_by_name) {
     auto it = model.variable_names().find(name);
     if (it == model.variable_names().end()) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "no variable with name: " << name << " in model";
     }
     new_to_old.push_back(it->second);

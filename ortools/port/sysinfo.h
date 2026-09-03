@@ -15,21 +15,19 @@
 #define ORTOOLS_PORT_SYSINFO_H_
 
 #include <cstdint>
-
-#include "ortools/base/types.h"
+#include <optional>
 
 namespace operations_research {
 namespace sysinfo {
 
-// Return the memory usage in bytes of the process.
-// Will return -1 if MemoryUsage is not supported on platform (e.g. Android).
+// Return the Resident Set Size (RSS) memory usage in bytes of the process if
+// available on the platform, `std::nullopt` otherwise.
 //
-// Note: fixing this on Android isn't really feasible, memory usage is only
-// available from Java.  So any code depending on this needs to deal with
-// the case where memory info is not available.
-//
-// See base/sysinfo.h MemoryUsage
-int64_t MemoryUsageProcess();
+// This is currently supported on Linux, MacOS, Windows, NetBSD, OpenBSD, and
+// FreeBSD. Android and IOS are not yet supported.
+// Note that when called from an interpreted language like Java, the reported
+// memory will include the virtual machine's memory usage.
+std::optional<uint64_t> MemoryUsageProcess();
 
 }  // namespace sysinfo
 }  // namespace operations_research

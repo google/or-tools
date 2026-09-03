@@ -52,7 +52,7 @@ Solving a problem yields the following possible status (CpSolverStatus):
     been reached before any of the statuses below could be determined.
 -   **[MODEL_INVALID]** The given CpModelProto didn't pass the validation step.
     You can get a detailed error by calling `ValidateCpModel(model_proto)`in
-    C++, or `model.Validate()` in other languages.
+    C++, or `model.validate()` in other languages.
 -   **[FEASIBLE]** A feasible solution has been found. But the search was
     stopped before we could prove optimality or before we enumerated all
     solutions of a feasibility problem (if asked).
@@ -100,6 +100,7 @@ parallelism. Therefore, the number of workers must be set to 1.
 from ortools.sat.python import cp_model
 
 
+
 def main() -> None:
   """Showcases assumptions."""
   # Creates the model.
@@ -145,14 +146,15 @@ if __name__ == '__main__':
 #include <stdlib.h>
 
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
-#include "absl/base/log_severity.h"
+#include "ortools/base/log_severity.h"
+#include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
+#include "ortools/util/sorted_interval_list.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
-#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -201,7 +203,7 @@ int main(int argc, char* argv[]) {
 ### Java code samples
 
 ```java
-// Snippet from ortools/sat/samples/AssumptionsSampleSat.java
+// Snippet from ortools/sat/samples/java/AssumptionsSampleSat.java
 package com.google.ortools.sat.samples;
 import com.google.ortools.Loader;
 import com.google.ortools.sat.CpSolverStatus;

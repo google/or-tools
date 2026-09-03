@@ -168,27 +168,6 @@ void ExpectInfeasibleDuringPresolve(CpModelProto initial_model) {
   PresolveForTest(initial_model, SatParameters(), CpSolverStatus::INFEASIBLE);
 }
 
-CpModelProto PresolveOneConstraint(const CpModelProto& initial_model,
-                                   const int constraint_index) {
-  CpModelProto presolved_model = initial_model;
-  CpModelProto mapping_model;
-  std::vector<int> mapping;
-  Model model;
-  model.GetOrCreate<SatParameters>()
-      ->set_keep_all_feasible_solutions_in_presolve(true);
-  PresolveContext context(&model, &presolved_model, &mapping_model);
-  CpModelPresolver presolver(&context, &mapping);
-  context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
-  presolver.PresolveOneConstraint(constraint_index);
-  presolver.RemoveEmptyConstraints();
-  for (int i = 0; i < presolved_model.variables_size(); ++i) {
-    FillDomainInProto(context.DomainOf(i),
-                      presolved_model.mutable_variables(i));
-  }
-  return presolved_model;
-}
-
 TEST(PresolveCpModelTest, BoolAndWithDuplicate) {
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
@@ -701,7 +680,7 @@ TEST(PresolveCpModelTest, BasicLinMaxPresolve) {
 }
 
 TEST(PresolveCpModelTest, MoreAdvancedPresolve) {
-  // We can remove variable zero from the max since it do not change the
+  // We can remove variable zero from the max since it does not change the
   // outcome.
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 10 ] }
@@ -930,7 +909,7 @@ TEST(PresolveCpModelTest, BasicLinAbsPresolveFixedTarget) {
 }
 
 TEST(PresolveCpModelTest, RemoveAbsFromUnaryLinear) {
-  // Make sure we can only remove the varibale 1 here.
+  // Make sure we can only remove the variable 1 here.
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ -20, 20 ] }
     variables { domain: [ 0, 12 ] }
@@ -1004,57 +983,6 @@ TEST(PresolveCpModelTest, LinMaxBasicPresolveSingleVar) {
   SatParameters params;
   params.set_keep_all_feasible_solutions_in_presolve(true);
   const CpModelProto presolved_model = PresolveForTest(initial_model, params);
-  EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
-}
-
-TEST(PresolveCpModelTest, LinMaxBasicPresolveExprs) {
-  const CpModelProto initial_model = ParseTestProto(R"pb(
-    variables { domain: [ 1, 2 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ -2, -1 ] }
-    variables { domain: [ -3, 0 ] }
-    constraints {
-      lin_max {
-        target { vars: 3 coeffs: 1 }
-        exprs {
-          vars: [ 0, 1 ]
-          coeffs: [ 2, 3 ]
-          offset: -5
-        }
-        exprs {
-          vars: [ 1, 2 ]
-          coeffs: [ 2, -5 ]
-          offset: -6
-        }
-        exprs {
-          vars: [ 0, 2 ]
-          coeffs: [ -2, 3 ]
-        }
-      }
-    }
-  )pb");
-  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
-    variables { domain: [ 1, 2 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ -2, -1 ] }
-    variables { domain: [ -1, 0 ] }
-    constraints {
-      lin_max {
-        target { vars: 3 coeffs: 1 }
-        exprs {
-          vars: [ 0, 1 ]
-          coeffs: [ 2, 3 ]
-          offset: -5
-        }
-        exprs {
-          vars: [ 1, 2 ]
-          coeffs: [ 2, -5 ]
-          offset: -6
-        }
-      }
-    }
-  )pb");
-  const CpModelProto presolved_model = PresolveOneConstraint(initial_model, 0);
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
@@ -1423,97 +1351,6 @@ TEST(PresolveCpModelTest, RemoveIsolatedFixedIntervalsAfter) {
 
   const CpModelProto presolved_model = PresolveForTest(initial_model, params);
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
-}
-
-TEST(PresolveCpModelTest, SplitNoOverlap) {
-  const CpModelProto initial_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 8 ] }
-    variables { domain: [ 5, 13 ] }
-    variables { domain: [ 1, 9 ] }
-    variables { domain: [ 6, 14 ] }
-    variables { domain: [ 14, 20 ] }
-    variables { domain: [ 19, 25 ] }
-    variables { domain: [ 18, 22 ] }
-    variables { domain: [ 23, 27 ] }
-    constraints {
-      interval {
-        start { vars: 0 coeffs: 1 }
-        size { offset: 5 }
-        end { vars: 1 coeffs: 1 }
-      }
-    }
-    constraints {
-      interval {
-        start { vars: 2 coeffs: 1 }
-        size { offset: 5 }
-        end { vars: 3 coeffs: 1 }
-      }
-    }
-    constraints {
-      interval {
-        start { vars: 4 coeffs: 1 }
-        size { offset: 5 }
-        end { vars: 5 coeffs: 1 }
-      }
-    }
-    constraints {
-      interval {
-        start { vars: 6 coeffs: 1 }
-        size { offset: 5 }
-        end { vars: 7 coeffs: 1 }
-      }
-    }
-    constraints { no_overlap { intervals: [ 0, 1, 2, 3 ] } }
-  )pb");
-
-  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 8 ] }
-    variables { domain: [ 5, 13 ] }
-    variables { domain: [ 1, 9 ] }
-    variables { domain: [ 6, 14 ] }
-    variables { domain: [ 14, 20 ] }
-    variables { domain: [ 19, 25 ] }
-    variables { domain: [ 18, 22 ] }
-    variables { domain: [ 23, 27 ] }
-    constraints {
-      interval {
-        start { vars: 0 coeffs: 1 }
-        size { offset: 5 }
-        end { vars: 1 coeffs: 1 }
-      }
-    }
-    constraints {
-      interval {
-        start { vars: 2 coeffs: 1 }
-        size { offset: 5 }
-        end { vars: 3 coeffs: 1 }
-      }
-    }
-    constraints {
-      interval {
-        start { vars: 4 coeffs: 1 }
-        size { offset: 5 }
-        end { vars: 5 coeffs: 1 }
-      }
-    }
-    constraints {
-      interval {
-        start { vars: 6 coeffs: 1 }
-        size { offset: 5 }
-        end { vars: 7 coeffs: 1 }
-      }
-    }
-    constraints { no_overlap { intervals: 0 intervals: 1 } }
-    constraints { no_overlap { intervals: 2 intervals: 3 } }
-  )pb");
-  SatParameters params;
-  params.set_convert_intervals(true);
-  params.set_enumerate_all_solutions(true);
-  params.set_keep_all_feasible_solutions_in_presolve(true);
-
-  const CpModelProto presolved_model = PresolveForTest(initial_model, params);
-  EXPECT_THAT(presolved_model,
-              ModelEqualsIgnoringConstraintsOrder(expected_presolved_model));
 }
 
 TEST(PresolveCpModelTest, NoOverlapDuplicateNonZeroSizedInterval) {
@@ -2908,142 +2745,6 @@ TEST(PresolveCpModelTest, NoOverlap2DMergeWithOverlaps) {
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
-TEST(PresolveCpModelTest, IntProdWithLeftConstant) {
-  const CpModelProto initial_model = ParseTestProto(R"pb(
-    variables {
-      name: 'x'
-      domain: [ 10, 12 ]
-    }
-    variables {
-      name: 'y'
-      domain: [ 2, 2 ]
-    }
-    variables {
-      name: 'p'
-      domain: [ 0, 100 ]
-    }
-    constraints {
-      int_prod {
-        target { vars: 2 coeffs: 1 }
-        exprs { vars: 1 coeffs: 1 }
-        exprs { vars: 0 coeffs: 1 }
-      }
-    }
-  )pb");
-  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
-    variables {
-      name: 'x'
-      domain: [ 10, 12 ]
-    }
-    variables {
-      name: 'y'
-      domain: [ 2, 2 ]
-    }
-    variables {
-      name: 'p'
-      domain: [ 20, 24 ]
-    }
-    constraints {
-      linear {
-        vars: 2
-        vars: 0
-        coeffs: 1
-        coeffs: -2
-        domain: [ 0, 0 ]
-      }
-    }
-  )pb");
-  const CpModelProto presolved_model =
-      PresolveOneConstraint(initial_model, /*constraint_index=*/0);
-  EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
-}
-
-TEST(PresolveCpModelTest, EnforcedIntProdWithLeftConstant) {
-  const CpModelProto initial_model = ParseTestProto(R"pb(
-    variables { domain: [ 10, 12 ] }
-    variables { domain: [ 2, 2 ] }
-    variables { domain: [ 0, 100 ] }
-    variables { domain: [ 0, 1 ] }
-    constraints {
-      enforcement_literal: 3
-      int_prod {
-        target { vars: 2 coeffs: 1 }
-        exprs { vars: 1 coeffs: 1 }
-        exprs { vars: 0 coeffs: 1 }
-      }
-    }
-  )pb");
-  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
-    variables { domain: [ 10, 12 ] }
-    variables { domain: [ 2, 2 ] }
-    variables { domain: [ 0, 100 ] }
-    variables { domain: [ 0, 1 ] }
-    constraints {
-      enforcement_literal: 3
-      linear {
-        vars: 2
-        vars: 0
-        coeffs: 1
-        coeffs: -2
-        domain: [ 0, 0 ]
-      }
-    }
-  )pb");
-  const CpModelProto presolved_model =
-      PresolveOneConstraint(initial_model, /*constraint_index=*/0);
-  EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
-}
-
-TEST(PresolveCpModelTest, IntProdWithRightConstant) {
-  const CpModelProto initial_model = ParseTestProto(R"pb(
-    variables {
-      name: 'x'
-      domain: [ 10, 14 ]
-    }
-    variables {
-      name: 'y'
-      domain: [ 2, 2 ]
-    }
-    variables {
-      name: 'p'
-      domain: [ 0, 100 ]
-    }
-    constraints {
-      int_prod {
-        target { vars: 2 coeffs: 1 }
-        exprs { vars: 0 coeffs: 1 }
-        exprs { vars: 1 coeffs: 1 }
-      }
-    }
-  )pb");
-  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
-    variables {
-      name: 'x'
-      domain: [ 10, 14 ]
-    }
-    variables {
-      name: 'y'
-      domain: [ 2, 2 ]
-    }
-    variables {
-      name: 'p'
-      domain: [ 20, 28 ]
-    }
-    constraints {
-      linear {
-        vars: 2
-        vars: 0
-        coeffs: 1
-        coeffs: -2
-        domain: [ 0, 0 ]
-      }
-    }
-  )pb");
-  const CpModelProto presolved_model =
-      PresolveOneConstraint(initial_model, /*constraint_index=*/0);
-  EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
-}
-
 TEST(PresolveCpModelTest, IntProdWithXEqualTwoX) {
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ -10, 20 ] }
@@ -3232,109 +2933,6 @@ TEST(PresolveCpModelTest, IntProdWithIdentity) {
   EXPECT_THAT(mapping_model, testing::EqualsProto(expected_mapping_model));
 }
 
-TEST(PresolveCpModelTest, IntProdWithXEqualX2) {
-  const CpModelProto initial_model = ParseTestProto(R"pb(
-    variables { domain: [ -10, 20 ] }
-    constraints {
-      int_prod {
-        target { vars: 0 coeffs: 1 }
-        exprs { vars: 0 coeffs: 1 }
-        exprs { vars: 0 coeffs: 1 }
-      }
-    }
-  )pb");
-  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 1 ] }
-  )pb");
-  const CpModelProto presolved_model =
-      PresolveOneConstraint(initial_model, /*constraint_index=*/0);
-  EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
-}
-
-TEST(PresolveCpModelTest, IntSquareDomainReduction) {
-  const CpModelProto initial_model = ParseTestProto(R"pb(
-    variables { domain: [ -3, 5 ] }
-    variables { domain: [ -30, 30 ] }
-    constraints {
-      int_prod {
-        target { vars: 1 coeffs: 1 }
-        exprs { vars: 0 coeffs: 1 }
-        exprs { vars: 0 coeffs: 1 }
-      }
-    }
-  )pb");
-  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
-    variables { domain: [ -3, 5 ] }
-    variables { domain: [ 0, 1, 4, 4, 9, 9, 16, 16, 25, 25 ] }
-    constraints {
-      int_prod {
-        target { vars: 1 coeffs: 1 }
-        exprs { vars: 0 coeffs: 1 }
-        exprs { vars: 0 coeffs: 1 }
-      }
-    }
-  )pb");
-  const CpModelProto presolved_model =
-      PresolveOneConstraint(initial_model, /*constraint_index=*/0);
-  EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
-}
-
-TEST(PresolveCpModelTest, IntSquareLargeDomainReduction) {
-  const CpModelProto initial_model = ParseTestProto(R"pb(
-    variables { domain: [ -20, 110 ] }
-    variables { domain: [ -200000, 200000 ] }
-    constraints {
-      int_prod {
-        target { vars: 1 coeffs: 1 }
-        exprs { vars: 0 coeffs: 1 }
-        exprs { vars: 0 coeffs: 1 }
-      }
-    }
-  )pb");
-  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
-    variables { domain: [ -20, 110 ] }
-    variables { domain: [ 0, 12100 ] }
-    constraints {
-      int_prod {
-        target { vars: 1 coeffs: 1 }
-        exprs { vars: 0 coeffs: 1 }
-        exprs { vars: 0 coeffs: 1 }
-      }
-    }
-  )pb");
-  const CpModelProto presolved_model =
-      PresolveOneConstraint(initial_model, /*constraint_index=*/0);
-  EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
-}
-
-TEST(PresolveCpModelTest, IntSquareExprDomainReduction) {
-  const CpModelProto initial_model = ParseTestProto(R"pb(
-    variables { domain: [ -20, 110 ] }
-    variables { domain: [ -9000, 9000 ] }
-    constraints {
-      int_prod {
-        target { vars: 1 coeffs: 1 }
-        exprs { vars: 0 coeffs: 1 }
-        exprs { vars: 0 coeffs: 1 }
-      }
-    }
-  )pb");
-  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
-    variables { domain: [ -20, 94 ] }
-    variables { domain: [ 0, 9000 ] }
-    constraints {
-      int_prod {
-        target { vars: 1 coeffs: 1 }
-        exprs { vars: 0 coeffs: 1 }
-        exprs { vars: 0 coeffs: 1 }
-      }
-    }
-  )pb");
-  const CpModelProto presolved_model =
-      PresolveOneConstraint(initial_model, /*constraint_index=*/0);
-  EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
-}
-
 TEST(PresolveCpModelTest, IntProdWithAffineRelation) {
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ -10, 20 ] }
@@ -3372,36 +2970,6 @@ TEST(PresolveCpModelTest, IntProdWithAffineRelation) {
     }
   )pb");
   EXPECT_THAT(presolved_model, EqualsProto(expected_presolved_model));
-}
-
-TEST(PresolveCpModelTest, IntProdCoeffDividesTarget) {
-  const CpModelProto initial_model = ParseTestProto(R"pb(
-    variables { domain: [ 3, 9 ] }
-    variables { domain: [ 1, 10 ] }
-    variables { domain: [ 0, 1000 ] }
-    constraints {
-      int_prod {
-        target { vars: 2 coeffs: 10 offset: 20 }
-        exprs { vars: 0 coeffs: 1 offset: 3 }
-        exprs { vars: 1 coeffs: 5 }
-      }
-    }
-  )pb");
-  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
-    variables { domain: [ 3, 9 ] }
-    variables { domain: [ 1, 10 ] }
-    variables { domain: [ 1, 58 ] }
-    constraints {
-      int_prod {
-        target { vars: 2 coeffs: 2 offset: 4 }
-        exprs { vars: 0 coeffs: 1 offset: 3 }
-        exprs { vars: 1 coeffs: 1 }
-      }
-    }
-  )pb");
-  const CpModelProto presolved_model =
-      PresolveOneConstraint(initial_model, /*constraint_index=*/0);
-  EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
 TEST(PresolveCpModelTest, IntProdGlobalGcd) {
@@ -3559,6 +3127,7 @@ TEST(PresolveCpModelTest, AffineBooleanProduct) {
   params.set_keep_all_feasible_solutions_in_presolve(true);
   params.set_permute_variable_randomly(false);
   params.set_cp_model_probing_level(0);
+  params.set_max_domain_size_for_linear2_expansion(0);
   const CpModelProto presolved_model = PresolveForTest(initial_model, params);
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
@@ -3596,6 +3165,7 @@ TEST(PresolveCpModelTest, EnforcedAffineBooleanProduct) {
   params.set_keep_all_feasible_solutions_in_presolve(true);
   params.set_permute_variable_randomly(false);
   params.set_cp_model_probing_level(0);
+  params.set_max_domain_size_for_linear2_expansion(0);
   const CpModelProto presolved_model = PresolveForTest(initial_model, params);
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
@@ -4017,119 +3587,6 @@ TEST(PresolveCpModelTest, LinearConstraintWithGcd) {
   EXPECT_EQ(9, lin.domain(1));
 }
 
-TEST(PresolveCpModelTest, RemoveNonUsefulTerms) {
-  const CpModelProto initial_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 10 ] }
-    variables { domain: [ 0, 10 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    constraints {
-      linear {
-        vars: [ 0, 1, 2, 3 ]
-        coeffs: [ 10, 10, 4, 3 ]
-        domain: [ 0, 29 ]
-      }
-    }
-  )pb");
-
-  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 2 ] }
-    variables { domain: [ 0, 2 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    constraints {
-      linear {
-        vars: [ 0, 1 ]
-        coeffs: [ 1, 1 ]
-        domain: [ 0, 2 ]
-      }
-    }
-  )pb");
-  const CpModelProto presolved_model = PresolveOneConstraint(initial_model, 0);
-  EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
-}
-
-TEST(PresolveCpModelTest, RemoveNonUsefulTerms2) {
-  const CpModelProto initial_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 10 ] }
-    variables { domain: [ 0, 10 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    constraints {
-      linear {
-        vars: [ 0, 1, 2, 3 ]
-        coeffs: [ 9, 9, 4, 3 ]
-        domain: [ 0, 26 ]
-      }
-    }
-  )pb");
-
-  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 2 ] }
-    variables { domain: [ 0, 2 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    constraints {
-      linear {
-        vars: [ 0, 1 ]
-        coeffs: [ 1, 1 ]
-        domain: [ 0, 2 ]
-      }
-    }
-  )pb");
-  const CpModelProto presolved_model = PresolveOneConstraint(initial_model, 0);
-  EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
-}
-
-TEST(PresolveCpModelTest, RemoveNonUsefulTerms3) {
-  const CpModelProto initial_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 10 ] }
-    variables { domain: [ 0, 1 ] }
-    constraints {
-      linear {
-        vars: [ 0, 1 ]
-        coeffs: [ 10, 7 ]
-        domain: [ 0, 17 ]
-      }
-    }
-  )pb");
-
-  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-  )pb");
-  const CpModelProto presolved_model = PresolveOneConstraint(initial_model, 0);
-  EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
-}
-
-TEST(PresolveCpModelTest, DetectApproximateGCD) {
-  const CpModelProto initial_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 100 ] }
-    variables { domain: [ 0, 100 ] }
-    constraints {
-      linear {
-        vars: [ 0, 1 ]
-        coeffs: [ 1001, 999 ]
-        domain: [ 0, 28500 ]
-      }
-    }
-  )pb");
-
-  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 28 ] }
-    variables { domain: [ 0, 28 ] }
-    constraints {
-      linear {
-        vars: [ 0, 1 ]
-        coeffs: [ 1, 1 ]
-        domain: [ 0, 28 ]
-      }
-    }
-  )pb");
-  const CpModelProto presolved_model = PresolveOneConstraint(initial_model, 0);
-  EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
-}
-
 TEST(PresolveCpModelTest, LinearConstraintWithGcdInfeasible) {
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 10 ] }
@@ -4144,50 +3601,6 @@ TEST(PresolveCpModelTest, LinearConstraintWithGcdInfeasible) {
   )pb");
 
   EXPECT_EQ(Solve(initial_model).status(), CpSolverStatus::INFEASIBLE);
-}
-
-TEST(PresolveCpModelTest,
-     LinearConstraintWithGcdFalseConstraintWithEnforcement) {
-  const CpModelProto initial_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 10 ] }
-    variables { domain: [ 0, 10 ] }
-    variables { domain: [ 0, 1 ] }
-    constraints {
-      enforcement_literal: 2
-      linear {
-        vars: [ 0, 1 ]
-        coeffs: [ 4, 4 ]
-        domain: [ 9, 9 ]
-      }
-    }
-  )pb");
-
-  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 10 ] }
-    variables { domain: [ 0, 10 ] }
-    variables { domain: [ 0, 0 ] }
-  )pb");
-  const CpModelProto presolved_model = PresolveOneConstraint(initial_model, 0);
-  EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
-}
-
-TEST(PresolveCpModelTest, IntervalPresolveNegativeSize) {
-  const CpModelProto initial_model = ParseTestProto(R"pb(
-    variables { domain: [ -7, -7, 0, 0 ] }
-    constraints {
-      interval {
-        start { offset: 0 }
-        end { vars: 0 coeffs: 1 }
-        size { vars: 0 coeffs: 1 }
-      }
-    }
-  )pb");
-
-  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 0 ] }
-  )pb");
-  const CpModelProto presolved_model = PresolveOneConstraint(initial_model, 0);
-  EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
 // TODO(user): really stop testing the full presolve, we always have to add
@@ -4516,10 +3929,10 @@ TEST(PresolveCpModelTest, ExpandMinimizeObjectiveWithLimitingLinearEquation2) {
   )pb");
 
   // This time, we have new_obj = old_obj - 3.
-  // Note that the variable #2 is removed, but this do not remove any feasible
+  // Note that the variable #2 is removed, but this does not remove any feasible
   // solution since its value will be uniquely determined via the removed
   // constraint x0 + 2x1 + x2 = 3. The objective domain constrains x0 + 2x1
-  // to take feasible value for x3.
+  // to take feasible values for x3.
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ -10, 10 ] }
     variables { domain: [ -7, 10 ] }
@@ -4628,7 +4041,7 @@ TEST(PresolveCpModelTest, CircuitConstraint) {
 }
 
 // Fully specified circuit. This used to remove the constraint instead of
-// detecting infeasibility since some mandatory node are not in the 0 <-> 1
+// detecting infeasibility since some mandatory nodes are not in the 0 <-> 1
 // circuit.
 TEST(PresolveCpModelTest, FixedButIncompleteCircuitConstraint) {
   const CpModelProto initial_model = ParseTestProto(R"pb(
@@ -4972,7 +4385,6 @@ TEST(PresolveCpModelTest, DetectDifferentVariablesAndAddNoOverlap) {
   std::vector<int> mapping;
   CpModelPresolver presolver(&context, &mapping);
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
   presolver.DetectDifferentVariables();
   context.WriteVariableDomainsToProto();
 
@@ -5920,6 +5332,13 @@ TEST(PresolveCpModelTest, NoConvertToNoOverlap) {
         intervals: [ 0, 1, 2 ]
       }
     }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 1, 1, 1, -1 ]
+        domain: [ 7, 17 ]
+      }
+    }
   )pb");
   SatParameters extra_params;
   extra_params.set_symmetry_level(0);
@@ -5958,6 +5377,13 @@ TEST(PresolveCpModelTest, NoConvertToNoOverlap) {
         demands { offset: 4 }
         demands { offset: 4 }
         intervals: [ 0, 1, 2 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 1, 1, 1, -1 ]
+        domain: [ 14, 24 ]
       }
     }
   )pb");
@@ -6218,82 +5644,6 @@ TEST(PresolveCpModelTest, OneActiveLiteralToFalseBoolXor) {
     variables { domain: [ 0, 0 ] }
   )pb");
   EXPECT_THAT(expected_presolved_model, testing::EqualsProto(presolved_model));
-}
-
-TEST(PresolveCpModelTest, BoolXorNotPresolvedIfEnforcementUnknown) {
-  const CpModelProto initial_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 1, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    constraints {
-      enforcement_literal: 2
-      bool_xor { literals: [ 0, 1 ] }
-    }
-  )pb");
-  const CpModelProto presolved_model = PresolveOneConstraint(initial_model, 0);
-  EXPECT_THAT(presolved_model, testing::EqualsProto(initial_model));
-}
-
-TEST(PresolveCpModelTest, BoolXorChangedToBoolOrIfAlwaysFalseWhenEnforced) {
-  const CpModelProto initial_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    constraints {
-      enforcement_literal: [ 0, 1, 2 ]
-      bool_xor {}
-    }
-  )pb");
-  const CpModelProto presolved_model = PresolveOneConstraint(initial_model, 0);
-  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    constraints { bool_or { literals: [ -1, -2, -3 ] } }
-  )pb");
-  EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
-}
-
-TEST(PresolveCpModelTest, BoolXorChangedToBoolOrIfAlwaysFalseWhenEnforced2) {
-  const CpModelProto initial_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    constraints {
-      enforcement_literal: [ 0, 1, 2 ]
-      bool_xor { literals: [ 1, 1 ] }
-    }
-  )pb");
-  const CpModelProto presolved_model = PresolveOneConstraint(initial_model, 0);
-  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    constraints { bool_or { literals: [ -1, -2, -3 ] } }
-  )pb");
-  EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
-}
-
-TEST(PresolveCpModelTest, BoolXorChangedToBoolOrIfAlwaysFalseWhenEnforced3) {
-  const CpModelProto initial_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 1, 1 ] }
-    constraints {
-      enforcement_literal: [ 0, 1, 2 ]
-      bool_xor { literals: [ 1, -2, 3 ] }
-    }
-  )pb");
-  const CpModelProto presolved_model = PresolveOneConstraint(initial_model, 0);
-  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 1, 1 ] }
-    constraints { bool_or { literals: [ -1, -2, -3 ] } }
-  )pb");
-  EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
 TEST(PresolveCpModelTest, OneActiveLiteralToTrueBoolXor) {
@@ -6889,7 +6239,8 @@ TEST(FindDuplicateConstraintsTest, BasicTest) {
     }
   )pb");
 
-  std::vector<std::pair<int, int>> duplicates = FindDuplicateConstraints(model);
+  std::vector<std::pair<int, int>> duplicates =
+      FindDuplicateConstraints(model, false, true, false);
   EXPECT_THAT(duplicates,
               ::testing::ElementsAre(std::make_pair(1, 0), std::make_pair(2, 0),
                                      std::make_pair(3, 0)));
@@ -6910,7 +6261,8 @@ TEST(FindDuplicateConstraintsTest, LinearConstraintParallelToObjective) {
     }
   )pb");
 
-  std::vector<std::pair<int, int>> duplicates = FindDuplicateConstraints(model);
+  std::vector<std::pair<int, int>> duplicates =
+      FindDuplicateConstraints(model, false, true, false);
   EXPECT_THAT(duplicates,
               ::testing::ElementsAre(std::make_pair(0, kObjectiveConstraint)));
 }
@@ -7399,8 +6751,12 @@ TEST(PresolveCpModelTest, ReduceDomainsInInverse) {
     variables { domain: [ 0, 2 ] }
     constraints {
       inverse {
-        f_direct: [ 0, 1, 2 ]
-        f_inverse: [ 3, 4, 5 ]
+        f_expr_direct: { vars: 0 coeffs: 1 }
+        f_expr_direct: { vars: 1 coeffs: 1 }
+        f_expr_direct: { vars: 2 coeffs: 1 }
+        f_expr_inverse: { vars: 3 coeffs: 1 }
+        f_expr_inverse: { vars: 4 coeffs: 1 }
+        f_expr_inverse: { vars: 5 coeffs: 1 }
       }
     }
   )pb");
@@ -8456,7 +7812,6 @@ TEST(PresolveCpModelTest, DuplicateColumns) {
   CpModelPresolver presolver(&context, &mapping);
 
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
   presolver.DetectDuplicateColumns();
   context.WriteVariableDomainsToProto();
 

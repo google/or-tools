@@ -21,6 +21,7 @@
 #include "absl/log/check.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/preprocessor.h"
+#include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/proto_solver/preprocessor.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
@@ -97,12 +98,15 @@ glop::ProblemStatus ApplyMipPresolveSteps(
     auto& preprocessor = lp_preprocessors[i];
     preprocessor->SetTimeLimit(time_limit.get());
     preprocessor->UseInMipContext();
-    const bool need_postsolve = preprocessor->Run(&lp);
+    const glop::Preprocessor::Result result = preprocessor->Run(&lp);
     names[i].resize(header.size(), ' ');  // padding.
     SOLVER_LOG(logger, names[i], lp.GetDimensionString());
-    const glop::ProblemStatus status = preprocessor->status();
-    if (status != glop::ProblemStatus::INIT) return status;
-    if (need_postsolve) for_postsolve->push_back(std::move(preprocessor));
+    if (result.solve_status.has_value()) {
+      return result.solve_status->problem_status();
+    }
+    if (result.postsolve_is_needed) {
+      for_postsolve->push_back(std::move(preprocessor));
+    }
   }
 
   // Finally, we make sure all domains contain zero.
@@ -110,11 +114,11 @@ glop::ProblemStatus ApplyMipPresolveSteps(
     auto shift_bounds =
         std::make_unique<glop::ShiftVariableBoundsPreprocessor>(&glop_params);
     shift_bounds->UseInMipContext();
-    const bool need_postsolve = shift_bounds->Run(&lp);
-    if (shift_bounds->status() != glop::ProblemStatus::INIT) {
-      return shift_bounds->status();
+    const glop::Preprocessor::Result result = shift_bounds->Run(&lp);
+    if (result.solve_status.has_value()) {
+      return result.solve_status->problem_status();
     }
-    if (need_postsolve) {
+    if (result.postsolve_is_needed) {
       for_postsolve->push_back(std::move(shift_bounds));
     }
   }

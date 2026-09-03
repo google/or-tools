@@ -41,6 +41,7 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/strong_integers.h"
 
@@ -683,27 +684,28 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(AffineExpression z,
                                                       int linearization_level,
                                                       Model* model);
 
-// Above hyperplan for square = x * x: square should be below the line
+// Above hyperplan for square = x * x (also for x negative)
+// square should be below the line
 //     (x_lb, x_lb ^ 2) to (x_ub, x_ub ^ 2).
 // The slope of that line is (ub^2 - lb^2) / (ub - lb) = ub + lb.
 //     square <= (x_lb + x_ub) * x - x_lb * x_ub
-// This only works for positive x.
 LinearConstraint ComputeHyperplanAboveSquare(AffineExpression x,
                                              AffineExpression square,
                                              IntegerValue x_lb,
-                                             IntegerValue x_ub, Model* model);
+                                             IntegerValue x_ub);
 
-// Below hyperplan for square = x * x: y should be above the line
+// Below hyperplan for square = x * x (also for x negative):
+//
+// square should be above the line
 //     (x_value, x_value ^ 2) to (x_value + 1, (x_value + 1) ^ 2)
 // The slope of that line is 2 * x_value + 1
 //     square >= below_slope * (x - x_value) + x_value ^ 2
 //     square >= below_slope * x - x_value ^ 2 - x_value
 LinearConstraint ComputeHyperplanBelowSquare(AffineExpression x,
                                              AffineExpression square,
-                                             IntegerValue x_value,
-                                             Model* model);
+                                             IntegerValue x_value);
 
-// A cut generator for y = x ^ 2 (x >= 0).
+// A cut generator for y = x ^ 2.
 // It will dynamically add a linear inequality to push y closer to the parabola.
 CutGenerator CreateSquareCutGenerator(AffineExpression y, AffineExpression x,
                                       int linearization_level, Model* model);

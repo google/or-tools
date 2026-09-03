@@ -13,17 +13,14 @@
 # limitations under the License.
 
 """Model specific solver configuration (e.g. starting basis)."""
+
 import dataclasses
 import datetime
 from typing import Dict, List, Optional, Set
 
 from ortools.math_opt import model_parameters_pb2
-from ortools.math_opt.python import linear_constraints
-from ortools.math_opt.python import model
-from ortools.math_opt.python import objectives
-from ortools.math_opt.python import solution
-from ortools.math_opt.python import sparse_containers
-from ortools.math_opt.python import variables
+from ortools.math_opt.python import (linear_constraints, model, objectives,
+                                     solution, sparse_containers, variables)
 
 
 @dataclasses.dataclass

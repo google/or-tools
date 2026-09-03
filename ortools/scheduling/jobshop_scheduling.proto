@@ -39,13 +39,13 @@
 
 syntax = "proto3";
 
-option java_package = "com.google.ortools.scheduling.jssp";
-option java_multiple_files = true;
-option csharp_namespace = "Google.OrTools.scheduling.Jssp";
-
 package operations_research.scheduling.jssp;
 
 import "google/protobuf/wrappers.proto";
+
+option java_package = "com.google.ortools.scheduling.jssp";
+option java_multiple_files = true;
+option csharp_namespace = "Google.OrTools.scheduling.Jssp";
 
 // This message specifies a task inside a job.
 message Task {

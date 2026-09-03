@@ -17,7 +17,6 @@
 #include <array>
 #include <cstdint>
 #include <cstdlib>
-#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -25,19 +24,20 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
-#include "absl/meta/type_traits.h"
+#include "absl/log/log.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
+#include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_solution.h"
 #include "ortools/bop/bop_types.h"
 #include "ortools/bop/bop_util.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/strong_integers.h"
@@ -45,10 +45,6 @@
 
 namespace operations_research {
 namespace bop {
-
-using ::operations_research::sat::LinearBooleanConstraint;
-using ::operations_research::sat::LinearBooleanProblem;
-using ::operations_research::sat::LinearObjective;
 
 //------------------------------------------------------------------------------
 // LocalSearchOptimizer
@@ -108,7 +104,7 @@ BopOptimizerBase::Status LocalSearchOptimizer::Optimize(
     --num_assignments_to_explore;
   }
   if (sat_wrapper_.IsModelUnsat()) {
-    // TODO(user): we do that all the time, return an UNSAT satus instead and
+    // TODO(user): we do that all the time, return an UNSAT status instead and
     // do this only once.
     return problem_state.solution().IsFeasible()
                ? BopOptimizerBase::OPTIMAL_SOLUTION_FOUND
@@ -226,9 +222,9 @@ AssignmentAndConstraintFeasibilityMaintainer::
     by_variable_matrix_[var].push_back(
         ConstraintEntry(kObjectiveConstraint, weight));
   }
-  constraint_lower_bounds_.push_back(std::numeric_limits<int64_t>::min());
+  constraint_lower_bounds_.push_back(kint64min);
   constraint_values_.push_back(0);
-  constraint_upper_bounds_.push_back(std::numeric_limits<int64_t>::max());
+  constraint_upper_bounds_.push_back(kint64max);
 
   // Add each constraint.
   ConstraintIndex num_constraints_with_objective(1);
@@ -248,12 +244,10 @@ AssignmentAndConstraintFeasibilityMaintainer::
           ConstraintEntry(num_constraints_with_objective, weight));
     }
     constraint_lower_bounds_.push_back(
-        constraint.has_lower_bound() ? constraint.lower_bound()
-                                     : std::numeric_limits<int64_t>::min());
+        constraint.has_lower_bound() ? constraint.lower_bound() : kint64min);
     constraint_values_.push_back(0);
     constraint_upper_bounds_.push_back(
-        constraint.has_upper_bound() ? constraint.upper_bound()
-                                     : std::numeric_limits<int64_t>::max());
+        constraint.has_upper_bound() ? constraint.upper_bound() : kint64max);
 
     ++num_constraints_with_objective;
   }
@@ -418,7 +412,7 @@ std::string AssignmentAndConstraintFeasibilityMaintainer::DebugString() const {
   }
   str += "\nmin  curr  max\n";
   for (ConstraintIndex ct(0); ct < constraint_values_.size(); ++ct) {
-    if (constraint_lower_bounds_[ct] == std::numeric_limits<int64_t>::min()) {
+    if (constraint_lower_bounds_[ct] == kint64min) {
       str += absl::StrFormat("-  %d  %d\n", constraint_values_[ct],
                              constraint_upper_bounds_[ct]);
     } else {
@@ -517,7 +511,7 @@ const TermIndex OneFlipConstraintRepairer::kInvalidTerm(-2);
 
 ConstraintIndex OneFlipConstraintRepairer::ConstraintToRepair() const {
   ConstraintIndex selected_ct = kInvalidConstraint;
-  int32_t selected_num_branches = std::numeric_limits<int32_t>::max();
+  int32_t selected_num_branches = kint32max;
   int num_infeasible_constraints_left = maintainer_.NumInfeasibleConstraints();
 
   // Optimization: We inspect the constraints in reverse order because the
@@ -796,7 +790,7 @@ bool LocalSearchAssignmentIterator::NextAssignment() {
 
   // We only look for potential one flip repairs if we reached the end of the
   // LS tree. I tried to do that at every level, but it didn't change the
-  // result much on the set-partitionning example I was using.
+  // result much on the set-partitioning example I was using.
   //
   // TODO(user): Perform more experiments with this.
   if (use_potential_one_flip_repairs_ &&

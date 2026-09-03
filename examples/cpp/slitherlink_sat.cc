@@ -14,6 +14,7 @@
 // Solve the Slitherlink problem:
 //    see https://en.wikipedia.org/wiki/Slitherlink
 
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <vector>

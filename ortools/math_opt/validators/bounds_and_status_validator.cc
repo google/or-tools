@@ -18,13 +18,12 @@
 #include <limits>
 
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/validators/scalar_validator.h"
-#include "ortools/port/proto_utils.h"
 
 namespace operations_research::math_opt {
 namespace {
@@ -42,9 +41,9 @@ absl::Status ValidateFeasibilityStatus(const FeasibilityStatusProto& status) {
 }
 
 absl::Status ValidateProblemStatus(const ProblemStatusProto& status) {
-  RETURN_IF_ERROR(ValidateFeasibilityStatus(status.primal_status()))
+  ABSL_RETURN_IF_ERROR(ValidateFeasibilityStatus(status.primal_status()))
       << "invalid primal_status";
-  RETURN_IF_ERROR(ValidateFeasibilityStatus(status.dual_status()))
+  ABSL_RETURN_IF_ERROR(ValidateFeasibilityStatus(status.dual_status()))
       << "invalid dual_status";
   if (status.primal_or_dual_infeasible() &&
       (status.primal_status() != FEASIBILITY_STATUS_UNDETERMINED ||
@@ -53,8 +52,9 @@ absl::Status ValidateProblemStatus(const ProblemStatusProto& status) {
         "primal_or_dual_infeasible can be true only when primal status = dual "
         "status = FEASIBILITY_STATUS_UNDETERMINED, and we have primal status "
         "= ",
-        ProtoEnumToString(status.primal_status()),
-        " and dual status = ", ProtoEnumToString(status.dual_status())));
+        FeasibilityStatusProto_Name(status.primal_status()),
+        " and dual status = ",
+        FeasibilityStatusProto_Name(status.dual_status())));
   }
   return absl::OkStatus();
 }
@@ -68,8 +68,8 @@ absl::Status CheckPrimalStatusIs(const ProblemStatusProto& status,
   }
   return absl::InvalidArgumentError(
       absl::StrCat("expected problem_status.primal_status = ",
-                   ProtoEnumToString(required_status), ", but was ",
-                   ProtoEnumToString(actual_status)));
+                   FeasibilityStatusProto_Name(required_status), ", but was ",
+                   FeasibilityStatusProto_Name(actual_status)));
 }
 
 // Assumes ValidateProblemStatus(status) is ok.
@@ -82,7 +82,7 @@ absl::Status CheckPrimalStatusIsNot(
   }
   return absl::InvalidArgumentError(
       absl::StrCat("expected problem_status.primal_status != ",
-                   ProtoEnumToString(forbidden_status)));
+                   FeasibilityStatusProto_Name(forbidden_status)));
 }
 
 // Assumes ValidateProblemStatus(status) is ok.
@@ -95,7 +95,7 @@ absl::Status CheckDualStatusIsNot(
   }
   return absl::InvalidArgumentError(
       absl::StrCat("expected problem_status.dual_status != ",
-                   ProtoEnumToString(forbidden_status)));
+                   FeasibilityStatusProto_Name(forbidden_status)));
 }
 
 // Assumes ValidateProblemStatus(status) is ok.
@@ -114,28 +114,29 @@ absl::Status CheckDualStatusIs(const ProblemStatusProto& status,
   if (primal_or_dual_infeasible_also_ok) {
     return absl::InvalidArgumentError(absl::StrCat(
         "expected either problem_status.dual_status = ",
-        ProtoEnumToString(required_status), " (and was ",
-        ProtoEnumToString(actual_status),
+        FeasibilityStatusProto_Name(required_status), " (and was ",
+        FeasibilityStatusProto_Name(actual_status),
         ") or problem_status.primal_or_dual_infeasible = true (and "
         "was false)"));
   }
   return absl::InvalidArgumentError(
       absl::StrCat("expected problem_status.dual_status = ",
-                   ProtoEnumToString(required_status), ", but was ",
-                   ProtoEnumToString(actual_status)));
+                   FeasibilityStatusProto_Name(required_status), ", but was ",
+                   FeasibilityStatusProto_Name(actual_status)));
 }
 
 absl::Status ValidateObjectiveBounds(const ObjectiveBoundsProto& bounds) {
   const DoubleOptions nonan;
-  RETURN_IF_ERROR(CheckScalar(bounds.primal_bound(), nonan))
+  ABSL_RETURN_IF_ERROR(CheckScalar(bounds.primal_bound(), nonan))
       << "in primal_bound";
-  RETURN_IF_ERROR(CheckScalar(bounds.dual_bound(), nonan)) << "in dual_bound";
+  ABSL_RETURN_IF_ERROR(CheckScalar(bounds.dual_bound(), nonan))
+      << "in dual_bound";
   return absl::OkStatus();
 }
 
 absl::Status CheckFinitePrimalBound(const ObjectiveBoundsProto& bounds) {
   if (!std::isfinite(bounds.primal_bound())) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "expected finite primal bound, but found "
            << bounds.primal_bound();
   }
@@ -153,11 +154,11 @@ absl::Status ValidateFiniteBoundImpliesFeasibleStatus(
   if (first_status == FEASIBILITY_STATUS_FEASIBLE) {
     return absl::OkStatus();
   }
-  return util::InvalidArgumentErrorBuilder()
+  return ortools::InvalidArgumentErrorBuilder()
          << "expected " << first_name
          << " status = FEASIBILITY_STATUS_FEASIBLE for finite " << first_name
          << " bound = " << first_bound << ", but found " << first_name
-         << " status = " << ProtoEnumToString(first_status);
+         << " status = " << FeasibilityStatusProto_Name(first_status);
 }
 
 absl::Status ValidateNotUnboundedBoundImpliesNotUnboundedStatus(
@@ -171,7 +172,7 @@ absl::Status ValidateNotUnboundedBoundImpliesNotUnboundedStatus(
       second_status != FEASIBILITY_STATUS_INFEASIBLE) {
     return absl::OkStatus();
   }
-  return util::InvalidArgumentErrorBuilder()
+  return ortools::InvalidArgumentErrorBuilder()
          << "unexpected (" << first_name << " status, " << second_name
          << " status) = (FEASIBILITY_STATUS_FEASIBLE, "
             "FEASIBILITY_STATUS_INFEASIBLE) for not-unbounded "
@@ -187,21 +188,23 @@ absl::Status ValidateUnboundedBoundImpliesUnboundedStatus(
     return absl::OkStatus();
   }
   if (first_status != FEASIBILITY_STATUS_FEASIBLE) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "expected " << first_name
            << " status = FEASIBILITY_STATUS_FEASIBLE for unbounded "
            << first_name << " bound = " << first_bound << ", but found "
-           << first_name << " status = " << ProtoEnumToString(first_status);
+           << first_name
+           << " status = " << FeasibilityStatusProto_Name(first_status);
   }
   if (second_status != FEASIBILITY_STATUS_INFEASIBLE) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "expected " << second_name
            << " status = FEASIBILITY_STATUS_INFEASIBLE for unbounded "
            << first_name << " bound = " << first_bound << ", but found "
-           << second_name << " status = " << ProtoEnumToString(second_status);
+           << second_name
+           << " status = " << FeasibilityStatusProto_Name(second_status);
   }
   if (second_bound != first_bound) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "expected " << second_name << " bound = " << first_name
            << " bound for unbounded " << first_name
            << " bound = " << first_bound << ", but found " << second_name
@@ -215,14 +218,14 @@ absl::Status ValidateUnboundedBoundImpliesUnboundedStatus(
 absl::Status ValidateBoundStatusConsistency(
     const ObjectiveBoundsProto& objective_bounds,
     const ProblemStatusProto& status, bool is_maximize) {
-  RETURN_IF_ERROR(ValidateUnboundedBoundImpliesUnboundedStatus(
+  ABSL_RETURN_IF_ERROR(ValidateUnboundedBoundImpliesUnboundedStatus(
       /*first_bound=*/objective_bounds.primal_bound(),
       /*second_bound=*/objective_bounds.dual_bound(),
       /*first_status=*/status.primal_status(),
       /*second_status=*/status.dual_status(), "primal", "dual",
       /*unbounded_bound=*/is_maximize ? kInf : -kInf))
       << "for is_maximize = " << std::boolalpha << is_maximize;
-  RETURN_IF_ERROR(ValidateUnboundedBoundImpliesUnboundedStatus(
+  ABSL_RETURN_IF_ERROR(ValidateUnboundedBoundImpliesUnboundedStatus(
       /*first_bound=*/objective_bounds.dual_bound(),
       /*second_bound=*/objective_bounds.primal_bound(),
       /*first_status=*/status.dual_status(),
@@ -230,20 +233,20 @@ absl::Status ValidateBoundStatusConsistency(
       /*unbounded_bound=*/is_maximize ? -kInf : kInf))
       << "for is_maximize = " << std::boolalpha << is_maximize;
 
-  RETURN_IF_ERROR(ValidateFiniteBoundImpliesFeasibleStatus(
+  ABSL_RETURN_IF_ERROR(ValidateFiniteBoundImpliesFeasibleStatus(
       /*first_bound=*/objective_bounds.primal_bound(),
       /*first_status=*/status.primal_status(), /*first_name=*/"primal"));
-  RETURN_IF_ERROR(ValidateFiniteBoundImpliesFeasibleStatus(
+  ABSL_RETURN_IF_ERROR(ValidateFiniteBoundImpliesFeasibleStatus(
       /*first_bound=*/objective_bounds.dual_bound(),
       /*first_status=*/status.dual_status(), /*first_name=*/"dual"));
 
-  RETURN_IF_ERROR(ValidateNotUnboundedBoundImpliesNotUnboundedStatus(
+  ABSL_RETURN_IF_ERROR(ValidateNotUnboundedBoundImpliesNotUnboundedStatus(
       /*first_bound=*/objective_bounds.primal_bound(),
       /*first_status=*/status.primal_status(),
       /*second_status=*/status.dual_status(), "primal", "dual",
       /*unbounded_bound=*/is_maximize ? kInf : -kInf))
       << "for is_maximize = " << std::boolalpha << is_maximize;
-  RETURN_IF_ERROR(ValidateNotUnboundedBoundImpliesNotUnboundedStatus(
+  ABSL_RETURN_IF_ERROR(ValidateNotUnboundedBoundImpliesNotUnboundedStatus(
       /*first_bound=*/objective_bounds.dual_bound(),
       /*first_status=*/status.dual_status(),
       /*second_status=*/status.primal_status(), "dual", "primal",

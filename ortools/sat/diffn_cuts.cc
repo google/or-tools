@@ -337,8 +337,7 @@ CutGenerator CreateNoOverlap2dEnergyCutGenerator(
 
     std::vector<int> rectangles;
     rectangles.reserve(num_rectangles);
-    for (const auto& component :
-         helper->connected_components().AsVectorOfSpan()) {
+    for (const auto& component : helper->connected_components()) {
       for (const int rect : component) {
         rectangles.clear();
         if (helper->IsAbsent(rect)) continue;
@@ -616,8 +615,7 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
     rectangles.reserve(num_rectangles);
     const SchedulingConstraintHelper* x_helper = &helper->x_helper();
     const SchedulingConstraintHelper* y_helper = &helper->y_helper();
-    for (const auto& component :
-         helper->connected_components().AsVectorOfSpan()) {
+    for (const auto& component : helper->connected_components()) {
       rectangles.clear();
       if (component.size() <= 1) continue;
       for (int rect : component) {

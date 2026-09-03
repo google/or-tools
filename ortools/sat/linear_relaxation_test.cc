@@ -30,6 +30,7 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -1081,7 +1082,7 @@ TEST(AppendLinearConstraintRelaxation, SmallConstraint) {
   AppendLinearConstraintRelaxation(initial_model.constraints(0), &model,
                                    &relaxation);
 
-  EXPECT_EQ(relaxation.linear_constraints.size(), 0);
+  EXPECT_EQ(relaxation.linear_constraints.size(), 1);
 }
 
 TEST(AppendLinearConstraintRelaxation, SingleEnforcementLiteralLowerBound) {

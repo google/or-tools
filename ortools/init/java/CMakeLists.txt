@@ -14,7 +14,7 @@
 set_property(SOURCE init.i PROPERTY CPLUSPLUS ON)
 set_property(SOURCE init.i PROPERTY SWIG_MODULE_NAME main)
 set_property(SOURCE init.i PROPERTY COMPILE_DEFINITIONS
-  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
+  ${OR_TOOLS_COMPILE_DEFINITIONS})
 set_property(SOURCE init.i PROPERTY COMPILE_OPTIONS
   -package ${JAVA_PACKAGE}.init)
 swig_add_library(jniinit
@@ -29,7 +29,7 @@ set_target_properties(jniinit PROPERTIES
   POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(jniinit PRIVATE ortools::ortools)
 
-if(BUILD_TESTING)
+if(BUILD_JAVA_TESTING)
   file(GLOB JAVA_SRCS "*Test.java")
   foreach(FILE_NAME IN LISTS JAVA_SRCS)
     add_java_test(FILE_NAME ${FILE_NAME})

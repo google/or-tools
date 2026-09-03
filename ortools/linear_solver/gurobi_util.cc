@@ -19,11 +19,11 @@
 
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/third_party_solvers/gurobi_environment.h"
 
 namespace operations_research {
@@ -43,7 +43,7 @@ bool GurobiIsCorrectlyInstalled() {
 absl::StatusOr<GRBenv*> GetGurobiEnv() {
   GRBenv* env = nullptr;
 
-  RETURN_IF_ERROR(LoadGurobiDynamicLibrary({}));
+  ABSL_RETURN_IF_ERROR(LoadGurobiDynamicLibrary({}));
 
   if (GRBloadenv(&env, nullptr) != 0 || env == nullptr) {
     return absl::FailedPreconditionError(

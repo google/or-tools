@@ -16,7 +16,7 @@
 
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/linear_solver/linear_solver.h"
+#include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_heuristics.h"
 #include "ortools/set_cover/set_cover_invariant.h"
@@ -30,14 +30,14 @@ enum class SetCoverMipSolver : int {
   PDLP = 4
 };
 
-class SetCoverMip : public SubsetListBasedSolutionGenerator {
+class SetCoverMip : public SubsetListBasedOptimizer {
  public:
   // Simpler constructors that uses SCIP by default.
   explicit SetCoverMip(SetCoverInvariant* inv)
       : SetCoverMip(inv, "SetCoverMip") {}
 
   SetCoverMip(SetCoverInvariant* inv, absl::string_view name)
-      : SubsetListBasedSolutionGenerator(
+      : SubsetListBasedOptimizer(
             inv, SetCoverInvariant::ConsistencyLevel::kCostAndCoverage, "Mip",
             name),
         mip_solver_(SetCoverMipSolver::SCIP),
@@ -56,13 +56,15 @@ class SetCoverMip : public SubsetListBasedSolutionGenerator {
     return *this;
   }
 
-  MPSolver::ResultStatus solve_status() const { return solve_status_; }
-
-  using SubsetListBasedSolutionGenerator::NextSolution;
+  math_opt::TerminationReason solve_status() const { return solve_status_; }
 
   // Computes the next partial solution considering only the subsets whose
   // indices are in focus.
-  bool NextSolution(absl::Span<const SubsetIndex> focus) final;
+  bool OptimizeImpl(absl::Span<const SubsetIndex> focus) override;
+
+  const SubsetWeightVector& solution_weights() const {
+    return solution_weights_;
+  }
 
  private:
   // The MIP solver flavor used by the instance.
@@ -72,7 +74,12 @@ class SetCoverMip : public SubsetListBasedSolutionGenerator {
   bool use_integers_;
 
   // The status of the last solve.
-  MPSolver::ResultStatus solve_status_;
+  math_opt::TerminationReason solve_status_;
+
+  // The solution of the MIP solver, corresponding to the weights of each subset
+  // in the solution. The weights can be fractional and are in [0, 1].
+  // This vector is only populated if use_integers_ is false.
+  SubsetWeightVector solution_weights_;
 };
 }  // namespace operations_research
 

@@ -23,8 +23,10 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/random/distributions.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -41,7 +43,7 @@ namespace sat {
 SatDecisionPolicy::SatDecisionPolicy(Model* model)
     : parameters_(*(model->GetOrCreate<SatParameters>())),
       trail_(*model->GetOrCreate<Trail>()),
-      random_(model->GetOrCreate<ModelRandomGenerator>()),
+      random_(*model->GetOrCreate<ModelRandomGenerator>()),
       ls_hints_(model->GetOrCreate<SharedLsSolutionRepository>()) {}
 
 void SatDecisionPolicy::IncreaseNumVariables(int num_variables) {
@@ -53,9 +55,9 @@ void SatDecisionPolicy::IncreaseNumVariables(int num_variables) {
   num_bumps_.clear();
   pq_need_update_for_var_at_trail_index_.IncreaseSize(num_variables);
 
-  has_forced_polarity_.resize(num_variables, false);
+  has_forced_polarity_.resize(num_variables);
   forced_polarity_.resize(num_variables);
-  has_target_polarity_.resize(num_variables, false);
+  has_target_polarity_.resize(num_variables);
   target_polarity_.resize(num_variables);
   var_polarity_.resize(num_variables);
 
@@ -79,11 +81,11 @@ void SatDecisionPolicy::BeforeConflict(int trail_index) {
 
   if (trail_index > target_length_) {
     target_length_ = trail_index;
-    has_target_polarity_.assign(has_target_polarity_.size(), false);
+    has_target_polarity_.ClearAll();
     for (int i = 0; i < trail_index; ++i) {
       const Literal l = trail_[i];
-      has_target_polarity_[l.Variable()] = true;
-      target_polarity_[l.Variable()] = l.IsPositive();
+      has_target_polarity_.Set(l.Variable(), true);
+      target_polarity_.Set(l.Variable(), l.IsPositive());
     }
   }
 
@@ -110,7 +112,7 @@ void SatDecisionPolicy::RephaseIfNeeded() {
 
   // We always reset the target each time we change phase.
   target_length_ = 0;
-  has_target_polarity_.assign(has_target_polarity_.size(), false);
+  has_target_polarity_.ClearAll();
 
   // Cycle between different initial polarities. Note that we already start by
   // the default polarity, and this code is reached the first time with a
@@ -156,8 +158,8 @@ void SatDecisionPolicy::ResetDecisionHeuristic() {
   num_conflicts_until_rephase_ = parameters_.polarity_rephase_increment();
 
   ResetInitialPolarity(/*from=*/0);
-  has_target_polarity_.assign(num_variables, false);
-  has_forced_polarity_.assign(num_variables, false);
+  has_target_polarity_.ClearAll();
+  has_forced_polarity_.ClearAll();
   best_partial_assignment_.clear();
 
   num_conflicts_ = 0;
@@ -172,13 +174,19 @@ void SatDecisionPolicy::ResetInitialPolarity(int from, bool inverted) {
   for (BooleanVariable var(from); var < num_variables; ++var) {
     switch (parameters_.initial_polarity()) {
       case SatParameters::POLARITY_TRUE:
-        var_polarity_[var] = inverted ? false : true;
+        var_polarity_.Set(var, inverted ? false : true);
         break;
       case SatParameters::POLARITY_FALSE:
-        var_polarity_[var] = inverted ? true : false;
+        var_polarity_.Set(var, inverted ? true : false);
         break;
       case SatParameters::POLARITY_RANDOM:
-        var_polarity_[var] = std::uniform_int_distribution<int>(0, 1)(*random_);
+        if (trail_.Assignment().VariableIsAssigned(var)) {
+          // No need to consume a random value if the variable is fixed.
+          var_polarity_.Set(
+              var, trail_.Assignment().LiteralIsTrue(Literal(var, true)));
+        } else {
+          var_polarity_.Set(var, absl::Bernoulli(random_, 0.5));
+        }
         break;
     }
   }
@@ -189,7 +197,7 @@ void SatDecisionPolicy::UseLongestAssignmentAsInitialPolarity() {
   // polarity and reset the best best_partial_assignment_ for the next such
   // phase.
   for (const Literal l : best_partial_assignment_) {
-    var_polarity_[l.Variable()] = l.IsPositive();
+    var_polarity_.Set(l.Variable(), l.IsPositive());
   }
   best_partial_assignment_.clear();
 }
@@ -203,27 +211,27 @@ bool SatDecisionPolicy::UseLsSolutionAsInitialPolarity() {
   // TODO(user): use cp_model_mapping. But this is not needed to experiment
   // on pure sat problems.
   std::shared_ptr<const SharedLsSolutionRepository::Solution> solution =
-      ls_hints_->GetRandomBiasedSolution(*random_);
+      ls_hints_->GetRandomBiasedSolution(random_);
   if (solution->variable_values.size() != var_polarity_.size()) return false;
 
   for (int i = 0; i < solution->variable_values.size(); ++i) {
-    var_polarity_[BooleanVariable(i)] = solution->variable_values[i] == 1;
+    var_polarity_.Set(BooleanVariable(i), solution->variable_values[i] == 1);
   }
 
   return false;
 }
 
 void SatDecisionPolicy::FlipCurrentPolarity() {
-  const int num_variables = var_polarity_.size();
+  const int num_variables = var_polarity_.size().value();
   for (BooleanVariable var; var < num_variables; ++var) {
-    var_polarity_[var] = !var_polarity_[var];
+    var_polarity_.Set(var, !var_polarity_[var]);
   }
 }
 
 void SatDecisionPolicy::RandomizeCurrentPolarity() {
-  const int num_variables = var_polarity_.size();
+  const int num_variables = var_polarity_.size().value();
   for (BooleanVariable var; var < num_variables; ++var) {
-    var_polarity_[var] = std::uniform_int_distribution<int>(0, 1)(*random_);
+    var_polarity_.Set(var, std::uniform_int_distribution<int>(0, 1)(random_));
   }
 }
 
@@ -278,7 +286,7 @@ void SatDecisionPolicy::InitializeVariableOrdering() {
       std::reverse(tmp_variables_.begin(), tmp_variables_.end());
       break;
     case SatParameters::IN_RANDOM_ORDER:
-      std::shuffle(tmp_variables_.begin(), tmp_variables_.end(), *random_);
+      std::shuffle(tmp_variables_.begin(), tmp_variables_.end(), random_);
       break;
   }
 
@@ -298,8 +306,8 @@ void SatDecisionPolicy::SetAssignmentPreference(Literal literal, float weight) {
   DCHECK_GE(weight, 0.0);
   DCHECK_LE(weight, 1.0);
 
-  has_forced_polarity_[literal.Variable()] = true;
-  forced_polarity_[literal.Variable()] = literal.IsPositive();
+  has_forced_polarity_.Set(literal.Variable(), true);
+  forced_polarity_.Set(literal.Variable(), literal.IsPositive());
 
   // The tie_breaker is changed, so we need to reinitialize the priority queue.
   // Note that this doesn't change the activity though.
@@ -383,7 +391,7 @@ Literal SatDecisionPolicy::NextBranch() {
   BooleanVariable var;
   const double ratio = parameters_.random_branches_ratio();
   auto zero_to_one = [this]() {
-    return std::uniform_real_distribution<double>()(*random_);
+    return std::uniform_real_distribution<double>()(random_);
   };
   if (ratio != 0.0 && zero_to_one() < ratio) {
     while (true) {
@@ -391,7 +399,7 @@ Literal SatDecisionPolicy::NextBranch() {
       // variables are assigned.
       std::uniform_int_distribution<int> index_dist(0,
                                                     var_ordering_.Size() - 1);
-      var = var_ordering_.QueueElement(index_dist(*random_)).var;
+      var = var_ordering_.QueueElement(index_dist(random_)).var;
       if (!trail_.Assignment().VariableIsAssigned(var)) break;
       pq_need_update_for_var_at_trail_index_.Set(trail_.Info(var).trail_index);
       var_ordering_.Remove(var.value());
@@ -411,7 +419,7 @@ Literal SatDecisionPolicy::NextBranch() {
   // Choose its polarity (i.e. True of False).
   const double random_ratio = parameters_.random_polarity_ratio();
   if (random_ratio != 0.0 && zero_to_one() < random_ratio) {
-    return Literal(var, std::uniform_int_distribution<int>(0, 1)(*random_));
+    return Literal(var, std::uniform_int_distribution<int>(0, 1)(random_));
   }
 
   if (has_forced_polarity_[var]) return Literal(var, forced_polarity_[var]);
@@ -437,7 +445,7 @@ void SatDecisionPolicy::Untrail(int target_trail_index) {
   if (maybe_enable_phase_saving_ && parameters_.use_phase_saving()) {
     for (int i = target_trail_index; i < trail_.Index(); ++i) {
       const Literal l = trail_[i];
-      var_polarity_[l.Variable()] = l.IsPositive();
+      var_polarity_.Set(l.Variable(), l.IsPositive());
     }
   }
 

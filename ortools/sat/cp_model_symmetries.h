@@ -53,7 +53,9 @@ void FindCpModelSymmetries(
 
 // Detects symmetries and fill the symmetry field.
 void DetectAndAddSymmetryToProto(const SatParameters& params,
-                                 CpModelProto* proto, SolverLogger* logger,
+                                 const CpModelProto& proto,
+                                 SymmetryProto* mutable_symmetry,
+                                 SolverLogger* logger,
                                  TimeLimit* solver_time_limit);
 
 // Basic implementation of some symmetry breaking during presolve.

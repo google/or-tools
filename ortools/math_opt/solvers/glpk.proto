@@ -16,6 +16,9 @@ syntax = "proto3";
 
 package operations_research.math_opt;
 
+option java_package = "com.google.ortools.mathopt";
+option java_multiple_files = true;
+
 // GLPK specific parameters for solving.
 //
 // Fields are optional to enable to capture user intention; if they set

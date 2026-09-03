@@ -32,7 +32,7 @@ include(UseSWIG)
 if(UNIX AND NOT APPLE)
   list(APPEND CMAKE_SWIG_FLAGS "-DSWIGWORDSIZE64")
 endif()
-list(APPEND CMAKE_SWIG_FLAGS "-DOR_DLL=")
+list(APPEND CMAKE_SWIG_FLAGS "-DOR_DLL=" "-DOR_INIT_DLL=" "-DOR_ROUTING_DLL=")
 
 # Find dotnet cli
 find_program(DOTNET_EXECUTABLE NAMES dotnet)
@@ -140,6 +140,7 @@ file(GLOB_RECURSE proto_dotnet_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/glop/*.proto"
   "ortools/graph/*.proto"
   "ortools/linear_solver/*.proto"
+  "ortools/routing/*.proto"
   "ortools/sat/*.proto"
   "ortools/util/*.proto"
   )
@@ -147,7 +148,6 @@ if(USE_PDLP)
   file(GLOB_RECURSE pdlp_proto_dotnet_files RELATIVE ${PROJECT_SOURCE_DIR} "ortools/pdlp/*.proto")
   list(APPEND proto_dotnet_files ${pdlp_proto_dotnet_files})
 endif()
-list(REMOVE_ITEM proto_dotnet_files "ortools/constraint_solver/demon_profiler.proto")
 list(REMOVE_ITEM proto_dotnet_files "ortools/constraint_solver/assignment.proto")
 foreach(PROTO_FILE IN LISTS proto_dotnet_files)
   #message(STATUS "protoc proto(dotnet): ${PROTO_FILE}")
@@ -275,7 +275,7 @@ function(add_dotnet_test)
       ${DOTNET_TEST_DIR}/timestamp
     WORKING_DIRECTORY ${DOTNET_TEST_DIR})
 
-  if(BUILD_TESTING)
+  if(BUILD_DOTNET_TESTING)
     if(USE_DOTNET_6)
       add_test(
         NAME dotnet_${COMPONENT_NAME}_${TEST_NAME}_net60
@@ -320,6 +320,7 @@ foreach(SUBPROJECT IN ITEMS
  init
  linear_solver
  constraint_solver
+ routing
  sat
  util)
   add_subdirectory(ortools/${SUBPROJECT}/csharp)
@@ -615,7 +616,7 @@ function(add_dotnet_sample)
       ${DOTNET_SAMPLE_DIR}/timestamp
     WORKING_DIRECTORY ${DOTNET_SAMPLE_DIR})
 
-  if(BUILD_TESTING)
+  if(BUILD_DOTNET_TESTING)
     if(USE_DOTNET_CORE_31)
       add_test(
         NAME dotnet_${COMPONENT_NAME}_${SAMPLE_NAME}_netcoreapp31
@@ -738,7 +739,7 @@ if(NOT EXAMPLE_FILE_NAME)
       ${DOTNET_EXAMPLE_DIR}/timestamp
     WORKING_DIRECTORY ${DOTNET_EXAMPLE_DIR})
 
-  if(BUILD_TESTING)
+  if(BUILD_DOTNET_TESTING)
     if(USE_DOTNET_CORE_31)
       add_test(
         NAME dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME}_netcoreapp31
