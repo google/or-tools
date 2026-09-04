@@ -1,4 +1,5 @@
-FROM ortools/cmake:fedora_swig AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}fedora_swig AS env
 
 RUN dnf -y update \
 && dnf -y install java-25-openjdk java-25-openjdk-devel maven \

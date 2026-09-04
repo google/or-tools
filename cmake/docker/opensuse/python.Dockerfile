@@ -1,4 +1,5 @@
-FROM ortools/cmake:opensuse_swig AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}opensuse_swig AS env
 
 ENV PATH=/root/.local/bin:$PATH
 RUN zypper refresh \

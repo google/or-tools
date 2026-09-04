@@ -1,4 +1,5 @@
-FROM ortools/cmake:alpine_swig AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}alpine_swig AS env
 
 # .NET install
 RUN apk add --no-cache dotnet8-sdk

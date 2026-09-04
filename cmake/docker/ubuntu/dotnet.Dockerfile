@@ -1,4 +1,5 @@
-FROM ortools/cmake:ubuntu_swig AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}ubuntu_swig AS env
 
 # Install .NET SDK
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu

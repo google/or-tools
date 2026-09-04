@@ -1,4 +1,5 @@
-FROM ortools/cmake:ubuntu_swig AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}ubuntu_swig AS env
 
 RUN apt-get update -qq \
 && DEBIAN_FRONTEND=noninteractive apt-get install -yq default-jdk maven \

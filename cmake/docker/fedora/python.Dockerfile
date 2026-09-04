@@ -1,4 +1,5 @@
-FROM ortools/cmake:fedora_swig AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}fedora_swig AS env
 
 ENV PATH=/root/.local/bin:$PATH
 RUN dnf -y update \

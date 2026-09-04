@@ -1,4 +1,5 @@
-FROM ortools/cmake:ubuntu_base AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}ubuntu_base AS env
 
 RUN cmake -version
 

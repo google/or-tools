@@ -1,4 +1,5 @@
-FROM ortools/cmake:debian_swig AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}debian_swig AS env
 
 RUN apt-get update -qq \
 && apt-get install -yq default-jdk maven \

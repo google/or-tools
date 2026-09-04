@@ -1,4 +1,5 @@
-FROM ortools/cmake:rockylinux_swig AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}rockylinux_swig AS env
 
 ENV PATH=/root/.local/bin:$PATH
 RUN dnf -y update \

@@ -1,4 +1,5 @@
-FROM ortools/cmake:debian_base AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}debian_base AS env
 
 RUN cmake -version
 

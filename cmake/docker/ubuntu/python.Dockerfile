@@ -1,4 +1,5 @@
-FROM ortools/cmake:ubuntu_swig AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}ubuntu_swig AS env
 
 ENV PATH=/root/.local/bin:$PATH
 RUN apt-get update -qq \
