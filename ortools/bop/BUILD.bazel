@@ -399,7 +399,7 @@ cc_test(
         "//ortools/lp_data:proto_utils",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:sat_parameters_cc_proto",
-        "//ortools/util:fp_utils",
+        "//ortools/util:fp_utils_testing",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/strings:str_format",
     ],
