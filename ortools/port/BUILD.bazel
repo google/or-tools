@@ -24,10 +24,13 @@ cc_library(
     copts = ORTOOLS_DEFAULT_COPTS,
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
+        "//ortools/base:types",
         "//ortools/base/macros:os_support",
         "//ortools/util:parse_proto",
+        "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/strings:string_view",
         "@protobuf",
     ],
