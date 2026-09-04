@@ -1,4 +1,5 @@
-FROM ortools/cmake:alpine_swig AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}alpine_swig AS env
 
 RUN apk add --no-cache openjdk21 maven
 ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk

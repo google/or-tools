@@ -1,4 +1,5 @@
-FROM ortools/cmake:rockylinux_swig AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}rockylinux_swig AS env
 
 # Install .NET SDK
 # see: https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#scripted-install

@@ -1,4 +1,5 @@
-FROM ortools/cmake:fedora_base AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}fedora_base AS env
 
 RUN cmake -version
 

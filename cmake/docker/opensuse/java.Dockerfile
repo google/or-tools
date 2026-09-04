@@ -1,4 +1,5 @@
-FROM ortools/cmake:opensuse_swig AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}opensuse_swig AS env
 
 # Install Java JDK and Maven
 RUN zypper update -y \

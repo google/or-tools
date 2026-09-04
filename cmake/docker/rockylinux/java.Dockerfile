@@ -1,4 +1,5 @@
-FROM ortools/cmake:rockylinux_swig AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}rockylinux_swig AS env
 
 RUN dnf -y update \
 && dnf -y install java-21-openjdk java-21-openjdk-devel maven \

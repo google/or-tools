@@ -1,4 +1,5 @@
-FROM ortools/cmake:debian_swig AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}debian_swig AS env
 
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-debian
 RUN apt-get update -qq \

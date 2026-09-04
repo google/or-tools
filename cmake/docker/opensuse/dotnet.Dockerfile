@@ -1,4 +1,5 @@
-FROM ortools/cmake:opensuse_swig AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}opensuse_swig AS env
 
 # .NET install
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-opensuse
