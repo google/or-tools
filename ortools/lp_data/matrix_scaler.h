@@ -146,6 +146,37 @@ class SparseMatrixScaler {
   // scaled. Helper function to Scale().
   ColIndex EquilibrateColumns();
 
+  // Runs Ruiz equilibration to convergence, iterating
+  // up to 10 passes on both rows and columns. Each pass
+  // divides rows and columns by the square root of their
+  // infinity norm.
+  //
+  // Reference:
+  //   D. Ruiz, "A Scaling Algorithm to Equilibrate Both
+  //   Rows and Columns Norms in Matrices,"
+  //   RAL-TR-2001-034, Rutherford Appleton Laboratory,
+  //   2001.
+  //
+  // Advantages over other scaling methods:
+  //
+  // - Simultaneous row-column balance: at convergence,
+  //   both row and column infinity norms approach 1.
+  //   Sequential equilibration (rows then columns) does
+  //   not guarantee this, because column scaling can undo
+  //   the row scaling.
+  //
+  // - Symmetry preservation: for symmetric matrices, row
+  //   and column scaling factors converge to the same
+  //   values. This is important for interior-point
+  //   methods where the normal equations matrix
+  //   A * diag(theta) * A^T must remain symmetric.
+  //
+  // - Guaranteed convergence: the iteration is a
+  //   contraction on the log-magnitude space and
+  //   converges to a unique fixed point, regardless
+  //   of the initial scaling.
+  void RuizEquilibrate();
+
   // Scales the row indexed by row by 1/factor.
   // Used by ScaleMatrixRowsGeometrically and EquilibrateRows.
   RowIndex ScaleMatrixRows(const DenseColumn& factors);

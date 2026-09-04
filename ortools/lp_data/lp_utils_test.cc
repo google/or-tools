@@ -25,7 +25,7 @@
 #include "ortools/lp_data/permutation.h"
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse_column.h"
-#include "ortools/util/fp_utils.h"
+#include "ortools/util/fp_utils_testing.h"
 
 namespace operations_research {
 namespace glop {
@@ -35,28 +35,37 @@ using ::testing::ContainerEq;
 static const Fractional kTolerance = 1e-10;
 
 TEST(FractionalityTest, PositiveNumbers) {
-  EXPECT_COMPARABLE(0.3, Fractionality(1.7), kTolerance);
-  EXPECT_COMPARABLE(0.3, Fractionality(1.3), kTolerance);
-  EXPECT_COMPARABLE(0.5, Fractionality(0.5), kTolerance);
-  EXPECT_COMPARABLE(0.0, Fractionality(10), kTolerance);
+  EXPECT_THAT(Fractionality(1.7),
+              WithinSameAbsoluteOrRelativeTolerance(0.3, kTolerance));
+  EXPECT_THAT(Fractionality(1.3),
+              WithinSameAbsoluteOrRelativeTolerance(0.3, kTolerance));
+  EXPECT_THAT(Fractionality(0.5),
+              WithinSameAbsoluteOrRelativeTolerance(0.5, kTolerance));
+  EXPECT_THAT(Fractionality(10),
+              WithinSameAbsoluteOrRelativeTolerance(0.0, kTolerance));
 }
 
 TEST(FractionalityTest, NegativeNumbers) {
-  EXPECT_COMPARABLE(0.3, Fractionality(-1.7), kTolerance);
-  EXPECT_COMPARABLE(0.3, Fractionality(-1.3), kTolerance);
-  EXPECT_COMPARABLE(0.5, Fractionality(-0.5), kTolerance);
-  EXPECT_COMPARABLE(0.0, Fractionality(-10), kTolerance);
+  EXPECT_THAT(Fractionality(-1.7),
+              WithinSameAbsoluteOrRelativeTolerance(0.3, kTolerance));
+  EXPECT_THAT(Fractionality(-1.3),
+              WithinSameAbsoluteOrRelativeTolerance(0.3, kTolerance));
+  EXPECT_THAT(Fractionality(-0.5),
+              WithinSameAbsoluteOrRelativeTolerance(0.5, kTolerance));
+  EXPECT_THAT(Fractionality(-10),
+              WithinSameAbsoluteOrRelativeTolerance(0.0, kTolerance));
 }
 
 TEST(SquaredNormTest, SimpleExample) {
   std::vector<Fractional> data = {0, 1, 2, 3, 4};
-  EXPECT_COMPARABLE(30.0, SquaredNorm(data), kTolerance);
+  EXPECT_THAT(SquaredNorm(data),
+              WithinSameAbsoluteOrRelativeTolerance(30.0, kTolerance));
 }
 
 TEST(SquaredNormAndResetToZeroTest, SimpleExample) {
   std::vector<Fractional> data = {0, 1, 2, 3, 4};
-  EXPECT_COMPARABLE(30.0, SquaredNormAndResetToZero(absl::MakeSpan(data)),
-                    kTolerance);
+  EXPECT_THAT(SquaredNormAndResetToZero(absl::MakeSpan(data)),
+              WithinSameAbsoluteOrRelativeTolerance(30.0, kTolerance));
   EXPECT_EQ(0.0, SquaredNorm(data));
 }
 
@@ -69,10 +78,12 @@ TEST(DenseVectorFunctionsTest, MathCorrectness) {
 
   const double n = num_rows.value();
   const double exact_squared_norm = (n - 1) * n * (2 * n - 1) / 6;
-  EXPECT_COMPARABLE(ScalarProduct(Transpose(col), col), SquaredNorm(col),
-                    kTolerance);
+  EXPECT_THAT(SquaredNorm(col),
+              WithinSameAbsoluteOrRelativeTolerance(
+                  ScalarProduct(Transpose(col), col), kTolerance));
   EXPECT_EQ(PreciseScalarProduct(Transpose(col), col), PreciseSquaredNorm(col));
-  EXPECT_COMPARABLE(exact_squared_norm, SquaredNorm(col), 1e-11);
+  EXPECT_THAT(SquaredNorm(col),
+              WithinSameAbsoluteOrRelativeTolerance(exact_squared_norm, 1e-11));
   EXPECT_EQ(exact_squared_norm, PreciseSquaredNorm(col));
 }
 
@@ -100,15 +111,22 @@ TEST(SparseVectorFunctionsTest, MathCorrectness) {
   const Fractional partial_scalar_product =
       PartialScalarProduct(row, column, reduced_num_cols.value());
 
-  EXPECT_COMPARABLE(-44.931725, precise_scalar_product, 1e-5);
-  EXPECT_COMPARABLE(21886.315, precise_snorm_col, 1e-5);
-  EXPECT_COMPARABLE(87317.665, precise_snorm_row, 1e-5);
+  EXPECT_THAT(precise_scalar_product,
+              WithinSameAbsoluteOrRelativeTolerance(-44.931725, 1e-5));
+  EXPECT_THAT(precise_snorm_col,
+              WithinSameAbsoluteOrRelativeTolerance(21886.315, 1e-5));
+  EXPECT_THAT(precise_snorm_row,
+              WithinSameAbsoluteOrRelativeTolerance(87317.665, 1e-5));
   EXPECT_NE(snorm_row, precise_snorm_row);
   EXPECT_NE(snorm_col, precise_snorm_col);
-  EXPECT_COMPARABLE(scalar_product, precise_scalar_product, 1e-11);
-  EXPECT_COMPARABLE(snorm_row, precise_snorm_row, 1e-11);
-  EXPECT_COMPARABLE(snorm_col, precise_snorm_col, 1e-11);
-  EXPECT_COMPARABLE(-44.784831, partial_scalar_product, 1e-5);
+  EXPECT_THAT(precise_scalar_product,
+              WithinSameAbsoluteOrRelativeTolerance(scalar_product, 1e-11));
+  EXPECT_THAT(precise_snorm_row,
+              WithinSameAbsoluteOrRelativeTolerance(snorm_row, 1e-11));
+  EXPECT_THAT(precise_snorm_col,
+              WithinSameAbsoluteOrRelativeTolerance(snorm_col, 1e-11));
+  EXPECT_THAT(partial_scalar_product,
+              WithinSameAbsoluteOrRelativeTolerance(-44.784831, 1e-5));
 
   // We compute in row, row += Transpose(col) and check the formula:
   // ||a + b||^2 = ||a||^2 + ||b||^2 + 2 * ScalarProduct(a, b);

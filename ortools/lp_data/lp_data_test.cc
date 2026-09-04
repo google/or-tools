@@ -28,7 +28,7 @@
 #include "ortools/lp_data/permutation.h"
 #include "ortools/lp_data/sparse.h"
 #include "ortools/lp_data/sparse_column.h"
-#include "ortools/util/fp_utils.h"
+#include "ortools/util/fp_utils_testing.h"
 
 namespace operations_research {
 namespace glop {
@@ -1008,14 +1008,12 @@ TEST(LinearProgramTest, ApplyAndRemoveObjectiveScalingAndOffset) {
       linear_program.SetObjectiveOffset(offset);
       for (const Fractional original_value : {0.0, -1.0, 2.3, -11.4, 27.2}) {
         const Fractional translated_value = factor * (offset + original_value);
-        EXPECT_COMPARABLE(
-            translated_value,
+        EXPECT_THAT(
             linear_program.ApplyObjectiveScalingAndOffset(original_value),
-            kEpsilon);
-        EXPECT_COMPARABLE(
-            original_value,
+            WithinSameAbsoluteOrRelativeTolerance(translated_value, kEpsilon));
+        EXPECT_THAT(
             linear_program.RemoveObjectiveScalingAndOffset(translated_value),
-            kEpsilon);
+            WithinSameAbsoluteOrRelativeTolerance(original_value, kEpsilon));
       }
     }
   }

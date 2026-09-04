@@ -15,52 +15,43 @@
 #define ORTOOLS_LP_DATA_LP_TEST_UTILS_H_
 
 #include <cmath>
+#include <tuple>
 
-#include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/sparse.h"
 #include "ortools/lp_data/sparse_column.h"
-#include "ortools/util/fp_utils.h"
+#include "ortools/util/fp_utils_testing.h"
 
 namespace operations_research {
 namespace glop {
 
 static const Fractional kComparableEpsilon(sqrt(kEpsilon));
 
-template <class IndexType, typename TestObjectType, typename ObjectType>
-void CheckValues(const util_intops::StrongVector<IndexType, ObjectType>& values,
-                 int expected_num_values,
-                 const TestObjectType* expected_value) {
-  CHECK(expected_value != nullptr);
-  EXPECT_EQ(expected_num_values, values.size());
-  for (int i = 0; i < values.size(); ++i) {
-    EXPECT_EQ(ObjectType(expected_value[i]), values[IndexType(i)])
-        << "At index i=" << i;
-  }
+// Returns WithinAbsoluteOrRelativeTolerances() matcher with Fractional type and
+// using kComparableEpsilon for both absolute and relative tolerance.
+inline testing::Matcher<Fractional> ComparableFractional(
+    const Fractional expected) {
+  return WithinSameAbsoluteOrRelativeTolerance<Fractional>(expected,
+                                                           kComparableEpsilon);
 }
 
-template <class IndexType, class FractionalType, class TestObjectType>
-void CheckFractionalValues(
-    const util_intops::StrongVector<IndexType, FractionalType>& values,
-    int expected_num_values, const TestObjectType* expected_value) {
-  CHECK(expected_value != nullptr);
-  EXPECT_EQ(expected_num_values, values.size());
-  for (int i = 0; i < values.size(); ++i) {
-    EXPECT_COMPARABLE(FractionalType(expected_value[i]), values[IndexType(i)],
-                      kComparableEpsilon);
-  }
+// Overload of ComparableFractional() that compares pairs of Fractional
+// (represented as std::tuple<>), typically used with testing::Pointwise().
+inline testing::Matcher<std::tuple<Fractional, Fractional>>
+ComparableFractional() {
+  return WithinSameAbsoluteOrRelativeTolerance<Fractional>(kComparableEpsilon);
 }
 
+// Returns a matcher for vectors of Fractional using ComparableFractional()
+// matcher.
 template <class IndexType>
-void ExpectFractionalVectorComparable(
-    const util_intops::StrongVector<IndexType, Fractional>& v1,
-    const util_intops::StrongVector<IndexType, Fractional>& v2) {
-  EXPECT_EQ(v1.size(), v2.size());
-  for (IndexType i(0); i < v1.size(); ++i) {
-    EXPECT_COMPARABLE(v1[i], v2[i], kComparableEpsilon);
-  }
+testing::Matcher<util_intops::StrongVector<IndexType, Fractional>>
+FractionalVectorComparable(
+    const util_intops::StrongVector<IndexType, Fractional>& expected) {
+  return testing::Pointwise(ComparableFractional(), expected);
 }
 
 //----------------------------------------------------------------------
