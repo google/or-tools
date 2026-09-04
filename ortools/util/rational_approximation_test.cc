@@ -16,7 +16,8 @@
 #include <limits>
 
 #include "gtest/gtest.h"
-#include "ortools/util/fp_utils.h"
+#include "ortools/base/gmock.h"
+#include "ortools/util/fp_utils_testing.h"
 
 namespace operations_research {
 namespace {
@@ -31,10 +32,9 @@ TEST(RationalApproximation, ContinuedFraction) {
   // The result for fraction.first and fraction.second varies depending on the
   // type for Fractional (kTestedNumber cannot be represented accurately
   // in a float), so we just test that the fraction is close enough.
-  EXPECT_COMPARABLE(kTestedNumber,
-                    static_cast<double>(fraction.first) /
-                        static_cast<double>(fraction.second),
-                    kEpsilon);
+  EXPECT_THAT(static_cast<double>(fraction.first) /
+                  static_cast<double>(fraction.second),
+              WithinSameAbsoluteOrRelativeTolerance(kTestedNumber, kEpsilon));
   fraction = RationalApproximation(0.4214, kEpsilon);
   EXPECT_EQ(fraction.first, 2107);
   EXPECT_EQ(fraction.second, 5000);

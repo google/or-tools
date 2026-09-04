@@ -28,23 +28,23 @@ func TestErrorCode(t *testing.T) {
 		want   int32 // The expected value for the first returned value.
 		wantOK bool  // The expected value for the second returned value; NOT related to absl::OkStatus()!
 	}{
-		{name: "ErrCancelled", err: ErrCancelled, want: cancelledCode.value(), wantOK: true},
+		{name: "ErrCancelled", err: ErrCancelled, want: CancelledCode.Value(), wantOK: true},
 		{
 			name: "ErrCancelled_wrapped", err: fmt.Errorf("%w: some message", ErrCancelled),
-			want: cancelledCode.value(), wantOK: true,
+			want: CancelledCode.Value(), wantOK: true,
 		},
 		{
 			name: "ErrCancelled_wrapped_twice",
 			err:  fmt.Errorf("oops: %w", fmt.Errorf("%w: some message", ErrCancelled)),
-			want: cancelledCode.value(), wantOK: true,
+			want: CancelledCode.Value(), wantOK: true,
 		},
 		{name: "unexpected_code", err: statusError(-5), want: -5, wantOK: true},
 		{
 			name: "from_to_error", err: ToError(&spb.StatusProto{
-				Code:    cancelledCode.value(),
+				Code:    CancelledCode.Value(),
 				Message: "some message",
 			}),
-			want: cancelledCode.value(), wantOK: true,
+			want: CancelledCode.Value(), wantOK: true,
 		},
 		{name: "non_status_error", err: fmt.Errorf("some message"), want: 0, wantOK: false},
 	}
@@ -104,11 +104,11 @@ func TestToError(t *testing.T) {
 		wantIs error
 	}{
 		{name: "nil", status: nil, wantNil: true},
-		{name: "ok", status: &spb.StatusProto{Code: okCode.value(), Message: "ok"}, wantNil: true},
+		{name: "ok", status: &spb.StatusProto{Code: OkCode.Value(), Message: "ok"}, wantNil: true},
 		{
 			name:     "not_found",
-			status:   &spb.StatusProto{Code: notFoundCode.value(), Message: "oops"},
-			wantCode: notFoundCode.value(), wantMessage: "NOT_FOUND: oops",
+			status:   &spb.StatusProto{Code: NotFoundCode.Value(), Message: "oops"},
+			wantCode: NotFoundCode.Value(), wantMessage: "NOT_FOUND: oops",
 			wantIs: ErrNotFound,
 		},
 		{

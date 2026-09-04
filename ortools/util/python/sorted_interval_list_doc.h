@@ -62,7 +62,8 @@ end(interval); ++it) { Work(*it); }
 
 The iterator is designed to be very efficient, using just a single
 counter. It works correctly for any combination of `start` and `end`
-except the full int64_t range (start == INT64_MIN && end == INT64_MAX).)doc";
+except the full int64_t range (start == INT64_MIN && end ==
+INT64_MAX).)doc";
 
 static const char *mkd_doc_operations_research_ClosedInterval_end = R"doc()doc";
 
@@ -397,7 +398,8 @@ end(interval); ++it) { Work(*it); }
 
 The iterator is designed to be very efficient, using just a single
 counter. It works correctly for any combination of `start` and `end`
-except the full int64_t range (start == INT64_MIN && end == INT64_MAX).)doc";
+except the full int64_t range (start == INT64_MIN && end ==
+INT64_MAX).)doc";
 
 static const char *mkd_doc_operations_research_Iterator_AssertNotFullInt64Range = R"doc()doc";
 

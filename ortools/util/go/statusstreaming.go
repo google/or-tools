@@ -29,59 +29,60 @@ import (
 	spb "ortools/util/status_go_proto"
 )
 
-// code are the C++ absl::Status::code() values.
-type code int32
+// Code are the C++ absl::Status::code() values.
+type Code int32
 
-// value returns the underlying integer value.
-func (c code) value() int32 {
+// Value returns the underlying integer value.
+func (c Code) Value() int32 {
 	return int32(c)
 }
 
+// Canonical values of absl::Status::code().
 var (
-	okCode                 = code(0)
-	cancelledCode          = code(1)
-	unknownCode            = code(2)
-	invalidArgumentCode    = code(3)
-	deadlineExceededCode   = code(4)
-	notFoundCode           = code(5)
-	alreadyExistsCode      = code(6)
-	permissionDeniedCode   = code(7)
-	unauthenticatedCode    = code(16)
-	resourceExhaustedCode  = code(8)
-	failedPreconditionCode = code(9)
-	abortedCode            = code(10)
-	outOfRangeCode         = code(11)
-	unimplementedCode      = code(12)
-	internalCode           = code(13)
-	unavailableCode        = code(14)
-	dataLossCode           = code(15)
+	OkCode                 = Code(0)
+	CancelledCode          = Code(1)
+	UnknownCode            = Code(2)
+	InvalidArgumentCode    = Code(3)
+	DeadlineExceededCode   = Code(4)
+	NotFoundCode           = Code(5)
+	AlreadyExistsCode      = Code(6)
+	PermissionDeniedCode   = Code(7)
+	UnauthenticatedCode    = Code(16)
+	ResourceExhaustedCode  = Code(8)
+	FailedPreconditionCode = Code(9)
+	AbortedCode            = Code(10)
+	OutOfRangeCode         = Code(11)
+	UnimplementedCode      = Code(12)
+	InternalCode           = Code(13)
+	UnavailableCode        = Code(14)
+	DataLossCode           = Code(15)
 )
 
-// codeName contains a name for each value of code
-var codeName = map[code]string{
-	okCode:                 "OK",
-	cancelledCode:          "CANCELLED",
-	unknownCode:            "UNKNOWN",
-	invalidArgumentCode:    "INVALID_ARGUMENT",
-	deadlineExceededCode:   "DEADLINE_EXCEEDED",
-	notFoundCode:           "NOT_FOUND",
-	alreadyExistsCode:      "ALREADY_EXISTS",
-	permissionDeniedCode:   "PERMISSION_DENIED",
-	unauthenticatedCode:    "UNAUTHENTICATED",
-	resourceExhaustedCode:  "RESOURCE_EXHAUSTED",
-	failedPreconditionCode: "FAILED_PRECONDITION",
-	abortedCode:            "ABORTED",
-	outOfRangeCode:         "OUT_OF_RANGE",
-	unimplementedCode:      "UNIMPLEMENTED",
-	internalCode:           "INTERNAL",
-	unavailableCode:        "UNAVAILABLE",
-	dataLossCode:           "DATA_LOSS",
+// codeName contains a name for each value of Code
+var codeName = map[Code]string{
+	OkCode:                 "OK",
+	CancelledCode:          "CANCELLED",
+	UnknownCode:            "UNKNOWN",
+	InvalidArgumentCode:    "INVALID_ARGUMENT",
+	DeadlineExceededCode:   "DEADLINE_EXCEEDED",
+	NotFoundCode:           "NOT_FOUND",
+	AlreadyExistsCode:      "ALREADY_EXISTS",
+	PermissionDeniedCode:   "PERMISSION_DENIED",
+	UnauthenticatedCode:    "UNAUTHENTICATED",
+	ResourceExhaustedCode:  "RESOURCE_EXHAUSTED",
+	FailedPreconditionCode: "FAILED_PRECONDITION",
+	AbortedCode:            "ABORTED",
+	OutOfRangeCode:         "OUT_OF_RANGE",
+	UnimplementedCode:      "UNIMPLEMENTED",
+	InternalCode:           "INTERNAL",
+	UnavailableCode:        "UNAVAILABLE",
+	DataLossCode:           "DATA_LOSS",
 }
 
 // statusError is the type implementing the `error` interface returned by ToError().
 //
 // Its value is the integer `StatusCode.code`. It should match one of the value
-// of `code` but it can be another unknown value.
+// of `Code` but it can be another unknown value.
 type statusError int32
 
 // value returns the integer code.
@@ -92,7 +93,7 @@ func (se statusError) value() int32 {
 // Error returns the name of the code if known. Returns "ERROR(x)" with x the
 // code integer value when no name is known.
 func (se statusError) Error() string {
-	if name, ok := codeName[code(se.value())]; ok {
+	if name, ok := codeName[Code(se.value())]; ok {
 		return name
 	}
 	return fmt.Sprintf("ERROR(%v)", se.value())
@@ -107,22 +108,22 @@ func (se statusError) Error() string {
 // one of that list. The function ErrorCode() can retrieve the code in that
 // case.
 var (
-	ErrCancelled          error = statusError(cancelledCode)
-	ErrUnknown            error = statusError(unknownCode)
-	ErrInvalidArgument    error = statusError(invalidArgumentCode)
-	ErrDeadlineExceeded   error = statusError(deadlineExceededCode)
-	ErrNotFound           error = statusError(notFoundCode)
-	ErrAlreadyExists      error = statusError(alreadyExistsCode)
-	ErrPermissionDenied   error = statusError(permissionDeniedCode)
-	ErrUnauthenticated    error = statusError(unauthenticatedCode)
-	ErrResourceExhausted  error = statusError(resourceExhaustedCode)
-	ErrFailedPrecondition error = statusError(failedPreconditionCode)
-	ErrAborted            error = statusError(abortedCode)
-	ErrOutOfRange         error = statusError(outOfRangeCode)
-	ErrUnimplemented      error = statusError(unimplementedCode)
-	ErrInternal           error = statusError(internalCode)
-	ErrUnavailable        error = statusError(unavailableCode)
-	ErrDataLoss           error = statusError(dataLossCode)
+	ErrCancelled          error = statusError(CancelledCode)
+	ErrUnknown            error = statusError(UnknownCode)
+	ErrInvalidArgument    error = statusError(InvalidArgumentCode)
+	ErrDeadlineExceeded   error = statusError(DeadlineExceededCode)
+	ErrNotFound           error = statusError(NotFoundCode)
+	ErrAlreadyExists      error = statusError(AlreadyExistsCode)
+	ErrPermissionDenied   error = statusError(PermissionDeniedCode)
+	ErrUnauthenticated    error = statusError(UnauthenticatedCode)
+	ErrResourceExhausted  error = statusError(ResourceExhaustedCode)
+	ErrFailedPrecondition error = statusError(FailedPreconditionCode)
+	ErrAborted            error = statusError(AbortedCode)
+	ErrOutOfRange         error = statusError(OutOfRangeCode)
+	ErrUnimplemented      error = statusError(UnimplementedCode)
+	ErrInternal           error = statusError(InternalCode)
+	ErrUnavailable        error = statusError(UnavailableCode)
+	ErrDataLoss           error = statusError(DataLossCode)
 )
 
 // ErrorCode returns the (code, true) of the error returned by ToError(). It returns
@@ -144,7 +145,7 @@ func ErrorCode(err error) (int32, bool) {
 // code does not match one of the existing constant, ErrorCode() can be used to
 // get the code number.
 func ToError(status *spb.StatusProto) error {
-	if status.GetCode() == okCode.value() {
+	if status.GetCode() == OkCode.Value() {
 		return nil
 	}
 	return fmt.Errorf("%w: %v", statusError(status.GetCode()), status.GetMessage())

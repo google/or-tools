@@ -158,6 +158,8 @@ bool AreWithinAbsoluteOrRelativeTolerances(FloatType x, FloatType y,
 // Tests whether x and y are close to one another using an absolute tolerance.
 // Returns true if |x - y| <= a (with a being the absolute_tolerance).
 // The cases for infinities are treated separately to avoid generating NaNs.
+//
+// Some matchers are available in fp_utils_testing.h for gUnit tests.
 template <typename FloatType>
 bool AreWithinAbsoluteTolerance(FloatType x, FloatType y,
                                 FloatType absolute_tolerance) {
@@ -185,20 +187,6 @@ inline bool IsIntegerWithinTolerance(FloatType x, FloatType tolerance) {
   if (IsPositiveOrNegativeInfinity(x)) return false;
   return std::abs(x - std::round(x)) <= tolerance;
 }
-
-// Handy alternatives to EXPECT_NEAR(), using relative and absolute tolerance
-// instead of relative tolerance only, and with a proper support for infinity.
-#define EXPECT_COMPARABLE(expected, obtained, epsilon)                    \
-  EXPECT_TRUE(operations_research::AreWithinAbsoluteOrRelativeTolerances( \
-      expected, obtained, epsilon, epsilon))                              \
-      << obtained << " != expected value " << expected                    \
-      << " within epsilon = " << epsilon;
-
-#define EXPECT_NOTCOMPARABLE(expected, obtained, epsilon)                  \
-  EXPECT_FALSE(operations_research::AreWithinAbsoluteOrRelativeTolerances( \
-      expected, obtained, epsilon, epsilon))                               \
-      << obtained << " == expected value " << expected                     \
-      << " within epsilon = " << epsilon;
 
 // Given an array of doubles, this computes a positive scaling factor such that
 // the scaled doubles can then be rounded to integers with little or no loss of
