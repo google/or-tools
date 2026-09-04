@@ -821,7 +821,7 @@ void CheckLowerSolves(RowIndex num_rows, Fractional tolerance,
   // Dense lower solve.
   DenseColumn temp = rhs_column;
   compact_lower.LowerSolve(&temp);
-  ExpectFractionalVectorComparable(expected, temp);
+  EXPECT_THAT(temp, FractionalVectorComparable(expected));
 
   // Sparse lower solve.
   temp = rhs_column;
@@ -833,7 +833,7 @@ void CheckLowerSolves(RowIndex num_rows, Fractional tolerance,
   } else {
     compact_lower.HyperSparseSolveWithReversedNonZeros(&temp, &non_zeros);
   }
-  ExpectFractionalVectorComparable(expected, temp);
+  EXPECT_THAT(temp, FractionalVectorComparable(expected));
 }
 
 TEST(TriangularMatrixTest, RandomTests) {
@@ -867,7 +867,7 @@ TEST(TriangularMatrixTest, PermutedTriangularLowerSolve) {
   compact_matrix.PermutedLowerSparseSolve(ColumnView(sparse_column), row_perm,
                                           &sparse_column, &sparse_column);
   sparse_column.CopyToDenseVector(num_rows, &dense_column);
-  ExpectFractionalVectorComparable(kExpectedResult, dense_column);
+  EXPECT_THAT(dense_column, FractionalVectorComparable(kExpectedResult));
 
   // Test with a random permutation.
   row_perm.PopulateRandomly();
@@ -882,7 +882,7 @@ TEST(TriangularMatrixTest, PermutedTriangularLowerSolve) {
                                           &sparse_column);
   sparse_column.ApplyRowPermutation(inverse_row_perm);
   sparse_column.CopyToDenseVector(num_rows, &dense_column);
-  ExpectFractionalVectorComparable(kExpectedResult, dense_column);
+  EXPECT_THAT(dense_column, FractionalVectorComparable(kExpectedResult));
 }
 
 TEST(TriangularMatrixTest, TriangularUpperSolve) {
@@ -944,13 +944,13 @@ void CheckHyperSparseSolves(const TriangularMatrix& matrix,
   // This non-zero pattern can be used for a normal solve ...
   DenseColumn other_result = rhs;
   matrix.HyperSparseSolveWithReversedNonZeros(&other_result, &non_zero_rows);
-  ExpectFractionalVectorComparable(result_left, other_result);
+  EXPECT_THAT(other_result, FractionalVectorComparable(result_left));
 
   // ... or a transpose one.
   other_result = rhs;
   transpose_matrix.TransposeHyperSparseSolveWithReversedNonZeros(
       &other_result, &non_zero_rows);
-  ExpectFractionalVectorComparable(result_left, other_result);
+  EXPECT_THAT(other_result, FractionalVectorComparable(result_left));
 
   // And if we use the sorted version, we get EXACTLY the same result.
   other_result = rhs;
@@ -965,12 +965,12 @@ void CheckHyperSparseSolves(const TriangularMatrix& matrix,
   other_result = rhs;
   transpose_matrix.HyperSparseSolveWithReversedNonZeros(&other_result,
                                                         &non_zero_rows);
-  ExpectFractionalVectorComparable(result_right, other_result);
+  EXPECT_THAT(other_result, FractionalVectorComparable(result_right));
 
   other_result = rhs;
   matrix.TransposeHyperSparseSolveWithReversedNonZeros(&other_result,
                                                        &non_zero_rows);
-  ExpectFractionalVectorComparable(result_right, other_result);
+  EXPECT_THAT(other_result, FractionalVectorComparable(result_right));
 }
 
 TEST(TriangularMatrixTest, RandomTriangularSolvesAreAllConsistent) {
@@ -1004,7 +1004,7 @@ TEST(TriangularMatrixTest, RandomTriangularSolvesAreAllConsistent) {
     // It should be the same as a transpose upper solve.
     DenseColumn other_result = rhs;
     transpose_matrix.TransposeUpperSolve(&other_result);
-    ExpectFractionalVectorComparable(result_left, other_result);
+    EXPECT_THAT(other_result, FractionalVectorComparable(result_left));
 
     // Now do the same for a right solve.
     DenseColumn result_right = rhs;
@@ -1012,7 +1012,7 @@ TEST(TriangularMatrixTest, RandomTriangularSolvesAreAllConsistent) {
 
     other_result = rhs;
     matrix.TransposeLowerSolve(&other_result);
-    ExpectFractionalVectorComparable(result_right, other_result);
+    EXPECT_THAT(other_result, FractionalVectorComparable(result_right));
 
     CheckHyperSparseSolves(matrix, transpose_matrix, rhs, result_left,
                            result_right);
@@ -1103,7 +1103,7 @@ TEST(TriangularMatrixTest, RandomTriangularSolvesWithDiagonalOfOne) {
 
     DenseColumn result;
     sparse_vector.CopyToDenseVector(kNumRows, &result);
-    ExpectFractionalVectorComparable(result, outputs[i]);
+    EXPECT_THAT(outputs[i], FractionalVectorComparable(result));
   }
 }
 

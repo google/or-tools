@@ -54,6 +54,7 @@ class SparseColumn : public SparseVector<RowIndex, SparseColumnIterator> {
   // Use a separate API to get the row and coefficient of entry #i.
   RowIndex EntryRow(EntryIndex i) const { return GetIndex(i); }
   Fractional EntryCoefficient(EntryIndex i) const { return GetCoefficient(i); }
+  using SparseVector<RowIndex, SparseColumnIterator>::MutableCoefficient;
   RowIndex GetFirstRow() const { return GetFirstIndex(); }
   RowIndex GetLastRow() const { return GetLastIndex(); }
   void ApplyRowPermutation(const RowPermutation& p) {

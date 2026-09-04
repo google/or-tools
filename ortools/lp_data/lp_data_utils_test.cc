@@ -223,9 +223,10 @@ TEST(LpScalingHelperTest, UnscaleUnitRowLeftSolve) {
   scaler.UnscaleUnitRowLeftSolve(basis[RowIndex(0)], &row0);
   scaler.UnscaleUnitRowLeftSolve(basis[RowIndex(1)], &row1);
   scaler.UnscaleUnitRowLeftSolve(basis[RowIndex(2)], &row2);
-  ExpectFractionalVectorComparable(DenseRow{-1.0, 0.0, 0.0}, row0.values);
-  ExpectFractionalVectorComparable(DenseRow{0.0, 1.0, 0.5}, row1.values);
-  ExpectFractionalVectorComparable(DenseRow{0.0, 0.0, 0.5}, row2.values);
+  EXPECT_THAT(row0.values,
+              FractionalVectorComparable(DenseRow{-1.0, 0.0, 0.0}));
+  EXPECT_THAT(row1.values, FractionalVectorComparable(DenseRow{0.0, 1.0, 0.5}));
+  EXPECT_THAT(row2.values, FractionalVectorComparable(DenseRow{0.0, 0.0, 0.5}));
 }
 
 TEST(LpScalingHelperTest, AverageCostScaling) {
