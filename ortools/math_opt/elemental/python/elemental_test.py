@@ -46,17 +46,19 @@ def _sort_attr_keys(
 class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
 
     def test_init_names_not_set(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         self.assertEqual(e.model_name, "")
         self.assertEqual(e.primary_objective_name, "")
 
     def test_init_names_set(self):
-        e = cpp_elemental.CppElemental(model_name="abc", primary_objective_name="123")
+        e = cpp_elemental.CppElemental(  # pyrefly: ignore[bad-instantiation]
+            model_name="abc", primary_objective_name="123"
+        )
         self.assertEqual(e.model_name, "abc")
         self.assertEqual(e.primary_objective_name, "123")
 
     def test_element_operations(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
 
         # Add two variables.
         xs = e.add_elements(_VARIABLE, 2)
@@ -88,12 +90,12 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
         )
 
     def test_ensure_next_element_id_at_least(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         e.ensure_next_element_id_at_least(_VARIABLE, 4)
         self.assertEqual(e.add_element(_VARIABLE, "x"), 4)
 
     def test_name_handling(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         ids = e.add_named_elements(
             _LINEAR_CONSTRAINT,
             np.array(["c", "name", "a somewhat long name", "a 💩 name"]),
@@ -109,13 +111,13 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
             e.add_named_elements(_LINEAR_CONSTRAINT, np.array([["a", "b"], ["c", "d"]]))
 
     def test_delete_with_duplicates_raises(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         xs = e.add_elements(_VARIABLE, 1)
         with self.assertRaisesRegex(ValueError, "duplicates"):
             e.delete_elements(_VARIABLE, np.array([xs[0], xs[0]]))
 
     def test_element_operations_bad_shape(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         ids = e.add_elements(_VARIABLE, 2)
         with self.assertRaisesRegex(
             ValueError, "array has incorrect number of dimensions: 2; expected 1"
@@ -123,12 +125,12 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
             e.delete_elements(_VARIABLE, np.full((1, 1), ids[0]))
 
     def test_bad_element_type_raises(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         with self.assertRaisesRegex(TypeError, "incompatible function arguments"):
             e.add_elements(-42, 1)
 
     def test_attr0(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         keys = np.empty((1, 0), np.int64)
         default_value = e.get_attrs(_MAXIMIZE, keys)
         self.assertFalse(e.is_attr_non_default(_MAXIMIZE, keys[0]))
@@ -154,7 +156,7 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
         )
 
     def test_attr1(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         x = e.add_elements(_VARIABLE, 3)
         keys = np.column_stack([x])
         np.testing.assert_array_equal(
@@ -204,7 +206,7 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
         )
 
     def test_attr2(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         x = e.add_elements(_VARIABLE, 1)
         c = e.add_elements(_LINEAR_CONSTRAINT, 1)
         keys = np.column_stack([x, c])
@@ -244,7 +246,7 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
         )
 
     def test_attr2_symmetric(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         xs = e.add_elements(_VARIABLE, 3)
         q01 = [xs[0], xs[1]]
         q21 = [xs[2], xs[1]]
@@ -265,7 +267,7 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
         )
 
     def test_attr1_element_valued(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         x = e.add_element(_VARIABLE, "x")
         ic = e.add_element(_INDICATOR_CONSTRAINT, "ic")
 
@@ -275,14 +277,14 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
         )
 
     def test_clear_attr0(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         e.set_attr(_MAXIMIZE, (), True)
         self.assertTrue(e.get_attr(_MAXIMIZE, ()))
         e.clear_attr(_MAXIMIZE)
         self.assertFalse(e.get_attr(_MAXIMIZE, ()))
 
     def test_clear_attr1(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         x = e.add_element(_VARIABLE, "x")
         e.set_attr(_VARIABLE_LOWER_BOUND, (x,), 4.0)
         self.assertEqual(e.get_attr(_VARIABLE_LOWER_BOUND, (x,)), 4.0)
@@ -290,7 +292,7 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
         self.assertEqual(e.get_attr(_VARIABLE_LOWER_BOUND, (x,)), -math.inf)
 
     def test_attr0_bad_attr_id_raises(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         with self.assertRaisesRegex(TypeError, "incompatible function arguments"):
             e.get_attrs(-42, np.array([1]))
         # Note: `assertRaisesRegex` does not seem to work with multiline regexps.
@@ -302,12 +304,12 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
             e.get_attrs(_VARIABLE, ())
 
     def test_attr1_bad_element_id_raises(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         with self.assertRaisesRegex(ValueError, "-1.*variable"):
             e.get_attrs(_VARIABLE_LOWER_BOUND, np.array([[-1]]))
 
     def test_set_attr_with_duplicates_raises(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         x = e.add_elements(_VARIABLE, 2)
         with self.assertRaisesRegex(ValueError, "array has duplicates"):
             e.set_attrs(
@@ -319,7 +321,7 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
         self.assertEqual(e.get_attr_num_non_defaults(_VARIABLE_LOWER_BOUND), 0)
 
     def test_set_attr_with_nonexistent_raises(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         x = e.add_elements(_VARIABLE, 1)
         with self.assertRaisesRegex(
             ValueError, "linear_constraint id 0 does not exist"
@@ -331,7 +333,7 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
             )
 
     def test_slice_attr1_success(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         x = e.add_element(_VARIABLE, "x")
         y = e.add_element(_VARIABLE, "y")
         e.set_attr(_VARIABLE_LOWER_BOUND, (x,), 2.0)
@@ -349,7 +351,7 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
         self.assertEqual(e.get_attr_slice_size(_VARIABLE_LOWER_BOUND, 0, y), 0)
 
     def test_slice_attr1_invalid_key_index(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         x = e.add_element(_VARIABLE, "x")
         with self.assertRaisesRegex(ValueError, "key_index was: -1"):
             e.slice_attr(_VARIABLE_LOWER_BOUND, -1, x)
@@ -357,7 +359,7 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
             e.slice_attr(_VARIABLE_LOWER_BOUND, 1, x)
 
     def test_slice_attr1_invalid_element_index(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         e.add_element(_VARIABLE, "x")
         with self.assertRaisesRegex(ValueError, "no element with id -1"):
             e.slice_attr(_VARIABLE_LOWER_BOUND, 0, -1)
@@ -365,7 +367,7 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
             e.slice_attr(_VARIABLE_LOWER_BOUND, 0, 4)
 
     def test_slice_attr2_success(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         # The first two variables are unused so that all variable and constraint
         # indices are all different.
         e.add_element(_VARIABLE, "")
@@ -415,7 +417,9 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
         self.assertEqual(e.get_attr_slice_size(_LINEAR_CONSTRAINT_COEFFICIENT, 1, z), 0)
 
     def test_clone(self):
-        e = cpp_elemental.CppElemental(model_name="mmm")
+        e = cpp_elemental.CppElemental(
+            model_name="mmm"
+        )  # pyrefly: ignore[bad-instantiation]
         x = e.add_element(_VARIABLE, "x")
         e.set_attr(_VARIABLE_LOWER_BOUND, (x,), 4.0)
 
@@ -432,7 +436,9 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
         self.assertEqual(e2.get_attr(_VARIABLE_LOWER_BOUND, (x,)), 4.0)
 
     def test_clone_with_rename(self):
-        e = cpp_elemental.CppElemental(model_name="mmm")
+        e = cpp_elemental.CppElemental(
+            model_name="mmm"
+        )  # pyrefly: ignore[bad-instantiation]
         x = e.add_element(_VARIABLE, "x")
         e2 = e.clone(new_model_name="yyy")
         self.assertEqual(e2.model_name, "yyy")
@@ -441,7 +447,7 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
         )
 
     def test_export_model(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         x = e.add_element(_VARIABLE, "x")
         e.set_attr(_VARIABLE_LOWER_BOUND, (x,), 4.0)
 
@@ -490,7 +496,7 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
             self.assertEqual(e.get_num_elements(element_type), 0)
 
     def test_repr(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         e.add_element(_VARIABLE, "xyz")
         self.assertEqual(
             repr(e),
@@ -500,13 +506,13 @@ ElementType: variable num_elements: 1 next_id: 1
         )
 
     def test_add_and_delete_diffs(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         self.assertEqual(e.add_diff(), 0)
         self.assertEqual(e.add_diff(), 1)
         e.delete_diff(1)
 
     def test_export_model_update_has_update(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         d = e.add_diff()
         e.add_element(_VARIABLE, "xyz")
 
@@ -531,13 +537,13 @@ ElementType: variable num_elements: 1 next_id: 1
         self.assert_protos_equal(update_no_names, expected)
 
     def test_export_model_update_empty(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         d = e.add_diff()
         update = e.export_model_update(d)
         self.assertIsNone(update)
 
     def test_advance_diff(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         d = e.add_diff()
         e.add_element(_VARIABLE, "xyz")
         e.advance_diff(d)
@@ -545,24 +551,24 @@ ElementType: variable num_elements: 1 next_id: 1
         self.assertIsNone(update)
 
     def test_delete_diff_twice_error(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         self.assertEqual(e.add_diff(), 0)
         e.delete_diff(0)
         with self.assertRaisesRegex(ValueError, "no diff with id: 0"):
             e.delete_diff(0)
 
     def test_delete_diff_never_created_error(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         with self.assertRaisesRegex(ValueError, "no diff with id: 0"):
             e.delete_diff(0)
 
     def test_export_model_update_diff_never_created(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         with self.assertRaisesRegex(ValueError, "no diff with id: 0"):
             e.export_model_update(0)
 
     def test_advance_diff_never_created(self):
-        e = cpp_elemental.CppElemental()
+        e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         with self.assertRaisesRegex(ValueError, "no diff with id: 0"):
             e.advance_diff(0)
 
