@@ -33,7 +33,7 @@ jobs:
           credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
           set_home_bazelrc: true
       - name: Set Java to OpenJDK 21 (Temurin)
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
           java-version: '21'
