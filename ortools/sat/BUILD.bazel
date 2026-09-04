@@ -710,6 +710,7 @@ cc_test(
         "//ortools/base:stl_util",
         "//ortools/port:proto_utils",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/strings:str_format",
         "@protobuf",
     ],
 )
@@ -1509,9 +1510,7 @@ cc_test(
 
 cc_library(
     name = "solution_crush",
-    srcs = [
-        "solution_crush.cc",
-    ],
+    srcs = ["solution_crush.cc"],
     hdrs = ["solution_crush.h"],
     deps = [
         ":cp_model_cc_proto",
@@ -1537,9 +1536,7 @@ cc_library(
 proto_library(
     name = "solution_crush_proto",
     srcs = ["solution_crush.proto"],
-    deps = [
-        ":cp_model_proto",
-    ],
+    deps = [":cp_model_proto"],
 )
 
 cc_proto_library(
@@ -1607,9 +1604,7 @@ cc_library(
 
 cc_library(
     name = "cp_constraint_presolve",
-    srcs = [
-        "cp_constraint_presolve.cc",
-    ],
+    srcs = ["cp_constraint_presolve.cc"],
     hdrs = ["cp_constraint_presolve.h"],
     deps = [
         ":2d_rectangle_presolve",
@@ -1678,9 +1673,7 @@ cc_test(
 
 cc_library(
     name = "cp_model_presolve",
-    srcs = [
-        "cp_model_presolve.cc",
-    ],
+    srcs = ["cp_model_presolve.cc"],
     hdrs = ["cp_model_presolve.h"],
     deps = [
         ":clause",
@@ -1803,9 +1796,7 @@ cc_test(
 
 cc_library(
     name = "cp_model_postsolve",
-    srcs = [
-        "cp_model_postsolve.cc",
-    ],
+    srcs = ["cp_model_postsolve.cc"],
     hdrs = ["cp_model_postsolve.h"],
     deps = [
         ":cp_model_cc_proto",
@@ -1924,9 +1915,7 @@ cc_test(
 
 cc_library(
     name = "sat_solver",
-    srcs = [
-        "sat_solver.cc",
-    ],
+    srcs = ["sat_solver.cc"],
     hdrs = ["sat_solver.h"],
     deps = [
         ":clause",
@@ -3328,6 +3317,7 @@ cc_library(
         ":sat_base",
         "//ortools/base:strong_vector",
         "//ortools/base:types",
+        "//ortools/lp_data:lp_types",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:strong_integers",
         "@abseil-cpp//absl/base:core_headers",
@@ -3534,7 +3524,7 @@ cc_test(
         ":sat_parameters_cc_proto",
         "//ortools/base:gmock_main",
         "//ortools/base:strong_vector",
-        "//ortools/util:fp_utils",
+        "//ortools/util:fp_utils_testing",
         "//ortools/util:sorted_interval_list",
         "//ortools/util:strong_integers",
         "@abseil-cpp//absl/log:check",
@@ -4859,9 +4849,7 @@ cc_library(
 cc_test(
     name = "opb_reader_test",
     size = "small",
-    srcs = [
-        "opb_reader_test.cc",
-    ],
+    srcs = ["opb_reader_test.cc"],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_checker",
@@ -4899,9 +4887,7 @@ cc_test(
 
 cc_binary(
     name = "sat_runner",
-    srcs = [
-        "sat_runner.cc",
-    ],
+    srcs = ["sat_runner.cc"],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_solver",
@@ -4950,9 +4936,7 @@ cc_library(
 cc_test(
     name = "sat_cnf_reader_test",
     size = "small",
-    srcs = [
-        "sat_cnf_reader_test.cc",
-    ],
+    srcs = ["sat_cnf_reader_test.cc"],
     deps = [
         ":sat_cnf_reader",
         "//ortools/base:file",
