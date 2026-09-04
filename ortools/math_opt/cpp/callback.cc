@@ -66,6 +66,29 @@ absl::Span<const CallbackEvent> Enum<CallbackEvent>::AllValues() {
   return absl::MakeConstSpan(kCallbackEventValues);
 }
 
+std::optional<absl::string_view> Enum<CallbackSolutionSource>::ToOptString(
+    CallbackSolutionSource value) {
+  switch (value) {
+    case CallbackSolutionSource::kIntegral:
+      return "integral";
+    case CallbackSolutionSource::kHeuristic:
+      return "heuristic";
+    case CallbackSolutionSource::kUser:
+      return "user";
+  }
+  return std::nullopt;
+}
+
+absl::Span<const CallbackSolutionSource>
+Enum<CallbackSolutionSource>::AllValues() {
+  static constexpr CallbackSolutionSource kCallbackSolutionSourceValues[] = {
+      CallbackSolutionSource::kIntegral,
+      CallbackSolutionSource::kHeuristic,
+      CallbackSolutionSource::kUser,
+  };
+  return absl::MakeConstSpan(kCallbackSolutionSourceValues);
+}
+
 CallbackData::CallbackData(const CallbackEvent event,
                            const absl::Duration runtime)
     : event(event), runtime(runtime) {}
