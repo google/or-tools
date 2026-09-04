@@ -341,6 +341,37 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
   // Solve
   CbcModel model(osi_);
 
+  // Use the solution hint if any.
+  if (!solver_->solution_hint_.empty()) {
+    const int num_cols = model.getNumCols();
+
+    // Build a full solution vector. Column 0 is the dummy variable for the
+    // objective offset (fixed at 1.0). Real variables start at column 1.
+    std::vector hint_solution(num_cols, 0.0);
+    hint_solution[0] = 1.0;  // Dummy variable is fixed at 1.0.
+
+    for (const auto& [hint_var, hint_val] : solver_->solution_hint_) {
+      const int var_index = hint_var->index();
+      const int cbc_col = MPSolverVarIndexToCbcVarIndex(var_index);
+      if (cbc_col >= 0 && cbc_col < num_cols) {
+        hint_solution[cbc_col] = hint_val;
+      }
+    }
+
+    // Precompute the actual objective value for the hint solution, so CBC can
+    // immediately compute a tighter optimality gap and prune more effectively.
+    double hint_objective = solver_->Objective().offset();
+    for (const auto& [hint_var, hint_val] : solver_->solution_hint_) {
+      hint_objective +=
+          solver_->Objective().GetCoefficient(hint_var) * hint_val;
+    }
+
+    // setBestSolution registers the hint as the best known solution, which
+    // branchAndBound uses to prune the search and guide heuristics.
+    model.setBestSolution(hint_solution.data(), num_cols, hint_objective,
+                          false);
+  }
+
   // Set log level.
   CoinMessageHandler message_handler;
   model.passInMessageHandler(&message_handler);
