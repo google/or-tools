@@ -29,10 +29,15 @@
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/types.h"
+#include "ortools/util/fp_utils_testing.h"
 
 namespace operations_research {
 namespace {
+
+using ::testing::Not;
+using ::testing::Pointwise;
 
 // To have more readable one-liners below.
 const double kInfinity = std::numeric_limits<double>::infinity();
@@ -97,18 +102,82 @@ TEST(ScopedFpEnv, NanDetectionDivisionByZeroDetection) {
   RunFloatingPointExceptionTest(FE_INVALID | FE_DIVBYZERO, true, true);
 }
 
-TEST(Comparable, ComparisonsWithinTolerances) {
-  EXPECT_COMPARABLE(-kInfinity, -kInfinity, 1e-6);
-  EXPECT_COMPARABLE(kInfinity, kInfinity, 1e-6);
-  EXPECT_NOTCOMPARABLE(-kInfinity, kInfinity, 1e-6);
-  EXPECT_NOTCOMPARABLE(kInfinity, -kInfinity, 1e-6);
-  EXPECT_NOTCOMPARABLE(1.0, kInfinity, 1e-6);
-  EXPECT_NOTCOMPARABLE(-kInfinity, 1.0, 1e-6);
-  EXPECT_COMPARABLE(1.0, 1.0 + 1e-7, 1e-6);
-  EXPECT_NOTCOMPARABLE(1.0, 1.0 + 1e-5, 1e-6);
-  EXPECT_COMPARABLE(0.0, 0.0 + 1e-7, 1e-6);
-  EXPECT_NOTCOMPARABLE(0.0, 0.0 + 1e-5, 1e-6);
-  EXPECT_NOTCOMPARABLE(1.0, std::numeric_limits<double>::quiet_NaN(), 1e-6);
+TEST(WithinAbsoluteOrRelativeTolerancesTest, ExpectedValue) {
+  EXPECT_THAT(-kInfinity,
+              WithinAbsoluteOrRelativeTolerances(-kInfinity, 1e-6, 1e-6));
+  EXPECT_THAT(kInfinity,
+              WithinAbsoluteOrRelativeTolerances(kInfinity, 1e-6, 1e-6));
+  EXPECT_THAT(kInfinity,
+              Not(WithinAbsoluteOrRelativeTolerances(-kInfinity, 1e-6, 1e-6)));
+  EXPECT_THAT(-kInfinity,
+              Not(WithinAbsoluteOrRelativeTolerances(kInfinity, 1e-6, 1e-6)));
+  EXPECT_THAT(kInfinity,
+              Not(WithinAbsoluteOrRelativeTolerances(1.0, 1e-6, 1e-6)));
+  EXPECT_THAT(1.0,
+              Not(WithinAbsoluteOrRelativeTolerances(-kInfinity, 1e-6, 1e-6)));
+  EXPECT_THAT(1.0 + 1e-7, WithinAbsoluteOrRelativeTolerances(1.0, 1e-6, 1e-6));
+  EXPECT_THAT(1.0 + 1e-5,
+              Not(WithinAbsoluteOrRelativeTolerances(1.0, 1e-6, 1e-6)));
+  EXPECT_THAT(0.0 + 1e-7, WithinAbsoluteOrRelativeTolerances(0.0, 1e-6, 1e-6));
+  EXPECT_THAT(0.0 + 1e-5,
+              Not(WithinAbsoluteOrRelativeTolerances(0.0, 1e-6, 1e-6)));
+  EXPECT_THAT(std::numeric_limits<double>::quiet_NaN(),
+              Not(WithinAbsoluteOrRelativeTolerances(1.0, 1e-6, 1e-6)));
+  // Test that we use the relative tolerance for big numbers.
+  EXPECT_THAT(100.0 + 1e-5,
+              WithinAbsoluteOrRelativeTolerances(100.0, 1e-6, 1e-10));
+  EXPECT_THAT(100.0 + 1e-3,
+              Not(WithinAbsoluteOrRelativeTolerances(100.0, 1e-6, 1e-10)));
+  // Test that we use the absolute tolerance for comparison with zero.
+  EXPECT_THAT(1e-11, WithinAbsoluteOrRelativeTolerances(0.0, 1e-6, 1e-10));
+  EXPECT_THAT(1e-9, Not(WithinAbsoluteOrRelativeTolerances(0.0, 1e-6, 1e-10)));
+}
+
+TEST(WithinAbsoluteOrRelativeTolerancesTest, Vectors) {
+  EXPECT_THAT(std::vector<double>({100.0 + 1e-5}),
+              Pointwise(WithinAbsoluteOrRelativeTolerances(1e-6, 1e-10),
+                        std::vector<double>({100.0})));
+  EXPECT_THAT(std::vector<double>({100.0 + 1e-3}),
+              Pointwise(Not(WithinAbsoluteOrRelativeTolerances(1e-6, 1e-10)),
+                        std::vector<double>({100.0})));
+}
+
+TEST(Comparable, WithinSameAbsoluteOrRelativeTolerance) {
+  EXPECT_THAT(-kInfinity,
+              WithinSameAbsoluteOrRelativeTolerance(-kInfinity, 1e-6));
+  EXPECT_THAT(kInfinity,
+              WithinSameAbsoluteOrRelativeTolerance(kInfinity, 1e-6));
+  EXPECT_THAT(kInfinity,
+              Not(WithinSameAbsoluteOrRelativeTolerance(-kInfinity, 1e-6)));
+  EXPECT_THAT(-kInfinity,
+              Not(WithinSameAbsoluteOrRelativeTolerance(kInfinity, 1e-6)));
+  EXPECT_THAT(kInfinity, Not(WithinSameAbsoluteOrRelativeTolerance(1.0, 1e-6)));
+  EXPECT_THAT(1.0,
+              Not(WithinSameAbsoluteOrRelativeTolerance(-kInfinity, 1e-6)));
+  EXPECT_THAT(1.0 + 1e-7, WithinSameAbsoluteOrRelativeTolerance(1.0, 1e-6));
+  EXPECT_THAT(1.0 + 1e-5,
+              Not(WithinSameAbsoluteOrRelativeTolerance(1.0, 1e-6)));
+  EXPECT_THAT(0.0 + 1e-7, WithinSameAbsoluteOrRelativeTolerance(0.0, 1e-6));
+  EXPECT_THAT(0.0 + 1e-5,
+              Not(WithinSameAbsoluteOrRelativeTolerance(0.0, 1e-6)));
+  EXPECT_THAT(std::numeric_limits<double>::quiet_NaN(),
+              Not(WithinSameAbsoluteOrRelativeTolerance(1.0, 1e-6)));
+  // Test that we use the relative tolerance for big numbers.
+  EXPECT_THAT(100.0 + 1e-5, WithinSameAbsoluteOrRelativeTolerance(100.0, 1e-6));
+  EXPECT_THAT(100.0 + 1e-3,
+              Not(WithinSameAbsoluteOrRelativeTolerance(100.0, 1e-6)));
+  // Test that we use the absolute tolerance for comparison with zero.
+  EXPECT_THAT(1e-7, WithinSameAbsoluteOrRelativeTolerance(0.0, 1e-6));
+  EXPECT_THAT(1e-5, Not(WithinSameAbsoluteOrRelativeTolerance(0.0, 1e-6)));
+}
+
+TEST(WithinSameAbsoluteOrRelativeToleranceTest, Vectors) {
+  EXPECT_THAT(std::vector<double>({100.0 + 1e-5}),
+              Pointwise(WithinSameAbsoluteOrRelativeTolerance(1e-6),
+                        std::vector<double>({100.0})));
+  EXPECT_THAT(std::vector<double>({100.0 + 1e-3}),
+              Pointwise(Not(WithinSameAbsoluteOrRelativeTolerance(1e-6)),
+                        std::vector<double>({100.0})));
 }
 
 TEST(Comparable, ComparisonsWithinAbolusteTolerance) {
@@ -246,7 +315,8 @@ TEST(GetBestScalingOfDoublesToInt64Test, MaxSum) {
   EXPECT_EQ(scale, 0.5);
 
   // We loose the bit at 1 from the 3s and 5.
-  EXPECT_COMPARABLE(error, 1.0 / 3.0, 1e-10);
+  EXPECT_THAT(1.0 / 3.0,
+              WithinAbsoluteOrRelativeTolerances(error, 1e-10, 1e-10));
 }
 
 void CheckNoError(absl::Span<const double> input, double scale) {

@@ -846,6 +846,7 @@ cc_test(
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":fp_utils",
+        ":fp_utils_testing",
         "//ortools/base:gmock_main",
         "//ortools/base:types",
         "@abseil-cpp//absl/base",
@@ -927,7 +928,7 @@ cc_test(
     copts = ORTOOLS_TEST_COPTS,
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
-        ":fp_utils",
+        ":fp_utils_testing",
         ":rational_approximation",
         "//ortools/base:gmock_main",
     ],
@@ -1129,6 +1130,18 @@ cc_library(
         "//ortools/graph_base:hash_or_tree_container",
         "//ortools/graph_base:index",
         "@abseil-cpp//absl/base",
+    ],
+)
+
+cc_library(
+    name = "fp_utils_testing",
+    testonly = True,
+    hdrs = ["fp_utils_testing.h"],
+    deps = [
+        ":fp_roundtrip_conv",
+        ":fp_utils",
+        "//ortools/base:gmock",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
