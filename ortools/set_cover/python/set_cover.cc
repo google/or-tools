@@ -17,12 +17,15 @@
 #include <cstddef>
 #include <iterator>
 #include <memory>
+#include <string>
+#include <tuple>
 #include <vector>
 
 #include "absl/types/span.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_heuristics.h"
 #include "ortools/set_cover/set_cover_invariant.h"
+#include "ortools/set_cover/set_cover_lagrangian.h"
 #include "ortools/set_cover/set_cover_model.h"
 #include "ortools/set_cover/set_cover_reader.h"
 #include "pybind11/numpy.h"
@@ -33,6 +36,7 @@
 
 using ::operations_research::BaseInt;
 using ::operations_research::ClearRandomSubsets;
+using ::operations_research::Cost;
 using ::operations_research::DualAscentOptimizer;
 using ::operations_research::ElementDegreeSolutionGenerator;
 using ::operations_research::ElementIndex;
@@ -55,6 +59,7 @@ using ::operations_research::WriteSetCoverSolutionText;
 
 using ::operations_research::SetCoverDecision;
 using ::operations_research::SetCoverInvariant;
+using ::operations_research::SetCoverLagrangian;
 using ::operations_research::SetCoverModel;
 using ::operations_research::SparseColumn;
 using ::operations_research::SparseRow;
@@ -81,6 +86,13 @@ SubsetCostVector VectorDoubleToSubsetCostVector(
     absl::Span<const double> doubles) {
   SubsetCostVector costs(doubles.begin(), doubles.end());
   return costs;
+}
+
+void CheckNumThreads(int num_threads) {
+  if (num_threads < 1) {
+    throw py::value_error("num_threads must be at least 1, got " +
+                          std::to_string(num_threads));
+  }
 }
 
 SubsetBoolVector BoolVectorToSubsetBoolVector(const std::vector<bool>& bools) {
@@ -623,5 +635,62 @@ PYBIND11_MODULE(set_cover, m) {
   m.def("read_set_cover_solution_proto", &ReadSetCoverSolutionProto);
 
   // set_cover_lagrangian.h
-  // TODO(user): add support for SetCoverLagrangian.
+  // Only the members set_cover_solve.cc uses are bound. Optimize() is a dummy
+  // in this class, and ThreePhase() is declared in set_cover_lagrangian.h but
+  // never defined, so binding it fails at import with an undefined symbol.
+  py::class_<SetCoverLagrangian>(m, "SetCoverLagrangian",
+                                 "Lagrangian relaxation lower bound for a set "
+                                 "cover model; see set_cover_lagrangian.h.")
+      .def(py::init([](SetCoverInvariant* inv, int num_threads) {
+             CheckNumThreads(num_threads);
+             auto lagrangian = std::make_unique<SetCoverLagrangian>(inv);
+             lagrangian->UseNumThreads(num_threads);
+             return lagrangian;
+           }),
+           arg("inv"), arg("num_threads") = 1,
+           "Creates the thread pool that compute_lower_bound() runs on. The "
+           "C++ class only creates it in UseNumThreads(); doing it here keeps "
+           "a fresh object usable.")
+      .def(
+          "use_num_threads",
+          [](SetCoverLagrangian& lagrangian,
+             int num_threads) -> SetCoverLagrangian& {
+            CheckNumThreads(num_threads);
+            return lagrangian.UseNumThreads(num_threads);
+          },
+          arg("num_threads"), py::return_value_policy::reference_internal,
+          "Recreates the thread pool with num_threads >= 1 threads. Returns "
+          "self.")
+      .def(
+          "compute_lower_bound",
+          [](SetCoverLagrangian& lagrangian, const std::vector<double>& costs,
+             Cost upper_bound)
+              -> std::tuple<Cost, std::vector<double>, std::vector<double>> {
+            const BaseInt num_subsets =
+                lagrangian.inv()->model()->num_subsets();
+            if (costs.size() != static_cast<size_t>(num_subsets)) {
+              throw py::value_error("costs has " +
+                                    std::to_string(costs.size()) +
+                                    " entries, the model has " +
+                                    std::to_string(num_subsets) + " subsets");
+            }
+            // The subgradient loop runs for a fixed number of iterations on
+            // the class's own thread pool, so the GIL is released meanwhile.
+            const auto [lower_bound, reduced_costs, multipliers] = [&] {
+              py::gil_scoped_release release;
+              return lagrangian.ComputeLowerBound(
+                  VectorDoubleToSubsetCostVector(costs), upper_bound);
+            }();
+            return {lower_bound, reduced_costs.get(), multipliers.get()};
+          },
+          arg("costs"), arg("upper_bound"),
+          "Runs the subgradient method on the Lagrangian relaxation and "
+          "returns (lower_bound, reduced_costs, multipliers). costs must have "
+          "one entry per subset; upper_bound is the cost of a known feasible "
+          "solution. lower_bound is the best Lagrangian value seen, while "
+          "reduced_costs and multipliers come from the final iteration, which "
+          "need not be the one that attained the bound. The bound is also "
+          "reported on the invariant with is_cost_consistent=false, replacing "
+          "any earlier bound. The GIL is released while this runs; do not "
+          "mutate the invariant or its model from another thread meanwhile.");
 }

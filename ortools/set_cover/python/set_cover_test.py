@@ -226,6 +226,58 @@ class SetCoverTest(absltest.TestCase):
     # KnightsCoverElementDegreeRandomClear, KnightsCoverRandomClearMip,
     # KnightsCoverMip
 
+    def test_lagrangian_lower_bound(self):
+        model = create_knights_cover_model(8, 8)
+        self.assertTrue(model.compute_feasibility())
+        inv = set_cover.SetCoverInvariant(model)
+
+        greedy = set_cover.GreedySolutionOptimizer(inv)
+        self.assertTrue(greedy.optimize())
+        upper_bound = inv.cost()
+
+        # The constructor creates the thread pool, so compute_lower_bound()
+        # is usable without a prior use_num_threads() call.
+        lagrangian = set_cover.SetCoverLagrangian(inv, num_threads=4)
+        lower_bound, reduced_costs, multipliers = lagrangian.compute_lower_bound(
+            model.subset_costs, upper_bound
+        )
+        self.assertLen(reduced_costs, model.num_subsets)
+        self.assertLen(multipliers, model.num_elements)
+        self.assertLessEqual(lower_bound, upper_bound)
+        # The bound is also reported on the invariant, as DualAscentOptimizer
+        # does with its bound.
+        self.assertEqual(inv.export_solution_as_proto().cost_lower_bound, lower_bound)
+
+    def test_lagrangian_lower_bound_never_exceeds_optimum(self):
+        # Six elements on a cycle, subset i covers {i, i + 1}: the optimum is 3.
+        model = set_cover.SetCoverModel()
+        for i in range(6):
+            model.add_empty_subset(1.0)
+            model.add_element_to_last_subset(i)
+            model.add_element_to_last_subset((i + 1) % 6)
+        inv = set_cover.SetCoverInvariant(model)
+        self.assertTrue(set_cover.GreedySolutionOptimizer(inv).optimize())
+
+        lagrangian = set_cover.SetCoverLagrangian(inv)
+        # use_num_threads() returns the object itself, so it can be chained.
+        self.assertIs(lagrangian.use_num_threads(2), lagrangian)
+        lower_bound, _, _ = lagrangian.compute_lower_bound(
+            model.subset_costs, inv.cost()
+        )
+        self.assertGreater(lower_bound, 0.0)
+        self.assertLessEqual(lower_bound, 3.0)
+
+    def test_lagrangian_rejects_invalid_arguments(self):
+        model = create_knights_cover_model(4, 4)
+        inv = set_cover.SetCoverInvariant(model)
+        with self.assertRaises(ValueError):
+            set_cover.SetCoverLagrangian(inv, num_threads=0)
+        lagrangian = set_cover.SetCoverLagrangian(inv)
+        with self.assertRaises(ValueError):
+            lagrangian.use_num_threads(-1)
+        with self.assertRaises(ValueError):
+            lagrangian.compute_lower_bound([1.0, 2.0], 10.0)
+
 
 if __name__ == "__main__":
     absltest.main()
