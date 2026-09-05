@@ -235,14 +235,11 @@ class SetCoverTest(absltest.TestCase):
         self.assertTrue(greedy.optimize())
         upper_bound = inv.cost()
 
-        lagrangian = set_cover.SetCoverLagrangian(inv)
-        # compute_lower_bound() runs the parallel code paths unconditionally,
-        # and the thread pool only exists once use_num_threads() has been
-        # called. Without this line the C++ dereferences a null thread pool.
-        lagrangian.use_num_threads(4)
-        costs = list(model.subset_costs)
+        # The constructor creates the thread pool, so compute_lower_bound()
+        # is usable without a prior use_num_threads() call.
+        lagrangian = set_cover.SetCoverLagrangian(inv, num_threads=4)
         lower_bound, reduced_costs, multipliers = lagrangian.compute_lower_bound(
-            costs, upper_bound
+            model.subset_costs, upper_bound
         )
         self.assertLen(reduced_costs, model.num_subsets)
         self.assertLen(multipliers, model.num_elements)
@@ -261,13 +258,25 @@ class SetCoverTest(absltest.TestCase):
         inv = set_cover.SetCoverInvariant(model)
         self.assertTrue(set_cover.GreedySolutionOptimizer(inv).optimize())
 
+        lagrangian = set_cover.SetCoverLagrangian(inv)
         # use_num_threads() returns the object itself, so it can be chained.
-        lagrangian = set_cover.SetCoverLagrangian(inv).use_num_threads(1)
+        self.assertIs(lagrangian.use_num_threads(2), lagrangian)
         lower_bound, _, _ = lagrangian.compute_lower_bound(
-            list(model.subset_costs), inv.cost()
+            model.subset_costs, inv.cost()
         )
         self.assertGreater(lower_bound, 0.0)
         self.assertLessEqual(lower_bound, 3.0)
+
+    def test_lagrangian_rejects_invalid_arguments(self):
+        model = create_knights_cover_model(4, 4)
+        inv = set_cover.SetCoverInvariant(model)
+        with self.assertRaises(ValueError):
+            set_cover.SetCoverLagrangian(inv, num_threads=0)
+        lagrangian = set_cover.SetCoverLagrangian(inv)
+        with self.assertRaises(ValueError):
+            lagrangian.use_num_threads(-1)
+        with self.assertRaises(ValueError):
+            lagrangian.compute_lower_bound([1.0, 2.0], 10.0)
 
 
 if __name__ == "__main__":
