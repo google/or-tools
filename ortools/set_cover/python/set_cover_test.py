@@ -222,6 +222,10 @@ class SetCoverTest(absltest.TestCase):
             inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
         )
 
+    # TODO(user): KnightsCoverGreedyAndTabu, KnightsCoverGreedyRandomClear,
+    # KnightsCoverElementDegreeRandomClear, KnightsCoverRandomClearMip,
+    # KnightsCoverMip
+
     def test_lagrangian_lower_bound(self):
         model = create_knights_cover_model(8, 8)
         self.assertTrue(model.compute_feasibility())
@@ -243,28 +247,27 @@ class SetCoverTest(absltest.TestCase):
         self.assertLen(reduced_costs, model.num_subsets)
         self.assertLen(multipliers, model.num_elements)
         self.assertLessEqual(lower_bound, upper_bound)
+        # The bound is also reported on the invariant, as DualAscentOptimizer
+        # does with its bound.
+        self.assertEqual(inv.export_solution_as_proto().cost_lower_bound, lower_bound)
 
-    def test_lagrangian_use_num_threads_comes_first(self):
-        model = create_knights_cover_model(4, 4)
+    def test_lagrangian_lower_bound_never_exceeds_optimum(self):
+        # Six elements on a cycle, subset i covers {i, i + 1}: the optimum is 3.
+        model = set_cover.SetCoverModel()
+        for i in range(6):
+            model.add_empty_subset(1.0)
+            model.add_element_to_last_subset(i)
+            model.add_element_to_last_subset((i + 1) % 6)
         inv = set_cover.SetCoverInvariant(model)
+        self.assertTrue(set_cover.GreedySolutionOptimizer(inv).optimize())
 
-        greedy = set_cover.GreedySolutionOptimizer(inv)
-        self.assertTrue(greedy.optimize())
-        upper_bound = inv.cost()
-
-        # use_num_threads() creates the thread pool that compute_lower_bound()
-        # dereferences, so it has to run first. It returns the object itself,
-        # so the two calls can be chained.
-        lagrangian = set_cover.SetCoverLagrangian(inv)
-        self.assertIs(lagrangian.use_num_threads(2), lagrangian)
+        # use_num_threads() returns the object itself, so it can be chained.
+        lagrangian = set_cover.SetCoverLagrangian(inv).use_num_threads(1)
         lower_bound, _, _ = lagrangian.compute_lower_bound(
-            list(model.subset_costs), upper_bound
+            list(model.subset_costs), inv.cost()
         )
-        self.assertLessEqual(lower_bound, upper_bound)
-
-    # TODO(user): KnightsCoverGreedyAndTabu, KnightsCoverGreedyRandomClear,
-    # KnightsCoverElementDegreeRandomClear, KnightsCoverRandomClearMip,
-    # KnightsCoverMip
+        self.assertGreater(lower_bound, 0.0)
+        self.assertLessEqual(lower_bound, 3.0)
 
 
 if __name__ == "__main__":

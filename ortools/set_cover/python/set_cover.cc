@@ -633,7 +633,8 @@ PYBIND11_MODULE(set_cover, m) {
   // nowhere in the tree, so binding it produces an undefined symbol at
   // module load. Left out until it has an implementation.
   // Scope is the usage in set_cover_solve.cc; see PR for why the rest is left
-  // out.
+  // out. compute_lower_bound() runs a 1000-iteration subgradient loop on the
+  // class's own thread pool, so the GIL is released while it runs.
   py::class_<SetCoverLagrangian>(m, "SetCoverLagrangian")
       .def(py::init<SetCoverInvariant*>())
       .def("use_num_threads", &SetCoverLagrangian::UseNumThreads,
@@ -648,5 +649,6 @@ PYBIND11_MODULE(set_cover, m) {
                     VectorDoubleToSubsetCostVector(costs), upper_bound);
             return {lower_bound, reduced_costs.get(), multipliers.get()};
           },
-          arg("costs"), arg("upper_bound"));
+          arg("costs"), arg("upper_bound"),
+          py::call_guard<py::gil_scoped_release>());
 }
