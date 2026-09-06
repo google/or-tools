@@ -27,6 +27,7 @@ pybind_extension(
         "//ortools/set_cover:base_types",
         "//ortools/set_cover:set_cover_heuristics",
         "//ortools/set_cover:set_cover_invariant",
+        "//ortools/set_cover:set_cover_lagrangian",
         "//ortools/set_cover:set_cover_model",
         "//ortools/set_cover:set_cover_reader",
         "@abseil-cpp//absl/time",
