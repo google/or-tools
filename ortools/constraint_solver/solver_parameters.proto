@@ -15,11 +15,11 @@
 
 syntax = "proto3";
 
+package operations_research;
+
 option java_package = "com.google.ortools.constraintsolver";
 option java_multiple_files = true;
 option csharp_namespace = "Google.OrTools.ConstraintSolver";
-
-package operations_research;
 
 // Solver parameters.
 message ConstraintSolverParameters {

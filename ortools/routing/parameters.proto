@@ -17,21 +17,22 @@
 
 syntax = "proto3";
 
-// clang-format off
-option csharp_namespace = "Google.OrTools.Routing";
-option java_package = "com.google.ortools.routing";
-option java_multiple_files = true;
-// clang-format on
+package operations_research.routing;
 
 import "google/protobuf/duration.proto";
-import "ortools/util/optional_boolean.proto";
 import "ortools/constraint_solver/solver_parameters.proto";
 import "ortools/routing/enums.proto";
 import "ortools/routing/heuristic_parameters.proto";
 import "ortools/routing/ils.proto";
 import "ortools/sat/sat_parameters.proto";
+import "ortools/util/optional_boolean.proto";
 
-package operations_research.routing;
+// clang-format off
+
+option java_package = "com.google.ortools.routing";
+option java_multiple_files = true;
+option csharp_namespace = "Google.OrTools.Routing";
+// clang-format on
 
 // Parameters defining the search used to solve vehicle routing problems.
 //
