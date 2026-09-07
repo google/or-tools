@@ -13,6 +13,7 @@
 
 #include "ortools/packing/binpacking_2d_parser.h"
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -20,6 +21,7 @@
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "ortools/packing/multiple_dimensions_bin_packing.pb.h"
 #include "ortools/util/filelineiter.h"
 
 namespace operations_research {
