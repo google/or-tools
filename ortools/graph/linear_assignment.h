@@ -207,7 +207,6 @@
 #include "ortools/base/base_export.h"
 #include "ortools/graph_base/iterators.h"
 #include "ortools/util/permutation.h"
-#include "ortools/util/zvector.h"
 
 #ifndef SWIG
 OR_DLL ABSL_DECLARE_FLAG(int64_t, assignment_alpha);
@@ -264,13 +263,13 @@ class LinearSumAssignment {
   ArcAnnotationCycleHandler();
 
   // Allows tests, iterators, etc., to inspect our underlying graph.
-  inline const GraphType& Graph() const { return *graph_; }
+  const GraphType& Graph() const { return *graph_; }
 
   // These handy member functions make the code more compact, and we
   // expose them to clients so that client code that doesn't have
   // direct access to the graph can learn about the optimum assignment
   // once it is computed.
-  inline NodeIndex Head(ArcIndex arc) const { return graph_->Head(arc); }
+  NodeIndex Head(ArcIndex arc) const { return graph_->Head(arc); }
 
   // Returns the original arc cost for use by a client that's
   // iterating over the optimum assignment.
@@ -321,19 +320,19 @@ class LinearSumAssignment {
   NodeIndex NumLeftNodes() const { return num_left_nodes_; }
 
   // Returns the arc through which the given node is matched.
-  inline ArcIndex GetAssignmentArc(NodeIndex left_node) const {
+  ArcIndex GetAssignmentArc(NodeIndex left_node) const {
     DCHECK_LT(left_node, num_left_nodes_);
     return matched_arc_[left_node];
   }
 
   // Returns the cost of the assignment arc incident to the given
   // node.
-  inline CostValue GetAssignmentCost(NodeIndex node) const {
+  CostValue GetAssignmentCost(NodeIndex node) const {
     return ArcCost(GetAssignmentArc(node));
   }
 
   // Returns the node to which the given node is matched.
-  inline NodeIndex GetMate(NodeIndex left_node) const {
+  NodeIndex GetMate(NodeIndex left_node) const {
     DCHECK_LT(left_node, num_left_nodes_);
     ArcIndex matching_arc = GetAssignmentArc(left_node);
     DCHECK_NE(GraphType::kNilArc, matching_arc);
@@ -495,7 +494,7 @@ class LinearSumAssignment {
   bool DoublePush(NodeIndex source);
 
   // Returns the partial reduced cost of the given arc.
-  inline CostValue PartialReducedCost(ArcIndex arc) const {
+  CostValue PartialReducedCost(ArcIndex arc) const {
     return scaled_arc_cost_[arc] - price_[Head(arc)];
   }
 
@@ -835,9 +834,8 @@ class LinearSumAssignment {
   //
   // Avoids overflow in computing the bound, and sets *in_range =
   // false if the value of the bound doesn't fit in CostValue.
-  inline CostValue PriceChangeBound(CostValue old_epsilon,
-                                    CostValue new_epsilon,
-                                    bool* in_range) const {
+  CostValue PriceChangeBound(CostValue old_epsilon, CostValue new_epsilon,
+                             bool* in_range) const {
     const CostValue n = graph_->num_nodes();
     // We work in double-precision floating point to determine whether
     // we'll overflow the integral CostValue type's range of
@@ -888,10 +886,9 @@ class LinearSumAssignment {
   // Indexed by node index, the price_ values are maintained only for
   // right-side nodes.
   //
-  // Note: We use a ZVector to only allocate a vector of size num_left_nodes_
-  // instead of 2*num_left_nodes_ since the right-side node indices start at
-  // num_left_nodes_.
-  ZVector<CostValue> price_;
+  // Note: We're only using indices in [num_left_node, 2*num_left_nodes] and so
+  // we're wasting a bit of space.
+  std::unique_ptr<CostValue[]> price_;
 
   // Indexed by left-side node index, the matched_arc_ array gives the
   // arc index of the arc matching any given left-side node, or
@@ -903,8 +900,9 @@ class LinearSumAssignment {
   // right-side node, or GraphType::kNilNode if the right-side node is
   // unmatched.
   //
-  // Note: We use a ZVector for the same reason as for price_.
-  ZVector<NodeIndex> matched_node_;
+  // Note: We're only using indices in [num_left_node, 2*num_left_nodes] and so
+  // we're wasting a bit of space.
+  std::unique_ptr<NodeIndex[]> matched_node_;
 
   // The array of arc costs as given in the problem definition, except
   // that they are scaled up by the number of nodes in the graph so we
@@ -941,9 +939,9 @@ LinearSumAssignment<GraphType, CostValue>::LinearSumAssignment(
       slack_relabeling_price_(0),
       largest_scaled_cost_magnitude_(0),
       total_excess_(0),
-      price_(num_left_nodes, 2 * num_left_nodes - 1),
+      price_(std::make_unique<CostValue[]>(2 * num_left_nodes)),
       matched_arc_(num_left_nodes, 0),
-      matched_node_(num_left_nodes, 2 * num_left_nodes - 1),
+      matched_node_(std::make_unique<NodeIndex[]>(2 * num_left_nodes)),
       scaled_arc_cost_(graph.arc_capacity(), 0),
       active_nodes_(absl::GetFlag(FLAGS_assignment_stack_order)
                         ? static_cast<ActiveNodeContainerInterface*>(
@@ -964,9 +962,9 @@ LinearSumAssignment<GraphType, CostValue>::LinearSumAssignment(
       slack_relabeling_price_(0),
       largest_scaled_cost_magnitude_(0),
       total_excess_(0),
-      price_(num_left_nodes, 2 * num_left_nodes - 1),
+      price_(std::make_unique<CostValue[]>(2 * num_left_nodes)),
       matched_arc_(num_left_nodes, 0),
-      matched_node_(num_left_nodes, 2 * num_left_nodes - 1),
+      matched_node_(std::make_unique<NodeIndex[]>(2 * num_left_nodes)),
       scaled_arc_cost_(num_arcs, 0),
       active_nodes_(absl::GetFlag(FLAGS_assignment_stack_order)
                         ? static_cast<ActiveNodeContainerInterface*>(

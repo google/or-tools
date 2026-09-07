@@ -543,7 +543,6 @@ cc_library(
     deps = [
         ":flow_problem_cc_proto",
         "//ortools/util:stats",
-        "//ortools/util:zvector",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:string_view",
@@ -603,7 +602,6 @@ cc_library(
         "//ortools/graph_base:graph",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:stats",
-        "//ortools/util:zvector",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
@@ -735,7 +733,6 @@ cc_library(
         "//ortools/base:base_export",
         "//ortools/graph_base:iterators",
         "//ortools/util:permutation",
-        "//ortools/util:zvector",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",

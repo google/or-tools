@@ -33,7 +33,6 @@
 #include "ortools/graph_base/graph.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/stats.h"
-#include "ortools/util/zvector.h"
 
 namespace operations_research {
 
@@ -55,12 +54,13 @@ GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::GenericMinCostFlow(
   }
   const ArcIndex max_num_arcs = graph_->arc_capacity();
   if (max_num_arcs > 0) {
-    residual_arc_capacity_ =
-        ZVector<ArcFlowType>(-max_num_arcs, max_num_arcs - 1);
-    residual_arc_capacity_.SetAll(0);
-    scaled_arc_unit_cost_ =
-        ZVector<ArcScaledCostType>(-max_num_arcs, max_num_arcs - 1);
-    scaled_arc_unit_cost_.SetAll(0);
+    // `resize` initializes the values to `T()` which is `0` for integral types.
+    residual_arc_capacity_buffer_ =
+        std::make_unique<ArcFlowType[]>(2 * max_num_arcs);
+    residual_arc_capacity_ = &residual_arc_capacity_buffer_[max_num_arcs];
+    scaled_arc_unit_cost_buffer_ =
+        std::make_unique<ArcScaledCostType[]>(2 * max_num_arcs);
+    scaled_arc_unit_cost_ = &scaled_arc_unit_cost_buffer_[max_num_arcs];
   }
 }
 
@@ -78,8 +78,8 @@ template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
 void GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::SetArcUnitCost(
     ArcIndex arc, ArcScaledCostType unit_cost) {
   DCHECK(IsArcDirect(arc));
-  scaled_arc_unit_cost_.Set(arc, unit_cost);
-  scaled_arc_unit_cost_.Set(Opposite(arc), -scaled_arc_unit_cost_[arc]);
+  scaled_arc_unit_cost_[arc] = unit_cost;
+  scaled_arc_unit_cost_[Opposite(arc)] = -scaled_arc_unit_cost_[arc];
   status_ = NOT_SOLVED;
   feasibility_checked_ = false;
 }
@@ -105,15 +105,15 @@ void GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::SetArcCapacity(
     //    reduction is not larger than the free capacity.
     DCHECK((capacity_delta > 0) ||
            (capacity_delta < 0 && new_availability >= 0));
-    residual_arc_capacity_.Set(arc, new_availability);
+    residual_arc_capacity_[arc] = new_availability;
     DCHECK_LE(0, residual_arc_capacity_[arc]);
   } else {
     // We have to reduce the flow on the arc, and update the excesses
     // accordingly.
     const FlowQuantity flow = residual_arc_capacity_[Opposite(arc)];
     const FlowQuantity flow_excess = flow - new_capacity;
-    residual_arc_capacity_.Set(arc, 0);
-    residual_arc_capacity_.Set(Opposite(arc), new_capacity);
+    residual_arc_capacity_[arc] = 0;
+    residual_arc_capacity_[Opposite(arc)] = new_capacity;
     node_excess_[Tail(arc)] += flow_excess;
     node_excess_[Head(arc)] -= flow_excess;
     DCHECK_LE(0, residual_arc_capacity_[arc]);
@@ -518,8 +518,8 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::ScaleCosts() {
       return false;
     }
     const CostValue cost = scaled_arc_unit_cost_[arc] * cost_scaling_factor_;
-    scaled_arc_unit_cost_.Set(arc, cost);
-    scaled_arc_unit_cost_.Set(Opposite(arc), -cost);
+    scaled_arc_unit_cost_[arc] = cost;
+    scaled_arc_unit_cost_[Opposite(arc)] = -cost;
     epsilon_ = std::max(epsilon_, MathUtil::Abs(cost));
   }
 
@@ -538,8 +538,8 @@ void GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::UnscaleCosts() {
   SCOPED_TIME_STAT(&stats_);
   for (ArcIndex arc = 0; arc < graph_->num_arcs(); ++arc) {
     const CostValue cost = scaled_arc_unit_cost_[arc] / cost_scaling_factor_;
-    scaled_arc_unit_cost_.Set(arc, cost);
-    scaled_arc_unit_cost_.Set(Opposite(arc), -cost);
+    scaled_arc_unit_cost_[arc] = cost;
+    scaled_arc_unit_cost_[Opposite(arc)] = -cost;
   }
   cost_scaling_factor_ = 1;
 }
@@ -597,10 +597,10 @@ void GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::FastPushFlow(
   DCHECK_GT(residual_arc_capacity_[arc], 0);
   DCHECK_LE(flow, residual_arc_capacity_[arc]);
   // Reduce the residual capacity on the arc by flow.
-  residual_arc_capacity_.Set(arc, residual_arc_capacity_[arc] - flow);
+  residual_arc_capacity_[arc] -= flow;
   // Increase the residual capacity on the opposite arc by flow.
   const ArcIndex opposite = Opposite(arc);
-  residual_arc_capacity_.Set(opposite, residual_arc_capacity_[opposite] + flow);
+  residual_arc_capacity_[opposite] += flow;
   // Update the excesses at the tail and head of the arc.
   node_excess_[tail] -= flow;
   node_excess_[Head(arc)] += flow;
