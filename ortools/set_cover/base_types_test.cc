@@ -14,11 +14,8 @@
 #include "ortools/set_cover/base_types.h"
 
 #include <cstddef>
-#include <cstdint>
-#include <random>
 #include <vector>
 
-#include "absl/random/random.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 

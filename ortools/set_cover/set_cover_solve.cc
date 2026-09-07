@@ -13,10 +13,8 @@
 
 #include <iostream>
 #include <string>
-#include <tuple>
 #include <vector>
 
-#include "absl/base/macros.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -24,6 +22,7 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/options.h"
@@ -150,112 +149,154 @@ using CL = SetCoverInvariant::ConsistencyLevel;
 
 namespace {
 
+struct ProblemData {
+  const char* const filename;
+  const double best_known_value;
+  const double best_known_lb;
+};
+
+struct BenchmarkGroup {
+  std::vector<absl::Span<const ProblemData>> problem_data_arrays;
+  std::string file_extension;
+  std::string type_string;
+  SetCoverFormat format;
+};
+
 // List all the files from the literature.
-static const char* const kRailFiles[] = {
-    "rail507.txt",  "rail516.txt",  "rail582.txt",  "rail2536.txt",
-    "rail2586.txt", "rail4284.txt", "rail4872.txt",
+static const ProblemData kRailFiles[] = {
+    {"rail507", 174, 0},   {"rail516", 182, 0},  {"rail582", 211, 0},
+    {"rail2536", 691, 0},  {"rail2586", 952, 0}, {"rail4284", 1065, 0},
+    {"rail4872", 1527, 0},
 };
 
-static const char* const kScp4To6Files[] = {
-    "scp41.txt", "scp42.txt", "scp43.txt", "scp44.txt", "scp45.txt",
-    "scp46.txt", "scp47.txt", "scp48.txt", "scp49.txt", "scp410.txt",
-    "scp51.txt", "scp52.txt", "scp53.txt", "scp54.txt", "scp55.txt",
-    "scp56.txt", "scp57.txt", "scp58.txt", "scp59.txt", "scp510.txt",
-    "scp61.txt", "scp62.txt", "scp63.txt", "scp64.txt", "scp65.txt",
+static const ProblemData kScp4To6Files[] = {
+    {"scp41", 429, 0},  {"scp42", 512, 0},  {"scp43", 516, 0},
+    {"scp44", 494, 0},  {"scp45", 512, 0},  {"scp46", 560, 0},
+    {"scp47", 430, 0},  {"scp48", 492, 0},  {"scp49", 641, 0},
+    {"scp410", 514, 0}, {"scp51", 253, 0},  {"scp52", 302, 0},
+    {"scp53", 226, 0},  {"scp54", 242, 0},  {"scp55", 211, 0},
+    {"scp56", 213, 0},  {"scp57", 293, 0},  {"scp58", 288, 0},
+    {"scp59", 279, 0},  {"scp510", 265, 0}, {"scp61", 138, 0},
+    {"scp62", 146, 0},  {"scp63", 145, 0},  {"scp64", 131, 0},
+    {"scp65", 161, 0},
 };
 
-static const char* const kScpAToEFiles[] = {
-    "scpa1.txt", "scpa2.txt", "scpa3.txt", "scpa4.txt", "scpa5.txt",
-    "scpb1.txt", "scpb2.txt", "scpb3.txt", "scpb4.txt", "scpb5.txt",
-    "scpc1.txt", "scpc2.txt", "scpc3.txt", "scpc4.txt", "scpc5.txt",
-    "scpd1.txt", "scpd2.txt", "scpd3.txt", "scpd4.txt", "scpd5.txt",
-    "scpe1.txt", "scpe2.txt", "scpe3.txt", "scpe4.txt", "scpe5.txt",
+static const ProblemData kScpAToEFiles[] = {
+    {"scpa1", 253, 0}, {"scpa2", 252, 0}, {"scpa3", 232, 0}, {"scpa4", 234, 0},
+    {"scpa5", 236, 0}, {"scpb1", 69, 0},  {"scpb2", 76, 0},  {"scpb3", 80, 0},
+    {"scpb4", 79, 0},  {"scpb5", 72, 0},  {"scpc1", 227, 0}, {"scpc2", 219, 0},
+    {"scpc3", 243, 0}, {"scpc4", 219, 0}, {"scpc5", 214, 0}, {"scpd1", 60, 0},
+    {"scpd2", 66, 0},  {"scpd3", 72, 0},  {"scpd4", 62, 0},  {"scpd5", 61, 0},
+    {"scpe1", 5, 0},   {"scpe2", 5, 0},   {"scpe3", 5, 0},   {"scpe4", 5, 0},
+    {"scpe5", 5, 0},
 };
 
-static const char* const kScpNrFiles[] = {
-    "scpnre1.txt", "scpnre2.txt", "scpnre3.txt", "scpnre4.txt", "scpnre5.txt",
-    "scpnrf1.txt", "scpnrf2.txt", "scpnrf3.txt", "scpnrf4.txt", "scpnrf5.txt",
-    "scpnrg1.txt", "scpnrg2.txt", "scpnrg3.txt", "scpnrg4.txt", "scpnrg5.txt",
-    "scpnrh1.txt", "scpnrh2.txt", "scpnrh3.txt", "scpnrh4.txt", "scpnrh5.txt",
+static const ProblemData kScpNrFiles[] = {
+    {"scpnre1", 29, 0},  {"scpnre2", 30, 0},  {"scpnre3", 27, 0},
+    {"scpnre4", 28, 0},  {"scpnre5", 28, 0},  {"scpnrf1", 14, 0},
+    {"scpnrf2", 15, 0},  {"scpnrf3", 14, 0},  {"scpnrf4", 14, 0},
+    {"scpnrf5", 13, 0},  {"scpnrg1", 176, 0}, {"scpnrg2", 154, 0},
+    {"scpnrg3", 166, 0}, {"scpnrg4", 168, 0}, {"scpnrg5", 168, 0},
+    {"scpnrh1", 63, 0},  {"scpnrh2", 63, 0},  {"scpnrh3", 59, 0},
+    {"scpnrh4", 58, 0},  {"scpnrh5", 55, 0},
 };
 
-static const char* const kScpClrFiles[] = {
-    "scpclr10.txt",
-    "scpclr11.txt",
-    "scpclr12.txt",
-    "scpclr13.txt",
+static const ProblemData kScpClrFiles[] = {
+    {"scpclr10", 0, 0},
+    {"scpclr11", 0, 0},
+    {"scpclr12", 0, 0},
+    {"scpclr13", 0, 0},
 };
 
-static const char* const kScpCycFiles[] = {
-    "scpcyc06.txt", "scpcyc07.txt", "scpcyc08.txt",
-    "scpcyc09.txt", "scpcyc10.txt", "scpcyc11.txt",
+static const ProblemData kScpCycFiles[] = {
+    {"scpcyc06", 0, 0}, {"scpcyc07", 0, 0}, {"scpcyc08", 0, 0},
+    {"scpcyc09", 0, 0}, {"scpcyc10", 0, 0}, {"scpcyc11", 0, 0},
 };
 
-static const char* const kWedelinFiles[] = {
-    "a320_coc.txt", "a320.txt",      "alitalia.txt",
-    "b727.txt",     "sasd9imp2.txt", "sasjump.txt",
+static const ProblemData kWedelinFiles[] = {
+    {"a320_coc", 0, 0}, {"a320", 0, 0},      {"alitalia", 0, 0},
+    {"b727", 0, 0},     {"sasd9imp2", 0, 0}, {"sasjump", 0, 0},
 };
 
-static const char* const kBalasFiles[] = {
-    "aa03.txt", "aa04.txt", "aa05.txt", "aa06.txt", "aa11.txt", "aa12.txt",
-    "aa13.txt", "aa14.txt", "aa15.txt", "aa16.txt", "aa17.txt", "aa18.txt",
-    "aa19.txt", "aa20.txt", "bus1.txt", "bus2.txt",
+static const ProblemData kBalasFiles[] = {
+    {"aa03", 0, 0}, {"aa04", 0, 0}, {"aa05", 0, 0}, {"aa06", 0, 0},
+    {"aa11", 0, 0}, {"aa12", 0, 0}, {"aa13", 0, 0}, {"aa14", 0, 0},
+    {"aa15", 0, 0}, {"aa16", 0, 0}, {"aa17", 0, 0}, {"aa18", 0, 0},
+    {"aa19", 0, 0}, {"aa20", 0, 0}, {"bus1", 0, 0}, {"bus2", 0, 0},
 };
 
-static const char* const kFimiFiles[] = {
-    "accidents.dat", "chess.dat",   "connect.dat", "kosarak.dat",
-    "mushroom.dat",  // "pumsb.dat", "pumsb_star.dat",
-    "retail.dat",    "webdocs.dat",
+static const ProblemData kFimiFiles[] = {
+    {"accidents", 0, 0},
+    {"chess", 0, 0},
+    {"connect", 0, 0},
+    {"kosarak", 0, 0},
+    {"mushroom", 0, 0},
+    // "pumsb", "pumsb_star",
+    {"retail", 0, 0},
+    {"webdocs", 0, 0},
 };
 
-using BenchmarksTableRow =
-    std::tuple<std::string, std::vector<std::string>, SetCoverFormat>;
-
-std::vector<std::string> BuildVector(const char* const files[], int size) {
-  return std::vector<std::string>(files, files + size);
-}
-
-std::vector<BenchmarksTableRow> BenchmarksTable() {
-// This creates a vector of tuples, where each tuple contains the directory
-// name, the vector of files and the file format.
-// It is assumed that the scp* files are in BENCHMARKS_DIR/orlib, the rail
-// files are in BENCHMARKS_DIR/rail, etc., with BENCHMARKS_DIR being the
-// directory specified by the --benchmarks_dir flag.
-// Use a macro to be able to compute the size of the array at compile time.
-#define BUILD_VECTOR(files) BuildVector(files, ABSL_ARRAYSIZE(files))
-#define APPEND(v, array) v.insert(v.end(), array, array + ABSL_ARRAYSIZE(array))
-  std::vector<BenchmarksTableRow> result;
-  std::vector<std::string> all_scp_files;
-  if (absl::GetFlag(FLAGS_collate_scp)) {
-    all_scp_files = BUILD_VECTOR(kScp4To6Files);
-    APPEND(all_scp_files, kScpAToEFiles);
-    APPEND(all_scp_files, kScpNrFiles);
-    APPEND(all_scp_files, kScpClrFiles);
-    result = {{"orlib", all_scp_files, SetCoverFormat::ORLIB}};
-  } else {
-    result = {
-        {"orlib", BUILD_VECTOR(kScp4To6Files), SetCoverFormat::ORLIB},
-        {"orlib", BUILD_VECTOR(kScpAToEFiles), SetCoverFormat::ORLIB},
-        {"orlib", BUILD_VECTOR(kScpNrFiles), SetCoverFormat::ORLIB},
-        {"orlib", BUILD_VECTOR(kScpClrFiles), SetCoverFormat::ORLIB},
-        {"orlib", BUILD_VECTOR(kScpCycFiles), SetCoverFormat::ORLIB},
-    };
-  }
-  result.insert(
-      result.end(),
+std::vector<BenchmarkGroup> CreateBenchmarkList() {
+  return {
       {
-          {"rail", BUILD_VECTOR(kRailFiles), SetCoverFormat::RAIL},
-          {"wedelin", BUILD_VECTOR(kWedelinFiles), SetCoverFormat::ORLIB},
-          {"balas", BUILD_VECTOR(kBalasFiles), SetCoverFormat::ORLIB},
-          {"fimi", BUILD_VECTOR(kFimiFiles), SetCoverFormat::FIMI},
-      });
-  return result;
-
-#undef BUILD_VECTOR
-#undef APPEND
+          .problem_data_arrays = {absl::MakeConstSpan(kScp4To6Files)},
+          .file_extension = ".txt",
+          .type_string = "orlib",
+          .format = SetCoverFormat::ORLIB,
+      },
+      {
+          .problem_data_arrays = {absl::MakeConstSpan(kScpAToEFiles)},
+          .file_extension = ".txt",
+          .type_string = "orlib",
+          .format = SetCoverFormat::ORLIB,
+      },
+      {
+          .problem_data_arrays = {absl::MakeConstSpan(kScpNrFiles)},
+          .file_extension = ".txt",
+          .type_string = "orlib",
+          .format = SetCoverFormat::ORLIB,
+      },
+      {
+          .problem_data_arrays = {absl::MakeConstSpan(kScpClrFiles)},
+          .file_extension = ".txt",
+          .type_string = "orlib",
+          .format = SetCoverFormat::ORLIB,
+      },
+      {
+          .problem_data_arrays = {absl::MakeConstSpan(kScpCycFiles)},
+          .file_extension = ".txt",
+          .type_string = "orlib",
+          .format = SetCoverFormat::ORLIB,
+      },
+      {
+          .problem_data_arrays = {absl::MakeConstSpan(kRailFiles)},
+          .file_extension = ".txt",
+          .type_string = "rail",
+          .format = SetCoverFormat::RAIL,
+      },
+      {
+          .problem_data_arrays = {absl::MakeConstSpan(kWedelinFiles)},
+          .file_extension = ".txt",
+          .type_string = "wedelin",
+          .format = SetCoverFormat::ORLIB,
+      },
+      {
+          .problem_data_arrays = {absl::MakeConstSpan(kBalasFiles)},
+          .file_extension = ".txt",
+          .type_string = "balas",
+          .format = SetCoverFormat::ORLIB,
+      },
+      {
+          .problem_data_arrays = {absl::MakeConstSpan(kFimiFiles)},
+          .file_extension = ".dat",
+          .type_string = "fimi",
+          .format = SetCoverFormat::FIMI,
+      },
+  };
 }
 
-RunResult RunAndReport(SetCoverOptimizer& gen, Report& report) {
+template <typename ParamsType>
+RunResult RunAndReport(SetCoverOptimizer<ParamsType>& gen, Report& report) {
   gen.inv()->Clear();
   CHECK(gen.Optimize());
   const RunResult result(gen);
@@ -291,8 +332,10 @@ RunResult RunAndReport(SetCoverMip& gen, bool use_integers, Report& report) {
 // Runs a solution generator starting from the solution in the base_result, and
 // reports the results in a string. Returns the result as a RunResult for
 // further use.
+template <typename ParamsType>
 RunResult RunFromResultAndReport(const RunResult& base_result,
-                                 SetCoverOptimizer& gen, Report& report) {
+                                 SetCoverOptimizer<ParamsType>& gen,
+                                 Report& report) {
   SetCoverInvariant* inv = gen.inv();
   inv->LoadSolution(base_result.solution());
   inv->Recompute(CL::kCostAndCoverage);
@@ -339,7 +382,9 @@ Cost ComputeLagrangianLowerBound(SetCoverInvariant& inv, int _) {
 }
 
 // Computes a lower bound using `gen` optimizer, and reports the results.
-RunResult RunLowerBoundAndReport(bool run_lower_bound, SetCoverOptimizer& gen,
+template <typename ParamsType>
+RunResult RunLowerBoundAndReport(bool run_lower_bound,
+                                 SetCoverOptimizer<ParamsType>& gen,
                                  Report& report) {
   if (!run_lower_bound) return RunResult();
   CHECK(gen.Optimize());
@@ -457,9 +502,10 @@ RunResult RunMipAndReport(bool run_mip, bool use_integers,
   return RunAndReport(mip, use_integers, report);
 }
 
+template <typename ParamsT1, typename ParamsT2>
 RunResult RunThriftyLNSAndReport(bool run_thrifty_lns, const RunResult& start,
-                                 SetCoverOptimizer& initial_sol_gen,
-                                 SetCoverOptimizer& improvement_gen,
+                                 SetCoverOptimizer<ParamsT1>& initial_sol_gen,
+                                 SetCoverOptimizer<ParamsT2>& improvement_gen,
                                  Report& report) {
   if (!run_thrifty_lns) return RunResult();
   SetCoverInvariant& inv = *initial_sol_gen.inv();
@@ -533,6 +579,9 @@ double RunSolvers() {
       absl::GetFlag(FLAGS_num_random_dual_ascent_passes));
   RunLowerBoundAndReport(true, dual_ascent_full_random, report);
 
+  VolumeOptimizer volume(&inv);
+  RunLowerBoundAndReport(true, volume, report);
+
   RunLowerBoundAndReport(true, ComputeLagrangianLowerBound, "LagrangianLB", inv,
                          report);
 
@@ -551,7 +600,7 @@ double RunSolvers() {
 void Benchmarks() {
   QCHECK(!absl::GetFlag(FLAGS_benchmarks_dir).empty())
       << "Benchmarks directory must be specified.";
-  const std::vector<BenchmarksTableRow> kBenchmarks = BenchmarksTable();
+  const std::vector<BenchmarkGroup> kBenchmarks = CreateBenchmarkList();
 
   const bool run_all = true;  // TODO(user): streamline the flags.
   const bool run_element_degree =
@@ -581,7 +630,7 @@ void Benchmarks() {
                                    report.Separator()),
                      report.Eol());
   }
-  for (const auto& [dir, files, input_format] : kBenchmarks) {
+  for (const BenchmarkGroup& group : kBenchmarks) {
     RunStats element_degree_vs_chvatal("ElementDegreeGenerator",
                                        "GreedyGenerator");
     RunStats lazy_element_degree_vs_chvatal(
@@ -597,130 +646,143 @@ void Benchmarks() {
         &lazy_steepest_vs_steepest, &lazy_greedy_vs_chvatal,
         &thrifty_lns_vs_chvatal};
 
-    for (const std::string& filename : files) {
-      const std::string filespec = absl::StrCat(
-          absl::GetFlag(FLAGS_benchmarks_dir), "/", dir, "/", filename);
+    for (const auto& problem_data_array : group.problem_data_arrays) {
+      for (const ProblemData& problem_data : problem_data_array) {
+        const std::string filename =
+            absl::StrCat(problem_data.filename, group.file_extension);
+        const std::string filespec =
+            absl::StrCat(absl::GetFlag(FLAGS_benchmarks_dir), "/",
+                         group.type_string, "/", filename);
 
-      LOG(INFO) << "Reading " << filespec;
-      SetCoverModel model = ReadModel(filespec, input_format);
-      if (absl::GetFlag(FLAGS_unicost)) {
-        for (const SubsetIndex subset : model.SubsetRange()) {
-          model.SetSubsetCost(subset, 1.0);
+        LOG(INFO) << "Reading " << filespec;
+        SetCoverModel model = ReadModel(filespec, group.format);
+        if (absl::GetFlag(FLAGS_unicost)) {
+          for (const SubsetIndex subset : model.SubsetRange()) {
+            model.SetSubsetCost(subset, 1.0);
+          }
         }
-      }
-      report.SetModelName(filename, absl::GetFlag(FLAGS_unicost), &model);
-      if (absl::GetFlag(FLAGS_stats)) {
-        report.ReportModelStats(model);
-      }
-      if (!absl::GetFlag(FLAGS_solve)) continue;
+        report.SetModelName(filename, absl::GetFlag(FLAGS_unicost), &model);
+        if (absl::GetFlag(FLAGS_stats)) {
+          report.ReportModelStats(model);
+        }
+        if (!absl::GetFlag(FLAGS_solve)) continue;
 
-      model.CreateSparseRowView();
+        model.CreateSparseRowView();
 
-      LOG(INFO) << "Solving " << model.name();
-      report.ReportModelNameAndSizes(model);
+        LOG(INFO) << "Solving " << model.name();
+        report.ReportModelNameAndSizes(model);
 
-      SetCoverInvariant inv_with_loaded_solution(&model);
-      const RunResult loaded_solution_result =
-          RunSolutionLoadAndReport(absl::GetFlag(FLAGS_load_solution), filename,
-                                   inv_with_loaded_solution, report);
+        SetCoverInvariant inv_with_loaded_solution(&model);
+        const RunResult loaded_solution_result = RunSolutionLoadAndReport(
+            absl::GetFlag(FLAGS_load_solution), filename,
+            inv_with_loaded_solution, report);
 
-      SetCoverInvariant inv(&model);
+        SetCoverInvariant inv(&model);
 
-      // Do not run Chvatal's classic algorithm on large problems, this is too
-      // slow.
-      const bool run_chvatal =
-          model.num_elements() <= absl::GetFlag(FLAGS_max_elements_for_chvatal);
-      const RunResult chvatal_result =
-          RunChvatalAndReport(run_chvatal, inv, report);
-      report.ReportGap(chvatal_result, loaded_solution_result);
+        // Do not run Chvatal's classic algorithm on large problems, this is too
+        // slow.
+        const bool run_chvatal = model.num_elements() <=
+                                 absl::GetFlag(FLAGS_max_elements_for_chvatal);
+        const RunResult chvatal_result =
+            RunChvatalAndReport(run_chvatal, inv, report);
+        report.ReportGap(chvatal_result, loaded_solution_result);
 
-      RunResult chvatal_steepest_result;
-      if (run_chvatal) {
-        // SteepestSearch starts from the Greedy solution.
-        SteepestSearch steepest(&inv);
-        chvatal_steepest_result =
-            RunFromResultAndReport(chvatal_result, steepest, report);
-      }
-      report.ReportGap(chvatal_steepest_result, loaded_solution_result);
-
-      const RunResult element_degree_result =
-          RunElementDegreeAndReport(run_element_degree, inv, report);
-      report.ReportGap(element_degree_result, loaded_solution_result);
-
-      const RunResult lazy_element_degree_result =
-          RunLazyElementDegreeAndReport(run_lazy_element_degree, inv, report);
-
-      const RunResult lazy_random_result =
-          RunRandomizedLazyElementDegreeAndReport(
-              run_randomized_lazy_element_degree, inv, report);
-      report.ReportGap(lazy_random_result, loaded_solution_result);
-      CHECK_EQ(lazy_element_degree_result.cost(), element_degree_result.cost());
-
-      const RunResult lazy_steepest_result = RunLazySteepestAndReport(
-          run_lazy_steepest, lazy_element_degree_result, inv, report);
-
-      const RunResult lazy_random_steepest_result = RunLazySteepestAndReport(
-          run_lazy_steepest_from_random, lazy_random_result, inv, report);
-      report.ReportGap(lazy_random_steepest_result, loaded_solution_result);
-
-      const RunResult clique_guided_result = RunCliqueGuidedAndReport(
-          run_clique_guided, lazy_random_steepest_result, inv, report);
-      report.ReportGap(clique_guided_result, loaded_solution_result);
-      report.ReportGap(clique_guided_result, lazy_random_steepest_result);
-
-      DualAscentOptimizer dual_ascent(&inv);
-      dual_ascent.SetNumRandomPasses(
-          absl::GetFlag(FLAGS_num_random_dual_ascent_passes));
-      const RunResult dual_ascent_result =
-          RunLowerBoundAndReport(run_lower_bounds, dual_ascent, report);
-      report.ReportGap(loaded_solution_result, dual_ascent_result);
-
-      DualAscentOptimizer dual_ascent_full_random(&inv);
-      dual_ascent_full_random.UseFullRandomization(true).SetNumRandomPasses(
-          absl::GetFlag(FLAGS_num_random_dual_ascent_passes));
-      const RunResult dual_ascent_full_random_result = RunLowerBoundAndReport(
-          run_lower_bounds, dual_ascent_full_random, report);
-      report.ReportGap(loaded_solution_result, dual_ascent_full_random_result);
-
-      const RunResult lagrangian_relaxation_result =
-          RunLowerBoundAndReport(run_lower_bounds, ComputeLagrangianLowerBound,
-                                 "LagrangianRelaxationLB", inv, report);
-      report.ReportGap(loaded_solution_result, lagrangian_relaxation_result);
-
-      const RunResult lp_result = RunMipAndReport(run_lp, false, inv, report);
-      report.ReportGap(lp_result, loaded_solution_result);
-
-      const RunResult element_based_tree_search_result =
-          RunElementBasedTreeSearchAndReport(run_element_based_tree_search, inv,
-                                             report);
-      report.ReportGap(element_based_tree_search_result,
-                       loaded_solution_result);
-
-      const RunResult tree_search_result =
-          RunTreeSearchAndReport(run_tree_search, inv, report);
-      report.ReportGap(tree_search_result, loaded_solution_result);
-      const RunResult mip_result = RunMipAndReport(run_mip, true, inv, report);
-      report.ReportGap(mip_result, loaded_solution_result);
-      if (run_chvatal) {
-        element_degree_vs_chvatal.Add(element_degree_result, chvatal_result);
-        lazy_element_degree_vs_chvatal.Add(lazy_element_degree_result,
-                                           chvatal_result);
-        lazy_steepest_vs_steepest.Add(lazy_steepest_result,
-                                      chvatal_steepest_result);
-        lazy_greedy_vs_chvatal.Add(lazy_steepest_result, chvatal_result);
-        clique_guided_vs_steepest.Add(clique_guided_result,
-                                      chvatal_steepest_result);
-      }
-      if (absl::GetFlag(FLAGS_thrifty_lns)) {
-        LazyElementDegreeSolutionGenerator lazy_element_degree_for_thrifty_lns(
-            &inv);
-        LazySteepestSearch lazy_steepest_for_thrifty_lns(&inv);
-        const RunResult thrifty_lns_result = RunThriftyLNSAndReport(
-            absl::GetFlag(FLAGS_thrifty_lns), lazy_steepest_result,
-            lazy_element_degree_for_thrifty_lns, lazy_steepest_for_thrifty_lns,
-            report);
+        RunResult chvatal_steepest_result;
         if (run_chvatal) {
-          thrifty_lns_vs_chvatal.Add(thrifty_lns_result, chvatal_result);
+          // SteepestSearch starts from the Greedy solution.
+          SteepestSearch steepest(&inv);
+          chvatal_steepest_result =
+              RunFromResultAndReport(chvatal_result, steepest, report);
+        }
+        report.ReportGap(chvatal_steepest_result, loaded_solution_result);
+
+        const RunResult element_degree_result =
+            RunElementDegreeAndReport(run_element_degree, inv, report);
+        report.ReportGap(element_degree_result, loaded_solution_result);
+
+        const RunResult lazy_element_degree_result =
+            RunLazyElementDegreeAndReport(run_lazy_element_degree, inv, report);
+
+        const RunResult lazy_random_result =
+            RunRandomizedLazyElementDegreeAndReport(
+                run_randomized_lazy_element_degree, inv, report);
+        report.ReportGap(lazy_random_result, loaded_solution_result);
+        CHECK_EQ(lazy_element_degree_result.cost(),
+                 element_degree_result.cost());
+
+        const RunResult lazy_steepest_result = RunLazySteepestAndReport(
+            run_lazy_steepest, lazy_element_degree_result, inv, report);
+
+        const RunResult lazy_random_steepest_result = RunLazySteepestAndReport(
+            run_lazy_steepest_from_random, lazy_random_result, inv, report);
+        report.ReportGap(lazy_random_steepest_result, loaded_solution_result);
+
+        const RunResult clique_guided_result = RunCliqueGuidedAndReport(
+            run_clique_guided, lazy_random_steepest_result, inv, report);
+        report.ReportGap(clique_guided_result, loaded_solution_result);
+        report.ReportGap(clique_guided_result, lazy_random_steepest_result);
+
+        DualAscentOptimizer dual_ascent(&inv);
+        dual_ascent.SetNumRandomPasses(
+            absl::GetFlag(FLAGS_num_random_dual_ascent_passes));
+        const RunResult dual_ascent_result =
+            RunLowerBoundAndReport(run_lower_bounds, dual_ascent, report);
+        report.ReportGap(loaded_solution_result, dual_ascent_result);
+
+        DualAscentOptimizer dual_ascent_full_random(&inv);
+        dual_ascent_full_random.UseFullRandomization(true).SetNumRandomPasses(
+            absl::GetFlag(FLAGS_num_random_dual_ascent_passes));
+        const RunResult dual_ascent_full_random_result = RunLowerBoundAndReport(
+            run_lower_bounds, dual_ascent_full_random, report);
+        report.ReportGap(loaded_solution_result,
+                         dual_ascent_full_random_result);
+
+        VolumeOptimizer volume(&inv);
+        const RunResult volume_result =
+            RunLowerBoundAndReport(run_lower_bounds, volume, report);
+        report.ReportGap(loaded_solution_result, volume_result);
+
+        const RunResult lagrangian_relaxation_result = RunLowerBoundAndReport(
+            run_lower_bounds, ComputeLagrangianLowerBound,
+            "LagrangianRelaxationLB", inv, report);
+        report.ReportGap(loaded_solution_result, lagrangian_relaxation_result);
+
+        const RunResult lp_result = RunMipAndReport(run_lp, false, inv, report);
+        report.ReportGap(lp_result, loaded_solution_result);
+
+        const RunResult element_based_tree_search_result =
+            RunElementBasedTreeSearchAndReport(run_element_based_tree_search,
+                                               inv, report);
+        report.ReportGap(element_based_tree_search_result,
+                         loaded_solution_result);
+
+        const RunResult tree_search_result =
+            RunTreeSearchAndReport(run_tree_search, inv, report);
+        report.ReportGap(tree_search_result, loaded_solution_result);
+        const RunResult mip_result =
+            RunMipAndReport(run_mip, true, inv, report);
+        report.ReportGap(mip_result, loaded_solution_result);
+        if (run_chvatal) {
+          element_degree_vs_chvatal.Add(element_degree_result, chvatal_result);
+          lazy_element_degree_vs_chvatal.Add(lazy_element_degree_result,
+                                             chvatal_result);
+          lazy_steepest_vs_steepest.Add(lazy_steepest_result,
+                                        chvatal_steepest_result);
+          lazy_greedy_vs_chvatal.Add(lazy_steepest_result, chvatal_result);
+          clique_guided_vs_steepest.Add(clique_guided_result,
+                                        chvatal_steepest_result);
+        }
+        if (absl::GetFlag(FLAGS_thrifty_lns)) {
+          LazyElementDegreeSolutionGenerator
+              lazy_element_degree_for_thrifty_lns(&inv);
+          LazySteepestSearch lazy_steepest_for_thrifty_lns(&inv);
+          const RunResult thrifty_lns_result = RunThriftyLNSAndReport(
+              absl::GetFlag(FLAGS_thrifty_lns), lazy_steepest_result,
+              lazy_element_degree_for_thrifty_lns,
+              lazy_steepest_for_thrifty_lns, report);
+          if (run_chvatal) {
+            thrifty_lns_vs_chvatal.Add(thrifty_lns_result, chvatal_result);
+          }
         }
       }
       report.StrAppend(report.Eol());

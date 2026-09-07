@@ -22,6 +22,7 @@
 #include "absl/log/check.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_heuristics.h"
 #include "ortools/set_cover/set_cover_invariant.h"
@@ -104,7 +105,7 @@ struct CftExecutionStats {
 };
 
 // Parameters configuring the CFT algorithm heuristics.
-struct CftParameters {
+struct SetCoverCftParams : public SetCoverOptimizerParamsBase {
   // Coefficient multiplied by model focus elements to get max iteration
   // countdown.
   BaseInt max_iter_multiplier = 10;
@@ -136,9 +137,6 @@ struct CftParameters {
 
   // Maximum multiplier limit for dual multipliers.
   Cost max_multiplier = 1e9;
-
-  // Time limit for the heuristic.
-  absl::Duration time_limit = absl::InfiniteDuration();
 
   // Minimum fraction of columns to fix.
   double fix_minimum = 0.3;
@@ -313,10 +311,10 @@ struct PrimalDualState {
 // Runs the outer CFT heuristic with automatic model refinement.
 PrimalDualState RunCftHeuristic(CoreModel& model,
                                 const SubmodelSolution& init_solution = {},
-                                const CftParameters& params = {});
+                                const SetCoverCftParams& params = {});
 
 // SetCoverCftOptimizer is a solution generator based on CFT heuristics.
-class SetCoverCftOptimizer : public SetCoverOptimizer {
+class SetCoverCftOptimizer : public SetCoverOptimizer<SetCoverCftParams> {
  public:
   explicit SetCoverCftOptimizer(SetCoverInvariant* inv);
 
@@ -331,15 +329,6 @@ class SetCoverCftOptimizer : public SetCoverOptimizer {
 
   // Same as above, but with a vector of Booleans as focus.
   bool Optimize(const SubsetBoolVector& in_focus) override;
-
-  // Returns mutable parameters of the CFT heuristic.
-  CftParameters& params() { return params_; }
-
-  // Returns parameters of the CFT heuristic.
-  const CftParameters& params() const { return params_; }
-
- private:
-  CftParameters params_;
 };
 
 }  // namespace operations_research

@@ -221,7 +221,6 @@ cc_library(
         "//ortools/algorithms:multikey_radix_sort",
         "//ortools/base:adjustable_priority_queue",
         "//ortools/base:types",
-        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
@@ -303,6 +302,7 @@ cc_library(
     deps = [
         ":base_types",
         ":capacity_invariant",
+        ":set_cover_cc_proto",
         ":set_cover_invariant",
         ":set_cover_model",
         "//ortools/base:mathutil",
@@ -318,6 +318,8 @@ cc_test(
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":assignment",
+        ":base_types",
+        ":set_cover_cc_proto",
         ":set_cover_invariant",
         ":set_cover_model",
         "//ortools/base:gmock_main",
@@ -372,12 +374,12 @@ cc_binary(
         "//ortools/math_opt/solvers:glop_solver",
         "//ortools/math_opt/solvers:gscip_solver",
         "//ortools/math_opt/solvers:pdlp_solver",
-        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -387,6 +389,10 @@ cc_test(
     timeout = "eternal",
     srcs = ["set_cover_cft_test.cc"],
     copts = ORTOOLS_TEST_COPTS,
+    data = [
+        "//operations_research_data/operations_research_data/SET_COVERING:rail",
+        "//operations_research_data/operations_research_data/SET_COVERING:scp",
+    ],
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["manual"],
     deps = [
@@ -514,6 +520,7 @@ cc_test(
     copts = ORTOOLS_TEST_COPTS,
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
+        ":base_types",
         ":capacity_model",
         "//ortools/base:gmock_main",
     ],
@@ -541,6 +548,7 @@ cc_test(
     copts = ORTOOLS_TEST_COPTS,
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
+        ":base_types",
         ":capacity_invariant",
         ":capacity_model",
         ":set_cover_model",

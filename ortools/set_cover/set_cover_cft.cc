@@ -18,6 +18,7 @@
 #include <cstdio>
 #include <functional>
 #include <limits>
+#include <memory>
 #include <random>
 #include <utility>
 #include <vector>
@@ -172,7 +173,7 @@ using FullCoverCounters = CoverCountersImpl<FullModelElementIndex>;
 // specific cases, the denominator should always be greater than the
 // numerator. This function checks that.
 inline Cost DivideIfNonNegative(Cost numerator, Cost denominator) {
-  const Cost kTol = CftParameters::kDivisionTolerance;
+  const Cost kTol = SetCoverCftParams::kDivisionTolerance;
   DCHECK_GE(denominator, numerator);
   DCHECK_GE(denominator, -kTol);
   const Cost result = numerator < kTol ? 0.0 : numerator / denominator;
@@ -242,7 +243,7 @@ class BoundCallback : public SubgradientCallback {
 
   // Constructor.
   explicit BoundCallback(const CoreModel& model,
-                         const CftParameters& params = CftParameters());
+                         const SetCoverCftParams& params = SetCoverCftParams());
 
   // Returns the step size parameter value.
   Cost step_size() const {
@@ -318,7 +319,7 @@ class BoundCallback : public SubgradientCallback {
   BaseInt step_size_update_period_;
 
   // Parameters configuring CFT heuristics.
-  CftParameters params_;
+  SetCoverCftParams params_;
 };
 
 // Three-phase algorithm.
@@ -329,7 +330,8 @@ class BoundCallback : public SubgradientCallback {
 class HeuristicCallback : public SubgradientCallback {
  public:
   // Default constructor.
-  explicit HeuristicCallback(const CftParameters& params = CftParameters())
+  explicit HeuristicCallback(
+      const SetCoverCftParams& params = SetCoverCftParams())
       : step_size_(0.1), countdown_(250), params_(params) {}
 
   // Sets the subgradient step size.
@@ -373,7 +375,7 @@ class HeuristicCallback : public SubgradientCallback {
   BaseInt countdown_;
 
   // Parameters configuring CFT heuristics.
-  CftParameters params_;
+  SetCoverCftParams params_;
 };
 
 // Full to Core Model.
@@ -528,7 +530,7 @@ class PricingModel : public CoreModel {
   ElementBoolVector is_row_in_focus_;
 
   // Covers per row target count.
-  BaseInt selection_coefficient_ = CftParameters::kMinimumCoverage;
+  BaseInt selection_coefficient_ = SetCoverCftParams::kMinimumCoverage;
 
   // The best bound value from the previous iteration.
   Cost prev_best_lower_bound_;
@@ -554,11 +556,11 @@ class PricingModel : public CoreModel {
 
 PrimalDualState RunThreePhase(CoreModel& model,
                               const SubmodelSolution& init_solution,
-                              const CftParameters& params,
+                              const SetCoverCftParams& params,
                               CftExecutionStats& stats);
 
 BoundCallback::BoundCallback(const CoreModel& model,
-                             const CftParameters& params)
+                             const SetCoverCftParams& params)
     : squared_norm_(static_cast<Cost>(model.num_elements())),
       direction_(ElementCostVector(model.num_elements(), 0.0)),
       previous_best_lower_bound_(std::numeric_limits<Cost>::lowest()),
@@ -727,7 +729,7 @@ bool BoundCallback::UpdateCoreModel(SubgradientContext context,
 // Subgradient optimization procedure. Optimizes the Lagrangian relaxation of
 // the Set-Covering problem until a termination criterion is met.
 void SubgradientOptimization(CoreModel& model, SubgradientCallback& cb,
-                             const CftParameters& params,
+                             const SetCoverCftParams& params,
                              PrimalDualState& best_state,
                              CftExecutionStats& stats) {
   DCHECK(ValidateSubmodel(model));
@@ -1291,7 +1293,7 @@ void HeuristicCallback::ComputeMultipliersDelta(
 
 PrimalDualState RunThreePhase(CoreModel& model,
                               const SubmodelSolution& init_solution,
-                              const CftParameters& params,
+                              const SetCoverCftParams& params,
                               CftExecutionStats& stats) {
   DCHECK(ValidateSubmodel(model));
   CFT_MEASURE_SCOPE_DURATION(stats.three_phase_time);
@@ -1431,19 +1433,19 @@ std::vector<FullModelSubsetIndex> ComputeTentativeFocus(
   std::vector<FullModelSubsetIndex> columns_in_focus;
 
   if (full_model.num_subsets() <=
-      2 * CftParameters::kMinimumCoverage * full_model.num_elements()) {
+      2 * SetCoverCftParams::kMinimumCoverage * full_model.num_elements()) {
     columns_in_focus.resize(full_model.num_subsets());
     absl::c_iota(columns_in_focus, FullModelSubsetIndex(0));
     return columns_in_focus;
   }
 
   columns_in_focus.reserve(full_model.num_elements() *
-                           CftParameters::kMinimumCoverage);
+                           SetCoverCftParams::kMinimumCoverage);
   FullSubsetBoolVector selected(full_model.num_subsets(), false);
 
   // Select the first min_row_coverage columns for each row
   for (const auto& row : full_model.rows()) {
-    BaseInt countdown = CftParameters::kMinimumCoverage;
+    BaseInt countdown = SetCoverCftParams::kMinimumCoverage;
     for (const FullModelSubsetIndex j : row) {
       if (--countdown <= 0) {
         break;
@@ -1501,7 +1503,7 @@ bool PricingModel::ColumnSelector::SelectColumn(MaskedModelView full_model,
   }
   for (const ElementIndex i : full_model.columns()[j]) {
     selected_[j] = true;  // Detect empty columns
-    if (++row_cover_counts_[i] == CftParameters::kMinimumCoverage) {
+    if (++row_cover_counts_[i] == SetCoverCftParams::kMinimumCoverage) {
       --rows_left_to_cover_;
     }
   }
@@ -1516,7 +1518,7 @@ void PricingModel::ColumnSelector::SelectMinReducedCostColumns(
   DCHECK_GE(full_model.num_subsets(), 0);
   BaseInt selected_size = 0;
   const BaseInt max_size =
-      CftParameters::kMinimumCoverage * full_model.num_elements();
+      SetCoverCftParams::kMinimumCoverage * full_model.num_elements();
   auto it = first_unselected_;
   while (it != candidates_.end() && reduced_costs[*it] < 0.1 &&
          selected_size < max_size) {
@@ -1538,9 +1540,9 @@ void PricingModel::ColumnSelector::SelectMinReducedCostByRow(
     for (const ElementIndex i : full_model.columns()[j]) {
       ++row_cover_counts_[i];
       rows_left_to_cover_ +=
-          (row_cover_counts_[i] == CftParameters::kMinimumCoverage ? 1 : 0);
-      selected_[j] = selected_[j] ||
-                     (row_cover_counts_[i] <= CftParameters::kMinimumCoverage);
+          (row_cover_counts_[i] == SetCoverCftParams::kMinimumCoverage ? 1 : 0);
+      selected_[j] = selected_[j] || (row_cover_counts_[i] <=
+                                      SetCoverCftParams::kMinimumCoverage);
     }
     if (selected_[j]) {
       selection_.push_back(static_cast<FullModelSubsetIndex>(j));
@@ -1834,7 +1836,7 @@ bool PricingModel::SubmodelInvariantCheck() {
 
 PrimalDualState RunCftHeuristic(CoreModel& model,
                                 const SubmodelSolution& init_solution,
-                                const CftParameters& params) {
+                                const SetCoverCftParams& params) {
   DCHECK(ValidateSubmodel(model));
   CftExecutionStats stats;
   stats.start_time = absl::Now();
@@ -1924,7 +1926,10 @@ PrimalDualState RunCftHeuristic(CoreModel& model,
 SetCoverCftOptimizer::SetCoverCftOptimizer(SetCoverInvariant* inv)
     : SetCoverOptimizer(inv,
                         SetCoverInvariant::ConsistencyLevel::kCostAndCoverage,
-                        "SetCoverCftOptimizer", "cft") {}
+                        std::make_unique<SetCoverCftParams>()) {
+  SetName("cft");
+  params().class_name = "SetCoverCftOptimizer";
+}
 
 bool SetCoverCftOptimizer::Optimize() {
   DCHECK(inv()->CheckConsistency(
@@ -1968,8 +1973,7 @@ bool SetCoverCftOptimizer::Optimize(absl::Span<const SubsetIndex> focus) {
   }
   SubmodelSolution initial_solution(core_model, initial_subsets);
 
-  CftParameters params = params_;
-  params.time_limit = time_limit();
+  SetCoverCftParams params = this->params();
 
   PrimalDualState best_state =
       RunCftHeuristic(core_model, initial_solution, params);

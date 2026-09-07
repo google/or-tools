@@ -24,6 +24,7 @@
 #include "ortools/algorithms/multikey_radix_sort.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/set_cover/base_types.h"
+#include "ortools/set_cover/set_cover.pb.h"
 #include "ortools/set_cover/set_cover_model.h"
 
 namespace operations_research {
@@ -61,6 +62,7 @@ void SetCoverInvariant::Clear() {
   }
 
   coverage_.assign(num_elements, 0);
+  dual_values_.assign(num_elements, 0.0);
 
   // No need to reserve for trace_ and other vectors as extending with
   // push_back is fast enough.
@@ -139,6 +141,19 @@ void SetCoverInvariant::LoadSolution(const SubsetBoolVector& solution) {
   }
   num_uncovered_elements_ = ComputeNumUncoveredElements(coverage_);
   consistency_level_ = CL::kCostAndCoverage;
+}
+
+void SetCoverInvariant::BuildSolutionFromDuals(Cost tolerance) {
+  SubsetCostVector reduced_costs;
+  model_->ComputeReducedCosts(dual_values_, reduced_costs);
+
+  SubsetBoolVector solution(model_->num_subsets(), false);
+  for (const SubsetIndex subset : model_->SubsetRange()) {
+    if (reduced_costs[subset] <= tolerance) {
+      solution[subset] = true;
+    }
+  }
+  LoadSolution(solution);
 }
 
 void SetCoverInvariant::LoadTraceAndCoverage(

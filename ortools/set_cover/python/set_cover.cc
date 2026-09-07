@@ -19,10 +19,14 @@
 #include <memory>
 #include <vector>
 
+#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/set_cover/base_types.h"
+#include "ortools/set_cover/set_cover_cft.h"
 #include "ortools/set_cover/set_cover_heuristics.h"
 #include "ortools/set_cover/set_cover_invariant.h"
+#include "ortools/set_cover/set_cover_lagrangian.h"
+#include "ortools/set_cover/set_cover_mip.h"
 #include "ortools/set_cover/set_cover_model.h"
 #include "ortools/set_cover/set_cover_reader.h"
 #include "pybind11/numpy.h"
@@ -64,6 +68,17 @@ using ::operations_research::SubsetCostVector;
 using ::operations_research::SubsetIndex;
 using ::operations_research::TabuList;
 using ::operations_research::TrivialSolutionGenerator;
+
+using ::operations_research::CliqueGuidedLNSParams;
+using ::operations_research::DualAscentParams;
+using ::operations_research::GuidedLocalSearchParams;
+using ::operations_research::GuidedTabuSearchParams;
+using ::operations_research::LazyElementDegreeParams;
+using ::operations_research::SetCoverCftParams;
+using ::operations_research::SetCoverLagrangianParams;
+using ::operations_research::SetCoverMipParams;
+using ::operations_research::SetCoverMipSolver;
+using ::operations_research::SetCoverOptimizerParamsBase;
 
 namespace py = pybind11;
 using ::py::arg;
@@ -121,10 +136,104 @@ class IntIterator {
   int current_value_;
 };
 
-PYBIND11_MODULE(set_cover, m) {
-  pybind11_protobuf::ImportNativeProtoCasters();
+namespace {
 
-  // set_cover_model.h
+// Bindings for optimizer parameter classes.
+void BindParameters(py::module& m) {
+  py::class_<SetCoverOptimizerParamsBase>(m, "SetCoverOptimizerParams")
+      .def(py::init<>())
+      .def_readwrite("max_iterations",
+                     &SetCoverOptimizerParamsBase::max_iterations)
+      .def_readwrite("name", &SetCoverOptimizerParamsBase::name)
+      .def_readwrite("class_name", &SetCoverOptimizerParamsBase::class_name)
+      .def_property(
+          "time_limit_seconds",
+          [](const SetCoverOptimizerParamsBase& p) {
+            return absl::ToDoubleSeconds(p.time_limit);
+          },
+          [](SetCoverOptimizerParamsBase& p, double seconds) {
+            p.time_limit = absl::Seconds(seconds);
+          });
+
+  py::class_<LazyElementDegreeParams, SetCoverOptimizerParamsBase>(
+      m, "LazyElementDegreeParams")
+      .def(py::init<>())
+      .def_readwrite("num_random_passes",
+                     &LazyElementDegreeParams::num_random_passes);
+
+  py::class_<GuidedLocalSearchParams, SetCoverOptimizerParamsBase>(
+      m, "GuidedLocalSearchParams")
+      .def(py::init<>())
+      .def_readwrite("epsilon", &GuidedLocalSearchParams::epsilon)
+      .def_readwrite("alpha", &GuidedLocalSearchParams::alpha);
+
+  py::class_<GuidedTabuSearchParams, SetCoverOptimizerParamsBase>(
+      m, "GuidedTabuSearchParams")
+      .def(py::init<>())
+      .def_readwrite("lagrangian_factor",
+                     &GuidedTabuSearchParams::lagrangian_factor)
+      .def_readwrite("penalty_factor", &GuidedTabuSearchParams::penalty_factor)
+      .def_readwrite("epsilon", &GuidedTabuSearchParams::epsilon)
+      .def_readwrite("tabu_list_size", &GuidedTabuSearchParams::tabu_list_size);
+
+  py::class_<CliqueGuidedLNSParams, SetCoverOptimizerParamsBase>(
+      m, "CliqueGuidedLNSParams")
+      .def(py::init<>())
+      .def_readwrite("max_num_cliques", &CliqueGuidedLNSParams::max_num_cliques)
+      .def_readwrite("max_clique_size",
+                     &CliqueGuidedLNSParams::max_clique_size);
+
+  py::class_<DualAscentParams, SetCoverOptimizerParamsBase>(m,
+                                                            "DualAscentParams")
+      .def(py::init<>())
+      .def_readwrite("num_random_passes", &DualAscentParams::num_random_passes)
+      .def_readwrite("use_full_randomization",
+                     &DualAscentParams::use_full_randomization);
+
+  py::enum_<SetCoverMipSolver>(m, "SetCoverMipSolver")
+      .value("SCIP", SetCoverMipSolver::SCIP)
+      .value("SAT", SetCoverMipSolver::SAT)
+      .value("GUROBI", SetCoverMipSolver::GUROBI)
+      .value("GLOP", SetCoverMipSolver::GLOP)
+      .value("PDLP", SetCoverMipSolver::PDLP);
+
+  py::class_<SetCoverMipParams, SetCoverOptimizerParamsBase>(
+      m, "SetCoverMipParams")
+      .def(py::init<>())
+      .def_readwrite("mip_solver", &SetCoverMipParams::mip_solver)
+      .def_readwrite("use_integers", &SetCoverMipParams::use_integers);
+
+  py::class_<SetCoverCftParams, SetCoverOptimizerParamsBase>(
+      m, "SetCoverCftParams")
+      .def(py::init<>())
+      .def_readwrite("max_iter_multiplier",
+                     &SetCoverCftParams::max_iter_multiplier)
+      .def_readwrite("exit_test_period", &SetCoverCftParams::exit_test_period)
+      .def_readwrite("initial_step_size", &SetCoverCftParams::initial_step_size)
+      .def_readwrite("step_size_update_period",
+                     &SetCoverCftParams::step_size_update_period)
+      .def_readwrite("gap_limit_for_step_increase",
+                     &SetCoverCftParams::gap_limit_for_step_increase)
+      .def_readwrite("step_size_increase_factor",
+                     &SetCoverCftParams::step_size_increase_factor)
+      .def_readwrite("gap_limit_for_step_decrease",
+                     &SetCoverCftParams::gap_limit_for_step_decrease)
+      .def_readwrite("step_size_decrease_factor",
+                     &SetCoverCftParams::step_size_decrease_factor)
+      .def_readwrite("bound_min_diff_distance",
+                     &SetCoverCftParams::bound_min_diff_distance)
+      .def_readwrite("max_multiplier", &SetCoverCftParams::max_multiplier)
+      .def_readwrite("fix_minimum", &SetCoverCftParams::fix_minimum)
+      .def_readwrite("fix_increment", &SetCoverCftParams::fix_increment);
+
+  py::class_<SetCoverLagrangianParams, SetCoverOptimizerParamsBase>(
+      m, "SetCoverLagrangianParams")
+      .def(py::init<>())
+      .def_readwrite("num_threads", &SetCoverLagrangianParams::num_threads);
+}
+
+// Bindings for SetCoverModel and its statistics.
+void BindModel(py::module& m) {
   py::class_<SetCoverModel::Stats>(m, "SetCoverModelStats")
       .def_readwrite("min", &SetCoverModel::Stats::min)
       .def_readwrite("max", &SetCoverModel::Stats::max)
@@ -237,12 +346,9 @@ PYBIND11_MODULE(set_cover, m) {
             model.ResizeNumSubsets(num_subsets);
           },
           arg("num_subsets"))
-      .def(
-          "reserve_num_elements_in_subset",
-          [](SetCoverModel& model, BaseInt num_elements, BaseInt subset) {
-            model.ReserveNumElementsInSubset(num_elements, subset);
-          },
-          arg("num_elements"), arg("subset"))
+      .def("reserve_num_elements_in_subset",
+           &SetCoverModel::ReserveNumElementsInSubset, arg("num_elements"),
+           arg("subset"))
       .def("export_model_as_proto", &SetCoverModel::ExportModelAsProto)
       .def("import_model_from_proto", &SetCoverModel::ImportModelFromProto)
       .def("compute_cost_stats", &SetCoverModel::ComputeCostStats)
@@ -252,8 +358,10 @@ PYBIND11_MODULE(set_cover, m) {
       .def("compute_column_deciles", &SetCoverModel::ComputeRowDeciles);
 
   // TODO(user): wrap IntersectingSubsetsIterator.
+}
 
-  // set_cover_invariant.h
+// Bindings for SetCoverInvariant and SetCoverDecision.
+void BindInvariant(py::module& m) {
   py::class_<SetCoverDecision>(m, "SetCoverDecision")
       .def(py::init<>())
       .def(py::init([](BaseInt subset, bool value) -> SetCoverDecision* {
@@ -362,8 +470,10 @@ PYBIND11_MODULE(set_cover, m) {
            &SetCoverInvariant::ExportSolutionAsProto)
       .def("import_solution_from_proto",
            &SetCoverInvariant::ImportSolutionFromProto);
+}
 
-  // set_cover_heuristics.h
+// Bindings for evaluation heuristics and solution generators.
+void BindHeuristics(py::module& m) {
   py::class_<TrivialSolutionGenerator>(m, "TrivialSolutionGenerator")
       .def(py::init<SetCoverInvariant*>())
       // TODO(user): make set_max_iterations return a TrivialSolutionGenerator&
@@ -383,8 +493,7 @@ PYBIND11_MODULE(set_cover, m) {
            [](TrivialSolutionGenerator& heuristic,
               const std::vector<bool>& in_focus) -> bool {
              return heuristic.Optimize(BoolVectorToSubsetBoolVector(in_focus));
-           })
-      .def("name", &TrivialSolutionGenerator::name);
+           });
 
   py::class_<RandomSolutionGenerator>(m, "RandomSolutionGenerator")
       .def(py::init<SetCoverInvariant*>())
@@ -550,14 +659,24 @@ PYBIND11_MODULE(set_cover, m) {
            })
       .def("set_lagrangian_factor", &GuidedTabuSearch::SetLagrangianFactor,
            arg("factor"))
-      .def("get_lagrangian_factor", &GuidedTabuSearch::GetLagrangianFactor)
+      .def("get_lagrangian_factor",
+           [](const GuidedTabuSearch& self) {
+             return self.params().lagrangian_factor;
+           })
       .def("set_epsilon", &GuidedTabuSearch::SetEpsilon, arg("r"))
-      .def("get_epsilon", &GuidedTabuSearch::GetEpsilon)
+      .def("get_epsilon",
+           [](const GuidedTabuSearch& self) { return self.params().epsilon; })
       .def("set_penalty_factor", &GuidedTabuSearch::SetPenaltyFactor,
            arg("factor"))
-      .def("get_penalty_factor", &GuidedTabuSearch::GetPenaltyFactor)
+      .def("get_penalty_factor",
+           [](const GuidedTabuSearch& self) {
+             return self.params().penalty_factor;
+           })
       .def("set_tabu_list_size", &GuidedTabuSearch::SetTabuListSize,
-           arg("size"));
+           arg("size"))
+      .def("get_tabu_list_size", [](const GuidedTabuSearch& self) {
+        return self.params().tabu_list_size;
+      });
   py::class_<DualAscentOptimizer>(m, "DualAscentOptimizer")
       .def(py::init<SetCoverInvariant*>())
       .def("use_full_randomization", &DualAscentOptimizer::UseFullRandomization,
@@ -608,8 +727,10 @@ PYBIND11_MODULE(set_cover, m) {
               VectorIntToVectorSubsetIndex(focus), num_subsets, inv);
           return {cleared.begin(), cleared.end()};
         });
+}
 
-  // set_cover_reader.h
+// Bindings for reading and writing problem instances.
+void BindReadersWriters(py::module& m) {
   m.def("read_orlib_scp", &ReadOrlibScp);
   m.def("read_orlib_rail", &ReadOrlibRail);
   m.def("read_fimi_dat", &ReadFimiDat);
@@ -621,7 +742,18 @@ PYBIND11_MODULE(set_cover, m) {
   m.def("write_set_cover_solution_proto", &WriteSetCoverSolutionProto);
   m.def("read_set_cover_solution_text", &ReadSetCoverSolutionText);
   m.def("read_set_cover_solution_proto", &ReadSetCoverSolutionProto);
+}
 
-  // set_cover_lagrangian.h
+}  // namespace
+
+PYBIND11_MODULE(set_cover, m) {
+  pybind11_protobuf::ImportNativeProtoCasters();
+
+  BindParameters(m);
+  BindModel(m);
+  BindInvariant(m);
+  BindHeuristics(m);
+  BindReadersWriters(m);
+
   // TODO(user): add support for SetCoverLagrangian.
 }

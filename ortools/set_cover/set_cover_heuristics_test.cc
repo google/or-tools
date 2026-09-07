@@ -141,5 +141,69 @@ TEST(SetCoverHeuristicsTest, ComputeSegmentStarts) {
   EXPECT_THAT(empty_segment_starts, ::testing::ElementsAre(0));
 }
 
+TEST(SetCoverHeuristicsTest, VolumeOptimizer) {
+  SetCoverModel model = CreateSimpleModel();
+  SetCoverInvariant inv(&model);
+  // VolumeOptimizer needs a feasible solution for the upper bound.
+  GreedySolutionOptimizer greedy(&inv);
+  EXPECT_TRUE(greedy.Optimize());
+  const Cost upper_bound = inv.cost();
+  EXPECT_GT(upper_bound, 0.0);
+
+  VolumeOptimizer volume(&inv);
+  EXPECT_TRUE(volume.Optimize());
+  const Cost lower_bound = inv.LowerBound();
+  EXPECT_GE(lower_bound, 0.0);
+  EXPECT_LE(lower_bound, upper_bound);
+}
+
+TEST(SetCoverHeuristicsTest, VolumeOptimizerZeroNorm) {
+  SetCoverModel model;
+  model.AddEmptySubset(1.0);
+  model.AddElementToLastSubset(0);
+  model.AddElementToLastSubset(1);
+
+  model.AddEmptySubset(1.0);
+  model.AddElementToLastSubset(1);
+  model.AddElementToLastSubset(2);
+
+  model.AddEmptySubset(1.0);
+  model.AddElementToLastSubset(2);
+  model.AddElementToLastSubset(0);
+
+  model.CreateSparseRowView();
+
+  SetCoverInvariant inv(&model);
+  TrivialSolutionGenerator trivial(&inv);
+  EXPECT_TRUE(trivial.Optimize());
+
+  VolumeOptimizer volume(&inv);
+  volume.params().initial_step_size_factor = 1.0;
+  volume.params().initial_alpha_max = 0.5;
+  volume.params().max_iterations = 10;
+
+  EXPECT_TRUE(volume.Optimize());
+  const Cost lower_bound = inv.LowerBound();
+  EXPECT_LE(lower_bound, 3.0);
+  EXPECT_GE(lower_bound, 0.0);
+}
+
+TEST(SetCoverHeuristicsTest, VolumeOptimizerOneIteration) {
+  SetCoverModel model = CreateSimpleModel();
+  SetCoverInvariant inv(&model);
+  GreedySolutionOptimizer greedy(&inv);
+  EXPECT_TRUE(greedy.Optimize());
+  const Cost upper_bound = inv.cost();
+  EXPECT_GT(upper_bound, 0.0);
+
+  VolumeOptimizer volume(&inv);
+  volume.params().max_iterations = 1;
+
+  EXPECT_TRUE(volume.Optimize());
+  const Cost lower_bound = inv.LowerBound();
+  EXPECT_GE(lower_bound, 0.0);
+  EXPECT_LE(lower_bound, upper_bound);
+}
+
 }  // namespace
 }  // namespace operations_research
