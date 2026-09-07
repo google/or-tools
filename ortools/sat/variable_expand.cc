@@ -341,7 +341,7 @@ void OrderEncoding::CreateAllOrderEncodingLiterals(
     }
 
     // Greater or equal.
-    if (value > var_domain_.Min()) {  // var >= min is not created..
+    if (value > var_domain_.Min()) {  // var >= min is not created.
       const auto it_ge =
           encoded_le_literal_.find(var_domain_.ValueAtOrBefore(value - 1));
       if (it_ge != encoded_le_literal_.end()) {
@@ -418,8 +418,8 @@ bool ProcessEncodingConstraints(
     bool& var_has_positive_objective_coefficient) {
   // We have a variable that appears only in linear1 constraints. That means
   // that the model should not change feasibility as long as the values that
-  // the variable take does not the satisfiability of the linear1s. Thus, we
-  // have "domains of equivalence" of the possible values of the variable.
+  // the variable takes do not change the satisfiability of the linear1s. Thus,
+  // we have "domains of equivalence" of the possible values of the variable.
   // Suppose we have a variable `v` in the domain `[0, 15]` that is only used in
   // the following linear1:
   // (c1)   x => v <= 10
@@ -455,7 +455,7 @@ bool ProcessEncodingConstraints(
   //
   // TODO(user): Pick a single value for each equivalence class, not one
   // per contiguous interval.
-  // TODO(user): Supports more domains, for now only <= and >= are supported.
+  // TODO(user): Support more domains, for now only <= and >= are supported.
   //
   // TODO(user): At the expense of a more complex hint manipulation, we could
   // only use one optional value per variable.
@@ -578,7 +578,7 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
   std::vector<int> constraint_indices;
 
   // Early abort if we know that the variable is not fully encoded (not enough
-  // linear 1), has a large domain and appear in a constrained objective.
+  // linear 1), has a large domain and appears in a constrained objective.
   const bool var_in_objective =
       context->VarToConstraints(var).contains(kObjectiveConstraint);
   if (var_in_objective && context->ObjectiveDomainIsConstraining() &&
@@ -608,8 +608,8 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
       linear_ones_by_type[static_cast<int>(EncodingLinear1Type::kVarInDomain)];
 
   // We force the full encoding if the variable is mostly encoded and some
-  // linear1 involves domains that do not correspond to value or order
-  // encodings.
+  // linear1 constraints involve domains that do not correspond to value or
+  // order encodings.
   const bool full_encoding_is_not_too_expensive =
       context->IsMostlyFullyEncoded(var) || var_domain.Size() <= 32;
   const bool full_encoding_is_needed =
@@ -622,7 +622,7 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
   }
 
   // TODO(user): It happens rarely that the variable domain was not restricted.
-  // Maybe we should make sure this is the case in more situation, here we just
+  // Maybe we should make sure this is the case in more situations, here we just
   // make sure it is the case when lin_domain_is_partition below is true.
   if (lin_domain.size() > 2 &&
       lin_domain[0].enforcement_literal ==
@@ -715,7 +715,7 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
   // - If the variable also has var>=value and var<=value encodings, we will
   //   push the value of the variable to the closest value in the domain in the
   //   direction of the objective. To this effect, for every contiguous set of
-  //   values not in the set of referenced values. the min of the max of that
+  //   values not in the set of referenced values, the min or the max of that
   //   set has been added to the encoded domain, such that the push up or down
   //   always falls back on an encoded value.
   //
@@ -730,7 +730,7 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
       values.encoding());
   order.CreateAllOrderEncodingLiterals(values);
 
-  // Link all Boolean in our linear1 to the encoding literals.
+  // Link all Booleans in our linear1 to the encoding literals.
   for (const EncodingLinear1& info_eq : lin_eq) {
     context->AddImplication(info_eq.enforcement_literal,
                             values.literal(info_eq.value));
@@ -826,10 +826,10 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
   }
 
   // Update the objective if needed. Note that this operation can fail if
-  // the new expression result in potential overflow.
+  // the new expression results in potential overflow.
   if (var_in_objective) {
-    // We substract the min or the max of the variable from all
-    // coefficients. This should reduce the objective size and helps with
+    // We subtract the min or the max of the variable from all
+    // coefficients. This should reduce the objective size and help with
     // the bounds.
     const int64_t base_value = var_has_positive_objective_coefficient
                                    ? var_domain.Min()
@@ -905,7 +905,7 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
     context->UpdateRuleStats("variables: reduce domain to encoded values");
   }
 
-  // Clear all involved constraint. We do it in two passes to avoid
+  // Clear all involved constraints. We do it in two passes to avoid
   // invalidating the iterator. We also use the constraint variable graph as
   // extra encodings (value, order) may have added new constraints.
   {
@@ -920,7 +920,7 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
     }
   }
 
-  // This must be done after we removed all the constraint containing var.
+  // This must be done after we removed all the constraints containing var.
   ConstraintProto* exo = context->AddConstraint();
   BoolArgumentProto* arg = exo->mutable_exactly_one();
   for (const auto& [value, literal] : values.encoding()) {

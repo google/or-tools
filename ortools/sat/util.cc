@@ -158,7 +158,7 @@ int64_t ModularInverse(int64_t x, int64_t m) {
     t[i] -= t[i ^ 1] * q;
   }
 
-  // If the gcd is not one, there is no inverse, we returns 0.
+  // If the gcd is not one, there is no inverse, we return 0.
   if (r[i] != 1) return 0;
 
   // Correct the result so that it is in [0, m). Note that abs(t[i]) is known to
@@ -228,7 +228,7 @@ bool SolveDiophantineEquationOfSizeTwo(int64_t& a, int64_t& b, int64_t& cte,
   const absl::int128 t = absl::int128{cte} - absl::int128{a} * absl::int128{x0};
   DCHECK_EQ(t % absl::int128{b}, absl::int128{0});
 
-  // Overflow-wise, there is two cases for cte > 0:
+  // Overflow-wise, there are two cases for cte > 0:
   // - a * x0 <= cte, in this case y0 will not overflow (<= cte).
   // - a * x0 > cte, in this case y0 will be in (-a, 0].
   const absl::int128 r = t / absl::int128{b};
@@ -763,7 +763,7 @@ class CliqueDecomposition {
     for (int i = 0; i < n; ++i) permutation_[i] = i;
   }
 
-  // This works in O(m). All possible decomposition are reachable, depending on
+  // This works in O(m). All possible decompositions are reachable, depending on
   // the initial permutation.
   //
   // TODO(user): It can be made faster within the same complexity though.
@@ -824,7 +824,7 @@ class CliqueDecomposition {
   //
   // Note that by keeping the local order of each clique, we cannot make the
   // order "worse". And each new call to DecomposeGreedily() can only reduce
-  // the number of clique in the cover.
+  // the number of cliques in the cover.
   void ChangeOrder() {
     if (absl::Bernoulli(random_, 0.5)) {
       std::reverse(decomposition_.begin(), decomposition_.end());
@@ -880,7 +880,7 @@ absl::Span<const int64_t> SortedSubsetSums::Compute(
     if (e == 0 || e > maximum_sum) continue;
 
     // Optimization: If all the sums in [0, maximum_sum] are already reachable
-    // we can abort early since no new reachable sum wil be discovered.
+    // we can abort early since no new reachable sum will be discovered.
     if (sums_.size() == maximum_sum + 1) return sums_;
 
     // Early abort when asked if we already reached maximum_sum.
@@ -916,8 +916,8 @@ absl::Span<const int64_t> SortedSubsetSums::Compute(
     }
 
     // We are sure of this since we will break only when to_push > maximum_sum
-    // and we are guarantee to have pushed all sums below "to_push" before, that
-    // includes all the initial sums in sums_.
+    // and we are guaranteed to have pushed all sums below "to_push" before,
+    // that includes all the initial sums in sums_.
     DCHECK_EQ(i, size);
 
     for (; j < size; ++j) {
@@ -961,7 +961,7 @@ int64_t MaxBoundedSubsetSumExact::MaxSubsetSum(
                                       /*abort_if_maximum_reached=*/true);
   if (span_b.back() == bin_size) return bin_size;
 
-  // For all possible sum a, we compute the largest sum b that fits.
+  // For all possible sums a, we compute the largest sum b that fits.
   // We do that in linear time thanks to the sorted partial sums.
   int64_t result = 0;
   CHECK(!span_a.empty());
@@ -989,7 +989,7 @@ std::vector<int> FindMostDiverseSubset(int k, int n,
   }
 
   if (k == n - 1) {
-    // We just exclude the one closer to all the other.
+    // We just exclude the one closer to all the others.
     int64_t worse = kint64max;
     int to_exclude = -1;
     for (int i = 0; i < n; ++i) {
@@ -1074,7 +1074,7 @@ std::vector<std::pair<int, int>> HeuristicallySplitLongLinear(
   }
 
   // If we don't have many different coefficients, we always create parts
-  // with exactly the same coeffs. We split large part evenly into size /
+  // with exactly the same coeffs. We split large parts evenly into size /
   // expected_part_size.
   if (num_differents < 20) {
     const int expected_part_size = num_terms / num_buckets;

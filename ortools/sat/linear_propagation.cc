@@ -77,7 +77,7 @@ LinearPropagator::LinearPropagator(Model* model)
   integer_trail_->RegisterReversibleClass(this);
 
   // TODO(user): When we start to push too much (Cycle?) we should see what
-  // other propagator says before repropagating this one, system for call
+  // other propagators say before repropagating this one, system to call
   // later?
   watcher_->SetPropagatorPriority(watcher_id_, 0);
 }
@@ -159,7 +159,7 @@ void LinearPropagator::OnVariableChange(IntegerVariable var, IntegerValue lb,
                                         int id) {
   DCHECK_EQ(lb, integer_trail_->LowerBound(var));
 
-  // If no constraint use this var, we just ignore it.
+  // If no constraints use this var, we just ignore it.
   const int size = var_to_constraint_ids_[var].size();
   if (size == 0) return;
 
@@ -235,25 +235,25 @@ bool LinearPropagator::Propagate() {
   // always finish the Boolean propagation first. This can happen when we push a
   // bound that has associated Booleans or push enforcement to false. The idea
   // is to resume from our current state when we are called again. Note however
-  // that we have to clear the propagated_by_ info has other propagator might
+  // that we have to clear the propagated_by_ info as other propagators might
   // have pushed the same variable further.
   //
   // TODO(user): More than the propagation speed, I think it is important to
   // have proper explanation, so if A pushes B, but later on the queue we have C
-  // that push A that push B again, that might be bad? We can try to avoid this
-  // even further, by organizing the queue in passes:
+  // that pushes A that pushes B again, that might be bad? We can try to avoid
+  // this even further, by organizing the queue in passes:
   //  - Scan all relevant constraints, remember who pushes but DO NOT push yet!
-  //  - If no cycle, do not pushes constraint whose slack will changes due to
+  //  - If no cycle, do not push constraints whose slack will change due to
   //    other pushes.
-  //  - consider the new constraint that need to be scanned and repeat.
+  //  - consider the new constraints that need to be scanned and repeat.
   // I think it is okay to scan twice the constraints that push something in
-  // order to get better explanation. We tend to diverge from the class shortest
-  // path algo in this regard.
+  // order to get better explanations. We tend to diverge from the classic
+  // shortest-path algo in this regard.
   //
   // TODO(user): If we push the idea further, can we first compute the fix point
   // without pushing anything, then compute a good order of constraints for the
-  // explanations? what is tricky is that we might need to "scan" more than once
-  // a constraint I think. ex: Y, Z, T >=0
+  // explanations? What is tricky is that we might need to "scan" more than once
+  // a constraint, I think. ex: Y, Z, T >=0
   //  - 2 * Y + Z + T <= 11   ==>   Y <= 5, Z <= 11, T <= 11  (1)
   //  - Z + Y >= 6            ==>   Z >= 1
   //  - (1) again to push T <= 10  and reach the propagation fixed point.
@@ -262,7 +262,7 @@ bool LinearPropagator::Propagate() {
                               trail_->CurrentDecisionLevel() == 0;
   while (true) {
     // We always process the whole queue in FIFO order.
-    // Note that the order really only matter for infeasible constraint so it
+    // Note that the order really only matters for infeasible constraints so it
     // shouldn't have a big impact.
     const int saved_index = trail_->Index();
     while (!propagation_queue_.empty()) {
@@ -304,13 +304,13 @@ bool LinearPropagator::Propagate() {
       // so it might lead to stronger affine ub.
       //
       // TODO(user): This can be costly for no reason if we keep updating the
-      // bound for variable appearing in a single linear3. On another hand it is
-      // O(1) compared to what this class already do. Profile will tell if it is
-      // worth it. Maybe we can only share LinearExpression2 that we might look
-      // up.
+      // bound for variables appearing in a single linear3. On the other hand it
+      // is O(1) compared to what this class already does. Profile will tell if
+      // it is worth it. Maybe we can only share LinearExpression2 that we might
+      // look up.
       //
-      // TODO(user): This only look at non-enforced linear3. We could look at
-      // constraint whose enforcement or other variables are fixed at level
+      // TODO(user): This only looks at non-enforced linear3. We could look at
+      // constraints whose enforcement or other variables are fixed at level
       // zero, but it is trickier. It could be done if we add a "batch clean up"
       // to this class that runs at level zero, and reduce constraints
       // accordingly.
@@ -324,11 +324,11 @@ bool LinearPropagator::Propagate() {
     if (next_id == -1) break;
 
     // We can probably save the AnalyzeConstraint() cost, but then we only do
-    // that when the constraint propagate, and the context might have change
+    // that when the constraint propagates, and the context might have changed
     // since we computed it above.
     if (!PropagateOneConstraint(next_id)) return false;
 
-    // TODO(user): This do not seems always good, especially since we pushed
+    // TODO(user): This does not seem always good, especially since we pushed
     // Boolean with a really small explanation, maybe we want to push more of
     // these rather than go back to pure-binary propagation.
     if (trail_->Index() > saved_index) {
@@ -409,8 +409,8 @@ void LinearPropagator::AddConstraint(
   in_queue_.resize(in_queue_.size() + 1);
 
   // Initialize data for lin2 affine ub pushes.
-  // Note that we also initialize the one for enforced constraint, so we can
-  // use this if later the constraint become non-enforced.
+  // Note that we also initialize the one for enforced constraints, so we can
+  // use this if later the constraint becomes non-enforced.
   lin3_ids_.Resize(in_queue_.size());
   if (vars.size() == 3) {
     if (id >= id_to_lin2_cache_.size()) {
@@ -458,7 +458,7 @@ void LinearPropagator::AddConstraint(
 
           // When a conditional precedence becomes enforced, add it.
           // Note that we only look at relation that were a "precedence" from
-          // the start, note the one currently of size 2 if we ignore fixed
+          // the start, not the one currently of size 2 if we ignore fixed
           // variables.
           if (status == EnforcementStatus::IS_ENFORCED) {
             const auto info = infos_[id];
@@ -556,7 +556,7 @@ void LinearPropagator::CanonicalizeConstraint(int id) {
 std::pair<IntegerValue, int> LinearPropagator::AnalyzeConstraint(int id) {
   ++num_scanned_;
 
-  // Skip constraint not enforced or that cannot propagate if false.
+  // Skip constraints not enforced or that cannot propagate if false.
   ConstraintInfo& info = infos_[id];
   const EnforcementStatus enf_status = EnforcementStatus(info.enf_status);
   if (DEBUG_MODE && enforcement_propagator_->PropagationIsDone(*trail_)) {
@@ -566,7 +566,7 @@ std::pair<IntegerValue, int> LinearPropagator::AnalyzeConstraint(int id) {
       if (enf_status == EnforcementStatus::CANNOT_PROPAGATE &&
           debug_status == EnforcementStatus::IS_FALSE) {
         // This case might happen because in our two watched literals scheme,
-        // we might watch two unassigned literal without knowing another one is
+        // we might watch two unassigned literals without knowing another one is
         // already false.
       } else {
         LOG(FATAL) << "Enforcement status not up to date: " << enf_status
@@ -588,7 +588,7 @@ std::pair<IntegerValue, int> LinearPropagator::AnalyzeConstraint(int id) {
     return {0, 0};
   }
 
-  // Compute the slack and max_variations_ of each variables.
+  // Compute the slack and max_variations_ of each variable.
   // We also filter out fixed variables in a reversible way.
   IntegerValue implied_lb(0);
   IntegerValue max_variation(0);
@@ -651,7 +651,7 @@ std::pair<IntegerValue, int> LinearPropagator::AnalyzeConstraint(int id) {
   }
 
   // What we call slack here is the "room" between the implied_lb and the rhs.
-  // Note that we use slack in other context in this file too.
+  // Note that we use slack in other contexts in this file too.
   const IntegerValue slack = info.rev_rhs - implied_lb;
 
   // Negative slack means the constraint is false.
@@ -723,8 +723,8 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
   // But this should have been checked by SkipConstraint().
   CHECK_EQ(info.enf_status, static_cast<int>(EnforcementStatus::IS_ENFORCED));
 
-  // We can look for disasemble before the actual push.
-  // This should lead to slighly better reason.
+  // We can look for disassemble before the actual push.
+  // This should lead to slightly better reasons.
   // Explore the subtree and detect cycles greedily.
   // Also postpone some propagation.
   if (!DisassembleSubtree(id, num_to_push)) {
@@ -740,7 +740,7 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
       continue;
     }
 
-    // TODO(user): If the new ub fall into an hole of the variable, we can
+    // TODO(user): If the new ub falls into a hole of the variable, we can
     // actually relax the reason more by computing a better slack.
     ++num_pushes_;
     const IntegerVariable var = vars[i];
@@ -754,7 +754,7 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
       return false;
     }
 
-    // Add to the queue all touched constraint.
+    // Add to the queue all touched constraints.
     const IntegerValue actual_ub = integer_trail_->UpperBound(var);
     const IntegerVariable next_var = NegationOf(var);
     if (actual_ub < new_ub) {
@@ -800,10 +800,10 @@ std::string LinearPropagator::ConstraintDebugString(int id) {
 
 bool LinearPropagator::ReportConflictingCycle() {
   // Often, all coefficients of the variable involved in the cycle are the same
-  // and if we sum all constraint, we get an infeasible one. If this is the
+  // and if we sum all constraints, we get an infeasible one. If this is the
   // case, we simplify the reason.
   //
-  // TODO(user): We could relax if the coefficient of the sum do not overflow.
+  // TODO(user): We could relax if the coefficients of the sum do not overflow.
   // TODO(user): Sum constraints with eventual factor in more cases.
   {
     literal_reason_.clear();
@@ -830,7 +830,7 @@ bool LinearPropagator::ReportConflictingCycle() {
       rhs_sum += (info.rev_rhs + rhs_correction).value();
     }
 
-    // We shouldn't have overflow since each component do not overflow an
+    // We shouldn't have overflow since each component does not overflow an
     // int64_t and we sum a small amount of them.
     absl::int128 implied_lb = 0;
     for (const auto [var, coeff] : map_sum) {
@@ -856,7 +856,7 @@ bool LinearPropagator::ReportConflictingCycle() {
                   return a.var < b.var;
                 });
 
-      // Relax the linear reason if everything fit on an int64_t.
+      // Relax the linear reason if everything fits on an int64_t.
       const absl::int128 limit{kint64max};
       const absl::int128 slack = implied_lb - rhs_sum;
       if (slack > 1) {
@@ -886,8 +886,8 @@ bool LinearPropagator::ReportConflictingCycle() {
     }
   }
 
-  // For the complex reason, we just use the bound of every variable.
-  // We do some basic simplification for the variable involved in the cycle.
+  // For the complex reason, we just use the bounds of every variable.
+  // We do some basic simplification for the variables involved in the cycle.
   //
   // TODO(user): Can we simplify more?
   VLOG(2) << "Cycle";
@@ -946,7 +946,7 @@ std::pair<IntegerValue, IntegerValue> LinearPropagator::GetCycleCoefficients(
 // TODO(user): Revisit the algo, no point exploring twice the same var, also
 // the queue reordering heuristic might not be the best.
 bool LinearPropagator::DisassembleSubtree(int root_id, int num_tight) {
-  // The variable was just pushed, we explore the set of variable that will
+  // The variable was just pushed, we explore the set of variables that will
   // be pushed further due to this push. Basically, if a constraint propagated
   // before and its slack will reduce due to the push, then any previously
   // propagated variable with a coefficient NOT GREATER than the one of the
@@ -992,7 +992,7 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_tight) {
         if (var == NegationOf(root_var)) continue;
 
         // Simple case, we have a cycle var -> root_var -> ... -> var where
-        // all coefficient are non-increasing.
+        // all coefficients are non-increasing.
         const auto [var_coeff, root_coeff] =
             GetCycleCoefficients(id, var, root_var);
         if (CapProdI(var_increase, var_coeff) >= root_coeff) {
@@ -1007,11 +1007,12 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_tight) {
         continue;
       }
 
-      if (id_to_count[id] == 0) continue;  // Didn't push or was desassembled.
+      if (id_to_count[id] == 0) continue;  // Didn't push or was disassembled.
 
-      // The constraint pushed some variable. Identify which ones will be pushed
-      // further. Disassemble the whole info since we are about to propagate
-      // this constraint again. Any pushed variable must be before the rev_size.
+      // The constraint pushed some variables. Identify which ones will be
+      // pushed further. Disassemble the whole info since we are about to
+      // propagate this constraint again. Any pushed variable must be before the
+      // rev_size.
       const ConstraintInfo& info = infos_[id];
       const auto coeffs = GetCoeffs(info);
       const auto vars = GetVariables(info);
@@ -1039,7 +1040,7 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_tight) {
         // If var was pushed by increase, next_var is pushed by
         // (var_coeff * increase) / next_var_coeff.
         //
-        // Note that it is okay to underevalute the increase in case of
+        // Note that it is okay to underevaluate the increase in case of
         // overflow.
         const IntegerValue next_increase =
             FloorRatio(CapProdI(var_coeff, increase), next_var_coeff);
@@ -1047,7 +1048,7 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_tight) {
           disassemble_queue_.push_back({id, next_var, next_increase});
 
           // We know this will push later, so we register it with a sentinel
-          // value so that it do not block any earlier propagation. Hopefully,
+          // value so that it does not block any earlier propagation. Hopefully,
           // adding this "dependency" should help find a better propagation
           // order.
           order_.Register(id, next_var, kMinIntegerValue);

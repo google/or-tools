@@ -66,7 +66,7 @@ ObjectiveShavingSolver::~ObjectiveShavingSolver() {
 bool ObjectiveShavingSolver::TaskIsAvailable() {
   if (shared_->SearchIsDone()) return false;
 
-  // We only support one task at the time.
+  // We only support one task at a time.
   absl::MutexLock mutex_lock(mutex_);
   return !task_in_flight_;
 }
@@ -121,7 +121,7 @@ void ObjectiveShavingSolver::Synchronize() {
   // to return nicely.
   if (stop_current_chunk_) return;
 
-  // TODO(user): Also stop if we have enough newly fixed / improved root level
+  // TODO(user): Also stop if we have enough newly fixed / improved root-level
   // bounds so that we think it is worth represolving and restarting.
   if (shared_->SearchIsDone()) {
     stop_current_chunk_.store(true);
@@ -130,7 +130,7 @@ void ObjectiveShavingSolver::Synchronize() {
   // The current objective lower bound has been improved, restarting.
   //
   // TODO(user): If we are exploring a range with current_objective_target_ub_
-  // still greater, it probably do not make sense to restart.
+  // still greater, it probably does not make sense to restart.
   if (shared_->response->GetInnerObjectiveLowerBound() > objective_lb_) {
     stop_current_chunk_.store(true);
   }
@@ -179,7 +179,7 @@ bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
 
   auto* time_limit = local_model_->GetOrCreate<TimeLimit>();
   shared_->time_limit->UpdateLocalLimit(time_limit);
-  // Don't let our shaving model to stop the main solve.
+  // Don't let our shaving model stop the main solve.
   local_model_->GetOrCreate<ModelSharedTimeLimit>()->DisableStop();
   time_limit->RegisterSecondaryExternalBooleanAsLimit(&stop_current_chunk_);
 
@@ -190,7 +190,7 @@ bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
   *local_proto_->mutable_variables() =
       helper_->FullNeighborhood().delta.variables();
 
-  // Store the current lb in local variable.
+  // Store the current lb in a local variable.
   IntegerValue objective_lb;
   IntegerValue chosen_objective_ub;
   {
@@ -211,7 +211,7 @@ bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
 
   // We replace the objective by a constraint, objective in [lb, target_ub].
   // We modify local_proto_ to a pure feasibility problem.
-  // Not having the objective open up more presolve reduction.
+  // Not having the objective opens up more presolve reductions.
   Domain obj_domain = Domain(objective_lb.value(), chosen_objective_ub.value());
   if (local_proto_->objective().domain_size() > 1) {
     // Intersect with the first interval of the objective domain.
@@ -270,12 +270,12 @@ bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
   }
 
   // Tricky: If we aborted during the presolve above, some constraints might
-  // be in a non-canonical form (like having duplicates, etc...) and it seem
-  // not all our propagator code deal with that properly. So it is important
+  // be in a non-canonical form (like having duplicates, etc.) and it seems
+  // not all our propagator code deals with that properly. So it is important
   // to abort right away here.
   //
   // We had a bug when the LoadCpModel() below was returning infeasible on
-  // such non fully-presolved model.
+  // such a non-fully-presolved model.
   if (time_limit->LimitReached()) return false;
 
   LoadCpModel(*local_proto_, local_model_.get());
@@ -458,7 +458,7 @@ bool VariablesShavingSolver::FindNextVar(State* state)
   ++current_index_;  // Starts at -1.
 
   // We start by shaving the objective in order to increase the lower bound.
-  // We abort for models with large number of objective variables. We also
+  // We abort for models with a large number of objective variables. We also
   // ignore when the objective is a single variable.
   int num_objective_vars_to_scan = 0;
   if (model_proto_.has_objective()) {
@@ -483,7 +483,7 @@ bool VariablesShavingSolver::FindNextVar(State* state)
 
   // Otherwise loop over all variables. The method returns false when all
   // variables are fixed.
-  // TODO(user): maybe we should just order all possible State, putting the
+  // TODO(user): maybe we should just order all possible States, putting the
   // objective first, and just loop.
   const int starting_index = current_index_;
   while (current_index_ - starting_index < num_vars * 2) {
@@ -532,7 +532,7 @@ void VariablesShavingSolver::CopyModelConnectedToVar(
     return c + num_vars;
   };
 
-  // Heuristic: we will ignore some complex constraint and "RELAX" them.
+  // Heuristic: we will ignore some complex constraints and "RELAX" them.
   const int root_index = var_to_node(state->var_index);
   std::vector<int> ignored_constraints;
 
@@ -549,7 +549,7 @@ void VariablesShavingSolver::CopyModelConnectedToVar(
 
     const ConstraintProto& ct = model_proto_.constraints(c);
     if (ct.constraint_case() == ConstraintProto::kNoOverlap2D) {
-      // Make sure x and y part are connected.
+      // Make sure x and y parts are connected.
       *has_no_overlap_2d = true;
       const int num_intervals = ct.no_overlap_2d().x_intervals().size();
       for (int i = 0; i < num_intervals; ++i) {
@@ -587,7 +587,7 @@ void VariablesShavingSolver::CopyModelConnectedToVar(
     CHECK(!active_constraints(c));
     const ConstraintProto& ct = model_proto_.constraints(c);
 
-    // We will only include non-ignored intervals there !
+    // We will only include non-ignored intervals there!
     if (ct.constraint_case() == ConstraintProto::kNoOverlap2D) {
       NoOverlap2DConstraintProto* new_no_overlap_2d =
           shaving_proto->add_constraints()->mutable_no_overlap_2d();
@@ -724,7 +724,7 @@ bool VariablesShavingSolver::ResetAndSolveModel(int64_t task_id, State* state,
     }
   }
 
-  // Hack: remove "non useful interval" from scheduling constraints.
+  // Hack: remove "non-useful intervals" from scheduling constraints.
   // For now we only do that for no-overlap 2d, but we should generalize.
   if (has_no_overlap_2d) {
     std::vector<int> postsolve_mapping;
@@ -772,12 +772,12 @@ bool VariablesShavingSolver::ResetAndSolveModel(int64_t task_id, State* state,
   local_response_manager->SetSynchronizationMode(true);
 
   // Tricky: If we aborted during the presolve above, some constraints might
-  // be in a non-canonical form (like having duplicates, etc...) and it seem
-  // not all our propagator code deal with that properly. So it is important
+  // be in a non-canonical form (like having duplicates, etc.) and it seems
+  // not all our propagator code deals with that properly. So it is important
   // to abort right away here.
   //
   // We had a bug when the LoadCpModel() below was returning infeasible on
-  // such non fully-presolved model.
+  // such a non-fully-presolved model.
   if (time_limit->LimitReached()) return false;
 
   LoadCpModel(*shaving_proto, local_model);

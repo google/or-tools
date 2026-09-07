@@ -148,7 +148,7 @@ bool ClauseManager::Propagate(Trail* trail) {
         (*trail)[propagation_trail_index_++].Negated();
     std::vector<Watcher>& watchers = watchers_on_false_[false_literal];
 
-    // Note(user): It sounds better to inspect the list in order, this is
+    // Note(user): It sounds better to inspect the list in order; this is
     // because small clauses like binary or ternary clauses will often propagate
     // and thus stay at the beginning of the list.
     auto new_it = watchers.begin();
@@ -200,7 +200,7 @@ bool ClauseManager::Propagate(Trail* trail) {
           if (i >= start) i = size;
         }
         if (i < size) {
-          // literal[i] is unassigned or true, it's now the new literal to
+          // literals[i] is unassigned or true; it's now the new literal to
           // watch. Note that by convention, we always keep the two watched
           // literals at the beginning of the clause.
           literals[0] = other_watched_literal;
@@ -299,7 +299,7 @@ SatClause* ClauseManager::ReasonClauseOrNull(BooleanVariable var) const {
   SatClause* result = reasons_[trail_->Info(var).trail_index];
   DCHECK(result != nullptr) << trail_->Info(var).DebugString();
 
-  // Tricky: In some corner case, that clause was subsumed, so we don't want
+  // Tricky: In some corner cases, that clause was subsumed, so we don't want
   // to check it nor use it.
   if (result->size() == 0) return nullptr;
   DCHECK_EQ(trail_->Reason(var), result->PropagationReason());
@@ -337,9 +337,9 @@ void ClauseManager::AddRemovableClause(SatClause* clause, Trail* trail,
 }
 
 // Sets up the 2-watchers data structure. It selects two non-false literals
-// and attaches the clause to the event: one of the watched literals become
+// and attaches the clause to the event: one of the watched literals becomes
 // false. It returns false if the clause only contains literals assigned to
-// false. If only one literals is not false, it propagates it to true if it
+// false. If only one literal is not false, it propagates it to true if it
 // is not already assigned.
 bool ClauseManager::AttachAndPropagate(SatClause* clause, Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
@@ -434,7 +434,7 @@ void ClauseManager::DetachAllClauses() {
   if (!all_clauses_are_attached_) return;
   all_clauses_are_attached_ = false;
 
-  // This is easy, and this allows to reset memory if some watcher lists where
+  // This is easy, and this allows to reset memory if some watcher lists were
   // really long at some point.
   is_clean_ = true;
   num_watched_clauses_ = 0;
@@ -520,8 +520,8 @@ bool ClauseManager::RemoveFixedLiteralsAndTestIfTrue(SatClause* clause) {
     }
     const ClausePtr clause_ptr = ClausePtr(clause);
     proof.push_back(clause_ptr);
-    // If the new size is 3 or more the clause pointer does not change since the
-    // SatClause pointer stays the same.
+    // If the new size is 3 or more, the clause pointer does not change since
+    // the SatClause pointer stays the same.
     clause->size_ = old_size;
     if (new_size == 2) {
       lrat_proof_handler_->AddInferredClause(
@@ -706,7 +706,7 @@ void ClauseManager::DeleteRemovedClauses() {
   if (!is_clean_) CleanUpWatchers();
 
   if (DEBUG_MODE) {
-    // This help debug issues, as it is easier to check for nullptr rather than
+    // This helps debug issues, as it is easier to check for nullptr rather than
     // detect a pointer that has been deleted.
     for (int i = 0; i < reasons_.size(); ++i) {
       if (reasons_[i] != nullptr && reasons_[i]->empty()) {
@@ -765,7 +765,7 @@ SatClause* ClauseManager::NextClauseToMinimize() {
     }
   }
 
-  // Lets reset and try once more to find one.
+  // Let's reset and try once more to find one.
   to_minimize_index_ = 0;
   ++num_to_minimize_index_resets_;
   for (; to_minimize_index_ < old; ++to_minimize_index_) {
@@ -944,7 +944,7 @@ bool BinaryImplicationGraph::CleanUpImplicationList(Literal a) {
   for (int i = 1; i < range.size(); ++i) {
     if (range[i] == range[i - 1]) continue;
 
-    // We have a => x and not(x) so a must be false. Lets fix it if not already
+    // We have a => x and not(x) so a must be false. Let's fix it if not already
     // done.
     //
     // Note that we leave both in the list to satisfy some invariant checks that
@@ -1015,9 +1015,9 @@ bool BinaryImplicationGraph::HasNoDuplicates() {
   return true;
 }
 
-// TODO(user): Not all of the solver knows about representative literal, do
-// use them here to maintains invariant? Explore this when we start cleaning our
-// clauses using equivalence during search. We can easily do it for every
+// TODO(user): Not all of the solver knows about representative literals; do
+// we use them here to maintain invariants? Explore this when we start cleaning
+// our clauses using equivalence during search. We can easily do it for every
 // conflict we learn instead of here.
 bool BinaryImplicationGraph::AddBinaryClauseInternal(Literal a, Literal b,
                                                      bool change_reason) {
@@ -1037,7 +1037,7 @@ bool BinaryImplicationGraph::AddBinaryClauseInternal(Literal a, Literal b,
   if (lrat_proof_handler_ != nullptr) {
     // TODO(user): we could use a single LRAT clause instead of two if this
     // method was responsible for adding it to the LRAT proof handler (currently
-    // is this done before calling this method).
+    // this is done before calling this method).
     if (rep_a != a || rep_b != b) {
       absl::InlinedVector<ClausePtr, 3> proof;
       if (rep_a != a) {
@@ -1073,7 +1073,7 @@ bool BinaryImplicationGraph::AddBinaryClauseInternal(Literal a, Literal b,
     const auto& assignment = trail_->Assignment();
 
     // TODO(user): just make GetClauseId() work all the time? for that
-    // we need to make sure all level zero are pushed with kUnitReason.
+    // we need to make sure all level-zero are pushed with kUnitReason.
     if (lrat_proof_handler_ != nullptr) {
       const ClausePtr rep_clause = ClausePtr(rep_a, rep_b);
       if (assignment.LiteralIsFalse(rep_a)) {
@@ -1158,7 +1158,7 @@ bool BinaryImplicationGraph::AddAtMostOne(
 // TODO(user): remove dupl with ClauseManager::InprocessingFixLiteral().
 //
 // Note that we currently do not support calling this at a positive level since
-// we might loose the fixing on backtrack otherwise.
+// we might lose the fixing on backtrack otherwise.
 bool BinaryImplicationGraph::FixLiteral(Literal true_literal,
                                         absl::Span<const ClausePtr> proof) {
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
@@ -1254,8 +1254,9 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
           trivializer = l.Variable();
         }
 
-        // We need to pay attention to triplet or more of equal elements, so
-        // it is why we need this boolean and can't just remove it right away.
+        // We need to pay attention to triplets or more of equal elements,
+        // which is why we need this boolean and can't just remove it right
+        // away.
         if (remove_previous) {
           --new_local_end;
           remove_previous = false;
@@ -1271,7 +1272,7 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
           Literal(LiteralIndex(local_end - local_start - 1));
     }
 
-    // If there was some duplicates, we need to rescan to see if a literal
+    // If there were some duplicates, we need to rescan to see if a literal
     // didn't become true because its negation was appearing twice!
     if (some_duplicates) {
       int new_local_end = local_start + 1;
@@ -1362,7 +1363,7 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
     const int level = trail->AssignmentLevel(true_literal);
 
     // Note(user): This update is not exactly correct because in case of
-    // conflict we don't inspect that much clauses. But doing ++num_inspections_
+    // conflict we don't inspect that many clauses. But doing ++num_inspections_
     // inside the loop does slow down the code by a few percent.
     const auto implied = implications[true_literal.Index().value()].literals();
     num_inspections_ += implied.size();
@@ -1450,7 +1451,7 @@ void BinaryImplicationGraph::Reimply(Trail* trail, int old_trail_index) {
 }
 
 // Here, we remove all the literals whose negation are implied by the negation
-// of the 1-UIP literal (which always appear first in the given conflict). Note
+// of the 1-UIP literal (which always appears first in the given conflict). Note
 // that this algorithm is "optimal" in the sense that it leads to a minimized
 // conflict with a backjump level as low as possible. However, not all possible
 // literals are removed. We also mark (in the given SparseBitset) the reachable
@@ -1473,10 +1474,10 @@ void BinaryImplicationGraph::MinimizeConflictFirst(
     MarkDescendants(conflict->front().Negated());
   }
 
-  // Because the decision cannot be removed from the conflict, we know they will
-  // stay, so it is okay to see what they propagate in the binary implication
-  // graph. Technically we could do that for any first literal of a decision
-  // level. Improve?
+  // Because the decisions cannot be removed from the conflict, we know they
+  // will stay, so it is okay to see what they propagate in the binary
+  // implication graph. Technically we could do that for any first literal of a
+  // decision level. Improve?
   std::vector<std::pair<Literal, int>> decisions;
   if (also_use_decisions) {
     for (int i = 1; i < conflict->size(); ++i) {
@@ -1675,8 +1676,8 @@ void BinaryImplicationGraph::RemoveFixedVariables() {
     }
 
     // If b is true and a -> b then because not b -> not a, all the
-    // implications list that contains b will be marked by this process.
-    // And the ones that contains not(b) should correspond to a false literal!
+    // implication lists that contain b will be marked by this process.
+    // And the ones that contain not(b) should correspond to a false literal!
     //
     // TODO(user): This might not be true if we remove implication by
     // transitive reduction and the process was aborted due to the computation
@@ -1778,10 +1779,10 @@ class SccGraph {
 
       // In the presence of at_most_ones_ constraints, expanding them
       // implicitly to implications in the SCC computation can result in a
-      // quadratic complexity rather than a linear one in term of the input
-      // data structure size. So this test here is critical on problem with
+      // quadratic complexity rather than a linear one in terms of the input
+      // data structure size. So this test here is critical on problems with
       // large at_most ones like the "ivu06-big.mps.gz" where without it, the
-      // full FindStronglyConnectedComponents() take more than on hour instead
+      // full FindStronglyConnectedComponents() takes more than an hour instead
       // of less than a second!
       if (at_most_one_already_explored_[start]) {
         // We never expand a node twice.
@@ -1792,7 +1793,7 @@ class SccGraph {
           // If the first node is not settled, then we do explore the
           // at_most_one constraint again. In "Mixed-Integer-Programming:
           // Analyzing 12 years of progress", Tobias Achterberg and Roland
-          // Wunderling explains that an at most one need to be looped over at
+          // Wunderling explain that an at most one needs to be looped over at
           // most twice. I am not sure exactly how that works, so for now we
           // are not fully linear, but on actual instances, we only rarely
           // run into this case.
@@ -1806,7 +1807,7 @@ class SccGraph {
           // detect below.
           previous_node_to_explore_at_most_one_[start] = node;
         } else {
-          // The first node is already settled and so are all its child. Only
+          // The first node is already settled and so are all its children. Only
           // not(first_node) might still need exploring.
           tmp_.push_back(
               Literal(LiteralIndex(first_node)).NegatedIndex().value());
@@ -2110,14 +2111,14 @@ void BinaryImplicationGraph::ExportAllEquivalences() {
 }
 
 bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
-  // This was already called, and no new constraint where added. Note that new
-  // fixed variable cannot create new equivalence, only new binary clauses do.
+  // This was already called, and no new constraints were added. Note that newly
+  // fixed variables cannot create new equivalences, only new binary clauses do.
   if (is_dag_) return true;
   WallTimer wall_timer;
   wall_timer.Start();
   log_info |= VLOG_IS_ON(1);
 
-  // Lets remove all fixed/duplicate variables first.
+  // Let's remove all fixed/duplicate variables first.
   if (!RemoveDuplicatesAndFixedVariables()) return false;
   const VariablesAssignment& assignment = trail_->Assignment();
   DCHECK(InvariantsAreOk());
@@ -2150,13 +2151,13 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   // invariant "num_redundant_literals_ % 2 == 0" in case of early return.
   reverse_topological_order_.clear();
   for (const absl::Span<int32_t> component : scc) {
-    // We ignore variable that appear in no constraints.
+    // We ignore variables that appear in no constraints.
     if (component.size() == 1 && is_removed_[LiteralIndex(component[0])]) {
       continue;
     }
 
     // We always take the smallest literal index (which also corresponds to the
-    // smallest BooleanVariable index) as a representative. This make sure that
+    // smallest BooleanVariable index) as a representative. This makes sure that
     // the representative of a literal l and the one of not(l) will be the
     // negation of each other. There is also reason to think that it is
     // heuristically better to use a BooleanVariable that was created first.
@@ -2196,7 +2197,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
     for (int i = 1; i < component.size(); ++i) {
       const Literal literal = Literal(LiteralIndex(component[i]));
       if (!is_redundant_[literal]) {
-        // This allows to make sure the SharedClauseManager properly detect
+        // This allows to make sure the SharedClauseManager properly detects
         // that we have an equivalence. It shouldn't share more than
         // O(num_variables) binary clauses per worker.
         //
@@ -2277,7 +2278,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   }
   // Look for fixed variables in each component, and make sure if one is fixed,
   // all variables in the same component are fixed. Note that the reason why the
-  // propagation didn't already do that and we don't always get fixed component
+  // propagation didn't already do that and we don't always get fixed components
   // of size 1 is because of the potential newly fixed literals above.
   //
   // In any case, all fixed literals are marked as redundant.
@@ -2352,7 +2353,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   const int num_fixed_during_scc =
       trail_->Index() - num_processed_fixed_variables_;
 
-  // If we fixed things, they can always be at_most_one that become simple
+  // If we fixed things, they can always be at_most_ones that become simple
   // implications, so we need to redo a round of cleaning.
   if (!RemoveDuplicatesAndFixedVariables()) return false;
 
@@ -2371,18 +2372,18 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   return true;
 }
 
-// Note that as a side effect this also do a full "failed literal probing"
+// Note that as a side effect this also does a full "failed literal probing"
 // using the binary implication graph only.
 //
-// TODO(user): Track which literal have new implications, and only process
+// TODO(user): Track which literals have new implications, and only process
 // the antecedents of these.
 bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
   DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   if (time_limit_->LimitReached()) return true;
   if (!DetectEquivalences()) return false;
 
-  // TODO(user): the situation with fixed variable is not really "clean".
-  // Simplify the code so we are sure we don't run into issue or have to deal
+  // TODO(user): the situation with fixed variables is not really "clean".
+  // Simplify the code so we are sure we don't run into issues or have to deal
   // with any of that here.
   if (time_limit_->LimitReached()) return true;
   if (!Propagate(trail_)) return false;
@@ -2419,10 +2420,10 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
   const LiteralIndex size(implications_and_amos_.size());
   LiteralIndex previous = kNoLiteralIndex;
   for (const LiteralIndex root : reverse_topological_order_) {
-    // In most situation reverse_topological_order_ contains no redundant, fixed
-    // or removed variables. But the reverse_topological_order_ is only
-    // recomputed when new binary are added to the graph, not when new variable
-    // are fixed.
+    // In most situations reverse_topological_order_ contains no redundant,
+    // fixed or removed variables. But reverse_topological_order_ is only
+    // recomputed when new binaries are added to the graph, not when new
+    // variables are fixed.
     if (is_redundant_[root]) continue;
     if (trail_->Assignment().LiteralIsAssigned(Literal(root))) continue;
 
@@ -2430,7 +2431,7 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
     if (direct_implications.literals().empty()) continue;
 
     // This is a "poor" version of the tree look stuff, but it does show good
-    // improvement. If we just processed one of the child of root, we don't
+    // improvement. If we just processed one of the children of root, we don't
     // need to re-explore it.
     //
     // TODO(user): Another optim we can do is that we never need to expand
@@ -2454,8 +2455,8 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
       if (is_redundant_[direct_child]) continue;
       if (is_marked_[direct_child]) continue;
 
-      // This is a corner case where because of equivalent literal, root
-      // appear in implications_[root], we will remove it below.
+      // This is a corner case where because of equivalent literals, root
+      // appears in implications_[root], we will remove it below.
       if (direct_child.Index() == root) continue;
 
       // When this happens, then root must be false, we handle this just after
@@ -2527,7 +2528,7 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
     // remove Literal(root) from all lists.
     if (trail_->Assignment().LiteralIsAssigned(Literal(root))) continue;
 
-    // Only keep the non-marked literal (and the redundant one which are never
+    // Only keep the non-marked literals (and the redundant ones which are never
     // marked). We mark root to remove it in the corner case where it was
     // there.
     const int old_size = direct_implications.num_literals();
@@ -2554,8 +2555,8 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
   is_marked_.ClearAndResize(size);
 
   // If we aborted early, we might no longer have both a=>b and not(b)=>not(a).
-  // This is not desirable has some algo relies on this invariant. We fix this
-  // here.
+  // This is not desirable as some algorithms rely on this invariant. We fix
+  // this here.
   if (aborted) {
     absl::flat_hash_set<std::pair<LiteralIndex, LiteralIndex>> removed;
     for (const auto [a, b] : tmp_removed_) {
@@ -2614,7 +2615,7 @@ int ElementInIntersectionOrMinusOne(absl::Span<const int> a,
 std::vector<std::pair<int, int>>
 BinaryImplicationGraph::FilterAndSortAtMostOnes(
     absl::Span<std::vector<Literal>> at_most_ones) {
-  // We starts by processing larger constraints first.
+  // We start by processing larger constraints first.
   // But we want the output order to be stable.
   std::vector<std::pair<int, int>> index_size_vector;
   const int num_amos = at_most_ones.size();
@@ -2623,9 +2624,9 @@ BinaryImplicationGraph::FilterAndSortAtMostOnes(
     std::vector<Literal>& clique = at_most_ones[index];
     if (clique.size() <= 1) continue;
 
-    // Note(user): Because we always use literal with the smallest variable
-    // indices as representative, this make sure that if possible, we express
-    // the clique in term of user provided variable (that are always created
+    // Note(user): Because we always use literals with the smallest variable
+    // indices as representatives, this makes sure that if possible, we express
+    // the clique in terms of user-provided variables (that are always created
     // first).
     //
     // Remap the clique to only use representative.
@@ -2636,8 +2637,8 @@ BinaryImplicationGraph::FilterAndSortAtMostOnes(
       ref = Literal(rep);
     }
 
-    // We skip anything that can be presolved further as the code below do
-    // not handle duplicate well.
+    // We skip anything that can be presolved further as the code below does
+    // not handle duplicates well.
     //
     // TODO(user): Shall we presolve it here?
     bool skip = false;
@@ -2670,7 +2671,7 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
   int num_removed = 0;
   int num_added = 0;
 
-  // Data to detect inclusion of base amo into extend amo.
+  // Data to detect inclusion of base amo into extended amo.
   std::vector<int> detector_clique_index;
   CompactVectorVector<int> storage;
   InclusionDetector detector(storage, time_limit_);
@@ -2689,7 +2690,7 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
     std::vector<Literal>& clique = (*at_most_ones)[index];
     if (time_limit_->LimitReached()) break;
 
-    // Special case for clique of size 2, we don't expand them if they
+    // Special case for cliques of size 2, we don't expand them if they
     // are included in an already added clique.
     if (clique.size() == 2) {
       DCHECK_NE(clique[0], clique[1]);
@@ -2707,7 +2708,7 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
     }
 
     // Save the non-extended version as possible subset.
-    // TODO(user): Detect on the fly is superset already exist.
+    // TODO(user): Detect on the fly if a superset already exists.
     detector_clique_index.push_back(index);
     detector.AddPotentialSubset(storage.AddLiterals(clique));
 
@@ -2734,7 +2735,7 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
     ++num_added;
   }
 
-  // Remove clique (before extension) that are included in an extended one.
+  // Remove cliques (before extension) that are included in an extended one.
   detector.DetectInclusions([&](int subset, int superset) {
     const int subset_index = detector_clique_index[subset];
     const int superset_index = detector_clique_index[superset];
@@ -2744,7 +2745,7 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
     if ((*at_most_ones)[subset_index].empty()) return;
     if ((*at_most_ones)[superset_index].empty()) return;
 
-    // If an extended clique already cover a deleted one, we cannot try to
+    // If an extended clique already covers a deleted one, we cannot try to
     // remove it by looking at its non-extended version.
     if (cannot_be_removed.contains(subset_index)) return;
 
@@ -2773,7 +2774,7 @@ bool BinaryImplicationGraph::MergeAtMostOnes(
   const std::vector<std::pair<int, int>> index_size_vector =
       FilterAndSortAtMostOnes(at_most_ones);
 
-  // Data to detect inclusion of base amo into extend amo.
+  // Data to detect inclusion of base amo into extended amo.
   std::vector<int> detector_clique_index;
   CompactVectorVector<int> storage;
   for (const auto& [index, old_size] : index_size_vector) {
@@ -2782,14 +2783,14 @@ bool BinaryImplicationGraph::MergeAtMostOnes(
     storage.AddLiterals(at_most_ones[index]);
   }
 
-  // We use an higher limit here as the code is faster.
+  // We use a higher limit here as the code is faster.
   SubsetsDetector detector(storage, time_limit_);
   detector.SetWorkLimit(10 * max_num_explored_nodes);
   detector.IndexAllStorageAsSubsets();
 
   // Now try to expand one by one.
   //
-  // TODO(user): We should process clique with elements in common together so
+  // TODO(user): We should process cliques with elements in common together so
   // that we can reuse MarkDescendants() which is slow. We should be able to
   // "cache" a few of the last calls.
   std::vector<int> intersection;
@@ -2817,7 +2818,7 @@ bool BinaryImplicationGraph::MergeAtMostOnes(
       if (work_done_in_mark_descendants_ > max_num_explored_nodes) break;
       if (detector.Stopped()) break;
 
-      // Compute the intersection of all the element (or the new ones) of this
+      // Compute the intersection of all the elements (or the new ones) of this
       // clique.
       //
       // Optimization: if clique_i > 0 && intersection.size() == clique.size()
@@ -2842,8 +2843,8 @@ bool BinaryImplicationGraph::MergeAtMostOnes(
             }
           }
         } else {
-          // We intersect we the negation of everything propagated by not(l).
-          // Note that we always keep the clique in case some implication where
+          // We intersect with the negation of everything propagated by not(l).
+          // Note that we always keep the clique in case some implications were
           // not added to the graph.
           int new_size = 0;
           const int old_size = intersection.size();
@@ -2865,13 +2866,13 @@ bool BinaryImplicationGraph::MergeAtMostOnes(
         if (intersection.size() <= clique.size()) break;
       }
 
-      // Should contains the original clique. If there are no more entry, then
+      // Should contain the original clique. If there are no more entries, then
       // we will not extend this clique. However, we still call FindSubsets() in
       // order to remove fully included ones.
       CHECK_GE(intersection.size(), clique.size());
 
-      // Look for element included in the intersection.
-      // Note that we clear element fully included at the same time.
+      // Look for elements included in the intersection.
+      // Note that we clear elements fully included at the same time.
       //
       // TODO(user): next_index_to_try help, but we might still rescan most of
       // the one-watcher list of intersection[next_index_to_try], we could be
@@ -2952,7 +2953,7 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight(
       int index = -1;
       double max_lp = 0.0;
       for (int j = 0; j < intersection.size(); ++j) {
-        // If we don't use weight, we prefer variable that comes first.
+        // If we don't use weight, we prefer variables that come first.
         const double lp =
             use_weight
                 ? expanded_lp_values[Literal(intersection[j]).NegatedIndex()] +
@@ -2973,7 +2974,7 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight(
   return clique;
 }
 
-// Make sure both version are compiled.
+// Make sure both versions are compiled.
 template std::vector<Literal>
 BinaryImplicationGraph::ExpandAtMostOneWithWeight<true>(
     const absl::Span<const Literal> at_most_one,
@@ -2985,7 +2986,7 @@ BinaryImplicationGraph::ExpandAtMostOneWithWeight<false>(
     const util_intops::StrongVector<LiteralIndex, bool>& can_be_included,
     const util_intops::StrongVector<LiteralIndex, double>& expanded_lp_values);
 
-// This function and the generated cut serves two purpose:
+// This function and the generated cut serves two purposes:
 //   1/ If a new clause of size 2 was discovered and not included in the LP, we
 //     will add it.
 //   2/ The more classical clique cut separation algorithm
@@ -3016,14 +3017,14 @@ BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
     expanded_lp_values[l.NegatedIndex()] = 1.0 - value;
 
     // This is used for extending clique-cuts.
-    // In most situation, we will only extend the cuts with literal at zero,
-    // and we prefer "low" reduced cost first, so we negate it. Variable with
+    // In most situations, we will only extend the cuts with literals at zero,
+    // and we prefer "low" reduced cost first, so we negate it. Variables with
     // high reduced costs will likely stay that way and are of less interest in
     // a clique cut. At least that is my interpretation.
     //
     // TODO(user): For large problems or when we base the clique from a newly
     // added and violated 2-clique, we might consider only a subset of
-    // fractional variables, so we might need to include fractional variable
+    // fractional variables, so we might need to include fractional variables
     // first, but then their rc should be zero, so it should be already kind of
     // doing that.
     //
@@ -3042,12 +3043,12 @@ BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
   };
   std::vector<Candidate> candidates;
 
-  // First heuristic. Currently we only consider violated at most one of size 2,
-  // and extend them. Right now, the code is a bit slow to try too many at every
-  // LP node so it is why we are defensive like this. Note also that because we
-  // currently still statically add the initial implications, this will only add
-  // cut based on newly learned binary clause. Or the one that were not added
-  // to the relaxation in the first place.
+  // First heuristic. Currently we only consider violated at-most-ones of size
+  // 2, and extend them. Right now, the code is a bit slow to try too many at
+  // every LP node so it is why we are defensive like this. Note also that
+  // because we currently still statically add the initial implications, this
+  // will only add cut based on newly learned binary clauses, or the ones that
+  // were not added to the relaxation in the first place.
   std::vector<Literal> fractional_literals;
   for (int i = 0; i < size; ++i) {
     Literal current_literal = literals[i];
@@ -3084,15 +3085,15 @@ BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
     }
   }
 
-  // Do not genate too many cut at once.
+  // Do not generate too many cuts at once.
   const int kMaxNumberOfCutPerCall = 10;
   std::sort(candidates.begin(), candidates.end());
   if (candidates.size() > kMaxNumberOfCutPerCall) {
     candidates.resize(kMaxNumberOfCutPerCall);
   }
 
-  // Expand to a maximal at most one each candidates before returning them.
-  // Note that we only expand using literal from the LP.
+  // Expand to a maximal at most one each candidate before returning them.
+  // Note that we only expand using literals from the LP.
   tmp_cuts_.clear();
   for (const Candidate& candidate : candidates) {
     tmp_cuts_.push_back(ExpandAtMostOneWithWeight(
@@ -3102,7 +3103,7 @@ BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
   // Once we processed new implications, also add "proper" clique cuts.
   // We can generate a small graph and separate cut efficiently there.
   if (fractional_literals.size() > 1) {
-    // Lets permute this randomly and truncate if we have too many variables.
+    // Let's permute this randomly and truncate if we have too many variables.
     // Since we use bitset it is good to have a multiple of 64 there.
     //
     // TODO(user): Prefer more fractional variables.
@@ -3176,7 +3177,7 @@ BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
       // Expand and add clique.
       //
       // TODO(user): Expansion is pretty slow. Given that the base clique can
-      // share literal being part of the same amo, we should be able to speed
+      // share literals being part of the same amo, we should be able to speed
       // that up, we don't want to scan an amo twice basically.
       tmp_cuts_.push_back(ExpandAtMostOneWithWeight(
           at_most_one, can_be_included, heuristic_weights));
@@ -3206,10 +3207,10 @@ BinaryImplicationGraph::HeuristicAmoPartition(std::vector<Literal>* literals) {
   // Priority queue of (intersection_size, start_of_amo).
   std::priority_queue<std::pair<int, int>> pq;
 
-  // Compute for each at most one that might overlap, its overlaping size and
-  // stores its start in the at_most_one_buffer_.
+  // Compute for each at most one that might overlap, its overlapping size and
+  // store its start in the at_most_one_buffer_.
   //
-  // This is in O(num_literal in amo).
+  // This is in O(num_literals in amo).
   absl::flat_hash_set<int> explored_amo;
   for (const Literal l : *literals) {
     for (const int start : implications_and_amos_[l].offsets()) {
@@ -3248,7 +3249,7 @@ BinaryImplicationGraph::HeuristicAmoPartition(std::vector<Literal>* literals) {
       continue;
     }
 
-    // Mark the literal of that at most one at false.
+    // Mark the literals of that at most one to false.
     for (const Literal l : AtMostOne(start)) {
       to_consider[l] = false;
     }
@@ -3347,7 +3348,7 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOne(
   }
 
   // TODO(user): Improve algorithm. If we do a dfs, we can know if a literal
-  // has no descendant in the current intersection. We can keep such literal
+  // has no descendants in the current intersection. We can keep such literals
   // marked.
   std::vector<LiteralIndex> intersection;
   for (int i = 0; i < clique.size(); ++i) {
@@ -3670,7 +3671,7 @@ bool BinaryImplicationGraph::InvariantsAreOk() {
     const LiteralIndex not_a_index = Literal(a_index).NegatedIndex();
     for (const Literal b : implications_and_amos_[a_index].literals()) {
       if (is_removed_[b]) {
-        LOG(ERROR) << "A removed literal still appear! " << Literal(a_index)
+        LOG(ERROR) << "A removed literal still appears! " << Literal(a_index)
                    << " => " << b;
         return false;
       }
@@ -3722,7 +3723,7 @@ bool BinaryImplicationGraph::InvariantsAreOk() {
     const absl::Span<const Literal> amo = AtMostOne(start);
     for (const Literal l : amo) {
       if (is_removed_[l]) {
-        LOG(ERROR) << "A removed literal still appear in an amo " << l;
+        LOG(ERROR) << "A removed literal still appears in an amo " << l;
         return false;
       }
       if (!lit_to_start.contains({l, start})) {

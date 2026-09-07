@@ -12,13 +12,13 @@
 // limitations under the License.
 
 // This file contains all the top-level logic responsible for driving the search
-// of a satisfiability integer problem. What decision we take next, which new
-// Literal associated to an IntegerLiteral we create and when we restart.
+// of a satisfiability integer problem: what decision we take next, which new
+// Literal associated with an IntegerLiteral we create, and when we restart.
 //
 // For an optimization problem, our algorithm solves a sequence of decision
-// problem using this file as an entry point. Note that some heuristics here
+// problems using this file as an entry point. Note that some heuristics here
 // still use the objective if there is one in order to orient the search towards
-// good feasible solution though.
+// good feasible solutions, though.
 
 #ifndef ORTOOLS_SAT_CONTINUOUS_PROBER_H_
 #define ORTOOLS_SAT_CONTINUOUS_PROBER_H_
@@ -51,18 +51,18 @@ namespace operations_research {
 namespace sat {
 
 // This class will loop continuously on model variables and try to probe/shave
-// its bounds.
+// their bounds.
 class ContinuousProber {
  public:
-  // The model_proto is just used to construct the lists of variable to probe.
+  // The model_proto is just used to construct the lists of variables to probe.
   ContinuousProber(const CpModelProto& model_proto, Model* model);
   ~ContinuousProber();
 
   // Starts or continues probing variables and their bounds.
   // It returns:
   //   - SatSolver::INFEASIBLE if the problem is proven infeasible.
-  //   - SatSolver::FEASIBLE when a feasible solution is found
-  //   - SatSolver::LIMIT_REACHED if the limit stored in the model is reached
+  //   - SatSolver::FEASIBLE when a feasible solution is found.
+  //   - SatSolver::LIMIT_REACHED if the limit stored in the model is reached.
   // Calling Probe() after it has returned FEASIBLE or LIMIT_REACHED will resume
   // probing from its previous state.
   SatSolver::Status Probe();
@@ -138,7 +138,7 @@ class ContinuousProber {
   std::optional<SatSolver::Status> ProbeAtLeastOnes(double deadline);
   // Probes at_most_ones of the SAT model.
   std::optional<SatSolver::Status> ProbeAtMostOnes(double deadline);
-  // Probes combinations of Booleans variables.
+  // Probes combinations of Boolean variables.
   std::optional<SatSolver::Status> ProbePairsOfBoolVars(double deadline);
 
   // Returns true if bool_var is not assigned and not redundant.
@@ -159,7 +159,7 @@ class ContinuousProber {
   static void AddStats(MethodStats& total_stats, const MethodStats& start_stats,
                        const MethodStats& end_stats);
 
-  // Variables containers. We reuse the bool_vars_to_probe_ for the pair of
+  // Variable containers. We reuse bool_vars_to_probe_ for the pairs of
   // Booleans probing method.
   std::vector<BooleanVariable> bool_vars_to_probe_;
   std::vector<BooleanVariable> bool_vars_to_shave_;
@@ -190,7 +190,7 @@ class ContinuousProber {
   // Var representatives, for the symmetry of the model proto.
   std::vector<int> var_to_representative_;
 
-  // Period counters;
+  // Period counters.
   int num_logs_remaining_ = 0;
   int num_syncs_remaining_ = 0;
   int num_test_limit_remaining_ = 0;

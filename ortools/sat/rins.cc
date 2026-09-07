@@ -30,7 +30,7 @@
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer_base.h"
-#include "ortools/sat/linear_constraint_manager.h"
+#include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/synchronization.h"
 
@@ -44,11 +44,11 @@ void RecordLPRelaxationValues(Model* model) {
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   auto* lp_values = model->GetOrCreate<ModelLpValues>();
 
-  // TODO(user): The default of ::infinity() for variable for which we do not
-  // have any LP solution is weird and inconsistent with ModelLpValues default
-  // which is zero. Fix. Note that in practice, at linearization level 2, all
-  // variable will eventually have an lp relaxation value, so it shoulnd't
-  // matter much to just use zero in RINS/RENS.
+  // TODO(user): The default of ::infinity() for variables for which we do not
+  // have any LP solution is weird and inconsistent with the ModelLpValues
+  // default which is zero. Fix. Note that in practice, at linearization level
+  // 2, all variables will eventually have an LP relaxation value, so it
+  // shouldn't matter much to just use zero in RINS/RENS.
   std::vector<double> relaxation_values(
       mapping->NumProtoVariables(), std::numeric_limits<double>::infinity());
 
@@ -189,8 +189,8 @@ ReducedDomainNeighborhood GetRinsRensNeighborhood(
     return reduced_domains;  // Not generated.
   }
 
-  // Using a partial LP relaxation computed by feasibility_pump, and a full lp
-  // relaxation periodically dumped by linearization=2 workers is equiprobable.
+  // Using a partial LP relaxation computed by feasibility_pump, and a full LP
+  // relaxation periodically dumped by linearization=2 workers are equiprobable.
   std::bernoulli_distribution random_bool(0.5);
 
   const bool use_lp_relaxation =

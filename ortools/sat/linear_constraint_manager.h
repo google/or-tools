@@ -41,30 +41,6 @@
 namespace operations_research {
 namespace sat {
 
-// Stores for each IntegerVariable its temporary LP solution.
-//
-// This is shared between all LinearProgrammingConstraint because in the corner
-// case where we have many different LinearProgrammingConstraint and a lot of
-// variable, we could theoretically use up a quadratic amount of memory
-// otherwise.
-struct ModelLpValues
-    : public util_intops::StrongVector<IntegerVariable, double> {
-  ModelLpValues() = default;
-};
-
-// Same as ModelLpValues for reduced costs.
-struct ModelReducedCosts
-    : public util_intops::StrongVector<IntegerVariable, double> {
-  ModelReducedCosts() = default;
-};
-
-// Stores the mapping integer_variable -> glop::ColIndex.
-// This is shared across all LP, which is fine since there are disjoint.
-struct ModelLpVariableMapping
-    : public util_intops::StrongVector<IntegerVariable, glop::ColIndex> {
-  ModelLpVariableMapping() = default;
-};
-
 // Knowing the symmetry of the IP problem should allow us to
 // solve the LP faster via "folding" techniques.
 //
@@ -72,13 +48,13 @@ struct ModelLpVariableMapping
 // Refinement", Martin Grohe, Kristian Kersting, Martin Mladenov, Erkal
 // Selman, https://arxiv.org/abs/1307.5697
 //
-// In the presence of symmetry, by considering all symmetric version of a
+// In the presence of symmetry, by considering all symmetric versions of a
 // constraint and summing them, we can derive a new constraint using the sum
-// of the variable on each orbit instead of the individual variables.
+// of the variables on each orbit instead of the individual variables.
 //
-// For the integration in a MIP solver, I couldn't find many reference. The way
+// For the integration in a MIP solver, I couldn't find many references. The way
 // I did it here is to introduce for each orbit a variable representing the
-// sum of the orbit variable. This allows to represent the folded LP in terms
+// sum of the orbit variables. This allows representing the folded LP in terms
 // of these variables (that are connected to the rest of the solver) and just
 // reuse the full machinery.
 //
@@ -99,7 +75,7 @@ class LinearConstraintSymmetrizer {
   void AddSymmetryOrbit(IntegerVariable sum_var,
                         absl::Span<const IntegerVariable> orbit);
 
-  // If there are no symmetry, we shouldn't bother calling the functions below.
+  // If there is no symmetry, we shouldn't bother calling the functions below.
   // Note that they will still work, but be no-op.
   bool HasSymmetry() const { return has_symmetry_; }
 
@@ -108,14 +84,14 @@ class LinearConstraintSymmetrizer {
   IntegerVariable OrbitSumVar(int i) const { return orbit_sum_vars_[i]; }
   absl::Span<const IntegerVariable> Orbit(int i) const { return orbits_[i]; }
 
-  // Returns the orbit number in [0, num_orbits) if var belong to a non-trivial
-  // orbit or if it is a "orbit_sum_var". Returns -1 otherwise.
+  // Returns the orbit number in [0, num_orbits) if var belongs to a non-trivial
+  // orbit or if it is an "orbit_sum_var". Returns -1 otherwise.
   int OrbitIndex(IntegerVariable var) const;
 
   // Returns true iff var is one of the sum_var passed to AddSymmetryOrbit().
   bool IsOrbitSumVar(IntegerVariable var) const;
 
-  // This will be only true for variable not appearing in any orbit and for
+  // This will be only true for variables not appearing in any orbit and for
   // the orbit sum variables.
   bool AppearInFoldedProblem(IntegerVariable var) const;
 
@@ -136,28 +112,28 @@ class LinearConstraintSymmetrizer {
   int64_t num_overflows_ = 0;
   LinearConstraintBuilder builder_;
 
-  // We index our vector by positive variable only.
+  // We index our vector by positive variables only.
   util_intops::StrongVector<PositiveOnlyIndex, int> var_to_orbit_index_;
 
-  // Orbit info index by number in [0, num_orbits);
+  // Orbit info indexed by number in [0, num_orbits).
   std::vector<IntegerVariable> orbit_sum_vars_;
   CompactVectorVector<int, IntegerVariable> orbits_;
 };
 
 // This class holds a list of globally valid linear constraints and has some
-// logic to decide which one should be part of the LP relaxation. We want more
-// for a better relaxation, but for efficiency we do not want to have too much
+// logic to decide which ones should be part of the LP relaxation. We want more
+// for a better relaxation, but for efficiency we do not want to have too many
 // constraints while solving the LP.
 //
 // This class is meant to contain all the initial constraints of the LP
 // relaxation and to get new cuts as they are generated. Thus, it can both
-// manage cuts but also only add the initial constraints lazily if there is too
+// manage cuts but also only add the initial constraints lazily if there are too
 // many of them.
 class LinearConstraintManager {
  public:
   struct ConstraintInfo {
     // Note that this constraint always contains "tight" lb/ub, some of these
-    // bound might be trivial level zero bounds, and one can know this by
+    // bounds might be trivial level zero bounds, and one can know this by
     // looking at lb_is_trivial/ub_is_trivial.
     LinearConstraint constraint;
 
@@ -170,8 +146,8 @@ class LinearConstraintManager {
     // LP and violated.
     double active_count = 0.0;
 
-    // TODO(user): This is the number of time the constraint was consecutively
-    // inactive, and go up to 100 with the default param, so we could optimize
+    // TODO(user): This is the number of times the constraint was consecutively
+    // inactive, and goes up to 100 with the default param, so we could optimize
     // the space used more.
     uint16_t inactive_count = 0;
 
@@ -183,7 +159,7 @@ class LinearConstraintManager {
 
     // For now, we mark all the generated cuts as deletable and the problem
     // constraints as undeletable.
-    // TODO(user): We can have a better heuristics. Some generated good cuts
+    // TODO(user): We can have a better heuristic. Some generated good cuts
     // can be marked undeletable and some unused problem specified constraints
     // can be marked deletable.
     bool is_deletable = false;
@@ -221,15 +197,15 @@ class LinearConstraintManager {
   bool UpdateConstraintLb(glop::RowIndex index_in_lp, IntegerValue new_lb);
   bool UpdateConstraintUb(glop::RowIndex index_in_lp, IntegerValue new_ub);
 
-  // The objective is used as one of the criterion to score cuts.
+  // The objective is used as one of the criteria to score cuts.
   // The more a cut is parallel to the objective, the better its score is.
   //
   // Currently this should only be called once per IntegerVariable (Checked). It
   // is easy to support dynamic modification if it becomes needed.
   void SetObjectiveCoefficient(IntegerVariable var, IntegerValue coeff);
 
-  // Heuristic to decides what LP is best solved next. We use the model lp
-  // solutions as an heuristic, and it should usually be updated with the last
+  // Heuristic to decide what LP is best solved next. We use the model lp
+  // solutions as a heuristic, and it should usually be updated with the last
   // known solution before this call.
   //
   // The current solution state is used for detecting inactive constraints. It
@@ -240,7 +216,7 @@ class LinearConstraintManager {
   bool ChangeLp(glop::BasisState* solution_state,
                 int* num_new_constraints = nullptr);
 
-  // This can be called initially to add all the current constraint to the LP
+  // This can be called initially to add all the current constraints to the LP
   // returned by GetLp().
   void AddAllConstraintsToLp();
 
@@ -250,7 +226,7 @@ class LinearConstraintManager {
     return constraint_infos_;
   }
 
-  // The set of constraints indices in AllConstraints() that should be part
+  // The set of constraint indices in AllConstraints() that should be part
   // of the next LP to solve.
   const std::vector<ConstraintIndex>& LpConstraints() const {
     return lp_constraints_;
@@ -287,7 +263,7 @@ class LinearConstraintManager {
   bool DebugCheckConstraint(const LinearConstraint& cut, bool only_check_ub);
 
   // Getter "ReducedCosts" API for cuts.
-  // One need to call CacheReducedCostsInfo() before accessing this, otherwise
+  // One needs to call CacheReducedCostsInfo() before accessing this, otherwise
   // these will just always return zero.
   //
   // It is not possible to set together to true a set of literals 'l' such that
@@ -302,7 +278,7 @@ class LinearConstraintManager {
   }
 
   // This is quick. Work will happen on CacheReducedCostsInfo().
-  // This way if no one use the information, we don't was time.
+  // This way if no one uses the information, we don't waste time.
   // See for instance co-1000.mps where this can be slow and we never use
   // the information.
   void SetReducedCostsAsLinearConstraint(const LinearConstraint& ct) {
@@ -313,11 +289,11 @@ class LinearConstraintManager {
   }
 
  private:
-  // Heuristic that decide which constraints we should remove from the current
+  // Heuristic that decides which constraints we should remove from the current
   // LP. Note that such constraints can be added back later by the heuristic
   // responsible for adding new constraints from the pool.
   //
-  // Returns true if and only if one or more constraints where removed.
+  // Returns true if and only if one or more constraints were removed.
   //
   // If the solutions_state is empty, then this function does nothing and
   // returns false (this is used for tests). Otherwise, the solutions_state is
@@ -325,8 +301,8 @@ class LinearConstraintManager {
   bool MaybeRemoveSomeInactiveConstraints(glop::BasisState* solution_state);
 
   // Apply basic inprocessing simplification rules:
-  //  - remove fixed variable
-  //  - reduce large coefficient (i.e. coeff strenghtenning or big-M reduction).
+  //  - remove fixed variables
+  //  - reduce large coefficients (i.e. coeff strengthening or big-M reduction).
   // This uses level-zero bounds.
   // Returns true if the terms of the constraint changed.
   bool SimplifyConstraint(LinearConstraint* ct);
@@ -364,7 +340,7 @@ class LinearConstraintManager {
 
   // We keep a map from the hash of our constraint terms to their position in
   // constraints_. This is an optimization to detect duplicate constraints. We
-  // are robust to collisions because we always relies on the ground truth
+  // are robust to collisions because we always rely on the ground truth
   // contained in constraints_ and the code is still okay if we do not merge the
   // constraints.
   absl::flat_hash_map<size_t, ConstraintIndex> equiv_constraints_;
@@ -393,7 +369,7 @@ class LinearConstraintManager {
   // Total deterministic time spent in this class.
   double dtime_ = 0.0;
 
-  // Sparse representation of the objective coeffs indexed by positive variables
+  // Sparse representation of the objective coeffs indexed by positive variable
   // indices. Important: We cannot use a dense representation here in the corner
   // case where we have many independent LPs. Alternatively, we could share a
   // dense vector between all LinearConstraintManager.
@@ -422,7 +398,7 @@ class LinearConstraintManager {
 // the top n of a given type during one generation round. This is there to help
 // doing that.
 //
-// TODO(user): Avoid computing efficacity twice.
+// TODO(user): Avoid computing efficacy twice.
 // TODO(user): We don't use any orthogonality consideration here.
 // TODO(user): Detect duplicate cuts?
 class TopNCuts {
@@ -434,7 +410,7 @@ class TopNCuts {
       LinearConstraint ct, absl::string_view name,
       const util_intops::StrongVector<IntegerVariable, double>& lp_solution);
 
-  // Empty the local pool and add all its content to the manager.
+  // Empty the local pool and add all its contents to the manager.
   void TransferToManager(LinearConstraintManager* manager);
 
  private:

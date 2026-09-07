@@ -23,7 +23,6 @@
 #include <ctime>
 #include <deque>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <numeric>
 #include <string>
@@ -75,10 +74,10 @@ static_assert(!operations_research::kTargetOsSupportsFile);
 #endif  // ORTOOLS_TARGET_OS_SUPPORTS_FILE
 
 ABSL_FLAG(bool, cp_model_dump_solutions, false,
-          "DEBUG ONLY. If true, all the intermediate solution will be dumped "
+          "DEBUG ONLY. If true, all the intermediate solutions will be dumped "
           "under '\"FLAGS_cp_model_dump_prefix\" + \"solution_xxx.pb.txt\"'.");
 ABSL_FLAG(bool, cp_model_dump_tightened_models, false,
-          "DEBUG ONLY. If true, dump tightened models incoporating all bounds "
+          "DEBUG ONLY. If true, dump tightened models incorporating all bounds "
           "changes under '\"FLAGS_cp_model_dump_prefix\" + "
           "\"tight_model_xxx.pb.txt\"'.");
 
@@ -92,7 +91,7 @@ SharedSolutionPool::Add(SharedSolutionRepository<int64_t>::Solution solution) {
       solution.source_id == alternative_path_.source_id()) {
     alternative_path_.Add(solution);
     if (solution.rank < best_solutions_.GetBestRank()) {
-      VLOG(2) << "ALTERNATIVE WIN !";
+      VLOG(2) << "ALTERNATIVE WIN!";
     }
   }
 
@@ -101,7 +100,7 @@ SharedSolutionPool::Add(SharedSolutionRepository<int64_t>::Solution solution) {
 }
 
 void SharedSolutionPool::Synchronize(absl::BitGenRef random) {
-  // Update the "seeds" for the aternative path.
+  // Update the "seeds" for the alternative path.
   if (alternative_path_.num_solutions_to_keep() > 0) {
     absl::MutexLock mutex_lock(mutex_);
 
@@ -132,7 +131,7 @@ void SharedSolutionPool::Synchronize(absl::BitGenRef random) {
 
                 // Resize and recompute rank_.
                 //
-                // seeds_[i] should contains solution in [ranks_[i],
+                // seeds_[i] should contain solutions in [ranks_[i],
                 // rank_[i+1]). rank_[0] is always min_rank_. As long as we have
                 // room, we should have exactly one bucket per rank.
                 ranks_.resize(num_solutions);
@@ -168,7 +167,7 @@ void SharedSolutionPool::Synchronize(absl::BitGenRef random) {
                       solution);
             };
 
-    // All solution go through best_solutions_.Add(), so we only need
+    // All solutions go through best_solutions_.Add(), so we only need
     // to process these here.
     best_solutions_.Synchronize(process_solution);
   } else {
@@ -179,10 +178,10 @@ void SharedSolutionPool::Synchronize(absl::BitGenRef random) {
   // If we try to improve the alternate path without success, reset it
   // from a random path_seeds_.
   //
-  // TODO(user): find a way to generate random solution and update the seeds
+  // TODO(user): find a way to generate random solutions and update the seeds
   // with them. Shall we do that in a continuous way or only when needed?
   if (alternative_path_.num_solutions_to_keep() > 0) {
-    // Restart the alternative path ?
+    // Restart the alternative path?
     const int threshold = std::max(
         100, static_cast<int>(std::sqrt(best_solutions_.num_queried())));
     if (alternative_path_.NumRecentlyNonImproving() > threshold) {
@@ -198,7 +197,7 @@ void SharedSolutionPool::Synchronize(absl::BitGenRef random) {
       absl::MutexLock mutex_lock(mutex_);
 
       // Pick random bucket with bias. If the bucket is empty, we will scan
-      // "worse" bucket until we find a solution. We never pick bucket 0.
+      // "worse" buckets until we find a solution. We never pick bucket 0.
       if (seeds_.size() > 1) {
         // Note that LogUniform() is always inclusive.
         // TODO(user): Shall we bias even more?
@@ -232,7 +231,7 @@ void SharedLPSolutionRepository::NewLPSolution(
       std::make_shared<SharedSolutionRepository<double>::Solution>();
   solution->variable_values = std::move(lp_solution);
 
-  // We always prefer to keep the solution from the last synchronize batch.
+  // We always prefer to keep the solution from the last synchronized batch.
   {
     absl::MutexLock mutex_lock(mutex_);
     solution->rank = -num_synchronization_;
@@ -348,8 +347,8 @@ void SharedResponseManager::UpdateGapIntegralInternal() {
   // We use the log of the absolute objective gap.
   //
   // Using the log should count no solution as just log(2*64) = 18, and
-  // otherwise just compare order of magnitude which seems nice. Also, It is
-  // more easy to compare the primal integral with the total time.
+  // otherwise just compare order of magnitude which seems nice. Also, it is
+  // easier to compare the primal integral with the total time.
   const CpObjectiveProto& obj = *objective_or_null_;
   const double factor =
       obj.scaling_factor() != 0.0 ? std::abs(obj.scaling_factor()) : 1.0;
@@ -377,7 +376,7 @@ void SharedResponseManager::TestGapLimitsIfNeeded() {
   // though.
   if (update_integral_on_each_change_) UpdateGapIntegralInternal();
 
-  // Abort if there is not limit set, if the gap is not defined or if we already
+  // Abort if there is no limit set, if the gap is not defined or if we already
   // proved optimality or infeasibility.
   if (absolute_gap_limit_ == 0 && relative_gap_limit_ == 0) return;
   if (best_solution_objective_value_ >= kMaxIntegerValue) return;
@@ -430,9 +429,9 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
 
   if (lb_change) {
     // When the improving problem is infeasible, it is possible to report
-    // arbitrary high inner_objective_lower_bound_. We make sure it never cross
-    // the current best solution, so that we always report globally valid lower
-    // bound.
+    // arbitrarily high inner_objective_lower_bound_. We make sure it never
+    // crosses the current best solution, so that we always report a globally
+    // valid lower bound.
     DCHECK_LE(inner_objective_upper_bound_, best_solution_objective_value_);
     inner_objective_lower_bound_ =
         std::min(best_solution_objective_value_, lb.value());
@@ -484,7 +483,8 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
   TestGapLimitsIfNeeded();
 }
 
-// Invariant: the status always start at UNKNOWN and can only evolve as follow:
+// Invariant: the status always starts at UNKNOWN and can only evolve as
+// follows:
 // UNKNOWN -> FEASIBLE -> OPTIMAL
 // UNKNOWN -> INFEASIBLE
 void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
@@ -657,10 +657,10 @@ CpSolverResponse SharedResponseManager::GetResponseInternal(
   FillObjectiveValuesInResponse(&result);
   result.set_solution_info(solution_info);
 
-  // Tricky: We copy the solution now for the case where MergeFrom() belows
-  // override it!
+  // Tricky: We copy the solution now for the case where MergeFrom() below
+  // overrides it!
   //
-  // TODO(user): Fix. This is messy, we should really just override stats not
+  // TODO(user): Fix. This is messy, we should really just override stats, not
   // important things like solution or status with the MergeFrom() below.
   if (best_status_ == CpSolverStatus::FEASIBLE ||
       best_status_ == CpSolverStatus::OPTIMAL) {
@@ -717,7 +717,7 @@ CpSolverResponse SharedResponseManager::GetResponse() {
     }
   }
 
-  // final postprocessors will print out the final log. They must be called
+  // Final postprocessors will print out the final log. They must be called
   // last.
   for (int i = final_postprocessors_.size(); --i >= 0;) {
     final_postprocessors_[i](&result);
@@ -798,7 +798,7 @@ SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
     if (objective_value > inner_objective_upper_bound_) return ret;
 
     // Our inner_objective_lower_bound_ should be a globally valid bound, until
-    // the problem become infeasible (i.e the lb > ub) in which case the bound
+    // the problem becomes infeasible (i.e. the lb > ub) in which case the bound
     // is no longer globally valid. Here, because we have a strictly improving
     // solution, we shouldn't be in the infeasible setting yet.
     DCHECK_GE(objective_value, inner_objective_lower_bound_);
@@ -810,7 +810,7 @@ SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
     inner_objective_upper_bound_ = objective_value - 1;
   }
 
-  // In single thread, no one is synchronizing the solution manager, so we
+  // In single-thread mode, no one is synchronizing the solution manager, so we
   // should do it from here.
   if (always_synchronize_) {
     solution_pool_.Synchronize(random_);
@@ -975,7 +975,7 @@ void SharedBoundsManager::ReportPotentialNewBounds(
     int var = variables[i];
     if (var >= num_variables_) continue;
 
-    // In the presence of symmetry we only update the representative.
+    // In the presence of symmetry, we only update the representative.
     if (has_symmetry_) {
       var = var_to_representative_[var];
     }
@@ -1007,7 +1007,7 @@ void SharedBoundsManager::ReportPotentialNewBounds(
 
     if (has_symmetry_ && variables[i] != var) {
       // We count -1 so that num_improvements + num_symmetric_improvements
-      // corresponds to the number of actual bound improvement.
+      // corresponds to the number of actual bound improvements.
       num_symmetric_improvements +=
           orbits_[var_to_orbit_index_[var]].size() - 1;
     }
@@ -1030,8 +1030,8 @@ void SharedBoundsManager::ReportPotentialNewBounds(
                                                            upper_bounds_[rep]));
         FillDomainInProto(domain, var_proto);
       }
-      const std::string filename = absl::StrCat(dump_prefix_, "tighened_model_",
-                                                export_counter_, ".pb.txt");
+      const std::string filename = absl::StrCat(
+          dump_prefix_, "tightened_model_", export_counter_, ".pb.txt");
       LOG(INFO) << "Dumping tightened model proto to '" << filename << "'.";
       export_counter_++;
       CHECK(WriteModelProtoToFile(tight_model, filename));
@@ -1039,9 +1039,9 @@ void SharedBoundsManager::ReportPotentialNewBounds(
   }
 }
 
-// TODO(user): Because we look at the non-synchronized and up to date bounds,
-// this break determinism if two solution for the same subpart comes at the same
-// time.
+// TODO(user): Because we look at the non-synchronized and up-to-date bounds,
+// this breaks determinism if two solutions for the same subpart come at the
+// same time.
 void SharedBoundsManager::FixVariablesFromPartialSolution(
     absl::Span<const int64_t> solution,
     absl::Span<const int> variables_to_fix) {
@@ -1144,8 +1144,8 @@ void SharedBoundsManager::GetChangedBounds(
     id_to_changed_variables_[id].ResetAllToFalse();
 
     // We need to report the bounds in a deterministic order as it is difficult
-    // to guarantee that nothing depend on the order in which the new bounds are
-    // processed.
+    // to guarantee that nothing depends on the order in which the new bounds
+    // are processed.
     absl::c_sort(*variables);
     for (const int var : *variables) {
       new_lower_bounds->push_back(synchronized_lower_bounds_[var]);
@@ -1167,7 +1167,7 @@ void SharedBoundsManager::GetChangedBounds(
   // just reused.
   //
   // TODO(user): Be careful if we ever start to call
-  // FixVariablesFromPartialSolution() on variable that touches symmetries.
+  // FixVariablesFromPartialSolution() on variables that touch symmetries.
   if (has_symmetry_) {
     const int old_size = variables->size();
     for (int i = 0; i < old_size; ++i) {
@@ -1242,7 +1242,7 @@ bool UniqueClauseStream::Add(absl::Span<const int> clause, int lbd) {
   } else {
     // Maybe replace an old buffered clause of the same size if it has a smaller
     // hash value. This means that the buffer will contain a deterministic
-    // sample of the clauses added independent of insertion order.
+    // sample of the clauses added, independent of insertion order.
     const int64_t replaced_clause_id =
         HashClause(clause, 1) % NumClausesOfSize(clause.size());
     absl::Span<int> replaced_clause = absl::MakeSpan(*buffer).subspan(
@@ -1382,10 +1382,10 @@ void SharedClausesManager::AddBinaryClause(int id, int lit1, int lit2) {
     if (always_synchronize_) ++last_visible_binary_clause_;
     id_to_num_exported_[id]++;
 
-    // Small optim. If the worker is already up to date with clauses to import,
+    // Small optim. If the worker is already up-to-date with clauses to import,
     // we can mark this new clause as already seen.
-    if (id_to_last_processed_binary_clause_[id] ==
-        added_binary_clauses_.size() - 1) {
+    if (always_synchronize_ && id_to_last_processed_binary_clause_[id] ==
+                                   added_binary_clauses_.size() - 1) {
       id_to_last_processed_binary_clause_[id]++;
     }
 
@@ -1424,7 +1424,7 @@ void SharedClausesManager::AddEdge(LiteralIndex a, LiteralIndex b) {
   // Always use the min as the new parent, in order to guarantee that the
   // representative of not(a) is the negation of the representative of a. On the
   // other hand, this does not give the shallowest new tree. This gives a less
-  // good algorithmic complexity compared with the classic union-find algorithm.
+  // good algorithmic complexity compared to the classic union-find algorithm.
   if (rep_a < rep_b) {
     parents_[rep_b] = rep_a;
   } else if (rep_b < rep_a) {
@@ -1448,8 +1448,7 @@ LiteralIndex SharedClausesManager::GetRepresentative(LiteralIndex a) {
   return representative;
 }
 
-std::vector<int> SharedClausesManager::GetRepresentatives(int64_t* timestamp) {
-  absl::MutexLock mutex_lock(mutex_);
+std::vector<int> SharedClausesManager::GetRepresentativesImpl() {
   std::vector<int> representatives;
   const int num_vars = parents_.size() / 2;
   representatives.reserve(num_vars);
@@ -1460,10 +1459,21 @@ std::vector<int> SharedClausesManager::GetRepresentatives(int64_t* timestamp) {
     const int rep_var = rep.Variable().value();
     representatives.push_back(rep.IsPositive() ? rep_var : NegatedRef(rep_var));
   }
+  return representatives;
+}
+
+std::vector<int> SharedClausesManager::GetRepresentatives(int64_t* timestamp) {
+  absl::MutexLock mutex_lock(mutex_);
+  if (!always_synchronize_) {
+    if (timestamp != nullptr) {
+      *timestamp = synchronized_num_equivalences_;
+    }
+    return synchronized_representatives_;
+  }
   if (timestamp != nullptr) {
     *timestamp = num_equivalences_;
   }
-  return representatives;
+  return GetRepresentativesImpl();
 }
 
 void SharedClausesManager::AddBatch(int id, CompactVectorVector<int> batch) {
@@ -1532,8 +1542,8 @@ void SharedClausesManager::LogStatistics(SolverLogger* logger) {
 }
 
 // TODO(user): Add some library to simplify this "transposition". Ideally we
-// could merge small table with few columns. I am thinking list (row_name,
-// col_name, count) + function that create table?
+// could merge small tables with few columns. I am thinking list (row_name,
+// col_name, count) + function that creates a table?
 void SharedLinear2Bounds::LogStatistics(SolverLogger* logger) {
   absl::MutexLock mutex_lock(mutex_);
   absl::btree_map<std::string, Stats> name_to_table_line;
@@ -1563,6 +1573,14 @@ void SharedClausesManager::Synchronize() {
   std::vector<CompactVectorVector<int>> batches_to_merge;
   {
     absl::MutexLock mutex_lock(mutex_);
+    if (!always_synchronize_) {
+      std::sort(added_binary_clauses_.begin() + last_visible_binary_clause_,
+                added_binary_clauses_.end());
+      if (synchronized_num_equivalences_ < num_equivalences_) {
+        synchronized_representatives_ = GetRepresentativesImpl();
+        synchronized_num_equivalences_ = num_equivalences_;
+      }
+    }
     last_visible_binary_clause_ = added_binary_clauses_.size();
     const int num_workers = id_to_last_processed_binary_clause_.size();
     if (num_workers <= 1) return;
@@ -1587,7 +1605,7 @@ void SharedClausesManager::Synchronize() {
         id_to_last_finished_batch_[id] -= min_finished_batch;
       }
     }
-    // TODO(user): We could cleanup binary clauses that have been consumed.
+    // TODO(user): We could clean up binary clauses that have been consumed.
   }
   if (batches_to_merge.empty()) return;
   UniqueClauseStream next_batch;

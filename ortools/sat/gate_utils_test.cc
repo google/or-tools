@@ -43,7 +43,7 @@ TEST(GetNumBitsAtOneTest, BasicTest) {
 TEST(CanonicalizeTruthTableTest, BasicBehavior1) {
   std::array<int, 3> key = {0, 2, 1};
 
-  // no change here.
+  // No change here.
   SmallBitset bitmask = 0b10101010;
   CanonicalizeTruthTable<int>(absl::MakeSpan(key), bitmask);
   EXPECT_EQ(std::bitset<8>(bitmask), std::bitset<8>(0b10101010));
@@ -131,7 +131,7 @@ TEST(CanonicalizeFunctionTruthTableTest, RandomTest) {
   const int num_vars = 8;
 
   for (int num_test = 0; num_test < 1000; ++num_test) {
-    // Lets generate a random function on k random variables.
+    // Let's generate a random function on k random variables.
     const int k = absl::Uniform(random, 0, 4);
     const int table = absl::Uniform<uint64_t>(random, 0, 1 << (1 << k));
     const Literal output(BooleanVariable(100), absl::Bernoulli(random, 0.5));
@@ -155,7 +155,7 @@ TEST(CanonicalizeFunctionTruthTableTest, RandomTest) {
     LOG(INFO) << "OUT arity=" << new_size << " " << new_output << " = f("
               << new_inputs << ") " << std::bitset<16>(new_table);
 
-    // Now check that both function always take the same value.
+    // Now check that both functions always take the same value.
     for (int m = 0; m < (1 << num_vars); ++m) {
       int index = 0;
       for (int i = 0; i < inputs.size(); ++i) {
@@ -201,7 +201,7 @@ TEST(CombineGate2Test, Exhaustive) {
 TEST(ReduceTest, Random) {
   absl::BitGen random;
 
-  // Lets create a random circuit.
+  // Let's create a random circuit.
   BinaryCircuit circuit;
   circuit.num_inputs = 10;
   circuit.num_vars = 30;
@@ -213,7 +213,7 @@ TEST(ReduceTest, Random) {
   circuit.ResetBooleanMapping();
   LOG(INFO) << "random: " << circuit.DebugString();
 
-  // Lets extract subcicuit to compute the last variable.
+  // Let's extract subcircuit to compute the last variable.
   SubcircuitExtractor extractor(circuit);
   const BinaryCircuit base = extractor.Extract({circuit.num_vars - 1});
   LOG(INFO) << "base: " << base.DebugString();
@@ -232,7 +232,7 @@ TEST(ReduceTest, Random) {
     EXPECT_EQ(response.status(), INFEASIBLE);
 
     if (mitter.num_inputs < 20) {
-      // Full enumeration should give same result.
+      // Full enumeration should give the same result.
       // We need to force output to 1 though.
       mitter.gates.emplace_back(0b1111, mitter.outputs[0], 0, 0);
       ASSERT_FALSE(BinaryCircuitIsFeasible(mitter));
@@ -265,7 +265,7 @@ TEST(ReduceTest, Random) {
     operations_research::sat::SampleForEquivalences(simplified, random, {});
   }
 
-  // We should get the same result
+  // We should get the same result.
   {
     const BinaryCircuit mitter = ConstructMitter(base, simplified);
     const CpModelProto cp_model =
@@ -284,8 +284,8 @@ TEST(NWayCircuitTest, GenerationAndChecking) {
     constants[i] = absl::Uniform<uint32_t>(random) % mask;
   }
 
-  // This do not check the constant are really respected though, but it exercise
-  // the recover function too.
+  // This does not check that constants are really respected though, but it
+  // exercises the recover function too.
   CHECK(RecoverNWayAddition(BuildPopcountCarryChainCircuit(m, constants)));
   CHECK(RecoverNWayAddition(
       BuildColumnWiseLinearCombinationCircuit(m, constants)));
@@ -293,17 +293,17 @@ TEST(NWayCircuitTest, GenerationAndChecking) {
 }
 
 // Evaluates a BinaryCircuit given input bit values (0 or 1).
-// Returns the circuit output as an uint32_t integer.
+// Returns the circuit output as a uint32_t integer.
 uint32_t EvaluateCircuit(const BinaryCircuit& circuit,
                          const std::vector<uint8_t>& inputs) {
   std::vector<uint8_t> var_values(circuit.num_vars, 0);
 
-  // Set input values
+  // Set input values.
   for (int i = 0; i < circuit.num_inputs; ++i) {
     var_values[i] = inputs[i] & 1;
   }
 
-  // Gates are topologically sorted, so we can evaluate sequentially
+  // Gates are topologically sorted, so we can evaluate sequentially.
   for (const auto& gate : circuit.gates) {
     uint8_t val_a = var_values[gate.a];
     uint8_t val_b = var_values[gate.b];
@@ -311,7 +311,7 @@ uint32_t EvaluateCircuit(const BinaryCircuit& circuit,
     var_values[gate.target] = (gate.type >> bit_index) & 1;
   }
 
-  // Reconstruct output integer from output bits
+  // Reconstruct output integer from output bits.
   uint32_t result = 0;
   for (size_t k = 0; k < circuit.outputs.size(); ++k) {
     uint8_t bit = var_values[circuit.outputs[k]];
@@ -321,14 +321,14 @@ uint32_t EvaluateCircuit(const BinaryCircuit& circuit,
   return result;
 }
 
-// Parametrized Test Suite to test all circuit builder implementations
+// Parameterized test suite to test all circuit builder implementations.
 class CircuitTest : public ::testing::TestWithParam<BinaryCircuit (*)(
                         int, absl::Span<const uint32_t>)> {};
 
 TEST_P(CircuitTest, CorrectnessOnRandomAndEdgeCases) {
   auto build_circuit_fn = GetParam();
 
-  // Test parameters: 5 inputs, 8-bit output
+  // Test parameters: 5 inputs, 8-bit output.
   const int n = 5;
   const int m = 8;
   const uint32_t mask = (1U << m) - 1;
@@ -336,7 +336,7 @@ TEST_P(CircuitTest, CorrectnessOnRandomAndEdgeCases) {
 
   BinaryCircuit circuit = build_circuit_fn(m, constants);
 
-  // Exhaustively test all 2^n = 32 input bit combinations
+  // Exhaustively test all 2^n = 32 input bit combinations.
   for (int mask_in = 0; mask_in < (1 << n); ++mask_in) {
     std::vector<uint8_t> inputs(n);
     uint32_t expected_sum = 0;
@@ -355,7 +355,7 @@ TEST_P(CircuitTest, CorrectnessOnRandomAndEdgeCases) {
   }
 }
 
-// Instantiate tests for all 4 implementations. [Gemini test]
+// Instantiate tests for all 3 implementations. [Gemini test]
 INSTANTIATE_TEST_SUITE_P(
     LinearCombinationCircuits, CircuitTest,
     ::testing::Values(

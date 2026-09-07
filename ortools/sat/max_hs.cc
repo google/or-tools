@@ -54,9 +54,9 @@
 // TODO(user): Remove this flag when experiments are stable.
 ABSL_FLAG(
     int, max_hs_strategy, 0,
-    "MaxHsStrategy: 0 extract only objective variable, 1 extract all variables "
-    "colocated with objective variables, 2 extract all variables in the "
-    "linearization");
+    "MaxHsStrategy: 0 extract only objective variables, 1 extract all "
+    "variables colocated with objective variables, 2 extract all variables in "
+    "the linearization");
 
 namespace operations_research {
 namespace sat {
@@ -93,8 +93,8 @@ bool HittingSetOptimizer::ImportFromOtherWorkers() {
   return true;
 }
 
-// Slightly different algo than FindCores() which aim to extract more cores, but
-// not necessarily non-overlapping ones.
+// Slightly different algo than FindCores() which aims to extract more cores,
+// but not necessarily non-overlapping ones.
 SatSolver::Status HittingSetOptimizer::FindMultipleCoresForMaxHs(
     std::vector<Literal> assumptions,
     std::vector<std::vector<Literal>>* cores) {
@@ -108,7 +108,7 @@ SatSolver::Status HittingSetOptimizer::FindMultipleCoresForMaxHs(
   do {
     if (time_limit_->LimitReached()) return SatSolver::LIMIT_REACHED;
 
-    // The order of assumptions do not matter.
+    // The order of assumptions does not matter.
     // Randomizing it should improve diversity.
     std::shuffle(assumptions.begin(), assumptions.end(), *random_);
 
@@ -160,7 +160,7 @@ void HittingSetOptimizer::ExtractObjectiveVariables() {
 
   CHECK_NE(objective_definition_.objective_var, kNoIntegerVariable);
   // Create the initial objective constraint.
-  // It is used to constraint the objective during search.
+  // It is used to constrain the objective during search.
   if (obj_constraint_ == nullptr) {
     obj_constraint_ = hs_model->mutable_objective();
     obj_constraint_->add_domain(
@@ -182,7 +182,7 @@ void HittingSetOptimizer::ExtractObjectiveVariables() {
       coeff = -coeff;
     }
 
-    // Normalized objective variables expects positive coefficients.
+    // Normalized objective variables expect positive coefficients.
     if (coeff > 0) {
       normalized_objective_variables_.push_back(var);
       normalized_objective_coefficients_.push_back(coeff);
@@ -390,7 +390,7 @@ bool HittingSetOptimizer::ComputeInitialLinearModel() {
 }
 
 void HittingSetOptimizer::TightenHitSetModel() {
-  // Update the variables bounds from the SAT level 0 bounds.
+  // Update the variable bounds from the SAT level 0 bounds.
   for (const auto& [var, var_proto] : extracted_variables_info_) {
     var_proto->mutable_domain()->Resize(2, 0);
     var_proto->set_domain(0, integer_trail_->LevelZeroLowerBound(var).value());
@@ -559,7 +559,7 @@ SatSolver::Status HittingSetOptimizer::Optimize() {
 
   // This is used by the "stratified" approach. We will only consider terms with
   // a weight not lower than this threshold. The threshold will decrease as the
-  // algorithm progress.
+  // algorithm progresses.
   IntegerValue stratified_threshold = kMaxIntegerValue;
 
   // Start the algorithm.
@@ -570,7 +570,7 @@ SatSolver::Status HittingSetOptimizer::Optimize() {
     //
     // TODO(user): deal with time limit.
 
-    // Get the best external bound and constraint the objective of the inner
+    // Get the best external bound and constrain the objective of the inner
     // model.
     if (shared_response_ != nullptr) {
       const IntegerValue best_lower_bound =
@@ -605,7 +605,7 @@ SatSolver::Status HittingSetOptimizer::Optimize() {
       // cases.
       //
       // TODO(user): It is actually easy to use a FEASIBLE result. If when
-      // passing it to SAT it is no feasible, we can still create cores. If it
+      // passing it to SAT it is not feasible, we can still create cores. If it
       // is feasible, we have a solution, but we cannot increase the lower
       // bound.
       return SatSolver::LIMIT_REACHED;
@@ -623,7 +623,7 @@ SatSolver::Status HittingSetOptimizer::Optimize() {
     // Update the objective lower bound with our current bound.
     //
     // Note(user): This is not needed for correctness, but it might cause
-    // more propagation and is nice to have for reporting/logging purpose.
+    // more propagation and is nice to have for reporting/logging purposes.
     if (!integer_trail_->Enqueue(
             IntegerLiteral::GreaterOrEqual(objective_definition_.objective_var,
                                            hs_objective),

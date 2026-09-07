@@ -20,7 +20,6 @@
 #include <cstdlib>
 #include <limits>
 #include <numeric>
-#include <random>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -35,7 +34,6 @@
 #include "absl/random/random.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
-#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/mathutil.h"
@@ -47,7 +45,6 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/bitset.h"
-#include "ortools/util/random_engine.h"
 #include "ortools/util/sorted_interval_list.h"
 
 using ::testing::UnorderedElementsAre;
@@ -263,7 +260,7 @@ TEST(ModularInverseTest, BasicOverflowTest) {
   }
 }
 
-TEST(ProductWithodularInverseTest, FewSmallValues) {
+TEST(ProductWithModularInverseTest, FewSmallValues) {
   const int limit = 50;
   for (int64_t mod = 1; mod < limit; ++mod) {
     for (int64_t coeff = -limit; coeff < limit; ++coeff) {
@@ -723,7 +720,7 @@ TEST(MaxBoundedSubsetSumTest, LowMaxValue) {
   }
 }
 
-TEST(MaxBoundedSubsetSumTest, LowNumberOfElement) {
+TEST(MaxBoundedSubsetSumTest, LowNumberOfElements) {
   MaxBoundedSubsetSum bounded_subset_sum(178'979);
   bounded_subset_sum.Add(150'000);
   bounded_subset_sum.Add(28'000);
@@ -757,48 +754,6 @@ TEST(MaxBoundedSubsetSumTest, SimpleMultiChoice) {
   bounded_subset_sum.AddChoices({3, 7, 8, 16});
   EXPECT_EQ(bounded_subset_sum.CurrentMax(), 31);
 }
-
-static void BM_bounded_subset_sum(benchmark::State& state) {
-  random_engine_t random_;
-  const int num_items = state.range(0);
-  const int num_choices = state.range(1);
-  const int max_capacity = state.range(2);
-  const int max_size = state.range(3);
-
-  const int num_updates = num_items * num_choices;
-  const int capacity = std::uniform_int_distribution<int>(
-      max_capacity / 2, max_capacity)(random_);
-  MaxBoundedSubsetSum subset_sum(capacity);
-  std::uniform_int_distribution<int> size_dist(0, max_size);
-  std::vector<int64_t> choices(num_choices);
-  for (auto _ : state) {
-    subset_sum.Reset(capacity);
-    for (int i = 0; i < num_items; ++i) {
-      choices.clear();
-      for (int j = 0; j < num_choices; ++j) {
-        choices[j] = size_dist(random_);
-      }
-      subset_sum.AddChoices(choices);
-    }
-  }
-  // Number of updates.
-  state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *
-                          num_updates);
-}
-
-BENCHMARK(BM_bounded_subset_sum)
-    ->Args({10, 3, 30, 5})
-    ->Args({10, 4, 50, 10})
-    ->Args({10, 4, 30, 20})
-    ->Args({25, 3, 30, 5})
-    ->Args({25, 4, 50, 10})
-    ->Args({25, 4, 30, 20})
-    ->Args({60, 3, 30, 5})
-    ->Args({60, 4, 50, 10})
-    ->Args({60, 4, 30, 20})
-    ->Args({100, 3, 30, 5})
-    ->Args({100, 4, 50, 10})
-    ->Args({100, 4, 30, 20});
 
 TEST(FirstFewValuesTest, Basic) {
   FirstFewValues<8> values;
@@ -836,7 +791,7 @@ TEST(BasicKnapsackSolverTest, BasicFeasibleExample) {
   EXPECT_THAT(result.solution, ElementsAre(-2, 9));
 }
 
-TEST(BasicKnapsackSolverTest, BasicInfesibleExample) {
+TEST(BasicKnapsackSolverTest, BasicInfeasibleExample) {
   std::vector<Domain> domains = {Domain(-3, 8), Domain(1, 8)};
   std::vector<int64_t> coeffs = {7, 13};
   std::vector<int64_t> costs = {5, 8};
@@ -1066,7 +1021,7 @@ TEST(MaxBoundedSubsetSumExactTest, RandomTest) {
     sum_of_all += elements[i];
   }
 
-  // Lets compute the maximum by brute force.
+  // Let's compute the maximum by brute force.
   int64_t brute_force_result = 0;
   for (int mask = 0; mask < (1 << num_elements); ++mask) {
     int64_t sum = 0;
@@ -1287,7 +1242,7 @@ TEST(HeuristicallySplitLongLinearTest, BasicExamples) {
   EXPECT_THAT(HeuristicallySplitLongLinear({1, 1, 2, 3}),
               ElementsAre(Pair(0, 2), Pair(2, 1), Pair(3, 1)));
 
-  // The number of part is not ideal here.
+  // The number of parts is not ideal here.
   EXPECT_THAT(
       HeuristicallySplitLongLinear({1, 1, 1, 1, 1, 2, 3}),
       ElementsAre(Pair(0, 1), Pair(1, 2), Pair(3, 2), Pair(5, 1), Pair(6, 1)));
@@ -1307,7 +1262,7 @@ bool IsStrictlyIncludedWrapper(absl::Span<const int> a,
   return IsStrictlyIncluded(in_a.const_view(), a_lits.size(), b_lits);
 }
 
-TEST(IsStricltyIncludedTest, BasicExamples) {
+TEST(IsStrictlyIncludedTest, BasicExamples) {
   EXPECT_FALSE(IsStrictlyIncludedWrapper({}, {}));
   EXPECT_FALSE(IsStrictlyIncludedWrapper({+3, +1}, {+1, +3}));
   EXPECT_FALSE(IsStrictlyIncludedWrapper({+3, +1}, {+2, +3, +5}));

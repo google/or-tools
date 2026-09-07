@@ -14,9 +14,9 @@
 // This file contains the entry point for our presolve/inprocessing code.
 //
 // TODO(user): for now it is mainly presolve, but the idea is to call these
-// function during the search so they should be as incremental as possible. That
-// is avoid doing work that is not useful because nothing changed or exploring
-// parts that were not done during the last round.
+// functions during the search so they should be as incremental as possible.
+// That is avoid doing work that is not useful because nothing changed or
+// exploring parts that were not done during the last round.
 
 #ifndef ORTOOLS_SAT_SAT_INPROCESSING_H_
 #define ORTOOLS_SAT_SAT_INPROCESSING_H_
@@ -50,13 +50,13 @@
 namespace operations_research {
 namespace sat {
 
-// The order is important and each clauses has a "special" literal that is
+// The order is important and each clause has a "special" literal that is
 // put first.
 //
 // TODO(user): Use a flat memory structure instead.
 struct PostsolveClauses {
-  // Utility function that push back clause but also make sure the given literal
-  // from clause appear first.
+  // Utility function that pushes back clauses but also makes sure the given
+  // literal from the clause appears first.
   void AddClauseWithSpecialLiteral(Literal literal,
                                    absl::Span<const Literal> clause);
 
@@ -81,9 +81,9 @@ struct SatPresolveOptions {
   // Whether we perform a transitive reduction of the binary implication graph
   // after equivalent literal detection and before each probing pass.
   //
-  // TODO(user): Doing that before the current SAT presolve also change the
-  // possible reduction. This shouldn't matter if we use the binary implication
-  // graph and its reachability instead of just binary clause though.
+  // TODO(user): Doing that before the current SAT presolve also changes the
+  // possible reductions. This shouldn't matter if we use the binary implication
+  // graph and its reachability instead of just binary clauses though.
   bool use_transitive_reduction = false;
 
   bool use_equivalence_sat_sweeping = false;
@@ -98,7 +98,7 @@ struct SatPresolveOptions {
 // do not "pollute" the normal SAT search.
 //
 // TODO(user): For the propagation, this depends on the SatSolver class, which
-// mean we cannot really use it without some refactoring as an in-processing
+// means we cannot really use it without some refactoring as an in-processing
 // from the SatSolver::Solve() function. So we do need a special
 // InprocessingSolve() that lives outside SatSolver. Alternatively, we can
 // extract the propagation main loop and conflict analysis from SatSolver.
@@ -145,16 +145,16 @@ class Inprocessing {
   // literal found during the process.
   bool DetectEquivalencesAndStamp(bool use_transitive_reduction, bool log_info);
 
-  // Removes fixed variables and exploit equivalence relations to cleanup the
+  // Removes fixed variables and exploits equivalence relations to cleanup the
   // clauses. Returns false if UNSAT.
   bool RemoveFixedAndEquivalentVariables(bool log_info);
 
-  // Returns true if there is new fixed variables or new equivalence relations
+  // Returns true if there are new fixed variables or new equivalence relations
   // since RemoveFixedAndEquivalentVariables() was last called.
   bool MoreFixedVariableToClean() const;
   bool MoreRedundantVariableToClean() const;
 
-  // Processes all clauses and see if there is any subsumption/strenghtening
+  // Processes all clauses and see if there are any subsumption/strengthening
   // reductions that can be performed. Returns false if UNSAT.
   bool SubsumeAndStrenghtenRound(bool log_info);
 
@@ -198,9 +198,9 @@ class Inprocessing {
 // Implements "stamping" as described in "Efficient CNF Simplification based on
 // Binary Implication Graphs", Marijn Heule, Matti Jarvisalo and Armin Biere.
 //
-// This sample the implications graph with a spanning tree, and then simplify
+// This samples the implication graph with a spanning tree, and then simplifies
 // all clauses (subsumption / strengthening) using the implications encoded in
-// this tree. So this allows to consider chain of implications instead of just
+// this tree. So this allows to consider chains of implications instead of just
 // direct ones, but depending on the problem, only a small fraction of the
 // implication graph will be captured by the tree.
 //
@@ -224,7 +224,7 @@ class StampingSimplifier {
   // and equivalence variable cleaning here too.
   bool DoOneRound(bool log_info);
 
-  // When we compute stamps, we might detect fixed variable (via failed literal
+  // When we compute stamps, we might detect fixed variables (via failed literal
   // probing in the implication graph). So it might make sense to do that until
   // we have dealt with all fixed literals before calling DoOneRound().
   bool ComputeStampsForNextRound(bool log_info);
@@ -232,8 +232,8 @@ class StampingSimplifier {
   // Visible for testing.
   void SampleTreeAndFillParent();
 
-  // Using a DFS visiting order, we can answer reachability query in O(1) on a
-  // tree, this is well known. ComputeStamps() also detect failed literal in
+  // Using a DFS visiting order, we can answer reachability queries in O(1) on a
+  // tree, this is well known. ComputeStamps() also detects failed literals in
   // the tree and fix them. It can return false on UNSAT.
   bool ComputeStamps();
   bool ImplicationIsInTree(Literal a, Literal b) const {
@@ -284,15 +284,15 @@ class StampingSimplifier {
 };
 
 // A clause c is "blocked" by a literal l if all clauses containing the
-// negation of l resolve to trivial clause with c. Blocked clause can be
+// negation of l resolve to trivial clauses with c. Blocked clauses can be
 // simply removed from the problem. At postsolve, if a blocked clause is not
 // satisfied, then l can simply be set to true without breaking any of the
-// clause containing not(l).
+// clauses containing not(l).
 //
 // See the paper "Blocked Clause Elimination", Matti Jarvisalo, Armin Biere,
 // and Marijn Heule.
 //
-// TODO(user): This requires that l only appear in clauses and not in the
+// TODO(user): This requires that l only appears in clauses and not in the
 // integer part of CP-SAT.
 class BlockedClauseSimplifier {
  public:
@@ -321,10 +321,10 @@ class BlockedClauseSimplifier {
   int32_t num_blocked_clauses_ = 0;
   int64_t num_inspected_literals_ = 0;
 
-  // Temporary vector to mark literal of a clause.
+  // Temporary vector to mark literals of a clause.
   util_intops::StrongVector<LiteralIndex, bool> marked_;
 
-  // List of literal to process.
+  // List of literals to process.
   // TODO(user): use priority queue?
   util_intops::StrongVector<LiteralIndex, bool> in_queue_;
   std::deque<Literal> queue_;
@@ -365,8 +365,8 @@ class BoundedVariableElimination {
                                ClausePtr proof);
   bool PropagateFixedVariables();
 
-  // The actual clause elimination algo. We have two versions, one just compute
-  // the "score" of what will be the final state. The other perform the
+  // The actual clause elimination algo. We have two versions, one just computes
+  // the "score" of what will be the final state. The other performs the
   // resolution, remove old clauses and add the new ones.
   //
   // Returns false on UNSAT.
@@ -396,14 +396,14 @@ class BoundedVariableElimination {
   int64_t new_score_;
   int64_t score_threshold_;
 
-  // Temporary vector to mark literal of a clause and compute its resolvant.
+  // Temporary vector to mark literals of a clause and compute its resolvent.
   util_intops::StrongVector<LiteralIndex, bool> marked_;
   std::vector<Literal> resolvant_;
 
   // Temporary vector to store LRAT proofs.
   std::vector<ClausePtr> tmp_proof_;
 
-  // Priority queue of variable to process.
+  // Priority queue of variables to process.
   // We will process highest priority first.
   struct VariableWithPriority {
     BooleanVariable var;
@@ -422,7 +422,7 @@ class BoundedVariableElimination {
   std::vector<BooleanVariable> need_to_be_updated_;
 
   // We compute the occurrence graph just once at the beginning of each round.
-  // We maintains the sizes at all time and lazily shrink the graph with deleted
+  // We maintain the sizes at all times and lazily shrink the graph with deleted
   // clauses.
   DEFINE_STRONG_INDEX_TYPE(ClauseIndex);
   util_intops::StrongVector<ClauseIndex, SatClause*> clauses_;

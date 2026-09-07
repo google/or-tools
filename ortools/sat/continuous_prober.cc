@@ -120,7 +120,7 @@ ContinuousProber::ContinuousProber(const CpModelProto& model_proto,
                               var_to_representative_);
 
   VLOG(2) << "Start continuous probing with " << bool_vars_to_probe_.size()
-          << " Boolean variables,  " << int_vars_to_probe_.size()
+          << " Boolean variables, " << int_vars_to_probe_.size()
           << " integer variables, deterministic time limit = "
           << time_limit_->GetDeterministicLimit() << " on " << model_->Name();
 }
@@ -187,7 +187,7 @@ SatSolver::Status ContinuousProber::Probe() {
     RETURN_IF_VALUE(ProbeAtMostOnes);
     RETURN_IF_VALUE(ProbePairsOfBoolVars);
 
-    // Probing loop finishes checks & compaction.
+    // Probing loop finished checks & compaction.
     if (bool_probing_.current_var >= bool_vars_to_probe_.size() &&
         !bool_vars_to_probe_.empty()) {
       CompactAndShuffleBooleanVariables(bool_vars_to_probe_);

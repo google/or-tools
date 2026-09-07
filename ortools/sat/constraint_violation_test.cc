@@ -68,7 +68,7 @@ TEST(LinearEvaluatorTest, IncrementalScoreComputationForEnforcement) {
   std::vector<double> jump_scores(3, 0.0);
   std::vector<int> modified_constraints;
 
-  // For all possible solution, we try all possible move.
+  // For all possible solutions, we try all possible moves.
   for (int sol = 0; sol < 8; ++sol) {
     for (int move = 0; move < 3; ++move) {
       // Initialize base solution.
@@ -664,7 +664,7 @@ TEST(ConstraintViolationTest, Breakpoints) {
   // around it to be sure we don't miss the minimum.
   //
   // breakpoints for the first constraint should be at 0,1 and 2.
-  // breakpoints for seconds constraints should be at 0,1 and 2,3.
+  // breakpoints for second constraint should be at 0,1 and 2,3.
   EXPECT_THAT(
       ls.MutableLinearEvaluator()->SlopeBreakpoints(0, 0, Domain(-5, 8)),
       ::testing::ElementsAre(-5, 0, 1, 2, 3, 8));
@@ -790,7 +790,7 @@ TEST(ConstraintViolationTest, LastUpdateViolationChanges) {
   EXPECT_THAT(ls.last_update_violation_changes(), ElementsAre(1));
 }
 
-// Simple test to check that empty active field and all-1 active fields are
+// Simple test to check that empty active fields and all-1 active fields are
 // encoded correctly, because they are special cases.
 TEST(ConstraintViolationTest, ReservoirEmptyOrAllOneActive) {
   for (const bool empty_active_field : {true, false}) {

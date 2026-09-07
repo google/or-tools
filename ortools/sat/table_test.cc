@@ -157,7 +157,7 @@ TEST(TableConstraintTest, EnumerationAndEncoding) {
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
 
   // There should be just one solution [0, 4, 1, 0], but the solver used to
-  // report more because of extra "free" variable used in the encoding.
+  // report more because of an extra "free" variable used in the encoding.
   EXPECT_EQ(count, 1);
 }
 
@@ -588,7 +588,7 @@ TEST(AutomatonTest, AnotherAutomaton) {
   SetEnumerateAllSolutions(&model);
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
 
-  // Out of the 2**7 tuples, the one that contains 4 consecutive 1 are:
+  // Out of the 2**7 tuples, the ones that contain 4 consecutive 1s are:
   // - 1111??? (8)
   // - 21111?? (4)
   // - ?21111? (4)

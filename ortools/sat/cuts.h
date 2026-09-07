@@ -48,13 +48,13 @@
 namespace operations_research {
 namespace sat {
 
-// A "cut" generator on a set of IntegerVariable.
+// A "cut" generator on a set of IntegerVariables.
 //
 // The generate_cuts() function can get the current LP solution with
 // manager->LpValues(). Note that a CutGenerator should:
-// - Only look at the lp_values positions that corresponds to its 'vars' or
+// - Only look at the lp_values positions that correspond to its 'vars' or
 //   their negation.
-// - Only add cuts in term of the same variables or their negation.
+// - Only add cuts in terms of the same variables or their negation.
 struct CutGenerator {
   bool only_run_at_level_zero = false;
   std::vector<IntegerVariable> vars;
@@ -62,8 +62,8 @@ struct CutGenerator {
 };
 
 // To simplify cut generation code, we use a more complex data structure than
-// just a LinearConstraint to represent a cut with shifted/complemented variable
-// and implied bound substitution.
+// just a LinearConstraint to represent a cut with shifted/complemented
+// variables and implied bound substitution.
 struct CutTerm {
   bool IsBoolean() const { return bound_diff == 1; }
   bool IsSimple() const { return expr_coeffs[1] == 0; }
@@ -77,7 +77,7 @@ struct CutTerm {
 
   std::string DebugString() const;
 
-  // Do the subtitution X -> (1 - X') and update the rhs.
+  // Do the substitution X -> (1 - X') and update the rhs.
   //
   // Our precondition on the sum of variable domains fitting an int64_t should
   // ensure that this can never overflow.
@@ -87,7 +87,7 @@ struct CutTerm {
   // var or 1 - var depending on the positiveness of var.
   void ReplaceExpressionByLiteral(IntegerVariable var);
 
-  // If the term correspond to literal_view or (1 - literal_view) return the
+  // If the term corresponds to literal_view or (1 - literal_view), return the
   // integer variable representation of that literal. Returns kNoIntegerVariable
   // if this is not the case.
   IntegerVariable GetUnderlyingLiteralOrNone() const;
@@ -99,7 +99,7 @@ struct CutTerm {
   IntegerValue bound_diff = IntegerValue(0);
 
   // X = the given LinearExpression.
-  // We only support size 1 or 2 here which allow to inline the memory.
+  // We only support size 1 or 2 here which allows inlining the memory.
   // When a coefficient is zero, we don't care about the variable.
   //
   // TODO(user): We might want to store that elsewhere, as sorting CutTerm is a
@@ -114,7 +114,7 @@ struct CutTerm {
   int cached_implied_ub = -1;
 };
 
-// Our cut are always of the form linear_expression <= rhs.
+// Our cuts are always of the form linear_expression <= rhs.
 struct CutData {
   // We need level zero bounds and LP relaxation values to fill a CutData.
   // Returns false if we encounter any integer overflow.
@@ -148,8 +148,8 @@ struct CutData {
 
   std::string DebugString() const;
 
-  // Note that we use a 128 bit rhs so we can freely complement variable without
-  // running into overflow.
+  // Note that we use a 128-bit rhs so we can freely complement variables
+  // without running into overflow.
   absl::int128 rhs;
   std::vector<CutTerm> terms;
 
@@ -164,8 +164,8 @@ class CutDataBuilder {
   // Returns false if we encounter an integer overflow.
   bool ConvertToLinearConstraint(const CutData& cut, LinearConstraint* output);
 
-  // These function allow to merges entries corresponding to the same variable
-  // and complementation. That is (X - lb) and (ub - X) are NOT merged and kept
+  // These functions allow merging entries corresponding to the same variable
+  // and complementation. That is, (X - lb) and (ub - X) are NOT merged and kept
   // as separate terms. Note that we currently only merge Booleans since this
   // is the only case we need.
   //
@@ -182,10 +182,10 @@ class CutDataBuilder {
 };
 
 // Given an upper-bounded linear relation (sum terms <= ub), this algorithm
-// inspects the integer variable appearing in the sum and try to replace each of
-// them by a tight lower bound (>= coeff * binary + lb) using the implied bound
-// repository. By tight, we mean that it will take the same value under the
-// current LP solution.
+// inspects the integer variables appearing in the sum and tries to replace each
+// of them by a tight lower bound (>= coeff * binary + lb) using the implied
+// bound repository. By tight, we mean that it will take the same value under
+// the current LP solution.
 //
 // We use a class to reuse memory of the tmp terms.
 class ImpliedBoundsProcessor {
@@ -198,8 +198,8 @@ class ImpliedBoundsProcessor {
         integer_trail_(integer_trail),
         implied_bounds_(implied_bounds) {}
 
-  // See if some of the implied bounds equation are violated and add them to
-  // the IB cut pool if it is the case.
+  // See if some of the implied bounds equations are violated and add them to
+  // the IB cut pool if that is the case.
   //
   // Important: This must be called before we process any constraints with a
   // different lp_values or level zero bounds.
@@ -209,8 +209,8 @@ class ImpliedBoundsProcessor {
   // This assumes the term is simple: expr[0] = var - LB / UB - var. We use an
   // implied lower bound on this expr, independently of the term.coeff sign.
   //
-  // If possible, returns true and express X = bool_term + slack_term.
-  // If coeff of X is positive, then all coeff will be positive here.
+  // If possible, returns true and expresses X = bool_term + slack_term.
+  // If coeff of X is positive, then all coeffs will be positive here.
   bool DecomposeWithImpliedLowerBound(const CutTerm& term,
                                       IntegerValue factor_t, CutTerm& bool_term,
                                       CutTerm& slack_term);
@@ -218,7 +218,7 @@ class ImpliedBoundsProcessor {
   // This assumes the term is simple: expr[0] = var - LB / UB - var. We use
   // an implied upper bound on this expr, independently of term.coeff sign.
   //
-  // If possible, returns true and express X = bool_term + slack_term.
+  // If possible, returns true and expresses X = bool_term + slack_term.
   // If coeff of X is positive, then bool_term will have a positive coeff but
   // slack_term will have a negative one.
   bool DecomposeWithImpliedUpperBound(const CutTerm& term,
@@ -229,13 +229,13 @@ class ImpliedBoundsProcessor {
   // implied bound information to eventually substitute and make the cut
   // stronger. Returns the number of {lb_ib, ub_ib, merges} applied.
   //
-  // This should lead to stronger cuts even if the norms migth be worse.
+  // This should lead to stronger cuts even if the norms might be worse.
   std::tuple<int, int, int> PostprocessWithImpliedBound(
       const std::function<IntegerValue(IntegerValue)>& f, IntegerValue factor_t,
       CutData* cut);
 
   // Precomputes quantities used by all cut generation.
-  // This allows to do that once rather than 6 times.
+  // This allows doing that once rather than 6 times.
   // Return false if there are no exploitable implied bounds.
   bool CacheDataForCut(IntegerVariable first_slack, CutData* cut);
 
@@ -258,7 +258,7 @@ class ImpliedBoundsProcessor {
   void AddLpVariable(IntegerVariable var) { lp_vars_.insert(var); }
 
   // Once RecomputeCacheAndSeparateSomeImpliedBoundCuts() has been called,
-  // we can get the best implied bound for each variables.
+  // we can get the best implied bound for each variable.
   //
   // Note that because the variable level zero lower bound might change since
   // the time this was cached, we just store the implied bound here.
@@ -320,18 +320,18 @@ class ImpliedBoundsProcessor {
 // - 1 <= max_scaling.
 //
 // This is used in IntegerRoundingCut() and is responsible for "strengthening"
-// the cut. Just taking f(x) = x / divisor result in the non-strengthened cut
-// and using any function that stricly dominate this one is better.
+// the cut. Just taking f(x) = x / divisor results in the non-strengthened cut
+// and using any function that strictly dominates this one is better.
 //
 // Algorithm:
 // - We first scale by a factor t so that rhs_remainder >= divisor / 2.
 // - Then, if max_scaling == 2, we use the function described
-//   in "Strenghtening Chvatal-Gomory cuts and Gomory fractional cuts", Adam N.
-//   Letchfrod, Andrea Lodi.
+//   in "Strengthening Chvatal-Gomory cuts and Gomory fractional cuts", Adam N.
+//   Letchford, Andrea Lodi.
 // - Otherwise, we use a generalization of this which is a discretized version
-//   of the classical MIR rounding function that only take the value of the
+//   of the classical MIR rounding function that only takes the values of the
 //   form "an_integer / max_scaling". As max_scaling goes to infinity, this
-//   converge to the real-valued MIR function.
+//   converges to the real-valued MIR function.
 //
 // Note that for each value of max_scaling we will get a different function.
 // And that there is no dominance relation between any of these functions. So
@@ -345,13 +345,13 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
 
 // If we have an equation sum ci.Xi >= rhs with everything positive, and all
 // ci are >= min_magnitude then any ci >= rhs can be set to rhs. Also if
-// some ci are in [rhs - min, rhs) then they can be strenghtened to rhs - min.
+// some ci are in [rhs - min, rhs) then they can be strengthened to rhs - min.
 //
 // If we apply this to the negated equation (sum -ci.Xi + sum cj.Xj <= -rhs)
-// with potentially positive terms, this reduce to apply a super-additive
+// with potentially positive terms, this reduces to applying a super-additive
 // function:
 //
-// Plot look like:
+// Plot looks like:
 //            x=-rhs   x=0
 //              |       |
 // y=0 :        |       ---------------------------------
@@ -360,7 +360,7 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
 //              |---
 // y=-rhs -------
 //
-// TODO(user): Extend it for ci >= max_magnitude, we can probaly "lift" such
+// TODO(user): Extend it for ci >= max_magnitude, we can probably "lift" such
 // coefficient.
 std::function<IntegerValue(IntegerValue)> GetSuperAdditiveStrengtheningFunction(
     IntegerValue positive_rhs, IntegerValue min_magnitude);
@@ -384,8 +384,8 @@ inline std::function<IntegerValue(IntegerValue)> ExtendNegativeFunction(
   };
 }
 
-// Exploit AtMosteOne from the model to derive stronger cut.
-// In the MIP community, using amo in this context is know as GUB (generalized
+// Exploit AtMostOne from the model to derive stronger cuts.
+// In the MIP community, using amo in this context is known as GUB (generalized
 // upper bound).
 class GUBHelper {
  public:
@@ -435,31 +435,31 @@ class GUBHelper {
 };
 
 // Given an upper bounded linear constraint, this function tries to transform it
-// to a valid cut that violate the given LP solution using integer rounding.
+// to a valid cut that violates the given LP solution using integer rounding.
 // Note that the returned cut might not always violate the LP solution, in which
 // case it can be discarded.
 //
 // What this does is basically take the integer division of the constraint by an
-// integer. If the coefficients where doubles, this would be the same as scaling
+// integer. If the coefficients were doubles, this would be the same as scaling
 // the constraint and then rounding. We choose the coefficient of the most
 // fractional variable (rescaled by its coefficient) as the divisor, but there
 // are other possible alternatives.
 //
 // Note that if the constraint is tight under the given lp solution, and if
 // there is a unique variable not at one of its bounds and fractional, then we
-// are guaranteed to generate a cut that violate the current LP solution. This
+// are guaranteed to generate a cut that violates the current LP solution. This
 // should be the case for Chvatal-Gomory base constraints modulo our loss of
 // precision while doing exact integer computations.
 //
 // Precondition:
-// - We assumes that the given initial constraint is tight using the given lp
+// - We assume that the given initial constraint is tight using the given lp
 //   values. This could be relaxed, but for now it should always be the case, so
 //   we log a message and abort if not, to ease debugging.
-// - The IntegerVariable of the cuts are not used here. We assumes that the
-//   first three vectors are in one to one correspondence with the initial order
-//   of the variable in the cut.
+// - The IntegerVariables of the cuts are not used here. We assume that the
+//   first three vectors are in one-to-one correspondence with the initial order
+//   of the variables in the cut.
 //
-// TODO(user): There is a bunch of heuristic involved here, and we could spend
+// TODO(user): There is a bunch of heuristics involved here, and we could spend
 // more effort tuning them. In particular, one can try many heuristics and keep
 // the best looking cut (or more than one). This is not on the critical code
 // path, so we can spend more effort in finding good cuts.
@@ -534,8 +534,8 @@ class CoverCutHelper {
   // coefficients positive. If this returns true, you can get the cut via cut().
   //
   // This uses a lifting procedure similar to what is described in "Lifting the
-  // Knapsack Cover Inequalities for the Knapsack Polytope", Adam N. Letchfod,
-  // Georgia Souli. In particular the section "Lifting via mixed-integer
+  // Knapsack Cover Inequalities for the Knapsack Polytope", Adam N. Letchford,
+  // Georgia Souli. In particular, the section "Lifting via mixed-integer
   // rounding".
   bool TrySimpleKnapsack(const CutData& input_ct,
                          ImpliedBoundsProcessor* ib_processor = nullptr);
@@ -544,32 +544,32 @@ class CoverCutHelper {
   // New Lifting Procedure with Unusual Properties", Adam N. Letchford, Georgia
   // Souli. This assumes an input with all coefficients positive.
   //
-  // The algo is pretty simple, given a cover C for a given rhs. We compute
+  // The algo is pretty simple: given a cover C for a given rhs, we compute
   // a rational weight p/q so that sum_C min(w_i, p/q) = rhs. Note that q is
   // pretty small (lower or equal to the size of C). The generated cut is then
   // of the form
   //  sum X_i in C for which w_i <= p / q
-  //  + sum gamma_i X_i for the other variable  <= |C| - 1.
+  //  + sum gamma_i X_i for the other variables  <= |C| - 1.
   //
   // gamma_i being the smallest k such that w_i <= sum of the k + 1 largest
   // min(w_i, p/q) for i in C. In particular, it is zero if w_i <= p/q.
   //
-  // Note that this accept a general constraint that has been canonicalized to
+  // Note that this accepts a general constraint that has been canonicalized to
   // sum coeff_i * X_i <= base_rhs. Each coeff_i >= 0 and each X_i >= 0.
   //
   // TODO(user): Generalize to non-Boolean, or use a different cover heuristic
   // for this:
-  // - We want a Boolean only cover currently.
-  // - We can always use implied bound for this, since there is more chance
-  //   for a Bool only cover.
-  // - Also, f() should be super additive on the value <= rhs, i.e. f(a + b) >=
+  // - We want a Boolean-only cover currently.
+  // - We can always use implied bounds for this, since there is more chance
+  //   for a Bool-only cover.
+  // - Also, f() should be super-additive on the value <= rhs, i.e. f(a + b) >=
   //   f(a) + f(b), so it is always good to use implied bounds of the form X =
   //   bound * B + Slack.
   bool TryWithLetchfordSouliLifting(
       const CutData& input_ct, ImpliedBoundsProcessor* ib_processor = nullptr);
 
   // It turns out that what FlowCoverCutHelper is doing is really just finding a
-  // cover and generating a cut via coefficient strenghtening instead of MIR
+  // cover and generating a cut via coefficient strengthening instead of MIR
   // rounding. This more generic version should just always outperform our old
   // code.
   bool TrySingleNodeFlow(const CutData& input_ct,
@@ -586,8 +586,8 @@ class CoverCutHelper {
  private:
   void InitializeCut(const CutData& input_ct);
 
-  // This looks at base_ct_ and reoder the terms so that the first ones are in
-  // the cover. return zero if no interesting cover was found.
+  // This looks at base_ct_ and reorders the terms so that the first ones are in
+  // the cover. Returns zero if no interesting cover was found.
   template <class CompareAdd, class CompareRemove>
   int GetCoverSize(int relevant_size);
 
@@ -613,7 +613,7 @@ class CoverCutHelper {
   // Stats.
   int64_t num_lifting_ = 0;
 
-  // Stats for the various type of cuts generated here.
+  // Stats for the various types of cuts generated here.
   struct CutStats {
     int64_t num_cuts = 0;
     int64_t num_initial_ibs = 0;
@@ -644,7 +644,7 @@ class BoolRLTCutHelper {
   ~BoolRLTCutHelper();
 
   // Precompute data according to the current lp relaxation.
-  // This also restrict any Boolean to be currently appearing in the LP.
+  // This also restricts any Boolean to be currently appearing in the LP.
   void Initialize(absl::Span<const IntegerVariable> lp_vars);
 
   // Tries RLT separation of the input constraint. Returns true on success.
@@ -661,7 +661,7 @@ class BoolRLTCutHelper {
   // That is lit(X) = X if X positive or 1 - X otherwise.
   double GetLiteralLpValue(IntegerVariable var) const;
 
-  // Multiplies input by lit(factor) and linearize in the best possible way.
+  // Multiplies input by lit(factor) and linearizes in the best possible way.
   // The result will be stored in cut_.
   bool TryProduct(IntegerVariable factor, const CutData& input);
 
@@ -684,7 +684,7 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(AffineExpression z,
                                                       int linearization_level,
                                                       Model* model);
 
-// Above hyperplan for square = x * x (also for x negative)
+// Above hyperplane for square = x * x (also for x negative):
 // square should be below the line
 //     (x_lb, x_lb ^ 2) to (x_ub, x_ub ^ 2).
 // The slope of that line is (ub^2 - lb^2) / (ub - lb) = ub + lb.
@@ -694,7 +694,7 @@ LinearConstraint ComputeHyperplanAboveSquare(AffineExpression x,
                                              IntegerValue x_lb,
                                              IntegerValue x_ub);
 
-// Below hyperplan for square = x * x (also for x negative):
+// Below hyperplane for square = x * x (also for x negative):
 //
 // square should be above the line
 //     (x_value, x_value ^ 2) to (x_value + 1, (x_value + 1) ^ 2)
@@ -710,12 +710,13 @@ LinearConstraint ComputeHyperplanBelowSquare(AffineExpression x,
 CutGenerator CreateSquareCutGenerator(AffineExpression y, AffineExpression x,
                                       int linearization_level, Model* model);
 
-// A cut generator for all_diff(xi). Let the united domain of all xi be D. Sum
-// of any k-sized subset of xi need to be greater or equal to the sum of
-// smallest k values in D and lesser or equal to the sum of largest k values in
-// D. The cut generator first sorts the variables based on LP values and adds
-// cuts of the form described above if they are violated by lp solution. Note
-// that all the fixed variables are ignored while generating cuts.
+// A cut generator for all_diff(xi). Let the united domain of all xi be D. The
+// sum of any k-sized subset of xi needs to be greater than or equal to the sum
+// of the smallest k values in D and less than or equal to the sum of the
+// largest k values in D. The cut generator first sorts the variables based on
+// LP values and adds cuts of the form described above if they are violated by
+// the LP solution. Note that all fixed variables are ignored while generating
+// cuts.
 CutGenerator CreateAllDifferentCutGenerator(
     absl::Span<const AffineExpression> exprs, Model* model);
 
@@ -745,14 +746,14 @@ CutGenerator CreateAllDifferentCutGenerator(
 //                           = max corner difference for variable i,
 //                             target expr I(i), max expr k.
 //
-// For detailed proof of validity, refer
+// For a detailed proof of validity, refer to:
 // Reference: "Strong mixed-integer programming formulations for trained neural
-// networks" by Ross Anderson et. (https://arxiv.org/pdf/1811.01988.pdf).
+// networks" by Ross Anderson et al. (https://arxiv.org/pdf/1811.01988.pdf).
 //
 // In the cut generator, we compute the most violated partition I by computing
 // the rhs value (wI(i)i * lp_value(xi) + Sum(k=1..d)(MPlusCoefficient_ki * zk))
 // for each variable for each partition index. We choose the partition index
-// that gives lowest rhs value for a given variable.
+// that gives the lowest rhs value for a given variable.
 //
 // Note: This cut generator requires all expressions to contain only positive
 // vars.
@@ -771,15 +772,15 @@ bool BuildMaxAffineUpConstraint(
 
 // By definition, the Max of affine functions is convex. The linear polytope is
 // bounded by all affine functions on the bottom, and by a single hyperplane
-// that join the two points at the extreme of the var domain, and their y-values
-// of the max of the affine functions.
+// that joins the two points at the extremes of the var domain, and their
+// y-values of the max of the affine functions.
 CutGenerator CreateMaxAffineCutGenerator(
     LinearExpression target, IntegerVariable var,
     std::vector<std::pair<IntegerValue, IntegerValue>> affines,
     std::string cut_name, Model* model);
 
 // Extracts the variables that have a Literal view from base variables and
-// create a generator that will returns constraint of the form "at_most_one"
+// creates a generator that will return constraints of the form "at_most_one"
 // between such literals.
 CutGenerator CreateCliqueCutGenerator(
     absl::Span<const IntegerVariable> base_variables, Model* model);

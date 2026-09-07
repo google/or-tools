@@ -152,9 +152,9 @@ namespace {
 // This function assumes that the left and right boxes overlap on the second
 // dimension, and that left cannot be after right.
 // It checks and pushes the lower bound of the right box and the upper bound
-// of the left box if need.
+// of the left box if needed.
 //
-// If y is not null, it import the mandatory reason for the overlap on y in
+// If y is not null, it imports the mandatory reason for the overlap on y in
 // the x helper.
 bool LeftBoxBeforeRightBoxOnFirstDimension(int left, int right,
                                            SchedulingConstraintHelper* x,
@@ -255,7 +255,7 @@ void NoOverlap2DConstraintHelper::Reset(
     if (IsAbsent(box)) continue;
     active_bounding_boxes.push_back(GetBoundingRectangle(box));
     // At level zero we can do a stronger check whether a box is fixed, since
-    // we can see use IsPresent() instead of !IsOptional().
+    // we can use IsPresent() instead of !IsOptional().
     const bool is_fixed = IsPresent(box) && x_helper_->StartIsFixed(box) &&
                           x_helper_->EndIsFixed(box) &&
                           y_helper_->StartIsFixed(box) &&
@@ -425,7 +425,7 @@ void NoOverlap2DConstraintHelper::RegisterWith(
     watch_index_to_box_[b] = b;
 
     // It is important to only update the cache of start/end/etc...
-    // incrementally otherwise we will be in O(num_boxes) each time we push a
+    // incrementally, otherwise we will be in O(num_boxes) each time we push a
     // bound.
     //
     // TODO(user): split x/y watching, but then we need to be careful when

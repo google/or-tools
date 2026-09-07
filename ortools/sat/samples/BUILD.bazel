@@ -47,8 +47,8 @@ py_test(
     main = "assignment_sat.py",
     tags = ["noci"],
     deps = [
-        requirement("pandas"),
         "//ortools/sat/python:cp_model",
+        requirement("pandas"),
     ],
 )
 
@@ -196,8 +196,8 @@ py_test(
     main = "bin_packing_sat.py",
     tags = ["noci"],
     deps = [
-        requirement("pandas"),
         "//ortools/sat/python:cp_model",
+        requirement("pandas"),
     ],
 )
 
@@ -368,9 +368,9 @@ py_test(
     main = "cumulative_variable_profile_sample_sat.py",
     tags = ["noci"],
     deps = [
+        "//ortools/sat/python:cp_model",
         requirement("absl-py"),
         requirement("pandas"),
-        "//ortools/sat/python:cp_model",
     ],
 )
 

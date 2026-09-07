@@ -32,7 +32,7 @@
 namespace operations_research {
 namespace sat {
 
-// This implement the implicit contract needed by the SatCnfReader class.
+// This implements the implicit contract needed by the SatCnfReader class.
 class CpModelProtoWrapper {
  public:
   explicit CpModelProtoWrapper(CpModelProto* p) : problem_(p) {}
@@ -87,7 +87,7 @@ class CpModelProtoWrapper {
 // The format is described here:
 //    http://people.sc.fsu.edu/~jburkardt/data/cnf/cnf.html
 //
-// It also support the wcnf input format for partial weighted max-sat problems.
+// It also supports the wcnf input format for partial weighted max-sat problems.
 class SatCnfReader {
  public:
   explicit SatCnfReader(bool wcnf_use_strong_slack = true)
@@ -160,8 +160,8 @@ class SatCnfReader {
       problem->SetObjectiveOffset(objective_offset_);
     }
 
-    // Some file from the max-sat competition seems to have the wrong number of
-    // clause !? I checked manually, so still parse them with best effort.
+    // Some files from the max-sat competition seem to have the wrong number of
+    // clauses !? I checked manually, so still parse them with best effort.
     const int total_seen = num_added_clauses_ + num_singleton_soft_clauses_ +
                            num_skipped_soft_clauses_;
     if (num_clauses_ > 0 && num_clauses_ != total_seen) {
@@ -215,7 +215,7 @@ class SatCnfReader {
       return;
     }
 
-    // The new wcnf format do not have header p line anymore.
+    // The new wcnf format does not have a header p line anymore.
     if (num_variables_ == 0) {
       is_wcnf_ = true;
     }
@@ -269,7 +269,7 @@ class SatCnfReader {
         // The max-sat formulation of an optimization sat problem with a
         // linear objective introduces many singleton soft clauses. Because we
         // natively work with a linear objective, we can just add the cost to
-        // the unique variable of such clause and remove the clause.
+        // the unique variable of such a clause and remove the clause.
         ++num_singleton_soft_clauses_;
         const int literal = -tmp_clause_[0];
         if (literal > 0) {
@@ -311,7 +311,7 @@ class SatCnfReader {
   // Temporary storage for ProcessNewLine().
   std::vector<absl::string_view> words_;
 
-  // We stores the objective in a map because we want the variables to appear
+  // We store the objective in a map because we want the variables to appear
   // only once in the LinearObjective proto.
   int64_t objective_offset_;
   absl::btree_map<int, int64_t> positive_literal_to_weight_;

@@ -36,9 +36,9 @@ namespace sat {
 // inside its interval, using energy units of the resource during execution.
 //
 // Important: This only uses the energies min/max and not the actual demand
-// of a task. It can thus be used in some non-conventional situation.
+// of a task. It can thus be used in some non-conventional situations.
 //
-// All energy expression are assumed to take a non-negative value;
+// All energy expressions are assumed to take a non-negative value;
 // if the energy of a task is 0, the task can run anywhere.
 // The schedule never uses more than capacity units of energy at a given time.
 //
@@ -84,7 +84,7 @@ class CumulativeEnergyConstraint : public PropagatorInterface {
 };
 
 // Given that the "tasks" are part of a cumulative constraint, this adds a
-// constraint that propagate the fact that: var >= max(end of subtasks) +
+// constraint that propagates the fact that: var >= max(end of subtasks) +
 // offset.
 //
 // TODO(user): I am not sure this is the best way, but it does at least push

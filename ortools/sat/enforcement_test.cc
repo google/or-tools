@@ -61,7 +61,7 @@ TEST(EnforcementPropagatorTest, BasicTest) {
   EXPECT_EQ(propag->Status(id3), EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT);
 }
 
-TEST(EnforcementPropagatorTest, UntrailWork) {
+TEST(EnforcementPropagatorTest, UntrailWorks) {
   Model model;
   auto* sat_solver = model.GetOrCreate<SatSolver>();
   auto* trail = model.GetOrCreate<Trail>();

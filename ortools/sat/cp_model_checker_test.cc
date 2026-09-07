@@ -308,7 +308,7 @@ TEST(ValidateCpModelTest, VariableUpperBoundTooLarge) {
       domain: [ 0, 9223372036854775807 ]
     }
   )pb");
-  EXPECT_THAT(ValidateCpModel(model), HasSubstr("do not fall in"));
+  EXPECT_THAT(ValidateCpModel(model), HasSubstr("does not fall in"));
 }
 
 TEST(ValidateCpModelTest, VariableLowerBoundTooLarge1) {
@@ -318,7 +318,7 @@ TEST(ValidateCpModelTest, VariableLowerBoundTooLarge1) {
       domain: [ -9223372036854775807, 0 ]
     }
   )pb");
-  EXPECT_THAT(ValidateCpModel(model), HasSubstr("do not fall in"));
+  EXPECT_THAT(ValidateCpModel(model), HasSubstr("does not fall in"));
 }
 
 TEST(ValidateCpModelTest, VariableLowerBoundTooLarge2) {
@@ -328,7 +328,7 @@ TEST(ValidateCpModelTest, VariableLowerBoundTooLarge2) {
       domain: [ -9223372036854775808, 0 ]
     }
   )pb");
-  EXPECT_THAT(ValidateCpModel(model), HasSubstr("do not fall in"));
+  EXPECT_THAT(ValidateCpModel(model), HasSubstr("does not fall in"));
 }
 
 TEST(ValidateCpModelTest, VariableDomainOverflow) {
@@ -346,18 +346,18 @@ TEST(ValidateCpModelTest, VariableDomainOverflow) {
   const CpModelProto model_bad0 = ParseTestProto(R"pb(
     variables { name: 'a' domain: 0 domain: 4611686018427387904 }
   )pb");
-  EXPECT_THAT(ValidateCpModel(model_bad0), HasSubstr("do not fall in"));
+  EXPECT_THAT(ValidateCpModel(model_bad0), HasSubstr("does not fall in"));
 
   const CpModelProto model_bad1 = ParseTestProto(R"pb(
     variables { name: 'a' domain: -4611686018427387904 domain: 0 }
   )pb");
-  EXPECT_THAT(ValidateCpModel(model_bad1), HasSubstr("do not fall in"));
+  EXPECT_THAT(ValidateCpModel(model_bad1), HasSubstr("does not fall in"));
 
   CHECK_EQ(kint64min + 2, int64_t{-9223372036854775806});
   const CpModelProto model_bad2 = ParseTestProto(R"pb(
     variables { name: 'a' domain: -9223372036854775806 domain: 2 }
   )pb");
-  EXPECT_THAT(ValidateCpModel(model_bad2), HasSubstr("do not fall in"));
+  EXPECT_THAT(ValidateCpModel(model_bad2), HasSubstr("does not fall in"));
 }
 
 TEST(ValidateCpModelTest, ObjectiveOverflow) {
@@ -372,7 +372,7 @@ TEST(ValidateCpModelTest, ObjectiveOverflow) {
     }
   )pb");
 
-  // The min/max sum do not overflow, but their difference do.
+  // The min/max sum does not overflow, but their difference does.
   EXPECT_THAT(ValidateCpModel(model), HasSubstr("overflow"));
 }
 
@@ -668,7 +668,7 @@ TEST(ValidateCpModelTest, InvalidInverseConstraint) {
               HasSubstr("Non-matching fields size in inverse"));
 }
 
-TEST(ValidateCpModelTest, InconsistenInverseConstraint) {
+TEST(ValidateCpModelTest, InconsistentInverseConstraint) {
   const CpModelProto model = ParseTestProto(R"pb(
     variables { domain: 0 domain: 1 }
     constraints {

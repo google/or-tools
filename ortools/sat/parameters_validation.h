@@ -22,7 +22,7 @@ namespace operations_research {
 namespace sat {
 
 // Verifies that the given parameters are correct. Returns an empty string if it
-// is the case, or an human-readable error message otherwise.
+// is the case, or a human-readable error message otherwise.
 std::string ValidateParameters(const SatParameters& params);
 
 }  // namespace sat

@@ -126,8 +126,8 @@ TEST(StopAfterFirstSolutionTest, BooleanLinearOptimizationProblem) {
   EXPECT_EQ(response.status(), CpSolverStatus::FEASIBLE);
   EXPECT_GE(num_solutions, 1);
 
-  // Because we have 8 threads and we currently report all solution as we found
-  // them, we might report more than one the time every subsolver is
+  // Because we have 8 threads and we currently report all solutions as we find
+  // them, we might report more than one by the time every subsolver is
   // terminated. This happens 8% of the time as of March 2020.
   EXPECT_LE(num_solutions, 2);
   LOG(INFO) << CpSolverResponseStats(response);
@@ -409,7 +409,7 @@ TEST(SolveCpModelTest, NonInstantiatedVariables) {
   const CpSolverResponse response = SolveCpModel(model_proto, &model);
 
   // Because we didn't try to instantiate the variables, we just did one round
-  // of propagation. Note that this allows to use the solve as a simple
+  // of propagation. Note that this allows using the solver as a simple
   // propagation engine with no search decision (modulo the binary variable that
   // will be instantiated anyway)!
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
@@ -421,7 +421,7 @@ TEST(SolveCpModelTest, NonInstantiatedVariables) {
 }
 
 // When there is nothing to do, we had a bug that didn't copy the solution
-// with the core based solver, this simply test this corner case.
+// with the core-based solver, this simply tests this corner case.
 TEST(SolveCpModelTest, TrivialModelWithCore) {
   CpModelProto model_proto;
   const int a = AddVariable(1, 1, &model_proto);
@@ -831,7 +831,7 @@ TEST(SolveCpModelTest, EnumerateAllSolutionsAndCopyToResponse) {
                   UnorderedElementsAre(3, 3), UnorderedElementsAre(4, 2),
                   UnorderedElementsAre(5, 1)));
 
-  // Not setting the solution_pool_size high enough gives partial result.
+  // Not setting the solution_pool_size high enough gives a partial result.
   // Because we randomize variable order, we don't know which solution will be
   // in the pool deterministically.
   params.set_solution_pool_size(3);
@@ -1302,9 +1302,9 @@ TEST(SolveCpModelTest,
   EXPECT_EQ(count, 2 * 2 * 2 * 2);
 }
 
-// The graph look like this with a self-loop at 2. If 2 is not selected
+// The graph looks like this with a self-loop at 2. If 2 is not selected
 // (self-loop) then there is one solution (0,1,3,0) and (0,3,5,0). Otherwise,
-// there is 2 more solutions with 2 inserted in one of the two routes.
+// there are 2 more solutions with 2 inserted in one of the two routes.
 //
 //   0  ---> 1 ---> 4 -------------
 //   |       |      ^             |
@@ -2061,7 +2061,7 @@ TEST(SolveCpModelTest, RegressionTest) {
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
 }
 
-// This used to crash because of how nodes with no arc were handled.
+// This used to crash because of how nodes with no arcs were handled.
 TEST(SolveCpModelTest, RouteConstraintRegressionTest) {
   const CpModelProto model_proto = ParseTestProto(R"pb(
     variables { domain: [ 1, 1 ] }
@@ -2251,7 +2251,7 @@ TEST(SolveCpModelTest, EmptyOptimizationModelBuggyInterleave) {
   SatParameters params;
   params.set_log_search_progress(true);
 
-  // This cause each chunk to abort right away with UNKNOWN. But because we are
+  // This causes each chunk to abort right away with UNKNOWN. But because we are
   // in chunked mode, we always reschedule full solver and we never finish if
   // there is no time limit.
   //
@@ -5523,6 +5523,33 @@ TEST(CpModelSolverTest, AddSubsolverGeneratesAndRunsTask) {
   EXPECT_GT(task_count.load(), 0);
   EXPECT_GT(sync_count.load(), 0);
 }
+
+TEST(SolveCpModelTest, ElementWithUnusedTargetAndUnfixedExpression) {
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ -4096, 4096 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: -2
+      element {
+        index: 3
+        target: 2
+        vars: [ 0, 0, 0 ]
+      }
+    }
+    constraints {
+      enforcement_literal: -4
+      bool_or { literals: [ -2, -1 ] }
+    }
+    floating_point_objective { offset: -1.9094753488048646 }
+  )pb");
+
+  Model model;
+  const CpSolverResponse response = SolveCpModel(model_proto, &model);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+}
+
 #else
 static_assert(!operations_research::kTargetOsSupportsThreads);
 #endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)

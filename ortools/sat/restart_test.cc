@@ -66,7 +66,7 @@ TEST(RestartPolicyTest, BasicRunningAverageTest) {
   }
   EXPECT_EQ(i, 10);
 
-  // If we call Reset() the global average is reaset, so if we have conflicts at
+  // If we call Reset() the global average is reset, so if we have conflicts at
   // a decreasing decision level, we never restart.
   restart->Reset();
   i = 0;

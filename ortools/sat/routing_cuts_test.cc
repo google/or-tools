@@ -709,9 +709,9 @@ TEST(MinOutgoingFlowHelperTest, UnaryRelationForTwoNodeExpressions) {
 }
 
 TEST(MinOutgoingFlowHelperTest, NodeMustBeInnerNode) {
-  // when considering subset {1, 2, 3}, knowing that 2 cannot be reached
-  // from outside can lead to better bound. The non zero-demands are in () on
-  // the arcs.
+  // When considering subset {1, 2, 3}, knowing that 2 cannot be reached
+  // from the outside can lead to a better bound. The non-zero demands are in ()
+  // on the arcs.
   //
   // 0 --> 1 -(5)-> 2 -(5)-> 3 --> 0
   //       1 <-(3)- 2 -----------> 0
@@ -773,7 +773,7 @@ TEST(MinOutgoingFlowHelperTest, NodeMustBeInnerNode) {
 
 TEST(MinOutgoingFlowHelperTest, BetterUseOfUpperBound) {
   // The non-zero demands are in () on the arcs.
-  // when considering subset {1, 2}:
+  // When considering subset {1, 2}:
   //
   // 0 --> 1 -(8)-> 2 --> 0
   // 0 --> 2 -(8)-> 1 --> 0
@@ -941,7 +941,7 @@ GetNodeExpressionsByDimension(const RouteRelationsHelper& helper) {
 
 int SolveTwoDimensionBinPacking(int capacity, absl::Span<const int> load1,
                                 absl::Span<const int> load2) {
-  // Lets generate a quick cp-sat model.
+  // Let's generate a quick cp-sat model.
   const int num_items = load1.size();
   const int num_bins = num_items;
 
@@ -1058,7 +1058,7 @@ TEST(MinOutgoingFlowHelperTest, SubsetMightBeServedWithKRoutes) {
 }
 
 // Same as above but with randomization.
-// I kept the "golden" test just to make sure things looks reasonable.
+// I kept the "golden" test just to make sure things look reasonable.
 TEST(MinOutgoingFlowHelperTest, SubsetMightBeServedWithKRoutesRandom) {
   Model model;
   absl::BitGen random;
@@ -1113,7 +1113,7 @@ TEST(MinOutgoingFlowHelperTest, SubsetMightBeServedWithKRoutesRandom) {
   }
   repository->Build();
 
-  // To check our indices mapping, lets remove a random nodes from the subset
+  // To check our indices mapping, let's remove a random node from the subset
   std::vector<int> subset;
   for (int i = 0; i < num_nodes; ++i) subset.push_back(i);
   const int to_remove = absl::Uniform(random, 0, num_nodes);
@@ -1167,7 +1167,7 @@ bool SolveTimeWindowProblemStartingFrom(
           .OnlyEnforceIf(arc_is_present);
     }
 
-    // Collect arc leaving the depot.
+    // Collect arcs leaving the depot.
     if (tails[arc] == 0) {
       sum_leaving_the_depot += arc_is_present;
 
@@ -1207,7 +1207,7 @@ TEST(MinOutgoingFlowHelperTest,
       heads.push_back(head);
       literals.push_back(Literal(model.Add(NewBooleanVariable()), true));
 
-      // Since SubsetMightBeServedWithKRoutes() ignore arcs to outside the
+      // Since SubsetMightBeServedWithKRoutes() ignores arcs to outside the
       // subset, we make sure these have no cost.
       travel_times.push_back(
           tail == 0 || head == 0 ? 0 : absl::Uniform(random, 2, 10));
@@ -1249,7 +1249,7 @@ TEST(MinOutgoingFlowHelperTest,
   // Subject under test.
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
 
-  // Lets compute how many routes we need to serve this subset.
+  // Let's compute how many routes we need to serve this subset.
   int optimal = -1;
   for (int k = 0; k <= subset.size(); ++k) {
     if (helper.SubsetMightBeServedWithKRoutes(k, subset)) {
@@ -1365,7 +1365,7 @@ TEST(SpecialBinPackingHelperTest, ComputeMinNumberOfBins) {
     LOG(INFO) << "bound " << obj_lb << " optimal " << optimal;
   }
 
-  // For each item in the complement, test that the bound increase if we
+  // For each item in the complement, test that the bound increases if we
   // force it to be a bin.
   if (objects_that_cannot_be_bin_and_reach_minimum.empty()) return;
   std::vector<bool> cannot_be_bin(num_objects, false);
@@ -2066,7 +2066,7 @@ TEST(ExtractAllSubsetsFromForestTest, Basic) {
   std::vector<absl::Span<const int>> subsets;
   ExtractAllSubsetsFromForest(parents, &buffer, &subsets);
 
-  // Post order but we explore high number first.
+  // Post-order but we explore high numbers first.
   // Alternatively, we could use unordered here, but the order is stable.
   EXPECT_THAT(buffer, ElementsAre(5, 4, 2, 1, 0, 3));
   EXPECT_THAT(subsets,
@@ -2086,7 +2086,7 @@ TEST(ExtractAllSubsetsFromForestTest, BasicForest) {
   std::vector<absl::Span<const int>> subsets;
   ExtractAllSubsetsFromForest(parents, &buffer, &subsets);
 
-  // Post order but we explore high number first.
+  // Post-order but we explore high numbers first.
   // Alternatively, we could use unordered here, but the order is stable.
   EXPECT_THAT(buffer, ElementsAre(2, 1, 0, 3, 5, 4));
   EXPECT_THAT(subsets,
@@ -2108,7 +2108,7 @@ TEST(ExtractAllSubsetsFromForestTest, Random) {
   std::vector<absl::Span<const int>> subsets;
   ExtractAllSubsetsFromForest(parents, &buffer, &subsets);
 
-  // We don't test that we are exhaustive, but we check basic property.
+  // We don't test that we are exhaustive, but we check basic properties.
   std::vector<int> in_subset(num_nodes, false);
   for (const auto subset : subsets) {
     for (const int n : subset) in_subset[n] = true;
@@ -2144,7 +2144,7 @@ TEST(SymmetrizeArcsTest, BasicTest) {
 TEST(ComputeGomoryHuTreeTest, Random) {
   absl::BitGen random;
 
-  // Lets generate a random graph on a small number of nodes.
+  // Let's generate a random graph on a small number of nodes.
   const int num_nodes = 10;
   const int num_arcs = 100;
   std::vector<ArcWithLpValue> arcs;
@@ -2156,7 +2156,7 @@ TEST(ComputeGomoryHuTreeTest, Random) {
     arcs.push_back({tail, head, lp_value});
   }
 
-  // Get all cut from Gomory-Hu tree.
+  // Get all cuts from Gomory-Hu tree.
   const std::vector<int> parents = ComputeGomoryHuTree(num_nodes, arcs);
   std::vector<int> buffer;
   std::vector<absl::Span<const int>> subsets;
@@ -2182,8 +2182,8 @@ TEST(ComputeGomoryHuTreeTest, Random) {
   }
 
   // We will test with an exhaustive comparison. We are in n ^ 3 !
-  // For all (s,t) pair, get the actual max-flow on the scaled graph.
-  // Check than one of the cuts separate s and t, with this exact weight.
+  // For all (s,t) pairs, get the actual max-flow on the scaled graph.
+  // Check that one of the cuts separates s and t, with this exact weight.
   SimpleMaxFlow max_flow;
   for (const auto& [tail, head, lp_value] : arcs) {
     // TODO(user): the algo only seems to work on an undirected graph, or
@@ -2236,7 +2236,7 @@ TEST(ComputeGomoryHuTreeTest, Random) {
 TEST(CreateStronglyConnectedGraphCutGeneratorTest, BasicExample) {
   Model model;
 
-  // Lets create a simple square graph with arcs in both directions:
+  // Let's create a simple square graph with arcs in both directions:
   //
   // 0 ---- 1
   // |      |
@@ -2306,7 +2306,7 @@ TEST(CreateStronglyConnectedGraphCutGeneratorTest, AnotherExample) {
   generator.generate_cuts(&manager);
 
   // The sets {2, 3} and {1, 2, 3} will generate cuts.
-  // However as an heuristic, we will wait another round to generate {1, 2, 3}.
+  // However as a heuristic, we will wait another round to generate {1, 2, 3}.
   ASSERT_EQ(manager.num_cuts(), 2);
   EXPECT_THAT(manager.AllConstraints().front().constraint.DebugString(),
               ::testing::StartsWith("1 <= 1*I3 1*I6"));
@@ -2319,7 +2319,7 @@ TEST(GenerateInterestingSubsetsTest, BasicExample) {
   const std::vector<std::pair<int, int>> arcs = {{0, 5}, {2, 3}, {3, 4}};
 
   // Note that the order is not important, but is currently fixed.
-  // This document the actual order.
+  // This documents the actual order.
   std::vector<int> subset_data;
   std::vector<absl::Span<const int>> subsets;
   GenerateInterestingSubsets(num_nodes, arcs,
@@ -2428,7 +2428,8 @@ TEST(CreateFlowCutGeneratorTest, WithMinusOneArcs) {
   LinearConstraintManager manager(&model);
   generator.generate_cuts(&manager);
 
-  // We artificially put bad LP values so that {1} generate outgoing flow cut.
+  // We artificially put bad LP values so that {1} generates an outgoing flow
+  // cut.
   EXPECT_EQ(manager.num_cuts(), 1);
   EXPECT_THAT(manager.AllConstraints().front().constraint.DebugString(),
               ::testing::StartsWith("1 <= 1*I1 1*I2"));

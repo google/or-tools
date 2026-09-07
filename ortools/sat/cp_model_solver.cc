@@ -121,9 +121,9 @@ ABSL_FLAG(bool, cp_model_dump_text_proto, true,
 
 ABSL_FLAG(
     bool, cp_model_dump_problematic_lns, false,
-    "DEBUG ONLY. Similar to --cp_model_dump_submodels, but only dump fragment "
+    "DEBUG ONLY. Similar to --cp_model_dump_submodels, but only dump fragments "
     "for which we got an issue while validating the postsolved solution. This "
-    "allows to debug presolve issues without dumping all the models.");
+    "allows debugging presolve issues without dumping all the models.");
 
 ABSL_FLAG(bool, cp_model_dump_response, false,
           "DEBUG ONLY. If true, the final response of each solve will be "
@@ -139,7 +139,7 @@ ABSL_FLAG(bool, cp_model_ignore_hints, false,
           "If true, ignore any supplied hints.");
 ABSL_FLAG(bool, cp_model_use_hint_for_debug_only, false,
           "If true, ignore any supplied hints, but if the hint is valid and "
-          "complete, validate that no buggy propagator make it infeasible.");
+          "complete, validate that no buggy propagator makes it infeasible.");
 ABSL_FLAG(bool, cp_model_fingerprint_model, true, "Fingerprint the model.");
 
 ABSL_FLAG(bool, cp_model_check_intermediate_solutions, false,
@@ -282,7 +282,8 @@ void DumpNoOverlap2dProblem(const ConstraintProto& ct,
 
 std::string CpModelStats(const CpModelProto& model_proto) {
   // Note that we only store pointer to "constant" string literals. This is
-  // slightly faster and take less space for model with millions of constraints.
+  // slightly faster and takes less space for models with millions of
+  // constraints.
   absl::flat_hash_map<char const*, int> name_to_num_constraints;
   absl::flat_hash_map<char const*, int> name_to_num_reified;
   absl::flat_hash_map<char const*, int> name_to_num_multi_reified;
@@ -313,7 +314,7 @@ std::string CpModelStats(const CpModelProto& model_proto) {
       ComputeVariableRelationships(model_proto);
 
   for (const ConstraintProto& ct : model_proto.constraints()) {
-    // We split the linear constraints into 3 buckets has it gives more insight
+    // We split the linear constraints into 3 buckets as it gives more insight
     // on the type of problem we are facing.
     char const* name;
     if (ct.constraint_case() == ConstraintProto::kLinear) {
@@ -377,8 +378,8 @@ std::string CpModelStats(const CpModelProto& model_proto) {
               expression_is_fixed(ct.interval().end()));
     };
 
-    // For pure Boolean constraints, we also display the total number of literal
-    // involved as this gives a good idea of the problem size.
+    // For pure Boolean constraints, we also display the total number of
+    // literals involved as this gives a good idea of the problem size.
     if (ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolOr) {
       name_to_num_literals[name] += ct.bool_or().literals().size();
     } else if (ct.constraint_case() ==
@@ -777,7 +778,7 @@ void LogSubsolverNames(absl::Span<const std::unique_ptr<SubSolver>> subsolvers,
     }
   }
 
-  // TODO(user): We might not want to sort the subsolver by name to keep our
+  // TODO(user): We might not want to sort the subsolvers by name to keep our
   // ordered list by importance? not sure.
   auto display_subsolver_list = [logger](absl::Span<const std::string> names,
                                          const absl::string_view type_name) {
@@ -851,7 +852,7 @@ void LaunchSubsolvers(Model* global_model, SharedClasses* shared,
 
   // We need to delete the subsolvers in order to fill the stat tables. Note
   // that first solution should already be deleted. We delete manually as
-  // windows release vectors in the opposite order.
+  // Windows releases vectors in the opposite order.
   for (int i = 0; i < subsolvers.size(); ++i) {
     subsolvers[i].reset();
   }
@@ -876,7 +877,7 @@ bool VarIsFixed(const CpModelProto& model_proto, int i) {
 
 // Note that we restrict the objective to be <= so that the hint is still
 // feasible. Alternatively, we could look for < hint value if we only want
-// better solution.
+// better solutions.
 bool RestrictObjectiveUsingHint(CpModelProto* model_proto) {
   if (!model_proto->has_objective()) return true;
   if (!model_proto->has_solution_hint()) return true;
@@ -1043,7 +1044,7 @@ bool SolutionHintIsCompleteAndFeasible(
   }
 }
 
-// Encapsulate a full CP-SAT solve without presolve in the SubSolver API.
+// Encapsulates a full CP-SAT solve without presolve in the SubSolver API.
 class FullProblemSolver : public SubSolver {
  public:
   FullProblemSolver(absl::string_view name,
@@ -1101,7 +1102,7 @@ class FullProblemSolver : public SubSolver {
   }
 
   bool IsDone() override {
-    // On large problem, deletion can take a while, so is is better to do it
+    // On large problems, deletion can take a while, so it is better to do it
     // while waiting for the slower worker to finish.
     if (shared_->SearchIsDone()) return true;
 
@@ -1114,7 +1115,7 @@ class FullProblemSolver : public SubSolver {
 
     // Tricky: we don't want this in IsDone() otherwise the order of destruction
     // is unclear, and currently we always report the stats of the last
-    // destroyed full solver (i.e. the first created with is the one with the
+    // destroyed full solver (i.e. the first created which is the one with the
     // parameter provided by the user).
     if (shared_->SearchIsDone()) return false;
 
@@ -1139,7 +1140,7 @@ class FullProblemSolver : public SubSolver {
 
         // Level zero variable bounds sharing. It is important to register
         // that after the probing that takes place in LoadCpModel() otherwise
-        // we will have a mutex contention issue when all the thread probes
+        // we will have a mutex contention issue when all the threads probe
         // at the same time.
         if (shared_->bounds != nullptr) {
           RegisterVariableBoundsLevelZeroExport(
@@ -1189,7 +1190,7 @@ class FullProblemSolver : public SubSolver {
                    absl::StrFormat("Starting subsolver \'%s\' search at %.2fs",
                                    name(), shared_->wall_timer->Get()));
 
-        // No need for mutex since we only run one task at the time.
+        // No need for mutex since we only run one task at a time.
         solving_first_chunk_ = false;
 
         // Make sure we count the loading/hint dtime.
@@ -1197,7 +1198,7 @@ class FullProblemSolver : public SubSolver {
         dtime_since_last_sync_ +=
             time_limit->GetElapsedDeterministicTime() - init_dtime;
 
-        // Abort first chunk and allow to schedule the next.
+        // Abort first chunk and allow scheduling the next.
         if (split_in_chunks_) {
           previous_task_is_completed_ = true;
           return;
@@ -1341,7 +1342,7 @@ class FeasibilityPumpSolver : public SubSolver {
   bool previous_task_is_completed_ ABSL_GUARDED_BY(mutex_) = true;
 };
 
-// A Subsolver that generate LNS solve from a given neighborhood.
+// A Subsolver that generates LNS solves from a given neighborhood.
 class LnsSolver : public SubSolver {
  public:
   LnsSolver(std::unique_ptr<NeighborhoodGenerator> generator,
@@ -1376,7 +1377,7 @@ class LnsSolver : public SubSolver {
       if (shared_->SearchIsDone()) return;
 
       // Create a random number generator whose seed depends both on the task_id
-      // and on the parameters_.random_seed() so that changing the later will
+      // and on the parameters_.random_seed() so that changing the latter will
       // change the LNS behavior.
       const int32_t low = static_cast<int32_t>(task_id);
       const int32_t high = static_cast<int32_t>(task_id >> 32);
@@ -1407,7 +1408,7 @@ class LnsSolver : public SubSolver {
         base_response.set_status(CpSolverStatus::UNKNOWN);
 
         // If we do not have a solution, we use the current objective upper
-        // bound so that our code that compute an "objective" improvement
+        // bound so that our code that computes an "objective" improvement
         // works.
         data.base_objective = data.initial_best_objective;
       }
@@ -1450,7 +1451,7 @@ class LnsSolver : public SubSolver {
       TimeLimit* local_time_limit = local_model.GetOrCreate<TimeLimit>();
       local_time_limit->ResetLimitFromParameters(local_params);
       shared_->time_limit->UpdateLocalLimit(local_time_limit);
-      // Don't let our LNS model to stop the main solve.
+      // Don't let our LNS model stop the main solve.
       local_model.GetOrCreate<ModelSharedTimeLimit>()->DisableStop();
 
       // Presolve and solve the LNS fragment.
@@ -1472,7 +1473,7 @@ class LnsSolver : public SubSolver {
         bool use_hint = true;
         if (generator_->num_consecutive_non_improving_calls() > 10 &&
             absl::Bernoulli(random, 0.5)) {
-          // If we seem to be stalling, lets try to solve without the hint in
+          // If we seem to be stalling, let's try to solve without the hint in
           // order to diversify our solution pool. Otherwise non-improving
           // neighborhood will just return the base solution always.
           use_hint = false;
@@ -1480,12 +1481,12 @@ class LnsSolver : public SubSolver {
         if (neighborhood.is_simple &&
             neighborhood.num_relaxed_variables_in_objective == 0) {
           // If we didn't relax the objective, there can be no improving
-          // solution. However, we might have some diversity if they are
+          // solution. However, we might have some diversity if there are
           // multiple feasible solutions.
           //
           // TODO(user): How can we tweak the search to favor diversity.
           if (generator_->num_consecutive_non_improving_calls() > 10) {
-            // We have been staling, try to find diverse solution?
+            // We have been stalling, try to find diverse solutions?
             use_hint = false;
           } else {
             // Just regenerate.
@@ -1496,7 +1497,7 @@ class LnsSolver : public SubSolver {
 
         // TODO(user): the mapping removes fixed variables but the model
         // copy can fix new ones. Should we update the mapping and do a new
-        // copy, and so on until fix point?
+        // copy, and so on until a fixed point?
         if (!GenerateMapping(neighborhood.delta, variable_mapping,
                              fixed_values)) {
           return;
@@ -1562,7 +1563,7 @@ class LnsSolver : public SubSolver {
       }
 
       // If we use a hint, we will restrict the objective to be <= to the one
-      // of the hint. This is helpful on some model where doing so can cause
+      // of the hint. This is helpful on some models where doing so can cause
       // the presolve to restrict the domain of many variables. Note that the
       // hint will still be feasible as we use <= and not <.
       if (!RestrictObjectiveUsingHint(&lns_fragment)) {
@@ -1572,7 +1573,7 @@ class LnsSolver : public SubSolver {
       CpModelProto debug_copy;
       if (absl::GetFlag(FLAGS_cp_model_dump_problematic_lns)) {
         // We need to make a copy because the presolve is destructive.
-        // It is why we do not do that by default.
+        // That is why we do not do that by default.
         debug_copy = lns_fragment;
       }
 
@@ -1639,8 +1640,8 @@ class LnsSolver : public SubSolver {
               absl::StrCat(lns_info, " [presolve]"));
         }
       } else {
-        // TODO(user): Clean this up? when the model is closed by presolve,
-        // we don't have a nice api to get the response with stats. That said
+        // TODO(user): Clean this up? When the model is closed by presolve,
+        // we don't have a nice API to get the response with stats. That said
         // for LNS, we don't really need it.
         if (presolve_status == CpSolverStatus::INFEASIBLE) {
           local_response_manager->NotifyThatImprovingProblemIsInfeasible(
@@ -1716,11 +1717,11 @@ class LnsSolver : public SubSolver {
 
         // Special case if we solved a part of the full problem!
         //
-        // TODO(user): This do not work if they are symmetries loaded into SAT.
-        // For now we just disable this if there is any symmetry. See for
+        // TODO(user): This does not work if there are symmetries loaded into
+        // SAT. For now we just disable this if there is any symmetry. See for
         // instance spot5_1401.fzn. Be smarter about that. We use
         // !VariablesTouchSymmetries() which is a bit better. Maybe we can use
-        // VariablesSplitSymmetries() but that currently require more work and
+        // VariablesSplitSymmetries() but that currently requires more work and
         // in general, we would need to disable the symmetry that we fix here.
         //
         // The issue is that as we fix level zero variables from a partial
@@ -1728,11 +1729,11 @@ class LnsSolver : public SubSolver {
         // since it assumes that if we could infer such fixing, then we could
         // do the same in any symmetric situation.
         //
-        // Note sure how to address that, we could disable symmetries if there
-        // is a lot of connected components. Or use a different mechanism than
+        // Not sure how to address that, we could disable symmetries if there
+        // are a lot of connected components. Or use a different mechanism than
         // just fixing variables. Or remove symmetry on the fly?
         //
-        // TODO(user): At least enable it if there is no Boolean symmetries
+        // TODO(user): At least enable it if there are no Boolean symmetries
         // since we currently do not use the other ones past the presolve.
         //
         // TODO(user): We could however fix it in the LNS Helper!
@@ -1755,7 +1756,7 @@ class LnsSolver : public SubSolver {
               neighborhood.variables_that_can_be_fixed_to_local_optimum);
         }
 
-        // Finish to fill the SolveData now that the local solve is done.
+        // Finish filling the SolveData now that the local solve is done.
         data.new_objective = data.base_objective;
         if (data.status == CpSolverStatus::OPTIMAL ||
             data.status == CpSolverStatus::FEASIBLE) {
@@ -1935,7 +1936,7 @@ class LnsSolver : public SubSolver {
   const SatParameters lns_parameters_base_;
   const SatParameters lns_parameters_stalling_;
   SharedClasses* shared_;
-  // This is a optimization to allocate the arena for the LNS fragment already
+  // This is an optimization to allocate the arena for the LNS fragment already
   // at roughly the right size. We will update it with the last size of the
   // latest LNS fragment.
   absl::Mutex next_arena_size_mutex_;
@@ -1967,17 +1968,17 @@ std::vector<std::unique_ptr<SubSolver>> PortfolioBuilder::MakeSubsolvers(
     SharedClasses* shared, SubsolverNameFilter& name_filter) {
   const SatParameters& params = *global_model_->GetOrCreate<SatParameters>();
 
-  // The list of all the SubSolver that will be used in this parallel search.
+  // The list of all the SubSolvers that will be used in this parallel search.
   // These will be synchronized in order. Note that we will assemble this at
-  // the end from the other list below.
+  // the end from the other lists below.
   std::vector<std::unique_ptr<SubSolver>> subsolvers;
 
-  // We distinguish subsolver depending on their behavior:
+  // We distinguish subsolvers depending on their behavior:
   // - 'full' if a full thread is needed and they are not interleaved.
   // - 'first_solution' if they will be destroyed as soon as we have a solution.
-  // - 'interleaved' if the work is cut into small chunk so that a few threads
+  // - 'interleaved' if the work is cut into small chunks so that a few threads
   //    can work on many of such subsolvers alternatively.
-  // - 'reentrant' if one subsolver can generate many such task.
+  // - 'reentrant' if one subsolver can generate many such tasks.
   //
   // TODO(user): Maybe we should just interleave everything for an easier
   // configuration.
@@ -2052,7 +2053,7 @@ std::vector<std::unique_ptr<SubSolver>> PortfolioBuilder::MakeSubsolvers(
   }
 
   // Add variables shaving if enabled.
-  // TODO(user): Like for feasibility jump, alternates better the variable that
+  // TODO(user): Like for feasibility jump, alternate better the variables that
   // we shave with the parameters that we use, and the time limit effort.
   int shaving_level = params.variables_shaving_level() >= 0
                           ? params.variables_shaving_level()
@@ -2073,7 +2074,8 @@ std::vector<std::unique_ptr<SubSolver>> PortfolioBuilder::MakeSubsolvers(
   }
 
   // Add rins/rens.
-  // This behave like a LNS, it just construct starting solution differently.
+  // This behaves like an LNS, it just constructs starting solutions
+  // differently.
   if (params.use_rins_lns() && name_filter.Keep("rins/rens")) {
     // Note that we always create the SharedLPSolutionRepository. This meets
     // the requirement of having a SharedLPSolutionRepository to
@@ -2274,15 +2276,15 @@ std::vector<std::unique_ptr<SubSolver>> PortfolioBuilder::MakeSubsolvers(
   if (shared->model_proto.has_objective() &&
       !shared->model_proto.objective().vars().empty()) {
     // If not forced by the parameters, we want one LS every 3 threads that
-    // work on interleaved stuff. Note that by default they are many LNS, so
-    // that shouldn't be too many.
+    // work on interleaved stuff. Note that by default there are many LNS
+    // subsolvers, so that shouldn't be too many.
     const int num_thread_for_interleaved_workers =
         params.num_workers() - full_worker_subsolvers.size();
     int num_violation_ls = params.has_num_violation_ls()
                                ? params.num_violation_ls()
                                : (num_thread_for_interleaved_workers + 2) / 3;
 
-    // If there is no rentrant solver, maybe increase the number to reach max
+    // If there is no reentrant solver, maybe increase the number to reach max
     // parallelism.
     if (reentrant_interleaved_subsolvers.empty()) {
       num_violation_ls =
@@ -2345,7 +2347,7 @@ std::vector<std::unique_ptr<SubSolver>> PortfolioBuilder::MakeSubsolvers(
   }
 
   // Adds first solution subsolvers.
-  // We have two kind, either full_worker_subsolvers or feasibility jump ones.
+  // We have two kinds, either full_worker_subsolvers or feasibility jump ones.
   //
   // These will be stopped and deleted as soon as the first solution is found,
   // leaving the resource for the other subsolvers (if we have an objective).
@@ -2353,7 +2355,7 @@ std::vector<std::unique_ptr<SubSolver>> PortfolioBuilder::MakeSubsolvers(
     int num_thread_available =
         params.num_workers() - static_cast<int>(full_worker_subsolvers.size());
 
-    // We reserve 1 thread for all interleaved subsolved that can work without
+    // We reserve 1 thread for all interleaved subsolvers that can work without
     // a first solution. If we have feasibility jump, because these will be
     // interleaved, we don't do that.
     if (!params.use_feasibility_jump() &&
@@ -2419,8 +2421,8 @@ std::vector<std::unique_ptr<SubSolver>> PortfolioBuilder::MakeSubsolvers(
     }
   }
 
-  // Now that we are done with the logic, move all subsolver into a single
-  // list. Note that the position of the "synchronization" subsolver matter.
+  // Now that we are done with the logic, move all subsolvers into a single
+  // list. Note that the position of the "synchronization" subsolver matters.
   // Some are already in subsolvers, and we will add the gap one last.
   const auto move_all =
       [&subsolvers](std::vector<std::unique_ptr<SubSolver>>& from) {
@@ -2437,7 +2439,7 @@ std::vector<std::unique_ptr<SubSolver>> PortfolioBuilder::MakeSubsolvers(
 
   // Add a synchronization point for the gap integral that is executed last.
   // This way, after each batch, the proper deterministic time is updated and
-  // then the function to integrate take the value of the new gap.
+  // then the function to integrate takes the value of the new gap.
   if (shared->model_proto.has_objective() &&
       !shared->model_proto.objective().vars().empty()) {
     subsolvers.push_back(std::make_unique<SynchronizationPoint>(
@@ -2545,12 +2547,12 @@ std::function<SatParameters(Model*)> NewSatParameters(
     const sat::SatParameters& parameters) {
   return [parameters = parameters](Model* model) {
     // Tricky: It is important to initialize the model parameters before any
-    // of the solver object are created, so that by default they use the given
+    // of the solver objects are created, so that by default they use the given
     // parameters.
     //
     // TODO(user): A notable exception to this is the TimeLimit which is
     // currently not initializing itself from the SatParameters in the model. It
-    // will also starts counting from the time of its creation. It will be good
+    // will also start counting from the time of its creation. It would be good
     // to find a solution that is less error prone.
     *model->GetOrCreate<SatParameters>() = parameters;
     return parameters;
@@ -2616,7 +2618,7 @@ void MergeParamsWithFlagsAndDefaults(SatParameters* params) {
 void FixVariablesToHintValue(const PartialVariableAssignment& solution_hint,
                              PresolveContext* context, SolverLogger* logger) {
   SOLVER_LOG(logger, "Fixing ", solution_hint.vars().size(),
-             " variables to their value in the solution hints.");
+             " variables to their value in the solution hint.");
   context->InitializeNewDomains();
   for (int i = 0; i < solution_hint.vars_size(); ++i) {
     const int var = solution_hint.vars(i);
@@ -2630,7 +2632,7 @@ void FixVariablesToHintValue(const PartialVariableAssignment& solution_hint,
 
       const Domain var_domain = ReadDomainFromProto(var_proto);
       SOLVER_LOG(logger, "Hint found infeasible when assigning variable '",
-                 var_name, "' with domain", var_domain.ToString(),
+                 var_name, "' with domain ", var_domain.ToString(),
                  " the value ", value);
       break;
     }
@@ -2697,7 +2699,7 @@ class CpModelSolver {
     AddDumpFinalResponsePostprocessor();
 
     // Always display the final response stats if requested.
-    // This also copy the logs to the response if requested.
+    // This also copies the logs to the response if requested.
     AddSetStatsAndLogsInFinalResponsePostprocessor();
 
     // Always add the timing information to a response. Note that it is
@@ -2864,7 +2866,7 @@ bool CpModelSolver::ValidateParameters() {
 
     // TODO(user): We currently reuse the MODEL_INVALID status even though it
     // is not the best name for this. Maybe we can add a PARAMETERS_INVALID
-    // when it become needed. Or rename to INVALID_INPUT ?
+    // when it becomes needed. Or rename to INVALID_INPUT ?
     CpSolverResponse status_response;
     status_response.set_status(CpSolverStatus::MODEL_INVALID);
     status_response.set_solution_info(error);
@@ -2936,7 +2938,7 @@ bool CpModelSolver::CopyInputProto() {
                              "the input proto at %.2fs",
                              model_->GetOrCreate<WallTimer>()->Get()));
 
-  // The lrat proof handler is needed is some cases, during the initial copy
+  // The lrat proof handler is needed in some cases, during the initial copy
   // and the presolve.
   //
   // Note that this is the "presolve one", each worker will have its own.
@@ -3015,7 +3017,7 @@ bool CpModelSolver::Presolve() {
 
   // For the case where the assumptions are currently not supported, we just
   // assume they are fixed, and will always report all of them in the UNSAT
-  // core if the problem turn out to be UNSAT.
+  // core if the problem turns out to be UNSAT.
   //
   // If the mode is not degraded, we will hopefully report a small subset
   // in case there is no feasible solution under these assumptions.
@@ -3065,10 +3067,10 @@ bool CpModelSolver::Presolve() {
 }
 
 void CpModelSolver::MaybeFixVariablesToHintValue(PresolveContext* context) {
-  // Note that this still use the original user-given hint, which is not
-  // clamped. We also don't have hint for potential new variable created during
-  // copy/canonicalization. But we should be able to recover their value quite
-  // quickly when we fix the hint.
+  // Note that this still uses the original user-given hint, which is not
+  // clamped. We also don't have a hint for potential new variables created
+  // during copy/canonicalization. But we should be able to recover their value
+  // quite quickly when we fix the hint.
   if (params_.fix_variables_to_their_hinted_value() &&
       model_proto_.has_solution_hint()) {
     FixVariablesToHintValue(model_proto_.solution_hint(), context, logger_);
@@ -3076,7 +3078,7 @@ void CpModelSolver::MaybeFixVariablesToHintValue(PresolveContext* context) {
 
   // If the hint is complete, we can use the solution checker to do more
   // validation. Note that after the model has been validated, we are sure there
-  // are do duplicate variables in the solution hint, so we can just check the
+  // are no duplicate variables in the solution hint, so we can just check the
   // size.
   hint_feasible_before_presolve_ = false;
   if (!context->ModelIsUnsat()) {
@@ -3093,7 +3095,7 @@ bool CpModelSolver::FixAssumptionsIfNotSupported(PresolveContext* context) {
     SOLVER_LOG(
         logger_,
         "Warning: solving with assumptions was requested in a non-fully "
-        "supported setting.\nWe will assumes these assumptions true while "
+        "supported setting.\nWe will assume these assumptions are true while "
         "solving, but if the model is infeasible, you will not get a useful "
         "'sufficient_assumptions_for_infeasibility' field in the response, it "
         "will include all assumptions.");
@@ -3150,7 +3152,7 @@ void CpModelSolver::AddFloatingPointObjectiveResponsePostprocessor() {
           *response->mutable_integer_objective() = integer_obj;
 
           // If requested, compute a correct lb from the one on the integer
-          // objective. We only do that if some error were introduced by the
+          // objective. We only do that if some errors were introduced by the
           // scaling algorithm.
           if (params_.mip_compute_true_objective_bound() &&
               !integer_obj.scaling_was_exact()) {
@@ -3216,7 +3218,7 @@ void CpModelSolver::DetectPresolvedModelSymmetry() {
     if (params_.keep_symmetry_in_presolve() &&
         presolved_model_proto_->has_symmetry()) {
       // Symmetry should be already computed and correct, so we don't redo it.
-      // Moreover it is possible we will not find them again as the constraints
+      // Moreover, it is possible we will not find them again as the constraints
       // might have changed.
     } else {
       TimeLimit time_limit;
@@ -3226,7 +3228,7 @@ void CpModelSolver::DetectPresolvedModelSymmetry() {
                                   logger_, &time_limit);
     }
 
-    // TODO(user): Some code just check presolved_model_proto_->has_symmetry().
+    // TODO(user): Some code just checks presolved_model_proto_->has_symmetry().
     // If we don't have any generator, better to just clear the field.
     if (presolved_model_proto_->symmetry().permutations().empty()) {
       presolved_model_proto_->clear_symmetry();
@@ -3247,7 +3249,7 @@ void CpModelSolver::AddFillTightenedDomainInResponsePostprocessor() {
             bounds.push_back(ReadDomainFromProto(vars));
           }
 
-          // Intersect with the SharedBoundsManager if it exist.
+          // Intersect with the SharedBoundsManager if it exists.
           if (shared_->bounds != nullptr) {
             shared_->bounds->UpdateDomains(&bounds);
           }
@@ -3263,14 +3265,14 @@ void CpModelSolver::AddFillTightenedDomainInResponsePostprocessor() {
 void CpModelSolver::AddCheckSolutionCallback() {
   // Solution checking.
   // We either check all solutions, or only the last one.
-  // Checking all solution might be expensive if we creates many.
+  // Checking all solutions might be expensive if we create many.
   auto check_solution = [&](const CpSolverResponse& response) {
     if (response.solution().empty()) return;
 
     bool solution_is_feasible = true;
     if (params_.cp_model_presolve()) {
-      // We pass presolve data for more informative message in case the solution
-      // is not feasible.
+      // We pass presolve data for a more informative message in case the
+      // solution is not feasible.
       solution_is_feasible =
           SolutionIsFeasible(model_proto_, response.solution(), mapping_proto_,
                              &postsolve_mapping_);
@@ -3352,10 +3354,10 @@ void CpModelSolver::DumpPresolvedProto() {
       DumpModelProto(*presolved_model_proto_, "presolved_model");
       DumpModelProto(*mapping_proto_, "mapping_model");
 
-      // Debug model with 1-based indices easier to read but cannot be parsed
-      // back! This follow the SAT convention for literal like +3/-3 and
-      // variable starts at 1. Note also that without the model name, the domain
-      // of variable #i will be at line i.
+      // Debug model with 1-based indices is easier to read but cannot be parsed
+      // back! This follows the SAT convention for literals like +3/-3 with
+      // variables starting at 1. Note also that without the model name, the
+      // domain of variable #i will be at line i.
       {
         CpModelProto copy = *presolved_model_proto_;
         copy.clear_name();
@@ -3436,7 +3438,7 @@ void CpModelSolver::LoadPresolvedModel() {
 
   // If specified, we load the initial objective domain right away in the
   // response manager. Note that the presolve will always fill it with the
-  // trivial min/max value if the user left it empty. This avoids to display
+  // trivial min/max value if the user left it empty. This avoids displaying
   // [-infinity, infinity] for the initial objective search space.
   if (presolved_model_proto_->has_objective()) {
     shared_response_manager_->InitializeObjective(*presolved_model_proto_);
@@ -3455,7 +3457,7 @@ void CpModelSolver::LoadPresolvedModel() {
   // load it in this case.
   //
   // TODO(user): Even for an optimization, if we load the solution right away,
-  // we might not have the same behavior as the initial search that follow the
+  // we might not have the same behavior as the initial search that follows the
   // hint will be infeasible, so the activities of the variables will be
   // different.
   const bool import_hint_as_solution =
@@ -3498,7 +3500,7 @@ void CpModelSolver::SolvePresolvedModel() {
   } else {
     shared_response_manager_->SetUpdateGapIntegralOnEachChange(true);
 
-    // To avoid duplicating code, the single-thread version reuse most of
+    // To avoid duplicating code, the single-thread version reuses most of
     // the multi-thread architecture.
     std::vector<std::unique_ptr<SubSolver>> subsolvers;
     subsolvers.push_back(std::make_unique<FullProblemSolver>(
@@ -3536,7 +3538,7 @@ class DirectSolverThread : public CpModelSolver {
                     .dump_presolved_proto = false}),
         global_model_(global_model) {
     CHECK(!params_.cp_model_presolve());
-    // Note that we need to make a copy of a model_copy_proto because it will be
+    // Note that we need to make a copy of model_copy_proto because it will be
     // modified by the presolve in DefaultCpModelSolver, upon return of this
     // constructor.
     *presolved_model_proto_ = model_copy_proto;
@@ -3793,9 +3795,9 @@ class DefaultCpModelSolver : public CpModelSolver {
         for (int i = 0; i < direct_solver_lower_bounds_.size(); ++i) {
           variables.push_back(i);
         }
-        // TODO(user): Note that if the presolve introduce a new variable X = Y
+        // TODO(user): Note that if the presolve introduces a new variable X = Y
         // + Z, it will have "trivial" bounds, and we will not compute the
-        // information as tightely as we could. I.e. no code will compute tight
+        // information as tightly as we could. I.e. no code will compute tight
         // bounds on X from the ones on Y and Z.
         shared_bounds->ReportPotentialNewBounds("direct_solver", variables,
                                                 direct_solver_lower_bounds_,

@@ -113,7 +113,7 @@ void VarDomination::ActivityShouldNotChange(absl::Span<const int> refs,
   tmp_vars_.clear();
 }
 
-// This correspond to a lower bounded constraint.
+// This corresponds to a lower-bounded constraint.
 void VarDomination::ProcessTempRanks() {
   if (phase_ == 0) {
     // We actually "split" tmp_ranks_ according to the current partition and
@@ -182,7 +182,7 @@ void VarDomination::Initialize(absl::Span<IntegerVariableWithRank> span) {
   // tmp_ranks_ into spans.
   MakeRankEqualToStartOfPart(span);
 
-  // We made sure all the variable belongs to the same part.
+  // We made sure all the variables belong to the same part.
   if (DEBUG_MODE) {
     if (span.empty()) return;
     const int part = partition_->PartOf(span[0].var.value());
@@ -224,12 +224,12 @@ bool VarDomination::EndFirstPhase() {
   CHECK_EQ(phase_, 0);
   phase_ = 1;
 
-  // Some initial lists ar too long and will be cropped to this size.
+  // Some initial lists are too long and will be cropped to this size.
   // We will handle them slightly differently.
   //
   // TODO(user): Tune the initial size, 50 might be a bit large, since our
-  // complexity is borned by this number times the number of entries in the
-  // constraints. Still we should in most situation be a lot lower than that.
+  // complexity is bounded by this number times the number of entries in the
+  // constraints. Still we should in most situations be a lot lower than that.
   const int kMaxInitialSize = 50;
   absl::btree_set<IntegerVariable> cropped_vars;
   util_intops::StrongVector<IntegerVariable, bool> is_cropped(
@@ -252,7 +252,7 @@ bool VarDomination::EndFirstPhase() {
                                      : elements_by_part[part];
 
     // Two modes, either we scan the full list, or a small subset of it.
-    // Not that low variable indices should appear first, so it is better not
+    // Note that low variable indices should appear first, so it is better not
     // to randomize.
     int new_size = 0;
     if (to_scan.size() <= 1'000) {
@@ -287,12 +287,12 @@ bool VarDomination::EndFirstPhase() {
     dominating_vars_[var] = {start, new_size};
   }
 
-  // Heuristic: To try not to remove domination relations corresponding to short
+  // Heuristic: To try not to remove dominance relations corresponding to short
   // lists during transposition (see EndSecondPhase()), we fill the cropped list
   // with the transpose of the short list relations. This helps finding more
-  // relation in the presence of cropped lists.
+  // relations in the presence of cropped lists.
   //
-  // Compute how many extra space we need for transposed values.
+  // Compute how much extra space we need for transposed values.
   // Note that it cannot be more than twice.
   int total_extra_space = 0;
   util_intops::StrongVector<IntegerVariable, int> extra_space(
@@ -337,7 +337,7 @@ bool VarDomination::EndFirstPhase() {
   // Remove any duplicates.
   //
   // TODO(user): Maybe we should do that with all lists in case the
-  // input function are called with duplicates too.
+  // input functions are called with duplicates too.
   for (const IntegerVariable var : cropped_vars) {
     DCHECK(is_cropped[var]);
     IntegerVariableSpan& s = dominating_vars_[var];
@@ -349,7 +349,7 @@ bool VarDomination::EndFirstPhase() {
   }
 
   // We no longer need the first phase memory.
-  VLOG(1) << "Num initial list that where cropped: "
+  VLOG(1) << "Num initial lists that were cropped: "
           << FormatCounter(cropped_vars.size());
   VLOG(1) << "Shared buffer size: " << FormatCounter(shared_buffer_.size());
   VLOG(1) << "Non-cropped buffer size: " << FormatCounter(non_cropped_size);
@@ -674,9 +674,9 @@ void DualBoundStrengthening::ProcessLinearConstraint(
 
 namespace {
 
-// This is used to detect if two linear constraint are equivalent if the literal
-// ref is mapped to another value. We fill a vector that will only be equal
-// to another such vector if the two constraint differ only there.
+// This is used to detect if two linear constraints are equivalent if the
+// literal ref is mapped to another value. We fill a vector that will only be
+// equal to another such vector if the two constraints differ only there.
 void TransformLinearWithSpecialBoolean(const ConstraintProto& ct, int ref,
                                        std::vector<int64_t>* output) {
   DCHECK_EQ(ct.constraint_case(), ConstraintProto::kLinear);
@@ -792,7 +792,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     context->UpdateRuleStats("dual: fix variable", num_fixed_vars);
   }
 
-  // For detecting near-duplicate constraint that can be made equivalent.
+  // For detecting near-duplicate constraints that can be made equivalent.
   // hash -> (ct_index, modified ref).
   absl::flat_hash_set<int> equiv_ct_index_set;
   absl::flat_hash_map<uint64_t, std::pair<int, int>> equiv_modified_constraints;
@@ -801,7 +801,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
   std::string s;
 
   // If there is only one blocking constraint, we can simplify the problem in
-  // a few situation.
+  // a few situations.
   //
   // TODO(user): Cover all the cases.
   std::vector<bool> processed(num_vars, false);
@@ -835,8 +835,8 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     if (ct.constraint_case() != ConstraintProto::kBoolAnd) {
       // If we have an enforcement literal then we can always add the
       // implication "not enforced" => var at its lower bound.
-      // If we also have enforced => fixed var, then var is in affine relation
-      // with the enforced literal and we can remove one variable.
+      // If we also have enforced => fixed var, then var is in an affine
+      // relation with the enforced literal and we can remove one variable.
       //
       // TODO(user): We can also deal with more than one enforcement.
       if (ct.enforcement_literal().size() == 1 &&
@@ -867,7 +867,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           }
 
           // Note(user): If we have enforced => var fixed, we could actually
-          // just have removed var from the constraint it was implied by
+          // just have removed var from the constraint if it was implied by
           // another constraint. If not, because of the new affine relation we
           // could remove it right away.
           processed[PositiveRef(enf)] = true;
@@ -1036,7 +1036,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
       // with non-equality or enforced constraints.
       //
       // TODO(user): Generalize to non-Boolean. Also for Boolean, we might
-      // miss some possible reduction if replacing X by 1 - X make a constraint
+      // miss some possible reduction if replacing X by 1 - X makes a constraint
       // near-duplicate of another.
       //
       // TODO(user): We can generalize to non-linear constraint.
@@ -1044,8 +1044,8 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
       // Optimization: Skip if this constraint was already used as a single
       // blocking constraint of another variable. If this is the case, it cannot
       // be equivalent to another constraint with "var" substituted, since
-      // otherwise var would have two blocking constraint. We can safely skip
-      // it. this make sure this is in O(num_entries) and not more.
+      // otherwise var would have two blocking constraints. We can safely skip
+      // it. This makes sure this is in O(num_entries) and not more.
       if (equiv_ct_index_set.insert(ct_index).second &&
           ct.constraint_case() == ConstraintProto::kLinear &&
           context->CanBeUsedAsLiteral(ref)) {
@@ -1076,7 +1076,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
               continue;
             }
 
-            // We have a true equality. The two ref can be made equivalent.
+            // We have a true equality. The two refs can be made equivalent.
             if (!processed[PositiveRef(other_ref)]) {
               ++num_bool_in_near_duplicate_ct;
               processed[PositiveRef(ref)] = true;
@@ -1091,7 +1091,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
                 return false;
               }
 
-              // We can delete one of the constraint since they are duplicate
+              // We can delete one of the constraints since they are duplicates
               // now.
               ++num_deleted_constraints_;
               context->ClearConstraint(ct_index);
@@ -1123,7 +1123,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     // If (a => b) is the only constraint blocking a literal a in the up
     // direction, then we can set a == b !
     //
-    // Recover a => b where a is having an unique up_lock (i.e this constraint).
+    // Recover a => b where a has a unique up_lock (i.e this constraint).
     // Note that if many implications are encoded in the same bool_and, we have
     // to be careful that a is appearing in just one of them.
     //
@@ -1132,13 +1132,14 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     // than the encoding into bool_and / at_most_one ? Basically if a =>
     // all_direct_deduction, we can transform it into a <=> all_direct_deduction
     // if that is interesting. This could always be done on a max-2sat problem
-    // in one of the two direction. Also think about max-2sat specific presolve.
+    // in one of the two directions. Also think about max-2sat specific
+    // presolve.
     int a = ct.enforcement_literal(0);
     int b = 1;
     if (PositiveRef(a) == positive_ref &&
         num_locks_[RefToIntegerVariable(NegatedRef(a))] == 1) {
       // Here, we can only add the equivalence if the literal is the only
-      // on the lhs, otherwise there is actually more lock.
+      // on the lhs, otherwise there are actually more locks.
       if (ct.bool_and().literals().size() != 1) continue;
       b = ct.bool_and().literals(0);
     } else {
@@ -1254,7 +1255,7 @@ void ScanModelForDominanceDetection(PresolveContext& context,
     }
   }
 
-  // The objective is handled like a <= constraints, or an == constraint if
+  // The objective is handled like a <= constraint, or an == constraint if
   // there is a non-trivial domain.
   if (cp_model.has_objective()) {
     // Important: We need to write the objective first to make sure it is up to
@@ -1271,9 +1272,9 @@ void ScanModelForDominanceDetection(PresolveContext& context,
     }
   }
 
-  // Now do two more scan.
-  // - the phase_ = 0 initialize candidate list, then EndFirstPhase()
-  // - the phase_ = 1 filter them, then EndSecondPhase();
+  // Now do two more scans.
+  // - the phase_ = 0 initializes candidate lists, then EndFirstPhase()
+  // - the phase_ = 1 filters them, then EndSecondPhase();
   std::vector<int> tmp;
   for (int phase = 0; phase < 2; phase++) {
     for (int c = 0; c < num_constraints; ++c) {
@@ -1291,8 +1292,8 @@ void ScanModelForDominanceDetection(PresolveContext& context,
           // working on the implication graph we could detect more dominance
           // relations. Since if a => b we say that a++ can only be paired with
           // b--, but it could actually be paired with any variables that when
-          // dereased implies b = 0. This is a bit mitigated by the fact that
-          // we regroup when we can such implications into big at most ones.
+          // decreased implies b = 0. This is a bit mitigated by the fact that
+          // we regroup when we can such implications into big at-most-ones.
           tmp.clear();
           for (const int ref : ct.enforcement_literal()) {
             tmp.push_back(NegatedRef(ref));
@@ -1580,9 +1581,9 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
 
   const int64_t saved_num_operations = context->num_presolve_operations;
 
-  // Strenghtening via domination. When a variable is dominated by a bunch of
-  // other, either we can do (var--, dom++) or if we can't (i.e all dominated
-  // variable at their upper bound) then maybe all constraint are satisfied if
+  // Strengthening via domination. When a variable is dominated by a bunch of
+  // others, either we can do (var--, dom++) or if we can't (i.e. all dominated
+  // variables at their upper bound) then maybe all constraints are satisfied if
   // var is high enough and we can also decrease it.
   util_intops::StrongVector<IntegerVariable, int> can_freely_decrease_count(
       num_vars * 2, 0);
@@ -1730,7 +1731,7 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
                                absl::Span<const IntegerVariable> vars) {
       int64_t delta = 0;
       for (const IntegerVariable var : vars) {
-        // Tricky: For now we skip complex domain as we are not sure they
+        // Tricky: For now we skip complex domains as we are not sure they
         // can be moved correctly.
         if (DomainOfRef(*context, VarDomination::IntegerVariableToRef(var))
                 .NumIntervals() != 1) {
@@ -1752,7 +1753,7 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
       const int64_t coeff_magnitude = std::abs(coeff);
       if (context->IsFixed(ref)) continue;
 
-      // For strenghtening using domination, just consider >= constraint.
+      // For strengthening using domination, just consider >= constraints.
       const bool domain_is_simple = ct.linear().domain_size() == 2;
       const bool only_lb = max_activity <= rhs_ub && domain_is_simple;
       const bool only_ub = min_activity >= rhs_lb && domain_is_simple;
@@ -1768,18 +1769,18 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
         const int64_t delta = get_delta(
             only_lb, var_domination.DominatingVariables(current_ivar));
         if (delta > 0) {
-          // When all dominated var are at their upper bound, we miss 'slack'
+          // When all dominated vars are at their upper bound, we miss 'slack'
           // to make the constraint trivially satisfiable.
           const int64_t slack = shifted_rhs - delta;
           const int64_t current_lb = context->MinOf(current_ref);
 
-          // Any increase such that coeff * delta >= slack make the constraint
+          // Any increase such that coeff * delta >= slack makes the constraint
           // trivial.
           //
-          // Note(user): It look like even if any of the upper bound of the
-          // dominating var decrease, this should still be valid. Here we only
+          // Note(user): It looks like even if any of the upper bounds of the
+          // dominating vars decrease, this should still be valid. Here we only
           // decrease such a bound due to a dominance relation, so the slack
-          // when all dominating variable are at their bound should not really
+          // when all dominating variables are at their bounds should not really
           // decrease.
           const int64_t min_delta =
               slack <= 0 ? 0 : MathUtil::CeilOfRatio(slack, coeff_magnitude);
@@ -1804,7 +1805,7 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
             ub_side ? rhs_ub - min_activity : max_activity - rhs_lb;
 
         // Compute the delta in min-activity if all dominating var moves to
-        // their other bound.
+        // their other bounds.
         const int64_t delta = get_delta(ub_side, dominated_by);
         const int64_t lb = context->MinOf(current_ref);
         if (delta + coeff_magnitude > slack) {
@@ -1883,19 +1884,19 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
   }
 
   // For any dominance relation still left (i.e. between non-fixed vars), if
-  // the variable are Boolean and X is dominated by Y, we can add
+  // the variables are Boolean and X is dominated by Y, we can add
   // (X = 1) => (Y = 1). But, as soon as we do that, we break some symmetry
   // and cannot add any incompatible relations.
   //
-  // EX: It is possible that X dominate Y and Y dominate X if they are both
+  // EX: It is possible that X dominates Y and Y dominates X if they are both
   // appearing in exactly the same constraint with the same coefficient.
   //
-  // TODO(user): if both variable are in a bool_or, this will allow us to
+  // TODO(user): if both variables are in a bool_or, this will allow us to
   // remove the dominated variable. Maybe we should exploit that to decide
   // which implication we add. Or just remove such variable and not add the
   // implications?
   //
-  // TODO(user): generalize to non Booleans?
+  // TODO(user): generalize to non-Booleans?
   int num_added = 0;
   util_intops::StrongVector<IntegerVariable, bool> increase_is_forbidden(
       2 * num_vars, false);
@@ -1922,15 +1923,16 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
       if (increase_is_forbidden[NegationOf(var)]) continue;
       if (can_freely_decrease_count[var] ==
           context->VarToConstraints(positive_ref).size()) {
-        // We need to account for domain with hole, hence the ValueAtOrAfter().
+        // We need to account for domains with holes, hence the
+        // ValueAtOrAfter().
         int64_t lb = can_freely_decrease_until[var];
         lb = DomainOfRef(*context, ref).ValueAtOrAfter(lb);
         if (lb < context->MaxOf(ref)) {
           // We have a candidate, however, we need to make sure the dominating
           // variable upper bound didn't change.
           //
-          // TODO(user): It look like testing this is not really necessary.
-          // The reduction done by this class seem to be order independent.
+          // TODO(user): It looks like testing this is not really necessary.
+          // The reductions done by this class seem to be order-independent.
           bool ok = true;
           const absl::Span<const IntegerVariable> dominating_vars =
               var_domination.DominatingVariables(var);
@@ -1954,7 +1956,7 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
             // TODO(user): Is this needed?
             increase_is_forbidden[var] = true;
             context->UpdateRuleStats(
-                "domination: dual strenghtening using dominance");
+                "domination: dual strengthening using dominance");
             const Domain reduced_domain = Domain(context->MinOf(ref), lb);
             MaybeUpdateRefHintFromDominance(*context, ref, reduced_domain,
                                             dominating_vars);
@@ -1962,7 +1964,7 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
               return false;
             }
 
-            // The rest of the loop only care about Booleans.
+            // The rest of the loop only cares about Booleans.
             // And if this was boolean, we would have fixed it.
             // If it became Boolean, we wait for the next call.
             // TODO(user): maybe the last point can be improved.

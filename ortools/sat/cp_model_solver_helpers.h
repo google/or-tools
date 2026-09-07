@@ -68,8 +68,8 @@ struct SharedClasses {
   std::unique_ptr<SharedLinear2Bounds> linear2_bounds;
   std::unique_ptr<SchedulingRelaxation> scheduling_relaxation;
 
-  // call local_model->Register() on most of the class here, this allow to
-  // more easily depends on one of the shared class deep within the solver.
+  // Call local_model->Register() on most of the classes here; this allows us
+  // to more easily depend on one of the shared classes deep within the solver.
   void RegisterSharedClassesInLocalModel(Model* local_model);
 
   bool SearchIsDone();
@@ -88,30 +88,31 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model);
 //
 // TODO(user): This should be transformed so that it can be called many times
 // and resume from the last search state as if it wasn't interrupted. That would
-// allow use to easily interleave different heuristics in the same thread.
+// allow us to easily interleave different heuristics in the same thread.
 void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model);
 
-// Registers a callback that will export variables bounds fixed at level 0 of
-// the search. This should not be registered to a LNS search.
+// Registers a callback that will export variable bounds fixed at level 0 of
+// the search. This should not be registered to an LNS search.
 void RegisterVariableBoundsLevelZeroExport(
     const CpModelProto& /*model_proto*/,
     SharedBoundsManager* shared_bounds_manager, Model* model);
 
-// Registers a callback to import new variables bounds stored in the
+// Registers a callback to import new variable bounds stored in the
 // shared_bounds_manager. These bounds are imported at level 0 of the search
 // in the linear scan minimize function.
 void RegisterVariableBoundsLevelZeroImport(
     const CpModelProto& model_proto, SharedBoundsManager* shared_bounds_manager,
     Model* model);
 
-// Registers a callback that will report improving objective best bound.
-// It will be called each time new objective bound are propagated at level zero.
+// Registers a callback that will report improving objective best bounds.
+// It will be called each time new objective bounds are propagated at level
+// zero.
 void RegisterObjectiveBestBoundExport(
     IntegerVariable objective_var,
     SharedResponseManager* shared_response_manager, Model* model);
 
 // Registers a callback to import new objective bounds. It will be called each
-// time the search main loop is back to level zero. Note that it the presence of
+// time the search main loop is back to level zero. Note that in the presence of
 // assumptions, this will not happen until the set of assumptions is changed.
 void RegisterObjectiveBoundsImport(
     SharedResponseManager* shared_response_manager, Model* model);
@@ -121,16 +122,16 @@ void RegisterClausesExport(int id, SharedClausesManager* shared_clauses_manager,
                            Model* model);
 
 // Registers a callback to import new clauses stored in the
-// shared_clausess_manager. These clauses are imported at level 0 of the search
+// shared_clauses_manager. These clauses are imported at level 0 of the search
 // in the linear scan minimize function.
-// it returns the id of the worker in the shared clause manager.
+// It returns the id of the worker in the shared clause manager.
 //
 // TODO(user): Can we import them in the core worker ?
 int RegisterClausesLevelZeroImport(int id,
                                    SharedClausesManager* shared_clauses_manager,
                                    Model* model);
 
-// This will register a level zero callback to imports new linear2 from the
+// This will register a level zero callback to import new linear2 from the
 // SharedLinear2Bounds.
 void RegisterLinear2BoundsImport(SharedLinear2Bounds* shared_linear2_bounds,
                                  Model* model);

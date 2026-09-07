@@ -59,7 +59,7 @@ bool CoeffComparator(const LiteralWithCoeff& a, const LiteralWithCoeff& b) {
 bool ComputeBooleanLinearExpressionCanonicalForm(
     std::vector<LiteralWithCoeff>* cst, Coefficient* bound_shift,
     Coefficient* max_value) {
-  // Note(user): For some reason, the IntType checking doesn't work here ?! that
+  // Note(user): For some reason, the IntType checking doesn't work here?! That
   // is a bit worrying, but the code seems to behave correctly.
   *bound_shift = 0;
   *max_value = 0;
@@ -150,7 +150,7 @@ bool ApplyLiteralMapping(
   return result;
 }
 
-// TODO(user): Also check for no duplicates literals + unit tests.
+// TODO(user): Also check for no duplicate literals + unit tests.
 bool BooleanLinearExpressionIsCanonical(
     absl::Span<const Literal> enforcement_literals,
     absl::Span<const LiteralWithCoeff> cst) {
@@ -169,11 +169,11 @@ bool BooleanLinearExpressionIsCanonical(
 // everyone and using less different coefficients if possible.
 void SimplifyCanonicalBooleanLinearConstraint(
     std::vector<LiteralWithCoeff>* cst, Coefficient* rhs) {
-  // Replace all coefficient >= rhs by rhs + 1 (these literal must actually be
+  // Replace all coefficients >= rhs by rhs + 1 (these literals must actually be
   // false). Note that the linear sum of literals remains canonical.
   //
   // TODO(user): It is probably better to remove these literals and have other
-  // constraint setting them to false from the symmetry finder perspective.
+  // constraints setting them to false from the symmetry finder perspective.
   for (LiteralWithCoeff& x : *cst) {
     if (x.coefficient > *rhs) x.coefficient = *rhs + 1;
   }
@@ -241,7 +241,7 @@ void MutableUpperBoundedLinearConstraint::ClearAll() {
   max_sum_ = 0;
 }
 
-// TODO(user): Also reduce the trivially false literal when coeff > rhs_ ?
+// TODO(user): Also reduce the trivially false literal when coeff > rhs_?
 void MutableUpperBoundedLinearConstraint::ReduceCoefficients() {
   CHECK_LT(rhs_, max_sum_) << "Trivially sat.";
   Coefficient removed_sum(0);
@@ -509,7 +509,7 @@ bool UpperBoundedLinearConstraint::InitializeRhs(
                           : last_level;
     if (level > 0) {
       CHECK_LE(coeffs_[coeff_index], rhs_ - sum_at_previous_level[level])
-          << "var should have been propagated at an earlier level !";
+          << "var should have been propagated at an earlier level!";
     }
     ++literal_index;
     if (literal_index == starts_[coeff_index + 1]) ++coeff_index;
@@ -775,10 +775,10 @@ void UpperBoundedLinearConstraint::ResolvePBConflict(
     // Use this one instead to start the resolution.
     //
     // TODO(user): Investigate if this is a good idea. It doesn't happen often,
-    // but does happened. Maybe we can detect this before in Propagate()? The
+    // but does happen. Maybe we can detect this before in Propagate()? The
     // setup is:
     // - At a given trail_index, var is propagated and added on the trail.
-    // - There is some constraint literals assigned to true with a trail index
+    // - There are some constraint literals assigned to true with a trail index
     //   in (trail_index, var.trail_index).
     // - Their sum is high enough to cause a conflict.
     // - But individually, their coefficients are too small to be propagated, so
@@ -865,7 +865,7 @@ void UpperBoundedLinearConstraint::ResolvePBConflict(
   CHECK_GE(diff, 0);
   CHECK_LE(diff, slack);
   if (diff == 0) {
-    // Special case if there if no relaxation is needed.
+    // Special case if no relaxation is needed.
     AddToConflict(conflict);
     return;
   }
@@ -1035,7 +1035,7 @@ bool PbConstraints::PropagateNext(Trail* trail) {
   const Literal true_literal = (*trail)[propagation_trail_index_];
   ++propagation_trail_index_;
 
-  // We need to update ALL threshold, otherwise the Untrail() will not be
+  // We need to update ALL thresholds, otherwise Untrail() will not be
   // synchronized.
   bool conflict = false;
   num_threshold_updates_ += to_update_[true_literal].size();
@@ -1138,7 +1138,7 @@ void PbConstraints::DeleteSomeLearnedConstraintIfNeeded() {
   SCOPED_TIME_STAT(&stats_);
 
   // Mark the constraint that needs to be deleted.
-  // We do that in two pass, first we extract the activities.
+  // We do that in two passes: first we extract the activities.
   std::vector<double> activities;
   for (int i = 0; i < constraints_.size(); ++i) {
     const UpperBoundedLinearConstraint& constraint = *(constraints_[i].get());
@@ -1150,14 +1150,14 @@ void PbConstraints::DeleteSomeLearnedConstraintIfNeeded() {
   }
 
   // Then we compute the cutoff threshold.
-  // Note that we can't delete constraint used as a reason!!
+  // Note that we can't delete constraints used as a reason!!
   std::sort(activities.begin(), activities.end());
   const int num_constraints_to_delete =
       constraints_.size() - target_number_of_learned_constraint_;
   CHECK_GT(num_constraints_to_delete, 0);
   if (num_constraints_to_delete >= activities.size()) {
     // Unlikely, but may happen, so in this case, we just delete all the
-    // constraint that can possibly be deleted
+    // constraints that can possibly be deleted
     for (int i = 0; i < constraints_.size(); ++i) {
       UpperBoundedLinearConstraint& constraint = *(constraints_[i].get());
       if (constraint.is_learned() && !constraint.is_used_as_a_reason()) {
@@ -1176,9 +1176,9 @@ void PbConstraints::DeleteSomeLearnedConstraintIfNeeded() {
     }
 
     // Mark for deletion all the constraints under this threshold.
-    // We only keep the most recent constraint amongst the one with the activity
-    // exactly equal ot limit_activity, it is why the loop is in the reverse
-    // order.
+    // We only keep the most recent constraint amongst the ones with the
+    // activity exactly equal to limit_activity. This is why the loop is in the
+    // reverse order.
     for (int i = constraints_.size() - 1; i >= 0; --i) {
       UpperBoundedLinearConstraint& constraint = *(constraints_[i].get());
       if (constraint.is_learned() && !constraint.is_used_as_a_reason()) {

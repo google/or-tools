@@ -13,7 +13,7 @@
 
 // This file implements a SAT solver.
 // see http://en.wikipedia.org/wiki/Boolean_satisfiability_problem
-// for more detail.
+// for more details.
 // TODO(user): Expand.
 
 #ifndef ORTOOLS_SAT_SAT_SOLVER_H_
@@ -108,7 +108,7 @@ class SatSolver {
 
   // Fixes a variable so that the given literal is true. This can be used to
   // solve a subproblem where some variables are fixed. Note that it is more
-  // efficient to add such unit clause before all the others.
+  // efficient to add such a unit clause before all the others.
   // Returns false if the problem is detected to be UNSAT.
   ABSL_MUST_USE_RESULT bool AddUnitClause(Literal true_literal);
 
@@ -120,13 +120,13 @@ class SatSolver {
   // Returns false if the problem is detected to be UNSAT.
   //
   // This must only be called at level zero, use AddClauseDuringSearch() for
-  // adding clause at a positive level.
+  // adding clauses at a positive level.
   //
   // We call this a "problem" clause just because we will never delete such
-  // clause unless it is proven to always be satisfied. So this can be called
-  // with the initial clause of a problem, but also an inferred clause that we
-  // don't want to delete (`one_based_cnf_index` must be positive for an initial
-  // problem clause).
+  // clauses unless they are proven to always be satisfied. So this can be
+  // called with the initial clause of a problem, but also an inferred clause
+  // that we don't want to delete (`one_based_cnf_index` must be positive for an
+  // initial problem clause).
   //
   // TODO(user): Rename this to AddClause() ? Also get rid of the specialized
   // AddUnitClause(), AddBinaryClause() and AddTernaryClause() since they
@@ -141,12 +141,12 @@ class SatSolver {
   // Note(user): There is an optimization if the same constraint is added
   // consecutively (even if the bounds are different). This is particularly
   // useful for an optimization problem when we want to constrain the objective
-  // of the problem more and more. Just re-adding such constraint is relatively
+  // of the problem more and more. Just re-adding such constraints is relatively
   // efficient.
   //
-  // OVERFLOW: The sum of the absolute value of all the coefficients
+  // OVERFLOW: The sum of the absolute values of all the coefficients
   // in the constraint must not overflow. This is currently CHECKed().
-  // TODO(user): Instead of failing, implement an error handling code.
+  // TODO(user): Instead of failing, implement error handling code.
   bool AddLinearConstraint(bool use_lower_bound, Coefficient lower_bound,
                            bool use_upper_bound, Coefficient upper_bound,
                            std::vector<Literal>* enforcement_literals,
@@ -161,10 +161,10 @@ class SatSolver {
   }
 
   // Returns true if the model is UNSAT. Note that currently the status is
-  // "sticky" and once this happen, nothing else can be done with the solver.
+  // "sticky" and once this happens, nothing else can be done with the solver.
   //
   // Thanks to this function, a client can safely ignore the return value of any
-  // Add*() functions. If one of them return false, then ModelIsUnsat() will
+  // Add*() functions. If one of them returns false, then ModelIsUnsat() will
   // return true.
   bool ModelIsUnsat() const { return model_is_unsat_; }
 
@@ -216,14 +216,15 @@ class SatSolver {
   Status SolveWithTimeLimit(TimeLimit* time_limit);
 
   // Simple interface to solve a problem under the given assumptions. This
-  // simply ask the solver to solve a problem given a set of variables fixed to
+  // simply asks the solver to solve a problem given a set of variables fixed to
   // a given value (the assumptions). Compared to simply calling AddUnitClause()
-  // and fixing the variables once and for all, this allow to backtrack over the
-  // assumptions and thus exploit the incrementally between subsequent solves.
+  // and fixing the variables once and for all, this allows backtracking over
+  // the assumptions and thus exploiting the incrementality between subsequent
+  // solves.
   //
-  // This function backtrack over all the current decision, tries to enqueue the
-  // given assumptions, sets the assumption level accordingly and finally calls
-  // Solve().
+  // This function backtracks over all the current decisions, tries to enqueue
+  // the given assumptions, sets the assumption level accordingly and finally
+  // calls Solve().
   //
   // If, given these assumptions, the model is UNSAT, this returns the
   // ASSUMPTIONS_UNSAT status. INFEASIBLE is reserved for the case where the
@@ -253,13 +254,13 @@ class SatSolver {
   bool EnqueueAssumption(Literal lit);
 
   // This can be called just after SolveWithAssumptions() returned
-  // ASSUMPTION_UNSAT or after EnqueueDecisionAndBacktrackOnConflict() leaded
+  // ASSUMPTION_UNSAT or after EnqueueDecisionAndBacktrackOnConflict() led
   // to a conflict. It returns a subsequence (in the correct order) of the
   // previously enqueued decisions that cannot be taken together without making
   // the problem UNSAT.
   std::vector<Literal> GetLastIncompatibleDecisions();
 
-  // This returns a ClausePtr to a clause containing all the negation of
+  // This returns a ClausePtr to a clause containing all the negations of
   // GetLastIncompatibleDecisions(). If the options are on, this will already
   // have an LRAT proof. Note that the pointer will only be valid until the next
   // ASSUMPTION_UNSAT conflict. If you plan to keep this clause, you should make
@@ -287,7 +288,7 @@ class SatSolver {
   //
   // If there is a conflict, the given decision is not applied and:
   // - The conflict is learned. If `conflict_callback` is provided, it is called
-  //   with for each learned conflict, if any, before backtracking.
+  //   for each learned conflict, if any, before backtracking.
   // - The decisions are potentially backtracked to the first decision that
   //   propagates more variables because of the newly learned conflict.
   // - The returned value is equal to trail_->Index() after this backtracking
@@ -304,7 +305,7 @@ class SatSolver {
   // conflicts may happen and the trail may be backtracked even further.
   //
   // In any case, the new decisions stack will be the largest valid "prefix"
-  // of the old stack. Note that decisions that are now consequence of the ones
+  // of the old stack. Note that decisions that are now consequences of the ones
   // before them will no longer be decisions.
   //
   // Returns INFEASIBLE if the model was proven infeasible, ASSUMPTION_UNSAT if
@@ -323,7 +324,7 @@ class SatSolver {
   bool EnqueueDecisionIfNotConflicting(Literal true_literal);
 
   // Restores the state to the given target decision level. The decision at that
-  // level and all its propagation will not be undone. But all the trail after
+  // level and all its propagations will not be undone. But all the trail after
   // this will be cleared. Calling this with 0 will revert all the decisions and
   // only the fixed variables will be left on the trail.
   void Backtrack(int target_level);
@@ -331,7 +332,7 @@ class SatSolver {
   // Same as Backtrack() but if there was some "re-implications" (see the option
   // use_chronological_backtracking), propagate them. Note that we avoid calling
   // FinishPropagation() if there is nothing re-implied because that function
-  // might have side-effects, like redoing a LP solve at level zero for
+  // might have side-effects, like redoing an LP solve at level zero for
   // instance.
   //
   // TODO(user): Try to clean the situation up, maybe FinishPropagation() should
@@ -353,14 +354,14 @@ class SatSolver {
   //
   // Note that if this is called at level zero, we might trigger a cleanup to
   // remove all fixed variables from our clause database. This can have
-  // side-effect, so it can be disabled by setting
+  // side-effects, so it can be disabled by setting
   // potentially_process_fixed_variables to false.
   ABSL_MUST_USE_RESULT bool FinishPropagation(
       std::optional<ConflictCallback> callback = std::nullopt,
       bool potentially_process_fixed_variables = true);
 
-  // Like Backtrack(0) but make sure the propagation is finished and return
-  // false if unsat was detected. This also removes any assumptions level.
+  // Like Backtrack(0) but makes sure the propagation is finished and returns
+  // false if unsat was detected. This also removes any assumption level.
   ABSL_MUST_USE_RESULT bool ResetToLevelZero();
 
   // Changes the assumptions level and the current solver assumptions. Returns
@@ -370,7 +371,7 @@ class SatSolver {
   // enqueued at once at decision level 1 before we start to propagate. This has
   // many advantages. In particular, because we propagate with the binary
   // implications first, if we ever have assumption => not(other_assumptions) we
-  // are guaranteed to find it and returns a core of size 2.
+  // are guaranteed to find it and return a core of size 2.
   //
   // Paper: "Speeding Up Assumption-Based SAT", Randy Hickey and Fahiem Bacchus
   // http://www.maxhs.org/docs/Hickey-Bacchus2019_Chapter_SpeedingUpAssumption-BasedSAT.pdf
@@ -386,7 +387,7 @@ class SatSolver {
   // returns false.
   Status UnsatStatus() const {
     // Some consistency check, we shouldn't return ASSUMPTION_UNSAT if there
-    // are no assumption currently in the solver.
+    // are no assumptions currently in the solver.
     DCHECK(ModelIsUnsat() || assumption_level_ > 0);
     return ModelIsUnsat() ? INFEASIBLE : ASSUMPTIONS_UNSAT;
   }
@@ -397,7 +398,7 @@ class SatSolver {
   //  - void AddClause(absl::Span<const Literal> clause);
   //  - void SetNumVariables(int num_variables);
   //
-  // Importantly, the `absl::Span<const Literal>` remain valid after the call,
+  // Importantly, the `absl::Span<const Literal>` remains valid after the call,
   // so it's safe to do a shallow copy of it.
   // TODO(user): also copy the removable clauses?
   template <typename Output>
@@ -411,8 +412,8 @@ class SatSolver {
     }
     clauses_propagator_->DeleteRemovedClauses();
 
-    // Note(user): Putting the binary clauses first help because the presolver
-    // currently process the clauses in order.
+    // Note(user): Putting the binary clauses first helps because the presolver
+    // currently processes the clauses in order.
     out->SetNumVariables(NumVariables());
     binary_implication_graph_->ExtractAllBinaryClauses(out);
     for (SatClause* clause : clauses_propagator_->AllClausesInCreationOrder()) {
@@ -444,18 +445,18 @@ class SatSolver {
   int64_t num_propagations() const;
   int64_t num_backtracks() const;
 
-  // Note that we count the number of backtrack to level zero from a positive
-  // level. Those can corresponds to actual restarts, or conflicts that learn
-  // unit clauses or any other reason that trigger such backtrack.
+  // Note that we count the number of backtracks to level zero from a positive
+  // level. Those can correspond to actual restarts, or conflicts that learn
+  // unit clauses or any other reason that trigger such a backtrack.
   int64_t num_restarts() const;
   int64_t num_backtracks_to_root() const;
 
-  // This allow to keep track of restart when the solver is controlled from
+  // This allows keeping track of restarts when the solver is controlled from
   // outside.
   void IncreaseNumRestarts() { ++counters_.num_restarts; }
 
   // Access to all counters.
-  // Tracks various information about the solver progress.
+  // Tracks various information about the solver's progress.
   struct Counters {
     int64_t num_branches = 0;
     int64_t num_failures = 0;
@@ -497,10 +498,10 @@ class SatSolver {
   // having to test the status of all the lines adding a constraint, one can
   // just check if the solver is not UNSAT once the model is constructed. Note
   // that we usually log a warning on the first constraint that caused a
-  // "trival" unsatisfiability.
+  // "trivial" unsatisfiability.
   void NotifyThatModelIsUnsat() { model_is_unsat_ = true; }
 
-  // Adds a clause at any level of the tree and propagate any new deductions.
+  // Adds a clause at any level of the tree and propagates any new deductions.
   // Returns false if the model becomes UNSAT. Important: We currently do not
   // support adding a clause that is already falsified at a positive decision
   // level. Doing that will cause a check fail.
@@ -537,17 +538,17 @@ class SatSolver {
     return trail_->Index();
   }
 
-  // Hack to allow to temporarily disable logging if it is enabled.
+  // Hack to allow temporarily disabling logging if it is enabled.
   SolverLogger* mutable_logger() { return logger_; }
 
   // Processes the current conflict from trail->FailingClause().
   // Returns false if the model is unsat or the assumptions are unsat.
   //
   // This learns the conflict, backtracks, enqueues the consequence of the
-  // learned conflict and return. If `callback` is provided it is called with
+  // learned conflict and returns. If `callback` is provided it is called with
   // the learned conflict, if any, before backtracking (there might not be any
   // learned conflict if there are assumptions or if the conflict is not a
-  // clause -- pseudo Boolean case). When handling assumptions, this might
+  // clause -- pseudo-Boolean case). When handling assumptions, this might
   // return false without backtracking in case of ASSUMPTIONS_UNSAT. This is
   // only exposed to allow processing a conflict detected outside normal
   // propagation.
@@ -609,8 +610,8 @@ class SatSolver {
   // last one backtracked over and so on.
   //
   // Returns FEASIBLE if no conflict occurred, INFEASIBLE if the model was
-  // proven unsat and ASSUMPTION_UNSAT otherwise. In the last case the first non
-  // taken old decision will be propagated to false by the ones before.
+  // proven unsat, and ASSUMPTION_UNSAT otherwise. In the last case the first
+  // non- taken old decision will be propagated to false by the ones before.
   //
   // first_propagation_index will be filled with the trail index of the first
   // newly propagated literal, or with -1 if INFEASIBLE is returned.
@@ -660,13 +661,13 @@ class SatSolver {
       const std::vector<LiteralWithCoeff>& cst, Coefficient rhs,
       Coefficient max_value);
 
-  // Makes sure a pseudo boolean constraint is in canonical form.
+  // Makes sure a pseudo-Boolean constraint is in canonical form.
   void CanonicalizeLinear(std::vector<LiteralWithCoeff>* cst,
                           Coefficient* bound_shift, Coefficient* max_value);
 
   // Adds a learned clause to the problem. This should be called after
   // Backtrack(). The backtrack is such that after it is applied, all the
-  // literals of the learned close except one will be false. Thus the last one
+  // literals of the learned clause except one will be false. Thus the last one
   // will be implied True. This function also Enqueue() the implied literal.
   //
   // Returns the LBD of the clause.
@@ -693,7 +694,7 @@ class SatSolver {
 
   // Computes what is known as the first UIP (Unique implication point) conflict
   // clause starting from the failing clause. For a definition of UIP and a
-  // comparison of the different possible conflict clause computation, see the
+  // comparison of the different possible conflict clause computations, see the
   // reference below.
   //
   // The conflict will have only one literal at the highest decision level, and
@@ -707,16 +708,16 @@ class SatSolver {
       int max_trail_index, std::vector<Literal>* conflict,
       std::vector<Literal>* reason_used_to_infer_the_conflict);
 
-  // Use the learned conflict to subsumes some clause.
+  // Use the learned conflict to subsume some clauses.
   //
-  // Returns the pair <is_redundant, minimum_lbd of the subsumed clause>.
+  // Returns the pair <is_redundant, minimum_lbd of the subsumed clauses>.
   // A clause will be marked as redundant only if all the subsumed clauses are.
   std::pair<bool, int> SubsumptionsInConflictResolution(
       ClausePtr learned_conflict, absl::Span<const Literal> conflict,
       absl::Span<const Literal> reason_used);
 
   // Append the necessary `proof` for the corresponding part of an LRAT
-  // proof. Note that the first function modify is_marked_.
+  // proof. Note that the first function modifies is_marked_.
   void AppendLratProofForFixedLiterals(absl::Span<const Literal> literals,
                                        std::vector<ClausePtr>* proof);
   void AppendLratProofForFailingClause(std::vector<ClausePtr>* proof);
@@ -729,22 +730,22 @@ class SatSolver {
   void ComputeUnionOfReasons(absl::Span<const Literal> input,
                              std::vector<Literal>* literals);
 
-  // Do the full pseudo-Boolean constraint analysis. This calls multiple
-  // time ResolvePBConflict() on the current conflict until we have a conflict
-  // that allow us to propagate more at a lower decision level. This level
-  // is the one returned in backjump_level.
+  // Do the full pseudo-Boolean constraint analysis. This calls
+  // ResolvePBConflict() multiple times on the current conflict until we have a
+  // conflict that allows us to propagate more at a lower decision level. This
+  // level is the one returned in backjump_level.
   void ComputePBConflict(int max_trail_index, Coefficient initial_slack,
                          MutableUpperBoundedLinearConstraint* conflict,
                          int* backjump_level);
 
   // Applies some heuristics to a conflict in order to minimize its size and/or
   // replace literals by other literals from lower decision levels. The first
-  // function choose which one of the other functions to call depending on the
+  // function chooses which one of the other functions to call depending on the
   // parameters. If an LRAT proof handler is set, fills the LRAT proof for the
   // minimization in `proof`.
   //
   // Precondition: is_marked_ should be set to true for all the variables of
-  // the conflict. It can also contains false non-conflict variables that
+  // the conflict. It can also contain false non-conflict variables that
   // are implied by the negation of the 1-UIP conflict literal.
   void MinimizeConflict(std::vector<Literal>* conflict,
                         std::vector<ClausePtr>* proof);
@@ -759,7 +760,7 @@ class SatSolver {
                             std::vector<ClausePtr>* clauses);
 
   // To be used in DCHECK(). Verifies some property of the conflict clause:
-  // - There is an unique literal with the highest decision level.
+  // - There is a unique literal with the highest decision level.
   // - This literal appears in the first position.
   // - All the other literals are of smaller decision level.
   // - There is no literal with a decision level of zero.
@@ -784,11 +785,11 @@ class SatSolver {
   // all the reason clauses.
   int ComputeLbd(absl::Span<const Literal> literals);
 
-  // Checks if we need to reduce the number of learned clauses and do
+  // Checks if we need to reduce the number of learned clauses and does
   // it if needed. Also updates the learned clause limit for the next cleanup.
   void CleanClauseDatabaseIfNeeded();
 
-  // Activity management for clauses. This work the same way at the ones for
+  // Activity management for clauses. This works the same way as the ones for
   // variables, but with different parameters.
   void BumpReasonActivities(absl::Span<const Literal> literals);
   void BumpClauseActivity(SatClause* clause);
@@ -808,7 +809,7 @@ class SatSolver {
   std::string RunningStatisticsString() const;
 
   // Make sure each clause is "canonicalized" with respect to equivalent
-  // literals. This assumes that the ClausePtr as ownership of its memory.
+  // literals. This assumes that the ClausePtr has ownership of its memory.
   //
   // TODO(user): The literals are a bit redundant with what is stored in clause.
   // Clean up.
@@ -965,7 +966,7 @@ class SatSolver {
   // When true, temporarily disable the deletion of clauses that are not needed
   // anymore. This is a hack for TryToMinimizeClause() because we use
   // propagation in this function which might trigger a clause database
-  // deletion, but we still want the pointer to the clause we wants to minimize
+  // deletion, but we still want the pointer to the clause we want to minimize
   // to be valid until the end of that function.
   bool block_clause_deletion_ = false;
 
@@ -1137,7 +1138,7 @@ inline std::function<int64_t(const Model&)> Value(BooleanVariable b) {
 
 // This can be used to enumerate all the solutions. After each SAT call to
 // Solve(), calling this will reset the solver and exclude the current solution
-// so that the next call to Solve() will give a new solution or UNSAT is there
+// so that the next call to Solve() will give a new solution or UNSAT if there
 // is no more new solutions.
 inline std::function<void(Model*)> ExcludeCurrentSolutionAndBacktrack() {
   return [=](Model* model) {

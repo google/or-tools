@@ -48,12 +48,12 @@ using ::testing::IsEmpty;
 using ::testing::UnorderedElementsAre;
 
 // A simple macro to make the code more readable.
-// TODO(user): move that in a common place. test_utils?
+// TODO(user): move that to a common place. test_utils?
 #define EXPECT_BOUNDS_EQ(var, lb, ub)            \
   EXPECT_EQ(integer_trail->LowerBound(var), lb); \
   EXPECT_EQ(integer_trail->LevelZeroUpperBound(var), ub)
 
-// All the tests here uses 10 integer variables initially in [0, 100].
+// All the tests here use 10 integer variables initially in [0, 100].
 std::vector<IntegerVariable> AddVariables(IntegerTrail* integer_trail) {
   std::vector<IntegerVariable> vars;
   const int num_variables = 10;
@@ -254,7 +254,7 @@ TEST(PrecedencesPropagatorTest, BasicPropagationTest) {
   EXPECT_BOUNDS_EQ(vars[1], 4, 90);
   EXPECT_BOUNDS_EQ(vars[2], 14, 100);
 
-  // Lets now move vars[1] lower bound.
+  // Let's now move vars[1] lower bound.
   std::vector<Literal> lr;
   std::vector<IntegerLiteral> ir;
   EXPECT_TRUE(integer_trail->Enqueue(
@@ -311,7 +311,7 @@ TEST(PrecedencesPropagatorTest, BasicPropagation) {
   propagator->AddConditionalPrecedenceWithOffset(vars[2], vars[0],
                                                  IntegerValue(-1), Literal(+2));
 
-  // These are is ok.
+  // These are ok.
   propagator->AddConditionalPrecedenceWithOffset(vars[1], vars[0],
                                                  IntegerValue(6), Literal(+3));
   propagator->AddConditionalPrecedenceWithOffset(vars[2], vars[0],
@@ -407,7 +407,7 @@ TEST(PrecedencesPropagatorTest, Cycles) {
               UnorderedElementsAre(Literal(-1), Literal(-3), Literal(-5)));
 }
 
-// This test a tricky situation:
+// This tests a tricky situation:
 //
 // vars[0] + (offset = vars[2]) <= var[1]
 // vars[1] <= vars[2] !!
@@ -478,9 +478,9 @@ TEST(PrecedencesPropagatorTest, ConditionalPrecedencesOnFixedLiteral) {
   // We then add a Boolean variable and fix it.
   // This will trigger a propagation.
   BooleanVariable b = model.Add(NewBooleanVariable());
-  AddClauseConstraint({Literal(b, true)}, &model);  // Fix b To true.
+  AddClauseConstraint({Literal(b, true)}, &model);  // Fix b to true.
 
-  // We now add a conditional precedences using the fixed variable.
+  // We now add conditional precedences using the fixed variable.
   // This used to not be taken into account.
   AddConditionalLowerOrEqualWithOffset(y, x, 0, Literal(b, true), &model);
 
@@ -999,7 +999,7 @@ TEST(GreaterThanAtLeastOneOfDetectorTest,
   repository->Add(lit_a, LinearExpression2(a, d, -1, 1), 2,
                   1000);  // d >= a + 2
   repository->Add(lit_b, LinearExpression2(b, d, -1, 1), -1,
-                  1000);                                            // d >= b -1
+                  1000);  // d >= b - 1
   repository->Add(lit_c, LinearExpression2(c, d, -1, 1), 0, 1000);  // d >= c
   repository->Build();
   auto* detector = model.GetOrCreate<GreaterThanAtLeastOneOfDetector>();
@@ -1021,7 +1021,7 @@ TEST(TransitivePrecedencesEvaluatorTest, ComputeFullPrecedencesIfCycle) {
     vars[i] = model.Add(NewIntegerVariable(0, 10));
   }
 
-  // Even if the weight are compatible, we will fail here.
+  // Even if the weights are compatible, we will fail here.
   auto* r = model.GetOrCreate<RootLevelLinear2Bounds>();
   r->AddUpperBound(LinearExpression2::Difference(vars[0], vars[1]), -2);
   r->AddUpperBound(LinearExpression2::Difference(vars[1], vars[2]), -2);
@@ -1133,7 +1133,7 @@ TEST(BinaryRelationMapsTest, AffineUpperBound) {
       Literal(search->GetDecisionLiteral(BooleanOrIntegerLiteral(
           IntegerLiteral::LowerOrEqual(w, IntegerValue(10))))));
 
-  // Lets add a relation.
+  // Let's add a relation.
   root_bounds->Add(expr, IntegerValue(-5), IntegerValue(5));
   EXPECT_EQ(bounds->UpperBound(expr), IntegerValue(5));
 
@@ -1142,12 +1142,12 @@ TEST(BinaryRelationMapsTest, AffineUpperBound) {
   expr.coeffs[1] *= 3;
   EXPECT_EQ(bounds->UpperBound(expr), IntegerValue(15));
 
-  // Lets add an affine upper bound to that expression <= 4 * z + 1.
+  // Let's add an affine upper bound to that expression <= 4 * z + 1.
   EXPECT_TRUE(lin3_bounds->AddAffineUpperBound(
       expr, AffineExpression(z, IntegerValue(4), IntegerValue(1))));
   EXPECT_EQ(bounds->UpperBound(expr), IntegerValue(9));
 
-  // Lets test the reason, first push a new bound.
+  // Let's test the reason, first push a new bound.
   search->TakeDecision(
       Literal(search->GetDecisionLiteral(BooleanOrIntegerLiteral(
           IntegerLiteral::LowerOrEqual(z, IntegerValue(1))))));

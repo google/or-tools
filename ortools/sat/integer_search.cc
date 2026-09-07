@@ -43,7 +43,7 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/intervals.h"
-#include "ortools/sat/linear_constraint_manager.h"
+#include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/linear_propagation.h"
 #include "ortools/sat/model.h"
@@ -206,7 +206,7 @@ std::function<BooleanOrIntegerLiteral()> MostFractionalHeuristic(Model* model) {
       if (fractionality > best_fractionality) {
         best_fractionality = fractionality;
 
-        // This choose <= value if possible.
+        // This chooses <= value if possible.
         decision = BooleanOrIntegerLiteral(SplitAroundGivenValue(
             var, IntegerValue(std::floor(lp_value)), model));
       }
@@ -451,7 +451,7 @@ bool LinearizedPartIsLarge(Model* model) {
   return (num_integer_variables <= 2 * num_lp_variables);
 }
 
-// Note that all these heuristic do not depend on the variable being positive
+// Note that all these heuristics do not depend on the variable being positive
 // or negative.
 //
 // TODO(user): Experiment more with value selection heuristics.
@@ -515,7 +515,7 @@ std::function<BooleanOrIntegerLiteral()> SatSolverHeuristic(Model* model) {
 }
 
 // TODO(user): Do we need a mechanism to reduce the range of possible gaps
-// when nothing gets proven? This could be a parameter or some adaptative code.
+// when nothing gets proven? This could be a parameter or some adaptive code.
 std::function<BooleanOrIntegerLiteral()> ShaveObjectiveLb(Model* model) {
   auto* objective_definition = model->GetOrCreate<ObjectiveDefinition>();
   const IntegerVariable obj_var = objective_definition->objective_var;
@@ -857,7 +857,7 @@ class SchedulingSearchHeuristicHelper {
 
       ToSchedule candidate;
       if (repo_->IsOptional(interval)) {
-        // For task whose presence is still unknown, our propagators should
+        // For tasks whose presence is still unknown, our propagators should
         // have propagated the minimum time as if it was present. So this
         // should reflect the earliest time at which this interval can be
         // scheduled.
@@ -963,8 +963,8 @@ class SchedulingSearchHeuristicHelper {
             return BooleanOrIntegerLiteral(
                 best.start.GreaterOrEqual(cached_start_min));
           } else {
-            // Our heuristic gave us a decision that is currently false! Lets
-            // fall back to other heuristic until we are called again.
+            // Our heuristic gave us a decision that is currently false! Let's
+            // fall back to other heuristics until we are called again.
             return BooleanOrIntegerLiteral();
           }
         }
@@ -1021,7 +1021,7 @@ class SchedulingSearchHeuristicHelper {
     IntegerValue start_max = kMaxIntegerValue;
     double noise = 0.5;
 
-    // We want to pack interval to the left. If two have the same start_min,
+    // We want to pack intervals to the left. If two have the same start_min,
     // we want to choose the one that will likely leave an easier problem for
     // the other tasks.
     bool operator<(const ToSchedule& other) const {
@@ -1113,7 +1113,7 @@ class SchedulingSearchHeuristicHelper {
   // original problem, such as artificial precedences between optional and
   // non-optional intervals). Empty if fixed_search_ is false.
   CompactVectorVector<IntervalVariable, IntervalVariable> successors_;
-  // For each interval I, of list of (J, Δt) pairs
+  // For each interval I, a list of (J, Δt) pairs
   // such that if J.start >= I.start + Δt, then all the conditional precedences
   // we know about should be satisfied. Empty if fixed_search_ is false.
   CompactVectorVector<IntervalVariable,
@@ -1153,10 +1153,10 @@ bool PrecedenceIsBetter(SchedulingConstraintHelper* helper, int a,
 
 }  // namespace
 
-// The algo goes as follow:
+// The algo goes as follows:
 // - For each disjunctive, consider the intervals by start time, consider
-//   adding the first precedence between overlapping interval.
-// - Take the smallest start time amongst all disjunctive.
+//   adding the first precedence between overlapping intervals.
+// - Take the smallest start time amongst all disjunctives.
 std::function<BooleanOrIntegerLiteral()> DisjunctivePrecedenceSearchHeuristic(
     Model* model) {
   auto* repo = model->GetOrCreate<IntervalsRepository>();
@@ -1171,7 +1171,7 @@ std::function<BooleanOrIntegerLiteral()> DisjunctivePrecedenceSearchHeuristic(
 
       // TODO(user): tie break by size/start-max
       // TODO(user): Use conditional lower bounds? note that in automatic search
-      // all precedence will be fixed before this is called though. In fixed
+      // all precedences will be fixed before this is called though. In fixed
       // search maybe we should use the other SchedulingSearchHeuristic().
       int a = -1;
       for (auto [b, time] : helper->TaskByIncreasingStartMin()) {
@@ -1205,7 +1205,8 @@ std::function<BooleanOrIntegerLiteral()> DisjunctivePrecedenceSearchHeuristic(
     }
 
     if (best_helper != nullptr) {
-      // If one of the task presence is undecided, start by making it present.
+      // If the presence of one of the tasks is undecided, start by making it
+      // present.
       for (const int t : {best_before, best_after}) {
         if (!best_helper->IsPresent(t)) {
           VLOG(2) << "Presence: " << best_helper->TaskDebugString(t);
@@ -1226,11 +1227,11 @@ std::function<BooleanOrIntegerLiteral()> DisjunctivePrecedenceSearchHeuristic(
   };
 }
 
-// The algo goes as follow:
+// The algo goes as follows:
 // - Build a profile of all the tasks packed to the right as long as that is
 //   feasible.
 // - If we can't grow the profile, we have identified a set of tasks that all
-//   overlap if they are packed on the right, and whose sum of demand exceed
+//   overlap if they are packed on the right, and whose sum of demands exceeds
 //   the capacity.
 // - Look for two tasks in that set that can be made non-overlapping, and take
 //   a "precedence" decision between them.
@@ -1312,10 +1313,10 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
         continue;
       }
 
-      // We will use a bunch of heuristic to add a new precedence. All the task
-      // in open_tasks cannot share a time point since they exceed the capacity.
-      // Moreover if we pack all to the left, they have an intersecting point.
-      // So we should be able to make two of them disjoint
+      // We will use a bunch of heuristics to add a new precedence. All the
+      // tasks in open_tasks cannot share a time point since they exceed the
+      // capacity. Moreover if we pack all of them to the left, they have an
+      // intersecting point. So we should be able to make two of them disjoint
       std::vector<int> open_tasks;
       for (int t = 0; t < num_tasks; ++t) {
         if (added_demand[t] <= 0) continue;
@@ -1323,7 +1324,7 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
       }
       open_tasks.push_back(first_skipped_task);
 
-      // TODO(user): If the two box cannot overlap because of high demand, use
+      // TODO(user): If the two boxes cannot overlap because of high demand, use
       // repo.CreateDisjunctivePrecedenceLiteralIfNonTrivial() instead.
       //
       // TODO(user): Add heuristic ordering for creating interesting precedence
@@ -1357,7 +1358,7 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
             }
 
             // This should always be true in normal usage after SAT search has
-            // fixed all literal, but if it is not, we can just return this
+            // fixed all literals, but if it is not, we can just return this
             // decision.
             if (trail->Assignment().LiteralIsFalse(Literal(existing))) {
               helper->AddLiteralReason(Literal(existing));
@@ -1380,8 +1381,8 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
       }
       if (found_precedence_to_add) break;
 
-      // If no precedence can be created, and all precedence are assigned to
-      // false we have a conflict since all these interval must intersect but
+      // If no precedence can be created, and all precedences are assigned to
+      // false we have a conflict since all these intervals must intersect but
       // cannot fit in the capacity!
       //
       // TODO(user): We need to add the reason for demand_min and capacity_max.
@@ -1403,7 +1404,7 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
       (void)helper->ReportConflict();
       search_helper->NotifyThatConflictWasFoundDuringGetDecision();
       if (VLOG_IS_ON(2)) {
-        LOG(INFO) << "Conflict between precedences !";
+        LOG(INFO) << "Conflict between precedences!";
         for (const int t : open_tasks) LOG(INFO) << helper->TaskDebugString(t);
       }
       return BooleanOrIntegerLiteral();
@@ -1441,14 +1442,14 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
   policies.push_back(SequentialSearch({sat_policy, heuristics.fixed_search}));
   weights.push_back(5);
 
-  // Adds user defined search if present.
+  // Adds user-defined search if present.
   if (heuristics.user_search != nullptr) {
     policies.push_back(SequentialSearch(
         {heuristics.user_search, sat_policy, heuristics.fixed_search}));
     weights.push_back(1);
   }
 
-  // Add model based heuristic search if present.
+  // Add model-based heuristic search if present.
   if (heuristics.heuristic_search != nullptr) {
     policies.push_back(
         SequentialSearch({heuristics.heuristic_search, sat_policy,
@@ -1471,7 +1472,7 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
       value_selection_heuristics;
   std::vector<int> value_selection_weight;
 
-  // LP Based value.
+  // LP-based value.
   const int linearization_level =
       model->GetOrCreate<SatParameters>()->linearization_level();
   if (LinearizedPartIsLarge(model)) {
@@ -1625,7 +1626,7 @@ std::function<BooleanOrIntegerLiteral()> FollowHint(
   // This is not ideal as we reserve an int for the full duration of the model
   // even if we use this FollowHint() function just for a while. But it is
   // an easy solution to not have reference to deleted memory in the
-  // RevIntRepository(). Note that once we backtrack, these reference will
+  // RevIntRepository(). Note that once we backtrack, these references will
   // disappear.
   int* rev_start_index = model->TakeOwnership(new int);
   *rev_start_index = 0;
@@ -2187,7 +2188,7 @@ SatSolver::Status IntegerSearchHelper::SolveIntegerProblem() {
     if (heuristics.restart_policies[heuristics.policy_index]()) {
       // Note that in the presence of assumptions, BeforeTakingDecision()
       // will make sure to restore them. On restart, we always call Propagate()
-      // as we might want to spent more effort on the root level LP relaxation
+      // as we might want to spend more effort on the root level LP relaxation
       // for instance.
       sat_solver_->IncreaseNumRestarts();
       sat_solver_->Backtrack(0);
@@ -2222,7 +2223,7 @@ SatSolver::Status IntegerSearchHelper::SolveIntegerProblem() {
       break;
     }
 
-    // No decision means that we reached a leave of the search tree and that
+    // No decision means that we reached a leaf of the search tree and that
     // we have a feasible solution.
     //
     // Tricky: If the time limit is reached during the final propagation when
@@ -2255,8 +2256,8 @@ SatSolver::Status IntegerSearchHelper::SolveIntegerProblem() {
 
       // Save the current polarity of all Booleans in the solution. It will be
       // followed for the next SAT decisions. This is known to be a good policy
-      // for optimization problem. Note that for decision problem we don't care
-      // since we are just done as soon as a solution is found.
+      // for optimization problems. Note that for decision problems we don't
+      // care since we are just done as soon as a solution is found.
       //
       // This idea is kind of "well known", see for instance the "LinSBPS"
       // submission to the maxSAT 2018 competition by Emir Demirovic and Peter
@@ -2275,16 +2276,16 @@ SatSolver::Status IntegerSearchHelper::SolveIntegerProblem() {
       return sat_solver_->UnsatStatus();
     }
 
-    // In multi-thread, we really only want to save the LP relaxation for thread
-    // with high linearization level to avoid to pollute the repository with
-    // sub-par lp solutions.
+    // In multi-thread, we really only want to save the LP relaxation for
+    // threads with high linearization level to avoid polluting the repository
+    // with sub-par LP solutions.
     //
     // TODO(user): Experiment more around dynamically changing the
     // threshold for storing LP solutions in the pool. Alternatively expose
     // this as parameter so this can be tuned later.
     //
-    // TODO(user): Avoid adding the same solution many time if the LP didn't
-    // change. Avoid adding solution that are too deep in the tree (most
+    // TODO(user): Avoid adding the same solution many times if the LP didn't
+    // change. Avoid adding solutions that are too deep in the tree (most
     // variable fixed). Also use a callback rather than having this here, we
     // don't want this file to depend on cp_model.proto.
     if (model_->Get<SharedLPSolutionRepository>() != nullptr &&

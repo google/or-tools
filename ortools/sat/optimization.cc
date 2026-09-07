@@ -65,7 +65,7 @@ void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
     // We want each literal in candidate to appear last once in our propagation
     // order. We want to do that while maximizing the reutilization of the
     // current assignment prefix, that is minimizing the number of
-    // decision/progagation we need to perform.
+    // decision/propagation we need to perform.
     const int target_level = MoveOneUnprocessedLiteralLast(
         moved_last, solver->CurrentDecisionLevel(), &candidate);
     if (target_level == -1) break;
@@ -95,7 +95,7 @@ void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
     VLOG(1) << "minimization with propag " << core->size() << " -> "
             << candidate.size();
 
-    // We want to preserve the order of literal in the response.
+    // We want to preserve the order of literals in the response.
     absl::flat_hash_set<LiteralIndex> set;
     for (const Literal l : candidate) set.insert(l.Index());
     int new_size = 0;
@@ -343,23 +343,23 @@ namespace {
 // non-overlapping set of assumptions, each set making the problem infeasible on
 // its own (the cores).
 //
-// In presence of weights, we "generalize" the notions of disjoints core using
-// the WCE idea describe in "Weight-Aware Core Extraction in SAT-Based MaxSAT
+// In presence of weights, we "generalize" the notion of disjoint cores using
+// the WCE idea described in "Weight-Aware Core Extraction in SAT-Based MaxSAT
 // solving" Jeremias Berg And Matti Jarvisalo.
 //
 // The returned status can be either:
-// - ASSUMPTIONS_UNSAT if the set of returned core perfectly cover the given
+// - ASSUMPTIONS_UNSAT if the set of returned cores perfectly covers the given
 //   assumptions, in this case, we don't bother trying to find a SAT solution
 //   with no assumptions.
-// - FEASIBLE if after finding zero or more core we have a solution.
+// - FEASIBLE if after finding zero or more cores we have a solution.
 // - LIMIT_REACHED if we reached the time-limit before one of the two status
 //   above could be decided.
 //
-// TODO(user): There is many way to combine the WCE and stratification
-// heuristics. I didn't had time to properly compare the different approach. See
-// the WCE papers for some ideas, but there is many more ways to try to find a
-// lot of core at once and try to minimize the minimum weight of each of the
-// cores.
+// TODO(user): There are many ways to combine the WCE and stratification
+// heuristics. I didn't have time to properly compare the different approaches.
+// See the WCE papers for some ideas, but there are many more ways to try to
+// find a lot of cores at once and try to minimize the minimum weight of each
+// of the cores.
 SatSolver::Status FindCores(std::vector<Literal> assumptions,
                             std::vector<IntegerValue> assumption_weights,
                             IntegerValue stratified_threshold, Model* model,
@@ -411,7 +411,7 @@ SatSolver::Status FindCores(std::vector<Literal> assumptions,
       assumption_weights[i] -= min_weight;
     }
 
-    // Remove from assumptions all the one with a new weight smaller than the
+    // Remove from assumptions all the ones with a new weight smaller than the
     // current stratification threshold and see if we can find another core.
     int new_size = 0;
     for (int i = 0; i < assumptions.size(); ++i) {
@@ -456,7 +456,7 @@ CoreBasedOptimizer::CoreBasedOptimizer(
 
   // This is used by the "stratified" approach. We will only consider terms with
   // a weight not lower than this threshold. The threshold will decrease as the
-  // algorithm progress.
+  // algorithm progresses.
   stratification_threshold_ = parameters_->max_sat_stratification() ==
                                       SatParameters::STRATIFICATION_NONE
                                   ? IntegerValue(1)
@@ -472,11 +472,11 @@ bool CoreBasedOptimizer::ProcessSolution() {
     objective += term.weight * value;
 
     // Also keep in term.cover_ub the minimum value for term.var that we have
-    // seens amongst all the feasible solutions found so far.
+    // seen amongst all the feasible solutions found so far.
     term.cover_ub = std::min(term.cover_ub, value);
   }
 
-  // Test that the current objective value fall in the requested objective
+  // Test that the current objective value falls in the requested objective
   // domain, which could potentially have holes.
   if (!integer_trail_->LevelZeroDomain(objective_var_)
            .Contains(objective.value())) {
@@ -499,7 +499,7 @@ bool CoreBasedOptimizer::ProcessSolution() {
 }
 
 bool CoreBasedOptimizer::PropagateObjectiveBounds() {
-  // We assumes all terms (modulo stratification) at their lower-bound.
+  // We assume all terms (modulo stratification) at their lower-bound.
   bool some_bound_were_tightened = true;
   while (some_bound_were_tightened) {
     some_bound_were_tightened = false;
@@ -525,9 +525,9 @@ bool CoreBasedOptimizer::PropagateObjectiveBounds() {
       some_bound_were_tightened = true;
     }
 
-    // The gap is used to propagate the upper-bound of all variable that are
+    // The gap is used to propagate the upper-bound of all variables that are
     // in the current objective (Exactly like done in the propagation of a
-    // linear constraint with the slack). When this fix a variable to its
+    // linear constraint with the slack). When this fixes a variable to its
     // lower bound, it is called "hardening" in the max-sat literature. This
     // has a really beneficial effect on some weighted max-sat problems like
     // the haplotyping-pedigrees ones.
@@ -540,10 +540,10 @@ bool CoreBasedOptimizer::PropagateObjectiveBounds() {
       const IntegerValue var_ub = integer_trail_->UpperBound(term.var);
       if (var_lb == var_ub) continue;
 
-      // Hardening. This basically just propagate the implied upper bound on
+      // Hardening. This basically just propagates the implied upper bound on
       // term.var from the current best solution. Note that the gap is
       // non-negative and the weight positive here. The test is done in order
-      // to avoid any integer overflow provided (ub - lb) do not overflow, but
+      // to avoid any integer overflow provided (ub - lb) does not overflow, but
       // this is a precondition in our cp-model.
       if (gap / term.weight < var_ub - var_lb) {
         some_bound_were_tightened = true;
@@ -560,13 +560,13 @@ bool CoreBasedOptimizer::PropagateObjectiveBounds() {
 }
 
 // A basic algorithm is to take the next one, or at least the next one
-// that invalidate the current solution. But to avoid corner cases for
-// problem with a lot of terms all with different objective weights (in
+// that invalidates the current solution. But to avoid corner cases for
+// problems with a lot of terms all with different objective weights (in
 // which case we will kind of introduce only one assumption per loop
-// which is little), we use an heuristic and take the 90% percentile of
+// which is little), we use a heuristic and take the 90% percentile of
 // the unique weights not yet included.
 //
-// TODO(user): There is many other possible heuristics here, and I
+// TODO(user): There are many other possible heuristics here, and I
 // didn't have the time to properly compare them.
 void CoreBasedOptimizer::ComputeNextStratificationThreshold() {
   std::vector<IntegerValue> weights;
@@ -593,7 +593,7 @@ void CoreBasedOptimizer::ComputeNextStratificationThreshold() {
 bool CoreBasedOptimizer::CoverOptimization() {
   if (!sat_solver_->ResetToLevelZero()) return false;
 
-  // We set a fix deterministic time limit per all sub-solves and skip to the
+  // We set a fixed deterministic time limit for all sub-solves and skip to the
   // next core if the sum of the sub-solves is also over this limit.
   constexpr double max_dtime_per_core = 0.5;
   const double old_time_limit = parameters_->max_deterministic_time();
@@ -609,14 +609,14 @@ bool CoreBasedOptimizer::CoverOptimization() {
     if (term.depth == 0) continue;
 
     // Find out the true lower bound of var. This is called "cover
-    // optimization" in some of the max-SAT literature. It can helps on some
+    // optimization" in some of the max-SAT literature. It can help on some
     // problem families and hurt on others, but the overall impact is
     // positive.
     const IntegerVariable var = term.var;
     IntegerValue best =
         std::min(term.cover_ub, integer_trail_->UpperBound(var));
 
-    // Note(user): this can happen in some corner case because each time we
+    // Note(user): this can happen in some corner cases because each time we
     // find a solution, we constrain the objective to be smaller than it, so
     // it is possible that a previous best is now infeasible.
     if (best <= integer_trail_->LowerBound(var)) continue;
@@ -664,13 +664,13 @@ bool CoreBasedOptimizer::CoverOptimization() {
 SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
     absl::Span<const Literal> literals, absl::Span<const IntegerVariable> vars,
     absl::Span<const Coefficient> coefficients, Coefficient offset) {
-  // Create one initial nodes per variables with cost.
+  // Create one initial node per variable with cost.
   // TODO(user): We could create EncodingNode out of IntegerVariable.
   //
   // Note that the nodes order and assumptions extracted from it will be stable.
-  // In particular, new nodes will be appended at the end, which make the solver
-  // more likely to find core involving only the first assumptions. This is
-  // important at the beginning so the solver as a chance to find a lot of
+  // In particular, new nodes will be appended at the end, which makes the
+  // solver more likely to find cores involving only the first assumptions. This
+  // is important at the beginning so the solver has a chance to find a lot of
   // non-overlapping small cores without the need to have dedicated
   // non-overlapping core finder.
   // TODO(user): It could still be beneficial to add one. Experiments.
@@ -696,7 +696,7 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
         encoder.AddBaseNode(EncodingNode::LiteralNode(lit, coefficients[i]));
       } else {
         // TODO(user): This might not be ideal if there are holes in the domain.
-        // It should work by adding duplicates literal, but we should be able to
+        // It should work by adding duplicate literals, but we should be able to
         // be more efficient.
         const int lb = 0;
         const int ub = static_cast<int>(var_ub.value() - var_lb.value());
@@ -713,7 +713,7 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
   }
 
   // Initialize the bounds.
-  // This is in term of number of variables not at their minimal value.
+  // This is in terms of the number of variables not at their minimal value.
   Coefficient lower_bound(0);
 
   // This is used by the "stratified" approach.
@@ -759,7 +759,7 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
 
       // Report the improvement.
       // Note that we have a callback that will do the same, but doing it
-      // earlier allow us to add more information.
+      // earlier allows us to add more information.
       const int num_bools = sat_solver_->NumVariables();
       const int num_fixed = sat_solver_->NumFixedVariables();
       model_->GetOrCreate<SharedResponseManager>()->UpdateInnerObjectiveBounds(
@@ -810,12 +810,12 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
 
     // Solve under the assumptions.
     //
-    // TODO(user): Find multiple core like in the "main" algorithm. This is just
-    // trying to solve with assumptions not involving the newly found core.
+    // TODO(user): Find multiple cores like in the "main" algorithm. This is
+    // just trying to solve with assumptions not involving the newly found core.
     //
-    // TODO(user): With stratification, sometime we just spend too much time
+    // TODO(user): With stratification, sometimes we just spend too much time
     // trying to find a feasible solution/prove infeasibility and we could
-    // instead just use stratification=0 to find easty core and improve lower
+    // instead just use stratification=0 to find easy cores and improve lower
     // bound.
     const SatSolver::Status result =
         ResetAndSolveIntegerProblem(assumptions, model_);
@@ -850,7 +850,7 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
     previous_core_info =
         absl::StrFormat("size:%u mw:%d", core.size(), min_weight.value());
 
-    // We only count an iter when we found a core.
+    // We only count an iter when we find a core.
     ++iter;
     if (!encoder.ProcessCore(core, min_weight, gap, &previous_core_info)) {
       return SatSolver::INFEASIBLE;
@@ -864,7 +864,7 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
 void PresolveBooleanLinearExpression(std::vector<Literal>* literals,
                                      std::vector<Coefficient>* coefficients,
                                      Coefficient* offset) {
-  // Sorting by literal index regroup duplicate or negated literal together.
+  // Sorting by literal index regroups duplicate or negated literals together.
   std::vector<std::pair<LiteralIndex, Coefficient>> pairs;
   const int size = literals->size();
   for (int i = 0; i < size; ++i) {
@@ -915,13 +915,13 @@ void CoreBasedOptimizer::PresolveObjectiveWithAtMostOne(
   util_intops::StrongVector<LiteralIndex, Coefficient> weights(num_literals);
   util_intops::StrongVector<LiteralIndex, bool> is_candidate(num_literals);
 
-  // For now, we do not use weight. Note that finding the at most on in the
-  // creation order of the variable make a HUGE difference on the max-sat frb
+  // For now, we do not use weight. Note that finding the at most one in the
+  // creation order of the variable makes a HUGE difference on the max-sat frb
   // family.
   //
   // TODO(user): We can assign preferences to literals to favor certain at most
-  // one instead of other. For now we don't, so ExpandAtMostOneWithWeight() will
-  // kind of randomize the expansion amongst possible choices.
+  // ones instead of others. For now we don't, so ExpandAtMostOneWithWeight()
+  // will kind of randomize the expansion amongst possible choices.
   util_intops::StrongVector<LiteralIndex, double> preferences;
 
   // Collect all literals with "negative weights", we will try to find at most
@@ -984,7 +984,7 @@ void CoreBasedOptimizer::PresolveObjectiveWithAtMostOne(
       weights[lit] = new_weight;
       weights[lit.NegatedIndex()] = 0;
       if (new_weight > 0) {
-        // TODO(user): While we authorize this to be in future at most one, it
+        // TODO(user): While we authorize this to be in a future at most one, it
         // will not appear in the "literal" list. We might also want to continue
         // until we reached the fix point.
         is_candidate[lit.NegatedIndex()] = true;
@@ -995,7 +995,8 @@ void CoreBasedOptimizer::PresolveObjectiveWithAtMostOne(
     const Literal new_lit(sat_solver_->NewBooleanVariable(), true);
     new_obj_terms.push_back({new_lit, max_coeff});
 
-    // The new boolean is true only if all the one in the at most one are false.
+    // The new boolean is true only if all the ones in the at most one are
+    // false.
     at_most_one.push_back(new_lit);
     sat_solver_->AddProblemClause(at_most_one);
     is_candidate.resize(implications_->literal_size(), false);
@@ -1038,7 +1039,7 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
   // Hack: If the objective is fully Boolean, we use the
   // OptimizeWithSatEncoding() version as it seems to be better.
   //
-  // TODO(user): Try to understand exactly why and merge both code path.
+  // TODO(user): Try to understand exactly why and merge both code paths.
   if (!parameters_->interleave_search()) {
     Coefficient offset(0);
     std::vector<Literal> literals;
@@ -1065,18 +1066,19 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
       }
     }
     if (all_booleans) {
-      // In some corner case, it is possible the GetOrCreateAssociatedLiteral()
-      // returns identical or negated literal of another term. We don't support
-      // this below, so we need to make sure this is not the case.
+      // In some corner cases, it is possible that
+      // GetOrCreateAssociatedLiteral() returns an identical or negated literal
+      // of another term. We don't support this below, so we need to make sure
+      // this is not the case.
       PresolveBooleanLinearExpression(&literals, &coefficients, &offset);
 
       // TODO(user): It might be interesting to redo this kind of presolving
       // once high cost booleans have been fixed as we might have more at most
-      // one between literal in the objective by then.
+      // one between literals in the objective by then.
       //
       // Or alternatively, we could try this or something like it on the
       // literals from the cores as they are found. We should probably make
-      // sure that if it exist, a core of size two is always added. And for
+      // sure that if it exists, a core of size two is always added. And for
       // such core, we can always try to see if the "at most one" can be
       // extended.
       PresolveObjectiveWithAtMostOne(&literals, &coefficients, &offset);
@@ -1089,7 +1091,7 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
 
   // TODO(user): The core is returned in the same order as the assumptions,
   // so we don't really need this map, we could just do a linear scan to
-  // recover which node are part of the core. This however needs to be properly
+  // recover which nodes are part of the core. This however needs to be properly
   // unit tested before usage.
   absl::btree_map<LiteralIndex, int> literal_to_term_index;
 
@@ -1097,20 +1099,20 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
   stop_ = false;
   while (true) {
     // TODO(user): This always resets the solver to level zero.
-    // Because of that we don't resume a solve in "chunk" perfectly. Fix.
+    // Because of that we don't resume a solve in "chunks" perfectly. Fix.
     if (!PropagateObjectiveBounds()) return SatSolver::INFEASIBLE;
     if (time_limit_->LimitReached()) return SatSolver::LIMIT_REACHED;
 
     // Bulk cover optimization.
     //
     // TODO(user): If the search is aborted during this phase and we solve in
-    // "chunk", we don't resume perfectly from where it was. Fix.
+    // "chunks", we don't resume perfectly from where it was. Fix.
     if (parameters_->cover_optimization()) {
       if (!CoverOptimization()) return SatSolver::INFEASIBLE;
       if (stop_) return SatSolver::LIMIT_REACHED;
     }
 
-    // We assumes all terms (modulo stratification) at their lower-bound.
+    // We assume all terms (modulo stratification) at their lower-bound.
     std::vector<int> term_indices;
     std::vector<IntegerLiteral> integer_assumptions;
     std::vector<IntegerValue> assumption_weights;
@@ -1210,7 +1212,7 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
           integer_assumptions[i]));
 
       // Tricky: In some rare case, it is possible that the same literal
-      // correspond to more that one assumptions. In this case, we can just
+      // corresponds to more than one assumption. In this case, we can just
       // pick one of them when converting back a core to term indices.
       //
       // TODO(user): We can probably be smarter about the cost of the
@@ -1242,7 +1244,7 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
     // weight of each core to it.
     if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
     for (const std::vector<Literal>& core : cores) {
-      // This just increase the lower-bound of the corresponding node.
+      // This just increases the lower-bound of the corresponding node.
       // TODO(user): Maybe the solver should do it right away.
       if (core.size() == 1) {
         if (!sat_solver_->AddUnitClause(core[0].Negated())) {
@@ -1263,7 +1265,7 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
       for (const Literal lit : core) {
         const int index = literal_to_term_index.at(lit.Index());
 
-        // When this happen, the core is now trivially "minimized" by the new
+        // When this happens, the core is now trivially "minimized" by the new
         // bound on this variable, so there is no point in adding it.
         if (terms_[index].old_var_lb <
             integer_trail_->LowerBound(terms_[index].var)) {
@@ -1310,7 +1312,7 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
     }
 
     // Abort if we reached the time limit. Note that we still add any cores we
-    // found in case the solve is split in "chunk".
+    // found in case the solve is split in "chunks".
     if (result == SatSolver::LIMIT_REACHED) return result;
   }
 }

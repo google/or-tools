@@ -24,7 +24,7 @@ namespace sat {
 // This class is meant to be a view on the full CpModelProto, with hidden and
 // additional constraints.
 // Currently, this class is meant to be used by the feasibility jump subsolver.
-// It could also contains the linear relaxation at level 1 or 2 of the model and
+// It could also contain the linear relaxation at level 1 or 2 of the model and
 // could be computed once for all workers of a given linearization level.
 class LinearModel {
  public:

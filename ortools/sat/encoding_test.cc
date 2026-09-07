@@ -50,8 +50,8 @@ TEST(MergeAllNodesWithDequeTest, BasicPropagation) {
   EXPECT_EQ(root->size(), n);
   EXPECT_EQ(root->depth(), 9);  // 2^9 = 512 which is the first value >= n.
 
-  // We fix some of the n variables randomly, and check some property of the
-  // Encoding nodes.
+  // We fix some of the n variables randomly, and check some properties of the
+  // encoding nodes.
   for (int run = 0; run < 10; ++run) {
     const float density = run / 10;
     int exact_count = 0;

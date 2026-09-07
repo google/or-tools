@@ -34,7 +34,7 @@ void LinearExpression2::SimpleCanonicalization() {
   // Corner case when the underlying variable is the same.
   if (vars[0] != kNoIntegerVariable && vars[1] != kNoIntegerVariable &&
       PositiveVariable(vars[0]) == PositiveVariable(vars[1])) {
-    // Make sure variable are positive before merging.
+    // Make sure variables are positive before merging.
     for (int i = 0; i < 2; ++i) {
       if (!VariableIsPositive(vars[i])) {
         coeffs[i] = -coeffs[i];
@@ -48,7 +48,7 @@ void LinearExpression2::SimpleCanonicalization() {
     if (coeffs[0] == 0) vars[0] = kNoIntegerVariable;
   }
 
-  // Make sure coeff are positive.
+  // Make sure coeffs are positive.
   for (int i = 0; i < 2; ++i) {
     if (coeffs[i] < 0) {
       coeffs[i] = -coeffs[i];
@@ -56,7 +56,7 @@ void LinearExpression2::SimpleCanonicalization() {
     }
   }
 
-  // Make sure variable are sorted.
+  // Make sure variables are sorted.
   if (vars[0] > vars[1]) {
     std::swap(vars[0], vars[1]);
     std::swap(coeffs[0], coeffs[1]);

@@ -43,15 +43,15 @@ namespace sat {
 // involving the negation of the problem variables. So that we could find a
 // symmetry x <-> not(y) for instance.
 //
-// TODO(user): As long as we only exploit symmetry involving only Boolean
+// TODO(user): As long as we only exploit symmetries involving only Boolean
 // variables we can make this code more efficient by not detecting symmetries
-// involving integer variable.
+// involving integer variables.
 void FindCpModelSymmetries(
     const SatParameters& params, const CpModelProto& problem,
     std::vector<std::unique_ptr<SparsePermutation>>* generators,
     SolverLogger* logger, TimeLimit* solver_time_limit);
 
-// Detects symmetries and fill the symmetry field.
+// Detects symmetries and fills the symmetry field.
 void DetectAndAddSymmetryToProto(const SatParameters& params,
                                  const CpModelProto& proto,
                                  SymmetryProto* mutable_symmetry,
@@ -60,20 +60,20 @@ void DetectAndAddSymmetryToProto(const SatParameters& params,
 
 // Basic implementation of some symmetry breaking during presolve.
 //
-// Currently this just try to fix variables by detecting symmetries between
+// Currently this just tries to fix variables by detecting symmetries between
 // Booleans in bool_and, at_most_one or exactly_one constraints.
 //
 // TODO(user): A bunch of other presolve transformations break the symmetry even
-// though they probably shouldn't. Like the find big liner overlap for instance.
-// Or when we fix variable but don't propagate to the full orbit. It might not
-// be too much work to:
+// though they probably shouldn't. Like the find big linear overlap for
+// instance. Or when we fix variables but don't propagate to the full orbit. It
+// might not be too much work to:
 //   1/ Compute the symmetry early
-//   2/ Only do transformation that preserve them
+//   2/ Only do transformations that preserve them
 // To investigate. It seems disabling find_big_linear_overlap helps on
 // mas74.pb.gz, or the square??.mps for instance. But it is less good overall.
 bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context);
 
-// This make sure all variables from the same orbit have the same domain.
+// This makes sure all variables from the same orbit have the same domain.
 // We also remove from the generator cycles on fixed or removed variables.
 //
 // Returns false on UNSAT.

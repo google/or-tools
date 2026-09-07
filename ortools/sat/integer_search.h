@@ -13,12 +13,12 @@
 
 // This file contains all the top-level logic responsible for driving the search
 // of a satisfiability integer problem. What decision we take next, which new
-// Literal associated to an IntegerLiteral we create and when we restart.
+// Literal associated with an IntegerLiteral we create and when we restart.
 //
 // For an optimization problem, our algorithm solves a sequence of decision
-// problem using this file as an entry point. Note that some heuristics here
+// problems using this file as an entry point. Note that some heuristics here
 // still use the objective if there is one in order to orient the search towards
-// good feasible solution though.
+// good feasible solutions though.
 
 #ifndef ORTOOLS_SAT_INTEGER_SEARCH_H_
 #define ORTOOLS_SAT_INTEGER_SEARCH_H_
@@ -50,7 +50,7 @@ namespace operations_research {
 namespace sat {
 
 // This is used to hold the next decision the solver will take. It is either
-// a pure Boolean literal decision or correspond to an IntegerLiteral one.
+// a pure Boolean literal decision or corresponds to an IntegerLiteral one.
 //
 // At most one of the two options should be set.
 struct BooleanOrIntegerLiteral {
@@ -91,7 +91,7 @@ struct SearchHeuristics {
   std::vector<std::function<BooleanOrIntegerLiteral()>> decision_policies;
   std::vector<std::function<bool()>> restart_policies;
 
-  // Index in the vectors above that indicate the current configuration.
+  // Index in the vectors above that indicates the current configuration.
   int policy_index;
 
   // Special decision functions that are constructed at loading time.
@@ -100,7 +100,7 @@ struct SearchHeuristics {
   // Contains the search specified by the user in CpModelProto.
   std::function<BooleanOrIntegerLiteral()> user_search = nullptr;
 
-  // Heuristic search build after introspecting the model. It can be used as
+  // Heuristic search built after introspecting the model. It can be used as
   // a replacement of the user search. This can include dedicated scheduling or
   // routing heuristics.
   std::function<BooleanOrIntegerLiteral()> heuristic_search = nullptr;
@@ -115,8 +115,8 @@ struct SearchHeuristics {
   // deviation.
   std::function<BooleanOrIntegerLiteral()> hint_search = nullptr;
 
-  // Some search strategy need to take more than one decision at once. They can
-  // set this function that will be called on the next decision. It will be
+  // Some search strategies need to take more than one decision at once. They
+  // can set this function that will be called on the next decision. It will be
   // automatically deleted the first time it returns an empty decision.
   std::function<BooleanOrIntegerLiteral()> next_decision_override = nullptr;
 };
@@ -135,14 +135,14 @@ SatSolver::Status ResetAndSolveIntegerProblem(
 // Only used in tests. Move to a test utility file.
 //
 // This configures the model SearchHeuristics with a simple default heuristic
-// and then call ResetAndSolveIntegerProblem() without any assumptions.
+// and then calls ResetAndSolveIntegerProblem() without any assumptions.
 SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model);
 
 // Returns decision corresponding to var at its lower bound.
 // Returns an invalid literal if the variable is fixed.
 IntegerLiteral AtMinValue(IntegerVariable var, IntegerTrail* integer_trail);
 
-// If a variable appear in the objective, branch on its best objective value.
+// If a variable appears in the objective, branch on its best objective value.
 IntegerLiteral ChooseBestObjectiveValue(
     IntegerVariable var, IntegerTrail* integer_trail,
     ObjectiveDefinition* objective_definition);
@@ -240,22 +240,22 @@ std::function<BooleanOrIntegerLiteral()> SatSolverHeuristic(Model* model);
 std::function<BooleanOrIntegerLiteral()> PseudoCost(Model* model);
 
 // Simple scheduling heuristic that looks at all the no-overlap constraints
-// and try to assign and perform the intervals that can be scheduled first.
+// and tries to assign and perform the intervals that can be scheduled first.
 std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
     Model* model);
 
-// Compared to SchedulingSearchHeuristic() this one take decision on precedences
-// between tasks. Lazily creating a precedence Boolean for the task in
-// disjunction.
+// Compared to SchedulingSearchHeuristic() this one takes decisions on
+// precedences between tasks. Lazily creating a precedence Boolean for the task
+// in disjunction.
 //
-// Note that this one is meant to be used when all Boolean has been fixed, so
+// Note that this one is meant to be used when all Booleans have been fixed, so
 // more as a "completion" heuristic rather than a fixed search one.
 std::function<BooleanOrIntegerLiteral()> DisjunctivePrecedenceSearchHeuristic(
     Model* model);
 std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
     Model* model);
 
-// Returns true if the number of variables in the linearized part represent
+// Returns true if the number of variables in the linearized part represents
 // a large enough proportion of all the problem variables.
 bool LinearizedPartIsLarge(Model* model);
 
@@ -269,14 +269,14 @@ std::function<bool()> RestartAfterDeterministicTime(double deterministic_time,
 // A restart policy that uses the underlying sat solver's policy.
 std::function<bool()> SatSolverRestartPolicy(Model* model);
 
-// Concatenates each input_heuristic with a default heuristic that instantiate
+// Concatenates each input_heuristic with a default heuristic that instantiates
 // all the problem's Boolean variables, into a new vector.
 std::vector<std::function<BooleanOrIntegerLiteral()>> CompleteHeuristics(
     absl::Span<const std::function<BooleanOrIntegerLiteral()>>
         incomplete_heuristics,
     const std::function<BooleanOrIntegerLiteral()>& completion_heuristic);
 
-// An helper class to share the code used by the different kind of search.
+// A helper class to share the code used by the different kinds of search.
 class IntegerSearchHelper {
  public:
   explicit IntegerSearchHelper(Model* model);
@@ -287,7 +287,7 @@ class IntegerSearchHelper {
   // One can distinguish with sat_solver->UnsatStatus().
   ABSL_MUST_USE_RESULT bool BeforeTakingDecision();
 
-  // Calls the decision heuristics and extract a non-fixed literal.
+  // Calls the decision heuristics and extracts a non-fixed literal.
   // Note that we do not want to copy the function here.
   //
   // Returns false if a conflict was found while trying to take a decision.
@@ -312,13 +312,13 @@ class IntegerSearchHelper {
 
   // Tries to find a feasible solution to the current model.
   //
-  // This function continues from the current state of the solver and loop until
-  // all variables are instantiated (i.e. the next decision is kNoLiteralIndex)
-  // or a search limit is reached. It uses the heuristic from the
-  // SearchHeuristics class in the model to decide when to restart and what next
-  // decision to take.
+  // This function continues from the current state of the solver and loops
+  // until all variables are instantiated (i.e. the next decision is
+  // kNoLiteralIndex) or a search limit is reached. It uses the heuristic from
+  // the SearchHeuristics class in the model to decide when to restart and what
+  // next decision to take.
   //
-  // Each time a restart happen, this increment the policy index modulo the
+  // Each time a restart happens, this increments the policy index modulo the
   // number of heuristics to act as a portfolio search.
   SatSolver::Status SolveIntegerProblem();
 

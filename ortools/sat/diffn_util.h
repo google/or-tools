@@ -149,20 +149,20 @@ inline double CenterToCenterLInfinityDistance(const Rectangle& a,
   return std::max(std::abs(diff_x), std::abs(diff_y));
 }
 
-// Creates a graph when two nodes are connected iff their rectangles overlap.
-// Then partition into connected components.
+// Creates a graph where two nodes are connected iff their rectangles overlap.
+// Then partitions into connected components.
 CompactVectorVector<int> GetOverlappingRectangleComponents(
     absl::Span<const Rectangle> rectangles);
 
 // Visible for testing. The algo is in O(n^4) so shouldn't be used directly.
-// Returns true if there exist a bounding box with too much energy.
+// Returns true if there exists a bounding box with too much energy.
 bool BoxesAreInEnergyConflict(absl::Span<const Rectangle> rectangles,
                               absl::Span<const IntegerValue> energies,
                               absl::Span<const int> boxes,
                               Rectangle* conflict = nullptr);
 
 // Checks that there is indeed a conflict for the given bounding_box and
-// report it. This returns false for convenience as we usually want to return
+// reports it. This returns false for convenience as we usually want to return
 // false on a conflict.
 //
 // TODO(user): relax the bounding box dimension to have a relaxed explanation.
@@ -171,11 +171,11 @@ bool ReportEnergyConflict(Rectangle bounding_box, absl::Span<const int> boxes,
                           SchedulingConstraintHelper* x,
                           SchedulingConstraintHelper* y);
 
-// A O(n^2) algorithm to analyze all the relevant X intervals and infer a
+// An O(n^2) algorithm to analyze all the relevant X intervals and infer a
 // threshold of the y size of a bounding box after which there is no point
 // checking for energy overload.
 //
-// Returns false on conflict, and fill the bounding box that caused the
+// Returns false on conflict, and fills the bounding box that caused the
 // conflict.
 //
 // If transpose is true, we analyze the relevant Y intervals instead.
@@ -185,8 +185,8 @@ bool AnalyzeIntervals(bool transpose, absl::Span<const int> boxes,
                       IntegerValue* x_threshold, IntegerValue* y_threshold,
                       Rectangle* conflict = nullptr);
 
-// Removes boxes with a size above the thresholds. Also randomize the order.
-// Because we rely on various heuristic, this allow to change the order from
+// Removes boxes with a size above the thresholds. Also randomizes the order.
+// Because we rely on various heuristics, this allows changing the order from
 // one call to the next.
 absl::Span<int> FilterBoxesAndRandomize(
     absl::Span<const Rectangle> cached_rectangles, absl::Span<int> boxes,
@@ -194,7 +194,7 @@ absl::Span<int> FilterBoxesAndRandomize(
 
 // Given the total energy of all rectangles (sum of energies[box]) we know that
 // any box with an area greater than that cannot participate in any "bounding
-// box" conflict. As we remove this box, the total energy decrease, so we might
+// box" conflict. As we remove this box, the total energy decreases, so we might
 // remove more. This works in O(n log n).
 absl::Span<int> FilterBoxesThatAreTooLarge(
     absl::Span<const Rectangle> cached_rectangles,
@@ -228,17 +228,18 @@ struct IndexedInterval {
 // Given n fixed intervals that must be sorted by
 // IndexedInterval::ComparatorByStart(), returns the subsets of intervals that
 // overlap during at least one time unit. Note that we only return "maximal"
-// subset and filter subset strictly included in another.
+// subsets and filter subsets strictly included in another.
 //
-// IMPORTANT: The span of intervals will not be usable after this function! this
+// IMPORTANT: The span of intervals will not be usable after this function! This
 // could be changed if needed with an extra copy.
 //
 // All Intervals must have a positive size.
 //
 // The algo is in O(n log n) + O(result_size) which is usually O(n^2).
 //
-// If the last argument is not empty, we will sort the interval in the result
-// according to the given order, i.e. i will be before j if order[i] < order[j].
+// If the last argument is not empty, we will sort the intervals in the result
+// according to the given order, i.e., i will be before j if
+// order[i] < order[j].
 void ConstructOverlappingSets(absl::Span<IndexedInterval> intervals,
                               CompactVectorVector<int>* result,
                               absl::Span<const int> order = {});
@@ -304,12 +305,12 @@ struct PairwiseRestriction {
   }
 };
 
-// Find pair of items that are either in conflict or could have their range
-// shrinked to avoid conflict.
+// Find pairs of items that are either in conflict or could have their range
+// shrunk to avoid conflict.
 void AppendPairwiseRestrictions(absl::Span<const ItemWithVariableSize> items,
                                 std::vector<PairwiseRestriction>* result);
 
-// Same as above, but test `items` against `other_items` and append the
+// Same as above, but tests `items` against `other_items` and appends the
 // restrictions found to `result`.
 void AppendPairwiseRestrictions(
     absl::Span<const ItemWithVariableSize> items,
@@ -318,7 +319,7 @@ void AppendPairwiseRestrictions(
 
 // This class is used by the no_overlap_2d constraint to maintain the envelope
 // of a set of rectangles. This envelope is not the convex hull, but the exact
-// polyline (aligned with the x and y axis) that contains all the rectangles
+// polyline (aligned with the x and y axes) that contains all the rectangles
 // passed with the AddRectangle() call.
 class CapacityProfile {
  public:
@@ -350,7 +351,7 @@ class CapacityProfile {
 
   // Returns the profile of the function:
   // capacity(x) = max(y_max of rectangles overlapping x) - min(y_min of
-  //     rectangle overlapping x) - sum(y_height of mandatory rectangles
+  //     rectangles overlapping x) - sum(y_height of mandatory rectangles
   //     overlapping x) where a rectangle overlaps x if x_min <= x < x_max.
   //
   // Note the profile can contain negative heights in case the mandatory part
@@ -408,7 +409,7 @@ class CapacityProfile {
 };
 
 // 1D counterpart of RectangleInRange::GetMinimumIntersectionArea.
-// Finds the minimum possible overlap of a interval of size `size` that fits in
+// Finds the minimum possible overlap of an interval of size `size` that fits in
 // [range_min, range_max] and a second interval [interval_min, interval_max].
 IntegerValue Smallest1DIntersection(IntegerValue range_min,
                                     IntegerValue range_max, IntegerValue size,
@@ -436,7 +437,7 @@ struct RectangleInRange {
            y_size == other.y_size;
   }
 
-  // Returns the position of the rectangle fixed to one of the corner of its
+  // Returns the position of the rectangle fixed to one of the corners of its
   // range.
   Rectangle GetAtCorner(Corner p) const {
     switch (p) {
@@ -542,13 +543,13 @@ struct RectangleInRange {
   }
 };
 
-// Cheaply test several increasingly smaller rectangles for energy conflict.
-// More precisely, each call to `Shrink()` cost O(k + n) operations, where k is
+// Cheaply tests several increasingly smaller rectangles for energy conflict.
+// More precisely, each call to `Shrink()` costs O(k + n) operations, where k is
 // the number of points that shrinking the probing rectangle will cross and n is
 // the number of items which are in a range that overlaps the probing rectangle
-// in both sides in the dimension that is getting shrinked. When calling
-// repeatedely `Shrink()` until the probing rectangle collapse into a single
-// point, the O(k) component adds up to a O(M) cost, where M is the number of
+// on both sides in the dimension that is getting shrunk. When calling
+// repeatedly `Shrink()` until the probing rectangle collapses into a single
+// point, the O(k) component adds up to an O(M) cost, where M is the number of
 // items. This means this procedure is linear in time if the ranges of the items
 // are small.
 //
@@ -570,7 +571,7 @@ class ProbingRectangle {
 
   // Shrink the rectangle by moving one of its four edges to the next
   // "interesting" value. The interesting values for x or y are the ones that
-  // correspond to a boundary, ie., a value that corresponds to one of {min,
+  // correspond to a boundary, i.e., a value that corresponds to one of {min,
   // min + size, max - size, max} of a rectangle.
   void Shrink(Edge edge);
 
@@ -582,7 +583,7 @@ class ProbingRectangle {
     return !(CanShrink(Edge::BOTTOM) || CanShrink(Edge::LEFT));
   }
 
-  // Test-only method that check that all internal incremental counts are
+  // Test-only method that checks that all internal incremental counts are
   // correct by comparing with recalculating them from scratch.
   void ValidateInvariants() const;
 
@@ -597,7 +598,7 @@ class ProbingRectangle {
   Rectangle GetCurrentRectangle() const;
   IntegerValue GetCurrentRectangleArea() const { return probe_area_; }
 
-  // This is equivalent of, for every item:
+  // This is equivalent to, for every item:
   // - Call GetMinimumIntersectionArea() with GetCurrentRectangle().
   // - Return the total sum of the areas.
   IntegerValue GetMinimumEnergy() const { return minimum_energy_; }
@@ -646,8 +647,8 @@ class ProbingRectangle {
   IntegerValue cached_delta_energy_[4];
 };
 
-// Monte-Carlo inspired heuristic to find a rectangles with an energy conflict:
-// - start with a rectangle equals to the full bounding box of the elements;
+// Monte-Carlo inspired heuristic to find rectangles with an energy conflict:
+// - start with a rectangle equal to the full bounding box of the elements;
 // - shrink the rectangle by an edge to the next "interesting" value. Choose
 //   the edge randomly, but biased towards the change that increases the ratio
 //   area_inside / area_rectangle;
@@ -684,9 +685,9 @@ std::vector<Rectangle> FindEmptySpaces(const Rectangle& bounding_box,
 
 // Given a bounding box and a list of non-overlapping rectangles inside that
 // bounding box, returns a list of non-overlapping rectangles partitioning the
-// empty area inside the bounding box. Moreover each rectangle has both its left
-// and right edge fully touching either one single box or the bounding box. Note
-// that the input rectangles must have non-zero area.
+// empty area inside the bounding box. Moreover, each rectangle has both its
+// left and right edge fully touching either one single box or the bounding box.
+// Note that the input rectangles must have non-zero area.
 //
 // Example:
 //    Input
@@ -731,7 +732,7 @@ std::vector<EmptySpace> FindEmptySpacesVertically(
 
 // Given two regions, each one of them defined by a vector of non-overlapping
 // rectangles paving them, returns a vector of non-overlapping rectangles that
-// paves the points that were part of the first region but not of the second.
+// pave the points that were part of the first region but not of the second.
 // This can also be seen as the set difference of the points of the regions.
 std::vector<Rectangle> PavedRegionDifference(
     std::vector<Rectangle> original_region,
@@ -743,20 +744,21 @@ inline bool RegionIncludesOther(absl::Span<const Rectangle> region,
   return PavedRegionDifference({other.begin(), other.end()}, region).empty();
 }
 
-// For a given a set of N rectangles in `rectangles`, there might be up to
+// For a given set of N rectangles in `rectangles`, there might be up to
 // N*(N-1)/2 pairs of rectangles that intersect one another. If each of these
-// pairs describe an arc and each rectangle describe a node, the rectangles and
-// their intersections describe a graph. This function returns the full spanning
-// forest for this graph (ie., a spanning tree for each connected component).
-// This function allows to know if a set of rectangles has any intersection,
-// find an example intersection for each rectangle that has one, or split the
-// rectangles into connected components according to their intersections.
+// pairs describes an arc and each rectangle describes a node, the rectangles
+// and their intersections describe a graph. This function returns the full
+// spanning forest for this graph (i.e., a spanning tree for each connected
+// component). This function allows knowing if a set of rectangles has any
+// intersection, find an example intersection for each rectangle that has one,
+// or split the rectangles into connected components according to their
+// intersections.
 //
 // The returned tuples are the arcs of the spanning forest represented by their
 // indices in the input vector.
 //
-// This function works with degenerate rectangles (ie., points or lines) and
-// have the same semantics for overlap as Rectangle::IsDisjoint().
+// This function works with degenerate rectangles (i.e., points or lines) and
+// has the same semantics for overlap as Rectangle::IsDisjoint().
 //
 // Note: This function runs in O(N (log N)^2) time on the input size, which
 // would be impossible to do if we were to return all the intersections, which
@@ -764,14 +766,15 @@ inline bool RegionIncludesOther(absl::Span<const Rectangle> region,
 std::vector<std::pair<int, int>> FindPartialRectangleIntersections(
     absl::Span<const Rectangle> rectangles);
 
-// This function is faster that the FindPartialRectangleIntersections() if one
-// only want to know if there is at least one intersection. It is in O(N log N).
+// This function is faster than FindPartialRectangleIntersections() if one
+// only wants to know if there is at least one intersection. It is in
+// O(N log N).
 //
 // IMPORTANT: this assumes rectangles are already sorted by their x_min and does
 // not support degenerate rectangles with zero area.
 //
 // If a pair {i, j} is returned, we will have i < j, and no intersection in
-// the subset of rectanges in [0, j).
+// the subset of rectangles in [0, j).
 std::optional<std::pair<int, int>> FindOneIntersectionIfPresent(
     absl::Span<const Rectangle> rectangles);
 

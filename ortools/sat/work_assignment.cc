@@ -56,7 +56,7 @@ const int kNumInitialRestarts = 10;
 
 // If you build a tree by expanding the nodes with minimal depth+discrepancy,
 // the number of leaves when all nodes less than a given value have been split
-// follows the fibonacci sequence:
+// follows the Fibonacci sequence:
 // num_leaves(0) := 1;
 // num_leaves(1) := 2;
 // num_leaves(n) := num_leaves(n-1) + num_leaves(n-2)
@@ -1092,7 +1092,7 @@ bool SharedTreeWorker::SyncWithSharedTree() {
         decision_policy_->SetTargetPolarityIfUnassigned(tree_.Decode(lit));
       }
       decision_policy_->ResetActivitiesToFollowBestPartialAssignment();
-      // This seems bizzare after just setting the best partial assignment,
+      // This seems bizarre after just setting the best partial assignment,
       // but this makes phase sharing work even when there is no stable phase
       // in the restart strategy, and makes no real difference if there is,
       // since the first dive will still try to follow this assignment until

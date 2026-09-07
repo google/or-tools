@@ -49,15 +49,15 @@ namespace sat {
 // In practice, not all literals are explicitly created:
 // - Only the literals in [lb, current_ub) are "active" at a given time.
 // - The represented number is known to be >= lb.
-// - It may be greater than current_ub, but the extra literals will be only
-//   created lazily. In all our solves, the literal current_ub - 1, will always
-//   be assumed to false (i.e. the number will be <= current_ub - 1).
+// - It may be greater than current_ub, but the extra literals will only be
+//   created lazily. In all our solves, the literal current_ub - 1 will always
+//   be assumed to be false (i.e. the number will be <= current_ub - 1).
 // - Note that lb may increase and ub decrease as more information is learned
 //   about this node by the sat solver.
 //
 // This is roughly based on the cardinality constraint encoding described in:
-// Bailleux and Yacine Boufkhad, "Efficient CNF Encoding of Boolean Cardinality
-// Constraints", In Proc. of CP 2003, pages 108-122, 2003.
+// Olivier Bailleux and Yacine Boufkhad, "Efficient CNF Encoding of Boolean
+// Cardinality Constraints", In Proc. of CP 2003, pages 108-122, 2003.
 class EncodingNode {
  public:
   EncodingNode() = default;
@@ -65,7 +65,7 @@ class EncodingNode {
   // Static creation functions.
   //
   // The generic version constructs a node with value in [lb, ub].
-  // New literal "<=x" will be constructed using create_lit(x).
+  // New literals "<=x" will be constructed using create_lit(x).
   static EncodingNode ConstantNode(Coefficient weight);
   static EncodingNode LiteralNode(Literal l, Coefficient weight);
   static EncodingNode GenericNode(int lb, int ub,
@@ -73,22 +73,22 @@ class EncodingNode {
                                   Coefficient weight);
 
   // Creates a "full" encoding node on n new variables, the represented number
-  // beeing in [lb, ub = lb + n). The variables are added to the given solver
+  // being in [lb, ub = lb + n). The variables are added to the given solver
   // with the basic implications linking them:
   //   literal(0) >= ... >= literal(n-1)
   void InitializeFullNode(int n, EncodingNode* a, EncodingNode* b,
                           SatSolver* solver);
 
   // Creates a "lazy" encoding node representing the sum of a and b.
-  // Only one literals will be created by this operation. Note that no clauses
+  // Only one literal will be created by this operation. Note that no clauses
   // linking it with a or b are added by this function.
   void InitializeLazyNode(EncodingNode* a, EncodingNode* b, SatSolver* solver);
   void InitializeLazyCoreNode(Coefficient weight, EncodingNode* a,
                               EncodingNode* b);
 
-  // If we know that all the literals[0] of the given nodes are in "at most one"
-  // relationship, we can create a node that is the sum of them with a simple
-  // encoding. This does create linking implications.
+  // If we know that all the literals[0] of the given nodes are in an "at most
+  // one" relationship, we can create a node that is the sum of them with a
+  // simple encoding. This does create linking implications.
   void InitializeAmoNode(absl::Span<EncodingNode* const> nodes,
                          SatSolver* solver);
 
@@ -111,7 +111,7 @@ class EncodingNode {
            (depth_ == other.depth_ && other.for_sorting_ > for_sorting_);
   }
 
-  // Creates a new literals and increases current_ub.
+  // Creates a new literal and increases current_ub.
   // Returns false if we were already at the upper bound for this node.
   bool IncreaseCurrentUB(SatSolver* solver);
 
@@ -141,7 +141,7 @@ class EncodingNode {
   }
   Coefficient weight() const { return weight_; }
 
-  // The depth is mainly used as an heuristic to decide which nodes to merge
+  // The depth is mainly used as a heuristic to decide which nodes to merge
   // first. See the < operator.
   void set_depth(int depth) { depth_ = depth; }
   int depth() const { return depth_; }
@@ -169,7 +169,7 @@ class EncodingNode {
   EncodingNode* child_a_ = nullptr;
   EncodingNode* child_b_ = nullptr;
 
-  // If not null, will be used instead of creating new variable directly.
+  // If not null, will be used instead of creating a new variable directly.
   std::function<Literal(int x)> create_lit_ = nullptr;
 
   // The literals of this node in order.
@@ -187,7 +187,7 @@ EncodingNode LazyMerge(EncodingNode* a, EncodingNode* b, SatSolver* solver);
 // literals.
 void IncreaseNodeSize(EncodingNode* node, SatSolver* solver);
 
-// Merges the two given EncodingNode by creating a new node that corresponds to
+// Merges the two given EncodingNodes by creating a new node that corresponds to
 // the sum of the two given ones. The given upper_bound is interpreted as a
 // bound on this sum, and allows creating fewer binary variables.
 EncodingNode FullMerge(Coefficient upper_bound, EncodingNode* a,
@@ -200,14 +200,14 @@ EncodingNode* MergeAllNodesWithDeque(Coefficient upper_bound,
                                      SatSolver* solver,
                                      std::deque<EncodingNode>* repository);
 
-// Same as MergeAllNodesWithDeque() but use a priority queue to merge in
-// priority nodes with smaller sizes. This also enforce that the sum of nodes
+// Same as MergeAllNodesWithDeque() but uses a priority queue to merge in
+// priority nodes with smaller sizes. This also enforces that the sum of nodes
 // is greater than its lower bound.
 EncodingNode* LazyMergeAllNodeWithPQAndIncreaseLb(
     Coefficient weight, const std::vector<EncodingNode*>& nodes,
     SatSolver* solver, std::deque<EncodingNode>* repository);
 
-// Reduces the nodes using the now fixed literals, update the lower-bound, and
+// Reduces the nodes using the now fixed literals, updates the lower-bound, and
 // returns the set of assumptions for the next round of the core-based
 // algorithm. Returns an empty set of assumptions if everything is fixed.
 void ReduceNodes(Coefficient upper_bound, Coefficient* lower_bound,
@@ -216,18 +216,18 @@ std::vector<Literal> ExtractAssumptions(Coefficient stratified_lower_bound,
                                         const std::vector<EncodingNode*>& nodes,
                                         SatSolver* solver);
 
-// Returns the minimum weight of the nodes in the core. Note that the literal in
-// the core must appear in the same order as the one in nodes.
+// Returns the minimum weight of the nodes in the core. Note that the literals
+// in the core must appear in the same order as the ones in nodes.
 Coefficient ComputeCoreMinWeight(const std::vector<EncodingNode*>& nodes,
                                  absl::Span<const Literal> core);
 
 // Returns the maximum node weight under the given upper_bound. Returns zero if
-// no such weight exist (note that a node weight is strictly positive, so this
-// make sense).
+// no such weight exists (note that a node weight is strictly positive, so this
+// makes sense).
 Coefficient MaxNodeWeightSmallerThan(const std::vector<EncodingNode*>& nodes,
                                      Coefficient upper_bound);
 
-// The class reponsible for processing cores and maintaining a Boolean encoding
+// The class responsible for processing cores and maintaining a Boolean encoding
 // of the linear objective.
 class ObjectiveEncoder {
  public:
@@ -238,7 +238,7 @@ class ObjectiveEncoder {
         random_(*model->GetOrCreate<ModelRandomGenerator>()) {}
 
   // Updates the encoding using the given core. The literals in the core must
-  // match the order in nodes. Returns false if the model become infeasible.
+  // match the order in nodes. Returns false if the model becomes infeasible.
   bool ProcessCore(absl::Span<const Literal> core, Coefficient min_weight,
                    Coefficient gap, std::string* info);
 
@@ -254,7 +254,7 @@ class ObjectiveEncoder {
  private:
   // There is more than one way to create new assumptions and encode the
   // information from this core. This is slightly different from ProcessCore()
-  // and follow the algorithm used by many of the top max-SAT solver under the
+  // and follows the algorithm used by many of the top max-SAT solvers under the
   // name incremental OLL. This is described in: António Morgado, Carmine
   // Dodaro, Joao Marques-Silva. "Core-Guided MaxSAT with Soft Cardinality
   // Constraints". CP 2014. pp. 564-573. António Morgado, Alexey Ignatiev, Joao
@@ -263,7 +263,7 @@ class ObjectiveEncoder {
   //
   // TODO(user): The last time this was tested, it was however not as good as
   // the ProcessCore() version. That might change as we code/change more
-  // heuristic, so we keep it around.
+  // heuristics, so we keep it around.
   const bool alternative_encoding_ = false;
 
   // Nodes point into repository_.

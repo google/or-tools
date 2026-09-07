@@ -39,7 +39,7 @@ void TestLoopFunction() {
     absl::Mutex mutex;
     std::vector<int64_t> updates;
 
-    // This one will be always the same after each batch of task.
+    // This one will always be the same after each batch of tasks.
     int64_t max_update_value = 0;
   };
 
@@ -81,7 +81,7 @@ void TestLoopFunction() {
 
   GlobalState state;
 
-  // The number of subsolver can be independent of the number of threads. Here
+  // The number of subsolvers can be independent of the number of threads. Here
   // there is actually no need to have 3 of them except for testing the feature.
   std::vector<std::unique_ptr<SubSolver>> subsolvers;
   for (int i = 0; i < 3; ++i) {

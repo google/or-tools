@@ -29,7 +29,7 @@
 
 namespace operations_research::sat {
 
-// Contains the table we display after the solver is done.
+// Contains the tables we display after the solver is done.
 class SharedStatTables {
  public:
   SharedStatTables();
@@ -53,7 +53,7 @@ class SharedStatTables {
                  int64_t num_backtracks, int64_t num_weight_updates,
                  int64_t num_scores_computed);
 
-  // Display the set of table at the end.
+  // Display the set of tables at the end.
   void Display(SolverLogger* logger);
 
  private:

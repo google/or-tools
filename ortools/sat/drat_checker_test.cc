@@ -73,8 +73,8 @@ TEST(DratCheckerTest, CheckBasicSuccessWithClauseAddedSeveralTimes) {
   checker.AddProblemClause(Literals({+1, -2}));
   checker.AddProblemClause(Literals({+2, -3}));
 
-  // Add a clause two times and deletes it on)e time, there should still be one
-  // copy left, which is needed for the rest )of the proof.
+  // Add a clause two times and delete it one time, there should still be one
+  // copy left, which is needed for the rest of the proof.
   checker.AddInferredClause(Literals({-2}));
   checker.AddInferredClause(Literals({-2}));
   checker.DeleteClause(Literals({-2}));
@@ -85,7 +85,7 @@ TEST(DratCheckerTest, CheckBasicSuccessWithClauseAddedSeveralTimes) {
 }
 
 TEST(DratCheckerTest, CheckSimpleSuccess) {
-  // Example from Fig. 7 of 'Trimming while C)hecking Clausal Proofs'.
+  // Example from Fig. 7 of 'Trimming while Checking Clausal Proofs'.
   DratChecker checker;
   checker.AddProblemClause(Literals({+1, +2, -3}));
   checker.AddProblemClause(Literals({-1, -2, +3}));

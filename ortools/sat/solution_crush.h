@@ -40,8 +40,8 @@ namespace sat {
 //
 // Note that partial solution crushing is not a priority: as of Jan 2025, most
 // methods of this class do nothing if some solution values are missing to
-// perform their work. If one just want to complete a partial solution to a full
-// one for convenience, it should be relatively easy to first solve a
+// perform their work. If one just wants to complete a partial solution to a
+// full one for convenience, it should be relatively easy to first solve a
 // feasibility model where all hinted variables are fixed, and use the solution
 // to that problem as a starting hint.
 //
@@ -163,7 +163,7 @@ class SolutionCrush {
   //    literals to reflect the new value of `var`.
   // 3/ The hinted value is not in the domain, and there is no escape value.
   //    Update the hinted value to be in the domain by pushing it in the given
-  //    direction, and update the encoding literals to reflect the new value
+  //    direction, and update the encoding literals to reflect the new value.
   // `encoding` maps values to their encoding literal.
   void SetOrUpdateVarToDomainWithOptionalEscapeValue(
       int var, const Domain& reduced_var_domain,
@@ -192,8 +192,8 @@ class SolutionCrush {
       int ref, int64_t min_value, int64_t max_value,
       absl::Span<const std::pair<int, Domain>> dominating_refs);
 
-  // If `var`'s value != `value` finds another variable in the orbit of `var`
-  // that can take that value, and permute the solution (using the symmetry
+  // If `var`'s value != `value`, finds another variable in the orbit of `var`
+  // that can take that value, and permutes the solution (using the symmetry
   // `generators`) so that this other variable is at position var. If no other
   // variable can be found, does nothing.
   void MaybeUpdateVarWithSymmetriesToValue(
@@ -253,7 +253,7 @@ class SolutionCrush {
   // Sets the value of as many variables in `prod_vars` as possible (depending
   // on how many expressions in `int_prod` have a value), assuming that the
   // `int_prod` constraint "target = x_0 * x_1 * ... * x_n" is expanded into
-  // "prod_var_1 = x_0 * x1",
+  // "prod_var_1 = x_0 * x_1",
   // "prod_var_2 = prod_var_1 * x_2",
   //  ...,
   // "prod_var_(n-1) = prod_var_(n-2) * x_(n-1)",
@@ -301,10 +301,9 @@ class SolutionCrush {
   };
 
   // Sets the value of the `new_row_lits` literals if all the variables in
-  // `column_vars` and `existing_row_lits` have a value. For each `row_lits`,
-  // `column_values` must have the same size as `column_vars`. This method
-  // assumes that exactly one of `existing_row_lits` and `new_row_lits` must be
-  // true.
+  // `column_vars` and `existing_row_lits` have a value. In each `new_row_lit`,
+  // `var_values` must have the same size as `column_vars`. This method assumes
+  // that exactly one of `existing_row_lits` and `new_row_lits` must be true.
   void SetTableExpandedVars(absl::Span<const int> column_vars,
                             absl::Span<const int> existing_row_lits,
                             absl::Span<const TableRowLiteral> new_row_lits);
@@ -317,7 +316,7 @@ class SolutionCrush {
   void SetLinearWithComplexDomainExpandedVars(
       const LinearConstraintProto& linear, absl::Span<const int> bucket_lits);
 
-  // Remap the variable indices. `old_to_new_mapping` maps old to new variable
+  // Remaps the variable indices. `old_to_new_mapping` maps old to new variable
   // indices. A removed variable is "mapped" to a negative index. Two old
   // variables can be mapped to the same new variable. The mapping must be dense
   // in [0, max(old_to_new_mapping)].

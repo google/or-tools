@@ -37,7 +37,7 @@
 namespace operations_research {
 namespace sat {
 
-// This class allows to query information about the current bounds of the loaded
+// This class allows querying information about the current bounds of the loaded
 // cp_model.proto variables during the search. It is a "view" of the current
 // solver state using the indices of the proto.
 //
@@ -89,7 +89,7 @@ ConstructIntegerCompletionSearchStrategy(
 std::function<BooleanOrIntegerLiteral()> ConstructHintSearchStrategy(
     const CpModelProto& cp_model_proto, CpModelMapping* mapping, Model* model);
 
-// Constructs our "fixed" search strategy which start with
+// Constructs our "fixed" search strategy which starts with
 // ConstructUserSearchStrategy() if present, but is completed by a couple of
 // automatic heuristics.
 void ConstructFixedSearchStrategy(SearchHeuristics* h, Model* model);
@@ -104,11 +104,11 @@ std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
     const std::function<BooleanOrIntegerLiteral()>& instrumented_strategy,
     Model* model);
 
-// Returns all the named set of parameters known to the solver. This include our
-// default strategies like "max_lp", "core", etc... It is visible here so that
-// this can be reused by parameter validation.
+// Returns all the named sets of parameters known to the solver. This includes
+// our default strategies like "max_lp", "core", etc... It is visible here so
+// that this can be reused by parameter validation.
 //
-// Usually, named strategies just override a few field from the base_params.
+// Usually, named strategies just override a few fields from the base_params.
 absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     SatParameters base_params);
 
@@ -118,7 +118,7 @@ std::vector<SatParameters> GetFullWorkerParameters(
     const CpModelProto& cp_model, SolverLogger* logger,
     SatParameters* base_params, SubsolverNameFilter* name_filter);
 
-// Given a base set of parameter, if non-empty, this repeat them (round-robbin)
+// Given a base set of parameters, if non-empty, this repeats them (round-robin)
 // until we get num_params_to_generate. Note that if we don't have a multiple,
 // the first base parameters will be repeated more than the others.
 //
@@ -126,7 +126,7 @@ std::vector<SatParameters> GetFullWorkerParameters(
 std::vector<SatParameters> RepeatParameters(
     absl::Span<const SatParameters> base_params, int num_params_to_generate);
 
-// Returns a vector of base parameters to specify solvers specialized to find a
+// Returns a vector of base parameters to specify solvers specialized to find an
 // initial solution. This is meant to be used with RepeatParameters() and
 // FilterParameters().
 std::vector<SatParameters> GetFirstSolutionBaseParams(
@@ -153,11 +153,11 @@ class SubsolverNameFilter {
   }
 
   // This is just a convenient function to follow the pattern
-  // if (filter.Keep("my_name")) subsovers.Add(.... filter.LastName() ... )
+  // if (filter.Keep("my_name")) subsolvers.Add(.... filter.LastName() ... )
   // And not repeat "my_name" twice.
   std::string LastName() const { return last_name_; }
 
-  // Returns the list of all ignored subsolver for use in logs.
+  // Returns the list of all ignored subsolvers for use in logs.
   const std::vector<std::string>& AllIgnored() {
     gtl::STLSortAndRemoveDuplicates(&ignored_);
     return ignored_;

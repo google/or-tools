@@ -654,7 +654,7 @@ TEST(FindCpModelSymmetries, BasicSchedulingCase) {
   EXPECT_EQ(generators[0]->DebugString(), "(0 2)");
 }
 
-// Assigning n items to b identical bins is an example of orbitope since the
+// Assigning n items to b identical bins is an example of an orbitope since the
 // bins can be freely permuted.
 TEST(FindCpModelSymmetries, BinPacking) {
   constexpr int num_items = 10;
@@ -703,7 +703,7 @@ TEST(FindCpModelSymmetries, BinPacking) {
   // We have a 10 x 7 orbitope.
   // Note that here we do not do propagation, just fixing to zero according
   // to the orbitope and the at most ones. We should fix 6 on the first row,
-  // and one less per row after that.
+  // and one fewer per row after that.
   for (int i = 0; i < num_items; ++i) {
     int num_fixed = 0;
     for (int b = 0; b < num_bins; ++b) {

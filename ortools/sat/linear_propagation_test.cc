@@ -35,7 +35,8 @@ namespace operations_research {
 namespace sat {
 namespace {
 
-// TEST copied from integer_expr test with little modif to use the new propag.
+// TEST copied from integer_expr test with a small modification to use the new
+// propagator.
 IntegerVariable AddWeightedSum(const absl::Span<const IntegerVariable> vars,
                                const absl::Span<const int> coeffs,
                                Model* model) {
@@ -105,7 +106,7 @@ TEST(WeightedSumTest, LevelZeroPropagation) {
   EXPECT_EQ(model.Get(LowerBound(sum)), 4 + 2 * 2 + 3 * 3);
   EXPECT_EQ(model.Get(UpperBound(sum)), 9 + 2 * 7 + 3 * 8);
 
-  // Setting this leave only a slack of 2.
+  // Setting this leaves only a slack of 2.
   AddLowerOrEqual(sum, 19, &model);
   EXPECT_EQ(SatSolver::FEASIBLE, model.GetOrCreate<SatSolver>()->Solve());
   EXPECT_BOUNDS_EQ(vars[0], 4, 6);    // coeff = 1, slack = 2
@@ -125,7 +126,7 @@ TEST(WeightedSumTest, LevelZeroPropagationWithNegativeNumbers) {
   EXPECT_EQ(model.Get(LowerBound(sum)), -15 * 3);
   EXPECT_EQ(model.Get(UpperBound(sum)), 0);
 
-  // Setting this leave only a slack of 5 which is not an exact multiple of 3.
+  // Setting this leaves only a slack of 5 which is not an exact multiple of 3.
   AddLowerOrEqual(sum, -40, &model);
   EXPECT_EQ(SatSolver::FEASIBLE, model.GetOrCreate<SatSolver>()->Solve());
   EXPECT_BOUNDS_EQ(vars[0], -5, -4);

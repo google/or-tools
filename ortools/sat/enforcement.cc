@@ -77,7 +77,7 @@ bool EnforcementPropagator::Propagate(Trail* /*trail*/) {
     }
     watch_list.resize(new_size);
 
-    // We also mark some constraint false.
+    // We also mark some constraints false.
     for (const EnforcementId id : watcher_[literal.NegatedIndex()]) {
       ChangeStatus(id, EnforcementStatus::IS_FALSE);
     }
@@ -111,9 +111,9 @@ void EnforcementPropagator::Untrail(const Trail& /*trail*/, int trail_index) {
 
 // Adds a new constraint to the class and returns the constraint id.
 //
-// Note that we accept empty enforcement list so that client code can be used
+// Note that we accept an empty enforcement list so that client code can be used
 // regardless of the presence of enforcement or not. A negative id means the
-// constraint is never enforced, and should be ignored.
+// constraint is always enforced, and should be ignored.
 EnforcementId EnforcementPropagator::Register(
     absl::Span<const Literal> enforcement,
     std::function<void(EnforcementId, EnforcementStatus)> callback) {
@@ -159,7 +159,7 @@ EnforcementId EnforcementPropagator::Register(
   if (temp_literals_.size() == 1) {
     watcher_[temp_literals_[0].Index()].push_back(id);
   } else {
-    // Make sure we watch correct literals.
+    // Make sure we watch the correct literals.
     const auto span = GetSpan(id);
     int num_not_true = 0;
     for (int i = 0; i < span.size(); ++i) {
@@ -169,7 +169,7 @@ EnforcementId EnforcementPropagator::Register(
       if (num_not_true == 2) break;
     }
 
-    // We need to watch one of the literals at highest level.
+    // We need to watch one of the literals at the highest level.
     if (num_not_true == 1) {
       int max_level = trail_.Info(span[1].Variable()).level;
       for (int i = 2; i < span.size(); ++i) {
@@ -185,8 +185,8 @@ EnforcementId EnforcementPropagator::Register(
     watcher_[span[1].Index()].push_back(id);
   }
 
-  // Change status, call callback and set up untrail if the status is different
-  // from EnforcementStatus::CANNOT_PROPAGATE.
+  // Change status, call the callback, and set up untrail if the status is
+  // different from EnforcementStatus::CANNOT_PROPAGATE.
   if (num_false > 0) {
     ChangeStatus(id, EnforcementStatus::IS_FALSE);
   } else if (num_true == temp_literals_.size()) {
@@ -263,19 +263,19 @@ LiteralIndex EnforcementPropagator::ProcessIdOnTrue(Literal watched,
     }
     if (!assignment_.LiteralIsAssigned(l)) {
       // Replace the watched literal. Note that if the other watched literal is
-      // true, it should be processed afterwards. We do not change the status
+      // true, it should be processed afterwards. We do not change the status.
       std::swap(span[watched_pos], span[i]);
       return span[watched_pos].Index();
     }
   }
 
-  // All literal with index > 1 are true. Two case.
+  // All literals with index > 1 are true. Two cases.
   if (assignment_.LiteralIsTrue(span[watched_pos ^ 1])) {
     // All literals are true.
     ChangeStatus(id, EnforcementStatus::IS_ENFORCED);
     return kNoLiteralIndex;
   } else {
-    // The other watched literal is the last unassigned
+    // The other watched literal is the last unassigned.
     CHECK_EQ(status, EnforcementStatus::CANNOT_PROPAGATE);
     ChangeStatus(id, EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT);
     return kNoLiteralIndex;

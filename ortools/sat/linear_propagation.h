@@ -49,13 +49,13 @@ namespace sat {
 // Helper class to decide on the constraint propagation order.
 //
 // Each constraint might push some variables which might in turn make other
-// constraint tighter. In general, it seems better to make sure we push first
+// constraints tighter. In general, it seems better to make sure we push first
 // constraints that are not affected by other variables and delay the
-// propagation of constraint that we know will become tigher. This also likely
+// propagation of constraints that we know will become tighter. This also likely
 // simplifies the reasons.
 //
-// Note that we can have cycle in this graph, and that this is not necessarily a
-// conflict.
+// Note that we can have cycles in this graph, and that this is not necessarily
+// a conflict.
 class ConstraintPropagationOrder {
  public:
   ConstraintPropagationOrder(
@@ -127,7 +127,7 @@ class ConstraintPropagationOrder {
       DCHECK(in_ids_[id]);
 
       // By degree, we mean the number of variables of the constraint that do
-      // not have yet their lower bounds up to date; they will be pushed by
+      // not yet have their lower bounds up to date; they will be pushed by
       // other constraints as we propagate them. If possible, we want to delay
       // the propagation of a constraint with positive degree until all involved
       // lower bounds are up to date (i.e. degree == 0).
@@ -138,10 +138,10 @@ class ConstraintPropagationOrder {
         if (var_has_entry[var]) {
           if (var_has_entry[NegationOf(var)] &&
               var_to_id_[NegationOf(var)] == id) {
-            // We have two constraints, this one (id) push NegationOf(var), and
-            // var_to_id_[var] push var. So whichever order we choose, the first
-            // constraint will need to be scanned at least twice. Lets not count
-            // this situation in the degree.
+            // We have two constraints, this one (id) pushes NegationOf(var),
+            // and var_to_id_[var] pushes var. So whichever order we choose, the
+            // first constraint will need to be scanned at least twice. Let's
+            // not count this situation in the degree.
             continue;
           }
 
@@ -174,7 +174,7 @@ class ConstraintPropagationOrder {
     // We didn't find any degree zero, we scanned the whole queue.
     // Extract best_id while keeping the order stable.
     //
-    // We tried to randomize the order, it does add more variance but also seem
+    // We tried to randomize the order, it does add more variance but also seems
     // worse overall.
     int new_size = 0;
     for (const int id : ids_) {
@@ -228,9 +228,9 @@ class ConstraintPropagationOrder {
 //
 // TODO(user): This is a work in progress and is currently incomplete:
 // - Lack more incremental support for faster propag.
-// - Lack detection and propagation of at least one of these linear is true
-//   which can be used to propagate more bound if a variable appear in all these
-//   constraint.
+// - Lack detection and propagation of at least one of these linear constraints
+//   is true which can be used to propagate more bounds if a variable appears
+//   in all these constraints.
 class LinearPropagator : public PropagatorInterface,
                          ReversibleInterface,
                          LazyReasonInterface {
@@ -247,7 +247,7 @@ class LinearPropagator : public PropagatorInterface,
 
   std::string LazyReasonName() const override { return "LinearPropagator"; }
 
-  // Adds a new constraint to the propagator. We support adding constraint at a
+  // Adds a new constraint to the propagator. We support adding constraints at a
   // positive level. Note that this will not trigger any propagation.
   //
   // You can call Propagate() after loading the constraint if needed.
@@ -265,11 +265,11 @@ class LinearPropagator : public PropagatorInterface,
 
  private:
   // We try to pack the struct as much as possible. Using a maximum size of
-  // 1 << 29 should be okay since we split long constraint anyway. Technically
+  // 1 << 29 should be okay since we split long constraints anyway. Technically
   // we could use int16_t or even int8_t if we wanted, but we just need to make
-  // sure we do split ALL constraints, not just the one from the initial model.
+  // sure we do split ALL constraints, not just the ones from the initial model.
   //
-  // TODO(user): We could also move some less often used fields out. like
+  // TODO(user): We could also move some less often used fields out, like
   // initial size and enf_id that are only needed when we push something.
   struct ConstraintInfo {
     unsigned int enf_status : 2;
@@ -289,7 +289,7 @@ class LinearPropagator : public PropagatorInterface,
   absl::Span<IntegerValue> GetCoeffs(const ConstraintInfo& info);
   absl::Span<IntegerVariable> GetVariables(const ConstraintInfo& info);
 
-  // Called when the lower bound of a variable changed. The id is the constraint
+  // Called when the lower bound of a variable changes. The id is the constraint
   // id that caused this change or -1 if it comes from an external source.
   void OnVariableChange(IntegerVariable var, IntegerValue lb, int id);
   void AddVarConstraintsToQueue(IntegerVariable var);
@@ -368,7 +368,7 @@ class LinearPropagator : public PropagatorInterface,
   std::vector<IntegerValue> reason_coeffs_;
   std::vector<Literal> literal_reason_;
 
-  // Queue of constraint to propagate.
+  // Queue of constraints to propagate.
   Bitset64<int> in_queue_;
   std::deque<int> propagation_queue_;
 
@@ -376,10 +376,10 @@ class LinearPropagator : public PropagatorInterface,
   // variable. This only applies before the first conflict is detected.
   bool only_propagate_unit_linear_;
 
-  // Lin3 constraint that need to be processed to push lin2 bounds.
+  // Lin3 constraints that need to be processed to push lin2 bounds.
   SparseBitset<int> lin3_ids_;
 
-  // This only contain constraint that currently push some bounds.
+  // This only contains constraints that currently push some bounds.
   ConstraintPropagationOrder order_;
 
   // Unenforced constraints are marked as "in_queue_" but not actually added
@@ -392,14 +392,14 @@ class LinearPropagator : public PropagatorInterface,
   util_intops::StrongVector<IntegerVariable, absl::InlinedVector<int, 6>>
       var_to_constraint_ids_;
 
-  // For an heuristic similar to Tarjan contribution to Bellman-Ford algorithm.
-  // We mark for each variable the last constraint that pushed it, and also keep
-  // the count of propagated variable for each constraint.
+  // For a heuristic similar to Tarjan's contribution to the Bellman-Ford
+  // algorithm. We mark for each variable the last constraint that pushed it,
+  // and also keep the count of propagated variables for each constraint.
   SparseBitset<IntegerVariable> propagated_by_was_set_;
   util_intops::StrongVector<IntegerVariable, int> propagated_by_;
   std::vector<int> id_to_propagation_count_;
 
-  // Used by DissasembleSubtreeAndAddToQueue().
+  // Used by DisassembleSubtree().
   struct DissasembleQueueEntry {
     int id;
     IntegerVariable var;

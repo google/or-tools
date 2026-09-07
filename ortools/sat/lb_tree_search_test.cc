@@ -21,7 +21,7 @@ namespace operations_research {
 namespace sat {
 namespace {
 
-// This just check that the code compile and runs.
+// This just checks that the code compiles and runs.
 TEST(LbTreeSearch, BooleanLinearOptimizationProblem) {
   const CpModelProto model_proto = RandomLinearProblem(50, 50);
   SatParameters params;

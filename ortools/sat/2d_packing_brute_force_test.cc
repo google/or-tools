@@ -25,7 +25,6 @@
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
 #include "absl/types/span.h"
-#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/sat/cp_model.h"
@@ -315,48 +314,6 @@ TEST(TestPreprocessing, Works) {
               testing::UnorderedPointwise(FieldEq(&PermutableItem::size_x),
                                           problem.items_x_sizes));
 }
-
-void BM_BruteForceOrthogonalPacking(benchmark::State& state) {
-  absl::BitGen random;
-  static constexpr int kNumProblems = 100;
-  std::vector<OppProblem> problems;
-  const bool feasible = state.range(1);
-  while (problems.size() < kNumProblems) {
-    OppProblem problem = CreateRandomOppProblem(random, state.range(0));
-    if ((BruteForceOrthogonalPacking(problem.items_x_sizes,
-                                     problem.items_y_sizes, problem.bb_sizes,
-                                     problem.items_x_sizes.size())
-             .status == BruteForceResult::Status::kFoundSolution) == feasible) {
-      problems.push_back(problem);
-    }
-  }
-  int index = 0;
-  for (auto s : state) {
-    const auto& problem = problems[index];
-    BruteForceOrthogonalPacking(problem.items_x_sizes, problem.items_y_sizes,
-                                problem.bb_sizes, problem.items_x_sizes.size());
-    ++index;
-    if (index == problems.size()) {
-      index = 0;
-    }
-  }
-}
-
-BENCHMARK(BM_BruteForceOrthogonalPacking)
-    ->ArgPair(3, false)
-    ->ArgPair(4, false)
-    ->ArgPair(5, false)
-    ->ArgPair(6, false)
-    ->ArgPair(7, false)
-    ->ArgPair(8, false)
-    ->ArgPair(9, false)
-    ->ArgPair(3, true)
-    ->ArgPair(4, true)
-    ->ArgPair(5, true)
-    ->ArgPair(6, true)
-    ->ArgPair(7, true)
-    ->ArgPair(8, true)
-    ->ArgPair(9, true);
 
 }  // namespace
 }  // namespace sat

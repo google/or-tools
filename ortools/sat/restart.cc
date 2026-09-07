@@ -113,7 +113,7 @@ bool RestartPolicy::ShouldRestart() {
       conflicts_until_next_strategy_change_ = strategy_change_conflicts_;
 
       // The LUBY_RESTART strategy is considered the "stable" mode and we change
-      // the polariy heuristic while under it.
+      // the polarity heuristic while under it.
       decision_policy_->SetStablePhase(
           strategies_[strategy_counter_ % strategies_.size()] ==
           SatParameters::LUBY_RESTART);
@@ -146,7 +146,7 @@ void RestartPolicy::OnConflict(int conflict_trail_index,
   lbd_running_average_.Add(conflict_lbd);
 
   // Block the restart.
-  // Note(user): glucose only activate this after 10000 conflicts.
+  // Note(user): glucose only activates this after 10000 conflicts.
   if (parameters_.use_blocking_restart()) {
     if (lbd_running_average_.IsWindowFull() &&
         dl_running_average_.IsWindowFull() &&

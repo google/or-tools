@@ -68,7 +68,7 @@ bool ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
   const IntegerVariable var = integer_literal.var;
 
   // Ignore any Add() with a bound worse than the level zero one.
-  // TODO(user): Check that this never happen? it shouldn't.
+  // TODO(user): Check that this never happens? It shouldn't.
   const IntegerValue root_lb = integer_trail_->LevelZeroLowerBound(var);
   if (integer_literal.bound <= root_lb) return true;
 
@@ -80,7 +80,7 @@ bool ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
 
   // We skip any IntegerLiteral referring to a variable with only two
   // consecutive possible values. This is because, once shifted this will
-  // already be a variable in [0, 1] so we shouldn't gain much by substituing
+  // already be a variable in [0, 1] so we shouldn't gain much by substituting
   // it.
   if (root_lb + 1 >= integer_trail_->LevelZeroUpperBound(var)) return true;
 
@@ -113,7 +113,7 @@ bool ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
   const auto it = bounds_.find(std::make_pair(literal.NegatedIndex(), var));
   if (it != bounds_.end()) {
     if (it->second <= root_lb) {
-      // The other bounds is worse than the new level-zero bound which can
+      // The other bound is worse than the new level-zero bound which can
       // happen because of lazy update, so here we just remove it.
       bounds_.erase(it);
     } else {
@@ -302,7 +302,7 @@ ElementEncodings::GetElementEncodedVariables() const {
 // expression pointing to a variable with domain [0,1] or [-1,0].
 // If the original variable has been removed from the model, then there are no
 // implied values from any exactly_one constraint to its domain.
-// If we are lucky, one of the literal of the exactly_one constraints, and its
+// If we are lucky, one of the literals of the exactly_one constraints, and its
 // negation are used to encode the Boolean variable of the affine.
 //
 // This may fail if exactly_one(l0, l1, l2, l3); l0 and l1 imply x = 0,
@@ -311,7 +311,7 @@ ElementEncodings::GetElementEncodedVariables() const {
 //
 // TODO(user): Consider removing this once we are more complete in our implied
 // bounds repository. Because if we can reconcile an encoding, then any of the
-// literal in the at most one should imply a value on the boolean view use in
+// literals in the at most one should imply a value on the boolean view used in
 // the size2 affine.
 std::vector<LiteralValueValue> TryToReconcileEncodings(
     const AffineExpression& size2_affine, const AffineExpression& affine,
@@ -356,7 +356,7 @@ std::vector<LiteralValueValue> TryToReconcileEncodings(
 }
 
 // Specialized case of encoding reconciliation when both variables have a domain
-// of size of 2.
+// of size 2.
 std::vector<LiteralValueValue> TryToReconcileSize2Encodings(
     const AffineExpression& left, const AffineExpression& right,
     IntegerEncoder* integer_encoder) {
@@ -554,7 +554,9 @@ ProductDetector::ProductDetector(Model* model)
       sat_solver_(model->GetOrCreate<SatSolver>()),
       trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      implications_(model->GetOrCreate<BinaryImplicationGraph>()),
       integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
+      lp_values_(*model->GetOrCreate<ModelLpValues>()),
       shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
 
 ProductDetector::~ProductDetector() {
@@ -574,6 +576,9 @@ ProductDetector::~ProductDetector() {
   stats.push_back(
       {"product_detector/num_conditional_zeros", num_conditional_zeros_});
   stats.push_back({"product_detector/num_int_products", num_int_products_});
+  stats.push_back({"product_detector/product_lbs/found", num_product_lbs_});
+  stats.push_back(
+      {"product_detector/product_lbs/work", total_product_lbs_work_});
   shared_stats_->AddStats(stats);
 }
 
@@ -592,8 +597,8 @@ void ProductDetector::ProcessTernaryClause(
   candidates_[GetKey(ternary_clause[1].Index(), ternary_clause[2].Index())]
       .push_back(ternary_clause[0].Index());
 
-  // We mark the literal of the ternary clause as seen.
-  // Only a => b with a seen need to be looked at.
+  // We mark the literals of the ternary clause as seen.
+  // Only a => b with a seen needs to be looked at.
   for (const Literal l : ternary_clause) {
     if (l.Index() >= seen_.size()) seen_.resize(l.Index() + 1);
     seen_[l.Index()] = true;
@@ -632,7 +637,7 @@ void ProductDetector::ProcessTernaryExactlyOne(
                     ternary_exo[1].NegatedIndex());
 }
 
-// TODO(user): As product are discovered, we could remove entries from our
+// TODO(user): As products are discovered, we could remove entries from our
 // hash maps!
 void ProductDetector::ProcessBinaryClause(
     absl::Span<const Literal> binary_clause) {
@@ -711,7 +716,7 @@ std::array<LiteralIndex, 2> ProductDetector::GetKey(LiteralIndex a,
 
 void ProductDetector::ProcessNewProduct(LiteralIndex p, LiteralIndex a,
                                         LiteralIndex b) {
-  // If many literal correspond to the same product, we just keep one.
+  // If many literals correspond to the same product, we just keep one.
   ++num_products_;
   products_[GetKey(a, b)] = p;
 
@@ -726,7 +731,7 @@ bool ProductDetector::ProductIsLinearizable(IntegerVariable a,
   if (a == b) return true;
   if (a == NegationOf(b)) return true;
 
-  // Otherwise, we need both a and b to be expressible as linear expression
+  // Otherwise, we need both a and b to be expressible as linear expressions
   // involving Booleans whose product is also expressible.
   if (integer_trail_->LevelZeroDomain(a).Size() != 2) return false;
   if (integer_trail_->LevelZeroDomain(b).Size() != 2) return false;
@@ -835,9 +840,9 @@ void ProductDetector::UpdateRLTMaps(
     const util_intops::StrongVector<IntegerVariable, double>& lp_values,
     IntegerVariable var1, double lp1, IntegerVariable var2, double lp2,
     IntegerVariable bound_var, double bound_lp) {
-  // we have var1 * var2 <= bound_var, and this is only useful if it is better
-  // than the trivial bound <= var1 or <= var2.
-  if (bound_lp > lp1 && bound_lp > lp2) return;
+  // We have var1 * var2 <= bound_var, and this is only useful if it is better
+  // than the trivial bounds < var1 and < var2.
+  if (bound_lp >= lp1 || bound_lp >= lp2) return;
 
   const auto [it, inserted] =
       bool_rlt_ubs_.insert({Canonicalize(var1, var2), bound_var});
@@ -847,31 +852,61 @@ void ProductDetector::UpdateRLTMaps(
     it->second = bound_var;
   }
 
-  // This will increase a RLT cut violation and is a good candidate.
+  // This will increase an RLT cut violation and is a good candidate.
   if (lp1 * lp2 > bound_lp + 1e-4) {
-    bool_rlt_candidates_[var1].push_back(var2);
-    bool_rlt_candidates_[var2].push_back(var1);
+    for (const IntegerVariable var : {var1, var2}) {
+      if (var_to_dense_index_[var] != -1) continue;
+      var_to_dense_index_[var] = dense_index_to_var_.size();
+      dense_index_to_var_.push_back(var);
+    }
+    dense_to_rlt_candidate_builder_.Add(var_to_dense_index_[var1], var2);
+    dense_to_rlt_candidate_builder_.Add(var_to_dense_index_[var2], var1);
   }
 }
 
-// TODO(user): limit work if too many ternary.
+// TODO(user): limit work if too many ternaries.
 void ProductDetector::InitializeBooleanRLTCuts(
     absl::Span<const IntegerVariable> lp_vars,
     const util_intops::StrongVector<IntegerVariable, double>& lp_values) {
+  // We reset this on each InitializeBooleanRLTCuts(), and limit the amount
+  // of work done.
+  work_spend_scanning_implications_ = 0;
+
   // TODO(user): Maybe we shouldn't reconstruct this every time, but it is hard
   // in case of multiple lps to make sure we don't use variables not in the lp
-  // otherwise.
+  // otherwise. This also allows to use the best candidate according to the
+  // current lp solution.
   bool_rlt_ubs_.clear();
 
+  // For LiteralProductLowerBound().
+  implies_cache_.resize(integer_trail_->NumIntegerVariables(),
+                        kNoIntegerVariable);
+
+  // Clear data to answer BoolRLTCandidates() query.
+  for (const IntegerVariable var : dense_index_to_var_) {
+    var_to_dense_index_[var] = -1;
+  }
+  dense_index_to_var_.clear();
+  var_to_dense_index_.resize(integer_trail_->NumIntegerVariables(), -1);
+  dense_to_rlt_candidate_builder_.Clear();
+  DCHECK(std::all_of(var_to_dense_index_.begin(), var_to_dense_index_.end(),
+                     [](int index) { return index == -1; }));
+
   // If we transform a linear constraint to sum positive_coeff * bool <= rhs.
-  // We will list all interesting multiplicative candidate for each variable.
-  bool_rlt_candidates_.clear();
+  // We will list all interesting multiplicative candidates for each variable.
   const int size = ternary_clauses_with_view_.size();
   if (size == 0) return;
 
+  // We space clear is_in_lp_vars_.
+  // TODO(user): Just switch to memclear() when dense, or use SparseBitset.
+  for (const IntegerVariable var : vars_in_lp_) {
+    is_in_lp_vars_.ClearBucket(var);
+  }
+  vars_in_lp_.assign(lp_vars.begin(), lp_vars.end());
   is_in_lp_vars_.resize(integer_trail_->NumIntegerVariables().value());
   for (const IntegerVariable var : lp_vars) is_in_lp_vars_.Set(var);
 
+  // Process ternary clauses.
   for (int i = 0; i < size; i += 3) {
     const IntegerVariable var1 = ternary_clauses_with_view_[i];
     const IntegerVariable var2 = ternary_clauses_with_view_[i + 1];
@@ -881,8 +916,8 @@ void ProductDetector::InitializeBooleanRLTCuts(
     if (!is_in_lp_vars_[PositiveVariable(var2)]) continue;
     if (!is_in_lp_vars_[PositiveVariable(var3)]) continue;
 
-    // If we have l1 + l2 + l3 >= 1, then for all (i, j) pair we have
-    // !li * !lj <= lk. We are looking for violation like this.
+    // If we have l1 + l2 + l3 >= 1, then for all (i, j) pairs we have
+    // !li * !lj <= lk. We are looking for violations like this.
     const double lp1 = GetLiteralLpValue(var1, lp_values);
     const double lp2 = GetLiteralLpValue(var2, lp_values);
     const double lp3 = GetLiteralLpValue(var3, lp_values);
@@ -895,9 +930,111 @@ void ProductDetector::InitializeBooleanRLTCuts(
                   1.0 - lp3, var1, lp1);
   }
 
-  // Clear.
-  // TODO(user): Just switch to memclear() when dense.
-  for (const IntegerVariable var : lp_vars) is_in_lp_vars_.ClearBucket(var);
+  // Build the actual data for BoolRLTCandidates().
+  dense_to_rlt_candidate_.ResetFromBuilder(dense_to_rlt_candidate_builder_);
+  DCHECK_EQ(dense_to_rlt_candidate_.size(), dense_index_to_var_.size());
+}
+
+// This use the same encoding as in GetLiteralLpValue()
+IntegerVariable ProductDetector::LiteralView(Literal literal) const {
+  IntegerVariable tmp_view;
+  bool tmp_view_is_direct;
+
+  if (!integer_encoder_->LiteralOrNegationHasView(literal, &tmp_view,
+                                                  &tmp_view_is_direct)) {
+    return kNoIntegerVariable;
+  }
+  if (!VariableIsPositive(tmp_view)) return kNoIntegerVariable;
+  if (tmp_view < is_in_lp_vars_.size() && !is_in_lp_vars_[tmp_view]) {
+    return kNoIntegerVariable;
+  }
+
+  if (!tmp_view_is_direct) tmp_view = NegationOf(tmp_view);
+  return tmp_view;
+}
+
+IntegerVariable ProductDetector::LiteralProductLowerBound(IntegerVariable a,
+                                                          IntegerVariable b) {
+  if (work_spend_scanning_implications_ > 1e7) return kNoIntegerVariable;
+  if (a >= integer_trail_->NumIntegerVariables()) return kNoIntegerVariable;
+  if (b >= integer_trail_->NumIntegerVariables()) return kNoIntegerVariable;
+  if (integer_trail_->IsFixedAtLevelZero(a)) return kNoIntegerVariable;
+  if (integer_trail_->IsFixedAtLevelZero(b)) return kNoIntegerVariable;
+
+  ++work_spend_scanning_implications_;  // Some work.
+
+  // Recover the literals for a and b.
+  const LiteralIndex la_index =
+      integer_encoder_->GetAssociatedLiteral(IntegerLiteral::GreaterOrEqual(
+          a, integer_trail_->LevelZeroUpperBound(a)));
+  if (la_index == kNoLiteralIndex) return kNoIntegerVariable;
+
+  const LiteralIndex lb_index =
+      integer_encoder_->GetAssociatedLiteral(IntegerLiteral::GreaterOrEqual(
+          b, integer_trail_->LevelZeroUpperBound(b)));
+  if (lb_index == kNoLiteralIndex) return kNoIntegerVariable;
+
+  // The best lower bound on a * b.
+  IntegerVariable best = kNoIntegerVariable;
+  double best_lp = 0.0;
+
+  const Literal la = Literal(la_index);
+  const Literal lb = Literal(lb_index);
+
+  // TODO(user): Remove DCHECK from DirectImplications() ? That said it is a bit
+  // weird that literal is assigned but not the integer view. We should really
+  // avoid this literal <-> IntegerVariable conversion, but it is a lot of
+  // work to change that now. Maybe this code should work with Literal only.
+  // and we should cache Literal <-> IntegerVariable somewhere once and for all.
+  if (trail_->Assignment().LiteralIsAssigned(la)) return kNoIntegerVariable;
+  if (trail_->Assignment().LiteralIsAssigned(lb)) return kNoIntegerVariable;
+
+  // Find a literal => la & lb by intersecting the reverse implication
+  // lists. TODO(user): Also intersect the clique ids.
+  if (var_last_used_for_caching_ != a) {
+    absl::Span<const Literal> reverse_la =
+        implications_->DirectImplications(la.Negated());
+    work_spend_scanning_implications_ += reverse_la.size();
+    total_product_lbs_work_ += reverse_la.size();
+    for (const Literal lit : reverse_la) {
+      const Literal candidate = lit.Negated();
+      const IntegerVariable c_var = LiteralView(candidate);
+      if (c_var == kNoIntegerVariable) continue;
+      implies_cache_[c_var] = a;
+    }
+    implies_cache_[a] = a;
+    var_last_used_for_caching_ = a;
+  }
+
+  // If b implies a, we can use a * b >= b.
+  if (implies_cache_[b] == a) {
+    const double lp_value = GetLiteralLpValue(b, lp_values_);
+    if (lp_value > best_lp) {
+      ++num_product_lbs_;
+      best = b;
+      best_lp = lp_value;
+    }
+  }
+
+  absl::Span<const Literal> reverse_lb =
+      implications_->DirectImplications(lb.Negated());
+  work_spend_scanning_implications_ += reverse_lb.size();
+  total_product_lbs_work_ += reverse_lb.size();
+  for (const Literal lit : reverse_lb) {
+    const Literal candidate = lit.Negated();
+    const IntegerVariable c_var = LiteralView(candidate);
+    if (c_var != kNoIntegerVariable && implies_cache_[c_var] == a) {
+      // c_var implies both a and b.
+      const double lp_value = GetLiteralLpValue(c_var, lp_values_);
+      if (lp_value > best_lp) {
+        ++num_product_lbs_;
+        best = c_var;
+        best_lp = lp_value;
+      }
+    }
+  }
+
+  return best;
 }
 
 }  // namespace sat

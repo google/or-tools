@@ -268,8 +268,8 @@ void LinearIncrementalEvaluator::ClearAffectedVariables() {
 }
 
 // Tricky: Here we reuse last_affected_variables_ to reset
-// var_to_score_change. And in particular we need to list all variable whose
-// score changed here. Not just the one for which we have a decrease.
+// var_to_score_change. And in particular we need to list all variables whose
+// scores changed here. Not just the ones for which we have a decrease.
 void LinearIncrementalEvaluator::UpdateScoreOnWeightUpdate(
     int c, absl::Span<const int64_t> jump_deltas,
     absl::Span<double> var_to_score_change) {
@@ -279,8 +279,8 @@ void LinearIncrementalEvaluator::UpdateScoreOnWeightUpdate(
   const SpanData& data = rows_[c];
 
   // Update enforcement part. Because we only update weight of currently
-  // infeasible constraint, all change are 0 -> 1 transition and change by the
-  // same amount, which is the current distance.
+  // infeasible constraints, all changes are 0 -> 1 transitions and change by
+  // the same amount, which is the current distance.
   const double enforcement_change = static_cast<double>(-distances_[c]);
   if (enforcement_change != 0.0) {
     int i = data.start;
@@ -305,8 +305,8 @@ void LinearIncrementalEvaluator::UpdateScoreOnWeightUpdate(
     num_ops_ += 2 * data.num_linear_entries;
 
     // Computing general Domain distance is slow.
-    // TODO(user): optimize even more for one sided constraints.
-    // Note(user): I tried to factor the two usage of this, but it is slower.
+    // TODO(user): optimize even more for one-sided constraints.
+    // Note(user): I tried to factor the two usages of this, but it is slower.
     const Domain& rhs = domains_[c];
     const int64_t rhs_min = rhs.Min();
     const int64_t rhs_max = rhs.Max();
@@ -343,8 +343,8 @@ void LinearIncrementalEvaluator::UpdateScoreOnNewlyEnforced(
     absl::Span<double> jump_scores) {
   const SpanData& data = rows_[c];
 
-  // Everyone else had a zero cost transition that now become enforced ->
-  // unenforced. So they all have better score.
+  // Everyone else had a zero-cost transition that now becomes enforced ->
+  // unenforced. So they all have a better score.
   const double weight_time_violation =
       weight * static_cast<double>(distances_[c]);
   if (weight_time_violation > 0.0) {
@@ -381,8 +381,8 @@ void LinearIncrementalEvaluator::UpdateScoreOnNewlyUnenforced(
     absl::Span<double> jump_scores) {
   const SpanData& data = rows_[c];
 
-  // Everyone else had a enforced -> unenforced transition that now become zero.
-  // So they all have worst score, and we don't need to update
+  // Everyone else had an enforced -> unenforced transition that now becomes
+  // zero. So they all have a worse score, and we don't need to update
   // last_affected_variables_.
   const double weight_time_violation =
       weight * static_cast<double>(distances_[c]);
@@ -414,8 +414,8 @@ void LinearIncrementalEvaluator::UpdateScoreOnNewlyUnenforced(
   }
 }
 
-// We just need to modify the old/new transition that decrease the number of
-// enforcement literal at false.
+// We just need to modify the old/new transition that decreases the number of
+// enforcement literals at false.
 void LinearIncrementalEvaluator::UpdateScoreOfEnforcementIncrease(
     int c, double score_change, absl::Span<const int64_t> jump_deltas,
     absl::Span<double> jump_scores) {
@@ -451,15 +451,15 @@ void LinearIncrementalEvaluator::UpdateScoreOnActivityChange(
   if (activity_delta == 0) return;
   const SpanData& data = rows_[c];
 
-  // In some cases, we can know that the score of all the involved variable
-  // will not change. This is the case if whatever 1 variable change the
+  // In some cases, we can know that the scores of all the involved variables
+  // will not change. This is the case if whatever 1 variable changes the
   // violation delta before/after is the same.
   //
   // TODO(user): Maintain more precise bounds.
   // - We could easily compute on each ComputeInitialActivities() the
   //   maximum increase/decrease per variable, and take the max as each
   //   variable changes?
-  // - Know if a constraint is only <= or >= !
+  // - Know if a constraint is only <= or >=!
   const int64_t old_activity = activities_[c];
   const int64_t new_activity = old_activity + activity_delta;
   int64_t min_range;
@@ -509,8 +509,8 @@ void LinearIncrementalEvaluator::UpdateScoreOnActivityChange(
         distances_[c] - domains_[c].Distance(new_activity);
 
     // Computing general Domain distance is slow.
-    // TODO(user): optimize even more for one sided constraints.
-    // Note(user): I tried to factor the two usage of this, but it is slower.
+    // TODO(user): optimize even more for one-sided constraints.
+    // Note(user): I tried to factor the two usages of this, but it is slower.
     const Domain& rhs = domains_[c];
     const int64_t rhs_min = rhs.Min();
     const int64_t rhs_max = rhs.Max();
@@ -577,7 +577,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnActivityChange(
   }
 }
 
-// Note that the code assumes that a column has no duplicates ct indices.
+// Note that the code assumes that a column has no duplicate ct indices.
 void LinearIncrementalEvaluator::UpdateVariableAndScores(
     int var, int64_t delta, absl::Span<const double> weights,
     absl::Span<const int64_t> jump_deltas, absl::Span<double> jump_scores,
@@ -1230,8 +1230,8 @@ int64_t OverlapOfTwoIntervals(const IntegerValue start1,
                               const IntegerValue end2) {
   DCHECK((start1 < end2) && (start2 < end1));
 
-  // We force a min cost of 1 to cover the case where a interval of size 0 is in
-  // the middle of another interval.
+  // We force a min cost of 1 to cover the case where an interval of size 0 is
+  // in the middle of another interval.
   return std::max(std::min(std::min(end2 - start2, end1 - start1),
                            std::min(end2 - start1, end1 - start2)),
                   IntegerValue{1})
@@ -1247,7 +1247,7 @@ int64_t NoOverlapMinRepairDistance(const IntegerValue start1,
 }
 
 int64_t NoOverlap2dViolation(const Rectangle& r1, const Rectangle& r2) {
-  // Fast track if one dimension do not overlap.
+  // Fast track if one dimension does not overlap.
   if (r1.x_min >= r2.x_max || r2.x_min >= r1.x_max) return 0;
   if (r1.y_min >= r2.y_max || r2.y_min >= r1.y_max) return 0;
 
@@ -2020,7 +2020,7 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
         // size. The most performing one was "start + size" on the multi-mode
         // RCPSP.
         //
-        // Note that for fixed size, this do not matter. It is easy enough to
+        // Note that for fixed size, this does not matter. It is easy enough to
         // try any expression by creating a small wrapper class to use instead
         // of a LinearExpressionProto for time.
         times.push_back(LinearExprSum(interval_ct.interval().start(),
@@ -2480,8 +2480,8 @@ void LsEvaluator::UpdateViolatedList(const int c) {
 }
 
 // Note that since we have our own ViolationDelta() implementation this is
-// only used for initialization and our PerformMove(). It is why we set
-// violations_ here.
+// only used for initialization and our PerformMove(). This is why we set
+// violation_ here.
 int64_t CompiledReservoirConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
   for (const int lit : enforcement_literals_) {
@@ -2496,7 +2496,7 @@ int64_t CompiledReservoirConstraint::ComputeViolation(
 
 int64_t CompiledReservoirConstraint::BuildProfileAndReturnViolation(
     absl::Span<const int64_t> solution) {
-  // Starts by filling the cache and profile_.
+  // Start by filling the cache and profile_.
   capacity_value_ = ExprValue(capacity_, solution);
   const int num_events = time_values_.size();
   profile_.clear();

@@ -51,15 +51,15 @@ void AddDisjunctive(const std::vector<Literal>& enforcement_literals,
                     Model* model);
 
 // Creates Boolean variables for all the possible precedences of the form (task
-// i is before task j) and forces that, for each couple of task (i,j), either i
+// i is before task j) and forces that, for each couple of tasks (i,j), either i
 // is before j or j is before i. Do not create any other propagators.
 void AddDisjunctiveWithBooleanPrecedencesOnly(
     absl::Span<const IntervalVariable> intervals, Model* model);
 
 // Helper class to compute the end-min of a set of tasks given their start-min
 // and size-min. In Petr Vilim's PhD "Global Constraints in Scheduling",
-// this corresponds to his Theta-tree except that we use a O(n) implementation
-// for most of the function here, not a O(log(n)) one.
+// this corresponds to his Theta-tree except that we use an O(n) implementation
+// for most of the functions here, not an O(log(n)) one.
 class TaskSet {
  public:
   using Entry = SchedulingConstraintHelper::TaskInfo;
@@ -78,7 +78,7 @@ class TaskSet {
   void AddShiftedStartMinEntry(const SchedulingConstraintHelper& helper, int t);
 
   // Advanced usage, if the entry is present, this assumes that its start_min is
-  // >= the end min without it, and update the datastructure accordingly.
+  // >= the end min without it, and updates the data structure accordingly.
   void NotifyEntryIsNowLastIfPresent(const Entry& e);
 
   // Advanced usage. Instead of calling many AddEntry(), it is more efficient to
@@ -88,7 +88,7 @@ class TaskSet {
   void AddUnsortedEntry(const Entry& e) { sorted_tasks_.push_back(e); }
   void Sort() { std::sort(sorted_tasks_.begin(), sorted_tasks_.end()); }
 
-  // Returns the end-min for the task in the set. The time profile of the tasks
+  // Returns the end-min for the tasks in the set. The time profile of the tasks
   // packed to the left will always be a set of contiguous tasks separated by
   // empty space:
   //
@@ -104,7 +104,7 @@ class TaskSet {
   // - The fact that all critical tasks have a start-min greater or equal to the
   //   first of them, that is SortedTasks()[critical_index].start_min.
   //
-  // It is possible to behave like if one task was not in the set by setting
+  // It is possible to behave as if one task was not in the set by setting
   // task_to_ignore to the id of this task. This returns 0 if the set is empty
   // in which case critical_index will be left unchanged.
   IntegerValue ComputeEndMin(int task_to_ignore, int* critical_index) const;
@@ -172,8 +172,8 @@ struct PropagationStatistics {
 // Disjunctive() model function above will instantiate the used ones (according
 // to the solver parameters) in both time directions.
 //
-// See Petr Vilim PhD "Global Constraints in Scheduling" for a description of
-// some of the algorithm.
+// See Petr Vilim's PhD "Global Constraints in Scheduling" for a description of
+// some of the algorithms.
 // ============================================================================
 
 class DisjunctiveOverloadChecker : public PropagatorInterface {
@@ -198,7 +198,7 @@ class DisjunctiveOverloadChecker : public PropagatorInterface {
 
   SchedulingConstraintHelper* helper_;
 
-  // Size assigned at construction, stay fixed afterwards.
+  // Size assigned at construction, stays fixed afterwards.
   std::unique_ptr<int[]> task_to_event_;
 
   ThetaLambdaTree<IntegerValue> theta_tree_;
@@ -206,11 +206,11 @@ class DisjunctiveOverloadChecker : public PropagatorInterface {
 };
 
 // This one is a simpler version of DisjunctiveDetectablePrecedences, it
-// detect all implied precedences between TWO tasks and push bounds accordingly.
-// If we created all pairwise precedence Booleans, this would already be
-// propagated and in this case we don't create this propagator.
+// detects all implied precedences between TWO tasks and pushes bounds
+// accordingly. If we created all pairwise precedence Booleans, this would
+// already be propagated and in this case we don't create this propagator.
 //
-// Otherwise, this generate short reason and is good to do early as it
+// Otherwise, this generates short reasons and is good to do early as it
 // propagates a lot.
 class DisjunctiveSimplePrecedences : public PropagatorInterface {
  public:
@@ -258,8 +258,8 @@ class DisjunctiveDetectablePrecedences : public PropagatorInterface {
 };
 
 // This propagates the same things as DisjunctiveDetectablePrecedences, except
-// that it only sort the full set of intervals once and then work on a combined
-// set of disjunctives.
+// that it only sorts the full set of intervals once and then works on a
+// combined set of disjunctives.
 template <bool time_direction>
 class CombinedDisjunctive : public PropagatorInterface {
  public:
@@ -325,7 +325,7 @@ class DisjunctiveEdgeFinding : public PropagatorInterface {
   const bool time_direction_;
   SchedulingConstraintHelper* helper_;
 
-  // All these member are indexed in the same way.
+  // All these members are indexed in the same way.
   ThetaLambdaTree<IntegerValue> theta_tree_;
   FixedCapacityVector<IntegerValue> event_size_;
 
@@ -336,7 +336,7 @@ class DisjunctiveEdgeFinding : public PropagatorInterface {
   PropagationStatistics stats_;
 };
 
-// Exploits the precedences relations of the form "this set of disjoint
+// Exploits the precedence relations of the form "this set of disjoint
 // IntervalVariables must be performed before a given IntegerVariable". The
 // relations are computed with PrecedencesPropagator::ComputePrecedences().
 class DisjunctivePrecedences : public PropagatorInterface {
@@ -377,7 +377,7 @@ class DisjunctivePrecedences : public PropagatorInterface {
 
 // This is an optimization for the case when we have a big number of such
 // pairwise constraints. This should be roughly equivalent to what the general
-// disjunctive case is doing, but it dealt with variable size better and has a
+// disjunctive case is doing, but it deals with variable size better and has a
 // lot less overhead.
 class DisjunctiveWithTwoItems : public PropagatorInterface {
  public:

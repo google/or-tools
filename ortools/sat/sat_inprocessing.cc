@@ -89,23 +89,23 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
   double probing_time = 0.0;
   const bool log_round_info = VLOG_IS_ON(2);
 
-  // In the presolve, we run this first as some preprocessing technique might
-  // change the problem clauses in such a way that make our heuristic gate
-  // detection miss some gates. Also, when this applies the reduction in problem
-  // size is huge, so it is just faster to run this early.
+  // In the presolve, we run this first as some preprocessing techniques might
+  // change the problem clauses in such a way that makes our heuristic gate
+  // detection miss some gates. Also, when this applies, the reduction in
+  // problem size is huge, so it is just faster to run this early.
   //
-  // TODO(user): If we remove fixed variables, on some problem like:
+  // TODO(user): If we remove fixed variables, on some problems like:
   // ~/SAT24/f0426369f61595aee97055965ee7e6a3-hwmcc12miters-xits-iso-6s111.sanitized.cnf.xz
-  // we don't detect as much equivalences... Understand why. I suspect it is due
-  // to the heuristic for ITE gate that combine two clauses of size 3 to get a
-  // truth table on 4 variables. If one of them become of size 2, we might miss
+  // we don't detect as many equivalences... Understand why. I suspect it is due
+  // to the heuristic for ITE gates that combines two clauses of size 3 to get a
+  // truth table on 4 variables. If one of them becomes of size 2, we might miss
   // it. Still we should be more robust to stuff like this.
   RETURN_IF_FALSE(congruence_closure_->DoOneRound(log_round_info));
 
   // We currently do the transformations in a given order and restart each time
   // we did something to make sure that the earlier step cannot strengthen more.
   // This might not be the best, but it is really good during development phase
-  // to make sure each individual functions is as incremental and as fast as
+  // to make sure each individual function is as incremental and as fast as
   // possible.
   const double start_dtime = time_limit_->GetElapsedDeterministicTime();
   const double stop_dtime = start_dtime + options.deterministic_time_limit;
@@ -118,7 +118,7 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
     // considered.
     RETURN_IF_FALSE(implication_graph_->RemoveDuplicatesAndFixedVariables());
 
-    // This also prepare the stamping below so that we do that on a DAG and do
+    // This also prepares the stamping below so that we do that on a DAG and do
     // not consider potential new implications added by
     // RemoveFixedAndEquivalentVariables().
     RETURN_IF_FALSE(DetectEquivalencesAndStamp(options.use_transitive_reduction,
@@ -126,11 +126,11 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
 
     // TODO(user): This should/could be integrated with the stamping since it
     // seems better to do just one loop instead of two over all clauses. Because
-    // of memory access. it isn't that clear though.
+    // of memory access, it isn't that clear though.
     RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
 
-    // IMPORTANT: Since we only run this on pure sat problem, we can just
-    // get rid of equivalent variable right away and do not need to keep them
+    // IMPORTANT: Since we only run this on a pure SAT problem, we can just
+    // get rid of equivalent variables right away and do not need to keep them
     // in the implication_graph_ for propagation.
     //
     // This is needed for the correctness of the bounded variable elimination.
@@ -168,13 +168,13 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
     }
 
     // TODO(user): Combine the two? this way we don't create a full literal <->
-    // clause graph twice. It might make sense to reach the BCE fix point which
-    // is unique before each variable elimination.
+    // clause graph twice. It might make sense to reach the BCE fixed point
+    // which is unique before each variable elimination.
     if (!params_.fill_tightened_domains_in_response()) {
       blocked_clause_simplifier_->DoOneRound(log_round_info);
     }
 
-    // TODO(user): this break some binary graph invariant. Fix!
+    // TODO(user): this breaks some binary graph invariants. Fix!
     RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
     RETURN_IF_FALSE(bounded_variable_elimination_->DoOneRound(log_round_info));
     RETURN_IF_FALSE(LevelZeroPropagate());
@@ -282,7 +282,7 @@ bool Inprocessing::InprocessingRound() {
   // Probing.
   //
   // TODO(user): right now we can't run probing if the solver is configured
-  // with assumption. Fix.
+  // with assumptions. Fix.
   if (params_.inprocessing_probing_dtime() > 0.0 &&
       sat_solver_->AssumptionLevel() == 0) {
     const double saved_wtime = wall_timer.Get();
@@ -326,7 +326,7 @@ bool Inprocessing::InprocessingRound() {
   RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
 
   // TODO(user): try to enable these? The problem is that we can only remove
-  // variables not used the non-pure SAT part of a model.
+  // variables not used in the non-pure SAT part of a model.
   if (/*DISABLES_CODE*/ (false)) {
     blocked_clause_simplifier_->DoOneRound(log_round_info);
     RETURN_IF_FALSE(bounded_variable_elimination_->DoOneRound(log_round_info));
@@ -397,8 +397,8 @@ bool Inprocessing::LevelZeroPropagate() {
   return true;
 }
 
-// It make sense to do the pre-stamping right after the equivalence detection
-// since it needs a DAG and can detect extra failed literal.
+// It makes sense to do the pre-stamping right after the equivalence detection
+// since it needs a DAG and can detect extra failed literals.
 bool Inprocessing::DetectEquivalencesAndStamp(bool use_transitive_reduction,
                                               bool log_info) {
   if (!LevelZeroPropagate()) return false;
@@ -425,7 +425,7 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
   // Preconditions.
   //
   // TODO(user): The level zero is required because we remove fixed variables
-  // but if we split this into two functions, we could rewrite clause at any
+  // but if we split this into two functions, we could rewrite clauses at any
   // level.
   CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
   if (!LevelZeroPropagate()) return false;
@@ -444,7 +444,7 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
     //
     // TODO(user): If only new fixed variables are there, we can use a faster
     // function. We should also merge the code with the deletion code in
-    // sat_solver_.cc, but that require some refactoring of the dependence
+    // sat_solver.cc, but that requires some refactoring of the dependencies
     // between files.
     const int64_t new_num_redundant_literals =
         implication_graph_->num_redundant_literals();
@@ -535,16 +535,16 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
       }
     }
 
-    // If clause became binary, make sure to clean up the relevant implication
+    // If clauses became binary, make sure to clean up the relevant implication
     // lists. This should be fast in all cases since it is incremental.
     //
-    // Tricky: This might fix more variables in some corner case, so we need to
+    // Tricky: This might fix more variables in some corner cases, so we need to
     // loop to reach the "fixed point" and maintain the invariant that no clause
-    // contain fixed variable.
+    // contain fixed variables.
     if (!implication_graph_->RemoveDuplicatesAndFixedVariables()) return false;
   }
 
-  // Invariant. There should be no clause with fixed or redundant variables
+  // Invariant. There should be no clauses with fixed or redundant variables
   // left.
   if (DEBUG_MODE) {
     const auto& assignment = trail_->Assignment();
@@ -569,7 +569,7 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
 // TODO(user): Use better work limits, see SAT09.CRAFTED.ramseycube.Q3inK12
 //
 // TODO(user): Be more incremental, each time a clause is added/reduced track
-// which literal are impacted? Also try to do orthogonal reductions from one
+// which literals are impacted? Also try to do orthogonal reductions from one
 // round to the next.
 bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
   WallTimer wall_timer;
@@ -592,7 +592,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
   clause_manager_->DeleteRemovedClauses();
   clause_manager_->DetachAllClauses();
 
-  // Process clause by increasing sizes.
+  // Process clauses by increasing sizes.
   // TODO(user): probably faster without the size indirection.
   std::vector<SatClause*> clauses_copy =
       clause_manager_->AllClausesInCreationOrder();
@@ -630,15 +630,16 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
       break;
     }
 
-    // Check for subsumption, note that this currently ignore all clauses in the
-    // binary implication graphs. Stamping is doing some of that (and some also
-    // happen during probing), but we could consider only direct implications
-    // here and be a bit more exhaustive than what stamping do with them (at
-    // least for node with many incoming and outgoing implications).
+    // Check for subsumption, note that this currently ignores all clauses in
+    // the binary implication graphs. Stamping is doing some of that (and some
+    // also happen during probing), but we could consider only direct
+    // implications here and be a bit more exhaustive than what stamping does
+    // with them (at least for nodes with many incoming and outgoing
+    // implications).
     //
-    // TODO(user): Do some reduction using binary clauses. Note that only clause
-    // that never propagated since last round need to be checked for binary
-    // subsumption.
+    // TODO(user): Do some reduction using binary clauses. Note that only
+    // clauses that never propagated since last round need to be checked for
+    // binary subsumption.
 
     // Compute hash and mark literals.
     uint64_t signature = 0;
@@ -648,7 +649,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
       signature |= (uint64_t{1} << (l.Variable().value() % 64));
     }
 
-    // Look for clause that subsumes this one. Note that because we inspect
+    // Look for clauses that subsume this one. Note that because we inspect
     // all one watcher lists for the literals of this clause, if a clause is
     // included inside this one, it must appear in one of these lists.
     bool removed = false;
@@ -691,7 +692,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
     }
     if (removed) continue;
 
-    // For strengthenning we also need to check the negative watcher lists.
+    // For strengthening we also need to check the negative watcher lists.
     for (const Literal l : clause->AsSpan()) {
       num_inspected_signatures += one_watcher[l.NegatedIndex()].size();
       for (const int i : one_watcher[l.NegatedIndex()]) {
@@ -715,7 +716,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
     // Any literal here can be removed, but afterwards the others might not.
     // So we re-check each potential removal one by one.
     for (const auto [target_lit, resolvant_index] : candidates_for_removal) {
-      // Check if this is still a valid resolvant.
+      // Check if this is still a valid resolvent.
       const SatClause* resolvant = clauses[resolvant_index];
       if (resolvant->size() > clause->size()) continue;
       if (!marked[target_lit]) continue;
@@ -726,8 +727,8 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
       }
       if (skip) continue;
 
-      // We properly checked that target_lit appear in clause and negatively in
-      // resolvant (precondition). And also that all other literals of resolvant
+      // We properly checked that target_lit appears in clause and negatively in
+      // resolvent (precondition). And also that all other literals of resolvent
       // appear in clause. We can remove target_lit.
       new_clause.clear();
       for (const Literal l : clause->AsSpan()) {
@@ -737,10 +738,10 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
       marked.Clear(target_lit);
       CHECK_EQ(new_clause.size() + 1, clause->size());
 
-      // The resolvant is now subsumed by the strengthened clause.
+      // The resolvent is now subsumed by the strengthened clause.
       if (resolvant->size() == clause->size()) {
-        // The resolvant was already kept forever and is subsumed by this clause
-        // so it make sense to just keep it instead.
+        // The resolvent was already kept forever and is subsumed by this clause
+        // so it makes sense to just keep it instead.
         clause_manager_->KeepClauseForever(clause);
         delayed_to_subsume.insert(resolvant_index);
       }
@@ -773,14 +774,14 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
     // smallest list.
     //
     // TODO(user): No need to add this clause if we know it cannot subsume
-    // any new clause since last round. i.e. unchanged clause that do not
-    // contains any literals of newly added clause do not need to be added
-    // here. We can track two bitset in LiteralWatchers via a register
+    // any new clause since last round. i.e. unchanged clauses that do not
+    // contain any literals of newly added clauses do not need to be added
+    // here. We can track two bitsets in LiteralWatchers via a register
     // mechanism:
-    // - literal of newly watched clauses since last clear.
-    // - literal of reduced clauses since last clear.
+    // - literals of newly watched clauses since last clear.
+    // - literals of reduced clauses since last clear.
     //
-    // Important: we can only use this clause to subsume/strenghten others if
+    // Important: we can only use this clause to subsume/strengthen others if
     // it cannot be deleted later.
     if (!clause_manager_->IsRemovable(clause)) {
       int min_size = kint32max;
@@ -792,7 +793,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
         }
       }
 
-      // TODO(user): We could/should sort the literal in this clause by
+      // TODO(user): We could/should sort the literals in this clause by
       // using literals that appear in a small number of clauses first so that
       // we maximize the chance of early abort in the critical loops above.
       //
@@ -803,11 +804,11 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
     }
   }
 
-  // Remove all element in "delayed_to_subsume". Note that even if the order is
+  // Remove all elements in "delayed_to_subsume". Note that even if the order is
   // non-deterministic, this should not matter, as we just remove clauses.
   //
   // TODO(user): maybe we could have done that as we discovered them, but
-  // then the one_watcher might contain empty clause, and we have to deal with
+  // then the one_watcher might contain empty clauses, and we have to deal with
   // that.
   for (const int index : delayed_to_subsume) {
     SatClause* clause = clauses[index];
@@ -853,7 +854,7 @@ bool StampingSimplifier::DoOneRound(bool log_info) {
   if (implication_graph_->IsEmpty()) return true;
 
   if (!stamps_are_already_computed_) {
-    // We need a DAG so that we don't have cycle while we sample the tree.
+    // We need a DAG so that we don't have cycles while we sample the tree.
     // TODO(user): We could probably deal with it if needed so that we don't
     // need to do equivalence detection each time we want to run this.
     implication_graph_->RemoveFixedVariables();
@@ -864,7 +865,7 @@ bool StampingSimplifier::DoOneRound(bool log_info) {
   stamps_are_already_computed_ = false;
   if (!ProcessClauses()) return false;
 
-  // Note that num_removed_literals_ do not count the literals of the subsumed
+  // Note that num_removed_literals_ does not count the literals of the subsumed
   // clauses.
   time_limit_->AdvanceDeterministicTime(dtime_);
   LOG_IF(INFO, log_info) << "Stamping. num_removed_literals: "
@@ -899,7 +900,7 @@ bool StampingSimplifier::ComputeStampsForNextRound(bool log_info) {
 
 void StampingSimplifier::SampleTreeAndFillParent() {
   const int size = implication_graph_->literal_size();
-  CHECK(implication_graph_->IsDag());  // so we don't have cycle.
+  CHECK(implication_graph_->IsDag());  // so we don't have cycles.
   parents_.resize(size);
   for (LiteralIndex i(0); i < size; ++i) {
     parents_[i] = i;  // default.
@@ -1051,7 +1052,7 @@ class LratStampingHelper {
       absl::FunctionRef<void(Literal, Literal, bool)> append_chain) {
     if (!has_literals_to_remove_) return;
     // The proof for removing a literal 'a' can depend on another removed
-    // literal 'b'. In this case the proof that 'b' can be removed must appear
+    // literal 'b'. In this case, the proof that 'b' can be removed must appear
     // before the one for 'a'. To ensure this we process them in topological
     // order.
     for (const Status& status : status_) {
@@ -1117,7 +1118,7 @@ class LratStampingHelper {
 bool StampingSimplifier::ProcessClauses() {
   struct Entry {
     int i;            // Index in the clause.
-    bool is_negated;  // Correspond to clause[i] or clause[i].Negated();
+    bool is_negated;  // Corresponds to clause[i] or clause[i].Negated();
     int start;        // Note that all start stamps are different.
     int end;
     bool operator<(const Entry& o) const { return start < o.start; }
@@ -1134,7 +1135,7 @@ bool StampingSimplifier::ProcessClauses() {
     const auto span = clause->AsSpan();
     if (span.empty()) continue;
 
-    // Note that we might fix literal as we perform the loop here, so we do
+    // Note that we might fix literals as we perform the loop here, so we do
     // need to deal with them.
     //
     // For a and b in the clause, if not(a) => b is present, then the clause is
@@ -1213,8 +1214,8 @@ bool StampingSimplifier::ProcessClauses() {
           if (top_entry.is_negated) {
             num_subsumed_clauses_++;
 
-            // TODO(user): For structural purpose, we should make sure the
-            // binary clause that subsume this is added to the binary graph...
+            // TODO(user): For structural purposes, we should make sure the
+            // binary clause that subsumes this is added to the binary graph...
             clause_manager_->LazyDelete(
                 clause, DeletionSourceForStat::SUBSUMPTION_INPROCESSING);
             break;
@@ -1231,9 +1232,9 @@ bool StampingSimplifier::ProcessClauses() {
             // a => b, we can remove a.
             //
             // TODO(user): Note that it is okay to still use top_entry, but we
-            // might miss the removal of b if b => c. Also the paper do things
+            // might miss the removal of b if b => c. Also the paper does things
             // differently. Make sure we don't miss any simplification
-            // opportunites by not changing top_entry. Same in the other
+            // opportunities by not changing top_entry. Same in the other
             // branches.
             to_remove.push_back(top_entry.i);
             if (lrat_proof_handler_ != nullptr) {
@@ -1319,8 +1320,8 @@ void BlockedClauseSimplifier::DoOneRound(bool log_info) {
     in_queue_[l] = false;
     queue_.pop_front();
 
-    // Avoid doing too much work here on large problem.
-    // Note that we still what to empty the queue.
+    // Avoid doing too much work here on large problems.
+    // Note that we still want to empty the queue.
     if (num_inspected_literals_ <= 1e9) ProcessLiteral(l);
   }
 
@@ -1340,14 +1341,14 @@ void BlockedClauseSimplifier::InitializeForNewRound() {
   clause_manager_->DeleteRemovedClauses();
   clause_manager_->DetachAllClauses();
   for (SatClause* c : clause_manager_->AllClausesInCreationOrder()) {
-    // We ignore redundant clause. This shouldn't cause any validity issue.
+    // We ignore redundant clauses. This shouldn't cause any validity issue.
     if (clause_manager_->IsRemovable(c)) continue;
 
     clauses_.push_back(c);
   }
   const int num_literals = clause_manager_->literal_size();
 
-  // TODO(user): process in order of increasing number of clause that contains
+  // TODO(user): process in order of increasing number of clauses that contain
   // not(l)?
   in_queue_.assign(num_literals, true);
   for (LiteralIndex l(0); l < num_literals; ++l) {
@@ -1358,7 +1359,7 @@ void BlockedClauseSimplifier::InitializeForNewRound() {
   DCHECK(
       std::all_of(marked_.begin(), marked_.end(), [](bool b) { return !b; }));
 
-  // TODO(user): because we don't create new clause here we can use a flat
+  // TODO(user): because we don't create new clauses here we can use a flat
   // vector for literal_to_clauses_.
   literal_to_clauses_.clear();
   literal_to_clauses_.resize(num_literals);
@@ -1374,18 +1375,18 @@ void BlockedClauseSimplifier::ProcessLiteral(Literal current_literal) {
   if (assignment_.LiteralIsAssigned(current_literal)) return;
   if (implication_graph_->IsRemoved(current_literal)) return;
 
-  // We want to check first that this clause will resolve to trivial clause with
-  // all binary containing not(current_literal). So mark all literal l so that
-  // current_literal => l.
+  // We want to check first that this clause will resolve to trivial clauses
+  // with all binaries containing not(current_literal). So mark all literals l
+  // so that current_literal => l.
   //
   // TODO(user): We do not need to redo that each time we reprocess
   // current_literal.
   //
   // TODO(user): Ignore redundant literals. That might require pushing
   // equivalence to the postsolve stack though. Better to simply remove
-  // these equivalence if we are allowed to and update the postsolve then.
+  // these equivalences if we are allowed to and update the postsolve then.
   //
-  // TODO(user): Make this work in the presence of at most ones.
+  // TODO(user): Make this work in the presence of at-most-ones.
   int num_binary = 0;
   const std::vector<Literal>& implications =
       implication_graph_->DirectImplications(current_literal);
@@ -1402,8 +1403,8 @@ void BlockedClauseSimplifier::ProcessLiteral(Literal current_literal) {
   for (const ClauseIndex i : literal_to_clauses_[current_literal]) {
     if (clauses_[i]->IsRemoved()) continue;
 
-    // Blocked with respect to binary clause only? all marked binary should have
-    // their negation in clause.
+    // Blocked with respect to binary clauses only? All marked binaries should
+    // have their negation in clause.
     //
     // TODO(user): Abort if size left is too small.
     if (num_binary > 0) {
@@ -1427,9 +1428,9 @@ void BlockedClauseSimplifier::ProcessLiteral(Literal current_literal) {
   }
 
   // TODO(user): There is a possible optimization: If we mark all literals of
-  // all the clause to process, we can check that each clause containing
-  // current_literal.Negated() contains at least one of these literal negated
-  // other than current_literal. Otherwise none of the clause are blocked.
+  // all the clauses to process, we can check that each clause containing
+  // current_literal.Negated() contains at least one of these literals negated
+  // other than current_literal. Otherwise none of the clauses are blocked.
   //
   // TODO(user): If a clause cannot be blocked because of another clause, then
   // when we call ProcessLiteral(current_literal.Negated()) we can skip some
@@ -1460,7 +1461,7 @@ void BlockedClauseSimplifier::ProcessLiteral(Literal current_literal) {
   }
 }
 
-// Note that this assume that the binary clauses have already been checked.
+// Note that this assumes that the binary clauses have already been checked.
 bool BlockedClauseSimplifier::ClauseIsBlocked(
     Literal current_literal, absl::Span<const Literal> clause) {
   bool is_blocked = true;
@@ -1518,7 +1519,7 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
   clause_manager_->DeleteRemovedClauses();
   clause_manager_->DetachAllClauses();
   for (SatClause* c : clause_manager_->AllClausesInCreationOrder()) {
-    // We ignore redundant clause. This shouldn't cause any validity issue.
+    // We ignore redundant clauses. This shouldn't cause any validity issue.
     // TODO(user): but we shouldn't keep clauses containing removed literals.
     // It is still valid to do so, but it should be less efficient.
     if (clause_manager_->IsRemovable(c)) {
@@ -1564,9 +1565,9 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
     queue_.Pop();
 
     // Make sure we fix variables first if needed. Note that because new binary
-    // clause might appear when we fix variables, we need a loop here.
+    // clauses might appear when we fix variables, we need a loop here.
     //
-    // TODO(user): we might also find new equivalent variable l => var => l
+    // TODO(user): we might also find new equivalent variables l => var => l
     // here, but for now we ignore those.
     bool is_unsat = false;
     if (!PropagateFixedVariables()) return false;
@@ -1589,8 +1590,8 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
   if (!PropagateFixedVariables()) return false;
   implication_graph_->CleanupAllRemovedAndFixedVariables();
 
-  // Remove all redundant clause containing a removed literal. This avoid to
-  // re-introduce a removed literal via conflict learning.
+  // Remove all redundant clauses containing a removed literal. This avoids
+  // re-introducing a removed literal via conflict learning.
   for (SatClause* c : clause_manager_->AllClausesInCreationOrder()) {
     bool remove = false;
     for (const Literal l : c->AsSpan()) {
@@ -1694,7 +1695,7 @@ int BoundedVariableElimination::NumClausesContaining(Literal l) {
          implication_graph_->DirectImplicationsEstimatedSize(l.Negated());
 }
 
-// TODO(user): Only enqueue variable that can be removed.
+// TODO(user): Only enqueue variables that can be removed.
 void BoundedVariableElimination::UpdatePriorityQueue(BooleanVariable var) {
   if (assignment_.VariableIsAssigned(var)) return;
   if (implication_graph_->IsRemoved(Literal(var, true))) return;
@@ -1786,8 +1787,9 @@ bool BoundedVariableElimination::ResolveAllClauseContaining(Literal lit) {
     DCHECK(marked_[lit]);
     num_inspected_literals_ += clause.size() + implications.size();
 
-    // If this is true, then "clause" is subsumed by one of its resolvant and we
-    // can just remove lit from it. Then it doesn't need to be acounted at all.
+    // If this is true, then "clause" is subsumed by one of its resolvents and
+    // we can just remove lit from it. Then it doesn't need to be accounted for
+    // at all.
     bool clause_can_be_simplified = false;
     ClausePtr simplification_proof = kNullClausePtr;
     const int64_t saved_score = new_score_;
@@ -1841,11 +1843,11 @@ bool BoundedVariableElimination::ResolveAllClauseContaining(Literal lit) {
           continue;
         }
 
-        // If this is the case, the other clause is subsumed by the resolvant.
+        // If this is the case, the other clause is subsumed by the resolvent.
         // We can just remove not_lit from it and ignore it.
         if (score_only && clause.size() + extra_size <= other.size()) {
           // TODO(user): We should have an exact equality here, except if
-          // presolve is off before the clause are added to the sat solver and
+          // presolve is off before the clauses are added to the sat solver and
           // we have duplicate literals. The code should still work but it
           // wasn't written with that in mind nor tested like this, so we should
           // just enforce the invariant.
@@ -1924,16 +1926,16 @@ bool BoundedVariableElimination::ResolveAllClauseContaining(Literal lit) {
 
     if (score_only && new_score_ > score_threshold_) return true;
 
-    // When this happen, then the clause is blocked (i.e. all its resolvant are
-    // trivial). So even if we do not actually perform the variable elimination,
-    // we can still remove this clause. Note that we treat the score as if the
-    // clause was removed before.
+    // When this happens, then the clause is blocked (i.e. all its resolvents
+    // are trivial). So even if we do not actually perform the variable
+    // elimination, we can still remove this clause. Note that we treat the
+    // score as if the clause was removed before.
     //
-    // Tricky: The detection only work if we didn't abort the computation above,
-    // so we do that after the score_threshold_ check.
+    // Tricky: The detection only works if we didn't abort the computation
+    // above, so we do that after the score_threshold_ check.
     //
-    // TODO(user): Also detect blocked clause for not(lit)? It is not as cheap
-    // though and require more code.
+    // TODO(user): Also detect blocked clauses for not(lit)? It is not as cheap
+    // though and requires more code.
     if (score_only && !with_binary_only && !clause_can_be_simplified &&
         new_score_ == saved_score) {
       ++num_blocked_clauses_;
@@ -1979,15 +1981,15 @@ bool BoundedVariableElimination::CrossProduct(BooleanVariable var) {
     }
 
     // Heuristic. Abort if the work required to decide if var should be removed
-    // seems to big.
+    // seems too big.
     if (s1 > 1 && s2 > 1 && s1 * s2 > parameters_.presolve_bve_threshold()) {
       return true;
     }
   }
 
   // TODO(user): swap lit and not_lit for speed? it is unclear if we prefer
-  // to minimize the number of clause containing lit or not_lit though. Also,
-  // we might want to alternate since we also detect blocked clause containing
+  // to minimize the number of clauses containing lit or not_lit though. Also,
+  // we might want to alternate since we also detect blocked clauses containing
   // lit, but don't do it for not_lit.
 
   // Compute the current score.
@@ -2015,8 +2017,8 @@ bool BoundedVariableElimination::CrossProduct(BooleanVariable var) {
   // TODO(user): Experiment with leaving the implications graph as is. This will
   // not remove the variable completely, but it seems interesting since after
   // equivalent variable removal and failed literal probing, the cross product
-  // of the implication always add a quadratic number of implication, except if
-  // the in (or out) degree is zero or one.
+  // of the implications always adds a quadratic number of implications, except
+  // if the in (or out) degree is zero or one.
   score_threshold_ = score;
   new_score_ = implication_graph_->NumImplicationOnVariableRemoval(var) *
                (clause_weight + 2);
@@ -2035,7 +2037,7 @@ bool BoundedVariableElimination::CrossProduct(BooleanVariable var) {
   // Perform BVE.
   //
   // TODO(user): If filter_sat_postsolve_clauses is true, only one of the two
-  // sets need to be kept for postsolve.
+  // sets needs to be kept for postsolve.
   if (new_score_ > 0) {
     if (!ResolveAllClauseContaining</*score_only=*/false,
                                     /*with_binary_only=*/false>(lit)) {

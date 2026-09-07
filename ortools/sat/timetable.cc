@@ -111,7 +111,7 @@ ReservoirTimeTabling::ReservoirTimeTabling(
   // We know the maximum size of the profile (+2 for sentinels).
   profile_.ClearAndReserve(num_events + 2);
 
-  // We know the maximum sizes of our reason.
+  // We know the maximum size of our reason.
   literal_reason_.ClearAndReserve(num_events);
   integer_reason_.ClearAndReserve(2 * num_events);
 }
@@ -157,23 +157,23 @@ bool ReservoirTimeTabling::Propagate() {
 // TODO(user): If we have precedences between events, we should be able to do
 // more.
 bool ReservoirTimeTabling::BuildProfile() {
-  // Cache vector access and avoid cheking bounds.
+  // Cache vector access and avoid checking bounds.
   const Literal* presences = presences_.data();
   const AffineExpression* deltas = deltas_.data();
   const AffineExpression* times = times_.data();
 
-  // Starts by copying the "events" in the profile and sort them by time.
+  // Starts by copying the "events" to the profile and sorting them by time.
   profile_.clear();
   const int num_events = times_.size();
   profile_.push_back({kMinIntegerValue, IntegerValue(0)});  // Sentinel.
   for (int e = 0; e < num_events; e++) {
     const IntegerValue min_d = integer_trail_.LowerBound(deltas[e]);
     if (min_d > 0) {
-      // Only consider present event for positive delta.
+      // Only consider present events for positive deltas.
       if (!assignment_.LiteralIsTrue(presences[e])) continue;
       profile_.push_back({integer_trail_.UpperBound(times[e]), min_d});
     } else if (min_d < 0) {
-      // Only consider non-absent event for negative delta.
+      // Only consider non-absent events for negative deltas.
       if (assignment_.LiteralIsFalse(presences[e])) continue;
       profile_.push_back({integer_trail_.LowerBound(times[e]), min_d});
     }
@@ -233,7 +233,7 @@ void AddGreaterOrEqual(const AffineExpression& expr, IntegerValue bound,
 // remove from the reason the absence of a negative event provided that the
 // level zero min of the event is greater than t anyway.
 //
-// TODO(user): Make sure the code work with fixed time since pushing always
+// TODO(user): Make sure the code works with fixed times since pushing an always
 // true/false literal to the reason is not completely supported.
 //
 // TODO(user): Try to convert this to a lazy reason, we can spend a large amount
@@ -250,7 +250,7 @@ void ReservoirTimeTabling::FillReasonForProfileAtGivenTime(
   // - it is present, positive delta, and with time <= t.
   // - it may be present, negative delta, and with time <= t.
   // We need to explain each contribution, but also why we can safely ignore
-  // events that are not part of the profile! we have a few options here:
+  // events that are not part of the profile! We have a few options here:
   // - the event is not present (just explain absence).
   // - the event is after t (just use time > t).
   // - if considered, the lower bound would increase (just use delta >= 0).
@@ -315,7 +315,7 @@ bool ReservoirTimeTabling::TryToDecreaseMax(int event) {
   if (start == end) return true;
 
   // Find the profile rectangle that overlaps the start of the given event.
-  // The sentinel prevents out of bound exceptions.
+  // The sentinel prevents out of bounds exceptions.
   DCHECK(std::is_sorted(profile_.begin(), profile_.end()));
   int rec_id =
       std::upper_bound(profile_.begin(), profile_.end(), start,
@@ -352,7 +352,7 @@ bool ReservoirTimeTabling::TryToDecreaseMax(int event) {
   // First, the task MUST be present, otherwise we have a conflict.
   //
   // TODO(user): We actually need to look after 'end' to potentially push the
-  // presence in more situation.
+  // presence in more situations.
   if (!assignment_.LiteralIsTrue(presences_[event])) {
     if (!enforcement_helper_.EnqueueLiteral(enforcement_id_, presences_[event],
                                             literal_reason_, integer_reason_)) {
@@ -377,9 +377,9 @@ bool ReservoirTimeTabling::TryToIncreaseMin(int event) {
   if (start == end) return true;
 
   // Find the profile rectangle containing the end of the given event.
-  // The sentinel prevents out of bound exceptions.
+  // The sentinel prevents out of bounds exceptions.
   //
-  // TODO(user): If the task is no present, we should actually look at the
+  // TODO(user): If the task is not present, we should actually look at the
   // maximum profile after end to maybe push its absence.
   DCHECK(std::is_sorted(profile_.begin(), profile_.end()));
   int rec_id =
@@ -442,8 +442,8 @@ TimeTablingPerTask::TimeTablingPerTask(AffineExpression capacity,
       helper_(helper),
       demands_(demands),
       integer_trail_(model->GetOrCreate<IntegerTrail>()) {
-  // Each task may create at most two profile rectangles. Such pattern appear if
-  // the profile is shaped like the Hanoi tower. The additional space is for
+  // Each task may create at most two profile rectangles. Such patterns appear
+  // if the profile is shaped like the Hanoi tower. The additional space is for
   // both extremities and the sentinels.
   profile_.reserve(2 * num_tasks_ + 4);
 
@@ -457,7 +457,7 @@ TimeTablingPerTask::TimeTablingPerTask(AffineExpression capacity,
     profile_tasks_[t] = t;
 
     if (capa_is_fixed && demands_->DemandMin(t) >= capa_min) {
-      // TODO(user): This usually correspond to a makespan interval.
+      // TODO(user): This usually corresponds to a makespan interval.
       // We should just detect and propagate it separately as it would result
       // in a faster propagation.
       has_demand_equal_to_capacity_ = true;
@@ -476,7 +476,7 @@ void TimeTablingPerTask::RegisterWith(GenericLiteralWatcher* watcher) {
   }
   watcher->RegisterReversibleInt(id, &num_profile_tasks_);
 
-  // Changing the times or pushing task absence migth have side effects on the
+  // Changing the times or pushing task absence might have side effects on the
   // other intervals, so we would need to be called again in this case.
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
@@ -537,7 +537,7 @@ bool TimeTablingPerTask::BuildProfile() {
 
   // Any profile height <= relevant_height is not really relevant since nothing
   // can be pushed. So we artificially put zero or one (if there is a makespan
-  // interval) in the profile instead. This allow to have a lot less
+  // interval) in the profile instead. This allows having a lot fewer
   // "rectangles" in a profile for exactly the same propagation!
   const IntegerValue relevant_height =
       integer_trail_->UpperBound(capacity_) - initial_max_demand_;
@@ -548,7 +548,7 @@ bool TimeTablingPerTask::BuildProfile() {
   const auto& by_end_min = helper_->TaskByIncreasingEndMin();
 
   // Next start/end of the compulsory parts to be processed. Note that only the
-  // task for which IsInProfile() is true must be considered.
+  // tasks for which IsInProfile() is true must be considered.
   int next_start = num_tasks_ - 1;
   int next_end = 0;
   const int num_tasks = num_tasks_;
@@ -618,7 +618,7 @@ bool TimeTablingPerTask::SweepAllTasks() {
   int profile_index = 1;
   const IntegerValue capa_max = CapacityMax();
   for (const auto& [t, time] : helper_->TaskByIncreasingStartMin()) {
-    // TODO(user): On some problem, a big chunk of the time is spend just
+    // TODO(user): On some problems, a big chunk of the time is spent just
     // checking these conditions below because it requires indirect memory
     // access to fetch the demand/size/presence/start ...
     if (helper_->IsAbsent(t)) continue;
@@ -646,7 +646,7 @@ bool TimeTablingPerTask::SweepTask(int task_id, IntegerValue initial_start_min,
   const IntegerValue initial_end_min = helper_->EndMin(task_id);
 
   // Find the profile rectangle that overlaps the minimum start time of task_id.
-  // The sentinel prevents out of bound exceptions.
+  // The sentinel prevents out of bounds exceptions.
   DCHECK(std::is_sorted(profile_.begin(), profile_.end()));
   while (profile_[*profile_index].start <= initial_start_min) {
     ++*profile_index;
@@ -664,7 +664,7 @@ bool TimeTablingPerTask::SweepTask(int task_id, IntegerValue initial_start_min,
   // propagate again in order to reach the timetabling consistency or to fail if
   // the profile exceeds the resource capacity.
   //
-  // For optimization purpose we have a separate code if the task is in the
+  // For optimization purposes we have a separate code if the task is in the
   // profile or not.
   IntegerValue new_start_min = initial_start_min;
   if (IsInProfile(task_id)) {
@@ -766,7 +766,7 @@ bool TimeTablingPerTask::UpdateStartingTime(int task_id, IntegerValue left,
 }
 
 // TODO(user): there is more room for improvements in the reason.
-// Note that compared to the "easiest" reason (mode == 2) this doesn't seems
+// Note that compared to the "easiest" reason (mode == 2) this doesn't seem
 // to help much. Still the more relaxed the reason, the better it should be.
 void TimeTablingPerTask::AddProfileReason(int task_id, IntegerValue left,
                                           IntegerValue right,
@@ -783,8 +783,8 @@ void TimeTablingPerTask::AddProfileReason(int task_id, IntegerValue left,
     mode = 0;
   } else if (right - left < helper_->SizeMin(task_id) + 2) {
     // In this case, only the profile in [left, left + 1) and [right - 1, right)
-    // is enough to push the task. We don't care about what happen in the middle
-    // since the task will not fit.
+    // is enough to push the task. We don't care about what happens in the
+    // middle since the task will not fit.
     mode = 1;
   } else {
     mode = 2;
@@ -814,7 +814,7 @@ void TimeTablingPerTask::AddProfileReason(int task_id, IntegerValue left,
       //
       // TODO(user): Improve what task we "exclude" instead of always taking
       // the last ones? Note however that profile_tasks_ should be in order in
-      // which task have a mandatory part.
+      // which tasks have a mandatory part.
       sum_of_demand += demands_->DemandMin(t);
       if (sum_of_demand > capacity_threshold) break;
     } else if (mode == 1) {

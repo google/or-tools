@@ -59,7 +59,7 @@ TEST(GetRinsRensNeighborhoodTest, GetRENSNeighborhood) {
   EXPECT_EQ(empty_rins_neighborhood.reduced_domain_vars.size(), 0);
   EXPECT_EQ(empty_rins_neighborhood.fixed_vars.size(), 0);
 
-  // Add a lp solution.
+  // Add an LP solution.
   lp_solutions.NewLPSolution({3.5, 5.0});
   lp_solutions.Synchronize();
 
@@ -103,7 +103,7 @@ TEST(GetRinsRensNeighborhoodTest, GetRENSNeighborhoodIncomplete) {
   EXPECT_EQ(empty_rins_neighborhood.reduced_domain_vars.size(), 0);
   EXPECT_EQ(empty_rins_neighborhood.fixed_vars.size(), 0);
 
-  // Add a incomplete solution.
+  // Add an incomplete solution.
   incomplete_solutions.AddSolution({4.0, 5.0});
 
   const ReducedDomainNeighborhood rins_neighborhood = GetRinsRensNeighborhood(
@@ -148,7 +148,7 @@ TEST(GetRinsRensNeighborhoodTest, GetRinsRensNeighborhoodLP) {
   EXPECT_EQ(empty_rins_neighborhood.reduced_domain_vars.size(), 0);
   EXPECT_EQ(empty_rins_neighborhood.fixed_vars.size(), 0);
 
-  // Add a lp solution.
+  // Add an LP solution.
   lp_solutions.NewLPSolution({3.5, 5});
   lp_solutions.Synchronize();
 

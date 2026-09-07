@@ -34,22 +34,22 @@
 namespace operations_research {
 namespace sat {
 
-// An helper class to process many sets of integer in [0, n] and detects all the
-// set included in each others. This is a common operations in presolve, and
+// A helper class to process many sets of integers in [0, n] and detect all the
+// sets included in each other. This is a common operation in presolve, and
 // while it can be slow the algorithm used here is pretty efficient in practice.
 //
 // The algorithm is based on the SAT preprocessing algorithm to detect clauses
-// that subsumes others. It uses a one-watcher scheme where each subset
-// candidate has only one element watched. To identify all potential subset of a
-// superset, one need to inspect the watch list for all element of the superset
-// candidate.
+// that subsume others. It uses a one-watcher scheme where each subset
+// candidate has only one element watched. To identify all potential subsets of
+// a superset, one needs to inspect the watch list for all elements of the
+// superset candidate.
 //
-// The number n will be detected automatically but we allocate various vector
+// The number n will be detected automatically but we allocate various vectors
 // of size n, so avoid having large integer values in your sets.
 //
 // All set contents will be accessed via storage_[index].
 // This can be used with a vector<vector<>> or our CompactVectorVector that we
-// use in a few place. But it can also be anything that support:
+// use in a few places. But it can also be anything that supports:
 // - storage_.size()
 // - range iteration over storage_[index]
 // - storage_[index].size()
@@ -70,7 +70,7 @@ class InclusionDetector {
   // The argument is an index that will only be used via storage_[index] to get
   // the content of the candidate set.
   //
-  // Note that set with no element are just ignored and will never be returned
+  // Note that sets with no elements are just ignored and will never be returned
   // as part of an inclusion.
   void AddPotentialSubset(int index);
   void AddPotentialSuperset(int index);
@@ -84,19 +84,19 @@ class InclusionDetector {
   // inclusions, each requiring O(n) work to check.
   void SetWorkLimit(uint64_t work_limit) { work_limit_ = work_limit; }
 
-  // Finds all subset included in a superset and call "process" on each of the
-  // detected inclusion. The std::function argument corresponds to indices
+  // Finds all subsets included in a superset and calls "process" on each of the
+  // detected inclusions. The std::function argument corresponds to indices
   // passed to the Add*() calls.
   //
-  // The order of detection will be by increasing superset size. For superset
+  // The order of detection will be by increasing superset size. For supersets
   // with the same size, the order will be deterministic but not specified. And
   // similarly, for a given superset, the order of the included subsets is
   // deterministic but not specified.
   //
   // Note that only the candidate marked as such can be a subset/superset.
-  // For the candidate than can be both and are duplicates (i.e. same set), only
-  // one pair will be returned. We will also never return identity inclusion and
-  // we always have subset != superset.
+  // For the candidates that can be both and are duplicates (i.e. same set),
+  // only one pair will be returned. We will also never return identity
+  // inclusion and we always have subset != superset.
   void DetectInclusions(
       const std::function<void(int subset, int superset)>& process);
 
@@ -112,7 +112,7 @@ class InclusionDetector {
     is_in_superset_.resize(0);
   }
 
-  // The algorithm here can detect many small set included in a big set while
+  // The algorithm here can detect many small sets included in a big set while
   // only scanning the superset once. So if we do scan the superset in the
   // process function, we can do a lot more work. This is here to reuse the
   // deterministic limit mechanism.
@@ -125,7 +125,7 @@ class InclusionDetector {
   bool Stopped() const { return stop_; }
 
  private:
-  // Allows to access the elements of each candidates via storage_[index];
+  // Allows accessing the elements of each candidate via storage_[index];
   const Storage& storage_;
 
   TimeLimit* time_limit_;
@@ -164,7 +164,7 @@ class InclusionDetector {
 };
 
 // Similar API and purpose to InclusionDetector. But this one is a bit simpler
-// and faster if it fit your usage. This assume an initial given set of
+// and faster if it fits your usage. This assumes an initial given set of
 // potential subsets, that will be queried against supersets one by one.
 template <class Storage>
 class SubsetsDetector {
@@ -185,22 +185,22 @@ class SubsetsDetector {
   bool Stopped() const { return stop_; }
 
   // Different API than InclusionDetector.
-  // 1/ Add all potential subset to the storage_.
+  // 1/ Add all potential subsets to the storage_.
   // 2/ Call IndexAllStorageAsSubsets()
-  // 3/ Call one or more time FindSubsets().
+  // 3/ Call one or more times FindSubsets().
   //    - process() can call StopProcessingCurrentSuperset() to abort early
   //    - process() can call StopProcessingCurrentSubset() to never consider
   //      that subset again.
   // 4/ Call Stop() to reclaim some memory.
   //
   // Optimization: next_index_to_try is an index in superset that can be used
-  // to skip some position for which we already called FindSubsets().
+  // to skip some positions for which we already called FindSubsets().
   void IndexAllStorageAsSubsets();
   void FindSubsets(absl::Span<const int> superset, int* next_index_to_try,
                    const std::function<void(int subset)>& process);
 
  private:
-  // Allows to access the elements of each subsets via storage_[index];
+  // Allows accessing the elements of each subset via storage_[index];
   const Storage& storage_;
 
   TimeLimit* time_limit_;
@@ -515,7 +515,7 @@ inline void SubsetsDetector<Storage>::FindSubsets(
       ++work_done_;
 
       // Do a bunch of quick checks. The second one is optimized for size 2
-      // which happens a lot in our usage of merging clique with implications.
+      // which happens a lot in our usage of merging cliques with implications.
       const auto [subset_index, other_e, subset_signature] = cached_span[i];
       if ((subset_signature & ~superset_signature) != 0) continue;
       if (!is_in_superset_view[other_e]) continue;
@@ -526,8 +526,8 @@ inline void SubsetsDetector<Storage>::FindSubsets(
 
       // TODO(user): Technically we do not need to check the watched position or
       // the "other element" position, we could do that by permuting them first
-      // or last and iterating on a subspan. However, in many slow situation, we
-      // have millions of size 2 sets, and the time is dominated by the first
+      // or last and iterating on a subspan. However, in many slow situations,
+      // we have millions of size 2 sets, and the time is dominated by the first
       // check.
       bool is_included = true;
       work_done_ += subset.size();

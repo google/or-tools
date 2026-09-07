@@ -99,7 +99,7 @@ void LinearConstraintSymmetrizer::AddSymmetryOrbit(
 // folded LP with the same objective. So the folded LP will give us a tight and
 // valid objective lower bound but with a lot less variables! This is an
 // adaptation of "LP folding" to use in a MIP context. Introducing the orbit sum
-// allow to propagates and add cuts as these sum are still integer for us.
+// allows propagating and adding cuts as these sums are still integers for us.
 //
 // The only issue is regarding scaling of the constraints. Basically each
 // orbit sum variable will appear with a factor 1/orbit_size in the original
@@ -197,7 +197,7 @@ bool LinearConstraintSymmetrizer::FoldLinearConstraint(LinearConstraint* ct,
 
   // TODO(user): In some cases, this constraint will propagate/fix directly
   // the orbit sum variables, we might want to propagate this in the cp world?
-  // This migth also remove bad scaling.
+  // This might also remove bad scaling.
   return true;
 }
 
@@ -329,7 +329,7 @@ LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
   }
   CHECK(std::is_sorted(ct.VarsAsSpan().begin(), ct.VarsAsSpan().end()));
 
-  // If an identical constraint exists, only updates its bound.
+  // If an identical constraint exists, only update its bounds.
   const size_t key = ComputeHashOfTerms(ct);
   if (equiv_constraints_.contains(key)) {
     const ConstraintIndex ct_index = equiv_constraints_[key];
@@ -392,7 +392,7 @@ bool LinearConstraintManager::UpdateConstraintUb(glop::RowIndex index_in_lp,
 void LinearConstraintManager::ComputeObjectiveParallelism(
     const ConstraintIndex ct_index) {
   CHECK(objective_is_defined_);
-  // lazy computation of objective norm.
+  // Lazy computation of objective norm.
   if (!objective_norm_computed_) {
     objective_l2_norm_ = std::sqrt(sum_of_squared_objective_coeffs_);
     objective_norm_computed_ = true;
@@ -432,7 +432,7 @@ bool LinearConstraintManager::AddCut(LinearConstraint ct, std::string type_name,
       std::max(activity - ToDouble(ct.ub), ToDouble(ct.lb) - activity);
   const double l2_norm = ComputeL2Norm(ct);
 
-  // Only add cut with sufficient efficacy.
+  // Only add cuts with sufficient efficacy.
   if (violation / l2_norm < 1e-4) {
     VLOG(3) << "BAD Cut '" << type_name << "'"
             << " size=" << ct.num_terms
@@ -442,9 +442,9 @@ bool LinearConstraintManager::AddCut(LinearConstraint ct, std::string type_name,
     return false;
   }
 
-  // TODO(user): We could prevent overflow by dividing more. Note that mainly
-  // happen with super large variable domain since we usually restrict the size
-  // of the generated coefficients in our cuts. So it shouldn't be that
+  // TODO(user): We could prevent overflow by dividing more. Note that this
+  // mainly happens with super large variable domains since we usually restrict
+  // the size of the generated coefficients in our cuts. So it shouldn't be that
   // important.
   if (PossibleOverflow(integer_trail_, ct)) return false;
 
@@ -455,7 +455,7 @@ bool LinearConstraintManager::AddCut(LinearConstraint ct, std::string type_name,
   // existing one.
   if (!added) return false;
 
-  // TODO(user): Use better heuristic here for detecting good cuts and mark
+  // TODO(user): Use a better heuristic here for detecting good cuts and mark
   // them undeletable.
   constraint_infos_[ct_index].is_deletable = true;
 
@@ -483,7 +483,7 @@ void LinearConstraintManager::PermanentlyRemoveSomeConstraints() {
   std::sort(deletable_constraint_counts.begin(),
             deletable_constraint_counts.end());
 
-  // We will delete the oldest (in the order they where added) cleanup target
+  // We will delete the oldest (in the order they were added) cleanup target
   // constraints with a count lower or equal to this.
   double active_count_threshold = std::numeric_limits<double>::infinity();
   if (sat_parameters_.cut_cleanup_target() <
@@ -559,7 +559,7 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
     const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
     const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
 
-    // For now we do not change ct, but just compute its new_size if we where
+    // For now we do not change ct, but just compute its new_size if we were
     // to remove a fixed term.
     if (lb == ub) continue;
     ++new_size;
@@ -617,14 +617,14 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
   // the form:
   // ... + |coeff| * X  >= threshold_ub
   // ... + |coeff| * X' >= threshold_lb
-  // In both case if coeff is big, we can reduce it and update the rhs
+  // In both cases if coeff is big, we can reduce it and update the rhs
   // accordingly.
   const IntegerValue threshold_ub = max_sum - ct->ub;
   const IntegerValue threshold_lb = ct->lb - min_sum;
   const IntegerValue threshold = std::max(threshold_lb, threshold_ub);
   CHECK_GT(threshold, 0);  // Since we aborted for trivial constraint.
 
-  // TODO(user): In some case, we could split the constraint to reduce one of
+  // TODO(user): In some cases, we could split the constraint to reduce one of
   // them further. But not sure that is a good thing.
   if (threshold_ub > 0 && threshold_lb > 0 && threshold_lb != threshold_ub) {
     if (max_magnitude > std::min(threshold_lb, threshold_ub)) {
@@ -632,7 +632,7 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
     }
   }
 
-  // TODO(user): For constraint with both bound, we could reduce further for
+  // TODO(user): For constraints with both bounds, we could reduce further for
   // coefficient between threshold - min_magnitude and min(t_lb, t_ub).
   const IntegerValue second_threshold = std::max(
       {CeilRatio(threshold, IntegerValue(2)), threshold - min_magnitude,
@@ -717,7 +717,7 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
       integer_trail_.num_level_zero_enqueues() > last_simplification_timestamp_;
   last_simplification_timestamp_ = integer_trail_.num_level_zero_enqueues();
 
-  // We keep any constraints that is already present, and otherwise, we add the
+  // We keep any constraints that are already present, and otherwise, we add the
   // ones that are currently not satisfied by at least "tolerance" to the set
   // of potential new constraints.
   bool rescale_active_count = false;
@@ -753,7 +753,7 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
 
     if (constraint_infos_[i].is_in_lp) continue;
 
-    // ComputeActivity() often represent the bulk of the time spent in
+    // ComputeActivity() often represents the bulk of the time spent in
     // ChangeLP().
     dtime_ +=
         1.7e-9 * static_cast<double>(constraint_infos_[i].constraint.num_terms);
@@ -825,7 +825,7 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
     current_lp_is_changed_ = true;
   }
 
-  // Note that the algo below is in O(limit * new_constraint). In order to
+  // Note that the algo below is in O(limit * new_constraints). In order to
   // limit spending too much time on this, we first sort all the constraints
   // with an imprecise score (no orthogonality), then limit the size of the
   // vector of constraints to precisely score, then we do the actual scoring.
@@ -833,7 +833,7 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
   // On problem crossword_opt_grid-19.05_dict-80_sat with linearization_level=2,
   // new_constraint.size() > 1.5M.
   //
-  // TODO(user): This blowup factor could be adaptative w.r.t. the constraint
+  // TODO(user): This blowup factor could be adaptive w.r.t. the constraint
   // limit.
   const int kBlowupFactor = 4;
   const int current_size = static_cast<int>(new_constraints_by_score.size());
@@ -960,7 +960,7 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
       // Add the best constraint in the LP.
       constraint_infos_[best_candidate].is_in_lp = true;
       // Note that it is important for LP incremental solving that the old
-      // constraints stays at the same position in this list (and thus in the
+      // constraints stay at the same position in this list (and thus in the
       // returned GetLp()).
       ++num_added;
       current_lp_is_changed_ = true;
@@ -976,7 +976,7 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
     *num_new_constraints = num_added;
   }
   if (num_added > 0) {
-    // We update the solution sate to match the new LP size.
+    // We update the solution state to match the new LP size.
     VLOG(3) << "Added " << num_added << " constraints.";
     solution_state->statuses.resize(solution_state->statuses.size() + num_added,
                                     glop::VariableStatus::BASIC);

@@ -25,23 +25,23 @@
 namespace operations_research {
 namespace sat {
 
-// Given the generator for a permutation group of [0, n-1], tries to identify
-// a grouping of the variables in an p x q matrix such that any permutations
+// Given the generators for a permutation group of [0, n-1], tries to identify
+// a grouping of the variables in a p x q matrix such that any permutation
 // of the columns of this matrix is in the given group.
 //
 // The name comes from: "Packing and Partitioning Orbitopes", Volker Kaibel,
 // Marc E. Pfetsch, https://arxiv.org/abs/math/0603678 . Here we just detect it,
 // independently of the constraints on the variables in this matrix. We can also
-// detect non-Boolean orbitope.
+// detect non-Boolean orbitopes.
 //
-// In order to detect orbitope, this basic algorithm requires that the
-// generators of the orbitope must only contain one or more 2-cyle (i.e
+// In order to detect orbitopes, this basic algorithm requires that the
+// generators of the orbitope must only contain one or more 2-cycles (i.e.
 // transpositions). Thus they must be involutions. The list of transpositions in
 // the SparsePermutation must also be listed in a canonical order.
 //
 // TODO(user): Detect more than one orbitope? Note that once detected, the
 // structure can be exploited efficiently, but for now, a more "generic"
-// algorithm based on stabilizator should achieve the same preprocessing power,
+// algorithm based on stabilizers should achieve the same preprocessing power,
 // so I don't know how hard we need to invest in orbitope detection.
 //
 // TODO(user): The heuristic is quite limited for now, but this works on
@@ -70,9 +70,9 @@ void GetSchreierVectorAndOrbit(
     int point, absl::Span<const std::unique_ptr<SparsePermutation>> generators,
     std::vector<int>* schrier_vector, std::vector<int>* orbit);
 
-// Given a schreier vector for a given base point and a point in the same orbit
-// of the base point, returns a list of index of the `generators` to apply to
-// get a permutation mapping the base point to get the given point.
+// Given a Schreier vector for a given base point and a point in the same orbit
+// as the base point, returns a list of indices of the `generators` to apply to
+// get a permutation mapping the base point to the given point.
 std::vector<int> TracePoint(
     int point, absl::Span<const int> schrier_vector,
     absl::Span<const std::unique_ptr<SparsePermutation>> generators);
@@ -86,7 +86,7 @@ void GetOrbitsAndRepresentatives(const CpModelProto& model_proto,
                                  std::vector<int>& var_to_orbit_index,
                                  std::vector<int>& var_to_representative);
 
-// Given the generators for a permutation group of [0, n-1], update it to
+// Given the generators for a permutation group of [0, n-1], update them to
 // a set of generators of the group stabilizing the given element.
 //
 // Note that one can add symmetry breaking constraints by repeatedly doing:

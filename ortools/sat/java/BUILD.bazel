@@ -73,5 +73,9 @@ or_java_wrap_cc(
     ],
     use_directors = True,
     visibility = ["//visibility:public"],
-    deps = ["//ortools/sat:swig_helper"],
+    deps = [
+        "//ortools/sat:cp_model_cc_proto",
+        "//ortools/sat:sat_parameters_cc_proto",
+        "//ortools/sat:swig_helper",
+    ],
 )

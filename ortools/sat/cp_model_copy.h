@@ -52,7 +52,7 @@ namespace sat {
 // This can only be done if the variable is fixed.
 constexpr int kNoVariableMapping = kint32min;
 
-// A simpler version of PresolveContext with just a few helper to query and
+// A simpler version of PresolveContext with just a few helpers to query and
 // manipulate variable domains during the copy and handle remapping.
 //
 // Only visible for testing.
@@ -63,7 +63,7 @@ class ModelCopyHelper {
   // IMPORTANT: Must be called before any other functions in this class.
   //
   // Takes list of num_input_vars domains of the "input" cp_model proto before
-  // the mapping. The mapping can be empty or must be of the same same and will
+  // the mapping. The mapping can be empty or must be of the same size and will
   // remap [0, num_input_vars) into a potential smaller [0, num_output_vars)
   // dense space.
   //
@@ -90,7 +90,7 @@ class ModelCopyHelper {
       const LinearArgumentProto& linear_argument) const;
 
   // All the *Mapped*() functions work in the mapped space, after the mapping
-  // has been applied. All the mutable function are in this category.
+  // has been applied. All the mutable functions are in this category.
   ABSL_MUST_USE_RESULT bool IntersectMappedDomainWith(int var,
                                                       const Domain& domain);
 
@@ -137,7 +137,7 @@ class ModelCopyHelper {
     }
   }
 
-  // This is used to udate the solution hint as we create new variables.
+  // This is used to update the solution hint as we create new variables.
   SolutionCrush* solution_crush() { return &solution_crush_; }
 
  private:
@@ -149,8 +149,8 @@ class ModelCopyHelper {
   mutable std::vector<bool> input_variable_is_fixed_;
   mutable std::vector<int64_t> input_variable_fixed_values_;
 
-  // Mapping from the input proto indexing to the new one. Fixed variable do not
-  // need to be mapped and can have a kNoVariableMapping entry. Note that
+  // Mapping from the input proto indexing to the new one. Fixed variables do
+  // not need to be mapped and can have a kNoVariableMapping entry. Note that
   // Boolean might be mapped to negative reference.
   std::vector<int> mapping_;
 
@@ -186,13 +186,13 @@ class ModelCopy {
   explicit ModelCopy(CpModelProto* out_proto, Model* model,
                      absl::Span<const int> variable_mapping = {});
 
-  // Setup new variables from the one in the given model.
+  // Setup new variables from the ones in the given model.
   // The imported variables must be the ones before variable mapping, if any.
   // This must be done first before any other call here. Note that the actual
   // IntegerVariableProto will only be written to the out_model in FinishCopy().
   //
   // Returns false iff the model was infeasible. This can happen if we map
-  // two incompatible variables to the same one, or if some domain were empty.
+  // two incompatible variables to the same one, or if some domains were empty.
   ABSL_MUST_USE_RESULT bool ImportVariables(const CpModelProto& in_model);
 
   // Same as ImportVariables() but from a vector of Domain instead.
@@ -200,7 +200,7 @@ class ModelCopy {
       absl::Span<const Domain> domains);
 
   // This must be done before we import the constraints. The hint will be
-  // adapted if we ever create new variable as we canonicalize constraints.
+  // adapted if we ever create new variables as we canonicalize constraints.
   // Note that the hint will only be written in FinishCopy().
   void ImportSolutionHint(const CpModelProto& in_model);
 
@@ -208,7 +208,7 @@ class ModelCopy {
   //
   // During the process, it will read variable domains from the context, and
   // simplify constraints to minimize the size of the copied model.
-  // Thus it is important that the context->working_model already have the
+  // Thus it is important that the context->working_model already has the
   // variables part copied. The hint must also be imported first so that it can
   // be updated during the simplification.
   //
@@ -217,16 +217,17 @@ class ModelCopy {
   // It does not clear the constraints part of the working model of the context.
   //
   // Note(user): If first_copy is true, we will reorder the scheduling
-  // constraint so that they only use reference to previously defined intervals.
-  // This allow to be more efficient later in a few preprocessing steps.
+  // constraints so that they only use references to previously defined
+  // intervals. This allows being more efficient later in a few preprocessing
+  // steps.
   ABSL_MUST_USE_RESULT bool ImportAndSimplifyConstraints(
       const CpModelProto& in_model, bool first_copy = false,
       const std::function<bool(int)>& active_constraints = nullptr);
 
-  // Imports and write the objective.
+  // Imports and writes the objective.
   ABSL_MUST_USE_RESULT bool ImportObjective(const CpModelProto& in_model);
 
-  // Copies the non constraint, non variables part of the model. `copy_symmetry`
+  // Copies the non-constraint, non-variable part of the model. `copy_symmetry`
   // is only supported if there is no variable mapping.
   ABSL_MUST_USE_RESULT bool ImportEverythingExceptVariablesConstraintsAndHint(
       const CpModelProto& in_model, bool copy_symmetry = true);
@@ -244,7 +245,7 @@ class ModelCopy {
   }
 
  private:
-  // Write a summary of what happen to the logger_.
+  // Write a summary of what happens to the logger_.
   void DisplaySummary();
 
   // Overwrites the out_model to be unsat. Returns false.
@@ -309,7 +310,7 @@ class ModelCopy {
   bool CopyReservoir(const ConstraintProto& ct);
 
   // If we "copy" an interval for a first time, we make sure to create the
-  // linear constraint between the start, size and end. This allow to simplify
+  // linear constraint between the start, size and end. This allows simplifying
   // the input proto and client side code. If there are more than one
   // enforcement literals, we replace them with a new one, made equal to their
   // conjunction with two new constraints.
@@ -317,8 +318,8 @@ class ModelCopy {
   bool AddLinearConstraintForInterval(const ConstraintProto& ct);
   int GetOrCreateVariableForConjunction(std::vector<int>* literals);
 
-  // These function remove unperformed intervals. Note that they requires
-  // interval to appear before (validated) as they test unperformed by testing
+  // These functions remove unperformed intervals. Note that they require
+  // intervals to appear before (validated) as they test unperformed by testing
   // if interval_mapping_ is empty.
   void CopyAndMapNoOverlap(const ConstraintProto& ct);
   void CopyAndMapNoOverlap2D(const ConstraintProto& ct);
@@ -364,7 +365,7 @@ class ModelCopy {
   template <typename T>
   void MapTerm(int& ref, T& coeff, T& offset) const;
 
-  // Helper to convert old proto format (single var) int new
+  // Helper to convert old proto format (single var) into new
   // LinearExpressionProto format.
   void ConvertSingleVarFormatToExpr(int var, LinearExpressionProto* expr);
 
@@ -429,24 +430,24 @@ class ModelCopy {
 
 // Copy in_proto to out_proto.
 // It performs on the fly simplification, and returns false if the
-// model is proved infeasible. If reads the parameters 'ignore_names' and keeps
+// model is proved infeasible. It reads the parameters 'ignore_names' and keeps
 // or deletes variables and constraints names accordingly.
 //
 // This should only be called on the first copy of the user given model.
-// Note that this reorder all constraints that use intervals last. We loose the
+// Note that this reorders all constraints that use intervals last. We lose the
 // user-defined order, but hopefully that should not matter too much.
 bool CopyModel(const CpModelProto& in_proto, CpModelProto* out_proto,
                Model* model);
 
 // Same as CopyModel() except that variable domains are read from domains and
-// constraint might be filtered.
+// constraints might be filtered.
 bool CopyModelAdvanced(const CpModelProto& in_proto,
                        absl::Span<const Domain> domains,
                        std::function<bool(int)> active_constraints,
                        std::vector<int>* interval_mapping,
                        CpModelProto* out_proto, Model* model);
 
-// Accessing Domain can be expensive, so we maintain vector of bool for the
+// Accessing Domain can be expensive, so we maintain a vector of bool for the
 // hot spots.
 class VariableDomains {
  public:
@@ -506,7 +507,7 @@ class DenseModelCopy {
   int64_t MapInnerObjectiveValue(int64_t input_inner_objective_value) const;
 
  private:
-  // Return false if one of the domain becomes empty (UNSAT). This might happen
+  // Return false if one of the domains becomes empty (UNSAT). This might happen
   // while we are cleaning up all workers at the end of a search.
   bool UpdateFromSharedBounds(int64_t& timestamp);
 

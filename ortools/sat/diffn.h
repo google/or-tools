@@ -92,11 +92,11 @@ void AddNonOverlappingRectangles(
     const std::vector<IntervalVariable>& x,
     const std::vector<IntervalVariable>& y, Model* model);
 
-// Non overlapping rectangles. This includes box with zero-areas.
+// Non overlapping rectangles. This includes boxes with zero-areas.
 // The following is forbidden:
-//   - a point box inside a box with a non zero area
-//   - a line box overlapping a box with a non zero area
-//   - one vertical line box crossing an horizontal line box.
+//   - a point box inside a box with a non-zero area
+//   - a line box overlapping a box with a non-zero area
+//   - one vertical line box crossing a horizontal line box.
 class NonOverlappingRectanglesDisjunctivePropagator
     : public PropagatorInterface {
  public:
@@ -125,8 +125,8 @@ class NonOverlappingRectanglesDisjunctivePropagator
   std::vector<int> order_;
   CompactVectorVector<int> events_overlapping_boxes_;
 
-  // List of box that are fully fixed in the current dive, and for which we
-  // know they are no conflict between them.
+  // List of boxes that are fully fixed in the current dive, and for which we
+  // know there are no conflicts between them.
   bool rev_is_in_dive_ = false;
   Bitset64<int> already_checked_fixed_boxes_;
   int last_helper_inprocessing_count_ = -1;

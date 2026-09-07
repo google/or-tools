@@ -52,8 +52,8 @@ namespace {
 // only SubSolvers for which TaskIsAvailable() is true are considered. Return -1
 // if no SubSolver can generate a new task.
 //
-// For now we use a really basic logic that tries to equilibrate the walltime or
-// deterministic time spent in each subsolver.
+// For now we use a really basic logic that tries to equilibrate the wall time
+// or deterministic time spent in each subsolver.
 int NextSubsolverToSchedule(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
                             bool deterministic = true) {
   int best = -1;
@@ -136,12 +136,12 @@ void DeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
     SynchronizeAll(subsolvers);
     ClearSubsolversThatAreDone(num_in_flight_per_subsolvers, subsolvers);
 
-    // We abort the loop after the last synchronize to properly reports final
+    // We abort the loop after the last synchronize to properly report final
     // status in case max_num_batches is used.
     if (max_num_batches > 0 && batch_index >= max_num_batches) break;
 
-    // We first generate all task to run in this batch.
-    // Note that we can't start the task right away since if a task finish
+    // We first generate all tasks to run in this batch.
+    // Note that we can't start the tasks right away since if a task finishes
     // before we schedule everything, we will not be deterministic.
     to_run.clear();
     indices.clear();
@@ -203,7 +203,7 @@ void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
 
   ThreadPool pool(num_threads);
 
-  // The lambda below are using little space, but there is no reason
+  // The lambdas below are using little space, but there is no reason
   // to create millions of them, so we use the blocking nature of
   // pool.Schedule() when the queue capacity is set.
   int64_t task_id = 0;
@@ -216,10 +216,10 @@ void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
           absl::Condition(&num_in_flight_lt_num_threads),
           absl::Milliseconds(100));
 
-      // To support some "advanced" cancelation of subsolve, we still call
+      // To support some "advanced" cancellation of subsolvers, we still call
       // synchronize every 0.1 seconds even if there is no worker available.
       //
-      // TODO(user): We could also directly register callback to set stopping
+      // TODO(user): We could also directly register a callback to set stopping
       // Boolean to false in a few places.
       if (!condition) {
         mutex.unlock();
@@ -228,7 +228,7 @@ void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
       }
 
       // The stopping condition is that we do not have anything else to generate
-      // once all the task are done and synchronized.
+      // once all the tasks are done and synchronized.
       if (num_in_flight == 0) all_done = true;
       mutex.unlock();
     }
@@ -236,7 +236,7 @@ void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
     SynchronizeAll(subsolvers);
     int best = -1;
     {
-      // We need to do that while holding the lock since substask below might
+      // We need to do that while holding the lock since subtasks below might
       // be currently updating the time via AddTaskDuration().
       const absl::MutexLock mutex_lock(mutex);
       ClearSubsolversThatAreDone(num_in_flight_per_subsolvers, subsolvers);
@@ -259,8 +259,8 @@ void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
     if (best == -1 || time_limit->LimitReached()) {
       if (all_done) break;
 
-      // It is hard to know when new info will allows for more task to be
-      // scheduled, so for now we just sleep for a bit. Note that in practice We
+      // It is hard to know when new info will allow for more tasks to be
+      // scheduled, so for now we just sleep for a bit. Note that in practice we
       // will never reach here except at the end of the search because we can
       // always schedule LNS threads.
       absl::SleepFor(absl::Milliseconds(1));

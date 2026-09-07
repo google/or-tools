@@ -40,15 +40,15 @@ struct ObjectiveDefinition {
   IntegerVariable objective_var = kNoIntegerVariable;
 
   // The objective linear expression that should be equal to objective_var.
-  // If not all proto variable have an IntegerVariable view, then some vars
+  // If not all proto variables have an IntegerVariable view, then some vars
   // will be set to kNoIntegerVariable. In practice, when this is used, we make
   // sure there is a view though.
   std::vector<IntegerVariable> vars;
   std::vector<IntegerValue> coeffs;
 
-  // List of variable that when set to their lower bound should help getting a
+  // List of variables that when set to their lower bound should help get a
   // better objective. This is used by some search heuristic to preferably
-  // assign any of the variable here to their lower bound first.
+  // assign any of the variables here to their lower bound first.
   absl::flat_hash_set<IntegerVariable> objective_impacting_variables;
 
   double ScaleIntegerObjective(IntegerValue value) const {
@@ -66,7 +66,7 @@ struct ObjectiveDefinition {
 class CpModelMapping {
  public:
   // Returns true if the given CpModelProto variable reference refers to a
-  // Boolean variable. Such variable will always have an associated Literal(),
+  // Boolean variable. Such a variable will always have an associated Literal(),
   // but not always an associated Integer().
   bool IsBoolean(int ref) const {
     DCHECK_LT(PositiveRef(ref), booleans_.size());
@@ -91,7 +91,7 @@ class CpModelMapping {
 
   // TODO(user): We could "easily" create an intermediate variable for more
   // complex linear expression. We could also identify duplicate expressions to
-  // not create two identical integer variable.
+  // not create two identical integer variables.
   AffineExpression Affine(const LinearExpressionProto& exp) const {
     CHECK_LE(exp.vars().size(), 1);
     if (exp.vars().empty()) {
@@ -141,7 +141,7 @@ class CpModelMapping {
   }
 
   // Depending on the option, we will load constraints in stages. This is used
-  // to detect constraints that are already loaded. For instance the interval
+  // to detect constraints that are already loaded. For instance, the interval
   // constraints and the linear constraint of size 1 (encodings) are usually
   // loaded first.
   bool ConstraintIsAlreadyLoaded(const ConstraintProto* ct) const {
@@ -154,7 +154,7 @@ class CpModelMapping {
     return encoding_ct_.contains(ct);
   }
 
-  // Note that both these functions returns positive reference or -1.
+  // Note that both these functions return positive reference or -1.
   int GetProtoVariableFromBooleanVariable(BooleanVariable var) const {
     if (var.value() >= reverse_boolean_map_.size()) return -1;
     return reverse_boolean_map_[var];
@@ -227,7 +227,7 @@ class CpModelMapping {
     return result;
   }
 
-  // This one do not count [0, 1] integers.
+  // This one does not count [0, 1] integers.
   int NumNonBooleanIntegers() const { return num_non_boolean_integers_; }
 
   // Returns the number of variables in the loaded proto.
@@ -242,14 +242,14 @@ class CpModelMapping {
   friend void ExtractEncoding(const CpModelProto& model_proto, Model* m);
 
   // Note that only the variables used by at least one constraint will be
-  // created, the other will have a kNo[Integer,Interval,Boolean]VariableValue.
+  // created, the others will have a kNo[Integer,Interval,Boolean]VariableValue.
   std::vector<IntegerVariable> integers_;
   std::vector<IntervalVariable> intervals_;
   std::vector<BooleanVariable> booleans_;
 
-  // Recover from a IntervalVariable/BooleanVariable its associated CpModelProto
-  // index. The value of -1 is used to indicate that there is no correspondence
-  // (i.e. this variable is only used internally).
+  // Recover from an IntervalVariable/BooleanVariable its associated
+  // CpModelProto index. The value of -1 is used to indicate that there is no
+  // correspondence (i.e. this variable is only used internally).
   util_intops::StrongVector<BooleanVariable, int> reverse_boolean_map_;
   util_intops::StrongVector<PositiveOnlyIndex, int> reverse_integer_map_;
 

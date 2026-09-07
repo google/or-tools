@@ -58,15 +58,15 @@
 namespace operations_research {
 namespace sat {
 
-// Simple class to combine linear expression efficiently. First in a sparse
-// way that switch to dense when the number of non-zeros grows.
+// Simple class to combine linear expressions efficiently. First in a sparse
+// way that switches to dense when the number of non-zeros grows.
 class ScatteredIntegerVector {
  public:
   // This must be called with the correct size before any other functions are
   // used.
   void ClearAndResize(int size);
 
-  // Does vector[col] += value and return false in case of overflow.
+  // Does vector[col] += value and returns false in case of overflow.
   bool Add(glop::ColIndex col, IntegerValue value);
 
   // Similar to Add() but for multiplier * terms.
@@ -80,7 +80,7 @@ class ScatteredIntegerVector {
                                    IntegerValue max_coeff_magnitude);
 
   // This is not const only because non_zeros is sorted. Note that sorting the
-  // non-zeros make the result deterministic whether or not we were in sparse
+  // non-zeros makes the result deterministic whether or not we were in sparse
   // mode.
   //
   // TODO(user): Ideally we should convert to IntegerVariable as late as
@@ -143,7 +143,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   typedef glop::RowIndex ConstraintIndex;
 
   // Each linear programming constraint works on a fixed set of variables.
-  // We expect the set of variable to be sorted in increasing order.
+  // We expect the set of variables to be sorted in increasing order.
   LinearProgrammingConstraint(Model* model,
                               absl::Span<const IntegerVariable> vars);
 
@@ -211,7 +211,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   std::string DimensionString() const;
 
-  // Returns a IntegerLiteral guided by the underlying LP constraints.
+  // Returns an IntegerLiteral guided by the underlying LP constraints.
   //
   // This computes the mean of reduced costs over successive calls,
   // and tries to fix the variable which has the highest reduced cost.
@@ -261,8 +261,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
     return optimal_constraints_;
   }
 
-  // This api allows to temporarily disable the LP propagator which can be
-  // costly during probing or other heavy propagation phase.
+  // This api allows temporarily disabling the LP propagator which can be
+  // costly during probing or other heavy propagation phases.
   void EnablePropagation(bool enable) {
     enabled_ = enable;
     watcher_->CallOnNextPropagate(watcher_id_);
@@ -277,17 +277,17 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
  private:
   // Helper method to fill reduced cost / dual ray reason in 'integer_reason'.
-  // Generates a set of IntegerLiterals explaining why the best solution can not
+  // Generates a set of IntegerLiterals explaining why the best solution cannot
   // be improved using reduced costs. This is used to generate explanations for
   // both infeasibility and bounds deductions.
   void FillReducedCostReasonIn(const glop::DenseRow& reduced_costs,
                                std::vector<IntegerLiteral>* integer_reason);
 
   // Reinitialize the LP from a potentially new set of constraints.
-  // This fills all data structure and properly rescale the underlying LP.
+  // This fills all data structures and properly rescales the underlying LP.
   //
   // Returns false if the problem is UNSAT (it can happen when presolve is off
-  // and some LP constraint are trivially false).
+  // and some LP constraints are trivially false).
   bool CreateLpFromConstraintManager();
 
   // Solve the LP, returns false if something went wrong in the LP solver.
@@ -325,11 +325,11 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   void UpdateBoundsOfLpVariables();
 
   // Use the dual optimal lp values to compute an EXACT lower bound on the
-  // objective. Fills its reason and perform reduced cost strenghtening.
+  // objective. Fills its reason and performs reduced cost strengthening.
   // Returns false in case of conflict.
   bool PropagateExactLpReason();
 
-  // Same as FillDualRayReason() but perform the computation EXACTLY. Returns
+  // Same as FillDualRayReason() but performs the computation EXACTLY. Returns
   // false in the case that the problem is not provably infeasible with exact
   // computations, true otherwise.
   bool PropagateExactDualRay();
@@ -338,15 +338,15 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // propagation.
   bool PropagateLpConstraint(LinearConstraint ct);
 
-  // Returns number of non basic variables with zero reduced costs.
+  // Returns number of non-basic variables with zero reduced costs.
   int64_t CalculateDegeneracy();
 
   // From a set of row multipliers (at LP scale), scale them back to the CP
   // world and then make them integer (eventually multiplying them by a new
   // scaling factor returned in *scaling).
   //
-  // Note that this will loose some precision, but our subsequent computation
-  // will still be exact as it will work for any set of multiplier.
+  // Note that this will lose some precision, but our subsequent computation
+  // will still be exact as it will work for any set of multipliers.
   void IgnoreTrivialConstraintMultipliers(
       std::vector<std::pair<glop::RowIndex, double>>* lp_multipliers);
   void ScaleMultipliers(
@@ -354,7 +354,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
       bool take_objective_into_account, IntegerValue* scaling,
       std::vector<std::pair<glop::RowIndex, IntegerValue>>* output) const;
 
-  // Can we have an overflow if we scale each coefficients with
+  // Can we have an overflow if we scale each coefficient with
   // std::round(std::ldexp(coeff, power)) ?
   bool ScalingCanOverflow(
       int power, bool take_objective_into_account,
@@ -362,7 +362,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
       int64_t overflow_cap) const;
 
   // Computes from an integer linear combination of the integer rows of the LP a
-  // new constraint of the form "sum terms <= upper_bound". All computation are
+  // new constraint of the form "sum terms <= upper_bound". All computations are
   // exact here.
   //
   // Returns false if we encountered any integer overflow. If the template bool
@@ -376,7 +376,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Simple heuristic to try to minimize |upper_bound - ImpliedLB(terms)|. This
   // should make the new constraint tighter and correct a bit the imprecision
-  // introduced by rounding the floating points values.
+  // introduced by rounding the floating-point values.
   void AdjustNewLinearConstraint(
       std::vector<std::pair<glop::RowIndex, IntegerValue>>* integer_multipliers,
       ScatteredIntegerVector* scattered_vector,
@@ -390,7 +390,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
       IntegerValue upper_bound, LinearConstraint* result);
 
   // Compute the implied lower bound of the given linear expression using the
-  // current variable bound.
+  // current variable bounds.
   absl::int128 GetImpliedLowerBound(const LinearConstraint& terms) const;
 
   // Fills the deductions vector with reduced cost deductions that can be made
@@ -450,7 +450,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // of the LP.
   LinearConstraintManager constraint_manager_;
 
-  // We do not want to add too many cut during each generation round.
+  // We do not want to add too many cuts during each generation round.
   TopNCuts top_n_cuts_ = TopNCuts(10);
 
   // Initial problem in integer form.
@@ -566,9 +566,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   std::vector<IntegerLiteral> deductions_reason_;
 
   // Repository of IntegerSumLE128 that needs to be kept around for the lazy
-  // reasons. Those are new integer constraint that are created each time we
+  // reasons. Those are new integer constraints that are created each time we
   // solve the LP to a dual-feasible solution. Propagating these constraints
-  // both improve the objective lower bound but also perform reduced cost
+  // both improves the objective lower bound and performs reduced cost
   // fixing.
   int rev_optimal_constraints_size_ = 0;
   std::vector<std::unique_ptr<IntegerSumLE128>> optimal_constraints_;
@@ -590,12 +590,12 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   double lp_objective_lower_bound_;
 
   // If non-empty, this is the last known optimal lp solution at root-node. If
-  // the variable bounds changed, or cuts where added, it is possible that this
+  // the variable bounds changed, or cuts were added, it is possible that this
   // solution is no longer optimal though.
   std::vector<double> level_zero_lp_solution_;
 
   // True if the last time we solved the exact same LP at level zero, no cuts
-  // and no lazy constraints where added.
+  // and no lazy constraints were added.
   bool lp_at_level_zero_is_final_ = false;
   int num_force_lp_call_on_next_propagate_ = 0;
 
@@ -632,7 +632,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // test the incrementality and compare to other solvers.
   int64_t total_num_simplex_iterations_ = 0;
 
-  // As we form candidate form cuts, sometimes we can propagate level zero
+  // As we form candidate cuts, sometimes we can propagate level zero
   // bounds with them.
   FirstFewValues<10> reachable_;
   int64_t total_num_cut_propagations_ = 0;
@@ -652,7 +652,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // We might temporarily disable the LP propagation.
   bool enabled_ = true;
 
-  // We set that to true if all proto variable are in the LP relaxation and
+  // We set that to true if all proto variables are in the LP relaxation and
   // we are at a high enough relaxation level.
   bool integer_solution_are_likely_feasible_ = false;
   int num_infeasible_integer_lp_solutions_ = 0;
@@ -668,7 +668,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 // We need to give the hash_map a name so it can be used as a singleton in our
 // model.
 //
-// Important: only positive variable do appear here.
+// Important: only positive variables appear here.
 class LinearProgrammingDispatcher
     : public absl::flat_hash_map<IntegerVariable,
                                  LinearProgrammingConstraint*> {};

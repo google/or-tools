@@ -83,12 +83,12 @@ namespace {
 // that appear in all such sets.
 //
 // This represents "one step" of computing such bounds by adding the sets one at
-// the time. When we process a set 'new_lbs':
+// a time. When we process a set 'new_lbs':
 // - For the first set, then 'new_lbs' is globally valid.
 // - For a new set, we need to erase variables not appearing in new_lbs and
 //   take the min for the ones appearing in both.
 //
-// TODO(user): The operation is symmetric, so we could swap both hash_map if
+// TODO(user): The operation is symmetric, so we could swap both hash_maps if
 // new_lbs is smaller than current_lbs as a small optimization.
 void ComputeMinLowerBoundOfSharedVariables(
     const absl::flat_hash_map<IntegerVariable, IntegerValue>& new_lbs,
@@ -183,7 +183,7 @@ void MinOutgoingFlowHelper::PrecomputeDataForSubset(
     const int tail = tails_[i];
     const int head = heads_[i];
 
-    // we always ignore self-arcs here.
+    // We always ignore self-arcs here.
     if (tail == head) continue;
     const bool tail_in = in_subset_[tail];
     const bool head_in = in_subset_[head];
@@ -315,8 +315,8 @@ MinOutgoingFlowHelper::RelaxIntoSpecialBinPackingProblem(
       const int n = forward_pass ? subset[i] : subset[size - 1 - i];
 
       // The local_min/max contains the min/max of all nodes strictly before 'n'
-      // in the forward pass (resp. striclty after). So after two passes,
-      // min/max_..._of_others[n] will contains the min/max of all nodes
+      // in the forward pass (resp. strictly after). So after two passes,
+      // min/max_..._of_others[n] will contain the min/max of all nodes
       // different from n.
       min_lower_bound_of_others[n] =
           std::min(min_lower_bound_of_others[n], local_min);
@@ -364,9 +364,9 @@ MinOutgoingFlowHelper::RelaxIntoSpecialBinPackingProblem(
     }
 
     // Note that we don't explicitly deal with the corner case of a subset node
-    // with no arcs. This corresponds to INFEASIBLE problem and should be dealt
-    // with elsewhere. Being "less restrictive" will still result in a valid
-    // bound and that is enough here.
+    // with no arcs. This corresponds to an INFEASIBLE problem and should be
+    // dealt with elsewhere. Being "less restrictive" will still result in a
+    // valid bound and that is enough here.
     if ((use_incoming && !has_incoming_arcs_from_outside_[n]) ||
         (!use_incoming && !has_outgoing_arcs_to_outside_[n])) {
       obj.type = SpecialBinPackingHelper::MUST_BE_ITEM;
@@ -410,11 +410,11 @@ int SpecialBinPackingHelper::ComputeMinNumberOfBins(
     }
   }
 
-  // TODO(user): we can probably handle a couple of extra case rather than just
+  // TODO(user): we can probably handle a couple of extra cases rather than just
   // bailing out here and below.
   if (AtMinOrMaxInt64I(sum_of_demands)) return 0;
 
-  // If the gcd of all the demands term is positive, we can divide everything.
+  // If the gcd of all the demand terms is positive, we can divide everything.
   if (gcd > 1) {
     absl::StrAppend(&info, "_gcd");
     for (ItemOrBin& obj : objects) {
@@ -432,7 +432,7 @@ int SpecialBinPackingHelper::ComputeMinNumberOfBins(
   // Tricky: For the GreedyPackingWorks() to make sense, we use the fact that
   // ComputeMinNumberOfBinsInternal() moves the best bins first. In any case
   // the code will still be correct if it is not the case as we just use this
-  // as an heuristic to do less work.
+  // as a heuristic to do less work.
   if (result > 1 && all_demands_are_non_negative &&
       max_bounded_subset_sum_exact_.ComplexityEstimate(
           max_num_items, max_capacity) < dp_effort_ &&
@@ -483,7 +483,7 @@ int SpecialBinPackingHelper::ComputeMinNumberOfBinsInternal(
     std::vector<int>& objects_that_cannot_be_bin_and_reach_minimum) {
   objects_that_cannot_be_bin_and_reach_minimum.clear();
 
-  // For a given choice of bins (set B), a feasible problem must satisfy.
+  // For a given choice of bins (set B), a feasible problem must satisfy:
   //     sum_{i \notin B} demands_i <= sum_{i \in B} capacity_i.
   //
   // Using this we can compute a lower bound on the number of bins needed
@@ -492,7 +492,7 @@ int SpecialBinPackingHelper::ComputeMinNumberOfBinsInternal(
   //
   // This puts 'a' before 'b' if we get more unused capacity by using 'a' as a
   // bin and 'b' as an item rather than the other way around. If we call the
-  // other items demands D and capacities C, the two options are:
+  // other items' demands D and capacities C, the two options are:
   // - option1:   a.demand  + D <= b.capacity + C
   // - option2:   b.demand  + D <= a.capacity + C
   //
@@ -547,13 +547,13 @@ int SpecialBinPackingHelper::ComputeMinNumberOfBinsInternal(
   if (num_bins > 0 && num_bins != objects.size()) {
     const int worst_used_bin = num_bins - 1;
     if (objects[worst_used_bin].type == MUST_BE_BIN) {
-      // All first object must be bins, we don't have a choice if we want to
+      // All first objects must be bins, we don't have a choice if we want to
       // reach the lower bound. The others cannot be bins.
       for (int i = num_bins; i < objects.size(); ++i) {
         objects_that_cannot_be_bin_and_reach_minimum.push_back(i);
       }
     } else {
-      // We revert the worst_used_bin and tries to use the other instead.
+      // We revert the worst_used_bin and try to use the other instead.
       CHECK_EQ(objects[worst_used_bin].type, ITEM_OR_BIN);
       sum_of_demands += objects[worst_used_bin].demand;
       sum_of_capacity -= objects[worst_used_bin].capacity;
@@ -637,7 +637,7 @@ int MinOutgoingFlowHelper::ComputeMinOutgoingFlow(
         }
 
         if (!is_reachable) {
-          // This is the first arc that reach this node.
+          // This is the first arc that reaches this node.
           is_reachable = true;
           next_node_var_lower_bounds_[head] = tmp_lbs;
         } else {
@@ -695,7 +695,7 @@ int MinOutgoingFlowHelper::GetMinOutgoingFlow(int subset_size,
 
 namespace {
 struct Path {
-  uint32_t node_set;  // Bit i is set iif node subset[i] is in the path.
+  uint32_t node_set;  // Bit i is set iff node subset[i] is in the path.
   int last_node;      // The last node in the path.
 
   bool operator==(const Path& p) const {
@@ -733,7 +733,7 @@ int MinOutgoingFlowHelper::ComputeTightMinOutgoingFlow(
   for (int path_length = 1; path_length <= subset.size(); ++path_length) {
     for (const Path& path : paths) {
       // We remove it from the hash_map since this entry should no longer be
-      // used as we create path of increasing length.
+      // used as we create paths of increasing length.
       DCHECK(path_var_bounds.contains(path));
       const absl::flat_hash_map<IntegerVariable, IntegerValue> path_bounds =
           std::move(path_var_bounds.extract(path).mapped());
@@ -850,11 +850,11 @@ bool MinOutgoingFlowHelper::SubsetMightBeServedWithKRoutes(
   }
 
   struct State {
-    // Bit i is set iif node subset[i] is in one of the current routes.
+    // Bit i is set iff node subset[i] is in one of the current routes.
     uint32_t node_set;
 
     // The last nodes of each of the k routes. If the hamming weight is less
-    // that k, then at least one route is still empty.
+    // than k, then at least one route is still empty.
     uint32_t last_nodes_set;
 
     // Valid lower bounds for this state.
@@ -867,8 +867,8 @@ bool MinOutgoingFlowHelper::SubsetMightBeServedWithKRoutes(
     // relation controlled by an arc literal. See for instance
     // RouteRelationsHelper that also uses a similar definition.
     //
-    // Hopefully the DFS order limit the number of entry to O(n^2 * k), so still
-    // somewhat reasonable for small values.
+    // Hopefully the DFS order limits the number of entries to O(n^2 * k), so
+    // still somewhat reasonable for small values.
     absl::flat_hash_map<IntegerVariable, IntegerValue> lbs;
 
     // The sum of the reduced costs of all the literals selected to form the
@@ -896,7 +896,7 @@ bool MinOutgoingFlowHelper::SubsetMightBeServedWithKRoutes(
     }
   }
 
-  // This is also correlated to the work done, and we abort if we starts to
+  // This is also correlated to the work done, and we abort if we start to
   // do too much work on one instance.
   int64_t allocated_memory_estimate = 0;
 
@@ -904,7 +904,7 @@ bool MinOutgoingFlowHelper::SubsetMightBeServedWithKRoutes(
   std::vector<State> states;
   states.push_back(State());
 
-  // If a state has an unique arc to enter/leave it, we can update it further.
+  // If a state has a unique arc to enter/leave it, we can update it further.
   const auto update_using_unique_arc = [manager, this](UniqueArc unique_arc,
                                                        State& state) {
     if (!unique_arc.IsUnique()) return true;
@@ -958,7 +958,7 @@ bool MinOutgoingFlowHelper::SubsetMightBeServedWithKRoutes(
         if (from_state.node_set >> i) continue;
         if (!can_be_first_set[subset[i]]) continue;
 
-        // All "initial-state" start with empty hash-map that correspond to
+        // All "initial-state" start with an empty hash-map that corresponds to
         // the level zero bounds.
         State to_state;
         const uint32_t head_mask = (1 << i);
@@ -1028,10 +1028,11 @@ bool MinOutgoingFlowHelper::SubsetMightBeServedWithKRoutes(
         to_state.last_nodes_set ^= tail_mask;
         allocated_memory_estimate += to_state.lbs.size();
         if (to_state.node_set == final_mask) {
-          // One of the last node has no arc to outside, this is not possible.
+          // One of the last nodes has no arc to the outside, this is not
+          // possible.
           if (to_state.last_nodes_set & ~can_be_last_mask) continue;
 
-          // Add the constraints implied by each last node that has an unique
+          // Add the constraints implied by each last node that has a unique
           // way to leave the subset.
           bool infeasible = false;
           int last_mask = to_state.last_nodes_set;
@@ -1187,7 +1188,7 @@ class RouteRelationsBuilder {
                                    std::numeric_limits<IntegerValue>::max());
 
     for (int dim = 0; dim < num_dimensions_; ++dim) {
-      // We can never beat trivial bound relations, starts by filling them.
+      // We can never beat trivial bound relations, start by filling them.
       for (int i = 1; i < num_nodes_; ++i) {
         const AffineExpression& i_expr = node_expression(i, dim);
         const IntegerValue i_ub = integer_trail.LevelZeroUpperBound(i_expr);
@@ -1198,7 +1199,7 @@ class RouteRelationsBuilder {
         }
       }
 
-      // Starts by the known arc relations.
+      // Start with the known arc relations.
       const auto path = [this](int dim, int i, int j) -> IntegerValue& {
         return flat_shortest_path_lbs_[dim * num_nodes_ * num_nodes_ +
                                        i * num_nodes_ + j];
@@ -1212,7 +1213,7 @@ class RouteRelationsBuilder {
                      flat_arc_dim_relations_[arc * num_dimensions_ + dim].lhs);
       }
 
-      // We do floyd-warshall to complete them into shortest path.
+      // We do floyd-warshall to complete them into shortest paths.
       for (int k = 1; k < num_nodes_; ++k) {
         for (int i = 1; i < num_nodes_; ++i) {
           if (i == k) continue;
@@ -2044,21 +2045,21 @@ class RoutingCutHelper {
                     absl::Span<const int> subset,
                     LinearConstraintManager* manager);
 
-  // Returns a bound on the number of vehicle that is valid for this subset and
-  // all superset. This takes a current valid bound. It might do nothing
-  // depening on the parameters and just return the initial bound.
+  // Returns a bound on the number of vehicles that is valid for this subset and
+  // all supersets. This takes a current valid bound. It might do nothing
+  // depending on the parameters and just return the initial bound.
   int ShortestPathBound(int bound, absl::Span<const int> subset);
 
   // If we look at the symmetrized version (tail <-> head = tail->head +
   // head->tail) and we split all the edges between a subset of nodes S and the
   // outside into a set A and the other d(S)\A, and |A| is odd, we have a
   // constraint of the form:
-  //   "all edge of A at 1" => sum other edges >= 1.
-  // This is because a cycle or multiple-cycle must go in/out an even number
-  // of time. This enforced constraint simply linearize to:
+  //   "all edges of A at 1" => sum other edges >= 1.
+  // This is because a cycle or multiple cycles must go in/out an even number
+  // of times. This enforced constraint simply linearizes to:
   //    sum_d(S)\A x_e + sum_A (1 - x_e) >= 1.
   //
-  // Given a subset of nodes, it is easy to identify the best subset A of edge
+  // Given a subset of nodes, it is easy to identify the best subset A of edges
   // to consider.
   bool TryBlossomSubsetCut(std::string name,
                            absl::Span<const ArcWithLpValue> symmetrized_edges,
@@ -2070,7 +2071,7 @@ class RoutingCutHelper {
   void TryInfeasiblePathCuts(LinearConstraintManager* manager);
 
  private:
-  // If bool is true it is a "incoming" cut, otherwise "outgoing" one.
+  // If bool is true it is an "incoming" cut, otherwise an "outgoing" one.
   struct BestChoice {
     int node;
     bool incoming;
@@ -2080,7 +2081,7 @@ class RoutingCutHelper {
                           absl::Span<const int> cannot_be_last);
 
   // Removes the arcs with a literal fixed at false at level zero. This is
-  // especially useful to remove fixed self loop.
+  // especially useful to remove fixed self-loops.
   void FilterFalseArcsAtLevelZero();
 
   // Add a cut of the form Sum_{outgoing arcs from S} lp >= rhs_lower_bound.
@@ -2174,7 +2175,7 @@ void RoutingCutHelper::InitializeForNewLpSolution(
     LinearConstraintManager* manager) {
   FilterFalseArcsAtLevelZero();
 
-  // We will collect only the arcs with a positive lp_values to speed up some
+  // We will collect only the arcs with positive lp_values to speed up some
   // computation below.
   relevant_arcs_.clear();
   relevant_arc_indices_.clear();
@@ -2193,7 +2194,7 @@ void RoutingCutHelper::InitializeForNewLpSolution(
     // We treat self-edge separately.
     // Note also that we do not need to include them in relevant_arcs_.
     //
-    // TODO(user): If there are multiple self-arc, the code should still
+    // TODO(user): If there are multiple self-arcs, the code should still
     // work, but is not ideal.
     if (tails_[i] == heads_[i]) {
       const int node = tails_[i];
@@ -2248,11 +2249,11 @@ namespace {
 //
 // Looping over all arcs can take a significant portion of the running time,
 // it is why it is faster to do it only on arcs with non-zero lp values which
-// should be in linear number rather than the total number of arc which can be
+// should be in linear number rather than the total number of arcs which can be
 // quadratic.
 //
 // TODO(user): For the symmetric case there is an even faster algo. See if
-// it can be generalized to the asymmetric one if become needed.
+// it can be generalized to the asymmetric one if it becomes needed.
 // Reference is algo 6.4 of the "The Traveling Salesman Problem" book
 // mentioned above.
 std::pair<double, double> GetIncomingAndOutgoingLpFlow(
@@ -2421,7 +2422,7 @@ bool RoutingCutHelper::AddOutgoingCut(LinearConstraintManager* manager,
     }
   }
 
-  // This just makes sure we don't call this with a bound > 1 if there is
+  // This just makes sure we don't call this with a bound > 1 if there is an
   // optional node inside the subset.
   CHECK(rhs_lower_bound == 1 || num_optional_nodes_in == 0);
 
@@ -2490,9 +2491,9 @@ bool RoutingCutHelper::TrySubsetCut(int known_bound, std::string name,
   for (const int n : subset) {
     in_subset_[n] = true;
 
-    // We should aways generate subset without the depot for the route
+    // We should always generate a subset without the depot for the route
     // constraint. This is because we remove arcs from/to the depot in the
-    // tree based heuristics to generate all the subsets we try.
+    // tree-based heuristics to generate all the subsets we try.
     if (is_route_constraint_) CHECK_NE(n, 0);
   }
 
@@ -2514,7 +2515,7 @@ bool RoutingCutHelper::TrySubsetCut(int known_bound, std::string name,
   // Even if we are looking for a full circuit of the mandatory nodes, some
   // side-constraint might require to go in and out of a subset more than once.
   //
-  // TODO(user): deal with non-mandatory node in the route constraint?
+  // TODO(user): deal with non-mandatory nodes in the route constraint?
   if (!is_route_constraint_ || !all_subset_nodes_are_mandatory) {
     return AddOutgoingCut(manager, name, subset.size(), in_subset_,
                           /*rhs_lower_bound=*/1);
@@ -2616,7 +2617,7 @@ bool RoutingCutHelper::TryBlossomSubsetCut(
     for (const int n : subset) in_subset_[n] = false;
   });
 
-  // The heuristic assumes non-duplicates arcs, otherwise they are all bundled
+  // The heuristic assumes non-duplicate arcs, otherwise they are all bundled
   // together in the same symmetric edge, and the result is probably wrong.
   absl::flat_hash_set<std::pair<int, int>> special_edges;
   int num_inverted = 0;
@@ -2642,7 +2643,7 @@ bool RoutingCutHelper::TryBlossomSubsetCut(
     }
   }
 
-  // If the we don't have an odd number, we move the best edge from one set to
+  // If we don't have an odd number, we move the best edge from one set to
   // the other.
   if (num_inverted % 2 == 0) {
     if (best_swap == nullptr) return false;
@@ -2660,7 +2661,7 @@ bool RoutingCutHelper::TryBlossomSubsetCut(
   }
   if (sum + sum_inverted > 0.99) return false;
 
-  // For the route constraint, it is actually allowed to have circuit of size
+  // For the route constraint, it is actually allowed to have a circuit of size
   // 2, so the reasoning is wrong if one of the edges touches the depot.
   if (!is_route_constraint_) {
     for (const auto [tail, head] : special_edges) {
@@ -2668,8 +2669,8 @@ bool RoutingCutHelper::TryBlossomSubsetCut(
     }
   }
 
-  // If there is just one special edge, and all other node can be ignored, then
-  // the reasonning is wrong too since we can have a 2-cycle. In that case
+  // If there is just one special edge, and all other nodes can be ignored, then
+  // the reasoning is wrong too since we can have a 2-cycle. In that case
   // we enforce the constraint when an extra self-loop literal is at zero.
   int best_optional_index = -1;
   if (special_edges.size() == 1) {
@@ -2700,7 +2701,7 @@ bool RoutingCutHelper::TryBlossomSubsetCut(
   if (best_optional_index != -1) {
     absl::StrAppend(&name, "_opt");
 
-    // This is tricky: The normal cut assume x_e <= 1, but in case of a single
+    // This is tricky: The normal cut assumes x_e <= 1, but in case of a single
     // 2 cycle, x_e can be equal to 2. So we need a coeff of 2 to disable that
     // cut.
     CHECK(builder.AddLiteralTerm(self_arc_literal_[best_optional_index],
@@ -2813,7 +2814,7 @@ void RoutingCutHelper::GenerateCutsForInfeasiblePaths(
       // We only consider simple paths.
       if (path_nodes[next_state.last_node]) continue;
       // If a path of length l is infeasible, we can exclude it by adding a cut
-      // saying the sum of its arcs literals must be strictly less than l. But
+      // saying the sum of its arc literals must be strictly less than l. But
       // this is only beneficial if the sum of the corresponding LP values is
       // currently greater than l. If it is not, and since it cannot become
       // greater for some extension of the path (the LP sum increases at most by
@@ -2866,7 +2867,7 @@ void GenerateInterestingSubsets(int num_nodes,
                                 int stop_at_num_components,
                                 std::vector<int>* subset_data,
                                 std::vector<absl::Span<const int>>* subsets) {
-  // We will do a union-find by adding one by one the arc of the lp solution
+  // We will do a union-find by adding one by one the arcs of the lp solution
   // in the order above. Every intermediate set during this construction will
   // be a candidate for a cut.
   //
@@ -2916,7 +2917,7 @@ void GenerateInterestingSubsets(int num_nodes,
   // order the nodes so that for each node in a tree, the set of children forms
   // a consecutive span in the subset_data vector. This vector just lists the
   // nodes in the "pre-order" graph traversal order. The Spans will point inside
-  // the subset_data vector, it is why we initialize it once and for all.
+  // the subset_data vector, which is why we initialize it once and for all.
   ExtractAllSubsetsFromForest(parent, subset_data, subsets,
                               /*node_limit=*/num_nodes);
 }
@@ -2932,7 +2933,7 @@ void ExtractAllSubsetsFromForest(absl::Span<const int> parent,
   subset_data->resize(std::min(num_nodes, node_limit));
   subsets->clear();
 
-  // Starts by creating the corresponding graph and find the root.
+  // Start by creating the corresponding graph and finding the root.
   util::StaticGraph<>::Builder builder(num_nodes, num_nodes - 1);
   for (int i = 0; i < num_nodes; ++i) {
     if (parent[i] != i) {
@@ -3031,14 +3032,14 @@ void SymmetrizeArcs(std::vector<ArcWithLpValue>* arcs) {
   arcs->resize(new_size);
 }
 
-// Processes each subsets and add any violated cut.
+// Processes each subset and adds any violated cut.
 // Returns the number of added cuts.
 int TryAllSubsets(std::string cut_name, absl::Span<const int> subset_data,
                   std::vector<absl::Span<const int>> subsets,
                   RoutingCutHelper& helper, LinearConstraintManager* manager) {
   const int num_nodes = subset_data.size();
 
-  // This exploit the fact that all subsets point into subset_data of size
+  // This exploits the fact that all subsets point into subset_data of size
   // num_nodes. Moreover, if S1 is included in S2, we will always process S1
   // before S2.
   //
@@ -3058,7 +3059,7 @@ int TryAllSubsets(std::string cut_name, absl::Span<const int> subset_data,
     // it to have a starting lb for the number of vehicles.
     //
     // TODO(user): Currently if we add too many not so relevant cuts, our
-    // generic MIP cut heuritic are way too slow on TSP/VRP problems.
+    // generic MIP cut heuristics are way too slow on TSP/VRP problems.
     int lb_for_that_subset = 1;
     bool included_cut_was_added = false;
     const int start = static_cast<int>(subset.data() - subset_data.data());
@@ -3070,8 +3071,8 @@ int TryAllSubsets(std::string cut_name, absl::Span<const int> subset_data,
     }
 
     // If the subset is small enough and the parameters ask for it, compute
-    // a lower bound on the number of vehicle for that subset. This uses
-    // "shortest path bounds" and thus that bounds will also be valid for
+    // a lower bound on the number of vehicles for that subset. This uses
+    // "shortest path bounds" and thus those bounds will also be valid for
     // any superset !
     lb_for_that_subset = helper.ShortestPathBound(lb_for_that_subset, subset);
     shortest_path_lb[start] = lb_for_that_subset;
@@ -3108,7 +3109,7 @@ void SeparateSubtourInequalities(RoutingCutHelper& helper,
   // For a routing problem, we always try with all nodes but the root as this
   // gives a global lower bound on the number of vehicles. Note that usually
   // the arcs with non-zero lp values should connect everything, but that only
-  // happen after many cuts on large problems.
+  // happens after many cuts on large problems.
   if (helper.is_route_constraint()) {
     subsets.push_back(absl::MakeSpan(&subset_data[1], num_nodes - 1));
   }
@@ -3116,14 +3117,14 @@ void SeparateSubtourInequalities(RoutingCutHelper& helper,
   int num_added =
       TryAllSubsets("Circuit", subset_data, subsets, helper, manager);
 
-  // If there were no cut added by the heuristic above, we try exact separation.
+  // If there was no cut added by the heuristic above, we try exact separation.
   //
-  // With n-1 max_flow from a source to all destination, we can get the global
+  // With n-1 max_flow from a source to all destinations, we can get the global
   // min-cut. Here, we use a slightly more advanced algorithm that will find a
-  // min-cut for all possible pair of nodes. This is achieved by computing a
-  // Gomory-Hu tree, still with n-1 max flow call.
+  // min-cut for all possible pairs of nodes. This is achieved by computing a
+  // Gomory-Hu tree, still with n-1 max flow calls.
   //
-  // Note(user): Compared to any min-cut, these cut have some nice properties
+  // Note(user): Compared to any min-cut, these cuts have some nice properties
   // since they are "included" in each other. This might help with combining
   // them within our generic IP cuts framework.
   //
@@ -3136,7 +3137,7 @@ void SeparateSubtourInequalities(RoutingCutHelper& helper,
   std::vector<int> parent =
       ComputeGomoryHuTree(num_nodes, symmetrized_relevant_arcs);
 
-  // Try all interesting subset from the Gomory-Hu tree.
+  // Try all interesting subsets from the Gomory-Hu tree.
   ExtractAllSubsetsFromForest(parent, &subset_data, &subsets);
   num_added +=
       TryAllSubsets("CircuitExact", subset_data, subsets, helper, manager);
@@ -3254,7 +3255,7 @@ void SeparateFlowInequalities(
   std::vector<Arc> relevant_arcs;
 
   // Often capacities have a coeff > 1.
-  // We currently exploit this if all coeff have a gcd > 1.
+  // We currently exploit this if all coeffs have a gcd > 1.
   int64_t gcd = 0;
 
   // Sort the arcs by non-increasing lp_values.
@@ -3286,7 +3287,7 @@ void SeparateFlowInequalities(
                              /*stop_at_num_components=*/1, &subset_data,
                              &subsets);
 
-  // Process each subsets and add any violated cut.
+  // Process each subset and add any violated cut.
   std::vector<bool> in_subset(num_nodes, false);
   for (const absl::Span<const int> subset : subsets) {
     DCHECK(!subset.empty());
@@ -3308,7 +3309,8 @@ void SeparateFlowInequalities(
     //
     // This can take a significant portion of the running time, it is why it is
     // faster to do it only on arcs with non-zero lp values which should be in
-    // linear number rather than the total number of arc which can be quadratic.
+    // linear number rather than the total number of arcs which can be
+    // quadratic.
     double lp_outgoing_flow = 0.0;
     double lp_incoming_flow = 0.0;
     for (const auto arc : relevant_arcs) {
@@ -3360,7 +3362,7 @@ void SeparateFlowInequalities(
     }
 
     if (lp_outgoing_flow < ToDouble(min_outgoing_flow) - 1e-6) {
-      VLOG(2) << "OUGOING CUT " << lp_outgoing_flow
+      VLOG(2) << "OUTGOING CUT " << lp_outgoing_flow
               << " >= " << min_outgoing_flow << " size " << subset.size()
               << " offset " << outgoing_offset << " gcd " << gcd;
       LinearConstraintBuilder cut(model, min_outgoing_flow, kMaxIntegerValue);

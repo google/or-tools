@@ -36,7 +36,7 @@ namespace sat {
 // This is a very specific container that is optimized for the specific usage
 // patterns of BinaryImplicationGraph.
 // It stores an ordered set of literals and an unordered set of offsets.
-// internally, both arrays are stored contiguously, literals first, then
+// Internally, both arrays are stored contiguously, literals first, then
 // offsets. There might be a hole between the two arrays. In comments, we denote
 // literals as `L` and offsets as `O`, and holes as `.`. For example, `LLL..OO`
 // has 3 literals and 2 offsets, with a hole of size 2 in between.
@@ -138,7 +138,7 @@ class LiteralsOrOffsets {
     free(old_ptr);
   }
 
-  // Resizes the list of literals to or shorter length.
+  // Resizes the list of literals to a shorter length.
   void TruncateLiterals(int new_size) {
     CHECK_GE(new_size, 0);
     CHECK_LE(new_size, num_literals_);
@@ -209,7 +209,7 @@ class LiteralsOrOffsets {
   // Inlined memory or a pointer to the content.
   //
   // TODO(user): If we want to be more compact, we can set kInlineElements == 2.
-  // We can probably fit a third one, if we don't care about the aligment since
+  // We can probably fit a third one, if we don't care about the alignment since
   // we only use 3 * int32_t above. Experiments.
   union {
     LiteralOrOffset inlined[kInlineElements];
@@ -221,7 +221,7 @@ inline absl::Span<const Literal> LiteralsOrOffsets::literals() const {
   DCHECK_LE(num_literals_, capacity_);
   // Casting is OK because "pointer to LiteralOrOffset" is
   // pointer-interconvertible with "pointer to Literal": `LiteralOrOffset` is
-  // an union object and the other is a non-static data member of that object.
+  // a union object and the other is a non-static data member of that object.
   return absl::MakeConstSpan(
       reinterpret_cast<const Literal*>(InternalAddress()), num_literals_);
 }

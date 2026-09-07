@@ -69,7 +69,7 @@ void EquivalenceSatSweeping::LoadClausesInModel(
 // and the clauses linking the neighborhood variables. The distance is defined
 // as a non-negative integer satisfying:
 // - d(v1, v2) == 0 iff v1 == v2.
-// - d(v1, v2) == 1 iff v1 and v2 appears in the same clause.
+// - d(v1, v2) == 1 iff v1 and v2 appear in the same clause.
 // - d(v1, v2) satisfies triangle inequality.
 //
 // Note that the distance above is equivalent to the distance on the graph of
@@ -92,7 +92,7 @@ std::vector<absl::Span<const Literal>> EquivalenceSatSweeping::GetNeighborhood(
     // TODO(user): when all the variables and clauses of a given distance
     // don't fit in the limit we are picking which ones we put in the
     // neighborhood quite arbitrarily. We should try doing it using a priority
-    // queue of how many clauses they using the variable or do it randomly.
+    // queue of how many clauses are using the variable or do it randomly.
     const BooleanVariable cur_var = rep_var(bools_to_add.front());
     bools_to_add.pop_front();
     for (const ClauseIndex clause_index : var_to_clauses_[cur_var]) {
@@ -113,14 +113,14 @@ std::vector<absl::Span<const Literal>> EquivalenceSatSweeping::GetNeighborhood(
           // Do not waste our variable budget with non-representative literals
           // and the clauses mapping them to their representative. We might end
           // up with a neighborhood that is too small if the inprocessing did
-          // not yet replaced the literals with their representative, but it's
+          // not yet replace the literals with their representative, but it's
           // better than wasting effort.
           continue;
         }
       }
       if (neighborhood.size() >= max_num_clauses_ - binary_clause_slack &&
           cur_clause.size() > 2) {
-        // Reserve a bit of out clauses budget for binary clauses. We do not
+        // Reserve a bit of our clauses budget for binary clauses. We do not
         // want to waste resources rediscovering them.
         continue;
       }
@@ -146,8 +146,8 @@ void RefinePartitions(std::vector<std::vector<Literal>>& partitions,
   for (int i = 0; i < original_num_partitions; i++) {
     std::vector<Literal>& partition_for_negated = partitions.emplace_back();
     std::vector<Literal>& partition_for_true = partitions[i];
-    // Split the partition in two, according to the value of the literals in the
-    // solution.
+    // Split the partition into two, according to the value of the literals in
+    // the solution.
     int new_partition_for_true_size = 0;
     for (int j = 0; j < partition_for_true.size(); j++) {
       const Literal lit = partition_for_true[j];
@@ -444,7 +444,7 @@ SatSweepingResult DoFullSatSweeping(
   }
 
   // We start by finding a first solution to our problem. This will be used for
-  // initializing the set of potential backbone (ie., fixable) literals and
+  // initializing the set of potential backbone (i.e., fixable) literals and
   // the partitions of potentially equivalent literals.
   result.status = nh_solver->Solve();
   if (result.status == SatSolver::INFEASIBLE) {
@@ -580,7 +580,7 @@ SatSweepingResult DoFullSatSweeping(
     } else {
       CHECK_EQ(status, SatSolver::FEASIBLE);
       // Use the new solution to update the partitions. Note that this will
-      // at least break the current partition in two, since we now have a
+      // at least break the current partition into two, since we now have a
       // solution where l1 and l2 have different polarities. This guarantees
       // that this loop will run at most num_variables times.
       RefinePartitions(partitions, nh_solver->Assignment());
@@ -607,7 +607,7 @@ SatSweepingResult DoFullSatSweeping(
   if (result.status != SatSolver::LIMIT_REACHED && DEBUG_MODE) {
     // Since we kept the set of all possible partitions and ran the algorithm
     // until they were all unitary, we must have seen all possible equivalences
-    // that are valid. Check that the solver didn't found more equivalences than
+    // that are valid. Check that the solver didn't find more equivalences than
     // we did.
     int num_equivalences_in_model = 0;
     for (BooleanVariable var{0}; var < num_variables; ++var) {
@@ -617,7 +617,7 @@ SatSweepingResult DoFullSatSweeping(
     DCHECK_EQ(num_equivalences_in_model, num_equivalences);
   }
 
-  // Remove binary clauses that were already in the input
+  // Remove binary clauses that were already in the input.
   absl::flat_hash_set<std::pair<Literal, Literal>> input_clauses;
   for (const absl::Span<const Literal> clause : clauses) {
     if (clause.size() != 2) continue;

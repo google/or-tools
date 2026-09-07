@@ -39,7 +39,7 @@ namespace sat {
 void AddAllDifferentBinary(absl::Span<const IntegerVariable> vars,
                            Model* model) {
   // Fully encode all the given variables and construct a mapping value ->
-  // List of literal each indicating that a given variable takes this value.
+  // List of literals each indicating that a given variable takes this value.
   //
   // Note that we use a map to always add the constraints in the same order.
   absl::btree_map<IntegerValue, std::vector<Literal>> value_to_literals;
@@ -59,7 +59,7 @@ void AddAllDifferentBinary(absl::Span<const IntegerVariable> vars,
   }
 
   // If the number of values is equal to the number of variables, we have
-  // a permutation. We can add a bool_or for each literals attached to a
+  // a permutation. We can add a bool_or for each literal attached to a
   // value.
   if (value_to_literals.size() == vars.size()) {
     for (const auto& entry : value_to_literals) {
@@ -104,7 +104,7 @@ AllDifferentConstraint::AllDifferentConstraint(
       trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()) {
   // Initialize literals cache.
-  // Note that remap all values appearing here with a dense_index.
+  // Note that we remap all values appearing here with a dense_index.
   num_values_ = 0;
   absl::flat_hash_map<IntegerValue, int> dense_indexing;
   variable_to_possible_values_.resize(num_variables_);
@@ -138,7 +138,7 @@ AllDifferentConstraint::AllDifferentConstraint(
       variable_to_possible_values_[x].push_back({it->second, lit});
     }
 
-    // Not sure it is needed, but lets sort.
+    // Not sure it is needed, but let's sort.
     absl::c_sort(
         variable_to_possible_values_[x],
         [](const std::pair<int, Literal>& a, const std::pair<int, Literal>& b) {
@@ -286,7 +286,7 @@ bool AllDifferentConstraint::Propagate() {
     if (variable_to_value_[x] == -1) break;  // No augmenting path exists.
   }
 
-  // Fail if covering variables impossible.
+  // Fail if covering variables is impossible.
   // Explain with the forbidden parts of the graph that prevent
   // MakeAugmentingPath from increasing the matching size.
   if (x < num_variables_) {
@@ -480,7 +480,7 @@ bool AllDifferentBoundsPropagator::PropagateLowerBounds() {
   }
 
   // TODO(user): The running time can be dominated by this sort. For the
-  // "permutation" case where we have as many bounds has possible lb, maybe a
+  // "permutation" case where we have as many bounds as possible lb, maybe a
   // radix sort is more efficient.
   time_limit_->AdvanceDeterministicTime(static_cast<double>(bounds_.size()) *
                                         1e-8);
@@ -488,8 +488,8 @@ bool AllDifferentBoundsPropagator::PropagateLowerBounds() {
       bounds_.begin(), bounds_.end(),
       [](const CachedBounds& a, const CachedBounds& b) { return a.lb < b.lb; });
 
-  // We will split the affine epressions in vars sorted by lb in contiguous
-  // subset with index of the form [start, start + num_in_window).
+  // We will split the affine expressions in vars sorted by lb into contiguous
+  // subsets with index of the form [start, start + num_in_window).
   int start = 0;
   int num_in_window = 1;
 
@@ -500,8 +500,8 @@ bool AllDifferentBoundsPropagator::PropagateLowerBounds() {
   for (int i = 1; i < size; ++i) {
     const IntegerValue lb = bounds_[i].lb;
 
-    // If the lower bounds of all the other variables is greater, then it can
-    // never fall into a potential hall interval formed by the variable in the
+    // If the lower bounds of all the other variables are greater, then it can
+    // never fall into a potential Hall interval formed by the variables in the
     // current window, so we can split the problem into independent parts.
     if (lb <= min_lb + IntegerValue(num_in_window - 1)) {
       ++num_in_window;
@@ -537,7 +537,7 @@ bool AllDifferentBoundsPropagator::PropagateLowerBoundsInternal(
   hall_ends_.clear();
 
   // All cached lb in bounds will be in [min_lb, min_lb + bounds_.size()).
-  // Make sure we change our base_ so that GetIndex() fit in our buffers.
+  // Make sure we change our base_ so that GetIndex() fits in our buffers.
   base_ = min_lb - IntegerValue(1);
 
   index_is_present_.ResetAllToFalse();
@@ -549,13 +549,13 @@ bool AllDifferentBoundsPropagator::PropagateLowerBoundsInternal(
     const AffineExpression expr = entry.expr;
 
     // Note that it is important to use the cache to make sure GetIndex() is
-    // not out of bound in case integer_trail_->LowerBound() changed when we
+    // not out of bounds in case integer_trail_->LowerBound() changed when we
     // pushed something.
     const IntegerValue lb = entry.lb;
     const int lb_index = GetIndex(lb);
     const bool value_is_covered = index_is_present_[lb_index];
 
-    // Check if lb is in an Hall interval, and push it if this is the case.
+    // Check if lb is in a Hall interval, and push it if this is the case.
     if (value_is_covered) {
       const int hall_index =
           std::lower_bound(hall_ends_.begin(), hall_ends_.end(), lb) -
@@ -612,7 +612,7 @@ bool AllDifferentBoundsPropagator::PropagateLowerBoundsInternal(
       index_is_present_.Set(new_index);
     }
 
-    // In most situation, we cannot have a conflict now, because it should have
+    // In most situations, we cannot have a conflict now, because it should have
     // been detected before by pushing an interval lower bound past its upper
     // bound. However, it is possible that when we push one bound, other bounds
     // change. So if the upper bound is smaller than the current interval end,

@@ -57,7 +57,7 @@ std::string CpSolverResponseStats(const CpSolverResponse& response,
 /**
  * Solves the given CpModelProto.
  *
- * This advanced API accept a Model* which allows to access more advanced
+ * This advanced API accepts a Model* which allows accessing more advanced
  * features by configuring some classes in the Model before solve.
  *
  * For instance:
@@ -70,7 +70,7 @@ std::string CpSolverResponseStats(const CpSolverResponse& response,
 CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model);
 
 /**
- * Solves the given CpModelProto with the given sat parameters as string in JSon
+ * Solves the given CpModelProto with the given sat parameters as string in JSON
  * format, and returns an instance of CpSolverResponse.
  */
 CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
@@ -82,15 +82,16 @@ CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
  *
  * The given function will be called on each improving feasible solution found
  * during the search. For a non-optimization problem, if the option to find all
- * solution was set, then this will be called on each new solution.
+ * solutions was set, then this will be called on each new solution.
  *
- * WARNING: Except when enumerate_all_solution() is true, one shouldn't rely on
+ * WARNING: Except when enumerate_all_solutions() is true, one shouldn't rely on
  * this to get a set of "diverse" solutions since any future change to the
  * solver might completely kill any diversity in the set of solutions observed.
  *
  * Valid usage of this includes implementing features like:
- *  - Enumerating all solution via enumerate_all_solution(). If only n solutions
- *    are needed, this can also be used to abort when this number is reached.
+ *  - Enumerating all solutions via enumerate_all_solutions(). If only n
+ * solutions are needed, this can also be used to abort when this number is
+ * reached.
  *  - Aborting early if a good enough solution is found.
  *  - Displaying log progress.
  *  - etc...
@@ -99,19 +100,19 @@ std::function<void(Model*)> NewFeasibleSolutionObserver(
     const std::function<void(const CpSolverResponse& response)>& callback);
 
 /**
- * Creates a callbacks that will append a string to the search log when
+ * Creates a callback that will append a string to the search log when
  * reporting a new solution.
  *
  * The given function will be called on each improving feasible solution found
  * during the search. For a non-optimization problem, if the option to find all
- * solution was set, then this will be called on each new solution.
+ * solutions was set, then this will be called on each new solution.
  */
 std::function<void(Model*)> NewFeasibleSolutionLogCallback(
     const std::function<std::string(const CpSolverResponse& response)>&
         callback);
 
 /**
- * Creates a callbacks that will be called on each new best objective bound
+ * Creates a callback that will be called on each new best objective bound
  * found. It is guaranteed that the best bound is strictly improving.
  *
  * Note that this function is called before the update takes place.
@@ -144,7 +145,7 @@ using SubsolverFactory =
 // portfolio.
 //
 // The factory will be invoked after presolve.
-// Note: This API is experimental and may change in future.
+// Note: This API is experimental and may change in the future.
 std::function<void(Model*)> NewSubsolver(SubsolverFactory factory);
 
 }  // namespace sat

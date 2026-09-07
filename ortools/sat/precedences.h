@@ -52,18 +52,18 @@ namespace sat {
 // with the bound being divided by the GCD.
 //
 // To efficiently store and query such bounds in different contexts, we map each
-// `LinearExpression2` expressions for which we have a non-trivial bound
+// `LinearExpression2` expression for which we have a non-trivial bound
 // to a `LinearExpression2Index`, managed by the `Linear2Indices` class.
 //
 // Most callers of this class should use the `Linear2Bounds` class, which hides
-// the complexity of the different ways such bounds are deduced and allow:
+// the complexity of the different ways such bounds are deduced and allows:
 // - knowing the bound of a given expression at current level;
 // - getting the literals and integer literals that can be used to explain that
 //   bound;
 // - pushing a new bound to an expression.
 //
 // Other classes in this file dealing with the current level bounds:
-// - `EnforcedLinear2Bounds`: Store the best relation of the form
+// - `EnforcedLinear2Bounds`: Stores the best relation of the form
 //   `{lits} => a*x + b*y <= ub` that is non-trivial at the current level.
 // - `Linear2BoundsFromLinear3`: Class that keeps the best upper bound at the
 //    current level for `a*x + b*y` from all the linear3 relations of the
@@ -74,13 +74,13 @@ namespace sat {
 //    `a*x + b*y <= ub` at root level.
 // - `ConditionalLinear2Bounds`: Holds all the relations of the form
 //   `{lits} => a*x + b*y <= ub` that are defined in the model.
-// - `ReifiedLinear2Bounds`: Store all the relations of the form
+// - `ReifiedLinear2Bounds`: Stores all the relations of the form
 //   `{lits} <=> a*x + b*y <= ub` that are defined in the model. Also stores all
 //    the relations of the form `a*x + b*y + c*z == d`.
 //
 // Other classes in this file:
-// - `Linear2Watcher`: Allow a propagator to be called back when a bound on a
-//   given linear2 changed.
+// - `Linear2Watcher`: Allows a propagator to be called back when a bound on a
+//   given linear2 has changed.
 // - `TransitivePrecedencesEvaluator`: Computes the transitive closure of a
 //   DAG of `a*x + b*y <= expr` relations that are stored in
 //   `RootLevelLinear2Bounds`.
@@ -138,13 +138,13 @@ class Linear2Indices {
     return exprs_;
   }
 
-  // Return a list of all potentially non-trivial LinearExpression2Indexes
-  // containing a given variable.
+  // Return a list of all potentially non-trivial LinearExpression2Index
+  // instances containing a given variable.
   absl::Span<const LinearExpression2Index> GetAllLinear2ContainingVariable(
       IntegerVariable var) const;
 
-  // Return a list of all potentially non-trivial LinearExpression2Indexes
-  // containing a given pair of variables.
+  // Return a list of all potentially non-trivial LinearExpression2Index
+  // instances containing a given pair of variables.
   absl::Span<const LinearExpression2Index> GetAllLinear2ContainingVariables(
       IntegerVariable var1, IntegerVariable var2) const;
 
@@ -174,10 +174,10 @@ class Linear2Watcher {
   void NotifyBoundChanged(LinearExpression2 expr);
 
   // Register a GenericLiteralWatcher() id so that propagation is called as
-  // soon as a bound on a linear2 changed.
+  // soon as a bound on a linear2 has changed.
   void WatchAllLinearExpressions2(int id) { propagator_ids_.insert(id); }
 
-  // Allow to know if some bounds changed since last query.
+  // Allows knowing if some bounds changed since last query.
   int64_t Timestamp() const { return timestamp_; }
   int64_t VarTimestamp(IntegerVariable var);
 
@@ -189,8 +189,8 @@ class Linear2Watcher {
   absl::btree_set<int> propagator_ids_;
 };
 
-// This holds all the relation lhs <= linear2 <= rhs that are true at level
-// zero. It is the source of truth across all the solver for such bounds.
+// This holds all the relations lhs <= linear2 <= rhs that are true at level
+// zero. It is the source of truth across the whole solver for such bounds.
 class RootLevelLinear2Bounds {
  public:
   explicit RootLevelLinear2Bounds(Model* model)
@@ -295,15 +295,15 @@ class RootLevelLinear2Bounds {
                                   IntegerVariable var2) const;
 
   // For a given variable `var`, return all variables `other` so that
-  // LinearExpression2(var, other, 1, 1) has a non trivial upper bound.
+  // LinearExpression2(var, other, 1, 1) has a non-trivial upper bound.
   // Note that using negation one can also recover x + y >= lb and x - y <= ub.
   absl::Span<const std::pair<IntegerVariable, LinearExpression2Index>>
   GetVariablesInSimpleRelation(IntegerVariable var) const;
 
-  // For all pairs of relation 'a + var <= x' and 'neg(var) + b <= y' try to add
-  // 'a + b <= x + y' if that relation is better.
+  // For all pairs of relations 'a + var <= x' and 'neg(var) + b <= y' try to
+  // add 'a + b <= x + y' if that relation is better.
   //
-  // This can be quadratic. Returns the amount of "work" done, and abort if
+  // This can be quadratic. Returns the amount of "work" done, and aborts if
   // we reach the limit. This uses GetVariablesInSimpleRelation().
   int AugmentSimpleRelations(IntegerVariable var, int work_limit);
 
@@ -371,7 +371,7 @@ class TransitivePrecedencesEvaluator {
 
   // Returns a set of relations var >= max_i(vars[index[i]] + offsets[i]).
   //
-  // This currently only works if the precedence relation form a DAG.
+  // This currently only works if the precedence relations form a DAG.
   // If not we will just abort. TODO(user): generalize.
   //
   // For more efficiency, this method ignores all linear2 expressions with any
@@ -391,10 +391,10 @@ class TransitivePrecedencesEvaluator {
   // The current code requires the internal data to be processed once all
   // root-level relations are loaded.
   //
-  // If we don't have too many variable, we compute the full transitive closure
-  // and then push back to RootLevelLinear2Bounds if there is a relation between
-  // two variables. This can be used to optimize some scheduling propagation and
-  // reasons.
+  // If we don't have too many variables, we compute the full transitive
+  // closure and then push back to RootLevelLinear2Bounds if there is a relation
+  // between two variables. This can be used to optimize some scheduling
+  // propagation and reasons.
   //
   // Warning: If there are too many, this will NOT push all relations.
   bool Build();
@@ -412,7 +412,7 @@ class TransitivePrecedencesEvaluator {
 };
 
 // Store the best non-trivial relation of the form "{lits} => a*x + b*y <= ub"
-// for which `{lits}` are assigned tp true at the current level.
+// for which `{lits}` are assigned to true at the current level.
 class EnforcedLinear2Bounds : public ReversibleInterface {
  public:
   explicit EnforcedLinear2Bounds(Model* model)
@@ -428,13 +428,13 @@ class EnforcedLinear2Bounds : public ReversibleInterface {
 
   ~EnforcedLinear2Bounds() override;
 
-  // Adds add relation (enf => expr <= rhs) that is assumed to be true at
+  // Adds a relation (enf => expr <= rhs) that is assumed to be true at
   // the current level.
   //
-  // It will be automatically reverted via the SetLevel() functions that is
+  // It will be automatically reverted via the SetLevel() function that is
   // called before any integer propagations trigger.
   //
-  // This is assumed to be called when a relation becomes true (enforcement are
+  // This is assumed to be called when a relation becomes true (enforcements are
   // assigned) and when it becomes false in reverse order (CHECKed).
   //
   // If expr is not a proper linear2 expression (e.g. 0*x + y, y + y, y - y) it
@@ -465,14 +465,14 @@ class EnforcedLinear2Bounds : public ReversibleInterface {
   // of the form vars[index] <= var + offset.
   //
   // All entries for the same variable will be contiguous and sorted by index.
-  // We only list variable with at least two entries. The up to date offset can
+  // We only list variables with at least two entries. The up to date offset can
   // be retrieved later via Linear2Bounds::UpperBound(lin2_index).
   //
   // This method currently ignores all linear2 expressions with any coefficient
   // different from 1.
   //
   // TODO(user): Ideally this should be moved to a new class and maybe augmented
-  // with other kind of precedences.
+  // with other kinds of precedences.
   struct PrecedenceData {
     IntegerVariable var;
     int var_index;
@@ -481,7 +481,7 @@ class EnforcedLinear2Bounds : public ReversibleInterface {
   void CollectPrecedences(absl::Span<const IntegerVariable> vars,
                           std::vector<PrecedenceData>* output);
 
-  // Low-level function that returns the upper bound if there is some enforced
+  // Low-level function that returns the upper bound if there are enforced
   // relations only. Otherwise always returns kMaxIntegerValue.
   // `expr` must be canonicalized and gcd-reduced.
   IntegerValue GetUpperBoundFromEnforced(LinearExpression2Index index) const;
@@ -508,7 +508,7 @@ class EnforcedLinear2Bounds : public ReversibleInterface {
   // Conditional stack for push/pop of conditional relations.
   //
   // TODO(user): this kind of reversible hash_map is already implemented in
-  // other part of the code. Consolidate.
+  // other parts of the code. Consolidate.
   struct ConditionalEntry {
     ConditionalEntry(int p, IntegerValue r, LinearExpression2Index k,
                      absl::Span<const Literal> e)
@@ -523,10 +523,10 @@ class EnforcedLinear2Bounds : public ReversibleInterface {
   std::vector<std::pair<int, int>> level_to_stack_size_;
 
   // This is always stored in the form (expr <= rhs).
-  // The conditional relations contains indices in the conditional_stack_.
+  // The conditional relations contain indices in the conditional_stack_.
   util_intops::StrongVector<LinearExpression2Index, int> conditional_relations_;
 
-  // Store for each variable x, the variables y that appears alongside it in
+  // Store for each variable x, the variables y that appear alongside it in
   // lit => x + y <= ub. Note that conditional_var_lookup_ is updated on
   // dive/backtrack.
   util_intops::StrongVector<
@@ -579,7 +579,7 @@ class ConditionalLinear2Bounds {
   int size() const { return relations_.size(); }
 
   // The linear2 expression in the returned relation is guaranteed to be
-  // normalized (ie., SimpleCanonicalization() has been called on it and it's
+  // normalized (i.e., SimpleCanonicalization() has been called on it and it's
   // GCD-reduced).
   const Relation& relation(int index) const { return relations_[index]; }
 
@@ -620,8 +620,8 @@ class Linear2BoundsFromLinear3 {
   explicit Linear2BoundsFromLinear3(Model* model);
   ~Linear2BoundsFromLinear3();
 
-  // If the given upper bound evaluate better than the current one we have, this
-  // will replace it and returns true, otherwise it returns false.
+  // If the given upper bound evaluates better than the current one we have,
+  // this will replace it and return true, otherwise it returns false.
   bool AddAffineUpperBound(LinearExpression2Index lin2_index,
                            IntegerValue lin_expr_gcd,
                            AffineExpression affine_ub);
@@ -635,7 +635,7 @@ class Linear2BoundsFromLinear3 {
 
   // Most users should just use Linear2Bounds::UpperBound() instead.
   //
-  // Returns the upper bound only if there is some relations coming from a
+  // Returns the upper bound only if there are some relations coming from a
   // linear3. Otherwise always returns kMaxIntegerValue.
   // `expr` must be canonicalized and gcd-reduced.
   IntegerValue GetUpperBoundFromLinear3(
@@ -682,7 +682,7 @@ class ReifiedLinear2Bounds {
 
   // Register the fact that l <=> ( expr <= ub ).
   // `expr` must already be canonicalized and gcd-reduced.
-  // These are considered equivalence relation.
+  // These are considered equivalence relations.
   void AddBoundEncodingIfNonTrivial(Literal l, LinearExpression2 expr,
                                     IntegerValue ub);
 
@@ -714,7 +714,7 @@ class ReifiedLinear2Bounds {
 
   // This stores divisor * linear2 = AffineExpression similarly to
   // Linear2BoundsFromLinear3. The difference here is that we only store linear3
-  // that are equality, but irrespective of whether it constraint any linear2 at
+  // that are equality, but irrespective of whether it constrains any linear2 at
   // the current level. If there is more than one expression for a given
   // linear2, we will keep the one with the smallest divisor.
   util_intops::StrongVector<LinearExpression2Index,
@@ -727,8 +727,8 @@ class ReifiedLinear2Bounds {
 
   // This is used to detect relations that become fixed at level zero and
   // "upgrade" them to non-enforced relations. Because we only do that when
-  // we fix variable, a linear scan shouldn't be too bad and is relatively
-  // compact memory wise.
+  // we fix variables, a linear scan shouldn't be too bad and is relatively
+  // compact memory-wise.
   absl::flat_hash_set<BooleanVariable> variable_appearing_in_reified_relations_;
   std::vector<std::tuple<Literal, LinearExpression2Index, IntegerValue>>
       all_reified_relations_;
@@ -767,7 +767,7 @@ class Linear2Bounds : public LazyReasonInterface {
   // Returns false on conflict.
   //
   // TODO(user): Ideally this shouldn't be necessary, but currently our best
-  // known linear2 might not always be propagated !! so this function do some
+  // known linear2 might not always be propagated! So this function does some
   // propagation when this is the case.
   bool MaybePropagate(LinearExpression2Index index,
                       const LinearExpression2& expr, IntegerValue expr_ub);
@@ -784,8 +784,8 @@ class Linear2Bounds : public LazyReasonInterface {
   // the individual variable bounds. This is faster.
   IntegerValue NonTrivialUpperBound(LinearExpression2Index lin2_index) const;
 
-  // Given the new linear2 bounds and its reason, inspect our various repository
-  // to find the strongest way to push this new upper bound.
+  // Given the new linear2 bounds and its reason, inspect our various
+  // repositories to find the strongest way to push this new upper bound.
   //
   // Note that the LinearExpression2 should be already canonicalized.
   bool EnqueueLowerOrEqual(LinearExpression2Index index,
@@ -863,7 +863,7 @@ class GreaterThanAtLeastOneOfDetector {
 
   // Advanced usage. To be called once all the constraints have been added to
   // the model. This will detect GreaterThanAtLeastOneOfConstraint().
-  // Returns the number of added constraint.
+  // Returns the number of added constraints.
   //
   // TODO(user): This can be quite slow, add some kind of deterministic limit
   // so that we can use it all the time.
@@ -882,7 +882,7 @@ class GreaterThanAtLeastOneOfDetector {
       std::vector<VariableConditionalAffineBound>* clause_bounds) const;
 
   // Given an existing clause, sees if it can be used to add "greater than at
-  // least one of" type of constraints. Returns the number of such constraint
+  // least one of" type of constraints. Returns the number of such constraints
   // added.
   int AddGreaterThanAtLeastOneOfConstraintsFromClause(
       absl::Span<const Literal> clause, Model* model,
@@ -896,7 +896,7 @@ class GreaterThanAtLeastOneOfDetector {
   int AddGreaterThanAtLeastOneOfConstraintsWithClauseAutoDetection(
       Model* model);
 
-  // Once we identified a clause and relevant indices, this build the
+  // Once we identified a clause and relevant indices, this builds the
   // constraint. Returns true if we actually add it.
   bool AddRelationFromBounds(
       IntegerVariable var, absl::Span<const Literal> clause,

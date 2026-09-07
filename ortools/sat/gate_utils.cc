@@ -50,7 +50,7 @@ std::string BinaryCircuit::DebugString() const {
   int max_depth = 0;
   std::vector<int> depths(num_vars);
 
-  // All these case should be easily simplifiable.
+  // All these cases should be easily simplifiable.
   int num_todo = 0;
   for (const BinaryGate& gate : gates) {
     if (gate.target == BinaryGate::kConstraintTarget) continue;
@@ -93,12 +93,12 @@ void RemoveConstraints(BinaryCircuit* circuit) {
 }
 
 // TODO(user): A similar code can be used to detect gates for which not all
-// 4 kind of inputs are possible (a kind of "don't care"). After verification,
-// we could thus change an AND to a XOR gate or vice-versa.
+// 4 kinds of inputs are possible (a kind of "don't care"). After verification,
+// we could thus change an AND to an XOR gate or vice-versa.
 CompactVectorVector<int, Literal> SampleForEquivalences(
     const BinaryCircuit& circuit, absl::BitGenRef random,
     const std::vector<std::vector<BooleanVariable>>& saved_solutions) {
-  // Try all possibilities. 64 at the time.
+  // Try all possibilities. 64 at a time.
   //
   // TODO(user): take into account small/binary constraint between these
   // variables?
@@ -131,7 +131,7 @@ CompactVectorVector<int, Literal> SampleForEquivalences(
       is_exact ? (1 << shifted_num_inputs) : (1 << kMaxExponents);
   bool first = true;
 
-  // If we are exact, the first 6 inputs will never changes, they contain all
+  // If we are exact, the first 6 inputs will never change, they contain all
   // possibilities.
   for (int i = 0; i < std::min(6, num_inputs); ++i) {
     values[i] = 0;
@@ -146,7 +146,7 @@ CompactVectorVector<int, Literal> SampleForEquivalences(
         values[i] = (start >> (i - 6)) & 1 ? ~uint64_t{0} : uint64_t{0};
       }
     } else {
-      // Exploit old solution before sampling as they might separate hard to
+      // Exploit old solutions before sampling as they might separate hard to
       // get "non-equivalences".
       if (solution_index < saved_solutions.size()) {
         for (int i = 0; i < num_inputs; ++i) {
@@ -178,14 +178,14 @@ CompactVectorVector<int, Literal> SampleForEquivalences(
       }
       if (target < assigned_limit) {
         // This is a double definition!
-        // Any possition that differ is incompatible.
+        // Any position that differs is incompatible.
         incompatible |= value ^ values[target];
         continue;
       }
 
       // TODO(user): We assign the value in order, we should be able to be
       // faster than Set() here. Note however that we need to read them right
-      // away above. A simple way is to sample/enumerate 64 values at the time.
+      // away above. A simple way is to sample/enumerate 64 values at a time.
       // But the equivalence class split might still be slow though.
       CHECK_EQ(target, assigned_limit);
       assigned_limit = target + 1;
@@ -197,8 +197,8 @@ CompactVectorVector<int, Literal> SampleForEquivalences(
     if (compatible == 0) continue;
     num_compatibles += absl::popcount(compatible);
 
-    // Start with special case for class of size 2.
-    // we expect this to be quite frequent.
+    // Start with special case for classes of size 2.
+    // We expect this to be quite frequent.
     {
       int new_size = 0;
       for (const auto [a, b] : equiv2) {
@@ -212,7 +212,7 @@ CompactVectorVector<int, Literal> SampleForEquivalences(
       equiv2.resize(new_size);
     }
 
-    // Once we have shorter equivalence list, it is a lot faster
+    // Once we have shorter equivalence lists, it is a lot faster
     // to use sorting than 64 passes.
     if (!first) {
       int new_size = 0;
@@ -263,7 +263,7 @@ CompactVectorVector<int, Literal> SampleForEquivalences(
           if (!first && tmp_part[i].size() == 2) {
             equiv2.push_back({tmp_part[i][0], tmp_part[i][1]});
           } else if (tmp_part[i].size() > 1) {
-            // It is okay to reuse buffer since span are always in order.
+            // It is okay to reuse buffer since spans are always in order.
             new_equivalences.push_back(
                 absl::MakeSpan(&buffer[new_size], tmp_part[i].size()));
             for (const int e : tmp_part[i]) buffer[new_size++] = e;
@@ -276,7 +276,7 @@ CompactVectorVector<int, Literal> SampleForEquivalences(
 
       // On the first split, we always split the set in two, one containing the
       // negated literals of the other. We only need to handle one.
-      // This divide the time to update equivalences by two!
+      // This divides the time to update equivalences by two!
       if (first) {
         CHECK_EQ(equivalences.size(), 2);
         CHECK_EQ(equivalences[0].size(), equivalences[1].size());
@@ -315,7 +315,7 @@ CompactVectorVector<int, Literal> SampleForEquivalences(
 //
 // TODO(user): remove duplication with SampleForEquivalences() ?
 bool BinaryCircuitIsFeasible(const BinaryCircuit& circuit) {
-  // Try all possibilities. 64 at the time.
+  // Try all possibilities. 64 at a time.
   const int num_inputs = circuit.num_inputs;
   const int num_vars = circuit.num_vars;
   CHECK_LE(num_inputs, 20);
@@ -327,7 +327,7 @@ bool BinaryCircuitIsFeasible(const BinaryCircuit& circuit) {
   // Complexity is in roughly num_samples * num_vars.
   const int num_samples = 1 << std::max(0, num_inputs - 6);
 
-  // The first 6 inputs will never changes, they contain all possibilities.
+  // The first 6 inputs will never change, they contain all possibilities.
   for (int i = 0; i < std::min(6, num_inputs); ++i) {
     values[i] = 0;
     for (uint64_t j = 0; j < 64; ++j) {
@@ -349,7 +349,7 @@ bool BinaryCircuitIsFeasible(const BinaryCircuit& circuit) {
       }
       if (target < assigned_limit) {
         // This is a double definition!
-        // Any position that differ is incompatible.
+        // Any position that differs is incompatible.
         incompatible |= value ^ values[target];
         if (~incompatible == 0) break;
         continue;
@@ -357,7 +357,7 @@ bool BinaryCircuitIsFeasible(const BinaryCircuit& circuit) {
 
       // TODO(user): We assign the value in order, we should be able to be
       // faster than Set() here. Note however that we need to read them right
-      // away above. A simple way is to sample/enumerate 64 values at the time.
+      // away above. A simple way is to sample/enumerate 64 values at a time.
       // But the equivalence class split might still be slow though.
       CHECK_EQ(target, assigned_limit);
       assigned_limit = target + 1;
@@ -368,7 +368,7 @@ bool BinaryCircuitIsFeasible(const BinaryCircuit& circuit) {
     const uint64_t compatible = ~incompatible;
     if (compatible == 0) continue;
 
-    // We have a solution !
+    // We have a solution!
     return true;
   }
 
@@ -389,8 +389,8 @@ void AddNotEquivalentConstraint(Literal a, Literal b, BinaryCircuit* circuit) {
     if (gate.b >= gate.target) continue;
 
     if (gate.target == index2) {
-      // If both literal are positive, we want to find a solution with variable
-      // that are different !
+      // If both literals are positive, we want to find a solution with
+      // variables that are different!
       gate.target = index1;
       if (swap) gate.type ^= 0b1111;
     }
@@ -475,7 +475,7 @@ CpModelProto CpModelUsingLargeAnds(const BinaryCircuit& circuit,
       }
     }
 
-    // TODO(user): If there is duplicate, check value are the same.
+    // TODO(user): If there are duplicates, check values are the same.
     gtl::STLSortAndRemoveDuplicates(&assignment);
     if (assignment.size() > 2) {
       ++num_large_ands;
@@ -594,7 +594,7 @@ void ReduceGates(BinaryCircuit* circuit) {
   for (int v = 0; v < num_vars; ++v) {
     if (var_to_gates[v].empty()) continue;
 
-    // We leave gate of arity one as is,
+    // We leave gates of arity one as is,
     // These should always be removed.
     if (circuit->gates[var_to_gates[v][0]].a ==
         circuit->gates[var_to_gates[v][0]].b) {
@@ -699,8 +699,8 @@ BinaryCircuit ConvertInnerNodeToInputs(const BinaryCircuit& circuit,
   CHECK_EQ(new_index, circuit.num_vars);
 
   // IMPORTANT special case: If one of the new_inputs is a negation of another
-  // variable then we want any dependency on the other variabe to be the
-  // negation of that input instead !
+  // variable then we want any dependency on the other variable to be the
+  // negation of that input instead!
   std::vector<int> rewrite_as_negation(circuit.num_vars, -1);
   for (BinaryGate gate : circuit.gates) {
     if (gate.a == gate.b && mapping[gate.target] <= new_num_inputs) {
@@ -717,7 +717,7 @@ BinaryCircuit ConvertInnerNodeToInputs(const BinaryCircuit& circuit,
 
   // Now remap the gates.
   for (BinaryGate gate : circuit.gates) {
-    // We remove constraint for now.
+    // We remove constraints for now.
     if (gate.type == BinaryGate::kConstraintTarget) continue;
     if (mapping[gate.target] <= new_num_inputs) continue;  // Remove.
 
@@ -753,12 +753,12 @@ BinaryCircuit ConvertInnerNodeToInputs(const BinaryCircuit& circuit,
   return new_circuit;
 }
 
-// In order to reduce the amount of nodes, we "expand" all node with a single
-// usage of their output. That result in node that are still a Boolean function
-// with one output, but can have a lot more than 2 inputs.
+// In order to reduce the amount of nodes, we "expand" all nodes with a single
+// usage of their output. That results in nodes that are still a Boolean
+// function with one output, but can have a lot more than 2 inputs.
 //
-// Note that such function are "easy" candidate for rewriting if the goal is to
-// optimize the circuit.
+// Note that such functions are "easy" candidates for rewriting if the goal is
+// to optimize the circuit.
 std::string ToDotFile(const BinaryCircuit& circuit,
                       absl::Span<const int> special_nodes) {
   std::vector<int> out_degree(circuit.num_vars, 0);
@@ -795,7 +795,7 @@ std::string ToDotFile(const BinaryCircuit& circuit,
     }
     nodes.push_back(node);
 
-    // Expand all node of out_degree[] 1.
+    // Expand all nodes of out_degree[] 1.
     queue.clear();
     for (const int before : dependency[node]) {
       if (!seen[before]) {
@@ -932,14 +932,14 @@ BinaryCircuit SubcircuitExtractor::Extract(absl::Span<const int> new_outputs) {
     if (!seen_[index]) {
       seen_[index] = true;
       queue_.push_back(index);
-      subproblem.outputs.push_back(index);  // Will be remapped below
+      subproblem.outputs.push_back(index);  // Will be remapped below.
     } else {
       ++num_duplicate_outputs;
       subproblem.outputs.push_back(index);
     }
   }
   if (num_duplicate_outputs > 0) {
-    VLOG(2) << num_duplicate_outputs << " duplicate outputs !";
+    VLOG(2) << num_duplicate_outputs << " duplicate outputs!";
   }
 
   absl::c_make_heap(queue_);
@@ -968,7 +968,7 @@ BinaryCircuit SubcircuitExtractor::Extract(absl::Span<const int> new_outputs) {
   }
 
   // We sort the new inputs to "keep" the order of the original circuit.
-  // This preserve a bit more the semantic.
+  // This preserves a bit more the semantics.
   absl::c_sort(new_inputs);
 
   // Extract the subproblem.
@@ -1054,7 +1054,7 @@ BinaryCircuit ConstructMitter(const BinaryCircuit& circuit_a,
   }
   mitter.num_vars += circuit_b.num_vars - circuit_b.num_inputs;
 
-  // Let's create new gate for the output "differences";
+  // Let's create new gates for the output "differences";
   // These are the new inputs.
   mitter.outputs.clear();
   for (int i = 0; i < num_outputs; ++i) {
@@ -1107,7 +1107,7 @@ BinaryCircuit ConstructDecomposition(int m, const BinaryCircuit& circuit) {
   const std::vector<int> outputs_0_b2 =
       AppendCircuit(input_map, circuit, &result);
 
-  // Constraint f(0, b) to be f(0, b2).
+  // Constrain f(0, b) to be f(0, b2).
   const int num_outputs = circuit.outputs.size();
   for (int i = 0; i < num_outputs; ++i) {
     result.gates.emplace_back(0b1001, BinaryGate::kConstraintTarget,
@@ -1141,7 +1141,7 @@ bool SampleDecomposition(int m, const BinaryCircuit& circuit) {
   values.ClearAndReserve(circuit.num_vars);
   m_values.ClearAndReserve(circuit.num_vars);
 
-  // We can sample 64 bits at the time.
+  // We can sample 64 bits at a time.
   const int num_samples = 1 << 20;
   absl::BitGen random;
   for (int start = 0; start < num_samples; ++start) {
@@ -1161,7 +1161,7 @@ bool SampleDecomposition(int m, const BinaryCircuit& circuit) {
       m_values[target] = CombineGate2(type, m_values[a], m_values[b]);
     }
 
-    // Reconstruct the 64 evaluation of g().
+    // Reconstruct the 64 evaluations of g().
     for (uint64_t pos = 0; pos < 64; ++pos) {
       uint64_t g_input = 0;
       uint64_t g_output = 0;
@@ -1185,7 +1185,7 @@ bool SampleDecomposition(int m, const BinaryCircuit& circuit) {
         g_values[g_input] = g_output;
       } else {
         if (g_values[g_input] != g_output) {
-          LOG(INFO) << "Not decomposable ! " << FormatCounter(64 * start) << " "
+          LOG(INFO) << "Not decomposable! " << FormatCounter(64 * start) << " "
                     << std::bitset<20>(g_input) << " "
                     << std::bitset<20>(g_output) << " was "
                     << std::bitset<20>(g_values[g_input]);
@@ -1221,7 +1221,7 @@ bool RecoverNWayAddition(const BinaryCircuit& circuit, int num_samples) {
       values[target] = CombineGate2(type, values[a], values[b]);
     }
 
-    // Fecth the output of f(1_i);
+    // Fetch the output of f(1_i);
     int k = 0;
     int64_t out = 0;
     for (const int o : circuit.outputs) {
@@ -1232,7 +1232,7 @@ bool RecoverNWayAddition(const BinaryCircuit& circuit, int num_samples) {
     LOG(INFO) << input_pos << " -> " << std::bitset<20>(out);
   }
 
-  // Does the circuit is sum of mapping[i] ??
+  // Is the circuit a sum of mapping[i]?
   absl::BitGen random;
   for (int start = 0; start < num_samples; ++start) {
     for (int i = 0; i < circuit.num_inputs; ++i) {
@@ -1242,7 +1242,7 @@ bool RecoverNWayAddition(const BinaryCircuit& circuit, int num_samples) {
       values[target] = CombineGate2(type, values[a], values[b]);
     }
 
-    // Reconstruct the 64 evaluation of g().
+    // Reconstruct the 64 evaluations of g().
     for (uint64_t pos = 0; pos < 64; ++pos) {
       int64_t out_sum = 0;
       for (int i = 0; i < circuit.num_inputs; ++i) {
@@ -1273,7 +1273,7 @@ bool RecoverNWayAddition(const BinaryCircuit& circuit, int num_samples) {
 
 std::vector<std::pair<int, uint64_t>> SampleForAdditionCandidates(
     const BinaryCircuit& circuit, int num_samples) {
-  // Starts with all nodes as candidate.
+  // Starts with all nodes as candidates.
   // The second member of the pair will be set on the first iteration below.
   std::vector<std::pair<int, uint64_t>> candidates(circuit.num_vars);
   for (int i = 0; i < circuit.num_vars; ++i) {
@@ -1359,7 +1359,7 @@ std::vector<std::pair<int, uint64_t>> SampleForAdditionCandidates(
   return candidates;
 }
 
-// == Adpated from Gemini  ===========================================
+// == Adapted from Gemini ===========================================
 
 // Truth table bitmasks for 2-input binary gates
 constexpr uint8_t kAnd = 0b1000;  // a AND b
@@ -1370,7 +1370,7 @@ constexpr uint8_t kOr = 0b1110;   // a OR b
 // processing column by column (bits 0 to m-1) using 3-to-2 and 2-to-2
 // compressor trees.
 //
-// Note(user): Apperently this is Dadda/Wallace addition.
+// Note(user): Apparently this is Dadda/Wallace addition.
 BinaryCircuit BuildColumnWiseLinearCombinationCircuit(
     int m, absl::Span<const uint32_t> constants) {
   const int n = constants.size();
@@ -1466,7 +1466,7 @@ BinaryCircuit BuildColumnWiseLinearCombinationCircuit(
 
 // == Adapted from Gemini ======================================================
 // Note(user): I asked for a different implementation of the n-way adder, which
-// should be more robust to the input order, which is important for easy of
+// should be more robust to the input order, which is important for ease of
 // verification.
 
 // Helper to add two multi-bit integer vectors A and B.
@@ -1606,7 +1606,7 @@ BinaryCircuit BuildPopcountCarryChainCircuit(
   return circuit;
 }
 
-// == Adapted form Gemini, mainly for experiment on circuit efficiency =========
+// == Adapted from Gemini, mainly for experiment on circuit efficiency =========
 
 // Helper struct to represent a 2-operand Kogge-Stone prefix node
 struct PrefixNode {
@@ -1771,8 +1771,8 @@ AdditionDecompositionResult ValidateAdditionCandidates(
   const BinaryCircuit adder = MakeNBitAdder(m);
   LOG(INFO) << "Initial circuit " << circuit.DebugString();
 
-  // Lets skip the outputs, it is harder to reason about otherwise.
-  // And also I believe our model the verify that indeed one the output bit
+  // Let's skip the outputs, it is harder to reason about otherwise.
+  // And also I believe our model to verify that indeed one of the output bits
   // is in linear dependence with the output is broken, so we don't
   // mark them as such.
   std::vector<bool> is_output(circuit.num_vars, false);
@@ -1786,7 +1786,7 @@ AdditionDecompositionResult ValidateAdditionCandidates(
     if (is_output[node]) continue;
     BinaryCircuit next = current;
 
-    // Lets make all gates using "node" take zero as input, and propagate
+    // Let's make all gates using "node" take zero as input, and propagate
     // constants.
     bool skip = false;
     std::vector<bool> value_is_zero(next.num_vars, false);
@@ -1813,7 +1813,7 @@ AdditionDecompositionResult ValidateAdditionCandidates(
     }
 
     // Once we show that current = simplified + node * term, we can try to
-    // simplify "simplified" next !
+    // simplify "simplified" next!
     // Note that since we process gate in topo order, the value of node
     // will never change again in our "simplified" circuit.
     BinaryCircuit simplified = next;
@@ -1833,7 +1833,7 @@ AdditionDecompositionResult ValidateAdditionCandidates(
     // Add an adder which is the new output.
     next.outputs = AppendCircuit(adder_input, adder, &next);
 
-    // copy the other outputs afterwards.
+    // Copy the other outputs afterwards.
     next.outputs.insert(next.outputs.end(),
                         absl::MakeSpan(current.outputs).subspan(m).begin(),
                         absl::MakeSpan(current.outputs).subspan(m).end());
@@ -1864,7 +1864,7 @@ AdditionDecompositionResult ValidateAdditionCandidates(
   // Because we process them in order, these should not be fixed.
   LOG(INFO) << "Final stats: " << validated.size();
 
-  // Lets construct a final circuit that should be equivalent to the first one
+  // Let's construct a final circuit that should be equivalent to the first one
   // by construction (but it will be hard to prove directly).
   BinaryCircuit final = current;
   AdditionDecompositionResult result;
@@ -1933,7 +1933,7 @@ AdditionDecompositionResult ValidateAdditionCandidates(
     input_dependency[target] = input_dependency[a] | input_dependency[b];
   }
 
-  // This should improve stability across circuit, and the adder input
+  // This should improve stability across circuits, and the adder inputs
   // that are the same should hopefully be consumed in the same way.
   absl::c_stable_sort(validated,
                       [&input_dependency](const std::pair<int, uint64_t>& a,
@@ -1944,7 +1944,7 @@ AdditionDecompositionResult ValidateAdditionCandidates(
                         return a.second < b.second;
                       });
 
-  // Lets display some summary
+  // Let's display some summary.
   absl::btree_map<uint64_t, int> count_map;
 
   std::vector<int> input_map;
@@ -1960,11 +1960,11 @@ AdditionDecompositionResult ValidateAdditionCandidates(
     LOG(INFO) << std::bitset<20>(term) << ": " << count;
   }
 
-  // Here we prefer a "nway" encoding that is less sensible to input order.
+  // Here we prefer a "nway" encoding that is less sensitive to input order.
   const BinaryCircuit nway_adder = BuildPopcountCarryChainCircuit(m, constants);
   LOG(INFO) << "nway_adder " << nway_adder.DebugString();
   {
-    // For info. Samller circuit, but harder ot verify.
+    // For info. Smaller circuit, but harder to verify.
     LOG(INFO)
         << "Basic version "
         << BuildColumnWiseLinearCombinationCircuit(m, constants).DebugString();
@@ -2128,7 +2128,7 @@ std::vector<BinaryCircuit> GetNWayAdditionSubmodels(
 }
 
 // TODO(user): If one call proved all potential equivalences, we can stop.
-// TODO(user): congruence closure is faster... resuse sat code somehow?
+// TODO(user): congruence closure is faster... reuse sat code somehow?
 std::vector<std::pair<Literal, Literal>> SimplifyCircuit(
     int max_num_solves, absl::BitGenRef random,
     std::function<CpSolverResponse(const CpModelProto& cp_model)> solve,
@@ -2215,7 +2215,7 @@ std::vector<std::pair<Literal, Literal>> SimplifyCircuit(
           CHECK(WriteModelProtoToFile(local_cp_model, filename));
         }
 
-        // Lets disable sat subsolve as soon as we can't solve one.
+        // Let's disable sat subsolve as soon as we can't solve one.
         num_tried = max_num_solves;
       }
 
@@ -2247,7 +2247,7 @@ std::vector<std::pair<Literal, Literal>> SimplifyCircuit(
 void RemoveEquivalences(absl::Span<const std::pair<Literal, Literal>> equiv,
                         BinaryCircuit* circuit,
                         absl::Span<const Literal> extra_fixing) {
-  // TODO(user): use an union find since we augment this with unary gate
+  // TODO(user): use a union-find since we augment this with unary gate
   // equivalences.
   std::vector<LiteralIndex> representative(circuit->num_vars, kNoLiteralIndex);
   for (auto [a, b] : equiv) {
@@ -2289,7 +2289,7 @@ void RemoveEquivalences(absl::Span<const std::pair<Literal, Literal>> equiv,
       const Literal lit(representative[gate.b]);
       gate.b = circuit->mapping[lit.Variable()];
       if (!lit.IsPositive()) {
-        // swap bit 0,2 and 1, 3.
+        // Swap bits 0,2 and 1,3.
         int new_type = 0;
         for (int i = 0; i < 4; ++i) {
           new_type |= ((gate.type >> i) & 1) << (i ^ 2);
@@ -2383,7 +2383,7 @@ void RemoveEquivalences(absl::Span<const std::pair<Literal, Literal>> equiv,
       if (negation_of[var] == -1) {
         circuit->reverse_mapping.push_back(circuit->reverse_mapping[out_ref]);
 
-        // Lets create a new gate to at least directly depend on the
+        // Let's create a new gate to at least directly depend on the
         // representative.
         ++num_negated_output;
         BinaryGate gate;
@@ -2399,7 +2399,7 @@ void RemoveEquivalences(absl::Span<const std::pair<Literal, Literal>> equiv,
 
   if (num_negated_output > 0) {
     VLOG(2) << "Warning: " << num_negated_output
-            << " unary gate still needed for negated output";
+            << " unary gates still needed for negated outputs";
   }
 
   if (num_extra_equivalences > 0) {

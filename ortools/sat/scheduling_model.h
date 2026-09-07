@@ -124,12 +124,12 @@ struct SchedulingRelaxation {
 // scheduling problems that together correspond to a relaxation of the original
 // problem. In other terms, any solution of the original problem will be a
 // solution of each individual scheduling problem and the objective computed
-// from the makespan of the taks using `relaxed_objective` will be lower or
+// from the makespan of the tasks using `relaxed_objective` will be lower or
 // equal to the original objective of the solution.
 SchedulingRelaxation DetectSchedulingProblems(const CpModelProto& model_proto);
 
 // Build a CpModelProto to solve the given scheduling problem. By convention,
-// the start time of task i will be variable i and the makespan will the
+// the start time of task i will be variable i and the makespan will be the
 // variable with index num_tasks.
 CpModelProto BuildSchedulingModel(const SchedulingProblem& problem);
 
@@ -138,9 +138,9 @@ bool VerifySchedulingRelaxation(const SchedulingRelaxation& relaxation,
                                 int64_t* relaxed_objective_value);
 
 // Detects all the precedences between intervals from `precedences`.
-// This return pairs of "interval constraint indices" in the given proto where
+// This returns pairs of "interval constraint indices" in the given proto where
 // we are sure that end(pair.first) <= start(pair.second) in all feasible
-// solution.
+// solutions.
 std::vector<std::pair<int, int>> DetectIntervalPrecedences(
     const CpModelProto& model_proto,
     const BestBinaryRelationBounds& precedences,
@@ -154,7 +154,7 @@ std::vector<std::pair<int, int>> DetectIntervalPrecedences(
 // This function takes into account both the `precedences` and the trivial
 // precedences from the interval start and end times. It runs in O(num_intervals
 // + num_precedences) time for "easy" cases and O(num_intervals *
-// (num_precedences) in the worst case. It always returns the largest number of
+// num_precedences) in the worst case. It always returns the largest number of
 // components possible. It doesn't do anything if the number of intervals is too
 // large to avoid spending too much time in this quadratic algorithm.
 CompactVectorVector<int> IntervalsNonOverlappingComponents(
@@ -210,7 +210,7 @@ CompactVectorVector<int> IntervalsNonOverlappingComponents(
 // first and only runs the exact solver when the filter suggests the graph is
 // splittable.
 //
-// Fun fact: if this sounds over-complicated, there is an algorithm [1] that can
+// Fun fact: if this sounds overcomplicated, there is an algorithm [1] that can
 // solve the general incomparability problem optimally in O(V + E) time.
 // However, it's so complex that not even Gemini had the stomach to implement
 // it.

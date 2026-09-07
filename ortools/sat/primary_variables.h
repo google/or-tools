@@ -23,7 +23,7 @@
 namespace operations_research {
 namespace sat {
 
-// This structs defines a way of splitting the variables of the model in two
+// This struct defines a way of splitting the variables of the model into two
 // groups: primary variables and secondary variables. Those are specified so
 // that the value of secondary_variables[i] is uniquely fixed by applying the
 // constraint dependency_resolution_constraint_index[i] to the values of the
@@ -36,18 +36,18 @@ namespace sat {
 // A useful property of this structure is that given an assignment of primary
 // variables that corresponds to a feasible solution, we can deduce all the
 // values of the secondary variables. Note that if the values of the primary
-// variables are unfeasible, then it might not be possible to deduce the values
+// variables are infeasible, then it might not be possible to deduce the values
 // of the secondary variables.
 struct VariableRelationships {
   std::vector<int> secondary_variables;
   std::vector<ConstraintProto> dependency_resolution_constraint;
 
-  // A pair of(x, y) means that one needs to compute the value of y before
+  // A pair (x, y) means that one needs to compute the value of y before
   // computing the value of x. This defines an implicit dependency DAG for
   // computing the secondary variables from the primary.
   std::vector<std::pair<int, int>> variable_dependencies;
 
-  // The list of model constraints that are redundant (ie., satisfied by
+  // The list of model constraints that are redundant (i.e., satisfied by
   // construction) when the secondary variables are computed from the primary
   // ones. In other words, a model has a solution for a set of primary
   // variables {x_i} if and only if all the variable bounds and non-redundant
@@ -56,10 +56,10 @@ struct VariableRelationships {
   std::vector<int> redundant_constraint_indices;
 };
 
-// Compute the variable relationships for a given model. Note that there are
-// multiple possible ways variables can be split in primary and secondary, so
-// this function will use an heuristic to try to find as many secondary
-// variables as possible. This runs in linear time in the model size (ie., the
+// Computes the variable relationships for a given model. Note that there are
+// multiple possible ways variables can be split into primary and secondary, so
+// this function will use a heuristic to try to find as many secondary
+// variables as possible. This runs in linear time in the model size (i.e., the
 // sum of the number of variables over the constraints).
 VariableRelationships ComputeVariableRelationships(const CpModelProto& model);
 

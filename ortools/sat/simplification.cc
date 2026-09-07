@@ -105,7 +105,7 @@ Literal SatPostsolver::ApplyReverseMapping(Literal l) {
 }
 
 void SatPostsolver::Postsolve(VariablesAssignment* assignment) const {
-  // First, we set all unassigned variable to true.
+  // First, we set all unassigned variables to true.
   // This will be a valid assignment of the presolved problem.
   for (BooleanVariable var(0); var < assignment->NumberOfVariables(); ++var) {
     if (!assignment->VariableIsAssigned(var)) {
@@ -302,8 +302,8 @@ bool SatPresolver::ProcessAllClauses() {
   int num_skipped_checks = 0;
   const int kCheckFrequency = 1000;
 
-  // Because on large problem we don't have a budget to process all clauses,
-  // lets start by the smallest ones first.
+  // Because on large problems we don't have a budget to process all clauses,
+  // let's start with the smallest ones first.
   std::stable_sort(clause_to_process_.begin(), clause_to_process_.end(),
                    [this](ClauseIndex c1, ClauseIndex c2) {
                      return clauses_[c1].size() < clauses_[c2].size();
@@ -327,7 +327,7 @@ bool SatPresolver::ProcessAllClauses() {
 }
 
 bool SatPresolver::Presolve() {
-  // This is slighlty inefficient, but the presolve algorithm is
+  // This is slightly inefficient, but the presolve algorithm is
   // a lot more costly anyway.
   std::vector<bool> can_be_removed(NumVariables(), true);
   return Presolve(can_be_removed);
@@ -417,7 +417,7 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
       const std::vector<Literal>& clause = clauses_[c];
       if (clause.empty()) continue;  // It has been deleted.
 
-      // Find a literal different from l that occur in the less number of
+      // Find a literal different from l that occurs in the fewest number of
       // clauses.
       const LiteralIndex l_min =
           FindLiteralWithShortestOccurrenceListExcluding(clause, Literal(l));
@@ -431,11 +431,11 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
             DifferAtGivenLiteral(clause, clauses_[d], Literal(l));
         if (l_diff == kNoLiteralIndex || m_lit_.count(l_diff) > 0) continue;
         if (l_diff == Literal(l).NegatedIndex()) {
-          // Self-subsumbtion!
+          // Self-subsumption!
           //
           // TODO(user): Not sure this can happen after the presolve we did
           // before calling SimpleBva().
-          VLOG(1) << "self-subsumbtion";
+          VLOG(1) << "self-subsumption";
         }
 
         flattened_p_.push_back({l_diff, c});
@@ -519,8 +519,8 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
   //
   // TODO(user): do that more efficiently? we can simply store the clause d
   // instead of finding it again. That said, this is executed only when a
-  // reduction occur, whereas the start of this function occur all the time, so
-  // we want it to be as fast as possible.
+  // reduction occurs, whereas the start of this function occurs all the time,
+  // so we want it to be as fast as possible.
   for (const ClauseIndex c : m_cls_) {
     const std::vector<Literal>& clause = clauses_[c];
     DCHECK(!clause.empty());
@@ -543,7 +543,7 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
 
   // Add these elements to the priority queue.
   //
-  // TODO(user): It seems some of the element already processed could benefit
+  // TODO(user): It seems some of the elements already processed could benefit
   // from being processed again by SimpleBva(). It is unclear if it is worth the
   // extra time though.
   AddToBvaPriorityQueue(x_true);
@@ -560,8 +560,8 @@ uint64_t SatPresolver::ComputeSignatureOfClauseVariables(ClauseIndex ci) {
   return signature;
 }
 
-// We are looking for clause that contains lit and contains a superset of the
-// literals in clauses_[clauses_index] or a superset with just one literal of
+// We are looking for a clause that contains lit and contains a superset of the
+// literals in clauses_[clause_index] or a superset with just one literal of
 // clauses_[clause_index] negated.
 bool SatPresolver::ProcessClauseToSimplifyOthersUsingLiteral(
     ClauseIndex clause_index, Literal lit) {
@@ -577,8 +577,8 @@ bool SatPresolver::ProcessClauseToSimplifyOthersUsingLiteral(
   for (const ClauseIndex ci : literal_to_clauses_[lit]) {
     const uint64_t ci_signature = signatures_[ci];
 
-    // This allows to check for empty clause without fetching the memory at
-    // clause_[ci]. It can have a huge time impact on large problems.
+    // This allows to check for an empty clause without fetching the memory at
+    // clauses_[ci]. It can have a huge time impact on large problems.
     DCHECK_EQ(ci_signature, ComputeSignatureOfClauseVariables(ci));
     if (ci_signature == 0) {
       need_cleaning = true;
@@ -586,7 +586,7 @@ bool SatPresolver::ProcessClauseToSimplifyOthersUsingLiteral(
     }
 
     // Note that SimplifyClause() can return true only if the variables in
-    // 'a' are a subset of the one in 'b'. We use the signatures to abort
+    // 'a' are a subset of the ones in 'b'. We use the signatures to abort
     // early as a speed optimization.
     if (ci != clause_index && (clause_signature & ~ci_signature) == 0 &&
         SimplifyClause(clause, &clauses_[ci], &opposite_literal,
@@ -723,7 +723,7 @@ bool SatPresolver::CrossProduct(Literal x) {
   if (s1 == 0 && s2 == 0) return false;
 
   // Heuristic. Abort if the work required to decide if x should be removed
-  // seems to big.
+  // seems too big.
   if (s1 > 1 && s2 > 1 && s1 * s2 > parameters_.presolve_bve_threshold()) {
     return false;
   }
@@ -763,21 +763,21 @@ bool SatPresolver::CrossProduct(Literal x) {
         no_resolvant = false;
         size += clause_weight + rs;
 
-        // Abort early if the "size" become too big.
+        // Abort early if the "size" becomes too big.
         if (size > threshold) return false;
       }
     }
     if (no_resolvant && parameters_.presolve_blocked_clause()) {
       // This is an incomplete heuristic for blocked clause detection. Here,
       // the clause i is "blocked", so we can remove it. Note that the code
-      // below already do that if we decide to eliminate x.
+      // below already does that if we decide to eliminate x.
       //
       // For more details, see the paper "Blocked clause elimination", Matti
       // Jarvisalo, Armin Biere, Marijn Heule. TACAS, volume 6015 of Lecture
       // Notes in Computer Science, pages 129–144. Springer, 2010.
       //
       // TODO(user): Choose if we use x or x.Negated() depending on the list
-      // sizes? The function achieve the same if x = x.Negated(), however the
+      // sizes? The function achieves the same if x = x.Negated(), however the
       // loops are not done in the same order which may change this incomplete
       // "blocked" clause detection.
       RemoveAndRegisterForPostsolve(i, x);
@@ -918,7 +918,7 @@ void SatPresolver::InitializeBvaPriorityQueue() {
     element->literal = lit;
     element->weight = literal_to_clause_sizes_[lit];
 
-    // If a literal occur only in two clauses, then there is no point calling
+    // If a literal occurs only in two clauses, then there is no point calling
     // SimpleBva() on it.
     if (element->weight > 2) bva_pq_.Add(element);
   }
@@ -1025,7 +1025,7 @@ LiteralIndex DifferAtGivenLiteral(const std::vector<Literal>& a,
       ++ia;
     } else {
       // A literal of b is not in a, save it.
-      // We abort if this happen twice.
+      // We abort if this happens twice.
       if (result != kNoLiteralIndex) return kNoLiteralIndex;
       result = (*ib).Index();
       ++ib;
@@ -1104,7 +1104,7 @@ int ComputeResolvantSize(Literal x, const std::vector<Literal>& a,
 }
 
 // A simple graph where the nodes are the literals and the nodes adjacent to a
-// literal l are the propagated literal when l is assigned in the underlying
+// literal l are the propagated literals when l is assigned in the underlying
 // sat solver.
 //
 // This can be used to do a strong component analysis while probing all the
@@ -1121,14 +1121,14 @@ class PropagationGraph {
   PropagationGraph(const PropagationGraph&) = delete;
   PropagationGraph& operator=(const PropagationGraph&) = delete;
 
-  // Returns the set of node adjacent to the given one.
+  // Returns the set of nodes adjacent to the given one.
   // Interface needed by FindStronglyConnectedComponents(), note that it needs
   // to be const.
   const std::vector<int32_t>& operator[](int32_t index) const {
     scratchpad_.clear();
     solver_->Backtrack(0);
 
-    // Note that when the time limit is reached, we just keep returning empty
+    // Note that when the time limit is reached, we just keep returning an empty
     // adjacency list. This way, the SCC algorithm will terminate quickly and
     // the equivalent literals detection will be incomplete but correct. Note
     // also that thanks to the SCC algorithm, we will explore the connected
@@ -1214,9 +1214,9 @@ void ProbeAndFindEquivalentLiteral(
   if (!mapping->empty()) {
     // If a variable in a cycle is fixed. We want to fix all of them.
     //
-    // We first fix all representative if one variable of the cycle is fixed. In
-    // a second pass we fix all the variable of a cycle whose representative is
-    // fixed.
+    // We first fix all representatives if one variable of the cycle is fixed.
+    // In a second pass we fix all the variables of a cycle whose representative
+    // is fixed.
     //
     // TODO(user): Fixing a variable might fix more of them by propagation, so
     // we might not fix everything possible with these loops.
