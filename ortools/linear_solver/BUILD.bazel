@@ -806,6 +806,20 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "scip_helper_macros_test",
+    srcs = ["scip_helper_macros_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":scip_helper_macros",
+        "//ortools/base:gmock_main",
+        "//ortools/port:scoped_std_stream_capture",
+        "@abseil-cpp//absl/status",
+        "@scip",
+    ],
+)
+
 cc_library(
     name = "solve_mp_model",
     srcs = ["solve_mp_model.cc"],
