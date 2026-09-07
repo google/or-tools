@@ -26,7 +26,6 @@ import com.google.ortools.routing.Model;
 import com.google.ortools.routing.RoutingSearchParameters;
 import com.google.protobuf.Duration;
 import java.util.logging.Logger;
-
 // [END import]
 
 /** Minimal VRP. */
@@ -88,7 +87,6 @@ public final class VrpSolutionCallback {
     }
     logger.info("Total distance of all routes: " + totalDistance + "m");
   }
-
   // [END solution_callback_printer]
 
   // [START solution_callback]
