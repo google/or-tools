@@ -219,6 +219,7 @@ cc_test(
     tags = ["noci"],
     deps = [
         ":matchers",
+        ":math_opt",
         ":variable_and_expressions",
         "//ortools/base:gmock",
         "//ortools/base:gmock_main",
@@ -227,54 +228,6 @@ cc_test(
         "//ortools/util:fp_roundtrip_conv",
         "//ortools/util:fp_roundtrip_conv_testing",
         "@abseil-cpp//absl/container:flat_hash_map",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:str_format",
-    ],
-)
-
-# Same as `variable_and_expressions_test` but activates the counters of
-# instances of LinearExpression and the associated tests.
-cc_test(
-    name = "variable_and_expressions_with_counters_test",
-    srcs = [
-        "variable_and_expressions.cc",
-        "variable_and_expressions.h",
-        "variable_and_expressions_test.cc",
-    ],
-    copts = ORTOOLS_TEST_COPTS,
-    defines = ["MATH_OPT_USE_EXPRESSION_COUNTERS"],
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
-    # Does not build with WASM, darwin_x86_64 or Android with duplicated symbols
-    # error in:
-    # * _objs/variable_and_expressions/variable_and_expressions.pic.o
-    # * _objs/variable_and_expressions_with_counters/variable_and_expressions.pic.o
-    #
-    # It seems likely that WASM links all tests in the same binary, and thus
-    # fails. We keep only variable_and_expressions_test.
-    tags = [
-        "no_test_android",
-        "no_test_darwin_x86_64",
-        "no_test_wasm",
-        "noci",
-    ],
-    deps = [
-        ":formatters",
-        ":key_types",
-        ":matchers",
-        "//ortools/base:gmock",
-        "//ortools/base:gmock_main",
-        "//ortools/base:map_util",
-        "//ortools/base:strong_int",
-        "//ortools/math_opt/elemental:elements",
-        "//ortools/math_opt/storage:model_storage",
-        "//ortools/math_opt/storage:model_storage_item",
-        "//ortools/math_opt/storage:model_storage_types",
-        "//ortools/util:fp_roundtrip_conv",
-        "//ortools/util:fp_roundtrip_conv_testing",
-        "@abseil-cpp//absl/base:core_headers",
-        "@abseil-cpp//absl/container:flat_hash_map",
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
     ],

@@ -24,42 +24,12 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/cpp/formatters.h"
-#ifdef MATH_OPT_USE_EXPRESSION_COUNTERS
-#include "ortools/math_opt/storage/model_storage_item.h"
-#endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
 #include "ortools/util/fp_roundtrip_conv.h"
 
 namespace operations_research {
 namespace math_opt {
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
-
-#ifdef MATH_OPT_USE_EXPRESSION_COUNTERS
-LinearExpression::LinearExpression() { ++num_calls_default_constructor_; }
-
-LinearExpression::LinearExpression(const LinearExpression& other)
-    : ModelStorageItemContainer(other.storage()),
-      terms_(other.terms_),
-      offset_(other.offset_) {
-  ++num_calls_copy_constructor_;
-}
-
-ABSL_CONST_INIT thread_local int
-    LinearExpression::num_calls_default_constructor_ = 0;
-ABSL_CONST_INIT thread_local int LinearExpression::num_calls_copy_constructor_ =
-    0;
-ABSL_CONST_INIT thread_local int LinearExpression::num_calls_move_constructor_ =
-    0;
-ABSL_CONST_INIT thread_local int
-    LinearExpression::num_calls_initializer_list_constructor_ = 0;
-
-void LinearExpression::ResetCounters() {
-  num_calls_default_constructor_ = 0;
-  num_calls_copy_constructor_ = 0;
-  num_calls_move_constructor_ = 0;
-  num_calls_initializer_list_constructor_ = 0;
-}
-#endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
 
 double LinearExpression::Evaluate(
     const VariableMap<double>& variable_values) const {
@@ -203,37 +173,6 @@ std::ostream& operator<<(std::ostream& ostr,
   }
   return ostr;
 }
-
-#ifdef MATH_OPT_USE_EXPRESSION_COUNTERS
-QuadraticExpression::QuadraticExpression() { ++num_calls_default_constructor_; }
-
-QuadraticExpression::QuadraticExpression(const QuadraticExpression& other)
-    : ModelStorageItemContainer(other),
-      quadratic_terms_(other.quadratic_terms_),
-      linear_terms_(other.linear_terms_),
-      offset_(other.offset_) {
-  ++num_calls_copy_constructor_;
-}
-
-ABSL_CONST_INIT thread_local int
-    QuadraticExpression::num_calls_default_constructor_ = 0;
-ABSL_CONST_INIT thread_local int
-    QuadraticExpression::num_calls_copy_constructor_ = 0;
-ABSL_CONST_INIT thread_local int
-    QuadraticExpression::num_calls_move_constructor_ = 0;
-ABSL_CONST_INIT thread_local int
-    QuadraticExpression::num_calls_initializer_list_constructor_ = 0;
-ABSL_CONST_INIT thread_local int
-    QuadraticExpression::num_calls_linear_expression_constructor_ = 0;
-
-void QuadraticExpression::ResetCounters() {
-  num_calls_default_constructor_ = 0;
-  num_calls_copy_constructor_ = 0;
-  num_calls_move_constructor_ = 0;
-  num_calls_initializer_list_constructor_ = 0;
-  num_calls_linear_expression_constructor_ = 0;
-}
-#endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
 
 }  // namespace math_opt
 }  // namespace operations_research

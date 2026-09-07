@@ -26,6 +26,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/math_opt/cpp/matchers.h"
+#include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/elemental/elements.h"
 #include "ortools/math_opt/storage/model_storage.h"
 #include "ortools/util/fp_roundtrip_conv.h"
@@ -707,93 +708,18 @@ TEST(LinearTermTest, LinearTermDividedByAssignment) {
   EXPECT_EQ(term.coefficient, 2.0);
 }
 
-// Define a reset function and a set of macros to test the constructor counters
-// of LinearExpression. When the counters are disabled, define empty
-// equivalents.
-#ifdef MATH_OPT_USE_EXPRESSION_COUNTERS
-void ResetExpressionCounters() {
-  LinearExpression::ResetCounters();
-  QuadraticExpression::ResetCounters();
-}
-#define EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(T, x) \
-  EXPECT_EQ(T::num_calls_default_constructor_, x);
-#define EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(T, x) \
-  EXPECT_EQ(T::num_calls_copy_constructor_, x);
-#define EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(T, x) \
-  EXPECT_EQ(T::num_calls_move_constructor_, x);
-#define EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(T, x) \
-  EXPECT_EQ(T::num_calls_initializer_list_constructor_, x);
-#define EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(x) \
-  EXPECT_EQ(QuadraticExpression::num_calls_linear_expression_constructor_, x);
-#define EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(x)              \
-  EXPECT_EQ(LinearExpression::num_calls_default_constructor_ +             \
-                LinearExpression::num_calls_copy_constructor_ +            \
-                LinearExpression::num_calls_move_constructor_ +            \
-                LinearExpression::num_calls_initializer_list_constructor_, \
-            x)                                                             \
-      << "num_calls_default_constructor: "                                 \
-      << LinearExpression::num_calls_default_constructor_                  \
-      << "\nnum_calls_copy_constructor: "                                  \
-      << LinearExpression::num_calls_copy_constructor_                     \
-      << "\nnum_calls_move_constructor: "                                  \
-      << LinearExpression::num_calls_move_constructor_                     \
-      << "\nnum_calls_initializer_list_constructor: "                      \
-      << LinearExpression::num_calls_initializer_list_constructor_
-#define EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(x)               \
-  EXPECT_EQ(QuadraticExpression::num_calls_default_constructor_ +              \
-                QuadraticExpression::num_calls_copy_constructor_ +             \
-                QuadraticExpression::num_calls_move_constructor_ +             \
-                QuadraticExpression::num_calls_initializer_list_constructor_ + \
-                QuadraticExpression::num_calls_linear_expression_constructor_, \
-            x)                                                                 \
-      << "num_calls_default_constructor: "                                     \
-      << QuadraticExpression::num_calls_default_constructor_                   \
-      << "\nnum_calls_copy_constructor: "                                      \
-      << QuadraticExpression::num_calls_copy_constructor_                      \
-      << "\nnum_calls_move_constructor: "                                      \
-      << QuadraticExpression::num_calls_move_constructor_                      \
-      << "\nnum_calls_initializer_list_constructor: "                          \
-      << QuadraticExpression::num_calls_initializer_list_constructor_          \
-      << "\nnum_calls_linear_expression_constructor: "                         \
-      << QuadraticExpression::num_calls_linear_expression_constructor_
-#else
-void ResetExpressionCounters() {}
-#define EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(T, x)
-#define EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(T, x)
-#define EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(T, x)
-#define EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(T, x)
-#define EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(x)
-#define EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(x)
-#define EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(x)
-#endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
-
 TEST(VariableTest, Negation) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
-  ResetExpressionCounters();
   {
     const LinearExpression expr = -a;
 
-    EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-    EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-    EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 0);
-    EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
     EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, -1}}, 0)));
   }
 
-  ResetExpressionCounters();
   {
     const QuadraticExpression expr = -a;
 
-    EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-    EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-    EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 0);
-    EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
-    EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(1);
     EXPECT_THAT(expr, IsIdentical(QuadraticExpression({}, {{a, -1}}, 0)));
   }
 }
@@ -1098,26 +1024,17 @@ TEST(LinearExpressionTest, Negation) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = -LinearExpression({{a, 3}, {b, -2}}, 5);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, -3}, {b, 2}}, -5)));
 }
 
 TEST(LinearExpressionTest, AdditionAssignmentDouble) {
   LinearExpression expr;
 
-  ResetExpressionCounters();
   expr += 3;
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({}, 3)));
 
-  ResetExpressionCounters();
   expr += -2;
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({}, 1)));
 }
 
@@ -1128,22 +1045,16 @@ TEST(LinearExpressionTest, AdditionAssignmentVariable) {
 
   // First test with a default expression, not associated with any ModelStorage.
   LinearExpression expr;
-  ResetExpressionCounters();
   expr += a;
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 1}}, 0)));
 
   // Reuse the previous expression now connected to a ModelStorage to test
   // adding the same variable.
-  ResetExpressionCounters();
   expr += a;
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 2}}, 0)));
 
   // Add another variable from the same ModelStorage.
-  ResetExpressionCounters();
   expr += b;
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 2}, {b, 1}}, 0)));
 }
 
@@ -1166,22 +1077,16 @@ TEST(LinearExpressionTest, AdditionAssignmentLinearTerm) {
 
   // First test with a default expression, not associated with any ModelStorage.
   LinearExpression expr;
-  ResetExpressionCounters();
   expr += LinearTerm(a, 3);
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 3}}, 0)));
 
   // Reuse the previous expression now connected to a ModelStorage to test
   // adding the same variable.
-  ResetExpressionCounters();
   expr += LinearTerm(a, -2);
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 1}}, 0)));
 
   // Add another variable from the same ModelStorage.
-  ResetExpressionCounters();
   expr += LinearTerm(b, -5);
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 1}, {b, -5}}, 0)));
 }
 
@@ -1204,9 +1109,7 @@ TEST(LinearExpressionTest, AdditionAssignmentSelf) {
   const Variable b(&storage, storage.AddVariable("b"));
 
   LinearExpression expr({{a, 2}, {b, 4}}, 2);
-  ResetExpressionCounters();
   expr += expr;
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 4}, {b, 8}}, 4)));
 }
 
@@ -1248,14 +1151,10 @@ TEST(LinearExpressionDeathTest, AdditionAssignmentOtherExpressionAndModel) {
 TEST(LinearExpressionTest, SubtractionAssignmentDouble) {
   LinearExpression expr;
 
-  ResetExpressionCounters();
   expr -= 3;
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({}, -3)));
 
-  ResetExpressionCounters();
   expr -= -2;
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({}, -1)));
 }
 
@@ -1266,22 +1165,16 @@ TEST(LinearExpressionTest, SubtractionAssignmentVariable) {
 
   // First test with a default expression, not associated with any ModelStorage.
   LinearExpression expr;
-  ResetExpressionCounters();
   expr -= a;
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, -1}}, 0)));
 
   // Reuse the previous expression now connected to a ModelStorage to test
   // adding the same variable.
-  ResetExpressionCounters();
   expr -= a;
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, -2}}, 0)));
 
   // Add another variable from the same ModelStorage.
-  ResetExpressionCounters();
   expr -= b;
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, -2}, {b, -1}}, 0)));
 }
 
@@ -1304,22 +1197,16 @@ TEST(LinearExpressionTest, SubtractionAssignmentLinearTerm) {
 
   // First test with a default expression, not associated with any ModelStorage.
   LinearExpression expr;
-  ResetExpressionCounters();
   expr -= LinearTerm(a, 3);
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, -3}}, 0)));
 
   // Reuse the previous expression now connected to a ModelStorage to test
   // adding the same variable.
-  ResetExpressionCounters();
   expr -= LinearTerm(a, -2);
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, -1}}, 0)));
 
   // Add another variable from the same ModelStorage.
-  ResetExpressionCounters();
   expr -= LinearTerm(b, 5);
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, -1}, {b, -5}}, 0)));
 }
 
@@ -1365,9 +1252,7 @@ TEST(LinearExpressionTest, SubtractionAssignmentSelf) {
   const Variable b(&storage, storage.AddVariable("b"));
 
   LinearExpression expr({{a, 2}, {b, 4}}, 2);
-  ResetExpressionCounters();
   expr -= expr;
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 0}, {b, 0}}, 0)));
 }
 
@@ -1387,9 +1272,7 @@ TEST(LinearExpressionTest, VariablePlusDouble) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = a + 3;
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 1}}, 3)));
 }
 
@@ -1397,9 +1280,7 @@ TEST(LinearExpressionTest, DoublePlusVariable) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = 3 + a;
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 1}}, 3)));
 }
 
@@ -1407,9 +1288,7 @@ TEST(LinearExpressionTest, LinearTermPlusDouble) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = 2 * a + 3;
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 2}}, 3)));
 }
 
@@ -1417,9 +1296,7 @@ TEST(LinearExpressionTest, DoublePlusLinearTerm) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = 3 + 2 * a;
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 2}}, 3)));
 }
 
@@ -1427,9 +1304,7 @@ TEST(LinearExpressionTest, LinearTermPlusLinearTerm) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = 3 * a + 2 * a;
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 5}}, 0)));
 }
 
@@ -1438,9 +1313,7 @@ TEST(LinearExpressionTest, LinearTermPlusVariable) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = 3 * a + b;
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 3}, {b, 1}}, 0)));
 }
 
@@ -1448,9 +1321,7 @@ TEST(LinearExpressionTest, VariablePlusLinearTerm) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = a + 2 * a;
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 3}}, 0)));
 }
 
@@ -1459,9 +1330,7 @@ TEST(LinearExpressionTest, VariablePlusVariable) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = a + b;
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 1}, {b, 1}}, 0)));
 }
 
@@ -1470,12 +1339,7 @@ TEST(LinearExpressionTest, ExpressionPlusDouble) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = (2 * a + b + 1) + 5;
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 2}, {b, 1}}, 6)));
 }
 
@@ -1484,12 +1348,7 @@ TEST(LinearExpressionTest, DoublePlusExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = 5 + (2 * a + b + 1);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 2}, {b, 1}}, 6)));
 }
 
@@ -1498,12 +1357,7 @@ TEST(LinearExpressionTest, ExpressionPlusVariable) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = (2 * a + b + 1) + b;
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 2}, {b, 2}}, 1)));
 }
 
@@ -1512,12 +1366,7 @@ TEST(LinearExpressionTest, VariablePlusExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = b + (2 * a + b + 1);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 2}, {b, 2}}, 1)));
 }
 
@@ -1526,12 +1375,7 @@ TEST(LinearExpressionTest, ExpressionPlusLinearTerm) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = (2 * a + b + 1) + 3 * b;
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 2}, {b, 4}}, 1)));
 }
 
@@ -1540,12 +1384,7 @@ TEST(LinearExpressionTest, LinearTermPlusExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = 3 * b + (2 * a + b + 1);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 2}, {b, 4}}, 1)));
 }
 
@@ -1554,12 +1393,7 @@ TEST(LinearExpressionTest, ExpressionPlusExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = (3 * b + a + 2) + (2 * a + b + 1);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 2);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 3}, {b, 4}}, 3)));
 }
 
@@ -1567,9 +1401,7 @@ TEST(LinearExpressionTest, VariableMinusDouble) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = a - 3;
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 1}}, -3)));
 }
 
@@ -1577,9 +1409,7 @@ TEST(LinearExpressionTest, DoubleMinusVariable) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = 3 - a;
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, -1}}, 3)));
 }
 
@@ -1587,9 +1417,7 @@ TEST(LinearExpressionTest, LinearTermMinusDouble) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = 2 * a - 3;
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 2}}, -3)));
 }
 
@@ -1597,9 +1425,7 @@ TEST(LinearExpressionTest, DoubleMinusLinearTerm) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = 3 - 2 * a;
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, -2}}, 3)));
 }
 
@@ -1607,9 +1433,7 @@ TEST(LinearExpressionTest, LinearTermMinusLinearTerm) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = 3 * a - 2 * a;
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 1}}, 0)));
 }
 
@@ -1618,9 +1442,7 @@ TEST(LinearExpressionTest, LinearTermMinusVariable) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = 3 * a - b;
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 3}, {b, -1}}, 0)));
 }
 
@@ -1628,9 +1450,7 @@ TEST(LinearExpressionTest, VariableMinusLinearTerm) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = a - 2 * a;
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, -1}}, 0)));
 }
 
@@ -1639,9 +1459,7 @@ TEST(LinearExpressionTest, VariableMinusVariable) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = a - b;
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 1}, {b, -1}}, 0)));
 }
 
@@ -1650,12 +1468,7 @@ TEST(LinearExpressionTest, ExpressionMinusDouble) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = (2 * a + b + 1) - 5;
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 2}, {b, 1}}, -4)));
 }
 
@@ -1664,12 +1477,7 @@ TEST(LinearExpressionTest, DoubleMinusExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = 5 - (2 * a + b + 1);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, -2}, {b, -1}}, 4)));
 }
 
@@ -1678,12 +1486,7 @@ TEST(LinearExpressionTest, ExpressionMinusVariable) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = (2 * a + 2 * b + 1) - b;
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 2}, {b, 1}}, 1)));
 }
 
@@ -1692,12 +1495,7 @@ TEST(LinearExpressionTest, VariableMinusExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = b - (2 * a + 2 * b + 1);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 4);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, -2}, {b, -1}}, -1)));
 }
 
@@ -1706,12 +1504,7 @@ TEST(LinearExpressionTest, ExpressionMinusLinearTerm) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = (2 * a + b + 1) - 3 * b;
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 2}, {b, -2}}, 1)));
 }
 
@@ -1720,12 +1513,7 @@ TEST(LinearExpressionTest, LinearTermMinusExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = 3 * b - (2 * a + b + 1);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, -2}, {b, 2}}, -1)));
 }
 
@@ -1734,12 +1522,7 @@ TEST(LinearExpressionTest, ExpressionMinusExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = (3 * b + a + 2) - (2 * a + b + 1);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 2);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, -1}, {b, 2}}, 1)));
 }
 
@@ -1749,9 +1532,7 @@ TEST(LinearExpressionTest, ExpressionTimesAssignment) {
   const Variable b(&storage, storage.AddVariable("b"));
 
   LinearExpression expr({{a, 3}, {b, 2}}, -2);
-  ResetExpressionCounters();
   expr *= 2;
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 0);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 6}, {b, 4}}, -4)));
 }
 
@@ -1760,12 +1541,7 @@ TEST(LinearExpressionTest, DoubleTimesExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = 2 * LinearExpression({{a, 3}, {b, 2}}, -2);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 6}, {b, 4}}, -4)));
 }
 
@@ -1774,12 +1550,7 @@ TEST(LinearExpressionTest, ExpressionTimesDouble) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = LinearExpression({{a, 3}, {b, 2}}, -2) * 2;
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 6}, {b, 4}}, -4)));
 }
 
@@ -1789,9 +1560,7 @@ TEST(LinearExpressionTest, ExpressionDividedByAssignment) {
   const Variable b(&storage, storage.AddVariable("b"));
 
   LinearExpression expr({{a, 3}, {b, 2}}, -2);
-  ResetExpressionCounters();
   expr /= 2;
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 0);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 1.5}, {b, 1}}, -1)));
 }
 
@@ -1800,12 +1569,7 @@ TEST(LinearExpressionTest, ExpressionDividedByDouble) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LinearExpression expr = LinearExpression({{a, 3}, {b, 2}}, -2) / 2;
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(expr, IsIdentical(LinearExpression({{a, 1.5}, {b, 1}}, -1)));
 }
 
@@ -1968,12 +1732,7 @@ TEST(LinearExpressionTest, ExpressionGreaterEqualDouble) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LowerBoundedLinearExpression comparison = 3 * a + b + 2 >= 5;
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(comparison.expression,
               IsIdentical(LinearExpression({{a, 3}, {b, 1}}, 2)));
   EXPECT_EQ(comparison.lower_bound, 5.0);
@@ -1984,12 +1743,7 @@ TEST(LinearExpressionTest, DoubleLesserEqualExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const LowerBoundedLinearExpression comparison = 5 <= 3 * a + b + 2;
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(comparison.expression,
               IsIdentical(LinearExpression({{a, 3}, {b, 1}}, 2)));
   EXPECT_EQ(comparison.lower_bound, 5.0);
@@ -1999,12 +1753,7 @@ TEST(LinearExpressionTest, LinearTermGreaterEqualDouble) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const LowerBoundedLinearExpression comparison = 3 * a >= 5;
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(comparison.expression,
               IsIdentical(LinearExpression({{a, 3}}, 0)));
   EXPECT_EQ(comparison.lower_bound, 5.0);
@@ -2014,12 +1763,7 @@ TEST(LinearExpressionTest, DoubleLesserEqualLinearTerm) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const LowerBoundedLinearExpression comparison = 5 <= 3 * a;
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(comparison.expression,
               IsIdentical(LinearExpression({{a, 3}}, 0)));
   EXPECT_EQ(comparison.lower_bound, 5.0);
@@ -2029,12 +1773,7 @@ TEST(LinearExpressionTest, VariableGreaterEqualDouble) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const LowerBoundedLinearExpression comparison = a >= 5;
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(comparison.expression,
               IsIdentical(LinearExpression({{a, 1}}, 0)));
   EXPECT_EQ(comparison.lower_bound, 5.0);
@@ -2044,12 +1783,7 @@ TEST(LinearExpressionTest, DoubleLesserEqualVariable) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const LowerBoundedLinearExpression comparison = 5 <= a;
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(comparison.expression,
               IsIdentical(LinearExpression({{a, 1}}, 0)));
   EXPECT_EQ(comparison.lower_bound, 5.0);
@@ -2060,12 +1794,7 @@ TEST(LinearExpressionTest, ExpressionLesserEqualDouble) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const UpperBoundedLinearExpression comparison = 3 * a + b + 2 <= 5;
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(comparison.expression,
               IsIdentical(LinearExpression({{a, 3}, {b, 1}}, 2)));
   EXPECT_EQ(comparison.upper_bound, 5.0);
@@ -2076,12 +1805,7 @@ TEST(LinearExpressionTest, DoubleGreaterEqualExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const UpperBoundedLinearExpression comparison = 5 >= 3 * a + b + 2;
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(comparison.expression,
               IsIdentical(LinearExpression({{a, 3}, {b, 1}}, 2)));
   EXPECT_EQ(comparison.upper_bound, 5.0);
@@ -2091,12 +1815,7 @@ TEST(LinearExpressionTest, LinearTermLesserEqualDouble) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const UpperBoundedLinearExpression comparison = 3 * a <= 5;
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(comparison.expression,
               IsIdentical(LinearExpression({{a, 3}}, 0)));
   EXPECT_EQ(comparison.upper_bound, 5.0);
@@ -2106,12 +1825,7 @@ TEST(LinearExpressionTest, DoubleGreaterEqualLinearTerm) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const UpperBoundedLinearExpression comparison = 5 >= 3 * a;
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(comparison.expression,
               IsIdentical(LinearExpression({{a, 3}}, 0)));
   EXPECT_EQ(comparison.upper_bound, 5.0);
@@ -2121,12 +1835,7 @@ TEST(LinearExpressionTest, VariableLesserEqualDouble) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const UpperBoundedLinearExpression comparison = a <= 5;
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(comparison.expression,
               IsIdentical(LinearExpression({{a, 1}}, 0)));
   EXPECT_EQ(comparison.upper_bound, 5.0);
@@ -2136,12 +1845,7 @@ TEST(LinearExpressionTest, DoubleGreaterEqualVariable) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const UpperBoundedLinearExpression comparison = 5 >= a;
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
   EXPECT_THAT(comparison.expression,
               IsIdentical(LinearExpression({{a, 1}}, 0)));
   EXPECT_EQ(comparison.upper_bound, 5.0);
@@ -2152,14 +1856,9 @@ TEST(LinearExpressionTest, LowerBoundedExpressionLesserEqualDouble) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = (2 <= 2 * a + 3 * b + 5) <= 4;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -3.0, LinearTerms({{a, 2}, {b, 3}}), -1.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 5);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, DoubleLesserEqualExpressionLesserEqualDouble) {
@@ -2167,14 +1866,9 @@ TEST(LinearExpressionTest, DoubleLesserEqualExpressionLesserEqualDouble) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 2 <= 2 * a + 3 * b + 5 <= 4;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -3.0, LinearTerms({{a, 2}, {b, 3}}), -1.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 5);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, DoubleGreaterEqualLowerBoundedExpression) {
@@ -2182,14 +1876,9 @@ TEST(LinearExpressionTest, DoubleGreaterEqualLowerBoundedExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 4 >= (2 * a + 3 * b + 5 >= 2);
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -3.0, LinearTerms({{a, 2}, {b, 3}}), -1.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 5);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, DoubleGreaterEqualExpressionGreaterEqualDouble) {
@@ -2197,14 +1886,9 @@ TEST(LinearExpressionTest, DoubleGreaterEqualExpressionGreaterEqualDouble) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 4 >= 2 * a + 3 * b + 5 >= 2;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -3.0, LinearTerms({{a, 2}, {b, 3}}), -1.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 5);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, DoubleLesserEqualUpperBoundedExpression) {
@@ -2212,14 +1896,9 @@ TEST(LinearExpressionTest, DoubleLesserEqualUpperBoundedExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 2 <= (2 * a + 3 * b + 5 <= 4);
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -3.0, LinearTerms({{a, 2}, {b, 3}}), -1.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 5);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, UpperBoundedExpressionGreaterEqualDouble) {
@@ -2227,14 +1906,9 @@ TEST(LinearExpressionTest, UpperBoundedExpressionGreaterEqualDouble) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = (4 >= 2 * a + 3 * b + 5) >= 2;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -3.0, LinearTerms({{a, 2}, {b, 3}}), -1.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 5);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, ExpressionLesserEqualExpression) {
@@ -2242,14 +1916,9 @@ TEST(LinearExpressionTest, ExpressionLesserEqualExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 2 * a + 3 * b + 5 <= a + 3;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -kInf, LinearTerms({{a, 1}, {b, 3}}), -2.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 2);
 }
 
 TEST(LinearExpressionTest, ExpressionLesserEqualLinearTerm) {
@@ -2257,14 +1926,9 @@ TEST(LinearExpressionTest, ExpressionLesserEqualLinearTerm) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 2 * a + 3 * b + 5 <= 2 * b;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -kInf, LinearTerms({{a, 2}, {b, 1}}), -5.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, LinearTermLesserEqualExpression) {
@@ -2272,14 +1936,9 @@ TEST(LinearExpressionTest, LinearTermLesserEqualExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 2 * b <= 2 * a + 3 * b + 5;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -5.0, LinearTerms({{a, 2}, {b, 1}}), kInf));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, VariableLesserEqualExpression) {
@@ -2287,14 +1946,9 @@ TEST(LinearExpressionTest, VariableLesserEqualExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = b <= 2 * a + 3 * b + 5;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -5.0, LinearTerms({{a, 2}, {b, 2}}), kInf));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 4);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, ExpressionLesserEqualVariable) {
@@ -2302,14 +1956,9 @@ TEST(LinearExpressionTest, ExpressionLesserEqualVariable) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 2 * a + 3 * b + 5 <= b;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -kInf, LinearTerms({{a, 2}, {b, 2}}), -5.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 4);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, ExpressionGreaterEqualExpression) {
@@ -2317,14 +1966,9 @@ TEST(LinearExpressionTest, ExpressionGreaterEqualExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 2 * a + 3 * b + 5 >= a + 3;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -2.0, LinearTerms({{a, 1}, {b, 3}}), kInf));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 2);
 }
 
 TEST(LinearExpressionTest, ExpressionGreaterEqualLinearTerm) {
@@ -2332,14 +1976,9 @@ TEST(LinearExpressionTest, ExpressionGreaterEqualLinearTerm) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 2 * a + 3 * b + 5 >= 2 * b;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -5.0, LinearTerms({{a, 2}, {b, 1}}), kInf));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, LinearTermGreaterEqualExpression) {
@@ -2347,14 +1986,9 @@ TEST(LinearExpressionTest, LinearTermGreaterEqualExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 2 * b >= 2 * a + 3 * b + 5;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -kInf, LinearTerms({{a, 2}, {b, 1}}), -5.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, VariableGreaterEqualExpression) {
@@ -2362,14 +1996,9 @@ TEST(LinearExpressionTest, VariableGreaterEqualExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = b >= 2 * a + 3 * b + 5;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -kInf, LinearTerms({{a, 2}, {b, 2}}), -5.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 4);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, ExpressionGreaterEqualVariable) {
@@ -2377,14 +2006,9 @@ TEST(LinearExpressionTest, ExpressionGreaterEqualVariable) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 2 * a + 3 * b + 5 >= b;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -5.0, LinearTerms({{a, 2}, {b, 2}}), kInf));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 4);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, LinearTermLesserEqualLinearTerm) {
@@ -2392,14 +2016,9 @@ TEST(LinearExpressionTest, LinearTermLesserEqualLinearTerm) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 2 * a <= 2 * b;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -kInf, LinearTerms({{a, 2}, {b, -2}}), 0.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, VariableLesserEqualLinearTerm) {
@@ -2407,14 +2026,9 @@ TEST(LinearExpressionTest, VariableLesserEqualLinearTerm) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = b <= 2 * a;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -kInf, LinearTerms({{a, -2}, {b, 1}}), 0.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, VariableLesserEqualVariable) {
@@ -2422,14 +2036,9 @@ TEST(LinearExpressionTest, VariableLesserEqualVariable) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = b <= a;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -kInf, LinearTerms({{a, -1}, {b, 1}}), 0.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, LinearTermLesserEqualVariable) {
@@ -2437,14 +2046,9 @@ TEST(LinearExpressionTest, LinearTermLesserEqualVariable) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 2 * a <= b;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -kInf, LinearTerms({{a, 2}, {b, -1}}), 0.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, LinearTermGreaterEqualLinearTerm) {
@@ -2452,14 +2056,9 @@ TEST(LinearExpressionTest, LinearTermGreaterEqualLinearTerm) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 2 * a >= 2 * b;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               0.0, LinearTerms({{a, 2}, {b, -2}}), kInf));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, VariableGreaterEqualLinearTerm) {
@@ -2467,14 +2066,9 @@ TEST(LinearExpressionTest, VariableGreaterEqualLinearTerm) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = b >= 2 * a;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               0.0, LinearTerms({{a, -2}, {b, 1}}), kInf));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, VariableGreaterEqualVariable) {
@@ -2482,14 +2076,9 @@ TEST(LinearExpressionTest, VariableGreaterEqualVariable) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = b >= a;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               0.0, LinearTerms({{a, -1}, {b, 1}}), kInf));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, LinearTermGreaterEqualVariable) {
@@ -2497,14 +2086,9 @@ TEST(LinearExpressionTest, LinearTermGreaterEqualVariable) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 2 * a >= b;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               0.0, LinearTerms({{a, 2}, {b, -1}}), kInf));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, ExpressionEqualExpression) {
@@ -2512,14 +2096,9 @@ TEST(LinearExpressionTest, ExpressionEqualExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 2 * a + 3 * b + 5 == 3 * a + b + 2;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -3.0, LinearTerms({{a, -1}, {b, 2}}), -3.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 4);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 2);
 }
 
 TEST(LinearExpressionTest, ExpressionEqualLinearTerm) {
@@ -2527,14 +2106,9 @@ TEST(LinearExpressionTest, ExpressionEqualLinearTerm) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 2 * a + 3 * b + 5 == 3 * a;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -5.0, LinearTerms({{a, -1}, {b, 3}}), -5.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, LinearTermEqualExpression) {
@@ -2542,14 +2116,9 @@ TEST(LinearExpressionTest, LinearTermEqualExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 3 * a == 2 * a + 3 * b + 5;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -5.0, LinearTerms({{a, -1}, {b, 3}}), -5.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, ExpressionEqualVariable) {
@@ -2557,14 +2126,9 @@ TEST(LinearExpressionTest, ExpressionEqualVariable) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 2 * a + 3 * b + 5 == a;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -5.0, LinearTerms({{a, 1}, {b, 3}}), -5.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 4);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, VariableEqualExpression) {
@@ -2572,14 +2136,9 @@ TEST(LinearExpressionTest, VariableEqualExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = a == 2 * a + 3 * b + 5;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -5.0, LinearTerms({{a, 1}, {b, 3}}), -5.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 4);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, ExpressionEqualDouble) {
@@ -2587,14 +2146,9 @@ TEST(LinearExpressionTest, ExpressionEqualDouble) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 2 * a + 3 * b + 5 == 3;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -2.0, LinearTerms({{a, 2}, {b, 3}}), -2.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, DoubleEqualExpression) {
@@ -2602,84 +2156,54 @@ TEST(LinearExpressionTest, DoubleEqualExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 3 == 2 * a + 3 * b + 5;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               -2.0, LinearTerms({{a, 2}, {b, 3}}), -2.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, LinearTermEqualLinearTerm) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 2 * a == 3 * a;
   EXPECT_THAT(comparison,
               BoundedLinearExpressionEquiv(0.0, LinearTerms({{a, -1}}), 0.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, LinearTermEqualVariable) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 2 * a == a;
   EXPECT_THAT(comparison,
               BoundedLinearExpressionEquiv(0.0, LinearTerms({{a, 1}}), 0.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, VariableEqualLinearTerm) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = a == 2 * a;
   EXPECT_THAT(comparison,
               BoundedLinearExpressionEquiv(0.0, LinearTerms({{a, -1}}), 0.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, LinearTermEqualDouble) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 2 * a == 3;
   EXPECT_THAT(comparison,
               BoundedLinearExpressionEquiv(3.0, LinearTerms({{a, 2}}), 3.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, DoubleEqualLinearTerm) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 3 == 2 * a;
   EXPECT_THAT(comparison,
               BoundedLinearExpressionEquiv(3.0, LinearTerms({{a, 2}}), 3.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, VariableEqualVariable) {
@@ -2687,70 +2211,45 @@ TEST(LinearExpressionTest, VariableEqualVariable) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = a == b;
   EXPECT_THAT(comparison, BoundedLinearExpressionEquiv(
                               0.0, LinearTerms({{a, 1}, {b, -1}}), 0.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, VariableEqualDouble) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = a == 3;
   EXPECT_THAT(comparison,
               BoundedLinearExpressionEquiv(3.0, LinearTerms({{a, 1}}), 3.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(LinearExpressionTest, DoubleEqualVariable) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 3 == a;
   EXPECT_THAT(comparison,
               BoundedLinearExpressionEquiv(3.0, LinearTerms({{a, 1}}), 3.0));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(BoundedLinearExpressionTest, FromLowerBoundedExpression) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = 3 <= a;
   EXPECT_THAT(comparison,
               BoundedLinearExpressionEquiv(3.0, LinearTerms({{a, 1}}), kInf));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(BoundedLinearExpressionTest, FromUpperBoundedExpression) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const BoundedLinearExpression comparison = a <= 5;
   EXPECT_THAT(comparison,
               BoundedLinearExpressionEquiv(-kInf, LinearTerms({{a, 1}}), 5));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 1);
 }
 
 TEST(BoundedLinearExpressionTest, OutputStreaming) {
@@ -2982,19 +2481,9 @@ TEST(QuadraticExpressionTest, FromLinearExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   LinearExpression linear_expr({{a, 1.2}, {b, 1.3}}, 1.4);
-  ResetExpressionCounters();
 
   const QuadraticExpression quadratic_expr = std::move(linear_expr);
 
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(1);
   EXPECT_THAT(quadratic_expr,
               IsIdentical(QuadraticExpression({}, {{a, 1.2}, {b, 1.3}}, 1.4)));
   // We attempt to test that the we successfully moved out of linear_expr. Since
@@ -3319,16 +2808,9 @@ TEST(QuadraticExpressionTest, DoublePlusQuadraticTerm) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   const QuadraticTerm term(a, b, 1.2);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = 3.4 + term;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression({{a, b, 1.2}}, {}, 3.4)));
 }
 
@@ -3337,16 +2819,9 @@ TEST(QuadraticExpressionTest, DoublePlusQuadraticExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = 7.8 + std::move(expr);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression({{a, b, 1.2}}, {{b, 3.4}},
                                                       7.8 + 5.6)));
 }
@@ -3356,16 +2831,9 @@ TEST(QuadraticExpressionTest, VariablePlusQuadraticTerm) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   const QuadraticTerm term(a, b, 1.2);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = b + term;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result,
               IsIdentical(QuadraticExpression({{a, b, 1.2}}, {{b, 1}}, 0)));
 }
@@ -3387,16 +2855,9 @@ TEST(QuadraticExpressionTest, VariablePlusQuadraticExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = b + std::move(expr);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression(
                           {{a, b, 1.2}}, {{b, 1 * 3.4 + 1}}, 5.6)));
 }
@@ -3419,16 +2880,9 @@ TEST(QuadraticExpressionTest, LinearTermPlusQuadraticTerm) {
   const Variable b(&storage, storage.AddVariable("b"));
   const LinearTerm first_term(a, 1.2);
   const QuadraticTerm second_term(b, a, 3.4);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = first_term + second_term;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result,
               IsIdentical(QuadraticExpression({{a, b, 3.4}}, {{a, 1.2}}, 0)));
 }
@@ -3452,16 +2906,9 @@ TEST(QuadraticExpressionTest, LinearTermPlusQuadraticExpression) {
   const Variable b(&storage, storage.AddVariable("b"));
   const LinearTerm term(a, 1.2);
   QuadraticExpression expr({{a, b, 3.4}}, {{b, 5.6}}, 7.8);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = term + std::move(expr);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression(
                           {{a, b, 3.4}}, {{a, 1.2}, {b, 5.6}}, 7.8)));
 }
@@ -3486,19 +2933,9 @@ TEST(QuadraticExpressionTest, LinearExpressionPlusQuadraticTerm) {
   const Variable b(&storage, storage.AddVariable("b"));
   LinearExpression expr({{a, 1.2}}, 3.4);
   const QuadraticTerm term(b, a, 5.6);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = std::move(expr) + term;
 
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(1);
   EXPECT_THAT(result,
               IsIdentical(QuadraticExpression({{a, b, 5.6}}, {{a, 1.2}}, 3.4)));
 }
@@ -3523,16 +2960,9 @@ TEST(QuadraticExpressionTest, LinearExpressionPlusQuadraticExpression) {
   const Variable b(&storage, storage.AddVariable("b"));
   const LinearExpression first_expr({{a, 1.2}}, 3.4);
   QuadraticExpression second_expr({{a, b, 5.6}}, {{b, 7.8}}, 9.0);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = first_expr + std::move(second_expr);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression(
                           {{a, b, 5.6}}, {{a, 1.2}, {b, 7.8}}, 3.4 + 9.0)));
 }
@@ -3556,16 +2986,9 @@ TEST(QuadraticExpressionTest, QuadraticTermPlusDouble) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   const QuadraticTerm term(a, b, 1.2);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = term + 3.4;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression({{a, b, 1.2}}, {}, 3.4)));
 }
 
@@ -3574,16 +2997,9 @@ TEST(QuadraticExpressionTest, QuadraticTermPlusVariable) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   const QuadraticTerm term(a, b, 1.2);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = term + a;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result,
               IsIdentical(QuadraticExpression({{a, b, 1.2}}, {{a, 1}}, 0)));
 }
@@ -3606,16 +3022,9 @@ TEST(QuadraticExpressionTest, QuadraticTermPlusLinearTerm) {
   const Variable b(&storage, storage.AddVariable("b"));
   const QuadraticTerm first_term(a, b, 1.2);
   const LinearTerm second_term(a, 3.4);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = first_term + second_term;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result,
               IsIdentical(QuadraticExpression({{a, b, 1.2}}, {{a, 3.4}}, 0)));
 }
@@ -3639,19 +3048,9 @@ TEST(QuadraticExpressionTest, QuadraticTermPlusLinearExpression) {
   const Variable b(&storage, storage.AddVariable("b"));
   const QuadraticTerm term(a, b, 1.2);
   LinearExpression expr({{a, 3.4}}, 5.6);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = term + std::move(expr);
 
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(1);
   EXPECT_THAT(result,
               IsIdentical(QuadraticExpression({{a, b, 1.2}}, {{a, 3.4}}, 5.6)));
 }
@@ -3676,16 +3075,9 @@ TEST(QuadraticExpressionTest, QuadraticTermPlusQuadraticTerm) {
   const Variable b(&storage, storage.AddVariable("b"));
   const QuadraticTerm first_term(a, b, 1.2);
   const QuadraticTerm second_term(b, b, 3.4);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = first_term + second_term;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression(
                           {{a, b, 1.2}, {b, b, 3.4}}, {}, 0)));
 }
@@ -3709,16 +3101,9 @@ TEST(QuadraticExpressionTest, QuadraticTermPlusQuadraticExpression) {
   const Variable b(&storage, storage.AddVariable("b"));
   const QuadraticTerm term(a, b, 1.2);
   QuadraticExpression expr({{a, b, 3.4}}, {{b, 5.6}}, 7.8);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = term + std::move(expr);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression({{a, b, 1.2 + 3.4}},
                                                       {{b, 5.6}}, 7.8)));
 }
@@ -3742,16 +3127,9 @@ TEST(QuadraticExpressionTest, QuadraticExpressionPlusDouble) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = std::move(expr) + 7.8;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression({{a, b, 1.2}}, {{b, 3.4}},
                                                       5.6 + 7.8)));
 }
@@ -3761,16 +3139,9 @@ TEST(QuadraticExpressionTest, QuadraticExpressionPlusVariable) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = std::move(expr) + a;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression(
                           {{a, b, 1.2}}, {{a, 1}, {b, 3.4}}, 5.6)));
 }
@@ -3793,16 +3164,9 @@ TEST(QuadraticExpressionTest, QuadraticExpressionPlusLinearTerm) {
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
   const LinearTerm term(a, 7.8);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = std::move(expr) + term;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression(
                           {{a, b, 1.2}}, {{a, 7.8}, {b, 3.4}}, 5.6)));
 }
@@ -3827,16 +3191,9 @@ TEST(QuadraticExpressionTest, QuadraticExpressionPlusLinearExpression) {
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression first_expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
   const LinearExpression second_expr({{a, 7.8}}, 9.0);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = std::move(first_expr) + second_expr;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression(
                           {{a, b, 1.2}}, {{a, 7.8}, {b, 3.4}}, 5.6 + 9)));
 }
@@ -3861,16 +3218,9 @@ TEST(QuadraticExpressionTest, QuadraticExpressionPlusQuadraticTerm) {
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
   const QuadraticTerm term(a, a, 7.8);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = std::move(expr) + term;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression(
                           {{a, a, 7.8}, {a, b, 1.2}}, {{b, 3.4}}, 5.6)));
 }
@@ -3895,17 +3245,10 @@ TEST(QuadraticExpressionTest, QuadraticExpressionPlusQuadraticExpression) {
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression first_expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
   QuadraticExpression second_expr({{b, b, 7.8}}, {{a, 9.0}}, 1.3);
-  ResetExpressionCounters();
 
   const QuadraticExpression result =
       std::move(first_expr) + std::move(second_expr);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result,
               IsIdentical(QuadraticExpression({{a, b, 1.2}, {b, b, 7.8}},
                                               {{a, 9}, {b, 3.4}}, 5.6 + 1.3)));
@@ -3945,16 +3288,9 @@ TEST(QuadraticExpressionTest, QuadraticExpressionNegation) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = -std::move(expr);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression({{a, b, -1.2}},
                                                       {{b, -3.4}}, -5.6)));
 }
@@ -3964,16 +3300,9 @@ TEST(QuadraticExpressionTest, DoubleMinusQuadraticTerm) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   const QuadraticTerm term(a, b, 1.2);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = 3.4 - term;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result,
               IsIdentical(QuadraticExpression({{a, b, -1.2}}, {}, 3.4)));
 }
@@ -3983,16 +3312,9 @@ TEST(QuadraticExpressionTest, DoubleMinusQuadraticExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = 7.8 - std::move(expr);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression({{a, b, -1.2}},
                                                       {{b, -3.4}}, 7.8 - 5.6)));
 }
@@ -4002,16 +3324,9 @@ TEST(QuadraticExpressionTest, VariableMinusQuadraticTerm) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   const QuadraticTerm term(a, b, 1.2);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = b - term;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result,
               IsIdentical(QuadraticExpression({{a, b, -1.2}}, {{b, 1}}, 0)));
 }
@@ -4033,16 +3348,9 @@ TEST(QuadraticExpressionTest, VariableMinusQuadraticExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = b - std::move(expr);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 4);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression({{a, b, -1.2}},
                                                       {{b, 1 - 3.4}}, -5.6)));
 }
@@ -4065,16 +3373,9 @@ TEST(QuadraticExpressionTest, LinearTermMinusQuadraticTerm) {
   const Variable b(&storage, storage.AddVariable("b"));
   const LinearTerm first_term(a, 1.2);
   const QuadraticTerm second_term(b, a, 3.4);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = first_term - second_term;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result,
               IsIdentical(QuadraticExpression({{a, b, -3.4}}, {{a, 1.2}}, 0)));
 }
@@ -4098,16 +3399,9 @@ TEST(QuadraticExpressionTest, LinearTermMinusQuadraticExpression) {
   const Variable b(&storage, storage.AddVariable("b"));
   const LinearTerm term(a, 1.2);
   QuadraticExpression expr({{a, b, 3.4}}, {{b, 5.6}}, 7.8);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = term - std::move(expr);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression(
                           {{a, b, -3.4}}, {{a, 1.2}, {b, -5.6}}, -7.8)));
 }
@@ -4132,19 +3426,9 @@ TEST(QuadraticExpressionTest, LinearExpressionMinusQuadraticTerm) {
   const Variable b(&storage, storage.AddVariable("b"));
   LinearExpression expr({{a, 1.2}}, 3.4);
   const QuadraticTerm term(b, a, 5.6);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = std::move(expr) - term;
 
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(1);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression({{a, b, -5.6}},
                                                       {{a, 1.2}}, 3.4)));
 }
@@ -4169,16 +3453,9 @@ TEST(QuadraticExpressionTest, LinearExpressionMinusQuadraticExpression) {
   const Variable b(&storage, storage.AddVariable("b"));
   const LinearExpression first_expr({{a, 1.2}}, 3.4);
   QuadraticExpression second_expr({{a, b, 5.6}}, {{b, 7.8}}, 9.0);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = first_expr - std::move(second_expr);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression(
                           {{a, b, -5.6}}, {{a, 1.2}, {b, -7.8}}, 3.4 - 9.0)));
 }
@@ -4202,16 +3479,9 @@ TEST(QuadraticExpressionTest, QuadraticTermMinusDouble) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   const QuadraticTerm term(a, b, 1.2);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = term - 3.4;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result,
               IsIdentical(QuadraticExpression({{a, b, 1.2}}, {}, -3.4)));
 }
@@ -4221,16 +3491,9 @@ TEST(QuadraticExpressionTest, QuadraticTermMinusVariable) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   const QuadraticTerm term(a, b, 1.2);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = term - a;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result,
               IsIdentical(QuadraticExpression({{a, b, 1.2}}, {{a, -1}}, 0)));
 }
@@ -4253,16 +3516,9 @@ TEST(QuadraticExpressionTest, QuadraticTermMinusLinearTerm) {
   const Variable b(&storage, storage.AddVariable("b"));
   const QuadraticTerm first_term(a, b, 1.2);
   const LinearTerm second_term(a, 3.4);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = first_term - second_term;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result,
               IsIdentical(QuadraticExpression({{a, b, 1.2}}, {{a, -3.4}}, 0)));
 }
@@ -4286,19 +3542,9 @@ TEST(QuadraticExpressionTest, QuadraticTermMinusLinearExpression) {
   const Variable b(&storage, storage.AddVariable("b"));
   const QuadraticTerm term(a, b, 1.2);
   LinearExpression expr({{a, 3.4}}, 5.6);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = term - std::move(expr);
 
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(1);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression({{a, b, 1.2}},
                                                       {{a, -3.4}}, -5.6)));
 }
@@ -4323,16 +3569,9 @@ TEST(QuadraticExpressionTest, QuadraticTermMinusQuadraticTerm) {
   const Variable b(&storage, storage.AddVariable("b"));
   const QuadraticTerm first_term(a, b, 1.2);
   const QuadraticTerm second_term(b, b, 3.4);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = first_term - second_term;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression(
                           {{a, b, 1.2}, {b, b, -3.4}}, {}, 0)));
 }
@@ -4356,16 +3595,9 @@ TEST(QuadraticExpressionTest, QuadraticTermMinusQuadraticExpression) {
   const Variable b(&storage, storage.AddVariable("b"));
   const QuadraticTerm term(a, b, 1.2);
   QuadraticExpression expr({{a, b, 3.4}}, {{b, 5.6}}, 7.8);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = term - std::move(expr);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression({{a, b, 1.2 - 3.4}},
                                                       {{b, -5.6}}, -7.8)));
 }
@@ -4389,16 +3621,9 @@ TEST(QuadraticExpressionTest, QuadraticExpressionMinusDouble) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = std::move(expr) - 7.8;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression({{a, b, 1.2}}, {{b, 3.4}},
                                                       5.6 - 7.8)));
 }
@@ -4408,16 +3633,9 @@ TEST(QuadraticExpressionTest, QuadraticExpressionMinusVariable) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = std::move(expr) - a;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression(
                           {{a, b, 1.2}}, {{a, -1}, {b, 3.4}}, 5.6)));
 }
@@ -4440,16 +3658,9 @@ TEST(QuadraticExpressionTest, QuadraticExpressionMinusLinearTerm) {
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
   const LinearTerm term(a, 7.8);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = std::move(expr) - term;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression(
                           {{a, b, 1.2}}, {{a, -7.8}, {b, 3.4}}, 5.6)));
 }
@@ -4474,16 +3685,9 @@ TEST(QuadraticExpressionTest, QuadraticExpressionMinusLinearExpression) {
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression first_expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
   const LinearExpression second_expr({{a, 7.8}}, 9.0);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = std::move(first_expr) - second_expr;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression(
                           {{a, b, 1.2}}, {{a, -7.8}, {b, 3.4}}, 5.6 - 9)));
 }
@@ -4508,16 +3712,9 @@ TEST(QuadraticExpressionTest, QuadraticExpressionMinusQuadraticTerm) {
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
   const QuadraticTerm term(a, a, 7.8);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = std::move(expr) - term;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression(
                           {{a, a, -7.8}, {a, b, 1.2}}, {{b, 3.4}}, 5.6)));
 }
@@ -4542,17 +3739,10 @@ TEST(QuadraticExpressionTest, QuadraticExpressionMinusQuadraticExpression) {
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression first_expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
   QuadraticExpression second_expr({{b, b, 7.8}}, {{a, 9.0}}, 1.3);
-  ResetExpressionCounters();
 
   const QuadraticExpression result =
       std::move(first_expr) - std::move(second_expr);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result,
               IsIdentical(QuadraticExpression({{a, b, 1.2}, {b, b, -7.8}},
                                               {{a, -9}, {b, 3.4}}, 5.6 - 1.3)));
@@ -4592,16 +3782,9 @@ TEST(QuadraticExpressionTest, DoubleTimesQuadraticExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = 7.8 * std::move(expr);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression(
                           {{a, b, 7.8 * 1.2}}, {{b, 7.8 * 3.4}}, 7.8 * 5.6)));
 }
@@ -4658,16 +3841,9 @@ TEST(QuadraticExpressionTest, VariableTimesLinearExpression) {
   const Variable b(&storage, storage.AddVariable("b"));
   {
     const LinearExpression expr({{a, 1.2}, {b, 3.4}}, 5.6);
-    ResetExpressionCounters();
 
     const QuadraticExpression result = a * expr;
 
-    EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-    EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 1);
-    EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
     EXPECT_THAT(result, IsIdentical(QuadraticExpression(
                             {{a, a, 1.2}, {a, b, 3.4}}, {{a, 5.6}}, 0)));
   }
@@ -4675,16 +3851,9 @@ TEST(QuadraticExpressionTest, VariableTimesLinearExpression) {
   // Now we test that we do not introduce extra terms if there is a zero offset.
   {
     const LinearExpression expr_no_offset({{a, 1.2}, {b, 3.4}}, 0.0);
-    ResetExpressionCounters();
 
     const QuadraticExpression result_no_offset = a * expr_no_offset;
 
-    EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-    EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 1);
-    EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
     EXPECT_THAT(result_no_offset, IsIdentical(QuadraticExpression(
                                       {{a, a, 1.2}, {a, b, 3.4}}, {}, 0)));
   }
@@ -4759,16 +3928,9 @@ TEST(QuadraticExpressionTest, LinearTermTimesLinearExpression) {
   const LinearTerm term(a, 1.2);
   {
     const LinearExpression expr({{a, 3.4}, {b, 5.6}}, 7.8);
-    ResetExpressionCounters();
 
     const QuadraticExpression result = term * expr;
 
-    EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-    EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 1);
-    EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
     EXPECT_THAT(result, IsIdentical(QuadraticExpression(
                             {{a, a, 1.2 * 3.4}, {a, b, 1.2 * 5.6}},
                             {{a, 1.2 * 7.8}}, 0)));
@@ -4777,16 +3939,9 @@ TEST(QuadraticExpressionTest, LinearTermTimesLinearExpression) {
   // Now we test that we do not introduce extra terms if there is a zero offset.
   {
     const LinearExpression expr_no_offset({{a, 3.4}, {b, 5.6}}, 0.0);
-    ResetExpressionCounters();
 
     const QuadraticExpression result_no_offset = term * expr_no_offset;
 
-    EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-    EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 1);
-    EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
     EXPECT_THAT(result_no_offset,
                 IsIdentical(QuadraticExpression(
                     {{a, a, 1.2 * 3.4}, {a, b, 1.2 * 5.6}}, {}, 0)));
@@ -4811,16 +3966,9 @@ TEST(QuadraticExpressionTest, LinearExpressionTimesVariable) {
   const Variable b(&storage, storage.AddVariable("b"));
   {
     const LinearExpression expr({{a, 1.2}, {b, 3.4}}, 5.6);
-    ResetExpressionCounters();
 
     const QuadraticExpression result = expr * a;
 
-    EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-    EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 1);
-    EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
     EXPECT_THAT(result, IsIdentical(QuadraticExpression(
                             {{a, a, 1.2}, {a, b, 3.4}}, {{a, 5.6}}, 0)));
   }
@@ -4828,16 +3976,9 @@ TEST(QuadraticExpressionTest, LinearExpressionTimesVariable) {
   // Now we test that we do not introduce extra terms if there is a zero offset.
   {
     const LinearExpression expr_no_offset({{a, 1.2}, {b, 3.4}}, 0.0);
-    ResetExpressionCounters();
 
     const QuadraticExpression result_no_offset = expr_no_offset * a;
 
-    EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-    EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 1);
-    EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
     EXPECT_THAT(result_no_offset, IsIdentical(QuadraticExpression(
                                       {{a, a, 1.2}, {a, b, 3.4}}, {}, 0)));
   }
@@ -4861,16 +4002,9 @@ TEST(QuadraticExpressionTest, LinearExpressionTimesLinearTerm) {
   const LinearTerm term(a, 7.8);
   {
     const LinearExpression expr({{a, 1.2}, {b, 3.4}}, 5.6);
-    ResetExpressionCounters();
 
     const QuadraticExpression result = expr * term;
 
-    EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-    EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 1);
-    EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
     EXPECT_THAT(result, IsIdentical(QuadraticExpression(
                             {{a, a, 1.2 * 7.8}, {a, b, 3.4 * 7.8}},
                             {{a, 5.6 * 7.8}}, 0)));
@@ -4879,16 +4013,9 @@ TEST(QuadraticExpressionTest, LinearExpressionTimesLinearTerm) {
   // Now we test that we do not introduce extra terms if there is a zero offset.
   {
     const LinearExpression expr_no_offset({{a, 1.2}, {b, 3.4}}, 0.0);
-    ResetExpressionCounters();
 
     const QuadraticExpression result_no_offset = expr_no_offset * term;
 
-    EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-    EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 1);
-    EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
     EXPECT_THAT(result_no_offset,
                 IsIdentical(QuadraticExpression(
                     {{a, a, 1.2 * 7.8}, {a, b, 3.4 * 7.8}}, {}, 0)));
@@ -4914,16 +4041,9 @@ TEST(QuadraticExpressionTest, LinearExpressionTimesLinearExpression) {
   {
     const LinearExpression expr({{a, 1.2}, {b, 3.4}}, 5.6);
     const LinearExpression other_expr({{a, 7.8}}, 9.0);
-    ResetExpressionCounters();
 
     const QuadraticExpression result = expr * other_expr;
 
-    EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-    EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
-    EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
     EXPECT_THAT(result,
                 IsIdentical(QuadraticExpression(
                     {{a, a, 1.2 * 7.8}, {a, b, 3.4 * 7.8}},
@@ -4935,17 +4055,10 @@ TEST(QuadraticExpressionTest, LinearExpressionTimesLinearExpression) {
   {
     const LinearExpression expr_no_offset({{a, 1.2}, {b, 3.4}}, 0.0);
     const LinearExpression other_expr({{a, 7.8}}, 9.0);
-    ResetExpressionCounters();
 
     const QuadraticExpression result_no_lhs_offset =
         expr_no_offset * other_expr;
 
-    EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-    EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
-    EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
     EXPECT_THAT(
         result_no_lhs_offset,
         IsIdentical(QuadraticExpression({{a, a, 1.2 * 7.8}, {a, b, 3.4 * 7.8}},
@@ -4956,17 +4069,10 @@ TEST(QuadraticExpressionTest, LinearExpressionTimesLinearExpression) {
   {
     const LinearExpression expr({{a, 1.2}, {b, 3.4}}, 5.6);
     const LinearExpression other_expr_no_offset({{a, 7.8}}, 0.0);
-    ResetExpressionCounters();
 
     const QuadraticExpression result_no_rhs_offset =
         expr * other_expr_no_offset;
 
-    EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-    EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-    EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
-    EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
     EXPECT_THAT(
         result_no_rhs_offset,
         IsIdentical(QuadraticExpression({{a, a, 1.2 * 7.8}, {a, b, 3.4 * 7.8}},
@@ -5005,16 +4111,9 @@ TEST(QuadraticExpressionTest, QuadraticExpressionTimesDouble) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = std::move(expr) * 7.8;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression(
                           {{a, b, 1.2 * 7.8}}, {{b, 3.4 * 7.8}}, 5.6 * 7.8)));
 }
@@ -5040,16 +4139,9 @@ TEST(QuadraticExpressionTest, QuadraticExpressionDividedByDouble) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
-  ResetExpressionCounters();
 
   const QuadraticExpression result = std::move(expr) / 7.8;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
   EXPECT_THAT(result, IsIdentical(QuadraticExpression(
                           {{a, b, 1.2 / 7.8}}, {{b, 3.4 / 7.8}}, 5.6 / 7.8)));
 }
@@ -5065,12 +4157,9 @@ TEST(QuadraticExpressionTest, AdditionAssignmentDouble) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
-  ResetExpressionCounters();
 
   expr += 7.8;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(QuadraticExpression({{a, b, 1.2}}, {{b, 3.4}},
                                                     5.6 + 7.8)));
 }
@@ -5081,29 +4170,20 @@ TEST(QuadraticExpressionTest, AdditionAssignmentVariable) {
   const Variable b(&storage, storage.AddVariable("b"));
   // First test with a default expression, not associated with any ModelStorage.
   QuadraticExpression expr;
-  ResetExpressionCounters();
 
   expr += a;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(QuadraticExpression({}, {{a, 1}}, 0)));
 
   // Reuse the previous expression now connected to a ModelStorage to test
   // adding the same variable.
-  ResetExpressionCounters();
   expr += a;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(QuadraticExpression({}, {{a, 2}}, 0)));
 
   // Add another variable from the same ModelStorage.
-  ResetExpressionCounters();
   expr += b;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(QuadraticExpression({}, {{a, 2}, {b, 1}}, 0)));
 }
 
@@ -5127,29 +4207,20 @@ TEST(QuadraticExpressionTest, AdditionAssignmentLinearTerm) {
 
   // First test with a default expression, not associated with any ModelStorage.
   QuadraticExpression expr;
-  ResetExpressionCounters();
 
   expr += LinearTerm(a, 3);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(QuadraticExpression({}, {{a, 3}}, 0)));
 
   // Reuse the previous expression now connected to a ModelStorage to test
   // adding the same variable.
-  ResetExpressionCounters();
   expr += LinearTerm(a, -2);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(QuadraticExpression({}, {{a, 1}}, 0)));
 
   // Add another variable from the same ModelStorage.
-  ResetExpressionCounters();
   expr += LinearTerm(b, -5);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(QuadraticExpression({}, {{a, 1}, {b, -5}}, 0)));
 }
 
@@ -5174,34 +4245,25 @@ TEST(QuadraticExpressionTest, AdditionAssignmentLinearExpression) {
   // First test with a default expression, not associated with any ModelStorage.
   QuadraticExpression expr;
   const LinearExpression another_expr({{a, 2}, {b, 4}}, 2);
-  ResetExpressionCounters();
 
   expr += another_expr;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(QuadraticExpression({}, {{a, 2}, {b, 4}}, 2)));
 
   // Then add another expression with variables from the same ModelStorage.
   const LinearExpression yet_another_expr({{a, -3}, {b, 6}}, -4);
-  ResetExpressionCounters();
 
   expr += yet_another_expr;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(
       expr, IsIdentical(QuadraticExpression({}, {{a, 2 - 3}, {b, 4 + 6}}, -2)));
 
   // Then add another expression without variables (i.e. having null
   // ModelStorage).
   const LinearExpression no_vars_expr({}, 3);
-  ResetExpressionCounters();
 
   expr += no_vars_expr;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(
       expr, IsIdentical(QuadraticExpression({}, {{a, 2 - 3}, {b, 4 + 6}}, 1)));
 }
@@ -5227,30 +4289,21 @@ TEST(QuadraticExpressionTest, AdditionAssignmentQuadraticTerm) {
 
   // First test with a default expression, not associated with any ModelStorage.
   QuadraticExpression expr;
-  ResetExpressionCounters();
 
   expr += QuadraticTerm(a, b, 3);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(QuadraticExpression({{a, b, 3}}, {}, 0)));
 
   // Reuse the previous expression now connected to a ModelStorage to test
   // adding the same variable.
-  ResetExpressionCounters();
   expr += QuadraticTerm(a, a, -2);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr,
               IsIdentical(QuadraticExpression({{a, a, -2}, {a, b, 3}}, {}, 0)));
 
   // Add another variable from the same ModelStorage.
-  ResetExpressionCounters();
   expr += QuadraticTerm(a, b, -4);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(
       expr, IsIdentical(QuadraticExpression({{a, a, -2}, {a, b, -1}}, {}, 0)));
 }
@@ -5277,24 +4330,18 @@ TEST(QuadraticExpressionTest, AdditionAssignmentQuadraticExpression) {
   // First test with a default expression, not associated with any ModelStorage.
   QuadraticExpression expr;
   const QuadraticExpression another_expr({{a, c, 2.4}}, {{a, 2}, {b, 4}}, 2);
-  ResetExpressionCounters();
 
   expr += another_expr;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(QuadraticExpression({{a, c, 2.4}},
                                                     {{a, 2}, {b, 4}}, 2)));
 
   // Then add another expression with variables from the same ModelStorage.
   const QuadraticExpression yet_another_expr({{c, b, 1.1}}, {{a, -3}, {c, 6}},
                                              -4);
-  ResetExpressionCounters();
 
   expr += yet_another_expr;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr,
               IsIdentical(QuadraticExpression({{a, c, 2.4}, {b, c, 1.1}},
                                               {{a, -1}, {b, 4}, {c, 6}}, -2)));
@@ -5302,12 +4349,9 @@ TEST(QuadraticExpressionTest, AdditionAssignmentQuadraticExpression) {
   // Then add another expression without variables (i.e. having null
   // ModelStorage).
   const QuadraticExpression no_vars_expr({}, {}, 3);
-  ResetExpressionCounters();
 
   expr += no_vars_expr;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr,
               IsIdentical(QuadraticExpression({{a, c, 2.4}, {b, c, 1.1}},
                                               {{a, -1}, {b, 4}, {c, 6}}, 1)));
@@ -5332,12 +4376,9 @@ TEST(QuadraticExpressionTest, AdditionAssignmentSelf) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression expr({}, {{a, 2}, {b, 4}}, 2.0);
-  ResetExpressionCounters();
 
   expr += expr;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(QuadraticExpression({}, {{a, 4}, {b, 8}}, 4)));
 }
 
@@ -5348,12 +4389,9 @@ TEST(QuadraticExpressionTest, SubtractionAssignmentDouble) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
-  ResetExpressionCounters();
 
   expr -= 7.8;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(QuadraticExpression({{a, b, 1.2}}, {{b, 3.4}},
                                                     5.6 - 7.8)));
 }
@@ -5365,29 +4403,20 @@ TEST(QuadraticExpressionTest, SubtractionAssignmentVariable) {
 
   // First test with a default expression, not associated with any ModelStorage.
   QuadraticExpression expr;
-  ResetExpressionCounters();
 
   expr -= a;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(QuadraticExpression({}, {{a, -1}}, 0)));
 
   // Reuse the previous expression now connected to a ModelStorage to test
   // adding the same variable.
-  ResetExpressionCounters();
   expr -= a;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(QuadraticExpression({}, {{a, -2}}, 0)));
 
   // Subtract another variable from the same ModelStorage.
-  ResetExpressionCounters();
   expr -= b;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr,
               IsIdentical(QuadraticExpression({}, {{a, -2}, {b, -1}}, 0)));
 }
@@ -5411,29 +4440,20 @@ TEST(QuadraticExpressionTest, SubtractionAssignmentLinearTerm) {
 
   // First test with a default expression, not associated with any ModelStorage.
   QuadraticExpression expr;
-  ResetExpressionCounters();
 
   expr -= LinearTerm(a, 3);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(QuadraticExpression({}, {{a, -3}}, 0)));
 
   // Reuse the previous expression now connected to a ModelStorage to test
   // subtracting the same variable.
-  ResetExpressionCounters();
   expr -= LinearTerm(a, -2);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(QuadraticExpression({}, {{a, -1}}, 0)));
 
   // Subtract another variable from the same ModelStorage.
-  ResetExpressionCounters();
   expr -= LinearTerm(b, -5);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(QuadraticExpression({}, {{a, -1}, {b, 5}}, 0)));
 }
 
@@ -5458,35 +4478,26 @@ TEST(QuadraticExpressionTest, SubtractionAssignmentLinearExpression) {
   // First test with a default expression, not associated with any ModelStorage.
   QuadraticExpression expr;
   const LinearExpression another_expr({{a, 2}, {b, 4}}, 2);
-  ResetExpressionCounters();
 
   expr -= another_expr;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr,
               IsIdentical(QuadraticExpression({}, {{a, -2}, {b, -4}}, -2)));
 
   // Then add another expression with variables from the same ModelStorage.
   const LinearExpression yet_another_expr({{a, -3}, {b, 6}}, -4);
-  ResetExpressionCounters();
 
   expr -= yet_another_expr;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr,
               IsIdentical(QuadraticExpression({}, {{a, 1}, {b, -10}}, 2)));
 
   // Then subtract another expression without variables (i.e. having null
   // ModelStorage).
   const LinearExpression no_vars_expr({}, 3);
-  ResetExpressionCounters();
 
   expr -= no_vars_expr;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr,
               IsIdentical(QuadraticExpression({}, {{a, 1}, {b, -10}}, -1)));
 }
@@ -5511,30 +4522,21 @@ TEST(QuadraticExpressionTest, SubtractionAssignmentQuadraticTerm) {
   const Variable b(&storage, storage.AddVariable("b"));
   // First test with a default expression, not associated with any ModelStorage.
   QuadraticExpression expr;
-  ResetExpressionCounters();
 
   expr -= QuadraticTerm(a, b, 3);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(QuadraticExpression({{a, b, -3}}, {}, 0)));
 
   // Reuse the previous expression now connected to a ModelStorage to test
   // adding the same variable.
-  ResetExpressionCounters();
   expr -= QuadraticTerm(a, a, -2);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr,
               IsIdentical(QuadraticExpression({{a, a, 2}, {a, b, -3}}, {}, 0)));
 
   // Add another variable from the same ModelStorage.
-  ResetExpressionCounters();
   expr -= QuadraticTerm(a, b, -4);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr,
               IsIdentical(QuadraticExpression({{a, a, 2}, {a, b, 1}}, {}, 0)));
 }
@@ -5562,23 +4564,17 @@ TEST(QuadraticExpressionTest, SubtractionAssignmentQuadraticExpression) {
   // First test with a default expression, not associated with any ModelStorage.
   QuadraticExpression expr;
   const QuadraticExpression another_expr({{a, c, 2.4}}, {{a, 2}, {b, 4}}, 2);
-  ResetExpressionCounters();
 
   expr -= another_expr;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(QuadraticExpression({{a, c, -2.4}},
                                                     {{a, -2}, {b, -4}}, -2)));
 
   // Then add another expression with variables from the same ModelStorage.
   QuadraticExpression yet_another_expr({{c, b, 1.1}}, {{a, -3}, {c, 6}}, -4);
-  ResetExpressionCounters();
 
   expr -= yet_another_expr;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr,
               IsIdentical(QuadraticExpression({{a, c, -2.4}, {b, c, -1.1}},
                                               {{a, 1}, {b, -4}, {c, -6}}, 2)));
@@ -5586,12 +4582,9 @@ TEST(QuadraticExpressionTest, SubtractionAssignmentQuadraticExpression) {
   // Then add another expression without variables (i.e. having null
   // ModelStorage).
   const QuadraticExpression no_vars_expr({}, {}, 3);
-  ResetExpressionCounters();
 
   expr -= no_vars_expr;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr,
               IsIdentical(QuadraticExpression({{a, c, -2.4}, {b, c, -1.1}},
                                               {{a, 1}, {b, -4}, {c, -6}}, -1)));
@@ -5616,12 +4609,9 @@ TEST(QuadraticExpressionTest, SubtractionAssignmentSelf) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
-  ResetExpressionCounters();
 
   expr -= expr;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(QuadraticExpression({{a, b, 1.2 - 1.2}},
                                                     {{b, 3.4 - 3.4}}, 0)));
 }
@@ -5646,12 +4636,9 @@ TEST(QuadraticExpressionTest, QuadraticExpressionTimesDoubleAssignment) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
-  ResetExpressionCounters();
 
   expr *= 7.8;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(QuadraticExpression(
                         {{a, b, 1.2 * 7.8}}, {{b, 3.4 * 7.8}}, 5.6 * 7.8)));
 }
@@ -5676,12 +4663,9 @@ TEST(QuadraticExpressionTest, QuadraticExpressionDividedByDoubleAssignment) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
   QuadraticExpression expr({{a, b, 1.2}}, {{b, 3.4}}, 5.6);
-  ResetExpressionCounters();
 
   expr /= 7.8;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS(0);
   EXPECT_THAT(expr, IsIdentical(QuadraticExpression(
                         {{a, b, 1.2 / 7.8}}, {{b, 3.4 / 7.8}}, 5.6 / 7.8)));
 }
@@ -5955,15 +4939,8 @@ TEST(QuadraticExpressionTest, DoubleGreaterEqualQuadraticTerm) {
   const double lhs = 3;
   const QuadraticTerm rhs = 2 * a * b;
 
-  ResetExpressionCounters();
   const UpperBoundedQuadraticExpression comparison = lhs >= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
   EXPECT_THAT(comparison.expression,
               IsIdentical(QuadraticExpression({{a, b, 2}}, {}, 0)));
   EXPECT_EQ(comparison.upper_bound, 3);
@@ -5977,15 +4954,8 @@ TEST(QuadraticExpressionTest, DoubleGreaterEqualQuadraticExpression) {
   const double lhs = 3;
   QuadraticExpression rhs = 2 * a * b + 3 * b + 4;
 
-  ResetExpressionCounters();
   const UpperBoundedQuadraticExpression comparison = lhs >= std::move(rhs);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison.expression,
               IsIdentical(QuadraticExpression({{a, b, 2}}, {{b, 3}}, 4)));
   EXPECT_EQ(comparison.upper_bound, 3);
@@ -6000,15 +4970,8 @@ TEST(QuadraticExpressionTest,
   const double lhs = 6;
   LowerBoundedQuadraticExpression rhs = (2 * a * b + 3 * b + 4 >= 5);
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs >= std::move(rhs);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison,
               BoundedQuadraticExpressionEquiv(1, QuadraticTerms({{a, b, 2}}),
                                               LinearTerms({{b, 3}}), 2));
@@ -6022,15 +4985,8 @@ TEST(QuadraticExpressionTest, VariableGreaterEqualQuadraticTerm) {
   const Variable lhs = a;
   const QuadraticTerm rhs = 2 * a * b;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs >= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
   EXPECT_THAT(comparison,
               BoundedQuadraticExpressionEquiv(0, QuadraticTerms({{a, b, -2}}),
                                               LinearTerms({{a, 1}}), kInf));
@@ -6044,15 +5000,8 @@ TEST(QuadraticExpressionTest, VariableGreaterEqualQuadraticExpression) {
   const Variable lhs = a;
   QuadraticExpression rhs = 2 * a * b + 3 * b + 4;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs >= std::move(rhs);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               4, QuadraticTerms({{a, b, -2}}),
                               LinearTerms({{a, 1}, {b, -3}}), kInf));
@@ -6066,15 +5015,8 @@ TEST(QuadraticExpressionTest, LinearTermGreaterEqualQuadraticTerm) {
   const LinearTerm lhs = 3 * a;
   const QuadraticTerm rhs = 2 * a * b;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs >= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
   EXPECT_THAT(comparison,
               BoundedQuadraticExpressionEquiv(0, QuadraticTerms({{a, b, -2}}),
                                               LinearTerms({{a, 3}}), kInf));
@@ -6088,15 +5030,8 @@ TEST(QuadraticExpressionTest, LinearTermGreaterEqualQuadraticExpression) {
   const LinearTerm lhs = 3 * a;
   QuadraticExpression rhs = 2 * a * b + 3 * b + 4;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs >= std::move(rhs);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               4, QuadraticTerms({{a, b, -2}}),
                               LinearTerms({{a, 3}, {b, -3}}), kInf));
@@ -6110,18 +5045,8 @@ TEST(QuadraticExpressionTest, LinearExpressionGreaterEqualQuadraticTerm) {
   LinearExpression lhs = 3 * a + 4;
   const QuadraticTerm rhs = 2 * a * b;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = std::move(lhs) >= rhs;
 
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 4);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(1);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison,
               BoundedQuadraticExpressionEquiv(-4, QuadraticTerms({{a, b, -2}}),
                                               LinearTerms({{a, 3}}), kInf));
@@ -6135,16 +5060,9 @@ TEST(QuadraticExpressionTest, LinearExpressionGreaterEqualQuadraticExpression) {
   LinearExpression lhs = 3 * a + 4;
   QuadraticExpression rhs = 2 * a * b + 4 * b + 5;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison =
       std::move(lhs) >= std::move(rhs);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               1, QuadraticTerms({{a, b, -2}}),
                               LinearTerms({{a, 3}, {b, -4}}), kInf));
@@ -6158,15 +5076,8 @@ TEST(QuadraticExpressionTest, QuadraticTermGreaterEqualDouble) {
   const QuadraticTerm lhs = 3 * a * b;
   const double rhs = 4;
 
-  ResetExpressionCounters();
   const LowerBoundedQuadraticExpression comparison = lhs >= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
   EXPECT_THAT(comparison.expression,
               IsIdentical(QuadraticExpression({{a, b, 3}}, {}, 0)));
   EXPECT_EQ(comparison.lower_bound, 4);
@@ -6180,15 +5091,8 @@ TEST(QuadraticExpressionTest, QuadraticTermGreaterEqualVariable) {
   const QuadraticTerm lhs = 3 * a * b;
   const Variable rhs = a;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs >= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
   EXPECT_THAT(comparison,
               BoundedQuadraticExpressionEquiv(0, QuadraticTerms({{a, b, 3}}),
                                               LinearTerms({{a, -1}}), kInf));
@@ -6202,15 +5106,8 @@ TEST(QuadraticExpressionTest, QuadraticTermGreaterEqualLinearTerm) {
   const QuadraticTerm lhs = 3 * a * b;
   const LinearTerm rhs = 4 * a;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs >= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
   EXPECT_THAT(comparison,
               BoundedQuadraticExpressionEquiv(0, QuadraticTerms({{a, b, 3}}),
                                               LinearTerms({{a, -4}}), kInf));
@@ -6224,18 +5121,8 @@ TEST(QuadraticExpressionTest, QuadraticTermGreaterEqualLinearExpression) {
   const QuadraticTerm lhs = 3 * a * b;
   LinearExpression rhs = 4 * a + 5;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs >= std::move(rhs);
 
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(1);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison,
               BoundedQuadraticExpressionEquiv(5, QuadraticTerms({{a, b, 3}}),
                                               LinearTerms({{a, -4}}), kInf));
@@ -6249,15 +5136,8 @@ TEST(QuadraticExpressionTest, QuadraticTermGreaterEqualQuadraticTerm) {
   const QuadraticTerm lhs = 3 * a * b;
   const QuadraticTerm rhs = 4 * a * a;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs >= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               0, QuadraticTerms({{a, a, -4}, {a, b, 3}}),
                               LinearTerms(), kInf));
@@ -6271,15 +5151,8 @@ TEST(QuadraticExpressionTest, QuadraticTermGreaterEqualQuadraticExpression) {
   const QuadraticTerm lhs = 3 * a * b;
   QuadraticExpression rhs = 4 * a * a + 5 * b + 6;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs >= std::move(rhs);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               6, QuadraticTerms({{a, a, -4}, {a, b, 3}}),
                               LinearTerms({{b, -5}}), kInf));
@@ -6293,15 +5166,8 @@ TEST(QuadraticExpressionTest, QuadraticExpressionGreaterEqualDouble) {
   QuadraticExpression lhs = 3 * a * b + 4 * b + 5;
   const double rhs = 6;
 
-  ResetExpressionCounters();
   const LowerBoundedQuadraticExpression comparison = std::move(lhs) >= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison.expression,
               IsIdentical(QuadraticExpression({{a, b, 3}}, {{b, 4}}, 5)));
   EXPECT_EQ(comparison.lower_bound, 6);
@@ -6315,15 +5181,8 @@ TEST(QuadraticExpressionTest, QuadraticExpressionGreaterEqualVariable) {
   QuadraticExpression lhs = 3 * a * b + 4 * b + 5;
   const Variable rhs = a;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = std::move(lhs) >= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               -5, QuadraticTerms({{a, b, 3}}),
                               LinearTerms({{a, -1}, {b, 4}}), kInf));
@@ -6337,15 +5196,8 @@ TEST(QuadraticExpressionTest, QuadraticExpressionGreaterEqualLinearTerm) {
   QuadraticExpression lhs = 3 * a * b + 4 * b + 5;
   const LinearTerm rhs = 6 * a;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = std::move(lhs) >= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               -5, QuadraticTerms({{a, b, 3}}),
                               LinearTerms({{a, -6}, {b, 4}}), kInf));
@@ -6359,16 +5211,9 @@ TEST(QuadraticExpressionTest, QuadraticExpressionGreaterEqualLinearExpression) {
   QuadraticExpression lhs = 3 * a * b + 4 * b + 5;
   LinearExpression rhs = 6 * a + 7;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison =
       std::move(lhs) >= std::move(rhs);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               2, QuadraticTerms({{a, b, 3}}),
                               LinearTerms({{a, -6}, {b, 4}}), kInf));
@@ -6382,15 +5227,8 @@ TEST(QuadraticExpressionTest, QuadraticExpressionGreaterEqualQuadraticTerm) {
   QuadraticExpression lhs = 3 * a * b + 4 * b + 5;
   const QuadraticTerm rhs = 6 * a * a;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = std::move(lhs) >= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               -5, QuadraticTerms({{a, a, -6}, {a, b, 3}}),
                               LinearTerms({{b, 4}}), kInf));
@@ -6405,16 +5243,9 @@ TEST(QuadraticExpressionTest,
   QuadraticExpression lhs = 3 * a * b + 4 * b + 5;
   QuadraticExpression rhs = 6 * a * a + 7 * a + 8;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison =
       std::move(lhs) >= std::move(rhs);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               3, QuadraticTerms({{a, a, -6}, {a, b, 3}}),
                               LinearTerms({{a, -7}, {b, 4}}), kInf));
@@ -6429,15 +5260,8 @@ TEST(QuadraticExpressionTest,
   UpperBoundedQuadraticExpression lhs = (2 * a * b + 3 * b + 4 <= 5);
   const double rhs = 1;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = std::move(lhs) >= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison,
               BoundedQuadraticExpressionEquiv(-3, QuadraticTerms({{a, b, 2}}),
                                               LinearTerms({{b, 3}}), 1));
@@ -6455,15 +5279,8 @@ TEST(QuadraticExpressionTest, DoubleLesserEqualQuadraticTerm) {
   const double lhs = 3;
   const QuadraticTerm rhs = 2 * a * b;
 
-  ResetExpressionCounters();
   const LowerBoundedQuadraticExpression comparison = lhs <= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
   EXPECT_THAT(comparison.expression,
               IsIdentical(QuadraticExpression({{a, b, 2}}, {}, 0)));
   EXPECT_EQ(comparison.lower_bound, 3);
@@ -6477,15 +5294,8 @@ TEST(QuadraticExpressionTest, DoubleLesserEqualQuadraticExpression) {
   const double lhs = 3;
   QuadraticExpression rhs = 2 * a * b + 3 * b + 4;
 
-  ResetExpressionCounters();
   const LowerBoundedQuadraticExpression comparison = lhs <= std::move(rhs);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison.expression,
               IsIdentical(QuadraticExpression({{a, b, 2}}, {{b, 3}}, 4)));
   EXPECT_EQ(comparison.lower_bound, 3);
@@ -6500,15 +5310,8 @@ TEST(QuadraticExpressionTest,
   const double lhs = 1;
   UpperBoundedQuadraticExpression rhs = (2 * a * b + 3 * b + 4 <= 5);
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs <= std::move(rhs);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison,
               BoundedQuadraticExpressionEquiv(-3, QuadraticTerms({{a, b, 2}}),
                                               LinearTerms({{b, 3}}), 1));
@@ -6522,15 +5325,8 @@ TEST(QuadraticExpressionTest, VariableLesserEqualQuadraticTerm) {
   const Variable lhs = a;
   const QuadraticTerm rhs = 2 * a * b;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs <= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               -kInf, QuadraticTerms({{a, b, -2}}),
                               LinearTerms({{a, 1}}), 0));
@@ -6544,15 +5340,8 @@ TEST(QuadraticExpressionTest, VariableLesserEqualQuadraticExpression) {
   const Variable lhs = a;
   QuadraticExpression rhs = 2 * a * b + 3 * b + 4;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs <= std::move(rhs);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               -kInf, QuadraticTerms({{a, b, -2}}),
                               LinearTerms({{a, 1}, {b, -3}}), 4));
@@ -6566,15 +5355,8 @@ TEST(QuadraticExpressionTest, LinearTermLesserEqualQuadraticTerm) {
   const LinearTerm lhs = 3 * a;
   const QuadraticTerm rhs = 2 * a * b;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs <= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               -kInf, QuadraticTerms({{a, b, -2}}),
                               LinearTerms({{a, 3}}), 0));
@@ -6588,15 +5370,8 @@ TEST(QuadraticExpressionTest, LinearTermLesserEqualQuadraticExpression) {
   const LinearTerm lhs = 3 * a;
   QuadraticExpression rhs = 2 * a * b + 3 * b + 4;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs <= std::move(rhs);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               -kInf, QuadraticTerms({{a, b, -2}}),
                               LinearTerms({{a, 3}, {b, -3}}), 4));
@@ -6610,18 +5385,8 @@ TEST(QuadraticExpressionTest, LinearExpressionLesserEqualQuadraticTerm) {
   LinearExpression lhs = 3 * a + 4;
   const QuadraticTerm rhs = 2 * a * b;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = std::move(lhs) <= rhs;
 
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 4);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(1);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               -kInf, QuadraticTerms({{a, b, -2}}),
                               LinearTerms({{a, 3}}), -4));
@@ -6635,16 +5400,9 @@ TEST(QuadraticExpressionTest, LinearExpressionLesserEqualQuadraticExpression) {
   LinearExpression lhs = 3 * a + 4;
   QuadraticExpression rhs = 2 * a * b + 4 * b + 5;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison =
       std::move(lhs) <= std::move(rhs);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               -kInf, QuadraticTerms({{a, b, -2}}),
                               LinearTerms({{a, 3}, {b, -4}}), 1));
@@ -6658,15 +5416,8 @@ TEST(QuadraticExpressionTest, QuadraticTermLesserEqualDouble) {
   const QuadraticTerm lhs = 3 * a * b;
   const double rhs = 4;
 
-  ResetExpressionCounters();
   const UpperBoundedQuadraticExpression comparison = lhs <= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
   EXPECT_THAT(comparison.expression,
               IsIdentical(QuadraticExpression({{a, b, 3}}, {}, 0)));
   EXPECT_EQ(comparison.upper_bound, 4);
@@ -6680,15 +5431,8 @@ TEST(QuadraticExpressionTest, QuadraticTermLesserEqualVariable) {
   const QuadraticTerm lhs = 3 * a * b;
   const Variable rhs = a;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs <= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               -kInf, QuadraticTerms({{a, b, 3}}),
                               LinearTerms({{a, -1}}), 0));
@@ -6702,15 +5446,8 @@ TEST(QuadraticExpressionTest, QuadraticTermLesserEqualLinearTerm) {
   const QuadraticTerm lhs = 3 * a * b;
   const LinearTerm rhs = 4 * a;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs <= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               -kInf, QuadraticTerms({{a, b, 3}}),
                               LinearTerms({{a, -4}}), 0));
@@ -6724,18 +5461,8 @@ TEST(QuadraticExpressionTest, QuadraticTermLesserEqualLinearExpression) {
   const QuadraticTerm lhs = 3 * a * b;
   LinearExpression rhs = 4 * a + 5;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs <= std::move(rhs);
 
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(1);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               -kInf, QuadraticTerms({{a, b, 3}}),
                               LinearTerms({{a, -4}}), 5));
@@ -6749,15 +5476,8 @@ TEST(QuadraticExpressionTest, QuadraticTermLesserEqualQuadraticTerm) {
   const QuadraticTerm lhs = 3 * a * b;
   const QuadraticTerm rhs = 4 * a * a;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs <= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               -kInf, QuadraticTerms({{a, a, -4}, {a, b, 3}}),
                               LinearTerms(), 0));
@@ -6771,15 +5491,8 @@ TEST(QuadraticExpressionTest, QuadraticTermLesserEqualQuadraticExpression) {
   const QuadraticTerm lhs = 3 * a * b;
   QuadraticExpression rhs = 4 * a * a + 5 * b + 6;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs <= std::move(rhs);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               -kInf, QuadraticTerms({{a, a, -4}, {a, b, 3}}),
                               LinearTerms({{b, -5}}), 6));
@@ -6793,15 +5506,8 @@ TEST(QuadraticExpressionTest, QuadraticExpressionLesserEqualDouble) {
   QuadraticExpression lhs = 3 * a * b + 4 * b + 5;
   const double rhs = 6;
 
-  ResetExpressionCounters();
   const UpperBoundedQuadraticExpression comparison = std::move(lhs) <= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison.expression,
               IsIdentical(QuadraticExpression({{a, b, 3}}, {{b, 4}}, 5)));
   EXPECT_EQ(comparison.upper_bound, 6);
@@ -6815,15 +5521,8 @@ TEST(QuadraticExpressionTest, QuadraticExpressionLesserEqualVariable) {
   QuadraticExpression lhs = 3 * a * b + 4 * b + 5;
   const Variable rhs = a;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = std::move(lhs) <= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               -kInf, QuadraticTerms({{a, b, 3}}),
                               LinearTerms({{a, -1}, {b, 4}}), -5));
@@ -6837,15 +5536,8 @@ TEST(QuadraticExpressionTest, QuadraticExpressionLesserEqualLinearTerm) {
   QuadraticExpression lhs = 3 * a * b + 4 * b + 5;
   const LinearTerm rhs = 6 * a;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = std::move(lhs) <= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               -kInf, QuadraticTerms({{a, b, 3}}),
                               LinearTerms({{a, -6}, {b, 4}}), -5));
@@ -6859,16 +5551,9 @@ TEST(QuadraticExpressionTest, QuadraticExpressionLesserEqualLinearExpression) {
   QuadraticExpression lhs = 3 * a * b + 4 * b + 5;
   LinearExpression rhs = 6 * a + 7;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison =
       std::move(lhs) <= std::move(rhs);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               -kInf, QuadraticTerms({{a, b, 3}}),
                               LinearTerms({{a, -6}, {b, 4}}), 2));
@@ -6882,15 +5567,8 @@ TEST(QuadraticExpressionTest, QuadraticExpressionLesserEqualQuadraticTerm) {
   QuadraticExpression lhs = 3 * a * b + 4 * b + 5;
   const QuadraticTerm rhs = 6 * a * a;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = std::move(lhs) <= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               -kInf, QuadraticTerms({{a, a, -6}, {a, b, 3}}),
                               LinearTerms({{b, 4}}), -5));
@@ -6905,16 +5583,9 @@ TEST(QuadraticExpressionTest,
   QuadraticExpression lhs = 3 * a * b + 4 * b + 5;
   QuadraticExpression rhs = 6 * a * a + 7 * a + 8;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison =
       std::move(lhs) <= std::move(rhs);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               -kInf, QuadraticTerms({{a, a, -6}, {a, b, 3}}),
                               LinearTerms({{a, -7}, {b, 4}}), 3));
@@ -6929,15 +5600,8 @@ TEST(QuadraticExpressionTest,
   LowerBoundedQuadraticExpression lhs = (2 * a * b + 3 * b + 4 >= 5);
   const double rhs = 6;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = std::move(lhs) <= rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison,
               BoundedQuadraticExpressionEquiv(1, QuadraticTerms({{a, b, 2}}),
                                               LinearTerms({{b, 3}}), 2));
@@ -6955,15 +5619,8 @@ TEST(QuadraticExpressionTest, DoubleEqualQuadraticTerm) {
   const double lhs = 3;
   const QuadraticTerm rhs = 2 * a * b;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs == rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
   EXPECT_THAT(comparison,
               BoundedQuadraticExpressionEquiv(3, QuadraticTerms({{a, b, 2}}),
                                               LinearTerms(), 3));
@@ -6977,15 +5634,8 @@ TEST(QuadraticExpressionTest, DoubleEqualQuadraticExpression) {
   const double lhs = 3;
   QuadraticExpression rhs = 2 * a * b + 3 * b + 4;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs == std::move(rhs);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison,
               BoundedQuadraticExpressionEquiv(-1, QuadraticTerms({{a, b, 2}}),
                                               LinearTerms({{b, 3}}), -1));
@@ -6999,15 +5649,8 @@ TEST(QuadraticExpressionTest, VariableEqualQuadraticTerm) {
   const Variable lhs = a;
   const QuadraticTerm rhs = 2 * a * b;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs == rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
   EXPECT_THAT(comparison,
               BoundedQuadraticExpressionEquiv(0, QuadraticTerms({{a, b, 2}}),
                                               LinearTerms({{a, -1}}), 0));
@@ -7021,15 +5664,8 @@ TEST(QuadraticExpressionTest, VariableEqualQuadraticExpression) {
   const Variable lhs = a;
   QuadraticExpression rhs = 2 * a * b + 3 * b + 4;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs == std::move(rhs);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               4, QuadraticTerms({{a, b, -2}}),
                               LinearTerms({{a, 1}, {b, -3}}), 4));
@@ -7043,15 +5679,8 @@ TEST(QuadraticExpressionTest, LinearTermEqualQuadraticTerm) {
   const LinearTerm lhs = 3 * a;
   const QuadraticTerm rhs = 2 * a * b;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs == rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
   EXPECT_THAT(comparison,
               BoundedQuadraticExpressionEquiv(0, QuadraticTerms({{a, b, 2}}),
                                               LinearTerms({{a, -3}}), 0));
@@ -7065,15 +5694,8 @@ TEST(QuadraticExpressionTest, LinearTermEqualQuadraticExpression) {
   const LinearTerm lhs = 3 * a;
   QuadraticExpression rhs = 2 * a * b + 3 * b + 4;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs == std::move(rhs);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               4, QuadraticTerms({{a, b, -2}}),
                               LinearTerms({{a, 3}, {b, -3}}), 4));
@@ -7087,18 +5709,8 @@ TEST(QuadraticExpressionTest, LinearExpressionEqualQuadraticTerm) {
   LinearExpression lhs = 3 * a + 4;
   const QuadraticTerm rhs = 2 * a * b;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = std::move(lhs) == rhs;
 
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 4);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(1);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison,
               BoundedQuadraticExpressionEquiv(-4, QuadraticTerms({{a, b, -2}}),
                                               LinearTerms({{a, 3}}), -4));
@@ -7112,16 +5724,9 @@ TEST(QuadraticExpressionTest, LinearExpressionEqualQuadraticExpression) {
   LinearExpression lhs = 3 * a + 4;
   QuadraticExpression rhs = 2 * a * b + 4 * b + 5;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison =
       std::move(lhs) == std::move(rhs);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               1, QuadraticTerms({{a, b, -2}}),
                               LinearTerms({{a, 3}, {b, -4}}), 1));
@@ -7135,15 +5740,8 @@ TEST(QuadraticExpressionTest, QuadraticTermEqualDouble) {
   const QuadraticTerm lhs = 3 * a * b;
   const double rhs = 4;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs == rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
   EXPECT_THAT(comparison,
               BoundedQuadraticExpressionEquiv(4, QuadraticTerms({{a, b, 3}}),
                                               LinearTerms(), 4));
@@ -7157,15 +5755,8 @@ TEST(QuadraticExpressionTest, QuadraticTermEqualVariable) {
   const QuadraticTerm lhs = 3 * a * b;
   const Variable rhs = a;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs == rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
   EXPECT_THAT(comparison,
               BoundedQuadraticExpressionEquiv(0, QuadraticTerms({{a, b, -3}}),
                                               LinearTerms({{a, 1}}), 0));
@@ -7179,15 +5770,8 @@ TEST(QuadraticExpressionTest, QuadraticTermEqualLinearTerm) {
   const QuadraticTerm lhs = 3 * a * b;
   const LinearTerm rhs = 4 * a;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs == rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
   EXPECT_THAT(comparison,
               BoundedQuadraticExpressionEquiv(0, QuadraticTerms({{a, b, -3}}),
                                               LinearTerms({{a, 4}}), 0));
@@ -7201,18 +5785,8 @@ TEST(QuadraticExpressionTest, QuadraticTermEqualLinearExpression) {
   const QuadraticTerm lhs = 3 * a * b;
   LinearExpression rhs = 4 * a + 5;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs == std::move(rhs);
 
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(1);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison,
               BoundedQuadraticExpressionEquiv(5, QuadraticTerms({{a, b, 3}}),
                                               LinearTerms({{a, -4}}), 5));
@@ -7226,15 +5800,8 @@ TEST(QuadraticExpressionTest, QuadraticTermEqualQuadraticTerm) {
   const QuadraticTerm lhs = 3 * a * b;
   const QuadraticTerm rhs = 4 * a * a;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs == rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               0, QuadraticTerms({{a, a, 4}, {a, b, -3}}),
                               LinearTerms(), 0));
@@ -7248,15 +5815,8 @@ TEST(QuadraticExpressionTest, QuadraticTermEqualQuadraticExpression) {
   const QuadraticTerm lhs = 3 * a * b;
   QuadraticExpression rhs = 4 * a * a + 5 * b + 6;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = lhs == std::move(rhs);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               -6, QuadraticTerms({{a, a, 4}, {a, b, -3}}),
                               LinearTerms({{b, 5}}), -6));
@@ -7270,15 +5830,8 @@ TEST(QuadraticExpressionTest, QuadraticExpressionEqualDouble) {
   QuadraticExpression lhs = 3 * a * b + 4 * b + 5;
   const double rhs = 6;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = std::move(lhs) == rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison,
               BoundedQuadraticExpressionEquiv(-1, QuadraticTerms({{a, b, -3}}),
                                               LinearTerms({{b, -4}}), -1));
@@ -7292,15 +5845,8 @@ TEST(QuadraticExpressionTest, QuadraticExpressionEqualVariable) {
   QuadraticExpression lhs = 3 * a * b + 4 * b + 5;
   const Variable rhs = a;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = std::move(lhs) == rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               -5, QuadraticTerms({{a, b, 3}}),
                               LinearTerms({{a, -1}, {b, 4}}), -5));
@@ -7314,15 +5860,8 @@ TEST(QuadraticExpressionTest, QuadraticExpressionEqualLinearTerm) {
   QuadraticExpression lhs = 3 * a * b + 4 * b + 5;
   const LinearTerm rhs = 6 * a;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = std::move(lhs) == rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               -5, QuadraticTerms({{a, b, 3}}),
                               LinearTerms({{a, -6}, {b, 4}}), -5));
@@ -7336,16 +5875,9 @@ TEST(QuadraticExpressionTest, QuadraticExpressionEqualLinearExpression) {
   QuadraticExpression lhs = 3 * a * b + 4 * b + 5;
   LinearExpression rhs = 6 * a + 7;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison =
       std::move(lhs) == std::move(rhs);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               2, QuadraticTerms({{a, b, 3}}),
                               LinearTerms({{a, -6}, {b, 4}}), 2));
@@ -7359,15 +5891,8 @@ TEST(QuadraticExpressionTest, QuadraticExpressionEqualQuadraticTerm) {
   QuadraticExpression lhs = 3 * a * b + 4 * b + 5;
   const QuadraticTerm rhs = 6 * a * a;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = std::move(lhs) == rhs;
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               -5, QuadraticTerms({{a, a, -6}, {a, b, 3}}),
                               LinearTerms({{b, 4}}), -5));
@@ -7381,16 +5906,9 @@ TEST(QuadraticExpressionTest, QuadraticExpressionEqualQuadraticExpression) {
   QuadraticExpression lhs = 3 * a * b + 4 * b + 5;
   QuadraticExpression rhs = 6 * a * a + 7 * a + 8;
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison =
       std::move(lhs) == std::move(rhs);
 
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 3);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(comparison, BoundedQuadraticExpressionEquiv(
                               3, QuadraticTerms({{a, a, -6}, {a, b, 3}}),
                               LinearTerms({{a, -7}, {b, 4}}), 3));
@@ -7402,15 +5920,8 @@ TEST(BoundedQuadraticExpressionTest, FromVariablesEquality) {
   const Variable b(&storage, storage.AddVariable("b"));
 
   const internal::VariablesEquality linear_comparison = a == b;
-  ResetExpressionCounters();
 
   const BoundedQuadraticExpression quadratic_comparison(linear_comparison);
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 1);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(quadratic_comparison,
               BoundedQuadraticExpressionEquiv(
                   0, QuadraticTerms(), LinearTerms({{a, 1}, {b, -1}}), 0));
@@ -7421,19 +5932,9 @@ TEST(LowerBoundedQuadraticExpressionTest, FromLowerBoundedLinearExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
 
   LowerBoundedLinearExpression linear_comparison = 2 * a >= 3;
-  ResetExpressionCounters();
 
   const LowerBoundedQuadraticExpression quadratic_comparison(
       std::move(linear_comparison));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(1);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(quadratic_comparison.expression,
               IsIdentical(QuadraticExpression({}, {{a, 2}}, 0)));
   EXPECT_EQ(quadratic_comparison.lower_bound, 3);
@@ -7444,19 +5945,9 @@ TEST(BoundedQuadraticExpressionTest, FromLowerBoundedLinearExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
 
   LowerBoundedLinearExpression linear_comparison = 2 * a >= 3;
-  ResetExpressionCounters();
 
   const BoundedQuadraticExpression quadratic_comparison(
       std::move(linear_comparison));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(1);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(quadratic_comparison,
               BoundedQuadraticExpressionEquiv(3, QuadraticTerms(),
                                               LinearTerms({{a, 2}}), kInf));
@@ -7467,19 +5958,9 @@ TEST(UpperBoundedQuadraticExpressionTest, FromUpperBoundedLinearExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
 
   UpperBoundedLinearExpression linear_comparison = 2 * a <= 3;
-  ResetExpressionCounters();
 
   const UpperBoundedQuadraticExpression quadratic_comparison(
       std::move(linear_comparison));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(1);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(quadratic_comparison.expression,
               IsIdentical(QuadraticExpression({}, {{a, 2}}, 0)));
   EXPECT_EQ(quadratic_comparison.upper_bound, 3);
@@ -7490,19 +5971,9 @@ TEST(BoundedQuadraticExpressionTest, FromUpperBoundedLinearExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
 
   UpperBoundedLinearExpression linear_comparison = 2 * a <= 3;
-  ResetExpressionCounters();
 
   const BoundedQuadraticExpression quadratic_comparison(
       std::move(linear_comparison));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(1);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(quadratic_comparison,
               BoundedQuadraticExpressionEquiv(-kInf, QuadraticTerms(),
                                               LinearTerms({{a, 2}}), 3));
@@ -7513,19 +5984,9 @@ TEST(BoundedQuadraticExpressionTest, FromBoundedLinearExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
 
   BoundedLinearExpression linear_comparison = (2 <= 3 * a <= 4);
-  ResetExpressionCounters();
 
   const BoundedQuadraticExpression quadratic_comparison(
       std::move(linear_comparison));
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(LinearExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(LinearExpression, 0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(1);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 0);
   EXPECT_THAT(quadratic_comparison,
               BoundedQuadraticExpressionEquiv(2, QuadraticTerms(),
                                               LinearTerms({{a, 3}}), 4));
@@ -7535,14 +5996,7 @@ TEST(BoundedQuadraticExpressionTest, FromLowerBoundedQuadraticExpression) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = 3 <= a * a;
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
   EXPECT_THAT(comparison,
               BoundedQuadraticExpressionEquiv(3.0, QuadraticTerms({{a, a, 1}}),
                                               LinearTerms(), kInf));
@@ -7552,17 +6006,10 @@ TEST(BoundedQuadraticExpressionTest, FromUpperBoundedQuadraticExpression) {
   ModelStorage storage;
   const Variable a(&storage, storage.AddVariable("a"));
 
-  ResetExpressionCounters();
   const BoundedQuadraticExpression comparison = a * a <= 5;
   EXPECT_THAT(comparison,
               BoundedQuadraticExpressionEquiv(
                   -kInf, QuadraticTerms({{a, a, 1}}), LinearTerms(), 5));
-  EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS(0);
-  EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR(0);
-  EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_COPY_CONSTRUCTOR(QuadraticExpression, 0);
-  EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR(QuadraticExpression, 2);
-  EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR(QuadraticExpression, 1);
 }
 
 TEST(BoundedQuadraticExpressionTest, OutputStreaming) {
@@ -7637,14 +6084,6 @@ TEST(BoundedQuadraticExpressionTest, OutputStreaming) {
           QuadraticExpression({{a, a, 2}}, {}, 0), 0.0, kRoundTripTestNumber)),
       absl::StrCat("0 ≤ 2*a² ≤ ", kRoundTripTestNumberStr));
 }
-
-#undef EXPECT_NUM_CALLS_DEFAULT_CONSTRUCTOR
-#undef EXPECT_NUM_CALLS_COPY_CONSTRUCTOR
-#undef EXPECT_NUM_CALLS_MOVE_CONSTRUCTOR
-#undef EXPECT_NUM_CALLS_INITIALIZER_LIST_CONSTRUCTOR
-#undef EXPECT_NUM_CALLS_LINEAR_TO_QUADRATIC_CONSTRUCTOR
-#undef EXPECT_NUM_CALLS_TO_LINEAR_EXPRESSION_CONSTRUCTORS
-#undef EXPECT_NUM_CALLS_TO_QUADRATIC_EXPRESSION_CONSTRUCTORS
 
 }  // namespace
 }  // namespace math_opt
