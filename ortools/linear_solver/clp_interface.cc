@@ -618,7 +618,7 @@ void CLPInterface::SetLpAlgorithm(int value) {
 namespace {
 
 // See MpSolverInterfaceFactoryRepository for details.
-const void* const kRegisterCLP ABSL_ATTRIBUTE_UNUSED = [] {
+const void* const kRegisterCLP [[maybe_unused]] = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* const solver) { return new CLPInterface(solver); },
       MPSolver::CLP_LINEAR_PROGRAMMING);

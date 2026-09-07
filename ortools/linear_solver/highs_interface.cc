@@ -282,7 +282,7 @@ void HighsInterface::NonIncrementalChange() {
 namespace {
 
 // See MpSolverInterfaceFactoryRepository for details.
-const void* const kRegisterHighsLp ABSL_ATTRIBUTE_UNUSED = [] {
+const void* const kRegisterHighsLp [[maybe_unused]] = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* solver) { return new HighsInterface(solver, false); },
       MPSolver::HIGHS_LINEAR_PROGRAMMING);
@@ -290,7 +290,7 @@ const void* const kRegisterHighsLp ABSL_ATTRIBUTE_UNUSED = [] {
 }();
 
 // See MpSolverInterfaceFactoryRepository for details.
-const void* const kRegisterHighsMip ABSL_ATTRIBUTE_UNUSED = [] {
+const void* const kRegisterHighsMip [[maybe_unused]] = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* solver) { return new HighsInterface(solver, true); },
       MPSolver::HIGHS_MIXED_INTEGER_PROGRAMMING);

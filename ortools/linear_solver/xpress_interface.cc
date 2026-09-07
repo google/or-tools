@@ -2291,7 +2291,7 @@ double XpressMPCallbackContext::SuggestSolution(
 namespace {
 
 // See MpSolverInterfaceFactoryRepository for details.
-const void* const kRegisterXpress ABSL_ATTRIBUTE_UNUSED = [] {
+const void* const kRegisterXpress [[maybe_unused]] = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* const solver) { return new XpressInterface(solver, false); },
       MPSolver::XPRESS_LINEAR_PROGRAMMING,
@@ -2300,7 +2300,7 @@ const void* const kRegisterXpress ABSL_ATTRIBUTE_UNUSED = [] {
 }();
 
 // See MpSolverInterfaceFactoryRepository for details.
-const void* const kRegisterXpressMip ABSL_ATTRIBUTE_UNUSED = [] {
+const void* const kRegisterXpressMip [[maybe_unused]] = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* const solver) { return new XpressInterface(solver, true); },
       MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING,

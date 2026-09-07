@@ -299,7 +299,7 @@ void SatInterface::NonIncrementalChange() {
 namespace {
 
 // See MpSolverInterfaceFactoryRepository for details.
-const void* const kRegisterSat ABSL_ATTRIBUTE_UNUSED = [] {
+const void* const kRegisterSat [[maybe_unused]] = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* const solver) { return new SatInterface(solver); },
       MPSolver::SAT_INTEGER_PROGRAMMING);

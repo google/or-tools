@@ -1415,7 +1415,7 @@ void GurobiInterface::SetCallback(MPCallback* mp_callback) {
 namespace {
 
 // See MpSolverInterfaceFactoryRepository for details.
-const void* const kRegisterGurobiLp ABSL_ATTRIBUTE_UNUSED = [] {
+const void* const kRegisterGurobiLp [[maybe_unused]] = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* solver) { return new GurobiInterface(solver, false); },
       MPSolver::GUROBI_LINEAR_PROGRAMMING,
@@ -1424,7 +1424,7 @@ const void* const kRegisterGurobiLp ABSL_ATTRIBUTE_UNUSED = [] {
 }();
 
 // See MpSolverInterfaceFactoryRepository for details.
-const void* const kRegisterGurobiMip ABSL_ATTRIBUTE_UNUSED = [] {
+const void* const kRegisterGurobiMip [[maybe_unused]] = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* solver) { return new GurobiInterface(solver, true); },
       MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING,

@@ -528,7 +528,7 @@ void CBCInterface::SetLpAlgorithm(int value) {
 namespace {
 
 // See MpSolverInterfaceFactoryRepository for details.
-const void* const kRegisterCBC ABSL_ATTRIBUTE_UNUSED = [] {
+const void* const kRegisterCBC [[maybe_unused]] = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* const solver) { return new CBCInterface(solver); },
       MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);

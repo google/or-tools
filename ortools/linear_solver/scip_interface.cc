@@ -1187,7 +1187,7 @@ void SCIPInterface::SetCallback(MPCallback* mp_callback) {
 namespace {
 
 // See MpSolverInterfaceFactoryRepository for details.
-const void* const kRegisterSCIP ABSL_ATTRIBUTE_UNUSED = [] {
+const void* const kRegisterSCIP [[maybe_unused]] = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* const solver) { return new SCIPInterface(solver); },
       MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
