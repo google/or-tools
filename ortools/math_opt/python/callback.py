@@ -223,26 +223,26 @@ class GeneratedConstraint:
 class CallbackResult:
     """The value returned by a solve callback (produced by the user).
 
-    Attributes:
-      terminate: When true it tells the solver to interrupt the solve as soon as
-        possible.
+  Attributes:
+    terminate: When true it tells the solver to interrupt the solve as soon as
+      possible.
 
-        It can be set from any event. This is equivalent to using a
-        SolveInterrupter and triggering it from the callback.
+      It can be set from any event. This is equivalent to using a
+      SolveInterrupter and triggering it from the callback.
 
-        Some solvers don't support interruption, in that case this is simply
-        ignored and the solve terminates as usual. On top of that solvers may not
-        immediately stop the solve. Thus the user should expect the callback to
-        still be called after they set `terminate` to true in a previous
-        call. Returning with `terminate` false after having previously returned
-        true won't cancel the interruption.
-      generated_constraints: Constraints to add to the model. For details, see
-        GeneratedConstraint documentation.
-      suggested_solutions: A list of solutions (or partially defined solutions) to
-        suggest to the solver. Some solvers (e.g. gurobi) will try and convert a
-        partial solution into a full solution by solving a MIP. Use only for
-        Event.MIP_NODE or Event.MIP_SOLUTION.
-    """
+      Some solvers don't support interruption, in that case this is simply
+      ignored and the solve terminates as usual. On top of that solvers may not
+      immediately stop the solve. Thus the user should expect the callback to
+      still be called after they set `terminate` to true in a previous
+      call. Returning with `terminate` false after having previously returned
+      true won't cancel the interruption.
+    generated_constraints: Constraints to add to the model. For details, see
+      GeneratedConstraint documentation.
+    suggested_solutions: A list of solutions (or partially defined solutions) to
+      suggest to the solver. Some solvers (e.g. gurobi) will try and convert a
+      partial solution into a full solution by solving a MIP. Use only for
+      Event.MIP_NODE or Event.MIP_SOLUTION.
+  """  # fmt: skip
 
     terminate: bool = False
     generated_constraints: List[GeneratedConstraint] = dataclasses.field(

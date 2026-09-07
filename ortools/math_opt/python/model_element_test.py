@@ -52,7 +52,7 @@ _VARIABLE_ADAPTER = ElementAdapter[variables.Variable](
     add=model.Model.add_variable,
     delete=model.Model.delete_variable,
     has=model.Model.has_variable,
-    get=model.Model.get_variable,
+    get=model.Model.get_variable,  # pyrefly: ignore[bad-argument-type]
     get_all=model.Model.variables,
     num=model.Model.get_num_variables,
     next_id=model.Model.get_next_variable_id,
@@ -63,7 +63,7 @@ _LINEAR_CONSTRAINT_ADAPTER = ElementAdapter[linear_constraints.LinearConstraint]
     add=model.Model.add_linear_constraint,
     delete=model.Model.delete_linear_constraint,
     has=model.Model.has_linear_constraint,
-    get=model.Model.get_linear_constraint,
+    get=model.Model.get_linear_constraint,  # pyrefly: ignore[bad-argument-type]
     get_all=model.Model.linear_constraints,
     num=model.Model.get_num_linear_constraints,
     next_id=model.Model.get_next_linear_constraint_id,
@@ -79,7 +79,7 @@ _AUX_OBJECTIVE_ADAPTER = ElementAdapter[objectives.AuxiliaryObjective](
     add=_aux_add,
     delete=model.Model.delete_auxiliary_objective,
     has=model.Model.has_auxiliary_objective,
-    get=model.Model.get_auxiliary_objective,
+    get=model.Model.get_auxiliary_objective,  # pyrefly: ignore[bad-argument-type]
     get_all=model.Model.auxiliary_objectives,
     num=model.Model.num_auxiliary_objectives,
     next_id=model.Model.next_auxiliary_objective_id,
@@ -92,7 +92,7 @@ _QUADRATIC_CONSTRAINT_ADAPTER = ElementAdapter[
     add=model.Model.add_quadratic_constraint,
     delete=model.Model.delete_quadratic_constraint,
     has=model.Model.has_quadratic_constraint,
-    get=model.Model.get_quadratic_constraint,
+    get=model.Model.get_quadratic_constraint,  # pyrefly: ignore[bad-argument-type]
     get_all=model.Model.get_quadratic_constraints,
     num=model.Model.get_num_quadratic_constraints,
     next_id=model.Model.get_next_quadratic_constraint_id,
@@ -105,7 +105,7 @@ _INDICTOR_CONSTRAINT_ADAPTER = ElementAdapter[
     add=model.Model.add_indicator_constraint,
     delete=model.Model.delete_indicator_constraint,
     has=model.Model.has_indicator_constraint,
-    get=model.Model.get_indicator_constraint,
+    get=model.Model.get_indicator_constraint,  # pyrefly: ignore[bad-argument-type]
     get_all=model.Model.get_indicator_constraints,
     num=model.Model.get_num_indicator_constraints,
     next_id=model.Model.get_next_indicator_constraint_id,
@@ -172,7 +172,7 @@ class ModelElementTest(parameterized.TestCase):
         e1 = element_adapter.add(mod)
         e2 = element_adapter.add(mod)
 
-        element_adapter.delete(mod, e1)
+        element_adapter.delete(mod, e1)  # pyrefly: ignore[bad-argument-type]
 
         self.assertTrue(element_adapter.has(mod, 0))
         self.assertFalse(element_adapter.has(mod, 1))
@@ -189,14 +189,14 @@ class ModelElementTest(parameterized.TestCase):
         mod = model.Model()
         bad_el = element_adapter.get(mod, 0, validate=False)
         with self.assertRaises(ValueError):
-            element_adapter.delete(mod, bad_el)
+            element_adapter.delete(mod, bad_el)  # pyrefly: ignore[bad-argument-type]
 
     def test_delete_element_twice_error(self, element_adapter: _ADAPTER) -> None:
         mod = model.Model()
         el = element_adapter.add(mod)
-        element_adapter.delete(mod, el)
+        element_adapter.delete(mod, el)  # pyrefly: ignore[bad-argument-type]
         with self.assertRaises(ValueError):
-            element_adapter.delete(mod, el)
+            element_adapter.delete(mod, el)  # pyrefly: ignore[bad-argument-type]
 
     def test_delete_element_wrong_model_error(self, element_adapter: _ADAPTER) -> None:
         mod1 = model.Model()
@@ -206,12 +206,12 @@ class ModelElementTest(parameterized.TestCase):
         e2 = element_adapter.add(mod2)
 
         with self.assertRaises(ValueError):
-            element_adapter.delete(mod1, e2)
+            element_adapter.delete(mod1, e2)  # pyrefly: ignore[bad-argument-type]
 
     def test_get_deleted_element_error(self, element_adapter: _ADAPTER) -> None:
         mod = model.Model()
         el = element_adapter.add(mod)
-        element_adapter.delete(mod, el)
+        element_adapter.delete(mod, el)  # pyrefly: ignore[bad-argument-type]
         with self.assertRaises(KeyError):
             element_adapter.get(mod, 0, validate=True)
 

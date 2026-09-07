@@ -59,7 +59,9 @@ class SolveTest(absltest.TestCase):
 
         def cb(cb_data: callback.CallbackData) -> callback.CallbackResult:
             cb_res = callback.CallbackResult()
-            if cb_data.solution[x] + cb_data.solution[y] >= 1 + 1e-4:
+            if (
+                cb_data.solution[x] + cb_data.solution[y] >= 1 + 1e-4
+            ):  # pyrefly: ignore[unsupported-operation]
                 cb_res.add_lazy_constraint(x + y <= 1.0)
             return cb_res
 

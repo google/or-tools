@@ -60,7 +60,7 @@ class SolveTest(absltest.TestCase):
         for k, v in expected.items():
             self.assertAlmostEqual(
                 v,
-                actual[k],
+                actual[k],  # pyrefly: ignore[bad-index]
                 places,
                 msg=f"actual: {actual} and expected: {expected} disagree on key: {k}",
             )
@@ -138,7 +138,9 @@ class SolveTest(absltest.TestCase):
             {x1: 0.0, x2: 1.0}, res.solutions[0].primal_solution.variable_values
         )
         dual = res.solutions[0].dual_solution
-        self.assertAlmostEqual(2.0, dual.objective_value)
+        self.assertAlmostEqual(
+            2.0, dual.objective_value
+        )  # pyrefly: ignore[no-matching-overload]
         self.assertSetEqual({c}, set(dual.dual_values.keys()))
         self.assertSetEqual({x1, x2}, set(dual.reduced_costs.keys()))
         # Possible values for [y, r1, r2] are [1, 0, 1] and [2, -1, 0].
@@ -230,7 +232,9 @@ class SolveTest(absltest.TestCase):
         )
         self.assertGreaterEqual(len(res.solutions), 1)
         dual = res.solutions[0].dual_solution
-        self.assertAlmostEqual(2.0, dual.objective_value)
+        self.assertAlmostEqual(
+            2.0, dual.objective_value
+        )  # pyrefly: ignore[no-matching-overload]
         # The dual was filtered by id
         self.assertSetEqual({d}, set(dual.dual_values.keys()))
         self.assertSetEqual({y, z}, set(dual.reduced_costs.keys()))
@@ -389,9 +393,17 @@ class SolveTest(absltest.TestCase):
             msg=res.termination,
         )
         self.assertGreaterEqual(len(res2.solutions), 1)
-        self.assertAlmostEqual(6.0, res2.solutions[0].primal_solution.objective_value)
+        self.assertAlmostEqual(
+            6.0,
+            res2.solutions[
+                0
+            ].primal_solution.objective_value,  # pyrefly: ignore[missing-attribute]
+        )
         self._assert_dict_almost_equal(
-            {x: 3.0}, res2.solutions[0].primal_solution.variable_values
+            {x: 3.0},
+            res2.solutions[
+                0
+            ].primal_solution.variable_values,  # pyrefly: ignore[missing-attribute]
         )
 
     def test_incremental_mip(self) -> None:

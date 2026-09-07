@@ -449,7 +449,7 @@ class PrimaryObjectiveTest(absltest.TestCase):
 class AuxiliaryObjectiveTest(absltest.TestCase):
 
     def test_invalid_id_type(self) -> None:
-        elemental = cpp_elemental.CppElemental()
+        elemental = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         with self.assertRaisesRegex(TypeError, "obj_id type"):
             objectives.AuxiliaryObjective(elemental, "dog")
 
