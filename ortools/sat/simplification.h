@@ -58,7 +58,7 @@ class SatPostsolver {
   // Tells the postsolver that the given literal must be true in any solution.
   // We currently check that the variable is not already fixed.
   //
-  // TODO(user): this as almost the same effect as adding an unit clause, and we
+  // TODO(user): this has almost the same effect as adding a unit clause, and we
   // should probably remove this to simplify the code.
   void FixVariable(Literal x);
 
@@ -69,13 +69,13 @@ class SatPostsolver {
   // assumed to be deleted.
   //
   // This can be called more than once. But each call must refer to the current
-  // variables set (after all the previous mapping have been applied).
+  // variables set (after all the previous mappings have been applied).
   void ApplyMapping(const util_intops::StrongVector<BooleanVariable,
                                                     BooleanVariable>& mapping);
 
-  // Extracts the current assignment of the given solver and postsolve it.
+  // Extracts the current assignment of the given solver and postsolves it.
   //
-  // Node(fdid): This can currently be called only once (but this is easy to
+  // Note(user): This can currently be called only once (but this is easy to
   // change since only some CHECK will fail).
   std::vector<bool> ExtractAndPostsolveSolution(const SatSolver& solver);
   std::vector<bool> PostsolveSolution(const std::vector<bool>& solution);
@@ -102,7 +102,7 @@ class SatPostsolver {
     return result;
   }
 
-  // This will initially contains the Fixed variable.
+  // This will initially contain the fixed variable.
   // If PostsolveSolution() is called, it will contain the final solution.
   const VariablesAssignment& assignment() { return assignment_; }
 
@@ -124,10 +124,10 @@ class SatPostsolver {
 
   // All the added clauses will be mapped back to the initial variables using
   // this reverse mapping. This way, clauses_ and associated_literal_ are only
-  // in term of the initial problem.
+  // in terms of the initial problem.
   util_intops::StrongVector<BooleanVariable, BooleanVariable> reverse_mapping_;
 
-  // This will stores the fixed variables value and later the postsolved
+  // This will store the fixed variables value and later the postsolved
   // assignment.
   VariablesAssignment assignment_;
 };
@@ -167,7 +167,7 @@ class SatPresolver {
     equiv_mapping_ = mapping;
   }
 
-  // Adds new clause to the SatPresolver.
+  // Adds a new clause to the SatPresolver.
   void SetNumVariables(int num_variables);
   void AddBinaryClause(Literal a, Literal b);
   void AddClause(absl::Span<const Literal> clause);
@@ -179,7 +179,7 @@ class SatPresolver {
   // so that this can never take too much time.
   bool Presolve();
 
-  // Same as Presolve() but only allow to remove BooleanVariable whose index
+  // Same as Presolve() but only allows removing BooleanVariables whose index
   // is set to true in the given vector.
   bool Presolve(const std::vector<bool>& var_that_can_be_removed);
 
@@ -194,23 +194,23 @@ class SatPresolver {
   // added to the SatPresolver.
   int NumVariables() const { return literal_to_clause_sizes_.size() / 2; }
 
-  // After presolving, Some variables in [0, NumVariables()) have no longer any
-  // clause pointing to them. This return a mapping that maps this interval to
-  // [0, new_size) such that now all variables are used. The unused variable
+  // After presolving, some variables in [0, NumVariables()) no longer have any
+  // clauses pointing to them. This returns a mapping that maps this interval to
+  // [0, new_size) such that now all variables are used. The unused variables
   // will be mapped to BooleanVariable(-1).
   util_intops::StrongVector<BooleanVariable, BooleanVariable> VariableMapping()
       const;
 
-  // Loads the current presolved problem in to the given sat solver.
+  // Loads the current presolved problem into the given sat solver.
   // Note that the variables will be re-indexed according to the mapping given
   // by GetMapping() so that they form a dense set.
   //
   // IMPORTANT: This is not const because it deletes the presolver clauses as
   // they are added to the SatSolver in order to save memory. After this is
-  // called, only VariableMapping() will still works.
+  // called, only VariableMapping() will still work.
   void LoadProblemIntoSatSolver(SatSolver* solver);
 
-  // Visible for Testing. Takes a given clause index and looks for clause that
+  // Visible for Testing. Takes a given clause index and looks for clauses that
   // can be subsumed or strengthened using this clause. Returns false if the
   // model is proven to be unsat.
   bool ProcessClauseToSimplifyOthers(ClauseIndex clause_index);
@@ -220,7 +220,7 @@ class SatPresolver {
   //
   // It is always possible to remove x by resolving each clause containing x
   // with all the clauses containing not(x). Hence the cross-product name. Note
-  // that this function only do that if the number of clauses is reduced.
+  // that this function only does that if the number of clauses is reduced.
   bool CrossProduct(Literal x);
 
   // Visible for testing. Just applies the BVA step of the presolve.
@@ -251,14 +251,14 @@ class SatPresolver {
   // the problem is shown to be UNSAT.
   bool ProcessAllClauses();
 
-  // Finds the literal from the clause that occur the less in the clause
+  // Finds the literal from the clause that occurs the least in the clause
   // database.
   Literal FindLiteralWithShortestOccurrenceList(
       absl::Span<const Literal> clause);
   LiteralIndex FindLiteralWithShortestOccurrenceListExcluding(
       const std::vector<Literal>& clause, Literal to_exclude);
 
-  // Tests and maybe perform a Simple Bounded Variable addition starting from
+  // Tests and maybe performs a Simple Bounded Variable addition starting from
   // the given literal as described in the paper: "Automated Reencoding of
   // Boolean Formulas", Norbert Manthey, Marijn J. H. Heule, and Armin Biere,
   // Volume 7857 of the series Lecture Notes in Computer Science pp 102-117,
@@ -266,7 +266,7 @@ class SatPresolver {
   // https://www.research.ibm.com/haifa/conferences/hvc2012/papers/paper16.pdf
   //
   // This seems to have a mostly positive effect, except on the crafted problem
-  // familly mugrauer_balint--GI.crafted_nxx_d6_cx_numxx where the reduction
+  // family mugrauer_balint--GI.crafted_nxx_d6_cx_numxx where the reduction
   // is big, but apparently the problem is harder to prove UNSAT for the solver.
   void SimpleBva(LiteralIndex l);
 
@@ -274,7 +274,7 @@ class SatPresolver {
   void DisplayStats(double elapsed_seconds);
 
   // Returns a hash of the given clause variables (not literal) in such a way
-  // that hash1 & not(hash2) == 0 iff the set of variable of clause 1 is a
+  // that hash1 & not(hash2) == 0 iff the set of variables of clause 1 is a
   // subset of the one of clause2.
   uint64_t ComputeSignatureOfClauseVariables(ClauseIndex ci);
 
@@ -375,10 +375,10 @@ class SatPresolver {
 };
 
 // Visible for testing. Returns true iff:
-// - a subsume b (subsumption): the clause a is a subset of b, in which case
+// - a subsumes b (subsumption): the clause a is a subset of b, in which case
 //   opposite_literal is set to -1.
 // - b is strengthened by self-subsumption using a (self-subsuming resolution):
-//   the clause a with one of its literal negated is a subset of b, in which
+//   the clause a with one of its literals negated is a subset of b, in which
 //   case opposite_literal is set to this negated literal index. Moreover, this
 //   opposite_literal is then removed from b.
 //
@@ -400,7 +400,7 @@ LiteralIndex DifferAtGivenLiteral(const std::vector<Literal>& a,
 
 // Visible for testing. Computes the resolvant of 'a' and 'b' obtained by
 // performing the resolution on 'x'. If the resolvant is trivially true this
-// returns false, otherwise it returns true and fill 'out' with the resolvant.
+// returns false, otherwise it returns true and fills 'out' with the resolvant.
 //
 // Note that the resolvant is just 'a' union 'b' with the literals 'x' and
 // not(x) removed. The two clauses are assumed to be sorted, and the computed
@@ -421,13 +421,13 @@ int ComputeResolvantSize(Literal x, const std::vector<Literal>& a,
 //   literal l -> literals propagated by l.
 //
 // Clears the mapping if there are no equivalent literals. Otherwise, mapping[l]
-// is the representative of the equivalent class of l. Note that mapping[l] may
+// is the representative of the equivalence class of l. Note that mapping[l] may
 // be equal to l.
 //
 // The postsolver will be updated so it can recover a solution of the mapped
 // problem. Note that this works on any problem the SatSolver can handle, not
-// only pure SAT problem, but the returned mapping do need to be applied to all
-// constraints.
+// only pure SAT problems, but the returned mapping does need to be applied to
+// all constraints.
 void ProbeAndFindEquivalentLiteral(
     SatSolver* solver, SatPostsolver* postsolver,
     util_intops::StrongVector<LiteralIndex, LiteralIndex>* mapping,

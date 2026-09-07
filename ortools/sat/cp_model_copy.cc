@@ -124,10 +124,10 @@ bool ModelCopyHelper::InputIsFixed(int ref) const {
   if (input_variable_is_fixed_[var]) return true;
 
   // If the mapped variable is fixed, mark the input as such.
-  // This make sure we use the latest state as we copy.
+  // This makes sure we use the latest state as we copy.
   //
-  // TODO(user): This reflect more the state during copy, but it might be
-  // slower. So maybe we should leave that for presolve? On another hand, more
+  // TODO(user): This reflects more the state during copy, but it might be
+  // slower. So maybe we should leave that for presolve? On the other hand, more
   // than speed, it is the saving in memory that is interesting during the
   // first copy.
   const int image = mapping_.empty() ? var : mapping_[var];
@@ -237,14 +237,14 @@ bool ModelCopy::CreateVariablesFromDomains(absl::Span<const Domain> domains) {
 //
 // TODO(user): It seems easy to forget to update this if any new constraint
 // contains an interval or if we add a field to an existing constraint. Find a
-// way to remind contributor to not forget this.
+// way to remind contributors to not forget this.
 bool ModelCopy::ImportAndSimplifyConstraints(
     const CpModelProto& in_model, bool first_copy,
     const std::function<bool(int)>& active_constraints) {
   const bool ignore_names = params_.ignore_names();
 
-  // If first_copy is true, we reorder the scheduling constraint to be sure they
-  // refer to interval before them.
+  // If first_copy is true, we reorder the scheduling constraints to be sure
+  // they refer to intervals before them.
   std::vector<int> constraints_using_intervals;
 
   interval_mapping_.assign(in_model.constraints().size(), -1);
@@ -464,7 +464,7 @@ bool ModelCopy::ImportObjective(const CpModelProto& in_model) {
 }
 
 // We have two modes:
-// - If variable_mapping is empty, we  import the hint and load it
+// - If variable_mapping is empty, we import the hint and load it
 //   in the solution_crush to be updated as we copy.
 // - Otherwise, we assume solution_crush is not needed, and we copy right
 //   away the hint in the remapped format.
@@ -493,7 +493,7 @@ void ModelCopy::ImportSolutionHint(const CpModelProto& in_model) {
 
     int64_t hint_value = hint.values(i);
     if (!RefIsPositive(mapped_ref)) {
-      // We alread checked that this must have been a literal.
+      // We already checked that this must have been a literal.
       // Note however that the hint value is from outside the solver, so
       // we distinguish true / false with hint_value > 0 and we inverse it.
       if (hint_value > 0) {
@@ -625,9 +625,9 @@ bool ModelCopy::FinishCopy(const CpModelProto& in_model) {
     }
   }
 
-  // When there is no mapping, we might have created new variable and updated
+  // When there is no mapping, we might have created new variables and updated
   // the hint, so write it back. Note that we DCHECK() that we don't create
-  // new variable when the mapping is non-empty.
+  // new variables when the mapping is non-empty.
   if (variable_mapping_.empty()) {
     helper_.solution_crush()->StoreSolutionAsHint(*working_model_);
   }
@@ -1145,7 +1145,7 @@ bool ModelCopy::CopyLinMax(const ConstraintProto& ct) {
   // We will create it lazily if we end up copying something.
   ConstraintProto* new_ct = nullptr;
 
-  // Regroup all constant terms and copy the other.
+  // Regroup all constant terms and copy the others.
   int64_t max_of_fixed_terms = kint64min;
   for (const auto& expr : ct.lin_max().exprs()) {
     const std::optional<int64_t> fixed = helper_.InputFixedValueOrNullopt(expr);
@@ -1417,7 +1417,7 @@ bool ModelCopy::CopyBoolXor(const ConstraintProto& ct) {
 bool ModelCopy::CopyInterval(const ConstraintProto& ct, int c,
                              bool ignore_names) {
   CHECK_EQ(starting_constraint_index_, 0)
-      << "Adding new interval constraints to partially filled model is not "
+      << "Adding new interval constraints to a partially filled model is not "
          "supported.";
   interval_mapping_[c] = working_model_->constraints_size();
   ConstraintProto* new_ct = working_model_->add_constraints();
@@ -2015,7 +2015,7 @@ void VariableDomains::Reset(int num_vars) {
 void VariableDomains::Set(int var, Domain d) {
   has_two_values_[var] = d.HasTwoValues();
   if (is_fixed_[var]) {
-    // The code here assume that once fixed, a variable stays that way.
+    // The code here assumes that once fixed, a variable stays that way.
     CHECK(d.IsFixed());
   } else if (d.IsFixed()) {
     is_fixed_[var] = true;

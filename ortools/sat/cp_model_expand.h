@@ -24,13 +24,13 @@ namespace sat {
 
 // Expands a given CpModelProto by rewriting complex constraints into
 // simpler constraints.
-// This is different from PresolveCpModel() as there are no reduction or
+// This is different from PresolveCpModel() as there is no reduction or
 // simplification of the model. Furthermore, this expansion is mandatory.
 void ExpandCpModel(PresolveContext* context);
 
-// Linear constraint with a complex rhs need to be expanded at the end of the
+// Linear constraints with a complex rhs need to be expanded at the end of the
 // presolve. We do that at the end, because the presolve is allowed to simplify
-// such constraints by updating the rhs. Also the extra variable we create are
+// such constraints by updating the rhs. Also the extra variables we create are
 // only linked by a few constraints to the rest of the model and should not be
 // pre-solvable.
 void FinalExpansionForLinearConstraint(PresolveContext* context);

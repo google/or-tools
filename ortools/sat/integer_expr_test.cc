@@ -82,7 +82,7 @@ void AddFixedWeightedSumReif(Literal is_eq,
                              absl::Span<const IntegerVariable> vars,
                              absl::Span<const int64_t> coefficients,
                              int64_t value, Model* model) {
-  // We creates two extra Boolean variables in this case. The alternative is
+  // We create two extra Boolean variables in this case. The alternative is
   // to code a custom propagator for the direction equality => reified.
   const Literal is_le = Literal(model->Add(NewBooleanVariable()), true);
   const Literal is_ge = Literal(model->Add(NewBooleanVariable()), true);
@@ -138,7 +138,7 @@ TEST(WeightedSumTest, LevelZeroPropagation) {
   EXPECT_EQ(model.Get(LowerBound(sum)), 4 + 2 * 2 + 3 * 3);
   EXPECT_EQ(model.Get(UpperBound(sum)), 9 + 2 * 7 + 3 * 8);
 
-  // Setting this leave only a slack of 2.
+  // Setting this leaves only a slack of 2.
   AddLowerOrEqual(sum, 19, &model);
   EXPECT_EQ(SatSolver::FEASIBLE, model.GetOrCreate<SatSolver>()->Solve());
   EXPECT_BOUNDS_EQ(vars[0], 4, 6);    // coeff = 1, slack = 2
@@ -168,7 +168,7 @@ TEST(WeightedSumTest, LevelZeroPropagationWithNegativeNumbers) {
   EXPECT_EQ(model.Get(LowerBound(sum)), -15 * 3);
   EXPECT_EQ(model.Get(UpperBound(sum)), 0);
 
-  // Setting this leave only a slack of 5 which is not an exact multiple of 3.
+  // Setting this leaves only a slack of 5 which is not an exact multiple of 3.
   AddLowerOrEqual(sum, -40, &model);
   EXPECT_EQ(SatSolver::FEASIBLE, model.GetOrCreate<SatSolver>()->Solve());
   EXPECT_BOUNDS_EQ(vars[0], -5, -4);
@@ -489,7 +489,7 @@ TEST(LinMinTest, OnlyOnePossibleCandidate) {
   EXPECT_EQ(SatSolver::FEASIBLE, model.GetOrCreate<SatSolver>()->Solve());
   EXPECT_BOUNDS_EQ(min, 2, 7);
 
-  // But now, if the min is known to be <= 3, the minimum variable is known! it
+  // But now, if the min is known to be <= 3, the minimum variable is known! It
   // has to be variable #1, so we can propagate its upper bound.
   AddLowerOrEqual(min, 3, &model);
   EXPECT_EQ(SatSolver::FEASIBLE, model.GetOrCreate<SatSolver>()->Solve());
@@ -691,7 +691,7 @@ TEST(LinMinTest, CheckEnumerateAllSolutionsWithoutEnforcementLiteral) {
 
 // Propagates a * b = p by hand. Return false if the domains are empty,
 // otherwise returns true and the expected domains value. This is slow and
-// work in O(product of domain(a).size() * domain(b).size())!.
+// works in O(product of domain(a).size() * domain(b).size())!.
 bool TestProductPropagation(const IntegerTrail& trail,
                             absl::Span<const IntegerVariable> vars,
                             std::vector<IntegerValue>* expected_mins,
@@ -1744,7 +1744,7 @@ TEST(DivisionConstraintTest, CheckAllSolutionsOnExprs) {
       }
     }
 
-    // Checks that we get we get the same solution set through the two methods.
+    // Checks that we get the same solution set through the two methods.
     EXPECT_EQ(solutions, expected)
         << "\n---------\n"
         << ProtobufDebugString(initial_model) << "---------\n";
@@ -1959,7 +1959,7 @@ TEST(ModuloConstraintTest, CheckAllSolutions) {
       expected.insert({i, mod, j});
     }
 
-    // Checks that we get we get the same solution set through the two methods.
+    // Checks that we get the same solution set through the two methods.
     EXPECT_EQ(solutions, expected)
         << "\n---------\n"
         << ProtobufDebugString(initial_model) << "---------\n";

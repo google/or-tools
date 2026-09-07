@@ -134,7 +134,7 @@ void GreaterThanAtLeastOneOfPropagator::Explain(int id,
 
   auto& literals_at_false = integer_trail_->ClearedMutableTmpLiterals();
   for (int i = 0; i < first_non_false; ++i) {
-    // If the level zero bounds is good enough, no reason needed.
+    // If the level-zero bound is good enough, no reason needed.
     //
     // TODO(user): We could also skip this if we already have the reason for
     // the expression being high enough in the current conflict.
@@ -171,7 +171,7 @@ bool GreaterThanAtLeastOneOfPropagator::Propagate() {
 
   // Compute the min of the lower-bound for the still possible variables.
   // TODO(user): This could be optimized by keeping more info from the last
-  // Propagate() calls.
+  // calls to Propagate().
   IntegerValue target_min = kMaxIntegerValue;
   const IntegerValue current_min = integer_trail_->LowerBound(target_var_);
   const AssignmentView assignment(trail_->Assignment());
@@ -203,12 +203,12 @@ bool GreaterThanAtLeastOneOfPropagator::Propagate() {
   }
 
   if (target_min == kMaxIntegerValue) {
-    // All false, conflit.
+    // All false, conflict.
     *(trail_->MutableConflict()) = selectors_;
     return false;
   }
 
-  // Note that we use id/propagation_slack for other purpose.
+  // Note that we use id/propagation_slack for other purposes.
   return integer_trail_->EnqueueWithLazyReason(
       IntegerLiteral::GreaterOrEqual(target_var_, target_min),
       /*id=*/first_non_false, /*propagation_slack=*/target_min, this);

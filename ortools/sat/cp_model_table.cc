@@ -223,8 +223,8 @@ namespace {
 // We will call FullyCompressTuplesRecursive() for a set of prefixes of the
 // original tuples, each having the same suffix (in reversed_suffix).
 //
-// For such set, we will compress it on the last variable of the prefixes. We
-// will then for each unique compressed set of value of that variable, call
+// For such a set, we will compress it on the last variable of the prefixes. We
+// will then for each unique compressed set of values of that variable, call
 // a new FullyCompressTuplesRecursive() on the corresponding subset.
 void FullyCompressTuplesRecursive(
     absl::Span<const int64_t> domain_sizes,
@@ -262,7 +262,7 @@ void FullyCompressTuplesRecursive(
       }
     }
 
-    // If one of the value is the special value kTableAnyValue, we convert
+    // If one of the values is the special value kTableAnyValue, we convert
     // it to the "empty means any" format.
     for (const int64_t v : temp_data.back().values) {
       if (v == kTableAnyValue) {
@@ -272,8 +272,8 @@ void FullyCompressTuplesRecursive(
     }
     gtl::STLSortAndRemoveDuplicates(&temp_data.back().values);
 
-    // If values cover the whole domain, we clear the vector. This allows to
-    // use less space and avoid creating unneeded clauses.
+    // If values cover the whole domain, we clear the vector. This allows using
+    // less space and avoids creating unneeded clauses.
     if (temp_data.back().values.size() == domain_size) {
       temp_data.back().values.clear();
     }
@@ -316,7 +316,7 @@ void FullyCompressTuplesRecursive(
 }  // namespace
 
 // TODO(user): We can probably reuse the tuples memory always and never create
-// new one. We should also be able to code an iterative version of this. Note
+// new ones. We should also be able to code an iterative version of this. Note
 // however that the recursion level is bounded by the number of columns which
 // should be small.
 std::vector<std::vector<absl::InlinedVector<int64_t, 2>>> FullyCompressTuples(
@@ -330,8 +330,8 @@ std::vector<std::vector<absl::InlinedVector<int64_t, 2>>> FullyCompressTuples(
 }
 
 // TODO(user): Note that if we have duplicate variables controlling different
-// time point, this might not reach the fixed point. Fix? it is not that
-// important as the expansion take care of this case anyway.
+// time points, this might not reach the fixed point. Fix? it is not that
+// important as the expansion takes care of this case anyway.
 void PropagateAutomaton(const AutomatonConstraintProto& proto,
                         const PresolveContext& context,
                         std::vector<absl::flat_hash_set<int64_t>>* states,

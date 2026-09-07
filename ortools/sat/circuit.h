@@ -35,23 +35,23 @@ namespace sat {
 
 // Circuit/sub-circuit constraint.
 //
-// Nodes that are not in the unique allowed sub-circuit must point to themseves.
-// A nodes that has no self-arc must thus be inside the sub-circuit. If there is
-// no self-arc at all, then this constraint forces the circuit to go through all
-// the nodes. Multi-arcs are NOT supported.
+// Nodes that are not in the unique allowed sub-circuit must point to
+// themselves. A node that has no self-arc must thus be inside the sub-circuit.
+// If there is no self-arc at all, then this constraint forces the circuit to go
+// through all the nodes. Multi-arcs are NOT supported.
 //
 // Important: for correctness, this constraint requires that "exactly one"
 // constraints have been added for all the incoming (resp. outgoing) arcs of
-// each node. Also, such constraint must propagate before this one.
+// each node. Also, such constraints must propagate before this one.
 class CircuitPropagator : PropagatorInterface, ReversibleInterface {
  public:
   struct Options {
-    // Hack for the VRP to allow for more than one sub-circuit and forces all
+    // Hack for the VRP to allow for more than one sub-circuit and force all
     // the subcircuits to go through the node zero.
     bool multiple_subcircuit_through_zero = false;
   };
 
-  // The constraints take a sparse representation of a graph on [0, n). Each arc
+  // The constraint takes a sparse representation of a graph on [0, n), each arc
   // being present when the given literal is true.
   CircuitPropagator(int num_nodes, absl::Span<const int> tails,
                     absl::Span<const int> heads,
@@ -94,8 +94,8 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   // accessed often, so we use a more efficient std::vector<> for them. Note
   // that we do not add self-arcs to graph_.
   //
-  // TODO(user): for large dense graph, using a matrix is faster and uses less
-  // memory. If the need arise we can have the two implementations.
+  // TODO(user): for large dense graphs, using a matrix is faster and uses less
+  // memory. If the need arises we can have the two implementations.
   std::vector<LiteralIndex> self_arcs_;
   absl::flat_hash_map<std::pair<int, int>, Literal> graph_;
 
@@ -107,17 +107,17 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   std::vector<Literal> watch_index_to_literal_;
   CompactVectorVector<int, Arc> watch_index_to_arcs_;
 
-  // Current partial chains of arc that are present.
+  // Current partial chains of arcs that are present.
   std::vector<int> next_;  // -1 if not assigned yet.
   std::vector<int> prev_;  // -1 if not assigned yet.
   std::vector<LiteralIndex> next_literal_;
 
   // Backtrack support for the partial chains of arcs, level_ends_[level] is an
-  // index in added_arcs_;
+  // index in added_arcs_.
   std::vector<int> level_ends_;
   std::vector<Arc> added_arcs_;
 
-  // Reversible list of node that must be in a cycle. A node must be in a cycle
+  // Reversible list of nodes that must be in a cycle. A node must be in a cycle
   // iff self_arcs_[node] is false. This graph entry can be used as a reason.
   int rev_must_be_in_cycle_size_ = 0;
   std::vector<int> must_be_in_cycle_;
@@ -128,7 +128,7 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   std::vector<Literal> temp_reason_;
 };
 
-// Enforce the fact that there is no cycle in the given directed graph.
+// Enforces the fact that there is no cycle in the given directed graph.
 class NoCyclePropagator : PropagatorInterface, ReversibleInterface {
  public:
   NoCyclePropagator(int num_nodes, absl::Span<const int> tails,
@@ -150,7 +150,7 @@ class NoCyclePropagator : PropagatorInterface, ReversibleInterface {
   std::vector<Literal> watch_index_to_literal_;
   std::vector<std::vector<std::pair<int, int>>> watch_index_to_arcs_;
 
-  // This will only contains the subgraph with all the arc at true.
+  // This will only contain the subgraph with all the arcs at true.
   // We maintain it incrementally and update this on SetLevel()/Propagate().
   std::vector<std::vector<int>> graph_;
   std::vector<std::vector<Literal>> graph_literals_;
@@ -254,7 +254,7 @@ int ReindexArcs(IntContainer* tails, IntContainer* heads,
 // ============================================================================
 
 // This just wraps CircuitPropagator. See the comment there to see what this
-// does. Note that any nodes with no outgoing or no incoming arc will cause the
+// does. Note that any node with no outgoing or no incoming arc will cause the
 // problem to be UNSAT. One can call ReindexArcs() first to ignore such nodes.
 void LoadSubcircuitConstraint(int num_nodes, absl::Span<const int> tails,
                               absl::Span<const int> heads,

@@ -69,7 +69,7 @@ class OpbReader {
     model_is_supported_ = true;
 
     // Read constraints line by line (1 constraint per line).
-    // We process into a temporary structure to support non linear constraints
+    // We process into a temporary structure to support non-linear constraints
     // and weighted constraints.
     for (const std::string& line : FileLines(filename)) {
       ++num_lines;
@@ -161,7 +161,7 @@ class OpbReader {
           objective_.back().literals.push_back(
               NegatedRef(PbLiteralToCpModelLiteral(index)));
         } else {
-          // Note that coefficient always appear before the variable/variables.
+          // Note that coefficients always appear before the variable/variables.
           PbTerm term;
           if (!ParseInt64Into(word, &term.coeff)) return;
           objective_.emplace_back(std::move(term));
@@ -208,7 +208,7 @@ class OpbReader {
         constraint.terms.back().literals.push_back(
             NegatedRef(PbLiteralToCpModelLiteral(index)));
       } else {
-        // Note that coefficient always appear before the variable/variables.
+        // Note that coefficients always appear before the variable/variables.
         PbTerm term;
         if (!ParseInt64Into(word, &term.coeff)) return;
         constraint.terms.emplace_back(std::move(term));

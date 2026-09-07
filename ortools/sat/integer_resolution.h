@@ -35,12 +35,12 @@
 namespace operations_research::sat {
 
 // Conflict resolution at the "integer level" a bit like if all our integer
-// literals where already instantiated as boolean.
+// literals were already instantiated as boolean.
 //
-// In addition we can minimize the conflict by exploiting the relationship
-// between integer literal on the same variable, like x >= 5  =>  x >= 3.
+// In addition, we can minimize the conflict by exploiting the relationship
+// between integer literals on the same variable, like x >= 5  =>  x >= 3.
 //
-// Depending on the options, this code might generate new Boolean during
+// Depending on the options, this code might generate new Booleans during
 // conflict resolution, or keep expanding the integer literals until we only
 // have Booleans left.
 class IntegerConflictResolution {
@@ -80,12 +80,13 @@ class IntegerConflictResolution {
     // We only need var >= bound in the current conflict resolution.
     // Note that we have: integer_trail_[int_index_in_queue] >= bound.
     //
-    // Important: If slacks is non empty, we might actually require more, i.e.
+    // Important: If slack is non-empty, we might actually require more, i.e.
     // var >= integer_trail_[int_index_in_queue] (with some slack).
     IntegerValue bound = kMinIntegerValue;
 
-    // We already added to the reason a literal that prove var >= settled_bound.
-    // So there is no need to prove any var >= rhs for rhs smaller than this.
+    // We already added to the reason a literal that proves var >=
+    // settled_bound. So there is no need to prove any var >= rhs for rhs
+    // smaller than this.
     IntegerValue settled_bound = kMinIntegerValue;
 
     // If empty, we just need to explain var >= bound.
@@ -95,13 +96,13 @@ class IntegerConflictResolution {
     // slack listed here.
     //
     // Note that this is usually constructed once and accessed only twice. So a
-    // linked list seems like a good datastructure for that. Note also that
+    // linked list seems like a good data structure for that. Note also that
     // we never reclaim the linked_list_buffer_ memory during a single
     // resolution.
     SlackListIndex slack_ptr = kNoListIndex;
   };
 
-  // Clears the slack for the given variable, and update its bound.
+  // Clears the slack for the given variable, and updates its bound.
   // There is no need to prove anything less tight than var >= threshold.
   void ConsumeSlack(IntegerVariable var,
                     IntegerValue threshold = kMinIntegerValue);
@@ -116,17 +117,17 @@ class IntegerConflictResolution {
                                  const IntegerReason& reason,
                                  std::optional<IntegerValue> bound);
 
-  // Updates int_data_[i_lit.var] and add an entry to the queue if needed.
+  // Updates int_data_[i_lit.var] and adds an entry to the queue if needed.
   void ProcessIntegerLiteral(GlobalTrailIndex source_index,
                              IntegerLiteral i_lit);
 
-  // If a variable has holes and one need to explain var >= value, if the value
-  // fall into a hole of the domain, we actually only need var >= smaller_value.
-  // This returns that smaller value.
+  // If a variable has holes and one needs to explain var >= value, if the value
+  // falls into a hole of the domain, we actually only need var >=
+  // smaller_value. This returns that smaller value.
   IntegerValue RelaxBoundIfHoles(IntegerVariable var, IntegerValue value);
 
-  // Marks all integer literals associated to one of the given Boolean literals
-  // as "no need to be expanded further".
+  // Marks all integer literals associated with one of the given Boolean
+  // literals as "no need to be expanded further".
   void MarkAllAssociatedLiterals(absl::Span<const Literal> literals);
 
   // Debugging function to print info about a GlobalTrailIndex.

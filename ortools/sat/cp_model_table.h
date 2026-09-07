@@ -29,16 +29,16 @@ namespace operations_research {
 namespace sat {
 
 // Canonicalizes the table constraint by removing all unreachable tuples, and
-// all columns which have the same variable of a previous column.
+// all columns which have the same variable as a previous column.
 //
-// This also sort all the tuples and remove all fixed columns from the table.
+// This also sorts all the tuples and removes all fixed columns from the table.
 void CanonicalizeTable(PresolveContext* context, ConstraintProto* ct);
 
 // This method tries to compress a list of tuples by merging complementary
 // tuples, that is a set of tuples that only differ on one variable, and that
 // cover the domain of the variable. In that case, it will keep only one tuple,
-// and replace the value for variable by any_value, the equivalent of '*' in
-// regexps.
+// and replace the value for that variable by any_value, the equivalent of '*'
+// in regexps.
 //
 // This method is exposed for testing purposes.
 constexpr int64_t kTableAnyValue = kint64min;
@@ -46,20 +46,20 @@ void CompressTuples(absl::Span<const int64_t> domain_sizes,
                     std::vector<std::vector<int64_t>>* tuples);
 
 // Similar to CompressTuples() but produces a final table where each cell is
-// a set of value. This should result in a table that can still be encoded
-// efficiently in SAT but with less tuples and thus less extra Booleans. Note
-// that if a set of value is empty, it is interpreted at "any" so we can gain
+// a set of values. This should result in a table that can still be encoded
+// efficiently in SAT but with fewer tuples and thus fewer extra Booleans. Note
+// that if a set of values is empty, it is interpreted as "any" so we can gain
 // some space.
 //
-// The passed tuples vector is used as temporary memory and is detroyed.
+// The passed tuples vector is used as temporary memory and is destroyed.
 // We interpret kTableAnyValue as an "any" tuple.
 //
 // TODO(user): To reduce memory, we could return some absl::Span in the last
 // layer instead of vector.
 //
-// TODO(user): The final compression is depend on the order of the variables.
+// TODO(user): The final compression depends on the order of the variables.
 // For instance the table (1,1)(1,2)(1,3),(1,4),(2,3) can either be compressed
-// as (1,*)(2,3) or (1,{1,2,4})({1,3},3). More experiment are needed to devise
+// as (1,*)(2,3) or (1,{1,2,4})({1,3},3). More experiments are needed to devise
 // a better heuristic. It might for example be good to call CompressTuples()
 // first.
 std::vector<std::vector<absl::InlinedVector<int64_t, 2>>> FullyCompressTuples(

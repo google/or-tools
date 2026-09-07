@@ -69,7 +69,7 @@ FeasibilityPump::FeasibilityPump(Model* model)
   // Tweak the default parameters to make the solve incremental.
   glop::GlopParameters parameters;
   // Note(user): Primal simplex does better here since we have a limit on
-  // simplex iterations. So dual simplex sometimes fails to find a LP feasible
+  // simplex iterations. So dual simplex sometimes fails to find an LP feasible
   // solution.
   parameters.set_use_dual_simplex(false);
   parameters.set_max_number_of_iterations(2000);
@@ -184,8 +184,8 @@ bool FeasibilityPump::Solve() {
     if (!SolveLp()) break;
     if (lp_solution_is_integer_) break;
     if (!Round()) break;
-    // We don't end this loop if the integer solutions is feasible in hope to
-    // get better solution.
+    // We don't end this loop if the integer solution is feasible in hope to
+    // get a better solution.
     if (integer_solution_is_feasible_) MaybePushToRepo();
   }
 
@@ -663,9 +663,9 @@ bool FeasibilityPump::PropagationRounding() {
     // Propagate the value.
     //
     // When we want to fix the variable at its lb or ub, we do not create an
-    // equality literal to minimize the number of new literal we create. This
+    // equality literal to minimize the number of new literals we create. This
     // is because creating an "== value" literal will implicitly also create
-    // a ">= value" and a "<= value" literals.
+    // a ">= value" and a "<= value" literal.
     Literal to_enqueue;
     const IntegerValue value(integer_solution_[var_index]);
     if (value == lb) {

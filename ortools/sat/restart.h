@@ -27,7 +27,7 @@
 namespace operations_research {
 namespace sat {
 
-// Contain the logic to decide when to restart a SAT tree search.
+// Contains the logic to decide when to restart a SAT tree search.
 class RestartPolicy {
  public:
   explicit RestartPolicy(Model* model)

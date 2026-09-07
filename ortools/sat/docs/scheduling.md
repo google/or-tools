@@ -499,8 +499,8 @@ as arguments to the `start`, `size`, and `end` parameters.
 
 Once the interval is build, these same expressions can be queries using
 `StartExpr()`, `SizeExpr()`, and `EndExpr()` in C++ and C#, `start_expr()`,
-`size_expr()`, and `end_expr()` in Python, and `getStartExpr()`, `getSizeExpr(),
-and `getEndExpr()` in Java.
+`size_expr()`, and `end_expr()` in Python, and `getStartExpr()`,
+`getSizeExpr()`, and `getEndExpr()` in Java.
 
 If one or both intervals are optional, then these inequalities must be reified
 by the presence literals of the optional intervals used.

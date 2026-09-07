@@ -96,7 +96,7 @@ CircuitPropagator::CircuitPropagator(
       continue;
     }
 
-    // Tricky: For self-arc, we watch instead when the arc become false.
+    // Tricky: For self-arcs, we watch instead when the arc becomes false.
     const Literal watched_literal = tail == head ? literal.Negated() : literal;
     const auto [it, inserted] = literal_to_watch_index.insert(
         {watched_literal.Index(), literal_to_watch_index.size()});
@@ -111,7 +111,7 @@ CircuitPropagator::CircuitPropagator(
     if (self_arcs_[node] == kFalseLiteralIndex ||
         assignment_.LiteralIsFalse(Literal(self_arcs_[node]))) {
       // For the multiple_subcircuit_through_zero case, must_be_in_cycle_ will
-      // be const and only contains zero.
+      // be const and only contain zero.
       if (node == 0 || !options_.multiple_subcircuit_through_zero) {
         must_be_in_cycle_[rev_must_be_in_cycle_size_++] = node;
       }
@@ -134,7 +134,7 @@ int CircuitPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   // This is needed in case a Literal is used for more than one arc, we may
   // propagate it to false/true here, and it might trigger more propagation.
   //
-  // TODO(user): come up with a test that fail when this is not here.
+  // TODO(user): come up with a test that fails when this is not here.
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
   return id;
 }
@@ -217,7 +217,7 @@ bool CircuitPropagator::IncrementalPropagate(
       }
 
       // Get rid of the trivial conflicts: At most one incoming and one outgoing
-      // arc for each nodes.
+      // arc for each node.
       if (next_[arc.tail] != -1) {
         if (next_literal_[arc.tail] != kNoLiteralIndex) {
           temp_reason_ = {Literal(next_literal_[arc.tail]).Negated(),
@@ -262,7 +262,7 @@ bool CircuitPropagator::Propagate() {
     if (next_[n] == -1 && prev_[n] == -1) continue;
 
     // TODO(user): both this and the loop on must_be_in_cycle_ might take some
-    // time on large graph. Optimize if this become an issue.
+    // time on large graphs. Optimize if this becomes an issue.
     in_current_path_.assign(num_nodes_, false);
 
     // Find the start and end of the path containing node n. If this is a
@@ -284,8 +284,8 @@ bool CircuitPropagator::Propagate() {
       if (start_node == n) break;
     }
 
-    // TODO(user): we can fail early in more case, like no more possible path
-    // to any of the mandatory node.
+    // TODO(user): we can fail early in more cases, like no more possible path
+    // to any of the mandatory nodes.
     if (options_.multiple_subcircuit_through_zero) {
       // Any cycle must contain zero.
       if (start_node == end_node && !in_current_path_[0]) {
@@ -311,14 +311,14 @@ bool CircuitPropagator::Propagate() {
         }
       }
 
-      // None of the other propagation below are valid in case of multiple
+      // None of the other propagations below are valid in case of multiple
       // circuits.
       continue;
     }
 
     // Check if we miss any node that must be in the circuit. Note that the ones
     // for which self_arcs_[i] is kFalseLiteralIndex are first. This is good as
-    // it will produce shorter reason. Otherwise we prefer the first that was
+    // it will produce a shorter reason. Otherwise we prefer the first that was
     // assigned in the trail.
     bool miss_some_nodes = false;
     LiteralIndex extra_reason = kFalseLiteralIndex;
@@ -332,7 +332,7 @@ bool CircuitPropagator::Propagate() {
     }
 
     if (miss_some_nodes) {
-      // A circuit that miss a mandatory node is a conflict.
+      // A circuit that misses a mandatory node is a conflict.
       if (start_node == end_node) {
         FillReasonForPath(start_node, &temp_reason_);
         if (extra_reason != kFalseLiteralIndex) {
@@ -448,7 +448,7 @@ NoCyclePropagator::NoCyclePropagator(int num_nodes, absl::Span<const int> tails,
 
   // We register at construction.
   //
-  // TODO(user): Uniformize this across propagator. Sometimes it is nice not
+  // TODO(user): Uniformize this across propagators. Sometimes it is nice not
   // to register them, but most of them can be registered right away.
   RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
 }
@@ -460,7 +460,7 @@ void NoCyclePropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   }
   watcher->RegisterReversibleClass(id, this);
 
-  // This class currently only test for conflict, so no need to call it twice.
+  // This class currently only tests for conflicts, so no need to call it twice.
   // watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
 
@@ -495,21 +495,21 @@ bool NoCyclePropagator::IncrementalPropagate(
   return Propagate();
 }
 
-// TODO(user): only explore node with newly added arcs.
+// TODO(user): only explore nodes with newly added arcs.
 //
 // TODO(user): We could easily re-index the graph so that only nodes with arcs
 // are used. Because right now we are in O(num_nodes) even if the graph is
 // empty.
 bool NoCyclePropagator::Propagate() {
   // The graph should be up to date when this is called thanks to
-  // IncrementalPropagate(). We just do a SCC on the graph.
+  // IncrementalPropagate(). We just do an SCC on the graph.
   components_.clear();
   FindStronglyConnectedComponents(num_nodes_, graph_, &components_);
 
   for (const std::vector<int>& compo : components_) {
     if (compo.size() <= 1) continue;
 
-    // We collect all arc from this compo.
+    // We collect all arcs from this compo.
     //
     // TODO(user): We could be more efficient here, but this is only executed on
     // conflicts. We should at least make sure we return a single cycle even

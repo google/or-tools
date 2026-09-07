@@ -217,7 +217,7 @@ void GenerateNoOverlap2dEnergyCut(
     IntegerValue y_max = kMinIntegerValue;
     capacity_profile.Clear();
 
-    // We sort all tasks (x_start_min(task) >= x_start_min(start_index) by
+    // We sort all tasks (x_start_min(task) >= x_start_min(start_index)) by
     // increasing end max.
     std::vector<DiffnEnergyEvent> residual_events(events.begin() + i1,
                                                   events.end());
@@ -381,7 +381,7 @@ std::string DiffnCtEvent::DebugString() const {
       ", lifted = ", lifted);
 }
 
-// We generate the cut from the Smith's rule from:
+// We generate the cut from Smith's rule in:
 // M. Queyranne, Structure of a simple scheduling polyhedron,
 // Mathematical Programming 58 (1993), 263–285
 //
@@ -389,10 +389,10 @@ std::string DiffnCtEvent::DebugString() const {
 //    sum(end_min_i * duration_min_i) >=
 //        (sum(duration_min_i^2) + sum(duration_min_i)^2) / 2
 //
-// Let's build a figure where each horizontal rectangle represent a task. It
+// Let's build a figure where each horizontal rectangle represents a task. It
 // ends at the end of the task, and its height is the duration of the task.
 // For a given order, we pack each rectangle to the left while not overlapping,
-// that is one rectangle starts when the previous one ends.
+// that is, one rectangle starts when the previous one ends.
 //
 //     e1
 // -----
@@ -411,7 +411,7 @@ std::string DiffnCtEvent::DebugString() const {
 // The second term of the rhs is the area below the diagonal.
 //
 // We apply the following changes (see the code for cumulative constraints):
-//   - we strengthen this cuts by noticing that if all tasks starts after S,
+//   - we strengthen this cut by noticing that if all tasks start after S,
 //     then replacing end_min_i by (end_min_i - S) is still valid.
 //   - we lift rectangles that start before the start of the sequence, but must
 //     overlap with it.
@@ -443,7 +443,7 @@ void GenerateNoOvelap2dCompletionTimeCuts(absl::string_view cut_name,
     std::vector<DiffnCtEvent> residual_tasks(events.begin() + start,
                                              events.end());
 
-    // We look at event that start before sequence_start_min, but are forced
+    // We look at events that start before sequence_start_min, but are forced
     // to cross this time point. In that case, we replace this event by a
     // truncated event starting at sequence_start_min. To do this, we reduce
     // the size_min, align the start_min with the sequence_start_min, and
@@ -513,7 +513,7 @@ void GenerateNoOvelap2dCompletionTimeCuts(absl::string_view cut_name,
       lp_contrib += event.x_lp_end * ToDouble(event.energy_min);
       current_start_min = std::min(current_start_min, event.x_start_min);
 
-      // For the capacity, we use the worse |y_max - y_min| and if all the tasks
+      // For the capacity, we use the worst |y_max - y_min| and if all the tasks
       // so far have a fixed demand with a gcd > 1, we can round it down.
       y_min_of_subset = std::min(y_min_of_subset, event.y_min);
       y_max_of_subset = std::max(y_max_of_subset, event.y_max);
@@ -522,7 +522,7 @@ void GenerateNoOvelap2dCompletionTimeCuts(absl::string_view cut_name,
         if (i == 0) {
           dp.Reset((y_max_of_subset - y_min_of_subset).value());
         } else {
-          // TODO(user): Can we increase the bound dynamically ?
+          // TODO(user): Can we increase the bound dynamically?
           if (y_max_of_subset - y_min_of_subset > dp.Bound()) {
             use_dp = false;
           }
@@ -539,7 +539,7 @@ void GenerateNoOvelap2dCompletionTimeCuts(absl::string_view cut_name,
       // If we have not reached capacity, there can be no cuts on ends.
       if (sum_of_y_size_min <= reachable_capacity) continue;
 
-      // Do we have a violated cut ?
+      // Do we have a violated cut?
       const IntegerValue square_sum_energy = CapProdI(sum_energy, sum_energy);
       if (AtMinOrMaxInt64I(square_sum_energy)) break;
       const IntegerValue rhs_second_term =

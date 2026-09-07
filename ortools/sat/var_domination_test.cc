@@ -126,18 +126,18 @@ TEST(VarDominationTest, ExploitDominanceRelation) {
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
   // Because X--, Z++ is always ok, we can exclude some value from Z using
-  // equation X + 2Z >=2 we see that if Z=5, X >= -8, so we can decrease it,
+  // equation X + 2Z >= 2 we see that if Z=5, X >= -8, so we can decrease it,
   // but for Z = 6, X might be -10, so we are not sure.
   //
-  // Also not that X can be 10 with Z at 10 too, so we cannot reduced the domain
+  // Also note that X can be 10 with Z at 10 too, so we cannot reduce the domain
   // of X.
   EXPECT_EQ(context.DomainOf(0).ToString(), "[-10,10]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[-10,10]");
   EXPECT_EQ(context.DomainOf(2).ToString(), "[6,10]");
 }
 
-// Same example as before but now Z has holes, which complicate a bit the
-// final result.
+// Same example as before but now Z has holes, which complicates the
+// final result a bit.
 TEST(VarDominationTest, ExploitDominanceRelationWithHoles) {
   CpModelProto model_proto = ParseTestProto(R"pb(
     variables {
@@ -175,7 +175,7 @@ TEST(VarDominationTest, ExploitDominanceRelationWithHoles) {
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
-  // With hole, if Z is 0, we will not be able to increase it up to 6, so we
+  // With holes, if Z is 0, we will not be able to increase it up to 6, so we
   // can't remove 0. If it is lower, we can safely increase it to zero though.
   EXPECT_EQ(context.DomainOf(0).ToString(), "[-10,10]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[-10,10]");
@@ -830,9 +830,9 @@ TEST(DualBoundReductionTest, FixVariableToDomainBound) {
   EXPECT_EQ(context.solution_crush().GetVarValues()[1], 10);
 }
 
-// Bound propagation see nothing, but if we can remove feasible solution, from
-// this constraint point of view, all variables can freely increase or decrease
-// until zero (because the constraint is trivial above/below).
+// Bound propagation sees nothing, but if we can remove feasible solutions,
+// from this constraint's point of view, all variables can freely increase or
+// decrease until zero (because the constraint is trivial above/below).
 //
 // -20 <= X + Y + Z <= 20
 TEST(DualBoundReductionTest, BasicTest) {
@@ -897,7 +897,7 @@ TEST(DualBoundReductionTest, CarefulWithHoles) {
   EXPECT_EQ(context.DomainOf(2).ToString(), "[-6][3,5]");
 }
 
-// Here the inferred bounds crosses, so we have multiple choices, we will fix
+// Here the inferred bounds cross, so we have multiple choices, we will fix
 // to the lowest magnitude.
 TEST(DualBoundReductionTest, Choices) {
   CpModelProto model_proto = ParseTestProto(R"pb(

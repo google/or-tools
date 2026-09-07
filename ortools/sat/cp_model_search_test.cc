@@ -136,7 +136,7 @@ TEST(BasicFixedSearchBehaviorTest, Default) {
 }
 
 TEST(BasicFixedSearchBehaviorTest, ReverseOrder) {
-  // Note that SELECT_LOWER_HALF or SELECT_MIN_VALUE result in the same
+  // Note that SELECT_LOWER_HALF or SELECT_MIN_VALUE results in the same
   // solution.
   const CpModelProto model_proto = ParseTestProto(R"pb(
     variables { domain: [ 4, 50 ] }

@@ -129,13 +129,13 @@ TEST(TimeTablingPropagation, UNSAT) {
   EXPECT_FALSE(TestTimeTablingPropagation({{3, 2, 0, 4}, {3, 2, 1, 5}}, {}, 3));
 }
 
-// This is an instance on Time Table pushes a task.
+// This is an instance on which Time Table pushes a task.
 TEST(TimeTablingPropagation, TimeTablePush1) {
   EXPECT_TRUE(TestTimeTablingPropagation({{1, 2, 1, 2}, {3, 2, 0, 10}},
                                          {{1, 2}, {2, 10}}, 3));
 }
 
-// This is an instance on Time Table pushes a task.
+// This is an instance on which Time Table pushes a task.
 TEST(TimeTablingPropagation, TimeTablePush2) {
   EXPECT_TRUE(
       TestTimeTablingPropagation({{1, 2, 1, 2}, {1, 2, 3, 4}, {3, 2, 0, 10}},
@@ -253,7 +253,7 @@ TEST(TimeTablingSolve, FindAllWithVaryingCapacity) {
   const std::vector<int> demands = {1, 2, 3};
   const int horizon = 6;
 
-  // Collect the number of solution for each capacity value.
+  // Collect the number of solutions for each capacity value.
   int sum = 0;
   for (const int capacity : {3, 4, 5}) {
     Model model;
@@ -391,7 +391,7 @@ TEST(TimeTablingSolve, FindAllWithOptionals) {
   EXPECT_EQ(num_solutions_found, num_solutions);
 }
 
-// This construct a reservoir corresponding to a well behaved parenthesis
+// This constructs a reservoir corresponding to a well-behaved parenthesis
 // sequence.
 TEST(ReservoirTest, FindAllParenthesis) {
   const int n = 3;
@@ -442,10 +442,10 @@ TEST(ReservoirTest, FindAllParenthesis) {
 
   // Test that we have the right number of solutions.
   //
-  // The catalan number n, which is 5 for n equal five, count the number of well
-  // formed parathesis sequence. But we have to multiply this by the permutation
-  // for the open and closing parenthesis that are matched to their positions:
-  // n!.
+  // The Catalan number n, which is 5 for n equal three, counts the number of
+  // well-formed parenthesis sequences. But we have to multiply this by the
+  // permutation for the open and closing parenthesis that are matched to their
+  // positions: n!.
   EXPECT_EQ(num_solutions_found, 5 * 6 * 6);
 }
 
@@ -502,7 +502,7 @@ TEST(ReservoirTest, FindAllParenthesisWithOptionality) {
   EXPECT_EQ(num_solutions_found, 184);
 }
 
-// Enumerate all fixed sequence of [-1, +1] with a partial sum >= 0 and <= 1.
+// Enumerate all fixed sequences of [-1, +1] with a partial sum >= 0 and <= 1.
 TEST(ReservoirTest, VariableLevelChange) {
   Model model;
   const int size = 8;
@@ -553,7 +553,7 @@ TEST(ReservoirTest, VariableLevelChange) {
   LOG(INFO) << "conflicts: " << model.GetOrCreate<SatSolver>()->num_failures();
 
   // Test that we have the right number of solutions.
-  // For each subset of non-zero position, the value are fixed, it must
+  // For each subset of non-zero positions, the values are fixed, it must
   // be an alternating sequence starting at 1.
   EXPECT_EQ(num_solutions_found, 1 << size);
 }
@@ -569,7 +569,7 @@ TEST(ReservoirTimeTablingTest, WithUnassignedEnforcementLiteral) {
     presences.push_back(model.GetOrCreate<TrivialLiterals>()->TrueLiteral());
   }
   const Literal b = Literal(model.Add(NewBooleanVariable()), true);
-  // Always false is enforced (sum(deltas) = 2+3+4+5 > 10).
+  // Always false if enforced (sum(deltas) = 2+3+4+5 > 10).
   model.TakeOwnership(new ReservoirTimeTabling({b}, times, deltas, presences,
                                                IntegerValue(10), &model));
 

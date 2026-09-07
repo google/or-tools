@@ -288,7 +288,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructUserSearchStrategy(
 
         if (randomize_decision) {
           // We need to use -value as we want the minimum valued variables.
-          // We add a random noise to get improve the entropy.
+          // We add random noise to improve the entropy.
           const double noise = absl::Uniform(*random, 0., 1.0);
           top_variables.Add(ref, {-value, noise});
           candidate_value = std::min(candidate_value, value);
@@ -379,7 +379,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructHeuristicSearchStrategy(
     }
 
     // Tricky: we need to create this at level zero in case there are no linear
-    // constraint in the model at the beginning.
+    // constraints in the model at the beginning.
     //
     // TODO(user): Alternatively, support creation of SatPropagator at positive
     // level.
@@ -418,7 +418,7 @@ ConstructIntegerCompletionSearchStrategy(
   return FirstUnassignedVarAtItsMinHeuristic(decisions, model);
 }
 
-// Constructs a search strategy that follow the hint from the model.
+// Constructs a search strategy that follows the hint from the model.
 std::function<BooleanOrIntegerLiteral()> ConstructHintSearchStrategy(
     const CpModelProto& cp_model_proto, CpModelMapping* mapping, Model* model) {
   std::vector<BooleanOrIntegerVariable> vars;
@@ -439,7 +439,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructHintSearchStrategy(
 }
 
 void ConstructFixedSearchStrategy(SearchHeuristics* h, Model* model) {
-  // We start by the user specified heuristic.
+  // We start with the user-specified heuristic.
   std::vector<std::function<BooleanOrIntegerLiteral()>> heuristics;
   if (h->user_search != nullptr) {
     heuristics.push_back(h->user_search);
@@ -517,7 +517,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     SatParameters base_params) {
   absl::flat_hash_map<std::string, SatParameters> strategies;
 
-  // By default we disable the logging when we generate a set of parameter. It
+  // By default we disable logging when we generate a set of parameters. It
   // is possible to force it by setting it in the corresponding named parameter
   // via the subsolver_params field.
   base_params.set_log_search_progress(false);
@@ -590,7 +590,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     SatParameters new_params = base_params;
     new_params.set_optimize_with_lb_tree_search(true);
     // We do not want to change the objective_var lb from outside as it gives
-    // better result to only use locally derived reason in that algo.
+    // better results to only use locally derived reasons in that algo.
     new_params.set_share_objective_bounds(false);
 
     new_params.set_linearization_level(0);
@@ -840,10 +840,10 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_optimize_with_lb_tree_search(false);
     new_params.set_optimize_with_max_hs(false);
 
-    // Given that each workers work on a different part of the subtree, it might
+    // Given that each worker works on a different part of the subtree, it might
     // not be a good idea to try to work on a global shared solution.
     //
-    // TODO(user): Experiments more here, in particular we could follow it if
+    // TODO(user): Experiment more here, in particular we could follow it if
     // it falls into the current subtree.
     new_params.set_polarity_exploit_ls_hints(false);
 
@@ -888,7 +888,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     lns_params_stalling.set_search_random_variable_pool_size(5);
     strategies["lns_stalling"] = lns_params_stalling;
 
-    // For routing, the LP relaxation seems pretty important, so we prefer an
+    // For routing, the LP relaxation seems pretty important, so we prefer a
     // high linearization level to solve LNS subproblems.
     SatParameters lns_params_routing = lns_params;
     lns_params_routing.set_linearization_level(2);
@@ -896,7 +896,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     strategies["lns_routing"] = lns_params_routing;
   }
 
-  // Add user defined ones.
+  // Add user-defined ones.
   // Note that this might be merged to our default ones.
   for (const SatParameters& params : base_params.subsolver_params()) {
     auto it = strategies.find(params.name());
@@ -925,18 +925,18 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
 //   - Specialize for purely boolean problems
 //   - Disable linearization_level options for non linear problems
 //   - Fast restart in randomized search
-//   - Different propatation levels for scheduling constraints
+//   - Different propagation levels for scheduling constraints
 std::vector<SatParameters> GetFullWorkerParameters(
     const CpModelProto& cp_model, SolverLogger* logger,
     SatParameters* base_params, SubsolverNameFilter* name_filter) {
   // Defines a set of named strategies so it is easier to read in one place
-  // the one that are used. See below.
+  // the ones that are used. See below.
   const auto strategies = GetNamedParameters(*base_params);
 
   // We only use a "fixed search" worker if some strategy is specified or
   // if we have a scheduling model.
   //
-  // TODO(user): For scheduling, this is important to find good first solution
+  // TODO(user): For scheduling, this is important to find a good first solution
   // but afterwards it is not really great and should probably be replaced by a
   // LNS worker.
   const bool use_fixed_strategy = !cp_model.search_strategy().empty() ||
@@ -945,7 +945,7 @@ std::vector<SatParameters> GetFullWorkerParameters(
   // Our current set of strategies
   std::vector<std::string> names;
 
-  // Starts by adding user specified ones.
+  // Starts by adding user-specified ones.
   for (const std::string& name : base_params->extra_subsolvers()) {
     names.push_back(name);
   }
@@ -957,7 +957,11 @@ std::vector<SatParameters> GetFullWorkerParameters(
     names.push_back("fixed");
     names.push_back("core");
     names.push_back("no_lp");
-    names.push_back("max_lp_sym");  // See below for fallback to max_lp.
+    if (cp_model.has_symmetry()) {
+      names.push_back("max_lp_sym");
+    } else {
+      names.push_back("max_lp");
+    }
     names.push_back("quick_restart_no_lp");
     names.push_back("reduced_costs");
     names.push_back("shaving_no_lp");
@@ -987,10 +991,6 @@ std::vector<SatParameters> GetFullWorkerParameters(
         } else {
           names.push_back("core");
         }
-      } else if (name == "max_lp_sym" && !cp_model.has_symmetry()) {
-        // If there is no symmetry, max_lp_sym and max_lp are the same, but
-        // we prefer the less confusing name.
-        names.push_back("max_lp");
       } else {
         names.push_back(name);
       }
@@ -1029,13 +1029,13 @@ std::vector<SatParameters> GetFullWorkerParameters(
     if (params.use_probing_search() && params.interleave_search()) continue;
 
     // TODO(user): Enable shaving search in interleave mode.
-    // Currently it do not respect ^C, and has no per chunk time limit.
+    // Currently it does not respect ^C, and has no per chunk time limit.
     if ((params.use_objective_shaving_search()) && params.interleave_search()) {
       continue;
     }
 
-    // In the corner case of empty variable, lets not schedule the probing as
-    // it currently just loop forever instead of returning right away.
+    // In the corner case of empty variables, let's not schedule the probing as
+    // it currently just loops forever instead of returning right away.
     if (params.use_probing_search() && cp_model.variables().empty()) continue;
 
     if (cp_model.has_objective() && !cp_model.objective().vars().empty()) {
@@ -1157,9 +1157,9 @@ std::vector<SatParameters> GetFullWorkerParameters(
   if (result.size() > target_subsolver_size) {
     result.resize(std::max(0, target_subsolver_size));
   } else if (!result.empty() && force_num_full_subsolvers) {
-    // If we have less parameters, duplicate the first one until we have enough.
-    // This is a bit hacky but easily allow to do experiment with n times the
-    // same subsolver.
+    // If we have fewer parameters, duplicate the first one until we have
+    // enough. This is a bit hacky but easily allows doing experiments with n
+    // times the same subsolver.
     while (result.size() < target_subsolver_size) {
       result.push_back(result[0]);
     }
@@ -1278,7 +1278,7 @@ SubsolverNameFilter::SubsolverNameFilter(const SatParameters& params) {
     ignore_patterns_.push_back(pattern);
   }
 
-  // Hack for backward compatibility and easy of use.
+  // Hack for backward compatibility and ease of use.
   if (params.use_ls_only()) {
     filter_patterns_.push_back("ls*");
     filter_patterns_.push_back("fj*");

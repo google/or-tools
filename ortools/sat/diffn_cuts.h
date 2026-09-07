@@ -28,7 +28,7 @@ namespace operations_research {
 namespace sat {
 
 // Completion time cuts for the no_overlap_2d constraint. It actually generates
-// the completion time cumulative cuts in both axis.
+// the completion time cumulative cuts along both axes.
 CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
     NoOverlap2DConstraintHelper* helper, Model* model);
 
@@ -44,7 +44,7 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
 // If an interval is performed, we use the linear area formulation (if
 // possible), or the McCormick relaxation of the size_x * size_y.
 //
-// The maximum area is the area of the bounding rectangle of each intervals
+// The maximum area is the area of the bounding rectangle of each interval
 // at level 0.
 CutGenerator CreateNoOverlap2dEnergyCutGenerator(
     NoOverlap2DConstraintHelper* helper, Model* model);
@@ -55,7 +55,7 @@ CutGenerator CreateNoOverlap2dEnergyCutGenerator(
 struct DiffnBaseEvent {
   DiffnBaseEvent(int t, const SchedulingConstraintHelper* x_helper);
 
-  // Cache of the intervals bound on the x direction.
+  // Cache of the interval bounds in the x direction.
   IntegerValue x_start_min;
   IntegerValue x_start_max;
   IntegerValue x_end_min;
@@ -69,16 +69,16 @@ struct DiffnBaseEvent {
   // The energy min of this event.
   IntegerValue energy_min;
 
-  // If non empty, a decomposed view of the energy of this event.
+  // If non-empty, a decomposed view of the energy of this event.
   // First value in each pair is x_size, second is y_size.
   std::vector<LiteralValueValue> decomposed_energy;
 };
 
-// Stores the event for a rectangle along the two axis x and y.
+// Stores the event for a rectangle along the two axes x and y.
 //   For a no_overlap constraint, y is always of size 1 between 0 and 1.
 //   For a cumulative constraint, y is the demand that must be between 0 and
 //       capacity_max.
-//   For a no_overlap_2d constraint, y the other dimension of the rect.
+//   For a no_overlap_2d constraint, y is the other dimension of the rectangle.
 struct DiffnCtEvent : DiffnBaseEvent {
   DiffnCtEvent(int t, const SchedulingConstraintHelper* x_helper);
 
@@ -86,7 +86,7 @@ struct DiffnCtEvent : DiffnBaseEvent {
   AffineExpression x_end;
   double x_lp_end;
 
-  // Indicates if the events used the optional energy information from the
+  // Indicates if the event used the optional energy information from the
   // model.
   bool use_energy = false;
 

@@ -120,19 +120,19 @@ TEST(SymmetryPropagatorTest, BasicTest) {
   EXPECT_FALSE(propagator.PropagationIsDone(trail));
   EXPECT_FALSE(propagator.Propagate(&trail));
 
-  // Let assume that the reason for -5 is the assignment +3 (which make sense
+  // Let's assume that the reason for -5 is the assignment +3 (which makes sense
   // since it was propagated). The expected conflict is as stated below because
-  // if -5 and +2 are true, by summetry since we had +3 => -5 we know that +2 =>
+  // if -5 and +2 are true, by symmetry since we had +3 => -5 we know that +2 =>
   // 5.
   //
   // Note: by convention all the literals of a reason or a conflict are false.
   EXPECT_THAT(trail.FailingClause(), ElementsAre(Literal(-2), Literal(+5)));
 
-  // Let backtrack to the trail to +3.
+  // Let's backtrack the trail to +3.
   trail.Untrail(trail.Index() - 2);
   propagator.Untrail(trail, trail.Index());
 
-  // Let now assume that +3 => +2, by symmetry we can also propagate -4!
+  // Let's now assume that +3 => +2, by symmetry we can also propagate -4!
   while (!propagator.PropagationIsDone(trail)) {
     EXPECT_TRUE(propagator.Propagate(&trail));
   }

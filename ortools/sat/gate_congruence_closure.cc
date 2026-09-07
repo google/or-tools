@@ -96,7 +96,7 @@ void GateCongruenceClosure::AddToTruthTable(
 
 namespace {
 
-// Given a set of feasible assignment of two variables, recover the
+// Given a set of feasible assignments of two variables, recover the
 // corresponding binary clauses.
 void AppendBinaryClausesFromTruthTable(
     absl::Span<const BooleanVariable> vars, SmallBitset table,
@@ -116,8 +116,8 @@ void GateCongruenceClosure::EarlyGateDetection() {
   PresolveTimer timer("EarlyGateDetection", logger_, time_limit_);
   timer.OverrideLogging(VLOG_IS_ON(2));
 
-  // Allow to fill old_truth_tables_bitset_ with tight value.
-  // Note that this change dtime and the solver behavior.
+  // Allow to fill old_truth_tables_bitset_ with tight values.
+  // Note that this changes dtime and the solver behavior.
   StructureExtraction(timer);
   tmp_binary_clauses_.clear();
   if (lrat_proof_handler_ != nullptr) {
@@ -151,9 +151,9 @@ void GateCongruenceClosure::ProcessPreviousTruthTables(PresolveTimer& timer) {
     }
     SmallBitset bitmask = truth_tables_bitset_[i];
 
-    // TODO(user): FullyCanonicalizeTruthTable() loose some info, it isn't
+    // TODO(user): FullyCanonicalizeTruthTable() loses some info, it isn't
     // completely clear why, and if we integrate ids2_ info as we canonicalize
-    // gate, that might not be necessary.
+    // gates, that might not be necessary.
     MakeAllInputsPositive(absl::MakeSpan(tmp_literals), bitmask);
     CanonicalizeTruthTable<Literal>(absl::MakeSpan(tmp_literals), bitmask);
 
@@ -192,17 +192,17 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
   tmp_ids_.clear();
   tmp_clauses_.clear();
 
-  // We deal with binary clause a bit differently.
+  // We deal with binary clauses a bit differently.
   //
-  // Tricky: We still include binary clause between fixed literal that haven't
+  // Tricky: We still include binary clauses between fixed literals that haven't
   // been cleaned up yet, as these are needed to really recover all gates.
   //
   // TODO(user): Ideally the detection code should be robust to that.
-  // TODO(user): Maybe we should always have an hash-map of binary up to date?
+  // TODO(user): Maybe we should always have a hash map of binary up to date?
   std::vector<std::pair<Literal, Literal>> binary_used;
   for (LiteralIndex a(0); a < implication_graph_->literal_size(); ++a) {
     // TODO(user): If we know we have too many implications for the time limit
-    // We should just be better of not doing that loop at all.
+    // we would be better off not doing that loop at all.
     if (timer.WorkLimitIsReached()) break;
     if (implication_graph_->IsRedundant(Literal(a))) continue;
     const absl::Span<const Literal> implied =
@@ -223,8 +223,8 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
           // This is either fixing or equivalence!
           //
           // Doing a run of DetectEquivalences() should fix that but then
-          // new clause of size 3 might become binary, and the fix point might
-          // require a lot of step. So it is important to do it here.
+          // new clauses of size 3 might become binary, and the fix point might
+          // require a lot of steps. So it is important to do it here.
           const SmallBitset bitset2 = it->second;
           if (lrat_proof_handler_ != nullptr) {
             binary_used.clear();
@@ -292,8 +292,8 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
     CHECK_EQ(marked_.PositionsSetAtLeastOnce().size(), clause_size);
 
     // These bitsets will contain the intersection of all the negated literals
-    // implied by one of the clause literal. It is used for an "optimization" as
-    // a literal can only be a "target" of a bool_and if it implies all other
+    // implied by one of the clause literals. It is used for an "optimization"
+    // as a literal can only be a "target" of a bool_and if it implies all other
     // literals of the clause to false. So by contraposition, any literal should
     // directly imply such a target to false.
     //
@@ -345,10 +345,10 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
       }
       std::swap(is_potential_target, next_is_potential_target);
 
-      // Target should imply all other literal in the base clause to false.
+      // Target should imply all other literals in the base clause to false.
       if (count < clause_size - 1) continue;
 
-      // Using only the "count" require that there is no duplicates. But
+      // Using only the "count" requires that there are no duplicates. But
       // depending when this is run in the inprocessing loop, we might have
       // some. Redo a pass to double check.
       int second_count = 0;
@@ -366,7 +366,7 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
       }
       if (second_count != clause_size - 1) continue;
 
-      // We have an and_gate !
+      // We have an and_gate!
       // Add the detected gate (its inputs are the negation of each clause
       // literal other than the target).
       gates_target_.push_back(target);
@@ -394,8 +394,8 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
       std::sort(gate.begin(), gate.end());
 
       // Even if we detected an and_gate from a base clause, we keep going
-      // as their could me more than one. In the extreme of an "exactly_one",
-      // a single base clause of size n will correspond to n and_gates !
+      // as there could be more than one. In the extreme of an "exactly_one",
+      // a single base clause of size n will correspond to n and_gates!
     }
   }
 
@@ -403,7 +403,7 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
 }
 
 int GateCongruenceClosure::CanonicalizeShortGate(GateId id) {
-  // Deals with fixed input variable.
+  // Deals with fixed input variables.
   absl::Span<Literal> inputs = gates_inputs_[id];
   int new_size = inputs.size();
 
@@ -455,7 +455,7 @@ int GateCongruenceClosure::CanonicalizeShortGate(GateId id) {
         truth_table |= 1 << i;
       }
       if (truth_table == 0b1111) {
-        // All assignment are possible, there is no constraints.
+        // All assignments are possible, there are no constraints.
         //
         // TODO(user): delete the gate.
         // We transform it to a <=> a for now.
@@ -504,7 +504,7 @@ int GateCongruenceClosure::CanonicalizeShortGate(GateId id) {
           gates_inputs_.Shrink(id, 1);
           return 1;
         } else {
-          LOG(FATAL) << "all case covered above";
+          LOG(FATAL) << "all cases covered above";
         }
       } else if (absl::popcount(truth_table) == 3) {
         // This is just a clause on (a, b).
@@ -1117,7 +1117,7 @@ class LratGateCongruenceHelper {
     if (rep_a.Negated() == rep_b) {
       // The model is UNSAT.
       //
-      // TODO(user): AddAndProveInferredClauseByEnumeration() do not like
+      // TODO(user): AddAndProveInferredClauseByEnumeration() does not like
       // duplicates, but maybe we should just handle the case to have
       // less code here?
       rep_a_implies_rep_b = ClausePtr(rep_a.Negated());
@@ -1274,7 +1274,7 @@ void GateCongruenceClosure::StructureExtraction(PresolveTimer& timer) {
   ExtractAndGatesAndFillShortTruthTables(timer);
   ExtractShortGates(timer);
 
-  // All vector have the same size.
+  // All vectors have the same size.
   // Except gates_clauses_ which is only filled if we need proof.
   CHECK_EQ(gates_target_.size(), gates_type_.size());
   CHECK_EQ(gates_target_.size(), gates_inputs_.size());
@@ -1295,7 +1295,7 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
   PresolveTimer timer("GateCongruenceClosure", logger_, time_limit_);
   timer.OverrideLogging(log_info || VLOG_IS_ON(2));
 
-  // Lets release the memory on exit.
+  // Let's release the memory on exit.
   CHECK(tmp_binary_clauses_.empty());
   absl::Cleanup binary_cleanup = [this] {
     tmp_binary_clauses_.clear();
@@ -1309,12 +1309,12 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
   StructureExtraction(timer);
 
   // If two gates have the same type and the same inputs, their targets are
-  // equivalent. We use an hash set to detect that the inputs are the same.
+  // equivalent. We use a hash set to detect that the inputs are the same.
   absl::flat_hash_set<GateId, GateHash, GateEq> gate_set(
       /*capacity=*/gates_inputs_.size(), GateHash(&gates_type_, &gates_inputs_),
       GateEq(&gates_type_, &gates_inputs_));
 
-  // Used to find representatives as we detect equivalent literal.
+  // Used to find representatives as we detect equivalent literals.
   DenseConnectedComponentsFinder union_find;
   union_find.SetNumberOfNodes(num_literals);
 
@@ -1385,7 +1385,7 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
 
     // This is quite tricky: as we fix a literal, we propagate right away
     // everything implied by it in the binary implication graph. So we need to
-    // loop over all newly_fixed variable in order to properly reach the fix
+    // loop over all newly fixed variables in order to properly reach the fix
     // point!
     ++num_units;
     for (; num_processed_fixed_variables < trail_->Index();
@@ -1415,7 +1415,7 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
       }
       return false;
     }
-    // Lets propagate fixed variables as we find new equivalences.
+    // Let's propagate fixed variables as we find new equivalences.
     if (assignment_.LiteralIsAssigned(a)) {
       if (assignment_.LiteralIsTrue(a)) {
         return fix_literal(b, {a_implies_b, ClausePtr(a)});
@@ -1448,7 +1448,7 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
       const LiteralIndex x = negate ? a.NegatedIndex() : a.Index();
       const LiteralIndex y = negate ? b.NegatedIndex() : b.Index();
 
-      // Because x always refer to a and y to b, this should maintain
+      // Because x always refers to a and y to b, this should maintain
       // the invariant root(lit) = root(lit.Negated()).Negated().
       // This is checked below.
       union_find.AddEdge(x.value(), y.value());
@@ -1495,7 +1495,7 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
     CHECK(in_queue[id.value()]);
     in_queue[id.value()] = false;
 
-    // Tricky: the hash-map might contain id not yet canonicalized. And in
+    // Tricky: the hash map might contain IDs not yet canonicalized. And in
     // particular might already contain the id we are processing.
     //
     // The first pass will check equivalence with the "non-canonical
@@ -1562,7 +1562,7 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
       }
 
       // Canonicalize on pass zero, otherwise loop.
-      // Note that even if nothing change, we want to run canonicalize at
+      // Note that even if nothing changes, we want to run canonicalize at
       // least once on the small "truth table" gates.
       //
       // Note that sorting works for and_gate and any gate that does not depend
@@ -1582,7 +1582,7 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
           const LiteralIndex rep(union_find.FindRoot(lit.Index().value()));
           if (marked_[rep]) continue;
 
-          // This only works for and-gate, if both lit and not(lit) are input,
+          // This only works for and-gate, if both lit and not(lit) are inputs,
           // then target must be false.
           if (marked_[Literal(rep).Negated()]) {
             is_unit = true;
@@ -1616,11 +1616,11 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
         std::sort(inputs.begin(), inputs.begin() + new_size);
         gates_inputs_.Shrink(id, new_size);
 
-        // Lets convert a kAndGateType to the short "type" if we can. The truth
+        // Let's convert a kAndGateType to the short "type" if we can. The truth
         // table is simply a 1 on the last position (where all inputs are ones).
         // We fall back to the case below to canonicalize further.
         //
-        // This is needed because while our generic and_gate use 1 clause +
+        // This is needed because while our generic and_gate uses 1 clause +
         // binary, it won't detect a kAndGateType "badly" encoded with 4 ternary
         // clauses for instance:
         //
@@ -1648,7 +1648,7 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
       }
       const int new_size = CanonicalizeShortGate(id);
 
-      // Note that the test below assume canonicalization.
+      // Note that the test below assumes canonicalization.
       if (new_size == 2 && gates_type_[id] == 0b0110) {
         // TODO(user): we can also have 0b0100 which correspond to a binary
         // clause worth of info (or fixing both variables).
@@ -1826,7 +1826,7 @@ void GateCongruenceClosure::ExploitCircuitStructure(
     }
   }
 
-  // Assume topological order follow the variable ones, and reconstruct a
+  // Assume topological order follows the variable ones, and reconstruct a
   // circuit. This is why we used the "lowest" representative, to try to keep
   // this topological order.
   util_intops::StrongVector<BooleanVariable, bool> is_used(num_variables,

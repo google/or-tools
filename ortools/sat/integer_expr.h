@@ -53,15 +53,15 @@ namespace sat {
 // in 128 bits, so that we can deal with constraints that might overflow (like
 // the one scaled from the LP relaxation). Note that we still use some
 // preconditions, such that for each variable the difference between their
-// bounds fit on an int64_t.
+// bounds fit in an int64_t.
 //
 // TODO(user): Technically we could still have an int128 overflow since we
 // sum n terms that cannot overflow but can still be pretty close to the limit.
-// Make sure this never happens! For most problem though, because the variable
+// Make sure this never happens! For most problems though, because the variable
 // bounds will be smaller than 10^9, we are pretty safe.
 //
-// TODO(user): If one has many such constraint, it will be more efficient to
-// propagate all of them at once rather than doing it one at the time.
+// TODO(user): If one has many such constraints, it will be more efficient to
+// propagate all of them at once rather than doing it one at a time.
 //
 // TODO(user): Explore tree structure to get a log(n) complexity.
 //
@@ -72,8 +72,8 @@ template <bool use_int128 = false>
 class LinearConstraintPropagator : public PropagatorInterface,
                                    LazyReasonInterface {
  public:
-  // If refied_literal is kNoLiteralIndex then this is a normal constraint,
-  // otherwise we enforce the implication refied_literal => constraint is true.
+  // If reified_literal is kNoLiteralIndex then this is a normal constraint,
+  // otherwise we enforce the implication reified_literal => constraint is true.
   // Note that we don't do the reverse implication here, it is usually done by
   // another LinearConstraintPropagator constraint on the negated variables.
   LinearConstraintPropagator(absl::Span<const Literal> enforcement_literals,
@@ -81,8 +81,8 @@ class LinearConstraintPropagator : public PropagatorInterface,
                              absl::Span<const IntegerValue> coeffs,
                              IntegerValue upper_bound, Model* model);
 
-  // This version allow to std::move the memory from the LinearConstraint
-  // directly. It Only uses the upper bound. Id does not support
+  // This version allows moving the memory from the LinearConstraint directly
+  // (with std::move). It only uses the upper bound. It does not support
   // enforcement_literals.
   LinearConstraintPropagator(LinearConstraint ct, Model* model);
 
@@ -91,18 +91,18 @@ class LinearConstraintPropagator : public PropagatorInterface,
   }
 
   // We propagate:
-  // - If the sum of the individual lower-bound is > upper_bound, we fail.
+  // - If the sum of the individual lower bounds is > upper_bound, we fail.
   // - For all i, upper-bound of i
-  //      <= upper_bound - Sum {individual lower-bound excluding i).
+  //      <= upper_bound - Sum (individual lower bounds excluding i).
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
   // Same as Propagate() but only consider current root level bounds. This is
   // mainly useful for the LP propagator since it can find relevant optimal
-  // really late in the search tree.
+  // values really late in the search tree.
   bool PropagateAtLevelZero();
 
-  // This is a pretty usage specific function. Returns the implied lower bound
+  // This is a pretty usage-specific function. Returns the implied lower bound
   // on target_var if the given integer literal is false (resp. true). If the
   // variables do not appear both in the linear inequality, this returns two
   // kMinIntegerValue.
@@ -121,9 +121,9 @@ class LinearConstraintPropagator : public PropagatorInterface,
 
   const IntegerValue upper_bound_;
 
-  // To gain a bit on memory (since we might have many linear constraint),
+  // To gain a bit on memory (since we might have many linear constraints),
   // we share this amongst all of them. Note that this is not accessed by
-  // two different thread though. Also the vector are only used as "temporary"
+  // two different threads though. Also the vectors are only used as "temporary"
   // so they are okay to be shared.
   struct Shared {
     explicit Shared(Model* model)
@@ -178,7 +178,7 @@ extern template class LinearConstraintPropagator<false>;
 // This propagator is quite specific and runs only at level zero. For now, this
 // is mainly used for the objective variable. As we fix terms with high
 // objective coefficient, it is possible the only terms left have a common
-// divisor. This close app2-2.mps in less than a second instead of running
+// divisor. This closes app2-2.mps in less than a second instead of running
 // forever to prove the optimal (in single thread).
 class LevelZeroEquality : PropagatorInterface {
  public:
@@ -199,30 +199,30 @@ class LevelZeroEquality : PropagatorInterface {
   IntegerTrail* integer_trail_;
 };
 
-// A min (resp max) constraint of the form min == MIN(vars) can be decomposed
+// A min (resp. max) constraint of the form min == MIN(vars) can be decomposed
 // into two inequalities:
 //   1/ min <= MIN(vars), which is the same as for all v in vars, "min <= v".
 //      This can be taken care of by the LowerOrEqual(min, v) constraint.
 //   2/ min >= MIN(vars).
 //
-// And in turn, 2/ can be decomposed in:
+// And in turn, 2/ can be decomposed into:
 //   a) lb(min) >= lb(MIN(vars)) = MIN(lb(var));
 //   b) ub(min) >= ub(MIN(vars)) and we can't propagate anything here unless
 //      there is just one possible variable 'v' that can be the min:
 //         for all u != v, lb(u) > ub(min);
 //      In this case, ub(min) >= ub(v).
 //
-// This constraint take care of a) and b). That is:
-// - If the min of the lower bound of the vars increase, then the lower bound of
-//   the min_var will be >= to it.
-// - If there is only one candidate for the min, then if the ub(min) decrease,
+// This constraint takes care of a) and b). That is:
+// - If the min of the lower bounds of the vars increase, then the lower bound
+//   of the min_var will be >= to it.
+// - If there is only one candidate for the min, then if the ub(min) decreases,
 //   the ub of the only candidate will be <= to it.
 //
 // Complexity: This is a basic implementation in O(num_vars) on each call to
 // Propagate(), which will happen each time one or more variables in vars_
 // changed.
 //
-// TODO(user): Implement a more efficient algorithm when the need arise.
+// TODO(user): Implement a more efficient algorithm when the need arises.
 class MinPropagator : public PropagatorInterface {
  public:
   MinPropagator(std::vector<AffineExpression> vars, AffineExpression min_var,
@@ -297,7 +297,7 @@ class GreaterThanMinOfExprsPropagator : public PropagatorInterface,
 // Propagates a * b = p.
 //
 // The bounds [min, max] of a and b will be propagated perfectly, but not
-// the bounds on p as this require more complex arithmetics.
+// the bounds on p as this requires more complex arithmetic.
 class ProductPropagator : public PropagatorInterface {
  public:
   ProductPropagator(absl::Span<const Literal> enforcement_literals,
@@ -335,7 +335,7 @@ class ProductPropagator : public PropagatorInterface {
 };
 
 // Propagates num / denom = div. Basic version, we don't extract any special
-// cases, and we only propagates the bounds. It expects denom to be > 0.
+// cases, and we only propagate the bounds. It expects denom to be > 0.
 //
 // TODO(user): Deal with overflow.
 class DivisionPropagator : public PropagatorInterface {
@@ -362,7 +362,7 @@ class DivisionPropagator : public PropagatorInterface {
   bool PropagateUpperBounds(AffineExpression num, AffineExpression denom,
                             AffineExpression div);
 
-  // When the sign of all 3 expressions are fixed, we can do morel propagation.
+  // When the sign of all 3 expressions are fixed, we can do more propagation.
   //
   // By using negated expressions, we can make sure the domains of num, denom,
   // and div are positive.
@@ -379,7 +379,7 @@ class DivisionPropagator : public PropagatorInterface {
 };
 
 // Propagates var_a / cst_b = var_c. Basic version, we don't extract any special
-// cases, and we only propagates the bounds. cst_b must be > 0.
+// cases, and we only propagate the bounds. cst_b must be > 0.
 class FixedDivisionPropagator : public PropagatorInterface {
  public:
   FixedDivisionPropagator(absl::Span<const Literal> enforcement_literals,
@@ -404,7 +404,7 @@ class FixedDivisionPropagator : public PropagatorInterface {
 };
 
 // Propagates target == expr % mod. Basic version, we don't extract any special
-// cases, and we only propagates the bounds. mod must be > 0.
+// cases, and we only propagate the bounds. mod must be > 0.
 class FixedModuloPropagator : public PropagatorInterface {
  public:
   FixedModuloPropagator(absl::Span<const Literal> enforcement_literals,
@@ -533,8 +533,8 @@ inline void AddWeightedSumLowerOrEqual(
                                  : integer_trail->LevelZeroUpperBound(vars[i]));
     }
     if (expression_min == upper_bound) {
-      // Tricky: as we create integer literal, we might propagate stuff and
-      // the bounds might change, so if the expression_min increase with the
+      // Tricky: as we create integer literals, we might propagate stuff and
+      // the bounds might change, so if the expression_min increases with the
       // bound we use, then the literal must be false.
       IntegerValue non_cached_min;
       for (int i = 0; i < vars.size(); ++i) {
@@ -602,14 +602,13 @@ template <typename VectorInt>
 inline void AddWeightedSumGreaterOrEqual(absl::Span<const IntegerVariable> vars,
                                          const VectorInt& coefficients,
                                          int64_t lower_bound, Model* model) {
-  // We just negate everything and use an <= constraints.
+  // We just negate everything and use a <= constraint.
   std::vector<IntegerValue> negated_coeffs(coefficients.begin(),
                                            coefficients.end());
   for (IntegerValue& ref : negated_coeffs) ref = -ref;
   AddWeightedSumLowerOrEqual({}, vars, negated_coeffs, -lower_bound, model);
 }
 
-// Weighted sum == constant.
 // Weighted sum == constant.
 template <typename VectorInt>
 inline void AddFixedWeightedSum(absl::Span<const IntegerVariable> vars,
@@ -646,7 +645,7 @@ inline void LoadConditionalLinearConstraint(
   if (cst.num_terms == 0) {
     if (cst.lb <= 0 && cst.ub >= 0) return;
 
-    // The enforcement literals cannot be all at true.
+    // The enforcement literals cannot all be true.
     std::vector<Literal> clause;
     for (const Literal lit : enforcement_literals) {
       clause.push_back(lit.Negated());

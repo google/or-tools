@@ -44,22 +44,22 @@ namespace sat {
 // benchmark and test the new code vs this one.
 // =============================================================================
 
-// This class implement a propagator on simple inequalities between integer
+// This class implements a propagator on simple inequalities between integer
 // variables of the form (i1 + offset <= i2). The offset can be constant or
 // given by the value of a third integer variable. Offsets can also be negative.
 //
 // The algorithm works by mapping the problem onto a graph where the edges carry
 // the offset and the nodes correspond to one of the two bounds of an integer
-// variable (lower_bound or -upper_bound). It then find the fixed point using an
-// incremental variant of the Bellman-Ford(-Tarjan) algorithm.
+// variable (lower_bound or -upper_bound). It then finds the fixed point using
+// an incremental variant of the Bellman-Ford(-Tarjan) algorithm.
 //
 // This is also known as an "integer difference logic theory" in the SMT world.
 // Another word is "separation logic".
 //
 // TODO(user): We could easily generalize the code to support any relation of
 // the form a*X + b*Y + c*Z >= rhs (or <=). Do that since this class should be
-// a lot faster at propagating small linear inequality than the generic
-// propagator and the overhead of supporting coefficient should not be too bad.
+// a lot faster at propagating small linear inequalities than the generic
+// propagator and the overhead of supporting coefficients should not be too bad.
 class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
  public:
   explicit PrecedencesPropagator(Model* model)
@@ -85,8 +85,8 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   void Untrail(const Trail& trail, int trail_index) final;
 
   // Propagates all the outgoing arcs of the given variable (and only those). It
-  // is more efficient to do all these propagation in one go by calling
-  // Propagate(), but for scheduling problem, we wants to propagate right away
+  // is more efficient to do all these propagations in one go by calling
+  // Propagate(), but for scheduling problems, we want to propagate right away
   // the end of an interval when its start moved.
   bool PropagateOutgoingArcs(IntegerVariable var);
 
@@ -107,13 +107,13 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
                                           IntegerVariable i2,
                                           IntegerValue offset, Literal l);
 
-  // Generic function that cover all of the above case and more.
+  // Generic function that covers all of the above cases and more.
   void AddPrecedenceWithAllOptions(IntegerVariable i1, IntegerVariable i2,
                                    IntegerValue offset,
                                    IntegerVariable offset_var,
                                    absl::Span<const Literal> presence_literals);
 
-  // This version check current precedence. It is however "slow".
+  // This version checks current precedence. It is however "slow".
   bool AddPrecedenceWithOffsetIfNew(IntegerVariable i1, IntegerVariable i2,
                                     IntegerValue offset);
 
@@ -153,20 +153,20 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
                        Trail* trail);
   IntegerValue ArcOffset(const ArcInfo& arc) const;
 
-  // Inspect all the optional arcs that needs inspection (to stay sparse) and
+  // Inspect all the optional arcs that need inspection (to stay sparse) and
   // check if their presence literal can be propagated to false. Return false
   // on conflict.
   bool PropagateOptionalArcs(Trail* trail);
 
   // The core algorithm implementation is split in these functions. One must
   // first call InitializeBFQueueWithModifiedNodes() that will push all the
-  // IntegerVariable whose lower bound has been modified since the last call.
+  // IntegerVariables whose lower bounds have been modified since the last call.
   // Then, BellmanFordTarjan() will take care of all the propagation and returns
   // false in case of conflict. Internally, it uses DisassembleSubtree() which
   // is the Tarjan variant to detect a possible positive cycle. Before exiting,
   // it will call CleanUpMarkedArcsAndParents().
   //
-  // The Tarjan version of the Bellam-Ford algorithm is really nice in our
+  // The Tarjan version of the Bellman-Ford algorithm is really nice in our
   // context because it was really easy to make it incremental. Moreover, it
   // supports batch increment!
   //
@@ -210,7 +210,7 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   // appear as 6 different entries in the arcs_ vector, one for each variable
   // and its negation, each time with a different tail.
   //
-  // TODO(user): rearranging the index so that the arc of the same node are
+  // TODO(user): rearranging the indices so that the arcs of the same node are
   // consecutive like in StaticGraph should have a big performance impact.
   //
   // TODO(user): We do not need to store ArcInfo.tail_var here.
@@ -221,19 +221,19 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   // This is similar to impacted_arcs_/arcs_ but it is only used to propagate
   // one of the presence literals when the arc cannot be present. An arc needs
   // to appear only once in potential_arcs_, but it will be referenced by
-  // all its variable in impacted_potential_arcs_.
+  // all its variables in impacted_potential_arcs_.
   util_intops::StrongVector<IntegerVariable,
                             absl::InlinedVector<OptionalArcIndex, 6>>
       impacted_potential_arcs_;
   util_intops::StrongVector<OptionalArcIndex, ArcInfo> potential_arcs_;
 
-  // Each time a literal becomes true, this list the set of arcs for which we
-  // need to decrement their count. When an arc count reach zero, it must be
-  // added to the set of impacted_arcs_. Note that counts never becomes
+  // Each time a literal becomes true, this lists the set of arcs for which we
+  // need to decrement their counts. When an arc count reaches zero, it must be
+  // added to the set of impacted_arcs_. Note that counts never become
   // negative.
   //
   // TODO(user): Try a one-watcher approach instead. Note that in most cases
-  // arc should be controlled by 1 or 2 literals, so not sure it is worth it.
+  // arcs should be controlled by 1 or 2 literals, so not sure it is worth it.
   util_intops::StrongVector<LiteralIndex, absl::InlinedVector<ArcIndex, 6>>
       literal_to_new_impacted_arcs_;
   util_intops::StrongVector<ArcIndex, int> arc_counts_;
@@ -243,8 +243,8 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   std::vector<IntegerLiteral> integer_reason_;
 
   // Temp vectors for the Bellman-Ford algorithm. The graph in which this
-  // algorithm works is in one to one correspondence with the IntegerVariable in
-  // impacted_arcs_.
+  // algorithm works is in one-to-one correspondence with the IntegerVariables
+  // in impacted_arcs_.
   std::deque<int> bf_queue_;
   std::vector<bool> bf_in_queue_;
   std::vector<bool> bf_can_be_skipped_;

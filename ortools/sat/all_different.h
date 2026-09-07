@@ -37,18 +37,18 @@ namespace sat {
 
 // Enforces that the given tuple of variables takes different values. This fully
 // encodes all the variables and simply enforces a <= 1 constraint on each
-// possible values.
+// possible value.
 void AddAllDifferentBinary(absl::Span<const IntegerVariable> vars,
                            Model* model);
 
 // Enforces that the given tuple of variables takes different values.
-// Same as AllDifferentBinary() but use a different propagator that only enforce
-// the so called "bound consistency" on the variable domains.
+// Same as AllDifferentBinary() but uses a different propagator that only
+// enforces the so-called "bound consistency" on the variable domains.
 //
 // Compared to AllDifferentBinary() this doesn't require fully encoding the
 // variables and it is also quite fast. Note that the propagation is different,
 // this will not remove already taken values from inside a domain, but it will
-// propagates more the domain bounds.
+// propagate more the domain bounds.
 void AddAllDifferentOnBounds(absl::Span<const IntegerVariable> vars,
                              Model* model);
 void AddAllDifferentOnBounds(absl::Span<const Literal> enforcement_literals,
@@ -74,7 +74,7 @@ class AllDifferentConstraint : PropagatorInterface {
   AllDifferentConstraint(absl::Span<const IntegerVariable> variables,
                          Model* model);
 
-  // In a circuit, the successor of all node must be "different".
+  // In a circuit, the successors of all nodes must be "different".
   // Thus this propagator can also be used in this context.
   AllDifferentConstraint(int num_nodes, absl::Span<const int> tails,
                          absl::Span<const int> heads,
@@ -101,7 +101,7 @@ class AllDifferentConstraint : PropagatorInterface {
   const int num_variables_;
   const std::vector<IntegerVariable> variables_;
 
-  // Note that we remap all value into [0, num_values_) in a "dense" way.
+  // Note that we remap all values into [0, num_values_) in a "dense" way.
   std::vector<std::vector<std::pair<int, Literal>>>
       variable_to_possible_values_;
   int64_t num_values_;
@@ -131,7 +131,7 @@ class AllDifferentConstraint : PropagatorInterface {
   // _ (dummy, var) for all variables.
   // In the original paper, forbidden arcs are identified by detecting that they
   // are not in any alternating cycle or alternating path starting at a
-  // free vertex. Adding the dummy node allows to factor the alternating path
+  // free vertex. Adding the dummy node allows factoring the alternating path
   // part in the alternating cycle, and filter with only the SCC decomposition.
   // When num_variables_ == num_all_values_, the dummy node is useless,
   // we add it anyway to simplify the code.
@@ -145,10 +145,10 @@ class AllDifferentConstraint : PropagatorInterface {
 // Implements the all different bound consistent propagator with explanation.
 // That is, given n affine expressions that must take different values, this
 // propagates the bounds of each expression as much as possible. The key is to
-// detect the so called Hall intervals which are intervals of size k that
+// detect the so-called Hall intervals which are intervals of size k that
 // contain the domain of k expressions. Because all the variables must take
 // different values, we can deduce that the domain of the other variables cannot
-// contain such Hall interval.
+// contain such a Hall interval.
 //
 // We use a "fast" O(n log n) algorithm.
 //
@@ -179,20 +179,21 @@ class AllDifferentBoundsPropagator : public PropagatorInterface {
 
   int RegisterWith(GenericLiteralWatcher* watcher);
 
-  // Fills integer_reason_ with the reason why we have the given hall interval.
+  // Fills integer_reason_ with the reason why we have the given Hall interval.
   void FillHallReason(IntegerValue hall_lb, IntegerValue hall_ub);
 
-  // Do half the job of Propagate(). This will split the variable into
-  // independent subset, and call PropagateLowerBoundsInternal() on each of
+  // Do half the job of Propagate(). This will split the variables into
+  // independent subsets, and call PropagateLowerBoundsInternal() on each of
   // them.
   bool PropagateLowerBounds();
   bool PropagateLowerBoundsInternal(IntegerValue min_lb,
                                     absl::Span<CachedBounds> bounds);
 
   // Internally, we will maintain a set of non-consecutive integer intervals of
-  // the form [start, end]. Each point (i.e. IntegerValue) of such interval will
-  // be associated to an unique input expression and via an union-find algorithm
-  // point to its start. The end only make sense for representative.
+  // the form [start, end]. Each point (i.e. IntegerValue) of such an interval
+  // will be associated with a unique input expression and via a union-find
+  // algorithm point to its start. The end only makes sense for the
+  // representative.
   //
   // TODO(user): Because we don't use rank, we have a worst case complexity of
   // O(n log n). We could try a normal Union-find data structure, but then we
@@ -201,9 +202,9 @@ class AllDifferentBoundsPropagator : public PropagatorInterface {
   // Note that during the execution of the algorithm we start from empty
   // intervals and finish with a set of points of size num_vars.
   //
-  // The list of all points are maintained in the dense vectors index_to_*_
+  // The list of all points is maintained in the dense vectors index_to_*_
   // where we have remapped values to indices (with GetIndex()) to make sure it
-  // always fall into the correct range.
+  // always falls into the correct range.
   int FindStartIndexAndCompressPath(int index);
 
   int GetIndex(IntegerValue value) const {
@@ -220,7 +221,7 @@ class AllDifferentBoundsPropagator : public PropagatorInterface {
   EnforcementHelper& enforcement_helper_;
   EnforcementId enforcement_id_;
 
-  // These vector will be either sorted by lb or by -ub.
+  // These vectors will be either sorted by lb or by -ub.
   std::vector<CachedBounds> bounds_;
   std::vector<CachedBounds> negated_bounds_;
 

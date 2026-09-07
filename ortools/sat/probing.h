@@ -49,36 +49,36 @@ class Prober {
   explicit Prober(Model* model);
   ~Prober();
 
-  // Fixes Booleans variables to true/false and see what is propagated. This
+  // Fixes Boolean variables to true/false and sees what is propagated. This
   // can:
   //
   // - Fix some Boolean variables (if we reach a conflict while probing).
   //
   // - Infer new direct implications. We add them directly to the
   //   BinaryImplicationGraph and they can later be used to detect equivalent
-  //   literals, expand at most ones clique, etc...
+  //   literals, expand at-most-ones cliques, etc...
   //
   // - Tighten the bounds of integer variables. If we probe the two possible
-  //   values of a Boolean (b=0 and b=1), we get for each integer variables two
-  //   propagated domain D_0 and D_1. The level zero domain can then be
+  //   values of a Boolean (b=0 and b=1), we get for each integer variable two
+  //   propagated domains D_0 and D_1. The level-zero domain can then be
   //   intersected with D_0 U D_1. This can restrict the lower/upper bounds of a
   //   variable, but it can also create holes in the domain! This will detect
-  //   common cases like an integer variable in [0, 10] that actually only take
+  //   common cases like an integer variable in [0, 10] that actually only takes
   //   two values [0] or [10] depending on one Boolean.
   //
   // Returns false if the problem was proved INFEASIBLE during probing.
   //
-  // TODO(user): For now we process the Boolean in their natural order, this is
+  // TODO(user): For now we process the Booleans in their natural order, this is
   // not the most efficient.
   //
   // TODO(user): This might generate a lot of new direct implications. We might
   // not want to add them directly to the BinaryImplicationGraph and could
-  // instead use them directly to detect equivalent literal like in
+  // instead use them directly to detect equivalent literals like in
   // ProbeAndFindEquivalentLiteral(). The situation is not clear.
   //
   // TODO(user): More generally, we might want to register any literal => bound
-  // in the IntegerEncoder. This would allow to remember them and use them in
-  // other part of the solver (cuts, lifting, ...).
+  // in the IntegerEncoder. This would allow remembering them and using them in
+  // other parts of the solver (cuts, lifting, ...).
   //
   // TODO(user): Rename to include Integer in the name and distinguish better
   // from FailedLiteralProbing() below.
@@ -92,15 +92,15 @@ class Prober {
   bool ProbeOneVariable(BooleanVariable b);
 
   // Probes the given problem DNF (disjunction of conjunctions). Since one of
-  // the conjunction must be true, we might be able to fix literal or improve
-  // integer bounds if all conjunction propagate the same thing.
+  // the conjunctions must be true, we might be able to fix literals or improve
+  // integer bounds if all conjunctions propagate the same thing.
   enum DnfType {
     // DNF is an existing clause 'dnf_clause' = (l1) OR ... (ln), minus its
     // literals which are already assigned.
     kAtLeastOne,
     // DNF is the tautology "either at least one of n literals is true, or all
     // of them are false": (l1) OR ... (ln) OR (not(l1) AND ... not(ln)). The
-    // single literal conjunctions must be listed first.
+    // single-literal conjunctions must be listed first.
     kAtLeastOneOrZero,
     // DNF is the tautology "one of the 2^n possible assignments of n Boolean
     // variables is true". The n variables must be in the same order in each
@@ -115,7 +115,7 @@ class Prober {
                 const SatClause* dnf_clause = nullptr);
 
   // Statistics.
-  // They are reset each time ProbleBooleanVariables() is called.
+  // They are reset each time ProbeBooleanVariables() is called.
   // Note however that we do not reset them on a call to ProbeOneVariable().
   int64_t num_decisions() const { return counters_.num_decisions; }
   int64_t num_new_literals_fixed() const {
@@ -134,8 +134,8 @@ class Prober {
   }
 
   // Register a callback that will be called on each "propagation".
-  // One can inspect the VariablesAssignment to see what are the inferred
-  // literals.
+  // One can inspect the VariablesAssignment to see what the inferred literals
+  // are.
   void SetPropagationCallback(std::function<void(Literal decision)> f) {
     callback_ = f;
   }
@@ -175,7 +175,7 @@ class Prober {
   TrailCopy* trail_copy_;
 
   // To detect literal x that must be true because b => x and not(b) => x.
-  // When probing b, we add all propagated literal to propagated, and when
+  // When probing b, we add all propagated literals to propagated, and when
   // probing not(b) we check if any are already there.
   SparseBitset<LiteralIndex> propagated_;
 
@@ -216,13 +216,13 @@ class Prober {
 };
 
 // Try to randomly tweak the search and stop at the first conflict each time.
-// This can sometimes find feasible solution, but more importantly, it is a form
-// of probing that can sometimes find small and interesting conflicts or fix
-// variables. This seems to work well on the SAT14/app/rook-* problems and
-// do fix more variables if run before probing.
+// This can sometimes find a feasible solution, but more importantly, it is a
+// form of probing that can sometimes find small and interesting conflicts or
+// fix variables. This seems to work well on the SAT14/app/rook-* problems and
+// does fix more variables if run before probing.
 //
-// If a feasible SAT solution is found (i.e. all Boolean assigned), then this
-// abort and leave the solver with the full solution assigned.
+// If a feasible SAT solution is found (i.e. all Booleans assigned), then this
+// aborts and leaves the solver with the full solution assigned.
 //
 // Returns false iff the problem is UNSAT.
 bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
@@ -236,13 +236,13 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
 struct ProbingOptions {
   // The probing will consume all this deterministic time or stop if nothing
   // else can be deduced and everything has been probed until fix-point. The
-  // fix point depend on the extract_binay_clauses option:
-  // - If false, we will just stop when no more failed literal can be found.
-  // - If true, we will do more work and stop when all failed literal have been
-  //   found and all hyper binary resolution have been performed.
+  // fix point depends on the extract_binary_clauses option:
+  // - If false, we will just stop when no more failed literals can be found.
+  // - If true, we will do more work and stop when all failed literals have been
+  //   found and all hyper binary resolutions have been performed.
   //
   // TODO(user): We can also provide a middle ground and probe all failed
-  // literal but do not extract all binary clauses.
+  // literals but do not extract all binary clauses.
   //
   // Note that the fix-point is unique, modulo the equivalent literal detection
   // we do. And if we add binary clauses, modulo the transitive reduction of the
@@ -250,47 +250,47 @@ struct ProbingOptions {
   //
   // To be fast, we only use the binary clauses in the binary implication graph
   // for the equivalence detection. So the power of the equivalence detection
-  // changes if the extract_binay_clauses option is true or not.
+  // changes if the extract_binary_clauses option is true or not.
   //
   // TODO(user): The fix point is not yet reached since we don't currently
-  // simplify non-binary clauses with these equivalence, but we will.
+  // simplify non-binary clauses with these equivalences, but we will.
   double deterministic_limit = 1.0;
 
   // This is also called hyper binary resolution. Basically, we make sure that
-  // the binary implication graph is augmented with all the implication of the
+  // the binary implication graph is augmented with all the implications of the
   // form a => b that can be derived by fixing 'a' at level zero and doing a
   // propagation using all constraints. Note that we only add clauses that
   // cannot be derived by the current implication graph.
   //
-  // With these extra clause the power of the equivalence literal detection
-  // using only the binary implication graph with increase. Note that it is
-  // possible to do exactly the same thing without adding these binary clause
+  // With these extra clauses the power of the equivalent literal detection
+  // using only the binary implication graph will increase. Note that it is
+  // possible to do exactly the same thing without adding these binary clauses
   // first. This is what is done by yet another probing algorithm (currently in
   // simplification.cc).
   //
-  // TODO(user): Note that adding binary clause before/during the SAT presolve
+  // TODO(user): Note that adding binary clauses before/during the SAT presolve
   // is currently not always a good idea. This is because we don't simplify the
-  // other clause as much as we could. Also, there can be up to a quadratic
-  // number of clauses added this way, which might slow down things a lot. But
-  // then because of the deterministic limit, we usually cannot add too much
+  // other clauses as much as we could. Also, there can be up to a quadratic
+  // number of clauses added this way, which might slow things down a lot. But
+  // then because of the deterministic limit, we usually cannot add too many
   // clauses, even for huge problems, since we will reach the limit before that.
   bool extract_binary_clauses = false;
 
   // Use a version of the "Tree look" algorithm as explained in the paper above.
   // This is usually faster and more efficient. Note that when extracting binary
-  // clauses it might currently produce more "redundant" one in the sense that a
-  // transitive reduction of the binary implication graph after all hyper binary
-  // resolution have been performed may need to do more work.
+  // clauses it might currently produce more "redundant" ones in the sense that
+  // a transitive reduction of the binary implication graph after all hyper
+  // binary resolutions have been performed may need to do more work.
   bool use_tree_look = true;
 
-  // There is two slightly different implementation of the tree-look algo.
+  // There are two slightly different implementations of the tree-look algo.
   //
   // TODO(user): Decide which one is better, currently the difference seems
   // small but the queue seems slightly faster.
   bool use_queue = true;
 
   // If we detect as we probe that a new binary clause subsumes one of the
-  // non-binary clause, we will replace the long clause by the binary one. This
+  // non-binary clauses, we will replace the long clause by the binary one. This
   // is orthogonal to the extract_binary_clauses parameters which will add all
   // binary clauses but not necessarily check for subsumption.
   bool subsume_with_binary_clause = true;
@@ -308,21 +308,22 @@ struct ProbingOptions {
 
 // Similar to ProbeBooleanVariables() but different :-)
 //
-// First, this do not consider integer variable. It doesn't do any disjunctive
-// reasoning (i.e. changing the domain of an integer variable by intersecting
-// it with the union of what happen when x is fixed and not(x) is fixed).
+// First, this does not consider integer variables. It doesn't do any
+// disjunctive reasoning (i.e. changing the domain of an integer variable by
+// intersecting it with the union of what happens when x is fixed and not(x) is
+// fixed).
 //
 // However this should be more efficient and just work better for pure Boolean
 // problems. On integer problems, we might also want to run this one first,
 // and then do just one quick pass of ProbeBooleanVariables().
 //
-// Note that this by itself just do one "round", look at the code in the
-// Inprocessing class that call this interleaved with other reductions until a
+// Note that this by itself just does one "round", look at the code in the
+// Inprocessing class that calls this interleaved with other reductions until a
 // fix point is reached.
 //
 // This can fix a lot of literals via failed literal detection, that is when
 // we detect that x => not(x) via propagation after taking x as a decision. It
-// also use the strongly connected component algorithm to detect equivalent
+// also uses the strongly connected component algorithm to detect equivalent
 // literals.
 //
 // It will add any detected binary clause (via hyper binary resolution) to
@@ -342,7 +343,7 @@ class FailedLiteralProbing {
   };
 
   // Returns true if we can skip this candidate decision.
-  // This factor out some code used by the functions below.
+  // This factors out some code used by the functions below.
   bool SkipCandidate(Literal last_decision, Literal candidate);
 
   // Sets `next_decision` to the unassigned literal which implies the last
@@ -364,7 +365,7 @@ class FailedLiteralProbing {
                                             bool use_queue,
                                             int& first_new_trail_index);
 
-  // If we can extract a binary clause that subsume the reason clause, we do add
+  // If we can extract a binary clause that subsumes the reason clause, we add
   // the binary and remove the subsumed clause.
   //
   // TODO(user): We could be slightly more generic and subsume some clauses that
@@ -384,14 +385,14 @@ class FailedLiteralProbing {
   void ExtractImplications(Literal last_decision,
                            absl::Span<const Literal> literals);
 
-  // Inspect the watcher list for last_decision, If we have a blocking
+  // Inspect the watcher list for last_decision. If we have a blocking
   // literal at true (implied by last decision), then we have subsumptions.
   //
-  // The intuition behind this is that if a binary clause (a,b) subsume a
+  // The intuition behind this is that if a binary clause (a,b) subsumes a
   // clause, and we watch a.Negated() for this clause with a blocking
   // literal b, then this watch entry will never change because we always
   // propagate binary clauses first and the blocking literal will always be
-  // true. So after many propagations, we hope to have such configuration
+  // true. So after many propagations, we hope to have such a configuration
   // which is quite cheap to test here.
   void SubsumeWithBinaryClauseUsingBlockingLiteral(Literal last_decision);
 
@@ -400,7 +401,7 @@ class FailedLiteralProbing {
   // some of them propagating 'not(literal)'.
   void AddFailedLiteralToFix(Literal literal);
 
-  // Fixes all the literals in to_fix_, and finish propagation.
+  // Fixes all the literals in to_fix_, and finishes propagation.
   bool ProcessLiteralsToFix();
 
   // Resizes trail_implication_clauses_ to the current or given trail index.
@@ -426,7 +427,7 @@ class FailedLiteralProbing {
   std::vector<SavedNextLiteral> queue_;
   util_intops::StrongVector<LiteralIndex, int> position_in_order_;
 
-  // This is only needed when options use_queue is false;
+  // This is only needed when options.use_queue is false.
   util_intops::StrongVector<LiteralIndex, int> starts_;
 
   // We delay fixing of already assigned literals once we go back to level 0.

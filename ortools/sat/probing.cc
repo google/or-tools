@@ -396,17 +396,17 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
         lrat_proof_handler_->DeleteTemporaryBinaryClauses();
   }
 
-  // We have at most two lower bounds for each variables (one for b==0 and one
-  // for b==1), so the min of the two is a valid level zero bound! More
+  // We have at most two lower bounds for each variable (one for b==0 and one
+  // for b==1), so the min of the two is a valid level-zero bound! More
   // generally, the domain of a variable can be intersected with the union
-  // of the two propagated domains. This also allow to detect "holes".
+  // of the two propagated domains. This also allows detecting "holes".
   //
   // TODO(user): More generally, for any clauses (b or not(b) is one), we
-  // could probe all the literal inside, and for any integer variable, we can
+  // could probe all the literals inside, and for any integer variable, we can
   // take the union of the propagated domain as a new domain.
   //
-  // TODO(user): fix binary variable in the same way? It might not be as
-  // useful since probing on such variable will also fix it. But then we might
+  // TODO(user): fix binary variables in the same way? It might not be as
+  // useful since probing on such a variable will also fix it. But then we might
   // abort probing early, so it might still be good.
   std::sort(new_integer_bounds_.begin(), new_integer_bounds_.end(),
             [](IntegerLiteral a, IntegerLiteral b) { return a.var < b.var; });
@@ -424,9 +424,9 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
     // Hole detection.
     if (i > 0 && PositiveVariable(var) != prev_var) {
       if (ub_min + 1 < lb_max) {
-        // The variable cannot take value in (ub_min, lb_max) !
+        // The variable cannot take a value in (ub_min, lb_max)!
         //
-        // TODO(user): do not create domain with a complexity that is too
+        // TODO(user): do not create a domain with a complexity that is too
         // large?
         const Domain old_domain = integer_trail_->LevelZeroDomain(prev_var);
         const Domain new_domain = old_domain.IntersectionWith(
@@ -524,7 +524,7 @@ bool Prober::ProbeBooleanVariables(
       continue;
     }
 
-    // TODO(user): Instead of an hard deterministic limit, we should probably
+    // TODO(user): Instead of a hard deterministic limit, we should probably
     // use a lower one, but reset it each time we have found something useful.
     if (time_limit_->LimitReached() ||
         time_limit_->GetElapsedDeterministicTime() > limit) {
@@ -1017,8 +1017,8 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
   auto* time_limit = model->GetOrCreate<TimeLimit>();
   const int initial_num_fixed = sat_solver->LiteralTrail().Index();
 
-  // Note that this code do not care about the non-Boolean part and just try to
-  // assign the existing Booleans.
+  // Note that this code does not care about the non-Boolean part and just tries
+  // to assign the existing Booleans.
   SatParameters initial_params = *model->GetOrCreate<SatParameters>();
   SatParameters new_params = initial_params;
   new_params.set_log_search_progress(false);
@@ -1061,7 +1061,7 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
       return false;
     }
 
-    // We randomize at the end so that the default params is executed
+    // We randomize at the end so that the default params are executed
     // at least once.
     RandomizeDecisionHeuristic(*random, &new_params);
     new_params.set_random_seed(i);
@@ -1101,7 +1101,7 @@ FailedLiteralProbing::FailedLiteralProbing(Model* model)
       binary_propagator_id_(implication_graph_->PropagatorId()),
       clause_propagator_id_(clause_manager_->PropagatorId()) {}
 
-// TODO(user): This might be broken if backtrack() propagates and go further
+// TODO(user): This might be broken if backtrack() propagates and goes further
 // back. Investigate and fix any issue.
 bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
   WallTimer wall_timer;
@@ -1145,12 +1145,12 @@ bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
   // With tree look, it is better to start with "leaf" first since we try
   // to reuse propagation as much as possible. This is also interesting to
   // do when extracting binary clauses since we will need to propagate
-  // everyone anyway, and this should result in less clauses that can be
+  // everyone anyway, and this should result in fewer clauses that can be
   // removed later by transitive reduction.
   //
   // However, without tree-look and without the need to extract all binary
   // clauses, it is better to just probe the root of the binary implication
-  // graph. This is exactly what happen when we probe using the topological
+  // graph. This is exactly what happens when we probe using the topological
   // order.
   probing_order_ = implication_graph_->ReverseTopologicalOrder();
   if (!options.use_tree_look && !options.extract_binary_clauses) {
@@ -1179,7 +1179,7 @@ bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
 
   while (!time_limit_->LimitReached() &&
          time_limit_->GetElapsedDeterministicTime() <= limit) {
-    // We only enqueue literal at level zero if we don't use "tree look".
+    // We only enqueue literals at level zero if we don't use "tree look".
     if (!options.use_tree_look) {
       if (!sat_solver_->BacktrackAndPropagateReimplications(0)) return false;
       ClearTrailImplicationClausesAfterBacktrack();
@@ -1249,7 +1249,7 @@ bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
           }
         }
       } else {
-        // If we don't extract binary, we don't need to explore any of
+        // If we don't extract binary clauses, we don't need to explore any of
         // these literals until more variables are fixed.
         processed_.Set(l.Index());
       }
@@ -1447,7 +1447,7 @@ bool FailedLiteralProbing::EnqueueDecisionAndBackjumpOnConflict(
   ClearTrailImplicationClausesStartingFrom(first_new_trail_index);
   trail_implication_clauses_.resize(trail_.Index());
 
-  // This is tricky, depending on the parameters, and for integer problem,
+  // This is tricky, depending on the parameters, and for integer problems,
   // EnqueueDecisionAndBackjumpOnConflict() might create new Booleans.
   if (sat_solver_->NumVariables() > num_variables_) {
     num_variables_ = sat_solver_->NumVariables();
@@ -1517,14 +1517,14 @@ void FailedLiteralProbing::ExtractImplication(const Literal last_decision,
   const auto& info = trail_.Info(l.Variable());
   if (lrat_only && info.level != sat_solver_->CurrentDecisionLevel()) return;
 
-  // TODO(user): Think about trying to extract clause that will not
+  // TODO(user): Think about trying to extract clauses that will not
   // get removed by transitive reduction later. If we can both extract
-  // a => c and b => c , ideally we don't want to extract a => c first
+  // a => c and b => c, ideally we don't want to extract a => c first
   // if we already know that a => b.
   //
   // TODO(user): Similar to previous point, we could find the LCA
   // of all literals in the reason for this propagation. And use this
-  // as a reason for later hyber binary resolution. Like we do when
+  // as a reason for later hyper binary resolution. Like we do when
   // this clause subsumes the reason.
   DCHECK(assignment_.LiteralIsTrue(l));
   CHECK_NE(l.Variable(), last_decision.Variable());
@@ -1630,7 +1630,7 @@ void FailedLiteralProbing::ExtractImplications(
   }
 }
 
-// If we can extract a binary clause that subsume the reason clause, we do add
+// If we can extract a binary clause that subsumes the reason clause, we add
 // the binary and remove the subsumed clause.
 //
 // TODO(user): We could be slightly more generic and subsume some clauses that
@@ -1674,14 +1674,14 @@ void FailedLiteralProbing::MaybeSubsumeWithBinaryClause(
                               DeletionSourceForStat::SUBSUMPTION_PROBING);
 }
 
-// Inspect the watcher list for last_decision, If we have a blocking
+// Inspect the watcher list for last_decision. If we have a blocking
 // literal at true (implied by last decision), then we have subsumptions.
 //
 // The intuition behind this is that if a binary clause (a,b) subsumes a
 // clause, and we watch a.Negated() for this clause with a blocking
 // literal b, then this watch entry will never change because we always
 // propagate binary clauses first and the blocking literal will always be
-// true. So after many propagations, we hope to have such configuration
+// true. So after many propagations, we hope to have such a configuration
 // which is quite cheap to test here.
 void FailedLiteralProbing::SubsumeWithBinaryClauseUsingBlockingLiteral(
     const Literal last_decision) {
@@ -1692,8 +1692,8 @@ void FailedLiteralProbing::SubsumeWithBinaryClauseUsingBlockingLiteral(
 
     // This should be enough for proof correctness.
     //
-    // TODO(user): Always extract the binary otherwise we might loose structural
-    // property, or do not subsume size 3 clauses.
+    // TODO(user): Always extract the binary otherwise we might lose structural
+    // properties, or not subsume size 3 clauses.
     DCHECK_NE(last_decision, w.blocking_literal);
     if (clause_manager_->ClauseIsUsedAsReason(w.clause)) {
       MaybeExtractImplication(last_decision, w.blocking_literal);

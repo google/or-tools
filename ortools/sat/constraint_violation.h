@@ -47,14 +47,14 @@ class LinearIncrementalEvaluator {
   // Returns the index of the new constraint.
   int NewConstraint(Domain domain);
 
-  // Incrementaly build the constraint.
+  // Incrementally build the constraint.
   //
   // In case of duplicate variables on the same constraint, the code assumes
   // constraints are built in-order as it checks for duplication.
   //
-  // Note that the code assume that a Boolean variable DO NOT appear both in the
-  // enforcement list and in the constraint. Otherwise the update will just be
-  // wrong. This should be enforced by our presolve.
+  // Note that the code assumes that a Boolean variable does not appear both in
+  // the enforcement list and in the constraint. Otherwise the update will just
+  // be wrong. This should be enforced by our presolve.
   void AddEnforcementLiteral(int ct_index, int lit);
   void AddLiteral(int ct_index, int lit, int64_t coeff = 1);
   void AddTerm(int ct_index, int var, int64_t coeff, int64_t offset = 0);
@@ -62,14 +62,14 @@ class LinearIncrementalEvaluator {
   void AddLinearExpression(int ct_index, const LinearExpressionProto& expr,
                            int64_t multiplier);
 
-  // Important: this needs to be called after all constraint has been added
+  // Important: this needs to be called after all constraints have been added
   // and before the class starts to be used. This is DCHECKed.
   void PrecomputeCompactView(absl::Span<const int64_t> var_max_variation);
 
   // Compute activities.
   void ComputeInitialActivities(absl::Span<const int64_t> solution);
 
-  // Update the activities of each constraints.
+  // Update the activities of each constraint.
   // Also update the current score for the given deltas.
   //
   // Note that the score of the changed variable will not be updated correctly!
@@ -121,7 +121,7 @@ class LinearIncrementalEvaluator {
   // computes and aggregates all the breakpoints for the given variable and its
   // domain.
   //
-  // Note that if the domain contains less than two values, we return an empty
+  // Note that if the domain contains fewer than two values, we return an empty
   // vector. This function is not meant to be used for such domains.
   std::vector<int64_t> SlopeBreakpoints(int var, int64_t current_value,
                                         const Domain& var_domain) const;
@@ -219,10 +219,10 @@ class LinearIncrementalEvaluator {
   std::vector<int> row_var_buffer_;
   std::vector<int64_t> row_coeff_buffer_;
 
-  // In order to avoid scanning long constraint we compute for each of them
+  // In order to avoid scanning long constraints we compute for each of them
   // the maximum activity variation of one variable (max-min) * abs(coeff).
   // If the current activity plus this is still feasible, then the constraint
-  // do not need to be scanned.
+  // does not need to be scanned.
   std::vector<int64_t> row_max_variations_;
 
   // Temporary data.
@@ -242,7 +242,7 @@ class LinearIncrementalEvaluator {
   mutable size_t num_ops_ = 0;
 };
 
-// View of a generic (non linear) constraint for the LsEvaluator.
+// View of a generic (non-linear) constraint for the LsEvaluator.
 class CompiledConstraint {
  public:
   CompiledConstraint() = default;
@@ -261,10 +261,10 @@ class CompiledConstraint {
       absl::Span<const int64_t> solution_with_new_value);
 
   // Returns the sorted vector of variables used by this constraint. This is
-  // used to known when a violation might change, and is only called once during
-  // initialization, so speed is not to much of a concern here.
+  // used to know when a violation might change, and is only called once during
+  // initialization, so speed is not too much of a concern here.
   //
-  // The global proto is needed to resolve interval variables reference.
+  // The global proto is needed to resolve interval variable references.
   virtual std::vector<int> UsedVariables(
       const CpModelProto& model_proto) const = 0;
 
@@ -326,10 +326,10 @@ class CompiledConstraintWithProto : public CompiledConstraint {
 //
 // TODO(user): Ideas for constraint generated moves or sequences of moves?
 
-// Note(user): This class do not handle ALL constraint yet. So it is not because
-// there is no violation here that the solution will be feasible. It is
+// Note(user): This class does not handle ALL constraints yet. So it is not
+// because there is no violation here that the solution will be feasible. It is
 // important to check feasibility once this is used. Note that in practice, we
-// can be lucky, and feasible on a subset of hard constraint is enough.
+// can be lucky, and feasible on a subset of hard constraints is enough.
 class LsEvaluator {
  public:
   // The cp_model must outlive this class.
@@ -345,11 +345,11 @@ class LsEvaluator {
   // Returns false if the objective domain becomes empty.
   bool ReduceObjectiveBounds(int64_t lb, int64_t ub, bool& reduced);
 
-  // Recomputes the violations of all constraints (resp only non-linear one).
+  // Recomputes the violations of all constraints (resp only non-linear ones).
   void ComputeAllViolations(absl::Span<const int64_t> solution);
   void ComputeAllNonLinearViolations(absl::Span<const int64_t> solution);
 
-  // Recomputes the violations of all impacted non linear constraints.
+  // Recomputes the violations of all impacted non-linear constraints.
   void UpdateNonLinearViolations(int var, int64_t old_value,
                                  absl::Span<const int64_t> new_solution);
 
@@ -538,7 +538,7 @@ class CompiledIntDivConstraint : public CompiledConstraintWithProto {
       absl::Span<const int64_t> solution) override;
 };
 
-// The violation of an int_mod constraint is defined as follow:
+// The violation of an int_mod constraint is defined as follows:
 //
 // if target and expr0 have the same sign:
 //   min(
@@ -547,7 +547,7 @@ class CompiledIntDivConstraint : public CompiledConstraintWithProto {
 //     abs(value(expr0) % value(expr1)) + abs(value(target) - value(expr1)),
 //   )
 //
-// if target and expr0 have different sign:
+// if target and expr0 have different signs:
 //   abs(target) + abs(expr0)
 // Note: the modulo (expr1) is always fixed.
 class CompiledIntModConstraint : public CompiledConstraintWithProto {
@@ -559,7 +559,7 @@ class CompiledIntModConstraint : public CompiledConstraintWithProto {
       absl::Span<const int64_t> solution) override;
 };
 
-// The violation of a all_diff is the number of unordered pairs of expressions
+// The violation of an all_diff is the number of unordered pairs of expressions
 // with the same value.
 class CompiledAllDiffConstraint : public CompiledConstraintWithProto {
  public:
@@ -641,8 +641,8 @@ class CompiledNoOverlapWithTwoIntervals : public CompiledConstraint {
 
   int64_t ComputeViolation(absl::Span<const int64_t> solution) final {
     // Optimization hack: If we create a ComputeViolationInternal() that we call
-    // from here and in ViolationDelta(), then the later is not inlined below in
-    // ViolationDelta() where it matter a lot for performance.
+    // from here and in ViolationDelta(), then the latter is not inlined below
+    // in ViolationDelta() where it matters a lot for performance.
     violation_ = 0;
     violation_ = ViolationDelta(0, 0, solution);
     return violation_;
@@ -750,15 +750,15 @@ class CompiledNoOverlap2dWithTwoBoxes : public CompiledConstraint {
 
   int64_t ComputeViolation(absl::Span<const int64_t> solution) final {
     // Optimization hack: If we create a ComputeViolationInternal() that we call
-    // from here and in ViolationDelta(), then the later is not inlined below in
-    // ViolationDelta() where it matter a lot for performance.
+    // from here and in ViolationDelta(), then the latter is not inlined below
+    // in ViolationDelta() where it matters a lot for performance.
     violation_ = 0;
     violation_ = ViolationDelta(0, 0, solution);
     return violation_;
   }
 
   // Note(user): this is the same implementation as the base one, but it
-  // avoid one virtual call !
+  // avoids one virtual call!
   int64_t ViolationDelta(
       int /*var*/, int64_t /*old_value*/,
       absl::Span<const int64_t> solution_with_new_value) final;
@@ -771,12 +771,12 @@ class CompiledNoOverlap2dWithTwoBoxes : public CompiledConstraint {
   const Box box2_;
 };
 
-// This can be used to encode reservoir or a cumulative constraints for LS. We
-// have a set of event time, and we use for overall violation the sum of
+// This can be used to encode reservoir or cumulative constraints for LS. We
+// have a set of event times, and we use for overall violation the sum of
 // overload over time.
 //
-// This version support an incremental computation when just a few events
-// changes, which is roughly O(n) instead of O(n log n) which makes it
+// This version supports an incremental computation when just a few events
+// change, which is roughly O(n) instead of O(n log n) which makes it
 // significantly faster than recomputing and sorting the profile on each
 // ViolationDelta().
 class CompiledReservoirConstraint : public CompiledConstraint {
@@ -824,7 +824,7 @@ class CompiledReservoirConstraint : public CompiledConstraint {
   int64_t BuildProfileAndReturnViolation(absl::Span<const int64_t> solution);
 
   // This works in O(n) + O(d log d) where d is the number of modified events
-  // compare to the base solution. In most situation it should be O(1).
+  // compared to the base solution. In most situations it should be O(1).
   int64_t IncrementalViolation(int var, absl::Span<const int64_t> solution);
 
   // This is used to speed up IncrementalViolation().
@@ -851,8 +851,8 @@ class CompiledReservoirConstraint : public CompiledConstraint {
   std::vector<Event> profile_;
   std::vector<Event> profile_delta_;
 
-  // This is filled by BuildProfileAndReturnViolation() and correspond to the
-  // value in the current solutions.
+  // This is filled by BuildProfileAndReturnViolation() and corresponds to the
+  // value in the current solution.
   int64_t capacity_value_;
   std::vector<int64_t> time_values_;
   std::vector<int64_t> demand_values_;

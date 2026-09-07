@@ -67,7 +67,7 @@ void DebugSolution::SynchronizeWithShared(const CpModelProto& model_proto) {
     ivar_values_[NegationOf(var)] = -proto_values_[i];
   }
 
-  // Also add the trivial literal that is sometimes created by the loader
+  // Also add the trivial literal that is sometimes created by the loader.
   if (trivial_literals_->TrueLiteral().Variable().value() ==
       proto_values_.size()) {
     boolean_solution_.push_back(trivial_literals_->TrueLiteral());
@@ -128,7 +128,7 @@ bool DebugSolution::CheckClause(
       }
     }
 
-    // Second case, it is associated to IntVar >= value.
+    // Second case, it is associated with IntVar >= value.
     // We can use any of them, so if one is false, we use this one.
     bool all_true = true;
     for (const IntegerLiteral associated : encoder_->GetIntegerLiterals(l)) {
@@ -162,7 +162,7 @@ bool DebugSolution::CheckClause(
     to_print_scratch_.push_back({Literal(kNoLiteralIndex), i_lit, value});
 
     // This is a bit confusing, but since the i_lit in the reason are
-    // not "negated", we need at least one to be FALSE, for the reason to
+    // not "negated", we need at least one to be FALSE for the reason to
     // be valid.
     if (value < i_lit.bound) {
       is_satisfied = true;

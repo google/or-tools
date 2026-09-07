@@ -82,8 +82,8 @@ TEST(SharedSolutionRepository, DuplicateSolutionAreMerged) {
   repository.Add({1, {1, 50}});
 
   // In practice we shouldn't have the same variable values and different
-  // objective, but the code don't care about this and just test the perfect
-  // equality.
+  // objectives, but the code does not care about this and just tests the
+  // perfect equality.
   repository.Add({5, {1, 50}});
   repository.Add({1, {1, 50}});
   EXPECT_EQ(repository.NumSolutions(), 0);
@@ -97,7 +97,7 @@ TEST(SharedSolutionRepository, DuplicateSolutionAreMerged2) {
   SharedSolutionRepository<int64_t> repository(3);
   EXPECT_EQ(repository.NumSolutions(), 0);
 
-  // All this should count as 1 solution.
+  // All these should count as 1 solution.
   repository.Add({3, {1, 50}});
   repository.Add({3, {1, 50}});
   repository.Add({3, {1, 50}});
@@ -130,7 +130,7 @@ TEST(SharedSolutionRepository, GetRandomBiasedSolution) {
   repository.Synchronize();
   EXPECT_EQ(repository.NumSolutions(), 5);
 
-  // We select one of the solution with best objective.
+  // We select one of the solutions with the best objective.
   random_engine_t random(0);
   for (int i = 0; i < 10; ++i) {
     EXPECT_EQ(repository.GetRandomBiasedSolution(random)->rank, 3);
@@ -220,7 +220,7 @@ TEST(SharedBoundsManagerTest, Api) {
   EXPECT_THAT(lbs, IsEmpty());
   EXPECT_THAT(ubs, IsEmpty());
 
-  // Non improving bounds, and partially improving bounds.
+  // Non-improving bounds, and partially improving bounds.
   manager.ReportPotentialNewBounds("fixed", {2, 4}, {0, 5}, {20, 20});
   manager.Synchronize();
 
@@ -404,14 +404,14 @@ TEST(SharedResponseManagerTest, GapIntegralTest) {
   shared_response->InitializeObjective(model_proto);
 
   // At the beginning the primal integral is zero, and will start counting
-  // on the first update, ignoring any earlier time. This leave a change to
-  // use reasonable bound on the objective.
+  // on the first update, ignoring any earlier time. This leaves a chance to
+  // use reasonable bounds on the objective.
   EXPECT_EQ(0.0, shared_response->GapIntegral());
   shared_time_limit->AdvanceDeterministicTime(1.0);
   shared_response->UpdateGapIntegral();
   EXPECT_EQ(0.0, shared_response->GapIntegral());
 
-  // Unknown count as max possible difference.
+  // Unknown counts as the max possible difference.
   shared_time_limit->AdvanceDeterministicTime(1.0);
   shared_response->UpdateGapIntegral();
   const double value1 = 1.0 * log(1 + 4 * (static_cast<double>(kint64max) -
@@ -424,7 +424,7 @@ TEST(SharedResponseManagerTest, GapIntegralTest) {
   shared_response->UpdateGapIntegral();
   EXPECT_EQ(value1, shared_response->GapIntegral());
 
-  // Add time, increase the integral.
+  // Add time, and increase the integral.
   shared_time_limit->AdvanceDeterministicTime(3.0);
   shared_response->UpdateGapIntegral();
   EXPECT_EQ(value1 + 3.0 * log(1 + 4.0 * 11), shared_response->GapIntegral());
@@ -439,7 +439,7 @@ TEST(SharedResponseManagerTest, GapIntegralOnEachChangeTest) {
   auto* shared_response = model.GetOrCreate<SharedResponseManager>();
   shared_response->InitializeObjective(model_proto);
 
-  // Starts with reasonable bound this time.
+  // Starts with reasonable bounds this time.
   shared_time_limit->AdvanceDeterministicTime(1.0);
   shared_response->UpdateInnerObjectiveBounds("", IntegerValue(0),
                                               IntegerValue(10));
@@ -455,19 +455,19 @@ TEST(SharedResponseManagerTest, GapIntegralOnEachChangeTest) {
   double expected = 1.0 * log(1 + 4 * 10);
   EXPECT_EQ(expected, shared_response->GapIntegral());
 
-  // Updating bound with no time, do not do anything.
+  // Updating bound with no time elapsed does not do anything.
   shared_response->UpdateInnerObjectiveBounds("", IntegerValue(0),
                                               IntegerValue(3));
   EXPECT_EQ(expected, shared_response->GapIntegral());
 
-  // Add time, and change bound increase the integral.
+  // Adding time and changing bound increases the integral.
   shared_time_limit->AdvanceDeterministicTime(3.0);
   shared_response->UpdateInnerObjectiveBounds("", IntegerValue(0),
                                               IntegerValue(2));
   expected += 3.0 * log(1 + 4.0 * 3);
   EXPECT_EQ(expected, shared_response->GapIntegral());
 
-  // Closing the search still increase it. And we deal correcly with bound
+  // Closing the search still increases it. And we deal correctly with bound
   // crossing.
   shared_time_limit->AdvanceDeterministicTime(1.0);
   shared_response->UpdateInnerObjectiveBounds("", IntegerValue(10),
@@ -680,11 +680,11 @@ TEST(SharedResponseManagerTest, ProblemCanBeClosedWithJustBoundUpdates2) {
   EXPECT_TRUE(shared_response->ProblemIsSolved());
 }
 
-// TODO(user): Having a check sometime fail in multithread. Understand how
+// TODO(user): Having a check sometimes fail in multithreading. Understand how
 // the code can push an invalid lower bound (and still be valid). The likely
-// behavior, is that at the end of the search, when the improving problem is
+// behavior is that at the end of the search, when the improving problem is
 // infeasible, then we might have no guarantee that while incorporating new
-// bounds, one thread pushes the lower bound too high ?
+// bounds, one thread pushes the lower bound too high?
 TEST(SharedResponseManagerDeathTest, InnerBoundMustBeValid) {
   if constexpr (!DEBUG_MODE) GTEST_SKIP() << "Skip in opt mode";
   const CpModelProto model_proto = ParseTestProto(R"pb(
@@ -766,7 +766,7 @@ TEST(SharedResponseManagerDeathTest,
   EXPECT_EQ(shared_response->GetResponse().status(), CpSolverStatus::OPTIMAL);
 
   {
-    // Better solution are not possible! otherwise there is a bug.
+    // Better solutions are not possible! Otherwise there is a bug.
     EXPECT_DEATH(shared_response->NewSolution({1, 0, 1}, "test2"), "");
   }
 }
@@ -839,6 +839,22 @@ TEST(SharedClausesManagerTest, GetRepresentatives) {
   manager.AddBinaryClause(/*id=*/0, 3, 1);
   manager.AddBinaryClause(/*id=*/0, NegatedRef(1), NegatedRef(2));
 
+  EXPECT_THAT(manager.GetRepresentatives(),
+              ::testing::ElementsAre(0, 1, NegatedRef(1)));
+}
+
+TEST(SharedClausesManagerTest, GetRepresentativesSynchronized) {
+  SharedClausesManager manager(/*always_synchronize=*/false);
+  EXPECT_EQ(0, manager.RegisterNewId("", /*may_terminate_early=*/false));
+
+  // 1 is equivalent to NegatedRef(2).
+  manager.AddBinaryClause(/*id=*/0, 2, 1);
+  manager.AddBinaryClause(/*id=*/0, 3, 1);
+  manager.AddBinaryClause(/*id=*/0, NegatedRef(1), NegatedRef(2));
+
+  EXPECT_THAT(manager.GetRepresentatives(), ::testing::IsEmpty());
+
+  manager.Synchronize();
   EXPECT_THAT(manager.GetRepresentatives(),
               ::testing::ElementsAre(0, 1, NegatedRef(1)));
 }
@@ -944,6 +960,9 @@ TEST(SharedClausesManagerTest, NonSyncApi) {
   EXPECT_TRUE(new_clauses.empty());
 
   manager.Synchronize();
+  manager.GetUnseenBinaryClauses(/*id=*/0, &new_clauses);
+  EXPECT_EQ(1, new_clauses.size());
+  EXPECT_THAT(new_clauses, ::testing::ElementsAre(std::make_pair(1, 2)));
   manager.GetUnseenBinaryClauses(/*id=*/1, &new_clauses);
   EXPECT_EQ(1, new_clauses.size());
   EXPECT_THAT(new_clauses, ::testing::ElementsAre(std::make_pair(1, 2)));
@@ -961,10 +980,11 @@ TEST(SharedClausesManagerTest, NonSyncApi) {
   // After sync.
   manager.Synchronize();
   manager.GetUnseenBinaryClauses(/*id=*/0, &new_clauses);
-  EXPECT_THAT(new_clauses, ::testing::ElementsAre(std::make_pair(2, 3),
-                                                  std::make_pair(0, 1)));
+  EXPECT_THAT(new_clauses, ::testing::ElementsAre(std::make_pair(0, 1),
+                                                  std::make_pair(2, 3)));
   manager.GetUnseenBinaryClauses(/*id=*/1, &new_clauses);
-  EXPECT_THAT(new_clauses, ::testing::ElementsAre(std::make_pair(0, 1)));
+  EXPECT_THAT(new_clauses, ::testing::ElementsAre(std::make_pair(0, 1),
+                                                  std::make_pair(2, 3)));
 
   // Not synced.
   manager.GetUnseenBinaryClauses(/*id=*/0, &new_clauses);
@@ -986,7 +1006,7 @@ TEST(SharedClausesManagerTest, ShareGlueClauses) {
   ASSERT_EQ(1, manager.RegisterNewId("", /*may_terminate_early=*/false));
   UniqueClauseStream stream0;
   UniqueClauseStream stream1;
-  // Add a bunch of clauses that will be skipped batch.
+  // Add a bunch of clauses that will skip a batch.
   for (int i = 0; i < UniqueClauseStream::kMaxLiteralsPerBatch / 8; ++i) {
     EXPECT_TRUE(stream0.Add({1, 2, 3, 4, 5, 6, 7, i + 8}));
   }
@@ -1052,7 +1072,7 @@ TEST(SharedClausesManagerTest, LbdThresholdDecrease) {
     stream0.Add({i + 1, i + 512, 2048, 2049});
     stream1.Add({i + 1, i + 513, 2048, -123});
   }
-  // Than add loads of longer clauses to just stream0.
+  // Then add loads of longer clauses to just stream0.
   for (int i = 0; i < kSize5ClausesAdded; ++i) {
     stream0.Add({i + 1, 2, 3, -10, 12});
   }

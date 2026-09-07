@@ -68,8 +68,8 @@ class LinearExpr;
 /**
  * A Boolean variable.
  *
- * This class refer to an IntegerVariableProto with domain [0, 1] or to its
- * logical negation (Not). This is called a Boolean Literal in other context.
+ * This class refers to an IntegerVariableProto with domain [0, 1] or to its
+ * logical negation (Not). This is called a Boolean Literal in other contexts.
  *
  * This can only be constructed via \c CpModelBuilder.NewBoolVar().
  */
@@ -155,7 +155,7 @@ class IntVar {
   /// The IntVar will take the value 1 (when the bool is true) and 0 otherwise.
   ///
   /// Warning: If you construct an IntVar from a negated BoolVar, this might
-  /// create a new variable in the model. Otherwise this just point to the same
+  /// create a new variable in the model. Otherwise this just points to the same
   /// underlying variable.
   explicit IntVar(const BoolVar& var);
 
@@ -209,11 +209,11 @@ std::ostream& operator<<(std::ostream& os, const IntVar& var);
  *
  * With the use of implicit constructors, it can accept integer values, Boolean
  * and Integer variables. Note that Not(x) will be silently transformed into 1 -
- * x when added to the linear expression. It also support operator overloads to
+ * x when added to the linear expression. It also supports operator overloads to
  * construct the linear expression naturally.
  *
- * Furthermore, static methods allow to construct a linear expression from sums
- * or scalar products.
+ * Furthermore, static methods allow one to construct a linear expression from
+ * sums or scalar products.
  *
  * Usage:
  * \code
@@ -404,7 +404,7 @@ class DoubleLinearExpr {
   /// Returns the vector of coefficients.
   const std::vector<double>& coefficients() const { return coefficients_; }
 
-  // Returns true if the expression has no variable.
+  // Returns true if the expression has no variables.
   bool IsConstant() const { return variables_.empty(); }
 
   /// Returns the constant term.
@@ -422,7 +422,7 @@ class DoubleLinearExpr {
 std::ostream& operator<<(std::ostream& os, const DoubleLinearExpr& e);
 
 /**
- * Represents a Interval variable.
+ * Represents an Interval variable.
  *
  * An interval variable is both a constraint and a variable. It is defined by
  * three objects: start, size, and end. All three can be an integer variable, a
@@ -537,7 +537,7 @@ class Constraint {
    *
    * [Important] currently, only a few constraints support enforcement:
    * - bool_or, bool_and, linear: fully supported.
-   * - interval: only support a single enforcement literal.
+   * - interval: only supports a single enforcement literal.
    * - other: no support (but can be added on a per-demand basis).
    */
   Constraint OnlyEnforceIf(absl::Span<const BoolVar> literals);
@@ -737,7 +737,7 @@ class ReservoirConstraint : public Constraint {
    * Adds an optional event
    *
    * If `is_active` is true, It will increase the used capacity by
-   * `level_change` at time `time. `time` must be an affine expression.
+   * `level_change` at time `time`. `time` must be an affine expression.
    */
   ReservoirConstraint& AddOptionalEvent(LinearExpr time, int64_t level_change,
                                         BoolVar is_active);
@@ -758,7 +758,7 @@ class ReservoirConstraint : public Constraint {
  */
 class AutomatonConstraint : public Constraint {
  public:
-  /// Adds a transitions to the automaton.
+  /// Adds a transition to the automaton.
   AutomatonConstraint& AddTransition(int tail, int head,
                                      int64_t transition_label);
 
@@ -852,7 +852,7 @@ class CpModelBuilder {
   BoolVar NewBoolVar();
 
   /// Creates a constant variable. This is a shortcut for
-  /// NewVariable(Domain(value)).but it will return the same variable if used
+  /// NewVariable(Domain(value)), but it will return the same variable if used
   /// twice with the same constant.
   IntVar NewConstant(int64_t value);
 
@@ -883,15 +883,15 @@ class CpModelBuilder {
   IntervalVar NewOptionalFixedSizeIntervalVar(const LinearExpr& start,
                                               int64_t size, BoolVar presence);
 
-  /// It is sometime convenient when building a model to create a bunch of
+  /// It is sometimes convenient when building a model to create a bunch of
   /// variables that will later be fixed. Instead of doing AddEquality(var,
-  /// value) which add a constraint, these functions modify directly the
+  /// value) which adds a constraint, these functions modify directly the
   /// underlying variable domain.
   ///
-  /// Note that this ignore completely the original variable domain and just fix
-  /// the given variable to the given value, even if it was outside the given
-  /// variable domain. You can still use AddEquality() if this is not what you
-  /// want.
+  /// Note that this ignores completely the original variable domain and just
+  /// fixes the given variable to the given value, even if it was outside the
+  /// given variable domain. You can still use AddEquality() if this is not what
+  /// you want.
   void FixVariable(IntVar var, int64_t value);
   void FixVariable(BoolVar var, bool value);
 
@@ -977,7 +977,7 @@ class CpModelBuilder {
    * Adds a circuit constraint.
    *
    * The circuit constraint is defined on a graph where the arc presence is
-   * controlled by literals. That is the arc is part of the circuit of its
+   * controlled by literals. That is the arc is part of the circuit if its
    * corresponding literal is assigned to true.
    *
    * For now, we ignore node indices with no incident arc. All the other nodes
@@ -1032,7 +1032,7 @@ class CpModelBuilder {
       std::initializer_list<LinearExpr> expressions);
 
   /**
-   * Adds an forbidden assignments constraint.
+   * Adds a forbidden assignments constraint.
    *
    * A ForbiddenAssignments constraint is a constraint on an array of affine
    * expressions (a * var + b) where the list of impossible combinations is
@@ -1045,12 +1045,12 @@ class CpModelBuilder {
       absl::Span<const LinearExpr> expression);
 
   /**
-   * Adds an forbidden assignments constraint.
+   * Adds a forbidden assignments constraint.
    */
   TableConstraint AddForbiddenAssignments(absl::Span<const IntVar> variables);
 
   /**
-   * Adds an forbidden assignments constraint.
+   * Adds a forbidden assignments constraint.
    */
   TableConstraint AddForbiddenAssignments(
       std::initializer_list<LinearExpr> expressions);
@@ -1108,7 +1108,7 @@ class CpModelBuilder {
    * path labeled by the values of the variables that ends in one of the final
    * states in the final phase.
    *
-   * It returns an AutomatonConstraint that allows adding transition
+   * It returns an AutomatonConstraint that allows adding transitions
    * incrementally after construction.
    */
   AutomatonConstraint AddAutomaton(
@@ -1318,7 +1318,7 @@ class CpModelBuilder {
   absl::flat_hash_map<int, int> negative_bool_index_to_integer_index_map_;
 };
 
-/// Evaluates the value of an linear expression in a solver response.
+/// Evaluates the value of a linear expression in a solver response.
 int64_t SolutionIntegerValue(const CpSolverResponse& r, const LinearExpr& expr);
 
 /// Evaluates the value of a Boolean literal in a solver response.
@@ -1326,16 +1326,16 @@ bool SolutionBooleanValue(const CpSolverResponse& r, BoolVar x);
 
 // Returns a more readable and compact DebugString() than
 // proto.variables(index).DebugString(). This is used by IntVar::DebugString()
-// but also allow to get the same string from a const proto.
+// but also allows getting the same string from a const proto.
 std::string VarDebugString(const CpModelProto& proto, int index);
 
 // ============================================================================
 // Minimal support for "natural" API to create LinearExpr.
 //
 // Note(user): This might be optimized further by optimizing LinearExpr for
-// holding one term, or introducing an LinearTerm class, but these should mainly
+// holding one term, or introducing a LinearTerm class, but these should mainly
 // be used to construct small expressions. Revisit if we run into performance
-// issues. Note that if perf become a bottleneck for a client, then probably
+// issues. Note that if perf becomes a bottleneck for a client, then probably
 // directly writing the proto will be even faster.
 // ============================================================================
 
@@ -1458,9 +1458,9 @@ inline DoubleLinearExpr operator-(DoubleLinearExpr&& lhs,
   return std::move(lhs);
 }
 
-inline DoubleLinearExpr operator-(DoubleLinearExpr epxr, double rhs) {
-  epxr -= rhs;
-  return epxr;
+inline DoubleLinearExpr operator-(DoubleLinearExpr expr, double rhs) {
+  expr -= rhs;
+  return expr;
 }
 inline DoubleLinearExpr operator-(double lhs, DoubleLinearExpr expr) {
   expr *= -1;

@@ -94,7 +94,7 @@ TEST(BinaryImplicationGraphTest, IssueFoundOnMipLibTest) {
 
 TEST(BinaryImplicationGraphTest, DetectEquivalences) {
   // We take a bunch of random permutations, equivalence classes will be cycles.
-  // We make sure the representative of x and not(x) are always negation of
+  // We make sure the representative of x and not(x) are always negations of
   // each other.
   absl::BitGen random;
   for (int num_passes = 0; num_passes < 10; ++num_passes) {
@@ -127,7 +127,7 @@ TEST(BinaryImplicationGraphTest, DetectEquivalences) {
       }
     }
 
-    // It is unlikely that std::shuffle() produce the identity permutation, so
+    // It is unlikely that std::shuffle() produces the identity permutation, so
     // this is not flaky and shows that there is some detection going on.
     EXPECT_GT(num_classes, 0);
     EXPECT_LT(num_classes, size);
@@ -173,7 +173,7 @@ TEST(BinaryImplicationGraphTest, TransitiveReduction) {
   EXPECT_EQ(graph->ComputeNumImplicationsForLog(), 9 * 2);
 }
 
-// This basically just test our DCHECKs.
+// This basically just tests our DCHECKs.
 TEST(BinaryImplicationGraphTest, BasicRandomTransitiveReduction) {
   Model model;
   const int num_vars = 200;
@@ -199,7 +199,7 @@ TEST(BinaryImplicationGraphTest, BasicRandomTransitiveReduction) {
 // We generate a random 2-SAT problem, and check that the propagation is
 // unchanged whether or not the graph is reduced.
 TEST(BinaryImplicationGraph, RandomTransitiveReduction) {
-  // These leads to a not trivial 2-SAT space with more than just all zero
+  // This leads to a non-trivial 2-SAT space with more than just all zero
   // and all 1 as solution.
   const int num_variables = 100;
   const int num_constraints = 200;
@@ -213,7 +213,7 @@ TEST(BinaryImplicationGraph, RandomTransitiveReduction) {
 
   absl::BitGen random;
   for (int i = 0; i < num_constraints; ++i) {
-    // Because we only use positive literal, we are never UNSAT.
+    // Because we only use positive literals, we are never UNSAT.
     const Literal a =
         Literal(BooleanVariable(absl::Uniform(random, 0, num_variables)), true);
     const Literal b =
@@ -283,7 +283,7 @@ TEST(BinaryImplicationGraphTest, CliqueDetectionAndDuplicates) {
   EXPECT_THAT(at_most_ones,
               ElementsAre(LiteralsAre(+1, +2), LiteralsAre(+2, +2)));
 
-  // Clique detection call the SCC which will see that 2 must be false...
+  // Clique detection calls the SCC which will see that 2 must be false...
   const auto& assignment = model.GetOrCreate<Trail>()->Assignment();
   EXPECT_FALSE(assignment.LiteralIsAssigned(Literal(1)));
   EXPECT_TRUE(assignment.LiteralIsFalse(Literal(2)));

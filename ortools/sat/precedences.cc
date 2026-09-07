@@ -124,7 +124,7 @@ bool RootLevelLinear2Bounds::AddUpperBound(LinearExpression2Index index,
   // Simple relations.
   //
   // TODO(user): Remove them each time we go back to level zero and they become
-  // trivially true ?
+  // trivially true?
   if (IntTypeAbs(expr.coeffs[0]) == 1 && IntTypeAbs(expr.coeffs[1]) == 1) {
     if (index >= in_coeff_one_lookup_.size()) {
       in_coeff_one_lookup_.resize(index + 1, false);
@@ -145,7 +145,7 @@ bool RootLevelLinear2Bounds::AddUpperBound(LinearExpression2Index index,
   // Share.
   //
   // TODO(user): It seems we could change the canonicalization to only use
-  // positive variable? that would simplify a bit the code here and not make it
+  // positive variables? That would simplify the code here a bit and not make it
   // worse elsewhere?
   if (shared_linear2_bounds_ != nullptr) {
     const IntegerValue lb = -LevelZeroUpperBound(NegationOf(index));
@@ -172,7 +172,7 @@ bool RootLevelLinear2Bounds::AddUpperBound(LinearExpression2Index index,
 }
 
 // TODO(user): If we add an indexing for "coeff * var"  this is kind of
-// easy to generalize to affine relations, not just "simple one".
+// easy to generalize to affine relations, not just "simple ones".
 int RootLevelLinear2Bounds::AugmentSimpleRelations(IntegerVariable var,
                                                    int work_limit) {
   var = PositiveVariable(var);
@@ -500,10 +500,10 @@ IntegerValue EnforcedLinear2Bounds::GetUpperBoundFromEnforced(
 
     // Note(user): We used to check
     //   entry.rhs <= root_level_bounds_->LevelZeroUpperBound(index));
-    // But that assumed level zero bounds where only added at level zero, if we
-    // add them at an higher level, some of the enforced relations here might be
+    // But that assumed level zero bounds were only added at level zero, if we
+    // add them at a higher level, some of the enforced relations here might be
     // worse than the fixed one we have. This is not a big deal, as we will not
-    // add then again on bactrack, and we should use the level-zero reason in
+    // add them again on backtrack, and we should use the level-zero reason in
     // that case.
     return entry.rhs;
   }
@@ -530,9 +530,9 @@ bool TransitivePrecedencesEvaluator::Build() {
   // TODO(user): This can fail if we don't have a DAG. But in the end we
   // don't really need a topological order, just something that is close to
   // one so that we can compute an approximated transitive closure in O(n^2) and
-  // not O(n^3). We could use an heuristic instead, like as long as there is
-  // node with an in-degree of zero, add them to the order and update the
-  // in-degree of the other (by removing outgoing arcs). If there is a cycle
+  // not O(n^3). We could use a heuristic instead, like as long as there are
+  // nodes with an in-degree of zero, add them to the order and update the
+  // in-degrees of the others (by removing outgoing arcs). If there is a cycle
   // (i.e. no node with no incoming arc), pick one with a small in-degree
   // randomly.
   DenseIntStableTopologicalSorter sorter(max_node);
@@ -570,7 +570,7 @@ bool TransitivePrecedencesEvaluator::Build() {
   }
   is_dag_ = !graph_has_cycle;
 
-  // Lets get the transitive closure if it is cheap. This is also a way not to
+  // Let's get the transitive closure if it is cheap. This is also a way not to
   // add too many relations per call.
   int total_work = 0;
   const int kWorkLimit = params_->transitive_precedences_work_limit();
@@ -591,10 +591,10 @@ bool TransitivePrecedencesEvaluator::Build() {
 }
 
 // TODO(user): There is probably little need for that function. For small
-// problem, we already augment root_level_bounds_ will all the relation obtained
-// by transitive closure, so this algo only need to look at direct dependency in
-// root_level_bounds_->GetVariablesInSimpleRelation(). And for large graph, we
-// probably do not want this.
+// problems, we already augment root_level_bounds_ with all the relations
+// obtained by transitive closure, so this algorithm only needs to look at
+// direct dependencies in root_level_bounds_->GetVariablesInSimpleRelation().
+// And for large graphs, we probably do not want this.
 void TransitivePrecedencesEvaluator::ComputeFullPrecedences(
     absl::Span<const IntegerVariable> vars,
     std::vector<FullIntegerPrecedence>* output) {
@@ -603,10 +603,11 @@ void TransitivePrecedencesEvaluator::ComputeFullPrecedences(
   if (!is_dag_) return;
 
   // Compute all precedences.
-  // We loop over the node in topological order, and we maintain for all
-  // variable we encounter, the list of "to_consider" variables that are before.
+  // We loop over the nodes in topological order, and we maintain for all
+  // variables we encounter, the list of "to_consider" variables that are
+  // before.
   //
-  // TODO(user): use vector of fixed size.
+  // TODO(user): use a vector of fixed size.
   absl::flat_hash_set<IntegerVariable> is_interesting;
   absl::flat_hash_set<IntegerVariable> to_consider(vars.begin(), vars.end());
   absl::flat_hash_map<IntegerVariable,
@@ -660,8 +661,8 @@ void TransitivePrecedencesEvaluator::ComputeFullPrecedences(
 
       // Small filtering heuristic: if we have (before) < tail, and tail < head,
       // we really do not need to list (before, tail) < head. We only need that
-      // if the list of variable before head contains some variable that are not
-      // already before tail.
+      // if the list of variables before head contains some variables that are
+      // not already before tail.
       if (to_update.size() > tail_map.size() + 1) {
         is_interesting.insert(head_var);
       } else {
@@ -871,7 +872,7 @@ void ConditionalLinear2Bounds::Build() {
           const IntegerValue ub = it->second;
           // Here we have "l => expr <= ub".
           if (ub >= lower_bounds[i]) {
-            // Don't obey the "a < b" condition
+            // Doesn't obey the "a < b" condition.
             continue;
           }
           num_encoded_equivalences_++;
@@ -1009,13 +1010,13 @@ bool GreaterThanAtLeastOneOfDetector::AddRelationFromBounds(
 
   for (const VariableConditionalAffineBound& bound : bounds) {
     DCHECK_EQ(bound.var, var);
-    // Note that duplicate selector are supported.
+    // Note that duplicate selectors are supported.
     selectors.push_back(bound.enforcement_literal);
     used.insert(bound.enforcement_literal);
     exprs.push_back(bound.bound);
   }
 
-  // The enforcement of the new constraint are simply the literal not used
+  // The enforcements of the new constraint are simply the literals not used
   // above.
   std::vector<Literal> enforcements;
   for (const Literal l : clause) {
@@ -1024,7 +1025,7 @@ bool GreaterThanAtLeastOneOfDetector::AddRelationFromBounds(
     }
   }
 
-  // No point adding a constraint if there is not at least two different
+  // No point adding a constraint if there are not at least two different
   // literals in selectors.
   if (used.size() <= 1) return false;
 
@@ -1073,7 +1074,7 @@ int GreaterThanAtLeastOneOfDetector::
       [](const VariableConditionalAffineBound& a,
          const VariableConditionalAffineBound& b) { return a.var < b.var; });
 
-  // We process the info with same variable together.
+  // We process the info with the same variable together.
   int num_added_constraints = 0;
   for (int i = 0; i < clause_bounds.size();) {
     const int start = i;
@@ -1107,7 +1108,7 @@ int GreaterThanAtLeastOneOfDetector::
   auto* time_limit = model->GetOrCreate<TimeLimit>();
   auto* solver = model->GetOrCreate<SatSolver>();
 
-  // Fill the set of interesting relations for each variables.
+  // Fill the set of interesting relations for each variable.
   std::vector<VariableConditionalAffineBound> clause_bounds;
   for (int index = 0; index < repository_.size(); ++index) {
     const Relation& r = repository_.relation(index);
@@ -1126,8 +1127,8 @@ int GreaterThanAtLeastOneOfDetector::
 
   // Stable sort to regroup by var.
   // TODO(user): We should probably also sort by enforcement literal,
-  // and regroup entry with same variable/enforcement if that happen often to
-  // have more than one such entry.
+  // and regroup entries with the same variable/enforcement if it happens often
+  // to have more than one such entry.
   absl::c_stable_sort(
       clause_bounds,
       [](const VariableConditionalAffineBound& a,
@@ -1218,18 +1219,18 @@ int GreaterThanAtLeastOneOfDetector::AddGreaterThanAtLeastOneOfConstraints(
   }
 
   // We have two possible approaches. For now, we prefer the first one except if
-  // there is too many clauses in the problem.
+  // there are too many clauses in the problem.
   //
   // TODO(user): Do more extensive experiment. Remove the second approach as
-  // it is more time consuming? or identify when it make sense. Note that the
+  // it is more time consuming? or identify when it makes sense. Note that the
   // first approach also allows to use "incomplete" at least one between arcs.
   if (!auto_detect_clauses &&
       clauses->AllClausesInCreationOrder().size() < 1e6) {
-    // TODO(user): This does not take into account clause of size 2 since they
+    // TODO(user): This does not take into account clauses of size 2 since they
     // are stored in the BinaryImplicationGraph instead. Some ideas specific
     // to size 2:
     // - There can be a lot of such clauses, but it might be nice to consider
-    //   them. we need to experiments.
+    //   them. We need to experiment.
     // - The automatic clause detection might be a better approach and it
     //   could be combined with probing.
     for (const SatClause* clause : clauses->AllClausesInCreationOrder()) {
@@ -1239,7 +1240,7 @@ int GreaterThanAtLeastOneOfDetector::AddGreaterThanAtLeastOneOfConstraints(
           clause->AsSpan(), model, implied_bounds_by_literal);
     }
 
-    // It is common that there is only two alternatives to push a variable.
+    // It is common that there are only two alternatives to push a variable.
     // In this case, our presolve most likely made sure that the two are
     // controlled by a single Boolean. This allows to detect this and add the
     // appropriate greater than at least one of.
@@ -1365,7 +1366,7 @@ ReifiedLinear2Bounds::GetEncodedBound(LinearExpression2Index index,
     if (root_lb > ub) return ReifiedBoundType::kAlwaysFalse;
   }
 
-  // Returns on trival case from root_level_bounds_.
+  // Returns on trivial case from root_level_bounds_.
   if (index != kNoLinearExpression2Index) {
     const IntegerValue root_ub =
         root_level_bounds_->GetUpperBoundNoTrail(index);
@@ -1584,7 +1585,7 @@ void Linear2Bounds::AddReasonForUpperBoundLowerThan(
   ub = FloorRatio(ub, gcd);
   DCHECK_LE(UpperBound(expr), ub);
 
-  // Explanation are by order of preference, with no reason needed first.
+  // Explanations are in order of preference, with no reason needed first.
   if (integer_trail_->LevelZeroUpperBound(expr) <= ub) return;
   const LinearExpression2Index index = lin2_indices_->GetIndex(expr);
 
@@ -1634,12 +1635,12 @@ bool Linear2Bounds::MaybePropagate(LinearExpression2Index index,
     std::vector<Literal> literal_reason;
     std::vector<IntegerLiteral> integer_reason;
     if (expr_ub == root_level_bounds_->GetUpperBoundNoTrail(index)) {
-      // TODO(user): This one make sense since we can push root level relation
+      // TODO(user): This one makes sense since we can push root level relation
       // without pushing a linear2 to the LinearPropagator, or without
       // tightening the bound there. It should be fixable.
       ++num_missing_propag_root_;
     } else if (expr_ub == enforced_bounds_->GetUpperBoundFromEnforced(index)) {
-      // TODO(user): How ? fix.
+      // TODO(user): How? Fix.
       ++num_missing_propag_enf_;
       enforced_bounds_->AddReasonForUpperBoundLowerThan(
           index, expr_ub, &literal_reason, &integer_reason);

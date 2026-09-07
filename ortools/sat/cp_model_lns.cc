@@ -152,7 +152,7 @@ void NeighborhoodGeneratorHelper::Synchronize() {
           //
           // Currently, we wait for any full solver to pick the crossing bounds
           // and do the correct stuff on their own. We do not want to have empty
-          // domain in the proto as this would means INFEASIBLE. So we just
+          // domain in the proto as this would mean INFEASIBLE. So we just
           // ignore such bounds here.
           //
           // TODO(user): We could set the optional literal to false directly in
@@ -213,7 +213,7 @@ void NeighborhoodGeneratorHelper::InitializeHelperData() {
                                         kLargestConstraintType + 1);
 
   // TODO(user): because we currently only load Boolean symmetries, we could
-  // be a bit smarter here. That said the SharedBoundsManager do exploit all
+  // be a bit smarter here. That said the SharedBoundsManager does exploit all
   // symmetries, so we still need to be careful there.
   if (model_proto_.has_symmetry() &&
       !model_proto_.symmetry().permutations().empty()) {
@@ -296,7 +296,7 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
     mapping = shared_clauses_->GetRepresentatives();
   }
   if (!mapping.empty()) {
-    // GetRepresentatives() return the smallest possible vector, complete it.
+    // GetRepresentatives() returns the smallest possible vector, complete it.
     const int num_vars = model_proto_with_only_variables_.variables().size();
     CHECK_LE(mapping.size(), num_vars);
     mapping.reserve(num_vars);
@@ -309,10 +309,10 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   // Here we just remove trivially true constraints.
   //
   // Note(user): We do that each time a new variable is fixed. It might be too
-  // much, but on the miplib and in 1200s, we do that only about 1k time on the
+  // much, but on the miplib and in 1200s, we do that only about 1k times on the
   // worst case problem.
   //
-  // TODO(user): Change API to avoid a few copy?
+  // TODO(user): Change API to avoid a few copies?
   // TODO(user): We could keep the context in the class.
   // TODO(user): We can also start from the previous simplified model instead.
   {
@@ -389,7 +389,7 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
     }
 
     // We replace intervals by their underlying integer variables. Note that
-    // this is needed for a correct decomposition into independent part.
+    // this is needed for a correct decomposition into independent parts.
     bool need_sort = false;
     for (const int interval : UsedIntervals(constraints[ct_index])) {
       need_sort = true;
@@ -399,7 +399,7 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
       }
     }
 
-    // We remove constraint of size 0 and 1 since they are not useful for LNS
+    // We remove constraints of size 0 and 1 since they are not useful for LNS
     // based on this graph.
     if (tmp_row_.size() <= 1) {
       continue;
@@ -483,8 +483,8 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   // Compute all components involving non-fixed, representative variables.
   //
   // TODO(user): If a component has no objective, we can fix it to any feasible
-  // solution. This will automatically be done by LNS fragment covering such
-  // component though.
+  // solution. This will automatically be done by LNS fragments covering such
+  // components though.
   var_to_component_index_.assign(num_variables, -1);
   CompactVectorVectorBuilder<int, int> components_builder;
   components_builder.ReserveNumItems(num_variables);
@@ -505,11 +505,11 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
 
   // Display information about the reduced problem.
   //
-  // TODO(user): Exploit connected component while generating fragments.
-  // TODO(user): Do not generate fragment not touching the objective.
+  // TODO(user): Exploit connected components while generating fragments.
+  // TODO(user): Do not generate fragments not touching the objective.
   if (!shared_response_->LoggingIsEnabled()) return;
 
-  // Dump each components.
+  // Dump each component.
   if (components_.size() > 1 && absl::GetFlag(FLAGS_cp_model_dump_components)) {
     absl::SetFlag(&FLAGS_cp_model_dump_components, false);  // only once
     int component_index = 0;
@@ -524,7 +524,7 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
 
       // Copy the model for dumping.
       //
-      // The variables indices are the one of the full-model, we rely on
+      // The variable indices are the ones of the full-model, we rely on
       // presolve to simplify this to a single component.
       CpModelProto copy;
       *copy.mutable_variables() = model_proto_with_only_variables_.variables();
@@ -557,7 +557,7 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
           absl::StrCat("/tmp/compo_", component_index, ".pb.txt");
       LOG(INFO) << "Dumping simple component model with " << component.size()
                 << " variables and " << num_in_obj
-                << " objective variable, to '" << filename << "'.";
+                << " objective variables, to '" << filename << "'.";
       CHECK(WriteModelProtoToFile(copy, filename));
       ++component_index;
     }
@@ -580,7 +580,7 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
     }
   }
 
-  // TODO(user): This is not ideal, as if two reductions appears in a row and
+  // TODO(user): This is not ideal, as if two reductions appear in a row and
   // nothing else is done for a while, we will never see the "latest" size
   // in the log until it is reduced again.
   shared_response_->LogMessageWithThrottling(
@@ -811,7 +811,7 @@ TimePartition PartitionIndicesAroundRandomTimeWindow(
   // intervals. This seems to help with Giza models.
   const int random_start_index = random_var(random);
 
-  // We want to minimize the time window relaxed, so we now sort the interval
+  // We want to minimize the time window relaxed, so we now sort the intervals
   // after the first selected intervals by end value.
   // TODO(user): We could do things differently (include all tasks <= some
   // end). The difficulty is that the number of relaxed tasks will differ from
@@ -959,8 +959,8 @@ void ProcessDemandListFromCumulativeConstraint(
 
   int usage_index = 0;
   for (const Demand& d : demands) {
-    // Since we process demand by increasing start, the usage_index only
-    // need to increase.
+    // Since we process demands by increasing start, the usage_index only
+    // needs to increase.
     while (usage_index < num_points && unique_starts[usage_index] < d.start) {
       usage_index++;
     }
@@ -969,7 +969,7 @@ void ProcessDemandListFromCumulativeConstraint(
     const int64_t slack1 = capacity1 - usage1[usage_index];
     const int64_t slack2 = capacity2 - usage2[usage_index];
 
-    // We differ from the ICAPS article. If it fits in both sub-cumulatives, We
+    // We differ from the ICAPS article. If it fits in both sub-cumulatives, we
     // choose the smallest slack. If it fits into at most one, we choose the
     // biggest slack. If both slacks are equal, we choose randomly.
     const bool prefer2 =
@@ -1272,7 +1272,7 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
   Neighborhood neighborhood(num_variables);
 
   // Do a bit of filtering on what to fix compared to "variables_to_fix".
-  // We want only active variable in there (at the time we acquire the lock).
+  // We want only active variables in there (at the time we acquire the lock).
   std::vector<int> to_fix;
   std::vector<bool> in_to_fix(num_variables, false);
   {
@@ -1291,15 +1291,15 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
     for (int var = 0; var < num_variables; ++var) {
       if (!variables_to_fix[var]) continue;
 
-      // We only fix representative.
+      // We only fix representatives.
       // This is needed for correctness of the "connected component" logic.
       //
-      // We don't need to fix all the other, since the initial copy to generate
+      // We don't need to fix all the others, since the initial copy to generate
       // the LNS fragment will use the most up to date equivalence information.
       const int rep = PositiveRef(GetRepresentative(var));
       if (rep == unique_objective_variable) continue;
 
-      // Skip non-active variable (they should be already fixed).
+      // Skip non-active variables (they should be already fixed).
       if (!active_variables_set_[rep]) continue;
 
       if (!in_to_fix[rep]) {
@@ -1317,7 +1317,7 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
         component_was_altered[c] = true;
       } else {
         // Anything non-fixed is considered "relaxed".
-        // TODO(user): shall we ignore fixed variables.
+        // TODO(user): shall we ignore fixed variables?
         ++neighborhood.num_relaxed_variables;
         if (is_in_objective_[var]) {
           ++neighborhood.num_relaxed_variables_in_objective;
@@ -1348,7 +1348,7 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
     IntegerVariableProto* var_proto = neighborhood.delta.mutable_variables(var);
 
     // Note the use of DomainInProtoContains() instead of
-    // ReadDomainFromProto() as the later is slower and allocate memory.
+    // ReadDomainFromProto() as the latter is slower and allocates memory.
     int64_t fixed_value = base_solution.solution(var);
     if (!DomainInProtoContains(*var_proto, fixed_value)) {
       // If under the updated domain, the base solution is no longer valid,
@@ -1377,7 +1377,7 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
   // the connected components.
   //
   // TODO(user): We could handle some complex domain (size > 2).
-  // TODO(user): We could still handle component that do not contain objective
+  // TODO(user): We could still handle components that do not contain objective
   // terms.
   if (model_proto_.has_objective() &&
       (model_proto_.objective().domain().size() != 2 ||
@@ -1400,7 +1400,7 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
 
   // TODO(user): force better objective? Note that this is already done when the
   // hint above is successfully loaded (i.e. if it passes the presolve
-  // correctly) since the solver will try to find better solution than the
+  // correctly) since the solver will try to find a better solution than the
   // current one.
   return neighborhood;
 }
@@ -1494,7 +1494,7 @@ absl::Span<const double> NeighborhoodGenerator::Synchronize() {
     }
 
     // It seems to make more sense to compare the new objective to the base
-    // solution objective, not the best one. However this causes issue in the
+    // solution objective, not the best one. However this causes issues in the
     // logic below because on some problems the neighborhood can always lead
     // to a better "new objective" if the base solution wasn't the best one.
     //
@@ -1533,7 +1533,7 @@ absl::Span<const double> NeighborhoodGenerator::Synchronize() {
 
   // Bump the time limit if we saw no better solution in the last few calls.
   // This means that as the search progress, we likely spend more and more time
-  // trying to solve individual neighborhood.
+  // trying to solve individual neighborhoods.
   //
   // TODO(user): experiment with resetting the time limit if a solution is
   // found.
@@ -1541,7 +1541,7 @@ absl::Span<const double> NeighborhoodGenerator::Synchronize() {
     next_time_limit_bump_ = num_consecutive_non_improving_calls_ + 50;
     deterministic_limit_ *= 1.02;
 
-    // We do not want the limit to go to high. Intuitively, the goal is to try
+    // We do not want the limit to go too high. Intuitively, the goal is to try
     // out a lot of neighborhoods, not just spend a lot of time on a few.
     deterministic_limit_ = std::min(60.0, deterministic_limit_);
   }
@@ -1642,7 +1642,7 @@ Neighborhood RelaxRandomConstraintsGenerator::Generate(
 }
 
 // Note that even if difficulty means full neighborhood, we go through the
-// generation process to never get out of a connected components.
+// generation process to never get out of a connected component.
 Neighborhood VariableGraphNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, SolveData& data,
     absl::BitGenRef random) {
@@ -1679,7 +1679,7 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
 
     for (int i = 0; i < visited_variables.size(); ++i) {
       random_variables.clear();
-      // Collect all the variables that appears in the same constraints as
+      // Collect all the variables that appear in the same constraints as
       // visited_variables[i].
       for (const int ct : helper_.VarToConstraint()[visited_variables[i]]) {
         if (scanned_constraints[ct]) continue;
@@ -1711,7 +1711,7 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
 }
 
 // Note that even if difficulty means full neighborhood, we go through the
-// generation process to never get out of a connected components.
+// generation process to never get out of a connected component.
 Neighborhood ArcGraphNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, SolveData& data,
     absl::BitGenRef random) {
@@ -1835,7 +1835,7 @@ Neighborhood SmallComponentNeighborhoodGenerator::Generate(
 }
 
 // Note that even if difficulty means full neighborhood, we go through the
-// generation process to never get out of a connected components.
+// generation process to never get out of a connected component.
 Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, SolveData& data,
     absl::BitGenRef random) {
@@ -1876,7 +1876,7 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
       std::swap(next_constraints[i], next_constraints.back());
       next_constraints.pop_back();
 
-      // Add all the variable of this constraint and increase the set of next
+      // Add all the variables of this constraint and increase the set of next
       // possible constraints.
       DCHECK_LT(constraint_index, num_active_constraints);
       random_variables.assign(
@@ -1930,7 +1930,7 @@ Neighborhood DecompositionGraphNeighborhoodGenerator::Generate(
     }
 
     // We will grow this incrementally.
-    // Index in the graph are first variables then constraints.
+    // Indices in the graph are first variables then constraints.
     const int num_nodes = num_vars + num_constraints;
     std::vector<bool> added(num_nodes, false);
     std::vector<bool> added_or_connected(num_nodes, false);
@@ -1992,7 +1992,7 @@ Neighborhood DecompositionGraphNeighborhoodGenerator::Generate(
         continue;
       }
 
-      // Note that while it might looks bad, the overall complexity of this is
+      // Note that while it might look bad, the overall complexity of this is
       // in O(num_edge) since we scan each index once and each newly connected
       // vertex once.
       int num_added = 0;
@@ -2113,8 +2113,8 @@ Neighborhood LocalBranchingLpBasedNeighborhoodGenerator::Generate(
     }
   }
 
-  // These are candidate for relaxation. The score will be filled later. Active
-  // variable not kept in candidate will be added to other_variables.
+  // These are candidates for relaxation. The score will be filled later. Active
+  // variables not kept in candidate will be added to other_variables.
   std::vector<std::pair<int, double>> candidates_with_score;
   std::vector<int> other_variables;
 
@@ -2169,7 +2169,7 @@ Neighborhood LocalBranchingLpBasedNeighborhoodGenerator::Generate(
     return helper_.NoNeighborhood();
   }
 
-  // With this option, we will create a bunch of Boolean variable
+  // With this option, we will create a bunch of Boolean variables
   // and add the constraints : "bool==0 => var == value_in_base_solution".
   if (use_hamming_for_others) {
     for (const int var : other_variables) {
@@ -2220,7 +2220,7 @@ Neighborhood LocalBranchingLpBasedNeighborhoodGenerator::Generate(
   params->set_root_lp_iterations(100000);
 
   // TODO(user): This is a lot longer than a normal LNS, so it might cause
-  // issue with the current round-robbin selection based on number of calls.
+  // issues with the current round-robin selection based on number of calls.
   params->set_max_deterministic_time(10);
   model.GetOrCreate<TimeLimit>()->ResetLimitFromParameters(*params);
   if (global_time_limit_ != nullptr) {
@@ -2229,7 +2229,7 @@ Neighborhood LocalBranchingLpBasedNeighborhoodGenerator::Generate(
   }
 
   // Tricky: we want the inner_objective_lower_bound in the response to be in
-  // term of the current problem, not the user facing one.
+  // terms of the current problem, not the user-facing one.
   if (local_cp_model.has_objective()) {
     local_cp_model.mutable_objective()->set_integer_before_offset(0);
     local_cp_model.mutable_objective()->set_integer_after_offset(0);
@@ -2250,9 +2250,9 @@ Neighborhood LocalBranchingLpBasedNeighborhoodGenerator::Generate(
   // Solve.
   //
   // TODO(user): Shall we pass the objective upper bound so we have more
-  // chance to fix variable via reduced cost fixing.
+  // chance to fix variables via reduced cost fixing.
   //
-  // TODO(user): Does the current solution can provide a warm-start for the
+  // TODO(user): Can the current solution provide a warm-start for the
   // LP?
   auto* response_manager = model.GetOrCreate<SharedResponseManager>();
   {
@@ -2268,7 +2268,7 @@ Neighborhood LocalBranchingLpBasedNeighborhoodGenerator::Generate(
   // Analyze the status of this first "solve".
   //
   // TODO(user): If we run into this case, it also means that every other LNS
-  // that tries to more variable than here will never be able to improve.
+  // that tries more variables than here will never be able to improve.
   if (local_cp_model.has_objective()) {
     const CpSolverResponse response = response_manager->GetResponse();
     if (response.status() == CpSolverStatus::INFEASIBLE) {
@@ -2283,7 +2283,7 @@ Neighborhood LocalBranchingLpBasedNeighborhoodGenerator::Generate(
     if (inner_lb >= current_inner_obj) {
       // In this case, we cannot improve on the base solution.
       // We could try to find a different solution for diversity, but we do have
-      // other neighborhood for that. Lets abort early.
+      // other neighborhoods for that. Let's abort early.
       data.status = CpSolverStatus::OPTIMAL;  // We cannot improve.
       AddSolveData(data);
       return helper_.NoNeighborhood();
@@ -2295,7 +2295,7 @@ Neighborhood LocalBranchingLpBasedNeighborhoodGenerator::Generate(
   const auto var_mapping = model.GetOrCreate<CpModelMapping>();
   const auto lp_solution = model.GetOrCreate<ModelLpValues>();
   if (lp_solution->empty()) {
-    // We likely didn't solve the LP at all, so lets not use this neighborhood.
+    // We likely didn't solve the LP at all, so let's not use this neighborhood.
     return helper_.NoNeighborhood();
   }
   for (auto& [var, score] : candidates_with_score) {
@@ -2328,10 +2328,10 @@ Neighborhood LocalBranchingLpBasedNeighborhoodGenerator::Generate(
   Neighborhood result =
       helper_.RelaxGivenVariables(initial_solution, vars_to_relax);
 
-  // Lets the name reflect the type.
+  // Let the name reflect the type.
   //
   // TODO(user): Unfortunately like this we have a common difficulty for all
-  // variant, we should probably fix that.
+  // variants, we should probably fix that.
   result.source_info = "lb_relax_lns";
   absl::StrAppend(&result.source_info,
                   some_non_binary_at_bound ? "_int" : "_bool");
@@ -2430,7 +2430,7 @@ Neighborhood GenerateSchedulingNeighborhoodFromRelaxedIntervals(
     const NeighborhoodGeneratorHelper& helper) {
   Neighborhood neighborhood = helper.FullNeighborhood();
 
-  // We will extend the set with some interval that we cannot fix.
+  // We will extend the set with some intervals that we cannot fix.
   absl::flat_hash_set<int> ignored_intervals(intervals_to_relax.begin(),
                                              intervals_to_relax.end());
 
@@ -2490,7 +2490,7 @@ Neighborhood GenerateSchedulingNeighborhoodFromRelaxedIntervals(
     AddPrecedence(before_end, after_start, &neighborhood.delta);
   }
 
-  // fix the extra variables passed as parameters.
+  // Fix the extra variables passed as parameters.
   for (const int var : variables_to_fix) {
     const int value = initial_solution.solution(var);
     neighborhood.delta.mutable_variables(var)->clear_domain();
@@ -2700,7 +2700,7 @@ Neighborhood RectanglesPackingRelaxOneNeighborhoodGenerator::Generate(
     }
   }
 
-  // Heuristic: we relax a bit the bounding box in order to allow some
+  // Heuristic: we relax the bounding box a bit in order to allow some
   // movements, this is needed to not have a trivial neighborhood if we relax a
   // single box for instance.
   const IntegerValue x_size = relaxed_bounding_box.SizeX();
@@ -2724,7 +2724,7 @@ Neighborhood RectanglesPackingRelaxOneNeighborhoodGenerator::Generate(
   neighborhood.is_reduced = true;
   neighborhood.variables_that_can_be_fixed_to_local_optimum.clear();
 
-  // The call above add the relaxed variables to the neighborhood using the
+  // The call above adds the relaxed variables to the neighborhood using the
   // current bounds at level 0. For big problems, this might create a hard model
   // with a large complicated landscape of fixed boxes with a lot of potential
   // places to place the relaxed boxes. Therefore we update the domain so the

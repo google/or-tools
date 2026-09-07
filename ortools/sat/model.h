@@ -32,7 +32,8 @@ namespace sat {
  * Class that owns everything related to a particular optimization model.
  *
  * This class is actually a fully generic wrapper that can hold any type of
- * constraints, watchers, solvers and provide a mechanism to wire them together.
+ * constraints, watchers, solvers and provides a mechanism to wire them
+ * together.
  */
 class Model {
   // FastTypeId<Type>() evaluates at compile/link-time to a unique integer for
@@ -76,14 +77,14 @@ class Model {
   Model& operator=(const Model&) = delete;
 
   /**
-   * This makes it possible  to have a nicer API on the client side, and it
+   * This makes it possible to have a nicer API on the client side, and it
    * allows both of these forms:
    *   - ConstraintCreationFunction(constraint_args, &model);
    *   - model.Add(ConstraintCreationFunction(constraint_args));
    *
-   * The second form is a bit nicer for the client and it also allows to store
-   * constraints and add them later. However, the function creating the
-   * constraint is slighly more involved.
+   * The second form is a bit nicer for the client and it also allows storing
+   * constraints and adding them later. However, the function creating the
+   * constraint is slightly more involved.
    *
    * \code
    std::function<void(Model*)> ConstraintCreationFunction(constraint_args) {
@@ -112,14 +113,15 @@ class Model {
 
   /**
    * Returns an object of type T that is unique to this model (like a "local"
-   * singleton). This returns an already created instance or create a new one if
-   * needed using the T(Model* model) constructor if it exist or T() otherwise.
+   * singleton). This returns an already created instance or creates a new one
+   * if needed using the T(Model* model) constructor if it exists or T()
+   * otherwise.
    *
-   * This works a bit like in a dependency injection framework and allows to
-   * really easily wire all the classes that make up a solver together. For
-   * instance a constraint can depends on the LiteralTrail, or the IntegerTrail
-   * or both, it can depend on a Watcher class to register itself in order to
-   * be called when needed and so on.
+   * This works a bit like in a dependency injection framework and allows wiring
+   * really easily all the classes that make up a solver together. For instance
+   * a constraint can depend on the LiteralTrail, or the IntegerTrail or both,
+   * it can depend on a Watcher class to register itself in order to be called
+   * when needed and so on.
    *
    * IMPORTANT: the Model* constructor functions shouldn't form a cycle between
    * each other, otherwise this will crash the program.
@@ -141,7 +143,7 @@ class Model {
   }
 
   /**
-   * Likes GetOrCreate() but do not create the object if it is non-existing.
+   * Like GetOrCreate() but does not create the object if it does not exist.
    *
    * This returns a const version of the object.
    */
@@ -174,7 +176,7 @@ class Model {
 
   /**
    * This returns a non-singleton object owned by the model and created with the
-   * T(Model* model) constructor if it exist or the T() constructor otherwise.
+   * T(Model* model) constructor if it exists or the T() constructor otherwise.
    * It is just a shortcut to new + TakeOwnership().
    */
   template <typename T>
@@ -185,7 +187,7 @@ class Model {
   }
 
   /**
-   * Register a non-owned class that will be "singleton" in the model.
+   * Registers a non-owned class that will be "singleton" in the model.
    *
    * It is an error to call this on an already registered class.
    */
@@ -207,9 +209,9 @@ class Model {
  private:
   // We want to call the constructor T(model*) if it exists or just T() if
   // it doesn't. For this we use some template "magic":
-  // - The first MyNew() will only be defined if the type in decltype() exist.
+  // - The first MyNew() will only be defined if the type in decltype() exists.
   // - The second MyNew() will always be defined, but because of the ellipsis
-  //   it has lower priority that the first one.
+  //   it has lower priority than the first one.
   template <typename T>
   decltype(T(static_cast<Model*>(nullptr)))* MyNew(int) {
     return new T(this);

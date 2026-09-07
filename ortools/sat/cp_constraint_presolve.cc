@@ -26,7 +26,6 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "absl/base/attributes.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
@@ -401,7 +400,7 @@ bool CpConstraintPresolver::PresolveBoolOr(ConstraintProto* ct) {
 
 // Note this function does not update the constraint graph. It assumes this is
 // done elsewhere.
-ABSL_MUST_USE_RESULT bool CpConstraintPresolver::MarkConstraintAsFalse(
+[[nodiscard]] bool CpConstraintPresolver::MarkConstraintAsFalse(
     ConstraintProto* ct, std::string_view reason) {
   if (!context_->MarkConstraintAsFalse(ct, reason)) return false;
   if (ct->constraint_case() == ConstraintProto::kBoolOr) {
@@ -411,7 +410,7 @@ ABSL_MUST_USE_RESULT bool CpConstraintPresolver::MarkConstraintAsFalse(
   return true;
 }
 
-ABSL_MUST_USE_RESULT bool CpConstraintPresolver::MarkOptionalIntervalAsFalse(
+[[nodiscard]] bool CpConstraintPresolver::MarkOptionalIntervalAsFalse(
     ConstraintProto* ct) {
   DCHECK_EQ(ct->constraint_case(), ConstraintProto::kInterval);
   CHECK_EQ(ct->enforcement_literal_size(), 1);
@@ -1506,6 +1505,13 @@ bool CpConstraintPresolver::PropagateAndReduceIntAbs(ConstraintProto* ct) {
     // This is the only reason why we don't support fully generic linear
     // expression.
     if (context_->IsFixed(target_expr)) {
+      const int64_t target_val = context_->FixedValue(target_expr);
+      // We have already tightened the domain a few lines above, but if expr
+      // and target use the same variable we need to do this again.
+      if (!context_->IntersectDomainWith(
+              expr, Domain::FromValues({-target_val, target_val}))) {
+        return true;
+      }
       context_->UpdateRuleStats("lin_max: fixed abs target");
       return RemoveConstraint(ct);
     }
@@ -2214,10 +2220,7 @@ bool CpConstraintPresolver::PresolveIntMod(int c, ConstraintProto* ct) {
   if (target.vars().size() == 1 && expr.vars().size() == 1 &&
       context_->DomainOf(expr.vars(0)).Size() < 100 && context_->IsFixed(mod) &&
       context_->VariableIsUniqueAndRemovable(target.vars(0)) &&
-      target.vars(0) != expr.vars(0) &&
-      // Note: the fringe case where both the target and the expression are
-      // not used elsewhere confuses the postsolve.
-      !context_->VariableIsUniqueAndRemovable(expr.vars(0))) {
+      target.vars(0) != expr.vars(0)) {
     const int64_t fixed_mod = context_->FixedValue(mod);
     std::vector<int64_t> values;
     const Domain dom = context_->DomainOf(target.vars(0));

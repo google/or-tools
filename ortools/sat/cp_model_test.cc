@@ -135,7 +135,7 @@ TEST(IntVarTest, TestApi) {
 }
 
 TEST(CpModelBuilderTest, UsingUninitializedVariableResultInInvalidModel) {
-  // This test the non-debug behavior.
+  // This tests the non-debug behavior.
   if (DEBUG_MODE) return;
 
   CpModelBuilder builder;
@@ -177,7 +177,7 @@ TEST(IntVarTest, TestNotBoolVarToIntVarCast) {
   CpModelBuilder cp_model;
   const BoolVar b = cp_model.NewBoolVar().WithName("b");
 
-  // This cast create an extra variable.
+  // This cast creates an extra variable.
   const IntVar x = IntVar(b.Not());
   EXPECT_EQ(x.Name(), "Not(b)");
   EXPECT_EQ(x.DebugString(), "Not(b)(0, 1)");
@@ -1163,7 +1163,7 @@ TEST(IntervalVarTest, NullAPI) {
   EXPECT_EQ(var.Name(), "null");
   EXPECT_EQ(var.DebugString(), "null");
   if (!DEBUG_MODE) {
-    // We don't crash, but we only return expression at zero.
+    // We don't crash, but we only return expressions at zero.
     EXPECT_TRUE(var.StartExpr().IsConstant());
     EXPECT_TRUE(var.EndExpr().IsConstant());
     EXPECT_TRUE(var.SizeExpr().IsConstant());

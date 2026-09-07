@@ -26,7 +26,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
-#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/algorithms/binary_search.h"
 #include "ortools/base/gmock.h"
@@ -407,40 +406,6 @@ TEST(OrthogonalPackingTest, SlackDoesNotChangeFeasibility) {
         << "problem: " << absl::StrCat(problem);
   }
 }
-
-void BM_OrthogonalPackingInfeasibilityDetector(benchmark::State& state) {
-  absl::BitGen random;
-  SharedStatistics stats;
-  OrthogonalPackingInfeasibilityDetector opp_solver(random, &stats);
-  std::vector<OppProblem> problems;
-  for (int i = 0; i < 10; ++i) {
-    problems.push_back(CreateFeasibleOppProblem(random, state.range(0)));
-  }
-  int index = 0;
-  for (auto s : state) {
-    const auto& problem = problems[index];
-    CHECK(opp_solver
-              .TestFeasibility(problem.items_x_sizes, problem.items_y_sizes,
-                               problem.bb_sizes)
-              .GetResult() != DetectorStatus::INFEASIBLE);
-    ++index;
-    if (index == 10) {
-      index = 0;
-    }
-  }
-}
-
-BENCHMARK(BM_OrthogonalPackingInfeasibilityDetector)
-    ->Arg(5)
-    ->Arg(10)
-    ->Arg(20)
-    ->Arg(30)
-    ->Arg(40)
-    ->Arg(80)
-    ->Arg(100)
-    ->Arg(200)
-    ->Arg(1000)
-    ->Arg(10000);
 
 MATCHER_P3(ItemIs, index, size_x, size_y, "") {
   return arg.index == index && arg.size_x == size_x && arg.size_y == size_y;

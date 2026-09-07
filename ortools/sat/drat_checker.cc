@@ -167,7 +167,7 @@ DratChecker::Status DratChecker::Check(double max_time_in_seconds) {
   }
   clauses_.back().is_needed_for_proof = true;
 
-  // Checks the inferred clauses in reversed order. The advantage of this order
+  // Checks the inferred clauses in reverse order. The advantage of this order
   // is that when checking a clause, one can mark all the clauses that are used
   // to check it. In turn, only these marked clauses need to be checked (and so
   // on recursively). By contrast, a forward iteration needs to check all the

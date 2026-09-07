@@ -133,7 +133,7 @@ inline bool AtMinOrMaxInt64I(IntegerValue t) {
 
 // Returns dividend - FloorRatio(dividend, divisor) * divisor;
 //
-// This function is around the same speed than the computation above, but it
+// This function is around the same speed as the computation above, but it
 // never causes integer overflow. Note also that when calling FloorRatio() then
 // PositiveRemainder(), the compiler should optimize the modulo away and just
 // reuse the one from the first integer division.
@@ -170,7 +170,7 @@ inline bool AddSquareTo(IntegerValue a, IntegerValue* result) {
 // Index of an IntegerVariable.
 //
 // Each time we create an IntegerVariable we also create its negation. This is
-// done like that so internally we only stores and deal with lower bound. The
+// done like that so internally we only store and deal with lower bounds, the
 // upper bound being the lower bound of the negated variable.
 DEFINE_STRONG_INDEX_TYPE(IntegerVariable);
 const IntegerVariable kNoIntegerVariable(-1);
@@ -277,9 +277,9 @@ inline std::ostream& operator<<(std::ostream& os,
 
 // Represents [coeff * variable + constant] or just a [constant].
 //
-// In some places it is useful to manipulate such expression instead of having
-// to create an extra integer variable. This is mainly used for scheduling
-// related constraints.
+// In some places it is useful to manipulate such an expression instead of
+// having to create an extra integer variable. This is mainly used for
+// scheduling related constraints.
 struct AffineExpression {
   // Helper to construct an AffineExpression.
   AffineExpression() = default;
@@ -397,7 +397,7 @@ struct LinearExpression2 {
 
   // Fully canonicalizes the expression and updates the given bounds
   // accordingly. This is the same as SimpleCanonicalization(), DivideByGcd()
-  // and the NegateForCanonicalization() with a proper updates of the bounds.
+  // and the NegateForCanonicalization() with proper updates of the bounds.
   // Returns whether the expression was negated.
   bool CanonicalizeAndUpdateBounds(IntegerValue& lb, IntegerValue& ub);
 
@@ -428,7 +428,7 @@ struct LinearExpression2 {
   }
 
   // Makes sure expr and -expr have the same canonical representation by
-  // negating the expression of it is in the non-canonical form. Returns true if
+  // negating the expression if it is in the non-canonical form. Returns true if
   // the expression was negated.
   bool NegateForCanonicalization();
 
@@ -500,16 +500,17 @@ H AbslHashValue(H h, const LinearExpression2& e) {
   return h;
 }
 
-// Note that we only care about binary relation, not just simple variable bound.
+// Note that we only care about binary relations, not just simple variable
+// bounds.
 enum class RelationStatus { IS_TRUE, IS_FALSE, IS_UNKNOWN };
 class BestBinaryRelationBounds {
  public:
   // Register the fact that expr \in [lb, ub] is true.
   //
-  // If lb==kMinIntegerValue it only register that expr <= ub (and symmetrically
-  // for ub==kMaxIntegerValue).
+  // If lb==kMinIntegerValue it only registers that expr <= ub (and
+  // symmetrically for ub==kMaxIntegerValue).
   //
-  // Returns for each of the bound if it was restricted (added/updated), if it
+  // Returns for each of the bounds if it was restricted (added/updated), if it
   // was ignored because a better or equal bound was already present, or if it
   // was rejected because it was invalid (e.g. the expression was a degenerate
   // linear2 or the bound was a min/max value).
@@ -547,7 +548,7 @@ class BestBinaryRelationBounds {
 };
 
 // A model singleton that holds the root level integer variable domains.
-// we just store a single domain for both var and its negation.
+// We just store a single domain for both var and its negation.
 struct IntegerDomains
     : public util_intops::StrongVector<PositiveOnlyIndex, Domain> {};
 
@@ -582,7 +583,7 @@ std::ostream& operator<<(std::ostream& os, const ValueLiteralPair& p);
 DEFINE_STRONG_INDEX_TYPE(IntervalVariable);
 const IntervalVariable kNoIntervalVariable(-1);
 
-// This functions appears in hot spot, and so it is important to inline it.
+// This function appears in hot spots, and so it is important to inline it.
 //
 // TODO(user): Maybe introduce a CanonicalizedLinear2 class so we automatically
 // get the better function, and it documents when we have canonicalized

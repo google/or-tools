@@ -102,7 +102,7 @@ struct SharedTreeNode {
   IntegerValue objective_lb = kMinIntegerValue;
   // A node is implied if its sibling node is closed (and the node is not closed
   // itself). This means that `decision` is not a true decision any more in this
-  // tree, but it might still be in other workers trees that have not  synced
+  // tree, but it might still be in other workers' trees that have not synced
   // with this one yet, so we must keep the node to be able to sync.
   bool is_implied = false;
 
@@ -123,8 +123,8 @@ struct SharedTreeNode {
 
 // Translates SharedTreeNode information according to a worker's mapping.
 // The mapping may be null, in which case this is the SharedTreeManager's copy.
-// Workers trees contain a subset of the nodes in the manager: just those on the
-// path to their assigned leaf.
+// Workers' trees contain a subset of the nodes in the manager: just those on
+// the path to their assigned leaf.
 class SharedTreeEncoder {
  public:
   // This class should only be mutated via the SharedTreeEncoder that owns it.
@@ -176,7 +176,7 @@ class SharedTreeEncoder {
     // Returns the negation of non-implied decisions on the path from the root
     // to this node. These are the literals expected in the reason for
     // propagating any implication at this node or, equivalently, the literals
-    // expected in a clause that closes this node
+    // expected in a clause that closes this node.
     std::vector<Literal> NegatedDecisions() const;
 
     // Returns the literals expected in a clause that propagates `implied` at
@@ -186,7 +186,7 @@ class SharedTreeEncoder {
     // Returns the reason clauses for all implications at this node. These
     // will contain a subset of the negated decoded decisions on the path from
     // this node to the root including at least all non-implied nodes. This will
-    // be empty if LRAT is not enabled
+    // be empty if LRAT is not enabled.
     const absl::flat_hash_map<Literal, ClausePtr>& reason_clauses() const {
       return reason_clauses_;
     }
@@ -258,7 +258,7 @@ class SharedTreeEncoder {
   // Convenience function to add children to `parent`.
   void SplitNode(NodeId parent, ProtoLiteral decision, NodeId first_child);
 
-  // Closes `node_id`, does not takes ownership of the proof clauses.
+  // Closes `node_id`, does not take ownership of the proof clauses.
   void CloseNode(NodeId node_id, absl::Span<const ClausePtr> proof);
 
   // Syncs all nodes on the path from the root to `leaf_id` with `worker_tree`.
@@ -290,7 +290,7 @@ class SharedTreeEncoder {
 
   // Ensures that `node` will be closed after the next call to
   // ProcessNodeChanges.
-  // It will either closes the first node at the same level as node and enqueue
+  // It will either close the first node at the same level as node and enqueue
   // its children to be closed later, or close the node itself if
   // `parent_is_closed` is true.
   // Will call ProcessImpliedNode on the newly implied non-closed sibling, if
@@ -500,7 +500,7 @@ class SharedTreeWorker {
   // appropriate node in the shared tree. Returns false if the problem is UNSAT.
   bool ProcessAssumptionConflict();
 
-  // Closes the appropriate node in the shared tree  after either failing to
+  // Closes the appropriate node in the shared tree after either failing to
   // enqueue a decision, or after processing a conflict at the assumption
   // level, the solver will be reset to level 0.
   // Returns false if the problem is UNSAT.

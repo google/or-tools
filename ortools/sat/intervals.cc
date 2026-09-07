@@ -140,8 +140,8 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
           if (assignment->LiteralIsAssigned(l)) {
             const bool is_fixed =
                 sat_solver_->LiteralTrail().Info(l.Variable()).level == 0;
-            // We can ignore always absent interval, and skip the literal of the
-            // interval that are now always present.
+            // We can ignore always absent intervals, and skip the literals of
+            // the intervals that are now always present.
             if (is_fixed && assignment->LiteralIsTrue(l)) continue;
             if (is_fixed && assignment->LiteralIsFalse(l)) return false;
           }
@@ -153,15 +153,15 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
 
   if (!remove_fixed_at_root_level(enforcement_literals)) return kNoLiteralIndex;
 
-  // task_a is currently before task_b ?
-  // Lets not create a literal that will be propagated right away.
+  // task_a is currently before task_b?
+  // Let's not create a literal that will be propagated right away.
   const auto [expr_b_before_a, ub_b_before_a] =
       EncodeDifferenceLowerThan(b.end, a.start, 0);
   const RelationStatus b_before_a_root_status =
       root_level_bounds_->GetLevelZeroStatus(expr_b_before_a, kMinIntegerValue,
                                              ub_b_before_a);
 
-  // task_b is before task_a ?
+  // task_b is before task_a?
   const auto [expr_a_before_b, ub_a_before_b] =
       EncodeDifferenceLowerThan(a.end, b.start, 0);
   const RelationStatus a_before_b_root_status =
@@ -226,7 +226,7 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
   // TODO(user): An alternative solution when it is enforced is to get/create
   // - s <=> a.end <= b.start
   // - t <=> b.end <= a.start
-  // and have enforcement => s + t == 1. The later might not even be needed
+  // and have enforcement => s + t == 1. The latter might not even be needed
   // though, since interval equation should already enforce it.
   Literal a_before_b;
   if (enforcement_literals.empty()) {

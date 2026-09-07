@@ -38,15 +38,15 @@ namespace sat {
 // variable, then we know that this variable domain is included in the union of
 // such inferred domains.
 //
-// This allows to propagate "element" like constraints encoded as enforced
+// This allows propagating "element" like constraints encoded as enforced
 // linear relations, and other more general reasoning.
 //
 // TODO(user): Also use these "deductions" in the solver directly. This is done
 // in good MIP solvers, and we should exploit them more.
 //
 // TODO(user): Also propagate implicit clauses (lit, not(lit)). Maybe merge
-// that with probing code? it might be costly to store all deduction done by
-// probing though, but I think this is what MIP solver do.
+// that with probing code? It might be costly to store all deductions done by
+// probing though, but I think this is what MIP solvers do.
 class DomainDeductions {
  public:
   // Adds the fact that enforcement => var \in domain.
@@ -60,7 +60,7 @@ class DomainDeductions {
   Domain ImpliedDomain(int literal_ref, int var) const;
 
   // Returns list of (var, domain) that were deduced because:
-  //   1/ We have a domain deduction for var and all literal from the clause
+  //   1/ We have a domain deduction for var and all literals from the clause
   //   2/ So we can take the union of all the deduced domains.
   //
   // TODO(user): We could probably be even more efficient. We could also
@@ -70,7 +70,7 @@ class DomainDeductions {
       absl::Span<const int> clause);
 
   // Optimization. Any following ProcessClause() will be fast if no more
-  // deduction touching that clause are added.
+  // deductions touching that clause are added.
   void MarkProcessingAsDoneForNow() {
     something_changed_.ClearAndResize(something_changed_.size());
   }
@@ -91,7 +91,7 @@ class DomainDeductions {
   absl::flat_hash_map<std::pair<Index, int>, Domain> deductions_;
 };
 
-// Does "to_modify += factor * to_add". Both constraint must be linear.
+// Does "to_modify += factor * to_add". Both constraints must be linear.
 // Returns false and does not change anything in case of overflow.
 //
 // Note that the enforcement literals (if any) are ignored and left untouched.
@@ -102,20 +102,20 @@ bool AddLinearConstraintMultiple(int64_t factor, const ConstraintProto& to_add,
 // Currently the coefficient in the definition must be 1 or -1.
 //
 // This might return false and NOT modify ConstraintProto in case of overflow
-// or other issue with the substitution.
+// or other issues with the substitution.
 bool SubstituteVariable(int var, int64_t var_coeff_in_definition,
                         const ConstraintProto& definition, ConstraintProto* ct);
 
-// Same as a vector<T> or hash_map<int, T> where the index are in [0, size),
+// Same as a vector<T> or hash_map<int, T> where the indices are in [0, size),
 // but optimized for the case where only a few entries are touched before the
-// vector need to be reset to zero and used again.
+// vector needs to be reset to zero and used again.
 //
 // TODO(user): Maybe a SparseBitset + sparse clear is better. But this is a
-// worth alternative to test IMO.
+// worthwhile alternative to test IMO.
 template <typename T>
 class VectorWithSparseUsage {
  public:
-  // Taking a view allow to cache the never changing addresses.
+  // Taking a view allows caching the never changing addresses.
   class View {
    public:
     View(int* i, int* pi, T* pv)
@@ -144,7 +144,7 @@ class VectorWithSparseUsage {
     T* const position_to_value_;
   };
 
-  // This reserve the size for using indices in [0, size).
+  // This reserves the size for using indices in [0, size).
   View ClearedView(int size) {
     index_to_position_.resize(size);
     position_to_index_.resize(size);
@@ -175,8 +175,8 @@ class ActivityBoundHelper {
  public:
   ActivityBoundHelper() = default;
 
-  // The at most one constraint must be added before linear constraint are
-  // processed. The functions below will still works, but do nothing more than
+  // The at most one constraint must be added before linear constraints are
+  // processed. The functions below will still work, but do nothing more than
   // compute trivial bounds.
   void ClearAtMostOnes();
   void AddAtMostOne(absl::Span<const int> amo);
@@ -185,7 +185,7 @@ class ActivityBoundHelper {
   // Computes the max/min activity of a linear expression involving only
   // Booleans.
   //
-  // Accepts a list of (literal, coefficient). Note that all literal will be
+  // Accepts a list of (literal, coefficient). Note that all literals will be
   // interpreted as referring to [0, 1] variables. We use the CpModelProto
   // convention for negated literal index.
   //
@@ -196,7 +196,7 @@ class ActivityBoundHelper {
   // Important: We shouldn't have duplicates or a lit and NegatedRef(lit)
   // appearing both.
   //
-  // Note: the result of this function is not exact (it uses an heuristic to
+  // Note: the result of this function is not exact (it uses a heuristic to
   // detect AMOs), but it does not depend on the order of the input terms, so
   // passing an input in non-deterministic order is fine.
   //
@@ -217,9 +217,9 @@ class ActivityBoundHelper {
   // at most one information.
   //
   // This returns false iff the enforcement list cannot be satisfied.
-  // It filters the enforcement list if some are consequences of other.
-  // It fills the given set with the literal that must be true due to the
-  // enforcement. Note that only literals or negated literal appearing in ref
+  // It filters the enforcement list if some are consequences of others.
+  // It fills the given set with the literals that must be true due to the
+  // enforcement. Note that only literals or negated literals appearing in ref
   // are filled.
   bool PresolveEnforcement(absl::Span<const int> refs, ConstraintProto* ct,
                            absl::flat_hash_set<int>* literals_at_true);
@@ -238,10 +238,10 @@ class ActivityBoundHelper {
   std::vector<absl::Span<const int>> PartitionLiteralsIntoAmo(
       absl::Span<const int> literals);
 
-  // Returns true iff the given literal are in at most one relationship.
+  // Returns true iff the given literals are in at most one relationship.
   bool IsAmo(absl::Span<const int> literals);
 
-  // Returns in how many amo var or Not(var) are part of.
+  // Returns how many AMOs var or Not(var) are part of.
   int NumAmoForVariable(int var) const {
     const Index i = IndexFromLiteral(var);
     const Index j = IndexFromLiteral(NegatedRef(var));
@@ -269,8 +269,8 @@ class ActivityBoundHelper {
       absl::Span<const std::pair<int, int64_t>> terms,
       std::vector<std::array<int64_t, 2>>* conditional = nullptr);
 
-  // We use an unique index by at most one, and just stores for each literal
-  // the at most one to which it belong.
+  // We use a unique index by at most one, and just stores for each literal
+  // the at most one to which it belongs.
   int num_at_most_ones_ = 0;
   util_intops::StrongVector<Index, std::vector<int>> amo_indices_;
 
@@ -283,7 +283,7 @@ class ActivityBoundHelper {
   };
   std::vector<TermWithIndex> to_sort_;
 
-  // We partition the set of term into disjoint at most one.
+  // We partition the set of terms into disjoint at most ones.
   VectorWithSparseUsage<int64_t> amo_sums_;
   std::vector<int> partition_;
   std::vector<int64_t> max_by_partition_;
@@ -297,7 +297,7 @@ class ActivityBoundHelper {
   std::vector<int> tmp_boolean_terms_in_some_amo_;
 };
 
-// Class to help detects clauses that differ on a single literal.
+// Class to help detect clauses that differ on a single literal.
 class ClauseWithOneMissingHasher {
  public:
   explicit ClauseWithOneMissingHasher(absl::BitGenRef random)
@@ -307,7 +307,7 @@ class ClauseWithOneMissingHasher {
   void RegisterClause(int c, absl::Span<const int> clause);
 
   // Returns a hash of the clause with index c and literal ref removed.
-  // This assumes that ref was part of the clause. Work in O(1).
+  // This assumes that ref was part of the clause. Works in O(1).
   uint64_t HashWithout(int c, int ref) const {
     return clause_to_hash_[c] ^ literal_to_hash_[IndexFromLiteral(ref)];
   }
@@ -329,8 +329,8 @@ class ClauseWithOneMissingHasher {
 // Specific function. Returns true if the negation of all literals in clause
 // except literal is exactly equal to the literal of enforcement.
 //
-// We assumes that enforcement and negated(clause) are sorted lexicographically
-// Or negated(enforcement) and clause. Both option works. If not, we will only
+// We assume that enforcement and negated(clause) are sorted lexicographically
+// Or negated(enforcement) and clause. Both options work. If not, we will only
 // return false more often. When we return true, the property is enforced.
 //
 // TODO(user): For the same complexity, we do not need to specify literal and
@@ -353,7 +353,7 @@ bool FindSingleLinearDifference(const LinearConstraintProto& lin1,
                                 const LinearConstraintProto& lin2, int* var1,
                                 int64_t* coeff1, int* var2, int64_t* coeff2);
 
-// Returns true iff the two linear constraint only differ at a single term.
+// Returns true iff the two linear constraints only differ at a single term.
 //
 // Preconditions: Constraint should be sorted by variable and of same size.
 inline bool LinearsDifferAtOneTerm(const LinearConstraintProto& lin1,

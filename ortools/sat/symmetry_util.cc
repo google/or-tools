@@ -32,7 +32,7 @@ namespace sat {
 
 std::vector<std::vector<int>> BasicOrbitopeExtraction(
     absl::Span<const std::unique_ptr<SparsePermutation>> generators) {
-  // Count the number of permutations that are compositions of 2-cycle and
+  // Count the number of permutations that are compositions of 2-cycles and
   // regroup them according to the number of cycles.
   std::vector<std::vector<int>> num_cycles_to_2cyclers;
   for (int g = 0; g < generators.size(); ++g) {
@@ -73,7 +73,7 @@ std::vector<std::vector<int>> BasicOrbitopeExtraction(
   std::vector<std::vector<int>> orbitope;
   if (best == -1) return orbitope;
 
-  // We will track the element already added so we never have duplicates.
+  // We will track the elements already added so we never have duplicates.
   std::vector<bool> in_matrix;
 
   // Greedily grow the orbitope.
@@ -96,10 +96,10 @@ std::vector<std::vector<int>> BasicOrbitopeExtraction(
     // We want to find a column such that g sends it to variables not already
     // in the orbitope matrix.
     //
-    // Note(user): This relies on the cycle in each permutation to be ordered by
-    // smaller element first. This way we don't have to account any row
-    // permutation of the orbitope matrix. The code that detect the symmetries
-    // of the problem should already return permutation in this canonical
+    // Note(user): This relies on the cycles in each permutation to be ordered
+    // by smallest element first. This way we don't have to account for any row
+    // permutation of the orbitope matrix. The code that detects the symmetries
+    // of the problem should already return permutations in this canonical
     // format.
     std::vector<int> grow;
     int matching_column_index = -1;
@@ -269,7 +269,7 @@ void GetOrbitsAndRepresentatives(const CpModelProto& model_proto,
   }
   if (generators.empty()) return;
 
-  // Get orbits in term of IntegerVariable.
+  // Get orbits in terms of IntegerVariable.
   var_to_orbit_index = GetOrbits(num_vars, generators);
 
   // Fill orbits_.

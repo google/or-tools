@@ -224,8 +224,8 @@ public class SimpleSatProgram
 
 The interface to the CP-SAT solver is implemented through the **CpModelBuilder**
 described in the package **cpmodel** in
-*ortools/sat/go/cp_model.go*. This class is a helper to fill
-in the cp_model protobuf.
+*ortools/sat/go/cp_model.go*. This class is a helper to
+fill in the cp_model protobuf.
 
 Also within the **cpmodel** package is
 *ortools/sat/go/cp_model.go* which provides functions to

@@ -51,7 +51,7 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
 
 // For a given set of intervals and demands, we first compute the mandatory part
 // of the interval as [start_max , end_min]. We use this to calculate mandatory
-// demands for each start_max time points for eligible intervals.
+// demands for each start_max time point for eligible intervals.
 // Since the sum of these mandatory demands must be smaller or equal to the
 // capacity, we create a cut representing that.
 //
@@ -96,7 +96,7 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
     SchedulingConstraintHelper* helper, Model* model);
 
 // For a given set of intervals in a no_overlap constraint, we detect violated
-// area based cuts from Queyranne 93 [see note in the code] and create a cut for
+// area-based cuts from Queyranne 93 [see note in the code] and create a cut for
 // these.
 CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
     SchedulingConstraintHelper* helper, Model* model);
@@ -136,11 +136,11 @@ struct CompletionTimeEvent {
   // The energy min of this event.
   IntegerValue energy_min;
 
-  // If non empty, a decomposed view of the energy of this event.
+  // If non-empty, a decomposed view of the energy of this event.
   // First value in each pair is x_size, second is y_size.
   std::vector<LiteralValueValue> decomposed_energy;
 
-  // Indicates if the events used the optional energy information from the
+  // Indicates if the event used the optional energy information from the
   // model.
   bool use_decomposed_energy_min = false;
 
@@ -210,7 +210,7 @@ void AbslStringify(Sink& sink, const CompletionTimeExplorationStatus& status) {
 // valid w.r.t. the range of starts.
 //
 // Note that this is an exhaustive algorithm, so the number of events should be
-// small, like <= 10. They should also starts in index order.
+// small, like <= 10. They should also start in index order.
 //
 // Optim: If both sums are proven <= to the corresponding threshold, we abort.
 CompletionTimeExplorationStatus ComputeMinSumOfWeightedEndMins(
@@ -220,10 +220,10 @@ CompletionTimeExplorationStatus ComputeMinSumOfWeightedEndMins(
     double& min_sum_of_weighted_ends, bool& cut_use_precedences,
     int& exploration_credit);
 
-// Split the list of events in connected components. Two intervals are connected
-// if they overlap. It expects the events to have the start_min and end_max
-// fields. Note that events are semi-open intervals [start_min, end_max). This
-// will filter out components of size one.
+// Splits the list of events into connected components. Two intervals are
+// connected if they overlap. It expects the events to have the start_min and
+// end_max fields. Note that events are semi-open intervals [start_min,
+// end_max). This will filter out components of size one.
 template <class E>
 std::vector<absl::Span<std::unique_ptr<E>>> SplitEventsInIndendentSets(
     std::vector<std::unique_ptr<E>>& events) {

@@ -31,10 +31,10 @@
 namespace operations_research {
 namespace sat {
 
-// Propagate the fact that a XOR of literals is equal to the given value.
+// Propagates the fact that a XOR of literals is equal to the given value.
 // The complexity is in O(n).
 //
-// TODO(user): By using a two watcher mechanism, we can propagate this a lot
+// TODO(user): By using a two-watcher mechanism, we can propagate this a lot
 // faster.
 class BooleanXorPropagator : public PropagatorInterface {
  public:
@@ -62,14 +62,14 @@ class BooleanXorPropagator : public PropagatorInterface {
 
 // If we have:
 //  - selectors[i] =>  (target_var >= vars[i] + offset[i])
-//  - and we known that at least one selectors[i] must be true
-// then we can propagate the fact that if no selectors is chosen yet, the lower
+//  - and we know that at least one selector[i] must be true
+// then we can propagate the fact that if no selector is chosen yet, the lower
 // bound of target_var is greater than the min of the still possible
 // alternatives.
 //
-// This constraint take care of this case when no selectors[i] is chosen yet.
+// This constraint takes care of this case when no selector[i] is chosen yet.
 //
-// This constraint support duplicate selectors.
+// This constraint supports duplicate selectors.
 class GreaterThanAtLeastOneOfPropagator : public PropagatorInterface,
                                           public LazyReasonInterface {
  public:
@@ -108,7 +108,7 @@ class GreaterThanAtLeastOneOfPropagator : public PropagatorInterface,
 };
 
 // ============================================================================
-// Model based functions.
+// Model-based functions.
 // ============================================================================
 
 inline std::vector<IntegerValue> ToIntegerValueVector(
@@ -145,12 +145,12 @@ inline void AddGreaterThanAtLeastOneOf(
   model->TakeOwnership(constraint);
 }
 
-// The target variable is equal to exactly one of the candidate variable. The
+// The target variable is equal to exactly one of the candidate variables. The
 // equality is controlled by the given "selector" literals.
 //
-// Note(user): This only propagate from the min/max of still possible candidates
-// to the min/max of the target variable. The full constraint also requires
-// to deal with the case when one of the literal is true.
+// Note(user): This only propagates from the min/max of still possible
+// candidates to the min/max of the target variable. The full constraint also
+// requires dealing with the case when one of the literals is true.
 //
 // Note(user): If there is just one or two candidates, this doesn't add
 // anything.

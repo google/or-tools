@@ -9,8 +9,9 @@ https://developers.google.com/optimization/
 The CP-SAT solver can express Boolean variables and constraints. A **Boolean
 variable** is an integer variable constrained to be either 0 or 1. A **literal**
 is either a Boolean variable or its negation: 0 negated is 1, and 1 negated is
-0. See
-https://en.wikipedia.org/wiki/Boolean_satisfiability_problem#Basic_definitions_and_terminology.
+
+0.  See
+    https://en.wikipedia.org/wiki/Boolean_satisfiability_problem#Basic_definitions_and_terminology.
 
 ## Boolean variables and literals
 

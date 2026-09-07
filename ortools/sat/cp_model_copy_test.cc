@@ -132,7 +132,7 @@ TEST(ModelCopyTest, RemoveDuplicateFromClauses) {
       bool_or { literals: [ -4, 9, 8 ] }
     }
   )pb");
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
@@ -148,7 +148,7 @@ TEST(ModelCopyTest, RemoveDuplicateFromClauses) {
   CpModelProto new_cp_model;
   Model model;
   CopyModel(initial_model, &new_cp_model, &model);
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, RemoveDuplicateFromEnforcementLiterals) {
@@ -177,7 +177,7 @@ TEST(ModelCopyTest, RemoveDuplicateFromEnforcementLiterals) {
       }
     }
   )pb");
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
@@ -199,7 +199,7 @@ TEST(ModelCopyTest, RemoveDuplicateFromEnforcementLiterals) {
   model.GetOrCreate<SatParameters>()
       ->set_keep_all_feasible_solutions_in_presolve(true);
   CopyModel(initial_model, &new_cp_model, &model);
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, RemapLiteralsInBoolOr) {
@@ -227,13 +227,13 @@ TEST(ModelCopyTest, RemapLiteralsInBoolOr) {
                                                       /*first_copy=*/true));
   EXPECT_TRUE(model_copy.FinishCopy(initial_model));
 
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     constraints { bool_or { literals: [ 1, 2, -1 ] } }
   )pb");
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, RemapLiteralsInBoolAnd) {
@@ -264,7 +264,7 @@ TEST(ModelCopyTest, RemapLiteralsInBoolAnd) {
                                                       /*first_copy=*/true));
   EXPECT_TRUE(model_copy.FinishCopy(initial_model));
 
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     constraints { bool_or { literals: [ -1 ] } }
@@ -273,7 +273,7 @@ TEST(ModelCopyTest, RemapLiteralsInBoolAnd) {
       bool_and { literals: [ -2 ] }
     }
   )pb");
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, RemapLiteralsInBoolXor) {
@@ -298,7 +298,7 @@ TEST(ModelCopyTest, RemapLiteralsInBoolXor) {
                                                       /*first_copy=*/true));
   EXPECT_TRUE(model_copy.FinishCopy(initial_model));
 
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 0 ] }
@@ -306,7 +306,7 @@ TEST(ModelCopyTest, RemapLiteralsInBoolXor) {
     constraints { bool_xor { literals: [ 0, 1, 3 ] } }
     constraints { bool_xor { literals: [ 0, 1, 3, -3 ] } }
   )pb");
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, RemapVariablesInLinear) {
@@ -335,7 +335,7 @@ TEST(ModelCopyTest, RemapVariablesInLinear) {
                                                       /*first_copy=*/true));
   EXPECT_TRUE(model_copy.FinishCopy(initial_model));
 
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 10 ] }
     variables { domain: [ 0, 10 ] }
@@ -348,7 +348,7 @@ TEST(ModelCopyTest, RemapVariablesInLinear) {
       }
     }
   )pb");
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, RemapVariablesInLinear_CanonicalizeSingleBoolInDomain) {
@@ -375,10 +375,10 @@ TEST(ModelCopyTest, RemapVariablesInLinear_CanonicalizeSingleBoolInDomain) {
 
   // 5x + 6y \in [6, 7] is remapped to 5x + 6.not(x) = 6 - x \in [6, 7], whose
   // unique solution is x = 0.
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 0 ] }
   )pb");
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, RemapVariablesInLegacyInverse) {
@@ -411,7 +411,7 @@ TEST(ModelCopyTest, RemapVariablesInLegacyInverse) {
                                                       /*first_copy=*/true));
   EXPECT_TRUE(model_copy.FinishCopy(initial_model));
 
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 2 ] }
     variables { domain: [ 0, 2 ] }
     constraints {
@@ -425,7 +425,7 @@ TEST(ModelCopyTest, RemapVariablesInLegacyInverse) {
       }
     }
   )pb");
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, RemapVariablesInInverse) {
@@ -454,7 +454,7 @@ TEST(ModelCopyTest, RemapVariablesInInverse) {
                                                       /*first_copy=*/true));
   EXPECT_TRUE(model_copy.FinishCopy(initial_model));
 
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 2 ] }
     variables { domain: [ 0, 2 ] }
     constraints {
@@ -468,7 +468,7 @@ TEST(ModelCopyTest, RemapVariablesInInverse) {
       }
     }
   )pb");
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, ExpandNonAffineExpressionsInInverse) {
@@ -500,7 +500,7 @@ TEST(ModelCopyTest, ExpandNonAffineExpressionsInInverse) {
                                                       /*first_copy=*/true));
   EXPECT_TRUE(model_copy.FinishCopy(initial_model));
 
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 2 ] }
     variables { domain: [ 0, 2 ] }
     variables { domain: [ 0, 2 ] }
@@ -523,7 +523,7 @@ TEST(ModelCopyTest, ExpandNonAffineExpressionsInInverse) {
       }
     }
   )pb");
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, RemapVariablesInObjective) {
@@ -549,7 +549,7 @@ TEST(ModelCopyTest, RemapVariablesInObjective) {
   EXPECT_TRUE(model_copy.FinishCopy(initial_model));
 
   // 5x + 6y \in [0, 50] is remapped to 5x + 6.not(x) = 6 - x \in [0, 50].
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     objective {
       vars: [ 0 ]
@@ -559,7 +559,7 @@ TEST(ModelCopyTest, RemapVariablesInObjective) {
       integer_before_offset: 6
     }
   )pb");
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, RemapVariablesInFloatingPointObjective) {
@@ -585,7 +585,7 @@ TEST(ModelCopyTest, RemapVariablesInFloatingPointObjective) {
   EXPECT_TRUE(model_copy.FinishCopy(initial_model));
 
   // 5.5x + 6.25y + 2.75 is remapped to 5.5x + 6.25 * (1 - x) + 2.75.
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     floating_point_objective {
       vars: [ 0 ]
@@ -593,7 +593,7 @@ TEST(ModelCopyTest, RemapVariablesInFloatingPointObjective) {
       offset: 9.0
     }
   )pb");
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, RemapVariablesInSearchStrategyAssumptionsAndHint) {
@@ -621,7 +621,7 @@ TEST(ModelCopyTest, RemapVariablesInSearchStrategyAssumptionsAndHint) {
       initial_model));
   EXPECT_TRUE(model_copy.FinishCopy(initial_model));
 
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     search_strategy {
       exprs { vars: 0 coeffs: -1 offset: 1 }
@@ -633,7 +633,7 @@ TEST(ModelCopyTest, RemapVariablesInSearchStrategyAssumptionsAndHint) {
       values: [ 0 ]
     }
   )pb");
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, ChangeEnforcedAtMostOrExactlyOneToLinear) {
@@ -651,7 +651,7 @@ TEST(ModelCopyTest, ChangeEnforcedAtMostOrExactlyOneToLinear) {
       exactly_one { literals: [ 2, 3 ] }
     }
   )pb");
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
@@ -678,7 +678,7 @@ TEST(ModelCopyTest, ChangeEnforcedAtMostOrExactlyOneToLinear) {
   model.GetOrCreate<SatParameters>()
       ->set_keep_all_feasible_solutions_in_presolve(true);
   CopyModel(initial_model, &new_cp_model, &model);
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, LegacyElementConstraint) {
@@ -696,7 +696,7 @@ TEST(ModelCopyTest, LegacyElementConstraint) {
       }
     }
   )pb");
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
@@ -716,7 +716,7 @@ TEST(ModelCopyTest, LegacyElementConstraint) {
   model.GetOrCreate<SatParameters>()
       ->set_keep_all_feasible_solutions_in_presolve(true);
   CopyModel(initial_model, &new_cp_model, &model);
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, ElementConstraint) {
@@ -735,7 +735,7 @@ TEST(ModelCopyTest, ElementConstraint) {
       }
     }
   )pb");
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
@@ -755,7 +755,7 @@ TEST(ModelCopyTest, ElementConstraint) {
   model.GetOrCreate<SatParameters>()
       ->set_keep_all_feasible_solutions_in_presolve(true);
   CopyModel(initial_model, &new_cp_model, &model);
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, ExpandedNonAffineExpressionsShareVariableWhenPossible) {
@@ -782,7 +782,7 @@ TEST(ModelCopyTest, ExpandedNonAffineExpressionsShareVariableWhenPossible) {
       }
     }
   )pb");
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 10 ] }
     variables { domain: [ 0, 10 ] }
     variables { domain: [ 0, 30 ] }
@@ -806,7 +806,7 @@ TEST(ModelCopyTest, ExpandedNonAffineExpressionsShareVariableWhenPossible) {
   model.GetOrCreate<SatParameters>()
       ->set_keep_all_feasible_solutions_in_presolve(true);
   CopyModel(initial_model, &new_cp_model, &model);
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 }  // namespace

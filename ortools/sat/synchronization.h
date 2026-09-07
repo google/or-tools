@@ -65,7 +65,7 @@ struct SolverStatusChangeInfo {
 
   std::string change_info;
 
-  // Set to true if the solver found a new solution with a improved objective
+  // Set to true if the solver found a new solution with an improved objective
   // value.
   bool new_best_solution = false;
 
@@ -79,9 +79,9 @@ struct SolverStatusChangeInfo {
   bool solved = false;
 };
 
-// Thread-safe. Keeps a set of n unique best solution found so far.
+// Thread-safe. Keeps a set of n unique best solutions found so far.
 //
-// TODO(user): Maybe add some criteria to only keep solution with an objective
+// TODO(user): Maybe add some criteria to only keep solutions with an objective
 // really close to the best solution.
 template <typename ValueType>
 class SharedSolutionRepository {
@@ -97,9 +97,9 @@ class SharedSolutionRepository {
   struct Solution {
     // Solution with lower "rank" will be preferred
     //
-    // TODO(user): Some LNS code assume that for the SharedSolutionRepository
+    // TODO(user): Some LNS code assumes that for the SharedSolutionRepository
     // this rank is actually the unscaled internal minimization objective.
-    // Remove this assumptions by simply recomputing this value since it is not
+    // Remove this assumption by simply recomputing this value since it is not
     // too costly to do so.
     int64_t rank = 0;
 
@@ -107,7 +107,7 @@ class SharedSolutionRepository {
 
     std::string info;
 
-    // Number of time this was returned by GetRandomBiasedSolution(). We use
+    // Number of times this was returned by GetRandomBiasedSolution(). We use
     // this information during the selection process.
     //
     // Should be private: only SharedSolutionRepository should modify this.
@@ -126,7 +126,7 @@ class SharedSolutionRepository {
     }
   };
 
-  // Returns the number of current solution in the pool. This will never
+  // Returns the number of current solutions in the pool. This will never
   // decrease.
   int NumSolutions() const;
 
@@ -149,17 +149,17 @@ class SharedSolutionRepository {
   std::shared_ptr<const Solution> GetRandomBiasedSolution(
       absl::BitGenRef random) const;
 
-  // Add a new solution. Note that it will not be added to the pool of solution
-  // right away. One must call Synchronize for this to happen. In order to be
+  // Add a new solution. Note that it will not be added to the pool of solutions
+  // right away. One must call Synchronize() for this to happen. In order to be
   // deterministic, this will keep all solutions until Synchronize() is called,
   // so we need to be careful not to generate too many solutions at once.
   //
   // Returns a shared pointer to the solution that was stored in the repository.
   std::shared_ptr<const Solution> Add(Solution solution);
 
-  // Updates the current pool of solution with the one recently added. Note that
-  // we use a stable ordering of solutions, so the final pool will be
-  // independent on the order of the calls to AddSolution() provided that the
+  // Updates the current pool of solutions with the ones recently added. Note
+  // that we use a stable ordering of solutions, so the final pool will be
+  // independent of the order of the calls to AddSolution() provided that the
   // set of added solutions is the same.
   //
   // Works in O(num_solutions_to_keep_).
@@ -214,8 +214,8 @@ class SharedSolutionRepository {
   mutable int64_t num_queried_at_last_sync_ ABSL_GUARDED_BY(mutex_) = 0;
   mutable int64_t num_non_improving_ ABSL_GUARDED_BY(mutex_) = 0;
 
-  // Our two solutions pools, the current one and the new one that will be
-  // merged into the current one on each Synchronize() calls.
+  // Our two solution pools, the current one and the new one that will be
+  // merged into the current one on each Synchronize() call.
   mutable std::vector<int> tmp_indices_ ABSL_GUARDED_BY(mutex_);
   std::vector<std::shared_ptr<Solution>> solutions_ ABSL_GUARDED_BY(mutex_);
   std::vector<std::shared_ptr<Solution>> new_solutions_ ABSL_GUARDED_BY(mutex_);
@@ -235,7 +235,7 @@ class SharedLPSolutionRepository : public SharedSolutionRepository<double> {
   void NewLPSolution(std::vector<double> lp_solution);
 };
 
-// This stores all the feasible solutions the solver know about.
+// This stores all the feasible solutions the solver knows about.
 // Moreover, for meta-heuristics, we keep them in different buckets.
 class SharedSolutionPool {
  public:
@@ -255,7 +255,7 @@ class SharedSolutionPool {
   // this.
   std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
   GetSolutionToImprove(absl::BitGenRef random) const {
-    // If we seems to have trouble making progress, work on the alternative
+    // If we seem to have trouble making progress, work on the alternative
     // path too.
     if (alternative_path_.num_solutions_to_keep() > 0 &&
         best_solutions_.NumRecentlyNonImproving() > 100 &&
@@ -293,7 +293,7 @@ class SharedSolutionPool {
   // range [ranks_[i], ranks_[i + 1]).
   //
   // ranks_[0] should always be min_rank_, and seeds_[0] should be one of the
-  // best known solution. We usually never select seeds_[0] but keep it around
+  // best known solutions. We usually never select seeds_[0] but keep it around
   // for later in case new best solutions are found.
   absl::Mutex mutex_;
   int64_t max_rank_ ABSL_GUARDED_BY(mutex_) = kint64min;
@@ -304,10 +304,10 @@ class SharedSolutionPool {
       ABSL_GUARDED_BY(mutex_) seeds_;
 };
 
-// Set of best solution from the feasibility jump workers.
+// Set of best solutions from the feasibility jump workers.
 //
 // We store (solution, num_violated_constraints), so we have a list of solutions
-// that violate as little constraints as possible. This can be used to set the
+// that violate as few constraints as possible. This can be used to set the
 // phase during SAT search.
 //
 // TODO(user): We could also use it after first solution to orient a SAT search
@@ -342,7 +342,7 @@ class SharedIncompleteSolutionManager {
 
   bool HasSolution() const;
 
-  // If there are no solution, this return an empty vector.
+  // If there is no solution, this returns an empty vector.
   std::vector<double> PopLast();
 
   std::vector<std::string> TableLineStats() const {
@@ -367,14 +367,14 @@ class SharedResponseManager {
  public:
   explicit SharedResponseManager(Model* model);
 
-  // Loads the initial objective bounds and keep a reference to the objective to
-  // properly display the scaled bounds. This is optional if the model has no
+  // Loads the initial objective bounds and keeps a reference to the objective
+  // to properly display the scaled bounds. This is optional if the model has no
   // objective.
   //
-  // This function is not thread safe.
+  // This function is not thread-safe.
   void InitializeObjective(const CpModelProto& cp_model);
 
-  // Reports OPTIMAL and stop the search if any gap limit are specified and
+  // Reports OPTIMAL and stops the search if any gap limits are specified and
   // crossed. By default, we only stop when we have the true optimal, which is
   // well defined since we are solving our pure integer problem exactly.
   void SetGapLimitsFromParameters(const SatParameters& parameters);
@@ -383,8 +383,8 @@ class SharedResponseManager {
   // time of the call with the best feasible solution and objective bounds.
   //
   // We will do more postprocessing by calling all the
-  // AddFinalSolutionPostprocessor() postprocesors. Note that the response given
-  // to the AddSolutionCallback() will not call them.
+  // AddFinalSolutionPostprocessor() postprocessors. Note that the response
+  // given to the AddSolutionCallback() will not call them.
   CpSolverResponse GetResponse();
 
   // These will be called in REVERSE order on any feasible solution returned
@@ -393,7 +393,7 @@ class SharedResponseManager {
       std::function<void(std::vector<int64_t>*)> postprocessor);
 
   // These "postprocessing" steps will be applied in REVERSE order of
-  // registration to all solution passed to the callbacks.
+  // registration to all solutions passed to the callbacks.
   void AddResponsePostprocessor(
       std::function<void(CpSolverResponse*)> postprocessor);
 
@@ -453,12 +453,13 @@ class SharedResponseManager {
   void UnregisterBestBoundCallback(int callback_id);
 
   // The "inner" objective is the CpModelProto objective without scaling/offset.
-  // Note that these bound correspond to valid bound for the problem of finding
-  // a strictly better objective than the current one. Thus the lower bound is
-  // always a valid bound for the global problem, but the upper bound is NOT.
+  // Note that these bounds correspond to valid bounds for the problem of
+  // finding a strictly better objective than the current one. Thus the lower
+  // bound is always a valid bound for the global problem, but the upper bound
+  // is NOT.
   //
   // This is always the last bounds in "always_synchronize" mode, otherwise it
-  // correspond to the bounds at the last Synchronize() call.
+  // corresponds to the bounds at the last Synchronize() call.
   void Synchronize();
   IntegerValue GetInnerObjectiveLowerBound();
   IntegerValue GetInnerObjectiveUpperBound();
@@ -476,8 +477,8 @@ class SharedResponseManager {
 
   // Returns the integral of the log of the absolute gap over deterministic
   // time. This is mainly used to compare how fast the gap closes on a
-  // particular instance. Or to evaluate how efficient our LNS code is improving
-  // solution.
+  // particular instance. Or to evaluate how efficiently our LNS code is
+  // improving solutions.
   //
   // Note: The integral will start counting on the first UpdateGapIntegral()
   // call, since before the difference is assumed to be zero.
@@ -486,8 +487,8 @@ class SharedResponseManager {
   // on UpdateGapIntegral() which should be called in the main subsolver
   // synchronization loop.
   //
-  // Note(user): In the litterature, people use the relative gap to the optimal
-  // solution (or the best known one), but this is ill defined in many case
+  // Note(user): In the literature, people use the relative gap to the optimal
+  // solution (or the best known one), but this is ill-defined in many cases
   // (like if the optimal cost is zero), so I prefer this version.
   double GapIntegral() const;
   void UpdateGapIntegral();
@@ -497,7 +498,7 @@ class SharedResponseManager {
   // UpdateGapIntegral() but it is not an issue to do so.
   void SetUpdateGapIntegralOnEachChange(bool set);
 
-  // Sets this to false, it you want new solutions to wait for the Synchronize()
+  // Sets this to false, if you want new solutions to wait for the Synchronize()
   // call.
   // The default 'true' indicates that all solutions passed through
   // NewSolution() are always propagated to the best response and to the
@@ -508,7 +509,7 @@ class SharedResponseManager {
   void UpdateInnerObjectiveBounds(const std::string& update_info,
                                   IntegerValue lb, IntegerValue ub);
 
-  // Reads the new solution from the response and update our state. For an
+  // Reads the new solution from the response and updates our state. For an
   // optimization problem, we only do something if the solution is strictly
   // improving. Returns a shared pointer to the solution that was potentially
   // stored in the repository.
@@ -671,13 +672,13 @@ class SharedBoundsManager {
                                 absl::Span<const int64_t> new_upper_bounds);
 
   // If we solved a small independent component of the full problem, then we can
-  // in most situation fix the solution on this subspace.
+  // in most situations fix the solution on this subspace.
   //
   // Note that because there can be more than one optimal solution on an
   // independent subproblem, it is important to do that in a locked fashion, and
   // reject future incompatible fixing.
   //
-  // Note that this do not work with symmetries. And for now we don't call it
+  // Note that this does not work with symmetries. And for now we don't call it
   // when this is the case.
   void FixVariablesFromPartialSolution(absl::Span<const int64_t> solution,
                                        absl::Span<const int> variables_to_fix);
@@ -696,7 +697,7 @@ class SharedBoundsManager {
                         std::vector<int64_t>* new_upper_bounds,
                         int64_t* timestamp = nullptr);
 
-  // This should not be called too often as it lock the class for
+  // This should not be called too often as it locks the class for
   // O(num_variables) time.
   void UpdateDomains(std::vector<Domain>* domains);
   void GetAllBounds(std::vector<int64_t>* lower_bounds,
@@ -709,9 +710,9 @@ class SharedBoundsManager {
   void LogStatistics(SolverLogger* logger);
   int NumBoundsExported(absl::string_view worker_name);
 
-  // If non-empty, we will check that all bounds update contains this solution.
+  // If non-empty, we will check that all bounds updates contain this solution.
   // Note that this might fail once we reach optimality and we might have wrong
-  // bounds, but if it fail before that it can help find bugs.
+  // bounds, but if it fails before that it can help find bugs.
   void LoadDebugSolution(absl::Span<const int64_t> solution) {
     debug_solution_.assign(solution.begin(), solution.end());
   }
@@ -859,7 +860,7 @@ class UniqueClauseStream {
 //
 // It is thread-safe.
 //
-// Note that this uses literal as encoded in a cp_model.proto. Thus, the
+// Note that this uses literals as encoded in a cp_model.proto. Thus, the
 // literals can be negative numbers.
 class SharedClausesManager {
  public:
@@ -893,7 +894,7 @@ class SharedClausesManager {
   // Periodically starts a new sharing round, making glue clauses visible.
   void Synchronize();
 
-  // For statistics, notify how many clauses where imported in that worker id
+  // For statistics, notify how many clauses were imported in that worker id
   // database.
   void NotifyNumImported(int id, int64_t num_imported);
 
@@ -912,6 +913,11 @@ class SharedClausesManager {
   // Returns the representative of a for the equivalence relations found in the
   // binary clauses. Also shortens the parents_ links found on the way.
   LiteralIndex GetRepresentative(LiteralIndex a)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+
+  // Returns the representative of each Boolean variable for the equivalence
+  // classes of the binary clauses.
+  std::vector<int> GetRepresentativesImpl()
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   static constexpr int kMinBatches = 64;
@@ -948,6 +954,8 @@ class SharedClausesManager {
   util_intops::StrongVector<LiteralIndex, LiteralIndex> parents_
       ABSL_GUARDED_BY(mutex_);
   int num_equivalences_ ABSL_GUARDED_BY(mutex_) = 0;
+  std::vector<int> synchronized_representatives_ ABSL_GUARDED_BY(mutex_);
+  int64_t synchronized_num_equivalences_ ABSL_GUARDED_BY(mutex_) = 0;
 
   // Stats:
   std::vector<int64_t> id_to_num_exported_ ABSL_GUARDED_BY(mutex_);
@@ -956,7 +964,7 @@ class SharedClausesManager {
   std::vector<std::string> id_to_worker_name_ ABSL_GUARDED_BY(mutex_);
 };
 
-// A class that allows to exchange root level bounds on linear2.
+// A class that allows exchanging root-level bounds on linear2.
 //
 // TODO(user): Add Synchronize() support and only publish new bounds when this
 // is called.
@@ -965,7 +973,7 @@ class SharedLinear2Bounds {
   int RegisterNewId(std::string worker_name);
   void LogStatistics(SolverLogger* logger);
 
-  // This should only contain canonicalized expression.
+  // This should only contain canonicalized expressions.
   // See the code for IsCanonicalized() for the definition.
   struct Key {
     int vars[2];
@@ -997,9 +1005,9 @@ class SharedLinear2Bounds {
   // Exports new bounds on the given expr (should be canonicalized).
   void Add(int id, Key expr, IntegerValue lb, IntegerValue ub);
 
-  // This is called less often, and maybe not every-worker that exports want to
+  // This is called less often, and maybe not every worker that exports wants to
   // export, so we use a separate id space. Because we rely on hash map to
-  // check if a bound is new, it is not such a big deal that a worker re-read
+  // check if a bound is new, it is not such a big deal that a worker re-reads
   // once the bounds it exported.
   int RegisterNewImportId(std::string name);
 
@@ -1025,12 +1033,12 @@ class SharedLinear2Bounds {
   absl::flat_hash_map<Key, std::pair<IntegerValue, IntegerValue>> shared_bounds_
       ABSL_GUARDED_BY(mutex_);
 
-  // Ever growing list of updated position in shared_bounds_.
+  // Ever-growing list of updated positions in shared_bounds_.
   // Note that we do reduce it in MaybeCompressNewlyUpdateKeys(), but that
   // requires all registered workers to have at least imported some bounds.
   //
   // TODO(user): use indirect addressing so that newly_updated_keys_ can just
-  // deal with indices, and it is a bit tighter memory wise? We also avoid
+  // deal with indices, and it is a bit tighter memory-wise? We also avoid
   // hash-lookups on NewlyUpdatedBounds(). But since this is only called at
   // level zero on new bounds, I don't think we care.
   std::vector<Key> newly_updated_keys_;
@@ -1058,7 +1066,7 @@ class SharedStatistics {
  public:
   SharedStatistics() = default;
 
-  // Adds a bunch of stats, adding count for the same key together.
+  // Adds a bunch of stats, adding counts for the same key together.
   void AddStats(absl::Span<const std::pair<std::string, int64_t>> stats);
 
   // Logs all the added stats.
@@ -1136,16 +1144,16 @@ SharedSolutionRepository<ValueType>::GetRandomBiasedSolution(
   if (solutions_.size() > 1) {
     const int64_t best_rank = solutions_[0]->rank;
 
-    // As long as we have solution with the best objective that haven't been
+    // As long as we have solutions with the best objective that haven't been
     // explored too much, we select one uniformly. Otherwise, we select a
     // solution from the pool uniformly.
     //
     // Note(user): Because of the increase of num_selected, this is dependent on
-    // the order of call. It should be fine for "determinism" because we do
+    // the order of calls. It should be fine for "determinism" because we do
     // generate the task of a batch always in the same order.
     const int kExplorationThreshold = 100;
 
-    // Select all the best solution with a low enough selection count.
+    // Select all the best solutions with a low enough selection count.
     tmp_indices_.clear();
     for (int i = 0; i < solutions_.size(); ++i) {
       std::shared_ptr<const Solution> solution = solutions_[i];
@@ -1235,7 +1243,7 @@ void SharedSolutionRepository<ValueType>::Synchronize(
       // first.
       for (auto& solution : solutions_) {
         if (solution->num_selected == 0) {
-          // TODO(user): randomize amongst new solution?
+          // TODO(user): randomize amongst new solutions?
           std::swap(solutions_[0], solution);
           break;
         }
@@ -1262,15 +1270,15 @@ void SharedSolutionRepository<ValueType>::Synchronize(
         }
       }
 
-      // In order to not get stuck on a subset that always maximize the sum of
+      // In order not to get stuck on a subset that always maximizes the sum of
       // orthogonality, we pick the first element (which should be a new one
       // thanks to the swap above), and we maximize the sum of orthogonality
       // with the rest.
       //
-      // This way, as we find new solution, the set changes slowly.
+      // This way, as we find new solutions, the set changes slowly.
       //
       // TODO(user): When n == num_solutions_to_keep_ + 1, there is
-      // a faster algo thant 2^n since there is only n possible sets. Fix.
+      // a faster algo than 2^n since there are only n possible sets. Fix.
       const std::vector<int> selected =
           FindMostDiverseSubset(num_solutions_to_keep_, n, distances_, buffer_,
                                 /*always_pick_mask = */ 1);

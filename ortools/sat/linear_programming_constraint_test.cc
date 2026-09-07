@@ -31,7 +31,6 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/linear_constraint.h"
-#include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"

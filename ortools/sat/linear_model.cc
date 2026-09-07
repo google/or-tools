@@ -32,7 +32,7 @@ namespace sat {
 namespace {
 
 // This struct stores constraints of the form literal => var ==/!= value.
-// It is meant to be in a sorted vector to detect complimentary equations.
+// It is meant to be in a sorted vector to detect complementary equations.
 struct EqualityDetectionHelper {
   int constraint_index;
   int literal;
@@ -48,7 +48,7 @@ struct EqualityDetectionHelper {
   }
 };
 
-// For a given variable. This struct stores the literal that encodes a value, as
+// For a given variable, this struct stores the literal that encodes a value, as
 // well as the indices of the two constraints in the model that implement
 //     literal <=> var == value.
 struct LitVarEncodingInfo {
@@ -57,8 +57,8 @@ struct LitVarEncodingInfo {
   int negative_ct_index;
 };
 
-// Struct use to store literal/value attached to a var. It is meant to be sorted
-// by ascending value order.
+// Struct used to store literal/value attached to a var. It is meant to be
+// sorted by ascending value order.
 struct ValueLiteralCtIndex {
   int64_t value;
   int literal;
@@ -83,7 +83,7 @@ LinearModel::LinearModel(const CpModelProto& model_proto)
     : model_proto_(model_proto),
       ignored_constraints_(model_proto.constraints_size(), false) {
   // TODO(user): Do we use the loader code to detect full encodings and
-  // element encodings.
+  // element encodings?
   absl::flat_hash_set<BoolArgumentProto> exactly_ones_cache;
   absl::flat_hash_set<LinearConstraintProto> encoding_cache;
   std::vector<std::vector<EqualityDetectionHelper>> var_to_equalities(
@@ -123,7 +123,7 @@ LinearModel::LinearModel(const CpModelProto& model_proto)
 
     // Detect enforcement_literal => (var == value or var != value).
     //
-    // Note that for domain with 2 values like [0, 1], we will detect both ==
+    // Note that for a domain with 2 values like [0, 1], we will detect both ==
     // 0 and != 1. Similarly, for a domain in [min, max], we should both
     // detect (== min) and (<= min), and both detect (== max) and (>= max).
     {

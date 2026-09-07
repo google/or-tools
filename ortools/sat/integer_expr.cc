@@ -163,7 +163,7 @@ LinearConstraintPropagator<use_int128>::ConditionalLb(
     }
   }
 
-  // Recall that all our coefficient are positive.
+  // Recall that all our coefficients are positive.
   bool literal_var_present = false;
   bool literal_var_present_positively = false;
   IntegerValue var_coeff;
@@ -196,7 +196,7 @@ LinearConstraintPropagator<use_int128>::ConditionalLb(
     return {kMinIntegerValue, kMinIntegerValue};
   }
 
-  // The upper bound on NegationOf(target_var) are lb(-target) + slack / coeff.
+  // The upper bound on NegationOf(target_var) is lb(-target) + slack / coeff.
   // So the lower bound on target_var is ub - slack / coeff.
   const absl::int128 slack128 = absl::int128(upper_bound_.value()) - lb_128;
   const IntegerValue target_lb = shared_->integer_trail->LowerBound(target_var);
@@ -352,7 +352,7 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
   for (int i = num_fixed_vars; i < size_; ++i) {
     if (!use_int128 && max_variations_[i] <= slack) continue;
 
-    // TODO(user): If the new ub fall into an hole of the variable, we can
+    // TODO(user): If the new ub falls into a hole of the variable, we can
     // actually relax the reason more by computing a better slack.
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
@@ -505,8 +505,8 @@ LevelZeroEquality::LevelZeroEquality(IntegerVariable target,
 // diophantine equation support.
 bool LevelZeroEquality::Propagate() {
   // TODO(user): Once the GCD is not 1, we could at any level make sure the
-  // objective is of the correct form. For now, this only happen in a few
-  // miplib problem that we close quickly, so I didn't add the extra code yet.
+  // objective is of the correct form. For now, this only happens in a few
+  // miplib problems that we close quickly, so I didn't add the extra code yet.
   if (trail_->CurrentDecisionLevel() != 0) return true;
 
   int64_t gcd = 0;
@@ -558,7 +558,7 @@ MinPropagator::MinPropagator(std::vector<AffineExpression> vars,
 bool MinPropagator::Propagate() {
   if (vars_.empty()) return true;
 
-  // Count the number of interval that are possible candidate for the min.
+  // Count the number of intervals that are possible candidates for the min.
   // Only the intervals for which lb > current_min_ub cannot.
   const IntegerLiteral min_ub_literal =
       integer_trail_->UpperBoundAsLiteral(min_var_);
@@ -595,7 +595,7 @@ bool MinPropagator::Propagate() {
     if (current_min_ub < ub_of_only_candidate) {
       integer_reason_.clear();
 
-      // The reason is that all the other interval start after current_min_ub.
+      // The reason is that all the other intervals start after current_min_ub.
       // And that min_ub has its current value.
       integer_reason_.push_back(min_ub_literal);
       for (const AffineExpression& var : vars_) {
@@ -760,7 +760,7 @@ bool GreaterThanMinOfExprsPropagator::Propagate() {
     return true;
   }
 
-  // Count the number of interval that are possible candidate for the min.
+  // Count the number of intervals that are possible candidates for the min.
   // Only the intervals for which lb > current_min_ub cannot.
   const IntegerValue current_min_ub = integer_trail_.UpperBound(min_var_);
   int num_intervals_that_can_be_min = 0;
@@ -884,7 +884,7 @@ ProductPropagator::ProductPropagator(
                                                  RegisterWith(watcher));
 }
 
-// We want all affine expression to be either non-negative or across zero.
+// We want all affine expressions to be either non-negative or across zero.
 bool ProductPropagator::CanonicalizeCases() {
   if (integer_trail_.UpperBound(a_) <= 0) {
     a_ = a_.Negated();
@@ -923,8 +923,8 @@ bool ProductPropagator::CanonicalizeCases() {
 // Note that this propagation is exact, except on the domain of p as this
 // involves more complex arithmetic.
 //
-// TODO(user): We could tighten the bounds on p by removing extreme value that
-// do not contains divisor in the domains of a or b. There is an algo in O(
+// TODO(user): We could tighten the bounds on p by removing extreme values that
+// do not contain a divisor in the domains of a or b. There is an algo in O(
 // smallest domain size between a or b).
 bool ProductPropagator::PropagateWhenAllNonNegative() {
   {
@@ -1091,7 +1091,7 @@ bool ProductPropagator::Propagate() {
     return PropagateWhenAllNonNegative();
   }
 
-  // Lets propagate on p_ first, the max/min is given by one of: max_a * max_b,
+  // Let's propagate on p_ first, the max/min is given by one of: max_a * max_b,
   // max_a * min_b, min_a * max_b, min_a * min_b. This is true, because any
   // product x * y, depending on the sign, is dominated by one of these.
   //
@@ -1126,7 +1126,7 @@ bool ProductPropagator::Propagate() {
     }
   }
 
-  // Lets propagate on a and b.
+  // Let's propagate on a and b.
   const IntegerValue min_p = integer_trail_.LowerBound(p_);
   const IntegerValue max_p = integer_trail_.UpperBound(p_);
 
@@ -1168,7 +1168,7 @@ bool ProductPropagator::Propagate() {
     const IntegerValue max_b = integer_trail_.UpperBound(b);
     const IntegerValue min_b = integer_trail_.LowerBound(b);
 
-    // If the domain of b contain zero, we can't propagate anything on a.
+    // If the domain of b contains zero, we can't propagate anything on a.
     // Because of CanonicalizeCases(), we just deal with min_b > 0 here.
     if (zero_is_possible && min_b <= 0) continue;
 

@@ -419,7 +419,7 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
       }
       if (type() == SubSolver::INCOMPLETE) {
         // This is not used once we have a solution, and setting it to false
-        // allow to fix the logs.
+        // allows fixing the logs.
         state_->options.use_objective = false;
       }
 
@@ -461,11 +461,11 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
       }
     }
 
-    // Between chunk, we synchronize bounds.
+    // Between chunks, we synchronize bounds.
     //
-    // TODO(user): This do not play well with optimizing solution whose
-    // objective lag behind... Basically, we can run LS on old solution but will
-    // only consider it feasible if it improve the best known solution.
+    // TODO(user): This does not play well with optimizing solutions whose
+    // objective lags behind... Basically, we can run LS on old solutions but
+    // will only consider it feasible if it improves the best known solution.
     bool recompute_compound_weights = false;
     if (dense_model_.proto().has_objective()) {
       const IntegerValue lb = shared_response_->GetInnerObjectiveLowerBound();
@@ -552,8 +552,8 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
           dense_model_.ReverseMapSolution(state_->solution);
       // Checks for infeasibility induced by the non supported constraints.
       //
-      // TODO(user): Checking the objective is faster and we could avoid to
-      // check feasibility if we are not going to keep the solution anyway.
+      // TODO(user): Checking the objective is faster and we could avoid
+      // checking feasibility if we are not going to keep the solution anyway.
       if (SolutionIsFeasible(input_model_proto_, input_solution)) {
         auto pointers = PushAndMaybeCombineSolution(
             shared_response_, input_model_proto_, input_solution,
@@ -596,11 +596,11 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
     }
 
     // Update dtime.
-    // Since we execute only one task at the time, this is safe.
+    // Since we execute only one task at a time, this is safe.
     {
       // TODO(user): Find better names. DeterministicTime() is maintained by
       // this class while deterministic_time() is the one saved in the SubSolver
-      // base class).
+      // base class.
       const double current_dtime = DeterministicTime();
       const double delta = current_dtime - deterministic_time();
 
@@ -651,7 +651,7 @@ std::pair<int64_t, double> FeasibilityJumpSolver::ComputeLinearJump(int var) {
   // move is slim, and we can test that fairly easily with at most two
   // queries!
   //
-  // Tricky/Annoying: if the value is not in the domain, we returns it.
+  // Tricky/Annoying: if the value is not in the domain, we return it.
   const int64_t p1 = var_domains[var].ValueAtOrBefore(current_value - 1);
   const int64_t p2 = var_domains[var].ValueAtOrAfter(current_value + 1);
 
@@ -662,7 +662,7 @@ std::pair<int64_t, double> FeasibilityJumpSolver::ComputeLinearJump(int var) {
                         : std::numeric_limits<double>::infinity();
   if (v1 < 0.0) {
     // Point p1 is improving. Look for best before it.
-    // Note that we can exclude all point after current_value since it is
+    // Note that we can exclude all points after current_value since they are
     // worse and we assume convexity.
     const Domain dom =
         var_domains[var].IntersectionWith(Domain(kint64min, p1 - 1));
@@ -703,7 +703,7 @@ std::pair<int64_t, double> FeasibilityJumpSolver::ComputeLinearJump(int var) {
       }
     } else {
       // We have no improving point, result is either p1 or p2. This is the
-      // most common scenario, and require no breakpoint computation!
+      // most common scenario, and requires no breakpoint computation!
       // Choose the direction which increases violation the least,
       // disambiguating by best objective.
       if (v1 < v2) {
@@ -762,7 +762,7 @@ void FeasibilityJumpSolver::UpdateViolatedConstraintWeights() {
     state_->bump_value *= kBumpFactor;
   }
 
-  // Note that ViolatedConstraints() might contain only linear constraint
+  // Note that ViolatedConstraints() might contain only linear constraints
   // depending on how it was initialized and updated.
   bool rescale = false;
   num_ops_ += evaluator_->ViolatedConstraints().size();
@@ -796,9 +796,9 @@ void FeasibilityJumpSolver::UpdateViolatedConstraintWeights() {
   // Update weight incrementally.
   //
   // To maximize floating point precision, we compute the change to jump value
-  // first and then apply it in one go. Also, in most situation the change is
-  // purely integer and should fit exactly on a double, so we don't depend on
-  // the order in which constraint are listed.
+  // first and then apply it in one go. Also, in most situations the change is
+  // purely integer and should fit exactly in a double, so we don't depend on
+  // the order in which constraints are listed.
   LinearIncrementalEvaluator* linear_evaluator =
       evaluator_->MutableLinearEvaluator();
   linear_evaluator->ClearAffectedVariables();
@@ -841,7 +841,7 @@ bool FeasibilityJumpSolver::DoSomeLinearIterations() {
   }
 
   // TODO(user): It should be possible to support compound moves with
-  // the specialized linear code, but lets keep it simpler for now.
+  // the specialized linear code, but let's keep it simpler for now.
   if (state_->options.use_compound_moves) return true;
 
   evaluator_->RecomputeViolatedList(/*linear_only=*/true);
@@ -888,7 +888,7 @@ bool FeasibilityJumpSolver::DoSomeLinearIterations() {
 
     // We will update the weight unless the queue is non-empty.
     if (vars_to_scan_.empty()) {
-      // Note that we only count linear constraint as violated here.
+      // Note that we only count linear constraints as violated here.
       if (evaluator_->ViolatedConstraints().empty()) return true;
       UpdateViolatedConstraintWeights();
     }
@@ -899,15 +899,15 @@ bool FeasibilityJumpSolver::DoSomeLinearIterations() {
 // Update the jump scores.
 //
 // We incrementally maintain the score (except for best_var).
-// However for non-Boolean, we still need to recompute the jump value.
+// However for non-Booleans, we still need to recompute the jump value.
 // We will do that in a lazy fashion.
 //
 // TODO(user): In the paper, they just recompute the scores and only
 // change the jump values when the constraint weight changes. Experiment?
 // Note however that the current code is quite fast.
 //
-// TODO(user): For non-Boolean, we could easily detect if a non-improving
-// score cannot become improving. We don't need to add such variable to
+// TODO(user): For non-Booleans, we could easily detect if a non-improving
+// score cannot become improving. We don't need to add such variables to
 // the queue.
 void FeasibilityJumpSolver::MarkJumpsThatNeedToBeRecomputed(int changed_var) {
   // To keep DCHECKs happy. Note that we might overwrite this afterwards with
@@ -917,7 +917,7 @@ void FeasibilityJumpSolver::MarkJumpsThatNeedToBeRecomputed(int changed_var) {
   // Generic part.
   // No optimization there, we just update all touched variables.
   // We need to do this before the Linear part, so that the status is correct in
-  // AddVarToScan() for variable with two values.
+  // AddVarToScan() for variables with two values.
   num_ops_ += evaluator_->VarToGeneralConstraints(changed_var).size();
   for (const int c : evaluator_->VarToGeneralConstraints(changed_var)) {
     num_ops_ += evaluator_->GeneralConstraintToVars(c).size();
@@ -1188,17 +1188,17 @@ bool FeasibilityJumpSolver::ShouldScan(int var) const {
   const VariableDomains& var_domains = dense_model_.var_domains();
   DCHECK(!var_domains.IsFixed(var));
 
-  // Return true iff var is has a better objective value in its domain.
+  // Return true iff var has a better objective value in its domain.
   if (has_better_objective_value_[var]) return true;
 
-  // We will need to recompute the score. Lets skip variable for which we known
+  // We will need to recompute the score. Let's skip variables for which we know
   // in advance that there will be no good score.
   //
   // For the objective, we don't care if it is violated or not, we only want
   // to scan variable that might improve it (and thus reduce its violation if it
   // is violated).
   //
-  // TODO(user): We should generalize the objective logic to all constraint.
+  // TODO(user): We should generalize the objective logic to all constraints.
   // There is no point scanning a variable of a violated constraint if it is at
   // the wrong bound and cannot improve the violation!
   return evaluator_->NumViolatedConstraintsForVarIgnoringObjective(var) > 0;
@@ -1213,9 +1213,9 @@ void FeasibilityJumpSolver::RecomputeVarsToScan() {
   in_vars_to_scan_.assign(num_variables, false);
   vars_to_scan_.clear();
 
-  // Since the fixed status never changes during one batch, we marks such
-  // variable as "in_vars_to_scan_" even if we don't add them here. This allow
-  // to skip them without any extra lookup.
+  // Since the fixed status never changes during one batch, we mark such
+  // variables as "in_vars_to_scan_" even if we don't add them here. This allows
+  // skipping them without any extra lookup.
   for (const int var : var_domains.FixedVariables()) {
     in_vars_to_scan_[var] = true;
   }

@@ -35,17 +35,18 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
 
-// For each IntegerVariable, the ImpliedBound class allows to list all such
+// For each IntegerVariable, the ImpliedBound class allows listing all such
 // entries.
 //
-// This is meant to be used in the cut generation code when it make sense: if we
-// have BoolVar => X >= bound, we can always lower bound the variable X by
+// This is meant to be used in the cut generation code when it makes sense: if
+// we have BoolVar => X >= bound, we can always lower bound the variable X by
 // (bound - X_lb) * BoolVar + X_lb, and that can lead to stronger cuts.
 struct ImpliedBoundEntry {
   // PositiveVariable(literal_view) is an integer variable in [0, 1].
@@ -66,7 +67,8 @@ struct ImpliedBoundEntry {
 };
 
 // Maintains all the implications of the form Literal => IntegerLiteral. We
-// collect these implication at model loading, during probing and during search.
+// collect these implications at model loading, during probing and during
+// search.
 //
 // TODO(user): This can quickly use up too much memory. Add some limit in place.
 // In particular, each time we have literal => integer_literal we should avoid
@@ -77,7 +79,7 @@ struct ImpliedBoundEntry {
 // TODO(user): This is a bit of a duplicate with the Literal <=> IntegerLiteral
 // stored in the IntegerEncoder class. However we only need one side here.
 //
-// TODO(user): Do like in the DomainDeductions class and allow to process
+// TODO(user): Do like in the DomainDeductions class and allow processing
 // clauses (or store them) to perform more level zero deductions. Note that this
 // is again a slight duplicate with what we do there (except that we work at the
 // Domain level in that presolve class).
@@ -96,7 +98,7 @@ class ImpliedBounds {
 
   // Adds literal => integer_literal to the repository.
   //
-  // Not that it checks right aways if there is another bound on the same
+  // Note that it checks right away if there is another bound on the same
   // variable involving literal.Negated(), in which case we can improve the
   // level zero lower bound of the variable.
   bool Add(Literal literal, IntegerLiteral integer_literal);
@@ -113,12 +115,12 @@ class ImpliedBounds {
   bool ProcessIntegerTrail(Literal first_decision);
 
   // Returns all the implied bounds stored for the given variable.
-  // Note that only literal with an IntegerView are considered here.
+  // Note that only literals with an IntegerView are considered here.
   const std::vector<ImpliedBoundEntry>& GetImpliedBounds(IntegerVariable var);
 
   // Returns all the variables for which GetImpliedBounds(var) is not empty. Or
-  // at least that was not empty at some point, because we lazily remove bounds
-  // that become trivial as the search progress.
+  // at least that were not empty at some point, because we lazily remove bounds
+  // that become trivial as the search progresses.
   const std::vector<IntegerVariable>& VariablesWithImpliedBounds() const {
     return has_implied_bounds_.PositionsSetAtLeastOnce();
   }
@@ -154,7 +156,7 @@ class ImpliedBounds {
     return bounds_;
   }
 
-  // Adds to the integer trail all the new level-zero deduction made here.
+  // Adds to the integer trail all the new level-zero deductions made here.
   // This can only be called at decision level zero. Returns false iff the model
   // is infeasible.
   bool EnqueueNewDeductions();
@@ -174,12 +176,12 @@ class ImpliedBounds {
   // improve on the level zero lower bound.
   //
   // TODO(user): we could lazily remove old entries to save a bit of space if
-  // many deduction where made at level zero.
+  // many deductions were made at level zero.
   absl::flat_hash_map<std::pair<LiteralIndex, IntegerVariable>, IntegerValue>
       bounds_;
 
   // Note(user): This is currently only used during cut generation, so only the
-  // Literal with an IntegerView that can be used in the LP relaxation need to
+  // literals with an IntegerView that can be used in the LP relaxation need to
   // be kept here.
   //
   // TODO(user): Use inlined vectors. Even better, we actually only process
@@ -213,7 +215,7 @@ class ElementEncodings {
   // The key must be unique for a given exactly_one constraint (implicit or
   // explicit).
   // Note that we can exploit the fact in the element_encoding, that one or more
-  // encoding of different variable comes from the same exactly_one, and are
+  // encodings of different variables come from the same exactly_one, and are
   // thus "parallel". This can happen for duration/demands on cumulative for
   // instance.
   void Add(IntegerVariable var, const std::vector<ValueLiteralPair>& encoding,
@@ -243,11 +245,11 @@ class ProductDecomposer {
         element_encodings_(model->GetOrCreate<ElementEncodings>()),
         integer_encoder_(model->GetOrCreate<IntegerEncoder>()) {}
 
-  // Tries to decompose a product left * right in a list of constant alternative
-  // left_value * right_value controlled by literals in an exactly one
-  // relationship. We construct this by using literals from the full encoding or
-  // element encodings of the variables of the two affine expressions.
-  // If it fails, it returns an empty vector.
+  // Tries to decompose a product left * right into a list of constant
+  // alternatives left_value * right_value controlled by literals in an exactly
+  // one relationship. We construct this by using literals from the full
+  // encoding or element encodings of the variables of the two affine
+  // expressions. If it fails, it returns an empty vector.
   std::vector<LiteralValueValue> TryToDecompose(const AffineExpression& left,
                                                 const AffineExpression& right);
 
@@ -279,19 +281,19 @@ class ProductDetector {
   ~ProductDetector();
 
   // Internally, a Boolean product is encoded in a linear fashion:
-  // p = a * b become:
+  // p = a * b becomes:
   // 1/ a and b => p, i.e.  a clause (not(a), not(b), p).
   // 2/ p => a and p => b, which is a clause (not(p), a) and (not(p), b).
   //
   // In particular if we have a+b+c==1 then we have a=b*c, b=a*c, and c=a*b !!
   //
-  // For the detection to work, we must load all ternary clause first, then the
-  // implication.
+  // For the detection to work, we must load all ternary clauses first, then the
+  // implications.
   void ProcessTernaryClause(absl::Span<const Literal> ternary_clause);
   void ProcessTernaryExactlyOne(absl::Span<const Literal> ternary_exo);
   void ProcessBinaryClause(absl::Span<const Literal> binary_clause);
 
-  // Utility function to process a bunch of implication all at once.
+  // Utility function to process a bunch of implications all at once.
   void ProcessImplicationGraph(BinaryImplicationGraph* graph);
   void ProcessTrailAtLevelOne();
 
@@ -318,27 +320,32 @@ class ProductDetector {
   LinearExpression LinearizeProduct(IntegerVariable a, IntegerVariable b);
 
   // Returns an expression that is always lower or equal to the product a * b.
-  // This use the exact LinearizeProduct() if ProductIsLinearizable() otherwise
+  // This uses the exact LinearizeProduct() if ProductIsLinearizable() otherwise
   // it uses the simple McCormick lower bound.
   //
   // TODO(user): Implement!
   LinearExpression ProductLowerBound(IntegerVariable a, IntegerVariable b);
 
-  // Experimental. Find violated inequality of the form l1 * l2 <= l3.
+  // Experimental. Find violated inequalities of the form l1 * l2 <= l3.
   // And set-up data structure to query this efficiently.
   void InitializeBooleanRLTCuts(
       absl::Span<const IntegerVariable> lp_vars,
       const util_intops::StrongVector<IntegerVariable, double>& lp_values);
 
-  // BoolRLTCandidates()[var] contains the list of factor for which we have
+  // Returns true if there are some candidates.
+  bool HasSomeCandidates() const { return !dense_index_to_var_.empty(); }
+
+  // BoolRLTCandidates(var) contains the list of factor for which we have
   // a violated upper bound on lit(var) * lit(factor).
-  const absl::flat_hash_map<IntegerVariable, std::vector<IntegerVariable>>&
-  BoolRLTCandidates() const {
-    return bool_rlt_candidates_;
+  absl::Span<const IntegerVariable> BoolRLTCandidates(IntegerVariable var) {
+    if (var >= var_to_dense_index_.size()) return {};
+    const int index = var_to_dense_index_[var];
+    if (index == -1) return {};
+    return dense_to_rlt_candidate_[index];
   }
 
-  // Returns if it exists an integer variable u such that lit(a) * lit(b) <=
-  // lit(u). All integer variable must be boolean, a positive variable means
+  // Returns if there exists an integer variable u such that lit(a) * lit(b) <=
+  // lit(u). All integer variables must be boolean, a positive variable means
   // positive literal, and a negative variable means negative literal. Returns
   // kNoIntegerVariable if there are none.
   IntegerVariable LiteralProductUpperBound(IntegerVariable a,
@@ -349,11 +356,27 @@ class ProductDetector {
     return it->second;
   }
 
+  // This one is "slow", so we have a work limit in place since the last
+  // InitializeBooleanRLTCuts(), and once reached, we just always return
+  // kNoIntegerVariable.
+  //
+  // TODO(user): Improve the heuristic, maybe cache identical (a, b) calls.
+  // Note that we already cache some data for consecutive calls with the same a.
+  IntegerVariable LiteralProductLowerBound(IntegerVariable a,
+                                           IntegerVariable b);
+
  private:
   std::array<LiteralIndex, 2> GetKey(LiteralIndex a, LiteralIndex b) const;
   void ProcessNewProduct(LiteralIndex p, LiteralIndex a, LiteralIndex b);
   void ProcessNewProduct(IntegerVariable p, Literal l, IntegerVariable x);
   void ProcessTernaryClauseForRLT(absl::Span<const Literal> clause);
+
+  // Returns kNoIntegerVariable if this literal has no view. Otherwise return an
+  // IntegerVariable where a negated IntegerVariable is interpreted as (1 -
+  // IntegerVariable).
+  //
+  // TODO(user): Clean this up, it is quite messy.
+  IntegerVariable LiteralView(Literal literal) const;
 
   // Process a relation lit(var1) * lit(var2) <= lit(bound_var).
   void UpdateRLTMaps(
@@ -367,14 +390,16 @@ class ProductDetector {
   SatSolver* sat_solver_;
   Trail* trail_;
   IntegerTrail* integer_trail_;
+  BinaryImplicationGraph* implications_;
   IntegerEncoder* integer_encoder_;
+  ModelLpValues& lp_values_;
   SharedStatistics* shared_stats_;
 
   // No need to process implication a => b if a was never seen.
   util_intops::StrongVector<LiteralIndex, bool> seen_;
 
   // For each clause of size 3 (l0, l1, l2) and a permutation of index (i, j, k)
-  // we bitset[i] to true if lj => not(lk) and lk => not(lj).
+  // we set bitset[i] to true if lj => not(lk) and lk => not(lj).
   //
   // The key is sorted.
   absl::flat_hash_map<std::array<LiteralIndex, 3>, std::bitset<3>> detector_;
@@ -383,10 +408,10 @@ class ProductDetector {
   absl::flat_hash_map<std::array<LiteralIndex, 2>, std::vector<LiteralIndex>>
       candidates_;
 
-  // Products (a, b) -> p such that p == a * b. They key is sorted.
+  // Products (a, b) -> p such that p == a * b. The key is sorted.
   absl::flat_hash_map<std::array<LiteralIndex, 2>, LiteralIndex> products_;
 
-  // Same keys has in products_ but canonicalized so we capture all 4 products
+  // Same keys as in products_ but canonicalized so we capture all 4 products
   // a * b, (1 - a) * b, a * (1 - b) and (1 - a) * (1 - b) with one query.
   absl::flat_hash_set<std::array<LiteralIndex, 2>> has_product_;
 
@@ -402,19 +427,31 @@ class ProductDetector {
   absl::flat_hash_map<std::pair<LiteralIndex, IntegerVariable>, IntegerVariable>
       int_products_;
 
-  // For RLT cuts.
-  absl::flat_hash_map<IntegerVariable, std::vector<IntegerVariable>>
-      bool_rlt_candidates_;
+  // Cache of var => implies_cache_[var];
+  IntegerVariable var_last_used_for_caching_ = kNoIntegerVariable;
+  util_intops::StrongVector<IntegerVariable, IntegerVariable> implies_cache_;
+
+  // For BoolRLTCandidates().
+  util_intops::StrongVector<IntegerVariable, int> var_to_dense_index_;
+  std::vector<IntegerVariable> dense_index_to_var_;
+  CompactVectorVectorBuilder<int, IntegerVariable>
+      dense_to_rlt_candidate_builder_;
+  CompactVectorVector<int, IntegerVariable> dense_to_rlt_candidate_;
+
+  // For LiteralProductUpperBound().
   absl::flat_hash_map<std::pair<IntegerVariable, IntegerVariable>,
                       IntegerVariable>
       bool_rlt_ubs_;
 
-  // Store ternary clause which have an IntegerVariable view.
+  // Stores ternary clauses which have an IntegerVariable view.
   // We only consider BooleanVariable == IntegerVariable, and store not(literal)
-  // as NegatedVariable(). This is a flat vector of size multiple of 3.
+  // as NegatedVariable(). This is a flat vector of size a multiple of 3.
   std::vector<IntegerVariable> ternary_clauses_with_view_;
 
+  std::vector<IntegerVariable> vars_in_lp_;
   Bitset64<IntegerVariable> is_in_lp_vars_;
+
+  int64_t work_spend_scanning_implications_ = 0;
 
   // Stats.
   int64_t num_products_ = 0;
@@ -425,6 +462,8 @@ class ProductDetector {
   int64_t num_processed_exo_ = 0;
   int64_t num_conditional_zeros_ = 0;
   int64_t num_conditional_equalities_ = 0;
+  int64_t num_product_lbs_ = 0;
+  int64_t total_product_lbs_work_ = 0;
 };
 
 }  // namespace sat

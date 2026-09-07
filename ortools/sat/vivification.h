@@ -34,7 +34,7 @@ namespace operations_research::sat {
 // Solvers" Chu-Min Li, Fan Xiao, Mao Luo, Felip Manyà, Zhipeng Lü, Yu Li.
 //
 // This is basically trying to minimize clauses using propagation by taking as
-// decisions the negation of some literals of that clause.
+// decisions the negations of some literals of that clause.
 class Vivifier {
  public:
   explicit Vivifier(Model* model)
@@ -79,7 +79,7 @@ class Vivifier {
   // conflicts.
   ABSL_MUST_USE_RESULT bool TryToMinimizeClause(SatClause* clause);
 
-  // Returns true if variable is fixed in the current assignment due to
+  // Returns true if the variable is fixed in the current assignment due to
   // non-removable clauses, plus at most one removable clause with size <=
   // max_size.
   bool SubsumptionIsInteresting(BooleanVariable variable, int max_size);

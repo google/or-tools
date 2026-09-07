@@ -186,7 +186,7 @@ void LoadVariables(const CpModelProto& model_proto,
     // Compute the integer variable references used by the model.
     absl::flat_hash_set<int> used_variables;
 
-    const bool some_linerization =
+    const bool some_linearization =
         m->GetOrCreate<SatParameters>()->linearization_level() > 0;
 
     IndexReferences refs;
@@ -197,9 +197,9 @@ void LoadVariables(const CpModelProto& model_proto,
         used_variables.insert(PositiveRef(ref));
       }
 
-      // We always add a linear relaxation for circuit/route except for
+      // We always add a linear relaxation for circuit/routes except for
       // linearization level zero.
-      if (some_linerization) {
+      if (some_linearization) {
         if (ct.constraint_case() == ConstraintProto::kCircuit) {
           for (const int ref : ct.circuit().literals()) {
             used_variables.insert(PositiveRef(ref));
@@ -212,7 +212,7 @@ void LoadVariables(const CpModelProto& model_proto,
       }
     }
 
-    // Add the objectives variables that needs to be referenceable as integer
+    // Add the objective variables that need to be referenceable as integer
     // even if they are only used as Booleans.
     if (model_proto.has_objective()) {
       for (const int obj_var : model_proto.objective().vars()) {
@@ -235,10 +235,10 @@ void LoadVariables(const CpModelProto& model_proto,
   }
   mapping->integers_.resize(num_proto_variables, kNoIntegerVariable);
 
-  // It is important for memory usage to reserve tight vector has we have many
+  // It is important for memory usage to reserve tight vectors as we have many
   // indexed by IntegerVariable. Unfortunately, we create intermediate
   // IntegerVariable while loading large linear constraint, or when we have
-  // disjoint LP component. So this is a best effort at a tight upper bound.
+  // disjoint LP components. So this is a best effort at a tight upper bound.
   int reservation_size = var_to_instantiate_as_integer.size();
   for (const ConstraintProto& ct : model_proto.constraints()) {
     if (ct.constraint_case() != ConstraintProto::kLinear) continue;
@@ -298,7 +298,7 @@ void LoadVariables(const CpModelProto& model_proto,
           mapping->Literal(ct.enforcement_literal(0));
       // TODO(user): Fix the constant variable situation. An optional interval
       // with constant start/end or size cannot share the same constant
-      // variable if it is used in non-optional situation.
+      // variable if it is used in a non-optional situation.
       mapping->intervals_[c] = intervals_repository->CreateInterval(
           mapping->Affine(ct.interval().start()),
           mapping->Affine(ct.interval().end()),
@@ -320,7 +320,7 @@ void LoadBooleanSymmetries(const CpModelProto& model_proto, Model* m) {
   const SymmetryProto& symmetry = model_proto.symmetry();
   if (symmetry.permutations().empty()) return;
 
-  // We currently can only use symmetry that touch a subset of variables.
+  // We currently can only use symmetries that touch a subset of variables.
   const int num_vars = model_proto.variables().size();
   std::vector<bool> can_be_used_in_symmetry(num_vars, true);
 
@@ -375,7 +375,7 @@ void LoadBooleanSymmetries(const CpModelProto& model_proto, Model* m) {
 
   SOLVER_LOG(m->GetOrCreate<SolverLogger>(), "Added ",
              symmetry_handler->num_permutations(),
-             " symmetry to the SAT solver.");
+             " symmetries to the SAT solver.");
 }
 
 // The logic assumes that the linear constraints have been presolved, so that
@@ -395,8 +395,8 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
   // TODO(user): Debug what makes it unsat at this point.
   if (sat_solver->ModelIsUnsat()) return;
 
-  // Detection of literal equivalent to (i_var == value). We collect all the
-  // half-reified constraint lit => equality or lit => inequality for a given
+  // Detection of literals equivalent to (i_var == value). We collect all the
+  // half-reified constraints lit => equality or lit => inequality for a given
   // variable, and we will later sort them to detect equivalence.
   struct EqualityDetectionHelper {
     const ConstraintProto* ct;
@@ -422,8 +422,8 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
   auto* implied_bounds = m->GetOrCreate<ImpliedBounds>();
   auto* detector = m->GetOrCreate<ProductDetector>();
 
-  // Detection of literal equivalent to (i_var >= bound). We also collect
-  // all the half-refied part and we will sort the vector for detection of the
+  // Detection of literals equivalent to (i_var >= bound). We also collect
+  // all the half-reified parts and we will sort the vector for detection of the
   // equivalence.
   struct InequalityDetectionHelper {
     const ConstraintProto* ct;
@@ -500,7 +500,7 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
 
     // Detect enforcement_literal => (var == value or var != value).
     //
-    // Note that for domain with 2 values like [0, 1], we will detect both ==
+    // Note that for domains with 2 values like [0, 1], we will detect both ==
     // 0 and != 1. Similarly, for a domain in [min, max], we should both
     // detect (== min) and (<= min), and both detect (== max) and (>= max).
     {
@@ -576,7 +576,7 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
 
   // Detect Literal <=> X == value and associate them in the IntegerEncoder.
   //
-  // TODO(user): Fully encode variable that are almost fully encoded?
+  // TODO(user): Fully encode variables that are almost fully encoded?
   int num_equalities = 0;
   int num_half_equalities = 0;
   int num_fully_encoded = 0;
@@ -622,15 +622,15 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
     for (const auto equality : encoding) {
       if (mapping->ConstraintIsAlreadyLoaded(equality.ct)) continue;
       if (equality.is_equality) {
-        // If we have just an half-equality, lets not create the <=> literal
-        // but just add two implications. If we don't create hole, we don't
+        // If we have just an half-equality, let's not create the <=> literal
+        // but just add two implications. If we don't create holes, we don't
         // really need the reverse literal. This way it is also possible for
         // the ExtractElementEncoding() to detect later that actually this
-        // literal is <=> to var == value, and this way we create one less
+        // literal is <=> to var == value, and this way we create one fewer
         // Boolean for the same result.
         //
         // TODO(user): It is not 100% clear what is the best encoding and if
-        // we should create equivalent literal or rely on propagator instead
+        // we should create equivalent literals or rely on propagator instead
         // to push bounds.
         AddImplication(equality.literal,
                        encoder->GetOrCreateAssociatedLiteral(
@@ -710,7 +710,7 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
     std::vector<IntegerVariable> encoded_variables;
     std::string encoded_variables_str;
 
-    // Search for variable fully covered by the literals of the exactly_one.
+    // Search for variables fully covered by the literals of the exactly_one.
     for (auto& [var, encoding] : var_to_value_literal_list) {
       if (encoding.size() < exo_proto_literals.size()) {
         VLOG(2) << "X" << var.value() << " has " << encoding.size()
@@ -727,8 +727,8 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
         absl::StrAppend(&encoded_variables_str, " X", var.value());
       }
 
-      // Encode the holes propagation (but we don't create extra literal if
-      // they are not already there). If there are non-encoded values we
+      // Encode the holes propagation (but we don't create extra literals if
+      // they are not already there). If there are non-encoded values, we
       // also add the direct min/max propagation.
       bool need_extra_propagation = false;
       std::sort(encoding.begin(), encoding.end(),
@@ -739,7 +739,7 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
         while (j < encoding.size() && encoding[j].value == value) ++j;
 
         if (j - i == 1) {
-          // Lets not create var >= value or var <= value if they do not
+          // Let's not create var >= value or var <= value if they do not
           // exist.
           if (!encoder->IsFixedOrHasAssociatedLiteral(
                   IntegerLiteral::GreaterOrEqual(var, value)) ||
@@ -758,9 +758,9 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
             continue;
           }
 
-          // If all literal supporting a value are false, then the value
+          // If all literals supporting a value are false, then the value
           // must be false. Note that such a clause is only useful if there
-          // are more than one literal supporting the value, otherwise we
+          // is more than one literal supporting the value, otherwise we
           // should already have detected the equivalence.
           ++num_support_clauses;
           clause.clear();
@@ -770,7 +770,7 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
           clause.push_back(eq_lit.Negated());
 
           // TODO(user): It should be safe otherwise the exactly_one will
-          // have duplicate literal, but I am not sure that if presolve is
+          // have duplicate literals, but I am not sure that if presolve is
           // off we can assume that.
           sat_solver->AddProblemClause(clause);
         }
@@ -856,7 +856,7 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
 
   if (num_element_encoded > 0) {
     SOLVER_LOG(logger,
-               "[Encoding] num_element_encoding: ", num_element_encoded);
+               "[Encoding] num_element_encodings: ", num_element_encoded);
   }
   if (num_support_clauses > 0) {
     SOLVER_LOG(logger, "[Encoding] Added ", num_support_clauses,
@@ -882,7 +882,7 @@ void PropagateEncodingFromEquivalenceRelations(const CpModelProto& model_proto,
 
     const IntegerValue rhs(ct.linear().domain(0));
 
-    // Make sure the coefficient are positive.
+    // Make sure the coefficients are positive.
     IntegerVariable var1 = mapping->Integer(ct.linear().vars(0));
     IntegerVariable var2 = mapping->Integer(ct.linear().vars(1));
     IntegerValue coeff1(ct.linear().coeffs(0));
@@ -896,13 +896,13 @@ void PropagateEncodingFromEquivalenceRelations(const CpModelProto& model_proto,
       coeff2 = -coeff2;
     }
 
-    // TODO(user): This is not supposed to happen, but apparently it did on
+    // TODO(user): This is not supposed to happen, but apparently it did
     // once on routing_GCM_0001_sat.fzn. Investigate and fix.
     if (coeff1 == 0 || coeff2 == 0) continue;
 
     // We first map the >= literals.
     // It is important to do that first, since otherwise mapping a == literal
-    // might creates the underlying >= and <= literals.
+    // might create the underlying >= and <= literals.
     for (int i = 0; i < 2; ++i) {
       for (const auto [value1, literal1] :
            encoder->PartialGreaterThanEncoding(var1)) {
@@ -918,8 +918,8 @@ void PropagateEncodingFromEquivalenceRelations(const CpModelProto& model_proto,
     // Same for the == literals.
     //
     // TODO(user): This is similar to LoadEquivalenceAC() for un-reified
-    // constraints, but when the later is called, more encoding might have taken
-    // place.
+    // constraints, but when the latter is called, more encoding might have
+    // taken place.
     for (int i = 0; i < 2; ++i) {
       const auto copy = encoder->PartialDomainEncoding(var1);
       for (const auto value_literal : copy) {
@@ -965,14 +965,14 @@ void DetectOptionalVariables(const CpModelProto& model_proto, Model* m) {
     }
   }
 
-  // Compute for each variables the intersection of the enforcement literals
+  // Compute for each variable the intersection of the enforcement literals
   // of the constraints in which they appear.
   //
   // TODO(user): This deals with the simplest cases, but we could try to
-  // detect literals that implies all the constraints in which a variable
-  // appear to false. This can be done with a LCA computation in the tree of
-  // Boolean implication (once the presolve remove cycles). Not sure if we can
-  // properly exploit that afterwards though. Do some research!
+  // detect literals that imply all the constraints in which a variable
+  // appears to be false. This can be done with an LCA computation in the tree
+  // of Boolean implications (once the presolve removes cycles). Not sure if we
+  // can properly exploit that afterwards though. Do some research!
   std::vector<std::vector<int>> enforcement_intersection(num_proto_variables);
   absl::btree_set<int> literals_set;
   for (int c = 0; c < model_proto.constraints_size(); ++c) {
@@ -1204,8 +1204,8 @@ void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
     ub_required = true;
   }
 
-  // We sort by absolute value of coefficients. The separate - from +, and then
-  // by variable order, usually variable with the same "meaning" are defined
+  // We sort by absolute value of coefficients. They separate - from +, and then
+  // by variable order, usually variables with the same "meaning" are defined
   // together in a model.
   const int num_terms = vars->size();
   std::vector<std::pair<IntegerVariable, IntegerValue>> terms;
@@ -1335,7 +1335,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
   }
 
   // TODO(user): We should probably reuse memory to avoid allocating for large
-  // problem with many small constraints.
+  // problems with many small constraints.
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   std::vector<IntegerVariable> vars = mapping->Integers(ct.linear().vars());
   std::vector<IntegerValue> coeffs(ct.linear().coeffs().begin(),
@@ -1367,7 +1367,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     auto* root_level_lin2_bounds = m->GetOrCreate<RootLevelLinear2Bounds>();
 
     // To avoid overflow in the code below, we tighten the bounds.
-    // Note that we detect and do not add trivial relation.
+    // Note that we detect and do not add trivial relations.
     int64_t rhs_min = ct.linear().domain(0);
     int64_t rhs_max = ct.linear().domain(ct.linear().domain().size() - 1);
     rhs_min = std::max(rhs_min, min_sum.value());
@@ -1378,7 +1378,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
       root_level_lin2_bounds->Add(expr, rhs_min, rhs_max);
     } else if (vars.size() == 3) {
       // TODO(user): This is a weaker duplication of the logic of
-      // BinaryRelationsMaps, but is is useful for the transitive closure in
+      // BinaryRelationsMaps, but it is useful for the transitive closure in
       // PrecedenceRelations::Build(). Replace this by getting the
       // BinaryRelationsMaps affine bounds at level zero.
       for (int i = 0; i < 3; ++i) {
@@ -1440,7 +1440,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     }
   }
 
-  // Note that the domain/enforcement of the main constraint do not change.
+  // Note that the domain/enforcement of the main constraint does not change.
   // Same for the min/sum and max_sum. The intermediate variables are always
   // equal to the intermediate sum, independently of the enforcement.
   const bool pseudo_boolean = ct.linear().domain_size() == 2 && all_booleans;
@@ -1500,7 +1500,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     if (max_sum < lb) continue;
 
     // Skip trivial constraint. Note that when this happens, all the intervals
-    // before where non-reachable.
+    // before were non-reachable.
     if (min_sum >= lb && max_sum <= ub) return;
 
     if (is_linear1) {
@@ -1519,9 +1519,9 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
       }
     }
 
-    // If there is just two terms and no enforcement, we don't need to create an
-    // extra boolean as the second case can be controlled by the negation of the
-    // first.
+    // If there are just two terms and no enforcement, we don't need to create
+    // an extra boolean as the second case can be controlled by the negation of
+    // the first.
     if (ct.enforcement_literal().empty() && clause.size() == 1 &&
         i + 1 == domain_size) {
       special_case = true;
@@ -1544,7 +1544,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
   const std::vector<Literal> enforcement_literals =
       mapping->Literals(ct.enforcement_literal());
 
-  // Make sure all booleans are tights when enumerating all solutions.
+  // Make sure all booleans are tight when enumerating all solutions.
   if (params.enumerate_all_solutions() && !enforcement_literals.empty()) {
     Literal linear_is_enforced;
     if (enforcement_literals.size() == 1) {

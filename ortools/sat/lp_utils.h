@@ -36,7 +36,7 @@ namespace operations_research {
 namespace sat {
 
 // Returns the highest x such that 2^x <= value.
-// This is meant to be called with non-negative value.
+// This is meant to be called with a non-negative value.
 inline int HighestPowerOfTwoAtOrBelow(double value) {
   CHECK_GE(value, 0.0);
   int exp;
@@ -45,7 +45,7 @@ inline int HighestPowerOfTwoAtOrBelow(double value) {
 }
 
 // Returns the lowest x such that value <= 2^x.
-// This is meant to be called with non-negative value.
+// This is meant to be called with a non-negative value.
 inline int LowestPowerOfTwoAtOrAbove(double value) {
   CHECK_GE(value, 0.0);
   int exp;
@@ -56,7 +56,7 @@ inline int LowestPowerOfTwoAtOrAbove(double value) {
 
 // Returns the smallest factor f such that f * abs(x) is integer modulo the
 // given tolerance relative to f (we use f * tolerance). It is only looking
-// for f smaller than the given limit. Returns zero if no such factor exist
+// for f smaller than the given limit. Returns zero if no such factor exists
 // below the limit.
 //
 // The complexity is a lot less than O(limit), but it is possible that we might
@@ -101,27 +101,27 @@ double FindBestScalingAndComputeErrors(
 // MPConstraintProto, but also directly from spans of CpModelProto variable
 // indices, coefficients and lower and upper bounds.
 struct ConstraintScaler {
-  // Scales an individual constraint and add it to the given CpModelProto.
+  // Scales an individual constraint and adds it to the given CpModelProto.
   //
   // We use the domain of the variables to derive error bounds and scale the
   // constraint as best as we can within "wanted_precision" and
-  // "scaling_target". We usually scale with power of two scaling factor or
+  // "scaling_target". We usually scale with a power of two scaling factor or
   // a rational scaling factor if we detect a good one via FindRationalFactor().
   //
-  // Returns an error if the given constraint contained huge coefficient or
+  // Returns an error if the given constraint contained huge coefficients or
   // infinity. Note that we do not consider it an error if the wanted precision
   // is not reached (best effort). One can check the error statistics field
-  // below and decide when there are too high and report an error separately.
+  // below and decide when they are too high and report an error separately.
   absl::Status ScaleAndAddConstraint(
       absl::Span<const int> vars, absl::Span<const double> coeffs,
       double ct_lower_bound, double ct_upper_bound, absl::string_view name,
       absl::Span<const IntegerVariableProto* const> var_domains,
       ConstraintProto* constraint);
 
-  // Scales an individual MPConstraintProto constraint and add it to the given
+  // Scales an individual MPConstraintProto constraint and adds it to the given
   // CpModelProto.
   //
-  // This is a wrapper around the other ScaleAndAddConstraint() that use the
+  // This is a wrapper around the other ScaleAndAddConstraint() that uses the
   // var_index, coefficient, lower_bound and upper_bound fields of the given
   // mp_constraint.
   absl::Status ScaleAndAddConstraint(const MPConstraintProto& mp_constraint,
@@ -154,11 +154,11 @@ struct ConstraintScaler {
   std::vector<double> upper_bounds;
 };
 
-// Multiplies all continuous variable by the given scaling parameters and change
-// the rest of the model accordingly. The returned vector contains the scaling
-// of each variable (will always be 1.0 for integers) and can be used to recover
-// a solution of the unscaled problem from one of the new scaled problems by
-// dividing the variable values.
+// Multiplies all continuous variables by the given scaling parameters and
+// changes the rest of the model accordingly. The returned vector contains the
+// scaling of each variable (will always be 1.0 for integers) and can be used
+// to recover a solution of the unscaled problem from one of the new scaled
+// problems by dividing the variable values.
 //
 // We usually scale a continuous variable by scaling, but if its domain is going
 // to have larger values than max_bound, then we scale to have the max domain
@@ -171,11 +171,11 @@ struct ConstraintScaler {
 std::vector<double> ScaleContinuousVariables(double scaling, double max_bound,
                                              MPModelProto* mp_model);
 
-// Scales with a power of two so that all continuous variable domain are
+// Scales with a power of two so that all continuous variable domains are
 // as big as possible while staying in [-max_bound, max_bound].
 //
-// We use "wanted_precision" to compute a maximum scaling needed per variables
-// so that if a variable only appear with really low coefficients in all
+// We use "wanted_precision" to compute a maximum scaling needed per variable
+// so that if a variable only appears with really low coefficients in all
 // constraints, we don't need to scale it too much.
 std::vector<double> ScaleContinuousVariablesUpToMaxBound(
     double max_bound, double wanted_precision, MPModelProto* mp_model,
@@ -187,15 +187,15 @@ bool MakeBoundsOfIntegerVariablesInteger(const SatParameters& params,
                                          MPModelProto* mp_model,
                                          SolverLogger* logger);
 
-// If a variable only appear in >= constraint (resp. <=) it is sometime possible
-// to compute a bound such that any value above it will just always satisfy all
-// constraints, so there is no point looking for such high value.
+// If a variable only appears in >= constraints (resp. <=) it is sometimes
+// possible to compute a bound such that any value above it will just always
+// satisfy all constraints, so there is no point looking for such a high value.
 //
 // Doing this before scaling can reduce the domain of variables and help.
 //
 // TODO(user): This should probably be done within a fixed-point loop and
 // mixed with bound propagation. Doing a single pass can still help remove
-// all [0, infinity) variable on models like uccase7.mps for instance.
+// all [0, infinity) variables on models like uccase7.mps for instance.
 void RestrictBoundsWithDualReasoning(const SatParameters& params,
                                      MPModelProto* mp_model,
                                      SolverLogger* logger);
@@ -212,16 +212,16 @@ bool MPModelProtoValidationBeforeConversion(const SatParameters& params,
                                             const MPModelProto& mp_model,
                                             SolverLogger* logger);
 
-// To satisfy our scaling requirements, any terms that is almost zero can just
+// To satisfy our scaling requirements, any term that is almost zero can just
 // be set to zero. We need to do that before operations like
 // DetectImpliedIntegers(), because really low coefficients can cause issues
 // and might lead to less detection.
 void RemoveNearZeroTerms(const SatParameters& params, MPModelProto* mp_model,
                          SolverLogger* logger);
 
-// This will mark implied integer as such. Note that it can also discover
-// variable of the form coeff * Integer + offset, and will change the model
-// so that these are marked as integer. It is why we return both a scaling and
+// This will mark implied integers as such. Note that it can also discover
+// variables of the form coeff * Integer + offset, and will change the model
+// so that these are marked as integers. It is why we return both a scaling and
 // an offset to transform the solution back to its original domain.
 //
 // TODO(user): Actually implement the offset part. This currently only happens
@@ -232,7 +232,7 @@ std::vector<double> DetectImpliedIntegers(MPModelProto* mp_model,
 // Converts a MIP problem to a CpModel. Returns false if the coefficients
 // couldn't be converted to integers with a good enough precision.
 //
-// There is a bunch of caveats and you can find more details on the
+// There are a bunch of caveats and you can find more details on the
 // SatParameters proto documentation for the mip_* parameters.
 bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
                                        const MPModelProto& mp_model,
@@ -240,25 +240,25 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
                                        SolverLogger* logger);
 
 // Converts a CP-SAT model to a MPModelProto one.
-// This only works for pure linear model (otherwise it returns false). This is
+// This only works for pure linear models (otherwise it returns false). This is
 // mainly useful for debugging or using CP-SAT presolve and then trying other
 // MIP solvers.
 //
-// TODO(user): This first version do not even handle basic Boolean constraint.
+// TODO(user): This first version does not even handle basic Boolean constraint.
 // Support more constraints as needed.
 bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
                                        MPModelProto* output);
 
 // Scales a double objective to its integer version and fills it in the proto.
-// The variable listed in the objective must be already defined in the cp_model
-// proto as this uses the variables bounds to compute a proper scaling.
+// The variables listed in the objective must be already defined in the cp_model
+// proto as this uses the variable bounds to compute a proper scaling.
 //
 // This uses params.mip_wanted_tolerance() and
 // params.mip_max_activity_exponent() to compute the scaling. Note however that
-// if the wanted tolerance is not satisfied this still scale with best effort.
+// if the wanted tolerance is not satisfied this still scales with best effort.
 // You can see in the log the tolerance guaranteed by this automatic scaling.
 //
-// This will almost always returns true except for really bad cases like having
+// This will almost always return true except for really bad cases like having
 // infinity in the objective.
 bool ScaleAndSetObjective(const SatParameters& params,
                           absl::Span<const std::pair<int, double>> objective,

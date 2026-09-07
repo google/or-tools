@@ -196,7 +196,7 @@ class SchedulingLocalSearch {
   };
 
   // Estimates the makespan of the solution if we apply the move `move`.
-  // For computing the impact of inside a single machine, uses the estimator
+  // For computing the impact inside a single machine, uses the estimator
   // described in Section 3 of "Balas, E., & Vazacopoulos, A. (1998). Guided
   // local search with shifting bottleneck for job shop scheduling. Management
   // science, 44(2), 262-275".

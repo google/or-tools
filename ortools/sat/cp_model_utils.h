@@ -23,7 +23,6 @@
 #include "absl/flags/declare.h"
 #include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
-#include "absl/status/status.h"
 #include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -69,9 +68,12 @@ inline int EnforcementLiteral(const ConstraintProto& ct) {
 }
 
 struct AffineExpr {
-  int var;  // The variable in the CpModelProto.
-  int64_t coeff;
-  int64_t offset;
+  // The variable in the CpModelProto (-1 if constant).
+  int var = -1;
+  // Coefficient of the variable.
+  int64_t coeff = 0;
+  // Constant offset.
+  int64_t offset = 0;
 
   bool operator==(const AffineExpr& o) const {
     return var == o.var && coeff == o.coeff && offset == o.offset;
@@ -81,9 +83,23 @@ struct AffineExpr {
   friend H AbslHashValue(H h, const AffineExpr& expr) {
     return H::combine(std::move(h), expr.var, expr.coeff, expr.offset);
   }
+
+  std::string ToString() const;
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const AffineExpr& expr) {
+    sink.Append(expr.ToString());
+  }
 };
 
 AffineExpr GetAffineExpr(const LinearExpressionProto& expr);
+
+// Evaluates the minimum and maximum possible values of an affine expression
+// given the variable domains in the CpModelProto.
+int64_t GetAffineExprMin(const AffineExpr& expr,
+                         const CpModelProto& model_proto);
+int64_t GetAffineExprMax(const AffineExpr& expr,
+                         const CpModelProto& model_proto);
 
 // Returns the gcd of the given LinearExpressionProto.
 // Specifying the second argument will take the gcd with it.
@@ -126,10 +142,10 @@ absl::string_view ConstraintCaseName(
     ConstraintProto::ConstraintCase constraint_case);
 
 // Returns the sorted list of variables used by a constraint.
-// Note that this include variable used as a literal.
+// Note that this includes variables used as literals.
 std::vector<int> UsedVariables(const ConstraintProto& ct);
 
-// Returns the sorted list of interval used by a constraint.
+// Returns the sorted list of intervals used by a constraint.
 std::vector<int> UsedIntervals(const ConstraintProto& ct);
 
 // Insert/Remove variables from an interval constraint into a bitset.
@@ -150,7 +166,7 @@ inline void RemoveVariablesFromInterval(const CpModelProto& model_proto,
   for (const int var : ct.interval().end().vars()) output.Clear(var);
 }
 
-// Returns true if a proto.domain() contain the given value.
+// Returns true if a proto.domain() contains the given value.
 // The domain is expected to be encoded as a sorted disjoint interval list.
 template <typename ProtoWithDomain>
 bool DomainInProtoContains(const ProtoWithDomain& proto, int64_t value) {
@@ -194,7 +210,7 @@ Domain ReadDomainFromProto(const ProtoWithDomain& proto) {
 }
 
 // Returns the list of values in a given domain.
-// This will fail if the domain contains more than one millions values.
+// This will fail if the domain contains more than one million values.
 //
 // TODO(user): work directly on the Domain class instead.
 template <typename ProtoWithDomain>
@@ -209,7 +225,7 @@ std::vector<int64_t> AllValuesInDomain(const ProtoWithDomain& proto) {
   return result;
 }
 
-// Scales back a objective value to a double value from the original model.
+// Scales back an objective value to a double value from the original model.
 inline double ScaleObjectiveValue(const CpObjectiveProto& proto,
                                   int64_t value) {
   double result = static_cast<double>(value);
@@ -257,7 +273,7 @@ inline int64_t PresolveInnerObjectiveValue(const CpObjectiveProto& proto,
 
 // Computes the "inner" objective of a response that contains a solution.
 // This is the objective without offset and scaling. Call ScaleObjectiveValue()
-// to get the user facing objective.
+// to get the user-facing objective.
 int64_t ComputeInnerObjective(const CpObjectiveProto& objective,
                               absl::Span<const int64_t> solution);
 
@@ -323,7 +339,7 @@ bool SafeAddLinearExpressionToLinearConstraint(
 // Returns if a constraint is of the form y = lin_max(x, -x).
 bool IsAffineIntAbs(const ConstraintProto& ct);
 
-// Returns true iff a == b * b_scaling. Note that this rely on a hash-map and
+// Returns true iff a == b * b_scaling. Note that this relies on a hash-map and
 // does not care about the order of the terms.
 bool LinearExpressionProtosAreEqual(const LinearExpressionProto& a,
                                     const LinearExpressionProto& b,
@@ -337,7 +353,8 @@ inline bool LinearExpressionProtosAreExactlyEqual(
          a.offset() == b.offset();
 }
 
-// Returns true if there exactly one variable appearing in all the expressions.
+// Returns true if there is exactly one variable appearing in all the
+// expressions.
 template <class ExpressionList>
 bool ExpressionsContainsOnlyOneVar(const ExpressionList& exprs) {
   int unique_var = -1;
@@ -381,7 +398,7 @@ uint64_t FingerprintModel(const CpModelProto& model,
 static_assert(kTargetOsSupportsProtoDescriptor);
 
 // We register a few custom printers to display variables and linear
-// expression on one line. This is especially nice for variables where it is
+// expressions on one line. This is especially nice for variables where it is
 // easy to recover their indices from the line number now.
 //
 // ex:
@@ -432,7 +449,7 @@ bool WriteModelProtoToFile([[maybe_unused]] const M& proto,
 #endif  // ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR
 }
 
-// hashing support.
+// Hashing support.
 //
 // Currently limited to a few inner types of ConstraintProto.
 inline bool operator==(const BoolArgumentProto& lhs,
@@ -490,7 +507,7 @@ bool ConvertCpModelProtoToCnf(const CpModelProto& cp_model, std::string* out);
 //     https://maxsat-evaluations.github.io/2022/rules.html
 bool ConvertCpModelProtoToWCnf(const CpModelProto& cp_model, std::string* out);
 
-// We assume delta >= 0 and we only use the low bit of delta.
+// We assume delta >= 0 and we only use the low bits of delta.
 int CombineSeed(int base_seed, int64_t delta);
 
 // The largest possible value of ConstraintProto::constraint_case.

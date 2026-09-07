@@ -104,7 +104,7 @@ std::vector<VariableEncodingLocalModel> CreateVariableEncodingLocalModels(
   // Now we use the linear1 we found to see which bool_or/amo/exactly_one are
   // linking two encodings of the same variable. But first, since some models
   // have a lot of bool_or, we use a simple heuristic to filter out all that are
-  // not related to the encodings. We use a bitset to keep track of all boolean
+  // not related to the encodings. We use a bitset to keep track of all booleans
   // potentially encoding a domain for any variable and we filter out all
   // bool_or that are not linked to at least two of these booleans.
   Bitset64<int> booleans_potentially_encoding_domain(context->NumVariables());
@@ -334,7 +334,7 @@ bool BasicPresolveAndGetFullyEncodedDomains(
   //   l_n => x in D_n
   //   bool_or(l1, l2, l3, ..., l_n)
   //
-  // where D1, D2, ..., D_n are non overlapping. This works too for exactly_one.
+  // where D1, D2, ..., D_n are non-overlapping. This works too for exactly_one.
   for (const int ct : local_model.constraints_linking_two_encoding_booleans) {
     const ConstraintProto& ct_proto = context->Constraint(ct);
     if (ct_proto.constraint_case() != ConstraintProto::kBoolOr &&
@@ -458,11 +458,11 @@ bool DetectEncodedComplexDomain(
          ct->constraint_case() == ConstraintProto::kExactlyOne ||
          ct->constraint_case() == ConstraintProto::kBoolOr);
 
-  // Handling exaclty_one, at_most_one and bool_or is pretty similar. If we have
+  // Handling exactly_one, at_most_one and bool_or is pretty similar. If we have
   // l1 <=> v \in D1
   // l2 <=> v \in D2
   //
-  // We built
+  // We build
   //   l <=> v \in (D1 U D2).
   //
   // Moreover, if we have exactly_one(l1, l2, ...) or at_most_one(l1, l2, ...),
@@ -513,7 +513,7 @@ bool DetectEncodedComplexDomain(
   const Domain var_domain = context->DomainOf(local_model.var);
 
   // We use as a proxy for the complexity the number of literals that will be
-  // needed to encode it. Note: this assume `domain = domain ∩ var_domain` or
+  // needed to encode it. Note: this assumes `domain = domain ∩ var_domain` or
   // `domain = domain.SimplifyUsingImpliedDomain(var_domain)`.
   const auto encoding_complexity = [&var_domain](const Domain& domain) {
     return 2 * domain.NumIntervals() - (domain.Min() == var_domain.Min()) -
@@ -573,8 +573,8 @@ bool DetectEncodedComplexDomain(
   std::vector<int> indexes_to_merge;
   Domain domain_new_var;
 
-  // Some crazy models have many thousands encodings for a single variable! So
-  // we need to first try to find a suitable set of encodings to merge with a
+  // Some crazy models have many thousands of encodings for a single variable!
+  // So we need to first try to find a suitable set of encodings to merge with a
   // quick heuristic.
   int cur_candidate = 0;
   while (cur_candidate < candidates.size()) {
@@ -591,7 +591,7 @@ bool DetectEncodedComplexDomain(
     const auto& candidate2 = candidates[j];
     if (merge_domains_and_compare_complexity(candidate1, candidate2,
                                              &domain_new_var)) {
-      // We found a pair! Let's try greedly merging more intervals.
+      // We found a pair! Let's try greedily merging more intervals.
       indexes_to_merge = {cur_candidate, j};
       Candidate candidate_new_var;
       candidate_new_var.domain = domain_new_var;
@@ -607,7 +607,7 @@ bool DetectEncodedComplexDomain(
                                                  &domain_new_var_tmp)) {
           if (domain_new_var_tmp.Max() <= candidate_new_var.domain.Max()) {
             // Avoid infinite loop in corner cases by making sure the resulting
-            // domain always increase its max.
+            // domain always increases its max.
             break;
           }
           indexes_to_merge.push_back(it->second);
@@ -666,7 +666,7 @@ bool DetectEncodedComplexDomain(
   // We found a set of literals that each fully encodes an interval and are all
   // only used in the encoding and in the bool_or/exactly_one/at_most_one. We
   // can thus replace the literals by their OR. Since this code is already
-  // rather complex, so we will just simplify a set of literals at a time, and
+  // rather complex, we will just simplify a set of literals at a time, and
   // leave for the presolve fixpoint to handle disconnected regions.
   *changed = true;
 
@@ -761,7 +761,7 @@ bool DetectEncodedComplexDomain(
     }
   }
 
-  // Finally, move the all removable linear1 to the mapping model.
+  // Finally, move all the removable linear1 to the mapping model.
   for (const int lit : literals_to_remove) {
     fully_encoded_domains->erase(lit);
     fully_encoded_domains->erase(NegatedRef(lit));
@@ -821,9 +821,9 @@ bool MaybeTransferLinear1ToAnotherVariable(
 
   const std::vector<int>& to_rewrite = local_model.linear1_constraints;
 
-  // In general constraint with more than two variable can't be removed.
+  // In general a constraint with more than two variables can't be removed.
   // Similarly for linear2 with non-fixed rhs as we would need to check the form
-  // of all implied domain.
+  // of all implied domains.
   const auto& other_ct = context->Constraint(other_c);
   if (context->ConstraintToVars(other_c).size() != 2 ||
       !other_ct.enforcement_literal().empty() ||
@@ -832,7 +832,7 @@ bool MaybeTransferLinear1ToAnotherVariable(
   }
 
   // This will be the rewriting function. It takes the implied domain of var
-  // from linear1, and return a pair {new_var, new_var_implied_domain}.
+  // from linear1, and returns a pair {new_var, new_var_implied_domain}.
   std::function<std::pair<int, Domain>(const Domain& implied)> transfer_f =
       nullptr;
 

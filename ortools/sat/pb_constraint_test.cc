@@ -73,7 +73,7 @@ TEST(ComputeBooleanLinearExpressionCanonicalForm, MakeAllCoefficientPositive) {
 
 TEST(ComputeBooleanLinearExpressionCanonicalForm, MergeSameVariableCase1) {
   Coefficient bound_shift, max_value;
-  // 4x -3(1-x) +4(1-x) -x is the same as to 2x + 1
+  // 4x -3(1-x) +4(1-x) -x is the same as 2x + 1
   auto cst = MakePb({{+1, 4}, {-1, -3}, {-1, 4}, {+1, -1}});
   const auto result = MakePb({{+1, 2}});
   EXPECT_TRUE(ComputeBooleanLinearExpressionCanonicalForm(&cst, &bound_shift,
@@ -85,7 +85,7 @@ TEST(ComputeBooleanLinearExpressionCanonicalForm, MergeSameVariableCase1) {
 
 TEST(ComputeBooleanLinearExpressionCanonicalForm, MergeSameVariableCase2) {
   Coefficient bound_shift, max_value;
-  // 4x -3(1-x) +4(1-x) -5x is the same as to -2x + 1
+  // 4x -3(1-x) +4(1-x) -5x is the same as -2x + 1
   // which is expressed as 2(1-x) -2 +1
   auto cst = MakePb({{+1, 4}, {-1, -3}, {-1, 4}, {+1, -5}});
   const auto result = MakePb({{-1, 2}});
@@ -210,7 +210,7 @@ TEST(UpperBoundedLinearConstraintTest, Conflict) {
                     Coefficient(1), 0, &threshold, &trail, &helper);
   EXPECT_EQ(threshold, 0);
 
-  // Two assignment from other part of the solver.
+  // Two assignments from other parts of the solver.
   trail.EnqueueSearchDecision(Literal(+1));
   trail.EnqueueSearchDecision(Literal(+2));
 
@@ -236,7 +236,7 @@ TEST(UpperBoundedLinearConstraintTest, CompactReason) {
                     Coefficient(7), 0, &threshold, &trail, &helper);
   EXPECT_EQ(threshold, 3);
 
-  // Two assignment from other part of the solver.
+  // Assignments from other parts of the solver.
   trail.EnqueueSearchDecision(Literal(+1));
   trail.EnqueueSearchDecision(Literal(+2));
   trail.EnqueueSearchDecision(Literal(+3));
@@ -250,7 +250,7 @@ TEST(UpperBoundedLinearConstraintTest, CompactReason) {
   EXPECT_EQ(trail.Index(), 4);
   EXPECT_EQ(trail[3], Literal(-4));
 
-  // -2 do not need to be in the reason since {-3, -1} propagates exactly
+  // -2 does not need to be in the reason since {-3, -1} propagates exactly
   // the same way.
   cst.FillReason(trail, source_trail_index, /*enforcement_literals=*/{},
                  Literal(-4).Variable(), &helper.temporary_tuples,
@@ -286,7 +286,7 @@ TEST(UpperBoundedLinearConstraintTest, ConflictAfterEnforcementStatusChange) {
                              EnforcementStatus::IS_ENFORCED,
                              enforcement_literals, &helper));
 
-  // -2 do not need to be in the reason since {-4, -3, -1} propagates exactly
+  // -2 does not need to be in the reason since {-4, -3, -1} propagates exactly
   // the same way.
   EXPECT_THAT(helper.conflict, LiteralsAre(-9, -4, -3, -1));
 }
@@ -321,7 +321,7 @@ TEST(UpperBoundedLinearConstraintTest, PropagateEnforcementAfterStatusChange) {
   EXPECT_EQ(trail.Index(), 6);
   EXPECT_EQ(trail[5], Literal(-8));
 
-  // -2 do not need to be in the reason since {-4, -3, -1} propagates exactly
+  // -2 does not need to be in the reason since {-4, -3, -1} propagates exactly
   // the same way.
   const PbConstraintsEnqueueHelper::ReasonInfo& reason = helper.reasons[5];
   cst.FillReason(trail, reason.source_trail_index, enforcement_literals,
@@ -457,7 +457,7 @@ TEST(PbConstraintsTest, BasicDeletion) {
   while (!csts.PropagationIsDone(trail)) EXPECT_TRUE(csts.Propagate(&trail));
   EXPECT_EQ("-1 -2 -3 -4", trail.DebugString());
 
-  // Let's bactrack.
+  // Let's backtrack.
   trail.Untrail(1);
   csts.Untrail(trail, 1);
 
@@ -592,7 +592,7 @@ TEST(MutableUpperBoundedLinearConstraintTest, LinearAddition) {
   cst_a.AddTerm(Literal(+5), Coefficient(1));
   cst_a.AddToRhs(Coefficient(10));
 
-  // The result of cst_a + cst_b is describes in the comments.
+  // The result of cst_a + cst_b is described in the comments.
   MutableUpperBoundedLinearConstraint cst_b;
   cst_b.ClearAndResize(5);
   cst_b.AddTerm(Literal(+1), Coefficient(3));  // 3x + 3x = 6x
@@ -674,18 +674,18 @@ TEST(MutableUpperBoundedLinearConstraintTest, ReduceSlackToZero) {
   trail.Enqueue(Literal(+5), AssignmentType::kSearchDecision);
   trail.Enqueue(Literal(+4), AssignmentType::kSearchDecision);
 
-  // +1, -2 and +3 gives a slack of 2.
+  // +1, -2 and +3 give a slack of 2.
   EXPECT_EQ(Coefficient(2), cst.ComputeSlackForTrailPrefix(trail, 3));
 
-  // It also propagate -4 and -5, to have the same propagation but with a slack
-  // of zero, we can call ReduceSlackToZero().
+  // It also propagates -4 and -5. To have the same propagation but with a
+  // slack of zero, we can call ReduceSlackToZero().
   cst.ReduceSlackTo(trail, 3, Coefficient(2), Coefficient(0));
 
   // +1 and +3 have the same coeff.
   EXPECT_EQ(cst.GetCoefficient(BooleanVariable(0)), Coefficient(3));
   EXPECT_EQ(cst.GetCoefficient(BooleanVariable(2)), Coefficient(5));
 
-  // the variable 1 disappeared.
+  // The variable 1 disappeared.
   EXPECT_EQ(cst.GetCoefficient(BooleanVariable(1)), Coefficient(0));
 
   // The propagated variable coeff has been reduced by the slack.

@@ -68,9 +68,9 @@ struct Neighborhood {
   bool is_simple = false;
 
   // Specification of the delta between the initial model and the lns fragment.
-  // The delta will contains all variables from the initial model, potentially
+  // The delta will contain all variables from the initial model, potentially
   // with updated domains.
-  // It can contains new variables and new constraints, and solution hinting.
+  // It can contain new variables and new constraints, and solution hinting.
   std::unique_ptr<google::protobuf::Arena> arena;
   CpModelProto& delta;
 
@@ -83,19 +83,19 @@ struct Neighborhood {
   // Overwrites the name of the neighborhood generator in the logs.
   std::string source_info = "";
 
-  // Statistic, only filled when is_simple is true.
+  // Statistics, only filled when is_simple is true.
   int num_relaxed_variables = 0;
   int num_relaxed_variables_in_objective = 0;
 
   // Only filled when is_simple is true. If we solve the fragment to optimality,
   // then we can just fix the variable listed here to that optimal solution.
   //
-  // This can happen if the neighborhood fully cover some part that are
+  // This can happen if the neighborhood fully covers some parts that are
   // completely independent from the rest of the model. Like for instance an
   // unused but not yet fixed variable.
   //
   // WARNING: all such variables should be fixed at once in a lock-like manner,
-  // because they can be multiple optimal solutions on these variables.
+  // because there can be multiple optimal solutions on these variables.
   std::vector<int> variables_that_can_be_fixed_to_local_optimum;
 };
 
@@ -103,7 +103,7 @@ struct Neighborhood {
 // to be used to generate LNS neighborhood. This class can be shared between
 // more than one generator in order to reduce memory usage.
 //
-// Note that its implement the SubSolver interface to be able to Synchronize()
+// Note that it implements the SubSolver interface to be able to Synchronize()
 // the bounds of the base problem with the external world.
 class NeighborhoodGeneratorHelper : public SubSolver {
  public:
@@ -138,11 +138,11 @@ class NeighborhoodGeneratorHelper : public SubSolver {
       const CpSolverResponse& initial_solution,
       absl::Span<const int> relaxed_variables) const;
 
-  // Returns a neighborhood that correspond to the full problem.
+  // Returns a neighborhood that corresponds to the full problem.
   Neighborhood FullNeighborhood() const;
 
   // Returns a neighborhood that will just be skipped.
-  // It usually indicate that the generator failed to generated a neighborhood.
+  // It usually indicates that the generator failed to generate a neighborhood.
   Neighborhood NoNeighborhood() const;
 
   // Adds solution hinting to the neighborhood from the value of the initial
@@ -150,8 +150,8 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   void AddSolutionHinting(const CpSolverResponse& initial_solution,
                           CpModelProto* model_proto) const;
 
-  // Indicates if the variable can be frozen. It happens if the variable is non
-  // constant, and if it is a decision variable, or if
+  // Indicates if the variable can be frozen. It happens if the variable is
+  // non-constant, and if it is a decision variable, or if
   // focus_on_decision_variables is false.
   bool IsActive(int var) const ABSL_SHARED_LOCKS_REQUIRED(graph_mutex_);
 
@@ -213,7 +213,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // Constraints <-> Variables graph.
   // Important:
   //   - The constraint index is NOT related to the one in the cp_model.
-  //   - Only non-constant var are listed in ConstraintToVar().
+  //   - Only non-constant vars are listed in ConstraintToVar().
   const CompactVectorVector<int, int>& ConstraintToVar() const
       ABSL_SHARED_LOCKS_REQUIRED(graph_mutex_) {
     return constraint_to_var_;
@@ -262,22 +262,22 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   std::vector<ActiveRectangle> GetActiveRectangles(
       const CpSolverResponse& initial_solution) const;
 
-  // Returns the set of unique intervals list appearing in a no_overlap,
+  // Returns the set of unique interval lists appearing in a no_overlap,
   // cumulative, or as a dimension of a no_overlap_2d constraint.
   std::vector<std::vector<int>> GetUniqueIntervalSets() const;
 
   // Returns one sub-vector per circuit or per individual vehicle circuit in a
-  // routes constraints. Each circuit is non empty, and does not contain any
-  // self-looping arcs. Path are sorted, starting from the arc with the lowest
+  // routes constraint. Each circuit is non empty, and does not contain any
+  // self-looping arcs. Paths are sorted, starting from the arc with the lowest
   // tail index, and going in sequence up to the last arc before the circuit is
-  // closed. Each entry correspond to the Boolean variable of the arc literal on
-  // the circuit.
+  // closed. Each entry corresponds to the Boolean variable of the arc literal
+  // on the circuit.
   std::vector<std::vector<int>> GetRoutingPathBooleanVariables(
       const CpSolverResponse& initial_solution) const;
 
   // Returns all precedences extracted from the scheduling constraint and the
   // initial solution. The precedences will be sorted by the natural order
-  // the pairs of integers.
+  // of the pairs of integers.
   std::vector<std::pair<int, int>> GetSchedulingPrecedences(
       const absl::flat_hash_set<int>& ignored_intervals,
       const CpSolverResponse& initial_solution, absl::BitGenRef random) const;
@@ -290,15 +290,15 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // VariablesTouchSymmetries() returns true iff any symmetry touches the given
   // variables.
   //
-  // VariablesSplitSymmetries() return true iff any symmetry is either fully
-  // included or fully excluded from the given set of variable. This is here
+  // VariablesSplitSymmetries() returns true iff any symmetry is either fully
+  // included or fully excluded from the given set of variables. This is here
   // because it is used to decide if we can close a full subproblem with LNS.
   // Maybe there is a better place.
   //
-  // TODO(user): right now VariablesSplitSymmetries() do not work because we
+  // TODO(user): right now VariablesSplitSymmetries() does not work because we
   // will still need to disable the symmetry propagation for this component, or
   // use a different system than fixing variables. Using
-  // VariablesTouchSymmetry() do not have this problem but is less powerful.
+  // VariablesTouchSymmetries() does not have this problem but is less powerful.
   bool VariablesTouchSymmetries(absl::Span<const int> variables) const;
   bool VariablesSplitSymmetries(absl::Span<const int> variables) const;
 
@@ -322,11 +322,11 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   void InitializeSymmetryData();
 
   // Precompute stuff that will never change. During the execution, only the
-  // domain of the variable will change, so data that only depends on the
+  // domains of the variables will change, so data that only depends on the
   // constraints need to be computed just once.
   void InitializeHelperData();
 
-  // Recompute most of the class member. This needs to be called when the
+  // Recompute most of the class members. This needs to be called when the
   // domains of the variables are updated.
   void RecomputeHelperData();
 
@@ -412,10 +412,10 @@ class NeighborhoodGeneratorHelper : public SubSolver {
 
   // The representative of each variable (for the equivalence relations in the
   // SharedClausesManager). The representative of a Boolean variable can be a
-  // negative reference. Can be empty is shared_clauses_ is null.
+  // negative reference. Can be empty if shared_clauses_ is null.
   std::vector<int> var_to_representative_ ABSL_GUARDED_BY(graph_mutex_);
 
-  // The list of non constant representative variables appearing in the
+  // The list of non-constant representative variables appearing in the
   // simplified_model_proto_ objective.
   std::vector<int> active_objective_variables_ ABSL_GUARDED_BY(graph_mutex_);
 
@@ -496,7 +496,7 @@ class NeighborhoodGenerator {
   // Details are at
   // https://lilianweng.github.io/lil-log/2018/01/23/the-multi-armed-bandit-problem-and-its-solutions.html.
   // 'total_num_calls' should be the sum of calls across all generators part of
-  // the multi armed bandit problem.
+  // the multi-armed bandit problem.
   // If the generator is called less than 10 times then the method returns
   // infinity as score in order to get more data about the generator
   // performance.
@@ -507,8 +507,8 @@ class NeighborhoodGenerator {
     solve_data_.push_back(data);
   }
 
-  // Process all the recently added solve data and update this generator
-  // score and difficulty. This returns list of the deterministic time of
+  // Process all the recently added solve data and update this generator's
+  // score and difficulty. This returns a list of the deterministic times of
   // each SolveData.
   absl::Span<const double> Synchronize();
 
@@ -521,7 +521,7 @@ class NeighborhoodGenerator {
     return num_calls_;
   }
 
-  // Number of time the neighborhood was fully solved (OPTIMAL/INFEASIBLE).
+  // Number of times the neighborhood was fully solved (OPTIMAL/INFEASIBLE).
   int64_t num_fully_solved_calls() const {
     absl::MutexLock mutex_lock(generator_mutex_);
     return num_fully_solved_calls_;
@@ -534,8 +534,8 @@ class NeighborhoodGenerator {
   }
 
   // Returns the number of the last calls to this generator that didn't improve
-  // the best solution. Note that this count improvement to the best known
-  // solution not the base one used to generate one neighborhood.
+  // the best solution. Note that this counts improvements to the best known
+  // solution, not the base one used to generate one neighborhood.
   int64_t num_consecutive_non_improving_calls() const {
     absl::MutexLock mutex_lock(generator_mutex_);
     return num_consecutive_non_improving_calls_;
@@ -592,7 +592,7 @@ class RelaxRandomVariablesGenerator : public NeighborhoodGenerator {
 
 // Pick a random subset of constraints and relax all the variables of these
 // constraints. Note that to satisfy the difficulty, we might not relax all the
-// variable of the "last" constraint.
+// variables of the "last" constraint.
 //
 // TODO(user): In the presence of connected components, this should just work
 // on one of them.
@@ -607,10 +607,10 @@ class RelaxRandomConstraintsGenerator : public NeighborhoodGenerator {
 
 // Pick a random subset of variables that are constructed by a BFS in the
 // variable <-> constraint graph. That is, pick a random variable, then all the
-// variable connected by some constraint to the first one, and so on. The
-// variable of the last "level" are selected randomly.
+// variables connected by some constraint to the first one, and so on. The
+// variables of the last "level" are selected randomly.
 //
-// Note that in the presence of connected component, this works correctly
+// Note that in the presence of connected components, this works correctly
 // already.
 class VariableGraphNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
@@ -621,7 +621,7 @@ class VariableGraphNeighborhoodGenerator : public NeighborhoodGenerator {
                         SolveData& data, absl::BitGenRef random) final;
 };
 
-// This randomly extend a working set of variable by one variable directly
+// This randomly extends a working set of variables by one variable directly
 // connected to that set.
 class ArcGraphNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
@@ -650,10 +650,11 @@ class SmallComponentNeighborhoodGenerator : public NeighborhoodGenerator {
   static constexpr int kNumVarsConsideredTrivial = 40;
 };
 
-// Pick a random subset of constraint and relax all of their variables. We are a
-// bit smarter than this because after the first constraint is selected, we only
-// select constraints that share at least one variable with the already selected
-// constraints. The variable from the "last" constraint are selected randomly.
+// Pick a random subset of constraints and relax all of their variables. We are
+// a bit smarter than this because after the first constraint is selected, we
+// only select constraints that share at least one variable with the already
+// selected constraints. The variables from the "last" constraint are selected
+// randomly.
 class ConstraintGraphNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   explicit ConstraintGraphNeighborhoodGenerator(
@@ -664,10 +665,10 @@ class ConstraintGraphNeighborhoodGenerator : public NeighborhoodGenerator {
 };
 
 // The idea here is to try to generate a random neighborhood incrementally in
-// such a way that we have at various point a "minimum connection" in term of
-// constraints or variable to the outside world.
+// such a way that we have at various points a "minimum connection" in terms of
+// constraints or variables to the outside world.
 //
-// This is inspired by what would be a good neighborhood if one where to use
+// This is inspired by what would be a good neighborhood if one were to use
 // a tree decomposition of the constraint-variable graph with small treewidth.
 //
 // TODO(user): Doing the full heuristic treewidth decomposition is probably
@@ -698,7 +699,7 @@ class LocalBranchingLpBasedNeighborhoodGenerator
       : NeighborhoodGenerator(name, helper),
         global_time_limit_(global_time_limit),
         shared_(shared) {
-    // Given that we spend time generating a good neighborhood it sounds
+    // Given that we spend time generating a good neighborhood, it sounds
     // reasonable to spend a bit more time solving it too.
     deterministic_limit_ = 0.5;
   }
@@ -722,16 +723,17 @@ Neighborhood GenerateSchedulingNeighborhoodFromRelaxedIntervals(
     const NeighborhoodGeneratorHelper& helper);
 
 // Helper method for the scheduling neighborhood generators. Returns a
-// full neighborhood enriched with the set or precedences passed to the generate
+// full neighborhood enriched with the set of precedences passed to the generate
 // method.
 Neighborhood GenerateSchedulingNeighborhoodFromIntervalPrecedences(
     absl::Span<const std::pair<int, int>> precedences,
     const CpSolverResponse& initial_solution,
     const NeighborhoodGeneratorHelper& helper);
 
-// Only make sense for scheduling problem. This select a random set of interval
-// of the problem according to the difficulty. Then, for each scheduling
-// constraints, it adds strict relation order between the non-relaxed intervals.
+// Only makes sense for scheduling problems. This selects a random set of
+// intervals of the problem according to the difficulty. Then, for each
+// scheduling constraint, it adds strict relation order between the non-relaxed
+// intervals.
 class RandomIntervalSchedulingNeighborhoodGenerator
     : public NeighborhoodGenerator {
  public:
@@ -743,7 +745,7 @@ class RandomIntervalSchedulingNeighborhoodGenerator
                         SolveData& data, absl::BitGenRef random) final;
 };
 
-// Only make sense for scheduling problem. This select a random set of
+// Only makes sense for scheduling problems. This selects a random set of
 // precedences between intervals of the problem according to the difficulty.
 // These precedences are extracted from the scheduling constraints and their
 // configuration in the current solution. Then it adds the kept precedences to
@@ -791,9 +793,9 @@ class SchedulingResourceWindowsNeighborhoodGenerator
   const std::vector<std::vector<int>> intervals_in_constraints_;
 };
 
-// Only make sense for problems with no_overlap_2d constraints. This select a
+// Only makes sense for problems with no_overlap_2d constraints. This selects a
 // random set of rectangles (i.e. a pair of intervals) of the problem according
-// to the difficulty. Then fix all variables in the selected intervals.
+// to the difficulty. Then fixes all variables in the selected intervals.
 class RandomRectanglesPackingNeighborhoodGenerator
     : public NeighborhoodGenerator {
  public:
@@ -805,8 +807,8 @@ class RandomRectanglesPackingNeighborhoodGenerator
                         SolveData& data, absl::BitGenRef random) final;
 };
 
-// Only make sense for problems with no_overlap_2d constraints. This selects one
-// random rectangles and relax the closest rectangles to it.
+// Only makes sense for problems with no_overlap_2d constraints. This selects
+// one random rectangle and relaxes the closest rectangles to it.
 class RectanglesPackingRelaxOneNeighborhoodGenerator
     : public NeighborhoodGenerator {
  public:
@@ -818,10 +820,11 @@ class RectanglesPackingRelaxOneNeighborhoodGenerator
                         SolveData& data, absl::BitGenRef random) final;
 };
 
-// Only make sense for problems with no_overlap_2d constraints. This selects two
-// random rectangles and relax them alongside the closest rectangles to each one
-// of them. The idea is that this will find a better solution when there is a
-// cost function that would be improved by swapping the two rectangles.
+// Only makes sense for problems with no_overlap_2d constraints. This selects
+// two random rectangles and relaxes them alongside the closest rectangles to
+// each one of them. The idea is that this will find a better solution when
+// there is a cost function that would be improved by swapping the two
+// rectangles.
 class RectanglesPackingRelaxTwoNeighborhoodsGenerator
     : public NeighborhoodGenerator {
  public:
@@ -833,9 +836,9 @@ class RectanglesPackingRelaxTwoNeighborhoodsGenerator
                         SolveData& data, absl::BitGenRef random) final;
 };
 
-// Only make sense for problems with no_overlap_2d constraints. This select a
+// Only makes sense for problems with no_overlap_2d constraints. This selects a
 // random set of rectangles (i.e. a pair of intervals) of the problem according
-// to the difficulty. Then add all implied precedences from the current
+// to the difficulty. Then adds all implied precedences from the current
 // positions of the rectangles in this selected subset.
 class RandomPrecedencesPackingNeighborhoodGenerator
     : public NeighborhoodGenerator {
@@ -848,9 +851,9 @@ class RandomPrecedencesPackingNeighborhoodGenerator
                         SolveData& data, absl::BitGenRef random) final;
 };
 
-// Only make sense for problems with no_overlap_2d constraints. This select a
-// slice on one dimension, and fix the variables of all rectangles not strictly
-// included in this slice.
+// Only makes sense for problems with no_overlap_2d constraints. This selects a
+// slice on one dimension, and fixes the variables of all rectangles not
+// strictly included in this slice.
 class SlicePackingNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   explicit SlicePackingNeighborhoodGenerator(
@@ -861,7 +864,7 @@ class SlicePackingNeighborhoodGenerator : public NeighborhoodGenerator {
                         SolveData& data, absl::BitGenRef random) final;
 };
 
-// This routing based LNS generator will relax random arcs in all the paths of
+// This routing-based LNS generator will relax random arcs in all the paths of
 // the circuit or routes constraints.
 class RoutingRandomNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
@@ -873,7 +876,7 @@ class RoutingRandomNeighborhoodGenerator : public NeighborhoodGenerator {
                         SolveData& data, absl::BitGenRef random) final;
 };
 
-// This routing based LNS generator will relax small sequences of arcs randomly
+// This routing-based LNS generator will relax small sequences of arcs randomly
 // chosen in all the paths of the circuit or routes constraints.
 class RoutingPathNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
@@ -885,7 +888,7 @@ class RoutingPathNeighborhoodGenerator : public NeighborhoodGenerator {
                         SolveData& data, absl::BitGenRef random) final;
 };
 
-// This routing based LNS generator aims at relaxing one full path, and make
+// This routing-based LNS generator aims at relaxing one full path, and makes
 // some room on the other paths to absorb the nodes of the relaxed path.
 //
 // In order to do so, it will relax the first and the last arc of each path in
@@ -905,14 +908,14 @@ class RoutingFullPathNeighborhoodGenerator : public NeighborhoodGenerator {
 // Generates a neighborhood by fixing the variables to solutions reported in
 // various repositories. This is inspired from RINS published in "Exploring
 // relaxation induced neighborhoods to improve MIP solutions" 2004 by E. Danna
-// et.
+// et al.
 //
 // If incomplete_solutions is provided, this generates a neighborhood by fixing
 // the variable values to a solution in the SharedIncompleteSolutionManager and
 // ignores the other repositories.
 //
 // Otherwise, if response_manager is not provided, this generates a neighborhood
-// using only the linear/general relaxation values. The domain of the variables
+// using only the linear/general relaxation values. The domains of the variables
 // are reduced to the integer values around their lp solution/relaxation
 // solution values. This was published in "RENS – The Relaxation Enforced
 // Neighborhood" 2009 by Timo Berthold.

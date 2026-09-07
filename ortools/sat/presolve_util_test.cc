@@ -266,7 +266,7 @@ TEST(ActivityBoundHelperTest, PartitionLiteralsIntoAmo) {
   helper.AddAtMostOne({+1, +2, -3});
   helper.AddAtMostOne({-5, -6, -7});
 
-  // The order is not documented, but it actually follow the original order.
+  // The order is not documented, but it actually follows the original order.
   std::vector<int> literals({+1, -6, +2, 10, -5});
   EXPECT_THAT(
       helper.PartitionLiteralsIntoAmo(literals),
@@ -391,7 +391,7 @@ TEST(ClauseWithOneMissingHasherTest, BasicTest) {
 // !X1 =>  X2 + X3 <= 1
 // X1 + X2 <= 1
 //
-// when X1 is true, we can see that X2 + X3 <= 1 still stand, so we don't need
+// when X1 is true, we can see that X2 + X3 <= 1 still stands, so we don't need
 // the enforcement.
 TEST(ActivityBoundHelper, RemoveEnforcementThatCouldBeLifted) {
   ActivityBoundHelper helper;

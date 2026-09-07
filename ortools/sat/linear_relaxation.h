@@ -50,23 +50,23 @@ struct LinearRelaxation {
   Counters counters;
 };
 
-// Looks at all the encoding literal (li <=> var == value_i) that have a
-// view and add a linear relaxation of their relationship with var.
+// Looks at all the encoding literals (li <=> var == value_i) that have a
+// view and adds a linear relaxation of their relationship with var.
 //
 // If the encoding is full, we can just add:
 // - Sum li == 1
 // - var == min_value + Sum li * (value_i - min_value)
 //
-// When the set of such encoding literals do not cover the full domain of var,
-// we do something a bit more involved. Let min_not_encoded/max_not_encoded the
-// min and max value of the domain of var that is NOT part of the encoding.
+// When the set of such encoding literals does not cover the full domain of var,
+// we do something a bit more involved. Let min_not_encoded/max_not_encoded be
+// the min and max value of the domain of var that is NOT part of the encoding.
 // We add:
 //   - Sum li <= 1
 //   - var >= (Sum li * value_i) + (1 - Sum li) * min_not_encoded
 //   - var <= (Sum li * value_i) + (1 - Sum li) * max_not_encoded
 //
-// Note of the special case where min_not_encoded == max_not_encoded that kind
-// of reduce to the full encoding, except with a different "rhs" value.
+// Note the special case where min_not_encoded == max_not_encoded that kind
+// of reduces to the full encoding, except with a different "rhs" value.
 //
 // We also increment the corresponding counter if we added something. We
 // consider the relaxation "tight" if the encoding was full or if
@@ -76,25 +76,25 @@ void AppendRelaxationForEqualityEncoding(IntegerVariable var,
                                          LinearRelaxation* relaxation,
                                          int* num_tight, int* num_loose);
 
-// This is a different relaxation that use a partial set of literal li such that
-// (li <=> var >= xi). In which case we use the following encoding:
+// This is a different relaxation that uses a partial set of literals li such
+// that (li <=> var >= xi). In which case we use the following encoding:
 //   - li >= l_{i+1} for all possible i. Note that the xi need to be sorted.
 //   - var >= min + l0 * (x0 - min) + Sum_{i>0} li * (xi - x_{i-1})
 //   - and same as above for NegationOf(var) for the upper bound.
 //
-// Like for AppendRelaxationForEqualityEncoding() we skip any li that do not
+// Like for AppendRelaxationForEqualityEncoding() we skip any li that does not
 // have an integer view.
 void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
                                                 const Model& model,
                                                 LinearRelaxation* relaxation);
 
-// Deal with non fully reified linear1 constraints.
+// Deal with non-fully reified linear1 constraints.
 void LinearizeComplexLinear1(Model* m, const CpModelProto& model_proto,
                              std::vector<bool>* already_linearized,
                              LinearRelaxation* relaxation);
 
 // Returns a vector of new literals in exactly one relationship.
-// In addition, this create an IntegerView for all these literals and also add
+// In addition, this creates an IntegerView for all these literals and also adds
 // the exactly one to the LinearRelaxation.
 std::vector<Literal> CreateAlternativeLiteralsWithView(
     int num_literals, Model* model, LinearRelaxation* relaxation);
@@ -129,7 +129,7 @@ void AppendExactlyOneRelaxation(const ConstraintProto& ct, Model* model,
 //   Nkl = Sum_i(max((wli - wki)*Li, (wli - wki)*Ui))
 //       = Sum (max corner difference for variable i, target expr k, max expr l)
 // Reference: "Strong mixed-integer programming formulations for trained neural
-// networks" by Ross Anderson et. (https://arxiv.org/pdf/1811.01988.pdf).
+// networks" by Ross Anderson et al. (https://arxiv.org/pdf/1811.01988.pdf).
 // TODO(user): Support linear expression as target.
 void AppendLinMaxRelaxationPart1(
     const ConstraintProto& ct, Model* model, LinearRelaxation* relaxation,
@@ -148,7 +148,7 @@ void AppendMaxAffineRelaxation(const ConstraintProto& ct, Model* model,
 // Appends linear constraints to the relaxation. This also handles the
 // relaxation of linear constraints with enforcement literals.
 // A linear constraint lb <= ax <= ub with enforcement literals {ei} is relaxed
-// as following.
+// as follows.
 // lb <= (Sum Negated(ei) * (lb - implied_lb)) + ax <= inf
 // -inf <= (Sum Negated(ei) * (ub - implied_ub)) + ax <= ub
 // Where implied_lb and implied_ub are trivial lower and upper bounds of the
@@ -171,7 +171,7 @@ void AppendNoOverlapRelaxationAndCutGenerator(const ConstraintProto& ct,
                                               Model* model,
                                               LinearRelaxation* relaxation);
 
-// Adds linearization of cumulative constraints.The second part adds an
+// Adds linearization of cumulative constraints. The second part adds an
 // energetic equation linking the duration of all potential tasks to the actual
 // span * capacity of the cumulative constraint.
 void AppendCumulativeRelaxationAndCutGenerator(const ConstraintProto& ct,
@@ -208,7 +208,7 @@ void AddRoutesCutGenerator(const ConstraintProto& ct, Model* m,
 
 // Scheduling relaxations and cut generators.
 
-// Adds linearization of cumulative constraints.The second part adds an
+// Adds linearization of cumulative constraints. The second part adds an
 // energetic equation linking the duration of all potential tasks to the actual
 // span * capacity of the cumulative constraint. It uses the makespan to compute
 // the span of the constraint if defined.

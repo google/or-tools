@@ -57,7 +57,7 @@ ABSL_FLAG(std::string, cp_model_dump_prefix, "/tmp/",
 
 ABSL_FLAG(bool, cp_model_dump_submodels, false,
           "DEBUG ONLY. When set to true, solve will dump all "
-          "lns or objective_shaving submodels proto in text format to "
+          "lns or objective_shaving submodel protos in text format to "
           "'FLAGS_cp_model_dump_prefix'xxx.pb.txt.");
 
 namespace operations_research {
@@ -996,7 +996,7 @@ class InlineMessagePrinter
   mutable std::string buffer_;
 };
 
-// Register a InlineFieldPrinter() for all the fields containing the message we
+// Register an InlineFieldPrinter() for all the fields containing the message we
 // want to print in one line.
 void RegisterFieldPrinters(
     const google::protobuf::Descriptor* descriptor,
@@ -1063,7 +1063,7 @@ bool ModelHasOnlyClausesAndBooleanVariables(const CpModelProto& cp_model,
 }
 
 bool ModelIsMaxSat(const CpModelProto& cp_model) {
-  // We should only have only bool_or and bool_and, and an integral objective.
+  // We should only have bool_or and bool_and, and an integral objective.
   int num_clauses = 0;
   if (!cp_model.has_objective()) return false;
   const CpObjectiveProto& obj = cp_model.objective();
@@ -1081,7 +1081,7 @@ bool ModelIsPureSat(const CpModelProto& cp_model, int* num_clauses) {
 
 void ConvertSatCpModelProtoToClauses(
     const CpModelProto& cp_model,
-    std::function<void(const std::vector<Literal>&)> add_clause) {
+    const std::function<void(const std::vector<Literal>&)>& add_clause) {
   const int num_vars = cp_model.variables().size();
   for (int v = 0; v < num_vars; ++v) {
     const auto& domain = cp_model.variables(v).domain();
@@ -1162,7 +1162,7 @@ bool ConvertCpModelProtoToWCnf(const CpModelProto& cp_model, std::string* out) {
   // In wcnf, we want 1 b1 0; 1 b2 0;
   //
   // If we minimize (b1 + b2), in CP-SAT, we will have
-  // obj = b1 + b2, scaling factor = 1 (or non set).
+  // obj = b1 + b2, scaling factor = 1 (or not set).
   // In wcnf, we want 1 -b1 0; 1 -b2 0;
   //
   // Note that the objective displayed by a max-sat solve will thus not match
@@ -1216,9 +1216,51 @@ AffineExpr GetAffineExpr(const LinearExpressionProto& expr) {
   if (expr.vars().empty()) {
     return AffineExpr{.var = -1, .coeff = 0, .offset = expr.offset()};
   }
-  const int64_t coeff = expr.coeffs().empty() ? 1 : expr.coeffs(0);
+  CHECK_EQ(expr.coeffs().size(), 1);
   return AffineExpr{
-      .var = expr.vars(0), .coeff = coeff, .offset = expr.offset()};
+      .var = expr.vars(0), .coeff = expr.coeffs(0), .offset = expr.offset()};
+}
+
+std::string AffineExpr::ToString() const {
+  if (var < 0 || coeff == 0) {
+    return absl::StrCat(offset);
+  }
+  const std::string offset_str =
+      offset > 0 ? absl::StrCat(" + ", offset)
+                 : (offset < 0 ? absl::StrCat(" - ", -offset) : "");
+  if (coeff == 1) return absl::StrCat("X", var, offset_str);
+  if (coeff == -1) return absl::StrCat("-X", var, offset_str);
+  return absl::StrCat(coeff, " * X", var, offset_str);
+}
+
+int64_t GetAffineExprMin(const AffineExpr& expr,
+                         const CpModelProto& model_proto) {
+  DCHECK_LE(expr.var, model_proto.variables_size());
+  if (expr.var < 0) return expr.offset;
+  const auto& var_proto = model_proto.variables(expr.var);
+  CHECK(!var_proto.domain().empty());
+  if (expr.coeff >= 0) {
+    const int64_t d_min = var_proto.domain(0);
+    return expr.coeff * d_min + expr.offset;
+  } else {
+    const int64_t d_max = var_proto.domain(var_proto.domain_size() - 1);
+    return expr.coeff * d_max + expr.offset;
+  }
+}
+
+int64_t GetAffineExprMax(const AffineExpr& expr,
+                         const CpModelProto& model_proto) {
+  DCHECK_LE(expr.var, model_proto.variables_size());
+  if (expr.var < 0) return expr.offset;
+  const auto& var_proto = model_proto.variables(expr.var);
+  CHECK(!var_proto.domain().empty());
+  if (expr.coeff >= 0) {
+    const int64_t d_max = var_proto.domain(var_proto.domain_size() - 1);
+    return expr.coeff * d_max + expr.offset;
+  } else {
+    const int64_t d_min = var_proto.domain(0);
+    return expr.coeff * d_min + expr.offset;
+  }
 }
 
 }  // namespace sat

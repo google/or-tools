@@ -71,8 +71,8 @@ EncodingNode EncodingNode::GenericNode(int lb, int ub,
 
   node.literals_.push_back(node.create_lit_(lb));
 
-  // TODO(user): Not ideal, we should probably just provide index in the
-  // original objective for sorting purpose.
+  // TODO(user): Not ideal, we should probably just provide an index in the
+  // original objective for sorting purposes.
   node.for_sorting_ = node.literals_[0].Variable();
   return node;
 }
@@ -119,7 +119,7 @@ void EncodingNode::InitializeAmoNode(absl::Span<EncodingNode* const> nodes,
     for_sorting_ = std::min(for_sorting_, node->for_sorting_);
   }
 
-  // If new_literal is true then one of the lit must be true.
+  // If new_literal is true then one of the lits must be true.
   // Note that this is not needed for correctness though.
   solver->AddProblemClause(clause);
 }
@@ -136,7 +136,7 @@ void EncodingNode::InitializeLazyNode(EncodingNode* a, EncodingNode* b,
   lb_ = a->lb_ + b->lb_;
   depth_ = 1 + std::max(a->depth_, b->depth_);
 
-  // Merging the node of the same depth in order seems to help a bit.
+  // Merging the nodes of the same depth in order seems to help a bit.
   for_sorting_ = std::min(a->for_sorting_, b->for_sorting_);
 }
 
@@ -151,7 +151,7 @@ void EncodingNode::InitializeLazyCoreNode(Coefficient weight, EncodingNode* a,
   lb_ = weight_lb_ + 1;
   depth_ = 1 + std::max(a->depth_, b->depth_);
 
-  // Merging the node of the same depth in order seems to help a bit.
+  // Merging the nodes of the same depth in order seems to help a bit.
   for_sorting_ = std::min(a->for_sorting_, b->for_sorting_);
 }
 
@@ -316,7 +316,7 @@ void IncreaseNodeSize(EncodingNode* node, SatSolver* solver) {
     const int target = n->current_ub() - 1;
 
     // Add a literal to a if needed.
-    // That is, now that the node n can go up to it new current_ub, if we need
+    // That is, now that the node n can go up to its new current_ub, if we need
     // to increase the current_ub of a.
     if (a->current_ub() != a->ub()) {
       CHECK_GE(a->current_ub() - 1 + b->lb(), target - 1);
@@ -372,7 +372,7 @@ void IncreaseNodeSize(EncodingNode* node, SatSolver* solver) {
       }
     }
 
-    // case ia == a->ub; a->GreaterThan(ia) always false.
+    // Case ia == a->ub(); a->GreaterThan(ia) always false.
     {
       const int ib = target - a->ub();
       if (complete_encoding && ib >= b->lb() && ib < b->current_ub()) {
@@ -509,8 +509,8 @@ void ReduceNodes(Coefficient upper_bound, Coefficient* lower_bound,
     *lower_bound += n->Reduce(*solver);
   }
 
-  // Fix the nodes right-most variables that are above the gap.
-  // If we closed the problem, we abort and return and empty vector.
+  // Fix the nodes' right-most variables that are above the gap.
+  // If we closed the problem, we abort and return an empty vector.
   if (upper_bound != kCoefficientMax) {
     const Coefficient gap = upper_bound - *lower_bound;
     if (gap < 0) {
@@ -625,8 +625,8 @@ bool ObjectiveEncoder::ProcessCore(absl::Span<const Literal> core,
 
       to_merge.push_back(node);
 
-      // Special case if the weight > min_weight. we keep it, but reduce its
-      // cost. This is the same "trick" as in WPM1 used to deal with weight.
+      // Special case if the weight > min_weight: we keep it, but reduce its
+      // cost. This is the same "trick" as in WPM1 used to deal with weights.
       // We basically split a clause with a larger weight in two identical
       // clauses, one with weight min_weight that will be merged and one with
       // the remaining weight.
@@ -642,12 +642,12 @@ bool ObjectiveEncoder::ProcessCore(absl::Span<const Literal> core,
     nodes_ = new_nodes;
   }
 
-  // Are the literal in amo relationship?
+  // Are the literals in an AMO relationship?
   // - If min_weight is large enough, we can infer that.
   // - If the size is small we can infer this via propagation.
   bool in_exactly_one = (2 * min_weight) > gap;
 
-  // Amongst the node to merge, if many are boolean nodes in an "at most one"
+  // Amongst the nodes to merge, if many are boolean nodes in an "at most one"
   // relationship, it is super advantageous to exploit it during merging as we
   // can regroup all nodes from an at most one in a single new node with a depth
   // of 1.
@@ -666,8 +666,8 @@ bool ObjectiveEncoder::ProcessCore(absl::Span<const Literal> core,
       bool_nodes.push_back(node.literal(0));
     }
 
-    // For "small" core, with O(n) full propagation, we can discover possible
-    // at most ones. This is a bit costly but can significantly reduce the
+    // For a "small" core, with O(n) full propagation, we can discover possible
+    // at-most-ones. This is a bit costly but can significantly reduce the
     // number of Booleans needed and has a good positive impact.
     std::vector<int> buffer;
     std::vector<absl::Span<const Literal>> decomposition;
@@ -691,7 +691,7 @@ bool ObjectiveEncoder::ProcessCore(absl::Span<const Literal> core,
             graph[j].push_back(i);
           }
 
-          // TODO(user): If assignment.LiteralIsTrue(bool_nodes[j]) We can
+          // TODO(user): If assignment.LiteralIsTrue(bool_nodes[j]), we can
           // minimize the core here by removing bool_nodes[i] from it. Note
           // however that since we already minimized the core, this is
           // unlikely to happen.
@@ -718,7 +718,7 @@ bool ObjectiveEncoder::ProcessCore(absl::Span<const Literal> core,
       decomposition = implications_->HeuristicAmoPartition(&bool_nodes);
     }
 
-    // Same case as above, all the nodes in the core are in a exactly_one.
+    // Same case as above, all the nodes in the core are in an exactly_one.
     if (decomposition.size() == 1 && decomposition[0].size() == core.size()) {
       in_exactly_one = true;
     }
@@ -758,9 +758,10 @@ bool ObjectiveEncoder::ProcessCore(absl::Span<const Literal> core,
     }
   }
 
-  // If all the literal of the core are in at_most_one, the core is actually an
-  // exactly_one. We just subtracted the min_cost above. We just have to enqueue
-  // a constant node with min_weight for the rest of the code to work.
+  // If all the literals of the core are in an at_most_one, the core is
+  // actually an exactly_one. We just subtracted the min_cost above. We just
+  // have to enqueue a constant node with min_weight for the rest of the code to
+  // work.
   if (in_exactly_one) {
     // Tricky: We need to enforce an upper bound of 1 on the nodes.
     for (EncodingNode* node : to_merge) {
@@ -771,8 +772,8 @@ bool ObjectiveEncoder::ProcessCore(absl::Span<const Literal> core,
     repository_.push_back(EncodingNode::ConstantNode(min_weight));
     nodes_.push_back(&repository_.back());
 
-    // The negation of the literal in the core are in exactly one.
-    // TODO(user): If we infered the exactly one from the binary implication
+    // The negations of the literals in the core are in exactly one.
+    // TODO(user): If we inferred the exactly one from the binary implication
     // graph, there is no need to add the amo since it is already there.
     std::vector<LiteralWithCoeff> cst;
     cst.reserve(core.size());

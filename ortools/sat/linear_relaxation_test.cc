@@ -17,7 +17,6 @@
 #include <string>
 #include <vector>
 
-#include "absl/base/attributes.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/parse_test_proto.h"
@@ -64,7 +63,7 @@ TEST(AppendRelaxationForEqualityEncodingTest, DomainOfSize2) {
                                       &num_loose);
   EXPECT_EQ(num_tight, 1);
 
-  // In this case, because there is just two value, we should get a literal
+  // In this case, because there are just two values, we should get a literal
   // and its negation, so just one constraint (the first one is empty).
   EXPECT_EQ(relaxation.linear_constraints.size(), 2);
   EXPECT_EQ(relaxation.linear_constraints[0].num_terms, 0);
@@ -79,7 +78,7 @@ std::string AtMostOneAsString(absl::Span<const Literal> at_most_one,
                               Model* model) {
   LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(1));
   for (const Literal literal : at_most_one) {
-    const bool unused ABSL_ATTRIBUTE_UNUSED =
+    const bool unused [[maybe_unused]] =
         lc.AddLiteralTerm(literal, IntegerValue(1));
   }
   return lc.Build().DebugString();
@@ -157,7 +156,7 @@ TEST(AppendPartialGreaterThanEncodingRelaxationTest, FullEncoding) {
       model.Add(NewIntegerVariable(Domain::FromValues({1, 5, 8, 9})));
   encoder->FullyEncodeVariable(var);
 
-  // Make sure all >= literal have a view.
+  // Make sure all >= literals have a view.
   for (const auto value_literal : encoder->PartialGreaterThanEncoding(var)) {
     model.Add(NewIntegerVariableFromLiteral(value_literal.literal));
   }
@@ -193,7 +192,7 @@ TEST(AppendPartialGreaterThanEncodingRelaxationTest, PartialEncoding) {
         IntegerLiteral::GreaterOrEqual(var, IntegerValue(value)));
   }
 
-  // Make sure all >= literal have a view.
+  // Make sure all >= literals have a view.
   for (const auto value_literal : encoder->PartialGreaterThanEncoding(var)) {
     model.Add(NewIntegerVariableFromLiteral(value_literal.literal));
   }

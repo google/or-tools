@@ -165,7 +165,7 @@ TYPED_TEST(GeneratorTest, NoReduction) {
 
   EXPECT_TRUE(neighborhood.is_generated);
 
-  // In these cases we might stay inside a connected components.
+  // In these cases we might stay inside a connected component.
   if constexpr (std::is_same_v<TypeParam, VariableGraphNeighborhoodGenerator> ||
                 std::is_same_v<TypeParam,
                                ConstraintGraphNeighborhoodGenerator>) {
@@ -381,7 +381,7 @@ TEST(RelaxationInducedNeighborhoodGeneratorTest, ValueOutOfDomain) {
 
   EXPECT_TRUE(generator.ReadyToGenerate());
 
-  // A value outside the domain cause the neighborhood to not be generated.
+  // A value outside the domain causes the neighborhood to not be generated.
   // Note that none of the arguments are currently used by this generator.
   random_engine_t random;
   NeighborhoodGenerator::SolveData data;
@@ -556,7 +556,7 @@ TEST(NeighborhoodGeneratorHelperTest, BoundAreUpdatedOnSynchronize) {
   NeighborhoodGeneratorHelper helper(&proto, &params, shared_response_manager,
                                      &time_limit, &shared_bounds_manager);
 
-  // Initial bound.
+  // Initial bounds.
   EXPECT_EQ(ReadDomainFromProto(helper.FullNeighborhood().delta.variables(0)),
             Domain(0, 10));
 
@@ -574,7 +574,7 @@ TEST(NeighborhoodGeneratorHelperTest, BoundAreUpdatedOnSynchronize) {
             Domain(0, 10));
   helper.Synchronize();
 
-  // New bound are properly there.
+  // New bounds are properly there.
   {
     absl::ReaderMutexLock lock(helper.graph_mutex_);
     EXPECT_FALSE(helper.IsActive(0));

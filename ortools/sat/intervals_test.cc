@@ -38,7 +38,7 @@ TEST(IntervalsRepositoryTest, Precedences) {
   const IntervalVariable a = repo->CreateInterval(start1, end1, size1);
   const IntervalVariable b = repo->CreateInterval(start2, end2, size2);
 
-  // Ok to call many times.
+  // OK to call many times.
   repo->CreateDisjunctivePrecedenceLiteral(a, b);
   repo->CreateDisjunctivePrecedenceLiteral(a, b);
 

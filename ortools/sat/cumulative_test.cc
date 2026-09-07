@@ -67,12 +67,12 @@ struct RcpspInstance {
 
 // Generates a random RcpspInstance with num_tasks tasks such that:
 // - the duration of a task is a fixed random number in
-//   [min_duration, max_durations];
+//   [min_duration, max_duration];
 // - tasks can be optional if enable_optional is true;
 // - the demand of a task is a fixed random number in [min_demand, max_demand];
 // - the resource capacity is a fixed random number in
 //   [max_demand - 1, max_capacity]. This allows the capacity to be lower than
-//   the highest demand to generate trivially unfeasible instances.
+//   the highest demand to generate trivially infeasible instances.
 // - the energy (i.e. surface) of the resource is 120% of the total energy of
 //   the tasks. This allows the generation of infeasible instances.
 RcpspInstance GenerateRandomInstance(int num_tasks, int min_duration,
@@ -283,7 +283,7 @@ TEST(CumulativeTest, CapacityAndDemand) {
   ASSERT_EQ(integer_trail->UpperBound(demand), 10);
 }
 
-// Checks that the cumulative constraint adpats the demand of the task to
+// Checks that the cumulative constraint adapts the demand of the task to
 // prevent the capacity overload.
 TEST(CumulativeTest, CapacityAndZeroDemand) {
   Model model;
@@ -352,8 +352,8 @@ TEST(CumulativeTest, RegressionTest2) {
 }
 
 // ========================================================================
-// All the test belows check that the cumulative propagator finds the exact
-// same number of solutions than its time point decomposition.
+// All the tests below check that the cumulative propagator finds the exact
+// same number of solutions as its time point decomposition.
 // ========================================================================
 
 // Param1: Number of tasks.

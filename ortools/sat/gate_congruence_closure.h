@@ -52,15 +52,15 @@ namespace sat {
 // fixed point (i.e. closure) by detecting equivalences, then updating the RHS
 // of the relations which might lead to more equivalences and so on.
 //
-// This mostly follows the paper "Clausal Congruence closure", Armin Biere,
+// This mostly follows the paper "Clausal Congruence Closure", Armin Biere,
 // Katalin Fazekas, Mathias Fleury, Nils Froleyks, 2024.
 //
 // TODO(user): For now we only deal with f() being an and_gate with an arbitrary
 // number of inputs, or equivalently target = product/and(literals). The next
 // most important one is xor().
 //
-// TODO(user): What is the relation with symmetry ? It feel like all the
-// equivalences found here should be in the same symmetry orbit ?
+// TODO(user): What is the relation with symmetry? It feels like all the
+// equivalences found here should be in the same symmetry orbit?
 DEFINE_STRONG_INDEX_TYPE(GateId);
 class GateCongruenceClosure {
  public:
@@ -124,7 +124,7 @@ class GateCongruenceClosure {
   // Display one line with all the gate info.
   std::string GateDebugString(GateId id) const;
 
-  // As we presolve the model, some clause can be shrinked and we can loose
+  // As we presolve the model, some clauses can be shrunk and we can lose
   // some structural information. This seeds the small truth-table detection
   // with information we already had.
   void ProcessPreviousTruthTables(PresolveTimer& timer);
@@ -141,7 +141,7 @@ class GateCongruenceClosure {
   //
   // This is because such an and_gate is encoded as:
   // - for all i, target_literal => literal_i  (direct binary implication)
-  // - all literal at true => target_literal, this is a clause:
+  // - all literals at true => target_literal, this is a clause:
   //   (not(literal[i]) for all i, target_literal).
   void ExtractAndGatesAndFillShortTruthTables(PresolveTimer& timer);
 
@@ -150,7 +150,7 @@ class GateCongruenceClosure {
   void ExtractShortGates(PresolveTimer& timer);
 
   // Detects gates encoded in the given truth table, and add them to the set
-  // of gates. Returns the number of gate detected.
+  // of gates. Returns the number of gates detected.
   int ProcessTruthTable(
       absl::Span<const BooleanVariable> inputs, SmallBitset truth_table,
       absl::Span<const TruthTableId> ids_for_proof,
@@ -166,7 +166,7 @@ class GateCongruenceClosure {
   // Returns its number of inputs.
   int CanonicalizeShortGate(GateId id);
 
-  // Infer a "circuit" from the binary gate, and using sampling see if we
+  // Infer a "circuit" from the binary gates, and using sampling see if we
   // can detect some extra equivalences.
   //
   // TODO(user): We currently do not have LRAT support for this.
@@ -195,19 +195,19 @@ class GateCongruenceClosure {
   SparseBitset<LiteralIndex> seen_;
   SparseBitset<LiteralIndex> next_seen_;
 
-  // A Boolean gates correspond to target = f(inputs).
+  // A Boolean gate corresponds to target = f(inputs).
   //
   // Note that the inputs are canonicalized. For and_gates, they are sorted,
   // since the gate function does not depend on the order. The type of an
-  // and_gates is kAndGateType.
+  // and_gate is kAndGateType.
   //
-  // Otherwise, we support generic 2 and 3 inputs gates where the type is the
+  // Otherwise, we support generic 2- and 3-input gates where the type is the
   // truth table. i.e. target = type[sum value_of_inputs[i] * 2^i]. For such
-  // gate, the target and inputs will always be canonicalized to positive and
-  // sorted literal. We just update the truth table accordingly.
+  // gates, the target and inputs will always be canonicalized to positive and
+  // sorted literals. We just update the truth table accordingly.
   //
   // If lrat_proof_handler_ != nullptr, we also store all the SatClause* needed
-  // to infer such gate from the clause database. The case of kAndGateType is
+  // to infer such gates from the clause database. The case of kAndGateType is
   // special, because we don't have SatClause for the binary clauses used to
   // infer it. We will thus only store the base clause used, if we have a =
   // and(x,y,...) we only store the clause "x and y and ... => a".
@@ -221,8 +221,9 @@ class GateCongruenceClosure {
   // a TruthTableId indirection.
   //
   // TODO(user): it feels like we could benefit from just storing this all
-  // the time in the binary_implication graph. This allow to never add duplicate
-  // and detect easy case of fixing/equivalences right away. To investigate.
+  // the time in the binary_implication graph. This allows never adding
+  // duplicates and detecting easy cases of fixing/equivalences right away. To
+  // investigate.
   absl::flat_hash_map<std::array<BooleanVariable, 2>, SmallBitset> ids2_;
 
   // Map (Xi) (sorted) to a bitmask corresponding to the allowed values.
@@ -230,7 +231,7 @@ class GateCongruenceClosure {
   // pointing in the vectors below.
   //
   // TruthTableIds are assigned in insertion order. We copy the map key in
-  // truth_tables_inputs_, this is a bit wasted but simplify the code.
+  // truth_tables_inputs_, this is a bit wasteful but simplifies the code.
   absl::flat_hash_map<std::array<BooleanVariable, 3>, TruthTableId> ids3_;
   absl::flat_hash_map<std::array<BooleanVariable, 4>, TruthTableId> ids4_;
   absl::flat_hash_map<std::array<BooleanVariable, 5>, TruthTableId> ids5_;

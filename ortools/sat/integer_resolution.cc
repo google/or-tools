@@ -152,7 +152,7 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
   // reason and have more slack, because we don't need to explain the stronger
   // possible push that was done.
   //
-  // TODO(user): Skip for the first AddToQueue() that correspond to a conflict.
+  // TODO(user): Skip for the first AddToQueue() that corresponds to a conflict.
   // Or handle properly, for now, we never have !vars.empty() for conflicts.
   IntegerValue slack = reason.slack;
   if (!reason.vars.empty() && reason.propagated_i_lit.IsValid()) {
@@ -167,7 +167,7 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
       CHECK_NE(bound, std::nullopt);
       needed_bound = *bound;
     } else {
-      // Currently the only other case where we have a linear reason is for
+      // Currently, the only other case where we have a linear reason is for
       // associated literals, in which case, we just need to explain the
       // associated bound, which might be lower than what is currently
       // explained.
@@ -195,7 +195,7 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
 
     // TODO(user): It might be better to pass to the Explain() function the
     // thing we need to be explaining, and let it handle the modification of
-    // the slack. So we can also relax non-linear reason.
+    // the slack. So we can also relax non-linear reasons.
     if (needed_bound < propagated_i_lit.bound) {
       IntegerValue coeff = 0;
       for (int i = 0; i < reason.vars.size(); ++i) {
@@ -244,7 +244,7 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
   // Deal with linear reason.
   if (reason.vars.empty()) return;
 
-  // List of variable that can be relaxed using this linear reason "slak".
+  // List of variables that can be relaxed using this linear reason "slack".
   struct Relax {
     IntegerVariable var;
     IntegerValue coeff;
@@ -274,7 +274,7 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
                   .bound;
     if (data.settled_bound >= required_bound) {
       // We can increase the slack since we already have a high bound in the
-      // reason. In all case, no need to add to the queue.
+      // reason. In all cases, no need to add to the queue.
       if (data.settled_bound > required_bound) {
         ++num_slack_increase_;
         slack = CapAddI(slack, CapProdI(reason.coeffs[i],
@@ -285,8 +285,8 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
     CHECK_GE(required_bound, data.bound);
     AddToQueueIfNotThere(data);
 
-    // In all case, we need the bound at the time.
-    // in some rare case, we have reason.index_at_propagation <
+    // In all cases, we need the bound at the time.
+    // In some rare cases, we have reason.index_at_propagation <
     // data.int_index_in_queue So we might use a stronger integer literal than
     // necessary. Investigate further.
     if (data.int_index_in_queue > reason.index_at_propagation) {
@@ -391,7 +391,7 @@ void IntegerConflictResolution::MarkAllAssociatedLiterals(
       // The std::max() is for the corner case of more than one
       // integer literal on the same variable.
       //
-      // TODO(user): we should probably make sure this never happen
+      // TODO(user): we should probably make sure this never happens
       // instead.
       IntegerVariableData& data = MutableIntData(i_lit.var);
       data.settled_bound = std::max(data.settled_bound, i_lit.bound);
@@ -478,7 +478,7 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
   touched_int_data_.ClearAndResize(IntegerVariable(num_i_vars));
   int_data_.resize(num_i_vars);
 
-  // Note the we need some slack because we enqueue a new decision if we see a
+  // Note that we need some slack because we enqueue a new decision if we see a
   // boolean already assigned to true.
   constexpr int kSizeSlack = 100;
   tmp_bool_index_seen_.ClearAndResize(trail_->Index() + kSizeSlack);
@@ -494,7 +494,7 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
   std::make_heap(tmp_queue_.begin(), tmp_queue_.end());
 
   // We will expand Booleans as long as we don't have first UIP.
-  // Then we will expand all integer_literal until we have only Boolean left.
+  // Then we will expand all integer_literals until we have only Boolean left.
   int64_t work_done = 0;
   bool uip_found = false;
   while (!tmp_queue_.empty()) {
@@ -564,11 +564,11 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
 
       // Optional. Try to see if we have a good enough associated
       // integer_literal. This can be disabled, but it should lead to better
-      // reason hopefully.
+      // reasons hopefully.
       if (is_only_one_left_at_top_level || uip_found) {
         // We don't want trivial literal here.
         //
-        // TODO(user): Deal with literal falling in holes? the situation is
+        // TODO(user): Deal with literals falling in holes? The situation is
         // not clear.
         const IntegerLiteral needed_lit =
             IntegerLiteral::GreaterOrEqual(i_lit.var, bound_to_explain);
@@ -592,7 +592,7 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
           if (test_index != kNoLiteralIndex && test_bound == bound_to_explain) {
             LOG(FATAL) << top_index.level << " BUG " << i_lit.var
                        << " >= " << bound_to_explain
-                       << " Not AtOrAfter, but at or before return"
+                       << " Not AtOrAfter, but at or before returns "
                        << Literal(test_index) << " var >=" << test_bound
                        << " | " << integer_trail_->VarDebugString(i_lit.var);
           }
@@ -609,8 +609,8 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
             CHECK_LE(associated_bound, test_bound);
           }
 
-          // Lets do more sanity_check before just using this literal.
-          // Instead. Since we output it right away. we should be good.
+          // Let's do more sanity checks before just using this literal.
+          // Instead, since we output it right away, we should be good.
           const auto& info = trail_->Info(lit.Variable());
           if (trail_->Assignment().LiteralIsTrue(lit) &&
               info.level == top_index.level) {
@@ -633,22 +633,23 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
         } else if (params_.create_1uip_boolean_during_icr() &&
                    top_index.level > sat_solver_->AssumptionLevel() &&
                    is_only_one_left_at_top_level && !uip_found) {
-          // Lets create a new associated literal and use it as the UIP.
+          // Let's create a new associated literal and use it as the UIP.
           // Note that we should always create a new fresh literal here.
           //
           // TODO(user): Note that we disabled this with assumptions otherwise
-          // we might have a core with new literal !
+          // we might have a core with new literal!
           const int num_bools = trail_->NumVariables();
           const Literal new_lit =
               integer_encoder_->GetOrCreateAssociatedLiteral(
                   IntegerLiteral::GreaterOrEqual(i_lit.var, bound_to_explain));
           CHECK_EQ(new_lit.Variable().value(), num_bools);
 
-          // TODO(user): This can happen is some rare corner case, we just skip.
+          // TODO(user): This can happen in some rare corner cases, we just
+          // skip.
           if (!trail_->Assignment().LiteralIsFalse(new_lit)) {
-            // The literal can be true if we have other encoding literal at true
-            // that implies it. However, if we only have an integer literal that
-            // implies it, the "integer_encoder_" do not have access to
+            // The literal can be true if we have other encoding literals at
+            // true that implies it. However, if we only have an integer literal
+            // that implies it, the "integer_encoder_" does not have access to
             // integer_trail_ (it should probably be split) and it cannot set it
             // to true.
             if (!trail_->Assignment().LiteralIsAssigned(new_lit)) {
@@ -680,7 +681,7 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
     if (top_index.IsBoolean()) {
       const Literal literal = (*trail_)[top_index.bool_index];
 
-      // Do we have a single GlobalTrailIndex at the top assignment level ?
+      // Do we have a single GlobalTrailIndex at the top assignment level?
       if (top_index.level <= sat_solver_->AssumptionLevel()) {
         // This will just output all Booleans from the assumption level.
         uip_found = true;
@@ -706,17 +707,17 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
             MarkAllAssociatedLiterals(
                 implications_->GetAllImpliedLiterals(literal));
           } else {
-            // This assumes no-one else call
+            // This assumes no one else calls
             // GetAllImpliedLiterals()/GetNewlyImpliedLiterals() while we run
             // this algorithm, and that the info stays valid as we create new
-            // literal.
+            // literals.
             if (implications_->LiteralIsImplied(literal)) {
               ++num_binary_minimization_;
               continue;
             }
 
             // We are about to add this literal to the conflict, mark all the
-            // literal implied using binary implication only as no need to be
+            // literals implied using binary implication only as no need to be
             // expanded further. Note that we don't need to expand already
             // expanded literals in the binary implication graph.
             MarkAllAssociatedLiterals(
@@ -724,7 +725,7 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
           }
         } else {
           // This literal is staying in the final conflict. If it has
-          // associated integer_literal, then these integer literals will be
+          // associated integer literals, then these integer literals will be
           // true for all the subsequent resolution. We can exploit that.
           MarkAllAssociatedLiterals({literal});
         }

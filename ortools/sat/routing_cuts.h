@@ -51,7 +51,7 @@ namespace sat {
 // -- such as time or load, and at most one relation per arc and dimension).
 //
 // This returns an empty vector and num_dimensions == 0 if nothing is detected.
-// Otherwise it returns one expression per node and dimensions.
+// Otherwise it returns one expression per node and dimension.
 struct RoutingCumulExpressions {
   const AffineExpression& GetNodeExpression(int node, int dimension) const {
     return flat_node_dim_expressions[node * num_dimensions + dimension];
@@ -173,7 +173,7 @@ class RouteRelationsHelper {
     return !flat_shortest_path_lbs_.empty();
   }
 
-  // If any of the bound is at the maximum, then there is no path between tail
+  // If any of the bounds is at the maximum, then there is no path between tail
   // and head.
   bool PathExists(int tail, int head) const {
     if (flat_shortest_path_lbs_.empty()) return true;
@@ -252,8 +252,8 @@ class RouteRelationsHelper {
   std::vector<HeadMinusTailBounds> flat_arc_dim_relations_;
 
   // flat_shortest_path_lbs_[dim * num_nodes^2 + i * num_nodes + j] is a lower
-  // bounds on node_expression[dim][j] - node_expression[dim][i] whatever the
-  // path used to join node i to node j (not using the root 0). It only make
+  // bound on node_expression[dim][j] - node_expression[dim][i] whatever the
+  // path used to join node i to node j (not using the root 0). It only makes
   // sense for i and j != 0.
   std::vector<IntegerValue> flat_shortest_path_lbs_;
 };
@@ -284,30 +284,30 @@ class SpecialBinPackingHelper {
   // capacity. The problem is to choose the minimum number of objects that will
   // be bins, such that the other objects (items) can be packed inside.
   struct ItemOrBin {
-    // The initial routing node that correspond to this object.
+    // The initial routing node that corresponds to this object.
     int node = 0;
 
     // Only one option will apply, this can either be an item with given demand
     // or a bin with given capacity.
     //
     // Important: We support negative demands and negative capacity. We just
-    // need that the sum of demand <= capacity for the item in that bin.
+    // need that the sum of demands <= capacity for the items in that bin.
     IntegerValue demand = 0;
     IntegerValue capacity = 0;
 
     // We described the problem where each object can be an item or a bin, but
-    // in practice we might have restriction on what object can be which, and we
-    // use this field to indicate that.
+    // in practice we might have restrictions on which object can be which, and
+    // we use this field to indicate that.
     //
     // The numerical order is important as we use that in the greedy algorithm.
     // See ComputeMinNumberOfBins() code.
     ItemOrBinType type = ITEM_OR_BIN;
   };
 
-  // Given a "special bin packing" problem as decribed above, return a lower
-  // bound on the number of bins that needs to be taken.
+  // Given a "special bin packing" problem as described above, return a lower
+  // bound on the number of bins that need to be taken.
   //
-  // This simply sorts the object according to a greedy criteria and minimize
+  // This simply sorts the objects according to a greedy criterion and minimizes
   // the number of bins such that the "demands <= capacities" constraint is
   // satisfied.
   //
@@ -315,7 +315,7 @@ class SpecialBinPackingHelper {
   // a trivially infeasible bound.
   //
   // TODO(user): Use fancier DP to derive tighter bound. Also, when there are
-  // many dimensions, the choice of which item go to which bin is correlated,
+  // many dimensions, the choice of which item goes to which bin is correlated,
   // can we exploit this?
   int ComputeMinNumberOfBins(
       absl::Span<ItemOrBin> objects,
@@ -336,7 +336,7 @@ class SpecialBinPackingHelper {
 
   // Visible for testing.
   //
-  // If we look at all the possible sum of item demands, it is possible that
+  // If we look at all the possible sums of item demands, it is possible that
   // some value can never be reached. We use dynamic programming to compute the
   // set of reachable values and tighten the capacities accordingly.
   //
@@ -391,7 +391,7 @@ class BestBoundHelper {
 
   // To serve the current subset with bound() num vehicles, one cannot exit
   // the subset with nodes in CannotBeLast() and one cannot enter the subset
-  // with node in CannotBeFirst(). Moreover, one cannot enter from or leave to
+  // with nodes in CannotBeFirst(). Moreover, one cannot enter from or leave to
   // nodes in OutsideNodeThatCannotBeConnected().
   absl::Span<const int> CannotBeLast() const { return cannot_be_last_; }
   absl::Span<const int> CannotBeFirst() const { return cannot_be_first_; }
@@ -461,8 +461,8 @@ class MinOutgoingFlowHelper {
       bool use_forward_direction = true);
 
   // Advanced. If non-empty, and one of the functions above proved that a subset
-  // needs at least k vehicles to serve it, then these vector list the nodes
-  // that cannot be first (resp. last) in one of the solution with k routes. If
+  // needs at least k vehicles to serve it, then these vectors list the nodes
+  // that cannot be first (resp. last) in one of the solutions with k routes. If
   // a node is listed here, it means we will need at least k + 1 routes to serve
   // the subset and enter (resp. leave) from that node.
   //
@@ -481,7 +481,7 @@ class MinOutgoingFlowHelper {
   // packing problem (defined above) where the minimum number of bins will
   // correspond to the minimum number of vehicles needed to serve this subset.
   //
-  // One way to derive such reduction is as follow.
+  // One way to derive such a reduction is as follows.
   //
   // If we look at a path going through the subset, it will touch in order the
   // nodes P = {n_0, ..., n_e}. It will enter S at a "start" node n_0 and leave
@@ -509,7 +509,7 @@ class MinOutgoingFlowHelper {
   //
   // Note that if a node has no incoming arc from within S, it must be a start
   // (i.e. a bin). And if a node has no incoming arcs from outside S, it cannot
-  // be a start an must be an inner node (i.e. an item). We can exploit this to
+  // be a start and must be an inner node (i.e. an item). We can exploit this to
   // derive better bounds.
   //
   // We just explained the reduction using incoming arcs and starts of route,
@@ -551,7 +551,7 @@ class MinOutgoingFlowHelper {
   const RootLevelLinear2Bounds& root_level_bounds_;
   SharedStatistics* shared_stats_;
 
-  // Temporary data used by ComputeMinOutgoingFlow(). Always contain default
+  // Temporary data used by ComputeMinOutgoingFlow(). Always contains default
   // values, except while ComputeMinOutgoingFlow() is running.
   // ComputeMinOutgoingFlow() computes, for each i in [0, |subset|), whether
   // each node n in the subset could appear at position i in a feasible path.
@@ -570,15 +570,15 @@ class MinOutgoingFlowHelper {
   std::vector<std::vector<int>> incoming_arc_indices_;
   std::vector<std::vector<int>> outgoing_arc_indices_;
 
-  // This can only be true for node in the current subset. If a node 'n' has no
+  // This can only be true for nodes in the current subset. If a node 'n' has no
   // incoming arcs from outside the subset, the part of a route serving node 'n'
-  // in a subset cannot start at that node. And if it has no outoing arc leaving
-  // the subset, it cannot end at that node. This can be used to derive tighter
-  // bounds.
+  // in a subset cannot start at that node. And if it has no outgoing arc
+  // leaving the subset, it cannot end at that node. This can be used to derive
+  // tighter bounds.
   std::vector<bool> has_incoming_arcs_from_outside_;
   std::vector<bool> has_outgoing_arcs_to_outside_;
 
-  // If a subset has an unique arc arriving or leaving at a given node, we can
+  // If a subset has a unique arc arriving or leaving at a given node, we can
   // derive tighter bounds.
   class UniqueArc {
    public:
@@ -604,7 +604,7 @@ class MinOutgoingFlowHelper {
   // For each node n, the lower bound of each variable (appearing in a linear
   // constraint enforced by some incoming arc literal), if n appears at the
   // current and next position in a feasible path. Variables not appearing in
-  // these maps have no tighter lower bound that the one from the IntegerTrail
+  // these maps have no tighter lower bound than the one from the IntegerTrail
   // (at decision level 0).
   std::vector<absl::flat_hash_map<IntegerVariable, IntegerValue>>
       node_var_lower_bounds_;
@@ -631,15 +631,15 @@ class MinOutgoingFlowHelper {
 
 // Given a graph with nodes in [0, num_nodes) and a set of arcs (the order is
 // important), this will:
-//   - Start with each nodes in separate "subsets".
-//   - Consider the arc in order, and each time one connects two separate
+//   - Start with each node in a separate "subset".
+//   - Consider the arcs in order, and each time one connects two separate
 //     subsets, merge the two subsets into a new one.
-//   - Stops when there is only 'stop_at_num_components' subset left.
+//   - Stop when there are only 'stop_at_num_components' subsets left.
 //   - Output all subsets generated this way (at most 2 * num_nodes). The
 //     subsets spans will point in the subset_data vector (which will be of size
 //     exactly num_nodes).
 //
-// This is an heuristic to generate interesting cuts for TSP or other graph
+// This is a heuristic to generate interesting cuts for TSP or other graph
 // based constraints. We roughly follow the algorithm described in section 6 of
 // "The Traveling Salesman Problem, A computational Study", David L. Applegate,
 // Robert E. Bixby, Vasek Chvatal, William J. Cook.
@@ -647,7 +647,7 @@ class MinOutgoingFlowHelper {
 // Note that this is mainly a "symmetric" case algo, but it does still work for
 // the asymmetric case.
 //
-// TODO(user): Returns the tree instead and let caller call
+// TODO(user): Return the tree instead and let the caller call
 // ExtractAllSubsetsFromForest().
 void GenerateInterestingSubsets(int num_nodes,
                                 absl::Span<const std::pair<int, int>> arcs,
@@ -655,26 +655,26 @@ void GenerateInterestingSubsets(int num_nodes,
                                 std::vector<int>* subset_data,
                                 std::vector<absl::Span<const int>>* subsets);
 
-// Given a set of rooted tree on n nodes represented by the parent vector,
-// returns the n sets of nodes corresponding to all the possible subtree. Note
-// that the output memory is just n as all subset will point into the same
+// Given a set of rooted trees on n nodes represented by the parent vector,
+// returns the n sets of nodes corresponding to all the possible subtrees. Note
+// that the output memory is just n as all subsets will point into the same
 // vector.
 //
 // This assumes no cycles, otherwise it will not crash but the result will not
 // be correct.
 //
-// In the TSP context, if the tree is a Gomory-Hu cut tree, this will returns
+// In the TSP context, if the tree is a Gomory-Hu cut tree, this will return
 // a set of "min-cut" that contains a min-cut for all node pairs.
 //
-// TODO(user): This also allocate O(n) memory internally, we could reuse it from
-// call to call if needed.
+// TODO(user): This also allocates O(n) memory internally, we could reuse it
+// from call to call if needed.
 void ExtractAllSubsetsFromForest(absl::Span<const int> parent,
                                  std::vector<int>* subset_data,
                                  std::vector<absl::Span<const int>>* subsets,
                                  int node_limit = kint32max);
 
 // In the routing context, we usually always have lp_value in [0, 1] and only
-// looks at arcs with a lp_value that is not too close to zero.
+// look at arcs with an lp_value that is not too close to zero.
 struct ArcWithLpValue {
   int tail;
   int head;
@@ -685,7 +685,7 @@ struct ArcWithLpValue {
   }
 };
 
-// Regroups and sum the lp values on duplicate arcs or reversed arcs
+// Regroups and sums the lp values on duplicate arcs or reversed arcs
 // (tail->head) and (head->tail). As a side effect, we will always
 // have tail <= head.
 void SymmetrizeArcs(std::vector<ArcWithLpValue>* arcs);
@@ -694,16 +694,16 @@ void SymmetrizeArcs(std::vector<ArcWithLpValue>* arcs);
 // returns a "parent" vector of size n encoding a rooted Gomory-Hu tree.
 //
 // Note that usually each edge in the tree is attached a max-flow value (its
-// weight), but we don't need it here. It can be added if needed. This tree as
-// the property that for all (s, t) pair of nodes, if you take the minimum
+// weight), but we don't need it here. It can be added if needed. This tree has
+// the property that for all (s, t) pairs of nodes, if you take the minimum
 // weight edge on the path from s to t and split the tree in two, then this is a
 // min-cut for that pair.
 //
-// IMPORTANT: This algorithm currently "symmetrize" the graph, so we will
+// IMPORTANT: This algorithm currently "symmetrizes" the graph, so we will
 // actually have all the min-cuts that minimize sum incoming + sum outgoing lp
-// values. The algo do not work as is on an asymmetric graph. Note however that
-// because of flow conservation, our outgoing lp values should be the same as
-// our incoming one on a circuit/route constraint.
+// values. The algo does not work as is on an asymmetric graph. Note however
+// that because of flow conservation, our outgoing lp values should be the same
+// as our incoming ones on a circuit/route constraint.
 //
 // We use a simple implementation described in "Very Simple Methods for All
 // Pairs Network Flow Analysis", Dan Gusfield, 1990,
@@ -713,19 +713,19 @@ std::vector<int> ComputeGomoryHuTree(
 
 // Cut generator for the circuit constraint, where in any feasible solution, the
 // arcs that are present (variable at 1) must form a circuit through all the
-// nodes of the graph. Self arc are forbidden in this case.
+// nodes of the graph. Self arcs are forbidden in this case.
 //
-// In more generality, this currently enforce the resulting graph to be strongly
-// connected. Note that we already assume basic constraint to be in the lp, so
-// we do not add any cuts for components of size 1.
+// In more generality, this currently enforces the resulting graph to be
+// strongly connected. Note that we already assume basic constraints to be in
+// the lp, so we do not add any cuts for components of size 1.
 CutGenerator CreateStronglyConnectedGraphCutGenerator(
     int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
     absl::Span<const Literal> literals, Model* model);
 
 // Almost the same as CreateStronglyConnectedGraphCutGenerator() but for each
-// components, computes the demand needed to serves it, and depending on whether
-// it contains the depot (node zero) or not, compute the minimum number of
-// vehicle that needs to cross the component border.
+// component, computes the demand needed to serve it, and depending on whether
+// it contains the depot (node zero) or not, computes the minimum number of
+// vehicles that need to cross the component border.
 // `flat_node_dim_expressions` must have num_dimensions (possibly 0) times
 // num_nodes elements, with the expression associated with node n and dimension
 // d at index n * num_dimensions + d.
@@ -738,11 +738,11 @@ CutGenerator CreateCVRPCutGenerator(
 // incoming arc is not enough to satisfy the demands.
 //
 // We support the special value -1 for tail or head that means that the arc
-// comes from (or is going to) outside the nodes in [0, num_nodes). Such arc
+// comes from (or is going to) outside the nodes in [0, num_nodes). Such an arc
 // must still have a capacity assigned to it.
 //
 // TODO(user): Support general linear expression for capacities.
-// TODO(user): Some model applies the same capacity to both an arc and its
+// TODO(user): Some models apply the same capacity to both an arc and its
 // reverse. Also support this case.
 CutGenerator CreateFlowCutGenerator(
     int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,

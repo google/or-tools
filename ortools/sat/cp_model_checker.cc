@@ -120,7 +120,8 @@ std::string ValidateIntegerVariable(const CpModelProto& model, int v) {
   const int64_t ub = proto.domain(proto.domain_size() - 1);
   if (lb < -kint64max / 2 || ub > kint64max / 2) {
     return absl::StrCat(
-        "var #", v, " domain do not fall in [-kint64max / 2, kint64max / 2]. ",
+        "var #", v,
+        " domain does not fall in [-kint64max / 2, kint64max / 2]. ",
         ProtobufShortDebugString(proto));
   }
 
@@ -580,9 +581,9 @@ std::string ValidateAutomatonConstraint(const CpModelProto& model,
         "Inconsistent automaton with both legacy and new format defined: ",
         ProtobufShortDebugString(ct));
   }
-  const int num_transistions = automaton.transition_tail().size();
-  if (num_transistions != automaton.transition_head().size() ||
-      num_transistions != automaton.transition_label().size()) {
+  const int num_transitions = automaton.transition_tail().size();
+  if (num_transitions != automaton.transition_head().size() ||
+      num_transitions != automaton.transition_label().size()) {
     return absl::StrCat(
         "The transitions repeated fields must have the same size: ",
         ProtobufShortDebugString(ct));
@@ -597,7 +598,7 @@ std::string ValidateAutomatonConstraint(const CpModelProto& model,
     RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
   }
   absl::flat_hash_map<std::pair<int64_t, int64_t>, int64_t> tail_label_to_head;
-  for (int i = 0; i < num_transistions; ++i) {
+  for (int i = 0; i < num_transitions; ++i) {
     const int64_t tail = automaton.transition_tail(i);
     const int64_t head = automaton.transition_head(i);
     const int64_t label = automaton.transition_label(i);
@@ -1105,9 +1106,9 @@ bool PossibleIntegerOverflow(const CpModelProto& model,
   if (offset > kint64max / 2) return true;
   offset = std::abs(offset);
 
-  LinearOverflowChecker checher;
-  checher.sum_min = -std::abs(offset);
-  checher.sum_max = std::abs(offset);
+  LinearOverflowChecker checker;
+  checker.sum_min = -std::abs(offset);
+  checker.sum_max = std::abs(offset);
   for (int i = 0; i < vars.size(); ++i) {
     const int ref = vars[i];
     CHECK(RefIsPositive(ref));
@@ -1115,11 +1116,11 @@ bool PossibleIntegerOverflow(const CpModelProto& model,
     const int64_t min_domain = var_proto.domain(0);
     const int64_t max_domain = var_proto.domain(var_proto.domain_size() - 1);
 
-    if (!checher.AddTerm(coeffs[i], min_domain, max_domain)) return true;
+    if (!checker.AddTerm(coeffs[i], min_domain, max_domain)) return true;
   }
 
   if (implied_domain) {
-    *implied_domain = {checher.sum_min, checher.sum_max};
+    *implied_domain = {checker.sum_min, checker.sum_max};
   }
   return false;
 }

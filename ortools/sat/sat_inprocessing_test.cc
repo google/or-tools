@@ -34,13 +34,13 @@ TEST(InprocessingTest, ClauseCleanupWithFixedVariables) {
   auto* clause_manager = model.GetOrCreate<ClauseManager>();
   auto* inprocessing = model.GetOrCreate<Inprocessing>();
 
-  // Lets add some clauses.
+  // Let's add some clauses.
   sat_solver->SetNumVariables(100);
   EXPECT_TRUE(clause_manager->AddClause(Literals({+1, +2, +3, +4})));
   EXPECT_TRUE(clause_manager->AddClause(Literals({+1, -2, -3, +5})));
   EXPECT_TRUE(clause_manager->AddClause(Literals({+2, -2, -3, +1, +1})));
 
-  // Nothing fixed, we don't even look at the clause.
+  // Nothing fixed, we don't even look at the clauses.
   const bool log_info = true;
   EXPECT_TRUE(inprocessing->DetectEquivalencesAndStamp(false, log_info));
   EXPECT_TRUE(inprocessing->RemoveFixedAndEquivalentVariables(log_info));
@@ -50,7 +50,7 @@ TEST(InprocessingTest, ClauseCleanupWithFixedVariables) {
     EXPECT_EQ(all_clauses[2]->AsSpan(), Literals({+2, -2, -3, +1, +1}));
   }
 
-  // Lets fix 3.
+  // Let's fix 3.
   CHECK(sat_solver->AddUnitClause(Literal(+3)));
   EXPECT_TRUE(sat_solver->FinishPropagation());
   EXPECT_TRUE(inprocessing->DetectEquivalencesAndStamp(false, log_info));
@@ -71,14 +71,14 @@ TEST(InprocessingTest, ClauseCleanupWithEquivalence) {
   auto* implication_graph = model.GetOrCreate<BinaryImplicationGraph>();
   auto* inprocessing = model.GetOrCreate<Inprocessing>();
 
-  // Lets add some clauses.
+  // Let's add some clauses.
   sat_solver->SetNumVariables(100);
   EXPECT_TRUE(clause_manager->AddClause(Literals({+1, +2, +5, +4})));
   EXPECT_TRUE(clause_manager->AddClause(Literals({+1, -2, -3, +5})));
   EXPECT_TRUE(clause_manager->AddClause(Literals({+2, +6, -3, +1, +1})));
   EXPECT_TRUE(clause_manager->AddClause(Literals({+2, +6, -3, +1, -5})));
 
-  // Lets make 3 and 5 equivalent.
+  // Let's make 3 and 5 equivalent.
   implication_graph->AddBinaryClause(Literal(-3), Literal(+5));
   implication_graph->AddBinaryClause(Literal(+3), Literal(-5));
 
@@ -92,7 +92,7 @@ TEST(InprocessingTest, ClauseCleanupWithEquivalence) {
     EXPECT_EQ(all_clauses[1]->AsSpan(), Literals({}));
     EXPECT_EQ(all_clauses[3]->AsSpan(), Literals({+2, +6, -3, +1}));
 
-    // Note that the +1 +1 is not simplified because this clause do not
+    // Note that the +1 +1 is not simplified because this clause does not
     // need to be rewritten otherwise and we assume initial simplification.
     EXPECT_EQ(all_clauses[2]->AsSpan(), Literals({+2, +6, -3, +1, +1}));
   }
@@ -104,8 +104,8 @@ TEST(InprocessingTest, ClauseSubsumptionAndStrengthening) {
   auto* clause_manager = model.GetOrCreate<ClauseManager>();
   auto* inprocessing = model.GetOrCreate<Inprocessing>();
 
-  // Lets add some clauses.
-  // Note that the order currently matter for what is left.
+  // Let's add some clauses.
+  // Note that the order currently matters for what is left.
   //
   // Note that currently the binary clauses are not reprocessed.
   // TODO(user): Maybe we should so that we always end up with a reduced set.
@@ -121,7 +121,7 @@ TEST(InprocessingTest, ClauseSubsumptionAndStrengthening) {
   EXPECT_TRUE(inprocessing->DetectEquivalencesAndStamp(false, log_info));
   EXPECT_TRUE(inprocessing->SubsumeAndStrenghtenRound(log_info));
 
-  // This function remove empty clauses.
+  // This function removes empty clauses.
   const auto& all_clauses = clause_manager->AllClausesInCreationOrder();
   EXPECT_GE(all_clauses.size(), 0);
 
@@ -140,8 +140,8 @@ TEST(StampingSimplifierTest, StampConstruction) {
   auto* implication_graph = model.GetOrCreate<BinaryImplicationGraph>();
   auto* simplifier = model.GetOrCreate<StampingSimplifier>();
 
-  // Lets add some clauses.
-  // Note that the order currently matter for what is left.
+  // Let's add some clauses.
+  // Note that the order currently matters for what is left.
   sat_solver->SetNumVariables(100);
   implication_graph->AddImplication(Literal(+1), Literal(+2));
   implication_graph->AddImplication(Literal(+1), Literal(+3));
@@ -153,7 +153,7 @@ TEST(StampingSimplifierTest, StampConstruction) {
 
   EXPECT_TRUE(implication_graph->DetectEquivalences(true));
 
-  // Lets test some implications.
+  // Let's test some implications.
   simplifier->SampleTreeAndFillParent();
   simplifier->ComputeStamps();
   EXPECT_TRUE(simplifier->ImplicationIsInTree(Literal(+1), Literal(+2)));
@@ -170,8 +170,8 @@ TEST(StampingSimplifierTest, BasicSimplification) {
   auto* implication_graph = model.GetOrCreate<BinaryImplicationGraph>();
   auto* simplifier = model.GetOrCreate<StampingSimplifier>();
 
-  // Lets add some clauses.
-  // Note that the order currently matter for what is left.
+  // Let's add some clauses.
+  // Note that the order currently matters for what is left.
   sat_solver->SetNumVariables(100);
   implication_graph->AddImplication(Literal(+1), Literal(+2));
   implication_graph->AddImplication(Literal(+1), Literal(+3));
@@ -183,16 +183,16 @@ TEST(StampingSimplifierTest, BasicSimplification) {
 
   EXPECT_TRUE(implication_graph->DetectEquivalences(true));
 
-  // Lets add some clause that should be simplifiable
+  // Let's add some clauses that should be simplifiable
   EXPECT_TRUE(clause_manager->AddClause(Literals({+1, +7, +8, +9})));
   EXPECT_TRUE(clause_manager->AddClause(Literals({+1, -6, +8, +9})));
   EXPECT_TRUE(clause_manager->AddClause(Literals({-3, -7, +8, +9})));
   EXPECT_TRUE(clause_manager->AddClause(Literals({-3, +7, +8, +9})));
 
-  // Lets test some implications.
+  // Let's test some implications.
   EXPECT_TRUE(simplifier->DoOneRound(/*log_info=*/true));
 
-  // Results. I cover all 4 possibilities, 2 strenghtening for clause 0 and 2,
+  // Results. I cover all 4 possibilities, 2 strengthenings for clauses 0 and 2,
   // one subsumption for clause 3 and nothing for clause 1.
   const auto& all_clauses = clause_manager->AllClausesInCreationOrder();
   EXPECT_EQ(all_clauses.size(), 4);
@@ -209,14 +209,14 @@ TEST(BlockedClauseSimplifierTest, BasicSimplification) {
   auto* implication_graph = model.GetOrCreate<BinaryImplicationGraph>();
   auto* simplifier = model.GetOrCreate<BlockedClauseSimplifier>();
 
-  // Lets add some clauses.
-  // Note that the order currently matter for what is left.
+  // Let's add some clauses.
+  // Note that the order currently matters for what is left.
   sat_solver->SetNumVariables(100);
   implication_graph->AddImplication(Literal(+1), Literal(-7));
   implication_graph->AddImplication(Literal(+1), Literal(-8));
   implication_graph->AddImplication(Literal(+1), Literal(-9));
 
-  // Lets add some clause that should be blocked
+  // Let's add some clauses that should be blocked
   EXPECT_TRUE(clause_manager->AddClause(Literals({-1, +7, -8, +9})));
   EXPECT_TRUE(clause_manager->AddClause(Literals({+1, +7, +8, +9})));
 
@@ -233,7 +233,7 @@ TEST(BoundedVariableEliminationTest, BasicSimplification) {
   auto* clause_manager = model.GetOrCreate<ClauseManager>();
   auto* simplifier = model.GetOrCreate<BoundedVariableElimination>();
 
-  // Lets add some clauses.
+  // Let's add some clauses.
   sat_solver->SetNumVariables(100);
   EXPECT_TRUE(clause_manager->AddClause(Literals({+1, +2, +3, +7})));
   EXPECT_TRUE(clause_manager->AddClause(Literals({+3, +4, +5, +7})));

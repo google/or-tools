@@ -83,30 +83,30 @@ void ZeroHalfCutHelper::AddOneConstraint(const glop::RowIndex row,
     activity += ToDouble(coeffs[i]) * lp_values_[col];
     magnitude = std::max(magnitude, IntTypeAbs(coeffs[i]));
 
-    // Only consider odd coefficient.
+    // Only consider odd coefficients.
     if ((coeffs[i].value() & 1) == 0) continue;
 
-    // Ignore column in the binary matrix if its lp value is almost zero.
+    // Ignore column in the binary matrix if its LP value is almost zero.
     if (shifted_lp_values_[col] > 1e-2) {
       binary_row.cols.push_back(col);
     }
 
-    // Because we work on the shifted variable, the rhs needs to be updated.
+    // Because we work on the shifted variables, the rhs needs to be updated.
     rhs_adjust ^= bound_parity_[col];
   }
 
-  // We ignore constraint with large coefficient, since there is little chance
-  // to cancel them and because of that the efficacity of a generated cut will
+  // We ignore constraints with large coefficients, since there is little chance
+  // to cancel them and because of that the efficacy of a generated cut will
   // be limited.
   if (magnitude > kMaxInputConstraintMagnitude) return;
   if (binary_row.cols.empty()) return;
 
-  // TODO(user): experiment with the best value. probably only tight rows are
+  // TODO(user): experiment with the best value. Probably only tight rows are
   // best? and we could use the basis status rather than recomputing the
   // activity for that.
   //
   // TODO(user): Avoid adding duplicates and just randomly pick one. Note
-  // that we should also remove duplicate in a generic way.
+  // that we should also remove duplicates in a generic way.
   const double tighteness_threshold = 1e-2;
   if (ToDouble(ub) - activity < tighteness_threshold) {
     binary_row.multipliers = {{row, IntegerValue(1)}};
@@ -136,7 +136,7 @@ void ZeroHalfCutHelper::SymmetricDifference(absl::Span<const int> a,
     }
   }
 
-  // Remove position that are not marked, and clear tmp_marked_.
+  // Remove positions that are not marked, and clear tmp_marked_.
   int new_size = 0;
   for (const int v : *b) {
     if (tmp_marked_[v]) {
@@ -209,7 +209,7 @@ void ZeroHalfCutHelper::EliminateVarUsingRow(int eliminated_col,
     rows_[eliminated_row].cols.resize(new_size);
   }
 
-  // Clear col since it is now singleton.
+  // Clear col since it is now a singleton.
   col_to_rows_[eliminated_col].clear();
   rows_[eliminated_row].slack += shifted_lp_values_[eliminated_col];
 }
@@ -218,7 +218,7 @@ std::vector<std::vector<std::pair<glop::RowIndex, IntegerValue>>>
 ZeroHalfCutHelper::InterestingCandidates(absl::BitGenRef random) {
   std::vector<std::vector<std::pair<glop::RowIndex, IntegerValue>>> result;
 
-  // Remove singleton column from the picture.
+  // Remove singleton columns from the picture.
   const int num_cols = col_to_rows_.size();
   for (int singleton_col = 0; singleton_col < num_cols; ++singleton_col) {
     if (col_to_rows_[singleton_col].size() != 1) continue;
@@ -249,7 +249,7 @@ ZeroHalfCutHelper::InterestingCandidates(absl::BitGenRef random) {
     if (rows_[row].slack > 1e-6) continue;
     if (rows_[row].multipliers.size() > kMaxAggregationSize) continue;
 
-    // Heuristic: eliminate the variable with highest shifted lp value.
+    // Heuristic: eliminate the variable with the highest shifted lp value.
     int eliminated_col = -1;
     double max_lp_value = 0.0;
     for (const int col : rows_[row].cols) {
@@ -263,7 +263,7 @@ ZeroHalfCutHelper::InterestingCandidates(absl::BitGenRef random) {
     EliminateVarUsingRow(eliminated_col, row);
   }
 
-  // As an heuristic, we just try to add zero rows with an odd rhs and a low
+  // As a heuristic, we just try to add zero rows with an odd rhs and a low
   // enough slack.
   for (const auto& row : rows_) {
     if (row.cols.empty() && row.rhs_parity && row.slack < kSlackThreshold) {

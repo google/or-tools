@@ -196,7 +196,7 @@ bool SymmetryPropagator::Enqueue(const Trail& trail, Literal literal,
     if (trail.Info((*p_trail)[*index].image.Variable()).trail_index >
         literal_trail_index) {
       // It isn't, so we can stop the function here. We will continue the loop
-      // when this function is called again with an higher trail_index.
+      // when this function is called again with a higher trail_index.
       return true;
     }
     ++(*index);

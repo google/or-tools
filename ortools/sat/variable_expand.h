@@ -41,9 +41,9 @@ class ValueEncoding {
 
   // This method is called after all values from lit => var ==/!= value have
   // been added. It canonicalizes the encoded values and adds an escape value
-  // if needed. It there is an objective, the escape value is the min or the max
+  // if needed. If there is an objective, the escape value is the min or the max
   // of the residual domain of the variable depending on the objective
-  // coefficient of the variable. It there are no objective, the escape value is
+  // coefficient of the variable. If there is no objective, the escape value is
   // the smallest value of the residual domain.
   // With this escape value, we can safely reduce the domain of the variable to
   // observed + escape values, and add an exactly_one constraint on all the
@@ -56,8 +56,9 @@ class ValueEncoding {
   bool is_fully_encoded() const;
   const std::vector<int64_t>& encoded_values() const;
 
-  // A unique escape value is defined only if the linear1 are var == value and
-  // var != value. In this case, only one escape value is needed.
+  // A unique escape value is defined only if the linear1 constraints are
+  // var == value and var != value. In this case, only one escape value is
+  // needed.
   std::optional<int64_t> unique_escape_value() const;
 
   // Setters and getters on the value encoding.
