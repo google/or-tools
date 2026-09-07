@@ -23,6 +23,10 @@ go_library(
     cdeps = ["//ortools/sat/c_api:cp_solver_c"],
     cgo = True,
     importpath = "github.com/google/or-tools/ortools/sat/go/cpmodel",
+    target_compatible_with = select({
+        "@platforms//os:windows": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/sat:cp_model_go_proto",
@@ -30,10 +34,6 @@ go_library(
         "@com_github_golang_glog//:glog",
         "@org_golang_google_protobuf//proto",
     ],
-    target_compatible_with = select({
-      "@platforms//os:windows": ["@platforms//:incompatible"],
-      "//conditions:default": [],
-    }),
 )
 
 go_test(
