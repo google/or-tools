@@ -1,4 +1,4 @@
-// Copyright 2010-2025 Google LLC
+// Copyright 2010-2026 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -90,6 +90,8 @@ std::optional<absl::string_view> Enum<SolverType>::ToOptString(
       return "xpress";
     case SolverType::kMinCostFlow:
       return "min_cost_flow";
+    case SolverType::kCplex:
+      return "cplex";
   }
   return std::nullopt;
 }
@@ -100,6 +102,7 @@ absl::Span<const SolverType> Enum<SolverType>::AllValues() {
       SolverType::kCpSat,     SolverType::kPdlp,   SolverType::kGlpk,
       SolverType::kEcos,      SolverType::kScs,    SolverType::kHighs,
       SolverType::kSantorini, SolverType::kXpress, SolverType::kMinCostFlow,
+      SolverType::kCplex,
   };
   return absl::MakeConstSpan(kSolverTypeValues);
 }
@@ -240,6 +243,59 @@ absl::StatusOr<XpressParameters> XpressParameters::FromProto(
   return result;
 }
 
+CplexParametersProto CplexParameters::Proto() const {
+  CplexParametersProto result;
+  for (const auto& [key, val] : param_double_values) {
+    auto* p = result.add_parameters()->mutable_parameter_double();
+    p->set_name(key);
+    p->set_value(val);
+  }
+  for (const auto& [key, val] : param_bool_values) {
+    auto* p = result.add_parameters()->mutable_parameter_bool();
+    p->set_name(key);
+    p->set_value(val);
+  }
+  for (const auto& [key, val] : param_int32_values) {
+    auto* p = result.add_parameters()->mutable_parameter_int32();
+    p->set_name(key);
+    p->set_value(val);
+  }
+  for (const auto& [key, val] : param_int64_values) {
+    auto* p = result.add_parameters()->mutable_parameter_int64();
+    p->set_name(key);
+    p->set_value(val);
+  }
+  for (const auto& [key, val] : param_string_values) {
+    auto* p = result.add_parameters()->mutable_parameter_string();
+    p->set_name(key);
+    p->set_value(val);
+  }
+  return result;
+}
+
+CplexParameters CplexParameters::FromProto(const CplexParametersProto& proto) {
+  CplexParameters result;
+  for (const CplexParametersProto::Parameter& p : proto.parameters()) {
+    if (p.has_parameter_double()) {
+      result.param_double_values[p.parameter_double().name()] =
+          p.parameter_double().value();
+    } else if (p.has_parameter_bool()) {
+      result.param_bool_values[p.parameter_bool().name()] =
+          p.parameter_bool().value();
+    } else if (p.has_parameter_int32()) {
+      result.param_int32_values[p.parameter_int32().name()] =
+          p.parameter_int32().value();
+    } else if (p.has_parameter_int64()) {
+      result.param_int64_values[p.parameter_int64().name()] =
+          p.parameter_int64().value();
+    } else if (p.has_parameter_string()) {
+      result.param_string_values[p.parameter_string().name()] =
+          p.parameter_string().value();
+    }
+  }
+  return result;
+}
+
 SolveParametersProto SolveParameters::Proto() const {
   SolveParametersProto result;
   result.set_enable_output(enable_output);
@@ -293,6 +349,7 @@ SolveParametersProto SolveParameters::Proto() const {
   *result.mutable_glpk() = glpk.Proto();
   *result.mutable_highs() = highs;
   *result.mutable_xpress() = xpress.Proto();
+  *result.mutable_cplex() = cplex.Proto();
   return result;
 }
 
@@ -355,6 +412,7 @@ absl::StatusOr<SolveParameters> SolveParameters::FromProto(
   OR_ASSIGN_OR_RETURN3(result.xpress,
                        XpressParameters::FromProto(proto.xpress()),
                        _ << "invalid xpress parameters");
+  result.cplex = CplexParameters::FromProto(proto.cplex());
   return result;
 }
 

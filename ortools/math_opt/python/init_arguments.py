@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2025 Google LLC
+# Copyright 2010-2026 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -130,6 +130,11 @@ class StreamableHighsInitArguments:
 
 
 @dataclasses.dataclass
+class StreamableCplexInitArguments:
+    """Streamable Cplex specific parameters for solver instantiation."""
+
+
+@dataclasses.dataclass
 class StreamableSantoriniInitArguments:
     """Streamable Santorini specific parameters for solver instantiation."""
 
@@ -150,6 +155,7 @@ class StreamableSolverInitArguments:
       scs: Initialization parameters specific to SCS.
       highs: Initialization parameters specific to HiGHS.
       santorini: Initialization parameters specific to Santorini.
+      cplex: Initialization parameters specific to Cplex.
     """
 
     gscip: Optional[StreamableGScipInitArguments] = None
@@ -163,6 +169,7 @@ class StreamableSolverInitArguments:
     scs: Optional[StreamableScsInitArguments] = None
     highs: Optional[StreamableHighsInitArguments] = None
     santorini: Optional[StreamableSantoriniInitArguments] = None
+    cplex: Optional[StreamableCplexInitArguments] = None
 
     def to_proto(self) -> parameters_pb2.SolverInitializerProto:
         """Returns a protocol buffer equivalent of this."""
