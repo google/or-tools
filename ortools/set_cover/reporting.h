@@ -46,11 +46,12 @@ class RunResult {
   // happen, thus there is no result to report.
   RunResult() = default;
 
-  explicit RunResult(const SetCoverOptimizer& gen)
+  template <typename ParamsType>
+  explicit RunResult(const SetCoverOptimizer<ParamsType>& gen)
       : response_(gen.inv()->ExportSolutionAsProto()),
         solution_(gen.inv()->is_selected()) {
     response_.set_problem_name(gen.inv()->model()->name());
-    response_.set_algorithm_name(gen.name());
+    response_.set_algorithm_name(gen.params().name);
     *response_.mutable_total_duration() =
         util_time::EncodeGoogleApiProto(gen.run_time()).value();
     response_.set_is_unicost(gen.inv()->model()->is_unicost());

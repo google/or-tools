@@ -197,6 +197,10 @@ class SetCoverModel {
   // Returns true if rows_ and columns_ represent the same problem.
   bool row_view_is_valid() const { return row_view_is_valid_; }
 
+  // Computes the reduced costs for all subsets given the dual values.
+  void ComputeReducedCosts(const ElementCostVector& dual_values,
+                           SubsetCostVector& reduced_costs) const;
+
   // Access to the ranges of subsets and elements.
   util_intops::StrongIntRange<SubsetIndex> SubsetRange() const {
     return util_intops::StrongIntRange<SubsetIndex>(SubsetIndex(num_subsets_));

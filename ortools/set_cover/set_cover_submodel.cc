@@ -13,6 +13,7 @@
 
 #include "ortools/set_cover/set_cover_submodel.h"
 
+#include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"

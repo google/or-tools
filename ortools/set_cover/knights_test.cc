@@ -357,6 +357,13 @@ TEST(SetCoverTest, KnightsCoverCliqueGuidedLNS) {
               << "): " << inv.cost() << " / " << best_known_cost[BoardSize]
               << " Time:" << ToInt64Milliseconds(clique_guided_lns.run_time());
     EXPECT_GE(inv.cost(), best_known_cost[BoardSize]);
+
+    VolumeOptimizer volume(&inv);
+    CHECK(volume.Optimize());
+    LOG(INFO) << "Volume Lower bound: " << inv.LowerBound();
+    EXPECT_LE(inv.LowerBound(), inv.cost());
+    EXPECT_LE(inv.LowerBound(), best_known_cost[BoardSize]);
+
     knights.DisplaySolution(inv.is_selected());
   }
 }

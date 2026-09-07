@@ -60,10 +60,6 @@ struct SubsetAndPriority {
 
 }  // namespace
 
-bool SetCoverOptimizer::CheckInvariantConsistency() const {
-  return inv_->CheckConsistency(consistency_level_);
-}
-
 // TrivialSolutionGenerator.
 
 bool TrivialSolutionGenerator::OptimizeImpl(
@@ -510,7 +506,7 @@ bool LazyElementDegreeSolutionGenerator::OptimizeImpl(
   Cost best_cost = inv()->cost();
   SubsetBoolVector best_solution = inv()->is_selected();
 
-  for (int pass = 0; pass < num_random_passes_; ++pass) {
+  for (int pass = 0; pass < params().num_random_passes; ++pass) {
     inv()->LoadSolution(initial_solution);
     inv()->Recompute(CL::kCostAndCoverage);
 
@@ -535,7 +531,7 @@ bool LazyElementDegreeSolutionGenerator::OptimizeImpl(
 
 bool SteepestSearch::OptimizeImpl(const SubsetBoolVector& in_focus) {
   StopWatch stop_watch(&run_time_);
-  const int64_t num_iterations = max_iterations();
+  const int64_t num_iterations = params().max_iterations;
   DCHECK(inv()->CheckConsistency(CL::kCostAndCoverage));
   inv()->Recompute(CL::kFreeAndUncovered);
   DVLOG(1) << "Entering SteepestSearch::OptimizeImpl, num_iterations = "
@@ -589,7 +585,7 @@ bool SteepestSearch::OptimizeImpl(const SubsetBoolVector& in_focus) {
 
 bool LazySteepestSearch::OptimizeImpl(const SubsetBoolVector& in_focus) {
   StopWatch stop_watch(&run_time_);
-  const int64_t num_iterations = max_iterations();
+  const int64_t num_iterations = params().max_iterations;
   DCHECK(inv()->CheckConsistency(CL::kCostAndCoverage));
   DVLOG(1) << "Entering LazySteepestSearch::OptimizeImpl, num_iterations = "
            << num_iterations;
@@ -666,7 +662,7 @@ void GuidedTabuSearch::UpdatePenalties(absl::Span<const SubsetIndex> focus) {
       max_utility = std::max(max_utility, utilities_[subset]);
     }
   }
-  const double epsilon_utility = epsilon_ * max_utility;
+  const double epsilon_utility = params().epsilon * max_utility;
   for (const SubsetIndex subset : focus) {
     if (inv()->is_selected()[subset]) {
       const double utility = utilities_[subset];
@@ -677,7 +673,7 @@ void GuidedTabuSearch::UpdatePenalties(absl::Span<const SubsetIndex> focus) {
             subset_costs[subset];  // / columns[subset].size().value();
         utilities_[subset] = cost / (1 + times_penalized);
         augmented_costs_[subset] =
-            cost * (1 + penalty_factor_ * times_penalized);
+            cost * (1 + params().penalty_factor * times_penalized);
       }
     }
   }
@@ -685,7 +681,7 @@ void GuidedTabuSearch::UpdatePenalties(absl::Span<const SubsetIndex> focus) {
 
 bool GuidedTabuSearch::OptimizeImpl(absl::Span<const SubsetIndex> focus) {
   StopWatch stop_watch(&run_time_);
-  const int64_t num_iterations = max_iterations();
+  const int64_t num_iterations = params().max_iterations;
   DCHECK(inv()->CheckConsistency(CL::kFreeAndUncovered));
   DVLOG(1) << "Entering GuidedTabuSearch::OptimizeImpl, num_iterations = "
            << num_iterations;
@@ -771,7 +767,9 @@ bool GuidedTabuSearch::OptimizeImpl(absl::Span<const SubsetIndex> focus) {
 void GuidedLocalSearch::Initialize() {
   const SparseColumnView& columns = model()->columns();
   penalties_.assign(columns.size(), 0);
-  penalization_factor_ = alpha_ * inv()->cost() * 1.0 / (columns.size());
+  // NOMUTANTS -- reason: it's a heuristic
+  penalization_factor_ =
+      params().alpha * inv()->cost() * 1.0 / (columns.size());
   for (const SetCoverDecision& decision : inv()->trace()) {
     const SubsetIndex subset = decision.subset();
     if (inv()->is_selected()[subset]) {
@@ -795,7 +793,7 @@ Cost GuidedLocalSearch::ComputeDelta(SubsetIndex subset) const {
 
 bool GuidedLocalSearch::OptimizeImpl(absl::Span<const SubsetIndex> focus) {
   StopWatch stop_watch(&run_time_);
-  const int64_t num_iterations = max_iterations();
+  const int64_t num_iterations = params().max_iterations;
   inv()->Recompute(CL::kRedundancy);
   Cost best_cost = inv()->cost();
   SubsetBoolVector best_choices = inv()->is_selected();
@@ -1014,18 +1012,18 @@ bool CliqueGuidedLNS::OptimizeImpl(absl::Span<const SubsetIndex> focus) {
 
   auto bit_gen = absl::BitGen();
   absl::uniform_int_distribution<BaseInt> dist(0, selected_subsets.size() - 1);
-  for (int i = 0; i < max_num_cliques_; ++i) {
+  for (int i = 0; i < params().max_num_cliques; ++i) {
     VLOG(1) << "Clique " << i << " cost " << inv()->cost();
     // Check global time budget.
     // TODO(user): check whether to do it here or after the clique computation.
-    if (stop_watch.GetElapsedDuration() > time_limit()) {
+    if (stop_watch.GetElapsedDuration() > params().time_limit) {
       break;
     }
 
     SubsetIndex subset;
     do {
       subset = SubsetIndex(dist(bit_gen));
-      if (stop_watch.GetElapsedDuration() > time_limit()) {
+      if (stop_watch.GetElapsedDuration() > params().time_limit) {
         break;
       }
     } while (!inv()->is_selected()[subset]);
@@ -1033,8 +1031,8 @@ bool CliqueGuidedLNS::OptimizeImpl(absl::Span<const SubsetIndex> focus) {
     if (!inv()->is_selected()[subset]) break;
 
     std::vector<SubsetIndex> clique = ComputeClique(
-        *inv(), subset, max_clique_size_,
-        std::min(time_limit() - run_time_, absl::Milliseconds(100)));
+        *inv(), subset, params().max_clique_size,
+        std::min(params().time_limit - run_time_, absl::Milliseconds(100)));
     max_clique_size_generated_ =
         std::max(max_clique_size_generated_, static_cast<int>(clique.size()));
 
@@ -1224,6 +1222,199 @@ std::pair<Cost, ElementCostVector> PerformDualAscent(
   return {lower_bound, dual_values};
 }
 
+}  // namespace internal
+
+namespace {
+
+// Performs the Volume Algorithm to compute a lower bound and dual values.
+// Based on Barahona and Anbil, "The volume algorithm: producing primal
+// solutions with a subgradient method", Math. Program. 87(3):385-399, 2000.
+// https://link.springer.com/article/10.1007/s101070050002
+std::pair<Cost, ElementCostVector> PerformVolumeMethodDualAscent(
+    const SetCoverInvariant& inv,
+    const std::vector<ElementIndex>& element_permutation,
+    const VolumeOptimizerParams& volume_params) {
+  absl::Duration local_run_time;
+  StopWatch stop_watch(&local_run_time);
+  const SetCoverModel& model = *(inv.model());
+  const SparseColumnView& columns = model.columns();
+  const SubsetCostVector& costs = model.subset_costs();
+  const BaseInt num_elements = model.num_elements();
+  const BaseInt num_subsets = model.num_subsets();
+  DCHECK(inv.CheckConsistency(CL::kCostAndCoverage));
+
+  // Compute upper bound from the current feasible solution.
+  Cost upper_bound = 0.0;
+  for (const SubsetIndex subset : model.SubsetRange()) {
+    if (inv.is_selected()[subset]) {
+      upper_bound += costs[subset];
+    }
+  }
+  CHECK_GT(upper_bound, 0.0);  // Must have a non-empty feasible solution.
+
+  // Step 0: warm-start pi_bar via greedy dual ascent.
+  auto [init_lb, pi_bar] =
+      internal::PerformDualAscent(inv, element_permutation);
+
+  // Solve the Lagrangian subproblem with pi_bar to get x^0 and z_bar.
+  // Reduced costs: r_j = c_j - sum_{i in j} pi_i.
+  SubsetCostVector reduced_costs;
+  model.ComputeReducedCosts(pi_bar, reduced_costs);
+
+  // z_bar = L(pi_bar) = sum_i pi_i + sum_{j: r_j < 0} r_j.
+  Cost z_bar = 0.0;
+  for (const Cost val : pi_bar) {
+    z_bar += val;  // NOMUTANTS -- sum calculation
+  }
+  SubsetCostVector x_bar(num_subsets, 0.0);
+  for (const SubsetIndex subset : model.SubsetRange()) {
+    // NOTE(user): should this be < 0 or <= 0 or <= tolerance?
+    if (reduced_costs[subset] <= 0.0) {
+      z_bar += reduced_costs[subset];
+      x_bar[subset] = 1.0;
+    }
+  }
+
+  double f = volume_params.initial_step_size_factor;
+  double alpha_max = volume_params.initial_alpha_max;
+  int consecutive_reds = 0;
+  // NOMUTANTS -- iteration loop, bounded by max_iterations and time_limit.
+  for (int64_t iter = 0; iter < volume_params.max_iterations; ++iter) {
+    if (stop_watch.GetElapsedDuration() >
+        volume_params.time_limit) {  // NOMUTANTS -- time limit check
+      break;
+    }
+    // 1. Subgradient from the smoothed primal x_bar.
+    //    v_bar_i = 1 - sum_{j: i in j} x_bar_j.
+    //    This is the key feature of the Volume Algorithm: the direction
+    //    uses x_bar (a convex combination of the preceding x^t's), not the
+    //    latest x^t.
+    ElementCostVector v_bar(num_elements, 1.0);
+    for (const SubsetIndex subset : model.SubsetRange()) {
+      const double x_val = x_bar[subset];
+      if (x_val == 0.0) continue;
+      for (const ElementIndex element : columns[subset]) {
+        v_bar[element] -= x_val;
+      }
+    }
+
+    // 2. Step size: s = f * (UB - z_bar) / ||v_bar||^2.
+    double v_bar_norm_sq = 0.0;
+    for (const Cost v : v_bar) {
+      v_bar_norm_sq += v * v;  // NOMUTANTS -- norm calculation
+    }
+    if (v_bar_norm_sq == 0.0) break;  // NO MUTANTS: algorithm terminates.
+
+    const double step = f * (upper_bound - z_bar) / v_bar_norm_sq;
+
+    // 3. Update iterate: pi_t = max(0, pi_bar + s * v_bar).
+    ElementCostVector pi_t(num_elements);
+    for (const ElementIndex element : model.ElementRange()) {
+      pi_t[element] = std::max(0.0, pi_bar[element] + step * v_bar[element]);
+    }
+
+    // 4. Solve subproblem with pi_t to get x^t and z^t.
+    model.ComputeReducedCosts(pi_t, reduced_costs);
+
+    Cost z_t = 0.0;
+    for (const Cost val : pi_t) {
+      z_t += val;
+    }
+
+    // 5. Subgradient at x^t: v_t_i = 1 - sum_{j: x^t_j=1, i in j} 1.
+    ElementCostVector v_t(num_elements, 1.0);
+    for (const SubsetIndex subset : model.SubsetRange()) {
+      if (reduced_costs[subset] < 0.0) {
+        z_t += reduced_costs[subset];
+        for (const ElementIndex element : columns[subset]) {
+          v_t[element] -= 1.0;
+        }
+      }
+    }
+
+    // 6. Adaptive alpha (Section 5).
+    //    alpha_opt minimizes ||alpha * v_t + (1-alpha) * v_bar||^2.
+    //    alpha_opt = v_bar . (v_bar - v_t) / ||v_t - v_bar||^2.
+    double dot_v_bar_diff = 0.0;
+    double diff_norm_sq = 0.0;
+    for (const ElementIndex element : model.ElementRange()) {
+      const double diff = v_bar[element] - v_t[element];
+      dot_v_bar_diff += v_bar[element] * diff;
+      diff_norm_sq += diff * diff;
+    }
+    double alpha;
+    if (diff_norm_sq != 0.0) {
+      const double alpha_opt = dot_v_bar_diff / diff_norm_sq;
+      if (alpha_opt < 0.0) {
+        alpha = alpha_max / 10.0;
+      } else {
+        alpha = std::min(alpha_opt, alpha_max);
+      }
+    } else {
+      alpha = alpha_max;
+    }
+
+    // 7. Update smoothed primal: x_bar <- alpha * x^t + (1-alpha) * x_bar.
+    for (const SubsetIndex subset : model.SubsetRange()) {
+      const double x_t = (reduced_costs[subset] < 0.0) ? 1.0 : 0.0;
+      x_bar[subset] = alpha * x_t + (1.0 - alpha) * x_bar[subset];
+    }
+
+    // 8. Step classification (Section 5).
+    if (z_t > z_bar) {
+      // Major iteration: update pi_bar and z_bar.
+      pi_bar = pi_t;
+      z_bar = z_t;
+      consecutive_reds = 0;
+      // Compute d = v_bar . v_t to distinguish green from yellow.
+      double d = 0.0;
+      for (const ElementIndex element : model.ElementRange()) {
+        // NOTE(user): the paper says v_t * v_t, but this is a typo.
+        d += v_bar[element] * v_t[element];
+      }
+      if (d >= 0.0) {
+        // Green step: increase step size factor.
+        f *= volume_params.green_step_multiplier;
+      }
+      // Yellow step (d < 0): no change to f.
+    } else {
+      // Red step: no improvement.
+      ++consecutive_reds;
+      if (consecutive_reds >= volume_params.red_run_length) {
+        f *= volume_params.red_step_multiplier;
+        consecutive_reds = 0;
+      }
+    }
+
+    // 9. Stopping criteria.
+    if (f < volume_params.min_step_size_factor) break;
+
+    // Section 6 stopping: relative gap and average violation.
+    if (std::abs(z_bar) > 0.0) {
+      Cost cx_bar = 0.0;
+      for (const SubsetIndex subset : model.SubsetRange()) {
+        cx_bar += costs[subset] * x_bar[subset];
+      }
+      const double rel_gap = std::abs(cx_bar - z_bar) / std::abs(z_bar);
+      double total_violation = 0.0;
+      for (const ElementIndex element : model.ElementRange()) {
+        total_violation += std::abs(v_bar[element]);
+      }
+      const double avg_violation = total_violation / num_elements;
+      if (rel_gap < volume_params.relative_gap_threshold &&
+          avg_violation < volume_params.violation_threshold) {
+        break;
+      }
+    }
+  }
+
+  return {z_bar, pi_bar};
+}
+
+}  // namespace
+
+namespace internal {
+
 std::vector<int32_t> GenerateFirstNPrimes(int32_t n) {
   if (n <= 0) return {};
   if (n == 1) return {2};
@@ -1271,47 +1462,72 @@ bool DualAscentOptimizer::OptimizeImpl(absl::Span<const SubsetIndex> focus) {
   std::vector<ElementIndex> element_permutation(num_elements);
   std::iota(element_permutation.begin(), element_permutation.end(),
             ElementIndex(0));
-  Cost max_lower_bound =
-      internal::PerformDualAscent(*inv(), element_permutation).first;
+  auto [max_lower_bound, best_duals] =
+      internal::PerformDualAscent(*inv(), element_permutation);
   inv()->ReportLowerBound(max_lower_bound, /*is_cost_consistent=*/false);
 
   absl::InsecureBitGen bit_gen;
 
-  if (use_full_randomization_) {                    // NOMUTANTS
-    for (int i = 0; i < num_random_passes_; ++i) {  // NOMUTANTS
+  if (params().use_full_randomization) {                    // NOMUTANTS
+    for (int i = 0; i < params().num_random_passes; ++i) {  // NOMUTANTS
       std::shuffle(element_permutation.begin(), element_permutation.end(),
                    bit_gen);
-      max_lower_bound = std::max(
-          max_lower_bound,
-          internal::PerformDualAscent(*inv(), element_permutation).first);
+      const auto [lower_bound, duals] =
+          internal::PerformDualAscent(*inv(), element_permutation);
+      if (lower_bound > max_lower_bound) {
+        max_lower_bound = lower_bound;
+        best_duals = duals;
+      }
     }
   } else {
     std::shuffle(element_permutation.begin(), element_permutation.end(),
                  bit_gen);
-    // We generate a few more primes than num_random_passes_ as a provision
-    // against the possibility that some primes may be skipped because they
-    // divide num_elements. There cannot be more that 9 such primes for a
-    // 32-bit integer, since
+    // We generate a few more primes than params().num_random_passes as a
+    // provision against the possibility that some primes may be skipped
+    // because they divide num_elements. There cannot be more that 9 such
+    // primes for a 32-bit integer, since
     // 2 * 3 * 5 * 7 * 11 * 13 * 17 * 19 * 23 * 29 > 2^32.
     // For a 64-bit integer, the number is 15.
     const int32_t kNumMaxDifferentPrimeFactors = 9;
     const std::vector<int32_t> primes = internal::GenerateFirstNPrimes(
-        num_random_passes_ + kNumMaxDifferentPrimeFactors);
+        params().num_random_passes + kNumMaxDifferentPrimeFactors);
     int prime_index = 0;
-    for (int i = 0; i < num_random_passes_; ++i) {
+    for (int i = 0; i < params().num_random_passes; ++i) {
       int32_t prime = primes[prime_index];
       while (num_elements % prime == 0) {  // NOMUTANTS
         ++prime_index;
         prime = primes[prime_index];
       }
-      max_lower_bound = std::max(
-          max_lower_bound,
-          internal::PerformDualAscent(*inv(), element_permutation, prime)
-              .first);
+      const auto [lower_bound, duals] =
+          internal::PerformDualAscent(*inv(), element_permutation, prime);
+      if (lower_bound > max_lower_bound) {
+        max_lower_bound = lower_bound;
+        best_duals = duals;
+      }
       ++prime_index;
     }
   }
   inv()->ReportLowerBound(max_lower_bound, /*is_cost_consistent=*/false);
+  inv()->set_dual_values(best_duals);
+  return true;
+}
+
+// TODO(user): Make it possible to a use a focus. The lower bound will be for
+// the cost of covering the elements reachable from focus.
+bool VolumeOptimizer::OptimizeImpl(absl::Span<const SubsetIndex> /*focus*/) {
+  StopWatch stop_watch(&run_time_);
+  const BaseInt num_elements = inv()->model()->num_elements();
+  std::vector<ElementIndex> element_permutation(num_elements);
+  // NOMUTANTS -- identity permutation.
+  std::iota(element_permutation.begin(), element_permutation.end(),
+            ElementIndex(0));
+  const auto [lower_bound, duals] =
+      PerformVolumeMethodDualAscent(*inv(), element_permutation, params());
+  // NOMUTANTS -- reporting a lower bound.
+  inv()->ReportLowerBound(lower_bound,
+                          /*is_cost_consistent=*/false);
+  // NOMUTANTS -- setting the dual values.
+  inv()->set_dual_values(duals);
   return true;
 }
 

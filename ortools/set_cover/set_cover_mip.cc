@@ -52,7 +52,7 @@ bool SetCoverMip::OptimizeImpl(absl::Span<const SubsetIndex> focus) {
   const SubsetIndex num_subsets(model()->num_subsets());
   const ElementIndex num_elements(model()->num_elements());
   math_opt::SolverType solver_type;
-  switch (mip_solver_) {
+  switch (params().mip_solver) {
     case SetCoverMipSolver::SCIP:
       solver_type = math_opt::SolverType::kGscip;
       break;
@@ -60,21 +60,21 @@ bool SetCoverMip::OptimizeImpl(absl::Span<const SubsetIndex> focus) {
       solver_type = math_opt::SolverType::kGurobi;
       break;
     case SetCoverMipSolver::SAT:
-      if (!use_integers_) {
+      if (!params().use_integers) {
         VLOG(1) << "Defaulting to integer variables with SAT";
-        use_integers_ = true;
+        params().use_integers = true;
       }
       solver_type = math_opt::SolverType::kCpSat;
       break;
     case SetCoverMipSolver::GLOP:
       VLOG(1) << "Defaulting to linear relaxation with GLOP";
-      use_integers_ = false;
+      params().use_integers = false;
       solver_type = math_opt::SolverType::kGlop;
       break;
     case SetCoverMipSolver::PDLP:
-      if (use_integers_) {
+      if (params().use_integers) {
         VLOG(1) << "Defaulting to linear relaxation with PDLP";
-        use_integers_ = false;
+        params().use_integers = false;
       }
       solver_type = math_opt::SolverType::kPdlp;
       break;
@@ -96,7 +96,7 @@ bool SetCoverMip::OptimizeImpl(absl::Span<const SubsetIndex> focus) {
   ElementToIntVector coverage_outside_focus =
       Subtract(inv()->coverage(), inv()->ComputeCoverageInFocus(focus));
   for (const SubsetIndex subset : focus) {
-    if (use_integers_) {
+    if (params().use_integers) {
       vars[subset] =
           mip_model.AddBinaryVariable(absl::StrCat("subset_", subset.value()));
     } else {
@@ -118,7 +118,7 @@ bool SetCoverMip::OptimizeImpl(absl::Span<const SubsetIndex> focus) {
   }
 
   math_opt::SolveArguments args;
-  args.parameters.time_limit = time_limit();
+  args.parameters.time_limit = params().time_limit;
   // Call the solver.
   const absl::StatusOr<math_opt::SolveResult> result =
       math_opt::Solve(mip_model, solver_type, args);
@@ -139,7 +139,7 @@ bool SetCoverMip::OptimizeImpl(absl::Span<const SubsetIndex> focus) {
       LOG(ERROR) << "Solving resulted in an error. Reason: " << solve_status_;
       return false;
   }
-  if (use_integers_) {
+  if (params().use_integers) {
     using CL = SetCoverInvariant::ConsistencyLevel;
     for (const SubsetIndex subset : focus) {
       if (result->variable_values().at(*vars[subset]) > 0.9) {

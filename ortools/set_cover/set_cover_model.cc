@@ -153,9 +153,6 @@ SetCoverModel SetCoverModel::GenerateRandomModelFrom(
         ++num_tries;
       } while (num_tries < kMaxTries &&
                subset_already_contains_element[element]);
-      if (subset_already_contains_element[element]) {
-        continue;
-      }
       ++model.num_nonzeros_;
       model.columns_[subset].push_back(element);
       subset_already_contains_element[element] = true;
@@ -197,9 +194,6 @@ SetCoverModel SetCoverModel::GenerateRandomModelFrom(
             ++num_tries;
           } while (num_tries < kMaxTries &&
                    element_already_in_subset[subset_index]);
-          if (element_already_in_subset[subset_index]) {
-            continue;
-          }
           ++model.num_nonzeros_;
           model.columns_[subset_index].push_back(element);
           element_already_in_subset[subset_index] = true;
@@ -344,6 +338,19 @@ void SetCoverModel::SortElementsInSubsets() {
                       [](const ElementIndex& x) { return x.value(); });
   }
   elements_in_columns_are_sorted_ = true;
+}
+
+void SetCoverModel::ComputeReducedCosts(const ElementCostVector& dual_values,
+                                        SubsetCostVector& reduced_costs) const {
+  DCHECK(row_view_is_valid_);
+  reduced_costs = subset_costs_;
+  for (const ElementIndex element : ElementRange()) {
+    const Cost pi_val = dual_values[element];
+    if (pi_val == 0.0) continue;
+    for (const SubsetIndex subset : rows_[element]) {
+      reduced_costs[subset] -= pi_val;
+    }
+  }
 }
 
 void SetCoverModel::CreateSparseRowView() {

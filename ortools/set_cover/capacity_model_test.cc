@@ -17,6 +17,7 @@
 
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/set_cover/base_types.h"
 
 namespace operations_research {
 namespace {

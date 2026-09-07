@@ -17,12 +17,11 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
-#include <limits>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "absl/base/attributes.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
@@ -56,6 +55,19 @@ namespace operations_research {
 // Base class for all set cover solution generators. This is almost an
 // interface.
 
+// Parameters for SetCoverOptimizer.
+struct SetCoverOptimizerParamsBase {
+  virtual ~SetCoverOptimizerParamsBase() = default;
+
+  int64_t max_iterations = kint64max;
+  absl::Duration time_limit = absl::InfiniteDuration();
+  std::string name = "";
+  std::string class_name = "";
+};
+
+// Base class for all set cover solution generators. This is almost an
+// interface.
+template <typename ParamsType = SetCoverOptimizerParamsBase>
 class SetCoverOptimizer {
  public:
   // By default, the maximum number of iterations is set to infinity, and the
@@ -68,14 +80,33 @@ class SetCoverOptimizer {
         consistency_level_(consistency_level),
         inv_(inv),
         subset_priority_fn_(&DefaultSubsetMarginalImpactFn),
-        class_name_(class_name),
-        name_(name),
-        time_limit_(absl::InfiniteDuration()),
-        max_iterations_(kint64max) {}
+        params_(std::make_unique<ParamsType>()) {
+    params_->class_name = class_name;
+    params_->name = name;
+  }
+
+  explicit SetCoverOptimizer(
+      SetCoverInvariant* inv,
+      SetCoverInvariant::ConsistencyLevel consistency_level,
+      std::unique_ptr<ParamsType> params = nullptr)
+      : run_time_(absl::ZeroDuration()),
+        consistency_level_(consistency_level),
+        inv_(inv),
+        subset_priority_fn_(&DefaultSubsetMarginalImpactFn),
+        params_(std::move(params)) {
+    if (params_ == nullptr) {
+      params_ = std::make_unique<ParamsType>();
+    }
+  }
 
   virtual ~SetCoverOptimizer() = default;
 
-  void SetName(const absl::string_view name) { name_ = name; }
+  SetCoverOptimizer& SetName(const absl::string_view name) {
+    params_->name = name;
+    return *this;
+  }
+
+  std::string name() const { return params_->name; }
 
   SetCoverInvariant* inv() const { return inv_; }
 
@@ -99,33 +130,29 @@ class SetCoverOptimizer {
 
   // Resets the limits to their default values.
   virtual SetCoverOptimizer& ResetLimits() {
-    time_limit_ = absl::InfiniteDuration();
-    max_iterations_ = kint64max;
+    params_->time_limit = absl::InfiniteDuration();
+    params_->max_iterations = kint64max;
     return *this;
   }
 
   // Sets the maximum number of iterations.
   SetCoverOptimizer& SetMaxIterations(int64_t max_iterations) {
-    max_iterations_ = max_iterations;
+    params_->max_iterations = max_iterations;
     return *this;
   }
 
-  // Returns the maximum number of iterations.
-  int64_t max_iterations() const { return max_iterations_; }
-
   // Sets the time limit.
   SetCoverOptimizer& SetTimeLimit(absl::Duration time_limit) {
-    time_limit_ = time_limit;
+    params_->time_limit = time_limit;
     return *this;
   }
 
   absl::Duration run_time() const { return run_time_; }
 
-  // Returns the name of the heuristic.
-  std::string name() const { return name_; }
+  // Returns the parameters.
+  const ParamsType& params() const { return *params_; }
 
-  // Returns the name of the class.
-  std::string class_name() const { return class_name_; }
+  ParamsType& params() { return *params_; }
 
   // Returns the current cost of the solution in the invariant.
   Cost cost() const { return inv_->cost(); }
@@ -142,15 +169,14 @@ class SetCoverOptimizer {
   // Same as above, but with a vector of Booleans as focus.
   virtual bool Optimize(const SubsetBoolVector& in_focus) = 0;
 
-  bool CheckInvariantConsistency() const;
+  bool CheckInvariantConsistency() const {
+    return inv_->CheckConsistency(consistency_level_);
+  }
 
  protected:
   // Accessors.
   SetCoverModel* model() const { return inv_->model(); }
   BaseInt num_subsets() const { return model()->num_subsets(); }
-
-  // Returns the time limit as an absl::Duration.
-  absl::Duration time_limit() const { return time_limit_; }
 
   // run_time_ is an abstract duration for the time spent in NextSolution().
   absl::Duration run_time_;
@@ -174,18 +200,8 @@ class SetCoverOptimizer {
   // the said subset is selected.
   std::function<double(SetCoverInvariant*, SubsetIndex)> subset_priority_fn_;
 
-  // The name of the solution generator class. Cannot be changed by the user.
-  std::string class_name_;
-
-  // The name of the solution generator object. Set to the name of the class
-  // by default, but can be changed by the user.
-  std::string name_;
-
-  // The time limit as an absl::Duration.
-  absl::Duration time_limit_;
-
-  // The maximum number of iterations.
-  int64_t max_iterations_;
+  // The parameters for the identifier.
+  std::unique_ptr<ParamsType> params_;
 };
 
 // Now we define two classes that are used to implement the optimizers.
@@ -196,19 +212,28 @@ class SetCoverOptimizer {
 // The class of solution generators that use a vector of subset indices as
 // focus, with a transformation from a vector of Booleans to a vector of
 // subset indices if needed.
-class SubsetListBasedOptimizer : public SetCoverOptimizer {
+template <typename ParamsType = SetCoverOptimizerParamsBase>
+class SubsetListBasedOptimizer : public SetCoverOptimizer<ParamsType> {
  public:
   explicit SubsetListBasedOptimizer(
       SetCoverInvariant* inv,
       SetCoverInvariant::ConsistencyLevel consistency_level,
       absl::string_view class_name, absl::string_view name)
-      : SetCoverOptimizer(inv, consistency_level, class_name, name) {}
+      : SetCoverOptimizer<ParamsType>(inv, consistency_level, class_name,
+                                      name) {}
+
+  explicit SubsetListBasedOptimizer(
+      SetCoverInvariant* inv,
+      SetCoverInvariant::ConsistencyLevel consistency_level,
+      std::unique_ptr<ParamsType> params = nullptr)
+      : SetCoverOptimizer<ParamsType>(inv, consistency_level,
+                                      std::move(params)) {}
 
   bool Optimize(absl::Span<const SubsetIndex> focus) final {
     return OptimizeImpl(focus);
   }
 
-  bool Optimize() final { return Optimize(model()->all_subsets()); }
+  bool Optimize() final { return Optimize(this->model()->all_subsets()); }
 
   bool Optimize(const SubsetBoolVector& in_focus) final {
     return Optimize(MakeSubsetIndexSpan(in_focus));
@@ -241,24 +266,33 @@ class SubsetListBasedOptimizer : public SetCoverOptimizer {
 // The class of optimizers that use a vector of Booleans as focus,
 // with a transformation from a vector of subset indices to a vector of
 // Booleans if needed.
-class BoolVectorBasedOptimizer : public SetCoverOptimizer {
+template <typename ParamsType = SetCoverOptimizerParamsBase>
+class BoolVectorBasedOptimizer : public SetCoverOptimizer<ParamsType> {
  public:
   explicit BoolVectorBasedOptimizer(
       SetCoverInvariant* inv,
       SetCoverInvariant::ConsistencyLevel consistency_level,
       absl::string_view class_name, absl::string_view name)
-      : SetCoverOptimizer(inv, consistency_level, class_name, name) {}
+      : SetCoverOptimizer<ParamsType>(inv, consistency_level, class_name,
+                                      name) {}
+
+  explicit BoolVectorBasedOptimizer(
+      SetCoverInvariant* inv,
+      SetCoverInvariant::ConsistencyLevel consistency_level,
+      std::unique_ptr<ParamsType> params = nullptr)
+      : SetCoverOptimizer<ParamsType>(inv, consistency_level,
+                                      std::move(params)) {}
 
   bool Optimize(const SubsetBoolVector& in_focus) final {
     return OptimizeImpl(in_focus);
   }
 
   bool Optimize(absl::Span<const SubsetIndex> focus) final {
-    return Optimize(MakeBoolVector(focus, num_subsets()));
+    return Optimize(MakeBoolVector(focus, this->num_subsets()));
   }
 
   bool Optimize() final {
-    return Optimize(SubsetBoolVector(num_subsets(), true));
+    return Optimize(SubsetBoolVector(this->num_subsets(), true));
   }
 
  protected:
@@ -285,7 +319,8 @@ class BoolVectorBasedOptimizer : public SetCoverOptimizer {
 // using local search.
 
 // The consistency level is maintained up to kFreeAndUncovered.
-class TrivialSolutionGenerator : public SubsetListBasedOptimizer {
+class TrivialSolutionGenerator
+    : public SubsetListBasedOptimizer<SetCoverOptimizerParamsBase> {
  public:
   explicit TrivialSolutionGenerator(SetCoverInvariant* inv)
       : TrivialSolutionGenerator(inv, "TrivialGenerator") {}
@@ -305,7 +340,8 @@ class TrivialSolutionGenerator : public SubsetListBasedOptimizer {
 // the generator towards the columns with the least marginal costs.
 
 // The consistency level is maintained up to kFreeAndUncovered.
-class RandomSolutionGenerator : public SubsetListBasedOptimizer {
+class RandomSolutionGenerator
+    : public SubsetListBasedOptimizer<SetCoverOptimizerParamsBase> {
  public:
   explicit RandomSolutionGenerator(SetCoverInvariant* inv)
       : RandomSolutionGenerator(inv, "RandomGenerator") {}
@@ -339,7 +375,8 @@ class RandomSolutionGenerator : public SubsetListBasedOptimizer {
 // https://doi.org/10.1145/1871437.1871501.
 
 // The consistency level is maintained up to kFreeAndUncovered.
-class GreedySolutionOptimizer : public SubsetListBasedOptimizer {
+class GreedySolutionOptimizer
+    : public SubsetListBasedOptimizer<SetCoverOptimizerParamsBase> {
  public:
   explicit GreedySolutionOptimizer(SetCoverInvariant* inv)
       : GreedySolutionOptimizer(inv, "GreedyOptimizer") {}
@@ -359,7 +396,8 @@ class GreedySolutionOptimizer : public SubsetListBasedOptimizer {
 // iteration. This is more efficient for dense problems or when the priority
 // function is expensive, significantly reducing the total number of expensive
 // evaluations.
-class LazyGreedySolutionOptimizer : public SubsetListBasedOptimizer {
+class LazyGreedySolutionOptimizer
+    : public SubsetListBasedOptimizer<SetCoverOptimizerParamsBase> {
  public:
   explicit LazyGreedySolutionOptimizer(SetCoverInvariant* inv)
       : LazyGreedySolutionOptimizer(inv, "GreedyOptimizer") {}
@@ -381,7 +419,8 @@ class LazyGreedySolutionOptimizer : public SubsetListBasedOptimizer {
 // are also updated and set to zero.
 
 // The consistency level is maintained up to kFreeAndUncovered.
-class ElementDegreeSolutionGenerator : public BoolVectorBasedOptimizer {
+class ElementDegreeSolutionGenerator
+    : public BoolVectorBasedOptimizer<SetCoverOptimizerParamsBase> {
  public:
   explicit ElementDegreeSolutionGenerator(SetCoverInvariant* inv)
       : ElementDegreeSolutionGenerator(inv, "ElementDegreeGenerator") {}
@@ -403,7 +442,13 @@ class ElementDegreeSolutionGenerator : public BoolVectorBasedOptimizer {
 
 // Because the number of uncovered elements is computed on-demand, the
 // consistency level only needs to be set to kCostAndCoverage.
-class LazyElementDegreeSolutionGenerator : public BoolVectorBasedOptimizer {
+// Parameters for LazyElementDegreeSolutionGenerator.
+struct LazyElementDegreeParams : public SetCoverOptimizerParamsBase {
+  int64_t num_random_passes = 0;
+};
+
+class LazyElementDegreeSolutionGenerator
+    : public BoolVectorBasedOptimizer<LazyElementDegreeParams> {
  public:
   explicit LazyElementDegreeSolutionGenerator(SetCoverInvariant* inv)
       : LazyElementDegreeSolutionGenerator(inv, "LazyElementDegreeGenerator") {}
@@ -412,26 +457,25 @@ class LazyElementDegreeSolutionGenerator : public BoolVectorBasedOptimizer {
                                      absl::string_view name)
       : BoolVectorBasedOptimizer(
             inv, SetCoverInvariant::ConsistencyLevel::kCostAndCoverage,
-            "LazyElementDegreeGenerator", name) {}
+            std::make_unique<LazyElementDegreeParams>()) {
+    SetName(name);
+    params().class_name = "LazyElementDegreeGenerator";
+  }
 
   bool OptimizeImpl(const SubsetBoolVector& in_focus) override;
 
   // Sets the number of random passes to be performed before after the main
   // heuristic. This is used to generate diverse solutions.
   // If set to 0, no random passes are performed.
-  void SetNumRandomPasses(int num_random_passes) {
-    num_random_passes_ = num_random_passes;
+  LazyElementDegreeSolutionGenerator& SetNumRandomPasses(
+      int num_random_passes) {
+    params().num_random_passes = num_random_passes;
     SetName(num_random_passes == 0
                 ? "LazyElementDegreeGenerator"
                 : absl::StrCat("LazyElementDegreeGeneratorRandom(",
                                num_random_passes, ")"));
+    return *this;
   }
-
-  // Returns the number of random passes to be performed. Default value is 0.
-  int64_t num_random_passes() const { return num_random_passes_; }
-
- private:
-  int64_t num_random_passes_ = 0;
 };
 
 // Once we have an initial solution to the problem, there may be (most often,
@@ -442,7 +486,8 @@ class LazyElementDegreeSolutionGenerator : public BoolVectorBasedOptimizer {
 // direction, taking the S_j with the largest total cost.
 
 // The consistency level is maintained up to kFreeAndUncovered.
-class SteepestSearch : public BoolVectorBasedOptimizer {
+class SteepestSearch
+    : public BoolVectorBasedOptimizer<SetCoverOptimizerParamsBase> {
  public:
   explicit SteepestSearch(SetCoverInvariant* inv)
       : SteepestSearch(inv, "SteepestSearch") {}
@@ -460,7 +505,8 @@ class SteepestSearch : public BoolVectorBasedOptimizer {
 // priorities are computed when needed. It is faster to compute because
 // there are relatively few subsets in the solution, because the cardinality
 // of the solution is bounded by the number of elements.
-class LazySteepestSearch : public BoolVectorBasedOptimizer {
+class LazySteepestSearch
+    : public BoolVectorBasedOptimizer<SetCoverOptimizerParamsBase> {
  public:
   explicit LazySteepestSearch(SetCoverInvariant* inv)
       : LazySteepestSearch(inv, "LazySteepestSearch") {}
@@ -545,7 +591,16 @@ class TabuList {
 // 2 (1): 4–32. doi:10.1287/ijoc.2.1.4.
 
 // The consistency level is maintained up to kFreeAndUncovered.
-class GuidedTabuSearch : public SubsetListBasedOptimizer {
+// Parameters for GuidedTabuSearch.
+struct GuidedTabuSearchParams : public SetCoverOptimizerParamsBase {
+  double lagrangian_factor = 100.0;
+  double penalty_factor = 0.3;
+  double epsilon = 1e-6;
+  int tabu_list_size = 17;
+};
+
+class GuidedTabuSearch
+    : public SubsetListBasedOptimizer<GuidedTabuSearchParams> {
  public:
   explicit GuidedTabuSearch(SetCoverInvariant* inv)
       : GuidedTabuSearch(inv, "GuidedTabuSearch") {}
@@ -553,13 +608,12 @@ class GuidedTabuSearch : public SubsetListBasedOptimizer {
   GuidedTabuSearch(SetCoverInvariant* inv, absl::string_view name)
       : SubsetListBasedOptimizer(
             inv, SetCoverInvariant::ConsistencyLevel::kFreeAndUncovered,
-            "GuidedTabuSearch", name),
-        lagrangian_factor_(kDefaultLagrangianFactor),
-        penalty_factor_(kDefaultPenaltyFactor),
-        epsilon_(kDefaultEpsilon),
+            std::make_unique<GuidedTabuSearchParams>()),
         augmented_costs_(),
         times_penalized_(),
-        tabu_list_(SubsetIndex(kDefaultTabuListSize)) {
+        tabu_list_(SubsetIndex(params().tabu_list_size)) {
+    SetName(name);
+    params().class_name = "GuidedTabuSearch";
     Initialize();
   }
 
@@ -571,37 +625,34 @@ class GuidedTabuSearch : public SubsetListBasedOptimizer {
   // TODO(user): re-introduce this is the code. It was used to favor
   // subsets with the same marginal costs but that would cover more
   // elements. But first, see if it makes sense to compute it.
-  void SetLagrangianFactor(double factor) { lagrangian_factor_ = factor; }
-  double GetLagrangianFactor() const { return lagrangian_factor_; }
+  GuidedTabuSearch& SetLagrangianFactor(double factor) {
+    params().lagrangian_factor = factor;
+    return *this;
+  }
 
-  void SetEpsilon(double r) { epsilon_ = r; }
-  double GetEpsilon() const { return epsilon_; }
+  GuidedTabuSearch& SetEpsilon(double r) {
+    params().epsilon = r;
+    return *this;
+  }
 
   // Setters and getters for the Guided Tabu Search algorithm parameters.
-  void SetPenaltyFactor(double factor) { penalty_factor_ = factor; }
-  double GetPenaltyFactor() const { return penalty_factor_; }
+  GuidedTabuSearch& SetPenaltyFactor(double factor) {
+    params().penalty_factor = factor;
+    return *this;
+  }
 
-  void SetTabuListSize(int size) { tabu_list_.Init(size); }
-  int GetTabuListSize() const { return tabu_list_.size(); }
+  GuidedTabuSearch& SetTabuListSize(int size) {
+    params().tabu_list_size = size;
+    tabu_list_.Init(size);
+    return *this;
+  }
 
  private:
   // Updates the penalties on the subsets in focus.
   void UpdatePenalties(absl::Span<const SubsetIndex> focus);
 
-  // Search handling variables and default parameters.
-  static constexpr double kDefaultLagrangianFactor = 100.0;
-  double lagrangian_factor_;
-
   // Guided local search-related data.
   static constexpr double kPenaltyUpdateEpsilon = 1e-1;
-
-  // Guided Tabu Search parameters.
-  static constexpr double kDefaultPenaltyFactor = 0.3;
-  double penalty_factor_;
-
-  // Tabu Search parameters.
-  static constexpr double kDefaultEpsilon = 1e-6;
-  double epsilon_;
 
   // Penalized costs for each subset as used in Guided Tabu Search.
   SubsetCostVector augmented_costs_;
@@ -616,7 +667,6 @@ class GuidedTabuSearch : public SubsetListBasedOptimizer {
   SubsetCostVector utilities_;
 
   // Tabu search-related data.
-  static constexpr int kDefaultTabuListSize = 17;  // Nice prime number.
   TabuList<SubsetIndex> tabu_list_;
 };
 
@@ -635,8 +685,14 @@ class GuidedTabuSearch : public SubsetListBasedOptimizer {
 // combinatorial optimisation problems", PhD Thesis, University of Essex,
 // Colchester, UK, July, 1997.
 
-// The consistency level is maintained up to kRedundancy.
-class GuidedLocalSearch : public SubsetListBasedOptimizer {
+// The consistency level is maintained// Parameters for GuidedLocalSearch.
+struct GuidedLocalSearchParams : public SetCoverOptimizerParamsBase {
+  double epsilon = 1e-8;
+  double alpha = 0.5;
+};
+
+class GuidedLocalSearch
+    : public SubsetListBasedOptimizer<GuidedLocalSearchParams> {
  public:
   explicit GuidedLocalSearch(SetCoverInvariant* inv)
       : GuidedLocalSearch(inv, "GuidedLocalSearch") {}
@@ -644,9 +700,9 @@ class GuidedLocalSearch : public SubsetListBasedOptimizer {
   GuidedLocalSearch(SetCoverInvariant* inv, absl::string_view name)
       : SubsetListBasedOptimizer(
             inv, SetCoverInvariant::ConsistencyLevel::kRedundancy,
-            "GuidedLocalSearch", name),
-        epsilon_(kDefaultEpsilon),
-        alpha_(kDefaultAlpha) {
+            std::make_unique<GuidedLocalSearchParams>()) {
+    SetName(name);
+    params().class_name = "GuidedLocalSearch";
     Initialize();
   }
 
@@ -657,23 +713,15 @@ class GuidedLocalSearch : public SubsetListBasedOptimizer {
 
  private:
   // Setters and getters for the Guided Local Search algorithm parameters.
-  void SetEpsilon(double r) { epsilon_ = r; }
+  GuidedLocalSearch& SetEpsilon(double r) {
+    params().epsilon = r;
+    return *this;
+  }
 
-  double GetEpsilon() const { return epsilon_; }
-
-  void SetAlpha(double r) { alpha_ = r; }
-
-  double GetAlpha() const { return alpha_; }
-
-  // The epsilon value for the Guided Local Search algorithm.
-  // Used to penalize the subsets within epsilon of the maximum utility.
-  static constexpr double kDefaultEpsilon = 1e-8;
-  double epsilon_;
-
-  // The alpha value for the Guided Local Search algorithm.
-  // Tunable factor used to penalize the subsets.
-  static constexpr double kDefaultAlpha = 0.5;
-  double alpha_;
+  GuidedLocalSearch& SetAlpha(double r) {
+    params().alpha = r;
+    return *this;
+  }
 
   // The penalization value for the Guided Local Search algorithm.
   double penalization_factor_;
@@ -700,7 +748,13 @@ class GuidedLocalSearch : public SubsetListBasedOptimizer {
 // elements.
 
 // The consistency level is maintained up to kFreeAndUncovered.
-class CliqueGuidedLNS : public SubsetListBasedOptimizer {
+// Parameters for CliqueGuidedLNS.
+struct CliqueGuidedLNSParams : public SetCoverOptimizerParamsBase {
+  int max_num_cliques = 100;
+  int max_clique_size = 2000;
+};
+
+class CliqueGuidedLNS : public SubsetListBasedOptimizer<CliqueGuidedLNSParams> {
  public:
   explicit CliqueGuidedLNS(SetCoverInvariant* inv)
       : CliqueGuidedLNS(inv, "CliqueGuidedLNS") {}
@@ -708,40 +762,35 @@ class CliqueGuidedLNS : public SubsetListBasedOptimizer {
   CliqueGuidedLNS(SetCoverInvariant* inv, absl::string_view name)
       : SubsetListBasedOptimizer(
             inv, SetCoverInvariant::ConsistencyLevel::kFreeAndUncovered,
-            "CliqueGuidedLNS", name),
-        max_num_cliques_(kDefaultNumCliques),
-        max_clique_size_(kDefaultMaxCliqueSize) {}
+            std::make_unique<CliqueGuidedLNSParams>()),
+        max_clique_size_generated_(0) {
+    SetName(name);
+    params().class_name = "CliqueGuidedLNS";
+  }
 
   bool OptimizeImpl(absl::Span<const SubsetIndex> focus) override;
 
-  // Setter and getter for the maximum number of cliques to be generated. This
+  // Setter for the maximum number of cliques to be generated. This
   // limits the running time.
   CliqueGuidedLNS& SetMaxNumCliques(int max_num_cliques) {
-    max_num_cliques_ = max_num_cliques;
+    params().max_num_cliques = max_num_cliques;
     return *this;
   }
-  int GetMaxNumCliques() const { return max_num_cliques_; }
 
-  // Setter and getter for the maximum clique size. In some cases, the clique
+  // Setter for the maximum clique size. In some cases, the clique
   // can be almost as large (90%) as the number of subsets in the problem,
   // making the computation time prohibitive, and defeating the local search
   // aspect of the algorithm.
   CliqueGuidedLNS& SetMaxCliqueSize(int max_clique_size) {
-    max_clique_size_ = max_clique_size;
+    params().max_clique_size = max_clique_size;
     return *this;
   }
-  int GetMaxCliqueSize() const { return max_clique_size_; }
 
   // Returns for the maximum clique size generated. This is useful to tune the
   // parameter max_clique_size.
   int max_clique_size_generated() const { return max_clique_size_generated_; }
 
  private:
-  static constexpr BaseInt kDefaultNumCliques = 100;
-  static constexpr BaseInt kDefaultMaxCliqueSize = 2000;
-
-  BaseInt max_num_cliques_;
-  BaseInt max_clique_size_;
   BaseInt max_clique_size_generated_ = 0;
 };
 
@@ -793,8 +842,13 @@ std::vector<int32_t> GenerateFirstNPrimes(int32_t n);
 // number for each pass.
 // When use_full_randomization is true, the permutation is fully random at each
 // pass. It is 5% to 10% slower than the ither method.
-// TODO(user): Implement the volume method to improve the lower bound.
-class DualAscentOptimizer : public SubsetListBasedOptimizer {
+// Parameters for DualAscentOptimizer.
+struct DualAscentParams : public SetCoverOptimizerParamsBase {
+  int num_random_passes = 0;
+  bool use_full_randomization = false;
+};
+
+class DualAscentOptimizer : public SubsetListBasedOptimizer<DualAscentParams> {
  public:
   explicit DualAscentOptimizer(SetCoverInvariant* inv)
       : DualAscentOptimizer(inv, "DualAscentLB") {}
@@ -802,29 +856,68 @@ class DualAscentOptimizer : public SubsetListBasedOptimizer {
   DualAscentOptimizer(SetCoverInvariant* inv, absl::string_view name)
       : SubsetListBasedOptimizer(
             inv, SetCoverInvariant::ConsistencyLevel::kInconsistent,
-            "DualAscentLB", name),
-        num_random_passes_(0),
-        use_full_randomization_(false) {}
+            std::make_unique<DualAscentParams>()) {
+    SetName(name);
+    params().class_name = "DualAscentLB";
+  }
 
   DualAscentOptimizer& SetNumRandomPasses(int num_random_passes) {
-    num_random_passes_ = num_random_passes;
+    params().num_random_passes = num_random_passes;
     return *this;
   }
-
-  int num_random_passes() const { return num_random_passes_; }
 
   DualAscentOptimizer& UseFullRandomization(bool use_full_randomization) {
-    use_full_randomization_ = use_full_randomization;
+    params().use_full_randomization = use_full_randomization;
     return *this;
   }
 
-  bool use_full_randomization() const { return use_full_randomization_; }
+  bool OptimizeImpl(absl::Span<const SubsetIndex> focus) override;
+};
+
+// Parameters for VolumeOptimizer.
+// Values from Barahona and Anbil (2000), Section 5.
+struct VolumeOptimizerParams : public SetCoverOptimizerParamsBase {
+  VolumeOptimizerParams() {
+    // Set some default values to have a reasonable stopping criterion.
+    time_limit = absl::Seconds(1);
+    max_iterations = 1000;
+  }
+  // Initial step size factor (f in the paper).
+  double initial_step_size_factor = 0.1;
+  // Upper bound on the primal smoothing parameter.
+  double initial_alpha_max = 0.1;
+  // Multiplier for f on green steps.
+  double green_step_multiplier = 1.1;
+  // Multiplier for f after consecutive red steps.
+  double red_step_multiplier = 0.66;
+  // Number of consecutive red steps before decay.
+  int red_run_length = 20;
+  // Minimum value of f before termination.
+  double min_step_size_factor = 1e-6;
+  // Relative gap threshold for stopping.
+  double relative_gap_threshold = 0.02;
+  // Average violation threshold for stopping.
+  double violation_threshold = 0.01;
+};
+
+// Computes a lower bound using the Volume Algorithm (Barahona and Anbil,
+// 2000), which extends the subgradient method with primal smoothing.
+// Produces both dual values (multipliers) and an approximate primal
+// solution.
+class VolumeOptimizer : public SubsetListBasedOptimizer<VolumeOptimizerParams> {
+ public:
+  explicit VolumeOptimizer(SetCoverInvariant* inv)
+      : VolumeOptimizer(inv, "VolumeLB") {}
+
+  VolumeOptimizer(SetCoverInvariant* inv, absl::string_view name)
+      : SubsetListBasedOptimizer(
+            inv, SetCoverInvariant::ConsistencyLevel::kInconsistent,
+            std::make_unique<VolumeOptimizerParams>()) {
+    SetName(name);
+    params().class_name = "VolumeLB";
+  }
 
   bool OptimizeImpl(absl::Span<const SubsetIndex> focus) override;
-
- private:
-  int num_random_passes_;
-  bool use_full_randomization_;
 };
 
 // Computes a clique in the intersection graph of the subsets, starting from
