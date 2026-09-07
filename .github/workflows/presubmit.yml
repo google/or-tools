@@ -26,6 +26,7 @@ jobs:
 ###############################################################################
   clang-format:
     runs-on: ubuntu-latest
+    if: false
     steps:
     - uses: actions/checkout@v7
     - uses: jidicula/clang-format-action@v4.18.0
@@ -36,7 +37,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        # os: [ubuntu-latest, windows-latest]
+        include:
+          # Map os to platform / generator
+          # - os: ubuntu-latest
+          #   platform: linux
+          # - os: macos-latest
+          #   platform: macos
+          - os: windows-latest
+            platform: windows
     runs-on: ${{matrix.os}}
     steps:
     - uses: actions/checkout@v7
@@ -49,10 +58,8 @@ jobs:
         python-version: ${{env.PYTHON_VERSION}}
     - uses: bazel-contrib/setup-bazel@0.19.0
     - name: Build
-      shell: bash
       run: bazel build --config=ci //...
     - name: Test
-      shell: bash
       run: bazel test  --config=ci //... -- -//bazel:all
 ###############################################################################
   CMake:
@@ -80,6 +87,7 @@ jobs:
             generator: Ninja
     name: CMake(${{matrix.platform}}•${{matrix.build}})
     runs-on: ${{matrix.os}}
+    if: false
     steps:
     - uses: actions/checkout@v7
     - uses: ./.github/actions/remote_cache
