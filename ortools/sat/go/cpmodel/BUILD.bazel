@@ -30,6 +30,10 @@ go_library(
         "@com_github_golang_glog//:glog",
         "@org_golang_google_protobuf//proto",
     ],
+    target_compatible_with = select({
+      "@platforms//os:windows": ["@platforms//:incompatible"],
+      "//conditions:default": [],
+    }),
 )
 
 go_test(
