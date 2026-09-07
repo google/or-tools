@@ -15,7 +15,6 @@ syntax = "proto3";
 
 package operations_research.math_opt;
 
-import "ortools/util/status.proto";
 import "ortools/math_opt/callback.proto";
 import "ortools/math_opt/infeasible_subsystem.proto";
 import "ortools/math_opt/model.proto";
@@ -23,6 +22,7 @@ import "ortools/math_opt/model_parameters.proto";
 import "ortools/math_opt/model_update.proto";
 import "ortools/math_opt/parameters.proto";
 import "ortools/math_opt/result.proto";
+import "ortools/util/status.proto";
 
 option java_package = "com.google.ortools.mathopt";
 option java_multiple_files = true;

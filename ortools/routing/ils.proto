@@ -19,7 +19,7 @@
 // to an acceptance criterion.
 // The best found solution is eventually returned.
 
-edition = "2024";
+syntax = "proto3";
 
 package operations_research.routing;
 

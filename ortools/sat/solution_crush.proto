@@ -17,15 +17,16 @@ syntax = "proto3";
 
 package operations_research.sat;
 
+import "ortools/sat/cp_model.proto";
+
 // clang-format off
-option csharp_namespace = "Google.OrTools.Sat";
 option go_package = "github.com/google/or-tools/ortools/sat/proto/cpmodel";
+
 option java_package = "com.google.ortools.sat";
 option java_multiple_files = true;
 option java_outer_classname = "CpModelProtobuf";
+option csharp_namespace = "Google.OrTools.Sat";
 // clang-format on
-
-import "ortools/sat/cp_model.proto";
 
 // Resizes the solution to contain `new_size` variables. Does not change the
 // value of existing variables, and does not set any value for the new
