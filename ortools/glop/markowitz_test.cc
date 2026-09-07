@@ -15,10 +15,12 @@
 
 #include <cstdint>
 #include <random>
+#include <utility>
 #include <vector>
 
 #include "absl/random/distributions.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/graph_base/iterators.h"
 #include "ortools/lp_data/lp_test_utils.h"
 #include "ortools/lp_data/lp_types.h"
@@ -298,17 +300,12 @@ TEST(MarkowitzTest, RandomSparseMatrix) {
 
   // So we know when we do a change that impacts the decomposition.
   EXPECT_EQ(1981, matrix.num_entries());
-  // The decomposition produces slightly different fill-in on macOS vs. Linux,
-  // likely because different compilers (or architectures) perform floating
-  // point operations in a different order or use FMA instructions, leading to
-  // different tie-breaking or pivot choices during Markowitz LU factorization.
-#if defined(__APPLE__)
-  EXPECT_EQ(5633, lower.num_entries());
-  EXPECT_EQ(5704, upper.num_entries());
-#else
-  EXPECT_EQ(5627, lower.num_entries());
-  EXPECT_EQ(5697, upper.num_entries());
-#endif
+  // The decomposition produces slightly different fill-in depending on the
+  // availability of FMA instructions leading to different tie-breaking or pivot
+  // choices during Markowitz LU factorization.
+  EXPECT_THAT(
+      std::make_pair(lower.num_entries(), upper.num_entries()),
+      testing::AnyOf(testing::Pair(5633, 5704), testing::Pair(5627, 5697)));
 }
 
 TEST(MarkowitzTest, RandomWideNonSquareMatrix) {
