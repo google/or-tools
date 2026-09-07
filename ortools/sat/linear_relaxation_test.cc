@@ -79,7 +79,7 @@ std::string AtMostOneAsString(absl::Span<const Literal> at_most_one,
                               Model* model) {
   LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(1));
   for (const Literal literal : at_most_one) {
-    const bool unused ABSL_ATTRIBUTE_UNUSED =
+    const bool unused [[maybe_unused]] =
         lc.AddLiteralTerm(literal, IntegerValue(1));
   }
   return lc.Build().DebugString();

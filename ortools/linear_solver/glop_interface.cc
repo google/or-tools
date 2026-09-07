@@ -436,7 +436,7 @@ void GLOPInterface::NonIncrementalChange() {
 namespace {
 
 // See MpSolverInterfaceFactoryRepository for details.
-const void* const kRegisterGlop ABSL_ATTRIBUTE_UNUSED = [] {
+const void* const kRegisterGlop [[maybe_unused]] = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* const solver) { return new GLOPInterface(solver); },
       MPSolver::GLOP_LINEAR_PROGRAMMING);

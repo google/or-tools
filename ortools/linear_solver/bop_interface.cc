@@ -383,7 +383,7 @@ void BopInterface::NonIncrementalChange() {
 namespace {
 
 // See MpSolverInterfaceFactoryRepository for details.
-const void* const kRegisterBop ABSL_ATTRIBUTE_UNUSED = [] {
+const void* const kRegisterBop [[maybe_unused]] = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* const solver) { return new BopInterface(solver); },
       MPSolver::BOP_INTEGER_PROGRAMMING);

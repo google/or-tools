@@ -309,7 +309,7 @@ void PdlpInterface::NonIncrementalChange() {
 namespace {
 
 // See MpSolverInterfaceFactoryRepository for details.
-const void* const kRegisterPdlp ABSL_ATTRIBUTE_UNUSED = [] {
+const void* const kRegisterPdlp [[maybe_unused]] = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* const solver) { return new PdlpInterface(solver); },
       MPSolver::PDLP_LINEAR_PROGRAMMING);

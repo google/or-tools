@@ -259,7 +259,7 @@ class AllSolversRegistry {
 //   solver_factory: A SolverInterface::Factory for solver_type.
 #define MATH_OPT_REGISTER_SOLVER(solver_type, solver_factory)              \
   namespace {                                                              \
-  const void* const kRegisterSolver ABSL_ATTRIBUTE_UNUSED = [] {           \
+  const void* const kRegisterSolver [[maybe_unused]] = [] {                \
     AllSolversRegistry::Instance()->Register(solver_type, solver_factory); \
     return nullptr;                                                        \
   }();                                                                     \

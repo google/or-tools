@@ -2383,7 +2383,7 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
     for (const Literal literal : at_most_one) {
       // Note that it is okay to simply ignore the literal if it has no
       // integer view.
-      const bool unused ABSL_ATTRIBUTE_UNUSED =
+      const bool unused [[maybe_unused]] =
           lc.AddLiteralTerm(literal, IntegerValue(1));
     }
     relaxation.linear_constraints.push_back(lc.Build());
