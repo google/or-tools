@@ -63,9 +63,15 @@ def _raise_ne_not_supported() -> NoReturn:
     raise TypeError("!= constraints are not supported")
 
 
-LowerBoundedLinearExpression = bounded_expressions.LowerBoundedExpression["LinearBase"]
-UpperBoundedLinearExpression = bounded_expressions.UpperBoundedExpression["LinearBase"]
-BoundedLinearExpression = bounded_expressions.BoundedExpression["LinearBase"]
+LowerBoundedLinearExpression = bounded_expressions.LowerBoundedExpression[
+    "LinearBase"  # pyrefly: ignore[not-a-type]
+]
+UpperBoundedLinearExpression = bounded_expressions.UpperBoundedExpression[
+    "LinearBase"  # pyrefly: ignore[not-a-type]
+]
+BoundedLinearExpression = bounded_expressions.BoundedExpression[
+    "LinearBase"
+]  # pyrefly: ignore[not-a-type]
 
 
 class VarEqVar:
@@ -113,28 +119,30 @@ class VarEqVar:
         return f"{self.first_variable!r} == {self._second_variable!r}"
 
 
-BoundedLinearTypesList = (
+BoundedLinearTypesList = (  # pylint: disable=invalid-name
     LowerBoundedLinearExpression,
     UpperBoundedLinearExpression,
     BoundedLinearExpression,
     VarEqVar,
 )
-BoundedLinearTypes = Union[BoundedLinearTypesList]
+BoundedLinearTypes = Union[BoundedLinearTypesList]  # pyrefly: ignore[not-a-type]
 
 LowerBoundedQuadraticExpression = bounded_expressions.LowerBoundedExpression[
-    "QuadraticBase"
+    "QuadraticBase"  # pyrefly: ignore[not-a-type]
 ]
 UpperBoundedQuadraticExpression = bounded_expressions.UpperBoundedExpression[
-    "QuadraticBase"
+    "QuadraticBase"  # pyrefly: ignore[not-a-type]
 ]
-BoundedQuadraticExpression = bounded_expressions.BoundedExpression["QuadraticBase"]
+BoundedQuadraticExpression = bounded_expressions.BoundedExpression[
+    "QuadraticBase"  # pyrefly: ignore[not-a-type]
+]
 
-BoundedQuadraticTypesList = (
+BoundedQuadraticTypesList = (  # pylint: disable=invalid-name
     LowerBoundedQuadraticExpression,
     UpperBoundedQuadraticExpression,
     BoundedQuadraticExpression,
 )
-BoundedQuadraticTypes = Union[BoundedQuadraticTypesList]
+BoundedQuadraticTypes = Union[BoundedQuadraticTypesList]  # pyrefly: ignore[not-a-type]
 
 
 # TODO(b/231426528): consider using a frozen dataclass.
@@ -158,7 +166,9 @@ class QuadraticTermKey:
     def second_var(self) -> "Variable":
         return self._second_var
 
-    def __eq__(self, other: "QuadraticTermKey") -> bool:
+    def __eq__(
+        self, other: "QuadraticTermKey"
+    ) -> bool:  # pyrefly: ignore[bad-override]
         return bool(
             self._first_var == other._first_var
             and self._second_var == other._second_var
@@ -223,7 +233,9 @@ class _ToProcessElementsImplementation(Generic[_T]):
         return bool(self._queue)
 
 
-_LinearToProcessElements = _ToProcessElementsImplementation["LinearBase"]
+_LinearToProcessElements = _ToProcessElementsImplementation[
+    "LinearBase"
+]  # pyrefly: ignore[not-a-type]
 _QuadraticToProcessElements = _ToProcessElementsImplementation[
     Union["LinearBase", "QuadraticBase"]
 ]
@@ -668,7 +680,8 @@ class Variable(LinearBase, from_model.FromModel):
         return f"<Variable id: {self.id}, name: {self.name!r}>"
 
     @typing.overload
-    def __eq__(self, rhs: "Variable") -> "VarEqVar": ...
+    def __eq__(self, rhs: "Variable") -> "VarEqVar":  # pyrefly: ignore[bad-override]
+        ...
 
     @typing.overload
     def __eq__(self, rhs: LinearTypesExceptVariable) -> "BoundedLinearExpression": ...
@@ -679,7 +692,8 @@ class Variable(LinearBase, from_model.FromModel):
         return super().__eq__(rhs)
 
     @typing.overload
-    def __ne__(self, rhs: "Variable") -> bool: ...
+    def __ne__(self, rhs: "Variable") -> bool:  # pyrefly: ignore[bad-override]
+        ...
 
     @typing.overload
     def __ne__(self, rhs: LinearTypesExceptVariable) -> NoReturn: ...
@@ -693,7 +707,8 @@ class Variable(LinearBase, from_model.FromModel):
         return hash(self._id)
 
     @typing.overload
-    def __mul__(self, other: float) -> "LinearTerm": ...
+    def __mul__(self, other: float) -> "LinearTerm":  # pyrefly: ignore[bad-override]
+        ...
 
     @typing.overload
     def __mul__(self, other: Union["Variable", "LinearTerm"]) -> "QuadraticTerm": ...
@@ -714,18 +729,22 @@ class Variable(LinearBase, from_model.FromModel):
             return LinearLinearProduct(self, other)  # pytype: disable=bad-return-type
         return LinearTerm(self, other)
 
-    def __rmul__(self, constant: float) -> "LinearTerm":
+    def __rmul__(
+        self, constant: float
+    ) -> "LinearTerm":  # pyrefly: ignore[bad-override]
         if not isinstance(constant, (int, float)):
             return NotImplemented
         return LinearTerm(self, constant)
 
     # TODO(b/216492143): explore numerical consequences of 1.0 / constant below.
-    def __truediv__(self, constant: float) -> "LinearTerm":
+    def __truediv__(
+        self, constant: float
+    ) -> "LinearTerm":  # pyrefly: ignore[bad-override]
         if not isinstance(constant, (int, float)):
             return NotImplemented
         return LinearTerm(self, 1.0 / constant)
 
-    def __neg__(self) -> "LinearTerm":
+    def __neg__(self) -> "LinearTerm":  # pyrefly: ignore[bad-override]
         return LinearTerm(self, -1.0)
 
     def _flatten_once_and_add_to(
@@ -766,7 +785,8 @@ class LinearTerm(LinearBase):
         processed_elements.terms[self._variable] += self._coefficient * scale
 
     @typing.overload
-    def __mul__(self, other: float) -> "LinearTerm": ...
+    def __mul__(self, other: float) -> "LinearTerm":  # pyrefly: ignore[bad-override]
+        ...
 
     @typing.overload
     def __mul__(self, other: Union["Variable", "LinearTerm"]) -> "QuadraticTerm": ...
@@ -790,17 +810,21 @@ class LinearTerm(LinearBase):
             return LinearLinearProduct(self, other)  # pytype: disable=bad-return-type
         return LinearTerm(self._variable, self._coefficient * other)
 
-    def __rmul__(self, constant: float) -> "LinearTerm":
+    def __rmul__(
+        self, constant: float
+    ) -> "LinearTerm":  # pyrefly: ignore[bad-override]
         if not isinstance(constant, (int, float)):
             return NotImplemented
         return LinearTerm(self._variable, self._coefficient * constant)
 
-    def __truediv__(self, constant: float) -> "LinearTerm":
+    def __truediv__(
+        self, constant: float
+    ) -> "LinearTerm":  # pyrefly: ignore[bad-override]
         if not isinstance(constant, (int, float)):
             return NotImplemented
         return LinearTerm(self._variable, self._coefficient / constant)
 
-    def __neg__(self) -> "LinearTerm":
+    def __neg__(self) -> "LinearTerm":  # pyrefly: ignore[bad-override]
         return LinearTerm(self._variable, -self._coefficient)
 
     def __str__(self):
@@ -848,12 +872,14 @@ class QuadraticTerm(QuadraticBase):
             return NotImplemented
         return QuadraticTerm(self._key, self._coefficient * constant)
 
-    def __truediv__(self, constant: float) -> "QuadraticTerm":
+    def __truediv__(
+        self, constant: float
+    ) -> "QuadraticTerm":  # pyrefly: ignore[bad-override]
         if not isinstance(constant, (int, float)):
             return NotImplemented
         return QuadraticTerm(self._key, self._coefficient / constant)
 
-    def __neg__(self) -> "QuadraticTerm":
+    def __neg__(self) -> "QuadraticTerm":  # pyrefly: ignore[bad-override]
         return QuadraticTerm(self._key, -self._coefficient)
 
     def __str__(self):

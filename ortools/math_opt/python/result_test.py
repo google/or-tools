@@ -204,7 +204,7 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*other_x"):
             res.variable_values(other_x)
         with self.assertRaisesRegex(KeyError, ".*string"):
-            res.variable_values([y, "string"])
+            res.variable_values([y, "string"])  # pyrefly: ignore[no-matching-overload]
         with self.assertRaisesRegex(TypeError, ".*int"):
             res.variable_values(20)
 
@@ -288,7 +288,7 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*other_x"):
             res.reduced_costs(other_x)
         with self.assertRaisesRegex(KeyError, ".*string"):
-            res.reduced_costs([y, "string"])
+            res.reduced_costs([y, "string"])  # pyrefly: ignore[no-matching-overload]
         with self.assertRaisesRegex(TypeError, ".*int"):
             res.reduced_costs(20)
         # Dual values.
@@ -300,7 +300,7 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*other_c"):
             res.dual_values(other_c)
         with self.assertRaisesRegex(KeyError, ".*string"):
-            res.dual_values([d, "string"])
+            res.dual_values([d, "string"])  # pyrefly: ignore[no-matching-overload]
         with self.assertRaisesRegex(TypeError, ".*int"):
             res.dual_values(20)
 
@@ -386,7 +386,9 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*other_x"):
             res.ray_variable_values(other_x)
         with self.assertRaisesRegex(KeyError, ".*string"):
-            res.ray_variable_values([y, "string"])
+            res.ray_variable_values(
+                [y, "string"]
+            )  # pyrefly: ignore[no-matching-overload]
         with self.assertRaisesRegex(TypeError, ".*int"):
             res.ray_variable_values(20)
 
@@ -421,7 +423,9 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*other_x"):
             res.ray_reduced_costs(other_x)
         with self.assertRaisesRegex(KeyError, ".*string"):
-            res.ray_reduced_costs([y, "string"])
+            res.ray_reduced_costs(
+                [y, "string"]
+            )  # pyrefly: ignore[no-matching-overload]
         with self.assertRaisesRegex(TypeError, ".*int"):
             res.ray_reduced_costs(20)
         # Dual values.
@@ -433,7 +437,7 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*other_c"):
             res.ray_dual_values(other_c)
         with self.assertRaisesRegex(KeyError, ".*string"):
-            res.ray_dual_values([d, "string"])
+            res.ray_dual_values([d, "string"])  # pyrefly: ignore[no-matching-overload]
         with self.assertRaisesRegex(TypeError, ".*int"):
             res.ray_dual_values(20)
 
@@ -491,7 +495,7 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*other_x"):
             res.variable_status(other_x)
         with self.assertRaisesRegex(KeyError, ".*string"):
-            res.variable_status([y, "string"])
+            res.variable_status([y, "string"])  # pyrefly: ignore[no-matching-overload]
         with self.assertRaisesRegex(TypeError, ".*int"):
             res.variable_status(20)
         # Constraint status
@@ -509,7 +513,9 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*other_c"):
             res.constraint_status(other_c)
         with self.assertRaisesRegex(KeyError, ".*string"):
-            res.constraint_status([d, "string"])
+            res.constraint_status(
+                [d, "string"]
+            )  # pyrefly: ignore[no-matching-overload]
         with self.assertRaisesRegex(TypeError, ".*int"):
             res.constraint_status(20)
 

@@ -45,10 +45,10 @@ def main(argv: Sequence[str]):
 
         script_path = argv[1]
 
-        if not os.path.isfile(script_path):
+        if not os.path.isfile(script_path):  # pyrefly: ignore[bad-argument-type]
             raise FileNotFoundError(f"File not found: {script_path}")
 
-        with open(script_path, "r") as f:
+        with open(script_path, "r") as f:  # pyrefly: ignore[no-matching-overload]
             lines = tuple(f)
 
         last_cmd_line = None

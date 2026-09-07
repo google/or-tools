@@ -41,10 +41,10 @@ class MathOptProtoEquivMatcher:
         self._expected = copy.deepcopy(expected)
         normalize.math_opt_normalize_proto(self._expected)
 
-    def __eq__(self, actual: message.Message) -> bool:
+    def __eq__(self, actual: message.Message) -> bool:  # pyrefly: ignore[bad-override]
         actual = copy.deepcopy(actual)
         normalize.math_opt_normalize_proto(actual)
         return str(actual) == str(self._expected)
 
-    def __ne__(self, other: message.Message) -> bool:
+    def __ne__(self, other: message.Message) -> bool:  # pyrefly: ignore[bad-override]
         return not self == other

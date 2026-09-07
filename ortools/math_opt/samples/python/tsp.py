@@ -121,7 +121,9 @@ def _edge_values(
     for i in range(n):
         for j in range(n):
             if i != j:
-                res[i][j] = var_values[edge_vars[i][j]] > 0.5
+                res[i][j] = (
+                    var_values[edge_vars[i][j]] > 0.5
+                )  # pyrefly: ignore[bad-index]
     return res
 
 
@@ -170,25 +172,32 @@ def solve_tsp(cities: Cities) -> list[int]:
     for i in range(n):
         for j in range(i + 1, n):
             v = model.add_binary_variable(name=f"x_{i}_{j}")
-            edges[i][j] = v
-            edges[j][i] = v
+            edges[i][j] = v  # pyrefly: ignore[unsupported-operation]
+            edges[j][i] = v  # pyrefly: ignore[unsupported-operation]
     obj = 0
     for i in range(n):
-        obj += sum(dist[i][j] * edges[i][j] for j in range(i + 1, n))
+        obj += sum(
+            dist[i][j] * edges[i][j] for j in range(i + 1, n)
+        )  # pyrefly: ignore[unsupported-operation]
     model.minimize(obj)
     for i in range(n):
-        model.add_linear_constraint(sum(edges[i][j] for j in range(n) if j != i) == 2.0)
+        model.add_linear_constraint(
+            sum(edges[i][j] for j in range(n) if j != i)
+            == 2.0  # pyrefly: ignore[no-matching-overload]
+        )
 
     def cb(cb_data: mathopt.CallbackData) -> mathopt.CallbackResult:
         assert cb_data.solution is not None
-        cycles = _find_cycles(_edge_values(edges, cb_data.solution))
+        cycles = _find_cycles(
+            _edge_values(edges, cb_data.solution)
+        )  # pyrefly: ignore[bad-argument-type]
         result = mathopt.CallbackResult()
         if len(cycles) > 1:
             for cycle in cycles:
                 cycle_as_set = set(cycle)
                 not_in_cycle = [i for i in range(n) if i not in cycle_as_set]
                 result.add_lazy_constraint(
-                    sum(
+                    sum(  # pyrefly: ignore[no-matching-overload]
                         edges[i][j] for (i, j) in itertools.product(cycle, not_in_cycle)
                     )
                     >= 2.0
@@ -210,7 +219,9 @@ def solve_tsp(cities: Cities) -> list[int]:
     assert result.solutions[0].primal_solution is not None
     print(f"Route length: {result.solutions[0].primal_solution.objective_value}")
     cycles = _find_cycles(
-        _edge_values(edges, result.solutions[0].primal_solution.variable_values)
+        _edge_values(
+            edges, result.solutions[0].primal_solution.variable_values
+        )  # pyrefly: ignore[bad-argument-type]
     )
     assert len(cycles) == 1, len(cycles)
     route = cycles[0]
