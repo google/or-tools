@@ -15,7 +15,6 @@
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
-#include <filesystem>
 #include <fstream>
 #include <random>
 #include <sstream>
@@ -32,6 +31,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/linear_solver/linear_solver.h"
+#include "ortools/linear_solver/linear_solver_callback.h"
 #include "ortools/third_party_solvers/xpress_environment.h"
 
 #define XPRS_NAMELENGTH 1028
@@ -48,145 +48,145 @@ class XPRSGetter {
  public:
   explicit XPRSGetter(MPSolver* solver) : solver_(solver) {}
 
-  int getNumVariables() {
-    int cols;
-    EXPECT_STATUS(XPRSgetintattrib(prob(), XPRS_COLS, &cols));
-    return cols;
+  int GetNumVariables() {
+    int num_vars;
+    EXPECT_STATUS(XPRSgetintattrib(Prob(), XPRS_COLS, &num_vars));
+    return num_vars;
   }
 
-  int getNumConstraints() {
-    int cols;
-    EXPECT_STATUS(XPRSgetintattrib(prob(), XPRS_ROWS, &cols));
-    return cols;
+  int GetNumConstraints() {
+    int num_rows;
+    EXPECT_STATUS(XPRSgetintattrib(Prob(), XPRS_ROWS, &num_rows));
+    return num_rows;
   }
 
-  std::string getRowName(int n) {
-    EXPECT_LT(n, getNumConstraints());
-    return getName(n, XPRS_NAMES_ROW);
+  std::string GetRowName(int n) {
+    EXPECT_LT(n, GetNumConstraints());
+    return GetName(n, XPRS_NAMES_ROW);
   }
 
-  double getLb(int n) {
-    EXPECT_LT(n, getNumVariables());
+  double GetLb(int n) {
+    EXPECT_LT(n, GetNumVariables());
     double lb;
-    EXPECT_STATUS(XPRSgetlb(prob(), &lb, n, n));
+    EXPECT_STATUS(XPRSgetlb(Prob(), &lb, n, n));
     return lb;
   }
 
-  double getUb(int n) {
-    EXPECT_LT(n, getNumVariables());
+  double GetUb(int n) {
+    EXPECT_LT(n, GetNumVariables());
     double ub;
-    EXPECT_STATUS(XPRSgetub(prob(), &ub, n, n));
+    EXPECT_STATUS(XPRSgetub(Prob(), &ub, n, n));
     return ub;
   }
 
-  std::string getColName(int n) {
-    EXPECT_LT(n, getNumVariables());
-    return getName(n, XPRS_NAMES_COLUMN);
+  std::string GetColName(int n) {
+    EXPECT_LT(n, GetNumVariables());
+    return GetName(n, XPRS_NAMES_COLUMN);
   }
 
-  char getVariableType(int n) {
-    EXPECT_LT(n, getNumVariables());
+  char GetVariableType(int n) {
+    EXPECT_LT(n, GetNumVariables());
     char type;
-    EXPECT_STATUS(XPRSgetcoltype(prob(), &type, n, n));
+    EXPECT_STATUS(XPRSgetcoltype(Prob(), &type, n, n));
     return type;
   }
 
-  char getConstraintType(int n) {
-    EXPECT_LT(n, getNumConstraints());
+  char GetConstraintType(int n) {
+    EXPECT_LT(n, GetNumConstraints());
     char type;
-    EXPECT_STATUS(XPRSgetrowtype(prob(), &type, n, n));
+    EXPECT_STATUS(XPRSgetrowtype(Prob(), &type, n, n));
     return type;
   }
 
-  double getConstraintRhs(int n) {
-    EXPECT_LT(n, getNumConstraints());
+  double GetConstraintRhs(int n) {
+    EXPECT_LT(n, GetNumConstraints());
     double rhs;
-    EXPECT_STATUS(XPRSgetrhs(prob(), &rhs, n, n));
+    EXPECT_STATUS(XPRSgetrhs(Prob(), &rhs, n, n));
     return rhs;
   }
 
-  double getConstraintRange(int n) {
-    EXPECT_LT(n, getNumConstraints());
+  double GetConstraintRange(int n) {
+    EXPECT_LT(n, GetNumConstraints());
     double range;
-    EXPECT_STATUS(XPRSgetrhsrange(prob(), &range, n, n));
+    EXPECT_STATUS(XPRSgetrhsrange(Prob(), &range, n, n));
     return range;
   }
 
-  double getConstraintCoef(int row, int col) {
-    EXPECT_LT(col, getNumVariables());
-    EXPECT_LT(row, getNumConstraints());
+  double GetConstraintCoef(int row, int col) {
+    EXPECT_LT(col, GetNumVariables());
+    EXPECT_LT(row, GetNumConstraints());
     double coef;
-    EXPECT_STATUS(XPRSgetcoef(prob(), row, col, &coef));
+    EXPECT_STATUS(XPRSgetcoef(Prob(), row, col, &coef));
     return coef;
   }
 
-  double getObjectiveCoef(int n) {
-    EXPECT_LT(n, getNumVariables());
-    double objCoef;
-    EXPECT_STATUS(XPRSgetobj(prob(), &objCoef, n, n));
-    return objCoef;
+  double GetObjectiveCoef(int n) {
+    EXPECT_LT(n, GetNumVariables());
+    double obj_coef;
+    EXPECT_STATUS(XPRSgetobj(Prob(), &obj_coef, n, n));
+    return obj_coef;
   }
 
-  double getObjectiveOffset() {
+  double GetObjectiveOffset() {
     double offset;
-    EXPECT_STATUS(XPRSgetdblattrib(prob(), XPRS_OBJRHS, &offset));
+    EXPECT_STATUS(XPRSgetdblattrib(Prob(), XPRS_OBJRHS, &offset));
     return offset;
   }
 
-  double getObjectiveSense() {
+  double GetObjectiveSense() {
     double sense;
-    EXPECT_STATUS(XPRSgetdblattrib(prob(), XPRS_OBJSENSE, &sense));
+    EXPECT_STATUS(XPRSgetdblattrib(Prob(), XPRS_OBJSENSE, &sense));
     return sense;
   }
 
-  std::string getStringControl(int control) {
+  std::string GetStringControl(int control) {
     std::string value(280, '\0');
-    int valueSize;
-    EXPECT_STATUS(XPRSgetstringcontrol(prob(), control, &value[0], value.size(),
-                                       &valueSize));
-    value.resize(valueSize - 1);
+    int value_size;
+    EXPECT_STATUS(XPRSgetstringcontrol(Prob(), control, &value[0], value.size(),
+                                       &value_size));
+    value.resize(value_size - 1);
     return value;
   }
 
-  double getDoubleControl(int control) {
+  double GetDoubleControl(int control) {
     double value;
-    EXPECT_STATUS(XPRSgetdblcontrol(prob(), control, &value));
+    EXPECT_STATUS(XPRSgetdblcontrol(Prob(), control, &value));
     return value;
   }
 
-  int getIntegerControl(int control) {
+  int GetIntegerControl(int control) {
     int value;
-    EXPECT_STATUS(XPRSgetintcontrol(prob(), control, &value));
+    EXPECT_STATUS(XPRSgetintcontrol(Prob(), control, &value));
     return value;
   }
 
-  int getInteger64Control(int control) {
+  int GetInteger64Control(int control) {
     XPRSint64 value;
-    EXPECT_STATUS(XPRSgetintcontrol64(prob(), control, &value));
+    EXPECT_STATUS(XPRSgetintcontrol64(Prob(), control, &value));
     return value;
   }
 
-  std::string getStringAttribute(int attrib) {
+  std::string GetStringAttribute(int attrib) {
     std::string value(280, '\0');
-    int valueSize;
-    EXPECT_STATUS(XPRSgetstringattrib(prob(), attrib, &value[0], value.size(),
-                                      &valueSize));
-    value.resize(valueSize - 1);
+    int value_size;
+    EXPECT_STATUS(XPRSgetstringattrib(Prob(), attrib, &value[0], value.size(),
+                                      &value_size));
+    value.resize(value_size - 1);
     return value;
   }
 
  private:
   MPSolver* solver_;
 
-  XPRSprob prob() { return (XPRSprob)solver_->underlying_solver(); }
+  XPRSprob Prob() { return (XPRSprob)solver_->underlying_solver(); }
 
-  std::string getName(int n, int type) {
+  std::string GetName(int n, int type) {
     int namelength;
-    EXPECT_STATUS(XPRSgetintattrib(prob(), XPRS_NAMELENGTH, &namelength));
+    EXPECT_STATUS(XPRSgetintattrib(Prob(), XPRS_NAMELENGTH, &namelength));
 
     std::string name;
     name.resize(8 * namelength + 1);
-    EXPECT_STATUS(XPRSgetnames(prob(), type, name.data(), n, n));
+    EXPECT_STATUS(XPRSgetnames(Prob(), type, name.data(), n, n));
 
     name.erase(std::find_if(name.rbegin(), name.rend(),
                             [](unsigned char ch) {
@@ -203,11 +203,11 @@ class XPRSGetter {
 // https://github.com/google/googletest/blob/main/docs/primer.md#test-fixtures-using-the-same-data-configuration-for-multiple-tests-same-data-multiple-tests
 class XpressFixture : public testing::Test {
  protected:
-  XpressFixture(const char* solverName, MPSolver::OptimizationProblemType type)
-      : solver(solverName, type), getter(&solver) {}
+  XpressFixture(const char* solver_name, MPSolver::OptimizationProblemType type)
+      : solver_(solver_name, type), getter_(&solver_) {}
   ~XpressFixture() override = default;
-  MPSolver solver;
-  XPRSGetter getter;
+  MPSolver solver_;
+  XPRSGetter getter_;
 };
 
 class XpressFixtureLP : public XpressFixture {
@@ -223,67 +223,68 @@ class XpressFixtureMIP : public XpressFixture {
                       MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING) {}
 };
 
-void _unittest_verify_var(XPRSGetter* getter, MPVariable* x, char type,
-                          double lb, double ub) {
-  EXPECT_EQ(getter->getVariableType(x->index()), type);
-  EXPECT_EQ(getter->getLb(x->index()), lb);
-  EXPECT_EQ(getter->getUb(x->index()), ub);
+void VerifyVar(XPRSGetter* getter, MPVariable* x, char type, double lb,
+               double ub) {
+  EXPECT_EQ(getter->GetVariableType(x->index()), type);
+  EXPECT_EQ(getter->GetLb(x->index()), lb);
+  EXPECT_EQ(getter->GetUb(x->index()), ub);
 }
 
-void _unittest_verify_constraint(XPRSGetter* getter, MPConstraint* c, char type,
-                                 double lb, double ub) {
+void VerifyConstraint(XPRSGetter* getter, MPConstraint* c, char type, double lb,
+                      double ub) {
   int idx = c->index();
-  EXPECT_EQ(getter->getConstraintType(idx), type);
+  EXPECT_EQ(getter->GetConstraintType(idx), type);
   switch (type) {
     case 'L':
-      EXPECT_EQ(getter->getConstraintRhs(idx), ub);
+      EXPECT_EQ(getter->GetConstraintRhs(idx), ub);
       break;
     case 'U':
-      EXPECT_EQ(getter->getConstraintRhs(idx), lb);
+      EXPECT_EQ(getter->GetConstraintRhs(idx), lb);
       break;
     case 'E':
-      EXPECT_EQ(getter->getConstraintRhs(idx), ub);
-      EXPECT_EQ(getter->getConstraintRhs(idx), lb);
+      EXPECT_EQ(getter->GetConstraintRhs(idx), ub);
+      EXPECT_EQ(getter->GetConstraintRhs(idx), lb);
       break;
     case 'R':
-      EXPECT_EQ(getter->getConstraintRhs(idx), ub);
-      EXPECT_EQ(getter->getConstraintRange(idx), ub - lb);
+      EXPECT_EQ(getter->GetConstraintRhs(idx), ub);
+      EXPECT_EQ(getter->GetConstraintRange(idx), ub - lb);
       break;
   }
 }
 
-void buildLargeMip(MPSolver& solver, int numVars, int maxTime) {
-  // Build a random but big and complicated MIP with numVars integer variables
+void BuildLargeMip(MPSolver& solver, int num_vars, int max_time) {
+  // Build a random but big and complicated MIP with num_vars integer variables
   // And every variable has a coupling constraint with all previous ones
-  srand(123);
+  std::mt19937 bitgen(123);
   MPObjective* obj = solver.MutableObjective();
   obj->SetMaximization();
-  for (int i = 0; i < numVars; ++i) {
-    MPVariable* x = solver.MakeIntVar(-rand() % 200, rand() % 200,
+  for (int i = 0; i < num_vars; ++i) {
+    MPVariable* x = solver.MakeIntVar(absl::Uniform(bitgen, -199, 1),
+                                      absl::Uniform(bitgen, 0, 200),
                                       "x_" + std::to_string(i));
-    obj->SetCoefficient(x, rand() % 200 - 100);
+    obj->SetCoefficient(x, absl::Uniform(bitgen, -100, 100));
     if (i == 0) {
       continue;
     }
-    int rand1 = -rand() % 2000;
-    int rand2 = rand() % 2000;
+    int rand1 = absl::Uniform(bitgen, -1999, 1);
+    int rand2 = absl::Uniform(bitgen, 0, 2000);
     int min = std::min(rand1, rand2);
     int max = std::max(rand1, rand2);
     MPConstraint* c = solver.MakeRowConstraint(min, max);
-    c->SetCoefficient(x, rand() % 200 - 100);
+    c->SetCoefficient(x, absl::Uniform(bitgen, -100, 100));
     for (int j = 0; j < i; ++j) {
-      c->SetCoefficient(solver.variable(j), rand() % 200 - 100);
+      c->SetCoefficient(solver.variable(j), absl::Uniform(bitgen, -100, 100));
     }
   }
   solver.SetSolverSpecificParametersAsString("PRESOLVE 0 MAXTIME " +
-                                             std::to_string(maxTime));
+                                             std::to_string(max_time));
   solver.EnableOutput();
 }
 
-void buildLargeLp(MPSolver& solver, int numVars) {
+void BuildLargeLp(MPSolver& solver, int num_vars) {
   MPObjective* obj = solver.MutableObjective();
   obj->SetMaximization();
-  for (int i = 0; i < numVars; ++i) {
+  for (int i = 0; i < num_vars; ++i) {
     MPVariable* x = solver.MakeNumVar(-(i * i) % 21, (i * i) % 55,
                                       "x_" + std::to_string(i));
     obj->SetCoefficient(x, (i * i) % 23);
@@ -300,18 +301,18 @@ void buildLargeLp(MPSolver& solver, int numVars) {
 
 class MyMPCallback : public MPCallback {
  private:
-  MPSolver* mpSolver_;
-  int nSolutions_ = 0;
+  MPSolver* solver_;
+  int n_solutions_ = 0;
   std::vector<double> last_variable_values_;
   bool should_throw_;
 
  public:
-  MyMPCallback(MPSolver* mpSolver, bool should_throw)
+  MyMPCallback(MPSolver* solver, bool should_throw)
       : MPCallback(false, false),
-        mpSolver_(mpSolver),
-        should_throw_(should_throw) {};
+        solver_(solver),
+        should_throw_(should_throw) {}
 
-  ~MyMPCallback() override {};
+  ~MyMPCallback() override {}
 
   void RunCallback(MPCallbackContext* callback_context) override {
     if (should_throw_) {
@@ -319,79 +320,79 @@ class MyMPCallback : public MPCallback {
     }
     // XpressMPCallbackContext* context_ =
     // static_cast<XpressMPCallbackContext*>(callback_context);
-    ++nSolutions_;
+    ++n_solutions_;
     EXPECT_TRUE(callback_context->CanQueryVariableValues());
     EXPECT_EQ(callback_context->Event(), MPCallbackEvent::kMipSolution);
-    last_variable_values_.resize(mpSolver_->NumVariables(), 0.0);
-    for (int i = 0; i < mpSolver_->NumVariables(); i++) {
+    last_variable_values_.resize(solver_->NumVariables(), 0.0);
+    for (int i = 0; i < solver_->NumVariables(); i++) {
       last_variable_values_[i] =
-          callback_context->VariableValue(mpSolver_->variable(i));
+          callback_context->VariableValue(solver_->variable(i));
     }
-  };
+  }
 
-  int getNSolutions() const { return nSolutions_; }
-  double getLastVariableValue(int index) const {
+  int GetNSolutions() const { return n_solutions_; }
+  double GetLastVariableValue(int index) const {
     return last_variable_values_[index];
   }
 };
 
-MyMPCallback* buildLargeMipWithCallback(MPSolver& solver, int numVars,
-                                        int maxTime) {
-  buildLargeMip(solver, numVars, maxTime);
-  MPCallback* mpCallback = new MyMPCallback(&solver, false);
+MyMPCallback* BuildLargeMipWithCallback(MPSolver& solver, int num_vars,
+                                        int max_time) {
+  BuildLargeMip(solver, num_vars, max_time);
+  MPCallback* mp_callback = new MyMPCallback(&solver, false);
   solver.SetCallback(nullptr);  // just to test that this does not cause failure
-  solver.SetCallback(mpCallback);
-  return static_cast<MyMPCallback*>(mpCallback);
+  solver.SetCallback(mp_callback);
+  return static_cast<MyMPCallback*>(mp_callback);
 }
 
-TEST_F(XpressFixtureMIP, isMIP) { EXPECT_EQ(solver.IsMIP(), true); }
+TEST_F(XpressFixtureMIP, isMIP) { EXPECT_EQ(solver_.IsMIP(), true); }
 
-TEST_F(XpressFixtureLP, isLP) { EXPECT_EQ(solver.IsMIP(), false); }
+TEST_F(XpressFixtureLP, isLP) { EXPECT_EQ(solver_.IsMIP(), false); }
 
 TEST_F(XpressFixtureLP, LpStartingBasis) {
-  buildLargeLp(solver, 1000);
+  BuildLargeLp(solver_, 1000);
   // First, we record the number of iterations without an initial basis
-  solver.Solve();
-  const auto iterInit = solver.iterations();
+  solver_.Solve();
+  const auto iterInit = solver_.iterations();
   EXPECT_GE(iterInit, 1000);
 
   // Here, we retrieve the final basis
   std::vector<MPSolver::BasisStatus> varStatus, constrStatus;
-  for (auto* var : solver.variables()) {
+  for (auto* var : solver_.variables()) {
     varStatus.push_back(var->basis_status());
   }
-  for (auto* constr : solver.constraints()) {
+  for (auto* constr : solver_.constraints()) {
     constrStatus.push_back(constr->basis_status());
   }
 
   // Then we slightly modify the problem...
-  MPObjective* obj = solver.MutableObjective();
-  obj->SetCoefficient(solver.variable(1), 100);
+  MPObjective* obj = solver_.MutableObjective();
+  obj->SetCoefficient(solver_.variable(1), 100);
   // Here, we provide the final basis of the previous (similar) problem
-  solver.SetStartingLpBasis(varStatus, constrStatus);
-  solver.Solve();
-  const auto iterWithBasis = solver.iterations();
+  solver_.SetStartingLpBasis(varStatus, constrStatus);
+  solver_.Solve();
+  const auto iterWithBasis = solver_.iterations();
   // ...and check that few iterations have been performed
   EXPECT_LT(iterWithBasis, 10);
 }
 
 TEST_F(XpressFixtureLP, LpStartingBasisNoIterationsIfBasisIsProvided) {
-  buildLargeLp(solver, 1000);
+  BuildLargeLp(solver_, 1000);
   // First, we record the number of iterations without an initial basis
-  solver.Solve();
+  solver_.Solve();
 
   // Then, we retrieve the final basis
   std::vector<MPSolver::BasisStatus> varStatus, constrStatus;
-  for (auto* var : solver.variables()) {
+  for (auto* var : solver_.variables()) {
     varStatus.push_back(var->basis_status());
   }
-  for (auto* constr : solver.constraints()) {
+  for (auto* constr : solver_.constraints()) {
     constrStatus.push_back(constr->basis_status());
   }
 
   MPSolver solver_BasisProvided("XPRESS_LP",
                                 MPSolver::XPRESS_LINEAR_PROGRAMMING);
-  buildLargeLp(solver_BasisProvided, 1000);
+  BuildLargeLp(solver_BasisProvided, 1000);
   solver_BasisProvided.SetStartingLpBasis(varStatus, constrStatus);
   solver_BasisProvided.Solve();
   const auto iterWithBasis = solver_BasisProvided.iterations();
@@ -400,71 +401,71 @@ TEST_F(XpressFixtureLP, LpStartingBasisNoIterationsIfBasisIsProvided) {
 }
 
 TEST_F(XpressFixtureMIP, NumVariables) {
-  MPVariable* x1 = solver.MakeNumVar(-1., 5.1, "x1");
-  MPVariable* x2 = solver.MakeNumVar(3.14, 5.1, "x2");
+  solver_.MakeNumVar(-1., 5.1, "x1");
+  solver_.MakeNumVar(3.14, 5.1, "x2");
   std::vector<MPVariable*> xs;
-  solver.MakeBoolVarArray(500, "xs", &xs);
-  solver.Solve();
-  EXPECT_EQ(getter.getNumVariables(), 502);
+  solver_.MakeBoolVarArray(500, "xs", &xs);
+  solver_.Solve();
+  EXPECT_EQ(getter_.GetNumVariables(), 502);
 }
 
 TEST_F(XpressFixtureMIP, NumConstraints) {
-  solver.MakeRowConstraint(12., 100.0);
-  solver.MakeRowConstraint(13., 13.1);
-  solver.MakeRowConstraint(12.1, 1000.0);
-  solver.Solve();
-  EXPECT_EQ(getter.getNumConstraints(), 3);
+  solver_.MakeRowConstraint(12., 100.0);
+  solver_.MakeRowConstraint(13., 13.1);
+  solver_.MakeRowConstraint(12.1, 1000.0);
+  solver_.Solve();
+  EXPECT_EQ(getter_.GetNumConstraints(), 3);
 }
 
 TEST_F(XpressFixtureMIP, Reset) {
-  solver.MakeBoolVar("x1");
-  solver.MakeBoolVar("x2");
-  solver.MakeRowConstraint(12., 100.0);
-  solver.MutableObjective()->SetMaximization();
-  solver.Solve();
-  EXPECT_EQ(getter.getNumConstraints(), 1);
-  EXPECT_EQ(getter.getNumVariables(), 2);
-  auto oldProbUuid = getter.getStringAttribute(XPRS_UUID);
-  solver.Reset();
-  EXPECT_EQ(getter.getStringAttribute(XPRS_UUID), oldProbUuid);
-  EXPECT_EQ(getter.getNumConstraints(), 0);
-  EXPECT_EQ(getter.getNumVariables(), 0);
-  EXPECT_EQ(getter.getObjectiveSense(), XPRS_OBJ_MAXIMIZE);
+  solver_.MakeBoolVar("x1");
+  solver_.MakeBoolVar("x2");
+  solver_.MakeRowConstraint(12., 100.0);
+  solver_.MutableObjective()->SetMaximization();
+  solver_.Solve();
+  EXPECT_EQ(getter_.GetNumConstraints(), 1);
+  EXPECT_EQ(getter_.GetNumVariables(), 2);
+  auto oldProbUuid = getter_.GetStringAttribute(XPRS_UUID);
+  solver_.Reset();
+  EXPECT_EQ(getter_.GetStringAttribute(XPRS_UUID), oldProbUuid);
+  EXPECT_EQ(getter_.GetNumConstraints(), 0);
+  EXPECT_EQ(getter_.GetNumVariables(), 0);
+  EXPECT_EQ(getter_.GetObjectiveSense(), XPRS_OBJ_MAXIMIZE);
 }
 
 TEST_F(XpressFixtureMIP, MakeIntVar) {
   int lb = 0, ub = 10;
-  MPVariable* x = solver.MakeIntVar(lb, ub, "x");
-  solver.Solve();
-  _unittest_verify_var(&getter, x, 'I', lb, ub);
+  MPVariable* x = solver_.MakeIntVar(lb, ub, "x");
+  solver_.Solve();
+  VerifyVar(&getter_, x, 'I', lb, ub);
 }
 
 TEST_F(XpressFixtureMIP, MakeNumVar) {
   double lb = 1.5, ub = 158.2;
-  MPVariable* x = solver.MakeNumVar(lb, ub, "x");
-  solver.Solve();
-  _unittest_verify_var(&getter, x, 'C', lb, ub);
+  MPVariable* x = solver_.MakeNumVar(lb, ub, "x");
+  solver_.Solve();
+  VerifyVar(&getter_, x, 'C', lb, ub);
 }
 
 TEST_F(XpressFixtureMIP, MakeBoolVar) {
-  MPVariable* x = solver.MakeBoolVar("x");
-  solver.Solve();
-  _unittest_verify_var(&getter, x, 'B', 0, 1);
+  MPVariable* x = solver_.MakeBoolVar("x");
+  solver_.Solve();
+  VerifyVar(&getter_, x, 'B', 0, 1);
 }
 
 TEST_F(XpressFixtureMIP, MakeIntVarArray) {
   int n1 = 25, lb1 = -7, ub1 = 18;
   std::vector<MPVariable*> xs1;
-  solver.MakeIntVarArray(n1, lb1, ub1, "xs1", &xs1);
+  solver_.MakeIntVarArray(n1, lb1, ub1, "xs1", &xs1);
   int n2 = 37, lb2 = 19, ub2 = 189;
   std::vector<MPVariable*> xs2;
-  solver.MakeIntVarArray(n2, lb2, ub2, "xs2", &xs2);
-  solver.Solve();
+  solver_.MakeIntVarArray(n2, lb2, ub2, "xs2", &xs2);
+  solver_.Solve();
   for (int i = 0; i < n1; ++i) {
-    _unittest_verify_var(&getter, xs1[i], 'I', lb1, ub1);
+    VerifyVar(&getter_, xs1[i], 'I', lb1, ub1);
   }
   for (int i = 0; i < n2; ++i) {
-    _unittest_verify_var(&getter, xs2[i], 'I', lb2, ub2);
+    VerifyVar(&getter_, xs2[i], 'I', lb2, ub2);
   }
 }
 
@@ -472,319 +473,312 @@ TEST_F(XpressFixtureMIP, MakeNumVarArray) {
   int n1 = 1;
   double lb1 = 5.1, ub1 = 8.1;
   std::vector<MPVariable*> xs1;
-  solver.MakeNumVarArray(n1, lb1, ub1, "xs1", &xs1);
+  solver_.MakeNumVarArray(n1, lb1, ub1, "xs1", &xs1);
   int n2 = 13;
   double lb2 = -11.5, ub2 = 189.9;
   std::vector<MPVariable*> xs2;
-  solver.MakeNumVarArray(n2, lb2, ub2, "xs2", &xs2);
-  solver.Solve();
+  solver_.MakeNumVarArray(n2, lb2, ub2, "xs2", &xs2);
+  solver_.Solve();
   for (int i = 0; i < n1; ++i) {
-    _unittest_verify_var(&getter, xs1[i], 'C', lb1, ub1);
+    VerifyVar(&getter_, xs1[i], 'C', lb1, ub1);
   }
   for (int i = 0; i < n2; ++i) {
-    _unittest_verify_var(&getter, xs2[i], 'C', lb2, ub2);
+    VerifyVar(&getter_, xs2[i], 'C', lb2, ub2);
   }
 }
 
 TEST_F(XpressFixtureMIP, MakeBoolVarArray) {
-  double n = 43;
+  int n = 43;
   std::vector<MPVariable*> xs;
-  solver.MakeBoolVarArray(n, "xs", &xs);
-  solver.Solve();
+  solver_.MakeBoolVarArray(n, "xs", &xs);
+  solver_.Solve();
   for (int i = 0; i < n; ++i) {
-    _unittest_verify_var(&getter, xs[i], 'B', 0, 1);
+    VerifyVar(&getter_, xs[i], 'B', 0, 1);
   }
 }
 
 TEST_F(XpressFixtureMIP, SetVariableBounds) {
   int lb1 = 3, ub1 = 4;
-  MPVariable* x1 = solver.MakeIntVar(lb1, ub1, "x1");
+  MPVariable* x1 = solver_.MakeIntVar(lb1, ub1, "x1");
   double lb2 = 3.7, ub2 = 4;
-  MPVariable* x2 = solver.MakeNumVar(lb2, ub2, "x2");
-  solver.Solve();
-  _unittest_verify_var(&getter, x1, 'I', lb1, ub1);
-  _unittest_verify_var(&getter, x2, 'C', lb2, ub2);
+  MPVariable* x2 = solver_.MakeNumVar(lb2, ub2, "x2");
+  solver_.Solve();
+  VerifyVar(&getter_, x1, 'I', lb1, ub1);
+  VerifyVar(&getter_, x2, 'C', lb2, ub2);
   lb1 = 12, ub1 = 15;
   x1->SetBounds(lb1, ub1);
   lb2 = -1.1, ub2 = 0;
   x2->SetBounds(lb2, ub2);
-  solver.Solve();
-  _unittest_verify_var(&getter, x1, 'I', lb1, ub1);
-  _unittest_verify_var(&getter, x2, 'C', lb2, ub2);
+  solver_.Solve();
+  VerifyVar(&getter_, x1, 'I', lb1, ub1);
+  VerifyVar(&getter_, x2, 'C', lb2, ub2);
 }
 
 TEST_F(XpressFixtureMIP, SetVariableInteger) {
   int lb = -1, ub = 7;
-  MPVariable* x = solver.MakeIntVar(lb, ub, "x");
-  solver.Solve();
-  _unittest_verify_var(&getter, x, 'I', lb, ub);
+  MPVariable* x = solver_.MakeIntVar(lb, ub, "x");
+  solver_.Solve();
+  VerifyVar(&getter_, x, 'I', lb, ub);
   x->SetInteger(false);
-  solver.Solve();
-  _unittest_verify_var(&getter, x, 'C', lb, ub);
+  solver_.Solve();
+  VerifyVar(&getter_, x, 'C', lb, ub);
 }
 
 TEST_F(XpressFixtureMIP, ConstraintL) {
-  double lb = -solver.infinity(), ub = 10.;
-  MPConstraint* c = solver.MakeRowConstraint(lb, ub);
-  solver.Solve();
-  _unittest_verify_constraint(&getter, c, 'L', lb, ub);
+  double lb = -solver_.infinity(), ub = 10.;
+  MPConstraint* c = solver_.MakeRowConstraint(lb, ub);
+  solver_.Solve();
+  VerifyConstraint(&getter_, c, 'L', lb, ub);
 }
 
 TEST_F(XpressFixtureMIP, ConstraintR) {
   double lb = -2, ub = -1;
-  MPConstraint* c = solver.MakeRowConstraint(lb, ub);
-  solver.Solve();
-  _unittest_verify_constraint(&getter, c, 'R', lb, ub);
+  MPConstraint* c = solver_.MakeRowConstraint(lb, ub);
+  solver_.Solve();
+  VerifyConstraint(&getter_, c, 'R', lb, ub);
 }
 
 TEST_F(XpressFixtureMIP, ConstraintG) {
-  double lb = 8.1, ub = solver.infinity();
-  MPConstraint* c = solver.MakeRowConstraint(lb, ub);
-  solver.Solve();
-  _unittest_verify_constraint(&getter, c, 'G', lb, ub);
+  double lb = 8.1, ub = solver_.infinity();
+  MPConstraint* c = solver_.MakeRowConstraint(lb, ub);
+  solver_.Solve();
+  VerifyConstraint(&getter_, c, 'G', lb, ub);
 }
 
 TEST_F(XpressFixtureMIP, ConstraintE) {
   double lb = 18947.3, ub = lb;
-  MPConstraint* c = solver.MakeRowConstraint(lb, ub);
-  solver.Solve();
-  _unittest_verify_constraint(&getter, c, 'E', lb, ub);
+  MPConstraint* c = solver_.MakeRowConstraint(lb, ub);
+  solver_.Solve();
+  VerifyConstraint(&getter_, c, 'E', lb, ub);
 }
 
 TEST_F(XpressFixtureMIP, SetConstraintBoundsL) {
   double lb = 18947.3, ub = lb;
-  MPConstraint* c = solver.MakeRowConstraint(lb, ub);
-  solver.Solve();
-  _unittest_verify_constraint(&getter, c, 'E', lb, ub);
-  lb = -solver.infinity(), ub = 16.6;
+  MPConstraint* c = solver_.MakeRowConstraint(lb, ub);
+  solver_.Solve();
+  VerifyConstraint(&getter_, c, 'E', lb, ub);
+  lb = -solver_.infinity(), ub = 16.6;
   c->SetBounds(lb, ub);
-  solver.Solve();
-  _unittest_verify_constraint(&getter, c, 'L', lb, ub);
+  solver_.Solve();
+  VerifyConstraint(&getter_, c, 'L', lb, ub);
 }
 
 TEST_F(XpressFixtureMIP, SetConstraintBoundsR) {
-  double lb = -solver.infinity(), ub = 15;
-  MPConstraint* c = solver.MakeRowConstraint(lb, ub);
-  solver.Solve();
-  _unittest_verify_constraint(&getter, c, 'L', lb, ub);
+  double lb = -solver_.infinity(), ub = 15;
+  MPConstraint* c = solver_.MakeRowConstraint(lb, ub);
+  solver_.Solve();
+  VerifyConstraint(&getter_, c, 'L', lb, ub);
   lb = 0, ub = 0.1;
   c->SetBounds(lb, ub);
-  solver.Solve();
-  _unittest_verify_constraint(&getter, c, 'R', lb, ub);
+  solver_.Solve();
+  VerifyConstraint(&getter_, c, 'R', lb, ub);
 }
 
 TEST_F(XpressFixtureMIP, SetConstraintBoundsG) {
   double lb = 1, ub = 2;
-  MPConstraint* c = solver.MakeRowConstraint(lb, ub);
-  solver.Solve();
-  _unittest_verify_constraint(&getter, c, 'R', lb, ub);
-  lb = 5, ub = solver.infinity();
+  MPConstraint* c = solver_.MakeRowConstraint(lb, ub);
+  solver_.Solve();
+  VerifyConstraint(&getter_, c, 'R', lb, ub);
+  lb = 5, ub = solver_.infinity();
   c->SetBounds(lb, ub);
-  solver.Solve();
-  _unittest_verify_constraint(&getter, c, 'G', lb, ub);
+  solver_.Solve();
+  VerifyConstraint(&getter_, c, 'G', lb, ub);
 }
 
 TEST_F(XpressFixtureMIP, SetConstraintBoundsE) {
-  double lb = -1, ub = solver.infinity();
-  MPConstraint* c = solver.MakeRowConstraint(lb, ub);
-  solver.Solve();
-  _unittest_verify_constraint(&getter, c, 'G', lb, ub);
+  double lb = -1, ub = solver_.infinity();
+  MPConstraint* c = solver_.MakeRowConstraint(lb, ub);
+  solver_.Solve();
+  VerifyConstraint(&getter_, c, 'G', lb, ub);
   lb = 128, ub = lb;
   c->SetBounds(lb, ub);
-  solver.Solve();
-  _unittest_verify_constraint(&getter, c, 'E', lb, ub);
+  solver_.Solve();
+  VerifyConstraint(&getter_, c, 'E', lb, ub);
 }
 
 TEST_F(XpressFixtureMIP, ConstraintCoef) {
-  MPVariable* x1 = solver.MakeBoolVar("x1");
-  MPVariable* x2 = solver.MakeBoolVar("x2");
-  MPConstraint* c1 = solver.MakeRowConstraint(4.1, solver.infinity());
-  MPConstraint* c2 = solver.MakeRowConstraint(-solver.infinity(), 0.1);
+  MPVariable* x1 = solver_.MakeBoolVar("x1");
+  MPVariable* x2 = solver_.MakeBoolVar("x2");
+  MPConstraint* c1 = solver_.MakeRowConstraint(4.1, solver_.infinity());
+  MPConstraint* c2 = solver_.MakeRowConstraint(-solver_.infinity(), 0.1);
   double c11 = -15.6, c12 = 0.4, c21 = -11, c22 = 4.5;
   c1->SetCoefficient(x1, c11);
   c1->SetCoefficient(x2, c12);
   c2->SetCoefficient(x1, c21);
   c2->SetCoefficient(x2, c22);
-  solver.Solve();
-  EXPECT_EQ(getter.getConstraintCoef(c1->index(), x1->index()), c11);
-  EXPECT_EQ(getter.getConstraintCoef(c1->index(), x2->index()), c12);
-  EXPECT_EQ(getter.getConstraintCoef(c2->index(), x1->index()), c21);
-  EXPECT_EQ(getter.getConstraintCoef(c2->index(), x2->index()), c22);
+  solver_.Solve();
+  EXPECT_EQ(getter_.GetConstraintCoef(c1->index(), x1->index()), c11);
+  EXPECT_EQ(getter_.GetConstraintCoef(c1->index(), x2->index()), c12);
+  EXPECT_EQ(getter_.GetConstraintCoef(c2->index(), x1->index()), c21);
+  EXPECT_EQ(getter_.GetConstraintCoef(c2->index(), x2->index()), c22);
   c11 = 0.11, c12 = 0.12, c21 = 0.21, c22 = 0.22;
   c1->SetCoefficient(x1, c11);
   c1->SetCoefficient(x2, c12);
   c2->SetCoefficient(x1, c21);
   c2->SetCoefficient(x2, c22);
-  solver.Solve();
-  EXPECT_EQ(getter.getConstraintCoef(c1->index(), x1->index()), c11);
-  EXPECT_EQ(getter.getConstraintCoef(c1->index(), x2->index()), c12);
-  EXPECT_EQ(getter.getConstraintCoef(c2->index(), x1->index()), c21);
-  EXPECT_EQ(getter.getConstraintCoef(c2->index(), x2->index()), c22);
+  solver_.Solve();
+  EXPECT_EQ(getter_.GetConstraintCoef(c1->index(), x1->index()), c11);
+  EXPECT_EQ(getter_.GetConstraintCoef(c1->index(), x2->index()), c12);
+  EXPECT_EQ(getter_.GetConstraintCoef(c2->index(), x1->index()), c21);
+  EXPECT_EQ(getter_.GetConstraintCoef(c2->index(), x2->index()), c22);
 }
 
 TEST_F(XpressFixtureMIP, ClearConstraint) {
-  MPVariable* x1 = solver.MakeBoolVar("x1");
-  MPVariable* x2 = solver.MakeBoolVar("x2");
-  MPConstraint* c1 = solver.MakeRowConstraint(4.1, solver.infinity());
-  MPConstraint* c2 = solver.MakeRowConstraint(-solver.infinity(), 0.1);
+  MPVariable* x1 = solver_.MakeBoolVar("x1");
+  MPVariable* x2 = solver_.MakeBoolVar("x2");
+  MPConstraint* c1 = solver_.MakeRowConstraint(4.1, solver_.infinity());
+  MPConstraint* c2 = solver_.MakeRowConstraint(-solver_.infinity(), 0.1);
   double c11 = -1533.6, c12 = 3.4, c21 = -11000, c22 = 0.0001;
   c1->SetCoefficient(x1, c11);
   c1->SetCoefficient(x2, c12);
   c2->SetCoefficient(x1, c21);
   c2->SetCoefficient(x2, c22);
-  solver.Solve();
-  EXPECT_EQ(getter.getConstraintCoef(c1->index(), x1->index()), c11);
-  EXPECT_EQ(getter.getConstraintCoef(c1->index(), x2->index()), c12);
-  EXPECT_EQ(getter.getConstraintCoef(c2->index(), x1->index()), c21);
-  EXPECT_EQ(getter.getConstraintCoef(c2->index(), x2->index()), c22);
+  solver_.Solve();
+  EXPECT_EQ(getter_.GetConstraintCoef(c1->index(), x1->index()), c11);
+  EXPECT_EQ(getter_.GetConstraintCoef(c1->index(), x2->index()), c12);
+  EXPECT_EQ(getter_.GetConstraintCoef(c2->index(), x1->index()), c21);
+  EXPECT_EQ(getter_.GetConstraintCoef(c2->index(), x2->index()), c22);
   c1->Clear();
   c2->Clear();
-  solver.Solve();
-  EXPECT_EQ(getter.getConstraintCoef(c1->index(), x1->index()), 0);
-  EXPECT_EQ(getter.getConstraintCoef(c1->index(), x2->index()), 0);
-  EXPECT_EQ(getter.getConstraintCoef(c2->index(), x1->index()), 0);
-  EXPECT_EQ(getter.getConstraintCoef(c2->index(), x2->index()), 0);
+  solver_.Solve();
+  EXPECT_EQ(getter_.GetConstraintCoef(c1->index(), x1->index()), 0);
+  EXPECT_EQ(getter_.GetConstraintCoef(c1->index(), x2->index()), 0);
+  EXPECT_EQ(getter_.GetConstraintCoef(c2->index(), x1->index()), 0);
+  EXPECT_EQ(getter_.GetConstraintCoef(c2->index(), x2->index()), 0);
 }
 
 TEST_F(XpressFixtureMIP, ObjectiveCoef) {
-  MPVariable* x = solver.MakeBoolVar("x");
-  MPObjective* obj = solver.MutableObjective();
+  MPVariable* x = solver_.MakeBoolVar("x");
+  MPObjective* obj = solver_.MutableObjective();
   double coef = 3112.4;
   obj->SetCoefficient(x, coef);
-  solver.Solve();
-  EXPECT_EQ(getter.getObjectiveCoef(x->index()), coef);
+  solver_.Solve();
+  EXPECT_EQ(getter_.GetObjectiveCoef(x->index()), coef);
   coef = 0.2;
   obj->SetCoefficient(x, coef);
-  solver.Solve();
-  EXPECT_EQ(getter.getObjectiveCoef(x->index()), coef);
+  solver_.Solve();
+  EXPECT_EQ(getter_.GetObjectiveCoef(x->index()), coef);
 }
 
 TEST_F(XpressFixtureMIP, ObjectiveOffset) {
-  MPVariable* x = solver.MakeBoolVar("x");
-  MPObjective* obj = solver.MutableObjective();
+  solver_.MakeBoolVar("x");
+  MPObjective* obj = solver_.MutableObjective();
   double offset = 4.3;
   obj->SetOffset(offset);
-  solver.Solve();
-  EXPECT_EQ(getter.getObjectiveOffset(), offset);
+  solver_.Solve();
+  EXPECT_EQ(getter_.GetObjectiveOffset(), offset);
   offset = 3.6;
   obj->SetOffset(offset);
-  solver.Solve();
-  EXPECT_EQ(getter.getObjectiveOffset(), offset);
+  solver_.Solve();
+  EXPECT_EQ(getter_.GetObjectiveOffset(), offset);
 }
 
 TEST_F(XpressFixtureMIP, ClearObjective) {
-  MPVariable* x = solver.MakeBoolVar("x");
-  MPObjective* obj = solver.MutableObjective();
+  MPVariable* x = solver_.MakeBoolVar("x");
+  MPObjective* obj = solver_.MutableObjective();
   double coef = -15.6;
   obj->SetCoefficient(x, coef);
-  solver.Solve();
-  EXPECT_EQ(getter.getObjectiveCoef(x->index()), coef);
+  solver_.Solve();
+  EXPECT_EQ(getter_.GetObjectiveCoef(x->index()), coef);
   obj->Clear();
-  solver.Solve();
-  EXPECT_EQ(getter.getObjectiveCoef(x->index()), 0);
+  solver_.Solve();
+  EXPECT_EQ(getter_.GetObjectiveCoef(x->index()), 0);
 }
 
 TEST_F(XpressFixtureMIP, ObjectiveSense) {
-  MPObjective* const objective = solver.MutableObjective();
+  MPObjective* const objective = solver_.MutableObjective();
   objective->SetMinimization();
-  EXPECT_EQ(getter.getObjectiveSense(), XPRS_OBJ_MINIMIZE);
+  EXPECT_EQ(getter_.GetObjectiveSense(), XPRS_OBJ_MINIMIZE);
   objective->SetMaximization();
-  EXPECT_EQ(getter.getObjectiveSense(), XPRS_OBJ_MAXIMIZE);
+  EXPECT_EQ(getter_.GetObjectiveSense(), XPRS_OBJ_MAXIMIZE);
 }
 
-TEST_F(XpressFixtureLP, interations) {
+TEST_F(XpressFixtureLP, interactions) {
   int nc = 100, nv = 100;
   std::vector<MPConstraint*> cs(nc);
   for (int ci = 0; ci < nc; ++ci) {
-    cs[ci] = solver.MakeRowConstraint(ci, ci + 1);
+    cs[ci] = solver_.MakeRowConstraint(ci, ci + 1);
   }
-  MPObjective* const objective = solver.MutableObjective();
+  MPObjective* const objective = solver_.MutableObjective();
   for (int vi = 0; vi < nv; ++vi) {
-    MPVariable* v = solver.MakeNumVar(0, nv, "x" + std::to_string(vi));
+    MPVariable* v = solver_.MakeNumVar(0, nv, "x" + std::to_string(vi));
     for (int ci = 0; ci < nc; ++ci) {
       cs[ci]->SetCoefficient(v, vi + ci);
     }
     objective->SetCoefficient(v, 1);
   }
-  solver.Solve();
-  EXPECT_GT(solver.iterations(), 0);
+  solver_.Solve();
+  EXPECT_GT(solver_.iterations(), 0);
 }
 
 TEST_F(XpressFixtureMIP, nodes) {
   int nc = 100, nv = 100;
   std::vector<MPConstraint*> cs(nc);
   for (int ci = 0; ci < nc; ++ci) {
-    cs[ci] = solver.MakeRowConstraint(ci, ci + 1);
+    cs[ci] = solver_.MakeRowConstraint(ci, ci + 1);
   }
-  MPObjective* const objective = solver.MutableObjective();
+  MPObjective* const objective = solver_.MutableObjective();
   for (int vi = 0; vi < nv; ++vi) {
-    MPVariable* v = solver.MakeIntVar(0, nv, "x" + std::to_string(vi));
+    MPVariable* v = solver_.MakeIntVar(0, nv, "x" + std::to_string(vi));
     for (int ci = 0; ci < nc; ++ci) {
       cs[ci]->SetCoefficient(v, vi + ci);
     }
     objective->SetCoefficient(v, 1);
   }
-  solver.Solve();
-  EXPECT_GT(solver.nodes(), 0);
+  solver_.Solve();
+  EXPECT_GT(solver_.nodes(), 0);
 }
 
 TEST_F(XpressFixtureMIP, SolverVersion) {
-  EXPECT_GE(solver.SolverVersion().size(), 30);
+  EXPECT_GE(solver_.SolverVersion().size(), 30);
 }
 
 TEST_F(XpressFixtureMIP, Write) {
-  MPVariable* x1 = solver.MakeIntVar(-1.2, 9.3, "C1");
-  MPVariable* x2 = solver.MakeNumVar(-1, 5.147593849384714, "SomeColumnName");
-  MPConstraint* c1 = solver.MakeRowConstraint(-solver.infinity(), 1, "R1");
+  MPVariable* x1 = solver_.MakeIntVar(-1.2, 9.3, "C1");
+  MPVariable* x2 = solver_.MakeNumVar(-1, 5.147593849384714, "SomeColumnName");
+  MPConstraint* c1 = solver_.MakeRowConstraint(-solver_.infinity(), 1, "R1");
   c1->SetCoefficient(x1, 3);
   c1->SetCoefficient(x2, 1.5);
-  MPConstraint* c2 = solver.MakeRowConstraint(3, 5, "SomeRowName");
+  MPConstraint* c2 = solver_.MakeRowConstraint(3, 5, "SomeRowName");
   c2->SetCoefficient(x2, -1.1122334455667788);
-  MPObjective* obj = solver.MutableObjective();
+  MPObjective* obj = solver_.MutableObjective();
   obj->SetMaximization();
   obj->SetCoefficient(x1, 1);
   obj->SetCoefficient(x2, 2);
 
-  const std::filesystem::path temporary_working_dir =
-      std::filesystem::temp_directory_path() / "temporary_working_dir";
-  std::filesystem::create_directories(temporary_working_dir);
-
-  std::string tmpName = (temporary_working_dir / "dummy.mps").string();
-  solver.Write(tmpName);
+  const std::string tmpName = absl::StrCat(testing::TempDir(), "/dummy.mps");
+  solver_.Write(tmpName);
 
   std::ifstream tmpFile(tmpName);
   std::stringstream tmpBuffer;
   tmpBuffer << tmpFile.rdbuf();
   tmpFile.close();
-  std::filesystem::remove_all(temporary_working_dir);
+  std::remove(tmpName.c_str());
 
-  // disable formatting to keep the expected MPS readable
-  // clang-format off
-  std::string expectedMps = std::string("") +
-                            "NAME          " + "\n" +
-                            "OBJSENSE  MAXIMIZE" + "\n" +
-                            "ROWS" + "\n" +
-                            " N  __OBJ___        " + "\n" +
-                            " L  R1              " + "\n" +
-                            " L  SomeRowName     " + "\n" +
-                            "COLUMNS" + "\n" +
-                            "    C1                __OBJ___          1" + "\n" +
-                            "    C1                R1                3" + "\n" +
-                            "    SomeColumnName    __OBJ___          2" + "\n" +
-                            "    SomeColumnName    R1                1.5" + "\n" +
-                            "    SomeColumnName    SomeRowName       -1.1122334455667788" + "\n" +
-                            "RHS" + "\n" +
-                            "    RHS00001          R1                1" + "\n" +
-                            "    RHS00001          SomeRowName       5" + "\n" +
-                            "RANGES" + "\n" +
-                            "    RNG00001          SomeRowName       2" + "\n" +
-                            "BOUNDS" + "\n" +
-                            " UI BND00001          C1                9" + "\n" +
-                            " LO BND00001          C1                -1" + "\n" +
-                            " UP BND00001          SomeColumnName    5.147593849384714" + "\n" +
-                            " LO BND00001          SomeColumnName    -1" + "\n" +
-                            "ENDATA" + "\n";
-  // clang-format on
+  std::string expectedMps = R"(NAME          
+OBJSENSE  MAXIMIZE
+ROWS
+ N  __OBJ___        
+ L  R1              
+ L  SomeRowName     
+COLUMNS
+    C1                __OBJ___          1
+    C1                R1                3
+    SomeColumnName    __OBJ___          2
+    SomeColumnName    R1                1.5
+    SomeColumnName    SomeRowName       -1.1122334455667788
+RHS
+    RHS00001          R1                1
+    RHS00001          SomeRowName       5
+RANGES
+    RNG00001          SomeRowName       2
+BOUNDS
+ UI BND00001          C1                9
+ LO BND00001          C1                -1
+ UP BND00001          SomeColumnName    5.147593849384714
+ LO BND00001          SomeColumnName    -1
+ENDATA
+)";
   EXPECT_EQ(tmpBuffer.str(), expectedMps);
 }
 
@@ -792,54 +786,54 @@ TEST_F(XpressFixtureLP, SetPrimalTolerance) {
   MPSolverParameters params;
   double tol = 1e-4;
   params.SetDoubleParam(MPSolverParameters::PRIMAL_TOLERANCE, tol);
-  solver.Solve(params);
-  EXPECT_EQ(getter.getDoubleControl(XPRS_FEASTOL), tol);
+  solver_.Solve(params);
+  EXPECT_EQ(getter_.GetDoubleControl(XPRS_FEASTOL), tol);
 }
 
-TEST_F(XpressFixtureLP, SetPrimalToleranceNotOverridenByMPSolverParameters) {
+TEST_F(XpressFixtureLP, SetPrimalToleranceNotOverriddenByMPSolverParameters) {
   double tol = 1e-4;  // Choose a value different from kDefaultPrimalTolerance
   std::string xpressParamString = "FEASTOL " + std::to_string(tol);
-  solver.SetSolverSpecificParametersAsString(xpressParamString);
-  solver.Solve();
-  EXPECT_EQ(getter.getDoubleControl(XPRS_FEASTOL), tol);
+  solver_.SetSolverSpecificParametersAsString(xpressParamString);
+  solver_.Solve();
+  EXPECT_EQ(getter_.GetDoubleControl(XPRS_FEASTOL), tol);
 }
 
 TEST_F(XpressFixtureLP, SetDualTolerance) {
   MPSolverParameters params;
   double tol = 1e-2;
   params.SetDoubleParam(MPSolverParameters::DUAL_TOLERANCE, tol);
-  solver.Solve(params);
-  EXPECT_EQ(getter.getDoubleControl(XPRS_OPTIMALITYTOL), tol);
+  solver_.Solve(params);
+  EXPECT_EQ(getter_.GetDoubleControl(XPRS_OPTIMALITYTOL), tol);
 }
 
-TEST_F(XpressFixtureLP, SetDualToleranceNotOverridenByMPSolverParameters) {
+TEST_F(XpressFixtureLP, SetDualToleranceNotOverriddenByMPSolverParameters) {
   double tol = 1e-4;  // Choose a value different from kDefaultDualTolerance
   std::string xpressParamString = "OPTIMALITYTOL " + std::to_string(tol);
-  solver.SetSolverSpecificParametersAsString(xpressParamString);
-  solver.Solve();
-  EXPECT_EQ(getter.getDoubleControl(XPRS_OPTIMALITYTOL), tol);
+  solver_.SetSolverSpecificParametersAsString(xpressParamString);
+  solver_.Solve();
+  EXPECT_EQ(getter_.GetDoubleControl(XPRS_OPTIMALITYTOL), tol);
 }
 
 TEST_F(XpressFixtureMIP, SetPresolveMode) {
   MPSolverParameters params;
   params.SetIntegerParam(MPSolverParameters::PRESOLVE,
                          MPSolverParameters::PRESOLVE_OFF);
-  solver.Solve(params);
-  EXPECT_EQ(getter.getIntegerControl(XPRS_PRESOLVE), 0);
+  solver_.Solve(params);
+  EXPECT_EQ(getter_.GetIntegerControl(XPRS_PRESOLVE), 0);
   params.SetIntegerParam(MPSolverParameters::PRESOLVE,
                          MPSolverParameters::PRESOLVE_ON);
-  solver.Solve(params);
-  EXPECT_EQ(getter.getIntegerControl(XPRS_PRESOLVE), 1);
+  solver_.Solve(params);
+  EXPECT_EQ(getter_.GetIntegerControl(XPRS_PRESOLVE), 1);
 }
 
-TEST_F(XpressFixtureMIP, SetPresolveModeNotOverridenByMPSolverParameters) {
+TEST_F(XpressFixtureMIP, SetPresolveModeNotOverriddenByMPSolverParameters) {
   // Test all presolve modes of Xpress
   std::vector<int> presolveModes{-1, 0, 1, 2, 3};
   for (int presolveMode : presolveModes) {
     std::string xpressParamString = "PRESOLVE " + std::to_string(presolveMode);
-    solver.SetSolverSpecificParametersAsString(xpressParamString);
-    solver.Solve();
-    EXPECT_EQ(getter.getIntegerControl(XPRS_PRESOLVE), presolveMode);
+    solver_.SetSolverSpecificParametersAsString(xpressParamString);
+    solver_.Solve();
+    EXPECT_EQ(getter_.GetIntegerControl(XPRS_PRESOLVE), presolveMode);
   }
 }
 
@@ -847,25 +841,25 @@ TEST_F(XpressFixtureLP, SetLpAlgorithm) {
   MPSolverParameters params;
   params.SetIntegerParam(MPSolverParameters::LP_ALGORITHM,
                          MPSolverParameters::DUAL);
-  solver.Solve(params);
-  EXPECT_EQ(getter.getIntegerControl(XPRS_DEFAULTALG), 2);
+  solver_.Solve(params);
+  EXPECT_EQ(getter_.GetIntegerControl(XPRS_DEFAULTALG), 2);
   params.SetIntegerParam(MPSolverParameters::LP_ALGORITHM,
                          MPSolverParameters::PRIMAL);
-  solver.Solve(params);
-  EXPECT_EQ(getter.getIntegerControl(XPRS_DEFAULTALG), 3);
+  solver_.Solve(params);
+  EXPECT_EQ(getter_.GetIntegerControl(XPRS_DEFAULTALG), 3);
   params.SetIntegerParam(MPSolverParameters::LP_ALGORITHM,
                          MPSolverParameters::BARRIER);
-  solver.Solve(params);
-  EXPECT_EQ(getter.getIntegerControl(XPRS_DEFAULTALG), 4);
+  solver_.Solve(params);
+  EXPECT_EQ(getter_.GetIntegerControl(XPRS_DEFAULTALG), 4);
 }
 
-TEST_F(XpressFixtureLP, SetLPAlgorithmNotOverridenByMPSolverParameters) {
+TEST_F(XpressFixtureLP, SetLPAlgorithmNotOverriddenByMPSolverParameters) {
   std::vector<int> defaultAlgs{1, 2, 3, 4};
   for (int defaultAlg : defaultAlgs) {
     std::string xpressParamString = "DEFAULTALG " + std::to_string(defaultAlg);
-    solver.SetSolverSpecificParametersAsString(xpressParamString);
-    solver.Solve();
-    EXPECT_EQ(getter.getIntegerControl(XPRS_DEFAULTALG), defaultAlg);
+    solver_.SetSolverSpecificParametersAsString(xpressParamString);
+    solver_.Solve();
+    EXPECT_EQ(getter_.GetIntegerControl(XPRS_DEFAULTALG), defaultAlg);
   }
 }
 
@@ -873,39 +867,39 @@ TEST_F(XpressFixtureMIP, SetScaling) {
   MPSolverParameters params;
   params.SetIntegerParam(MPSolverParameters::SCALING,
                          MPSolverParameters::SCALING_OFF);
-  solver.Solve(params);
-  EXPECT_EQ(getter.getIntegerControl(XPRS_SCALING), 0);
+  solver_.Solve(params);
+  EXPECT_EQ(getter_.GetIntegerControl(XPRS_SCALING), 0);
   params.SetIntegerParam(MPSolverParameters::SCALING,
                          MPSolverParameters::SCALING_ON);
-  solver.Solve(params);
-  EXPECT_EQ(getter.getIntegerControl(XPRS_SCALING), 163);
+  solver_.Solve(params);
+  EXPECT_EQ(getter_.GetIntegerControl(XPRS_SCALING), 163);
 }
 
-TEST_F(XpressFixtureMIP, SetScalingNotOverridenByMPSolverParameters) {
+TEST_F(XpressFixtureMIP, SetScalingNotOverriddenByMPSolverParameters) {
   // Scaling is a bitmap on 16 bits in Xpress, test only a random value among
   // all possible
   int scaling = 2354;
 
   std::string xpressParamString = "SCALING " + std::to_string(scaling);
-  solver.SetSolverSpecificParametersAsString(xpressParamString);
-  solver.Solve();
-  EXPECT_EQ(getter.getIntegerControl(XPRS_SCALING), scaling);
+  solver_.SetSolverSpecificParametersAsString(xpressParamString);
+  solver_.Solve();
+  EXPECT_EQ(getter_.GetIntegerControl(XPRS_SCALING), scaling);
 }
 
 TEST_F(XpressFixtureMIP, SetRelativeMipGap) {
   MPSolverParameters params;
   double relativeMipGap = 1e-3;
   params.SetDoubleParam(MPSolverParameters::RELATIVE_MIP_GAP, relativeMipGap);
-  solver.Solve(params);
-  EXPECT_EQ(getter.getDoubleControl(XPRS_MIPRELSTOP), relativeMipGap);
+  solver_.Solve(params);
+  EXPECT_EQ(getter_.GetDoubleControl(XPRS_MIPRELSTOP), relativeMipGap);
 }
 
-TEST_F(XpressFixtureMIP, SetRelativeMipGapNotOverridenByMPSolverParameters) {
+TEST_F(XpressFixtureMIP, SetRelativeMipGapNotOverriddenByMPSolverParameters) {
   double gap = 1e-2;  // Choose a value different from kDefaultRelativeMipGap
   std::string xpressParamString = "MIPRELSTOP " + std::to_string(gap);
-  solver.SetSolverSpecificParametersAsString(xpressParamString);
-  solver.Solve();
-  EXPECT_EQ(getter.getDoubleControl(XPRS_MIPRELSTOP), gap);
+  solver_.SetSolverSpecificParametersAsString(xpressParamString);
+  solver_.Solve();
+  EXPECT_EQ(getter_.GetDoubleControl(XPRS_MIPRELSTOP), gap);
 }
 
 TEST(XpressInterface, setStringControls) {
@@ -920,12 +914,12 @@ TEST(XpressInterface, setStringControls) {
       {"TUNERSESSIONNAME", XPRS_TUNERSESSIONNAME, "default_value"},
       {"COMPUTEEXECSERVICE", XPRS_COMPUTEEXECSERVICE, "default_value"},
   };
-  for (const auto& [paramString, control, paramValue] : params) {
+  for (const auto& [param_string, control, param_value] : params) {
     MPSolver solver("XPRESS_MIP", MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING);
     XPRSGetter getter(&solver);
-    std::string xpressParamString = paramString + " " + paramValue;
-    solver.SetSolverSpecificParametersAsString(xpressParamString);
-    EXPECT_EQ(paramValue, getter.getStringControl(control));
+    std::string xpress_param_string = param_string + " " + param_value;
+    solver.SetSolverSpecificParametersAsString(xpress_param_string);
+    EXPECT_EQ(param_value, getter.GetStringControl(control));
   }
 }
 
@@ -1011,13 +1005,13 @@ TEST(XpressInterface, setDoubleControls) {
       {"SOLTIMELIMIT", XPRS_SOLTIMELIMIT, 1.},
       {"REPAIRINFEASTIMELIMIT", XPRS_REPAIRINFEASTIMELIMIT, 1.},
   };
-  for (const auto& [paramString, control, paramValue] : params) {
+  for (const auto& [param_string, control, param_value] : params) {
     MPSolver solver("XPRESS_MIP", MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING);
     XPRSGetter getter(&solver);
-    std::string xpressParamString =
-        paramString + " " + std::to_string(paramValue);
-    solver.SetSolverSpecificParametersAsString(xpressParamString);
-    EXPECT_EQ(paramValue, getter.getDoubleControl(control));
+    std::string xpress_param_string =
+        param_string + " " + std::to_string(param_value);
+    solver.SetSolverSpecificParametersAsString(xpress_param_string);
+    EXPECT_EQ(param_value, getter.GetDoubleControl(control));
   }
 }
 
@@ -1256,13 +1250,13 @@ TEST(XpressInterface, setIntControl) {
       {"PRECONFIGURATION", XPRS_PRECONFIGURATION, 1},
       {"FEASIBILITYJUMP", XPRS_FEASIBILITYJUMP, 1},
   };
-  for (const auto& [paramString, control, paramValue] : params) {
+  for (const auto& [param_string, control, param_value] : params) {
     MPSolver solver("XPRESS_MIP", MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING);
     XPRSGetter getter(&solver);
-    std::string xpressParamString =
-        paramString + " " + std::to_string(paramValue);
-    solver.SetSolverSpecificParametersAsString(xpressParamString);
-    EXPECT_EQ(paramValue, getter.getIntegerControl(control));
+    std::string xpress_param_string =
+        param_string + " " + std::to_string(param_value);
+    solver.SetSolverSpecificParametersAsString(xpress_param_string);
+    EXPECT_EQ(param_value, getter.GetIntegerControl(control));
   }
 }
 
@@ -1271,13 +1265,13 @@ TEST(XpressInterface, setInt64Control) {
       {"EXTRAELEMS", XPRS_EXTRAELEMS, 1},
       {"EXTRASETELEMS", XPRS_EXTRASETELEMS, 1},
   };
-  for (const auto& [paramString, control, paramValue] : params) {
+  for (const auto& [param_string, control, param_value] : params) {
     MPSolver solver("XPRESS_MIP", MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING);
     XPRSGetter getter(&solver);
-    std::string xpressParamString =
-        paramString + " " + std::to_string(paramValue);
-    solver.SetSolverSpecificParametersAsString(xpressParamString);
-    EXPECT_EQ(paramValue, getter.getInteger64Control(control));
+    std::string xpress_param_string =
+        param_string + " " + std::to_string(param_value);
+    solver.SetSolverSpecificParametersAsString(xpress_param_string);
+    EXPECT_EQ(param_value, getter.GetInteger64Control(control));
   }
 }
 
@@ -1289,23 +1283,23 @@ TEST_F(XpressFixtureMIP, SolveMIP) {
   //       x ,  y >= 0
   //       x ,  y \in Z
 
-  double inf = solver.infinity();
-  MPVariable* x = solver.MakeIntVar(0, inf, "x");
-  MPVariable* y = solver.MakeIntVar(0, inf, "y");
-  MPObjective* obj = solver.MutableObjective();
+  double inf = solver_.infinity();
+  MPVariable* x = solver_.MakeIntVar(0, inf, "x");
+  MPVariable* y = solver_.MakeIntVar(0, inf, "y");
+  MPObjective* obj = solver_.MutableObjective();
   obj->SetCoefficient(x, 1);
   obj->SetCoefficient(y, 2);
   obj->SetMaximization();
-  MPConstraint* c1 = solver.MakeRowConstraint(-inf, 1);
+  MPConstraint* c1 = solver_.MakeRowConstraint(-inf, 1);
   c1->SetCoefficient(x, -1);
   c1->SetCoefficient(y, 1);
-  MPConstraint* c2 = solver.MakeRowConstraint(-inf, 12);
+  MPConstraint* c2 = solver_.MakeRowConstraint(-inf, 12);
   c2->SetCoefficient(x, 3);
   c2->SetCoefficient(y, 2);
-  MPConstraint* c3 = solver.MakeRowConstraint(-inf, 12);
+  MPConstraint* c3 = solver_.MakeRowConstraint(-inf, 12);
   c3->SetCoefficient(x, 2);
   c3->SetCoefficient(y, 3);
-  solver.Solve();
+  solver_.Solve();
 
   EXPECT_EQ(obj->Value(), 6);
   EXPECT_EQ(obj->BestBound(), 6);
@@ -1320,23 +1314,23 @@ TEST_F(XpressFixtureLP, SolveLP) {
   //      3x + 2y <= 12
   //       x ,  y \in R+
 
-  double inf = solver.infinity();
-  MPVariable* x = solver.MakeNumVar(0, inf, "x");
-  MPVariable* y = solver.MakeNumVar(0, inf, "y");
-  MPObjective* obj = solver.MutableObjective();
+  double inf = solver_.infinity();
+  MPVariable* x = solver_.MakeNumVar(0, inf, "x");
+  MPVariable* y = solver_.MakeNumVar(0, inf, "y");
+  MPObjective* obj = solver_.MutableObjective();
   obj->SetCoefficient(x, 1);
   obj->SetCoefficient(y, 2);
   obj->SetMaximization();
-  MPConstraint* c1 = solver.MakeRowConstraint(-inf, 1);
+  MPConstraint* c1 = solver_.MakeRowConstraint(-inf, 1);
   c1->SetCoefficient(x, -1);
   c1->SetCoefficient(y, 1);
-  MPConstraint* c2 = solver.MakeRowConstraint(-inf, 12);
+  MPConstraint* c2 = solver_.MakeRowConstraint(-inf, 12);
   c2->SetCoefficient(x, 3);
   c2->SetCoefficient(y, 2);
-  MPConstraint* c3 = solver.MakeRowConstraint(-inf, 12);
+  MPConstraint* c3 = solver_.MakeRowConstraint(-inf, 12);
   c3->SetCoefficient(x, 2);
   c3->SetCoefficient(y, 3);
-  solver.Solve();
+  solver_.Solve();
 
   EXPECT_NEAR(obj->Value(), 7.4, 1e-8);
   EXPECT_NEAR(x->solution_value(), 1.8, 1e-8);
@@ -1365,8 +1359,8 @@ TEST_F(XpressFixtureMIP, SetHint) {
   // In this test we send the (near) optimal solution as a hint (with
   // obj=56774). Usually XPRESS finds it in ~3000 seconds but in this case it
   // should be able to retain it in just a few seconds using the hint. Note
-  // that the logs should mention "User solution (USER_HINT) stored."
-  buildLargeMipWithCallback(solver, 60, 2);
+  // that the logs should mention \"User solution (USER_HINT) stored.\"
+  BuildLargeMipWithCallback(solver_, 60, 2);
 
   std::vector<double> hintValues{
       -2,  -3,  -19, 8,    -1,  -1, 7,   9,   -20, -17,  7,    -7,
@@ -1375,62 +1369,62 @@ TEST_F(XpressFixtureMIP, SetHint) {
       0,   -36, 9,   -29,  -6,  4,  -16, -45, -12, -45,  -25,  -70,
       -43, -63, 54,  -148, 79,  -2, 64,  92,  61,  -121, -174, -85};
   std::vector<std::pair<const MPVariable*, double>> hint;
-  for (int i = 0; i < solver.NumVariables(); ++i) {
+  for (int i = 0; i < solver_.NumVariables(); ++i) {
     hint.push_back(std::make_pair(
-        solver.LookupVariableOrNull("x_" + std::to_string(i)), hintValues[i]));
+        solver_.LookupVariableOrNull("x_" + std::to_string(i)), hintValues[i]));
   }
-  solver.SetHint(hint);
-  solver.Solve();
+  solver_.SetHint(hint);
+  solver_.Solve();
 
   // Test that we have at least the near optimal objective function value
-  EXPECT_GE(solver.Objective().Value(), 56774.0);
+  EXPECT_GE(solver_.Objective().Value(), 56774.0);
 }
 #endif
 
 TEST_F(XpressFixtureMIP, SetCallBack) {
-  auto myMpCallback = buildLargeMipWithCallback(solver, 30, 30);
-  solver.Solve();
+  auto my_mp_callback = BuildLargeMipWithCallback(solver_, 30, 30);
+  solver_.Solve();
 
-  int nSolutions = myMpCallback->getNSolutions();
+  int n_solutions = my_mp_callback->GetNSolutions();
 
   // This is a tough MIP, in 30 seconds XPRESS should have found at least 5
   // solutions (tested with XPRESS v9.0, may change in later versions)
-  EXPECT_GT(nSolutions, 5);
+  EXPECT_GT(n_solutions, 5);
   // Test variable values for the last solution found
-  for (int i = 0; i < solver.NumVariables(); ++i) {
-    EXPECT_NEAR(
-        myMpCallback->getLastVariableValue(i),
-        solver.LookupVariableOrNull("x_" + std::to_string(i))->solution_value(),
-        1e-10);
+  for (int i = 0; i < solver_.NumVariables(); ++i) {
+    EXPECT_NEAR(my_mp_callback->GetLastVariableValue(i),
+                solver_.LookupVariableOrNull("x_" + std::to_string(i))
+                    ->solution_value(),
+                1e-10);
   }
 }
 
 TEST_F(XpressFixtureMIP, SetAndUnsetCallBack) {
   // Test that when we unset a callback it is not called
-  auto myMpCallback = buildLargeMipWithCallback(solver, 100, 5);
-  solver.SetCallback(nullptr);
-  solver.Solve();
-  EXPECT_EQ(myMpCallback->getNSolutions(), 0);
+  auto my_mp_callback = BuildLargeMipWithCallback(solver_, 100, 5);
+  solver_.SetCallback(nullptr);
+  solver_.Solve();
+  EXPECT_EQ(my_mp_callback->GetNSolutions(), 0);
 }
 
 TEST_F(XpressFixtureMIP, SetAndResetCallBack) {
   // Test that when we set a new callback then it is called, and old one is not
   // called
-  auto oldMpCallback = buildLargeMipWithCallback(solver, 100, 5);
-  auto newMpCallback = new MyMPCallback(&solver, false);
-  solver.SetCallback((MPCallback*)newMpCallback);
-  solver.Solve();
-  EXPECT_EQ(oldMpCallback->getNSolutions(), 0);
-  EXPECT_GT(newMpCallback->getNSolutions(), 1);
+  auto old_mp_callback = BuildLargeMipWithCallback(solver_, 100, 5);
+  auto new_mp_callback = new MyMPCallback(&solver_, false);
+  solver_.SetCallback((MPCallback*)new_mp_callback);
+  solver_.Solve();
+  EXPECT_EQ(old_mp_callback->GetNSolutions(), 0);
+  EXPECT_GT(new_mp_callback->GetNSolutions(), 1);
 }
 
 TEST_F(XpressFixtureMIP, CallbackThrowsException) {
   // Test that when the callback throws an exception, it is caught and logged
-  auto oldMpCallback = buildLargeMipWithCallback(solver, 30, 30);
-  auto newMpCallback = new MyMPCallback(&solver, true);
-  solver.SetCallback((MPCallback*)newMpCallback);
+  BuildLargeMipWithCallback(solver_, 30, 30);
+  auto new_mp_callback = new MyMPCallback(&solver_, true);
+  solver_.SetCallback((MPCallback*)new_mp_callback);
   testing::internal::CaptureStderr();
-  EXPECT_NO_THROW(solver.Solve());
+  EXPECT_NO_THROW(solver_.Solve());
   std::string errors = testing::internal::GetCapturedStderr();
   // Test that StdErr contains the following error message
   std::string expected_error =
