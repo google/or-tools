@@ -174,12 +174,10 @@
 #include <string>
 #include <vector>
 
-#include "absl/base/attributes.h"
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
 #include "ortools/graph_base/graph.h"
 #include "ortools/util/stats.h"
-#include "ortools/util/zvector.h"
 
 namespace operations_research {
 
@@ -435,7 +433,6 @@ class GenericMinCostFlow : public MinCostFlowBase {
   typedef int64_t FlowQuantity;
   typedef typename Graph::OutgoingOrOppositeIncomingArcIterator
       OutgoingOrOppositeIncomingArcIterator;
-  typedef ZVector<ArcIndex> ArcIndexArray;
 
   // Initialize a MinCostFlow instance on the given graph. The graph does not
   // need to be fully built yet, but its capacity reservation is used to
@@ -636,7 +633,8 @@ class GenericMinCostFlow : public MinCostFlowBase {
   // Note that the sum of the largest capacity of an arc in the graph and of
   // the total flow in the graph mustn't exceed the largest 64 bit integer
   // to avoid errors. CheckInputConsistency() verifies this constraint.
-  ZVector<ArcFlowType> residual_arc_capacity_;
+  std::unique_ptr<ArcFlowType[]> residual_arc_capacity_buffer_;
+  ArcFlowType* residual_arc_capacity_ = nullptr;
 
   // An array representing the first admissible arc for each node in graph_.
   std::unique_ptr<ArcIndex[]> first_admissible_arc_;
@@ -659,7 +657,8 @@ class GenericMinCostFlow : public MinCostFlowBase {
   CostValue overflow_threshold_;
 
   // An array representing the scaled unit cost for each arc in graph_.
-  ZVector<ArcScaledCostType> scaled_arc_unit_cost_;
+  std::unique_ptr<ArcScaledCostType[]> scaled_arc_unit_cost_buffer_;
+  ArcScaledCostType* scaled_arc_unit_cost_ = nullptr;
 
   // The status of the problem.
   Status status_ = NOT_SOLVED;

@@ -136,7 +136,6 @@
 #include "absl/strings/string_view.h"
 #include "ortools/graph/flow_problem.pb.h"
 #include "ortools/util/stats.h"
-#include "ortools/util/zvector.h"
 
 namespace operations_research {
 
@@ -502,7 +501,8 @@ class GenericMaxFlow : public MaxFlowStatusClass {
   // Using these facts enables one to only maintain residual_arc_capacity_,
   // instead of both capacity and flow, for each direct and indirect arc. This
   // reduces the amount of memory for this information by a factor 2.
-  ZVector<ArcFlowType> residual_arc_capacity_;
+  std::unique_ptr<ArcFlowType[]> residual_arc_capacity_buffer_;
+  ArcFlowType* residual_arc_capacity_ = nullptr;  // Point into the buffer.
 
   // The initial capacity as set by SetArcCapacity(), unused if
   // `Graph::kNegativeReverseArcs`, as we can always recover the initial
@@ -611,14 +611,16 @@ GenericMaxFlow<Graph, ArcFlowT, FlowSumT>::GenericMaxFlow(const Graph* graph,
   const ArcIndex max_num_arcs = graph_->arc_capacity();
   if (max_num_arcs > 0) {
     if constexpr (Graph::kHasNegativeReverseArcs) {
-      residual_arc_capacity_ =
-          ZVector<ArcFlowType>(-max_num_arcs, max_num_arcs - 1);
+      residual_arc_capacity_buffer_ =
+          std::make_unique<ArcFlowType[]>(2 * max_num_arcs);
+      residual_arc_capacity_ = &residual_arc_capacity_buffer_[max_num_arcs];
     } else {
       // We will need to store the initial capacity in this case.
       initial_capacity_ = std::make_unique<ArcFlowType[]>(max_num_arcs);
-      residual_arc_capacity_ = ZVector<ArcFlowType>(0, max_num_arcs - 1);
+      residual_arc_capacity_buffer_ =
+          std::make_unique<ArcFlowType[]>(max_num_arcs);
+      residual_arc_capacity_ = &residual_arc_capacity_buffer_[0];
     }
-    residual_arc_capacity_.SetAll(0);
   }
 }
 

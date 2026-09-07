@@ -15,7 +15,6 @@
 #include <functional>
 #include <memory>
 #include <random>
-#include <vector>
 
 #include "absl/log/check.h"
 #include "absl/random/distributions.h"
