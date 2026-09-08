@@ -102,9 +102,9 @@ TEST(PresolveCpModelTest, LinMaxBasicPresolveExprs) {
 
 TEST(PresolveCpModelTest, InferAllDiffsControlsNoOverlapConversion) {
   const CpModelProto initial_model = ParseTestProto(R"pb(
-    variables { domain: [0, 2] }
-    variables { domain: [0, 2] }
-    variables { domain: [0, 2] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
 
     constraints {
       interval {
@@ -127,9 +127,7 @@ TEST(PresolveCpModelTest, InferAllDiffsControlsNoOverlapConversion) {
         end { vars: 2 coeffs: 1 offset: 1 }
       }
     }
-    constraints {
-      no_overlap { intervals: [0, 1, 2] }
-    }
+    constraints { no_overlap { intervals: [ 0, 1, 2 ] } }
   )pb");
 
   CpModelProto presolved_model = initial_model;
