@@ -39,5 +39,7 @@ runs:
       shell: bash
       run: |
         echo "Installing remote cache in workspace 'user.bazelrc'"
+        # Compresses blobs locally before uploading them to GCS and decompresses them upon download.
+        echo "common --remote_cache_compression=true" >> ./user.bazelrc
         echo "common --google_default_credentials" >> ./user.bazelrc
         echo "common --remote_cache=https://storage.googleapis.com/or-tools-github-remote-caching" >> ./user.bazelrc
