@@ -1115,6 +1115,8 @@ cc_library(
     name = "fp_utils_testing",
     testonly = True,
     hdrs = ["fp_utils_testing.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":fp_roundtrip_conv",
         ":fp_utils",

@@ -41,7 +41,8 @@ cc_test(
     name = "rank_one_update_test",
     size = "small",
     srcs = ["rank_one_update_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":rank_one_update",
         "//ortools/base:gmock_main",
@@ -113,7 +114,8 @@ cc_test(
     name = "basis_representation_test",
     size = "small",
     srcs = ["basis_representation_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":basis_representation",
         "//ortools/base:gmock_main",
@@ -147,7 +149,8 @@ cc_test(
     name = "variables_info_test",
     size = "small",
     srcs = ["variables_info_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":variables_info",
         "//ortools/base:gmock_main",
@@ -193,6 +196,8 @@ cc_test(
     name = "parameters_validation_test",
     size = "small",
     srcs = ["parameters_validation_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":parameters_cc_proto",
         ":parameters_validation",
@@ -230,7 +235,8 @@ cc_test(
     name = "reduced_costs_test",
     size = "small",
     srcs = ["reduced_costs_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":basis_representation",
         ":reduced_costs",
@@ -279,7 +285,8 @@ cc_test(
     name = "preprocessor_test",
     size = "small",
     srcs = ["preprocessor_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":parameters_cc_proto",
         ":preprocessor",
@@ -300,7 +307,8 @@ cc_test(
     name = "preprocessor_random_test",
     size = "medium",
     srcs = ["preprocessor_random_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_solver",
         ":parameters_cc_proto",
@@ -345,7 +353,8 @@ cc_test(
     name = "markowitz_test",
     size = "small",
     srcs = ["markowitz_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":markowitz",
         "//ortools/base:gmock_main",
@@ -383,7 +392,8 @@ cc_test(
     name = "dual_edge_norms_test",
     size = "small",
     srcs = ["dual_edge_norms_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":basis_representation",
         ":dual_edge_norms",
@@ -461,7 +471,8 @@ cc_test(
     size = "small",
     timeout = "moderate",
     srcs = ["revised_simplex_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":parameters_cc_proto",
         ":preprocessor",
@@ -489,6 +500,7 @@ cc_test(
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
         "@abseil-cpp//absl/types:span",
     ],
 )
@@ -503,7 +515,8 @@ cc_test(
         "--simplex_display_numbers_as_fractions",
         "--v=1",
     ],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":parameters_cc_proto",
         ":preprocessor",
@@ -531,6 +544,7 @@ cc_test(
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
         "@abseil-cpp//absl/types:span",
     ],
 )
@@ -558,7 +572,8 @@ cc_test(
     name = "initial_basis_test",
     size = "small",
     srcs = ["initial_basis_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":initial_basis",
         ":parameters_cc_proto",
@@ -597,7 +612,8 @@ cc_test(
     name = "variable_values_test",
     size = "small",
     srcs = ["variable_values_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":basis_representation",
         ":dual_edge_norms",
@@ -637,7 +653,8 @@ cc_test(
     name = "update_row_test",
     size = "small",
     srcs = ["update_row_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":basis_representation",
         ":update_row",
@@ -654,7 +671,8 @@ cc_binary(
     name = "update_row_benchmark",
     testonly = True,
     srcs = ["update_row_benchmark.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":basis_representation",
         ":update_row",
@@ -709,7 +727,8 @@ cc_test(
     name = "lp_solver_test",
     size = "small",
     srcs = ["lp_solver_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_solver",
         "//ortools/base:gmock_main",
@@ -782,7 +801,8 @@ cc_test(
     name = "lu_factorization_test",
     size = "small",
     srcs = ["lu_factorization_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lu_factorization",
         ":parameters_cc_proto",
