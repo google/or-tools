@@ -73,7 +73,8 @@ cc_test(
     name = "permutation_test",
     size = "small",
     srcs = ["permutation_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_types",
         ":permutation",
@@ -113,7 +114,8 @@ cc_test(
     name = "sparse_vector_test",
     size = "small",
     srcs = ["sparse_vector_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_types",
         ":permutation",
@@ -127,7 +129,8 @@ cc_binary(
     name = "sparse_vector_benchmark",
     testonly = True,
     srcs = ["sparse_vector_benchmark.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_types",
         ":sparse_vector",
@@ -159,7 +162,8 @@ cc_test(
     name = "sparse_column_test",
     size = "small",
     srcs = ["sparse_column_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_types",
         ":permutation",
@@ -183,7 +187,8 @@ cc_test(
     name = "sparse_row_test",
     size = "small",
     srcs = ["sparse_row_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_types",
         ":permutation",
@@ -217,7 +222,8 @@ cc_test(
     name = "sparse_test",
     size = "small",
     srcs = ["sparse_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_test_utils",
         ":lp_types",
@@ -237,7 +243,8 @@ cc_binary(
     name = "sparse_benchmark",
     testonly = True,
     srcs = ["sparse_benchmark.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_test_utils",
         ":lp_types",
@@ -277,7 +284,8 @@ cc_test(
     name = "matrix_scaler_test",
     size = "small",
     srcs = ["matrix_scaler_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_types",
         ":matrix_scaler",
@@ -323,7 +331,8 @@ cc_test(
     name = "lp_data_test",
     size = "small",
     srcs = ["lp_data_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_data",
         ":lp_parser",
@@ -361,6 +370,8 @@ cc_test(
     name = "lp_data_utils_test",
     size = "small",
     srcs = ["lp_data_utils_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_data",
         ":lp_data_utils",
@@ -397,7 +408,8 @@ cc_test(
     name = "lp_utils_test",
     size = "small",
     srcs = ["lp_utils_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_types",
         ":lp_utils",
@@ -414,7 +426,8 @@ cc_test(
 cc_binary(
     name = "lp_utils_benchmark",
     srcs = ["lp_utils_benchmark.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_types",
         ":lp_utils",
@@ -443,7 +456,8 @@ cc_test(
     name = "matrix_utils_test",
     size = "small",
     srcs = ["matrix_utils_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_test_utils",
         ":lp_types",
@@ -481,7 +495,8 @@ cc_library(
 cc_test(
     name = "lp_parser_test",
     srcs = ["lp_parser_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_data",
         ":lp_parser",
@@ -514,7 +529,8 @@ cc_test(
     name = "lp_print_utils_test",
     size = "small",
     srcs = ["lp_print_utils_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_print_utils",
         ":lp_types",
@@ -542,7 +558,8 @@ cc_test(
     name = "proto_utils_test",
     size = "small",
     srcs = ["proto_utils_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_data",
         ":lp_types",
@@ -645,7 +662,8 @@ cc_test(
     name = "lp_decomposer_test",
     size = "small",
     srcs = ["lp_decomposer_test.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_data",
         ":lp_decomposer",
@@ -676,7 +694,8 @@ cc_library(
     testonly = 1,
     srcs = ["lp_test_utils.cc"],
     hdrs = ["lp_test_utils.h"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_types",
         ":sparse",
@@ -694,7 +713,8 @@ cc_binary(
     name = "triangular_benchmark",
     testonly = True,
     srcs = ["triangular_benchmark.cc"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     linkstatic = 1,
     deps = [
         ":lp_test_utils",

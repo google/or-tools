@@ -19,6 +19,7 @@ load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -26,6 +27,8 @@ package(default_visibility = ["//visibility:public"])
 cc_library(
     name = "linear_expr_doc",
     hdrs = ["linear_expr_doc.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
 )
 
 pybind_library(
@@ -82,6 +85,8 @@ cc_library(
     name = "linear_expr",
     srcs = ["linear_expr.cc"],
     hdrs = ["linear_expr.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:types",
         "//ortools/sat:cp_model_cc_proto",
@@ -100,6 +105,8 @@ cc_library(
 cc_binary(
     name = "gen_proto_builder_pybind11",
     srcs = ["gen_proto_builder_pybind11.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:sat_parameters_cc_proto",
@@ -122,6 +129,8 @@ genrule(
 cc_library(
     name = "proto_builder_pybind11",
     hdrs = ["proto_builder_pybind11.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
 )
 
 pybind_extension(

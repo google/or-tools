@@ -16,6 +16,7 @@ load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_python//python:py_binary.bzl", "py_binary")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 load("//tools/testing:bintest.bzl", "bintest", "py_bintest")
 
 package(default_visibility = ["//visibility:public"])
@@ -82,12 +83,16 @@ cc_binary(
     name = "echo",
     testonly = True,
     srcs = ["echo.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
 )
 
 cc_binary(
     name = "fail",
     testonly = True,
     srcs = ["fail.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
 )
 
 py_test(
@@ -112,6 +117,8 @@ py_test(
 cc_binary(
     name = "print_args",
     srcs = ["print_args.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
 )
 
 bintest(

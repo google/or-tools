@@ -16,6 +16,7 @@
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -35,6 +36,8 @@ exports_files(["README"] + glob(
 cc_library(
     name = "graph",
     hdrs = ["graph.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":iterators",
         "//ortools/base:constant_divisor",
@@ -51,6 +54,8 @@ cc_library(
 cc_library(
     name = "generic_graph",
     hdrs = ["generic_graph.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":graph",
         ":hash_or_tree_container",
@@ -62,6 +67,8 @@ cc_library(
 cc_test(
     name = "generic_graph_test",
     srcs = ["generic_graph_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":generic_graph",
         "//ortools/base:gmock_main",
@@ -74,6 +81,8 @@ cc_library(
     testonly = 1,
     srcs = ["random_graph.cc"],
     hdrs = ["random_graph.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":graph",
         "@abseil-cpp//absl/container:flat_hash_set",
@@ -86,6 +95,8 @@ cc_library(
 cc_library(
     name = "io",
     hdrs = ["io.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:numbers",
         "//ortools/util:filelineiter",
@@ -103,6 +114,8 @@ cc_library(
     name = "util",
     srcs = ["util.cc"],
     hdrs = ["util.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":connected_components",
         ":graph",
@@ -120,6 +133,8 @@ cc_library(
 cc_library(
     name = "test_util",
     hdrs = ["test_util.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":graph",
         "//ortools/base:types",
@@ -130,6 +145,8 @@ cc_library(
 cc_test(
     name = "test_util_test",
     srcs = ["test_util_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":graph",
         ":io",
@@ -142,6 +159,8 @@ cc_test(
 cc_library(
     name = "iterators",
     hdrs = ["iterators.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = ["@abseil-cpp//absl/log:check"],
 )
 
@@ -149,6 +168,8 @@ cc_test(
     name = "iterators_test",
     size = "small",
     srcs = ["iterators_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":iterators",
         "//ortools/base:gmock_main",
@@ -159,6 +180,8 @@ cc_test(
 cc_library(
     name = "bfs",
     hdrs = ["bfs.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
@@ -176,6 +199,8 @@ cc_library(
 cc_library(
     name = "strongly_connected_components",
     hdrs = ["strongly_connected_components.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":generic_graph",
         ":graph",
@@ -188,6 +213,8 @@ cc_library(
     name = "topologicalsorter",
     srcs = ["topologicalsorter.cc"],
     hdrs = ["topologicalsorter.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":generic_graph",
         ":graph",
@@ -210,6 +237,8 @@ cc_library(
     name = "hash_or_tree_container",
     srcs = [],
     hdrs = ["hash_or_tree_container.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/container:flat_hash_map",
@@ -221,6 +250,8 @@ cc_library(
 cc_library(
     name = "index",
     hdrs = ["index.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":hash_or_tree_container",
         "@abseil-cpp//absl/base:core_headers",
@@ -232,6 +263,8 @@ cc_library(
 cc_test(
     name = "index_test",
     srcs = ["index_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":index",
         "//ortools/base:gmock_main",
@@ -246,6 +279,8 @@ cc_test(
 cc_test(
     name = "hash_or_tree_container_test",
     srcs = ["hash_or_tree_container_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":hash_or_tree_container",
         "//ortools/base:gmock_main",
@@ -260,6 +295,8 @@ cc_library(
     name = "connected_components",
     srcs = ["connected_components.cc"],
     hdrs = ["connected_components.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":hash_or_tree_container",
         "//ortools/base:log_severity",
@@ -273,6 +310,8 @@ cc_library(
 cc_library(
     name = "flow_graph",
     hdrs = ["flow_graph.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":graph",
         ":iterators",
