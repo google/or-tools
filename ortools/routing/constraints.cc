@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <functional>
-#include <limits>
 #include <optional>
 #include <string>
 #include <utility>
@@ -31,8 +30,8 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraints.h"
 #include "ortools/constraint_solver/interval.h"
+#include "ortools/constraint_solver/reversible_data.h"
 #include "ortools/routing/breaks.h"
 #include "ortools/routing/filter_committables.h"
 #include "ortools/routing/filters.h"

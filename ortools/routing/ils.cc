@@ -18,7 +18,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <random>
@@ -35,6 +34,7 @@
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/routing/enums.pb.h"
 #include "ortools/routing/ils.pb.h"
 #include "ortools/routing/parameters.pb.h"
 #include "ortools/routing/routing.h"
