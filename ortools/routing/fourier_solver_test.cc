@@ -25,7 +25,6 @@
 #include "absl/types/span.h"
 #include "google/protobuf/duration.pb.h"
 #include "gtest/gtest.h"
-#include "ortools/util/optional_boolean.pb.h"
 
 namespace operations_research::routing {
 

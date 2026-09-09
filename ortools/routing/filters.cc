@@ -22,7 +22,6 @@
 #include <deque>
 #include <functional>
 #include <initializer_list>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -3540,12 +3539,8 @@ bool ResourceGroupAssignmentFilter::FinalizeAcceptPath(
         return false;
       }
     } else if (IsVarSynced(start)) {
-      // Necessary to avoid b/533262519.
-      // TODO(user): Figure out the conditions under which this can happen.
-      if (!vehicle_to_resource_class_assignment_costs_[v].empty()) {
-        DCHECK_EQ(vehicle_to_resource_class_assignment_costs_[v].size(), 1);
-        route_cost = vehicle_to_resource_class_assignment_costs_[v][0];
-      }
+      DCHECK_EQ(vehicle_to_resource_class_assignment_costs_[v].size(), 1);
+      route_cost = vehicle_to_resource_class_assignment_costs_[v][0];
     }
     CapAddTo(route_cost, &delta_cost_without_transit_);
     if (delta_cost_without_transit_ > objective_max) {
@@ -3585,8 +3580,22 @@ bool ResourceGroupAssignmentFilter::FinalizeAcceptPath(
   return assignment_cost >= 0 && delta_cost_without_transit_ <= objective_max;
 }
 
-void ResourceGroupAssignmentFilter::OnBeforeSynchronizePaths(bool) {
-  if (!HasAnySyncedPath()) {
+void ResourceGroupAssignmentFilter::OnBeforeSynchronizePaths(
+    bool synchronizing_all_paths) {
+  // 1. Capture and reset the failed state from the previous sync.
+  bool was_synch_failed = current_synch_failed_;
+  current_synch_failed_ = false;
+
+  // 2. Capture old state if we're doing an incremental sync from a valid state.
+  std::vector<bool> old_requires_assignment;
+  std::vector<int> old_bound_resource;
+  if (!synchronizing_all_paths && !was_synch_failed) {
+    old_requires_assignment = vehicle_requires_resource_assignment_;
+    old_bound_resource = bound_resource_index_of_vehicle_;
+  }
+
+  // 3. Clear caches if doing a full sync OR recovering from a failed sync.
+  if (!HasAnySyncedPath() || was_synch_failed) {
     vehicle_to_resource_class_assignment_costs_.assign(model_.vehicles(), {});
   }
   bound_resource_index_of_vehicle_.assign(model_.vehicles(), -1);
@@ -3602,6 +3611,8 @@ void ResourceGroupAssignmentFilter::OnBeforeSynchronizePaths(bool) {
     if (!IsVarSynced(start)) {
       continue;
     }
+    // This implicitly overwrites &current_synch_failed_, which is why we had to
+    // save `was_synch_failed` above.
     vehicle_requires_resource_assignment_[v] =
         VehicleRequiresResourceAssignment(
             v, [this](int64_t n) { return Value(n); }, &current_synch_failed_);
@@ -3612,6 +3623,26 @@ void ResourceGroupAssignmentFilter::OnBeforeSynchronizePaths(bool) {
       return;
     }
   }
+
+  // 4. Force synchronization for paths whose resource state mutated
+  // independently of their `Nexts` variables.
+  // ALWAYS force if the previous sync failed, as caches are incomplete.
+  if (!synchronizing_all_paths) {
+    for (int v = 0; v < model_.vehicles(); ++v) {
+      const int64_t start = model_.Start(v);
+      if (!IsVarSynced(start) || PathStartTouched(start)) continue;
+
+      if (was_synch_failed ||
+          old_requires_assignment[v] !=
+              vehicle_requires_resource_assignment_[v] ||
+          old_bound_resource[v] != bound_resource_index_of_vehicle_[v]) {
+        OnSynchronizePathFromStart(start);
+        // OnSynchronizePathFromStart(..) can modify current_synch_failed_.
+        if (current_synch_failed_) return;
+      }
+    }
+  }
+
   synchronized_cost_without_transit_ = 0;
 }
 

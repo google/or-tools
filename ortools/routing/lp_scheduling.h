@@ -671,7 +671,7 @@ class CPSatWrapper : public LinearSolverWrapper {
     return DimensionSchedulingStatus::INFEASIBLE;
   }
   int64_t GetObjectiveValue() const override {
-    return MathUtil::Round<int64_t>(response_.objective_value());
+    return MathUtil::SafeRound<int64_t>(response_.objective_value());
   }
   int64_t GetVariableValue(int index) const override {
     return response_.solution(index);
