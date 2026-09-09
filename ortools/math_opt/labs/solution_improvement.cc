@@ -15,15 +15,13 @@
 
 #include <cmath>
 #include <ios>
-#include <limits>
-#include <tuple>
-#include <vector>
 
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/validators/model_validator.h"

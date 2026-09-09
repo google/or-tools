@@ -20,6 +20,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
+#include "ortools/algorithms/multikey_radix_sort.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/core/sorted.h"
 #include "ortools/math_opt/model.pb.h"
@@ -53,7 +54,7 @@ std::vector<VariableId> VariableStorage::Variables() const {
 
 std::vector<VariableId> VariableStorage::SortedVariables() const {
   std::vector<VariableId> result = Variables();
-  absl::c_sort(result);
+  AutoRadixSort(result, [](const VariableId v) { return v.value(); });
   return result;
 }
 
@@ -100,7 +101,7 @@ VariableStorage::UpdateResult VariableStorage::Update(const Diff& diff) const {
   for (const VariableId v : diff.deleted) {
     result.deleted.Add(v.value());
   }
-  absl::c_sort(result.deleted);
+  AutoRadixSort(result.deleted);
   for (const VariableId v : SortedSetElements(diff.lower_bounds)) {
     result.updates.mutable_lower_bounds()->add_ids(v.value());
     result.updates.mutable_lower_bounds()->add_values(lower_bound(v));

@@ -61,6 +61,7 @@ cc_library(
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
@@ -72,6 +73,7 @@ cc_library(
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
+        "//ortools/base:status_builder",
         "//ortools/math_opt/core:math_opt_proto_utils",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/validators:model_validator",

@@ -664,7 +664,7 @@ cc_library(
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
         "//ortools/math_opt/solvers:xpress_cc_proto",
-        "@abseil-cpp//absl/base:core_headers",
+        "//ortools/port:attributes",
         "@abseil-cpp//absl/status:statusor",
     ],
 )

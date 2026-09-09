@@ -13,6 +13,7 @@
 
 #include "ortools/math_opt/labs/linear_expr_util.h"
 
+#include <cstdlib>
 #include <utility>
 #include <vector>
 

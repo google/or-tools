@@ -14,12 +14,12 @@
 #include "ortools/math_opt/validators/solution_validator.h"
 
 #include <cstdint>
-#include <limits>
-#include <string>
+#include <optional>
 
 #include "absl/status/status.h"
 #include "absl/status/status_macros.h"
 #include "absl/strings/str_cat.h"
+#include "absl/types/optional_ref.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/model_summary.h"
@@ -101,14 +101,17 @@ absl::Status IsFiltered(const SparseVectorView<T>& vector_view,
 //    used.
 //
 // TODO(b/174345677): check that the ids are valid.
-absl::Status IsValidSolutionVector(const SparseDoubleVectorProto& vector,
-                                   const SparseVectorFilterProto& filter,
-                                   const IdNameBiMap& all_items) {
+absl::Status IsValidSolutionVector(
+    const SparseDoubleVectorProto& vector,
+    const absl::optional_ref<const SparseVectorFilterProto> filter,
+    const IdNameBiMap& all_items) {
   const auto vector_view = MakeView(vector);
   ABSL_RETURN_IF_ERROR(CheckIdsAndValues(
       vector_view,
       {.allow_positive_infinity = false, .allow_negative_infinity = false}));
-  ABSL_RETURN_IF_ERROR(IsFiltered(vector_view, filter, all_items));
+  if (filter.has_value()) {
+    ABSL_RETURN_IF_ERROR(IsFiltered(vector_view, *filter, all_items));
+  }
   return absl::OkStatus();
 }
 
@@ -163,6 +166,13 @@ absl::Status ValidatePrimalSolutionVector(const SparseDoubleVectorProto& vector,
                                           const ModelSummary& model_summary) {
   ABSL_RETURN_IF_ERROR(
       IsValidSolutionVector(vector, filter, model_summary.variables));
+  return absl::OkStatus();
+}
+
+absl::Status ValidateSuggestedSolution(const SparseDoubleVectorProto& vector,
+                                       const ModelSummary& model_summary) {
+  ABSL_RETURN_IF_ERROR(IsValidSolutionVector(vector, /*filter=*/std::nullopt,
+                                             model_summary.variables));
   return absl::OkStatus();
 }
 

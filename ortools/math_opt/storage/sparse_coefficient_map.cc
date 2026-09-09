@@ -15,7 +15,7 @@
 
 #include <cstdint>
 
-#include "absl/algorithm/container.h"
+#include "ortools/algorithms/multikey_radix_sort.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/storage/model_storage_types.h"
 
@@ -28,7 +28,7 @@ SparseDoubleVectorProto SparseCoefficientMap::Proto() const {
   for (const auto [var, _] : terms_) {
     result.add_ids(var.value());
   }
-  absl::c_sort(*result.mutable_ids());
+  AutoRadixSort(*result.mutable_ids());
   for (const int64_t id : result.ids()) {
     result.add_values(terms_.at(VariableId(id)));
   }
