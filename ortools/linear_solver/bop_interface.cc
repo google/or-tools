@@ -12,17 +12,23 @@
 // limitations under the License.
 
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "absl/base/attributes.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "google/protobuf/text_format.h"
 #include "ortools/bop/bop_parameters.pb.h"
+#include "ortools/bop/bop_types.h"
 #include "ortools/bop/integral_solver.h"
 #include "ortools/linear_solver/linear_solver.h"
+#include "ortools/lp_data/lp_data.h"
+#include "ortools/lp_data/lp_types.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace {
