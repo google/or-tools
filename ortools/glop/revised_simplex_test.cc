@@ -36,6 +36,8 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "absl/time/clock.h"
+#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
@@ -62,6 +64,10 @@ namespace {
 using ::testing::_;
 using ::testing::AnyOf;
 using ::testing::ElementsAre;
+
+// Duration of tests that use a loop where they generate random data and repeat
+// a test on them.
+constexpr absl::Duration kRepeatedTestsDuration = absl::Seconds(5);
 
 // Wrapper of std::mt19937 that picks a random seed that can be fixed to
 // reproduce issues with the --revised_simplex_test_seed flag.
@@ -1231,17 +1237,18 @@ ExpectedSolution SolveRandomProblem(ColIndex num_cols, RowIndex num_rows,
           simplex->GetNumberOfIterations()};
 }
 
-void RandomTestsOfIncrementalityOnSameProblem(ColIndex num_cols,
-                                              RowIndex num_rows, int num_tests,
-                                              bool use_dual_simplex) {
+void RandomTestsOfIncrementalityOnSameProblem(
+    const ColIndex num_cols, const RowIndex num_rows,
+    const absl::Duration test_duration, const bool use_dual_simplex) {
   std::unique_ptr<LinearProgram> linear_program(new LinearProgram);
   absl::BitGen bit_gen;
-  for (int test = 0; test < num_tests; ++test) {
+  const absl::Time deadline = absl::Now() + test_duration;
+  int test = 0;
+  for (; test == 0 || absl::Now() < deadline; ++test) {
     RandomWithFixableSeed fixable_seed(bit_gen);
     if (fixable_seed.seed.fixed && test >= 1) break;
 
-    std::string err(absl::StrFormat(" test no %d / %d; %s.", test + 1,
-                                    num_tests,
+    std::string err(absl::StrFormat(" test no %d; %s.", test + 1,
                                     absl::FormatStreamed(fixable_seed.seed)));
     // Initialize data for this test.
     const ExpectedSolution solution =
@@ -1298,67 +1305,71 @@ void RandomTestsOfIncrementalityOnSameProblem(ColIndex num_cols,
     EXPECT_EQ(simplex->DeterministicTime(),
               time_limit->GetElapsedDeterministicTime());
   }
+  LOG(INFO) << "#tests=" << test;
 }
 
 TEST(RevisedSimplexTest, PrimalIsFullyIncrementalOnRandomTinyProblems) {
   RandomTestsOfIncrementalityOnSameProblem(
-      ColIndex(10),  // Number of variables.
-      RowIndex(5),   // Number of constraints.
-      25,            // Number of repeats.
-      false);        // Use dual simplex?
+      ColIndex(10),            // Number of variables.
+      RowIndex(5),             // Number of constraints.
+      kRepeatedTestsDuration,  // Duration of the test.
+      false);                  // Use dual simplex?
 }
 
 TEST(RevisedSimplexTest, DualIsFullyIncrementalOnRandomTinyProblems) {
   RandomTestsOfIncrementalityOnSameProblem(
-      ColIndex(10),  // Number of variables.
-      RowIndex(5),   // Number of constraints.
-      25,            // Number of repeats.
-      true);         // Use dual simplex?
+      ColIndex(10),            // Number of variables.
+      RowIndex(5),             // Number of constraints.
+      kRepeatedTestsDuration,  // Duration of the test.
+      true);                   // Use dual simplex?
 }
 
 TEST(RevisedSimplexTest, PrimalIsFullyIncrementalOnRandomSmallProblems) {
   RandomTestsOfIncrementalityOnSameProblem(
-      ColIndex(50),  // Number of variables.
-      RowIndex(25),  // Number of constraints.
-      10,            // Number of repeats.
-      false);        // Use dual simplex?
+      ColIndex(50),            // Number of variables.
+      RowIndex(25),            // Number of constraints.
+      kRepeatedTestsDuration,  // Duration of the test.
+      false);                  // Use dual simplex?
 }
 
 TEST(RevisedSimplexTest, DualIsFullyIncrementalOnRandomSmallProblems) {
   RandomTestsOfIncrementalityOnSameProblem(
-      ColIndex(50),  // Number of variables.
-      RowIndex(25),  // Number of constraints.
-      10,            // Number of repeats.
-      true);         // Use dual simplex?
+      ColIndex(50),            // Number of variables.
+      RowIndex(25),            // Number of constraints.
+      kRepeatedTestsDuration,  // Duration of the test.
+      true);                   // Use dual simplex?
 }
 
 TEST(RevisedSimplexTest, PrimalIsFullyIncrementalOnRandomMediumProblems) {
   RandomTestsOfIncrementalityOnSameProblem(
-      ColIndex(100),  // Number of variables.
-      RowIndex(50),   // Number of constraints.
-      2,              // Number of repeats.
-      false);         // Use dual simplex?
+      ColIndex(100),           // Number of variables.
+      RowIndex(50),            // Number of constraints.
+      kRepeatedTestsDuration,  // Duration of the test.
+      false);                  // Use dual simplex?
 }
 
 TEST(RevisedSimplexTest, DualIsFullyIncrementalOnRandomMediumProblems) {
   RandomTestsOfIncrementalityOnSameProblem(
-      ColIndex(100),  // Number of variables.
-      RowIndex(50),   // Number of constraints.
-      2,              // Number of repeats.
-      true);          // Use dual simplex?
+      ColIndex(100),           // Number of variables.
+      RowIndex(50),            // Number of constraints.
+      kRepeatedTestsDuration,  // Duration of the test.
+      true);                   // Use dual simplex?
 }
 
-void RandomTestsOfBasisLoadOnSameProblem(ColIndex num_cols, RowIndex num_rows,
-                                         int num_tests, bool use_dual_simplex) {
+void RandomTestsOfBasisLoadOnSameProblem(const ColIndex num_cols,
+                                         const RowIndex num_rows,
+                                         const absl::Duration test_duration,
+                                         const bool use_dual_simplex) {
   std::unique_ptr<LinearProgram> linear_program(new LinearProgram);
 
   absl::BitGen bit_gen;
-  for (int test = 0; test < num_tests; ++test) {
+  const absl::Time deadline = absl::Now() + test_duration;
+  int test = 0;
+  for (; test == 0 || absl::Now() < deadline; ++test) {
     RandomWithFixableSeed fixable_seed(bit_gen);
     if (fixable_seed.seed.fixed && test >= 1) break;
 
-    std::string err(absl::StrFormat(" test no %d / %d; %s.", test + 1,
-                                    num_tests,
+    std::string err(absl::StrFormat(" test no %d; %s.", test + 1,
                                     absl::FormatStreamed(fixable_seed.seed)));
     // Initialize data for this test.
     const ExpectedSolution solution =
@@ -1425,63 +1436,72 @@ void RandomTestsOfBasisLoadOnSameProblem(ColIndex num_cols, RowIndex num_rows,
           << err;
     }
   }
+  LOG(INFO) << "#tests=" << test;
 }
 
 TEST(RevisedSimplexTest, PrimalSupportsLoadingBasisStateOnRandomTinyProblems) {
-  RandomTestsOfBasisLoadOnSameProblem(ColIndex(10),  // Number of variables.
-                                      RowIndex(5),   // Number of constraints.
-                                      25,            // Number of repeats.
-                                      false);        // Use dual simplex?
+  RandomTestsOfBasisLoadOnSameProblem(
+      ColIndex(10),            // Number of variables.
+      RowIndex(5),             // Number of constraints.
+      kRepeatedTestsDuration,  // Duration of the test.
+      false);                  // Use dual simplex?
 }
 
 TEST(RevisedSimplexTest, DualSupportsLoadingBasisStateOnRandomTinyProblems) {
-  RandomTestsOfBasisLoadOnSameProblem(ColIndex(10),  // Number of variables.
-                                      RowIndex(5),   // Number of constraints.
-                                      25,            // Number of repeats.
-                                      true);         // Use dual simplex?
+  RandomTestsOfBasisLoadOnSameProblem(
+      ColIndex(10),            // Number of variables.
+      RowIndex(5),             // Number of constraints.
+      kRepeatedTestsDuration,  // Duration of the test.
+      true);                   // Use dual simplex?
 }
 
 TEST(RevisedSimplexTest, PrimalSupportsLoadingBasisStateOnRandomSmallProblems) {
-  RandomTestsOfBasisLoadOnSameProblem(ColIndex(50),  // Number of variables.
-                                      RowIndex(25),  // Number of constraints.
-                                      100,           // Number of repeats.
-                                      false);        // Use dual simplex?
+  RandomTestsOfBasisLoadOnSameProblem(
+      ColIndex(50),            // Number of variables.
+      RowIndex(25),            // Number of constraints.
+      kRepeatedTestsDuration,  // Duration of the test.
+      false);                  // Use dual simplex?
 }
 
 TEST(RevisedSimplexTest, DualSupportsLoadingBasisStateOnRandomSmallProblems) {
-  RandomTestsOfBasisLoadOnSameProblem(ColIndex(50),  // Number of variables.
-                                      RowIndex(25),  // Number of constraints.
-                                      10,            // Number of repeats.
-                                      true);         // Use dual simplex?
+  RandomTestsOfBasisLoadOnSameProblem(
+      ColIndex(50),            // Number of variables.
+      RowIndex(25),            // Number of constraints.
+      kRepeatedTestsDuration,  // Duration of the test.
+      true);                   // Use dual simplex?
 }
 
 // TODO(user): This test fails on the 2nd of the 2 random problems.
 // The basises do not match.
 TEST(RevisedSimplexTest,
      DISABLED_PrimalSupportsLoadingBasisStateOnRandomMediumProblems) {
-  RandomTestsOfBasisLoadOnSameProblem(ColIndex(100),  // Number of variables.
-                                      RowIndex(50),   // Number of constraints.
-                                      2,              // Number of repeats.
-                                      false);         // Use dual simplex?
+  RandomTestsOfBasisLoadOnSameProblem(
+      ColIndex(100),           // Number of variables.
+      RowIndex(50),            // Number of constraints.
+      kRepeatedTestsDuration,  // Duration of the test.
+      false);                  // Use dual simplex?
 }
 
 TEST(RevisedSimplexTest, DualSupportsLoadingBasisStateOnRandomMediumProblems) {
-  RandomTestsOfBasisLoadOnSameProblem(ColIndex(100),  // Number of variables.
-                                      RowIndex(50),   // Number of constraints.
-                                      2,              // Number of repeats.
-                                      true);          // Use dual simplex?
+  RandomTestsOfBasisLoadOnSameProblem(
+      ColIndex(100),           // Number of variables.
+      RowIndex(50),            // Number of constraints.
+      kRepeatedTestsDuration,  // Duration of the test.
+      true);                   // Use dual simplex?
 }
 
-void RandomTestsOfPrimalEqualsDual(ColIndex num_cols, RowIndex num_rows,
-                                   int num_tests) {
+void RandomTestsOfPrimalEqualsDual(const ColIndex num_cols,
+                                   const RowIndex num_rows,
+                                   const absl::Duration test_duration) {
   std::unique_ptr<LinearProgram> linear_program(new LinearProgram);
   absl::BitGen bit_gen;
-  for (int test = 0; test < num_tests; ++test) {
+  const absl::Time deadline = absl::Now() + test_duration;
+  int test = 0;
+  for (; test == 0 || absl::Now() < deadline; ++test) {
     RandomWithFixableSeed fixable_seed(bit_gen);
     if (fixable_seed.seed.fixed && test >= 1) break;
 
-    std::string err(absl::StrFormat(" test no %d / %d; %s.", test + 1,
-                                    num_tests,
+    std::string err(absl::StrFormat(" test no %d; %s.", test + 1,
                                     absl::FormatStreamed(fixable_seed.seed)));
     // Initialize data for this test.
     const ExpectedSolution solution_primal = SolveRandomProblem(
@@ -1503,38 +1523,46 @@ void RandomTestsOfPrimalEqualsDual(ColIndex num_cols, RowIndex num_rows,
                  status.problem_status() == ProblemStatus::DUAL_UNBOUNDED) ||
                 (solution_primal.status == ProblemStatus::PRIMAL_INFEASIBLE &&
                  status.problem_status() == ProblemStatus::DUAL_INFEASIBLE))
-        << err;
+        << "primal status: " << solution_primal.status
+        << " dual status: " << status.problem_status() << ';' << err;
     if (ProblemStatus::OPTIMAL == solution_primal.status) {
       EXPECT_NEAR(solution_primal.objective_value,
                   simplex_dual->GetObjectiveValue(), 1e-10)
           << err;
     }
   }
+  LOG(INFO) << "#tests=" << test;
 }
 
 TEST(RevisedSimplexTest, PrimalAndDualGiveSameSolutionOnRandomSmallProblems) {
-  RandomTestsOfPrimalEqualsDual(ColIndex(50),  // Number of variables.
-                                RowIndex(25),  // Number of constraints.
-                                10);           // Number of repeats
+  RandomTestsOfPrimalEqualsDual(
+      ColIndex(50),             // Number of variables.
+      RowIndex(25),             // Number of constraints.
+      kRepeatedTestsDuration);  // Duration of the test.
 }
 
 TEST(RevisedSimplexTest, PrimalAndDualGiveSameSolutionOnRandomMediumProblems) {
-  RandomTestsOfPrimalEqualsDual(ColIndex(100),  // Number of variables.
-                                RowIndex(50),   // Number of constraints.
-                                2);             // Number of repeats
+  RandomTestsOfPrimalEqualsDual(
+      ColIndex(100),            // Number of variables.
+      RowIndex(50),             // Number of constraints.
+      kRepeatedTestsDuration);  // Duration of the test.
 }
 
-void RandomTestsOfIncrementalChanges(ColIndex num_cols, RowIndex num_rows,
-                                     ColIndex add_cols, RowIndex add_rows,
-                                     int num_tests, bool use_dual_simplex) {
+void RandomTestsOfIncrementalChanges(const ColIndex num_cols,
+                                     const RowIndex num_rows,
+                                     const ColIndex add_cols,
+                                     const RowIndex add_rows,
+                                     const absl::Duration test_duration,
+                                     const bool use_dual_simplex) {
   std::unique_ptr<LinearProgram> linear_program(new LinearProgram);
   absl::BitGen bit_gen;
-  for (int test = 0; test < num_tests; ++test) {
+  const absl::Time deadline = absl::Now() + test_duration;
+  int test = 0;
+  for (; test == 0 || absl::Now() < deadline; ++test) {
     RandomWithFixableSeed fixable_seed(bit_gen);
     if (fixable_seed.seed.fixed && test >= 1) break;
 
-    std::string err(absl::StrFormat(" test no %d / %d; %s.", test + 1,
-                                    num_tests,
+    std::string err(absl::StrFormat(" test no %d; %s.", test + 1,
                                     absl::FormatStreamed(fixable_seed.seed)));
     // Initialize data for this test.
     CreateRandomProblem(num_cols, num_rows, linear_program.get(), fixable_seed);
@@ -1595,60 +1623,67 @@ void RandomTestsOfIncrementalChanges(ColIndex num_cols, RowIndex num_rows,
           << err;
     }
   }
+  LOG(INFO) << "#tests=" << test;
 }
 
 TEST(RevisedSimplexTest, IncrementalRowAdditionsOnRandomTinyProblems) {
-  RandomTestsOfIncrementalChanges(ColIndex(10),  // Number of variables.
-                                  RowIndex(5),   // Number of constraints.
-                                  ColIndex(0),   // Number of new variables.
-                                  RowIndex(2),   // Number of new constraints.
-                                  25,            // Number of repeats
-                                  true);         // Use dual simplex
+  RandomTestsOfIncrementalChanges(
+      ColIndex(10),            // Number of variables.
+      RowIndex(5),             // Number of constraints.
+      ColIndex(0),             // Number of new variables.
+      RowIndex(2),             // Number of new constraints.
+      kRepeatedTestsDuration,  // Duration of the test.
+      true);                   // Use dual simplex
 }
 
 TEST(RevisedSimplexTest, IncrementalRowAdditionsOnRandomSmallProblems) {
-  RandomTestsOfIncrementalChanges(ColIndex(50),  // Number of variables.
-                                  RowIndex(25),  // Number of constraints.
-                                  ColIndex(0),   // Number of new variables.
-                                  RowIndex(5),   // Number of new constraints.
-                                  10,            // Number of repeats
-                                  true);         // Use dual simplex
+  RandomTestsOfIncrementalChanges(
+      ColIndex(50),            // Number of variables.
+      RowIndex(25),            // Number of constraints.
+      ColIndex(0),             // Number of new variables.
+      RowIndex(5),             // Number of new constraints.
+      kRepeatedTestsDuration,  // Duration of the test.
+      true);                   // Use dual simplex
 }
 
 TEST(RevisedSimplexTest, IncrementalRowAdditionsOnRandomMediumProblems) {
-  RandomTestsOfIncrementalChanges(ColIndex(100),  // Number of variables.
-                                  RowIndex(50),   // Number of constraints.
-                                  ColIndex(0),    // Number of new variables.
-                                  RowIndex(5),    // Number of new constraints.
-                                  2,              // Number of repeats
-                                  true);          // Use dual simplex
+  RandomTestsOfIncrementalChanges(
+      ColIndex(100),           // Number of variables.
+      RowIndex(50),            // Number of constraints.
+      ColIndex(0),             // Number of new variables.
+      RowIndex(5),             // Number of new constraints.
+      kRepeatedTestsDuration,  // Duration of the test.
+      true);                   // Use dual simplex
 }
 
 TEST(RevisedSimplexTest, IncrementalColAdditionsOnRandomTinyProblems) {
-  RandomTestsOfIncrementalChanges(ColIndex(10),  // Number of variables.
-                                  RowIndex(5),   // Number of constraints.
-                                  ColIndex(2),   // Number of new variables.
-                                  RowIndex(0),   // Number of new constraints.
-                                  25,            // Number of repeats
-                                  false);        // Use dual simplex
+  RandomTestsOfIncrementalChanges(
+      ColIndex(10),            // Number of variables.
+      RowIndex(5),             // Number of constraints.
+      ColIndex(2),             // Number of new variables.
+      RowIndex(0),             // Number of new constraints.
+      kRepeatedTestsDuration,  // Duration of the test.
+      false);                  // Use dual simplex
 }
 
 TEST(RevisedSimplexTest, IncrementalColAdditionsOnRandomSmallProblems) {
-  RandomTestsOfIncrementalChanges(ColIndex(50),  // Number of variables.
-                                  RowIndex(25),  // Number of constraints.
-                                  ColIndex(5),   // Number of new variables.
-                                  RowIndex(0),   // Number of new constraints.
-                                  10,            // Number of repeats
-                                  false);        // Use dual simplex
+  RandomTestsOfIncrementalChanges(
+      ColIndex(50),            // Number of variables.
+      RowIndex(25),            // Number of constraints.
+      ColIndex(5),             // Number of new variables.
+      RowIndex(0),             // Number of new constraints.
+      kRepeatedTestsDuration,  // Duration of the test.
+      false);                  // Use dual simplex
 }
 
 TEST(RevisedSimplexTest, IncrementalColAdditionsOnRandomMediumProblems) {
-  RandomTestsOfIncrementalChanges(ColIndex(100),  // Number of variables.
-                                  RowIndex(50),   // Number of constraints.
-                                  ColIndex(5),    // Number of new variables.
-                                  RowIndex(0),    // Number of new constraints.
-                                  2,              // Number of repeats
-                                  false);         // Use dual simplex
+  RandomTestsOfIncrementalChanges(
+      ColIndex(100),           // Number of variables.
+      RowIndex(50),            // Number of constraints.
+      ColIndex(5),             // Number of new variables.
+      RowIndex(0),             // Number of new constraints.
+      kRepeatedTestsDuration,  // Duration of the test.
+      false);                  // Use dual simplex
 }
 
 TEST(RevisedSimplexTest, EmptyProblemAndIncrementalSolve) {
