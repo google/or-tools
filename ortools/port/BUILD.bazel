@@ -85,6 +85,14 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "attributes",
+    hdrs = ["attributes.h"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = ["@abseil-cpp//absl/base:core_headers"],
+)
+
 cc_test(
     name = "scoped_std_stream_capture_test",
     srcs = ["scoped_std_stream_capture_test.cc"],
