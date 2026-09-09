@@ -1,4 +1,5 @@
-FROM ortools/cmake:archlinux_swig AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}archlinux_swig AS env
 
 ENV PATH=/root/.local/bin:$PATH
 RUN pacman -Syu --noconfirm python python-pip \
