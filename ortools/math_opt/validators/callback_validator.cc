@@ -283,8 +283,8 @@ absl::Status ValidateCallbackResultProto(
     }
     for (const SparseDoubleVectorProto& primal_solution_vector :
          callback_result.suggested_solutions()) {
-      ABSL_RETURN_IF_ERROR(ValidatePrimalSolutionVector(
-          primal_solution_vector, SparseVectorFilterProto(), model_summary))
+      ABSL_RETURN_IF_ERROR(
+          ValidateSuggestedSolution(primal_solution_vector, model_summary))
           << "invalid CallbackResultProto.suggested_solutions";
     }
   }

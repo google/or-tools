@@ -24,6 +24,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/math_opt/cpp/math_opt.h"

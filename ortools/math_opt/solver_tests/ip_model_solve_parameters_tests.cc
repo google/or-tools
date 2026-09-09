@@ -25,7 +25,6 @@
 #include "ortools/base/gmock.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
-#include "ortools/math_opt/parameters.pb.h"
 #include "ortools/port/proto_utils.h"
 
 namespace operations_research {

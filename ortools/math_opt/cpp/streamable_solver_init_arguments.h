@@ -27,11 +27,11 @@
 #include <optional>
 #include <string>
 
-#include "absl/base/attributes.h"
 #include "absl/status/statusor.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"
 #include "ortools/math_opt/solvers/xpress.pb.h"
+#include "ortools/port/attributes.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -81,7 +81,7 @@ struct StreamableGurobiInitArguments {
 
 // A license key for the Xpress solver.
 struct XpressLicenseKey {
-  std::string path;
+  std::string path ORTOOLS_REQUIRE_EXPLICIT_INIT;
 
   XpressInitializerProto::License Proto() const;
   static XpressLicenseKey FromProto(

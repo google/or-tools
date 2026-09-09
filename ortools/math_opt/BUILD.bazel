@@ -145,6 +145,26 @@ java_proto_library(
 )
 
 proto_library(
+    name = "sparse_containers_proto",
+    srcs = ["sparse_containers.proto"],
+)
+
+cc_proto_library(
+    name = "sparse_containers_cc_proto",
+    deps = [":sparse_containers_proto"],
+)
+
+py_proto_library(
+    name = "sparse_containers_py_pb2",
+    deps = [":sparse_containers_proto"],
+)
+
+java_proto_library(
+    name = "sparse_containers_java_proto",
+    deps = [":sparse_containers_proto"],
+)
+
+proto_library(
     name = "result_proto",
     srcs = ["result.proto"],
     deps = [
@@ -190,26 +210,6 @@ py_proto_library(
 java_proto_library(
     name = "solution_java_proto",
     deps = [":solution_proto"],
-)
-
-proto_library(
-    name = "sparse_containers_proto",
-    srcs = ["sparse_containers.proto"],
-)
-
-cc_proto_library(
-    name = "sparse_containers_cc_proto",
-    deps = [":sparse_containers_proto"],
-)
-
-py_proto_library(
-    name = "sparse_containers_py_pb2",
-    deps = [":sparse_containers_proto"],
-)
-
-java_proto_library(
-    name = "sparse_containers_java_proto",
-    deps = [":sparse_containers_proto"],
 )
 
 proto_library(

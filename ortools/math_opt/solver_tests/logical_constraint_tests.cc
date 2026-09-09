@@ -23,8 +23,6 @@
 #include "ortools/base/gmock.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
-#include "ortools/math_opt/model_update.pb.h"
-#include "ortools/math_opt/result.pb.h"
 #include "ortools/port/proto_utils.h"
 
 namespace operations_research::math_opt {

@@ -29,7 +29,6 @@
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/io/mps_converter.h"
 #include "ortools/math_opt/model.pb.h"
-#include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/port/proto_utils.h"
 

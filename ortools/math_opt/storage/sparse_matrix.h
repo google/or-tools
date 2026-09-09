@@ -24,10 +24,9 @@
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/meta/type_traits.h"
 #include "absl/types/span.h"
+#include "ortools/algorithms/multikey_radix_sort.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/storage/model_storage_types.h"
 
@@ -274,7 +273,14 @@ namespace internal {
 template <typename RowId, typename ColumnId>
 SparseDoubleMatrixProto EntriesToMatrixProto(
     std::vector<std::tuple<RowId, ColumnId, double>> entries) {
-  absl::c_sort(entries);
+  MultikeyRadixSort(
+      entries,
+      [](const std::tuple<RowId, ColumnId, double>& t) {
+        return std::get<1>(t).value();
+      },
+      [](const std::tuple<RowId, ColumnId, double>& t) {
+        return std::get<0>(t).value();
+      });
   const int num_entries = static_cast<int>(entries.size());
   SparseDoubleMatrixProto result;
   result.mutable_row_ids()->Reserve(num_entries);
@@ -509,7 +515,14 @@ template <typename RowId, typename ColumnId>
 SparseDoubleMatrixProto SparseMatrix<RowId, ColumnId>::Proto() const {
   SparseDoubleMatrixProto result;
   std::vector<std::tuple<RowId, ColumnId, double>> terms = Terms();
-  absl::c_sort(terms);
+  MultikeyRadixSort(
+      terms,
+      [](const std::tuple<RowId, ColumnId, double>& t) {
+        return std::get<1>(t).value();
+      },
+      [](const std::tuple<RowId, ColumnId, double>& t) {
+        return std::get<0>(t).value();
+      });
   for (const auto [r, c, v] : terms) {
     result.add_row_ids(r.value());
     result.add_column_ids(c.value());
