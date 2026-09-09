@@ -41,5 +41,7 @@ runs:
         echo "Installing remote cache in workspace 'user.bazelrc'"
         # Compresses blobs locally before uploading them to GCS and decompresses them upon download.
         echo "common --remote_cache_compression=true" >> ./user.bazelrc
+        # Increase maximum concurrent connections from 100 to 200.
+        echo "common --remote_max_connections=200" >> ./user.bazelrc
         echo "common --google_default_credentials" >> ./user.bazelrc
         echo "common --remote_cache=https://storage.googleapis.com/or-tools-github-remote-caching" >> ./user.bazelrc
