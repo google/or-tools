@@ -424,6 +424,7 @@ cc_test(
         ":set_cover_cc_proto",
         ":set_cover_heuristics",
         ":set_cover_invariant",
+        ":set_cover_lagrangian",
         ":set_cover_mip",
         ":set_cover_model",
         "//ortools/base:gmock_main",

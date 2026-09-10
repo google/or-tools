@@ -23,6 +23,7 @@
 #include "ortools/set_cover/set_cover.pb.h"
 #include "ortools/set_cover/set_cover_heuristics.h"
 #include "ortools/set_cover/set_cover_invariant.h"
+#include "ortools/set_cover/set_cover_lagrangian.h"
 #include "ortools/set_cover/set_cover_mip.h"
 #include "ortools/set_cover/set_cover_model.h"
 
@@ -127,6 +128,26 @@ TEST(SetCoverTest, MipErasePreviousSubsets) {
   mip.Optimize();
 
   EXPECT_THAT(inv.is_selected(), ElementsAre(true, false, false));
+}
+
+TEST(SetCoverTest, LagrangianComputeLowerBoundDefaultThreadPool) {
+  SetCoverModel model;
+  model.AddEmptySubset(1);
+  model.AddElementToLastSubset(0);
+  model.AddElementToLastSubset(1);
+  model.AddEmptySubset(1);
+  model.AddElementToLastSubset(1);
+  model.AddElementToLastSubset(2);
+  model.AddEmptySubset(1);
+  model.AddElementToLastSubset(2);
+  model.AddElementToLastSubset(0);
+  SetCoverInvariant inv(&model);
+
+  // Verifies that ComputeLowerBound() works without calling UseNumThreads() first.
+  SetCoverLagrangian lagrangian(&inv);
+  auto [lower_bound, reduced_costs, multipliers] =
+      lagrangian.ComputeLowerBound(model.subset_costs(), 3.0);
+  EXPECT_GE(lower_bound, 0.0);
 }
 
 }  // namespace
