@@ -809,7 +809,35 @@ MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
   return MPSOLVER_MODEL_IS_VALID;
 }
 
-namespace {
+MPSolver::ResultStatus MPSolverResponseStatusToResultStatus(
+    MPSolverResponseStatus status) {
+  switch (status) {
+    case MPSOLVER_OPTIMAL:
+      return MPSolver::OPTIMAL;
+    case MPSOLVER_FEASIBLE:
+      return MPSolver::FEASIBLE;
+    case MPSOLVER_INFEASIBLE:
+      return MPSolver::INFEASIBLE;
+    case MPSOLVER_UNBOUNDED:
+      return MPSolver::UNBOUNDED;
+    case MPSOLVER_ABNORMAL:
+      return MPSolver::ABNORMAL;
+    case MPSOLVER_MODEL_INVALID:
+    case MPSOLVER_MODEL_INVALID_SOLUTION_HINT:
+    case MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS:
+    case MPSOLVER_SOLVER_TYPE_UNAVAILABLE:
+    case MPSOLVER_INCOMPATIBLE_OPTIONS:
+      return MPSolver::MODEL_INVALID;
+    case MPSOLVER_NOT_SOLVED:
+    case MPSOLVER_MODEL_IS_VALID:
+      return MPSolver::NOT_SOLVED;
+    case MPSOLVER_CANCELLED_BY_USER:
+    case MPSOLVER_UNKNOWN_STATUS:
+    default:
+      return MPSolver::ABNORMAL;
+  }
+}
+
 MPSolverResponseStatus ResultStatusToMPSolverResponseStatus(
     MPSolver::ResultStatus status) {
   switch (status) {
@@ -830,7 +858,6 @@ MPSolverResponseStatus ResultStatusToMPSolverResponseStatus(
   }
   return MPSOLVER_UNKNOWN_STATUS;
 }
-}  // namespace
 
 void MPSolver::FillSolutionResponseProto(MPSolutionResponse* response) const {
   CHECK(response != nullptr);
@@ -1150,7 +1177,8 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
 
 absl::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
                                              double tolerance) {
-  interface_->result_status_ = static_cast<ResultStatus>(response.status());
+  interface_->result_status_ =
+      MPSolverResponseStatusToResultStatus(response.status());
   if (response.status() != MPSOLVER_OPTIMAL &&
       response.status() != MPSOLVER_FEASIBLE) {
     return absl::InvalidArgumentError(absl::StrCat(
