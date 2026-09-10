@@ -137,6 +137,10 @@ else()
   )
 endif()
 
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "s390x")
+  list(APPEND OR_TOOLS_COMPILE_OPTIONS "-fpermissive")
+endif()
+
 ################
 ##  C++ Test  ##
 ################
