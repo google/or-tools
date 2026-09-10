@@ -15,6 +15,7 @@ load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_go//go:def.bzl", "go_binary")
 load("@rules_python//python:py_test.bzl", "py_test")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -29,6 +30,8 @@ py_test(
 cc_test(
     name = "assignment_sat_test",
     srcs = ["assignment_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -55,6 +58,8 @@ py_test(
 cc_test(
     name = "assignment_groups_sat_test",
     srcs = ["assignment_groups_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -80,6 +85,8 @@ py_test(
 cc_test(
     name = "assignment_task_sizes_sat_test",
     srcs = ["assignment_task_sizes_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -103,6 +110,8 @@ py_test(
 cc_test(
     name = "assignment_teams_sat_test",
     srcs = ["assignment_teams_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -127,6 +136,8 @@ py_test(
 cc_test(
     name = "assumptions_sample_sat_test",
     srcs = ["assumptions_sample_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -162,6 +173,8 @@ py_test(
 cc_test(
     name = "binpacking_problem_sat_test",
     srcs = ["binpacking_problem_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -211,6 +224,8 @@ py_test(
 cc_test(
     name = "bool_or_sample_sat_test",
     srcs = ["bool_or_sample_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -256,6 +271,8 @@ py_test(
 cc_test(
     name = "channeling_sample_sat_test",
     srcs = ["channeling_sample_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -293,6 +310,8 @@ py_test(
 cc_test(
     name = "clone_model_sample_sat_test",
     srcs = ["clone_model_sample_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -316,6 +335,8 @@ py_test(
 cc_test(
     name = "cp_is_fun_sat_test",
     srcs = ["cp_is_fun_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -342,6 +363,8 @@ py_test(
 cc_test(
     name = "cp_sat_example_test",
     srcs = ["cp_sat_example.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -377,6 +400,8 @@ py_test(
 cc_test(
     name = "earliness_tardiness_cost_sample_sat_test",
     srcs = ["earliness_tardiness_cost_sample_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -413,6 +438,8 @@ py_test(
 cc_test(
     name = "interval_sample_sat_test",
     srcs = ["interval_sample_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -458,6 +485,8 @@ py_test(
 cc_test(
     name = "minimal_jobshop_sat_test",
     srcs = ["minimal_jobshop_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -482,6 +511,8 @@ py_test(
 cc_test(
     name = "literal_sample_sat_test",
     srcs = ["literal_sample_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -512,6 +543,8 @@ py_test(
 cc_test(
     name = "multiple_knapsack_sat_test",
     srcs = ["multiple_knapsack_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -536,6 +569,8 @@ py_test(
 cc_test(
     name = "non_linear_sat_test",
     srcs = ["non_linear_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -559,6 +594,8 @@ py_test(
 cc_test(
     name = "nqueens_sat_test",
     srcs = ["nqueens_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -595,6 +632,8 @@ py_test(
 cc_test(
     name = "nurses_sat_test",
     srcs = ["nurses_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -630,6 +669,8 @@ py_test(
 cc_test(
     name = "optional_interval_sample_sat_test",
     srcs = ["optional_interval_sample_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -661,6 +702,8 @@ py_test(
 cc_test(
     name = "no_overlap_sample_sat_test",
     srcs = ["no_overlap_sample_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -705,6 +748,8 @@ py_test(
 cc_test(
     name = "rabbits_and_pheasants_sat_test",
     srcs = ["rabbits_and_pheasants_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -745,6 +790,8 @@ py_test(
 cc_test(
     name = "ranking_sample_sat_test",
     srcs = ["ranking_sample_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -780,6 +827,8 @@ py_test(
 cc_test(
     name = "reified_sample_sat_test",
     srcs = ["reified_sample_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -805,6 +854,8 @@ py_test(
 cc_test(
     name = "schedule_requests_sat_test",
     srcs = ["schedule_requests_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -837,6 +888,8 @@ py_test(
 cc_test(
     name = "search_for_all_solutions_sample_sat_test",
     srcs = ["search_for_all_solutions_sample_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -882,6 +935,8 @@ py_test(
 cc_test(
     name = "simple_sat_program_test",
     srcs = ["simple_sat_program.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -916,6 +971,8 @@ py_test(
 cc_test(
     name = "solution_hinting_sample_sat_test",
     srcs = ["solution_hinting_sample_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -959,6 +1016,8 @@ py_test(
 cc_test(
     name = "solve_and_print_intermediate_solutions_sample_sat_test",
     srcs = ["solve_and_print_intermediate_solutions_sample_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -994,6 +1053,8 @@ py_test(
 cc_test(
     name = "step_function_sample_sat_test",
     srcs = ["step_function_sample_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -1033,6 +1094,8 @@ py_test(
 cc_test(
     name = "solve_with_time_limit_sample_sat_test",
     srcs = ["solve_with_time_limit_sample_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -1071,6 +1134,8 @@ py_test(
 cc_test(
     name = "stop_after_n_solutions_sample_sat_test",
     srcs = ["stop_after_n_solutions_sample_sat.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
