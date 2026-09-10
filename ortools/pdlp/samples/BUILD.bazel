@@ -14,10 +14,15 @@
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_python//python:py_binary.bzl", "py_binary")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
+
+package(default_visibility = ["//visibility:public"])
 
 cc_binary(
     name = "simple_pdlp_program_cc",
     srcs = ["simple_pdlp_program.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/pdlp:iteration_stats",
