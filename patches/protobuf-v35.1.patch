@@ -1,8 +1,8 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 807ef014..8937d5eb 100644
+index f4a488373..61be594d3 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -42,7 +42,7 @@ else (BUILD_SHARED_LIBS)
+@@ -51,7 +51,7 @@ else (BUILD_SHARED_LIBS)
  endif (BUILD_SHARED_LIBS)
  option(protobuf_BUILD_SHARED_LIBS "Build Shared Libraries" ${protobuf_BUILD_SHARED_LIBS_DEFAULT})
  include(CMakeDependentOption)
@@ -11,7 +11,7 @@ index 807ef014..8937d5eb 100644
    "NOT protobuf_BUILD_SHARED_LIBS" OFF)
  set(protobuf_WITH_ZLIB_DEFAULT ON)
  option(protobuf_WITH_ZLIB "Build with zlib support" ${protobuf_WITH_ZLIB_DEFAULT})
-@@ -160,24 +160,16 @@ endif()
+@@ -164,24 +164,16 @@ find_package(Threads REQUIRED)
  
  set(_protobuf_FIND_ZLIB)
  if (protobuf_WITH_ZLIB)
@@ -46,7 +46,7 @@ index 807ef014..8937d5eb 100644
  endif (protobuf_WITH_ZLIB)
  
  # We need to link with libatomic on systems that do not have builtin atomics, or
-@@ -279,7 +271,6 @@ else (MSVC)
+@@ -260,7 +252,6 @@ else (MSVC)
  endif (MSVC)
  
  include_directories(
@@ -54,3 +54,47 @@ index 807ef014..8937d5eb 100644
    ${protobuf_BINARY_DIR}
    # Support #include-ing other top-level directories, i.e. upb_generator.
    ${protobuf_SOURCE_DIR}
+diff --git a/python/build_targets.bzl b/python/build_targets.bzl
+index d2cf4418c..c9cab66ac 100644
+--- a/python/build_targets.bzl
++++ b/python/build_targets.bzl
+@@ -97,7 +97,7 @@ def build_targets(name):
+             # https://docs.bazel.build/versions/master/be/common-definitions.html#common-attributes
+             "manual",
+         ],
+-        deps = ["@system_python//:python_headers"],
++        deps = ["@rules_python//python/cc:current_py_cc_headers"],
+     )
+ 
+     native.config_setting(
+@@ -150,7 +150,7 @@ def build_targets(name):
+             "@abseil-cpp//absl/status:statusor",
+             "@abseil-cpp//absl/strings",
+             "@abseil-cpp//absl/synchronization",
+-            "@system_python//:python_headers",
++            "@rules_python//python/cc:current_py_cc_headers",
+         ],
+     )
+ 
+@@ -471,7 +471,7 @@ def build_targets(name):
+             "//src/google/protobuf/io",
+             "@abseil-cpp//absl/log:absl_check",
+             "@abseil-cpp//absl/status",
+-            "@system_python//:python_headers",
++            "@rules_python//python/cc:current_py_cc_headers",
+         ],
+     )
+ 
+diff --git a/python/py_extension.bzl b/python/py_extension.bzl
+index 82d8445e2..51a148de0 100644
+--- a/python/py_extension.bzl
++++ b/python/py_extension.bzl
+@@ -31,7 +31,7 @@ def py_extension(name, srcs, copts, deps = [], **kwargs):
+             "//python:limited_api_3.10": ["@python-3.10.0//:python_headers"],
+             "//python:limited_api_3.10_win32": ["@nuget_python_i686_3.10.0//:python_limited_api"],
+             "//python:limited_api_3.10_win64": ["@nuget_python_x86-64_3.10.0//:python_limited_api"],
+-            "//conditions:default": ["@system_python//:python_headers"],
++            "//conditions:default": ["@rules_python//python/cc:current_py_cc_headers"],
+         }),
+         **kwargs
+     )
