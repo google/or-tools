@@ -12,6 +12,8 @@
 # limitations under the License.
 
 file(GLOB _SRCS "*.h" "*.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_benchmark.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
 list(FILTER _SRCS EXCLUDE REGEX "/vector_bin_packing_main\\.cc")
 
 ortools_cxx_library(
@@ -48,6 +50,24 @@ ortools_cxx_binary(
 )
 
 if(BUILD_CXX_TESTING)
+  # Test
+  file(GLOB _TEST_SRCS "*_test.cc")
+  list(FILTER _TEST_SRCS EXCLUDE REGEX ".*/vector_bin_packing_test.cc")
+  foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
+    get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
+    get_filename_component(_FILE_NAME ${_FULL_FILE_NAME} NAME)
+    ortools_cxx_test(
+      NAME
+        algorithms_${_NAME}
+      SOURCES
+        ${_FILE_NAME}
+      LINK_LIBRARIES
+        GTest::gtest
+        GTest::gtest_main
+        GTest::gmock
+    )
+  endforeach()
+
   add_test(
     NAME cxx_packing_vector_bin_packing
     COMMAND vector_bin_packing --input ${CMAKE_CURRENT_SOURCE_DIR}/testdata/1D__bpp_scholl__bin2data.N2W2B1R0.vbp)
