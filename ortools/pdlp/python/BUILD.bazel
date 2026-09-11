@@ -20,7 +20,7 @@ load("@rules_python//python:py_test.bzl", "py_test")
 pybind_extension(
     name = "pdlp",
     srcs = ["pdlp.cc"],
-    visibility = ["//visibility:public"],
+    visibility = ["//visibility:public"],  # Scheuklappen: keep
     deps = [
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/pdlp:primal_dual_hybrid_gradient",

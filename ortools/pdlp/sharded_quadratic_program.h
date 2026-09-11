@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef PDLP_SHARDED_QUADRATIC_PROGRAM_H_
-#define PDLP_SHARDED_QUADRATIC_PROGRAM_H_
+#ifndef ORTOOLS_PDLP_SHARDED_QUADRATIC_PROGRAM_H_
+#define ORTOOLS_PDLP_SHARDED_QUADRATIC_PROGRAM_H_
 
 #include <cstdint>
 #include <memory>
@@ -125,4 +125,4 @@ class ShardedQuadraticProgram {
 
 }  // namespace operations_research::pdlp
 
-#endif  // PDLP_SHARDED_QUADRATIC_PROGRAM_H_
+#endif  // ORTOOLS_PDLP_SHARDED_QUADRATIC_PROGRAM_H_

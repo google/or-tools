@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef PDLP_PRIMAL_DUAL_HYBRID_GRADIENT_H_
-#define PDLP_PRIMAL_DUAL_HYBRID_GRADIENT_H_
+#ifndef ORTOOLS_PDLP_PRIMAL_DUAL_HYBRID_GRADIENT_H_
+#define ORTOOLS_PDLP_PRIMAL_DUAL_HYBRID_GRADIENT_H_
 
 #include <atomic>
 #include <functional>
@@ -183,4 +183,4 @@ std::pair<glop::SolveStatus, glop::ProblemSolution> ComputeStatuses(
 
 }  // namespace operations_research::pdlp
 
-#endif  // PDLP_PRIMAL_DUAL_HYBRID_GRADIENT_H_
+#endif  // ORTOOLS_PDLP_PRIMAL_DUAL_HYBRID_GRADIENT_H_

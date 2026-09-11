@@ -22,10 +22,10 @@ namespace operations_research::pdlp {
 // Convenience factory function.
 std::unique_ptr<Scheduler> MakeScheduler(SchedulerType type, int num_threads) {
   switch (type) {
-    case SchedulerType::SCHEDULER_TYPE_GOOGLE_THREADPOOL:
-      return std::make_unique<GoogleThreadPoolScheduler>(num_threads);
     case SchedulerType::SCHEDULER_TYPE_EIGEN_THREADPOOL:
       return std::make_unique<EigenThreadPoolScheduler>(num_threads);
+    case SchedulerType::SCHEDULER_TYPE_GOOGLE_THREADPOOL:
+      return std::make_unique<GoogleThreadPoolScheduler>(num_threads);
     default:
       return nullptr;
   }

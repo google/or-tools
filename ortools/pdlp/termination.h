@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef PDLP_TERMINATION_H_
-#define PDLP_TERMINATION_H_
+#ifndef ORTOOLS_PDLP_TERMINATION_H_
+#define ORTOOLS_PDLP_TERMINATION_H_
 
 #include <atomic>
 #include <optional>
@@ -131,4 +131,4 @@ bool OptimalityCriteriaMet(
 
 }  // namespace operations_research::pdlp
 
-#endif  // PDLP_TERMINATION_H_
+#endif  // ORTOOLS_PDLP_TERMINATION_H_

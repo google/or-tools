@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef PDLP_SCHEDULER_H_
-#define PDLP_SCHEDULER_H_
+#ifndef ORTOOLS_PDLP_SCHEDULER_H_
+#define ORTOOLS_PDLP_SCHEDULER_H_
 
 // Eigen defaults to using TensorFlow's scheduler, unless we add this line.
 #ifndef EIGEN_USE_CUSTOM_THREAD_POOL
@@ -103,4 +103,4 @@ std::unique_ptr<Scheduler> MakeScheduler(SchedulerType type, int num_threads);
 
 }  // namespace operations_research::pdlp
 
-#endif  // PDLP_SCHEDULER_H_
+#endif  // ORTOOLS_PDLP_SCHEDULER_H_

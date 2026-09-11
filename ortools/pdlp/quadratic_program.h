@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef PDLP_QUADRATIC_PROGRAM_H_
-#define PDLP_QUADRATIC_PROGRAM_H_
+#ifndef ORTOOLS_PDLP_QUADRATIC_PROGRAM_H_
+#define ORTOOLS_PDLP_QUADRATIC_PROGRAM_H_
 
 #include <cstdint>
 #include <limits>
@@ -221,4 +221,4 @@ void CombineRepeatedTripletsInPlace(
 }  // namespace internal
 }  // namespace operations_research::pdlp
 
-#endif  // PDLP_QUADRATIC_PROGRAM_H_
+#endif  // ORTOOLS_PDLP_QUADRATIC_PROGRAM_H_

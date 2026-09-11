@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef PDLP_SHARDER_H_
-#define PDLP_SHARDER_H_
+#ifndef ORTOOLS_PDLP_SHARDER_H_
+#define ORTOOLS_PDLP_SHARDER_H_
 
 #include <cstdint>
 #include <functional>
@@ -331,4 +331,4 @@ Eigen::VectorXd ScaledColL2Norm(
 
 }  // namespace operations_research::pdlp
 
-#endif  // PDLP_SHARDER_H_
+#endif  // ORTOOLS_PDLP_SHARDER_H_
