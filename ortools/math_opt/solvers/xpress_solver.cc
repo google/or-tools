@@ -19,7 +19,6 @@
 #include <cstdint>
 #include <functional>
 #include <iostream>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -48,6 +47,7 @@
 #include "google/protobuf/map.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/base/types.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
@@ -847,6 +847,8 @@ absl::Status InvokeOrtoolsCallback(OrtoolsCallbackContext* ctx, XPRSprob prob,
        result.suggested_solutions()) {
     std::vector<int> ids;
     std::vector<double> vals;
+    ids.reserve(solution_vector.ids_size());
+    vals.reserve(solution_vector.values_size());
     for (auto const [id, value] : MakeView(solution_vector)) {
       ids.push_back(or2xprs(ctx->varMap_, id));
       vals.push_back(value);
@@ -1167,7 +1169,9 @@ class ScopedSolverContext {
 
  public:
   ScopedSolverContext(Xpress* xpress) : shared_ctx_(xpress), ctx(nullptr) {}
-  absl::Status Set(int id, int32_t value) { return Set(id, int64_t(value)); }
+  absl::Status Set(int id, int32_t value) {
+    return Set(id, static_cast<int64_t>(value));
+  }
   absl::Status Set(int id, int64_t value) {
     ABSL_ASSIGN_OR_RETURN(int64_t old, shared_ctx_.xpress->GetIntControl64(id));
     modified_controls_.push_back({id, old});
