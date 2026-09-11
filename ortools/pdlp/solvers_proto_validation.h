@@ -13,8 +13,8 @@
 
 // Validation utilities for solvers.proto.
 
-#ifndef PDLP_SOLVERS_PROTO_VALIDATION_H_
-#define PDLP_SOLVERS_PROTO_VALIDATION_H_
+#ifndef ORTOOLS_PDLP_SOLVERS_PROTO_VALIDATION_H_
+#define ORTOOLS_PDLP_SOLVERS_PROTO_VALIDATION_H_
 
 #include "absl/status/status.h"
 #include "ortools/pdlp/solvers.pb.h"
@@ -41,4 +41,4 @@ absl::Status ValidatePrimalDualHybridGradientParams(
 
 }  // namespace operations_research::pdlp
 
-#endif  // PDLP_SOLVERS_PROTO_VALIDATION_H_
+#endif  // ORTOOLS_PDLP_SOLVERS_PROTO_VALIDATION_H_

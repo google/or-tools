@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for ortools.pdlp.python.quadratic_program."""
-
 import numpy as np
 import scipy.sparse
 from absl.testing import absltest
