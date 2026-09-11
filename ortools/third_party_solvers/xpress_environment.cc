@@ -247,12 +247,12 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSaddcbpresolve, "XPRSaddcbpresolve");
   xpress_dynamic_library->GetFunction(&XPRSremovecbpresolve, "XPRSremovecbpresolve");
   xpress_dynamic_library->GetFunction(&XPRSaddcbprenode, "XPRSaddcbprenode");
-  xpress_dynamic_library->GetFunction(&XPRSremovecbprenode,"XPRSremovecbprenode");
+  xpress_dynamic_library->GetFunction(&XPRSremovecbprenode, "XPRSremovecbprenode");
   xpress_dynamic_library->GetFunction(&XPRSaddcbpreintsol, "XPRSaddcbpreintsol");
   xpress_dynamic_library->GetFunction(&XPRSremovecbpreintsol, "XPRSremovecbpreintsol");
   xpress_dynamic_library->GetFunction(&XPRSaddcboptnode, "XPRSaddcboptnode");
   xpress_dynamic_library->GetFunction(&XPRSremovecboptnode, "XPRSremovecboptnode");
-  
+
   xpress_dynamic_library->GetFunction(&XPRSlpoptimize, "XPRSlpoptimize");
   xpress_dynamic_library->GetFunction(&XPRSmipoptimize, "XPRSmipoptimize");
   xpress_dynamic_library->GetFunction(&XPRSoptimize, "XPRSoptimize");

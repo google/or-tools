@@ -863,6 +863,7 @@ cc_library(
     deps = [
         "//ortools/base:map_util",
         "//ortools/base:protoutil",
+        "//ortools/base:status_builder",
         "//ortools/base:types",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:infeasible_subsystem_cc_proto",

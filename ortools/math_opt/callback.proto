@@ -96,7 +96,7 @@ enum CallbackSolutionSourceProto {
   // The solution came from a solution vector provided by the user.
   // This may include solutions the solver had to "repair".
   CALLBACK_SOLUTION_SOURCE_USER = 3;
-};
+}
 
 // The callback function input data.
 // Note that depending on the event, some information might be unavailable.
