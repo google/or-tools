@@ -15,8 +15,9 @@ load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("//bazel:compilation_flags.bzl", "SAFE_FP_CODE")
-load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
 load("//tools/testing:bintest.bzl", "bintest")
 
 package(default_visibility = ["//visibility:public"])
@@ -36,6 +37,19 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "arc_flow_builder_test",
+    size = "small",
+    srcs = ["arc_flow_builder_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":arc_flow_builder",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -63,6 +77,21 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "arc_flow_solver_test",
+    size = "small",
+    srcs = ["arc_flow_solver_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":arc_flow_solver",
+        ":vector_bin_packing_cc_proto",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_text_proto",
+        "//ortools/linear_solver:linear_solver_sat",
+    ],
+)
+
 ### Vector Bin Packing ###
 
 proto_library(
@@ -86,6 +115,25 @@ cc_library(
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "vector_bin_packing_parser_test",
+    size = "small",
+    srcs = ["vector_bin_packing_parser_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    data = [
+        "//ortools/packing/testdata:BPPC_5_0_10.vbp",
+        "//ortools/packing/testdata:queen5_5.vbp",
+    ],
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":vector_bin_packing_cc_proto",
+        ":vector_bin_packing_parser",
+        "//ortools/base:gmock_main",
+        "//ortools/util:data_path_resolver",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -145,5 +193,20 @@ cc_library(
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "binpacking_2d_parser_test",
+    size = "small",
+    srcs = ["binpacking_2d_parser_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    data = ["//ortools/packing/testdata:Class_01.2bp"],
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":binpacking_2d_parser",
+        ":multiple_dimensions_bin_packing_cc_proto",
+        "//ortools/base:gmock_main",
+        "//ortools/util:data_path_resolver",
     ],
 )
