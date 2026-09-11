@@ -29,8 +29,7 @@ namespace util {
 // This is useful for wrapping iterators of a class that support many different
 // iterations. For instance, on a Graph class, one can write:
 //
-// BeginEndWrapper<OutgoingArcIterator> Graph::OutgoingArcs(NodeInde node)
-//      const {
+// auto Graph::OutgoingArcs(NodeInde node) const {
 //   return BeginEndWrapper(
 //       OutgoingArcIterator(*this, node, /*at_end=*/false),
 //       OutgoingArcIterator(*this, node, /*at_end=*/true));
@@ -46,7 +45,9 @@ namespace util {
 // function can take it by value and return iterators obtained from it without
 // danger of dangling". We cannot `static_assert` this property though as
 // `std::ranges` is prohibited in google3.
-template <typename Iterator>
+// It's allowed to have `EndIterator` be distinct from `Iterator` when the
+// `EndIterator` is a sentinel. This can allow more efficient implementations.
+template <typename Iterator, typename EndIterator = Iterator>
 class BeginEndWrapper {
  public:
   using const_iterator = Iterator;
@@ -55,10 +56,10 @@ class BeginEndWrapper {
   // If `Iterator` is default-constructible, an empty range.
   BeginEndWrapper() = default;
 
-  BeginEndWrapper(Iterator begin, Iterator end) : begin_(begin), end_(end) {}
+  BeginEndWrapper(Iterator begin, EndIterator end) : begin_(begin), end_(end) {}
 
   Iterator begin() const { return begin_; }
-  Iterator end() const { return end_; }
+  EndIterator end() const { return end_; }
 
   // Available only if `Iterator` is a random access iterator.
   size_t size() const { return end_ - begin_; }
@@ -67,34 +68,27 @@ class BeginEndWrapper {
 
  private:
   Iterator begin_;
-  Iterator end_;
+  EndIterator end_;
 };
 
-// Inline wrapper methods, to make the client code even simpler.
-// The harm of overloading is probably less than the benefit of the nice,
-// compact name, in this special case.
-template <typename Iterator>
-inline BeginEndWrapper<Iterator> BeginEndRange(Iterator begin, Iterator end) {
-  return BeginEndWrapper<Iterator>(begin, end);
-}
-template <typename Iterator>
-inline BeginEndWrapper<Iterator> BeginEndRange(
-    std::pair<Iterator, Iterator> begin_end) {
-  return BeginEndWrapper<Iterator>(begin_end.first, begin_end.second);
-}
+template <typename Iterator, typename EndIterator>
+BeginEndWrapper(Iterator, EndIterator)
+    -> BeginEndWrapper<Iterator, EndIterator>;
 
-// Shortcut for BeginEndRange(multimap::equal_range(key)).
+// Shortcut for BeginEndWrapper(multimap::equal_range(key)).
 // TODO(user): go further and expose only the values, not the pairs (key,
 // values) since the caller already knows the key.
 template <typename MultiMap>
 inline BeginEndWrapper<typename MultiMap::iterator> EqualRange(
     MultiMap& multi_map, const typename MultiMap::key_type& key) {
-  return BeginEndRange(multi_map.equal_range(key));
+  auto [begin, end] = multi_map.equal_range(key);
+  return BeginEndWrapper(std::move(begin), std::move(end));
 }
 template <typename MultiMap>
 inline BeginEndWrapper<typename MultiMap::const_iterator> EqualRange(
     const MultiMap& multi_map, const typename MultiMap::key_type& key) {
-  return BeginEndRange(multi_map.equal_range(key));
+  auto [begin, end] = multi_map.equal_range(key);
+  return BeginEndWrapper(std::move(begin), std::move(end));
 }
 
 // The Reverse() function allows to reverse the iteration order of a range-based

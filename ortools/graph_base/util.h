@@ -110,6 +110,7 @@ class UndirectedAdjacencyListsOfDirectedGraph {
       : graph_(graph) {}
 
   typedef typename Graph::OutgoingOrOppositeIncomingArcIterator ArcIterator;
+  template <typename ArcItT>
   class AdjacencyListIterator {
    public:
     using value_type = typename Graph::NodeIndex;
@@ -118,7 +119,7 @@ class UndirectedAdjacencyListsOfDirectedGraph {
 
     AdjacencyListIterator() : arc_it_(), graph_(nullptr) {}  // End iterator.
 
-    explicit AdjacencyListIterator(const Graph* graph, ArcIterator&& arc_it)
+    explicit AdjacencyListIterator(const Graph* graph, ArcItT&& arc_it)
         : arc_it_(std::move(arc_it)), graph_(graph) {}
 
     typename Graph::NodeIndex operator*() const {
@@ -126,13 +127,15 @@ class UndirectedAdjacencyListsOfDirectedGraph {
       return graph_->Head(*arc_it_);
     }
 
+    template <typename OtherArcIt>
     friend bool operator==(const AdjacencyListIterator& l,
-                           const AdjacencyListIterator& r) {
+                           const AdjacencyListIterator<OtherArcIt>& r) {
       return l.arc_it_ == r.arc_it_;
     }
 
+    template <typename OtherArcIt>
     friend bool operator!=(const AdjacencyListIterator& l,
-                           const AdjacencyListIterator& r) {
+                           const AdjacencyListIterator<OtherArcIt>& r) {
       return l.arc_it_ != r.arc_it_;
     }
 
@@ -148,15 +151,20 @@ class UndirectedAdjacencyListsOfDirectedGraph {
     }
 
    private:
-    ArcIterator arc_it_;
+    template <typename T>
+    friend class AdjacencyListIterator;
+
+    ArcItT arc_it_;
     const Graph* graph_;
   };
 
   // Returns a pseudo-container of all the nodes adjacent to "node".
-  BeginEndWrapper<AdjacencyListIterator> operator[](int node) const {
+  auto operator[](int node) const {
     const auto& arc_range = graph_.OutgoingOrOppositeIncomingArcs(node);
-    return {AdjacencyListIterator(&graph_, arc_range.begin()),
-            AdjacencyListIterator(&graph_, arc_range.end())};
+    return BeginEndWrapper(AdjacencyListIterator<decltype(arc_range.begin())>(
+                               &graph_, arc_range.begin()),
+                           AdjacencyListIterator<decltype(arc_range.end())>(
+                               &graph_, arc_range.end()));
   }
 
  private:
