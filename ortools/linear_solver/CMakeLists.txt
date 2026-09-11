@@ -142,4 +142,9 @@ if(BUILD_CXX_TESTING)
 
     add_test(NAME cxx_unittests_xpress_interface COMMAND test_xprs_interface)
   endif()
+
+  add_executable(linear_solver_test linear_solver_test.cc)
+  target_compile_features(linear_solver_test PRIVATE cxx_std_17)
+  target_link_libraries(linear_solver_test PRIVATE ortools::ortools GTest::gtest_main)
+  add_test(NAME cxx_unittests_linear_solver COMMAND linear_solver_test)
 endif ()
