@@ -47,6 +47,13 @@ bazel_dep(name = "googletest", version = "1.18.0")
 bazel_dep(name = "highs", version = "1.14.0")
 bazel_dep(name = "protobuf-matchers", version = "0.1.2")
 bazel_dep(name = "protobuf", version = "35.1")
+git_override(
+    module_name = "protobuf",
+    commit = "35cd01f9fe9afbeea38cc7b979a3b6bfcde82c03",
+    patch_strip = 1,
+    patches = ["//:patches/protobuf-v35.1.patch"],
+    remote = "https://github.com/protocolbuffers/protobuf.git",
+)
 bazel_dep(name = "re2", version = "2025-11-05.bcr.1")
 bazel_dep(name = "scip", version = "10.0.3")
 bazel_dep(name = "zlib", version = "1.3.2")
