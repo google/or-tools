@@ -13,10 +13,12 @@
 
 // [START program]
 package com.google.ortools.graph.samples;
+
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.graph.LinearSumAssignment;
 import java.util.stream.IntStream;
+
 // [END import]
 
 /** Minimal Linear Sum Assignment problem. */

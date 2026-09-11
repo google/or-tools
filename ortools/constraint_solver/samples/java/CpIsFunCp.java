@@ -19,12 +19,14 @@
 //
 // This problem has 72 different solutions in base 10.
 package com.google.ortools.constraintsolver.samples;
+
 // [START import]
 // [END import]
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
+
 // [END import]
 
 /** Cryptarithmetic puzzle. */
