@@ -135,11 +135,13 @@ The Java code implements the same interface as the Python code, with a
 ```java
 // Snippet from ortools/sat/samples/java/SimpleSatProgram.java
 package com.google.ortools.sat.samples;
+
 import com.google.ortools.Loader;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
+
 
 /** Minimal CP-SAT example to showcase calling the solver. */
 public final class SimpleSatProgram {

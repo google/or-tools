@@ -205,12 +205,14 @@ int main(int argc, char* argv[]) {
 ```java
 // Snippet from ortools/sat/samples/java/AssumptionsSampleSat.java
 package com.google.ortools.sat.samples;
+
 import com.google.ortools.Loader;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
+
 
 /** Minimal CP-SAT example to showcase assumptions. */
 public class AssumptionsSampleSat {

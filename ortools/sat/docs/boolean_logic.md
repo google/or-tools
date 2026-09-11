@@ -82,6 +82,7 @@ package com.google.ortools.sat.samples;
 import com.google.ortools.sat.BoolVar;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.Literal;
+
 import com.google.ortools.Loader;
 
 /** Code sample to demonstrate Boolean variable and literals. */

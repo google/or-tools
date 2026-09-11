@@ -789,6 +789,7 @@ public class SearchForAllSolutionsSampleSat {
     private final IntVar[] variableArray;
   }
 
+
   public static void main(String[] args) throws Exception {
     Loader.loadNativeLibraries();
     // Create the model.
