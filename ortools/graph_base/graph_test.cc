@@ -153,9 +153,9 @@ TEST_F(ConceptsTest, ReverseArcStaticGraph) {
   static_assert(IsForwardIterator<UntypedIterators::IncomingArcs<>>);
   static_assert(
       IsRandomAccessIterator<UntypedIterators::OppositeIncomingArcs<>>);
-  // TODO(user): Make this a random access iterator. Right now this is not
-  // even an input iterator.
-  // static_assert(IsInputIterator<UntypedIterators::OutgoingOrOppositeIncomingArcs<>>);
+  // TODO(user): Make this a random access iterator.
+  static_assert(
+      IsInputIterator<UntypedIterators::OutgoingOrOppositeIncomingArcs<>>);
 
   using TypedIterators =
       IteratorTypes<ReverseArcStaticGraph<StrongNodeId, StrongArcId>>;
@@ -165,9 +165,9 @@ TEST_F(ConceptsTest, ReverseArcStaticGraph) {
   // TODO(user): Make this a random access iterator.
   static_assert(IsForwardIterator<TypedIterators::IncomingArcs<>>);
   static_assert(IsRandomAccessIterator<TypedIterators::OppositeIncomingArcs<>>);
-  // TODO(user): Make this a random access iterator. Right now this is not
-  // even an input iterator.
-  // static_assert(IsInputIterator<TypedIterators::OutgoingOrOppositeIncomingArcs<>>);
+  // TODO(user): Make this a random access iterator.
+  static_assert(
+      IsInputIterator<TypedIterators::OutgoingOrOppositeIncomingArcs<>>);
 }
 
 // GraphTraits.
