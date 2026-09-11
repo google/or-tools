@@ -13,9 +13,11 @@
 
 // [START program]
 package com.google.ortools.graph.samples;
+
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.graph.MaxFlow;
+
 // [END import]
 
 /** Minimal MaxFlow program. */

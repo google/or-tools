@@ -14,6 +14,7 @@
 // CP-SAT example that solves an assignment problem.
 // [START program]
 package com.google.ortools.sat.samples;
+
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
@@ -25,6 +26,7 @@ import com.google.ortools.sat.Literal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
+
 // [END import]
 
 /** Assignment problem. */

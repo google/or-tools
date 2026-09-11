@@ -45,6 +45,7 @@ public class SearchForAllSolutionsSampleSat {
     private int solutionCount;
     private final IntVar[] variableArray;
   }
+
   // [END print_solution]
 
   public static void main(String[] args) throws Exception {

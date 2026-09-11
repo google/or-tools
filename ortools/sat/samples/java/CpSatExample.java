@@ -13,6 +13,7 @@
 
 // [START program]
 package com.google.ortools.sat.samples;
+
 // [START import]
 import static java.util.Arrays.stream;
 
@@ -22,6 +23,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
+
 // [END import]
 
 /** Minimal CP-SAT example to showcase calling the solver. */
