@@ -63,18 +63,20 @@ class SetCoverLagrangian
       : SubsetListBasedOptimizer(
             inv, SetCoverInvariant::ConsistencyLevel::kInconsistent,
             std::move(params)),
-        thread_pool_(nullptr) {}
+        thread_pool_(std::make_unique<ThreadPool>(this->params().num_threads)) {
+  }
 
   SetCoverLagrangian(SetCoverInvariant* inv, const absl::string_view name)
       : SubsetListBasedOptimizer(
             inv, SetCoverInvariant::ConsistencyLevel::kInconsistent,
-            std::make_unique<SetCoverLagrangianParams>()) {
+            std::make_unique<SetCoverLagrangianParams>()),
+        thread_pool_(std::make_unique<ThreadPool>(this->params().num_threads)) {
     SetName(name);
-    params().class_name = "Lagrangian";
+    this->params().class_name = "Lagrangian";
   }
 
   SetCoverLagrangian& UseNumThreads(int num_threads) {
-    params().num_threads = num_threads;
+    this->params().num_threads = num_threads;
     thread_pool_ = std::make_unique<ThreadPool>(num_threads);
     return *this;
   }
@@ -144,9 +146,6 @@ class SetCoverLagrangian
   Cost ComputeGap(const SubsetCostVector& reduced_costs,
                   const SubsetBoolVector& solution,
                   const ElementCostVector& multipliers) const;
-
-  // Performs the three-phase algorithm.
-  void ThreePhase(Cost upper_bound);
 
   // Computes a lower bound on the optimal cost.
   // The returned value is the lower bound, the reduced costs, and the

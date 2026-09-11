@@ -500,6 +500,9 @@ SetCoverLagrangian::ComputeLowerBound(const SubsetCostVector& costs,
                                       Cost upper_bound) {
   StopWatch stop_watch(&run_time_);
   Cost lower_bound = 0.0;
+  if (thread_pool_ == nullptr) {
+    UseNumThreads(params().num_threads);
+  }
   ElementCostVector multipliers = InitializeLagrangeMultipliers();
   double step_size = 0.1;               // [***] arbitrary, from [1].
   StepSizer step_sizer(20, step_size);  // [***] arbitrary, from [1].
