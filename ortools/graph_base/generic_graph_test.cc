@@ -121,13 +121,13 @@ TEST(GenericGraphTest, BuilderAndGraphAreMovable) {
 TEST(GenericGraphDeathTest, AddMoreNodesThanReserved) {
   GenericGraph<char>::Builder builder(/*num_nodes=*/2, /*num_edges=*/3);
   builder.AddEdge('a', 'b');
-  if constexpr (DEBUG_MODE) {
-    EXPECT_DEATH(builder.AddEdge('c', 'a'), "const_capacities");
-  } else {
-    builder.AddEdge('c', 'a');
-    EXPECT_THAT(std::move(builder).Build().AllNodes(),
-                ElementsAre('a', 'b', 'c'));
-  }
+#ifndef NDEBUG
+  EXPECT_DEATH(builder.AddEdge('c', 'a'), "const_capacities");
+#else
+  builder.AddEdge('c', 'a');
+  EXPECT_THAT(std::move(builder).Build().AllNodes(),
+              ElementsAre('a', 'b', 'c'));
+#endif
 }
 
 TEST(GenericGraphDeathTest, AddMoreEdgesThanReserved) {
