@@ -78,6 +78,9 @@ class ABSL_ATTRIBUTE_TRIVIAL_ABI ABSL_NULLABILITY_COMPATIBLE UniqueArray {
   using size_type = size_t;
   using deleter_type = std::conditional_t<std::is_void_v<Deleter>,
                                           std::default_delete<T[]>, Deleter>;
+  using value_type = T;
+  using iterator = pointer;
+  using const_iterator = const_pointer;
 
   // This type wraps a unique_ptr `ptr` and its `size`. It is used when
   // releasing ownership of the unique_ptr to callers of `release()`, without
@@ -254,6 +257,19 @@ class ABSL_ATTRIBUTE_TRIVIAL_ABI ABSL_NULLABILITY_COMPATIBLE UniqueArray {
   // Returns the number of the elements in the owned allocation.
   size_t size() const { return size_; }
 
+  // Iterator access.
+  iterator begin() ABSL_ATTRIBUTE_LIFETIME_BOUND {  //
+    return data();
+  }
+  const_iterator begin() const ABSL_ATTRIBUTE_LIFETIME_BOUND {  //
+    return data();
+  }
+  iterator end() ABSL_ATTRIBUTE_LIFETIME_BOUND {  //
+    return data() + size();
+  }
+  const_iterator end() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return data() + size();
+  }
   // Releases ownership of the managed unique_ptr, returning the unique_ptr and
   // the size of the array, leaving the `UniqueArray` in a moved-from state.
   OwningPointer release() {
