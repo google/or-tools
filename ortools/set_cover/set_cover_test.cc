@@ -143,7 +143,8 @@ TEST(SetCoverTest, LagrangianComputeLowerBoundDefaultThreadPool) {
   model.AddElementToLastSubset(0);
   SetCoverInvariant inv(&model);
 
-  // Verifies that ComputeLowerBound() works without calling UseNumThreads() first.
+  // Verifies that ComputeLowerBound() works without calling UseNumThreads()
+  // first.
   SetCoverLagrangian lagrangian(&inv);
   auto [lower_bound, reduced_costs, multipliers] =
       lagrangian.ComputeLowerBound(model.subset_costs(), 3.0);

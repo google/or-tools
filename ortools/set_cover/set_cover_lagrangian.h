@@ -63,15 +63,14 @@ class SetCoverLagrangian
       : SubsetListBasedOptimizer(
             inv, SetCoverInvariant::ConsistencyLevel::kInconsistent,
             std::move(params)),
-        thread_pool_(
-            std::make_unique<ThreadPool>(this->params().num_threads)) {}
+        thread_pool_(std::make_unique<ThreadPool>(this->params().num_threads)) {
+  }
 
   SetCoverLagrangian(SetCoverInvariant* inv, const absl::string_view name)
       : SubsetListBasedOptimizer(
             inv, SetCoverInvariant::ConsistencyLevel::kInconsistent,
             std::make_unique<SetCoverLagrangianParams>()),
-        thread_pool_(
-            std::make_unique<ThreadPool>(this->params().num_threads)) {
+        thread_pool_(std::make_unique<ThreadPool>(this->params().num_threads)) {
     SetName(name);
     this->params().class_name = "Lagrangian";
   }
