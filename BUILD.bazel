@@ -24,8 +24,9 @@ exports_files(["LICENSE"])
 license(
     name = "license",
     package_name = "or-tools",
-    license_kinds = ["@rules_license//licenses/spdx:Apache-2.0"],
-    license_text = ":LICENSE",
+    license_kinds = [
+        "@rules_license//licenses/spdx:Apache-2.0",
+    ],
 )
 
 # gazelle:build_file_name BUILD,BUILD.bazel
