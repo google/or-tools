@@ -11,10 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+file(GLOB _SRCS "*.h" "*.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
+
 set(NAME ${PROJECT_NAME}_math_opt_labs)
 add_library(${NAME} OBJECT)
-
-file(GLOB _SRCS "*.h" "*.cc")
 target_sources(${NAME} PRIVATE ${_SRCS})
 set_target_properties(${NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(${NAME} PUBLIC
@@ -23,3 +24,23 @@ target_include_directories(${NAME} PUBLIC
 target_link_libraries(${NAME} PRIVATE
   absl::strings
   ${PROJECT_NAMESPACE}::math_opt_proto)
+
+if(BUILD_CXX_TESTING)
+  # Test
+  file(GLOB _TEST_SRCS "*_test.cc")
+  foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
+    get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
+    get_filename_component(_FILE_NAME ${_FULL_FILE_NAME} NAME)
+    ortools_cxx_test(
+      NAME
+        math_opt_labs_${_NAME}
+      SOURCES
+        ${_FILE_NAME}
+      LINK_LIBRARIES
+        benchmark::benchmark
+        GTest::gtest
+        GTest::gtest_main
+        GTest::gmock
+    )
+  endforeach()
+endif()
