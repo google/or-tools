@@ -60,7 +60,7 @@ jobs:
     - name: Build
       run: bazel build --config=ci //...
     - name: Test
-      run: bazel test  --config=ci //... -- -//bazel:all
+      run: bazel test  --config=ci --keep_going //... -- -//bazel:all
 ###############################################################################
   CMake:
     strategy:
