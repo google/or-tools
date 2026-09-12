@@ -58,9 +58,9 @@ jobs:
         python-version: ${{env.PYTHON_VERSION}}
     - uses: bazel-contrib/setup-bazel@0.19.0
     - name: Build
-      run: bazel build --config=ci --keep_going //...
+      run: bazel build --config=ci --verbose_failures --materialize_param_files --keep_going //...
     - name: Test
-      run: bazel test  --config=ci --keep_going //... -- -//bazel:all
+      run: bazel test  --config=ci --verbose_failures --materialize_param_files --keep_going //... -- -//bazel:all
 ###############################################################################
   CMake:
     strategy:
