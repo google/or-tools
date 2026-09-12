@@ -136,6 +136,8 @@ cc_library(
 pybind_extension(
     name = "cp_model_helper",
     srcs = ["cp_model_helper.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":linear_expr",

@@ -35,6 +35,8 @@ cc_library(
 pybind_extension(
     name = "sorted_interval_list",
     srcs = ["sorted_interval_list.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":sorted_interval_list_doc_cc",
@@ -66,6 +68,8 @@ py_test(
 pybind_extension(
     name = "piecewise_linear_function",
     srcs = ["piecewise_linear_function.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/util:piecewise_linear_function",
@@ -119,6 +123,8 @@ cc_library(
 pybind_extension(
     name = "pybind_solve_interrupter",
     srcs = ["pybind_solve_interrupter.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     # This library is not meant to be consumed end users; only pybind11 code
     # that needs a SolverInterrupter.
     visibility = ["//visibility:public"],
@@ -129,6 +135,8 @@ pybind_extension(
     name = "pybind_solve_interrupter_testing",
     testonly = True,
     srcs = ["pybind_solve_interrupter_testing.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [":py_solve_interrupter_testing_lib"],
 )
@@ -224,6 +232,8 @@ pybind_extension(
     name = "wrappers_test_message_extension",
     testonly = True,
     srcs = ["wrappers_test_message_extension.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":wrappers_test_message_pybind11",

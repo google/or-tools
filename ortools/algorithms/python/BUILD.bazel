@@ -33,6 +33,8 @@ cc_library(
 pybind_extension(
     name = "knapsack_solver",
     srcs = ["knapsack_solver.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":knapsack_solver_doc_cc",
