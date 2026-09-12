@@ -12,12 +12,15 @@
 # limitations under the License.
 
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
 pybind_extension(
     name = "solver",
     srcs = ["solver.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps =
         select({

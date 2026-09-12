@@ -14,10 +14,13 @@
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
 load("@rules_python//python:py_test.bzl", "py_test")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 
 pybind_extension(
     name = "rcpsp",
     srcs = ["rcpsp.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/scheduling:rcpsp_parser",
