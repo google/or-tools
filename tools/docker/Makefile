@@ -103,7 +103,6 @@ help:
 	@echo -e "\t\t${BOLD}ubuntu-24.10${RESET} (Ubuntu 24.10, rolling)"
 	@echo -e "\t\t${BOLD}ubuntu-24.04${RESET} (Ubuntu 24.04 LTS, latest)"
 	@echo -e "\t\t${BOLD}ubuntu-22.04${RESET} (Ubuntu 22.04 LTS)"
-	@echo -e "\t\t${BOLD}ubuntu-20.04${RESET} (Ubuntu 20.04 LTS)"
 	@echo
 	@echo -e "\t${BOLD}<stage>${RESET}:"
 	@echo -e "\t\t${BOLD}env${RESET}"
@@ -434,7 +433,7 @@ DISTROS := \
  fedora-40 fedora-41 fedora-42 \
  opensuse-leap \
  rockylinux-10 \
- ubuntu-20.04 ubuntu-22.04 ubuntu-24.04 ubuntu-24.10
+ ubuntu-22.04 ubuntu-24.04 ubuntu-24.10
 
 # List of stages
 STAGES := env devel
