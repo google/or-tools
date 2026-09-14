@@ -95,7 +95,6 @@ help:
 	@echo -e "\t\t${BOLD}debian-sid${RESET} (unstable)"
 	#@echo -e "\t\t${BOLD}debian-13${RESET} (Trixie)"
 	@echo -e "\t\t${BOLD}debian-12${RESET} (Bookworm)"
-	@echo -e "\t\t${BOLD}debian-11${RESET} (Bullseye)"
 	@echo -e "\t\t${BOLD}fedora-42${RESET}"
 	@echo -e "\t\t${BOLD}fedora-41${RESET}"
 	@echo -e "\t\t${BOLD}fedora-40${RESET}"
@@ -431,7 +430,7 @@ DISTROS := \
  almalinux-10 \
  alpine-edge \
  archlinux \
- debian-11 debian-12 debian-sid \
+ debian-12 debian-sid \
  fedora-40 fedora-41 fedora-42 \
  opensuse-leap \
  rockylinux-10 \
