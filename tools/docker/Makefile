@@ -97,9 +97,6 @@ help:
 	@echo -e "\t\t${BOLD}debian-12${RESET} (Bookworm)"
 	@echo -e "\t\t${BOLD}fedora-44${RESET}"
 	@echo -e "\t\t${BOLD}fedora-43${RESET}"
-	@echo -e "\t\t${BOLD}fedora-42${RESET}"
-	@echo -e "\t\t${BOLD}fedora-41${RESET}"
-	@echo -e "\t\t${BOLD}fedora-40${RESET}"
 	@echo -e "\t\t${BOLD}opensuse-leap${RESET} (latest)"
 	@echo -e "\t\t${BOLD}rockylinux-10${RESET} (latest)"
 	@echo -e "\t\t${BOLD}ubuntu-24.10${RESET} (Ubuntu 24.10, rolling)"
@@ -432,7 +429,7 @@ DISTROS := \
  alpine-edge \
  archlinux \
  debian-12 debian-sid \
- fedora-40 fedora-41 fedora-42 fedora-43 fedora-44 \
+ fedora-43 fedora-44 \
  opensuse-leap \
  rockylinux-10 \
  ubuntu-22.04 ubuntu-24.04 ubuntu-24.10
