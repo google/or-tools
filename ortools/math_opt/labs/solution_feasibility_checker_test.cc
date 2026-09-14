@@ -491,9 +491,9 @@ TEST(ViolatedConstraintsAsStringsTest, ViolatedVariableBounds) {
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
   EXPECT_THAT(
       ViolatedConstraintsAsStrings(
-          model, {.variable_bounds = {{x, {.upper = true}}}}, {{x, 1.1}}),
+          model, {.variable_bounds = {{x, {.upper = true}}}}, {{x, 1.125}}),
       IsOkAndHolds(ElementsAre(
-          "violated variable bound: 0 ≤ x ≤ 1, with variable value 1.1")));
+          "violated variable bound: 0 ≤ x ≤ 1, with variable value 1.125")));
 }
 
 TEST(ViolatedConstraintsAsStringsTest, ViolatedVariableIntegrality) {
@@ -501,9 +501,9 @@ TEST(ViolatedConstraintsAsStringsTest, ViolatedVariableIntegrality) {
   const Variable x = model.AddBinaryVariable("x");
   EXPECT_THAT(
       ViolatedConstraintsAsStrings(model, {.variable_integrality = {x}},
-                                   {{x, 1.1}}),
+                                   {{x, 1.125}}),
       IsOkAndHolds(ElementsAre(
-          "violated variable integrality: x, with variable value 1.1")));
+          "violated variable integrality: x, with variable value 1.125")));
 }
 
 TEST(ViolatedConstraintsAsStringsTest, ViolatedLinearConstraint) {
@@ -512,9 +512,9 @@ TEST(ViolatedConstraintsAsStringsTest, ViolatedLinearConstraint) {
   const LinearConstraint c = model.AddLinearConstraint(x <= 1.0, "c");
   EXPECT_THAT(
       ViolatedConstraintsAsStrings(
-          model, {.linear_constraints = {{c, {.upper = true}}}}, {{x, 1.1}}),
+          model, {.linear_constraints = {{c, {.upper = true}}}}, {{x, 1.125}}),
       IsOkAndHolds(ElementsAre("violated linear constraint c: x ≤ 1, with "
-                               "variable values {{x, 1.1}}")));
+                               "variable values {{x, 1.125}}")));
 }
 
 TEST(ViolatedConstraintsAsStringsTest, ViolatedQuadraticConstraint) {
@@ -523,9 +523,10 @@ TEST(ViolatedConstraintsAsStringsTest, ViolatedQuadraticConstraint) {
   const QuadraticConstraint c = model.AddQuadraticConstraint(x * x <= 1.0, "c");
   EXPECT_THAT(
       ViolatedConstraintsAsStrings(
-          model, {.quadratic_constraints = {{c, {.upper = true}}}}, {{x, 1.1}}),
+          model, {.quadratic_constraints = {{c, {.upper = true}}}},
+          {{x, 1.125}}),
       IsOkAndHolds(ElementsAre("violated quadratic constraint c: x² ≤ 1, with "
-                               "variable values {{x, 1.1}}")));
+                               "variable values {{x, 1.125}}")));
 }
 
 TEST(ViolatedConstraintsAsStringsTest, ViolatedSecondOrderConeConstraint) {
@@ -534,10 +535,10 @@ TEST(ViolatedConstraintsAsStringsTest, ViolatedSecondOrderConeConstraint) {
   const SecondOrderConeConstraint c =
       model.AddSecondOrderConeConstraint({x}, 1.0, "c");
   EXPECT_THAT(ViolatedConstraintsAsStrings(
-                  model, {.second_order_cone_constraints = {c}}, {{x, 1.1}}),
+                  model, {.second_order_cone_constraints = {c}}, {{x, 1.125}}),
               IsOkAndHolds(ElementsAre(
                   "violated second-order cone constraint c: ||{x}||₂ ≤ 1, with "
-                  "variable values {{x, 1.1}}")));
+                  "variable values {{x, 1.125}}")));
 }
 
 TEST(ViolatedConstraintsAsStringsTest, ViolatedSos1Constraint) {
@@ -568,11 +569,12 @@ TEST(ViolatedConstraintsAsStringsTest, ViolatedIndicatorConstraint) {
   const Variable y = model.AddBinaryVariable("y");
   const IndicatorConstraint c =
       model.AddIndicatorConstraint(y, x <= 1.0, false, "c");
-  EXPECT_THAT(ViolatedConstraintsAsStrings(
-                  model, {.indicator_constraints = {c}}, {{x, 1.1}, {y, 1.0}}),
-              IsOkAndHolds(ElementsAre(
-                  "violated indicator constraint c: y = 1 ⇒ x ≤ 1, with "
-                  "variable values {{x, 1.1}, {y, 1}}")));
+  EXPECT_THAT(
+      ViolatedConstraintsAsStrings(model, {.indicator_constraints = {c}},
+                                   {{x, 1.125}, {y, 1.0}}),
+      IsOkAndHolds(
+          ElementsAre("violated indicator constraint c: y = 1 ⇒ x ≤ 1, with "
+                      "variable values {{x, 1.125}, {y, 1}}")));
 }
 
 }  // namespace
