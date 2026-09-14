@@ -93,7 +93,7 @@ help:
 	@echo -e "\t\t${BOLD}alpine-edge${RESET} (latest)"
 	@echo -e "\t\t${BOLD}archlinux${RESET} (latest)"
 	@echo -e "\t\t${BOLD}debian-sid${RESET} (unstable)"
-	#@echo -e "\t\t${BOLD}debian-13${RESET} (Trixie)"
+	@echo -e "\t\t${BOLD}debian-13${RESET} (Trixie)"
 	@echo -e "\t\t${BOLD}debian-12${RESET} (Bookworm)"
 	@echo -e "\t\t${BOLD}fedora-44${RESET}"
 	@echo -e "\t\t${BOLD}fedora-43${RESET}"
@@ -428,7 +428,7 @@ DISTROS := \
  almalinux-10 \
  alpine-edge \
  archlinux \
- debian-12 debian-sid \
+ debian-12 debian-13 debian-sid \
  fedora-43 fedora-44 \
  opensuse-leap \
  rockylinux-10 \
