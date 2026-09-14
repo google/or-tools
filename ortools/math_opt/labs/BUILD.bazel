@@ -30,6 +30,20 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "general_constraint_to_mip_test",
+    srcs = ["general_constraint_to_mip_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":general_constraint_to_mip",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/cpp:matchers",
+        "//ortools/math_opt/cpp:math_opt",
+        "@abseil-cpp//absl/status",
+    ],
+)
+
 cc_library(
     name = "linear_expr_util",
     srcs = ["linear_expr_util.cc"],
@@ -40,6 +54,18 @@ cc_library(
     deps = [
         "//ortools/math_opt/cpp:math_opt",
         "@abseil-cpp//absl/algorithm:container",
+    ],
+)
+
+cc_test(
+    name = "linear_expr_util_test",
+    srcs = ["linear_expr_util_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":linear_expr_util",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/cpp:math_opt",
     ],
 )
 
@@ -65,6 +91,22 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "solution_feasibility_checker_test",
+    srcs = ["solution_feasibility_checker_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":solution_feasibility_checker",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt:infeasible_subsystem_cc_proto",
+        "//ortools/math_opt/cpp:math_opt",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/status",
+    ],
+)
+
 cc_library(
     name = "solution_improvement",
     srcs = ["solution_improvement.cc"],
@@ -78,6 +120,28 @@ cc_library(
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/validators:model_validator",
         "//ortools/util:fp_roundtrip_conv",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "solution_improvement_test",
+    srcs = ["solution_improvement_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":solution_improvement",
+        "//ortools/base:gmock_main",
+        "//ortools/base:status_builder",
+        "//ortools/math_opt/cpp:matchers",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/util:fp_roundtrip_conv",
+        "//ortools/util:status_macros",
+        "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:status_macros",
@@ -100,4 +164,19 @@ cc_library(
         "@abseil-cpp//absl/types:span",
     ],
     alwayslink = 1,
+)
+
+cc_test(
+    name = "dualizer_test",
+    srcs = ["dualizer_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":dualizer",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/cpp:matchers",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/solvers:glop_solver",
+        "@abseil-cpp//absl/strings",
+    ],
 )
