@@ -48,6 +48,8 @@ using ::testing::status::IsOkAndHolds;
 using ::testing::status::StatusIs;
 
 INSTANTIATE_TYPED_TEST_SUITE_P(CallbackEvent, EnumTest, CallbackEvent);
+INSTANTIATE_TYPED_TEST_SUITE_P(CallbackSolutionSource, EnumTest,
+                               CallbackSolutionSource);
 
 TEST(CallbackDataTest, Creation) {
   ModelStorage storage;
@@ -66,6 +68,8 @@ TEST(CallbackDataTest, Creation) {
   proto.mutable_simplex_stats()->set_iteration_count(12);
   proto.mutable_barrier_stats()->set_primal_objective(10.0);
   proto.mutable_mip_stats()->set_explored_nodes(4);
+  proto.mutable_mip_stats()->set_solution_source(
+      CALLBACK_SOLUTION_SOURCE_HEURISTIC);
   CallbackData cb_data(&storage, proto);
   EXPECT_EQ(cb_data.event, CallbackEvent::kMipNode);
   ASSERT_TRUE(cb_data.solution.has_value());
@@ -75,7 +79,10 @@ TEST(CallbackDataTest, Creation) {
   EXPECT_THAT(cb_data.presolve_stats, EqualsProto("removed_variables: 3"));
   EXPECT_THAT(cb_data.simplex_stats, EqualsProto("iteration_count: 12"));
   EXPECT_THAT(cb_data.barrier_stats, EqualsProto("primal_objective: 10.0"));
-  EXPECT_THAT(cb_data.mip_stats, EqualsProto("explored_nodes: 4"));
+  EXPECT_THAT(
+      cb_data.mip_stats,
+      EqualsProto("explored_nodes: 4\n"
+                  "solution_source: CALLBACK_SOLUTION_SOURCE_HEURISTIC"));
 
   EXPECT_OK(cb_data.CheckModelStorage(&storage));
   const ModelStorage other_storage;

@@ -129,6 +129,10 @@ std::ostream& operator<<(std::ostream& out, const CallbackTestParams& params) {
       << (params.reaches_cut_callback.has_value()
               ? ProtobufShortDebugString(params.reaches_cut_callback->Proto())
               : "nullopt")
+      << ", solve_parameters: "
+      << (params.solve_parameters.has_value()
+              ? ProtobufShortDebugString(params.solve_parameters->Proto())
+              : "nullopt")
       << " }";
   return out;
 }
@@ -390,7 +394,7 @@ TEST_P(CallbackTest, EventSimplex) {
   EXPECT_EQ(stats[0].iteration_count(), 0);
   if (GetParam().solver_type == SolverType::kXpress) {
     // Xpress does not report dual infeasibiltiy
-    /** TODO: Instead report NUMBER of dual infeasibilities and test that. */
+    // TODO: Instead report NUMBER of dual infeasibilities and test that.
     ASSERT_THAT(stats[0].has_dual_infeasibility(), IsFalse());
   } else {
     EXPECT_GT(stats[0].dual_infeasibility(), 0.0);
@@ -411,7 +415,8 @@ TEST_P(CallbackTest, EventBarrier) {
   const std::unique_ptr<const Model> model =
       SmallModel(GetParam().uses_integer_variables());
 
-  double optimalObjective = GetParam().uses_integer_variables() ? 9.0 : 12.0;
+  const double optimalObjective =
+      GetParam().uses_integer_variables() ? 9.0 : 12.0;
   SolveArguments args = {
       .parameters = GetParam().solve_parameters.value_or(SolveParameters())};
   args.parameters.presolve = Emphasis::kOff;
