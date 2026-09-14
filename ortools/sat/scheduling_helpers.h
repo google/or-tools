@@ -131,7 +131,7 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   // it at the highest priority, so that will mostly be the case at the
   // beginning of each Propagate() call of the classes using this.
   bool Propagate() final;
-  bool IncrementalPropagate(const std::vector<int>& watch_indices) final;
+  bool IncrementalPropagate(absl::Span<const int> watch_indices) final;
   void RegisterWith(GenericLiteralWatcher* watcher,
                     absl::Span<const Literal> enforcement_literals);
 

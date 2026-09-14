@@ -5550,6 +5550,150 @@ TEST(SolveCpModelTest, ElementWithUnusedTargetAndUnfixedExpression) {
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
 }
 
+TEST(SolveCpModelTest,
+     RelaxationInducedNeighborhoodGeneratorUnsatModel16Threads) {
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ -686, 234, 702, 703 ] }
+    constraints {
+      element {
+        index: 0
+        target: 0
+        vars: [
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]
+      }
+    }
+    objective {
+      vars: [ 0, 0, 0, 0 ]
+      scaling_factor: -7.4796082507053793e+18
+      coeffs: [ -4096, -1, -1358, -1 ]
+      domain: [ 1, 9223372036854775807 ]
+    }
+  )pb");
+
+  SatParameters params;
+  params.set_num_workers(16);
+  params.set_cp_model_presolve(false);
+  params.set_linearization_level(2);
+  params.set_max_time_in_seconds(1.0);
+  const CpSolverResponse response = SolveWithParameters(model_proto, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::INFEASIBLE);
+}
+
+TEST(SolveCpModelTest,
+     InnerObjectiveLowerBoundMatchesObjectiveWhenOptimal16Threads) {
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 1, 10 ] }
+    variables { domain: [ 1, 10 ] }
+    variables { domain: [ 1, 10 ] }
+    variables { domain: [ 1, 10 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 2 ]
+        domain: [ 0, 8 ]
+      }
+    }
+    constraints {
+      element {
+        target: 3
+        vars: [ 0, 1, 0 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 2, 3 ]
+        coeffs: [ 1, 2 ]
+        domain: [ 0, 6 ]
+      }
+    }
+    constraints { inverse {} }
+    objective {
+      vars: [ 0, 1, 2, 1, 3 ]
+      scaling_factor: 4.376525474779716e+19
+      coeffs: [ -1, -2, -3, -2144, -4 ]
+    }
+  )pb");
+
+  SatParameters params;
+  params.set_num_workers(16);
+  params.set_cp_model_presolve(false);
+  params.set_linearization_level(2);
+  params.set_absolute_gap_limit(0);
+  const CpSolverResponse response = SolveWithParameters(model_proto, params);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(response.inner_objective_lower_bound(), -6454);
+}
+
+TEST(SolveCpModelTest, CumulativeNegativeCapacity16Threads) {
+  CpModelProto model_proto;
+  // Vars 0 and 1: x0, x1 in [0, 1].
+  for (int i = 0; i < 2; ++i) {
+    auto* var = model_proto.add_variables();
+    var->add_domain(0);
+    var->add_domain(1);
+  }
+
+  // Cumulative constraint enforced by ~x1 (literal -2) with 0 intervals and
+  // capacity = 10*x0 - 5. At (x0, x1) = (0, 0), ~x1 is true and capacity = -5 <
+  // 0.
+  auto* cumu_ct = model_proto.add_constraints();
+  cumu_ct->add_enforcement_literal(-2);
+  auto* cumu = cumu_ct->mutable_cumulative();
+  cumu->mutable_capacity()->add_vars(0);
+  cumu->mutable_capacity()->add_coeffs(10);
+  cumu->mutable_capacity()->set_offset(-5);
+
+  // Add Pairwise Pigeonhole Principle (10 pigeons in 9 holes) where every
+  // pigeon clause AND every hole clause contains ~x0 (-1) or ~x1 (-2).
+  // Thus any state with x0=0 and x1=0 has 0 clause violations regardless of
+  // the values of the pigeon variables, while proving UNSAT when x0=1 or x1=1
+  // takes longer than FeasibilityJumpSolver takes to start.
+  const int num_pigeons = 10;
+  const int num_holes = 9;
+  for (int p = 0; p < num_pigeons; ++p) {
+    for (int h = 0; h < num_holes; ++h) {
+      auto* var = model_proto.add_variables();
+      var->add_domain(0);
+      var->add_domain(1);
+    }
+  }
+  auto var_index = [&](int p, int h) { return 2 + p * num_holes + h; };
+  for (int neg_lit : {-1, -2}) {
+    for (int p = 0; p < num_pigeons; ++p) {
+      auto* clause = model_proto.add_constraints()->mutable_bool_or();
+      for (int h = 0; h < num_holes; ++h) {
+        clause->add_literals(var_index(p, h));
+      }
+      clause->add_literals(neg_lit);
+    }
+    for (int h = 0; h < num_holes; ++h) {
+      for (int p1 = 0; p1 < num_pigeons; ++p1) {
+        for (int p2 = p1 + 1; p2 < num_pigeons; ++p2) {
+          auto* clause = model_proto.add_constraints()->mutable_bool_or();
+          clause->add_literals(-var_index(p1, h) - 1);
+          clause->add_literals(-var_index(p2, h) - 1);
+          clause->add_literals(neg_lit);
+        }
+      }
+    }
+  }
+
+  SatParameters params;
+  params.set_num_workers(16);
+  params.set_cp_model_presolve(false);
+  params.set_max_time_in_seconds(0.3);
+  const CpSolverResponse response = SolveWithParameters(model_proto, params);
+  EXPECT_THAT(response.status(),
+              AnyOf(CpSolverStatus::INFEASIBLE, CpSolverStatus::UNKNOWN));
+}
+
 #else
 static_assert(!operations_research::kTargetOsSupportsThreads);
 #endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)

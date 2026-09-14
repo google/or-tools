@@ -129,7 +129,7 @@ bool SchedulingConstraintHelper::Propagate() {
 }
 
 bool SchedulingConstraintHelper::IncrementalPropagate(
-    const std::vector<int>& watch_indices) {
+    absl::Span<const int> watch_indices) {
   if (!IsEnforced()) return true;
   for (const int t : watch_indices) recompute_cache_.Set(t);
   for (const int id : propagator_ids_) watcher_->CallOnNextPropagate(id);

@@ -130,6 +130,23 @@ go_proto_library(
 )
 
 cc_library(
+    name = "deterministic_time",
+    srcs = ["deterministic_time.cc"],
+    hdrs = ["deterministic_time.h"],
+    deps = [
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/numeric:int128",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:source_location",
+    ],
+)
+
+cc_library(
     name = "gate_congruence_closure",
     srcs = ["gate_congruence_closure.cc"],
     hdrs = ["gate_congruence_closure.h"],
@@ -1722,6 +1739,7 @@ cc_library(
         ":cp_model_mapping",
         ":cp_model_table",
         ":cp_model_utils",
+        ":deterministic_time",
         ":diffn_util",
         ":diophantine",
         ":integer",

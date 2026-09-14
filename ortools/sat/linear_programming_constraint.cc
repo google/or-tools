@@ -871,7 +871,7 @@ void LinearProgrammingConstraint::AddCutGenerator(CutGenerator generator) {
 }
 
 bool LinearProgrammingConstraint::IncrementalPropagate(
-    const std::vector<int>& watch_indices) {
+    absl::Span<const int> watch_indices) {
   if (!enabled_) return true;
 
   // If we have a really deep branch, with a lot of LP explanation constraints,
