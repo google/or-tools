@@ -1,6 +1,6 @@
 # Create a virtual environment with all tools installed
 # ref: https://hub.docker.com/_/ubuntu
-FROM ubuntu:24.10 AS env
+FROM ubuntu:26.04 AS env
 
 #############
 ##  SETUP  ##

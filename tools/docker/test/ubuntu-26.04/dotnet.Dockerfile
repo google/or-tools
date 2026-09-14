@@ -1,5 +1,5 @@
 # ref: https://hub.docker.com/_/ubuntu
-FROM ubuntu:24.10
+FROM ubuntu:26.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -qq \
@@ -20,6 +20,6 @@ RUN dotnet --info
 #RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 WORKDIR /root
-ADD or-tools_amd64_ubuntu-24.10_dotnet_v*.tar.gz .
+ADD or-tools_amd64_ubuntu-26.04_dotnet_v*.tar.gz .
 
 RUN cd or-tools_*_v* && make test
