@@ -6,7 +6,7 @@ FROM almalinux:10 AS env
 #############
 ENV PATH=/usr/local/bin:$PATH
 RUN dnf -y update \
-&& dnf -y install git wget openssl-devel cmake \
+&& dnf -y install which git wget openssl-devel cmake \
 && dnf -y group install "Development Tools" \
 && dnf clean all \
 && rm -rf /var/cache/dnf
