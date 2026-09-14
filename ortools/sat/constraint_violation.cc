@@ -33,6 +33,7 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/base/types.h"
 #include "ortools/graph_base/strongly_connected_components.h"
+#include "ortools/sat/circuit.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/diffn_util.h"
@@ -998,7 +999,10 @@ CompiledConstraintWithProto::CompiledConstraintWithProto(
 int64_t CompiledConstraintWithProto::ComputeViolation(
     absl::Span<const int64_t> solution) {
   for (const int lit : ct_proto_.enforcement_literal()) {
-    if (!LiteralValue(lit, solution)) return 0;
+    if (!LiteralValue(lit, solution)) {
+      UpdateStateWhenUnenforced(solution);
+      return 0;
+    }
   }
   return ComputeViolationWhenEnforced(solution);
 }
@@ -1545,6 +1549,7 @@ class CompiledCircuitConstraint : public CompiledConstraintWithProto {
   explicit CompiledCircuitConstraint(const ConstraintProto& ct_proto);
   ~CompiledCircuitConstraint() override = default;
 
+  void UpdateStateWhenUnenforced(absl::Span<const int64_t> solution) override;
   int64_t ComputeViolationWhenEnforced(
       absl::Span<const int64_t> solution) override;
   void PerformMove(int var, int64_t old_value,
@@ -1568,8 +1573,8 @@ class CompiledCircuitConstraint : public CompiledConstraintWithProto {
 
   absl::flat_hash_map<int, std::vector<int>> arcs_by_lit_;
   absl::Span<const int> literals_;
-  absl::Span<const int> tails_;
-  absl::Span<const int> heads_;
+  std::vector<int> tails_;
+  std::vector<int> heads_;
   // Stores the currently active arcs per tail node.
   std::vector<DenseSet<int>> graph_;
   SccOutput sccs_;
@@ -1599,16 +1604,29 @@ void CompiledCircuitConstraint::SccOutput::reset(int num_nodes) {
   skipped.resize(num_nodes);
 }
 
+namespace {
+int ExtractAndReindexArcs(const ConstraintProto& ct_proto,
+                          std::vector<int>& tails, std::vector<int>& heads) {
+  const bool routes = ct_proto.has_routes();
+  absl::Span<const int> original_heads =
+      routes ? ct_proto.routes().heads() : ct_proto.circuit().heads();
+  absl::Span<const int> original_tails =
+      routes ? ct_proto.routes().tails() : ct_proto.circuit().tails();
+  tails.assign(original_tails.begin(), original_tails.end());
+  heads.assign(original_heads.begin(), original_heads.end());
+  return ReindexArcs(&tails, &heads);
+}
+}  // namespace
+
 CompiledCircuitConstraint::CompiledCircuitConstraint(
     const ConstraintProto& ct_proto)
     : CompiledConstraintWithProto(ct_proto) {
+  const int num_nodes = ExtractAndReindexArcs(ct_proto, tails_, heads_);
   const bool routes = ct_proto.has_routes();
-  tails_ = routes ? ct_proto.routes().tails() : ct_proto.circuit().tails();
-  heads_ = absl::MakeConstSpan(routes ? ct_proto.routes().heads()
-                                      : ct_proto.circuit().heads());
   literals_ = absl::MakeConstSpan(routes ? ct_proto.routes().literals()
                                          : ct_proto.circuit().literals());
-  graph_.resize(*absl::c_max_element(tails_) + 1);
+
+  graph_.resize(num_nodes);
   for (int i = 0; i < literals_.size(); ++i) {
     arcs_by_lit_[literals_[i]].push_back(i);
   }
@@ -1652,6 +1670,15 @@ void CompiledCircuitConstraint::PerformMove(
   UpdateGraph(var, new_solution[var]);
   violation_ = ViolationForCurrentGraph();
   std::swap(committed_sccs_, sccs_);
+}
+
+void CompiledCircuitConstraint::UpdateStateWhenUnenforced(
+    absl::Span<const int64_t> solution) {
+  InitGraph(solution);
+  const int num_nodes = graph_.size();
+  committed_sccs_.reset(num_nodes);
+  scc_finder_.FindStronglyConnectedComponents(num_nodes, graph_,
+                                              &committed_sccs_);
 }
 
 int64_t CompiledCircuitConstraint::ComputeViolationWhenEnforced(
@@ -1708,25 +1735,27 @@ int64_t CompiledCircuitConstraint::ViolationForCurrentGraph() {
 void AddCircuitFlowConstraints(LinearIncrementalEvaluator& linear_evaluator,
                                const ConstraintProto& ct_proto) {
   const bool routes = ct_proto.has_routes();
-  auto heads = routes ? ct_proto.routes().heads() : ct_proto.circuit().heads();
-  auto tails = routes ? ct_proto.routes().tails() : ct_proto.circuit().tails();
-  auto literals =
+  absl::Span<const int> literals =
       routes ? ct_proto.routes().literals() : ct_proto.circuit().literals();
 
-  std::vector<std::vector<int>> inflow_lits;
-  std::vector<std::vector<int>> outflow_lits;
+  std::vector<int> heads;
+  std::vector<int> tails;
+  const int num_nodes = ExtractAndReindexArcs(ct_proto, tails, heads);
+
+  if (heads.empty()) return;
+
+  std::vector<std::vector<int>> inflow_lits(num_nodes);
+  std::vector<std::vector<int>> outflow_lits(num_nodes);
   for (int i = 0; i < heads.size(); ++i) {
-    if (heads[i] >= inflow_lits.size()) {
-      inflow_lits.resize(heads[i] + 1);
-    }
     inflow_lits[heads[i]].push_back(literals[i]);
-    if (tails[i] >= outflow_lits.size()) {
-      outflow_lits.resize(tails[i] + 1);
-    }
     outflow_lits[tails[i]].push_back(literals[i]);
   }
+  auto enforcement_literals = ct_proto.enforcement_literal();
   if (routes) {
     const int depot_net_flow = linear_evaluator.NewConstraint({0, 0});
+    for (const int lit : enforcement_literals) {
+      linear_evaluator.AddEnforcementLiteral(depot_net_flow, lit);
+    }
     for (const int lit : inflow_lits[0]) {
       linear_evaluator.AddLiteral(depot_net_flow, lit, 1);
     }
@@ -1736,12 +1765,18 @@ void AddCircuitFlowConstraints(LinearIncrementalEvaluator& linear_evaluator,
   }
   for (int i = routes ? 1 : 0; i < inflow_lits.size(); ++i) {
     const int inflow_ct = linear_evaluator.NewConstraint({1, 1});
+    for (const int lit : enforcement_literals) {
+      linear_evaluator.AddEnforcementLiteral(inflow_ct, lit);
+    }
     for (const int lit : inflow_lits[i]) {
       linear_evaluator.AddLiteral(inflow_ct, lit);
     }
   }
   for (int i = routes ? 1 : 0; i < outflow_lits.size(); ++i) {
     const int outflow_ct = linear_evaluator.NewConstraint({1, 1});
+    for (const int lit : enforcement_literals) {
+      linear_evaluator.AddEnforcementLiteral(outflow_ct, lit);
+    }
     for (const int lit : outflow_lits[i]) {
       linear_evaluator.AddLiteral(outflow_ct, lit);
     }
@@ -1991,6 +2026,16 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
     }
     case ConstraintProto::ConstraintCase::kCumulative: {
       LinearExpressionProto capacity = ct.cumulative().capacity();
+      if (ExprMin(capacity, cp_model_) < 0) {
+        const int ct_index =
+            linear_evaluator_.NewConstraint(Domain(0, kint64max));
+        for (const int lit : ct.enforcement_literal()) {
+          linear_evaluator_.AddEnforcementLiteral(ct_index, lit);
+        }
+        linear_evaluator_.AddLinearExpression(ct_index, capacity, 1);
+      }
+      const int num_intervals = ct.cumulative().intervals().size();
+      if (num_intervals == 0) break;
       std::vector<int> enforcement_literals;
       for (const int lit : ct.enforcement_literal()) {
         enforcement_literals.push_back(lit);
@@ -1998,7 +2043,6 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
       std::vector<std::optional<int>> is_active;
       std::vector<LinearExpressionProto> times;
       std::vector<LinearExpressionProto> demands;
-      const int num_intervals = ct.cumulative().intervals().size();
       for (int i = 0; i < num_intervals; ++i) {
         const ConstraintProto& interval_ct =
             cp_model_.constraints(ct.cumulative().intervals(i));

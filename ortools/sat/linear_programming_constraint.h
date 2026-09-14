@@ -195,7 +195,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // PropagatorInterface API.
   bool Propagate() override;
-  bool IncrementalPropagate(const std::vector<int>& watch_indices) override;
+  bool IncrementalPropagate(absl::Span<const int> watch_indices) override;
   void RegisterWith(Model* model);
 
   // ReversibleInterface API.

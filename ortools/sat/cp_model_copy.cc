@@ -1212,6 +1212,8 @@ bool ModelCopy::CopyLinMax(const ConstraintProto& ct) {
 }
 
 bool ModelCopy::CopyCircuit(const ConstraintProto& ct) {
+  if (ct.circuit().tails().empty()) return true;
+
   ConstraintProto* new_ct = working_model_->add_constraints();
   FinishEnforcementCopy(new_ct);
   *new_ct->mutable_circuit()->mutable_tails() = ct.circuit().tails();

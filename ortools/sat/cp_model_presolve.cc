@@ -3368,6 +3368,11 @@ void CpModelPresolver::DetectDuplicateColumns() {
     if (appear_in_amo[var]) {
       domain = domain.IntersectionWith(Domain(0, 1));
     }
+    if (domain.IsEmpty()) {
+      (void)context_->NotifyThatModelIsUnsat(
+          "duplicate: empty domain for the sum of variables");
+      return;
+    }
     const int new_var = context_->NewIntVarWithDefinition(
         domain, definition, /*append_constraint_to_mapping_model=*/true);
     if (new_var == -1) {
