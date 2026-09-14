@@ -23,14 +23,14 @@ public enum CallbackEvent {
   /**
    * The solver is currently running presolve.
    *
-   * <p>This event is supported only for {@link SolverType#GUROBI}.
+   * <p>This event is supported only for {@link SolverType#GUROBI} and {@link SolverType#XPRESS}.
    */
   PRESOLVE(CallbackEventProto.CALLBACK_EVENT_PRESOLVE),
 
   /**
    * The solver is currently running the simplex method.
    *
-   * <p>This event is supported only for {@link SolverType#GUROBI}.
+   * <p>This event is supported only for {@link SolverType#GUROBI} and {@link SolverType#XPRESS}.
    */
   SIMPLEX(CallbackEventProto.CALLBACK_EVENT_SIMPLEX),
 
@@ -40,17 +40,22 @@ public enum CallbackEvent {
    * <p>Useful for early termination. Note that this event does not provide information on LP
    * relaxations nor about new incumbent solutions.
    *
-   * <p>This event is fully supported for MIP models by {@link SolverType#GUROBI}. If used with
-   * {@link SolverType#CP_SAT}, it is called when the dual bound is improved.
+   * <p>This event is fully supported for MIP models by {@link SolverType#GUROBI} and {@link
+   * SolverType#XPRESS}. If used with {@link SolverType#CP_SAT}, it is called when the dual bound is
+   * improved.
    */
   MIP(CallbackEventProto.CALLBACK_EVENT_MIP),
 
   /**
    * Called every time a new MIP incumbent is found.
    *
-   * <p>This event is fully supported for MIP models by {@link SolverType#GUROBI}. SolverType.CP_SAT
-   * has partial support: you can view the solutions and request termination, but you cannot add
-   * lazy constraints. Other solvers don't support this event.
+   * <p>This event is fully supported for MIP models by {@link SolverType#GUROBI} and {@link
+   * SolverType#XPRESS}. {@link SolverType#CP_SAT} has partial support: you can view the solutions
+   * and request termination, but you cannot add lazy constraints. Other solvers don't support this
+   * event.
+   *
+   * <p>It is solver-dependent whether termination from this event still collects the solution for
+   * which the callback was called.
    */
   MIP_SOLUTION(CallbackEventProto.CALLBACK_EVENT_MIP_SOLUTION),
 
@@ -63,14 +68,17 @@ public enum CallbackEvent {
    * <p>Disabling cuts using {@link SolveParameters} may interfere with this event being called
    * and/or adding cuts at this event, the behavior is solver specific.
    *
-   * <p>This event is supported for MIP models with {@link SolverType#GUROBI} only.
+   * <p>This event is supported for MIP models with {@link SolverType#GUROBI} and {@link
+   * SolverType#XPRESS} only. For Xpress, disabling cuts will prevent this event. To disable cuts
+   * and still get this event called for Xpress, disable cuts by setting COVERCUTS, GOMCUTS,
+   * TREECOVERCUTS, TREEGOMCUTS to 0.
    */
   MIP_NODE(CallbackEventProto.CALLBACK_EVENT_MIP_NODE),
 
   /**
    * Called in each iterate of an interior point/barrier method.
    *
-   * <p>This event is supported for {@link SolverType#GUROBI} only.
+   * <p>This event is supported for {@link SolverType#GUROBI} and {@link SolverType#XPRESS} only.
    */
   BARRIER(CallbackEventProto.CALLBACK_EVENT_BARRIER);
 

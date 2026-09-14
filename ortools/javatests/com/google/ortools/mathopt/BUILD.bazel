@@ -13,9 +13,12 @@
 
 load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
 
+package(default_visibility = ["//visibility:public"])
+
 java_junit5_test(
     name = "ModelIdTest",
     srcs = ["ModelIdTest.java"],
+    test_class = "com.google.ortools.mathopt.ModelIdTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:model_id",
@@ -31,6 +34,7 @@ java_junit5_test(
 java_junit5_test(
     name = "SparseContainersTest",
     srcs = ["SparseContainersTest.java"],
+    test_class = "com.google.ortools.mathopt.SparseContainersTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:model_element",
@@ -49,6 +53,7 @@ java_junit5_test(
 java_junit5_test(
     name = "VariableTest",
     srcs = ["VariableTest.java"],
+    test_class = "com.google.ortools.mathopt.VariableTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:hash_linear_expression",
@@ -69,6 +74,7 @@ java_junit5_test(
 java_junit5_test(
     name = "VariablesTest",
     srcs = ["VariablesTest.java"],
+    test_class = "com.google.ortools.mathopt.VariablesTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:model_id",
@@ -89,6 +95,7 @@ java_junit5_test(
 java_junit5_test(
     name = "LinearConstraintTest",
     srcs = ["LinearConstraintTest.java"],
+    test_class = "com.google.ortools.mathopt.LinearConstraintTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:hash_linear_expression",
@@ -111,6 +118,7 @@ java_junit5_test(
 java_junit5_test(
     name = "IndicatorConstraintTest",
     srcs = ["IndicatorConstraintTest.java"],
+    test_class = "com.google.ortools.mathopt.IndicatorConstraintTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:indicator_constraint",
@@ -132,6 +140,7 @@ java_junit5_test(
 java_junit5_test(
     name = "IndicatorConstraintsTest",
     srcs = ["IndicatorConstraintsTest.java"],
+    test_class = "com.google.ortools.mathopt.IndicatorConstraintsTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:expressions",
@@ -155,6 +164,7 @@ java_junit5_test(
 java_junit5_test(
     name = "MergeTest",
     srcs = ["MergeTest.java"],
+    test_class = "com.google.ortools.mathopt.MergeTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:merge",
@@ -171,6 +181,7 @@ java_junit5_test(
 java_junit5_test(
     name = "ObjectiveTest",
     srcs = ["ObjectiveTest.java"],
+    test_class = "com.google.ortools.mathopt.ObjectiveTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:expressions",
@@ -194,6 +205,7 @@ java_junit5_test(
 java_junit5_test(
     name = "AuxiliaryObjectiveTest",
     srcs = ["AuxiliaryObjectiveTest.java"],
+    test_class = "com.google.ortools.mathopt.AuxiliaryObjectiveTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:auxiliary_objective",
@@ -214,6 +226,7 @@ java_junit5_test(
 java_junit5_test(
     name = "LinearConstraintsTest",
     srcs = ["LinearConstraintsTest.java"],
+    test_class = "com.google.ortools.mathopt.LinearConstraintsTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:linear_constraint",
@@ -236,6 +249,7 @@ java_junit5_test(
 java_junit5_test(
     name = "LinearConstraintsUpdateTest",
     srcs = ["LinearConstraintsUpdateTest.java"],
+    test_class = "com.google.ortools.mathopt.LinearConstraintsUpdateTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:linear_constraint",
@@ -258,6 +272,7 @@ java_junit5_test(
 java_junit5_test(
     name = "ModelTest",
     srcs = ["ModelTest.java"],
+    test_class = "com.google.ortools.mathopt.ModelTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:auxiliary_objective",
@@ -286,6 +301,7 @@ java_junit5_test(
 java_junit5_test(
     name = "JniSolverTest",
     srcs = ["JniSolverTest.java"],
+    test_class = "com.google.ortools.mathopt.JniSolverTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt/testing:string_correspondences",
@@ -314,6 +330,7 @@ java_junit5_test(
 java_junit5_test(
     name = "BasisTest",
     srcs = ["BasisTest.java"],
+    test_class = "com.google.ortools.mathopt.BasisTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:basis",
@@ -336,6 +353,7 @@ java_junit5_test(
 java_junit5_test(
     name = "SolutionStatusTest",
     srcs = ["SolutionStatusTest.java"],
+    test_class = "com.google.ortools.mathopt.SolutionStatusTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:solution_status",
@@ -352,6 +370,7 @@ java_junit5_test(
 java_junit5_test(
     name = "SolutionTest",
     srcs = ["SolutionTest.java"],
+    test_class = "com.google.ortools.mathopt.SolutionTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:basis",
@@ -373,6 +392,7 @@ java_junit5_test(
 java_junit5_test(
     name = "UtilFromProtoTest",
     srcs = ["UtilFromProtoTest.java"],
+    test_class = "com.google.ortools.mathopt.UtilFromProtoTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:linear_constraint",
@@ -392,6 +412,7 @@ java_junit5_test(
 java_junit5_test(
     name = "SolveResultTest",
     srcs = ["SolveResultTest.java"],
+    test_class = "com.google.ortools.mathopt.SolveResultTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:basis",
@@ -416,6 +437,7 @@ java_junit5_test(
 java_junit5_test(
     name = "ObjectivesTest",
     srcs = ["ObjectivesTest.java"],
+    test_class = "com.google.ortools.mathopt.ObjectivesTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:auxiliary_objective",
@@ -441,6 +463,7 @@ java_junit5_test(
 java_junit5_test(
     name = "SolverTypeTest",
     srcs = ["SolverTypeTest.java"],
+    test_class = "com.google.ortools.mathopt.SolverTypeTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:solver_type",
@@ -457,6 +480,7 @@ java_junit5_test(
 java_junit5_test(
     name = "SolveTest",
     srcs = ["SolveTest.java"],
+    test_class = "com.google.ortools.mathopt.SolveTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:basis",
@@ -495,6 +519,7 @@ java_junit5_test(
 java_junit5_test(
     name = "SolveParametersTest",
     srcs = ["SolveParametersTest.java"],
+    test_class = "com.google.ortools.mathopt.SolveParametersTest",
     deps = [
         "//ortools/glop:parameters_java_proto",
         "//ortools/java/com/google/ortools:Loader",
@@ -520,6 +545,7 @@ java_junit5_test(
 java_junit5_test(
     name = "ScopedCppMessageCallbackTest",
     srcs = ["ScopedCppMessageCallbackTest.java"],
+    test_class = "com.google.ortools.mathopt.ScopedCppMessageCallbackTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:scoped_cpp_message_callback",
@@ -543,6 +569,7 @@ java_junit5_test(
 java_junit5_test(
     name = "CallbackEventTest",
     srcs = ["CallbackEventTest.java"],
+    test_class = "com.google.ortools.mathopt.CallbackEventTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:callback_event",
@@ -559,6 +586,7 @@ java_junit5_test(
 java_junit5_test(
     name = "CallbackResultTest",
     srcs = ["CallbackResultTest.java"],
+    test_class = "com.google.ortools.mathopt.CallbackResultTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:callback_result",
@@ -581,6 +609,7 @@ java_junit5_test(
 java_junit5_test(
     name = "CallbackDataTest",
     srcs = ["CallbackDataTest.java"],
+    test_class = "com.google.ortools.mathopt.CallbackDataTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:callback_data",
@@ -604,6 +633,7 @@ java_junit5_test(
 java_junit5_test(
     name = "CallbackRegistrationTest",
     srcs = ["CallbackRegistrationTest.java"],
+    test_class = "com.google.ortools.mathopt.CallbackRegistrationTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:callback_event",
@@ -623,6 +653,7 @@ java_junit5_test(
 java_junit5_test(
     name = "HashLinearExpressionTest",
     srcs = ["HashLinearExpressionTest.java"],
+    test_class = "com.google.ortools.mathopt.HashLinearExpressionTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:hash_linear_expression",
@@ -641,6 +672,7 @@ java_junit5_test(
 java_junit5_test(
     name = "LinearConstraintsAddConstraintOverloadTest",
     srcs = ["LinearConstraintsAddConstraintOverloadTest.java"],
+    test_class = "com.google.ortools.mathopt.LinearConstraintsAddConstraintOverloadTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:expressions",
@@ -662,6 +694,7 @@ java_junit5_test(
 java_junit5_test(
     name = "ModelAddLinearConstraintOverloadsTest",
     srcs = ["ModelAddLinearConstraintOverloadsTest.java"],
+    test_class = "com.google.ortools.mathopt.ModelAddLinearConstraintOverloadsTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:expressions",
@@ -681,6 +714,7 @@ java_junit5_test(
 java_junit5_test(
     name = "ExpressionsTest",
     srcs = ["ExpressionsTest.java"],
+    test_class = "com.google.ortools.mathopt.ExpressionsTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:expressions",
@@ -700,6 +734,7 @@ java_junit5_test(
 java_junit5_test(
     name = "ScopedCppSolveCallbackTest",
     srcs = ["ScopedCppSolveCallbackTest.java"],
+    test_class = "com.google.ortools.mathopt.ScopedCppSolveCallbackTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:scoped_cpp_solve_callback",
@@ -723,6 +758,7 @@ java_junit5_test(
 java_junit5_test(
     name = "ModelSolveParametersTest",
     srcs = ["ModelSolveParametersTest.java"],
+    test_class = "com.google.ortools.mathopt.ModelSolveParametersTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:basis",
@@ -747,6 +783,7 @@ java_junit5_test(
 java_junit5_test(
     name = "MathOptInternalExceptionTest",
     srcs = ["MathOptInternalExceptionTest.java"],
+    test_class = "com.google.ortools.mathopt.MathOptInternalExceptionTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:math_opt_internal_exception",
@@ -763,6 +800,7 @@ java_junit5_test(
     name = "ErrorsTest",
     size = "small",
     srcs = ["ErrorsTest.java"],
+    test_class = "com.google.ortools.mathopt.ErrorsTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:errors",

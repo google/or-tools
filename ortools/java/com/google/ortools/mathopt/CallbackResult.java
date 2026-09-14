@@ -55,6 +55,12 @@ public final class CallbackResult {
   /**
    * Suggest a complete or partial solution to the solver, can be called from {@link
    * CallbackEvent#MIP_NODE} or {@link CallbackEvent#MIP_SOLUTION}.
+   *
+   * <p>Note that some solvers (e.g. {@link SolverType#GUROBI} or {@link SolverType#XPRESS}) support
+   * partially-defined solutions. The most common use case is to specify a value for each variable
+   * in the model. If a variable is not present in the primal solution, its value is taken to be
+   * undefined, and it is up to the underlying solver to deal with it. For example, Gurobi or Xpress
+   * will try to solve a Sub-MIP to get a fully feasible solution if necessary.
    */
   public void suggestSolution(ImmutableMap<Variable, Double> variableValues) {
     suggestedSolutions.add(variableValues);
@@ -68,6 +74,9 @@ public final class CallbackResult {
    * any integer points infeasible. User cuts cannot affect the feasibility of a solution, they only
    * improve the quality of the LP relaxation. They can be discarded by the underlying solver,
    * immediately or at any point while solving.
+   *
+   * <p>The constraint must be globally valid (and not only valid for the subtree rooted at the MIP
+   * search node at which the event was triggered).
    */
   public void addUserCut(
       double lowerBound, ImmutableMap<Variable, Double> linearTerms, double upperBound) {
@@ -179,6 +188,9 @@ public final class CallbackResult {
    * solution. Lazy constraints may be discarded or temporarily ignored by the underlying solver,
    * but solvers must always give a final chance to mark solutions infeasible on event {@link
    * CallbackEvent#MIP_SOLUTION}.
+   *
+   * <p>The constraint must be globally valid (and not only valid for the subtree rooted at the MIP
+   * search node at which the event was triggered).
    *
    * <p>{@link CallbackRegistration#getAddLazyConstraints()} must be true to add lazy constraints.
    */
@@ -299,6 +311,7 @@ public final class CallbackResult {
 
   private static final class GeneratedLinearConstraint {
     final double lowerBound;
+
     /** Must not be modified. Triggers an exception otherwise. */
     final Iterable<Map.Entry<Variable, Double>> linearTerms;
 
