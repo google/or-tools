@@ -1,5 +1,5 @@
 # ref: https://hub.docker.com/_/ubuntu
-FROM ubuntu:24.10
+FROM ubuntu:26.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -qq \
@@ -15,6 +15,6 @@ RUN apt-get update -qq \
 ENV JAVA_HOME=/usr/lib/jvm/java-openjdk
 
 WORKDIR /root
-ADD or-tools_amd64_ubuntu-24.10_java_v*.tar.gz .
+ADD or-tools_amd64_ubuntu-26.04_java_v*.tar.gz .
 
 RUN cd or-tools_*_v* && make test
