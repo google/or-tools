@@ -23,7 +23,7 @@ pybind_extension(
     srcs = ["pdlp.cc"],
     copts = ORTOOLS_DEFAULT_COPTS,
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
-    visibility = ["//visibility:public"],  # Scheuklappen: keep
+    visibility = ["//visibility:public"],
     deps = [
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/pdlp:primal_dual_hybrid_gradient",
