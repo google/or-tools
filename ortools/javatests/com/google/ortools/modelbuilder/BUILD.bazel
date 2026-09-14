@@ -13,6 +13,8 @@
 
 load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
 
+package(default_visibility = ["//visibility:public"])
+
 # Testing the Java ModelBuilder library.
 java_junit5_test(
     name = "ModelBuilderTest",
@@ -22,6 +24,7 @@ java_junit5_test(
         "not_build:arm",
         "not_run:arm",
     ],
+    test_class = "com.google.ortools.modelbuilder.ModelBuilderTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/modelbuilder",

@@ -197,7 +197,8 @@ public final class Solve {
      * the solver and informs what actions the user is allowed to take. The callback will only be
      * invoked on events listed in {@link #getCallbackRegistration()}.
      *
-     * <p>Some solvers may invoke the callback from multiple threads (Gurobi will not).
+     * <p>Some solvers may invoke the callback from multiple threads (SCIP and Xpress will, Gurobi
+     * will not).
      */
     public Optional<Function<CallbackData, CallbackResult>> getCallback() {
       return callback;

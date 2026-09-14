@@ -24,9 +24,10 @@ import com.google.ortools.routing.Model;
 import com.google.ortools.routing.RoutingSearchParameters;
 import com.google.ortools.routing.RoutingSearchStatus;
 import java.util.logging.Logger;
+
 // [END import]
 
-/** Minimal VRP.*/
+/** Minimal VRP. */
 public class Vrp {
   private static final Logger logger = Logger.getLogger(Vrp.class.getName());
 
@@ -92,6 +93,7 @@ public class Vrp {
     }
     logger.info("Total Distance of all routes: " + totalDistance + "m");
   }
+
   // [END solution_printer]
 
   public static void main(String[] args) throws Exception {

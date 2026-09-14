@@ -14,6 +14,7 @@
 // [START program]
 // Solve a multiple knapsack problem using a MIP solver.
 package com.google.ortools.linearsolver.samples;
+
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.linearsolver.MPConstraint;
@@ -21,6 +22,7 @@ import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
 import java.util.stream.IntStream;
+
 // [END import]
 
 /** Multiple knapsack problem. */

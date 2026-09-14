@@ -141,7 +141,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var constraint = new LinearConstraint(
-        /* lowerBound= */ 1.0, /* upperBound= */ 2.0, /*id=*/3L, "c", listener, modelId);
+        /* lowerBound= */ 1.0, /* upperBound= */ 2.0, /* id= */ 3L, "c", listener, modelId);
 
     assertThat(constraint.getLowerBound()).isEqualTo(1.0);
     assertThat(constraint.getUpperBound()).isEqualTo(2.0);
@@ -158,7 +158,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var constraint = new LinearConstraint(
-        /* lowerBound= */ 1.0, /* upperBound= */ 2.0, /*id=*/3L, "c", listener, modelId);
+        /* lowerBound= */ 1.0, /* upperBound= */ 2.0, /* id= */ 3L, "c", listener, modelId);
 
     assertThat(constraint.setLowerBound(-2.0)).isSameInstanceAs(constraint);
 
@@ -172,7 +172,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var constraint = new LinearConstraint(
-        /* lowerBound= */ 1.0, /* upperBound= */ 2.0, /*id=*/3L, "c", listener, modelId);
+        /* lowerBound= */ 1.0, /* upperBound= */ 2.0, /* id= */ 3L, "c", listener, modelId);
 
     assertThat(constraint.setLowerBound(1.0)).isSameInstanceAs(constraint);
 
@@ -185,7 +185,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var constraint = new LinearConstraint(
-        /* lowerBound= */ 1.0, /* upperBound= */ 2.0, /*id=*/3L, "c", listener, modelId);
+        /* lowerBound= */ 1.0, /* upperBound= */ 2.0, /* id= */ 3L, "c", listener, modelId);
 
     assertThat(constraint.setUpperBound(4.0)).isSameInstanceAs(constraint);
 
@@ -199,7 +199,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var constraint = new LinearConstraint(
-        /* lowerBound= */ 1.0, /* upperBound= */ 2.0, /*id=*/3L, "c", listener, modelId);
+        /* lowerBound= */ 1.0, /* upperBound= */ 2.0, /* id= */ 3L, "c", listener, modelId);
 
     assertThat(constraint.setUpperBound(2.0)).isSameInstanceAs(constraint);
 
@@ -212,7 +212,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var c = new LinearConstraint(
-        /* lowerBound= */ 1.0, /* upperBound= */ 2.0, /*id=*/3L, "c", listener, modelId);
+        /* lowerBound= */ 1.0, /* upperBound= */ 2.0, /* id= */ 3L, "c", listener, modelId);
     var variables = new Variables(modelId);
     Variable x = variables.addVariable("x");
 
@@ -229,7 +229,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var c = new LinearConstraint(
-        /* lowerBound= */ 1.0, /* upperBound= */ 2.0, /*id=*/3L, "c", listener, modelId);
+        /* lowerBound= */ 1.0, /* upperBound= */ 2.0, /* id= */ 3L, "c", listener, modelId);
     var variables = new Variables(modelId);
     Variable x = variables.addVariable("x");
 
@@ -245,7 +245,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var c = new LinearConstraint(
-        /* lowerBound= */ 1.0, /* upperBound= */ 2.0, /*id=*/3L, "c", listener, modelId);
+        /* lowerBound= */ 1.0, /* upperBound= */ 2.0, /* id= */ 3L, "c", listener, modelId);
     var variables = new Variables(modelId);
     Variable x = variables.addVariable("x");
     c.setTerm(x, 3.0);
@@ -264,7 +264,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var constraint = new LinearConstraint(
-        /* lowerBound= */ 1.0, /* upperBound= */ 2.0, /*id=*/3L, "c", listener, modelId);
+        /* lowerBound= */ 1.0, /* upperBound= */ 2.0, /* id= */ 3L, "c", listener, modelId);
     var variables = new Variables(modelId);
     Variable x = variables.addVariable("x");
     constraint.setTerm(x, 3.0);
@@ -283,7 +283,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var constraint = new LinearConstraint(
-        /* lowerBound= */ 1.0, /* upperBound= */ 2.0, /*id=*/3L, "c", listener, modelId);
+        /* lowerBound= */ 1.0, /* upperBound= */ 2.0, /* id= */ 3L, "c", listener, modelId);
     var variables = new Variables(modelId);
     Variable x = variables.addVariable("x");
     constraint.setTerm(x, 3.0);
@@ -301,7 +301,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var constraint = new LinearConstraint(
-        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /*id=*/34L, "", listener, modelId);
+        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /* id= */ 34L, "", listener, modelId);
 
     constraint.markDeleted();
 
@@ -313,7 +313,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var constraint = new LinearConstraint(
-        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /*id=*/34L, "c", listener, modelId);
+        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /* id= */ 34L, "c", listener, modelId);
     constraint.markDeleted();
 
     assertThat(assertThrows(IllegalArgumentException.class, () -> constraint.setLowerBound(-2.0)))
@@ -326,7 +326,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var constraint = new LinearConstraint(
-        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /*id=*/34L, "c", listener, modelId);
+        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /* id= */ 34L, "c", listener, modelId);
     constraint.markDeleted();
 
     assertThat(assertThrows(IllegalArgumentException.class, () -> constraint.setUpperBound(2.0)))
@@ -339,7 +339,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var constraint = new LinearConstraint(
-        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /*id=*/34L, "c", listener, modelId);
+        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /* id= */ 34L, "c", listener, modelId);
     var variables = new Variables(modelId);
     Variable x = variables.addVariable("x");
     constraint.markDeleted();
@@ -354,7 +354,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var constraint = new LinearConstraint(
-        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /*id=*/34L, "c", listener, modelId);
+        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /* id= */ 34L, "c", listener, modelId);
     var variables = new Variables(modelId);
     Variable x = variables.addVariable("x");
     variables.deleteVariable(x);
@@ -369,7 +369,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var constraint = new LinearConstraint(
-        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /*id=*/34L, "c", listener, modelId);
+        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /* id= */ 34L, "c", listener, modelId);
     var modelId2 = new ModelId("test_model2");
     var variables = new Variables(modelId2);
     Variable x = variables.addVariable("x");
@@ -384,7 +384,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var constraint = new LinearConstraint(
-        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /*id=*/34L, "c", listener, modelId);
+        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /* id= */ 34L, "c", listener, modelId);
     var modelId2 = new ModelId("test_model2");
     var variables = new Variables(modelId2);
     Variable x = variables.addVariable("x");
@@ -399,7 +399,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var constraint = new LinearConstraint(
-        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /*id=*/34L, "", listener, modelId);
+        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /* id= */ 34L, "", listener, modelId);
 
     assertThat(constraint.toString()).contains("34");
   }
@@ -409,7 +409,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var constraint = new LinearConstraint(
-        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /*id=*/34L, "agj", listener, modelId);
+        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /* id= */ 34L, "agj", listener, modelId);
 
     assertThat(constraint.toString()).isEqualTo("agj");
   }
@@ -419,7 +419,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var constraint = new LinearConstraint(
-        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /*id=*/3L, "c", listener, modelId);
+        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /* id= */ 3L, "c", listener, modelId);
     var linearConstraintProto = LinearConstraintsProto.newBuilder();
 
     constraint.appendToProto(linearConstraintProto);
@@ -439,7 +439,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var constraint = new LinearConstraint(
-        /* lowerBound= */ -1.0, /* upperBound= */ 1.0, /*id=*/3L, "agj", listener, modelId);
+        /* lowerBound= */ -1.0, /* upperBound= */ 1.0, /* id= */ 3L, "agj", listener, modelId);
     assertThat(constraint.toCompleteString()).isEqualTo("agj: -1.0 ≤ 0.0 ≤ 1.0");
   }
 
@@ -448,7 +448,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var constraint = new LinearConstraint(
-        /* lowerBound= */ -1.0, /* upperBound= */ 1.0, /*id=*/3L, "agj", listener, modelId);
+        /* lowerBound= */ -1.0, /* upperBound= */ 1.0, /* id= */ 3L, "agj", listener, modelId);
     constraint.markDeleted();
     assertThat(constraint.toCompleteString()).isEqualTo("agj: -1.0 ≤ 0.0 ≤ 1.0 (deleted)");
   }
@@ -458,7 +458,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var constraint = new LinearConstraint(
-        /* lowerBound= */ -1.0, /* upperBound= */ 1.0, /*id=*/3L, "agj", listener, modelId);
+        /* lowerBound= */ -1.0, /* upperBound= */ 1.0, /* id= */ 3L, "agj", listener, modelId);
     var variables = new Variables(modelId);
     Variable x = variables.addVariable("x");
     Variable y = variables.addVariable("y");
@@ -474,7 +474,7 @@ public final class LinearConstraintTest {
     var constraint = new LinearConstraint(
         /* lowerBound= */ Double.NaN,
         /* upperBound= */ Double.NaN,
-        /*id=*/3L, "agj", listener, modelId);
+        /* id= */ 3L, "agj", listener, modelId);
     var variables = new Variables(modelId);
     Variable x = variables.addVariable("x");
     Variable y = variables.addVariable("y");
@@ -488,7 +488,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var constraint = new LinearConstraint(
-        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /*id=*/3L, "c", listener, modelId);
+        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /* id= */ 3L, "c", listener, modelId);
     var variables = new Variables(modelId);
     Variable x = variables.addVariable("x");
     Variable y = variables.addVariable("y");
@@ -506,7 +506,7 @@ public final class LinearConstraintTest {
     var modelId = new ModelId("test_model");
     var listener = new TestListener();
     var constraint = new LinearConstraint(
-        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /*id=*/3L, "c", listener, modelId);
+        /* lowerBound= */ 0.0, /* upperBound= */ 1.0, /* id= */ 3L, "c", listener, modelId);
     var variables = new Variables(modelId);
     Variable x = variables.addVariable("x");
     Variable y = variables.addVariable("y");

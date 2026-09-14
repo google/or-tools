@@ -13,10 +13,13 @@
 
 load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
 
+package(default_visibility = ["//visibility:public"])
+
 java_junit5_test(
     name = "SortedIntervalListTest",
     size = "medium",
     srcs = ["SortedIntervalListTest.java"],
+    test_class = "com.google.ortools.util.SortedIntervalListTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/util/java:sorted_interval_list",
@@ -32,6 +35,7 @@ java_junit5_test(
 java_junit5_test(
     name = "SolveInterrupterTest",
     srcs = ["SolveInterrupterTest.java"],
+    test_class = "com.google.ortools.util.SolveInterrupterTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/util:solve_interrupter",
@@ -48,6 +52,7 @@ java_junit5_test(
     name = "ProtoDurationConversionTest",
     size = "small",
     srcs = ["ProtoDurationConversionTest.java"],
+    test_class = "com.google.ortools.util.ProtoDurationConversionTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/util:proto_duration_conversion",
@@ -64,6 +69,7 @@ java_junit5_test(
 java_junit5_test(
     name = "ScopedSwigInterrupterTest",
     srcs = ["ScopedSwigInterrupterTest.java"],
+    test_class = "com.google.ortools.util.ScopedSwigInterrupterTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/util:scoped_swig_interrupter",
