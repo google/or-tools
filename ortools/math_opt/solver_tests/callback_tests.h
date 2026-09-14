@@ -113,7 +113,8 @@ struct CallbackTestParams {
   // Returns true if model_class uses integer variables (i.e., is `kIp`).
   bool uses_integer_variables() const;
 
-  // Parameters that are set for every solve.
+  // Parameters that are set for every solve but the ones using
+  // reaches_cut_callback.
   std::optional<SolveParameters> solve_parameters;
 
   friend std::ostream& operator<<(std::ostream& out,
