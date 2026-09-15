@@ -12,19 +12,15 @@
 # limitations under the License.
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_python//python:py_test.bzl", "py_test")
-load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_test")
 load("//tools/testing:bintest.bzl", "bintest")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_test(
+or_cc_test(
     name = "assignment_linear_sum_assignment_test",
     srcs = ["assignment_linear_sum_assignment.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -44,11 +40,9 @@ py_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "assignment_min_flow_test",
     srcs = ["assignment_min_flow.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -65,11 +59,9 @@ py_test(
     deps = ["//ortools/graph/python:min_cost_flow"],
 )
 
-cc_test(
+or_cc_test(
     name = "balance_min_flow_test",
     srcs = ["balance_min_flow.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -86,11 +78,9 @@ py_test(
     deps = ["//ortools/graph/python:min_cost_flow"],
 )
 
-cc_test(
+or_cc_test(
     name = "simple_max_flow_program_test",
     srcs = ["simple_max_flow_program.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -110,11 +100,9 @@ py_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "simple_min_cost_flow_program_test",
     srcs = ["simple_min_cost_flow_program.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -134,11 +122,9 @@ py_test(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "root_a_tree",
     srcs = ["root_a_tree.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/graph:rooted_tree",
@@ -156,11 +142,9 @@ bintest(
     named_data = {"root_a_tree": ":root_a_tree"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "rooted_tree_paths",
     srcs = ["rooted_tree_paths.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/graph:rooted_tree",
@@ -177,11 +161,9 @@ bintest(
     named_data = {"rooted_tree_paths": ":rooted_tree_paths"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "dijkstra_directed",
     srcs = ["dijkstra_directed.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/graph:bounded_dijkstra",
@@ -195,11 +177,9 @@ bintest(
     named_data = {"dijkstra_directed": ":dijkstra_directed"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "dijkstra_undirected",
     srcs = ["dijkstra_undirected.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/graph:bounded_dijkstra",
@@ -213,11 +193,9 @@ bintest(
     named_data = {"dijkstra_undirected": ":dijkstra_undirected"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "dijkstra_one_to_all",
     srcs = ["dijkstra_one_to_all.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:types",
@@ -233,11 +211,9 @@ bintest(
     named_data = {"dijkstra_one_to_all": ":dijkstra_one_to_all"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "dijkstra_sequential",
     srcs = ["dijkstra_sequential.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:types",
@@ -254,11 +230,9 @@ bintest(
     named_data = {"dijkstra_sequential": ":dijkstra_sequential"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "dijkstra_all_pairs_shortest_paths",
     srcs = ["dijkstra_all_pairs_shortest_paths.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:types",
@@ -278,11 +252,9 @@ bintest(
     named_data = {"dijkstra_all_pairs_shortest_paths": ":dijkstra_all_pairs_shortest_paths"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "dag_simple_shortest_path",
     srcs = ["dag_simple_shortest_path.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/graph:dag_shortest_path",
@@ -296,11 +268,9 @@ bintest(
     named_data = {"dag_simple_shortest_path": ":dag_simple_shortest_path"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "dag_shortest_path_one_to_all",
     srcs = ["dag_shortest_path_one_to_all.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/graph:dag_shortest_path",
@@ -319,11 +289,9 @@ bintest(
     named_data = {"dag_shortest_path_one_to_all": ":dag_shortest_path_one_to_all"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "dag_shortest_path_sequential",
     srcs = ["dag_shortest_path_sequential.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/graph:dag_shortest_path",
@@ -338,11 +306,9 @@ bintest(
     named_data = {"dag_shortest_path_sequential": ":dag_shortest_path_sequential"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "dag_simple_multiple_shortest_paths",
     srcs = ["dag_simple_multiple_shortest_paths.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/graph:dag_shortest_path",
@@ -356,11 +322,9 @@ bintest(
     named_data = {"dag_simple_multiple_shortest_paths": ":dag_simple_multiple_shortest_paths"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "dag_multiple_shortest_paths_one_to_all",
     srcs = ["dag_multiple_shortest_paths_one_to_all.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/graph:dag_shortest_path",
@@ -379,11 +343,9 @@ bintest(
     named_data = {"dag_multiple_shortest_paths_one_to_all": ":dag_multiple_shortest_paths_one_to_all"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "dag_multiple_shortest_paths_sequential",
     srcs = ["dag_multiple_shortest_paths_sequential.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/graph:dag_shortest_path",
@@ -398,11 +360,9 @@ bintest(
     named_data = {"dag_multiple_shortest_paths_sequential": ":dag_multiple_shortest_paths_sequential"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "dag_simple_constrained_shortest_path",
     srcs = ["dag_simple_constrained_shortest_path.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/graph:dag_constrained_shortest_path",
@@ -417,11 +377,9 @@ bintest(
     named_data = {"dag_simple_constrained_shortest_path": ":dag_simple_constrained_shortest_path"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "dag_constrained_shortest_path_sequential",
     srcs = ["dag_constrained_shortest_path_sequential.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/graph:dag_constrained_shortest_path",

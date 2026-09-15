@@ -15,9 +15,7 @@
 
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
-load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
+load("//bazel:or_cc_rules.bzl", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -32,21 +30,17 @@ cc_proto_library(
     deps = [":capacity_planning_proto"],
 )
 
-cc_library(
+or_cc_library(
     name = "simple_graph",
     srcs = ["simple_graph.cc"],
     hdrs = ["simple_graph.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = ["@abseil-cpp//absl/hash"],
 )
 
-cc_test(
+or_cc_test(
     name = "simple_graph_test",
     size = "small",
     srcs = ["simple_graph_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":simple_graph",
         "//ortools/base:gmock_main",
@@ -54,12 +48,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solomon_parser",
     srcs = ["solomon_parser.cc"],
     hdrs = ["solomon_parser.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":simple_graph",
         "//ortools/base:map_util",
@@ -75,16 +67,14 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "solomon_parser_test",
     size = "small",
     srcs = ["solomon_parser_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
     data = [
         "//ortools/routing/parsers/testdata:c1_10_2-90-42222.96.txt",
         "//ortools/routing/parsers/testdata:solomon.zip",
     ],
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":solomon_parser",
         "//ortools/base:gmock_main",
@@ -94,12 +84,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "lilim_parser",
     srcs = ["lilim_parser.cc"],
     hdrs = ["lilim_parser.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":simple_graph",
         "//ortools/base:file",
@@ -112,16 +100,14 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "lilim_parser_test",
     size = "small",
     srcs = ["lilim_parser_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
     data = [
         "//ortools/routing/parsers/testdata:lilim.zip",
         "//ortools/routing/parsers/testdata:pdptw_LRC2_10_6.txt",
     ],
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lilim_parser",
         "//ortools/base:gmock_main",
@@ -132,12 +118,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "carp_parser",
     srcs = ["carp_parser.cc"],
     hdrs = ["carp_parser.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":simple_graph",
         "//ortools/base:numbers",
@@ -151,11 +135,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "carp_parser_test",
     size = "small",
     srcs = ["carp_parser_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
     data = [
         "//ortools/routing/parsers/testdata:carp_gdb19.dat",
         "//ortools/routing/parsers/testdata:carp_gdb19_diferente_deposito.dat",
@@ -171,7 +154,6 @@ cc_test(
         "//ortools/routing/parsers/testdata:carp_gdb19_mixed_arcs.dat",
         "//ortools/routing/parsers/testdata:carp_gdb19_no_arista_req.dat",
     ],
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":carp_parser",
         "//ortools/base:gmock_main",
@@ -182,12 +164,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "nearp_parser",
     srcs = ["nearp_parser.cc"],
     hdrs = ["nearp_parser.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":simple_graph",
         "//ortools/base:numbers",
@@ -200,16 +180,14 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "nearp_parser_test",
     size = "small",
     srcs = ["nearp_parser_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
     data = [
         "//ortools/routing/parsers/testdata:nearp_BHW1.dat",
         "//ortools/routing/parsers/testdata:nearp_toy.dat",
     ],
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":nearp_parser",
         ":simple_graph",
@@ -218,12 +196,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "pdtsp_parser",
     srcs = ["pdtsp_parser.cc"],
     hdrs = ["pdtsp_parser.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:gzipfile",
@@ -234,16 +210,14 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "pdtsp_parser_test",
     size = "small",
     srcs = ["pdtsp_parser_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
     data = [
         "//ortools/routing/parsers/testdata:pdtsp_prob10b.txt",
         "//ortools/routing/parsers/testdata:pdtsp_prob10b.txt.gz",
     ],
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":pdtsp_parser",
         "//ortools/base:gmock_main",
@@ -251,12 +225,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "tsplib_parser",
     srcs = ["tsplib_parser.cc"],
     hdrs = ["tsplib_parser.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":simple_graph",
@@ -282,18 +254,16 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "tsplib_parser_test",
     size = "small",
     timeout = "moderate",
     srcs = ["tsplib_parser_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
     data = [
         "//ortools/routing/parsers/testdata:solomon.zip",
         "//ortools/routing/parsers/testdata:tsplib_Kytojoki_33.vrp",
     ],
     flaky = 1,  # b/132942541
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":tsplib_parser",
         "//ortools/base:file",
@@ -310,12 +280,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "tsptw_parser",
     srcs = ["tsptw_parser.cc"],
     hdrs = ["tsptw_parser.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":simple_graph",
@@ -329,17 +297,15 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "tsptw_parser_test",
     size = "small",
     srcs = ["tsptw_parser_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
     data = [
         "//ortools/routing/parsers/testdata:n20w20.001.txt",
         "//ortools/routing/parsers/testdata:n20w20.002.txt",
         "//ortools/routing/parsers/testdata:rc201.0",
     ],
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":tsptw_parser",
         "//ortools/base:gmock_main",
@@ -347,12 +313,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solution_serializer",
     srcs = ["solution_serializer.cc"],
     hdrs = ["solution_serializer.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":simple_graph",
         "//ortools/base:file",
@@ -366,12 +330,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "solution_serializer_test",
     size = "small",
     srcs = ["solution_serializer_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     target_compatible_with = select({
         "@platforms//os:windows": ["@platforms//:incompatible"],
         "//conditions:default": [],
@@ -387,12 +349,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "cvrptw_lib",
     srcs = ["cvrptw_lib.cc"],
     hdrs = ["cvrptw_lib.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:strong_vector",
         "//ortools/base:types",
@@ -410,12 +370,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "dow_parser",
     srcs = ["dow_parser.cc"],
     hdrs = ["dow_parser.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":capacity_planning_cc_proto",
         "//ortools/base:file",

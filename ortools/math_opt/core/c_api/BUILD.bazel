@@ -11,20 +11,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
-load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library", "or_cc_test")
 load("//tools/testing:bintest.bzl", "bintest")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+or_cc_library(
     name = "solver",
     srcs = ["solver.cc"],
     hdrs = ["solver.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:status_builder",
         "//ortools/base:types",
@@ -41,11 +36,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "solver_test",
     srcs = ["solver_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":solver",
         "//ortools/base:gmock_main",
@@ -63,22 +56,18 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "solver_port_c_test",
     srcs = ["solver_port_c_test.c"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":solver",
         "//ortools/math_opt/solvers:glop_solver",
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "cpp_example",
     srcs = ["cpp_example.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":solver",
         "//ortools/base",

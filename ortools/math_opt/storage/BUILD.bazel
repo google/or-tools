@@ -11,43 +11,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
+load("//bazel:or_cc_rules.bzl", "or_cc_library")
 
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
-cc_library(
+or_cc_library(
     name = "model_storage_types",
     hdrs = ["model_storage_types.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:strong_int",
         "//ortools/math_opt/elemental:elements",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "range",
     hdrs = ["range.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
 )
 
-cc_library(
+or_cc_library(
     name = "iterators",
     hdrs = ["iterators.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [":range"],
 )
 
-cc_library(
+or_cc_library(
     name = "sparse_coefficient_map",
     srcs = ["sparse_coefficient_map.cc"],
     hdrs = ["sparse_coefficient_map.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model_storage_types",
         "//ortools/algorithms:multikey_radix_sort",
@@ -58,12 +49,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "sparse_matrix",
     srcs = ["sparse_matrix.cc"],
     hdrs = ["sparse_matrix.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model_storage_types",
         "//ortools/algorithms:multikey_radix_sort",
@@ -78,11 +67,9 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "linear_expression_data",
     hdrs = ["linear_expression_data.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":sparse_coefficient_map",
         "//ortools/math_opt:sparse_containers_cc_proto",
@@ -91,11 +78,9 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "update_trackers",
     hdrs = ["update_trackers.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model_storage_types",
         "//ortools/base:stl_util",
@@ -107,12 +92,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "variable_storage",
     srcs = ["variable_storage.cc"],
     hdrs = ["variable_storage.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model_storage_types",
         ":range",
@@ -129,12 +112,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "objective_storage",
     srcs = ["objective_storage.cc"],
     hdrs = ["objective_storage.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":range",
         ":sparse_coefficient_map",
@@ -156,12 +137,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "linear_constraint_storage",
     srcs = ["linear_constraint_storage.cc"],
     hdrs = ["linear_constraint_storage.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model_storage_types",
         ":range",
@@ -182,11 +161,9 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "atomic_constraint_storage",
     hdrs = ["atomic_constraint_storage.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model_storage_types",
         ":range",
@@ -202,17 +179,15 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "model_storage",
     srcs = select({
         "//conditions:default": ["model_storage.cc"],
     }),
     hdrs = ["model_storage.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
     defines = select({
         "//conditions:default": [],
     }),
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":atomic_constraint_storage",
         ":iterators",
@@ -248,12 +223,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "model_storage_item",
     srcs = ["model_storage_item.cc"],
     hdrs = ["model_storage_item.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model_storage",
         "//ortools/math_opt/elemental:elements",

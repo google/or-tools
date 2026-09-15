@@ -13,23 +13,19 @@
 
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("//bazel:compilation_flags.bzl", "SAFE_FP_CODE")
-load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library", "or_cc_test")
 load("//tools/testing:bintest.bzl", "bintest")
 
 package(default_visibility = ["//visibility:public"])
 
 ### Arc Flow ###
 
-cc_library(
+or_cc_library(
     name = "arc_flow_builder",
     srcs = ["arc_flow_builder.cc"],
     hdrs = ["arc_flow_builder.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         "//ortools/base:stl_util",
         "//ortools/graph_base:topologicalsorter",
@@ -40,12 +36,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "arc_flow_builder_test",
     size = "small",
     srcs = ["arc_flow_builder_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":arc_flow_builder",
         "//ortools/base:gmock_main",
@@ -53,12 +47,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "arc_flow_solver",
     srcs = ["arc_flow_solver.cc"],
     hdrs = ["arc_flow_solver.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":arc_flow_builder",
         ":vector_bin_packing_cc_proto",
@@ -77,12 +69,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "arc_flow_solver_test",
     size = "small",
     srcs = ["arc_flow_solver_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":arc_flow_solver",
         ":vector_bin_packing_cc_proto",
@@ -104,12 +94,10 @@ cc_proto_library(
     deps = [":vector_bin_packing_proto"],
 )
 
-cc_library(
+or_cc_library(
     name = "vector_bin_packing_parser",
     srcs = ["vector_bin_packing_parser.cc"],
     hdrs = ["vector_bin_packing_parser.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":vector_bin_packing_cc_proto",
         "//ortools/util:filelineiter",
@@ -119,16 +107,14 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "vector_bin_packing_parser_test",
     size = "small",
     srcs = ["vector_bin_packing_parser_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
     data = [
         "//ortools/packing/testdata:BPPC_5_0_10.vbp",
         "//ortools/packing/testdata:queen5_5.vbp",
     ],
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":vector_bin_packing_cc_proto",
         ":vector_bin_packing_parser",
@@ -138,11 +124,9 @@ cc_test(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "vector_bin_packing",
     srcs = ["vector_bin_packing_main.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":arc_flow_solver",
         ":vector_bin_packing_cc_proto",
@@ -182,12 +166,10 @@ cc_proto_library(
     deps = [":multiple_dimensions_bin_packing_proto"],
 )
 
-cc_library(
+or_cc_library(
     name = "binpacking_2d_parser",
     srcs = ["binpacking_2d_parser.cc"],
     hdrs = ["binpacking_2d_parser.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":multiple_dimensions_bin_packing_cc_proto",
         "//ortools/util:filelineiter",
@@ -196,13 +178,11 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "binpacking_2d_parser_test",
     size = "small",
     srcs = ["binpacking_2d_parser_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
     data = ["//ortools/packing/testdata:Class_01.2bp"],
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":binpacking_2d_parser",
         ":multiple_dimensions_bin_packing_cc_proto",
