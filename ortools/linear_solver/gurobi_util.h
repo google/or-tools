@@ -17,12 +17,19 @@
 #include <string>
 
 #include "absl/flags/declare.h"
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "ortools/third_party_solvers/gurobi_environment.h"
 
 namespace operations_research {
 
 absl::StatusOr<GRBenv*> GetGurobiEnv();
+
+// Copies all non-default Gurobi parameters from `src` to `dest`. When using the
+// fallback implementation for Gurobi 13, parameters that are non-default on
+// `dest` and default on `src` are not reset. This is intended for freshly
+// created destination environments.
+absl::Status CopyGurobiParameters(GRBenv* dest, GRBenv* src);
 
 // This returns true if the Gurobi shared library is properly loaded (otherwise,
 // tries to find it and load it) and if a Gurobi license can be obtained (it
