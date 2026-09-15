@@ -5,28 +5,28 @@
 
 function MathOptNewInterrupter()
   _check_lib_loaded()
-  return ccall((:MathOptNewInterrupter, libortools[]), Ptr{Cvoid}, ())
+  return ccall((:MathOptNewInterrupter, libortools), Ptr{Cvoid}, ())
 end
 
 function MathOptFreeInterrupter(ptr)
   _check_lib_loaded()
   return ccall(
-      (:MathOptFreeInterrupter, libortools[]), Cvoid, (Ptr{Cvoid},), ptr)
+      (:MathOptFreeInterrupter, libortools), Cvoid, (Ptr{Cvoid},), ptr)
 end
 
 function MathOptInterrupt(ptr)
   _check_lib_loaded()
-  return ccall((:MathOptInterrupt, libortools[]), Cvoid, (Ptr{Cvoid},), ptr)
+  return ccall((:MathOptInterrupt, libortools), Cvoid, (Ptr{Cvoid},), ptr)
 end
 
 function MathOptIsInterrupted(ptr)
   _check_lib_loaded()
-  return ccall((:MathOptIsInterrupted, libortools[]), Cint, (Ptr{Cvoid},), ptr)
+  return ccall((:MathOptIsInterrupted, libortools), Cint, (Ptr{Cvoid},), ptr)
 end
 
 function MathOptFree(ptr)
   _check_lib_loaded()
-  return ccall((:MathOptFree, libortools[]), Cvoid, (Ptr{Cvoid},), ptr)
+  return ccall((:MathOptFree, libortools), Cvoid, (Ptr{Cvoid},), ptr)
 end
 
 function MathOptSolve(
@@ -40,7 +40,7 @@ function MathOptSolve(
 )
   _check_lib_loaded()
   return ccall(
-      (:MathOptSolve, libortools[]),
+      (:MathOptSolve, libortools),
       Cint,
       (
           Ptr{Cvoid},
