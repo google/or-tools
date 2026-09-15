@@ -308,6 +308,9 @@ class CompiledConstraintWithProto : public CompiledConstraint {
   }
 
  protected:
+  // Updates any necessary internal state for a new solution when unenforced.
+  virtual void UpdateStateWhenUnenforced(absl::Span<const int64_t> solution) {}
+
   // Computes the violation of a constraint when it is enforced.
   virtual int64_t ComputeViolationWhenEnforced(
       absl::Span<const int64_t> solution) = 0;

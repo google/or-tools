@@ -439,6 +439,15 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
   if (ub_change) {
     inner_objective_upper_bound_ = ub.value();
   }
+  if (inner_objective_lower_bound_ > inner_objective_upper_bound_) {
+    // When it was the inner_objective_upper_bound that was lowered our
+    // lower_bound could actually be lower than the optimal objective. Make sure
+    // to update it.
+    if (best_status_ == CpSolverStatus::FEASIBLE ||
+        best_status_ == CpSolverStatus::OPTIMAL) {
+      inner_objective_lower_bound_ = best_solution_objective_value_;
+    }
+  }
 
   if (always_synchronize_) {
     synchronized_inner_objective_lower_bound_ =
@@ -499,6 +508,10 @@ void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
     // We just proved that the best solution cannot be improved upon, so we
     // have a new lower bound.
     inner_objective_lower_bound_ = best_solution_objective_value_;
+    if (always_synchronize_) {
+      synchronized_inner_objective_lower_bound_ =
+          IntegerValue(inner_objective_lower_bound_);
+    }
     if (update_integral_on_each_change_) UpdateGapIntegralInternal();
   } else {
     CHECK_EQ(num_solutions_, 0);
@@ -829,6 +842,11 @@ SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
   if (objective_or_null_ != nullptr &&
       inner_objective_lower_bound_ > inner_objective_upper_bound_) {
     UpdateBestStatus(CpSolverStatus::OPTIMAL);
+    inner_objective_lower_bound_ = best_solution_objective_value_;
+    if (always_synchronize_) {
+      synchronized_inner_objective_lower_bound_ =
+          IntegerValue(inner_objective_lower_bound_);
+    }
   }
 
   TestGapLimitsIfNeeded();

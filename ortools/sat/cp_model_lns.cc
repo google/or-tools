@@ -291,6 +291,10 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   absl::MutexLock graph_lock(graph_mutex_);
   absl::ReaderMutexLock domain_lock(domain_mutex_);
 
+  // Do it right away to make sure it is done even if ModelCopy detects
+  // infeasibility.
+  active_variables_set_.assign(model_proto_.variables_size(), false);
+
   std::vector<int> mapping;
   if (shared_clauses_ != nullptr) {
     mapping = shared_clauses_->GetRepresentatives();
@@ -1190,7 +1194,20 @@ NeighborhoodGeneratorHelper::GetRoutingPathBooleanVariables(
   absl::flat_hash_map<int, HeadAndArcBooleanVariable>
       tail_to_head_and_arc_bool_var;
 
+  auto is_enforced = [&](const ConstraintProto& ct) {
+    for (int i = 0; i < ct.enforcement_literal_size(); ++i) {
+      const int literal = ct.enforcement_literal(i);
+      const int bool_var = PositiveRef(literal);
+      const int64_t value = initial_solution.solution(bool_var);
+      if (RefIsPositive(literal) == (value == 0)) {
+        return false;
+      }
+    }
+    return true;
+  };
+
   for (const int i : TypeToConstraints(ConstraintProto::kCircuit)) {
+    if (!is_enforced(ModelProto().constraints(i))) continue;
     const CircuitConstraintProto& ct = ModelProto().constraints(i).circuit();
 
     // Collect arcs.
@@ -1225,6 +1242,7 @@ NeighborhoodGeneratorHelper::GetRoutingPathBooleanVariables(
 
   std::vector<HeadAndArcBooleanVariable> route_starts;
   for (const int i : TypeToConstraints(ConstraintProto::kRoutes)) {
+    if (!is_enforced(ModelProto().constraints(i))) continue;
     const RoutesConstraintProto& ct = ModelProto().constraints(i).routes();
     tail_to_head_and_arc_bool_var.clear();
     route_starts.clear();

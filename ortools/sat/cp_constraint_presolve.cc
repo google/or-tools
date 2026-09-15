@@ -53,6 +53,7 @@
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_table.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/deterministic_time.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/diophantine.h"
 #include "ortools/sat/integer.h"
@@ -150,6 +151,8 @@ bool CpConstraintPresolver::PresolveEnforcementLiteral(ConstraintProto* ct,
   *changed = false;
   if (context_->ModelIsUnsat()) return false;
   if (!HasEnforcementLiteral(*ct)) return true;
+  DeterministicTimer<{.scale = 6.186e-08, .offset = 4.249e-08}> timer(
+      time_limit_, ct->enforcement_literal().size());
 
   auto remove_if_not_interval = [this, changed, ct]() {
     *changed = true;
@@ -221,6 +224,8 @@ bool CpConstraintPresolver::PresolveEnforcementLiteral(ConstraintProto* ct,
 
 bool CpConstraintPresolver::PresolveBoolXor(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  DeterministicTimer<{.scale = 1.992e-08, .offset = 6.787e-08}> timer(
+      time_limit_, ct->bool_xor().literals_size());
 
   int new_size = 0;
   bool changed = false;
@@ -320,6 +325,8 @@ bool CpConstraintPresolver::PresolveBoolXor(ConstraintProto* ct) {
 
 bool CpConstraintPresolver::PresolveBoolOr(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  DeterministicTimer<{.scale = 8.323e-08, .offset = 0.000e+00}> timer(
+      time_limit_, ct->bool_or().literals_size());
 
   // Move the enforcement literal inside the clause if any. Note that we do not
   // mark this as a change since the literal in the constraint are the same.
@@ -430,6 +437,8 @@ bool CpConstraintPresolver::PresolveBoolOr(ConstraintProto* ct) {
 
 bool CpConstraintPresolver::PresolveBoolAnd(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  DeterministicTimer<{.scale = 4.886e-08, .offset = 5.841e-08}> timer(
+      time_limit_, ct->bool_and().literals_size());
 
   if (!HasEnforcementLiteral(*ct)) {
     context_->UpdateRuleStats("bool_and: non-reified");
@@ -534,6 +543,8 @@ bool CpConstraintPresolver::PresolveAtMostOrExactlyOne(
   auto* literals = is_at_most_one
                        ? ct->mutable_at_most_one()->mutable_literals()
                        : ct->mutable_exactly_one()->mutable_literals();
+  DeterministicTimer<{.scale = 7.681e-08, .offset = 0.000e+00}> timer(
+      time_limit_, literals->size());
 
   // Having a canonical constraint is needed for duplicate detection.
   // This also change how we regroup bool_and.
@@ -700,6 +711,8 @@ bool CpConstraintPresolver::PresolveAtMostOrExactlyOne(
 bool CpConstraintPresolver::PresolveAtMostOne(ConstraintProto* ct,
                                               bool use_dual_reduction) {
   if (context_->ModelIsUnsat()) return false;
+  DeterministicTimer<{.scale = 0.000e+00, .offset = 5.933e-08}> timer(
+      time_limit_);
 
   CHECK(!HasEnforcementLiteral(*ct));
   const bool changed = PresolveAtMostOrExactlyOne(ct, use_dual_reduction);
@@ -723,6 +736,9 @@ bool CpConstraintPresolver::PresolveAtMostOne(ConstraintProto* ct,
 
 bool CpConstraintPresolver::PresolveExactlyOne(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  DeterministicTimer<{.scale = 0.000e+00, .offset = 8.830e-08}> timer(
+      time_limit_);
+
   CHECK(!HasEnforcementLiteral(*ct));
   const bool changed =
       PresolveAtMostOrExactlyOne(ct, /*use_dual_reduction=*/true);
@@ -844,6 +860,8 @@ int GetFirstVar(const ExpressionList& exprs) {
 bool CpConstraintPresolver::PropagateAndReduceAffineMax(ConstraintProto* ct) {
   // Get the unique variable appearing in the expressions.
   const int unique_var = GetFirstVar(ct->lin_max().exprs());
+  DeterministicTimer<{.scale = 6.511e-08, .offset = 1.101e-07}> timer(
+      time_limit_, context_->DomainOf(unique_var).Size());
 
   const auto& lin_max = ct->lin_max();
   const int num_exprs = lin_max.exprs_size();
@@ -970,6 +988,9 @@ bool CpConstraintPresolver::PropagateAndReduceAffineMax(ConstraintProto* ct) {
 }
 
 bool CpConstraintPresolver::PropagateAndReduceLinMax(ConstraintProto* ct) {
+  DeterministicTimer<{.scale = 8.597e-07, .offset = 3.706e-05}> timer(
+      time_limit_, ct->lin_max().exprs_size());
+
   const LinearExpressionProto& target = ct->lin_max().target();
 
   // Compute the infered min/max of the target.
@@ -1055,6 +1076,8 @@ bool CpConstraintPresolver::PropagateAndReduceLinMax(ConstraintProto* ct) {
 
 void CpConstraintPresolver::AddLinear2ToModel(const LinearExpression2& linear2,
                                               int64_t lb, int64_t ub) {
+  DeterministicTimer<{.scale = 0.000e+00, .offset = 6.702e-06}> timer(
+      time_limit_);
   auto* ct = context_->AddConstraint();
   auto* linear = ct->mutable_linear();
   linear->add_domain(lb);
@@ -1076,6 +1099,9 @@ void CpConstraintPresolver::AddLinear2ToModel(const LinearExpression2& linear2,
 
 bool CpConstraintPresolver::PresolveLinMax(int c, ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  DeterministicTimer<{.scale = 2.143e-07, .offset = 4.160e-05}> timer(
+      time_limit_, ct->lin_max().exprs_size());
+
   // TODO(user): add support for this case.
   if (HasEnforcementLiteral(*ct)) return false;
   const LinearExpressionProto& target = ct->lin_max().target();
@@ -1368,6 +1394,8 @@ bool CpConstraintPresolver::PresolveLinMax(int c, ConstraintProto* ct) {
 bool CpConstraintPresolver::PresolveLinMaxWhenAllBoolean(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   if (HasEnforcementLiteral(*ct)) return false;
+  DeterministicTimer<{.scale = 1.113e-09, .offset = 6.101e-08}> timer(
+      time_limit_, ct->lin_max().exprs_size());
 
   const LinearExpressionProto& target = ct->lin_max().target();
   if (!context_->ExpressionIsAffineBoolean(target)) return false;
@@ -1467,6 +1495,9 @@ bool CpConstraintPresolver::PresolveLinMaxWhenAllBoolean(ConstraintProto* ct) {
 bool CpConstraintPresolver::PropagateAndReduceIntAbs(ConstraintProto* ct) {
   CHECK_EQ(ct->enforcement_literal_size(), 0);
   if (context_->ModelIsUnsat()) return false;
+  DeterministicTimer<{.scale = 0.000e+00, .offset = 6.196e-07}> timer(
+      time_limit_);
+
   const LinearExpressionProto& target_expr = ct->lin_max().target();
   const LinearExpressionProto& expr = ct->lin_max().exprs(0);
   DCHECK_EQ(expr.vars_size(), 1);
@@ -1594,6 +1625,8 @@ Domain EvaluateImpliedIntProdDomain(const LinearArgumentProto& expr,
 
 bool CpConstraintPresolver::PresolveIntProd(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  DeterministicTimer<{.scale = 0.000e+00, .offset = 2.358e-06}> timer(
+      time_limit_, ct->int_prod().exprs_size());
 
   // Start by restricting the domain of target. We will be more precise later.
   bool domain_modified = false;
@@ -2000,6 +2033,8 @@ bool CpConstraintPresolver::PresolveIntProd(ConstraintProto* ct) {
 
 bool CpConstraintPresolver::PresolveIntDiv(int c, ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  DeterministicTimer<{.scale = 0.000e+00, .offset = 3.730e-07}> timer(
+      time_limit_);
 
   const LinearExpressionProto& target = ct->int_div().target();
   const LinearExpressionProto& expr = ct->int_div().exprs(0);
@@ -2128,6 +2163,8 @@ bool CpConstraintPresolver::PresolveIntDiv(int c, ConstraintProto* ct) {
 
 bool CpConstraintPresolver::PresolveIntMod(int c, ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  DeterministicTimer<{.scale = 0.000e+00, .offset = 4.573e-07}> timer(
+      time_limit_);
 
   // TODO(user): Presolve f(X) = g(X) % fixed_mod.
   const LinearExpressionProto target = ct->int_mod().target();
@@ -2295,6 +2332,8 @@ bool CpConstraintPresolver::ExploitEquivalenceRelations(int c,
 
 bool CpConstraintPresolver::DivideLinearByGcd(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  DeterministicTimer<{.scale = 3.899e-10, .offset = 1.998e-08}> timer(
+      time_limit_, ct->linear().vars().size());
 
   // Compute the GCD of all coefficients.
   int64_t gcd = 0;
@@ -2327,6 +2366,8 @@ bool CpConstraintPresolver::CanonicalizeLinear(ConstraintProto* ct,
                                                bool* changed) {
   if (ct->constraint_case() != ConstraintProto::kLinear) return true;
   if (context_->ModelIsUnsat()) return false;
+  DeterministicTimer<{.scale = 3.763e-08, .offset = 1.837e-07}> timer(
+      time_limit_, ct->linear().vars().size());
 
   if (ct->linear().domain().empty()) {
     *changed = true;
@@ -2379,6 +2420,8 @@ bool CpConstraintPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
       context_->ModelIsUnsat()) {
     return false;
   }
+  DeterministicTimer<{.scale = 1.663e-08, .offset = 7.297e-08}> timer(
+      time_limit_, ct->linear().vars().size());
 
   absl::btree_set<int> index_to_erase;
   const int num_vars = ct->linear().vars().size();
@@ -2726,6 +2769,8 @@ bool CpConstraintPresolver::PresolveLinearEqualityWithModulo(
 
   const int num_variables = ct->linear().vars().size();
   if (num_variables < 2) return false;
+  DeterministicTimer<{.scale = 8.090e-09, .offset = 1.661e-07}> timer(
+      time_limit_, num_variables);
 
   std::vector<int> mod2_indices;
   std::vector<int> mod3_indices;
@@ -2795,6 +2840,8 @@ bool CpConstraintPresolver::PresolveLinearEqualityWithModulo(
 }
 
 bool CpConstraintPresolver::PresolveLinearOfSizeOne(ConstraintProto* ct) {
+  DeterministicTimer<{.scale = 0.000e+00, .offset = 4.885e-07}> timer(
+      time_limit_);
   CHECK_EQ(ct->linear().vars().size(), 1);
   CHECK(RefIsPositive(ct->linear().vars(0)));
   DCHECK(context_->VariableIsAffineRepresentative(ct->linear().vars(0)));
@@ -2904,6 +2951,8 @@ bool CpConstraintPresolver::PresolveLinearOfSizeOne(ConstraintProto* ct) {
 }
 
 bool CpConstraintPresolver::PresolveLinearOfSizeTwo(ConstraintProto* ct) {
+  DeterministicTimer<{.scale = 0.000e+00, .offset = 5.931e-07}> timer(
+      time_limit_);
   DCHECK_EQ(ct->linear().vars().size(), 2);
 
   const LinearConstraintProto& arg = ct->linear();
@@ -2992,6 +3041,8 @@ bool CpConstraintPresolver::PresolveLinearOfSizeTwo(ConstraintProto* ct) {
 // propagate domain of enforced linear constraints, to detect Boolean that
 // must be true or false. This way we can do the same for longer constraints.
 bool CpConstraintPresolver::PresolveLinear2WithBooleans(ConstraintProto* ct) {
+  DeterministicTimer<{.scale = 0.000e+00, .offset = 3.352e-08}> timer(
+      time_limit_);
   DCHECK_EQ(ct->linear().vars().size(), 2);
 
   const LinearConstraintProto& arg = ct->linear();
@@ -3129,6 +3180,8 @@ bool CpConstraintPresolver::PresolveLinear2WithBooleans(ConstraintProto* ct) {
 
 bool CpConstraintPresolver::PresolveLinear2NeCst(ConstraintProto* ct,
                                                  int64_t rhs) {
+  DeterministicTimer<{.scale = 0.000e+00, .offset = 4.126e-07}> timer(
+      time_limit_);
   const LinearConstraintProto& arg = ct->linear();
   const int var1 = arg.vars(0);
   const int var2 = arg.vars(1);
@@ -3214,6 +3267,8 @@ bool CpConstraintPresolver::PresolveLinear2NeCst(ConstraintProto* ct,
 
 bool CpConstraintPresolver::PresolveUnenforcedLinear2EqCst(ConstraintProto* ct,
                                                            int64_t rhs) {
+  DeterministicTimer<{.scale = 0.000e+00, .offset = 6.936e-07}> timer(
+      time_limit_);
   DCHECK_EQ(ct->linear().vars().size(), 2);
 
   const LinearConstraintProto& arg = ct->linear();
@@ -3253,6 +3308,8 @@ bool CpConstraintPresolver::PresolveUnenforcedLinear2EqCst(ConstraintProto* ct,
 
 bool CpConstraintPresolver::PresolveEnforcedLinear2EqCst(ConstraintProto* ct,
                                                          int64_t rhs) {
+  DeterministicTimer<{.scale = 0.000e+00, .offset = 5.501e-07}> timer(
+      time_limit_);
   CHECK(!ct->enforcement_literal().empty());
   DCHECK(context_->VariableIsAffineRepresentative(ct->linear().vars(0)));
   DCHECK(context_->VariableIsAffineRepresentative(ct->linear().vars(1)));
@@ -3458,6 +3515,9 @@ bool CpConstraintPresolver::PresolveDiophantine(ConstraintProto* ct) {
   if (linear_constraint.domain_size() != 2) return false;
   if (linear_constraint.domain(0) != linear_constraint.domain(1)) return false;
 
+  DeterministicTimer<{.scale = 1.650e-08, .offset = 3.146e-08}> timer(
+      time_limit_, linear_constraint.vars_size());
+
   std::vector<int64_t> lbs(linear_constraint.vars_size());
   std::vector<int64_t> ubs(linear_constraint.vars_size());
   for (int i = 0; i < linear_constraint.vars_size(); ++i) {
@@ -3652,6 +3712,9 @@ void CpConstraintPresolver::TryToReduceCoefficientsOfLinearConstraint(
   const LinearConstraintProto& lin = ct->linear();
   if (lin.domain().size() != 2) return;
   if (lin.vars().size() <= 1) return;
+
+  DeterministicTimer<{.scale = 7.228e-08, .offset = 0.000e+00}> timer(
+      time_limit_, lin.vars().size());
 
   // Precompute a bunch of quantities and "canonicalize" the constraint.
   int64_t lb_sum = 0;
@@ -3961,6 +4024,8 @@ bool CpConstraintPresolver::PropagateDomainsInLinear(int ct_index,
                                                      ConstraintProto* ct) {
   if (ct->constraint_case() != ConstraintProto::kLinear) return false;
   if (context_->ModelIsUnsat()) return false;
+  DeterministicTimer<{.scale = 1.024e-07, .offset = 6.396e-07}> timer(
+      time_limit_, ct->linear().vars_size());
 
   // For fast mode.
   int64_t min_activity;
@@ -4403,6 +4468,8 @@ void CpConstraintPresolver::LowerThanCoeffStrengthening(bool from_lower_bound,
                                                         int64_t min_magnitude,
                                                         int64_t rhs,
                                                         ConstraintProto* ct) {
+  DeterministicTimer<{.scale = 1.493e-08, .offset = 0.000e+00}> timer(
+      time_limit_, ct->linear().vars_size());
   const LinearConstraintProto& arg = ct->linear();
   const int64_t second_threshold = rhs - min_magnitude;
   const int num_vars = arg.vars_size();
@@ -4548,6 +4615,8 @@ void CpConstraintPresolver::ExtractEnforcementLiteralFromLinearConstraint(
     int ct_index, ConstraintProto* ct) {
   if (ct->constraint_case() != ConstraintProto::kLinear) return;
   if (context_->ModelIsUnsat()) return;
+  DeterministicTimer<{.scale = 1.713e-08, .offset = 1.020e-09}> timer(
+      time_limit_, ct->linear().vars_size());
 
   const LinearConstraintProto& arg = ct->linear();
   const int num_vars = arg.vars_size();
@@ -4774,6 +4843,8 @@ void CpConstraintPresolver::ExtractEnforcementLiteralFromLinearConstraint(
 bool CpConstraintPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
   if (ct->linear().vars().empty()) return false;
   if (context_->ModelIsUnsat()) return false;
+  DeterministicTimer<{.scale = 5.838e-09, .offset = 1.634e-08}> timer(
+      time_limit_, ct->linear().vars_size());
 
   // For special kind of constraint detection.
   int64_t sum_of_coeffs = 0;
@@ -4977,6 +5048,8 @@ bool CpConstraintPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
 }
 
 bool CpConstraintPresolver::PresolveSmallLinearOnBooleans(ConstraintProto* ct) {
+  DeterministicTimer<{.scale = 3.850e-12, .offset = 7.382e-08}> timer(
+      time_limit_, ct->linear().vars_size());
   const LinearConstraintProto& linear = ct->linear();
   const int num_vars = linear.vars().size();
   const Domain rhs_domain = ReadDomainFromProto(linear);
@@ -5074,6 +5147,8 @@ bool CpConstraintPresolver::PresolveSmallLinearOnBooleans(ConstraintProto* ct) {
 
 bool CpConstraintPresolver::PresolveInterval(int c, ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  DeterministicTimer<{.scale = 0.000e+00, .offset = 1.656e-07}> timer(
+      time_limit_);
   IntervalConstraintProto* interval = ct->mutable_interval();
 
   // If the size is < 0, then the interval cannot be performed.
@@ -5116,6 +5191,8 @@ bool CpConstraintPresolver::PresolveInverse(ConstraintProto* ct) {
   if (HasEnforcementLiteral(*ct)) return false;
   const int size = ct->inverse().f_expr_direct().size();
   bool changed = false;
+  DeterministicTimer<{.scale = 3.348e-06, .offset = 0.000e+00}> timer(
+      time_limit_, size);
 
   // Make sure the domains are included in [0, size - 1).
   for (const LinearExpressionProto& expr : ct->inverse().f_expr_direct()) {
@@ -5248,6 +5325,8 @@ bool CpConstraintPresolver::PresolveElement(int c, ConstraintProto* ct) {
   if (ct->element().exprs().empty()) {
     return MarkConstraintAsFalse(ct, "element: empty array");
   }
+  DeterministicTimer<{.scale = 1.193e-07, .offset = 6.887e-06}> timer(
+      time_limit_);
 
   bool changed = false;
   changed |= CanonicalizeLinearExpression(
@@ -5300,6 +5379,7 @@ bool CpConstraintPresolver::PresolveElement(int c, ConstraintProto* ct) {
 
   // We know index is not fixed.
   const int index_var = index.vars(0);
+  timer.Advance(context_->DomainOf(index_var).Size());
 
   {
     // Cleanup the array: if exprs[i] contains index_var, fix its value.
@@ -5572,6 +5652,8 @@ bool CpConstraintPresolver::PresolveElement(int c, ConstraintProto* ct) {
 
 bool CpConstraintPresolver::PresolveTable(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  DeterministicTimer<{.scale = 3.676e-05, .offset = 0.000e+00}> timer(
+      time_limit_, ct->table().exprs_size());
 
   bool changed = false;
   for (int i = 0; i < ct->table().exprs_size(); ++i) {
@@ -5744,6 +5826,8 @@ bool CpConstraintPresolver::PresolveAllDiff(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   // TODO(user): add support for this case.
   if (HasEnforcementLiteral(*ct)) return false;
+  DeterministicTimer<{.scale = 1.527e-07, .offset = 7.244e-06}> timer(
+      time_limit_, ct->all_diff().exprs_size());
 
   AllDifferentConstraintProto& all_diff = *ct->mutable_all_diff();
 
@@ -5898,6 +5982,8 @@ bool CpConstraintPresolver::PresolveAllDiff(ConstraintProto* ct) {
 
 bool CpConstraintPresolver::PresolveNoOverlap(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  DeterministicTimer<{.scale = 1.626e-07, .offset = 0.000e+00}> timer(
+      time_limit_, ct->no_overlap().intervals_size());
   NoOverlapConstraintProto* proto = ct->mutable_no_overlap();
   bool changed = false;
 
@@ -6778,6 +6864,8 @@ bool CpConstraintPresolver::PresolveCumulative(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   // TODO(user): add support for enforcement literals.
   if (HasEnforcementLiteral(*ct)) return false;
+  DeterministicTimer<{.scale = 2.904e-07, .offset = 8.579e-06}> timer(
+      time_limit_, ct->cumulative().intervals_size());
 
   CumulativeConstraintProto* proto = ct->mutable_cumulative();
 
@@ -7292,6 +7380,8 @@ bool CpConstraintPresolver::PresolveRoutes(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   // TODO(user): add support for this case.
   if (HasEnforcementLiteral(*ct)) return false;
+  DeterministicTimer<{.scale = 0.0, .offset = 0.0}> timer(
+      time_limit_, ct->routes().literals_size());
   RoutesConstraintProto& proto = *ct->mutable_routes();
 
   const int old_size = proto.literals_size();
@@ -7383,6 +7473,8 @@ bool CpConstraintPresolver::PresolveCircuit(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   // TODO(user): add support for this case.
   if (HasEnforcementLiteral(*ct)) return false;
+  DeterministicTimer<{.scale = 1.022e-07, .offset = 2.611e-06}> timer(
+      time_limit_, ct->circuit().literals_size());
   CircuitConstraintProto& proto = *ct->mutable_circuit();
 
   // The indexing might not be dense, so fix that first.
@@ -7589,6 +7681,8 @@ bool CpConstraintPresolver::PresolveAutomaton(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   // TODO(user): add support for this case.
   if (HasEnforcementLiteral(*ct)) return false;
+  DeterministicTimer<{.scale = 6.659e-05, .offset = 0.000e+00}> timer(
+      time_limit_, ct->automaton().exprs_size());
 
   AutomatonConstraintProto* proto = ct->mutable_automaton();
   if (proto->exprs_size() == 0 || proto->transition_label_size() == 0) {
@@ -7635,6 +7729,8 @@ bool CpConstraintPresolver::PresolveReservoir(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   // TODO(user): add support for this case.
   if (HasEnforcementLiteral(*ct)) return false;
+  DeterministicTimer<{.scale = 0.0, .offset = 0.0}> timer(
+      time_limit_, ct->reservoir().time_exprs_size());
 
   ReservoirConstraintProto& proto = *ct->mutable_reservoir();
   bool changed = false;
@@ -7816,6 +7912,8 @@ bool CpConstraintPresolver::PresolveReservoir(ConstraintProto* ct) {
 void CpConstraintPresolver::RunPropagatorsForConstraint(
     const ConstraintProto& ct) {
   if (context_->ModelIsUnsat()) return;
+  DeterministicTimer<{.scale = 1.119e-06, .offset = 1.362e-04}> timer(
+      time_limit_);
 
   Model model;
 
@@ -7842,6 +7940,7 @@ void CpConstraintPresolver::RunPropagatorsForConstraint(
   std::vector<int> variable_mapping;
   CreateValidModelWithSingleConstraint(ct, context_, &variable_mapping,
                                        &tmp_model_);
+  timer.Advance(tmp_model_.constraints_size());
   DCHECK_EQ(ValidateCpModel(tmp_model_, false), "");
   if (!LoadModelForPresolve(tmp_model_, std::move(local_params), context_,
                             &model, "single constraint")) {

@@ -1201,7 +1201,13 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
   // TODO(user): In some cases, we could have only one task that can be
   // first.
   IntegerValue max_for_overflow_check = std::max(-min_of_starts, max_of_ends);
+  AffineExpression span_start = min_of_starts;
   if (makespan.has_value()) {
+    // If all intervals are optional or with zero duration, min_of_starts can
+    // be larger than makespan. For this case, the relaxation
+    // `Area <= Capacity * (Makespan - MinStarts) < 0` is invalid.
+    span_start =
+        std::min(min_of_starts, integer_trail->LowerBound(makespan.value()));
     max_for_overflow_check = std::max(
         max_for_overflow_check, integer_trail->UpperBound(makespan.value()));
   }
@@ -1209,13 +1215,13 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
                    integer_trail->UpperBound(capacity))) {
     return;
   }
-  const AffineExpression span_start = min_of_starts;
   const AffineExpression span_end =
       makespan.has_value() ? makespan.value() : max_of_ends;
   lc.AddTerm(span_end, -integer_trail->UpperBound(capacity));
   lc.AddTerm(span_start, integer_trail->UpperBound(capacity));
   relaxation->linear_constraints.push_back(lc.Build());
 }
+
 void AppendNoOverlap2dRelaxationForComponent(
     absl::Span<const int> component, Model* model,
     NoOverlap2DConstraintHelper* no_overlap_helper,
