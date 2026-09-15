@@ -5,7 +5,7 @@ function SolveCpModelWithParameters(
 )
   _check_lib_loaded()
   return ccall(
-      (:SolveCpModelWithParameters, libortools[]),
+      (:SolveCpModelWithParameters, libortools),
       Cvoid,
       (
           Ptr{Cvoid},
@@ -26,17 +26,17 @@ end
 
 function SolveCpNewEnv()
   _check_lib_loaded()
-  return ccall((:SolveCpNewEnv, libortools[]), Ptr{Cvoid}, ())
+  return ccall((:SolveCpNewEnv, libortools), Ptr{Cvoid}, ())
 end
 
 function SolveCpDestroyEnv(cenv)
   _check_lib_loaded()
-  return ccall((:SolveCpDestroyEnv, libortools[]), Cvoid, (Ptr{Cvoid},), cenv)
+  return ccall((:SolveCpDestroyEnv, libortools), Cvoid, (Ptr{Cvoid},), cenv)
 end
 
 function SolveCpStopSearch(cenv)
   _check_lib_loaded()
-  return ccall((:SolveCpStopSearch, libortools[]), Cvoid, (Ptr{Cvoid},), cenv)
+  return ccall((:SolveCpStopSearch, libortools), Cvoid, (Ptr{Cvoid},), cenv)
 end
 
 function SolveCpInterruptible(
@@ -44,7 +44,7 @@ function SolveCpInterruptible(
 )
   _check_lib_loaded()
   return ccall(
-      (:SolveCpInterruptible, libortools[]),
+      (:SolveCpInterruptible, libortools),
       Cvoid,
       (
           Ptr{Cvoid},
