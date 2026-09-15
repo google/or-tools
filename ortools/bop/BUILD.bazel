@@ -13,9 +13,7 @@
 
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
-load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
+load("//bazel:or_cc_rules.bzl", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -39,23 +37,19 @@ cc_proto_library(
     deps = [":bop_parameters_proto"],
 )
 
-cc_library(
+or_cc_library(
     name = "bop_types",
     hdrs = ["bop_types.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:strong_vector",
         "//ortools/util:strong_integers",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "bop_base",
     srcs = ["bop_base.cc"],
     hdrs = ["bop_base.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":boolean_problem_cc_proto",
         ":bop_parameters_cc_proto",
@@ -77,12 +71,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "bop_util",
     srcs = ["bop_util.cc"],
     hdrs = ["bop_util.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":boolean_problem",
         ":boolean_problem_cc_proto",
@@ -101,12 +93,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "bop_solution",
     srcs = ["bop_solution.cc"],
     hdrs = ["bop_solution.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":boolean_problem",
         ":boolean_problem_cc_proto",
@@ -118,12 +108,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "bop_solution_test",
     size = "small",
     srcs = ["bop_solution_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":boolean_problem_cc_proto",
         ":bop_solution",
@@ -135,12 +123,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "bop_fs",
     srcs = ["bop_fs.cc"],
     hdrs = ["bop_fs.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":boolean_problem",
         ":boolean_problem_cc_proto",
@@ -173,12 +159,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "bop_lns",
     srcs = ["bop_lns.cc"],
     hdrs = ["bop_lns.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":boolean_problem",
         ":boolean_problem_cc_proto",
@@ -208,12 +192,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "complete_optimizer",
     srcs = ["complete_optimizer.cc"],
     hdrs = ["complete_optimizer.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":boolean_problem_cc_proto",
         ":bop_base",
@@ -235,12 +217,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "bop_ls",
     srcs = ["bop_ls.cc"],
     hdrs = ["bop_ls.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":boolean_problem_cc_proto",
         ":bop_base",
@@ -267,12 +247,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "bop_portfolio",
     srcs = ["bop_portfolio.cc"],
     hdrs = ["bop_portfolio.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":boolean_problem",
         ":boolean_problem_cc_proto",
@@ -305,12 +283,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "bop_solver",
     srcs = ["bop_solver.cc"],
     hdrs = ["bop_solver.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":boolean_problem",
         ":boolean_problem_cc_proto",
@@ -332,12 +308,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "integral_solver",
     srcs = ["integral_solver.cc"],
     hdrs = ["integral_solver.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":boolean_problem",
         ":boolean_problem_cc_proto",
@@ -366,12 +340,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "lp_utils",
     srcs = ["lp_utils.cc"],
     hdrs = ["lp_utils.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":boolean_problem",
         ":boolean_problem_cc_proto",
@@ -385,11 +357,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "lp_utils_test",
     srcs = ["lp_utils_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":boolean_problem_cc_proto",
         ":lp_utils",
@@ -405,12 +375,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "boolean_problem",
     srcs = ["boolean_problem.cc"],
     hdrs = ["boolean_problem.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":boolean_problem_cc_proto",
         "//ortools/algorithms:find_graph_symmetries",
@@ -440,11 +408,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "boolean_problem_test",
     srcs = ["boolean_problem_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":boolean_problem",
         "//ortools/base:gmock_main",

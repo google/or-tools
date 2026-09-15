@@ -16,11 +16,8 @@ load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("//bazel:compilation_flags.bzl", "SAFE_FP_CODE")
-load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -188,7 +185,7 @@ py_proto_library(
     deps = [":iis_proto"],
 )
 
-cc_library(
+or_cc_library(
     name = "linear_solver_lib",
     srcs = [
         "linear_expr.cc",
@@ -198,8 +195,7 @@ cc_library(
         "linear_expr.h",
         "linear_solver.h",
     ],
-    copts = ["-fexceptions"] + SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = ["-fexceptions"] + SAFE_FP_CODE,
     deps = [
         ":linear_solver_callback",
         ":linear_solver_cc_proto",
@@ -239,10 +235,8 @@ cc_library(
 # Solvers can be included or excluded using build flags.
 # Each solver has an associated bool_flag (e.g., :with_glpk) that controls its inclusion in the
 # following target.
-cc_library(
+or_cc_library(
     name = "linear_solver",
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = [
         "not_build:arm",
         "not_run:arm",
@@ -300,11 +294,10 @@ cc_library(
     alwayslink = 1,  # Important! Library is used via dependency injection.
 )
 
-cc_library(
+or_cc_library(
     name = "linear_solver_xpress",
     srcs = ["xpress_interface.cc"],
-    copts = ["-fexceptions"] + SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = ["-fexceptions"] + SAFE_FP_CODE,
     target_compatible_with = select({
         ":use_xpress": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -328,11 +321,10 @@ cc_library(
     alwayslink = 1,  # Important! Library is used via dependency injection.
 )
 
-cc_test(
+or_cc_test(
     name = "xpress_interface_test",
     srcs = ["xpress_interface_test.cc"],
-    copts = ["-fexceptions"] + SAFE_FP_CODE + ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = ["-fexceptions"] + SAFE_FP_CODE,
     deps = [
         ":linear_solver_callback",
         ":linear_solver_lib",
@@ -346,11 +338,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "linear_solver_cplex",
     srcs = ["cplex_interface.cc"],
-    copts = ["-fexceptions"] + SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = ["-fexceptions"] + SAFE_FP_CODE,
     target_compatible_with = select({
         ":use_cplex": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -360,11 +351,10 @@ cc_library(
 )
 
 # Recommended target to do linear programming (LP).
-cc_library(
+or_cc_library(
     name = "linear_solver_glop",
     srcs = ["glop_interface.cc"],
-    copts = ["-fexceptions"] + SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = ["-fexceptions"] + SAFE_FP_CODE,
     target_compatible_with = select({
         ":use_glop": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -392,11 +382,10 @@ cc_library(
 # and better behavior on ill-conditioned problems); but we still provide
 # some free third-party solvers. CLP is usually the best among those.
 # GUROBI is the best, even better than GLOP, but it has a restricted license.
-cc_library(
+or_cc_library(
     name = "linear_solver_clp",
     srcs = ["clp_interface.cc"],
-    copts = ["-fexceptions"] + SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = ["-fexceptions"] + SAFE_FP_CODE,
     target_compatible_with = select({
         ":use_clp": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -414,12 +403,10 @@ cc_library(
     alwayslink = 1,  # Important! Library is used via dependency injection.
 )
 
-cc_library(
+or_cc_library(
     name = "scip_callback",
     srcs = ["scip_callback.cc"],
     hdrs = ["scip_callback.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":linear_solver_lib",
         ":scip_helper_macros",
@@ -436,11 +423,10 @@ cc_library(
 # by setting a define when you build your end target:
 # blaze build -c opt --define scip_lp_solver=glop my/build:target.
 # blaze build -c opt --define scip_lp_solver=clp my/build:target.
-cc_library(
+or_cc_library(
     name = "linear_solver_scip",
     srcs = ["scip_interface.cc"],
-    copts = ["-fexceptions"] + SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = ["-fexceptions"] + SAFE_FP_CODE,
     target_compatible_with = select({
         ":use_scip": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -472,11 +458,10 @@ cc_library(
 )
 
 # Use with caution. For example, it is not thread-safe.
-cc_library(
+or_cc_library(
     name = "linear_solver_glpk",
     srcs = ["glpk_interface.cc"],
-    copts = ["-fexceptions"] + SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = ["-fexceptions"] + SAFE_FP_CODE,
     target_compatible_with = select({
         ":use_glpk": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -495,11 +480,10 @@ cc_library(
 
 # Use with caution. For example, it has yielded erroneous solutions
 # in the past (contact or-core-team@ for details).
-cc_library(
+or_cc_library(
     name = "linear_solver_cbc",
     srcs = ["cbc_interface.cc"],
-    copts = ["-fexceptions"] + SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = ["-fexceptions"] + SAFE_FP_CODE,
     target_compatible_with = select({
         ":use_cbc": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -517,11 +501,10 @@ cc_library(
     alwayslink = 1,  # Important! Library is used via dependency injection.
 )
 
-cc_library(
+or_cc_library(
     name = "linear_solver_gurobi",
     srcs = ["gurobi_interface.cc"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     tags = [
         "not_build:arm",
         "not_run:arm",
@@ -555,12 +538,10 @@ cc_library(
     alwayslink = 1,  # Important! Library is used via dependency injection.
 )
 
-cc_library(
+or_cc_library(
     name = "gurobi_util",
     srcs = ["gurobi_util.cc"],
     hdrs = ["gurobi_util.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = [
         "not_build:arm",
         "not_run:arm",
@@ -579,11 +560,9 @@ cc_library(
 
 # Experimental. Boolean optimization problem solver.
 # This works best on MIP problem where all the variables are Boolean integers.
-cc_library(
+or_cc_library(
     name = "linear_solver_bop",
     srcs = ["bop_interface.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     target_compatible_with = select({
         ":use_bop": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -605,11 +584,9 @@ cc_library(
 )
 
 # Experimental. SAT-based optimization problem solver.
-cc_library(
+or_cc_library(
     name = "linear_solver_sat",
     srcs = ["sat_interface.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     target_compatible_with = select({
         ":use_cp_sat": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -632,11 +609,9 @@ cc_library(
     alwayslink = 1,  # Important! Library is used via dependency injection.
 )
 
-cc_library(
+or_cc_library(
     name = "linear_solver_pdlp",
     srcs = ["pdlp_interface.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     target_compatible_with = select({
         ":use_pdlp": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -662,11 +637,9 @@ cc_library(
 )
 
 # Highs solver;
-cc_library(
+or_cc_library(
     name = "linear_solver_highs",
     srcs = ["highs_interface.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     target_compatible_with = select({
         ":use_highs": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -687,12 +660,10 @@ cc_library(
     alwayslink = 1,  # Important! Library is used via dependency injection.
 )
 
-cc_library(
+or_cc_library(
     name = "linear_solver_callback",
     srcs = ["linear_solver_callback.cc"],
     hdrs = ["linear_solver_callback.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log",
@@ -700,12 +671,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "glop_utils",
     srcs = ["glop_utils.cc"],
     hdrs = ["glop_utils.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":linear_solver_lib",
         "//ortools/lp_data:lp_types",
@@ -715,12 +684,10 @@ cc_library(
 )
 
 # Model exporter that can write MPS and LP file formats from an MPModelProto.
-cc_library(
+or_cc_library(
     name = "model_exporter",
     srcs = ["model_exporter.cc"],
     hdrs = ["model_exporter.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":linear_solver_cc_proto",
         "//ortools/base:file",
@@ -738,12 +705,11 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "model_validator",
     srcs = ["model_validator.cc"],
     hdrs = ["model_validator.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":linear_solver_cc_proto",
         "//ortools/base:accurate_sum",
@@ -767,11 +733,9 @@ cc_library(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "solve",
     srcs = ["solve.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = [
         "not_build:arm",
         "not_run:arm",
@@ -802,12 +766,10 @@ cc_binary(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "scip_helper_macros",
     srcs = ["scip_helper_macros.cc"],
     hdrs = ["scip_helper_macros.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:status_builder",
         "@abseil-cpp//absl/base",
@@ -822,11 +784,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "scip_helper_macros_test",
     srcs = ["scip_helper_macros_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":scip_helper_macros",
         "//ortools/base:gmock_main",
@@ -836,12 +796,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solve_mp_model",
     srcs = ["solve_mp_model.cc"],
     hdrs = ["solve_mp_model.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":linear_solver",
         ":linear_solver_cc_proto",
@@ -854,10 +812,8 @@ cc_library(
 # Universal target (except Gurobi). Only available for internal testing.
 # If you feel like you really want to depend on this target, talk to
 # or-core-team@google.com.
-cc_library(
+or_cc_library(
     name = "linear_solver_all",
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":linear_solver_bop",
         ":linear_solver_cbc",
@@ -873,11 +829,9 @@ cc_library(
 )
 
 # SWIG helper for the model exporter.
-cc_library(
+or_cc_library(
     name = "model_exporter_swig_helper",
     hdrs = ["model_exporter_swig_helper.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":linear_solver_cc_proto",
         ":model_exporter",

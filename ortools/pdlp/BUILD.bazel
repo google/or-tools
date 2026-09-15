@@ -15,18 +15,14 @@ load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
-load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
+load("//bazel:or_cc_rules.bzl", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+or_cc_library(
     name = "scheduler",
     srcs = ["scheduler.cc"],
     hdrs = ["scheduler.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":solvers_cc_proto",
         "//ortools/base:threadpool",
@@ -36,11 +32,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "scheduler_test",
     srcs = ["scheduler_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":scheduler",
         ":solvers_cc_proto",
@@ -91,12 +85,10 @@ java_proto_library(
     deps = [":solvers_proto"],
 )
 
-cc_library(
+or_cc_library(
     name = "iteration_stats",
     srcs = ["iteration_stats.cc"],
     hdrs = ["iteration_stats.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":quadratic_program",
         ":sharded_quadratic_program",
@@ -110,11 +102,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "iteration_stats_test",
     srcs = ["iteration_stats_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":iteration_stats",
         ":quadratic_program",
@@ -128,12 +118,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "primal_dual_hybrid_gradient",
     srcs = ["primal_dual_hybrid_gradient.cc"],
     hdrs = ["primal_dual_hybrid_gradient.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":iteration_stats",
         ":quadratic_program",
@@ -169,12 +157,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "primal_dual_hybrid_gradient_test",
     size = "medium",
     srcs = ["primal_dual_hybrid_gradient_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["noci"],
     deps = [
         ":iteration_stats",
@@ -200,12 +186,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "quadratic_program",
     srcs = ["quadratic_program.cc"],
     hdrs = ["quadratic_program.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/linear_solver:linear_solver_cc_proto",
         "@abseil-cpp//absl/log:check",
@@ -217,12 +201,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "quadratic_program_test",
     size = "small",
     srcs = ["quadratic_program_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":quadratic_program",
         ":test_util",
@@ -235,12 +217,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "quadratic_program_io",
     srcs = ["quadratic_program_io.cc"],
     hdrs = ["quadratic_program_io.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":quadratic_program",
         "//ortools/base:bzip2file",
@@ -266,12 +246,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "sharded_optimization_utils",
     srcs = ["sharded_optimization_utils.cc"],
     hdrs = ["sharded_optimization_utils.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":quadratic_program",
         ":sharded_quadratic_program",
@@ -285,12 +263,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "sharded_optimization_utils_test",
     size = "small",
     srcs = ["sharded_optimization_utils_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":quadratic_program",
         ":sharded_optimization_utils",
@@ -303,12 +279,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "sharded_quadratic_program",
     srcs = ["sharded_quadratic_program.cc"],
     hdrs = ["sharded_quadratic_program.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":quadratic_program",
         ":scheduler",
@@ -322,11 +296,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "sharded_quadratic_program_test",
     srcs = ["sharded_quadratic_program_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":quadratic_program",
         ":sharded_quadratic_program",
@@ -337,12 +309,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "sharder",
     srcs = ["sharder.cc"],
     hdrs = ["sharder.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":scheduler",
         "//ortools/base:mathutil",
@@ -356,12 +326,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "sharder_test",
     size = "small",
     srcs = ["sharder_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":scheduler",
         ":sharder",
@@ -374,12 +342,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solvers_proto_validation",
     srcs = ["solvers_proto_validation.cc"],
     hdrs = ["solvers_proto_validation.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":solvers_cc_proto",
         "@abseil-cpp//absl/status",
@@ -388,11 +354,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "solvers_proto_validation_test",
     srcs = ["solvers_proto_validation_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":solvers_cc_proto",
         ":solvers_proto_validation",
@@ -403,12 +367,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "termination",
     srcs = ["termination.cc"],
     hdrs = ["termination.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":solve_log_cc_proto",
         ":solvers_cc_proto",
@@ -417,12 +379,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "termination_test",
     size = "small",
     srcs = ["termination_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":solve_log_cc_proto",
         ":solvers_cc_proto",
@@ -432,13 +392,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "test_util",
     testonly = 1,
     srcs = ["test_util.cc"],
     hdrs = ["test_util.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":quadratic_program",
         "//ortools/base:gmock",
@@ -450,11 +408,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "test_util_test",
     srcs = ["test_util_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":test_util",
         "//ortools/base:gmock_main",
@@ -464,12 +420,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "trust_region",
     srcs = ["trust_region.cc"],
     hdrs = ["trust_region.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":quadratic_program",
         ":sharded_optimization_utils",
@@ -483,11 +437,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "trust_region_test",
     srcs = ["trust_region_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":quadratic_program",
         ":sharded_optimization_utils",

@@ -14,21 +14,18 @@
 # Description: python wrapping of the C++ code at ../
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@pybind11_bazel//:build_defs.bzl", "pybind_extension", "pybind_library")
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@pybind11_bazel//:build_defs.bzl", "pybind_library")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
-load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library")
+load("//bazel:or_pybind_rules.bzl", "or_pybind_extension")
 
 package(default_visibility = ["//visibility:public"])
 
 # This file is generated manually by running pybind11_mkdoc on linear_expr.h
-cc_library(
+or_cc_library(
     name = "linear_expr_doc",
     hdrs = ["linear_expr_doc.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
 )
 
 pybind_library(
@@ -81,12 +78,10 @@ pybind_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "linear_expr",
     srcs = ["linear_expr.cc"],
     hdrs = ["linear_expr.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:types",
         "//ortools/sat:cp_model_cc_proto",
@@ -102,11 +97,9 @@ cc_library(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "gen_proto_builder_pybind11",
     srcs = ["gen_proto_builder_pybind11.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:sat_parameters_cc_proto",
@@ -126,18 +119,14 @@ genrule(
     tools = [":gen_proto_builder_pybind11"],
 )
 
-cc_library(
+or_cc_library(
     name = "proto_builder_pybind11",
     hdrs = ["proto_builder_pybind11.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
 )
 
-pybind_extension(
+or_pybind_extension(
     name = "cp_model_helper",
     srcs = ["cp_model_helper.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":linear_expr",

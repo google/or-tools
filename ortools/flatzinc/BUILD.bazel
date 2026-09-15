@@ -15,9 +15,7 @@
 # Source code for the flatzinc interpreter. See www.minizinc.org.
 # This is a google owned implementation.
 
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -25,12 +23,10 @@ package(default_visibility = ["//visibility:public"])
 # Baseline flatzinc model.
 # ---------------------------------------------------------------------------
 
-cc_library(
+or_cc_library(
     name = "model",
     srcs = ["model.cc"],
     hdrs = ["model.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:stl_util",
         "//ortools/base:types",
@@ -51,7 +47,7 @@ cc_library(
 # Parser.
 # ---------------------------------------------------------------------------
 
-cc_library(
+or_cc_library(
     name = "parser_yacc_lib",
     srcs = ["parser.tab.cc"],
     hdrs = [
@@ -64,8 +60,7 @@ cc_library(
         "//conditions:default": ["-Wno-implicit-fallthrough"],
     }) + [
         "$(STACK_FRAME_UNLIMITED)",  # parser.tab.cc
-    ] + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    ],
     deps = [
         ":model",
         "//ortools/base",
@@ -81,7 +76,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "parser_lex_lib",
     srcs = ["parser.yy.cc"],
     copts = select({
@@ -91,8 +86,7 @@ cc_library(
         "@platforms//os:linux": ["-Wno-unused-function"],  # parser.yy.cc
         "@platforms//os:macos": ["-Wno-unused-function"],  # parser.yy.cc
         "//conditions:default": [],
-    }) + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    }),
     tags = ["keep_dep"],  # So that build_cleaner doesn't remove this as a dep.
     deps = [
         ":parser_yacc_lib",
@@ -102,12 +96,10 @@ cc_library(
     alwayslink = 1,
 )
 
-cc_library(
+or_cc_library(
     name = "parser_lib",
     srcs = ["parser.cc"],
     hdrs = ["parser.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model",
         ":parser_lex_lib",
@@ -116,11 +108,9 @@ cc_library(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "parser",
     srcs = ["parser_main.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model",
         ":parser_lib",
@@ -139,12 +129,10 @@ cc_binary(
 # Solution Checker
 # ---------------------------------------------------------------------------
 
-cc_library(
+or_cc_library(
     name = "checker",
     srcs = ["checker.cc"],
     hdrs = ["checker.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model",
         "//ortools/base:types",
@@ -161,12 +149,10 @@ cc_library(
 # Connection to SAT/CP solver.
 # ---------------------------------------------------------------------------
 
-cc_library(
+or_cc_library(
     name = "cp_model_fz_solver",
     srcs = ["cp_model_fz_solver.cc"],
     hdrs = ["cp_model_fz_solver.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":checker",
         ":model",
@@ -196,11 +182,9 @@ cc_library(
 )
 
 # Main binary to parse and execute a fz model using the CP-SAT solver.
-cc_binary(
+or_cc_binary(
     name = "fz",
     srcs = ["fz.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_fz_solver",
         ":model",

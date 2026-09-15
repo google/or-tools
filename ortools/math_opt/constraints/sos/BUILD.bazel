@@ -11,18 +11,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
-load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
+load("//bazel:or_cc_rules.bzl", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
-cc_library(
+or_cc_library(
     name = "sos1_constraint",
     srcs = ["sos1_constraint.cc"],
     hdrs = ["sos1_constraint.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":util",
         "//ortools/base:strong_int",
@@ -37,11 +33,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "sos1_constraint_test",
     srcs = ["sos1_constraint_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":sos1_constraint",
         "//ortools/base:gmock",
@@ -56,12 +50,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "sos2_constraint",
     srcs = ["sos2_constraint.cc"],
     hdrs = ["sos2_constraint.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":util",
         "//ortools/base:strong_int",
@@ -75,11 +67,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "sos2_constraint_test",
     srcs = ["sos2_constraint_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":sos2_constraint",
         "//ortools/base:gmock",
@@ -94,11 +84,9 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "storage",
     hdrs = ["storage.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:strong_int",
         "//ortools/math_opt:model_cc_proto",
@@ -111,11 +99,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "storage_test",
     srcs = ["storage_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+
     # TODO: b/475196802 - Stop using EquivToProto().
     tags = [
         "no_test_android",
@@ -133,11 +120,9 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "util",
     hdrs = ["util.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/math_opt/cpp:variable_and_expressions",
         "//ortools/util:fp_roundtrip_conv",
@@ -145,12 +130,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "validator",
     srcs = ["validator.cc"],
     hdrs = ["validator.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:status_builder",
         "//ortools/math_opt:model_cc_proto",
@@ -165,11 +148,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "validator_test",
     srcs = ["validator_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":validator",
         "//ortools/base:gmock_main",

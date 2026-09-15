@@ -26,10 +26,10 @@ py_binary(
         "not_run:arm",
     ],
     deps = [
+        "//ortools/sat/python:cp_model",
         requirement("absl-py"),
         requirement("numpy"),
         "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/python:cp_model",
     ],
 )
 
@@ -38,8 +38,8 @@ py_binary(
     srcs = ["assignment_with_constraints_sat.py"],
     main = "assignment_with_constraints_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -56,8 +56,8 @@ py_binary(
     srcs = ["balance_group_sat.py"],
     main = "balance_group_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -74,8 +74,8 @@ py_binary(
     srcs = ["bus_driver_scheduling_sat.py"],
     main = "bus_driver_scheduling_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -107,8 +107,8 @@ py_binary(
     srcs = ["car_sequencing_optimization_sat.py"],
     main = "car_sequencing_optimization_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -125,8 +125,8 @@ py_binary(
     srcs = ["chemical_balance_sat.py"],
     main = "chemical_balance_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -143,8 +143,8 @@ py_binary(
     srcs = ["clustering_sat.py"],
     main = "clustering_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -161,8 +161,8 @@ py_binary(
     srcs = ["cover_rectangle_sat.py"],
     main = "cover_rectangle_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -193,8 +193,8 @@ py_binary(
     srcs = ["gate_scheduling_sat.py"],
     main = "gate_scheduling_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/colab:visualization",
+        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
     ],
 )
@@ -211,8 +211,8 @@ py_binary(
     srcs = ["golomb_sat.py"],
     main = "golomb_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -229,9 +229,9 @@ py_binary(
     srcs = ["hidato_sat.py"],
     main = "hidato_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/colab:visualization",
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -278,8 +278,8 @@ py_binary(
     srcs = ["jobshop_with_maintenance_sat.py"],
     main = "jobshop_with_maintenance_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -296,10 +296,10 @@ py_binary(
     srcs = ["knapsack_2d_sat.py"],
     main = "knapsack_2d_sat.py",
     deps = [
+        "//ortools/sat/python:cp_model",
         requirement("absl-py"),
         requirement("numpy"),
         requirement("pandas"),
-        "//ortools/sat/python:cp_model",
     ],
 )
 
@@ -316,8 +316,8 @@ py_binary(
     srcs = ["line_balancing_sat.py"],
     main = "line_balancing_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -336,8 +336,8 @@ py_binary(
     srcs = ["maximize_combinations_sat.py"],
     main = "maximize_combinations_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -354,8 +354,8 @@ py_binary(
     srcs = ["maze_escape_sat.py"],
     main = "maze_escape_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -388,8 +388,8 @@ py_binary(
     srcs = ["no_wait_baking_scheduling_sat.py"],
     main = "no_wait_baking_scheduling_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -406,8 +406,8 @@ py_binary(
     srcs = ["pell_equation_sat.py"],
     main = "pell_equation_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -424,8 +424,8 @@ py_binary(
     srcs = ["pentominoes_sat.py"],
     main = "pentominoes_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -442,8 +442,8 @@ py_binary(
     srcs = ["prize_collecting_tsp_sat.py"],
     main = "prize_collecting_tsp_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -496,8 +496,8 @@ py_binary(
     srcs = ["prize_collecting_vrp_sat.py"],
     main = "prize_collecting_vrp_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -514,8 +514,8 @@ py_binary(
     srcs = ["qubo_sat.py"],
     main = "qubo_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -552,10 +552,10 @@ py_binary(
     srcs = ["rcpsp_sat.py"],
     main = "rcpsp_sat.py",
     deps = [
+        "//ortools/sat/python:cp_model",
         "//ortools/scheduling:rcpsp_py_pb2",
         "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        "//ortools/sat/python:cp_model",
     ],
 )
 
@@ -564,8 +564,8 @@ py_binary(
     srcs = ["shift_scheduling_sat.py"],
     main = "shift_scheduling_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -581,8 +581,8 @@ py_binary(
     srcs = ["single_machine_scheduling_with_setup_release_due_dates_sat.py"],
     main = "single_machine_scheduling_with_setup_release_due_dates_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -599,8 +599,8 @@ py_binary(
     srcs = ["spread_robots_sat.py"],
     main = "spread_robots_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -616,8 +616,8 @@ py_binary(
     srcs = ["steel_mill_slab_sat.py"],
     main = "steel_mill_slab_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -647,8 +647,8 @@ py_binary(
     srcs = ["task_allocation_sat.py"],
     main = "task_allocation_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -665,8 +665,8 @@ py_binary(
     srcs = ["tree_ensemble_optimization_sat.py"],
     main = "tree_ensemble_optimization_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -682,8 +682,8 @@ py_binary(
     srcs = ["tasks_and_workers_assignment_sat.py"],
     main = "tasks_and_workers_assignment_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -700,9 +700,9 @@ py_binary(
     srcs = ["test_scheduling_sat.py"],
     main = "test_scheduling_sat.py",
     deps = [
+        "//ortools/sat/python:cp_model",
         requirement("absl-py"),
         requirement("pandas"),
-        "//ortools/sat/python:cp_model",
     ],
 )
 
@@ -734,8 +734,8 @@ py_binary(
     srcs = ["vendor_scheduling_sat.py"],
     main = "vendor_scheduling_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -752,8 +752,8 @@ py_binary(
     srcs = ["wedding_optimal_chart_sat.py"],
     main = "wedding_optimal_chart_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 

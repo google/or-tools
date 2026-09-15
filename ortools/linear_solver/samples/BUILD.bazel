@@ -12,19 +12,16 @@
 # limitations under the License.
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_python//python:py_test.bzl", "py_test")
-load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
+load("//bazel:or_cc_rules.bzl", "or_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
 # Linear Solver
 
-cc_test(
+or_cc_test(
     name = "assignment_mip_test",
     srcs = ["assignment_mip.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -35,11 +32,9 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "assignment_groups_mip_test",
     srcs = ["assignment_groups_mip.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -51,11 +46,9 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "assignment_task_sizes_mip_test",
     srcs = ["assignment_task_sizes_mip.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -67,11 +60,9 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "assignment_teams_mip_test",
     srcs = ["assignment_teams_mip.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -83,11 +74,9 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "basic_example_test",
     srcs = ["basic_example.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -98,22 +87,18 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "bin_packing_mip_test",
     srcs = ["bin_packing_mip.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/linear_solver:linear_solver_lib",
         "@abseil-cpp//absl/log",
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "linear_programming_example_test",
     srcs = ["linear_programming_example.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -123,11 +108,9 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "integer_programming_example_test",
     srcs = ["integer_programming_example.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -137,11 +120,9 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "mip_var_array_test",
     srcs = ["mip_var_array.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -151,11 +132,9 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "multiple_knapsack_mip_test",
     srcs = ["multiple_knapsack_mip.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -166,11 +145,9 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "simple_lp_program_test",
     srcs = ["simple_lp_program.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -181,11 +158,9 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "simple_mip_program_test",
     srcs = ["simple_mip_program.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -195,11 +170,9 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "stigler_diet_test",
     srcs = ["stigler_diet.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",

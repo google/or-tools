@@ -12,17 +12,14 @@
 # limitations under the License.
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary")
 load("//tools/testing:bintest.bzl", "py_bintest")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_binary(
+or_cc_binary(
     name = "basic_example",
     srcs = ["basic_example.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/math_opt/cpp:math_opt",
@@ -34,11 +31,9 @@ cc_binary(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "cocktail_hour",
     srcs = ["cocktail_hour.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:map_util",
@@ -58,11 +53,9 @@ cc_binary(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "linear_programming",
     srcs = ["linear_programming.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/math_opt/cpp:math_opt",
@@ -76,11 +69,9 @@ cc_binary(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "advanced_linear_programming",
     srcs = ["advanced_linear_programming.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:status_builder",
@@ -95,11 +86,9 @@ cc_binary(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "integer_programming",
     srcs = ["integer_programming.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/math_opt/cpp:math_opt",
@@ -112,11 +101,9 @@ cc_binary(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "cutting_stock",
     srcs = ["cutting_stock.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:status_builder",
@@ -132,11 +119,9 @@ cc_binary(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "facility_lp_benders",
     srcs = ["facility_lp_benders.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = [
         "not_build:arm",
         "not_run:arm",
@@ -167,11 +152,9 @@ cc_binary(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "lagrangian_relaxation",
     srcs = ["lagrangian_relaxation.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:container_logging",
@@ -190,11 +173,9 @@ cc_binary(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "linear_regression",
     srcs = ["linear_regression.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = [
         "not_build:arm",
         "not_run:arm",
@@ -216,11 +197,9 @@ cc_binary(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "mathopt_info",
     srcs = ["mathopt_info.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = [
         "not_build:arm",
         "not_run:arm",
@@ -238,11 +217,9 @@ cc_binary(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "tsp",
     srcs = ["tsp.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = [
         "not_build:arm",
         "not_run:arm",
@@ -265,11 +242,9 @@ cc_binary(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "graph_coloring",
     srcs = ["graph_coloring.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/math_opt/cpp:math_opt",
@@ -284,11 +259,9 @@ cc_binary(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "area_socp",
     srcs = ["area_socp.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/math_opt/cpp:math_opt",
@@ -300,11 +273,9 @@ cc_binary(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "time_indexed_scheduling",
     srcs = ["time_indexed_scheduling.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = [
         "not_build:arm",
         "not_run:arm",
@@ -326,11 +297,9 @@ cc_binary(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "min_cost_flow",
     srcs = ["min_cost_flow.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = [
         "not_build:arm",
         "not_run:arm",
@@ -358,11 +327,9 @@ py_bintest(
     deps = [requirement("absl-py")],
 )
 
-cc_binary(
+or_cc_binary(
     name = "matching_by_min_cost_flow",
     srcs = ["matching_by_min_cost_flow.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = [
         "not_build:arm",
         "not_run:arm",

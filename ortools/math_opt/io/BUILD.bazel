@@ -11,17 +11,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
+load("//bazel:or_cc_rules.bzl", "or_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+or_cc_library(
     name = "proto_converter",
     srcs = ["proto_converter.cc"],
     hdrs = ["proto_converter.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_validator",
@@ -42,12 +39,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "mps_converter",
     srcs = ["mps_converter.cc"],
     hdrs = ["mps_converter.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":proto_converter",
         "//ortools/linear_solver:linear_solver_cc_proto",
@@ -60,24 +55,20 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "names_removal",
     srcs = ["names_removal.cc"],
     hdrs = ["names_removal.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "lp_converter",
     srcs = ["lp_converter.cc"],
     hdrs = ["lp_converter.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":proto_converter",
         "//ortools/linear_solver:linear_solver_cc_proto",
@@ -88,12 +79,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "lp_parser",
     srcs = ["lp_parser.cc"],
     hdrs = ["lp_parser.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":mps_converter",
         "//ortools/base:file",

@@ -11,21 +11,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("//bazel:compilation_flags.bzl", "SAFE_FP_CODE")
-load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library")
 load("//tools/testing:bintest.bzl", "bintest")
 
 # Description:
 # C++ examples for operations_research.
 package(default_visibility = ["//visibility:public"])
 
-cc_binary(
+or_cc_binary(
     name = "binpacking_2d_sat",
     srcs = ["binpacking_2d_sat.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -58,15 +54,13 @@ bintest(
     },
 )
 
-cc_library(
+or_cc_library(
     name = "cgc",
     srcs = ["cgc.cc"],
     hdrs = [
         "cgc.h",
         "cgc_data.h",
     ],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:file",
         "//ortools/constraint_solver:cp",
@@ -81,11 +75,9 @@ cc_library(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "cgc_main",
     srcs = ["cgc_main.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cgc",
         "//ortools/base",
@@ -112,11 +104,9 @@ bintest(
     },
 )
 
-cc_binary(
+or_cc_binary(
     name = "constraint_programming_cp",
     srcs = ["constraint_programming_cp.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -133,11 +123,9 @@ bintest(
     named_data = {"constraint_programming_cp": ":constraint_programming_cp"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "costas_array_sat",
     srcs = ["costas_array_sat.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -177,11 +165,9 @@ bintest(
     named_data = {"costas_array_sat": ":costas_array_sat"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "cryptarithm_sat",
     srcs = ["cryptarithm_sat.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
@@ -197,11 +183,9 @@ bintest(
     named_data = {"cryptarithm_sat": ":cryptarithm_sat"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "dobble_ls",
     srcs = ["dobble_ls.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/constraint_solver:cp",
@@ -223,11 +207,9 @@ bintest(
     named_data = {"dobble_ls": ":dobble_ls"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "golomb_sat",
     srcs = ["golomb_sat.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -252,11 +234,9 @@ bintest(
     named_data = {"golomb_sat": ":golomb_sat"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "knapsack_2d_sat",
     srcs = ["knapsack_2d_sat.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -286,12 +266,10 @@ bintest(
     },
 )
 
-cc_library(
+or_cc_library(
     name = "jobshop_sat_model",
     srcs = ["jobshop_sat_model.cc"],
     hdrs = ["jobshop_sat_model.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:log_severity",
         "//ortools/base:types",
@@ -315,11 +293,9 @@ cc_library(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "jobshop_sat",
     srcs = ["jobshop_sat.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":jobshop_sat_model",
         "//ortools/base",
@@ -350,11 +326,9 @@ bintest(
     },
 )
 
-cc_binary(
+or_cc_binary(
     name = "magic_sequence_sat",
     srcs = ["magic_sequence_sat.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -375,11 +349,9 @@ bintest(
     named_data = {"magic_sequence_sat": ":magic_sequence_sat"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "multi_knapsack_sat",
     srcs = ["multi_knapsack_sat.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -399,11 +371,9 @@ bintest(
     named_data = {"multi_knapsack_sat": ":multi_knapsack_sat"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "shift_minimization_sat",
     srcs = ["shift_minimization_sat.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -431,11 +401,9 @@ bintest(
     },
 )
 
-cc_binary(
+or_cc_binary(
     name = "weighted_tardiness_sat",
     srcs = ["weighted_tardiness_sat.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -465,11 +433,9 @@ bintest(
     },
 )
 
-cc_binary(
+or_cc_binary(
     name = "magic_square_sat",
     srcs = ["magic_square_sat.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -492,11 +458,9 @@ bintest(
     tags = ["noci"],
 )
 
-cc_binary(
+or_cc_binary(
     name = "network_routing_sat",
     srcs = ["network_routing_sat.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -529,11 +493,9 @@ bintest(
     tags = ["noci"],
 )
 
-cc_binary(
+or_cc_binary(
     name = "nqueens",
     srcs = ["nqueens.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:map_util",
@@ -552,11 +514,9 @@ bintest(
     named_data = {"nqueens": ":nqueens"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "sports_scheduling_sat",
     srcs = ["sports_scheduling_sat.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -580,11 +540,9 @@ bintest(
     named_data = {"sports_scheduling_sat": ":sports_scheduling_sat"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "pdptw",
     srcs = ["pdptw.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -633,11 +591,9 @@ bintest(
 )
 
 # Routing examples.
-cc_binary(
+or_cc_binary(
     name = "random_tsp",
     srcs = ["random_tsp.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:log_severity",
         "//ortools/constraint_solver:cp",
@@ -659,11 +615,9 @@ cc_binary(
 )
 
 # Linear and integer programming examples.
-cc_binary(
+or_cc_binary(
     name = "integer_programming",
     srcs = ["integer_programming.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -682,11 +636,9 @@ bintest(
     named_data = {"integer_programming": ":integer_programming"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "linear_programming",
     srcs = ["linear_programming.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -706,11 +658,9 @@ bintest(
     named_data = {"linear_programming": ":linear_programming"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "linear_solver_protocol_buffers",
     srcs = ["linear_solver_protocol_buffers.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/linear_solver:linear_solver_all",
@@ -728,11 +678,9 @@ bintest(
     named_data = {"linear_solver_protocol_buffers": ":linear_solver_protocol_buffers"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "strawberry_fields_with_column_generation",
     srcs = ["strawberry_fields_with_column_generation.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -758,11 +706,9 @@ bintest(
 )
 
 # Dimacs assignment problems
-cc_library(
+or_cc_library(
     name = "print_dimacs_assignment",
     hdrs = ["print_dimacs_assignment.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:file",
         "//ortools/graph:linear_assignment",
@@ -772,11 +718,9 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "parse_dimacs_assignment",
     hdrs = ["parse_dimacs_assignment.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/graph:linear_assignment",
         "//ortools/util:filelineiter",
@@ -785,11 +729,9 @@ cc_library(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "dimacs_assignment",
     srcs = ["dimacs_assignment.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":parse_dimacs_assignment",
         ":print_dimacs_assignment",
@@ -829,11 +771,10 @@ bintest(
 )
 
 # MPS driver for LP and MIP.
-cc_binary(
+or_cc_binary(
     name = "mps_driver",
     srcs = ["mps_driver.cc"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         "//ortools/base",
         "//ortools/base:file",
@@ -870,11 +811,9 @@ bintest(
 )
 
 # Linear Assignment C++ Example
-cc_binary(
+or_cc_binary(
     name = "linear_assignment_api",
     srcs = ["linear_assignment_api.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/graph:linear_assignment",
@@ -892,11 +831,9 @@ bintest(
 )
 
 # Flow C++ Example
-cc_binary(
+or_cc_binary(
     name = "flow_api",
     srcs = ["flow_api.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/graph:generic_max_flow",
@@ -914,11 +851,9 @@ bintest(
     named_data = {"flow_api": ":flow_api"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "max_flow",
     srcs = ["max_flow.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -936,11 +871,9 @@ bintest(
     named_data = {"max_flow": ":max_flow"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "min_cost_flow",
     srcs = ["min_cost_flow.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -958,12 +891,10 @@ bintest(
 )
 
 # Frequency Assignment Problem
-cc_library(
+or_cc_library(
     name = "fap_parser",
     srcs = ["fap_parser.cc"],
     hdrs = ["fap_parser.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:file",
         "//ortools/base:map_util",
@@ -976,12 +907,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "fap_model_printer",
     srcs = ["fap_model_printer.cc"],
     hdrs = ["fap_model_printer.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":fap_parser",
         "@abseil-cpp//absl/container:btree",
@@ -993,12 +922,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "fap_utilities",
     srcs = ["fap_utilities.cc"],
     hdrs = ["fap_utilities.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":fap_parser",
         "//ortools/base:map_util",
@@ -1010,11 +937,9 @@ cc_library(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "frequency_assignment_problem",
     srcs = ["frequency_assignment_problem.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":fap_model_printer",
         ":fap_parser",
@@ -1035,11 +960,9 @@ cc_binary(
 
 # Quadratic assignment problem.
 
-cc_binary(
+or_cc_binary(
     name = "qap_sat",
     srcs = ["qap_sat.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/sat:cp_model",
@@ -1055,11 +978,9 @@ cc_binary(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "slitherlink_sat",
     srcs = ["slitherlink_sat.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
@@ -1079,11 +1000,9 @@ bintest(
     named_data = {"slitherlink_sat": ":slitherlink_sat"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "uncapacitated_facility_location",
     srcs = ["uncapacitated_facility_location.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:log_severity",
         "//ortools/linear_solver:linear_solver_lib",
@@ -1098,11 +1017,9 @@ cc_binary(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "variable_intervals_sat",
     srcs = ["variable_intervals_sat.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
@@ -1121,11 +1038,9 @@ bintest(
     named_data = {"variable_intervals_sat": ":variable_intervals_sat"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "pdlp_solve",
     srcs = ["pdlp_solve.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:file",
