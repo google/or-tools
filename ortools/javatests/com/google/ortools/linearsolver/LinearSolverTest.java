@@ -653,4 +653,229 @@ public final class LinearSolverTest {
 
     assertFalse(solver.setNumThreads(4));
   }
+
+  private void runSolveWithHint(MPSolver.OptimizationProblemType problemType) {
+    if (!MPSolver.supportsProblemType(problemType)) {
+      return;
+    }
+    final MPSolver solver = new MPSolver("testSolveWithHint", problemType);
+    assertNotNull(solver);
+
+    final double infinity = MPSolver.infinity();
+    final MPVariable x = solver.makeIntVar(0.0, infinity, "x");
+    final MPVariable y = solver.makeIntVar(0.0, infinity, "y");
+
+    // Maximize x + 10 * y.
+    final MPObjective objective = solver.objective();
+    objective.setCoefficient(x, 1);
+    objective.setCoefficient(y, 10);
+    objective.setMaximization();
+
+    // x + 7 * y <= 17.5.
+    final MPConstraint c0 = solver.makeConstraint(-infinity, 17.5, "c0");
+    c0.setCoefficient(x, 1);
+    c0.setCoefficient(y, 7);
+
+    // x <= 3.5.
+    final MPConstraint c1 = solver.makeConstraint(-infinity, 3.5, "c1");
+    c1.setCoefficient(x, 1);
+
+    // Provide a feasible hint to guide the solver.
+    solver.setHint(new MPVariable[] {x, y}, new double[] {2.0, 1.0});
+
+    assertEquals(MPSolver.ResultStatus.OPTIMAL, solver.solve());
+    // Optimal: x = 3, y = 2, obj = 3 + 20 = 23.
+    // With x <= 3.5 and integer, x max is 3. Then
+    // x + 7*y <= 17.5 → 3 + 7*y <= 17.5 → 7*y <= 14.5 → y <= 2, so y = 2.
+    assertThat(objective.value()).isWithin(NUM_TOLERANCE).of(23.0);
+    assertThat(x.solutionValue()).isWithin(NUM_TOLERANCE).of(3.0);
+    assertThat(y.solutionValue()).isWithin(NUM_TOLERANCE).of(2.0);
+  }
+
+  @Test
+  public void testMPSolver_solveWithHint() {
+    runSolveWithHint(MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
+    runSolveWithHint(MPSolver.OptimizationProblemType.SCIP_MIXED_INTEGER_PROGRAMMING);
+    runSolveWithHint(MPSolver.OptimizationProblemType.SAT_INTEGER_PROGRAMMING);
+    runSolveWithHint(MPSolver.OptimizationProblemType.GUROBI_MIXED_INTEGER_PROGRAMMING);
+  }
+
+  private void runSolveWithAndWithoutHint(
+      MPSolver.OptimizationProblemType problemType, boolean useHint) {
+    if (!MPSolver.supportsProblemType(problemType)) {
+      return;
+    }
+    final MPSolver solver =
+        new MPSolver("testSolveWithAndWithoutHint", problemType);
+    assertNotNull(solver);
+
+    final double infinity = MPSolver.infinity();
+    final MPVariable x = solver.makeIntVar(0.0, infinity, "x");
+    final MPVariable y = solver.makeIntVar(0.0, infinity, "y");
+    final MPVariable z = solver.makeIntVar(0.0, infinity, "z");
+
+    // Maximize 10*x + 6*y + 4*z.
+    final MPObjective objective = solver.objective();
+    objective.setCoefficient(x, 10);
+    objective.setCoefficient(y, 6);
+    objective.setCoefficient(z, 4);
+    objective.setMaximization();
+
+    // x + y + z <= 100.
+    final MPConstraint c0 = solver.makeConstraint(-infinity, 100.0);
+    c0.setCoefficient(x, 1);
+    c0.setCoefficient(y, 1);
+    c0.setCoefficient(z, 1);
+
+    // 10*x + 4*y + 5*z <= 600.
+    final MPConstraint c1 = solver.makeConstraint(-infinity, 600.0);
+    c1.setCoefficient(x, 10);
+    c1.setCoefficient(y, 4);
+    c1.setCoefficient(z, 5);
+
+    // 2*x + 2*y + 6*z <= 300.
+    final MPConstraint c2 = solver.makeConstraint(-infinity, 300.0);
+    c2.setCoefficient(x, 2);
+    c2.setCoefficient(y, 2);
+    c2.setCoefficient(z, 6);
+
+    if (useHint) {
+      // Provide a feasible hint: (x=30, y=70, z=0) satisfies all constraints:
+      //   30 + 70 + 0 = 100 <= 100
+      //   10*30 + 4*70 + 5*0 = 300 + 280 = 580 <= 600
+      //   2*30 + 2*70 + 6*0 = 60 + 140 = 200 <= 300
+      solver.setHint(new MPVariable[] {x, y, z}, new double[] {30.0, 70.0, 0.0});
+    }
+
+    assertEquals(MPSolver.ResultStatus.OPTIMAL, solver.solve());
+    // Same problem as runLinearSolver with integer variables:
+    // optimal: x=33, y=67, z=0, obj = 10*33 + 6*67 + 4*0 = 330 + 402 = 732.
+    assertThat(objective.value()).isWithin(NUM_TOLERANCE).of(732.0);
+    assertThat(x.solutionValue()).isWithin(NUM_TOLERANCE).of(33.0);
+    assertThat(y.solutionValue()).isWithin(NUM_TOLERANCE).of(67.0);
+    assertThat(z.solutionValue()).isWithin(NUM_TOLERANCE).of(0.0);
+  }
+
+  @Test
+  public void testMPSolver_solveWithAndWithoutHint() {
+    for (MPSolver.OptimizationProblemType solverType :
+        new MPSolver.OptimizationProblemType[] {
+          MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING,
+          MPSolver.OptimizationProblemType.SCIP_MIXED_INTEGER_PROGRAMMING,
+          MPSolver.OptimizationProblemType.SAT_INTEGER_PROGRAMMING,
+          MPSolver.OptimizationProblemType.GUROBI_MIXED_INTEGER_PROGRAMMING,
+        }) {
+      // Solve without hint.
+      runSolveWithAndWithoutHint(solverType, /*useHint=*/ false);
+      // Solve with hint.
+      runSolveWithAndWithoutHint(solverType, /*useHint=*/ true);
+    }
+  }
+
+  private void runSolveWithBadHint(MPSolver.OptimizationProblemType problemType) {
+    if (!MPSolver.supportsProblemType(problemType)) {
+      return;
+    }
+    final MPSolver solver =
+        new MPSolver("testSolveWithBadHint", problemType);
+    assertNotNull(solver);
+
+    final double infinity = MPSolver.infinity();
+    final MPVariable x = solver.makeIntVar(0.0, infinity, "x");
+    final MPVariable y = solver.makeIntVar(0.0, infinity, "y");
+
+    // Maximize x + 10 * y.
+    final MPObjective objective = solver.objective();
+    objective.setCoefficient(x, 1);
+    objective.setCoefficient(y, 10);
+    objective.setMaximization();
+
+    // x + 7 * y <= 17.5.
+    final MPConstraint c0 = solver.makeConstraint(-infinity, 17.5, "c0");
+    c0.setCoefficient(x, 1);
+    c0.setCoefficient(y, 7);
+
+    // x <= 3.5.
+    final MPConstraint c1 = solver.makeConstraint(-infinity, 3.5, "c1");
+    c1.setCoefficient(x, 1);
+
+    // Provide a very suboptimal but still feasible hint:
+    // (x=0, y=0) yields obj = 0 + 10*0 = 0, but the true optimum is 23.
+    // If the solver blindly accepted the hint and stopped early, it would
+    // return obj=0. Verifying obj=23 proves the solver continued searching
+    // past the hint and found the true optimum.
+    solver.setHint(new MPVariable[] {x, y}, new double[] {0.0, 0.0});
+
+    assertEquals(MPSolver.ResultStatus.OPTIMAL, solver.solve());
+    // Optimal: x = 3, y = 2, obj = 3 + 20 = 23.
+    assertThat(objective.value()).isWithin(NUM_TOLERANCE).of(23.0);
+    assertThat(x.solutionValue()).isWithin(NUM_TOLERANCE).of(3.0);
+    assertThat(y.solutionValue()).isWithin(NUM_TOLERANCE).of(2.0);
+  }
+
+  @Test
+  public void testMPSolver_solveWithBadHint() {
+    runSolveWithBadHint(
+        MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
+    runSolveWithBadHint(
+        MPSolver.OptimizationProblemType.SCIP_MIXED_INTEGER_PROGRAMMING);
+    runSolveWithBadHint(
+        MPSolver.OptimizationProblemType.SAT_INTEGER_PROGRAMMING);
+    runSolveWithBadHint(
+        MPSolver.OptimizationProblemType.GUROBI_MIXED_INTEGER_PROGRAMMING);
+  }
+
+  private void runSolveWithInfeasibleHint(
+      MPSolver.OptimizationProblemType problemType) {
+    if (!MPSolver.supportsProblemType(problemType)) {
+      return;
+    }
+    final MPSolver solver =
+        new MPSolver("testSolveWithInfeasibleHint", problemType);
+    assertNotNull(solver);
+
+    final double infinity = MPSolver.infinity();
+    final MPVariable x = solver.makeIntVar(0.0, infinity, "x");
+    final MPVariable y = solver.makeIntVar(0.0, infinity, "y");
+
+    // Maximize x + 10 * y.
+    final MPObjective objective = solver.objective();
+    objective.setCoefficient(x, 1);
+    objective.setCoefficient(y, 10);
+    objective.setMaximization();
+
+    // x + 7 * y <= 17.5.
+    final MPConstraint c0 = solver.makeConstraint(-infinity, 17.5, "c0");
+    c0.setCoefficient(x, 1);
+    c0.setCoefficient(y, 7);
+
+    // x <= 3.5.
+    final MPConstraint c1 = solver.makeConstraint(-infinity, 3.5, "c1");
+    c1.setCoefficient(x, 1);
+
+    // Provide an infeasible hint: (x=10, y=10) violates both constraints:
+    //   x + 7*y = 10 + 70 = 80 > 17.5
+    //   x = 10 > 3.5
+    // The solver should detect infeasibility and ignore the hint, solving
+    // the problem normally and finding the true optimum.
+    solver.setHint(new MPVariable[] {x, y}, new double[] {10.0, 10.0});
+
+    assertEquals(MPSolver.ResultStatus.OPTIMAL, solver.solve());
+    // Optimal: x = 3, y = 2, obj = 3 + 20 = 23.
+    assertThat(objective.value()).isWithin(NUM_TOLERANCE).of(23.0);
+    assertThat(x.solutionValue()).isWithin(NUM_TOLERANCE).of(3.0);
+    assertThat(y.solutionValue()).isWithin(NUM_TOLERANCE).of(2.0);
+  }
+
+  @Test
+  public void testMPSolver_solveWithInfeasibleHint() {
+    runSolveWithInfeasibleHint(
+        MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
+    runSolveWithInfeasibleHint(
+        MPSolver.OptimizationProblemType.SCIP_MIXED_INTEGER_PROGRAMMING);
+    runSolveWithInfeasibleHint(
+        MPSolver.OptimizationProblemType.SAT_INTEGER_PROGRAMMING);
+    runSolveWithInfeasibleHint(
+        MPSolver.OptimizationProblemType.GUROBI_MIXED_INTEGER_PROGRAMMING);
+  }
 }
