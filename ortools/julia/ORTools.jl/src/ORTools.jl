@@ -3,7 +3,9 @@ module ORTools
 import MathOptInterface as MOI
 
 # Path to the OR-Tools shared library.
-const libortools = Ref{String}("")
+# `ccall` accepts a global variable as the library name, but not an
+# arbitrary expression such as `libortools[]`; Julia v1.13 enforces this.
+global libortools::String = ""
 
 # Set the library path to be used by the C wrapper. This function is mostly
 # intended for use by the extension packages.
@@ -12,7 +14,7 @@ const libortools = Ref{String}("")
 # library before using any other function in this package (technically, any
 # function that uses the C APIs like `solve`).
 function set_library(path::String)
-  libortools[] = path
+  global libortools = path
   return
 end
 
