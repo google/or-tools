@@ -332,7 +332,6 @@ $$(foreach stage,${PYTHON_STAGES},$$(eval $$(call musllinux_inner,$1,$2,$${stage
 python_$1_musllinux_cp$2_export: python_$1_musllinux_cp$2_build
 	${DOCKER_RUN_CMD} \
  -v `pwd`/export:/export \
- -it \
  --name ortools_$$< \
  ${IMAGE}:$$< \
  "cp build*/python/dist/*.whl /export/python"
