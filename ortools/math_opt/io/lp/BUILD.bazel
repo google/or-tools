@@ -11,47 +11,53 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:or_cc_rules.bzl", "or_cc_library")
 
-cc_library(
+package(default_visibility = ["//ortools/math_opt:__subpackages__"])
+
+or_cc_library(
     name = "lp_model",
     srcs = ["lp_model.cc"],
     hdrs = ["lp_model.h"],
     deps = [
         ":lp_name",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/base:strong_int",
         "//ortools/base:strong_vector",
         "//ortools/util:fp_roundtrip_conv",
         "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "lp_name",
     srcs = ["lp_name.cc"],
     hdrs = ["lp_name.h"],
     deps = [
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "model_utils",
     srcs = ["model_utils.cc"],
     hdrs = ["model_utils.h"],
     deps = [
         ":lp_model",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/base:strong_vector",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
     ],
 )

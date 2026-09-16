@@ -13,12 +13,11 @@
 
 # Some tools to interact with MathOpt.
 
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library")
 
-package(default_visibility = ["//visibility:private"])
+package(default_visibility = ["//visibility:public"])
 
-cc_binary(
+or_cc_binary(
     name = "mathopt_solve",
     srcs = ["mathopt_solve.cc"],
     tags = [
@@ -29,7 +28,7 @@ cc_binary(
         ":file_format_flags",
         "//ortools/base",
         "//ortools/base:file",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt/core:solver_interface",
         "//ortools/math_opt/cpp:math_opt",
@@ -47,37 +46,38 @@ cc_binary(
         "@abseil-cpp//absl/base:no_destructor",
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/time",
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "mathopt_convert",
     srcs = ["mathopt_convert.cc"],
     deps = [
         ":file_format_flags",
         "//ortools/base",
-        "//ortools/base:status_macros",
         "//ortools/math_opt/io:names_removal",
         "//ortools/util:status_macros",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "file_format_flags",
     srcs = ["file_format_flags.cc"],
     hdrs = ["file_format_flags.h"],
     deps = [
         "//ortools/base:file",
-        "//ortools/base:status_macros",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_parameters_cc_proto",
@@ -90,6 +90,7 @@ cc_library(
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",

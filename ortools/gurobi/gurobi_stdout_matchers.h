@@ -16,6 +16,7 @@
 
 #include <string>
 
+#include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 
 namespace operations_research {

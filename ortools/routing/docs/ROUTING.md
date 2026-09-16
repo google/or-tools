@@ -107,6 +107,7 @@ from ortools.routing import enums_pb2
 from ortools.routing.python import routing
 
 
+
 def main() -> None:
   """Entry point of the program."""
   # Instantiate the data problem.
@@ -168,7 +169,7 @@ if __name__ == "__main__":
 ### Java code samples
 
 ```java
-// Snippet from ortools/routing/samples/SimpleRoutingProgram.java
+// Snippet from ortools/routing/samples/java/SimpleRoutingProgram.java
 package com.google.ortools.routing.samples;
 import static java.lang.Math.abs;
 

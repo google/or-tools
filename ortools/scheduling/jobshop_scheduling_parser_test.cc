@@ -18,6 +18,7 @@
 #include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
 #include "ortools/base/path.h"
+#include "ortools/scheduling/jobshop_scheduling.pb.h"
 
 namespace operations_research {
 namespace scheduling {
@@ -57,6 +58,19 @@ TEST(RcpspParserTest, Flexible) {
 TEST(RcpspParserTest, Sdst) {
   JsspParser parser;
   ASSERT_TRUE(parser.ParseFile(GetPath("SDST10_ta001.txt")));
+  const JsspInputProblem problem = parser.problem();
+  EXPECT_EQ(20, problem.jobs_size());
+  EXPECT_EQ(5, problem.machines_size());
+  for (const Machine& m : problem.machines()) {
+    ASSERT_TRUE(m.has_transition_time_matrix());
+    EXPECT_EQ(m.transition_time_matrix().transition_time_size(),
+              problem.jobs_size() * problem.jobs_size());
+  }
+}
+
+TEST(RcpspParserTest, CompressedSdst) {
+  JsspParser parser;
+  ASSERT_TRUE(parser.ParseFile(GetPath("SDST10_ta001.txt.gz")));
   const JsspInputProblem problem = parser.problem();
   EXPECT_EQ(20, problem.jobs_size());
   EXPECT_EQ(5, problem.machines_size());

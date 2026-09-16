@@ -74,8 +74,8 @@ std::optional<std::pair<int, int>> FindPairwiseConflict(
     std::pair<IntegerValue, IntegerValue> bounding_box_size,
     absl::Span<const int> index_by_decreasing_x_size,
     absl::Span<const int> index_by_decreasing_y_size) {
-  // Look for pairwise incompatible pairs by using the logic such conflict can
-  // only happen between a "tall" item a "wide" item.
+  // Look for pairwise incompatible pairs by using the logic that such conflict
+  // can only happen between a "tall" item and a "wide" item.
   int x_idx = 0;
   int y_idx = 0;
   while (x_idx < index_by_decreasing_x_size.size() &&
@@ -165,7 +165,7 @@ IntegerValue RoundingDualFeasibleFunctionPowerOfTwo::LowestInverse(
 //
 // The current implementation is a bit more general than a simple check using
 // f_0 described above. This implementation can take a function g(x) that is
-// non-decreasing and satisfy g(0)=0 and it will check for conflict using
+// non-decreasing and satisfies g(0)=0 and it will check for a conflict using
 // g(f_0^k(x)) for all values of k, but without recomputing g(x) `k` times. This
 // is handy if g() is a DFF that is slow to compute. g(x) is described by the
 // vector g_x[i] = g(sizes_x[i]) and the variable g_max = g(x_bb_size).
@@ -245,13 +245,13 @@ OrthogonalPackingResult OrthogonalPackingInfeasibilityDetector::GetDffConflict(
     int index = index_by_decreasing_x_size[enlarging_item_index];
     IntegerValue size = sizes_x[index];
     // Note that since `size_x` is decreasing, we test increasingly large
-    // values of k. Also note that a item with size `k` cannot fit alongside
+    // values of k. Also note that an item with size `k` cannot fit alongside
     // an item with size `size_x`, but smaller ones can.
     const IntegerValue k = x_bb_size - size + 1;
     if (2 * k > x_bb_size) {
       break;
     }
-    // First, add the area contribution of enlarging the all the items of size
+    // First, add the area contribution of enlarging all the items of size
     // exactly size_x. All larger items were already enlarged in the previous
     // iterations.
     do {
@@ -302,7 +302,7 @@ namespace {
 // One interesting property is if we find an energy conflict using a
 // superadditive function it means the problem is infeasible both interpreted as
 // a 2d bin packing and as a RCPSP problem. In practice, that means that if we
-// find a RCPSP solution for a 2d bin packing problem, there is no point on
+// find a RCPSP solution for a 2d bin packing problem, there is no point in
 // using Maximal DFFs to search for energy conflicts.
 //
 // Returns true if it found a feasible solution to the RCPSP problem.
@@ -377,7 +377,7 @@ bool FindHeuristicSchedulingSolution(
 // We want to find the minimum set of values of `k` that would always find a
 // conflict if there is a `k` for which it exists. In the literature it is
 // often implied (but not stated) that it is sufficient to test the values of
-// `k` that correspond to the size of an item. This is not true. To find the
+// `k` that corresponds to the size of an item. This is not true. To find the
 // minimum set of values of `k` we look for all values of `k` that are
 // "extreme": ie., the rounding on the division truncates the most (or the
 // least) amount, depending on the sign it appears in the formula.
@@ -429,7 +429,7 @@ void OrthogonalPackingInfeasibilityDetector::GetAllCandidatesForKForDff2(
   // C/4 we need to test are {C/4+1, C/3+1}.
   //
   // In the same reference there is a proof that this way of composing f_0 and
-  // f_2 cover all possible ways of composing the two functions, including
+  // f_2 covers all possible ways of composing the two functions, including
   // composing several times each.
   //
   // [1] F. Clautiaux, PhD thesis, hal/tel-00749411.
@@ -444,7 +444,7 @@ void OrthogonalPackingInfeasibilityDetector::GetAllCandidatesForKForDff2(
 // Check for conflict all combinations of the two Dual Feasible Functions f_0
 // (see documentation for GetDffConflict()) and f_2 (see documentation for
 // RoundingDualFeasibleFunction). More precisely, check whether there exist `l`
-// and `k` so that
+// and `k` such that
 //
 // sum_i f_2^k(f_0^l(sizes_x[i])) * sizes_y[i] > f_2^k(f_0^l(x_bb_size)) *
 //                                                 y_bb_size
@@ -485,7 +485,7 @@ OrthogonalPackingInfeasibilityDetector::CheckFeasibilityWithDualFunction2(
   if (5ull * max_number_of_parameters_to_check <
       max_possible_number_of_parameters) {
     // There are many more possible values than what we want to sample. It is
-    // not worth to pay the price of computing all optimal values to drop most
+    // not worth paying the price of computing all optimal values to drop most
     // of them, so let's just pick it randomly.
     candidates.Resize(x_bb_size / 4 + 1);
     int num_candidates = 0;
@@ -721,8 +721,8 @@ OrthogonalPackingInfeasibilityDetector::TestFeasibilityImpl(
   }
 
   if (options.use_dff_f0) {
-    // If there is no pairwise incompatible pairs, this DFF cannot find a
-    // conflict by enlarging a item on both x and y directions: this would
+    // If there are no pairwise incompatible pairs, this DFF cannot find a
+    // conflict by enlarging an item in both x and y directions: this would
     // create an item as long as the whole box and another item as high as the
     // whole box, which is obviously incompatible, and this incompatibility
     // would be present already before enlarging the items since it is a DFF. So

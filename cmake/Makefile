@@ -290,16 +290,16 @@ all_python_$1: $$(python_targets_$1)
 
 $$(cpp_targets_$1): %_cpp_$1: docker/%/cpp.Dockerfile %_base
 	#@docker image rm -f ${IMAGE}:$$*_cpp_$1 2>/dev/null
-	${DOCKER_BUILD_CMD} --target=$1 --tag ${IMAGE}:$$*_cpp_$1 -f $$< ..
+	${DOCKER_BUILD_CMD} --build-arg TARGETARCH="" --target=$1 --tag ${IMAGE}:$$*_cpp_$1 -f $$< ..
 $$(dotnet_targets_$1): %_dotnet_$1: docker/%/dotnet.Dockerfile %_swig
 	#@docker image rm -f ${IMAGE}:$$*_dotnet_$1 2>/dev/null
-	${DOCKER_BUILD_CMD} --target=$1 --tag ${IMAGE}:$$*_dotnet_$1 -f $$< ..
+	${DOCKER_BUILD_CMD} --build-arg TARGETARCH="" --target=$1 --tag ${IMAGE}:$$*_dotnet_$1 -f $$< ..
 $$(java_targets_$1): %_java_$1: docker/%/java.Dockerfile %_swig
 	#@docker image rm -f ${IMAGE}:$$*_java_$1 2>/dev/null
-	${DOCKER_BUILD_CMD} --target=$1 --tag ${IMAGE}:$$*_java_$1 -f $$< ..
+	${DOCKER_BUILD_CMD} --build-arg TARGETARCH="" --target=$1 --tag ${IMAGE}:$$*_java_$1 -f $$< ..
 $$(python_targets_$1): %_python_$1: docker/%/python.Dockerfile %_swig
 	#@docker image rm -f ${IMAGE}:$$*_python_$1 2>/dev/null
-	${DOCKER_BUILD_CMD} --target=$1 --tag ${IMAGE}:$$*_python_$1 -f $$< ..
+	${DOCKER_BUILD_CMD} --build-arg TARGETARCH="" --target=$1 --tag ${IMAGE}:$$*_python_$1 -f $$< ..
 
 # Save $1 docker images (debug).
 #$$(info Create targets: save_all_$1 $(addprefix save_, $(addsuffix _$1, $(DISTROS))).)
@@ -482,18 +482,18 @@ java_targets_$1_$2 := $(addprefix $1_, $(addsuffix _java_$2, $(DISTROS)))
 python_targets_$1_$2 := $(addprefix $1_, $(addsuffix _python_$2, $(DISTROS)))
 .PHONY: $$(cpp_targets_$1_$2) $$(dotnet_targets_$1_$2) $$(java_targets_$1_$2) $$(python_targets_$1_$2)
 
-$$(cpp_targets_$1_$2): $1_%_cpp_$2: docker/%/cpp.Dockerfile %_base
+$$(cpp_targets_$1_$2): $1_%_cpp_$2: docker/%/cpp.Dockerfile $1_%_base
 	#@docker image rm -f ${IMAGE}:$1_$$*_cpp_$2 2>/dev/null
-	${DOCKER_BUILD_CMD} --target=$2 --tag ${IMAGE}:$1_$$*_cpp_$2 -f $$< ..
-$$(dotnet_targets_$1_$2): $1_%_dotnet_$2: docker/%/dotnet.Dockerfile %_swig
+	${DOCKER_BUILDX_CMD} --platform linux/$1 --target=$2 --tag ${IMAGE}:$1_$$*_cpp_$2 -f $$< ..
+$$(dotnet_targets_$1_$2): $1_%_dotnet_$2: docker/%/dotnet.Dockerfile $1_%_swig
 	#@docker image rm -f ${IMAGE}:$1_$$*_dotnet_$2 2>/dev/null
-	${DOCKER_BUILD_CMD} --target=$2 --tag ${IMAGE}:$1_$$*_dotnet_$2 -f $$< ..
-$$(java_targets_$1_$2): $1_%_java_$2: docker/%/java.Dockerfile %_swig
+	${DOCKER_BUILDX_CMD} --platform linux/$1 --target=$2 --tag ${IMAGE}:$1_$$*_dotnet_$2 -f $$< ..
+$$(java_targets_$1_$2): $1_%_java_$2: docker/%/java.Dockerfile $1_%_swig
 	#@docker image rm -f ${IMAGE}:$1_$$*_java_$2 2>/dev/null
-	${DOCKER_BUILD_CMD} --target=$2 --tag ${IMAGE}:$1_$$*_java_$2 -f $$< ..
-$$(python_targets_$1_$2): $1_%_python_$2: docker/%/python.Dockerfile %_swig
+	${DOCKER_BUILDX_CMD} --platform linux/$1 --target=$2 --tag ${IMAGE}:$1_$$*_java_$2 -f $$< ..
+$$(python_targets_$1_$2): $1_%_python_$2: docker/%/python.Dockerfile $1_%_swig
 	#@docker image rm -f ${IMAGE}:$1_$$*_python_$2 2>/dev/null
-	${DOCKER_BUILD_CMD} --target=$2 --tag ${IMAGE}:$1_$$*_python_$2 -f $$< ..
+	${DOCKER_BUILDX_CMD} --platform linux/$1 --target=$2 --tag ${IMAGE}:$1_$$*_python_$2 -f $$< ..
 
 #$$(info Create save targets: $(addprefix save_$1_, $(addsuffix _$2, $(DISTROS))).)
 save_targets_$1_$2 := $(addprefix save_$1_, $(addsuffix _$2, $(DISTROS)))
@@ -552,13 +552,13 @@ python_targets_$1_$2 := $(addprefix sh_$1_, $(addsuffix _python_$2, $(DISTROS)))
 .PHONY: $$(cpp_targets_$1_$2) $$(dotnet_targets_$1_$2) $$(java_targets_$1_$2) $$(python_targets_$1_$2)
 
 $$(cpp_targets_$1_$2): sh_$1_%_cpp_$2: $1_%_cpp_$2
-	${DOCKER_RUN_CMD} -it --name ${PROJECT}_${BUILD_SYSTEM}_$1_$$*_cpp_$2 ${IMAGE}:$1_$$*_cpp_$2
+	${DOCKER_RUN_CMD} --platform linux/$1 -it --name ${PROJECT}_${BUILD_SYSTEM}_$1_$$*_cpp_$2 ${IMAGE}:$1_$$*_cpp_$2
 $$(dotnet_targets_$1_$2): sh_$1_%_dotnet_$2: $1_%_dotnet_$2
-	${DOCKER_RUN_CMD} -it --name ${PROJECT}_${BUILD_SYSTEM}_$1_$$*_dotnet_$2 ${IMAGE}:$1_$$*_dotnet_$2
+	${DOCKER_RUN_CMD} --platform linux/$1 -it --name ${PROJECT}_${BUILD_SYSTEM}_$1_$$*_dotnet_$2 ${IMAGE}:$1_$$*_dotnet_$2
 $$(java_targets_$1_$2): sh_$1_%_java_$2: $1_%_java_$2
-	${DOCKER_RUN_CMD} -it --name ${PROJECT}_${BUILD_SYSTEM}_$1_$$*_java_$2 ${IMAGE}:$1_$$*_java_$2
+	${DOCKER_RUN_CMD} --platform linux/$1 -it --name ${PROJECT}_${BUILD_SYSTEM}_$1_$$*_java_$2 ${IMAGE}:$1_$$*_java_$2
 $$(python_targets_$1_$2): sh_$1_%_python_$2: $1_%_python_$2
-	${DOCKER_RUN_CMD} -it --name ${PROJECT}_${BUILD_SYSTEM}_$1_$$*_python_$2 ${IMAGE}:$1_$$*_python_$2
+	${DOCKER_RUN_CMD} --platform linux/$1 -it --name ${PROJECT}_${BUILD_SYSTEM}_$1_$$*_python_$2 ${IMAGE}:$1_$$*_python_$2
 
 #$$(info Create clean distro targets: $(addprefix clean_$1_, $(addsuffix _$2, $(DISTROS))).)
 targets_$1_$2 := $(addprefix clean_$1_, $(addsuffix _$2, $(DISTROS)))

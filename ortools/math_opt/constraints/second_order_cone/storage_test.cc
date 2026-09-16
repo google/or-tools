@@ -13,12 +13,10 @@
 
 #include "ortools/math_opt/constraints/second_order_cone/storage.h"
 
-#include <vector>
-
 #include "absl/container/flat_hash_map.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/strong_int.h"
+#include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/storage/linear_expression_data.h"

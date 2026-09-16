@@ -1,4 +1,5 @@
-FROM ortools/cmake:alpine_base AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}alpine_base AS env
 
 RUN cmake -version
 

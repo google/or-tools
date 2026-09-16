@@ -31,6 +31,7 @@
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
+#include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/preprocessor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
@@ -356,6 +357,7 @@ MPSolutionResponse SatSolveProtoInternal(
     MPSolution mp_solution;
     mp_solution.set_objective_value(sat_response.objective_value());
     // Postsolve the bound shift and scaling.
+    glop::SolveStatus solve_status = glop::OptimalSolveStatus();
     glop::ProblemSolution glop_solution((glop::RowIndex(old_num_constraints)),
                                         (glop::ColIndex(old_num_variables)));
     for (int v = 0; v < glop_solution.primal_values.size(); ++v) {
@@ -363,7 +365,7 @@ MPSolutionResponse SatSolveProtoInternal(
           static_cast<double>(sat_response.solution(v)) / var_scaling[v];
     }
     for (int i = for_postsolve.size(); --i >= 0;) {
-      for_postsolve[i]->RecoverSolution(&glop_solution);
+      for_postsolve[i]->RecoverSolution(solve_status, &glop_solution);
     }
     for (int v = 0; v < glop_solution.primal_values.size(); ++v) {
       mp_solution.add_variable_value(

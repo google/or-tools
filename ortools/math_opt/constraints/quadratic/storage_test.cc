@@ -17,7 +17,6 @@
 
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/storage/model_storage_types.h"

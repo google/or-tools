@@ -60,6 +60,7 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/die_if_null.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "absl/synchronization/mutex.h"
@@ -72,6 +73,7 @@
 #include "ortools/linear_solver/proto_solver/proto_utils.h"
 #include "ortools/third_party_solvers/gurobi_environment.h"
 #include "ortools/util/lazy_mutable_copy.h"
+#include "ortools/util/status_streaming.h"
 #include "ortools/util/time_limit.h"
 
 ABSL_FLAG(int, num_gurobi_threads, 0,
@@ -1413,7 +1415,7 @@ void GurobiInterface::SetCallback(MPCallback* mp_callback) {
 namespace {
 
 // See MpSolverInterfaceFactoryRepository for details.
-const void* const kRegisterGurobiLp ABSL_ATTRIBUTE_UNUSED = [] {
+const void* const kRegisterGurobiLp [[maybe_unused]] = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* solver) { return new GurobiInterface(solver, false); },
       MPSolver::GUROBI_LINEAR_PROGRAMMING,
@@ -1422,7 +1424,7 @@ const void* const kRegisterGurobiLp ABSL_ATTRIBUTE_UNUSED = [] {
 }();
 
 // See MpSolverInterfaceFactoryRepository for details.
-const void* const kRegisterGurobiMip ABSL_ATTRIBUTE_UNUSED = [] {
+const void* const kRegisterGurobiMip [[maybe_unused]] = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* solver) { return new GurobiInterface(solver, true); },
       MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING,

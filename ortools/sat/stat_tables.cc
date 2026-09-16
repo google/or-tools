@@ -63,7 +63,7 @@ SharedStatTables::SharedStatTables() {
       {"LNS stats", "Improv/Calls", "Closed", "Difficulty", "TimeLimit"});
 
   ls_table_.push_back({"LS stats", "Batches", "Restarts/Perturbs", "LinMoves",
-                       "GenMoves", "CompoundMoves", "Bactracks",
+                       "GenMoves", "CompoundMoves", "Backtracks",
                        "WeightUpdates", "ScoreComputed"});
 }
 

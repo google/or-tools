@@ -23,6 +23,7 @@
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
+#include "ortools/sat/cp_model.pb.h"
 
 namespace operations_research {
 namespace sat {
@@ -58,7 +59,7 @@ TEST(GetOrbitsTest, BasicExample) {
   }
 }
 
-// Recover for generators (in a particular form)
+// Recover from generators (in a particular form)
 // [0, 1, 2]
 // [4, 5, 3]
 // [8, 7, 6]
@@ -77,7 +78,7 @@ TEST(BasicOrbitopeExtractionTest, BasicExample) {
   EXPECT_THAT(orbitope[2], ElementsAre(8, 7, 6));
 }
 
-// This one is trickier and is not an orbitope because 8 appear twice. So it
+// This one is trickier and is not an orbitope because 8 appears twice. So it
 // would be incorrect to "grow" the first two columns with the 3rd one.
 // [0, 1, 2]
 // [4, 5, 8]

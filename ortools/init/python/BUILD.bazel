@@ -14,22 +14,24 @@
 # Python wrapper for init module.
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//python:py_test.bzl", "py_test")
+load("//bazel:or_cc_rules.bzl", "or_cc_library")
+load("//bazel:or_pybind_rules.bzl", "or_pybind_extension")
 
-cc_library(
-    name = "init_doc",
+package(default_visibility = ["//visibility:private"])
+
+or_cc_library(
+    name = "init_doc_h",
     hdrs = ["init_doc.h"],
     visibility = ["//visibility:public"],
 )
 
-pybind_extension(
+or_pybind_extension(
     name = "init",
     srcs = ["init.cc"],
     visibility = ["//visibility:public"],
     deps = [
-        ":init_doc",
+        ":init_doc_h",
         "//ortools/init",
     ],
 )

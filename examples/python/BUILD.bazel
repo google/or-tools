@@ -26,10 +26,10 @@ py_binary(
         "not_run:arm",
     ],
     deps = [
+        "//ortools/sat/python:cp_model",
         requirement("absl-py"),
         requirement("numpy"),
         "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/python:cp_model",
     ],
 )
 
@@ -38,8 +38,8 @@ py_binary(
     srcs = ["assignment_with_constraints_sat.py"],
     main = "assignment_with_constraints_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -48,6 +48,7 @@ bintest(
     size = "medium",
     srcs = [":assignment_with_constraints_sat_py_test.bintest"],
     named_data = {"assignment_with_constraints_sat_py3": ":assignment_with_constraints_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -55,8 +56,8 @@ py_binary(
     srcs = ["balance_group_sat.py"],
     main = "balance_group_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -65,6 +66,7 @@ bintest(
     size = "medium",
     srcs = [":balance_group_sat_py_test.bintest"],
     named_data = {"balance_group_sat_py3": ":balance_group_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -72,8 +74,8 @@ py_binary(
     srcs = ["bus_driver_scheduling_sat.py"],
     main = "bus_driver_scheduling_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -82,6 +84,7 @@ bintest(
     size = "medium",
     srcs = [":bus_driver_scheduling_sat_py_test.bintest"],
     named_data = {"bus_driver_scheduling_sat_py3": ":bus_driver_scheduling_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -96,6 +99,7 @@ bintest(
     size = "medium",
     srcs = [":bus_driver_scheduling_flow_sat_py_test.bintest"],
     named_data = {"bus_driver_scheduling_flow_sat_py3": ":bus_driver_scheduling_flow_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -103,8 +107,8 @@ py_binary(
     srcs = ["car_sequencing_optimization_sat.py"],
     main = "car_sequencing_optimization_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -113,6 +117,7 @@ bintest(
     size = "small",
     srcs = [":car_sequencing_optimization_sat_py_test.bintest"],
     named_data = {"car_sequencing_optimization_sat_py3": ":car_sequencing_optimization_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -120,8 +125,8 @@ py_binary(
     srcs = ["chemical_balance_sat.py"],
     main = "chemical_balance_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -130,6 +135,7 @@ bintest(
     size = "medium",
     srcs = [":chemical_balance_sat_py_test.bintest"],
     named_data = {"chemical_balance_sat_py3": ":chemical_balance_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -137,8 +143,8 @@ py_binary(
     srcs = ["clustering_sat.py"],
     main = "clustering_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -147,6 +153,7 @@ bintest(
     size = "medium",
     srcs = [":clustering_sat_py_test.bintest"],
     named_data = {"clustering_sat_py3": ":clustering_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -154,8 +161,8 @@ py_binary(
     srcs = ["cover_rectangle_sat.py"],
     main = "cover_rectangle_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -164,6 +171,7 @@ bintest(
     size = "medium",
     srcs = [":cover_rectangle_sat_py_test.bintest"],
     named_data = {"cover_rectangle_sat_py3": ":cover_rectangle_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -177,6 +185,7 @@ bintest(
     name = "flexible_job_shop_sat_py_test",
     srcs = [":flexible_job_shop_sat_py_test.bintest"],
     named_data = {"flexible_job_shop_sat_py3": ":flexible_job_shop_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -184,8 +193,8 @@ py_binary(
     srcs = ["gate_scheduling_sat.py"],
     main = "gate_scheduling_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/colab:visualization",
+        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
     ],
 )
@@ -194,6 +203,7 @@ bintest(
     name = "gate_scheduling_sat_py_test",
     srcs = [":gate_scheduling_sat_py_test.bintest"],
     named_data = {"gate_scheduling_sat_py3": ":gate_scheduling_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -201,8 +211,8 @@ py_binary(
     srcs = ["golomb_sat.py"],
     main = "golomb_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -211,6 +221,7 @@ bintest(
     size = "medium",
     srcs = [":golomb_sat_py_test.bintest"],
     named_data = {"golomb_sat_py3": ":golomb_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -218,9 +229,9 @@ py_binary(
     srcs = ["hidato_sat.py"],
     main = "hidato_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/colab:visualization",
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -228,6 +239,7 @@ bintest(
     name = "hidato_sat_py_test",
     srcs = [":hidato_sat_py_test.bintest"],
     named_data = {"hidato_sat_py3": ":hidato_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -241,6 +253,7 @@ bintest(
     name = "jobshop_ft06_distance_sat_py_test",
     srcs = [":jobshop_ft06_distance_sat_py_test.bintest"],
     named_data = {"jobshop_ft06_distance_sat_py3": ":jobshop_ft06_distance_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -257,6 +270,7 @@ bintest(
     name = "jobshop_ft06_sat_py_test",
     srcs = [":jobshop_ft06_sat_py_test.bintest"],
     named_data = {"jobshop_ft06_sat_py3": ":jobshop_ft06_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -264,8 +278,8 @@ py_binary(
     srcs = ["jobshop_with_maintenance_sat.py"],
     main = "jobshop_with_maintenance_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -274,6 +288,7 @@ bintest(
     size = "medium",
     srcs = [":jobshop_with_maintenance_sat_py_test.bintest"],
     named_data = {"jobshop_with_maintenance_sat_py3": ":jobshop_with_maintenance_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -281,10 +296,10 @@ py_binary(
     srcs = ["knapsack_2d_sat.py"],
     main = "knapsack_2d_sat.py",
     deps = [
+        "//ortools/sat/python:cp_model",
         requirement("absl-py"),
         requirement("numpy"),
         requirement("pandas"),
-        "//ortools/sat/python:cp_model",
     ],
 )
 
@@ -293,6 +308,7 @@ bintest(
     size = "medium",
     srcs = [":knapsack_2d_sat_py_test.bintest"],
     named_data = {"knapsack_2d_sat_py3": ":knapsack_2d_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -300,8 +316,8 @@ py_binary(
     srcs = ["line_balancing_sat.py"],
     main = "line_balancing_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -312,6 +328,7 @@ bintest(
         "line_balancing_sat_py3": ":line_balancing_sat_py3",
         "salbp_20_1.alb": "//examples/python/testdata:salbp_20_1.alb",
     },
+    tags = ["noci"],
 )
 
 py_binary(
@@ -319,8 +336,8 @@ py_binary(
     srcs = ["maximize_combinations_sat.py"],
     main = "maximize_combinations_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -329,6 +346,7 @@ bintest(
     size = "medium",
     srcs = [":maximize_combinations_sat_py_test.bintest"],
     named_data = {"maximize_combinations_sat_py3": ":maximize_combinations_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -336,8 +354,8 @@ py_binary(
     srcs = ["maze_escape_sat.py"],
     main = "maze_escape_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -345,6 +363,7 @@ bintest(
     name = "maze_escape_sat_py_test",
     srcs = [":maze_escape_sat_py_test.bintest"],
     named_data = {"maze_escape_sat_py3": ":maze_escape_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -361,6 +380,7 @@ bintest(
     name = "music_playlist_sat_py_test",
     srcs = [":music_playlist_sat_py_test.bintest"],
     named_data = {"music_playlist_sat_py3": ":music_playlist_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -368,8 +388,8 @@ py_binary(
     srcs = ["no_wait_baking_scheduling_sat.py"],
     main = "no_wait_baking_scheduling_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -378,6 +398,7 @@ bintest(
     size = "medium",
     srcs = [":no_wait_baking_scheduling_sat_py_test.bintest"],
     named_data = {"no_wait_baking_scheduling_sat_py3": ":no_wait_baking_scheduling_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -385,8 +406,8 @@ py_binary(
     srcs = ["pell_equation_sat.py"],
     main = "pell_equation_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -395,6 +416,7 @@ bintest(
     size = "medium",
     srcs = [":pell_equation_sat_py_test.bintest"],
     named_data = {"pell_equation_sat_py3": ":pell_equation_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -402,8 +424,8 @@ py_binary(
     srcs = ["pentominoes_sat.py"],
     main = "pentominoes_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -412,6 +434,7 @@ bintest(
     size = "medium",
     srcs = [":pentominoes_sat_py_test.bintest"],
     named_data = {"pentominoes_sat_py3": ":pentominoes_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -419,8 +442,8 @@ py_binary(
     srcs = ["prize_collecting_tsp_sat.py"],
     main = "prize_collecting_tsp_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -429,6 +452,7 @@ bintest(
     size = "medium",
     srcs = [":prize_collecting_tsp_sat_py_test.bintest"],
     named_data = {"prize_collecting_tsp_sat_py3": ":prize_collecting_tsp_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -436,6 +460,8 @@ py_binary(
     srcs = ["prize_collecting_tsp.py"],
     main = "prize_collecting_tsp.py",
     deps = [
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing_py",
     ],
 )
@@ -452,6 +478,8 @@ py_binary(
     srcs = ["prize_collecting_vrp.py"],
     main = "prize_collecting_vrp.py",
     deps = [
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing_py",
     ],
 )
@@ -468,8 +496,8 @@ py_binary(
     srcs = ["prize_collecting_vrp_sat.py"],
     main = "prize_collecting_vrp_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -478,6 +506,7 @@ bintest(
     size = "medium",
     srcs = [":prize_collecting_vrp_sat_py_test.bintest"],
     named_data = {"prize_collecting_vrp_sat_py3": ":prize_collecting_vrp_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -485,8 +514,8 @@ py_binary(
     srcs = ["qubo_sat.py"],
     main = "qubo_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -495,6 +524,7 @@ bintest(
     size = "medium",
     srcs = [":qubo_sat_py_test.bintest"],
     named_data = {"qubo_sat_py3": ":qubo_sat_py3"},
+    tags = ["noci"],
 )
 
 bintest(
@@ -504,6 +534,7 @@ bintest(
         "rcpsp_sat_py3": ":rcpsp_sat_py3",
         "c1510_1.mm.txt": "//ortools/scheduling/testdata:c1510_1.mm.txt",
     },
+    tags = ["noci"],
 )
 
 bintest(
@@ -513,6 +544,7 @@ bintest(
         "rcpsp_sat_py3": ":rcpsp_sat_py3",
         "j301_1.sm": "//ortools/scheduling/testdata:j301_1.sm",
     },
+    tags = ["noci"],
 )
 
 py_binary(
@@ -520,10 +552,10 @@ py_binary(
     srcs = ["rcpsp_sat.py"],
     main = "rcpsp_sat.py",
     deps = [
+        "//ortools/sat/python:cp_model",
         "//ortools/scheduling:rcpsp_py_pb2",
         "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        "//ortools/sat/python:cp_model",
     ],
 )
 
@@ -532,8 +564,8 @@ py_binary(
     srcs = ["shift_scheduling_sat.py"],
     main = "shift_scheduling_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -541,6 +573,7 @@ bintest(
     name = "shift_scheduling_sat_py_test",
     srcs = [":shift_scheduling_sat_py_test.bintest"],
     named_data = {"shift_scheduling_sat_py3": ":shift_scheduling_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -548,8 +581,8 @@ py_binary(
     srcs = ["single_machine_scheduling_with_setup_release_due_dates_sat.py"],
     main = "single_machine_scheduling_with_setup_release_due_dates_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -558,6 +591,7 @@ bintest(
     size = "medium",
     srcs = [":single_machine_scheduling_with_setup_release_due_dates_sat_py_test.bintest"],
     named_data = {"single_machine_scheduling_with_setup_release_due_dates_sat_py3": ":single_machine_scheduling_with_setup_release_due_dates_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -565,8 +599,8 @@ py_binary(
     srcs = ["spread_robots_sat.py"],
     main = "spread_robots_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -574,6 +608,7 @@ bintest(
     name = "spread_robots_sat_py_test",
     srcs = [":spread_robots_sat_py_test.bintest"],
     named_data = {"spread_robots_sat_py3": ":spread_robots_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -581,8 +616,8 @@ py_binary(
     srcs = ["steel_mill_slab_sat.py"],
     main = "steel_mill_slab_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -590,6 +625,7 @@ bintest(
     name = "steel_mill_slab_sat_py_test",
     srcs = [":steel_mill_slab_sat_py_test.bintest"],
     named_data = {"steel_mill_slab_sat_py3": ":steel_mill_slab_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -603,6 +639,7 @@ bintest(
     name = "sudoku_sat_py_test",
     srcs = [":sudoku_sat_py_test.bintest"],
     named_data = {"sudoku_sat_py3": ":sudoku_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -610,8 +647,8 @@ py_binary(
     srcs = ["task_allocation_sat.py"],
     main = "task_allocation_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -620,6 +657,24 @@ bintest(
     size = "medium",
     srcs = [":task_allocation_sat_py_test.bintest"],
     named_data = {"task_allocation_sat_py3": ":task_allocation_sat_py3"},
+    tags = ["noci"],
+)
+
+py_binary(
+    name = "tree_ensemble_optimization_sat_py3",
+    srcs = ["tree_ensemble_optimization_sat.py"],
+    main = "tree_ensemble_optimization_sat.py",
+    deps = [
+        "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
+    ],
+)
+
+bintest(
+    name = "tree_ensemble_optimization_sat_py_test",
+    size = "small",
+    srcs = [":tree_ensemble_optimization_sat_py_test.bintest"],
+    named_data = {"tree_ensemble_optimization_sat_py3": ":tree_ensemble_optimization_sat_py3"},
 )
 
 py_binary(
@@ -627,8 +682,8 @@ py_binary(
     srcs = ["tasks_and_workers_assignment_sat.py"],
     main = "tasks_and_workers_assignment_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -637,6 +692,7 @@ bintest(
     size = "medium",
     srcs = [":tasks_and_workers_assignment_sat_py_test.bintest"],
     named_data = {"tasks_and_workers_assignment_sat_py3": ":tasks_and_workers_assignment_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -644,9 +700,9 @@ py_binary(
     srcs = ["test_scheduling_sat.py"],
     main = "test_scheduling_sat.py",
     deps = [
+        "//ortools/sat/python:cp_model",
         requirement("absl-py"),
         requirement("pandas"),
-        "//ortools/sat/python:cp_model",
     ],
 )
 
@@ -655,6 +711,7 @@ bintest(
     size = "medium",
     srcs = [":test_scheduling_sat_py_test.bintest"],
     named_data = {"test_scheduling_sat_py3": ":test_scheduling_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -669,6 +726,7 @@ bintest(
     size = "medium",
     srcs = [":tsp_sat_py_test.bintest"],
     named_data = {"tsp_sat_py3": ":tsp_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -676,8 +734,8 @@ py_binary(
     srcs = ["vendor_scheduling_sat.py"],
     main = "vendor_scheduling_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -686,6 +744,7 @@ bintest(
     size = "medium",
     srcs = [":vendor_scheduling_sat_py_test.bintest"],
     named_data = {"vendor_scheduling_sat_py3": ":vendor_scheduling_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -693,8 +752,8 @@ py_binary(
     srcs = ["wedding_optimal_chart_sat.py"],
     main = "wedding_optimal_chart_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -703,6 +762,7 @@ bintest(
     size = "medium",
     srcs = [":wedding_optimal_chart_sat_py_test.bintest"],
     named_data = {"wedding_optimal_chart_sat_py3": ":wedding_optimal_chart_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -716,4 +776,5 @@ bintest(
     name = "zebra_sat_py_test",
     srcs = [":zebra_sat_py_test.bintest"],
     named_data = {"zebra_sat_py3": ":zebra_sat_py3"},
+    tags = ["noci"],
 )

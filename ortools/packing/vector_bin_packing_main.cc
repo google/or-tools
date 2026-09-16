@@ -23,6 +23,7 @@
 #include "absl/strings/string_view.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/options.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/packing/arc_flow_solver.h"

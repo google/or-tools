@@ -81,9 +81,9 @@ class SolverInterface {
   // class and looks like:
   //
   //   absl::Status Callback(const CallbackDataProto& callback_data) {
-  //     RETURN_IF_ERROR(ValidateCallbackDataProto(callback_data, ...));
+  //     ABSL_RETURN_IF_ERROR(ValidateCallbackDataProto(callback_data, ...));
   //     CallbackResultProto result = user_cb(callback_data);
-  //     RETURN_IF_ERROR(ValidateCallbackResultProto(result));
+  //     ABSL_RETURN_IF_ERROR(ValidateCallbackResultProto(result));
   //     return result;
   //   }
   //
@@ -259,7 +259,7 @@ class AllSolversRegistry {
 //   solver_factory: A SolverInterface::Factory for solver_type.
 #define MATH_OPT_REGISTER_SOLVER(solver_type, solver_factory)              \
   namespace {                                                              \
-  const void* const kRegisterSolver ABSL_ATTRIBUTE_UNUSED = [] {           \
+  const void* const kRegisterSolver [[maybe_unused]] = [] {                \
     AllSolversRegistry::Instance()->Register(solver_type, solver_factory); \
     return nullptr;                                                        \
   }();                                                                     \

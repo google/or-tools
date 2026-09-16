@@ -19,6 +19,7 @@ exports_files(
         "1010_1_3",
         "50_10_01_ta041.txt",
         "SDST10_ta001.txt",
+        "SDST10_ta001.txt.gz",
         "c1510_1.mm.txt",
         "ft06",
         "j301_1.sm",

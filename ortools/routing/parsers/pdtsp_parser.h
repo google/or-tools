@@ -18,6 +18,7 @@
 #ifndef ORTOOLS_ROUTING_PARSERS_PDTSP_PARSER_H_
 #define ORTOOLS_ROUTING_PARSERS_PDTSP_PARSER_H_
 
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <vector>

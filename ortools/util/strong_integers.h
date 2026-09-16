@@ -169,6 +169,10 @@ class StrongIndex {
     return static_cast<ValType>(value_);
   }
 
+  explicit constexpr operator ValueType() const {  // Needed for util::graph.
+    return static_cast<ValueType>(value_);
+  }
+
   constexpr ThisType operator+() const { return ThisType(value_); }
   constexpr ThisType operator-() const { return ThisType(-value_); }
 
@@ -222,6 +226,10 @@ class StrongInt64 {
   template <typename ValType>  // Needed for StrongVector.
   constexpr ValType value() const {
     return static_cast<ValType>(value_);
+  }
+
+  explicit constexpr operator ValueType() const {  // Needed for util::graph.
+    return static_cast<ValueType>(value_);
   }
 
   INCREMENT_AND_DECREMENT_OPERATORS;

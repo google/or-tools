@@ -429,21 +429,6 @@ TEST(SetCoverModelTest, CreateSparseRowView2) {
               ElementsAre(SubsetIndex(0), SubsetIndex(3)));
 }
 
-namespace {
-// Returns true if the two sparse columns are equal.
-bool Equal(const SparseColumn& sparse_col, const SparseColumn& other_col) {
-  EXPECT_EQ(sparse_col.empty(), other_col.empty());
-  ColumnEntryIndex entry(0);
-  for (const ElementIndex element : other_col) {
-    if (element != sparse_col[entry]) {
-      return false;
-    }
-    ++entry;
-  }
-  return true;
-}
-}  // namespace
-
 // Model Analysis Tests
 
 TEST(SetCoverModelTest, IsUnicost2) {
@@ -574,8 +559,9 @@ TEST(SetCoverModelTest, Resize) {
   EXPECT_EQ(model.num_elements(), 5);
   model.CreateSparseRowView();
   ASSERT_THAT(model.rows(), SizeIs(5));
-  EXPECT_THAT(model.rows()[ElementIndex(3)], IsEmpty());
-  EXPECT_THAT(model.rows()[ElementIndex(4)], IsEmpty());
+  EXPECT_TRUE(model.has_zero_cost_dummy_column());
+  EXPECT_THAT(model.rows()[ElementIndex(3)], ElementsAre(SubsetIndex(6)));
+  EXPECT_THAT(model.rows()[ElementIndex(4)], ElementsAre(SubsetIndex(6)));
 }
 
 TEST(SetCoverModelTest, GenerateRandomModelFrom) {
@@ -600,6 +586,74 @@ TEST(SetCoverModelTest, GenerateRandomModelFrom) {
   } else {
     // This is a possible and valid outcome.
     LOG(INFO) << "Random model generation produced an empty model.";
+  }
+}
+
+SubsetBoolVector SubsetBoolVectorFromIndices(
+    int size, const std::vector<BaseInt>& indices) {
+  SubsetBoolVector v(size, false);
+  for (const BaseInt index : indices) {
+    v[SubsetIndex(index)] = true;
+  }
+  return v;
+}
+
+TEST(SetCoverModelTest, CompareSolutions) {
+  const SubsetBoolVector a = SubsetBoolVectorFromIndices(3, {0, 1});
+  const SubsetBoolVector b = SubsetBoolVectorFromIndices(3, {1, 2});
+
+  const auto [a_minus_b, b_minus_a] = SetCoverModel::CompareSolutions(a, b);
+
+  // a - b should have index 0 set.
+  EXPECT_THAT(a_minus_b, ElementsAre(SubsetIndex(0)));
+
+  // b - a should have index 2 set.
+  EXPECT_THAT(b_minus_a, ElementsAre(SubsetIndex(2)));
+}
+
+TEST(SetCoverModelTest, CompareSolutionsRandom) {
+  auto rng = absl::BitGen();
+  const int size = 50;
+
+  for (int i = 0; i < 10; ++i) {
+    SubsetBoolVector a(size, false);
+    SubsetBoolVector b(size, false);
+    for (int j = 0; j < size; ++j) {
+      a[SubsetIndex(j)] = absl::Bernoulli(rng, 0.5);
+      b[SubsetIndex(j)] = absl::Bernoulli(rng, 0.5);
+    }
+
+    const auto [a_minus_b, b_minus_a] = SetCoverModel::CompareSolutions(a, b);
+
+    // Check a_minus_b.
+    // 1. All elements in a_minus_b must be in a and not in b.
+    for (const SubsetIndex index : a_minus_b) {
+      EXPECT_TRUE(a[index]);
+      EXPECT_FALSE(b[index]);
+    }
+    // 2. All elements in a and not in b must be in a_minus_b.
+    int count_a_minus_b = 0;
+    for (SubsetIndex index(0); index.value() < size; ++index) {
+      if (a[index] && !b[index]) {
+        ++count_a_minus_b;
+      }
+    }
+    EXPECT_EQ(a_minus_b.size(), count_a_minus_b);
+
+    // Check b_minus_a.
+    // 1. All elements in b_minus_a must be in b and not in a.
+    for (const SubsetIndex index : b_minus_a) {
+      EXPECT_TRUE(b[index]);
+      EXPECT_FALSE(a[index]);
+    }
+    // 2. All elements in b and not in a must be in b_minus_a.
+    int count_b_minus_a = 0;
+    for (SubsetIndex index(0); index.value() < size; ++index) {
+      if (b[index] && !a[index]) {
+        ++count_b_minus_a;
+      }
+    }
+    EXPECT_EQ(b_minus_a.size(), count_b_minus_a);
   }
 }
 

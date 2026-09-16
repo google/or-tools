@@ -9,8 +9,9 @@ https://developers.google.com/optimization/
 The CP-SAT solver can express Boolean variables and constraints. A **Boolean
 variable** is an integer variable constrained to be either 0 or 1. A **literal**
 is either a Boolean variable or its negation: 0 negated is 1, and 1 negated is
-0. See
-https://en.wikipedia.org/wiki/Boolean_satisfiability_problem#Basic_definitions_and_terminology.
+
+0.  See
+    https://en.wikipedia.org/wiki/Boolean_satisfiability_problem#Basic_definitions_and_terminology.
 
 ## Boolean variables and literals
 
@@ -22,7 +23,6 @@ negation of `x`.
 ```python
 # Snippet from ortools/sat/samples/literal_sample_sat.py
 """Code sample to demonstrate Boolean variable and literals."""
-
 
 from ortools.sat.python import cp_model
 
@@ -48,6 +48,7 @@ literal_sample_sat()
 #include "ortools/base/log_severity.h"
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "ortools/sat/cp_model.h"
 
 namespace operations_research {
@@ -75,12 +76,13 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/LiteralSampleSat.java
+// Snippet from ortools/sat/samples/java/LiteralSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.sat.BoolVar;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.Literal;
+
 import com.google.ortools.Loader;
 
 /** Code sample to demonstrate Boolean variable and literals. */
@@ -158,7 +160,6 @@ constraints. For instance, we can add a constraint Or(x, not(y)).
 # Snippet from ortools/sat/samples/bool_or_sample_sat.py
 """Code sample to demonstrates a simple Boolean constraint."""
 
-
 from ortools.sat.python import cp_model
 
 
@@ -216,7 +217,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/BoolOrSampleSat.java
+// Snippet from ortools/sat/samples/java/BoolOrSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -382,7 +383,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/ReifiedSampleSat.java
+// Snippet from ortools/sat/samples/java/ReifiedSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -519,7 +520,6 @@ x = 1   y = 1   p = 1
 ```python
 # Snippet from ortools/sat/samples/boolean_product_sample_sat.py
 """Code sample that encodes the product of two Boolean variables."""
-
 
 from ortools.sat.python import cp_model
 

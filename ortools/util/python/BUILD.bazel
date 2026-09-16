@@ -15,26 +15,26 @@
 # some generic utilities for SWIG python.
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@pybind11_bazel//:build_defs.bzl", "pybind_extension", "pybind_library")
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@pybind11_bazel//:build_defs.bzl", "pybind_library")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library")
+load("//bazel:or_pybind_rules.bzl", "or_pybind_extension")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
-    name = "sorted_interval_list_doc",
+or_cc_library(
+    name = "sorted_interval_list_doc_cc",
     hdrs = ["sorted_interval_list_doc.h"],
     visibility = ["//visibility:public"],
 )
 
-pybind_extension(
+or_pybind_extension(
     name = "sorted_interval_list",
     srcs = ["sorted_interval_list.cc"],
     visibility = ["//visibility:public"],
     deps = [
-        ":sorted_interval_list_doc",
+        ":sorted_interval_list_doc_cc",
         "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/strings",
     ],
@@ -45,7 +45,7 @@ pybind_library(
     srcs = ["sorted_interval_list.cc"],
     visibility = ["//visibility:public"],
     deps = [
-        ":sorted_interval_list_doc",
+        ":sorted_interval_list_doc_cc",
         "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/strings",
     ],
@@ -60,7 +60,7 @@ py_test(
     ],
 )
 
-pybind_extension(
+or_pybind_extension(
     name = "piecewise_linear_function",
     srcs = ["piecewise_linear_function.cc"],
     visibility = ["//visibility:public"],
@@ -78,10 +78,11 @@ pybind_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "py_solve_interrupter_lib",
     srcs = ["py_solve_interrupter.cc"],
     hdrs = ["py_solve_interrupter.h"],
+
     # This library is not meant to be consumed end users; only by C++ code of
     # Clif libraries that needs a SolverInterrupter.
     visibility = [
@@ -98,7 +99,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "py_solve_interrupter_testing_lib",
     testonly = True,
     srcs = ["py_solve_interrupter_testing.cc"],
@@ -109,16 +110,17 @@ cc_library(
     ],
 )
 
-pybind_extension(
+or_pybind_extension(
     name = "pybind_solve_interrupter",
     srcs = ["pybind_solve_interrupter.cc"],
+
     # This library is not meant to be consumed end users; only pybind11 code
     # that needs a SolverInterrupter.
     visibility = ["//visibility:public"],
     deps = [":py_solve_interrupter_lib"],
 )
 
-pybind_extension(
+or_pybind_extension(
     name = "pybind_solve_interrupter_testing",
     testonly = True,
     srcs = ["pybind_solve_interrupter_testing.cc"],
@@ -158,7 +160,7 @@ py_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "wrappers",
     srcs = ["wrappers.cc"],
     hdrs = ["wrappers.h"],
@@ -177,13 +179,12 @@ cc_library(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "gen_wrappers_test_message_pybind11",
     testonly = True,
     srcs = ["gen_wrappers_test_message_pybind11.cc"],
     deps = [
         ":wrappers",
-        "//ortools/base",
         "//ortools/util/testdata:wrappers_test_message_cc_proto",
         "@abseil-cpp//absl/flags:parse",
         "@abseil-cpp//absl/flags:usage",
@@ -202,13 +203,13 @@ genrule(
     tools = [":gen_wrappers_test_message_pybind11"],
 )
 
-cc_library(
+or_cc_library(
     name = "wrappers_test_message_pybind11",
     testonly = True,
     hdrs = ["wrappers_test_message_pybind11.h"],
 )
 
-pybind_extension(
+or_pybind_extension(
     name = "wrappers_test_message_extension",
     testonly = True,
     srcs = ["wrappers_test_message_extension.cc"],
@@ -227,5 +228,21 @@ py_test(
     deps = [
         ":wrappers_test_message_extension",
         requirement("absl-py"),
+    ],
+)
+
+py_library(
+    name = "status_streaming",
+    srcs = ["status_streaming.py"],
+    deps = ["//ortools/util:status_py_pb2"],
+)
+
+py_test(
+    name = "status_streaming_test",
+    srcs = ["status_streaming_test.py"],
+    deps = [
+        ":status_streaming",
+        requirement("absl-py"),
+        "//ortools/util:status_py_pb2",
     ],
 )

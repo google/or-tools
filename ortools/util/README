@@ -1,7 +1,0 @@
-<summary> Various utilities to be used by libraries </summary>
-
-This directory contains various utilities needed by the operations
-research libraries.
-
-  - const_int_array.h : A read-only container of integer values.
-  - const_ptr_array.h : A read-only container of pointers.

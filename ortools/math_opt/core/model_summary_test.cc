@@ -14,7 +14,6 @@
 #include "ortools/math_opt/core/model_summary.h"
 
 #include <cstdint>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <string>

@@ -3026,7 +3026,9 @@ class QuadraticExpressionTest(absltest.TestCase):
         with self.assertRaisesRegex(TypeError, "does not support item assignment"):
             expression.linear_terms[x] += 1  # pytype: disable=unsupported-operands
         with self.assertRaisesRegex(TypeError, "does not support item assignment"):
-            expression.quadratic_terms[yy] += 1  # pytype: disable=unsupported-operands
+            expression.quadratic_terms[  # pyrefly: ignore[unsupported-operation]
+                yy
+            ] += 1  # pytype: disable=unsupported-operands
 
     def test_no_copy_of_quadratic_expression(self) -> None:
         mod = model.Model()

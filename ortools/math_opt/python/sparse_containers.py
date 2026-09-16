@@ -123,7 +123,9 @@ class SparseVectorFilter(Generic[VarOrConstraintType]):
     ):
         self._skip_zero_values: bool = skip_zero_values
         self._filtered_items: Optional[Set[VarOrConstraintType]] = (
-            None if filtered_items is None else frozenset(filtered_items)
+            None
+            if filtered_items is None
+            else frozenset(filtered_items)  # pyrefly: ignore[bad-assignment]
         )  # pytype: disable=annotation-type-mismatch  # attribute-variable-annotations
 
     @property

@@ -93,18 +93,15 @@ help:
 	@echo -e "\t\t${BOLD}alpine-edge${RESET} (latest)"
 	@echo -e "\t\t${BOLD}archlinux${RESET} (latest)"
 	@echo -e "\t\t${BOLD}debian-sid${RESET} (unstable)"
-	#@echo -e "\t\t${BOLD}debian-13${RESET} (Trixie)"
+	@echo -e "\t\t${BOLD}debian-13${RESET} (Trixie)"
 	@echo -e "\t\t${BOLD}debian-12${RESET} (Bookworm)"
-	@echo -e "\t\t${BOLD}debian-11${RESET} (Bullseye)"
-	@echo -e "\t\t${BOLD}fedora-42${RESET}"
-	@echo -e "\t\t${BOLD}fedora-41${RESET}"
-	@echo -e "\t\t${BOLD}fedora-40${RESET}"
+	@echo -e "\t\t${BOLD}fedora-44${RESET}"
+	@echo -e "\t\t${BOLD}fedora-43${RESET}"
 	@echo -e "\t\t${BOLD}opensuse-leap${RESET} (latest)"
 	@echo -e "\t\t${BOLD}rockylinux-10${RESET} (latest)"
-	@echo -e "\t\t${BOLD}ubuntu-24.10${RESET} (Ubuntu 24.10, rolling)"
-	@echo -e "\t\t${BOLD}ubuntu-24.04${RESET} (Ubuntu 24.04 LTS, latest)"
+	@echo -e "\t\t${BOLD}ubuntu-26.04${RESET} (Ubuntu 26.04 LTS, latest)"
+	@echo -e "\t\t${BOLD}ubuntu-24.04${RESET} (Ubuntu 24.04 LTS)"
 	@echo -e "\t\t${BOLD}ubuntu-22.04${RESET} (Ubuntu 22.04 LTS)"
-	@echo -e "\t\t${BOLD}ubuntu-20.04${RESET} (Ubuntu 20.04 LTS)"
 	@echo
 	@echo -e "\t${BOLD}<stage>${RESET}:"
 	@echo -e "\t\t${BOLD}env${RESET}"
@@ -431,11 +428,11 @@ DISTROS := \
  almalinux-10 \
  alpine-edge \
  archlinux \
- debian-11 debian-12 debian-sid \
- fedora-40 fedora-41 fedora-42 \
+ debian-12 debian-13 debian-sid \
+ fedora-43 fedora-44 \
  opensuse-leap \
  rockylinux-10 \
- ubuntu-20.04 ubuntu-22.04 ubuntu-24.04 ubuntu-24.10
+ ubuntu-22.04 ubuntu-24.04 ubuntu-26.04
 
 # List of stages
 STAGES := env devel

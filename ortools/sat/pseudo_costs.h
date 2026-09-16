@@ -23,6 +23,7 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
+#include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
@@ -34,7 +35,7 @@
 namespace operations_research {
 namespace sat {
 
-// Pseudo cost of a variable is measured as average observed change in the
+// Pseudo cost of a variable is measured as the average observed change in the
 // objective bounds per unit change in the variable bounds.
 class PseudoCosts {
  public:
@@ -70,7 +71,7 @@ class PseudoCosts {
     return pseudo_costs_[var].NumRecords();
   }
 
-  // Combines the score of the two branch into one score.
+  // Combines the scores of the two branches into one score.
   double CombineScores(double down_branch, double up_branch) const;
 
   // Alternative pseudo-cost. This relies on the LP more heavily and is more in
@@ -126,7 +127,7 @@ class PseudoCosts {
   LinearProgrammingConstraintCollection* lps_;
   IntegerVariable objective_var_ = kNoIntegerVariable;
 
-  // Saved info by BeforeTakingDecision().
+  // Info saved by BeforeTakingDecision().
   ObjectiveInfo saved_info_;
   std::vector<VariableBoundChange> bound_changes_;
 

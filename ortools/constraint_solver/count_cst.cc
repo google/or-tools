@@ -23,8 +23,6 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraints.h"
-#include "ortools/constraint_solver/utilities.h"
 #include "ortools/util/string_array.h"
 
 namespace operations_research {

@@ -15,8 +15,7 @@
 
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//bazel:or_cc_rules.bzl", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -31,14 +30,14 @@ cc_proto_library(
     deps = [":capacity_planning_proto"],
 )
 
-cc_library(
+or_cc_library(
     name = "simple_graph",
     srcs = ["simple_graph.cc"],
     hdrs = ["simple_graph.h"],
     deps = ["@abseil-cpp//absl/hash"],
 )
 
-cc_test(
+or_cc_test(
     name = "simple_graph_test",
     size = "small",
     srcs = ["simple_graph_test.cc"],
@@ -49,7 +48,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solomon_parser",
     srcs = ["solomon_parser.cc"],
     hdrs = ["solomon_parser.h"],
@@ -61,13 +60,14 @@ cc_library(
         "//ortools/base:zipfile",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@re2",
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "solomon_parser_test",
     size = "small",
     srcs = ["solomon_parser_test.cc"],
@@ -78,12 +78,13 @@ cc_test(
     deps = [
         ":solomon_parser",
         "//ortools/base:gmock_main",
-        "//ortools/base:path",
+        "//ortools/util:data_path_resolver",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "lilim_parser",
     srcs = ["lilim_parser.cc"],
     hdrs = ["lilim_parser.h"],
@@ -99,7 +100,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "lilim_parser_test",
     size = "small",
     srcs = ["lilim_parser_test.cc"],
@@ -111,10 +112,13 @@ cc_test(
         ":lilim_parser",
         "//ortools/base:gmock_main",
         "//ortools/base:path",
+        "//ortools/util:data_path_resolver",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "carp_parser",
     srcs = ["carp_parser.cc"],
     hdrs = ["carp_parser.h"],
@@ -131,7 +135,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "carp_parser_test",
     size = "small",
     srcs = ["carp_parser_test.cc"],
@@ -154,12 +158,13 @@ cc_test(
         ":carp_parser",
         "//ortools/base:gmock_main",
         "//ortools/base:log_severity",
-        "//ortools/base:path",
+        "//ortools/util:data_path_resolver",
         "@abseil-cpp//absl/log:scoped_mock_log",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "nearp_parser",
     srcs = ["nearp_parser.cc"],
     hdrs = ["nearp_parser.h"],
@@ -167,13 +172,15 @@ cc_library(
         ":simple_graph",
         "//ortools/base:numbers",
         "//ortools/util:filelineiter",
+        "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:linked_hash_map",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "nearp_parser_test",
     size = "small",
     srcs = ["nearp_parser_test.cc"],
@@ -185,11 +192,11 @@ cc_test(
         ":nearp_parser",
         ":simple_graph",
         "//ortools/base:gmock_main",
-        "//ortools/base:path",
+        "//ortools/util:data_path_resolver",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "pdtsp_parser",
     srcs = ["pdtsp_parser.cc"],
     hdrs = ["pdtsp_parser.h"],
@@ -203,7 +210,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "pdtsp_parser_test",
     size = "small",
     srcs = ["pdtsp_parser_test.cc"],
@@ -214,11 +221,11 @@ cc_test(
     deps = [
         ":pdtsp_parser",
         "//ortools/base:gmock_main",
-        "//ortools/base:path",
+        "//ortools/util:data_path_resolver",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "tsplib_parser",
     srcs = ["tsplib_parser.cc"],
     hdrs = ["tsplib_parser.h"],
@@ -230,7 +237,7 @@ cc_library(
         "//ortools/base:map_util",
         "//ortools/base:numbers",
         "//ortools/base:path",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/base:strtoint",
         "//ortools/base:types",
         "//ortools/base:zipfile",
@@ -239,6 +246,7 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
@@ -246,12 +254,13 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "tsplib_parser_test",
     size = "small",
     timeout = "moderate",
     srcs = ["tsplib_parser_test.cc"],
     data = [
+        "//ortools/routing/parsers/testdata:solomon.zip",
         "//ortools/routing/parsers/testdata:tsplib_Kytojoki_33.vrp",
     ],
     flaky = 1,  # b/132942541
@@ -259,9 +268,10 @@ cc_test(
         ":tsplib_parser",
         "//ortools/base:file",
         "//ortools/base:gmock_main",
-        "//ortools/base:memfile",
         "//ortools/base:path",
+        "//ortools/base:temp_file",
         "//ortools/base:zipfile",
+        "//ortools/util:data_path_resolver",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/status",
@@ -270,7 +280,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "tsptw_parser",
     srcs = ["tsptw_parser.cc"],
     hdrs = ["tsptw_parser.h"],
@@ -287,7 +297,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "tsptw_parser_test",
     size = "small",
     srcs = ["tsptw_parser_test.cc"],
@@ -299,11 +309,11 @@ cc_test(
     deps = [
         ":tsptw_parser",
         "//ortools/base:gmock_main",
-        "//ortools/base:path",
+        "//ortools/util:data_path_resolver",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solution_serializer",
     srcs = ["solution_serializer.cc"],
     hdrs = ["solution_serializer.h"],
@@ -320,7 +330,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "solution_serializer_test",
     size = "small",
     srcs = ["solution_serializer_test.cc"],
@@ -333,13 +343,13 @@ cc_test(
         ":solution_serializer",
         "//ortools/base:file",
         "//ortools/base:gmock_main",
-        "//ortools/base:mutable_memfile",
+        "//ortools/base:temp_file",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/time",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "cvrptw_lib",
     srcs = ["cvrptw_lib.cc"],
     hdrs = ["cvrptw_lib.h"],
@@ -350,6 +360,7 @@ cc_library(
         "//ortools/routing",
         "//ortools/routing:index_manager",
         "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:distributions",
@@ -359,7 +370,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "dow_parser",
     srcs = ["dow_parser.cc"],
     hdrs = ["dow_parser.h"],

@@ -1,4 +1,5 @@
-FROM ortools/cmake:archlinux_base AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}archlinux_base AS env
 
 RUN cmake -version
 

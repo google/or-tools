@@ -26,13 +26,13 @@ from typing import Mapping, Optional, Union
 
 from ortools.math_opt.python import bounded_expressions, variables
 
-_BoundedLinearExpressions = (
+_BoundedLinearExpressions = (  # pylint: disable=invalid-name
     variables.LowerBoundedLinearExpression,
     variables.UpperBoundedLinearExpression,
     variables.BoundedLinearExpression,
 )
 
-_BoundedQuadraticExpressions = (
+_BoundedQuadraticExpressions = (  # pylint: disable=invalid-name
     variables.LowerBoundedLinearExpression,
     variables.UpperBoundedLinearExpression,
     variables.BoundedLinearExpression,
@@ -41,7 +41,7 @@ _BoundedQuadraticExpressions = (
     variables.BoundedQuadraticExpression,
 )
 
-_BoundedExpressions = (
+_BoundedExpressions = (  # pylint: disable=invalid-name
     bounded_expressions.LowerBoundedExpression,
     bounded_expressions.UpperBoundedExpression,
     bounded_expressions.BoundedExpression,

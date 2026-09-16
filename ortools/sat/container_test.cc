@@ -84,7 +84,7 @@ TEST(LiteralsOrOffsetsTest, Holes) {
               ElementsAre(Literal(12), Literal(), Literal(), Literal(14)));
   EXPECT_THAT(container.offsets(), UnorderedElementsAre());
 
-  // LLLL0
+  // LLLLO
   container.InsertOffset(23);
   EXPECT_THAT(container.literals(),
               ElementsAre(Literal(12), Literal(), Literal(), Literal(14)));

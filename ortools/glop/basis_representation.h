@@ -21,11 +21,11 @@
 #include "ortools/glop/lu_factorization.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/rank_one_update.h"
-#include "ortools/glop/status.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/permutation.h"
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse.h"
+#include "ortools/lp_data/sparse_column.h"
 #include "ortools/util/stats.h"
 
 namespace operations_research {
@@ -200,7 +200,7 @@ class BasisFactorization {
   // matrix_ and basis_. This is fast if IsIdentityBasis() is true, otherwise
   // it will trigger a refactorization and will return an error if the matrix
   // could not be factorized.
-  ABSL_MUST_USE_RESULT Status Initialize();
+  AbnormalityStatus Initialize();
 
   // This mainly forward the call to LuFactorization::ComputeInitialBasis().
   //
@@ -220,11 +220,11 @@ class BasisFactorization {
   // Clears eta factorization and refactorizes LU.
   // Nothing happens if this is called on an already refactorized basis.
   // Returns an error if the matrix could not be factorized: i.e. not a basis.
-  ABSL_MUST_USE_RESULT Status Refactorize();
+  AbnormalityStatus Refactorize();
 
   // Like Refactorize(), but do it even if IsRefactorized() is true.
   // Call this if the underlying basis_ changed and Update() wasn't called.
-  ABSL_MUST_USE_RESULT Status ForceRefactorization();
+  AbnormalityStatus ForceRefactorization();
 
   // Returns true if the factorization was just recomputed.
   bool IsRefactorized() const;
@@ -232,9 +232,8 @@ class BasisFactorization {
   // Updates the factorization. The 'eta' column will be modified with a swap to
   // avoid a copy (only if the standard eta update is used). Returns an error if
   // the matrix could not be factorized: i.e. not a basis.
-  ABSL_MUST_USE_RESULT Status Update(ColIndex entering_col,
-                                     RowIndex leaving_variable_row,
-                                     const ScatteredColumn& direction);
+  AbnormalityStatus Update(ColIndex entering_col, RowIndex leaving_variable_row,
+                           const ScatteredColumn& direction);
 
   // Left solves the system y.B = rhs, where y initially contains rhs.
   void LeftSolve(ScatteredRow* y) const;
@@ -316,7 +315,7 @@ class BasisFactorization {
 
  private:
   // Called by ForceRefactorization() or Refactorize() or Initialize().
-  Status ComputeFactorization();
+  AbnormalityStatus ComputeFactorization();
 
   // Return true if the submatrix of matrix_ given by basis_ is exactly the
   // identity (without permutation).
@@ -325,8 +324,8 @@ class BasisFactorization {
   // Updates the factorization using the middle product form update.
   // Qi Huangfu, J. A. Julian Hall, "Novel update techniques for the revised
   // simplex method", 28 january 2013, Technical Report ERGO-13-0001
-  ABSL_MUST_USE_RESULT Status
-  MiddleProductFormUpdate(ColIndex entering_col, RowIndex leaving_variable_row);
+  AbnormalityStatus MiddleProductFormUpdate(ColIndex entering_col,
+                                            RowIndex leaving_variable_row);
 
   // Increases the deterministic time for a solve operation with a vector having
   // this number of non-zero entries (it can be an approximation).

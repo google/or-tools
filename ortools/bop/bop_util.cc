@@ -16,7 +16,6 @@
 #include <stdint.h>
 
 #include <algorithm>
-#include <limits>
 #include <vector>
 
 #include "absl/log/check.h"

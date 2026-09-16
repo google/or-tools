@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef PDLP_ITERATION_STATS_H_
-#define PDLP_ITERATION_STATS_H_
+#ifndef ORTOOLS_PDLP_ITERATION_STATS_H_
+#define ORTOOLS_PDLP_ITERATION_STATS_H_
 
 #include <optional>
 #include <vector>
@@ -116,4 +116,4 @@ void SetRandomProjections(const ShardedQuadraticProgram& sharded_qp,
 
 }  // namespace operations_research::pdlp
 
-#endif  // PDLP_ITERATION_STATS_H_
+#endif  // ORTOOLS_PDLP_ITERATION_STATS_H_

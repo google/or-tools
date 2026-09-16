@@ -16,10 +16,12 @@
 
 #include <cstdint>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -34,7 +36,7 @@ namespace operations_research {
 namespace sat {
 
 // A model singleton used for debugging. If this is set in the model, then we
-// can check that various derived constraint do not exclude this solution (if
+// can check that various derived constraints do not exclude this solution (if
 // it is a known optimal solution for instance).
 class DebugSolution {
  public:
@@ -83,6 +85,8 @@ class DebugSolution {
   ObjectiveDefinition* objective_def_;
   IntegerEncoder* encoder_;
   std::string name_;
+  mutable std::vector<std::tuple<Literal, IntegerLiteral, IntegerValue>>
+      to_print_scratch_;
 
   bool IsLookingForSolutionBetterThanDebugSolution() const {
     if (inner_objective_value_ == kMinIntegerValue) return false;
@@ -95,11 +99,11 @@ class DebugSolution {
 
   // This is filled from proto_values at load-time, and using the
   // cp_model_mapping, we cache the solution of the integer variables that are
-  // mapped. Note that it is possible that not all integer variable are
+  // mapped. Note that it is possible that not all integer variables are
   // mapped.
   //
-  // TODO(user): When this happen we should be able to infer the value of
-  // these derived variable in the solution. For now, we only do that for the
+  // TODO(user): When this happens we should be able to infer the value of
+  // these derived variables in the solution. For now, we only do that for the
   // objective variable.
   util_intops::StrongVector<IntegerVariable, bool> ivar_has_value_;
   util_intops::StrongVector<IntegerVariable, IntegerValue> ivar_values_;
@@ -107,7 +111,7 @@ class DebugSolution {
   std::vector<Literal> boolean_solution_;
 
   // This is the value of all proto variables.
-  // It should be of the same size of the PRESOLVED model and should
+  // It should be of the same size as the PRESOLVED model and should
   // correspond to a solution to the presolved model.
   std::vector<int64_t> proto_values_;
 

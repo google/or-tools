@@ -118,7 +118,9 @@ class Network:
         # location is connected to at least one facility.
         for facility in range(num_facilities):
             if not self.facility_edge_incidence[facility]:
-                location = rng.integer(num_locations)
+                location = rng.integer(
+                    num_locations
+                )  # pyrefly: ignore[missing-attribute]
                 edge: Edge = (facility, location)
                 self.facility_edge_incidence[facility].append(edge)
                 self.location_edge_incidence[location].append(edge)
@@ -126,7 +128,9 @@ class Network:
                 self.edge_costs[edge] = rng.uniform()
         for location in range(num_locations):
             if not self.location_edge_incidence[location]:
-                facility = rng.integer(num_facilities)
+                facility = rng.integer(
+                    num_facilities
+                )  # pyrefly: ignore[missing-attribute]
                 edge: Edge = (facility, location)
                 self.facility_edge_incidence[facility].append(edge)
                 self.location_edge_incidence[location].append(edge)

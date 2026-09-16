@@ -19,17 +19,20 @@
 #include <optional>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/routing.h"
 
 namespace operations_research::routing {
 
-Constraint* MakeDifferentFromValues(Solver* solver, IntVar* var,
+Constraint* MakeDifferentFromValues(Solver* absl_nonnull solver,
+                                    IntVar* absl_nonnull var,
                                     std::vector<int64_t> values);
 
 Constraint* MakeResourceConstraint(
-    const Model::ResourceGroup* resource_group,
-    const std::vector<IntVar*>* vehicle_resource_vars, Model* model);
+    const Model::ResourceGroup* absl_nonnull resource_group,
+    const std::vector<IntVar*>* absl_nonnull vehicle_resource_vars,
+    Model* absl_nonnull model);
 
 /// For every vehicle of the routing model:
 /// - if total_slacks[vehicle] is not nullptr, constrains it to be the sum of
@@ -40,23 +43,23 @@ Constraint* MakeResourceConstraint(
 ///   dimension->CumulVar(end) - dimension->CumulVar(start)
 /// This does stronger propagation than a decomposition, and takes breaks into
 /// account.
-Constraint* MakePathSpansAndTotalSlacks(const Dimension* dimension,
+Constraint* MakePathSpansAndTotalSlacks(const Dimension* absl_nonnull dimension,
                                         std::vector<IntVar*> spans,
                                         std::vector<IntVar*> total_slacks);
 
 Constraint* MakeRouteConstraint(
-    Model* model, std::vector<IntVar*> route_cost_vars,
+    Model* absl_nonnull model, std::vector<IntVar*> route_cost_vars,
     std::function<std::optional<int64_t>(const std::vector<int64_t>&)>
         route_evaluator);
 
-Constraint* MakeGlobalVehicleBreaksConstraint(Solver* solver,
-                                              const Dimension* dimension);
+Constraint* MakeGlobalVehicleBreaksConstraint(
+    Solver* absl_nonnull solver, const Dimension* absl_nonnull dimension);
 
 /// Makes inactive the vehicles which cannot cover the demand resulting from
 /// the transit variables of the active nodes given the maximum number of
 /// vehicles which can be active.
 Constraint* MakeNumActiveVehiclesCapacityConstraint(
-    Solver* solver, std::vector<IntVar*> transit_vars,
+    Solver* absl_nonnull solver, std::vector<IntVar*> transit_vars,
     std::vector<IntVar*> active_vars, std::vector<IntVar*> vehicle_active_vars,
     std::vector<int64_t> vehicle_capacities, int max_active_vehicles,
     bool enforce_active_vehicles = false);

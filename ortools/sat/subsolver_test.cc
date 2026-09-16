@@ -39,7 +39,7 @@ void TestLoopFunction() {
     absl::Mutex mutex;
     std::vector<int64_t> updates;
 
-    // This one will be always the same after each batch of task.
+    // This one will always be the same after each batch of tasks.
     int64_t max_update_value = 0;
   };
 
@@ -50,25 +50,25 @@ void TestLoopFunction() {
 
     bool TaskIsAvailable() override {
       // Note that the lock is only needed for the non-deterministic test.
-      absl::MutexLock mutex_lock(&state_->mutex);
+      absl::MutexLock mutex_lock(state_->mutex);
       return state_->num_task < state_->limit;
     }
 
     std::function<void()> GenerateTask(int64_t id) override {
       {
         // Note that the lock is only needed for the non-deterministic test.
-        absl::MutexLock mutex_lock(&state_->mutex);
+        absl::MutexLock mutex_lock(state_->mutex);
         state_->num_task++;
       }
       return [this, id] {
-        absl::MutexLock mutex_lock(&state_->mutex);
+        absl::MutexLock mutex_lock(state_->mutex);
         state_->updates.push_back(id);
       };
     }
 
     void Synchronize() override {
       // Note that the lock is only needed for the non-deterministic test.
-      absl::MutexLock mutex_lock(&state_->mutex);
+      absl::MutexLock mutex_lock(state_->mutex);
       for (const int64_t i : state_->updates) {
         state_->max_update_value = std::max(state_->max_update_value, i);
       }
@@ -81,7 +81,7 @@ void TestLoopFunction() {
 
   GlobalState state;
 
-  // The number of subsolver can be independent of the number of threads. Here
+  // The number of subsolvers can be independent of the number of threads. Here
   // there is actually no need to have 3 of them except for testing the feature.
   std::vector<std::unique_ptr<SubSolver>> subsolvers;
   for (int i = 0; i < 3; ++i) {

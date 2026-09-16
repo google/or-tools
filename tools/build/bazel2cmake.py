@@ -70,6 +70,10 @@ def extract_bazel_calls(
     exec(
         content,
         {"__builtins__": {}}
+        | {"SAFE_FP_CODE": []}
+        | {"ORTOOLS_DEFAULT_COPTS": []}
+        | {"ORTOOLS_DEFAULT_LINKOPTS": []}
+        | {"ORTOOLS_TEST_COPTS": []}
         | {foo: record(foo) for foo in extract_functions}
         | {foo: discard() for foo in discard_functions}
         | {"requirement": lambda value: f"requirement({value})"},
@@ -448,11 +452,15 @@ def map_cc_binary(ctx: BazelContext, name: str, **kwargs) -> CMakeCall:
     srcs = kwargs.get("srcs", [])
     hdrs = kwargs.get("hdrs", [])
     deps = kwargs.get("deps", [])
+    ortools_deps = []
+    if not ENABLE_ORTOOLS_LIBRARIES:
+        ortools_deps.append("ortools::ortools")
     return CMakeCall(
         "ortools_cxx_binary",
         CMakeArg("NAME", ctx.cmake_name(name)),
         CMakeArg("SOURCES", sorted(srcs + hdrs)),
-        CMakeArg("LINK_LIBRARIES", ctx.cmake_deps(deps)),
+        CMakeArg("LINK_LIBRARIES", ortools_deps + ctx.cmake_deps(deps)),
+        CMakeArg(name="NO_INSTALL", values=[], remove_if_empty=False),
     )
 
 
@@ -460,12 +468,16 @@ def map_cc_library(ctx: BazelContext, name: str, **kwargs) -> CMakeCall:
     srcs = kwargs.get("srcs", [])
     hdrs = kwargs.get("hdrs", [])
     deps = kwargs.get("deps", [])
+    ortools_deps = []
+    if not ENABLE_ORTOOLS_LIBRARIES:
+        ortools_deps.append("ortools::ortools")
     return CMakeCall(
         "ortools_cxx_library",
         CMakeArg("NAME", ctx.cmake_name(name)),
         CMakeArg("SOURCES", sorted(srcs + hdrs)),
-        CMakeArg("LINK_LIBRARIES", ctx.cmake_deps(deps)),
+        CMakeArg("LINK_LIBRARIES", ortools_deps + ctx.cmake_deps(deps)),
         CMakeArg("TYPE", ["INTERFACE" if not srcs else "SHARED"]),
+        CMakeArg(name="NO_INSTALL", values=[], remove_if_empty=False),
     )
 
 
@@ -496,7 +508,6 @@ CALL_MAPPERS = {
     "select": None,
     "sh_binary": None,
     "sh_test": None,
-    "SAFE_FP_CODE": None,
 }
 EXTRACT_FUNCTIONS = [key for key, value in CALL_MAPPERS.items() if value]
 DISCARD_FUNCTIONS = [key for key, value in CALL_MAPPERS.items() if not value]
@@ -518,11 +529,13 @@ def main(argv: Sequence[str]) -> None:
             bazel_content = f.read()
         folder = os.path.dirname(file)
         ctx = BazelContext(folder)
+        print(f"Processing {file}")
         bazel_calls = extract_bazel_calls(
             bazel_content, EXTRACT_FUNCTIONS, DISCARD_FUNCTIONS
         )
         cmake_calls = [
-            CALL_MAPPERS[call.name](ctx, **call.kwargs) for call in bazel_calls
+            CALL_MAPPERS[call.name](ctx, **call.kwargs)
+            for call in bazel_calls  # pyrefly: ignore[not-callable]
         ]
         fmt = CMakeFmt(
             [

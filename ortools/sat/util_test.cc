@@ -20,7 +20,6 @@
 #include <cstdlib>
 #include <limits>
 #include <numeric>
-#include <random>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -29,23 +28,23 @@
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/numeric/bits.h"
 #include "absl/numeric/int128.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
-#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/bitset.h"
-#include "ortools/util/random_engine.h"
 #include "ortools/util/sorted_interval_list.h"
 
 using ::testing::UnorderedElementsAre;
@@ -128,6 +127,23 @@ TEST(CompactVectorVectorTest, ShrinkValues) {
 
   storage.ReplaceValuesBySmallerSet(2, {3, 4, 5});
   EXPECT_THAT(storage[2], ElementsAre(3, 4, 5));
+}
+
+TEST(CompactVectorVectorTest, SortAndRemoveDuplicateValues) {
+  CompactVectorVector<int, int> storage;
+  EXPECT_EQ(storage.size(), 0);
+
+  storage.ResetFromFlatMapping(
+      std::vector<int>({1, 1, 2, 2, 2, 1, 1, 1}),
+      std::vector<int>({14, 13, 22, 21, 22, 14, 10, 14}));
+  storage.SortAndRemoveDuplicateValues(0);
+  storage.SortAndRemoveDuplicateValues(1);
+  storage.SortAndRemoveDuplicateValues(2);
+
+  EXPECT_EQ(storage.size(), 3);
+  EXPECT_THAT(storage[0], IsEmpty());
+  EXPECT_THAT(storage[1], ElementsAre(10, 13, 14));
+  EXPECT_THAT(storage[2], ElementsAre(21, 22));
 }
 
 TEST(CompactVectorVectorTest, ResetFromTranspose) {
@@ -226,7 +242,7 @@ TEST(ModularInverseTest, AllSmallValues) {
 
 TEST(ModularInverseTest, BasicOverflowTest) {
   absl::BitGen random;
-  const int64_t max = std::numeric_limits<int64_t>::max();
+  const int64_t max = kint64max;
   for (int i = 0; i < 100000; ++i) {
     const int64_t m = max - absl::LogUniform<int64_t>(random, 0, max);
     const int64_t x = absl::Uniform(random, 0, m);
@@ -244,7 +260,7 @@ TEST(ModularInverseTest, BasicOverflowTest) {
   }
 }
 
-TEST(ProductWithodularInverseTest, FewSmallValues) {
+TEST(ProductWithModularInverseTest, FewSmallValues) {
   const int limit = 50;
   for (int64_t mod = 1; mod < limit; ++mod) {
     for (int64_t coeff = -limit; coeff < limit; ++coeff) {
@@ -316,7 +332,7 @@ TEST(SolveDiophantineEquationOfSizeTwoTest, FewSmallValues) {
 
 TEST(SolveDiophantineEquationOfSizeTwoTest, BasicOverflowTest) {
   absl::BitGen random;
-  const int64_t max = std::numeric_limits<int64_t>::max();
+  const int64_t max = kint64max;
   for (int i = 0; i < 100000; ++i) {
     int64_t a = max - absl::LogUniform<int64_t>(random, 0, max);
     int64_t b = max - absl::LogUniform<int64_t>(random, 0, max);
@@ -651,8 +667,8 @@ TEST(Percentile, RandomNumbers) {
 
 TEST(SafeDoubleToInt64Test, BasicCases) {
   const double kInfinity = std::numeric_limits<double>::infinity();
-  const int64_t kMax = std::numeric_limits<int64_t>::max();
-  const int64_t kMin = std::numeric_limits<int64_t>::min();
+  const int64_t kMax = kint64max;
+  const int64_t kMin = kint64min;
   const int64_t max53 = (int64_t{1} << 53) - 1;
 
   // Arbitrary behavior for nans.
@@ -704,7 +720,7 @@ TEST(MaxBoundedSubsetSumTest, LowMaxValue) {
   }
 }
 
-TEST(MaxBoundedSubsetSumTest, LowNumberOfElement) {
+TEST(MaxBoundedSubsetSumTest, LowNumberOfElements) {
   MaxBoundedSubsetSum bounded_subset_sum(178'979);
   bounded_subset_sum.Add(150'000);
   bounded_subset_sum.Add(28'000);
@@ -739,51 +755,9 @@ TEST(MaxBoundedSubsetSumTest, SimpleMultiChoice) {
   EXPECT_EQ(bounded_subset_sum.CurrentMax(), 31);
 }
 
-static void BM_bounded_subset_sum(benchmark::State& state) {
-  random_engine_t random_;
-  const int num_items = state.range(0);
-  const int num_choices = state.range(1);
-  const int max_capacity = state.range(2);
-  const int max_size = state.range(3);
-
-  const int num_updates = num_items * num_choices;
-  const int capacity = std::uniform_int_distribution<int>(
-      max_capacity / 2, max_capacity)(random_);
-  MaxBoundedSubsetSum subset_sum(capacity);
-  std::uniform_int_distribution<int> size_dist(0, max_size);
-  std::vector<int64_t> choices(num_choices);
-  for (auto _ : state) {
-    subset_sum.Reset(capacity);
-    for (int i = 0; i < num_items; ++i) {
-      choices.clear();
-      for (int j = 0; j < num_choices; ++j) {
-        choices[j] = size_dist(random_);
-      }
-      subset_sum.AddChoices(choices);
-    }
-  }
-  // Number of updates.
-  state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *
-                          num_updates);
-}
-
-BENCHMARK(BM_bounded_subset_sum)
-    ->Args({10, 3, 30, 5})
-    ->Args({10, 4, 50, 10})
-    ->Args({10, 4, 30, 20})
-    ->Args({25, 3, 30, 5})
-    ->Args({25, 4, 50, 10})
-    ->Args({25, 4, 30, 20})
-    ->Args({60, 3, 30, 5})
-    ->Args({60, 4, 50, 10})
-    ->Args({60, 4, 30, 20})
-    ->Args({100, 3, 30, 5})
-    ->Args({100, 4, 50, 10})
-    ->Args({100, 4, 30, 20});
-
 TEST(FirstFewValuesTest, Basic) {
   FirstFewValues<8> values;
-  EXPECT_EQ(values.LastValue(), std::numeric_limits<int64_t>::max());
+  EXPECT_EQ(values.LastValue(), kint64max);
   values.Add(3);
   EXPECT_THAT(values.reachable(), ElementsAre(0, 3, 6, 9, 12, 15, 18, 21));
   values.Add(5);
@@ -798,7 +772,7 @@ TEST(FirstFewValuesTest, Basic) {
 TEST(FirstFewValuesTest, Overflow) {
   FirstFewValues<6> values;
 
-  const int64_t max = std::numeric_limits<int64_t>::max();
+  const int64_t max = kint64max;
   const int64_t v = max / 3;
   values.Add(v);
   EXPECT_THAT(values.reachable(), ElementsAre(0, v, 2 * v, 3 * v, max, max));
@@ -817,7 +791,7 @@ TEST(BasicKnapsackSolverTest, BasicFeasibleExample) {
   EXPECT_THAT(result.solution, ElementsAre(-2, 9));
 }
 
-TEST(BasicKnapsackSolverTest, BasicInfesibleExample) {
+TEST(BasicKnapsackSolverTest, BasicInfeasibleExample) {
   std::vector<Domain> domains = {Domain(-3, 8), Domain(1, 8)};
   std::vector<int64_t> coeffs = {7, 13};
   std::vector<int64_t> costs = {5, 8};
@@ -1047,7 +1021,7 @@ TEST(MaxBoundedSubsetSumExactTest, RandomTest) {
     sum_of_all += elements[i];
   }
 
-  // Lets compute the maximum by brute force.
+  // Let's compute the maximum by brute force.
   int64_t brute_force_result = 0;
   for (int mask = 0; mask < (1 << num_elements); ++mask) {
     int64_t sum = 0;
@@ -1268,7 +1242,7 @@ TEST(HeuristicallySplitLongLinearTest, BasicExamples) {
   EXPECT_THAT(HeuristicallySplitLongLinear({1, 1, 2, 3}),
               ElementsAre(Pair(0, 2), Pair(2, 1), Pair(3, 1)));
 
-  // The number of part is not ideal here.
+  // The number of parts is not ideal here.
   EXPECT_THAT(
       HeuristicallySplitLongLinear({1, 1, 1, 1, 1, 2, 3}),
       ElementsAre(Pair(0, 1), Pair(1, 2), Pair(3, 2), Pair(5, 1), Pair(6, 1)));
@@ -1288,7 +1262,7 @@ bool IsStrictlyIncludedWrapper(absl::Span<const int> a,
   return IsStrictlyIncluded(in_a.const_view(), a_lits.size(), b_lits);
 }
 
-TEST(IsStricltyIncludedTest, BasicExamples) {
+TEST(IsStrictlyIncludedTest, BasicExamples) {
   EXPECT_FALSE(IsStrictlyIncludedWrapper({}, {}));
   EXPECT_FALSE(IsStrictlyIncludedWrapper({+3, +1}, {+1, +3}));
   EXPECT_FALSE(IsStrictlyIncludedWrapper({+3, +1}, {+2, +3, +5}));

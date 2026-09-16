@@ -11,15 +11,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//bazel:or_cc_rules.bzl", "or_cc_library", "or_cc_test")
 
 package(
     # Code specific to Glpk solver used by linear_solver/ and math_opt/.
     default_visibility = ["//visibility:public"],
 )
 
-cc_library(
+or_cc_library(
     name = "glpk_env_deleter",
     srcs = ["glpk_env_deleter.cc"],
     hdrs = ["glpk_env_deleter.h"],
@@ -35,7 +34,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "glpk_formatters",
     srcs = ["glpk_formatters.cc"],
     hdrs = ["glpk_formatters.h"],
@@ -51,7 +50,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "glpk_formatters_test",
     srcs = ["glpk_formatters_test.cc"],
     target_compatible_with =
@@ -66,7 +65,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "glpk_computational_form",
     hdrs = ["glpk_computational_form.h"],
     target_compatible_with =

@@ -23,6 +23,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "google/protobuf/map.h"
+#include "ortools/algorithms/multikey_radix_sort.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/core/sorted.h"
@@ -256,7 +257,7 @@ template <typename ConstraintData>
 std::vector<typename AtomicConstraintStorage<ConstraintData>::IdType>
 AtomicConstraintStorage<ConstraintData>::SortedConstraints() const {
   std::vector<IdType> result = Constraints();
-  absl::c_sort(result);
+  AutoRadixSort(result, [](const IdType id) { return id.value(); });
   return result;
 }
 
@@ -280,7 +281,7 @@ AtomicConstraintStorage<ConstraintData>::Update(const Diff& diff) const {
   for (const IdType deleted_id : diff.deleted_constraints) {
     update.mutable_deleted_constraint_ids()->Add(deleted_id.value());
   }
-  absl::c_sort(*update.mutable_deleted_constraint_ids());
+  AutoRadixSort(*update.mutable_deleted_constraint_ids());
   for (const IdType id :
        util_intops::MakeStrongIntRange(diff.checkpoint, next_id_)) {
     if (contains(id)) {

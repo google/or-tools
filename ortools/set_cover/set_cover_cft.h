@@ -1,4 +1,3 @@
-// Copyright 2025 Francesco Cavaliere
 // Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,11 +15,17 @@
 #define ORTOOLS_SET_COVER_SET_COVER_CFT_H_
 
 #include <cmath>
+#include <functional>
 #include <limits>
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/time/time.h"
+#include "absl/types/span.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/set_cover/base_types.h"
+#include "ortools/set_cover/set_cover_heuristics.h"
+#include "ortools/set_cover/set_cover_invariant.h"
 #include "ortools/set_cover/set_cover_model.h"
 #include "ortools/set_cover/set_cover_submodel.h"
 #include "ortools/set_cover/set_cover_views.h"
@@ -78,374 +83,252 @@ namespace operations_research {
 
 // Common Definitions
 
+// Statistics gathered during CFT algorithm execution.
+struct CftExecutionStats {
+  // Accumulated time spent in subgradient optimization.
+  absl::Duration subgradient_time;
+
+  // Accumulated time spent in greedy heuristics.
+  absl::Duration greedy_time;
+
+  // Accumulated time spent in the three-phase core procedure.
+  absl::Duration three_phase_time;
+
+  // Accumulated time spent in the outer search refinement.
+  absl::Duration refinement_time;
+
+  // Time limit for the optimization.
+  absl::Duration time_limit = absl::InfiniteDuration();
+
+  // The start time of the optimization.
+  absl::Time start_time;
+};
+
+// Parameters configuring the CFT algorithm heuristics.
+struct SetCoverCftParams : public SetCoverOptimizerParamsBase {
+  // Coefficient multiplied by model focus elements to get max iteration
+  // countdown.
+  BaseInt max_iter_multiplier = 10;
+
+  // Countdown and period value between exit tests.
+  BaseInt exit_test_period = 300;
+
+  // Initial step size during subgradient optimization.
+  Cost initial_step_size = 0.1;
+
+  // Period (iterations) between step size updates.
+  BaseInt step_size_update_period = 20;
+
+  // Gap limit threshold below which step size is increased.
+  Cost gap_limit_for_step_increase = 0.001;
+
+  // Multiplier factor by which step size is amplified.
+  Cost step_size_increase_factor = 1.5;
+
+  // Gap limit threshold above which step size is decreased.
+  Cost gap_limit_for_step_decrease = 0.01;
+
+  // Divisor factor by which step size is reduced.
+  Cost step_size_decrease_factor = 2.0;
+
+  // Minimum distance between lower and upper bounds to consider them different.
+  // If costs are all integral, can be set closer to 1.0.
+  Cost bound_min_diff_distance = 0.999;
+
+  // Maximum multiplier limit for dual multipliers.
+  Cost max_multiplier = 1e9;
+
+  // Minimum fraction of columns to fix.
+  double fix_minimum = 0.3;
+
+  // Multiplier factor by which the fraction of fixed columns is increased.
+  double fix_increment = 1.1;
+
+  // Tolerance used to check for division in DivideIfNonNegative.
+  static constexpr Cost kDivisionTolerance = 1e-6;
+
+  // Coverage counter to decide the number of columns to keep in the
+  // core model.
+  static constexpr BaseInt kMinimumCoverage = 5;
+};
+
 // Small class to store the solution of a sub-model. It contains the cost and
 // the subset list.
-class Solution {
+class SubmodelSolution {
  public:
-  Solution() = default;
-  Solution(const CoreModel& model,
-           const std::vector<SubsetIndex>& core_subsets);
+  // Default constructor.
+  SubmodelSolution() = default;
 
-  double cost() const { return cost_; }
-  const std::vector<FullSubsetIndex>& subsets() const { return subsets_; }
-  void AddSubset(FullSubsetIndex subset, Cost cost) {
+  // Constructor for a submodel solution from a subset list.
+  SubmodelSolution(const CoreModel& model,
+                   const std::vector<SubsetIndex>& core_subsets);
+
+  // Returns the cost of the solution.
+  double cost() const {
+    DCHECK_GE(cost_, 0.0);
+    return cost_;
+  }
+
+  // Returns the list of subsets in the solution.
+  const std::vector<FullModelSubsetIndex>& subsets() const {
+    if constexpr (DEBUG_MODE) {
+      for (FullModelSubsetIndex v : subsets_) {
+        DCHECK_GE(v, FullModelSubsetIndex(0));
+      }
+    }
+    return subsets_;
+  }
+
+  // Adds a subset to the solution and updates the cost accordingly.
+  void AddSubset(FullModelSubsetIndex subset, Cost cost) {
+    DCHECK_GE(subset, FullModelSubsetIndex(0));
+    DCHECK_GE(cost, 0.0);
+    DCHECK_GE(cost_, 0.0);
     subsets_.push_back(subset);
     cost_ += cost;
   }
+
+  // Returns true if the solution represents an empty subset list.
   bool Empty() const { return subsets_.empty(); }
+
+  // Clears the solution resetting cost and subsets list.
   void Clear() {
     cost_ = 0.0;
     subsets_.clear();
   }
 
  private:
+  // The cost of the solution.
   Cost cost_ = std::numeric_limits<Cost>::max();
-  std::vector<FullSubsetIndex> subsets_;
-};
 
-// In the narrow scope of the CFT subgradient, there are often divisions
-// between non-negative quantities (e.g., to compute a relative gap). In these
-// specific cases, the denominator should always be greater than the
-// numerator. This function checks that.
-inline Cost DivideIfGE0(Cost numerator, Cost denominator) {
-  CHECK_GE(numerator, denominator);  // NOTE(user): should become a DCHECK.
-  DCHECK_GE(numerator, -1e-6);
-  return numerator < 1e-6 ? 0.0 : numerator / denominator;
-}
+  // The list of full subset indices in the solution.
+  std::vector<FullModelSubsetIndex> subsets_;
+};
 
 // Dual information related to a CoreModel.
 // Stores multipliers, reduced costs, and the lower bound, and provides an
 // interface that keeps them aligned.
 class DualState {
  public:
+  // Default constructor.
   DualState() = default;
-  DualState(const DualState&) = default;
-  template <typename SubModelT>
-  explicit DualState(const SubModelT& model)
-      : lower_bound_(.0),
-        multipliers_(model.num_elements(), .0),
-        reduced_costs_(model.subset_costs().begin(),
-                       model.subset_costs().end()) {}
 
+  // Copy constructor.
+  DualState(const DualState&) = default;
+
+  // Constructor initializing with dummy values.
+  template <typename SubmodelT>
+  explicit DualState(const SubmodelT& model)
+      : lower_bound_(0.0),
+        multipliers_(model.num_elements(), 0.0),
+        reduced_costs_(model.subset_costs().begin(),
+                       model.subset_costs().end()) {
+    DCHECK_GE(model.num_elements(), 0);
+    DCHECK_GE(model.num_subsets(), 0);
+  }
+
+  // Returns the Lagrangian lower bound.
   Cost lower_bound() const { return lower_bound_; }
-  const ElementCostVector& multipliers() const { return multipliers_; }
+
+  // Returns the Lagrangian multiplier vectors.
+  const ElementCostVector& multipliers() const {
+    if constexpr (DEBUG_MODE) {
+      for (Cost m : multipliers_) {
+        DCHECK_GE(m, 0.0);
+      }
+    }
+    return multipliers_;
+  }
+
+  // Returns the reduced costs vector.
   const SubsetCostVector& reduced_costs() const { return reduced_costs_; }
 
+  // Updates dual multipliers and recomputes lower bound.
   // NOTE: This function contains one of the two O(nnz) subgradient steps
-  // NOTE(user): why is Op a template parameter? SubModelT?
-  template <typename SubModelT, typename Op>
-  void DualUpdate(const SubModelT& model, Op multiplier_operator) {
+  template <typename SubmodelT, typename OperatorFn>
+  void DualUpdate(const SubmodelT& model, OperatorFn multiplier_operator) {
+    DCHECK_GE(model.num_elements(), 0);
+    DCHECK_GE(model.num_subsets(), 0);
+
     multipliers_.resize(model.num_elements());
     reduced_costs_.resize(model.num_subsets());
-    lower_bound_ = .0;
+    lower_bound_ = 0.0;
     // Update multipliers
     for (ElementIndex i : model.ElementRange()) {
       multiplier_operator(i, multipliers_[i]);
       lower_bound_ += multipliers_[i];
       DCHECK(std::isfinite(multipliers_[i]));
-      DCHECK_GE(multipliers_[i], .0);
+      DCHECK_GE(multipliers_[i], 0.0);
     }
     lower_bound_ += ComputeReducedCosts(model, multipliers_, reduced_costs_);
   }
 
  private:
+  // Computes reduced costs for the active elements in the model.
   // Single hot point to optimize once for the different use cases.
   template <typename ModelT>
   static Cost ComputeReducedCosts(const ModelT& model,
                                   const ElementCostVector& multipliers,
                                   SubsetCostVector& reduced_costs) {
+    DCHECK_GE(model.num_subsets(), 0);
+    DCHECK_EQ(reduced_costs.size(), model.num_subsets());
+
     // Compute new reduced costs (O(nnz))
-    Cost negative_sum = .0;
+    Cost negative_sum = 0.0;
     for (SubsetIndex j : model.SubsetRange()) {
       reduced_costs[j] = model.subset_costs()[j];
       for (ElementIndex i : model.columns()[j]) {
         reduced_costs[j] -= multipliers[i];
       }
-      if (reduced_costs[j] < .0) {
+      if (reduced_costs[j] < 0.0) {
         negative_sum += reduced_costs[j];
       }
     }
     return negative_sum;
   }
 
+  // The dual lower bound value.
   Cost lower_bound_;
+
+  // The vector containing multipliers.
   ElementCostVector multipliers_;
+
+  // The vector of reduced costs.
   SubsetCostVector reduced_costs_;
 };
 
 // Utility aggregate to store and pass around both primal and dual states.
 struct PrimalDualState {
-  Solution solution;
+  // Primal state solution.
+  SubmodelSolution solution;
+
+  // Active dual state information.
   DualState dual_state;
 };
 
-// Subgradient
-
-// Utility aggregate used by the SubgradientOptimization procedure to
-// pass the needed information to the SubgradientCBs interface.
-struct SubgradientContext {
-  const CoreModel& model;
-  const DualState& current_dual_state;
-
-  // Avoid copying unused reduced cost during subgradient NOTE(user): is this a
-  // TODO?
-  const Cost& best_lower_bound;
-  const ElementCostVector& best_multipliers;
-
-  const Solution& best_solution;
-  const ElementCostVector& subgradient;
-};
-
-// Generic set of callback hooks used to specialize the behavior of the
-// subgradient optimization
-class SubgradientCBs {
- public:
-  virtual bool ExitCondition(const SubgradientContext&) = 0;
-  virtual void RunHeuristic(const SubgradientContext&, Solution&) = 0;
-  virtual void ComputeMultipliersDelta(const SubgradientContext&,
-                                       ElementCostVector& delta_mults) = 0;
-  virtual bool UpdateCoreModel(SubgradientContext context,
-                               CoreModel& core_model, bool force) = 0;
-  virtual ~SubgradientCBs() = default;
-};
-
-// Subgradient optimization procedure. Optimizes the Lagrangian relaxation of
-// the Set-Covering problem until a termination criterion is met.
-void SubgradientOptimization(CoreModel& core_model, SubgradientCBs& cbs,
-                             PrimalDualState& best_state);
-
-// Subgradient callbacks implementation focused on improving the current best
-// dual bound.
-class BoundCBs : public SubgradientCBs {
- public:
-  static constexpr Cost kTol = 1e-6;
-
-  explicit BoundCBs(const CoreModel& model);
-  Cost step_size() const { return step_size_; }
-  bool ExitCondition(const SubgradientContext& context) override;
-  void ComputeMultipliersDelta(const SubgradientContext& context,
-                               ElementCostVector& delta_mults) override;
-  void RunHeuristic(const SubgradientContext& context,
-                    Solution& solution) override {
-    (void)context;
-    (void)solution;
-  }
-  bool UpdateCoreModel(SubgradientContext context, CoreModel& core_model,
-                       bool force) override;
-
- private:
-  void MakeMinimalCoverageSubgradient(const SubgradientContext& context,
-                                      ElementCostVector& subgradient);
-
- private:
-  Cost squared_norm_;
-  ElementCostVector direction_;
-  std::vector<SubsetIndex> lagrangian_solution_;
-
-  // Stopping condition
-  Cost prev_best_lb_;
-  BaseInt max_iter_countdown_;
-  BaseInt exit_test_countdown_;
-  BaseInt exit_test_period_;
-  BaseInt unfixed_run_extension_;
-
-  // Step size
-  void UpdateStepSize(SubgradientContext context);
-  Cost step_size_;
-  Cost last_min_lb_seen_;
-  Cost last_max_lb_seen_;
-  BaseInt step_size_update_countdown_;
-  BaseInt step_size_update_period_;
-};
-
-// Multiplier-based greedy heuristic.
-
-// Higher level function that returns a solution obtained by the dual multiplier
-// based greedy heuristic.
-Solution RunMultiplierBasedGreedy(
-    const CoreModel& model, const DualState& dual_state,
-    Cost cost_cutoff = std::numeric_limits<BaseInt>::max());
-
-// Lower level greedy function which creates or completes a "solution" (seen as
-// set of subsets of the current CoreModel) until a cutoff size or cost is
-// reached.
-// Note: since the cutoff might be reached, the returned solution might not be
-// feasible.
-Cost ComputeGreedyCover(const CoreModel& model, const DualState& dual_state,
-                        Cost cost_cutoff, BaseInt size_cutoff,
-                        std::vector<SubsetIndex>& sol_subsets);
-
-// Three-phase algorithm.
-// Subgradient callbacks implementation focused on wandering near the optimal
-// multipliers and invoking the multiplier-based greedy heuristic at each
-// iteration.
-
-class HeuristicCBs : public SubgradientCBs {
- public:
-  HeuristicCBs() : step_size_(0.1), countdown_(250) {};
-  void set_step_size(Cost step_size) { step_size_ = step_size; }
-  bool ExitCondition(const SubgradientContext& context) override {
-    Cost upper_bound =
-        context.best_solution.cost() - context.model.fixed_cost();
-    Cost lower_bound = context.best_lower_bound;
-    // NOTE(user): why 0.999? TODO(user): add a kParameter for this.
-    return upper_bound - .999 < lower_bound || --countdown_ <= 0;
-  }
-  void RunHeuristic(const SubgradientContext& context,
-                    Solution& solution) override;
-  void ComputeMultipliersDelta(const SubgradientContext& context,
-                               ElementCostVector& delta_mults) override;
-  bool UpdateCoreModel(SubgradientContext context, CoreModel& core_model,
-                       bool force) override {
-    (void)context;
-    (void)core_model;
-    (void)force;
-    return false;
-  }
-
- private:
-  Cost step_size_;
-  BaseInt countdown_;
-};
-
-PrimalDualState RunThreePhase(CoreModel& model,
-                              const Solution& init_solution = {});
-
 // Outer refinement procedure.
-
+//
+// Runs the outer CFT heuristic with automatic model refinement.
 PrimalDualState RunCftHeuristic(CoreModel& model,
-                                const Solution& init_solution = {});
+                                const SubmodelSolution& init_solution = {},
+                                const SetCoverCftParams& params = {});
 
-// Full to Core Model.
-
-// Coverage counter to decide the number of columns to keep in the core model.
-static constexpr BaseInt kMinCov = 5;
-
-// CoreModel extractor. Stores a pointer to the full model and specialized
-// UpdateCore in such a way to update the CoreModel (stored as base class) and
-// focus the search on a small window of the full model.
-class FullToCoreModel : public CoreModel {
-  struct UpdateTrigger {
-    BaseInt countdown;
-    BaseInt period;
-    BaseInt max_period;
-  };
-
-  // This class handles the logic for selecting columns based on their reduced
-  // costs and the number of rows they cover. While this implementation is more
-  // complex than what would typically be required for static `SetCoverModel`s,
-  // it is designed to efficiently handle dynamically updated models where new
-  // columns are generated over time. In this case, recomputing the row view
-  // from scratch each time would introduce significant overhead. To avoid this,
-  // the column selection logic operates solely on the column view, without
-  // relying on the row view.
-  //
-  // NOTE: A cleaner alternative would involve modifying the `SetCoverModel`
-  // implementation to support incremental updates to the row view as new
-  // columns are added. This approach would reduce overhead while enabling a
-  // simpler and more efficient column selection process.
-  // TODO(user): implement the above NOTE.
-  //
-  // NOTE: The row-view based approach is available at commit:
-  // a598cf83930629853f72b964ebcff01f7a9378e0
-  class ColumnSelector {
-   public:
-    const std::vector<FullSubsetIndex>& ComputeNewSelection(
-        FilterModelView full_model,
-        const std::vector<FullSubsetIndex>& forced_columns,
-        const SubsetCostVector& reduced_costs);
-
-   private:
-    bool SelectColumn(FilterModelView full_model, SubsetIndex j);
-    void SelecteMinRedCostColumns(FilterModelView full_model,
-                                  const SubsetCostVector& reduced_costs);
-    void SelectMinRedCostByRow(FilterModelView full_model,
-                               const SubsetCostVector& reduced_costs);
-
-   private:
-    std::vector<SubsetIndex> candidates_;
-    std::vector<SubsetIndex>::const_iterator first_unselected_;
-    ElementToIntVector row_cover_counts_;
-    BaseInt rows_left_to_cover_;
-
-    std::vector<FullSubsetIndex> selection_;
-    SubsetBoolVector selected_;
-  };
-
+// SetCoverCftOptimizer is a solution generator based on CFT heuristics.
+class SetCoverCftOptimizer : public SetCoverOptimizer<SetCoverCftParams> {
  public:
-  FullToCoreModel() = default;
-  explicit FullToCoreModel(const SetCoverModel* full_model);
-  Cost FixMoreColumns(const std::vector<SubsetIndex>& columns_to_fix) override;
-  void ResetColumnFixing(const std::vector<FullSubsetIndex>& columns_to_fix,
-                         const DualState& state) override;
-  bool UpdateCore(Cost best_lower_bound,
-                  const ElementCostVector& best_multipliers,
-                  const Solution& best_solution, bool force) override;
-  void ResetPricingPeriod();
-  const DualState& best_dual_state() const { return best_dual_state_; }
-  bool FullToSubModelInvariantCheck();
+  explicit SetCoverCftOptimizer(SetCoverInvariant* inv);
 
- protected:
-  void SizeUpdate();
-  bool IsTimeToUpdate(Cost best_lower_bound, bool force);
+  ~SetCoverCftOptimizer() override = default;
 
-  decltype(auto) IsFocusCol(FullSubsetIndex j) {
-    return is_focus_col_[static_cast<SubsetIndex>(j)];
-  }
-  decltype(auto) IsFocusRow(FullElementIndex i) {
-    return is_focus_row_[static_cast<ElementIndex>(i)];
-  }
-  void UpdatePricingPeriod(const DualState& full_dual_state,
-                           Cost core_lower_bound, Cost core_upper_bound);
-  Cost UpdateMultipliers(const ElementCostVector& core_multipliers);
-  void ComputeAndSetFocus(Cost best_lower_bound, const Solution& best_solution);
+  // Computes the next full solution taking into account all the subsets.
+  bool Optimize() override;
 
-  // Views are not composable (for now), so we can either access the full_model
-  // with the strongly typed view or with the filtered view.
+  // Computes the next partial solution considering only the subsets whose
+  // indices are in focus.
+  bool Optimize(absl::Span<const SubsetIndex> focus) override;
 
-  // Access the full model filtered by the current columns fixed.
-  FilterModelView FixingFullModelView() const {
-    return FilterModelView(full_model_, &is_focus_col_, &is_focus_row_,
-                           full_model_->num_subsets(),
-                           full_model_->num_elements());
-  }
-
-  // Access the full model with the strongly typed view.
-  StrongModelView StrongTypedFullModelView() const {
-    return StrongModelView(full_model_);
-  }
-
-  std::vector<FullSubsetIndex> SelectNewCoreColumns(
-      const std::vector<FullSubsetIndex>& forced_columns = {});
-
- private:
-  const SetCoverModel* full_model_;
-
-  // Note: The `is_focus_col_` vector duplicates information already present in
-  // `SubModelView::cols_sizes_`. However, it does not overlap with any data
-  // stored in `CoreModel`. Since `CoreModel` is expected to be the primary use
-  // case, this vector is explicitly maintained here to ensure compatibility.
-  SubsetBoolVector is_focus_col_;
-
-  // Note: The `is_focus_row_` vector is functionally redundant with either
-  // `CoreModel::full2core_row_map_` or `SubModelView::rows_sizes_`. These
-  // existing structures could be used to create the filtered view of the full
-  // model. However, doing so would require generalizing the current view
-  // system to work with generic functors instead of vectors of integral types.
-  // Since the number of elements is assumed to be not prohibitive, a simpler
-  // implementation that avoids this memory optimization was preferred.
-  ElementBoolVector is_focus_row_;
-
-  BaseInt selection_coefficient_ = kMinCov;
-  Cost prev_best_lower_bound_;
-  DualState full_dual_state_;
-  DualState best_dual_state_;
-
-  BaseInt update_countdown_;
-  BaseInt update_period_;
-  BaseInt update_max_period_;
-
-  ColumnSelector col_selector_;  // Here to avoid reallocations
+  // Same as above, but with a vector of Booleans as focus.
+  bool Optimize(const SubsetBoolVector& in_focus) override;
 };
 
 }  // namespace operations_research

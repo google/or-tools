@@ -22,7 +22,6 @@
 #include "absl/status/statusor.h"
 #include "gtest/gtest.h"
 #include "ortools/math_opt/cpp/math_opt.h"
-#include "ortools/math_opt/solution.pb.h"
 
 namespace operations_research {
 namespace math_opt {

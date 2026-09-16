@@ -74,7 +74,6 @@
 #define ORTOOLS_GLOP_MARKOWITZ_H_
 
 #include <cstdint>
-#include <queue>
 #include <string>
 #include <vector>
 
@@ -82,7 +81,6 @@
 #include "absl/log/check.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/parameters.pb.h"
-#include "ortools/glop/status.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/permutation.h"
 #include "ortools/lp_data/sparse.h"
@@ -305,10 +303,10 @@ class Markowitz {
   // of the matrix. Moreover, by adding singleton columns with a one at the rows
   // such that 'row_perm[row] == kInvalidRow', then the matrix will be
   // non-singular.
-  ABSL_MUST_USE_RESULT Status
-  ComputeLU(const CompactSparseMatrixView& basis_matrix,
-            RowPermutation* row_perm, ColumnPermutation* col_perm,
-            TriangularMatrix* lower, TriangularMatrix* upper);
+  AbnormalityStatus ComputeLU(const CompactSparseMatrixView& basis_matrix,
+                              RowPermutation* row_perm,
+                              ColumnPermutation* col_perm,
+                              TriangularMatrix* lower, TriangularMatrix* upper);
 
   // Only computes P and Q^{-1}, L and U can be computed later from these
   // permutations using another algorithm (for instance left-looking L.U). This
@@ -319,8 +317,8 @@ class Markowitz {
   //
   // This function also works with a non-square matrix. It will return a set of
   // independent columns of maximum size. If all the given columns are
-  // independent, the returned Status will be OK.
-  ABSL_MUST_USE_RESULT Status ComputeRowAndColumnPermutation(
+  // independent, the returned value will be OkAbnormalityStatus().
+  AbnormalityStatus ComputeRowAndColumnPermutation(
       const CompactSparseMatrixView& basis_matrix, RowPermutation* row_perm,
       ColumnPermutation* col_perm);
 

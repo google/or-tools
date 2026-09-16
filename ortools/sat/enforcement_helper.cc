@@ -45,7 +45,7 @@ EnforcementId EnforcementHelper::Register(
 }
 
 // Try to propagate when the enforced constraint is not satisfiable.
-// This is currently in O(enforcement_size);
+// This is currently in O(enforcement_size).
 bool EnforcementHelper::PropagateWhenFalse(
     EnforcementId id, absl::Span<const Literal> literal_reason,
     absl::Span<const IntegerLiteral> integer_reason) {

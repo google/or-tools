@@ -12,10 +12,12 @@
 # limitations under the License.
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_python//python:py_binary.bzl", "py_binary")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary")
 
-cc_binary(
+package(default_visibility = ["//visibility:public"])
+
+or_cc_binary(
     name = "simple_pdlp_program_cc",
     srcs = ["simple_pdlp_program.cc"],
     deps = [

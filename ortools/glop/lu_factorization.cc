@@ -21,7 +21,6 @@
 #include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "ortools/base/log_severity.h"
-#include "ortools/glop/status.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/permutation.h"
@@ -53,15 +52,15 @@ void LuFactorization::Clear() {
   inverse_col_perm_.clear();
 }
 
-Status LuFactorization::ComputeFactorization(
+AbnormalityStatus LuFactorization::ComputeFactorization(
     const CompactSparseMatrixView& matrix) {
   SCOPED_TIME_STAT(&stats_);
   Clear();
   if (matrix.num_rows().value() != matrix.num_cols().value()) {
-    GLOP_RETURN_AND_LOG_ERROR(Status::ERROR_LU, "Not a square matrix!!");
+    return AbnormalityStatus(AbnormalityCause::kLuFactorizationNotSquare);
   }
 
-  GLOP_RETURN_IF_ERROR(
+  GLOP_RETURN_IF_ABNORMAL(
       markowitz_.ComputeLU(matrix, &row_perm_, &col_perm_, &lower_, &upper_));
   inverse_col_perm_.PopulateFromInverse(col_perm_);
   inverse_row_perm_.PopulateFromInverse(row_perm_);
@@ -79,7 +78,7 @@ Status LuFactorization::ComputeFactorization(
   // matrices.
   DCHECK(matrix.num_rows() > 100 ||
          CheckFactorization(matrix, Fractional(1e-6)));
-  return Status::OK();
+  return OkAbnormalityStatus();
 }
 
 RowToColMapping LuFactorization::ComputeInitialBasis(

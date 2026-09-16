@@ -165,6 +165,14 @@ class SetCoverInvariant {
   // Returns vector containing number of subsets covering each element.
   const ElementToIntVector& coverage() const { return coverage_; }
 
+  // Returns vector containing dual values of each element.
+  const ElementCostVector& dual_values() const { return dual_values_; }
+
+  // Sets dual values of each element.
+  void set_dual_values(const ElementCostVector& dual_values) {
+    dual_values_ = dual_values;
+  }
+
   // Returns a vector containing the number of subsets within `focus` covering
   // each element. Subsets that are without `focus` are not considered.
   ElementToIntVector ComputeCoverageInFocus(
@@ -224,6 +232,10 @@ class SetCoverInvariant {
 
   // Loads the solution and recomputes the data in the invariant.
   void LoadSolution(const SubsetBoolVector& solution);
+
+  // Builds a solution from the stored dual values.
+  // Subsets with reduced cost <= tolerance are selected.
+  void BuildSolutionFromDuals(Cost tolerance = 0.0);
 
   // Loads the trace and the coverage. When both the trace and the coverage
   // are loaded, the invariant is consistent at level kCostAndCoverage. It's
@@ -354,6 +366,9 @@ class SetCoverInvariant {
   // without making it infeasible.
   // Takes |S| bits.
   SubsetBoolVector is_redundant_;
+
+  // Dual values of each element.
+  ElementCostVector dual_values_;
 
   // Subsets that became removable after the last update.
   // Takes at most |S| BaseInts. (More likely a few percent of that).

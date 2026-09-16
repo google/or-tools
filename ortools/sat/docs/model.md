@@ -8,7 +8,7 @@ https://developers.google.com/optimization/
 
 In all languages, the CpModel class is a thin wrapper around a
 [protocol buffer](http://developers.google.com/protocol-buffers/) object
-[cp_model.proto](../cp_model.proto).
+[cp_model.proto](/ortools/sat/cp_model.proto).
 
 Some functionalities require using the cp_model protobuf directly. To write code
 that manipulates this protobuf, one must understand how modeling objects
@@ -123,6 +123,7 @@ solution_hinting_sample_sat()
 #include "ortools/base/log_severity.h"
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -178,7 +179,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/SolutionHintingSampleSat.java
+// Snippet from ortools/sat/samples/java/SolutionHintingSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -448,6 +449,7 @@ clone_model_sample_sat()
 #include "ortools/base/log_severity.h"
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -499,7 +501,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/CloneModelSampleSat.java
+// Snippet from ortools/sat/samples/java/CloneModelSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;

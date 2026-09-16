@@ -18,13 +18,13 @@
 #include <cstdint>
 #include <deque>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -33,7 +33,9 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/base/types.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_data.h"
@@ -58,7 +60,7 @@ namespace operations_research::routing {
 // as possible based on the model precedences.
 class CumulBoundsPropagator {
  public:
-  explicit CumulBoundsPropagator(const Dimension* dimension);
+  explicit CumulBoundsPropagator(const Dimension* absl_nonnull dimension);
 
   // Tightens the cumul bounds starting from the current cumul var min/max,
   // and propagating the precedences resulting from the next_accessor, and the
@@ -78,9 +80,7 @@ class CumulBoundsPropagator {
 
   int64_t CumulMax(int index) const {
     const int64_t negated_upper_bound = propagated_bounds_[NegativeNode(index)];
-    return negated_upper_bound == std::numeric_limits<int64_t>::min()
-               ? std::numeric_limits<int64_t>::max()
-               : -negated_upper_bound;
+    return negated_upper_bound == kint64min ? kint64max : -negated_upper_bound;
   }
 
   const Dimension& dimension() const { return dimension_; }
@@ -244,32 +244,30 @@ class LinearSolverWrapper {
       int64_t lower_bound, int64_t upper_bound,
       absl::Span<const std::pair<int, double>> weighted_variables) {
     const int reification_ct = AddLinearConstraint(1, 1, {});
-    if (std::numeric_limits<int64_t>::min() < lower_bound) {
+    if (kint64min < lower_bound) {
       const int under_lower_bound = AddVariable(0, 1);
-#ifndef NDEBUG
-      SetVariableName(under_lower_bound, "under_lower_bound");
-#endif
+      if constexpr (DEBUG_MODE) {
+        SetVariableName(under_lower_bound, "under_lower_bound");
+      }
       SetCoefficient(reification_ct, under_lower_bound, 1);
       const int under_lower_bound_ct =
-          AddLinearConstraint(std::numeric_limits<int64_t>::min(),
-                              lower_bound - 1, weighted_variables);
+          AddLinearConstraint(kint64min, lower_bound - 1, weighted_variables);
       SetEnforcementLiteral(under_lower_bound_ct, under_lower_bound);
     }
-    if (upper_bound < std::numeric_limits<int64_t>::max()) {
+    if (upper_bound < kint64max) {
       const int above_upper_bound = AddVariable(0, 1);
-#ifndef NDEBUG
-      SetVariableName(above_upper_bound, "above_upper_bound");
-#endif
+      if constexpr (DEBUG_MODE) {
+        SetVariableName(above_upper_bound, "above_upper_bound");
+      }
       SetCoefficient(reification_ct, above_upper_bound, 1);
-      const int above_upper_bound_ct = AddLinearConstraint(
-          upper_bound + 1, std::numeric_limits<int64_t>::max(),
-          weighted_variables);
+      const int above_upper_bound_ct =
+          AddLinearConstraint(upper_bound + 1, kint64max, weighted_variables);
       SetEnforcementLiteral(above_upper_bound_ct, above_upper_bound);
     }
     const int within_bounds = AddVariable(0, 1);
-#ifndef NDEBUG
-    SetVariableName(within_bounds, "within_bounds");
-#endif
+    if constexpr (DEBUG_MODE) {
+      SetVariableName(within_bounds, "within_bounds");
+    }
     SetCoefficient(reification_ct, within_bounds, 1);
     const int within_bounds_ct =
         AddLinearConstraint(lower_bound, upper_bound, weighted_variables);
@@ -334,7 +332,7 @@ class GlopWrapper : public LinearSolverWrapper {
     const double upper_bound =
         linear_program_.variable_upper_bounds()[glop::ColIndex(index)];
     DCHECK_GE(upper_bound, 0);
-    return upper_bound == glop::kInfinity ? std::numeric_limits<int64_t>::max()
+    return upper_bound == glop::kInfinity ? kint64max
                                           : static_cast<int64_t>(upper_bound);
   }
   void SetObjectiveCoefficient(int index, double coefficient) override {
@@ -354,11 +352,8 @@ class GlopWrapper : public LinearSolverWrapper {
   int CreateNewConstraint(int64_t lower_bound, int64_t upper_bound) override {
     const glop::RowIndex ct = linear_program_.CreateNewConstraint();
     linear_program_.SetConstraintBounds(
-        ct,
-        (lower_bound == std::numeric_limits<int64_t>::min()) ? -glop::kInfinity
-                                                             : lower_bound,
-        (upper_bound == std::numeric_limits<int64_t>::max()) ? glop::kInfinity
-                                                             : upper_bound);
+        ct, (lower_bound == kint64min) ? -glop::kInfinity : lower_bound,
+        (upper_bound == kint64max) ? glop::kInfinity : upper_bound);
     return ct.value();
   }
   void SetCoefficient(int ct, int index, double coefficient) override {
@@ -413,11 +408,11 @@ class GlopWrapper : public LinearSolverWrapper {
     // be costly. Note that the assumptions are DCHECKed() in the call below.
     linear_program_.NotifyThatColumnsAreClean();
     VLOG(2) << linear_program_.Dump();
-    const glop::ProblemStatus status = lp_solver_.Solve(linear_program_);
+    const glop::SolveStatus status = lp_solver_.Solve(linear_program_);
     if (search_stats_) search_stats_->num_glop_calls_in_lp_scheduling++;
-    const bool feasible_only = status == glop::ProblemStatus::PRIMAL_FEASIBLE;
-    if (status != glop::ProblemStatus::OPTIMAL &&
-        status != glop::ProblemStatus::IMPRECISE && !feasible_only) {
+    const bool feasible_only = status.Is<glop::SolveStatus::PrimalFeasible>();
+    if (!status.Is<glop::SolveStatus::Optimal>() &&
+        !status.Is<glop::SolveStatus::Imprecise>() && !feasible_only) {
       return DimensionSchedulingStatus::INFEASIBLE;
     }
     if (is_relaxation_) {
@@ -438,13 +433,10 @@ class GlopWrapper : public LinearSolverWrapper {
     return DimensionSchedulingStatus::OPTIMAL;
   }
   int64_t GetObjectiveValue() const override {
-    return MathUtil::Round<int64_t>(lp_solver_.GetObjectiveValue());
+    return CappedRound(lp_solver_.GetObjectiveValue());
   }
   int64_t GetVariableValue(int index) const override {
-    const double value_double = GetValueDouble(glop::ColIndex(index));
-    return (value_double >= std::numeric_limits<int64_t>::max())
-               ? std::numeric_limits<int64_t>::max()
-               : MathUtil::Round<int64_t>(value_double);
+    return CappedRound(GetValueDouble(glop::ColIndex(index)));
   }
   bool SolutionIsInteger() const override {
     return linear_program_.SolutionIsInteger(lp_solver_.variable_values(),
@@ -465,6 +457,9 @@ class GlopWrapper : public LinearSolverWrapper {
  private:
   double GetValueDouble(glop::ColIndex index) const {
     return lp_solver_.variable_values()[index];
+  }
+  int64_t CappedRound(double value) const {
+    return (value >= kint64max) ? kint64max : MathUtil::Round<int64_t>(value);
   }
 
   const bool is_relaxation_;
@@ -530,10 +525,10 @@ class CPSatWrapper : public LinearSolverWrapper {
     const int ct = CreateNewConstraint(1, 1);
     for (int i = 0; i < starts.size(); ++i) {
       const int variable = CreateNewPositiveVariable();
-#ifndef NDEBUG
-      SetVariableName(variable,
-                      absl::StrFormat("disjoint(%ld, %ld)", index, i));
-#endif
+      if constexpr (DEBUG_MODE) {
+        SetVariableName(variable,
+                        absl::StrFormat("disjoint(%ld, %ld)", index, i));
+      }
       SetVariableBounds(variable, 0, 1);
       SetCoefficient(ct, variable, 1);
       const int window_ct = CreateNewConstraint(starts[i], ends[i]);
@@ -588,8 +583,7 @@ class CPSatWrapper : public LinearSolverWrapper {
     for (int i = 0; i < objective.vars_size(); ++i) {
       activity += response_.solution(objective.vars(i)) * objective.coeffs(i);
     }
-    const int ct =
-        CreateNewConstraint(std::numeric_limits<int64_t>::min(), activity);
+    const int ct = CreateNewConstraint(kint64min, activity);
     for (int i = 0; i < objective.vars_size(); ++i) {
       SetCoefficient(ct, objective.vars(i), objective.coeffs(i));
     }
@@ -677,7 +671,7 @@ class CPSatWrapper : public LinearSolverWrapper {
     return DimensionSchedulingStatus::INFEASIBLE;
   }
   int64_t GetObjectiveValue() const override {
-    return MathUtil::Round<int64_t>(response_.objective_value());
+    return MathUtil::SafeRound<int64_t>(response_.objective_value());
   }
   int64_t GetVariableValue(int index) const override {
     return response_.solution(index);
@@ -693,6 +687,9 @@ class CPSatWrapper : public LinearSolverWrapper {
 
   // Prints an understandable view of the model
   std::string PrintModel() const override;
+
+  // For testing.
+  sat::SatParameters* MutableParameters() { return &parameters_; }
 
  private:
   sat::CpModelProto model_;
@@ -717,7 +714,7 @@ class DimensionCumulOptimizerCore {
   using Resource = Model::ResourceGroup::Resource;
 
  public:
-  DimensionCumulOptimizerCore(const Dimension* dimension,
+  DimensionCumulOptimizerCore(const Dimension* absl_nonnull dimension,
                               bool use_precedence_propagator);
 
   // Finds an optimal (or just feasible) solution for the route for the given
@@ -939,7 +936,7 @@ class DimensionCumulOptimizerCore {
 class LocalDimensionCumulOptimizer {
  public:
   LocalDimensionCumulOptimizer(
-      const Dimension* dimension,
+      const Dimension* absl_nonnull dimension,
       RoutingSearchParameters::SchedulingSolver solver_type,
       SearchStats* search_stats);
 
@@ -1040,7 +1037,7 @@ class LocalDimensionCumulOptimizer {
 class GlobalDimensionCumulOptimizer {
  public:
   GlobalDimensionCumulOptimizer(
-      const Dimension* dimension,
+      const Dimension* absl_nonnull dimension,
       RoutingSearchParameters::SchedulingSolver solver_type,
       SearchStats* search_stats);
   // If feasible, computes the optimal cost of the entire model with regards to
@@ -1129,9 +1126,10 @@ bool ComputeVehicleToResourceClassAssignmentCosts(
         ignored_resources_per_class,
     const std::function<int64_t(int64_t)>& next_accessor,
     const std::function<int64_t(int64_t, int64_t)>& transit_accessor,
-    bool optimize_vehicle_costs, LocalDimensionCumulOptimizer* lp_optimizer,
-    LocalDimensionCumulOptimizer* mp_optimizer,
-    std::vector<int64_t>* assignment_costs,
+    bool optimize_vehicle_costs,
+    LocalDimensionCumulOptimizer* absl_nonnull lp_optimizer,
+    LocalDimensionCumulOptimizer* absl_nonnull mp_optimizer,
+    std::vector<int64_t>* absl_nonnull assignment_costs,
     std::vector<std::vector<int64_t>>* cumul_values,
     std::vector<std::vector<int64_t>>* break_values);
 

@@ -23,6 +23,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/algorithms/multikey_radix_sort.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/core/sorted.h"
 #include "ortools/math_opt/model.pb.h"
@@ -57,7 +58,7 @@ std::vector<LinearConstraintId> LinearConstraintStorage::LinearConstraints()
 std::vector<LinearConstraintId>
 LinearConstraintStorage::SortedLinearConstraints() const {
   std::vector<LinearConstraintId> result = LinearConstraints();
-  absl::c_sort(result);
+  AutoRadixSort(result, [](const LinearConstraintId id) { return id.value(); });
   return result;
 }
 
@@ -129,7 +130,8 @@ LinearConstraintStorage::UpdateResult LinearConstraintStorage::Update(
   for (const LinearConstraintId c : diff.deleted) {
     result.deleted.Add(c.value());
   }
-  absl::c_sort(result.deleted);
+  // NOMUTANTS -- General tests seem to not test that this is sorted.
+  AutoRadixSort(result.deleted);
 
   for (const LinearConstraintId c : SortedSetElements(diff.lower_bounds)) {
     result.updates.mutable_lower_bounds()->add_ids(c.value());

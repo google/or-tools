@@ -17,7 +17,6 @@
 #include <array>
 #include <cstdint>
 #include <cstdlib>
-#include <limits>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -29,6 +28,7 @@
 #include "absl/random/distributions.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/util.h"
@@ -40,7 +40,8 @@
 namespace operations_research {
 namespace sat {
 
-void DomainDeductions::AddDeduction(int literal_ref, int var, Domain domain) {
+void DomainDeductions::AddDeduction(int literal_ref, int var,
+                                    const Domain& domain) {
   CHECK_GE(var, 0);
   const Index index = IndexFromLiteral(literal_ref);
   if (index >= something_changed_.size()) {
@@ -221,7 +222,7 @@ bool SubstituteVariable(int var, int64_t var_coeff_in_definition,
     const int ref = ct->linear().vars(i);
     if (!RefIsPositive(ref)) return false;
     if (ref == var) {
-      // If var appear multiple time, we add all its coefficients.
+      // If var appears multiple times, we add all its coefficients.
       var_coeff += ct->linear().coeffs(i);
     }
   }
@@ -316,9 +317,9 @@ int64_t ActivityBoundHelper::ComputeActivity(
   return offset + internal_result;
 }
 
-// Use trivial heuristic for now:
+// Use a trivial heuristic for now:
 // - Sort by decreasing coeff.
-// - If belong to a chosen part, use it.
+// - If it belongs to a chosen part, use it.
 // - If not, choose biggest part left. TODO(user): compute sum of coeff in part?
 void ActivityBoundHelper::PartitionIntoAmo(
     absl::Span<const std::pair<int, int64_t>> terms) {
@@ -437,7 +438,7 @@ ActivityBoundHelper::PartitionLiteralsIntoAmo(absl::Span<const int> literals) {
     partition_[i] = num_parts++;
   }
 
-  // We have the partition, lets construct the spans now.
+  // We have the partition, let's construct the spans now.
   part_to_literals_.ResetFromFlatMapping(partition_, literals);
   DCHECK_EQ(part_to_literals_.size(), num_parts);
   return part_to_literals_.AsVectorOfSpan();
@@ -489,8 +490,8 @@ int64_t ActivityBoundHelper::ComputeMaxActivityInternal(
       const int p = partition_[i];
       const int64_t max_used = max_by_partition_[p];
 
-      // We have two cases depending if coeff was the maximum in its part or
-      // not.
+      // We have two cases depending on whether coeff was the maximum in its
+      // part or not.
       if (coeff == max_used) {
         // Use the second max.
         (*conditional)[i][0] =
@@ -629,20 +630,28 @@ int ActivityBoundHelper::RemoveEnforcementThatMakesConstraintTrivial(
     // Compute min_max activity when enf_lit is false.
     int64_t min_activity = non_amo_min_activity;
     int64_t max_activity = non_amo_max_activity;
+    bool aborted = false;
     for (const int i : tmp_boolean_terms_in_some_amo_) {
       const int ref = boolean_terms[i].first;
       const int64_t coeff = boolean_terms[i].second;
       // This is not supposed to happen after PresolveEnforcement(), so we
       // just abort in this case.
-      if (ref == enf_lit || ref == NegatedRef(enf_lit)) break;
+      if (ref == enf_lit || ref == NegatedRef(enf_lit)) {
+        aborted = true;
+        break;
+      }
 
       const bool is_true = AppearInTriggeredAmo(NegatedRef(ref));
       const bool is_false = AppearInTriggeredAmo(ref);
       work += NumAmoForVariable(ref);
       if (work > kMaxWork) return log_work();
 
-      // Similarly, this is not supposed to happen after PresolveEnforcement().
-      if (is_true && is_false) break;
+      // This shows that the enforcement must be false. Other presolves rule
+      // should have dealt with that, and we just abort here.
+      if (is_true && is_false) {
+        aborted = true;
+        break;
+      }
 
       if (is_false) continue;
       if (is_true) {
@@ -657,9 +666,12 @@ int ActivityBoundHelper::RemoveEnforcementThatMakesConstraintTrivial(
       }
     }
 
-    if (Domain(min_activity, max_activity)
-            .AdditionWith(other_terms)
-            .IsIncludedIn(rhs)) {
+    // The two aborts above leave min/max_activity missing the remaining terms,
+    // so the bounds are not valid and must not be used to remove an
+    // enforcement.
+    if (!aborted && Domain(min_activity, max_activity)
+                        .AdditionWith(other_terms)
+                        .IsIncludedIn(rhs)) {
       tmp_set_.insert(enf_lit);
     }
   }
@@ -683,7 +695,7 @@ void ClauseWithOneMissingHasher::RegisterClause(int c,
   for (const int ref : clause) {
     const Index index = IndexFromLiteral(ref);
     while (index >= literal_to_hash_.size()) {
-      // We use random value for a literal hash.
+      // We use a random value for a literal hash.
       literal_to_hash_.push_back(absl::Uniform<uint64_t>(random_));
     }
     hash ^= literal_to_hash_[index];
@@ -699,7 +711,7 @@ uint64_t ClauseWithOneMissingHasher::HashOfNegatedLiterals(
   for (const int ref : literals) {
     const Index index = IndexFromLiteral(NegatedRef(ref));
     while (index >= literal_to_hash_.size()) {
-      // We use random value for a literal hash.
+      // We use a random value for a literal hash.
       literal_to_hash_.push_back(absl::Uniform<uint64_t>(random_));
     }
     hash ^= literal_to_hash_[index];
@@ -718,8 +730,8 @@ bool FindSingleLinearDifference(const LinearConstraintProto& lin1,
   int j = 0;
   while (i < size || j < size) {
     // Note that we can't have both undefined or the loop would have exited.
-    const int v1 = i < size ? lin1.vars(i) : std::numeric_limits<int>::max();
-    const int v2 = j < size ? lin2.vars(j) : std::numeric_limits<int>::max();
+    const int v1 = i < size ? lin1.vars(i) : kint32max;
+    const int v2 = j < size ? lin2.vars(j) : kint32max;
 
     // Same term, continue.
     if (v1 == v2 && lin1.coeffs(i) == lin2.coeffs(j)) {
@@ -747,7 +759,7 @@ bool FindSingleLinearDifference(const LinearConstraintProto& lin1,
       continue;
     }
 
-    // Coeff differ. Returns if we had a diff previously.
+    // Coefficients differ. Returns if we had a diff previously.
     if (*coeff1 != 0 || *coeff2 != 0) return false;
     *var1 = v1;
     *var2 = v2;

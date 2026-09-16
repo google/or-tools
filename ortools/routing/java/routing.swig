@@ -185,6 +185,7 @@ import com.google.ortools.constraintsolver.Constraint;
 // Map transit callback to Java @FunctionalInterface types.
 // This replaces the RoutingTransitCallback[1-2] in the Java proxy class
 %typemap(javaimports) Model %{
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 // Types from ConstraintSolver
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.DecisionBuilder;
@@ -246,9 +247,13 @@ import java.util.function.LongUnaryOperator;
 %rename (addConstantDimensionWithSlack) Model::AddConstantDimensionWithSlack;
 %rename (addVectorDimension) Model::AddVectorDimension;
 %rename (addMatrixDimension) Model::AddMatrixDimension;
+%javamethodmodifiers Model::AddDimension "@CanIgnoreReturnValue\n  public";
 %rename (addDimension) Model::AddDimension;
+%javamethodmodifiers Model::AddDimensionWithVehicleCapacity "@CanIgnoreReturnValue\n  public";
 %rename (addDimensionWithVehicleCapacity) Model::AddDimensionWithVehicleCapacity;
+%javamethodmodifiers Model::AddDimensionWithVehicleTransitAndCapacity "@CanIgnoreReturnValue\n  public";
 %rename (addDimensionWithVehicleTransitAndCapacity) Model::AddDimensionWithVehicleTransitAndCapacity;
+%javamethodmodifiers Model::AddDimensionWithVehicleTransits "@CanIgnoreReturnValue\n  public";
 %rename (addDimensionWithVehicleTransits) Model::AddDimensionWithVehicleTransits;
 
 %rename (addDisjunction) Model::AddDisjunction;
@@ -292,6 +297,13 @@ import java.util.function.LongUnaryOperator;
 %rename (getDimensionOrDie) Model::GetDimensionOrDie;
 %rename (getDisjunctionIndices) Model::GetDisjunctionIndices;
 %rename (getDisjunctionMaxCardinality) Model::GetDisjunctionMaxCardinality;
+%rename (getDisjunctionMinCardinality) Model::GetDisjunctionMinCardinality;
+%rename (getDisjunctionSoftMaxCardinality) Model::GetDisjunctionSoftMaxCardinality;
+%rename (getDisjunctionSoftMaxPenalty) Model::GetDisjunctionSoftMaxPenalty;
+%rename (getDisjunctionSoftMaxPenaltyCostBehavior) Model::GetDisjunctionSoftMaxPenaltyCostBehavior;
+%rename (getDisjunctionSoftMinCardinality) Model::GetDisjunctionSoftMinCardinality;
+%rename (getDisjunctionSoftMinPenalty) Model::GetDisjunctionSoftMinPenalty;
+%rename (getDisjunctionSoftMinPenaltyCostBehavior) Model::GetDisjunctionSoftMinPenaltyCostBehavior;
 %rename (getDisjunctionPenalty) Model::GetDisjunctionPenalty;
 %rename (getFixedCostOfVehicle) Model::GetFixedCostOfVehicle;
 %rename (getHomogeneousCost) Model::GetHomogeneousCost;
@@ -321,6 +333,7 @@ import java.util.function.LongUnaryOperator;
 %rename (isStart) Model::IsStart;
 %rename (isVehicleAllowedForIndex) Model::IsVehicleAllowedForIndex;
 %rename (isVehicleUsed) Model::IsVehicleUsed;
+%rename (makeDisjunction) Model::MakeDisjunction;
 %rename (makeGuidedSlackFinalizer) Model::MakeGuidedSlackFinalizer;
 %rename (makeSelfDependentDimensionFinalizer) Model::MakeSelfDependentDimensionFinalizer;
 %rename (mutablePreAssignment) Model::MutablePreAssignment;
@@ -339,12 +352,22 @@ import java.util.function.LongUnaryOperator;
 
 %rename (restoreAssignment) Model::RestoreAssignment;
 %rename (routesToAssignment) Model::RoutesToAssignment;
-%rename (setAllowedVehiclesForIndex) Model::SetAllowedVehiclesForIndex;
+%rename (setAllowedVehiclesForIndex) Model::SetAllowedVehiclesForIndex(const std::vector<int>&, int64_t);
+%extend Model {
+  void SetAllowedVehiclesForIndex(const std::vector<int>& vehicles,
+                                  int64_t index) {
+    $self->SetAllowedVehiclesForIndex(absl::Span<const int>(vehicles), index);
+  }
+}
 %rename (setAmortizedCostFactorsOfAllVehicles) Model::SetAmortizedCostFactorsOfAllVehicles;
 %rename (setAmortizedCostFactorsOfVehicle) Model::SetAmortizedCostFactorsOfVehicle;
 %rename (setArcCostEvaluatorOfAllVehicles) Model::SetArcCostEvaluatorOfAllVehicles;
 %rename (setArcCostEvaluatorOfVehicle) Model::SetArcCostEvaluatorOfVehicle;
 %rename (setAssignmentFromOtherModelAssignment) Model::SetAssignmentFromOtherModelAssignment;
+%rename (setDisjunctionHardMaximum) Model::SetDisjunctionHardMaximum;
+%rename (setDisjunctionHardMinimum) Model::SetDisjunctionHardMinimum;
+%rename (setDisjunctionSoftMaximum) Model::SetDisjunctionSoftMaximum;
+%rename (setDisjunctionSoftMinimum) Model::SetDisjunctionSoftMinimum;
 %rename (setFirstSolutionEvaluator) Model::SetFirstSolutionEvaluator;
 %rename (setFixedCostOfAllVehicles) Model::SetFixedCostOfAllVehicles;
 %rename (setFixedCostOfVehicle) Model::SetFixedCostOfVehicle;

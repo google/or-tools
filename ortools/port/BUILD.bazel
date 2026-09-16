@@ -11,26 +11,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//bazel:or_cc_rules.bzl", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+or_cc_library(
     name = "proto_utils",
     srcs = ["proto_utils.cc"],
     hdrs = ["proto_utils.h"],
     deps = [
+        "//ortools/base:types",
         "//ortools/base/macros:os_support",
         "//ortools/util:parse_proto",
+        "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/strings:string_view",
         "@protobuf",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "file",
     srcs = ["file.cc"],
     hdrs = ["file.h"],
@@ -42,14 +44,14 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "sysinfo",
     srcs = ["sysinfo.cc"],
     hdrs = ["sysinfo.h"],
     deps = ["//ortools/base/macros:os"],
 )
 
-cc_test(
+or_cc_test(
     name = "sysinfo_test",
     srcs = ["sysinfo_test.cc"],
     deps = [
@@ -59,7 +61,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "scoped_std_stream_capture",
     testonly = True,
     srcs = ["scoped_std_stream_capture.cc"],
@@ -71,7 +73,13 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_library(
+    name = "attributes",
+    hdrs = ["attributes.h"],
+    deps = ["@abseil-cpp//absl/base:core_headers"],
+)
+
+or_cc_test(
     name = "scoped_std_stream_capture_test",
     srcs = ["scoped_std_stream_capture_test.cc"],
     deps = [

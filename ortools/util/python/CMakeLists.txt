@@ -82,7 +82,7 @@ target_link_libraries(${WRAPPERS_NAME} PUBLIC
   protobuf::libprotobuf)
 add_library(${PROJECT_NAMESPACE}::${WRAPPERS_NAME} ALIAS ${WRAPPERS_NAME})
 
-if(BUILD_TESTING)
+if(BUILD_PYTHON_TESTING)
   add_library(py_solve_interrupter_testing OBJECT
     "py_solve_interrupter_testing.cc")
   set_target_properties(py_solve_interrupter_testing PROPERTIES POSITION_INDEPENDENT_CODE ON)

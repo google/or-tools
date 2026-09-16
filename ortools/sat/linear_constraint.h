@@ -28,6 +28,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -38,26 +39,50 @@
 namespace operations_research {
 namespace sat {
 
+// Stores for each IntegerVariable its temporary LP solution.
+//
+// This is shared between all LinearProgrammingConstraints because in the corner
+// case where we have many different LinearProgrammingConstraints and a lot of
+// variables, we could theoretically use up a quadratic amount of memory
+// otherwise.
+struct ModelLpValues
+    : public util_intops::StrongVector<IntegerVariable, double> {
+  ModelLpValues() = default;
+};
+
+// Same as ModelLpValues for reduced costs.
+struct ModelReducedCosts
+    : public util_intops::StrongVector<IntegerVariable, double> {
+  ModelReducedCosts() = default;
+};
+
+// Stores the mapping integer_variable -> glop::ColIndex.
+// This is shared across all LPs, which is fine since they are disjoint.
+struct ModelLpVariableMapping
+    : public util_intops::StrongVector<IntegerVariable, glop::ColIndex> {
+  ModelLpVariableMapping() = default;
+};
+
 // One linear constraint on a set of Integer variables.
 // Important: there should be no duplicate variables.
 //
-// We also assume that we never have integer overflow when evaluating such
+// We also assume that we never have integer overflow when evaluating such a
 // constraint at the ROOT node. This should be enforced by the checker for user
-// given constraints, and we must enforce it ourselves for the newly created
-// constraint. See ValidateLinearConstraintForOverflow().
+// given constraints, and we must enforce it ourselves for newly created
+// constraints. See ValidateLinearConstraintForOverflow().
 struct LinearConstraint {
   IntegerValue lb;
   IntegerValue ub;
 
   // Rather than using two std::vector<> this class is optimized for memory
-  // consumption, given that most of our LinearConstraint are constructed once
+  // consumption, given that most of our LinearConstraints are constructed once
   // and for all.
   //
   // It is however up to clients to maintain the invariants that both vars
   // and coeffs are properly allocated and of size num_terms.
   //
   // Also note that we did not add a copy constructor, to make sure that this is
-  // moved as often as possible. This allowed to optimize a few call site and so
+  // moved as often as possible. This allowed optimizing a few call sites and so
   // far we never copy this.
   int num_terms = 0;
   std::unique_ptr<IntegerVariable[]> vars;
@@ -117,9 +142,9 @@ struct LinearConstraint {
     return true;
   }
 
-  // We rarelly need to copy a LinearConstraint and it should almost always
+  // We rarely need to copy a LinearConstraint and it should almost always
   // be moved instead, so we don't want a copy constructor. This can be used
-  // if one really need to copy it.
+  // if one really needs to copy it.
   void CopyFrom(const LinearConstraint& other) {
     const int n = other.num_terms;
     resize(n);
@@ -156,7 +181,7 @@ struct LinearExpression {
   std::vector<IntegerValue> coeffs;
   IntegerValue offset = IntegerValue(0);
 
-  // Return[s] the evaluation of the linear expression.
+  // Returns the evaluation of the linear expression.
   double LpValue(const util_intops::StrongVector<IntegerVariable, double>&
                      lp_values) const;
 
@@ -203,8 +228,8 @@ IntegerValue GetCoefficient(IntegerVariable var, const LinearExpression& expr);
 IntegerValue GetCoefficientOfPositiveVar(IntegerVariable var,
                                          const LinearExpression& expr);
 
-// Allow to build a LinearConstraint while making sure there is no duplicate
-// variables. Note that we do not simplify literal/variable that are currently
+// Allows building a LinearConstraint while making sure there are no duplicate
+// variables. Note that we do not simplify literals/variables that are currently
 // fixed here.
 //
 // All the functions manipulate a linear expression with an offset. The final
@@ -229,7 +254,7 @@ class LinearConstraintBuilder {
       : encoder_(encoder), lb_(lb), ub_(ub) {}
 
   // Warning: this version without encoder cannot be used to add literals, so
-  // one shouldn't call AddLiteralTerm() on it. All other functions works.
+  // one shouldn't call AddLiteralTerm() on it. All other functions work.
   //
   // TODO(user): Have a subclass so we can enforce that a caller using
   // AddLiteralTerm() must construct the Builder with an encoder.
@@ -252,8 +277,8 @@ class LinearConstraintBuilder {
   ABSL_MUST_USE_RESULT bool AddDecomposedProduct(
       absl::Span<const LiteralValueValue> product);
 
-  // Add literal * coeff to the constraint. Returns false and do nothing if the
-  // given literal didn't have an integer view.
+  // Add literal * coeff to the constraint. Returns false and does nothing if
+  // the given literal didn't have an integer view.
   ABSL_MUST_USE_RESULT bool AddLiteralTerm(
       Literal lit, IntegerValue coeff = IntegerValue(1));
 
@@ -263,7 +288,7 @@ class LinearConstraintBuilder {
   //     left * right = (left_min + delta_left) * (right_min + delta_right) =
   //         left_min * right_min + delta_left * right_min +
   //          delta_right * left_min + delta_left * delta_right
-  //     which is >= (by ignoring the quatratic term)
+  //     which is >= (by ignoring the quadratic term)
   //         right_min * left + left_min * right - right_min * left_min
   //
   // TODO(user): We could use (max - delta) instead of (min + delta) for each
@@ -292,7 +317,7 @@ class LinearConstraintBuilder {
   // The bounds can be changed here or taken at construction.
   //
   // TODO(user): this doesn't invalidate the builder object, but if one wants
-  // to do a lot of dynamic editing to the constraint, then then underlying
+  // to do a lot of dynamic editing to the constraint, then the underlying
   // algorithm needs to be optimized for that.
   LinearConstraint Build();
   LinearConstraint BuildConstraint(IntegerValue lb, IntegerValue ub);
@@ -328,9 +353,9 @@ double ComputeActivity(
 
 // Tests for possible overflow in the given linear constraint used for the
 // linear relaxation. This is a bit relaxed compared to what we require for
-// generic linear constraint that are used in our CP propagators.
+// generic linear constraints that are used in our CP propagators.
 //
-// If this check pass, our constraint should be safe to use in our
+// If this check passes, our constraint should be safe to use in our
 // simplification code, our cut computation, etc...
 bool PossibleOverflow(const IntegerTrail& integer_trail,
                       const LinearConstraint& constraint);
@@ -346,15 +371,15 @@ IntegerValue ComputeInfinityNorm(const LinearConstraint& constraint);
 double ScalarProduct(const LinearConstraint& constraint1,
                      const LinearConstraint& constraint2);
 
-// Computes the GCD of the constraint coefficient, and divide them by it. This
-// also tighten the constraint bounds assuming all the variables are integer.
+// Computes the GCD of the constraint coefficients, and divides them by it. This
+// also tightens the constraint bounds assuming all the variables are integers.
 void DivideByGCD(LinearConstraint* constraint);
 
 // Makes all variables "positive" by transforming a variable to its negation.
 void MakeAllVariablesPositive(LinearConstraint* constraint);
 
 // Makes sure the coefficient of the first variable is positive while keeping
-// all variable positive. This can simply be achieved by negating the
+// all variables positive. This can simply be achieved by negating the
 // constraint.
 void MakeFirstCoefficientPositive(LinearConstraint* constraint);
 

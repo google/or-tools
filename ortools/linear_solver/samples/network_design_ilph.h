@@ -17,6 +17,9 @@
 #include <memory>
 #include <vector>
 
+#include "absl/status/status.h"
+#include "absl/strings/string_view.h"
+#include "absl/time/time.h"
 #include "ortools/graph_base/graph.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/routing/parsers/capacity_planning.pb.h"

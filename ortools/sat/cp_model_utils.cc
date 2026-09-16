@@ -57,7 +57,7 @@ ABSL_FLAG(std::string, cp_model_dump_prefix, "/tmp/",
 
 ABSL_FLAG(bool, cp_model_dump_submodels, false,
           "DEBUG ONLY. When set to true, solve will dump all "
-          "lns or objective_shaving submodels proto in text format to "
+          "lns or objective_shaving submodel protos in text format to "
           "'FLAGS_cp_model_dump_prefix'xxx.pb.txt.");
 
 namespace operations_research {
@@ -189,8 +189,18 @@ void GetReferencesUsedByConstraint(const ConstraintProto& ct,
       // The node expressions are not used by the constraint itself.
       break;
     case ConstraintProto::ConstraintCase::kInverse:
-      AddIndices(ct.inverse().f_direct(), variables);
-      AddIndices(ct.inverse().f_inverse(), variables);
+      if (!ct.inverse().f_direct().empty()) {
+        AddIndices(ct.inverse().f_direct(), variables);
+        AddIndices(ct.inverse().f_inverse(), variables);
+      } else {
+        for (const LinearExpressionProto& expr : ct.inverse().f_expr_direct()) {
+          AddIndices(expr.vars(), variables);
+        }
+        for (const LinearExpressionProto& expr :
+             ct.inverse().f_expr_inverse()) {
+          AddIndices(expr.vars(), variables);
+        }
+      }
       break;
     case ConstraintProto::ConstraintCase::kReservoir:
       for (const LinearExpressionProto& time : ct.reservoir().time_exprs()) {
@@ -384,8 +394,17 @@ void ApplyToAllVariableIndices(absl::FunctionRef<void(int*)> f,
     case ConstraintProto::ConstraintCase::kRoutes:
       break;
     case ConstraintProto::ConstraintCase::kInverse:
-      APPLY_TO_REPEATED_FIELD(inverse, f_direct);
-      APPLY_TO_REPEATED_FIELD(inverse, f_inverse);
+      if (!ct->inverse().f_direct().empty()) {
+        APPLY_TO_REPEATED_FIELD(inverse, f_direct);
+        APPLY_TO_REPEATED_FIELD(inverse, f_inverse);
+      } else {
+        for (int i = 0; i < ct->inverse().f_expr_direct_size(); ++i) {
+          APPLY_TO_REPEATED_FIELD(inverse, f_expr_direct(i)->mutable_vars);
+        }
+        for (int i = 0; i < ct->inverse().f_expr_inverse_size(); ++i) {
+          APPLY_TO_REPEATED_FIELD(inverse, f_expr_inverse(i)->mutable_vars);
+        }
+      }
       break;
     case ConstraintProto::ConstraintCase::kReservoir:
       for (int i = 0; i < ct->reservoir().time_exprs_size(); ++i) {
@@ -612,6 +631,7 @@ std::vector<int> UsedIntervals(const ConstraintProto& ct) {
       AddIndices(ct.no_overlap().intervals(), &used_intervals);
       break;
     case ConstraintProto::ConstraintCase::kNoOverlap2D:
+      used_intervals.reserve(2 * ct.no_overlap_2d().x_intervals_size());
       AddIndices(ct.no_overlap_2d().x_intervals(), &used_intervals);
       AddIndices(ct.no_overlap_2d().y_intervals(), &used_intervals);
       break;
@@ -831,8 +851,19 @@ uint64_t FingerprintModel(const CpModelProto& model, uint64_t seed) {
         fp = FingerprintRepeatedField(ct.routes().literals(), fp);
         break;
       case ConstraintProto::ConstraintCase::kInverse:
-        fp = FingerprintRepeatedField(ct.inverse().f_direct(), fp);
-        fp = FingerprintRepeatedField(ct.inverse().f_inverse(), fp);
+        if (!ct.inverse().f_direct().empty()) {
+          fp = FingerprintRepeatedField(ct.inverse().f_direct(), fp);
+          fp = FingerprintRepeatedField(ct.inverse().f_inverse(), fp);
+        } else {
+          for (const LinearExpressionProto& expr :
+               ct.inverse().f_expr_direct()) {
+            fp = FingerprintExpression(expr, fp);
+          }
+          for (const LinearExpressionProto& expr :
+               ct.inverse().f_expr_inverse()) {
+            fp = FingerprintExpression(expr, fp);
+          }
+        }
         break;
       case ConstraintProto::ConstraintCase::kReservoir:
         fp = FingerprintSingleField(ct.reservoir().min_level(), fp);
@@ -965,7 +996,7 @@ class InlineMessagePrinter
   mutable std::string buffer_;
 };
 
-// Register a InlineFieldPrinter() for all the fields containing the message we
+// Register an InlineFieldPrinter() for all the fields containing the message we
 // want to print in one line.
 void RegisterFieldPrinters(
     const google::protobuf::Descriptor* descriptor,
@@ -1032,7 +1063,7 @@ bool ModelHasOnlyClausesAndBooleanVariables(const CpModelProto& cp_model,
 }
 
 bool ModelIsMaxSat(const CpModelProto& cp_model) {
-  // We should only have only bool_or and bool_and, and an integral objective.
+  // We should only have bool_or and bool_and, and an integral objective.
   int num_clauses = 0;
   if (!cp_model.has_objective()) return false;
   const CpObjectiveProto& obj = cp_model.objective();
@@ -1050,7 +1081,7 @@ bool ModelIsPureSat(const CpModelProto& cp_model, int* num_clauses) {
 
 void ConvertSatCpModelProtoToClauses(
     const CpModelProto& cp_model,
-    std::function<void(const std::vector<Literal>&)> add_clause) {
+    const std::function<void(const std::vector<Literal>&)>& add_clause) {
   const int num_vars = cp_model.variables().size();
   for (int v = 0; v < num_vars; ++v) {
     const auto& domain = cp_model.variables(v).domain();
@@ -1131,7 +1162,7 @@ bool ConvertCpModelProtoToWCnf(const CpModelProto& cp_model, std::string* out) {
   // In wcnf, we want 1 b1 0; 1 b2 0;
   //
   // If we minimize (b1 + b2), in CP-SAT, we will have
-  // obj = b1 + b2, scaling factor = 1 (or non set).
+  // obj = b1 + b2, scaling factor = 1 (or not set).
   // In wcnf, we want 1 -b1 0; 1 -b2 0;
   //
   // Note that the objective displayed by a max-sat solve will thus not match
@@ -1178,6 +1209,58 @@ bool IsAffineIntAbs(const ConstraintProto& ct) {
                                   ? lin_max.exprs(1).coeffs(0)
                                   : -lin_max.exprs(1).coeffs(0);
   return left_coeff == -right_coeff;
+}
+
+AffineExpr GetAffineExpr(const LinearExpressionProto& expr) {
+  CHECK_LE(expr.vars_size(), 1);
+  if (expr.vars().empty()) {
+    return AffineExpr{.var = -1, .coeff = 0, .offset = expr.offset()};
+  }
+  CHECK_EQ(expr.coeffs().size(), 1);
+  return AffineExpr{
+      .var = expr.vars(0), .coeff = expr.coeffs(0), .offset = expr.offset()};
+}
+
+std::string AffineExpr::ToString() const {
+  if (var < 0 || coeff == 0) {
+    return absl::StrCat(offset);
+  }
+  const std::string offset_str =
+      offset > 0 ? absl::StrCat(" + ", offset)
+                 : (offset < 0 ? absl::StrCat(" - ", -offset) : "");
+  if (coeff == 1) return absl::StrCat("X", var, offset_str);
+  if (coeff == -1) return absl::StrCat("-X", var, offset_str);
+  return absl::StrCat(coeff, " * X", var, offset_str);
+}
+
+int64_t GetAffineExprMin(const AffineExpr& expr,
+                         const CpModelProto& model_proto) {
+  DCHECK_LE(expr.var, model_proto.variables_size());
+  if (expr.var < 0) return expr.offset;
+  const auto& var_proto = model_proto.variables(expr.var);
+  CHECK(!var_proto.domain().empty());
+  if (expr.coeff >= 0) {
+    const int64_t d_min = var_proto.domain(0);
+    return expr.coeff * d_min + expr.offset;
+  } else {
+    const int64_t d_max = var_proto.domain(var_proto.domain_size() - 1);
+    return expr.coeff * d_max + expr.offset;
+  }
+}
+
+int64_t GetAffineExprMax(const AffineExpr& expr,
+                         const CpModelProto& model_proto) {
+  DCHECK_LE(expr.var, model_proto.variables_size());
+  if (expr.var < 0) return expr.offset;
+  const auto& var_proto = model_proto.variables(expr.var);
+  CHECK(!var_proto.domain().empty());
+  if (expr.coeff >= 0) {
+    const int64_t d_max = var_proto.domain(var_proto.domain_size() - 1);
+    return expr.coeff * d_max + expr.offset;
+  } else {
+    const int64_t d_min = var_proto.domain(0);
+    return expr.coeff * d_min + expr.offset;
+  }
 }
 
 }  // namespace sat

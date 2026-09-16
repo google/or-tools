@@ -16,6 +16,8 @@
 #include <vector>
 
 #include "absl/types/span.h"
+#include "ortools/routing/heuristic_parameters.pb.h"
+#include "ortools/routing/parameters.pb.h"
 #include "ortools/util/optional_boolean.pb.h"
 
 namespace operations_research::routing {

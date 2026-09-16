@@ -16,6 +16,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/math_opt/core/model_summary.h"
+#include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/validators/result_validator.h"
 
 namespace operations_research::math_opt {

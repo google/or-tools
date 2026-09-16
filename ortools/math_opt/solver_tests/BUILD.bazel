@@ -11,12 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//bazel:or_cc_rules.bzl", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
-cc_library(
+or_cc_library(
     name = "base_solver_test",
     testonly = 1,
     srcs = ["base_solver_test.cc"],
@@ -28,7 +27,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "callback_tests",
     testonly = 1,
     srcs = ["callback_tests.cc"],
@@ -41,7 +40,6 @@ cc_library(
         ":test_models",
         "//ortools/base:gmock",
         "//ortools/base:map_util",
-        "//ortools/base:status_macros",
         "//ortools/gurobi:gurobi_stdout_matchers",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:parameters_cc_proto",
@@ -55,16 +53,18 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/synchronization",
         "@abseil-cpp//absl/types:span",
+        "@rules_cc//cc/runfiles",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
 )
 
-cc_library(
+or_cc_library(
     name = "status_tests",
     testonly = 1,
     srcs = ["status_tests.cc"],
@@ -75,21 +75,22 @@ cc_library(
     deps = [
         ":test_models",
         "//ortools/base:gmock",
-        "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/io:mps_converter",
         "//ortools/port:proto_utils",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/time",
+        "@rules_cc//cc/runfiles",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
 )
 
-cc_library(
+or_cc_library(
     name = "lp_tests",
     testonly = 1,
     srcs = ["lp_tests.cc"],
@@ -109,7 +110,26 @@ cc_library(
     alwayslink = 1,
 )
 
-cc_library(
+or_cc_library(
+    name = "min_cost_flow_tests",
+    testonly = 1,
+    srcs = ["min_cost_flow_tests.cc"],
+    hdrs = ["min_cost_flow_tests.h"],
+    deps = [
+        "//ortools/base:gmock",
+        "//ortools/math_opt/cpp:matchers",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/port:proto_utils",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@abseil-cpp//absl/strings",
+    ],
+    # Make sure the tests are included when using --dynamic_mode=off.
+    alwayslink = 1,
+)
+
+or_cc_library(
     name = "lp_incomplete_solve_tests",
     testonly = 1,
     srcs = ["lp_incomplete_solve_tests.cc"],
@@ -122,6 +142,7 @@ cc_library(
         "//ortools/math_opt:solution_cc_proto",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
     ],
@@ -129,13 +150,14 @@ cc_library(
     alwayslink = 1,
 )
 
-cc_library(
+or_cc_library(
     name = "invalid_input_tests",
     testonly = 1,
     srcs = ["invalid_input_tests.cc"],
     hdrs = ["invalid_input_tests.h"],
     deps = [
         ":base_solver_test",
+        ":test_models",
         "//ortools/base:gmock",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
@@ -152,10 +174,11 @@ cc_library(
     alwayslink = 1,
 )
 
-cc_test(
+or_cc_test(
     name = "unregistered_solver_test",
     size = "small",
     srcs = ["unregistered_solver_test.cc"],
+
     # SCIP depends on strerror_r() returning a `char*` which is GNU
     # specific. Android returns an `int`.
     tags = ["no_test_android"],
@@ -168,7 +191,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "mip_tests",
     testonly = 1,
     srcs = ["mip_tests.cc"],
@@ -185,7 +208,7 @@ cc_library(
     alwayslink = 1,
 )
 
-cc_library(
+or_cc_library(
     name = "ip_model_solve_parameters_tests",
     testonly = 1,
     srcs = ["ip_model_solve_parameters_tests.cc"],
@@ -193,18 +216,18 @@ cc_library(
     deps = [
         ":base_solver_test",
         "//ortools/base:gmock",
-        "//ortools/base:status_macros",
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/port:proto_utils",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
 )
 
-cc_library(
+or_cc_library(
     name = "ip_multiple_solutions_tests",
     testonly = 1,
     srcs = ["ip_multiple_solutions_tests.cc"],
@@ -220,7 +243,7 @@ cc_library(
     alwayslink = 1,
 )
 
-cc_library(
+or_cc_library(
     name = "lp_model_solve_parameters_tests",
     testonly = 1,
     srcs = ["lp_model_solve_parameters_tests.cc"],
@@ -237,20 +260,20 @@ cc_library(
     alwayslink = 1,
 )
 
-cc_library(
+or_cc_library(
     name = "lp_parameter_tests",
     testonly = 1,
     srcs = ["lp_parameter_tests.cc"],
     hdrs = ["lp_parameter_tests.h"],
     deps = [
         "//ortools/base:gmock",
-        "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
     ],
@@ -258,7 +281,7 @@ cc_library(
     alwayslink = 1,
 )
 
-cc_library(
+or_cc_library(
     name = "lp_initial_basis_tests",
     testonly = 1,
     srcs = ["lp_initial_basis_tests.cc"],
@@ -275,7 +298,7 @@ cc_library(
     alwayslink = 1,
 )
 
-cc_library(
+or_cc_library(
     name = "ip_parameter_tests",
     testonly = 1,
     srcs = ["ip_parameter_tests.cc"],
@@ -288,7 +311,6 @@ cc_library(
         ":test_models",
         "//ortools/base:gmock",
         "//ortools/base:log_severity",
-        "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/io:mps_converter",
@@ -297,16 +319,18 @@ cc_library(
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/time",
         "@abseil-cpp//absl/types:span",
+        "@rules_cc//cc/runfiles",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
 )
 
-cc_library(
+or_cc_library(
     name = "multi_objective_tests",
     testonly = 1,
     srcs = ["multi_objective_tests.cc"],
@@ -316,7 +340,6 @@ cc_library(
     ],
     deps = [
         "//ortools/base:gmock",
-        "//ortools/base:status_macros",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
         "//ortools/math_opt:result_cc_proto",
@@ -326,15 +349,17 @@ cc_library(
         "//ortools/port:proto_utils",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings:string_view",
         "@abseil-cpp//absl/time",
+        "@rules_cc//cc/runfiles",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
 )
 
-cc_library(
+or_cc_library(
     name = "qp_tests",
     testonly = 1,
     srcs = ["qp_tests.cc"],
@@ -344,6 +369,7 @@ cc_library(
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/port:proto_utils",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
@@ -352,7 +378,7 @@ cc_library(
     alwayslink = 1,
 )
 
-cc_library(
+or_cc_library(
     name = "qc_tests",
     testonly = 1,
     srcs = ["qc_tests.cc"],
@@ -370,7 +396,7 @@ cc_library(
     alwayslink = 1,
 )
 
-cc_library(
+or_cc_library(
     name = "second_order_cone_tests",
     testonly = 1,
     srcs = ["second_order_cone_tests.cc"],
@@ -388,7 +414,7 @@ cc_library(
     alwayslink = 1,
 )
 
-cc_library(
+or_cc_library(
     name = "logical_constraint_tests",
     testonly = 1,
     srcs = ["logical_constraint_tests.cc"],
@@ -408,7 +434,7 @@ cc_library(
     alwayslink = 1,
 )
 
-cc_library(
+or_cc_library(
     name = "test_models",
     testonly = 1,
     srcs = ["test_models.cc"],
@@ -419,14 +445,14 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
-        "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings",
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "test_models_test",
     srcs = ["test_models_test.cc"],
+
     # SCIP depends on strerror_r() returning a `char*` which is GNU
     # specific. Android returns an `int`.
     tags = ["no_test_android"],
@@ -435,12 +461,15 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/solvers:cp_sat_solver",
         "//ortools/math_opt/solvers:glop_solver",
         "//ortools/math_opt/solvers:gscip_solver",
+        "//ortools/math_opt/solvers:min_cost_flow_solver",
+        "//ortools/math_opt/testing:stream",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "generic_tests",
     testonly = True,
     srcs = ["generic_tests.cc"],
@@ -469,7 +498,7 @@ cc_library(
     alwayslink = 1,
 )
 
-cc_library(
+or_cc_library(
     name = "infeasible_subsystem_tests",
     testonly = 1,
     srcs = ["infeasible_subsystem_tests.cc"],

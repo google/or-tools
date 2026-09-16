@@ -70,10 +70,10 @@ TEST(EliminateVarUsingRowTest, BasicExample) {
   typedef std::vector<std::pair<glop::RowIndex, IntegerValue>> MultiplierType;
   typedef std::vector<int> VectorType;
 
-  // Let use row with index 2 to eliminate the variable 4.
+  // Let us use row with index 2 to eliminate variable 4.
   helper.EliminateVarUsingRow(4, 2);
 
-  // The multipliers, cols and parity behave like a xor.
+  // The multipliers, cols and parity behave like an XOR.
   EXPECT_EQ(helper.MatrixRow(0).multipliers,
             MultiplierType({{glop::RowIndex(3), IntegerValue(1)}}));
   EXPECT_EQ(helper.MatrixRow(0).cols, VectorType({2, 3, 7, 5, 8}));
@@ -88,7 +88,7 @@ TEST(EliminateVarUsingRowTest, BasicExample) {
   EXPECT_EQ(helper.MatrixRow(1).rhs_parity, 1);
   EXPECT_EQ(helper.MatrixRow(1).slack, 0.0);
 
-  // The column is eliminated like a singleton column and the lp value become
+  // The column is eliminated like a singleton column and the LP value becomes
   // the slack.
   EXPECT_EQ(helper.MatrixRow(2).multipliers,
             MultiplierType({{glop::RowIndex(1), IntegerValue(1)},

@@ -361,10 +361,20 @@ def solve_rcpsp(
     if params:
         solver.parameters.parse_text_format(params)
 
-    # Favor objective_shaving over objective_lb_search.
-    if solver.parameters.num_workers >= 16 and solver.parameters.num_workers < 24:
-        solver.parameters.ignore_subsolvers.append("objective_lb_search")
-        solver.parameters.extra_subsolvers.append("objective_shaving")
+    # A good default set of workers as of Jul 2026.
+    if not solver.parameters.subsolvers and solver.parameters.num_workers == 16:
+        print("Overriding the set of subsolvers for 16 workers.")
+        solver.parameters.subsolvers.append("fixed_no_lp")
+        solver.parameters.subsolvers.append("max_lp")
+        solver.parameters.subsolvers.append("no_lp")
+        solver.parameters.subsolvers.append("objective_shaving_no_lp")
+        solver.parameters.subsolvers.append("objective_shaving_max_lp")
+        solver.parameters.subsolvers.append("probing_no_lp")
+        solver.parameters.subsolvers.append("pseudo_costs")
+        solver.parameters.subsolvers.append("quick_restart_no_lp")
+        solver.parameters.subsolvers.append("reduced_costs")
+        solver.parameters.subsolvers.append("shaving_no_lp")
+        solver.parameters.subsolvers.append("shaving_max_lp")
 
     # Experimental: Specify the fact that the objective is a makespan
     solver.parameters.push_all_tasks_toward_start = True

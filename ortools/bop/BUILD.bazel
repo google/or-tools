@@ -13,8 +13,7 @@
 
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//bazel:or_cc_rules.bzl", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -38,7 +37,7 @@ cc_proto_library(
     deps = [":bop_parameters_proto"],
 )
 
-cc_library(
+or_cc_library(
     name = "bop_types",
     hdrs = ["bop_types.h"],
     deps = [
@@ -47,7 +46,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "bop_base",
     srcs = ["bop_base.cc"],
     hdrs = ["bop_base.h"],
@@ -72,7 +71,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "bop_util",
     srcs = ["bop_util.cc"],
     hdrs = ["bop_util.h"],
@@ -94,7 +93,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "bop_solution",
     srcs = ["bop_solution.cc"],
     hdrs = ["bop_solution.h"],
@@ -109,7 +108,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "bop_solution_test",
     size = "small",
     srcs = ["bop_solution_test.cc"],
@@ -124,7 +123,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "bop_fs",
     srcs = ["bop_fs.cc"],
     hdrs = ["bop_fs.h"],
@@ -137,7 +136,6 @@ cc_library(
         ":bop_types",
         ":bop_util",
         ":lp_utils",
-        "//ortools/algorithms:sparse_permutation",
         "//ortools/base:strong_vector",
         "//ortools/base:types",
         "//ortools/glop:lp_solver",
@@ -149,7 +147,6 @@ cc_library(
         "//ortools/sat:sat_base",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/sat:sat_solver",
-        "//ortools/sat:symmetry",
         "//ortools/sat:util",
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
@@ -162,7 +159,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "bop_lns",
     srcs = ["bop_lns.cc"],
     hdrs = ["bop_lns.h"],
@@ -195,7 +192,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "complete_optimizer",
     srcs = ["complete_optimizer.cc"],
     hdrs = ["complete_optimizer.h"],
@@ -220,7 +217,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "bop_ls",
     srcs = ["bop_ls.cc"],
     hdrs = ["bop_ls.h"],
@@ -250,7 +247,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "bop_portfolio",
     srcs = ["bop_portfolio.cc"],
     hdrs = ["bop_portfolio.h"],
@@ -286,7 +283,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "bop_solver",
     srcs = ["bop_solver.cc"],
     hdrs = ["bop_solver.h"],
@@ -311,7 +308,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "integral_solver",
     srcs = ["integral_solver.cc"],
     hdrs = ["integral_solver.h"],
@@ -343,7 +340,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "lp_utils",
     srcs = ["lp_utils.cc"],
     hdrs = ["lp_utils.h"],
@@ -360,7 +357,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "lp_utils_test",
     srcs = ["lp_utils_test.cc"],
     deps = [
@@ -372,13 +369,13 @@ cc_test(
         "//ortools/lp_data:proto_utils",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:sat_parameters_cc_proto",
-        "//ortools/util:fp_utils",
+        "//ortools/util:fp_utils_testing",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "boolean_problem",
     srcs = ["boolean_problem.cc"],
     hdrs = ["boolean_problem.h"],
@@ -411,7 +408,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "boolean_problem_test",
     srcs = ["boolean_problem_test.cc"],
     deps = [

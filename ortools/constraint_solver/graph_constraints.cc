@@ -29,7 +29,6 @@
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraints.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/string_array.h"

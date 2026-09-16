@@ -14,7 +14,6 @@
 #include "ortools/set_cover/set_cover_invariant.h"
 
 #include <algorithm>
-#include <limits>
 #include <tuple>
 #include <vector>
 
@@ -22,8 +21,10 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/types/span.h"
+#include "ortools/algorithms/multikey_radix_sort.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/set_cover/base_types.h"
+#include "ortools/set_cover/set_cover.pb.h"
 #include "ortools/set_cover/set_cover_model.h"
 
 namespace operations_research {
@@ -61,6 +62,7 @@ void SetCoverInvariant::Clear() {
   }
 
   coverage_.assign(num_elements, 0);
+  dual_values_.assign(num_elements, 0.0);
 
   // No need to reserve for trace_ and other vectors as extending with
   // push_back is fast enough.
@@ -139,6 +141,19 @@ void SetCoverInvariant::LoadSolution(const SubsetBoolVector& solution) {
   }
   num_uncovered_elements_ = ComputeNumUncoveredElements(coverage_);
   consistency_level_ = CL::kCostAndCoverage;
+}
+
+void SetCoverInvariant::BuildSolutionFromDuals(Cost tolerance) {
+  SubsetCostVector reduced_costs;
+  model_->ComputeReducedCosts(dual_values_, reduced_costs);
+
+  SubsetBoolVector solution(model_->num_subsets(), false);
+  for (const SubsetIndex subset : model_->SubsetRange()) {
+    if (reduced_costs[subset] <= tolerance) {
+      solution[subset] = true;
+    }
+  }
+  LoadSolution(solution);
 }
 
 void SetCoverInvariant::LoadTraceAndCoverage(
@@ -359,6 +374,7 @@ bool SetCoverInvariant::ComputeIsRedundant(SubsetIndex subset) const {
 
 std::vector<SubsetIndex> SetCoverInvariant::ComputeUncoveredFocus() const {
   std::vector<SubsetIndex> focus;
+  focus.reserve(model_->num_subsets());
   SubsetBoolVector seen_subsets(model_->num_subsets(), false);
   // NOTE(user): to be optimal in memory, we could use is_selected_ to store the
   // fact that a subset has been processed and is therefore redundant.
@@ -374,7 +390,8 @@ std::vector<SubsetIndex> SetCoverInvariant::ComputeUncoveredFocus() const {
       }
     }
   }
-  std::sort(focus.begin(), focus.end());
+  RangeRadixSort(0, model_->num_subsets(), focus,
+                 [](const SubsetIndex j) { return j.value(); });
   return focus;
 }
 
@@ -525,15 +542,15 @@ bool SetCoverInvariant::Deselect(SubsetIndex subset,
 SetCoverSolutionResponse SetCoverInvariant::ExportSolutionAsProto() const {
   SetCoverSolutionResponse message;
   message.set_num_subsets(is_selected_.size());
-  Cost lower_bound = std::numeric_limits<Cost>::max();
   for (const SubsetIndex subset : model_->SubsetRange()) {
     if (is_selected_[subset]) {
       message.add_subset(subset.value());
     }
-    lower_bound = std::min(model_->subset_costs()[subset], lower_bound);
   }
   message.set_cost(cost_);
-  message.set_cost_lower_bound(lower_bound);
+  message.set_cost_lower_bound(lower_bound_);
+  message.set_is_unicost(model_->is_unicost());
+  message.set_problem_name(model_->name());
   return message;
 }
 

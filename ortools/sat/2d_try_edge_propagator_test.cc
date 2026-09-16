@@ -198,7 +198,7 @@ TEST(TryEdgeRectanglePropagatorTest, Simple) {
                 UnorderedElementsAre(Pair(2, IntegerValue(5))));
   }
 
-  // Now the same thing, but makes it a conflict
+  // Now the same thing, but make it a conflict
   {
     active_box_ranges[2].bounding_area.x_min = 0;
     active_box_ranges[2].bounding_area.x_max = 5;

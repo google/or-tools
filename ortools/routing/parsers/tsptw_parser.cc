@@ -26,6 +26,7 @@
 #include "ortools/base/numbers.h"
 #include "ortools/base/path.h"
 #include "ortools/base/zipfile.h"
+#include "ortools/routing/parsers/simple_graph.h"
 #include "ortools/util/filelineiter.h"
 
 namespace operations_research::routing {

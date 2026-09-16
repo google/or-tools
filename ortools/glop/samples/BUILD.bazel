@@ -11,16 +11,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary")
 load("//tools/testing:bintest.bzl", "bintest")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_binary(
+or_cc_binary(
     name = "simple_glop_program_cc",
     srcs = ["simple_glop_program.cc"],
     deps = [
         "//ortools/glop:lp_solver",
+        "//ortools/glop:parameters_cc_proto",
         "//ortools/lp_data",
         "//ortools/lp_data:lp_types",
     ],

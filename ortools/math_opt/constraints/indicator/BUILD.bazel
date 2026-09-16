@@ -11,12 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//bazel:or_cc_rules.bzl", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
-cc_library(
+or_cc_library(
     name = "indicator_constraint",
     srcs = ["indicator_constraint.cc"],
     hdrs = ["indicator_constraint.h"],
@@ -30,7 +29,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "indicator_constraint_test",
     srcs = ["indicator_constraint_test.cc"],
     deps = [
@@ -45,7 +44,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "storage",
     srcs = ["storage.cc"],
     hdrs = ["storage.h"],
@@ -62,9 +61,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "storage_test",
     srcs = ["storage_test.cc"],
+
     # TODO: b/475196802 - Stop using EquivToProto().
     tags = [
         "no_test_android",
@@ -81,21 +81,24 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "validator",
     srcs = ["validator.cc"],
     hdrs = ["validator.h"],
     deps = [
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt/core:model_summary",
+        "//ortools/math_opt/core:sparse_vector_view",
         "//ortools/math_opt/validators:scalar_validator",
         "//ortools/math_opt/validators:sparse_vector_validator",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_builder",
+        "@abseil-cpp//absl/status:status_macros",
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "validator_test",
     srcs = ["validator_test.cc"],
     deps = [

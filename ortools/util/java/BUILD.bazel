@@ -15,10 +15,8 @@
 # some generic utilities for SWIG java.
 
 load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
-load("//bazel:swig_java.bzl", "java_wrap_cc")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library", "or_cc_test")
+load("//bazel:or_java_wrap_cc.bzl", "or_java_wrap_cc")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -36,7 +34,7 @@ exports_files(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "wrappers",
     srcs = ["wrappers.cc"],
     hdrs = ["wrappers.h"],
@@ -52,9 +50,10 @@ cc_library(
     ],
 )
 
-java_wrap_cc(
+or_java_wrap_cc(
     name = "sorted_interval_list",
     srcs = ["sorted_interval_list.swig"],
+    java_deps = ["@protobuf//java/core"],
     package = "com.google.ortools.util",
     swig_includes = [
         ":vector.swig",
@@ -71,14 +70,14 @@ java_wrap_cc(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "java_swig_solve_interrupter",
     hdrs = ["java_swig_solve_interrupter.h"],
     visibility = ["//visibility:public"],
     deps = ["//ortools/util:solve_interrupter"],
 )
 
-cc_test(
+or_cc_test(
     name = "java_swig_solve_interrupter_test",
     srcs = ["java_swig_solve_interrupter_test.cc"],
     deps = [
@@ -87,17 +86,19 @@ cc_test(
     ],
 )
 
-java_wrap_cc(
+or_java_wrap_cc(
     name = "java_swig_solve_interrupter_swig",
     srcs = ["java_swig_solve_interrupter.swig"],
+    java_deps = ["@protobuf//java/core"],
     package = "com.google.ortools.util",
     swig_includes = [
         ":java_swig_solve_interrupter",
         "//ortools/base:base_swig",
     ],
     visibility = [
-        "//javatests/com/google/wrappers/util/operationsresearch:__subpackages__",
-        "//ortools:__subpackages__",
+        "//ortools/java/com/google/ortools:__subpackages__",
+        "//ortools/java/com/google/ortools/util:__pkg__",
+        "//ortools/javatests/com/google/ortools:__subpackages__",
         "//visibility:public",
     ],
     deps = [":java_swig_solve_interrupter"],
@@ -107,7 +108,7 @@ JNI_DEPS = select({
     "//conditions:default": ["@bazel_tools//tools/jdk:jni"],
 })
 
-cc_library(
+or_cc_library(
     name = "jni_helper",
     srcs = ["jni_helper.cc"],
     hdrs = ["jni_helper.h"],
@@ -117,20 +118,18 @@ cc_library(
     ] + JNI_DEPS,
 )
 
-cc_binary(
+or_cc_binary(
     name = "gen_wrappers_test_message_java_swig",
     testonly = 1,
     srcs = ["gen_wrappers_test_message_java_swig.cc"],
     tags = ["manual"],
     deps = [
         ":wrappers",
-        "//ortools/base",
         "//ortools/util/testdata:wrappers_test_message_cc_proto",
         "@abseil-cpp//absl/flags:parse",
         "@abseil-cpp//absl/flags:usage",
         "@abseil-cpp//absl/log:die_if_null",
         "@abseil-cpp//absl/log:initialize",
-        "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
     ],
 )
@@ -144,9 +143,13 @@ genrule(
     tools = [":gen_wrappers_test_message_java_swig"],
 )
 
-java_wrap_cc(
+or_java_wrap_cc(
     name = "wrappers_test_message",
     srcs = ["wrappers_test_message.swig"],
+    java_deps = [
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@protobuf//java/core",
+    ],
     package = "com.google.ortools.util",
     swig_includes = [
         "//ortools/base:base_swig",

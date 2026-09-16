@@ -11,14 +11,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Description: java wrapping of the C++ code at ../
+load("//bazel:or_java_wrap_cc.bzl", "or_java_wrap_cc")
 
-load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
-load("//bazel:swig_java.bzl", "java_wrap_cc")
+package(default_visibility = ["//visibility:public"])
 
-java_wrap_cc(
+or_java_wrap_cc(
     name = "modelbuilder",
     srcs = ["modelbuilder.swig"],
+    java_deps = ["@protobuf//java/core"],
     package = "com.google.ortools.modelbuilder",
     swig_includes = [
         "//ortools/base:base_swig",
@@ -32,28 +32,5 @@ java_wrap_cc(
     deps = [
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver/wrappers:model_builder_helper",
-    ],
-)
-
-java_junit5_test(
-    name = "ModelBuilderTest",
-    srcs = ["ModelBuilderTest.java"],
-    jvm_flags = ["-Xcheck:jni"],
-    tags = [
-        "not_build:arm",
-        "not_run:arm",
-    ],
-    test_class = "com.google.ortools.modelbuilder.ModelBuilderTest",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/modelbuilder",
-        "//ortools/linear_solver:linear_solver_glop",
-        "//ortools/linear_solver/java:modelbuilder",
-        "@maven//:com_google_truth_truth",
-        "@maven//:org_junit_jupiter_junit_jupiter_api",
-        "@maven//:org_junit_jupiter_junit_jupiter_engine",
-        "@maven//:org_junit_jupiter_junit_jupiter_params",
-        "@maven//:org_junit_platform_junit_platform_launcher",
-        "@maven//:org_junit_platform_junit_platform_reporting",
     ],
 )

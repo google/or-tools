@@ -11,18 +11,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_python//python:py_binary.bzl", "py_binary")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary")
 load("//tools/testing:bintest.bzl", "bintest")
 
-package(default_visibility = ["//visibility:public"])
-
-cc_binary(
+or_cc_binary(
     name = "set_cover_cc",
     srcs = ["set_cover.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
+        "//ortools/set_cover:set_cover_cc_proto",
         "//ortools/set_cover:set_cover_heuristics",
         "//ortools/set_cover:set_cover_invariant",
         "//ortools/set_cover:set_cover_model",

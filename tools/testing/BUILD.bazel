@@ -12,10 +12,10 @@
 # limitations under the License.
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_python//python:py_binary.bzl", "py_binary")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary")
 load("//tools/testing:bintest.bzl", "bintest", "py_bintest")
 
 package(default_visibility = ["//visibility:public"])
@@ -78,13 +78,13 @@ py_binary(
     deps = [":bintest_script_runner"],
 )
 
-cc_binary(
+or_cc_binary(
     name = "echo",
     testonly = True,
     srcs = ["echo.cc"],
 )
 
-cc_binary(
+or_cc_binary(
     name = "fail",
     testonly = True,
     srcs = ["fail.cc"],
@@ -109,7 +109,7 @@ py_test(
 
 # The following targets demonstrate the usage of the `bintest` and `py_bintest` rules.
 
-cc_binary(
+or_cc_binary(
     name = "print_args",
     srcs = ["print_args.cc"],
 )

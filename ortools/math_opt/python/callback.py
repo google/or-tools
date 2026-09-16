@@ -30,24 +30,31 @@ class Event(enum.Enum):
     """The supported events during a solve for callbacks.
 
     * UNSPECIFIED: The event is unknown (typically an internal error).
-    * PRESOLVE: The solver is currently running presolve. Gurobi only.
-    * SIMPLEX: The solver is currently running the simplex method. Gurobi only.
+    * PRESOLVE: The solver is currently running presolve. Gurobi and Xpress only.
+    * SIMPLEX: The solver is currently running the simplex method. Gurobi and
+        Xpress only.
     * MIP: The solver is in the MIP loop (called periodically before starting a
         new node). Useful for early termination. Note that this event does not
         provide information on LP relaxations nor about new incumbent solutions.
-        Fully supported by Gurobi only. If used with CP-SAT, it is called when the
-        dual bound is improved.
+        Fully supported for MIP models by Gurobi and Xpress only. If used with
+        CP-SAT, it is called when the dual bound is improved.
     * MIP_SOLUTION: Called every time a new MIP incumbent is found. Fully
-        supported by Gurobi, partially supported by CP-SAT (you can observe new
-        solutions, but not add lazy constraints).
+        supported for MIP models by Gurobi and Xpress. Partially supported by
+        CP-SAT (you can view the solutions and request termination, but you cannot
+        add lazy constraints). Other solvers don't support this event. It is
+        solver specific whether terminating from this event still collects the
+        solution for which the event was triggered or not.
     * MIP_NODE: Called inside a MIP node. Note that there is no guarantee that the
         callback function will be called on every node. That behavior is
-        solver-dependent. Gurobi only.
+        solver-dependent. Supported for MIP models by Gurobi and Xpress only.
 
         Disabling cuts using SolveParameters may interfere with this event being
         called and/or adding cuts at this event, the behavior is solver specific.
+        For Xpress disabling cuts will prevent this event. To disable cuts and
+        still get this event called for Xpress, disable cuts by setting
+        COVERCUTS, GOMCUTS, TREECOVERCUTS, TREEGOMCUTS to 0.
     * BARRIER: Called in each iterate of an interior point/barrier method. Gurobi
-        only.
+        and Xpress only.
     """
 
     UNSPECIFIED = callback_pb2.CALLBACK_EVENT_UNSPECIFIED
@@ -189,6 +196,8 @@ class GeneratedConstraint:
       * The "user cut" (on is_lazy=false) strengthens the LP without removing
         integer points. It can only be added at Event.MIP_NODE.
 
+    All constraints must be globally valid (and not only valid for the subtree
+    rooted at the search tree node for which the event was triggered).
 
     Attributes:
       terms: The variables and linear coefficients in the constraint, a_i and x_i
@@ -221,6 +230,7 @@ class GeneratedConstraint:
 
 @dataclasses.dataclass
 class CallbackResult:
+    # pyformat: disable
     """The value returned by a solve callback (produced by the user).
 
     Attributes:
@@ -236,13 +246,14 @@ class CallbackResult:
         still be called after they set `terminate` to true in a previous
         call. Returning with `terminate` false after having previously returned
         true won't cancel the interruption.
-      generated_constraints: Constraints to add to the model. For details, see
-        GeneratedConstraint documentation.
+      generated_constraints: Constraints to add to the model. All constraints must
+        be globally valid. For details, see GeneratedConstraint documentation.
       suggested_solutions: A list of solutions (or partially defined solutions) to
-        suggest to the solver. Some solvers (e.g. gurobi) will try and convert a
-        partial solution into a full solution by solving a MIP. Use only for
-        Event.MIP_NODE or Event.MIP_SOLUTION.
+        suggest to the solver. Some solvers (e.g. gurobi or Xpress) will try and
+        convert a partial solution into a full solution by solving a MIP. Use only
+        for Event.MIP_NODE or Event.MIP_SOLUTION.
     """
+    # pyformat: enable
 
     terminate: bool = False
     generated_constraints: List[GeneratedConstraint] = dataclasses.field(
@@ -276,6 +287,9 @@ class CallbackResult:
           * add_generated_constraint(x + y + 1.0 <= 2.0, is_lazy=True),
           * add_generated_constraint(x + y >= 2.0, is_lazy=True), or
           * add_generated_constraint((1.0 <= x + y) <= 2.0, is_lazy=True).
+
+        All constraints must be globally valid (and not only valid for the subtree
+        rooted at the search tree node for which the event was triggered).
 
         Note the extra parenthesis for two-sided linear inequalities, which is
         required due to some language limitations (see
@@ -329,7 +343,7 @@ class CallbackResult:
         ub: Optional[float] = None,
         expr: Optional[variables.LinearTypes] = None,
     ) -> None:
-        """Shortcut for add_generated_constraint(..., is_lazy=True).."""
+        """Shortcut for add_generated_constraint(..., is_lazy=True)."""
         self.add_generated_constraint(
             bounded_expr, lb=lb, ub=ub, expr=expr, is_lazy=True
         )

@@ -14,7 +14,6 @@
 #include "ortools/math_opt/core/inverted_bounds.h"
 
 #include <cstdint>
-#include <string>
 #include <string_view>
 #include <vector>
 
@@ -30,7 +29,7 @@ absl::Status InvertedBounds::ToStatus() const {
     return absl::OkStatus();
   }
 
-  auto builder = util::InvalidArgumentErrorBuilder();
+  auto builder = ortools::InvalidArgumentErrorBuilder();
   const auto format_bounds_ids = [&builder](const std::string_view name,
                                             const std::vector<int64_t>& ids) {
     if (ids.empty()) {

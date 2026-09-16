@@ -11,22 +11,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:or_cc_rules.bzl", "or_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+or_cc_library(
     name = "os",
     hdrs = ["os.h"],
 )
 
-cc_library(
+or_cc_library(
     name = "os_support",
     hdrs = ["os_support.h"],
     deps = [":os"],
 )
 
-cc_library(
+or_cc_library(
     name = "buildenv",
     hdrs = ["buildenv.h"],
 )

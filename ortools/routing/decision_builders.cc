@@ -23,11 +23,14 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/nullability.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/interval.h"
 #include "ortools/routing/lp_scheduling.h"
@@ -102,7 +105,7 @@ class SetValuesFromTargets : public DecisionBuilder {
 
 }  // namespace
 
-DecisionBuilder* MakeSetValuesFromTargets(Solver* solver,
+DecisionBuilder* MakeSetValuesFromTargets(Solver* absl_nonnull solver,
                                           std::vector<IntVar*> variables,
                                           std::vector<int64_t> targets) {
   return solver->RevAlloc(
@@ -172,7 +175,7 @@ void AppendRouteCumulAndBreakVarAndValues(
   int new_num_values = old_num_values;
   for (int j = old_num_values; j < vals.size(); ++j) {
     // Value kint64min signals an unoptimized variable, skip setting those.
-    if (vals[j] == std::numeric_limits<int64_t>::min()) continue;
+    if (vals[j] == kint64min) continue;
     // Skip variables that are not bound.
     if (vars[j]->Bound()) continue;
     vals[new_num_values] = vals[j];
@@ -330,7 +333,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
     return true;
   }
 
-  inline void DetermineVehiclesRequiringResourceAssignment(
+  void DetermineVehiclesRequiringResourceAssignment(
       std::vector<int>* vehicles_without_resource_assignment,
       std::vector<int>* vehicles_with_resource_assignment,
       util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>*
@@ -541,8 +544,10 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
 }  // namespace
 
 DecisionBuilder* MakeSetCumulsFromLocalDimensionCosts(
-    Solver* solver, LocalDimensionCumulOptimizer* lp_optimizer,
-    LocalDimensionCumulOptimizer* mp_optimizer, bool optimize_and_pack,
+    Solver* absl_nonnull solver,
+    LocalDimensionCumulOptimizer* absl_nonnull lp_optimizer,
+    LocalDimensionCumulOptimizer* absl_nonnull mp_optimizer,
+    bool optimize_and_pack,
     std::vector<Model::RouteDimensionTravelInfo>
         dimension_travel_info_per_route) {
   return solver->RevAlloc(new SetCumulsFromLocalDimensionCosts(
@@ -645,15 +650,16 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
                         break_start_end_values_.end());
     }
     if (optimize_and_pack_) {
-// Resource variables should be bound when packing, so we don't need
-// to restore them again.
-#ifndef NDEBUG
-      for (int rg_index : model->GetDimensionResourceGroupIndices(dimension)) {
-        for (IntVar* res_var : model->ResourceVars(rg_index)) {
-          DCHECK(res_var->Bound());
+      // Resource variables should be bound when packing, so we don't need
+      // to restore them again.
+      if constexpr (DEBUG_MODE) {
+        for (int rg_index :
+             model->GetDimensionResourceGroupIndices(dimension)) {
+          for (IntVar* res_var : model->ResourceVars(rg_index)) {
+            DCHECK(res_var->Bound());
+          }
         }
       }
-#endif
     } else {
       // Add resource values to cp_values_.
       for (int rg_index : model->GetDimensionResourceGroupIndices(dimension)) {
@@ -667,7 +673,7 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
     DCHECK_EQ(cp_variables_.size(), cp_values_.size());
     // Value kint64min signals an unoptimized variable, set to min instead.
     for (int j = 0; j < cp_values_.size(); ++j) {
-      if (cp_values_[j] == std::numeric_limits<int64_t>::min()) {
+      if (cp_values_[j] == kint64min) {
         cp_values_[j] = cp_variables_[j]->Min();
       }
     }
@@ -716,8 +722,10 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
 }  // namespace
 
 DecisionBuilder* MakeSetCumulsFromGlobalDimensionCosts(
-    Solver* solver, GlobalDimensionCumulOptimizer* global_optimizer,
-    GlobalDimensionCumulOptimizer* global_mp_optimizer, bool optimize_and_pack,
+    Solver* absl_nonnull solver,
+    GlobalDimensionCumulOptimizer* absl_nonnull global_optimizer,
+    GlobalDimensionCumulOptimizer* absl_nonnull global_mp_optimizer,
+    bool optimize_and_pack,
     std::vector<Model::RouteDimensionTravelInfo>
         dimension_travel_info_per_route) {
   return solver->RevAlloc(new SetCumulsFromGlobalDimensionCosts(
@@ -884,14 +892,16 @@ class RestoreDimensionValuesForUnchangedRoutes : public DecisionBuilder {
 };
 }  // namespace
 
-DecisionBuilder* MakeRestoreDimensionValuesForUnchangedRoutes(Model* model) {
+DecisionBuilder* MakeRestoreDimensionValuesForUnchangedRoutes(
+    Model* absl_nonnull model) {
   return model->solver()->RevAlloc(
       new RestoreDimensionValuesForUnchangedRoutes(model));
 }
 
 // FinalizerVariables
 
-void FinalizerVariables::AddWeightedVariableTarget(IntVar* var, int64_t target,
+void FinalizerVariables::AddWeightedVariableTarget(IntVar* absl_nonnull var,
+                                                   int64_t target,
                                                    int64_t cost) {
   CHECK(var != nullptr);
   const int index =
@@ -909,7 +919,8 @@ void FinalizerVariables::AddWeightedVariableTarget(IntVar* var, int64_t target,
   }
 }
 
-void FinalizerVariables::AddVariableTarget(IntVar* var, int64_t target) {
+void FinalizerVariables::AddVariableTarget(IntVar* absl_nonnull var,
+                                           int64_t target) {
   CHECK(var != nullptr);
   if (finalizer_variable_target_set_.contains(var)) return;
   finalizer_variable_target_set_.insert(var);

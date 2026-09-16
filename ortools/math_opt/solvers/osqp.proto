@@ -92,9 +92,10 @@ message OsqpSettingsProto {
   // Run time limit in seconds. If 0 or unset, then no time limit. Must be >= 0.
   optional double time_limit = 21;
 }
-// LINT.ThenChange(osqp_solver.cc:merge_from_proto,
-// osqp_solver.cc:must_initialize, osqp_solver.cc:solve,
-// osqp_solver.cc:try_overwrite_with_current_values,
+// LINT.ThenChange(//depot/ortools/math_opt/solvers/osqp_solver.cc:merge_from_proto,
+// //depot/ortools/math_opt/solvers/osqp_solver.cc:must_initialize,
+// //depot/ortools/math_opt/solvers/osqp_solver.cc:solve,
+// //depot/ortools/math_opt/solvers/osqp_solver.cc:try_overwrite_with_current_values,
 // osqp_cpp/include/osqp++.h:osqp_settings,
 // osqp_cpp/src/osqp++.cc:settings_translation)
 

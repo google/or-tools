@@ -15,10 +15,13 @@
 
 #include <stdint.h>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/strings/str_format.h"
+#include "google/protobuf/descriptor.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
@@ -168,32 +171,6 @@ TEST(SetToNegatedLinearExpressionTest, BasicTest) {
   EXPECT_THAT(negated_expr.vars(), testing::ElementsAre(-3, 1));
   EXPECT_THAT(negated_expr.coeffs(), testing::ElementsAre(3, -4));
   EXPECT_EQ(-3, negated_expr.offset());
-}
-
-void Random(ConstraintProto ct) {
-  // The behavior of both functions differ on the enforcement_literal, so
-  // we clear it. TODO(user): make the behavior identical.
-  ct.clear_enforcement_literal();
-
-  absl::flat_hash_set<int> expected;
-  {
-    const IndexReferences references = GetReferencesUsedByConstraint(ct);
-    expected.insert(references.variables.begin(), references.variables.end());
-    expected.insert(references.literals.begin(), references.literals.end());
-  }
-
-  absl::flat_hash_set<int> var_and_literals;
-  ApplyToAllVariableIndices(
-      [&var_and_literals](int* ref) { var_and_literals.insert(*ref); }, &ct);
-  ApplyToAllLiteralIndices(
-      [&var_and_literals](int* ref) { var_and_literals.insert(*ref); }, &ct);
-  EXPECT_EQ(var_and_literals, expected) << ProtobufDebugString(ct);
-
-  std::vector<int> intervals;
-  ApplyToAllIntervalIndices(
-      [&intervals](int* ref) { intervals.push_back(*ref); }, &ct);
-  gtl::STLSortAndRemoveDuplicates(&intervals);
-  EXPECT_EQ(intervals, UsedIntervals(ct)) << ProtobufDebugString(ct);
 }
 
 TEST(ConstraintCaseNameTest, TestFewCases) {
@@ -395,6 +372,99 @@ TEST(ConvertCpModelProtoToCnfTest, BoolAnd) {
   std::string cnf;
   EXPECT_TRUE(ConvertCpModelProtoToCnf(model_proto, &cnf));
   EXPECT_EQ(expected, cnf);
+}
+
+TEST(LargestConstraintTypeTest, IsCorrect) {
+  const google::protobuf::Descriptor* message_descriptor =
+      ConstraintProto::descriptor();
+  ASSERT_NE(message_descriptor, nullptr);
+
+  const google::protobuf::OneofDescriptor* oneof_descriptor =
+      message_descriptor->FindOneofByName("constraint");
+  ASSERT_NE(oneof_descriptor, nullptr) << "Oneof 'constraint' not found";
+
+  int max_field_number = -1;
+  for (int i = 0; i < oneof_descriptor->field_count(); ++i) {
+    const google::protobuf::FieldDescriptor* field = oneof_descriptor->field(i);
+    ASSERT_NE(field, nullptr);
+    max_field_number = std::max(max_field_number, field->number());
+  }
+
+  EXPECT_EQ(max_field_number, kLargestConstraintType)
+      << "kLargestConstraintType (" << kLargestConstraintType
+      << ") does not match the largest field number in the 'constraint' oneof ("
+      << max_field_number << "). Please update the constant.";
+
+  EXPECT_LT(kLargestConstraintType, 1 << kConstraintTypeBitSize)
+      << "kLargestConstraintType (" << kLargestConstraintType
+      << ") is not less than 2^kConstraintTypeBitSize ("
+      << (1 << kConstraintTypeBitSize)
+      << "). Please update kConstraintTypeBitSize.";
+}
+
+TEST(AffineExprTest, ToStringAndStringify) {
+  EXPECT_EQ((AffineExpr{.var = -1, .coeff = 0, .offset = 42}.ToString()), "42");
+  EXPECT_EQ((AffineExpr{.var = 5, .coeff = 0, .offset = 12}.ToString()), "12");
+  EXPECT_EQ((AffineExpr{.var = 3, .coeff = 1, .offset = 0}.ToString()), "X3");
+  EXPECT_EQ((AffineExpr{.var = 3, .coeff = 1, .offset = 5}.ToString()),
+            "X3 + 5");
+  EXPECT_EQ((AffineExpr{.var = 3, .coeff = 1, .offset = -5}.ToString()),
+            "X3 - 5");
+  EXPECT_EQ((AffineExpr{.var = 3, .coeff = -1, .offset = 0}.ToString()), "-X3");
+  EXPECT_EQ((AffineExpr{.var = 3, .coeff = -1, .offset = 5}.ToString()),
+            "-X3 + 5");
+  EXPECT_EQ((AffineExpr{.var = 3, .coeff = -1, .offset = -5}.ToString()),
+            "-X3 - 5");
+  EXPECT_EQ((AffineExpr{.var = 2, .coeff = 4, .offset = 0}.ToString()),
+            "4 * X2");
+  EXPECT_EQ((AffineExpr{.var = 2, .coeff = 4, .offset = 10}.ToString()),
+            "4 * X2 + 10");
+  EXPECT_EQ((AffineExpr{.var = 2, .coeff = 4, .offset = -10}.ToString()),
+            "4 * X2 - 10");
+  EXPECT_EQ(
+      absl::StrFormat("%v", AffineExpr{.var = 1, .coeff = 2, .offset = 3}),
+      "2 * X1 + 3");
+}
+
+TEST(AffineExprTest, EqualityAndHash) {
+  AffineExpr a{.var = 1, .coeff = 2, .offset = 3};
+  AffineExpr b{.var = 1, .coeff = 2, .offset = 3};
+  AffineExpr c{.var = 1, .coeff = 2, .offset = 4};
+  AffineExpr d{.var = 2, .coeff = 2, .offset = 3};
+  AffineExpr e{.var = 1, .coeff = 1, .offset = 3};
+
+  EXPECT_EQ(a, b);
+  EXPECT_NE(a, c);
+  EXPECT_NE(a, d);
+  EXPECT_NE(a, e);
+
+  absl::flat_hash_set<AffineExpr> expr_set;
+  expr_set.insert(a);
+  EXPECT_TRUE(expr_set.contains(b));
+  EXPECT_FALSE(expr_set.contains(c));
+}
+
+TEST(AffineExprTest, MinAndMaxEvaluation) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 2, 10 ] }
+    variables { domain: [ -5, 3 ] }
+    variables {}
+  )pb");
+
+  // Constant expression
+  AffineExpr constant_expr{.var = -1, .coeff = 0, .offset = 7};
+  EXPECT_EQ(GetAffineExprMin(constant_expr, model_proto), 7);
+  EXPECT_EQ(GetAffineExprMax(constant_expr, model_proto), 7);
+
+  // Positive coefficient: var 0 in [2, 10], 3 * X0 + 4 -> [10, 34]
+  AffineExpr pos_expr{.var = 0, .coeff = 3, .offset = 4};
+  EXPECT_EQ(GetAffineExprMin(pos_expr, model_proto), 10);
+  EXPECT_EQ(GetAffineExprMax(pos_expr, model_proto), 34);
+
+  // Negative coefficient: var 1 in [-5, 3], -2 * X1 + 1 -> [-5, 11]
+  AffineExpr neg_expr{.var = 1, .coeff = -2, .offset = 1};
+  EXPECT_EQ(GetAffineExprMin(neg_expr, model_proto), -5);
+  EXPECT_EQ(GetAffineExprMax(neg_expr, model_proto), 11);
 }
 
 }  // namespace

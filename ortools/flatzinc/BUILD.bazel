@@ -15,8 +15,7 @@
 # Source code for the flatzinc interpreter. See www.minizinc.org.
 # This is a google owned implementation.
 
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -24,7 +23,7 @@ package(default_visibility = ["//visibility:public"])
 # Baseline flatzinc model.
 # ---------------------------------------------------------------------------
 
-cc_library(
+or_cc_library(
     name = "model",
     srcs = ["model.cc"],
     hdrs = ["model.h"],
@@ -48,7 +47,7 @@ cc_library(
 # Parser.
 # ---------------------------------------------------------------------------
 
-cc_library(
+or_cc_library(
     name = "parser_yacc_lib",
     srcs = ["parser.tab.cc"],
     hdrs = [
@@ -77,7 +76,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "parser_lex_lib",
     srcs = ["parser.yy.cc"],
     copts = select({
@@ -97,7 +96,7 @@ cc_library(
     alwayslink = 1,
 )
 
-cc_library(
+or_cc_library(
     name = "parser_lib",
     srcs = ["parser.cc"],
     hdrs = ["parser.h"],
@@ -109,7 +108,7 @@ cc_library(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "parser",
     srcs = ["parser_main.cc"],
     deps = [
@@ -130,7 +129,7 @@ cc_binary(
 # Solution Checker
 # ---------------------------------------------------------------------------
 
-cc_library(
+or_cc_library(
     name = "checker",
     srcs = ["checker.cc"],
     hdrs = ["checker.h"],
@@ -150,7 +149,7 @@ cc_library(
 # Connection to SAT/CP solver.
 # ---------------------------------------------------------------------------
 
-cc_library(
+or_cc_library(
     name = "cp_model_fz_solver",
     srcs = ["cp_model_fz_solver.cc"],
     hdrs = ["cp_model_fz_solver.h"],
@@ -183,7 +182,7 @@ cc_library(
 )
 
 # Main binary to parse and execute a fz model using the CP-SAT solver.
-cc_binary(
+or_cc_binary(
     name = "fz",
     srcs = ["fz.cc"],
     deps = [
@@ -201,6 +200,7 @@ cc_binary(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/time",
         "@protobuf",

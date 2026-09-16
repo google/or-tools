@@ -15,8 +15,8 @@
 // operate on a `ShardedQuadraticProgram`. Utilities that are purely linear
 // algebra operations (e.g., norms) should be defined in sharder.h instead.
 
-#ifndef PDLP_SHARDED_OPTIMIZATION_UTILS_H_
-#define PDLP_SHARDED_OPTIMIZATION_UTILS_H_
+#ifndef ORTOOLS_PDLP_SHARDED_OPTIMIZATION_UTILS_H_
+#define ORTOOLS_PDLP_SHARDED_OPTIMIZATION_UTILS_H_
 
 #include <limits>
 #include <optional>
@@ -203,4 +203,4 @@ void ProjectToDualVariableBounds(const ShardedQuadraticProgram& sharded_qp,
 
 }  // namespace operations_research::pdlp
 
-#endif  // PDLP_SHARDED_OPTIMIZATION_UTILS_H_
+#endif  // ORTOOLS_PDLP_SHARDED_OPTIMIZATION_UTILS_H_

@@ -19,9 +19,12 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/status/status.h"
+#include "absl/status/status_macros.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/status_macros.h"
+#include "ortools/math_opt/solvers/gscip/gscip.h"
 
 namespace operations_research {
 
@@ -95,13 +98,13 @@ absl::Status GScipCreateMaximum(GScip* gscip, const GScipLinearExpr& resultant,
   for (int i = 0; i < terms.size(); ++i) {
     auto z = gscip->AddVariable(0.0, 1.0, 0.0, GScipVarType::kInteger,
                                 MaybeExtendName(name, absl::StrCat("z_", i)));
-    RETURN_IF_ERROR(z.status());
+    ABSL_RETURN_IF_ERROR(z.status());
     indicators.push_back(*z);
   }
 
   for (int i = 0; i < terms.size(); ++i) {
     // x_i <= y
-    RETURN_IF_ERROR(
+    ABSL_RETURN_IF_ERROR(
         gscip
             ->AddLinearConstraint(
                 GScipLe(terms.at(i), resultant),
@@ -116,7 +119,7 @@ absl::Status GScipCreateMaximum(GScip* gscip, const GScipLinearExpr& resultant,
       ind.variables = y_less_x.variables;
       ind.coefficients = y_less_x.coefficients;
       ind.upper_bound = y_less_x.upper_bound;
-      RETURN_IF_ERROR(
+      ABSL_RETURN_IF_ERROR(
           gscip
               ->AddIndicatorConstraint(
                   ind, MaybeExtendName(
@@ -155,7 +158,7 @@ absl::Status GScipAddQuadraticObjectiveTerm(
   auto obj_term =
       gscip->AddVariable(-kInf, kInf, 1.0, GScipVarType::kContinuous,
                          MaybeExtendName(name, "obj"));
-  RETURN_IF_ERROR(obj_term.status());
+  ABSL_RETURN_IF_ERROR(obj_term.status());
   GScipQuadraticRange range;
   range.quadratic_variables1 = quadratic_variables1;
   range.quadratic_variables2 = quadratic_variables2;
@@ -187,10 +190,11 @@ absl::Status GScipCreateIndicatorRange(
     ub_constraint.coefficients = indicator_range.range.coefficients;
     ub_constraint.indicator_variable = indicator_range.indicator_variable;
     ub_constraint.negate_indicator = indicator_range.negate_indicator;
-    RETURN_IF_ERROR(gscip
-                        ->AddIndicatorConstraint(
-                            ub_constraint, MaybeExtendName(name, "ub"), options)
-                        .status());
+    ABSL_RETURN_IF_ERROR(
+        gscip
+            ->AddIndicatorConstraint(ub_constraint, MaybeExtendName(name, "ub"),
+                                     options)
+            .status());
   }
   if (std::isfinite(indicator_range.range.lower_bound)) {
     // want z -> lb <= a * x
@@ -203,10 +207,11 @@ absl::Status GScipCreateIndicatorRange(
     }
     lb_constraint.indicator_variable = indicator_range.indicator_variable;
     lb_constraint.negate_indicator = indicator_range.negate_indicator;
-    RETURN_IF_ERROR(gscip
-                        ->AddIndicatorConstraint(
-                            lb_constraint, MaybeExtendName(name, "lb"), options)
-                        .status());
+    ABSL_RETURN_IF_ERROR(
+        gscip
+            ->AddIndicatorConstraint(lb_constraint, MaybeExtendName(name, "lb"),
+                                     options)
+            .status());
   }
   return absl::OkStatus();
 }

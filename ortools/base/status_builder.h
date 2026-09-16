@@ -14,137 +14,75 @@
 #ifndef ORTOOLS_BASE_STATUS_BUILDER_H_
 #define ORTOOLS_BASE_STATUS_BUILDER_H_
 
-#include <ios>
-#include <sstream>
-#include <string>
-#include <utility>
-
 #include "absl/status/status.h"
-#include "absl/strings/str_cat.h"
+#include "absl/status/status_builder.h"
 
-namespace util {
+namespace ortools {
 
-class StatusBuilder {
- public:
-  explicit StatusBuilder(const absl::StatusCode code)
-      : base_status_(code, /*msg=*/{}) {}
-
-  explicit StatusBuilder(const absl::Status status)
-      : base_status_(std::move(status)) {}
-
-  StatusBuilder(const StatusBuilder& other)
-      : base_status_(other.base_status_),
-        ss_(other.ss_.str(), std::ios_base::app) {}
-  StatusBuilder& operator=(const StatusBuilder& other) {
-    base_status_ = other.base_status_;
-    ss_ = std::ostringstream(other.ss_.str(), std::ios_base::app);
-    return *this;
-  }
-
-  StatusBuilder(StatusBuilder&& other)
-      : base_status_(std::exchange(other.base_status_, absl::OkStatus())),
-        ss_(std::move(other.ss_)) {}
-  StatusBuilder& operator=(StatusBuilder&& other) {
-    base_status_ = std::exchange(other.base_status_, absl::OkStatus());
-    ss_ = std::move(other.ss_);
-    return *this;
-  }
-
-  operator absl::Status() const {  // NOLINT
-    const std::string annotation = ss_.str();
-    if (annotation.empty()) {
-      return base_status_;
-    }
-    if (base_status_.message().empty()) {
-      return absl::Status(base_status_.code(), annotation);
-    }
-    const std::string annotated_message =
-        absl::StrCat(base_status_.message(), "; ", annotation);
-    return absl::Status(base_status_.code(), annotated_message);
-  }
-
-  template <class T>
-  StatusBuilder& operator<<(const T& t) {
-    ss_ << t;
-    return *this;
-  }
-
-  StatusBuilder& SetAppend() { return *this; }
-
-  StatusBuilder& SetCode(const absl::StatusCode code) {
-    base_status_ = absl::Status(code, base_status_.message());
-    return *this;
-  }
-
- private:
-  absl::Status base_status_;
-  std::ostringstream ss_;
-};
-
-inline StatusBuilder AbortedErrorBuilder() {
-  return StatusBuilder(absl::StatusCode::kAborted);
+inline absl::StatusBuilder AbortedErrorBuilder() {
+  return absl::StatusBuilder(absl::StatusCode::kAborted);
 }
 
-inline StatusBuilder AlreadyExistsErrorBuilder() {
-  return StatusBuilder(absl::StatusCode::kAlreadyExists);
+inline absl::StatusBuilder AlreadyExistsErrorBuilder() {
+  return absl::StatusBuilder(absl::StatusCode::kAlreadyExists);
 }
 
-inline StatusBuilder CancelledErrorBuilder() {
-  return StatusBuilder(absl::StatusCode::kCancelled);
+inline absl::StatusBuilder CancelledErrorBuilder() {
+  return absl::StatusBuilder(absl::StatusCode::kCancelled);
 }
 
-inline StatusBuilder DataLossErrorBuilder() {
-  return StatusBuilder(absl::StatusCode::kDataLoss);
+inline absl::StatusBuilder DataLossErrorBuilder() {
+  return absl::StatusBuilder(absl::StatusCode::kDataLoss);
 }
 
-inline StatusBuilder DeadlineExceededErrorBuilder() {
-  return StatusBuilder(absl::StatusCode::kDeadlineExceeded);
+inline absl::StatusBuilder DeadlineExceededErrorBuilder() {
+  return absl::StatusBuilder(absl::StatusCode::kDeadlineExceeded);
 }
 
-inline StatusBuilder FailedPreconditionErrorBuilder() {
-  return StatusBuilder(absl::StatusCode::kFailedPrecondition);
+inline absl::StatusBuilder FailedPreconditionErrorBuilder() {
+  return absl::StatusBuilder(absl::StatusCode::kFailedPrecondition);
 }
 
-inline StatusBuilder InternalErrorBuilder() {
-  return StatusBuilder(absl::StatusCode::kInternal);
+inline absl::StatusBuilder InternalErrorBuilder() {
+  return absl::StatusBuilder(absl::StatusCode::kInternal);
 }
 
-inline StatusBuilder InvalidArgumentErrorBuilder() {
-  return StatusBuilder(absl::StatusCode::kInvalidArgument);
+inline absl::StatusBuilder InvalidArgumentErrorBuilder() {
+  return absl::StatusBuilder(absl::StatusCode::kInvalidArgument);
 }
 
-inline StatusBuilder NotFoundErrorBuilder() {
-  return StatusBuilder(absl::StatusCode::kNotFound);
+inline absl::StatusBuilder NotFoundErrorBuilder() {
+  return absl::StatusBuilder(absl::StatusCode::kNotFound);
 }
 
-inline StatusBuilder OutOfRangeErrorBuilder() {
-  return StatusBuilder(absl::StatusCode::kOutOfRange);
+inline absl::StatusBuilder OutOfRangeErrorBuilder() {
+  return absl::StatusBuilder(absl::StatusCode::kOutOfRange);
 }
 
-inline StatusBuilder PermissionDeniedErrorBuilder() {
-  return StatusBuilder(absl::StatusCode::kPermissionDenied);
+inline absl::StatusBuilder PermissionDeniedErrorBuilder() {
+  return absl::StatusBuilder(absl::StatusCode::kPermissionDenied);
 }
 
-inline StatusBuilder UnauthenticatedErrorBuilder() {
-  return StatusBuilder(absl::StatusCode::kUnauthenticated);
+inline absl::StatusBuilder UnauthenticatedErrorBuilder() {
+  return absl::StatusBuilder(absl::StatusCode::kUnauthenticated);
 }
 
-inline StatusBuilder ResourceExhaustedErrorBuilder() {
-  return StatusBuilder(absl::StatusCode::kResourceExhausted);
+inline absl::StatusBuilder ResourceExhaustedErrorBuilder() {
+  return absl::StatusBuilder(absl::StatusCode::kResourceExhausted);
 }
 
-inline StatusBuilder UnavailableErrorBuilder() {
-  return StatusBuilder(absl::StatusCode::kUnavailable);
+inline absl::StatusBuilder UnavailableErrorBuilder() {
+  return absl::StatusBuilder(absl::StatusCode::kUnavailable);
 }
 
-inline StatusBuilder UnimplementedErrorBuilder() {
-  return StatusBuilder(absl::StatusCode::kUnimplemented);
+inline absl::StatusBuilder UnimplementedErrorBuilder() {
+  return absl::StatusBuilder(absl::StatusCode::kUnimplemented);
 }
 
-inline StatusBuilder UnknownErrorBuilder() {
-  return StatusBuilder(absl::StatusCode::kUnknown);
+inline absl::StatusBuilder UnknownErrorBuilder() {
+  return absl::StatusBuilder(absl::StatusCode::kUnknown);
 }
 
-}  // namespace util
+}  // namespace ortools
 
 #endif  // ORTOOLS_BASE_STATUS_BUILDER_H_

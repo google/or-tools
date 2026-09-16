@@ -57,9 +57,10 @@ class ChristofidesPathSolver {
  public:
   enum class MatchingAlgorithm {
     MINIMUM_WEIGHT_MATCHING,
-#if defined(USE_CBC) || defined(USE_SCIP)
+#if defined(USE_CBC) || defined(USE_SCIP) || defined(USE_HIGHS)
     MINIMUM_WEIGHT_MATCHING_WITH_MIP,
-#endif  // defined(USE_CBC) || defined(USE_SCIP)
+#endif  // defined(USE_CBC) || defined(USE_SCIP) || \
+       defined(USE_HIGHS)
     MINIMAL_WEIGHT_MATCHING,
   };
   ChristofidesPathSolver(NodeIndex num_nodes, CostFunction costs);
@@ -155,7 +156,7 @@ ComputeMinimumWeightMatching(const GraphType& graph,
   return match;
 }
 
-#if defined(USE_CBC) || defined(USE_SCIP)
+#if defined(USE_CBC) || defined(USE_SCIP) || defined(USE_HIGHS)
 // Computes a minimum weight perfect matching on an undirected graph using a
 // Mixed Integer Programming model.
 // TODO(user): Handle infeasible cases if this algorithm is used outside of
@@ -211,6 +212,9 @@ ComputeMinimumWeightMatchingWithMIP(const GraphType& graph,
 #if defined(USE_SCIP)
   MPSolver mp_solver("MatchingWithSCIP",
                      MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
+#elif defined(USE_HIGHS)
+  MPSolver mp_solver("MatchingWithHiGHS",
+                     MPSolver::HIGHS_MIXED_INTEGER_PROGRAMMING);
 #elif defined(USE_CBC)
   MPSolver mp_solver("MatchingWithCBC",
                      MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
@@ -233,7 +237,8 @@ ComputeMinimumWeightMatchingWithMIP(const GraphType& graph,
   }
   return matching;
 }
-#endif  // defined(USE_CBC) || defined(USE_SCIP)
+#endif  // defined(USE_CBC) || defined(USE_SCIP) || \
+  defined(USE_HIGHS)
 
 template <typename CostType, typename ArcIndex, typename NodeIndex,
           typename CostFunction>
@@ -316,7 +321,7 @@ ChristofidesPathSolver<CostType, ArcIndex, NodeIndex, CostFunction>::Solve() {
       result->swap(closure_arcs);
       break;
     }
-#if defined(USE_CBC) || defined(USE_SCIP)
+#if defined(USE_CBC) || defined(USE_SCIP) || defined(USE_HIGHS)
     case MatchingAlgorithm::MINIMUM_WEIGHT_MATCHING_WITH_MIP: {
       auto result = ComputeMinimumWeightMatchingWithMIP(
           reduced_graph, [this, &reduced_graph,
@@ -330,7 +335,8 @@ ChristofidesPathSolver<CostType, ArcIndex, NodeIndex, CostFunction>::Solve() {
       result->swap(closure_arcs);
       break;
     }
-#endif  // defined(USE_CBC) || defined(USE_SCIP)
+#endif  // defined(USE_CBC) || defined(USE_SCIP) || \
+       defined(USE_HIGHS)
     case MatchingAlgorithm::MINIMAL_WEIGHT_MATCHING: {
       // TODO(user): Cost caching was added and can gain up to 20% but
       // increases memory usage; see if we can avoid caching.

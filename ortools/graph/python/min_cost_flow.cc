@@ -21,7 +21,7 @@ using ::operations_research::MinCostFlowBase;
 using ::operations_research::SimpleMinCostFlow;
 using ::pybind11::arg;
 
-PYBIND11_MODULE(min_cost_flow, m) {
+PYBIND11_MODULE(min_cost_flow, m, pybind11::mod_gil_not_used()) {
   pybind11::class_<SimpleMinCostFlow> smcf(m, "SimpleMinCostFlow");
   smcf.def(pybind11::init<>());
   smcf.def("add_arc_with_capacity_and_unit_cost",

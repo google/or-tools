@@ -14,8 +14,8 @@ exclusivity between tasks, and temporal relations between tasks.
 ## Interval variables
 
 Intervals are constraints containing three constant of affine expressions
-(start, size, and end). Creating an interval constraint will enforce that `start
-+ size == end`.
+(start, size, and end). Creating an interval constraint will enforce that
+`start + size == end`.
 
 The more general API uses three expressions to define the interval. If the size
 is fixed, a simpler API uses the start expression and the fixed size.
@@ -27,7 +27,6 @@ Creating these intervals is illustrated in the following code snippets.
 ```python
 # Snippet from ortools/sat/samples/interval_sample_sat.py
 """Code sample to demonstrates how to build an interval."""
-
 
 from ortools.sat.python import cp_model
 
@@ -71,6 +70,7 @@ interval_sample_sat()
 #include "ortools/base/log_severity.h"
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/sat/cp_model.h"
 
@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/IntervalSampleSat.java
+// Snippet from ortools/sat/samples/java/IntervalSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -308,6 +308,7 @@ optional_interval_sample_sat()
 #include "ortools/base/log_severity.h"
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/sat/cp_model.h"
 
@@ -361,7 +362,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/OptionalIntervalSampleSat.java
+// Snippet from ortools/sat/samples/java/OptionalIntervalSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -498,8 +499,8 @@ as arguments to the `start`, `size`, and `end` parameters.
 
 Once the interval is build, these same expressions can be queries using
 `StartExpr()`, `SizeExpr()`, and `EndExpr()` in C++ and C#, `start_expr()`,
-`size_expr()`, and `end_expr()` in Python, and `getStartExpr()`, `getSizeExpr(),
-and `getEndExpr()` in Java.
+`size_expr()`, and `end_expr()` in Python, and `getStartExpr()`,
+`getSizeExpr()`, and `getEndExpr()` in Java.
 
 If one or both intervals are optional, then these inequalities must be reified
 by the presence literals of the optional intervals used.
@@ -661,6 +662,7 @@ no_overlap_sample_sat()
 #include "ortools/base/log_severity.h"
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/sat/cp_model.h"
@@ -741,7 +743,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/NoOverlapSampleSat.java
+// Snippet from ortools/sat/samples/java/NoOverlapSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -1430,6 +1432,7 @@ ranking_sample_sat()
 #include "ortools/base/log_severity.h"
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/sat/cp_model.h"
@@ -1579,7 +1582,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/RankingSampleSat.java
+// Snippet from ortools/sat/samples/java/RankingSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -2087,7 +2090,6 @@ need to take into account the case where no task is performed.
 # Snippet from ortools/sat/samples/ranking_circuit_sample_sat.py
 """Code sample to demonstrates how to rank intervals using a circuit."""
 
-
 from collections.abc import Sequence
 
 from ortools.sat.python import cp_model
@@ -2310,7 +2312,7 @@ def scheduling_with_calendar_sample_sat():
   # Because of the break, work cannot start at 13h.
 
   start = model.new_int_var_from_domain(
-      cp_model.Domain.from_intervals([(8, 12), (14, 15)]), 'start'
+      cp_model.Domain.from_intervals([[8, 12], [14, 15]]), 'start'
   )
   duration = model.new_int_var(3, 4, 'duration')
   end = model.new_int_var(8, 18, 'end')
@@ -2462,7 +2464,8 @@ def overlapping_interval_sample_sat():
 
   # Search and print out all solutions.
   solution_printer = VarArraySolutionPrinter(
-      [start_var_a, start_var_b, a_overlaps_b])
+      [start_var_a, start_var_b, a_overlaps_b]
+  )
   solver.solve(model, solution_printer)
 
 

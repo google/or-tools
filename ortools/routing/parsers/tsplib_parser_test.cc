@@ -27,12 +27,12 @@
 #include "gtest/gtest.h"
 #include "ortools/base/filesystem.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/memfile.h"
+#include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
 #include "ortools/base/path.h"
+#include "ortools/base/temp_file.h"
 #include "ortools/base/zipfile.h"
-
-#define ROOT_DIR "_main/"
+#include "ortools/util/data_path_resolver.h"
 
 namespace operations_research::routing {
 namespace {
@@ -101,7 +101,7 @@ TEST(TspLibParserTest, GeneratedDataSets) {
                 if (node_type == 1) {
                   data += " 0";
                 }
-                data += "\n";
+                data += '\n';
               }
             }
             if (type == 1) {
@@ -131,7 +131,7 @@ TEST(TspLibParserTest, GeneratedDataSets) {
                           abs(x - (j % kCoordSize)) + abs(y - (j / kCoordSize));
                       absl::StrAppendFormat(&data, "%d ", distance);
                     }
-                    data += "\n";
+                    data += '\n';
                   }
                   break;
                 case 1:
@@ -144,7 +144,7 @@ TEST(TspLibParserTest, GeneratedDataSets) {
                           abs(x - (j % kCoordSize)) + abs(y - (j / kCoordSize));
                       absl::StrAppendFormat(&data, "%d ", distance);
                     }
-                    data += "\n";
+                    data += '\n';
                   }
                   break;
                 case 2:
@@ -157,7 +157,7 @@ TEST(TspLibParserTest, GeneratedDataSets) {
                           abs(x - (j % kCoordSize)) + abs(y - (j / kCoordSize));
                       absl::StrAppendFormat(&data, "%d ", distance);
                     }
-                    data += "\n";
+                    data += '\n';
                   }
                   break;
                 case 3:
@@ -170,7 +170,7 @@ TEST(TspLibParserTest, GeneratedDataSets) {
                           abs(x - (j % kCoordSize)) + abs(y - (j / kCoordSize));
                       absl::StrAppendFormat(&data, "%d ", distance);
                     }
-                    data += "\n";
+                    data += '\n';
                   }
                   break;
                 case 4:
@@ -183,17 +183,19 @@ TEST(TspLibParserTest, GeneratedDataSets) {
                           abs(x - (j % kCoordSize)) + abs(y - (j / kCoordSize));
                       absl::StrAppendFormat(&data, "%d ", distance);
                     }
-                    data += "\n";
+                    data += '\n';
                   }
                   break;
               }
             }
             data += "EOF";
-            const std::string kMMFileName{std::tmpnam(nullptr)};
-            RegisteredMemFile registered(kMMFileName, data);
+            ASSERT_OK_AND_ASSIGN(
+                const std::string file_name,
+                file::MakeTempFilename(::testing::TempDir(), "dummy.tsp"));
+            ASSERT_OK(file::SetContents(file_name, data, file::Defaults()));
             TspLibParser parser;
-            EXPECT_OK(parser.LoadFile(kMMFileName));
-            EXPECT_THAT(parser.SizeFromFile(kMMFileName),
+            EXPECT_OK(parser.LoadFile(file_name));
+            EXPECT_THAT(parser.SizeFromFile(file_name),
                         IsOkAndHolds(kDimension));
           }
         }
@@ -213,11 +215,13 @@ TEST(TspLibParserTest, ParseHCPEdgeList) {
       " 3    1\n"
       " 2    1\n"
       "-1\nEOF";
-  const std::string kMMFileName{std::tmpnam(nullptr)};
-  RegisteredMemFile registered(kMMFileName, kData);
+  ASSERT_OK_AND_ASSIGN(
+      const std::string file_name,
+      file::MakeTempFilename(::testing::TempDir(), "dummy.hcp"));
+  ASSERT_OK(file::SetContents(file_name, kData, file::Defaults()));
   TspLibParser parser;
-  EXPECT_OK(parser.LoadFile(kMMFileName));
-  EXPECT_THAT(parser.SizeFromFile(kMMFileName), IsOkAndHolds(3));
+  EXPECT_OK(parser.LoadFile(file_name));
+  EXPECT_THAT(parser.SizeFromFile(file_name), IsOkAndHolds(3));
   EXPECT_EQ(2, parser.edges()[0].size());
   EXPECT_EQ(1, parser.edges()[0][0]);
   EXPECT_EQ(2, parser.edges()[0][1]);
@@ -235,11 +239,13 @@ TEST(TspLibParserTest, ParseHCPAdjList) {
       "EDGE_DATA_SECTION\n"
       " 3    1     2    -1\n"
       "-1\nEOF";
-  const std::string kMMFileName{std::tmpnam(nullptr)};
-  RegisteredMemFile registered(kMMFileName, kData);
+  ASSERT_OK_AND_ASSIGN(
+      const std::string file_name,
+      file::MakeTempFilename(::testing::TempDir(), "dummy.hcp"));
+  ASSERT_OK(file::SetContents(file_name, kData, file::Defaults()));
   TspLibParser parser;
-  EXPECT_OK(parser.LoadFile(kMMFileName));
-  EXPECT_THAT(parser.SizeFromFile(kMMFileName), IsOkAndHolds(3));
+  EXPECT_OK(parser.LoadFile(file_name));
+  EXPECT_THAT(parser.SizeFromFile(file_name), IsOkAndHolds(3));
   EXPECT_EQ(1, parser.edges()[0].size());
   EXPECT_EQ(2, parser.edges()[0][0]);
   EXPECT_EQ(1, parser.edges()[1].size());
@@ -249,8 +255,8 @@ TEST(TspLibParserTest, ParseHCPAdjList) {
 
 TEST(TspLibParserTest, ParseKytojoki33Depot) {
   // This file inverts EDGE_WEIGHT_TYPE and EDGE_WEIGHT_FORMAT.
-  std::string file_name = file::JoinPath(
-      ::testing::SrcDir(), ROOT_DIR "ortools/routing/parsers/testdata/",
+  std::string file_name = ortools::GetDataDependencyFilepath(
+      "ortools/routing/parsers/testdata/"
       "tsplib_Kytojoki_33.vrp");
   TspLibParser parser;
   EXPECT_OK(parser.LoadFile(file_name));
@@ -263,12 +269,10 @@ TEST(TspLibParserTest, ParseKytojoki33Depot) {
 }
 
 // Make sure we properly fail when reading an invalid file. To test this,
-// reading from a raw tar file instead of the included subfiles.
+// reading from a raw zip file instead of the included subfiles.
 TEST(TspLibParserTest, ReadFailOnInvalidFile) {
-  std::string file_name =
-      file::JoinPath(::testing::SrcDir(), ROOT_DIR
-                     "operations_research_data/operations_research_data/"
-                     "TSPLIB95/ALL_tsp.tar.gz");
+  std::string file_name = ortools::GetDataDependencyFilepath(
+      "ortools/routing/parsers/testdata/solomon.zip");
   TspLibParser parser;
   EXPECT_THAT(parser.LoadFile(file_name),
               testing::status::StatusIs(absl::StatusCode::kInvalidArgument));
@@ -276,7 +280,7 @@ TEST(TspLibParserTest, ReadFailOnInvalidFile) {
 
 TEST(TspLibTourParserTest, LoadAllDataSets) {
   static const char kArchive[] =
-      ROOT_DIR "operations_research_data/TSPLIB95/ALL_tsp.tar.gz";
+      "operations_research_data/TSPLIB95/ALL_tsp.tar.gz";
   static const char* kExpectedComments[] = {
       "",
       ": Optimum solution for att48",
@@ -312,9 +316,11 @@ TEST(TspLibTourParserTest, LoadAllDataSets) {
       ": Optimal solution of ulysses22 (7013)"};
   int file_index = 0;
   std::vector<std::string> matches;
-  if (file::Match(file::JoinPath("/tarfs", ::testing::SrcDir(), kArchive,
-                                 "*\\.opt\\.tour\\.gz"),
-                  &matches, file::Defaults())
+  const std::string opt_archive_path =
+      ortools::GetDataDependencyFilepath(kArchive);
+  if (file::Match(
+          file::JoinPath("/tarfs", opt_archive_path, "*\\.opt\\.tour\\.gz"),
+          &matches, file::Defaults())
           .ok()) {
     for (const std::string& match : matches) {
       TspLibTourParser parser;
@@ -327,7 +333,7 @@ TEST(TspLibTourParserTest, LoadAllDataSets) {
 
 TEST(CVRPToursParserTest, LoadAllDataSets) {
   static const char kArchive[] =
-      ROOT_DIR "operations_research_data/CVRP/Augerat/A-VRP-sol.zip";
+      "operations_research_data/CVRP/Augerat/A-VRP-sol.zip";
   static const int kExpectedCosts[] = {/*opt-A-n32-k5*/ 784,
                                        /*opt-A-n33-k5*/ 661,
                                        /*opt-A-n33-k6*/ 742,
@@ -347,9 +353,10 @@ TEST(CVRPToursParserTest, LoadAllDataSets) {
                                        /*opt-A-n55-k9*/ 1073};
   int file_index = 0;
   std::vector<std::string> matches;
-  if (file::Match(
-          file::JoinPath("/zip", ::testing::SrcDir(), kArchive, "opt-A-\\.*"),
-          &matches, file::Defaults())
+  const std::string cvrp_archive_path =
+      ortools::GetDataDependencyFilepath(kArchive);
+  if (file::Match(file::JoinPath("/zip", cvrp_archive_path, "opt-A-\\.*"),
+                  &matches, file::Defaults())
           .ok()) {
     for (const std::string& match : matches) {
       CVRPToursParser parser;

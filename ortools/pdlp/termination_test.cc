@@ -166,18 +166,17 @@ TEST(EffectiveOptimalityCriteriaTest, DetailedOptimalityCriteriaInput) {
               EqualsProto(criteria.detailed_optimality_criteria()));
 }
 
-TEST(EffectiveOptimalityCriteriaTest, DeprecatedInput) {
-  const auto criteria = ParseTextOrDie<TerminationCriteria>(
-      R"pb(eps_optimal_absolute: 1.0e-4 eps_optimal_relative: 2.0e-4)pb");
+TEST(EffectiveOptimalityCriteriaTest, DefaultInput) {
+  const auto criteria = ParseTextOrDie<TerminationCriteria>(R"pb()pb");
   EXPECT_THAT(EffectiveOptimalityCriteria(criteria),
               EqualsProto(
                   R"pb(
-                    eps_optimal_primal_residual_absolute: 1.0e-4
-                    eps_optimal_primal_residual_relative: 2.0e-4
-                    eps_optimal_dual_residual_absolute: 1.0e-4
-                    eps_optimal_dual_residual_relative: 2.0e-4
-                    eps_optimal_objective_gap_absolute: 1.0e-4
-                    eps_optimal_objective_gap_relative: 2.0e-4
+                    eps_optimal_primal_residual_absolute: 1.0e-6
+                    eps_optimal_primal_residual_relative: 1.0e-6
+                    eps_optimal_dual_residual_absolute: 1.0e-6
+                    eps_optimal_dual_residual_relative: 1.0e-6
+                    eps_optimal_objective_gap_absolute: 1.0e-6
+                    eps_optimal_objective_gap_relative: 1.0e-6
                   )pb"));
 }
 

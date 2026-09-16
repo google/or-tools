@@ -11,13 +11,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library", "or_cc_test")
 
-cc_library(
+or_cc_library(
     name = "attributes",
     hdrs = ["attributes.h"],
-    visibility = ["//ortools/math_opt:__subpackages__"],
+    visibility = ["//ortools:__subpackages__"],
     deps = [
         ":arrays",
         ":elements",
@@ -26,7 +25,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "attributes_test",
     srcs = ["attributes_test.cc"],
     deps = [
@@ -38,7 +37,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "elemental",
     srcs = [
         "elemental.cc",
@@ -47,7 +46,7 @@ cc_library(
         "elemental_to_string.cc",
     ],
     hdrs = ["elemental.h"],
-    visibility = ["//ortools/math_opt:__subpackages__"],
+    visibility = ["//ortools:__subpackages__"],
     deps = [
         ":arrays",
         ":attr_key",
@@ -60,7 +59,7 @@ cc_library(
         ":elements",
         ":symmetry",
         ":thread_safe_id_map",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/base:types",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
@@ -74,6 +73,7 @@ cc_library(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:die_if_null",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:string_view",
@@ -82,7 +82,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "elemental_test",
     srcs = ["elemental_test.cc"],
     deps = [
@@ -93,19 +93,33 @@ cc_test(
         ":elemental",
         ":elemental_matcher",
         ":elements",
-        ":symmetry",
-        ":testing",
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+    ],
+)
+
+or_cc_binary(
+    name = "elemental_benchmark",
+    testonly = 1,
+    srcs = ["elemental_benchmark.cc"],
+    deps = [
+        ":attr_key",
+        ":attributes",
+        ":elemental",
+        ":elements",
+        ":symmetry",
+        ":testing",
+        "//ortools/base:benchmark_main",
+        "@abseil-cpp//absl/log:check",
         "@google_benchmark//:benchmark",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "derived_data",
     hdrs = ["derived_data.h"],
-    visibility = ["//ortools/math_opt:__subpackages__"],
+    visibility = ["//ortools:__subpackages__"],
     deps = [
         ":arrays",
         ":attr_key",
@@ -117,7 +131,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "derived_data_test",
     srcs = ["derived_data_test.cc"],
     deps = [
@@ -132,12 +146,12 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "element_storage",
     srcs = ["element_storage.cc"],
     hdrs = ["element_storage.h"],
     deps = [
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/status:statusor",
@@ -145,24 +159,34 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "element_storage_test",
     srcs = ["element_storage_test.cc"],
     deps = [
         ":element_storage",
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/status",
+    ],
+)
+
+or_cc_binary(
+    name = "element_storage_benchmark",
+    testonly = 1,
+    srcs = ["element_storage_benchmark.cc"],
+    deps = [
+        ":element_storage",
+        "//ortools/base:benchmark_main",
         "@google_benchmark//:benchmark",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "element_diff",
     hdrs = ["element_diff.h"],
     deps = ["@abseil-cpp//absl/container:flat_hash_set"],
 )
 
-cc_test(
+or_cc_test(
     name = "element_diff_test",
     srcs = ["element_diff_test.cc"],
     deps = [
@@ -171,7 +195,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "diff",
     srcs = ["diff.cc"],
     hdrs = ["diff.h"],
@@ -187,7 +211,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "diff_test",
     srcs = ["diff_test.cc"],
     deps = [
@@ -200,7 +224,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "attr_storage",
     hdrs = ["attr_storage.h"],
     deps = [
@@ -212,7 +236,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "attr_storage_test",
     srcs = ["attr_storage_test.cc"],
     deps = [
@@ -220,11 +244,23 @@ cc_test(
         ":attr_storage",
         ":symmetry",
         "//ortools/base:gmock_main",
+    ],
+)
+
+or_cc_binary(
+    name = "attr_storage_benchmark",
+    testonly = 1,
+    srcs = ["attr_storage_benchmark.cc"],
+    deps = [
+        ":attr_key",
+        ":attr_storage",
+        ":symmetry",
+        "//ortools/base:benchmark_main",
         "@google_benchmark//:benchmark",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "attr_diff",
     hdrs = ["attr_diff.h"],
     deps = [
@@ -233,7 +269,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "attr_diff_test",
     srcs = ["attr_diff_test.cc"],
     deps = [
@@ -244,14 +280,14 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "attr_key",
     hdrs = ["attr_key.h"],
-    visibility = ["//ortools/math_opt:__subpackages__"],
+    visibility = ["//ortools:__subpackages__"],
     deps = [
         ":elements",
         ":symmetry",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
@@ -260,34 +296,49 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "attr_key_test",
     srcs = ["attr_key_test.cc"],
     deps = [
         ":attr_key",
         ":elements",
         ":symmetry",
-        ":testing",
         "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
         "//ortools/math_opt/testing:stream",
-        "@abseil-cpp//absl/algorithm:container",
-        "@abseil-cpp//absl/container:flat_hash_map",
-        "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/hash:hash_testing",
         "@abseil-cpp//absl/meta:type_traits",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
+    ],
+)
+
+or_cc_binary(
+    name = "attr_key_benchmark",
+    testonly = 1,
+    srcs = ["attr_key_benchmark.cc"],
+    deps = [
+        ":attr_key",
+        ":symmetry",
+        ":testing",
+        "//ortools/base:benchmark_main",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
         "@google_benchmark//:benchmark",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "arrays",
     hdrs = ["arrays.h"],
-    visibility = ["//ortools/math_opt/elemental:__subpackages__"],
+    visibility = [
+        "//ortools/math_opt/elemental/codegen:__pkg__",
+        "//ortools/math_opt/elemental/python:__pkg__",
+    ],
 )
 
-cc_library(
+or_cc_library(
     name = "elemental_differencer",
     srcs = ["elemental_differencer.cc"],
     hdrs = ["elemental_differencer.h"],
@@ -304,7 +355,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "elemental_differencer_test",
     srcs = ["elemental_differencer_test.cc"],
     deps = [
@@ -318,7 +369,7 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "arrays_test",
     srcs = ["arrays_test.cc"],
     deps = [
@@ -330,7 +381,7 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "elemental_export_model_test",
     srcs = ["elemental_export_model_test.cc"],
     deps = [
@@ -345,7 +396,7 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "elemental_to_string_test",
     srcs = ["elemental_to_string_test.cc"],
     deps = [
@@ -359,7 +410,7 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "safe_attr_ops_test",
     srcs = ["safe_attr_ops_test.cc"],
     deps = [
@@ -373,28 +424,30 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "safe_attr_ops",
     hdrs = ["safe_attr_ops.h"],
-    visibility = ["//ortools/math_opt/elemental/c_api:__subpackages__"],
+    visibility = [
+        "//ortools/math_opt/elemental/c_api:__subpackages__",
+    ],
     deps = [
         ":derived_data",
         ":elemental",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "testing",
     testonly = 1,
     hdrs = ["testing.h"],
     deps = [":attr_key"],
 )
 
-cc_library(
+or_cc_library(
     name = "tagged_id",
     hdrs = ["tagged_id.h"],
     deps = [
@@ -404,7 +457,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "tagged_id_test",
     srcs = ["tagged_id_test.cc"],
     deps = [
@@ -417,7 +470,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "symmetry",
     hdrs = ["symmetry.h"],
     deps = [
@@ -427,7 +480,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "elemental_matcher",
     testonly = 1,
     srcs = ["elemental_matcher.cc"],
@@ -440,7 +493,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "element_ref_tracker",
     hdrs = ["element_ref_tracker.h"],
     deps = [
@@ -452,7 +505,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "elements",
     srcs = ["elements.cc"],
     hdrs = ["elements.h"],
@@ -464,7 +517,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "elements_test",
     srcs = ["elements_test.cc"],
     deps = [
@@ -476,7 +529,7 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "elemental_matcher_test",
     srcs = ["elemental_matcher_test.cc"],
     deps = [
@@ -488,7 +541,7 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "element_ref_tracker_test",
     srcs = ["element_ref_tracker_test.cc"],
     deps = [
@@ -500,7 +553,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "thread_safe_id_map",
     hdrs = ["thread_safe_id_map.h"],
     deps = [
@@ -512,7 +565,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "thread_safe_id_map_test",
     srcs = ["thread_safe_id_map_test.cc"],
     deps = [
@@ -521,7 +574,7 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "elemental_from_proto_test",
     srcs = ["elemental_from_proto_test.cc"],
     deps = [
@@ -538,7 +591,7 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "elemental_update_from_proto_test",
     srcs = ["elemental_update_from_proto_test.cc"],
     deps = [

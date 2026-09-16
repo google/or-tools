@@ -12,7 +12,7 @@
 // limitations under the License.
 
 // Proto used to store LRAT proofs (https://arxiv.org/abs/1612.02353) with some
-// extensions to support multi-threading (with one output file per file). This
+// extensions to support multi-threading (with one output file per worker). This
 // proto is only used internally to store partial proofs on disk before merging
 // them. It can be changed without backward compatibility, and should not be
 // used directly by users.
@@ -43,8 +43,9 @@ message LratInferredClause {
   // If `rat_infos` is empty, the last `rup_clause_ids` clause must become empty
   // after unit propagation. If the last `rup_clause_ids` clause does not become
   // empty by unit propagation, then `rat_infos` must contain all the clauses
-  // which contain the negation of the first `literals` (called the pivot 'p')
-  // -- and no other clauses. Moreover, for each r in `rat_infos`, all the
+  // which contain the negation of the first literal of `literals` (called the
+  // pivot 'p') -- and no other clauses. Moreover, for each r in `rat_infos`,
+  // all the
   // `r.rup_clause_ids` clauses must become unit and eventually empty if all the
   // literals of the `r.resolvant_id` clause (minus ~p), plus those in
   // `literals`, are assumed to be false (this list must be in unit propagation
@@ -82,10 +83,10 @@ message LratDeletedClauses {
 // A remapping of all the Boolean variables of the model. This remapping is
 // applied to the next clauses added to the proof. It maps their variables to
 // those of the input problem, if it is the first remapping, or to those of the
-// last remapping. If several remappings m_1, m_2, ..., m_n are defined they are
-// composed together in reverse order: a variable index is mapped through m_n,
-// ..., m_2, and finally m_1 to obtain the corresponding variable in the input
-// problem.
+// last remapping. If several remappings m_1, m_2, ..., m_n are defined, they
+// are composed together in reverse order: a variable index is mapped through
+// m_n, ..., m_2, and finally m_1 to obtain the corresponding variable in the
+// input problem.
 message BooleanVariableRemapping {
   // The old index of each variable of the model.
   repeated int32 new_to_old_var = 1 [packed = true];

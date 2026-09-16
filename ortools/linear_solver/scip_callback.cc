@@ -21,7 +21,9 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
+#include "ortools/linear_solver/linear_expr.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
 #include "scip/cons_linear.h"
@@ -164,7 +166,7 @@ ScipSeparationResult RunSeparation(internal::ScipCallbackRunner* runner,
         CHECK_OK(SCIP_TO_STATUS(SCIPreleaseRow(scip, &row)));
         // TODO(user): when infeasible is true, it better to have the scip
         // return status be cutoff instead of cutting plane added (e.g. see
-        // cs/third_party/scip/src/scip/cons_knapsack.c). However, as we use
+        // @scip//src/scip/cons_knapsack.c). However, as we use
         // SCIPaddRow(), it isn't clear this will even happen.
         if (result != ScipSeparationResult::kLazyConstraintAdded) {
           // NOTE(user): if we have already found a violated lazy constraint,

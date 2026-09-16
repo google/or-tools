@@ -91,8 +91,8 @@ TEST(InclusionDetectorTest, NonSymmetricExample) {
                             std::make_pair(1, 5), std::make_pair(0, 6),
                             std::make_pair(2, 6), std::make_pair(1, 6)));
 
-  // Class can be used multiple time.
-  // Here we test exclude a subset for appearing twice.
+  // Class can be used multiple times.
+  // Here we test excluding a subset from appearing twice.
   included.clear();
   detector.DetectInclusions([&detector, &included](int subset, int superset) {
     included.push_back({subset, superset});
@@ -102,7 +102,7 @@ TEST(InclusionDetectorTest, NonSymmetricExample) {
               ::testing::ElementsAre(std::make_pair(0, 3), std::make_pair(1, 4),
                                      std::make_pair(2, 6)));
 
-  // Here we test exclude a superset for appearing twice.
+  // Here we test excluding a superset from appearing twice.
   included.clear();
   detector.DetectInclusions([&detector, &included](int subset, int superset) {
     included.push_back({subset, superset});

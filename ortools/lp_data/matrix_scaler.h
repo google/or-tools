@@ -61,14 +61,11 @@
 #define ORTOOLS_LP_DATA_MATRIX_SCALER_H_
 
 #include <string>
-#include <vector>
 
-#include "ortools/base/types.h"
 #include "ortools/glop/parameters.pb.h"
-#include "ortools/glop/revised_simplex.h"
-#include "ortools/glop/status.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/sparse.h"
 
 namespace operations_research {
 namespace glop {
@@ -125,8 +122,9 @@ class SparseMatrixScaler {
   void ScaleColumnVector(bool up, DenseColumn* column_vector) const;
 
  private:
-  // Solves the scaling problem as a linear program.
-  Status LPScale();
+  // Solves the scaling problem as a linear program; returns true it is
+  // succeeded. When it fails, VLOG(1) the error.
+  [[nodiscard]] bool LPScale();
 
   // Computes the variance of the non-zero coefficients of the matrix.
   // Used by Scale() do decide when to stop.
@@ -147,6 +145,37 @@ class SparseMatrixScaler {
   // Equilibrates the Columns. Returns the number of columns that have been
   // scaled. Helper function to Scale().
   ColIndex EquilibrateColumns();
+
+  // Runs Ruiz equilibration to convergence, iterating
+  // up to 10 passes on both rows and columns. Each pass
+  // divides rows and columns by the square root of their
+  // infinity norm.
+  //
+  // Reference:
+  //   D. Ruiz, "A Scaling Algorithm to Equilibrate Both
+  //   Rows and Columns Norms in Matrices,"
+  //   RAL-TR-2001-034, Rutherford Appleton Laboratory,
+  //   2001.
+  //
+  // Advantages over other scaling methods:
+  //
+  // - Simultaneous row-column balance: at convergence,
+  //   both row and column infinity norms approach 1.
+  //   Sequential equilibration (rows then columns) does
+  //   not guarantee this, because column scaling can undo
+  //   the row scaling.
+  //
+  // - Symmetry preservation: for symmetric matrices, row
+  //   and column scaling factors converge to the same
+  //   values. This is important for interior-point
+  //   methods where the normal equations matrix
+  //   A * diag(theta) * A^T must remain symmetric.
+  //
+  // - Guaranteed convergence: the iteration is a
+  //   contraction on the log-magnitude space and
+  //   converges to a unique fixed point, regardless
+  //   of the initial scaling.
+  void RuizEquilibrate();
 
   // Scales the row indexed by row by 1/factor.
   // Used by ScaleMatrixRowsGeometrically and EquilibrateRows.

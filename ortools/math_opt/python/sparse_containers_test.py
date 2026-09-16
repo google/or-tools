@@ -82,17 +82,17 @@ class ParseMapAdapater(Generic[T]):
 _VAR_ADAPTER = ParseMapAdapater(
     model.Model.add_variable,
     lambda mod, id: mod.get_variable(id, validate=False),
-    sparse_containers.parse_variable_map,
+    sparse_containers.parse_variable_map,  # pyrefly: ignore[bad-argument-type]
 )
 _LIN_CON_ADAPTER = ParseMapAdapater(
     model.Model.add_linear_constraint,
     lambda mod, id: mod.get_linear_constraint(id, validate=False),
-    sparse_containers.parse_linear_constraint_map,
+    sparse_containers.parse_linear_constraint_map,  # pyrefly: ignore[bad-argument-type]
 )
 _QUAD_CON_ADAPTER = ParseMapAdapater(
     model.Model.add_quadratic_constraint,
     lambda mod, id: mod.get_quadratic_constraint(id, validate=False),
-    sparse_containers.parse_quadratic_constraint_map,
+    sparse_containers.parse_quadratic_constraint_map,  # pyrefly: ignore[bad-argument-type]
 )
 
 _ADAPTERS = Union[
@@ -197,7 +197,7 @@ class SparseVectorFilterTest(compare_proto.MathOptProtoAssertions, absltest.Test
             skip_zero_values=True, filtered_items=[d]
         )
         self.assertTrue(f.skip_zero_values)
-        self.assertSetEqual(f.filtered_items, {d})
+        self.assertSetEqual(f.filtered_items, {d})  # pyrefly: ignore[bad-argument-type]
         expected_proto = sparse_containers_pb2.SparseVectorFilterProto(
             skip_zero_values=True, filter_by_ids=True, filtered_ids=[1]
         )
@@ -211,7 +211,9 @@ class SparseVectorFilterTest(compare_proto.MathOptProtoAssertions, absltest.Test
         z = mod.add_binary_variable(name="z")
         f = sparse_containers.VariableFilter(filtered_items=(z, w, x))
         self.assertFalse(f.skip_zero_values)
-        self.assertSetEqual(f.filtered_items, {w, x, z})
+        self.assertSetEqual(
+            f.filtered_items, {w, x, z}
+        )  # pyrefly: ignore[bad-argument-type]
         expected_proto = sparse_containers_pb2.SparseVectorFilterProto(
             filter_by_ids=True, filtered_ids=[0, 1, 3]
         )

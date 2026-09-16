@@ -660,8 +660,9 @@ class LinearProgram {
 // --------------------------------------------------------
 // Contains the solution of a LinearProgram as returned by a preprocessor.
 struct ProblemSolution {
-  ProblemSolution(RowIndex num_rows, ColIndex num_cols)
-      : status(ProblemStatus::OPTIMAL),
+  ProblemSolution(RowIndex num_rows, ColIndex num_cols,
+                  ProblemStatus status = ProblemStatus::OPTIMAL)
+      : status(status),
         primal_values(num_cols, 0.0),
         dual_values(num_rows, 0.0),
         variable_statuses(num_cols, VariableStatus::FREE),

@@ -34,12 +34,6 @@ std::string GetErrorCodeString(Status::ErrorCode error_code) {
       return "GLOP_OK";
     case Status::ERROR_LU:
       return "ERROR_LU";
-    case Status::ERROR_BOUND:
-      return "ERROR_BOUND";
-    case Status::ERROR_NULL:
-      return "ERROR_NULL";
-    case Status::ERROR_INVALID_PROBLEM:
-      return "INVALID_PROBLEM";
   }
   // Fallback. We don't use "default:" so the compiler will return an error
   // if we forgot one enum case above.

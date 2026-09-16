@@ -280,7 +280,9 @@ class ModelObjectiveExportProtoIntegrationTest(
             )
         )
 
-        self.assert_protos_equal(tracker.export_update(), expected)
+        self.assert_protos_equal(
+            tracker.export_update(), expected
+        )  # pyrefly: ignore[bad-argument-type]
 
     def test_export_model_with_auxiliary_objective(self) -> None:
         mod = model.Model()
@@ -324,7 +326,9 @@ class ModelObjectiveExportProtoIntegrationTest(
             )
         )
 
-        self.assert_protos_equal(tracker.export_update(), expected)
+        self.assert_protos_equal(
+            tracker.export_update(), expected
+        )  # pyrefly: ignore[bad-argument-type]
 
 
 if __name__ == "__main__":

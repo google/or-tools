@@ -31,13 +31,13 @@ namespace operations_research::math_opt {
 //   class A {
 //    public:
 //     absl::StatusOr<...> f() {
-//       ASSIGN_OR_RETURN(const auto guard,
+//       ABSL_ASSIGN_OR_RETURN(const auto guard,
 //                        ConcurrentCallsGuard::TryAcquire(tracker_));
 //       ...
 //     }
 //
 //     absl::StatusOr<...> g() {
-//       ASSIGN_OR_RETURN(const auto guard,
+//       ABSL_ASSIGN_OR_RETURN(const auto guard,
 //                        ConcurrentCallsGuard::TryAcquire(tracker_));
 //       ...
 //     }

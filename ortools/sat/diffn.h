@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/sat/2d_orthogonal_packing.h"
 #include "ortools/sat/diffn_util.h"
@@ -44,9 +45,9 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
   NonOverlappingRectanglesEnergyPropagator(NoOverlap2DConstraintHelper* helper,
                                            Model* model)
       : helper_(*helper),
-        random_(model->GetOrCreate<ModelRandomGenerator>()),
+        random_(*model->GetOrCreate<ModelRandomGenerator>()),
         shared_stats_(model->GetOrCreate<SharedStatistics>()),
-        orthogonal_packing_checker_(*random_, shared_stats_) {}
+        orthogonal_packing_checker_(random_, shared_stats_) {}
 
   ~NonOverlappingRectanglesEnergyPropagator() override;
 
@@ -68,7 +69,7 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
   bool BuildAndReportEnergyTooLarge(absl::Span<const RectangleInRange> ranges);
 
   NoOverlap2DConstraintHelper& helper_;
-  ModelRandomGenerator* random_;
+  absl::BitGenRef random_;
   SharedStatistics* shared_stats_;
   OrthogonalPackingInfeasibilityDetector orthogonal_packing_checker_;
 
@@ -91,11 +92,11 @@ void AddNonOverlappingRectangles(
     const std::vector<IntervalVariable>& x,
     const std::vector<IntervalVariable>& y, Model* model);
 
-// Non overlapping rectangles. This includes box with zero-areas.
+// Non overlapping rectangles. This includes boxes with zero-areas.
 // The following is forbidden:
-//   - a point box inside a box with a non zero area
-//   - a line box overlapping a box with a non zero area
-//   - one vertical line box crossing an horizontal line box.
+//   - a point box inside a box with a non-zero area
+//   - a line box overlapping a box with a non-zero area
+//   - one vertical line box crossing a horizontal line box.
 class NonOverlappingRectanglesDisjunctivePropagator
     : public PropagatorInterface {
  public:
@@ -124,8 +125,8 @@ class NonOverlappingRectanglesDisjunctivePropagator
   std::vector<int> order_;
   CompactVectorVector<int> events_overlapping_boxes_;
 
-  // List of box that are fully fixed in the current dive, and for which we
-  // know they are no conflict between them.
+  // List of boxes that are fully fixed in the current dive, and for which we
+  // know there are no conflicts between them.
   bool rev_is_in_dive_ = false;
   Bitset64<int> already_checked_fixed_boxes_;
   int last_helper_inprocessing_count_ = -1;

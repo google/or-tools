@@ -1,4 +1,5 @@
-FROM ortools/cmake:archlinux_swig AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}archlinux_swig AS env
 
 RUN pacman -Syu --noconfirm dotnet-sdk
 # Trigger first run experience by running arbitrary cmd

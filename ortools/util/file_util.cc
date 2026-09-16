@@ -14,11 +14,12 @@
 #include "ortools/util/file_util.h"
 
 #include <string>
-#include <utility>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_builder.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
@@ -28,17 +29,16 @@
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/util/json_util.h"
-#include "ortools/base/file.h"
 #include "ortools/base/gzipstring.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
-#include "ortools/base/status_macros.h"
 
 namespace operations_research {
 
 absl::StatusOr<std::string> ReadFileToString(absl::string_view filename) {
   std::string contents;
-  RETURN_IF_ERROR(file::GetContents(filename, &contents, file::Defaults()));
+  ABSL_RETURN_IF_ERROR(
+      file::GetContents(filename, &contents, file::Defaults()));
   // Try decompressing it.
   {
     std::string uncompressed;
@@ -51,8 +51,8 @@ absl::Status ReadFileToProto(absl::string_view filename,
                              google::protobuf::Message* proto,
                              bool allow_partial) {
   std::string data;
-  RETURN_IF_ERROR(file::GetContents(filename, &data, file::Defaults()));
-  return util::StatusBuilder(StringToProto(data, proto, allow_partial))
+  ABSL_RETURN_IF_ERROR(file::GetContents(filename, &data, file::Defaults()));
+  return absl::StatusBuilder(StringToProto(data, proto, allow_partial))
          << " in file '" << filename << "'";
 }
 

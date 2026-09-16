@@ -28,7 +28,7 @@
 #include "ortools/lp_data/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/util/fp_utils.h"
+#include "ortools/util/fp_utils_testing.h"
 
 namespace operations_research {
 namespace bop {
@@ -81,8 +81,9 @@ TEST(ConversionCycleTest, MPModelProtoToBooleanLinearProgramAndBack) {
 
   // Check the rescaling.
   for (int i = 0; i < kNumVariables; ++i) {
-    EXPECT_COMPARABLE(mp_model.variable(i).objective_coefficient(),
-                      mp_model2.variable(i).objective_coefficient(), 1e-10);
+    EXPECT_THAT(mp_model2.variable(i).objective_coefficient(),
+                WithinSameAbsoluteOrRelativeTolerance(
+                    mp_model.variable(i).objective_coefficient(), 1e-10));
   }
   for (int j = 0; j < kNumConstraints; ++j) {
     const int size = mp_model.constraint(j).var_index_size();
@@ -93,9 +94,9 @@ TEST(ConversionCycleTest, MPModelProtoToBooleanLinearProgramAndBack) {
     for (int i = 0; i < size; ++i) {
       EXPECT_EQ(mp_model.constraint(j).var_index(i),
                 mp_model2.constraint(j).var_index(i));
-      EXPECT_COMPARABLE(mp_model.constraint(j).coefficient(i),
-                        mp_model2.constraint(j).coefficient(i) * scaling,
-                        1e-10);
+      EXPECT_THAT(mp_model2.constraint(j).coefficient(i) * scaling,
+                  WithinSameAbsoluteOrRelativeTolerance(
+                      mp_model.constraint(j).coefficient(i), 1e-10));
     }
   }
 

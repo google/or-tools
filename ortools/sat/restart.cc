@@ -19,6 +19,7 @@
 #include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -50,9 +51,9 @@ void RestartPolicy::Reset() {
     strategies_.push_back(parameters_.restart_algorithms(i));
   }
   if (strategies_.empty()) {
-    const std::vector<std::string> string_values = absl::StrSplit(
+    const std::vector<absl::string_view> string_values = absl::StrSplit(
         parameters_.default_restart_algorithms(), ',', absl::SkipEmpty());
-    for (const std::string& string_value : string_values) {
+    for (const absl::string_view string_value : string_values) {
       SatParameters::RestartAlgorithm tmp;
       if (!SatParameters::RestartAlgorithm_Parse(string_value, &tmp)) {
         LOG(WARNING) << "Couldn't parse the RestartAlgorithm name: '"
@@ -112,7 +113,7 @@ bool RestartPolicy::ShouldRestart() {
       conflicts_until_next_strategy_change_ = strategy_change_conflicts_;
 
       // The LUBY_RESTART strategy is considered the "stable" mode and we change
-      // the polariy heuristic while under it.
+      // the polarity heuristic while under it.
       decision_policy_->SetStablePhase(
           strategies_[strategy_counter_ % strategies_.size()] ==
           SatParameters::LUBY_RESTART);
@@ -145,7 +146,7 @@ void RestartPolicy::OnConflict(int conflict_trail_index,
   lbd_running_average_.Add(conflict_lbd);
 
   // Block the restart.
-  // Note(user): glucose only activate this after 10000 conflicts.
+  // Note(user): glucose only activates this after 10000 conflicts.
   if (parameters_.use_blocking_restart()) {
     if (lbd_running_average_.IsWindowFull() &&
         dl_running_average_.IsWindowFull() &&

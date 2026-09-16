@@ -29,11 +29,11 @@ This module provides:
 
 To begin, skim
 
-*   [linear_solver.proto](../linear_solver/linear_solver.proto):
+*   [linear_solver.proto](/ortools/linear_solver/linear_solver.proto):
     Specifically, look at `MPModelProto`. This gives a succinct description of
     what problems can be solved.
 
-*   [solve_mp_model.h](../linear_solver/solve_mp_model.h):
+*   [solve_mp_model.h](/ortools/linear_solver/solve_mp_model.h):
     This file contains the key functions to run various solvers.
 
 ## Available solvers
@@ -41,27 +41,27 @@ To begin, skim
 Each *\*_interface.cc*  file corresponds to one of the solver accessible
 through the wrapper.
 
-* Google's BOP (boolean) solver: [bop_interface.cc](../linear_solver/bop_interface.cc)
+* Google's BOP (boolean) solver: [bop_interface.cc](/ortools/linear_solver/bop_interface.cc)
 
-* Google's GLOP (lp) solver: [glop_interface.cc](../linear_solver/glop_interface.cc)
+* Google's GLOP (lp) solver: [glop_interface.cc](/ortools/linear_solver/glop_interface.cc)
 
-* Gurobi (MIP) solver: [gurobi_interface.cc](../linear_solver/gurobi_interface.cc)
+* Gurobi (MIP) solver: [gurobi_interface.cc](/ortools/linear_solver/gurobi_interface.cc)
 
-* Google's PLDP solver: [pdlp_interface.cc](../linear_solver/pdlp_interface.cc)
+* Google's PLDP solver: [pdlp_interface.cc](/ortools/linear_solver/pdlp_interface.cc)
 
-* SCIP (MIP) solver: [scip_interface.cc](../linear_solver/scip_interface.cc)
+* SCIP (MIP) solver: [scip_interface.cc](/ortools/linear_solver/scip_interface.cc)
 
-* Google's CP-SAT solver: [sat_interface.cc](../linear_solver/sat_interface.cc)
+* Google's CP-SAT solver: [sat_interface.cc](/ortools/linear_solver/sat_interface.cc)
 
-* Coin-OR Cbc (MIP) solver: [cbc_interface.cc](../linear_solver/cbc_interface.cc)
+* Coin-OR Cbc (MIP) solver: [cbc_interface.cc](/ortools/linear_solver/cbc_interface.cc)
 
-* Coin-OR Clp (LP) solver: [clp_interface.cc](../linear_solver/clp_interface.cc)
+* Coin-OR Clp (LP) solver: [clp_interface.cc](/ortools/linear_solver/clp_interface.cc)
 
-* CPLEX (MIP) solver: [cplex_interface.cc](../linear_solver/cplex_interface.cc)
+* CPLEX (MIP) solver: [cplex_interface.cc](/ortools/linear_solver/cplex_interface.cc)
 
-* GLPK (MIP) solver: [glpk_interface.cc](../linear_solver/glpk_interface.cc)
+* GLPK (MIP) solver: [glpk_interface.cc](/ortools/linear_solver/glpk_interface.cc)
 
-* Xpress (MIP) solver: [xpress_interface.cc](../linear_solver/xpress_interface.cc)
+* Xpress (MIP) solver: [xpress_interface.cc](/ortools/linear_solver/xpress_interface.cc)
 
 ## Wrappers
 
@@ -76,4 +76,4 @@ through the wrapper.
 
 ## Samples
 
-You can find some canonical examples in [samples](../linear_solver/samples/)
+You can find some canonical examples in [samples](/ortools/linear_solver/samples/)

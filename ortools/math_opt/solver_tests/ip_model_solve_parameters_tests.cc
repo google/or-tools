@@ -19,13 +19,12 @@
 #include <string>
 #include <vector>
 
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
-#include "ortools/math_opt/parameters.pb.h"
 #include "ortools/port/proto_utils.h"
 
 namespace operations_research {
@@ -292,12 +291,6 @@ TEST_P(BranchPrioritiesTest, PrioritiesAreSetProperly) {
 
 // See PrioritiesAreSetProperly for details on the model and solve parameters.
 TEST_P(BranchPrioritiesTest, PrioritiesClearedAfterIncrementalSolve) {
-  if (GetParam().solver_type == SolverType::kXpress) {
-    // This test does not work with Xpress since Xpress does not clear/reset
-    // model parameters after a solve. See the comment in XpressSolver::Solve
-    // in xpress_solver.cc.
-    GTEST_SKIP() << "Xpress does not clear model parameters in Solve().";
-  }
   Model model;
   Variable x = model.AddContinuousVariable(-3.0, 1.0, "x");
   Variable y = model.AddContinuousVariable(0.0, 3.0, "y");
@@ -317,9 +310,9 @@ TEST_P(BranchPrioritiesTest, PrioritiesClearedAfterIncrementalSolve) {
             .parameters = SolveParams(),
             .model_parameters = {.branching_priorities = {
                                      {zminus1, 1}, {zminus2, 1}, {zplus1, 3}}}};
-        ASSIGN_OR_RETURN(const SolveResult result,
-                         Solve(model, TestedSolver(), args));
-        RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+        ABSL_ASSIGN_OR_RETURN(const SolveResult result,
+                              Solve(model, TestedSolver(), args));
+        ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
         return result.solve_stats.node_count;
       }()));
 
@@ -350,8 +343,8 @@ TEST_P(BranchPrioritiesTest, PrioritiesClearedAfterIncrementalSolve) {
             .parameters = SolveParams(),
             .model_parameters = {
                 .branching_priorities = {{zminus1, 2}, {zminus2, 2}}}};
-        ASSIGN_OR_RETURN(const SolveResult result, solver->Solve(args));
-        RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+        ABSL_ASSIGN_OR_RETURN(const SolveResult result, solver->Solve(args));
+        ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
         return result.solve_stats.node_count;
       }()));
 

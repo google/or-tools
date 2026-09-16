@@ -36,14 +36,14 @@ namespace sat {
 // interval variable. The amount of resource consumed by the task is the value
 // of its associated demand variable.
 //
-// The cumulative constraint forces the set of task to be scheduled such that
+// The cumulative constraint forces the set of tasks to be scheduled such that
 // the sum of the demands of all the tasks that overlap any time point cannot
 // exceed the capacity of the resource.
 //
 // This constraint assumes that an interval can be optional or have a size
 // of zero. The demands and the capacity can be any non-negative number.
 //
-// Optimization: If one already have an helper constructed from the interval
+// Optimization: If one already has a helper constructed from the interval
 // variable, it can be passed as last argument.
 void AddCumulative(const std::vector<Literal>& enforcement_literals,
                    const std::vector<IntervalVariable>& vars,
@@ -55,7 +55,7 @@ void AddCumulative(const std::vector<Literal>& enforcement_literals,
 // for a definition of the constraint. This is only used for testing.
 //
 // This constraint assumes that task demands and the resource capacity are fixed
-// to non-negative number.
+// to non-negative numbers.
 void AddCumulativeTimeDecomposition(
     absl::Span<const Literal> enforcement_literals,
     absl::Span<const IntervalVariable> vars,

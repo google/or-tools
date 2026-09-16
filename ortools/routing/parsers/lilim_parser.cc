@@ -14,7 +14,6 @@
 #include "ortools/routing/parsers/lilim_parser.h"
 
 #include <cstdint>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <string>

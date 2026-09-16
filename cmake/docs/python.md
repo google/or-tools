@@ -1,13 +1,15 @@
-Linux                                            | macOS                                            | Windows
------------------------------------------------- | ------------------------------------------------ | -------
-[![Status][linux_python_svg]][linux_python_link] | [![Status][macos_python_svg]][macos_python_link] | [![Status][windows_python_svg]][windows_python_link]
+| amd64 Linux | arm64 macOS | amd64 macOS | amd64 Windows |
+| :---: | :---: | :---: | :---: |
+| [![Status][linux_python_svg]][linux_python_link] | [![Status][arm64_macos_python_svg]][arm64_macos_python_link] | [![Status][amd64_macos_python_svg]][amd64_macos_python_link] | [![Status][windows_python_svg]][windows_python_link] |
 
-[linux_python_svg]: https://github.com/google/or-tools/actions/workflows/cmake_linux_python.yml/badge.svg?branch=main
-[linux_python_link]: https://github.com/google/or-tools/actions/workflows/cmake_linux_python.yml
-[macos_python_svg]: https://github.com/google/or-tools/actions/workflows/cmake_macos_python.yml/badge.svg?branch=main
-[macos_python_link]: https://github.com/google/or-tools/actions/workflows/cmake_macos_python.yml
-[windows_python_svg]: https://github.com/google/or-tools/actions/workflows/cmake_windows_python.yml/badge.svg?branch=main
-[windows_python_link]: https://github.com/google/or-tools/actions/workflows/cmake_windows_python.yml
+[linux_python_svg]: ./../../../../actions/workflows/amd64_linux_cmake_python.yml/badge.svg?branch=main
+[linux_python_link]: ./../../../../actions/workflows/amd64_linux_cmake_python.yml
+[arm64_macos_python_svg]: ./../../../../actions/workflows/arm64_macos_cmake_python.yml/badge.svg?branch=main
+[arm64_macos_python_link]: ./../../../../actions/workflows/arm64_macos_cmake__python.yml
+[amd64_macos_python_svg]: ./../../../../actions/workflows/amd64_macos_cmake_python.yml/badge.svg?branch=main
+[amd64_macos_python_link]: ./../../../../actions/workflows/amd64_macos_cmake__python.yml
+[windows_python_svg]: ./../../../../actions/workflows/amd64_windows_cmake_python.yml/badge.svg?branch=main
+[windows_python_link]: ./../../../../actions/workflows/amd64_windows_cmake_python.yml
 
 # Introduction
 

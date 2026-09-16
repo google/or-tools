@@ -18,9 +18,10 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/attributes.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
@@ -391,7 +392,7 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
 
   VLOG(1) << "cbc result status: " << tmp_status;
   /* Final status of problem
-     (info from third_party/cbc/.../CbcSolver.cpp,
+     (info from @cbc//.../CbcSolver.cpp,
       See http://cs?q="cbc+status"+file:CbcSolver.cpp)
      Some of these can be found out by is...... functions
      -1 before branchAndBound
@@ -528,7 +529,7 @@ void CBCInterface::SetLpAlgorithm(int value) {
 namespace {
 
 // See MpSolverInterfaceFactoryRepository for details.
-const void* const kRegisterCBC ABSL_ATTRIBUTE_UNUSED = [] {
+const void* const kRegisterCBC [[maybe_unused]] = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* const solver) { return new CBCInterface(solver); },
       MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);

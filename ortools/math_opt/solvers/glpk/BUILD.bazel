@@ -11,13 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//bazel:or_cc_rules.bzl", "or_cc_library", "or_cc_test")
 
-# Code specific to GLPK used in glpk_solver.cc.
-package(default_visibility = ["//ortools/math_opt/solvers:__subpackages__"])
+package(default_visibility = [
+    "//ortools/math_opt/solvers:__subpackages__",
+])
 
-cc_library(
+or_cc_library(
     name = "rays",
     srcs = ["rays.cc"],
     hdrs = ["rays.h"],
@@ -27,18 +27,18 @@ cc_library(
             "//conditions:default": ["@platforms//:incompatible"],
         }),
     deps = [
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/third_party_solvers/glpk:glpk_computational_form",
         "//ortools/third_party_solvers/glpk:glpk_formatters",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings",
         "@glpk",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "glpk_sparse_vector",
     srcs = ["glpk_sparse_vector.cc"],
     hdrs = ["glpk_sparse_vector.h"],
@@ -53,7 +53,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "glpk_sparse_vector_test",
     srcs = ["glpk_sparse_vector_test.cc"],
     target_compatible_with =
@@ -67,7 +67,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "gap",
     srcs = ["gap.cc"],
     hdrs = ["gap.h"],
@@ -78,7 +78,7 @@ cc_library(
         }),
 )
 
-cc_test(
+or_cc_test(
     name = "gap_test",
     srcs = ["gap_test.cc"],
     target_compatible_with =

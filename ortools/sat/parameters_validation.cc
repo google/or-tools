@@ -16,10 +16,11 @@
 #include <stdint.h>
 
 #include <cmath>
-#include <limits>
 #include <string>
 
+#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model_search.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
@@ -119,10 +120,10 @@ std::string ValidateParameters(const SatParameters& params) {
                 log2(kMaxReasonableParallelism));
 
   // TODO(user): Consider using annotations directly in the proto for these
-  // validation. It is however not open sourced.
+  // validations. It is however not open sourced.
   TEST_IN_RANGE(mip_max_activity_exponent, 1, 62);
   TEST_IN_RANGE(mip_max_bound, 0, 1e17);
-  TEST_IN_RANGE(solution_pool_size, 1, std::numeric_limits<int32_t>::max());
+  TEST_IN_RANGE(solution_pool_size, 1, kint32max);
 
   // Feasibility jump.
   TEST_NOT_NAN(feasibility_jump_decay);
@@ -215,8 +216,13 @@ std::string ValidateParameters(const SatParameters& params) {
   if (!params.subsolvers().empty() || !params.extra_subsolvers().empty()) {
     const auto strategies = GetNamedParameters(params);
     for (const std::string& subsolver : params.subsolvers()) {
-      if (subsolver == "core_or_no_lp") continue;  // Used by fz free search.
-      if (!strategies.contains(subsolver)) {
+      const std::string prefix = "core_or_";
+      if (absl::StartsWith(subsolver, prefix)) {
+        const std::string alt = subsolver.substr(prefix.size());
+        if (!strategies.contains(alt)) {
+          return absl::StrCat("subsolver \'", alt, "\' is not valid");
+        }
+      } else if (!strategies.contains(subsolver)) {
         return absl::StrCat("subsolver \'", subsolver, "\' is not valid");
       }
     }

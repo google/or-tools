@@ -28,12 +28,12 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/elemental/arrays.h"
 #include "ortools/math_opt/elemental/attr_key.h"
 #include "ortools/math_opt/elemental/attributes.h"
@@ -207,7 +207,7 @@ absl::Status CheckStringArray(const py::array& strings) {
   if (strings.ndim() == 1 && dtype == 'U') {
     return absl::OkStatus();
   }
-  return util::InvalidArgumentErrorBuilder()
+  return ortools::InvalidArgumentErrorBuilder()
          << "expected a 1d array of dtype U:, got " << strings.ndim()
          << "d array of dtype " << dtype;
 }
@@ -222,7 +222,7 @@ absl::Status CheckForDuplicates(const InRange& values) {
   seen.reserve(values.size());
   for (int i = 0; i < values.size(); ++i) {
     if (!seen.insert(values[i]).second) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "array has duplicates: " << values[i];
     }
   }
@@ -336,7 +336,7 @@ template <typename AttrType>
 absl::Status ValidateSliceKeyIndex(const AttrType attr, const int key_index) {
   const int key_size = GetAttrKeySize<AttrType>();
   if (key_index < 0 || key_index >= key_size) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "key_index must be in [0, " << key_size
            << ") for attribute: " << attr
            << " but key_index was: " << key_index;
@@ -380,7 +380,7 @@ template <typename AttrType>
 absl::StatusOr<std::vector<AttrKeyFor<AttrType>>> DynamicSlice(
     const Elemental& e, const AttrType attr, const int key_index,
     const int element_id) {
-  RETURN_IF_ERROR(ValidateSliceKeyIndex(attr, key_index));
+  ABSL_RETURN_IF_ERROR(ValidateSliceKeyIndex(attr, key_index));
   return ApplyOnIndex<GetAttrKeySize<AttrType>()>(
       [&e, attr, element_id]<int k>() {
         return e.Slice<k, Elemental::StatusPolicy>(attr, element_id);
@@ -396,7 +396,7 @@ absl::StatusOr<int64_t> DynamicGetSliceSize(const Elemental& e,
                                             const AttrType attr,
                                             const int key_index,
                                             const int element_id) {
-  RETURN_IF_ERROR(ValidateSliceKeyIndex(attr, key_index));
+  ABSL_RETURN_IF_ERROR(ValidateSliceKeyIndex(attr, key_index));
   return ApplyOnIndex<GetAttrKeySize<AttrType>()>(
       [&e, attr, element_id]<int k>() {
         return e.GetSliceSize<k, Elemental::StatusPolicy>(attr, element_id);
@@ -432,7 +432,7 @@ absl::Status CheckForElementExistence(
     for (int j = 0; j < GetAttrKeySize<AttrType>(); ++j) {
       const auto element_type = GetElementTypes<AttrType>(attr)[j];
       if (!e.ElementExistsUntyped(element_type, key[j])) {
-        return util::InvalidArgumentErrorBuilder()
+        return ortools::InvalidArgumentErrorBuilder()
                << element_type << " id " << key[j] << " does not exist";
       }
     }
@@ -445,7 +445,7 @@ absl::StatusOr<Elemental::DiffHandle> GetDiffHandle(const Elemental& elemental,
   std::optional<Elemental::DiffHandle> handle =
       elemental.GetDiffHandle(diff_id);
   if (handle == std::nullopt) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "no diff with id: " << diff_id;
   }
   return *handle;
@@ -463,6 +463,94 @@ template <typename AttrType>
 int64_t get_attr_slice_size(const Elemental& e, const AttrType attr,
                             const int key_index, const int element_id) {
   return ThrowIfError(DynamicGetSliceSize(e, attr, key_index, element_id));
+}
+
+template <typename Descriptor>
+void RegisterAttrOperations(
+    py::class_<Elemental, std::unique_ptr<Elemental>>& elemental) {
+  using AttrType = typename Descriptor::AttrType;
+  using ValueType = typename Descriptor::ValueType;
+  using Key = AttrKeyFor<AttrType>;
+
+  elemental.def("clear_attr", &Elemental::AttrClear<AttrType>, arg("attr"));
+
+  // Get:
+  elemental.def(
+      "get_attr",
+      [](const Elemental& e, AttrType attr, const Key& key) {
+        return ThrowIfError(e.GetAttr<Elemental::StatusPolicy>(attr, key));
+      },
+      arg("attr"), arg("key"));
+  elemental.def(
+      "get_attrs",
+      [](const Elemental& e, const AttrType a, py::array_t<int64_t> keys) {
+        return MapToArray<ValueType>(AttrKeyArrayView<Key>(keys), [&](Key key) {
+          return ThrowIfError(e.GetAttr<Elemental::StatusPolicy>(a, key));
+        });
+      },
+      arg("attr"), arg("keys"));
+
+  // Set:
+  elemental.def(
+      "set_attr",
+      [](Elemental& e, AttrType attr, const Key& key,
+         const ValueTypeFor<AttrType> value) {
+        return ThrowIfError(
+            e.SetAttr<Elemental::StatusPolicy>(attr, key, value));
+      },
+      arg("attr"), arg("key"), arg("value"));
+  elemental.def(
+      "set_attrs",
+      [](Elemental& e, AttrType attr, const py::array_t<int64_t>& keys,
+         const py::array_t<ValueType>& values) {
+        const AttrKeyArrayView<Key> keys_view(keys);
+        // We need to check for duplicates and existence first, as we
+        // don't want to end up with a partially mutated state on error.
+        ThrowIfError(CheckForDuplicates(keys_view));
+        ThrowIfError(CheckForElementExistence(e, attr, keys_view));
+        const auto values_view = values.template unchecked<1>();
+        const int64_t num_elements = keys_view.size();
+        for (int i = 0; i < num_elements; ++i) {
+          e.SetAttr<Elemental::UBPolicy>(attr, keys_view[i], values_view[i]);
+        }
+      },
+      arg("attr"), arg("key"), arg("value"));
+
+  // IsNonDefault:
+  elemental.def(
+      "is_attr_non_default",
+      [](const Elemental& e, AttrType attr, const Key& key) {
+        return ThrowIfError(
+            e.AttrIsNonDefault<Elemental::StatusPolicy>(attr, key));
+      },
+      arg("attr"), arg("key"));
+  elemental.def(
+      "bulk_is_attr_non_default",
+      [](const Elemental& e, AttrType attr, const py::array_t<int64_t>& keys) {
+        return MapToArray<bool>(AttrKeyArrayView<Key>(keys), [&](Key key) {
+          return ThrowIfError(
+              e.AttrIsNonDefault<Elemental::StatusPolicy>(attr, key));
+        });
+      },
+      arg("attr"), arg("key"));
+  if constexpr (GetAttrKeySize<AttrType>() >= 1) {
+    elemental.def("slice_attr", &slice_attr<AttrType>);
+    elemental.def("get_attr_slice_size", &get_attr_slice_size<AttrType>);
+  }
+
+  // NumNonDefaults:
+  elemental.def("get_attr_num_non_defaults",
+                &Elemental::AttrNumNonDefaults<AttrType>, arg("attr"));
+
+  // GetNonDefaults:
+  elemental.def(
+      "get_attr_non_defaults",
+      [](const Elemental& e, AttrType attr) {
+        const std::vector<AttrKeyFor<AttrType>> non_defaults =
+            e.AttrNonDefaults(attr);
+        return ConvertAttrKeysToNpArray(absl::MakeConstSpan(non_defaults));
+      },
+      arg("attr"));
 }
 
 }  // namespace
@@ -630,98 +718,7 @@ PYBIND11_MODULE(cpp_elemental, py_module) {
   // Export attribute operations.
   ForEach(
       [&elemental]<typename Descriptor>(const Descriptor&) {
-        using AttrType = typename Descriptor::AttrType;
-        using ValueType = typename Descriptor::ValueType;
-        using Key = AttrKeyFor<AttrType>;
-
-        elemental.def("clear_attr", &Elemental::AttrClear<AttrType>,
-                      arg("attr"));
-
-        // Get:
-        elemental.def(
-            "get_attr",
-            [](const Elemental& e, AttrType attr, const Key& key) {
-              return ThrowIfError(
-                  e.GetAttr<Elemental::StatusPolicy>(attr, key));
-            },
-            arg("attr"), arg("key"));
-        elemental.def(
-            "get_attrs",
-            [](const Elemental& e, const AttrType a,
-               py::array_t<int64_t> keys) {
-              return MapToArray<ValueType>(
-                  AttrKeyArrayView<Key>(keys), [&](Key key) {
-                    return ThrowIfError(
-                        e.GetAttr<Elemental::StatusPolicy>(a, key));
-                  });
-            },
-            arg("attr"), arg("keys"));
-
-        // Set:
-        elemental.def(
-            "set_attr",
-            [](Elemental& e, AttrType attr, const Key& key,
-               const ValueTypeFor<AttrType> value) {
-              return ThrowIfError(
-                  e.SetAttr<Elemental::StatusPolicy>(attr, key, value));
-            },
-            arg("attr"), arg("key"), arg("value"));
-        elemental.def(
-            "set_attrs",
-            [](Elemental& e, AttrType attr, const py::array_t<int64_t>& keys,
-               const py::array_t<ValueType>& values) {
-              const AttrKeyArrayView<Key> keys_view(keys);
-              // We need to check for duplicates and existence first, as we
-              // don't want to end up with a partially mutated state on error.
-              ThrowIfError(CheckForDuplicates(keys_view));
-              ThrowIfError(CheckForElementExistence(e, attr, keys_view));
-              const auto values_view = values.template unchecked<1>();
-              const int64_t num_elements = keys_view.size();
-              for (int i = 0; i < num_elements; ++i) {
-                e.SetAttr<Elemental::UBPolicy>(attr, keys_view[i],
-                                               values_view[i]);
-              }
-            },
-            arg("attr"), arg("key"), arg("value"));
-
-        // IsNonDefault:
-        elemental.def(
-            "is_attr_non_default",
-            [](const Elemental& e, AttrType attr, const Key& key) {
-              return ThrowIfError(
-                  e.AttrIsNonDefault<Elemental::StatusPolicy>(attr, key));
-            },
-            arg("attr"), arg("key"));
-        elemental.def(
-            "bulk_is_attr_non_default",
-            [](const Elemental& e, AttrType attr,
-               const py::array_t<int64_t>& keys) {
-              return MapToArray<bool>(
-                  AttrKeyArrayView<Key>(keys), [&](Key key) {
-                    return ThrowIfError(
-                        e.AttrIsNonDefault<Elemental::StatusPolicy>(attr, key));
-                  });
-            },
-            arg("attr"), arg("key"));
-        if constexpr (GetAttrKeySize<AttrType>() >= 1) {
-          elemental.def("slice_attr", &slice_attr<AttrType>);
-          elemental.def("get_attr_slice_size", &get_attr_slice_size<AttrType>);
-        }
-
-        // NumNonDefaults:
-        elemental.def("get_attr_num_non_defaults",
-                      &Elemental::AttrNumNonDefaults<AttrType>, arg("attr"));
-
-        // GetNonDefaults:
-        elemental.def(
-            "get_attr_non_defaults",
-            [](const Elemental& e, AttrType attr) {
-              const std::vector<AttrKeyFor<AttrType>> non_defaults =
-                  e.AttrNonDefaults(attr);
-              return ConvertAttrKeysToNpArray(
-                  absl::MakeConstSpan(non_defaults));
-            },
-            arg("attr"));
+        RegisterAttrOperations<Descriptor>(elemental);
       },
       AllAttrTypeDescriptors{});
 }

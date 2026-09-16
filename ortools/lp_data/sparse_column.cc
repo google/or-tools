@@ -13,7 +13,7 @@
 
 #include "ortools/lp_data/sparse_column.h"
 
-#include <algorithm>
+#include <cstddef>
 
 #include "absl/log/check.h"
 #include "ortools/lp_data/lp_types.h"

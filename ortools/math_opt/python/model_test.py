@@ -377,7 +377,9 @@ class ModelTest(compare_proto.MathOptProtoAssertions, parameterized.TestCase):
             mod.add_linear_constraint(x <= (y <= z))
 
         with self.assertRaisesRegex(TypeError, "unsupported operand.*"):
-            mod.add_linear_constraint((0 <= x) >= z)
+            mod.add_linear_constraint(
+                (0 <= x) >= z
+            )  # pyrefly: ignore[unsupported-operation]
 
         with self.assertRaisesRegex(AssertionError, "lb cannot be specified.*"):
             mod.add_linear_constraint(x + y == 1, lb=1)
@@ -579,8 +581,12 @@ class ModelTest(compare_proto.MathOptProtoAssertions, parameterized.TestCase):
                 )
             )
         )
-        self.assert_protos_equiv(expected, t.export_update())
-        self.assert_protos_equiv(expected, t.export_update())
+        self.assert_protos_equiv(
+            expected, t.export_update()
+        )  # pyrefly: ignore[bad-argument-type]
+        self.assert_protos_equiv(
+            expected, t.export_update()
+        )  # pyrefly: ignore[bad-argument-type]
         t.advance_checkpoint()
         self.assertIsNone(t.export_update())
 
@@ -606,8 +612,12 @@ class ModelTest(compare_proto.MathOptProtoAssertions, parameterized.TestCase):
                 )
             )
         )
-        self.assert_protos_equiv(expected1, t1.export_update())
-        self.assert_protos_equiv(expected2, t2.export_update())
+        self.assert_protos_equiv(
+            expected1, t1.export_update()
+        )  # pyrefly: ignore[bad-argument-type]
+        self.assert_protos_equiv(
+            expected2, t2.export_update()
+        )  # pyrefly: ignore[bad-argument-type]
 
     def test_remove_tracker(self) -> None:
         mod = model.Model(name="test_model")
@@ -627,7 +637,9 @@ class ModelTest(compare_proto.MathOptProtoAssertions, parameterized.TestCase):
                 ),
             )
         )
-        self.assert_protos_equiv(expected, t2.export_update())
+        self.assert_protos_equiv(
+            expected, t2.export_update()
+        )  # pyrefly: ignore[bad-argument-type]
         with self.assertRaises(ValueError):
             t1.export_update()
         with self.assertRaises(ValueError):

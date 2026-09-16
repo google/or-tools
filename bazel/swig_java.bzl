@@ -19,40 +19,28 @@ load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("@rules_java//java:java_library.bzl", "java_library")
 load("@rules_java//java/common:java_common.bzl", "java_common")
 
-def _create_src_jar(ctx, java_runtime_info, input_dir, output_jar):
-    jar_args = ctx.actions.args()
-    jar_args.add("cf", output_jar)
-    jar_args.add_all([input_dir])
+def _create_swig_action(ctx, swig_includes, swig_src):
+    swig_out_cc = ctx.outputs.outfile
+    hdr_file = ctx.outputs.outhdr
 
-    ctx.actions.run(
-        outputs = [output_jar],
-        inputs = [input_dir],
-        executable = "%s/bin/jar" % java_runtime_info.java_home,
-        tools = java_runtime_info.files,
-        arguments = [jar_args],
-        mnemonic = "SwigJar",
-    )
+    # Direct cc dependencies compilation contexts.
+    deps_cc_contexts = [
+        target[CcInfo].compilation_context
+        for target in ctx.attr.deps
+        if CcInfo in target
+    ]
 
-def _java_wrap_cc_impl(ctx):
-    if len(ctx.files.srcs) != 1:
-        fail("There must be exactly one *.swig file", attr = "srcs")
-    swig_src = ctx.files.srcs[0]
-    outfile = ctx.outputs.outfile
-    outhdr = ctx.outputs.outhdr
+    # Headers of direct cc dependencies.
+    cc_headers = [cc_ctx.headers for cc_ctx in deps_cc_contexts]
 
-    header_sets = []  # depsets of Files
-    include_path_sets = []  # depsets of strings
+    # Include dirs of direct cc dependencies.
+    cc_include_dirs = [cc_ctx.includes for cc_ctx in deps_cc_contexts]
 
-    # Include headers from deps.
-    for target in ctx.attr.deps:
-        cc_context = target[CcInfo].compilation_context
-        header_sets.append(cc_context.headers)
-        include_path_sets.append(cc_context.includes)
-
-        # Include workspace root in include path for when target is defined in an
-        # external workspace.
-        if target.label.workspace_root:
-            include_path_sets.append(depset([target.label.workspace_root]))
+    # Includes dirs are:
+    # - Workspace root
+    # - bin_dir to the include path for generated files
+    # - Include dirs of transitive cc dependencies.
+    swig_includes_dirs = [".", ctx.bin_dir.path] + depset(transitive = cc_include_dirs).to_list()
 
     java_files_dir = ctx.actions.declare_directory("java_files_%s" % ctx.label.name)
 
@@ -60,39 +48,51 @@ def _java_wrap_cc_impl(ctx):
     swig_args.add("-c++")
     swig_args.add("-java")
     swig_args.add("-package", ctx.attr.package)
-    swig_args.add_all("-outdir", [java_files_dir], expand_directories = False)
+    swig_args.add("-outdir", java_files_dir.path)
     if ctx.attr.swig_opt:
         swig_args.add(ctx.attr.swig_opt)
-    swig_args.add("-o", outfile)
+    swig_args.add("-o", swig_out_cc)
     if ctx.attr.module:
         swig_args.add("-module", ctx.attr.module)
-
-    # Add the workspace root to the include path.
-    swig_args.add("-I.")
-
-    # Add the bin_dir to the include path for generated files.
-    swig_args.add("-I" + ctx.bin_dir.path)
-
-    for include_path in depset(transitive = include_path_sets).to_list():
-        swig_args.add("-I" + include_path)
+    swig_args.add_all(swig_includes_dirs, format_each = "-I%s")
     swig_args.add(swig_src.path)
-    generated_c_files = [outfile]
-    if ctx.attr.use_directors:
-        generated_c_files.append(outhdr)
 
     # Add swig LIB files.
-    swig_lib = {"SWIG_LIB": paths.dirname(ctx.files._swig_lib[0].path)}
+    swig_lib_files = ctx.files._swig_lib
+    swig_lib_dir = paths.dirname(swig_lib_files[0].path)
+    swig_inputs = depset([swig_src] + swig_includes + swig_lib_files, transitive = cc_headers)
+    swig_outputs = [swig_out_cc, java_files_dir]
+    if ctx.attr.use_directors:
+        swig_outputs.append(hdr_file)
     ctx.actions.run(
-        outputs = generated_c_files + [java_files_dir],
-        inputs = depset([swig_src] + ctx.files.swig_includes + ctx.files._swig_lib, transitive = header_sets),
-        env = swig_lib,
+        outputs = swig_outputs,
+        inputs = swig_inputs,
+        env = {"SWIG_LIB": swig_lib_dir},
         executable = ctx.executable._swig,
         arguments = [swig_args],
         mnemonic = "SwigCompile",
     )
 
+    # JAR creation
     java_runtime = ctx.attr._jdk[java_common.JavaRuntimeInfo]
-    _create_src_jar(ctx, java_runtime, java_files_dir, ctx.outputs.srcjar)
+    jar_args = ctx.actions.args()
+    jar_args.add("cf", ctx.outputs.srcjar)
+    jar_args.add(java_files_dir.path)
+    ctx.actions.run(
+        outputs = [ctx.outputs.srcjar],
+        inputs = [java_files_dir],
+        executable = java_runtime.java_home + "/bin/jar",
+        tools = java_runtime.files,
+        arguments = [jar_args],
+        mnemonic = "SwigJar",
+    )
+    return (swig_out_cc, ctx.outputs.srcjar, hdr_file)
+
+def _java_wrap_cc_impl(ctx):
+    if len(ctx.files.srcs) != 1:
+        fail("There must be exactly one *.swig file", attr = "srcs")
+
+    _create_swig_action(ctx, ctx.files.swig_includes, ctx.files.srcs[0])
 
 _java_wrap_cc = rule(
     doc = """

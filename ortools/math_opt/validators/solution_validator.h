@@ -39,6 +39,14 @@ absl::Status ValidatePrimalSolutionVector(const SparseDoubleVectorProto& vector,
                                           const SparseVectorFilterProto& filter,
                                           const ModelSummary& model_summary);
 
+// Used to validate suggested solutions in callback result, which are
+// represented by a SparseDoubleVectorProto and not the full PrimalSolutionProto
+// message. Does the same checks on a SparseDoubleVectorProto that
+// ValidatePrimalSolution does on the variable_values sub-message of a
+// PrimalSolutionProto.
+absl::Status ValidateSuggestedSolution(const SparseDoubleVectorProto& vector,
+                                       const ModelSummary& model_summary);
+
 absl::Status ValidatePrimalRay(const PrimalRayProto& primal_ray,
                                const SparseVectorFilterProto& filter,
                                const ModelSummary& model_summary);

@@ -31,10 +31,15 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "google/protobuf/text_format.h"
+#include "ortools/base/basictypes.h"  // MOE:strip
+#include "ortools/base/bzip2file.h"
 #include "ortools/base/file.h"
 #include "ortools/base/filesystem.h"
+#include "ortools/base/gzipfile.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
+#include "ortools/base/types.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover.pb.h"
 #include "ortools/set_cover/set_cover_model.h"
@@ -209,13 +214,47 @@ double Percent(SubsetIndex subset, BaseInt total) {
 double Percent(ElementIndex element, BaseInt total) {
   return element.value() == 0 ? 0 : 100.0 * element.value() / total;
 }
+
+File* OpenFile(absl::string_view filename) {
+  File* file = file::OpenOrDie(filename, "r", file::Defaults());
+  if (absl::EndsWith(filename, ".gz")) {
+    file = GZipFileReader(filename, file, TAKE_OWNERSHIP);
+    return file;
+  }
+  return file;
+}
+
+std::vector<std::string> GetFileLines(absl::string_view filename) {
+  std::vector<std::string> lines;
+  for (absl::string_view line : FileLines(filename)) {
+    lines.emplace_back(line);
+  }
+  return lines;
+}
+
+std::string ReadFileToString(absl::string_view filename) {
+  File* file = OpenFile(filename);
+  std::string content;
+#if defined(FILE_BASE_FILE_H_)
+  CHECK_OK(file::ReadFileToString(file, &content, file::Defaults()));
+#else
+  std::vector<char> buffer(1024 * 1024);
+  while (true) {
+    const size_t bytes_read = file->Read(buffer.data(), buffer.size());
+    if (bytes_read == 0) break;
+    content.append(buffer.data(), bytes_read);
+  }
+#endif
+  file->Close(file::Defaults()).IgnoreError();
+  return content;
+}
 }  // namespace
 
 // This is a row-based format where the elements are 1-indexed.
 SetCoverModel ReadOrlibScp(absl::string_view filename) {
   CHECK_OK(file::Exists(filename, file::Defaults()));
   SetCoverModel model;
-  File* file(file::OpenOrDie(filename, "r", file::Defaults()));
+  File* file(OpenFile(filename));
   SetCoverReader reader(file);
   const ElementIndex num_rows(reader.ParseNextInteger());
   const SubsetIndex num_cols(reader.ParseNextInteger());
@@ -246,7 +285,7 @@ SetCoverModel ReadOrlibScp(absl::string_view filename) {
 SetCoverModel ReadOrlibRail(absl::string_view filename) {
   CHECK_OK(file::Exists(filename, file::Defaults()));
   SetCoverModel model;
-  File* file(file::OpenOrDie(filename, "r", file::Defaults()));
+  File* file(OpenFile(filename));
   SetCoverReader reader(file);
   const ElementIndex num_rows(reader.ParseNextInteger());
   const SubsetIndex num_cols(reader.ParseNextInteger());
@@ -257,9 +296,9 @@ SetCoverModel ReadOrlibRail(absl::string_view filename) {
                            Percent(subset, model.num_subsets()));
     const double cost(reader.ParseNextDouble());
     model.SetSubsetCost(subset, cost);
-    const ColumnEntryIndex column_size(reader.ParseNextInteger());
-    model.ReserveNumElementsInSubset(column_size.value(), subset.value());
-    for (const ColumnEntryIndex _ : ColumnEntryRange(column_size)) {
+    const int64_t num_columns(reader.ParseNextInteger());
+    model.ReserveNumElementsInSubset(num_columns, subset.value());
+    for (int64_t i = 0; i < num_columns; ++i) {
       // Correct the 1-indexing.
       const ElementIndex element(reader.ParseNextInteger() - 1);
       model.AddElementToSubset(element, subset);
@@ -279,12 +318,13 @@ SetCoverModel ReadFimiDat(absl::string_view filename) {
   // Read the file once to discover the smallest element index.
   BaseInt smallest_element = std::numeric_limits<BaseInt>::max();
   BaseInt largest_element = 0;
-  for (const std::string& line : FileLines(filename)) {
-    std::vector<std::string> elements = absl::StrSplit(line, ' ');
+  const std::vector<std::string> lines = GetFileLines(filename);
+  for (absl::string_view line : lines) {
+    std::vector<absl::string_view> elements = absl::StrSplit(line, ' ');
     if (elements.back().empty() || elements.back()[0] == '\0') {
       elements.pop_back();
     }
-    for (const std::string& number_str : elements) {
+    for (absl::string_view number_str : elements) {
       BaseInt element;
       CHECK(absl::SimpleAtoi(number_str, &element));
       smallest_element = std::min(smallest_element, element);
@@ -294,7 +334,7 @@ SetCoverModel ReadFimiDat(absl::string_view filename) {
   DLOG(INFO) << "Smallest element: " << smallest_element
              << ", Largest element: " << largest_element;
   ElementBoolVector element_seen(largest_element + 1, false);
-  for (const std::string& line : FileLines(filename)) {
+  for (absl::string_view line : lines) {
     LOG_EVERY_N_SEC(INFO, 5)
         << absl::StrFormat("Reading subset %d", subset.value());
     std::vector<std::string> elements = absl::StrSplit(line, ' ');
@@ -305,7 +345,8 @@ SetCoverModel ReadFimiDat(absl::string_view filename) {
     // As there can be repetitions in the data, we need to keep track of the
     // elements already added to the subset.
     std::vector<ElementIndex> elements_list;
-    for (const std::string& number_str : elements) {
+    elements_list.reserve(elements.size());
+    for (absl::string_view number_str : elements) {
       BaseInt raw_element;
       CHECK(absl::SimpleAtoi(number_str, &raw_element));
       // Re-index the elements starting from 0.
@@ -336,11 +377,22 @@ SetCoverModel ReadSetCoverProto(absl::string_view filename, bool binary) {
   CHECK_OK(file::Exists(filename, file::Defaults()));
   SetCoverModel model;
   SetCoverProto message;
-  if (binary) {
-    CHECK_OK(file::GetBinaryProto(filename, &message, file::Defaults()));
+  const bool is_compressed = absl::EndsWith(filename, ".gz");
+  if (is_compressed) {
+    const std::string content = ReadFileToString(filename);
+    if (binary) {
+      CHECK(message.ParseFromString(content));
+    } else {
+      CHECK(google::protobuf::TextFormat::ParseFromString(content, &message));
+    }
   } else {
-    CHECK_OK(file::GetTextProto(filename, &message, file::Defaults()));
+    if (binary) {
+      CHECK_OK(file::GetBinaryProto(filename, &message, file::Defaults()));
+    } else {
+      CHECK_OK(file::GetTextProto(filename, &message, file::Defaults()));
+    }
   }
+  // MOE:end_strip
   model.ImportModelFromProto(message);
   return model;
 }
@@ -353,8 +405,7 @@ namespace {
 // FlushLine() must be called before closing the file.
 class LineFormatter {
  public:
-  explicit LineFormatter(File* file)
-      : LineFormatter(file, std::numeric_limits<int64_t>::max()) {}
+  explicit LineFormatter(File* file) : LineFormatter(file, kint64max) {}
   LineFormatter(File* file, int64_t max_cols)
       : num_cols_(0), max_cols_(max_cols), line_(), file_(file) {}
   ~LineFormatter() { CHECK(line_.empty()); }
@@ -446,7 +497,7 @@ void WriteSetCoverProto(const SetCoverModel& model, absl::string_view filename,
 SubsetBoolVector ReadSetCoverSolutionText(absl::string_view filename) {
   CHECK_OK(file::Exists(filename, file::Defaults()));
   SubsetBoolVector solution;
-  File* file(file::OpenOrDie(filename, "r", file::Defaults()));
+  File* file(OpenFile(filename));
   SetCoverReader reader(file);
   const BaseInt num_cols(reader.ParseNextInteger());
   solution.resize(num_cols, false);
@@ -474,6 +525,36 @@ SubsetBoolVector ReadSetCoverSolutionProto(absl::string_view filename,
   // NOTE(user): The solution is 0-indexed.
   for (const BaseInt subset : message.subset()) {
     solution[SubsetIndex(subset)] = true;
+  }
+  return solution;
+}
+
+SubsetBoolVector ReadSetCoverSolutionDat(absl::string_view filename,
+                                         BaseInt num_subsets) {
+  SubsetBoolVector solution(num_subsets, false);
+  if (!file::Exists(filename, file::Defaults()).ok()) {
+    return solution;
+  }
+  bool cost_read = false;
+  for (const std::string& line : FileLines(filename)) {
+    std::vector<std::string> tokens =
+        absl::StrSplit(line, ' ', absl::SkipEmpty());
+    for (const std::string& token : tokens) {
+      if (token.empty()) continue;
+      if (!cost_read) {
+        double cost;
+        CHECK(absl::SimpleAtod(token, &cost));
+        cost_read = true;
+      } else {
+        int64_t subset_val;
+        CHECK(absl::SimpleAtoi(token, &subset_val));
+        CHECK_GE(subset_val, 0);
+        CHECK_LT(subset_val, num_subsets)
+            << "Subset index " << subset_val << " out of range [0, "
+            << num_subsets << ")";
+        solution[SubsetIndex(subset_val)] = true;
+      }
+    }
   }
   return solution;
 }

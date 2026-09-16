@@ -71,7 +71,7 @@ class AttrKey {
   // Creates a key from a range of `n` elements.
   static absl::StatusOr<AttrKey> FromRange(absl::Span<const int64_t> range) {
     if (range.size() != n) {
-      return ::util::InvalidArgumentErrorBuilder()
+      return ::ortools::InvalidArgumentErrorBuilder()
              << "cannot build AttrKey<" << n << "> from a range of size "
              << range.size();
     }

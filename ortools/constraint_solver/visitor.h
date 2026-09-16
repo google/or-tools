@@ -34,7 +34,7 @@ class IntVar;
 class SequenceVar;
 
 /// Model visitor.
-class OR_DLL ModelVisitor : public BaseObject {
+class OR_ROUTING_DLL ModelVisitor : public BaseObject {
  public:
   /// Constraint and Expression types.
   static const char kAbs[];

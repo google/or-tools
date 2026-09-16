@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef PDLP_TEST_UTIL_H_
-#define PDLP_TEST_UTIL_H_
+#ifndef ORTOOLS_PDLP_TEST_UTIL_H_
+#define ORTOOLS_PDLP_TEST_UTIL_H_
 
 #include <cstdint>
 #include <cstdlib>
@@ -401,4 +401,4 @@ void PrintTo(const Array<Scalar, Rows, Cols, Options, MaxRows, MaxCols>& array,
 }
 }  // namespace Eigen
 
-#endif  // PDLP_TEST_UTIL_H_
+#endif  // ORTOOLS_PDLP_TEST_UTIL_H_

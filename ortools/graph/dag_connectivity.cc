@@ -22,6 +22,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/container_logging.h"
 #include "ortools/graph_base/topologicalsorter.h"
+#include "ortools/util/bitset.h"
 
 namespace operations_research {
 

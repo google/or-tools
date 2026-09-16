@@ -23,8 +23,6 @@
 #include "ortools/base/gmock.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
-#include "ortools/math_opt/model_update.pb.h"
-#include "ortools/math_opt/result.pb.h"
 #include "ortools/port/proto_utils.h"
 
 namespace operations_research::math_opt {
@@ -36,8 +34,7 @@ LogicalConstraintTestParameters::LogicalConstraintTestParameters(
     const bool supports_incremental_add_and_deletes,
     const bool supports_incremental_variable_deletions,
     const bool supports_deleting_indicator_variables,
-    const bool supports_updating_binary_variables,
-    const bool supports_sos_on_expressions)
+    const bool supports_updating_binary_variables)
     : solver_type(solver_type),
       parameters(std::move(parameters)),
       supports_integer_variables(supports_integer_variables),
@@ -50,8 +47,7 @@ LogicalConstraintTestParameters::LogicalConstraintTestParameters(
           supports_incremental_variable_deletions),
       supports_deleting_indicator_variables(
           supports_deleting_indicator_variables),
-      supports_updating_binary_variables(supports_updating_binary_variables),
-      supports_sos_on_expressions(supports_sos_on_expressions) {}
+      supports_updating_binary_variables(supports_updating_binary_variables) {}
 
 std::ostream& operator<<(std::ostream& out,
                          const LogicalConstraintTestParameters& params) {
@@ -70,9 +66,7 @@ std::ostream& operator<<(std::ostream& out,
       << ", supports_deleting_indicator_variables: "
       << (params.supports_deleting_indicator_variables ? "true" : "false")
       << ", supports_updating_binary_variables: "
-      << (params.supports_updating_binary_variables ? "true" : "false")
-      << ", supports_sos_on_expressions: "
-      << (params.supports_sos_on_expressions ? "true" : "false") << " }";
+      << (params.supports_updating_binary_variables ? "true" : "false") << " }";
   return out;
 }
 
@@ -90,19 +84,11 @@ constexpr absl::string_view no_sos2_support_message =
 constexpr absl::string_view no_indicator_support_message =
     "This test is disabled as the solver does not support indicator "
     "constraints";
-constexpr absl::string_view no_updating_binary_variables_message =
-    "This test is disabled as the solver does not support updating "
-    "binary variables";
-constexpr absl::string_view no_deleting_indicator_variables_message =
-    "This test is disabled as the solver does not support deleting "
-    "indicator variables";
-constexpr absl::string_view no_incremental_add_and_deletes_message =
-    "This test is disabled as the solver does not support incremental "
-    "add/delete";
 
 // We test SOS1 constraints with both explicit weights and default weights.
 TEST_P(SimpleLogicalConstraintTest, CanBuildSos1Model) {
-  if (!GetParam().supports_sos_on_expressions) {
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // see https://github.com/google/or-tools/issues/5084
     GTEST_SKIP() << "skipped since SOS on expressions are not supported";
   }
   Model model;
@@ -121,7 +107,8 @@ TEST_P(SimpleLogicalConstraintTest, CanBuildSos1Model) {
 
 // We test SOS2 constraints with both explicit weights and default weights.
 TEST_P(SimpleLogicalConstraintTest, CanBuildSos2Model) {
-  if (!GetParam().supports_sos_on_expressions) {
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // see https://github.com/google/or-tools/issues/5084
     GTEST_SKIP() << "skipped since SOS on expressions are not supported";
   }
   Model model;
@@ -219,6 +206,10 @@ TEST_P(SimpleLogicalConstraintTest, Sos1WithExpressions) {
   if (!GetParam().supports_sos1) {
     GTEST_SKIP() << no_sos1_support_message;
   }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // see https://github.com/google/or-tools/issues/5084
+    GTEST_SKIP() << "skipped since SOS on expressions are not supported";
+  }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
   const Variable y = model.AddContinuousVariable(0.0, 1.0, "y");
@@ -239,6 +230,10 @@ TEST_P(SimpleLogicalConstraintTest, Sos1WithExpressions) {
 TEST_P(SimpleLogicalConstraintTest, Sos2WithExpressions) {
   if (!GetParam().supports_sos2) {
     GTEST_SKIP() << no_sos2_support_message;
+  }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // see https://github.com/google/or-tools/issues/5084
+    GTEST_SKIP() << "skipped since SOS on expressions are not supported";
   }
   Model model;
   const Variable x = model.AddContinuousVariable(-1.0, 1.0, "x");
@@ -262,6 +257,11 @@ TEST_P(SimpleLogicalConstraintTest, Sos1VariableInMultipleTerms) {
   if (!GetParam().supports_sos1) {
     GTEST_SKIP() << no_sos2_support_message;
   }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // Xpress does not support SOSs like { x, x } (see also xpress_solver.cc).
+    GTEST_SKIP() << "Xpress does not support the same variable appearing "
+                    "multiple times in an SOS";
+  }
   Model model;
   const Variable x = model.AddContinuousVariable(-1.0, 1.0, "x");
   model.Minimize(x);
@@ -281,6 +281,11 @@ TEST_P(SimpleLogicalConstraintTest, Sos1VariableInMultipleTerms) {
 TEST_P(SimpleLogicalConstraintTest, Sos2VariableInMultipleTerms) {
   if (!GetParam().supports_sos2) {
     GTEST_SKIP() << no_sos2_support_message;
+  }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // Xpress does not support SOSs like { x, x } (see also xpress_solver.cc).
+    GTEST_SKIP() << "Xpress does not support the same variable appearing "
+                    "multiple times in an SOS";
   }
   Model model;
   const Variable x = model.AddContinuousVariable(-1.0, 1.0, "x");
@@ -303,9 +308,6 @@ TEST_P(SimpleLogicalConstraintTest, Sos2VariableInMultipleTerms) {
 // The optimal solution for the modified problem is (x*, y*) = (0, 1) with
 // objective value 2.
 TEST_P(IncrementalLogicalConstraintTest, LinearToSos1Update) {
-  if (!GetParam().supports_incremental_add_and_deletes) {
-    GTEST_SKIP() << no_incremental_add_and_deletes_message;
-  }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
   const Variable y = model.AddContinuousVariable(0.0, 1.0, "y");
@@ -357,9 +359,6 @@ TEST_P(IncrementalLogicalConstraintTest, LinearToSos1Update) {
 // The optimal solution for the modified problem is (x*, y*, z*) = (0, 1, 1)
 // with objective value 4.
 TEST_P(IncrementalLogicalConstraintTest, LinearToSos2Update) {
-  if (!GetParam().supports_incremental_add_and_deletes) {
-    GTEST_SKIP() << no_incremental_add_and_deletes_message;
-  }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
   const Variable y = model.AddContinuousVariable(0.0, 1.0, "y");
@@ -422,6 +421,10 @@ TEST_P(IncrementalLogicalConstraintTest, UpdateDeletesSos1Constraint) {
   if (!GetParam().supports_sos1) {
     GTEST_SKIP() << no_sos1_support_message;
   }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // see https://github.com/google/or-tools/issues/5084
+    GTEST_SKIP() << "skipped since SOS on expressions are not supported";
+  }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
   const Variable y = model.AddContinuousVariable(0.0, 1.0, "y");
@@ -465,6 +468,10 @@ TEST_P(IncrementalLogicalConstraintTest, UpdateDeletesSos1Constraint) {
 TEST_P(IncrementalLogicalConstraintTest, UpdateDeletesSos2Constraint) {
   if (!GetParam().supports_sos2) {
     GTEST_SKIP() << no_sos1_support_message;
+  }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // see https://github.com/google/or-tools/issues/5084
+    GTEST_SKIP() << "skipped since SOS on expressions are not supported";
   }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
@@ -515,6 +522,10 @@ TEST_P(IncrementalLogicalConstraintTest,
   if (!GetParam().supports_sos1) {
     GTEST_SKIP() << no_sos1_support_message;
   }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // see https://github.com/google/or-tools/issues/5084
+    GTEST_SKIP() << "skipped since SOS on expressions are not supported";
+  }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
   const Variable y = model.AddContinuousVariable(0.0, 1.0, "y");
@@ -562,6 +573,10 @@ TEST_P(IncrementalLogicalConstraintTest,
        UpdateDeletesVariableInSos2Constraint) {
   if (!GetParam().supports_sos2) {
     GTEST_SKIP() << no_sos2_support_message;
+  }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // see https://github.com/google/or-tools/issues/5084
+    GTEST_SKIP() << "skipped since SOS on expressions are not supported";
   }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
@@ -887,9 +902,6 @@ TEST_P(IncrementalLogicalConstraintTest, UpdateDeletesIndicatorConstraint) {
   if (!GetParam().supports_indicator_constraints) {
     GTEST_SKIP() << no_indicator_support_message;
   }
-  if (!GetParam().supports_incremental_add_and_deletes) {
-    GTEST_SKIP() << no_incremental_add_and_deletes_message;
-  }
   Model model;
   const Variable x = model.AddBinaryVariable("x");
   const Variable y = model.AddContinuousVariable(0.0, 1.0, "y");
@@ -932,9 +944,6 @@ TEST_P(IncrementalLogicalConstraintTest,
        UpdateDeletesIndicatorConstraintWithUnsetIndicatorVariable) {
   if (!GetParam().supports_indicator_constraints) {
     GTEST_SKIP() << no_indicator_support_message;
-  }
-  if (!GetParam().supports_incremental_add_and_deletes) {
-    GTEST_SKIP() << no_incremental_add_and_deletes_message;
   }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
@@ -979,9 +988,6 @@ TEST_P(IncrementalLogicalConstraintTest,
 TEST_P(IncrementalLogicalConstraintTest, UpdateDeletesIndicatorVariable) {
   if (!GetParam().supports_indicator_constraints) {
     GTEST_SKIP() << no_indicator_support_message;
-  }
-  if (!GetParam().supports_deleting_indicator_variables) {
-    GTEST_SKIP() << no_deleting_indicator_variables_message;
   }
   Model model;
   const Variable x = model.AddBinaryVariable("x");
@@ -1063,9 +1069,6 @@ TEST_P(IncrementalLogicalConstraintTest,
   if (!GetParam().supports_indicator_constraints) {
     GTEST_SKIP() << no_indicator_support_message;
   }
-  if (!GetParam().supports_updating_binary_variables) {
-    GTEST_SKIP() << no_updating_binary_variables_message;
-  }
   Model model;
   const Variable x = model.AddBinaryVariable("x");
   const Variable y = model.AddContinuousVariable(0.0, 1.0, "y");
@@ -1112,9 +1115,6 @@ TEST_P(IncrementalLogicalConstraintTest,
 TEST_P(IncrementalLogicalConstraintTest, UpdateChangesIndicatorVariableBound) {
   if (!GetParam().supports_indicator_constraints) {
     GTEST_SKIP() << no_indicator_support_message;
-  }
-  if (!GetParam().supports_updating_binary_variables) {
-    GTEST_SKIP() << no_updating_binary_variables_message;
   }
   Model model;
   const Variable x = model.AddIntegerVariable(0.0, 1.0, "x");
@@ -1179,9 +1179,6 @@ TEST_P(IncrementalLogicalConstraintTest,
        UpdateMakesIndicatorVariableBoundsInvalid) {
   if (!GetParam().supports_indicator_constraints) {
     GTEST_SKIP() << no_indicator_support_message;
-  }
-  if (!GetParam().supports_updating_binary_variables) {
-    GTEST_SKIP() << no_updating_binary_variables_message;
   }
   Model model;
   const Variable x = model.AddIntegerVariable(0.0, 1.0, "x");

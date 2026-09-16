@@ -24,6 +24,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -35,6 +36,7 @@
 #include "absl/time/time.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/types.h"
 #include "ortools/gurobi/gurobi_stdout_matchers.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/cpp/matchers.h"
@@ -55,12 +57,12 @@ std::ostream& operator<<(std::ostream& out,
 
 GenericTestParameters::GenericTestParameters(const SolverType solver_type,
                                              const bool support_interrupter,
-                                             const bool integer_variables,
+                                             const TestModelClass model_class,
                                              std::string expected_log,
                                              SolveParameters solve_parameters)
     : solver_type(solver_type),
       support_interrupter(support_interrupter),
-      integer_variables(integer_variables),
+      model_class(model_class),
       expected_log(std::move(expected_log)),
       solve_parameters(std::move(solve_parameters)) {}
 
@@ -68,8 +70,8 @@ std::ostream& operator<<(std::ostream& out,
                          const GenericTestParameters& params) {
   out << "{ solver_type: " << params.solver_type
       << ", support_interrupter: " << params.support_interrupter
-      << ", integer_variables: " << params.integer_variables
-      << ", expected_log: \"" << absl::CEscape(params.expected_log) << "\""
+      << ", model_class: " << params.model_class << ", expected_log: \""
+      << absl::CEscape(params.expected_log) << "\""
       << ", solve_parameters: "
       << ProtobufShortDebugString(params.solve_parameters.Proto()) << " }";
   return out;
@@ -82,39 +84,6 @@ using ::testing::status::IsOkAndHolds;
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
-TEST_P(GenericTest, EmptyModel) {
-  Model model;
-  EXPECT_THAT(SimpleSolve(model), IsOkAndHolds(IsOptimal(0.0)));
-}
-
-TEST_P(GenericTest, OffsetOnlyMinimization) {
-  Model model;
-  model.Minimize(4.0);
-  EXPECT_THAT(SimpleSolve(model), IsOkAndHolds(IsOptimal(4.0)));
-}
-
-TEST_P(GenericTest, OffsetOnlyMaximization) {
-  Model model;
-  model.Maximize(4.0);
-  EXPECT_THAT(SimpleSolve(model), IsOkAndHolds(IsOptimal(4.0)));
-}
-
-TEST_P(GenericTest, OffsetMinimization) {
-  Model model;
-  const Variable x =
-      model.AddVariable(-1.0, 2.0, GetParam().integer_variables, "x");
-  model.Minimize(2 * x + 4);
-  EXPECT_THAT(SimpleSolve(model), IsOkAndHolds(IsOptimal(2.0)));
-}
-
-TEST_P(GenericTest, OffsetMaximization) {
-  Model model;
-  const Variable x =
-      model.AddVariable(-1.0, 2.0, GetParam().integer_variables, "x");
-  model.Maximize(2 * x + 4);
-  EXPECT_THAT(SimpleSolve(model), IsOkAndHolds(IsOptimal(8.0)));
-}
-
 TEST_P(GenericTest, SolveTime) {
   // We use a non-trivial problem since on WASM the time resolution is of 1ms
   // and thus a trivial model could be solved in absl::ZeroDuration().
@@ -125,13 +94,13 @@ TEST_P(GenericTest, SolveTime) {
   // too long solve times. Here we just want to make sure that we have a long
   // enough solve time so that it is not too close to zero.
   constexpr int kMinN = 10;
-  constexpr int kMaxN = 30;
-  constexpr int kIncrementN = 5;
+  constexpr int kMaxN = 210;
+  constexpr int kIncrementN = 50;
   constexpr absl::Duration kMinSolveTime = absl::Milliseconds(5);
   for (int n = kMinN; n <= kMaxN; n += kIncrementN) {
     SCOPED_TRACE(absl::StrCat("n = ", n));
     const std::unique_ptr<const Model> model =
-        DenseIndependentSet(GetParam().integer_variables, /*n=*/n);
+        NontrivialModel(GetParam().model_class, n);
 
     const absl::Time start = absl::Now();
     ASSERT_OK_AND_ASSIGN(const SolveResult result, SimpleSolve(*model));
@@ -154,7 +123,10 @@ TEST_P(GenericTest, InterruptBeforeSolve) {
     GTEST_SKIP() << "Solve interrupter not supported. Ignoring this test.";
   }
 
-  const std::unique_ptr<Model> model = SmallModel(GetParam().integer_variables);
+  // GLPK as a MIP solver terminates before checking the interrupt when the
+  // model is too simple, so we cannot use MinimalModelForTestModelClass().
+  const std::unique_ptr<Model> model =
+      NontrivialModel(GetParam().model_class, 5);
 
   SolveInterrupter interrupter;
   interrupter.Interrupt();
@@ -173,7 +145,8 @@ TEST_P(GenericTest, InterruptAfterSolve) {
     GTEST_SKIP() << "Solve interrupter not supported. Ignoring this test.";
   }
 
-  const std::unique_ptr<Model> model = SmallModel(GetParam().integer_variables);
+  const std::unique_ptr<Model> model =
+      MinimalModelForTestModelClass(GetParam().model_class);
 
   SolveInterrupter interrupter;
 
@@ -199,7 +172,8 @@ TEST_P(GenericTest, InterrupterNeverTriggered) {
     GTEST_SKIP() << "Solve interrupter not supported. Ignoring this test.";
   }
 
-  const std::unique_ptr<Model> model = SmallModel(GetParam().integer_variables);
+  const std::unique_ptr<Model> model =
+      MinimalModelForTestModelClass(GetParam().model_class);
 
   SolveInterrupter interrupter;
 
@@ -209,7 +183,8 @@ TEST_P(GenericTest, InterrupterNeverTriggered) {
 
   ASSERT_OK_AND_ASSIGN(const SolveResult result,
                        Solve(*model, GetParam().solver_type, args));
-  EXPECT_THAT(result, IsOptimal());
+  EXPECT_THAT(result,
+              IsOptimal(kMinimalModelForTestModelClassOptimalObjective));
 }
 
 TEST_P(GenericTest, NoStdoutOutputByDefault) {
@@ -217,31 +192,26 @@ TEST_P(GenericTest, NoStdoutOutputByDefault) {
     GTEST_SKIP() << "Stdout can't be captured.";
   }
 
-  Model model("model");
-  const Variable x =
-      model.AddVariable(0, 21.0, GetParam().integer_variables, "x");
-  model.Maximize(2.0 * x);
-
+  const std::unique_ptr<Model> model =
+      MinimalModelForTestModelClass(GetParam().model_class);
   ScopedStdStreamCapture stdout_capture(CapturedStream::kStdout);
-  ASSERT_OK(SimpleSolve(model));
+  ASSERT_OK(SimpleSolve(*model));
   EXPECT_THAT(std::move(stdout_capture).StopCaptureAndReturnContents(),
               EmptyOrGurobiLicenseWarningIfGurobi(
                   /*is_gurobi=*/GetParam().solver_type == SolverType::kGurobi));
 }
 
 TEST_P(GenericTest, EnableOutputPrintsToStdOut) {
-  Model model("model");
-  const Variable x =
-      model.AddVariable(0, 21.0, GetParam().integer_variables, "x");
-  model.Maximize(2.0 * x);
-
+  const std::unique_ptr<Model> model =
+      MinimalModelForTestModelClass(GetParam().model_class);
   SolveParameters params = GetParam().solve_parameters;
   params.enable_output = true;
 
   ScopedStdStreamCapture stdout_capture(CapturedStream::kStdout);
 
-  EXPECT_THAT(Solve(model, GetParam().solver_type, {.parameters = params}),
-              IsOkAndHolds(IsOptimal(42.0)));
+  EXPECT_THAT(
+      Solve(*model, GetParam().solver_type, {.parameters = params}),
+      IsOkAndHolds(IsOptimal(kMinimalModelForTestModelClassOptimalObjective)));
 
   if (ScopedStdStreamCapture::kIsSupported) {
     EXPECT_THAT(std::move(stdout_capture).StopCaptureAndReturnContents(),
@@ -268,100 +238,114 @@ std::string AllNonAsciiCharacters() {
   return oss.str();
 }
 
-TEST_P(GenericTest, ModelNameTooLong) {
-  // GLPK and Gurobi have a limit for problem name to 255 characters; here we
-  // use long names to validate that it does not raise any assertion (along with
-  // other solvers).
-  EXPECT_THAT(SimpleSolve(Model(std::string(1024, 'x'))),
-              IsOkAndHolds(IsOptimal(0.0)));
-
-  // GLPK refuses control characters (iscntrl()) in the problem name and has a
-  // limit for problem name to 255 characters. Here we validate that the
-  // truncation of the string takes into account the quoting of the control
-  // characters (we pass all 7-bits ASCII characters to make sure they are
-  // accepted).
-  EXPECT_THAT(SimpleSolve(Model(AllAsciiCharacters() + std::string(1024, 'x'))),
-              IsOkAndHolds(IsOptimal(0.0)));
-
-  // GLPK should accept non-ASCII characters (>= 0x80).
-  EXPECT_THAT(
-      SimpleSolve(Model(AllNonAsciiCharacters() + std::string(1024, 'x'))),
-      IsOkAndHolds(IsOptimal(0.0)));
+std::vector<std::string> HardNames() {
+  return {
+      // GLPK and Gurobi have a limit for problem name to 255 characters; here
+      // we use long names to validate that it does not raise any assertion
+      // (along with other solvers).
+      std::string(1024, 'x'),
+      // GLPK refuses control characters (iscntrl()) in the problem name and has
+      // a limit for problem name to 255 characters. Here we validate that the
+      // truncation of the string takes into account the quoting of the control
+      // characters (we pass all 7-bits ASCII characters to make sure they are
+      // accepted).
+      AllAsciiCharacters() + std::string(1024, 'x'),
+      // GLPK should accept non-ASCII characters (>= 0x80).
+      AllNonAsciiCharacters() + std::string(1024, 'x')};
 }
 
-TEST_P(GenericTest, VariableNames) {
-  // See rationales in ModelName for these tests.
-  {
-    Model model;
-    model.AddVariable(-1.0, 2.0, GetParam().integer_variables,
-                      std::string(1024, 'x'));
-    EXPECT_THAT(SimpleSolve(model), IsOkAndHolds(IsOptimal(0.0)));
-  }
-  {
-    Model model;
-    model.AddVariable(-1.0, 2.0, GetParam().integer_variables,
-                      AllAsciiCharacters() + std::string(1024, 'x'));
-    EXPECT_THAT(SimpleSolve(model), IsOkAndHolds(IsOptimal(0.0)));
-  }
-  {
-    Model model;
-    model.AddVariable(-1.0, 2.0, GetParam().integer_variables,
-                      AllNonAsciiCharacters() + std::string(1024, 'x'));
-    EXPECT_THAT(SimpleSolve(model), IsOkAndHolds(IsOptimal(0.0)));
-  }
-  // Test two variables that thanks to the truncation will get the same name are
-  // not an issue for the solver.
-  {
-    Model model;
-    model.AddVariable(-1.0, 2.0, GetParam().integer_variables,
-                      std::string(1024, '-') + 'x');
-    model.AddVariable(-1.0, 2.0, GetParam().integer_variables,
-                      std::string(1024, '-') + 'y');
-    EXPECT_THAT(SimpleSolve(model), IsOkAndHolds(IsOptimal(0.0)));
+TEST_P(GenericTest, HardModelName) {
+  const std::vector<std::string> hard_names = HardNames();
+  for (int i = 0; i < hard_names.size(); ++i) {
+    SCOPED_TRACE(i);
+    EXPECT_THAT(SimpleSolve(Model(hard_names[i])),
+                IsOkAndHolds(IsOptimal(0.0)));
   }
 }
 
-TEST_P(GenericTest, LinearConstraintNames) {
-  // See rationales in ModelName for these tests.
-  {
-    Model model;
-    model.AddLinearConstraint(-1.0, 2.0, std::string(1024, 'x'));
-    EXPECT_THAT(SimpleSolve(model), IsOkAndHolds(IsOptimal(0.0)));
+// Returns a Model that:
+//  * Is within `model_class`
+//  * Has variables with each name in `var_names`
+//  * Has optimal objective value zero.
+absl_nonnull std::unique_ptr<math_opt::Model> ModelWithNamedVars(
+    const TestModelClass model_class,
+    const std::vector<std::string>& var_names) {
+  auto result = std::make_unique<Model>();
+  const bool integer = model_class == TestModelClass::kIp;
+  for (const std::string& var_name : var_names) {
+    const math_opt::Variable st =
+        result->AddVariable(0.0, 1.0, integer, var_name);
+    if (model_class == TestModelClass::kMinCostFlow) {
+      result->AddLinearConstraint(st == 1);
+      result->AddLinearConstraint(-st == -1);
+    }
   }
-  {
-    Model model;
-    model.AddLinearConstraint(-1.0, 2.0,
-                              AllAsciiCharacters() + std::string(1024, 'x'));
-    EXPECT_THAT(SimpleSolve(model), IsOkAndHolds(IsOptimal(0.0)));
+  return result;
+}
+
+TEST_P(GenericTest, HardVariableNames) {
+  const std::vector<std::string> hard_names = HardNames();
+  for (int i = 0; i < hard_names.size(); ++i) {
+    SCOPED_TRACE(i);
+    std::unique_ptr<Model> model =
+        ModelWithNamedVars(GetParam().model_class, {hard_names[i]});
+    EXPECT_THAT(SimpleSolve(*model), IsOkAndHolds(IsOptimal(0.0)));
+    // Test two variables that thanks to the truncation will get the same name
+    // are not an issue for the solver.
+    std::unique_ptr<Model> repeat_names = ModelWithNamedVars(
+        GetParam().model_class, {hard_names[i], hard_names[i] + "xyz"});
+    EXPECT_THAT(SimpleSolve(*repeat_names), IsOkAndHolds(IsOptimal(0.0)));
   }
-  {
-    Model model;
-    model.AddLinearConstraint(-1.0, 2.0,
-                              AllNonAsciiCharacters() + std::string(1024, 'x'));
-    EXPECT_THAT(SimpleSolve(model), IsOkAndHolds(IsOptimal(0.0)));
+}
+
+// Returns a Model that:
+//  * Is within every TestModelClass
+//  * Has linear constraints with each name in `lin_con_names`
+//  * Has optimal objective value zero.
+absl_nonnull std::unique_ptr<math_opt::Model> ModelWithNamedLinearConstraints(
+    std::vector<std::string> lin_con_names) {
+  auto result = std::make_unique<Model>();
+  for (const std::string& n : lin_con_names) {
+    result->AddLinearConstraint(0.0, 0.0, n);
   }
-  // Test two constraints that thanks to the truncation will get the same name
-  // are not an issue for the solver.
-  {
-    Model model;
-    model.AddLinearConstraint(-1.0, 2.0, std::string(1024, '-') + 'x');
-    model.AddLinearConstraint(-1.0, 2.0, std::string(1024, '-') + 'y');
-    EXPECT_THAT(SimpleSolve(model), IsOkAndHolds(IsOptimal(0.0)));
+  return result;
+}
+
+TEST_P(GenericTest, HardLinearConstraintNames) {
+  if (GetParam().solver_type == SolverType::kGlpk &&
+      GetParam().solve_parameters.lp_algorithm == LPAlgorithm::kBarrier) {
+    GTEST_SKIP() << "Bug in GLPK barrier, it errors on this problem w/o names.";
   }
+  if (GetParam().solver_type == SolverType::kEcos) {
+    GTEST_SKIP() << "ECOS solver crashes on this test (segfault).";
+  }
+  const std::vector<std::string> hard_names = HardNames();
+  for (int i = 0; i < hard_names.size(); ++i) {
+    SCOPED_TRACE(i);
+    std::unique_ptr<Model> model =
+        ModelWithNamedLinearConstraints({hard_names[i]});
+    EXPECT_THAT(SimpleSolve(*model), IsOkAndHolds(IsOptimal(0.0)));
+    // Test two linear constraints that thanks to the truncation will get the
+    // same name are not an issue for the solver.
+    std::unique_ptr<Model> repeat_names =
+        ModelWithNamedLinearConstraints({hard_names[i], hard_names[i] + "xyz"});
+    EXPECT_THAT(SimpleSolve(*repeat_names), IsOkAndHolds(IsOptimal(0.0)));
+  }
+}
+
+TEST_P(GenericTest, NamesUnset) {
   // Solvers should accept a ModelProto whose linear_constraints.names repeated
   // field is not set. As of 2023-08-21 this is done by remove_names.
   {
-    Model model;
-    const Variable x =
-        model.AddVariable(0.0, 1.0, GetParam().integer_variables, "x");
-    model.AddLinearConstraint(x == 1.0, "c");
+    auto model = MinimalModelForTestModelClass(GetParam().model_class);
     SolverInitArguments init_args;
     init_args.remove_names = true;
     ASSERT_OK_AND_ASSIGN(
         const SolveResult result,
-        Solve(model, GetParam().solver_type,
+        Solve(*model, GetParam().solver_type,
               {.parameters = GetParam().solve_parameters}, init_args));
-    EXPECT_THAT(result, IsOptimal(0.0));
+    EXPECT_THAT(result,
+                IsOptimal(kMinimalModelForTestModelClassOptimalObjective));
   }
 }
 
@@ -370,11 +354,16 @@ TEST_P(GenericTest, LinearConstraintNames) {
 // Test that the solvers properly translates the MathOpt ids to their internal
 // indices by using a model where indices don't start a zero.
 TEST_P(GenericTest, NonZeroIndices) {
+  if (GetParam().solver_type == SolverType::kMinCostFlow) {
+    GTEST_SKIP()
+        << "MinCostFlow solver is incompatible with this test (b/496243723)";
+  }
+  const bool integer_variables = GetParam().model_class == TestModelClass::kIp;
   // To test that solvers don't truncate by mistake numbers in the whole range
   // of valid id numbers, we force the use of the maximum value by using a input
   // model proto.
   ModelProto base_model_proto;
-  constexpr int64_t kMaxValidId = std::numeric_limits<int64_t>::max() - 1;
+  constexpr int64_t kMaxValidId = kint64max - 1;
   {
     VariablesProto& variables = *base_model_proto.mutable_variables();
     variables.add_ids(kMaxValidId - 1);
@@ -398,8 +387,7 @@ TEST_P(GenericTest, NonZeroIndices) {
   model->DeleteVariable(model->Variables().back());
   model->DeleteLinearConstraint(model->LinearConstraints().back());
 
-  const Variable x =
-      model->AddVariable(0.0, kInf, GetParam().integer_variables, "x");
+  const Variable x = model->AddVariable(0.0, kInf, integer_variables, "x");
   EXPECT_EQ(x.id(), kMaxValidId);
 
   model->Maximize(x);
@@ -419,6 +407,11 @@ testing::Matcher<absl::StatusOr<SolveResult>> StatusIsInvertedBounds(
 }
 
 TEST_P(GenericTest, InvertedVariableBounds) {
+  if (GetParam().solver_type == SolverType::kMinCostFlow) {
+    GTEST_SKIP()
+        << "MinCostFlow solver is incompatible with this test (b/496264107)";
+  }
+  const bool integer_variables = GetParam().model_class == TestModelClass::kIp;
   const SolveArguments solve_args = {.parameters = GetParam().solve_parameters};
 
   // First test with bounds inverted at the construction of the solver.
@@ -442,7 +435,7 @@ TEST_P(GenericTest, InvertedVariableBounds) {
     }
 
     const Variable x = model.AddVariable(/*lower_bound=*/lb, /*upper_bound=*/ub,
-                                         GetParam().integer_variables, "x");
+                                         integer_variables, "x");
     ASSERT_EQ(x.id(), kXId);
 
     model.Maximize(3.0 * x);
@@ -480,9 +473,9 @@ TEST_P(GenericTest, InvertedVariableBounds) {
       model.DeleteVariable(model.AddVariable());
     }
 
-    const Variable x = model.AddVariable(/*lower_bound=*/initial_lb,
-                                         /*upper_bound=*/initial_ub,
-                                         GetParam().integer_variables, "x");
+    const Variable x =
+        model.AddVariable(/*lower_bound=*/initial_lb,
+                          /*upper_bound=*/initial_ub, integer_variables, "x");
     ASSERT_EQ(x.id(), kXId);
 
     model.Maximize(3.0 * x);
@@ -528,9 +521,8 @@ TEST_P(GenericTest, InvertedVariableBounds) {
       model.DeleteVariable(model.AddVariable());
     }
 
-    const Variable x =
-        model.AddVariable(/*lower_bound=*/3.0, /*upper_bound=*/4.0,
-                          GetParam().integer_variables, "x");
+    const Variable x = model.AddVariable(
+        /*lower_bound=*/3.0, /*upper_bound=*/4.0, integer_variables, "x");
     ASSERT_EQ(x.id(), kXId);
 
     model.Maximize(3.0 * x);
@@ -544,7 +536,7 @@ TEST_P(GenericTest, InvertedVariableBounds) {
     // Test the update using a new variable with inverted bounds (in case the
     // update code path is not identical to the NewIncrementalSolver() one).
     const Variable y = model.AddVariable(/*lower_bound=*/lb, /*upper_bound=*/ub,
-                                         GetParam().integer_variables, "y");
+                                         integer_variables, "y");
     model.Maximize(3.0 * x + y);
     ASSERT_OK(solver->Update());
     EXPECT_THAT(solver->SolveWithoutUpdate(solve_args),
@@ -553,14 +545,18 @@ TEST_P(GenericTest, InvertedVariableBounds) {
 }
 
 TEST_P(GenericTest, InvertedLinearConstraintBounds) {
+  if (GetParam().solver_type == SolverType::kMinCostFlow) {
+    GTEST_SKIP()
+        << "MinCostFlow solver is incompatible with this test (b/496264107)";
+  }
+  const bool integer_variables = GetParam().model_class == TestModelClass::kIp;
   const SolveArguments solve_args = {.parameters = GetParam().solve_parameters};
 
   // First test with bounds inverted at the construction of the solver.
   {
     Model model;
-    const Variable x =
-        model.AddVariable(/*lower_bound=*/0.0, /*upper_bound=*/10.0,
-                          GetParam().integer_variables, "x");
+    const Variable x = model.AddVariable(
+        /*lower_bound=*/0.0, /*upper_bound=*/10.0, integer_variables, "x");
 
     // Here we add some constraints that we immediately remove so that the id of
     // `u` below won't be 0. This will help making sure bugs in conversion from
@@ -587,9 +583,8 @@ TEST_P(GenericTest, InvertedLinearConstraintBounds) {
   // Then test with bounds inverted during an update.
   {
     Model model;
-    const Variable x =
-        model.AddVariable(/*lower_bound=*/0.0, /*upper_bound=*/10.0,
-                          GetParam().integer_variables, "x");
+    const Variable x = model.AddVariable(
+        /*lower_bound=*/0.0, /*upper_bound=*/10.0, integer_variables, "x");
 
     // Here we add some constraints that we immediately remove so that the id of
     // `u` below won't be 0. This will help making sure bugs in conversion from
@@ -622,9 +617,8 @@ TEST_P(GenericTest, InvertedLinearConstraintBounds) {
   // Finally test with an update adding a constraint with inverted bounds.
   {
     Model model;
-    const Variable x =
-        model.AddVariable(/*lower_bound=*/0.0, /*upper_bound=*/10.0,
-                          GetParam().integer_variables, "x");
+    const Variable x = model.AddVariable(
+        /*lower_bound=*/0.0, /*upper_bound=*/10.0, integer_variables, "x");
 
     // Here we add some constraints that we immediately remove so that the id of
     // `u` below won't be 0. This will help making sure bugs in conversion from

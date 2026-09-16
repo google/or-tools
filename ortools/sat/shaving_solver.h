@@ -60,12 +60,12 @@ class ObjectiveShavingSolver : public SubSolver {
   NeighborhoodGeneratorHelper* helper_;
   SharedClasses* shared_;
 
-  // Allow to control the local time limit in addition to a potential user
+  // Allows controlling the local time limit in addition to a potential user-
   // defined external Boolean.
   std::atomic<bool> stop_current_chunk_;
 
   // Local singleton repository and presolved local model.
-  std::unique_ptr<Model> local_sat_model_;
+  std::unique_ptr<Model> local_model_;
   std::unique_ptr<google::protobuf::Arena> arena_;
   CpModelProto* local_proto_;
 
@@ -95,7 +95,6 @@ class VariablesShavingSolver : public SubSolver {
   };
 
   VariablesShavingSolver(const SatParameters& local_parameters,
-                         NeighborhoodGeneratorHelper* helper,
                          SharedClasses* shared);
 
   ~VariablesShavingSolver() override;
@@ -133,7 +132,7 @@ class VariablesShavingSolver : public SubSolver {
   SharedClasses* shared_;
   int shared_bounds_id_ = -1;
 
-  // Allow to control the local time limit in addition to a potential user
+  // Allows controlling the local time limit in addition to a potential user-
   // defined external Boolean.
   std::atomic<bool> stop_current_chunk_;
 

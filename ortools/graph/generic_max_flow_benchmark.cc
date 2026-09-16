@@ -14,7 +14,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <memory>
-#include <optional>
 #include <random>
 #include <vector>
 
@@ -129,10 +128,9 @@ struct MaxFlowSolver {
 };
 
 template <typename Graph>
-void FullAssignment(std::optional<FlowQuantity> unused,
-                    typename MaxFlowSolver<Graph>::Solver f,
-                    typename Graph::NodeIndex num_tails,
-                    typename Graph::NodeIndex num_heads) {
+FlowQuantity FullAssignment(typename MaxFlowSolver<Graph>::Solver f,
+                            typename Graph::NodeIndex num_tails,
+                            typename Graph::NodeIndex num_heads) {
   typename Graph::Builder graph_builder;
   GenerateCompleteGraphWithSourceAndSink<Graph>(num_tails, num_heads,
                                                 graph_builder);
@@ -142,21 +140,14 @@ void FullAssignment(std::optional<FlowQuantity> unused,
       graph.get(), graph->num_nodes() - 2, graph->num_nodes() - 1));
   SetUpNetworkData(arc_capacity, max_flow.get());
 
-  // In a complete graph we should always reach the maximum flow.
-  const FlowQuantity flow = f(max_flow.get());
-  CHECK_EQ(std::min(num_tails, num_heads), flow);
+  return f(max_flow.get());
 }
 
 template <typename Graph>
-void PartialRandomAssignment(std::optional<FlowQuantity> expected_flow,
-                             typename MaxFlowSolver<Graph>::Solver f,
-                             typename Graph::NodeIndex num_tails,
-                             typename Graph::NodeIndex num_heads) {
-  absl::BitGen absl_random;
-  std::mt19937 mt_random(0);
-  absl::BitGenRef random = expected_flow != std::nullopt
-                               ? absl::BitGenRef(mt_random)
-                               : absl::BitGenRef(absl_random);
+FlowQuantity PartialRandomAssignment(typename MaxFlowSolver<Graph>::Solver f,
+                                     typename Graph::NodeIndex num_tails,
+                                     typename Graph::NodeIndex num_heads) {
+  std::mt19937 random(0);
 
   const typename Graph::NodeIndex kDegree = 3;
   typename Graph::Builder graph_builder;
@@ -173,23 +164,14 @@ void PartialRandomAssignment(std::optional<FlowQuantity> expected_flow,
       graph.get(), graph->num_nodes() - 2, graph->num_nodes() - 1));
   SetUpNetworkData(arc_capacity, max_flow.get());
 
-  if (expected_flow != std::nullopt) {
-    const FlowQuantity flow = f(max_flow.get());
-    CHECK_EQ(flow, *expected_flow);
-    return;
-  }
+  return f(max_flow.get());
 }
 
 template <typename Graph>
-void PartialRandomFlow(std::optional<FlowQuantity> expected_flow,
-                       typename MaxFlowSolver<Graph>::Solver f,
-                       typename Graph::NodeIndex num_tails,
-                       typename Graph::NodeIndex num_heads) {
-  absl::BitGen absl_random;
-  std::mt19937 mt_random(0);
-  absl::BitGenRef random = expected_flow != std::nullopt
-                               ? absl::BitGenRef(mt_random)
-                               : absl::BitGenRef(absl_random);
+FlowQuantity PartialRandomFlow(typename MaxFlowSolver<Graph>::Solver f,
+                               typename Graph::NodeIndex num_tails,
+                               typename Graph::NodeIndex num_heads) {
+  std::mt19937 random(0);
 
   const typename Graph::NodeIndex kDegree = 10;
   const FlowQuantity kCapacityRange = 10000;
@@ -209,23 +191,14 @@ void PartialRandomFlow(std::optional<FlowQuantity> expected_flow,
       graph.get(), graph->num_nodes() - 2, graph->num_nodes() - 1));
   SetUpNetworkData(arc_capacity, max_flow.get());
 
-  if (expected_flow != std::nullopt) {
-    FlowQuantity flow = f(max_flow.get());
-    CHECK_EQ(flow, *expected_flow);
-    return;
-  }
+  return f(max_flow.get());
 }
 
 template <typename Graph>
-void FullRandomFlow(std::optional<FlowQuantity> expected_flow,
-                    typename MaxFlowSolver<Graph>::Solver f,
-                    typename Graph::NodeIndex num_tails,
-                    typename Graph::NodeIndex num_heads) {
-  absl::BitGen absl_random;
-  std::mt19937 mt_random(0);
-  absl::BitGenRef random = expected_flow != std::nullopt
-                               ? absl::BitGenRef(mt_random)
-                               : absl::BitGenRef(absl_random);
+FlowQuantity FullRandomFlow(typename MaxFlowSolver<Graph>::Solver f,
+                            typename Graph::NodeIndex num_tails,
+                            typename Graph::NodeIndex num_heads) {
+  std::mt19937 random(0);
 
   const FlowQuantity kCapacityRange = 10000;
   typename Graph::Builder graph_builder;
@@ -244,18 +217,16 @@ void FullRandomFlow(std::optional<FlowQuantity> expected_flow,
       graph.get(), graph->num_nodes() - 2, graph->num_nodes() - 1));
   SetUpNetworkData(arc_capacity, max_flow.get());
 
-  if (expected_flow != std::nullopt) {
-    FlowQuantity flow = f(max_flow.get());
-    CHECK_EQ(flow, *expected_flow);
-    return;
-  }
+  return f(max_flow.get());
 }
 
 template <typename Graph>
 static void BM_FullRandomAssignment(benchmark::State& state) {
   const int kSize = 3000;
   for (auto _ : state) {
-    FullAssignment<Graph>(std::nullopt, SolveMaxFlow, kSize, kSize);
+    // In a complete graph we should always reach the maximum flow.
+    const auto flow = FullAssignment<Graph>(SolveMaxFlow, kSize, kSize);
+    CHECK_EQ(flow, kSize);
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) * kSize);
 }
@@ -264,7 +235,9 @@ template <typename Graph>
 static void BM_PartialRandomAssignment(benchmark::State& state) {
   const int kSize = 10100;
   for (auto _ : state) {
-    PartialRandomAssignment<Graph>(9512, SolveMaxFlow, kSize, kSize);
+    const auto flow =
+        PartialRandomAssignment<Graph>(SolveMaxFlow, kSize, kSize);
+    CHECK_EQ(flow, 9512);
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) * kSize);
 }
@@ -273,7 +246,8 @@ template <typename Graph>
 static void BM_PartialRandomFlow(benchmark::State& state) {
   const int kSize = 800;
   for (auto _ : state) {
-    PartialRandomFlow<Graph>(3939172, SolveMaxFlow, kSize, kSize);
+    const auto flow = PartialRandomFlow<Graph>(SolveMaxFlow, kSize, kSize);
+    CHECK_EQ(flow, 3939172);
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) * kSize);
 }
@@ -282,7 +256,8 @@ template <typename Graph>
 static void BM_FullRandomFlow(benchmark::State& state) {
   const int kSize = 800;
   for (auto _ : state) {
-    FullRandomFlow<Graph>(3952652, SolveMaxFlow, kSize, kSize);
+    const auto flow = FullRandomFlow<Graph>(SolveMaxFlow, kSize, kSize);
+    CHECK_EQ(flow, 3952652);
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) * kSize);
 }

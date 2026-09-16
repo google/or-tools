@@ -43,13 +43,13 @@ performance and numerical stability. See also
 
 <!-- Links used throughout the document. -->
 [background]: https://developers.google.com/optimization/lp/pdlp_math
-[primal_dual_hybrid_gradient_h]: ../pdlp/primal_dual_hybrid_gradient.h
-[quadratic_program_h]: ../pdlp/quadratic_program.h
-[quadratic_program_io_h]: ../pdlp/quadratic_program_io.h
-[sharded_quadratic_program_h]: ../pdlp/sharded_quadratic_program.h
-[sharder_h]: ../pdlp/sharder.h
-[scheduler_h]: ../pdlp/scheduler.h
-[iteration_stats_h]: ../pdlp/iteration_stats.h
-[termination_h]: ../pdlp/termination.h
-[solvers_proto]: ../pdlp/solvers.proto
-[solve_log_proto]: ../pdlp/solve_log.proto
+[primal_dual_hybrid_gradient_h]: /ortools/pdlp/primal_dual_hybrid_gradient.h
+[quadratic_program_h]: /ortools/pdlp/quadratic_program.h
+[quadratic_program_io_h]: /ortools/pdlp/quadratic_program_io.h
+[sharded_quadratic_program_h]: /ortools/pdlp/sharded_quadratic_program.h
+[sharder_h]: /ortools/pdlp/sharder.h
+[scheduler_h]: /ortools/pdlp/scheduler.h
+[iteration_stats_h]: /ortools/pdlp/iteration_stats.h
+[termination_h]: /ortools/pdlp/termination.h
+[solvers_proto]: /ortools/pdlp/solvers.proto
+[solve_log_proto]: /ortools/pdlp/solve_log.proto

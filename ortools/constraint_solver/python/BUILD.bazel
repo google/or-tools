@@ -14,18 +14,19 @@
 # Description: python wrapping of the code in ../
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@pybind11_bazel//:build_defs.bzl", "pybind_extension", "pybind_library")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@pybind11_bazel//:build_defs.bzl", "pybind_library")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
+load("//bazel:or_cc_rules.bzl", "or_cc_library")
+load("//bazel:or_pybind_rules.bzl", "or_pybind_extension")
 
-cc_library(
+or_cc_library(
     name = "constraint_solver_doc",
     hdrs = ["constraint_solver_doc.h"],
     visibility = ["//visibility:public"],
 )
 
-pybind_extension(
+or_pybind_extension(
     name = "constraint_solver",
     srcs = ["constraint_solver.cc"],
     visibility = ["//visibility:public"],
@@ -36,7 +37,7 @@ pybind_extension(
         "//ortools/constraint_solver:reversible_data",
         "//ortools/constraint_solver:reversible_engine",
         "//ortools/constraint_solver:search_limit_cc_proto",
-        "//ortools/util:piecewise_linear_function",
+        "//ortools/constraint_solver:solver_parameters_cc_proto",
         "//ortools/util:tuple_set",
         "//ortools/util/python:piecewise_linear_function_deps",
         "@abseil-cpp//absl/cleanup",
@@ -57,7 +58,7 @@ pybind_library(
         "//ortools/constraint_solver:reversible_data",
         "//ortools/constraint_solver:reversible_engine",
         "//ortools/constraint_solver:search_limit_cc_proto",
-        "//ortools/util:piecewise_linear_function",
+        "//ortools/constraint_solver:solver_parameters_cc_proto",
         "//ortools/util:tuple_set",
         "//ortools/util/python:piecewise_linear_function_deps",
         "@abseil-cpp//absl/cleanup",

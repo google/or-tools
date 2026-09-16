@@ -191,7 +191,7 @@ bool TimeTableEdgeFinding::TimeTableEdgeFindingPass() {
 
   // TODO(user): Is it possible to have a 'higher' mandatory profile using
   // the min energy instead of the demand_min * size_min? How can we incorporate
-  // this extra energy in the mandatory profile ?
+  // this extra energy in the mandatory profile?
   BuildTimeTable();
   const auto& by_start_min = helper_->TaskByIncreasingStartMin();
 
@@ -275,7 +275,7 @@ bool TimeTableEdgeFinding::TimeTableEdgeFindingPass() {
             demand_min;
 
         // TODO(user): There is no point setting max_task if its start min
-        // is already bigger that what we can push. Maybe we can exploit that?
+        // is already bigger than what we can push. Maybe we can exploit that?
         if (extra_energy > extra_energy_required_by_max_task) {
           if (max_task != -1 && free_energy_of_max_task_in_window > 0) {
             reason_tasks_partially_included_in_window_.push_back(max_task);
@@ -300,7 +300,7 @@ bool TimeTableEdgeFinding::TimeTableEdgeFindingPass() {
       // overloaded, i.e., available_energy < 0.
       //
       // We also defensively abort if the demand_min is 0.
-      // This may happen along a energy_min > 0 if the literals in the
+      // This may happen along an energy_min > 0 if the literals in the
       // decomposed_energy have been fixed, and not yet propagated to the demand
       // affine expression.
       if (max_task == -1 || demands_->DemandMin(max_task) == 0) continue;
@@ -324,7 +324,7 @@ bool TimeTableEdgeFinding::TimeTableEdgeFindingPass() {
         //
         // TODO(user): We currently only do that if we are not about to push the
         // start as we assume the start push is just stronger. Maybe we should
-        // do it in more situation?
+        // do it in more situations?
         if (energy_free_[max_task] > available_energy &&
             helper_->EndMin(max_task) <= window_max) {
           FillEnergyInWindowReason(window_min, window_max, max_task);
@@ -338,9 +338,9 @@ bool TimeTableEdgeFinding::TimeTableEdgeFindingPass() {
       // Compute the length of the mandatory subpart of max_task that should be
       // considered as available.
       //
-      // TODO(user): Because this use updated bounds, it might be more than what
-      // we accounted for in the precomputation. This is correct but could be
-      // improved upon.
+      // TODO(user): Because this uses updated bounds, it might be more than
+      // what we accounted for in the precomputation. This is correct but could
+      // be improved upon.
       const IntegerValue mandatory_size_in_window =
           std::max(IntegerValue(0),
                    std::min(window_max, helper_->EndMin(max_task)) -
@@ -363,8 +363,8 @@ bool TimeTableEdgeFinding::TimeTableEdgeFindingPass() {
 
         // We also need the explanation for extra_energy_required_by_max_task.
         //
-        // TODO(user): This might not be enough, the whole logic probably need
-        // to be inspected again as task with variable size are tricky.
+        // TODO(user): This might not be enough, the whole logic probably needs
+        // to be inspected again as tasks with variable size are tricky.
         helper_->AddSizeMinReason(max_task);
 
         if (!helper_->IncreaseStartMin(max_task, new_start)) return false;
@@ -403,8 +403,8 @@ void TimeTableEdgeFinding::FillEnergyInWindowReason(IntegerValue window_min,
 
   // Tasks contributing to the free energy in [window_min, window_max].
   //
-  // TODO(user): If a task appears in both, we could avoid adding twice the
-  // same things, but the core solver should merge duplicates anyway.
+  // TODO(user): If a task appears in both, we could avoid adding the same
+  // things twice, but the core solver should merge duplicates anyway.
   for (const int t : reason_tasks_fully_included_in_window_) {
     DCHECK_NE(t, task_index);
     DCHECK(helper_->IsPresent(t));

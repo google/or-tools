@@ -26,7 +26,6 @@
 // A random problem generator is also included.
 
 #include <algorithm>
-#include <atomic>
 #include <cstdint>
 #include <cstdlib>
 #include <random>
@@ -49,9 +48,10 @@
 #include "ortools/graph/shortest_paths.h"
 #include "ortools/graph_base/graph.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/sorted_interval_list.h"
-#include "ortools/util/time_limit.h"
 
 // ----- Data Generator -----
 ABSL_FLAG(int, clients, 0,

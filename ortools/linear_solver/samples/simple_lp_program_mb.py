@@ -67,7 +67,9 @@ def main():
         print("x =", solver.value(x))
         print("y =", solver.value(y))
 
-        print("dual_value(ct) =", solver.dual_value(ct))
+        print(
+            "dual_value(ct) =", solver.dual_value(ct)
+        )  # pyrefly: ignore[bad-argument-type]
         print("reduced_cost(x) =", solver.reduced_cost(x))
     else:
         print("The problem does not have an optimal solution.")

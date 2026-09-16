@@ -14,6 +14,7 @@
 #include "ortools/util/sorted_interval_list.h"
 
 #include <cstdint>
+#include <vector>
 
 #include "absl/strings/str_cat.h"
 #include "ortools/util/python/sorted_interval_list_doc.h"
@@ -28,6 +29,8 @@ PYBIND11_MODULE(sorted_interval_list, m) {
   pybind11::class_<Domain>(m, "Domain", DOC(operations_research, Domain))
       .def_static("all_values", &Domain::AllValues,
                   DOC(operations_research, Domain, AllValues))
+      .def_static(
+          "empty", []() { return Domain(); }, "Returns an empty domain.")
       .def_static("greater_or_equal", &Domain::GreaterOrEqual, arg("value"),
                   DOC(operations_research, Domain, GreaterOrEqual))
       .def_static("from_values", &Domain::FromValues,
@@ -48,6 +51,24 @@ PYBIND11_MODULE(sorted_interval_list, m) {
            DOC(operations_research, Domain, Complement))
       .def("contains", &Domain::Contains,
            DOC(operations_research, Domain, Contains), arg("value"))
+      .def(
+          "continuous_multiplication_by",
+          [](const Domain& d1, const Domain& d2) {
+            return d1.ContinuousMultiplicationBy(d2);
+          },
+          DOC(operations_research, Domain, ContinuousMultiplicationBy),
+          arg("domain"))
+      .def(
+          "continuous_multiplication_by",
+          [](const Domain& d1, int64_t coeff) {
+            return d1.ContinuousMultiplicationBy(coeff);
+          },
+          DOC(operations_research, Domain, ContinuousMultiplicationBy),
+          arg("coeff"))
+      .def("division_by", &Domain::DivisionBy,
+           DOC(operations_research, Domain, DivisionBy), arg("coeff"))
+      .def("division_by_superset", &Domain::DivisionBySuperset,
+           DOC(operations_research, Domain, DivisionBySuperset), arg("divisor"))
       .def("flattened_intervals", &Domain::FlattenedIntervals,
            DOC(operations_research, Domain, FlattenedIntervals))
       .def("intersection_with", &Domain::IntersectionWith,
@@ -63,8 +84,25 @@ PYBIND11_MODULE(sorted_interval_list, m) {
            DOC(operations_research, Domain, Negation))
       .def("overlaps_with", &Domain::OverlapsWith,
            DOC(operations_research, Domain, OverlapsWith), arg("domain"))
+      .def("positive_modulo_by_superset", &Domain::PositiveModuloBySuperset,
+           DOC(operations_research, Domain, PositiveModuloBySuperset),
+           arg("modulo"))
       .def("union_with", &Domain::UnionWith,
            DOC(operations_research, Domain, UnionWith), arg("domain"))
+      .def("value_at_or_before", &Domain::ValueAtOrBefore,
+           DOC(operations_research, Domain, ValueAtOrBefore), arg("value"))
+      .def("value_at_or_after", &Domain::ValueAtOrAfter,
+           DOC(operations_research, Domain, ValueAtOrAfter), arg("value"))
+      .def(
+          "values",
+          [](const Domain& domain) {
+            std::vector<int64_t> values;
+            for (int64_t value : domain.Values()) {
+              values.push_back(value);
+            }
+            return values;
+          },
+          DOC(operations_research, Domain, Values))
       .def("__eq__", &Domain::operator==)
       .def("__str__", &Domain::ToString)
       .def("__repr__",

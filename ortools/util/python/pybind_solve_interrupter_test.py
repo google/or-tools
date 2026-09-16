@@ -90,6 +90,14 @@ class PybindPySolveInterrupterTest(absltest.TestCase):
         self.assertTrue(pybind_solve_interrupter_testing.IsInterrupted(source))
         self.assertTrue(pybind_solve_interrupter_testing.IsInterrupted(target))
 
+    def test_add_target_triggered_interrupter(self) -> None:
+        source = pybind_solve_interrupter.PySolveInterrupter()
+        target = pybind_solve_interrupter.PySolveInterrupter()
+        source.interrupt()
+        source.add_trigger_target(target)
+        self.assertTrue(pybind_solve_interrupter_testing.IsInterrupted(source))
+        self.assertTrue(pybind_solve_interrupter_testing.IsInterrupted(target))
+
     def test_remove_existing_target(self) -> None:
         source = pybind_solve_interrupter.PySolveInterrupter()
         target = pybind_solve_interrupter.PySolveInterrupter()

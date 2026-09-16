@@ -29,7 +29,7 @@
 namespace operations_research {
 namespace sat {
 
-// A variable X is say to dominate a variable Y if, from any feasible solution,
+// A variable X is said to dominate a variable Y if, from any feasible solution,
 // doing X++ and Y-- is also feasible (modulo the domain of X and Y) and has the
 // same or a better objective value.
 //
@@ -38,23 +38,23 @@ namespace sat {
 // We reuse both ref / Negated(ref) and translate that to IntegerVariable for
 // indexing vectors.
 //
-// Once detected, dominance relation can lead to more propagation. Note however,
-// that we will loose feasible solution that are dominated by better solutions.
-// In particular, in a linear constraint sum coeff * Xi <= rhs with positive
-// coeff, if an X is dominated by a set of other variable in the constraint,
-// then its upper bound can be propagated assuming the dominating variables are
-// at their upper bound. This can in many case result in X being fixed to its
-// lower bound.
+// Once detected, dominance relations can lead to more propagation. Note
+// however, that we will lose feasible solutions that are dominated by better
+// solutions. In particular, in a linear constraint sum coeff * Xi <= rhs with
+// positive coeff, if an X is dominated by a set of other variables in the
+// constraint, then its upper bound can be propagated assuming the dominating
+// variables are at their upper bound. This can in many cases result in X being
+// fixed to its lower bound.
 //
-// TODO(user): We have a lot of benchmarks and tests that shows that we don't
-// report wrong relations, but we lack unit test that make sure we don't miss
+// TODO(user): We have a lot of benchmarks and tests that show that we don't
+// report wrong relations, but we lack unit tests that make sure we don't miss
 // any. Try to improve the situation.
 class VarDomination {
  public:
   VarDomination() = default;
 
   // This is the translation used from "ref" to IntegerVariable. The API
-  // understand the cp_model.proto ref, but internally we only store
+  // understands the cp_model.proto ref, but internally we only store
   // IntegerVariable.
   static IntegerVariable RefToIntegerVariable(int ref) {
     return RefIsPositive(ref) ? IntegerVariable(2 * ref)
@@ -70,10 +70,10 @@ class VarDomination {
   void Reset(int num_variables);
 
   // These functions are used to encode all of our constraints.
-  // The algorithm work in two passes, so one should do:
+  // The algorithm works in two passes, so one should do:
   // - 1/ Convert all problem constraints to one or more calls
   // - 2/ Call EndFirstPhase()
-  // - 3/ Redo 1. Only the one sided constraint need to be processed again. But
+  // - 3/ Redo 1. Only the one-sided constraints need to be processed again. But
   //      calling the others will just do nothing, so it is fine too.
   // - 4/ Call EndSecondPhase()
   //
@@ -82,9 +82,9 @@ class VarDomination {
   // - To encode terms >= cte, one should call ActivityShouldNotDecrease()
   // - To encode terms <= cte, one should call ActivityShouldNotIncrease()
   //
-  // The coeffs vector can be left empty, in which case all variable are assumed
-  // to have the same coefficients. CanOnlyDominateEachOther() is basically the
-  // same as ActivityShouldNotChange() without any coefficients.
+  // The coeffs vector can be left empty, in which case all variables are
+  // assumed to have the same coefficients. CanOnlyDominateEachOther() is
+  // basically the same as ActivityShouldNotChange() without any coefficients.
   //
   // Note(user): It is better complexity wise to first refine the underlying
   // partition as much as possible, and then process all
@@ -106,7 +106,7 @@ class VarDomination {
   // ActivityShouldNotDecrease(). And finally call EndSecondPhase() before
   // querying the domination information.
   //
-  // If EndFirstPhase() return false, there is no point continuing.
+  // If EndFirstPhase() returns false, there is no point continuing.
   bool EndFirstPhase();
   void EndSecondPhase();
 
@@ -116,7 +116,7 @@ class VarDomination {
   bool CanFreelyDecrease(int ref) const;
   bool CanFreelyDecrease(IntegerVariable var) const;
 
-  // Returns a set of variable dominating the given ones. Note that to keep the
+  // Returns a set of variables dominating the given ones. Note that to keep the
   // algo efficient, this might not include all the possible dominations.
   //
   // Note: we never include as part of the dominating candidate variables that
@@ -125,7 +125,7 @@ class VarDomination {
   absl::Span<const IntegerVariable> DominatingVariables(
       IntegerVariable var) const;
 
-  // Returns readable string with the possible valid combinations of the form
+  // Returns a readable string with the possible valid combinations of the form
   // (var++/--, dom++/--) to facilitate debugging.
   std::string DominationDebugString(IntegerVariable var) const;
 
@@ -140,7 +140,7 @@ class VarDomination {
     }
   };
 
-  // This refine the partition can_dominate_partition_ with the given set.
+  // This refines the partition can_dominate_partition_ with the given set.
   void RefinePartition(std::vector<int>* vars);
 
   // Convert the input from the public API into tmp_ranks_.
@@ -163,28 +163,28 @@ class VarDomination {
   // Debug function.
   void CheckUsingTempRanks();
 
-  // Starts at zero on Reset(), move to one on EndFirstPhase() and to 2 on
-  // EndSecondPhase(). This is used for debug checks and to control what happen
+  // Starts at zero on Reset(), moves to one on EndFirstPhase() and to 2 on
+  // EndSecondPhase(). This is used for debug checks and to control what happens
   // on the constraint processing functions.
   int phase_ = 0;
 
-  // The variables will be sorted by non-decreasking rank. The rank is also the
+  // The variables will be sorted by non-decreasing rank. The rank is also the
   // start of the first variable in tmp_ranks_ with this rank.
   //
   // Note that the rank should be int, but to reuse the same vector when we
   // construct it, we need int64_t. See FillTempRanks().
   std::vector<IntegerVariableWithRank> tmp_ranks_;
 
-  // This do not change after EndFirstPhase().
+  // This does not change after EndFirstPhase().
   //
-  // We will add to the Dynamic partition, a set of subset S, each meaning that
+  // We will add to the Dynamic partition, a set of subsets S, each meaning that
   // any variable in S can only dominate or be dominated by another variable in
   // S.
   std::vector<int> tmp_vars_;
   std::unique_ptr<SimpleDynamicPartition> partition_;
   util_intops::StrongVector<IntegerVariable, bool> can_freely_decrease_;
 
-  // For all one sided constraints, we keep the bitmap of constraint indices
+  // For all one-sided constraints, we keep the bitmap of constraint indices
   // modulo 64 that block on the lower side each variable.
   int64_t ct_index_for_signature_ = 0;
   util_intops::StrongVector<IntegerVariable, uint64_t> block_down_signatures_;
@@ -194,13 +194,13 @@ class VarDomination {
   util_intops::StrongVector<IntegerVariable, int> tmp_var_to_rank_;
 
   // We don't use absl::Span() because the underlying buffer can be resized.
-  // This however serve the same purpose.
+  // This however serves the same purpose.
   struct IntegerVariableSpan {
     int start = 0;
     int size = 0;
   };
 
-  // This hold the first phase best candidate.
+  // This holds the first phase best candidates.
   // Warning, the initial candidates span can overlap in the shared_buffer_.
   std::vector<IntegerVariable> shared_buffer_;
   util_intops::StrongVector<IntegerVariable, bool> has_initial_candidates_;
@@ -208,7 +208,7 @@ class VarDomination {
       initial_candidates_;
 
   // This will hold the final result.
-  // Buffer with independent content for each vars.
+  // Buffer with independent content for each var.
   std::vector<IntegerVariable> buffer_;
   std::vector<IntegerVariable> other_buffer_;
   util_intops::StrongVector<IntegerVariable, IntegerVariableSpan>
@@ -216,7 +216,7 @@ class VarDomination {
 };
 
 // This detects variables that can move freely in one direction, or that can
-// move freely as long as their value do not cross a bound.
+// move freely as long as their values do not cross a bound.
 //
 // TODO(user): This is actually an important step to do before scaling as it can
 // usually reduce really large bounds!
@@ -230,7 +230,7 @@ class DualBoundStrengthening {
     locking_ct_index_.assign(2 * num_variables, -1);
   }
 
-  // All constraints should be mapped to one of more call to these functions.
+  // All constraints should be mapped to one or more calls to these functions.
   void CannotDecrease(absl::Span<const int> refs, int ct_index = -1);
   void CannotIncrease(absl::Span<const int> refs, int ct_index = -1);
   void CannotMove(absl::Span<const int> refs, int ct_index = -1);
@@ -245,10 +245,10 @@ class DualBoundStrengthening {
   // Once ALL constraints have been processed, call this to fix variables or
   // reduce their domain if possible.
   //
-  // Note that this also tighten some constraint that are the only one blocking
-  // in one direction. Currently we only do that for implication, so that if we
-  // have two Booleans such that a + b <= 1 we transform that to = 1 and we
-  // remove one variable since we have now an equivalence relation.
+  // Note that this also tightens some constraints that are the only ones
+  // blocking in one direction. Currently we only do that for implication, so
+  // that if we have two Booleans such that a + b <= 1 we transform that to = 1
+  // and we remove one variable since we now have an equivalence relation.
   bool Strengthen(PresolveContext* context);
 
   // The given ref can always freely decrease until the returned value.
@@ -267,15 +267,15 @@ class DualBoundStrengthening {
                               : IntegerVariable(2 * NegatedRef(ref) + 1);
   }
 
-  // Starts with kMaxIntegerValue, and decrease as constraints are processed.
+  // Starts with kMaxIntegerValue, and decreases as constraints are processed.
   util_intops::StrongVector<IntegerVariable, IntegerValue>
       can_freely_decrease_until_;
 
-  // How many times can_freely_decrease_until_[var] was set by a constraints.
+  // How many times can_freely_decrease_until_[var] was set by a constraint.
   // If only one constraint is blocking, we can do more presolve.
   util_intops::StrongVector<IntegerVariable, int> num_locks_;
 
-  // If num_locks_[var] == 1, this will be the unique constraint that block var
+  // If num_locks_[var] == 1, this will be the unique constraint that blocks var
   // in this direction. Note that it can be set to -1 if this wasn't recorded.
   util_intops::StrongVector<IntegerVariable, int> locking_ct_index_;
 
@@ -290,11 +290,11 @@ void ScanModelForDominanceDetection(PresolveContext& context,
 // Once detected, exploit the dominance relations that appear in the same
 // constraint. This does a full scan of the model.
 //
-// Return false if the problem is infeasible.
+// Returns false if the problem is infeasible.
 bool ExploitDominanceRelations(const VarDomination& var_domination,
                                PresolveContext* context);
 
-// Scan the model so that dual_bound_strengthening.Strenghten() works.
+// Scan the model so that dual_bound_strengthening.Strengthen() works.
 void ScanModelForDualBoundStrengthening(
     const PresolveContext& context,
     DualBoundStrengthening* dual_bound_strengthening);

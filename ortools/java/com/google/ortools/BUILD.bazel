@@ -11,11 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_java//java:java_library.bzl", "java_library")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary")
 
 # Utilities to load native libraries in java or-tools.
-cc_binary(
+or_cc_binary(
     name = "libjniortools.so",
     linkshared = True,
     target_compatible_with = select({
@@ -28,14 +28,16 @@ cc_binary(
         "//ortools/graph/java:graph_cc",
         "//ortools/init/java:init_cc",
         "//ortools/linear_solver/java:modelbuilder_cc",
+        "//ortools/math_opt/core/java:solver_swig_cc",
         "//ortools/sat/java:cp_model_proto_cc",
         "//ortools/sat/java:sat_cc",
+        "//ortools/util/java:java_swig_solve_interrupter_swig_cc",
         "//ortools/util/java:sorted_interval_list_cc",
         "//ortools/util/java:wrappers_test_message_cc",
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "libjniortools.dylib",
     linkshared = True,
     target_compatible_with = select({
@@ -44,19 +46,21 @@ cc_binary(
     }),
     visibility = ["//visibility:public"],
     deps = [
-        "@rules_jni//jni:libjvm",
         "//ortools/algorithms/java:knapsacksolver_cc",
         "//ortools/graph/java:graph_cc",
         "//ortools/init/java:init_cc",
         "//ortools/linear_solver/java:modelbuilder_cc",
+        "//ortools/math_opt/core/java:solver_swig_cc",
         "//ortools/sat/java:cp_model_proto_cc",
         "//ortools/sat/java:sat_cc",
+        "//ortools/util/java:java_swig_solve_interrupter_swig_cc",
         "//ortools/util/java:sorted_interval_list_cc",
         "//ortools/util/java:wrappers_test_message_cc",
+        "@rules_jni//jni:libjvm",
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "jniortools.dll",
     linkshared = True,
     target_compatible_with = select({
@@ -65,15 +69,17 @@ cc_binary(
     }),
     visibility = ["//visibility:public"],
     deps = [
-        "@rules_jni//jni:libjvm",
         "//ortools/algorithms/java:knapsacksolver_cc",
         "//ortools/graph/java:graph_cc",
         "//ortools/init/java:init_cc",
         "//ortools/linear_solver/java:modelbuilder_cc",
+        "//ortools/math_opt/core/java:solver_swig_cc",
         "//ortools/sat/java:cp_model_proto_cc",
         "//ortools/sat/java:sat_cc",
+        "//ortools/util/java:java_swig_solve_interrupter_swig_cc",
         "//ortools/util/java:sorted_interval_list_cc",
         "//ortools/util/java:wrappers_test_message_cc",
+        "@rules_jni//jni:libjvm",
     ],
 )
 

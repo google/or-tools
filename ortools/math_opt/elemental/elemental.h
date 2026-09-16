@@ -28,7 +28,6 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/math_opt/elemental/attr_key.h"
 #include "ortools/math_opt/elemental/attr_storage.h"
 #include "ortools/math_opt/elemental/derived_data.h"
 #include "ortools/math_opt/elemental/diff.h"
@@ -484,7 +483,7 @@ inline Elemental::DiePolicy::CheckResultT Elemental::CheckElementExists(
 inline Elemental::StatusPolicy::CheckResultT Elemental::CheckElementExists(
     const ElementType elem_type, const int64_t elem_id, StatusPolicy) const {
   if (!ElementExistsUntyped(elem_type, elem_id)) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "no element with id " << elem_id << " for element type "
            << elem_type;
   }

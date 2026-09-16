@@ -13,13 +13,91 @@
 
 #include "ortools/port/proto_utils.h"
 
+#include <algorithm>
+#include <string>
+
+#include "absl/algorithm/container.h"
+#include "absl/log/log.h"
+#include "absl/strings/escaping.h"
+#include "absl/strings/match.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
+#include "absl/strings/strip.h"
 #include "gtest/gtest.h"
+#include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/macros/os_support.h"
+#include "ortools/base/types.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/util/test.pb.h"
 
 namespace operations_research {
 namespace {
+
+using ::testing::AllOf;
+using ::testing::EndsWith;
+using ::testing::EqualsProto;
+using ::testing::HasSubstr;
+using ::testing::StartsWith;
+
+TEST(ProtobufDebugStringTest, EmptyProto) {
+  EXPECT_EQ(ProtobufDebugString(TestProto()),
+            "# [operations_research.TestProto of 0 bytes]\n");
+}
+
+TEST(ProtobufDebugStringTest, TextFormatWhenFittingLimits) {
+  TestProto proto;
+  proto.set_bool_type(true);
+  proto.set_int32_type(123);
+  EXPECT_EQ(ProtobufDebugString(proto),
+            "# [operations_research.TestProto of 4 bytes]\nbool_type: "
+            "true\nint32_type: 123\n");
+}
+
+TEST(ProtobufDebugStringTest,
+     BinaryFormatWhenTextFormatExceedsMaxLinesOrMaxChars) {
+  TestProto proto;
+  for (int i = 0; i < 10; ++i) {
+    proto.add_repeated_int64_type(1'000'000'000'000'000'000 + i);
+  }
+
+  // The text format takes ≥10 lines. With max_lines = 9, it should fallback to
+  // the binary base64.
+  const std::string debug_str =
+      ProtobufDebugString(proto, /*max_chars=*/1000, /*max_lines=*/9);
+  constexpr absl::string_view kExpectedPrefix =
+      "[operations_research.TestProto of 110 bytes] ";
+  EXPECT_THAT(debug_str, StartsWith(kExpectedPrefix));
+  absl::string_view b64_payload = debug_str;
+  ASSERT_TRUE(absl::ConsumePrefix(&b64_payload, kExpectedPrefix));
+  std::string decoded_serialized;
+  ASSERT_TRUE(absl::Base64Unescape(b64_payload, &decoded_serialized));
+  TestProto deserialized;
+  ASSERT_TRUE(deserialized.ParseFromString(decoded_serialized));
+  EXPECT_THAT(deserialized, EqualsProto(proto));
+
+  // With max_chars the limiting factor, it should also fall back to binary.
+  EXPECT_EQ(ProtobufDebugString(proto, /*max_chars=*/400), debug_str);
+}
+
+TEST(ProtobufDebugStringTest, GenericFallbackWhenBinaryExceedsMaxChars) {
+  TestProto proto;
+  proto.set_string_type("a_somewhat_longer_string_for_testing");
+
+  // With max_chars too small for the binary, it should only print the header.
+  EXPECT_EQ(ProtobufDebugString(proto, /*max_chars=*/30),
+            absl::StrFormat("[operations_research.TestProto of %d bytes]",
+                            proto.ByteSizeLong()));
+}
+
+TEST(ProtobufDebugStringTest, NegativeLimits) {
+  TestProto proto;
+  proto.set_int32_type(42);
+
+  EXPECT_EQ(ProtobufDebugString(proto, /*max_chars=*/-1, /*max_lines=*/-1),
+            absl::StrFormat("[operations_research.TestProto of %d bytes]",
+                            proto.ByteSizeLong()));
+}
 
 #if defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
 static_assert(operations_research::kTargetOsSupportsProtoDescriptor);

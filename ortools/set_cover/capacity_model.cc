@@ -21,6 +21,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "ortools/set_cover/base_types.h"
+#include "ortools/set_cover/capacity.pb.h"
 
 namespace operations_research {
 void CapacityModel::AddTerm(SubsetIndex subset, ElementIndex element,

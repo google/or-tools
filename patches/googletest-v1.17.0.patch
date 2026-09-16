@@ -1,8 +1,8 @@
 diff --git a/googlemock/include/gmock/internal/gmock-port.h b/googlemock/include/gmock/internal/gmock-port.h
-index e9d9e32..ca55646 100644
+index 42d36d2f..3bf0b818 100644
 --- a/googlemock/include/gmock/internal/gmock-port.h
 +++ b/googlemock/include/gmock/internal/gmock-port.h
-@@ -85,11 +85,11 @@
+@@ -86,11 +86,11 @@
  
  // Macros for declaring flags.
  #define GMOCK_DECLARE_bool_(name) \
@@ -17,8 +17,21 @@ index e9d9e32..ca55646 100644
  
  #define GMOCK_FLAG_GET(name) ::absl::GetFlag(GMOCK_FLAG(name))
  #define GMOCK_FLAG_SET(name, value) \
+diff --git a/googletest/CMakeLists.txt b/googletest/CMakeLists.txt
+index dce6a7c9..c214dd49 100644
+--- a/googletest/CMakeLists.txt
++++ b/googletest/CMakeLists.txt
+@@ -19,6 +19,8 @@ option(gtest_build_tests "Build all of gtest's own tests." OFF)
+ 
+ option(gtest_build_samples "Build gtest's sample programs." OFF)
+ 
++option(gtest_disable_warnings_as_errors "Disable promoting warnings as errors." OFF)
++
+ option(gtest_disable_pthreads "Disable uses of pthreads in gtest." OFF)
+ 
+ option(
 diff --git a/googletest/cmake/internal_utils.cmake b/googletest/cmake/internal_utils.cmake
-index 580ac1c..b338398 100644
+index 7ca256a7..1a2e5210 100644
 --- a/googletest/cmake/internal_utils.cmake
 +++ b/googletest/cmake/internal_utils.cmake
 @@ -11,6 +11,7 @@
@@ -29,7 +42,20 @@ index 580ac1c..b338398 100644
  
  # Tweaks CMake's default compiler/linker settings to suit Google Test's needs.
  #
-@@ -170,11 +171,11 @@ function(cxx_library_with_type name type cxx_flags)
+@@ -73,7 +74,11 @@ macro(config_compiler_and_linker)
+   if (MSVC)
+     # Newlines inside flags variables break CMake's NMake generator.
+     # TODO(vladl@google.com): Add -RTCs and -RTCu to debug builds.
+-    set(cxx_base_flags "-GS -W4 -WX -wd4251 -wd4275 -nologo -J")
++    set(cxx_base_flags "-GS -W4")
++    if (NOT gtest_disable_warnings_as_errors)
++      set(cxx_base_flags "${cxx_base_flags} -WX")
++    endif()
++    set(cxx_base_flags "${cxx_base_flags} -wd4251 -wd4275 -nologo -J")
+     set(cxx_base_flags "${cxx_base_flags} -D_UNICODE -DUNICODE -DWIN32 -D_WIN32")
+     set(cxx_base_flags "${cxx_base_flags} -DSTRICT -DWIN32_LEAN_AND_MEAN")
+     set(cxx_exception_flags "-EHsc -D_HAS_EXCEPTIONS=1")
+@@ -170,11 +175,11 @@ function(cxx_library_with_type name type cxx_flags)
    # Set the output directory for build artifacts.
    set_target_properties(${name}
      PROPERTIES
@@ -46,7 +72,7 @@ index 580ac1c..b338398 100644
    # Make PDBs match library name.
    get_target_property(pdb_debug_postfix ${name} DEBUG_POSTFIX)
    set_target_properties(${name}
-@@ -185,11 +186,19 @@ function(cxx_library_with_type name type cxx_flags)
+@@ -185,11 +190,19 @@ function(cxx_library_with_type name type cxx_flags)
      COMPILE_PDB_NAME_DEBUG "${name}${pdb_debug_postfix}")
  
    if (BUILD_SHARED_LIBS OR type STREQUAL "SHARED")
@@ -70,7 +96,7 @@ index 580ac1c..b338398 100644
    endif()
    if (DEFINED GTEST_HAS_PTHREAD)
      target_link_libraries(${name} PUBLIC Threads::Threads)
-@@ -226,9 +235,8 @@ function(cxx_executable_with_flags name cxx_flags libs)
+@@ -226,9 +239,8 @@ function(cxx_executable_with_flags name cxx_flags libs)
        COMPILE_FLAGS "${cxx_flags}")
    endif()
    if (BUILD_SHARED_LIBS)
@@ -83,10 +109,10 @@ index 580ac1c..b338398 100644
    # To support mixing linking in static and dynamic libraries, link each
    # library in with an extra call to target_link_libraries.
 diff --git a/googletest/include/gtest/internal/gtest-port.h b/googletest/include/gtest/internal/gtest-port.h
-index 8d27c2c..890c953 100644
+index 25b7d194..ad6cb760 100644
 --- a/googletest/include/gtest/internal/gtest-port.h
 +++ b/googletest/include/gtest/internal/gtest-port.h
-@@ -867,10 +867,10 @@ typedef struct _RTL_CRITICAL_SECTION GTEST_CRITICAL_SECTION;
+@@ -835,10 +835,10 @@ typedef struct _RTL_CRITICAL_SECTION GTEST_CRITICAL_SECTION;
  #ifndef GTEST_API_
  
  #ifdef _MSC_VER
@@ -100,7 +126,7 @@ index 8d27c2c..890c953 100644
  #endif
  #elif GTEST_HAVE_ATTRIBUTE_(visibility)
  #define GTEST_API_ __attribute__((visibility("default")))
-@@ -2287,11 +2287,11 @@ using TimeInMillis = int64_t;  // Represents time in milliseconds.
+@@ -2255,11 +2255,11 @@ using TimeInMillis = int64_t;  // Represents time in milliseconds.
  
  // Macros for declaring flags.
  #define GTEST_DECLARE_bool_(name) \

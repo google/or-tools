@@ -46,7 +46,7 @@ namespace sat {
 // with a linear integer subsolver to handle the discovered infeasibility cores.
 //
 // It is implemented by keeping two CpModelProto:
-// - the one that the user want to solve.
+// - the one that the user wants to solve.
 // - a hitting set model, which finds the hitting set with minimum cost.
 //
 // See Jessica Davies and Fahiem Bacchus, "Solving MAXSAT by Solving a
@@ -57,7 +57,7 @@ namespace sat {
 // on the industrial category, see
 // http://maxsat.ia.udl.cat/results/#wpms-industrial
 //
-// Note that this class need to get solve_cp_model_callback as a parameter
+// Note that this class needs to get solve_cp_model_callback as a parameter
 // instead of simply calling SolveCpModel() because it needs to avoid a circular
 // dependency.
 class HittingSetOptimizer {
@@ -82,7 +82,7 @@ class HittingSetOptimizer {
   // Extract the objective variables, which is the smallest possible useful set.
   void ExtractObjectiveVariables();
 
-  // Calls ComputeAdditionalVariablesToExtract() and extract all new variables.
+  // Calls ComputeAdditionalVariablesToExtract() and extracts all new variables.
   // This must be called after the linear relaxation has been filled.
   void ExtractAdditionalVariables(absl::Span<const IntegerVariable> to_extract);
 
@@ -91,10 +91,10 @@ class HittingSetOptimizer {
   // We use a sorted map to have a deterministic model.
   std::vector<IntegerVariable> ComputeAdditionalVariablesToExtract();
 
-  // Checks whethers a variable is extracted, and return the index in the HS
-  // model. It returns the same indef for both the variable and its negation.
+  // Checks whether a variable is extracted, and returns the index in the HS
+  // model. It returns the same index for both the variable and its negation.
   //
-  // Node that the domain of the linear variable is equal to the domain of the
+  // Note that the domain of the linear variable is equal to the domain of the
   // positive variable.
   int GetExtractedIndex(IntegerVariable var) const;
 
@@ -108,7 +108,7 @@ class HittingSetOptimizer {
   // extracted variables are used to 'extend' the lower and upper bound of the
   // linear equation.
   //
-  // It returns a non-null proto if the constraints was successfully extracted.
+  // It returns a non-null proto if the constraint was successfully extracted.
   LinearConstraintProto* ProjectAndAddLinear(const LinearConstraint& linear);
 
   // Auxiliary method used by ProjectAndAddLinear(), and TightenLinear().
@@ -117,10 +117,10 @@ class HittingSetOptimizer {
   // Imports variable bounds from the shared bound manager (in parallel),
   // updates the domains of the SAT variables, lower and upper bounds of
   // extracted variables. Then it scans the extracted linear constraints and
-  // recompute its lower and upper bounds.
+  // recomputes their lower and upper bounds.
   void TightenHitSetModel();
 
-  // Processes the cores from the SAT solver and add them to the hitting set
+  // Processes the cores from the SAT solver and adds them to the hitting set
   // model.
   void AddCoresToHittingSetModel(absl::Span<const std::vector<Literal>> cores);
 
@@ -162,10 +162,10 @@ class HittingSetOptimizer {
 
   // TODO(user): The core is returned in the same order as the assumptions,
   // so we don't really need this map, we could just do a linear scan to
-  // recover which node are part of the core.
+  // recover which nodes are part of the core.
   absl::flat_hash_map<LiteralIndex, std::vector<int>> assumption_to_indices_;
 
-  // New Booleans variable in the HS model to represent X OP cte (OP is => if
+  // New Boolean variables in the HS model to represent X OP cte (OP is => if
   // the variable of the objective is positive, <= otherwise).
   absl::flat_hash_map<std::pair<int, int64_t>, int> hs_integer_literals_;
 

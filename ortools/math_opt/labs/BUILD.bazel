@@ -11,9 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:or_cc_rules.bzl", "or_cc_library", "or_cc_test")
 
-cc_library(
+or_cc_library(
     name = "general_constraint_to_mip",
     srcs = ["general_constraint_to_mip.cc"],
     hdrs = ["general_constraint_to_mip.h"],
@@ -26,7 +26,19 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_test(
+    name = "general_constraint_to_mip_test",
+    srcs = ["general_constraint_to_mip_test.cc"],
+    deps = [
+        ":general_constraint_to_mip",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/cpp:matchers",
+        "//ortools/math_opt/cpp:math_opt",
+        "@abseil-cpp//absl/status",
+    ],
+)
+
+or_cc_library(
     name = "linear_expr_util",
     srcs = ["linear_expr_util.cc"],
     hdrs = ["linear_expr_util.h"],
@@ -37,47 +49,92 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_test(
+    name = "linear_expr_util_test",
+    srcs = ["linear_expr_util_test.cc"],
+    deps = [
+        ":linear_expr_util",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/cpp:math_opt",
+    ],
+)
+
+or_cc_library(
     name = "solution_feasibility_checker",
     srcs = ["solution_feasibility_checker.cc"],
     hdrs = ["solution_feasibility_checker.h"],
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:mathutil",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/util:fp_roundtrip_conv",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
-cc_library(
+or_cc_test(
+    name = "solution_feasibility_checker_test",
+    srcs = ["solution_feasibility_checker_test.cc"],
+    deps = [
+        ":solution_feasibility_checker",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt:infeasible_subsystem_cc_proto",
+        "//ortools/math_opt/cpp:math_opt",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/status",
+    ],
+)
+
+or_cc_library(
     name = "solution_improvement",
     srcs = ["solution_improvement.cc"],
     hdrs = ["solution_improvement.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/math_opt/core:math_opt_proto_utils",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/validators:model_validator",
         "//ortools/util:fp_roundtrip_conv",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/types:span",
     ],
 )
 
-cc_library(
-    name = "dualizer",
-    srcs = [
-        "dualizer.cc",
+or_cc_test(
+    name = "solution_improvement_test",
+    srcs = ["solution_improvement_test.cc"],
+    deps = [
+        ":solution_improvement",
+        "//ortools/base:gmock_main",
+        "//ortools/base:status_builder",
+        "//ortools/math_opt/cpp:matchers",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/util:fp_roundtrip_conv",
+        "//ortools/util:status_macros",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/types:span",
     ],
+)
+
+or_cc_library(
+    name = "dualizer",
+    srcs = ["dualizer.cc"],
     hdrs = ["dualizer.h"],
     visibility = ["//visibility:public"],
     deps = [
@@ -87,4 +144,17 @@ cc_library(
         "@abseil-cpp//absl/types:span",
     ],
     alwayslink = 1,
+)
+
+or_cc_test(
+    name = "dualizer_test",
+    srcs = ["dualizer_test.cc"],
+    deps = [
+        ":dualizer",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/cpp:matchers",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/solvers:glop_solver",
+        "@abseil-cpp//absl/strings",
+    ],
 )

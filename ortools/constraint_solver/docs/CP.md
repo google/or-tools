@@ -13,12 +13,15 @@ Java and .Net. Each language have different requirements for the code samples.
 
 ```cpp
 // Snippet from ortools/constraint_solver/samples/simple_cp_program.cc
+#include <cstdint>
+#include <cstdlib>
 #include <ostream>
 #include <string>
 
 #include "ortools/base/init_google.h"
 #include "ortools/base/log_severity.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
 namespace operations_research {
@@ -80,6 +83,7 @@ int main(int argc, char* argv[]) {
 from ortools.constraint_solver.python import constraint_solver as cp
 
 
+
 def main():
   """Entry point of the program."""
   # Instantiate the solver.
@@ -126,15 +130,17 @@ if __name__ == '__main__':
 ### Java code samples
 
 ```java
-// Snippet from ortools/constraint_solver/samples/SimpleCpProgram.java
+// Snippet from ortools/constraint_solver/samples/java/SimpleCpProgram.java
 package com.google.ortools.constraintsolver.samples;
+
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
 import java.util.logging.Logger;
 
-/** Simple CP Program.*/
+
+/** Simple CP Program. */
 public class SimpleCpProgram {
   private SimpleCpProgram() {}
 
@@ -152,32 +158,29 @@ public class SimpleCpProgram {
     final IntVar z = solver.makeIntVar(0, numVals - 1, "z");
 
     // Constraint 0: x != y..
-    solver.addConstraint(solver.makeAllDifferent(new IntVar[]{x, y}));
+    solver.addConstraint(solver.makeAllDifferent(new IntVar[] {x, y}));
     logger.info("Number of constraints: " + solver.constraints());
 
     // Solve the problem.
-    final DecisionBuilder db = solver.makePhase(
-        new IntVar[]{x, y, z},
-        Solver.CHOOSE_FIRST_UNBOUND,
-        Solver.ASSIGN_MIN_VALUE);
+    final DecisionBuilder db =
+        solver.makePhase(
+            new IntVar[] {x, y, z}, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     // Print solution on console.
     int count = 0;
     solver.newSearch(db);
     while (solver.nextSolution()) {
       ++count;
-      logger.info(String.format("Solution: %d\n x=%d y=%d z=%d"
-          , count
-          , x.value()
-          , y.value()
-          , z.value()));
+      logger.info(
+          String.format("Solution: %d\n x=%d y=%d z=%d", count, x.value(), y.value(), z.value()));
     }
     solver.endSearch();
     logger.info("Number of solutions found: " + solver.solutions());
 
-    logger.info(String.format(
-          "Advanced usage:\nProblem solved in %d ms\nMemory usage: %d bytes"
-          , solver.wallTime(), Solver.memoryUsage()));
+    logger.info(
+        String.format(
+            "Advanced usage:\nProblem solved in %d ms\nMemory usage: %d bytes",
+            solver.wallTime(), Solver.memoryUsage()));
   }
 }
 ```

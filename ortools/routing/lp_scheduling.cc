@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/nullability.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -184,7 +185,7 @@ void StoreVisitedPickupDeliveryPairsOnRoute(
 // LocalDimensionCumulOptimizer
 
 LocalDimensionCumulOptimizer::LocalDimensionCumulOptimizer(
-    const Dimension* dimension,
+    const Dimension* absl_nonnull dimension,
     RoutingSearchParameters::SchedulingSolver solver_type,
     SearchStats* search_stats)
     : optimizer_core_(dimension, /*use_precedence_propagator=*/false) {
@@ -356,7 +357,8 @@ LocalDimensionCumulOptimizer::ComputeRouteCumulsWithTransitTargets(
 const int CumulBoundsPropagator::kNoParent = -2;
 const int CumulBoundsPropagator::kParentToBePropagated = -1;
 
-CumulBoundsPropagator::CumulBoundsPropagator(const Dimension* dimension)
+CumulBoundsPropagator::CumulBoundsPropagator(
+    const Dimension* absl_nonnull dimension)
     : dimension_(*dimension), num_nodes_(2 * dimension->cumuls().size()) {
   outgoing_arcs_.resize(num_nodes_);
   node_in_queue_.resize(num_nodes_, false);
@@ -596,7 +598,7 @@ bool CumulBoundsPropagator::PropagateCumulBounds(
 }
 
 DimensionCumulOptimizerCore::DimensionCumulOptimizerCore(
-    const Dimension* dimension, bool use_precedence_propagator)
+    const Dimension* absl_nonnull dimension, bool use_precedence_propagator)
     : dimension_(dimension),
       visited_pickup_delivery_indices_for_pair_(
           dimension->model()->GetPickupAndDeliveryPairs().size(), {-1, -1}) {
@@ -959,7 +961,12 @@ DimensionCumulOptimizerCore::OptimizeSingleRouteWithResources(
       statuses.push_back(DimensionSchedulingStatus::INFEASIBLE);
       continue;
     }
-
+    const int64_t resource_fixed_cost =
+        optimize_with_resources
+            ? resources[resource_indices[i]]
+                  .GetDimensionAttributes(dimension_->index())
+                  .fixed_cost()
+            : 0;
     statuses.push_back(
         solver->Solve(model->RemainingTime() * solve_duration_ratio));
     if (statuses.back() == DimensionSchedulingStatus::INFEASIBLE) {
@@ -968,7 +975,8 @@ DimensionCumulOptimizerCore::OptimizeSingleRouteWithResources(
     if (costs_without_transits != nullptr) {
       costs_without_transits->at(i) =
           optimize_vehicle_costs
-              ? CapAdd(cost_offset, solver->GetObjectiveValue())
+              ? CapAdd(resource_fixed_cost,
+                       CapAdd(cost_offset, solver->GetObjectiveValue()))
               : 0;
     }
 
@@ -2786,6 +2794,14 @@ bool DimensionCumulOptimizerCore::SetGlobalConstraintsForResourceAssignment(
                 solver)) {
           return false;
         }
+        const int64_t fixed_cost =
+            resource_group.GetResource(resource_index)
+                .GetDimensionAttributes(dimension_->index())
+                .fixed_cost();
+        if (fixed_cost != 0) {
+          solver->SetObjectiveCoefficient(solver->AddVariable(1, 1),
+                                          fixed_cost);
+        }
         continue;
       }
       num_required_resources++;
@@ -2906,6 +2922,10 @@ bool DimensionCumulOptimizerCore::SetGlobalConstraintsForResourceAssignment(
           solver->SetCoefficient(ct, end_index, 1);
           solver->SetCoefficient(ct, start_index, -1);
         }
+        if (attributes.fixed_cost() != 0) {
+          solver->SetObjectiveCoefficient(assign_rc_to_v,
+                                          attributes.fixed_cost());
+        }
       }
     }
   }
@@ -2990,7 +3010,7 @@ void DimensionCumulOptimizerCore::SetResourceIndices(
 // GlobalDimensionCumulOptimizer
 
 GlobalDimensionCumulOptimizer::GlobalDimensionCumulOptimizer(
-    const Dimension* dimension,
+    const Dimension* absl_nonnull dimension,
     RoutingSearchParameters::SchedulingSolver solver_type,
     SearchStats* search_stats)
     : optimizer_core_(dimension,
@@ -3074,16 +3094,14 @@ bool ComputeVehicleToResourceClassAssignmentCosts(
         ignored_resources_per_class,
     const std::function<int64_t(int64_t)>& next_accessor,
     const std::function<int64_t(int64_t, int64_t)>& transit_accessor,
-    bool optimize_vehicle_costs, LocalDimensionCumulOptimizer* lp_optimizer,
-    LocalDimensionCumulOptimizer* mp_optimizer,
-    std::vector<int64_t>* assignment_costs,
+    bool optimize_vehicle_costs,
+    LocalDimensionCumulOptimizer* absl_nonnull lp_optimizer,
+    LocalDimensionCumulOptimizer* absl_nonnull mp_optimizer,
+    std::vector<int64_t>* absl_nonnull assignment_costs,
     std::vector<std::vector<int64_t>>* cumul_values,
     std::vector<std::vector<int64_t>>* break_values) {
   DCHECK_GT(solve_duration_ratio, 0);
   DCHECK_LE(solve_duration_ratio, 1);
-  DCHECK(lp_optimizer != nullptr);
-  DCHECK(mp_optimizer != nullptr);
-  DCHECK_NE(assignment_costs, nullptr);
   assignment_costs->clear();
   ClearIfNonNull(cumul_values);
   ClearIfNonNull(break_values);

@@ -14,21 +14,25 @@
 # Description: python wrapping of the libraries in ../
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
 load("@rules_python//python:py_test.bzl", "py_test")
+load("//bazel:or_pybind_rules.bzl", "or_pybind_extension")
 
 package(default_visibility = ["//visibility:public"])
 
-pybind_extension(
+or_pybind_extension(
     name = "set_cover",
     srcs = ["set_cover.cc"],
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/set_cover:base_types",
+        "//ortools/set_cover:set_cover_cft",
         "//ortools/set_cover:set_cover_heuristics",
         "//ortools/set_cover:set_cover_invariant",
+        "//ortools/set_cover:set_cover_lagrangian",
+        "//ortools/set_cover:set_cover_mip",
         "//ortools/set_cover:set_cover_model",
         "//ortools/set_cover:set_cover_reader",
+        "@abseil-cpp//absl/time",
         "@abseil-cpp//absl/types:span",
         "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],

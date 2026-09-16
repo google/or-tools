@@ -18,6 +18,7 @@
 #include "ortools/base/mathutil.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/capacity_invariant.h"
+#include "ortools/set_cover/set_cover.pb.h"
 #include "ortools/set_cover/set_cover_invariant.h"
 #include "ortools/set_cover/set_cover_model.h"
 

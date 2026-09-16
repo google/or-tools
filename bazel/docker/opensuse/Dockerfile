@@ -20,7 +20,7 @@ https://github.com/bazelbuild/bazelisk/releases/download/v1.27.0/bazelisk-linux-
 RUN zypper refresh \
 && zypper install -y java-21-openjdk-devel maven \
 && zypper clean -a
-ENV PATH=/usr/share/maven/bin:$PATH
+ENV JAVA_HOME=/usr/lib64/jvm/java-21-openjdk
 
 # Install Python
 RUN zypper update -y \

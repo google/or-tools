@@ -15,32 +15,61 @@
 #define ORTOOLS_PORT_PROTO_UTILS_H_
 
 #include <string>
+#include <utility>
 
+#include "absl/algorithm/container.h"
 #include "absl/log/log.h"
 #include "absl/strings/ascii.h"
+#include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/message_lite.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/macros/os_support.h"
+#include "ortools/base/types.h"
 #include "ortools/util/parse_proto.h"
 
 namespace operations_research {
 
+// Returns a debug string of the given proto, suitable for logging:
+// - Uses text format if its available and fits within the given limits;
+// - Else, uses binary (base64-encoded) format if that one fits (the line limit
+//   is ignored since it's always 1 line).
+// - Else, returns a generic string like "[namespace.ProtoClass of %d bytes]".
 template <class P>
-std::string ProtobufDebugString(const P& message) {
-  if constexpr (std::is_base_of_v<google::protobuf::Message, P>) {
-    std::string output;
-    google::protobuf::TextFormat::PrintToString(message, &output);
-    absl::StripTrailingAsciiWhitespace(&output);
-    return output;
-  } else if constexpr (std::is_base_of_v<google::protobuf::MessageLite, P>) {
-    return std::string(message.GetTypeName());
-  } else {
-    LOG(FATAL) << "Unsupported type";
-    return "";
+std::string ProtobufDebugString(const P& message, int max_chars = kint32max,
+                                int max_lines = kint32max) {
+  static_assert(std::is_base_of_v<google::protobuf::Message, P> ||
+                std::is_base_of_v<google::protobuf::MessageLite, P>);
+  const std::string serialized_proto = message.SerializeAsString();
+  std::string output = absl::StrFormat(
+      "[%s of %d bytes]", message.GetTypeName(), serialized_proto.size());
+  if (max_chars >= 0) {
+    if constexpr (std::is_base_of_v<google::protobuf::Message, P>) {
+      std::string text_format_str;
+      // To avoid text-printing large protos for nothing, we first serialize it,
+      // which is very fast, and assume that if the serialized size is larger
+      // than max_chars, then the text format will be even larger.
+      if (max_lines >= 0 && serialized_proto.size() < max_chars &&
+          google::protobuf::TextFormat::PrintToString(message,
+                                                      &text_format_str) &&
+          // The +3 comes from added formatting and is maintained by unit tests.
+          text_format_str.size() + output.size() + 3 <= max_chars &&
+          // A text proto always ends with a newline.
+          absl::c_count(text_format_str, '\n') < max_lines) {
+        // Prefix with the type + size info.
+        return absl::StrCat("# ", output, "\n", text_format_str);
+      }
+    }
+    if (serialized_proto.size() < max_chars) {
+      std::string tmp =
+          absl::StrCat(output, " ", absl::Base64Escape(serialized_proto));
+      if (tmp.size() <= max_chars) output = std::move(tmp);
+    }
   }
+  return output;
 }
 
 template <class P>

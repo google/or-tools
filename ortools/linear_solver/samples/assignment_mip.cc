@@ -13,13 +13,16 @@
 
 // [START program]
 // [START import]
+#include <cstdlib>
 #include <memory>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/log_severity.h"
+#include "ortools/linear_solver/linear_expr.h"
 #include "ortools/linear_solver/linear_solver.h"
 // [END import]
 

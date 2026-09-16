@@ -17,8 +17,8 @@
 #include <string>
 #include <vector>
 
-#include "absl/base/attributes.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
@@ -618,7 +618,7 @@ void CLPInterface::SetLpAlgorithm(int value) {
 namespace {
 
 // See MpSolverInterfaceFactoryRepository for details.
-const void* const kRegisterCLP ABSL_ATTRIBUTE_UNUSED = [] {
+const void* const kRegisterCLP [[maybe_unused]] = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* const solver) { return new CLPInterface(solver); },
       MPSolver::CLP_LINEAR_PROGRAMMING);

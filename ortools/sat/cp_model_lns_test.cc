@@ -26,7 +26,6 @@
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/log_severity.h"
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -166,7 +165,7 @@ TYPED_TEST(GeneratorTest, NoReduction) {
 
   EXPECT_TRUE(neighborhood.is_generated);
 
-  // In these cases we might stay inside a connected components.
+  // In these cases we might stay inside a connected component.
   if constexpr (std::is_same_v<TypeParam, VariableGraphNeighborhoodGenerator> ||
                 std::is_same_v<TypeParam,
                                ConstraintGraphNeighborhoodGenerator>) {
@@ -382,7 +381,7 @@ TEST(RelaxationInducedNeighborhoodGeneratorTest, ValueOutOfDomain) {
 
   EXPECT_TRUE(generator.ReadyToGenerate());
 
-  // A value outside the domain cause the neighborhood to not be generated.
+  // A value outside the domain causes the neighborhood to not be generated.
   // Note that none of the arguments are currently used by this generator.
   random_engine_t random;
   NeighborhoodGenerator::SolveData data;
@@ -557,7 +556,7 @@ TEST(NeighborhoodGeneratorHelperTest, BoundAreUpdatedOnSynchronize) {
   NeighborhoodGeneratorHelper helper(&proto, &params, shared_response_manager,
                                      &time_limit, &shared_bounds_manager);
 
-  // Initial bound.
+  // Initial bounds.
   EXPECT_EQ(ReadDomainFromProto(helper.FullNeighborhood().delta.variables(0)),
             Domain(0, 10));
 
@@ -575,7 +574,7 @@ TEST(NeighborhoodGeneratorHelperTest, BoundAreUpdatedOnSynchronize) {
             Domain(0, 10));
   helper.Synchronize();
 
-  // New bound are properly there.
+  // New bounds are properly there.
   {
     absl::ReaderMutexLock lock(helper.graph_mutex_);
     EXPECT_FALSE(helper.IsActive(0));
@@ -621,19 +620,12 @@ TEST(NeighborhoodGeneratorHelperTest, FixGivenVariables) {
   Bitset64<int> variables_to_fix(helper.NumVariables());
   for (const int var : {2, 0}) variables_to_fix.Set(var);
   const Neighborhood n = helper.FixGivenVariables(response, variables_to_fix);
-  const CpModelProto expected_output =
-      DEBUG_MODE ? ParseTestProto(R"pb(
-        variables { name: "x" domain: 2 domain: 2 }
-        variables { name: "y" domain: 0 domain: 10 }
-        variables { name: "z" domain: 4 domain: 4 }
-        solution_hint { vars: 1 values: 3 }
-      )pb")
-                 : ParseTestProto(R"pb(
-                     variables { domain: 2 domain: 2 }
-                     variables { domain: 0 domain: 10 }
-                     variables { domain: 4 domain: 4 }
-                     solution_hint { vars: 1 values: 3 }
-                   )pb");
+  const CpModelProto expected_output = ParseTestProto(R"pb(
+    variables { name: "x" domain: 2 domain: 2 }
+    variables { name: "y" domain: 0 domain: 10 }
+    variables { name: "z" domain: 4 domain: 4 }
+    solution_hint { vars: 1 values: 3 }
+  )pb");
   EXPECT_THAT(n.delta, testing::EqualsProto(expected_output));
 }
 

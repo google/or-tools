@@ -23,10 +23,10 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/types/span.h"
-#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/log_severity.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
@@ -137,17 +137,15 @@ TEST(NegationOfTest, VectorArgument) {
 }
 
 TEST(IntegerValue, NegatedCannotOverflow) {
-  EXPECT_GT(kMinIntegerValue - 1, std::numeric_limits<int64_t>::min());
+  EXPECT_GT(kMinIntegerValue - 1, kint64min);
 }
 
 TEST(IntegerLiteral, OverflowValueAreCapped) {
   const IntegerVariable var(0);
   EXPECT_EQ(IntegerLiteral::GreaterOrEqual(var, kMaxIntegerValue + 1),
-            IntegerLiteral::GreaterOrEqual(
-                var, IntegerValue(std::numeric_limits<int64_t>::max())));
+            IntegerLiteral::GreaterOrEqual(var, IntegerValue(kint64max)));
   EXPECT_EQ(IntegerLiteral::LowerOrEqual(var, kMinIntegerValue - 1),
-            IntegerLiteral::LowerOrEqual(
-                var, IntegerValue(std::numeric_limits<int64_t>::min())));
+            IntegerLiteral::LowerOrEqual(var, IntegerValue(kint64min)));
 }
 
 TEST(IntegerLiteral, NegatedIsIdempotent) {
@@ -163,13 +161,11 @@ TEST(IntegerLiteral, NegatedIsIdempotent) {
 // A bound difference of exactly kint64max is ok.
 TEST(IntegerTrailDeathTest, LargeVariableDomain) {
   Model model;
-  model.Add(NewIntegerVariable(-3, std::numeric_limits<int64_t>::max() - 3));
+  model.Add(NewIntegerVariable(-3, kint64max - 3));
 
   if (DEBUG_MODE) {
-    // But one of kint64max + 1 cause a check fail in debug.
-    EXPECT_DEATH(model.Add(NewIntegerVariable(
-                     -3, std::numeric_limits<int64_t>::max() - 2)),
-                 "");
+    // But one of kint64max + 1 causes a check failure in debug.
+    EXPECT_DEATH(model.Add(NewIntegerVariable(-3, kint64max - 2)), "");
   }
 }
 
@@ -197,7 +193,7 @@ TEST(IntegerTrailTest, VariableCreationAndBoundGetter) {
   IntegerVariable b = model.Add(NewIntegerVariable(-10, 10));
   IntegerVariable c = model.Add(NewIntegerVariable(20, 30));
 
-  // Index are dense and contiguous, but two indices are created each time.
+  // Indices are dense and contiguous, but two indices are created each time.
   // They start at zero.
   EXPECT_EQ(0, a.value());
   EXPECT_EQ(1, NegationOf(a).value());
@@ -206,7 +202,7 @@ TEST(IntegerTrailTest, VariableCreationAndBoundGetter) {
   EXPECT_EQ(4, c.value());
   EXPECT_EQ(5, NegationOf(c).value());
 
-  // Bounds matches the one we passed at creation.
+  // Bounds match the ones we passed at creation.
   EXPECT_EQ(0, p->LowerBound(a));
   EXPECT_EQ(10, p->UpperBound(a));
   EXPECT_EQ(-10, p->LowerBound(b));
@@ -431,7 +427,7 @@ TEST(IntegerTrailTest, RelaxLinearReason) {
               ElementsAre(IntegerLiteral::GreaterOrEqual(a, IntegerValue(3)),
                           IntegerLiteral::GreaterOrEqual(b, IntegerValue(3))));
 
-  // Some slack, we find the "lowest" possible reason in term of trail index.
+  // Some slack, we find the "lowest" possible reason in terms of trail indices.
   integer_trail->RelaxLinearReason(IntegerValue(3), coeffs, &reasons);
   EXPECT_THAT(reasons,
               ElementsAre(IntegerLiteral::GreaterOrEqual(a, IntegerValue(2)),
@@ -669,7 +665,7 @@ TEST(IntegerEncoderTest, BasicInequalityEncoding) {
   }
 
   // Test the propagation from the literal to the bounds.
-  // By default the polarity of the literal are false.
+  // By default the polarity of the literals is false.
   EXPECT_EQ(SatSolver::FEASIBLE, model.GetOrCreate<SatSolver>()->Solve());
   EXPECT_FALSE(model.Get(Value(l3)));
   EXPECT_FALSE(model.Get(Value(l5)));
@@ -1077,18 +1073,18 @@ TEST(IntegerEncoderTest, EncodingToIntegerTrailPropagation) {
   EXPECT_TRUE(sat_solver->Propagate());
   EXPECT_BOUNDS_EQ(var, 3, 9);
 
-  // We remove the value 4, nothing happen.
+  // We remove the value 4, nothing happens.
   trail->EnqueueSearchDecision(encoding[1].literal.Negated());
   EXPECT_TRUE(sat_solver->Propagate());
   EXPECT_BOUNDS_EQ(var, 3, 9);
 
-  // When we remove 3, the lower bound change though.
+  // When we remove 3, the lower bound changes though.
   trail->EnqueueSearchDecision(encoding[0].literal.Negated());
   EXPECT_TRUE(sat_solver->Propagate());
   EXPECT_BOUNDS_EQ(var, 7, 9);
 
   // The reason for the lower bounds is that both encoding[0] and encoding[1]
-  // are false. But it is captured by the literal associated to x >= 7.
+  // are false. But it is captured by the literal associated with x >= 7.
   {
     const IntegerLiteral l = integer_trail->LowerBoundAsLiteral(var);
     EXPECT_EQ(integer_trail->ReasonFor(l),
@@ -1127,7 +1123,7 @@ TEST(IntegerEncoderTest, IsFixedOrHasAssociatedLiteral) {
   EXPECT_TRUE(encoder->IsFixedOrHasAssociatedLiteral(
       IntegerLiteral::GreaterOrEqual(var, 10)));
 
-  // Not other encoding currently.
+  // No other encoding currently.
   EXPECT_FALSE(encoder->IsFixedOrHasAssociatedLiteral(
       IntegerLiteral::GreaterOrEqual(var, 4)));
   EXPECT_FALSE(encoder->IsFixedOrHasAssociatedLiteral(
@@ -1236,8 +1232,8 @@ TEST(IntegerEncoderTest, IssueWhenNotFullyingPropagatingAtLoading) {
   EXPECT_EQ(integer_trail->UpperBound(var), 9);
 
   // And that used to fail because it does some domain propagation when it
-  // detect that some value cannot be there and update the domains of var while
-  // iterating over it.
+  // detects that some value cannot be there and updates the domains of var
+  // while iterating over it.
   integer_encoder->FullyEncodeVariable(var);
 }
 
@@ -1272,20 +1268,18 @@ TEST(SolveIntegerProblemWithLazyEncodingTest, Unsat) {
             SatSolver::Status::INFEASIBLE);
 }
 
-TEST(IntegerTrailTest, InitialVariableDomainIsUpdated) {
+TEST(IntegerTrailTest, LevelZeroDomainIsUpdated) {
   Model model;
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
   const IntegerVariable var =
       integer_trail->AddIntegerVariable(IntegerValue(0), IntegerValue(1000));
-  EXPECT_EQ(integer_trail->InitialVariableDomain(var), Domain(0, 1000));
-  EXPECT_EQ(integer_trail->InitialVariableDomain(NegationOf(var)),
-            Domain(-1000, 0));
+  EXPECT_EQ(integer_trail->LevelZeroDomain(var), Domain(0, 1000));
+  EXPECT_EQ(integer_trail->LevelZeroDomain(NegationOf(var)), Domain(-1000, 0));
 
   EXPECT_TRUE(integer_trail->Enqueue(
       IntegerLiteral::GreaterOrEqual(var, IntegerValue(7)), {}, {}));
-  EXPECT_EQ(integer_trail->InitialVariableDomain(var), Domain(7, 1000));
-  EXPECT_EQ(integer_trail->InitialVariableDomain(NegationOf(var)),
-            Domain(-1000, -7));
+  EXPECT_EQ(integer_trail->LevelZeroDomain(var), Domain(7, 1000));
+  EXPECT_EQ(integer_trail->LevelZeroDomain(NegationOf(var)), Domain(-1000, -7));
 }
 
 TEST(IntegerTrailTest, AppendNewBounds) {
@@ -1297,7 +1291,7 @@ TEST(IntegerTrailTest, AppendNewBounds) {
   EXPECT_TRUE(
       model.GetOrCreate<SatSolver>()->EnqueueDecisionIfNotConflicting(l));
 
-  // Enqueue a bunch of fact.
+  // Enqueue a bunch of facts.
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
   EXPECT_TRUE(integer_trail->Enqueue(
       IntegerLiteral::GreaterOrEqual(var, IntegerValue(2)), {l.Negated()}, {}));
@@ -1314,94 +1308,6 @@ TEST(IntegerTrailTest, AppendNewBounds) {
   EXPECT_THAT(bounds, ElementsAre(IntegerLiteral::GreaterOrEqual(
                           var, IntegerValue(9))));
 }
-
-static void BM_FloorRatio(benchmark::State& state) {
-  IntegerValue divisor(654676436498);
-  IntegerValue dividend(45454655155444);
-  IntegerValue test(0);
-  for (auto _ : state) {
-    dividend++;
-    divisor++;
-    benchmark::DoNotOptimize(test += FloorRatio(dividend, divisor));
-  }
-  state.SetBytesProcessed(static_cast<int64_t>(state.iterations()));
-}
-
-static void BM_PositiveRemainder(benchmark::State& state) {
-  IntegerValue divisor(654676436498);
-  IntegerValue dividend(45454655155444);
-  IntegerValue test(0);
-  for (auto _ : state) {
-    dividend++;
-    divisor++;
-    benchmark::DoNotOptimize(test += PositiveRemainder(dividend, divisor));
-  }
-  state.SetBytesProcessed(static_cast<int64_t>(state.iterations()));
-}
-
-static void BM_PositiveRemainderAlternative(benchmark::State& state) {
-  IntegerValue divisor(654676436498);
-  IntegerValue dividend(45454655155444);
-  IntegerValue test(0);
-  for (auto _ : state) {
-    dividend++;
-    divisor++;
-    benchmark::DoNotOptimize(test += dividend -
-                                     divisor * FloorRatio(dividend, divisor));
-  }
-  state.SetBytesProcessed(static_cast<int64_t>(state.iterations()));
-}
-
-// What we use in the code. This is safe of integer overflow. The compiler
-// should also do a single integer division to get the quotient and remainder.
-static void BM_DivisionAndRemainder(benchmark::State& state) {
-  IntegerValue divisor(654676436498);
-  IntegerValue dividend(45454655155444);
-  IntegerValue test(0);
-  for (auto _ : state) {
-    dividend++;
-    divisor++;
-    benchmark::DoNotOptimize(test += FloorRatio(dividend, divisor));
-    benchmark::DoNotOptimize(test += PositiveRemainder(dividend, divisor));
-  }
-  state.SetBytesProcessed(static_cast<int64_t>(state.iterations()));
-}
-
-// An alternative version, note however that divisor * f might overflow!
-static void BM_DivisionAndRemainderAlternative(benchmark::State& state) {
-  IntegerValue divisor(654676436498);
-  IntegerValue dividend(45454655155444);
-  IntegerValue test(0);
-  for (auto _ : state) {
-    dividend++;
-    divisor++;
-    const IntegerValue f = FloorRatio(dividend, divisor);
-    benchmark::DoNotOptimize(test += f);
-    benchmark::DoNotOptimize(test += dividend - divisor * f);
-  }
-  state.SetBytesProcessed(static_cast<int64_t>(state.iterations()));
-}
-
-// The best we can hope for ?
-static void BM_DivisionAndRemainderBaseline(benchmark::State& state) {
-  IntegerValue divisor(654676436498);
-  IntegerValue dividend(45454655155444);
-  IntegerValue test(0);
-  for (auto _ : state) {
-    dividend++;
-    divisor++;
-    benchmark::DoNotOptimize(test += dividend / divisor);
-    benchmark::DoNotOptimize(test += dividend % divisor);
-  }
-  state.SetBytesProcessed(static_cast<int64_t>(state.iterations()));
-}
-
-BENCHMARK(BM_FloorRatio);
-BENCHMARK(BM_PositiveRemainder);
-BENCHMARK(BM_PositiveRemainderAlternative);
-BENCHMARK(BM_DivisionAndRemainder);
-BENCHMARK(BM_DivisionAndRemainderAlternative);
-BENCHMARK(BM_DivisionAndRemainderBaseline);
 
 }  // namespace
 }  // namespace sat

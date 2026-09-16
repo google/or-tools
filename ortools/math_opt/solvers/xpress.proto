@@ -16,9 +16,24 @@ syntax = "proto3";
 
 package operations_research.math_opt;
 
+option java_package = "com.google.ortools.mathopt";
+option java_multiple_files = true;
+option java_outer_classname = "Xpress";
+
 // Parameters used to initialize the Xpress solver.
 message XpressInitializerProto {
-  optional bool extract_names = 1;
+  message License {
+    // If provided, Xpress will use load the license from this path. If not
+    // provided, Xpress will look for xpauth.xpr in default locations.
+    // See
+    // https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/XPRSinit.html
+    // for details.
+    string path = 1;
+  }
+
+  // The license to use. If not provided, Xpress will look for xpauth.xpr in
+  // default locations.
+  optional License license = 1;
 }
 
 // Xpress specific parameters for solving. See

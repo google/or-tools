@@ -14,6 +14,7 @@
 
 # [START program]
 """Minimal jobshop example."""
+
 # [START import]
 import collections
 

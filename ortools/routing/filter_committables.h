@@ -22,6 +22,7 @@
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/saturated_arithmetic.h"
 
@@ -276,8 +277,7 @@ class DimensionValues {
     void Subtract(const Interval& other) { *this = *this - other; }
     // Returns an interval containing all integers: {kint64min, kint64max}.
     static Interval AllIntegers() {
-      return {.min = std::numeric_limits<int64_t>::min(),
-              .max = std::numeric_limits<int64_t>::max()};
+      return {.min = kint64min, .max = kint64max};
     }
   };
 

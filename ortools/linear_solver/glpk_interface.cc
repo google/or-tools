@@ -958,7 +958,7 @@ void GLPKInterface::SetLpAlgorithm(int value) {
 namespace {
 
 // See MpSolverInterfaceFactoryRepository for details.
-const void* const kRegisterGLPKLP ABSL_ATTRIBUTE_UNUSED = [] {
+const void* const kRegisterGLPKLP [[maybe_unused]] = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* solver) { return new GLPKInterface(solver, false); },
       MPSolver::GLPK_LINEAR_PROGRAMMING);
@@ -966,7 +966,7 @@ const void* const kRegisterGLPKLP ABSL_ATTRIBUTE_UNUSED = [] {
 }();
 
 // See MpSolverInterfaceFactoryRepository for details.
-const void* const kRegisterGLPKMIP ABSL_ATTRIBUTE_UNUSED = [] {
+const void* const kRegisterGLPKMIP [[maybe_unused]] = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* solver) { return new GLPKInterface(solver, true); },
       MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING);

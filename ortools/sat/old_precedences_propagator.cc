@@ -69,7 +69,7 @@ bool PrecedencesPropagator::Propagate() {
     const Literal literal = (*trail_)[propagation_trail_index_++];
     if (literal.Index() >= literal_to_new_impacted_arcs_.size()) continue;
 
-    // IMPORTANT: Because of the way Untrail() work, we need to add all the
+    // IMPORTANT: Because of the way Untrail() works, we need to add all the
     // potential arcs before we can abort. It is why we iterate twice here.
     for (const ArcIndex arc_index :
          literal_to_new_impacted_arcs_[literal.Index()]) {
@@ -99,7 +99,7 @@ bool PrecedencesPropagator::Propagate() {
   if (!BellmanFordTarjan(trail_)) return false;
 
   // We can only test that no propagation is left if we didn't enqueue new
-  // literal in the presence of optional variables.
+  // literals in the presence of optional variables.
   //
   // TODO(user): Because of our code to deal with InPropagationLoop(), this is
   // not always true. Find a cleaner way to DCHECK() while not failing in this
@@ -134,7 +134,7 @@ bool PrecedencesPropagator::PropagateOutgoingArcs(IntegerVariable var) {
 // TODO(user): Remove literal fixed at level zero from there.
 void PrecedencesPropagator::PushConditionalRelations(const ArcInfo& arc) {
   // We currently do not handle variable size in the reasons.
-  // TODO(user): we could easily take a level zero ArcOffset() instead, or
+  // TODO(user): We could easily take a level zero ArcOffset() instead, or
   // add this to the reason though.
   if (arc.offset_var != kNoIntegerVariable) return;
   const IntegerValue offset = ArcOffset(arc);
@@ -197,7 +197,7 @@ void PrecedencesPropagator::AddArc(
         if (trail_->Assignment().LiteralIsTrue(Literal(l))) {
           continue;  // At true, ignore this literal.
         } else if (trail_->Assignment().LiteralIsFalse(Literal(l))) {
-          return;  // At false, ignore completely this arc.
+          return;  // At false, completely ignore this arc.
         }
         enforcement_literals[new_size++] = l;
       }
@@ -208,7 +208,7 @@ void PrecedencesPropagator::AddArc(
   if (head == tail) {
     // A self-arc is either plain SAT or plain UNSAT or it forces something on
     // the given offset_var or presence_literal_index. In any case it could be
-    // presolved in something more efficient.
+    // presolved into something more efficient.
     VLOG(1) << "Self arc! This could be presolved. "
             << "var:" << tail << " offset:" << offset
             << " offset_var:" << offset_var
@@ -267,17 +267,17 @@ void PrecedencesPropagator::AddArc(
     // IntegerTrail in this class constructor.
     //
     // TODO(user): Adding arcs and then calling Untrail() before Propagate()
-    // will cause this mecanism to break. Find a more robust implementation.
+    // will cause this mechanism to break. Find a more robust implementation.
     //
-    // TODO(user): In some rare corner case, rescanning the whole list of arc
-    // leaving tail_var can make AddVar() have a quadratic complexity where it
+    // TODO(user): In some rare corner cases, rescanning the whole list of arcs
+    // leaving tail_var can make AddVar() have quadratic complexity where it
     // shouldn't. A better solution would be to see if this new arc currently
-    // propagate something, and if it does, just update the lower bound of
-    // a.head_var and let the normal "is modified" mecanism handle any eventual
-    // follow up propagations.
+    // propagates something, and if it does, just update the lower bound of
+    // a.head_var and let the normal "is modified" mechanism handle any eventual
+    // follow-up propagations.
     modified_vars_.Set(a.tail_var);
 
-    // If a.head_var is optional, we can potentially remove some literal from
+    // If a.head_var is optional, we can potentially remove some literals from
     // enforcement_literals.
     const ArcIndex arc_index(arcs_.size());
     arcs_.push_back(
@@ -358,7 +358,7 @@ bool PrecedencesPropagator::PropagateOptionalArcs(Trail* trail) {
       if (trail->Assignment().LiteralIsFalse(to_propagate)) continue;
 
       // Test if this arc can be present or not.
-      // Important arc.tail_var can be different from var here.
+      // Important: arc.tail_var can be different from var here.
       const IntegerValue tail_lb = integer_trail_->LowerBound(arc.tail_var);
       const IntegerValue head_ub = integer_trail_->UpperBound(arc.head_var);
       if (tail_lb + ArcOffset(arc) > head_ub) {
@@ -398,9 +398,9 @@ bool PrecedencesPropagator::EnqueueAndCheck(const ArcInfo& arc,
 
   // Compute the reason for new_head_lb.
   //
-  // TODO(user): do like for clause and keep the negation of
+  // TODO(user): Do like for clauses and keep the negation of
   // arc.presence_literals? I think we could change the integer.h API to accept
-  // true literal like for IntegerVariable, it is really confusing currently.
+  // true literals like for IntegerVariable, it is really confusing currently.
   literal_reason_.clear();
   for (const Literal l : arc.presence_literals) {
     literal_reason_.push_back(l.Negated());
@@ -520,7 +520,7 @@ void PrecedencesPropagator::AnalyzePositiveCycle(
   std::vector<ArcIndex> arc_on_cycle;
 
   // Just to be safe and avoid an infinite loop we use the fact that the maximum
-  // cycle size on a graph with n nodes is of size n. If we have more in the
+  // cycle in a graph with n nodes is of size n. If we have more in the
   // code below, it means first_arc is not part of a cycle according to
   // bf_parent_arc_of_[], which should never happen.
   const int num_nodes = impacted_arcs_.size();
@@ -545,7 +545,7 @@ void PrecedencesPropagator::AnalyzePositiveCycle(
     }
   }
 
-  // TODO(user): what if the sum overflow? this is just a check so I guess
+  // TODO(user): What if the sum overflows? This is just a check so I guess
   // we don't really care, but fix the issue.
   CHECK_GT(sum, 0);
 }
@@ -558,7 +558,7 @@ void PrecedencesPropagator::AnalyzePositiveCycle(
 bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
   const int num_nodes = impacted_arcs_.size();
 
-  // These vector are reset by CleanUpMarkedArcsAndParents() so resize is ok.
+  // These vectors are reset by CleanUpMarkedArcsAndParents() so resize is ok.
   bf_can_be_skipped_.resize(num_nodes, false);
   bf_parent_arc_of_.resize(num_nodes, ArcIndex(-1));
   const auto cleanup =
@@ -593,11 +593,11 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
       if (candidate > integer_trail_->LowerBound(arc.head_var)) {
         if (!EnqueueAndCheck(arc, candidate, trail)) return false;
 
-        // This is the Tarjan contribution to Bellman-Ford. This code detect
-        // positive cycle, and because it disassemble the subtree while doing
+        // This is the Tarjan contribution to Bellman-Ford. This code detects
+        // positive cycles, and because it disassembles the subtree while doing
         // so, the cost is amortized during the algorithm execution. Another
-        // advantages is that it will mark the node explored here as skippable
-        // which will avoid to propagate them too early (knowing that they will
+        // advantage is that it will mark the nodes explored here as skippable,
+        // which will avoid propagating them too early (knowing that they will
         // need to be propagated again later).
         if (DisassembleSubtree(arc.head_var.value(), arc.tail_var.value(),
                                &bf_can_be_skipped_)) {
@@ -625,7 +625,7 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
               }
             }
 
-            // We just marked some optional variable as ignored, no need
+            // We just marked some optional variables as ignored, no need
             // to update bf_parent_arc_of_[].
             continue;
           }

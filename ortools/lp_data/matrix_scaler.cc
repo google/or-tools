@@ -18,19 +18,19 @@
 #include <cstdlib>
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/revised_simplex.h"
-#include "ortools/glop/status.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/sparse.h"
 #include "ortools/lp_data/sparse_column.h"
+#include "ortools/lp_data/sparse_vector.h"
 #include "ortools/util/return_macros.h"
 #include "ortools/util/time_limit.h"
 
@@ -112,15 +112,27 @@ void SparseMatrixScaler::Scale(GlopParameters::ScalingAlgorithm method) {
     return;  // Null matrix: nothing to do.
   }
   VLOG(1) << "Before scaling:\n" << DebugInformationString();
-  if (method == GlopParameters::LINEAR_PROGRAM) {
-    Status lp_status = LPScale();
-    // Revert to the default scaling method if there is an error with the LP.
-    if (lp_status.ok()) {
+  switch (method) {
+    case GlopParameters::LINEAR_PROGRAM:
+      if (LPScale()) {
+        return;
+      }
+      // Revert to the default scaling method if there is an error with the LP.
+      break;
+    case GlopParameters::RUIZ:
+      RuizEquilibrate();
+      VLOG(1) << "After Ruiz scaling:\n" << DebugInformationString();
       return;
-    } else {
-      VLOG(1) << "Error with LP scaling: " << lp_status.error_message();
-    }
+    case GlopParameters::EQUILIBRATION:
+    case GlopParameters::DEFAULT:
+      break;
+    default:
+      LOG(DFATAL) << "Unimplemented scaling method: "
+                  << GlopParameters::ScalingAlgorithm_Name(method) << " ("
+                  << method << ")";
+      break;
   }
+
   // TODO(user): Decide precisely for which value of dynamic range we should cut
   // off geometric scaling.
   const Fractional dynamic_range = max_magnitude / min_magnitude;
@@ -196,7 +208,7 @@ Fractional SparseMatrixScaler::VarianceOfAbsoluteValueOfNonZeros() const {
   const ColIndex num_cols = matrix_->num_cols();
   for (ColIndex col(0); col < num_cols; ++col) {
     for (const SparseColumn::Entry e : matrix_->column(col)) {
-      const Fractional magnitude = fabs(e.coefficient());
+      const Fractional magnitude = std::abs(e.coefficient());
       sigma_square += magnitude * magnitude;
       sigma_abs += magnitude;
       ++n;
@@ -224,7 +236,7 @@ RowIndex SparseMatrixScaler::ScaleRowsGeometrically() {
   const ColIndex num_cols = matrix_->num_cols();
   for (ColIndex col(0); col < num_cols; ++col) {
     for (const SparseColumn::Entry e : matrix_->column(col)) {
-      const Fractional magnitude = fabs(e.coefficient());
+      const Fractional magnitude = std::abs(e.coefficient());
       const RowIndex row = e.row();
       if (magnitude != 0.0) {
         max_in_row[row] = std::max(max_in_row[row], magnitude);
@@ -253,7 +265,7 @@ ColIndex SparseMatrixScaler::ScaleColumnsGeometrically() {
     Fractional max_in_col(0.0);
     Fractional min_in_col(kInfinity);
     for (const SparseColumn::Entry e : matrix_->column(col)) {
-      const Fractional magnitude = fabs(e.coefficient());
+      const Fractional magnitude = std::abs(e.coefficient());
       if (magnitude != 0.0) {
         max_in_col = std::max(max_in_col, magnitude);
         min_in_col = std::min(min_in_col, magnitude);
@@ -280,7 +292,7 @@ RowIndex SparseMatrixScaler::EquilibrateRows() {
   const ColIndex num_cols = matrix_->num_cols();
   for (ColIndex col(0); col < num_cols; ++col) {
     for (const SparseColumn::Entry e : matrix_->column(col)) {
-      const Fractional magnitude = fabs(e.coefficient());
+      const Fractional magnitude = std::abs(e.coefficient());
       if (magnitude != 0.0) {
         const RowIndex row = e.row();
         max_magnitudes[row] = std::max(max_magnitudes[row], magnitude);
@@ -340,12 +352,92 @@ void SparseMatrixScaler::ScaleMatrixColumn(ColIndex col, Fractional factor) {
   matrix_->mutable_column(col)->DivideByConstant(factor);
 }
 
-Status SparseMatrixScaler::LPScale() {
+namespace {
+template <typename IndexType>
+IndexType UpdateScales(
+    const util_intops::StrongVector<IndexType, Fractional>& factors,
+    util_intops::StrongVector<IndexType, Fractional>* scales) {
+  DCHECK(scales != nullptr);
+  IndexType num_scaled(0);
+  const IndexType size(factors.size());
+  for (IndexType i(0); i < size; ++i) {
+    const Fractional factor = factors[i];
+    DCHECK_NE(0.0, factor);
+    if (factor != 1.0) {
+      ++num_scaled;
+      (*scales)[i] *= factor;
+    }
+  }
+  return num_scaled;
+}
+}  // anonymous namespace
+
+void SparseMatrixScaler::RuizEquilibrate() {
+  DCHECK(matrix_ != nullptr);
+  const RowIndex num_rows = matrix_->num_rows();
+  const ColIndex num_cols = matrix_->num_cols();
+
+  // Ruiz equilibration converges geometrically: each
+  // pass reduces the deviation of infinity norms from
+  // 1 by a constant factor. In practice, 3-5 passes
+  // suffice for the scaling factors to reach 1.0 in
+  // double precision. The loop exits early when no rows
+  // or columns are rescaled. The constant 10 is a safety
+  // cap that is never the bottleneck.
+  const int kRuizIterations = 10;
+  for (int k = 0; k < kRuizIterations; ++k) {
+    DenseRow col_factors(num_cols, 1.0);
+    DenseColumn row_factors(num_rows, 0.0);
+    for (ColIndex col(0); col < num_cols; ++col) {
+      const SparseColumn& column = matrix_->column(col);
+      const Fractional col_magnitude = InfinityNorm(column);
+      col_factors[col] = col_magnitude == 0.0 ? 1.0 : std::sqrt(col_magnitude);
+      for (const SparseColumn::Entry e : column) {
+        const Fractional row_magnitude = std::abs(e.coefficient());
+        const RowIndex row = e.row();
+        row_factors[row] = std::max(row_magnitude, row_factors[row]);
+      }
+    }
+    for (RowIndex row(0); row < num_rows; ++row) {
+      const Fractional factor =
+          row_factors[row] == 0.0 ? 1.0 : std::sqrt(row_factors[row]);
+      row_factors[row] = factor;
+    }
+
+    const RowIndex num_rows_scaled = UpdateScales(row_factors, &row_scales_);
+    const ColIndex num_cols_scaled = UpdateScales(col_factors, &col_scales_);
+
+    VLOG(1) << "Ruiz pass " << k << ". Rows scaled = " << num_rows_scaled
+            << ", columns scaled = " << num_cols_scaled;
+
+    if (num_rows_scaled == 0 && num_cols_scaled == 0) break;
+
+    for (ColIndex col(0); col < num_cols; ++col) {
+      const Fractional col_factor = col_factors[col];
+      SparseColumn* const column = matrix_->mutable_column(col);
+      if (col_factor == 1.0) {
+        for (const EntryIndex i : column->AllEntryIndices()) {
+          const Fractional row_factor = row_factors[column->EntryRow(i)];
+          if (row_factor != 1.0) {
+            column->MutableCoefficient(i) /= row_factor;
+          }
+        }
+      } else {
+        for (const EntryIndex i : column->AllEntryIndices()) {
+          const Fractional row_factor = row_factors[column->EntryRow(i)];
+          column->MutableCoefficient(i) /= row_factor * col_factor;
+        }
+      }
+    }
+  }
+}
+
+bool SparseMatrixScaler::LPScale() {
   DCHECK(matrix_ != nullptr);
 
-  auto linear_program = std::make_unique<LinearProgram>();
+  const auto linear_program = std::make_unique<LinearProgram>();
   GlopParameters params;
-  auto simplex = std::make_unique<RevisedSimplex>();
+  const auto simplex = std::make_unique<RevisedSimplex>();
   simplex->SetParameters(params);
 
   // Begin linear program construction.
@@ -429,32 +521,35 @@ Status SparseMatrixScaler::LPScale() {
   // End linear program construction.
 
   linear_program->AddSlackVariablesWhereNecessary(false);
-  const Status simplex_status =
-      simplex->Solve(*linear_program, TimeLimit::Infinite().get());
-  if (!simplex_status.ok()) {
-    return simplex_status;
-  } else {
-    // Now the solution variables can be interpreted and translated from log
-    // space.
-    // For each row scale, unlog it and scale the constraints and constraint
-    // bounds.
-    const ColIndex num_cols = matrix_->num_cols();
-    for (ColIndex col(0); col < num_cols; ++col) {
-      const Fractional column_scale =
-          exp2(-simplex->GetVariableValue(CreateOrGetScaleIndex<ColIndex>(
-              col, linear_program.get(), &col_scale_var_indices)));
-      ScaleMatrixColumn(col, column_scale);
-    }
-    const RowIndex num_rows = matrix_->num_rows();
-    DenseColumn row_scale(num_rows, 0.0);
-    for (RowIndex row(0); row < num_rows; ++row) {
-      row_scale[row] =
-          exp2(-simplex->GetVariableValue(CreateOrGetScaleIndex<RowIndex>(
-              row, linear_program.get(), &row_scale_var_indices)));
-    }
-    ScaleMatrixRows(row_scale);
-    return Status::OK();
+  const SolveStatus simplex_status =
+      simplex->Solve(*linear_program, *TimeLimit::Infinite());
+  if (simplex_status.Is<SolveStatus::Abnormal>()) {
+    VLOG(1) << "Error with LP scaling: " << simplex_status;
+    return false;
   }
+
+  // Now the solution variables can be interpreted and translated from log
+  // space.
+  // For each row scale, unlog it and scale the constraints and constraint
+  // bounds.
+
+  // Returns the computed scale if scale_var is not kInvalidCol, else 1.0 (which
+  // happens for empty rows, for which we don't create variables in the model).
+  const auto get_scale = [&](const ColIndex scale_var) -> Fractional {
+    return scale_var == kInvalidCol
+               ? 1.0
+               : exp2(-simplex->GetVariableValue(scale_var));
+  };
+  for (ColIndex col(0); col < num_cols; ++col) {
+    ScaleMatrixColumn(col, get_scale(col_scale_var_indices[col]));
+  }
+  const RowIndex num_rows = matrix_->num_rows();
+  DenseColumn row_scale(num_rows, 0.0);
+  for (RowIndex row(0); row < num_rows; ++row) {
+    row_scale[row] = get_scale(row_scale_var_indices[row]);
+  }
+  ScaleMatrixRows(row_scale);
+  return true;
 }
 
 }  // namespace glop

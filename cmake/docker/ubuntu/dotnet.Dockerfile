@@ -1,9 +1,10 @@
-FROM ortools/cmake:ubuntu_swig AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}ubuntu_swig AS env
 
 # Install .NET SDK
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu
 RUN apt-get update -qq \
-&& apt-get install -yq dotnet-sdk-8.0 \
+&& apt-get install -yq dotnet-sdk-10.0 \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 # Trigger first run experience by running arbitrary cmd

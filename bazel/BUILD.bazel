@@ -25,6 +25,7 @@ compile_pip_requirements(
     extra_args = extra_args,
     generate_hashes = True,
     requirements_txt = "ortools_requirements.txt",
+    tags = ["noci"],
 )
 
 compile_pip_requirements(
@@ -34,6 +35,7 @@ compile_pip_requirements(
     extra_args = extra_args,
     generate_hashes = True,
     requirements_txt = "notebook_requirements.txt",
+    tags = ["noci"],
 )
 
 # To fully update `requirements.txt` files run the following commands:

@@ -13,21 +13,29 @@
 
 #include "ortools/routing/parsers/dow_parser.h"
 
+#include <string>
+
 #include "absl/status/status.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/path.h"
 #include "ortools/routing/parsers/capacity_planning.pb.h"
+#include "ortools/util/data_path_resolver.h"
 
 namespace operations_research::routing {
 namespace {
+
+std::string GetTestDataPath(absl::string_view filename) {
+  return ortools::GetDataDependencyFilepath(
+      absl::StrCat("operations_research_data/"
+                   "MULTICOM_FIXED_CHARGE_NETWORK_DESIGN/C/",
+                   filename));
+}
+
 TEST(CapacityPlanningReaderTest, C33PassesOK) {
   CapacityPlanningInstance request;
-  ::absl::Status status =
-      ReadFile(file::JoinPathRespectAbsolute(
-                   ::testing::SrcDir(), "operations_research_data/",
-                   "MULTICOM_FIXED_CHARGE_NETWORK_DESIGN/C/c33.dow"),
-               &request);
+  ::absl::Status status = ReadFile(GetTestDataPath("c33.dow"), &request);
   EXPECT_OK(status);
   const NetworkTopology& topology = request.topology();
   const int num_arcs = topology.from_node_size();
@@ -45,11 +53,7 @@ TEST(CapacityPlanningReaderTest, C33PassesOK) {
 
 TEST(CapacityPlanningReaderTest, C34DoesNotExist) {
   CapacityPlanningInstance request;
-  ::absl::Status status =
-      ReadFile(file::JoinPathRespectAbsolute(
-                   ::testing::SrcDir(), "operations_research_data/",
-                   "MULTICOM_FIXED_CHARGE_NETWORK_DESIGN/C/c34.dow"),
-               &request);
+  ::absl::Status status = ReadFile(GetTestDataPath("c34.dow"), &request);
   EXPECT_THAT(::util::StatusToString(status),
               testing::HasSubstr("generic::not_found"));
 }

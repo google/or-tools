@@ -28,6 +28,7 @@
 #include "absl/synchronization/mutex.h"
 #include "absl/synchronization/notification.h"
 #include "ortools/base/iterator_adaptors.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/threadpool.h"
 
 namespace operations_research {
@@ -265,10 +266,10 @@ BidirectionalDijkstra<GraphType, DistanceType>::SetToSetShortestPath(
         dir == FORWARD ? sources : destinations;
     CHECK(queue_[dir].empty());
     QCHECK_EQ(reached_nodes_[dir].size(), 0);
-#ifndef NDEBUG
-    for (bool b : is_reached_[dir]) QCHECK(!b);
-    for (bool b : is_settled_[dir]) QCHECK(!b);
-#endif
+    if constexpr (DEBUG_MODE) {
+      for (bool b : is_reached_[dir]) QCHECK(!b);
+      for (bool b : is_settled_[dir]) QCHECK(!b);
+    }
     for (const NodeDistance& src : srcs) {
       CHECK_GE(src.node, 0);
       CHECK_LT(src.node, graph_[dir]->num_nodes());

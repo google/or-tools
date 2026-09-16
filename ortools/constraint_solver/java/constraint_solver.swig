@@ -147,7 +147,6 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 
 #include <vector>
 
-#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
 class RAIIExceptionChecker {

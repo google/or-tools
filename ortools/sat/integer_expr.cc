@@ -17,7 +17,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <limits>
 #include <numeric>
 #include <utility>
 #include <vector>
@@ -27,6 +26,8 @@
 #include "absl/numeric/int128.h"
 #include "absl/types/span.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/base/stl_util.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -39,6 +40,20 @@
 
 namespace operations_research {
 namespace sat {
+
+namespace {
+
+bool HasDuplicateVariables(absl::Span<const IntegerVariable> vars) {
+  std::vector<IntegerVariable> copy;
+  copy.reserve(vars.size());
+  for (int i = 0; i < vars.size(); ++i) {
+    copy.push_back(PositiveVariable(vars[i]));
+  }
+  gtl::STLSortAndRemoveDuplicates(&copy);
+  return copy.size() < vars.size();
+}
+
+}  // namespace
 
 template <bool use_int128>
 LinearConstraintPropagator<use_int128>::LinearConstraintPropagator(
@@ -54,6 +69,7 @@ LinearConstraintPropagator<use_int128>::LinearConstraintPropagator(
       max_variations_(new IntegerValue[size_]) {
   // TODO(user): deal with this corner case.
   CHECK(!vars.empty());
+  DCHECK(!HasDuplicateVariables(vars));
 
   // Copy data.
   memcpy(vars_.get(), vars.data(), size_ * sizeof(IntegerVariable));
@@ -93,6 +109,7 @@ LinearConstraintPropagator<use_int128>::LinearConstraintPropagator(
       max_variations_(new IntegerValue[size_]) {
   // TODO(user): deal with this corner case.
   CHECK_GT(size_, 0);
+  DCHECK(!HasDuplicateVariables(absl::MakeSpan(vars_.get(), size_)));
 
   // Handle negative coefficients.
   for (int i = 0; i < size_; ++i) {
@@ -146,7 +163,7 @@ LinearConstraintPropagator<use_int128>::ConditionalLb(
     }
   }
 
-  // Recall that all our coefficient are positive.
+  // Recall that all our coefficients are positive.
   bool literal_var_present = false;
   bool literal_var_present_positively = false;
   IntegerValue var_coeff;
@@ -179,7 +196,7 @@ LinearConstraintPropagator<use_int128>::ConditionalLb(
     return {kMinIntegerValue, kMinIntegerValue};
   }
 
-  // The upper bound on NegationOf(target_var) are lb(-target) + slack / coeff.
+  // The upper bound on NegationOf(target_var) is lb(-target) + slack / coeff.
   // So the lower bound on target_var is ub - slack / coeff.
   const absl::int128 slack128 = absl::int128(upper_bound_.value()) - lb_128;
   const IntegerValue target_lb = shared_->integer_trail->LowerBound(target_var);
@@ -295,7 +312,7 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
   // If use_int128 is true, the slack or propagation slack can be larger than
   // this. To detect overflow with capped arithmetic, it is important the slack
   // used in our algo never exceed this value.
-  const absl::int128 max_slack = std::numeric_limits<int64_t>::max() - 1;
+  const absl::int128 max_slack = kint64max - 1;
 
   // Conflict?
   IntegerValue slack;
@@ -335,7 +352,7 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
   for (int i = num_fixed_vars; i < size_; ++i) {
     if (!use_int128 && max_variations_[i] <= slack) continue;
 
-    // TODO(user): If the new ub fall into an hole of the variable, we can
+    // TODO(user): If the new ub falls into a hole of the variable, we can
     // actually relax the reason more by computing a better slack.
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
@@ -488,8 +505,8 @@ LevelZeroEquality::LevelZeroEquality(IntegerVariable target,
 // diophantine equation support.
 bool LevelZeroEquality::Propagate() {
   // TODO(user): Once the GCD is not 1, we could at any level make sure the
-  // objective is of the correct form. For now, this only happen in a few
-  // miplib problem that we close quickly, so I didn't add the extra code yet.
+  // objective is of the correct form. For now, this only happens in a few
+  // miplib problems that we close quickly, so I didn't add the extra code yet.
   if (trail_->CurrentDecisionLevel() != 0) return true;
 
   int64_t gcd = 0;
@@ -541,7 +558,7 @@ MinPropagator::MinPropagator(std::vector<AffineExpression> vars,
 bool MinPropagator::Propagate() {
   if (vars_.empty()) return true;
 
-  // Count the number of interval that are possible candidate for the min.
+  // Count the number of intervals that are possible candidates for the min.
   // Only the intervals for which lb > current_min_ub cannot.
   const IntegerLiteral min_ub_literal =
       integer_trail_->UpperBoundAsLiteral(min_var_);
@@ -578,7 +595,7 @@ bool MinPropagator::Propagate() {
     if (current_min_ub < ub_of_only_candidate) {
       integer_reason_.clear();
 
-      // The reason is that all the other interval start after current_min_ub.
+      // The reason is that all the other intervals start after current_min_ub.
       // And that min_ub has its current value.
       integer_reason_.push_back(min_ub_literal);
       for (const AffineExpression& var : vars_) {
@@ -743,7 +760,7 @@ bool GreaterThanMinOfExprsPropagator::Propagate() {
     return true;
   }
 
-  // Count the number of interval that are possible candidate for the min.
+  // Count the number of intervals that are possible candidates for the min.
   // Only the intervals for which lb > current_min_ub cannot.
   const IntegerValue current_min_ub = integer_trail_.UpperBound(min_var_);
   int num_intervals_that_can_be_min = 0;
@@ -867,7 +884,7 @@ ProductPropagator::ProductPropagator(
                                                  RegisterWith(watcher));
 }
 
-// We want all affine expression to be either non-negative or across zero.
+// We want all affine expressions to be either non-negative or across zero.
 bool ProductPropagator::CanonicalizeCases() {
   if (integer_trail_.UpperBound(a_) <= 0) {
     a_ = a_.Negated();
@@ -906,8 +923,8 @@ bool ProductPropagator::CanonicalizeCases() {
 // Note that this propagation is exact, except on the domain of p as this
 // involves more complex arithmetic.
 //
-// TODO(user): We could tighten the bounds on p by removing extreme value that
-// do not contains divisor in the domains of a or b. There is an algo in O(
+// TODO(user): We could tighten the bounds on p by removing extreme values that
+// do not contain a divisor in the domains of a or b. There is an algo in O(
 // smallest domain size between a or b).
 bool ProductPropagator::PropagateWhenAllNonNegative() {
   {
@@ -1074,7 +1091,7 @@ bool ProductPropagator::Propagate() {
     return PropagateWhenAllNonNegative();
   }
 
-  // Lets propagate on p_ first, the max/min is given by one of: max_a * max_b,
+  // Let's propagate on p_ first, the max/min is given by one of: max_a * max_b,
   // max_a * min_b, min_a * max_b, min_a * min_b. This is true, because any
   // product x * y, depending on the sign, is dominated by one of these.
   //
@@ -1109,7 +1126,7 @@ bool ProductPropagator::Propagate() {
     }
   }
 
-  // Lets propagate on a and b.
+  // Let's propagate on a and b.
   const IntegerValue min_p = integer_trail_.LowerBound(p_);
   const IntegerValue max_p = integer_trail_.UpperBound(p_);
 
@@ -1151,7 +1168,7 @@ bool ProductPropagator::Propagate() {
     const IntegerValue max_b = integer_trail_.UpperBound(b);
     const IntegerValue min_b = integer_trail_.LowerBound(b);
 
-    // If the domain of b contain zero, we can't propagate anything on a.
+    // If the domain of b contains zero, we can't propagate anything on a.
     // Because of CanonicalizeCases(), we just deal with min_b > 0 here.
     if (zero_is_possible && min_b <= 0) continue;
 
@@ -1228,18 +1245,32 @@ SquarePropagator::SquarePropagator(
   GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
   enforcement_id_ = enforcement_helper_.Register(enforcement_literals, watcher,
                                                  RegisterWith(watcher));
-  CHECK_GE(integer_trail_.LevelZeroLowerBound(x), 0);
 }
 
 // Propagation from x to s: s in [min_x * min_x, max_x * max_x].
 // Propagation from s to x: x in [ceil(sqrt(min_s)), floor(sqrt(max_s))].
 bool SquarePropagator::Propagate() {
   const IntegerValue min_x = integer_trail_.LowerBound(x_);
-  const IntegerValue min_s = integer_trail_.LowerBound(s_);
-  const IntegerValue min_x_square = CapProdI(min_x, min_x);
   const IntegerValue max_x = integer_trail_.UpperBound(x_);
+
+  // If x can change sign, min_x_square is zero and we don't need a reason.
+  // Otherwise it depends on the sign.
+  IntegerValue min_x_square(0);
+  IntegerLiteral min_x_square_reason = IntegerLiteral::TrueLiteral();
+  if (min_x > 0) {
+    min_x_square = CapProdI(min_x, min_x);
+    min_x_square_reason = x_.GreaterOrEqual(min_x);
+  } else if (max_x < 0) {
+    min_x_square = CapProdI(max_x, max_x);
+    min_x_square_reason = x_.LowerOrEqual(max_x);
+  }
+
+  const IntegerValue max_x_magnitude =
+      std::max(IntTypeAbs(max_x), IntTypeAbs(min_x));
+  const IntegerValue max_x_square = CapProdI(max_x_magnitude, max_x_magnitude);
+
+  const IntegerValue min_s = integer_trail_.LowerBound(s_);
   const IntegerValue max_s = integer_trail_.UpperBound(s_);
-  const IntegerValue max_x_square = CapProdI(max_x, max_x);
 
   const EnforcementStatus status = enforcement_helper_.Status(enforcement_id_);
   if (status == EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT) {
@@ -1249,45 +1280,96 @@ bool SquarePropagator::Propagate() {
       return enforcement_helper_.PropagateWhenFalse(
           enforcement_id_,
           /*literal_reason=*/{},
-          {x_.GreaterOrEqual(min_x), s_.LowerOrEqual(min_x_square - 1)});
+          {min_x_square_reason, s_.LowerOrEqual(min_x_square - 1)});
     }
     if (min_s > max_x_square) {
       return enforcement_helper_.PropagateWhenFalse(
           enforcement_id_,
           /*literal_reason=*/{},
-          {x_.LowerOrEqual(max_x), s_.GreaterOrEqual(max_x_square + 1)});
+          {x_.LowerOrEqual(max_x_magnitude),
+           x_.GreaterOrEqual(-max_x_magnitude),
+           s_.GreaterOrEqual(max_x_square + 1)});
     }
     // Otherwise we cannot propagate anything since the enforcement is unknown.
     return true;
   }
 
   if (status != EnforcementStatus::IS_ENFORCED) return true;
+
+  // We can always make sure the lower bound of s is a proper square.
+  if (min_s > 0) {
+    const IntegerValue new_x_min(CeilSquareRoot(min_s.value()));
+    const IntegerValue proper_s_min = new_x_min * new_x_min;
+    if (proper_s_min > min_s) {
+      if (!enforcement_helper_.SafeEnqueue(enforcement_id_,
+                                           s_.GreaterOrEqual(proper_s_min),
+                                           {s_.GreaterOrEqual(min_s)})) {
+        return false;
+      }
+    }
+  }
+
+  // Same for the upper bound of s.
+  if (max_s > 0) {
+    const IntegerValue new_x_max(FloorSquareRoot(max_s.value()));
+    const IntegerValue proper_s_max = new_x_max * new_x_max;
+    if (proper_s_max < max_s) {
+      if (!enforcement_helper_.SafeEnqueue(enforcement_id_,
+                                           s_.LowerOrEqual(proper_s_max),
+                                           {s_.LowerOrEqual(max_s)})) {
+        return false;
+      }
+    }
+  }
+
   if (min_x_square > min_s) {
     if (!enforcement_helper_.SafeEnqueue(enforcement_id_,
                                          s_.GreaterOrEqual(min_x_square),
-                                         {x_.GreaterOrEqual(min_x)})) {
+                                         {min_x_square_reason})) {
       return false;
     }
   } else if (min_x_square < min_s) {
-    const IntegerValue new_min(CeilSquareRoot(min_s.value()));
-    if (!enforcement_helper_.SafeEnqueue(
-            enforcement_id_, x_.GreaterOrEqual(new_min),
-            {s_.GreaterOrEqual((new_min - 1) * (new_min - 1) + 1)})) {
-      return false;
+    const IntegerValue new_x_min(CeilSquareRoot(min_s.value()));
+    if (min_x > -new_x_min) {
+      if (!enforcement_helper_.SafeEnqueue(
+              enforcement_id_, x_.GreaterOrEqual(new_x_min),
+              {x_.GreaterOrEqual(-new_x_min + 1),
+               s_.GreaterOrEqual((new_x_min - 1) * (new_x_min - 1) + 1)})) {
+        return false;
+      }
+    }
+    if (max_x < new_x_min) {
+      if (!enforcement_helper_.SafeEnqueue(
+              enforcement_id_, x_.LowerOrEqual(-new_x_min),
+              {x_.LowerOrEqual(new_x_min - 1),
+               s_.GreaterOrEqual((new_x_min - 1) * (new_x_min - 1) + 1)})) {
+        return false;
+      }
     }
   }
+
   if (max_x_square < max_s) {
-    if (!enforcement_helper_.SafeEnqueue(enforcement_id_,
-                                         s_.LowerOrEqual(max_x_square),
-                                         {x_.LowerOrEqual(max_x)})) {
+    if (!enforcement_helper_.SafeEnqueue(
+            enforcement_id_, s_.LowerOrEqual(max_x_square),
+            {x_.LowerOrEqual(max_x_magnitude),
+             x_.GreaterOrEqual(-max_x_magnitude)})) {
       return false;
     }
   } else if (max_x_square > max_s) {
-    const IntegerValue new_max(FloorSquareRoot(max_s.value()));
-    if (!enforcement_helper_.SafeEnqueue(
-            enforcement_id_, x_.LowerOrEqual(new_max),
-            {s_.LowerOrEqual(CapProdI(new_max + 1, new_max + 1) - 1)})) {
-      return false;
+    const IntegerValue new_x_max(FloorSquareRoot(max_s.value()));
+    if (max_x > new_x_max) {
+      if (!enforcement_helper_.SafeEnqueue(
+              enforcement_id_, x_.LowerOrEqual(new_x_max),
+              {s_.LowerOrEqual(CapProdI(new_x_max + 1, new_x_max + 1) - 1)})) {
+        return false;
+      }
+    }
+    if (min_x < -new_x_max) {
+      if (!enforcement_helper_.SafeEnqueue(
+              enforcement_id_, x_.GreaterOrEqual(-new_x_max),
+              {s_.LowerOrEqual(CapProdI(new_x_max + 1, new_x_max + 1) - 1)})) {
+        return false;
+      }
     }
   }
 
@@ -1339,21 +1421,39 @@ bool DivisionPropagator::Propagate() {
     const IntegerValue max_denom = integer_trail_.UpperBound(denom_);
     const IntegerValue min_div = integer_trail_.LowerBound(div_);
     const IntegerValue max_div = integer_trail_.UpperBound(div_);
+
+    const IntegerValue max_possible_div =
+        (max_num >= 0) ? (max_num / min_denom) : (max_num / max_denom);
+
+    const IntegerValue min_possible_div =
+        (min_num >= 0) ? (min_num / max_denom) : (min_num / min_denom);
+
     // If the bounds of num / denom and div are disjoint, the enforcement must
     // be false. TODO(user): relax the reason in a better way.
-    if (min_num / max_denom > max_div) {
+    if (min_possible_div > max_div) {
+      std::vector<IntegerLiteral> integer_reason = {
+          num_.GreaterOrEqual(min_num), div_.LowerOrEqual(max_div)};
+      if (min_num >= 0) {
+        integer_reason.push_back(denom_.LowerOrEqual(max_denom));
+        integer_reason.push_back(denom_.GreaterOrEqual(1));
+      } else {
+        integer_reason.push_back(denom_.GreaterOrEqual(min_denom));
+      }
       return enforcement_helper_.PropagateWhenFalse(
-          enforcement_id_,
-          /*literal_reason=*/{},
-          {num_.GreaterOrEqual(min_num), denom_.LowerOrEqual(max_denom),
-           div_.LowerOrEqual(max_div)});
+          enforcement_id_, /*literal_reason=*/{}, integer_reason);
     }
-    if (max_num / min_denom < min_div) {
+
+    if (max_possible_div < min_div) {
+      std::vector<IntegerLiteral> integer_reason = {
+          num_.LowerOrEqual(max_num), div_.GreaterOrEqual(min_div)};
+      if (max_num >= 0) {
+        integer_reason.push_back(denom_.GreaterOrEqual(min_denom));
+      } else {
+        integer_reason.push_back(denom_.LowerOrEqual(max_denom));
+        integer_reason.push_back(denom_.GreaterOrEqual(1));
+      }
       return enforcement_helper_.PropagateWhenFalse(
-          enforcement_id_,
-          /*literal_reason=*/{},
-          {num_.LowerOrEqual(max_num), denom_.GreaterOrEqual(min_denom),
-           div_.GreaterOrEqual(min_div)});
+          enforcement_id_, /*literal_reason=*/{}, integer_reason);
     }
     // Otherwise we cannot propagate anything since the enforcement is unknown.
     return true;
@@ -1565,16 +1665,35 @@ bool FixedDivisionPropagator::Propagate() {
     // If the bounds of a / b and c are disjoint, the enforcement must be false.
     // TODO(user): relax the reason in a better way.
     if (min_a / b_ > max_c) {
+      // Our conflict is div(a, b) > c where div rounds towards 0 (e.g.,
+      // div(-3, 2) = -1). To propagate, we want a reason bound `L` for `a` so
+      // that a >= L => div(a, b) > c.
+      // If c >= 0, L must be > 0, otherwise a=0 is a counter-example.
+      // If c < 0, L=0 is a valid bound. So to find the tightest bound, we can
+      // assume L <= 0.
+      // Thus, reasoning about positive values and noticing that the tightest
+      // bound is when the inequality becomes an equality:
+      // - If c >= 0, then floor(L/b) == c + 1. We want the smallest L, so we
+      //   choose L = (c + 1) * b.
+      // - If c < 0, we use the property that if we round towards zero,
+      //   abs(div(a, b)) == div(abs(a), abs(b)). To keep manipulating
+      //   non-negative values, we apply this to get floor(-L/b) == -(c + 1). We
+      //   want the smallest L, thus the highest (-L), so we choose
+      //   -L = -(c + 1) * b + (b - 1). Thus L = c * b + 1.
+      const IntegerValue min_a_reason =
+          max_c >= 0 ? max_c * b_ + b_ : max_c * b_ + 1;
       return enforcement_helper_.PropagateWhenFalse(
           enforcement_id_,
           /*literal_reason=*/{},
-          {a_.GreaterOrEqual(max_c * b_ + 1), c_.LowerOrEqual(max_c)});
+          {a_.GreaterOrEqual(min_a_reason), c_.LowerOrEqual(max_c)});
     }
     if (max_a / b_ < min_c) {
+      const IntegerValue max_a_reason =
+          min_c > 0 ? min_c * b_ - 1 : min_c * b_ - b_;
       return enforcement_helper_.PropagateWhenFalse(
           enforcement_id_,
           /*literal_reason=*/{},
-          {a_.LowerOrEqual(min_c * b_ - 1), c_.GreaterOrEqual(min_c)});
+          {a_.LowerOrEqual(max_a_reason), c_.GreaterOrEqual(min_c)});
     }
     // Otherwise we cannot propagate anything since the enforcement is unknown.
     return true;
@@ -1674,14 +1793,19 @@ bool FixedModuloPropagator::Propagate() {
 
   if (status != EnforcementStatus::IS_ENFORCED) return true;
   if (!PropagateSignsAndTargetRange()) return false;
-  if (!PropagateOuterBounds()) return false;
+  bool changed = true;
+  if (!PropagateOuterBounds(&changed)) return false;
+
+  // Subtle: we might need to run PropagateSignsAndTargetRange() again to make
+  // sure that the invariant `expr >= 0 => target >= 0` is respected.
+  if (changed) {
+    if (!PropagateSignsAndTargetRange()) return false;
+  }
 
   if (integer_trail_.LowerBound(expr_) >= 0) {
-    if (!PropagateBoundsWhenExprIsNonNegative(expr_, target_)) return false;
+    return PropagateBoundsWhenExprIsNonNegative(expr_, target_);
   } else if (integer_trail_.UpperBound(expr_) <= 0) {
-    if (!PropagateBoundsWhenExprIsNonNegative(negated_expr_, negated_target_)) {
-      return false;
-    }
+    return PropagateBoundsWhenExprIsNonNegative(negated_expr_, negated_target_);
   }
 
   return true;
@@ -1827,13 +1951,15 @@ bool FixedModuloPropagator::PropagateSignsAndTargetRange() {
   return true;
 }
 
-bool FixedModuloPropagator::PropagateOuterBounds() {
+bool FixedModuloPropagator::PropagateOuterBounds(bool* changed) {
+  *changed = false;
   const IntegerValue min_expr = integer_trail_.LowerBound(expr_);
   const IntegerValue max_expr = integer_trail_.UpperBound(expr_);
   const IntegerValue min_target = integer_trail_.LowerBound(target_);
   const IntegerValue max_target = integer_trail_.UpperBound(target_);
 
   if (max_expr % mod_ > max_target) {
+    *changed = true;
     if (!enforcement_helper_.SafeEnqueue(
             enforcement_id_,
             expr_.LowerOrEqual((max_expr / mod_) * mod_ + max_target),
@@ -1844,6 +1970,7 @@ bool FixedModuloPropagator::PropagateOuterBounds() {
   }
 
   if (min_expr % mod_ < min_target) {
+    *changed = true;
     if (!enforcement_helper_.SafeEnqueue(
             enforcement_id_,
             expr_.GreaterOrEqual((min_expr / mod_) * mod_ + min_target),
@@ -1854,6 +1981,7 @@ bool FixedModuloPropagator::PropagateOuterBounds() {
   }
 
   if (min_expr / mod_ == max_expr / mod_) {
+    *changed = true;
     if (min_target < min_expr % mod_) {
       if (!enforcement_helper_.SafeEnqueue(
               enforcement_id_,
@@ -1867,6 +1995,7 @@ bool FixedModuloPropagator::PropagateOuterBounds() {
     }
 
     if (max_target > max_expr % mod_) {
+      *changed = true;
       if (!enforcement_helper_.SafeEnqueue(
               enforcement_id_,
               target_.LowerOrEqual(max_expr - (max_expr / mod_) * mod_),
@@ -1880,6 +2009,7 @@ bool FixedModuloPropagator::PropagateOuterBounds() {
   } else if (min_expr / mod_ == 0 && min_target < 0) {
     // expr == target when expr <= 0.
     if (min_target < min_expr) {
+      *changed = true;
       if (!enforcement_helper_.SafeEnqueue(
               enforcement_id_, target_.GreaterOrEqual(min_expr),
               {integer_trail_.LowerBoundAsLiteral(target_),
@@ -1890,6 +2020,7 @@ bool FixedModuloPropagator::PropagateOuterBounds() {
   } else if (max_expr / mod_ == 0 && max_target > 0) {
     // expr == target when expr >= 0.
     if (max_target > max_expr) {
+      *changed = true;
       if (!enforcement_helper_.SafeEnqueue(
               enforcement_id_, target_.LowerOrEqual(max_expr),
               {integer_trail_.UpperBoundAsLiteral(target_),

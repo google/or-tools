@@ -81,7 +81,7 @@ CostValue BuildAndSolveHungarianInstance(
   // need to increase our memory footprint by building the array of
   // arc tails (since we need tails to build the input to the
   // hungarian algorithm). We opt for the alternative of iterating
-  // over hte arcs via adjacency lists, which gives us the arc tails
+  // over the arcs via adjacency lists, which gives us the arc tails
   // implicitly.
   for (const auto tail : graph.AllNodes()) {
     for (const auto arc : graph.OutgoingArcs(tail)) {

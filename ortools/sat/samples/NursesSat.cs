@@ -55,7 +55,7 @@ public class NursesSat
                     }
                     if (!isWorking)
                     {
-                        Console.WriteLine($"  Nurse {d} does not work");
+                        Console.WriteLine($"  Nurse {n} does not work");
                     }
                 }
             }

@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 
+#include "ortools/routing/ils.pb.h"
 #include "ortools/routing/parameters.pb.h"
 
 namespace operations_research::routing {
@@ -24,7 +25,7 @@ namespace operations_research::routing {
 RoutingModelParameters DefaultRoutingModelParameters();
 RoutingSearchParameters DefaultRoutingSearchParameters();
 RoutingSearchParameters DefaultSecondaryRoutingSearchParameters();
-IteratedLocalSearchParameters DefaultIteratedLocalSearchParameters();
+IteratedLocalSearchParameters RecommendedIteratedLocalSearchParameters();
 
 /// Returns an empty std::string if the routing search parameters are valid, and
 /// a non-empty, human readable error description if they're not.
@@ -35,6 +36,11 @@ std::string FindErrorInRoutingSearchParameters(
 /// parameters. Returns an empty vector if the parameters are valid.
 std::vector<std::string> FindErrorsInRoutingSearchParameters(
     const RoutingSearchParameters& search_parameters);
+
+/// Returns a list of std::string describing the errors in the iterated local
+/// search parameters. Returns an empty vector if the parameters are valid.
+std::vector<std::string> FindErrorsInIteratedLocalSearchParameters(
+    const IteratedLocalSearchParameters& ils);
 
 }  // namespace operations_research::routing
 

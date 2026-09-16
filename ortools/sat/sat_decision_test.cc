@@ -82,7 +82,7 @@ TEST(SatDecisionPolicyTest, ErwaHeuristic) {
       Literal(BooleanVariable(0), true));
   EXPECT_EQ(Literal(BooleanVariable(9), false), decision->NextBranch());
 
-  // Lets enqueue some more.
+  // Let's enqueue some more.
   trail->EnqueueWithUnitReason(Literal(BooleanVariable(1), false));
   trail->EnqueueWithUnitReason(Literal(BooleanVariable(2), true));
 

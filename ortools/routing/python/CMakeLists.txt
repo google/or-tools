@@ -70,7 +70,7 @@ if(MSVC)
 endif()
 
 # Test
-if(BUILD_TESTING)
+if(BUILD_PYTHON_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)
     add_python_test(FILE_NAME ${FILE_NAME})

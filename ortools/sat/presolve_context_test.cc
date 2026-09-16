@@ -667,7 +667,6 @@ TEST(PresolveContextTest, VarIsOnlyUsedInEncoding) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
   EXPECT_FALSE(context.VariableIsOnlyUsedInEncodingAndMaybeInObjective(0));
   EXPECT_FALSE(context.VariableIsOnlyUsedInEncodingAndMaybeInObjective(1));
   EXPECT_TRUE(context.VariableIsOnlyUsedInEncodingAndMaybeInObjective(2));
@@ -689,8 +688,7 @@ TEST(PresolveContextTest, ReifiedConstraintCache) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   LinearExpressionProto expr1;
   expr1.add_vars(2);
   expr1.add_coeffs(1);
@@ -723,7 +721,6 @@ TEST(PresolveContextTest, ExploitFixedDomainOverflow) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
 }
 
 TEST(PresolveContextTest, IntersectDomainWithConstant) {
@@ -767,7 +764,7 @@ TEST(PresolveContextTest, IntersectDomainWithUpdatesHint) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
 
   EXPECT_TRUE(context.IntersectDomainWith(0, Domain(5, 20)));
 
@@ -815,14 +812,13 @@ TEST(PresolveContextTest, AddAffineRelation) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
 
   EXPECT_TRUE(context.StoreAffineRelation(0, 1, 3, 0));  // x0 = 3x1
   EXPECT_TRUE(context.StoreAffineRelation(2, 3, 5, 0));  // x2 = 5x3
   EXPECT_TRUE(context.StoreAffineRelation(0, 2, 2, 0));  // x0 = 2x2 !
 
   // A new variable is created: x4 !
-  // x0 = 2x2 get expanded into 3x1 = 10 x3, so x1 is a multiple of 10.
+  // x0 = 2x2 gets expanded into 3x1 = 10 x3, so x1 is a multiple of 10.
   EXPECT_EQ(context.GetAffineRelation(1).representative, 4);
   EXPECT_EQ(context.GetAffineRelation(1).coeff, 10);
   EXPECT_EQ(context.DomainOf(4).ToString(), "[0,33]");
@@ -850,7 +846,6 @@ TEST(PresolveContextTest, AddAffineRelationWithOffset) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
 
   EXPECT_TRUE(context.StoreAffineRelation(0, 1, 3, 10));  // x0 = 3x1 + 10
   EXPECT_TRUE(context.StoreAffineRelation(2, 3, 1, 30));  // x2 = x3 + 30
@@ -880,7 +875,6 @@ TEST(PresolveContextTest, AddAffineRelationPreventOverflow) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
 
   // x0 = 10 x2 - 1e9.
   EXPECT_TRUE(context.StoreAffineRelation(0, 1, 10, -1000000000));
@@ -892,7 +886,7 @@ TEST(PresolveContextTest, AddAffineRelationPreventOverflow) {
   EXPECT_EQ(context.GetAffineRelation(1).offset, 100000001);
   EXPECT_EQ(context.DomainOf(2).ToString(), "[0,3]");
 
-  // And x0 is in term of that one.
+  // And x0 is in terms of that one.
   EXPECT_EQ(context.GetAffineRelation(0).representative, 2);
   EXPECT_EQ(context.GetAffineRelation(0).coeff, 10);
   EXPECT_EQ(context.DomainOf(0).ToString(), "[10][20][30][40]");
@@ -956,7 +950,6 @@ TEST(ExpressionIsALiteralTest, BasicApi) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
 
   int ref;
   const LinearExpressionProto expr1 = ParseTestProto(R"pb(
@@ -1059,7 +1052,7 @@ TEST(PresolveContextTest, CanonicalizeLinearConstraint) {
   EXPECT_THAT(working_model.constraints(0), testing::EqualsProto(expected));
 }
 
-TEST(PresolveContextTest, LoadSolutionHint) {
+TEST(PresolveContextTest, LoadAndClampSolutionHint) {
   Model model;
   CpModelProto working_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 10 ] }
@@ -1072,7 +1065,7 @@ TEST(PresolveContextTest, LoadSolutionHint) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
 
   context.solution_crush().StoreSolutionAsHint(working_model);
   // All hints should be clamped to their respective domains, and new hints

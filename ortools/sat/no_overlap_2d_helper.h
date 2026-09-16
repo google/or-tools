@@ -35,8 +35,8 @@ namespace sat {
 
 // Helper class shared by the propagators that handle no_overlap_2d constraints.
 //
-// Having a helper class like this one makes much easier to do in-processing and
-// to share pre-computed data between the two propagators.
+// Having a helper class like this one makes it much easier to do in-processing
+// and to share pre-computed data between the two propagators.
 class NoOverlap2DConstraintHelper : public PropagatorInterface {
  public:
   NoOverlap2DConstraintHelper(std::vector<AffineExpression> x_starts,
@@ -130,13 +130,13 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
   bool PropagateRelativePosition(
       int first, int second, PairwiseRestriction::PairwiseRestrictionType type);
 
-  // Returns a "fixed size projection" of the item of the item `index`. More
-  // precisely, returns item of index `index` with its sizes fixed to their
-  // minimum value alongside a bounding box that contains the item.
+  // Returns a "fixed size projection" of the item with index `index`. More
+  // precisely, returns the item of index `index` with its sizes fixed to their
+  // minimum values alongside a bounding box that contains the item.
   RectangleInRange GetItemRangeForSizeMin(int index) const;
 
-  // Returns a {start_min, start_max, end_min, end_max} view of the item of
-  // the index `index`.
+  // Returns a {start_min, start_max, end_min, end_max} view of the item with
+  // index `index`.
   ItemWithVariableSize GetItemWithVariableSize(int index) const;
 
   // If there is no possible placement for the two mandatory boxes (they will
@@ -150,7 +150,7 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
   // satisfy:
   //   - the problem of placing all the rectangles in their domain is
   //     infeasible;
-  //   - the x and y sizes of each box in `ranges` are smaller or equal than
+  //   - the x and y sizes of each box in `ranges` are smaller than or equal to
   //     the corresponding current minimum sizes of the boxes;
   //   - for each range in `ranges`, range.box_index.bounding_box is fully
   //     contained inside GetItemRangeForSizeMin(range.box_index).bounding_box.
@@ -224,6 +224,7 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
 
   int NumBoxes() const { return x_helper_->NumTasks(); }
 
+  bool IncrementalPropagate(absl::Span<const int> watch_indices) override;
   bool Propagate() override;
 
   // Note that the helpers are only valid until the next call to
@@ -248,6 +249,14 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
              absl::Span<const int> non_fixed_box_indexes);
 
   CompactVectorVector<int> connected_components_;
+
+  // The watcher indices never change, but box indices are remapped by Reset().
+  // Note that as boxes become fixed at the root level, the corresponding entry
+  // will be set to -1 here.
+  //
+  // TODO(user): We should probably remove the entry in the watch list of the
+  // GenericLiteralWatcher too.
+  std::vector<int> watch_index_to_box_;
 
   bool axes_are_swapped_;
   std::unique_ptr<SchedulingConstraintHelper> x_helper_;

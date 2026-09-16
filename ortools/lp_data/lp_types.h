@@ -21,14 +21,21 @@
 #include <initializer_list>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <string>
+#include <variant>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/glop/status.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 // We use typedefs as much as possible to later permit the usage of
 // types such as quad-doubles or rationals.
@@ -172,6 +179,382 @@ inline std::ostream& operator<<(std::ostream& os, ProblemStatus status) {
   os << GetProblemStatusString(status);
   return os;
 }
+
+// Different causes of early interruption of the solve (not including errors).
+//
+// See TimeLimitStateToCause().
+enum class InterruptionCause : int8_t {
+  // The solve was interrupted with an elapsed time limit (could be
+  // deterministic time or wall time).
+  //
+  // This corresponds to TimeLimit::LimitReached() being true because of the
+  // time. See kExternalBoolean for other case.
+  kTimeLimit,
+
+  // The solve was interrupted because of an external interruption.
+  //
+  // This corresponds to TimeLimit::LimitReached() being true because of the
+  // boolean passed to TimeLimit::RegisterExternalBooleanAsLimit().
+  kExternal,
+
+  // The solve was interrupted due to the number of iterations.
+  kIterationLimit,
+
+  // The objective limit has been reached.
+  kObjectiveLimit,
+};
+
+// Returns the string representation of the InterruptionCause enum.
+absl::string_view GetInterruptionCauseString(InterruptionCause cause);
+
+inline std::ostream& operator<<(std::ostream& os, InterruptionCause cause) {
+  os << GetInterruptionCauseString(cause);
+  return os;
+}
+
+// Converts the state of the TimeLimit to a cause of interruption. Returns
+// std::nullopt when called with TimeLimit::State::kRunning.
+inline std::optional<InterruptionCause> TimeLimitStateToCause(
+    TimeLimit::State state) {
+  switch (state) {
+    case TimeLimit::State::kRunning:
+      return std::nullopt;
+    case TimeLimit::State::kExternalBoolean:
+    case TimeLimit::State::kSecondaryExternalBoolean:
+      return InterruptionCause::kExternal;
+    case TimeLimit::State::kDeterministicTime:
+    case TimeLimit::State::kTime:
+      return InterruptionCause::kTimeLimit;
+  }
+  // Fallback. We don't use "default:" so the compiler will return an error
+  // if we forgot one enum case above.
+  LOG(DFATAL) << "Invalid TimeLimit::State " << static_cast<int>(state);
+  return InterruptionCause::kTimeLimit;
+}
+
+// Computes the state of the TimeLimit and convert it to a cause of
+// interruption. Returns std::nullopt when called with
+// TimeLimit::State::kRunning.
+inline std::optional<InterruptionCause> TimeLimitStateToCause(
+    TimeLimit& time_limit) {
+  return TimeLimitStateToCause(time_limit.CurrentState());
+}
+
+// Feasibility status of the problem.
+//
+// This is not a final status, this different from ProblemStatus/SolveStatus:
+//
+// * ProblemStatus::PRIMAL_FEASIBLE (or SolveStatus::PrimalFeasible) means that
+//   the solver was interrupted (time-limit, number of iterations...).
+//
+// * FeasibilityStatus::kPrimal means the problem is currently known to be
+//   feasible but the solver is not done yet.
+enum class FeasibilityStatus { kPrimal, kDual };
+
+absl::string_view GetFeasibilityStatusString(FeasibilityStatus feasibility);
+inline std::ostream& operator<<(std::ostream& out,
+                                const FeasibilityStatus feasibility) {
+  out << GetFeasibilityStatusString(feasibility);
+  return out;
+}
+
+// Different causes of a ProblemStatus::ABNORMAL.
+//
+// This enum should not be exhaustively `switch` on in user code! Instead
+// functions declared here like GetAbnormalityCauseString() or operator<< should
+// be used. We use a enum to keep the memory footprint small instead of using
+// strings and help locate errors in the code.
+//
+// The names are chosen to be kSrcFileErrorName, where SrcFile is the CamelCase
+// of the source name and ErrorName is an arbitrary name that describes the
+// error.
+//
+// For functions that can either succeed of fail with an abnormality, the type
+// AbnormalityStatus can be used.
+enum class AbnormalityCause : int8_t {
+  // LU factorization error: failed to generate the rank one update matrix.
+  kLuFactorizationDegenerateRankOneUpdate,
+
+  // LU factorization error: matrix is not square.
+  kLuFactorizationNotSquare,
+
+  // LU factorization error: too small pivot number.
+  kLuFactorizationPivotTooSmall,
+
+  // LU factorization/markowitz error: too small pivot number.
+  kLuFactorizationMarkowitzPivotTooSmall,
+
+  // The solution produced is not consistent.
+  kLpSolverInconsistentSolution,
+
+  // The phase-I problem is unbounded.
+  kRevisedSimplexUnboundedFeasibilityProblem,
+
+  // Too high condition number; see initial_condition_number_threshold.
+  kRevisedSimplexConditionNumberTooHigh,
+
+  // Overflow in step_length.
+  kRevisedSimplexStepLengthOverflow,
+
+  // Pivot value too small.
+  kRevisedSimplexPivotTooSmall,
+
+  // No unmarked entry in a row or column.
+  kSingletonPreprocessorNoUnmarkedEntry,
+
+  // Overflow in computations in DoubletonEqualityRowPreprocessor.
+  kDoubletonEqualityRowPreprocessorOverflow,
+
+  // See enum documentation, no exhaustive switch should be used.
+  kNotForUseWithExhaustiveSwitchStatements,
+};
+
+absl::string_view GetAbnormalityCauseString(AbnormalityCause cause);
+inline std::ostream& operator<<(std::ostream& out,
+                                const AbnormalityCause feasibility) {
+  out << GetAbnormalityCauseString(feasibility);
+  return out;
+}
+
+// Wrapper around std::optional<AbnormalityCause> that adds:
+// * [[nodiscard]], to prevent ignore errors,
+// * an operator<< for std::ostream,
+// * a convenient ok() shortcut.
+//
+// See GLOP_RETURN_IF_ABNORMAL() to propagate failures.
+// See lp_types_testing.h for tests.
+struct [[nodiscard]] AbnormalityStatus {
+  // No error.
+  //
+  // Prefer using OkAbnormalityStatus().
+  explicit AbnormalityStatus() = default;
+
+  // An error happened.
+  explicit AbnormalityStatus(const AbnormalityCause cause) : cause(cause) {}
+
+  // Returns true when `cause` is unset (no error occurred).
+  bool ok() const { return !cause.has_value(); }
+
+  // Unset means no error.
+  std::optional<AbnormalityCause> cause;
+};
+
+// Prints either OK or ABNORMAL(Xxx).
+std::ostream& operator<<(std::ostream& out, const AbnormalityStatus& status);
+
+// Returns an OK AbnormalityStatus.
+inline AbnormalityStatus OkAbnormalityStatus() { return AbnormalityStatus{}; }
+
+// Evaluates expr once, which should evaluate to an AbnormalityStatus and
+// returns when AbnormalityStatus.ok() is false.
+//
+// It returns a value that implicitly converts to:
+// * either AbnormalityStatus,
+// * or SolveStatus built from AbnormalSolveStatus.
+//
+// So this macro can be used in functions with AbnormalityStatus or SolveStatus
+// return types.
+#define GLOP_RETURN_IF_ABNORMAL(expr)                                   \
+  if (const AbnormalityStatus status = (expr); !status.ok()) {          \
+    return internal::GlopReturnIfAbnormalError{.cause = *status.cause}; \
+  }
+
+// Status of a solve.
+//
+// It pairs ProblemStatus and InterruptionCause/AbnormalityCause, making sure we
+// have a cause for cases where the status due to an interruption (see
+// ProblemStatus comments). To do so there is one `struct Xxx` for each
+// status in ProblemStatus. Each of these types have:
+// - a `status` field with the corresponding ProblemStatus,
+// - a optional `cause` field for statuses that have a cause
+//
+// The XxxSolveStatus() factories should be used to simplify call sites.
+//
+// The problem_status() and cause() can be used for users that don't want to use
+// the std::variant type.
+//
+// See FeasibilityStatus.
+struct [[nodiscard]] SolveStatus {
+  struct Optimal {
+    static constexpr ProblemStatus status = ProblemStatus::OPTIMAL;
+    friend bool operator==(const Optimal&, const Optimal&) = default;
+  };
+  struct PrimalInfeasible {
+    static constexpr ProblemStatus status = ProblemStatus::PRIMAL_INFEASIBLE;
+    friend bool operator==(const PrimalInfeasible&,
+                           const PrimalInfeasible&) = default;
+  };
+  struct DualInfeasible {
+    static constexpr ProblemStatus status = ProblemStatus::DUAL_INFEASIBLE;
+    friend bool operator==(const DualInfeasible&,
+                           const DualInfeasible&) = default;
+  };
+  struct InfeasibleOrUnbounded {
+    static constexpr ProblemStatus status =
+        ProblemStatus::INFEASIBLE_OR_UNBOUNDED;
+    friend bool operator==(const InfeasibleOrUnbounded&,
+                           const InfeasibleOrUnbounded&) = default;
+  };
+  struct PrimalUnbounded {
+    static constexpr ProblemStatus status = ProblemStatus::PRIMAL_UNBOUNDED;
+    friend bool operator==(const PrimalUnbounded&,
+                           const PrimalUnbounded&) = default;
+  };
+  struct DualUnbounded {
+    static constexpr ProblemStatus status = ProblemStatus::DUAL_UNBOUNDED;
+    friend bool operator==(const DualUnbounded&,
+                           const DualUnbounded&) = default;
+  };
+  struct Init {
+    static constexpr ProblemStatus status = ProblemStatus::INIT;
+    InterruptionCause cause ABSL_REQUIRE_EXPLICIT_INIT;
+    friend bool operator==(const Init&, const Init&) = default;
+  };
+  struct PrimalFeasible {
+    static constexpr ProblemStatus status = ProblemStatus::PRIMAL_FEASIBLE;
+    InterruptionCause cause ABSL_REQUIRE_EXPLICIT_INIT;
+    friend bool operator==(const PrimalFeasible&,
+                           const PrimalFeasible&) = default;
+  };
+  struct DualFeasible {
+    static constexpr ProblemStatus status = ProblemStatus::DUAL_FEASIBLE;
+    InterruptionCause cause ABSL_REQUIRE_EXPLICIT_INIT;
+    friend bool operator==(const DualFeasible&, const DualFeasible&) = default;
+  };
+  struct Abnormal {
+    static constexpr ProblemStatus status = ProblemStatus::ABNORMAL;
+    AbnormalityCause cause ABSL_REQUIRE_EXPLICIT_INIT;
+    friend bool operator==(const Abnormal&, const Abnormal&) = default;
+  };
+  struct InvalidProblem {
+    static constexpr ProblemStatus status = ProblemStatus::INVALID_PROBLEM;
+    friend bool operator==(const InvalidProblem&,
+                           const InvalidProblem&) = default;
+  };
+  struct Imprecise {
+    static constexpr ProblemStatus status = ProblemStatus::IMPRECISE;
+    friend bool operator==(const Imprecise&, const Imprecise&) = default;
+  };
+
+  using Value = std::variant<Optimal, PrimalInfeasible, DualInfeasible,
+                             InfeasibleOrUnbounded, PrimalUnbounded,
+                             DualUnbounded, Init, PrimalFeasible, DualFeasible,
+                             Abnormal, InvalidProblem, Imprecise>;
+
+  // One of the XxxResult.
+  //
+  // To build a SolveStatus, see XxxSolveStatus() factories.
+  Value value ABSL_REQUIRE_EXPLICIT_INIT;
+
+  friend bool operator==(const SolveStatus&, const SolveStatus&) = default;
+
+  // Returns true if `value` is the Alternative type.
+  //
+  // This is a shortcut for std::holds_alternative<Alternative>(status.value).
+  //
+  // Example:
+  //   SolveStatus solve_status = ...;
+  //   if (solve_status.Is<SolveStatus::Abnormal>()) {
+  //     return solve_status;
+  //   }
+  template <typename Alternative>
+  bool Is() const {
+    return std::holds_alternative<Alternative>(value);
+  }
+
+  // Returns the equivalent ProblemStatus enum to the status.
+  ProblemStatus problem_status() const;
+
+  // Returns the interruption cause if there is one (depends on the
+  // problem_status(), some status are not the result of an early interruption).
+  std::optional<InterruptionCause> interruption_cause() const;
+
+  // Returns a failing glop::Status iff this holds AbnormalResult.
+  //
+  // Used only in legacy API that returns a glop::Status.
+  Status LegacyStatus() const;
+};
+
+// Returns the string representation of the SolveStatus.
+std::string GetSolveStatusString(SolveStatus status);
+
+// Prints the string representation of the SolveStatus.
+std::ostream& operator<<(std::ostream& os, SolveStatus status);
+
+std::ostream& operator<<(std::ostream& os,
+                         const SolveStatus::Optimal& alternative);
+std::ostream& operator<<(std::ostream& os,
+                         const SolveStatus::PrimalInfeasible& alternative);
+std::ostream& operator<<(std::ostream& os,
+                         const SolveStatus::DualInfeasible& alternative);
+std::ostream& operator<<(std::ostream& os,
+                         const SolveStatus::InfeasibleOrUnbounded& alternative);
+std::ostream& operator<<(std::ostream& os,
+                         const SolveStatus::PrimalUnbounded& alternative);
+std::ostream& operator<<(std::ostream& os,
+                         const SolveStatus::DualUnbounded& alternative);
+std::ostream& operator<<(std::ostream& os,
+                         const SolveStatus::Init& alternative);
+std::ostream& operator<<(std::ostream& os,
+                         const SolveStatus::PrimalFeasible& alternative);
+std::ostream& operator<<(std::ostream& os,
+                         const SolveStatus::DualFeasible& alternative);
+std::ostream& operator<<(std::ostream& os,
+                         const SolveStatus::Abnormal& alternative);
+std::ostream& operator<<(std::ostream& os,
+                         const SolveStatus::InvalidProblem& alternative);
+std::ostream& operator<<(std::ostream& os,
+                         const SolveStatus::Imprecise& alternative);
+
+// Returns a status with SolveStatus::Optimal alternative.
+SolveStatus OptimalSolveStatus();
+
+// Returns a status with SolveStatus::PrimalInfeasible alternative.
+SolveStatus PrimalInfeasibleSolveStatus();
+
+// Returns a status with SolveStatus::DualInfeasible alternative.
+SolveStatus DualInfeasibleSolveStatus();
+
+// Returns a status with SolveStatus::InfeasibleOrUnbounded alternative.
+SolveStatus InfeasibleOrUnboundedSolveStatus();
+
+// Returns a status with SolveStatus::PrimalUnbounded alternative.
+SolveStatus PrimalUnboundedSolveStatus();
+
+// Returns a status with SolveStatus::DualUnbounded alternative.
+SolveStatus DualUnboundedSolveStatus();
+
+// Returns a status with SolveStatus::Init alternative.
+SolveStatus InitSolveStatus(InterruptionCause cause);
+
+// Returns a status with SolveStatus::PrimalFeasible alternative.
+//
+// See FeasibleSolveStatus().
+SolveStatus PrimalFeasibleSolveStatus(InterruptionCause cause);
+
+// Returns a status with SolveStatus::DualFeasible alternative.
+//
+// See FeasibleSolveStatus().
+SolveStatus DualFeasibleSolveStatus(InterruptionCause cause);
+
+// Returns a status with either SolveStatus::PrimalFeasible or
+// SolveStatus::DualFeasible alternative.
+//
+// This is used when a solve is interrupted to convert the temporary
+// FeasibilityStatus into a final "only feasibility is known" status.
+//
+// See PrimalFeasibleSolveStatus() and DualFeasibleSolveStatus().
+SolveStatus FeasibleSolveStatus(FeasibilityStatus feasibility,
+                                InterruptionCause cause);
+
+// Returns a status with SolveStatus::Abnormal alternative.
+SolveStatus AbnormalSolveStatus(AbnormalityCause cause);
+
+// Returns a status with SolveStatus::InvalidProblem alternative.
+SolveStatus InvalidProblemSolveStatus();
+
+// Returns a status with SolveStatus::Imprecise alternative.
+SolveStatus ImpreciseSolveStatus();
 
 // Different types of variables.
 enum class VariableType : int8_t {
@@ -432,6 +815,25 @@ static inline double DeterministicTimeForFpOperations(int64_t n) {
   return kConversionFactor * static_cast<double>(n);
 }
 
+namespace internal {
+
+// Thin wrapper around AbnormalityCause that implicit converts to:
+// * either AbnormalityStatus,
+// * or SolveStatus (using AbnormalSolveStatus()).
+//
+// This allows using the same GLOP_RETURN_IF_ABNORMAL() macro for functions that
+// returns either AbnormalityStatus or SolveStatus.
+struct GlopReturnIfAbnormalError {
+  operator AbnormalityStatus() const {  // NOLINT
+    return AbnormalityStatus(cause);
+  }
+  operator SolveStatus() const {  // NOLINT
+    return AbnormalSolveStatus(cause);
+  }
+  AbnormalityCause cause ABSL_REQUIRE_EXPLICIT_INIT;
+};
+
+}  // namespace internal
 }  // namespace glop
 }  // namespace operations_research
 

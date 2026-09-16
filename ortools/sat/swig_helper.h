@@ -134,7 +134,7 @@ class SolveWrapper {
   ModelSharedTimeLimit* shared_time_limit_;
 };
 
-// Static methods are stored in a module which name can vary.
+// Static methods are stored in a module whose name can vary.
 // To avoid this issue, we put all global functions as a static method of the
 // CpSatHelper class.
 struct CpSatHelper {
@@ -147,7 +147,7 @@ struct CpSatHelper {
   static std::string SolverResponseStats(
       const operations_research::sat::CpSolverResponse& response);
 
-  // Returns a non empty string explaining the issue if the model is not valid.
+  // Returns a non-empty string explaining the issue if the model is not valid.
   static std::string ValidateModel(
       const operations_research::sat::CpModelProto& model_proto);
 
@@ -157,7 +157,7 @@ struct CpSatHelper {
 
   // Write the model proto to file. If the filename ends with 'txt', the model
   // will be written as a text file, otherwise, the binary format will be used.
-  // The functions returns true if the model was correctly written.
+  // The function returns true if the model was correctly written.
   static bool WriteModelToFile(
       const operations_research::sat::CpModelProto& model_proto,
       const std::string& filename);

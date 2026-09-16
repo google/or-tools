@@ -14,8 +14,6 @@
 #ifndef ORTOOLS_FLATZINC_CP_MODEL_FZ_SOLVER_H_
 #define ORTOOLS_FLATZINC_CP_MODEL_FZ_SOLVER_H_
 
-#include <string>
-
 #include "ortools/flatzinc/model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/model.h"
@@ -34,7 +32,8 @@ struct FlatzincSatParameters {
   int random_seed = 0;
   int number_of_threads = 0;
   double max_time_in_seconds = 0.0;
-  bool ortools_mode = false;
+  bool minizinc_io_mode = false;
+  bool minizinc_search_mode = false;
   bool check_all_solutions = false;
 };
 

@@ -17,9 +17,7 @@
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -39,7 +37,7 @@ py_proto_library(
     deps = [":rcpsp_proto"],
 )
 
-cc_library(
+or_cc_library(
     name = "rcpsp_parser",
     srcs = ["rcpsp_parser.cc"],
     hdrs = ["rcpsp_parser.h"],
@@ -53,7 +51,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "rcpsp_parser_test",
     size = "small",
     srcs = ["rcpsp_parser_test.cc"],
@@ -69,6 +67,7 @@ cc_test(
         "//ortools/scheduling/testdata:ubo_10_psp2.sch",
     ],
     deps = [
+        ":rcpsp_cc_proto",
         ":rcpsp_parser",
         "//ortools/base:gmock_main",
         "//ortools/base:path",
@@ -88,7 +87,7 @@ cc_proto_library(
     deps = [":jobshop_scheduling_proto"],
 )
 
-cc_library(
+or_cc_library(
     name = "jobshop_scheduling_parser",
     srcs = ["jobshop_scheduling_parser.cc"],
     hdrs = ["jobshop_scheduling_parser.h"],
@@ -98,13 +97,14 @@ cc_library(
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@protobuf//:wrappers_cc_proto",
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "jobshop_scheduling_parser_test",
     size = "small",
     srcs = ["jobshop_scheduling_parser_test.cc"],
@@ -113,11 +113,13 @@ cc_test(
         "//ortools/scheduling/testdata:1010_1_3",
         "//ortools/scheduling/testdata:50_10_01_ta041.txt",
         "//ortools/scheduling/testdata:SDST10_ta001.txt",
+        "//ortools/scheduling/testdata:SDST10_ta001.txt.gz",
         "//ortools/scheduling/testdata:ft06",
         "//ortools/scheduling/testdata:jb1.txt",
         "//ortools/scheduling/testdata:taillard-jobshop-15_15-1_225_100_150-1",
     ],
     deps = [
+        ":jobshop_scheduling_cc_proto",
         ":jobshop_scheduling_parser",
         "//ortools/base:gmock_main",
         "//ortools/base:path",
@@ -136,14 +138,14 @@ cc_proto_library(
     deps = [":course_scheduling_proto"],
 )
 
-cc_library(
+or_cc_library(
     name = "course_scheduling",
     srcs = ["course_scheduling.cc"],
     hdrs = ["course_scheduling.h"],
     deps = [
         ":course_scheduling_cc_proto",
         "//ortools/base:mathutil",
-        "//ortools/linear_solver:linear_solver_base",
+        "//ortools/linear_solver:linear_solver_lib",
         "//ortools/linear_solver:linear_solver_scip",
         "//ortools/sat:cp_model_cc_proto",
         "@abseil-cpp//absl/container:flat_hash_set",
@@ -154,7 +156,7 @@ cc_library(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "course_scheduling_run",
     srcs = ["course_scheduling_run.cc"],
     deps = [
@@ -168,14 +170,13 @@ cc_binary(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "course_scheduling_test",
     srcs = ["course_scheduling_test.cc"],
     deps = [
         ":course_scheduling",
         ":course_scheduling_cc_proto",
         "//ortools/base:gmock_main",
-        "//ortools/base:mutable_memfile",
         "//ortools/base:parse_test_proto",
     ],
 )

@@ -30,7 +30,7 @@
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
-#include "ortools/sat/linear_constraint_manager.h"
+#include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -113,7 +113,7 @@ void PseudoCosts::SaveBoundChanges(Literal decision,
     bound_changes_.push_back(entry);
   }
 
-  // NOTE: We ignore literal associated to var != value.
+  // NOTE: We ignore literals associated with var != value.
   for (const auto [var, value] : encoder_->GetEqualityLiterals(decision)) {
     {
       PseudoCosts::VariableBoundChange entry;
@@ -174,10 +174,10 @@ PseudoCosts::BranchingInfo PseudoCosts::EvaluateVar(
                       average_unit_objective_increase_[var].CurrentAverage();
     result.score = CombineScores(result.down_score, result.up_score);
 
-    const int reliablitity = std::min(
+    const int reliability = std::min(
         average_unit_objective_increase_[var].NumRecords(),
         average_unit_objective_increase_[NegationOf(var)].NumRecords());
-    result.is_reliable = reliablitity >= 4;
+    result.is_reliable = reliability >= 4;
   }
 
   return result;
@@ -231,8 +231,8 @@ void PseudoCosts::AfterTakingDecision(bool conflict) {
   // revert to integer version if there is no lp. TODO(user): tune that.
   //
   // We only collect lp increase when the lp is at optimal, otherwise it might
-  // just be the "artificial" continuing of the current lp solve that create the
-  // increase.
+  // just be the "artificial" continuing of the current lp solve that creates
+  // the increase.
   if (saved_info_.lp_at_optimal) {
     // Update the average unit increases.
     const double obj_increase = ObjectiveIncrease(conflict);
@@ -283,16 +283,16 @@ void PseudoCosts::AfterTakingDecision(bool conflict) {
   }
 }
 
-// TODO(user): Supports search randomization tolerance.
+// TODO(user): Support search randomization tolerance.
 // TODO(user): Implement generic class to choose the randomized
-// solution, and supports sub-linear variable selection.
+// solution, and support sub-linear variable selection.
 IntegerVariable PseudoCosts::GetBestDecisionVar() {
   IntegerVariable chosen_var = kNoIntegerVariable;
   double best_score = -std::numeric_limits<double>::infinity();
 
-  // TODO(user): Avoid the O(num_relevant_variable) loop.
-  // In practice since a variable only become relevant after 100 records, this
-  // list might be small compared to the number of variable though.
+  // TODO(user): Avoid the O(num_relevant_variables) loop.
+  // In practice since a variable only becomes relevant after 100 records, this
+  // list might be small compared to the number of variables though.
   for (const IntegerVariable positive_var : relevant_variables_) {
     const IntegerValue lb = integer_trail_->LowerBound(positive_var);
     const IntegerValue ub = integer_trail_->UpperBound(positive_var);

@@ -15,8 +15,6 @@
 
 #include "ortools/init/init.h"
 
-#include <string>
-
 #include "ortools/init/python/init_doc.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"

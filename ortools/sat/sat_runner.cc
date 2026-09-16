@@ -15,7 +15,6 @@
 #include <cstdlib>
 #include <functional>
 #include <iostream>
-#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -25,7 +24,6 @@
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
 #include "absl/log/check.h"
-#include "absl/log/flags.h"
 #include "absl/log/initialize.h"
 #include "absl/log/log.h"
 #include "absl/strings/match.h"
@@ -54,17 +52,17 @@
 
 ABSL_FLAG(
     std::string, input, "",
-    "Required: input file of the problem to solve. Many format are supported:"
+    "Required: input file of the problem to solve. Many formats are supported:"
     ".cnf (sat, max-sat, weighted max-sat), .opb (pseudo-boolean sat/optim) "
     "and by default the CpModelProto proto (binary or text).");
 
 ABSL_FLAG(
     std::string, hint_file, "",
-    "Protobuf file containing a CpModelResponse. The solution will be used as a"
-    " hint to bootstrap the search.");
+    "Protobuf file containing a CpSolverResponse. The solution will be used as "
+    "a hint to bootstrap the search.");
 
 ABSL_FLAG(std::string, domain_file, "",
-          "Protobuf file containing a CpModelResponse. If present, the "
+          "Protobuf file containing a CpSolverResponse. If present, the "
           "tightened models will be used to reduce the domain of variables.");
 
 ABSL_FLAG(std::string, output, "",
@@ -109,7 +107,7 @@ std::string ExtractName(absl::string_view full_filename) {
 
 class LastSolutionPrinter {
  public:
-  // Note that is prints the solution in the PB competition format.
+  // Note that this prints the solution in the PB competition format.
   void MaybePrintLastSolution() {
     absl::MutexLock lock(mutex_);
     if (last_solution_printed_) return;
@@ -276,8 +274,8 @@ bool LoadProblem(const std::string& filename, absl::string_view hint_file,
           // This way, the solver will return MODEL_INVALID instead of
           // crashing.
           IntegerVariableProto* var = cp_model->add_variables();
-          var->add_domain(std::numeric_limits<int64_t>::min());
-          var->add_domain(std::numeric_limits<int64_t>::max());
+          var->add_domain(kint64min);
+          var->add_domain(kint64max);
           return true;  // Will still call solve() to get the status.
         }
       } else {
@@ -339,7 +337,7 @@ bool LoadProblem(const std::string& filename, absl::string_view hint_file,
     CHECK_OK(ReadFileToProto(domain_file, &response));
     if (!response.tightened_variables().empty()) {
       CHECK_EQ(response.tightened_variables_size(), cp_model->variables_size())
-          << "The tighened variables from the response proto is not "
+          << "The tightened variables from the response proto are not "
              "compatible with the model proto";
 
       for (int i = 0; i < cp_model->variables_size(); ++i) {

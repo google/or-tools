@@ -12,7 +12,6 @@
 // limitations under the License.
 
 #include <algorithm>
-#include <limits>
 #include <random>
 #include <string>
 #include <tuple>
@@ -24,6 +23,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
@@ -136,7 +136,7 @@ TEST(BasicFixedSearchBehaviorTest, Default) {
 }
 
 TEST(BasicFixedSearchBehaviorTest, ReverseOrder) {
-  // Note that SELECT_LOWER_HALF or SELECT_MIN_VALUE result in the same
+  // Note that SELECT_LOWER_HALF or SELECT_MIN_VALUE results in the same
   // solution.
   const CpModelProto model_proto = ParseTestProto(R"pb(
     variables { domain: [ 4, 50 ] }
@@ -362,7 +362,7 @@ TEST(BasicFixedSearchBehaviorTest, RandomHalfTest) {
   }
   EXPECT_EQ(count_by_solution.size(), kNumExpectedSolutions);
   DoubleDistribution counts;
-  int min_count = std::numeric_limits<int>::max();
+  int min_count = kint32max;
   std::tuple<int, int, int, int> min_count_solution;
   int max_count = 0;
   std::tuple<int, int, int, int> max_count_solution;

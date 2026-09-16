@@ -22,7 +22,6 @@
 #include "absl/status/statusor.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/constraints/indicator/indicator_constraint.h"
 #include "ortools/math_opt/constraints/quadratic/quadratic_constraint.h"
 #include "ortools/math_opt/constraints/second_order_cone/second_order_cone_constraint.h"

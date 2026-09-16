@@ -1,6 +1,6 @@
 # Run this script as:
 #     hgd / g4d ...
-#     cd third_party/ortools/ortools/julia/ORToolsGenerated.jl/scripts/
+#     cd ortools/julia/ORToolsGenerated.jl/scripts/
 #     julia gen_pb.jl
 
 using ORTools_jll

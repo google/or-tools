@@ -1,4 +1,5 @@
-FROM ortools/cmake:rockylinux_base AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}rockylinux_base AS env
 
 RUN cmake -version
 

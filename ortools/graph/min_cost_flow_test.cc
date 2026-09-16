@@ -130,8 +130,8 @@ void GenericMinCostFlowTester(
     EXPECT_EQ(min_cost_flow.Supply(i), node_supply[i]);
   }
   for (int options = 0; options < 2; ++options) {
-    min_cost_flow.SetUseUpdatePrices(options & 1);
-    bool ok = min_cost_flow.Solve();
+    min_cost_flow.params().update_prices = (options & 1) != 0;
+    const bool ok = min_cost_flow.Solve();
     typename GenericMinCostFlow<Graph>::Status status = min_cost_flow.status();
     EXPECT_EQ(expected_status, status);
     if (expected_status == GenericMinCostFlow<Graph>::OPTIMAL) {

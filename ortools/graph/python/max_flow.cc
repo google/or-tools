@@ -22,7 +22,7 @@
 using ::operations_research::SimpleMaxFlow;
 using ::pybind11::arg;
 
-PYBIND11_MODULE(max_flow, m) {
+PYBIND11_MODULE(max_flow, m, pybind11::mod_gil_not_used()) {
   pybind11::class_<SimpleMaxFlow> smf(m, "SimpleMaxFlow");
   smf.def(pybind11::init<>());
   smf.def("add_arc_with_capacity", &SimpleMaxFlow::AddArcWithCapacity,

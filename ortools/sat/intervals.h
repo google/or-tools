@@ -41,7 +41,8 @@ namespace sat {
 // This class maintains a set of intervals which correspond to three integer
 // variables (start, end and size). It automatically registers with the
 // PrecedencesPropagator the relation between the bounds of each interval and
-// provides many helper functions to add precedences relation between intervals.
+// provides many helper functions to add precedence relations between
+// intervals.
 class IntervalsRepository {
  public:
   explicit IntervalsRepository(Model* model);
@@ -67,7 +68,7 @@ class IntervalsRepository {
                                   LiteralIndex is_present = kNoLiteralIndex,
                                   bool add_linear_relation = false);
 
-  // Returns whether or not a interval is optional and the associated literal.
+  // Returns whether or not an interval is optional and the associated literal.
   bool IsOptional(IntervalVariable i) const {
     return is_present_[i] != kNoLiteralIndex;
   }
@@ -83,12 +84,12 @@ class IntervalsRepository {
     return assignment_.LiteralIsFalse(PresenceLiteral(i));
   }
 
-  // The 3 integer variables associated to a interval.
+  // The 3 integer variables associated with an interval.
   // Fixed size intervals will have a kNoIntegerVariable as size.
   //
   // Note: For an optional interval, the start/end variables are propagated
   // assuming the interval is present. Because of that, these variables can
-  // cross each other or have an empty domain. If any of this happen, then the
+  // cross each other or have an empty domain. If any of this happens, then the
   // PresenceLiteral() of this interval will be propagated to false.
   AffineExpression Size(IntervalVariable i) const { return sizes_[i]; }
   AffineExpression Start(IntervalVariable i) const { return starts_[i]; }
@@ -104,7 +105,7 @@ class IntervalsRepository {
     return integer_trail_->UpperBound(sizes_[i]);
   }
 
-  // Utility function that returns a vector will all intervals.
+  // Utility function that returns a vector with all intervals.
   std::vector<IntervalVariable> AllIntervals() const {
     std::vector<IntervalVariable> result;
     for (IntervalVariable i(0); i < NumIntervals(); ++i) {
@@ -114,11 +115,11 @@ class IntervalsRepository {
   }
 
   // Returns a SchedulingConstraintHelper corresponding to the given variables.
-  // Note that the order of interval in the helper will be the same.
+  // Note that the order of intervals in the helper will be the same.
   //
-  // It is possible to indicate that this correspond to a disjunctive constraint
-  // by setting the Boolean to true. This is used by our scheduling heuristic
-  // based on precedences.
+  // It is possible to indicate that this corresponds to a disjunctive
+  // constraint by setting the Boolean to true. This is used by our scheduling
+  // heuristic based on precedences.
   SchedulingConstraintHelper* GetOrCreateHelper(
       std::vector<Literal> enforcement_literals,
       const std::vector<IntervalVariable>& variables,
@@ -130,22 +131,22 @@ class IntervalsRepository {
       const std::vector<IntervalVariable>& y_variables);
 
   // Returns a SchedulingDemandHelper corresponding to the given helper and
-  // demands. Note that the order of interval in the helper and the order of
-  // demands must be the compatible.
+  // demands. Note that the order of intervals in the helper and the order of
+  // demands must be compatible.
   SchedulingDemandHelper* GetOrCreateDemandHelper(
       SchedulingConstraintHelper* helper,
       absl::Span<const AffineExpression> demands);
 
-  // Calls InitDecomposedEnergies on all SchedulingDemandHelper created.
+  // Calls InitDecomposedEnergies on all SchedulingDemandHelpers created.
   void InitAllDecomposedEnergies();
 
-  // Assuming a and b cannot overlap if they are present, this create a new
+  // Assuming a and b cannot overlap if they are present, this creates a new
   // literal such that:
   // - literal & presences => a is before b.
   // - not(literal) & presences => b is before a.
   // - not present => literal @ true for disallowing multiple solutions.
   //
-  // If such literal already exists this returns it.
+  // If such a literal already exists this returns it.
   void CreateDisjunctivePrecedenceLiteral(IntervalVariable a,
                                           IntervalVariable b);
   LiteralIndex GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
@@ -156,7 +157,7 @@ class IntervalsRepository {
   bool CreatePrecedenceLiteralIfNonTrivial(AffineExpression x,
                                            AffineExpression y);
 
-  // Returns a literal l <=> y >= x if it exist or kNoLiteralIndex
+  // Returns a literal l <=> y >= x if it exists or kNoLiteralIndex
   // otherwise. This could be the one created by
   // CreateDisjunctivePrecedenceLiteral() or
   // CreatePrecedenceLiteralIfNonTrivial().
@@ -172,7 +173,7 @@ class IntervalsRepository {
     return disjunctive_helpers_;
   }
 
-  // We register cumulative at load time so that our search heuristic can loop
+  // We register cumulatives at load time so that our search heuristic can loop
   // over all cumulative constraints easily.
   struct CumulativeHelper {
     AffineExpression capacity;
@@ -199,11 +200,11 @@ class IntervalsRepository {
   IntegerEncoder* integer_encoder_;
   TrivialLiterals* trivial_literals_;
 
-  // Literal indicating if the tasks is executed. Tasks that are always executed
+  // Literal indicating if the task is executed. Tasks that are always executed
   // will have a kNoLiteralIndex entry in this vector.
   util_intops::StrongVector<IntervalVariable, LiteralIndex> is_present_;
 
-  // The integer variables for each tasks.
+  // The integer variables for each task.
   util_intops::StrongVector<IntervalVariable, AffineExpression> starts_;
   util_intops::StrongVector<IntervalVariable, AffineExpression> ends_;
   util_intops::StrongVector<IntervalVariable, AffineExpression> sizes_;
@@ -312,7 +313,7 @@ inline std::function<IntervalVariable(Model*)> NewOptionalInterval(
             /*add_linear_relation=*/false);
 
     // To not have too many solutions during enumeration, we force the
-    // start at its min value for absent interval.
+    // start at its min value for an absent interval.
     AddImplication({is_present.Negated()},
                    IntegerLiteral::LowerOrEqual(start, min_start), model);
     return interval;

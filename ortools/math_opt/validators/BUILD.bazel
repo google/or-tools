@@ -11,26 +11,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:or_cc_rules.bzl", "or_cc_library")
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
-cc_library(
+or_cc_library(
     name = "ids_validator",
     srcs = ["ids_validator.cc"],
     hdrs = ["ids_validator.h"],
     deps = [
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/base:types",
         "//ortools/math_opt/core:model_summary",
-        "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "scalar_validator",
     srcs = ["scalar_validator.cc"],
     hdrs = ["scalar_validator.h"],
@@ -40,36 +40,36 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "sparse_matrix_validator",
     srcs = ["sparse_matrix_validator.cc"],
     hdrs = ["sparse_matrix_validator.h"],
     deps = [
         ":ids_validator",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:model_summary",
         "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/types:span",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "sparse_vector_validator",
     hdrs = ["sparse_vector_validator.h"],
     deps = [
         ":ids_validator",
         ":scalar_validator",
-        "//ortools/base:status_macros",
         "//ortools/math_opt/core:sparse_vector_view",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "model_validator",
     srcs = ["model_validator.cc"],
     hdrs = ["model_validator.h"],
@@ -78,7 +78,7 @@ cc_library(
         ":scalar_validator",
         ":sparse_matrix_validator",
         ":sparse_vector_validator",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
@@ -89,11 +89,12 @@ cc_library(
         "//ortools/math_opt/core:model_summary",
         "//ortools/math_opt/core:sparse_vector_view",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solve_stats_validator",
     srcs = ["solve_stats_validator.cc"],
     hdrs = ["solve_stats_validator.h"],
@@ -107,7 +108,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "result_validator",
     srcs = ["result_validator.cc"],
     hdrs = ["result_validator.h"],
@@ -115,18 +116,19 @@ cc_library(
         ":solution_validator",
         ":solve_stats_validator",
         ":termination_validator",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/math_opt:model_parameters_cc_proto",
         "//ortools/math_opt:result_cc_proto",
         "//ortools/math_opt:solution_cc_proto",
         "//ortools/math_opt/core:math_opt_proto_utils",
         "//ortools/math_opt/core:model_summary",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@protobuf",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solution_validator",
     srcs = ["solution_validator.cc"],
     hdrs = ["solution_validator.h"],
@@ -134,7 +136,7 @@ cc_library(
         ":ids_validator",
         ":scalar_validator",
         ":sparse_vector_validator",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/math_opt:model_parameters_cc_proto",
         "//ortools/math_opt:solution_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
@@ -142,27 +144,29 @@ cc_library(
         "//ortools/math_opt/core:model_summary",
         "//ortools/math_opt/core:sparse_vector_view",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:optional_ref",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solve_parameters_validator",
     srcs = ["solve_parameters_validator.cc"],
     hdrs = ["solve_parameters_validator.h"],
     deps = [
         "//ortools/base:protoutil",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/util:status_macros",
         "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/time",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "callback_validator",
     srcs = ["callback_validator.cc"],
     hdrs = ["callback_validator.h"],
@@ -172,7 +176,6 @@ cc_library(
         ":scalar_validator",
         ":solution_validator",
         ":sparse_vector_validator",
-        "//ortools/base:status_macros",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:solution_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
@@ -183,12 +186,13 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",
         "@protobuf//:duration_cc_proto",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "model_parameters_validator",
     srcs = ["model_parameters_validator.cc"],
     hdrs = ["model_parameters_validator.h"],
@@ -197,71 +201,76 @@ cc_library(
         ":solution_validator",
         ":sparse_vector_validator",
         "//ortools/base:protoutil",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/math_opt:model_parameters_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:model_summary",
         "//ortools/math_opt/core:sparse_vector_view",
         "//ortools/util:status_macros",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/time",
         "@protobuf",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "linear_expression_validator",
     srcs = ["linear_expression_validator.cc"],
     hdrs = ["linear_expression_validator.h"],
     deps = [
         ":scalar_validator",
         ":sparse_vector_validator",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:model_summary",
         "//ortools/math_opt/core:sparse_vector_view",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "infeasible_subsystem_validator",
     srcs = ["infeasible_subsystem_validator.cc"],
     hdrs = ["infeasible_subsystem_validator.h"],
     deps = [
         ":bounds_and_status_validator",
         ":ids_validator",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/math_opt:infeasible_subsystem_cc_proto",
         "//ortools/math_opt:result_cc_proto",
         "//ortools/math_opt/core:model_summary",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "bounds_and_status_validator",
     srcs = ["bounds_and_status_validator.cc"],
     hdrs = ["bounds_and_status_validator.h"],
     deps = [
         ":scalar_validator",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/math_opt:result_cc_proto",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "termination_validator",
     srcs = ["termination_validator.cc"],
     hdrs = ["termination_validator.h"],
     deps = [
         ":bounds_and_status_validator",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/math_opt:result_cc_proto",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",
     ],
 )

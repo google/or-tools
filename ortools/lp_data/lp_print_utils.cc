@@ -13,9 +13,7 @@
 
 #include "ortools/lp_data/lp_print_utils.h"
 
-#include <cmath>
 #include <cstdint>
-#include <cstdio>
 #include <limits>
 #include <string>
 

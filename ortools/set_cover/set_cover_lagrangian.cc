@@ -113,10 +113,12 @@ SubsetCostVector SetCoverLagrangian::ParallelComputeReducedCosts(
   SubsetCostVector reduced_costs(num_subsets);
   // TODO(user): compute a close-to-optimal k-subset partitioning of the columns
   // based on their sizes. [***]
-  const SubsetIndex block_size(BlockSize(num_subsets.value(), num_threads_));
-  absl::BlockingCounter num_threads_running(num_threads_);
+  const SubsetIndex block_size(
+      BlockSize(num_subsets.value(), params().num_threads));
+  absl::BlockingCounter num_threads_running(params().num_threads);
   SubsetIndex slice_start(0);
-  for (int thread_index = 0; thread_index < num_threads_; ++thread_index) {
+  for (int thread_index = 0; thread_index < params().num_threads;
+       ++thread_index) {
     const SubsetIndex slice_end =
         std::min(slice_start + block_size, num_subsets);
     thread_pool_->Schedule([&num_threads_running, slice_start, slice_end,
@@ -188,11 +190,13 @@ ElementCostVector SetCoverLagrangian::ParallelComputeSubgradient(
   // TODO(user): it may be better to split the elements among the threads,
   // although this might be less well-balanced.
   std::vector<ElementCostVector> subgradients(
-      num_threads_, ElementCostVector(model()->num_elements()));
-  absl::BlockingCounter num_threads_running(num_threads_);
-  const SubsetIndex block_size(BlockSize(num_subsets.value(), num_threads_));
+      params().num_threads, ElementCostVector(model()->num_elements()));
+  absl::BlockingCounter num_threads_running(params().num_threads);
+  const SubsetIndex block_size(
+      BlockSize(num_subsets.value(), params().num_threads));
   SubsetIndex slice_start(0);
-  for (int thread_index = 0; thread_index < num_threads_; ++thread_index) {
+  for (int thread_index = 0; thread_index < params().num_threads;
+       ++thread_index) {
     const SubsetIndex slice_end =
         std::min(slice_start + block_size, num_subsets);
     thread_pool_->Schedule([&num_threads_running, slice_start, slice_end,
@@ -205,7 +209,8 @@ ElementCostVector SetCoverLagrangian::ParallelComputeSubgradient(
     slice_start = slice_end;
   }
   num_threads_running.Wait();
-  for (int thread_index = 0; thread_index < num_threads_; ++thread_index) {
+  for (int thread_index = 0; thread_index < params().num_threads;
+       ++thread_index) {
     for (const ElementIndex element : model()->ElementRange()) {
       subgradient[element] += subgradients[thread_index][element];
     }
@@ -263,12 +268,14 @@ Cost SetCoverLagrangian::ParallelComputeLagrangianValue(
   for (const Cost u : multipliers) {
     lagrangian_value += u;
   }
-  std::vector<Cost> lagrangian_values(num_threads_, 0.0);
-  absl::BlockingCounter num_threads_running(num_threads_);
-  const SubsetIndex block_size(BlockSize(model()->num_subsets(), num_threads_));
+  std::vector<Cost> lagrangian_values(params().num_threads, 0.0);
+  absl::BlockingCounter num_threads_running(params().num_threads);
+  const SubsetIndex block_size(
+      BlockSize(model()->num_subsets(), params().num_threads));
   const SubsetIndex num_subsets(model()->num_subsets());
   SubsetIndex slice_start(0);
-  for (int thread_index = 0; thread_index < num_threads_; ++thread_index) {
+  for (int thread_index = 0; thread_index < params().num_threads;
+       ++thread_index) {
     const SubsetIndex slice_end =
         std::min(slice_start + block_size, num_subsets);
     thread_pool_->Schedule([&num_threads_running, slice_start, block_size,
@@ -517,6 +524,7 @@ SetCoverLagrangian::ComputeLowerBound(const SubsetCostVector& costs,
     // }
   }
   inv()->ReportLowerBound(lower_bound, /*is_cost_consistent=*/false);
+  inv()->set_dual_values(multipliers);
   return std::make_tuple(lower_bound, reduced_costs, multipliers);
 }
 

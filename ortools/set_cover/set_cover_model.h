@@ -71,6 +71,7 @@ class SetCoverModel {
         subset_costs_(),
         is_unicost_(true),
         is_unicost_valid_(false),
+        has_zero_cost_dummy_column_(false),
         columns_(),
         rows_(),
         all_subsets_() {}
@@ -126,6 +127,12 @@ class SetCoverModel {
   // Returns the fill rate of the matrix.
   double FillRate() const {
     return 1.0 * num_nonzeros() / (1.0 * num_elements() * num_subsets());
+  }
+
+  // Returns true if the model has a zero-cost dummy column, which is a column
+  // added by a file reader to ensure that the problem is feasible.
+  bool has_zero_cost_dummy_column() const {
+    return has_zero_cost_dummy_column_;
   }
 
   // Computes the number of singleton columns in the model, i.e. subsets
@@ -190,6 +197,10 @@ class SetCoverModel {
   // Returns true if rows_ and columns_ represent the same problem.
   bool row_view_is_valid() const { return row_view_is_valid_; }
 
+  // Computes the reduced costs for all subsets given the dual values.
+  void ComputeReducedCosts(const ElementCostVector& dual_values,
+                           SubsetCostVector& reduced_costs) const;
+
   // Access to the ranges of subsets and elements.
   util_intops::StrongIntRange<SubsetIndex> SubsetRange() const {
     return util_intops::StrongIntRange<SubsetIndex>(SubsetIndex(num_subsets_));
@@ -242,6 +253,13 @@ class SetCoverModel {
   void CreateSparseRowView();
 
   void CreateSparseColumnView();
+
+  // Compares two solutions a and b and returns two vectors:
+  // - the first one contains the indices of the bits set in a but not in b.
+  // - the second one contains the indices of the bits set in b but not in a.
+  // This is useful to understand the differences between two solutions.
+  static std::pair<std::vector<SubsetIndex>, std::vector<SubsetIndex>>
+  CompareSolutions(const SubsetBoolVector& a, const SubsetBoolVector& b);
 
   // Same as CreateSparseRowView, but uses a slicing algorithm, more prone to
   // parallelism.
@@ -392,6 +410,9 @@ class SetCoverModel {
 
   // True when is_unicost_ is up-to-date.
   bool is_unicost_valid_;
+
+  // True if the model has a zero-cost dummy column.
+  bool has_zero_cost_dummy_column_;
 
   // Stores the run time for CreateSparseRowView. Interesting to compare with
   // the time spent to actually generate a solution to the model.

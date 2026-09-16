@@ -26,9 +26,9 @@ namespace sat {
 
 // Try to solve the Orthogonal Packing Problem by enumeration of all possible
 // solutions. It will try to preprocess the problem into a smaller one and will
-// only try to solve it if it the reduced problem has `max_complexity` or less
+// only try to solve it if the reduced problem has `max_complexity` or fewer
 // items.
-// Warning: do not call this with a too many items and a large value of
+// Warning: do not call this with too many items and a large value of
 // `max_complexity` or it will run forever.
 struct BruteForceResult {
   enum class Status {

@@ -13,7 +13,12 @@
 
 // Use CP-SAT to solve a simple cryptarithmetic problem: SEND+MORE=MONEY.
 
+#include <cstdlib>
+
+#include "absl/log/log.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {

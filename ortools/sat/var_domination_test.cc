@@ -122,23 +122,22 @@ TEST(VarDominationTest, ExploitDominanceRelation) {
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
   // Because X--, Z++ is always ok, we can exclude some value from Z using
-  // equation X + 2Z >=2 we see that if Z=5, X >= -8, so we can decrease it,
+  // equation X + 2Z >= 2 we see that if Z=5, X >= -8, so we can decrease it,
   // but for Z = 6, X might be -10, so we are not sure.
   //
-  // Also not that X can be 10 with Z at 10 too, so we cannot reduced the domain
+  // Also note that X can be 10 with Z at 10 too, so we cannot reduce the domain
   // of X.
   EXPECT_EQ(context.DomainOf(0).ToString(), "[-10,10]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[-10,10]");
   EXPECT_EQ(context.DomainOf(2).ToString(), "[6,10]");
 }
 
-// Same example as before but now Z has holes, which complicate a bit the
-// final result.
+// Same example as before but now Z has holes, which complicates the
+// final result a bit.
 TEST(VarDominationTest, ExploitDominanceRelationWithHoles) {
   CpModelProto model_proto = ParseTestProto(R"pb(
     variables {
@@ -173,11 +172,10 @@ TEST(VarDominationTest, ExploitDominanceRelationWithHoles) {
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
-  // With hole, if Z is 0, we will not be able to increase it up to 6, so we
+  // With holes, if Z is 0, we will not be able to increase it up to 6, so we
   // can't remove 0. If it is lower, we can safely increase it to zero though.
   EXPECT_EQ(context.DomainOf(0).ToString(), "[-10,10]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[-10,10]");
@@ -219,8 +217,7 @@ TEST(VarDominationTest, ExploitDominanceOfImplicant) {
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
@@ -268,8 +265,7 @@ TEST(VarDominationTest, ExploitDominanceOfNegatedImplicand) {
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
@@ -314,8 +310,7 @@ TEST(VarDominationTest, ExploitDominanceInExactlyOne) {
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
@@ -368,8 +363,7 @@ TEST(VarDominationTest, ExploitDominanceWithIntegerVariables) {
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
@@ -414,19 +408,17 @@ TEST(VarDominationTest, ExploitRemainingDominance) {
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
   // Check that an implication between X and Y was added, and that the hint was
   // updated in consequence.
-  EXPECT_EQ(context.working_model->constraints_size(), 2);
+  EXPECT_EQ(context.NumConstraints(), 2);
   const ConstraintProto expected_constraint_proto =
       ParseTestProto(R"pb(enforcement_literal: -1
                           bool_and { literals: -2 })pb");
-  EXPECT_THAT(context.working_model->constraints(1),
-              EqualsProto(expected_constraint_proto));
+  EXPECT_THAT(context.Constraint(1), EqualsProto(expected_constraint_proto));
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0,1]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0,1]");
   EXPECT_EQ(context.solution_crush().GetVarValues()[0], 1);
@@ -481,8 +473,7 @@ TEST(VarDominationTest, ExploitRemainingDominanceWithIntegerVariables) {
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
@@ -827,7 +818,7 @@ TEST(DualBoundReductionTest, FixVariableToDomainBound) {
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
 
@@ -839,9 +830,9 @@ TEST(DualBoundReductionTest, FixVariableToDomainBound) {
   EXPECT_EQ(context.solution_crush().GetVarValues()[1], 10);
 }
 
-// Bound propagation see nothing, but if we can remove feasible solution, from
-// this constraint point of view, all variables can freely increase or decrease
-// until zero (because the constraint is trivial above/below).
+// Bound propagation sees nothing, but if we can remove feasible solutions,
+// from this constraint's point of view, all variables can freely increase or
+// decrease until zero (because the constraint is trivial above/below).
 //
 // -20 <= X + Y + Z <= 20
 TEST(DualBoundReductionTest, BasicTest) {
@@ -865,7 +856,7 @@ TEST(DualBoundReductionTest, BasicTest) {
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
 
@@ -906,7 +897,7 @@ TEST(DualBoundReductionTest, CarefulWithHoles) {
   EXPECT_EQ(context.DomainOf(2).ToString(), "[-6][3,5]");
 }
 
-// Here the inferred bounds crosses, so we have multiple choices, we will fix
+// Here the inferred bounds cross, so we have multiple choices, we will fix
 // to the lowest magnitude.
 TEST(DualBoundReductionTest, Choices) {
   CpModelProto model_proto = ParseTestProto(R"pb(
@@ -929,7 +920,7 @@ TEST(DualBoundReductionTest, Choices) {
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
 
@@ -966,24 +957,22 @@ TEST(DualBoundReductionTest, AddImplication) {
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
 
   EXPECT_TRUE(dual_bound_strengthening.Strengthen(&context));
 
   // not(a) => not(b) and not(a) => not(c) should be added.
-  ASSERT_EQ(context.working_model->constraints_size(), 3);
+  ASSERT_EQ(context.NumConstraints(), 3);
   const ConstraintProto expected_constraint_proto1 =
       ParseTestProto(R"pb(enforcement_literal: -1
                           bool_and { literals: -2 })pb");
-  EXPECT_THAT(context.working_model->constraints(1),
-              EqualsProto(expected_constraint_proto1));
+  EXPECT_THAT(context.Constraint(1), EqualsProto(expected_constraint_proto1));
   const ConstraintProto expected_constraint_proto2 =
       ParseTestProto(R"pb(enforcement_literal: -1
                           bool_and { literals: -3 })pb");
-  EXPECT_THAT(context.working_model->constraints(2),
-              EqualsProto(expected_constraint_proto2));
+  EXPECT_THAT(context.Constraint(2), EqualsProto(expected_constraint_proto2));
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0,1]");
   EXPECT_EQ(context.DomainOf(2).ToString(), "[0,1]");
@@ -1024,7 +1013,7 @@ TEST(DualBoundReductionTest, EquivalenceDetection) {
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
 

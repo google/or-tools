@@ -19,9 +19,9 @@
 
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/str_join.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/graph_base/bfs.h"
 // [END imports]
 
@@ -45,11 +45,11 @@ absl::Status Main() {
   // Solve the shortest path problem from 0 to 3.
   const int source = 0;
   const int terminal = 3;
-  ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const std::vector<int> bfs_tree,
       util::graph::GetBFSRootedTree(adjacency_list, num_nodes, source));
-  ASSIGN_OR_RETURN(const std::vector<int> shortest_path,
-                   util::graph::GetBFSShortestPath(bfs_tree, terminal));
+  ABSL_ASSIGN_OR_RETURN(const std::vector<int> shortest_path,
+                        util::graph::GetBFSShortestPath(bfs_tree, terminal));
 
   // Print to length of the path and then the nodes in the path.
   std::cout << "Shortest path length (in arcs): " << shortest_path.size() - 1

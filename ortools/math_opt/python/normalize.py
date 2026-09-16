@@ -45,7 +45,7 @@ def math_opt_normalize_proto(protobuf_message: message.Message) -> None:
     for field, value in protobuf_message.ListFields():
         if field.type != field.TYPE_MESSAGE:
             continue
-        if field.label == field.LABEL_REPEATED:
+        if field.is_repeated:
             # Now the repeated case, recursively normalize each member. Note that
             # there is no field presence for repeated fields, so we don't need to call
             # ClearField().

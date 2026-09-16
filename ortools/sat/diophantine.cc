@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
-#include <limits>
 #include <numeric>
 #include <vector>
 
@@ -24,6 +23,7 @@
 #include "absl/numeric/int128.h"
 #include "absl/types/span.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/util.h"
 
 namespace operations_research::sat {
@@ -31,10 +31,10 @@ namespace operations_research::sat {
 namespace {
 
 int64_t Gcd(const absl::Span<const int64_t> coeffs) {
-  DCHECK(coeffs[0] != std::numeric_limits<int64_t>::min());
+  DCHECK(coeffs[0] != kint64min);
   int64_t gcd = std::abs(coeffs[0]);
   for (int i = 1; i < coeffs.size(); ++i) {
-    DCHECK(coeffs[i] != std::numeric_limits<int64_t>::min());
+    DCHECK(coeffs[i] != kint64min);
     const int64_t abs_coeff = std::abs(coeffs[i]);
     gcd = std::gcd(gcd, abs_coeff);
   }
@@ -69,12 +69,12 @@ void ReduceModuloBasis(absl::Span<const std::vector<absl::int128>> basis,
 std::vector<int> GreedyFastDecreasingGcd(
     const absl::Span<const int64_t> coeffs) {
   std::vector<int> result;
-  DCHECK(coeffs[0] != std::numeric_limits<int64_t>::min());
+  DCHECK(coeffs[0] != kint64min);
   int64_t min_abs_coeff = std::abs(coeffs[0]);
   int min_term = 0;
   int64_t global_gcd = min_abs_coeff;
   for (int i = 1; i < coeffs.size(); ++i) {
-    DCHECK(coeffs[i] != std::numeric_limits<int64_t>::min());
+    DCHECK(coeffs[i] != kint64min);
     const int64_t abs_coeff = std::abs(coeffs[i]);
     global_gcd = std::gcd(global_gcd, abs_coeff);
     if (abs_coeff < min_abs_coeff) {
@@ -87,8 +87,8 @@ std::vector<int> GreedyFastDecreasingGcd(
   result.reserve(coeffs.size());
   result.push_back(min_term);
   while (current_gcd > global_gcd) {
-    // TODO(user): The following is a heuristic to make drop the GCD as fast
-    // as possible. It might be suboptimal in general (as we could miss two
+    // TODO(user): The following is a heuristic to drop the GCD as fast as
+    // possible. It might be suboptimal in general (as we could miss two
     // coprime coefficients for instance).
     int64_t new_gcd = std::gcd(current_gcd, std::abs(coeffs[0]));
     int term = 0;
@@ -184,14 +184,14 @@ DiophantineSolution SolveDiophantine(absl::Span<const int64_t> coeffs,
 
   // To compute the domains, we use the triangular shape of the basis. The first
   // one is special as it is controlled by two columns of the basis. Note that
-  // we don't try to compute exact domains as we would need to multiply then
-  // making the number of interval explode.
-  // For i = 0, ..., replaced_variable_count - 1, uses identities
+  // we don't try to compute exact domains as we would need to multiply them
+  // making the number of intervals explode.
+  // For i = 0, ..., replaced_variables_count - 1, use identities
   //  x[i] = special_solution[i]
-  //        + sum(linear_basis[k][i]*y[k], max(1, i) <= k < vars.size)
+  //        + sum(kernel_basis[k][i]*y[k], max(1, i) <= k < vars.size)
   // where:
-  //  y[k] is a newly created variable if 1 <= k < replaced_variable_count
-  //  y[k] = x[pivots[k]] else.
+  //  y[k] is a newly created variable if 1 <= k < replaced_variables_count
+  //  y[k] = x[pivots[k]] otherwise.
   // TODO(user): look if there is a natural improvement.
   std::vector<absl::int128> kernel_vars_lbs(replaced_variables_count - 1);
   std::vector<absl::int128> kernel_vars_ubs(replaced_variables_count - 1);

@@ -15,12 +15,11 @@ load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//bazel:or_cc_rules.bzl", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+or_cc_library(
     name = "scheduler",
     srcs = ["scheduler.cc"],
     hdrs = ["scheduler.h"],
@@ -33,10 +32,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "scheduler_test",
     srcs = ["scheduler_test.cc"],
-    tags = ["noci"],
     deps = [
         ":scheduler",
         ":solvers_cc_proto",
@@ -87,7 +85,7 @@ java_proto_library(
     deps = [":solvers_proto"],
 )
 
-cc_library(
+or_cc_library(
     name = "iteration_stats",
     srcs = ["iteration_stats.cc"],
     hdrs = ["iteration_stats.h"],
@@ -104,10 +102,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "iteration_stats_test",
     srcs = ["iteration_stats_test.cc"],
-    tags = ["noci"],
     deps = [
         ":iteration_stats",
         ":quadratic_program",
@@ -121,7 +118,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "primal_dual_hybrid_gradient",
     srcs = ["primal_dual_hybrid_gradient.cc"],
     hdrs = ["primal_dual_hybrid_gradient.h"],
@@ -160,7 +157,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "primal_dual_hybrid_gradient_test",
     size = "medium",
     srcs = ["primal_dual_hybrid_gradient_test.cc"],
@@ -189,22 +186,22 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "quadratic_program",
     srcs = ["quadratic_program.cc"],
     hdrs = ["quadratic_program.h"],
     deps = [
-        "//ortools/base:status_macros",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@eigen",
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "quadratic_program_test",
     size = "small",
     srcs = ["quadratic_program_test.cc"],
@@ -220,17 +217,17 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "quadratic_program_io",
     srcs = ["quadratic_program_io.cc"],
     hdrs = ["quadratic_program_io.h"],
     deps = [
         ":quadratic_program",
+        "//ortools/base:bzip2file",
         "//ortools/base:file",
         "//ortools/base:gzipfile",
         "//ortools/base:mathutil",
         "//ortools/base:recordio",
-        "//ortools/base:status_macros",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_exporter",
         "//ortools/lp_data:mps_reader_template",
@@ -240,6 +237,8 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_builder",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
@@ -247,7 +246,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "sharded_optimization_utils",
     srcs = ["sharded_optimization_utils.cc"],
     hdrs = ["sharded_optimization_utils.h"],
@@ -264,11 +263,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "sharded_optimization_utils_test",
     size = "small",
     srcs = ["sharded_optimization_utils_test.cc"],
-    tags = ["noci"],
     deps = [
         ":quadratic_program",
         ":sharded_optimization_utils",
@@ -281,7 +279,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "sharded_quadratic_program",
     srcs = ["sharded_quadratic_program.cc"],
     hdrs = ["sharded_quadratic_program.h"],
@@ -298,10 +296,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "sharded_quadratic_program_test",
     srcs = ["sharded_quadratic_program_test.cc"],
-    tags = ["noci"],
     deps = [
         ":quadratic_program",
         ":sharded_quadratic_program",
@@ -312,7 +309,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "sharder",
     srcs = ["sharder.cc"],
     hdrs = ["sharder.h"],
@@ -329,11 +326,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "sharder_test",
     size = "small",
     srcs = ["sharder_test.cc"],
-    tags = ["noci"],
     deps = [
         ":scheduler",
         ":sharder",
@@ -346,19 +342,19 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solvers_proto_validation",
     srcs = ["solvers_proto_validation.cc"],
     hdrs = ["solvers_proto_validation.h"],
     deps = [
         ":solvers_cc_proto",
-        "//ortools/base:status_macros",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "solvers_proto_validation_test",
     srcs = ["solvers_proto_validation_test.cc"],
     deps = [
@@ -371,7 +367,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "termination",
     srcs = ["termination.cc"],
     hdrs = ["termination.h"],
@@ -379,10 +375,11 @@ cc_library(
         ":solve_log_cc_proto",
         ":solvers_cc_proto",
         "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "termination_test",
     size = "small",
     srcs = ["termination_test.cc"],
@@ -395,7 +392,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "test_util",
     testonly = 1,
     srcs = ["test_util.cc"],
@@ -411,7 +408,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "test_util_test",
     srcs = ["test_util_test.cc"],
     deps = [
@@ -423,7 +420,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "trust_region",
     srcs = ["trust_region.cc"],
     hdrs = ["trust_region.h"],
@@ -440,10 +437,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "trust_region_test",
     srcs = ["trust_region_test.cc"],
-    tags = ["noci"],
     deps = [
         ":quadratic_program",
         ":sharded_optimization_utils",

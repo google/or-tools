@@ -14,6 +14,7 @@
 #include "ortools/lp_data/sparse.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <initializer_list>
 #include <string>
@@ -21,11 +22,13 @@
 #include <vector>
 
 #include "absl/log/check.h"
-#include "absl/strings/str_format.h"
+#include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/permutation.h"
 #include "ortools/lp_data/sparse_column.h"
+#include "ortools/util/bitset.h"
+#include "ortools/util/fp_roundtrip_conv.h"
 #include "ortools/util/return_macros.h"
 
 namespace operations_research {
@@ -409,7 +412,8 @@ std::string SparseMatrix::Dump() const {
   for (RowIndex row(0); row < num_rows_; ++row) {
     result.append("{ ");
     for (ColIndex col(0); col < num_cols; ++col) {
-      absl::StrAppendFormat(&result, "%g ", ToDouble(LookUpValue(row, col)));
+      absl::StrAppend(
+          &result, RoundTripDoubleFormat(ToDouble(LookUpValue(row, col))), " ");
     }
     result.append("}\n");
   }

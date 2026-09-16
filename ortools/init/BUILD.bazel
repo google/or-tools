@@ -11,16 +11,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:or_cc_rules.bzl", "or_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+or_cc_library(
     name = "init",
     srcs = ["init.cc"],
     hdrs = ["init.h"],
     deps = [
         "//ortools/base",
+        "//ortools/base:base_export",
         "//ortools/base:log_severity",
         "//ortools/base:version",
         "//ortools/sat:cp_model_solver",

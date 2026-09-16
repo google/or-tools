@@ -18,13 +18,13 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/attributes.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/linear_solver/glop_utils.h"
 #include "ortools/linear_solver/linear_solver.h"
+#include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/proto_solver/glop_proto_solver.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
@@ -146,8 +146,8 @@ MPSolver::ResultStatus GLOPInterface::Solve(const MPSolverParameters& param) {
   std::unique_ptr<TimeLimit> time_limit =
       TimeLimit::FromParameters(lp_solver_.GetParameters());
   time_limit->RegisterExternalBooleanAsLimit(&interrupt_solver_);
-  const glop::ProblemStatus status =
-      lp_solver_.SolveWithTimeLimit(linear_program_, time_limit.get());
+  const glop::SolveStatus status =
+      lp_solver_.Solve(linear_program_, *time_limit);
 
   // The solution must be marked as synchronized even when no solution exists.
   sync_status_ = SOLUTION_SYNCHRONIZED;
@@ -436,7 +436,7 @@ void GLOPInterface::NonIncrementalChange() {
 namespace {
 
 // See MpSolverInterfaceFactoryRepository for details.
-const void* const kRegisterGlop ABSL_ATTRIBUTE_UNUSED = [] {
+const void* const kRegisterGlop [[maybe_unused]] = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* const solver) { return new GLOPInterface(solver); },
       MPSolver::GLOP_LINEAR_PROGRAMMING);

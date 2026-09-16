@@ -11,16 +11,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:or_cc_rules.bzl", "or_cc_library")
 
-cc_library(
+package(default_visibility = [
+    "//ortools/gurobi:__subpackages__",
+    "//ortools/math_opt:__subpackages__",
+])
+
+or_cc_library(
     name = "g_gurobi",
-    srcs = [
-        "g_gurobi.cc",
-    ],
-    hdrs = [
-        "g_gurobi.h",
-    ],
+    srcs = ["g_gurobi.cc"],
+    hdrs = ["g_gurobi.h"],
     tags = [
         "not_build:arm",
         "not_run:arm",
@@ -30,8 +31,7 @@ cc_library(
         "//ortools/math_opt:__subpackages__",
     ],
     deps = [
-        "//ortools/base:source_location",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/gurobi/isv_public:gurobi_isv",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
         "@abseil-cpp//absl/log",
@@ -40,8 +40,10 @@ cc_library(
         "@abseil-cpp//absl/log:vlog_is_on",
         "@abseil-cpp//absl/memory",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:source_location",
         "@abseil-cpp//absl/types:span",
     ],
 )

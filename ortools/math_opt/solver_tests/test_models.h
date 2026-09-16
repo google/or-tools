@@ -16,10 +16,55 @@
 #define ORTOOLS_MATH_OPT_SOLVER_TESTS_TEST_MODELS_H_
 
 #include <memory>
+#include <ostream>
 
+#include "absl/base/nullability.h"
+#include "absl/strings/string_view.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
 namespace operations_research::math_opt {
+
+// Common model types that we would want to run a test suite on. Each value
+// imposes some restrictions on what can be in a mathopt Model, and there are
+// functions to generate a Model meeting these restrictions below.
+//
+// Note that SupportedProblemStructures is a statement about what a solver can
+// do, while this is a statement about what kind of model to generate.
+enum class TestModelClass {
+  // Model contains only a single linear objective and linear constraints, all
+  // variables are continuous, all constraints are equality constraints, all
+  // variable lower bounds are zero, and each variable appears in exactly two
+  // constraints, once with coefficient 1, and once with coefficient -1.
+  //
+  // See go/mathopt-min-cost-flow for a precise statement of the rules.
+  kMinCostFlow,
+
+  // Model contains only a single linear objective and only linear constraints,
+  // and all variables are continuous.
+  kLp,
+
+  // Model contains only a single linear objective and only linear constraints,
+  // and all variables are integer.
+  kIp,
+};
+
+absl::string_view ToString(TestModelClass model_class);
+
+std::ostream& operator<<(std::ostream& os, const TestModelClass& model_class);
+
+constexpr double kMinimalModelForTestModelClassOptimalObjective = 1.0;
+
+// Returns a model within model_class with at least one named variable and named
+// constraint and optimal objective of
+// kMinimalModelForTestModelClassOptimalObjective.
+absl_nonnull std::unique_ptr<Model> MinimalModelForTestModelClass(
+    TestModelClass model_class);
+
+// Returns a model within model_class that cannot be solve immediately, where
+// solve time grows with n. Objective weights are drawn from a random number
+// generator with the given seed.
+absl_nonnull std::unique_ptr<Model> NontrivialModel(TestModelClass model_class,
+                                                    int n, int seed = 0);
 
 // Decision variables:
 //   * x[i], i=1..3
@@ -34,7 +79,7 @@ namespace operations_research::math_opt {
 // Analysis:
 //   * For IP, x[i] = 1, y[i] = 0 for all i is optimal, objective 9.
 //   * For LP, x[i] = 1, y[i] = 0.5 for all i is optimal, objective is 12.
-std::unique_ptr<Model> SmallModel(bool integer);
+absl_nonnull std::unique_ptr<Model> SmallModel(bool integer);
 
 // Problem data: m = 3, n > 0, c = [5, 4, 3]
 //
@@ -59,7 +104,8 @@ std::unique_ptr<Model> SmallModel(bool integer);
 //     so the problem has a large initial gap.
 //   * For LP, variable is at a bound, so likely some pivots will be required.
 //   * The MIP has many symmetric solutions.
-std::unique_ptr<Model> DenseIndependentSet(bool integer, int n = 10);
+absl_nonnull std::unique_ptr<Model> DenseIndependentSet(bool integer,
+                                                        int n = 10);
 
 // A hint with objective value of 5 for the model returned by
 // DenseIndependentSet().
@@ -80,7 +126,8 @@ ModelSolveParameters::SolutionHint DenseIndependentSetHint5(const Model& model);
 //   * Setting an iteration of limit significantly smaller than n should prevent
 //     an LP solver from finding an optimal solution. Specific state at such
 //     termination is solver-dependent.
-std::unique_ptr<Model> IndependentSetCompleteGraph(bool integer, int n = 10);
+absl_nonnull std::unique_ptr<Model> IndependentSetCompleteGraph(bool integer,
+                                                                int n = 10);
 
 }  // namespace operations_research::math_opt
 

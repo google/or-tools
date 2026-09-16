@@ -22,14 +22,12 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
-#include "ortools/math_opt/parameters.pb.h"
-#include "ortools/math_opt/result.pb.h"
-#include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/solver_tests/test_models.h"
 
 namespace operations_research {

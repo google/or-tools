@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/numeric/bits.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
@@ -44,7 +45,7 @@ inline SmallBitset GetNumBitsAtOne(int num_bits) {
 
 // Sort the key and modify the truth table accordingly.
 //
-// Note that we don't deal with identical key here, but the function
+// Note that we don't deal with identical keys here, but the function
 // CanonicalizeFunctionTruthTable() does, and that is sufficient for our use
 // case.
 template <typename VarOrLiteral>
@@ -91,13 +92,13 @@ inline void FillKeyAndBitmask(absl::Span<const Literal> clause,
   CanonicalizeTruthTable<BooleanVariable>(key, bitmask);
 }
 
-// Returns true iff the truth table encoded in bitmask encode a function
+// Returns true iff the truth table encoded in bitmask encodes a function
 // Xi = f(Xj, j != i);
 inline bool IsFunction(int i, int num_bits, SmallBitset truth_table) {
   DCHECK_GE(i, 0);
   DCHECK_LT(i, num_bits);
 
-  // We need to check that there is never two possibilities for Xi.
+  // We need to check that there are never two possibilities for Xi.
   for (int p = 0; p < (1 << num_bits); ++p) {
     if ((truth_table >> p) & (truth_table >> (p ^ (1 << i))) & 1) return false;
   }
@@ -142,7 +143,7 @@ inline void MakeAllInputsPositive(absl::Span<Literal> inputs,
 
     inputs[i] = inputs[i].Negated();
 
-    // Position p go to position (p ^ (1 << i)).
+    // Position p goes to position (p ^ (1 << i)).
     SmallBitset new_truth_table = 0;
     const SmallBitset to_xor = 1 << i;
     for (int p = 0; p < (1 << num_bits); ++p) {
@@ -152,7 +153,7 @@ inline void MakeAllInputsPositive(absl::Span<Literal> inputs,
   }
 }
 
-// Similar to CanonicalizeTruthTable, but perform more canonicalization.
+// Similar to CanonicalizeTruthTable, but performs more canonicalization.
 //
 // TODO(user): This can be optimized with more bit twiddling if needed.
 inline int FullyCanonicalizeTruthTable(absl::Span<Literal> inputs,
@@ -166,14 +167,14 @@ inline int FullyCanonicalizeTruthTable(absl::Span<Literal> inputs,
   for (int i = 0; i < inputs.size(); ++i) {
     for (int j = i + 1; j < inputs.size();) {
       if (inputs[i] == inputs[j]) {
-        // Lets remove input j.
+        // Let's remove input j.
         for (int k = j; k + 1 < inputs.size(); ++k) inputs[k] = inputs[k + 1];
         inputs.remove_suffix(1);
 
         SmallBitset new_truth_table = 0;
         for (int p = 0; p < (1 << inputs.size()); ++p) {
           int extended_p = AddHoleAtPosition(j, p);
-          extended_p |= ((p >> i) & 1) << j;  // fill it with bit i.
+          extended_p |= ((p >> i) & 1) << j;  // Fill it with bit i.
           new_truth_table |= ((bitmask >> extended_p) & 1) << p;
         }
         bitmask = new_truth_table;
@@ -184,7 +185,7 @@ inline int FullyCanonicalizeTruthTable(absl::Span<Literal> inputs,
   }
 
   // Lower arity?
-  // This can happen if the output do not depend on one of the inputs.
+  // This can happen if the output does not depend on one of the inputs.
   for (int i = 0; i < inputs.size();) {
     bool remove = true;
     for (int p = 0; p < (1 << inputs.size()); ++p) {
@@ -194,7 +195,7 @@ inline int FullyCanonicalizeTruthTable(absl::Span<Literal> inputs,
       }
     }
     if (remove) {
-      // Lets remove input i.
+      // Let's remove input i.
       for (int k = i; k + 1 < inputs.size(); ++k) inputs[k] = inputs[k + 1];
       inputs.remove_suffix(1);
 
@@ -222,7 +223,7 @@ inline int CanonicalizeFunctionTruthTable(Literal& target,
   const int new_size = FullyCanonicalizeTruthTable(inputs, function_values);
 
   // If we have x = f(a,b,c) and not(y) = f(a,b,c) with the same f, we have an
-  // equivalence, so we need to canonicalicpze both f() and not(f()) to the same
+  // equivalence, so we need to canonicalize both f() and not(f()) to the same
   // function. For that we just always choose to have the lowest bit at zero.
   if (function_values & 1) {
     target = target.Negated();
@@ -238,7 +239,7 @@ inline int CanonicalizeFunctionTruthTable(Literal& target,
 
 // Combines 64 "pairs of bits" using a function on two bits given by its truth
 // table. For two bits, we have result = (type >> (a + 2 * b)) & 1.
-// This just apply this to all 64 positions of a and b.
+// This just applies this to all 64 positions of a and b.
 inline uint64_t CombineGate2(int type, uint64_t a, uint64_t b) {
   switch (type) {
     case 0b0000:
@@ -281,7 +282,7 @@ inline uint64_t CombineGate2(int type, uint64_t a, uint64_t b) {
 // Encodes a simple binary gate target = f(a, b) where f() is given by its 4
 // bits value table (we call it type here).
 //
-// Note that degenerate case are supported, like
+// Note that degenerate cases are supported, like
 // - unary function target = f(a, a)
 // - zero-ary function target = 0 / 1 independently of a or b.
 struct BinaryGate {
@@ -329,6 +330,15 @@ struct BinaryGate {
     }
   }
 
+  template <typename H>
+  friend H AbslHashValue(H h, const BinaryGate& g) {
+    return H::combine(std::move(h), g.type, g.target, g.a, g.b);
+  }
+
+  bool operator==(const BinaryGate& o) const {
+    return type == o.type && target == o.target && a == o.a && b == o.b;
+  }
+
   // value[target] = (type >> (value[a] + 2 * value[b])) & 1.
   SmallBitset type = 0;
   int target = 0;
@@ -358,6 +368,28 @@ struct BinaryCircuit {
     }
   }
 
+  // Create a new intermediate node which is the target of f(a,b).
+  int AddGate(SmallBitset type, int a, int b) {
+    const int target = num_vars++;
+    gates.emplace_back(type, target, a, b);
+    return target;
+  }
+  int AddCopyOf(int a) {
+    const int target = num_vars++;
+    gates.emplace_back(0b1010, target, a, 0);
+    return target;
+  }
+  int AddNegationOf(int a) {
+    const int target = num_vars++;
+    gates.emplace_back(0b0101, target, a, 0);
+    return target;
+  }
+  int AddConstant(bool at_true) {
+    const int target = num_vars++;
+    gates.emplace_back(at_true ? 0b1111 : 0b0000, target, 0, 0);
+    return target;
+  }
+
   // Inputs are in [0, num_inputs). The targets are in [0, num_vars).
   int num_inputs = 0;
   int num_vars = 0;
@@ -376,39 +408,133 @@ struct BinaryCircuit {
 };
 
 // Removes the constraints from the problem by only keeping the first gate
-// that define a new target. Constraints are always of the form of multiple
+// that defines a new target. Constraints are always of the form of multiple
 // definitions for the same variable.
 void RemoveConstraints(BinaryCircuit* circuit);
 
 // Removes intermediate variables that are not useful. For instance this can
-// "detect" XOR gates encoded with AND gate and just use the XOR variant.
+// "detect" XOR gates encoded with AND gates and just use the XOR variant.
 void ReduceGates(BinaryCircuit* circuit);
 
 // Simplifies the circuit using the given equivalences.
-// Note that this arbitrarily choose one way to express two equivalent literals.
+// Note that this arbitrarily chooses one way to express two equivalent
+// literals.
 //
-// This also detect new equivalence if gate.a == gate.b.
+// This also detects new equivalences if gate.a == gate.b.
 void RemoveEquivalences(absl::Span<const std::pair<Literal, Literal>> equiv,
                         BinaryCircuit* circuit,
                         absl::Span<const Literal> extra_fixing = {});
 
+// Given a list of nodes that are not already inputs, remove the gates defining
+// them, and reorder everything so that they are considered as new inputs.
+// They will appear after the original circuit inputs.
+BinaryCircuit ConvertInnerNodeToInputs(const BinaryCircuit& circuit,
+                                       absl::Span<const int> new_inputs);
+
 // Constructs a problem to prove the equivalence of both circuits,
 // the num_inputs and the outputs size must be equivalent.
-// This will create a new circuit where the output are 1 iff the output of
-// the two different circuit at that position are different.
+// This will create a new circuit where the outputs are 1 iff the output of
+// the two different circuits at that position are different.
 //
 // To prove equivalence, one would need to also enforce that at least one of
-// the new output is one, and show infeasibility.
+// the new outputs is one, and show infeasibility.
 BinaryCircuit ConstructMitter(const BinaryCircuit& circuit_a,
                               const BinaryCircuit& circuit_b);
 
-// Output a "dot" file representation of the given circuit. This tries to
-// simplify the final graph by removing all intermediate node that are used only
-// in one place.
+// Append a copy of the given circuit into a "result" circuit we are currently
+// constructing.
 //
-// Note that for large file, it is better to split the positioning from the line
-// rendering with a command like:
-// dot -Tdot -Gsplines=none -Grankdir=LR  /tmp/circuit.dot -o /tmp/cmap.dot
+// The input i of the circuit will be wired to input_map[i] of the initial
+// result circuit. And an input_map[i] of -1 is a special case that means that
+// input will be set to zero.
+//
+// This will append new gates and "local variables" at the end of the result
+// circuit.
+//
+// Returns the set of outputs indices of "circuit" in the new space.
+std::vector<int> AppendCircuit(absl::Span<const int> input_map,
+                               const BinaryCircuit& circuit,
+                               BinaryCircuit* result);
+
+// For a binary circuit of n inputs, see if n can be decomposed
+// in (a, b) with the size of a being m, such that f(a, b) = g(a, f(0, b)).
+//
+// The first function uses sampling to see if this seems to be the case and to
+// "reconstruct" g(). This is a bit flawed because with random sampling we will
+// probably not cover the full domain of g(). For multi-addition, for instance,
+// to recover the output zero, we would need to try the all zero input, which
+// will not happen with random input.
+//
+// The second function creates a kind of mitter circuit to prove that a g()
+// exists without having to describe it. For that we construct a circuit with
+// m + 2 * (n - m) inputs that evaluates f(a, b), f(a, b'), f(0, b), f(0, b'),
+// forces f(0, b) to be f(0, b'), and tests that f(a, b) != f(a, b').
+bool SampleDecomposition(int m, const BinaryCircuit& circuit);
+BinaryCircuit ConstructDecomposition(int m, const BinaryCircuit& circuit);
+
+// Generates an n-bit adder circuit that computes output = (A + B) mod (2^n).
+// Input layout:  A = [0, n), B = [n, 2*n)
+// Output layout: Sum bits [S_0, S_1, ..., S_{n-1}]
+BinaryCircuit MakeNBitAdder(int n);
+
+// See if the circuit looks like sum_i(bit_i * constants[i]).
+//
+// The first function just checks it with sampling.
+//
+// The second function dumps num_input models to prove that this is the case.
+// If there are n input bits, we have n models
+// where each shows that f(0, a_i, suffix) = f(0, a_i, 0) + f(0, 0, suffix).
+// The models are easier and easier to solve.
+bool RecoverNWayAddition(const BinaryCircuit& circuit,
+                         int num_samples = 1 << 10);
+std::vector<BinaryCircuit> GetNWayAdditionSubmodels(
+    const BinaryCircuit& circuit);
+
+// Various circuit implementations of an "n-way adder". These return a circuit
+// that computes the m-bit sum (sum_i inputs[i] * constants[i]), where the
+// constants are m-bit wide.
+//
+// From a verification perspective, BuildPopcountCarryChainCircuit() is the
+// best as it is less sensitive to permutations of the inputs. The others are
+// smaller and less deep, they are more for circuit generation and testing.
+BinaryCircuit BuildPopcountCarryChainCircuit(
+    int m, absl::Span<const uint32_t> constants);
+BinaryCircuit BuildColumnWiseLinearCombinationCircuit(
+    int m, absl::Span<const uint32_t> constants);
+BinaryCircuit BuildDaddaKoggeStoneCircuit(int m,
+                                          absl::Span<const uint32_t> constants);
+
+// Returns a list of intermediate nodes, each of the form (node n, term_n) and
+// for which the output of the circuit seems to be equivalent to
+//     f(input) = f'(input) + value_n * term_n.
+// Where f'() is the same as f(), but all gates consuming node n receive zero
+// instead, and value_n is the value of node n in f(input).
+std::vector<std::pair<int, uint64_t>> SampleForAdditionCandidates(
+    const BinaryCircuit& circuit, int num_samples = 1 << 10);
+
+// TODO(user): rather than encoding the addition in an order-dependent way
+// we could use CP-SAT direct model for the mitter (to try). But we will lose
+// the LRAT proof though.
+struct AdditionDecompositionResult {
+  BinaryCircuit reduced_circuit;
+  BinaryCircuit final_circuit;
+
+  // The final circuit is constructed by adding sum input_i * term_i to the
+  // output of the reduced circuit.
+  std::vector<std::pair<int, uint64_t>> input_term_pairs;
+};
+AdditionDecompositionResult ValidateAdditionCandidates(
+    absl::Span<const std::pair<int, uint64_t>> candidates,
+    const BinaryCircuit& circuit,
+    const std::function<CpSolverResponse(const CpModelProto& cp_model)>& solve);
+
+// Output a "dot" file representation of the given circuit. This tries to
+// simplify the final graph by removing all intermediate nodes that are used
+// only in one place.
+//
+// Note that for large files, it is better to split the positioning from the
+// line rendering with a command like: dot -Tdot -Gsplines=none -Grankdir=LR
+// /tmp/circuit.dot -o /tmp/cmap.dot
 //   && neato -Tsvg -n -Goutputorder=edgesfirst -Gsplines=line /tmp/cmap.dot
 //   -o /tmp/circuit.svg && google-chrome /tmp/circuit.svg
 std::string ToDotFile(const BinaryCircuit& circuit,
@@ -423,9 +549,9 @@ CompactVectorVector<int, Literal> SampleForEquivalences(
     const BinaryCircuit& circuit, absl::BitGenRef random,
     const std::vector<std::vector<BooleanVariable>>& saved_solutions);
 
-// Find equivalences using sampling, and then proove using either exhaustive
+// Find equivalences using sampling, and then prove using either exhaustive
 // enumeration or sat solving via the solve() function.
-void SimplifyCircuit(
+std::vector<std::pair<Literal, Literal>> SimplifyCircuit(
     int max_num_solve, absl::BitGenRef random,
     std::function<CpSolverResponse(const CpModelProto& cp_model)> solve,
     std::vector<std::vector<BooleanVariable>>* saved_solutions,
@@ -440,15 +566,15 @@ void AddNotEquivalentConstraint(Literal a, Literal b, BinaryCircuit* circuit);
 // a set of variables.
 class SubcircuitExtractor {
  public:
-  // The constructor does some precomputations, so that all the subsequent
-  // Extract() call are a bit faster.
+  // The constructor does some precomputations, so that all subsequent
+  // Extract() calls are a bit faster.
   explicit SubcircuitExtractor(const BinaryCircuit& circuit);
 
   // Returns the subproblem sufficient to define all the given literals.
   // These literals will be the outputs of the new circuit.
   BinaryCircuit Extract(absl::Span<const Literal> literals);
 
-  // Same as above but use local indices instead of literals.
+  // Same as above but uses local indices instead of literals.
   BinaryCircuit Extract(absl::Span<const int> new_outputs);
 
  private:
@@ -468,7 +594,7 @@ bool BinaryCircuitIsFeasible(const BinaryCircuit& circuit);
 // Constructs a CpModelProto encoding of the given circuit.
 // This can be used to prove that a circuit is "infeasible" for instance.
 //
-// If enforce_one_output is true, we will add a "at least one output"
+// If enforce_one_output is true, we will add an "at least one output"
 // constraint. See ConstructMitter() to see the usage of this.
 CpModelProto ConstructCpModelFromBinaryCircuit(const BinaryCircuit& circuit,
                                                bool enforce_one_output = false);

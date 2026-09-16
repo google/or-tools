@@ -18,6 +18,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/log.h"
 #include "gtest/gtest.h"
 #include "ortools/math_opt/cpp/math_opt.h"
@@ -37,6 +38,7 @@
 #include "ortools/math_opt/solver_tests/qp_tests.h"
 #include "ortools/math_opt/solver_tests/second_order_cone_tests.h"
 #include "ortools/math_opt/solver_tests/status_tests.h"
+#include "ortools/math_opt/solver_tests/test_models.h"
 #include "ortools/third_party_solvers/xpress_environment.h"
 
 /** A string in the log file that indicates that the solution process
@@ -52,6 +54,53 @@ namespace operations_research {
 namespace math_opt {
 namespace {
 using testing::ValuesIn;
+
+/** Supported callback events.
+ * Xpress supports all callback events.
+ */
+absl::flat_hash_set<CallbackEvent> SupportedEvents() {
+  return {CallbackEvent::kPresolve, CallbackEvent::kSimplex,
+          CallbackEvent::kMip,      CallbackEvent::kMipSolution,
+          CallbackEvent::kMipNode,  CallbackEvent::kBarrier};
+}
+
+/** Supported callback events for tests with integer_variables=false.
+ * Even though Xpress supports setting the callbacks for non-MIP (they
+ * will just not be invoked), the tests are not prepared for this and will
+ * fail if the callback is supported and integer_variables=false.
+ */
+absl::flat_hash_set<CallbackEvent> SupportedEventsNoMip() {
+  return {CallbackEvent::kPresolve, CallbackEvent::kSimplex,
+          CallbackEvent::kBarrier};
+}
+
+/** Parameter settings to make sure we reach a callback that allows injection
+ * of cuts.
+ */
+SolveParameters ReachesCutCallback() {
+  SolveParameters params;
+  params.xpress.param_values["PRESOLVE"] = "0";
+  params.xpress.param_values["COVERCUTS"] = "0";
+  params.xpress.param_values["GOMCUTS"] = "0";
+  params.xpress.param_values["TREECOVERCUTS"] = "0";
+  params.xpress.param_values["TREEGOMCUTS"] = "0";
+  params.xpress.param_values["HEUREMPHASIS"] = "0";
+  return params;
+}
+
+/** Parameters that we must set for Xpress for every callback test.
+ */
+SolveParameters CallbackTestXpressParams() {
+  SolveParameters params;
+  //  By default, Xpress does not trigger the lplog callback for every simplex
+  // iteration since that results in quite some overhead. We have to force
+  // invocation after each iteration to pass the tests.
+  params.xpress.param_values["LPLOGSTYLE"] = "0";
+  params.xpress.param_values["LPLOG"] = "1";
+  // Never run concurrent
+  params.xpress.param_values["CONCURRENTTHREADS"] = "0";
+  return params;
+}
 
 INSTANTIATE_TEST_SUITE_P(
     XpressSolverLpTest, SimpleLpTest,
@@ -124,34 +173,33 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     XpressCallbackTest, CallbackTest,
     testing::ValuesIn(
-        {CallbackTestParams(SolverType::kXpress,
-                            /*integer_variables=*/false,
+        {CallbackTestParams(SolverType::kXpress, TestModelClass::kLp,
                             /*add_lazy_constraints=*/false,
                             /*add_cuts=*/false,
-                            /*supported_events=*/{},
+                            /*supported_events=*/SupportedEventsNoMip(),
                             /*all_solutions=*/std::nullopt,
-                            /*reaches_cut_callback*/ std::nullopt),
-         CallbackTestParams(SolverType::kXpress,
-                            /*integer_variables=*/true,
-                            /*add_lazy_constraints=*/false,
-                            /*add_cuts=*/false,
-                            /*supported_events=*/{},
+                            /*reaches_cut_callback*/ std::nullopt,
+                            /*solve_parameters*/ CallbackTestXpressParams()),
+         CallbackTestParams(SolverType::kXpress, TestModelClass::kIp,
+                            /*add_lazy_constraints=*/true,
+                            /*add_cuts=*/true,
+                            /*supported_events=*/SupportedEvents(),
                             /*all_solutions=*/std::nullopt,
-                            /*reaches_cut_callback*/ std::nullopt)}));
+                            /*reaches_cut_callback*/ ReachesCutCallback(),
+                            /*solve_parameters*/ CallbackTestXpressParams())}));
 
 INSTANTIATE_TEST_SUITE_P(
     XpressInvalidInputTest, InvalidInputTest,
-    testing::ValuesIn(
-        {InvalidInputTestParameters(SolverType::kXpress,
-                                    /*use_integer_variables=*/true),
-         InvalidInputTestParameters(SolverType::kXpress,
-                                    /*use_integer_variables=*/false)}));
+    testing::ValuesIn({InvalidInputTestParameters(SolverType::kXpress,
+                                                  TestModelClass::kIp),
+                       InvalidInputTestParameters(SolverType::kXpress,
+                                                  TestModelClass::kLp)}));
 
 InvalidParameterTestParams InvalidObjectiveLimitParameters() {
   SolveParameters params;
   params.objective_limit = 1.5;
   return InvalidParameterTestParams(
-      SolverType::kXpress, std::move(params),
+      SolverType::kXpress, TestModelClass::kLp, std::move(params),
       {"XpressSolver does not support objective_limit"});
 }
 
@@ -159,7 +207,7 @@ InvalidParameterTestParams InvalidBestBoundLimitParameters() {
   SolveParameters params;
   params.best_bound_limit = 1.5;
   return InvalidParameterTestParams(
-      SolverType::kXpress, std::move(params),
+      SolverType::kXpress, TestModelClass::kLp, std::move(params),
       {"XpressSolver does not support best_bound_limit"});
 }
 
@@ -167,7 +215,7 @@ InvalidParameterTestParams InvalidSolutionPoolSizeParameters() {
   SolveParameters params;
   params.solution_pool_size = 2;
   return InvalidParameterTestParams(
-      SolverType::kXpress, std::move(params),
+      SolverType::kXpress, TestModelClass::kLp, std::move(params),
       {"XpressSolver does not support solution_pool_size"});
 }
 
@@ -181,11 +229,11 @@ INSTANTIATE_TEST_SUITE_P(
     testing::ValuesIn(
         {GenericTestParameters(SolverType::kXpress,
                                /*support_interrupter=*/true,
-                               /*integer_variables=*/false,
+                               TestModelClass::kLp,
                                /*expected_log=*/OPTIMAL_SOLUTION_FOUND_LP),
          GenericTestParameters(SolverType::kXpress,
                                /*support_interrupter=*/true,
-                               /*integer_variables=*/true,
+                               TestModelClass::kIp,
                                /*expected_log=*/OPTIMAL_SOLUTION_FOUND_MIP)}));
 
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TimeLimitTest);
@@ -278,14 +326,13 @@ LogicalConstraintTestParameters GetXpressLogicalConstraintTestParameters() {
       //       solely of variables (not expressions) and it does not support
       //       duplicate entries. Many of the SOS tests construct things
       //       like this, so we skip them.
-      /*supports_sos1=*/false,
-      /*supports_sos2=*/false,
+      /*supports_sos1=*/true,
+      /*supports_sos2=*/true,
       /*supports_indicator_constraints=*/true,
       /*supports_incremental_add_and_deletes=*/false,
       /*supports_incremental_variable_deletions=*/false,
       /*supports_deleting_indicator_variables=*/false,
-      /*supports_updating_binary_variables=*/false,
-      /*supports_sos_on_expressions=*/false);
+      /*supports_updating_binary_variables=*/false);
 }
 
 INSTANTIATE_TEST_SUITE_P(

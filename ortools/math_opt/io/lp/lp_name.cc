@@ -60,7 +60,7 @@ absl::Status ValidateName(absl::string_view name) {
   }
   for (int i = 0; i < name.size(); ++i) {
     if (!ValidateCharInName(name[i], i == 0)) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "invalid character: " << name[i] << " at index: " << i
              << " in: " << name;
     }

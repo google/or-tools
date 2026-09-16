@@ -29,16 +29,11 @@ if(BUILD_PYTHON_SAMPLES)
   endforeach()
 endif()
 
-if(BUILD_JAVA_SAMPLES)
-  file(GLOB JAVA_SRCS "*.java")
-  foreach(SAMPLE IN LISTS JAVA_SRCS)
-    add_java_sample(FILE_NAME ${SAMPLE})
-  endforeach()
-endif()
-
 if(BUILD_DOTNET_SAMPLES)
   file(GLOB DOTNET_SRCS "*.cs")
   foreach(SAMPLE IN LISTS DOTNET_SRCS)
     add_dotnet_sample(FILE_NAME ${SAMPLE})
   endforeach()
 endif()
+
+add_subdirectory(java)

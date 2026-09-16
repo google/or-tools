@@ -14,9 +14,11 @@
 #ifndef ORTOOLS_SET_COVER_SET_COVER_MIP_H_
 #define ORTOOLS_SET_COVER_SET_COVER_MIP_H_
 
+#include <memory>
+
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/linear_solver/linear_solver.h"
+#include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_heuristics.h"
 #include "ortools/set_cover/set_cover_invariant.h"
@@ -30,53 +32,57 @@ enum class SetCoverMipSolver : int {
   PDLP = 4
 };
 
-class SetCoverMip : public SubsetListBasedSolutionGenerator {
+// Parameters for SetCoverMip.
+struct SetCoverMipParams : public SetCoverOptimizerParamsBase {
+  SetCoverMipSolver mip_solver = SetCoverMipSolver::SCIP;
+  bool use_integers = true;
+};
+
+class SetCoverMip : public SubsetListBasedOptimizer<SetCoverMipParams> {
  public:
   // Simpler constructors that uses SCIP by default.
   explicit SetCoverMip(SetCoverInvariant* inv)
-      : SetCoverMip(inv, "SetCoverMip") {}
+      : SetCoverMip(inv, std::make_unique<SetCoverMipParams>()) {}
+
+  SetCoverMip(SetCoverInvariant* inv, std::unique_ptr<SetCoverMipParams> params)
+      : SubsetListBasedOptimizer(
+            inv, SetCoverInvariant::ConsistencyLevel::kCostAndCoverage,
+            std::move(params)) {}
 
   SetCoverMip(SetCoverInvariant* inv, absl::string_view name)
-      : SubsetListBasedSolutionGenerator(
-            inv, SetCoverInvariant::ConsistencyLevel::kCostAndCoverage, "Mip",
-            name),
-        mip_solver_(SetCoverMipSolver::SCIP),
-        use_integers_(true) {}
+      : SubsetListBasedOptimizer(
+            inv, SetCoverInvariant::ConsistencyLevel::kCostAndCoverage,
+            std::make_unique<SetCoverMipParams>()) {
+    SetName(name);
+    params().class_name = "Mip";
+  }
 
   SetCoverMip& UseMipSolver(SetCoverMipSolver mip_solver) {
-    mip_solver_ = mip_solver;
+    params().mip_solver = mip_solver;
     return *this;
   }
 
   SetCoverMip& UseIntegers(bool use_integers) {
-    use_integers_ = use_integers;
+    params().use_integers = use_integers;
     consistency_level_ =
-        use_integers_ ? SetCoverInvariant::ConsistencyLevel::kCostAndCoverage
-                      : SetCoverInvariant::ConsistencyLevel::kInconsistent;
+        use_integers ? SetCoverInvariant::ConsistencyLevel::kCostAndCoverage
+                     : SetCoverInvariant::ConsistencyLevel::kInconsistent;
     return *this;
   }
 
-  MPSolver::ResultStatus solve_status() const { return solve_status_; }
-
-  using SubsetListBasedSolutionGenerator::NextSolution;
+  math_opt::TerminationReason solve_status() const { return solve_status_; }
 
   // Computes the next partial solution considering only the subsets whose
   // indices are in focus.
-  bool NextSolution(absl::Span<const SubsetIndex> focus) final;
+  bool OptimizeImpl(absl::Span<const SubsetIndex> focus) override;
 
   const SubsetWeightVector& solution_weights() const {
     return solution_weights_;
   }
 
  private:
-  // The MIP solver flavor used by the instance.
-  SetCoverMipSolver mip_solver_;
-
-  // Whether to use integer variables in the MIP.
-  bool use_integers_;
-
   // The status of the last solve.
-  MPSolver::ResultStatus solve_status_;
+  math_opt::TerminationReason solve_status_;
 
   // The solution of the MIP solver, corresponding to the weights of each subset
   // in the solution. The weights can be fractional and are in [0, 1].

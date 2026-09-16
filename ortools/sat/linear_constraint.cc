@@ -17,18 +17,17 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <limits>
 #include <numeric>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "absl/base/attributes.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/sat_base.h"
@@ -83,12 +82,12 @@ void LinearConstraintBuilder::AddLinearExpression(const LinearExpression& expr,
   offset_ += expr.offset * coeff;
 }
 
-ABSL_MUST_USE_RESULT bool LinearConstraintBuilder::AddDecomposedProduct(
+[[nodiscard]] bool LinearConstraintBuilder::AddDecomposedProduct(
     absl::Span<const LiteralValueValue> product) {
   if (product.empty()) return true;
 
   IntegerValue product_min = kMaxIntegerValue;
-  // TODO(user): Checks the value of literals.
+  // TODO(user): Check the value of literals.
   for (const LiteralValueValue& term : product) {
     product_min = std::min(product_min, term.left_value * term.right_value);
   }
@@ -116,7 +115,7 @@ void LinearConstraintBuilder::AddQuadraticLowerBound(
     const IntegerValue right_min = integer_trail->LowerBound(right);
     AddTerm(left, right_min);
     AddTerm(right, left_min);
-    // Substract the energy counted twice.
+    // Subtract the energy counted twice.
     AddConstant(-left_min * right_min);
     if (is_quadratic != nullptr) *is_quadratic = true;
   }
@@ -126,8 +125,8 @@ void LinearConstraintBuilder::AddConstant(IntegerValue value) {
   offset_ += value;
 }
 
-ABSL_MUST_USE_RESULT bool LinearConstraintBuilder::AddLiteralTerm(
-    Literal lit, IntegerValue coeff) {
+[[nodiscard]] bool LinearConstraintBuilder::AddLiteralTerm(Literal lit,
+                                                           IntegerValue coeff) {
   DCHECK(encoder_ != nullptr);
   IntegerVariable var = kNoIntegerVariable;
   bool view_is_direct = true;
@@ -424,7 +423,7 @@ bool ValidateLinearConstraintForOverflow(const LinearConstraint& constraint,
     negative_sum = CapAdd(negative_sum, std::min(int64_t{0}, min_prod));
   }
 
-  const int64_t limit = std::numeric_limits<int64_t>::max();
+  const int64_t limit = kint64max;
   if (positive_sum >= limit) return false;
   if (negative_sum <= -limit) return false;
   if (CapSub(positive_sum, negative_sum) >= limit) return false;

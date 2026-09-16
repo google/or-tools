@@ -11,10 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library")
 
-cc_library(
+or_cc_library(
     name = "gen",
     srcs = ["gen.cc"],
     hdrs = ["gen.h"],
@@ -28,7 +27,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "gen_c",
     srcs = ["gen_c.cc"],
     hdrs = ["gen_c.h"],
@@ -42,14 +41,14 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "testing",
     testonly = 1,
     hdrs = ["testing.h"],
     deps = [":gen"],
 )
 
-cc_library(
+or_cc_library(
     name = "gen_python",
     srcs = ["gen_python.cc"],
     hdrs = ["gen_python.h"],
@@ -63,12 +62,12 @@ cc_library(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "codegen",
     srcs = ["codegen.cc"],
     visibility = [
         "//ortools/math_opt/elemental/c_api:__subpackages__",
-        "//ortools/math_opt/elemental/python:__subpackages__",
+        "//ortools/math_opt/elemental/python:__pkg__",
     ],
     deps = [
         ":gen",

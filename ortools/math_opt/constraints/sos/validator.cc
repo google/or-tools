@@ -15,8 +15,9 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
+#include "absl/status/status_builder.h"
+#include "absl/status/status_macros.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
@@ -29,21 +30,22 @@ absl::Status ValidateConstraint(const SosConstraintProto& constraint,
                                 const IdNameBiMap& variable_universe) {
   if (!constraint.weights().empty() &&
       constraint.weights_size() != constraint.expressions_size()) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "Length mismatch between weights and expressions: "
            << constraint.weights_size() << " vs. "
            << constraint.expressions_size();
   }
   for (const LinearExpressionProto& expression : constraint.expressions()) {
-    RETURN_IF_ERROR(ValidateLinearExpression(expression, variable_universe))
+    ABSL_RETURN_IF_ERROR(
+        ValidateLinearExpression(expression, variable_universe))
         << "Invalid SOS expression";
   }
   // Check weights for uniqueness.
   absl::flat_hash_set<double> weights;
   for (const double weight : constraint.weights()) {
-    RETURN_IF_ERROR(CheckScalarNoNanNoInf(weight)) << "Invalid SOS weight";
+    ABSL_RETURN_IF_ERROR(CheckScalarNoNanNoInf(weight)) << "Invalid SOS weight";
     if (!weights.insert(weight).second) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "SOS weights must be unique, but encountered duplicate weight: "
              << weight;
     }

@@ -147,8 +147,10 @@ class Model:
         name: str = "",  # TODO(b/371236599): rename to model_name
         primary_objective_name: str = "",
     ) -> None:
-        self._elemental: elemental.Elemental = cpp_elemental.CppElemental(
-            model_name=name, primary_objective_name=primary_objective_name
+        self._elemental: elemental.Elemental = (
+            cpp_elemental.CppElemental(  # pyrefly: ignore[bad-instantiation]
+                model_name=name, primary_objective_name=primary_objective_name
+            )
         )
 
     @property

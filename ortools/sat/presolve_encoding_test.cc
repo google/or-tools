@@ -52,7 +52,6 @@ TEST(CreateVariableEncodingLocalModelsTest, TrivialTest) {
   PresolveContext context(&model, &model_proto, &mapping_model);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
   const std::vector<VariableEncodingLocalModel> local_models =
       CreateVariableEncodingLocalModels(&context);
   ASSERT_EQ(local_models.size(), 1);
@@ -88,7 +87,6 @@ TEST(CreateVariableEncodingLocalModelsTest, BasicTest) {
   PresolveContext context(&model, &model_proto, &mapping_model);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
   const std::vector<VariableEncodingLocalModel> local_models =
       CreateVariableEncodingLocalModels(&context);
   ASSERT_EQ(local_models.size(), 1);
@@ -149,7 +147,6 @@ TEST(CreateVariableEncodingLocalModelsTest, OneBooleanUsedElsewhere) {
   PresolveContext context(&model, &model_proto, &mapping_model);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
   const std::vector<VariableEncodingLocalModel> local_models =
       CreateVariableEncodingLocalModels(&context);
   ASSERT_EQ(local_models.size(), 1);
@@ -228,7 +225,6 @@ TEST(CreateVariableEncodingLocalModelsTest, TwoVars) {
   PresolveContext context(&model, &model_proto, &mapping_model);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
   std::vector<VariableEncodingLocalModel> local_models =
       CreateVariableEncodingLocalModels(&context);
   ASSERT_EQ(local_models.size(), 2);
@@ -313,7 +309,6 @@ TEST(BasicPresolveAndGetFullyEncodedDomainsTest, EncodingWithBoolOr) {
   PresolveContext context(&model, &model_proto, &mapping_model);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
   std::vector<VariableEncodingLocalModel> local_models =
       CreateVariableEncodingLocalModels(&context);
 
@@ -330,7 +325,7 @@ TEST(BasicPresolveAndGetFullyEncodedDomainsTest, EncodingWithBoolOr) {
   ConstraintProto expected_exactly_one = ParseTestProto(R"pb(
     exactly_one { literals: [ 0, 1, 2 ] }
   )pb");
-  EXPECT_THAT(context.working_model->constraints(),
+  EXPECT_THAT(context.WorkingModel().constraints(),
               testing::Contains(testing::EqualsProto(expected_exactly_one)));
 }
 
@@ -400,7 +395,6 @@ TEST(DetectAllEncodedComplexDomainTest, BasicTest) {
   PresolveContext context(&model, &model_proto, &mapping_model);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
   std::vector<VariableEncodingLocalModel> local_models =
       CreateVariableEncodingLocalModels(&context);
   ASSERT_TRUE(DetectAllEncodedComplexDomain(&context, local_models[0]));
@@ -454,7 +448,7 @@ TEST(DetectAllEncodedComplexDomainTest, BasicTest) {
       coeffs: [ 2 ]
     }
   )pb");
-  EXPECT_THAT(context.working_model, testing::EqualsProto(expected_model));
+  EXPECT_THAT(context.WorkingModel(), testing::EqualsProto(expected_model));
 }
 
 }  // namespace

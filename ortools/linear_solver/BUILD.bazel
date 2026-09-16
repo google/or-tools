@@ -13,11 +13,11 @@
 
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("//bazel:compilation_flags.bzl", "SAFE_FP_CODE")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -63,6 +63,16 @@ config_setting(
 )
 
 bool_flag(
+    name = "with_cplex",  # Proprietary solvers
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "use_cplex",
+    flag_values = {":with_cplex": "true"},
+)
+
+bool_flag(
     name = "with_glop",
     build_setting_default = True,
 )
@@ -73,16 +83,6 @@ config_setting(
 )
 
 bool_flag(
-    name = "with_gurobi",
-    build_setting_default = True,
-)
-
-config_setting(
-    name = "use_gurobi",
-    flag_values = {":with_gurobi": "true"},
-)
-
-bool_flag(
     name = "with_glpk",
     build_setting_default = False,
 )
@@ -90,6 +90,16 @@ bool_flag(
 config_setting(
     name = "use_glpk",
     flag_values = {":with_glpk": "true"},
+)
+
+bool_flag(
+    name = "with_gurobi",
+    build_setting_default = True,
+)
+
+config_setting(
+    name = "use_gurobi",
+    flag_values = {":with_gurobi": "true"},
 )
 
 bool_flag(
@@ -122,19 +132,8 @@ config_setting(
     flag_values = {":with_scip": "true"},
 )
 
-# Prorietary solvers
 bool_flag(
-    name = "with_cplex",
-    build_setting_default = False,
-)
-
-config_setting(
-    name = "use_cplex",
-    flag_values = {":with_cplex": "true"},
-)
-
-bool_flag(
-    name = "with_xpress",
+    name = "with_xpress",  # Proprietary solvers
     build_setting_default = True,
 )
 
@@ -150,6 +149,11 @@ proto_library(
     deps = ["//ortools/util:optional_boolean_proto"],
 )
 
+java_proto_library(
+    name = "linear_solver_java_proto",
+    deps = [":linear_solver_proto"],
+)
+
 cc_proto_library(
     name = "linear_solver_cc_proto",
     deps = [":linear_solver_proto"],
@@ -160,30 +164,86 @@ py_proto_library(
     deps = [":linear_solver_proto"],
 )
 
-# You can include the interfaces to different solvers by invoking '--define'
-# flags. By default GLOP, BOP, SCIP, GUROBI, and CP-SAT interface are included.
-#
-# For instance, if you want to use the GLPK solver, build with
-# '--define USE_GLPK=' (or add it to your bazel.rc file). This will download,
-# build and link to GLPK.
-cc_library(
-    name = "linear_solver",
+proto_library(
+    name = "iis_proto",
+    srcs = ["iis.proto"],
+    deps = ["//ortools/util:status_proto"],
+)
+
+cc_proto_library(
+    name = "iis_cc_proto",
+    deps = [":iis_proto"],
+)
+
+java_proto_library(
+    name = "iis_java_proto",
+    deps = [":iis_proto"],
+)
+
+py_proto_library(
+    name = "iis_py_pb2",
+    deps = [":iis_proto"],
+)
+
+or_cc_library(
+    name = "linear_solver_lib",
     srcs = [
-        "sat_interface.cc",
-    ] + select({
-        ":use_cplex": ["cplex_interface.cc"],
-        "//conditions:default": [],
-    }) + select({
-        ":use_xpress": ["xpress_interface.cc"],
-        "//conditions:default": [],
-    }),
+        "linear_expr.cc",
+        "linear_solver.cc",
+    ],
+    hdrs = [
+        "linear_expr.h",
+        "linear_solver.h",
+    ],
+    copts = ["-fexceptions"] + SAFE_FP_CODE,
+    deps = [
+        ":linear_solver_callback",
+        ":linear_solver_cc_proto",
+        ":model_exporter",
+        ":model_validator",
+        "//ortools/base:accurate_sum",
+        "//ortools/base:base_export",
+        "//ortools/base:map_util",
+        "//ortools/base:numbers",
+        "//ortools/base:stl_util",
+        "//ortools/base:threadpool",
+        "//ortools/base/macros:os_support",
+        "//ortools/glop:parameters_cc_proto",
+        "//ortools/port:file",  # Needed by go/lp-specific-params. Don't remove!
+        "//ortools/port:proto_utils",
+        "//ortools/util:fp_utils",
+        "//ortools/util:lazy_mutable_copy",
+        "//ortools/util:status_streaming",
+        "//ortools/util:testing_utils",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/time",
+        "@protobuf",
+    ],
+)
+
+# Solvers can be included or excluded using build flags.
+# Each solver has an associated bool_flag (e.g., :with_glpk) that controls its inclusion in the
+# following target.
+or_cc_library(
+    name = "linear_solver",
     tags = [
         "not_build:arm",
         "not_run:arm",
     ],
     deps = [
-        ":linear_solver_base",
         ":linear_solver_cc_proto",
+        ":linear_solver_lib",
         "//ortools/base",
         "//ortools/linear_solver/proto_solver:proto_utils",
         "//ortools/linear_solver/proto_solver:sat_proto_solver",
@@ -204,6 +264,9 @@ cc_library(
         ":use_clp": [":linear_solver_clp"],
         "//conditions:default": [],
     }) + select({
+        ":use_cplex": [":linear_solver_cplex"],
+        "//conditions:default": [],
+    }) + select({
         ":use_glop": [":linear_solver_glop"],
         "//conditions:default": [],
     }) + select({
@@ -216,25 +279,90 @@ cc_library(
         ":use_pdlp": [":linear_solver_pdlp"],
         "//conditions:default": [],
     }) + select({
+        ":use_cp_sat": [":linear_solver_sat"],
+        "//conditions:default": [],
+    }) + select({
         ":use_scip": [":linear_solver_scip"],
         "//conditions:default": [],
     }) + select({
         ":use_highs": [":linear_solver_highs"],
         "//conditions:default": [],
     }) + select({
-        ":use_xpress": ["//ortools/third_party_solvers:xpress_environment"],
+        ":use_xpress": [":linear_solver_xpress"],
         "//conditions:default": [],
     }),
     alwayslink = 1,  # Important! Library is used via dependency injection.
 )
 
+or_cc_library(
+    name = "linear_solver_xpress",
+    srcs = ["xpress_interface.cc"],
+    copts = ["-fexceptions"] + SAFE_FP_CODE,
+    target_compatible_with = select({
+        ":use_xpress": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        ":linear_solver_callback",
+        ":linear_solver_lib",
+        "//ortools/base:mathutil",
+        "//ortools/base:timer",
+        "//ortools/third_party_solvers:xpress_environment",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/synchronization",
+    ],
+    alwayslink = 1,  # Important! Library is used via dependency injection.
+)
+
+or_cc_test(
+    name = "xpress_interface_test",
+    srcs = ["xpress_interface_test.cc"],
+    copts = ["-fexceptions"] + SAFE_FP_CODE,
+    deps = [
+        ":linear_solver_callback",
+        ":linear_solver_lib",
+        "//ortools/base:gmock",
+        "//ortools/base:log_severity",
+        "//ortools/third_party_solvers:xpress_environment",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+or_cc_library(
+    name = "linear_solver_cplex",
+    srcs = ["cplex_interface.cc"],
+    copts = ["-fexceptions"] + SAFE_FP_CODE,
+    target_compatible_with = select({
+        ":use_cplex": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [":linear_solver_lib"],
+    alwayslink = 1,  # Important! Library is used via dependency injection.
+)
+
 # Recommended target to do linear programming (LP).
-cc_library(
+or_cc_library(
     name = "linear_solver_glop",
     srcs = ["glop_interface.cc"],
+    copts = ["-fexceptions"] + SAFE_FP_CODE,
+    target_compatible_with = select({
+        ":use_glop": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         ":glop_utils",
-        ":linear_solver_base",
+        ":linear_solver_cc_proto",
+        ":linear_solver_lib",
         "//ortools/glop:lp_solver",
         "//ortools/glop:parameters_cc_proto",
         "//ortools/linear_solver/proto_solver:glop_proto_solver",
@@ -254,32 +382,35 @@ cc_library(
 # and better behavior on ill-conditioned problems); but we still provide
 # some free third-party solvers. CLP is usually the best among those.
 # GUROBI is the best, even better than GLOP, but it has a restricted license.
-cc_library(
+or_cc_library(
     name = "linear_solver_clp",
     srcs = ["clp_interface.cc"],
+    copts = ["-fexceptions"] + SAFE_FP_CODE,
     target_compatible_with = select({
         ":use_clp": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
-        ":linear_solver_base",
+        ":linear_solver_lib",
         "//ortools/base:timer",
-        "//third_party/cbc:clp",
-        "//third_party/cbc:coinutils",
         "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:str_format",
+        "@clp",
+        "@coinutils",
     ],
     alwayslink = 1,  # Important! Library is used via dependency injection.
 )
 
-cc_library(
+or_cc_library(
     name = "scip_callback",
     srcs = ["scip_callback.cc"],
     hdrs = ["scip_callback.h"],
     deps = [
-        ":linear_solver_base",
+        ":linear_solver_lib",
         ":scip_helper_macros",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
         "@scip",
@@ -292,12 +423,18 @@ cc_library(
 # by setting a define when you build your end target:
 # blaze build -c opt --define scip_lp_solver=glop my/build:target.
 # blaze build -c opt --define scip_lp_solver=clp my/build:target.
-cc_library(
+or_cc_library(
     name = "linear_solver_scip",
     srcs = ["scip_interface.cc"],
+    copts = ["-fexceptions"] + SAFE_FP_CODE,
+    target_compatible_with = select({
+        ":use_scip": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
-        ":linear_solver_base",
+        ":linear_solver_callback",
         ":linear_solver_cc_proto",
+        ":linear_solver_lib",
         ":scip_callback",
         ":scip_helper_macros",
         "//ortools/base:timer",
@@ -321,11 +458,16 @@ cc_library(
 )
 
 # Use with caution. For example, it is not thread-safe.
-cc_library(
+or_cc_library(
     name = "linear_solver_glpk",
     srcs = ["glpk_interface.cc"],
+    copts = ["-fexceptions"] + SAFE_FP_CODE,
+    target_compatible_with = select({
+        ":use_glpk": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
-        ":linear_solver_base",
+        ":linear_solver_lib",
         "//ortools/base:timer",
         "//ortools/third_party_solvers/glpk:glpk_env_deleter",
         "@abseil-cpp//absl/base:core_headers",
@@ -338,44 +480,54 @@ cc_library(
 
 # Use with caution. For example, it has yielded erroneous solutions
 # in the past (contact or-core-team@ for details).
-cc_library(
+or_cc_library(
     name = "linear_solver_cbc",
     srcs = ["cbc_interface.cc"],
+    copts = ["-fexceptions"] + SAFE_FP_CODE,
     target_compatible_with = select({
         ":use_cbc": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
-        ":linear_solver_base",
+        ":linear_solver_lib",
         "//ortools/base:timer",
         "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
     ],
     alwayslink = 1,  # Important! Library is used via dependency injection.
 )
 
-cc_library(
+or_cc_library(
     name = "linear_solver_gurobi",
     srcs = ["gurobi_interface.cc"],
+    copts = SAFE_FP_CODE,
     tags = [
         "not_build:arm",
         "not_run:arm",
     ],
+    target_compatible_with = select({
+        ":use_gurobi": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         ":gurobi_util",
-        ":linear_solver_base",
-        "//ortools/base:status_macros",
+        ":linear_solver_callback",
+        ":linear_solver_lib",
         "//ortools/base:timer",
         "//ortools/linear_solver/proto_solver:gurobi_proto_solver",
         "//ortools/linear_solver/proto_solver:proto_utils",
         "//ortools/util:lazy_mutable_copy",
+        "//ortools/util:status_streaming",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:die_if_null",
         "@abseil-cpp//absl/status",
@@ -386,7 +538,7 @@ cc_library(
     alwayslink = 1,  # Important! Library is used via dependency injection.
 )
 
-cc_library(
+or_cc_library(
     name = "gurobi_util",
     srcs = ["gurobi_util.cc"],
     hdrs = ["gurobi_util.h"],
@@ -395,11 +547,11 @@ cc_library(
         "not_run:arm",
     ],
     deps = [
-        "//ortools/base:status_macros",
         "//ortools/third_party_solvers:gurobi_environment",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
@@ -408,25 +560,65 @@ cc_library(
 
 # Experimental. Boolean optimization problem solver.
 # This works best on MIP problem where all the variables are Boolean integers.
-cc_library(
+or_cc_library(
     name = "linear_solver_bop",
     srcs = ["bop_interface.cc"],
+    target_compatible_with = select({
+        ":use_bop": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
-        ":linear_solver_base",
+        ":linear_solver_lib",
         "//ortools/bop:bop_parameters_cc_proto",
+        "//ortools/bop:bop_types",
         "//ortools/bop:integral_solver",
+        "//ortools/lp_data",
+        "//ortools/lp_data:lp_types",
+        "//ortools/util:time_limit",
         "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
+        "@protobuf",
     ],
     alwayslink = 1,  # Important! Library is used via dependency injection.
 )
 
-cc_library(
+# Experimental. SAT-based optimization problem solver.
+or_cc_library(
+    name = "linear_solver_sat",
+    srcs = ["sat_interface.cc"],
+    target_compatible_with = select({
+        ":use_cp_sat": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        ":linear_solver_cc_proto",
+        ":linear_solver_lib",
+        "//ortools/linear_solver/proto_solver:proto_utils",
+        "//ortools/linear_solver/proto_solver:sat_proto_solver",
+        "//ortools/port:proto_utils",
+        "//ortools/sat:cp_model_cc_proto",
+        "//ortools/sat:cp_model_solver",
+        "//ortools/sat:sat_parameters_cc_proto",
+        "//ortools/util:lazy_mutable_copy",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+    ],
+    alwayslink = 1,  # Important! Library is used via dependency injection.
+)
+
+or_cc_library(
     name = "linear_solver_pdlp",
     srcs = ["pdlp_interface.cc"],
+    target_compatible_with = select({
+        ":use_pdlp": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
-        ":linear_solver_base",
         ":linear_solver_cc_proto",
+        ":linear_solver_lib",
         "//ortools/linear_solver/proto_solver:pdlp_proto_solver",
         "//ortools/linear_solver/proto_solver:proto_utils",
         "//ortools/pdlp:solve_log_cc_proto",
@@ -434,25 +626,32 @@ cc_library(
         "//ortools/port:proto_utils",
         "//ortools/util:lazy_mutable_copy",
         "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
+        "@protobuf",
     ],
     alwayslink = 1,  # Important! Library is used via dependency injection.
 )
 
 # Highs solver;
-cc_library(
+or_cc_library(
     name = "linear_solver_highs",
     srcs = ["highs_interface.cc"],
+    target_compatible_with = select({
+        ":use_highs": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
-        ":linear_solver_base",
         ":linear_solver_cc_proto",
+        ":linear_solver_lib",
         "//ortools/linear_solver/proto_solver:highs_proto_solver",
         "//ortools/linear_solver/proto_solver:proto_utils",
         "//ortools/util:lazy_mutable_copy",
         "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
@@ -461,85 +660,52 @@ cc_library(
     alwayslink = 1,  # Important! Library is used via dependency injection.
 )
 
-cc_library(
-    name = "linear_solver_base",
-    srcs = [
-        "linear_expr.cc",
-        "linear_solver.cc",
-        "linear_solver_callback.cc",
-    ],
-    hdrs = [
-        "linear_expr.h",
-        "linear_solver.h",
-        "linear_solver_callback.h",
-    ],
+or_cc_library(
+    name = "linear_solver_callback",
+    srcs = ["linear_solver_callback.cc"],
+    hdrs = ["linear_solver_callback.h"],
     deps = [
-        ":linear_solver_cc_proto",
-        ":model_exporter",
-        ":model_validator",
-        "//ortools/base:accurate_sum",
-        "//ortools/base:base_export",
-        "//ortools/base:map_util",
-        "//ortools/base:numbers",
-        "//ortools/base:stl_util",
-        "//ortools/base:threadpool",
-        "//ortools/base/macros:os_support",
-        "//ortools/glop:parameters_cc_proto",
-        "//ortools/port:file",  # Needed by go/lp-specific-params. Don't remove!
-        "//ortools/port:proto_utils",
-        "//ortools/util:fp_utils",
-        "//ortools/util:lazy_mutable_copy",
-        "//ortools/util:testing_utils",
-        "//ortools/util:time_limit",
-        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:flat_hash_map",
-        "@abseil-cpp//absl/container:flat_hash_set",
-        "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:str_format",
-        "@abseil-cpp//absl/synchronization",
-        "@abseil-cpp//absl/time",
-        "@protobuf",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "glop_utils",
     srcs = ["glop_utils.cc"],
     hdrs = ["glop_utils.h"],
     deps = [
-        ":linear_solver_base",
+        ":linear_solver_lib",
         "//ortools/lp_data:lp_types",
+        "@abseil-cpp//absl/functional:overload",
         "@abseil-cpp//absl/log",
     ],
 )
 
 # Model exporter that can write MPS and LP file formats from an MPModelProto.
-cc_library(
+or_cc_library(
     name = "model_exporter",
     srcs = ["model_exporter.cc"],
     hdrs = ["model_exporter.h"],
     deps = [
         ":linear_solver_cc_proto",
         "//ortools/base:file",
-        "//ortools/base:status_macros",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
         "@abseil-cpp//absl/types:span",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "model_validator",
     srcs = ["model_validator.cc"],
     hdrs = ["model_validator.h"],
@@ -555,15 +721,19 @@ cc_library(
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
         "@abseil-cpp//absl/types:optional",
+        "@protobuf",
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "solve",
     srcs = ["solve.cc"],
     tags = [
@@ -585,6 +755,7 @@ cc_binary(
         "//ortools/util:file_util",
         "//ortools/util:sigint",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:flags",
         "@abseil-cpp//absl/status",
@@ -595,26 +766,37 @@ cc_binary(
     ],
 )
 
-# Benchmarks.
-
-cc_library(
+or_cc_library(
     name = "scip_helper_macros",
     srcs = ["scip_helper_macros.cc"],
     hdrs = ["scip_helper_macros.h"],
     deps = [
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "@abseil-cpp//absl/base",
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:string_view",
         "@scip",
     ],
 )
 
-cc_library(
+or_cc_test(
+    name = "scip_helper_macros_test",
+    srcs = ["scip_helper_macros_test.cc"],
+    deps = [
+        ":scip_helper_macros",
+        "//ortools/base:gmock_main",
+        "//ortools/port:scoped_std_stream_capture",
+        "@abseil-cpp//absl/status",
+        "@scip",
+    ],
+)
+
+or_cc_library(
     name = "solve_mp_model",
     srcs = ["solve_mp_model.cc"],
     hdrs = ["solve_mp_model.h"],
@@ -624,5 +806,34 @@ cc_library(
         "//ortools/util:lazy_mutable_copy",
         "//ortools/util:solve_interrupter",
         "@abseil-cpp//absl/base:nullability",
+    ],
+)
+
+# Universal target (except Gurobi). Only available for internal testing.
+# If you feel like you really want to depend on this target, talk to
+# or-core-team@google.com.
+or_cc_library(
+    name = "linear_solver_all",
+    deps = [
+        ":linear_solver_bop",
+        ":linear_solver_cbc",
+        ":linear_solver_clp",
+        ":linear_solver_glop",
+        ":linear_solver_glpk",
+        ":linear_solver_highs",
+        ":linear_solver_lib",
+        ":linear_solver_pdlp",
+        ":linear_solver_sat",
+        ":linear_solver_scip",
+    ],
+)
+
+# SWIG helper for the model exporter.
+or_cc_library(
+    name = "model_exporter_swig_helper",
+    hdrs = ["model_exporter_swig_helper.h"],
+    deps = [
+        ":linear_solver_cc_proto",
+        ":model_exporter",
     ],
 )

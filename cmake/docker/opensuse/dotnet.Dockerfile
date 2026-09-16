@@ -1,9 +1,10 @@
-FROM ortools/cmake:opensuse_swig AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}opensuse_swig AS env
 
 # .NET install
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-opensuse
 RUN zypper refresh \
-&& zypper install -y wget tar awk gzip libicu-devel findutils
+&& zypper install -y wget findutils libicu-devel
 
 ## .Net 8.0
 # see: https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#scripted-install

@@ -14,7 +14,7 @@
 set_property(SOURCE sat.i PROPERTY CPLUSPLUS ON)
 set_property(SOURCE sat.i PROPERTY SWIG_MODULE_NAME operations_research_sat)
 set_property(SOURCE sat.i PROPERTY COMPILE_DEFINITIONS
-  ${OR_TOOLS_COMPILE_DEFINITIONS})
+  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
 set_property(SOURCE sat.i PROPERTY COMPILE_OPTIONS
   -namespace ${DOTNET_PROJECT}.Sat
   -dllimport google-ortools-native)
@@ -30,7 +30,7 @@ set_target_properties(dotnet_sat PROPERTIES
   POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(dotnet_sat PRIVATE ortools::ortools)
 
-if(BUILD_TESTING)
+if(BUILD_DOTNET_TESTING)
   file(GLOB DOTNET_SRCS "*Tests.cs")
   foreach(FILE_NAME IN LISTS DOTNET_SRCS)
     add_dotnet_test(FILE_NAME ${FILE_NAME})

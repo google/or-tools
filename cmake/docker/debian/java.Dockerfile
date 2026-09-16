@@ -1,4 +1,5 @@
-FROM ortools/cmake:debian_swig AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}debian_swig AS env
 
 RUN apt-get update -qq \
 && apt-get install -yq default-jdk maven \
@@ -15,7 +16,7 @@ ENV CMAKE_BUILD_PARALLEL_LEVEL=${CMAKE_BUILD_PARALLEL_LEVEL:-4}
 
 FROM devel AS build
 RUN cmake -S. -Bbuild -DBUILD_JAVA=ON -DSKIP_GPG=ON \
- -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
+-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
 RUN cmake --build build --target all -v
 RUN cmake --build build --target install
 

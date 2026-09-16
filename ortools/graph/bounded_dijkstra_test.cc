@@ -63,8 +63,7 @@ TEST(BoundedDijkstraWrapperDeathTest, Accessors) {
 TEST(BoundedDijkstraWrapperDeathTest, WithArcLengthFunctor) {
   TestGraph graph;
   graph.AddArc(NodeIndex(1), NodeIndex(3));
-  BoundedDijkstraWrapper<TestGraph, float, std::function<float(ArcIndex)>>
-      dijkstra(&graph, [](ArcIndex) { return 2.34; });
+  BoundedDijkstraWrapper dijkstra(&graph, [](ArcIndex) { return 2.34f; });
   ASSERT_FLOAT_EQ(dijkstra.GetArcLength(ArcIndex(0)), 2.34f);
 }
 

@@ -13,5 +13,7 @@
 
 exports_files([
     "1D__bpp_scholl__bin2data.N2W2B1R0.vbp",
+    "BPPC_5_0_10.vbp",
     "Class_01.2bp",
+    "queen5_5.vbp",
 ])

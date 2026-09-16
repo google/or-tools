@@ -20,9 +20,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
-#include <vector>
 
-#include "absl/base/casts.h"
 #include "absl/log/check.h"
 
 namespace operations_research {

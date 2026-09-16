@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Code sample that solves a model and gets the infeasibility assumptions."""
+
 # [START program]
 # [START import]
 from ortools.sat.python import cp_model

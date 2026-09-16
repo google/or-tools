@@ -2294,7 +2294,8 @@ TEST(ComputeStatusesTest, AtOptimum) {
       .primal_solution = Eigen::VectorXd{{-1, 8, 1, 2.5}},
       .dual_solution = Eigen::VectorXd{{-2, 0, 2.375, 2.0 / 3}},
   };
-  glop::ProblemSolution glop_solution = internal::ComputeStatuses(lp, solution);
+  glop::ProblemSolution glop_solution =
+      internal::ComputeStatuses(lp, solution).second;
   EXPECT_THAT(
       glop_solution.constraint_statuses,
       ElementsAre(ConstraintStatus::FIXED_VALUE, ConstraintStatus::BASIC,
@@ -2314,7 +2315,8 @@ TEST(ComputeStatusesTest, CoverMoreCases) {
       .primal_solution = Eigen::VectorXd{{-1, 8, 1, 2.5}},
       .dual_solution = Eigen::VectorXd{{-2, 0, 2.375, -1}},
   };
-  glop::ProblemSolution glop_solution = internal::ComputeStatuses(lp, solution);
+  glop::ProblemSolution glop_solution =
+      internal::ComputeStatuses(lp, solution).second;
   EXPECT_THAT(
       glop_solution.constraint_statuses,
       ElementsAre(ConstraintStatus::FIXED_VALUE, ConstraintStatus::BASIC,

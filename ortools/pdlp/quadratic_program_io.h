@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef PDLP_QUADRATIC_PROGRAM_IO_H_
-#define PDLP_QUADRATIC_PROGRAM_IO_H_
+#ifndef ORTOOLS_PDLP_QUADRATIC_PROGRAM_IO_H_
+#define ORTOOLS_PDLP_QUADRATIC_PROGRAM_IO_H_
 
 #include <cstdint>
 #include <string>
@@ -53,4 +53,4 @@ absl::Status WriteQuadraticProgramToMPModelProto(
     const std::string& mpmodel_proto_file);
 
 }  // namespace operations_research::pdlp
-#endif  // PDLP_QUADRATIC_PROGRAM_IO_H_
+#endif  // ORTOOLS_PDLP_QUADRATIC_PROGRAM_IO_H_

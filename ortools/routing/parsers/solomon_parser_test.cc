@@ -16,11 +16,10 @@
 #include <string>
 
 #include "absl/flags/flag.h"
+#include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/path.h"
-
-#define ROOT_DIR "_main/"
+#include "ortools/util/data_path_resolver.h"
 
 ABSL_FLAG(std::string, solomon_test_archive,
           "ortools/routing/benchmarks/solomon/"
@@ -56,10 +55,9 @@ TEST(SolomonParserTest, LoadNonExistingArchive) {
 
 TEST(SolomonParserTest, LoadNonExistingInstance) {
   SolomonParser parser;
-  EXPECT_FALSE(parser.LoadFile(
-      "doesnotexist.txt",
-      file::JoinPath(::testing::SrcDir(),
-                     absl::GetFlag(FLAGS_solomon_test_archive))));
+  EXPECT_FALSE(parser.LoadFile("doesnotexist.txt",
+                               ortools::GetDataDependencyFilepath(
+                                   absl::GetFlag(FLAGS_solomon_test_archive))));
 }
 
 TEST(SolomonSolutionParserTest, LoadEmptyFileName) {
@@ -75,9 +73,9 @@ TEST(SolomonSolutionParserTest, LoadNonExistingFile) {
 
 TEST(SolomonSolutionParserTest, LoadFile) {
   SolomonSolutionParser parser;
-  EXPECT_TRUE(parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
-                                             "ortools/routing/parsers/testdata/"
-                                             "c1_10_2-90-42222.96.txt")));
+  EXPECT_TRUE(parser.LoadFile(
+      ortools::GetDataDependencyFilepath("ortools/routing/parsers/testdata/"
+                                         "c1_10_2-90-42222.96.txt")));
   EXPECT_EQ(parser.NumberOfRoutes(), 90);
   EXPECT_EQ(parser.GetValueFromKey("Instance Name"), "c1_10_2");
   EXPECT_EQ(

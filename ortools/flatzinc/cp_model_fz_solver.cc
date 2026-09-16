@@ -17,7 +17,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -57,8 +56,6 @@
 
 ABSL_FLAG(int64_t, fz_int_max, int64_t{1} << 40,
           "Default max value for unbounded integer variables.");
-ABSL_FLAG(bool, force_interleave_search, false,
-          "If true, enable interleaved workers when num_workers is 1.");
 ABSL_FLAG(bool, fz_use_light_encoding, false,
           "Use lighter encodings for the model");
 
@@ -87,6 +84,14 @@ struct SetVariable {
         std::lower_bound(sorted_values.begin(), sorted_values.end(), value);
     if (it == sorted_values.end() || *it != value) return -1;
     return it - sorted_values.begin();
+  }
+
+  std::string DebugString() const {
+    return absl::StrCat(
+        "SetVariable(var_indices: ", absl::StrJoin(var_indices, ","),
+        ", sorted_values: ", absl::StrJoin(sorted_values, ","),
+        ", card_var_index: ", card_var_index,
+        ", fixed_card: ", fixed_card.value_or(-1), ")");
   }
 };
 
@@ -150,7 +155,6 @@ struct CpModelProtoWithMapping {
   std::optional<int> GetVarEqVarLiteral(int var1, int var2);
   int GetOrCreateLiteralForVarNeVar(int var1, int var2);
   std::optional<int> GetVarNeVarLiteral(int var1, int var2);
-  void AddVarNeVarLiteral(int var1, int var2, int literal);
   int GetOrCreateLiteralForVarLeVar(int var1, int var2);
   std::optional<int> GetVarLeVarLiteral(int var1, int var2);
   void AddVarLeVarLiteral(int var1, int var2, int literal);
@@ -533,8 +537,8 @@ std::shared_ptr<SetVariable> CpModelProtoWithMapping::LookupSetVarAt(
     }
     return result;
   } else {
-    LOG(FATAL) << "LookupSetVarAt:Unsupported argument type '" << argument.type
-               << "'";
+    LOG(FATAL) << "LookupSetVarAt:Unsupported argument type '"
+               << argument.TypeString() << "'";
   }
   return std::make_shared<SetVariable>();
 }
@@ -928,10 +932,6 @@ void CpModelProtoWithMapping::AddVarEqVarLiteral(int var1, int var2, int lit) {
   }
 }
 
-void CpModelProtoWithMapping::AddVarNeVarLiteral(int var1, int var2, int lit) {
-  AddVarEqVarLiteral(var1, var2, NegatedRef(lit));
-}
-
 std::optional<int> CpModelProtoWithMapping::GetVarEqVarLiteral(int var1,
                                                                int var2) {
   CHECK_NE(var1, kNoVar);
@@ -1297,6 +1297,7 @@ void CpModelProtoWithMapping::AlwaysFalseConstraint(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::BoolClauseConstraint(const fz::Constraint& fz_ct,
                                                    ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 2);
   auto* arg = ct->mutable_bool_or();
   for (const int var : LookupVars(fz_ct.arguments[0])) {
     arg->add_literals(var);
@@ -1307,6 +1308,7 @@ void CpModelProtoWithMapping::BoolClauseConstraint(const fz::Constraint& fz_ct,
 }
 void CpModelProtoWithMapping::BoolXorConstraint(const fz::Constraint& fz_ct,
                                                 ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   // This is not the same semantics as the array_bool_xor as this constraint
   // is actually a fully reified xor(a, b) <==> x.
   const int a = LookupVar(fz_ct.arguments[0]);
@@ -1325,6 +1327,7 @@ void CpModelProtoWithMapping::BoolXorConstraint(const fz::Constraint& fz_ct,
 }
 void CpModelProtoWithMapping::ArrayBoolXorConstraint(
     const fz::Constraint& fz_ct, ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 1);
   auto* arg = ct->mutable_bool_xor();
   for (const int var : LookupVars(fz_ct.arguments[0])) {
     arg->add_literals(var);
@@ -1358,6 +1361,7 @@ void CpModelProtoWithMapping::BoolEqConstraint(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::BoolNeConstraint(const fz::Constraint& fz_ct,
                                                ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 2);
   auto* arg = ct->mutable_linear();
   FillDomainInProto(1, arg);
   AddTermToLinearConstraint(LookupVar(fz_ct.arguments[0]), 1, arg);
@@ -1371,6 +1375,7 @@ void CpModelProtoWithMapping::IntNeConstraint(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::IntLinEqConstraint(const fz::Constraint& fz_ct,
                                                  ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   // Special case for the index of element 2D and element 3D constraints.
   if (fz_ct.strong_propagation && fz_ct.arguments[0].Size() >= 3 &&
       fz_ct.arguments[0].Size() <= 4 &&
@@ -1384,6 +1389,7 @@ void CpModelProtoWithMapping::IntLinEqConstraint(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::BoolLinEqConstraint(const fz::Constraint& fz_ct,
                                                   ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   auto* arg = ct->mutable_linear();
   const std::vector<int> vars = LookupVars(fz_ct.arguments[1]);
   if (fz_ct.arguments[2].IsVariable()) {
@@ -1400,30 +1406,35 @@ void CpModelProtoWithMapping::BoolLinEqConstraint(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::BoolOrIntLinLeConstraint(
     const fz::Constraint& fz_ct, ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   const int64_t rhs = fz_ct.arguments[2].values[0];
   FillLinearConstraintWithGivenDomain({kint64min, rhs}, fz_ct, ct);
 }
 
 void CpModelProtoWithMapping::IntLinLtConstraint(const fz::Constraint& fz_ct,
                                                  ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   const int64_t rhs = fz_ct.arguments[2].values[0];
   FillLinearConstraintWithGivenDomain({kint64min, rhs - 1}, fz_ct, ct);
 }
 
 void CpModelProtoWithMapping::IntLinGeConstraint(const fz::Constraint& fz_ct,
                                                  ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   const int64_t rhs = fz_ct.arguments[2].values[0];
   FillLinearConstraintWithGivenDomain({rhs, kint64max}, fz_ct, ct);
 }
 
 void CpModelProtoWithMapping::IntLinGtConstraint(const fz::Constraint& fz_ct,
                                                  ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   const int64_t rhs = fz_ct.arguments[2].values[0];
   FillLinearConstraintWithGivenDomain({rhs + 1, kint64max}, fz_ct, ct);
 }
 
 void CpModelProtoWithMapping::IntLinNeConstraint(const fz::Constraint& fz_ct,
                                                  ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   const int64_t rhs = fz_ct.arguments[2].values[0];
   FillLinearConstraintWithGivenDomain({kint64min, rhs - 1, rhs + 1, kint64max},
                                       fz_ct, ct);
@@ -1431,6 +1442,7 @@ void CpModelProtoWithMapping::IntLinNeConstraint(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::SetCardConstraint(const fz::Constraint& fz_ct,
                                                 ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 2);
   int64_t set_size = 0;
   if (fz_ct.arguments[0].type == fz::Argument::INT_LIST) {
     set_size = fz_ct.arguments[0].values.size();
@@ -1447,6 +1459,7 @@ void CpModelProtoWithMapping::SetCardConstraint(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::SetInConstraint(const fz::Constraint& fz_ct,
                                               ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 2);
   auto* arg = ct->mutable_linear();
   arg->add_vars(LookupVar(fz_ct.arguments[0]));
   arg->add_coeffs(1);
@@ -1465,6 +1478,7 @@ void CpModelProtoWithMapping::SetInConstraint(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::SetInNegatedConstraint(
     const fz::Constraint& fz_ct, ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 2);
   auto* arg = ct->mutable_linear();
   if (fz_ct.arguments[1].type == fz::Argument::INT_LIST) {
     FillDomainInProto(Domain::FromValues(std::vector<int64_t>{
@@ -1485,6 +1499,7 @@ void CpModelProtoWithMapping::SetInNegatedConstraint(
 
 void CpModelProtoWithMapping::IntMinConstraint(const fz::Constraint& fz_ct,
                                                ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   auto* arg = ct->mutable_lin_max();
   *arg->add_exprs() = LookupExpr(fz_ct.arguments[0], /*negate=*/true);
   *arg->add_exprs() = LookupExpr(fz_ct.arguments[1], /*negate=*/true);
@@ -1493,6 +1508,7 @@ void CpModelProtoWithMapping::IntMinConstraint(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::ArrayIntMinConstraint(const fz::Constraint& fz_ct,
                                                     ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 2);
   auto* arg = ct->mutable_lin_max();
   *arg->mutable_target() = LookupExpr(fz_ct.arguments[0], /*negate=*/true);
   for (int i = 0; i < fz_ct.arguments[1].Size(); ++i) {
@@ -1502,6 +1518,7 @@ void CpModelProtoWithMapping::ArrayIntMinConstraint(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::IntMaxConstraint(const fz::Constraint& fz_ct,
                                                ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   auto* arg = ct->mutable_lin_max();
   *arg->add_exprs() = LookupExpr(fz_ct.arguments[0]);
   *arg->add_exprs() = LookupExpr(fz_ct.arguments[1]);
@@ -1510,6 +1527,7 @@ void CpModelProtoWithMapping::IntMaxConstraint(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::ArrayIntMaxConstraint(const fz::Constraint& fz_ct,
                                                     ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 2);
   auto* arg = ct->mutable_lin_max();
   *arg->mutable_target() = LookupExpr(fz_ct.arguments[0]);
   for (int i = 0; i < fz_ct.arguments[1].Size(); ++i) {
@@ -1519,6 +1537,7 @@ void CpModelProtoWithMapping::ArrayIntMaxConstraint(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::IntTimesConstraint(const fz::Constraint& fz_ct,
                                                  ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   auto* arg = ct->mutable_int_prod();
   *arg->add_exprs() = LookupExpr(fz_ct.arguments[0]);
   *arg->add_exprs() = LookupExpr(fz_ct.arguments[1]);
@@ -1527,6 +1546,7 @@ void CpModelProtoWithMapping::IntTimesConstraint(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::IntAbsConstraint(const fz::Constraint& fz_ct,
                                                ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 2);
   auto* arg = ct->mutable_lin_max();
   *arg->add_exprs() = LookupExpr(fz_ct.arguments[0]);
   *arg->add_exprs() = LookupExpr(fz_ct.arguments[0], /*negate=*/true);
@@ -1535,6 +1555,7 @@ void CpModelProtoWithMapping::IntAbsConstraint(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::IntPlusConstraint(const fz::Constraint& fz_ct,
                                                 ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   auto* arg = ct->mutable_linear();
   FillDomainInProto(0, arg);
   AddTermToLinearConstraint(LookupVar(fz_ct.arguments[0]), 1, arg);
@@ -1544,6 +1565,7 @@ void CpModelProtoWithMapping::IntPlusConstraint(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::IntDivConstraint(const fz::Constraint& fz_ct,
                                                ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   auto* arg = ct->mutable_int_div();
   *arg->add_exprs() = LookupExpr(fz_ct.arguments[0]);
   *arg->add_exprs() = LookupExpr(fz_ct.arguments[1]);
@@ -1569,6 +1591,7 @@ int64_t CappedIntPow(int64_t x, int64_t p) {
 
 void CpModelProtoWithMapping::IntPowConstraint(const fz::Constraint& fz_ct,
                                                ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   if (fz_ct.arguments[1].IsVariable()) {
     if (fz_ct.arguments[0].IsVariable()) {
       const int var0 = LookupVar(fz_ct.arguments[0]);
@@ -1654,6 +1677,7 @@ void CpModelProtoWithMapping::IntPowConstraint(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::IntModConstraint(const fz::Constraint& fz_ct,
                                                ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   auto* arg = ct->mutable_int_mod();
   *arg->add_exprs() = LookupExpr(fz_ct.arguments[0]);
   *arg->add_exprs() = LookupExpr(fz_ct.arguments[1]);
@@ -1662,6 +1686,7 @@ void CpModelProtoWithMapping::IntModConstraint(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::ArrayElementConstraint(
     const fz::Constraint& fz_ct, ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   auto* arg = ct->mutable_element();
   *arg->mutable_linear_index() = LookupExpr(fz_ct.arguments[0]);
   if (!absl::EndsWith(fz_ct.type, "_nonshifted")) {
@@ -1682,6 +1707,7 @@ void CpModelProtoWithMapping::ArrayElementConstraint(
 
 void CpModelProtoWithMapping::OrToolsConstantElementConstraint(
     const fz::Constraint& fz_ct, ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 4);
   auto* arg = ct->mutable_element();
 
   // Index.
@@ -1701,6 +1727,7 @@ void CpModelProtoWithMapping::OrToolsConstantElementConstraint(
 
 void CpModelProtoWithMapping::OrToolsVariableElementConstraint(
     const fz::Constraint& fz_ct, ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 4);
   auto* arg = ct->mutable_element();
 
   // Index.
@@ -1726,6 +1753,7 @@ void CpModelProtoWithMapping::OrToolsVariableElementConstraint(
 
 void CpModelProtoWithMapping::OrToolsTableIntConstraint(
     const fz::Constraint& fz_ct, ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 2);
   auto* arg = ct->mutable_table();
   for (const VarOrValue v : LookupVarsOrValues(fz_ct.arguments[0])) {
     LinearExpressionProto* expr = arg->add_exprs();
@@ -1741,6 +1769,7 @@ void CpModelProtoWithMapping::OrToolsTableIntConstraint(
 
 void CpModelProtoWithMapping::OrToolsRegular(const fz::Constraint& fz_ct,
                                              ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 6);
   auto* arg = ct->mutable_automaton();
   for (const VarOrValue v : LookupVarsOrValues(fz_ct.arguments[0])) {
     LinearExpressionProto* expr = arg->add_exprs();
@@ -1793,6 +1822,7 @@ void CpModelProtoWithMapping::OrToolsRegular(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::OrToolsArgMax(const fz::Constraint& fz_ct,
                                             ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 4);
   const std::vector<int> x = LookupVars(fz_ct.arguments[0]);
   const int num_vars = x.size();
   const int z = LookupVar(fz_ct.arguments[1]);
@@ -1842,6 +1872,7 @@ void CpModelProtoWithMapping::OrToolsArgMax(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::FznAllDifferentInt(const fz::Constraint& fz_ct,
                                                  ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 1);
   auto* arg = ct->mutable_all_diff();
   for (int i = 0; i < fz_ct.arguments[0].Size(); ++i) {
     *arg->add_exprs() = LookupExprAt(fz_ct.arguments[0], i);
@@ -1850,6 +1881,7 @@ void CpModelProtoWithMapping::FznAllDifferentInt(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::FznValuePrecedeInt(const fz::Constraint& fz_ct,
                                                  ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   const int64_t before = fz_ct.arguments[0].Value();
   const int64_t after = fz_ct.arguments[1].Value();
   const std::vector<int> x = LookupVars(fz_ct.arguments[2]);
@@ -1887,6 +1919,7 @@ void CpModelProtoWithMapping::FznValuePrecedeInt(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::OrToolsCountEqCst(const fz::Constraint& fz_ct,
                                                 ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   const std::vector<VarOrValue> counts = LookupVarsOrValues(fz_ct.arguments[0]);
   const int64_t value = fz_ct.arguments[1].Value();
   const VarOrValue target = LookupVarOrValue(fz_ct.arguments[2]);
@@ -1915,6 +1948,7 @@ void CpModelProtoWithMapping::OrToolsCountEqCst(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::OrToolsCountEq(const fz::Constraint& fz_ct,
                                              ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   const std::vector<VarOrValue> counts = LookupVarsOrValues(fz_ct.arguments[0]);
   const int var = LookupVar(fz_ct.arguments[1]);
   const VarOrValue target = LookupVarOrValue(fz_ct.arguments[2]);
@@ -1935,6 +1969,7 @@ void CpModelProtoWithMapping::OrToolsCountEq(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::OrToolsCircuit(const fz::Constraint& fz_ct,
                                              ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 2);
   const int64_t min_index = fz_ct.arguments[1].Value();
   const int size = std::max(fz_ct.arguments[0].values.size(),
                             fz_ct.arguments[0].variables.size());
@@ -1985,6 +2020,7 @@ void CpModelProtoWithMapping::OrToolsCircuit(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::OrToolsInverse(const fz::Constraint& fz_ct,
                                              ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 4);
   auto* arg = ct->mutable_inverse();
 
   const auto direct_variables = LookupVars(fz_ct.arguments[0]);
@@ -2049,6 +2085,7 @@ void CpModelProtoWithMapping::OrToolsInverse(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::OrToolsLexOrdering(const fz::Constraint& fz_ct,
                                                  ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 2);
   const std::vector<int> x = LookupVars(fz_ct.arguments[0]);
   const std::vector<int> y = LookupVars(fz_ct.arguments[1]);
   const bool accepts_equals = fz_ct.type == "ortools_lex_lesseq_bool" ||
@@ -2059,6 +2096,7 @@ void CpModelProtoWithMapping::OrToolsLexOrdering(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::OrToolsPrecedeChainInt(
     const fz::Constraint& fz_ct, ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 2);
   std::vector<int64_t> values;
   if (fz_ct.arguments[0].type == fz::Argument::INT_INTERVAL) {
     values.reserve(fz_ct.arguments[0].values[1] - fz_ct.arguments[0].values[0] +
@@ -2103,6 +2141,7 @@ void CpModelProtoWithMapping::OrToolsPrecedeChainInt(
 
 void CpModelProtoWithMapping::FznDisjunctive(const fz::Constraint& fz_ct,
                                              ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 2);
   const std::vector<VarOrValue> starts = LookupVarsOrValues(fz_ct.arguments[0]);
   const std::vector<VarOrValue> sizes = LookupVarsOrValues(fz_ct.arguments[1]);
 
@@ -2117,6 +2156,7 @@ void CpModelProtoWithMapping::FznDisjunctive(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::FznDisjunctiveStrict(const fz::Constraint& fz_ct,
                                                    ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 2);
   const std::vector<VarOrValue> starts = LookupVarsOrValues(fz_ct.arguments[0]);
   const std::vector<VarOrValue> sizes = LookupVarsOrValues(fz_ct.arguments[1]);
 
@@ -2129,6 +2169,7 @@ void CpModelProtoWithMapping::FznDisjunctiveStrict(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::FznCumulative(const fz::Constraint& fz_ct,
                                             ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 4);
   const std::vector<VarOrValue> starts = LookupVarsOrValues(fz_ct.arguments[0]);
   const std::vector<VarOrValue> sizes = LookupVarsOrValues(fz_ct.arguments[1]);
   const std::vector<VarOrValue> demands =
@@ -2168,6 +2209,7 @@ void CpModelProtoWithMapping::FznCumulative(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::OrToolsCumulativeOpt(const fz::Constraint& fz_ct,
                                                    ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 5);
   const std::vector<int> occurs = LookupVars(fz_ct.arguments[0]);
   const std::vector<VarOrValue> starts = LookupVarsOrValues(fz_ct.arguments[1]);
   const std::vector<VarOrValue> durations =
@@ -2197,6 +2239,7 @@ void CpModelProtoWithMapping::OrToolsCumulativeOpt(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::OrToolsDisjunctiveStrictOpt(
     const fz::Constraint& fz_ct, ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   const std::vector<int> occurs = LookupVars(fz_ct.arguments[0]);
   const std::vector<VarOrValue> starts = LookupVarsOrValues(fz_ct.arguments[1]);
   const std::vector<VarOrValue> durations =
@@ -2211,6 +2254,7 @@ void CpModelProtoWithMapping::OrToolsDisjunctiveStrictOpt(
 
 void CpModelProtoWithMapping::FznDiffn(const fz::Constraint& fz_ct,
                                        ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 4);
   const bool is_strict = fz_ct.type == "fzn_diffn";
   const std::vector<VarOrValue> x = LookupVarsOrValues(fz_ct.arguments[0]);
   const std::vector<VarOrValue> y = LookupVarsOrValues(fz_ct.arguments[1]);
@@ -2234,6 +2278,7 @@ void CpModelProtoWithMapping::OrToolsNetworkFlow(const fz::Constraint& fz_ct,
   // Note that we leave ct empty here (with just the name set).
   // We simply do a linear encoding of this constraint.
   const bool has_cost = fz_ct.type == "ortools_network_flow_cost";
+  DCHECK_GE(fz_ct.arguments.size(), has_cost ? 6 : 4);
   const std::vector<int> flow = LookupVars(fz_ct.arguments[3]);
 
   // Flow conservation constraints.
@@ -2273,6 +2318,7 @@ void CpModelProtoWithMapping::OrToolsNetworkFlow(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::OrToolsBinPacking(const fz::Constraint& fz_ct,
                                                 ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   const int capacity = fz_ct.arguments[0].Value();
   const std::vector<int> positions = LookupVars(fz_ct.arguments[1]);
   CHECK_EQ(fz_ct.arguments[2].type, fz::Argument::INT_LIST);
@@ -2302,6 +2348,7 @@ void CpModelProtoWithMapping::OrToolsBinPacking(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::OrToolsBinPackingCapa(const fz::Constraint& fz_ct,
                                                     ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 4);
   const std::vector<int64_t>& capacities = fz_ct.arguments[0].values;
   const std::vector<int> bins = LookupVars(fz_ct.arguments[1]);
   CHECK_EQ(fz_ct.arguments[2].type, fz::Argument::INT_INTERVAL);
@@ -2336,6 +2383,7 @@ void CpModelProtoWithMapping::OrToolsBinPackingCapa(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::OrToolsBinPackingLoad(const fz::Constraint& fz_ct,
                                                     ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 4);
   const std::vector<int>& loads = LookupVars(fz_ct.arguments[0]);
   const std::vector<int> positions = LookupVars(fz_ct.arguments[1]);
   if (fz_ct.arguments[3].values.empty()) {  // No items.
@@ -2388,6 +2436,7 @@ void CpModelProtoWithMapping::OrToolsBinPackingLoad(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::OrToolsNvalue(const fz::Constraint& fz_ct,
                                             ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 2);
   const int card = LookupVar(fz_ct.arguments[0]);
   const std::vector<int>& x = LookupVars(fz_ct.arguments[1]);
 
@@ -2423,6 +2472,7 @@ void CpModelProtoWithMapping::OrToolsNvalue(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::OrToolsGlobalCardinality(
     const fz::Constraint& fz_ct, ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 4);
   const std::vector<int> x = LookupVars(fz_ct.arguments[0]);
   CHECK_EQ(fz_ct.arguments[1].type, fz::Argument::INT_LIST);
   const std::vector<int64_t>& values = fz_ct.arguments[1].values;
@@ -2466,6 +2516,7 @@ void CpModelProtoWithMapping::OrToolsGlobalCardinality(
 
 void CpModelProtoWithMapping::OrToolsGlobalCardinalityLowUp(
     const fz::Constraint& fz_ct, ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 5);
   const std::vector<int> x = LookupVars(fz_ct.arguments[0]);
   CHECK(fz_ct.arguments[1].type == fz::Argument::INT_LIST ||
         fz_ct.arguments[1].type == fz::Argument::VOID_ARGUMENT);
@@ -2646,6 +2697,7 @@ void CpModelProtoWithMapping::PutSetBooleansInCommonDomain(
 
 void CpModelProtoWithMapping::FirstPass(const fz::Constraint& fz_ct) {
   if (fz_ct.type == "set_card") {
+    if (fz_ct.arguments.size() < 2) return;
     if (!fz_ct.arguments[0].IsVariable() ||
         !fz_ct.arguments[0].Var()->domain.is_a_set ||
         !fz_ct.arguments[1].HasOneValue()) {
@@ -2659,6 +2711,7 @@ void CpModelProtoWithMapping::FirstPass(const fz::Constraint& fz_ct) {
 
 void CpModelProtoWithMapping::ArraySetElementConstraint(
     const fz::Constraint& fz_ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   const int index = LookupVar(fz_ct.arguments[0]);
   const Domain index_domain = ReadDomainFromProto(proto.variables(index));
   const std::shared_ptr<SetVariable> target_var =
@@ -2718,6 +2771,7 @@ void CpModelProtoWithMapping::ArraySetElementConstraint(
 
 void CpModelProtoWithMapping::ArrayVarSetElementConstraint(
     const fz::Constraint& fz_ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   const int index = LookupVar(fz_ct.arguments[0]);
   const Domain index_domain = ReadDomainFromProto(proto.variables(index));
   const int64_t min_index = index_domain.Min();
@@ -2767,6 +2821,7 @@ void CpModelProtoWithMapping::ArrayVarSetElementConstraint(
 
 void CpModelProtoWithMapping::OrToolsArrayVarSetElementConstraint(
     const fz::Constraint& fz_ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 4);
   const int index = LookupVar(fz_ct.arguments[0]);
   std::shared_ptr<SetVariable> array_index_set =
       LookupSetVar(fz_ct.arguments[1]);
@@ -2816,6 +2871,7 @@ void CpModelProtoWithMapping::OrToolsArrayVarSetElementConstraint(
 
 void CpModelProtoWithMapping::FznAllDifferentSetConstraint(
     const fz::Constraint& fz_ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 1);
   const int num_vars = fz_ct.arguments[0].Size();
   if (num_vars == 0) return;
 
@@ -2839,6 +2895,7 @@ void CpModelProtoWithMapping::FznAllDifferentSetConstraint(
 
 void CpModelProtoWithMapping::FznAllDisjointConstraint(
     const fz::Constraint& fz_ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 1);
   const int num_vars = fz_ct.arguments[0].Size();
   if (num_vars == 0) return;
 
@@ -2862,6 +2919,7 @@ void CpModelProtoWithMapping::FznAllDisjointConstraint(
 
 void CpModelProtoWithMapping::FznDisjointConstraint(
     const fz::Constraint& fz_ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 2);
   std::vector<int> x_literals, y_literals;
   PutSetBooleansInCommonDomain(
       {LookupSetVar(fz_ct.arguments[0]), LookupSetVar(fz_ct.arguments[1])},
@@ -2876,6 +2934,7 @@ void CpModelProtoWithMapping::FznDisjointConstraint(
 
 void CpModelProtoWithMapping::FznPartitionSetConstraint(
     const fz::Constraint& fz_ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 2);
   const int num_vars = fz_ct.arguments[0].Size();
   if (num_vars == 0) return;
 
@@ -2914,6 +2973,7 @@ void CpModelProtoWithMapping::FznPartitionSetConstraint(
 }
 
 void CpModelProtoWithMapping::SetCardConstraint(const fz::Constraint& fz_ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 2);
   std::shared_ptr<SetVariable> set_var = LookupSetVar(fz_ct.arguments[0]);
   VarOrValue var_or_value = LookupVarOrValue(fz_ct.arguments[1]);
   if (set_var->card_var_index == kNoVar) {
@@ -2942,6 +3002,7 @@ void CpModelProtoWithMapping::SetCardConstraint(const fz::Constraint& fz_ct) {
 }
 
 void CpModelProtoWithMapping::SetInConstraint(const fz::Constraint& fz_ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 2);
   const VarOrValue var_or_value = LookupVarOrValue(fz_ct.arguments[0]);
   std::shared_ptr<SetVariable> set_var = LookupSetVar(fz_ct.arguments[1]);
   if (var_or_value.var == kNoVar) {
@@ -3000,6 +3061,7 @@ void CpModelProtoWithMapping::SetInConstraint(const fz::Constraint& fz_ct) {
 }
 
 void CpModelProtoWithMapping::SetInReifConstraint(const fz::Constraint& fz_ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   VarOrValue var_or_value = LookupVarOrValue(fz_ct.arguments[0]);
   std::shared_ptr<const SetVariable> set_var = LookupSetVar(fz_ct.arguments[1]);
   const int enforcement_literal = LookupVar(fz_ct.arguments[2]);
@@ -3037,6 +3099,7 @@ void CpModelProtoWithMapping::SetInReifConstraint(const fz::Constraint& fz_ct) {
 }
 
 void CpModelProtoWithMapping::SetOpConstraint(const fz::Constraint& fz_ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   std::vector<int> x_literals, y_literals, r_literals;
   PutSetBooleansInCommonDomain(
       {LookupSetVar(fz_ct.arguments[0]), LookupSetVar(fz_ct.arguments[1]),
@@ -3064,6 +3127,7 @@ void CpModelProtoWithMapping::SetOpConstraint(const fz::Constraint& fz_ct) {
 
 void CpModelProtoWithMapping::SetSubSupersetEqConstraint(
     const fz::Constraint& fz_ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 2);
   std::vector<int> x_literals, y_literals;
   PutSetBooleansInCommonDomain(
       {LookupSetVar(fz_ct.arguments[0]), LookupSetVar(fz_ct.arguments[1])},
@@ -3087,6 +3151,7 @@ void CpModelProtoWithMapping::SetSubSupersetEqConstraint(
 }
 
 void CpModelProtoWithMapping::SetNeConstraint(const fz::Constraint& fz_ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 2);
   std::vector<int> x_literals, y_literals;
   PutSetBooleansInCommonDomain(
       {LookupSetVar(fz_ct.arguments[0]), LookupSetVar(fz_ct.arguments[1])},
@@ -3096,6 +3161,7 @@ void CpModelProtoWithMapping::SetNeConstraint(const fz::Constraint& fz_ct) {
 
 void CpModelProtoWithMapping::SetSubSupersetEqReifConstraint(
     const fz::Constraint& fz_ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 3);
   std::vector<int> x_literals, y_literals;
   PutSetBooleansInCommonDomain(
       {LookupSetVar(fz_ct.arguments[0]), LookupSetVar(fz_ct.arguments[1])},
@@ -3127,6 +3193,7 @@ void CpModelProtoWithMapping::SetSubSupersetEqReifConstraint(
 
 void CpModelProtoWithMapping::SetLexOrderingConstraint(
     const fz::Constraint& fz_ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 2);
   // set_le is tricky. Let's see all possible sets of size four in their
   // lexicographical order and their bit representation:
   // {}        0000
@@ -3208,6 +3275,9 @@ void CpModelProtoWithMapping::SetLexOrderingConstraint(
       fz_ct.type == "set_le" || fz_ct.type == "set_le_reif";
   const bool is_reif =
       fz_ct.type == "set_le_reif" || fz_ct.type == "set_lt_reif";
+  if (is_reif) {
+    DCHECK_GE(fz_ct.arguments.size(), 3);
+  }
   const int enforcement_literal =
       is_reif ? LookupVar(fz_ct.arguments[2]) : LookupConstant(1);
   AddLexOrdering(y_literals, x_literals, enforcement_literal, accept_equals);
@@ -3712,15 +3782,15 @@ void CpModelProtoWithMapping::TranslateSearchAnnotations(
       const fz::Annotation& select = args[2];
       if (select.id == "indomain_min" || select.id == "indomain") {
         strategy->set_domain_reduction_strategy(
-            DecisionStrategyProto::SELECT_MIN_VALUE);
+            DecisionStrategyProto::SELECT_MAX_VALUE);
       } else if (select.id == "indomain_max") {
         strategy->set_domain_reduction_strategy(
-            DecisionStrategyProto::SELECT_MAX_VALUE);
+            DecisionStrategyProto::SELECT_MIN_VALUE);
       } else {
         SOLVER_LOG(logger, "Unsupported value selection strategy '", select.id,
                    "', falling back to 'indomain_min'");
         strategy->set_domain_reduction_strategy(
-            DecisionStrategyProto::SELECT_MIN_VALUE);
+            DecisionStrategyProto::SELECT_MAX_VALUE);
       }
     }
   }
@@ -4032,7 +4102,7 @@ CpSolverResponse SolveFzWithCpModelProto(const fz::Model& fz_model,
   }
 
   m.parameters.set_log_search_progress(p.log_search_progress);
-  m.parameters.set_log_to_stdout(!p.ortools_mode);
+  m.parameters.set_log_to_stdout(!p.minizinc_io_mode);
 
   // Helps with challenge unit tests.
   m.parameters.set_max_domain_size_when_encoding_eq_neq_constraints(32);
@@ -4062,27 +4132,149 @@ CpSolverResponse SolveFzWithCpModelProto(const fz::Model& fz_model,
   }
 
   // Specifies single thread specific search modes.
-  if (num_workers == 1 && !p.use_free_search) {  // Fixed search.
+  const bool has_objective =
+      m.proto.has_objective() || m.proto.has_floating_point_objective();
+  const bool has_search_strategy = !m.proto.search_strategy().empty();
+  const bool has_subsolvers = !m.parameters.subsolvers().empty();
+
+  SOLVER_LOG(logger);
+  // Note on subsolver selections:
+  //  - on flatzinc, objective_shaving_no_lp dominates objective_lb_search
+  //  - symmetries are not yet detected, so we use max_lp_sym. It will be
+  //    replaced by max_lp later if no symmetries are detected.
+  //  - alt_fixed merges the fixed search strategy and the default_lp.
+  //    The idea is that the usefulness of the user strategy is limited in time.
+  //    Furthermore, on some problems, default_lp is necessary to prove
+  //    optimality.
+  if (num_workers == 1 && !p.use_free_search && p.minizinc_search_mode) {
+    // ---------- Fixed search ----------
+    SOLVER_LOG(logger, "  - setting up fixed search.");
     m.parameters.set_search_branching(SatParameters::FIXED_SEARCH);
     m.parameters.set_keep_all_feasible_solutions_in_presolve(true);
   } else if (num_workers == 1 && p.use_free_search) {  // Free search.
-    m.parameters.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-    if (!p.search_all_solutions &&
-        (absl::GetFlag(FLAGS_force_interleave_search) || p.ortools_mode)) {
+    // ---------- Free search ----------
+    if (!p.search_all_solutions) {
+      SOLVER_LOG(logger, "  - setting up free search.");
       m.parameters.set_interleave_search(true);
       m.parameters.set_use_rins_lns(false);
-      m.parameters.add_subsolvers("default_lp");
-      m.parameters.add_subsolvers("max_lp");
-      m.parameters.add_subsolvers("quick_restart");
-      m.parameters.add_subsolvers("core_or_no_lp");  // no_lp if no objective.
-      m.parameters.set_num_violation_ls(1);          // Off if no objective.
-      if (!m.proto.search_strategy().empty()) {
-        m.parameters.add_subsolvers("fixed");
+      if (has_objective) {
+        if (has_search_strategy) m.parameters.add_subsolvers("alt_fixed");
+        m.parameters.add_subsolvers("no_lp");
+        m.parameters.add_subsolvers("max_lp_sym");
+        m.parameters.add_subsolvers("quick_restart_no_lp");
+        m.parameters.add_subsolvers("core_or_shaving_no_lp");
+        m.parameters.set_num_violation_ls(1);  // Off if no objective.
+      } else {                                 // SAT problem.
+        if (has_search_strategy) m.parameters.add_subsolvers("alt_fixed");
+        m.parameters.add_subsolvers("no_lp");
+        m.parameters.add_subsolvers("max_lp_sym");
+        m.parameters.add_subsolvers("quick_restart_no_lp");
+        m.parameters.add_subsolvers("shaving_no_lp");
+        m.parameters.set_num_violation_ls(0);  // Off if no objective.
+      }
+    } else {
+      // Enumerate all solutions in minizinc mode.
+      m.parameters.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    }
+  } else if (num_workers > 1 && num_workers <= 4) {
+    // ---------- up to 4 workers ----------
+    if (num_workers < 4 && p.minizinc_search_mode) {
+      SOLVER_LOG(logger, "  - bumping number of workers from ", num_workers,
+                 " to 4");
+      num_workers = 4;
+    }
+    if (!has_subsolvers && num_workers == 4) {
+      if (has_objective) {
+        // TODO(user): can we not use interleave_search?
+        SOLVER_LOG(logger,
+                   "  - setting subsolvers for 4 workers and an optimization "
+                   "problem.");
+        m.parameters.set_interleave_search(true);
+        m.parameters.set_use_rins_lns(false);
+        if (has_search_strategy) m.parameters.add_subsolvers("alt_fixed");
+        m.parameters.add_subsolvers("core_or_shaving_no_lp");
+        m.parameters.add_subsolvers("max_lp_sym");
+        m.parameters.add_subsolvers("no_lp");
+        m.parameters.add_subsolvers("quick_restart_no_lp");
+        m.parameters.set_num_violation_ls(1);
+      }
+    } else {
+      SOLVER_LOG(logger,
+                 "  - setting subsolvers for 4 workers and a SAT problem.");
+      m.parameters.set_interleave_search(true);
+      m.parameters.set_use_rins_lns(false);
+      if (has_search_strategy) m.parameters.add_subsolvers("alt_fixed");
+      m.parameters.add_subsolvers("max_lp_sym");
+      m.parameters.add_subsolvers("no_lp");
+      m.parameters.add_subsolvers("quick_restart_no_lp");
+      m.parameters.add_subsolvers("shaving_no_lp");
+    }
+  } else if (num_workers > 4 && num_workers <= 8) {
+    // ---------- up to 8 workers ----------
+    if (num_workers < 8 && p.minizinc_search_mode) {
+      SOLVER_LOG(logger, "  - bumping number of workers from ", num_workers,
+                 " to 8");
+      num_workers = 8;
+    }
+    if (!has_subsolvers && num_workers == 8) {
+      if (has_objective) {
+        SOLVER_LOG(logger,
+                   "  - setting subsolvers for 8 workers and an optimization "
+                   "problem.");
+        m.parameters.add_subsolvers("alt_fixed");
+        m.parameters.add_subsolvers("core_or_shaving_no_lp");
+        m.parameters.add_subsolvers("max_lp_sym");
+        m.parameters.add_subsolvers("no_lp");
+        m.parameters.add_subsolvers("objective_shaving_no_lp");
+        m.parameters.add_subsolvers("quick_restart_no_lp");
+      } else {
+        SOLVER_LOG(logger,
+                   "  - setting subsolvers for 8 workers and a SAT problem.");
+        m.parameters.add_subsolvers("alt_fixed");
+        m.parameters.add_subsolvers("max_lp_sym");
+        m.parameters.add_subsolvers("no_lp");
+        m.parameters.add_subsolvers("probing_no_lp");
+        m.parameters.add_subsolvers("quick_restart_no_lp");
+        m.parameters.add_subsolvers("shaving_no_lp");
+        m.parameters.set_shared_tree_num_workers(0);
       }
     }
-  } else if (num_workers > 1 && num_workers < 8 && p.ortools_mode) {
-    SOLVER_LOG(logger, "Bumping number of workers from ", num_workers, " to 8");
-    num_workers = 8;
+  } else if (num_workers >= 9 && num_workers <= 16) {
+    // ---------- up to 16 workers ----------
+    if (num_workers < 16 && p.minizinc_search_mode) {
+      SOLVER_LOG(logger, "  - bumping number of workers from ", num_workers,
+                 " to 16");
+      num_workers = 16;
+    }
+    if (!has_subsolvers && num_workers == 16) {
+      if (has_objective) {
+        SOLVER_LOG(logger,
+                   "  - setting subsolvers for 16 workers and an optimization "
+                   "problem.");
+        m.parameters.add_subsolvers("alt_fixed");
+        m.parameters.add_subsolvers("core_or_objective_shaving_max_lp");
+        m.parameters.add_subsolvers("lb_tree_search");
+        m.parameters.add_subsolvers("max_lp_sym");
+        m.parameters.add_subsolvers("no_lp");
+        m.parameters.add_subsolvers("objective_shaving_no_lp");
+        m.parameters.add_subsolvers("probing_no_lp");
+        m.parameters.add_subsolvers("pseudo_costs");
+        m.parameters.add_subsolvers("quick_restart_no_lp");
+        m.parameters.add_subsolvers("reduced_costs");
+        m.parameters.add_subsolvers("shaving_no_lp");
+      } else {
+        SOLVER_LOG(logger,
+                   "  - setting subsolvers for 16 workers and a SAT problem.");
+        m.parameters.add_subsolvers("alt_fixed");
+        m.parameters.add_subsolvers("max_lp_sym");
+        m.parameters.add_subsolvers("no_lp");
+        m.parameters.add_subsolvers("probing_no_lp");
+        m.parameters.add_subsolvers("pseudo_costs");
+        m.parameters.add_subsolvers("quick_restart_no_lp");
+        m.parameters.add_subsolvers("shaving_no_lp");
+        m.parameters.set_shared_tree_num_workers(4);
+      }
+    }
   }
   m.parameters.set_num_workers(num_workers);
 
@@ -4173,7 +4365,7 @@ CpSolverResponse SolveFzWithCpModelProto(const fz::Model& fz_model,
   }
 
   // Output the solution in the flatzinc official format.
-  if (p.ortools_mode) {
+  if (p.minizinc_io_mode) {
     if (response.status() == CpSolverStatus::FEASIBLE ||
         response.status() == CpSolverStatus::OPTIMAL) {
       // Display the solution if it is not already displayed.

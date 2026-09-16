@@ -20,10 +20,16 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "absl/log/check.h"
+#include "absl/random/random.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/graph_base/strongly_connected_components.h"
+#include "ortools/sat/cp_model_checker.h"
+#include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
@@ -138,7 +144,7 @@ TEST(CircuitConstraintTest, AllSubCircuits) {
   const int num_solutions = CountSolutions(&model);
   int expected = 1;  // No circuit at all.
   for (int circuit_size = 2; circuit_size <= kNumNodes; ++circuit_size) {
-    // The number of circuit of a given size is:
+    // The number of circuits of a given size is:
     //   - n for the first element
     //   - times (n-1) for the second
     //   - ...
@@ -161,7 +167,7 @@ TEST(CircuitConstraintTest, AllVehiculeRoutes) {
 
   const int num_solutions = CountSolutions(&model);
   int expected = 1;   // 3 outgoing arcs from zero.
-  expected += 2 * 3;  // 2 outgoing arcs from zero. 3 pairs, 2 direction.
+  expected += 2 * 3;  // 2 outgoing arcs from zero. 3 pairs, 2 directions.
   expected += 6;      // full circuit.
   EXPECT_EQ(num_solutions, expected);
 }
@@ -178,7 +184,7 @@ TEST(CircuitConstraintTest, AllCircuitCoverings) {
   // Indeed, we can enumerate canonical representations, e.g. [1]64[2]35,
   // by starting with [1][2]...[k], and place every node in turn at its final
   // place w.r.t. existing neighbours. To generate the above example, we go
-  // though [1][2], [1][2]3, [1]4[2]3, [1]4[2]35, [1]64[2]35.
+  // through [1][2], [1][2]3, [1]4[2]3, [1]4[2]35, [1]64[2]35.
   // At the first iteration, there are k choices, then k+1 ... n-1.
   for (int num_nodes = 1; num_nodes <= 6; num_nodes++) {
     for (int num_distinguished = 1; num_distinguished <= num_nodes;
@@ -225,9 +231,9 @@ TEST(CircuitConstraintTest, InfeasibleBecauseOfMissingArcs) {
   EXPECT_EQ(status, SatSolver::Status::INFEASIBLE);
 }
 
-// The graph look like this with a self-loop at 2. If 2 is not selected
+// The graph looks like this with a self-loop at 2. If 2 is not selected
 // (self-loop) then there is one solution (0,1,3,0) and (0,3,5,0). Otherwise,
-// there is 2 more solutions with 2 inserted in one of the two routes.
+// there are 2 more solutions with 2 inserted in one of the two routes.
 //
 //   0  ---> 1 ---> 4 -------------
 //   |       |      ^             |
@@ -300,7 +306,7 @@ TEST(NoCyclePropagatorTest, CountAllSolutions) {
   CHECK_EQ(num_nodes, 4);
   CHECK_EQ(tails.size(), 12);
 
-  // Counts solution with brute-force algo.
+  // Counts solutions with brute-force algo.
   int num_expected_solutions = 0;
   std::vector<std::vector<int>> subgraph(num_nodes);
   std::vector<std::vector<int>> components;
@@ -327,9 +333,76 @@ TEST(NoCyclePropagatorTest, CountAllSolutions) {
   }
   EXPECT_EQ(num_expected_solutions, 543);
 
-  // There is 12 arcs.
-  // So out of 2^12 solution, we have to exclude all the one with cycles.
+  // There are 12 arcs.
+  // So out of 2^12 solutions, we have to exclude all the ones with cycles.
   EXPECT_EQ(CountSolutions(&model), 543);
+}
+
+CpSolverResponse SolveAndCheck(
+    const CpModelProto& initial_model,
+    absl::btree_set<std::vector<int>>* solutions = nullptr) {
+  SatParameters params;
+  params.set_use_sat_inprocessing(false);
+  params.set_cp_model_presolve(false);
+  params.set_enumerate_all_solutions(true);
+  auto observer = [&](const CpSolverResponse& response) {
+    if (solutions != nullptr) {
+      solutions->insert(std::vector<int>(response.solution().begin(),
+                                         response.solution().end()));
+    }
+  };
+  Model model;
+  model.Add(NewSatParameters(params));
+  model.Add(NewFeasibleSolutionObserver(observer));
+  return SolveCpModel(initial_model, &model);
+}
+
+TEST(CircuitConstraintTest, RandomCircuitConstraint) {
+  absl::BitGen random;
+  for (int iter = 0; iter < 5; ++iter) {
+    CpModelProto model;
+    for (int i = 0; i < 16; ++i) {
+      IntegerVariableProto* var = model.add_variables();
+      var->add_domain(0);
+      var->add_domain(1);
+    }
+    const auto random_literal = [&]() {
+      const int var = absl::Uniform(random, 0, 16);
+      return absl::Bernoulli(random, 0.5) ? var : NegatedRef(var);
+    };
+
+    ConstraintProto* ct = model.add_constraints();
+    ct->add_enforcement_literal(random_literal());
+    ct->add_enforcement_literal(random_literal());
+
+    CircuitConstraintProto* circuit = ct->mutable_circuit();
+    for (int tail = 0; tail < 4; ++tail) {
+      for (int head = 0; head < 4; ++head) {
+        if (tail == head && absl::Bernoulli(random, 0.5)) {
+          continue;
+        }
+        circuit->add_tails(tail);
+        circuit->add_heads(head);
+        circuit->add_literals(random_literal());
+      }
+    }
+
+    absl::btree_set<std::vector<int>> solutions;
+    SolveAndCheck(model, &solutions);
+
+    absl::btree_set<std::vector<int>> expected_solutions;
+    std::vector<int64_t> assignment(16);
+    for (int mask = 0; mask < (1 << 16); ++mask) {
+      for (int i = 0; i < 16; ++i) {
+        assignment[i] = (mask >> i) & 1;
+      }
+      if (SolutionIsFeasible(model, assignment)) {
+        expected_solutions.insert(
+            std::vector<int>(assignment.begin(), assignment.end()));
+      }
+    }
+    EXPECT_EQ(solutions, expected_solutions) << model.DebugString();
+  }
 }
 
 }  // namespace

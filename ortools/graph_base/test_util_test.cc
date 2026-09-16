@@ -14,7 +14,7 @@
 #include "ortools/graph_base/test_util.h"
 
 #include "gtest/gtest.h"
-#include "ortools/base/gmock.h"
+#include "ortools/graph_base/graph.h"
 #include "ortools/graph_base/io.h"
 
 namespace util {

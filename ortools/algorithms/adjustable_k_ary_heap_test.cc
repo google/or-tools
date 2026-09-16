@@ -23,7 +23,6 @@
 #include "absl/random/random.h"
 #include "gtest/gtest.h"
 #include "ortools/base/strong_int.h"
-#include "ortools/base/strong_vector.h"
 
 namespace operations_research {
 

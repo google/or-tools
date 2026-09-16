@@ -27,7 +27,7 @@
 namespace operations_research {
 namespace sat {
 
-// This is meant as an helper to deal with enforcement for any integer based
+// This is meant as a helper to deal with enforcement for any integer-based
 // constraint. It wraps some IntegerTrail functions while making sure the
 // enforcement literals are properly added to the propagation reason.
 class EnforcementHelper {

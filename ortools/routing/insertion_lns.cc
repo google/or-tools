@@ -25,6 +25,7 @@
 #include "absl/log/check.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/local_search.h"
 #include "ortools/routing/routing.h"
 #include "ortools/routing/search.h"
 #include "ortools/routing/types.h"

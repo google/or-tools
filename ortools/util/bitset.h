@@ -542,7 +542,7 @@ class Bitset64 {
   // Sets the bit at position i to 1.
   void Set(IndexType i) {
     DCHECK_GE(Value(i), 0);
-    DCHECK_LT(Value(i), size_);
+    DCHECK_LT(Value(i), Value(size_));
     // The c++ hardening is costly here, so we disable it.
     data_.data()[BitOffset64(Value(i))] |= OneBit64(BitPos64(Value(i)));
   }

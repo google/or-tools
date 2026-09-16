@@ -20,13 +20,13 @@ namespace operations_research {
 namespace sat {
 
 // Generates a random 3-SAT problem with a number of constraints given by:
-// num_variables * proportions_of_constraints. With the default proportion
+// num_variables * proportion_of_constraints. With the default proportion
 // value, we are around the transition SAT/UNSAT.
 CpModelProto Random3SatProblem(int num_variables,
                                double proportion_of_constraints = 4.26);
 
 // Generates a random 0-1 "covering" optimization linear problem:
-// - Each constraint has density ~0.5 and ask for a sum >= num_variables / 10.
+// - Each constraint has density ~0.5 and asks for a sum >= num_variables / 10.
 // - The objective is to minimize the number of variables at 1.
 CpModelProto RandomLinearProblem(int num_variables, int num_constraints);
 

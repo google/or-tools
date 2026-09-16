@@ -30,8 +30,7 @@ struct LogicalConstraintTestParameters {
       bool supports_incremental_add_and_deletes,
       bool supports_incremental_variable_deletions,
       bool supports_deleting_indicator_variables,
-      bool supports_updating_binary_variables,
-      bool supports_sos_on_expressions = true);
+      bool supports_updating_binary_variables);
 
   // The tested solver.
   SolverType solver_type;
@@ -63,16 +62,16 @@ struct LogicalConstraintTestParameters {
   // True if the solver supports updates (changing bounds or vartype) to binary
   // variables.
   bool supports_updating_binary_variables;
-
-  // True if the solver supports SOS constraints on expressions. False if
-  // SOS constraints are only supported on singleton variables.
-  bool supports_sos_on_expressions;
 };
 
 std::ostream& operator<<(std::ostream& out,
                          const LogicalConstraintTestParameters& params);
 
 // A suite of unit tests for logical constraints.
+//
+// These tests assume that the solver supports optimizing linear programs (LPs)
+// or mixed-integer programs (MIPs), depending on if variables are continuous
+// or integer.
 //
 // To use these tests, in file <solver>_test.cc, write:
 //   INSTANTIATE_TEST_SUITE_P(
@@ -96,6 +95,10 @@ class SimpleLogicalConstraintTest
 };
 
 // A suite of unit tests for logical constraints.
+//
+// These tests assume that the solver supports optimizing linear programs (LPs)
+// or mixed-integer programs (MIPs), depending on if variables are continuous
+// or integer.
 //
 // To use these tests, in file <solver>_test.cc, write:
 //   INSTANTIATE_TEST_SUITE_P(

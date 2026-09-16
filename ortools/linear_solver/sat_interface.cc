@@ -17,8 +17,8 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/attributes.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -27,6 +27,7 @@
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/lazy_mutable_copy.h"
 
 namespace operations_research {
@@ -297,7 +298,7 @@ void SatInterface::NonIncrementalChange() {
 namespace {
 
 // See MpSolverInterfaceFactoryRepository for details.
-const void* const kRegisterSat ABSL_ATTRIBUTE_UNUSED = [] {
+const void* const kRegisterSat [[maybe_unused]] = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* const solver) { return new SatInterface(solver); },
       MPSolver::SAT_INTEGER_PROGRAMMING);

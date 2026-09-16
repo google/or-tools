@@ -80,6 +80,7 @@
 #include "absl/log/log.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/graph/bounded_dijkstra.h"
 #include "ortools/graph/shortest_paths.h"
 
@@ -430,41 +431,42 @@ KShortestPaths<GraphType> YenKShortestPaths(
         std::vector<NodeIndex> spur_path = std::move(std::get<0>(detour_path));
         if (ABSL_PREDICT_FALSE(spur_path.empty())) continue;
 
-#ifndef NDEBUG
-        CHECK_EQ(root_path.back(), spur_path.front());
-        CHECK_EQ(spur_node, spur_path.front());
+        if constexpr (DEBUG_MODE) {
+          CHECK_EQ(root_path.back(), spur_path.front());
+          CHECK_EQ(spur_node, spur_path.front());
 
-        if (spur_path.size() == 1) {
-          CHECK_EQ(spur_path.front(), destination);
-        } else {
-          // Ensure there is an edge between the end of the root path
-          // and the beginning of the spur path (knowing that both subpaths
-          // coincide at the spur node).
-          const bool root_path_leads_to_spur_path = absl::c_any_of(
-              graph.OutgoingArcs(root_path.back()),
-              [&graph, node_after_spur_in_spur_path = *(spur_path.begin() + 1)](
-                  const typename GraphType::ArcIndex arc_index) {
-                return graph.Head(arc_index) == node_after_spur_in_spur_path;
-              });
-          CHECK(root_path_leads_to_spur_path);
-        }
-
-        // Ensure the forbidden arc is not present in any previously generated
-        // path.
-        for (absl::Span<const NodeIndex> previous_path : paths.paths) {
-          if (previous_path.size() <= spur_node_position + 1) continue;
-          const bool has_same_prefix_as_root_path = std::equal(
-              root_path.begin(), root_path.end(), previous_path.begin(),
-              previous_path.begin() + root_path.length());
-          if (has_same_prefix_as_root_path) {
-            CHECK_NE(spur_path[1], previous_path[spur_node_position + 1])
-                << "Forbidden arc " << previous_path[spur_node_position]
-                << " - " << previous_path[spur_node_position + 1]
-                << " is present in the spur path "
-                << absl::StrJoin(spur_path, " - ");
+          if (spur_path.size() == 1) {
+            CHECK_EQ(spur_path.front(), destination);
+          } else {
+            // Ensure there is an edge between the end of the root path
+            // and the beginning of the spur path (knowing that both subpaths
+            // coincide at the spur node).
+            const bool root_path_leads_to_spur_path = absl::c_any_of(
+                graph.OutgoingArcs(root_path.back()),
+                [&graph,
+                 node_after_spur_in_spur_path = *(spur_path.begin() + 1)](
+                    const typename GraphType::ArcIndex arc_index) {
+                  return graph.Head(arc_index) == node_after_spur_in_spur_path;
+                });
+            CHECK(root_path_leads_to_spur_path);
           }
-        }
-#endif  // !defined(NDEBUG)
+
+          // Ensure the forbidden arc is not present in any previously generated
+          // path.
+          for (absl::Span<const NodeIndex> previous_path : paths.paths) {
+            if (previous_path.size() <= spur_node_position + 1) continue;
+            const bool has_same_prefix_as_root_path = std::equal(
+                root_path.begin(), root_path.end(), previous_path.begin(),
+                previous_path.begin() + root_path.length());
+            if (has_same_prefix_as_root_path) {
+              CHECK_NE(spur_path[1], previous_path[spur_node_position + 1])
+                  << "Forbidden arc " << previous_path[spur_node_position]
+                  << " - " << previous_path[spur_node_position + 1]
+                  << " is present in the spur path "
+                  << absl::StrJoin(spur_path, " - ");
+            }
+          }
+        }  // if constexpr (DEBUG_MODE)
 
         // Assemble the new path.
         std::vector<NodeIndex> new_path;
@@ -475,14 +477,13 @@ KShortestPaths<GraphType> YenKShortestPaths(
         DCHECK_EQ(new_path.front(), source);
         DCHECK_EQ(new_path.back(), destination);
 
-#ifndef NDEBUG
-        // Ensure the assembled path is loopless, i.e. no node is repeated.
-        {
+        if constexpr (DEBUG_MODE) {
+          // Ensure the assembled path is loopless, i.e. no node is
+          // repeated.         {
           absl::flat_hash_set<NodeIndex> visited_nodes(new_path.begin(),
                                                        new_path.end());
           CHECK_EQ(visited_nodes.size(), new_path.size());
-        }
-#endif  // !defined(NDEBUG)
+        }  // if constexpr(DEBUG_MODE)
 
         // Ensure the new path is not one of the previously known ones. This
         // operation is required, as there are two sources of paths from the

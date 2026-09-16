@@ -95,7 +95,7 @@ TEST(LratCheckerTest, ValidationStopsAtFirstEmptyClause) {
   checker.AddProblemClause(c5);
 
   // not(a) => ... => a proves that a is true. If the content in the middle is
-  // of the same form, not(b) => ... => b, then not(a) => not(b) => ... => b if
+  // of the same form, not(b) => ... => b, then not(a) => not(b) => ... => b is
   // sufficient to prove a.
   EXPECT_TRUE(checker.AddInferredClause(c6, {c1, c2, c3}));
   // Using unneeded clauses after that is still valid (here not(a) => not(b) =>
@@ -224,6 +224,33 @@ TEST(LratCheckerTest, CheckSuccessWithRatClausesExtensions) {
        // {+2, +4}), then clause 6 is in conflict. But this would not be the
        // case if {+3}, propagated from clause 1 above, was ignored.
        LratChecker::RatClauses{c7, {c6}}}));
+}
+
+TEST(LratCheckerTest, VariableAdditionWithRatProof) {
+  Model model;
+  ClauseFactory factory;
+
+  LratChecker& checker = *model.GetOrCreate<LratChecker>();
+  checker.EnableRatProofs();
+
+  // Add a new variable x4 <=> x1 ^ x2 ^ not(x3), assuming that x1, x2, x3
+  // already exist.
+  // First add the clauses not(x4) v x1, not(x4) v x2, and not(x4) v not(x3).
+  // They can be proved with an empty RAT proof since there are no clauses
+  // containing x4, the negation of the pivot not(x4).
+  const ClausePtr c1 = factory.NewClause({-4, +1});
+  const ClausePtr c2 = factory.NewClause({-4, +2});
+  const ClausePtr c3 = factory.NewClause({-4, -3});
+  EXPECT_TRUE(checker.AddInferredClause(c1, {}, {}));
+  EXPECT_TRUE(checker.AddInferredClause(c2, {}, {}));
+  EXPECT_TRUE(checker.AddInferredClause(c3, {}, {}));
+  // Now add the clause x1 ^ x2 ^ not(x3) => x4. This requires a RAT proof
+  // listing all the clauses C containing not(x4), the negation of the pivot x4.
+  // Here each resolvant C has two pairs of complementary literals with c4,
+  // hence an empty rup_clauses is sufficient in each RatClauses.
+  const ClausePtr c4 = factory.NewClause({+4, -1, -2, +3});
+  EXPECT_TRUE(checker.AddInferredClause(
+      c4, {}, {{.resolvant = c1}, {.resolvant = c2}, {.resolvant = c3}}));
 }
 
 TEST(LratCheckerTest, ErrorStateIsSticky) {

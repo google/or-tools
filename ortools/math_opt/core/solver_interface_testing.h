@@ -18,6 +18,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "ortools/math_opt/core/solver_interface.h"
+#include "ortools/math_opt/parameters.pb.h"
 
 namespace operations_research::math_opt {
 

@@ -11,12 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//bazel:or_cc_rules.bzl", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
-cc_library(
+or_cc_library(
     name = "math_opt_proto_utils",
     srcs = ["math_opt_proto_utils.cc"],
     hdrs = ["math_opt_proto_utils.h"],
@@ -24,7 +23,7 @@ cc_library(
     deps = [
         ":sparse_vector_view",
         "//ortools/base:log_severity",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:infeasible_subsystem_cc_proto",
         "//ortools/math_opt:model_cc_proto",
@@ -38,13 +37,16 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_builder",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "math_opt_proto_utils_test",
     srcs = ["math_opt_proto_utils_test.cc"],
+
     # TODO: b/475196802 - Stop using EquivToProto().
     tags = [
         "no_test_android",
@@ -64,14 +66,13 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "sparse_vector_view",
     hdrs = ["sparse_vector_view.h"],
     deps = [
         ":arrow_operator_proxy",
         ":sparse_vector",
         "//ortools/base:map_util",
-        "//ortools/base:types",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log:check",
@@ -80,9 +81,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "sparse_vector_view_test",
     srcs = ["sparse_vector_view_test.cc"],
+
     # TODO: b/475194473 - Stop using ParseFromString().
     tags = [
         "no_test_android",
@@ -93,7 +95,6 @@ cc_test(
         ":sparse_vector_view",
         "//ortools/base:gmock_main",
         "//ortools/base:strong_int",
-        "//ortools/base:types",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "@abseil-cpp//absl/container:flat_hash_map",
@@ -103,7 +104,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "message_callback_testing",
     testonly = True,
     srcs = ["message_callback_testing.cc"],
@@ -115,7 +116,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "message_callback_testing_test",
     srcs = ["message_callback_testing_test.cc"],
     deps = [
@@ -125,12 +126,12 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "model_summary",
     srcs = ["model_summary.cc"],
     hdrs = ["model_summary.h"],
     deps = [
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/base:types",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
@@ -139,15 +140,18 @@ cc_library(
         "@abseil-cpp//absl/container:linked_hash_map",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_builder",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "model_summary_test",
     srcs = ["model_summary_test.cc"],
+
     # TODO: b/475194473 - Stop using ParseTextProtoOrDie().
     tags = [
         "no_test_android",
@@ -166,14 +170,14 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solver_interface",
     srcs = ["solver_interface.cc"],
     hdrs = ["solver_interface.h"],
     deps = [
         ":non_streamable_solver_init_arguments",
         "//ortools/base:map_util",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:infeasible_subsystem_cc_proto",
         "//ortools/math_opt:model_cc_proto",
@@ -194,7 +198,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solver",
     srcs = ["solver.cc"],
     hdrs = ["solver.h"],
@@ -206,7 +210,6 @@ cc_library(
         ":non_streamable_solver_init_arguments",
         ":solver_debug",
         ":solver_interface",
-        "//ortools/base:status_macros",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:infeasible_subsystem_cc_proto",
         "//ortools/math_opt:model_cc_proto",
@@ -223,12 +226,13 @@ cc_library(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/memory",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solver_interface_mock",
     testonly = True,
     srcs = ["solver_interface_mock.cc"],
@@ -256,7 +260,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "sparse_collection_matchers",
     testonly = True,
     srcs = ["sparse_collection_matchers.cc"],
@@ -268,7 +272,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "sparse_collection_matchers_test",
     srcs = ["sparse_collection_matchers_test.cc"],
     deps = [
@@ -278,40 +282,42 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "non_streamable_solver_init_arguments",
     srcs = ["non_streamable_solver_init_arguments.cc"],
     hdrs = ["non_streamable_solver_init_arguments.h"],
     deps = ["//ortools/math_opt:parameters_cc_proto"],
 )
 
-cc_test(
+or_cc_test(
     name = "non_streamable_solver_init_arguments_test",
     srcs = ["non_streamable_solver_init_arguments_test.cc"],
     deps = [
         ":non_streamable_solver_init_arguments",
         "//ortools/base:gmock_main",
+        "//ortools/math_opt:parameters_cc_proto",
+        "@abseil-cpp//absl/base:core_headers",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solver_debug",
     srcs = ["solver_debug.cc"],
     hdrs = ["solver_debug.h"],
     deps = ["//ortools/base:base_export"],
 )
 
-cc_library(
+or_cc_library(
     name = "arrow_operator_proxy",
     hdrs = ["arrow_operator_proxy.h"],
 )
 
-cc_library(
+or_cc_library(
     name = "sparse_vector",
     hdrs = ["sparse_vector.h"],
 )
 
-cc_library(
+or_cc_library(
     name = "sparse_submatrix",
     srcs = ["sparse_submatrix.cc"],
     hdrs = ["sparse_submatrix.h"],
@@ -325,7 +331,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "sparse_submatrix_test",
     srcs = ["sparse_submatrix_test.cc"],
     deps = [
@@ -339,45 +345,48 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solver_interface_testing",
     testonly = True,
     srcs = ["solver_interface_testing.cc"],
     hdrs = ["solver_interface_testing.h"],
     deps = [
         ":solver_interface",
+        "//ortools/math_opt:parameters_cc_proto",
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "solver_interface_testing_test",
     srcs = ["solver_interface_testing_test.cc"],
     deps = [
         ":solver_interface",
         ":solver_interface_testing",
         "//ortools/base:gmock",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:parameters_cc_proto",
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "inverted_bounds",
     srcs = ["inverted_bounds.cc"],
     hdrs = ["inverted_bounds.h"],
     deps = [
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "inverted_bounds_test",
     srcs = ["inverted_bounds_test.cc"],
     deps = [
@@ -387,19 +396,20 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "invalid_indicators",
     srcs = ["invalid_indicators.cc"],
     hdrs = ["invalid_indicators.h"],
     deps = [
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_builder",
         "@abseil-cpp//absl/strings",
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "invalid_indicators_test",
     srcs = ["invalid_indicators_test.cc"],
     deps = [
@@ -409,7 +419,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "concurrent_calls_guard",
     srcs = ["concurrent_calls_guard.cc"],
     hdrs = ["concurrent_calls_guard.h"],
@@ -422,20 +432,20 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "concurrent_calls_guard_test",
     srcs = ["concurrent_calls_guard_test.cc"],
     deps = [
         ":concurrent_calls_guard",
         "//ortools/base:gmock_main",
-        "//ortools/base:status_macros",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "empty_bounds",
     srcs = ["empty_bounds.cc"],
     hdrs = ["empty_bounds.h"],
@@ -446,18 +456,19 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "empty_bounds_test",
     srcs = ["empty_bounds_test.cc"],
     deps = [
         ":empty_bounds",
         ":model_summary",
         "//ortools/base:gmock_main",
+        "//ortools/math_opt:result_cc_proto",
         "//ortools/math_opt/validators:result_validator",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "sorted",
     hdrs = ["sorted.h"],
     deps = [
@@ -468,7 +479,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "sorted_test",
     srcs = ["sorted_test.cc"],
     deps = [
@@ -479,7 +490,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "base_solver",
     srcs = ["base_solver.cc"],
     hdrs = ["base_solver.h"],

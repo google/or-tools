@@ -25,6 +25,7 @@
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/algorithms/multikey_radix_sort.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/core/sorted.h"
@@ -89,7 +90,7 @@ std::vector<AuxiliaryObjectiveId> ObjectiveStorage::AuxiliaryObjectives()
 std::vector<AuxiliaryObjectiveId> ObjectiveStorage::SortedAuxiliaryObjectives()
     const {
   std::vector<AuxiliaryObjectiveId> ids = AuxiliaryObjectives();
-  absl::c_sort(ids);
+  AutoRadixSort(ids, [](const AuxiliaryObjectiveId id) { return id.value(); });
   return ids;
 }
 
@@ -164,7 +165,8 @@ ObjectiveStorage::Update(
   for (const AuxiliaryObjectiveId id : diff.deleted) {
     auxiliary_result.add_deleted_objective_ids(id.value());
   }
-  absl::c_sort(*auxiliary_result.mutable_deleted_objective_ids());
+  // NOMUTANTS -- General tests seem to not test that this is sorted.
+  AutoRadixSort(*auxiliary_result.mutable_deleted_objective_ids());
 
   for (const auto& [id, objective] : auxiliary_objectives_) {
     // Note that any `Delete()`d objective will not be in the `objectives_` map.

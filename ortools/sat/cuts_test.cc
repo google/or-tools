@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
@@ -35,7 +36,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/util/fp_utils.h"
+#include "ortools/util/fp_utils_testing.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
 
@@ -137,7 +138,8 @@ TEST(CutDataTest, ComputeViolation) {
   cut.rhs = 2;
   cut.terms.push_back({.lp_value = 1.2, .coeff = 1});
   cut.terms.push_back({.lp_value = 0.5, .coeff = 2});
-  EXPECT_COMPARABLE(cut.ComputeViolation(), 0.2, 1e-10);
+  EXPECT_THAT(0.2, WithinSameAbsoluteOrRelativeTolerance(cut.ComputeViolation(),
+                                                         1e-10));
 }
 
 template <class Helper>
@@ -157,7 +159,7 @@ TEST(CoverCutHelperTest, SimpleExample) {
   std::vector<double> lp_values{1.0, 0.5, 0.1};  // Tight.
 
   // Note(user): the ub of the last variable is not used. But the first two
-  // are even though only the second one is required for the validity of the
+  // are, even though only the second one is required for the validity of the
   // cut.
   std::vector<IntegerValue> ubs = IntegerValueVector({1, 1, 10});
 
@@ -174,7 +176,7 @@ TEST(CoverCutHelperTest, SimpleExample) {
 
 // I tried to reproduce bug 169094958, but if the base constraint is tight,
 // the bug was triggered only due to numerical imprecision. A simple way to
-// trigger it is like with this test if the given LP value just violate the
+// trigger it is like with this test if the given LP value just violates the
 // initial constraint.
 TEST(CoverCutHelperTest, WeirdExampleWithViolatedConstraint) {
   // x0 + x1 <= 9.
@@ -225,7 +227,7 @@ TEST(CoverCutHelperTest, LetchfordSouliLifting) {
             "1*I0 1*I1 1*I2 1*I3 3*I4 3*I5 2*I6 1*I7 1*I8 1*I9 <= 3");
 
   // For now, we only support Booleans in the cover.
-  // Note that we don't care for variable not in the cover though.
+  // Note that we don't care for variables not in the cover though.
   data.terms[3].bound_diff = IntegerValue(2);
   EXPECT_FALSE(helper.TryWithLetchfordSouliLifting(data));
 }
@@ -353,11 +355,11 @@ TEST(IntegerRoundingCutTest, TestCaseUsedForDebugging) {
   EXPECT_EQ(constraint.DebugString(), "-2*I0 -1*I1 -2*I2 -2*I3 2*I4 <= -2");
 }
 
-// The algo should find a "divisor" 2 when it lead to a good cut.
+// The algo should find a "divisor" 2 when it leads to a good cut.
 //
-// TODO(user): Double check that such divisor will always be found? Of course,
-// if the initial constraint coefficient are too high, then it will not, but
-// that is okay since such cut efficacity will be bad anyway.
+// TODO(user): Double check that such a divisor will always be found? Of course,
+// if the initial constraint coefficients are too high, then it will not, but
+// that is okay since such cut efficacy will be bad anyway.
 TEST(IntegerRoundingCutTest, ZeroHalfCut) {
   Model model;
   const IntegerVariable x0 = model.Add(NewIntegerVariable(0, 10));
@@ -387,7 +389,7 @@ TEST(IntegerRoundingCutTest, LargeCoeffWithSmallImprecision) {
   std::vector<IntegerVariable> vars = {x0, x1};
   std::vector<IntegerValue> coeffs = {IntegerValue(1e6), IntegerValue(-1)};
 
-  // Note thate without adjustement, this returns 2 * I0 - I1 <= 2.
+  // Note that without adjustment, this returns 2 * I0 - I1 <= 2.
   // TODO(user): expose parameters so this can be verified other than manually?
   std::vector<double> lp_values{1.5, 0.1};
   LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
@@ -405,7 +407,7 @@ TEST(IntegerRoundingCutTest, LargeCoeffWithSmallImprecision2) {
   std::vector<IntegerVariable> vars = {x0, x1};
   std::vector<IntegerValue> coeffs = {IntegerValue(1e6), IntegerValue(999999)};
 
-  // Note thate without adjustement, this returns 2 * I0 + I1 <= 2.
+  // Note that without adjustment, this returns 2 * I0 + I1 <= 2.
   // TODO(user): expose parameters so this can be verified other than manually?
   std::vector<double> lp_values{1.49, 0.1};
   LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
@@ -527,7 +529,7 @@ TEST(IntegerRoundingCutTest, RegressionTest) {
   Model model;
   IntegerRoundingCutHelper helper(&model);
 
-  // TODO(user): Actually this fail, so we don't compute a cut here.
+  // TODO(user): Actually this fails, so we don't compute a cut here.
   EXPECT_FALSE(helper.ComputeCut(options, data, nullptr));
 }
 
@@ -1168,6 +1170,62 @@ TEST(SumOfAllDiffLowerBounderTest, DiscreteDomains) {
   std::string suffix;
   EXPECT_EQ(18, helper.GetBestLowerBound(suffix));
   EXPECT_EQ("d", suffix);
+}
+
+TEST(ComputeHyperPlaneBelowSquare, Exhaustive) {
+  const IntegerVariable x(0);
+  const IntegerVariable s(2);
+  for (int lb = -10; lb <= 10; ++lb) {
+    for (int ub = lb; ub <= 10; ++ub) {
+      for (IntegerValue location(lb); location < ub; ++location) {
+        const LinearConstraint cut = ComputeHyperplanBelowSquare(
+            AffineExpression(x), AffineExpression(s), location);
+        for (IntegerValue x_value = lb; x_value <= ub; ++x_value) {
+          const IntegerValue s_value = x_value * x_value;
+          IntegerValue line_value(0);
+          for (int i = 0; i < cut.num_terms; ++i) {
+            CHECK(cut.vars[i] == x || cut.vars[i] == s);
+            const IntegerValue point = cut.vars[i] == x ? x_value : s_value;
+            line_value += point * cut.coeffs[i];
+          }
+          EXPECT_GE(line_value, cut.lb);
+          EXPECT_LE(line_value, cut.ub);
+
+          // The line should be tight at these points.
+          if (x_value == location || x_value == location + 1) {
+            EXPECT_TRUE(line_value == cut.lb || line_value == cut.ub);
+          }
+        }
+      }
+    }
+  }
+}
+
+TEST(ComputeHyperPlaneAboveSquare, Exhaustive) {
+  const IntegerVariable x(0);
+  const IntegerVariable s(2);
+  for (int lb = -10; lb <= 10; ++lb) {
+    for (int ub = lb; ub <= 10; ++ub) {
+      const LinearConstraint cut = ComputeHyperplanAboveSquare(
+          AffineExpression(x), AffineExpression(s), lb, ub);
+      for (IntegerValue x_value = lb; x_value <= ub; ++x_value) {
+        const IntegerValue s_value = x_value * x_value;
+        IntegerValue line_value(0);
+        for (int i = 0; i < cut.num_terms; ++i) {
+          CHECK(cut.vars[i] == x || cut.vars[i] == s);
+          const IntegerValue point = cut.vars[i] == x ? x_value : s_value;
+          line_value += point * cut.coeffs[i];
+        }
+        EXPECT_GE(line_value, cut.lb);
+        EXPECT_LE(line_value, cut.ub);
+
+        // The line should be tight at these points.
+        if (x_value == lb || x_value == ub) {
+          EXPECT_TRUE(line_value == cut.lb || line_value == cut.ub);
+        }
+      }
+    }
+  }
 }
 
 }  // namespace

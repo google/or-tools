@@ -288,7 +288,9 @@ def _solve_spillover_problem(problem: SpilloverProblem) -> None:
         for meet_demand in problem.vm_demands[i].compatible_machines:
             j = meet_demand.machine_type
             nij = meet_demand.vms_per_machine
-            total_machine_use[j] += (di / float(nij)) * (w[j] - v[i][j])
+            total_machine_use[j] += (di / float(nij)) * (
+                w[j] - v[i][j]
+            )  # pyrefly: ignore[unsupported-operation]
     for j in range(num_machines):
         model.add_linear_constraint(total_machine_use[j] <= s[j])
 

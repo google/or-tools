@@ -17,21 +17,22 @@
 
 syntax = "proto3";
 
-// clang-format off
-option csharp_namespace = "Google.OrTools.Routing";
-option java_package = "com.google.ortools.routing";
-option java_multiple_files = true;
-// clang-format on
+package operations_research.routing;
 
 import "google/protobuf/duration.proto";
-import "ortools/util/optional_boolean.proto";
 import "ortools/constraint_solver/solver_parameters.proto";
 import "ortools/routing/enums.proto";
 import "ortools/routing/heuristic_parameters.proto";
 import "ortools/routing/ils.proto";
 import "ortools/sat/sat_parameters.proto";
+import "ortools/util/optional_boolean.proto";
 
-package operations_research.routing;
+// clang-format off
+
+option java_package = "com.google.ortools.routing";
+option java_multiple_files = true;
+option csharp_namespace = "Google.OrTools.Routing";
+// clang-format on
 
 // Parameters defining the search used to solve vehicle routing problems.
 //
@@ -41,7 +42,7 @@ package operations_research.routing;
 // To see those "default" parameters, call GetDefaultRoutingSearchParameters().
 // Next ID: 73
 message RoutingSearchParameters {
-  reserved 14, 15, 16, 18, 19, 21, 23, 31, 40, 44, 45, 46, 49, 55, 65, 67;
+  reserved 14, 15, 16, 18, 19, 21, 23, 31, 40, 44, 45, 46, 49, 55, 58, 65, 67;
 
   // First solution strategies, used as starting point of local search.
   FirstSolutionStrategy.Value first_solution_strategy = 1;
@@ -570,11 +571,8 @@ message RoutingSearchParameters {
   // solution. Useful to sort out logs when several solves are run in parallel.
   string log_tag = 36;
 
-  // Whether the solver should use an Iterated Local Search approach to solve
-  // the problem.
-  bool use_iterated_local_search = 58;
-
-  // Iterated Local Search parameters.
+  // Iterated Local Search parameters. When set, the solver will use an
+  // Iterated Local Search approach to solve the problem.
   IteratedLocalSearchParameters iterated_local_search_parameters = 60;
 }
 

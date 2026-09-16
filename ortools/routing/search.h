@@ -15,6 +15,7 @@
 #define ORTOOLS_ROUTING_SEARCH_H_
 
 #include <algorithm>
+#include <compare>
 #include <cstddef>
 #include <cstdint>
 #include <deque>
@@ -33,11 +34,13 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/adjustable_priority_queue.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/enums.pb.h"
@@ -74,18 +77,19 @@ namespace operations_research::routing {
 // interrupted and the best solution found will be returned immediately.
 // TODO(user): Add a version taking search parameters for alternative models.
 const Assignment* SolveWithAlternativeSolvers(
-    Model* primary_model, const std::vector<Model*>& alternative_models,
+    Model* absl_nonnull primary_model,
+    const std::vector<Model*>& alternative_models,
     const RoutingSearchParameters& parameters,
     int max_non_improving_iterations);
 // Same as above, but taking an initial solution.
 const Assignment* SolveFromAssignmentWithAlternativeSolvers(
-    const Assignment* assignment, Model* primary_model,
+    const Assignment* assignment, Model* absl_nonnull primary_model,
     const std::vector<Model*>& alternative_models,
     const RoutingSearchParameters& parameters,
     int max_non_improving_iterations);
 // Same as above but taking alternative parameters for each alternative model.
 const Assignment* SolveFromAssignmentWithAlternativeSolversAndParameters(
-    const Assignment* assignment, Model* primary_model,
+    const Assignment* assignment, Model* absl_nonnull primary_model,
     const RoutingSearchParameters& parameters,
     const std::vector<Model*>& alternative_models,
     const std::vector<RoutingSearchParameters>& alternative_parameters,
@@ -236,7 +240,8 @@ class RoutingFilteredDecisionBuilder : public DecisionBuilder {
 /// Generic filter-based heuristic applied to IntVars.
 class IntVarFilteredHeuristic {
  public:
-  IntVarFilteredHeuristic(Solver* solver, const std::vector<IntVar*>& vars,
+  IntVarFilteredHeuristic(Solver* absl_nonnull solver,
+                          const std::vector<IntVar*>& vars,
                           const std::vector<IntVar*>& secondary_vars,
                           LocalSearchFilterManager* filter_manager);
 
@@ -271,6 +276,10 @@ class IntVarFilteredHeuristic {
   /// returning.
   std::optional<int64_t> Evaluate(bool commit, bool ignore_upper_bound = false,
                                   bool update_upper_bound = true);
+  // Reset current cost upper bound.
+  void ResetUpperBound() {
+    objective_upper_bound_ = std::numeric_limits<int64_t>::max();
+  }
   /// Returns true if the search must be stopped.
   virtual bool StopSearch() { return false; }
   /// Modifies the current solution by setting the variable of index 'index' to
@@ -334,7 +343,8 @@ class IntVarFilteredHeuristic {
 /// Filter-based heuristic dedicated to routing.
 class RoutingFilteredHeuristic : public IntVarFilteredHeuristic {
  public:
-  RoutingFilteredHeuristic(Model* model, std::function<bool()> stop_search,
+  RoutingFilteredHeuristic(Model* absl_nonnull model,
+                           std::function<bool()> stop_search,
                            LocalSearchFilterManager* filter_manager);
   ~RoutingFilteredHeuristic() override = default;
   /// Builds a solution starting from the routes formed by the next accessor.
@@ -384,7 +394,7 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
  public:
   /// Takes ownership of evaluator.
   CheapestInsertionFilteredHeuristic(
-      Model* model, std::function<bool()> stop_search,
+      Model* absl_nonnull model, std::function<bool()> stop_search,
       std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
       std::function<int64_t(int64_t)> penalty_evaluator,
       LocalSearchFilterManager* filter_manager);
@@ -395,10 +405,7 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
     int64_t distance;
     int vehicle;
 
-    bool operator<(const StartEndValue& other) const {
-      return std::tie(distance, vehicle) <
-             std::tie(other.distance, other.vehicle);
-    }
+    auto operator<=>(const StartEndValue&) const = default;
   };
   struct EvaluatorCache {
     int64_t value = 0;
@@ -413,14 +420,7 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
     bool is_node_index = true;
     int index;
 
-    bool operator>(const Seed& other) const {
-      for (size_t i = 0; i < properties.size(); ++i) {
-        if (properties[i] == other.properties[i]) continue;
-        return properties[i] > other.properties[i];
-      }
-      return std::tie(vehicle, is_node_index, index) >
-             std::tie(other.vehicle, other.is_node_index, other.index);
-    }
+    bool operator>(const Seed& other) const;
   };
 
   struct SeedQueue {
@@ -522,7 +522,7 @@ class GlobalCheapestInsertionFilteredHeuristic
  public:
   /// Takes ownership of evaluators.
   GlobalCheapestInsertionFilteredHeuristic(
-      Model* model, std::function<bool()> stop_search,
+      Model* absl_nonnull model, std::function<bool()> stop_search,
       std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
       std::function<int64_t(int64_t)> penalty_evaluator,
       LocalSearchFilterManager* filter_manager,
@@ -543,7 +543,7 @@ class GlobalCheapestInsertionFilteredHeuristic
     PairEntry(int pickup_to_insert, int pickup_insert_after,
               int delivery_to_insert, int delivery_insert_after, int vehicle,
               int64_t bucket)
-        : value_(std::numeric_limits<int64_t>::max()),
+        : value_(kint64max),
           heap_index_(-1),
           pickup_to_insert_(pickup_to_insert),
           pickup_insert_after_(pickup_insert_after),
@@ -553,25 +553,7 @@ class GlobalCheapestInsertionFilteredHeuristic
           bucket_(bucket) {}
     // Note: for compatibility reasons, comparator follows tie-breaking rules
     // used in the first version of GlobalCheapestInsertion.
-    bool operator<(const PairEntry& other) const {
-      // We give higher priority to insertions from lower buckets.
-      if (bucket_ != other.bucket_) {
-        return bucket_ > other.bucket_;
-      }
-      // We then compare by value, then we favor insertions (vehicle != -1).
-      // The rest of the tie-breaking is done with std::tie.
-      if (value_ != other.value_) {
-        return value_ > other.value_;
-      }
-      if ((vehicle_ == -1) ^ (other.vehicle_ == -1)) {
-        return vehicle_ == -1;
-      }
-      return std::tie(pickup_insert_after_, pickup_to_insert_,
-                      delivery_insert_after_, delivery_to_insert_, vehicle_) >
-             std::tie(other.pickup_insert_after_, other.pickup_to_insert_,
-                      other.delivery_insert_after_, other.delivery_to_insert_,
-                      other.vehicle_);
-    }
+    bool operator<(const PairEntry& other) const;
     void SetHeapIndex(int h) { heap_index_ = h; }
     int GetHeapIndex() const { return heap_index_; }
     void set_value(int64_t value) { value_ = value; }

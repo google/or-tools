@@ -68,7 +68,7 @@ target_link_libraries(model_builder_helper_pybind11 PRIVATE
   Eigen3::Eigen)
 add_library(${PROJECT_NAMESPACE}::model_builder_helper_pybind11 ALIAS model_builder_helper_pybind11)
 
-if(BUILD_TESTING)
+if(BUILD_PYTHON_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)
     add_python_test(FILE_NAME ${FILE_NAME})

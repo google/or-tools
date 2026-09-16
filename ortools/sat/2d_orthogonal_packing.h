@@ -23,6 +23,7 @@
 #include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/base/constant_divisor.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/bitset.h"
@@ -35,7 +36,7 @@ struct OrthogonalPackingOptions {
   bool use_dff_f0 = true;
   bool use_dff_f2 = true;
   int brute_force_threshold = 6;
-  int dff2_max_number_of_parameters_to_check = std::numeric_limits<int>::max();
+  int dff2_max_number_of_parameters_to_check = kint32max;
 };
 
 class OrthogonalPackingResult {
@@ -53,7 +54,7 @@ class OrthogonalPackingResult {
     // Index of the item on the original sizes_x/sizes_y input.
     int index;
     // New size for item of index `i` which is smaller or equal to the initial
-    // size. The subproblem remain infeasible if every item is shrinked to its
+    // size. The subproblem remains infeasible if every item is shrunk to its
     // new size.
     IntegerValue size_x;
     IntegerValue size_y;
@@ -65,8 +66,8 @@ class OrthogonalPackingResult {
   bool HasSlack() const { return slack_ > IntegerValue(0); }
 
   enum class Coord { kCoordX, kCoordY };
-  // Use an eventual slack to reduce the size of item corresponding to the
-  // `i`-th element on GetItemsParticipatingOnConflict(). It will not use any
+  // Use an eventual slack to reduce the size of the item corresponding to the
+  // `i`-th element in GetItemsParticipatingOnConflict(). It will not use any
   // slack to reduce it beyond lower_bound. This is a no-op if HasSlack() is
   // false.
   bool TryUseSlackToReduceItemSize(int i, Coord coord,
@@ -170,7 +171,7 @@ class OrthogonalPackingInfeasibilityDetector {
   // sufficient to find a conflict. This function runs in
   // O(num_items * sqrt(bb_size)) operations.
   // All sizes must be positive values less than UINT16_MAX.
-  // The returned bitset will contain less elements than
+  // The returned bitset will contain fewer elements than
   // min(sqrt_bb_size * num_items, x_bb_size/4+1).
   void GetAllCandidatesForKForDff2(absl::Span<const IntegerValue> sizes,
                                    IntegerValue bb_size,
@@ -322,7 +323,7 @@ class RoundingDualFeasibleFunctionPowerOfTwo {
     DCHECK_GE(log2_k_, 0);
     DCHECK_LT(log2_k_, 63);
     DCHECK_LE(2 * (1 << log2_k), max_x_);
-    DCHECK_LE(max_x_, std::numeric_limits<int64_t>::max() / 2);
+    DCHECK_LE(max_x_, kint64max / 2);
   }
 
   IntegerValue operator()(IntegerValue x) const {

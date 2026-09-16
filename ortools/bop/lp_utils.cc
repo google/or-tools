@@ -17,13 +17,14 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
-#include <limits>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "ortools/base/types.h"
 #include "ortools/bop/boolean_problem.h"
+#include "ortools/bop/boolean_problem.pb.h"
+#include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/util/fp_utils.h"

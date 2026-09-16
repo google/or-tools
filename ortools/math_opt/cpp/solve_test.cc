@@ -22,12 +22,12 @@
 #include "absl/base/nullability.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/solver_interface.h"
@@ -190,7 +190,7 @@ TEST(SolveTest, SuccessfulSolveWithCallback) {
     cb_data.set_event(CALLBACK_EVENT_MIP_SOLUTION);
     *cb_data.mutable_primal_solution_vector() = MakeSparseDoubleVector(
         {{basic_lp.a.id(), 1.0}, {basic_lp.b.id(), 0.0}});
-    ASSIGN_OR_RETURN(const CallbackResultProto result, cb(cb_data));
+    ABSL_ASSIGN_OR_RETURN(const CallbackResultProto result, cb(cb_data));
     return basic_lp.OptimalResult({basic_lp.a});
   };
 
@@ -422,7 +422,7 @@ TEST(SolveTest, WrongModelInCallbackResult) {
     cb_data.set_event(CALLBACK_EVENT_MIP_SOLUTION);
     *cb_data.mutable_primal_solution_vector() = MakeSparseDoubleVector(
         {{basic_lp.a.id(), 1.0}, {basic_lp.b.id(), 0.0}});
-    ASSIGN_OR_RETURN(const CallbackResultProto result, cb(cb_data));
+    ABSL_ASSIGN_OR_RETURN(const CallbackResultProto result, cb(cb_data));
     return basic_lp.OptimalResult({basic_lp.a, basic_lp.b});
   };
 
@@ -967,7 +967,7 @@ TEST(IncrementalSolverTest, SuccessfulSolveWithCallback) {
     cb_data.set_event(CALLBACK_EVENT_MIP_SOLUTION);
     *cb_data.mutable_primal_solution_vector() = MakeSparseDoubleVector(
         {{basic_lp.a.id(), 1.0}, {basic_lp.b.id(), 0.0}});
-    ASSIGN_OR_RETURN(const CallbackResultProto result, cb(cb_data));
+    ABSL_ASSIGN_OR_RETURN(const CallbackResultProto result, cb(cb_data));
     return basic_lp.OptimalResult({basic_lp.a});
   };
 
@@ -1143,7 +1143,7 @@ TEST(IncrementalSolverTest, UpdateAndSolve) {
     cb_data.set_event(CALLBACK_EVENT_MIP_SOLUTION);
     *cb_data.mutable_primal_solution_vector() = MakeSparseDoubleVector(
         {{basic_lp.a.id(), 1.0}, {basic_lp.b.id(), 0.0}});
-    ASSIGN_OR_RETURN(const CallbackResultProto result, cb(cb_data));
+    ABSL_ASSIGN_OR_RETURN(const CallbackResultProto result, cb(cb_data));
     return basic_lp.OptimalResult({basic_lp.a});
   };
 
@@ -1401,7 +1401,7 @@ TEST(IncrementalSolverTest, WrongModelInCallbackResult) {
     cb_data.set_event(CALLBACK_EVENT_MIP_SOLUTION);
     *cb_data.mutable_primal_solution_vector() = MakeSparseDoubleVector(
         {{basic_lp.a.id(), 1.0}, {basic_lp.b.id(), 0.0}});
-    ASSIGN_OR_RETURN(const CallbackResultProto result, cb(cb_data));
+    ABSL_ASSIGN_OR_RETURN(const CallbackResultProto result, cb(cb_data));
     return basic_lp.OptimalResult({basic_lp.a, basic_lp.b});
   };
 

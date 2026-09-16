@@ -26,13 +26,13 @@
 namespace operations_research {
 namespace sat {
 
-// A RINS Neighborhood is actually just a generic neighborhood where the domain
-// of some variable have been reduced (fixed or restricted in [lb, ub]).
+// A RINS Neighborhood is actually just a generic neighborhood where the domains
+// of some variables have been reduced (fixed or restricted in [lb, ub]).
 //
-// Important: It might be possible that the value of the variables here are
-// outside the domains of these variables! This happens for RENS type of
+// Important: It might be possible that the values of the variables here are
+// outside the domains of these variables! This happens for a RENS type of
 // neighborhood in the presence of holes in the domains because the LP
-// relaxation ignore those.
+// relaxation ignores those.
 struct ReducedDomainNeighborhood {
   // A variable will appear only once and not in both vectors.
   std::vector<std::pair</*model_var*/ int, /*value*/ int64_t>> fixed_vars;
@@ -42,18 +42,18 @@ struct ReducedDomainNeighborhood {
   std::string source_info;
 };
 
-// Helper method to create a RINS neighborhood by fixing variables with same
-// values in relaxation solution and the current best solution in the
-// response_manager. Prioritizes repositories in following order to get a
+// Helper method to create a RINS neighborhood by fixing variables with the same
+// values in the relaxation solution and the current best solution in the
+// response_manager. Prioritizes repositories in the following order to get a
 // neighborhood.
 //  1. incomplete_solutions
 //  2. lp_solutions
 //
 // If response_manager has no solution, this generates a RENS neighborhood by
-// ignoring the solutions and using the relaxation values. The domain of the
-// variables are reduced to integer values around relaxation values. If the
-// relaxation value is integer, then we fix the domain of the variable to that
-// value.
+// ignoring the solutions and using the relaxation values. The domains of the
+// variables are reduced to integer values around the relaxation values. If the
+// relaxation value is an integer, then we fix the domain of the variable to
+// that value.
 ReducedDomainNeighborhood GetRinsRensNeighborhood(
     const SharedResponseManager* response_manager,
     const SharedLPSolutionRepository* lp_solutions,

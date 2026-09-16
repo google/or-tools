@@ -23,6 +23,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
+#include "ortools/constraint_solver/solver_parameters.pb.h"
 #include "zlib.h"
 
 namespace operations_research {

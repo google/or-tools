@@ -19,17 +19,16 @@
 
 #include "absl/base/optimization.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/io/mps_converter.h"
 #include "ortools/math_opt/model.pb.h"
-#include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/port/proto_utils.h"
 
@@ -234,7 +233,7 @@ absl::StatusOr<SimpleMultiObjectiveSolveResult> SolveWithObjectiveDegradation(
       model_parameters.objective_parameters[priority_0]
           .objective_degradation_relative_tolerance = 0.5;
   }
-  ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const SolveResult result,
       Solve(model, solver_type,
             {.parameters = parameters, .model_parameters = model_parameters}));
@@ -360,7 +359,7 @@ TEST_P(SimpleMultiObjectiveTest,
 //
 // Note that this instance is a MIP.
 absl::StatusOr<std::unique_ptr<Model>> Load23588MiplibInstance() {
-  ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const ModelProto model_proto,
       ReadMpsFile(absl::StrCat("ortools/math_opt/solver_tests/testdata/"
                                "23588.mps")));
@@ -373,10 +372,6 @@ TEST_P(SimpleMultiObjectiveTest,
        MultiObjectiveModelWithAuxiliaryObjectiveTimeLimit) {
   if (!GetParam().supports_integer_variables) {
     GTEST_SKIP() << kNoIntegerVariableSupportMessage;
-  }
-  if (GetParam().solver_type == SolverType::kXpress) {
-    GTEST_SKIP() << "Ignoring this test because Xpress does not support per "
-                    "objective time limits at the moment";
   }
   ASSERT_OK_AND_ASSIGN(const std::unique_ptr<Model> model,
                        Load23588MiplibInstance());
@@ -410,8 +405,15 @@ TEST_P(SimpleMultiObjectiveTest,
     GTEST_SKIP() << kNoIntegerVariableSupportMessage;
   }
   if (GetParam().solver_type == SolverType::kXpress) {
-    GTEST_SKIP() << "Ignoring this test because Xpress does not support per "
-                    "objective time limits at the moment";
+    // Xpress behaves very differently from what this test expects:
+    // If the first objective hits a time limit without finding a solution
+    // (this is what happens here) then Xpress leaves the first solution
+    // unfixed and continues with the second solution. Since the second
+    // solution solves to optimality, Xpress will report "optimal" in the end.
+    // The rationale for this behavior is that a time limit on everything but
+    // the first objective is interpreted as "if you can solve this then great,
+    // if not, move on".
+    GTEST_SKIP() << "skipped since Xpress behaves differently in this context";
   }
   ASSERT_OK_AND_ASSIGN(const std::unique_ptr<Model> model,
                        Load23588MiplibInstance());
@@ -474,10 +476,6 @@ TEST_P(SimpleMultiObjectiveTest,
   if (!GetParam().supports_integer_variables) {
     GTEST_SKIP() << kNoIntegerVariableSupportMessage;
   }
-  if (GetParam().solver_type == SolverType::kXpress) {
-    GTEST_SKIP() << "Ignoring this test because Xpress does not support per "
-                    "objective time limits at the moment";
-  }
   ASSERT_OK_AND_ASSIGN(const std::unique_ptr<Model> model,
                        Load23588MiplibInstance());
   SolveArguments args = {
@@ -486,13 +484,13 @@ TEST_P(SimpleMultiObjectiveTest,
           .objective_parameters = {{model->primary_objective(),
                                     {.time_limit = absl::Seconds(10)}}}}};
   args.parameters.time_limit = absl::Milliseconds(1);
-  ASSERT_OK_AND_ASSIGN(const SolveResult result,
-                       Solve(*model, GetParam().solver_type, args));
-  EXPECT_THAT(result, TerminatesWithLimit(Limit::kTime));
+  const auto result = Solve(*model, GetParam().solver_type, args);
+  ASSERT_OK(result);
+  EXPECT_THAT(*result, TerminatesWithLimit(Limit::kTime));
   // Solvers do not stop very precisely, use a large number to avoid flaky
   // tests. Do NOT try to fine tune this to be small, it is hard to get right
   // for all compilation modes (e.g., debug, asan).
-  EXPECT_LE(result.solve_stats.solve_time, absl::Seconds(1));
+  EXPECT_LE(result->solve_stats.solve_time, absl::Seconds(1));
 }
 
 // We test that all solvers that do not support multi-objective models error
@@ -598,10 +596,6 @@ TEST_P(IncrementalMultiObjectiveTest, AddObjectiveToMultiObjectiveModel) {
   if (!GetParam().supports_auxiliary_objectives) {
     GTEST_SKIP() << kNoMultiObjectiveSupportMessage;
   }
-  if (!GetParam().supports_incremental_objective_add_and_delete) {
-    GTEST_SKIP()
-        << "Ignoring this test as it requires support for incremental solve";
-  }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
   const Variable y = model.AddContinuousVariable(0.0, 1.0, "y");
@@ -654,10 +648,6 @@ TEST_P(IncrementalMultiObjectiveTest, AddObjectiveToMultiObjectiveModel) {
 TEST_P(IncrementalMultiObjectiveTest, DeleteObjectiveFromMultiObjectiveModel) {
   if (!GetParam().supports_auxiliary_objectives) {
     GTEST_SKIP() << kNoMultiObjectiveSupportMessage;
-  }
-  if (!GetParam().supports_incremental_objective_add_and_delete) {
-    GTEST_SKIP()
-        << "Ignoring this test as it requires support for incremental solve";
   }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");

@@ -260,12 +260,6 @@ int NumBitsForZeroTo(T max_value) {
   }
 }
 
-#ifdef NDEBUG
-const bool DEBUG_MODE = false;
-#else
-const bool DEBUG_MODE = true;
-#endif
-
 template <typename T>
 void RadixSort(absl::Span<T> values, int num_bits) {
   // Debug-check that num_bits is valid w.r.t. the values given.

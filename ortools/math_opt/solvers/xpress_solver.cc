@@ -15,78 +15,208 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <string>
-#include <type_traits>
 #include <utility>
+#include <variant>
 #include <vector>
 
+#include "absl/base/config.h"  // IWYU pragma: keep
+#include "absl/base/nullability.h"
+#include "absl/base/thread_annotations.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/container/linked_hash_map.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "absl/synchronization/mutex.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
+#include "google/protobuf/map.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/empty_bounds.h"
+#include "ortools/base/status_builder.h"
+#include "ortools/base/types.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
-#include "ortools/math_opt/cpp/math_opt.h"
-#include "ortools/math_opt/cpp/streamable_solver_init_arguments.h"
 #include "ortools/math_opt/solvers/xpress/g_xpress.h"
 #include "ortools/math_opt/validators/callback_validator.h"
-#include "ortools/port/proto_utils.h"
 #include "ortools/third_party_solvers/xpress_environment.h"
 #include "ortools/util/solve_interrupter.h"
 
+#ifdef ABSL_HAVE_EXCEPTIONS
+#include <exception>
+#endif
+
 namespace operations_research {
 namespace math_opt {
+
+// The callback events that Xpress supports.
+// For Xpress it is not a problem to listen to MIP events when solving an LP,
+// they will just never be triggered. However, the testsuite expects that we
+// raise an error if someone attempts to register MIP events for a non-MIP
+// solve, so we have to support different callbacks depending on the problem
+// type.
+
+absl::flat_hash_set<CallbackEventProto> const XpressSolver::SupportedMIPEvents_(
+    {
+        CALLBACK_EVENT_PRESOLVE,
+        CALLBACK_EVENT_SIMPLEX,
+        CALLBACK_EVENT_MIP,
+        CALLBACK_EVENT_MIP_SOLUTION,
+        CALLBACK_EVENT_MIP_NODE,
+        CALLBACK_EVENT_BARRIER,
+    });
+absl::flat_hash_set<CallbackEventProto> const XpressSolver::SupportedLPEvents_({
+    CALLBACK_EVENT_PRESOLVE,
+    CALLBACK_EVENT_SIMPLEX,
+    CALLBACK_EVENT_BARRIER,
+});
+
 namespace {
 
-struct SharedSolveContext {
-  Xpress* xpress;
+/** Map an ortools variable or objective id to an Xpress column index.
+ * This will raise an exception if the ortools id does not exist in the map.
+ */
+int or2xprs(absl::linked_hash_map<int64_t, int> const& varMap, int64_t orId) {
+  return varMap.at(orId);  // raises exception if no such key
+}
 
-  /** Mutex for accessing callbackException. */
+/** Map an ortools constraint id to an Xpress row index.
+ * This will raise an exception if the ortools id does not exist in the map.
+ */
+XpressSolver::XpressLinearConstraintIndex or2xprs(
+    absl::linked_hash_map<XpressSolver::LinearConstraintId,
+                          XpressSolver::LinearConstraintData> const& conMap,
+    XpressSolver::LinearConstraintId orId) {
+  return conMap.at(orId).constraint_index;  // raises exception if no such key
+}
+
+class SharedSolveContext {
+  /** Mutex for accessing callback_exception or callback_status. */
   absl::Mutex mutex;
 
   /** Capturing of exceptions in callbacks.
    * We cannot let exceptions escape from callbacks since that would just
    * unroll the stack until some function that catches the exception.
    * In particular, it would bypass any cleanup code implemented in the C code
-   * of the solver. So we must capture exceptions, interrupt the solve and
-   * handle the exception once the solver returned.
+   * of the solver. So we must capture exceptions, convert them to Status,
+   * interrupt the solve and handle the status once the solver returned.
    */
-  std::exception_ptr callbackException;
+  std::exception_ptr callback_exception ABSL_GUARDED_BY(mutex) = nullptr;
+
+  /** Capturing of errors in callbacks.
+   * This allows us to report errors that occur in a callback back to
+   * the user once the solve is complete.
+   */
+  absl::Status callback_status ABSL_GUARDED_BY(mutex) = absl::OkStatus();
+
+ public:
+  /** The Xpress instance we use for adding and removing callbacks,
+   * for querying attributes and setting controls, etc.
+   */
+  Xpress* const xpress;
+
+  SharedSolveContext(Xpress* xprs) : xpress(xprs) {}
+
+  ~SharedSolveContext() {
+    // If pending callback exception was not re-raised yet then do it now.
+    // Raising exceptions from a destructor is usually a bad idea. We do it
+    // only for RAII purposes and as the very last thing in the destructor.
+    // Note that instances of this class are only ever allocated on the stack,
+    // so an exception will not bypass memory deallocation.
+    if (callback_exception) std::rethrow_exception(callback_exception);
+  }
+
+  void SetCallbackException(std::exception_ptr ex) {
+    absl::MutexLock const lock(mutex);
+    if (!callback_exception) callback_exception = ex;
+  }
+
+  void SetCallbackStatus(absl::Status const& status) {
+    absl::MutexLock const lock(mutex);
+    callback_status.Update(status);
+  }
+
+  /** Handle errors that occured during callbacks.
+   * This is supposed to be called after a solve completes. If there was an
+   * exception in a callback then this function re-raises the exception.
+   * If there was an error during any callback then this function returns that
+   * error.
+   */
+  absl::Status HandleCallbackProblems() {
+    const absl::MutexLock lock(mutex);
+    // If callbacks raised an exception then re-raise that now.
+    if (callback_exception) {
+      std::rethrow_exception(std::exchange(callback_exception, nullptr));
+    }
+    // If callbacks produced an error then return that now.
+    return std::exchange(callback_status, absl::OkStatus());
+  }
+};
+
+/** Base class for scoped callbacks.
+ * This provides everything the ScopedCallback class requires that does not
+ * depend on template arguments.
+ */
+class ScopedCallbackBase {
+  ScopedCallbackBase(ScopedCallbackBase const&) = delete;
+  ScopedCallbackBase(ScopedCallbackBase&&) = delete;
+  ScopedCallbackBase& operator=(ScopedCallbackBase const&) = delete;
+  ScopedCallbackBase& operator=(ScopedCallbackBase&&) = delete;
+
+ protected:
+  SharedSolveContext* ctx;
+  ScopedCallbackBase() : ctx(nullptr) {}
+
+ public:
+  /** Store an exception that case raised during a callback.
+   * Only the first such exception will be remembered.
+   */
+  void SetCallbackException(std::exception_ptr ex) {
+    ctx->SetCallbackException(ex);
+  }
+
+  /** Store an error status that occurred during a callback.
+   * Only the first such error will be remembered.
+   */
+  void SetCallbackStatus(absl::Status const& status) {
+    ctx->SetCallbackStatus(status);
+  }
 };
 
 /** Registered callback that is auto-removed in the destructor.
  * Use Add() to add a callback to a solve context.
- * The class also provides convenience functions SetCallbackException()
+ * The class also provides convenience functions SetCallbackStatus()
  * and Interrupt() that are required in every callback implementation to
- * capture exceptions from user code and reraise them appropriately.
+ * capture exceptions from user code and return them as Status.
  */
 template <typename ProtoT, typename CbT>
-class ScopedCallback {
+class ScopedCallback : public ScopedCallbackBase {
   using proto_type = typename ProtoT::proto_type;
-  SharedSolveContext* ctx;
+  SharedSolveContext* ctx_;
 
   ScopedCallback(ScopedCallback const&) = delete;
-  ScopedCallback(ScopedCallback&&) = delete;
   ScopedCallback& operator=(ScopedCallback const&) = delete;
-  ScopedCallback& operator=(ScopedCallback&&) = delete;
 
   // We intercept and store any exception throw by a callback defining a static
-  // wrapper function that invokes the callback within a try/carch block. For
+  // wrapper function that invokes the callback within a try/catch block. For
   // this to work, we need to deduce the callback return type and arguments.
   template <typename FuncPtr>
   struct ExWrapper;
@@ -95,43 +225,54 @@ class ScopedCallback {
   template <typename R, typename... Args>
   struct ExWrapper<R (*)(XPRSprob, void*, Args...)> {
     // The static function that will be directly invoked by Xpress
-    static auto low_level_cb(XPRSprob prob, void* cbdata, Args... args) try {
-      return ProtoT::glueFn(prob, cbdata, args...);
-    } catch (...) {
-      // Catch any exception and terminate Xpress gracefully
+    // Note: Xpress callbacks return either void or int. All callbacks
+    //       that return int treat zero as "continue" and non-zero as "stop"
+    //       (either explicit stop request or error).
+    static R low_level_cb(XPRSprob prob, void* cbdata, Args... args) {
       ScopedCallback* cb = reinterpret_cast<ScopedCallback*>(cbdata);
-      cb->Interrupt(XPRS_STOP_USER);
-      cb->SetCallbackException(std::current_exception());
-      if constexpr (std::is_convertible_v<R, int>) return static_cast<int>(1);
+#ifdef ABSL_HAVE_EXCEPTIONS
+      try {
+#endif
+        absl::Status status = ProtoT::glueFn(prob, cbdata, args...);
+        if (status.ok()) return static_cast<R>(0);  // void-cast ignores value
+        XPRSinterrupt(prob, XPRS_STOP_GENERICERROR);
+        cb->SetCallbackStatus(status);
+#ifdef ABSL_HAVE_EXCEPTIONS
+      } catch (...) {
+        // Catch any exception and terminate Xpress gracefully
+        XPRSinterrupt(prob, XPRS_STOP_USER);
+        cb->SetCallbackException(std::current_exception());
+      }
+#endif
+      // We get here only if an error or an exception occurred.
+      return static_cast<R>(1);  // void-cast ignores value
     }
   };
-  const proto_type low_level_cb = ExWrapper<proto_type>::low_level_cb;
+  const proto_type low_level_cb_ = ExWrapper<proto_type>::low_level_cb;
 
  public:
-  CbT or_tools_cb;
+  CbT or_tools_cb_;
 
-  ScopedCallback() : ctx(nullptr) {}
+  ScopedCallback() : ScopedCallbackBase(), ctx_(nullptr) {}
 
-  inline absl::Status Add(SharedSolveContext* context, CbT cb) {
-    ctx = context;
-    RETURN_IF_ERROR(
-        ProtoT::Add(ctx->xpress, low_level_cb, reinterpret_cast<void*>(this)));
-    or_tools_cb = cb;
+  absl::Status Add(SharedSolveContext* context, CbT cb) {
+    ctx_ = context;
+    ABSL_RETURN_IF_ERROR(ProtoT::Add(ctx_->xpress, low_level_cb_,
+                                     reinterpret_cast<void*>(this)));
+    or_tools_cb_ = cb;
     return absl::OkStatus();
   }
 
-  inline void Interrupt(int reason) {
-    CHECK_OK(ctx->xpress->Interrupt(reason));
-  }
+  void Interrupt(int reason) { CHECK_OK(ctx_->xpress->Interrupt(reason)); }
 
-  inline void SetCallbackException(std::exception_ptr ex) {
-    const absl::MutexLock lock(&ctx->mutex);
-    if (!ctx->callbackException) ctx->callbackException = ex;
+  void SetCallbackStatus(const absl::Status& status) {
+    ctx_->SetCallbackStatus(status);
   }
 
   ~ScopedCallback() {
-    if (ctx)
-      ProtoT::Remove(ctx->xpress, low_level_cb, reinterpret_cast<void*>(this));
+    if (ctx_)
+      ProtoT::Remove(ctx_->xpress, low_level_cb_,
+                     reinterpret_cast<void*>(this));
   }
 };
 
@@ -151,39 +292,43 @@ class ScopedCallback {
  * The effect of the macro is an alias CB_NAME####ScopedCb =
  * ScopedCallback<...>.
  */
-#define DEFINE_SCOPED_CB(CB_NAME, ORTOOLS_CB, CB_RET_TYPE, ARGS)         \
-  CB_RET_TYPE CB_NAME##GlueFn ARGS;                                      \
-  struct CB_NAME##Traits {                                               \
-    using proto_type = CB_RET_TYPE(XPRS_CC*) ARGS;                       \
-    static constexpr proto_type glueFn = CB_NAME##GlueFn;                \
-    static absl::Status Add(Xpress* xpress, proto_type fn, void* data) { \
-      return xpress->AddCb##CB_NAME(fn, data, 0);                        \
-    }                                                                    \
-    static void Remove(Xpress* xpress, proto_type fn, void* data) {      \
-      CHECK_OK(xpress->RemoveCb##CB_NAME(fn, data));                     \
-    }                                                                    \
-  };                                                                     \
-  using CB_NAME##ScopedCb = ScopedCallback<CB_NAME##Traits, ORTOOLS_CB>; \
-  CB_RET_TYPE CB_NAME##GlueFn ARGS
+#define DEFINE_SCOPED_CB(CB_NAME, ORTOOLS_CB, CB_RET_TYPE, ARGS)           \
+  absl::Status CB_NAME##GlueFn ARGS;                                       \
+  struct CB_NAME##Traits {                                                 \
+    using proto_type = CB_RET_TYPE(XPRS_CC*) ARGS;                         \
+    static constexpr absl::Status(XPRS_CC* glueFn) ARGS = CB_NAME##GlueFn; \
+    static absl::Status Add(Xpress* xpress, proto_type fn, void* data,     \
+                            int prio = 0) {                                \
+      return xpress->AddCb##CB_NAME(fn, data, prio);                       \
+    }                                                                      \
+    static void Remove(Xpress* xpress, proto_type fn, void* data) {        \
+      CHECK_OK(xpress->RemoveCb##CB_NAME(fn, data));                       \
+    }                                                                      \
+  };                                                                       \
+  using CB_NAME##ScopedCb = ScopedCallback<CB_NAME##Traits, ORTOOLS_CB>;   \
+  absl::Status CB_NAME##GlueFn ARGS
 
 /** Define the message callback.
  * This forwards messages from Xpress to an ortools message callback.
  */
-DEFINE_SCOPED_CB(Message, MessageCallback, void,
-                 (XPRSprob prob, void* cbdata, char const* msg, int len,
+DEFINE_SCOPED_CB(Message, SolverInterface::MessageCallback, void,
+                 (XPRSprob /*prob*/, void* cbdata, char const* msg, int len,
                   int type)) {
   auto cb = reinterpret_cast<MessageScopedCb*>(cbdata);
 
-  if (type != 1 &&  // info message
-      type != 3 &&  // warning message
-      type != 4) {  // error message
-    // message type 2 is not used by Xpress, negative values mean "flush"
-    return;
+  switch (type) {
+    case 1:  // info message
+    case 3:  // warning message
+    case 4:  // error message
+      break;
+    default:
+      // message type 2 is not used by Xpress, negative values mean "flush"
+      return absl::OkStatus();
   }
 
   if (len == 0) {
-    cb->or_tools_cb(std::vector<std::string>{""});
-    return;
+    cb->or_tools_cb_(std::vector<std::string>{""});
+    return absl::OkStatus();
   }
 
   std::vector<std::string> lines;
@@ -203,7 +348,8 @@ DEFINE_SCOPED_CB(Message, MessageCallback, void,
     }
     start = end + 1;
   }
-  cb->or_tools_cb(lines);
+  cb->or_tools_cb_(lines);
+  return absl::OkStatus();
 }
 
 /** Define the checktime callback.
@@ -216,10 +362,721 @@ DEFINE_SCOPED_CB(Checktime, SolveInterrupter const*, int,
   //       interrupted. Returning non-zero from the callback is interpreted
   //       as hitting a time limit and we would therefore not map correctly
   //       the resulting stop status to ortools' termination status.
-  if (cb->or_tools_cb->IsInterrupted()) {
+  if (cb->or_tools_cb_->IsInterrupted()) {
     cb->Interrupt(XPRS_STOP_USER);
+    ABSL_RETURN_IF_ERROR(
+        Xpress::ToStatus(prob, XPRSinterrupt(prob, XPRS_STOP_USER)));
   }
-  return 0;
+  return absl::OkStatus();
+}
+
+/** This is passed as user data to the callback. */
+struct OrtoolsCallbackContext {
+  /** Storage for solutions that cannot be injected in the callback in which
+   * the user returns them.
+   * This is needed since not all Xpress callbacks allow injection of solutions
+   * in all situations.
+   */
+  struct SolStore {
+    std::vector<int> ind;
+    std::vector<double> val;
+  };
+  /** Storage for cuts or lazy constraints that cannot be injected in the
+   * callback in which the user returns them.
+   * This is needed since not all Xpress callbacks allow injection of cuts or
+   * lazy constraints in all situations.
+   */
+  struct CutStore {
+    std::vector<XPRSint64> start;
+    std::vector<int> ind;
+    std::vector<double> val;
+    std::vector<char> sense;
+    std::vector<double> rhs;
+
+    /** Add the cuts stored in this instance as managed cuts to prob.
+     * The function assumes that all cuts stored in this instance are stated
+     * in the original space.
+     */
+    absl::Status AddManagedCuts(XPRSprob prob) {
+      if (start.empty()) return absl::OkStatus();
+      constexpr int const globallyValid =
+          1;  // Cuts must always be globally valid.
+      start.push_back(ind.size());
+      int const xprs_err = XPRSaddmanagedcuts64(
+          prob, globallyValid, rhs.size(), sense.data(), rhs.data(),
+          start.data(), ind.data(), val.data());
+      start.clear();
+      ind.clear();
+      val.clear();
+      sense.clear();
+      rhs.clear();
+      return Xpress::ToStatus(prob, xprs_err);
+    }
+
+    /** Add the cuts stored in this instance as lazy constraints to prob.
+     * The function assumes that the cuts stored are already presolved.
+     */
+    absl::Status AddLazyConstraints(XPRSprob prob) {
+      if (start.empty()) return absl::OkStatus();
+      start.push_back(ind.size());
+      std::vector<int> cuttype(rhs.size());  // Cannot be null.
+      int const xprs_err =
+          XPRSaddcuts64(prob, rhs.size(), cuttype.data(), sense.data(),
+                        rhs.data(), start.data(), ind.data(), val.data());
+      start.clear();
+      ind.clear();
+      val.clear();
+      sense.clear();
+      rhs.clear();
+      return Xpress::ToStatus(prob, xprs_err);
+    }
+  };
+  /** ortools callback function. */
+  SolverInterface::Callback const cb_;
+  /** Maps ortools variable ids to Xpress column indices in the original
+   * space. This is a reference to XpressSolver::variables_map_.
+   */
+  absl::linked_hash_map<int64_t, int> const& varMap_;
+  /** The solution filter specified by the user for CALLBACK_EVENT_MIP_SOLUTION.
+   */
+  SparseVectorFilterProto const& mip_solution_filter_;
+  /** The solution filter specified by the user for CALLBACK_EVENT_MIP_NODE. */
+  SparseVectorFilterProto const& mip_node_filter_;
+
+ private:
+  /** Mutex for accessing the maps below. */
+  absl::Mutex mutex;
+  /** Lazy constraints that could not be injected at the time they were
+   * separated. */
+  absl::linked_hash_map<int, CutStore> delayedLazyConstraints_;
+  /** User cuts that could not be injected at the time they were separated. */
+  absl::linked_hash_map<int, CutStore> delayedCuts_;
+  /** Feasible solutions that could not be injected at the time they were
+   * provided. */
+  absl::linked_hash_map<int, std::vector<SolStore>> delayedSols_;
+  /** The time at which the solve started. */
+  absl::Time const startTime_;
+
+ public:
+  OrtoolsCallbackContext(SolverInterface::Callback const& cb,
+                         CallbackRegistrationProto const& callback_registration,
+                         absl::linked_hash_map<int64_t, int> const& varMap)
+      : cb_(cb),
+        varMap_(varMap),
+        mip_solution_filter_(callback_registration.mip_solution_filter()),
+        mip_node_filter_(callback_registration.mip_node_filter()),
+        startTime_(absl::Now()) {}
+
+  template <typename ElemT>
+  ElemT* GetDelayedEntity_(int threadID, bool create,
+                           absl::linked_hash_map<int, ElemT>& map) {
+    absl::MutexLock const lock(mutex);
+    if (!create) {
+      auto it = map.find(threadID);
+      return it != map.end() ? &it->second : nullptr;
+    }
+    auto res = map.try_emplace(threadID);
+    return &res.first->second;
+  }
+
+ public:
+  /** Get the store for delayed lazy constraints for the specified thread.
+   * @param threadID  The thread for which we should get the store.
+   * @param create    If true then the store will be created if it does not
+   *                  yet exist.
+   * @return The requested store or nullptr if that does not exist and
+   *         create was false.
+   */
+  CutStore* GetDelayedLazyConstraints(int threadID, bool create) {
+    return GetDelayedEntity_(threadID, create, delayedLazyConstraints_);
+  }
+
+  /** Get the store for delayed cuts for the specified thread.
+   * @param threadID  The thread for which we should get the store.
+   * @param create    If true then the store will be created if it does not
+   *                  yet exist.
+   * @return The requested store or nullptr if that does not exist and
+   *         create was false.
+   */
+  CutStore* GetDelayedCuts(int threadID, bool create) {
+    return GetDelayedEntity_(threadID, create, delayedCuts_);
+  }
+
+  /** Get the store for delayed solutions for the specified thread.
+   * @param threadID  The thread for which we should get the store.
+   * @param create    If true then the store will be created if it does not
+   *                  yet exist.
+   * @return The requested store or nullptr if that does not exist and
+   *         create was false.
+   */
+  std::vector<SolStore>* GetDelayedSolutions(int threadID, bool create) {
+    return GetDelayedEntity_(threadID, create, delayedSols_);
+  }
+
+  /** Flush any delayed info from a callback for the current thread.
+   * @param prob       The problem instance that was passed into the callback.
+   * @param flushCuts  Whether we are allowed to flush user cuts.
+   */
+  absl::Status FlushDelayedInfo(XPRSprob prob, bool flushCuts) {
+    int threadID = -1;
+    ABSL_RETURN_IF_ERROR(Xpress::ToStatus(
+        prob, XPRSgetintattrib(prob, XPRS_MIPTHREADID, &threadID)));
+
+    CutStore* store = nullptr;
+    if (flushCuts) {
+      if ((store = GetDelayedCuts(threadID, false))) {
+        ABSL_RETURN_IF_ERROR(store->AddManagedCuts(prob));
+      }
+    }
+    if ((store = GetDelayedLazyConstraints(threadID, false))) {
+      ABSL_RETURN_IF_ERROR(store->AddLazyConstraints(prob));
+    }
+    std::vector<SolStore>* sols = GetDelayedSolutions(threadID, false);
+    if (sols) {
+      int xprs_err = 0;
+      for (auto const& s : *sols) {
+        xprs_err = XPRSaddmipsol(prob, s.ind.size(), s.val.data(), s.ind.data(),
+                                 nullptr);
+        if (xprs_err != 0) break;
+      }
+      sols->clear();
+      ABSL_RETURN_IF_ERROR(Xpress::ToStatus(prob, xprs_err));
+    }
+    return absl::OkStatus();
+  }
+
+  /** Set the elapsed time in callback data.
+   */
+  absl::Status SetElapsed(XPRSprob prob, CallbackDataProto& cbdata) {
+    ABSL_RETURN_IF_ERROR(util_time::EncodeGoogleApiProto(
+        absl::Now() - startTime_, cbdata.mutable_runtime()));
+    return absl::OkStatus();
+  }
+
+  /** Apply a solutionn filter to reduce the number of non-zeros in a
+   * solution.
+   */
+  SparseDoubleVectorProto FilterSolution(
+      absl::Span<const double> dense, const SparseVectorFilterProto& filter) {
+    SparseVectorFilterPredicate predicate(filter);
+    SparseDoubleVectorProto result;
+    for (auto const [id, idx] : varMap_) {
+      const double val = dense[idx];
+      if (predicate.AcceptsAndUpdate(id, val)) {
+        result.add_ids(id);
+        result.add_values(val);
+      }
+    }
+    return result;
+  }
+};
+
+// Query attributes from callbacks.
+// Since we do not want to create an Xpress instance for every callback
+// invocation, we just directly call XPRSgetintattrib() and friends from
+// callbacks.
+absl::Status GetAttr(XPRSprob prob, int attr, int* value) {
+  return Xpress::ToStatus(prob, XPRSgetintattrib(prob, attr, value));
+}
+absl::Status GetAttr(XPRSprob prob, int attr, int64_t* value) {
+  XPRSint64 xval;
+  int err = XPRSgetintattrib64(prob, attr, &xval);
+  *value = xval;
+  return Xpress::ToStatus(prob, err);
+}
+absl::Status GetAttr(XPRSprob prob, int attr, double* value) {
+  return Xpress::ToStatus(prob, XPRSgetdblattrib(prob, attr, value));
+}
+
+/** Set an attribute for a CallbackDataProto.
+ * The macro assumes that  an XPRSprob `prob` is in the current scope.
+ * @param stats  The field of CallbackDataProto to be set.
+ * @param orattr The attribute to set in stats.
+ * @param xattr  The XPRS_FOO attribute to query.
+ */
+#define CALLBACK_SET_ATTRIBUTE(stats, orattr, xattr)     \
+  do {                                                   \
+    decltype(stats->orattr()) value_;                    \
+    ABSL_RETURN_IF_ERROR(GetAttr(prob, xattr, &value_)); \
+    stats->set_##orattr(value_);                         \
+  } while (0)
+
+/** Initialize simplex statistics in cbdata.
+ * @param prob    Problem passed into callback.
+ * @param cbdata  Data that will be passed to the ortools callback.
+ */
+absl::Status InitSimplexStats(XPRSprob prob, CallbackDataProto& cbdata) {
+  CallbackDataProto::SimplexStats* const s = cbdata.mutable_simplex_stats();
+  CALLBACK_SET_ATTRIBUTE(s, iteration_count, XPRS_SIMPLEXITER);
+  /* This is not available in Xpress
+  CALLBACK_SET_ATTRIBUTE(s, is_perturbed, );
+   */
+  CALLBACK_SET_ATTRIBUTE(s, objective_value, XPRS_LPOBJVAL);
+  CALLBACK_SET_ATTRIBUTE(s, primal_infeasibility, XPRS_SUMPRIMALINF);
+  /* Xpress only has XPRS_SUMPRIMALINF, not XPRS_SUMDUALINF
+  CALLBACK_SET_ATTRIBUTE(s, dual_infeasibility, );
+   */
+  return absl::OkStatus();
+}
+
+/** Initialize barrier statistics in cbdata.
+ * @param prob    Problem passed into callback.
+ * @param cbdata  Data that will be passed to the ortools callback.
+ */
+absl::Status InitBarrierStats(XPRSprob prob, CallbackDataProto& cbdata) {
+  CallbackDataProto::BarrierStats* const s = cbdata.mutable_barrier_stats();
+
+  CALLBACK_SET_ATTRIBUTE(s, iteration_count, XPRS_BARITER);
+  CALLBACK_SET_ATTRIBUTE(s, primal_objective, XPRS_BARPRIMALOBJ);
+  CALLBACK_SET_ATTRIBUTE(s, dual_objective, XPRS_BARDUALOBJ);
+  CALLBACK_SET_ATTRIBUTE(s, complementarity, XPRS_BARCGAP);
+  CALLBACK_SET_ATTRIBUTE(s, primal_infeasibility, XPRS_BARPRIMALINF);
+  CALLBACK_SET_ATTRIBUTE(s, dual_infeasibility, XPRS_BARDUALINF);
+  return absl::OkStatus();
+}
+
+/** Initialize presolve statistics in cbdata.
+ * @param prob    Problem passed into callback.
+ * @param cbdata  Data that will be passed to the ortools callback.
+ */
+absl::Status InitPresolveStats(XPRSprob prob, CallbackDataProto& cbdata) {
+  int cols, origCols, rows, origRows;
+  ABSL_RETURN_IF_ERROR(
+      Xpress::ToStatus(prob, XPRSgetintattrib(prob, XPRS_COLS, &cols)));
+  ABSL_RETURN_IF_ERROR(Xpress::ToStatus(
+      prob, XPRSgetintattrib(prob, XPRS_ORIGINALCOLS, &origCols)));
+  ABSL_RETURN_IF_ERROR(
+      Xpress::ToStatus(prob, XPRSgetintattrib(prob, XPRS_ROWS, &rows)));
+  ABSL_RETURN_IF_ERROR(Xpress::ToStatus(
+      prob, XPRSgetintattrib(prob, XPRS_ORIGINALROWS, &origRows)));
+
+  CallbackDataProto::PresolveStats* const s = cbdata.mutable_presolve_stats();
+  s->set_removed_variables(origCols - cols);
+  s->set_removed_constraints(origRows - rows);
+  /* These two are not available in Xpress.
+   s->set_bound_changes()
+   s->set_coefficient_changes()
+   */
+  return absl::OkStatus();
+}
+
+/** Initialize MIP statistics in cbdata.
+ * @param prob    Problem passed into callback.
+ * @param cbdata  Data that will be passed to the ortools callback.
+ */
+absl::Status InitMipStats(XPRSprob prob, CallbackDataProto& cbdata) {
+  CallbackDataProto::MipStats* const s = cbdata.mutable_mip_stats();
+
+  CALLBACK_SET_ATTRIBUTE(s, primal_bound, XPRS_MIPBESTOBJVAL);
+  CALLBACK_SET_ATTRIBUTE(s, dual_bound, XPRS_BESTBOUND);
+  CALLBACK_SET_ATTRIBUTE(s, explored_nodes, XPRS_NODES);
+  CALLBACK_SET_ATTRIBUTE(s, open_nodes, XPRS_ACTIVENODES);
+  // Note that in multi-threading SIMPLEXITER gives the iterations per worker,
+  // not the global grand total. That will only be reported after the solve.
+  CALLBACK_SET_ATTRIBUTE(s, simplex_iterations, XPRS_SIMPLEXITER);
+  CALLBACK_SET_ATTRIBUTE(s, number_of_solutions_found, XPRS_MIPSOLS);
+  CALLBACK_SET_ATTRIBUTE(s, cutting_planes_in_lp, XPRS_CUTS);
+  return absl::OkStatus();
+}
+
+/** Invoke the ortools callback.
+ * The function also handles all actions requested by the callback, such as
+ * termination requests, injected solutions, add cuts/lazy constraints.
+ * @param ctx             Global callback context.
+ * @param prob            The XPRSprob passed into the Xpress callback.
+ * @param data            Data passed into the ortools callback.
+ *                        Everything but the runtime field must be setup.
+ * @param allowCuts       If this is true then the callback is allowed to
+ *                        add cuts or lazy constraints.
+ * @param modifiableNode  True if the current node can be modified, i.e.,
+ *                        we can add solutions, cuts, lazy constraints.
+ * @param hadLazy         Set to true if we had any lazy constraint.
+ */
+absl::Status InvokeOrtoolsCallback(OrtoolsCallbackContext* ctx, XPRSprob prob,
+                                   CallbackDataProto& data, bool allowCuts,
+                                   bool modifiableNode, bool* hadLazy) {
+  ABSL_RETURN_IF_ERROR(ctx->SetElapsed(prob, data));
+  ABSL_ASSIGN_OR_RETURN(CallbackResultProto result, ctx->cb_(data));
+  // The variables below are needed to presolve lazy constraints. They are
+  // only initialized when we have to presolve the first lazy constraint.
+  int origCols = -1, cols = -1, threadID = -1;
+  std::vector<int> origInd, preInd;
+  std::vector<double> origVal, preVal;
+
+  ABSL_RETURN_IF_ERROR(Xpress::ToStatus(
+      prob, XPRSgetintattrib(prob, XPRS_MIPTHREADID, &threadID)));
+
+  // Setup stores for cuts/lazy constraints, depending on whether we can
+  // add them directly or need to cache them.
+  OrtoolsCallbackContext::CutStore cutsToCommit;
+  OrtoolsCallbackContext::CutStore* cutStore = &cutsToCommit;
+  OrtoolsCallbackContext::CutStore* lazyStore = nullptr;
+  std::vector<OrtoolsCallbackContext::SolStore>* solStore = nullptr;
+  if (!modifiableNode) {
+    cutStore = ctx->GetDelayedCuts(threadID, true);
+    lazyStore = ctx->GetDelayedLazyConstraints(threadID, true);
+    solStore = ctx->GetDelayedSolutions(threadID, true);
+  }
+
+  // Go through all linear constraints returned by the callback.
+  for (CallbackResultProto::GeneratedLinearConstraint const& cut :
+       result.cuts()) {
+    if (!allowCuts) {
+      return absl::StatusBuilder(absl::StatusCode::kInvalidArgument)
+             << " Callback " << data.event()
+             << " is not allowed to generate cuts or lazy constraints";
+    }
+
+    // Since we cannot add ranged cuts, we must add ranged cuts as two
+    // different cuts, one for each direction.
+    char senseToAdd[2];
+    double rhsToAdd[2];
+    int numToAdd = 0;
+    double const lb = cut.lower_bound();
+    double const ub = cut.upper_bound();
+
+    // Now process the cut/lazy constraint
+    if (lb <= -1e20 && ub >= 1e20) {
+      // Ignore free rows.
+      continue;
+    } else if (lb == ub) {
+      // Equality constraint
+      senseToAdd[0] = 'E';
+      rhsToAdd[0] = lb;
+      numToAdd = 1;
+    } else {
+      if (lb <= -1e20) {
+        // <= constraint
+        senseToAdd[0] = 'L';
+        rhsToAdd[0] = ub;
+        numToAdd = 1;
+      } else if (ub >= 1e20) {
+        // >= constraint
+        senseToAdd[0] = 'G';
+        rhsToAdd[0] = lb;
+        numToAdd = 1;
+      } else {
+        // Range constraint, must insert the cut twice, once for each direction
+        senseToAdd[0] = 'L';
+        rhsToAdd[0] = ub;
+        senseToAdd[1] = 'G';
+        rhsToAdd[1] = lb;
+        numToAdd = 2;
+      }
+    }
+
+    for (int i = 0; i < numToAdd; ++i) {
+      if (cut.is_lazy()) {
+        // Lazy constraints are special. They must be provided in the
+        // presolved space, so we must presolve them.
+        *hadLazy = true;
+        if (cols < 0) {
+          // First lazy constraint. Initialize the buffers.
+          ABSL_RETURN_IF_ERROR(Xpress::ToStatus(
+              prob, XPRSgetintattrib(prob, XPRS_ORIGINALCOLS, &origCols)));
+          ABSL_RETURN_IF_ERROR(
+              Xpress::ToStatus(prob, XPRSgetintattrib(prob, XPRS_COLS, &cols)));
+          origInd.reserve(origCols);
+          origVal.reserve(origCols);
+          preInd.resize(cols);
+          preVal.resize(cols);
+        }
+        origInd.clear();
+        origVal.clear();
+        for (auto const [id, value] : MakeView(cut.linear_expression())) {
+          origInd.push_back(or2xprs(ctx->varMap_, id));
+          origVal.push_back(value);
+        }
+        int const cuttype = 0;
+        int ncoefs, status;
+        double preRhs;
+        /* Note: For the second iteration for ranged rows, we cannot just
+         *       reuse results from the first iteration and change direction
+         *       of the constraints: constants on the left-hand side may have
+         *       to be factored into the right-hand side.
+         */
+        ABSL_RETURN_IF_ERROR(Xpress::ToStatus(
+            prob,
+            XPRSpresolverow(prob, senseToAdd[i], origInd.size(), origInd.data(),
+                            origVal.data(), rhsToAdd[i], cols, &ncoefs,
+                            preInd.data(), preVal.data(), &preRhs, &status)));
+        if (status != 0) {
+          // Presolving a row may fail depending on which presolve reductions
+          // have been carried out on the problem. Hedge against this.
+          return absl::StatusBuilder(absl::StatusCode::kInvalidArgument)
+                 << "Failed to presolve a lazy constraint, status = " << status;
+        }
+        if (lazyStore) {
+          // We cannot apply the lazy constraints directly, we must buffer
+          // them.
+          lazyStore->start.push_back(lazyStore->ind.size());
+          lazyStore->ind.insert(lazyStore->ind.end(), preInd.begin(),
+                                preInd.begin() + ncoefs);
+          lazyStore->val.insert(lazyStore->val.end(), preVal.begin(),
+                                preVal.begin() + ncoefs);
+          lazyStore->sense.push_back(senseToAdd[i]);
+          lazyStore->rhs.push_back(preRhs);
+        } else {
+          // Apply lazy constraints one by one, there is not really a point
+          // in buffering since presolving the row already is a significant
+          // overhead.
+          XPRSint64 const prestart[] = {0,
+                                        static_cast<XPRSint64>(preInd.size())};
+          ABSL_RETURN_IF_ERROR(Xpress::ToStatus(
+              prob, XPRSaddcuts64(prob, 1, &cuttype, &senseToAdd[i], &preRhs,
+                                  prestart, preInd.data(), preVal.data())));
+        }
+      } else {
+        // A regular cut.
+        cutStore->start.push_back(cutStore->ind.size());
+        for (auto const [id, value] : MakeView(cut.linear_expression())) {
+          cutStore->ind.push_back(or2xprs(ctx->varMap_, id));
+          cutStore->val.push_back(value);
+        }
+        cutStore->sense.push_back(senseToAdd[i]);
+        cutStore->rhs.push_back(rhsToAdd[i]);
+      }
+    }
+  }
+
+  if (!cutsToCommit.start.empty())
+    ABSL_RETURN_IF_ERROR(cutsToCommit.AddManagedCuts(prob));
+
+  // Process any solutions that were added.
+  for (SparseDoubleVectorProto const& solution_vector :
+       result.suggested_solutions()) {
+    std::vector<int> ids;
+    std::vector<double> vals;
+    ids.reserve(solution_vector.ids_size());
+    vals.reserve(solution_vector.values_size());
+    for (auto const [id, value] : MakeView(solution_vector)) {
+      ids.push_back(or2xprs(ctx->varMap_, id));
+      vals.push_back(value);
+    }
+    if (solStore) {
+      solStore->push_back({ids, vals});
+    } else {
+      ABSL_RETURN_IF_ERROR(Xpress::ToStatus(
+          prob,
+          XPRSaddmipsol(prob, ids.size(), vals.data(), ids.data(), nullptr)));
+    }
+  }
+  // If we are asked to terminate then do that now.
+  if (result.terminate()) {
+    ABSL_RETURN_IF_ERROR(
+        Xpress::ToStatus(prob, XPRSinterrupt(prob, XPRS_STOP_USER)));
+  }
+  return absl::OkStatus();
+}
+
+// Below we define various callbacks that we need in order to implement
+// the ortools callback.
+// ortools only has a single callback that is called with different events.
+// Xpress on the other side has a separate callback for each event. So we
+// need multiple Xpress callbacks that all fire the same ortools callback but
+// with different events.
+
+/** Barrier Logging callback.
+ * This is used to implemented CALLBACK_EVENT_BARRIER.
+ * Specification of this event from math_opt/cpp/callback.h:
+ *     Called in each iterate of an interior point/barrier method.
+ * @return non-zero to stop the solve.
+ */
+DEFINE_SCOPED_CB(Barlog, OrtoolsCallbackContext*, int,
+                 (XPRSprob prob, void* cbdata)) {
+  BarlogScopedCb* cb = reinterpret_cast<BarlogScopedCb*>(cbdata);
+  OrtoolsCallbackContext* ctx = cb->or_tools_cb_;
+  CallbackDataProto cbargs;
+  cbargs.set_event(CALLBACK_EVENT_BARRIER);
+  ABSL_RETURN_IF_ERROR(InitBarrierStats(prob, cbargs));
+  ABSL_RETURN_IF_ERROR(
+      InvokeOrtoolsCallback(ctx, prob, cbargs, false, false, nullptr));
+  return absl::OkStatus();
+}
+
+/** LP Logging callback.
+ * This is used to implemented CALLBACK_EVENT_SIMPLEX.
+ * Specification of this event from math_opt/cpp/callback.h:
+ *     The solver is currently running the simplex method.
+ * @return non-zero to stop the solve.
+ */
+DEFINE_SCOPED_CB(Lplog, OrtoolsCallbackContext*, int,
+                 (XPRSprob prob, void* cbdata)) {
+  LplogScopedCb* cb = reinterpret_cast<LplogScopedCb*>(cbdata);
+  OrtoolsCallbackContext* ctx = cb->or_tools_cb_;
+  CallbackDataProto cbargs;
+  cbargs.set_event(CALLBACK_EVENT_SIMPLEX);
+  ABSL_RETURN_IF_ERROR(InitSimplexStats(prob, cbargs));
+  ABSL_RETURN_IF_ERROR(
+      InvokeOrtoolsCallback(ctx, prob, cbargs, false, false, nullptr));
+  return absl::OkStatus();
+}
+
+/** Presolve callback.
+ * This is used to implement CALLBACK_EVENT_PRESOLVE.
+ * Specification of this event from math_opt/cpp/callback.h:
+ *     The solver is currently running presolve
+ * Note that this callback is fired only once at the end of presolve.
+ * Note that in case of restarts it might be fired once for each restart.
+ * @return non-zero to stop the solve.
+ */
+DEFINE_SCOPED_CB(Presolve, OrtoolsCallbackContext*, void,
+                 (XPRSprob prob, void* cbdata)) {
+  PresolveScopedCb* cb = reinterpret_cast<PresolveScopedCb*>(cbdata);
+  OrtoolsCallbackContext* ctx = cb->or_tools_cb_;
+  CallbackDataProto cbargs;
+  cbargs.set_event(CALLBACK_EVENT_PRESOLVE);
+  bool hadLazy = false;
+  ABSL_RETURN_IF_ERROR(InitPresolveStats(prob, cbargs));
+  ABSL_RETURN_IF_ERROR(
+      InvokeOrtoolsCallback(ctx, prob, cbargs, true, false, &hadLazy));
+  return absl::OkStatus();
+}
+
+/** Preintsol callback.
+ * This is used to implement CALLBACK_EVENT_MIPSOLUTION.
+ * Specification of this event from math_opt/cpp/callback.h:
+ *     Called every time a new MIP incumbent is found.
+ * Note that we can only add solutions, cuts, lazy constraints if soltype==0.
+ * In all other cases we capture what we should add and flush it only later
+ * from optnode/cutround.
+ */
+DEFINE_SCOPED_CB(PreIntSol, OrtoolsCallbackContext*, void,
+                 (XPRSprob prob, void* cbdata, int soltype, int* p_reject,
+                  double*)) {
+  // We could flush here, but that can have bad side effects. For example
+  // - if we inject lazy constraints and the solution is not violated by
+  //   any of them, then this would still reject the solution.
+  // - if we flush a feasible solution but the current node is later
+  //   rejected, then we lost this feasible solution.
+  // We therefore leave all the flushing to the optnode callback.
+  PreIntSolScopedCb* cb = reinterpret_cast<PreIntSolScopedCb*>(cbdata);
+  OrtoolsCallbackContext* ctx = cb->or_tools_cb_;
+  CallbackDataProto cbargs;
+  cbargs.set_event(CALLBACK_EVENT_MIP_SOLUTION);
+  /* The specification in callback.h says that primal_solution should hold
+   * the candidate relaxation. That is returned by XPRSgetcallbacksolution() in
+   * the preintsol callback context.
+   */
+  int cols;
+  ABSL_RETURN_IF_ERROR(
+      Xpress::ToStatus(prob, XPRSgetintattrib(prob, XPRS_ORIGINALCOLS, &cols)));
+  std::vector<double> x(cols);
+  ABSL_RETURN_IF_ERROR(Xpress::ToStatus(
+      prob, XPRSgetcallbacksolution(prob, nullptr, x.data(), 0, cols - 1)));
+  // Note that ortools has no way to communicate the objective value,
+  // users have to find that themselves.
+  *cbargs.mutable_primal_solution_vector() =
+      ctx->FilterSolution(absl::MakeSpan(x), ctx->mip_solution_filter_);
+  bool hadLazy = false;
+  ABSL_RETURN_IF_ERROR(InitMipStats(prob, cbargs));
+  CallbackSolutionSourceProto solution_source =
+      CALLBACK_SOLUTION_SOURCE_UNSPECIFIED;
+  switch (soltype) {
+    case 0:
+      solution_source = CALLBACK_SOLUTION_SOURCE_INTEGRAL;
+      break;
+    case 1:
+      solution_source = CALLBACK_SOLUTION_SOURCE_HEURISTIC;
+      break;
+    case 2:
+      solution_source = CALLBACK_SOLUTION_SOURCE_USER;
+      break;
+  }
+  cbargs.mutable_mip_stats()->set_solution_source(solution_source);
+  ABSL_RETURN_IF_ERROR(
+      InvokeOrtoolsCallback(ctx, prob, cbargs, true, soltype == 0, &hadLazy));
+  if (hadLazy && soltype != 0) {
+    // The user provided lazy constraints but we could not add them. We have to
+    // flatly reject the solution.
+    // Note that we must NOT set *p_reject=1 if there were lazy constraints
+    // and we could add them, since that would drop the whole subtree.
+    *p_reject = 1;
+  }
+  return absl::OkStatus();
+}
+
+/** Cut round callback.
+ * While the optnode() callback is the obvious candidate for implementing
+ * CALLBACK_EVENT_MIP_NODE, we use the cutround callback because this allows
+ * us to immediately directly
+ * - add user cuts via XPRSaddmanagedcuts(),
+ * - add lazy constraints via XPRSaddcuts() (it is recommended to do this via
+ *   optnode() but explicitly allowed for cutround())
+ * - add new solutions via XPRSaddmipsol().
+ * In the optnode() callback we cannot call XPRSaddmanagedcuts().
+ */
+DEFINE_SCOPED_CB(CutRound, OrtoolsCallbackContext*, void,
+                 (XPRSprob prob, void* cbdata, int ifxpresscuts, int*)) {
+  CutRoundScopedCb* cb = reinterpret_cast<CutRoundScopedCb*>(cbdata);
+  OrtoolsCallbackContext* ctx = cb->or_tools_cb_;
+
+  // First flush any pending information.
+  ABSL_RETURN_IF_ERROR(ctx->FlushDelayedInfo(prob, true));
+
+  // Only trigger the event if Xpress is done with its cutting.
+  if (ifxpresscuts) return absl::OkStatus();
+
+  CallbackDataProto cbargs;
+  cbargs.set_event(CALLBACK_EVENT_MIP_NODE);
+  // The specification in callback.h says that primal_solution should hold
+  // the LP relaxation. That is returned by XPRSgetcallbacksolution() in the
+  // optnode callback context. If the current node is infeasible then we shall
+  // not setup primal_solution.
+  int cols;
+  ABSL_RETURN_IF_ERROR(
+      Xpress::ToStatus(prob, XPRSgetintattrib(prob, XPRS_ORIGINALCOLS, &cols)));
+  std::vector<double> x(cols);
+  int available = 0;
+  ABSL_RETURN_IF_ERROR(Xpress::ToStatus(
+      prob, XPRSgetcallbacksolution(prob, &available, x.data(), 0, cols - 1)));
+  if (available) {
+    *cbargs.mutable_primal_solution_vector() =
+        ctx->FilterSolution(absl::MakeSpan(x), ctx->mip_node_filter_);
+  }
+  bool hadLazy = false;
+  ABSL_RETURN_IF_ERROR(InitMipStats(prob, cbargs));
+  ABSL_RETURN_IF_ERROR(
+      InvokeOrtoolsCallback(ctx, prob, cbargs, true, true, &hadLazy));
+  return absl::OkStatus();
+}
+
+/** prenode callback.
+ * This is used to implement CALLBACK_EVENT_MIP.
+ * Specification of this event from math_opt/cpp/callback.h:
+ *     The solver is in the MIP loop (called periodically before starting a
+ *     new node). Useful for early termination. Note that this event does not
+ *     provide information on LP relaxations nor about new incumbent solutions.
+ */
+DEFINE_SCOPED_CB(PreNode, OrtoolsCallbackContext*, void,
+                 (XPRSprob prob, void* cbdata, int* p_infeasible)) {
+  PreNodeScopedCb* cb = reinterpret_cast<PreNodeScopedCb*>(cbdata);
+  OrtoolsCallbackContext* ctx = cb->or_tools_cb_;
+  CallbackDataProto cbargs;
+  cbargs.set_event(CALLBACK_EVENT_MIP);
+  bool hadLazy = false;
+  /** TODO: Is it not clear from the specification whether injecting cuts,
+   *        lazy constraints, or feasible solutions is allowed from this
+   *        event. We currently allow that but defer the actual injection
+   *        until the next optnode() event.
+   */
+  ABSL_RETURN_IF_ERROR(InitMipStats(prob, cbargs));
+  ABSL_RETURN_IF_ERROR(
+      InvokeOrtoolsCallback(ctx, prob, cbargs, true, false, &hadLazy));
+  return absl::OkStatus();
+}
+
+/** optnode callback.
+ * This is only used for flushing information that could not be processed in
+ * preintsol() or prenode().
+ */
+DEFINE_SCOPED_CB(OptNode, OrtoolsCallbackContext*, void,
+                 (XPRSprob prob, void* cbdata, int* p_infeasible)) {
+  OptNodeScopedCb* cb = reinterpret_cast<OptNodeScopedCb*>(cbdata);
+  OrtoolsCallbackContext* ctx = cb->or_tools_cb_;
+
+  ABSL_RETURN_IF_ERROR(ctx->FlushDelayedInfo(prob, false));
+  return absl::OkStatus();
 }
 
 /** An ortools message callback that prints everything to stdout. */
@@ -273,16 +1130,34 @@ inline int MathOptToXpressBasisStatus(const BasisStatusProto status,
  */
 class ScopedSolverContext {
   /** Solver context data shared by callbacks */
-  SharedSolveContext shared_ctx;
+  SharedSolveContext shared_ctx_;
   /** Installed message callback (if any). */
-  MessageScopedCb messageCallback;
+  MessageScopedCb message_callback_;
   /** Installed interrupter (if any). */
-  ChecktimeScopedCb checktimeCallback;
+  ChecktimeScopedCb checktime_callback_;
   /** If we installed an interrupter callback then this removes it. */
-  std::function<void()> removeInterrupterCallback;
+  std::unique_ptr<ScopedSolveInterrupterCallback> interrupter_callback_;
+  /** Installed barlog callback (if any). */
+  BarlogScopedCb barlog_callback_;
+  /** Installed lplog callback (if any). */
+  LplogScopedCb lplog_callback_;
+  /** Installed presolve callback (if any). */
+  PresolveScopedCb presolve_callback_;
+  /** Installed preintsol callback (if any). */
+  PreIntSolScopedCb preintsol_callback_;
+  /** Installed optnode callback (if any). */
+  OptNodeScopedCb optnode_callback_;
+  /** Installed prenode callback (if any). */
+  PreNodeScopedCb prenode_callback_;
+  /** Installed cutround callback (if any). */
+  CutRoundScopedCb cutround_callback_;
+  /** Context to invoke the ortools callback (if any). */
+  std::unique_ptr<OrtoolsCallbackContext> ctx;
   /** A single control that must be reset in the destructor. */
   struct OneControl {
     int id;
+    // std::variant (not a raw union) so the std::string alternative is
+    // destroyed automatically; index() drives the manual restore in the dtor.
     std::variant<int64_t, double, std::string> value;
     enum {
       INT_CONTROL,
@@ -291,98 +1166,172 @@ class ScopedSolverContext {
     };  // Matches std::variant<>::index;
   };
   /** Controls to be reset in the destructor. */
-  std::vector<OneControl> modifiedControls;
+  std::vector<OneControl> modified_controls_;
 
  public:
-  ScopedSolverContext(Xpress* xpress) : removeInterrupterCallback(nullptr) {
-    shared_ctx.xpress = xpress;
+  ScopedSolverContext(Xpress* xpress) : shared_ctx_(xpress), ctx(nullptr) {}
+  absl::Status Set(int id, int32_t value) {
+    return Set(id, static_cast<int64_t>(value));
   }
-  absl::Status Set(int id, int32_t value) { return Set(id, int64_t(value)); }
   absl::Status Set(int id, int64_t value) {
-    ASSIGN_OR_RETURN(int64_t old, shared_ctx.xpress->GetIntControl64(id));
-    modifiedControls.push_back({id, old});
-    RETURN_IF_ERROR(shared_ctx.xpress->SetIntControl64(id, value));
+    ABSL_ASSIGN_OR_RETURN(int64_t old, shared_ctx_.xpress->GetIntControl64(id));
+    modified_controls_.push_back({id, old});
+    ABSL_RETURN_IF_ERROR(shared_ctx_.xpress->SetIntControl64(id, value));
     return absl::OkStatus();
   }
   absl::Status Set(int id, double value) {
-    ASSIGN_OR_RETURN(double old, shared_ctx.xpress->GetDblControl(id));
-    modifiedControls.push_back({id, old});
-    RETURN_IF_ERROR(shared_ctx.xpress->SetDblControl(id, value));
+    ABSL_ASSIGN_OR_RETURN(double old, shared_ctx_.xpress->GetDblControl(id));
+    modified_controls_.push_back({id, old});
+    ABSL_RETURN_IF_ERROR(shared_ctx_.xpress->SetDblControl(id, value));
     return absl::OkStatus();
   }
   absl::Status Set(int id, std::string const& value) {
-    ASSIGN_OR_RETURN(std::string old, shared_ctx.xpress->GetStrControl(id));
-    modifiedControls.push_back({id, old});
-    RETURN_IF_ERROR(shared_ctx.xpress->SetStrControl(id, value));
+    ABSL_ASSIGN_OR_RETURN(std::string old,
+                          shared_ctx_.xpress->GetStrControl(id));
+    modified_controls_.push_back({id, old});
+    ABSL_RETURN_IF_ERROR(shared_ctx_.xpress->SetStrControl(id, value));
     return absl::OkStatus();
   }
 
-  absl::Status AddCallbacks(MessageCallback message_callback,
-                            const SolveInterrupter* interrupter) {
+  absl::Status AddCallbacks(
+      SolverInterface::MessageCallback message_callback,
+      const CallbackRegistrationProto& callback_registration,
+      SolverInterface::Callback callback, const SolveInterrupter* interrupter,
+      absl::linked_hash_map<XpressSolver::VarId,
+                            XpressSolver::XpressVariableIndex> const& varMap) {
     if (message_callback)
-      RETURN_IF_ERROR(messageCallback.Add(&shared_ctx, message_callback));
+      ABSL_RETURN_IF_ERROR(
+          message_callback_.Add(&shared_ctx_, message_callback));
     if (interrupter) {
       /* To be extra safe we add two ways to interrupt Xpress:
        * 1. We register a checktime callback that polls the interrupter.
        * 2. We register a callback with the interrupter that will call
        *    XPRSinterrupt().
        * Eventually we should assess whether the first thing is a performance
-       * hit and if so, remove it.
-       */
-      RETURN_IF_ERROR(checktimeCallback.Add(&shared_ctx, interrupter));
-      SolveInterrupter::CallbackId const id =
-          interrupter->AddInterruptionCallback(
-              [=] { CHECK_OK(shared_ctx.xpress->Interrupt(XPRS_STOP_USER)); });
-      removeInterrupterCallback = [=] {
-        interrupter->RemoveInterruptionCallback(id);
-      };
-      /** TODO: Support
-       *        CallbackRegistrationProto and Callback and install the
-       *        ortools callback as required.
-       *        Note that this is only for Solve(), not for
-       *        ComputeInfeasibleSubsystem()
-       */
+       * hit and if so, remove it. */
+      ABSL_RETURN_IF_ERROR(checktime_callback_.Add(&shared_ctx_, interrupter));
+      interrupter_callback_ = std::make_unique<ScopedSolveInterrupterCallback>(
+          interrupter,
+          [this] { CHECK_OK(shared_ctx_.xpress->Interrupt(XPRS_STOP_USER)); });
+    }
+    if (callback) {
+      absl::flat_hash_set<CallbackEventProto> const events =
+          EventSet(callback_registration);
+
+      // If the user wants to add cuts or listen to CALLBACK_EVENT_MIP_NODE
+      // then we need XPRSaddcbcutround().
+      if ((events.contains(CALLBACK_EVENT_MIP_NODE) ||
+           callback_registration.add_cuts()) &&
+          !XPRSaddcbcutround) {
+        return absl::StatusBuilder(absl::StatusCode::kInvalidArgument)
+               << "Callback will add cuts or listen for "
+                  "CALLBACK_EVENT_MIP_NODE but XPRSaddcbcutround() is not "
+                  "available. Need at least Xpress optimizer version 45 "
+                  "(Xpress 9.6.0)";
+      }
+
+      // If the user wants to add cuts but XPRSaddmanagedcuts() is not available
+      // then we error out.
+      if (callback_registration.add_cuts() && !XPRSaddmanagedcuts64) {
+        return absl::StatusBuilder(absl::StatusCode::kInvalidArgument)
+               << "Callback will add cuts but XPRSaddmanagedcuts64() is not "
+                  "available. Need at least Xpress optimizer version 45 "
+                  "(Xpress 9.6.0)";
+      }
+
+      ctx = std::make_unique<OrtoolsCallbackContext>(
+          callback, callback_registration, varMap);
+
+      // Register the callbacks that we need to handle the required events.
+      // If we listen to any MIP event but CALLBACK_EVENT_MIP_NODE then we
+      // may have to flush info at the end of a node.
+      bool needFlush = false;
+      for (auto const& event : events) {
+        switch (event) {
+          case CALLBACK_EVENT_PRESOLVE:
+            ABSL_RETURN_IF_ERROR(
+                presolve_callback_.Add(&shared_ctx_, ctx.get()));
+            break;
+          case CALLBACK_EVENT_SIMPLEX:
+            ABSL_RETURN_IF_ERROR(lplog_callback_.Add(&shared_ctx_, ctx.get()));
+            break;
+          case CALLBACK_EVENT_MIP:
+            ABSL_RETURN_IF_ERROR(
+                prenode_callback_.Add(&shared_ctx_, ctx.get()));
+            needFlush = true;
+            break;
+          case CALLBACK_EVENT_MIP_SOLUTION:
+            ABSL_RETURN_IF_ERROR(
+                preintsol_callback_.Add(&shared_ctx_, ctx.get()));
+            needFlush = true;
+            break;
+          case CALLBACK_EVENT_MIP_NODE:
+            ABSL_RETURN_IF_ERROR(
+                cutround_callback_.Add(&shared_ctx_, ctx.get()));
+            break;
+          case CALLBACK_EVENT_BARRIER:
+            ABSL_RETURN_IF_ERROR(barlog_callback_.Add(&shared_ctx_, ctx.get()));
+            break;
+          case CALLBACK_EVENT_UNSPECIFIED:  // fallthrough
+          default:
+            LOG(FATAL) << "Unsupported callback event: " << event;
+        }
+      }
+
+      if (needFlush) {
+        ABSL_RETURN_IF_ERROR(optnode_callback_.Add(&shared_ctx_, ctx.get()));
+      }
+
+      // If the user plans to ever add lazy constraints from callbacks then we
+      // must disable dual reductions.
+      if (callback_registration.add_lazy_constraints()) {
+        ABSL_RETURN_IF_ERROR(
+            shared_ctx_.xpress->SetIntControl(XPRS_MIPDUALREDUCTIONS, 0));
+      }
     }
     return absl::OkStatus();
   }
   /** Setup model specific parameters. */
-  absl::Status ApplyParameters(const SolveParametersProto& parameters,
-                               MessageCallback message_callback,
-                               std::string* export_model, bool* force_postsolve,
-                               bool* stop_after_lp) {
+  absl::Status ApplyParameters(
+      const SolveParametersProto& parameters,
+      SolverInterface::MessageCallback message_callback,
+      std::string* export_model, bool* force_postsolve, bool* stop_after_lp) {
     std::vector<std::string> warnings;
-    ASSIGN_OR_RETURN(bool const isMIP, shared_ctx.xpress->IsMIP());
+    ABSL_ASSIGN_OR_RETURN(bool const isMIP, shared_ctx_.xpress->IsMIP());
     if (parameters.enable_output()) {
       // This is considered only if no message callback is set, see the
       // ortools specification of the enable_output parameter.
       if (!message_callback) {
-        RETURN_IF_ERROR(
-            messageCallback.Add(&shared_ctx, stdoutMessageCallback));
+        ABSL_RETURN_IF_ERROR(
+            message_callback_.Add(&shared_ctx_, stdoutMessageCallback));
       }
     }
     absl::Duration time_limit = absl::InfiniteDuration();
     if (parameters.has_time_limit()) {
-      ASSIGN_OR_RETURN(
+      ABSL_ASSIGN_OR_RETURN(
           time_limit, util_time::DecodeGoogleApiProto(parameters.time_limit()));
     }
     if (time_limit < absl::InfiniteDuration()) {
-      RETURN_IF_ERROR(Set(XPRS_TIMELIMIT, absl::ToDoubleSeconds(time_limit)));
+      ABSL_RETURN_IF_ERROR(
+          Set(XPRS_TIMELIMIT, absl::ToDoubleSeconds(time_limit)));
     }
     if (parameters.has_iteration_limit()) {
       if (parameters.lp_algorithm() == LP_ALGORITHM_FIRST_ORDER) {
         // Iteration limit for PDHG is BARHGMAXRESTARTS
-        RETURN_IF_ERROR(
+        ABSL_RETURN_IF_ERROR(
             Set(XPRS_BARHGMAXRESTARTS, parameters.iteration_limit()));
       } else {
-        RETURN_IF_ERROR(Set(XPRS_LPITERLIMIT, parameters.iteration_limit()));
-        RETURN_IF_ERROR(Set(XPRS_BARITERLIMIT, parameters.iteration_limit()));
+        ABSL_RETURN_IF_ERROR(
+            Set(XPRS_LPITERLIMIT, parameters.iteration_limit()));
+        ABSL_RETURN_IF_ERROR(
+            Set(XPRS_BARITERLIMIT, parameters.iteration_limit()));
       }
     }
     if (parameters.has_node_limit()) {
-      RETURN_IF_ERROR(Set(XPRS_MAXNODE, parameters.node_limit()));
+      ABSL_RETURN_IF_ERROR(Set(XPRS_MAXNODE, parameters.node_limit()));
     }
     if (parameters.has_cutoff_limit()) {
-      RETURN_IF_ERROR(Set(XPRS_MIPABSCUTOFF, parameters.cutoff_limit()));
+      ABSL_RETURN_IF_ERROR(Set(XPRS_MIPABSCUTOFF, parameters.cutoff_limit()));
     }
     if (parameters.has_objective_limit()) {
       // In Xpress you can apply MIPABSCUTOFF also to LPs.
@@ -399,18 +1348,18 @@ class ScopedSolverContext {
       warnings.emplace_back("XpressSolver does not support best_bound_limit");
     }
     if (parameters.has_solution_limit()) {
-      RETURN_IF_ERROR(Set(XPRS_MAXMIPSOL, parameters.solution_limit()));
+      ABSL_RETURN_IF_ERROR(Set(XPRS_MAXMIPSOL, parameters.solution_limit()));
     }
     if (parameters.has_threads() && parameters.threads() > 0)
-      RETURN_IF_ERROR(Set(XPRS_THREADS, parameters.threads()));
+      ABSL_RETURN_IF_ERROR(Set(XPRS_THREADS, parameters.threads()));
     if (parameters.has_random_seed()) {
-      RETURN_IF_ERROR(Set(XPRS_RANDOMSEED, parameters.random_seed()));
+      ABSL_RETURN_IF_ERROR(Set(XPRS_RANDOMSEED, parameters.random_seed()));
     }
     if (parameters.has_absolute_gap_tolerance())
-      RETURN_IF_ERROR(
+      ABSL_RETURN_IF_ERROR(
           Set(XPRS_MIPABSSTOP, parameters.absolute_gap_tolerance()));
     if (parameters.has_relative_gap_tolerance())
-      RETURN_IF_ERROR(
+      ABSL_RETURN_IF_ERROR(
           Set(XPRS_MIPRELSTOP, parameters.relative_gap_tolerance()));
     if (parameters.has_solution_pool_size()) {
       warnings.emplace_back("XpressSolver does not support solution_pool_size");
@@ -419,20 +1368,24 @@ class ScopedSolverContext {
     if (!isMIP && parameters.lp_algorithm() != LP_ALGORITHM_UNSPECIFIED) {
       switch (parameters.lp_algorithm()) {
         case LP_ALGORITHM_PRIMAL_SIMPLEX:
-          RETURN_IF_ERROR(Set(XPRS_LPFLAGS, 1 << 1));
+          ABSL_RETURN_IF_ERROR(Set(XPRS_LPFLAGS, 1 << 1));
           break;
         case LP_ALGORITHM_DUAL_SIMPLEX:
-          RETURN_IF_ERROR(Set(XPRS_LPFLAGS, 1 << 0));
+          ABSL_RETURN_IF_ERROR(Set(XPRS_LPFLAGS, 1 << 0));
           break;
         case LP_ALGORITHM_BARRIER:
-          RETURN_IF_ERROR(Set(XPRS_LPFLAGS, 1 << 2));
+          ABSL_RETURN_IF_ERROR(Set(XPRS_LPFLAGS, 1 << 2));
           break;
         case LP_ALGORITHM_FIRST_ORDER:
-          RETURN_IF_ERROR(Set(XPRS_LPFLAGS, 1 << 2));
-          RETURN_IF_ERROR(Set(XPRS_BARALG, 4));
+          ABSL_RETURN_IF_ERROR(Set(XPRS_LPFLAGS, 1 << 2));
+          ABSL_RETURN_IF_ERROR(Set(XPRS_BARALG, 4));
           break;
           // Note: Xpress also supports network simplex, but that is not
           //       supported by ortools.
+        default:
+          LOG(FATAL) << "LPAlgorithm: "
+                     << LPAlgorithmProto_Name(parameters.lp_algorithm())
+                     << " unknown, error setting Xpress parameters";
       }
     }
     if (parameters.presolve() != EMPHASIS_UNSPECIFIED) {
@@ -440,7 +1393,7 @@ class ScopedSolverContext {
       int presolvePasses = -1;
       switch (parameters.presolve()) {
         case EMPHASIS_OFF:
-          RETURN_IF_ERROR(Set(XPRS_PRESOLVE, 0));  // Turn presolve off
+          ABSL_RETURN_IF_ERROR(Set(XPRS_PRESOLVE, 0));  // Turn presolve off
           break;
         case EMPHASIS_LOW:
           presolvePasses = 2;
@@ -454,44 +1407,56 @@ class ScopedSolverContext {
         case EMPHASIS_VERY_HIGH:
           presolvePasses = 5;
           break;
+        default:
+          LOG(FATAL) << "Presolve emphasis: "
+                     << EmphasisProto_Name(parameters.presolve())
+                     << " unknown, error setting Xpress parameters";
       }
       if (presolvePasses > 0)
-        RETURN_IF_ERROR(Set(XPRS_PRESOLVEPASSES, presolvePasses));
+        ABSL_RETURN_IF_ERROR(Set(XPRS_PRESOLVEPASSES, presolvePasses));
     }
     if (parameters.cuts() != EMPHASIS_UNSPECIFIED) {
       switch (parameters.cuts()) {
         case EMPHASIS_OFF:
-          RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 0));
+          ABSL_RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 0));
           break;
         case EMPHASIS_LOW:
-          RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 1));
+          ABSL_RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 1));
           break;
         case EMPHASIS_MEDIUM:
-          RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 2));
+          ABSL_RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 2));
           break;
         case EMPHASIS_HIGH:
-          RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 3));
+          ABSL_RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 3));
           break;
         case EMPHASIS_VERY_HIGH:
-          RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 3));  // Same as high
+          ABSL_RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 3));  // Same as high
           break;
+        default:
+          LOG(FATAL) << "Cuts emphasis: "
+                     << EmphasisProto_Name(parameters.cuts())
+                     << " unknown, error setting Xpress parameters";
       }
     }
     if (parameters.heuristics() != EMPHASIS_UNSPECIFIED) {
       switch (parameters.heuristics()) {
         case EMPHASIS_OFF:
-          RETURN_IF_ERROR(Set(XPRS_HEUREMPHASIS, 0));
+          ABSL_RETURN_IF_ERROR(Set(XPRS_HEUREMPHASIS, 0));
           break;
         case EMPHASIS_UNSPECIFIED:
           break;
         case EMPHASIS_LOW:  // fallthrough
         case EMPHASIS_MEDIUM:
-          RETURN_IF_ERROR(Set(XPRS_HEUREMPHASIS, 1));
+          ABSL_RETURN_IF_ERROR(Set(XPRS_HEUREMPHASIS, 1));
           break;
         case EMPHASIS_HIGH:  // fallthrough
         case EMPHASIS_VERY_HIGH:
-          RETURN_IF_ERROR(Set(XPRS_HEUREMPHASIS, 2));
+          ABSL_RETURN_IF_ERROR(Set(XPRS_HEUREMPHASIS, 2));
           break;
+        default:
+          LOG(FATAL) << "Heuristics emphasis: "
+                     << EmphasisProto_Name(parameters.heuristics())
+                     << " unknown, error setting Xpress parameters";
       }
     }
 
@@ -508,47 +1473,46 @@ class ScopedSolverContext {
         continue;
       } else if (name == "FORCE_POSTSOLVE") {
         if (!absl::SimpleAtoi(value, &l))
-          return util::InvalidArgumentErrorBuilder()
+          return ortools::InvalidArgumentErrorBuilder()
                  << "value " << value << " for FORCE_POSTSOLVE"
                  << " is not an integer";
         if (force_postsolve) *force_postsolve = l != 0;
         continue;
       } else if (name == "STOP_AFTER_LP") {
         if (!absl::SimpleAtoi(value, &l))
-          return util::InvalidArgumentErrorBuilder()
+          return ortools::InvalidArgumentErrorBuilder()
                  << "value " << value << " for STOP_AFTER_LP"
                  << " is not an integer";
         if (stop_after_lp) *stop_after_lp = l != 0;
         continue;
       }
-      RETURN_IF_ERROR(
-          shared_ctx.xpress->GetControlInfo(name.c_str(), &id, &type));
+      ABSL_RETURN_IF_ERROR(
+          shared_ctx_.xpress->GetControlInfo(name.c_str(), &id, &type));
       switch (type) {
         case XPRS_TYPE_INT:  // fallthrough
         case XPRS_TYPE_INT64:
           if (!absl::SimpleAtoi(value, &l))
-            return util::InvalidArgumentErrorBuilder()
+            return ortools::InvalidArgumentErrorBuilder()
                    << "value " << value << " for " << name
                    << " is not an integer";
-          if (type == XPRS_TYPE_INT && (l > std::numeric_limits<int>::max() ||
-                                        l < std::numeric_limits<int>::min()))
-            return util::InvalidArgumentErrorBuilder()
+          if (type == XPRS_TYPE_INT && (l > kint32max || l < kint32min))
+            return ortools::InvalidArgumentErrorBuilder()
                    << "value " << value << " for " << name
                    << " is out of range";
-          RETURN_IF_ERROR(Set(id, l));
+          ABSL_RETURN_IF_ERROR(Set(id, l));
           break;
         case XPRS_TYPE_DOUBLE:
           if (!absl::SimpleAtod(value, &d))
-            return util::InvalidArgumentErrorBuilder()
+            return ortools::InvalidArgumentErrorBuilder()
                    << "value " << value << " for " << name
                    << " is not a floating pointer number";
-          RETURN_IF_ERROR(Set(id, d));
+          ABSL_RETURN_IF_ERROR(Set(id, d));
           break;
         case XPRS_TYPE_STRING:
-          RETURN_IF_ERROR(Set(id, value));
+          ABSL_RETURN_IF_ERROR(Set(id, value));
           break;
         default:
-          return util::InvalidArgumentErrorBuilder()
+          return ortools::InvalidArgumentErrorBuilder()
                  << "bad control type for " << name;
       }
     }
@@ -569,37 +1533,40 @@ class ScopedSolverContext {
       absl::linked_hash_map<XpressSolver::AuxiliaryObjectiveId,
                             XpressSolver::XpressMultiObjectiveIndex> const&
           objectives_map) {
-    ASSIGN_OR_RETURN(int const cols,
-                     shared_ctx.xpress->GetIntAttr(XPRS_ORIGINALCOLS));
-    ASSIGN_OR_RETURN(int const rows,
-                     shared_ctx.xpress->GetIntAttr(XPRS_ORIGINALROWS));
+    ABSL_ASSIGN_OR_RETURN(int const cols,
+                          shared_ctx_.xpress->GetIntAttr(XPRS_ORIGINALCOLS));
+    ABSL_ASSIGN_OR_RETURN(int const rows,
+                          shared_ctx_.xpress->GetIntAttr(XPRS_ORIGINALROWS));
+    int majorVersion = -1;
+    ABSL_RETURN_IF_ERROR(
+        Xpress::GetVersionNumbers(&majorVersion, nullptr, nullptr));
+
     // Set initial basis
     if (model_parameters.has_initial_basis()) {
       // XPRSloadbasis() will raise an error if called on a model in presolved
       // state. We still trap this already here so that we can produce a more
       // meaningful error message.
-      ASSIGN_OR_RETURN(int const state,
-                       shared_ctx.xpress->GetIntAttr(XPRS_PRESOLVESTATE));
+      ABSL_ASSIGN_OR_RETURN(int const state,
+                            shared_ctx_.xpress->GetIntAttr(XPRS_PRESOLVESTATE));
       if (state & ((1 << 1) | (1 << 2))) {
-        return util::InvalidArgumentErrorBuilder()
+        return ortools::InvalidArgumentErrorBuilder()
                << "cannot set basis for model in presolved space (consider "
                   "FORCE_POSTSOLVE?)";
       }
       auto const& basis = model_parameters.initial_basis();
       std::vector<int> xpress_var_basis_status(cols);
       for (const auto [id, value] : MakeView(basis.variable_status())) {
-        xpress_var_basis_status[variables_map.at(id)] =
+        xpress_var_basis_status[or2xprs(variables_map, id)] =
             MathOptToXpressBasisStatus(static_cast<BasisStatusProto>(value),
                                        false);
       }
       std::vector<int> xpress_constr_basis_status(rows);
       for (const auto [id, value] : MakeView(basis.constraint_status())) {
-        xpress_constr_basis_status[linear_constraints_map.at(id)
-                                       .constraint_index] =
+        xpress_constr_basis_status[or2xprs(linear_constraints_map, id)] =
             MathOptToXpressBasisStatus(static_cast<BasisStatusProto>(value),
                                        true);
       }
-      RETURN_IF_ERROR(shared_ctx.xpress->SetStartingBasis(
+      ABSL_RETURN_IF_ERROR(shared_ctx_.xpress->SetStartingBasis(
           xpress_constr_basis_status, xpress_var_basis_status));
     }
     std::vector<int> colind;
@@ -616,14 +1583,14 @@ class ScopedSolverContext {
         colind.clear();
         mipStart.clear();
         for (const auto [id, value] : MakeView(hint.variable_values())) {
-          colind.push_back(variables_map.at(id));
+          colind.push_back(or2xprs(variables_map, id));
           mipStart.push_back(value);
         }
         if (mipStart.size() > cols)
-          return util::InvalidArgumentErrorBuilder()
+          return ortools::InvalidArgumentErrorBuilder()
                  << "more solution hints than columns";
         // XPRSaddmipsol() expects a solution in the original space
-        RETURN_IF_ERROR(shared_ctx.xpress->AddMIPSol(
+        ABSL_RETURN_IF_ERROR(shared_ctx_.xpress->AddMIPSol(
             mipStart, colind, absl::StrCat("SolutionHint", cnt).c_str()));
         ++cnt;
       }
@@ -631,24 +1598,43 @@ class ScopedSolverContext {
 
     // Install branching priorities.
     if (model_parameters.has_branching_priorities()) {
+      // XPRSloaddirs() will raise an error if called on a model in presolved
+      // state. We still trap this already here because otherwise dimensions
+      // do not match and we may produce an out-of-bounds write while setting
+      // up the function arguments.
+      ABSL_ASSIGN_OR_RETURN(int const state,
+                            shared_ctx_.xpress->GetIntAttr(XPRS_PRESOLVESTATE));
+      if (state & ((1 << 1) | (1 << 2))) {
+        return ortools::InvalidArgumentErrorBuilder()
+               << "cannot set branching priorities for model in presolved "
+                  "space (consider "
+                  "FORCE_POSTSOLVE?)";
+      }
+      // Things to observe here:
+      // - Xpress only allows priorities in [0,1000].
+      // - In ortools higher priority takes precedence while in Xpress
+      //   lower priority takes precedence.
+      // - The specification of `branching_priorities` explicitly requires
+      //   that variables not in `branching_priorities` are set to default
+      //   priority. So we must set priorities for _all_ columns to satisfy
+      //   this, especially for incremental/repeated solves.
       auto const& prios = model_parameters.branching_priorities();
       colind.clear();
-      colind.reserve(prios.ids_size());
-      std::vector<int> priority;
+      if (colind.capacity() < cols) colind.reserve(cols);
+      for (int j = 0; j < cols; ++j) colind.push_back(j);
+      std::vector<int> priority(cols, 1000);
       priority.reserve(prios.ids_size());
       for (const auto [id, prio] : MakeView(prios)) {
-        colind.push_back(variables_map.at(id));
-        // Xpress only allows priorities in [0,1000].
-        // In ortools higher priority takes precedence while in Xpress
-        // lower priority takes precedence.
         if (prio < 0 || prio > 1000)
-          return util::InvalidArgumentErrorBuilder()
+          return ortools::InvalidArgumentErrorBuilder()
                  << "Xpress only allows branching priorities in [0,1000]";
-        priority.push_back(
-            1000 - prio);  // Smaller prios have higher precedence in Xpress!
+        int j = or2xprs(variables_map, id);
+        CHECK_LT(j, cols);
+        priority[j] =
+            1000 - prio;  // Smaller prios have higher precedence in Xpress!
       }
 
-      RETURN_IF_ERROR(shared_ctx.xpress->LoadDirs(
+      ABSL_RETURN_IF_ERROR(shared_ctx_.xpress->LoadDirs(
           absl::MakeSpan(colind), absl::MakeSpan(priority), std::nullopt,
           std::nullopt, std::nullopt));
     }
@@ -660,44 +1646,71 @@ class ScopedSolverContext {
       // multi-objective models. We just set them blindly here. They don't
       // hurt for a single-objective model.
       if (p.has_objective_degradation_absolute_tolerance()) {
-        RETURN_IF_ERROR(shared_ctx.xpress->SetObjectiveDoubleControl(
+        ABSL_RETURN_IF_ERROR(shared_ctx_.xpress->SetObjectiveDoubleControl(
             0, XPRS_OBJECTIVE_ABSTOL,
             p.objective_degradation_absolute_tolerance()));
       }
       if (p.has_objective_degradation_relative_tolerance()) {
-        RETURN_IF_ERROR(shared_ctx.xpress->SetObjectiveDoubleControl(
+        ABSL_RETURN_IF_ERROR(shared_ctx_.xpress->SetObjectiveDoubleControl(
             0, XPRS_OBJECTIVE_RELTOL,
             p.objective_degradation_relative_tolerance()));
       }
       if (p.has_time_limit()) {
-        // We support a time limit but only if there is one single objective.
-        if (objectives_map.size() > 0) {
-          return util::InvalidArgumentErrorBuilder()
-                 << "Xpress does not support per-objective time limits";
+        ABSL_ASSIGN_OR_RETURN(auto l,
+                              util_time::DecodeGoogleApiProto(p.time_limit()));
+        double const newTimeLimit = absl::ToDoubleSeconds(l);
+        if (objectives_map.empty()) {
+          // Single objective. Add this as global time limit, but only if it is
+          // tighter than any time limit that we might have already installed
+          // (via global time limit parameter).
+          ABSL_ASSIGN_OR_RETURN(
+              auto globalTimeLimit,
+              shared_ctx_.xpress->GetDblControl(XPRS_TIMELIMIT));
+          double newTimeLimit = absl::ToDoubleSeconds(l);
+          if (newTimeLimit < globalTimeLimit) {
+            ABSL_RETURN_IF_ERROR(shared_ctx_.xpress->SetDblControl(
+                XPRS_TIMELIMIT, newTimeLimit));
+          }
+        } else {
+          // Before Xpress 9.9 (optimizer version 47) we support a per objective
+          // time limit only if there is one single objective.
+          if (majorVersion < 47) {
+            return ortools::InvalidArgumentErrorBuilder()
+                   << "Xpress does not support per-objective time limits "
+                      "before version 9.9 (optimizer version 47)";
+          }
+          ABSL_RETURN_IF_ERROR(shared_ctx_.xpress->SetObjectiveDoubleControl(
+              0, XPRS_TIMELIMIT, newTimeLimit));
         }
-        ASSIGN_OR_RETURN(auto l,
-                         util_time::DecodeGoogleApiProto(p.time_limit()));
-
-        RETURN_IF_ERROR(shared_ctx.xpress->SetDblControl(
-            XPRS_TIMELIMIT, absl::ToDoubleSeconds(l)));
       }
     }
     // Objective parameters: auxiliary objectives
     for (auto const& [id, p] :
          model_parameters.auxiliary_objective_parameters()) {
       if (p.has_objective_degradation_absolute_tolerance()) {
-        RETURN_IF_ERROR(shared_ctx.xpress->SetObjectiveDoubleControl(
-            objectives_map.at(id), XPRS_OBJECTIVE_ABSTOL,
+        ABSL_RETURN_IF_ERROR(shared_ctx_.xpress->SetObjectiveDoubleControl(
+            or2xprs(objectives_map, id), XPRS_OBJECTIVE_ABSTOL,
             p.objective_degradation_absolute_tolerance()));
       }
       if (p.has_objective_degradation_relative_tolerance()) {
-        RETURN_IF_ERROR(shared_ctx.xpress->SetObjectiveDoubleControl(
-            objectives_map.at(id), XPRS_OBJECTIVE_RELTOL,
+        ABSL_RETURN_IF_ERROR(shared_ctx_.xpress->SetObjectiveDoubleControl(
+            or2xprs(objectives_map, id), XPRS_OBJECTIVE_RELTOL,
             p.objective_degradation_relative_tolerance()));
       }
       if (p.has_time_limit()) {
-        return util::InvalidArgumentErrorBuilder()
-               << "Xpress does not support per-objective time limits";
+        // Per-objective time limits are supported since Xpress 9.9
+        // (optimizer version 47)
+        if (majorVersion < 47) {
+          return ortools::InvalidArgumentErrorBuilder()
+                 << "Xpress does not support per-objective time limits before "
+                    "version 9.9 (optimizer version 47)";
+        } else {
+          ABSL_ASSIGN_OR_RETURN(
+              auto l, util_time::DecodeGoogleApiProto(p.time_limit()));
+          ABSL_RETURN_IF_ERROR(shared_ctx_.xpress->SetObjectiveDoubleControl(
+              or2xprs(objectives_map, id), XPRS_TIMELIMIT,
+              absl::ToDoubleSeconds(l)));
+        }
       }
     }
 
@@ -705,50 +1718,46 @@ class ScopedSolverContext {
       std::vector<int> delayedRows;
       delayedRows.reserve(rows);
       for (auto const& idx : model_parameters.lazy_linear_constraint_ids()) {
-        delayedRows.push_back(linear_constraints_map.at(idx).constraint_index);
+        delayedRows.push_back(or2xprs(linear_constraints_map, idx));
       }
       if (delayedRows.size() > rows)
-        return util::InvalidArgumentErrorBuilder()
+        return ortools::InvalidArgumentErrorBuilder()
                << "more lazy constraints than rows";
 
-      RETURN_IF_ERROR(shared_ctx.xpress->LoadDelayedRows(delayedRows));
+      ABSL_RETURN_IF_ERROR(shared_ctx_.xpress->LoadDelayedRows(delayedRows));
     }
 
     return absl::OkStatus();
   }
   /** Interrupt the current solve with the given reason. */
-  void Interrupt(int reason) { CHECK_OK(shared_ctx.xpress->Interrupt(reason)); }
+  void Interrupt(int reason) {
+    CHECK_OK(shared_ctx_.xpress->Interrupt(reason));
+  }
 
-  void ReraiseException() {
-    if (shared_ctx.callbackException) {
-      std::exception_ptr ex = shared_ctx.callbackException;
-      shared_ctx.callbackException = nullptr;
-      std::rethrow_exception(ex);
-    }
+  absl::Status HandleCallbackProblems() {
+    return shared_ctx_.HandleCallbackProblems();
   }
 
   ~ScopedSolverContext() {
-    for (auto it = modifiedControls.rbegin(); it != modifiedControls.rend();
+    for (auto it = modified_controls_.rbegin(); it != modified_controls_.rend();
          ++it) {
       switch (it->value.index()) {
         case OneControl::INT_CONTROL:
-          CHECK_OK(shared_ctx.xpress->SetIntControl64(
+          CHECK_OK(shared_ctx_.xpress->SetIntControl64(
               it->id, std::get<int64_t>(it->value)));
           break;
         case OneControl::DBL_CONTROL:
-          CHECK_OK(shared_ctx.xpress->SetDblControl(
+          CHECK_OK(shared_ctx_.xpress->SetDblControl(
               it->id, std::get<double>(it->value)));
           break;
         case OneControl::STR_CONTROL:
-          CHECK_OK(shared_ctx.xpress->SetStrControl(
-              it->id, std::get<std::string>(it->value).c_str()));
+          CHECK_OK(shared_ctx_.xpress->SetStrControl(
+              it->id, std::get<std::string>(it->value)));
           break;
       }
     }
-    if (removeInterrupterCallback) removeInterrupterCallback();
-    // If pending callback exception was not reraised yet then do it now
-    if (shared_ctx.callbackException)
-      std::rethrow_exception(shared_ctx.callbackException);
+    // If pending callback exception was not reraised yet then do it now.
+    CHECK_OK(shared_ctx_.HandleCallbackProblems());
   }
 };
 
@@ -777,7 +1786,7 @@ absl::StatusOr<std::optional<XpressSolver::VarId>> ExtractSingleton(
       case SingletonType::SOS:
         // A non-zero coefficient does not change anything, so is allowed.
         if (coef == 0.0) {
-          return util::InvalidArgumentErrorBuilder()
+          return ortools::InvalidArgumentErrorBuilder()
                  << "Xpress does not support coefficient " << coef
                  << " in SOS (consider using auxiliary variables?)";
         }
@@ -787,7 +1796,7 @@ absl::StatusOr<std::optional<XpressSolver::VarId>> ExtractSingleton(
         // We are going to square the coefficient, so anything non-negative
         // is allowed.
         if (coef < 0) {
-          return util::InvalidArgumentErrorBuilder()
+          return ortools::InvalidArgumentErrorBuilder()
                  << "Xpress does not support coefficient " << coef
                  << " in a second order cone constraint "
                  << (type == SingletonType::SOCBound ? "bound" : "norm")
@@ -804,13 +1813,13 @@ absl::StatusOr<std::optional<XpressSolver::VarId>> ExtractSingleton(
         // Any non-zero constant would force all other variables to 0.
         // Any zero constant would be redundant.
         // Both are edge cases that we do not support at the moment.
-        return util::InvalidArgumentErrorBuilder()
+        return ortools::InvalidArgumentErrorBuilder()
                << "Xpress does not support constant expressions in SOS "
                   "(consider using auxiliary variables?)";
       case SingletonType::SOCBound:
         // We are going to square the bound, so it should not be negative.
         if (constant < 0.0) {
-          return util::InvalidArgumentErrorBuilder()
+          return ortools::InvalidArgumentErrorBuilder()
                  << "Xpress does not support constant " << constant
                  << " in a second order cone constraint bound (consider using "
                     "auxiliary variables?)";
@@ -819,7 +1828,7 @@ absl::StatusOr<std::optional<XpressSolver::VarId>> ExtractSingleton(
       case SingletonType::SOCNorm:
         // Constant entries in the norm are not supported (we would have to
         // move them to the right-hand side).
-        return util::InvalidArgumentErrorBuilder()
+        return ortools::InvalidArgumentErrorBuilder()
                << "Xpress does not support constants in a second order cone "
                   "constraint norm (consider using auxiliary variables?)";
     }
@@ -830,7 +1839,7 @@ absl::StatusOr<std::optional<XpressSolver::VarId>> ExtractSingleton(
     static char const* const name[] = {"SOS",
                                        "second order cone constraint bound",
                                        "second order cone constraint norm"};
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "Xpress does not support general linear expressions in "
            << name[static_cast<int>(type)]
            << " (consider using auxiliary variables?)";
@@ -851,7 +1860,7 @@ struct NameResolver {
 template <typename K, typename V>
 struct NameResolver<google::protobuf::Map<K, V>> {
   static std::string const& GetName(
-      google::protobuf::Map<K, V> const& container,
+      google::protobuf::Map<K, V> const& /*container*/,
       typename google::protobuf::Map<K, V>::const_iterator const& i) {
     return i->second.name();
   }
@@ -866,22 +1875,34 @@ absl::Status AddNames(Xpress* xpress, int type, int offset, I begin, I end,
                       T const& container) {
   std::vector<char> buffer;
   int i = 0, start = 0;
+  bool allempty = true;
   while (begin != end) {
+    // Elements may have no names but there is no way for us to detect
+    // this. If no name is specified for an element then its name is set
+    // to "". This cannot be distinguished from the case in which one
+    // element explicitly has name "" and other elements have other names.
+    // Xpress will raise an error if two elements of the same type have the
+    // same name, in particular if all have an empty name. So we add some
+    // heuristic via allempty to detect the case in which none of them have
+    // names. This occurs for example in tests.
     std::string const& name = NameResolver<T>::GetName(container, begin);
     char const* c_name = name.c_str();
+    if (*c_name) allempty = false;
     buffer.insert(buffer.end(), c_name, c_name + name.size() + 1);
     // Add names in chunks of 1MB.
     if (buffer.size() > 1024 * 1024) {
-      RETURN_IF_ERROR(
-          xpress->AddNames(type, buffer, offset + start, offset + i));
+      if (!allempty) {
+        ABSL_RETURN_IF_ERROR(
+            xpress->AddNames(type, buffer, offset + start, offset + i));
+      }
       start = i + 1;
       buffer.clear();
     }
     ++i;
     ++begin;
   }
-  if (buffer.size()) {
-    RETURN_IF_ERROR(
+  if (!allempty && !buffer.empty()) {
+    ABSL_RETURN_IF_ERROR(
         xpress->AddNames(type, buffer, offset + start, offset + i - 1));
   }
   return absl::OkStatus();
@@ -908,34 +1929,33 @@ constexpr SupportedProblemStructures kXpressSupportedStructures = {
     .indicator_constraints = SupportType::kSupported};
 
 absl::StatusOr<std::unique_ptr<XpressSolver>> XpressSolver::New(
-    const ModelProto& model, const InitArgs& init_args) {
+    const ModelProto& model, const InitArgs& /*init_args*/) {
   if (!XpressIsCorrectlyInstalled()) {
     return absl::InvalidArgumentError("Xpress is not correctly installed.");
   }
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ModelIsSupported(model, kXpressSupportedStructures, "XPRESS"));
 
   // We can add here extra checks that are not made in ModelIsSupported
   // (for example, if XPRESS does not support multi-objective with quad terms)
 
-  ASSIGN_OR_RETURN(auto xpr, Xpress::New(model.name()));
-  bool extract_names = init_args.streamable.has_xpress() &&
-                       init_args.streamable.xpress().has_extract_names() &&
-                       init_args.streamable.xpress().extract_names();
-  auto xpress_solver =
-      absl::WrapUnique(new XpressSolver(std::move(xpr), extract_names));
-  RETURN_IF_ERROR(xpress_solver->LoadModel(model));
+  ABSL_ASSIGN_OR_RETURN(auto xpr, Xpress::New(model.name()));
+  auto xpress_solver = absl::WrapUnique(new XpressSolver(std::move(xpr)));
+  ABSL_RETURN_IF_ERROR(xpress_solver->LoadModel(model));
   return xpress_solver;
 }
 
 absl::Status XpressSolver::LoadModel(const ModelProto& input_model) {
   CHECK(xpress_ != nullptr);
-  RETURN_IF_ERROR(xpress_->SetProbName(input_model.name()));
-  RETURN_IF_ERROR(AddNewVariables(input_model.variables()));
-  RETURN_IF_ERROR(AddNewLinearConstraints(input_model.linear_constraints()));
-  RETURN_IF_ERROR(ChangeCoefficients(input_model.linear_constraint_matrix()));
-  RETURN_IF_ERROR(AddObjective(input_model.objective(), std::nullopt,
-                               !input_model.auxiliary_objectives().empty()));
+  ABSL_RETURN_IF_ERROR(xpress_->SetProbName(input_model.name()));
+  ABSL_RETURN_IF_ERROR(AddNewVariables(input_model.variables()));
+  ABSL_RETURN_IF_ERROR(
+      AddNewLinearConstraints(input_model.linear_constraints()));
+  ABSL_RETURN_IF_ERROR(
+      ChangeCoefficients(input_model.linear_constraint_matrix()));
+  ABSL_RETURN_IF_ERROR(
+      AddObjective(input_model.objective(), std::nullopt,
+                   !input_model.auxiliary_objectives().empty()));
   // Tests expect an error on duplicate priorities, so raise one.
   // Xpress would otherwise merge objectives with the same objective when it
   // starts solving.
@@ -944,28 +1964,29 @@ absl::Status XpressSolver::LoadModel(const ModelProto& input_model) {
   for (auto const& [id, obj] : input_model.auxiliary_objectives()) {
     auto const prio = obj.priority();
     if (!prios.insert(prio).second) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "repeated objective priority: " << prio;
     }
-    RETURN_IF_ERROR(AddObjective(obj, id, true));
+    ABSL_RETURN_IF_ERROR(AddObjective(obj, id, true));
   }
-  RETURN_IF_ERROR(AddSOS(input_model.sos1_constraints(), true));
-  RETURN_IF_ERROR(AddSOS(input_model.sos2_constraints(), false));
-  RETURN_IF_ERROR(AddIndicators(input_model.indicator_constraints()));
-  RETURN_IF_ERROR(AddQuadraticConstraints(input_model.quadratic_constraints()));
-  RETURN_IF_ERROR(AddSecondOrderConeConstraints(
+  ABSL_RETURN_IF_ERROR(AddSOS(input_model.sos1_constraints(), true));
+  ABSL_RETURN_IF_ERROR(AddSOS(input_model.sos2_constraints(), false));
+  ABSL_RETURN_IF_ERROR(AddIndicators(input_model.indicator_constraints()));
+  ABSL_RETURN_IF_ERROR(
+      AddQuadraticConstraints(input_model.quadratic_constraints()));
+  ABSL_RETURN_IF_ERROR(AddSecondOrderConeConstraints(
       input_model.second_order_cone_constraints()));
   return absl::OkStatus();
 }
 
 absl::Status XpressSolver::AddNewVariables(
     const VariablesProto& new_variables) {
-  ASSIGN_OR_RETURN(const int num_old_variables,
-                   xpress_->GetIntAttr(XPRS_ORIGINALCOLS));
+  ABSL_ASSIGN_OR_RETURN(const int num_old_variables,
+                        xpress_->GetIntAttr(XPRS_ORIGINALCOLS));
   const int num_new_variables = new_variables.lower_bounds().size();
   std::vector<char> variable_type(num_new_variables);
-  ASSIGN_OR_RETURN(int const n_variables,
-                   xpress_->GetIntAttr(XPRS_ORIGINALCOLS));
+  ABSL_ASSIGN_OR_RETURN(int const n_variables,
+                        xpress_->GetIntAttr(XPRS_ORIGINALCOLS));
   bool have_integers = false;
   // Indices (within this batch) of integer variables whose unrounded bounds
   // are non-empty but whose rounded integer bounds are empty. Xpress rounds
@@ -1016,17 +2037,17 @@ absl::Status XpressSolver::AddNewVariables(
                                      upper_bounds, variable_type));
   }
 
-  if (extract_names_) {
-    RETURN_IF_ERROR(AddNames(xpress_.get(), XPRS_NAMES_COLUMN,
-                             num_old_variables, 0, num_new_variables,
-                             new_variables));
+  if (new_variables.names_size() > 0) {
+    ABSL_RETURN_IF_ERROR(AddNames(xpress_.get(), XPRS_NAMES_COLUMN,
+                                  num_old_variables, 0, num_new_variables,
+                                  new_variables));
   }
 
   return absl::OkStatus();
 }
 
-XpressSolver::XpressSolver(std::unique_ptr<Xpress> g_xpress, bool extract_names)
-    : xpress_(std::move(g_xpress)), extract_names_(extract_names) {}
+XpressSolver::XpressSolver(std::unique_ptr<Xpress> g_xpress)
+    : xpress_(std::move(g_xpress)) {}
 
 void XpressSolver::ExtractBounds(double lb, double ub, char& sense, double& rhs,
                                  double& rng) {
@@ -1065,8 +2086,8 @@ void XpressSolver::ExtractBounds(double lb, double ub, char& sense, double& rhs,
 absl::Status XpressSolver::AddNewLinearConstraints(
     const LinearConstraintsProto& constraints) {
   // TODO: we might be able to improve performance by setting coefs also
-  ASSIGN_OR_RETURN(int const num_old_constraints,
-                   xpress_->GetIntAttr(XPRS_ORIGINALROWS));
+  ABSL_ASSIGN_OR_RETURN(int const num_old_constraints,
+                        xpress_->GetIntAttr(XPRS_ORIGINALROWS));
   const int num_new_constraints = constraints.lower_bounds().size();
   std::vector<char> constraint_sense;
   constraint_sense.reserve(num_new_constraints);
@@ -1074,7 +2095,8 @@ absl::Status XpressSolver::AddNewLinearConstraints(
   constraint_rhs.reserve(num_new_constraints);
   std::vector<double> constraint_rng;
   constraint_rng.reserve(num_new_constraints);
-  ASSIGN_OR_RETURN(int n_constraints, xpress_->GetIntAttr(XPRS_ORIGINALROWS));
+  ABSL_ASSIGN_OR_RETURN(int n_constraints,
+                        xpress_->GetIntAttr(XPRS_ORIGINALROWS));
   for (int i = 0; i < num_new_constraints; ++i) {
     const int64_t id = constraints.ids(i);
     LinearConstraintData& constraint_data =
@@ -1092,11 +2114,12 @@ absl::Status XpressSolver::AddNewLinearConstraints(
     constraint_rng.emplace_back(rng);
   }
   // Add all constraints in one call.
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       xpress_->AddConstrs(constraint_sense, constraint_rhs, constraint_rng));
-  if (extract_names_) {
-    RETURN_IF_ERROR(AddNames(xpress_.get(), XPRS_NAMES_ROW, num_old_constraints,
-                             0, num_new_constraints, constraints));
+  if (constraints.names_size() > 0) {
+    ABSL_RETURN_IF_ERROR(AddNames(xpress_.get(), XPRS_NAMES_ROW,
+                                  num_old_constraints, 0, num_new_constraints,
+                                  constraints));
   }
   return absl::OkStatus();
 }
@@ -1113,8 +2136,8 @@ absl::Status XpressSolver::AddObjective(
     // Moreover, in Xpress priorities are 32bit.
     // Note that ortools does not allow duplicate priorities, this is checked
     // by the caller.
-    if (objective.priority() <= INT_MIN || objective.priority() > INT_MAX) {
-      return util::InvalidArgumentErrorBuilder()
+    if (objective.priority() <= kint32min || objective.priority() > kint32max) {
+      return ortools::InvalidArgumentErrorBuilder()
              << "Xpress only supports 32bit signed integers as objective "
                 "priority, not "
              << objective.priority();
@@ -1124,18 +2147,18 @@ absl::Status XpressSolver::AddObjective(
   // Set/adjust objective sense.
   if (!multiobj) {
     // Not a multi-objective model
-    RETURN_IF_ERROR(xpress_->SetObjectiveSense(objective.maximize()));
-  } else if (!objective_id.has_value()) {
+    ABSL_RETURN_IF_ERROR(xpress_->SetObjectiveSense(objective.maximize()));
+  } else if (!haveId) {
     // First objective in multi-objective.
-    RETURN_IF_ERROR(xpress_->SetObjectiveSense(objective.maximize()));
+    ABSL_RETURN_IF_ERROR(xpress_->SetObjectiveSense(objective.maximize()));
     is_multiobj_ = true;
   } else {
     // Auxiliary objective in multi-objective. Xpress does not support
     // different objective senses for different objectives. So if the sense
     // does not match we set the weight to -1.0 to invert the objective
     // coefficients.
-    ASSIGN_OR_RETURN(double const objsen,
-                     xpress_->GetDoubleAttr(XPRS_OBJSENSE));
+    ABSL_ASSIGN_OR_RETURN(double const objsen,
+                          xpress_->GetDoubleAttr(XPRS_OBJSENSE));
     if (objective.maximize() != (objsen < 0.0)) {
       weight = -1.0;
     }
@@ -1146,8 +2169,8 @@ absl::Status XpressSolver::AddObjective(
   // Quadratic terms
   const int num_terms = objective.quadratic_coefficients().row_ids().size();
   if (num_terms > 0) {
-    if (multiobj && objective_id.has_value()) {
-      return util::InvalidArgumentErrorBuilder()
+    if (multiobj && haveId) {
+      return ortools::InvalidArgumentErrorBuilder()
              << "Xpress does not support quadratic terms in anything but the "
                 "first objective";
     }
@@ -1158,14 +2181,14 @@ absl::Status XpressSolver::AddObjective(
       const int64_t row_id = objective.quadratic_coefficients().row_ids(k);
       const int64_t column_id =
           objective.quadratic_coefficients().column_ids(k);
-      first_var_index[k] = variables_map_.at(row_id);
-      second_var_index[k] = variables_map_.at(column_id);
+      first_var_index[k] = or2xprs(variables_map_, row_id);
+      second_var_index[k] = or2xprs(variables_map_, column_id);
       // XPRESS supposes a 1/2 implicit multiplier to quadratic terms (see doc)
       // We have to multiply it by 2 for diagonal terms
       double m = first_var_index[k] == second_var_index[k] ? 2 : 1;
       coefficients[k] = objective.quadratic_coefficients().coefficients(k) * m;
     }
-    RETURN_IF_ERROR(xpress_->SetQuadraticObjective(
+    ABSL_RETURN_IF_ERROR(xpress_->SetQuadraticObjective(
         first_var_index, second_var_index, coefficients));
   }
 
@@ -1173,23 +2196,23 @@ absl::Status XpressSolver::AddObjective(
   std::vector<int> index;
   index.reserve(objective.linear_coefficients().ids_size());
   for (const int64_t id : objective.linear_coefficients().ids()) {
-    index.push_back(variables_map_.at(id));
+    index.push_back(or2xprs(variables_map_, id));
   }
 
   if (multiobj) {
-    if (!objective_id.has_value()) {
+    if (!haveId) {
       // Primary objective
-      RETURN_IF_ERROR(xpress_->SetLinearObjective(
+      ABSL_RETURN_IF_ERROR(xpress_->SetLinearObjective(
           objective.offset(), index, objective.linear_coefficients().values()));
-      RETURN_IF_ERROR(xpress_->SetObjectiveIntControl(
+      ABSL_RETURN_IF_ERROR(xpress_->SetObjectiveIntControl(
           0, XPRS_OBJECTIVE_PRIORITY,
           // checked above
           static_cast<int>(-objective.priority())));
-      RETURN_IF_ERROR(
+      ABSL_RETURN_IF_ERROR(
           xpress_->SetObjectiveDoubleControl(0, XPRS_OBJECTIVE_WEIGHT, weight));
     } else {
       // Auxiliary objective
-      ASSIGN_OR_RETURN(
+      ABSL_ASSIGN_OR_RETURN(
           int const newid,
           xpress_->AddObjective(
               objective.offset(), static_cast<int>(index.size()),
@@ -1199,7 +2222,7 @@ absl::Status XpressSolver::AddObjective(
       gtl::InsertOrDie(&objectives_map_, objective_id.value(), newid);
     }
   } else {
-    RETURN_IF_ERROR(xpress_->SetLinearObjective(
+    ABSL_RETURN_IF_ERROR(xpress_->SetLinearObjective(
         objective.offset(), index, objective.linear_coefficients().values()));
   }
 
@@ -1234,7 +2257,7 @@ absl::Status XpressSolver::AddSOS(
   std::vector<XPRSint64> start;
   std::vector<int> colind;
   std::vector<double> refval;
-  ASSIGN_OR_RETURN(int nextId, xpress_->GetIntAttr(XPRS_ORIGINALSETS));
+  ABSL_ASSIGN_OR_RETURN(int nextId, xpress_->GetIntAttr(XPRS_ORIGINALSETS));
   int const num_old_sets = nextId;
   auto* sosmap = sos1 ? &sos1_map_ : &sos2_map_;
   for (auto const& [sosId, sos] : sets) {
@@ -1246,20 +2269,20 @@ absl::Status XpressSolver::AddSOS(
       double const weight = has_weight ? sos.weights(i) : (i + 1);
       // Note: A constant value in an SOS forces all others to zero. At the
       //       moment we do not support this. We consider this an edge case.
-      ASSIGN_OR_RETURN(std::optional<VarId> x,
-                       ExtractSingleton(expr, SingletonType::SOS, nullptr));
-      colind.push_back(variables_map_.at(x.value()));
+      ABSL_ASSIGN_OR_RETURN(
+          std::optional<VarId> x,
+          ExtractSingleton(expr, SingletonType::SOS, nullptr));
+      colind.push_back(or2xprs(variables_map_, x.value()));
       refval.push_back(weight);
     }
     gtl::InsertOrDie(sosmap, sosId, nextId);
     ++nextId;
   }
   std::vector<char> settype(start.size(), sos1 ? '1' : '2');
-  RETURN_IF_ERROR(xpress_->AddSets(settype, start, colind, refval));
-  if (extract_names_) {
-    RETURN_IF_ERROR(AddNames(xpress_.get(), XPRS_NAMES_SET, num_old_sets,
-                             sets.begin(), sets.end(), sets));
-  }
+  ABSL_RETURN_IF_ERROR(xpress_->AddSets(settype, start, colind, refval));
+  // Note: SOS constraints always have names.
+  ABSL_RETURN_IF_ERROR(AddNames(xpress_.get(), XPRS_NAMES_SET, num_old_sets,
+                                sets.begin(), sets.end(), sets));
   return absl::OkStatus();
 }
 
@@ -1273,7 +2296,7 @@ void XpressSolver::ExtractLinear(SparseDoubleVectorProto const& expr,
   colind.reserve(colind.size() + terms);
   coef.reserve(coef.size() + terms);
   for (decltype(terms) i = 0; i < terms; ++i) {
-    colind.push_back(variables_map_.at(expr.ids(i)));
+    colind.push_back(or2xprs(variables_map_, expr.ids(i)));
     coef.push_back(expr.values(i));
   }
 }
@@ -1292,7 +2315,7 @@ void XpressSolver::ExtractQuadratic(QuadraticConstraintProto const& expr,
   lin_colind.reserve(lin_colind.size() + linTerms);
   lin_coef.reserve(lin_coef.size() + linTerms);
   for (decltype(linTerms) i = 0; i < linTerms; ++i) {
-    lin_colind.push_back(variables_map_.at(lin.ids(i)));
+    lin_colind.push_back(or2xprs(variables_map_, lin.ids(i)));
     lin_coef.push_back(lin.values(i));
   }
   auto const& quad = expr.quadratic_terms();
@@ -1301,8 +2324,8 @@ void XpressSolver::ExtractQuadratic(QuadraticConstraintProto const& expr,
   quad_col2.reserve(quad_col2.size() + quadTerms);
   quad_coef.reserve(quad_coef.size() + quadTerms);
   for (decltype(quadTerms) i = 0; i < quadTerms; ++i) {
-    int const col1 = variables_map_.at(quad.row_ids(i));
-    int const col2 = variables_map_.at(quad.column_ids(i));
+    int const col1 = or2xprs(variables_map_, quad.row_ids(i));
+    int const col2 = or2xprs(variables_map_, quad.column_ids(i));
     double coef = quad.coefficients(i);
     if (col1 != col2) coef *= 0.5;
     quad_col1.push_back(col1);
@@ -1328,9 +2351,10 @@ absl::Status XpressSolver::AddIndicators(
   std::vector<int> i_rowind(count);
   std::vector<int> i_colind(count);
   std::vector<int> i_complement(count);
-  ASSIGN_OR_RETURN(int const oldRows, xpress_->GetIntAttr(XPRS_ORIGINALROWS));
-  int min_icol = std::numeric_limits<int>::max();
-  int max_icol = std::numeric_limits<int>::min();
+  ABSL_ASSIGN_OR_RETURN(int const oldRows,
+                        xpress_->GetIntAttr(XPRS_ORIGINALROWS));
+  int min_icol = kint32max;
+  int max_icol = kint32min;
   bool check_types = false;
   int next = 0;
   for (auto const& [ortoolsId, indicator] : indicators) {
@@ -1340,7 +2364,7 @@ absl::Status XpressSolver::AddIndicators(
     // ortools tests require us to raise an error on ranged indicator
     // constraints
     if (sense[next] == XPRS_RANGE) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "indicator constraint on ranged constraint";
     }
 
@@ -1348,7 +2372,7 @@ absl::Status XpressSolver::AddIndicators(
 
     i_rowind[next] = oldRows + next;
     if (indicator.has_indicator_id()) {
-      i_colind[next] = variables_map_.at(indicator.indicator_id());
+      i_colind[next] = or2xprs(variables_map_, indicator.indicator_id());
       if (i_colind[next] < min_icol) min_icol = i_colind[next];
       if (i_colind[next] > max_icol) max_icol = i_colind[next];
       i_complement[next] = indicator.activate_on_zero() ? -1 : 1;
@@ -1375,11 +2399,11 @@ absl::Status XpressSolver::AddIndicators(
     std::vector<double> orig_lb(1 + max_icol - min_icol);
     std::vector<double> orig_ub(1 + max_icol - min_icol);
     std::vector<char> orig_type(1 + max_icol - min_icol);
-    RETURN_IF_ERROR(
+    ABSL_RETURN_IF_ERROR(
         xpress_->GetLB(absl::MakeSpan(orig_lb), min_icol, max_icol));
-    RETURN_IF_ERROR(
+    ABSL_RETURN_IF_ERROR(
         xpress_->GetUB(absl::MakeSpan(orig_ub), min_icol, max_icol));
-    RETURN_IF_ERROR(
+    ABSL_RETURN_IF_ERROR(
         xpress_->GetColType(absl::MakeSpan(orig_type), min_icol, max_icol));
     std::vector<int> colind_bnd;
     std::vector<double> new_bds;
@@ -1397,8 +2421,8 @@ absl::Status XpressSolver::AddIndicators(
           // Convert to binary if within range.
           if (orig_lb[idx] >= 0.0 && orig_lb[idx] <= 1.0 &&
               orig_ub[idx] >= 0.0 && orig_ub[idx] <= 1.0) {
-            double const l = ceil(orig_lb[idx]);
-            double const u = floor(orig_ub[idx]);
+            double const l = std::ceil(orig_lb[idx]);
+            double const u = std::floor(orig_ub[idx]);
             orig_lb[idx] = l;  // In case variable is indicator more than once
             orig_ub[idx] = u;
             // It would require less storage if we performed two calls to
@@ -1428,15 +2452,17 @@ absl::Status XpressSolver::AddIndicators(
     // Change column type and bounds. Note that we must first change the type
     // since changing the type to 'B' will automatically change bounds to [0,1].
     // After that we can fix up the bounds.
-    if (colind_type.size()) {
-      RETURN_IF_ERROR(xpress_->ChgColType(colind_type, new_type));
+    if (!colind_type.empty()) {
+      ABSL_RETURN_IF_ERROR(xpress_->ChgColType(colind_type, new_type));
     }
-    if (colind_bnd.size()) {
-      RETURN_IF_ERROR(xpress_->ChgBounds(colind_bnd, new_bdtype, new_bds));
+    if (!colind_bnd.empty()) {
+      ABSL_RETURN_IF_ERROR(xpress_->ChgBounds(colind_bnd, new_bdtype, new_bds));
     }
   }
-  RETURN_IF_ERROR(xpress_->AddRows(sense, rhs, rng, start, colind, rowcoef));
-  RETURN_IF_ERROR(xpress_->SetIndicators(i_rowind, i_colind, i_complement));
+  ABSL_RETURN_IF_ERROR(
+      xpress_->AddRows(sense, rhs, rng, start, colind, rowcoef));
+  ABSL_RETURN_IF_ERROR(
+      xpress_->SetIndicators(i_rowind, i_colind, i_complement));
   return absl::OkStatus();
 }
 
@@ -1448,7 +2474,7 @@ absl::Status XpressSolver::AddQuadraticConstraints(
   std::vector<int> quad_col1;
   std::vector<int> quad_col2;
   std::vector<double> quad_coef;
-  ASSIGN_OR_RETURN(int next, xpress_->GetIntAttr(XPRS_ORIGINALROWS));
+  ABSL_ASSIGN_OR_RETURN(int next, xpress_->GetIntAttr(XPRS_ORIGINALROWS));
   for (const auto& [ortoolsId, quad] : constraints) {
     // Xpress has no function to add multiple quadratic rows in one shot, so we
     // add the linear part one by one as well.
@@ -1463,8 +2489,8 @@ absl::Status XpressSolver::AddQuadraticConstraints(
     quad_coef.clear();
     ExtractQuadratic(quad, lin_colind, lin_coef, quad_col1, quad_col2,
                      quad_coef);
-    RETURN_IF_ERROR(xpress_->AddQRow(sense, rhs, rng, lin_colind, lin_coef,
-                                     quad_col1, quad_col2, quad_coef));
+    ABSL_RETURN_IF_ERROR(xpress_->AddQRow(sense, rhs, rng, lin_colind, lin_coef,
+                                          quad_col1, quad_col2, quad_coef));
     LinearConstraintData& data =
         gtl::InsertKeyOrDie(&quad_constraints_map_, ortoolsId);
     data.constraint_index = next;
@@ -1483,29 +2509,31 @@ absl::Status XpressSolver::AddSecondOrderConeConstraints(
                                 SecondOrderConeConstraintProto>& constraints) {
   std::vector<int> cols;
   std::vector<double> coefs;
-  ASSIGN_OR_RETURN(int next, xpress_->GetIntAttr(XPRS_ORIGINALROWS));
+  ABSL_ASSIGN_OR_RETURN(int next, xpress_->GetIntAttr(XPRS_ORIGINALROWS));
   for (auto const& [ortoolsId, soc] : constraints) {
     cols.clear();
     coefs.clear();
     double rhs = 0.0;
     auto const& ub = soc.upper_bound();
     double coef;
-    ASSIGN_OR_RETURN(std::optional<VarId> const x0,
-                     ExtractSingleton(ub, SingletonType::SOCBound, &coef));
+    ABSL_ASSIGN_OR_RETURN(std::optional<VarId> const x0,
+                          ExtractSingleton(ub, SingletonType::SOCBound, &coef));
     if (x0.has_value()) {
-      cols.push_back(variables_map_.at(x0.value()));
+      cols.push_back(or2xprs(variables_map_, x0.value()));
       coefs.push_back(-coef * coef);
     } else {
       rhs = coef * coef;
     }
 
     for (auto const& arg : soc.arguments_to_norm()) {
-      ASSIGN_OR_RETURN(std::optional<VarId> const x,
-                       ExtractSingleton(arg, SingletonType::SOCNorm, &coef));
-      cols.push_back(variables_map_.at(x.value()));
+      ABSL_ASSIGN_OR_RETURN(
+          std::optional<VarId> const x,
+          ExtractSingleton(arg, SingletonType::SOCNorm, &coef));
+      cols.push_back(or2xprs(variables_map_, x.value()));
       coefs.push_back(coef * coef);
     }
-    RETURN_IF_ERROR(xpress_->AddQRow('L', rhs, 0.0, {}, {}, cols, cols, coefs));
+    ABSL_RETURN_IF_ERROR(
+        xpress_->AddQRow('L', rhs, 0.0, {}, {}, cols, cols, coefs));
     LinearConstraintData& data = gtl::InsertKeyOrDie(&soc_map_, ortoolsId);
     data.constraint_index = next;
     data.lower_bound = kMinusInf;
@@ -1523,9 +2551,8 @@ absl::Status XpressSolver::ChangeCoefficients(
   std::vector<int> col_index;
   col_index.reserve(num_coefficients);
   for (int k = 0; k < num_coefficients; ++k) {
-    row_index.push_back(
-        linear_constraints_map_.at(matrix.row_ids(k)).constraint_index);
-    col_index.push_back(variables_map_.at(matrix.column_ids(k)));
+    row_index.push_back(or2xprs(linear_constraints_map_, matrix.row_ids(k)));
+    col_index.push_back(or2xprs(variables_map_, matrix.column_ids(k)));
   }
   return xpress_->ChgCoeffs(row_index, col_index, matrix.coefficients());
 }
@@ -1533,29 +2560,30 @@ absl::Status XpressSolver::ChangeCoefficients(
 absl::StatusOr<SolveResultProto> XpressSolver::Solve(
     const SolveParametersProto& parameters,
     const ModelSolveParametersProto& model_parameters,
-    MessageCallback message_callback,
-    const CallbackRegistrationProto& callback_registration, Callback,
-    const SolveInterrupter* interrupter) {
+    SolverInterface::MessageCallback message_callback,
+    const CallbackRegistrationProto& callback_registration, Callback callback,
+    const SolveInterrupter* absl_nullable interrupter) {
   force_postsolve_ = false;
   primal_sol_avail_ = XPRS_SOLAVAILABLE_NOTFOUND;
   dual_sol_avail_ = XPRS_SOLAVAILABLE_NOTFOUND;
   solvestatus_ = XPRS_SOLVESTATUS_UNSTARTED;
   solstatus_ = XPRS_SOLSTATUS_NOTFOUND;
   algorithm_ = XPRS_ALG_DEFAULT;
-  RETURN_IF_ERROR(ModelSolveParametersAreSupported(
+  ABSL_RETURN_IF_ERROR(ModelSolveParametersAreSupported(
       model_parameters, kXpressSupportedStructures, "XPRESS"));
-  ASSIGN_OR_RETURN(is_mip_, xpress_->IsMIP());
+  ABSL_ASSIGN_OR_RETURN(is_mip_, xpress_->IsMIP());
   const absl::Time start = absl::Now();
 
-  RETURN_IF_ERROR(CheckRegisteredCallbackEvents(callback_registration,
-                                                /*supported_events=*/{}));
+  ABSL_RETURN_IF_ERROR(CheckRegisteredCallbackEvents(
+      callback_registration,
+      is_mip_ ? SupportedMIPEvents_ : SupportedLPEvents_));
 
   // Check that bounds are not inverted just before solve
   // XPRESS returns "infeasible" when bounds are inverted
   {
-    ASSIGN_OR_RETURN(const InvertedBounds inverted_bounds,
-                     ListInvertedBounds());
-    RETURN_IF_ERROR(inverted_bounds.ToStatus());
+    ABSL_ASSIGN_OR_RETURN(const InvertedBounds inverted_bounds,
+                          ListInvertedBounds());
+    ABSL_RETURN_IF_ERROR(inverted_bounds.ToStatus());
   }
   // Handle integer variables whose unrounded bounds are non-empty but whose
   // rounded integer bounds are empty (e.g. AddIntegerVariable(0.5, 0.6)).
@@ -1576,31 +2604,33 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
   }
   // Check that we don't have non-binary indicator variables
   if (nonbinary_indicator_) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "indicator variable is not binary";
   }
 
   // Register callbacks and create scoped context to automatically if an
   // exception has been thrown during optimization.
   ScopedSolverContext solveContext(xpress_.get());
-  RETURN_IF_ERROR(solveContext.AddCallbacks(message_callback, interrupter));
+  ABSL_RETURN_IF_ERROR(
+      solveContext.AddCallbacks(message_callback, callback_registration,
+                                callback, interrupter, variables_map_));
   std::string export_model = "";
-  RETURN_IF_ERROR(solveContext.ApplyParameters(parameters, message_callback,
-                                               &export_model, &force_postsolve_,
-                                               &stop_after_lp_));
-  RETURN_IF_ERROR(solveContext.ApplyModelParameters(
+  ABSL_RETURN_IF_ERROR(
+      solveContext.ApplyParameters(parameters, message_callback, &export_model,
+                                   &force_postsolve_, &stop_after_lp_));
+  ABSL_RETURN_IF_ERROR(solveContext.ApplyModelParameters(
       model_parameters, variables_map_, linear_constraints_map_,
       objectives_map_));
 
   // We are ready to solve the problem. If we are asked to export the
   // problem, then do that now. Depending on the file name extension we
   // either create a save file or an LP/MPS file.
-  if (export_model.length() > 0) {
+  if (!export_model.empty()) {
     if (export_model.length() >= 4 &&
         export_model.compare(export_model.length() - 4, 4, ".svf") == 0) {
-      RETURN_IF_ERROR(xpress_->SaveAs(export_model.c_str()));
+      ABSL_RETURN_IF_ERROR(xpress_->SaveAs(export_model));
     } else {
-      RETURN_IF_ERROR(xpress_->WriteProb(export_model.c_str()));
+      ABSL_RETURN_IF_ERROR(xpress_->WriteProb(export_model));
     }
   }
 
@@ -1608,20 +2638,21 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
   // the best algorithm. Note that we do not pass flags to the function
   // either. We assume that algorithms are configured via controls like
   // LPFLAGS.
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       xpress_->Optimize(stop_after_lp_ ? "l" : "", &solvestatus_, &solstatus_));
-  // Reraise any exception now. Note that we cannot just limit the scope of
+  // Return any callback error now. Note that we cannot just limit the scope of
   // solveContext since its destructor will restore controls settings.
   // On the other hand, when fetching results we need to check some controls
   // (for example, BARALG to decide whether we need to report barrier or
   // first order iterations).
-  solveContext.ReraiseException();
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(solveContext.HandleCallbackProblems());
+  ABSL_RETURN_IF_ERROR(
       xpress_->GetSolution(&primal_sol_avail_, std::nullopt, 0, -1));
-  RETURN_IF_ERROR(xpress_->GetDuals(&dual_sol_avail_, std::nullopt, 0, -1));
-  ASSIGN_OR_RETURN(algorithm_, xpress_->GetIntAttr(XPRS_ALGORITHM));
-  ASSIGN_OR_RETURN(optimizetypeused_,
-                   xpress_->GetIntAttr(XPRS_OPTIMIZETYPEUSED));
+  ABSL_RETURN_IF_ERROR(
+      xpress_->GetDuals(&dual_sol_avail_, std::nullopt, 0, -1));
+  ABSL_ASSIGN_OR_RETURN(algorithm_, xpress_->GetIntAttr(XPRS_ALGORITHM));
+  ABSL_ASSIGN_OR_RETURN(optimizetypeused_,
+                        xpress_->GetIntAttr(XPRS_OPTIMIZETYPEUSED));
   // Do NOT postsolve by default here!
   // All functions we use operate in the original space
   // and postsolving here is harmful if we want to come back and solve with
@@ -1629,9 +2660,9 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
   // point possible. This means we call it in ::Update() and
   // ::ComputeInfeasibleSubsystem()
   if (force_postsolve_)
-    RETURN_IF_ERROR(xpress_->PostSolve()) << "XPRSpostsolve() failed";
+    ABSL_RETURN_IF_ERROR(xpress_->PostSolve()) << "XPRSpostsolve() failed";
 
-  ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       SolveResultProto solve_result,
       ExtractSolveResultProto(start, model_parameters, parameters));
 
@@ -1652,11 +2683,12 @@ absl::StatusOr<SolveResultProto> XpressSolver::ExtractSolveResultProto(
     absl::Time start, const ModelSolveParametersProto& model_parameters,
     const SolveParametersProto& solve_parameters) {
   SolveResultProto result;
-  RETURN_IF_ERROR(AppendSolution(result, model_parameters, solve_parameters));
-  ASSIGN_OR_RETURN(*result.mutable_solve_stats(), GetSolveStats(start));
-  ASSIGN_OR_RETURN(const double best_primal_bound, GetBestPrimalBound());
-  ASSIGN_OR_RETURN(const double best_dual_bound, GetBestDualBound());
-  ASSIGN_OR_RETURN(
+  ABSL_RETURN_IF_ERROR(
+      AppendSolution(result, model_parameters, solve_parameters));
+  ABSL_ASSIGN_OR_RETURN(*result.mutable_solve_stats(), GetSolveStats(start));
+  ABSL_ASSIGN_OR_RETURN(const double best_primal_bound, GetBestPrimalBound());
+  ABSL_ASSIGN_OR_RETURN(const double best_dual_bound, GetBestDualBound());
+  ABSL_ASSIGN_OR_RETURN(
       *result.mutable_termination(),
       ConvertTerminationReason(best_primal_bound, best_dual_bound));
   return result;
@@ -1670,25 +2702,26 @@ absl::StatusOr<double> XpressSolver::GetBestPrimalBound() const {
     return xpress_->GetDoubleAttr(XPRS_OBJVAL);
   }
   // No primal bound available, return infinity.
-  ASSIGN_OR_RETURN(double const objsen, xpress_->GetDoubleAttr(XPRS_OBJSENSE));
+  ABSL_ASSIGN_OR_RETURN(double const objsen,
+                        xpress_->GetDoubleAttr(XPRS_OBJSENSE));
   return objsen * kPlusInf;
 }
 
 absl::StatusOr<double> XpressSolver::GetBestDualBound() const {
   if (is_mip_) {
     return xpress_->GetDoubleAttr(XPRS_BESTBOUND);
-  }
-  // Xpress does not have an attribute to report the best dual bound from
-  // simplex
-  else {
-    ASSIGN_OR_RETURN(int const alg, xpress_->GetIntAttr(XPRS_ALGORITHM));
+  } else {
+    // Xpress does not have an attribute to report the best dual bound from
+    // simplex
+    ABSL_ASSIGN_OR_RETURN(int const alg, xpress_->GetIntAttr(XPRS_ALGORITHM));
     if (alg == XPRS_ALG_BARRIER)
       return xpress_->GetDoubleAttr(XPRS_BARDUALOBJ);
     else if (primal_sol_avail_ == XPRS_SOLAVAILABLE_OPTIMAL)
       return xpress_->GetDoubleAttr(XPRS_OBJVAL);
   }
   // No dual bound available, return infinity.
-  ASSIGN_OR_RETURN(double const objsen, xpress_->GetDoubleAttr(XPRS_OBJSENSE));
+  ABSL_ASSIGN_OR_RETURN(double const objsen,
+                        xpress_->GetDoubleAttr(XPRS_OBJSENSE));
   return objsen * kMinusInf;
 }
 
@@ -1698,12 +2731,18 @@ absl::StatusOr<double> XpressSolver::GetBestDualBound() const {
 absl::Status XpressSolver::ExtendWithMultiobj(SolutionProto& solution) {
   // We may not have solved for all objectives, so make sure we query only
   // those that were solved.
-  ASSIGN_OR_RETURN(int const nSolved, xpress_->GetIntAttr(XPRS_SOLVEDOBJS));
+  ABSL_ASSIGN_OR_RETURN(int const nSolved,
+                        xpress_->GetIntAttr(XPRS_SOLVEDOBJS));
+  if (nSolved == 0) return absl::OkStatus();
+  if (nSolved < objectives_map_.size()) {
+    LOG(WARNING) << "Only " << nSolved << " objectives were solved, but "
+                 << objectives_map_.size() << " were requested.";
+  }
   auto* objvals =
       solution.mutable_primal_solution()->mutable_auxiliary_objective_values();
   for (auto const& [ortoolsId, xpressId] : objectives_map_) {
-    ASSIGN_OR_RETURN(double const thisobj,
-                     xpress_->CalculateObjectiveN(xpressId, nullptr));
+    ABSL_ASSIGN_OR_RETURN(double const thisobj,
+                          xpress_->CalculateObjectiveN(xpressId, nullptr));
     (*objvals)[ortoolsId] = thisobj;
   }
   return absl::OkStatus();
@@ -1713,20 +2752,21 @@ absl::Status XpressSolver::AppendSolution(
     SolveResultProto& solve_result,
     const ModelSolveParametersProto& model_parameters,
     const SolveParametersProto& solve_parameters) {
-  ASSIGN_OR_RETURN(int const nVars, xpress_->GetIntAttr(XPRS_ORIGINALCOLS));
+  ABSL_ASSIGN_OR_RETURN(int const nVars,
+                        xpress_->GetIntAttr(XPRS_ORIGINALCOLS));
   if (is_mip_) {
     std::vector<double> x(nVars);
     int avail;
-    RETURN_IF_ERROR(
+    ABSL_RETURN_IF_ERROR(
         xpress_->GetSolution(&avail, absl::MakeSpan(x), 0, nVars - 1));
     if (avail != XPRS_SOLAVAILABLE_NOTFOUND) {
       SolutionProto solution{};
       solution.mutable_primal_solution()->set_feasibility_status(
           getPrimalSolutionStatus());
-      ASSIGN_OR_RETURN(const double objval,
-                       xpress_->GetDoubleAttr(XPRS_OBJVAL));
+      ABSL_ASSIGN_OR_RETURN(const double objval,
+                            xpress_->GetDoubleAttr(XPRS_OBJVAL));
       solution.mutable_primal_solution()->set_objective_value(objval);
-      RETURN_IF_ERROR(ExtendWithMultiobj(solution));
+      ABSL_RETURN_IF_ERROR(ExtendWithMultiobj(solution));
       XpressVectorToSparseDoubleVector(
           x, variables_map_,
           *solution.mutable_primal_solution()->mutable_variable_values(),
@@ -1735,7 +2775,8 @@ absl::Status XpressSolver::AppendSolution(
     }
   } else {
     // Fetch all results from XPRESS
-    ASSIGN_OR_RETURN(int const nCons, xpress_->GetIntAttr(XPRS_ORIGINALROWS));
+    ABSL_ASSIGN_OR_RETURN(int const nCons,
+                          xpress_->GetIntAttr(XPRS_ORIGINALROWS));
     std::vector<double> primals(nVars);
     std::vector<double> duals(nCons);
     std::vector<double> reducedCosts(nVars);
@@ -1759,30 +2800,31 @@ absl::Status XpressSolver::AppendSolution(
 
     SolutionProto solution{};
     bool storeSolutions = (solvestatus_ == XPRS_SOLVESTATUS_STOPPED ||
-                           solvestatus_ == XPRS_SOLVESTATUS_COMPLETED);
+                           solvestatus_ == XPRS_SOLVESTATUS_COMPLETED) ||
+                          hasSolution;
 
     if (isPrimalFeasible()) {
       // The preferred methods for obtaining primal information are
       // XPRSgetsolution() and XPRSgetslacks() (not used here)
       // XPRSgetsolution() returns solution in original space.
-      RETURN_IF_ERROR(
+      ABSL_RETURN_IF_ERROR(
           xpress_->GetSolution(nullptr, absl::MakeSpan(primals), 0, nVars - 1));
       solution.mutable_primal_solution()->set_feasibility_status(
           getPrimalSolutionStatus());
-      ASSIGN_OR_RETURN(const double primalBound, GetBestPrimalBound());
+      ABSL_ASSIGN_OR_RETURN(const double primalBound, GetBestPrimalBound());
       solution.mutable_primal_solution()->set_objective_value(primalBound);
       XpressVectorToSparseDoubleVector(
           primals, variables_map_,
           *solution.mutable_primal_solution()->mutable_variable_values(),
           model_parameters.variable_values_filter());
-      RETURN_IF_ERROR(ExtendWithMultiobj(solution));
+      ABSL_RETURN_IF_ERROR(ExtendWithMultiobj(solution));
     } else if (storeSolutions) {
       // Even if we are not primal feasible, store the results we obtained
       // from XPRSgetlpsolution(). The feasibility status of this vector
       // is undetermined, though.
       solution.mutable_primal_solution()->set_feasibility_status(
           SOLUTION_STATUS_UNDETERMINED);
-      ASSIGN_OR_RETURN(const double primalBound, GetBestPrimalBound());
+      ABSL_ASSIGN_OR_RETURN(const double primalBound, GetBestPrimalBound());
       solution.mutable_primal_solution()->set_objective_value(primalBound);
       XpressVectorToSparseDoubleVector(
           primals, variables_map_,
@@ -1795,13 +2837,13 @@ absl::Status XpressSolver::AppendSolution(
       // and XPRSgetredcosts().
       // XPRSgetduals() and XPRSgetredcosts() both return values in the
       // original space.
-      RETURN_IF_ERROR(
+      ABSL_RETURN_IF_ERROR(
           xpress_->GetDuals(nullptr, absl::MakeSpan(duals), 0, nCons - 1));
-      RETURN_IF_ERROR(xpress_->GetRedCosts(
+      ABSL_RETURN_IF_ERROR(xpress_->GetRedCosts(
           nullptr, absl::MakeSpan(reducedCosts), 0, nVars - 1));
       solution.mutable_dual_solution()->set_feasibility_status(
           getDualSolutionStatus());
-      ASSIGN_OR_RETURN(const double dualBound, GetBestDualBound());
+      ABSL_ASSIGN_OR_RETURN(const double dualBound, GetBestDualBound());
       solution.mutable_dual_solution()->set_objective_value(dualBound);
       XpressVectorToSparseDoubleVector(
           duals, linear_constraints_map_,
@@ -1817,7 +2859,7 @@ absl::Status XpressSolver::AppendSolution(
       // is undetermined, though.
       solution.mutable_dual_solution()->set_feasibility_status(
           SOLUTION_STATUS_UNDETERMINED);
-      ASSIGN_OR_RETURN(const double dualBound, GetBestDualBound());
+      ABSL_ASSIGN_OR_RETURN(const double dualBound, GetBestDualBound());
       solution.mutable_dual_solution()->set_objective_value(dualBound);
       XpressVectorToSparseDoubleVector(
           duals, linear_constraints_map_,
@@ -1830,7 +2872,7 @@ absl::Status XpressSolver::AppendSolution(
     }
 
     // Get basis
-    ASSIGN_OR_RETURN(auto basis, GetBasisIfAvailable(solve_parameters));
+    ABSL_ASSIGN_OR_RETURN(auto basis, GetBasisIfAvailable(solve_parameters));
     if (basis.has_value()) {
       *solution.mutable_basis() = std::move(*basis);
     }
@@ -1938,26 +2980,28 @@ absl::StatusOr<SolveStatsProto> XpressSolver::GetSolveStats(
   int first_order_iters = 0;
   if (algorithm_ == XPRS_ALG_DEFAULT) {
     // Could be concurrent, so capture simplex and barrier iterations
-    ASSIGN_OR_RETURN(simplex_iters, xpress_->GetIntAttr(XPRS_SIMPLEXITER));
-    ASSIGN_OR_RETURN(barrier_iters, xpress_->GetIntAttr(XPRS_BARITER));
+    ABSL_ASSIGN_OR_RETURN(simplex_iters, xpress_->GetIntAttr(XPRS_SIMPLEXITER));
+    ABSL_ASSIGN_OR_RETURN(barrier_iters, xpress_->GetIntAttr(XPRS_BARITER));
   } else if (algorithm_ == XPRS_ALG_DUAL || algorithm_ == XPRS_ALG_PRIMAL ||
              algorithm_ == XPRS_ALG_NETWORK) {
     // Definitely simplex
-    ASSIGN_OR_RETURN(simplex_iters, xpress_->GetIntAttr(XPRS_SIMPLEXITER));
+    ABSL_ASSIGN_OR_RETURN(simplex_iters, xpress_->GetIntAttr(XPRS_SIMPLEXITER));
   } else if (algorithm_ == XPRS_ALG_BARRIER) {
     // Barrier or first order
-    ASSIGN_OR_RETURN(const int baralg, xpress_->GetIntControl(XPRS_BARALG));
+    ABSL_ASSIGN_OR_RETURN(const int baralg,
+                          xpress_->GetIntControl(XPRS_BARALG));
     if (baralg == 4) {
-      ASSIGN_OR_RETURN(first_order_iters, xpress_->GetIntAttr(XPRS_BARITER));
+      ABSL_ASSIGN_OR_RETURN(first_order_iters,
+                            xpress_->GetIntAttr(XPRS_BARITER));
     } else {
-      ASSIGN_OR_RETURN(barrier_iters, xpress_->GetIntAttr(XPRS_BARITER));
+      ABSL_ASSIGN_OR_RETURN(barrier_iters, xpress_->GetIntAttr(XPRS_BARITER));
     }
   }
   solve_stats.set_simplex_iterations(simplex_iters);
   solve_stats.set_barrier_iterations(barrier_iters);
   solve_stats.set_first_order_iterations(first_order_iters);
   if (is_mip_) {
-    ASSIGN_OR_RETURN(const int nodes, xpress_->GetIntAttr(XPRS_NODES));
+    ABSL_ASSIGN_OR_RETURN(const int nodes, xpress_->GetIntAttr(XPRS_NODES));
     solve_stats.set_node_count(nodes);
   }
   return solve_stats;
@@ -1980,14 +3024,17 @@ void XpressSolver::XpressVectorToSparseDoubleVector(
 
 absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
     double best_primal_bound, double best_dual_bound) const {
-  ASSIGN_OR_RETURN(double const objsen, xpress_->GetDoubleAttr(XPRS_OBJSENSE));
-  ASSIGN_OR_RETURN(int const stopStatus, xpress_->GetIntAttr(XPRS_STOPSTATUS));
+  ABSL_ASSIGN_OR_RETURN(double const objsen,
+                        xpress_->GetDoubleAttr(XPRS_OBJSENSE));
+  ABSL_ASSIGN_OR_RETURN(int const stopStatus,
+                        xpress_->GetIntAttr(XPRS_STOPSTATUS));
   bool const isMax = objsen < 0.0;
   bool checkSolStatus = false;
 
   if (!is_mip_) {
     // Handle some special LP termination reasons.
-    ASSIGN_OR_RETURN(int const lpstatus, xpress_->GetIntAttr(XPRS_LPSTATUS));
+    ABSL_ASSIGN_OR_RETURN(int const lpstatus,
+                          xpress_->GetIntAttr(XPRS_LPSTATUS));
     switch (lpstatus) {
       case XPRS_LP_UNSTARTED:
         break;
@@ -2154,19 +3201,22 @@ absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
 absl::StatusOr<bool> XpressSolver::Update(const ModelUpdateProto&) {
   // Not implemented yet
   // We can only update if problem is not in presolved state.
-  RETURN_IF_ERROR(xpress_->PostSolve()) << "XPRSpostsolve() failed";
+  // ABSL_RETURN_IF_ERROR(xpress_->PostSolve()) << "XPRSpostsolve() failed";
   return false;
 }
 
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
-XpressSolver::ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
-                                         MessageCallback message_callback,
-                                         const SolveInterrupter* interrupter) {
-  RETURN_IF_ERROR(xpress_->PostSolve()) << "XPRSpostsolve() failed";
+XpressSolver::ComputeInfeasibleSubsystem(
+    const SolveParametersProto& parameters,
+    SolverInterface::MessageCallback message_callback,
+    const SolveInterrupter* absl_nullable interrupter) {
+  ABSL_RETURN_IF_ERROR(xpress_->PostSolve()) << "XPRSpostsolve() failed";
   ScopedSolverContext solveContext(xpress_.get());
-  RETURN_IF_ERROR(solveContext.AddCallbacks(message_callback, interrupter));
-  RETURN_IF_ERROR(solveContext.ApplyParameters(parameters, message_callback,
-                                               nullptr, nullptr, nullptr));
+  ABSL_RETURN_IF_ERROR(
+      solveContext.AddCallbacks(message_callback, CallbackRegistrationProto(),
+                                nullptr, interrupter, variables_map_));
+  ABSL_RETURN_IF_ERROR(solveContext.ApplyParameters(
+      parameters, message_callback, nullptr, nullptr, nullptr));
 
   return absl::UnimplementedError(
       "XpressSolver does not compute an infeasible subsystem (yet)");
@@ -2175,8 +3225,10 @@ XpressSolver::ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
 absl::StatusOr<InvertedBounds> XpressSolver::ListInvertedBounds() const {
   InvertedBounds inverted_bounds;
   {
-    ASSIGN_OR_RETURN(const std::vector<double> var_lbs, xpress_->GetVarLb());
-    ASSIGN_OR_RETURN(const std::vector<double> var_ubs, xpress_->GetVarUb());
+    ABSL_ASSIGN_OR_RETURN(const std::vector<double> var_lbs,
+                          xpress_->GetVarLb());
+    ABSL_ASSIGN_OR_RETURN(const std::vector<double> var_ubs,
+                          xpress_->GetVarUb());
     for (const auto& [id, index] : variables_map_) {
       if (var_lbs[index] > var_ubs[index]) {
         inverted_bounds.variables.push_back(id);

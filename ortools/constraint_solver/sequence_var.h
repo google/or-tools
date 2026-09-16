@@ -29,7 +29,7 @@ namespace operations_research {
 /// returns the list of interval variables that can be ranked first or
 /// last; and RankFirst/RankNotFirst/RankLast/RankNotLast, which can be
 /// used to create the search decision.
-class OR_DLL SequenceVar : public PropagationBaseObject {
+class OR_ROUTING_DLL SequenceVar : public PropagationBaseObject {
  public:
   SequenceVar(Solver* s, const std::vector<IntervalVar*>& intervals,
               const std::vector<IntVar*>& nexts, const std::string& name);

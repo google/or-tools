@@ -6,7 +6,7 @@ within Google3: they are intended for use by the open-source community only.
 Note: the wrapper is being written and highly experimental.
 
 For now, only MathOpt is accessible through
-[its C API](../math_opt/core/c_api).
+[its C API](/ortools/math_opt/core/c_api/).
 
 TODO(user): how to run this on my machine?
 
@@ -19,13 +19,13 @@ The Julia wrapper is divided into three Julia packages:
 
 *   [`ORTools_jll`](https://github.com/JuliaRegistries/General/tree/master/jll/O/ORTools_jll)
     contains the precompiled OR-Tools binaries.
-*   [`ORToolsGenerated.jl`](../ORToolsGenerated.jl)
+*   [`ORToolsGenerated.jl`](/ortools/julia/ORToolsGenerated.jl)
     contains the generated part of the wrapper. For now, this package
     corresponds to Protocol Buffers files.
-*   [`ORTools.jl`](../ORTools.jl)
+*   [`ORTools.jl`](/ortools/julia/ORTools.jl)
     is the actual, high-level wrapper (more specifically, the
     [MathOptInterface](https://github.com/jump-dev/MathOptInterface.jl) code for
-    use through [JuMP](https://jump.dev/)). **It is not yet written.**
+    use through [JuMP](https://jump.dev/)).
 
 ## Maintenance
 
@@ -44,13 +44,13 @@ When releasing a new version of OR-Tools:
     Buffers files any time the new release has new Protocol Buffers files.
 
 2.  Update the generated files in
-    [`ORToolsGenerated.jl`](../ORToolsGenerated.jl).
+    [`ORToolsGenerated.jl`](/ortools/julia/ORToolsGenerated.jl).
     This step depends on the first one: the PR you wrote at the first step must
     be accepted and merged into the repository. Updating the generated files
     amounts to have a local Julia installation, adding the new version of
     `ORTools_jll` (within a Julia shell, `]add ORTools_jll` the first time, then
     update the version with `]update`), and calling the script
-    [`update_package.jl`](../ORToolsGenerated.jl/scripts/update_package.jl).
+    [`update_package.jl`](/ortools/julia/ORToolsGenerated.jl/scripts/update_package.jl).
 
 3.  Synchronize the results of the previous step with OR-Tools' repository: the
     updated files go into `ortools/julia/ORToolsGenerated/` (an updated
@@ -129,10 +129,10 @@ If there is an update in the C API, use `scripts/TODO(user)` to update the
 generated code to call the C functions.
 
 If there is an update in the MathOpt proto interface, use
-[`ORToolsGenerated.jl/scripts/gen_pb.jl`](../ORToolsGenerated.jl/scripts/gen_pb.jl)
+[`ORToolsGenerated.jl/scripts/gen_pb.jl`](/ortools/julia/ORToolsGenerated.jl/scripts/gen_pb.jl)
 to update the generated Protocol Buffers code. This script is automatically
 called by
-[`update_package.jl`](../ORToolsGenerated.jl/scripts/update_package.jl).
+[`update_package.jl`](/ortools/julia/ORToolsGenerated.jl/scripts/update_package.jl).
 
 ## Design decisions
 

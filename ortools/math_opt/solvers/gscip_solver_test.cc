@@ -38,6 +38,7 @@
 #include "ortools/math_opt/solver_tests/qp_tests.h"
 #include "ortools/math_opt/solver_tests/second_order_cone_tests.h"
 #include "ortools/math_opt/solver_tests/status_tests.h"
+#include "ortools/math_opt/solver_tests/test_models.h"
 #include "ortools/math_opt/solvers/gscip/gscip_parameters.h"
 #include "ortools/math_opt/testing/param_name.h"
 #include "ortools/port/scoped_std_stream_capture.h"
@@ -177,10 +178,9 @@ INSTANTIATE_TEST_SUITE_P(GscipIncrementalLogicalConstraintTest,
                          IncrementalLogicalConstraintTest,
                          Values(GetGscipLogicalConstraintTestParameters()));
 
-INSTANTIATE_TEST_SUITE_P(
-    GScipInvalidInputTest, InvalidInputTest,
-    Values(InvalidInputTestParameters(SolverType::kGscip,
-                                      /*use_integer_variables=*/true)));
+INSTANTIATE_TEST_SUITE_P(GScipInvalidInputTest, InvalidInputTest,
+                         Values(InvalidInputTestParameters(
+                             SolverType::kGscip, TestModelClass::kIp)));
 
 SolveParameters StopBeforeOptimal() {
   return {.node_limit = 1,
@@ -240,7 +240,8 @@ InvalidParameterTestParams MakeGScipBadParams() {
   // TODO(b/168069105): for solver specific errors, we should collect all
   //  errors, not just the first. Then set int_param "parallel/maxnthreads" to
   //  -4 (an invalid value).
-  return InvalidParameterTestParams(SolverType::kGscip, std::move(parameters),
+  return InvalidParameterTestParams(SolverType::kGscip, TestModelClass::kIp,
+                                    std::move(parameters),
                                     {"SCIP error code -12"});
 }
 
@@ -273,8 +274,7 @@ SolveParameters ReachEventNode() {
 
 INSTANTIATE_TEST_SUITE_P(
     GscipCallbackTest, CallbackTest,
-    Values(CallbackTestParams(SolverType::kGscip,
-                              /*integer_variables=*/true,
+    Values(CallbackTestParams(SolverType::kGscip, TestModelClass::kIp,
                               /*add_lazy_constraints=*/true,
                               /*add_cuts=*/true,
                               /*supported_events=*/
@@ -322,11 +322,11 @@ INSTANTIATE_TEST_SUITE_P(
     GscipGenericTest, GenericTest,
     Values(GenericTestParameters(SolverType::kGscip,
                                  /*support_interrupter=*/true,
-                                 /*integer_variables=*/false,
+                                 TestModelClass::kLp,
                                  /*expected_log=*/"[optimal solution found]"),
            GenericTestParameters(SolverType::kGscip,
                                  /*support_interrupter=*/true,
-                                 /*integer_variables=*/true,
+                                 TestModelClass::kIp,
                                  /*expected_log=*/"[optimal solution found]")));
 
 INSTANTIATE_TEST_SUITE_P(GscipInfeasibleSubsystemTest, InfeasibleSubsystemTest,

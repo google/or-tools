@@ -1,0 +1,4 @@
+# Test vector_bin_packing binary
+RUN: $(vector_bin_packing) --input $(testdata) --threads 8
+CHECK: "status: OPTIMAL"
+CHECK: "objective: 20"

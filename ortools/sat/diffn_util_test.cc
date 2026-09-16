@@ -28,14 +28,15 @@
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
-#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/types.h"
 #include "ortools/graph_base/connected_components.h"
 #include "ortools/graph_base/strongly_connected_components.h"
 #include "ortools/sat/2d_orthogonal_packing_testing.h"
@@ -267,7 +268,7 @@ std::vector<IndexedInterval> GenerateRandomIntervalVector(
   std::vector<IndexedInterval> intervals;
   intervals.reserve(num_intervals);
   const int64_t interval_domain =
-      absl::LogUniform<int64_t>(random, 1, std::numeric_limits<int64_t>::max());
+      absl::LogUniform<int64_t>(random, 1, kint64max);
   const int64_t max_interval_length = absl::Uniform<int64_t>(
       random, std::max<int64_t>(1, interval_domain / (2 * num_intervals + 1)),
       interval_domain);
@@ -438,7 +439,7 @@ TEST(CapacityProfileTest, ProfileWithMandatoryPart) {
                                   IntegerValue(1));
   std::vector<CapacityProfile::Rectangle> result;
 
-  // Add a dummy rectangle to test the result is cleared. result.push_bask(..);
+  // Add a dummy rectangle to test the result is cleared. result.push_back(..);
   result.push_back(
       CapacityProfile::Rectangle(IntegerValue(2), IntegerValue(3)));
 
@@ -602,7 +603,8 @@ TEST(GetMinimumOverlapTest, BasicTest) {
 
   RectangleInRange bigger =
       RectangleInRange::BiggestWithMinIntersection(r, range_ret, 7, 7);
-  // This should be a broader range but don't increase the minimum intersection.
+  // This should be a broader range but doesn't increase the minimum
+  // intersection.
   EXPECT_EQ(bigger.GetMinimumIntersection(r).Area(), 7 * 7);
   for (const auto& pos :
        {RectangleInRange::Corner::BOTTOM_LEFT,
@@ -883,7 +885,7 @@ TEST(ProbingRectangleTest, Random) {
     ReduceUntilDone(ranges, random);
     comprehensive_count += has_possible_conflict;
   }
-  LOG(INFO) << count << "/" << num_runs << " had an heuristic (out of "
+  LOG(INFO) << count << "/" << num_runs << " had a heuristic (out of "
             << comprehensive_count << " possible).";
 }
 
@@ -1104,45 +1106,94 @@ TEST(FindPartialIntersections, Random) {
   }
 }
 
-void BM_FindRectangles(benchmark::State& state) {
+TEST(FindEmptySpaces, Random) {
   absl::BitGen random;
-  std::vector<std::vector<RectangleInRange>> problems;
-  static constexpr int kNumProblems = 20;
-  for (int i = 0; i < kNumProblems; i++) {
-    problems.push_back(MakeItemsFromRectangles(
-        GenerateNonConflictingRectangles(state.range(0), random),
-        state.range(1) / 100.0, random));
-  }
-  int idx = 0;
-  for (auto s : state) {
-    CHECK(FindRectanglesWithEnergyConflictMC(problems[idx], random, 1.0, 0.8)
-              .conflicts.empty());
-    ++idx;
-    if (idx == kNumProblems) idx = 0;
+  constexpr int num_runs = 100;
+
+  const Rectangle bounding_box = {
+      .x_min = 0, .x_max = 100, .y_min = 0, .y_max = 100};
+  const IntegerValue total_bb_area = bounding_box.Area();
+
+  for (int k = 0; k < num_runs; k++) {
+    std::vector<Rectangle> rectangles =
+        GenerateNonConflictingRectanglesWithPacking({100, 100}, 60, random);
+
+    IntegerValue occupied_area = 0;
+    for (const Rectangle& r : rectangles) {
+      occupied_area += r.Area();
+    }
+
+    for (const bool test_vertical : {false, true}) {
+      std::vector<EmptySpace> empty_spaces =
+          test_vertical ? FindEmptySpacesVertically(bounding_box, rectangles)
+                        : FindEmptySpacesHorizontally(bounding_box, rectangles);
+
+      std::vector<Rectangle> all_rects = rectangles;
+      IntegerValue empty_area = 0;
+
+      for (const EmptySpace& space : empty_spaces) {
+        all_rects.push_back(space.rect);
+        empty_area += space.rect.Area();
+
+        // Check that the returned rectangle is touching the adjacent inputs
+        if (test_vertical) {
+          if (space.before_idx == -1) {
+            EXPECT_EQ(space.rect.y_min, bounding_box.y_min);
+          } else {
+            ASSERT_GE(space.before_idx, 0);
+            ASSERT_LT(space.before_idx, rectangles.size());
+            EXPECT_EQ(space.rect.y_min, rectangles[space.before_idx].y_max);
+            EXPECT_GE(space.rect.x_min, rectangles[space.before_idx].x_min);
+            EXPECT_LE(space.rect.x_max, rectangles[space.before_idx].x_max);
+          }
+
+          if (space.after_idx == -1) {
+            EXPECT_EQ(space.rect.y_max, bounding_box.y_max);
+          } else {
+            ASSERT_GE(space.after_idx, 0);
+            ASSERT_LT(space.after_idx, rectangles.size());
+            EXPECT_EQ(space.rect.y_max, rectangles[space.after_idx].y_min);
+            EXPECT_GE(space.rect.x_min, rectangles[space.after_idx].x_min);
+            EXPECT_LE(space.rect.x_max, rectangles[space.after_idx].x_max);
+          }
+        } else {
+          if (space.before_idx == -1) {
+            EXPECT_EQ(space.rect.x_min, bounding_box.x_min);
+          } else {
+            ASSERT_GE(space.before_idx, 0);
+            ASSERT_LT(space.before_idx, rectangles.size());
+            EXPECT_EQ(space.rect.x_min, rectangles[space.before_idx].x_max);
+            EXPECT_GE(space.rect.y_min, rectangles[space.before_idx].y_min);
+            EXPECT_LE(space.rect.y_max, rectangles[space.before_idx].y_max);
+          }
+
+          if (space.after_idx == -1) {
+            EXPECT_EQ(space.rect.x_max, bounding_box.x_max);
+          } else {
+            ASSERT_GE(space.after_idx, 0);
+            ASSERT_LT(space.after_idx, rectangles.size());
+            EXPECT_EQ(space.rect.x_max, rectangles[space.after_idx].x_min);
+            EXPECT_GE(space.rect.y_min, rectangles[space.after_idx].y_min);
+            EXPECT_LE(space.rect.y_max, rectangles[space.after_idx].y_max);
+          }
+        }
+      }
+
+      // Check that the result is not overlapping with itself or with the
+      // input.
+      absl::c_sort(all_rects, [](const Rectangle& a, const Rectangle& b) {
+        return a.x_min < b.x_min;
+      });
+      EXPECT_FALSE(FindOneIntersectionIfPresent(all_rects).has_value())
+          << "Overlap detected between empty spaces and/or occupied "
+             "rectangles!";
+
+      // Check that the entire bounding box area is covered.
+      EXPECT_EQ(occupied_area + empty_area, total_bb_area)
+          << "Sum of areas does not match bounding box.";
+    }
   }
 }
-
-BENCHMARK(BM_FindRectangles)
-    ->ArgPair(5, 1)
-    ->ArgPair(10, 1)
-    ->ArgPair(20, 1)
-    ->ArgPair(30, 1)
-    ->ArgPair(40, 1)
-    ->ArgPair(80, 1)
-    ->ArgPair(100, 1)
-    ->ArgPair(200, 1)
-    ->ArgPair(1000, 1)
-    ->ArgPair(10000, 1)
-    ->ArgPair(5, 100)
-    ->ArgPair(10, 100)
-    ->ArgPair(20, 100)
-    ->ArgPair(30, 100)
-    ->ArgPair(40, 100)
-    ->ArgPair(80, 100)
-    ->ArgPair(100, 100)
-    ->ArgPair(200, 100)
-    ->ArgPair(1000, 100)
-    ->ArgPair(10000, 100);
 
 TEST(FindPairwiseRestrictionsTest, Random) {
   absl::BitGen random;
@@ -1163,121 +1214,6 @@ TEST(FindPairwiseRestrictionsTest, Random) {
   }
 }
 
-void BM_FindPairwiseRestrictions(benchmark::State& state) {
-  absl::BitGen random;
-  // In the vast majority of the cases the propagator doesn't find any pairwise
-  // condition to propagate. Thus we choose to benchmark for this particular
-  // case.
-  const std::vector<ItemWithVariableSize> items =
-      GenerateItemsRectanglesWithNoPairwisePropagation(
-          state.range(0), state.range(1) / 100.0, random);
-  std::vector<PairwiseRestriction> results;
-  for (auto s : state) {
-    AppendPairwiseRestrictions(items, &results);
-    CHECK(results.empty());
-  }
-}
-
-BENCHMARK(BM_FindPairwiseRestrictions)
-    ->ArgPair(5, 1)
-    ->ArgPair(10, 1)
-    ->ArgPair(20, 1)
-    ->ArgPair(30, 1)
-    ->ArgPair(40, 1)
-    ->ArgPair(80, 1)
-    ->ArgPair(100, 1)
-    ->ArgPair(200, 1)
-    ->ArgPair(1000, 1)
-    ->ArgPair(10000, 1)
-    ->ArgPair(5, 100)
-    ->ArgPair(10, 100)
-    ->ArgPair(20, 100)
-    ->ArgPair(30, 100)
-    ->ArgPair(40, 100)
-    ->ArgPair(80, 100)
-    ->ArgPair(100, 100)
-    ->ArgPair(200, 100)
-    ->ArgPair(1000, 100)
-    ->ArgPair(10000, 100);
-
-void BM_FindPartialIntersectionsSparse(benchmark::State& state) {
-  absl::BitGen random;
-  std::vector<std::vector<Rectangle>> problems;
-  static constexpr int kNumProblems = 10;
-  for (int i = 0; i < kNumProblems; i++) {
-    std::vector<Rectangle>& rectangles = problems.emplace_back(
-        GenerateNonConflictingRectangles(state.range(0), random));
-    const int num_to_grow = absl::Uniform(random, 0, 20);
-    for (int i = 0; i < num_to_grow; ++i) {
-      Rectangle& rec =
-          rectangles[absl::Uniform(random, size_t{0}, rectangles.size())];
-      rec = {.x_min = rec.x_min - IntegerValue(absl::Uniform(random, 0, 4)),
-             .x_max = rec.x_max + IntegerValue(absl::Uniform(random, 0, 4)),
-             .y_min = rec.y_min - IntegerValue(absl::Uniform(random, 0, 4)),
-             .y_max = rec.y_max + IntegerValue(absl::Uniform(random, 0, 4))};
-    }
-  }
-  int idx = 0;
-  for (auto s : state) {
-    const std::vector<std::pair<int, int>> result =
-        FindPartialRectangleIntersections(problems[idx]);
-    CHECK_LT(result.size(), state.range(0) * state.range(0));
-    ++idx;
-    if (idx == kNumProblems) idx = 0;
-  }
-}
-
-BENCHMARK(BM_FindPartialIntersectionsSparse)
-    ->Arg(5)
-    ->Arg(10)
-    ->Arg(20)
-    ->Arg(30)
-    ->Arg(40)
-    ->Arg(80)
-    ->Arg(100)
-    ->Arg(200)
-    ->Arg(1000)
-    ->Arg(10000);
-
-std::vector<Rectangle> GeneratePathologicalCase(int num_rectangles) {
-  std::vector<Rectangle> rectangles;
-  for (int i = 0; i < num_rectangles / 2; ++i) {
-    rectangles.push_back({.x_min = 2 * i,
-                          .x_max = 2 * i + 1,
-                          .y_min = 0,
-                          .y_max = 2 * num_rectangles});
-    rectangles.push_back({
-        .x_min = 0,
-        .x_max = 2 * num_rectangles,
-        .y_min = 2 * i,
-        .y_max = 2 * i + 1,
-    });
-  }
-  return rectangles;
-}
-
-void BM_FindPartialIntersectionsPathological(benchmark::State& state) {
-  const std::vector<Rectangle> rectangles =
-      GeneratePathologicalCase(state.range(0));
-  for (auto s : state) {
-    const std::vector<std::pair<int, int>> result =
-        FindPartialRectangleIntersections(rectangles);
-    CHECK_LT(result.size(), state.range(0) * state.range(0));
-  }
-}
-
-BENCHMARK(BM_FindPartialIntersectionsPathological)
-    ->Arg(5)
-    ->Arg(10)
-    ->Arg(20)
-    ->Arg(30)
-    ->Arg(40)
-    ->Arg(80)
-    ->Arg(100)
-    ->Arg(200)
-    ->Arg(1000)
-    ->Arg(10000);
-
 std::vector<Rectangle> GenerateDenseCase(int num_rectangles) {
   absl::BitGen random;
   std::vector<Rectangle> rectangles;
@@ -1293,39 +1229,10 @@ std::vector<Rectangle> GenerateDenseCase(int num_rectangles) {
   return rectangles;
 }
 
-void BM_FindPartialIntersectionsDense(benchmark::State& state) {
-  absl::BitGen random;
-  std::vector<std::vector<Rectangle>> problems;
-  static constexpr int kNumProblems = 10;
-  for (int i = 0; i < kNumProblems; i++) {
-    problems.push_back(GenerateDenseCase(state.range(0)));
-  }
-  int idx = 0;
-  for (auto s : state) {
-    const std::vector<std::pair<int, int>> result =
-        FindPartialRectangleIntersections(problems[idx]);
-    CHECK_LT(result.size(), state.range(0) * state.range(0));
-    ++idx;
-    if (idx == kNumProblems) idx = 0;
-  }
-}
-
 TEST(FindPartialIntersectionsDenseTest, Random) {
   const std::vector<std::pair<int, int>> result =
       FindPartialRectangleIntersections(GenerateDenseCase(20));
 }
-
-BENCHMARK(BM_FindPartialIntersectionsDense)
-    ->Arg(5)
-    ->Arg(10)
-    ->Arg(20)
-    ->Arg(30)
-    ->Arg(40)
-    ->Arg(80)
-    ->Arg(100)
-    ->Arg(200)
-    ->Arg(1000)
-    ->Arg(10000);
 
 }  // namespace
 }  // namespace sat

@@ -14,13 +14,13 @@
 #include "ortools/math_opt/core/invalid_indicators.h"
 
 #include <algorithm>
-#include <cstdint>
 #include <string>
 #include <tuple>
 #include <vector>
 
 #include "absl/algorithm/container.h"
 #include "absl/status/status.h"
+#include "absl/status/status_builder.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "ortools/base/status_builder.h"
@@ -39,7 +39,7 @@ absl::Status InvalidIndicators::ToStatus() const {
                                          ", ", invalid_indicators[i].variable,
                                          ")"));
   }
-  auto builder = util::InvalidArgumentErrorBuilder();
+  auto builder = ortools::InvalidArgumentErrorBuilder();
   builder
       << "the following (indicator constraint ID, indicator variable ID) pairs "
          "are invalid as the indicator variable is not binary: "

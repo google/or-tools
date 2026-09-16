@@ -11,16 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef PDLP_PRIMAL_DUAL_HYBRID_GRADIENT_H_
-#define PDLP_PRIMAL_DUAL_HYBRID_GRADIENT_H_
+#ifndef ORTOOLS_PDLP_PRIMAL_DUAL_HYBRID_GRADIENT_H_
+#define ORTOOLS_PDLP_PRIMAL_DUAL_HYBRID_GRADIENT_H_
 
 #include <atomic>
 #include <functional>
 #include <optional>
 #include <string>
+#include <utility>
 
 #include "Eigen/Core"
 #include "ortools/lp_data/lp_data.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/pdlp/quadratic_program.h"
 #include "ortools/pdlp/solve_log.pb.h"
 #include "ortools/pdlp/solvers.pb.h"
@@ -174,11 +176,11 @@ namespace internal {
 // variables are at their bounds based on exact comparisons and therefore may
 // not work with unscaled solutions. The primal and dual solution in the
 // returned `ProblemSolution` are NOT set.
-glop::ProblemSolution ComputeStatuses(const QuadraticProgram& qp,
-                                      const PrimalAndDualSolution& solution);
+std::pair<glop::SolveStatus, glop::ProblemSolution> ComputeStatuses(
+    const QuadraticProgram& qp, const PrimalAndDualSolution& solution);
 
 }  // namespace internal
 
 }  // namespace operations_research::pdlp
 
-#endif  // PDLP_PRIMAL_DUAL_HYBRID_GRADIENT_H_
+#endif  // ORTOOLS_PDLP_PRIMAL_DUAL_HYBRID_GRADIENT_H_

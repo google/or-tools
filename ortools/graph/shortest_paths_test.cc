@@ -225,9 +225,7 @@ void TestShortestPathsFromGraph(
   for (int i = 0; i < num_arcs; ++i) {
     lengths[builder.AddArc(arcs[i][0], arcs[i][1])] = arc_lengths[i];
   }
-  std::vector<typename GraphType::ArcIndex> permutation;
-  const auto graph = std::move(builder).Build(&permutation);
-  util::Permute(permutation, &lengths);
+  const auto graph = std::move(builder).BuildAndPermute(lengths);
   TestShortestPathsFromGraph(*graph, lengths, expected_paths,
                              expected_distances);
 }
@@ -331,9 +329,7 @@ TYPED_TEST(GraphShortestPathsDeathTest, ShortestPaths2) {
 }
 
 TYPED_TEST(GraphShortestPathsDeathTest, MismatchedData) {
-  TypeParam graph(2, 2);
-  graph.AddArc(0, 1);
-  graph.AddArc(1, 0);
+  const TypeParam graph = util::GraphFromArcs<TypeParam>(2, {{0, 1}, {1, 0}});
   std::vector<PathDistance> lengths = {0};
   auto container =
       GenericPathContainer<TypeParam>::BuildInMemoryCompactPathContainer();
@@ -419,9 +415,7 @@ TYPED_TEST(GraphShortestPathsTest, DISABLED_LargeRandomShortestPaths) {
   }
   builder.AddArc(prev_index, first_index);
   lengths.push_back(kConnectionArcLength);
-  std::vector<typename TypeParam::ArcIndex> permutation;
-  const auto graph = std::move(builder).Build(&permutation);
-  util::Permute(permutation, &lengths);
+  const auto graph = std::move(builder).BuildAndPermute(lengths);
   std::vector<std::vector<typename TypeParam::NodeIndex>> components;
   ::FindStronglyConnectedComponents(graph->num_nodes(), *graph, &components);
   CHECK_EQ(1, components.size());

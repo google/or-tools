@@ -34,6 +34,7 @@
 #include "ortools/math_opt/solver_tests/qp_tests.h"
 #include "ortools/math_opt/solver_tests/second_order_cone_tests.h"
 #include "ortools/math_opt/solver_tests/status_tests.h"
+#include "ortools/math_opt/solver_tests/test_models.h"
 #include "ortools/math_opt/testing/param_name.h"
 
 namespace operations_research {
@@ -147,14 +148,13 @@ INSTANTIATE_TEST_SUITE_P(CpSatIncrementalLogicalConstraintTest,
                          IncrementalLogicalConstraintTest,
                          Values(GetCpSatLogicalConstraintTestParameters()));
 
-INSTANTIATE_TEST_SUITE_P(
-    CpSatInvalidInputTest, InvalidInputTest,
-    Values(InvalidInputTestParameters(SolverType::kCpSat,
-                                      /*use_integer_variables=*/true)));
+INSTANTIATE_TEST_SUITE_P(CpSatInvalidInputTest, InvalidInputTest,
+                         Values(InvalidInputTestParameters(
+                             SolverType::kCpSat, TestModelClass::kIp)));
 
 INSTANTIATE_TEST_SUITE_P(CpSatInvalidParameterTest, InvalidParameterTest,
                          Values(InvalidParameterTestParams(
-                             SolverType::kCpSat,
+                             SolverType::kCpSat, TestModelClass::kIp,
                              {.objective_limit = 2.0, .best_bound_limit = 1.0},
                              {"objective_limit", "best_bound_limit"})));
 
@@ -209,12 +209,11 @@ INSTANTIATE_TEST_SUITE_P(
     Values(IpMultipleSolutionsTestParams(SolverType::kCpSat,
                                          {.presolve = Emphasis::kOff})));
 
-INSTANTIATE_TEST_SUITE_P(
-    CpSatGenericTest, GenericTest,
-    Values(GenericTestParameters(SolverType::kCpSat,
-                                 /*support_interrupter=*/true,
-                                 /*integer_variables=*/true,
-                                 /*expected_log=*/"status: OPTIMAL")));
+INSTANTIATE_TEST_SUITE_P(CpSatGenericTest, GenericTest,
+                         Values(GenericTestParameters(
+                             SolverType::kCpSat,
+                             /*support_interrupter=*/true, TestModelClass::kIp,
+                             /*expected_log=*/"status: OPTIMAL")));
 
 INSTANTIATE_TEST_SUITE_P(CpSatInfeasibleSubsystemTest, InfeasibleSubsystemTest,
                          testing::Values(InfeasibleSubsystemTestParameters(
@@ -331,8 +330,7 @@ SolveParameters AllSolutions() {
 INSTANTIATE_TEST_SUITE_P(
     CpSatCallbackTest, CallbackTest,
     Values(CallbackTestParams(
-        SolverType::kCpSat,
-        /*integer_variables=*/true,
+        SolverType::kCpSat, TestModelClass::kIp,
         /*add_lazy_constraints=*/false,
         /*add_cuts=*/false,
         /*supported_events=*/{CallbackEvent::kMipSolution, CallbackEvent::kMip},

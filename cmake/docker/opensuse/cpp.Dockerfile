@@ -1,4 +1,5 @@
-FROM ortools/cmake:opensuse_base AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}opensuse_base AS env
 
 RUN cmake -version
 

@@ -11,12 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//bazel:or_cc_rules.bzl", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
-cc_library(
+or_cc_library(
     name = "quadratic_constraint",
     srcs = ["quadratic_constraint.cc"],
     hdrs = ["quadratic_constraint.h"],
@@ -35,7 +34,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "quadratic_constraint_test",
     srcs = ["quadratic_constraint_test.cc"],
     deps = [
@@ -43,6 +42,7 @@ cc_test(
         "//ortools/base:gmock",
         "//ortools/base:gmock_main",
         "//ortools/base:strong_int",
+        "//ortools/math_opt/constraints/util:model_util",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/storage:model_storage",
         "//ortools/math_opt/storage:sparse_coefficient_map",
@@ -51,7 +51,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "storage",
     srcs = ["storage.cc"],
     hdrs = ["storage.h"],
@@ -68,9 +68,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "storage_test",
     srcs = ["storage_test.cc"],
+
     # TODO: b/475196802 - Stop using EquivToProto().
     tags = [
         "no_test_android",
@@ -88,12 +89,12 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "validator",
     srcs = ["validator.cc"],
     hdrs = ["validator.h"],
     deps = [
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:model_summary",
@@ -103,10 +104,12 @@ cc_library(
         "//ortools/math_opt/validators:sparse_matrix_validator",
         "//ortools/math_opt/validators:sparse_vector_validator",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_builder",
+        "@abseil-cpp//absl/status:status_macros",
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "validator_test",
     srcs = ["validator_test.cc"],
     deps = [

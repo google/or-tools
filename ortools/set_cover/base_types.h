@@ -222,6 +222,15 @@ class StopWatch {
   WallTimer timer_;
 };
 
+template <typename ContainerType, typename IndexType>
+bool CheckIndices(const ContainerType& container, IndexType limit) {
+  for (auto v : container) {
+    CHECK_GE(v, decltype(v)(0));
+    CHECK_LT(v, limit);
+  }
+  return true;
+}
+
 }  // namespace operations_research
 
 #endif  // ORTOOLS_SET_COVER_BASE_TYPES_H_

@@ -24,7 +24,6 @@
 #include <cstdlib>
 #include <deque>
 #include <functional>
-#include <limits>
 #include <map>
 #include <memory>
 #include <optional>
@@ -36,6 +35,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/base/attributes.h"
+#include "absl/base/nullability.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -56,6 +56,7 @@
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/reversible_data.h"
 #include "ortools/graph/christofides.h"
 #include "ortools/routing/enums.pb.h"
 #include "ortools/routing/heuristic_parameters.pb.h"
@@ -134,7 +135,8 @@ bool UpdateTimeLimits(Solver* solver, int64_t start_time_ms,
 }  // namespace
 
 const Assignment* SolveWithAlternativeSolvers(
-    Model* primary_model, const std::vector<Model*>& alternative_models,
+    Model* absl_nonnull primary_model,
+    const std::vector<Model*>& alternative_models,
     const RoutingSearchParameters& parameters,
     int max_non_improving_iterations) {
   return SolveFromAssignmentWithAlternativeSolvers(
@@ -143,7 +145,7 @@ const Assignment* SolveWithAlternativeSolvers(
 }
 
 const Assignment* SolveFromAssignmentWithAlternativeSolvers(
-    const Assignment* assignment, Model* primary_model,
+    const Assignment* assignment, Model* absl_nonnull primary_model,
     const std::vector<Model*>& alternative_models,
     const RoutingSearchParameters& parameters,
     int max_non_improving_iterations) {
@@ -153,7 +155,7 @@ const Assignment* SolveFromAssignmentWithAlternativeSolvers(
 }
 
 const Assignment* SolveFromAssignmentWithAlternativeSolversAndParameters(
-    const Assignment* assignment, Model* primary_model,
+    const Assignment* assignment, Model* absl_nonnull primary_model,
     const RoutingSearchParameters& primary_parameters,
     const std::vector<Model*>& alternative_models,
     const std::vector<RoutingSearchParameters>& alternative_parameters,
@@ -495,7 +497,7 @@ std::string RoutingFilteredDecisionBuilder::DebugString() const {
 // IntVarFilteredHeuristic
 
 IntVarFilteredHeuristic::IntVarFilteredHeuristic(
-    Solver* solver, const std::vector<IntVar*>& vars,
+    Solver* absl_nonnull solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     LocalSearchFilterManager* filter_manager)
     : assignment_(solver->MakeAssignment()),
@@ -505,7 +507,7 @@ IntVarFilteredHeuristic::IntVarFilteredHeuristic(
       delta_(solver->MakeAssignment()),
       empty_(solver->MakeAssignment()),
       filter_manager_(filter_manager),
-      objective_upper_bound_(std::numeric_limits<int64_t>::max()),
+      objective_upper_bound_(kint64max),
       number_of_decisions_(0),
       number_of_rejects_(0) {
   if (!secondary_vars.empty()) {
@@ -555,7 +557,7 @@ Assignment* RoutingFilteredHeuristic::BuildSolutionFromRoutes(
     int64_t node = model_->Start(v);
     while (!model_->IsEnd(node)) {
       const int64_t next = next_accessor(node);
-      DCHECK_NE(next, node);
+      if (next == node) return nullptr;
       SetNext(node, next, v);
       SetVehicleIndex(node, v);
       node = next;
@@ -623,22 +625,21 @@ std::optional<int64_t> IntVarFilteredHeuristic::Evaluate(
 void IntVarFilteredHeuristic::SynchronizeFilters() {
   if (filter_manager_) filter_manager_->Synchronize(assignment_, delta_);
   // Resetting the upper bound to allow cost-increasing insertions.
-  objective_upper_bound_ = std::numeric_limits<int64_t>::max();
+  objective_upper_bound_ = kint64max;
 }
 
 bool IntVarFilteredHeuristic::FilterAccept(bool ignore_upper_bound) {
   if (!filter_manager_) return true;
   LocalSearchMonitor* const monitor = solver_->GetLocalSearchMonitor();
   return filter_manager_->Accept(
-      monitor, delta_, empty_, std::numeric_limits<int64_t>::min(),
-      ignore_upper_bound ? std::numeric_limits<int64_t>::max()
-                         : objective_upper_bound_);
+      monitor, delta_, empty_, kint64min,
+      ignore_upper_bound ? kint64max : objective_upper_bound_);
 }
 
 // RoutingFilteredHeuristic
 
 RoutingFilteredHeuristic::RoutingFilteredHeuristic(
-    Model* model, std::function<bool()> stop_search,
+    Model* absl_nonnull model, std::function<bool()> stop_search,
     LocalSearchFilterManager* filter_manager)
     : IntVarFilteredHeuristic(model->solver(), model->Nexts(),
                               model->CostsAreHomogeneousAcrossVehicles()
@@ -693,12 +694,17 @@ bool RoutingFilteredHeuristic::InitializeSolution() {
 }
 
 void RoutingFilteredHeuristic::MakeDisjunctionNodesUnperformed(int64_t node) {
-  model()->ForEachNodeInDisjunctionWithMaxCardinalityFromIndex(
-      node, 1, [this, node](int alternate) {
+  for (const RoutingModel::DisjunctionIndex disjunction :
+       model()->GetDisjunctionIndices(node)) {
+    if (model()->GetDisjunctionMaxCardinality(disjunction) == 1) {
+      for (const int64_t alternate :
+           model()->GetDisjunctionNodeIndices(disjunction)) {
         if (node != alternate && !Contains(alternate)) {
           SetNext(alternate, alternate, -1);
         }
-      });
+      }
+    }
+  }
 }
 
 void RoutingFilteredHeuristic::AddUnassignedNodesToEmptyVehicles() {
@@ -782,7 +788,7 @@ void RoutingFilteredHeuristic::MakePartiallyPerformedPairsUnperformed() {
 // CheapestInsertionFilteredHeuristic
 
 CheapestInsertionFilteredHeuristic::CheapestInsertionFilteredHeuristic(
-    Model* model, std::function<bool()> stop_search,
+    Model* absl_nonnull model, std::function<bool()> stop_search,
     std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
     std::function<int64_t(int64_t)> penalty_evaluator,
     LocalSearchFilterManager* filter_manager)
@@ -970,14 +976,14 @@ int64_t CheapestInsertionFilteredHeuristic::GetUnperformedValue(
   if (penalty_evaluator_ != nullptr) {
     return penalty_evaluator_(node_to_insert);
   }
-  return std::numeric_limits<int64_t>::max();
+  return kint64max;
 }
 
 // GlobalCheapestInsertionFilteredHeuristic
 
 GlobalCheapestInsertionFilteredHeuristic::
     GlobalCheapestInsertionFilteredHeuristic(
-        Model* model, std::function<bool()> stop_search,
+        Model* absl_nonnull model, std::function<bool()> stop_search,
         std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
         std::function<int64_t(int64_t)> penalty_evaluator,
         LocalSearchFilterManager* filter_manager,
@@ -1420,11 +1426,15 @@ class GlobalCheapestInsertionFilteredHeuristic::NodeEntryQueue {
       return std::tie(insert_after, node_to_insert, vehicle) <
              std::tie(other.insert_after, other.node_to_insert, other.vehicle);
     }
+    // Fields ordered for cache-friendly comparisons without padding waste.
+    // bucket and value are compared first in operator<, followed by vehicle.
+    // Layout: value(8) + bucket(4)+vehicle(4) + node_to_insert(8) +
+    //         insert_after(8) = 32 bytes, no padding.
     int64_t value;
+    int bucket;
+    int vehicle;
     int64_t node_to_insert;
     int64_t insert_after;
-    int vehicle;
-    int bucket;
   };
 
   explicit NodeEntryQueue(int num_nodes)
@@ -1475,7 +1485,7 @@ class GlobalCheapestInsertionFilteredHeuristic::NodeEntryQueue {
   void PushInsertion(int64_t node, int64_t insert_after, int vehicle,
                      int bucket, int64_t value) {
     entries_[insert_after].entries.push_back(
-        {value, node, insert_after, vehicle, bucket});
+        {value, bucket, vehicle, node, insert_after});
     touched_entries_.Set(insert_after);
   }
 
@@ -1886,10 +1896,8 @@ bool GlobalCheapestInsertionFilteredHeuristic::InitializePairPositions(
         // TODO(user): Adapt the code to make pair disjunctions unperformed.
         if (gci_params_.add_unperformed_entries() && pickups.size() == 1 &&
             deliveries.size() == 1 &&
-            GetUnperformedValue(pickup) !=
-                std::numeric_limits<int64_t>::max() &&
-            GetUnperformedValue(delivery) !=
-                std::numeric_limits<int64_t>::max()) {
+            GetUnperformedValue(pickup) != kint64max &&
+            GetUnperformedValue(delivery) != kint64max) {
           AddPairEntry(pickup, -1, delivery, -1, -1, priority_queue, nullptr,
                        nullptr);
         }
@@ -2314,7 +2322,7 @@ bool GlobalCheapestInsertionFilteredHeuristic::InitializePositions(
     if (StopSearch()) return false;
     // Add insertion entry making node unperformed.
     if (gci_params_.add_unperformed_entries() &&
-        GetUnperformedValue(node) != std::numeric_limits<int64_t>::max()) {
+        GetUnperformedValue(node) != kint64max) {
       AddNodeEntry(node, node, -1, all_vehicles, queue);
     }
     // Add all insertion entries making node performed.
@@ -2731,7 +2739,7 @@ int64_t GetNegMaxDistanceFromVehicles(const Model& model, int pair_index) {
     const std::vector<int64_t>& cost_from_start = pickup_costs[pickup];
     for (int64_t delivery : deliveries) {
       const std::vector<int64_t>& cost_to_end = delivery_costs[delivery];
-      int64_t closest_vehicle_distance = std::numeric_limits<int64_t>::max();
+      int64_t closest_vehicle_distance = kint64max;
       for (int v = 0; v < model.vehicles(); v++) {
         if (cost_from_start[v] < 0 || cost_to_end[v] < 0) {
           // Vehicle not in the pickup and/or delivery's vehicle var domain.
@@ -3053,7 +3061,7 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
 
   for (int pair_index = 0; pair_index < pairs.size(); ++pair_index) {
     const auto& [pickups, deliveries] = pairs[pair_index];
-    int64_t num_allowed_vehicles = std::numeric_limits<int64_t>::max();
+    int64_t num_allowed_vehicles = kint64max;
     int64_t pickup_penalty = 0;
     int hint_weight = 0;
     int reversed_hint_weight = 0;
@@ -3110,7 +3118,7 @@ void LocalCheapestInsertionFilteredHeuristic::ComputeInsertionOrder() {
   for (int node = 0; node < model.Size(); ++node) {
     if (model.IsStart(node) || model.IsEnd(node)) continue;
 
-    int64_t min_distance = std::numeric_limits<int64_t>::max();
+    int64_t min_distance = kint64max;
     int64_t sum_distance = 0;
     ProcessVehicleStartEndCosts(
         model, node,
@@ -3176,6 +3184,8 @@ void LocalCheapestInsertionFilteredHeuristic::InsertBestPickupThenDelivery(
                                                         vehicle)) {
           continue;
         }
+        // Do not propagate pickup insertion cost to the delivery insertions.
+        ResetUpperBound();
         for (const NodeInsertion& delivery_insertion :
              ComputeEvaluatorSortedPositionsOnRouteAfter(
                  delivery, pickup, Value(pickup_insertion.insert_after),
@@ -3753,12 +3763,11 @@ EvaluatorCheapestAdditionFilteredHeuristic::
 
 int64_t EvaluatorCheapestAdditionFilteredHeuristic::FindTopSuccessor(
     int64_t node, const std::vector<int64_t>& successors) {
-  int64_t best_evaluation = std::numeric_limits<int64_t>::max();
+  int64_t best_evaluation = kint64max;
   int64_t best_successor = -1;
   for (int64_t successor : successors) {
-    const int64_t evaluation = (successor >= 0)
-                                   ? evaluator_(node, successor)
-                                   : std::numeric_limits<int64_t>::max();
+    const int64_t evaluation =
+        (successor >= 0) ? evaluator_(node, successor) : kint64max;
     if (evaluation < best_evaluation ||
         (evaluation == best_evaluation && successor > best_successor)) {
       best_evaluation = evaluation;
@@ -4383,11 +4392,11 @@ bool SavingsFilteredHeuristic::ComputeSavings() {
         costed_after_nodes.resize(saving_neighbors);
       }
       adjacency_lists[before_node].resize(costed_after_nodes.size());
-      std::transform(costed_after_nodes.begin(), costed_after_nodes.end(),
-                     adjacency_lists[before_node].begin(),
-                     [](std::pair<int64_t, int64_t> cost_and_node) {
-                       return cost_and_node.second;
-                     });
+      absl::c_transform(costed_after_nodes,
+                        adjacency_lists[before_node].begin(),
+                        [](std::pair<int64_t, int64_t> cost_and_node) {
+                          return cost_and_node.second;
+                        });
     }
     if (savings_params_.add_reverse_arcs()) {
       AddSymmetricArcsToAdjacencyLists(&adjacency_lists);
@@ -4418,9 +4427,9 @@ bool SavingsFilteredHeuristic::ComputeSavings() {
         const double weighted_arc_cost_fp =
             savings_params_.arc_coefficient() * arc_cost;
         const int64_t weighted_arc_cost =
-            weighted_arc_cost_fp < std::numeric_limits<int64_t>::max()
+            weighted_arc_cost_fp < kint64max
                 ? static_cast<int64_t>(weighted_arc_cost_fp)
-                : std::numeric_limits<int64_t>::max();
+                : kint64max;
         const int64_t saving_value = CapSub(
             CapAdd(before_to_end_cost, start_to_after_cost), weighted_arc_cost);
 
@@ -4849,7 +4858,7 @@ bool ChristofidesFilteredHeuristic::BuildSolutionInternal() {
         // value supported by MinCostPerfectMatching.
         // TODO(user): Investigate if ChristofidesPathSolver should not
         // return a status to bail out fast in case of problem.
-        return std::min(cost, std::numeric_limits<int64_t>::max() / 2);
+        return std::min(cost, kint64max / 2);
       };
       using Cost = decltype(cost);
       ChristofidesPathSolver<int64_t, int64_t, int, Cost> christofides_solver(
@@ -5576,8 +5585,7 @@ GuidedSlackFinalizer::GuidedSlackFinalizer(
       model_(ABSL_DIE_IF_NULL(model)),
       initializer_(std::move(initializer)),
       is_initialized_(dimension->slacks().size(), false),
-      initial_values_(dimension->slacks().size(),
-                      std::numeric_limits<int64_t>::min()),
+      initial_values_(dimension->slacks().size(), kint64min),
       current_index_(model_->Start(0)),
       current_route_(0),
       last_delta_used_(dimension->slacks().size(), 0) {}
@@ -5770,7 +5778,7 @@ void GreedyDescentLSOperator::Start(const Assignment* assignment) {
 
 int64_t GreedyDescentLSOperator::FindMaxDistanceToDomain(
     const Assignment* assignment) {
-  int64_t result = std::numeric_limits<int64_t>::min();
+  int64_t result = kint64min;
   for (const IntVar* const var : variables_) {
     result = std::max(result, std::abs(var->Max() - assignment->Value(var)));
     result = std::max(result, std::abs(var->Min() - assignment->Value(var)));
@@ -5813,4 +5821,36 @@ DecisionBuilder* Model::MakeSelfDependentDimensionFinalizer(
       solver_->MakeLocalSearchPhase(first_solution, parameters);
   return finalizer;
 }
+
+bool CheapestInsertionFilteredHeuristic::Seed::operator>(
+    const Seed& other) const {
+  for (size_t i = 0; i < properties.size(); ++i) {
+    if (properties[i] == other.properties[i]) continue;
+    return properties[i] > other.properties[i];
+  }
+  return std::tie(vehicle, is_node_index, index) >
+         std::tie(other.vehicle, other.is_node_index, other.index);
+}
+
+bool GlobalCheapestInsertionFilteredHeuristic::PairEntry::operator<(
+    const PairEntry& other) const {
+  // We give higher priority to insertions from lower buckets.
+  if (bucket_ != other.bucket_) {
+    return bucket_ > other.bucket_;
+  }
+  // We then compare by value, then we favor insertions (vehicle != -1).
+  // The rest of the tie-breaking is done with std::tie.
+  if (value_ != other.value_) {
+    return value_ > other.value_;
+  }
+  if ((vehicle_ == -1) ^ (other.vehicle_ == -1)) {
+    return vehicle_ == -1;
+  }
+  return std::tie(pickup_insert_after_, pickup_to_insert_,
+                  delivery_insert_after_, delivery_to_insert_, vehicle_) >
+         std::tie(other.pickup_insert_after_, other.pickup_to_insert_,
+                  other.delivery_insert_after_, other.delivery_to_insert_,
+                  other.vehicle_);
+}
+
 }  // namespace operations_research::routing

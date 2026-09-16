@@ -21,6 +21,7 @@
 #include "absl/base/attributes.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
@@ -62,9 +63,14 @@ bool JsspParser::ParseFile(absl::string_view filename) {
   //  - fjs suffix -> Flexible Jobshop
   //  - txt suffix -> Taillard or time dependent scheduling.
 
-  if (absl::EndsWith(filename, "fjs")) {
+  if (absl::EndsWith(filename, "fjs") || absl::EndsWith(filename, "fjs.bz2") ||
+      absl::EndsWith(filename, "fjs.gz") ||
+      absl::EndsWith(filename, "fjs.xz")) {
     problem_type_ = FLEXIBLE;
-  } else if (absl::EndsWith(filename, ".txt")) {
+  } else if (absl::EndsWith(filename, ".txt") ||
+             absl::EndsWith(filename, ".txt.bz2") ||
+             absl::EndsWith(filename, ".txt.gz") ||
+             absl::EndsWith(filename, ".txt.xz")) {
     problem_type_ = TAILLARD;
   } else {
     problem_type_ = JSSP;

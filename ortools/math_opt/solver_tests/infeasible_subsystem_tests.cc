@@ -28,7 +28,6 @@
 #include "ortools/gurobi/gurobi_stdout_matchers.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
-#include "ortools/math_opt/infeasible_subsystem.pb.h"
 #include "ortools/port/scoped_std_stream_capture.h"
 
 namespace operations_research::math_opt {

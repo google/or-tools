@@ -15,10 +15,10 @@
 
 #include <stdint.h>
 
-#include <limits>
 #include <vector>
 
 #include "absl/random/random.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 
@@ -68,7 +68,7 @@ CpModelProto RandomLinearProblem(int num_variables, int num_constraints) {
     auto* ct = result.add_constraints()->mutable_linear();
     const int min_value = num_variables / 10;
     ct->add_domain(min_value);
-    ct->add_domain(std::numeric_limits<int64_t>::max());
+    ct->add_domain(kint64max);
     for (int v = 0; v < num_variables; ++v) {
       if (absl::Bernoulli(random, 0.5) ||
           // To ensure that the constraint is feasible, we enforce that it has

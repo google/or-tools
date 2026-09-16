@@ -24,6 +24,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -77,9 +78,8 @@ TEST(ComputeInfinityNormTest, BasicTest) {
   }
   {
     LinearConstraintBuilder constraint;
-    constraint.AddTerm(y, IntegerValue(std::numeric_limits<int64_t>::max()));
-    EXPECT_EQ(IntegerValue(std::numeric_limits<int64_t>::max()),
-              ComputeInfinityNorm(constraint.Build()));
+    constraint.AddTerm(y, IntegerValue(kint64max));
+    EXPECT_EQ(IntegerValue(kint64max), ComputeInfinityNorm(constraint.Build()));
   }
 }
 
@@ -186,7 +186,7 @@ TEST(LinearConstraintBuilderTest, DuplicateCoefficient) {
   model.GetOrCreate<IntegerEncoder>();
   LinearConstraintBuilder builder(&model, kMinIntegerValue, IntegerValue(10));
 
-  // Note that internally, positive variable have an even index, so we only
+  // Note that internally, positive variables have an even index, so we only
   // use those so that we don't remap a negated variable.
   builder.AddTerm(IntegerVariable(0), IntegerValue(100));
   builder.AddTerm(IntegerVariable(2), IntegerValue(10));
@@ -204,7 +204,7 @@ TEST(LinearConstraintBuilderTest, AffineExpression) {
   model.GetOrCreate<IntegerEncoder>();
   LinearConstraintBuilder builder(&model, kMinIntegerValue, IntegerValue(10));
 
-  // Note that internally, positive variable have an even index, so we only
+  // Note that internally, positive variables have an even index, so we only
   // use those so that we don't remap a negated variable.
   const IntegerVariable var(0);
   builder.AddTerm(AffineExpression(var, IntegerValue(3), IntegerValue(2)),
@@ -231,7 +231,7 @@ TEST(LinearConstraintBuilderTest, AddLiterals) {
   model.Add(NewIntegerVariableFromLiteral(Literal(d, false)));  // I3
   model.Add(NewIntegerVariableFromLiteral(Literal(d, true)));   // I4
 
-  // When we have both view, we use the lowest IntegerVariable.
+  // When we have both views, we use the lowest IntegerVariable.
   {
     LinearConstraintBuilder builder(&model, kMinIntegerValue, IntegerValue(1));
     EXPECT_TRUE(builder.AddLiteralTerm(Literal(b, true), IntegerValue(1)));

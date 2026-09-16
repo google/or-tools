@@ -22,7 +22,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraints.h"
 #include "ortools/constraint_solver/sched_expr.h"
 #include "ortools/constraint_solver/variables.h"
 #include "ortools/util/saturated_arithmetic.h"

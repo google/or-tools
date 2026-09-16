@@ -1,4 +1,5 @@
-FROM ortools/cmake:fedora_swig AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}fedora_swig AS env
 
 ENV PATH=/root/.local/bin:$PATH
 RUN dnf -y update \
@@ -13,7 +14,8 @@ ARG CMAKE_BUILD_PARALLEL_LEVEL
 ENV CMAKE_BUILD_PARALLEL_LEVEL=${CMAKE_BUILD_PARALLEL_LEVEL:-4}
 
 FROM devel AS build
-RUN cmake -S. -Bbuild -DBUILD_PYTHON=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
+RUN cmake -S. -Bbuild -DBUILD_PYTHON=ON \
+-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
 RUN cmake --build build --target all -v
 RUN cmake --build build --target install
 

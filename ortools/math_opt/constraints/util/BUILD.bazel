@@ -11,12 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//bazel:or_cc_rules.bzl", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
-cc_library(
+or_cc_library(
     name = "model_util",
     srcs = ["model_util.cc"],
     hdrs = ["model_util.h"],
@@ -31,7 +30,7 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "model_util_test",
     srcs = ["model_util_test.cc"],
     deps = [

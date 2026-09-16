@@ -21,6 +21,21 @@ namespace Google.OrTools.Tests
 {
 public class RoutingModelTest
 {
+    private sealed class ConstantRouteConstraintCallback : RouteConstraintCallback
+    {
+        private readonly long value_;
+
+        public ConstantRouteConstraintCallback(long value)
+        {
+            value_ = value;
+        }
+
+        public override RouteConstraintResult Evaluate(long[] route)
+        {
+            return new RouteConstraintResult { is_satisfied = true, cost = value_ };
+        }
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -206,6 +221,76 @@ public class RoutingModelTest
         Assignment solution = routing.SolveWithParameters(searchParameters);
         // 0 --(+1)-> 1 --(+1)-> 2 --(+1)-> 3 --(+1)-> 4 --(+1)-> 0 := +5
         Assert.Equal(5, solution.ObjectiveValue());
+    }
+
+    [Fact]
+    public void TestAddRouteConstraint()
+    {
+        long SolveObjective(bool addRouteConstraint)
+        {
+            IndexManager manager = new IndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+            Assert.NotNull(manager);
+            Model routing = new Model(manager);
+            Assert.NotNull(routing);
+
+            int transitCallbackIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) =>
+                                                                       {
+                                                                           var fromNode =
+                                                                               manager.IndexToNode(fromIndex);
+                                                                           var toNode = manager.IndexToNode(toIndex);
+                                                                           return Math.Abs(toNode - fromNode);
+                                                                       });
+            routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
+
+            if (addRouteConstraint)
+            {
+                routing.AddRouteConstraint(new ConstantRouteConstraintCallback(10),
+                                           /*costs_are_homogeneous_across_vehicles=*/true);
+            }
+
+            RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
+            searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
+            Assignment solution = routing.SolveWithParameters(searchParameters);
+            return solution.ObjectiveValue();
+        }
+
+        long baselineObjective = SolveObjective(addRouteConstraint: false);
+        long constrainedObjective = SolveObjective(addRouteConstraint: true);
+
+        Assert.Equal(8, baselineObjective);
+        Assert.Equal(18, constrainedObjective);
+    }
+
+    [Fact]
+    public void TestAllowedVehicles()
+    {
+        IndexManager manager = new IndexManager(2, 2, 0);
+        Assert.NotNull(manager);
+        Model model = new Model(manager);
+        Assert.NotNull(model);
+
+        // out of range vehicle index is allowed.
+        model.SetAllowedVehiclesForIndex(new int[] { 13 }, 1);
+        Assert.False(model.IsVehicleAllowedForIndex(0, 1));
+        Assert.False(model.IsVehicleAllowedForIndex(1, 1));
+        Assert.True(model.IsVehicleAllowedForIndex(13, 1));
+
+        // empty array means any vehicles are allowed.
+        model.SetAllowedVehiclesForIndex(new int[] {}, 1);
+        Assert.True(model.IsVehicleAllowedForIndex(0, 1));
+        Assert.True(model.IsVehicleAllowedForIndex(1, 1));
+        Assert.True(model.IsVehicleAllowedForIndex(42, 1));
+
+        // only allow first vehicle for node 1.
+        model.SetAllowedVehiclesForIndex(new int[] { 0 }, 1);
+        Assert.True(model.IsVehicleAllowedForIndex(0, 1));
+        Assert.False(model.IsVehicleAllowedForIndex(1, 1));
+        Assert.False(model.IsVehicleAllowedForIndex(2, 1));
+
+        Assignment solution = model.Solve(null);
+        Assert.NotNull(solution);
+        Assert.Equal(1, solution.Value(model.NextVar(model.Start(0))));
+        Assert.Equal(2, model.GetVehicleClassesCount());
     }
 }
 

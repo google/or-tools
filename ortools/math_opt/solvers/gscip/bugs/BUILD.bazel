@@ -11,9 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary")
 
-cc_binary(
+or_cc_binary(
     name = "binary_variable_bounds",
     srcs = ["binary_variable_bounds.cc"],
     deps = [
@@ -23,7 +23,7 @@ cc_binary(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "fixed_integer_variable_bounds",
     srcs = ["fixed_integer_variable_bounds.cc"],
     deps = [
@@ -33,7 +33,7 @@ cc_binary(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "integer_to_binary_variable",
     srcs = ["integer_to_binary_variable.cc"],
     deps = [
@@ -43,7 +43,7 @@ cc_binary(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "integer_to_continuous_variable",
     srcs = ["integer_to_continuous_variable.cc"],
     deps = [

@@ -23,11 +23,10 @@
 
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/str_cat.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/solvers/gscip/gscip.h"
 #include "ortools/math_opt/solvers/gscip/gscip.pb.h"
 #include "ortools/math_opt/solvers/gscip/gscip_callback_result.h"
@@ -64,7 +63,7 @@ class AtMostOneConstraintHandler
       const AtMostOneData& constraint_data, bool) override {
     enforce_lp_is_called_ = true;
     if (IsViolated(context, constraint_data)) {
-      RETURN_IF_ERROR(AddConstraint(context, constraint_data));
+      ABSL_RETURN_IF_ERROR(AddConstraint(context, constraint_data));
       return GScipCallbackResult::kConstraintAdded;
     }
     return GScipCallbackResult::kFeasible;
@@ -504,7 +503,7 @@ class CircleConstraintHandler
     if (PointInCircle(current_point, constraint_data.circle, kTolerance)) {
       return GScipCallbackResult::kFeasible;
     }
-    RETURN_IF_ERROR(context.AddLazyLinearConstraint(
+    ABSL_RETURN_IF_ERROR(context.AddLazyLinearConstraint(
         SeparationInequality(current_point, constraint_data),
         "circle_constraint"));
     return GScipCallbackResult::kConstraintAdded;
@@ -517,7 +516,7 @@ class CircleConstraintHandler
     if (PointInCircle(current_point, constraint_data.circle, kTolerance)) {
       return GScipCallbackResult::kFeasible;
     }
-    RETURN_IF_ERROR(context.AddLazyLinearConstraint(
+    ABSL_RETURN_IF_ERROR(context.AddLazyLinearConstraint(
         SeparationInequality(current_point, constraint_data),
         "circle_constraint"));
     return GScipCallbackResult::kConstraintAdded;

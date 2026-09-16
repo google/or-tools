@@ -11,20 +11,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary")
 load("//tools/testing:bintest.bzl", "bintest")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_binary(
+or_cc_binary(
     name = "bfs_directed",
     srcs = ["bfs_directed.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:status_macros",
         "//ortools/graph_base:bfs",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -35,15 +35,15 @@ bintest(
     named_data = {"bfs_directed": ":bfs_directed"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "bfs_undirected",
     srcs = ["bfs_undirected.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:status_macros",
         "//ortools/graph_base:bfs",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -54,15 +54,15 @@ bintest(
     named_data = {"bfs_undirected": ":bfs_undirected"},
 )
 
-cc_binary(
+or_cc_binary(
     name = "bfs_one_to_all",
     srcs = ["bfs_one_to_all.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:status_macros",
         "//ortools/graph_base:bfs",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",
     ],
 )

@@ -23,8 +23,10 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/glop/variables_info.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -44,18 +46,18 @@
 namespace operations_research {
 namespace sat {
 
-// Implement a "classic" MIP tree search by having an exhaustive list of open
+// Implements a "classic" MIP tree search by having an exhaustive list of open
 // nodes.
 //
 // The goal of this subsolver is to improve the objective lower bound. It is
-// meant to be used in a multi-thread portfolio, and as such it really do not
-// care about finding solution. It is all about improving the lower bound.
+// meant to be used in a multi-thread portfolio, and as such it really does not
+// care about finding solutions. It is all about improving the lower bound.
 //
 // TODO(user): What this is doing is really similar to asking a SAT solver if
 // the current objective lower bound is reachable by solving a SAT problem.
-// However, this code handle on the side all the "conflict" of the form
+// However, this code handles on the side all the "conflicts" of the form
 // objective > current_lb. As a result, when it is UNSAT, we can bump the lower
-// bound by a bigger amount than one. We also do not completely loose everything
+// bound by a bigger amount than one. We also do not completely lose everything
 // learned so far for the next iteration.
 class LbTreeSearch {
  public:
@@ -112,10 +114,10 @@ class LbTreeSearch {
     IntegerValue false_objective;
 
     // Points to adjacent nodes in the tree. Large if no connection.
-    NodeIndex true_child = NodeIndex(std::numeric_limits<int32_t>::max());
-    NodeIndex false_child = NodeIndex(std::numeric_limits<int32_t>::max());
+    NodeIndex true_child = NodeIndex(kint32max);
+    NodeIndex false_child = NodeIndex(kint32max);
 
-    // Indicates if this nodes was removed from the tree.
+    // Indicates if this node was removed from the tree.
     bool is_deleted = false;
 
     // Experimental. Store the optimal basis at each node.
@@ -157,21 +159,21 @@ class LbTreeSearch {
   bool NodeHasBasis(const Node& node) const;
 
   // Mark the given node as deleted. Its literal is assumed to be set. We also
-  // delete the subtree that is not longer relevant.
+  // delete the subtree that is no longer relevant.
   void MarkAsDeletedNodeAndUnreachableSubtree(Node& node);
   void MarkBranchAsInfeasible(Node& node, bool true_branch);
   void MarkSubtreeAsDeleted(NodeIndex root);
 
   // Create a new node at the end of the current branch.
-  // This assume the last decision in the branch is assigned.
+  // This assumes the last decision in the branch is assigned.
   NodeIndex CreateNewEmptyNodeIfNeeded();
   void AppendNewNodeToCurrentBranch(Literal decision);
 
   // Update the bounds on the given nodes by using reduced costs if possible.
   void ExploitReducedCosts(NodeIndex n);
 
-  // Returns a small number of decision needed to reach the same conflict.
-  // We basically reduce the number of decision at each level to 1.
+  // Returns a small number of decisions needed to reach the same conflict.
+  // We basically reduce the number of decisions at each level to 1.
   std::vector<Literal> ExtractDecisions(int base_level,
                                         absl::Span<const Literal> conflict);
 
@@ -187,7 +189,7 @@ class LbTreeSearch {
   // Model singleton class used here.
   const std::string name_;
   TimeLimit* time_limit_;
-  ModelRandomGenerator* random_;
+  absl::BitGenRef random_;
   SatSolver* sat_solver_;
   IntegerEncoder* integer_encoder_;
   Trail* trail_;
@@ -215,7 +217,7 @@ class LbTreeSearch {
   // The list of nodes in the current branch, in order from the root.
   std::vector<NodeIndex> current_branch_;
 
-  // Our heuristic used to explore the tree. See code for detail.
+  // Our heuristic used to explore the tree. See code for details.
   std::function<BooleanOrIntegerLiteral()> search_heuristic_;
 
   int64_t num_rc_detected_ = 0;
@@ -235,7 +237,7 @@ class LbTreeSearch {
   int64_t num_decisions_taken_at_last_restart_ = 0;
   int64_t num_decisions_taken_at_last_level_zero_ = 0;
 
-  // Count the number of time we are back to decision level zero.
+  // Counts the number of times we are back to decision level zero.
   int64_t num_back_to_root_node_ = 0;
 };
 

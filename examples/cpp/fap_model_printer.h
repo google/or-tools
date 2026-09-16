@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "absl/container/btree_map.h"
+#include "absl/strings/string_view.h"
 #include "examples/cpp/fap_parser.h"
 
 namespace operations_research {

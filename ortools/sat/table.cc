@@ -13,7 +13,6 @@
 
 #include "ortools/sat/table.h"
 
-#include <functional>
 #include <utility>
 #include <vector>
 

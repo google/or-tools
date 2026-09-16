@@ -25,16 +25,18 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/scheduling_helpers.h"
+#include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
 
 // Adds a reservoir constraint to the model. Note that to account for level not
-// containing zero at time zero, we might needs to create an artificial fixed
+// containing zero at time zero, we might need to create an artificial fixed
 // event.
 //
-// This instantiate one or more ReservoirTimeTabling class to perform the
+// This instantiates one or more ReservoirTimeTabling classes to perform the
 // propagation.
 void AddReservoirConstraint(absl::Span<const Literal> enforcement_literals,
                             absl::Span<const AffineExpression> times,
@@ -47,10 +49,11 @@ void AddReservoirConstraint(absl::Span<const Literal> enforcement_literals,
 // infeasible.
 //
 // Note that we take for the definition of the function at time t to be the sum
-// of all delta with time <= t. But because we check for the capacity over the
+// of all deltas with time <= t. But because we check for the capacity over the
 // full horizon, we could have taken < t with no behavior change.
 class ReservoirTimeTabling : public PropagatorInterface {
  public:
+  ~ReservoirTimeTabling() override;
   ReservoirTimeTabling(absl::Span<const Literal> enforcement_literals,
                        absl::Span<const AffineExpression> times,
                        absl::Span<const AffineExpression> deltas,
@@ -60,8 +63,8 @@ class ReservoirTimeTabling : public PropagatorInterface {
   bool Propagate() final;
 
  private:
-  // The rectangle will be ordered by start, and the end of each rectangle
-  // will be equal to the start of the next one. The height correspond to the
+  // The rectangles will be ordered by start, and the end of each rectangle
+  // will be equal to the start of the next one. The height corresponds to the
   // one from start (inclusive) until the next one (exclusive).
   struct ProfileRectangle {
     ProfileRectangle() = default;
@@ -100,13 +103,21 @@ class ReservoirTimeTabling : public PropagatorInterface {
   // Model class.
   const VariablesAssignment& assignment_;
   const IntegerTrail& integer_trail_;
+  SharedStatistics* shared_stats_;
   EnforcementHelper& enforcement_helper_;
   EnforcementId enforcement_id_;
 
   // Temporary data.
-  std::vector<Literal> literal_reason_;
-  std::vector<IntegerLiteral> integer_reason_;
-  std::vector<ProfileRectangle> profile_;
+  FixedCapacityVector<Literal> literal_reason_;
+  FixedCapacityVector<IntegerLiteral> integer_reason_;
+  FixedCapacityVector<ProfileRectangle> profile_;
+
+  // Counters.
+  int64_t num_calls_ = 0;
+  int64_t num_explanations_ = 0;
+  int64_t num_conflicts_ = 0;
+  int64_t num_time_increases_ = 0;
+  int64_t num_time_decreases_ = 0;
 };
 
 // A strongly quadratic version of Time Tabling filtering. This propagator
@@ -129,8 +140,8 @@ class TimeTablingPerTask : public PropagatorInterface {
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  // The rectangle will be ordered by start, and the end of each rectangle
-  // will be equal to the start of the next one. The height correspond to the
+  // The rectangles will be ordered by start, and the end of each rectangle
+  // will be equal to the start of the next one. The height corresponds to the
   // one from start (inclusive) until the next one (exclusive).
   struct ProfileRectangle {
     /* const */ IntegerValue start;
@@ -159,20 +170,20 @@ class TimeTablingPerTask : public PropagatorInterface {
 
   // Tries to increase the minimum start time of task_id. This assumes tasks are
   // processed by increasing start_min so that the starting profile_index only
-  // increase.
+  // increases.
   bool SweepTask(int task_id, IntegerValue initial_start_min,
                  IntegerValue conflict_height, int* profile_index);
 
-  // Updates the starting time of task_id to right and explain it. The reason is
-  // all the mandatory parts contained in [left, right).
+  // Updates the starting time of task_id to right and explains it. The reason
+  // is all the mandatory parts contained in [left, right).
   bool UpdateStartingTime(int task_id, IntegerValue left, IntegerValue right);
 
-  // Increases the minimum capacity to new_min and explain it. The reason is all
-  // the mandatory parts that overlap time.
+  // Increases the minimum capacity to new_min and explains it. The reason is
+  // all the mandatory parts that overlap time.
   bool IncreaseCapacity(IntegerValue time, IntegerValue new_min);
 
   // Explains the state of the profile in the time interval [left, right) that
-  // allow to push task_id. The reason is all the mandatory parts that overlap
+  // allows pushing task_id. The reason is all the mandatory parts that overlap
   // the interval. The current reason is not cleared when this method is called.
   void AddProfileReason(int task_id, IntegerValue left, IntegerValue right,
                         IntegerValue capacity_threshold);
@@ -185,7 +196,7 @@ class TimeTablingPerTask : public PropagatorInterface {
     return integer_trail_->UpperBound(capacity_);
   }
 
-  // Returns true if the tasks is present and has a mantatory part.
+  // Returns true if the task is present and has a mandatory part.
   // This is only valid after BuildProfile() has been called.
   bool IsInProfile(int t) const { return cached_demands_min_[t] > 0; }
 
@@ -209,12 +220,12 @@ class TimeTablingPerTask : public PropagatorInterface {
   std::vector<int> profile_tasks_;
   int num_profile_tasks_;
 
-  // Only task with mandatory part will have their demand cached.
+  // Only tasks with a mandatory part will have their demand cached.
   // Others will have zero here.
   std::vector<IntegerValue> cached_demands_min_;
 
   // Statically computed.
-  // This allow to simplify the profile for common usage.
+  // This allows simplifying the profile for common usage.
   bool has_demand_equal_to_capacity_ = false;
   IntegerValue initial_max_demand_;
 };

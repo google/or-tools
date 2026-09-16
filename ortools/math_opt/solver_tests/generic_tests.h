@@ -20,16 +20,18 @@
 #include <ostream>
 #include <string>
 
+#include "absl/base/attributes.h"
 #include "absl/status/statusor.h"
 #include "gtest/gtest.h"
 #include "ortools/math_opt/cpp/math_opt.h"
+#include "ortools/math_opt/solver_tests/test_models.h"
 
 namespace operations_research {
 namespace math_opt {
 
 struct GenericTestParameters {
   GenericTestParameters(SolverType solver_type, bool support_interrupter,
-                        bool integer_variables, std::string expected_log,
+                        TestModelClass model_class, std::string expected_log,
                         SolveParameters solve_parameters = {});
 
   // The tested solver.
@@ -38,8 +40,8 @@ struct GenericTestParameters {
   // True if the solver support SolveInterrupter.
   bool support_interrupter;
 
-  // True if the tests should be performed with integer variables.
-  bool integer_variables;
+  // What type of model to run the solver on.
+  TestModelClass model_class;
 
   // A message included in the solver logs when an optimal solution is found.
   std::string expected_log;
@@ -81,7 +83,7 @@ struct TimeLimitTestParameters {
   // The tested solver.
   SolverType solver_type;
 
-  // The test problem will be a 0-1 IP if true, otherwise will be an LP.
+  // Should we use integer variables or continuous ones.
   bool integer_variables;
 
   // A supported callback event, or nullopt if no event is supported.
@@ -96,6 +98,9 @@ struct TimeLimitTestParameters {
 // These tests require that the underlying solver supports a callback. The tests
 // will create either a small LP or IP, depending on the bool
 // integer_variables below.
+//
+// NOTE: min cost flow solver is not supported for this suite, as there are no
+// time limits or callbacks supported yet.
 //
 // To use these tests, in file <solver>_test.cc write:
 //   INSTANTIATE_TEST_SUITE_P(<Solver>TimeLimitTest, TimeLimitTest,

@@ -131,7 +131,7 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> AllSolversRegistry::Create(
     factory = gtl::FindOrNull(registered_solvers_, solver_type);
   }
   if (factory == nullptr) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "solver type " << SolverTypeName(solver_type)
            << " is not registered"
            << ", support for this solver has not been compiled";

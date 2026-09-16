@@ -24,13 +24,15 @@
 #include "absl/types/span.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/algorithms/sparse_permutation.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/util.h"
 
 namespace operations_research {
 namespace sat {
 
 std::vector<std::vector<int>> BasicOrbitopeExtraction(
     absl::Span<const std::unique_ptr<SparsePermutation>> generators) {
-  // Count the number of permutations that are compositions of 2-cycle and
+  // Count the number of permutations that are compositions of 2-cycles and
   // regroup them according to the number of cycles.
   std::vector<std::vector<int>> num_cycles_to_2cyclers;
   for (int g = 0; g < generators.size(); ++g) {
@@ -71,7 +73,7 @@ std::vector<std::vector<int>> BasicOrbitopeExtraction(
   std::vector<std::vector<int>> orbitope;
   if (best == -1) return orbitope;
 
-  // We will track the element already added so we never have duplicates.
+  // We will track the elements already added so we never have duplicates.
   std::vector<bool> in_matrix;
 
   // Greedily grow the orbitope.
@@ -94,10 +96,10 @@ std::vector<std::vector<int>> BasicOrbitopeExtraction(
     // We want to find a column such that g sends it to variables not already
     // in the orbitope matrix.
     //
-    // Note(user): This relies on the cycle in each permutation to be ordered by
-    // smaller element first. This way we don't have to account any row
-    // permutation of the orbitope matrix. The code that detect the symmetries
-    // of the problem should already return permutation in this canonical
+    // Note(user): This relies on the cycles in each permutation to be ordered
+    // by smallest element first. This way we don't have to account for any row
+    // permutation of the orbitope matrix. The code that detects the symmetries
+    // of the problem should already return permutations in this canonical
     // format.
     std::vector<int> grow;
     int matching_column_index = -1;
@@ -249,6 +251,48 @@ std::unique_ptr<SparsePermutation> CreateSparsePermutationFromProto(
     perm->CloseCurrentCycle();
   }
   return perm;
+}
+
+void GetOrbitsAndRepresentatives(const CpModelProto& model_proto,
+                                 CompactVectorVector<int, int>& orbits,
+                                 std::vector<int>& var_to_orbit_index,
+                                 std::vector<int>& var_to_representative) {
+  orbits.clear();
+  var_to_orbit_index.clear();
+  var_to_representative.clear();
+  if (!model_proto.has_symmetry()) return;
+  const int num_vars = model_proto.variables().size();
+  std::vector<std::unique_ptr<SparsePermutation>> generators;
+  for (const SparsePermutationProto& perm :
+       model_proto.symmetry().permutations()) {
+    generators.emplace_back(CreateSparsePermutationFromProto(num_vars, perm));
+  }
+  if (generators.empty()) return;
+
+  // Get orbits in terms of IntegerVariable.
+  var_to_orbit_index = GetOrbits(num_vars, generators);
+
+  // Fill orbits_.
+  CompactVectorVectorBuilder<int, int> orbits_builder;
+  orbits_builder.ReserveNumItems(num_vars);
+  for (int var = 0; var < num_vars; ++var) {
+    const int orbit_index = var_to_orbit_index[var];
+    if (orbit_index == -1) continue;
+    orbits_builder.Add(orbit_index, var);
+  }
+  orbits.ResetFromBuilder(orbits_builder);
+  if (orbits.empty()) return;
+
+  // Fill representative.
+  var_to_representative.resize(num_vars);
+  for (int var = 0; var < num_vars; ++var) {
+    const int orbit_index = var_to_orbit_index[var];
+    if (orbit_index == -1) {
+      var_to_representative[var] = var;
+    } else {
+      var_to_representative[var] = orbits[orbit_index][0];
+    }
+  }
 }
 
 }  // namespace sat

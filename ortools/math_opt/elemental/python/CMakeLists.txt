@@ -35,7 +35,7 @@ target_link_libraries(math_opt_elemental_pybind11 PRIVATE
   protobuf::libprotobuf)
 add_library(${PROJECT_NAMESPACE}::math_opt_elemental_pybind11 ALIAS math_opt_elemental_pybind11)
 
-if(BUILD_TESTING)
+if(BUILD_PYTHON_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")
 
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)

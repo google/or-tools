@@ -58,7 +58,7 @@ def assert_is_a_number(x: NumberT) -> np.double:
     """Asserts that x is a number and converts to a np.double."""
     if not is_a_number(x):
         raise TypeError("Not a number: %s" % x)
-    return np.double(x)
+    return np.double(x)  # pyrefly: ignore[bad-argument-type]
 
 
 def assert_is_a_number_array(x: Sequence[NumberT]) -> npt.NDArray[np.double]:

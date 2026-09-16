@@ -15,7 +15,6 @@
 
 #include <cstdint>
 #include <initializer_list>
-#include <limits>
 #include <ostream>
 #include <string>
 #include <utility>
@@ -28,7 +27,6 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/strong_int.h"
-#include "ortools/base/types.h"
 #include "ortools/math_opt/core/sparse_vector.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"

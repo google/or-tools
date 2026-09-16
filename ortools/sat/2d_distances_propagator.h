@@ -28,15 +28,16 @@
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
 
 // This class implements a propagator for non_overlap_2d constraints that uses
 // the Linear2Bounds to detect precedences between pairs of boxes and
-// detect a conflict if the precedences implies an overlap between the two
+// detect a conflict if the precedences imply an overlap between the two
 // boxes. For doing this efficiently, it keeps track of pairs of boxes that have
-// non-fixed precedences in the Linear2Bounds and only check those in the
+// non-fixed precedences in the Linear2Bounds and only checks those in the
 // propagation.
 class Precedences2DPropagator : public PropagatorInterface {
  public:
@@ -85,6 +86,7 @@ class Precedences2DPropagator : public PropagatorInterface {
   Linear2Indices* lin2_indices_;
   Trail* trail_;
   IntegerTrail* integer_trail_;
+  TimeLimit* time_limit_;
 
   int last_helper_inprocessing_count_ = -1;
   int num_known_linear2_ = 0;

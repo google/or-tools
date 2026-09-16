@@ -1,10 +1,11 @@
-FROM ortools/cmake:opensuse_swig AS env
+ARG TARGETARCH
+FROM ortools/cmake:${TARGETARCH:+${TARGETARCH}_}opensuse_swig AS env
 
 # Install Java JDK and Maven
-RUN zypper refresh \
+RUN zypper update -y \
 && zypper install -y java-21-openjdk-devel maven \
 && zypper clean -a
-ENV PATH=/usr/share/maven/bin:$PATH
+ENV JAVA_HOME=/usr/lib64/jvm/java-21-openjdk
 
 FROM env AS devel
 WORKDIR /home/project
@@ -15,7 +16,7 @@ ENV CMAKE_BUILD_PARALLEL_LEVEL=${CMAKE_BUILD_PARALLEL_LEVEL:-4}
 
 FROM devel AS build
 RUN cmake -S. -Bbuild -DBUILD_JAVA=ON -DSKIP_GPG=ON \
- -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
+-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
 RUN cmake --build build --target all -v
 RUN cmake --build build --target install -v
 

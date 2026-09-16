@@ -13,6 +13,7 @@
 
 #include "ortools/graph_base/graph.h"
 
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
@@ -32,7 +33,6 @@
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/log_severity.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 
@@ -50,18 +50,125 @@ DEFINE_STRONG_INT_TYPE(StrongNodeId, int32_t);
 DEFINE_STRONG_INT_TYPE(StrongArcId, int32_t);
 
 // Iterators.
-#if __cplusplus >= 202002L
-static_assert(std::forward_iterator<ListGraph<>::OutgoingArcIterator>);
-static_assert(std::forward_iterator<ListGraph<>::OutgoingHeadIterator>);
-static_assert(
-    std::forward_iterator<ReverseArcListGraph<>::OutgoingArcIterator>);
-static_assert(
-    std::forward_iterator<ReverseArcListGraph<>::IncomingArcIterator>);
-static_assert(std::input_iterator<
-              ReverseArcListGraph<>::OutgoingOrOppositeIncomingArcIterator>);
-static_assert(
-    std::forward_iterator<ReverseArcListGraph<>::OutgoingHeadIterator>);
-#endif  // __cplusplus >= 202002L
+template <typename T>
+concept IsInputIterator =
+    std::input_iterator<T> &&
+    // This is supposed to be part of the input_iterator concept but is not in
+    // the current libc++ implementation.
+    std::same_as<typename std::iterator_traits<T>::iterator_category,
+                 std::input_iterator_tag>;
+
+template <typename T>
+concept IsForwardIterator =
+    std::forward_iterator<T> &&
+    std::same_as<typename std::iterator_traits<T>::iterator_category,
+                 std::forward_iterator_tag>;
+
+template <typename T>
+concept IsRandomAccessIterator =
+    std::random_access_iterator<T> &&
+    std::same_as<typename std::iterator_traits<T>::iterator_category,
+                 std::random_access_iterator_tag>;
+
+class ConceptsTest : public ::testing::Test {
+ protected:
+  template <typename GraphT>
+  struct IteratorTypes {
+    static constexpr auto kNode0 = typename GraphT::NodeIndex(0);
+
+    using OutgoingArcs =
+        decltype(std::declval<GraphT>().OutgoingArcs(kNode0).begin());
+
+    template <typename T = GraphT>
+    using IncomingArcs =
+        decltype(std::declval<T>().IncomingArcs(kNode0).begin());
+
+    using OutgoingHeads = decltype(std::declval<GraphT>()[kNode0].begin());
+
+    template <typename T = GraphT>
+    using OppositeIncomingArcs =
+        decltype(std::declval<T>().OppositeIncomingArcs(kNode0).begin());
+
+    template <typename T = GraphT>
+    using OutgoingOrOppositeIncomingArcs =
+        decltype(std::declval<T>()
+                     .OutgoingOrOppositeIncomingArcs(kNode0)
+                     .begin());
+  };
+};
+
+TEST_F(ConceptsTest, ListGraph) {
+  using UntypedIterators = IteratorTypes<ListGraph<>>;
+
+  static_assert(IsForwardIterator<UntypedIterators::OutgoingArcs>);
+  static_assert(IsForwardIterator<UntypedIterators::OutgoingHeads>);
+
+  using TypedIterators = IteratorTypes<ListGraph<StrongNodeId, StrongArcId>>;
+
+  static_assert(IsForwardIterator<TypedIterators::OutgoingArcs>);
+  static_assert(IsForwardIterator<TypedIterators::OutgoingHeads>);
+}
+
+TEST_F(ConceptsTest, StaticGraph) {
+  using UntypedIterators = IteratorTypes<StaticGraph<>>;
+
+  static_assert(IsRandomAccessIterator<UntypedIterators::OutgoingArcs>);
+  static_assert(IsRandomAccessIterator<UntypedIterators::OutgoingHeads>);
+
+  using TypedIterators = IteratorTypes<StaticGraph<StrongNodeId, StrongArcId>>;
+
+  static_assert(IsRandomAccessIterator<TypedIterators::OutgoingArcs>);
+  static_assert(IsRandomAccessIterator<TypedIterators::OutgoingHeads>);
+}
+
+TEST_F(ConceptsTest, ReverseArcListGraph) {
+  using UntypedIterators = IteratorTypes<ReverseArcListGraph<>>;
+
+  static_assert(IsForwardIterator<UntypedIterators::OutgoingArcs>);
+  static_assert(IsForwardIterator<UntypedIterators::OutgoingHeads>);
+  static_assert(IsForwardIterator<UntypedIterators::IncomingArcs<>>);
+  static_assert(IsForwardIterator<UntypedIterators::OppositeIncomingArcs<>>);
+  // TODO(user): Make this a forward iterator.
+  static_assert(
+      IsInputIterator<UntypedIterators::OutgoingOrOppositeIncomingArcs<>>);
+
+  using TypedIterators =
+      IteratorTypes<ReverseArcListGraph<StrongNodeId, StrongArcId>>;
+
+  static_assert(IsForwardIterator<TypedIterators::OutgoingArcs>);
+  static_assert(IsForwardIterator<TypedIterators::OutgoingHeads>);
+  static_assert(IsForwardIterator<TypedIterators::IncomingArcs<>>);
+  static_assert(IsForwardIterator<TypedIterators::OppositeIncomingArcs<>>);
+  // TODO(user): Make this a forward iterator.
+  static_assert(
+      IsInputIterator<TypedIterators::OutgoingOrOppositeIncomingArcs<>>);
+}
+
+TEST_F(ConceptsTest, ReverseArcStaticGraph) {
+  using UntypedIterators = IteratorTypes<ReverseArcStaticGraph<>>;
+
+  static_assert(IsRandomAccessIterator<UntypedIterators::OutgoingArcs>);
+  static_assert(IsRandomAccessIterator<UntypedIterators::OutgoingHeads>);
+  // TODO(user): Make this a random access iterator.
+  static_assert(IsForwardIterator<UntypedIterators::IncomingArcs<>>);
+  static_assert(
+      IsRandomAccessIterator<UntypedIterators::OppositeIncomingArcs<>>);
+  // TODO(user): Make this a random access iterator.
+  static_assert(
+      IsInputIterator<UntypedIterators::OutgoingOrOppositeIncomingArcs<>>);
+
+  using TypedIterators =
+      IteratorTypes<ReverseArcStaticGraph<StrongNodeId, StrongArcId>>;
+
+  static_assert(IsRandomAccessIterator<TypedIterators::OutgoingArcs>);
+  static_assert(IsRandomAccessIterator<TypedIterators::OutgoingHeads>);
+  // TODO(user): Make this a random access iterator.
+  static_assert(IsForwardIterator<TypedIterators::IncomingArcs<>>);
+  static_assert(IsRandomAccessIterator<TypedIterators::OppositeIncomingArcs<>>);
+  // TODO(user): Make this a random access iterator.
+  static_assert(
+      IsInputIterator<TypedIterators::OutgoingOrOppositeIncomingArcs<>>);
+}
 
 // GraphTraits.
 static_assert(
@@ -860,261 +967,6 @@ TYPED_TEST(GenericGraphInterfaceTest, PastTheEndIterators) {
   }
 }
 
-// TODO(b/501313028): Remove once graphs are always built.
-TEST(StaticGraphTest, HeadAndTailBeforeAndAfterBuild) {
-  for (const bool poll_in_the_middle_of_construction : {false, true}) {
-    for (const bool build : {false, true}) {
-      SCOPED_TRACE(absl::StrCat(
-          "Polling in the middle of construction: ",
-          poll_in_the_middle_of_construction,
-          ", Calling Build() at the end of the construction: ", build));
-      StaticGraph<> graph;
-      graph.AddArc(1, 3);
-      graph.AddArc(2, 1);
-      graph.AddArc(4, 6);
-      if (poll_in_the_middle_of_construction) {
-        ASSERT_EQ(1, graph.Tail(0));
-        ASSERT_EQ(3, graph.Head(0));
-        ASSERT_EQ(2, graph.Tail(1));
-        ASSERT_EQ(1, graph.Head(1));
-        ASSERT_EQ(4, graph.Tail(2));
-        ASSERT_EQ(6, graph.Head(2));
-        ASSERT_EQ(3, graph.num_arcs());
-      }
-      graph.AddArc(2, 1);
-      graph.AddArc(0, 0);
-      graph.AddArc(7, 7);
-      if (build) {
-        graph.Build();
-        std::vector<std::string> arcs;
-        for (int i = 0; i < graph.num_arcs(); ++i) {
-          arcs.push_back(absl::StrCat(graph.Tail(i), "->", graph.Head(i)));
-        }
-        EXPECT_THAT(arcs, UnorderedElementsAre("1->3", "2->1", "4->6", "2->1",
-                                               "0->0", "7->7"));
-      } else {
-        ASSERT_EQ(1, graph.Tail(0));
-        ASSERT_EQ(3, graph.Head(0));
-        ASSERT_EQ(2, graph.Tail(1));
-        ASSERT_EQ(1, graph.Head(1));
-        ASSERT_EQ(4, graph.Tail(2));
-        ASSERT_EQ(6, graph.Head(2));
-        ASSERT_EQ(2, graph.Tail(3));
-        ASSERT_EQ(1, graph.Head(3));
-        ASSERT_EQ(0, graph.Tail(4));
-        ASSERT_EQ(0, graph.Head(4));
-        ASSERT_EQ(7, graph.Tail(5));
-        ASSERT_EQ(7, graph.Head(5));
-        ASSERT_EQ(6, graph.num_arcs());
-      }
-    }
-  }
-}
-
-TEST(StaticGraphTest, FromArcs) {
-  const std::vector<std::pair<int, int>> arcs = {{1, 2}, {1, 0}};
-  StaticGraph<> graph = StaticGraph<>::FromArcs(3, arcs);
-  EXPECT_EQ(3, graph.num_nodes());
-  EXPECT_EQ(3, size(graph));
-  EXPECT_EQ(2, graph.num_arcs());
-  std::vector<std::pair<int, int>> read_arcs;
-  for (const auto arc : graph.AllForwardArcs()) {
-    read_arcs.push_back({graph.Tail(arc), graph.Head(arc)});
-  }
-  EXPECT_THAT(read_arcs, UnorderedElementsAre(Pair(1, 2), Pair(1, 0)));
-}
-
-TEST(CompleteGraphTest, EmptyGraph) {
-  CompleteGraph<> graph(0);
-  EXPECT_EQ(0, graph.num_nodes());
-  EXPECT_EQ(0, size(graph));
-  EXPECT_EQ(0, graph.num_arcs());
-  for (const auto arc : graph.AllForwardArcs()) {
-    EXPECT_TRUE(false);
-    EXPECT_TRUE(graph.IsArcValid(arc));
-  }
-}
-
-TEST(CompleteGraphTest, OneNodeGraph) {
-  CompleteGraph<> graph(1);
-  EXPECT_EQ(1, graph.num_nodes());
-  EXPECT_EQ(1, size(graph));
-  EXPECT_EQ(1, graph.num_arcs());
-  EXPECT_EQ(graph.Head(0), 0);
-  EXPECT_EQ(graph.Tail(0), 0);
-}
-
-TEST(CompleteGraphTest, NonEmptyGraph) {
-  static const int kNumNodes = 5;
-  CompleteGraph<> graph(kNumNodes);
-  EXPECT_EQ(kNumNodes, graph.num_nodes());
-  EXPECT_EQ(kNumNodes, size(graph));
-  EXPECT_EQ(kNumNodes * kNumNodes, graph.num_arcs());
-  int count = 0;
-  for (const auto arc : graph.AllForwardArcs()) {
-    ++count;
-    EXPECT_TRUE(graph.IsArcValid(arc));
-  }
-  EXPECT_EQ(kNumNodes * kNumNodes, count);
-  for (const auto node : graph.AllNodes()) {
-    EXPECT_EQ(kNumNodes, graph.OutDegree(node));
-    EXPECT_TRUE(graph.IsNodeValid(node));
-    count = 0;
-    for (const auto arc : graph.OutgoingArcs(node)) {
-      EXPECT_EQ(node, graph.Tail(arc));
-      ++count;
-      EXPECT_EQ(*(graph.OutgoingArcsStartingFrom(node, arc).begin()), arc);
-    }
-    EXPECT_EQ(kNumNodes, count);
-    count = 0;
-    for (const auto head : graph[node]) {
-      ++count;
-      EXPECT_TRUE(graph.IsNodeValid(head));
-    }
-    EXPECT_EQ(kNumNodes, count);
-  }
-}
-
-TEST(CompleteBipartiteGraphTest, EmptyGraph) {
-  CompleteBipartiteGraph<> graph(0, 0);
-  EXPECT_EQ(0, graph.num_nodes());
-  EXPECT_EQ(0, size(graph));
-  EXPECT_EQ(0, graph.num_arcs());
-  EXPECT_TRUE(graph.AllForwardArcs().empty());
-}
-
-TEST(CompleteBipartiteGraphTest, OneRightNodeGraph) {
-  CompleteBipartiteGraph<> graph(3, 1);
-  EXPECT_EQ(4, graph.num_nodes());
-  EXPECT_EQ(4, size(graph));
-  EXPECT_EQ(3, graph.num_arcs());
-  EXPECT_EQ(graph.Head(0), 3);
-  EXPECT_EQ(graph.Head(1), 3);
-  EXPECT_EQ(graph.Head(2), 3);
-  EXPECT_EQ(graph.Tail(0), 0);
-  EXPECT_EQ(graph.Tail(1), 1);
-  EXPECT_EQ(graph.Tail(2), 2);
-}
-
-TEST(CompleteBipartiteGraphTest, NonEmptyGraph) {
-  static const int kNumRightNodes = 5;
-  static const int kNumLeftNodes = 3;
-  CompleteBipartiteGraph<> graph(kNumLeftNodes, kNumRightNodes);
-  EXPECT_EQ(kNumLeftNodes + kNumRightNodes, graph.num_nodes());
-  EXPECT_EQ(graph.num_nodes(), size(graph));
-  EXPECT_EQ(kNumLeftNodes * kNumRightNodes, graph.num_arcs());
-  int count = 0;
-  for (const auto arc : graph.AllForwardArcs()) {
-    ++count;
-    EXPECT_TRUE(graph.IsArcValid(arc));
-  }
-  EXPECT_EQ(kNumLeftNodes * kNumRightNodes, count);
-  for (const auto node : graph.AllNodes()) {
-    EXPECT_EQ(node < kNumLeftNodes ? kNumRightNodes : 0, graph.OutDegree(node));
-    EXPECT_TRUE(graph.IsNodeValid(node));
-    count = 0;
-    for (const auto arc : graph.OutgoingArcs(node)) {
-      EXPECT_EQ(node, graph.Tail(arc));
-      EXPECT_EQ(kNumLeftNodes + count, graph.Head(arc));
-      ++count;
-      EXPECT_EQ(*(graph.OutgoingArcsStartingFrom(node, arc).begin()), arc);
-    }
-    EXPECT_EQ(node < kNumLeftNodes ? kNumRightNodes : 0, count);
-    count = 0;
-    for (const auto head : graph[node]) {
-      EXPECT_EQ(head, kNumLeftNodes + count);
-      EXPECT_TRUE(graph.IsNodeValid(head));
-      ++count;
-    }
-    EXPECT_EQ(node < kNumLeftNodes ? kNumRightNodes : 0, count);
-  }
-  for (const auto arc : graph.AllForwardArcs()) {
-    EXPECT_EQ(graph.GetArc(graph.Tail(arc), graph.Head(arc)), arc);
-  }
-}
-
-TEST(CompleteBipartiteGraphTest, Overflow) {
-  using NodeIndex = uint32_t;
-  using ArcIndex = uint64_t;
-  using Graph = CompleteBipartiteGraph<NodeIndex, ArcIndex>;
-  constexpr NodeIndex kNumNodes = std::numeric_limits<NodeIndex>::max() / 2;
-  Graph graph(kNumNodes, kNumNodes);
-  EXPECT_EQ(2 * kNumNodes, graph.num_nodes());
-  EXPECT_EQ(graph.num_nodes(), size(graph));
-  EXPECT_EQ(kNumNodes * kNumNodes, graph.num_arcs());
-  constexpr uint64_t kLeft = kNumNodes - 3;
-  constexpr uint64_t kRight = kNumNodes + kNumNodes - 2;
-
-  EXPECT_EQ(graph.GetArc(kLeft, kRight),
-            kLeft * kNumNodes + (kRight - kNumNodes));
-}
-
-TEST(SVector, NoHeapCheckerFalsePositive) {
-  static const internal::SVector<int, int32_t>* const kVector = []() {
-    auto* vector = new internal::SVector<int, int32_t>();
-    vector->resize(5000);
-    return vector;
-  }();
-  EXPECT_EQ(kVector->size(), 5000);
-}
-
-TEST(Permute, IntArray) {
-  int array[] = {4, 5, 6};
-  std::vector<int> permutation = {0, 2, 1};
-  util::Permute(permutation, &array);
-  EXPECT_THAT(array, ElementsAre(4, 6, 5));
-}
-
-TEST(Permute, BoolVector) {
-  std::vector<bool> array = {true, false, true};
-  std::vector<int> permutation = {0, 2, 1};
-  util::Permute(permutation, &array);
-  EXPECT_THAT(array, ElementsAre(true, true, false));
-}
-
-TEST(Permute, StrongVector) {
-  util_intops::StrongVector<StrongArcId, int> array = {4, 5, 6};
-  std::vector<StrongArcId> permutation = {StrongArcId(0), StrongArcId(2),
-                                          StrongArcId(1)};
-  util::Permute(permutation, &array);
-  EXPECT_THAT(array, ElementsAre(4, 6, 5));
-}
-
-class TestGraphBuilder
-    : public internal::GraphBuilderBase<TestGraphBuilder, ListGraph<int, int>,
-                                        int, int> {
- public:
-  static constexpr bool kBuildPermutesArcs = true;
-
-  explicit TestGraphBuilder(std::vector<int> permutation)
-      : permutation_(std::move(permutation)) {}
-
-  std::unique_ptr<ListGraph<int, int>> Build(std::vector<int>* permutation) && {
-    *permutation = std::move(permutation_);
-    return nullptr;
-  }
-
- private:
-  std::vector<int> permutation_;
-};
-
-TEST(BuildAndPermuteTest, Works) {
-  TestGraphBuilder builder({0, 2, 1});
-  int array[] = {4, 5, 6};
-  std::vector<bool> bool_vector = {true, false, true};
-  util_intops::StrongVector<StrongArcId, int> strong_vector = {4, 5, 6};
-  std::unique_ptr<int> unique_ptr_array[] = {std::make_unique<int>(4),
-                                             std::make_unique<int>(5),
-                                             std::make_unique<int>(6)};
-  auto graph = std::move(builder).BuildAndPermute(
-      array, bool_vector, strong_vector, unique_ptr_array);
-  EXPECT_THAT(array, ElementsAre(4, 6, 5));
-  EXPECT_THAT(bool_vector, ElementsAre(true, true, false));
-  EXPECT_THAT(strong_vector, ElementsAre(4, 6, 5));
-  EXPECT_THAT(unique_ptr_array,
-              ElementsAre(Pointee(4), Pointee(6), Pointee(5)));
-}
-
 template <typename Graph>
 class BMGraphBuilder : public Graph::Builder {
   using Base = Graph::Builder;
@@ -1207,7 +1059,7 @@ class BMGraphBuilder<VectorVectorGraph> {
 
   void AddArc(int32_t tail, int32_t head) { (*graph_)[tail].push_back(head); }
 
-  std::unique_ptr<VectorVectorGraph> Build(nullptr_t) && {
+  std::unique_ptr<VectorVectorGraph> Build(std::nullptr_t) && {
     return std::move(graph_);
   }
 
@@ -1372,7 +1224,7 @@ static void BM_IntegralTypeCopy(benchmark::State& state) {
   const auto graph = BuildGraphForIterationsBenchmarks<GraphType>();
 
   for (auto s : state) {
-    GraphType copied;
+    GraphType copied = typename GraphType::Builder().BuildGraph(nullptr);
     benchmark::DoNotOptimize(copied = GraphType(graph));
   }
 }

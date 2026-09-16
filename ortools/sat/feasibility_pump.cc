@@ -22,15 +22,16 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
-#include "absl/meta/type_traits.h"
+#include "absl/log/log.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/revised_simplex.h"
-#include "ortools/glop/status.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_data_utils.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/sparse_column.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -65,11 +66,12 @@ FeasibilityPump::FeasibilityPump(Model* model)
       incomplete_solutions_(model->Mutable<SharedIncompleteSolutionManager>()),
       sat_solver_(model->GetOrCreate<SatSolver>()),
       domains_(model->GetOrCreate<IntegerDomains>()),
-      mapping_(model->Get<CpModelMapping>()) {
+      mapping_(model->Get<CpModelMapping>()),
+      binary_implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()) {
   // Tweak the default parameters to make the solve incremental.
   glop::GlopParameters parameters;
   // Note(user): Primal simplex does better here since we have a limit on
-  // simplex iterations. So dual simplex sometimes fails to find a LP feasible
+  // simplex iterations. So dual simplex sometimes fails to find an LP feasible
   // solution.
   parameters.set_use_dual_simplex(false);
   parameters.set_max_number_of_iterations(2000);
@@ -184,8 +186,8 @@ bool FeasibilityPump::Solve() {
     if (!SolveLp()) break;
     if (lp_solution_is_integer_) break;
     if (!Round()) break;
-    // We don't end this loop if the integer solutions is feasible in hope to
-    // get better solution.
+    // We don't end this loop if the integer solution is feasible in hope to
+    // get a better solution.
     if (integer_solution_is_feasible_) MaybePushToRepo();
   }
 
@@ -385,10 +387,10 @@ bool FeasibilityPump::SolveLp() {
   const int num_vars = integer_variables_.size();
   VLOG(3) << "LP relaxation: " << lp_data_.GetDimensionString() << ".";
 
-  const auto status = simplex_.Solve(lp_data_, time_limit_);
+  const auto status = simplex_.Solve(lp_data_, *time_limit_);
   total_num_simplex_iterations_ += simplex_.GetNumberOfIterations();
-  if (!status.ok()) {
-    VLOG(1) << "The LP solver encountered an error: " << status.error_message();
+  if (status.Is<glop::SolveStatus::Abnormal>()) {
+    VLOG(1) << "The LP solver encountered an error: " << status;
     simplex_.ClearStateForNextSolve();
     return false;
   }
@@ -396,16 +398,16 @@ bool FeasibilityPump::SolveLp() {
   // TODO(user): This shouldn't really happen except if the problem is UNSAT.
   // But we can't just rely on a potentially imprecise LP to close the problem.
   // The rest of the solver should do that with exact precision.
-  VLOG(3) << "simplex status: " << simplex_.GetProblemStatus();
-  if (simplex_.GetProblemStatus() == glop::ProblemStatus::PRIMAL_INFEASIBLE) {
+  VLOG(3) << "simplex status: " << status;
+  if (status.Is<glop::SolveStatus::PrimalInfeasible>()) {
     return false;
   }
 
   lp_solution_fractionality_ = 0.0;
-  if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL ||
-      simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_FEASIBLE ||
-      simplex_.GetProblemStatus() == glop::ProblemStatus::PRIMAL_FEASIBLE ||
-      simplex_.GetProblemStatus() == glop::ProblemStatus::IMPRECISE) {
+  if (status.Is<glop::SolveStatus::Optimal>() ||
+      status.Is<glop::SolveStatus::DualFeasible>() ||
+      status.Is<glop::SolveStatus::PrimalFeasible>() ||
+      status.Is<glop::SolveStatus::Imprecise>()) {
     lp_solution_is_set_ = true;
     for (int i = 0; i < num_vars; i++) {
       const double value = GetVariableValueAtCpScale(ColIndex(i));
@@ -604,6 +606,8 @@ bool FeasibilityPump::PropagationRounding() {
     CHECK(VariableIsPositive(var));
     const Domain& domain = (*domains_)[GetPositiveOnlyIndex(var)];
 
+    if (!sat_solver_->FinishPropagation()) return false;
+
     const IntegerValue lb = integer_trail_->LowerBound(var);
     const IntegerValue ub = integer_trail_->UpperBound(var);
     if (lb == ub) {
@@ -663,9 +667,9 @@ bool FeasibilityPump::PropagationRounding() {
     // Propagate the value.
     //
     // When we want to fix the variable at its lb or ub, we do not create an
-    // equality literal to minimize the number of new literal we create. This
+    // equality literal to minimize the number of new literals we create. This
     // is because creating an "== value" literal will implicitly also create
-    // a ">= value" and a "<= value" literals.
+    // a ">= value" and a "<= value" literal.
     Literal to_enqueue;
     const IntegerValue value(integer_solution_[var_index]);
     if (value == lb) {
@@ -679,7 +683,16 @@ bool FeasibilityPump::PropagationRounding() {
           integer_encoder_->GetOrCreateLiteralAssociatedToEquality(var, value);
     }
 
-    if (!sat_solver_->FinishPropagation()) return false;
+    if (sat_solver_->Assignment().LiteralIsTrue(to_enqueue)) {
+      // This is rare, so we just abort if this turns out to be assigned to
+      // false. Maybe a better fix would be to try a different to_enqueue on the
+      // same variable.
+      continue;
+    }
+    if (sat_solver_->Assignment().LiteralIsFalse(to_enqueue)) return false;
+
+    to_enqueue = binary_implication_graph_->RepresentativeOf(to_enqueue);
+    DCHECK(!sat_solver_->Assignment().LiteralIsAssigned(to_enqueue));
     const SatSolver::Status decision_status =
         sat_solver_->EnqueueDecisionAndBacktrackOnConflict(to_enqueue);
     if (decision_status != SatSolver::Status::FEASIBLE) return false;
@@ -705,15 +718,12 @@ void FeasibilityPump::FillIntegerSolutionStats() {
     for (const auto& term : integer_lp_[i].terms) {
       const int64_t prod =
           CapProd(integer_solution_[term.first.value()], term.second.value());
-      if (prod <= std::numeric_limits<int64_t>::min() ||
-          prod >= std::numeric_limits<int64_t>::max()) {
+      if (prod <= kint64min || prod >= kint64max) {
         activity = prod;
         break;
       }
       activity = CapAdd(activity, prod);
-      if (activity <= std::numeric_limits<int64_t>::min() ||
-          activity >= std::numeric_limits<int64_t>::max())
-        break;
+      if (activity <= kint64min || activity >= kint64max) break;
     }
     if (activity > integer_lp_[i].ub || activity < integer_lp_[i].lb) {
       integer_solution_is_feasible_ = false;

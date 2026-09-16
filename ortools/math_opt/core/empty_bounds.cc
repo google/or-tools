@@ -13,6 +13,7 @@
 
 #include "ortools/math_opt/core/empty_bounds.h"
 
+#include <cstdint>
 #include <limits>
 
 #include "absl/strings/str_cat.h"

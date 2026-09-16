@@ -13,17 +13,13 @@
 
 #include "ortools/sat/cp_model_copy.h"
 
-#include <algorithm>
-
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/base/protobuf_util.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
@@ -52,9 +48,7 @@ TEST(ModelCopyTest, IntervalsAddLinearConstraints) {
 
   Model model;
   CpModelProto new_cp_model;
-  PresolveContext context(&model, &new_cp_model, nullptr);
-
-  ImportModelWithBasicPresolveIntoContext(initial_model, &context);
+  CopyModel(initial_model, &new_cp_model, &model);
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ -10, 10 ] }
@@ -105,9 +99,7 @@ TEST(ModelCopyTest, IntervalsWithFixedStartAndEnd) {
 
   Model model;
   CpModelProto new_cp_model;
-  PresolveContext context(&model, &new_cp_model, nullptr);
-
-  ImportModelWithBasicPresolveIntoContext(initial_model, &context);
+  CopyModel(initial_model, &new_cp_model, &model);
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 10, 10 ] }
     variables { domain: [ 10, 10 ] }
@@ -140,7 +132,7 @@ TEST(ModelCopyTest, RemoveDuplicateFromClauses) {
       bool_or { literals: [ -4, 9, 8 ] }
     }
   )pb");
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
@@ -155,9 +147,8 @@ TEST(ModelCopyTest, RemoveDuplicateFromClauses) {
   )pb");
   CpModelProto new_cp_model;
   Model model;
-  PresolveContext context(&model, &new_cp_model, nullptr);
-  ImportModelWithBasicPresolveIntoContext(initial_model, &context);
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  CopyModel(initial_model, &new_cp_model, &model);
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, RemoveDuplicateFromEnforcementLiterals) {
@@ -186,7 +177,7 @@ TEST(ModelCopyTest, RemoveDuplicateFromEnforcementLiterals) {
       }
     }
   )pb");
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
@@ -207,28 +198,9 @@ TEST(ModelCopyTest, RemoveDuplicateFromEnforcementLiterals) {
   Model model;
   model.GetOrCreate<SatParameters>()
       ->set_keep_all_feasible_solutions_in_presolve(true);
-  PresolveContext context(&model, &new_cp_model, nullptr);
-  ImportModelWithBasicPresolveIntoContext(initial_model, &context);
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  CopyModel(initial_model, &new_cp_model, &model);
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
-
-namespace {
-std::vector<int> ReverseMapping(const std::vector<int>& mapping) {
-  int max_var = 0;
-  for (int lit : mapping) {
-    if (lit == kNoVariableMapping) continue;
-    max_var = std::max(max_var, PositiveRef(lit));
-  }
-  std::vector<int> reverse_mapping(max_var + 1, kNoVariableMapping);
-  for (int i = 0; i < mapping.size(); ++i) {
-    const int mapped = mapping[i];
-    if (mapped == kNoVariableMapping) continue;
-    reverse_mapping[PositiveRef(mapped)] =
-        RefIsPositive(mapped) ? i : NegatedRef(i);
-  }
-  return reverse_mapping;
-}
-}  // namespace
 
 TEST(ModelCopyTest, RemapLiteralsInBoolOr) {
   const CpModelProto initial_model = ParseTestProto(R"pb(
@@ -246,23 +218,22 @@ TEST(ModelCopyTest, RemapLiteralsInBoolOr) {
   )pb");
   CpModelProto new_cp_model;
   Model model;
-  PresolveContext context(&model, &new_cp_model, nullptr);
   const std::vector<int> variable_mapping = {
       kNoVariableMapping, 1, -3, -3, 1, 0, kNoVariableMapping};
-  const std::vector<int> reverse_mapping = ReverseMapping(variable_mapping);
-  ModelCopy model_copy(&context, variable_mapping, reverse_mapping);
+  ModelCopy model_copy(&new_cp_model, &model, variable_mapping);
 
-  model_copy.ImportVariablesAndMaybeIgnoreNames(initial_model);
-  model_copy.ImportAndSimplifyConstraints(initial_model, /*first_copy=*/true);
-  model_copy.RemapVariablesInProtoAndContext();
+  EXPECT_TRUE(model_copy.ImportVariables(initial_model));
+  EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
+                                                      /*first_copy=*/true));
+  EXPECT_TRUE(model_copy.FinishCopy(initial_model));
 
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     constraints { bool_or { literals: [ 1, 2, -1 ] } }
   )pb");
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, RemapLiteralsInBoolAnd) {
@@ -284,17 +255,16 @@ TEST(ModelCopyTest, RemapLiteralsInBoolAnd) {
   )pb");
   CpModelProto new_cp_model;
   Model model;
-  PresolveContext context(&model, &new_cp_model, nullptr);
   const std::vector<int> variable_mapping = {
       kNoVariableMapping, 0, 1, -2, 0, -2};
-  const std::vector<int> reverse_mapping = ReverseMapping(variable_mapping);
-  ModelCopy model_copy(&context, variable_mapping, reverse_mapping);
+  ModelCopy model_copy(&new_cp_model, &model, variable_mapping);
 
-  model_copy.ImportVariablesAndMaybeIgnoreNames(initial_model);
-  model_copy.ImportAndSimplifyConstraints(initial_model, /*first_copy=*/true);
-  model_copy.RemapVariablesInProtoAndContext();
+  EXPECT_TRUE(model_copy.ImportVariables(initial_model));
+  EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
+                                                      /*first_copy=*/true));
+  EXPECT_TRUE(model_copy.FinishCopy(initial_model));
 
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     constraints { bool_or { literals: [ -1 ] } }
@@ -303,7 +273,7 @@ TEST(ModelCopyTest, RemapLiteralsInBoolAnd) {
       bool_and { literals: [ -2 ] }
     }
   )pb");
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, RemapLiteralsInBoolXor) {
@@ -319,17 +289,16 @@ TEST(ModelCopyTest, RemapLiteralsInBoolXor) {
   )pb");
   CpModelProto new_cp_model;
   Model model;
-  PresolveContext context(&model, &new_cp_model, nullptr);
   const std::vector<int> variable_mapping = {
       kNoVariableMapping, kNoVariableMapping, 0, 1, 2, 3};
-  const std::vector<int> reverse_mapping = ReverseMapping(variable_mapping);
-  ModelCopy model_copy(&context, variable_mapping, reverse_mapping);
+  ModelCopy model_copy(&new_cp_model, &model, variable_mapping);
 
-  model_copy.ImportVariablesAndMaybeIgnoreNames(initial_model);
-  model_copy.ImportAndSimplifyConstraints(initial_model, /*first_copy=*/true);
-  model_copy.RemapVariablesInProtoAndContext();
+  EXPECT_TRUE(model_copy.ImportVariables(initial_model));
+  EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
+                                                      /*first_copy=*/true));
+  EXPECT_TRUE(model_copy.FinishCopy(initial_model));
 
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 0 ] }
@@ -337,7 +306,7 @@ TEST(ModelCopyTest, RemapLiteralsInBoolXor) {
     constraints { bool_xor { literals: [ 0, 1, 3 ] } }
     constraints { bool_xor { literals: [ 0, 1, 3, -3 ] } }
   )pb");
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, RemapVariablesInLinear) {
@@ -358,19 +327,18 @@ TEST(ModelCopyTest, RemapVariablesInLinear) {
   )pb");
   CpModelProto new_cp_model;
   Model model;
-  PresolveContext context(&model, &new_cp_model, nullptr);
   const std::vector<int> variable_mapping = {kNoVariableMapping, -1, 1, 2, 2};
-  const std::vector<int> reverse_mapping = ReverseMapping(variable_mapping);
-  ModelCopy model_copy(&context, variable_mapping, reverse_mapping);
+  ModelCopy model_copy(&new_cp_model, &model, variable_mapping);
 
-  model_copy.ImportVariablesAndMaybeIgnoreNames(initial_model);
-  model_copy.ImportAndSimplifyConstraints(initial_model, /*first_copy=*/true);
-  model_copy.RemapVariablesInProtoAndContext();
+  EXPECT_TRUE(model_copy.ImportVariables(initial_model));
+  EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
+                                                      /*first_copy=*/true));
+  EXPECT_TRUE(model_copy.FinishCopy(initial_model));
 
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 10 ] }
-    variables { domain: [ 0, 11 ] }
+    variables { domain: [ 0, 10 ] }
     constraints {
       enforcement_literal: [ -1 ]
       linear {
@@ -380,7 +348,7 @@ TEST(ModelCopyTest, RemapVariablesInLinear) {
       }
     }
   )pb");
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, RemapVariablesInLinear_CanonicalizeSingleBoolInDomain) {
@@ -397,21 +365,165 @@ TEST(ModelCopyTest, RemapVariablesInLinear_CanonicalizeSingleBoolInDomain) {
   )pb");
   CpModelProto new_cp_model;
   Model model;
-  PresolveContext context(&model, &new_cp_model, nullptr);
   const std::vector<int> variable_mapping = {0, -1};
-  const std::vector<int> reverse_mapping = ReverseMapping(variable_mapping);
-  ModelCopy model_copy(&context, variable_mapping, reverse_mapping);
+  ModelCopy model_copy(&new_cp_model, &model, variable_mapping);
 
-  model_copy.ImportVariablesAndMaybeIgnoreNames(initial_model);
-  model_copy.ImportAndSimplifyConstraints(initial_model, /*first_copy=*/true);
-  model_copy.RemapVariablesInProtoAndContext();
+  EXPECT_TRUE(model_copy.ImportVariables(initial_model));
+  EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
+                                                      /*first_copy=*/true));
+  EXPECT_TRUE(model_copy.FinishCopy(initial_model));
 
   // 5x + 6y \in [6, 7] is remapped to 5x + 6.not(x) = 6 - x \in [6, 7], whose
   // unique solution is x = 0.
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 0 ] }
   )pb");
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
+}
+
+TEST(ModelCopyTest, RemapVariablesInLegacyInverse) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 2, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 2, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    constraints {
+      inverse {
+        f_direct: 0
+        f_direct: 1
+        f_direct: 2
+        f_inverse: 3
+        f_inverse: 4
+        f_inverse: 5
+      }
+    }
+  )pb");
+  CpModelProto new_cp_model;
+  Model model;
+  const std::vector<int> variable_mapping = {kNoVariableMapping, 0, 1, 1,
+                                             kNoVariableMapping, 0};
+  ModelCopy model_copy(&new_cp_model, &model, variable_mapping);
+
+  EXPECT_TRUE(model_copy.ImportVariables(initial_model));
+  EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
+                                                      /*first_copy=*/true));
+  EXPECT_TRUE(model_copy.FinishCopy(initial_model));
+
+  const CpModelProto expected_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    constraints {
+      inverse {
+        f_expr_direct: { offset: 2 }
+        f_expr_direct: { vars: 0 coeffs: 1 }
+        f_expr_direct: { vars: 1 coeffs: 1 }
+        f_expr_inverse: { vars: 1 coeffs: 1 }
+        f_expr_inverse: { offset: 2 }
+        f_expr_inverse: { vars: 0 coeffs: 1 }
+      }
+    }
+  )pb");
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
+}
+
+TEST(ModelCopyTest, RemapVariablesInInverse) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 1, 1 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    constraints {
+      inverse {
+        f_expr_direct: { vars: 0 coeffs: -1 offset: 3 }
+        f_expr_direct: { vars: 1 coeffs: 1 offset: -1 }
+        f_expr_direct: { vars: 2 coeffs: 3 offset: -2 }
+        f_expr_inverse: { vars: 0 coeffs: 1 offset: 0 }
+        f_expr_inverse: { vars: 1 coeffs: 1 offset: 1 }
+        f_expr_inverse: { vars: 2 coeffs: -2 offset: 2 }
+      }
+    }
+  )pb");
+  CpModelProto new_cp_model;
+  Model model;
+  const std::vector<int> variable_mapping = {kNoVariableMapping, 0, 1};
+  ModelCopy model_copy(&new_cp_model, &model, variable_mapping);
+
+  EXPECT_TRUE(model_copy.ImportVariables(initial_model));
+  EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
+                                                      /*first_copy=*/true));
+  EXPECT_TRUE(model_copy.FinishCopy(initial_model));
+
+  const CpModelProto expected_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    constraints {
+      inverse {
+        f_expr_direct: { offset: 2 }
+        f_expr_direct: { vars: 0 coeffs: 1 offset: -1 }
+        f_expr_direct: { vars: 1 coeffs: 3 offset: -2 }
+        f_expr_inverse: { offset: 1 }
+        f_expr_inverse: { vars: 0 coeffs: 1 offset: 1 }
+        f_expr_inverse: { vars: 1 coeffs: -2 offset: 2 }
+      }
+    }
+  )pb");
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
+}
+
+TEST(ModelCopyTest, ExpandNonAffineExpressionsInInverse) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    constraints {
+      inverse {
+        f_expr_direct: { vars: 0 coeffs: -1 offset: 3 }
+        f_expr_direct: { vars: 1 coeffs: 1 offset: -1 }
+        f_expr_direct: { vars: 2 coeffs: 3 offset: -2 }
+        f_expr_inverse: { vars: 0 coeffs: 1 offset: 0 }
+        f_expr_inverse: { vars: 1 coeffs: 1 offset: 1 }
+        f_expr_inverse: {
+          vars: [ 1, 2 ]
+          coeffs: [ -1, -1 ]
+          offset: 2
+        }
+      }
+    }
+  )pb");
+  CpModelProto new_cp_model;
+  Model model;
+  ModelCopy model_copy(&new_cp_model, &model);
+
+  EXPECT_TRUE(model_copy.ImportVariables(initial_model));
+  EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
+                                                      /*first_copy=*/true));
+  EXPECT_TRUE(model_copy.FinishCopy(initial_model));
+
+  const CpModelProto expected_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ -4, 0 ] }
+    constraints {
+      inverse {
+        f_expr_direct: { vars: 0 coeffs: -1 offset: 3 }
+        f_expr_direct: { vars: 1 coeffs: 1 offset: -1 }
+        f_expr_direct: { vars: 2 coeffs: 3 offset: -2 }
+        f_expr_inverse: { vars: 0 coeffs: 1 offset: 0 }
+        f_expr_inverse: { vars: 1 coeffs: 1 offset: 1 }
+        f_expr_inverse: { vars: 3 coeffs: 1 offset: 2 }
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 3, 1, 2 ]
+        coeffs: [ -1, -1, -1 ]
+        domain: [ 0, 0 ]
+      }
+    }
+  )pb");
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, RemapVariablesInObjective) {
@@ -426,28 +538,28 @@ TEST(ModelCopyTest, RemapVariablesInObjective) {
   )pb");
   CpModelProto new_cp_model;
   Model model;
-  PresolveContext context(&model, &new_cp_model, nullptr);
   const std::vector<int> variable_mapping = {0, -1};
-  const std::vector<int> reverse_mapping = ReverseMapping(variable_mapping);
-  ModelCopy model_copy(&context, variable_mapping, reverse_mapping);
+  ModelCopy model_copy(&new_cp_model, &model, variable_mapping);
 
-  model_copy.ImportVariablesAndMaybeIgnoreNames(initial_model);
-  model_copy.ImportAndSimplifyConstraints(initial_model, /*first_copy=*/true);
-  model_copy.ImportEverythingExceptVariablesConstraintsAndHint(initial_model);
-  model_copy.RemapVariablesInProtoAndContext();
+  EXPECT_TRUE(model_copy.ImportVariables(initial_model));
+  EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
+                                                      /*first_copy=*/true));
+  EXPECT_TRUE(model_copy.ImportEverythingExceptVariablesConstraintsAndHint(
+      initial_model));
+  EXPECT_TRUE(model_copy.FinishCopy(initial_model));
 
   // 5x + 6y \in [0, 50] is remapped to 5x + 6.not(x) = 6 - x \in [0, 50].
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     objective {
       vars: [ 0 ]
       coeffs: [ -1 ]
       offset: 6
-      domain: [ -6, 5 ]
+      domain: [ -1, 0 ]
       integer_before_offset: 6
     }
   )pb");
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, RemapVariablesInFloatingPointObjective) {
@@ -462,18 +574,18 @@ TEST(ModelCopyTest, RemapVariablesInFloatingPointObjective) {
   )pb");
   CpModelProto new_cp_model;
   Model model;
-  PresolveContext context(&model, &new_cp_model, nullptr);
   const std::vector<int> variable_mapping = {0, -1};
-  const std::vector<int> reverse_mapping = ReverseMapping(variable_mapping);
-  ModelCopy model_copy(&context, variable_mapping, reverse_mapping);
+  ModelCopy model_copy(&new_cp_model, &model, variable_mapping);
 
-  model_copy.ImportVariablesAndMaybeIgnoreNames(initial_model);
-  model_copy.ImportAndSimplifyConstraints(initial_model, /*first_copy=*/true);
-  model_copy.ImportEverythingExceptVariablesConstraintsAndHint(initial_model);
-  model_copy.RemapVariablesInProtoAndContext();
+  EXPECT_TRUE(model_copy.ImportVariables(initial_model));
+  EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
+                                                      /*first_copy=*/true));
+  EXPECT_TRUE(model_copy.ImportEverythingExceptVariablesConstraintsAndHint(
+      initial_model));
+  EXPECT_TRUE(model_copy.FinishCopy(initial_model));
 
   // 5.5x + 6.25y + 2.75 is remapped to 5.5x + 6.25 * (1 - x) + 2.75.
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     floating_point_objective {
       vars: [ 0 ]
@@ -481,7 +593,7 @@ TEST(ModelCopyTest, RemapVariablesInFloatingPointObjective) {
       offset: 9.0
     }
   )pb");
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, RemapVariablesInSearchStrategyAssumptionsAndHint) {
@@ -497,19 +609,19 @@ TEST(ModelCopyTest, RemapVariablesInSearchStrategyAssumptionsAndHint) {
   )pb");
   CpModelProto new_cp_model;
   Model model;
-  PresolveContext context(&model, &new_cp_model, nullptr);
   // x0, x1 mapped to x0, not(x0).
   const std::vector<int> variable_mapping = {0, -1};
-  const std::vector<int> reverse_mapping = ReverseMapping(variable_mapping);
-  ModelCopy model_copy(&context, variable_mapping, reverse_mapping);
+  ModelCopy model_copy(&new_cp_model, &model, variable_mapping);
 
-  model_copy.ImportVariablesAndMaybeIgnoreNames(initial_model);
-  model_copy.ImportAndSimplifyConstraints(initial_model, /*first_copy=*/true);
+  EXPECT_TRUE(model_copy.ImportVariables(initial_model));
+  EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
+                                                      /*first_copy=*/true));
   model_copy.ImportSolutionHint(initial_model);
-  model_copy.ImportEverythingExceptVariablesConstraintsAndHint(initial_model);
-  model_copy.RemapVariablesInProtoAndContext();
+  EXPECT_TRUE(model_copy.ImportEverythingExceptVariablesConstraintsAndHint(
+      initial_model));
+  EXPECT_TRUE(model_copy.FinishCopy(initial_model));
 
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     search_strategy {
       exprs { vars: 0 coeffs: -1 offset: 1 }
@@ -521,7 +633,7 @@ TEST(ModelCopyTest, RemapVariablesInSearchStrategyAssumptionsAndHint) {
       values: [ 0 ]
     }
   )pb");
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, ChangeEnforcedAtMostOrExactlyOneToLinear) {
@@ -539,7 +651,7 @@ TEST(ModelCopyTest, ChangeEnforcedAtMostOrExactlyOneToLinear) {
       exactly_one { literals: [ 2, 3 ] }
     }
   )pb");
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
@@ -565,9 +677,8 @@ TEST(ModelCopyTest, ChangeEnforcedAtMostOrExactlyOneToLinear) {
   Model model;
   model.GetOrCreate<SatParameters>()
       ->set_keep_all_feasible_solutions_in_presolve(true);
-  PresolveContext context(&model, &new_cp_model, nullptr);
-  ImportModelWithBasicPresolveIntoContext(initial_model, &context);
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  CopyModel(initial_model, &new_cp_model, &model);
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, LegacyElementConstraint) {
@@ -585,7 +696,7 @@ TEST(ModelCopyTest, LegacyElementConstraint) {
       }
     }
   )pb");
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
@@ -604,9 +715,8 @@ TEST(ModelCopyTest, LegacyElementConstraint) {
   Model model;
   model.GetOrCreate<SatParameters>()
       ->set_keep_all_feasible_solutions_in_presolve(true);
-  PresolveContext context(&model, &new_cp_model, nullptr);
-  ImportModelWithBasicPresolveIntoContext(initial_model, &context);
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  CopyModel(initial_model, &new_cp_model, &model);
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, ElementConstraint) {
@@ -625,7 +735,7 @@ TEST(ModelCopyTest, ElementConstraint) {
       }
     }
   )pb");
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
@@ -644,9 +754,8 @@ TEST(ModelCopyTest, ElementConstraint) {
   Model model;
   model.GetOrCreate<SatParameters>()
       ->set_keep_all_feasible_solutions_in_presolve(true);
-  PresolveContext context(&model, &new_cp_model, nullptr);
-  ImportModelWithBasicPresolveIntoContext(initial_model, &context);
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  CopyModel(initial_model, &new_cp_model, &model);
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 TEST(ModelCopyTest, ExpandedNonAffineExpressionsShareVariableWhenPossible) {
@@ -673,7 +782,7 @@ TEST(ModelCopyTest, ExpandedNonAffineExpressionsShareVariableWhenPossible) {
       }
     }
   )pb");
-  const CpModelProto expected_moded = ParseTestProto(R"pb(
+  const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 10 ] }
     variables { domain: [ 0, 10 ] }
     variables { domain: [ 0, 30 ] }
@@ -696,9 +805,8 @@ TEST(ModelCopyTest, ExpandedNonAffineExpressionsShareVariableWhenPossible) {
   Model model;
   model.GetOrCreate<SatParameters>()
       ->set_keep_all_feasible_solutions_in_presolve(true);
-  PresolveContext context(&model, &new_cp_model, nullptr);
-  ImportModelWithBasicPresolveIntoContext(initial_model, &context);
-  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+  CopyModel(initial_model, &new_cp_model, &model);
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
 }  // namespace

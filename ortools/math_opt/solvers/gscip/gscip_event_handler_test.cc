@@ -221,7 +221,7 @@ TEST(GScipEventHandlerDeathTest, ErrorReturnedByInit) {
 
         const absl::Status status = gscip->Solve().status();
         if (!status.ok() &&
-            absl::StrContains(status.message(), "SCIP error code -8")) {
+            absl::StrContains(status.message(), "SCIP error code 0")) {
           // Write the expected marker only if we see the expected error.
           LOG(FATAL) << kMarker;
         }

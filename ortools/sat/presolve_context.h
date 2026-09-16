@@ -15,8 +15,6 @@
 #define ORTOOLS_SAT_PRESOLVE_CONTEXT_H_
 
 #include <cstdint>
-#include <memory>
-#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -27,6 +25,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/declare.h"
 #include "absl/log/check.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -38,6 +37,7 @@
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/solution_crush.h"
+#include "ortools/sat/solution_crush.pb.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/bitset.h"
@@ -62,7 +62,7 @@ class PresolveContext;
 
 // When storing a reference to a literal, it is important not to forget when
 // reading it back to take its representative. Otherwise, we might introduce
-// literal that have already been removed, which will break invariants in a
+// literals that have already been removed, which will break invariants in a
 // bunch of places.
 class SavedLiteral {
  public:
@@ -91,25 +91,196 @@ class SavedVariable {
 
 // If a floating point objective is present, scale it using the current domains
 // and transform it to an integer_objective.
-ABSL_MUST_USE_RESULT bool ScaleFloatingPointObjective(
-    const SatParameters& params, SolverLogger* logger, CpModelProto* proto);
+[[nodiscard]] bool ScaleFloatingPointObjective(const SatParameters& params,
+                                               SolverLogger* logger,
+                                               CpModelProto* proto);
 
-// Wrap the CpModelProto we are presolving with extra data structure like the
-// in-memory domain of each variables and the constraint variable graph.
+// Class responsible for maintaining the constraint <-> variable graph.
+class LazyConstraintVariableGraph {
+ public:
+  LazyConstraintVariableGraph(const CpModelProto* cp_model,
+                              const SolutionCrush* solution_crush)
+      : cp_model_(*cp_model), solution_crush_(*solution_crush) {}
+
+  // This must be called when new variables are created, BEFORE any other
+  // functions here.
+  void IncreaseNumVars(int num_vars) {
+    DCHECK_GE(num_vars, var_to_constraints_.size());
+    var_with_reduced_small_degree_.Resize(num_vars);
+    var_to_constraints_.resize(num_vars);
+    var_to_num_linear1_.resize(num_vars);
+    var_was_removed_.resize(num_vars);
+  }
+
+  // This must be called each time a constraint is maybe mutated, BEFORE any
+  // other functions here. Note that new constraints are handled automatically
+  // and do not need this.
+  void MarkForLazyUpdate(int c) {
+    if (c < to_update_.size()) {
+      to_update_.Set(c);
+    }
+  }
+
+  // Variable <-> constraint graph.
+  // The vector list is sorted and contains unique elements.
+  //
+  // Important: To properly handle the objective, var_to_constraints[objective]
+  // contains kObjectiveConstraint (i.e. -1) so that if the objective appears in
+  // only one constraint, the constraint cannot be simplified.
+  absl::Span<const int> ConstraintToVars(int c) {
+    LazyUpdate();
+    return constraint_to_vars_[c];
+  }
+  const absl::flat_hash_set<int>& VarToConstraints(int var) {
+    LazyUpdate();
+    return var_to_constraints_[var];
+  }
+  int IntervalUsage(int c) {
+    LazyUpdate();
+    if (c >= interval_usage_.size()) return 0;
+    return interval_usage_[c];
+  }
+  int VarToNumLinear1(int var) {
+    LazyUpdate();
+    return var_to_num_linear1_[var];
+  }
+  int ConstraintToLinear1Var(int c) {
+    LazyUpdate();
+    return constraint_to_linear1_var_[c];
+  }
+
+  SparseBitset<int>* MutableVarWithReducedSmallDegree() {
+    LazyUpdate();
+    return &var_with_reduced_small_degree_;
+  }
+
+  void RegisterVariablesUsedInAssumptions() {
+    for (const int ref : cp_model_.assumptions()) {
+      var_to_constraints_[PositiveRef(ref)].insert(kAssumptionsConstraint);
+    }
+  }
+
+  // Special constraints are still handled by the PresolveContext directly.
+  void AddToAffineRelation(int var) {
+    var_to_constraints_[var].insert(kAffineRelationConstraint);
+  }
+  void RemoveFromAffineRelation(int var) {
+    EraseFromVarToConstraint(var, kAffineRelationConstraint);
+  }
+  void AddToObjective(int var) {
+    var_to_constraints_[var].insert(kObjectiveConstraint);
+  }
+  void RemoveFromObjective(int var) {
+    EraseFromVarToConstraint(var, kObjectiveConstraint);
+  }
+
+  // TODO(user): This is a bit hacky, fix.
+  void RemoveAllVariablesFromAffineRelationConstraint() {
+    for (auto& ref_map : var_to_constraints_) {
+      ref_map.erase(kAffineRelationConstraint);
+    }
+  }
+
+  void Reset() {
+    to_update_.ClearAndResize(0);
+    constraint_to_vars_.clear();
+    constraint_to_intervals_.clear();
+    constraint_to_linear1_var_.clear();
+    var_with_reduced_small_degree_.ResetAllToFalse();
+    var_to_constraints_.clear();
+    var_to_num_linear1_.clear();
+    var_was_removed_.clear();
+  }
+
+  // Note that once a variable is removed, we DCHECK() that no constraint
+  // introduces it again. This should only be called when
+  // var_to_constraints_[var] is empty after LazyUpdate(), however we don't want
+  // to call LazyUpdate() to check that.
+  void MarkVariableAsRemoved(int var) {
+    DCHECK(RefIsPositive(var));
+    var_was_removed_[var] = true;
+  }
+
+  bool VariableWasRemoved(int var) const {
+    return var_was_removed_[PositiveRef(var)];
+  }
+
+ private:
+  void MaybeResizeIntervalData();
+  void EraseFromVarToConstraint(int var, int c);
+  void AddVariableUsage(int c);
+  void UpdateLinear1Usage(const ConstraintProto& ct, int c);
+  void UpdateConstraintVariableUsage(int c);
+
+  // This lazily recomputes what needs to be recomputed.
+  void LazyUpdate() {
+    const int old_size = constraint_to_vars_.size();
+    const int new_size = cp_model_.constraints_size();
+    DCHECK_LE(old_size, new_size);
+    CHECK_EQ(old_size, to_update_.size());
+
+    if (new_size > old_size) {
+      constraint_to_vars_.resize(new_size);
+      constraint_to_linear1_var_.resize(new_size, -1);
+      for (int c = old_size; c < new_size; ++c) {
+        AddVariableUsage(c);
+      }
+    }
+
+    // Note that the update assumes new constraints have already been handled,
+    // so the order is important here.
+    for (const int c : to_update_.PositionsSetAtLeastOnce()) {
+      UpdateConstraintVariableUsage(c);
+    }
+    to_update_.ClearAndResize(new_size);
+  }
+
+  // This can change behind the class back, but is never mutated here.
+  const CpModelProto& cp_model_;
+  const SolutionCrush& solution_crush_;
+
+  // The constraints that need to be updated by LazyUpdate().
+  // Note that any new constraint will also need update.
+  SparseBitset<int> to_update_;
+
+  // Constraints <-> Variables graph.
+  std::vector<std::vector<int>> constraint_to_vars_;
+  std::vector<absl::flat_hash_set<int>> var_to_constraints_;
+
+  // Number of constraints of the form [lit =>] var in domain.
+  std::vector<int> constraint_to_linear1_var_;
+  std::vector<int> var_to_num_linear1_;
+
+  // We maintain how many times each interval is used.
+  std::vector<std::vector<int>> constraint_to_intervals_;
+  std::vector<int> interval_usage_;
+
+  // This is mainly used for debug, to not reuse some cached variables that
+  // are not used anymore in the model.
+  std::vector<bool> var_was_removed_;
+
+  // Each time the constraint <-> variable graph is updated, we update this.
+  // A variable is added here iff its usage decreased and is now one or two.
+  SparseBitset<int> var_with_reduced_small_degree_;
+};
+
+// Wrap the CpModelProto we are presolving with extra data structures like the
+// in-memory domain of each variable and the constraint variable graph.
 class PresolveContext {
  public:
-  PresolveContext(Model* model, CpModelProto* cp_model, CpModelProto* mapping)
-      : working_model(cp_model),
-        mapping_model(mapping),
+  PresolveContext(Model* model, CpModelProto* cp_model, CpModelProto* mapping,
+                  SolutionCrushProto* solution_crush_proto = nullptr)
+      : mapping_model(mapping),
+        lrat_proof_handler(model->Mutable<LratProofHandler>()),
         logger_(model->GetOrCreate<SolverLogger>()),
         params_(*model->GetOrCreate<SatParameters>()),
         time_limit_(model->GetOrCreate<TimeLimit>()),
-        random_(model->GetOrCreate<ModelRandomGenerator>()) {
-    lrat_proof_handler = LratProofHandler::MaybeCreate(
-        model, /*enable_rat_proofs=*/params_.cp_model_pure_sat_presolve());
-  }
+        random_(model->GetOrCreate<ModelRandomGenerator>()),
+        working_model_(cp_model),
+        solution_crush_(solution_crush_proto),
+        graph_(cp_model, &solution_crush_) {}
 
-  // Helpers to adds new variables to the presolved model.
+  // Helpers to add new variables to the presolved model.
 
   // Creates a new integer variable with the given domain.
   // WARNING: this does not set any hint value for the new variable.
@@ -118,6 +289,12 @@ class PresolveContext {
   // Creates a new Boolean variable.
   // WARNING: this does not set any hint value for the new variable.
   int NewBoolVar(absl::string_view source);
+
+  // Changes the name of a variable. This is just for debug, and we don't need
+  // to notify anyone that a name changed.
+  void SetVarName(int var, absl::string_view name) {
+    working_model_->mutable_variables(var)->set_name(name);
+  }
 
   // Creates a new integer variable with the given domain and definition.
   // By default this also creates the linking constraint new_var = definition.
@@ -136,15 +313,11 @@ class PresolveContext {
   // Its hint value is set to the value of the given conjunction.
   int NewBoolVarWithConjunction(absl::Span<const int> conjunction);
 
-  // Some expansion code use constant literal to be simpler to write. This will
-  // create a NewBoolVar() the first time, but later call will just returns it.
+  // Some expansion code uses a constant literal to be simpler to write. This
+  // will create a NewBoolVar() the first time, but later calls will just return
+  // it.
   int GetTrueLiteral();
   int GetFalseLiteral();
-
-  // Shortcuts to create enforced constraints.
-  ConstraintProto* AddEnforcedConstraint(
-      absl::Span<const int> enforcement_literals);
-  ConstraintProto* AddEnforcedConstraint(ConstraintProto* ct);
 
   // a => b.
   void AddImplication(int a, int b);
@@ -193,13 +366,9 @@ class PresolveContext {
   bool IsFixed(const LinearExpressionProto& expr) const;
   int64_t FixedValue(const LinearExpressionProto& expr) const;
 
-  // This is faster than testing IsFixed() + FixedValue().
-  std::optional<int64_t> FixedValueOrNullopt(
-      const LinearExpressionProto& expr) const;
-
   // Accepts any proto with two parallel vector .vars() and .coeffs(), like
   // LinearConstraintProto or ObjectiveProto or LinearExpressionProto but beware
-  // that this ignore any offset.
+  // that this ignores any offset.
   template <typename ProtoWithVarsAndCoeffs>
   std::pair<int64_t, int64_t> ComputeMinMaxActivity(
       const ProtoWithVarsAndCoeffs& proto) const {
@@ -232,29 +401,27 @@ class PresolveContext {
     }
   }
 
-  // Canonicalization of linear constraint. This might also be needed when
-  // creating new constraint to make sure there are no duplicate variables.
+  // Canonicalization of linear constraints. This might also be needed when
+  // creating new constraints to make sure there are no duplicate variables.
   // Returns true if the set of variables in the expression changed.
   //
-  // This uses affine relation and regroup duplicate/fixed terms.
+  // This uses affine relations and regroups duplicate/fixed terms.
   bool CanonicalizeLinearConstraint(ConstraintProto* ct,
-                                    bool* is_impossible = nullptr);
+                                    bool* is_impossible = nullptr,
+                                    bool* is_trivial = nullptr);
   bool CanonicalizeLinearExpression(absl::Span<const int> enforcements,
                                     LinearExpressionProto* expr);
 
-  // This methods only works for affine expressions (checked).
+  // This method only works for affine expressions (checked).
   bool DomainContains(const LinearExpressionProto& expr, int64_t value) const;
 
   // Return a super-set of the domain of the linear expression.
   Domain DomainSuperSetOf(const LinearExpressionProto& expr) const;
 
   // Returns true iff the expr is of the form a * literal + b.
-  // The other function can be used to get the literal that achieve MaxOf().
+  // The other function can be used to get the literal that achieves MaxOf().
   bool ExpressionIsAffineBoolean(const LinearExpressionProto& expr) const;
   int LiteralForExpressionMax(const LinearExpressionProto& expr) const;
-
-  // Returns true iff the expr is of the form 1 * var + 0.
-  bool ExpressionIsSingleVariable(const LinearExpressionProto& expr) const;
 
   // Returns true iff the expr is a literal (x or not(x)).
   bool ExpressionIsALiteral(const LinearExpressionProto& expr,
@@ -265,7 +432,7 @@ class PresolveContext {
     return domains_[var].IsIncludedIn(domain);
   }
 
-  // Returns true if this ref only appear in one constraint.
+  // Returns true if this ref only appears in one constraint.
   bool VariableIsUnique(int ref) const;
   bool VariableIsUniqueAndRemovable(int ref) const;
 
@@ -275,10 +442,12 @@ class PresolveContext {
   // Functions to make sure that once we remove a variable, we no longer reuse
   // it.
   void MarkVariableAsRemoved(int var);
-  bool VariableWasRemoved(int ref) const;
+  bool VariableWasRemoved(int var) const {
+    return graph_.VariableWasRemoved(var);
+  }
 
   // Same as VariableIsUniqueAndRemovable() except that in this case the
-  // variable also appear in the objective in addition to a single constraint.
+  // variable also appears in the objective in addition to a single constraint.
   bool VariableWithCostIsUnique(int ref) const;
   bool VariableWithCostIsUniqueAndRemovable(int ref) const;
 
@@ -291,7 +460,7 @@ class PresolveContext {
   // Similar to VariableIsOnlyUsedInEncodingAndMaybeInObjective() for the case
   // where we have one extra constraint instead of the objective. Sometimes it
   // is possible to transfer the linear1 domain restrictions to another
-  // variable. for instance if the other constraint is of the form Y = abs(X) or
+  // variable. For instance if the other constraint is of the form Y = abs(X) or
   // Y = X^2, then a domain restriction on Y can be transferred to X. We can
   // then move the extra constraint to the mapping model and remove one
   // variable. This happens on the flatzinc celar problems for instance.
@@ -299,27 +468,26 @@ class PresolveContext {
 
   // Returns false if the new domain is empty. Sets 'domain_modified' (if
   // provided) to true iff the domain is modified otherwise does not change it.
-  ABSL_MUST_USE_RESULT bool IntersectDomainWith(
-      int ref, const Domain& domain, bool* domain_modified = nullptr);
+  [[nodiscard]] bool IntersectDomainWith(int ref, const Domain& domain,
+                                         bool* domain_modified = nullptr);
 
   // Returns false if the 'lit' doesn't have the desired value in the domain.
-  ABSL_MUST_USE_RESULT bool SetLiteralToFalse(int lit);
-  ABSL_MUST_USE_RESULT bool SetLiteralToTrue(int lit);
+  [[nodiscard]] bool SetLiteralToFalse(int lit);
+  [[nodiscard]] bool SetLiteralToTrue(int lit);
 
   // Same as IntersectDomainWith() but take a linear expression as input.
-  // If this expression if of size > 1, this does nothing for now, so it will
-  // only propagates for constant and affine expression.
-  ABSL_MUST_USE_RESULT bool IntersectDomainWith(
-      const LinearExpressionProto& expr, const Domain& domain,
-      bool* domain_modified = nullptr);
+  // If this expression is of size > 1, this does nothing for now, so it will
+  // only propagate for constant and affine expressions.
+  [[nodiscard]] bool IntersectDomainWith(const LinearExpressionProto& expr,
+                                         const Domain& domain,
+                                         bool* domain_modified = nullptr);
 
-  ABSL_MUST_USE_RESULT bool IntersectionOfAffineExprsIsNotEmpty(
+  [[nodiscard]] bool IntersectionOfAffineExprsIsNotEmpty(
       const LinearExpressionProto& a, const LinearExpressionProto& b);
 
-  // This function always return false. It is just a way to make a little bit
+  // This function always returns false. It is just a way to make a little bit
   // more sure that we abort right away when infeasibility is detected.
-  ABSL_MUST_USE_RESULT bool NotifyThatModelIsUnsat(
-      absl::string_view message = "") {
+  [[nodiscard]] bool NotifyThatModelIsUnsat(absl::string_view message = "") {
     // TODO(user): Report any explanation for the client in a nicer way?
     SOLVER_LOG(logger_, "INFEASIBLE: '", message, "'");
     is_unsat_ = true;
@@ -333,34 +501,40 @@ class PresolveContext {
 
   // Updates the constraints <-> variables graph. This needs to be called each
   // time a constraint is modified.
-  void UpdateConstraintVariableUsage(int c);
+  //
+  // TODO(user): Remove and call MarkForLazyUpdate() from MutableConstraint()
+  // instead. Note that this will require some refactoring to make sure we only
+  // call MutableConstraint() when we are about to change the constraint though,
+  // and not all the time. It is also still tricky because if one calls
+  // MutableConstraint() just once, and uses one of the functions from this
+  // class, it would need to be called again later...
+  void UpdateConstraintVariableUsage(int c) {
+    if (is_unsat_) return;
+    graph_.MarkForLazyUpdate(c);
+  }
 
-  // At the beginning of the presolve, we delay the costly creation of this
-  // "graph" until we at least ran some basic presolve. This is because during
-  // a LNS neighborhood, many constraints will be reduced significantly by
-  // this "simple" presolve.
-  bool ConstraintVariableGraphIsUpToDate() const;
-
-  // Calls UpdateConstraintVariableUsage() on all newly created constraints.
-  void UpdateNewConstraintsVariableUsage();
+  SparseBitset<int>* MutableVarWithReducedSmallDegree() {
+    return graph_.MutableVarWithReducedSmallDegree();
+  }
 
   // Returns true if our current constraints <-> variables graph is ok.
   // This is meant to be used in DEBUG mode only.
-  bool ConstraintVariableUsageIsConsistent();
+  bool ConstraintVariableUsageIsConsistent() const;
 
-  // Loop over all variable and return true if one of them is only used in
-  // affine relation and is not a representative. This is in O(num_vars) and
+  // Loop over all variables and return true if one of them is only used in
+  // affine relations and is not a representative. This is in O(num_vars) and
   // only meant to be used in DCHECKs.
   bool HasUnusedAffineVariable() const;
 
-  // A "canonical domain" always have a MinOf() equal to zero.
+  // A "canonical domain" always has a MinOf() equal to zero.
   // If needed we introduce a new variable with such canonical domain and
   // add the relation X = Y + offset.
   //
-  // This is useful in some corner case to avoid overflow.
+  // This is useful in some corner cases to avoid overflow.
   //
-  // TODO(user): When we can always get rid of affine relation, it might be good
-  // to do a final pass to canonicalize all domains in a model after presolve.
+  // TODO(user): When we can always get rid of affine relations, it might be
+  // good to do a final pass to canonicalize all domains in a model after
+  // presolve.
   void CanonicalizeVariable(int ref);
 
   // Given the relation (X * coeff % mod = rhs % mod), this creates a new
@@ -375,10 +549,10 @@ class PresolveContext {
                                   int64_t rhs);
 
   // Adds the relation (var_x = coeff * var_y + offset) to the repository.
-  // Returns false if we detect infeasability because of this.
+  // Returns false if we detect infeasibility because of this.
   //
   // Once the relation is added, it doesn't need to be enforced by a constraint
-  // in the model proto, since we will propagate such relation directly and add
+  // in the model proto, since we will propagate such relations directly and add
   // them to the proto at the end of the presolve.
   //
   // Note that this should always add a relation, even though it might need to
@@ -389,7 +563,7 @@ class PresolveContext {
   //
   // All involved variables will be marked to appear in the special
   // kAffineRelationConstraint. This will allow to identify when a variable is
-  // no longer needed (only appear there and is not a representative).
+  // no longer needed (only appears there and is not a representative).
   bool StoreAffineRelation(int var_x, int var_y, int64_t coeff, int64_t offset,
                            bool debug_no_recursion = false);
 
@@ -418,15 +592,15 @@ class PresolveContext {
   bool PropagateAffineRelation(int var);
   bool PropagateAffineRelation(int var, int rep, int64_t coeff, int64_t offset);
 
-  // Creates the internal structure for any new variables in working_model.
+  // Creates the internal structure for any new variables in working_model_.
   void InitializeNewDomains();
 
   // This is a bit hacky. Clear some fields. See call site.
   //
   // TODO(user): The ModelCopier should probably not depend on the full context
-  // it only need to read/write domains and call UpdateRuleStats(), so we might
+  // it only needs to read/write domains and call UpdateRuleStats(), so we might
   // want to split that part out so that we can just initialize the full context
-  // later. Alternatively, we could just move more complex part of the context
+  // later. Alternatively, we could just move more complex parts of the context
   // out, like the graph, the encoding, the affine representative, and so on to
   // individual and easier to manage classes.
   void ResetAfterCopy();
@@ -438,31 +612,19 @@ class PresolveContext {
   // If an encoding already exists, it adds the two implications between
   // the previous encoding and the new encoding.
   //
-  // Important: This does not update the constraint<->variable graph, so
-  // ConstraintVariableGraphIsUpToDate() will be false until
-  // UpdateNewConstraintsVariableUsage() is called.
-  //
-  // Returns false if the model become UNSAT.
+  // Returns false if the model becomes UNSAT.
   //
   // TODO(user): This function is not always correct if
   // !context->DomainOf(var).contains(value), we could make it correct but it
-  // might be a bit expansive to do so. For now we just have a DCHECK().
+  // might be a bit expensive to do so. For now we just have a DCHECK().
   bool InsertVarValueEncoding(int literal, int var, int64_t value);
 
   // Gets the associated literal if it is already created. Otherwise
-  // create it, add the corresponding constraints and returns it.
-  //
-  // Important: This does not update the constraint<->variable graph, so
-  // ConstraintVariableGraphIsUpToDate() will be false until
-  // UpdateNewConstraintsVariableUsage() is called.
+  // create it, add the corresponding constraints and return it.
   int GetOrCreateVarValueEncoding(int ref, int64_t value);
 
   // Gets the associated literal if it is already created. Otherwise
-  // create it, add the corresponding constraints and returns it.
-  //
-  // Important: This does not update the constraint<->variable graph, so
-  // ConstraintVariableGraphIsUpToDate() will be false until
-  // UpdateNewConstraintsVariableUsage() is called.
+  // create it, add the corresponding constraints and return it.
   int GetOrCreateAffineValueEncoding(const LinearExpressionProto& expr,
                                      int64_t value);
 
@@ -474,15 +636,15 @@ class PresolveContext {
   void CanonicalizeDomainOfSizeTwo(int var);
 
   // Returns true if a literal attached to ref == value exists.
-  // It assigns the corresponding to `literal` if non null.
+  // It assigns the corresponding literal to `literal` if non null.
   // This function will check that the value is in the domain of ref.
   bool HasVarValueEncoding(int ref, int64_t value, int* literal = nullptr);
 
   // Returns true if a literal attached to expr == value exists.
-  // It assigns the corresponding to `literal`. This methods checks that the
-  // expression as exactly one variable.
+  // It assigns the corresponding literal to `literal`. This method checks that
+  // the expression has exactly one variable.
   //
-  // This methods checks that the value is in the domain of the expression.
+  // This method checks that the value is in the domain of the expression.
   bool HasAffineValueEncoding(const LinearExpressionProto& expr, int64_t value,
                               int* literal = nullptr);
 
@@ -493,8 +655,8 @@ class PresolveContext {
   // of values not encoded.
   bool IsFullyEncoded(int ref) const;
 
-  // This methods only works for affine expressions (checked).
-  // It returns true iff the expression is constant or its one variable is full
+  // This method only works for affine expressions (checked).
+  // It returns true iff the expression is constant or its one variable is fully
   // encoded.
   bool IsFullyEncoded(const LinearExpressionProto& expr) const;
 
@@ -518,28 +680,29 @@ class PresolveContext {
   // presolve we can work on the more efficient hash_map representation.
   //
   // Note that ReadObjectiveFromProto() makes sure that var_to_constraints of
-  // all the variable that appear in the objective contains -1. This is later
+  // all the variables that appear in the objective contains -1. This is later
   // enforced by all the functions modifying the objective.
   //
-  // Note(user): Because we process affine relation only on
+  // Note(user): Because we process affine relations only in
   // CanonicalizeObjective(), it is possible that when processing a
   // canonicalized linear constraint, we don't detect that a variable in affine
   // relation is in the objective. For now this is fine, because when this is
   // the case, we also have an affine linear constraint, so we can't really do
-  // anything with that variable since it appear in at least two constraints.
+  // anything with that variable since it appears in at least two constraints.
   void ReadObjectiveFromProto();
   bool AddToObjectiveOffset(int64_t delta);
-  ABSL_MUST_USE_RESULT bool CanonicalizeOneObjectiveVariable(int var);
-  ABSL_MUST_USE_RESULT bool CanonicalizeObjective(bool simplify_domain = true);
+  [[nodiscard]] bool RestrictObjectiveDomain(Domain domain);
+  [[nodiscard]] bool CanonicalizeOneObjectiveVariable(int var);
+  [[nodiscard]] bool CanonicalizeObjective(bool simplify_domain = true);
   void WriteObjectiveToProto() const;
 
-  // When the objective is singleton, we can always restrict the domain of var
+  // When the objective is a singleton, we can always restrict the domain of var
   // so that the current objective domain is non-constraining. Returns false
   // on UNSAT.
   bool RecomputeSingletonObjectiveDomain();
 
-  // Some function need the domain to be up to date in the proto.
-  // This make sures our in-memory domain are written back to the proto.
+  // Some functions need the domain to be up to date in the proto.
+  // This makes sure our in-memory domains are written back to the proto.
   void WriteVariableDomainsToProto() const;
 
   // Checks if the given exactly_one is included in the objective, and simplify
@@ -554,21 +717,21 @@ class PresolveContext {
   // if this happens.
   bool ShiftCostInExactlyOne(absl::Span<const int> exactly_one, int64_t shift);
 
-  // Allows to manipulate the objective coefficients.
+  // Allows manipulating the objective coefficients.
   void RemoveVariableFromObjective(int ref);
   void AddToObjective(int var, int64_t value);
   void AddLiteralToObjective(int ref, int64_t value);
 
-  // Given a variable defined by the given inequality that also appear in the
+  // Given a variable defined by the given inequality that also appears in the
   // objective, remove it from the objective by transferring its cost to other
   // variables in the equality.
   //
   // Returns false, if the substitution cannot be done. This is the case if the
-  // model become UNSAT or if doing it will result in an objective that do not
-  // satisfy our overflow preconditions. Note that this can only happen if the
-  // substituted variable is not implied free (i.e. if its domain is smaller
+  // model becomes UNSAT or if doing it will result in an objective that does
+  // not satisfy our overflow preconditions. Note that this can only happen if
+  // the substituted variable is not implied free (i.e. if its domain is smaller
   // than the implied domain from the equality).
-  ABSL_MUST_USE_RESULT bool SubstituteVariableInObjective(
+  [[nodiscard]] bool SubstituteVariableInObjective(
       int var_in_equality, int64_t coeff_in_equality,
       const ConstraintProto& equality,
       bool substitution_does_not_change_objective_domain = false);
@@ -605,25 +768,26 @@ class PresolveContext {
   // The vector list is sorted and contains unique elements.
   //
   // Important: To properly handle the objective, var_to_constraints[objective]
-  // contains kObjectiveConstraint (i.e. -1) so that if the objective appear in
+  // contains kObjectiveConstraint (i.e. -1) so that if the objective appears in
   // only one constraint, the constraint cannot be simplified.
   absl::Span<const int> ConstraintToVars(int c) const {
-    DCHECK(ConstraintVariableGraphIsUpToDate());
-    return constraint_to_vars_[c];
+    return graph_.ConstraintToVars(c);
   }
   const absl::flat_hash_set<int>& VarToConstraints(int var) const {
-    DCHECK(ConstraintVariableGraphIsUpToDate());
-    return var_to_constraints_[var];
+    return graph_.VarToConstraints(var);
   }
-  int IntervalUsage(int c) const {
-    DCHECK(ConstraintVariableGraphIsUpToDate());
-    if (c >= interval_usage_.size()) return 0;
-    return interval_usage_[c];
-  }
+  int IntervalUsage(int c) const { return graph_.IntervalUsage(c); }
 
   // Note this function does not update the constraint graph. It assumes this is
   // done elsewhere.
   bool MarkConstraintAsFalse(ConstraintProto* ct, std::string_view reason);
+
+  // Replace the constraint (keeping the same enforcement literals) by
+  // expr \in domain.
+  bool MarkConstraintAsEquivalentToLinear(ConstraintProto* ct,
+                                          const LinearExpressionProto& expr,
+                                          const Domain& domain,
+                                          std::string_view reason);
 
   // Checks if a constraint contains an enforcement literal set to false,
   // or if it has been cleared.
@@ -636,14 +800,12 @@ class PresolveContext {
   // Make sure we never delete an "assumption" literal by using a special
   // constraint for that.
   void RegisterVariablesUsedInAssumptions() {
-    for (const int ref : working_model->assumptions()) {
-      var_to_constraints_[PositiveRef(ref)].insert(kAssumptionsConstraint);
-    }
+    graph_.RegisterVariablesUsedInAssumptions();
   }
 
-  // The "expansion" phase should be done once and allow to transform complex
+  // The "expansion" phase should be done once and allows transforming complex
   // constraints into basic ones (see cp_model_expand.h). Some presolve rules
-  // need to know if the expansion was ran before being applied.
+  // need to know if the expansion was run before being applied.
   bool ModelIsExpanded() const { return model_is_expanded_; }
   void NotifyThatModelIsExpanded() { model_is_expanded_ = true; }
 
@@ -653,7 +815,7 @@ class PresolveContext {
   //
   // Note that this cache should just be used temporarily and then cleared
   // with ClearPrecedenceCache() because there is no mechanism to update the
-  // cached literals when literal equivalence are detected.
+  // cached literals when literal equivalences are detected.
   int GetOrCreateReifiedPrecedenceLiteral(const LinearExpressionProto& time_i,
                                           const LinearExpressionProto& time_j,
                                           int active_i, int active_j);
@@ -674,25 +836,66 @@ class PresolveContext {
   // Hint values outside the domain of their variable are adjusted to the
   // nearest value in this domain. Missing hint values are completed when
   // possible (e.g. for the model proto's fixed variables).
-  void LoadSolutionHint();
+  //
+  // At the end of presolve, one should call WriteHintInProto() to update it.
+  void LoadAndClampSolutionHint();
+  void WriteHintToProto();
 
   SolutionCrush& solution_crush() { return solution_crush_; }
+
   // This is slow O(problem_size) but can be used to debug presolve, either by
   // pinpointing the transition from feasible to infeasible or the other way
-  // around if for some reason the presolve drop constraint that it shouldn't.
+  // around if for some reason the presolve drops constraints that it shouldn't.
   bool DebugTestHintFeasibility();
 
   SolverLogger* logger() const { return logger_; }
   const SatParameters& params() const { return params_; }
   TimeLimit* time_limit() { return time_limit_; }
-  ModelRandomGenerator* random() { return random_; }
+  absl::BitGenRef random() { return *random_; }
 
-  CpModelProto* working_model = nullptr;
+  // CpModelProto const accessors.
+  const CpModelProto& WorkingModel() const { return *working_model_; }
+  int NumConstraints() const { return working_model_->constraints().size(); }
+  int NumVariables() const { return working_model_->variables().size(); }
+  const ConstraintProto& Constraint(int c) const {
+    return working_model_->constraints(c);
+  }
+
+  // Function to create a new constraint, with shortcuts for enforced ones.
+  ConstraintProto* AddConstraint() { return working_model_->add_constraints(); }
+  ConstraintProto* AddEnforcedConstraint(
+      absl::Span<const int> enforcement_literals);
+  ConstraintProto* AddEnforcedConstraint(const ConstraintProto& ct);
+  ConstraintProto* AddEnforcedConstraint(const ConstraintProto* ct);
+
+  // CpModelProto mutable accessors.
+  ConstraintProto* MutableConstraint(int c) {
+    return working_model_->mutable_constraints(c);
+  }
+  void ClearConstraint(int c) { MutableConstraint(c)->Clear(); }
+
+  // Sometimes we start creating a constraint but bail out, this is a "safe"
+  // pattern and shouldn't break invariants.
+  void RemoveLastConstraint() {
+    working_model_->mutable_constraints()->RemoveLast();
+  }
+
+  // WARNING. Only use when you know what you are doing as some modification
+  // might break the invariants maintained by this class. In particular, do not
+  // modify constraints via this pointer!
+  //
+  // This is still exposed for efficiency and set-up in some places. The usage
+  // should stay minimal.
+  CpModelProto* UnsafeMutableWorkingModel() { return working_model_; }
+  SymmetryProto* MutableWorkingModelSymmetry() {
+    return working_model_->mutable_symmetry();
+  }
+
   CpModelProto* mapping_model = nullptr;
 
   // Used for the LRAT proof of inferred clauses during model copy and, if
   // applicable, during the pure SAT presolve.
-  std::unique_ptr<LratProofHandler> lrat_proof_handler = nullptr;
+  LratProofHandler* lrat_proof_handler = nullptr;
 
   // Number of "rules" applied. This should be equal to the sum of all numbers
   // in stats_by_rule_name. This is used to decide if we should do one more pass
@@ -710,10 +913,6 @@ class PresolveContext {
   // Each time a domain is modified this is set to true.
   SparseBitset<int> modified_domains;
 
-  // Each time the constraint <-> variable graph is updated, we update this.
-  // A variable is added here iff its usage decreased and is now one or two.
-  SparseBitset<int> var_with_reduced_small_degree;
-
   // Advanced presolve. See this class comment.
   DomainDeductions deductions;
 
@@ -727,15 +926,8 @@ class PresolveContext {
                                         absl::string_view file, int line);
 
  private:
-  void MaybeResizeIntervalData();
-
-  void EraseFromVarToConstraint(int var, int c);
-
   // Helper to add an affine relation x = c.y + o to the given repository.
   bool AddRelation(int x, int y, int64_t c, int64_t o, AffineRelation* repo);
-
-  void AddVariableUsage(int c);
-  void UpdateLinear1Usage(const ConstraintProto& ct, int c);
 
   // Makes sure we only insert encoding about the current representative.
   //
@@ -743,9 +935,9 @@ class PresolveContext {
   // propagated yet).
   bool CanonicalizeEncoding(int* ref, int64_t* value) const;
 
-  // Inserts an half reified var value encoding (literal => var ==/!= value).
+  // Inserts a half reified var value encoding (literal => var ==/!= value).
   // It returns true if the new state is different from the old state.
-  // Not that if imply_eq is false, the literal will be stored in its negated
+  // Note that if imply_eq is false, the literal will be stored in its negated
   // form.
   //
   // Thus, if you detect literal <=> var == value, then two calls must be made:
@@ -755,7 +947,7 @@ class PresolveContext {
                                   bool imply_eq);
 
   // Insert fully reified var-value encoding.
-  // Returns false if this make the problem infeasible.
+  // Returns false if this makes the problem infeasible.
   bool InsertVarValueEncodingInternal(int literal, int var, int64_t value,
                                       bool add_constraints);
 
@@ -764,13 +956,21 @@ class PresolveContext {
   TimeLimit* time_limit_;
   ModelRandomGenerator* random_;
 
+  // The model we are modifying during presolve.
+  CpModelProto* working_model_ = nullptr;
+
   // Initially false, and set to true on the first inconsistency.
   bool is_unsat_ = false;
 
-  // The current domain of each variables.
+  // The current domain of each variable.
   std::vector<Domain> domains_;
 
+  // Used to maintain the hint during presolve.
   SolutionCrush solution_crush_;
+
+  // Store the variable <-> constraint graph on top of the working_model_.
+  // This is mutable for the lazy update.
+  mutable LazyConstraintVariableGraph graph_;
 
   // Internal representation of the objective. During presolve, we first load
   // the objective in this format in order to have more efficient substitution
@@ -788,18 +988,6 @@ class PresolveContext {
   int64_t objective_integer_after_offset_;
   int64_t objective_integer_scaling_factor_;
 
-  // Constraints <-> Variables graph.
-  std::vector<std::vector<int>> constraint_to_vars_;
-  std::vector<absl::flat_hash_set<int>> var_to_constraints_;
-
-  // Number of constraints of the form [lit =>] var in domain.
-  std::vector<int> constraint_to_linear1_var_;
-  std::vector<int> var_to_num_linear1_;
-
-  // We maintain how many time each interval is used.
-  std::vector<std::vector<int>> constraint_to_intervals_;
-  std::vector<int> interval_usage_;
-
   // Used by GetTrueLiteral()/GetFalseLiteral().
   bool true_literal_is_defined_ = false;
   int true_literal_;
@@ -812,7 +1000,7 @@ class PresolveContext {
   // Contains the currently collected half value encodings:
   // (literal, var, value),  i.e.: literal => var ==/!= value
   // The state is accumulated (adding x => var == value then !x => var != value)
-  // will deduce that x equivalent to var == value.
+  // to deduce that x is equivalent to var == value.
   absl::flat_hash_map<std::tuple<int, int>, int64_t> eq_half_encoding_;
   absl::flat_hash_map<std::tuple<int, int>, int64_t> neq_half_encoding_;
 
@@ -821,9 +1009,6 @@ class PresolveContext {
   // detection time. But we mark all the variables in affine relations as part
   // of the kAffineRelationConstraint.
   AffineRelation affine_relations_;
-
-  // Used by SetVariableAsRemoved() and VariableWasRemoved().
-  std::vector<bool> var_was_removed_;
 
   // Cache for the reified precedence literals created during the expansion of
   // the reservoir constraint. This cache is only valid during the expansion
@@ -841,7 +1026,7 @@ class PresolveContext {
   bool model_is_expanded_ = false;
 };
 
-// Utility function to load the current problem into a in-memory representation
+// Utility function to load the current problem into an in-memory representation
 // that will be used for probing. Returns false if UNSAT.
 bool LoadModelForProbing(PresolveContext* context, Model* local_model);
 

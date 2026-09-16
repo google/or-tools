@@ -14,7 +14,6 @@
 #include "ortools/sat/cp_model_checker.h"
 
 #include <cstdint>
-#include <limits>
 #include <string>
 
 #include "absl/log/check.h"
@@ -22,6 +21,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 
 namespace operations_research {
@@ -119,6 +119,49 @@ TEST(SolutionIsFeasibleTest, OrToolsIssue3769) {
   EXPECT_TRUE(SolutionIsFeasible(model, {1, 0}));
   EXPECT_TRUE(SolutionIsFeasible(model, {1, 1}));
   EXPECT_FALSE(SolutionIsFeasible(model, {2, 0}));
+}
+
+TEST(SolutionIsFeasibleTest, LegacyInverse) {
+  const CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    constraints {
+      inverse {
+        f_direct: 0
+        f_direct: 1
+        f_direct: 2
+        f_inverse: 3
+        f_inverse: 4
+        f_inverse: 5
+      }
+    }
+  )pb");
+  EXPECT_TRUE(SolutionIsFeasible(model, {2, 0, 1, 1, 2, 0}));
+  EXPECT_FALSE(SolutionIsFeasible(model, {2, 0, 1, 1, 0, 2}));
+}
+
+TEST(SolutionIsFeasibleTest, Inverse) {
+  const CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    constraints {
+      inverse {
+        f_expr_direct: { vars: 0 coeffs: -1 offset: 3 }
+        f_expr_direct: { vars: 1 coeffs: 1 offset: -1 }
+        f_expr_direct: { vars: 2 coeffs: 3 offset: -2 }
+        f_expr_inverse: { vars: 0 coeffs: 1 offset: 0 }
+        f_expr_inverse: { vars: 1 coeffs: 1 offset: 1 }
+        f_expr_inverse: { vars: 2 coeffs: -2 offset: 2 }
+      }
+    }
+  )pb");
+  EXPECT_TRUE(SolutionIsFeasible(model, {1, 1, 1}));
+  EXPECT_FALSE(SolutionIsFeasible(model, {1, 0, 2}));
 }
 
 TEST(SolutionIsFeasibleTest, Reservoir) {
@@ -265,7 +308,7 @@ TEST(ValidateCpModelTest, VariableUpperBoundTooLarge) {
       domain: [ 0, 9223372036854775807 ]
     }
   )pb");
-  EXPECT_THAT(ValidateCpModel(model), HasSubstr("do not fall in"));
+  EXPECT_THAT(ValidateCpModel(model), HasSubstr("does not fall in"));
 }
 
 TEST(ValidateCpModelTest, VariableLowerBoundTooLarge1) {
@@ -275,7 +318,7 @@ TEST(ValidateCpModelTest, VariableLowerBoundTooLarge1) {
       domain: [ -9223372036854775807, 0 ]
     }
   )pb");
-  EXPECT_THAT(ValidateCpModel(model), HasSubstr("do not fall in"));
+  EXPECT_THAT(ValidateCpModel(model), HasSubstr("does not fall in"));
 }
 
 TEST(ValidateCpModelTest, VariableLowerBoundTooLarge2) {
@@ -285,12 +328,11 @@ TEST(ValidateCpModelTest, VariableLowerBoundTooLarge2) {
       domain: [ -9223372036854775808, 0 ]
     }
   )pb");
-  EXPECT_THAT(ValidateCpModel(model), HasSubstr("do not fall in"));
+  EXPECT_THAT(ValidateCpModel(model), HasSubstr("does not fall in"));
 }
 
 TEST(ValidateCpModelTest, VariableDomainOverflow) {
-  CHECK_EQ(std::numeric_limits<int64_t>::max() / 2,
-           int64_t{4611686018427387903});
+  CHECK_EQ(kint64max / 2, int64_t{4611686018427387903});
 
   const CpModelProto model_ok = ParseTestProto(R"pb(
     variables {
@@ -304,24 +346,22 @@ TEST(ValidateCpModelTest, VariableDomainOverflow) {
   const CpModelProto model_bad0 = ParseTestProto(R"pb(
     variables { name: 'a' domain: 0 domain: 4611686018427387904 }
   )pb");
-  EXPECT_THAT(ValidateCpModel(model_bad0), HasSubstr("do not fall in"));
+  EXPECT_THAT(ValidateCpModel(model_bad0), HasSubstr("does not fall in"));
 
   const CpModelProto model_bad1 = ParseTestProto(R"pb(
     variables { name: 'a' domain: -4611686018427387904 domain: 0 }
   )pb");
-  EXPECT_THAT(ValidateCpModel(model_bad1), HasSubstr("do not fall in"));
+  EXPECT_THAT(ValidateCpModel(model_bad1), HasSubstr("does not fall in"));
 
-  CHECK_EQ(std::numeric_limits<int64_t>::min() + 2,
-           int64_t{-9223372036854775806});
+  CHECK_EQ(kint64min + 2, int64_t{-9223372036854775806});
   const CpModelProto model_bad2 = ParseTestProto(R"pb(
     variables { name: 'a' domain: -9223372036854775806 domain: 2 }
   )pb");
-  EXPECT_THAT(ValidateCpModel(model_bad2), HasSubstr("do not fall in"));
+  EXPECT_THAT(ValidateCpModel(model_bad2), HasSubstr("does not fall in"));
 }
 
 TEST(ValidateCpModelTest, ObjectiveOverflow) {
-  CHECK_EQ(std::numeric_limits<int64_t>::max() / 4,
-           int64_t{2305843009213693951});
+  CHECK_EQ(kint64max / 4, int64_t{2305843009213693951});
   const CpModelProto model = ParseTestProto(R"pb(
     variables { domain: [ -2305843009213693951, 2305843009213693951 ] }
     variables { domain: [ -2305843009213693951, 2305843009213693951 ] }
@@ -332,7 +372,7 @@ TEST(ValidateCpModelTest, ObjectiveOverflow) {
     }
   )pb");
 
-  // The min/max sum do not overflow, but their difference do.
+  // The min/max sum does not overflow, but their difference does.
   EXPECT_THAT(ValidateCpModel(model), HasSubstr("overflow"));
 }
 
@@ -601,6 +641,55 @@ TEST(ValidateCpModelTest, NegativeModulo) {
   )pb");
   EXPECT_THAT(ValidateCpModel(model),
               HasSubstr("strictly positive modulo argument"));
+}
+
+TEST(ValidateCpModelTest, InvalidLegacyInverseConstraint) {
+  const CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: 0 domain: 1 }
+    constraints { inverse { f_direct: [ 0 ] } }
+  )pb");
+  EXPECT_THAT(ValidateCpModel(model),
+              HasSubstr("Non-matching fields size in inverse"));
+}
+
+TEST(ValidateCpModelTest, InvalidInverseConstraint) {
+  const CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: 0 domain: 1 }
+    constraints {
+      inverse {
+        f_expr_direct: {
+          vars: [ 0 ]
+          coeffs: [ 1 ]
+        }
+      }
+    }
+  )pb");
+  EXPECT_THAT(ValidateCpModel(model),
+              HasSubstr("Non-matching fields size in inverse"));
+}
+
+TEST(ValidateCpModelTest, InconsistentInverseConstraint) {
+  const CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: 0 domain: 1 }
+    constraints {
+      inverse {
+        f_direct: [ 0 ]
+        f_inverse: [ 0 ]
+        f_expr_direct: {
+          vars: [ 0 ]
+          coeffs: [ 1 ]
+        }
+        f_expr_inverse: {
+          vars: [ 0 ]
+          coeffs: [ 1 ]
+        }
+      }
+    }
+  )pb");
+  EXPECT_THAT(
+      ValidateCpModel(model),
+      HasSubstr(
+          "Inconsistent inverse with both legacy and new format defined"));
 }
 
 TEST(ValidateCpModelTest, IncompatibleAutomatonTransitions) {

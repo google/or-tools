@@ -26,7 +26,7 @@
 
 namespace operations_research {
 
-class OR_DLL BooleanVar : public IntVar {
+class OR_ROUTING_DLL BooleanVar : public IntVar {
  public:
   static constexpr int kUnboundBooleanVarValue = 2;
 
@@ -74,7 +74,7 @@ class OR_DLL BooleanVar : public IntVar {
 
 // ----- IntConst -----
 
-class OR_DLL IntConst : public IntVar {
+class OR_ROUTING_DLL IntConst : public IntVar {
  public:
   IntConst(Solver* s, int64_t value, const std::string& name = "");
   ~IntConst() override;
@@ -111,7 +111,7 @@ class OR_DLL IntConst : public IntVar {
 };
 
 // ----- ConcreteBooleanVar -----
-class OR_DLL ConcreteBooleanVar : public BooleanVar {
+class OR_ROUTING_DLL ConcreteBooleanVar : public BooleanVar {
  public:
   class Handler : public Demon {
    public:
@@ -140,7 +140,7 @@ class OR_DLL ConcreteBooleanVar : public BooleanVar {
 
 // ----- DomainIntVar -----
 // It Contains bounds and a bitset representation of possible values.
-class OR_DLL DomainIntVar : public IntVar {
+class OR_ROUTING_DLL DomainIntVar : public IntVar {
  public:
   class BitSetIterator;
   class BitSet;

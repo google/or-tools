@@ -80,29 +80,39 @@ class ScopedFloatingPointEnv {
 #endif
   }
 
-  void EnableExceptions(int excepts) {
-#if defined(_MSC_VER)
+  // Enables the provided exceptions, an or-combination of FE_XXX constants.
+  //
+  // Returns true if there where successfully set. Returns false if the current
+  // platform does not support setting enabling them.
+  bool EnableExceptions(int excepts) {
+    // To add some clarity, the #if/#elif/#else/#endif are labeled by a number,
+    // e.g. *1*.
+#if defined(_MSC_VER)  // *1*
     // _controlfp(static_cast<unsigned int>(excepts), _MCW_EM);
+    return false;
 #elif (defined(__GNUC__) || defined(__llvm__)) && defined(__x86_64__) && \
-    !defined(__ANDROID__)
+    !defined(__ANDROID__)                             // *1*
     CHECK_EQ(0, fegetenv(&fenv_));
     excepts &= FE_ALL_EXCEPT;
-#if defined(__APPLE__)
+#if defined(__APPLE__)                                // *2*
     fenv_.__control &= ~excepts;
-#elif (defined(__FreeBSD__) || defined(__OpenBSD__))
+#elif (defined(__FreeBSD__) || defined(__OpenBSD__))  // *2*
     fenv_.__x87.__control &= ~excepts;
-#elif defined(__NetBSD__)
+#elif defined(__NetBSD__)                             // *2*
     fenv_.x87.control &= ~excepts;
-#else  // Linux
+#else                                                 // *2* Linux
     fenv_.__control_word &= ~excepts;
-#endif
-#if defined(__NetBSD__)
+#endif                                                // *2*
+#if defined(__NetBSD__)                               // *3*
     fenv_.mxcsr &= ~(excepts << 7);
-#else
+#else                                                 // *3*
     fenv_.__mxcsr &= ~(excepts << 7);
-#endif
+#endif                                                // *3*
     CHECK_EQ(0, fesetenv(&fenv_));
-#endif
+    return true;
+#else
+    return false;
+#endif  // *1*
   }
 
  private:
@@ -148,6 +158,8 @@ bool AreWithinAbsoluteOrRelativeTolerances(FloatType x, FloatType y,
 // Tests whether x and y are close to one another using an absolute tolerance.
 // Returns true if |x - y| <= a (with a being the absolute_tolerance).
 // The cases for infinities are treated separately to avoid generating NaNs.
+//
+// Some matchers are available in fp_utils_testing.h for gUnit tests.
 template <typename FloatType>
 bool AreWithinAbsoluteTolerance(FloatType x, FloatType y,
                                 FloatType absolute_tolerance) {
@@ -175,20 +187,6 @@ inline bool IsIntegerWithinTolerance(FloatType x, FloatType tolerance) {
   if (IsPositiveOrNegativeInfinity(x)) return false;
   return std::abs(x - std::round(x)) <= tolerance;
 }
-
-// Handy alternatives to EXPECT_NEAR(), using relative and absolute tolerance
-// instead of relative tolerance only, and with a proper support for infinity.
-#define EXPECT_COMPARABLE(expected, obtained, epsilon)                    \
-  EXPECT_TRUE(operations_research::AreWithinAbsoluteOrRelativeTolerances( \
-      expected, obtained, epsilon, epsilon))                              \
-      << obtained << " != expected value " << expected                    \
-      << " within epsilon = " << epsilon;
-
-#define EXPECT_NOTCOMPARABLE(expected, obtained, epsilon)                  \
-  EXPECT_FALSE(operations_research::AreWithinAbsoluteOrRelativeTolerances( \
-      expected, obtained, epsilon, epsilon))                               \
-      << obtained << " == expected value " << expected                     \
-      << " within epsilon = " << epsilon;
 
 // Given an array of doubles, this computes a positive scaling factor such that
 // the scaled doubles can then be rounded to integers with little or no loss of

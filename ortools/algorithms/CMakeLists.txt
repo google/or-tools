@@ -34,7 +34,7 @@ target_link_libraries(${NAME} PRIVATE
   ${PROJECT_NAMESPACE}::ortools_proto)
 #add_library(${PROJECT_NAMESPACE}::algorithms ALIAS ${NAME})
 
-if(BUILD_TESTING)
+if(BUILD_CXX_TESTING)
   # Test
   file(GLOB _TEST_SRCS "*_test.cc")
   list(FILTER _TEST_SRCS EXCLUDE REGEX ".*_stress_test.cc")
@@ -74,7 +74,7 @@ if(BUILD_TESTING)
         ${_FILE_NAME}
       LINK_LIBRARIES
         benchmark::benchmark
-        benchmark::benchmark_main
+        ortools_benchmark_main
         GTest::gtest
         GTest::gmock
       ${_ARGS}

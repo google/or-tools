@@ -18,7 +18,6 @@
 #include "absl/status/statusor.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"
-#include "ortools/math_opt/solvers/xpress.pb.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -61,11 +60,22 @@ StreamableGurobiInitArguments StreamableGurobiInitArguments::FromProto(
   return args;
 }
 
+XpressInitializerProto::License XpressLicenseKey::Proto() const {
+  XpressInitializerProto::License license_proto;
+  license_proto.set_path(path);
+  return license_proto;
+}
+
+XpressLicenseKey XpressLicenseKey::FromProto(
+    const XpressInitializerProto::License& license_proto) {
+  return XpressLicenseKey{.path = license_proto.path()};
+}
+
 XpressInitializerProto StreamableXpressInitArguments::Proto() const {
   XpressInitializerProto params_proto;
 
-  if (extract_names.has_value()) {
-    params_proto.set_extract_names(extract_names.value());
+  if (license.has_value()) {
+    *params_proto.mutable_license() = license->Proto();
   }
 
   return params_proto;
@@ -74,8 +84,8 @@ XpressInitializerProto StreamableXpressInitArguments::Proto() const {
 StreamableXpressInitArguments StreamableXpressInitArguments::FromProto(
     const XpressInitializerProto& args_proto) {
   StreamableXpressInitArguments args;
-  if (args_proto.has_extract_names()) {
-    args.extract_names = args_proto.extract_names();
+  if (args_proto.has_license()) {
+    args.license = XpressLicenseKey::FromProto(args_proto.license());
   }
   return args;
 }

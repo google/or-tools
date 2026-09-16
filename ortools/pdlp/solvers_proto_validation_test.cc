@@ -135,40 +135,22 @@ TEST(ValidateTerminationCriteria, BadDetailedEpsOptimalDualityGapRelative) {
       "eps_optimal_objective_gap_relative");
 }
 
-TEST(ValidateTerminationCriteria, AbsoluteAndSimpleOptimalityCriteria) {
+TEST(ValidateTerminationCriteria, DeprecatedAbsoluteOptimalityCriteria) {
   TerminationCriteria termination_criteria =
-      ParseTextOrDie<TerminationCriteria>(
-          "eps_optimal_absolute: 1.0 simple_optimality_criteria { }");
+      ParseTextOrDie<TerminationCriteria>("eps_optimal_absolute: 1.0");
   const absl::Status status = ValidateTerminationCriteria(termination_criteria);
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("simple_optimality_criteria"));
+  EXPECT_THAT(status.message(),
+              HasSubstr("eps_optimal_absolute should not be set (deprecated)"));
 }
 
-TEST(ValidateTerminationCriteria, RelativeAndSimpleOptimalityCriteria) {
+TEST(ValidateTerminationCriteria, DeprecatedRelativeOptimalityCriteria) {
   TerminationCriteria termination_criteria =
-      ParseTextOrDie<TerminationCriteria>(
-          "eps_optimal_relative: 1.0 simple_optimality_criteria { }");
+      ParseTextOrDie<TerminationCriteria>("eps_optimal_relative: 1.0");
   const absl::Status status = ValidateTerminationCriteria(termination_criteria);
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("simple_optimality_criteria"));
-}
-
-TEST(ValidateTerminationCriteria, AbsoluteAndDetailedOptimalityCriteria) {
-  TerminationCriteria termination_criteria =
-      ParseTextOrDie<TerminationCriteria>(
-          "eps_optimal_absolute: 1.0 detailed_optimality_criteria { }");
-  const absl::Status status = ValidateTerminationCriteria(termination_criteria);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("detailed_optimality_criteria"));
-}
-
-TEST(ValidateTerminationCriteria, RelativeAndDetailedOptimalityCriteria) {
-  TerminationCriteria termination_criteria =
-      ParseTextOrDie<TerminationCriteria>(
-          "eps_optimal_relative: 1.0 detailed_optimality_criteria { }");
-  const absl::Status status = ValidateTerminationCriteria(termination_criteria);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("detailed_optimality_criteria"));
+  EXPECT_THAT(status.message(),
+              HasSubstr("eps_optimal_relative should not be set (deprecated)"));
 }
 
 TEST(ValidateTerminationCriteria, BadEpsPriamlInfeasible) {

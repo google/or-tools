@@ -25,12 +25,12 @@
 #include "absl/log/vlog_is_on.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
+#include "absl/types/source_location.h"
 #include "absl/types/span.h"
-#include "ortools/base/source_location.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/gurobi/isv_public/gurobi_isv.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"
 #include "ortools/third_party_solvers/gurobi_environment.h"
@@ -81,10 +81,10 @@ int GUROBI_STDCALL GurobiCallback(GRBmodel* const model, void* const cbdata,
 
 // A typical use case would be:
 //
-// ASSIGN_OR_RETURN(const auto scope, ScopedCallback::New(this, std::move(cb)));
-// const int error = GRBxxx(gurobi_model_);
-// RETURN_IF_ERROR(scope->Flush());
-// RETURN_IF_ERROR(ToStatus(error));
+// ABSL_ASSIGN_OR_RETURN(const auto scope, ScopedCallback::New(this,
+// std::move(cb))); const int error = GRBxxx(gurobi_model_);
+// ABSL_RETURN_IF_ERROR(scope->Flush());
+// ABSL_RETURN_IF_ERROR(ToStatus(error));
 // return scope->Release();
 class ScopedCallback {
  public:
@@ -101,7 +101,7 @@ class ScopedCallback {
     if (cb != nullptr) {
       scope->user_cb_data_.user_cb = std::move(cb);
       scope->user_cb_data_.gurobi = gurobi;
-      RETURN_IF_ERROR(gurobi->ToStatus(GRBsetcallbackfunc(
+      ABSL_RETURN_IF_ERROR(gurobi->ToStatus(GRBsetcallbackfunc(
           gurobi->model(), GurobiCallback, &scope->user_cb_data_)));
       scope->needs_cleanup_ = true;
     }
@@ -142,14 +142,6 @@ class ScopedCallback {
   UserCallbackData user_cb_data_;
 };
 
-// Returns true if both keys are equal.
-bool AreISVKeyEqual(const GurobiIsvKey& key,
-                    const GurobiInitializerProto::ISVKey& proto_key) {
-  return key.name == proto_key.name() &&
-         key.application_name == proto_key.application_name() &&
-         key.expiration == proto_key.expiration() && key.key == proto_key.key();
-}
-
 }  // namespace
 
 void GurobiFreeEnv::operator()(GRBenv* const env) const {
@@ -161,8 +153,8 @@ void GurobiFreeEnv::operator()(GRBenv* const env) const {
 absl::StatusOr<GRBenvUniquePtr> GurobiNewPrimaryEnv(
     const std::optional<GurobiIsvKey>& isv_key) {
   if (isv_key.has_value()) {
-    ASSIGN_OR_RETURN(GRBenv* const naked_primary_env,
-                     NewPrimaryEnvFromISVKey(*isv_key));
+    ABSL_ASSIGN_OR_RETURN(GRBenv* const naked_primary_env,
+                          NewPrimaryEnvFromISVKey(*isv_key));
     return GRBenvUniquePtr(naked_primary_env);
   }
   GRBenv* naked_primary_env = nullptr;
@@ -173,7 +165,7 @@ absl::StatusOr<GRBenvUniquePtr> GurobiNewPrimaryEnv(
   if (err == kGrbOk) {
     return primary_env;
   }
-  return util::InvalidArgumentErrorBuilder()
+  return ortools::InvalidArgumentErrorBuilder()
          << "failed to create Gurobi primary environment, GRBloadenv() "
             "returned the error ("
          << err << "): " << GRBgeterrormsg(primary_env.get());
@@ -188,7 +180,7 @@ absl::StatusOr<std::unique_ptr<Gurobi>> Gurobi::NewWithSharedPrimaryEnv(
 absl::StatusOr<std::unique_ptr<Gurobi>> Gurobi::New(
     GRBenvUniquePtr primary_env) {
   if (primary_env == nullptr) {
-    ASSIGN_OR_RETURN(primary_env, GurobiNewPrimaryEnv());
+    ABSL_ASSIGN_OR_RETURN(primary_env, GurobiNewPrimaryEnv());
   }
   GRBenv* const raw_primary_env = primary_env.get();
   return New(std::move(primary_env), raw_primary_env);
@@ -211,7 +203,7 @@ absl::StatusOr<std::unique_ptr<Gurobi>> Gurobi::New(
                               /*ub=*/nullptr, /*vtype=*/nullptr,
                               /*varnames=*/nullptr);
   if (err != kGrbOk) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "Error creating gurobi model on GRBnewmodel(), error code: "
            << err << " message: " << GRBgeterrormsg(primary_env);
   }
@@ -243,7 +235,7 @@ absl::Status Gurobi::ToStatus(const int grb_err, const absl::StatusCode code,
     return absl::OkStatus();
   }
 
-  return util::StatusBuilder(code)
+  return absl::StatusBuilder(code, loc)
          << "Gurobi error code: " << grb_err
          << ", message: " << GRBgeterrormsg(model_env_);
 }
@@ -494,8 +486,8 @@ absl::Status Gurobi::ChgCoeffs(const absl::Span<const int> cind,
 
 absl::StatusOr<int> Gurobi::GetNnz(const int first_var, const int num_vars) {
   int nnz = 0;
-  RETURN_IF_ERROR(ToStatus(GRBgetvars(gurobi_model_, &nnz, nullptr, nullptr,
-                                      nullptr, first_var, num_vars)));
+  ABSL_RETURN_IF_ERROR(ToStatus(GRBgetvars(
+      gurobi_model_, &nnz, nullptr, nullptr, nullptr, first_var, num_vars)));
   return nnz;
 }
 
@@ -506,7 +498,7 @@ absl::Status Gurobi::GetVars(const absl::Span<int> vbegin,
   CHECK_EQ(vbegin.size(), num_vars);
   CHECK_EQ(vind.size(), vval.size());
   int nnz = 0;
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ToStatus(GRBgetvars(gurobi_model_, &nnz, vbegin.data(), vind.data(),
                           vval.data(), first_var, num_vars)));
   CHECK_EQ(nnz, vind.size());
@@ -516,12 +508,12 @@ absl::Status Gurobi::GetVars(const absl::Span<int> vbegin,
 absl::StatusOr<Gurobi::SparseMat> Gurobi::GetVars(const int first_var,
                                                   const int num_vars) {
   SparseMat result;
-  ASSIGN_OR_RETURN(const int nnz, GetNnz(first_var, num_vars));
+  ABSL_ASSIGN_OR_RETURN(const int nnz, GetNnz(first_var, num_vars));
   result.begins.resize(num_vars);
   result.inds.resize(nnz);
   result.vals.resize(nnz);
   int read_nnz = 0;
-  RETURN_IF_ERROR(ToStatus(
+  ABSL_RETURN_IF_ERROR(ToStatus(
       GRBgetvars(gurobi_model_, &read_nnz, result.begins.data(),
                  result.inds.data(), result.vals.data(), first_var, num_vars)));
   CHECK_EQ(read_nnz, nnz);
@@ -533,19 +525,21 @@ absl::Status Gurobi::UpdateModel() {
 }
 
 absl::Status Gurobi::Optimize(Callback cb) {
-  ASSIGN_OR_RETURN(const auto scope, ScopedCallback::New(this, std::move(cb)));
+  ABSL_ASSIGN_OR_RETURN(const auto scope,
+                        ScopedCallback::New(this, std::move(cb)));
   const int error = GRBoptimize(gurobi_model_);
-  RETURN_IF_ERROR(scope->Flush());
-  RETURN_IF_ERROR(ToStatus(error));
+  ABSL_RETURN_IF_ERROR(scope->Flush());
+  ABSL_RETURN_IF_ERROR(ToStatus(error));
   return scope->Release();
 }
 
 absl::StatusOr<bool> Gurobi::ComputeIIS(Callback cb) {
-  ASSIGN_OR_RETURN(const auto scope, ScopedCallback::New(this, std::move(cb)));
+  ABSL_ASSIGN_OR_RETURN(const auto scope,
+                        ScopedCallback::New(this, std::move(cb)));
   const int error = GRBcomputeIIS(gurobi_model_);
-  RETURN_IF_ERROR(scope->Flush());
+  ABSL_RETURN_IF_ERROR(scope->Flush());
   if (error == GRB_ERROR_IIS_NOT_INFEASIBLE) {
-    RETURN_IF_ERROR(scope->Release());
+    ABSL_RETURN_IF_ERROR(scope->Release());
     return false;
   } else if (error == kGrbOk) {
     // If Gurobi v11 terminates at a limit before determining if the model is
@@ -555,10 +549,10 @@ absl::StatusOr<bool> Gurobi::ComputeIIS(Callback cb) {
     // point, and this should fail iff an IIS is present, i.e., Gurobi proved
     // that the model was infeasible.
     const bool has_iis = GetIntAttr(GRB_INT_ATTR_IIS_MINIMAL).ok();
-    RETURN_IF_ERROR(scope->Release());
+    ABSL_RETURN_IF_ERROR(scope->Release());
     return has_iis;
   }
-  RETURN_IF_ERROR(ToStatus(error));
+  ABSL_RETURN_IF_ERROR(ToStatus(error));
   return scope->Release();
 }
 
@@ -568,14 +562,14 @@ bool Gurobi::IsAttrAvailable(const char* name) const {
 
 absl::StatusOr<int> Gurobi::GetIntAttr(const char* const name) const {
   int result;
-  RETURN_IF_ERROR(ToStatus(GRBgetintattr(gurobi_model_, name, &result)))
+  ABSL_RETURN_IF_ERROR(ToStatus(GRBgetintattr(gurobi_model_, name, &result)))
       << "Error getting Gurobi int attribute: " << name;
   return result;
 }
 
 absl::StatusOr<double> Gurobi::GetDoubleAttr(const char* const name) const {
   double result;
-  RETURN_IF_ERROR(ToStatus(GRBgetdblattr(gurobi_model_, name, &result)))
+  ABSL_RETURN_IF_ERROR(ToStatus(GRBgetdblattr(gurobi_model_, name, &result)))
       << "Error getting Gurobi double attribute: " << name;
   return result;
 }
@@ -585,7 +579,7 @@ absl::StatusOr<std::string> Gurobi::GetStringAttr(
   // WARNING: if a string attribute is the empty string, we need to be careful,
   // std::string(char*) cannot take a nullptr.
   char* result = nullptr;
-  RETURN_IF_ERROR(ToStatus(GRBgetstrattr(gurobi_model_, name, &result)))
+  ABSL_RETURN_IF_ERROR(ToStatus(GRBgetstrattr(gurobi_model_, name, &result)))
       << "Error getting Gurobi string attribute: " << name;
   if (result == nullptr) {
     return std::string();
@@ -627,7 +621,7 @@ absl::Status Gurobi::SetCharAttrArray(const char* const name,
 
 absl::Status Gurobi::GetIntAttrArray(const char* const name,
                                      const absl::Span<int> attr_out) const {
-  RETURN_IF_ERROR(ToStatus(GRBgetintattrarray(
+  ABSL_RETURN_IF_ERROR(ToStatus(GRBgetintattrarray(
       gurobi_model_, name, 0, attr_out.size(), attr_out.data())))
       << "Error getting Gurobi int array attribute: " << name;
   return absl::OkStatus();
@@ -636,13 +630,13 @@ absl::Status Gurobi::GetIntAttrArray(const char* const name,
 absl::StatusOr<std::vector<int>> Gurobi::GetIntAttrArray(const char* const name,
                                                          const int len) const {
   std::vector<int> result(len);
-  RETURN_IF_ERROR(GetIntAttrArray(name, absl::MakeSpan(result)));
+  ABSL_RETURN_IF_ERROR(GetIntAttrArray(name, absl::MakeSpan(result)));
   return result;
 }
 
 absl::Status Gurobi::GetDoubleAttrArray(
     const char* const name, const absl::Span<double> attr_out) const {
-  RETURN_IF_ERROR(ToStatus(GRBgetdblattrarray(
+  ABSL_RETURN_IF_ERROR(ToStatus(GRBgetdblattrarray(
       gurobi_model_, name, 0, attr_out.size(), attr_out.data())))
       << "Error getting Gurobi double array attribute: " << name;
   return absl::OkStatus();
@@ -651,13 +645,13 @@ absl::Status Gurobi::GetDoubleAttrArray(
 absl::StatusOr<std::vector<double>> Gurobi::GetDoubleAttrArray(
     const char* const name, const int len) const {
   std::vector<double> result(len);
-  RETURN_IF_ERROR(GetDoubleAttrArray(name, absl::MakeSpan(result)));
+  ABSL_RETURN_IF_ERROR(GetDoubleAttrArray(name, absl::MakeSpan(result)));
   return result;
 }
 
 absl::Status Gurobi::GetCharAttrArray(const char* const name,
                                       const absl::Span<char> attr_out) const {
-  RETURN_IF_ERROR(ToStatus(GRBgetcharattrarray(
+  ABSL_RETURN_IF_ERROR(ToStatus(GRBgetcharattrarray(
       gurobi_model_, name, 0, attr_out.size(), attr_out.data())))
       << "Error getting Gurobi char array attribute: " << name;
   return absl::OkStatus();
@@ -666,7 +660,7 @@ absl::Status Gurobi::GetCharAttrArray(const char* const name,
 absl::StatusOr<std::vector<char>> Gurobi::GetCharAttrArray(
     const char* const name, const int len) const {
   std::vector<char> result(len);
-  RETURN_IF_ERROR(GetCharAttrArray(name, absl::MakeSpan(result)));
+  ABSL_RETURN_IF_ERROR(GetCharAttrArray(name, absl::MakeSpan(result)));
   return result;
 }
 
@@ -703,7 +697,7 @@ absl::Status Gurobi::SetCharAttrList(const char* const name,
 absl::StatusOr<int> Gurobi::GetIntAttrElement(const char* const name,
                                               const int element) const {
   int value;
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ToStatus(GRBgetintattrelement(gurobi_model_, name, element, &value)));
   return value;
 }
@@ -717,7 +711,7 @@ absl::Status Gurobi::SetIntAttrElement(const char* const name,
 absl::StatusOr<double> Gurobi::GetDoubleAttrElement(const char* const name,
                                                     const int element) const {
   double value;
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ToStatus(GRBgetdblattrelement(gurobi_model_, name, element, &value)));
   return value;
 }
@@ -731,7 +725,7 @@ absl::Status Gurobi::SetDoubleAttrElement(const char* const name, int element,
 absl::StatusOr<char> Gurobi::GetCharAttrElement(const char* const name,
                                                 const int element) const {
   char value;
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ToStatus(GRBgetcharattrelement(gurobi_model_, name, element, &value)));
   return value;
 }
@@ -764,19 +758,20 @@ absl::Status Gurobi::SetStringParam(const char* const name,
 
 absl::StatusOr<int> Gurobi::GetIntParam(const char* const name) {
   int result;
-  RETURN_IF_ERROR(ToStatus(GRBgetintparam(model_env_, name, &result)));
+  ABSL_RETURN_IF_ERROR(ToStatus(GRBgetintparam(model_env_, name, &result)));
   return result;
 }
 
 absl::StatusOr<double> Gurobi::GetDoubleParam(const char* const name) {
   double result;
-  RETURN_IF_ERROR(ToStatus(GRBgetdblparam(model_env_, name, &result)));
+  ABSL_RETURN_IF_ERROR(ToStatus(GRBgetdblparam(model_env_, name, &result)));
   return result;
 }
 
 absl::StatusOr<std::string> Gurobi::GetStringParam(const char* const name) {
   std::vector<char> result(GRB_MAX_STRLEN);
-  RETURN_IF_ERROR(ToStatus(GRBgetstrparam(model_env_, name, result.data())));
+  ABSL_RETURN_IF_ERROR(
+      ToStatus(GRBgetstrparam(model_env_, name, result.data())));
   return std::string(result.data());
 }
 
@@ -787,16 +782,16 @@ absl::Status Gurobi::ResetParameters() {
 absl::Status Gurobi::SetMultiObjectiveDoubleParam(const char* const name,
                                                   const int obj_index,
                                                   const double value) {
-  ASSIGN_OR_RETURN(GRBenv* const obj_env, GetMultiObjectiveEnv(obj_index));
-  return util::StatusBuilder(ToStatus(GRBsetdblparam(obj_env, name, value)))
+  ABSL_ASSIGN_OR_RETURN(GRBenv* const obj_env, GetMultiObjectiveEnv(obj_index));
+  return absl::StatusBuilder(ToStatus(GRBsetdblparam(obj_env, name, value)))
          << " for objective index: " << obj_index;
 }
 
 absl::StatusOr<double> Gurobi::GetMultiObjectiveDoubleParam(
     const char* const name, const int obj_index) {
-  ASSIGN_OR_RETURN(GRBenv* const obj_env, GetMultiObjectiveEnv(obj_index));
+  ABSL_ASSIGN_OR_RETURN(GRBenv* const obj_env, GetMultiObjectiveEnv(obj_index));
   double result;
-  RETURN_IF_ERROR(ToStatus(GRBgetdblparam(obj_env, name, &result)))
+  ABSL_RETURN_IF_ERROR(ToStatus(GRBgetdblparam(obj_env, name, &result)))
       << " for objective index: " << obj_index;
   return result;
 }
@@ -809,7 +804,7 @@ Gurobi::CallbackContext::CallbackContext(Gurobi* const gurobi,
 
 absl::StatusOr<int> Gurobi::CallbackContext::CbGetInt(const int what) const {
   int result;
-  RETURN_IF_ERROR(gurobi_->ToStatus(
+  ABSL_RETURN_IF_ERROR(gurobi_->ToStatus(
       GRBcbget(cb_data_, where_, what, static_cast<void*>(&result))));
   return result;
 }
@@ -817,7 +812,7 @@ absl::StatusOr<int> Gurobi::CallbackContext::CbGetInt(const int what) const {
 absl::StatusOr<double> Gurobi::CallbackContext::CbGetDouble(
     const int what) const {
   double result;
-  RETURN_IF_ERROR(gurobi_->ToStatus(
+  ABSL_RETURN_IF_ERROR(gurobi_->ToStatus(
       GRBcbget(cb_data_, where_, what, static_cast<void*>(&result))));
   return result;
 }
@@ -830,7 +825,7 @@ absl::Status Gurobi::CallbackContext::CbGetDoubleArray(
 
 absl::StatusOr<std::string> Gurobi::CallbackContext::CbGetMessage() const {
   char* result = nullptr;
-  RETURN_IF_ERROR(gurobi_->ToStatus(GRBcbget(
+  ABSL_RETURN_IF_ERROR(gurobi_->ToStatus(GRBcbget(
       cb_data_, where_, GRB_CB_MSG_STRING, static_cast<void*>(&result))));
   if (result == nullptr) {
     return std::string();
@@ -861,7 +856,7 @@ absl::Status Gurobi::CallbackContext::CbLazy(
 absl::StatusOr<double> Gurobi::CallbackContext::CbSolution(
     const absl::Span<const double> solution) const {
   double result;
-  RETURN_IF_ERROR(gurobi_->ToStatus(
+  ABSL_RETURN_IF_ERROR(gurobi_->ToStatus(
       GRBcbsolution(cb_data_, const_cast<double*>(solution.data()), &result)));
   return result;
 }
@@ -870,7 +865,7 @@ absl::StatusOr<GRBenv*> Gurobi::GetMultiObjectiveEnv(
     const int obj_index) const {
   GRBenv* const obj_env = GRBgetmultiobjenv(gurobi_model_, obj_index);
   if (obj_env == nullptr) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "Failed to get objective environment for objective index: "
            << obj_index;
   }

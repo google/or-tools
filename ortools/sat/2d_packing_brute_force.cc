@@ -95,7 +95,8 @@ bool ShouldPlaceItemAtPosition(
                                   pos == RectangleRelationship::TOUCHING_BOTTOM;
   }
 
-  // Finally, check if it touching something both on the bottom and to the left.
+  // Finally, check if it is touching something both on the bottom and to the
+  // left.
   if (!touches_something_on_left || !touches_something_on_bottom) {
     return false;
   }
@@ -112,21 +113,22 @@ struct PotentialPositionForItem {
   }
 };
 
-// This implementation search for a solution in the following order:
+// This implementation searches for a solution in the following order:
 // - first place the 0-th item in the bottom left corner;
 // - then place the 1-th item either on the bottom of the bounding box to the
 //   right of the 0-th item, or on the left of the bounding box on top of it;
 // - keep placing items, while respecting that each item should touch something
 //   on both its bottom and left sides until either all items are placed (in
-//   this case a solution is found and return) or we found an item that cannot
+//   this case a solution is found and returned) or we found an item that cannot
 //   be placed on any possible solution.
 // - if an item cannot be placed, backtrack: try to place the last successfully
 //   placed item in another position.
 //
-// This is a recursive implementation, each call will place the first non placed
-// item in a fixed order. Backtrack occur when we return from a recursive call.
+// This is a recursive implementation, each call will place the first non-placed
+// item in a fixed order. Backtracking occurs when we return from a recursive
+// call.
 //
-// This return false iff it is infeasible to place the other items given the
+// This returns false iff it is infeasible to place the other items given the
 // already placed ones.
 //
 // This implementation is very similar to the "Left-Most Active Only" method
@@ -204,7 +206,7 @@ bool BruteForceOrthogonalPackingImpl(
 
       // Now the hard part of the algorithm: create the new "potential
       // positions" vector after placing this item. Describing the actual set of
-      // acceptable places to put consider for the next item in the search would
+      // acceptable places to consider for the next item in the search would
       // be pretty complex. For example:
       // +----------------------------+
       // |                            |
@@ -228,13 +230,13 @@ bool BruteForceOrthogonalPackingImpl(
       //
       // We consider that every item must be touching something (other item or
       // the box boundaries) to the left and to the bottom. Thus, when we add a
-      // new item, it is enough to consider at all positions where it would
+      // new item, it is enough to consider all positions where it would
       // touch the new item on the bottom and something else on the left or
       // touch the new item on the left and something else on the bottom. So we
       // consider the following points:
-      // - all previous positions if they didn't got invalid due to the new
+      // - all previous positions if they didn't become invalid due to the new
       //   item;
-      // - new position are derived getting the right-top most corner of the
+      // - new positions are derived getting the right-top most corner of the
       //   added item and connecting it to the bottom and the left with a line.
       //   New potential positions are the intersection of this line with either
       //   the current items or the box. For example, if we add a box to the
@@ -299,9 +301,9 @@ bool BruteForceOrthogonalPackingImpl(
           if (j < i) {
             // We already explored all items of index less than i in all their
             // current possible positions and they are all unfeasible. We still
-            // keep track of whether it fit there or not, since having any item
-            // that don't fit anywhere is a good stopping criteria. But we don't
-            // have to retest those positions down in the search tree.
+            // keep track of whether it fits there or not, since having any item
+            // that doesn't fit anywhere is a good stopping criterion. But we
+            // don't have to retest those positions down in the search tree.
             PotentialPositionForItem position = original_position;
             position.already_explored = true;
             new_potential_positions.AppendToLastVector(position);
@@ -432,7 +434,7 @@ bool BruteForceOrthogonalPackingNoPreprocessing(
 // |####|......|OOOOOOOOO|@@@   |
 // +----+------+---------+------+
 //
-// If the packing is successful, we can remove both set from the problem:
+// If the packing is successful, we can remove both sets from the problem:
 // +----------------+
 // |                |
 // |                |
@@ -538,8 +540,9 @@ bool PreprocessLargeWithSmallY(
 // Try to find an equivalent smaller OPP problem by fixing large items.
 // The API is a bit unusual: it takes a reference to a mutable Span of sizes and
 // rectangles. When this function finds an item that can be fixed, it sets
-// the position of the PermutableItem, reorders `items` to put that item in the
-// end of the span and then resizes the span so it contain only non-fixed items.
+// the position of the PermutableItem, reorders `items` to put that item at the
+// end of the span and then resizes the span so it contains only non-fixed
+// items.
 //
 // Note that the position of input items is not used and the position of
 // non-fixed items will not be modified by this function.
@@ -571,7 +574,7 @@ bool Preprocess(absl::Span<PermutableItem>& items,
 
   if (largest_x > bounding_box_size.first ||
       largest_y > bounding_box_size.second) {
-    // No point in optimizing obviously infeasible instance.
+    // No point in optimizing an obviously infeasible instance.
     return false;
   }
   const auto remove_item = [&items](int index_to_remove) {
@@ -579,8 +582,8 @@ bool Preprocess(absl::Span<PermutableItem>& items,
     items.remove_suffix(1);
   };
   if (largest_x + smallest_x > bounding_box_size.first) {
-    // No item (not even the narrowest one) fit alongside the widest item. So we
-    // care only about fitting the remaining items in the remaining space.
+    // No item (not even the narrowest one) fits alongside the widest item. So
+    // we care only about fitting the remaining items in the remaining space.
     bounding_box_size.second -= items[largest_x_idx].size_y;
     items[largest_x_idx].position = {
         .x_min = 0,

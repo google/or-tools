@@ -43,32 +43,44 @@ namespace operations_research {
 // Algorithms.” Mathematical Programming, 91 (3): 447–78.
 // https://link.springer.com/article/10.1007/s101070100262
 
-// The implementation benefits from the features of SetCoverSolutionGenerator.
-// Notice however that NextSolution() is not implemented, and the class is
+// The implementation benefits from the features of SetCoverOptimizer.
+// Notice however that Optimize() is not implemented, and the class is
 // intended to be used only for ComputeLowerBound(). FOR THE TIME BEING.
 
-class SetCoverLagrangian : public SubsetListBasedSolutionGenerator {
+// Parameters for SetCoverLagrangian.
+struct SetCoverLagrangianParams : public SetCoverOptimizerParamsBase {
+  int num_threads = 1;
+};
+
+class SetCoverLagrangian
+    : public SubsetListBasedOptimizer<SetCoverLagrangianParams> {
  public:
   explicit SetCoverLagrangian(SetCoverInvariant* inv)
-      : SetCoverLagrangian(inv, "Lagrangian") {}
+      : SetCoverLagrangian(inv, std::make_unique<SetCoverLagrangianParams>()) {}
 
-  SetCoverLagrangian(SetCoverInvariant* inv, const absl::string_view name)
-      : SubsetListBasedSolutionGenerator(
+  SetCoverLagrangian(SetCoverInvariant* inv,
+                     std::unique_ptr<SetCoverLagrangianParams> params)
+      : SubsetListBasedOptimizer(
             inv, SetCoverInvariant::ConsistencyLevel::kInconsistent,
-            "Lagrangian", name),
-        num_threads_(1),
+            std::move(params)),
         thread_pool_(nullptr) {}
 
+  SetCoverLagrangian(SetCoverInvariant* inv, const absl::string_view name)
+      : SubsetListBasedOptimizer(
+            inv, SetCoverInvariant::ConsistencyLevel::kInconsistent,
+            std::make_unique<SetCoverLagrangianParams>()) {
+    SetName(name);
+    params().class_name = "Lagrangian";
+  }
+
   SetCoverLagrangian& UseNumThreads(int num_threads) {
-    num_threads_ = num_threads;
+    params().num_threads = num_threads;
     thread_pool_ = std::make_unique<ThreadPool>(num_threads);
     return *this;
   }
 
-  using SubsetListBasedSolutionGenerator::NextSolution;
-
-  // This is a dummy implementation of NextSolution() that is not used.
-  bool NextSolution(absl::Span<const SubsetIndex> _) final { return false; }
+  // This is a dummy implementation of OptimizeImpl() that is not used.
+  bool OptimizeImpl(absl::Span<const SubsetIndex> _) override { return false; }
 
   // Initializes the multipliers vector (u) based on the cost per subset.
   ElementCostVector InitializeLagrangeMultipliers() const;
@@ -143,9 +155,6 @@ class SetCoverLagrangian : public SubsetListBasedSolutionGenerator {
       const SubsetCostVector& costs, Cost upper_bound);
 
  private:
-  // The number of threads to use for parallelization.
-  int num_threads_;
-
   // The thread pool used for parallelization.
   std::unique_ptr<ThreadPool> thread_pool_;
 

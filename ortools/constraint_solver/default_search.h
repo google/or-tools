@@ -24,6 +24,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/reversible_engine.h"
 #include "ortools/util/cached_log.h"
 
 namespace operations_research {

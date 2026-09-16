@@ -20,9 +20,9 @@ It contains in particular:
 * [`status.h`][status_h]: Return type for various solver functions.
 
 <!-- Links used throughout the document. -->
-[parameters_proto]: ../glop/parameters.proto
-[benchmark_proto]: ../glop/benchmark.proto
-[lp_solver_h]: ../glop/lp_solver.h
-[preprocessor_h]: ../glop/preprocessor.h
-[revised_simplex_h]: ../glop/revised_simplex.h
-[status_h]: ../glop/status.h
+[parameters_proto]: /ortools/glop/parameters.proto
+[benchmark_proto]: /ortools/glop/benchmark.proto
+[lp_solver_h]: /ortools/glop/lp_solver.h
+[preprocessor_h]: /ortools/glop/preprocessor.h
+[revised_simplex_h]: /ortools/glop/revised_simplex.h
+[status_h]: /ortools/glop/status.h

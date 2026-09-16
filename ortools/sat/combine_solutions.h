@@ -29,9 +29,10 @@
 namespace operations_research {
 namespace sat {
 
-// Given a `new_solution` that was created by changing a bit a `base_solution`,
-// try to apply the same changes to the other solutions stored in the
-// `response_manager` and return any such generated solution that is valid.
+// Given a `new_solution` that was created by slightly changing a
+// `base_solution`, try to apply the same changes to the other solutions stored
+// in the `response_manager` and return any such generated solution that is
+// valid.
 std::optional<std::vector<int64_t>> FindCombinedSolution(
     const CpModelProto& model, absl::Span<const int64_t> new_solution,
     absl::Span<const int64_t> base_solution,

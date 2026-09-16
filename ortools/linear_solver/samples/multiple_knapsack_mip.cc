@@ -14,12 +14,13 @@
 // [START program]
 // Solve a multiple knapsack problem using a MIP solver.
 // [START import]
-#include <iostream>
+#include <cstdlib>
 #include <memory>
 #include <numeric>
 #include <vector>
 
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/log_severity.h"

@@ -21,9 +21,8 @@
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/meta/type_traits.h"
 #include "absl/types/span.h"
-#include "ortools/base/strong_int.h"
+#include "ortools/algorithms/multikey_radix_sort.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/storage/model_storage_types.h"
 
@@ -144,13 +143,15 @@ SparseDoubleMatrixProto SparseSymmetricMatrix::Proto() const {
   for (const auto& [v, _] : related_variables_) {
     vars_in_order.push_back(v);
   }
-  absl::c_sort(vars_in_order);
+  AutoRadixSort(vars_in_order, [](const VariableId id) { return id.value(); });
 
   for (const VariableId v : vars_in_order) {
     // TODO(b/233630053): reuse the allocation once an iterator API is
     // supported.
     std::vector<std::pair<VariableId, double>> related = Terms(v);
-    absl::c_sort(related);
+    AutoRadixSort(related, [](const std::pair<VariableId, double>& p) {
+      return p.first.value();
+    });
     for (const auto& [other, coef] : related) {
       if (v <= other) {
         result.add_row_ids(v.value());

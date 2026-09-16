@@ -70,7 +70,9 @@ def remote_http_solve(
 
     payload = _build_json_payload(model, solver_type, params, model_params, resources)
 
-    session = create_optimization_service_session(api_key, deadline_sec)
+    session = create_optimization_service_session(
+        api_key, deadline_sec
+    )  # pyrefly: ignore[bad-argument-type]
     response = session.post(
         url=endpoint,
         json=payload,

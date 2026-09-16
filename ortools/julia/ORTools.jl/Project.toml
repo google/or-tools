@@ -1,6 +1,6 @@
 name = "ORTools"
 uuid = "b7d69b34-a827-4671-8cfa-f7e1eec930c7"
-version = "0.0.1"
+version = "0.1.0"
 
 [deps]
 MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
@@ -13,19 +13,20 @@ ORTools_jll = "717719f8-c30c-5086-8f3c-70cd6a1e3a46"
 ORToolsBinaries = "594ad865-6a17-49ee-8f22-76ed020c7c08"
 
 [extensions]
-ORToolsJllExt = "ORTools_jll"
 ORToolsBinariesExt = "ORToolsBinaries"
+ORToolsJllExt = "ORTools_jll"
 
 [compat]
-julia = "1.9"
-ORTools_jll = "9.14.0"
-ORToolsBinaries = "0.0.1"
-ORToolsGenerated = "0.0.2"
-ProtoBuf = "1.0.15"
 MathOptInterface = "1.42.0"
+ORToolsBinaries = "0.1.0"
+ORToolsGenerated = "0.1.0"
+ORTools_jll = "9.14.0"
+ProtoBuf = "1.0.15"
+julia = "1.9"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+ORToolsBinaries = "594ad865-6a17-49ee-8f22-76ed020c7c08"
 
 [targets]
-test = ["Test"]
+test = ["Test", "ORToolsBinaries"]

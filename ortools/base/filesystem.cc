@@ -14,7 +14,6 @@
 #include "ortools/base/filesystem.h"
 
 #include <algorithm>
-#include <exception>   // IWYU pragma: keep
 #include <filesystem>  // NOLINT
 #include <regex>       // NOLINT
 #include <string>
@@ -22,26 +21,27 @@
 #include <system_error>  // NOLINT
 #include <vector>
 
+#include "absl/base/config.h"  // IWYU pragma: keep
 #include "absl/status/status.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_replace.h"
 #include "ortools/base/file.h"
 
-namespace fs = std::filesystem;
-
-// Converts a absl::string_view into an object compatible with std::filesystem.
-#ifdef ABSL_USES_STD_STRING_VIEW
-#define SV_ABSL_TO_STD(X) X
-#else
-#define SV_ABSL_TO_STD(X) std::string(X)
+#ifdef ABSL_HAVE_EXCEPTIONS
+#include <exception>
 #endif
+
+namespace fs = std::filesystem;
 
 namespace file {
 
 absl::Status Match(std::string_view pattern, std::vector<std::string>* result,
                    const file::Options& options) {
+#ifdef ABSL_HAVE_EXCEPTIONS
   try {
-    const auto search_dir = fs::path(SV_ABSL_TO_STD(pattern)).parent_path();
-    const auto filename = fs::path(SV_ABSL_TO_STD(pattern)).filename().string();
+#endif
+    const auto search_dir = fs::path(pattern).parent_path();
+    const auto filename = fs::path(pattern).filename().string();
     std::string regexp_filename =
         absl::StrReplaceAll(filename, {{".", "\\."}, {"*", ".*"}, {"?", "."}});
     std::regex regexp_pattern(regexp_filename);
@@ -63,9 +63,11 @@ absl::Status Match(std::string_view pattern, std::vector<std::string>* result,
 
     std::sort(result->begin(), result->end());
     return absl::OkStatus();
+#ifdef ABSL_HAVE_EXCEPTIONS
   } catch (const std::exception& e) {
     return absl::InvalidArgumentError(e.what());
   }
+#endif
 }
 
 absl::Status IsDirectory(std::string_view path, const file::Options& options) {
@@ -81,12 +83,16 @@ absl::Status IsDirectory(std::string_view path, const file::Options& options) {
 absl::Status RecursivelyCreateDir(std::string_view path,
                                   const file::Options& options) {
   (void)options;
+#ifdef ABSL_HAVE_EXCEPTIONS
   try {
+#endif
     std::filesystem::create_directories(std::filesystem::path(path));
     return absl::OkStatus();
+#ifdef ABSL_HAVE_EXCEPTIONS
   } catch (const std::exception& e) {
     return absl::InvalidArgumentError(e.what());
   }
+#endif
 }
 
 }  // namespace file

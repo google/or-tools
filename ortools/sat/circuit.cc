@@ -13,13 +13,13 @@
 
 #include "ortools/sat/circuit.h"
 
-#include <functional>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "ortools/graph_base/strongly_connected_components.h"
 #include "ortools/sat/all_different.h"
@@ -29,7 +29,9 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -49,14 +51,14 @@ CircuitPropagator::CircuitPropagator(
   prev_.resize(num_nodes_, -1);
   next_literal_.resize(num_nodes_);
   must_be_in_cycle_.resize(num_nodes_);
+
+  const int num_arcs = tails.size();
   absl::flat_hash_map<LiteralIndex, int> literal_to_watch_index;
+  literal_to_watch_index.reserve(num_arcs);
 
   // Temporary data to fill watch_index_to_arcs_.
-  const int num_arcs = tails.size();
-  std::vector<int> keys;
-  std::vector<Arc> values;
-  keys.reserve(num_arcs);
-  values.reserve(num_arcs);
+  CompactVectorVectorBuilder<int, Arc> watch_index_to_arcs_builder;
+  watch_index_to_arcs_builder.ReserveNumItems(num_arcs);
 
   graph_.reserve(num_arcs);
   self_arcs_.resize(num_nodes_, kFalseLiteralIndex);
@@ -94,26 +96,22 @@ CircuitPropagator::CircuitPropagator(
       continue;
     }
 
-    // Tricky: For self-arc, we watch instead when the arc become false.
+    // Tricky: For self-arcs, we watch instead when the arc becomes false.
     const Literal watched_literal = tail == head ? literal.Negated() : literal;
-    const auto& it = literal_to_watch_index.find(watched_literal.Index());
-    int watch_index = it != literal_to_watch_index.end() ? it->second : -1;
-    if (watch_index == -1) {
-      watch_index = watch_index_to_literal_.size();
-      literal_to_watch_index[watched_literal.Index()] = watch_index;
+    const auto [it, inserted] = literal_to_watch_index.insert(
+        {watched_literal.Index(), literal_to_watch_index.size()});
+    if (inserted) {
       watch_index_to_literal_.push_back(watched_literal);
     }
-
-    keys.push_back(watch_index);
-    values.push_back({tail, head});
+    watch_index_to_arcs_builder.Add(it->second, {tail, head});
   }
-  watch_index_to_arcs_.ResetFromFlatMapping(keys, values);
+  watch_index_to_arcs_.ResetFromBuilder(watch_index_to_arcs_builder);
 
   for (int node = 0; node < num_nodes_; ++node) {
     if (self_arcs_[node] == kFalseLiteralIndex ||
         assignment_.LiteralIsFalse(Literal(self_arcs_[node]))) {
       // For the multiple_subcircuit_through_zero case, must_be_in_cycle_ will
-      // be const and only contains zero.
+      // be const and only contain zero.
       if (node == 0 || !options_.multiple_subcircuit_through_zero) {
         must_be_in_cycle_[rev_must_be_in_cycle_size_++] = node;
       }
@@ -132,11 +130,12 @@ int CircuitPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   }
   watcher->RegisterReversibleClass(id, this);
   watcher->RegisterReversibleInt(id, &rev_must_be_in_cycle_size_);
+  watcher->RegisterReversibleInt(id, &rev_deferred_watch_indices_size_);
 
   // This is needed in case a Literal is used for more than one arc, we may
   // propagate it to false/true here, and it might trigger more propagation.
   //
-  // TODO(user): come up with a test that fail when this is not here.
+  // TODO(user): come up with a test that fails when this is not here.
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
   return id;
 }
@@ -201,11 +200,25 @@ void CircuitPropagator::AddArc(int tail, int head, LiteralIndex literal_index) {
 }
 
 bool CircuitPropagator::IncrementalPropagate(
-    const std::vector<int>& watch_indices) {
+    absl::Span<const int> watch_indices) {
   if (!enabled_) return true;
   const EnforcementStatus status = enforcement_helper_.Status(enforcement_id_);
+  if (status == EnforcementStatus::IS_FALSE) return true;
   if (status != EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT &&
       status != EnforcementStatus::IS_ENFORCED) {
+    // We cannot propagate anything, and we can't update the internal state
+    // either because this could break invariants (e.g. at most one
+    // incoming/outgoing arc per node). Instead, we save the watch indices to
+    // process them later by calling this method again in Propagate() when we
+    // can propagate again.
+    if (rev_deferred_watch_indices_size_ + watch_indices.size() >
+        deferred_watch_indices_.size()) {
+      deferred_watch_indices_.resize(rev_deferred_watch_indices_size_ +
+                                     watch_indices.size());
+    }
+    for (const int w : watch_indices) {
+      deferred_watch_indices_[rev_deferred_watch_indices_size_++] = w;
+    }
     return true;
   }
 
@@ -219,7 +232,7 @@ bool CircuitPropagator::IncrementalPropagate(
       }
 
       // Get rid of the trivial conflicts: At most one incoming and one outgoing
-      // arc for each nodes.
+      // arc for each node.
       if (next_[arc.tail] != -1) {
         if (next_literal_[arc.tail] != kNoLiteralIndex) {
           temp_reason_ = {Literal(next_literal_[arc.tail]).Negated(),
@@ -256,6 +269,14 @@ bool CircuitPropagator::Propagate() {
       status != EnforcementStatus::IS_ENFORCED) {
     return true;
   }
+  if (rev_deferred_watch_indices_size_ > 0) {
+    // IncrementalPropagate() calls Propagate() again, make sure this does not
+    // result in an infinite loop.
+    const int size = rev_deferred_watch_indices_size_;
+    rev_deferred_watch_indices_size_ = 0;
+    return IncrementalPropagate(
+        absl::MakeConstSpan(deferred_watch_indices_).subspan(0, size));
+  }
 
   processed_.assign(num_nodes_, false);
   for (int n = 0; n < num_nodes_; ++n) {
@@ -264,7 +285,7 @@ bool CircuitPropagator::Propagate() {
     if (next_[n] == -1 && prev_[n] == -1) continue;
 
     // TODO(user): both this and the loop on must_be_in_cycle_ might take some
-    // time on large graph. Optimize if this become an issue.
+    // time on large graphs. Optimize if this becomes an issue.
     in_current_path_.assign(num_nodes_, false);
 
     // Find the start and end of the path containing node n. If this is a
@@ -286,8 +307,8 @@ bool CircuitPropagator::Propagate() {
       if (start_node == n) break;
     }
 
-    // TODO(user): we can fail early in more case, like no more possible path
-    // to any of the mandatory node.
+    // TODO(user): we can fail early in more cases, like no more possible path
+    // to any of the mandatory nodes.
     if (options_.multiple_subcircuit_through_zero) {
       // Any cycle must contain zero.
       if (start_node == end_node && !in_current_path_[0]) {
@@ -313,14 +334,14 @@ bool CircuitPropagator::Propagate() {
         }
       }
 
-      // None of the other propagation below are valid in case of multiple
+      // None of the other propagations below are valid in case of multiple
       // circuits.
       continue;
     }
 
     // Check if we miss any node that must be in the circuit. Note that the ones
     // for which self_arcs_[i] is kFalseLiteralIndex are first. This is good as
-    // it will produce shorter reason. Otherwise we prefer the first that was
+    // it will produce a shorter reason. Otherwise we prefer the first that was
     // assigned in the trail.
     bool miss_some_nodes = false;
     LiteralIndex extra_reason = kFalseLiteralIndex;
@@ -334,7 +355,7 @@ bool CircuitPropagator::Propagate() {
     }
 
     if (miss_some_nodes) {
-      // A circuit that miss a mandatory node is a conflict.
+      // A circuit that misses a mandatory node is a conflict.
       if (start_node == end_node) {
         FillReasonForPath(start_node, &temp_reason_);
         if (extra_reason != kFalseLiteralIndex) {
@@ -374,10 +395,6 @@ bool CircuitPropagator::Propagate() {
           assignment_.LiteralIsTrue(Literal(self_arcs_[node]))) {
         continue;
       }
-
-      // This shouldn't happen because ExactlyOnePerRowAndPerColumn() should
-      // have executed first and propagated self_arcs_[node] to false.
-      CHECK_EQ(next_[node], -1);
 
       // We should have detected that above (miss_some_nodes == true). But we
       // still need this for corner cases where the same literal is used for
@@ -450,7 +467,7 @@ NoCyclePropagator::NoCyclePropagator(int num_nodes, absl::Span<const int> tails,
 
   // We register at construction.
   //
-  // TODO(user): Uniformize this across propagator. Sometimes it is nice not
+  // TODO(user): Uniformize this across propagators. Sometimes it is nice not
   // to register them, but most of them can be registered right away.
   RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
 }
@@ -462,7 +479,7 @@ void NoCyclePropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   }
   watcher->RegisterReversibleClass(id, this);
 
-  // This class currently only test for conflict, so no need to call it twice.
+  // This class currently only tests for conflicts, so no need to call it twice.
   // watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
 
@@ -485,7 +502,7 @@ void NoCyclePropagator::SetLevel(int level) {
 }
 
 bool NoCyclePropagator::IncrementalPropagate(
-    const std::vector<int>& watch_indices) {
+    absl::Span<const int> watch_indices) {
   for (const int w : watch_indices) {
     const Literal literal = watch_index_to_literal_[w];
     for (const auto& [tail, head] : watch_index_to_arcs_[w]) {
@@ -497,21 +514,21 @@ bool NoCyclePropagator::IncrementalPropagate(
   return Propagate();
 }
 
-// TODO(user): only explore node with newly added arcs.
+// TODO(user): only explore nodes with newly added arcs.
 //
 // TODO(user): We could easily re-index the graph so that only nodes with arcs
 // are used. Because right now we are in O(num_nodes) even if the graph is
 // empty.
 bool NoCyclePropagator::Propagate() {
   // The graph should be up to date when this is called thanks to
-  // IncrementalPropagate(). We just do a SCC on the graph.
+  // IncrementalPropagate(). We just do an SCC on the graph.
   components_.clear();
   FindStronglyConnectedComponents(num_nodes_, graph_, &components_);
 
   for (const std::vector<int>& compo : components_) {
     if (compo.size() <= 1) continue;
 
-    // We collect all arc from this compo.
+    // We collect all arcs from this compo.
     //
     // TODO(user): We could be more efficient here, but this is only executed on
     // conflicts. We should at least make sure we return a single cycle even
@@ -581,7 +598,7 @@ void CircuitCoveringPropagator::SetLevel(int level) {
 }
 
 bool CircuitCoveringPropagator::IncrementalPropagate(
-    const std::vector<int>& watch_indices) {
+    absl::Span<const int> watch_indices) {
   for (const int w : watch_indices) {
     const auto& arc = watch_index_to_arc_[w];
     fixed_arcs_.push_back(arc);

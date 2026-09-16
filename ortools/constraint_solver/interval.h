@@ -43,7 +43,7 @@ class Solver;
 /// cannot be accessed any more. An interval var is automatically marked
 /// as unperformed when it is not consistent anymore (start greater
 /// than end, duration < 0...)
-class OR_DLL IntervalVar : public PropagationBaseObject {
+class OR_ROUTING_DLL IntervalVar : public PropagationBaseObject {
  public:
   /// The smallest acceptable value to be returned by StartMin()
   static const int64_t kMinValidValue;

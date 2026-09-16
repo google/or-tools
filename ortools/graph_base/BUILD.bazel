@@ -14,8 +14,7 @@
 # Description:
 # A bunch of graph-related libraries.
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//bazel:or_cc_rules.bzl", "or_cc_library", "or_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -32,7 +31,7 @@ exports_files(["README"] + glob(
 
 # graph.h : Memory efficient implementations for storing in-memory graph datastructure.
 #   Branched from previous util/operation_research/graph.h
-cc_library(
+or_cc_library(
     name = "graph",
     hdrs = ["graph.h"],
     deps = [
@@ -41,12 +40,35 @@ cc_library(
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/debugging:leak_check",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/memory",
         "@abseil-cpp//absl/types:span",
     ],
 )
 
-cc_library(
+or_cc_library(
+    name = "generic_graph",
+    hdrs = ["generic_graph.h"],
+    deps = [
+        ":graph",
+        ":hash_or_tree_container",
+        ":index",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+or_cc_test(
+    name = "generic_graph_test",
+    srcs = ["generic_graph_test.cc"],
+    deps = [
+        ":generic_graph",
+        "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
+    ],
+)
+
+or_cc_library(
     name = "random_graph",
     testonly = 1,
     srcs = ["random_graph.cc"],
@@ -55,13 +77,12 @@ cc_library(
         ":graph",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/memory",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:bit_gen_ref",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "io",
     hdrs = ["io.h"],
     deps = [
@@ -77,7 +98,7 @@ cc_library(
 )
 
 # Utility functions related to graph.h
-cc_library(
+or_cc_library(
     name = "util",
     srcs = ["util.cc"],
     hdrs = ["util.h"],
@@ -95,7 +116,7 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "test_util",
     hdrs = ["test_util.h"],
     deps = [
@@ -105,10 +126,11 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "test_util_test",
     srcs = ["test_util_test.cc"],
     deps = [
+        ":graph",
         ":io",
         ":test_util",
         "//ortools/base:gmock_main",
@@ -116,13 +138,13 @@ cc_test(
 )
 
 # Iterators used for graph.h
-cc_library(
+or_cc_library(
     name = "iterators",
     hdrs = ["iterators.h"],
     deps = ["@abseil-cpp//absl/log:check"],
 )
 
-cc_test(
+or_cc_test(
     name = "iterators_test",
     size = "small",
     srcs = ["iterators_test.cc"],
@@ -133,7 +155,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "bfs",
     hdrs = ["bfs.h"],
     deps = [
@@ -150,20 +172,23 @@ cc_library(
 
 # LIBRARIES
 
-cc_library(
+or_cc_library(
     name = "strongly_connected_components",
     hdrs = ["strongly_connected_components.h"],
     deps = [
+        ":generic_graph",
+        ":graph",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "topologicalsorter",
     srcs = ["topologicalsorter.cc"],
     hdrs = ["topologicalsorter.h"],
     deps = [
+        ":generic_graph",
         ":graph",
         "//ortools/base:container_logging",
         "//ortools/base:map_util",
@@ -180,29 +205,76 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "connected_components",
-    srcs = ["connected_components.cc"],
-    hdrs = ["connected_components.h"],
+or_cc_library(
+    name = "hash_or_tree_container",
+    srcs = [],
+    hdrs = ["hash_or_tree_container.h"],
     deps = [
-        "//ortools/base:map_util",
-        "//ortools/base:stl_util",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/container:hash_container_defaults",
+    ],
+)
+
+or_cc_library(
+    name = "index",
+    hdrs = ["index.h"],
+    deps = [
+        ":hash_or_tree_container",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+or_cc_test(
+    name = "index_test",
+    srcs = ["index_test.cc"],
+    deps = [
+        ":index",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/hash",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings:string_view",
+    ],
+)
+
+or_cc_test(
+    name = "hash_or_tree_container_test",
+    srcs = ["hash_or_tree_container_test.cc"],
+    deps = [
+        ":hash_or_tree_container",
+        "//ortools/base:gmock_main",
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/hash",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/meta:type_traits",
     ],
 )
 
-cc_library(
+or_cc_library(
+    name = "connected_components",
+    srcs = ["connected_components.cc"],
+    hdrs = ["connected_components.h"],
+    deps = [
+        ":hash_or_tree_container",
+        "//ortools/base:log_severity",
+        "//ortools/base:map_util",
+        "//ortools/base:stl_util",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+    ],
+)
+
+or_cc_library(
     name = "flow_graph",
     hdrs = ["flow_graph.h"],
     deps = [
         ":graph",
         ":iterators",
-        "//ortools/base:stl_util",
         "//ortools/base:unique_array",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",

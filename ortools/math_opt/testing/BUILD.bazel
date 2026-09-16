@@ -11,11 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:or_cc_rules.bzl", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+or_cc_library(
     name = "param_name",
     testonly = True,
     hdrs = ["param_name.h"],
@@ -24,7 +24,25 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "stream",
     hdrs = ["stream.h"],
+)
+
+or_cc_test(
+    name = "param_name_test",
+    srcs = ["param_name_test.cc"],
+    deps = [
+        ":param_name",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+or_cc_test(
+    name = "stream_test",
+    srcs = ["stream_test.cc"],
+    deps = [
+        ":stream",
+        "//ortools/base:gmock_main",
+    ],
 )

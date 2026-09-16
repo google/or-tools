@@ -62,9 +62,11 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/linear_solver/linear_solver.h"
 
 ABSL_FLAG(bool, colgen_verbose, false, "print verbosely");

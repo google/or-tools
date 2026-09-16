@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <optional>
 #include <utility>
 
 #include "absl/log/check.h"
@@ -202,6 +203,39 @@ TEST(Linear2BoundAffineRelaxationTest, Random) {
                  << ") other_var=[" << other_lb << ", " << other_ub << "]";
     }
   }
+}
+
+TEST(LinearExpression2Test, GetDifferenceLowerBound) {
+  const IntegerVariable x = IntegerVariable(0);
+  const IntegerVariable y = IntegerVariable(2);
+
+  // y - x >= 5 => y - x >= 5
+  EXPECT_EQ(LinearExpression2(NegationOf(x), y, 1, 1)
+                .GetDifferenceLowerBound(IntegerValue(5), AffineExpression(y),
+                                         AffineExpression(x)),
+            IntegerValue(5));
+  // 2y - 2x >= 5 => y - x >= 5/2 => y - x >= 3
+  EXPECT_EQ(LinearExpression2(NegationOf(x), y, 2, 2)
+                .GetDifferenceLowerBound(IntegerValue(5), AffineExpression(y),
+                                         AffineExpression(x)),
+            IntegerValue(3));
+  // 2y - 2x >= 5 => y - x >= 5/2 => (y+2) - (x+4) >= 3 + 2 - 4 = 1
+  EXPECT_EQ(
+      LinearExpression2(NegationOf(x), y, 2, 2)
+          .GetDifferenceLowerBound(IntegerValue(5), AffineExpression(y, 1, 2),
+                                   AffineExpression(x, 1, 4)),
+      IntegerValue(1));
+  // 2y - x >= 5 implies nothing about y - x.
+  EXPECT_EQ(LinearExpression2(NegationOf(x), y, 1, 2)
+                .GetDifferenceLowerBound(IntegerValue(5), AffineExpression(y),
+                                         AffineExpression(x)),
+            std::nullopt);
+  // 3y - 2x >= 5 implies nothing about 2y - 2x.
+  EXPECT_EQ(
+      LinearExpression2(NegationOf(x), y, 2, 3)
+          .GetDifferenceLowerBound(IntegerValue(5), AffineExpression(y, 2),
+                                   AffineExpression(x, 2)),
+      std::nullopt);
 }
 
 }  // namespace

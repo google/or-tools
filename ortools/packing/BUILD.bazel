@@ -13,18 +13,19 @@
 
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//bazel:compilation_flags.bzl", "SAFE_FP_CODE")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library", "or_cc_test")
+load("//tools/testing:bintest.bzl", "bintest")
 
 package(default_visibility = ["//visibility:public"])
 
 ### Arc Flow ###
 
-cc_library(
+or_cc_library(
     name = "arc_flow_builder",
     srcs = ["arc_flow_builder.cc"],
     hdrs = ["arc_flow_builder.h"],
+    copts = SAFE_FP_CODE,
     deps = [
         "//ortools/base:stl_util",
         "//ortools/graph_base:topologicalsorter",
@@ -35,7 +36,18 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_test(
+    name = "arc_flow_builder_test",
+    size = "small",
+    srcs = ["arc_flow_builder_test.cc"],
+    deps = [
+        ":arc_flow_builder",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+or_cc_library(
     name = "arc_flow_solver",
     srcs = ["arc_flow_solver.cc"],
     hdrs = ["arc_flow_solver.h"],
@@ -44,7 +56,9 @@ cc_library(
         ":vector_bin_packing_cc_proto",
         "//ortools/base:file",
         "//ortools/base:timer",
-        "//ortools/linear_solver",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/linear_solver:linear_solver_lib",
+        "//ortools/linear_solver:linear_solver_sat",
         "//ortools/linear_solver:linear_solver_scip",
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/flags:flag",
@@ -52,6 +66,19 @@ cc_library(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/time",
+    ],
+)
+
+or_cc_test(
+    name = "arc_flow_solver_test",
+    size = "small",
+    srcs = ["arc_flow_solver_test.cc"],
+    deps = [
+        ":arc_flow_solver",
+        ":vector_bin_packing_cc_proto",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_text_proto",
+        "//ortools/linear_solver:linear_solver_sat",
     ],
 )
 
@@ -67,7 +94,7 @@ cc_proto_library(
     deps = [":vector_bin_packing_proto"],
 )
 
-cc_library(
+or_cc_library(
     name = "vector_bin_packing_parser",
     srcs = ["vector_bin_packing_parser.cc"],
     hdrs = ["vector_bin_packing_parser.h"],
@@ -80,7 +107,24 @@ cc_library(
     ],
 )
 
-cc_binary(
+or_cc_test(
+    name = "vector_bin_packing_parser_test",
+    size = "small",
+    srcs = ["vector_bin_packing_parser_test.cc"],
+    data = [
+        "//ortools/packing/testdata:BPPC_5_0_10.vbp",
+        "//ortools/packing/testdata:queen5_5.vbp",
+    ],
+    deps = [
+        ":vector_bin_packing_cc_proto",
+        ":vector_bin_packing_parser",
+        "//ortools/base:gmock_main",
+        "//ortools/util:data_path_resolver",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+or_cc_binary(
     name = "vector_bin_packing",
     srcs = ["vector_bin_packing_main.cc"],
     deps = [
@@ -89,7 +133,8 @@ cc_binary(
         ":vector_bin_packing_parser",
         "//ortools/base",
         "//ortools/base:file",
-        "//ortools/linear_solver",
+        "//ortools/base:log_severity",
+        "//ortools/linear_solver:linear_solver_lib",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
@@ -98,24 +143,15 @@ cc_binary(
     ],
 )
 
-cc_test(
+bintest(
     name = "vector_bin_packing_test",
-    size = "medium",
-    srcs = ["vector_bin_packing_main.cc"],
-    args = ["--input $(rootpath //ortools/packing/testdata:1D__bpp_scholl__bin2data.N2W2B1R0.vbp)"],
-    data = ["//ortools/packing/testdata:1D__bpp_scholl__bin2data.N2W2B1R0.vbp"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/packing:arc_flow_builder",
-        "//ortools/packing:arc_flow_solver",
-        "//ortools/packing:vector_bin_packing_cc_proto",
-        "//ortools/packing:vector_bin_packing_parser",
-        "@abseil-cpp//absl/flags:flag",
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/strings",
-    ],
+    timeout = "long",
+    srcs = ["vector_bin_packing.bintest"],
+    named_data = {
+        "vector_bin_packing": ":vector_bin_packing",
+        "testdata": "//ortools/packing/testdata:1D__bpp_scholl__bin2data.N2W2B1R0.vbp",
+    },
+    tags = ["noci"],
 )
 
 ### Multiple Dimension (non vector) Bin Packing ###
@@ -130,7 +166,7 @@ cc_proto_library(
     deps = [":multiple_dimensions_bin_packing_proto"],
 )
 
-cc_library(
+or_cc_library(
     name = "binpacking_2d_parser",
     srcs = ["binpacking_2d_parser.cc"],
     hdrs = ["binpacking_2d_parser.h"],
@@ -139,5 +175,18 @@ cc_library(
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
+    ],
+)
+
+or_cc_test(
+    name = "binpacking_2d_parser_test",
+    size = "small",
+    srcs = ["binpacking_2d_parser_test.cc"],
+    data = ["//ortools/packing/testdata:Class_01.2bp"],
+    deps = [
+        ":binpacking_2d_parser",
+        ":multiple_dimensions_bin_packing_cc_proto",
+        "//ortools/base:gmock_main",
+        "//ortools/util:data_path_resolver",
     ],
 )

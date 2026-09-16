@@ -17,6 +17,7 @@
 #include <string>
 
 #include "absl/container/btree_map.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/synchronization.h"
@@ -36,6 +37,8 @@ class SolverProgressLogger {
     bounds_logging_id_ = logger_->GetNewThrottledId();
   }
 
+  void SetLogPrefix(absl::string_view log_prefix) { log_prefix_ = log_prefix; }
+
   void UpdateProgress(const SolverStatusChangeInfo& info);
 
   void SetIsOptimization(bool is_optimization) {
@@ -51,6 +54,7 @@ class SolverProgressLogger {
 
   const WallTimer& wall_timer_;
   SolverLogger* logger_;
+  std::string log_prefix_;
   bool is_optimization_ = false;
   int bounds_logging_id_;
 

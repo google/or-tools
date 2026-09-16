@@ -16,8 +16,10 @@
 #ifndef UTIL_GRAPH_ITERATORS_H_
 #define UTIL_GRAPH_ITERATORS_H_
 
+#include <compare>
 #include <cstddef>
 #include <iterator>
+#include <type_traits>
 #include <utility>
 
 #include "absl/log/check.h"
@@ -27,8 +29,7 @@ namespace util {
 // This is useful for wrapping iterators of a class that support many different
 // iterations. For instance, on a Graph class, one can write:
 //
-// BeginEndWrapper<OutgoingArcIterator> Graph::OutgoingArcs(NodeInde node)
-//      const {
+// auto Graph::OutgoingArcs(NodeInde node) const {
 //   return BeginEndWrapper(
 //       OutgoingArcIterator(*this, node, /*at_end=*/false),
 //       OutgoingArcIterator(*this, node, /*at_end=*/true));
@@ -44,7 +45,9 @@ namespace util {
 // function can take it by value and return iterators obtained from it without
 // danger of dangling". We cannot `static_assert` this property though as
 // `std::ranges` is prohibited in google3.
-template <typename Iterator>
+// It's allowed to have `EndIterator` be distinct from `Iterator` when the
+// `EndIterator` is a sentinel. This can allow more efficient implementations.
+template <typename Iterator, typename EndIterator = Iterator>
 class BeginEndWrapper {
  public:
   using const_iterator = Iterator;
@@ -53,10 +56,10 @@ class BeginEndWrapper {
   // If `Iterator` is default-constructible, an empty range.
   BeginEndWrapper() = default;
 
-  BeginEndWrapper(Iterator begin, Iterator end) : begin_(begin), end_(end) {}
+  BeginEndWrapper(Iterator begin, EndIterator end) : begin_(begin), end_(end) {}
 
   Iterator begin() const { return begin_; }
-  Iterator end() const { return end_; }
+  EndIterator end() const { return end_; }
 
   // Available only if `Iterator` is a random access iterator.
   size_t size() const { return end_ - begin_; }
@@ -65,34 +68,27 @@ class BeginEndWrapper {
 
  private:
   Iterator begin_;
-  Iterator end_;
+  EndIterator end_;
 };
 
-// Inline wrapper methods, to make the client code even simpler.
-// The harm of overloading is probably less than the benefit of the nice,
-// compact name, in this special case.
-template <typename Iterator>
-inline BeginEndWrapper<Iterator> BeginEndRange(Iterator begin, Iterator end) {
-  return BeginEndWrapper<Iterator>(begin, end);
-}
-template <typename Iterator>
-inline BeginEndWrapper<Iterator> BeginEndRange(
-    std::pair<Iterator, Iterator> begin_end) {
-  return BeginEndWrapper<Iterator>(begin_end.first, begin_end.second);
-}
+template <typename Iterator, typename EndIterator>
+BeginEndWrapper(Iterator, EndIterator)
+    -> BeginEndWrapper<Iterator, EndIterator>;
 
-// Shortcut for BeginEndRange(multimap::equal_range(key)).
+// Shortcut for BeginEndWrapper(multimap::equal_range(key)).
 // TODO(user): go further and expose only the values, not the pairs (key,
 // values) since the caller already knows the key.
 template <typename MultiMap>
 inline BeginEndWrapper<typename MultiMap::iterator> EqualRange(
     MultiMap& multi_map, const typename MultiMap::key_type& key) {
-  return BeginEndRange(multi_map.equal_range(key));
+  auto [begin, end] = multi_map.equal_range(key);
+  return BeginEndWrapper(std::move(begin), std::move(end));
 }
 template <typename MultiMap>
 inline BeginEndWrapper<typename MultiMap::const_iterator> EqualRange(
     const MultiMap& multi_map, const typename MultiMap::key_type& key) {
-  return BeginEndRange(multi_map.equal_range(key));
+  auto [begin, end] = multi_map.equal_range(key);
+  return BeginEndWrapper(std::move(begin), std::move(end));
 }
 
 // The Reverse() function allows to reverse the iteration order of a range-based
@@ -116,26 +112,30 @@ BeginEndReverseIteratorWrapper<Container> Reverse(const Container& c) {
   return BeginEndReverseIteratorWrapper<Container>(c);
 }
 
+namespace iterators_internal {
+
+template <typename IndexType>
+constexpr auto GetValue(IndexType x) {
+  if constexpr (std::is_integral_v<IndexType>) {
+    return x;
+  } else {
+    return static_cast<typename IndexType::ValueType>(x);
+  }
+}
+
+}  // namespace iterators_internal
+
 // Simple iterator on an integer range, see `IntegerRange` below.
 // `IntegerType` can be any signed integer type, or strong integer type that
 // defines usual operations (e.g. `gtl::IntType<T>`).
 template <typename IntegerType>
-class IntegerRangeIterator
-// TODO(b/385094969): In C++17, `std::iterator_traits<Iterator>` required
-// explicitly specifying the iterator category. Remove this when backwards
-// compatibility with C++17 is no longer needed.
-#if __cplusplus < 201703L
-    : public std::iterator<std::input_iterator_tag, IntegerType>
-#endif
-{
+class IntegerRangeIterator {
  public:
-  using difference_type = ptrdiff_t;
+  using difference_type =
+      std::make_signed_t<decltype(iterators_internal::GetValue(
+          IntegerType(0)))>;
   using value_type = IntegerType;
-#if __cplusplus >= 201703L && __cplusplus < 202002L
-  using iterator_category = std::input_iterator_tag;
-  using pointer = IntegerType*;
-  using reference = IntegerType&;
-#endif
+  using iterator_category = std::random_access_iterator_tag;
 
   IntegerRangeIterator() : index_{} {}
 
@@ -143,26 +143,8 @@ class IntegerRangeIterator
 
   IntegerType operator*() const { return index_; }
 
-  // TODO(b/385094969): Use `=default` when backwards compatibility with C++17
-  // is no longer needed.
-  bool operator==(const IntegerRangeIterator& other) const {
-    return index_ == other.index_;
-  }
-  bool operator!=(const IntegerRangeIterator& other) const {
-    return index_ != other.index_;
-  }
-  bool operator<(const IntegerRangeIterator& other) const {
-    return index_ < other.index_;
-  }
-  bool operator>(const IntegerRangeIterator& other) const {
-    return index_ > other.index_;
-  }
-  bool operator<=(const IntegerRangeIterator& other) const {
-    return index_ <= other.index_;
-  }
-  bool operator>=(const IntegerRangeIterator& other) const {
-    return index_ >= other.index_;
-  }
+  friend std::strong_ordering operator<=>(
+      const IntegerRangeIterator& l, const IntegerRangeIterator& r) = default;
 
   IntegerRangeIterator& operator++() {
     ++index_;
@@ -215,7 +197,8 @@ class IntegerRangeIterator
 
   friend difference_type operator-(const IntegerRangeIterator l,
                                    const IntegerRangeIterator r) {
-    return static_cast<difference_type>(l.index_ - r.index_);
+    return static_cast<difference_type>(l.index_) -
+           static_cast<difference_type>(r.index_);
   }
 
  private:
@@ -247,19 +230,12 @@ class IntegerRange : public BeginEndWrapper<IntegerRangeIterator<IntegerType>> {
 // chasing on `next` until `sentinel` is found. `Tag` allows distinguishing
 // different iterators with the same index type and sentinel.
 template <typename IndexT, const IndexT& sentinel, typename Tag>
-class ChasingIterator
-#if __cplusplus < 201703L
-    : public std::iterator<std::input_iterator_tag, IndexT>
-#endif
-{
+class ChasingIterator {
  public:
-  using difference_type = ptrdiff_t;
+  using difference_type =
+      std::make_signed_t<decltype(iterators_internal::GetValue(IndexT(0)))>;
   using value_type = IndexT;
-#if __cplusplus >= 201703L && __cplusplus < 202002L
-  using iterator_category = std::input_iterator_tag;
-  using pointer = IndexT*;
-  using reference = IndexT&;
-#endif
+  using iterator_category = std::forward_iterator_tag;
 
   ChasingIterator() : index_(sentinel), next_(nullptr) {}
 

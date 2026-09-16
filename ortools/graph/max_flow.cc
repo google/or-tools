@@ -18,6 +18,7 @@
 #include <utility>
 #include <vector>
 
+#include "ortools/graph/flow_problem.pb.h"
 #include "ortools/graph/generic_max_flow.h"
 #include "ortools/graph_base/graph.h"
 

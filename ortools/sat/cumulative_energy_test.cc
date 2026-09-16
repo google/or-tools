@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
@@ -36,9 +37,8 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/intervals.h"
-#include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/precedences.h"
+#include "ortools/sat/old_precedences_propagator.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
@@ -142,7 +142,7 @@ TEST(CumulativeEnergyTest, FeasibleEnergyMin) {
   EXPECT_TRUE(SolveUsingConstraint(instance)) << InstanceDebugString(instance);
 }
 
-// Tasks are feasible iff optionals tasks are removed.
+// Tasks are feasible iff optional tasks are removed.
 TEST(CumulativeEnergyTest, FeasibleRemoveOptionals) {
   EnergyInstance instance = {{
                                  {-10, 10, 1, 1, 1, 1, true},
@@ -230,7 +230,7 @@ bool SolveUsingNaiveModel(const EnergyInstance& instance) {
          SatSolver::Status::FEASIBLE;
 }
 
-// Generates random instances, fill the schedule to try and make a tricky case.
+// Generates random instances, fills the schedule to try and make a tricky case.
 EnergyInstance GenerateRandomInstance(int num_tasks,
                                       absl::BitGenRef randomizer) {
   const int capacity = absl::Uniform(randomizer, 1, 12);
@@ -406,7 +406,7 @@ TEST(OverloadCheckerTest, OptionalTaskPropagatedToAbsent) {
   Model model;
   const Literal is_present = Literal(model.Add(NewBooleanVariable()), true);
 
-  // TODO(user): Fix the code! the propagation is dependent on the order of
+  // TODO(user): Fix the code! The propagation is dependent on the order of
   // tasks. If we use the proper theta-lambda tree, this will be fixed.
   const IntervalVariable i2 = model.Add(NewInterval(0, 10, /*size=*/8));
   const IntervalVariable i1 =
@@ -543,7 +543,7 @@ bool TestIsAfterCumulative(absl::Span<const CumulativeTasks> tasks,
   return true;
 }
 
-// We detect that the interval cannot overlap.
+// We detect that the intervals cannot overlap.
 TEST(IsAfterCumulativeTest, BasicCase1) {
   // duration, demand, start_min, end_max
   EXPECT_TRUE(TestIsAfterCumulative({{4, 2, 0, 8}, {4, 2, 0, 10}},

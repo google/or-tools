@@ -15,31 +15,28 @@ load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library", "or_cc_test")
+
+package(default_visibility = ["//visibility:public"])
 
 proto_library(
     name = "enums_proto",
     srcs = ["enums.proto"],
-    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "enums_cc_proto",
-    visibility = ["//visibility:public"],
     deps = [":enums_proto"],
 )
 
 java_proto_library(
     name = "enums_java_proto",
-    visibility = ["//visibility:public"],
     deps = [":enums_proto"],
 )
 
 proto_library(
     name = "ils_proto",
     srcs = ["ils.proto"],
-    visibility = ["//visibility:public"],
     deps = [
         ":enums_proto",
         ":heuristic_parameters_proto",
@@ -48,7 +45,6 @@ proto_library(
 
 cc_proto_library(
     name = "ils_cc_proto",
-    visibility = ["//visibility:public"],
     deps = [":ils_proto"],
 )
 
@@ -59,14 +55,12 @@ py_proto_library(
 
 java_proto_library(
     name = "ils_java_proto",
-    visibility = ["//visibility:public"],
     deps = [":ils_proto"],
 )
 
 proto_library(
     name = "parameters_proto",
     srcs = ["parameters.proto"],
-    visibility = ["//visibility:public"],
     deps = [
         ":enums_proto",
         ":heuristic_parameters_proto",
@@ -80,33 +74,28 @@ proto_library(
 
 cc_proto_library(
     name = "parameters_cc_proto",
-    visibility = ["//visibility:public"],
     deps = [":parameters_proto"],
 )
 
 java_proto_library(
     name = "parameters_java_proto",
-    visibility = ["//visibility:public"],
     deps = [":parameters_proto"],
 )
 
 py_proto_library(
     name = "parameters_py_pb2",
-    visibility = ["//visibility:public"],
     deps = [":parameters_proto"],
 )
 
 py_proto_library(
     name = "enums_py_pb2",
-    visibility = ["//visibility:public"],
     deps = [":enums_proto"],
 )
 
-cc_library(
+or_cc_library(
     name = "parameters",
     srcs = ["parameters.cc"],
     hdrs = ["parameters.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":enums_cc_proto",
         ":heuristic_parameters_cc_proto",
@@ -133,11 +122,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "parameters_utils",
     srcs = ["parameters_utils.cc"],
     hdrs = ["parameters_utils.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":heuristic_parameters_cc_proto",
         ":parameters_cc_proto",
@@ -146,11 +134,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "ils_parameters_utils",
     srcs = ["ils_parameters_utils.cc"],
     hdrs = ["ils_parameters_utils.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":enums_cc_proto",
         ":ils_cc_proto",
@@ -158,33 +145,31 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "types",
     hdrs = ["types.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/util:piecewise_linear_function",
         "//ortools/util:strong_integers",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "utils",
     srcs = ["utils.cc"],
     hdrs = ["utils.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/util:saturated_arithmetic",
+        "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "neighborhoods",
     srcs = ["neighborhoods.cc"],
     hdrs = ["neighborhoods.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":types",
         ":utils",
@@ -192,16 +177,18 @@ cc_library(
         "//ortools/constraint_solver:cp",
         "//ortools/util:bitset",
         "//ortools/util:saturated_arithmetic",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "index_manager",
     srcs = ["index_manager.cc"],
     hdrs = ["index_manager.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":types",
         "//ortools/base:base_export",
@@ -213,20 +200,21 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "breaks",
     srcs = ["breaks.cc"],
     hdrs = ["breaks.h"],
     deps = [
         ":filter_committables",
         "//ortools/algorithms:binary_search",
+        "//ortools/base:types",
         "//ortools/util:saturated_arithmetic",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "routing",
     srcs = [
         "constraints.cc",
@@ -250,11 +238,6 @@ cc_library(
         "routing.h",
         "search.h",
     ],
-    copts = select({
-        "@platforms//os:windows": ["/Zc:preprocessor"],
-        "//conditions:default": [],
-    }),
-    visibility = ["//visibility:public"],
     deps = [
         ":breaks",
         ":enums_cc_proto",
@@ -269,6 +252,7 @@ cc_library(
         ":types",
         ":utils",
         "//ortools/base:adjustable_priority_queue",
+        "//ortools/base:base_export",
         "//ortools/base:dump_vars",
         "//ortools/base:log_severity",
         "//ortools/base:map_util",
@@ -279,6 +263,7 @@ cc_library(
         "//ortools/base:types",
         "//ortools/constraint_solver:cp",
         "//ortools/constraint_solver:reversible_data",
+        "//ortools/constraint_solver:reversible_engine",
         "//ortools/constraint_solver:solver_parameters_cc_proto",
         "//ortools/glop:lp_solver",
         "//ortools/glop:parameters_cc_proto",
@@ -287,6 +272,7 @@ cc_library(
         "//ortools/graph:min_cost_flow",
         "//ortools/graph_base:connected_components",
         "//ortools/graph_base:graph",
+        "//ortools/graph_base:index",
         "//ortools/lp_data",
         "//ortools/lp_data:lp_types",
         "//ortools/port:proto_utils",
@@ -304,10 +290,12 @@ cc_library(
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
         "//ortools/util:stats",
+        "//ortools/util:strong_index_map",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/base:no_destructor",
+        "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
@@ -329,11 +317,12 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "filter_committables",
     srcs = ["filter_committables.cc"],
     hdrs = ["filter_committables.h"],
     deps = [
+        "//ortools/base:types",
         "//ortools/util:bitset",
         "//ortools/util:saturated_arithmetic",
         "@abseil-cpp//absl/log:check",
@@ -341,12 +330,13 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "fourier_solver",
     srcs = ["fourier_solver.cc"],
     hdrs = ["fourier_solver.h"],
     deps = [
         "//ortools/base:strong_vector",
+        "//ortools/base:types",
         "//ortools/util:strong_integers",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_map",
@@ -358,20 +348,31 @@ cc_library(
     ],
 )
 
-# cc_test(
-#     name = "fourier_solver_test",
-#     srcs = ["fourier_solver_test.cc"],
-#     deps = [
-#         ":fourier_solver",
-#         "//ortools/base:gmock_main",
-#         "//ortools/util:optional_boolean_cc_proto",
-#         "@abseil-cpp//absl/algorithm:container",
-#         "@abseil-cpp//absl/container:flat_hash_map",
-#         "@abseil-cpp//absl/strings",
-#         "@abseil-cpp//absl/types:span",
-#         "@protobuf//:duration_cc_proto",
-#     ],
-# )
+or_cc_binary(
+    name = "fourier_solver_benchmark",
+    srcs = ["fourier_solver_benchmark.cc"],
+    deps = [
+        ":fourier_solver",
+        "//ortools/base:benchmark_main",
+        "@abseil-cpp//absl/algorithm:container",
+        "@google_benchmark//:benchmark",
+    ],
+)
+
+or_cc_test(
+    name = "fourier_solver_test",
+    srcs = ["fourier_solver_test.cc"],
+    deps = [
+        ":fourier_solver",
+        "//ortools/base:gmock_main",
+        "//ortools/util:optional_boolean_cc_proto",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@protobuf//:duration_cc_proto",
+    ],
+)
 
 proto_library(
     name = "heuristic_parameters_proto",
@@ -385,7 +386,6 @@ java_proto_library(
 
 cc_proto_library(
     name = "heuristic_parameters_cc_proto",
-    visibility = ["//visibility:public"],
     deps = [":heuristic_parameters_proto"],
 )
 

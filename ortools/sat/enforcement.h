@@ -38,7 +38,7 @@ DEFINE_STRONG_INDEX_TYPE(EnforcementId);
 enum class EnforcementStatus {
   // One enforcement literal is false.
   IS_FALSE = 0,
-  // More than two literals are unassigned.
+  // More than one literal is unassigned.
   CANNOT_PROPAGATE = 1,
   // All enforcement literals are true but one.
   CAN_PROPAGATE_ENFORCEMENT = 2,
@@ -48,7 +48,7 @@ enum class EnforcementStatus {
 
 std::ostream& operator<<(std::ostream& os, const EnforcementStatus& e);
 
-// This is meant as an helper to deal with enforcement for any constraint.
+// This is meant as a helper to deal with enforcement for any constraint.
 class EnforcementPropagator : public SatPropagator {
  public:
   explicit EnforcementPropagator(Model* model);
@@ -57,11 +57,11 @@ class EnforcementPropagator : public SatPropagator {
   bool Propagate(Trail* trail) final;
   void Untrail(const Trail& trail, int trail_index) final;
 
-  // Adds a new constraint to the class and register a callback that will
+  // Adds a new constraint to the class and registers a callback that will
   // be called on status change. Note that we also call the callback with the
   // initial status if different from CANNOT_PROPAGATE when added.
   //
-  // It is better to not call this for empty enforcement list, but you can. A
+  // It is better to not call this for an empty enforcement list, but you can. A
   // negative id means the level zero status will never change, and only the
   // first call to callback() should be necessary, we don't save it.
   EnforcementId Register(
@@ -82,7 +82,7 @@ class EnforcementPropagator : public SatPropagator {
   EnforcementStatus Status(absl::Span<const Literal> enforcement) const;
 
   // Recompute the status from the current assignment.
-  // This should only used in DCHECK().
+  // This should only be used in DCHECK().
   EnforcementStatus DebugStatus(EnforcementId id);
 
   // Returns the enforcement literals of the given id.
@@ -96,7 +96,7 @@ class EnforcementPropagator : public SatPropagator {
   absl::Span<const Literal> GetSpan(EnforcementId id) const;
   void ChangeStatus(EnforcementId id, EnforcementStatus new_status);
 
-  // Returns kNoLiteralIndex if nothing need to change or a new literal to
+  // Returns kNoLiteralIndex if nothing needs to change or a new literal to
   // watch. This also calls the registered callback.
   LiteralIndex ProcessIdOnTrue(Literal watched, EnforcementId id);
 
@@ -105,9 +105,9 @@ class EnforcementPropagator : public SatPropagator {
   const VariablesAssignment& assignment_;
   RevRepository<int> rev_int_repository_;
 
-  // All enforcement will be copied there, and we will create Span out of this.
-  // Note that we don't store the span so that we are not invalidated on buffer_
-  // resizing.
+  // All enforcements will be copied there, and we will create spans out of
+  // this. Note that we don't store the span so that we are not invalidated on
+  // buffer_ resizing.
   util_intops::StrongVector<EnforcementId, int> starts_;
   std::vector<Literal> buffer_;
 
@@ -116,12 +116,12 @@ class EnforcementPropagator : public SatPropagator {
       EnforcementId, std::function<void(EnforcementId, EnforcementStatus)>>
       callbacks_;
 
-  // Used to restore status and call callback on untrail.
+  // Used to restore status and call the callback on untrail.
   std::vector<std::pair<EnforcementId, EnforcementStatus>> untrail_stack_;
   int rev_stack_size_ = 0;
   int64_t rev_stamp_ = 0;
 
-  // We use a two watcher scheme.
+  // We use a two-watcher scheme.
   util_intops::StrongVector<LiteralIndex, absl::InlinedVector<EnforcementId, 6>>
       watcher_;
 

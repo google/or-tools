@@ -14,7 +14,9 @@
 #include "ortools/graph/max_flow.h"
 
 #include <limits>
+#include <optional>
 
+#include "absl/log/check.h"
 #include "google/protobuf/text_format.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
@@ -124,12 +126,14 @@ SimpleMaxFlow::Status LoadAndSolveFlowModel(const FlowModelProto& model,
     solver->AddArcWithCapacity(model.arcs(a).tail(), model.arcs(a).head(),
                                model.arcs(a).capacity());
   }
-  int source, sink;
+  std::optional<int> source, sink;
   for (int n = 0; n < model.nodes_size(); ++n) {
     if (model.nodes(n).supply() == 1) source = model.nodes(n).id();
     if (model.nodes(n).supply() == -1) sink = model.nodes(n).id();
   }
-  return solver->Solve(source, sink);
+  CHECK(source.has_value());
+  CHECK(sink.has_value());
+  return solver->Solve(*source, *sink);
 }
 
 TEST(SimpleMaxFlowTest, CreateFlowModelProto) {

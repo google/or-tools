@@ -40,6 +40,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
@@ -233,11 +234,22 @@ Prober::Prober(Model* model)
       time_limit_(model->GetOrCreate<TimeLimit>()),
       implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
       clause_manager_(model->GetOrCreate<ClauseManager>()),
+      shared_stats_(model->GetOrCreate<SharedStatistics>()),
       lrat_proof_handler_(model->Mutable<LratProofHandler>()),
       trail_copy_(new TrailCopy(trail_, *clause_manager_, lrat_proof_handler_)),
       logger_(model->GetOrCreate<SolverLogger>()) {}
 
-Prober::~Prober() { delete trail_copy_; }
+Prober::~Prober() {
+  delete trail_copy_;
+  if (!VLOG_IS_ON(1)) return;
+  shared_stats_->AddStats(
+      {{"Probing/num_decisions", counters_.num_decisions},
+       {"Probing/num_total_new_binary", counters_.num_total_new_binary},
+       {"Probing/num_total_new_integer_bounds",
+        counters_.num_total_new_integer_bounds},
+       {"Probing/num_total_new_literals_fixed",
+        counters_.num_total_new_literals_fixed}});
+}
 
 bool Prober::ProbeBooleanVariables(const double deterministic_time_limit) {
   const int num_variables = sat_solver_->NumVariables();
@@ -266,7 +278,7 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
   for (const Literal decision : {Literal(b, true), Literal(b, false)}) {
     if (assignment_.LiteralIsAssigned(decision)) continue;
 
-    ++num_decisions_;
+    ++counters_.num_decisions;
     CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
     const int saved_index = trail_.Index();
     if (sat_solver_->EnqueueDecisionAndBackjumpOnConflict(decision) ==
@@ -332,8 +344,8 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
           lrat_proof_handler_->AddInferredClause(
               ClausePtr(decision.Negated(), l), tmp_proof_);
         }
-        num_lrat_clauses_++;
-        num_lrat_proof_clauses_ += tmp_proof_.size();
+        counters_.num_lrat_clauses++;
+        counters_.num_lrat_proof_clauses += tmp_proof_.size();
       }
       if (decision.IsPositive()) {
         trail_copy_->CopyTrail(saved_index);
@@ -345,8 +357,8 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
                                            decision.NegatedIndex());
           lrat_proof_handler_->AddInferredClause(ClausePtr(decision, l),
                                                  tmp_proof_);
-          num_lrat_clauses_++;
-          num_lrat_proof_clauses_ += tmp_proof_.size();
+          counters_.num_lrat_clauses++;
+          counters_.num_lrat_proof_clauses += tmp_proof_.size();
         }
       }
     }
@@ -359,8 +371,8 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
         lrat_proof_handler_->AddInferredClause(
             ClausePtr(l),
             {ClausePtr(decision.Negated(), l), ClausePtr(decision, l)});
-        num_lrat_clauses_++;
-        num_lrat_proof_clauses_ += 2;
+        counters_.num_lrat_clauses++;
+        counters_.num_lrat_proof_clauses += 2;
       }
       if (!clause_manager_->InprocessingAddUnitClause(l)) {
         return false;
@@ -371,7 +383,8 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
       // Some variables can be fixed by the above loop.
       if (trail_.Assignment().LiteralIsAssigned(decision)) break;
       if (trail_.Assignment().LiteralIsAssigned(l)) continue;
-      num_new_binary_++;
+      counters_.num_new_binary++;
+      counters_.num_total_new_binary++;
       if (!implication_graph_->AddBinaryClause(decision.Negated(), l)) {
         return false;
       }
@@ -379,21 +392,21 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
     if (!sat_solver_->FinishPropagation()) return false;
   }
   if (lrat_proof_handler_ != nullptr) {
-    num_unneeded_lrat_clauses_ +=
+    counters_.num_unneeded_lrat_clauses +=
         lrat_proof_handler_->DeleteTemporaryBinaryClauses();
   }
 
-  // We have at most two lower bounds for each variables (one for b==0 and one
-  // for b==1), so the min of the two is a valid level zero bound! More
+  // We have at most two lower bounds for each variable (one for b==0 and one
+  // for b==1), so the min of the two is a valid level-zero bound! More
   // generally, the domain of a variable can be intersected with the union
-  // of the two propagated domains. This also allow to detect "holes".
+  // of the two propagated domains. This also allows detecting "holes".
   //
   // TODO(user): More generally, for any clauses (b or not(b) is one), we
-  // could probe all the literal inside, and for any integer variable, we can
+  // could probe all the literals inside, and for any integer variable, we can
   // take the union of the propagated domain as a new domain.
   //
-  // TODO(user): fix binary variable in the same way? It might not be as
-  // useful since probing on such variable will also fix it. But then we might
+  // TODO(user): fix binary variables in the same way? It might not be as
+  // useful since probing on such a variable will also fix it. But then we might
   // abort probing early, so it might still be good.
   std::sort(new_integer_bounds_.begin(), new_integer_bounds_.end(),
             [](IntegerLiteral a, IntegerLiteral b) { return a.var < b.var; });
@@ -411,16 +424,15 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
     // Hole detection.
     if (i > 0 && PositiveVariable(var) != prev_var) {
       if (ub_min + 1 < lb_max) {
-        // The variable cannot take value in (ub_min, lb_max) !
+        // The variable cannot take a value in (ub_min, lb_max)!
         //
-        // TODO(user): do not create domain with a complexity that is too
+        // TODO(user): do not create a domain with a complexity that is too
         // large?
-        const Domain old_domain =
-            integer_trail_->InitialVariableDomain(prev_var);
+        const Domain old_domain = integer_trail_->LevelZeroDomain(prev_var);
         const Domain new_domain = old_domain.IntersectionWith(
             Domain(ub_min.value() + 1, lb_max.value() - 1).Complement());
         if (new_domain != old_domain) {
-          ++num_new_holes_;
+          ++counters_.num_new_holes;
           if (!integer_trail_->UpdateInitialDomain(prev_var, new_domain)) {
             return false;
           }
@@ -444,7 +456,8 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
     const IntegerValue new_bound = std::min(new_integer_bounds_[i - 1].bound,
                                             new_integer_bounds_[i].bound);
     if (new_bound > integer_trail_->LowerBound(var)) {
-      ++num_new_integer_bounds_;
+      ++counters_.num_new_integer_bounds;
+      ++counters_.num_total_new_integer_bounds;
       if (!integer_trail_->Enqueue(
               IntegerLiteral::GreaterOrEqual(var, new_bound), {}, {})) {
         return false;
@@ -469,7 +482,8 @@ bool Prober::ProbeOneVariable(BooleanVariable b) {
 
   // Statistics
   const int num_fixed = sat_solver_->LiteralTrail().Index();
-  num_new_literals_fixed_ += num_fixed - initial_num_fixed;
+  counters_.num_new_literals_fixed += num_fixed - initial_num_fixed;
+  counters_.num_total_new_literals_fixed += num_fixed - initial_num_fixed;
   return true;
 }
 
@@ -480,14 +494,14 @@ bool Prober::ProbeBooleanVariables(
   wall_timer.Start();
 
   // Reset statistics.
-  num_decisions_ = 0;
-  num_new_binary_ = 0;
-  num_new_holes_ = 0;
-  num_new_integer_bounds_ = 0;
-  num_new_literals_fixed_ = 0;
-  num_lrat_clauses_ = 0;
-  num_lrat_proof_clauses_ = 0;
-  num_unneeded_lrat_clauses_ = 0;
+  counters_.num_decisions = 0;
+  counters_.num_new_binary = 0;
+  counters_.num_new_holes = 0;
+  counters_.num_new_integer_bounds = 0;
+  counters_.num_new_literals_fixed = 0;
+  counters_.num_lrat_clauses = 0;
+  counters_.num_lrat_proof_clauses = 0;
+  counters_.num_unneeded_lrat_clauses = 0;
 
   // Resize the propagated sparse bitset.
   const int num_variables = sat_solver_->NumVariables();
@@ -510,7 +524,7 @@ bool Prober::ProbeBooleanVariables(
       continue;
     }
 
-    // TODO(user): Instead of an hard deterministic limit, we should probably
+    // TODO(user): Instead of a hard deterministic limit, we should probably
     // use a lower one, but reset it each time we have found something useful.
     if (time_limit_->LimitReached() ||
         time_limit_->GetElapsedDeterministicTime() > limit) {
@@ -527,7 +541,8 @@ bool Prober::ProbeBooleanVariables(
 
   // Update stats.
   const int num_fixed = sat_solver_->LiteralTrail().Index();
-  num_new_literals_fixed_ = num_fixed - initial_num_fixed;
+  counters_.num_new_literals_fixed = num_fixed - initial_num_fixed;
+  counters_.num_total_new_literals_fixed += num_fixed - initial_num_fixed;
 
   // Display stats.
   if (logger_->LoggingIsEnabled()) {
@@ -538,35 +553,35 @@ bool Prober::ProbeBooleanVariables(
                ") wall_time: ", wall_timer.Get(), " (",
                (limit_reached ? "Aborted " : ""), num_probed, "/",
                bool_vars.size(), ")");
-    if (num_new_literals_fixed_ > 0) {
-      SOLVER_LOG(logger_,
-                 "[Probing]  - new fixed Boolean: ", num_new_literals_fixed_,
-                 " (", FormatCounter(num_fixed), "/",
+    if (counters_.num_new_literals_fixed > 0) {
+      SOLVER_LOG(logger_, "[Probing]  - new fixed Boolean: ",
+                 counters_.num_new_literals_fixed, " (",
+                 FormatCounter(num_fixed), "/",
                  FormatCounter(sat_solver_->NumVariables()), ")");
     }
-    if (num_new_holes_ > 0) {
+    if (counters_.num_new_holes > 0) {
       SOLVER_LOG(logger_, "[Probing]  - new integer holes: ",
-                 FormatCounter(num_new_holes_));
+                 FormatCounter(counters_.num_new_holes));
     }
-    if (num_new_integer_bounds_ > 0) {
+    if (counters_.num_new_integer_bounds > 0) {
       SOLVER_LOG(logger_, "[Probing]  - new integer bounds: ",
-                 FormatCounter(num_new_integer_bounds_));
+                 FormatCounter(counters_.num_new_integer_bounds));
     }
-    if (num_new_binary_ > 0) {
+    if (counters_.num_new_binary > 0) {
       SOLVER_LOG(logger_, "[Probing]  - new binary clause: ",
-                 FormatCounter(num_new_binary_));
+                 FormatCounter(counters_.num_new_binary));
     }
-    if (num_lrat_clauses_ > 0) {
+    if (counters_.num_lrat_clauses > 0) {
       SOLVER_LOG(logger_, "[Probing]  - new LRAT clauses: ",
-                 FormatCounter(num_lrat_clauses_));
+                 FormatCounter(counters_.num_lrat_clauses));
     }
-    if (num_lrat_proof_clauses_ > 0) {
+    if (counters_.num_lrat_proof_clauses > 0) {
       SOLVER_LOG(logger_, "[Probing]  - new LRAT proof clauses: ",
-                 FormatCounter(num_lrat_proof_clauses_));
+                 FormatCounter(counters_.num_lrat_proof_clauses));
     }
-    if (num_unneeded_lrat_clauses_ > 0) {
+    if (counters_.num_unneeded_lrat_clauses > 0) {
       SOLVER_LOG(logger_, "[Probing]  - unneeded LRAT clauses: ",
-                 FormatCounter(num_unneeded_lrat_clauses_));
+                 FormatCounter(counters_.num_unneeded_lrat_clauses));
     }
   }
 
@@ -577,6 +592,9 @@ bool Prober::ProbeDnf(absl::string_view name,
                       absl::Span<const std::vector<Literal>> dnf,
                       DnfType dnf_type, const SatClause* dnf_clause) {
   if (dnf.size() <= 1) return true;
+  // Large DNFs take a long time to probe, and can cause time limit violations.
+  // They are also less likely to give new fixed literals or new bounds.
+  if (dnf.size() >= 10) return true;
 
   // dnf_clause could be deleted as a side effect of probing, but is needed for
   // LRAT in FixProbedDnfLiterals(). To avoid this we block clause deletion
@@ -589,17 +607,22 @@ bool Prober::ProbeDnf(absl::string_view name,
   // Reset the solver in case it was already used.
   if (!sat_solver_->ResetToLevelZero()) return false;
 
+  const int root_trail_index = trail_.Index();
+  const int root_integer_trail_index = integer_trail_->Index();
   always_propagated_bounds_.clear();
   always_propagated_literals_.clear();
+  TimeLimitCheckEveryNCalls checker(100, time_limit_);
   int num_valid_conjunctions = 0;
   for (absl::Span<const Literal> conjunction : dnf) {
-    // TODO(user): instead of going back to level zero, we could backtrack
-    // to level 'n', where n is the length of the longest prefix shared between
-    // the current conjunction and the previous one (more or less -- conjunction
-    // literals which are already assigned or lead to a conflict do not
-    // translate to a decision). For a kAtLeastOneCombination DNF with 8
-    // conjunctions, this would reduce the number of enqueues from 8*3=24 to 14.
-    if (!sat_solver_->ResetToLevelZero()) return false;
+    int backtrack_level = 0;
+    while (backtrack_level < conjunction.size() &&
+           backtrack_level < sat_solver_->CurrentDecisionLevel() &&
+           conjunction[backtrack_level] ==
+               sat_solver_->Decisions()[backtrack_level].literal) {
+      backtrack_level++;
+    }
+    sat_solver_->Backtrack(backtrack_level);
+    if (!sat_solver_->FinishPropagation()) return false;
     if (num_valid_conjunctions > 0 && always_propagated_bounds_.empty() &&
         always_propagated_literals_.empty()) {
       // We can exit safely as nothing will be propagated.
@@ -607,9 +630,8 @@ bool Prober::ProbeDnf(absl::string_view name,
     }
 
     bool conjunction_is_valid = true;
-    const int root_trail_index = trail_.Index();
-    const int root_integer_trail_index = integer_trail_->Index();
     for (const Literal& lit : conjunction) {
+      if (checker.LimitReached()) return true;
       if (assignment_.LiteralIsAssigned(lit)) {
         if (assignment_.LiteralIsTrue(lit)) continue;
         conjunction_is_valid = false;
@@ -621,7 +643,7 @@ bool Prober::ProbeDnf(absl::string_view name,
       sat_solver_->AdvanceDeterministicTime(time_limit_);
       const int decision_level_after_enqueue =
           sat_solver_->CurrentDecisionLevel();
-      ++num_decisions_;
+      ++counters_.num_decisions;
 
       if (sat_solver_->ModelIsUnsat()) return false;
       // If the literal has been pushed without any conflict, the level should
@@ -667,7 +689,7 @@ bool Prober::ProbeDnf(absl::string_view name,
 
   if (!sat_solver_->ResetToLevelZero()) return false;
   // Fix literals implied by the dnf.
-  const int previous_num_literals_fixed = num_new_literals_fixed_;
+  const int previous_num_literals_fixed = counters_.num_new_literals_fixed;
   if (lrat_proof_handler_ != nullptr) {
     if (!FixProbedDnfLiterals(dnf, always_propagated_literals_, dnf_type,
                               dnf_clause)) {
@@ -677,16 +699,18 @@ bool Prober::ProbeDnf(absl::string_view name,
     for (const LiteralIndex literal_index : always_propagated_literals_) {
       const Literal lit(literal_index);
       if (assignment_.LiteralIsTrue(lit)) continue;
-      ++num_new_literals_fixed_;
+      ++counters_.num_new_literals_fixed;
+      ++counters_.num_total_new_literals_fixed;
       if (!sat_solver_->AddUnitClause(lit)) return false;
     }
   }
 
   // Fix integer bounds implied by the dnf.
-  int previous_num_integer_bounds = num_new_integer_bounds_;
+  int previous_num_integer_bounds = counters_.num_new_integer_bounds;
   for (const auto& [var, bound] : always_propagated_bounds_) {
     if (bound > integer_trail_->LowerBound(var)) {
-      ++num_new_integer_bounds_;
+      ++counters_.num_new_integer_bounds;
+      ++counters_.num_total_new_integer_bounds;
       if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(var, bound),
                                    {}, {})) {
         return false;
@@ -696,12 +720,12 @@ bool Prober::ProbeDnf(absl::string_view name,
 
   if (!sat_solver_->FinishPropagation()) return false;
 
-  if (num_new_integer_bounds_ > previous_num_integer_bounds ||
-      num_new_literals_fixed_ > previous_num_literals_fixed) {
-    VLOG(1) << "ProbeDnf(" << name << ", num_fixed_literals="
-            << num_new_literals_fixed_ - previous_num_literals_fixed
+  if (counters_.num_new_integer_bounds > previous_num_integer_bounds ||
+      counters_.num_new_literals_fixed > previous_num_literals_fixed) {
+    VLOG(2) << "ProbeDnf(" << name << ", num_fixed_literals="
+            << counters_.num_new_literals_fixed - previous_num_literals_fixed
             << ", num_pushed_integer_bounds="
-            << num_new_integer_bounds_ - previous_num_integer_bounds
+            << counters_.num_new_integer_bounds - previous_num_integer_bounds
             << ", num_valid_conjunctions=" << num_valid_conjunctions << "/"
             << dnf.size() << ")";
   }
@@ -769,8 +793,16 @@ bool Prober::FixProbedDnfLiterals(
   for (int conjunction_index = 0; conjunction_index < dnf.size();
        ++conjunction_index) {
     absl::Span<const Literal> conjunction = dnf[conjunction_index];
-    // TODO(user): same comment as in ProbeDnf().
-    if (!sat_solver_->ResetToLevelZero()) return false;
+
+    int backtrack_level = 0;
+    while (backtrack_level < conjunction.size() &&
+           backtrack_level < sat_solver_->CurrentDecisionLevel() &&
+           conjunction[backtrack_level] ==
+               sat_solver_->Decisions()[backtrack_level].literal) {
+      backtrack_level++;
+    }
+    sat_solver_->Backtrack(backtrack_level);
+    if (!sat_solver_->FinishPropagation()) return false;
 
     // Enqueue the literals of `conjunction` one by one.
     // The first literal of `conjunction` which is propagated to false, if any,
@@ -838,8 +870,8 @@ bool Prober::FixProbedDnfLiterals(
         tmp_proof_.push_back(first_false_literal_clause);
       } else {
         // TODO(user): processing the propagated literals in trail order
-        // and reusing the previous proofs to compute new ones
-        // could reduce the algorithmic complexity here.
+        // and reusing the previous proofs to compute new ones could reduce the
+        // algorithmic complexity here.
         clause_manager_->AppendClausesFixing({propagated_lit}, &tmp_proof_);
       }
       // Add the inferred clause to the LratProofHandler.
@@ -858,7 +890,8 @@ bool Prober::FixProbedDnfLiterals(
     absl::Span<ClausePtr> propagations = propagation_clauses[i++];
     if (assignment_.LiteralIsTrue(propagated_lit)) continue;
 
-    ++num_new_literals_fixed_;
+    ++counters_.num_new_literals_fixed;
+    ++counters_.num_total_new_literals_fixed;
     switch (dnf_type) {
       case DnfType::kAtLeastOne:
         // `propagations` contains the clauses "not(l_i) OR propagated_lit"
@@ -984,8 +1017,8 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
   auto* time_limit = model->GetOrCreate<TimeLimit>();
   const int initial_num_fixed = sat_solver->LiteralTrail().Index();
 
-  // Note that this code do not care about the non-Boolean part and just try to
-  // assign the existing Booleans.
+  // Note that this code does not care about the non-Boolean part and just tries
+  // to assign the existing Booleans.
   SatParameters initial_params = *model->GetOrCreate<SatParameters>();
   SatParameters new_params = initial_params;
   new_params.set_log_search_progress(false);
@@ -1028,7 +1061,7 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
       return false;
     }
 
-    // We randomize at the end so that the default params is executed
+    // We randomize at the end so that the default params are executed
     // at least once.
     RandomizeDecisionHeuristic(*random, &new_params);
     new_params.set_random_seed(i);
@@ -1068,13 +1101,13 @@ FailedLiteralProbing::FailedLiteralProbing(Model* model)
       binary_propagator_id_(implication_graph_->PropagatorId()),
       clause_propagator_id_(clause_manager_->PropagatorId()) {}
 
-// TODO(user): This might be broken if backtrack() propagates and go further
+// TODO(user): This might be broken if backtrack() propagates and goes further
 // back. Investigate and fix any issue.
 bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
   WallTimer wall_timer;
   wall_timer.Start();
 
-  options.log_info |= VLOG_IS_ON(1);
+  options.log_info |= VLOG_IS_ON(2);
 
   num_variables_ = sat_solver_->NumVariables();
   to_fix_.clear();
@@ -1112,12 +1145,12 @@ bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
   // With tree look, it is better to start with "leaf" first since we try
   // to reuse propagation as much as possible. This is also interesting to
   // do when extracting binary clauses since we will need to propagate
-  // everyone anyway, and this should result in less clauses that can be
+  // everyone anyway, and this should result in fewer clauses that can be
   // removed later by transitive reduction.
   //
   // However, without tree-look and without the need to extract all binary
   // clauses, it is better to just probe the root of the binary implication
-  // graph. This is exactly what happen when we probe using the topological
+  // graph. This is exactly what happens when we probe using the topological
   // order.
   probing_order_ = implication_graph_->ReverseTopologicalOrder();
   if (!options.use_tree_look && !options.extract_binary_clauses) {
@@ -1146,7 +1179,7 @@ bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
 
   while (!time_limit_->LimitReached() &&
          time_limit_->GetElapsedDeterministicTime() <= limit) {
-    // We only enqueue literal at level zero if we don't use "tree look".
+    // We only enqueue literals at level zero if we don't use "tree look".
     if (!options.use_tree_look) {
       if (!sat_solver_->BacktrackAndPropagateReimplications(0)) return false;
       ClearTrailImplicationClausesAfterBacktrack();
@@ -1216,7 +1249,7 @@ bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
           }
         }
       } else {
-        // If we don't extract binary, we don't need to explore any of
+        // If we don't extract binary clauses, we don't need to explore any of
         // these literals until more variables are fixed.
         processed_.Set(l.Index());
       }
@@ -1414,7 +1447,7 @@ bool FailedLiteralProbing::EnqueueDecisionAndBackjumpOnConflict(
   ClearTrailImplicationClausesStartingFrom(first_new_trail_index);
   trail_implication_clauses_.resize(trail_.Index());
 
-  // This is tricky, depending on the parameters, and for integer problem,
+  // This is tricky, depending on the parameters, and for integer problems,
   // EnqueueDecisionAndBackjumpOnConflict() might create new Booleans.
   if (sat_solver_->NumVariables() > num_variables_) {
     num_variables_ = sat_solver_->NumVariables();
@@ -1484,14 +1517,14 @@ void FailedLiteralProbing::ExtractImplication(const Literal last_decision,
   const auto& info = trail_.Info(l.Variable());
   if (lrat_only && info.level != sat_solver_->CurrentDecisionLevel()) return;
 
-  // TODO(user): Think about trying to extract clause that will not
+  // TODO(user): Think about trying to extract clauses that will not
   // get removed by transitive reduction later. If we can both extract
-  // a => c and b => c , ideally we don't want to extract a => c first
+  // a => c and b => c, ideally we don't want to extract a => c first
   // if we already know that a => b.
   //
   // TODO(user): Similar to previous point, we could find the LCA
   // of all literals in the reason for this propagation. And use this
-  // as a reason for later hyber binary resolution. Like we do when
+  // as a reason for later hyper binary resolution. Like we do when
   // this clause subsumes the reason.
   DCHECK(assignment_.LiteralIsTrue(l));
   CHECK_NE(l.Variable(), last_decision.Variable());
@@ -1597,7 +1630,7 @@ void FailedLiteralProbing::ExtractImplications(
   }
 }
 
-// If we can extract a binary clause that subsume the reason clause, we do add
+// If we can extract a binary clause that subsumes the reason clause, we add
 // the binary and remove the subsumed clause.
 //
 // TODO(user): We could be slightly more generic and subsume some clauses that
@@ -1641,14 +1674,14 @@ void FailedLiteralProbing::MaybeSubsumeWithBinaryClause(
                               DeletionSourceForStat::SUBSUMPTION_PROBING);
 }
 
-// Inspect the watcher list for last_decision, If we have a blocking
+// Inspect the watcher list for last_decision. If we have a blocking
 // literal at true (implied by last decision), then we have subsumptions.
 //
 // The intuition behind this is that if a binary clause (a,b) subsumes a
 // clause, and we watch a.Negated() for this clause with a blocking
 // literal b, then this watch entry will never change because we always
 // propagate binary clauses first and the blocking literal will always be
-// true. So after many propagations, we hope to have such configuration
+// true. So after many propagations, we hope to have such a configuration
 // which is quite cheap to test here.
 void FailedLiteralProbing::SubsumeWithBinaryClauseUsingBlockingLiteral(
     const Literal last_decision) {
@@ -1659,8 +1692,8 @@ void FailedLiteralProbing::SubsumeWithBinaryClauseUsingBlockingLiteral(
 
     // This should be enough for proof correctness.
     //
-    // TODO(user): Always extract the binary otherwise we might loose structural
-    // property, or do not subsume size 3 clauses.
+    // TODO(user): Always extract the binary otherwise we might lose structural
+    // properties, or not subsume size 3 clauses.
     DCHECK_NE(last_decision, w.blocking_literal);
     if (clause_manager_->ClauseIsUsedAsReason(w.clause)) {
       MaybeExtractImplication(last_decision, w.blocking_literal);

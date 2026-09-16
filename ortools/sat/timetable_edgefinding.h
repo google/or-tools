@@ -36,7 +36,7 @@ namespace sat {
 // Note that this propagator does not ensure that the cumulative constraint
 // holds. It should thus always be used with at least a timetable propagator.
 //
-// ALOGRITHM:
+// ALGORITHM:
 //
 // The algorithm relies on free tasks. A free task is basically a task without
 // its mandatory part. For instance:
@@ -49,14 +49,14 @@ namespace sat {
 //
 // Obviously, the free part of a task that has no mandatory part is equal to the
 // task itself. Also, a free part cannot have a mandatory part by definition. A
-// fixed task thus have no free part.
+// fixed task thus has no free part.
 //
 // The idea of the algorithm is to use free and mandatory parts separately to
 // have a better estimation of the energy contained in a task interval.
 //
 // If the sum of the energy of all the free parts and mandatory subparts
 // contained in a task interval exceeds the amount of energy available, then the
-// problem is unfeasible. A task thus cannot be scheduled at its minimum start
+// problem is infeasible. A task thus cannot be scheduled at its minimum start
 // time if this would cause an overload in one of the task intervals.
 class TimeTableEdgeFinding : public PropagatorInterface {
  public:
@@ -73,21 +73,21 @@ class TimeTableEdgeFinding : public PropagatorInterface {
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  // Build the timetable and fills the mandatory_energy_before_start_min_ and
+  // Builds the timetable and fills the mandatory_energy_before_start_min_ and
   // mandatory_energy_before_end_max_.
   //
-  // TODO(user): Share the profile building code with TimeTablingPerTask ! we do
+  // TODO(user): Share the profile building code with TimeTablingPerTask! We do
   // not really need the mandatory_energy_before_* vectors and can recompute the
   // profile integral in a window efficiently during TimeTableEdgeFindingPass().
   void BuildTimeTable();
 
   // Performs a single pass of the Timetable Edge Finding filtering rule to
-  // updates the start time of the tasks. This same function can be used to
+  // update the start time of the tasks. This same function can be used to
   // update the end times by calling the SwitchToMirrorProblem method first.
   bool TimeTableEdgeFindingPass();
 
   // Fills the reason for the energy in [window_min, window_max].
-  // We exclude the given task_index mandatory energy and uses
+  // We exclude the given task_index mandatory energy and use
   // tasks_contributing_to_free_energy_.
   void FillEnergyInWindowReason(IntegerValue window_min,
                                 IntegerValue window_max, int task_index);
@@ -115,7 +115,7 @@ class TimeTableEdgeFinding : public PropagatorInterface {
   std::vector<IntegerValue> mandatory_energy_before_start_min_;
   std::vector<IntegerValue> mandatory_energy_before_end_max_;
 
-  // List of task that should participate in the reason.
+  // List of tasks that should participate in the reason.
   std::vector<int> reason_tasks_fully_included_in_window_;
   std::vector<int> reason_tasks_partially_included_in_window_;
 };

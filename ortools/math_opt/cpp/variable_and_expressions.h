@@ -209,13 +209,8 @@ class LinearExpression final : public ModelStorageItemContainer {
   // For unit testing purpose, we define optional counters. We have to
   // explicitly define the default constructor, copy constructor and assignment
   // operators in that case. Else we use the defaults.
-#ifndef MATH_OPT_USE_EXPRESSION_COUNTERS
   LinearExpression() = default;
   LinearExpression(const LinearExpression& other) = default;
-#else   // MATH_OPT_USE_EXPRESSION_COUNTERS
-  LinearExpression();
-  LinearExpression(const LinearExpression& other);
-#endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
   // Usually users should use the overloads of operators to build linear
   // expressions. For example, assuming `x` and `y` are Variable, then `x + 2*y
   // + 5` will build a LinearExpression automatically.
@@ -342,15 +337,6 @@ class LinearExpression final : public ModelStorageItemContainer {
   // the same model as the ones of the expression.
   double EvaluateWithDefaultZero(
       const VariableMap<double>& variable_values) const;
-
-#ifdef MATH_OPT_USE_EXPRESSION_COUNTERS
-  static thread_local int num_calls_default_constructor_;
-  static thread_local int num_calls_copy_constructor_;
-  static thread_local int num_calls_move_constructor_;
-  static thread_local int num_calls_initializer_list_constructor_;
-  // Reset all counters in the current thread to 0.
-  static void ResetCounters();
-#endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
 
  private:
   friend LinearExpression operator-(LinearExpression expr);
@@ -716,13 +702,8 @@ class QuadraticExpression final : public ModelStorageItemContainer {
   // For unit testing purpose, we define optional counters. We have to
   // explicitly define the default constructor, copy constructor and assignment
   // operators in that case. Else we use the defaults.
-#ifndef MATH_OPT_USE_EXPRESSION_COUNTERS
   QuadraticExpression() = default;
   QuadraticExpression(const QuadraticExpression& other) = default;
-#else   // MATH_OPT_USE_EXPRESSION_COUNTERS
-  QuadraticExpression();
-  QuadraticExpression(const QuadraticExpression& other);
-#endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
   // Users should prefer the default constructor and operator overloads to build
   // expressions.
   inline QuadraticExpression(
@@ -897,16 +878,6 @@ class QuadraticExpression final : public ModelStorageItemContainer {
   // the same model as the ones of the expression.
   double EvaluateWithDefaultZero(
       const VariableMap<double>& variable_values) const;
-
-#ifdef MATH_OPT_USE_EXPRESSION_COUNTERS
-  static thread_local int num_calls_default_constructor_;
-  static thread_local int num_calls_copy_constructor_;
-  static thread_local int num_calls_move_constructor_;
-  static thread_local int num_calls_initializer_list_constructor_;
-  static thread_local int num_calls_linear_expression_constructor_;
-  // Reset all counters in the current thread to 0.
-  static void ResetCounters();
-#endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
 
  private:
   friend QuadraticExpression operator-(QuadraticExpression expr);
@@ -1307,9 +1278,6 @@ LinearExpression::LinearExpression(LinearExpression&& other) noexcept
       terms_(std::move(other.terms_)),
       offset_(std::exchange(other.offset_, 0.0)) {
   other.terms_.clear();
-#ifdef MATH_OPT_USE_EXPRESSION_COUNTERS
-  ++num_calls_move_constructor_;
-#endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
 }
 
 LinearExpression& LinearExpression::operator=(
@@ -1325,9 +1293,6 @@ LinearExpression& LinearExpression::operator=(
 LinearExpression::LinearExpression(std::initializer_list<LinearTerm> terms,
                                    const double offset)
     : offset_(offset) {
-#ifdef MATH_OPT_USE_EXPRESSION_COUNTERS
-  ++num_calls_initializer_list_constructor_;
-#endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
   for (const auto& term : terms) {
     SetOrCheckStorage(term.variable);
     // The same variable may appear multiple times in the input list; we must
@@ -2054,9 +2019,6 @@ QuadraticExpression::QuadraticExpression(QuadraticExpression&& other) noexcept
       offset_(std::exchange(other.offset_, 0.0)) {
   other.quadratic_terms_.clear();
   other.linear_terms_.clear();
-#ifdef MATH_OPT_USE_EXPRESSION_COUNTERS
-  ++num_calls_move_constructor_;
-#endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
 }
 
 QuadraticExpression& QuadraticExpression::operator=(
@@ -2075,9 +2037,6 @@ QuadraticExpression::QuadraticExpression(
     const std::initializer_list<QuadraticTerm> quadratic_terms,
     const std::initializer_list<LinearTerm> linear_terms, const double offset)
     : offset_(offset) {
-#ifdef MATH_OPT_USE_EXPRESSION_COUNTERS
-  ++num_calls_initializer_list_constructor_;
-#endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
   for (const LinearTerm& term : linear_terms) {
     SetOrCheckStorage(term.variable);
     linear_terms_[term.variable] += term.coefficient;
@@ -2101,11 +2060,7 @@ QuadraticExpression::QuadraticExpression(const LinearTerm& term)
 QuadraticExpression::QuadraticExpression(LinearExpression expr)
     : ModelStorageItemContainer(expr.storage()),
       linear_terms_(std::move(expr.terms_)),
-      offset_(expr.offset_) {
-#ifdef MATH_OPT_USE_EXPRESSION_COUNTERS
-  ++num_calls_linear_expression_constructor_;
-#endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
-}
+      offset_(expr.offset_) {}
 
 QuadraticExpression::QuadraticExpression(const QuadraticTerm& term)
     : QuadraticExpression({term}, {}, 0.0) {}

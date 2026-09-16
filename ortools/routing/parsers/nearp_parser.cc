@@ -14,16 +14,22 @@
 #include "ortools/routing/parsers/nearp_parser.h"
 
 #include <array>
+#include <cstdint>
 #include <iterator>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#include "absl/algorithm/container.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/numbers.h"
+#include "ortools/routing/parsers/simple_graph.h"
 #include "ortools/util/filelineiter.h"
 
 namespace operations_research::routing {

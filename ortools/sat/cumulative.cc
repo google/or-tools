@@ -85,8 +85,8 @@ void AddCumulative(const std::vector<Literal>& enforcement_literals,
       task_enforcement_literals.push_back(intervals->PresenceLiteral(vars[i]));
     }
 
-    // If the interval can be of size zero, it currently do not count towards
-    // the capacity. TODO(user): Change that since we have optional interval
+    // If the interval can be of size zero, it currently does not count towards
+    // the capacity. TODO(user): Change that since we have optional intervals
     // for this.
     if (intervals->MinSize(vars[i]) <= 0) {
       task_enforcement_literals.push_back(encoder->GetOrCreateAssociatedLiteral(
@@ -108,10 +108,10 @@ void AddCumulative(const std::vector<Literal>& enforcement_literals,
   // Disjunctive() constraint over them.
   if (parameters.use_disjunctive_constraint_in_cumulative()) {
     // TODO(user): We need to exclude intervals that can be of size zero
-    // because the disjunctive do not "ignore" them like the cumulative
+    // because the disjunctive does not "ignore" them like the cumulative
     // does. That is, the interval [2,2) will be assumed to be in
     // disjunction with [1, 3) for instance. We need to uniformize the
-    // handling of interval with size zero.
+    // handling of intervals with size zero.
     std::vector<IntervalVariable> in_disjunction;
     IntegerValue min_of_demands = kMaxIntegerValue;
     const IntegerValue capa_max = integer_trail->UpperBound(capacity);
@@ -152,11 +152,11 @@ void AddCumulative(const std::vector<Literal>& enforcement_literals,
     // That said, this is more a question of optimizing the disjunctive
     // propagation code.
     //
-    // TODO(user): Another "known" idea is to detect pair of tasks that must
+    // TODO(user): Another "known" idea is to detect pairs of tasks that must
     // be in disjunction and to create a Boolean to indicate which one is
     // before the other. It shouldn't change the propagation, but may result
-    // in a faster one with smaller explanations, and the solver can also take
-    // decision on such Boolean.
+    // in a faster one with smaller explanations, and the solver can also make
+    // decisions on such Booleans.
     //
     // TODO(user): A better place for stuff like this could be in the
     // presolver so that it is easier to disable and play with alternatives.
@@ -172,7 +172,7 @@ void AddCumulative(const std::vector<Literal>& enforcement_literals,
       intervals->GetOrCreateDemandHelper(helper, demands);
   intervals->RegisterCumulative({capacity, helper, demands_helper});
 
-  // For each variables that is after a subset of task ends (i.e. like a
+  // For each variable that is after a subset of task ends (i.e. like a
   // makespan objective), we detect it and add a special constraint to
   // propagate it.
   //
@@ -181,13 +181,13 @@ void AddCumulative(const std::vector<Literal>& enforcement_literals,
   // allows to have decent lower bound on the large cumulative minizinc
   // instances.
   //
-  // TODO(user): this require the precedence constraints to be already loaded,
+  // TODO(user): this requires the precedence constraints to be already loaded,
   // and there is no guarantee of that currently. Find a more robust way.
   //
   // TODO(user): There is a bit of code duplication with the disjunctive
   // precedence propagator. Abstract more?
   if (parameters.use_hard_precedences_in_cumulative()) {
-    // The CumulativeIsAfterSubsetConstraint() always reset the helper to the
+    // The CumulativeIsAfterSubsetConstraint() always resets the helper to the
     // forward time direction, so it is important to also precompute the
     // precedence relation using the same direction! This is needed in case
     // the helper has already been used and set in the other direction.
@@ -209,14 +209,14 @@ void AddCumulative(const std::vector<Literal>& enforcement_literals,
     }
 
     // TODO(user): This can lead to many constraints. By analyzing a bit more
-    // the precedences, we could restrict that. In particular for cases were
+    // the precedences, we could restrict that. In particular for cases where
     // the cumulative is always (bunch of tasks B), T, (bunch of tasks A) and
-    // task T always in the middle, we never need to explicit list the
+    // task T always in the middle, we never need to explicitly list the
     // precedence of a task in B with a task in A.
     //
-    // TODO(user): If more than one variable are after the same set of
+    // TODO(user): If more than one variable is after the same set of
     // intervals, we should regroup them in a single constraint rather than
-    // having two independent constraint doing the same propagation.
+    // having two independent constraints doing the same propagation.
     std::vector<FullIntegerPrecedence> full_precedences;
     if (parameters.exploit_all_precedences()) {
       model->GetOrCreate<TransitivePrecedencesEvaluator>()
@@ -254,9 +254,9 @@ void AddCumulative(const std::vector<Literal>& enforcement_literals,
     }
   }
 
-  // Propagator responsible for applying Timetabling filtering rule. It
-  // increases the minimum of the start variables, decrease the maximum of the
-  // end variables, and increase the minimum of the capacity variable.
+  // Propagator responsible for applying the Timetabling filtering rule. It
+  // increases the minimum of the start variables, decreases the maximum of the
+  // end variables, and increases the minimum of the capacity variable.
   TimeTablingPerTask* time_tabling =
       new TimeTablingPerTask(capacity, helper, demands_helper, model);
   time_tabling->RegisterWith(watcher);
@@ -285,7 +285,7 @@ void AddCumulative(const std::vector<Literal>& enforcement_literals,
 
   // Propagator responsible for applying the Timetable Edge finding filtering
   // rule. It increases the minimum of the start variables and decreases the
-  // maximum of the end variables,
+  // maximum of the end variables.
   if (parameters.use_timetable_edge_finding_in_cumulative() &&
       helper->NumTasks() <=
           parameters.max_num_intervals_for_timetable_edge_finding()) {
@@ -359,7 +359,7 @@ void AddCumulativeTimeDecomposition(
 
       AddReifiedBoolAnd(consume_condition, consume, model);
 
-      // this is needed because we currently can't create a boolean variable
+      // This is needed because we currently can't create a boolean variable
       // if the model is unsat.
       if (sat_solver->ModelIsUnsat()) return;
 

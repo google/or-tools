@@ -13,7 +13,10 @@
 
 #include "ortools/sat/cp_model_solver.h"
 
+#include <atomic>
 #include <cstdint>
+#include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -31,6 +34,7 @@
 #include "ortools/sat/lp_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/subsolver.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research {
@@ -122,8 +126,8 @@ TEST(StopAfterFirstSolutionTest, BooleanLinearOptimizationProblem) {
   EXPECT_EQ(response.status(), CpSolverStatus::FEASIBLE);
   EXPECT_GE(num_solutions, 1);
 
-  // Because we have 8 threads and we currently report all solution as we found
-  // them, we might report more than one the time every subsolver is
+  // Because we have 8 threads and we currently report all solutions as we find
+  // them, we might report more than one by the time every subsolver is
   // terminated. This happens 8% of the time as of March 2020.
   EXPECT_LE(num_solutions, 2);
   LOG(INFO) << CpSolverResponseStats(response);
@@ -405,7 +409,7 @@ TEST(SolveCpModelTest, NonInstantiatedVariables) {
   const CpSolverResponse response = SolveCpModel(model_proto, &model);
 
   // Because we didn't try to instantiate the variables, we just did one round
-  // of propagation. Note that this allows to use the solve as a simple
+  // of propagation. Note that this allows using the solver as a simple
   // propagation engine with no search decision (modulo the binary variable that
   // will be instantiated anyway)!
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
@@ -417,7 +421,7 @@ TEST(SolveCpModelTest, NonInstantiatedVariables) {
 }
 
 // When there is nothing to do, we had a bug that didn't copy the solution
-// with the core based solver, this simply test this corner case.
+// with the core-based solver, this simply tests this corner case.
 TEST(SolveCpModelTest, TrivialModelWithCore) {
   CpModelProto model_proto;
   const int a = AddVariable(1, 1, &model_proto);
@@ -827,7 +831,7 @@ TEST(SolveCpModelTest, EnumerateAllSolutionsAndCopyToResponse) {
                   UnorderedElementsAre(3, 3), UnorderedElementsAre(4, 2),
                   UnorderedElementsAre(5, 1)));
 
-  // Not setting the solution_pool_size high enough gives partial result.
+  // Not setting the solution_pool_size high enough gives a partial result.
   // Because we randomize variable order, we don't know which solution will be
   // in the pool deterministically.
   params.set_solution_pool_size(3);
@@ -1298,9 +1302,9 @@ TEST(SolveCpModelTest,
   EXPECT_EQ(count, 2 * 2 * 2 * 2);
 }
 
-// The graph look like this with a self-loop at 2. If 2 is not selected
+// The graph looks like this with a self-loop at 2. If 2 is not selected
 // (self-loop) then there is one solution (0,1,3,0) and (0,3,5,0). Otherwise,
-// there is 2 more solutions with 2 inserted in one of the two routes.
+// there are 2 more solutions with 2 inserted in one of the two routes.
 //
 //   0  ---> 1 ---> 4 -------------
 //   |       |      ^             |
@@ -2057,7 +2061,7 @@ TEST(SolveCpModelTest, RegressionTest) {
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
 }
 
-// This used to crash because of how nodes with no arc were handled.
+// This used to crash because of how nodes with no arcs were handled.
 TEST(SolveCpModelTest, RouteConstraintRegressionTest) {
   const CpModelProto model_proto = ParseTestProto(R"pb(
     variables { domain: [ 1, 1 ] }
@@ -2247,7 +2251,7 @@ TEST(SolveCpModelTest, EmptyOptimizationModelBuggyInterleave) {
   SatParameters params;
   params.set_log_search_progress(true);
 
-  // This cause each chunk to abort right away with UNKNOWN. But because we are
+  // This causes each chunk to abort right away with UNKNOWN. But because we are
   // in chunked mode, we always reschedule full solver and we never finish if
   // there is no time limit.
   //
@@ -5475,6 +5479,221 @@ TEST(CpModelSolverTest, LratProofIsValidForRandom3Sat) {
   LOG(INFO) << "num_infeasible: " << num_infeasible;
   EXPECT_GT(num_infeasible, 0);
 }
+
+class MockCountingSubsolver : public SubSolver {
+ public:
+  MockCountingSubsolver(std::atomic<int>* task_count,
+                        std::atomic<int>* sync_count)
+      : SubSolver("mock_counting", SubSolver::HELPER),
+        task_count_(task_count),
+        sync_count_(sync_count) {}
+
+  void Synchronize() override { ++(*sync_count_); }
+
+  bool TaskIsAvailable() override { return !task_generated_.load(); }
+
+  std::function<void()> GenerateTask(int64_t /*task_id*/) override {
+    task_generated_.store(true);
+    return [this]() { ++(*task_count_); };
+  }
+
+ private:
+  std::atomic<int>* const task_count_;
+  std::atomic<int>* const sync_count_;
+  std::atomic<bool> task_generated_{false};
+};
+
+TEST(CpModelSolverTest, AddSubsolverGeneratesAndRunsTask) {
+  std::atomic<int> task_count{0};
+  std::atomic<int> sync_count{0};
+  const CpModelProto model_proto = Random3SatProblem(100, 3);
+  Model model;
+  SatParameters params;
+  params.set_num_workers(16);
+  params.set_interleave_search(true);
+  params.set_cp_model_presolve(false);
+  model.Add(NewSatParameters(params));
+  model.Add(NewSubsolver([&task_count, &sync_count](SharedClasses* /*shared*/) {
+    return std::make_unique<MockCountingSubsolver>(&task_count, &sync_count);
+  }));
+
+  const CpSolverResponse response = SolveCpModel(model_proto, &model);
+
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_GT(task_count.load(), 0);
+  EXPECT_GT(sync_count.load(), 0);
+}
+
+TEST(SolveCpModelTest, ElementWithUnusedTargetAndUnfixedExpression) {
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ -4096, 4096 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: -2
+      element {
+        index: 3
+        target: 2
+        vars: [ 0, 0, 0 ]
+      }
+    }
+    constraints {
+      enforcement_literal: -4
+      bool_or { literals: [ -2, -1 ] }
+    }
+    floating_point_objective { offset: -1.9094753488048646 }
+  )pb");
+
+  Model model;
+  const CpSolverResponse response = SolveCpModel(model_proto, &model);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+}
+
+TEST(SolveCpModelTest,
+     RelaxationInducedNeighborhoodGeneratorUnsatModel16Threads) {
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ -686, 234, 702, 703 ] }
+    constraints {
+      element {
+        index: 0
+        target: 0
+        vars: [
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]
+      }
+    }
+    objective {
+      vars: [ 0, 0, 0, 0 ]
+      scaling_factor: -7.4796082507053793e+18
+      coeffs: [ -4096, -1, -1358, -1 ]
+      domain: [ 1, 9223372036854775807 ]
+    }
+  )pb");
+
+  SatParameters params;
+  params.set_num_workers(16);
+  params.set_cp_model_presolve(false);
+  params.set_linearization_level(2);
+  params.set_max_time_in_seconds(1.0);
+  const CpSolverResponse response = SolveWithParameters(model_proto, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::INFEASIBLE);
+}
+
+TEST(SolveCpModelTest,
+     InnerObjectiveLowerBoundMatchesObjectiveWhenOptimal16Threads) {
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 1, 10 ] }
+    variables { domain: [ 1, 10 ] }
+    variables { domain: [ 1, 10 ] }
+    variables { domain: [ 1, 10 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 2 ]
+        domain: [ 0, 8 ]
+      }
+    }
+    constraints {
+      element {
+        target: 3
+        vars: [ 0, 1, 0 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 2, 3 ]
+        coeffs: [ 1, 2 ]
+        domain: [ 0, 6 ]
+      }
+    }
+    constraints { inverse {} }
+    objective {
+      vars: [ 0, 1, 2, 1, 3 ]
+      scaling_factor: 4.376525474779716e+19
+      coeffs: [ -1, -2, -3, -2144, -4 ]
+    }
+  )pb");
+
+  SatParameters params;
+  params.set_num_workers(16);
+  params.set_cp_model_presolve(false);
+  params.set_linearization_level(2);
+  params.set_absolute_gap_limit(0);
+  const CpSolverResponse response = SolveWithParameters(model_proto, params);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(response.inner_objective_lower_bound(), -6454);
+}
+
+TEST(SolveCpModelTest, CumulativeNegativeCapacity16Threads) {
+  CpModelProto model_proto;
+  // Vars 0 and 1: x0, x1 in [0, 1].
+  for (int i = 0; i < 2; ++i) {
+    auto* var = model_proto.add_variables();
+    var->add_domain(0);
+    var->add_domain(1);
+  }
+
+  // Cumulative constraint enforced by ~x1 (literal -2) with 0 intervals and
+  // capacity = 10*x0 - 5. At (x0, x1) = (0, 0), ~x1 is true and capacity = -5 <
+  // 0.
+  auto* cumu_ct = model_proto.add_constraints();
+  cumu_ct->add_enforcement_literal(-2);
+  auto* cumu = cumu_ct->mutable_cumulative();
+  cumu->mutable_capacity()->add_vars(0);
+  cumu->mutable_capacity()->add_coeffs(10);
+  cumu->mutable_capacity()->set_offset(-5);
+
+  // Add Pairwise Pigeonhole Principle (10 pigeons in 9 holes) where every
+  // pigeon clause AND every hole clause contains ~x0 (-1) or ~x1 (-2).
+  // Thus any state with x0=0 and x1=0 has 0 clause violations regardless of
+  // the values of the pigeon variables, while proving UNSAT when x0=1 or x1=1
+  // takes longer than FeasibilityJumpSolver takes to start.
+  const int num_pigeons = 10;
+  const int num_holes = 9;
+  for (int p = 0; p < num_pigeons; ++p) {
+    for (int h = 0; h < num_holes; ++h) {
+      auto* var = model_proto.add_variables();
+      var->add_domain(0);
+      var->add_domain(1);
+    }
+  }
+  auto var_index = [&](int p, int h) { return 2 + p * num_holes + h; };
+  for (int neg_lit : {-1, -2}) {
+    for (int p = 0; p < num_pigeons; ++p) {
+      auto* clause = model_proto.add_constraints()->mutable_bool_or();
+      for (int h = 0; h < num_holes; ++h) {
+        clause->add_literals(var_index(p, h));
+      }
+      clause->add_literals(neg_lit);
+    }
+    for (int h = 0; h < num_holes; ++h) {
+      for (int p1 = 0; p1 < num_pigeons; ++p1) {
+        for (int p2 = p1 + 1; p2 < num_pigeons; ++p2) {
+          auto* clause = model_proto.add_constraints()->mutable_bool_or();
+          clause->add_literals(-var_index(p1, h) - 1);
+          clause->add_literals(-var_index(p2, h) - 1);
+          clause->add_literals(neg_lit);
+        }
+      }
+    }
+  }
+
+  SatParameters params;
+  params.set_num_workers(16);
+  params.set_cp_model_presolve(false);
+  params.set_max_time_in_seconds(0.3);
+  const CpSolverResponse response = SolveWithParameters(model_proto, params);
+  EXPECT_THAT(response.status(),
+              AnyOf(CpSolverStatus::INFEASIBLE, CpSolverStatus::UNKNOWN));
+}
+
 #else
 static_assert(!operations_research::kTargetOsSupportsThreads);
 #endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)

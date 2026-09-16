@@ -340,7 +340,9 @@ class CpModel(cmh.CpBaseModel):
         return (
             IntVar(self.model_proto)
             .with_name(name)
-            .with_domain(sorted_interval_list.Domain(lb, ub))
+            .with_domain(
+                sorted_interval_list.Domain(lb, ub)
+            )  # pyrefly: ignore[bad-argument-type]
         )
 
     def new_int_var_from_domain(
@@ -471,7 +473,8 @@ class CpModel(cmh.CpBaseModel):
     ) -> Constraint:
         """Adds the constraint: `lb <= linear_expr <= ub`."""
         return self.add_linear_expression_in_domain(
-            linear_expr, sorted_interval_list.Domain(lb, ub)
+            linear_expr,
+            sorted_interval_list.Domain(lb, ub),  # pyrefly: ignore[bad-argument-type]
         )
 
     def add_linear_expression_in_domain(
@@ -521,7 +524,10 @@ class CpModel(cmh.CpBaseModel):
     # General Integer Constraints.
 
     @overload
-    def add_all_different(self, expressions: Iterable[LinearExprT]) -> Constraint: ...
+    def add_all_different(
+        self, expressions: Iterable[LinearExprT]
+    ) -> Constraint:  # pyrefly: ignore[inconsistent-overload]
+        ...
 
     @overload
     def add_all_different(self, *expressions: LinearExprT) -> Constraint: ...
@@ -933,7 +939,10 @@ class CpModel(cmh.CpBaseModel):
         return self.add_bool_and(b).only_enforce_if(a)
 
     @overload
-    def add_bool_or(self, literals: Iterable[LiteralT]) -> Constraint: ...
+    def add_bool_or(
+        self, literals: Iterable[LiteralT]
+    ) -> Constraint:  # pyrefly: ignore[inconsistent-overload]
+        ...
 
     @overload
     def add_bool_or(self, *literals: LiteralT) -> Constraint: ...
@@ -945,7 +954,10 @@ class CpModel(cmh.CpBaseModel):
         )
 
     @overload
-    def add_at_least_one(self, literals: Iterable[LiteralT]) -> Constraint: ...
+    def add_at_least_one(
+        self, literals: Iterable[LiteralT]
+    ) -> Constraint:  # pyrefly: ignore[inconsistent-overload]
+        ...
 
     @overload
     def add_at_least_one(self, *literals: LiteralT) -> Constraint: ...
@@ -957,7 +969,10 @@ class CpModel(cmh.CpBaseModel):
         )
 
     @overload
-    def add_at_most_one(self, literals: Iterable[LiteralT]) -> Constraint: ...
+    def add_at_most_one(
+        self, literals: Iterable[LiteralT]
+    ) -> Constraint:  # pyrefly: ignore[inconsistent-overload]
+        ...
 
     @overload
     def add_at_most_one(self, *literals: LiteralT) -> Constraint: ...
@@ -969,7 +984,10 @@ class CpModel(cmh.CpBaseModel):
         )
 
     @overload
-    def add_exactly_one(self, literals: Iterable[LiteralT]) -> Constraint: ...
+    def add_exactly_one(
+        self, literals: Iterable[LiteralT]
+    ) -> Constraint:  # pyrefly: ignore[inconsistent-overload]
+        ...
 
     @overload
     def add_exactly_one(self, *literals: LiteralT) -> Constraint: ...
@@ -981,7 +999,10 @@ class CpModel(cmh.CpBaseModel):
         )
 
     @overload
-    def add_bool_and(self, literals: Iterable[LiteralT]) -> Constraint: ...
+    def add_bool_and(
+        self, literals: Iterable[LiteralT]
+    ) -> Constraint:  # pyrefly: ignore[inconsistent-overload]
+        ...
 
     @overload
     def add_bool_and(self, *literals: LiteralT) -> Constraint: ...
@@ -993,7 +1014,10 @@ class CpModel(cmh.CpBaseModel):
         )
 
     @overload
-    def add_bool_xor(self, literals: Iterable[LiteralT]) -> Constraint: ...
+    def add_bool_xor(
+        self, literals: Iterable[LiteralT]
+    ) -> Constraint:  # pyrefly: ignore[inconsistent-overload]
+        ...
 
     @overload
     def add_bool_xor(self, *literals: LiteralT) -> Constraint: ...
@@ -1015,7 +1039,7 @@ class CpModel(cmh.CpBaseModel):
         )
 
     @overload
-    def add_min_equality(
+    def add_min_equality(  # pyrefly: ignore[inconsistent-overload]
         self, target: LinearExprT, expressions: Iterable[LinearExprT]
     ) -> Constraint: ...
 
@@ -1031,7 +1055,7 @@ class CpModel(cmh.CpBaseModel):
         )
 
     @overload
-    def add_max_equality(
+    def add_max_equality(  # pyrefly: ignore[inconsistent-overload]
         self, target: LinearExprT, expressions: Iterable[LinearExprT]
     ) -> Constraint: ...
 
@@ -1656,7 +1680,10 @@ class CpModel(cmh.CpBaseModel):
     def add_hint(self, var: IntVar, value: int) -> None: ...
 
     @overload
-    def add_hint(self, literal: BoolVarT, value: bool) -> None: ...
+    def add_hint(
+        self, literal: BoolVarT, value: bool
+    ) -> None:  # pyrefly: ignore[inconsistent-overload]
+        ...
 
     def add_hint(self, var, value) -> None:
         """Adds 'var == value' as a hint to the solver."""

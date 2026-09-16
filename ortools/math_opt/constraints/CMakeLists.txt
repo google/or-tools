@@ -16,14 +16,3 @@ add_subdirectory(quadratic)
 add_subdirectory(second_order_cone)
 add_subdirectory(sos)
 add_subdirectory(util)
-
-set(NAME ${PROJECT_NAME}_math_opt_constraints)
-add_library(${NAME} OBJECT)
-target_sources(${NAME} PUBLIC
-  $<TARGET_OBJECTS:${NAME}_indicator>
-  $<TARGET_OBJECTS:${NAME}_quadratic>
-  $<TARGET_OBJECTS:${NAME}_second_order_cone>
-  $<TARGET_OBJECTS:${NAME}_sos>
-  $<TARGET_OBJECTS:${NAME}_util>
-)
-install(TARGETS ${NAME} EXPORT ${PROJECT_NAME}Targets)

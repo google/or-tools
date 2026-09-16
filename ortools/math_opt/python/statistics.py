@@ -78,13 +78,13 @@ def absolute_finite_non_zeros_range(values: Iterable[float]) -> Optional[Range]:
             maximum = v
         else:
             minimum = min(minimum, v)
-            maximum = max(maximum, v)
+            maximum = max(maximum, v)  # pyrefly: ignore[bad-specialization]
 
     assert (maximum is None) == (minimum is None), (minimum, maximum)
 
     if minimum is None:
         return None
-    return Range(minimum=minimum, maximum=maximum)
+    return Range(minimum=minimum, maximum=maximum)  # pyrefly: ignore[bad-argument-type]
 
 
 @dataclasses.dataclass(frozen=True)

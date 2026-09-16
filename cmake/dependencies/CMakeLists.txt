@@ -67,15 +67,16 @@ if(BUILD_ZLIB)
   FetchContent_Declare(
     ZLIB
     GIT_REPOSITORY "https://github.com/madler/ZLIB.git"
-    GIT_TAG "v1.3.1"
+    GIT_TAG "v1.3.2"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
-    PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/ZLIB-v1.3.1.patch"
+    #PATCH_COMMAND git apply --ignore-whitespace
+    #"${CMAKE_CURRENT_LIST_DIR}/../../patches/ZLIB-v1.3.2.patch"
     OVERRIDE_FIND_PACKAGE
     SYSTEM
   )
-  set(ZLIB_BUILD_EXAMPLES OFF)
+  set(ZLIB_BUILD_TESTING OFF)
+  set(ZLIB_BUILD_STATIC OFF)
   FetchContent_MakeAvailable(ZLIB)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
@@ -114,11 +115,11 @@ if(BUILD_absl)
   FetchContent_Declare(
     absl
     GIT_REPOSITORY "https://github.com/abseil/abseil-cpp.git"
-    GIT_TAG "20260107.1"
+    GIT_TAG "20260817.0"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20260107.1.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20260817.0.patch"
     OVERRIDE_FIND_PACKAGE
     SYSTEM
   )
@@ -150,12 +151,12 @@ if(BUILD_Protobuf)
   FetchContent_Declare(
     Protobuf
     GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
-    GIT_TAG "v33.1"
+    GIT_TAG "v35.1"
     GIT_SHALLOW TRUE
     GIT_SUBMODULES ""
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v33.1.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v35.1.patch"
     OVERRIDE_FIND_PACKAGE # Make package visible for "protobuf-matchers" below
     SYSTEM
   )
@@ -270,9 +271,9 @@ if(BUILD_PYTHON)
       GIT_REPOSITORY "https://github.com/pybind/pybind11_protobuf.git"
       GIT_TAG "f02a2b7653bc50eb5119d125842a3870db95d251" # 2025/02/10
       #GIT_SHALLOW TRUE
-      #UPDATE_COMMAND git reset --hard
-      #PATCH_COMMAND git apply --ignore-whitespace
-      #"${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11_protobuf.patch"
+      UPDATE_COMMAND git reset --hard
+      PATCH_COMMAND git apply --ignore-whitespace
+      "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11_protobuf.patch"
       SYSTEM
     )
     FetchContent_MakeAvailable(pybind11_protobuf)
@@ -312,11 +313,11 @@ if(BUILD_HIGHS)
   FetchContent_Declare(
     highs
     GIT_REPOSITORY "https://github.com/ERGO-Code/HiGHS.git"
-    GIT_TAG        "v1.14.0"
+    GIT_TAG        "v1.15.1"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
-    PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/highs-v1.14.0.patch"
+    #PATCH_COMMAND git apply --ignore-whitespace
+    #"${CMAKE_CURRENT_LIST_DIR}/../../patches/highs-v1.15.1.patch"
     SYSTEM
   )
   set(CI OFF) # disable CI tests
@@ -335,11 +336,11 @@ if(BUILD_soplex)
   FetchContent_Declare(
     soplex
     GIT_REPOSITORY "https://github.com/scipopt/soplex.git"
-    GIT_TAG        "v8.0.2"
+    GIT_TAG        "v8.0.3"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/soplex-v8.0.2.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/soplex-v8.0.3.patch"
     SYSTEM
   )
   set(SHARED ON CACHE BOOL "Soplex param" FORCE)
@@ -366,11 +367,11 @@ if(BUILD_SCIP)
   FetchContent_Declare(
     scip
     GIT_REPOSITORY "https://github.com/scipopt/scip.git"
-    GIT_TAG        "v10.0.2"
+    GIT_TAG        "v10.0.3"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-v10.0.2.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-v10.0.3.patch"
     SYSTEM
   )
   set(SHARED ON CACHE BOOL "Scip param" FORCE)
@@ -526,6 +527,7 @@ if(BUILD_googletest)
     SYSTEM
   )
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  set(gtest_disable_warnings_as_errors ON CACHE BOOL "" FORCE)
   set(GTEST_HAS_ABSL ON)
   set(INSTALL_GTEST ON)
   FetchContent_MakeAvailable(googletest)
@@ -539,11 +541,11 @@ if(BUILD_protobuf_matchers)
   FetchContent_Declare(
     protobuf-matchers
     GIT_REPOSITORY https://github.com/inazarenko/protobuf-matchers.git
-    GIT_TAG v0.1.1
+    GIT_TAG v0.1.2
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-matchers-v0.1.1.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-matchers-v0.1.2.patch"
     SYSTEM
   )
   FetchContent_MakeAvailable(protobuf-matchers)

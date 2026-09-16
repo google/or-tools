@@ -19,6 +19,7 @@
 #include "absl/log/log.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/log_severity.h"
+#include "ortools/set_cover/set_cover.pb.h"
 #include "ortools/set_cover/set_cover_heuristics.h"
 #include "ortools/set_cover/set_cover_invariant.h"
 #include "ortools/set_cover/set_cover_model.h"
@@ -40,8 +41,8 @@ void SimpleSetCoverProgram() {
 
   // [START solve]
   SetCoverInvariant inv(&model);
-  GreedySolutionGenerator greedy(&inv);
-  bool found_solution = greedy.NextSolution();
+  GreedySolutionOptimizer greedy(&inv);
+  bool found_solution = greedy.Optimize();
   if (!found_solution) {
     LOG(INFO) << "No solution found by the greedy heuristic.";
     return;

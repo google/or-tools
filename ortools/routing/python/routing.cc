@@ -27,20 +27,14 @@
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/interval.h"
-#include "ortools/constraint_solver/search_stats.pb.h"
-#include "ortools/constraint_solver/solver_parameters.pb.h"
-#include "ortools/port/proto_utils.h"  // IWYU: keep
-#include "ortools/routing/enums.pb.h"
-#include "ortools/routing/heuristic_parameters.pb.h"
-#include "ortools/routing/ils.pb.h"
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
+#include "ortools/routing/parameters.pb.h"
 #include "ortools/routing/python/doc.h"                // IWYU pragma: keep
 #include "ortools/routing/python/index_manager_doc.h"  // IWYU pragma: keep. NOLINT
 #include "ortools/routing/python/parameters_doc.h"     // IWYU pragma: keep
 #include "ortools/routing/types.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/util/optional_boolean.pb.h"
 #include "ortools/util/piecewise_linear_function.h"  // IWYU pragma: keep
 #include "ortools/util/sorted_interval_list.h"
 #include "pybind11/cast.h"
@@ -434,24 +428,27 @@ PYBIND11_MODULE(routing, m) {
   rm.def("add_dimension", &Model::AddDimension, py::arg("evaluator_index"),
          py::arg("slack_max"), py::arg("capacity"),
          py::arg("fix_start_cumul_to_zero"), py::arg("name"),
+         py::arg("has_variable_transits") = false,
          DOC(operations_research, routing, Model, AddDimension));
   rm.def("add_dimension_with_vehicle_capacity",
          &Model::AddDimensionWithVehicleCapacity, py::arg("evaluator_index"),
          py::arg("slack_max"), py::arg("vehicle_capacities"),
          py::arg("fix_start_cumul_to_zero"), py::arg("name"),
+         py::arg("has_variable_transits") = false,
          DOC(operations_research, routing, Model,
              AddDimensionWithVehicleCapacity));
   rm.def("add_dimension_with_vehicle_transits",
          &Model::AddDimensionWithVehicleTransits, py::arg("evaluator_indices"),
          py::arg("slack_max"), py::arg("capacity"),
          py::arg("fix_start_cumul_to_zero"), py::arg("name"),
+         py::arg("has_variable_transits") = false,
          DOC(operations_research, routing, Model,
              AddDimensionWithVehicleTransits));
   rm.def("add_dimension_with_vehicle_transit_and_capacity",
          &Model::AddDimensionWithVehicleTransitAndCapacity,
          py::arg("evaluator_indices"), py::arg("slack_max"),
          py::arg("vehicle_capacities"), py::arg("fix_start_cumul_to_zero"),
-         py::arg("name"),
+         py::arg("name"), py::arg("has_variable_transits") = false,
          DOC(operations_research, routing, Model,
              AddDimensionWithVehicleTransitAndCapacity));
   rm.def("add_constant_dimension", &Model::AddConstantDimension,
@@ -463,6 +460,7 @@ PYBIND11_MODULE(routing, m) {
       &Model::AddConstantDimensionWithSlack, py::arg("value"),
       py::arg("slack_max"), py::arg("capacity"),
       py::arg("fix_start_cumul_to_zero"), py::arg("name"),
+      py::arg("has_variable_transits") = false,
       DOC(operations_research, routing, Model, AddConstantDimensionWithSlack));
   rm.def("add_vector_dimension", &Model::AddVectorDimension, py::arg("values"),
          py::arg("capacity"), py::arg("fix_start_cumul_to_zero"),
@@ -608,6 +606,48 @@ PYBIND11_MODULE(routing, m) {
       py::arg("penalty_cost_behavior") =
           Model::PenaltyCostBehavior::PENALIZE_ONCE,
       DOC(operations_research, routing, Model, AddDisjunction));
+  rm.def(
+      "make_disjunction",
+      [](Model* routing_model, const std::vector<int64_t>& indices) -> int {
+        return routing_model->MakeDisjunction(indices).value();
+      },
+      py::arg("indices"));
+  rm.def(
+      "set_disjunction_hard_maximum",
+      [](Model* model, int disjunction, int max_cardinality) {
+        model->SetDisjunctionHardMaximum(
+            operations_research::routing::DisjunctionIndex(disjunction),
+            max_cardinality);
+      },
+      py::arg("disjunction"), py::arg("max_cardinality"));
+  rm.def(
+      "set_disjunction_hard_minimum",
+      [](Model* model, int disjunction, int min_cardinality) {
+        model->SetDisjunctionHardMinimum(
+            operations_research::routing::DisjunctionIndex(disjunction),
+            min_cardinality);
+      },
+      py::arg("disjunction"), py::arg("min_cardinality"));
+  rm.def(
+      "set_disjunction_soft_maximum",
+      [](Model* model, int disjunction, int soft_max_cardinality,
+         int64_t penalty, Model::PenaltyCostBehavior penalty_cost_behavior) {
+        model->SetDisjunctionSoftMaximum(
+            operations_research::routing::DisjunctionIndex(disjunction),
+            soft_max_cardinality, penalty, penalty_cost_behavior);
+      },
+      py::arg("disjunction"), py::arg("soft_max_cardinality"),
+      py::arg("penalty"), py::arg("penalty_cost_behavior"));
+  rm.def(
+      "set_disjunction_soft_minimum",
+      [](Model* model, int disjunction, int soft_min_cardinality,
+         int64_t penalty, Model::PenaltyCostBehavior penalty_cost_behavior) {
+        model->SetDisjunctionSoftMinimum(
+            operations_research::routing::DisjunctionIndex(disjunction),
+            soft_min_cardinality, penalty, penalty_cost_behavior);
+      },
+      py::arg("disjunction"), py::arg("soft_min_cardinality"),
+      py::arg("penalty"), py::arg("penalty_cost_behavior"));
   rm.def("add_pickup_and_delivery", &Model::AddPickupAndDelivery,
          py::arg("pickup"), py::arg("delivery"),
          DOC(operations_research, routing, Model, AddPickupAndDelivery));
@@ -621,6 +661,71 @@ PYBIND11_MODULE(routing, m) {
       },
       py::arg("pickup_disjunction"), py::arg("delivery_disjunction"),
       DOC(operations_research, routing, Model, AddPickupAndDeliverySets));
+  rm.def(
+      "get_disjunction_max_cardinality",
+      [](const Model* model, int index) {
+        return model->GetDisjunctionMaxCardinality(
+            operations_research::routing::DisjunctionIndex(index));
+      },
+      py::arg("index"));
+  rm.def(
+      "get_disjunction_min_cardinality",
+      [](const Model* model, int index) {
+        return model->GetDisjunctionMinCardinality(
+            operations_research::routing::DisjunctionIndex(index));
+      },
+      py::arg("index"));
+  rm.def(
+      "get_disjunction_soft_max_cardinality",
+      [](const Model* model, int index) {
+        return model->GetDisjunctionSoftMaxCardinality(
+            operations_research::routing::DisjunctionIndex(index));
+      },
+      py::arg("index"));
+  rm.def(
+      "get_disjunction_soft_min_cardinality",
+      [](const Model* model, int index) {
+        return model->GetDisjunctionSoftMinCardinality(
+            operations_research::routing::DisjunctionIndex(index));
+      },
+      py::arg("index"));
+  rm.def(
+      "get_disjunction_soft_max_penalty",
+      [](const Model* model, int index) {
+        return model->GetDisjunctionSoftMaxPenalty(
+            operations_research::routing::DisjunctionIndex(index));
+      },
+      py::arg("index"));
+  rm.def(
+      "get_disjunction_soft_min_penalty",
+      [](const Model* model, int index) {
+        return model->GetDisjunctionSoftMinPenalty(
+            operations_research::routing::DisjunctionIndex(index));
+      },
+      py::arg("index"));
+  rm.def(
+      "get_disjunction_penalty",
+      [](const Model* model, int index) {
+        return model->GetDisjunctionPenalty(
+            operations_research::routing::DisjunctionIndex(index));
+      },
+      py::arg("index"));
+  rm.def(
+      "get_disjunction_soft_min_penalty_cost_behavior",
+      [](const Model* model, int index) {
+        return model->GetDisjunctionSoftMinPenaltyCostBehavior(
+            operations_research::routing::DisjunctionIndex(index));
+      },
+      py::arg("index"));
+  rm.def(
+      "get_disjunction_soft_max_penalty_cost_behavior",
+      [](const Model* model, int index) {
+        return model->GetDisjunctionSoftMaxPenaltyCostBehavior(
+            operations_research::routing::DisjunctionIndex(index));
+      },
+      py::arg("index"));
+  rm.def("get_number_of_disjunctions", &Model::GetNumberOfDisjunctions);
+  rm.def("has_hard_disjunctions", &Model::HasHardDisjunctions);
   rm.def("get_pickup_position", &Model::GetPickupPosition,
          py::arg("node_index"));  // Missing doc.
   rm.def("get_delivery_position", &Model::GetDeliveryPosition,

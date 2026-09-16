@@ -99,7 +99,7 @@ TEST(MinimizeIntegerVariableWithLinearScanAndLazyEncodingTest,
   EXPECT_EQ(status, SatSolver::Status::INFEASIBLE);  // Search done.
 }
 
-// TODO(user): The core find the best solution right away here, so it doesn't
+// TODO(user): The core finds the best solution right away here, so it doesn't
 // really exercise the solution limit...
 TEST(MinimizeWithCoreAndLazyEncodingTest, BasicProblemWithSolutionLimit) {
   Model model;

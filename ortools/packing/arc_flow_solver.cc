@@ -27,6 +27,7 @@
 #include "ortools/base/options.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
+#include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/packing/arc_flow_builder.h"
 #include "ortools/packing/vector_bin_packing.pb.h"
 

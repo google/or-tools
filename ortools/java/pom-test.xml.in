@@ -68,17 +68,27 @@
     <version>5.11.3</version>
     <scope>test</scope>
   </dependency>
-  <dependency>
-    <groupId>com.google.truth</groupId>
-    <artifactId>truth</artifactId>
-    <version>1.4.4</version>
-    <scope>test</scope>
-  </dependency>
+  <!-- Source: https://mvnrepository.com/artifact/com.google.guava/guava -->
   <dependency>
     <groupId>com.google.guava</groupId>
     <artifactId>guava</artifactId>
     <version>33.3.1-jre</version>
   </dependency>
+  <!-- Source: https://mvnrepository.com/artifact/com.google.truth/truth -->
+  <dependency>
+    <groupId>com.google.truth</groupId>
+    <artifactId>truth</artifactId>
+    <version>1.4.5</version>
+    <scope>test</scope>
+  </dependency>
+  <!-- Source: https://mvnrepository.com/artifact/com.google.truth.extensions/truth-proto-extension -->
+  <dependency>
+    <groupId>com.google.truth.extensions</groupId>
+    <artifactId>truth-proto-extension</artifactId>
+    <version>1.4.5</version>
+    <scope>test</scope>
+  </dependency>
+  <!-- Source: https://mvnrepository.com/artifact/com.google.auto.value/auto-value-annotations -->
   <dependency>
     <groupId>com.google.auto.value</groupId>
     <artifactId>auto-value-annotations</artifactId>

@@ -19,7 +19,7 @@
 
 namespace operations_research {
 
-MPSolver::ResultStatus GlopToMPSolverResultStatus(glop::ProblemStatus s);
+MPSolver::ResultStatus GlopToMPSolverResultStatus(glop::SolveStatus s);
 
 MPSolver::BasisStatus GlopToMPSolverVariableStatus(glop::VariableStatus s);
 glop::VariableStatus MPSolverToGlopVariableStatus(MPSolver::BasisStatus s);
