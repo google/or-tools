@@ -1,0 +1,337 @@
+# ref: https://github.com/actions/runner-images
+name: Release
+
+on:
+  push:
+    branches:
+      - rc
+      - mizux/rc
+  workflow_dispatch:
+
+concurrency:
+  group: ${{github.workflow}}-${{github.ref_name}}
+  cancel-in-progress: true
+
+env:
+  JAVA_DISTRIBUTION: 'temurin'
+  JAVA_VERSION: '21'
+  # Disable auth (and caching) when running from a fork.
+  # By default, secrets are not passed to workflows triggered from forks, including Dependabot.
+  USE_GOOGLE_CLOUD_STORAGE: ${{! (github.event.pull_request.head.repo.fork || false)}}
+  ORTOOLS_TOKEN: ${{secrets.ORTOOLS_TOKEN}}
+jobs:
+###############################################################################
+  delivery:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [
+          { runner: "ubuntu-22.04",     arch: "amd64", os: "linux",   generator: "Ninja" },
+          #{ runner: "ubuntu-22.04-arm", arch: "arm64", os: "linux",   generator: "Ninja" },
+          { runner: "macos-latest",     arch: "arm64", os: "macos",   generator: "Ninja" },
+          { runner: "windows-latest",   arch: "amd64", os: "windows", generator: "Visual Studio 18 2026" }
+        ]
+        target: [
+          { name: "cpp",       lang: "cpp" },
+          { name: "dotnet",    lang: "dotnet" },
+          { name: "java",      lang: "java" },
+          #{ name: "python310", lang: "python", python_version: "10" },
+          { name: "python312", lang: "python", python_version: "12" },
+          #{ name: "python314", lang: "python", python_version: "14" }
+        ]
+    name: Build(${{matrix.platform.arch}}•${{matrix.platform.os}}•${{matrix.target.name}})
+    runs-on: ${{matrix.platform.runner}}
+    steps:
+    - uses: actions/checkout@v7
+    - uses: ./.github/actions/remote_cache
+      with:
+        credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
+        set_cmake_sccache_launcher: true
+
+# SYSTEM BUILD DEPS
+    - name: Setup linux
+      if: ${{matrix.platform.os == 'linux'}}
+      run: |
+        sudo apt install -y ninja-build
+        wget -q "https://downloads.sourceforge.net/project/swig/swig/swig-4.5.1/swig-4.5.1.tar.gz" && tar xvf swig-4.5.1.tar.gz && rm swig-4.5.1.tar.gz
+        cd swig-4.5.1 && ./configure --prefix=$HOME/.local && make -j 4 && make install
+        rm -rf swig-4.5.1
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Setup macos
+      # can't use brew swig (4.4) since Director python support is broken on macos
+      # see: https://github.com/swig/swig/issues/3279
+      if: ${{matrix.platform.os == 'macos'}}
+      run: |
+        brew install ninja
+        wget -q https://downloads.sourceforge.net/project/swig/swig/swig-4.3.1/swig-4.3.1.tar.gz && tar xzvf swig-4.3.1.tar.gz && rm swig-4.3.1.tar.gz
+        cd swig-4.3.1 && ./configure --prefix=$HOME/.local && make -j 4 && make install
+        rm -rf swig-4.3.1
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Setup windows
+      if: ${{matrix.platform.os == 'windows'}}
+      run: dir
+    - id: num_cores
+      uses: ./.github/actions/num_cores
+    - name: Setup CMake env
+      run: echo "CMAKE_BUILD_PARALLEL_LEVEL=${{steps.num_cores.outputs.cores}}" >> $GITHUB_ENV
+
+# Setup .Net
+    - name: Setup .NET 8.0
+      uses: actions/setup-dotnet@v6
+      if: ${{matrix.target.lang == 'dotnet'}}
+      with:
+        dotnet-version: 8.0.x
+    - name: Check dotnet
+      if: ${{matrix.target.lang == 'dotnet'}}
+      run: dotnet --info
+
+# Setup Java
+    - uses: actions/setup-java@v6
+      if: ${{ matrix.target.lang == 'java'}}
+      with:
+        distribution: ${{env.JAVA_DISTRIBUTION}}
+        java-version: ${{env.JAVA_VERSION}}
+    - name: Check java
+      if: ${{matrix.target.lang == 'java'}}
+      run: |
+        java -version
+        mvn --version
+
+# Setup Python
+    - uses: actions/setup-python@v7
+      if: ${{matrix.target.lang == 'python'}}
+      with:
+        python-version: 3.${{matrix.target.python_version}}
+    - name: Install python3 deps
+      if: ${{matrix.target.lang == 'python'}}
+      run: python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas
+    - name: Setup Linux Python Env
+      if: ${{matrix.target.lang == 'python' && matrix.platform.os == 'linux'}}
+      run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Setup MacOs Python Env
+      if: ${{matrix.target.lang == 'python' && matrix.platform.os == 'macos'}}
+      run: |
+        echo "$HOME/Library/Python/3.${{matrix.target.python_version}}/bin" >> $GITHUB_PATH
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Setup Windows Python Env
+      if: ${{matrix.target.lang == 'python' && matrix.platform.os == 'windows'}}
+      run: >
+        echo "$((Get-Item ~).FullName)/AppData/Roaming/Python/${{matrix.python.dir}}/Scripts" |
+        Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+    - name: Check Python
+      if: ${{matrix.target.lang == 'python'}}
+      run: python3 --version
+
+# Build Delivery
+    - name: Build Linux ${{matrix.target.name}} Delivery
+      if: ${{matrix.platform.os == 'linux'}}
+      run: ./tools/release/build_delivery_linux.sh ${{matrix.target.lang}} ${{matrix.target.python_version}}
+    - name: Build MacOS ${{matrix.target.name}} Delivery
+      if: ${{matrix.platform.os == 'macos'}}
+      run: ./tools/release/build_delivery_macos.sh ${{matrix.target.lang}} ${{matrix.target.python_version}}
+    - name: Build Windows ${{matrix.target.name}} Delivery
+      if: ${{matrix.platform.os == 'windows'}}
+      run: ./tools/release/build_delivery_windows.cmd ${{matrix.target.lang}} ${{matrix.target.python_version}}
+
+    - name: Check Unix export
+      if: ${{matrix.platform.os == 'linux' || matrix.platform.os == 'macos'}}
+      run: ls export
+    - name: Check Windows export
+      if: ${{matrix.platform.os == 'windows'}}
+      run: dir export
+# Upload Artifact
+    - name: Upload Tarball Artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{matrix.platform.arch}}-${{matrix.platform.os}}-${{matrix.target.name}}
+        path: |
+          build.log
+          export/*.tar.gz
+          export/*.zip
+          export/*.nupkg
+          export/*.jar
+          export/*.whl
+        if-no-files-found: error
+        retention-days: 1
+
+
+###############################################################################
+# Test Delivery
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [
+          { runner: "ubuntu-22.04",     arch: "amd64", os: "linux",   generator: "Ninja" },
+          #{ runner: "ubuntu-22.04-arm", arch: "arm64", os: "linux",   generator: "Ninja" },
+          { runner: "macos-latest",     arch: "arm64", os: "macos",   generator: "Ninja" },
+          { runner: "windows-latest",   arch: "amd64", os: "windows", generator: "Visual Studio 18 2026" }
+        ]
+        target: [
+          { name: "cpp",       lang: "cpp" },
+          { name: "dotnet",    lang: "dotnet" },
+          { name: "java",      lang: "java" },
+          #{ name: "python310", lang: "python", python_version: "10" },
+          { name: "python312", lang: "python", python_version: "12" },
+          #{ name: "python314", lang: "python", python_version: "14" }
+        ]
+    name: Test(${{matrix.platform.arch}}•${{matrix.platform.os}}•${{matrix.target.name}})
+    runs-on: ${{matrix.platform.runner}}
+    needs: delivery
+    steps:
+    - uses: actions/checkout@v7
+
+# SYSTEM BUILD DEPS
+    - name: Setup linux
+      if: ${{matrix.platform.os == 'linux'}}
+      run: sudo apt install -y ninja-build
+    - name: Setup macos
+      if: ${{matrix.platform.os == 'macos'}}
+      run: brew install ninja
+    - name: Setup windows
+      if: ${{matrix.platform.os == 'windows'}}
+      run: dir
+    - id: num_cores
+      uses: ./.github/actions/num_cores
+    - name: Setup CMake env
+      run: echo "CMAKE_BUILD_PARALLEL_LEVEL=${{steps.num_cores.outputs.cores}}" >> $GITHUB_ENV
+
+# Setup .Net
+    - name: Setup .NET 8.0
+      uses: actions/setup-dotnet@v6
+      if: ${{matrix.target.lang == 'dotnet'}}
+      with:
+        dotnet-version: 8.0.x
+    - name: Check dotnet
+      if: ${{matrix.target.lang == 'dotnet'}}
+      run: dotnet --info
+
+# Setup Java
+    - uses: actions/setup-java@v6
+      if: ${{ matrix.target.lang == 'java'}}
+      with:
+        distribution: ${{env.JAVA_DISTRIBUTION}}
+        java-version: ${{env.JAVA_VERSION}}
+    - name: Check java
+      if: ${{matrix.target.lang == 'java'}}
+      run: |
+        java -version
+        mvn --version
+
+# Setup Python
+    - uses: actions/setup-python@v7
+      if: ${{matrix.target.lang == 'python'}}
+      with:
+        python-version: 3.${{matrix.target.python_version}}
+    - name: Check Python
+      if: ${{matrix.target.lang == 'python'}}
+      run: python3 --version
+
+# Download Artifact
+    - name: Download Tarball Artifact
+      uses: actions/download-artifact@v8
+      with:
+        name: ${{matrix.platform.arch}}-${{matrix.platform.os}}-${{matrix.target.name}}
+        path: .
+    - name: Check Export dir
+      run: ls -R export
+
+# Test Delivery
+    - name: Test Linux ${{matrix.target.name}} Delivery
+      if: ${{matrix.platform.os == 'linux'}}
+      run: ./tools/release/test_delivery_linux.sh ${{matrix.target.lang}} ${{matrix.target.python_version}}
+    - name: Test MacOS ${{matrix.target.name}} Delivery
+      if: ${{matrix.platform.os == 'macos'}}
+      run: ./tools/release/test_delivery_macos.sh ${{matrix.target.lang}} ${{matrix.target.python_version}}
+    - name: Test Windows ${{matrix.target.name}} Delivery
+      if: ${{matrix.platform.os == 'windows'}}
+      run: ./tools/release/test_delivery_windows.cmd ${{matrix.target.lang}} ${{matrix.target.python_version}}
+
+
+###############################################################################
+# DOCKER ARCHIVES
+  distro:
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64]
+        os: [
+          almalinux-10,
+          #alpine-edge,
+          #archlinux,
+          #debian-sid,
+          #debian-13,
+          #debian-12,
+          #fedora-44,
+          #fedora-43,
+          #opensuse-leap,
+          #rockylinux-10,
+          ubuntu-26.04,
+          #ubuntu-24.04,
+          #ubuntu-22.04,
+        ]
+        lang: [cpp, dotnet, java, python]
+    name: Distro(${{matrix.arch}}•${{matrix.os}}•${{matrix.lang}})
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - name: retrieve or-tools.snk
+      run: >
+        openssl aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN"
+        -in "tools/release/or-tools.snk.enc"
+        -out "tools/docker/or-tools.snk" -d
+    - name: Build ${{matrix.lang}}
+      run: make --directory=tools/docker ${{matrix.arch}}_${{matrix.os}}_${{matrix.lang}}_build
+    - name: Export ${{matrix.lang}}
+      run: make --directory=tools/docker ${{matrix.arch}}_${{matrix.os}}_${{matrix.lang}}_export
+    - name: Test ${{matrix.lang}} export
+      run: make --directory=tools/docker ${{matrix.arch}}_${{matrix.os}}_${{matrix.lang}}_test
+    - name: Check Export dir
+      run: ls -R tools/docker/export
+    - name: Upload Tarball Artifact
+      uses: actions/upload-artifact@v7
+      with:
+        path: |
+          tools/docker/export/archives/*.tar.gz
+        archive: false
+        if-no-files-found: error
+        retention-days: 1
+
+
+###############################################################################
+# Python Manylinux
+  python:
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64] # arm64
+        distro: [manylinux, musllinux]
+        python: [
+          310,
+          #311,
+          312,
+          #313,
+          314
+        ]
+    name: Python(${{matrix.arch}}•${{matrix.distro}}•cp${{matrix.python}})
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - name: Build Whl
+      run: >
+        make --directory=tools/docker
+        python_${{matrix.arch}}_${{matrix.distro}}_cp${{matrix.python}}_build
+    - name: Export Whl
+      run: >
+        make --directory=tools/docker
+        python_${{matrix.arch}}_${{matrix.distro}}_cp${{matrix.python}}_export
+    - name: Check Export dir
+      run: ls -R tools/docker/export
+    - name: Upload Tarball Artifact
+      uses: actions/upload-artifact@v7
+      with:
+        path: |
+          tools/docker/export/python/ortools-*${{matrix.distro}}*.whl
+        archive: false
+        if-no-files-found: error
+        retention-days: 1

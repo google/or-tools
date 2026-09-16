@@ -29,13 +29,14 @@ ${BOLD}DESCRIPTION${RESET}
 \t* ORTOOLS_TOKEN: secret use to decrypt keys to sign .Net and Java packages.
 
 ${BOLD}OPTIONS${RESET}
-\t-h --help: display this help text
-\tarchive: build all (C++, .Net, Java) archives
+\t-h --help: display this help text (default)
+\tcpp: build C++ (CMake based) prebuilt archive
 \tdotnet: build all .Net packages
 \tjava: build all Java packages
-\tpython: build all Pyhon packages
+\tpython <X.Y>: build Pyhon X.Y package
+\tarchive: build all (C++, .Net, Java) archives
 \texamples: build examples archives
-\tall: build everything (default)
+\tall: build cpp, dotnet and java
 
 ${BOLD}EXAMPLES${RESET}
 Using export to define the ${BOLD}ORTOOLS_TOKEN${RESET} env and only building the Java packages:
@@ -112,6 +113,26 @@ function build_delivery() {
   echo "DONE" | tee -a "${ROOT_DIR}/build.log"
 }
 
+# Cpp build
+function build_cpp() {
+  if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/arm64_cpp_build" -; then
+    echo "build C++ up to date!" | tee -a build.log
+    return 0
+  fi
+
+  assert_defined ORTOOLS_IMG
+  local -r ORTOOLS_DELIVERY=cpp
+  build_delivery
+
+  # copy tar.gz to export
+  docker run --rm --init \
+  -w /root/or-tools \
+  -v "${ROOT_DIR}/export":/export \
+  -u "$(id -u "${USER}")":"$(id -g "${USER}")" \
+  -t "${ORTOOLS_IMG}":"${ORTOOLS_DELIVERY}" "cp export/*tar.gz /export/"
+  echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/arm64_cpp_build"
+}
+
 # .Net build
 function build_dotnet() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/arm64_dotnet_build" -; then
@@ -154,6 +175,12 @@ function build_java() {
 
 # Python build
 function build_python() {
+  if [ -z "$1" ]; then
+    >&2 echo "No python version supplied"
+    exit 1
+  fi
+  local -r PY_VERSION="3.$1"
+
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/arm64_python_build" -; then
     echo "build python up to date!" | tee -a build.log
     return 0
@@ -252,25 +279,25 @@ function main() {
   mkdir -p "${ROOT_DIR}/export"
 
   case ${1} in
-    dotnet|java|python|archive|examples)
+    cpp|dotnet|java|archive|examples)
       "build_$1"
+      exit ;;
+    python)
+      "build_$1" "$2"
       exit ;;
     reset)
       reset
       exit ;;
     all)
+      build_cpp
       build_dotnet
       build_java
-      #build_python
-      build_archive
-      #build_examples
       exit ;;
     *)
       >&2 echo "Target '${1}' unknown"
       exit 1
   esac
-  exit 0
 }
 
-main "${1:-all}"
+main "${1:-help}" "$2"
 
