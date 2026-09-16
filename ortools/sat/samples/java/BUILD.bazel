@@ -23,7 +23,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -40,7 +40,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -57,7 +57,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -74,7 +74,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -91,7 +91,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -108,7 +108,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -141,8 +141,8 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
         "//ortools/sat:sat_parameters_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -159,7 +159,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -176,7 +176,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -193,7 +193,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -210,8 +210,8 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
         "//ortools/sat:sat_parameters_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -260,7 +260,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -277,7 +277,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -294,7 +294,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -311,7 +311,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -328,7 +328,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -345,7 +345,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -378,7 +378,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -395,7 +395,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -428,7 +428,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -445,7 +445,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -462,7 +462,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -479,7 +479,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -496,7 +496,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -513,7 +513,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
@@ -530,8 +530,8 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
         "//ortools/sat:sat_parameters_java_proto",
+        "//ortools/sat/java:cp_model_proto",
         "//ortools/util/java:sorted_interval_list",
         "@maven//:com_google_errorprone_error_prone_annotations",
     ],
@@ -550,7 +550,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
     ],
 )
 
