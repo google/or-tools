@@ -157,7 +157,6 @@ Keywords: Vehicle Routing, Traveling Salesman Problem, TSP, VRP, CVRPTW, PDP.
 #include <cstdint>
 #include <deque>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <set>
@@ -182,6 +181,7 @@ Keywords: Vehicle Routing, Traveling Salesman Problem, TSP, VRP, CVRPTW, PDP.
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/local_search.h"
 #include "ortools/constraint_solver/reversible_data.h"
+#include "ortools/constraint_solver/reversible_engine.h"
 #include "ortools/graph_base/graph.h"
 #include "ortools/routing/enums.pb.h"
 #include "ortools/routing/heuristic_parameters.pb.h"
@@ -743,6 +743,12 @@ class OR_ROUTING_DLL Model {
   /// a time dimension).
   /// Setting the value of fix_start_cumul_to_zero to true will force the
   /// "cumul" variable of the start node of all vehicles to be equal to 0.
+  /// When 'has_variable_transits' is true, the transit from i to j is
+  /// transit(i, j) = fixed_transit(i, j) + variable_transit(i, j), where
+  /// variable_transit(i, j) isn't a fixed value. As of 09/2026, this is only
+  /// used to propagate the scheduling obtained with transit targets as a
+  /// post-processing step, for instance to model traffic on the time dimension
+  /// without affecting the feasibility of an existing solution.
 
   /// Creates a dimension where the transit variable is constrained to be
   /// equal to evaluator(i, next(i)); 'slack_max' is the upper bound of the
@@ -753,18 +759,21 @@ class OR_ROUTING_DLL Model {
   /// (and doesn't create the new dimension).
   /// Takes ownership of the callback 'evaluator'.
   bool AddDimension(int evaluator_index, int64_t slack_max, int64_t capacity,
-                    bool fix_start_cumul_to_zero, absl::string_view name);
+                    bool fix_start_cumul_to_zero, absl::string_view name,
+                    bool has_variable_transits = false);
   bool AddDimensionWithVehicleTransits(
       const std::vector<int>& evaluator_indices, int64_t slack_max,
-      int64_t capacity, bool fix_start_cumul_to_zero, absl::string_view name);
+      int64_t capacity, bool fix_start_cumul_to_zero, absl::string_view name,
+      bool has_variable_transits = false);
   bool AddDimensionWithVehicleCapacity(int evaluator_index, int64_t slack_max,
                                        std::vector<int64_t> vehicle_capacities,
                                        bool fix_start_cumul_to_zero,
-                                       absl::string_view name);
+                                       absl::string_view name,
+                                       bool has_variable_transits = false);
   bool AddDimensionWithVehicleTransitAndCapacity(
       const std::vector<int>& evaluator_indices, int64_t slack_max,
       std::vector<int64_t> vehicle_capacities, bool fix_start_cumul_to_zero,
-      absl::string_view name);
+      absl::string_view name, bool has_variable_transits = false);
   /// Creates a dimension where the transit variable on arc i->j is the sum of:
   /// - A "fixed" transit value, obtained from the fixed_evaluator_index for
   ///   this vehicle, referencing evaluators in transit_evaluators_, and
@@ -787,7 +796,8 @@ class OR_ROUTING_DLL Model {
   /// (and doesn't create the new dimension but still register a new callback).
   std::pair<int, bool> AddConstantDimensionWithSlack(
       int64_t value, int64_t capacity, int64_t slack_max,
-      bool fix_start_cumul_to_zero, absl::string_view name);
+      bool fix_start_cumul_to_zero, absl::string_view name,
+      bool has_variable_transits = false);
   std::pair<int, bool> AddConstantDimension(int64_t value, int64_t capacity,
                                             bool fix_start_cumul_to_zero,
                                             absl::string_view name) {
@@ -2362,7 +2372,8 @@ class OR_ROUTING_DLL Model {
       const std::vector<int>& evaluator_indices,
       const std::vector<int>& cumul_dependent_evaluator_indices,
       int64_t slack_max, std::vector<int64_t> vehicle_capacities,
-      bool fix_start_cumul_to_zero, absl::string_view name);
+      bool fix_start_cumul_to_zero, absl::string_view name,
+      bool has_variable_transits);
   bool AddDimensionDependentDimensionWithVehicleCapacityInternal(
       const std::vector<int>& pure_transits,
       const std::vector<int>& dependent_transits,
@@ -2373,7 +2384,8 @@ class OR_ROUTING_DLL Model {
       const std::vector<int>& evaluator_indices,
       const std::vector<int>& cumul_dependent_evaluator_indices,
       const std::vector<int>& state_dependent_evaluator_indices,
-      int64_t slack_max, bool fix_start_cumul_to_zero, Dimension* dimension);
+      int64_t slack_max, bool fix_start_cumul_to_zero,
+      bool has_variable_transits, Dimension* dimension);
   DimensionIndex GetDimensionIndex(absl::string_view dimension_name) const;
 
   /// Creates global and local cumul optimizers for the dimensions needing them,
@@ -3692,14 +3704,15 @@ class Dimension {
   void Initialize(absl::Span<const int> transit_evaluators,
                   absl::Span<const int> cumul_dependent_transit_evaluators,
                   absl::Span<const int> state_dependent_transit_evaluators,
-                  int64_t slack_max);
+                  int64_t slack_max, bool has_variable_transits);
   void InitializeCumuls();
   void InitializeTransits(
       absl::Span<const int> transit_evaluators,
       absl::Span<const int> cumul_dependent_transit_evaluators,
       absl::Span<const int> state_dependent_transit_evaluators,
-      int64_t slack_max);
-  void InitializeTransitVariables(int64_t slack_max);
+      int64_t slack_max, bool has_variable_transits);
+  void InitializeTransitVariables(int64_t slack_max,
+                                  bool has_variable_transits);
   /// Sets up the cost variables related to cumul soft upper bounds.
   void SetupCumulVarSoftUpperBoundCosts(
       std::vector<operations_research::IntVar*>* cost_elements) const;
@@ -3733,6 +3746,7 @@ class Dimension {
   const std::vector<int64_t> vehicle_capacities_;
   std::vector<operations_research::IntVar*> transits_;
   std::vector<operations_research::IntVar*> fixed_transits_;
+  std::vector<operations_research::IntVar*> variable_transits_;
   /// Values in class_evaluators_ correspond to the evaluators in
   /// Model::transit_evaluators_ for each vehicle class.
   std::vector<int> class_evaluators_;
