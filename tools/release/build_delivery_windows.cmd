@@ -35,6 +35,11 @@ echo SHA1: %SHA1% | tee.exe -a build.log
 
 if not exist .\export md .\export
 
+if "%1"=="cpp" (
+call :BUILD_CPP
+exit /B %ERRORLEVEL%
+)
+
 if "%1"=="dotnet" (
 call :BUILD_DOTNET
 exit /B %ERRORLEVEL%
@@ -46,7 +51,12 @@ exit /B %ERRORLEVEL%
 )
 
 if "%1"=="python" (
-call :BUILD_PYTHON
+call :BUILD_PYTHON "%2"
+exit /B %ERRORLEVEL%
+)
+
+if "%1"=="python_all" (
+call :BUILD_PYTHON_ALL
 exit /B %ERRORLEVEL%
 )
 
@@ -61,11 +71,12 @@ exit /B %ERRORLEVEL%
 )
 
 if "%1"=="all" (
+call :BUILD_CPP
 call :BUILD_DOTNET
 call :BUILD_JAVA
-call :BUILD_ARCHIVE
+:: call :BUILD_ARCHIVE
 :: call :BUILD_EXAMPLES
-call :BUILD_PYTHON
+:: call :BUILD_PYTHON_ALL
 exit /B %ERRORLEVEL%
 )
 
@@ -82,7 +93,7 @@ exit /B 1
 echo NAME
 echo   %PRG% - Build delivery using the local host system.
 echo SYNOPSIS
-echo   %PRG% [help] dotnet^|java^|python^|archive^|examples^|all^|reset
+echo   %PRG% [help] cpp^|dotnet^|java^|python^|archive^|examples^|all^|reset
 echo DESCRIPTION
 echo   Build Google OR-Tools deliveries.
 echo   You MUST define the following variables before running this script:
@@ -90,6 +101,7 @@ echo   * ORTOOLS_TOKEN: secret use to decrypt key to sign dotnet and java packag
 echo.
 echo OPTIONS
 echo   help: show this help text (default)
+echo   cpp: Build C++ packages
 echo   dotnet: Build dotnet packages
 echo   java: Build java packages
 echo   python: Build python packages
@@ -100,6 +112,39 @@ echo   reset: delete all artifacts and suppress cache file
 echo.
 echo EXAMPLES
 echo   cmd /c %PRG%
+exit /B 0
+
+
+REM Build C++
+:BUILD_CPP
+title Build Cpp
+set HASH=
+FOR /F "tokens=* delims=" %%x IN (build_cpp.log) do (set HASH=%%x)
+if "%HASH%"=="%BRANCH% %SHA1%" (
+echo C++ build seems up to date, skipping
+exit /B 0
+)
+
+REM Check C++
+which.exe cmake || exit 1
+which.exe cmake| tee.exe -a build.log
+
+echo Cleaning C++... | tee.exe -a build.log
+rm.exe -rf temp_cpp
+echo DONE | tee.exe -a build.log
+
+echo Build cpp: ... | tee.exe -a build.log
+set Platform=any
+cmake -S. -Btemp_cpp -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DEPS=ON
+cmake --build temp_cpp --config Release
+echo DONE | tee.exe -a build.log
+
+FOR %%i IN (temp_cpp\pack\*.zip) do (
+  echo Copy %%i to export... | tee.exe -a build.log
+  copy %%i export\.
+  echo Copy %%i to export...DONE | tee.exe -a build.log
+)
+echo %BRANCH% %SHA1%>build_cpp.log
 exit /B 0
 
 
@@ -133,8 +178,6 @@ set Platform=any
 cmake -S. -Btemp_dotnet -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOTNET=ON -DUSE_DOTNET_462=ON
 cmake --build temp_dotnet --config Release -j8 -v
 echo DONE | tee.exe -a build.log
-REM make.exe test_dotnet WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
-REM echo make test_dotnet: DONE | tee.exe -a build.log
 
 FOR %%i IN (temp_dotnet\dotnet\packages\*.nupkg*) do (
   echo Copy %%i to export... | tee.exe -a build.log
@@ -201,6 +244,68 @@ echo %BRANCH% %SHA1%>build_java.log
 exit /B 0
 
 
+:subroutine
+set PATH=C:\python3%1-64\Scripts;%PATH%
+set PATH=%userprofile%\AppData\Roaming\Python\Python3%1\Scripts;%PATH%
+::echo "python path: %PATH%"
+GOTO :eof
+
+
+REM Build Python
+:BUILD_PYTHON
+title Build Python3%1
+set HASH=
+FOR /F "tokens=* delims=" %%x IN (build_python3%1.log) do (set HASH=%%x)
+if "%HASH%"=="%BRANCH% %SHA1%" (
+echo Python3%1 build seems up to date, skipping
+exit /B 0
+)
+
+echo Check python3.%1... | tee.exe -a build.log
+which.exe "python" || exit 1
+echo "python: FOUND" | tee.exe -a build.log
+python -m pip install --upgrade --user absl-py mypy mypy-protobuf protobuf numpy pandas "typing-extensions>=4.12"
+
+echo Cleaning Python 3.%1... | tee.exe -a build.log
+rm.exe -rf temp_python3%1
+echo Cleaning Python 3.%1...DONE | tee.exe -a build.log
+
+echo Build Python 3.%1... | tee.exe -a build.log
+cmake -S. -Btemp_python3%1 -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON
+REM -DPython3_ROOT_DIR=C:\python3%1-64
+cmake --build temp_python3%1 --config Release -j8 -v
+echo Build Python 3.%1...DONE | tee.exe -a build.log
+
+echo Check MYPY files... | tee.exe -a build.log
+  FOR %%m IN (
+    ortools\algorithms\python\knapsack_solver.pyi
+    ortools\graph\python\linear_sum_assignment.pyi
+    ortools\graph\python\max_flow.pyi
+    ortools\graph\python\min_cost_flow.pyi
+    ortools\init\python\init.pyi
+    ortools\linear_solver\python\model_builder_helper.pyi
+    ortools\linear_solver\pywraplp.pyi
+    ortools\pdlp\python\pdlp.pyi
+    ortools\sat\python\cp_model_helper.pyi
+    ortools\scheduling\python\rcpsp.pyi
+    ortools\util\python\sorted_interval_list.pyi
+  ) DO (
+    IF NOT EXIST temp_python3%1\python\%%m (
+      echo File %%m missing in python project | tee.exe -a build.log
+      exit /B 1
+    )
+  )
+echo Check MYPY files...DONE | tee.exe -a build.log
+
+FOR %%i IN (temp_python3%1\python\dist\*.whl) do (
+  echo Copy %%i to export... | tee.exe -a build.log
+  copy %%i export\.
+  echo Copy %%i to export...DONE | tee.exe -a build.log
+)
+echo %BRANCH% %SHA1%>build_python3%1.log
+exit /B 0
+
+
 REM Create Archive
 :BUILD_ARCHIVE
 title Build archives
@@ -212,18 +317,18 @@ exit /B 0
 )
 
 REM Clean archive
-make.exe clean_archive WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
+make.exe clean_archive WINDOWS_PATH_TO_PYTHON=c:\python310-64 || exit 1
 
 echo Make cpp archive... | tee.exe -a build.log
-make.exe archive_cpp WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
+make.exe archive_cpp WINDOWS_PATH_TO_PYTHON=c:\python310-64 || exit 1
 echo DONE | tee.exe -a build.log
 
 echo Make dotnet archive... | tee.exe -a build.log
-make.exe archive_dotnet WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
+make.exe archive_dotnet WINDOWS_PATH_TO_PYTHON=c:\python310-64 || exit 1
 echo DONE | tee.exe -a build.log
 
 echo Make java archive... | tee.exe -a build.log
-make.exe archive_java WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
+make.exe archive_java WINDOWS_PATH_TO_PYTHON=c:\python310-64 || exit 1
 echo DONE | tee.exe -a build.log
 
 FOR %%i IN (or-tools_*VisualStudio*.zip) do (
@@ -248,11 +353,11 @@ exit /B 0
 rm.exe -rf temp *.zip || exit 1
 echo Build examples archives... | tee.exe -a build.log
 echo   Python examples archive... | tee.exe -a build.log
-make.exe python_examples_archive WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
+make.exe python_examples_archive WINDOWS_PATH_TO_PYTHON=c:\python310-64 || exit 1
 echo   Java examples archive... | tee.exe -a build.log
-make.exe java_examples_archive WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
+make.exe java_examples_archive WINDOWS_PATH_TO_PYTHON=c:\python310-64 || exit 1
 echo   .Net examples archive... | tee.exe -a build.log
-make.exe dotnet_examples_archive WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
+make.exe dotnet_examples_archive WINDOWS_PATH_TO_PYTHON=c:\python310-64 || exit 1
 echo DONE | tee.exe -a build.log
 
 FOR %%i IN (or-tools_*_examples_*.zip) do (
@@ -263,23 +368,18 @@ FOR %%i IN (or-tools_*_examples_*.zip) do (
 echo %BRANCH% %SHA1%>build_examples.log
 exit /B 0
 
-:subroutine
-set PATH=C:\python3%1-64\Scripts;%PATH%
-set PATH=%userprofile%\AppData\Roaming\Python\Python3%1\Scripts;%PATH%
-::echo "python path: %PATH%"
-GOTO :eof
 
 REM PYTHON 3.10, 3.11, 3.12, 3.13, 3.14
-:BUILD_PYTHON
+:BUILD_PYTHON_ALL
 title Build Python
 set HASH=
-FOR /F "tokens=* delims=" %%x IN (build_python.log) DO (set HASH=%%x)
+FOR /F "tokens=* delims=" %%x IN (build_python_all.log) DO (set HASH=%%x)
 if "%HASH%"=="%BRANCH% %SHA1%" (
 echo Python build seems up to date, skipping
 exit /B 0
 )
 
-FOR %%v IN (9 10 11 12 13 14) DO (
+FOR %%v IN (10 11 12 13 14) DO (
   title Build Python 3.%%v
   echo Check python3.%%v... | tee.exe -a build.log
   which.exe "C:\python3%%v-64\python.exe" || exit 1
@@ -329,14 +429,17 @@ FOR %%v IN (9 10 11 12 13 14) DO (
     echo Copy %%i to export...DONE | tee.exe -a build.log
   )
 )
-echo %BRANCH% %SHA1%>build_python.log
+echo %BRANCH% %SHA1%>build_python_all.log
 exit /B 0
+
 
 REM Reset
 :RESET
 title Reset
 echo clean everything...
 make.exe clean || exit 1
+del /s /f /q temp_cpp
+rmdir /s /q temp_cpp
 del /s /f /q temp_dotnet
 rmdir /s /q temp_dotnet
 del /s /f /q temp_java

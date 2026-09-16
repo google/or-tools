@@ -22,20 +22,21 @@ function help() {
 ${BOLD}NAME${RESET}
 \t$NAME - Build delivery using the ${BOLD}local host system${RESET}.
 ${BOLD}SYNOPSIS${RESET}
-\t$NAME [-h|--help|help] [examples|dotnet|java|python|all|reset]
+\t$NAME [-h|--help|help] [cpp|dotnet|java|python X.Y|examples|all|reset]
 ${BOLD}DESCRIPTION${RESET}
 \tBuild Google OR-Tools deliveries.
 \tYou ${BOLD}MUST${RESET} define the following variables before running this script:
 \t* ORTOOLS_TOKEN: secret use to decrypt keys to sign .Net and Java packages.
 
 ${BOLD}OPTIONS${RESET}
-\t-h --help: display this help text
-\tarchive: build all (C++, .Net, Java) archives
+\t-h --help: display this help text (default)
+\tcpp: build C++ (CMake based) prebuilt archive
 \tdotnet: build all .Net packages
 \tjava: build all Java packages
-\tpython: build all Pyhon packages
+\tpython <X.Y>: build Pyhon X.Y package
+\tarchive: build all (C++, .Net, Java) archives
 \texamples: build examples archives
-\tall: build everything (default)
+\tall: build cpp, dotnet and java
 
 ${BOLD}EXAMPLES${RESET}
 Using export to define the ${BOLD}ORTOOLS_TOKEN${RESET} env and only building the Java packages:
@@ -54,6 +55,30 @@ function assert_defined(){
     >&2 echo "Variable '${1}' must be defined"
     exit 1
   fi
+}
+
+# Create C++ export
+function build_cpp() {
+  if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/cpp_build" -; then
+    echo "build C++ up to date!" | tee -a build.log
+    return 0
+  fi
+
+  # Clean dotnet
+  echo -n "Clean C++..." | tee -a build.log
+  cd "${ROOT_DIR}" || exit 2
+  rm -rf "${ROOT_DIR}/temp_cpp"
+  echo "DONE" | tee -a build.log
+
+  echo -n "Build C++..." | tee -a build.log
+  cmake -S. -Btemp_cpp -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DEPS=ON
+  cmake --build temp_cpp --target all
+  (cd temp_cpp && cpack -B pack)
+  echo "DONE" | tee -a build.log
+
+  # move archive to export
+  mv temp_cpp/pack/*.tar.gz export/
+  echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/cpp_build"
 }
 
 # .Net build
@@ -94,7 +119,7 @@ function build_dotnet() {
 
   echo -n "Build .Net..." | tee -a build.log
   cmake -S. -Btemp_dotnet -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOTNET=ON
-  cmake --build temp_dotnet -j8 -v
+  cmake --build temp_dotnet
   echo "DONE" | tee -a build.log
   #cmake --build temp_dotnet --target test
   #echo "cmake test: DONE" | tee -a build.log
@@ -112,9 +137,11 @@ function build_java() {
   fi
 
   cd "${ROOT_DIR}" || exit 2
-  echo "check swig..."
+  echo -n "check swig..."
   command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
+  echo "DONE" | tee -a build.log
+
   # maven require JAVA_HOME
   if [[ -z "${JAVA_HOME}" ]]; then
     echo "JAVA_HOME: not found !" | tee -a build.log
@@ -131,6 +158,7 @@ function build_java() {
     command -v mvn | xargs echo "mvn: " | tee -a build.log
     echo "Check java version..."
     java -version 2>&1 | head -n 1 | xargs echo "java version: " | tee -a build.log
+    java -version 2>&1 | head -n 1 | grep "\b21\.0\."
   fi
   # Maven central need gpg sign and we store the release key encoded using openssl
   local OPENSSL_PRG=openssl
@@ -165,18 +193,16 @@ function build_java() {
   rm -rf "${ROOT_DIR}/temp_java"
   echo "DONE" | tee -a build.log
 
-  echo -n "Build Java..." | tee -a build.log
-
+  echo "Build Java..." | tee -a build.log
   if [[ ! -v GPG_ARGS ]]; then
     GPG_EXTRA=""
   else
     GPG_EXTRA="-DGPG_ARGS=${GPG_ARGS}"
   fi
-
   # shellcheck disable=SC2086 # cmake fail to parse empty string ""
   cmake -S. -Btemp_java -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
  -DBUILD_JAVA=ON -DSKIP_GPG=OFF ${GPG_EXTRA}
-  cmake --build temp_java -j8 -v
+  cmake --build temp_java
   echo "DONE" | tee -a build.log
   #cmake --build temp_java --target test
   #echo "cmake test: DONE" | tee -a build.log
@@ -194,6 +220,12 @@ function build_java() {
 # Python 3
 # TODO(user) Use `make --directory tools/docker python` instead
 function build_python() {
+  if [ -z "$1" ]; then
+    >&2 echo "No python version supplied"
+    exit 1
+  fi
+  local -r PY_VERSION="3.$1"
+
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/python_build" -; then
     echo "build python up to date!" | tee -a build.log
     return 0
@@ -203,28 +235,32 @@ function build_python() {
   echo "check swig..."
   command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
+  echo "DONE" | tee -a build.log
 
   # Check Python env
   echo "check python3..."
   command -v python3 | xargs echo "python3: " | tee -a build.log
+  python3 --version | grep "${PY_VERSION}"
   python3 -c "import platform as p; print(p.platform())" | tee -a build.log
   python3 -m pip install --upgrade --user --break-system-package pip
   python3 -m pip install --upgrade --user --break-system-package wheel absl-py mypy mypy-protobuf virtualenv "typing-extensions>=4.12"
   echo "check protoc-gen-mypy..."
   command -v protoc-gen-mypy | xargs echo "protoc-gen-mypy: " | tee -a build.log
   protoc-gen-mypy --version | xargs echo "protoc-gen-mypy version: " | tee -a build.log
-  protoc-gen-mypy --version | grep "3\.6\.0"
+  protoc-gen-mypy --version | grep "5\.1\.0"
 
   # Clean and build
-  echo -n "Cleaning Python 3..." | tee -a build.log
+  echo -n "Cleaning Python3..." | tee -a build.log
   rm -rf "temp_python"
   echo "DONE" | tee -a build.log
-  echo -n "Build Python 3..." | tee -a build.log
+  echo -n "Build Python3..." | tee -a build.log
+  echo -n "  CMake configure..." | tee -a build.log
   cmake -S. -Btemp_python -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON
-  cmake --build temp_python -j8 -v
   echo "DONE" | tee -a build.log
-  #cmake --build test_python --target test
-  #echo "cmake test_python: DONE" | tee -a build.log
+
+  echo -n "  Cmake build..." | tee -a build.log
+  cmake --build temp_python
+  echo "DONE" | tee -a build.log
 
   cp temp_python/python/dist/*.whl export/
 
@@ -290,6 +326,7 @@ function reset() {
   cd "${ROOT_DIR}" || exit 2
 
   make clean
+  rm -rf temp_cpp
   rm -rf temp_dotnet
   rm -rf temp_java
   rm -rf temp_python*
@@ -312,6 +349,11 @@ function main() {
   assert_defined ORTOOLS_TOKEN
   echo "ORTOOLS_TOKEN: FOUND" | tee -a build.log
 
+  local -r PLATFORM=$(uname -m)
+  echo "PLATFORM: '${PLATFORM}'" | tee -a build.log
+  local -r OS=$(uname -s)
+  echo "OS: '${OS}'" | tee -a build.log
+
   local -r ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
   echo "ROOT_DIR: '${ROOT_DIR}'" | tee -a build.log
 
@@ -322,30 +364,29 @@ function main() {
 
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
-  local -r PLATFORM=$(uname -m)
 
   mkdir -p "${ROOT_DIR}/export"
 
   case ${1} in
-    dotnet|java|python|archive|examples)
+    cpp|dotnet|java|archive|examples)
       "build_$1"
+      exit ;;
+    python)
+      "build_$1" "$2"
       exit ;;
     reset)
       reset
       exit ;;
     all)
+      build_cpp
       build_dotnet
       build_java
-      #build_python
-      build_archive
-      #build_examples
       exit ;;
     *)
       >&2 echo "Target '${1}' unknown"
       exit 1
   esac
-  exit 0
 }
 
-main "${1:-all}"
+main "${1:-help}" "$2"
 
