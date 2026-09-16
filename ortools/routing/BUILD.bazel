@@ -263,6 +263,7 @@ or_cc_library(
         "//ortools/base:types",
         "//ortools/constraint_solver:cp",
         "//ortools/constraint_solver:reversible_data",
+        "//ortools/constraint_solver:reversible_engine",
         "//ortools/constraint_solver:solver_parameters_cc_proto",
         "//ortools/glop:lp_solver",
         "//ortools/glop:parameters_cc_proto",
