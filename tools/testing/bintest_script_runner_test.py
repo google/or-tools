@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 from typing import Optional
 
 from absl.testing import absltest
@@ -65,7 +64,10 @@ class BintestScriptRunnerTest(absltest.TestCase):
         self.execute_with_script_content("RUN: $(ECHO)")
 
     def test_run_inexistent_binary(self):
-        with self.assertRaisesRegex(SystemExit, "No such file or directory"):
+        with self.assertRaisesRegex(
+            SystemExit,
+            r"No such file or directory|The system cannot find the file specified",
+        ):
             self.execute_with_script_content("RUN: /path/to/inexistent_binary")
 
     def test_run_fails(self):
