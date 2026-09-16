@@ -13,11 +13,7 @@
 
 load("//bazel:or_cc_rules.bzl", "or_cc_library", "or_cc_test")
 
-package(default_visibility = [
-    "//experimental/users/rander/santorini:__subpackages__",
-    "//ortools/javatests/com/google/ortools/mathopt:__subpackages__",
-    "//visibility:public",
-])
+package(default_visibility = ["//visibility:public"])
 
 or_cc_library(
     name = "param_name",
