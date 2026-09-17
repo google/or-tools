@@ -428,24 +428,27 @@ PYBIND11_MODULE(routing, m) {
   rm.def("add_dimension", &Model::AddDimension, py::arg("evaluator_index"),
          py::arg("slack_max"), py::arg("capacity"),
          py::arg("fix_start_cumul_to_zero"), py::arg("name"),
+         py::arg("has_variable_transits") = false,
          DOC(operations_research, routing, Model, AddDimension));
   rm.def("add_dimension_with_vehicle_capacity",
          &Model::AddDimensionWithVehicleCapacity, py::arg("evaluator_index"),
          py::arg("slack_max"), py::arg("vehicle_capacities"),
          py::arg("fix_start_cumul_to_zero"), py::arg("name"),
+         py::arg("has_variable_transits") = false,
          DOC(operations_research, routing, Model,
              AddDimensionWithVehicleCapacity));
   rm.def("add_dimension_with_vehicle_transits",
          &Model::AddDimensionWithVehicleTransits, py::arg("evaluator_indices"),
          py::arg("slack_max"), py::arg("capacity"),
          py::arg("fix_start_cumul_to_zero"), py::arg("name"),
+         py::arg("has_variable_transits") = false,
          DOC(operations_research, routing, Model,
              AddDimensionWithVehicleTransits));
   rm.def("add_dimension_with_vehicle_transit_and_capacity",
          &Model::AddDimensionWithVehicleTransitAndCapacity,
          py::arg("evaluator_indices"), py::arg("slack_max"),
          py::arg("vehicle_capacities"), py::arg("fix_start_cumul_to_zero"),
-         py::arg("name"),
+         py::arg("name"), py::arg("has_variable_transits") = false,
          DOC(operations_research, routing, Model,
              AddDimensionWithVehicleTransitAndCapacity));
   rm.def("add_constant_dimension", &Model::AddConstantDimension,
@@ -457,6 +460,7 @@ PYBIND11_MODULE(routing, m) {
       &Model::AddConstantDimensionWithSlack, py::arg("value"),
       py::arg("slack_max"), py::arg("capacity"),
       py::arg("fix_start_cumul_to_zero"), py::arg("name"),
+      py::arg("has_variable_transits") = false,
       DOC(operations_research, routing, Model, AddConstantDimensionWithSlack));
   rm.def("add_vector_dimension", &Model::AddVectorDimension, py::arg("values"),
          py::arg("capacity"), py::arg("fix_start_cumul_to_zero"),

@@ -173,19 +173,6 @@ class GenericPathContainer {
   std::unique_ptr<Impl> container_;
 };
 
-// Utility function which returns a vector containing all nodes of a graph.
-template <class GraphType>
-void GetGraphNodes(const GraphType& graph,
-                   std::vector<typename GraphType::NodeIndex>* nodes) {
-  CHECK(nodes != nullptr);
-  nodes->clear();
-  nodes->reserve(graph.num_nodes());
-  for (typename GraphType::NodeIterator iterator(graph); iterator.Ok();
-       iterator.Next()) {
-    nodes->push_back(iterator.Index());
-  }
-}
-
 template <class GraphType>
 void GetGraphNodesFromGraph(const GraphType& graph,
                             std::vector<typename GraphType::NodeIndex>* nodes) {

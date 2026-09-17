@@ -15,6 +15,8 @@ load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
 load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 
+package(default_visibility = ["//visibility:public"])
+
 proto_library(
     name = "test_message_proto",
     srcs = ["test_message.proto"],
@@ -28,6 +30,7 @@ java_proto_library(
 java_junit5_test(
     name = "StringCorrespondencesTest",
     srcs = ["StringCorrespondencesTest.java"],
+    test_class = "com.google.ortools.mathopt.testing.StringCorrespondencesTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt/testing:string_correspondences",
@@ -44,6 +47,7 @@ java_junit5_test(
 java_junit5_test(
     name = "LinearConstraintSubjectTest",
     srcs = ["LinearConstraintSubjectTest.java"],
+    test_class = "com.google.ortools.mathopt.testing.LinearConstraintSubjectTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/mathopt:linear_constraint",

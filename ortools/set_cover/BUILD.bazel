@@ -14,10 +14,7 @@
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
-load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -43,11 +40,9 @@ py_proto_library(
     deps = [":set_cover_proto"],
 )
 
-cc_library(
+or_cc_library(
     name = "base_types",
     hdrs = ["base_types.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:strong_int",
         "//ortools/base:strong_vector",
@@ -58,11 +53,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "base_types_test",
     srcs = ["base_types_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_types",
         "//ortools/base:gmock_main",
@@ -71,11 +64,9 @@ cc_test(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "base_types_benchmark",
     srcs = ["base_types_benchmark.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_types",
         "//ortools/base:benchmark_main",
@@ -84,12 +75,10 @@ cc_binary(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "set_cover_lagrangian",
     srcs = ["set_cover_lagrangian.cc"],
     hdrs = ["set_cover_lagrangian.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_types",
         ":set_cover_heuristics",
@@ -104,12 +93,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "set_cover_model",
     srcs = ["set_cover_model.cc"],
     hdrs = ["set_cover_model.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_types",
         ":set_cover_cc_proto",
@@ -127,11 +114,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "set_cover_model_test",
     srcs = ["set_cover_model_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_types",
         ":set_cover_cc_proto",
@@ -142,12 +127,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "set_cover_invariant",
     srcs = ["set_cover_invariant.cc"],
     hdrs = ["set_cover_invariant.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_types",
         ":set_cover_cc_proto",
@@ -161,11 +144,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "set_cover_invariant_test",
     srcs = ["set_cover_invariant_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_types",
         ":set_cover_invariant",
@@ -174,7 +155,7 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "set_cover_cft",
     srcs = [
         "set_cover_cft.cc",
@@ -186,8 +167,6 @@ cc_library(
         "set_cover_views.h",
         "views.h",
     ],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_types",
         ":set_cover_heuristics",
@@ -207,12 +186,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "set_cover_heuristics",
     srcs = ["set_cover_heuristics.cc"],
     hdrs = ["set_cover_heuristics.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_types",
         ":set_cover_invariant",
@@ -232,11 +209,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "set_cover_heuristics_test",
     srcs = ["set_cover_heuristics_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_types",
         ":set_cover_heuristics",
@@ -246,12 +221,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "set_cover_mip",
     srcs = ["set_cover_mip.cc"],
     hdrs = ["set_cover_mip.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_types",
         ":set_cover_heuristics",
@@ -269,12 +242,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "set_cover_reader",
     srcs = ["set_cover_reader.cc"],
     hdrs = ["set_cover_reader.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_types",
         ":set_cover_cc_proto",
@@ -293,12 +264,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "assignment",
     srcs = ["assignment.cc"],
     hdrs = ["assignment.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_types",
         ":capacity_invariant",
@@ -311,11 +280,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "assignment_test",
     srcs = ["assignment_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":assignment",
         ":base_types",
@@ -327,12 +294,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "reporting",
     srcs = ["reporting.cc"],
     hdrs = ["reporting.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_types",
         ":set_cover_cc_proto",
@@ -348,11 +313,9 @@ cc_library(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "set_cover_solve",
     srcs = ["set_cover_solve.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = [
         "not_build:arm",
         "not_run:arm",
@@ -383,17 +346,15 @@ cc_binary(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "set_cover_cft_test",
     size = "large",
     timeout = "eternal",
     srcs = ["set_cover_cft_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
     data = [
         "//operations_research_data/operations_research_data/SET_COVERING:rail",
         "//operations_research_data/operations_research_data/SET_COVERING:scp",
     ],
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["manual"],
     deps = [
         ":base_types",
@@ -411,13 +372,11 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "set_cover_test",
     size = "medium",
     timeout = "eternal",
     srcs = ["set_cover_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["manual"],
     deps = [
         ":base_types",
@@ -437,13 +396,11 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "knights_test",
     size = "medium",
     timeout = "eternal",
     srcs = ["knights_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["manual"],
     deps = [
         ":base_types",
@@ -464,11 +421,9 @@ cc_test(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "knights_benchmark",
     srcs = ["knights_benchmark.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_types",
         ":set_cover_heuristics",
@@ -497,12 +452,10 @@ py_proto_library(
     deps = [":capacity_proto"],
 )
 
-cc_library(
+or_cc_library(
     name = "capacity_model",
     srcs = ["capacity_model.cc"],
     hdrs = ["capacity_model.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_types",
         ":capacity_cc_proto",
@@ -514,11 +467,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "capacity_model_test",
     srcs = ["capacity_model_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_types",
         ":capacity_model",
@@ -526,12 +477,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "capacity_invariant",
     srcs = ["capacity_invariant.cc"],
     hdrs = ["capacity_invariant.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_types",
         ":capacity_model",
@@ -542,11 +491,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "capacity_invariant_test",
     srcs = ["capacity_invariant_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_types",
         ":capacity_invariant",

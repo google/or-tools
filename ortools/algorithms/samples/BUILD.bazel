@@ -11,17 +11,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_python//python:py_test.bzl", "py_test")
-load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
+load("//bazel:or_cc_rules.bzl", "or_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_test(
+or_cc_test(
     name = "simple_knapsack_program_test",
     srcs = ["simple_knapsack_program.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/algorithms:knapsack_solver",
         "//ortools/base",
@@ -38,11 +35,9 @@ py_test(
     deps = ["//ortools/algorithms/python:knapsack_solver"],
 )
 
-cc_test(
+or_cc_test(
     name = "knapsack_test",
     srcs = ["knapsack.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/algorithms:knapsack_solver",
         "//ortools/base",

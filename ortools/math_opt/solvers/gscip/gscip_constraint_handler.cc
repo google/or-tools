@@ -429,7 +429,7 @@ static SCIP_DECL_CONSENFOLP(EnforceLpC) {
           conss, nusefulconss, nconss, DoEnforceLp,
           operations_research::ConstraintHandlerCallbackType::kEnfoLp);
   if (!gresult.ok()) {
-    SCIPerrorMessage(gresult.status().ToString().c_str());
+    SCIPerrorMessage("%s", gresult.status().ToString().c_str());
     return SCIP_ERROR;
   }
   *result = operations_research::ConvertGScipCallbackResult(*gresult);
@@ -457,7 +457,7 @@ static SCIP_DECL_CONSENFOPS(EnforcePseudoSolutionC) {
           conss, nusefulconss, nconss, DoEnforcePseudoSolution,
           operations_research::ConstraintHandlerCallbackType::kEnfoPs);
   if (!gresult.ok()) {
-    SCIPerrorMessage(gresult.status().ToString().c_str());
+    SCIPerrorMessage("%s", gresult.status().ToString().c_str());
     return SCIP_ERROR;
   }
   *result = operations_research::ConvertGScipCallbackResult(*gresult);
@@ -486,7 +486,7 @@ static SCIP_DECL_CONSCHECK(CheckFeasibilityC) {
           conss, nconss, nconss, DoCheckIsFeasible,
           operations_research::ConstraintHandlerCallbackType::kEnfoPs);
   if (!gresult.ok()) {
-    SCIPerrorMessage(gresult.status().ToString().c_str());
+    SCIPerrorMessage("%s", gresult.status().ToString().c_str());
     return SCIP_ERROR;
   }
   *result = operations_research::ConvertGScipCallbackResult(*gresult);
@@ -509,7 +509,7 @@ static SCIP_DECL_CONSSEPALP(SeparateLpC) {
           conss, nusefulconss, nconss, DoSeparateLp,
           operations_research::ConstraintHandlerCallbackType::kSepaLp);
   if (!gresult.ok()) {
-    SCIPerrorMessage(gresult.status().ToString().c_str());
+    SCIPerrorMessage("%s", gresult.status().ToString().c_str());
     return SCIP_ERROR;
   }
   *result = operations_research::ConvertGScipCallbackResult(*gresult);
@@ -532,7 +532,7 @@ static SCIP_DECL_CONSSEPASOL(SeparatePrimalSolutionC) {
           conss, nusefulconss, nconss, DoSeparateSolution,
           operations_research::ConstraintHandlerCallbackType::kSepaSol);
   if (!gresult.ok()) {
-    SCIPerrorMessage(gresult.status().ToString().c_str());
+    SCIPerrorMessage("%s", gresult.status().ToString().c_str());
     return SCIP_ERROR;
   }
   *result = operations_research::ConvertGScipCallbackResult(*gresult);

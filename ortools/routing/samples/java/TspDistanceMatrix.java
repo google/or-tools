@@ -23,9 +23,10 @@ import com.google.ortools.routing.IndexManager;
 import com.google.ortools.routing.Model;
 import com.google.ortools.routing.RoutingSearchParameters;
 import java.util.logging.Logger;
+
 // [END import]
 
-/** Minimal TSP using distance matrix.*/
+/** Minimal TSP using distance matrix. */
 public class TspDistanceMatrix {
   private static final Logger logger = Logger.getLogger(TspDistanceMatrix.class.getName());
 
@@ -77,6 +78,7 @@ public class TspDistanceMatrix {
     logger.info(route);
     logger.info("Distance of the route: " + routeDistance + "m");
   }
+
   // [END solution_printer]
 
   public static void main(String[] args) throws Exception {

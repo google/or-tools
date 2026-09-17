@@ -13,12 +13,11 @@
 
 # ModelBuilder: a lightweight implementation of the linear_solver API
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
+load("//bazel:or_cc_rules.bzl", "or_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+or_cc_library(
     name = "model_builder_helper",
     srcs = ["model_builder_helper.cc"],
     hdrs = ["model_builder_helper.h"],
@@ -26,8 +25,7 @@ cc_library(
         "-DUSE_HIGHS",
         "-DUSE_PDLP",
         "-DUSE_SCIP",
-    ] + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    ],
     tags = [
         "not_build:arm",
         "not_run:arm",

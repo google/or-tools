@@ -163,7 +163,7 @@ message CallbackDataProto {
     // Only for CALLBACK_EVENT_MIP_SOLUTION, specifies where the solution
     // came from. See CallbackSolutionSource.
     // Only implemented for SOLVER_TYPE_XPRESS.
-    optional int32 solution_source = 8;
+    optional CallbackSolutionSourceProto solution_source = 8;
   }
   MipStats mip_stats = 7;
 }

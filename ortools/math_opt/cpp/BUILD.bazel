@@ -13,9 +13,7 @@
 
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
-load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
+load("//bazel:or_cc_rules.bzl", "or_cc_library", "or_cc_test")
 
 # External users should depend only on ":math_opt" and include
 # "math_opt.h". Hence other libraries are private.
@@ -24,11 +22,9 @@ package(default_visibility = [
     "//ortools/math_opt/cpp:__subpackages__",
 ])
 
-cc_library(
+or_cc_library(
     name = "math_opt",
     hdrs = ["math_opt.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":model",
@@ -37,12 +33,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "basis_status",
     srcs = ["basis_status.cc"],
     hdrs = ["basis_status.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":enums",
         "//ortools/math_opt:solution_cc_proto",
@@ -51,11 +45,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "basis_status_test",
     srcs = ["basis_status_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":basis_status",
         ":enums_testing",
@@ -64,12 +56,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "sparse_containers",
     srcs = ["sparse_containers.cc"],
     hdrs = ["sparse_containers.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":basis_status",
         ":linear_constraint",
@@ -94,11 +84,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "sparse_containers_test",
     srcs = ["sparse_containers_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":matchers",
         ":math_opt",
@@ -111,12 +99,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "model",
     srcs = ["model.cc"],
     hdrs = ["model.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":key_types",
         ":linear_constraint",
@@ -151,11 +137,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "model_test",
     srcs = ["model_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+
     # TODO: b/475196802 - Stop using EquivToProto().
     tags = [
         "no_test_android",
@@ -188,12 +173,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "variable_and_expressions",
     srcs = ["variable_and_expressions.cc"],
     hdrs = ["variable_and_expressions.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":formatters",
         ":key_types",
@@ -211,11 +194,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "variable_and_expressions_test",
     srcs = ["variable_and_expressions_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["noci"],
     deps = [
         ":matchers",
@@ -233,12 +214,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "objective",
     srcs = ["objective.cc"],
     hdrs = ["objective.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":key_types",
         ":variable_and_expressions",
@@ -250,11 +229,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "objective_test",
     srcs = ["objective_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":objective",
         ":variable_and_expressions",
@@ -266,11 +243,9 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "linear_constraint",
     hdrs = ["linear_constraint.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":key_types",
         ":variable_and_expressions",
@@ -284,11 +259,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "linear_constraint_test",
     srcs = ["linear_constraint_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":linear_constraint",
         ":matchers",
@@ -304,12 +277,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solution",
     srcs = ["solution.cc"],
     hdrs = ["solution.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":basis_status",
         ":enums",
@@ -334,11 +305,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "solution_test",
     srcs = ["solution_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":enums_testing",
         ":linear_constraint",
@@ -356,12 +325,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solve_impl_testing",
     testonly = True,
     hdrs = ["solve_impl_testing.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":compute_infeasible_subsystem_arguments",
         ":compute_infeasible_subsystem_result",
@@ -378,12 +345,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solve_result",
     srcs = ["solve_result.cc"],
     hdrs = ["solve_result.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":enums",
         ":linear_constraint",
@@ -409,12 +374,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "map_filter",
     srcs = ["map_filter.cc"],
     hdrs = ["map_filter.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":key_types",
         ":linear_constraint",
@@ -431,11 +394,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "map_filter_test",
     srcs = ["map_filter_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+
     # TODO: b/475196802 - Stop using EquivToProto().
     tags = [
         "no_test_android",
@@ -453,12 +415,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "callback",
     srcs = ["callback.cc"],
     hdrs = ["callback.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":enums",
         ":map_filter",
@@ -482,11 +442,9 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "key_types",
     hdrs = ["key_types.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/math_opt/storage:model_storage",
         "//ortools/math_opt/storage:model_storage_item",
@@ -498,11 +456,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "key_types_test",
     srcs = ["key_types_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":key_types",
         ":variable_and_expressions",
@@ -515,12 +471,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "model_solve_parameters",
     srcs = ["model_solve_parameters.cc"],
     hdrs = ["model_solve_parameters.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":linear_constraint",
         ":map_filter",
@@ -545,12 +499,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "update_tracker",
     srcs = ["update_tracker.cc"],
     hdrs = ["update_tracker.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
@@ -563,12 +515,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "message_callback",
     srcs = ["message_callback.cc"],
     hdrs = ["message_callback.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base:core_headers",
@@ -583,23 +533,19 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solver_init_arguments",
     hdrs = ["solver_init_arguments.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":streamable_solver_init_arguments",
         "//ortools/math_opt/core:non_streamable_solver_init_arguments",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solve_arguments",
     srcs = ["solve_arguments.cc"],
     hdrs = ["solve_arguments.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":callback",
         ":message_callback",
@@ -614,11 +560,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "solve_arguments_test",
     srcs = ["solve_arguments_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":math_opt",
         ":solve_arguments",
@@ -627,12 +571,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solve",
     srcs = ["solve.cc"],
     hdrs = ["solve.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":compute_infeasible_subsystem_arguments",
         ":compute_infeasible_subsystem_result",
@@ -654,12 +596,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "streamable_solver_init_arguments",
     srcs = ["streamable_solver_init_arguments.cc"],
     hdrs = ["streamable_solver_init_arguments.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
@@ -669,11 +609,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "streamable_solver_init_arguments_test",
     srcs = ["streamable_solver_init_arguments_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":streamable_solver_init_arguments",
         "//ortools/base:gmock_main",
@@ -683,12 +621,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "parameters",
     srcs = ["parameters.cc"],
     hdrs = ["parameters.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":enums",
         "//ortools/base:protoutil",
@@ -714,13 +650,11 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "matchers",
     testonly = True,
     srcs = ["matchers.cc"],
     hdrs = ["matchers.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":linear_constraint",
@@ -738,11 +672,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "matchers_test",
     srcs = ["matchers_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":matchers",
         ":math_opt",
@@ -756,11 +688,9 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "enums",
     hdrs = ["enums.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
@@ -778,11 +708,9 @@ cc_proto_library(
     deps = [":enums_test_proto"],
 )
 
-cc_test(
+or_cc_test(
     name = "enums_test",
     srcs = ["enums_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":enums",
         ":enums_test_cc_proto",
@@ -795,12 +723,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "enums_testing",
     testonly = True,
     hdrs = ["enums_testing.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":enums",
         "//ortools/base:gmock",
@@ -812,12 +738,10 @@ cc_library(
     alwayslink = 1,
 )
 
-cc_library(
+or_cc_library(
     name = "statistics",
     srcs = ["statistics.cc"],
     hdrs = ["statistics.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":model",
@@ -825,11 +749,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "statistics_test",
     srcs = ["statistics_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model",
         ":statistics",
@@ -837,28 +759,22 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "formatters",
     hdrs = ["formatters.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = ["//ortools/util:fp_roundtrip_conv"],
 )
 
-cc_library(
+or_cc_library(
     name = "update_result",
     srcs = ["update_result.cc"],
     hdrs = ["update_result.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = ["//ortools/math_opt:model_update_cc_proto"],
 )
 
-cc_test(
+or_cc_test(
     name = "update_result_test",
     srcs = ["update_result_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":update_result",
         "//ortools/base:gmock_main",
@@ -866,12 +782,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "compute_infeasible_subsystem_result",
     srcs = ["compute_infeasible_subsystem_result.cc"],
     hdrs = ["compute_infeasible_subsystem_result.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":enums",
         ":key_types",
@@ -900,11 +814,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "compute_infeasible_subsystem_result_test",
     srcs = ["compute_infeasible_subsystem_result_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":compute_infeasible_subsystem_result",
         ":enums",
@@ -930,11 +842,9 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "compute_infeasible_subsystem_arguments",
     hdrs = ["compute_infeasible_subsystem_arguments.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":message_callback",
         ":parameters",
@@ -943,12 +853,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solver_resources",
     srcs = ["solver_resources.cc"],
     hdrs = ["solver_resources.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/math_opt:rpc_cc_proto",
         "//ortools/port:proto_utils",
@@ -958,11 +866,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "solver_resources_test",
     srcs = ["solver_resources_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":solver_resources",
         "//ortools/base:gmock_main",
@@ -970,12 +876,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solve_impl",
     srcs = ["solve_impl.cc"],
     hdrs = ["solve_impl.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":compute_infeasible_subsystem_arguments",
         ":compute_infeasible_subsystem_result",
@@ -1003,12 +907,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "incremental_solver",
     srcs = ["incremental_solver.cc"],
     hdrs = ["incremental_solver.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":compute_infeasible_subsystem_arguments",
         ":compute_infeasible_subsystem_result",
@@ -1021,11 +923,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "incremental_solver_test",
     srcs = ["incremental_solver_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":incremental_solver",
         ":matchers",
@@ -1037,23 +937,19 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "remote_streaming_mode",
     srcs = ["remote_streaming_mode.cc"],
     hdrs = ["remote_streaming_mode.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "remote_streaming_mode_test",
     srcs = ["remote_streaming_mode_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":remote_streaming_mode",
         "//ortools/base:gmock_main",

@@ -13,10 +13,13 @@
 
 load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
 
+package(default_visibility = ["//visibility:public"])
+
 java_junit5_test(
     name = "FlowTest",
     size = "small",
     srcs = ["FlowTest.java"],
+    test_class = "com.google.ortools.graph.FlowTest",
     deps = [
         "//ortools/graph/java:graph",
         "//ortools/java/com/google/ortools:Loader",

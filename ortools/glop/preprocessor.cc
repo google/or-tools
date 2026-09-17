@@ -428,6 +428,9 @@ Fractional ComputeMaxVariableBoundsMagnitude(const LinearProgram& lp) {
 Preprocessor::Result EmptyColumnPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
+  if (!parameters_.use_empty_column_preprocessor()) {
+    return {.postsolve_is_needed = false};
+  }
   column_deletion_helper_.Clear();
   const ColIndex num_cols = lp->num_variables();
   for (ColIndex col(0); col < num_cols; ++col) {
@@ -529,6 +532,9 @@ struct ColumnWithRepresentativeAndScaledCost {
 Preprocessor::Result ProportionalColumnPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
+  if (!parameters_.use_proportional_column_preprocessor()) {
+    return {.postsolve_is_needed = false};
+  }
   ColMapping mapping = FindProportionalColumns(
       lp->GetSparseMatrix(), parameters_.preprocessor_zero_tolerance());
 
@@ -873,6 +879,9 @@ void ProportionalColumnPreprocessor::RecoverSolution(
 Preprocessor::Result ProportionalRowPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
+  if (!parameters_.use_proportional_row_preprocessor()) {
+    return {.postsolve_is_needed = false};
+  }
   const RowIndex num_rows = lp->num_constraints();
   const SparseMatrix& transpose = lp->GetTransposeSparseMatrix();
 
@@ -1122,6 +1131,9 @@ void ProportionalRowPreprocessor::RecoverSolution(
 Preprocessor::Result FixedVariablePreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
+  if (!parameters_.use_fixed_variable_preprocessor()) {
+    return {.postsolve_is_needed = false};
+  }
   const ColIndex num_cols = lp->num_variables();
   for (ColIndex col(0); col < num_cols; ++col) {
     const Fractional lower_bound = lp->variable_lower_bounds()[col];
@@ -1156,6 +1168,9 @@ Preprocessor::Result ForcingAndImpliedFreeConstraintPreprocessor::Run(
     LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
+  if (!parameters_.use_forcing_and_implied_free_constraint_preprocessor()) {
+    return {.postsolve_is_needed = false};
+  }
   const RowIndex num_rows = lp->num_constraints();
 
   // Compute the implied constraint bounds from the variable bounds.
@@ -1635,6 +1650,9 @@ void ImpliedFreePreprocessor::RecoverSolution(SolveStatus& solve_status,
 Preprocessor::Result DoubletonFreeColumnPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
+  if (!parameters_.use_doubleton_free_column_preprocessor()) {
+    return {.postsolve_is_needed = false};
+  }
   // We will modify the matrix transpose and then push the change to the linear
   // program by calling lp->UseTransposeMatrixAsReference(). Note
   // that original_matrix will not change during this preprocessor run.
@@ -1860,6 +1878,9 @@ void UnconstrainedVariablePreprocessor::RemoveZeroCostUnconstrainedVariable(
 Preprocessor::Result UnconstrainedVariablePreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
+  if (!parameters_.use_unconstrained_variable_preprocessor()) {
+    return {.postsolve_is_needed = false};
+  }
 
   // To simplify the problem if something is almost zero, we use the low
   // tolerance (1e-9 by default) to be defensive. But to detect an infeasibility
@@ -2198,6 +2219,9 @@ void UnconstrainedVariablePreprocessor::RecoverSolution(
 Preprocessor::Result FreeConstraintPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
+  if (!parameters_.use_free_constraint_preprocessor()) {
+    return {.postsolve_is_needed = false};
+  }
   const RowIndex num_rows = lp->num_constraints();
   for (RowIndex row(0); row < num_rows; ++row) {
     const Fractional lower_bound = lp->constraint_lower_bounds()[row];
@@ -2224,6 +2248,9 @@ void FreeConstraintPreprocessor::RecoverSolution(
 Preprocessor::Result EmptyConstraintPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
+  if (!parameters_.use_empty_constraint_preprocessor()) {
+    return {.postsolve_is_needed = false};
+  }
   const RowIndex num_rows(lp->num_constraints());
   const ColIndex num_cols(lp->num_variables());
 
@@ -2863,6 +2890,9 @@ bool SingletonPreprocessor::MakeConstraintAnEqualityIfPossible(
 Preprocessor::Result SingletonPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
+  if (!parameters_.use_singleton_preprocessor()) {
+    return {.postsolve_is_needed = false};
+  }
   const SparseMatrix& matrix = lp->GetSparseMatrix();
   const SparseMatrix& transpose = lp->GetTransposeSparseMatrix();
 
@@ -3023,6 +3053,9 @@ MatrixEntry SingletonPreprocessor::GetSingletonRowMatrixEntry(
 Preprocessor::Result SingletonColumnSignPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
+  if (!parameters_.use_singleton_column_sign_preprocessor()) {
+    return {.postsolve_is_needed = false};
+  }
   const ColIndex num_cols = lp->num_variables();
   if (num_cols == 0) return {.postsolve_is_needed = false};
 
@@ -3071,6 +3104,9 @@ void SingletonColumnSignPreprocessor::RecoverSolution(
 Preprocessor::Result DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
+  if (!parameters_.use_doubleton_equality_row_preprocessor()) {
+    return {.postsolve_is_needed = false};
+  }
 
   // This is needed at postsolve.
   //
@@ -3458,7 +3494,8 @@ void DoubletonEqualityRowPreprocessor::
 Preprocessor::Result DualizerPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
-  if (parameters_.solve_dual_problem() == GlopParameters::NEVER_DO) {
+  if (parameters_.solve_dual_problem() == GlopParameters::NEVER_DO ||
+      !parameters_.use_dualizer_preprocessor()) {
     return {.postsolve_is_needed = false};
   }
 
@@ -3715,6 +3752,9 @@ SolveStatus DualizerPreprocessor::ChangeResultToDualResult(
 Preprocessor::Result ShiftVariableBoundsPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
+  if (!parameters_.use_shift_variable_bounds_preprocessor()) {
+    return {.postsolve_is_needed = false};
+  }
 
   // Save the linear program bounds before shifting them.
   bool all_variable_domains_contain_zero = true;

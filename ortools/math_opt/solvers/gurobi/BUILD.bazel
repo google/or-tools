@@ -11,20 +11,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
+load("//bazel:or_cc_rules.bzl", "or_cc_library")
 
 package(default_visibility = [
     "//ortools/gurobi:__subpackages__",
     "//ortools/math_opt:__subpackages__",
 ])
 
-cc_library(
+or_cc_library(
     name = "g_gurobi",
     srcs = ["g_gurobi.cc"],
     hdrs = ["g_gurobi.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = [
         "not_build:arm",
         "not_run:arm",

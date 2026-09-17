@@ -26,7 +26,6 @@
 #include "ortools/linear_solver/proto_solver/sat_proto_solver.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/lazy_mutable_copy.h"
 
@@ -146,32 +145,7 @@ MPSolver::ResultStatus SatInterface::Solve(const MPSolverParameters& param) {
 
   // The solution must be marked as synchronized even when no solution exists.
   sync_status_ = SOLUTION_SYNCHRONIZED;
-  switch (response.status()) {
-    case MPSOLVER_OPTIMAL:
-      result_status_ = MPSolver::OPTIMAL;
-      break;
-    case MPSOLVER_FEASIBLE:
-      result_status_ = MPSolver::FEASIBLE;
-      break;
-    case MPSOLVER_INFEASIBLE:
-      result_status_ = MPSolver::INFEASIBLE;
-      break;
-    case MPSOLVER_UNBOUNDED:
-      result_status_ = MPSolver::UNBOUNDED;
-      break;
-    case MPSOLVER_ABNORMAL:
-      result_status_ = MPSolver::ABNORMAL;
-      break;
-    case MPSOLVER_MODEL_INVALID:
-      result_status_ = MPSolver::MODEL_INVALID;
-      break;
-    case MPSOLVER_NOT_SOLVED:
-      result_status_ = MPSolver::NOT_SOLVED;
-      break;
-    default:
-      result_status_ = MPSolver::ABNORMAL;
-      break;
-  }
+  result_status_ = MPSolverResponseStatusToResultStatus(response.status());
 
   if (response.status() == MPSOLVER_FEASIBLE ||
       response.status() == MPSOLVER_OPTIMAL) {
@@ -252,9 +226,7 @@ bool SatInterface::IsContinuous() const { return false; }
 bool SatInterface::IsLP() const { return false; }
 bool SatInterface::IsMIP() const { return true; }
 
-std::string SatInterface::SolverVersion() const {
-  return sat::CpSatSolverVersion();
-}
+std::string SatInterface::SolverVersion() const { return SatSolverVersion(); }
 
 void* SatInterface::underlying_solver() { return nullptr; }
 

@@ -24,7 +24,6 @@
 #include <deque>
 #include <functional>
 #include <iterator>
-#include <limits>
 #include <map>
 #include <memory>
 #include <optional>
@@ -755,40 +754,41 @@ void Model::AddNoCycleConstraintInternal() {
 
 bool Model::AddDimension(int evaluator_index, int64_t slack_max,
                          int64_t capacity, bool fix_start_cumul_to_zero,
-                         absl::string_view name) {
+                         absl::string_view name, bool has_variable_transits) {
   const std::vector<int> evaluator_indices(vehicles_, evaluator_index);
   std::vector<int64_t> capacities(vehicles_, capacity);
-  return AddDimensionWithCapacityInternal(evaluator_indices, {}, slack_max,
-                                          std::move(capacities),
-                                          fix_start_cumul_to_zero, name);
+  return AddDimensionWithCapacityInternal(
+      evaluator_indices, {}, slack_max, std::move(capacities),
+      fix_start_cumul_to_zero, name, has_variable_transits);
 }
 
 bool Model::AddDimensionWithVehicleTransits(
     const std::vector<int>& evaluator_indices, int64_t slack_max,
-    int64_t capacity, bool fix_start_cumul_to_zero, absl::string_view name) {
+    int64_t capacity, bool fix_start_cumul_to_zero, absl::string_view name,
+    bool has_variable_transits) {
   std::vector<int64_t> capacities(vehicles_, capacity);
-  return AddDimensionWithCapacityInternal(evaluator_indices, {}, slack_max,
-                                          std::move(capacities),
-                                          fix_start_cumul_to_zero, name);
+  return AddDimensionWithCapacityInternal(
+      evaluator_indices, {}, slack_max, std::move(capacities),
+      fix_start_cumul_to_zero, name, has_variable_transits);
 }
 
 bool Model::AddDimensionWithVehicleCapacity(
     int evaluator_index, int64_t slack_max,
     std::vector<int64_t> vehicle_capacities, bool fix_start_cumul_to_zero,
-    absl::string_view name) {
+    absl::string_view name, bool has_variable_transits) {
   const std::vector<int> evaluator_indices(vehicles_, evaluator_index);
-  return AddDimensionWithCapacityInternal(evaluator_indices, {}, slack_max,
-                                          std::move(vehicle_capacities),
-                                          fix_start_cumul_to_zero, name);
+  return AddDimensionWithCapacityInternal(
+      evaluator_indices, {}, slack_max, std::move(vehicle_capacities),
+      fix_start_cumul_to_zero, name, has_variable_transits);
 }
 
 bool Model::AddDimensionWithVehicleTransitAndCapacity(
     const std::vector<int>& evaluator_indices, int64_t slack_max,
     std::vector<int64_t> vehicle_capacities, bool fix_start_cumul_to_zero,
-    absl::string_view name) {
-  return AddDimensionWithCapacityInternal(evaluator_indices, {}, slack_max,
-                                          std::move(vehicle_capacities),
-                                          fix_start_cumul_to_zero, name);
+    absl::string_view name, bool has_variable_transits) {
+  return AddDimensionWithCapacityInternal(
+      evaluator_indices, {}, slack_max, std::move(vehicle_capacities),
+      fix_start_cumul_to_zero, name, has_variable_transits);
 }
 
 bool Model::AddDimensionWithCumulDependentVehicleTransitAndCapacity(
@@ -798,19 +798,21 @@ bool Model::AddDimensionWithCumulDependentVehicleTransitAndCapacity(
     bool fix_start_cumul_to_zero, absl::string_view name) {
   return AddDimensionWithCapacityInternal(
       fixed_evaluator_indices, cumul_dependent_evaluator_indices, slack_max,
-      std::move(vehicle_capacities), fix_start_cumul_to_zero, name);
+      std::move(vehicle_capacities), fix_start_cumul_to_zero, name,
+      /*has_variable_transits=*/false);
 }
 
 bool Model::AddDimensionWithCapacityInternal(
     const std::vector<int>& evaluator_indices,
     const std::vector<int>& cumul_dependent_evaluator_indices,
     int64_t slack_max, std::vector<int64_t> vehicle_capacities,
-    bool fix_start_cumul_to_zero, absl::string_view name) {
+    bool fix_start_cumul_to_zero, absl::string_view name,
+    bool has_variable_transits) {
   CHECK_EQ(vehicles_, vehicle_capacities.size());
   return InitializeDimensionInternal(
       evaluator_indices, cumul_dependent_evaluator_indices,
       /*state_dependent_evaluator_indices=*/{}, slack_max,
-      fix_start_cumul_to_zero,
+      fix_start_cumul_to_zero, has_variable_transits,
       new Dimension(this, std::move(vehicle_capacities), name, nullptr));
 }
 
@@ -818,7 +820,8 @@ bool Model::InitializeDimensionInternal(
     const std::vector<int>& evaluator_indices,
     const std::vector<int>& cumul_dependent_evaluator_indices,
     const std::vector<int>& state_dependent_evaluator_indices,
-    int64_t slack_max, bool fix_start_cumul_to_zero, Dimension* dimension) {
+    int64_t slack_max, bool fix_start_cumul_to_zero, bool has_variable_transits,
+    Dimension* dimension) {
   DCHECK(dimension != nullptr);
   DCHECK_EQ(vehicles_, evaluator_indices.size());
   DCHECK((dimension->base_dimension_ == nullptr &&
@@ -829,7 +832,8 @@ bool Model::InitializeDimensionInternal(
     dimension_name_to_index_[dimension->name()] = dimension->index();
     dimensions_.push_back(dimension);
     dimension->Initialize(evaluator_indices, cumul_dependent_evaluator_indices,
-                          state_dependent_evaluator_indices, slack_max);
+                          state_dependent_evaluator_indices, slack_max,
+                          has_variable_transits);
     solver_->AddConstraint(solver_->MakeDelayedPathCumul(
         nexts_, active_, dimension->cumuls(), dimension->transits()));
     if (fix_start_cumul_to_zero) {
@@ -847,7 +851,8 @@ bool Model::InitializeDimensionInternal(
 
 std::pair<int, bool> Model::AddConstantDimensionWithSlack(
     int64_t value, int64_t capacity, int64_t slack_max,
-    bool fix_start_cumul_to_zero, absl::string_view dimension_name) {
+    bool fix_start_cumul_to_zero, absl::string_view dimension_name,
+    bool has_variable_transits) {
   const TransitEvaluatorSign sign = value < 0
                                         ? kTransitEvaluatorSignNegativeOrZero
                                         : kTransitEvaluatorSignPositiveOrZero;
@@ -855,16 +860,18 @@ std::pair<int, bool> Model::AddConstantDimensionWithSlack(
       RegisterUnaryTransitCallback([value](int64_t) { return value; }, sign);
   return std::make_pair(evaluator_index,
                         AddDimension(evaluator_index, slack_max, capacity,
-                                     fix_start_cumul_to_zero, dimension_name));
+                                     fix_start_cumul_to_zero, dimension_name,
+                                     has_variable_transits));
 }
 
 std::pair<int, bool> Model::AddVectorDimension(
     std::vector<int64_t> values, int64_t capacity, bool fix_start_cumul_to_zero,
     absl::string_view dimension_name) {
   const int evaluator_index = RegisterUnaryTransitVector(std::move(values));
-  return std::make_pair(evaluator_index,
-                        AddDimension(evaluator_index, 0, capacity,
-                                     fix_start_cumul_to_zero, dimension_name));
+  return std::make_pair(
+      evaluator_index,
+      AddDimension(evaluator_index, 0, capacity, fix_start_cumul_to_zero,
+                   dimension_name, /*has_variable_transits=*/false));
 }
 
 std::pair<int, bool> Model::AddMatrixDimension(
@@ -873,7 +880,8 @@ std::pair<int, bool> Model::AddMatrixDimension(
   const int evaluator_index = RegisterTransitMatrix(std::move(values));
   return std::make_pair(evaluator_index,
                         AddDimension(evaluator_index, 0, capacity,
-                                     fix_start_cumul_to_zero, dimension_name));
+                                     fix_start_cumul_to_zero, dimension_name,
+                                     /*has_variable_transits=*/false));
 }
 
 namespace {
@@ -986,10 +994,11 @@ bool Model::AddDimensionDependentDimensionWithVehicleCapacityInternal(
     new_dimension = new Dimension(this, std::move(vehicle_capacities), name,
                                   base_dimension);
   }
-  return InitializeDimensionInternal(pure_transits,
-                                     /*cumul_dependent_evaluator_indices=*/{},
-                                     dependent_transits, slack_max,
-                                     fix_start_cumul_to_zero, new_dimension);
+  return InitializeDimensionInternal(
+      pure_transits,
+      /*cumul_dependent_evaluator_indices=*/{}, dependent_transits, slack_max,
+      fix_start_cumul_to_zero,
+      /*has_variable_transits=*/false, new_dimension);
 }
 
 bool Model::AddDimensionDependentDimensionWithVehicleCapacity(
@@ -6962,11 +6971,12 @@ Dimension::~Dimension() { cumul_var_piecewise_linear_cost_.clear(); }
 void Dimension::Initialize(
     absl::Span<const int> transit_evaluators,
     absl::Span<const int> cumul_dependent_transit_evaluators,
-    absl::Span<const int> state_dependent_transit_evaluators,
-    int64_t slack_max) {
+    absl::Span<const int> state_dependent_transit_evaluators, int64_t slack_max,
+    bool has_variable_transits) {
   InitializeCumuls();
   InitializeTransits(transit_evaluators, cumul_dependent_transit_evaluators,
-                     state_dependent_transit_evaluators, slack_max);
+                     state_dependent_transit_evaluators, slack_max,
+                     has_variable_transits);
 }
 
 void Dimension::InitializeCumuls() {
@@ -7021,7 +7031,8 @@ void ComputeTransitClasses(absl::Span<const int> evaluator_indices,
 }
 }  // namespace
 
-void Dimension::InitializeTransitVariables(int64_t slack_max) {
+void Dimension::InitializeTransitVariables(int64_t slack_max,
+                                           bool has_variable_transits) {
   CHECK(!class_evaluators_.empty());
   CHECK(base_dimension_ == nullptr ||
         !state_dependent_class_evaluators_.empty());
@@ -7036,6 +7047,7 @@ void Dimension::InitializeTransitVariables(int64_t slack_max) {
       };
   const std::string slack_name = name_ + " slack";
   const std::string transit_name = name_ + " fixed transit";
+  const std::string variable_transit_name = name_ + " variable transit";
 
   bool are_all_evaluators_positive = true;
   for (int class_evaluator : class_evaluators_) {
@@ -7124,6 +7136,15 @@ void Dimension::InitializeTransitVariables(int64_t slack_max) {
           solver->MakeIntVar(0, slack_max, absl::StrCat(slack_name, i));
       transit_expr = solver->MakeSum(slacks_[i], transit_expr);
     }
+
+    if (has_variable_transits) {
+      variable_transits_[i] = solver->MakeIntVar(
+          0, kint64max, absl::StrCat(variable_transit_name, i));
+      transit_expr = solver->MakeSum(variable_transits_[i], transit_expr);
+    } else {
+      variable_transits_[i] = solver->MakeIntConst(0);
+    }
+
     transits_[i] = transit_expr->Var();
   }
 }
@@ -7131,8 +7152,8 @@ void Dimension::InitializeTransitVariables(int64_t slack_max) {
 void Dimension::InitializeTransits(
     absl::Span<const int> transit_evaluators,
     absl::Span<const int> cumul_dependent_transit_evaluators,
-    absl::Span<const int> state_dependent_transit_evaluators,
-    int64_t slack_max) {
+    absl::Span<const int> state_dependent_transit_evaluators, int64_t slack_max,
+    bool has_variable_transits) {
   CHECK_EQ(model_->vehicles(), transit_evaluators.size());
   CHECK(base_dimension_ == nullptr ||
         model_->vehicles() == state_dependent_transit_evaluators.size());
@@ -7140,6 +7161,7 @@ void Dimension::InitializeTransits(
   transits_.resize(size, nullptr);
   fixed_transits_.resize(size, nullptr);
   slacks_.resize(size, nullptr);
+  variable_transits_.resize(size, nullptr);
   dependent_transits_.resize(size, nullptr);
   ComputeTransitClasses(transit_evaluators, &class_evaluators_,
                         &vehicle_to_class_);
@@ -7152,7 +7174,7 @@ void Dimension::InitializeTransits(
                           &state_dependent_vehicle_to_class_);
   }
 
-  InitializeTransitVariables(slack_max);
+  InitializeTransitVariables(slack_max, has_variable_transits);
 }
 
 // TODO(user): Apply http://go/minimize-pointer-following.

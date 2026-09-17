@@ -15,28 +15,23 @@
 # some generic utilities for SWIG python.
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@pybind11_bazel//:build_defs.bzl", "pybind_extension", "pybind_library")
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@pybind11_bazel//:build_defs.bzl", "pybind_library")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
-load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library")
+load("//bazel:or_pybind_rules.bzl", "or_pybind_extension")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+or_cc_library(
     name = "sorted_interval_list_doc_cc",
     hdrs = ["sorted_interval_list_doc.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
 )
 
-pybind_extension(
+or_pybind_extension(
     name = "sorted_interval_list",
     srcs = ["sorted_interval_list.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":sorted_interval_list_doc_cc",
@@ -65,11 +60,9 @@ py_test(
     ],
 )
 
-pybind_extension(
+or_pybind_extension(
     name = "piecewise_linear_function",
     srcs = ["piecewise_linear_function.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/util:piecewise_linear_function",
@@ -85,12 +78,11 @@ pybind_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "py_solve_interrupter_lib",
     srcs = ["py_solve_interrupter.cc"],
     hdrs = ["py_solve_interrupter.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+
     # This library is not meant to be consumed end users; only by C++ code of
     # Clif libraries that needs a SolverInterrupter.
     visibility = [
@@ -107,36 +99,31 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "py_solve_interrupter_testing_lib",
     testonly = True,
     srcs = ["py_solve_interrupter_testing.cc"],
     hdrs = ["py_solve_interrupter_testing.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":py_solve_interrupter_lib",
         "@abseil-cpp//absl/base:nullability",
     ],
 )
 
-pybind_extension(
+or_pybind_extension(
     name = "pybind_solve_interrupter",
     srcs = ["pybind_solve_interrupter.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+
     # This library is not meant to be consumed end users; only pybind11 code
     # that needs a SolverInterrupter.
     visibility = ["//visibility:public"],
     deps = [":py_solve_interrupter_lib"],
 )
 
-pybind_extension(
+or_pybind_extension(
     name = "pybind_solve_interrupter_testing",
     testonly = True,
     srcs = ["pybind_solve_interrupter_testing.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [":py_solve_interrupter_testing_lib"],
 )
@@ -173,12 +160,10 @@ py_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "wrappers",
     srcs = ["wrappers.cc"],
     hdrs = ["wrappers.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         "@abseil-cpp//absl/algorithm:container",
@@ -194,12 +179,10 @@ cc_library(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "gen_wrappers_test_message_pybind11",
     testonly = True,
     srcs = ["gen_wrappers_test_message_pybind11.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":wrappers",
         "//ortools/util/testdata:wrappers_test_message_cc_proto",
@@ -220,20 +203,16 @@ genrule(
     tools = [":gen_wrappers_test_message_pybind11"],
 )
 
-cc_library(
+or_cc_library(
     name = "wrappers_test_message_pybind11",
     testonly = True,
     hdrs = ["wrappers_test_message_pybind11.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
 )
 
-pybind_extension(
+or_pybind_extension(
     name = "wrappers_test_message_extension",
     testonly = True,
     srcs = ["wrappers_test_message_extension.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":wrappers_test_message_pybind11",

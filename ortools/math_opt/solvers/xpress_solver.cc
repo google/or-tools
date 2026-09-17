@@ -142,12 +142,12 @@ class SharedSolveContext {
     if (callback_exception) std::rethrow_exception(callback_exception);
   }
 
-  inline void SetCallbackException(std::exception_ptr ex) {
+  void SetCallbackException(std::exception_ptr ex) {
     absl::MutexLock const lock(mutex);
     if (!callback_exception) callback_exception = ex;
   }
 
-  inline void SetCallbackStatus(absl::Status const& status) {
+  void SetCallbackStatus(absl::Status const& status) {
     absl::MutexLock const lock(mutex);
     callback_status.Update(status);
   }
@@ -187,14 +187,14 @@ class ScopedCallbackBase {
   /** Store an exception that case raised during a callback.
    * Only the first such exception will be remembered.
    */
-  inline void SetCallbackException(std::exception_ptr ex) {
+  void SetCallbackException(std::exception_ptr ex) {
     ctx->SetCallbackException(ex);
   }
 
   /** Store an error status that occurred during a callback.
    * Only the first such error will be remembered.
    */
-  inline void SetCallbackStatus(absl::Status const& status) {
+  void SetCallbackStatus(absl::Status const& status) {
     ctx->SetCallbackStatus(status);
   }
 };
@@ -253,7 +253,7 @@ class ScopedCallback : public ScopedCallbackBase {
 
   ScopedCallback() : ScopedCallbackBase(), ctx_(nullptr) {}
 
-  inline absl::Status Add(SharedSolveContext* context, CbT cb) {
+  absl::Status Add(SharedSolveContext* context, CbT cb) {
     ctx_ = context;
     ABSL_RETURN_IF_ERROR(ProtoT::Add(ctx_->xpress, low_level_cb_,
                                      reinterpret_cast<void*>(this)));
@@ -261,11 +261,9 @@ class ScopedCallback : public ScopedCallbackBase {
     return absl::OkStatus();
   }
 
-  inline void Interrupt(int reason) {
-    CHECK_OK(ctx_->xpress->Interrupt(reason));
-  }
+  void Interrupt(int reason) { CHECK_OK(ctx_->xpress->Interrupt(reason)); }
 
-  inline void SetCallbackStatus(const absl::Status& status) {
+  void SetCallbackStatus(const absl::Status& status) {
     ctx_->SetCallbackStatus(status);
   }
 
@@ -970,7 +968,8 @@ DEFINE_SCOPED_CB(PreIntSol, OrtoolsCallbackContext*, void,
       ctx->FilterSolution(absl::MakeSpan(x), ctx->mip_solution_filter_);
   bool hadLazy = false;
   ABSL_RETURN_IF_ERROR(InitMipStats(prob, cbargs));
-  int solution_source = CALLBACK_SOLUTION_SOURCE_UNSPECIFIED;
+  CallbackSolutionSourceProto solution_source =
+      CALLBACK_SOLUTION_SOURCE_UNSPECIFIED;
   switch (soltype) {
     case 0:
       solution_source = CALLBACK_SOLUTION_SOURCE_INTEGRAL;

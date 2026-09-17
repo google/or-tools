@@ -13,10 +13,13 @@
 
 load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
 
+package(default_visibility = ["//visibility:public"])
+
 java_junit5_test(
     name = "KnapsackSolverTest",
     size = "small",
     srcs = ["KnapsackSolverTest.java"],
+    test_class = "com.google.ortools.algorithms.KnapsackSolverTest",
     deps = [
         "//ortools/algorithms/java:knapsacksolver",
         "//ortools/java/com/google/ortools:Loader",

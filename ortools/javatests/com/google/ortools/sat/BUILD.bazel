@@ -13,16 +13,19 @@
 
 load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
 
+package(default_visibility = ["//visibility:public"])
+
 # Testing the Java SAT library.
 java_junit5_test(
     name = "CpModelTest",
     size = "medium",
     srcs = ["CpModelTest.java"],
     jvm_flags = ["-Xcheck:jni"],
+    test_class = "com.google.ortools.sat.CpModelTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
         "//ortools/util/java:sorted_interval_list",
         "@maven//:com_google_truth_truth",
         "@maven//:org_junit_jupiter_junit_jupiter_api",
@@ -38,10 +41,11 @@ java_junit5_test(
     size = "medium",
     srcs = ["CpSolverTest.java"],
     jvm_flags = ["-Xcheck:jni"],
+    test_class = "com.google.ortools.sat.CpSolverTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
         "//ortools/util/java:sorted_interval_list",
         "@maven//:com_google_truth_truth",
         "@maven//:org_junit_jupiter_junit_jupiter_api",
@@ -57,6 +61,7 @@ java_junit5_test(
     size = "medium",
     srcs = ["LinearExprTest.java"],
     jvm_flags = ["-Xcheck:jni"],
+    test_class = "com.google.ortools.sat.LinearExprTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
@@ -75,9 +80,10 @@ java_junit5_test(
     size = "medium",
     srcs = ["CpModelProtoTest.java"],
     jvm_flags = ["-Xcheck:jni"],
+    test_class = "com.google.ortools.sat.CpModelProtoTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
-        "//ortools/sat:cp_model_java_proto",
+        "//ortools/sat/java:cp_model_proto",
         "@maven//:com_google_truth_truth",
         "@maven//:org_junit_jupiter_junit_jupiter_api",
         "@maven//:org_junit_jupiter_junit_jupiter_engine",

@@ -13,6 +13,8 @@
 
 load("@rules_java//java:java_library.bzl", "java_library")
 
+package(default_visibility = ["//visibility:public"])
+
 java_library(
     name = "interruptable",
     srcs = ["Interruptable.java"],
@@ -24,7 +26,7 @@ java_library(
     srcs = ["SolveInterrupter.java"],
     visibility = ["//visibility:public"],
     deps = [
-        ":interruptable",
+        ":interruptable",  # buildcleaner: keep
         "@maven//:com_google_errorprone_error_prone_annotations",
     ],
 )
@@ -50,7 +52,7 @@ java_library(
         "//ortools/javatests/com/google/ortools:__subpackages__",
     ],
     deps = [
-        ":interruptable",
+        ":interruptable",  # buildcleaner: keep
         "//ortools/util/java:java_swig_solve_interrupter_swig",  # buildcleaner: keep
         "@maven//:org_jspecify_jspecify",
     ],

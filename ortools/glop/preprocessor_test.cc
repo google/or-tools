@@ -1328,6 +1328,112 @@ TEST(FixConstraintWithFixedStatusesTest, BasicTest) {
                                     ConstraintStatus::AT_LOWER_BOUND}));
 }
 
+// --------------------------------------------------------
+// ConfigurablePreprocessorFlagsTest
+// --------------------------------------------------------
+
+TEST(ConfigurablePreprocessorFlagsTest, DisableFixedVariablePreprocessor) {
+  const std::string kLinearProgram =
+      "min: 0 + 0 x1 + 0 x2 + 0 x3;"
+      " 1 <= x1 <= 5;"
+      " 3 <= x2 <= 3;"  // Fixed.
+      " 4 <= x3 <= 8;";
+  std::unique_ptr<TimeLimit> time_limit = TimeLimit::Infinite();
+
+  // With flag enabled (default), the fixed variable is removed.
+  {
+    LinearProgram lp;
+    ASSERT_TRUE(ParseLp(kLinearProgram, &lp));
+    GlopParameters params;
+    FixedVariablePreprocessor preprocessor(&params);
+    preprocessor.SetTimeLimit(time_limit.get());
+    EXPECT_THAT(preprocessor.Run(&lp),
+                PreprocessorResultIs(/*postsolve_is_needed=*/true,
+                                     /*status=*/std::nullopt));
+    EXPECT_EQ(2, lp.num_variables());
+  }
+
+  // With flag disabled, the preprocessor returns early and leaves variables.
+  {
+    LinearProgram lp;
+    ASSERT_TRUE(ParseLp(kLinearProgram, &lp));
+    GlopParameters params;
+    params.set_use_fixed_variable_preprocessor(false);
+    FixedVariablePreprocessor preprocessor(&params);
+    preprocessor.SetTimeLimit(time_limit.get());
+    EXPECT_THAT(preprocessor.Run(&lp),
+                PreprocessorResultIs(/*postsolve_is_needed=*/false,
+                                     /*status=*/std::nullopt));
+    EXPECT_EQ(3, lp.num_variables());
+  }
+}
+
+TEST(ConfigurablePreprocessorFlagsTest, DisableEmptyColumnPreprocessor) {
+  const std::string kLinearProgram =
+      "min: 0 + 0 x1 + 2 x2;"
+      " 1 <= x1 <= 5;"
+      " 2 <= x2 <= 6;";
+  std::unique_ptr<TimeLimit> time_limit = TimeLimit::Infinite();
+
+  // With flag disabled, empty columns are preserved.
+  {
+    LinearProgram lp;
+    ASSERT_TRUE(ParseLp(kLinearProgram, &lp));
+    GlopParameters params;
+    params.set_use_empty_column_preprocessor(false);
+    EmptyColumnPreprocessor preprocessor(&params);
+    preprocessor.SetTimeLimit(time_limit.get());
+    EXPECT_THAT(preprocessor.Run(&lp),
+                PreprocessorResultIs(/*postsolve_is_needed=*/false,
+                                     /*status=*/std::nullopt));
+    EXPECT_EQ(2, lp.num_variables());
+  }
+}
+
+TEST(ConfigurablePreprocessorFlagsTest, DisableFreeConstraintPreprocessor) {
+  const std::string kLinearProgram =
+      "min: 0 + x1 + x2;"
+      "-inf <= x1 + x2 <= inf;"  // Free constraint.
+      " 1 <= x1 <= 5;"
+      " 2 <= x2 <= 6;";
+  std::unique_ptr<TimeLimit> time_limit = TimeLimit::Infinite();
+
+  // With flag disabled, free constraints are preserved.
+  {
+    LinearProgram lp;
+    ASSERT_TRUE(ParseLp(kLinearProgram, &lp));
+    GlopParameters params;
+    params.set_use_free_constraint_preprocessor(false);
+    FreeConstraintPreprocessor preprocessor(&params);
+    preprocessor.SetTimeLimit(time_limit.get());
+    EXPECT_THAT(preprocessor.Run(&lp),
+                PreprocessorResultIs(/*postsolve_is_needed=*/false,
+                                     /*status=*/std::nullopt));
+    EXPECT_EQ(1, lp.num_constraints());
+  }
+}
+
+TEST(ConfigurablePreprocessorFlagsTest, DisableShiftVariableBounds) {
+  const std::string kLinearProgram =
+      "min: 0 + x1;"
+      " 10 <= x1 <= 20;";
+  std::unique_ptr<TimeLimit> time_limit = TimeLimit::Infinite();
+
+  // With flag disabled, bounds are not shifted to include zero.
+  {
+    LinearProgram lp;
+    ASSERT_TRUE(ParseLp(kLinearProgram, &lp));
+    GlopParameters params;
+    params.set_use_shift_variable_bounds_preprocessor(false);
+    ShiftVariableBoundsPreprocessor preprocessor(&params);
+    preprocessor.SetTimeLimit(time_limit.get());
+    EXPECT_THAT(preprocessor.Run(&lp),
+                PreprocessorResultIs(/*postsolve_is_needed=*/false,
+                                     /*status=*/std::nullopt));
+    EXPECT_EQ(10.0, lp.variable_lower_bounds()[ColIndex(0)]);
+  }
+}
+
 }  // namespace
 }  // namespace glop
 }  // namespace operations_research

@@ -13,10 +13,7 @@
 
 load("@rules_java//java:java_library.bzl", "java_library")
 
-package(default_visibility = [
-    "//ortools/java/com/google/ortools/mathopt:__subpackages__",
-    "//ortools/javatests/com/google/ortools/mathopt:__subpackages__",
-])
+package(default_visibility = ["//visibility:public"])
 
 java_library(
     name = "math_opt_proto_subject",

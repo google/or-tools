@@ -13,9 +13,7 @@
 
 load("@rules_java//java:java_library.bzl", "java_library")
 
-package(default_visibility = [
-    "//ortools/javatests/com/google/ortools/mathopt:__subpackages__",
-])
+package(default_visibility = ["//visibility:public"])
 
 java_library(
     name = "model_element",

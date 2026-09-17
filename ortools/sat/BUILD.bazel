@@ -17,21 +17,16 @@ load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_go//proto:def.bzl", "go_proto_library")
 load("//bazel:compilation_flags.bzl", "SAFE_FP_CODE")
-load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+or_cc_library(
     name = "cp_model",
     srcs = ["cp_model.cc"],
     hdrs = ["cp_model.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
@@ -49,12 +44,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "cp_model_test",
     size = "small",
     srcs = ["cp_model_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model",
         ":cp_model_cc_proto",
@@ -74,11 +67,9 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "model",
     hdrs = ["model.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         "@abseil-cpp//absl/container:flat_hash_map",
@@ -86,12 +77,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "model_test",
     size = "small",
     srcs = ["model_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model",
         "//ortools/base:gmock_main",
@@ -129,7 +118,7 @@ go_proto_library(
     visibility = ["//visibility:public"],
 )
 
-cc_library(
+or_cc_library(
     name = "deterministic_time",
     srcs = ["deterministic_time.cc"],
     hdrs = ["deterministic_time.h"],
@@ -146,12 +135,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "gate_congruence_closure",
     srcs = ["gate_congruence_closure.cc"],
     hdrs = ["gate_congruence_closure.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":clause",
         ":cp_model_cc_proto",
@@ -186,12 +173,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "scheduling_local_search",
     srcs = ["scheduling_local_search.cc"],
     hdrs = ["scheduling_local_search.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":combine_solutions",
         ":cp_model_cc_proto",
@@ -220,11 +205,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "scheduling_local_search_test",
     srcs = ["scheduling_local_search_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":integer_base",
         ":scheduling_local_search",
@@ -241,12 +224,10 @@ proto_library(
     visibility = ["//visibility:public"],
 )
 
-cc_library(
+or_cc_library(
     name = "2d_distances_propagator",
     srcs = ["2d_distances_propagator.cc"],
     hdrs = ["2d_distances_propagator.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":integer",
@@ -272,12 +253,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "2d_mandatory_overlap_propagator",
     srcs = ["2d_mandatory_overlap_propagator.cc"],
     hdrs = ["2d_mandatory_overlap_propagator.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":diffn_util",
         ":integer",
@@ -291,12 +270,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "cp_model_copy",
     srcs = ["cp_model_copy.cc"],
     hdrs = ["cp_model_copy.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
@@ -329,11 +306,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "cp_model_copy_test",
     srcs = ["cp_model_copy_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_copy",
@@ -346,12 +321,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "primary_variables",
     srcs = ["primary_variables.cc"],
     hdrs = ["primary_variables.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
@@ -365,11 +338,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "primary_variables_test",
     srcs = ["primary_variables_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":primary_variables",
@@ -378,12 +349,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "old_precedences_propagator",
     srcs = ["old_precedences_propagator.cc"],
     hdrs = ["old_precedences_propagator.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//ortools/sat:__pkg__"],
     deps = [
         ":integer",
@@ -406,11 +375,9 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "container",
     hdrs = ["container.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":sat_base",
         "//ortools/base:stl_util",
@@ -421,11 +388,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "container_test",
     srcs = ["container_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":container",
         ":sat_base",
@@ -433,12 +398,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "continuous_prober",
     srcs = ["continuous_prober.cc"],
     hdrs = ["continuous_prober.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":clause",
         ":cp_model_cc_proto",
@@ -467,12 +430,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "cp_model_solver_logging",
     srcs = ["cp_model_solver_logging.cc"],
     hdrs = ["cp_model_solver_logging.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model",
         ":synchronization",
@@ -486,12 +447,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "gate_utils",
     srcs = ["gate_utils.cc"],
     hdrs = ["gate_utils.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
@@ -517,11 +476,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "gate_utils_test",
     srcs = ["gate_utils_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_solver",
@@ -536,12 +493,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "vivification",
     srcs = ["vivification.cc"],
     hdrs = ["vivification.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":clause",
         ":lrat_proof_handler",
@@ -563,12 +518,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "sat_sweeping",
     srcs = ["sat_sweeping.cc"],
     hdrs = ["sat_sweeping.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":clause",
         ":drat_checker",
@@ -596,11 +549,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "sat_sweeping_test",
     srcs = ["sat_sweeping_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_utils",
         ":model",
@@ -615,12 +566,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "presolve_encoding",
     srcs = ["presolve_encoding.cc"],
     hdrs = ["presolve_encoding.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
@@ -641,11 +590,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "presolve_encoding_test",
     srcs = ["presolve_encoding_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":model",
@@ -659,12 +606,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "debug_solution",
     srcs = ["debug_solution.cc"],
     hdrs = ["debug_solution.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_checker",
@@ -686,12 +631,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "scheduling_model",
     srcs = ["scheduling_model.cc"],
     hdrs = ["scheduling_model.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
@@ -740,12 +683,10 @@ go_proto_library(
     visibility = ["//visibility:public"],
 )
 
-cc_library(
+or_cc_library(
     name = "cp_model_utils",
     srcs = ["cp_model_utils.cc"],
     hdrs = ["cp_model_utils.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
@@ -771,12 +712,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "cp_model_utils_test",
     size = "small",
     srcs = ["cp_model_utils_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
@@ -790,12 +729,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "synchronization",
     srcs = ["synchronization.cc"],
     hdrs = ["synchronization.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
@@ -839,12 +776,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "synchronization_test",
     size = "small",
     srcs = ["synchronization_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
@@ -861,12 +796,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "cp_model_checker",
     srcs = ["cp_model_checker.cc"],
     hdrs = ["cp_model_checker.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
@@ -890,12 +823,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "cp_model_checker_test",
     size = "small",
     srcs = ["cp_model_checker_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_checker",
@@ -907,12 +838,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "constraint_violation",
     srcs = ["constraint_violation.cc"],
     hdrs = ["constraint_violation.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":circuit",
@@ -942,12 +871,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "constraint_violation_test",
     size = "small",
     srcs = ["constraint_violation_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":constraint_violation",
         ":cp_model_cc_proto",
@@ -963,12 +890,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "feasibility_jump",
     srcs = ["feasibility_jump.cc"],
     hdrs = ["feasibility_jump.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":combine_solutions",
@@ -1009,23 +934,19 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "feasibility_jump_test",
     srcs = ["feasibility_jump_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":feasibility_jump",
         "//ortools/base:gmock_main",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "linear_model",
     srcs = ["linear_model.cc"],
     hdrs = ["linear_model.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
@@ -1038,12 +959,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "linear_model_test",
     size = "small",
     srcs = ["linear_model_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":linear_model",
@@ -1053,12 +972,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "parameters_validation",
     srcs = ["parameters_validation.cc"],
     hdrs = ["parameters_validation.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_search",
@@ -1068,12 +985,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "parameters_validation_test",
     size = "small",
     srcs = ["parameters_validation_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":parameters_validation",
         ":sat_parameters_cc_proto",
@@ -1082,12 +997,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "cp_model_search",
     srcs = ["cp_model_search.cc"],
     hdrs = ["cp_model_search.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_mapping",
@@ -1116,12 +1029,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "cp_model_search_test",
     size = "small",
     srcs = ["cp_model_search_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["noci"],
     deps = [
         ":cp_model_cc_proto",
@@ -1138,12 +1049,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "cp_model_solver_helpers",
     srcs = ["cp_model_solver_helpers.cc"],
     hdrs = ["cp_model_solver_helpers.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":circuit",
@@ -1245,12 +1154,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "shaving_solver",
     srcs = ["shaving_solver.cc"],
     hdrs = ["shaving_solver.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
@@ -1281,12 +1188,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "cp_model_solver",
     srcs = ["cp_model_solver.cc"],
     hdrs = ["cp_model_solver.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":circuit",
@@ -1392,12 +1297,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "cp_model_solver_test",
     size = "medium",
     srcs = ["cp_model_solver_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["noci"],
     deps = [
         ":cp_model_cc_proto",
@@ -1419,11 +1322,9 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "cp_model_mapping",
     hdrs = ["cp_model_mapping.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
@@ -1439,12 +1340,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "cp_model_loader",
     srcs = ["cp_model_loader.cc"],
     hdrs = ["cp_model_loader.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":all_different",
@@ -1491,12 +1390,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "cp_model_test_utils",
     srcs = ["cp_model_test_utils.cc"],
     hdrs = ["cp_model_test_utils.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
@@ -1505,12 +1402,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "presolve_util",
     srcs = ["presolve_util.cc"],
     hdrs = ["presolve_util.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
@@ -1531,12 +1426,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "presolve_util_test",
     size = "small",
     srcs = ["presolve_util_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model",
         ":cp_model_cc_proto",
@@ -1554,12 +1447,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "presolve_context",
     srcs = ["presolve_context.cc"],
     hdrs = ["presolve_context.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_checker",
@@ -1601,12 +1492,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "presolve_context_test",
     size = "small",
     srcs = ["presolve_context_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
@@ -1622,12 +1511,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "solution_crush",
     srcs = ["solution_crush.cc"],
     hdrs = ["solution_crush.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
@@ -1660,12 +1547,10 @@ cc_proto_library(
     deps = [":solution_crush_proto"],
 )
 
-cc_library(
+or_cc_library(
     name = "cp_model_table",
     srcs = ["cp_model_table.cc"],
     hdrs = ["cp_model_table.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
@@ -1680,12 +1565,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "cp_model_table_test",
     size = "small",
     srcs = ["cp_model_table_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_table",
@@ -1699,12 +1582,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "variable_expand",
     srcs = ["variable_expand.cc"],
     hdrs = ["variable_expand.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
@@ -1724,12 +1605,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "cp_constraint_presolve",
     srcs = ["cp_constraint_presolve.cc"],
     hdrs = ["cp_constraint_presolve.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":2d_rectangle_presolve",
         ":circuit",
@@ -1779,12 +1658,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "cp_constraint_presolve_test",
     size = "small",
     srcs = ["cp_constraint_presolve_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_constraint_presolve",
         ":cp_model_cc_proto",
@@ -1797,12 +1674,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "cp_model_presolve",
     srcs = ["cp_model_presolve.cc"],
     hdrs = ["cp_model_presolve.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":clause",
         ":cp_constraint_presolve",
@@ -1865,12 +1740,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "cp_model_presolve_test",
     size = "small",
     srcs = ["cp_model_presolve_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = [
         "noautofuzz",
         "noci",
@@ -1900,12 +1773,10 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "cp_model_presolve_random_test",
     size = "medium",
     srcs = ["cp_model_presolve_random_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["noci"],
     deps = [
         ":cp_model_cc_proto",
@@ -1926,12 +1797,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "cp_model_postsolve",
     srcs = ["cp_model_postsolve.cc"],
     hdrs = ["cp_model_postsolve.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
@@ -1946,12 +1815,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "cp_model_postsolve_test",
     size = "small",
     srcs = ["cp_model_postsolve_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_postsolve",
@@ -1962,12 +1829,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "cp_model_expand",
     srcs = ["cp_model_expand.cc"],
     hdrs = ["cp_model_expand.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_checker",
@@ -1994,13 +1859,11 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "cp_model_expand_test",
     size = "small",
     timeout = "moderate",
     srcs = ["cp_model_expand_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["noci"],
     deps = [
         ":cp_model_cc_proto",
@@ -2024,12 +1887,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "sat_base",
     srcs = ["sat_base.cc"],
     hdrs = ["sat_base.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:log_severity",
         "//ortools/base:strong_vector",
@@ -2045,24 +1906,21 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "sat_base_test",
     size = "small",
     srcs = ["sat_base_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":sat_base",
         "//ortools/base:gmock_main",
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "sat_solver",
     srcs = ["sat_solver.cc"],
     hdrs = ["sat_solver.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":clause",
         ":enforcement",
@@ -2100,12 +1958,11 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "restart",
     srcs = ["restart.cc"],
     hdrs = ["restart.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":model",
         ":sat_decision",
@@ -2120,12 +1977,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "restart_test",
     size = "small",
     srcs = ["restart_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model",
         ":restart",
@@ -2135,12 +1990,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "probing",
     srcs = ["probing.cc"],
     hdrs = ["probing.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":clause",
         ":implied_bounds",
@@ -2171,12 +2025,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "probing_test",
     size = "small",
     srcs = ["probing_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":integer",
         ":integer_base",
@@ -2190,12 +2042,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "sat_inprocessing",
     srcs = ["sat_inprocessing.cc"],
     hdrs = ["sat_inprocessing.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":clause",
         ":drat_checker",
@@ -2234,12 +2085,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "sat_inprocessing_test",
     size = "small",
     srcs = ["sat_inprocessing_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":clause",
         ":model",
@@ -2252,12 +2101,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "sat_decision",
     srcs = ["sat_decision.cc"],
     hdrs = ["sat_decision.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":model",
         ":sat_base",
@@ -2278,12 +2126,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "sat_decision_test",
     size = "small",
     srcs = ["sat_decision_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model",
         ":sat_base",
@@ -2295,12 +2141,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "clause",
     srcs = ["clause.cc"],
     hdrs = ["clause.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":container",
         ":inclusion",
@@ -2335,12 +2180,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "clause_test",
     size = "small",
     srcs = ["clause_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":clause",
         ":model",
@@ -2355,12 +2198,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "simplification",
     srcs = ["simplification.cc"],
     hdrs = ["simplification.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":sat_base",
         ":sat_parameters_cc_proto",
@@ -2383,12 +2225,11 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "pb_constraint",
     srcs = ["pb_constraint.cc"],
     hdrs = ["pb_constraint.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":enforcement",
         ":model",
@@ -2410,12 +2251,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "pb_constraint_test",
     size = "small",
     srcs = ["pb_constraint_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":enforcement",
         ":model",
@@ -2430,12 +2269,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "symmetry",
     srcs = ["symmetry.cc"],
     hdrs = ["symmetry.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":sat_base",
         "//ortools/algorithms:sparse_permutation",
@@ -2449,12 +2287,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "symmetry_test",
     size = "small",
     srcs = ["symmetry_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":sat_base",
         ":symmetry",
@@ -2464,12 +2300,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "symmetry_util",
     srcs = ["symmetry_util.cc"],
     hdrs = ["symmetry_util.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":cp_model_cc_proto",
         ":util",
@@ -2482,12 +2317,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "symmetry_util_test",
     size = "small",
     srcs = ["symmetry_util_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":symmetry_util",
@@ -2498,12 +2331,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "var_domination",
     srcs = ["var_domination.cc"],
     hdrs = ["var_domination.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
@@ -2535,12 +2367,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "var_domination_test",
     size = "small",
     srcs = ["var_domination_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":integer_base",
@@ -2553,12 +2383,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "integer_base",
     srcs = ["integer_base.cc"],
     hdrs = ["integer_base.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     visibility = ["//visibility:public"],
     deps = [
         ":sat_base",
@@ -2575,12 +2404,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "integer_base_test",
     size = "small",
     srcs = ["integer_base_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":integer_base",
         "//ortools/base:gmock_main",
@@ -2591,12 +2418,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "integer",
     srcs = ["integer.cc"],
     hdrs = ["integer.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
@@ -2627,12 +2453,11 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "integer_resolution",
     srcs = ["integer_resolution.cc"],
     hdrs = ["integer_resolution.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":clause",
         ":integer",
@@ -2645,6 +2470,7 @@ cc_library(
         "//ortools/base:strong_vector",
         "//ortools/base:types",
         "//ortools/util:bitset",
+        "//ortools/util:strong_integers",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:vlog_is_on",
@@ -2653,12 +2479,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "integer_search",
     srcs = ["integer_search.cc"],
     hdrs = ["integer_search.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":clause",
         ":cp_model_cc_proto",
@@ -2703,12 +2527,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "integer_search_test",
     size = "small",
     srcs = ["integer_search_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_mapping",
@@ -2726,12 +2548,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "lb_tree_search",
     srcs = ["lb_tree_search.cc"],
     hdrs = ["lb_tree_search.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_mapping",
         ":integer",
@@ -2764,12 +2584,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "lb_tree_search_test",
     size = "small",
     srcs = ["lb_tree_search_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_solver",
@@ -2779,12 +2597,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "pseudo_costs",
     srcs = ["pseudo_costs.cc"],
     hdrs = ["pseudo_costs.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_mapping",
         ":integer",
@@ -2804,12 +2620,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "pseudo_costs_test",
     size = "small",
     srcs = ["pseudo_costs_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_mapping",
         ":integer",
@@ -2824,12 +2638,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "intervals",
     srcs = ["intervals.cc"],
     hdrs = ["intervals.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":clause",
         ":integer",
@@ -2850,12 +2663,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "intervals_test",
     size = "small",
     srcs = ["intervals_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":integer",
         ":integer_base",
@@ -2866,12 +2677,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "scheduling_helpers",
     srcs = ["scheduling_helpers.cc"],
     hdrs = ["scheduling_helpers.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":enforcement",
         ":enforcement_helper",
@@ -2897,12 +2707,11 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "no_overlap_2d_helper",
     srcs = ["no_overlap_2d_helper.cc"],
     hdrs = ["no_overlap_2d_helper.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":2d_rectangle_presolve",
         ":debug_solution",
@@ -2923,12 +2732,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "scheduling_helpers_test",
     size = "small",
     srcs = ["scheduling_helpers_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":integer",
         ":integer_base",
@@ -2942,12 +2749,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "precedences",
     srcs = ["precedences.cc"],
     hdrs = ["precedences.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     visibility = ["//visibility:public"],
     deps = [
         ":clause",
@@ -2983,12 +2789,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "precedences_test",
     size = "small",
     srcs = ["precedences_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_mapping",
@@ -3011,12 +2815,10 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "integer_test",
     size = "small",
     srcs = ["integer_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["noci"],
     deps = [
         ":integer",
@@ -3036,11 +2838,9 @@ cc_test(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "integer_benchmark",
     srcs = ["integer_benchmark.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":integer_base",
         "//ortools/base:benchmark_main",
@@ -3048,12 +2848,11 @@ cc_binary(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "integer_expr",
     srcs = ["integer_expr.cc"],
     hdrs = ["integer_expr.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     visibility = ["//visibility:public"],
     deps = [
         ":enforcement",
@@ -3081,12 +2880,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "integer_expr_test",
     size = "medium",
     srcs = ["integer_expr_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["noci"],
     deps = [
         "cp_model_checker",
@@ -3121,12 +2918,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "linear_propagation",
     srcs = ["linear_propagation.cc"],
     hdrs = ["linear_propagation.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":enforcement",
         ":enforcement_helper",
@@ -3161,12 +2956,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "linear_propagation_test",
     size = "small",
     srcs = ["linear_propagation_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["noci"],
     deps = [
         ":integer",
@@ -3185,12 +2978,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "all_different",
     srcs = ["all_different.cc"],
     hdrs = ["all_different.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":enforcement",
         ":enforcement_helper",
@@ -3213,11 +3004,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "all_different_test",
     srcs = ["all_different_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":all_different",
         ":integer",
@@ -3234,12 +3023,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "disjunctive",
     srcs = ["disjunctive.cc"],
     hdrs = ["disjunctive.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":all_different",
         ":integer",
@@ -3268,12 +3056,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "disjunctive_test",
     size = "small",
     srcs = ["disjunctive_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":disjunctive",
         ":integer",
@@ -3299,12 +3085,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "timetable",
     srcs = ["timetable.cc"],
     hdrs = ["timetable.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":enforcement",
         ":enforcement_helper",
@@ -3321,12 +3106,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "timetable_test",
     size = "medium",
     srcs = ["timetable_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":all_different",
         ":cumulative",
@@ -3349,12 +3132,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "timetable_edgefinding",
     srcs = ["timetable_edgefinding.cc"],
     hdrs = ["timetable_edgefinding.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":integer",
         ":integer_base",
@@ -3367,12 +3149,11 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "cumulative",
     srcs = ["cumulative.cc"],
     hdrs = ["cumulative.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":cumulative_energy",
         ":disjunctive",
@@ -3398,12 +3179,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "cumulative_test",
     size = "large",
     srcs = ["cumulative_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cumulative",
         ":integer",
@@ -3423,12 +3202,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "cumulative_energy",
     srcs = ["cumulative_energy.cc"],
     hdrs = ["cumulative_energy.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":2d_orthogonal_packing",
         ":diffn_util",
@@ -3450,12 +3228,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "cumulative_energy_test",
     size = "medium",
     srcs = ["cumulative_energy_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":2d_orthogonal_packing_testing",
         ":cp_model_solver",
@@ -3484,12 +3260,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "linear_relaxation",
     srcs = ["linear_relaxation.cc"],
     hdrs = ["linear_relaxation.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":circuit",
         ":clause",
@@ -3539,11 +3313,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "linear_relaxation_test",
     srcs = ["linear_relaxation_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_loader",
@@ -3564,12 +3336,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "linear_constraint",
     srcs = ["linear_constraint.cc"],
     hdrs = ["linear_constraint.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":integer",
@@ -3589,11 +3359,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "linear_constraint_test",
     srcs = ["linear_constraint_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":integer",
         ":integer_base",
@@ -3608,12 +3376,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "linear_programming_constraint",
     srcs = ["linear_programming_constraint.cc"],
     hdrs = ["linear_programming_constraint.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_checker",
@@ -3663,11 +3429,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "linear_programming_constraint_test",
     srcs = ["linear_programming_constraint_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_solver",
         ":integer",
@@ -3687,12 +3451,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "linear_constraint_manager",
     srcs = ["linear_constraint_manager.cc"],
     hdrs = ["linear_constraint_manager.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":debug_solution",
         ":integer",
@@ -3723,11 +3485,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "linear_constraint_manager_test",
     srcs = ["linear_constraint_manager_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":integer",
         ":integer_base",
@@ -3743,12 +3503,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "cuts",
     srcs = ["cuts.cc"],
     hdrs = ["cuts.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":clause",
         ":implied_bounds",
@@ -3779,11 +3537,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "cuts_test",
     srcs = ["cuts_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cuts",
         ":implied_bounds",
@@ -3818,12 +3574,10 @@ cc_proto_library(
     deps = [":routes_support_graph_proto"],
 )
 
-cc_library(
+or_cc_library(
     name = "routing_cuts",
     srcs = ["routing_cuts.cc"],
     hdrs = ["routing_cuts.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":clause",
         ":cp_model_cc_proto",
@@ -3865,11 +3619,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "routing_cuts_test",
     srcs = ["routing_cuts_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":clause",
         ":cp_model",
@@ -3899,12 +3651,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "scheduling_cuts",
     srcs = ["scheduling_cuts.cc"],
     hdrs = ["scheduling_cuts.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cuts",
         ":integer",
@@ -3933,11 +3683,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "scheduling_cuts_test",
     srcs = ["scheduling_cuts_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["noci"],
     deps = [
         ":cp_model",
@@ -3962,12 +3710,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "diffn_cuts",
     srcs = ["diffn_cuts.cc"],
     hdrs = ["diffn_cuts.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cuts",
         ":diffn_util",
@@ -3991,12 +3737,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "zero_half_cuts",
     srcs = ["zero_half_cuts.cc"],
     hdrs = ["zero_half_cuts.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":integer_base",
         ":util",
@@ -4009,11 +3753,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "zero_half_cuts_test",
     srcs = ["zero_half_cuts_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":integer_base",
         ":zero_half_cuts",
@@ -4022,12 +3764,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "lp_utils",
     srcs = ["lp_utils.cc"],
     hdrs = ["lp_utils.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     visibility = [
         "//ortools/bop:__pkg__",
         "//ortools/linear_solver/proto_solver:__pkg__",
@@ -4060,12 +3801,11 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "optimization",
     srcs = ["optimization.cc"],
     hdrs = ["optimization.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":clause",
         ":encoding",
@@ -4098,12 +3838,11 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "max_hs",
     srcs = ["max_hs.cc"],
     hdrs = ["max_hs.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_mapping",
@@ -4136,11 +3875,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "optimization_test",
     srcs = ["optimization_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":integer",
         ":integer_base",
@@ -4155,12 +3892,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "util",
     srcs = ["util.cc"],
     hdrs = ["util.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":model",
         ":sat_base",
@@ -4190,11 +3926,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "util_test",
     srcs = ["util_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["noci"],
     deps = [
         ":cp_model_cc_proto",
@@ -4221,11 +3955,9 @@ cc_test(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "util_benchmark",
     srcs = ["util_benchmark.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":util",
         "//ortools/base:benchmark_main",
@@ -4234,12 +3966,10 @@ cc_binary(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "stat_tables",
     srcs = ["stat_tables.cc"],
     hdrs = ["stat_tables.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":clause",
         ":cp_model_cc_proto",
@@ -4261,12 +3991,11 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "table",
     srcs = ["table.cc"],
     hdrs = ["table.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":model",
         ":sat_base",
@@ -4277,11 +4006,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "table_test",
     srcs = ["table_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model",
         ":cp_model_cc_proto",
@@ -4302,12 +4029,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "cp_constraints",
     srcs = ["cp_constraints.cc"],
     hdrs = ["cp_constraints.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     visibility = ["//visibility:public"],
     deps = [
         ":enforcement",
@@ -4322,11 +4048,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "cp_constraints_test",
     srcs = ["cp_constraints_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_constraints",
         ":integer",
@@ -4343,12 +4067,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "enforcement",
     srcs = ["enforcement.cc"],
     hdrs = ["enforcement.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":model",
         ":sat_base",
@@ -4362,11 +4085,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "enforcement_test",
     srcs = ["enforcement_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":enforcement",
         ":model",
@@ -4378,12 +4099,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "enforcement_helper",
     srcs = ["enforcement_helper.cc"],
     hdrs = ["enforcement_helper.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":enforcement",
         ":integer",
@@ -4396,12 +4116,11 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "diffn_util",
     srcs = ["diffn_util.cc"],
     hdrs = ["diffn_util.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":integer_base",
         ":scheduling_helpers",
@@ -4428,12 +4147,11 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "2d_orthogonal_packing",
     srcs = ["2d_orthogonal_packing.cc"],
     hdrs = ["2d_orthogonal_packing.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":2d_packing_brute_force",
         ":integer_base",
@@ -4452,12 +4170,11 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "2d_packing_brute_force",
     srcs = ["2d_packing_brute_force.cc"],
     hdrs = ["2d_packing_brute_force.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":diffn_util",
         ":integer_base",
@@ -4470,11 +4187,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "2d_packing_brute_force_test",
     srcs = ["2d_packing_brute_force_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["noci"],
     deps = [
         ":2d_packing_brute_force",
@@ -4493,11 +4208,9 @@ cc_test(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "2d_packing_brute_force_benchmark",
     srcs = ["2d_packing_brute_force_benchmark.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":2d_packing_brute_force",
         ":integer_base",
@@ -4509,12 +4222,11 @@ cc_binary(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "2d_rectangle_presolve",
     srcs = ["2d_rectangle_presolve.cc"],
     hdrs = ["2d_rectangle_presolve.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":diffn_util",
         ":integer_base",
@@ -4534,11 +4246,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "2d_rectangle_presolve_test",
     srcs = ["2d_rectangle_presolve_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["noci"],
     deps = [
         ":2d_orthogonal_packing_testing",
@@ -4558,13 +4268,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "2d_orthogonal_packing_testing",
     testonly = 1,
     srcs = ["2d_orthogonal_packing_testing.cc"],
     hdrs = ["2d_orthogonal_packing_testing.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":diffn_util",
         ":integer_base",
@@ -4575,11 +4283,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "2d_orthogonal_packing_test",
     srcs = ["2d_orthogonal_packing_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["noci"],
     deps = [
         ":2d_orthogonal_packing",
@@ -4599,12 +4305,10 @@ cc_test(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "2d_orthogonal_packing_benchmark",
     testonly = 1,
     srcs = ["2d_orthogonal_packing_benchmark.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":2d_orthogonal_packing",
         ":2d_orthogonal_packing_testing",
@@ -4619,12 +4323,11 @@ cc_binary(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "2d_try_edge_propagator",
     srcs = ["2d_try_edge_propagator.cc"],
     hdrs = ["2d_try_edge_propagator.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":diffn_util",
         ":integer",
@@ -4647,11 +4350,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "2d_try_edge_propagator_test",
     srcs = ["2d_try_edge_propagator_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":2d_orthogonal_packing_testing",
         ":2d_try_edge_propagator",
@@ -4668,12 +4369,10 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "diffn_util_test",
     size = "small",
     srcs = ["diffn_util_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["noci"],
     target_compatible_with = select({
         "@platforms//os:linux": [],
@@ -4703,12 +4402,10 @@ cc_test(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "diffn_util_benchmark",
     testonly = 1,
     srcs = ["diffn_util_benchmark.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":2d_orthogonal_packing_testing",
         ":diffn_util",
@@ -4723,12 +4420,11 @@ cc_binary(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "diffn",
     srcs = ["diffn.cc"],
     hdrs = ["diffn.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":2d_distances_propagator",
         ":2d_mandatory_overlap_propagator",
@@ -4768,12 +4464,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "diffn_test",
     size = "small",
     srcs = ["diffn_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model",
         ":cp_model_cc_proto",
@@ -4795,12 +4489,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "circuit",
     srcs = ["circuit.cc"],
     hdrs = ["circuit.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":all_different",
         ":clause",
@@ -4825,11 +4518,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "circuit_test",
     srcs = ["circuit_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["noci"],
     deps = [
         ":circuit",
@@ -4841,6 +4532,7 @@ cc_test(
         ":integer_search",
         ":model",
         ":sat_base",
+        ":sat_parameters_cc_proto",
         ":sat_solver",
         "//ortools/base:gmock_main",
         "//ortools/graph_base:strongly_connected_components",
@@ -4852,12 +4544,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "encoding",
     srcs = ["encoding.cc"],
     hdrs = ["encoding.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":clause",
         ":model",
@@ -4877,11 +4568,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "encoding_test",
     srcs = ["encoding_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":encoding",
         ":pb_constraint",
@@ -4892,12 +4581,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "cp_model_lns",
     srcs = ["cp_model_lns.cc"],
     hdrs = ["cp_model_lns.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
@@ -4943,12 +4630,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "cp_model_lns_test",
     size = "small",
     srcs = ["cp_model_lns_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["noci"],
     deps = [
         ":cp_model_cc_proto",
@@ -4976,12 +4661,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "feasibility_pump",
     srcs = ["feasibility_pump.cc"],
     hdrs = ["feasibility_pump.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":clause",
@@ -5013,12 +4696,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "feasibility_pump_test",
     size = "small",
     srcs = ["feasibility_pump_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_loader",
@@ -5034,12 +4715,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "rins",
     srcs = ["rins.cc"],
     hdrs = ["rins.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_mapping",
@@ -5055,12 +4734,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "rins_test",
     size = "small",
     srcs = ["rins_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_loader",
@@ -5075,12 +4752,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "subsolver",
     srcs = ["subsolver.cc"],
     hdrs = ["subsolver.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":util",
@@ -5098,12 +4773,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "subsolver_test",
     size = "small",
     srcs = ["subsolver_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model",
         ":subsolver",
@@ -5113,12 +4786,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "drat_checker",
     srcs = ["drat_checker.cc"],
     hdrs = ["drat_checker.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":sat_base",
         "//ortools/base:hash",
@@ -5135,11 +4807,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "drat_checker_test",
     srcs = ["drat_checker_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":drat_checker",
         ":sat_base",
@@ -5150,12 +4820,11 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "lrat_checker",
     srcs = ["lrat_checker.cc"],
     hdrs = ["lrat_checker.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":model",
         ":sat_base",
@@ -5175,11 +4844,9 @@ cc_library(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "lrat_checker_main",
     srcs = ["lrat_checker_main.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
@@ -5214,12 +4881,11 @@ cc_proto_library(
     deps = [":lrat_proto"],
 )
 
-cc_library(
+or_cc_library(
     name = "lrat_proof_handler",
     srcs = ["lrat_proof_handler.cc"],
     hdrs = ["lrat_proof_handler.h"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":lrat_cc_proto",
         ":lrat_checker",
@@ -5239,11 +4905,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "lrat_proof_handler_test",
     srcs = ["lrat_proof_handler_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lrat_proof_handler",
         ":model",
@@ -5255,11 +4919,9 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "lrat_checker_test",
     srcs = ["lrat_checker_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lrat_checker",
         ":model",
@@ -5271,11 +4933,9 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "opb_reader",
     hdrs = ["opb_reader.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
@@ -5292,12 +4952,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "opb_reader_test",
     size = "small",
     srcs = ["opb_reader_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_checker",
@@ -5315,20 +4973,16 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "recordio",
     srcs = ["recordio.cc"],
     hdrs = ["recordio.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = ["@protobuf"],
 )
 
-cc_test(
+or_cc_test(
     name = "recordio_test",
     srcs = ["recordio_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":recordio",
@@ -5337,11 +4991,10 @@ cc_test(
     ],
 )
 
-cc_binary(
+or_cc_binary(
     name = "sat_runner",
     srcs = ["sat_runner.cc"],
-    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    copts = SAFE_FP_CODE,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_solver",
@@ -5373,11 +5026,9 @@ cc_binary(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "sat_cnf_reader",
     hdrs = ["sat_cnf_reader.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
@@ -5389,12 +5040,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "sat_cnf_reader_test",
     size = "small",
     srcs = ["sat_cnf_reader_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":sat_cnf_reader",
         "//ortools/base:file",
@@ -5409,12 +5058,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "cp_model_symmetries",
     srcs = ["cp_model_symmetries.cc"],
     hdrs = ["cp_model_symmetries.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_checker",
@@ -5452,11 +5099,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "cp_model_symmetries_test",
     srcs = ["cp_model_symmetries_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_symmetries",
@@ -5473,12 +5118,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "swig_helper",
     srcs = ["swig_helper.cc"],
     hdrs = ["swig_helper.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = [
         "//ortools/sat:__pkg__",
         "//ortools/sat/java:__pkg__",
@@ -5501,12 +5144,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "implied_bounds",
     srcs = ["implied_bounds.cc"],
     hdrs = ["implied_bounds.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":clause",
         ":integer",
@@ -5532,12 +5173,10 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "implied_bounds_test",
     size = "small",
     srcs = ["implied_bounds_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":implied_bounds",
         ":integer",
@@ -5555,11 +5194,9 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "inclusion",
     hdrs = ["inclusion.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":util",
         "//ortools/base:types",
@@ -5570,12 +5207,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "diophantine",
     srcs = ["diophantine.cc"],
     hdrs = ["diophantine.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":util",
         "//ortools/base:mathutil",
@@ -5586,12 +5221,10 @@ cc_library(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "combine_solutions",
     srcs = ["combine_solutions.cc"],
     hdrs = ["combine_solutions.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_checker",
@@ -5603,11 +5236,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "combine_solutions_test",
     srcs = ["combine_solutions_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":combine_solutions",
         ":cp_model_cc_proto",
@@ -5618,12 +5249,10 @@ cc_test(
     ],
 )
 
-cc_library(
+or_cc_library(
     name = "work_assignment",
     srcs = ["work_assignment.cc"],
     hdrs = ["work_assignment.h"],
-    copts = ORTOOLS_DEFAULT_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":clause",
         ":cp_model_mapping",
@@ -5660,11 +5289,9 @@ cc_library(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "work_assignment_test",
     srcs = ["work_assignment_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model",
         ":cp_model_cc_proto",
@@ -5688,11 +5315,9 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "diophantine_test",
     srcs = ["diophantine_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":diophantine",
         "//ortools/base:gmock_main",
@@ -5706,12 +5331,10 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "inclusion_test",
     size = "small",
     srcs = ["inclusion_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":inclusion",
         ":util",
@@ -5722,12 +5345,10 @@ cc_test(
     ],
 )
 
-cc_test(
+or_cc_test(
     name = "flaky_models_test",
     size = "small",
     srcs = ["flaky_models_test.cc"],
-    copts = ORTOOLS_TEST_COPTS,
-    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_solver",
