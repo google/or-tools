@@ -1,0 +1,178 @@
+# ref: https://github.com/actions/runner-images
+name: Release
+
+on:
+  push:
+    branches:
+      - rc
+      - mizux/rc
+  workflow_dispatch:
+
+concurrency:
+  group: ${{github.workflow}}-${{github.ref_name}}
+  cancel-in-progress: true
+
+env:
+  JAVA_DISTRIBUTION: 'temurin'
+  JAVA_VERSION: '21'
+  # Disable auth (and caching) when running from a fork.
+  # By default, secrets are not passed to workflows triggered from forks, including Dependabot.
+  USE_GOOGLE_CLOUD_STORAGE: ${{! (github.event.pull_request.head.repo.fork || false)}}
+  ORTOOLS_TOKEN: ${{secrets.ORTOOLS_TOKEN}}
+jobs:
+###############################################################################
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, macos-latest, windows-latest, ubuntu-22.04-arm]
+        target: [cpp, dotnet, java, python310, python312, python314]
+        include:
+          - target: cpp
+            build: cpp
+          - target: dotnet
+            build: dotnet
+          - target: java
+            build: java
+          - target: python310
+            build: python
+            python_version: "3.10"
+          - target: python312
+            build: python
+            python_version: "3.12"
+          - target: python314
+            build: python
+            python_version: "3.14"
+          # Map os to platform / generator
+          - os: ubuntu-22.04
+            arch: amd64
+            platform: linux
+            generator: Ninja
+          - os: macos-latest
+            arch: arm64
+            platform: macos
+            generator: Ninja
+          - os: windows-latest
+            arch: amd64
+            platform: windows
+            generator: "Visual Studio 18 2026"
+          - os: ubuntu-24.04-arm
+            arch: arm64
+            platform: linux
+            generator: Ninja
+    name: CMake(${{matrix.arch}}•${{matrix.platform}}•${{matrix.target}})
+    runs-on: ${{matrix.os}}
+    steps:
+    - uses: actions/checkout@v7
+    - uses: ./.github/actions/remote_cache
+      with:
+        credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
+        set_cmake_sccache_launcher: true
+
+# SYSTEM BUILD DEPS
+    - name: Setup linux
+      if: ${{matrix.platform == 'linux'}}
+      run: sudo apt install -y ninja-build swig
+    - name: Setup macos
+      # can't use brew swig (4.4) since Director python support is broken on macos
+      # see: https://github.com/swig/swig/issues/3279
+      if: ${{matrix.platform == 'macos'}}
+      run: |
+        brew install ninja
+        wget -q https://downloads.sourceforge.net/project/swig/swig/swig-4.3.1/swig-4.3.1.tar.gz && tar xzvf swig-4.3.1.tar.gz && rm swig-4.3.1.tar.gz
+        cd swig-4.3.1 && ./configure --prefix=$HOME/.local && make -j 4 && make install
+        rm -rf swig-4.3.1
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Setup windows
+      if: ${{matrix.platform == 'windows'}}
+      run: dir
+    - id: num_cores
+      uses: ./.github/actions/num_cores
+    - name: Setup CMake env
+      run: echo "CMAKE_BUILD_PARALLEL_LEVEL=${{steps.num_cores.outputs.cores}}" >> $GITHUB_ENV
+
+# Setup .Net
+    - name: Setup .NET 8.0
+      uses: actions/setup-dotnet@v6
+      if: ${{matrix.build == 'dotnet'}}
+      with:
+        dotnet-version: 8.0.x
+    - name: Check dotnet
+      if: ${{matrix.build == 'dotnet'}}
+      run: dotnet --info
+
+# Setup Java
+    - uses: actions/setup-java@v6
+      if: ${{ matrix.build == 'java'}}
+      with:
+        distribution: ${{env.JAVA_DISTRIBUTION}}
+        java-version: ${{env.JAVA_VERSION}}
+    - name: Check java
+      if: ${{matrix.build == 'java'}}
+      run: |
+        java -version
+        mvn --version
+
+# Setup Python
+    - uses: actions/setup-python@v7
+      if: ${{matrix.build == 'python'}}
+      with:
+        python-version: ${{matrix.python_version}}
+    - name: Install python3 deps
+      if: ${{matrix.build == 'python'}}
+      run: python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas
+    - name: Setup Linux Python Env
+      if: ${{matrix.build == 'python' && matrix.platform == 'linux'}}
+      run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Setup MacOs Python Env
+      if: ${{matrix.build == 'python' && matrix.platform == 'macos'}}
+      run: |
+        echo "$HOME/Library/Python/${{matrix.python_version}}/bin" >> $GITHUB_PATH
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Setup Windows Python Env
+      if: ${{matrix.build == 'python' && matrix.platform == 'windows'}}
+      run: >
+        echo "$((Get-Item ~).FullName)/AppData/Roaming/Python/${{matrix.python.dir}}/Scripts" |
+        Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+    - name: Check Python
+      if: ${{matrix.build == 'python'}}
+      run: python3 --version
+
+###############################################################################
+# DOCKER ARCHIVES
+  distro:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [
+          almalinux-10,
+          alpine-edge,
+          archlinux,
+          debian-sid,
+          debian-13,
+          debian-12,
+          fedora-44,
+          fedora-43,
+          opensuse-leap,
+          rockylinux-10,
+          ubuntu-26.04,
+          ubuntu-24.04,
+          ubuntu-22.04,
+        ]
+        lang: [cpp, dotnet, java, python]
+    name: Distro(amd64•${{matrix.os}}•${{matrix.lang}})
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - name: retrieve or-tools.snk
+      run: >
+        openssl aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN"
+        -in "tools/release/or-tools.snk.enc"
+        -out "tools/docker/or-tools.snk" -d
+    - name: Build ${{matrix.lang}}
+      run: make --directory=tools/docker amd64_${{matrix.os}}_${{matrix.lang}}_build
+    - name: Export ${{matrix.lang}}
+      run: make --directory=tools/docker amd64_${{matrix.os}}_${{matrix.lang}}_export
+    - name: Test ${{matrix.lang}} export
+      run: make --directory=tools/docker amd64_${{matrix.os}}_${{matrix.lang}}_test
+
