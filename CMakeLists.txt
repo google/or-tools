@@ -21,7 +21,11 @@ option(CMAKE_EXPORT_COMPILE_COMMANDS "Export compile command" ON)
 include(utils)
 set_version(VERSION RELEASE)
 
-project(ortools VERSION ${VERSION} LANGUAGES CXX C)
+project(ortools
+  VERSION ${VERSION}
+  DESCRIPTION "Google's software suite for combinatorial optimization"
+  HOMEPAGE_URL "https://developers.google.com/optimization/"
+  LANGUAGES CXX C)
 set(PROJECT_NAMESPACE ortools)
 message(STATUS "${PROJECT_NAME} version: ${PROJECT_VERSION} release: ${RELEASE}")
 #message(STATUS "major: ${PROJECT_VERSION_MAJOR}")
@@ -487,7 +491,6 @@ endif()
 set(CPACK_PACKAGE_NAME "OR-Tools")
 set(CPACK_PACKAGE_VENDOR "Google")
 set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Google's software suite for combinatorial optimization")
 set(CPACK_GENERATOR "ZIP;TGZ")
 set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY ON)
 include(CPack)
