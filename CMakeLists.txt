@@ -460,24 +460,28 @@ include(dotnet)
 
 # Since samples mix all languages we must parse them once we have included all
 # <language>.cmake files
-foreach(SAMPLES IN ITEMS
- algorithms
- graph
- glop
- constraint_solver
- routing
- linear_solver
- model_builder
- ${MATH_OPT_DIR}
- ${PDLP_DIR}
- sat)
-  add_subdirectory(ortools/${SAMPLES}/samples)
-endforeach()
+if(BUILD_SAMPLES)
+  foreach(SAMPLES IN ITEMS
+      algorithms
+      graph
+      glop
+      constraint_solver
+      routing
+      linear_solver
+      model_builder
+      ${MATH_OPT_DIR}
+      ${PDLP_DIR}
+      sat)
+    add_subdirectory(ortools/${SAMPLES}/samples)
+  endforeach()
+endif()
 
 # Same for examples
-foreach(EXAMPLES IN ITEMS contrib cpp dotnet python)
-  add_subdirectory(examples/${EXAMPLES})
-endforeach()
+if(BUILD_EXAMPLES)
+  foreach(EXAMPLES IN ITEMS contrib cpp dotnet python)
+    add_subdirectory(examples/${EXAMPLES})
+  endforeach()
+endif()
 
 # Packing
 set(CPACK_PACKAGE_NAME "OR-Tools")
