@@ -478,3 +478,12 @@ endforeach()
 foreach(EXAMPLES IN ITEMS contrib cpp dotnet python)
   add_subdirectory(examples/${EXAMPLES})
 endforeach()
+
+# Packing
+set(CPACK_PACKAGE_NAME "OR-Tools")
+set(CPACK_PACKAGE_VENDOR "Google")
+set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Google's software suite for combinatorial optimization")
+set(CPACK_GENERATOR "ZIP;TGZ")
+set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY ON)
+include(CPack)
