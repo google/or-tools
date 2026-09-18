@@ -712,8 +712,6 @@ add_custom_command(
    $<IF:$<TARGET_EXISTS:pdlp_pybind11>,copy,true>
    $<$<TARGET_EXISTS:pdlp_pybind11>:$<TARGET_FILE:pdlp_pybind11>> ${PYTHON_PROJECT}/pdlp/python
   COMMAND ${CMAKE_COMMAND} -E copy
-   $<TARGET_FILE:pywraprouting> ${PYTHON_PROJECT}/routing
-  COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:routing_pybind11> ${PYTHON_PROJECT}/routing/python
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:cp_model_helper_pybind11> ${PYTHON_PROJECT}/sat/python
@@ -741,7 +739,6 @@ add_custom_command(
     min_cost_flow_pybind11
     dag_shortest_path_pybind11
     constraint_solver_pybind11
-    pywraprouting
     routing_pybind11
     pywraplp
     model_builder_helper_pybind11
@@ -790,7 +787,6 @@ add_custom_command(
   COMMAND ${stubgen_EXECUTABLE} -p pybind11_abseil.absl_casters --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.math_opt.core.python.solver --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.pdlp.python.pdlp --output .
-  COMMAND ${stubgen_EXECUTABLE} -p ortools.routing.pywraprouting --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.routing.python.routing --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.sat.python.cp_model_helper --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.scheduling.python.rcpsp --output .

@@ -15,12 +15,13 @@
 """Generate SVG for a Routing problem."""
 
 # [START import]
+from typing import Any, Dict
 import argparse
 
-from ortools.routing import enums_pb2, pywraprouting
+from ortools.constraint_solver.python import constraint_solver
+from ortools.routing import enums_pb2, parameters_pb2
+from ortools.routing.python import routing
 
-FirstSolutionStrategy = enums_pb2.FirstSolutionStrategy
-RoutingSearchStatus = enums_pb2.RoutingSearchStatus
 # [END import]
 
 
@@ -674,12 +675,12 @@ class SVGPrinter:  # pylint: disable=too-many-instance-attributes
     """Generate Problem as svg file to stdout."""
 
     # pylint: disable=too-many-arguments
-    def __init__(self, args, data, manager=None, routing=None, assignment=None):
+    def __init__(self, args, data, manager=None, routing_model=None, assignment=None):
         """Initializes the printer."""
         self._args = args
         self._data = data
         self._manager = manager
-        self._routing = routing
+        self._routing_model = routing_model
         self._assignment = assignment
         # Design variables
         self._color_palette = GoogleColorPalette()
@@ -695,13 +696,13 @@ class SVGPrinter:  # pylint: disable=too-many-instance-attributes
 
     @property
     def manager(self):
-        """Gets the RoutingIndexManager."""
+        """Gets the IndexManager."""
         return self._manager
 
     @property
-    def routing(self):
+    def routing_model(self):
         """Gets the Routing solver."""
-        return self._routing
+        return self._routing_model
 
     @property
     def assignment(self):
@@ -837,11 +838,11 @@ class SVGPrinter:  # pylint: disable=too-many-instance-attributes
             print("<!-- No solution found. -->")
         # Display dropped nodes.
         dropped_nodes = []
-        for node in range(self._routing.Size()):
-            if self._routing.IsStart(node) or self._routing.IsEnd(node):
+        for node in range(self._routing_model.Size()):
+            if self._routing_model.IsStart(node) or self._routing_model.is_end(node):
                 continue
-            if self._assignment.Value(self._routing.NextVar(node)) == node:
-                dropped_nodes.append(self._manager.IndexToNode(node))
+            if self._assignment.Value(self._routing_model.next_var(node)) == node:
+                dropped_nodes.append(self._manager.index_to_node(node))
         color = self._color_palette.value_from_name("black")
         for node_idx in dropped_nodes:
             loc = self._data.locations[node_idx]
@@ -855,13 +856,13 @@ class SVGPrinter:  # pylint: disable=too-many-instance-attributes
             return []
         routes = []
         for vehicle_id in range(self._data.num_vehicles):
-            index = self._routing.Start(vehicle_id)
+            index = self._routing_model.Start(vehicle_id)
             route = []
-            while not self._routing.IsEnd(index):
-                node_index = self._manager.IndexToNode(index)
+            while not self._routing_model.is_end(index):
+                node_index = self._manager.index_to_node(index)
                 route.append(node_index)
-                index = self._assignment.Value(self._routing.NextVar(index))
-            node_index = self._manager.IndexToNode(index)
+                index = self._assignment.Value(self._routing_model.next_var(index))
+            node_index = self._manager.index_to_node(index)
             route.append(node_index)
             routes.append(route)
         return routes
@@ -903,24 +904,24 @@ class SVGPrinter:  # pylint: disable=too-many-instance-attributes
         if self._assignment is None:
             print("<!-- No solution found. -->")
             return []
-        time_dimension = self._routing.GetDimensionOrDie("Time")
+        time_dimension = self._routing_model.get_dimension_or_die("Time")
         loc_routes = []
         tw_routes = []
         for vehicle_id in range(self._data.num_vehicles):
-            index = self._routing.Start(vehicle_id)
-            # index = self._assignment.Value(self._routing.NextVar(index))
+            index = self._routing_model.Start(vehicle_id)
+            # index = self._assignment.value(self._routing_model.next_var(index))
             loc_route = []
             tw_route = []
             while True:
-                node_index = self._manager.IndexToNode(index)
+                node_index = self._manager.index_to_node(index)
                 loc_route.append(node_index)
-                time_var = time_dimension.CumulVar(index)
-                t_min = self._assignment.Min(time_var)
-                t_max = self._assignment.Max(time_var)
+                time_var = time_dimension.cumul_var(index)
+                t_min = self._assignment.min(time_var)
+                t_max = self._assignment.max(time_var)
                 tw_route.append((t_min, t_max))
-                if self._routing.IsEnd(index):
+                if self._routing_model.is_end(index):
                     break
-                index = self._assignment.Value(self._routing.NextVar(index))
+                index = self._assignment.value(self._routing_model.next_var(index))
             loc_routes.append(loc_route)
             tw_routes.append(tw_route)
         return zip(loc_routes, tw_routes)
@@ -1062,63 +1063,63 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
     # Create the routing index manager.
     # [START index_manager]
     if args["starts_ends"]:
-        manager = pywraprouting.RoutingIndexManager(
+        manager = routing.IndexManager(
             len(data.locations), data.num_vehicles, data.starts, data.ends
         )
     else:
-        manager = pywraprouting.RoutingIndexManager(
+        manager = routing.IndexManager(
             len(data.locations), data.num_vehicles, data.depot
         )
     # [END index_manager]
 
     # Create Routing Model.
     # [START routing_model]
-    routing = pywraprouting.RoutingModel(manager)
+    routing_model = routing.Model(manager)
 
     # [END routing_model]
 
     # Register distance callback
     def distance_callback(from_index, to_index):
         """Returns the manhattan distance between the two nodes."""
-        # Convert from routing variable Index to distance matrix NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        to_node = manager.IndexToNode(to_index)
+        # Convert from routing_model variable Index to distance matrix NodeIndex.
+        from_node = manager.index_to_node(from_index)
+        to_node = manager.index_to_node(to_index)
         return data.distance_matrix[from_node][to_node]
 
-    distance_callback_index = routing.RegisterTransitCallback(distance_callback)
+    distance_callback_index = routing_model.register_transit_callback(distance_callback)
 
     # Register time callback
     def time_callback(from_index, to_index):
         """Returns the manhattan distance travel time between the two nodes."""
-        # Convert from routing variable Index to distance matrix NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        to_node = manager.IndexToNode(to_index)
+        # Convert from routing_model variable Index to distance matrix NodeIndex.
+        from_node = manager.index_to_node(from_index)
+        to_node = manager.index_to_node(to_index)
         return data.time_matrix[from_node][to_node]
 
-    time_callback_index = routing.RegisterTransitCallback(time_callback)
+    time_callback_index = routing_model.register_transit_callback(time_callback)
 
     # Register demands callback
     def demand_callback(from_index):
         """Returns the demand of the node."""
-        # Convert from routing variable Index to demands NodeIndex.
-        from_node = manager.IndexToNode(from_index)
+        # Convert from routing_model variable Index to demands NodeIndex.
+        from_node = manager.index_to_node(from_index)
         return data.demands[from_node]
 
-    demand_callback_index = routing.RegisterUnaryTransitCallback(demand_callback)
+    demand_callback_index = routing_model.register_unary_transit_callback(demand_callback)
 
     if args["time_windows"] or args["resources"]:
-        routing.SetArcCostEvaluatorOfAllVehicles(time_callback_index)
+        routing_model.set_arc_cost_evaluator_of_all_vehicles(time_callback_index)
     else:
-        routing.SetArcCostEvaluatorOfAllVehicles(distance_callback_index)
+        routing_model.set_arc_cost_evaluator_of_all_vehicles(distance_callback_index)
 
     if args["global_span"] or args["pickup_delivery"]:
         dimension_name = "Distance"
-        routing.AddDimension(distance_callback_index, 0, 3000, True, dimension_name)
-        distance_dimension = routing.GetDimensionOrDie(dimension_name)
-        distance_dimension.SetGlobalSpanCostCoefficient(100)
+        routing_model.add_dimension(distance_callback_index, 0, 3000, True, dimension_name)
+        distance_dimension = routing_model.get_dimension_or_die(dimension_name)
+        distance_dimension.set_global_span_cost_coefficient(100)
 
     if args["capacity"] or args["drop_nodes"]:
-        routing.AddDimensionWithVehicleCapacity(
+        routing_model.add_dimension_with_vehicle_capacity(
             demand_callback_index, 0, data.vehicle_capacities, True, "Capacity"
         )
 
@@ -1126,106 +1127,108 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
         # Allow to drop nodes.
         penalty = 1000
         for node in range(1, len(data.locations)):
-            routing.AddDisjunction([manager.NodeToIndex(node)], penalty)
+            routing_model.add_disjunction([manager.node_to_index(node)], penalty)
 
     if args["pickup_delivery"]:
         dimension_name = "Distance"
-        routing.AddDimension(distance_callback_index, 0, 3000, True, dimension_name)
-        distance_dimension = routing.GetDimensionOrDie(dimension_name)
-        distance_dimension.SetGlobalSpanCostCoefficient(100)
+        routing_model.add_dimension(distance_callback_index, 0, 3000, True, dimension_name)
+        distance_dimension = routing_model.get_dimension_or_die(dimension_name)
+        distance_dimension.set_global_span_cost_coefficient(100)
         for request in data.pickups_deliveries:
-            pickup_index = manager.NodeToIndex(request[0])
-            delivery_index = manager.NodeToIndex(request[1])
-            routing.AddPickupAndDelivery(pickup_index, delivery_index)
-            routing.solver().Add(
-                routing.VehicleVar(pickup_index) == routing.VehicleVar(delivery_index)
+            pickup_index = manager.node_to_index(request[0])
+            delivery_index = manager.node_to_index(request[1])
+            routing_model.add_pickup_and_delivery(pickup_index, delivery_index)
+            routing_model.solver().Add(
+                routing_model.Vehicle_var(pickup_index) == routing_model.vehicle_var(delivery_index)
             )
-            routing.solver().Add(
-                distance_dimension.CumulVar(pickup_index)
-                <= distance_dimension.CumulVar(delivery_index)
+            routing_model.solver().Add(
+                distance_dimension.cumul_var(pickup_index)
+                <= distance_dimension.cumul_var(delivery_index)
             )
         if args["fifo"]:
-            routing.SetPickupAndDeliveryPolicyOfAllVehicles(
-                pywraprouting.RoutingModel.PICKUP_AND_DELIVERY_FIFO
+            routing_model.set_pickup_and_delivery_policy_of_all_vehicles(
+                routing.Model.PICKUP_AND_DELIVERY_FIFO
             )
         if args["lifo"]:
-            routing.SetPickupAndDeliveryPolicyOfAllVehicles(
-                pywraprouting.RoutingModel.PICKUP_AND_DELIVERY_LIFO
+            routing_model.set_pickup_and_delivery_policy_of_all_vehicles(
+                routing.Model.PICKUP_AND_DELIVERY_LIFO
             )
 
     if args["starts_ends"]:
         dimension_name = "Distance"
-        routing.AddDimension(distance_callback_index, 0, 2000, True, dimension_name)
-        distance_dimension = routing.GetDimensionOrDie(dimension_name)
-        distance_dimension.SetGlobalSpanCostCoefficient(100)
+        routing_model.add_dimension(distance_callback_index, 0, 2000, True, dimension_name)
+        distance_dimension = routing_model.get_dimension_or_die(dimension_name)
+        distance_dimension.set_global_span_cost_coefficient(100)
 
     time = "Time"
     if args["time_windows"] or args["resources"]:
-        routing.AddDimension(time_callback_index, 30, 30, False, time)
-        time_dimension = routing.GetDimensionOrDie(time)
+        routing_model.add_dimension(time_callback_index, 30, 30, False, time)
+        time_dimension = routing_model.get_dimension_or_die(time)
         # Add time window constraints for each location except depot and 'copy' the
         # slack var in the solution object (aka Assignment) to print it.
         for location_idx, time_window in enumerate(data.time_windows):
             if location_idx == 0:
                 continue
-            index = manager.NodeToIndex(location_idx)
-            time_dimension.CumulVar(index).SetRange(time_window[0], time_window[1])
-            routing.AddToAssignment(time_dimension.SlackVar(index))
+            index = manager.node_to_index(location_idx)
+            time_dimension.cumul_var(index).set_range(time_window[0], time_window[1])
+            routing_model.add_to_assignment(time_dimension.slack_var(index))
         # Add time window constraints for each vehicle start node and 'copy' the
         # slack var in the solution object (aka Assignment) to print it.
         for vehicle_id in range(data.num_vehicles):
-            index = routing.Start(vehicle_id)
+            index = routing_model.start(vehicle_id)
             time_window = data.time_windows[0]
-            time_dimension.CumulVar(index).SetRange(time_window[0], time_window[1])
-            routing.AddToAssignment(time_dimension.SlackVar(index))
+            time_dimension.cumul_var(index).set_range(time_window[0], time_window[1])
+            routing_model.add_to_assignment(time_dimension.slack_var(index))
 
         # Instantiate route start and end times to produce feasible times.
         for vehicle_id in range(data.num_vehicles):
-            routing.AddVariableMinimizedByFinalizer(
-                time_dimension.CumulVar(routing.End(vehicle_id))
+            routing_model.add_variable_minimized_by_finalizer(
+                time_dimension.cumul_var(routing_model.end(vehicle_id))
             )
-            routing.AddVariableMinimizedByFinalizer(
-                time_dimension.CumulVar(routing.Start(vehicle_id))
+            routing_model.add_variable_minimized_by_finalizer(
+                time_dimension.cumul_var(routing_model.start(vehicle_id))
             )
 
     if args["resources"]:
         # Add resource constraints at the depot.
-        time_dimension = routing.GetDimensionOrDie(time)
-        solver = routing.solver()
+        time_dimension = routing_model.get_dimension_or_die(time)
+        solver = routing_model.solver()
         intervals = []
         for i in range(data.num_vehicles):
             # Add loading time at start of routes
             intervals.append(
-                solver.FixedDurationIntervalVar(
-                    time_dimension.CumulVar(routing.Start(i)),
+                solver.fixed_duration_interval_var(
+                    time_dimension.cumul_var(routing_model.start(i)),
                     data.vehicle_load_time,
                     "depot_interval",
                 )
             )
             # Add unloading time at end of routes.
             intervals.append(
-                solver.FixedDurationIntervalVar(
-                    time_dimension.CumulVar(routing.End(i)),
+                solver.fixed_duration_interval_var(
+                    time_dimension.cumul_var(routing_model.end(i)),
                     data.vehicle_unload_time,
                     "depot_interval ",
                 )
             )
 
         depot_usage = [1 for i in range(data.num_vehicles * 2)]
-        solver.AddConstraint(
+        solver.add_constraint(
             solver.Cumulative(intervals, depot_usage, data.depot_capacity, "depot")
         )
 
     # Setting first solution heuristic (cheapest addition).
-    search_parameters = pywraprouting.DefaultRoutingSearchParameters()
+    search_parameters: parameters_pb2.RoutingSearchParameters = (
+        routing_model.default_routing_search_parameters()
+    )
     # pylint: disable=no-member
     if not args["pickup_delivery"]:
         search_parameters.first_solution_strategy = (
-            FirstSolutionStrategy.PATH_CHEAPEST_ARC
+            enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
         )
     else:
         search_parameters.first_solution_strategy = (
-            FirstSolutionStrategy.PARALLEL_CHEAPEST_INSERTION
+            enums_pb2.FirstSolutionStrategy.PARALLEL_CHEAPEST_INSERTION
         )
 
     search_parameters.local_search_metaheuristic = (
@@ -1234,9 +1237,9 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
     search_parameters.time_limit.FromSeconds(2)
 
     # Solve the problem.
-    assignment = routing.SolveWithParameters(search_parameters)
+    assignment = routing_model.solve_with_parameters(search_parameters)
     # Print the solution.
-    printer = SVGPrinter(args, data, manager, routing, assignment)
+    printer = SVGPrinter(args, data, manager, routing_model, assignment)
     printer.print_to_console()
     return 0
 
