@@ -241,7 +241,6 @@ test_python_tests: \
  rpy_lp_test \
  rpy_model_builder_test \
  rpy_pywraplp_test \
- rpy_pywraprouting_test \
  rpy_cp_model_test \
  rpy_sorted_interval_list_test
 

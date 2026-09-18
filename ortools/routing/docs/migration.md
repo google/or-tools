@@ -6,7 +6,7 @@ to the new pybind11-based bindings (`routing`).
 
 The new bindings offer better integration with Python, including:
 
-*   Compliance with PEP8 naming conventions (snake_case for methods and
+*   Compliance with PEP8 naming conventions (`snake_case` for methods and
     functions).
 *   Better type hinting support.
 *   More pythonic APIs.
@@ -32,8 +32,8 @@ from google3.third_party.ortools.ortools.routing.python import routing
 
 ## Naming Conventions
 
-The most significant change is the shift from CamelCase to snake_case for method
-names and functions. Class names remain CamelCase.
+The most significant change is the shift from `CamelCase` to `snake_case` for method
+names and functions. Class names remain `CamelCase`.
 
 Feature               | Legacy (SWIG)                                       | New (pybind11)
 :-------------------- | :-------------------------------------------------- | :-------------
@@ -117,7 +117,7 @@ Legacy Pattern                            | New Method
 `solver.Add(solver.Pack(...))`            | `solver.add_pack(...)`
 
 **Note:** For general constraints not covered by specific `add_` methods, you
-can still use `solver.add(...)` (snake_case version of `solver.Add(...)`).
+can still use `solver.add(...)` (`snake_case` version of `solver.Add(...)`).
 
 ## Enums and Status
 
@@ -205,7 +205,7 @@ def main():
 
 ## Dimensions and Variables
 
-When working with dimensions, the variable accessors also change to snake_case.
+When working with dimensions, the variable accessors also change to `snake_case`.
 
 ### Legacy
 
