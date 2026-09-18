@@ -28,12 +28,12 @@
   http://www.hakank.org/google_or_tools/
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(n=3):
   # Create the solver.
-  solver = pywrapcp.Solver("n-queens")
+  solver = cp.Solver("n-queens")
 
   #
   # data
@@ -46,61 +46,61 @@ def main(n=3):
   x = {}
   for i in range(n):
     for j in range(n):
-      x[(i, j)] = solver.IntVar(1, 13, "x(%i,%i)" % (i, j))
+      x[(i, j)] = solver.new_int_var(1, 13, "x(%i,%i)" % (i, j))
   x_flat = [x[(i, j)] for i in range(n) for j in range(n)]
 
-  s = solver.IntVar(1, 13 * 4, "s")
-  counts = [solver.IntVar(0, 4, "counts(%i)" % i) for i in range(14)]
+  s = solver.new_int_var(1, 13 * 4, "s")
+  counts = [solver.new_int_var(0, 4, "counts(%i)" % i) for i in range(14)]
 
   #
   # constraints
   #
-  solver.Add(solver.Distribute(x_flat, list(range(14)), counts))
+  solver.add_distribute(x_flat, list(range(14)), counts)
 
   # the standard magic square constraints (sans all_different)
-  [solver.Add(solver.Sum([x[(i, j)] for j in range(n)]) == s) for i in range(n)]
-  [solver.Add(solver.Sum([x[(i, j)] for i in range(n)]) == s) for j in range(n)]
+  [solver.add(solver.sum([x[(i, j)] for j in range(n)]) == s) for i in range(n)]
+  [solver.add(solver.sum([x[(i, j)] for i in range(n)]) == s) for j in range(n)]
 
-  solver.Add(solver.Sum([x[(i, i)] for i in range(n)]) == s)  # diag 1
-  solver.Add(solver.Sum([x[(i, n - i - 1)] for i in range(n)]) == s)  # diag 2
+  solver.add(solver.sum([x[(i, i)] for i in range(n)]) == s)  # diag 1
+  solver.add(solver.sum([x[(i, n - i - 1)] for i in range(n)]) == s)  # diag 2
 
   # redundant constraint
-  solver.Add(solver.Sum(counts) == n * n)
+  solver.add(solver.sum(counts) == n * n)
 
   # objective
-  objective = solver.Maximize(s, 1)
+  objective = solver.maximize(s, 1)
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(x_flat)
-  solution.Add(s)
-  solution.Add(counts)
+  solution = solver.assignment()
+  solution.add(x_flat)
+  solution.add(s)
+  solution.add(counts)
 
   # db: DecisionBuilder
-  db = solver.Phase(x_flat, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MAX_VALUE)
+  db = solver.phase(x_flat, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+                    cp.IntValueStrategy.ASSIGN_MAX_VALUE)
 
-  solver.NewSearch(db, [objective])
+  solver.new_search(db, [objective])
   num_solutions = 0
-  while solver.NextSolution():
-    print("s:", s.Value())
-    print("counts:", [counts[i].Value() for i in range(14)])
+  while solver.next_solution():
+    print("s:", s.value())
+    print("counts:", [counts[i].value() for i in range(14)])
     for i in range(n):
       for j in range(n):
-        print(x[(i, j)].Value(), end=" ")
+        print(x[(i, j)].value(), end=" ")
       print()
 
     print()
     num_solutions += 1
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 n = 3

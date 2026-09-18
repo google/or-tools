@@ -750,7 +750,7 @@ class MyDecisionBuilderThatFailsWithRev(cp.DecisionBuilder):
         return None
 
 
-class PyWrapCPSearchTest(absltest.TestCase):
+class CPSearchTest(absltest.TestCase):
     NUMBER_OF_VARIABLES = 10
     VARIABLE_MIN = 0
     VARIABLE_MAX = 10
@@ -927,7 +927,7 @@ class SplitDomainDecisionBuilder(cp.DecisionBuilder):
         return solver.split_variable_domain(self.__var, self.__value, self.__lower)
 
 
-class PyWrapCPDecisionTest(absltest.TestCase):
+class CPDecisionTest(absltest.TestCase):
 
     def test_split_domain_lower(self):
         solver = cp.Solver("test_split_domain_lower")

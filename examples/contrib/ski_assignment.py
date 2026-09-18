@@ -49,13 +49,13 @@
 """
 import sys
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver('Ski assignment')
+  solver = cp.Solver('Ski assignment')
 
   #
   # data
@@ -70,49 +70,49 @@ def main():
   #
 
   # which ski to choose for each skier
-  x = [solver.IntVar(0, num_skis - 1, 'x[%i]' % i) for i in range(num_skiers)]
-  z = solver.IntVar(0, sum(ski_heights), 'z')
+  x = [solver.new_int_var(0, num_skis - 1, 'x[%i]' % i) for i in range(num_skiers)]
+  z = solver.new_int_var(0, sum(ski_heights), 'z')
 
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(x))
+  solver.add_all_different(x)
 
   z_tmp = [
-      abs(solver.Element(ski_heights, x[i]) - skier_heights[i])
+      abs(solver.element(ski_heights, x[i]) - skier_heights[i])
       for i in range(num_skiers)
   ]
-  solver.Add(z == sum(z_tmp))
+  solver.add(z == sum(z_tmp))
 
   # objective
-  objective = solver.Minimize(z, 1)
+  objective = solver.minimize(z, 1)
 
   #
   # search and result
   #
-  db = solver.Phase(x, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
+  db = solver.phase(x, cp.IntVarStrategy.INT_VAR_DEFAULT, cp.IntValueStrategy.INT_VALUE_DEFAULT)
 
-  solver.NewSearch(db, [objective])
+  solver.new_search(db, [objective])
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
-    print('total differences:', z.Value())
+    print('total differences:', z.value())
     for i in range(num_skiers):
-      x_val = x[i].Value()
-      ski_height = ski_heights[x[i].Value()]
+      x_val = x[i].value()
+      ski_height = ski_heights[x[i].value()]
       diff = ski_height - skier_heights[i]
       print('Skier %i: Ski %i with length %2i (diff: %2i)' %\
             (i, x_val, ski_height, diff))
     print()
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print('num_solutions:', num_solutions)
-  print('failures:', solver.Failures())
-  print('branches:', solver.Branches())
-  print('WallTime:', solver.WallTime())
+  print('failures:', solver.num_failures)
+  print('branches:', solver.num_branches)
+  print('WallTime:', solver.wall_time_ms)
 
 
 if __name__ == '__main__':

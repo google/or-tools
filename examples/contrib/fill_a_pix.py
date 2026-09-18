@@ -51,7 +51,7 @@
   http://www.hakank.org/google_or_tools/
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 # Puzzle 1 from
 # http://www.conceptispuzzles.com/index.aspx?uri=puzzle/fill-a-pix/rules
@@ -69,7 +69,7 @@ default_puzzle = [
 def main(puzzle='', n=''):
 
   # Create the solver.
-  solver = pywrapcp.Solver('Fill-a-Pix')
+  solver = cp.Solver('Fill-a-Pix')
 
   #
   # data
@@ -102,7 +102,7 @@ def main(puzzle='', n=''):
   pict = {}
   for i in range(n):
     for j in range(n):
-      pict[(i, j)] = solver.IntVar(0, 1, 'pict %i %i' % (i, j))
+      pict[(i, j)] = solver.new_int_var(0, 1, 'pict %i %i' % (i, j))
 
   pict_flat = [pict[i, j] for i in range(n) for j in range(n)]
 
@@ -113,7 +113,7 @@ def main(puzzle='', n=''):
     for j in range(n):
       if puzzle[i][j] > X:
         # this cell is the sum of all the surrounding cells
-        solver.Add(puzzle[i][j] == solver.Sum([
+        solver.add(puzzle[i][j] == solver.sum([
             pict[i + a, j + b]
             for a in S
             for b in S
@@ -123,15 +123,15 @@ def main(puzzle='', n=''):
   #
   # solution and search
   #
-  db = solver.Phase(pict_flat, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
+  db = solver.phase(pict_flat, cp.IntVarStrategy.INT_VAR_DEFAULT, cp.IntValueStrategy.INT_VALUE_DEFAULT)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
   print('Solution:')
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
     for i in range(n):
-      row = [str(pict[i, j].Value()) for j in range(n)]
+      row = [str(pict[i, j].value()) for j in range(n)]
       for j in range(n):
         if row[j] == '0':
           row[j] = ' '
@@ -141,9 +141,9 @@ def main(puzzle='', n=''):
     print()
 
   print('num_solutions:', num_solutions)
-  print('failures:', solver.Failures())
-  print('branches:', solver.Branches())
-  print('WallTime:', solver.WallTime(), 'ms')
+  print('failures:', solver.num_failures)
+  print('branches:', solver.num_branches)
+  print('WallTime:', solver.wall_time_ms, 'ms')
 
 
 #

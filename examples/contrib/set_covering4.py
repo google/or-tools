@@ -65,13 +65,13 @@
   http://www.hakank.org/google_or_tools/
 
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(set_partition=1):
 
   # Create the solver.
-  solver = pywrapcp.Solver("Set partition and set covering")
+  solver = cp.Solver("Set partition and set covering")
 
   #
   # data
@@ -100,7 +100,7 @@ def main(set_partition=1):
   #
   # declare variables
   #
-  x = [solver.IntVar(0, 1, "x[%i]" % i) for i in range(num_alternatives)]
+  x = [solver.new_int_var(0, 1, "x[%i]" % i) for i in range(num_alternatives)]
 
   #
   # constraints
@@ -108,42 +108,40 @@ def main(set_partition=1):
 
   # sum the cost of the choosen alternative,
   # to be minimized
-  z = solver.ScalProd(x, costs)
+  z = solver.weighted_sum(x, costs)
 
   #
   for j in range(num_objects):
     if set_partition == 1:
-      solver.Add(
-          solver.SumEquality([x[i] * a[i][j] for i in range(num_alternatives)],
-                             1))
+      solver.add_sum_equality([x[i] * a[i][j] for i in range(num_alternatives)],
+                             1)
     else:
-      solver.Add(
-          solver.SumGreaterOrEqual(
-              [x[i] * a[i][j] for i in range(num_alternatives)], 1))
+      solver.add_sum_greater_or_equal(
+              [x[i] * a[i][j] for i in range(num_alternatives)], 1)
 
-  objective = solver.Minimize(z, 1)
+  objective = solver.minimize(z, 1)
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(x)
-  solution.AddObjective(z)
+  solution = solver.assignment()
+  solution.add(x)
+  solution.add_objective(z)
 
-  collector = solver.LastSolutionCollector(solution)
-  solver.Solve(
-      solver.Phase([x[i] for i in range(num_alternatives)],
-                   solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT),
+  collector = solver.last_solution_collector(solution)
+  solver.solve(
+      solver.phase([x[i] for i in range(num_alternatives)],
+                   cp.IntVarStrategy.INT_VAR_DEFAULT, cp.IntValueStrategy.INT_VALUE_DEFAULT),
       [collector, objective])
 
-  print("z:", collector.ObjectiveValue(0))
+  print("z:", collector.objective_value(0))
   print(
       "selected alternatives:",
-      [i + 1 for i in range(num_alternatives) if collector.Value(0, x[i]) == 1])
+      [i + 1 for i in range(num_alternatives) if collector.value(0, x[i]) == 1])
 
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 if __name__ == "__main__":

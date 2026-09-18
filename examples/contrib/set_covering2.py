@@ -32,13 +32,13 @@
   http://www.hakank.org/google_or_tools/
 
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(unused_argv):
 
   # Create the solver.
-  solver = pywrapcp.Solver("Set covering")
+  solver = cp.Solver("Set covering")
 
   #
   # data
@@ -54,40 +54,40 @@ def main(unused_argv):
   #
   # declare variables
   #
-  x = [solver.IntVar(0, 1, "x[%i]" % i) for i in range(n)]
+  x = [solver.new_int_var(0, 1, "x[%i]" % i) for i in range(n)]
 
   #
   # constraints
   #
 
   # number of telephones, to be minimized
-  z = solver.Sum(x)
+  z = solver.sum(x)
 
   # ensure that all corners are covered
   for i in range(num_streets):
     # also, convert to 0-based
-    solver.Add(solver.SumGreaterOrEqual([x[j - 1] for j in corner[i]], 1))
+    solver.add_sum_greater_or_equal([x[j - 1] for j in corner[i]], 1)
 
-  objective = solver.Minimize(z, 1)
+  objective = solver.minimize(z.var(), 1)
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(x)
-  solution.AddObjective(z)
+  solution = solver.assignment()
+  solution.add(x)
+  solution.add_objective(z.var())
 
-  collector = solver.LastSolutionCollector(solution)
-  solver.Solve(
-      solver.Phase(x, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT),
+  collector = solver.last_solution_collector(solution)
+  solver.solve(
+      solver.phase(x, cp.IntVarStrategy.INT_VAR_DEFAULT, cp.IntValueStrategy.INT_VALUE_DEFAULT),
       [collector, objective])
 
-  print("z:", collector.ObjectiveValue(0))
-  print("x:", [collector.Value(0, x[i]) for i in range(n)])
+  print("z:", collector.objective_value(0))
+  print("x:", [collector.value(0, x[i]) for i in range(n)])
 
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 if __name__ == "__main__":

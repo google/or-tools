@@ -32,7 +32,7 @@
   http://www.hakank.org/google_or_tools/
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 #
 # No overlapping of tasks s1 and s2
@@ -40,15 +40,15 @@ from ortools.constraint_solver import pywrapcp
 
 
 def no_overlap(solver, s1, d1, s2, d2):
-  b1 = solver.IsLessOrEqualVar(s1 + d1, s2)  # s1 + d1 <= s2
-  b2 = solver.IsLessOrEqualVar(s2 + d2, s1)  # s2 + d2 <= s1
-  solver.Add(b1 + b2 >= 1)
+  b1 = solver.add_is_less_or_equal_var(s1 + d1, s2)  # s1 + d1 <= s2
+  b2 = solver.add_is_less_or_equal_var(s2 + d2, s1)  # s2 + d2 <= s1
+  solver.add(b1 + b2 >= 1)
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver('Organizing a day')
+  solver = cp.Solver('Organizing a day')
 
   #
   # data
@@ -69,14 +69,14 @@ def main():
   #
   # declare variables
   #
-  begins = [solver.IntVar(begin, end, 'begins[%i]% % i') for i in tasks]
-  ends = [solver.IntVar(begin, end, 'ends[%i]% % i') for i in tasks]
+  begins = [solver.new_int_var(begin, end, 'begins[%i]% % i') for i in tasks]
+  ends = [solver.new_int_var(begin, end, 'ends[%i]% % i') for i in tasks]
 
   #
   # constraints
   #
   for i in tasks:
-    solver.Add(ends[i] == begins[i] + durations[i])
+    solver.add(ends[i] == begins[i] + durations[i])
 
   for i in tasks:
     for j in tasks:
@@ -85,29 +85,29 @@ def main():
 
   # specific constraints
   for (before, after) in before_tasks:
-    solver.Add(ends[before] <= begins[after])
+    solver.add(ends[before] <= begins[after])
 
-  solver.Add(begins[work] >= 11)
+  solver.add(begins[work] >= 11)
 
   #
   # solution and search
   #
-  db = solver.Phase(begins + ends, solver.INT_VAR_DEFAULT,
-                    solver.INT_VALUE_DEFAULT)
+  db = solver.phase(begins + ends, cp.IntVarStrategy.INT_VAR_DEFAULT,
+                    cp.IntValueStrategy.INT_VALUE_DEFAULT)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
-    print('begins:', [begins[i].Value() for i in tasks])
-    print('ends:', [ends[i].Value() for i in tasks])
+    print('begins:', [begins[i].value() for i in tasks])
+    print('ends:', [ends[i].value() for i in tasks])
     print()
 
   print('num_solutions:', num_solutions)
-  print('failures:', solver.Failures())
-  print('branches:', solver.Branches())
-  print('WallTime:', solver.WallTime(), 'ms')
+  print('failures:', solver.num_failures)
+  print('branches:', solver.num_branches)
+  print('WallTime:', solver.wall_time_ms, 'ms')
 
 
 if __name__ == '__main__':

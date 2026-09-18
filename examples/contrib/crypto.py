@@ -42,13 +42,13 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver("Crypto problem")
+  solver = cp.Solver("Crypto problem")
 
   #
   # data
@@ -79,57 +79,57 @@ def main():
   #
   # variables
   #
-  LD = [solver.IntVar(1, num_letters, "LD[%i]" % i) for i in range(num_letters)]
+  LD = [solver.new_int_var(1, num_letters, "LD[%i]" % i) for i in range(num_letters)]
   A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z = LD
 
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(LD))
-  solver.Add(B + A + L + L + E + T == BALLET)
-  solver.Add(C + E + L + L + O == CELLO)
-  solver.Add(C + O + N + C + E + R + T == CONCERT)
-  solver.Add(F + L + U + T + E == FLUTE)
-  solver.Add(F + U + G + U + E == FUGUE)
-  solver.Add(G + L + E + E == GLEE)
-  solver.Add(J + A + Z + Z == JAZZ)
-  solver.Add(L + Y + R + E == LYRE)
-  solver.Add(O + B + O + E == OBOE)
-  solver.Add(O + P + E + R + A == OPERA)
-  solver.Add(P + O + L + K + A == POLKA)
-  solver.Add(Q + U + A + R + T + E + T == QUARTET)
-  solver.Add(S + A + X + O + P + H + O + N + E == SAXOPHONE)
-  solver.Add(S + C + A + L + E == SCALE)
-  solver.Add(S + O + L + O == SOLO)
-  solver.Add(S + O + N + G == SONG)
-  solver.Add(S + O + P + R + A + N + O == SOPRANO)
-  solver.Add(T + H + E + M + E == THEME)
-  solver.Add(V + I + O + L + I + N == VIOLIN)
-  solver.Add(W + A + L + T + Z == WALTZ)
+  solver.add_all_different(LD)
+  solver.add(B + A + L + L + E + T == BALLET)
+  solver.add(C + E + L + L + O == CELLO)
+  solver.add(C + O + N + C + E + R + T == CONCERT)
+  solver.add(F + L + U + T + E == FLUTE)
+  solver.add(F + U + G + U + E == FUGUE)
+  solver.add(G + L + E + E == GLEE)
+  solver.add(J + A + Z + Z == JAZZ)
+  solver.add(L + Y + R + E == LYRE)
+  solver.add(O + B + O + E == OBOE)
+  solver.add(O + P + E + R + A == OPERA)
+  solver.add(P + O + L + K + A == POLKA)
+  solver.add(Q + U + A + R + T + E + T == QUARTET)
+  solver.add(S + A + X + O + P + H + O + N + E == SAXOPHONE)
+  solver.add(S + C + A + L + E == SCALE)
+  solver.add(S + O + L + O == SOLO)
+  solver.add(S + O + N + G == SONG)
+  solver.add(S + O + P + R + A + N + O == SOPRANO)
+  solver.add(T + H + E + M + E == THEME)
+  solver.add(V + I + O + L + I + N == VIOLIN)
+  solver.add(W + A + L + T + Z == WALTZ)
 
   #
   # search and result
   #
-  db = solver.Phase(LD, solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                    solver.ASSIGN_CENTER_VALUE)
+  db = solver.phase(LD, cp.IntVarStrategy.CHOOSE_MIN_SIZE_LOWEST_MIN,
+                    cp.IntValueStrategy.ASSIGN_CENTER_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
 
   num_solutions = 0
   str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
-    for (letter, val) in [(str[i], LD[i].Value()) for i in range(num_letters)]:
+    for (letter, val) in [(str[i], LD[i].value()) for i in range(num_letters)]:
       print("%s: %i" % (letter, val))
     print()
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 if __name__ == "__main__":

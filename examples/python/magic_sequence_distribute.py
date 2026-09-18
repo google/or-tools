@@ -24,33 +24,37 @@ Usage: python magic_sequence_distribute.py NUMBER
 
 from absl import app, flags
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 FLAGS = flags.FLAGS
 
 
 def main(argv):
     # Create the solver.
-    solver = pywrapcp.Solver("magic sequence")
+    solver = cp.Solver("magic sequence")
 
     # Create an array of IntVars to hold the answers.
     size = int(argv[1]) if len(argv) > 1 else 100
     all_values = list(range(0, size))
-    all_vars = [solver.IntVar(0, size, "vars_%d" % i) for i in all_values]
+    all_vars = [solver.new_int_var(0, size, "vars_%d" % i) for i in all_values]
 
     # The number of variables equal to j shall be the value of all_vars[j].
-    solver.Add(solver.Distribute(all_vars, all_values, all_vars))
+    solver.add(solver.distribute(all_vars, all_values, all_vars))
 
     # The sum of all the values shall be equal to the size.
     # (This constraint is redundant, but speeds up the search.)
-    solver.Add(solver.Sum(all_vars) == size)
+    solver.add(solver.sum(all_vars) == size)
 
-    solver.NewSearch(
-        solver.Phase(all_vars, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
+    solver.new_search(
+        solver.phase(
+            all_vars,
+            cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+            cp.IntValueStrategy.ASSIGN_MIN_VALUE
+        )
     )
-    solver.NextSolution()
+    solver.next_solution()
     print(all_vars)
-    solver.EndSearch()
+    solver.end_search()
 
 
 if __name__ == "__main__":

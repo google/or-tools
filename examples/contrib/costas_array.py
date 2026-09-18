@@ -61,13 +61,13 @@
 """
 import sys
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(n=6):
 
   # Create the solver.
-  solver = pywrapcp.Solver("Costas array")
+  solver = cp.Solver("Costas array")
 
   #
   # data
@@ -77,11 +77,11 @@ def main(n=6):
   #
   # declare variables
   #
-  costas = [solver.IntVar(1, n, "costas[%i]" % i) for i in range(n)]
+  costas = [solver.new_int_var(1, n, "costas[%i]" % i) for i in range(n)]
   differences = {}
   for i in range(n):
     for j in range(n):
-      differences[(i, j)] = solver.IntVar(-n + 1, n - 1,
+      differences[(i, j)] = solver.new_int_var(-n + 1, n - 1,
                                           "differences[%i,%i]" % (i, j))
   differences_flat = [differences[i, j] for i in range(n) for j in range(n)]
 
@@ -94,25 +94,24 @@ def main(n=6):
   # of the difference matrix for the same Costas array.
   for i in range(n):
     for j in range(i + 1):
-      solver.Add(differences[i, j] == -n + 1)
+      solver.add(differences[i, j] == -n + 1)
 
   # hakank: All the following constraints are from
   # Barry O'Sullivans's original model.
   #
-  solver.Add(solver.AllDifferent(costas))
+  solver.add_all_different(costas)
 
   # "How do the positions in the Costas array relate
   #  to the elements of the distance triangle."
   for i in range(n):
     for j in range(n):
       if i < j:
-        solver.Add(differences[(i, j)] == costas[j] - costas[j - i - 1])
+        solver.add(differences[(i, j)] == costas[j] - costas[j - i - 1])
 
   # "All entries in a particular row of the difference
   #  triangle must be distint."
   for i in range(n - 2):
-    solver.Add(
-        solver.AllDifferent([differences[i, j] for j in range(n) if j > i]))
+    solver.add_all_different([differences[i, j] for j in range(n) if j > i])
 
   #
   # "All the following are redundant - only here to speed up search."
@@ -122,28 +121,28 @@ def main(n=6):
   for i in range(n):
     for j in range(n):
       if i < j:
-        solver.Add(differences[i, j] != 0)
+        solver.add(differences[i, j] != 0)
 
   for k in range(2, n):
     for l in range(2, n):
       if k < l:
-        solver.Add(differences[k - 2, l - 1] + differences[k, l] ==
+        solver.add(differences[k - 2, l - 1] + differences[k, l] ==
                    differences[k - 1, l - 1] + differences[k - 1, l])
 
   #
   # search and result
   #
-  db = solver.Phase(costas + differences_flat, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(costas + differences_flat, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+                    cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
-  while solver.NextSolution():
-    print("costas:", [costas[i].Value() for i in range(n)])
+  while solver.next_solution():
+    print("costas:", [costas[i].value() for i in range(n)])
     print("differences:")
     for i in range(n):
       for j in range(n):
-        v = differences[i, j].Value()
+        v = differences[i, j].value()
         if v == -n + 1:
           print("  ", end=" ")
         else:
@@ -152,13 +151,13 @@ def main(n=6):
     print()
     num_solutions += 1
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 n = 6

@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 import argparse
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 parser = argparse.ArgumentParser()
 
@@ -28,10 +28,10 @@ def BinPacking(solver, binvars, weights, loadvars):
 
   constraints forall j: loadvars[j] == sum_i (binvars[i] == j) * weights[i])
   """
-  pack = solver.Pack(binvars, len(loadvars))
+  pack = solver.add_pack(binvars, len(loadvars))
   pack.AddWeightedSumEqualVarDimension(weights, loadvars)
-  solver.Add(pack)
-  solver.Add(solver.SumEquality(loadvars, sum(weights)))
+  solver.add(pack)
+  solver.add_sum_equality(loadvars, sum(weights))
 
 
 #------------------------------data reading-------------------
@@ -54,13 +54,13 @@ def main(args):
   credits, nb_periods, prereq = ReadData(args.data)
   nb_courses = len(credits)
 
-  solver = pywrapcp.Solver('Balanced Academic Curriculum Problem')
+  solver = cp.Solver('Balanced Academic Curriculum Problem')
 
   x = [
-      solver.IntVar(0, nb_periods - 1, 'x' + str(i)) for i in range(nb_courses)
+      solver.new_int_var(0, nb_periods - 1, 'x' + str(i)) for i in range(nb_courses)
   ]
   load_vars = [
-      solver.IntVar(0, sum(credits), 'load_vars' + str(i))
+      solver.new_int_var(0, sum(credits), 'load_vars' + str(i))
       for i in range(nb_periods)
   ]
 
@@ -70,20 +70,20 @@ def main(args):
   BinPacking(solver, x, credits, load_vars)
   # Add dependencies.
   for i, j in prereq:
-    solver.Add(x[i] < x[j])
+    solver.add(x[i] < x[j])
 
   #----------------Objective-------------------------------
 
-  objective_var = solver.Max(load_vars)
-  objective = solver.Minimize(objective_var, 1)
+  objective_var = solver.max(load_vars)
+  objective = solver.minimize(objective_var, 1)
 
   #------------start the search and optimization-----------
 
-  db = solver.Phase(x, solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                    solver.INT_VALUE_DEFAULT)
+  db = solver.phase(x, cp.IntVarStrategy.CHOOSE_MIN_SIZE_LOWEST_MIN,
+                    cp.IntValueStrategy.INT_VALUE_DEFAULT)
 
-  search_log = solver.SearchLog(100000, objective_var)
-  solver.Solve(db, [objective, search_log])
+  search_log = solver.search_log(100000, objective_var)
+  solver.solve(db, [objective, search_log])
 
 
 if __name__ == '__main__':

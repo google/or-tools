@@ -61,7 +61,7 @@
 """
 from collections import defaultdict
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def var_matrix_array(solver, rows, cols, lb, ub, name):
@@ -69,7 +69,7 @@ def var_matrix_array(solver, rows, cols, lb, ub, name):
   for i in range(rows):
     t = []
     for j in range(cols):
-      t.append(solver.IntVar(lb, ub, "%s[%i,%i]" % (name, i, j)))
+      t.append(solver.new_int_var(lb, ub, "%s[%i,%i]" % (name, i, j)))
     x.append(t)
   return x
 
@@ -81,7 +81,7 @@ def flatten_matrix(solver, m, rows, cols):
 def print_flat_matrix(m_flat, rows, cols):
   for i in range(rows):
     for j in range(cols):
-      print(m_flat[i * cols + j].Value(), end=" ")
+      print(m_flat[i * cols + j].value(), end=" ")
     print()
   print()
 
@@ -89,7 +89,7 @@ def print_flat_matrix(m_flat, rows, cols):
 def main(the_killers):
 
   # Create the solver.
-  solver = pywrapcp.Solver("Who killed agatha?")
+  solver = cp.Solver("Who killed agatha?")
 
   #
   # data
@@ -102,8 +102,8 @@ def main(the_killers):
   #
   # declare variables
   #
-  the_killer = solver.IntVar(0, 2, "the_killer")
-  the_victim = solver.IntVar(0, 2, "the_victim")
+  the_killer = solver.new_int_var(0, 2, "the_killer")
+  the_victim = solver.new_int_var(0, 2, "the_victim")
 
   hates = var_matrix_array(solver, n, n, 0, 1, "hates")
   richer = var_matrix_array(solver, n, n, 0, 1, "richer")
@@ -119,74 +119,74 @@ def main(the_killers):
   # are the only ones to live there.
 
   # A killer always hates, and is no richer than his victim.
-  # solver.Add(hates[the_killer, the_victim] == 1)
-  solver.Add(solver.Element(hates_flat, the_killer * n + the_victim) == 1)
+  # solver.add(hates[the_killer, the_victim] == 1)
+  solver.add(solver.element(hates_flat, the_killer * n + the_victim) == 1)
 
-  # solver.Add(richer[the_killer, the_victim] == 0)
-  solver.Add(solver.Element(richer_flat, the_killer * n + the_victim) == 0)
+  # solver.add(richer[the_killer, the_victim] == 0)
+  solver.add(solver.element(richer_flat, the_killer * n + the_victim) == 0)
 
   # define the concept of richer: no one is richer than him-/herself
   for i in range(n):
-    solver.Add(richer[i][i] == 0)
+    solver.add(richer[i][i] == 0)
 
   # (contd...) if i is richer than j then j is not richer than i
   #  (i != j) => (richer[i,j] = 1) <=> (richer[j,i] = 0),
   for i in range(n):
     for j in range(n):
       if i != j:
-        solver.Add((richer[i][j] == 1) == (richer[j][i] == 0))
+        solver.add((richer[i][j] == 1) == (richer[j][i] == 0))
 
   # Charles hates noone that Agatha hates.
   # forall i : Range .
   #  (hates[agatha, i] = 1) => (hates[charles, i] = 0),
   for i in range(n):
-    solver.Add((hates[agatha][i] == 1) <= (hates[charles][i] == 0))
+    solver.add((hates[agatha][i] == 1) <= (hates[charles][i] == 0))
 
   # Agatha hates everybody except the butler.
-  solver.Add(hates[agatha][charles] == 1)
-  solver.Add(hates[agatha][agatha] == 1)
-  solver.Add(hates[agatha][butler] == 0)
+  solver.add(hates[agatha][charles] == 1)
+  solver.add(hates[agatha][agatha] == 1)
+  solver.add(hates[agatha][butler] == 0)
 
   # The butler hates everyone not richer than Aunt Agatha.
   # forall i : Range .
   #  (richer[i, agatha] = 0) => (hates[butler, i] = 1),
   for i in range(n):
-    solver.Add((richer[i][agatha] == 0) <= (hates[butler][i] == 1))
+    solver.add((richer[i][agatha] == 0) <= (hates[butler][i] == 1))
 
   # The butler hates everyone whom Agatha hates.
   # forall i : Range .
   #  (hates[agatha, i] = 1) => (hates[butler, i] = 1),
   for i in range(n):
-    solver.Add((hates[agatha][i] == 1) <= (hates[butler][i] == 1))
+    solver.add((hates[agatha][i] == 1) <= (hates[butler][i] == 1))
 
   # Noone hates everyone.
   # forall i : Range .
   #   (sum j : Range . hates[i,j]) <= 2,
   for i in range(n):
-    solver.Add(solver.Sum([hates[i][j] for j in range(n)]) <= 2)
+    solver.add(solver.sum([hates[i][j] for j in range(n)]) <= 2)
 
   # Who killed Agatha?
-  solver.Add(the_victim == agatha)
+  solver.add(the_victim == agatha)
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(the_killer)
-  solution.Add(the_victim)
-  solution.Add(hates_flat)
-  solution.Add(richer_flat)
+  solution = solver.assignment()
+  solution.add(the_killer)
+  solution.add(the_victim)
+  solution.add(hates_flat)
+  solution.add(richer_flat)
 
   # db: DecisionBuilder
-  db = solver.Phase(hates_flat + richer_flat, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(hates_flat + richer_flat, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+                    cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
-  while solver.NextSolution():
-    print("the_killer:", the_killer.Value())
-    the_killers[the_killer.Value()] += 1
-    print("the_victim:", the_victim.Value())
+  while solver.next_solution():
+    print("the_killer:", the_killer.value())
+    the_killers[the_killer.value()] += 1
+    print("the_victim:", the_victim.value())
     print("hates:")
     print_flat_matrix(hates_flat, n, n)
     print("richer:")
@@ -194,13 +194,13 @@ def main(the_killers):
     print()
     num_solutions += 1
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 the_killers = defaultdict(int)

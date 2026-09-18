@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 import argparse
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -31,10 +31,10 @@ def BinPacking(solver, binvars, weights, loadvars):
 
   constraints forall j: loadvars[j] == sum_i (binvars[i] == j) * weights[i])
   """
-  pack = solver.Pack(binvars, len(binvars))
+  pack = solver.add_pack(binvars, len(binvars))
   pack.AddWeightedSumEqualVarDimension(weights, loadvars)
-  solver.Add(pack)
-  solver.Add(solver.SumEquality(loadvars, sum(weights)))
+  solver.add(pack)
+  solver.add_sum_equality(loadvars, sum(weights))
 
 
 #------------------------------data reading-------------------
@@ -66,7 +66,7 @@ def ReadData(filename):
 #------------------dedicated search for this problem-----------
 
 
-class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
+class SteelDecisionBuilder(cp.PyDecisionBuilder):
   """Dedicated Decision Builder for steel mill slab.
 
   Search for the steel mill slab problem with Dynamic Symmetry
@@ -80,7 +80,7 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
   """
 
   def __init__(self, x, nb_slabs, weights, losstab, loads):
-    pywrapcp.PyDecisionBuilder.__init__(self)
+    cp.PyDecisionBuilder.__init__(self)
     self.__x = x
     self.__nb_slabs = nb_slabs
     self.__weights = weights
@@ -95,7 +95,7 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
       if v + 1 == var.Min():
         # Symmetry breaking. If you need to assign to a new bin,
         # select the first one.
-        solver.Add(var == v + 1)
+        solver.add(var == v + 1)
         return self.Next(solver)
       else:
         # value heuristic (important for difficult problem):
@@ -106,7 +106,7 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
                    for i in range(var.Min(),
                                   var.Max() + 1)
                    if var.Contains(i) and loads[i] + weight <= self.__maxcapa)
-        decision = solver.AssignVariableValue(var, v)
+        decision = solver.AssignVariabl.value(var, v)
         return decision
     else:
       return None
@@ -146,10 +146,10 @@ def main(args):
   (nb_slabs, capacity, max_capacity, weights, colors, loss, color_orders) =\
       ReadData(args.data)
   nb_colors = len(color_orders)
-  solver = pywrapcp.Solver('Steel Mill Slab')
-  x = [solver.IntVar(0, nb_slabs - 1, 'x' + str(i)) for i in range(nb_slabs)]
+  solver = cp.Solver('Steel Mill Slab')
+  x = [solver.new_int_var(0, nb_slabs - 1, 'x' + str(i)) for i in range(nb_slabs)]
   load_vars = [
-      solver.IntVar(0, max_capacity - 1, 'load_vars' + str(i))
+      solver.new_int_var(0, max_capacity - 1, 'load_vars' + str(i))
       for i in range(nb_slabs)
   ]
 
@@ -159,9 +159,9 @@ def main(args):
   BinPacking(solver, x, weights, load_vars)
   # At most two colors per slab.
   for s in range(nb_slabs):
-    solver.Add(
+    solver.add(
         solver.SumLessOrEqual([
-            solver.Max([solver.IsEqualCstVar(x[c], s)
+            solver.max([solver.add_is_equal_cst_var(x[c], s)
                         for c in o])
             for o in color_orders
         ], 2))
@@ -169,19 +169,19 @@ def main(args):
   #----------------Objective-------------------------------
 
   objective_var = \
-      solver.Sum([load_vars[s].IndexOf(loss) for s in range(nb_slabs)]).Var()
-  objective = solver.Minimize(objective_var, 1)
+      solver.sum([load_vars[s].index_of(loss) for s in range(nb_slabs)]).Var()
+  objective = solver.minimize(objective_var, 1)
 
   #------------start the search and optimization-----------
 
   db = SteelDecisionBuilder(x, nb_slabs, weights, loss, load_vars)
-  search_log = solver.SearchLog(100000, objective_var)
+  search_log = solver.search_log(100000, objective_var)
   global_limit = solver.TimeLimit(args.time_limit)
-  solver.NewSearch(db, [objective, search_log, global_limit])
-  while solver.NextSolution():
-    print('Objective:', objective_var.Value(),\
+  solver.new_search(db, [objective, search_log, global_limit])
+  while solver.next_solution():
+    print('Objective:', objective_var.value(),\
         'check:', sum(loss[load_vars[s].Min()] for s in range(nb_slabs)))
-  solver.EndSearch()
+  solver.end_search()
 
 
 if __name__ == '__main__':

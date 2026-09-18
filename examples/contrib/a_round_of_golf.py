@@ -65,13 +65,13 @@
 """
 
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver("All interval")
+  solver = cp.Solver("All interval")
 
   #
   # data
@@ -82,84 +82,84 @@ def main():
   #
   # declare variables
   #
-  last_name = [solver.IntVar(0, n - 1, "last_name[%i]" % i) for i in range(n)]
+  last_name = [solver.new_int_var(0, n - 1, "last_name[%i]" % i) for i in range(n)]
   [Green, Clubb, Sands, Carter] = last_name
 
-  job = [solver.IntVar(0, n - 1, "job[%i]" % i) for i in range(n)]
+  job = [solver.new_int_var(0, n - 1, "job[%i]" % i) for i in range(n)]
   [cook, maintenance_man, clerk, caddy] = job
 
-  score = [solver.IntVar(70, 85, "score[%i]" % i) for i in range(n)]
+  score = [solver.new_int_var(70, 85, "score[%i]" % i) for i in range(n)]
 
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(last_name))
-  solver.Add(solver.AllDifferent(job))
-  solver.Add(solver.AllDifferent(score))
+  solver.add_all_different(last_name)
+  solver.add_all_different(job)
+  solver.add_all_different(score)
 
   # 1. Bill, who is not the maintenance man, plays golf often and had
   #    the lowest score of the foursome.
-  solver.Add(Bill != maintenance_man)
-  solver.Add(score[Bill] < score[Jack])
-  solver.Add(score[Bill] < score[Paul])
-  solver.Add(score[Bill] < score[Frank])
+  solver.add(Bill != maintenance_man)
+  solver.add(score[Bill] < score[Jack])
+  solver.add(score[Bill] < score[Paul])
+  solver.add(score[Bill] < score[Frank])
 
   # 2. Mr. Clubb, who isn't Paul, hit several balls into the woods and
   #    scored ten strokes more than the pro-shop clerk.
-  solver.Add(Clubb != Paul)
-  solver.Add(solver.Element(score, Clubb) == solver.Element(score, clerk) + 10)
+  solver.add(Clubb != Paul)
+  solver.add(solver.element(score, Clubb) == solver.element(score, clerk) + 10)
 
   # 3. In some order, Frank and the caddy scored four and seven more
   #    strokes than Mr. Sands.
-  solver.Add(Frank != caddy)
-  solver.Add(Frank != Sands)
-  solver.Add(caddy != Sands)
+  solver.add(Frank != caddy)
+  solver.add(Frank != Sands)
+  solver.add(caddy != Sands)
 
-  b3_a_1 = solver.IsEqualVar(solver.Element(score, Sands) + 4, score[Frank])
-  b3_a_2 = solver.IsEqualVar(
-      solver.Element(score, caddy),
-      solver.Element(score, Sands) + 7)
+  b3_a_1 = solver.add_is_equal_var(solver.element(score, Sands) + 4, score[Frank])
+  b3_a_2 = solver.add_is_equal_var(
+      solver.element(score, caddy),
+      solver.element(score, Sands) + 7)
 
-  b3_b_1 = solver.IsEqualVar(solver.Element(score, Sands) + 7, score[Frank])
-  b3_b_2 = solver.IsEqualVar(
-      solver.Element(score, caddy),
-      solver.Element(score, Sands) + 4)
+  b3_b_1 = solver.add_is_equal_var(solver.element(score, Sands) + 7, score[Frank])
+  b3_b_2 = solver.add_is_equal_var(
+      solver.element(score, caddy),
+      solver.element(score, Sands) + 4)
 
-  solver.Add((b3_a_1 * b3_a_2) + (b3_b_1 * b3_b_2) == 1)
+  solver.add((b3_a_1 * b3_a_2) + (b3_b_1 * b3_b_2) == 1)
 
   # 4. Mr. Carter thought his score of 78 was one of his better games,
   #    even though Frank's score was lower.
-  solver.Add(Frank != Carter)
-  solver.Add(solver.Element(score, Carter) == 78)
-  solver.Add(score[Frank] < solver.Element(score, Carter))
+  solver.add(Frank != Carter)
+  solver.add(solver.element(score, Carter) == 78)
+  solver.add(score[Frank] < solver.element(score, Carter))
 
   # 5. None of the four scored exactly 81 strokes.
-  [solver.Add(score[i] != 81) for i in range(n)]
+  [solver.add(score[i] != 81) for i in range(n)]
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(last_name)
-  solution.Add(job)
-  solution.Add(score)
+  solution = solver.assignment()
+  solution.add(last_name)
+  solution.add(job)
+  solution.add(score)
 
-  db = solver.Phase(last_name + job + score, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.INT_VALUE_DEFAULT)
+  db = solver.phase(last_name + job + score, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+                    cp.IntValueStrategy.INT_VALUE_DEFAULT)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
-  while solver.NextSolution():
-    print("last_name:", [last_name[i].Value() for i in range(n)])
-    print("job      :", [job[i].Value() for i in range(n)])
-    print("score    :", [score[i].Value() for i in range(n)])
+  while solver.next_solution():
+    print("last_name:", [last_name[i].value() for i in range(n)])
+    print("job      :", [job[i].value() for i in range(n)])
+    print("score    :", [score[i].value() for i in range(n)])
     num_solutions += 1
     print()
 
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 if __name__ == "__main__":

@@ -53,13 +53,13 @@
 
 import sys
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(n=12):
 
   # Create the solver.
-  solver = pywrapcp.Solver("All interval")
+  solver = cp.Solver("All interval")
 
   #
   # data
@@ -69,43 +69,43 @@ def main(n=12):
   #
   # declare variables
   #
-  x = [solver.IntVar(1, n, "x[%i]" % i) for i in range(n)]
-  diffs = [solver.IntVar(1, n - 1, "diffs[%i]" % i) for i in range(n - 1)]
+  x = [solver.new_int_var(1, n, "x[%i]" % i) for i in range(n)]
+  diffs = [solver.new_int_var(1, n - 1, "diffs[%i]" % i) for i in range(n - 1)]
 
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(x))
-  solver.Add(solver.AllDifferent(diffs))
+  solver.add_all_different(x)
+  solver.add_all_different(diffs)
 
   for k in range(n - 1):
-    solver.Add(diffs[k] == abs(x[k + 1] - x[k]))
+    solver.add(diffs[k] == abs(x[k + 1] - x[k]))
 
   # symmetry breaking
-  solver.Add(x[0] < x[n - 1])
-  solver.Add(diffs[0] < diffs[1])
+  solver.add(x[0] < x[n - 1])
+  solver.add(diffs[0] < diffs[1])
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(x)
-  solution.Add(diffs)
+  solution = solver.assignment()
+  solution.add(x)
+  solution.add(diffs)
 
-  db = solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(x, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND, cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
-  while solver.NextSolution():
-    print("x:", [x[i].Value() for i in range(n)])
-    print("diffs:", [diffs[i].Value() for i in range(n - 1)])
+  while solver.next_solution():
+    print("x:", [x[i].value() for i in range(n)])
+    print("diffs:", [diffs[i].value() for i in range(n - 1)])
     num_solutions += 1
     print()
 
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 n = 12

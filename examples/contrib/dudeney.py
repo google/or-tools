@@ -10,33 +10,33 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def dudeney(n):
-  solver = pywrapcp.Solver('Dudeney')
-  x = [solver.IntVar(list(range(10)), 'x' + str(i)) for i in range(n)]
-  nb = solver.IntVar(list(range(3, 10**n)), 'nb')
-  s = solver.IntVar(list(range(1, 9 * n + 1)), 's')
+  solver = cp.Solver('Dudeney')
+  x = [solver.new_int_var(list(range(10)), 'x' + str(i)) for i in range(n)]
+  nb = solver.new_int_var(list(range(3, 10**n)), 'nb')
+  s = solver.new_int_var(list(range(1, 9 * n + 1)), 's')
 
-  solver.Add(nb == s * s * s)
-  solver.Add(sum([10**(n - i - 1) * x[i] for i in range(n)]) == nb)
-  solver.Add(sum([x[i] for i in range(n)]) == s)
+  solver.add(nb == s * s * s)
+  solver.add(sum([10**(n - i - 1) * x[i] for i in range(n)]) == nb)
+  solver.add(sum([x[i] for i in range(n)]) == s)
 
-  solution = solver.Assignment()
-  solution.Add(nb)
-  collector = solver.AllSolutionCollector(solution)
+  solution = solver.assignment()
+  solution.add(nb)
+  collector = solver.all_solution_collector(solution)
 
-  solver.Solve(
-      solver.Phase(x, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT),
+  solver.solve(
+      solver.phase(x, cp.IntVarStrategy.INT_VAR_DEFAULT, cp.IntValueStrategy.INT_VALUE_DEFAULT),
       [collector])
 
-  for i in range(collector.SolutionCount()):
-    nbsol = collector.Value(i, nb)
+  for i in range(collector.solution_count):
+    nbsol = collector.value(i, nb)
     print(nbsol)
 
-  print('#fails:', solver.Failures())
-  print('time:', solver.WallTime(), 'ms')
+  print('#fails:', solver.num_failures)
+  print('time:', solver.wall_time_ms, 'ms')
 
 
 if __name__ == '__main__':

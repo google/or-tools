@@ -36,7 +36,7 @@
   http://www.hakank.org/google_or_tools/
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 #
@@ -54,35 +54,35 @@ from ortools.constraint_solver import pywrapcp
 #
 # Parameters:
 #
-# s: start_times    assumption: array of IntVar
+# s: start_times    assumption: array of.new_int_var
 # d: durations      assumption: array of int
 # r: resources      assumption: array of int
-# b: resource limit assumption: IntVar or int
+# b: resource limit assumption:.new_int_var or int
 #
 def my_cumulative(solver, s, d, r, b):
 
   # tasks = [i for i in range(len(s))]
   tasks = [i for i in range(len(s)) if r[i] > 0 and d[i] > 0]
-  times_min = min([s[i].Min() for i in tasks])
-  times_max = max([s[i].Max() + max(d) for i in tasks])
+  times_min = min([s[i].min() for i in tasks])
+  times_max = max([s[i].max() + max(d) for i in tasks])
   for t in range(times_min, times_max + 1):
     bb = []
     for i in tasks:
-      c1 = solver.IsLessOrEqualCstVar(s[i], t)  # s[i] <= t
-      c2 = solver.IsGreaterCstVar(s[i] + d[i], t)  # t < s[i] + d[i]
+      c1 = solver.add_is_less_or_equal_cst_var(s[i], t)  # s[i] <= t
+      c2 = solver.add_is_greater_cst_var(s[i] + d[i], t)  # t < s[i] + d[i]
       bb.append(c1 * c2 * r[i])
-    solver.Add(solver.Sum(bb) <= b)
+    solver.add(solver.sum(bb) <= b)
 
   # Somewhat experimental:
   # This constraint is needed to contrain the upper limit of b.
   if not isinstance(b, int):
-    solver.Add(b <= sum(r))
+    solver.add(b <= sum(r))
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver("Furniture moving")
+  solver = cp.Solver("Furniture moving")
 
   #
   # data
@@ -96,23 +96,23 @@ def main():
   # declare variables
   #
   start_times = [
-      solver.IntVar(0, upper_limit, "start_times[%i]" % i) for i in range(n)
+      solver.new_int_var(0, upper_limit, "start_times[%i]" % i) for i in range(n)
   ]
   end_times = [
-      solver.IntVar(0, upper_limit * 2, "end_times[%i]" % i) for i in range(n)
+      solver.new_int_var(0, upper_limit * 2, "end_times[%i]" % i) for i in range(n)
   ]
-  end_time = solver.IntVar(0, upper_limit * 2, "end_time")
+  end_time = solver.new_int_var(0, upper_limit * 2, "end_time")
 
   # number of needed resources, to be minimized
-  num_resources = solver.IntVar(0, 10, "num_resources")
+  num_resources = solver.new_int_var(0, 10, "num_resources")
 
   #
   # constraints
   #
   for i in range(n):
-    solver.Add(end_times[i] == start_times[i] + duration[i])
+    solver.add(end_times[i] == start_times[i] + duration[i])
 
-  solver.Add(end_time == solver.Max(end_times))
+  solver.add(end_time == solver.max(end_times))
 
   my_cumulative(solver, start_times, duration, demand, num_resources)
 
@@ -121,54 +121,54 @@ def main():
   #
 
   # all tasks must end within an hour
-  # solver.Add(end_time <= 60)
+  # solver.add(end_time <= 60)
 
   # All tasks should start at time 0
   # for i in range(n):
-  #    solver.Add(start_times[i] == 0)
+  #    solver.add(start_times[i] == 0)
 
   # limitation of the number of people
-  # solver.Add(num_resources <= 3)
+  # solver.add(num_resources <= 3)
 
   #
   # objective
   #
-  # objective = solver.Minimize(end_time, 1)
-  objective = solver.Minimize(num_resources, 1)
+  # objective = solver.minimize(end_time, 1)
+  objective = solver.minimize(num_resources, 1)
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(start_times)
-  solution.Add(end_times)
-  solution.Add(end_time)
-  solution.Add(num_resources)
+  solution = solver.assignment()
+  solution.add(start_times)
+  solution.add(end_times)
+  solution.add(end_time)
+  solution.add(num_resources)
 
-  db = solver.Phase(start_times, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(start_times, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+                    cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
   #
   # result
   #
-  solver.NewSearch(db, [objective])
+  solver.new_search(db, [objective])
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
-    print("num_resources:", num_resources.Value())
-    print("start_times  :", [start_times[i].Value() for i in range(n)])
+    print("num_resources:", num_resources.value())
+    print("start_times  :", [start_times[i].value() for i in range(n)])
     print("duration     :", [duration[i] for i in range(n)])
-    print("end_times    :", [end_times[i].Value() for i in range(n)])
-    print("end_time     :", end_time.Value())
+    print("end_times    :", [end_times[i].value() for i in range(n)])
+    print("end_time     :", end_time.value())
     print()
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 if __name__ == "__main__":

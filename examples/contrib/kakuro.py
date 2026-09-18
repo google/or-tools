@@ -56,7 +56,7 @@
 """
 import sys
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 #
 # Ensure that the sum of the segments
@@ -66,20 +66,20 @@ from ortools.constraint_solver import pywrapcp
 
 def calc(cc, x, res):
 
-  solver = list(x.values())[0].solver()
+  solver = list(x.values())[0].solver
 
   # ensure that the values are positive
   for i in cc:
-    solver.Add(x[i[0] - 1, i[1] - 1] >= 1)
+    solver.add(x[i[0] - 1, i[1] - 1] >= 1)
 
   # sum the numbers
-  solver.Add(solver.Sum([x[i[0] - 1, i[1] - 1] for i in cc]) == res)
+  solver.add(solver.sum([x[i[0] - 1, i[1] - 1] for i in cc]) == res)
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver("Kakuro")
+  solver = cp.Solver("Kakuro")
 
   #
   # data
@@ -121,7 +121,7 @@ def main():
   x = {}
   for i in range(n):
     for j in range(n):
-      x[i, j] = solver.IntVar(0, 9, "x[%i,%i]" % (i, j))
+      x[i, j] = solver.new_int_var(0, 9, "x[%i,%i]" % (i, j))
 
   x_flat = [x[i, j] for i in range(n) for j in range(n)]
 
@@ -131,7 +131,7 @@ def main():
 
   # fill the blanks with 0
   for i in range(num_blanks):
-    solver.Add(x[blanks[i][0] - 1, blanks[i][1] - 1] == 0)
+    solver.add(x[blanks[i][0] - 1, blanks[i][1] - 1] == 0)
 
   for i in range(num_p):
     segment = problem[i][1::]
@@ -142,20 +142,20 @@ def main():
 
     # all numbers in this segment must be distinct
     segment = [x[p[0] - 1, p[1] - 1] for p in segment]
-    solver.Add(solver.AllDifferent(segment))
+    solver.add_all_different(segment)
 
   #
   # search and solution
   #
-  db = solver.Phase(x_flat, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
+  db = solver.phase(x_flat, cp.IntVarStrategy.INT_VAR_DEFAULT, cp.IntValueStrategy.INT_VALUE_DEFAULT)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     for i in range(n):
       for j in range(n):
-        val = x[i, j].Value()
+        val = x[i, j].value()
         if val > 0:
           print(val, end=" ")
         else:
@@ -165,13 +165,13 @@ def main():
     print()
     num_solutions += 1
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 if __name__ == "__main__":

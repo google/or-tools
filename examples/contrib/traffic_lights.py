@@ -53,7 +53,7 @@
 
   '''
 
-  Note: In this model we use only the constraint solver.AllowedAssignments().
+  Note: In this model we use only the constraint solver.add_allowed_assignments().
 
 
   Compare with these models:
@@ -71,13 +71,13 @@
 """
 import sys
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(base=10, start=1, len1=1, len2=4):
 
   # Create the solver.
-  solver = pywrapcp.Solver("Traffic lights")
+  solver = cp.Solver("Traffic lights")
 
   #
   # data
@@ -93,8 +93,8 @@ def main(base=10, start=1, len1=1, len2=4):
   #
   # declare variables
   #
-  V = [solver.IntVar(0, n - 1, "V[%i]" % i) for i in range(n)]
-  P = [solver.IntVar(0, n - 1, "P[%i]" % i) for i in range(n)]
+  V = [solver.new_int_var(0, n - 1, "V[%i]" % i) for i in range(n)]
+  P = [solver.new_int_var(0, n - 1, "P[%i]" % i) for i in range(n)]
 
   #
   # constraints
@@ -102,28 +102,28 @@ def main(base=10, start=1, len1=1, len2=4):
   for i in range(n):
     for j in range(n):
       if j == (1 + i) % n:
-        solver.Add(solver.AllowedAssignments((V[i], P[i], V[j], P[j]), allowed))
+        solver.add_allowed_assignments((V[i], P[i], V[j], P[j]), allowed)
 
   #
   # Search and result
   #
-  db = solver.Phase(V + P, solver.INT_VAR_SIMPLE, solver.INT_VALUE_DEFAULT)
+  db = solver.phase(V + P, cp.IntVarStrategy.INT_VAR_SIMPLE, cp.IntValueStrategy.INT_VALUE_DEFAULT)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     for i in range(n):
-      print("%+2s %+2s" % (lights[V[i].Value()], lights[P[i].Value()]), end=" ")
+      print("%+2s %+2s" % (lights[V[i].value()], lights[P[i].value()]), end=" ")
     print()
     num_solutions += 1
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
   print()
 
 

@@ -62,13 +62,13 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver('Einav puzzle')
+  solver = cp.Solver('Einav puzzle')
 
   #
   # data
@@ -120,78 +120,78 @@ def main():
   x = {}
   for i in range(rows):
     for j in range(cols):
-      x[i, j] = solver.IntVar(-100, 100, 'x[%i,%i]' % (i, j))
+      x[i, j] = solver.new_int_var(-100, 100, 'x[%i,%i]' % (i, j))
 
   x_flat = [x[i, j] for i in range(rows) for j in range(cols)]
 
-  row_sums = [solver.IntVar(0, 300, 'row_sums(%i)' % i) for i in range(rows)]
-  col_sums = [solver.IntVar(0, 300, 'col_sums(%i)' % j) for j in range(cols)]
+  row_sums = [solver.new_int_var(0, 300, 'row_sums(%i)' % i) for i in range(rows)]
+  col_sums = [solver.new_int_var(0, 300, 'col_sums(%i)' % j) for j in range(cols)]
 
-  row_signs = [solver.IntVar([-1, 1], 'row_signs(%i)' % i) for i in range(rows)]
-  col_signs = [solver.IntVar([-1, 1], 'col_signs(%i)' % j) for j in range(cols)]
+  row_signs = [solver.new_int_var([-1, 1], 'row_signs(%i)' % i) for i in range(rows)]
+  col_signs = [solver.new_int_var([-1, 1], 'col_signs(%i)' % j) for j in range(cols)]
 
   # total sum: to be minimized
-  total_sum = solver.IntVar(0, 1000, 'total_sum')
+  total_sum = solver.new_int_var(0, 1000, 'total_sum')
 
   #
   # constraints
   #
   for i in range(rows):
     for j in range(cols):
-      solver.Add(x[i, j] == data[i][j] * row_signs[i] * col_signs[j])
+      solver.add(x[i, j] == data[i][j] * row_signs[i] * col_signs[j])
 
   total_sum_a = [
       data[i][j] * row_signs[i] * col_signs[j]
       for i in range(rows)
       for j in range(cols)
   ]
-  solver.Add(total_sum == solver.Sum(total_sum_a))
+  solver.add(total_sum == solver.sum(total_sum_a))
 
   # row sums
   for i in range(rows):
     s = [row_signs[i] * col_signs[j] * data[i][j] for j in range(cols)]
-    solver.Add(row_sums[i] == solver.Sum(s))
+    solver.add(row_sums[i] == solver.sum(s))
 
   # column sums
   for j in range(cols):
     s = [row_signs[i] * col_signs[j] * data[i][j] for i in range(rows)]
-    solver.Add(col_sums[j] == solver.Sum(s))
+    solver.add(col_sums[j] == solver.sum(s))
 
   # objective
-  objective = solver.Minimize(total_sum, 1)
+  objective = solver.minimize(total_sum, 1)
 
   #
   # search and result
   #
   # Note: The order of the variables makes a big difference.
   #       If row_signs are before col_sign it is much slower.
-  db = solver.Phase(col_signs + row_signs, solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                    solver.ASSIGN_MAX_VALUE)
+  db = solver.phase(col_signs + row_signs, cp.IntVarStrategy.CHOOSE_MIN_SIZE_LOWEST_MIN,
+                    cp.IntValueStrategy.ASSIGN_MAX_VALUE)
 
-  solver.NewSearch(db, [objective])
+  solver.new_search(db, [objective])
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
-    print('total_sum:', total_sum.Value())
-    print('row_sums:', [row_sums[i].Value() for i in range(rows)])
-    print('col_sums:', [col_sums[j].Value() for j in range(cols)])
-    print('row_signs:', [row_signs[i].Value() for i in range(rows)])
-    print('col_signs:', [col_signs[j].Value() for j in range(cols)])
+    print('total_sum:', total_sum.value())
+    print('row_sums:', [row_sums[i].value() for i in range(rows)])
+    print('col_sums:', [col_sums[j].value() for j in range(cols)])
+    print('row_signs:', [row_signs[i].value() for i in range(rows)])
+    print('col_signs:', [col_signs[j].value() for j in range(cols)])
     print('x:')
     for i in range(rows):
       for j in range(cols):
-        print('%3i' % x[i, j].Value(), end=' ')
+        print('%3i' % x[i, j].value(), end=' ')
       print()
     print()
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print('num_solutions:', num_solutions)
-  print('failures:', solver.Failures())
-  print('branches:', solver.Branches())
-  print('WallTime:', solver.WallTime(), 'ms')
+  print('failures:', solver.num_failures)
+  print('branches:', solver.num_branches)
+  print('WallTime:', solver.wall_time_ms, 'ms')
 
 
 if __name__ == '__main__':

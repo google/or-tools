@@ -39,7 +39,7 @@
   http://www.hakank.org/google_or_tools/
 
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 #
 # Global constraint regular
@@ -55,7 +55,7 @@ from ortools.constraint_solver import pywrapcp
 # 1..Q).  We reserve state 0 to be an always failing state.
 # '''
 #
-# x : IntVar array
+# x :.new_int_var array
 # Q : number of states
 # S : input_max
 # d : transition matrix
@@ -65,7 +65,7 @@ from ortools.constraint_solver import pywrapcp
 
 def regular(x, Q, S, d, q0, F):
 
-  solver = x[0].solver()
+  solver = x[0].solver
 
   assert Q > 0, 'regular: "Q" must be greater than zero'
   assert S > 0, 'regular: "S" must be greater than zero'
@@ -96,25 +96,25 @@ def regular(x, Q, S, d, q0, F):
   m = 0
   n = len(x)
 
-  a = [solver.IntVar(0, Q + 1, 'a[%i]' % i) for i in range(m, n + 1)]
+  a = [solver.new_int_var(0, Q + 1, 'a[%i]' % i) for i in range(m, n + 1)]
 
   # Check that the final state is in F
-  solver.Add(solver.MemberCt(a[-1], F))
+  solver.add_member_ct(a[-1], F)
   # First state is q0
-  solver.Add(a[m] == q0)
+  solver.add(a[m] == q0)
   for i in x_range:
-    solver.Add(x[i] >= 1)
-    solver.Add(x[i] <= S)
+    solver.add(x[i] >= 1)
+    solver.add(x[i] <= S)
 
     # Determine a[i+1]: a[i+1] == d2[a[i], x[i]]
-    solver.Add(
-        a[i + 1] == solver.Element(d2_flatten, ((a[i]) * S) + (x[i] - 1)))
+    solver.add(
+        a[i + 1] == solver.element(d2_flatten, ((a[i]) * S) + (x[i] - 1)))
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver('Global contiguity using regular')
+  solver = cp.Solver('Global contiguity using regular')
 
   #
   # data
@@ -141,7 +141,7 @@ def main():
   #
 
   # We use 1..2 and subtract 1 in the solution
-  reg_input = [solver.IntVar(1, 2, 'x[%i]' % i) for i in range(n)]
+  reg_input = [solver.new_int_var(1, 2, 'x[%i]' % i) for i in range(n)]
 
   #
   # constraints
@@ -152,23 +152,23 @@ def main():
   #
   # solution and search
   #
-  db = solver.Phase(reg_input, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(reg_input, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+                    cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
     # Note: here we subract 1 from the solution
-    print('reg_input:', [int(reg_input[i].Value() - 1) for i in range(n)])
+    print('reg_input:', [int(reg_input[i].value() - 1) for i in range(n)])
 
-  solver.EndSearch()
+  solver.end_search()
   print()
   print('num_solutions:', num_solutions)
-  print('failures:', solver.Failures())
-  print('branches:', solver.Branches())
-  print('wall_time:', solver.WallTime(), 'ms')
+  print('failures:', solver.num_failures)
+  print('branches:', solver.num_branches)
+  print('wall_time:', solver.wall_time_ms, 'ms')
 
 
 if __name__ == '__main__':

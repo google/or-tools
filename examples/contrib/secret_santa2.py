@@ -61,13 +61,13 @@
   http://www.hakank.org/google_or_tools/
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(singe=0):
 
   # Create the solver.
-  solver = pywrapcp.Solver('Secret Santa problem II')
+  solver = cp.Solver('Secret Santa problem II')
 
   #
   # data
@@ -143,71 +143,71 @@ def main(singe=0):
   #
   # declare variables
   #
-  santas = [solver.IntVar(0, n - 1, 'santas[%i]' % i) for i in range(n)]
+  santas = [solver.new_int_var(0, n - 1, 'santas[%i]' % i) for i in range(n)]
   santa_distance = [
-      solver.IntVar(0, M, 'santa_distance[%i]' % i) for i in range(n)
+      solver.new_int_var(0, M, 'santa_distance[%i]' % i) for i in range(n)
   ]
 
   # total of 'distance', to maximize
-  z = solver.IntVar(0, n * n * n, 'z')
+  z = solver.new_int_var(0, n * n * n, 'z')
 
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(santas))
+  solver.add_all_different(santas)
 
-  solver.Add(z == solver.Sum(santa_distance))
+  solver.add(z == solver.sum(santa_distance))
 
   # Can't be one own's Secret Santa
   # (i.e. ensure that there are no fix-point in the array.)
   for i in range(n):
-    solver.Add(santas[i] != i)
+    solver.add(santas[i] != i)
 
   # no Santa for a spouses
   for i in range(n):
     if spouses[i] > -1:
-      solver.Add(santas[i] != spouses[i])
+      solver.add(santas[i] != spouses[i])
 
   # optimize 'distance' to earlier rounds:
   for i in range(n):
-    solver.Add(santa_distance[i] == solver.Element(rounds[i], santas[i]))
+    solver.add(santa_distance[i] == solver.element(rounds[i], santas[i]))
 
   # cannot be a Secret Santa for the same person
   # two years in a row.
   for i in range(n):
     for j in range(n):
       if rounds[i][j] == 1:
-        solver.Add(santas[i] != j)
+        solver.add(santas[i] != j)
 
   # objective
-  objective = solver.Maximize(z, 1)
+  objective = solver.maximize(z, 1)
 
   #
   # solution and search
   #
-  db = solver.Phase(santas, solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                    solver.ASSIGN_CENTER_VALUE)
+  db = solver.phase(santas, cp.IntVarStrategy.CHOOSE_MIN_SIZE_LOWEST_MIN,
+                    cp.IntValueStrategy.ASSIGN_CENTER_VALUE)
 
-  solver.NewSearch(db, [objective])
+  solver.new_search(db, [objective])
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
-    print('total distances:', z.Value())
-    print('santas:', [santas[i].Value() for i in range(n)])
+    print('total distances:', z.value())
+    print('santas:', [santas[i].value() for i in range(n)])
     for i in range(n):
       print('%s\tis a Santa to %s (distance %i)' % \
             (persons[i],
-             persons[santas[i].Value()],
-             santa_distance[i].Value()))
-    # print 'distance:', [santa_distance[i].Value()
+             persons[santas[i].value()],
+             santa_distance[i].value()))
+    # print 'distance:', [santa_distance[i].value()
     #                     for i in range(n)]
     print()
 
   print('num_solutions:', num_solutions)
-  print('failures:', solver.Failures())
-  print('branches:', solver.Branches())
-  print('WallTime:', solver.WallTime(), 'ms')
+  print('failures:', solver.num_failures)
+  print('branches:', solver.num_branches)
+  print('WallTime:', solver.wall_time_ms, 'ms')
 
 
 single = 0

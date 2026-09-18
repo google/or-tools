@@ -52,12 +52,12 @@
 """
 
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(n, c):
   # Create the solver.
-  solver = pywrapcp.Solver("Coins grid")
+  solver = cp.Solver("Coins grid")
   # data
 
   print("n: ", n)
@@ -67,7 +67,7 @@ def main(n, c):
   x = {}
   for i in range(n):
     for j in range(n):
-      x[(i, j)] = solver.BoolVar("x %i %i" % (i, j))
+      x[(i, j)] = solver.new_bool_var("x %i %i" % (i, j))
 
   #
   # constraints
@@ -75,42 +75,42 @@ def main(n, c):
 
   # sum rows/columns == c
   for i in range(n):
-    solver.Add(solver.SumEquality([x[(i, j)] for j in range(n)], c))  # sum rows
-    solver.Add(solver.SumEquality([x[(j, i)] for j in range(n)], c))  # sum cols
+    solver.add_sum_equality([x[(i, j)] for j in range(n)], c)  # sum rows
+    solver.add_sum_equality([x[(j, i)] for j in range(n)], c)  # sum cols
 
   # quadratic horizonal distance var
-  objective_var = solver.Sum(
+  objective_var = solver.sum(
       [x[(i, j)] * (i - j) * (i - j) for i in range(n) for j in range(n)])
 
   # objective
-  objective = solver.Minimize(objective_var, 1)
+  objective = solver.minimize(objective_var, 1)
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add([x[(i, j)] for i in range(n) for j in range(n)])
-  solution.AddObjective(objective_var)
+  solution = solver.assignment()
+  solution.add([x[(i, j)] for i in range(n) for j in range(n)])
+  solution.add_objective(objective_var)
 
   # last solutions
-  collector = solver.LastSolutionCollector(solution)
-  search_log = solver.SearchLog(1000000, objective_var)
-  restart = solver.ConstantRestart(300)
-  solver.Solve(
-      solver.Phase([x[(i, j)] for i in range(n) for j in range(n)],
-                   solver.CHOOSE_RANDOM, solver.ASSIGN_MAX_VALUE),
+  collector = solver.last_solution_collector(solution)
+  search_log = solver.search_log(1000000, objective_var)
+  restart = solver.constant_restart(300)
+  solver.solve(
+      solver.phase([x[(i, j)] for i in range(n) for j in range(n)],
+                   cp.IntVarStrategy.CHOOSE_RANDOM, cp.IntValueStrategy.ASSIGN_MAX_VALUE),
       [collector, search_log, objective])
 
-  print("objective:", collector.ObjectiveValue(0))
+  print("objective:", collector.objective_value(0))
   for i in range(n):
     for j in range(n):
-      print(collector.Value(0, x[(i, j)]), end=" ")
+      print(collector.value(0, x[(i, j)]), end=" ")
     print()
   print()
 
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 if __name__ == "__main__":

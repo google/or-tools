@@ -60,13 +60,13 @@
   http://www.hakank.org/google_or_tools/
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver('Secret Santa problem')
+  solver = cp.Solver('Secret Santa problem')
 
   #
   # data
@@ -78,38 +78,38 @@ def main():
   #
   # declare variables
   #
-  x = [solver.IntVar(0, n - 1, 'x[%i]' % i) for i in range(n)]
+  x = [solver.new_int_var(0, n - 1, 'x[%i]' % i) for i in range(n)]
 
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(x))
+  solver.add_all_different(x)
 
   # Can't be one own's Secret Santa
   # Ensure that there are no fix-point in the array
   for i in range(n):
-    solver.Add(x[i] != i)
+    solver.add(x[i] != i)
 
   # No Secret Santa to a person in the same family
   for i in range(n):
-    solver.Add(family[i] != solver.Element(family, x[i]))
+    solver.add(family[i] != solver.element(family, x[i]))
 
   #
   # solution and search
   #
-  db = solver.Phase(x, solver.INT_VAR_SIMPLE, solver.INT_VALUE_SIMPLE)
+  db = solver.phase(x, cp.IntVarStrategy.INT_VAR_SIMPLE, cp.IntValueStrategy.INT_VALUE_SIMPLE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
-    print('x:', [x[i].Value() for i in range(n)])
+    print('x:', [x[i].value() for i in range(n)])
     print()
 
   print('num_solutions:', num_solutions)
-  print('failures:', solver.Failures())
-  print('branches:', solver.Branches())
-  print('WallTime:', solver.WallTime(), 'ms')
+  print('failures:', solver.num_failures)
+  print('branches:', solver.num_branches)
+  print('WallTime:', solver.wall_time_ms, 'ms')
 
 
 if __name__ == '__main__':

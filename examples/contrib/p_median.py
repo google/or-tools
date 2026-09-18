@@ -34,13 +34,13 @@
   http://www.hakank.org/google_or_tools/
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver('P-median problem')
+  solver = cp.Solver('P-median problem')
 
   #
   # data
@@ -60,61 +60,61 @@ def main():
   #
   # declare variables
   #
-  open = [solver.IntVar(warehouses, 'open[%i]% % i') for w in warehouses]
+  open = [solver.new_int_var(warehouses, 'open[%i]% % i') for w in warehouses]
   ship = {}
   for c in customers:
     for w in warehouses:
-      ship[c, w] = solver.IntVar(0, 1, 'ship[%i,%i]' % (c, w))
+      ship[c, w] = solver.new_int_var(0, 1, 'ship[%i,%i]' % (c, w))
   ship_flat = [ship[c, w] for c in customers for w in warehouses]
 
-  z = solver.IntVar(0, 1000, 'z')
+  z = solver.new_int_var(0, 1000, 'z')
 
   #
   # constraints
   #
-  z_sum = solver.Sum([
+  z_sum = solver.sum([
       demand[c] * distance[c][w] * ship[c, w]
       for c in customers
       for w in warehouses
   ])
-  solver.Add(z == z_sum)
+  solver.add(z == z_sum)
 
   for c in customers:
-    s = solver.Sum([ship[c, w] for w in warehouses])
-    solver.Add(s == 1)
+    s = solver.sum([ship[c, w] for w in warehouses])
+    solver.add(s == 1)
 
-  solver.Add(solver.Sum(open) == p)
+  solver.add(solver.sum(open) == p)
 
   for c in customers:
     for w in warehouses:
-      solver.Add(ship[c, w] <= open[w])
+      solver.add(ship[c, w] <= open[w])
 
   # objective
-  objective = solver.Minimize(z, 1)
+  objective = solver.minimize(z, 1)
 
   #
   # solution and search
   #
-  db = solver.Phase(open + ship_flat, solver.INT_VAR_DEFAULT,
-                    solver.INT_VALUE_DEFAULT)
+  db = solver.phase(open + ship_flat, cp.IntVarStrategy.INT_VAR_DEFAULT,
+                    cp.IntValueStrategy.INT_VALUE_DEFAULT)
 
-  solver.NewSearch(db, [objective])
+  solver.new_search(db, [objective])
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
-    print('z:', z.Value())
-    print('open:', [open[w].Value() for w in warehouses])
+    print('z:', z.value())
+    print('open:', [open[w].value() for w in warehouses])
     for c in customers:
       for w in warehouses:
-        print(ship[c, w].Value(), end=' ')
+        print(ship[c, w].value(), end=' ')
       print()
     print()
 
   print('num_solutions:', num_solutions)
-  print('failures:', solver.Failures())
-  print('branches:', solver.Branches())
-  print('WallTime:', solver.WallTime(), 'ms')
+  print('failures:', solver.num_failures)
+  print('branches:', solver.num_branches)
+  print('WallTime:', solver.wall_time_ms, 'ms')
 
 
 if __name__ == '__main__':

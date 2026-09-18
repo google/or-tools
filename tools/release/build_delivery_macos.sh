@@ -256,7 +256,6 @@ function build_python() {
 
   declare -a MYPY_FILES=(
     "ortools/algorithms/python/knapsack_solver.pyi"
-    "ortools/constraint_solver/pywrapcp.pyi"
     "ortools/graph/python/linear_sum_assignment.pyi"
     "ortools/graph/python/max_flow.pyi"
     "ortools/graph/python/min_cost_flow.pyi"

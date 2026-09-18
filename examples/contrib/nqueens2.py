@@ -17,7 +17,7 @@
 
   N queens problem.
 
-  This version use NewSearch()/NextSolution() for looping through
+  This version use NewSearch()/next_solution() for looping through
   the solutions.
 
   This model was created by Hakan Kjellerstrand (hakank@gmail.com)
@@ -25,12 +25,12 @@
   http://www.hakank.org/google_or_tools/
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(n=8):
   # Create the solver.
-  solver = pywrapcp.Solver("n-queens")
+  solver = cp.Solver("n-queens")
 
   #
   # data
@@ -38,42 +38,42 @@ def main(n=8):
   # n = 8 # size of board (n x n)
 
   # declare variables
-  q = [solver.IntVar(0, n - 1, "x%i" % i) for i in range(n)]
+  q = [solver.new_int_var(0, n - 1, "x%i" % i) for i in range(n)]
 
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(q))
+  solver.add_all_different(q)
   for i in range(n):
     for j in range(i):
-      solver.Add(q[i] != q[j])
-      solver.Add(q[i] + i != q[j] + j)
-      solver.Add(q[i] - i != q[j] - j)
+      solver.add(q[i] != q[j])
+      solver.add(q[i] + i != q[j] + j)
+      solver.add(q[i] - i != q[j] - j)
 
   # for i in range(n):
   #     for j in range(i):
-  #         solver.Add(abs(q[i]-q[j]) != abs(i-j))
+  #         solver.add(abs(q[i]-q[j]) != abs(i-j))
 
   # symmetry breaking
-  # solver.Add(q[0] == 0)
+  # solver.add(q[0] == 0)
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add([q[i] for i in range(n)])
+  solution = solver.assignment()
+  solution.add([q[i] for i in range(n)])
 
   # db: DecisionBuilder
-  db = solver.Phase(
+  db = solver.phase(
       [q[i] for i in range(n)],
-      # solver.CHOOSE_FIRST_UNBOUND,
-      solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
-      solver.ASSIGN_CENTER_VALUE)
+      # cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+      cp.IntVarStrategy.CHOOSE_MIN_SIZE_LOWEST_MAX,
+      cp.IntValueStrategy.ASSIGN_CENTER_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
-  while solver.NextSolution():
-    qval = [q[i].Value() for i in range(n)]
+  while solver.next_solution():
+    qval = [q[i].value() for i in range(n)]
     print("q:", qval)
     for i in range(n):
       for j in range(n):
@@ -84,13 +84,13 @@ def main(n=8):
       print()
     print()
     num_solutions += 1
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 n = 8

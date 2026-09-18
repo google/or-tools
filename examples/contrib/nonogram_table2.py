@@ -67,7 +67,7 @@
 """
 import sys
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 #
@@ -119,16 +119,15 @@ def check_rule(rules, y):
   initial_state = 1
   accepting_states = [last_state]
 
-  solver = y[0].solver()
-  solver.Add(
-      solver.TransitionConstraint(y, transition_tuples, initial_state,
-                                  accepting_states))
+  solver = y[0].solver
+  solver.add_transition_constraint(y, transition_tuples, initial_state,
+                                  accepting_states)
 
 
 def main(rows, row_rule_len, row_rules, cols, col_rule_len, col_rules):
 
   # Create the solver.
-  solver = pywrapcp.Solver('Regular test')
+  solver = cp.Solver('Regular test')
 
   #
   # variables
@@ -136,7 +135,7 @@ def main(rows, row_rule_len, row_rules, cols, col_rule_len, col_rules):
   board = {}
   for i in range(rows):
     for j in range(cols):
-      board[i, j] = solver.IntVar(0, 1, 'board[%i, %i]' % (i, j))
+      board[i, j] = solver.new_int_var(0, 1, 'board[%i, %i]' % (i, j))
   board_flat = [board[i, j] for i in range(rows) for j in range(cols)]
 
   # Flattened board for labeling.
@@ -164,18 +163,18 @@ def main(rows, row_rule_len, row_rules, cols, col_rule_len, col_rules):
   #
   # solution and search
   #
-  db = solver.Phase(board_label, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(board_label, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+                    cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  print('before solver, wall time = ', solver.WallTime(), 'ms')
-  solver.NewSearch(db)
+  print('before solver, wall time = ', solver.wall_time_ms, 'ms')
+  solver.new_search(db)
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     print()
     num_solutions += 1
     for i in range(rows):
-      row = [board[i, j].Value() for j in range(cols)]
+      row = [board[i, j].value() for j in range(cols)]
       row_pres = []
       for j in row:
         if j == 1:
@@ -191,12 +190,12 @@ def main(rows, row_rule_len, row_rules, cols, col_rule_len, col_rules):
       print('2 solutions is enough...')
       break
 
-  solver.EndSearch()
+  solver.end_search()
   print()
   print('num_solutions:', num_solutions)
-  print('failures:', solver.Failures())
-  print('branches:', solver.Branches())
-  print('WallTime:', solver.WallTime(), 'ms')
+  print('failures:', solver.num_failures)
+  print('branches:', solver.num_branches)
+  print('WallTime:', solver.wall_time_ms, 'ms')
 
 
 #

@@ -38,13 +38,13 @@
   http://www.hakank.org/google_or_tools/
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(sols=1):
 
   # Create the solver.
-  solver = pywrapcp.Solver("Crew")
+  solver = cp.Solver("Crew")
 
   #
   # data
@@ -109,22 +109,22 @@ def main(sols=1):
   crew = {}
   for i in range(num_flights):
     for j in range(num_persons):
-      crew[(i, j)] = solver.IntVar(0, 1, "crew[%i,%i]" % (i, j))
+      crew[(i, j)] = solver.new_int_var(0, 1, "crew[%i,%i]" % (i, j))
   crew_flat = [
       crew[(i, j)] for i in range(num_flights) for j in range(num_persons)
   ]
 
   # number of working persons
-  num_working = solver.IntVar(1, num_persons, "num_working")
+  num_working = solver.new_int_var(1, num_persons, "num_working")
 
   #
   # constraints
   #
 
   # number of working persons
-  solver.Add(num_working == solver.Sum([
-      solver.IsGreaterOrEqualCstVar(
-          solver.Sum([crew[(f, p)]
+  solver.add(num_working == solver.sum([
+      solver.add_is_greater_or_equal_cst_var(
+          solver.sum([crew[(f, p)]
                       for f in range(num_flights)]), 1)
       for p in range(num_persons)
   ]))
@@ -132,44 +132,44 @@ def main(sols=1):
   for f in range(num_flights):
     # size of crew
     tmp = [crew[(f, i)] for i in range(num_persons)]
-    solver.Add(solver.Sum(tmp) == required_crew[f][0])
+    solver.add(solver.sum(tmp) == required_crew[f][0])
 
     # attributes and requirements
     for j in range(5):
       tmp = [attributes[i][j] * crew[(f, i)] for i in range(num_persons)]
-      solver.Add(solver.Sum(tmp) >= required_crew[f][j + 1])
+      solver.add(solver.sum(tmp) >= required_crew[f][j + 1])
 
   # after a flight, break for at least two flights
   for f in range(num_flights - 2):
     for i in range(num_persons):
-      solver.Add(crew[f, i] + crew[f + 1, i] + crew[f + 2, i] <= 1)
+      solver.add(crew[f, i] + crew[f + 1, i] + crew[f + 2, i] <= 1)
 
   # extra contraint: all must work at least two of the flights
   # for i in range(num_persons):
-  #     [solver.Add(solver.Sum([crew[f,i] for f in range(num_flights)]) >= 2) ]
+  #     [solver.add(solver.sum([crew[f,i] for f in range(num_flights)]) >= 2) ]
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(crew_flat)
-  solution.Add(num_working)
+  solution = solver.assignment()
+  solution.add(crew_flat)
+  solution.add(num_working)
 
-  db = solver.Phase(crew_flat, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(crew_flat, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+                    cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
   #
   # result
   #
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
     print("Solution #%i" % num_solutions)
-    print("Number working:", num_working.Value())
+    print("Number working:", num_working.value())
     for i in range(num_flights):
       for j in range(num_persons):
-        print(crew[i, j].Value(), end=" ")
+        print(crew[i, j].value(), end=" ")
       print()
     print()
 
@@ -177,7 +177,7 @@ def main(sols=1):
     for flight in range(num_flights):
       print("Flight", flight, "persons:", end=" ")
       for person in range(num_persons):
-        if crew[flight, person].Value() == 1:
+        if crew[flight, person].value() == 1:
           print(names[person], end=" ")
       print()
     print()
@@ -186,20 +186,20 @@ def main(sols=1):
     for person in range(num_persons):
       print("%-10s flights" % names[person], end=" ")
       for flight in range(num_flights):
-        if crew[flight, person].Value() == 1:
+        if crew[flight, person].value() == 1:
           print(flight, end=" ")
       print()
     print()
 
     if num_solutions >= sols:
       break
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 num_solutions_to_show = 1

@@ -28,13 +28,13 @@
   http://www.hakank.org/google_or_tools/
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver('Max flow problem, Winston')
+  solver = cp.Solver('Max flow problem, Winston')
 
   #
   # data
@@ -77,60 +77,60 @@ def main():
   flow = {}
   for i in nodes:
     for j in nodes:
-      flow[i, j] = solver.IntVar(0, 200, 'flow %i %i' % (i, j))
+      flow[i, j] = solver.new_int_var(0, 200, 'flow %i %i' % (i, j))
 
   flow_flat = [flow[i, j] for i in nodes for j in nodes]
 
-  z = solver.IntVar(0, 10000, 'z')
+  z = solver.new_int_var(0, 10000, 'z')
 
   #
   # constraints
   #
-  solver.Add(z == flow[n - 1, 0])
+  solver.add(z == flow[n - 1, 0])
 
   # capacity of arcs
   for i in range(num_arcs):
-    solver.Add(flow[arcs[i][0], arcs[i][1]] <= cap[i])
+    solver.add(flow[arcs[i][0], arcs[i][1]] <= cap[i])
 
   # inflows == outflows
   for i in nodes:
-    s1 = solver.Sum([
+    s1 = solver.sum([
         flow[arcs[k][0], arcs[k][1]] for k in range(num_arcs) if arcs[k][1] == i
     ])
-    s2 = solver.Sum([
+    s2 = solver.sum([
         flow[arcs[k][0], arcs[k][1]] for k in range(num_arcs) if arcs[k][0] == i
     ])
-    solver.Add(s1 == s2)
+    solver.add(s1 == s2)
 
   # sanity: just arcs with connections can have a flow
   for i in nodes:
     for j in nodes:
       if mat[i, j] == 0:
-        solver.Add(flow[i, j] == 0)
+        solver.add(flow[i, j] == 0)
 
   # objective: maximize z
-  objective = solver.Maximize(z, 1)
+  objective = solver.maximize(z, 1)
 
   #
   # solution and search
   #
-  db = solver.Phase(flow_flat, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
+  db = solver.phase(flow_flat, cp.IntVarStrategy.INT_VAR_DEFAULT, cp.IntValueStrategy.INT_VALUE_DEFAULT)
 
-  solver.NewSearch(db, [objective])
+  solver.new_search(db, [objective])
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
-    print('z:', z.Value())
+    print('z:', z.value())
     for i in nodes:
       for j in nodes:
-        print(flow[i, j].Value(), end=' ')
+        print(flow[i, j].value(), end=' ')
       print()
     print()
 
   print('num_solutions:', num_solutions)
-  print('failures:', solver.Failures())
-  print('branches:', solver.Branches())
-  print('WallTime:', solver.WallTime(), 'ms')
+  print('failures:', solver.num_failures)
+  print('branches:', solver.num_branches)
+  print('WallTime:', solver.wall_time_ms, 'ms')
 
 
 if __name__ == '__main__':

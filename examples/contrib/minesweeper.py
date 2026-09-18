@@ -63,7 +63,7 @@
   http://www.hakank.org/google_or_tools/
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 default_r = 8
 default_c = 8
@@ -77,7 +77,7 @@ default_game = [[2, 3, X, 2, 2, X, 2, 1], [X, X, 4, X, X, 4, X, 2],
 def main(game="", r="", c=""):
 
   # Create the solver.
-  solver = pywrapcp.Solver("Minesweeper")
+  solver = cp.Solver("Minesweeper")
 
   #
   # data
@@ -127,7 +127,7 @@ def main(game="", r="", c=""):
   mines = {}
   for i in range(r):
     for j in range(c):
-      mines[(i, j)] = solver.IntVar(0, 1, "mines %i %i" % (i, j))
+      mines[(i, j)] = solver.new_int_var(0, 1, "mines %i %i" % (i, j))
 
   #
   # constraints
@@ -135,9 +135,9 @@ def main(game="", r="", c=""):
   for i in range(r):
     for j in range(c):
       if game[i][j] >= 0:
-        solver.Add(mines[i, j] == 0)
+        solver.add(mines[i, j] == 0)
         # this cell is the sum of all the surrounding cells
-        solver.Add(game[i][j] == solver.Sum([
+        solver.add(game[i][j] == solver.sum([
             mines[i + a, j + b]
             for a in S
             for b in S
@@ -145,25 +145,25 @@ def main(game="", r="", c=""):
         ]))
       if game[i][j] > X:
         # This cell cannot be a mine
-        solver.Add(mines[i, j] == 0)
+        solver.add(mines[i, j] == 0)
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add([mines[(i, j)] for i in range(r) for j in range(c)])
+  solution = solver.assignment()
+  solution.add([mines[(i, j)] for i in range(r) for j in range(c)])
 
-  collector = solver.AllSolutionCollector(solution)
-  solver.Solve(
-      solver.Phase([mines[(i, j)] for i in range(r) for j in range(c)],
-                   solver.INT_VAR_SIMPLE, solver.ASSIGN_MIN_VALUE), [collector])
+  collector = solver.all_solution_collector(solution)
+  solver.solve(
+      solver.phase([mines[(i, j)] for i in range(r) for j in range(c)],
+                   cp.IntVarStrategy.INT_VAR_SIMPLE, cp.IntValueStrategy.ASSIGN_MIN_VALUE), [collector])
 
-  num_solutions = collector.SolutionCount()
+  num_solutions = collector.solution_count
   print("num_solutions: ", num_solutions)
   if num_solutions > 0:
     for s in range(num_solutions):
       minesval = [
-          collector.Value(s, mines[(i, j)]) for i in range(r) for j in range(c)
+          collector.value(s, mines[(i, j)]) for i in range(r) for j in range(c)
       ]
       for i in range(r):
         for j in range(c):
@@ -173,9 +173,9 @@ def main(game="", r="", c=""):
 
     print()
     print("num_solutions:", num_solutions)
-    print("failures:", solver.Failures())
-    print("branches:", solver.Branches())
-    print("WallTime:", solver.WallTime())
+    print("failures:", solver.num_failures)
+    print("branches:", solver.num_branches)
+    print("WallTime:", solver.wall_time_ms)
 
   else:
     print("No solutions found")

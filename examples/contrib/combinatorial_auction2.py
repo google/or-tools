@@ -30,13 +30,13 @@
 """
 import sys
 from collections import *
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver("Problem")
+  solver = cp.Solver("Problem")
 
   #
   # data
@@ -63,44 +63,44 @@ def main():
   #
   # declare variables
   #
-  X = [solver.BoolVar("x%i" % i) for i in range(N)]
-  obj = solver.IntVar(0, 100, "obj")
+  X = [solver.new_bool_var("x%i" % i) for i in range(N)]
+  obj = solver.new_int_var(0, 100, "obj")
 
   #
   # constraints
   #
-  solver.Add(obj == solver.ScalProd(X, bid_amount))
+  solver.add(obj == solver.weighted_sum(X, bid_amount))
   for item in items_t:
-    solver.Add(solver.Sum([X[bid] for bid in items_t[item]]) <= 1)
+    solver.add(solver.sum([X[bid] for bid in items_t[item]]) <= 1)
 
   # objective
-  objective = solver.Maximize(obj, 1)
+  objective = solver.maximize(obj, 1)
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(X)
-  solution.Add(obj)
+  solution = solver.assignment()
+  solution.add(X)
+  solution.add(obj)
 
   # db: DecisionBuilder
-  db = solver.Phase(X, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(X, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND, cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db, [objective])
+  solver.new_search(db, [objective])
   num_solutions = 0
-  while solver.NextSolution():
-    print("X:", [X[i].Value() for i in range(N)])
-    print("obj:", obj.Value())
+  while solver.next_solution():
+    print("X:", [X[i].value() for i in range(N)])
+    print("obj:", obj.value())
     print()
     num_solutions += 1
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 if __name__ == "__main__":

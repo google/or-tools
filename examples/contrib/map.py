@@ -32,12 +32,12 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
   # Create the solver.
-  solver = pywrapcp.Solver("Map coloring")
+  solver = cp.Solver("Map coloring")
 
   #
   # data
@@ -53,47 +53,47 @@ def main():
   max_num_colors = 4
 
   # declare variables
-  color = [solver.IntVar(1, max_num_colors, "x%i" % i) for i in range(n)]
+  color = [solver.new_int_var(1, max_num_colors, "x%i" % i) for i in range(n)]
 
   #
   # constraints
   #
-  solver.Add(color[Belgium] == 1)  # Symmetry breaking
-  solver.Add(color[France] != color[Belgium])
-  solver.Add(color[France] != color[Luxembourg])
-  solver.Add(color[France] != color[Germany])
-  solver.Add(color[Luxembourg] != color[Germany])
-  solver.Add(color[Luxembourg] != color[Belgium])
-  solver.Add(color[Belgium] != color[Netherlands])
-  solver.Add(color[Belgium] != color[Germany])
-  solver.Add(color[Germany] != color[Netherlands])
-  solver.Add(color[Germany] != color[Denmark])
+  solver.add(color[Belgium] == 1)  # Symmetry breaking
+  solver.add(color[France] != color[Belgium])
+  solver.add(color[France] != color[Luxembourg])
+  solver.add(color[France] != color[Germany])
+  solver.add(color[Luxembourg] != color[Germany])
+  solver.add(color[Luxembourg] != color[Belgium])
+  solver.add(color[Belgium] != color[Netherlands])
+  solver.add(color[Belgium] != color[Germany])
+  solver.add(color[Germany] != color[Netherlands])
+  solver.add(color[Germany] != color[Denmark])
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add([color[i] for i in range(n)])
+  solution = solver.assignment()
+  solution.add([color[i] for i in range(n)])
 
-  collector = solver.AllSolutionCollector(solution)
+  collector = solver.all_solution_collector(solution)
   # collector = solver.FirstSolutionCollector(solution)
-  # search_log = solver.SearchLog(100, x[0])
-  solver.Solve(
-      solver.Phase([color[i] for i in range(n)], solver.INT_VAR_SIMPLE,
-                   solver.ASSIGN_MIN_VALUE), [collector])
+  # search_log = solver.search_log(100, x[0])
+  solver.solve(
+      solver.phase([color[i] for i in range(n)], cp.IntVarStrategy.INT_VAR_SIMPLE,
+                   cp.IntValueStrategy.ASSIGN_MIN_VALUE), [collector])
 
-  num_solutions = collector.SolutionCount()
+  num_solutions = collector.solution_count
   print("num_solutions: ", num_solutions)
   if num_solutions > 0:
     for s in range(num_solutions):
-      colorval = [collector.Value(s, color[i]) for i in range(n)]
+      colorval = [collector.value(s, color[i]) for i in range(n)]
       print("color:", colorval)
 
     print()
     print("num_solutions:", num_solutions)
-    print("failures:", solver.Failures())
-    print("branches:", solver.Branches())
-    print("WallTime:", solver.WallTime())
+    print("failures:", solver.num_failures)
+    print("branches:", solver.num_branches)
+    print("WallTime:", solver.wall_time_ms)
 
   else:
     print("No solutions found")

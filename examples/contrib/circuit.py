@@ -43,7 +43,7 @@
 
 
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 #
 # circuit(x)
@@ -56,43 +56,43 @@ from ortools.constraint_solver import pywrapcp
 
 def circuit(solver, x):
   n = len(x)
-  z = [solver.IntVar(0, n - 1, "z%i" % i) for i in range(n)]
+  z = [solver.new_int_var(0, n - 1, "z%i" % i) for i in range(n)]
 
-  solver.Add(solver.AllDifferent(x))
-  solver.Add(solver.AllDifferent(z))
+  solver.add_all_different(x)
+  solver.add_all_different(z)
 
   # put the orbit of x[0] in in z[0..n-1]
-  solver.Add(z[0] == x[0])
+  solver.add(z[0] == x[0])
   for i in range(1, n - 1):
     # The following constraint give the error
-    # "TypeError: list indices must be integers, not IntVar"
-    # solver.Add(z[i] == x[z[i-1]])
+    # "TypeError: list indices must be integers, not.new_int_var"
+    # solver.add(z[i] == x[z[i-1]])
 
     # solution: use Element instead
-    solver.Add(z[i] == solver.Element(x, z[i - 1]))
+    solver.add(z[i] == solver.element(x, z[i - 1]))
 
   #
   # Note: At least one of the following two constraint must be set.
   #
   # may not be 0 for i < n-1
   for i in range(1, n - 1):
-    solver.Add(z[i] != 0)
+    solver.add(z[i] != 0)
 
   # when i = n-1 it must be 0
-  solver.Add(z[n - 1] == 0)
+  solver.add(z[n - 1] == 0)
 
 
 def main(n=5):
 
   # Create the solver.
-  solver = pywrapcp.Solver("Send most money")
+  solver = cp.Solver("Send most money")
 
   # data
   print("n:", n)
 
   # declare variables
   # Note: domain should be 0..n-1
-  x = [solver.IntVar(0, n - 1, "x%i" % i) for i in range(n)]
+  x = [solver.new_int_var(0, n - 1, "x%i" % i) for i in range(n)]
 
   #
   # constraints
@@ -102,24 +102,24 @@ def main(n=5):
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(x)
+  solution = solver.assignment()
+  solution.add(x)
 
-  collector = solver.AllSolutionCollector(solution)
+  collector = solver.all_solution_collector(solution)
 
-  solver.Solve(
-      solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE),
+  solver.solve(
+      solver.phase(x, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND, cp.IntValueStrategy.ASSIGN_MIN_VALUE),
       [collector])
 
-  num_solutions = collector.SolutionCount()
+  num_solutions = collector.solution_count
   for s in range(num_solutions):
-    print("x:", [collector.Value(s, x[i]) for i in range(len(x))])
+    print("x:", [collector.value(s, x[i]) for i in range(len(x))])
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
   print()
 
 

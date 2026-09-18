@@ -59,7 +59,6 @@ for i in "${PY[@]}"; do
   echo "Testing ortools Python$i..." | tee -a test.log
   (cd "${VENV_DIR}/bin" && ./python -c "from ortools.algorithms import pywrapknapsack_solver") 2>&1 | tee -a test.log
   (cd "${VENV_DIR}/bin" && ./python -c "from ortools.graph import pywrapgraph") 2>&1 | tee -a test.log
-  (cd "${VENV_DIR}/bin" && ./python -c "from ortools.constraint_solver import pywrapcp") 2>&1 | tee -a test.log
   (cd "${VENV_DIR}/bin" && ./python -c "from ortools.linear_solver import pywraplp") 2>&1 | tee -a test.log
   (cd "${VENV_DIR}/bin" && ./python -c "from ortools.sat import pywrapsat") 2>&1 | tee -a test.log
   "${VENV_DIR}/bin/python" "cmake/samples/python/sample.py" 2>&1 | tee -a test.log

@@ -30,24 +30,24 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(cost, rows, cols):
   # Create the solver.
-  solver = pywrapcp.Solver("n-queens")
+  solver = cp.Solver("n-queens")
 
   #
   # data
   #
 
   # declare variables
-  total_cost = solver.IntVar(0, 100, "total_cost")
+  total_cost = solver.new_int_var(0, 100, "total_cost")
   x = []
   for i in range(rows):
     t = []
     for j in range(cols):
-      t.append(solver.IntVar(0, 1, "x[%i,%i]" % (i, j)))
+      t.append(solver.new_int_var(0, 1, "x[%i,%i]" % (i, j)))
     x.append(t)
   x_flat = [x[i][j] for i in range(rows) for j in range(cols)]
 
@@ -56,60 +56,60 @@ def main(cost, rows, cols):
   #
 
   # total_cost
-  solver.Add(total_cost == solver.Sum(
-      [solver.ScalProd(x_row, cost_row) for (x_row, cost_row) in zip(x, cost)]))
+  solver.add(total_cost == solver.sum(
+      [solver.weighted_sum(x_row, cost_row) for (x_row, cost_row) in zip(x, cost)]))
 
   # exacly one assignment per row, all rows must be assigned
   [
-      solver.Add(solver.Sum([x[row][j]
+      solver.add(solver.sum([x[row][j]
                              for j in range(cols)]) == 1)
       for row in range(rows)
   ]
 
   # zero or one assignments per column
   [
-      solver.Add(solver.Sum([x[i][col]
+      solver.add(solver.sum([x[i][col]
                              for i in range(rows)]) <= 1)
       for col in range(cols)
   ]
 
-  objective = solver.Minimize(total_cost, 1)
+  objective = solver.minimize(total_cost, 1)
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(x_flat)
-  solution.Add(total_cost)
+  solution = solver.assignment()
+  solution.add(x_flat)
+  solution.add(total_cost)
 
   # db: DecisionBuilder
-  db = solver.Phase(x_flat, solver.INT_VAR_SIMPLE, solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(x_flat, cp.IntVarStrategy.INT_VAR_SIMPLE, cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db, [objective])
+  solver.new_search(db, [objective])
   num_solutions = 0
-  while solver.NextSolution():
-    print("total_cost:", total_cost.Value())
+  while solver.next_solution():
+    print("total_cost:", total_cost.value())
     for i in range(rows):
       for j in range(cols):
-        print(x[i][j].Value(), end=" ")
+        print(x[i][j].value(), end=" ")
       print()
     print()
 
     for i in range(rows):
       print("Task:", i, end=" ")
       for j in range(cols):
-        if x[i][j].Value() == 1:
+        if x[i][j].value() == 1:
           print(" is done by ", j)
     print()
 
     num_solutions += 1
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 # Problem instance

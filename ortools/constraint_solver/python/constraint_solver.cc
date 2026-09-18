@@ -48,6 +48,7 @@ namespace py = ::pybind11;
 using ::operations_research::Assignment;
 using ::operations_research::AssignmentElement;
 using ::operations_research::AssignmentProto;
+using ::operations_research::BaseLns;
 using ::operations_research::BaseObject;
 using ::operations_research::Constraint;
 using ::operations_research::ConstraintSolverParameters;
@@ -349,9 +350,161 @@ class PyIntVarLocalSearchOperator : public IntVarLocalSearchOperator {
     PYBIND11_OVERRIDE_NAME(void, IntVarLocalSearchOperator, "on_start",
                            OnStart, );
   }
+  bool IsIncremental() const override {
+    PYBIND11_OVERRIDE_NAME(bool, IntVarLocalSearchOperator, "is_incremental",
+                           IsIncremental, );
+  }
   std::string DebugString() const override {
     PYBIND11_OVERRIDE_NAME(std::string, IntVarLocalSearchOperator, "__str__",
                            DebugString, );
+  }
+};
+
+class PyBaseLns : public BaseLns {
+ public:
+  using BaseLns::BaseLns;
+  void InitFragments() override {
+    PYBIND11_OVERRIDE_NAME(void, BaseLns, "init_fragments", InitFragments, );
+  }
+  bool NextFragment() override {
+    PYBIND11_OVERRIDE_PURE_NAME(bool, BaseLns, "next_fragment", NextFragment, );
+  }
+  bool IsIncremental() const override {
+    PYBIND11_OVERRIDE_NAME(bool, BaseLns, "is_incremental", IsIncremental, );
+  }
+  std::string DebugString() const override {
+    PYBIND11_OVERRIDE_NAME(std::string, BaseLns, "__str__", DebugString, );
+  }
+};
+
+class PyDemon : public Demon {
+ public:
+  using Demon::Demon;
+  ~PyDemon() override = default;
+  virtual void run(Solver*) {}
+  void Run(Solver* s) override {
+    try {
+      ThrowOnFailure<PyDemon>(this, s, [s](PyDemon* d) { d->run(s); });
+    } catch (const py::error_already_set& e) {
+      if (e.matches(PyExc_ValueError) &&
+          absl::StrContains(e.what(), "Solver fails outside of solve")) {
+        s->Fail();
+      } else {
+        throw;
+      }
+    }
+  }
+  Solver::DemonPriority priority() const override {
+    PYBIND11_OVERRIDE(Solver::DemonPriority, Demon, priority, );
+  }
+  std::string DebugString() const override {
+    PYBIND11_OVERRIDE_NAME(std::string, Demon, "__str__", DebugString, );
+  }
+};
+
+class PyDemonHelper : public PyDemon {
+ public:
+  using PyDemon::PyDemon;
+  void run(Solver* s) override { PYBIND11_OVERRIDE(void, PyDemon, run, s); }
+};
+
+class PyCallbackDemon : public Demon {
+ public:
+  explicit PyCallbackDemon(py::object method)
+      : ct_(py::none()), method_(std::move(method)), args_(), delayed_(false) {}
+  PyCallbackDemon(py::object method, py::args args,
+                  Solver::DemonPriority priority = Solver::NORMAL_PRIORITY)
+      : ct_(py::none()),
+        method_(std::move(method)),
+        args_(std::move(args)),
+        delayed_(priority == Solver::DELAYED_PRIORITY) {}
+  PyCallbackDemon(py::object ct, py::object method, py::args args, bool delayed)
+      : ct_(std::move(ct)),
+        method_(std::move(method)),
+        args_(std::move(args)),
+        delayed_(delayed) {}
+  void Run(Solver* s) override {
+    try {
+      ThrowOnFailure<PyCallbackDemon>(this, s, [](PyCallbackDemon* d) {
+        if (!d->ct_.is_none() && (!py::hasattr(d->method_, "__self__") ||
+                                  d->method_.attr("__self__").is_none())) {
+          d->method_(d->ct_, *d->args_);
+        } else {
+          d->method_(*d->args_);
+        }
+      });
+    } catch (const py::error_already_set& e) {
+      if (e.matches(PyExc_ValueError) &&
+          absl::StrContains(e.what(), "Solver fails outside of solve")) {
+        s->Fail();
+      } else {
+        throw;
+      }
+    }
+  }
+  Solver::DemonPriority priority() const override {
+    return delayed_ ? Solver::DELAYED_PRIORITY : Solver::NORMAL_PRIORITY;
+  }
+
+ private:
+  py::object ct_;
+  py::object method_;
+  py::args args_;
+  bool delayed_;
+};
+
+class PyConstraint : public Constraint {
+ public:
+  using Constraint::Constraint;
+  ~PyConstraint() override = default;
+  virtual void post() {}
+  virtual void initial_propagate() {}
+  void Post() override {
+    try {
+      ThrowOnFailure<PyConstraint>(this, solver(),
+                                   [](PyConstraint* ct) { ct->post(); });
+    } catch (const py::error_already_set& e) {
+      if (e.matches(PyExc_ValueError) &&
+          absl::StrContains(e.what(), "Solver fails outside of solve")) {
+        solver()->Fail();
+      } else {
+        throw;
+      }
+    }
+  }
+  void InitialPropagate() override {
+    try {
+      ThrowOnFailure<PyConstraint>(
+          this, solver(), [](PyConstraint* ct) { ct->initial_propagate(); });
+    } catch (const py::error_already_set& e) {
+      if (e.matches(PyExc_ValueError) &&
+          absl::StrContains(e.what(), "Solver fails outside of solve")) {
+        solver()->Fail();
+      } else {
+        throw;
+      }
+    }
+  }
+  Demon* RegisterDemon(py::object self, py::object method, py::args args,
+                       bool delayed) {
+    demons_.push_back(std::make_unique<PyCallbackDemon>(
+        std::move(self), std::move(method), std::move(args), delayed));
+    return demons_.back().get();
+  }
+  std::string DebugString() const override {
+    PYBIND11_OVERRIDE_NAME(std::string, Constraint, "__str__", DebugString, );
+  }
+
+ private:
+  std::vector<std::unique_ptr<Demon>> demons_;
+};
+
+class PyConstraintHelper : public PyConstraint {
+ public:
+  using PyConstraint::PyConstraint;
+  void post() override { PYBIND11_OVERRIDE(void, PyConstraint, post, ); }
+  void initial_propagate() override {
+    PYBIND11_OVERRIDE(void, PyConstraint, initial_propagate, );
   }
 };
 
@@ -507,7 +660,32 @@ class PyIntVarLocalSearchFilter : public IntVarLocalSearchFilter {
     PYBIND11_OVERRIDE_NAME(void, IntVarLocalSearchFilter, "on_synchronize",
                            OnSynchronize, assignment);
   }
+  bool IsIncremental() const override {
+    PYBIND11_OVERRIDE_NAME(bool, IntVarLocalSearchFilter, "is_incremental",
+                           IsIncremental, );
+  }
 };
+
+IntExpr* ToIntExpr(PropagationBaseObject* arg) {
+  if (arg == nullptr) return nullptr;
+  IntExpr* expr = dynamic_cast<IntExpr*>(arg);
+  if (expr != nullptr) {
+    return expr;
+  }
+  Constraint* constraint = dynamic_cast<Constraint*>(arg);
+  if (constraint != nullptr) {
+    IntVar* var = constraint->Var();
+    if (var != nullptr) {
+      return var;
+    }
+  }
+  PyErr_SetString(
+      PyExc_TypeError,
+      absl::StrCat("Model argument should be castable to an IntExpr, got: '",
+                   arg->DebugString(), "'")
+          .c_str());
+  throw py::error_already_set();
+}
 
 std::vector<IntVar*> ToIntVarArray(
     const std::vector<PropagationBaseObject*>& arguments) {
@@ -797,12 +975,17 @@ PYBIND11_MODULE(constraint_solver, m) {
       .def(py::init<Solver*, const Assignment*>(), py::arg("solver"),
            py::arg("assignment"))
       .def(py::init<Solver*>(), py::arg("solver"))
-      .def("add", py::overload_cast<IntVar*>(&SolutionCollector::Add),
-           py::arg("var"))
-      .def("add",
-           py::overload_cast<const std::vector<IntVar*>&>(
-               &SolutionCollector::Add),
-           py::arg("vars"))
+      .def(
+          "add",
+          [](SolutionCollector* sc, IntExpr* var) { sc->Add(var->Var()); },
+          py::arg("var"))
+      .def(
+          "add",
+          [](SolutionCollector* sc,
+             const std::vector<PropagationBaseObject*>& vars) {
+            sc->Add(ToIntVarArray(vars));
+          },
+          py::arg("vars"))
       .def("add", py::overload_cast<IntervalVar*>(&SolutionCollector::Add),
            py::arg("var"))
       .def("add",
@@ -815,8 +998,12 @@ PYBIND11_MODULE(constraint_solver, m) {
            py::overload_cast<const std::vector<SequenceVar*>&>(
                &SolutionCollector::Add),
            py::arg("vars"))
-      .def("add_objective", &SolutionCollector::AddObjective,
-           py::arg("objective"))
+      .def(
+          "add_objective",
+          [](SolutionCollector* sc, IntExpr* objective) {
+            sc->AddObjective(objective->Var());
+          },
+          py::arg("objective"))
       .def("add_objectives", &SolutionCollector::AddObjectives,
            py::arg("objectives"))
       .def_property_readonly("solution_count",
@@ -833,7 +1020,12 @@ PYBIND11_MODULE(constraint_solver, m) {
       .def("objective_value_from_index",
            &SolutionCollector::ObjectiveValueFromIndex, py::arg("n"),
            py::arg("index"))
-      .def("value", &SolutionCollector::Value, py::arg("n"), py::arg("var"))
+      .def(
+          "value",
+          [](SolutionCollector* sc, int n, IntExpr* var) {
+            return sc->Value(n, var->Var());
+          },
+          py::arg("n"), py::arg("var"))
       .def("start_value", &SolutionCollector::StartValue, py::arg("n"),
            py::arg("var"))
       .def("end_value", &SolutionCollector::EndValue, py::arg("n"),
@@ -1110,7 +1302,7 @@ PYBIND11_MODULE(constraint_solver, m) {
            [](Solver* s, const std::string& name) {
              return s->MakeBoolVar(name);
            },
-           py::arg("name"), DOC(operations_research, Solver, MakeBoolVar),
+           py::arg("name") = "", DOC(operations_research, Solver, MakeBoolVar),
            py::return_value_policy::reference_internal)
       .def("new_interval_var",
            py::overload_cast<int64_t, int64_t, int64_t, int64_t, int64_t,
@@ -1393,6 +1585,37 @@ PYBIND11_MODULE(constraint_solver, m) {
               IntVar* boolvar) {
              s->AddConstraint(s->MakeIsMemberCt(var, values, boolvar));
            })
+      .def("add_is_between_var", &Solver::MakeIsBetweenVar,
+           py::return_value_policy::reference_internal)
+      .def("add_is_different_cst_var", &Solver::MakeIsDifferentCstVar,
+           py::return_value_policy::reference_internal)
+      .def("add_is_different_var", &Solver::MakeIsDifferentVar,
+           py::return_value_policy::reference_internal)
+      .def("add_is_equal_cst_var", &Solver::MakeIsEqualCstVar,
+           py::return_value_policy::reference_internal)
+      .def("add_is_equal_var", &Solver::MakeIsEqualVar,
+           py::return_value_policy::reference_internal)
+      .def("add_is_greater_cst_var", &Solver::MakeIsGreaterCstVar,
+           py::return_value_policy::reference_internal)
+      .def("add_is_greater_var", &Solver::MakeIsGreaterVar,
+           py::return_value_policy::reference_internal)
+      .def("add_is_greater_or_equal_cst_var",
+           &Solver::MakeIsGreaterOrEqualCstVar,
+           py::return_value_policy::reference_internal)
+      .def("add_is_greater_or_equal_var", &Solver::MakeIsGreaterOrEqualVar,
+           py::return_value_policy::reference_internal)
+      .def("add_is_less_cst_var", &Solver::MakeIsLessCstVar,
+           py::return_value_policy::reference_internal)
+      .def("add_is_less_var", &Solver::MakeIsLessVar,
+           py::return_value_policy::reference_internal)
+      .def("add_is_less_or_equal_cst_var", &Solver::MakeIsLessOrEqualCstVar,
+           py::return_value_policy::reference_internal)
+      .def("add_is_less_or_equal_var", &Solver::MakeIsLessOrEqualVar,
+           py::return_value_policy::reference_internal)
+      .def("add_is_member_var",
+           py::overload_cast<IntExpr*, const std::vector<int64_t>&>(
+               &Solver::MakeIsMemberVar),
+           py::return_value_policy::reference_internal)
       .def("add_lexical_less",
            [](Solver* s, const std::vector<PropagationBaseObject*>& left,
               const std::vector<PropagationBaseObject*>& right) {
@@ -1462,9 +1685,10 @@ PYBIND11_MODULE(constraint_solver, m) {
            [](Solver* s,
               const std::vector<PropagationBaseObject*>& exprs,
               int64_t number_of_bins) {
-             s->AddConstraint(
-                 s->MakePack(ToIntVarArray(exprs), number_of_bins));
-           })
+             auto* ct = s->MakePack(ToIntVarArray(exprs), number_of_bins);
+             s->AddConstraint(ct);
+             return ct;
+           }, py::return_value_policy::reference_internal)
       .def("add_path_cumul",
            [](Solver* s, const std::vector<PropagationBaseObject*>& nexts,
               const std::vector<PropagationBaseObject*>& active,
@@ -1579,7 +1803,12 @@ PYBIND11_MODULE(constraint_solver, m) {
              return ct;
            }, py::return_value_policy::reference_internal)
       .def("local_search_profile", &Solver::LocalSearchProfile)
-      .def("add", &Solver::AddConstraint,
+      .def("add",
+           [](Solver* s, Constraint* c) {
+             if (c != nullptr) {
+               s->AddConstraint(c);
+             }
+           },
            DOC(operations_research, Solver, AddConstraint), py::arg("c"),
            py::keep_alive<1, 2>())
       .def("fail",
@@ -1775,14 +2004,26 @@ PYBIND11_MODULE(constraint_solver, m) {
            py::overload_cast<>(&Solver::MakeAllSolutionCollector),
            DOC(operations_research, Solver, MakeAllSolutionCollector_2),
            py::return_value_policy::reference_internal)
-      .def("minimize", &Solver::MakeMinimize, py::arg("v"), py::arg("step"),
+      .def("minimize",
+           [](Solver* s, IntExpr* v, int64_t step) {
+             return s->MakeMinimize(v->Var(), step);
+           },
+           py::arg("v"), py::arg("step"),
            DOC(operations_research, Solver, MakeMinimize),
            py::return_value_policy::reference_internal)
-      .def("maximize", &Solver::MakeMaximize, py::arg("v"), py::arg("step"),
+      .def("maximize",
+           [](Solver* s, IntExpr* v, int64_t step) {
+             return s->MakeMaximize(v->Var(), step);
+           },
+           py::arg("v"), py::arg("step"),
            DOC(operations_research, Solver, MakeMaximize),
            py::return_value_policy::reference_internal)
-      .def("optimize", &Solver::MakeOptimize, py::arg("maximize"), py::arg("v"),
-           py::arg("step"), DOC(operations_research, Solver, MakeOptimize),
+      .def("optimize",
+           [](Solver* s, bool maximize, IntExpr* v, int64_t step) {
+             return s->MakeOptimize(maximize, v->Var(), step);
+           },
+           py::arg("maximize"), py::arg("v"), py::arg("step"),
+           DOC(operations_research, Solver, MakeOptimize),
            py::return_value_policy::reference_internal)
       .def("weighted_minimize",
          [](Solver* s,
@@ -1835,9 +2076,18 @@ PYBIND11_MODULE(constraint_solver, m) {
            DOC(operations_research, Solver, MakeSum),
            py::return_value_policy::reference_internal)
       .def("element",
-           py::overload_cast<const std::vector<int64_t>&, IntVar*>(
-               &Solver::MakeElement),
+           [](Solver* s, const std::vector<int64_t>& values, IntExpr* index) {
+             return s->MakeElement(values, index->Var());
+           },
            py::arg("values"), py::arg("index"),
+           DOC(operations_research, Solver, MakeElement),
+           py::return_value_policy::reference_internal)
+      .def("element",
+           [](Solver* s, const std::vector<PropagationBaseObject*>& vars,
+              IntExpr* index) {
+             return s->MakeElement(ToIntVarArray(vars), index->Var());
+           },
+           py::arg("vars"), py::arg("index"),
            DOC(operations_research, Solver, MakeElement),
            py::return_value_policy::reference_internal)
       .def("min",
@@ -1846,10 +2096,16 @@ PYBIND11_MODULE(constraint_solver, m) {
            },
            DOC(operations_research, Solver, MakeMin),
            py::return_value_policy::reference_internal)
-      .def("min", py::overload_cast<IntExpr*, IntExpr*>(&Solver::MakeMin),
+      .def("min",
+           [](Solver* s, PropagationBaseObject* a, PropagationBaseObject* b) {
+             return s->MakeMin(ToIntExpr(a), ToIntExpr(b));
+           },
            DOC(operations_research, Solver, MakeMin_2),
            py::return_value_policy::reference_internal)
-      .def("min", py::overload_cast<IntExpr*, int64_t>(&Solver::MakeMin),
+      .def("min",
+           [](Solver* s, PropagationBaseObject* a, int64_t b) {
+             return s->MakeMin(ToIntExpr(a), b);
+           },
            DOC(operations_research, Solver, MakeMin_3),
            py::return_value_policy::reference_internal)
       .def("max",
@@ -1858,10 +2114,16 @@ PYBIND11_MODULE(constraint_solver, m) {
            },
            DOC(operations_research, Solver, MakeMax),
            py::return_value_policy::reference_internal)
-      .def("max", py::overload_cast<IntExpr*, IntExpr*>(&Solver::MakeMax),
+      .def("max",
+           [](Solver* s, PropagationBaseObject* a, PropagationBaseObject* b) {
+             return s->MakeMax(ToIntExpr(a), ToIntExpr(b));
+           },
            DOC(operations_research, Solver, MakeMax_2),
            py::return_value_policy::reference_internal)
-      .def("max", py::overload_cast<IntExpr*, int64_t>(&Solver::MakeMax),
+      .def("max",
+           [](Solver* s, PropagationBaseObject* a, int64_t b) {
+             return s->MakeMax(ToIntExpr(a), b);
+           },
            DOC(operations_research, Solver, MakeMax_3),
            py::return_value_policy::reference_internal)
       .def("convex_piecewise_expr", &Solver::MakeConvexPiecewiseExpr,
@@ -1900,6 +2162,25 @@ PYBIND11_MODULE(constraint_solver, m) {
                                  val_strategy);
            },
            DOC(operations_research, Solver, MakePhase),
+           py::return_value_policy::reference_internal)
+      .def("default_phase",
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs) {
+             return s->MakeDefaultPhase(ToIntVarArray(exprs));
+           },
+           py::arg("vars"),
+           py::return_value_policy::reference_internal)
+      .def("default_phase",
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
+              const DefaultPhaseParameters& parameters) {
+             return s->MakeDefaultPhase(ToIntVarArray(exprs), parameters);
+           },
+           py::arg("vars"), py::arg("parameters"),
+           py::return_value_policy::reference_internal)
+      .def("constant_restart", &Solver::MakeConstantRestart,
+           py::arg("frequency"),
+           py::return_value_policy::reference_internal)
+      .def("luby_restart", &Solver::MakeLubyRestart,
+           py::arg("scale_factor"),
            py::return_value_policy::reference_internal)
       .def("assign_variable_value", &Solver::MakeAssignVariableValue,
            py::arg("var"), py::arg("val"),
@@ -1966,10 +2247,22 @@ PYBIND11_MODULE(constraint_solver, m) {
            py::arg("db1"), py::arg("db2"),
            py::return_value_policy::reference_internal)
       .def("search_log",
-           [](Solver* s, int64_t period, IntVar* var) {
-             return s->MakeSearchLog(period, var);
+           [](Solver* s, int64_t period) {
+             return s->MakeSearchLog(period);
+           },
+           py::arg("period"),
+           py::return_value_policy::reference_internal)
+      .def("search_log",
+           [](Solver* s, int64_t period, IntExpr* var) {
+             return s->MakeSearchLog(period, var->Var());
            },
            py::arg("period"), py::arg("var"),
+           py::return_value_policy::reference_internal)
+      .def("search_log",
+           [](Solver* s, int64_t period, OptimizeVar* opt_var) {
+             return s->MakeSearchLog(period, opt_var);
+           },
+           py::arg("period"), py::arg("opt_var"),
            py::return_value_policy::reference_internal)
       .def("split_variable_domain", &Solver::MakeSplitVariableDomain,
            py::arg("var"), py::arg("val"), py::arg("start_with_lower_half"),
@@ -2261,11 +2554,48 @@ PYBIND11_MODULE(constraint_solver, m) {
           },
           py::return_value_policy::reference_internal)
       .def(
+          "var_with_name",
+          [](IntExpr* expr, const std::string& name) {
+            IntVar* const v = expr->Var();
+            v->set_name(name);
+            return v;
+          },
+          py::arg("name"), py::return_value_policy::reference_internal)
+      .def(
           "index_of",
           [](IntExpr* expr, const std::vector<int64_t>& values) {
             return expr->solver()->MakeElement(values, expr->Var());
           },
-          py::return_value_policy::reference);
+          py::return_value_policy::reference)
+      .def(
+          "index_of",
+          [](IntExpr* expr, const std::vector<PropagationBaseObject*>& vars) {
+            return expr->solver()->MakeElement(ToIntVarArray(vars),
+                                               expr->Var());
+          },
+          py::return_value_policy::reference)
+      .def(
+          "member",
+          [](IntExpr* expr, const std::vector<int64_t>& values) {
+            return expr->solver()->MakeMemberCt(expr, values);
+          },
+          py::arg("values"), py::return_value_policy::reference_internal)
+      .def(
+          "is_member",
+          [](IntExpr* expr, const std::vector<int64_t>& values) {
+            return expr->solver()->MakeIsMemberVar(expr, values);
+          },
+          py::arg("values"), py::return_value_policy::reference_internal)
+      .def(
+          "when_range", [](IntExpr* expr, Demon* d) { expr->WhenRange(d); },
+          py::arg("d"), py::keep_alive<1, 2>())
+      .def(
+          "when_range",
+          [](IntExpr* expr, py::object closure) {
+            expr->WhenRange(
+                expr->solver()->RevAlloc(new PyCallbackDemon(closure)));
+          },
+          py::arg("closure"));
 
   // Note: no ctor.
   py::class_<IntVar, IntExpr>(m, "IntVar", DOC(operations_research, IntVar))
@@ -2292,7 +2622,27 @@ PYBIND11_MODULE(constraint_solver, m) {
       .def("set_values", &IntVar::SetValues,
            DOC(operations_research, IntVar, SetValues))
       .def("var_type", &IntVar::VarType,
-           DOC(operations_research, IntVar, VarType));
+           DOC(operations_research, IntVar, VarType))
+      .def(
+          "when_bound", [](IntVar* var, Demon* d) { var->WhenBound(d); },
+          py::arg("d"), py::keep_alive<1, 2>())
+      .def(
+          "when_bound",
+          [](IntVar* var, py::object closure) {
+            var->WhenBound(
+                var->solver()->RevAlloc(new PyCallbackDemon(closure)));
+          },
+          py::arg("closure"))
+      .def(
+          "when_domain", [](IntVar* var, Demon* d) { var->WhenDomain(d); },
+          py::arg("d"), py::keep_alive<1, 2>())
+      .def(
+          "when_domain",
+          [](IntVar* var, py::object closure) {
+            var->WhenDomain(
+                var->solver()->RevAlloc(new PyCallbackDemon(closure)));
+          },
+          py::arg("closure"));
 
   // Note: no ctor.
   py::class_<IntervalVar, PropagationBaseObject>(
@@ -2654,6 +3004,50 @@ PYBIND11_MODULE(constraint_solver, m) {
           },
           py::return_value_policy::reference_internal);
 
+  py::class_<Demon, BaseObject>(m, "DemonBase", DOC(operations_research, Demon))
+      .def("priority", &Demon::priority)
+      .def("inhibit", &Demon::inhibit, py::arg("s"))
+      .def("desinhibit", &Demon::desinhibit, py::arg("s"));
+
+  py::class_<PyDemon, Demon, PyDemonHelper>(m, "Demon")
+      .def(py::init<>())
+      .def("run", &PyDemon::run, py::arg("s"))
+      .def("priority", &PyDemon::priority);
+
+  py::class_<PyConstraint, Constraint, PyConstraintHelper>(
+      m, "PyConstraint", DOC(operations_research, Constraint))
+      .def(py::init<Solver*>(), py::arg("s"))
+      .def("post", &PyConstraint::Post)
+      .def("initial_propagate", &PyConstraint::InitialPropagate)
+      .def("post_and_propagate", &PyConstraint::PostAndPropagate)
+      .def(
+          "initial_propagate_demon",
+          [](PyConstraint* ct) -> Demon* {
+            return ct->solver()->MakeConstraintInitialPropagateCallback(ct);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "delayed_initial_propagate_demon",
+          [](PyConstraint* ct) -> Demon* {
+            return ct->solver()->MakeDelayedConstraintInitialPropagateCallback(
+                ct);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "demon",
+          [](py::object self, py::object method, py::args args) -> Demon* {
+            PyConstraint* ct = self.cast<PyConstraint*>();
+            return ct->RegisterDemon(self, method, args, false);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "delayed_demon",
+          [](py::object self, py::object method, py::args args) -> Demon* {
+            PyConstraint* ct = self.cast<PyConstraint*>();
+            return ct->RegisterDemon(self, method, args, true);
+          },
+          py::return_value_policy::reference_internal);
+
   py::class_<LocalSearchOperator, BaseObject, PyLocalSearchOperator>(
       m, "LocalSearchOperator", DOC(operations_research, LocalSearchOperator))
       .def(py::init<>())
@@ -2692,6 +3086,18 @@ PYBIND11_MODULE(constraint_solver, m) {
           [](PyIntVarLocalSearchOperator* op) { return op->MakeOneNeighbor(); })
       .def("on_start", &IntVarLocalSearchOperator::OnStart);
 
+  py::class_<BaseLns, IntVarLocalSearchOperator, PyBaseLns>(m, "BaseLns", "")
+      .def(py::init<const std::vector<IntVar*>&>(), py::arg("vars"))
+      .def("init_fragments", &BaseLns::InitFragments)
+      .def("next_fragment", &BaseLns::NextFragment)
+      .def("append_to_fragment", &BaseLns::AppendToFragment, py::arg("index"))
+      .def("fragment_size", &BaseLns::FragmentSize)
+      .def(
+          "__getitem__",
+          [](const BaseLns* lns, int index) { return lns->Value(index); },
+          py::arg("index"))
+      .def("__len__", &BaseLns::Size);
+
   py::class_<LocalSearchFilter, BaseObject, PyLocalSearchFilter>(
       m, "LocalSearchFilter", DOC(operations_research, LocalSearchFilter))
       .def(py::init<>())
@@ -2725,6 +3131,14 @@ PYBIND11_MODULE(constraint_solver, m) {
             int64_t index = -1;
             bool found = filter.FindIndex(var, &index);
             return py::make_tuple(found, index);
+          },
+          py::arg("var"))
+      .def(
+          "index_from_var",
+          [](const IntVarLocalSearchFilter& filter, IntVar* const var) {
+            int64_t index = -1;
+            filter.FindIndex(var, &index);
+            return index;
           },
           py::arg("var"))
       .def("add_vars", &IntVarLocalSearchFilter::AddVars, py::arg("vars"))
@@ -2778,12 +3192,12 @@ PYBIND11_MODULE(constraint_solver, m) {
 
   solver_py.def(
       "local_search_phase_parameters",
-      [](Solver* s, IntVar* objective, LocalSearchOperator* ls_operator,
+      [](Solver* s, IntExpr* objective, LocalSearchOperator* ls_operator,
          DecisionBuilder* sub_decision_builder, RegularLimit* limit,
          LocalSearchFilterManager* filter_manager) {
-        return s->MakeLocalSearchPhaseParameters(objective, ls_operator,
-                                                 sub_decision_builder, limit,
-                                                 filter_manager);
+        return s->MakeLocalSearchPhaseParameters(
+            objective ? objective->Var() : nullptr, ls_operator,
+            sub_decision_builder, limit, filter_manager);
       },
       py::arg("objective"), py::arg("ls_operator"),
       py::arg("sub_decision_builder"), py::arg("limit") = nullptr,
@@ -2815,8 +3229,16 @@ PYBIND11_MODULE(constraint_solver, m) {
            py::arg("filename"))
       .def("load", py::overload_cast<const AssignmentProto&>(&Assignment::Load),
            py::arg("assignment_proto"))
-      .def("add_objective", &Assignment::AddObjective, py::arg("v"))
-      .def("add_objectives", &Assignment::AddObjectives, py::arg("vars"))
+      .def(
+          "add_objective",
+          [](Assignment* a, IntExpr* v) { a->AddObjective(v->Var()); },
+          py::arg("v"))
+      .def(
+          "add_objectives",
+          [](Assignment* a, const std::vector<PropagationBaseObject*>& vars) {
+            a->AddObjectives(ToIntVarArray(vars));
+          },
+          py::arg("vars"))
       .def("clear_objective", &Assignment::ClearObjective)
       .def("num_objectives", &Assignment::NumObjectives)
       .def("objective", &Assignment::Objective)
@@ -2852,20 +3274,63 @@ PYBIND11_MODULE(constraint_solver, m) {
       .def("set_objective_range_from_index",
            &Assignment::SetObjectiveRangeFromIndex, py::arg("index"),
            py::arg("l"), py::arg("u"))
-      .def("add", py::overload_cast<IntVar*>(&Assignment::Add), py::arg("var"),
-           py::return_value_policy::reference_internal)
-      .def("add",
-           py::overload_cast<const std::vector<IntVar*>&>(&Assignment::Add),
-           py::arg("var"), py::return_value_policy::reference_internal)
-      .def("min", &Assignment::Min, py::arg("var"))
-      .def("max", &Assignment::Max, py::arg("var"))
-      .def("value", &Assignment::Value, py::arg("var"))
-      .def("bound", &Assignment::Bound, py::arg("var"))
-      .def("set_min", &Assignment::SetMin, py::arg("var"), py::arg("m"))
-      .def("set_max", &Assignment::SetMax, py::arg("var"), py::arg("m"))
-      .def("set_range", &Assignment::SetRange, py::arg("var"), py::arg("l"),
-           py::arg("u"))
-      .def("set_value", &Assignment::SetValue, py::arg("var"), py::arg("value"))
+      .def(
+          "add", [](Assignment* a, IntExpr* var) { return a->Add(var->Var()); },
+          py::arg("var"), py::return_value_policy::reference_internal)
+      .def(
+          "add",
+          [](Assignment* a, const std::vector<PropagationBaseObject*>& vars) {
+            a->Add(ToIntVarArray(vars));
+          },
+          py::arg("var"))
+      .def(
+          "min",
+          [](const Assignment* a, const IntExpr* var) {
+            return a->Min(const_cast<IntExpr*>(var)->Var());
+          },
+          py::arg("var"))
+      .def(
+          "max",
+          [](const Assignment* a, const IntExpr* var) {
+            return a->Max(const_cast<IntExpr*>(var)->Var());
+          },
+          py::arg("var"))
+      .def(
+          "value",
+          [](const Assignment* a, const IntExpr* var) {
+            return a->Value(const_cast<IntExpr*>(var)->Var());
+          },
+          py::arg("var"))
+      .def(
+          "bound",
+          [](const Assignment* a, const IntExpr* var) {
+            return a->Bound(const_cast<IntExpr*>(var)->Var());
+          },
+          py::arg("var"))
+      .def(
+          "set_min",
+          [](Assignment* a, const IntExpr* var, int64_t m) {
+            a->SetMin(const_cast<IntExpr*>(var)->Var(), m);
+          },
+          py::arg("var"), py::arg("m"))
+      .def(
+          "set_max",
+          [](Assignment* a, const IntExpr* var, int64_t m) {
+            a->SetMax(const_cast<IntExpr*>(var)->Var(), m);
+          },
+          py::arg("var"), py::arg("m"))
+      .def(
+          "set_range",
+          [](Assignment* a, const IntExpr* var, int64_t l, int64_t u) {
+            a->SetRange(const_cast<IntExpr*>(var)->Var(), l, u);
+          },
+          py::arg("var"), py::arg("l"), py::arg("u"))
+      .def(
+          "set_value",
+          [](Assignment* a, const IntExpr* var, int64_t value) {
+            a->SetValue(const_cast<IntExpr*>(var)->Var(), value);
+          },
+          py::arg("var"), py::arg("value"))
       .def("add", py::overload_cast<IntervalVar*>(&Assignment::Add),
            py::arg("var"), py::return_value_policy::reference_internal)
       .def(

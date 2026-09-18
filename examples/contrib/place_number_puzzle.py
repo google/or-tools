@@ -40,13 +40,13 @@
 
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver("Place number")
+  solver = cp.Solver("Place number")
 
   # data
   m = 32
@@ -58,40 +58,40 @@ def main():
            [6, 8], [7, 3], [7, 4], [7, 6], [7, 8], [8, 5], [8, 6], [8, 7]]
 
   # declare variables
-  x = [solver.IntVar(1, n, "x%i" % i) for i in range(n)]
+  x = [solver.new_int_var(1, n, "x%i" % i) for i in range(n)]
 
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(x))
+  solver.add_all_different(x)
   for i in range(m):
     # Note: make 0-based
-    solver.Add(abs(x[graph[i][0] - 1] - x[graph[i][1] - 1]) > 1)
+    solver.add(abs(x[graph[i][0] - 1] - x[graph[i][1] - 1]) > 1)
 
   # symmetry breaking
-  solver.Add(x[0] < x[n - 1])
+  solver.add(x[0] < x[n - 1])
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(x)
+  solution = solver.assignment()
+  solution.add(x)
 
-  collector = solver.AllSolutionCollector(solution)
+  collector = solver.all_solution_collector(solution)
 
-  solver.Solve(
-      solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE),
+  solver.solve(
+      solver.phase(x, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND, cp.IntValueStrategy.ASSIGN_MIN_VALUE),
       [collector])
 
-  num_solutions = collector.SolutionCount()
+  num_solutions = collector.solution_count
   for s in range(num_solutions):
-    print("x:", [collector.Value(s, x[i]) for i in range(len(x))])
+    print("x:", [collector.value(s, x[i]) for i in range(len(x))])
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
   print()
 
 

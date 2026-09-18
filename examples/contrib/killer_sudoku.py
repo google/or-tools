@@ -68,7 +68,7 @@
 """
 
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 #
 # Ensure that the sum of the segments
@@ -78,18 +78,18 @@ from ortools.constraint_solver import pywrapcp
 
 def calc(cc, x, res):
 
-  solver = list(x.values())[0].solver()
+  solver = list(x.values())[0].solver
 
   # sum the numbers
   cage = [x[i[0] - 1, i[1] - 1] for i in cc]
-  solver.Add(solver.Sum(cage) == res)
-  solver.Add(solver.AllDifferent(cage))
+  solver.add(solver.sum(cage) == res)
+  solver.add_all_different(cage)
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver("Killer Sudoku")
+  solver = cp.Solver("Killer Sudoku")
 
   #
   # data
@@ -128,7 +128,7 @@ def main():
   x = {}
   for i in range(n):
     for j in range(n):
-      x[i, j] = solver.IntVar(1, n, "x[%i,%i]" % (i, j))
+      x[i, j] = solver.new_int_var(1, n, "x[%i,%i]" % (i, j))
 
   x_flat = [x[i, j] for i in range(n) for j in range(n)]
 
@@ -139,10 +139,10 @@ def main():
   # all rows and columns must be unique
   for i in range(n):
     row = [x[i, j] for j in range(n)]
-    solver.Add(solver.AllDifferent(row))
+    solver.add_all_different(row)
 
     col = [x[j, i] for j in range(n)]
-    solver.Add(solver.AllDifferent(col))
+    solver.add_all_different(col)
 
   # cells
   for i in range(2):
@@ -152,7 +152,7 @@ def main():
           for r in range(i * 3, i * 3 + 3)
           for c in range(j * 3, j * 3 + 3)
       ]
-      solver.Add(solver.AllDifferent(cell))
+      solver.add_all_different(cell)
 
   # calculate the segments
   for (res, segment) in problem:
@@ -161,27 +161,27 @@ def main():
   #
   # search and solution
   #
-  db = solver.Phase(x_flat, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
+  db = solver.phase(x_flat, cp.IntVarStrategy.INT_VAR_DEFAULT, cp.IntValueStrategy.INT_VALUE_DEFAULT)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     for i in range(n):
       for j in range(n):
-        print(x[i, j].Value(), end=" ")
+        print(x[i, j].value(), end=" ")
       print()
 
     print()
     num_solutions += 1
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 if __name__ == "__main__":

@@ -24,7 +24,7 @@ of the rule.
 
 from absl import app
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 # We disable the following warning because it is a false positive on constraints
 # like: solver.Add(x == 0)
@@ -33,49 +33,53 @@ from ortools.constraint_solver import pywrapcp
 
 def main(_) -> None:
     # Create the solver.
-    solver = pywrapcp.Solver("golomb ruler")
+    solver = cp.Solver("golomb ruler")
 
     size = 8
     var_max = size * size
     all_vars = list(range(0, size))
 
-    marks = [solver.IntVar(0, var_max, "marks_%d" % i) for i in all_vars]
+    marks = [solver.new_int_var(0, var_max, "marks_%d" % i) for i in all_vars]
 
-    objective = solver.Minimize(marks[size - 1], 1)
+    objective = solver.minimize(marks[size - 1], 1)
 
-    solver.Add(marks[0] == 0)
+    solver.add(marks[0] == 0)
 
     # We expand the creation of the diff array to avoid a pylint warning.
     diffs = []
     for i in range(size - 1):
         for j in range(i + 1, size):
             diffs.append(marks[j] - marks[i])
-    solver.Add(solver.AllDifferent(diffs))
+    solver.add_all_different(diffs)
 
-    solver.Add(marks[size - 1] - marks[size - 2] > marks[1] - marks[0])
+    solver.add(marks[size - 1] - marks[size - 2] > marks[1] - marks[0])
     for i in range(size - 2):
-        solver.Add(marks[i + 1] > marks[i])
+        solver.add(marks[i + 1] > marks[i])
 
-    solution = solver.Assignment()
+    solution = solver.assignment()
     solution.Add(marks[size - 1])
-    collector = solver.AllSolutionCollector(solution)
+    collector = solver.all_solution_collector(solution)
 
-    solver.Solve(
-        solver.Phase(marks, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE),
+    solver.solve(
+        solver.phase(
+            marks,
+            cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+            cp.IntValueStrategy.ASSIGN_MIN_VALUE
+        ),
         [objective, collector],
     )
-    for i in range(0, collector.SolutionCount()):
-        obj_value = collector.Value(i, marks[size - 1])
-        time = collector.WallTime(i)
-        branches = collector.Branches(i)
-        failures = collector.Failures(i)
+    for i in range(0, collector.solution_count()):
+        obj_value = collector.value(i, marks[size - 1])
+        time = collector.wall_time_ms(i)
+        branches = collector.branches(i)
+        failures = collector.failures(i)
         print(
             "Solution #%i: value = %i, failures = %i, branches = %i,time = %i ms"
             % (i, obj_value, failures, branches, time)
         )
-    time = solver.WallTime()
-    branches = solver.Branches()
-    failures = solver.Failures()
+    time = solver.wall_time_ms()
+    branches = solver.branches()
+    failures = solver.failures()
     print(
         (
             "Total run : failures = %i, branches = %i, time = %i ms"

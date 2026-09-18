@@ -22,7 +22,7 @@
   http://www.hakank.org/google_or_tools/
 
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 #
 # converts a number (s) <-> an array of integers (t) in the specific base.
@@ -31,52 +31,52 @@ from ortools.constraint_solver import pywrapcp
 
 def toNum(solver, t, s, base):
   tlen = len(t)
-  solver.Add(
-      s == solver.Sum([(base**(tlen - i - 1)) * t[i] for i in range(tlen)]))
+  solver.add(
+      s == solver.sum([(base**(tlen - i - 1)) * t[i] for i in range(tlen)]))
 
 
 def main(unused_argv):
   # Create the solver.
-  solver = pywrapcp.Solver("toNum test")
+  solver = cp.Solver("toNum test")
 
   # data
   n = 4
   base = 10
 
   # declare variables
-  x = [solver.IntVar(0, n - 1, "x%i" % i) for i in range(n)]
-  y = solver.IntVar(0, 10**n - 1, "y")
+  x = [solver.new_int_var(0, n - 1, "x%i" % i) for i in range(n)]
+  y = solver.new_int_var(0, 10**n - 1, "y")
 
   #
   # constraints
   #
-  # solver.Add(solver.AllDifferent([x[i] for i in range(n)]))
-  solver.Add(solver.AllDifferent(x))
-  # solver.Add(x[0] > 0) # just for fun
+  # solver.add(solver.add_all_different([x[i] for i in range(n)]))
+  solver.add_all_different(x)
+  # solver.add(x[0] > 0) # just for fun
 
   toNum(solver, x, y, base)
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add([x[i] for i in range(n)])
-  solution.Add(y)
+  solution = solver.assignment()
+  solution.add([x[i] for i in range(n)])
+  solution.add(y)
 
-  collector = solver.AllSolutionCollector(solution)
-  solver.Solve(
-      solver.Phase([x[i] for i in range(n)], solver.CHOOSE_FIRST_UNBOUND,
-                   solver.ASSIGN_MIN_VALUE), [collector])
+  collector = solver.all_solution_collector(solution)
+  solver.solve(
+      solver.phase([x[i] for i in range(n)], cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+                   cp.IntValueStrategy.ASSIGN_MIN_VALUE), [collector])
 
-  num_solutions = collector.SolutionCount()
+  num_solutions = collector.solution_count
   for s in range(num_solutions):
-    print("x:", [collector.Value(s, x[i]) for i in range(n)])
-    print("y:", collector.Value(s, y))
+    print("x:", [collector.value(s, x[i]) for i in range(n)])
+    print("y:", collector.value(s, y))
     print()
 
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 if __name__ == "__main__":

@@ -47,13 +47,13 @@
   http://www.hakank.org/google_or_tools/
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver('Mr Smith problem')
+  solver = cp.Solver('Mr Smith problem')
 
   #
   # data
@@ -63,7 +63,7 @@ def main():
   #
   # declare variables
   #
-  x = [solver.IntVar(0, 1, 'x[%i]' % i) for i in range(n)]
+  x = [solver.new_int_var(0, 1, 'x[%i]' % i) for i in range(n)]
   Mr_Smith, Mrs_Smith, Matt, John, Tim = x
 
   #
@@ -77,42 +77,42 @@ def main():
 
   # If Mr Smith comes then his wife will come too.
   # (Mr_Smith -> Mrs_Smith)
-  solver.Add(Mr_Smith - Mrs_Smith <= 0)
+  solver.add(Mr_Smith - Mrs_Smith <= 0)
 
   # At least one of their two sons Matt and John will come.
   # (Matt \/ John)
-  solver.Add(Matt + John >= 1)
+  solver.add(Matt + John >= 1)
 
   # Either Mrs Smith or Tim will come but not both.
   # bool2int(Mrs_Smith) + bool2int(Tim) = 1 /\
   # (Mrs_Smith xor Tim)
-  solver.Add(Mrs_Smith + Tim == 1)
+  solver.add(Mrs_Smith + Tim == 1)
 
   # Either Tim and John will come or neither will come.
   # (Tim = John)
-  solver.Add(Tim == John)
+  solver.add(Tim == John)
 
   # If Matt comes /\ then John and his father will also come.
   # (Matt -> (John /\ Mr_Smith))
-  solver.Add(Matt - (John * Mr_Smith) <= 0)
+  solver.add(Matt - (John * Mr_Smith) <= 0)
 
   #
   # solution and search
   #
-  db = solver.Phase(x, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
+  db = solver.phase(x, cp.IntVarStrategy.INT_VAR_DEFAULT, cp.IntValueStrategy.INT_VALUE_DEFAULT)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
-    print('x:', [x[i].Value() for i in range(n)])
+    print('x:', [x[i].value() for i in range(n)])
 
   print()
   print('num_solutions:', num_solutions)
-  print('failures:', solver.Failures())
-  print('branches:', solver.Branches())
-  print('WallTime:', solver.WallTime(), 'ms')
+  print('failures:', solver.num_failures)
+  print('branches:', solver.num_branches)
+  print('WallTime:', solver.wall_time_ms, 'ms')
 
 
 if __name__ == '__main__':

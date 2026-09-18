@@ -47,13 +47,13 @@
   http://www.hakank.org/google_or_tools/
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver('Marathon')
+  solver = cp.Solver('Marathon')
 
   #
   # data
@@ -67,54 +67,54 @@ def main():
   #
   # declare variables
   #
-  runners = [solver.IntVar(1, n, 'runners[%i]' % i) for i in range(n)]
+  runners = [solver.new_int_var(1, n, 'runners[%i]' % i) for i in range(n)]
   Dominique, Ignace, Naren, Olivier, Philippe, Pascal = runners
 
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(runners))
+  solver.add_all_different(runners)
 
   # a: Olivier not last
-  solver.Add(Olivier != n)
+  solver.add(Olivier != n)
 
   # b: Dominique, Pascal and Ignace before Naren and Olivier
-  solver.Add(Dominique < Naren)
-  solver.Add(Dominique < Olivier)
-  solver.Add(Pascal < Naren)
-  solver.Add(Pascal < Olivier)
-  solver.Add(Ignace < Naren)
-  solver.Add(Ignace < Olivier)
+  solver.add(Dominique < Naren)
+  solver.add(Dominique < Olivier)
+  solver.add(Pascal < Naren)
+  solver.add(Pascal < Olivier)
+  solver.add(Ignace < Naren)
+  solver.add(Ignace < Olivier)
 
   # c: Dominique better than third
-  solver.Add(Dominique < 3)
+  solver.add(Dominique < 3)
 
   # d: Philippe is among the first four
-  solver.Add(Philippe <= 4)
+  solver.add(Philippe <= 4)
 
   # e: Ignace neither second nor third
-  solver.Add(Ignace != 2)
-  solver.Add(Ignace != 3)
+  solver.add(Ignace != 2)
+  solver.add(Ignace != 3)
 
   # f: Pascal three places earlier than Naren
-  solver.Add(Pascal + 3 == Naren)
+  solver.add(Pascal + 3 == Naren)
 
   # g: Neither Ignace nor Dominique on fourth position
-  solver.Add(Ignace != 4)
-  solver.Add(Dominique != 4)
+  solver.add(Ignace != 4)
+  solver.add(Dominique != 4)
 
   #
   # solution and search
   #
-  db = solver.Phase(runners, solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                    solver.ASSIGN_CENTER_VALUE)
+  db = solver.phase(runners, cp.IntVarStrategy.CHOOSE_MIN_SIZE_LOWEST_MIN,
+                    cp.IntValueStrategy.ASSIGN_CENTER_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
-    runners_val = [runners[i].Value() for i in range(n)]
+    runners_val = [runners[i].value() for i in range(n)]
     print('runners:', runners_val)
     print('Places:')
     for i in range(1, n + 1):
@@ -124,9 +124,9 @@ def main():
     print()
 
   print('num_solutions:', num_solutions)
-  print('failures:', solver.Failures())
-  print('branches:', solver.Branches())
-  print('WallTime:', solver.WallTime(), 'ms')
+  print('failures:', solver.num_failures)
+  print('branches:', solver.num_branches)
+  print('WallTime:', solver.wall_time_ms, 'ms')
 
 
 if __name__ == '__main__':

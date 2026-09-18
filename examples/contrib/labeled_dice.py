@@ -46,13 +46,13 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver("Labeled dice")
+  solver = cp.Solver("Labeled dice")
 
   #
   # data
@@ -74,7 +74,7 @@ def main():
   #
   # declare variables
   #
-  dice = [solver.IntVar(0, n - 1, "dice[%i]" % i) for i in range(m)]
+  dice = [solver.new_int_var(0, n - 1, "dice[%i]" % i) for i in range(m)]
 
   #
   # constraints
@@ -82,33 +82,33 @@ def main():
 
   # the letters in a word must be on a different die
   for i in range(num_words):
-    solver.Add(solver.AllDifferent([dice[words[i][j]] for j in range(n)]))
+    solver.add_all_different([dice[words[i][j]] for j in range(n)])
 
   # there must be exactly 6 letters of each die
   for i in range(n):
-    b = [solver.IsEqualCstVar(dice[j], i) for j in range(m)]
-    solver.Add(solver.Sum(b) == 6)
+    b = [solver.add_is_equal_cst_var(dice[j], i) for j in range(m)]
+    solver.add(solver.sum(b) == 6)
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(dice)
+  solution = solver.assignment()
+  solution.add(dice)
 
-  db = solver.Phase(dice, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(dice, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND, cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
   #
   # result
   #
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
-    # print "dice:", [(letters[i],dice[i].Value()) for i in range(m)]
+    # print "dice:", [(letters[i],dice[i].value()) for i in range(m)]
     for d in range(n):
       print("die %i:" % d, end=" ")
       for i in range(m):
-        if dice[i].Value() == d:
+        if dice[i].value() == d:
           print(letters[i], end=" ")
       print()
 
@@ -116,19 +116,19 @@ def main():
     for i in range(num_words):
       for j in range(n):
         print(
-            "%s (%i)" % (letters[words[i][j]], dice[words[i][j]].Value()),
+            "%s (%i)" % (letters[words[i][j]], dice[words[i][j]].value()),
             end=" ")
       print()
 
     print()
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 if __name__ == "__main__":

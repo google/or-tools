@@ -57,13 +57,13 @@
 """
 import sys
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver("Set covering")
+  solver = cp.Solver("Set covering")
 
   #
   # data
@@ -93,48 +93,48 @@ def main():
   #
   # variables
   #
-  Hire = [solver.IntVar(0, 1, "Hire[%i]" % w) for w in Workers]
-  total_cost = solver.IntVar(0, nb_workers * sum(Cost), "total_cost")
+  Hire = [solver.new_int_var(0, 1, "Hire[%i]" % w) for w in Workers]
+  total_cost = solver.new_int_var(0, nb_workers * sum(Cost), "total_cost")
 
   #
   # constraints
   #
-  solver.Add(total_cost == solver.ScalProd(Hire, Cost))
+  solver.add(total_cost == solver.weighted_sum(Hire, Cost))
 
   for j in Tasks:
     # Sum the cost for hiring the qualified workers
     # (also, make 0-base)
-    b = solver.Sum([Hire[c - 1] for c in Qualified[j]])
-    solver.Add(b >= 1)
+    b = solver.sum([Hire[c - 1] for c in Qualified[j]])
+    solver.add(b >= 1)
 
   # objective: Minimize total cost
-  objective = solver.Minimize(total_cost, 1)
+  objective = solver.minimize(total_cost, 1)
 
   #
   # search and result
   #
-  db = solver.Phase(Hire, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(Hire, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND, cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db, [objective])
+  solver.new_search(db, [objective])
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
-    print("Total cost", total_cost.Value())
+    print("Total cost", total_cost.value())
     print("We should hire these workers: ", end=" ")
     for w in Workers:
-      if Hire[w].Value() == 1:
+      if Hire[w].value() == 1:
         print(w, end=" ")
     print()
     print()
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 if __name__ == "__main__":

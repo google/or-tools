@@ -16,7 +16,7 @@
 
 import ortools
 # from ortools.algorithms import knapsack_solver
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 # from ortools.graph.python import linear_sum_assignment
 # from ortools.graph.python import max_flow
 # from ortools.graph.python import min_cost_flow
@@ -38,19 +38,21 @@ def lpsolver_test():
 
 
 def cpsolver_test():
-    """Test pywrapcp."""
-    print("Test cpsolver...")
-    cpsolver = pywrapcp.Solver("ConstraintTest")
+    """Test solver CP."""
+    print("Test solver CP...")
+    solver = cp.Solver("ConstraintTest")
     num_vals = 3
-    x = cpsolver.IntVar(0, num_vals - 1, "x")
-    y = cpsolver.IntVar(0, num_vals - 1, "y")
-    z = cpsolver.IntVar(0, num_vals - 1, "z")
-    cpsolver.Add(x != y)
-    db = cpsolver.Phase(
-        [x, y, z], cpsolver.CHOOSE_FIRST_UNBOUND, cpsolver.ASSIGN_MIN_VALUE
+    x = solver.new_int_var(0, num_vals - 1, "x")
+    y = solver.new_int_var(0, num_vals - 1, "y")
+    z = solver.new_int_var(0, num_vals - 1, "z")
+    solver.add(x != y)
+    db = solver.phase(
+        [x, y, z],
+        cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+        cp.IntValueStrategy.ASSIGN_MIN_VALUE,
     )
-    cpsolver.Solve(db)
-    print("Test cpsolver...DONE")
+    solver.solve(db)
+    print("Test solver CP...DONE")
 
 
 def main():

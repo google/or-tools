@@ -47,7 +47,6 @@ echo Installing ortools Python3 venv...DONE | tee -a test.log
 set +e
 echo Testing ortools Python3... | tee -a test.log
 (cd ${VENV_DIR}/bin && ./python -c "from ortools.linear_solver import pywraplp") 2>&1 | tee -a test.log
-(cd ${VENV_DIR}/bin && ./python -c "from ortools.constraint_solver import pywrapcp") 2>&1 | tee -a test.log
 (cd ${VENV_DIR}/bin && ./python -c "from ortools.sat import pywrapsat") 2>&1 | tee -a test.log
 (cd ${VENV_DIR}/bin && ./python -c "from ortools.graph import pywrapgraph") 2>&1 | tee -a test.log
 (cd ${VENV_DIR}/bin && ./python -c "from ortools.algorithms import pywrapknapsack_solver") 2>&1 | tee -a test.log

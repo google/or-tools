@@ -42,20 +42,20 @@
   http://www.hakank.org/google_or_tools/
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 # converts a number (s) <-> an array of numbers (t) in the specific base.
 
 
 def toNum(solver, t, s, base):
   tlen = len(t)
-  solver.Add(
-      s == solver.Sum([(base**(tlen - i - 1)) * t[i] for i in range(tlen)]))
+  solver.add(
+      s == solver.sum([(base**(tlen - i - 1)) * t[i] for i in range(tlen)]))
 
 
 def main(base=2, n=3, m=8):
   # Create the solver.
-  solver = pywrapcp.Solver("de Bruijn sequences")
+  solver = cp.Solver("de Bruijn sequences")
 
   #
   # data
@@ -97,87 +97,87 @@ def main(base=2, n=3, m=8):
     print("Checks gcc")
 
   # declare variables
-  x = [solver.IntVar(0, (base**n) - 1, "x%i" % i) for i in range(m)]
+  x = [solver.new_int_var(0, (base**n) - 1, "x%i" % i) for i in range(m)]
   binary = {}
   for i in range(m):
     for j in range(n):
-      binary[(i, j)] = solver.IntVar(0, base - 1, "x_%i_%i" % (i, j))
+      binary[(i, j)] = solver.new_int_var(0, base - 1, "x_%i_%i" % (i, j))
 
-  bin_code = [solver.IntVar(0, base - 1, "bin_code%i" % i) for i in range(m)]
+  bin_code = [solver.new_int_var(0, base - 1, "bin_code%i" % i) for i in range(m)]
 
   #
   # constraints
   #
-  #solver.Add(solver.AllDifferent([x[i] for i in range(m)]))
-  solver.Add(solver.AllDifferent(x))
+  #solver.add(solver.add_all_different([x[i] for i in range(m)]))
+  solver.add_all_different(x)
 
   # converts x <-> binary
   for i in range(m):
-    t = [solver.IntVar(0, base - 1, "t_%i" % j) for j in range(n)]
+    t = [solver.new_int_var(0, base - 1, "t_%i" % j) for j in range(n)]
     toNum(solver, t, x[i], base)
     for j in range(n):
-      solver.Add(binary[(i, j)] == t[j])
+      solver.add(binary[(i, j)] == t[j])
 
   # the de Bruijn condition
   # the first elements in binary[i] is the same as the last
   # elements in binary[i-i]
   for i in range(1, m - 1):
     for j in range(1, n - 1):
-      solver.Add(binary[(i - 1, j)] == binary[(i, j - 1)])
+      solver.add(binary[(i - 1, j)] == binary[(i, j - 1)])
 
   # ... and around the corner
   for j in range(1, n):
-    solver.Add(binary[(m - 1, j)] == binary[(0, j - 1)])
+    solver.add(binary[(m - 1, j)] == binary[(0, j - 1)])
 
   # converts binary -> bin_code
   for i in range(m):
-    solver.Add(bin_code[i] == binary[(i, 0)])
+    solver.add(bin_code[i] == binary[(i, 0)])
 
   # extra: ensure that all the numbers in the de Bruijn sequence
   # (bin_code) has the same occurrences (if check_same_gcc is True
   # and mathematically possible)
-  gcc = [solver.IntVar(0, m, "gcc%i" % i) for i in range(base)]
-  solver.Add(solver.Distribute(bin_code, list(range(base)), gcc))
+  gcc = [solver.new_int_var(0, m, "gcc%i" % i) for i in range(base)]
+  solver.add_distribute(bin_code, list(range(base)), gcc)
   if check_same_gcc and m % base == 0:
     for i in range(1, base):
-      solver.Add(gcc[i] == gcc[i - 1])
+      solver.add(gcc[i] == gcc[i - 1])
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add([x[i] for i in range(m)])
-  solution.Add([bin_code[i] for i in range(m)])
-  # solution.Add([binary[(i,j)] for i in range(m) for j in range(n)])
-  solution.Add([gcc[i] for i in range(base)])
+  solution = solver.assignment()
+  solution.add([x[i] for i in range(m)])
+  solution.add([bin_code[i] for i in range(m)])
+  # solution.add([binary[(i,j)] for i in range(m) for j in range(n)])
+  solution.add([gcc[i] for i in range(base)])
 
-  db = solver.Phase([x[i] for i in range(m)] + [bin_code[i] for i in range(m)],
-                    solver.CHOOSE_MIN_SIZE_LOWEST_MAX, solver.ASSIGN_MIN_VALUE)
+  db = solver.phase([x[i] for i in range(m)] + [bin_code[i] for i in range(m)],
+                    cp.IntVarStrategy.CHOOSE_MIN_SIZE_LOWEST_MAX, cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
   num_solutions = 0
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
     print("\nSolution %i" % num_solutions)
-    print("x:", [int(x[i].Value()) for i in range(m)])
-    print("gcc:", [int(gcc[i].Value()) for i in range(base)])
-    print("de Bruijn sequence:", [int(bin_code[i].Value()) for i in range(m)])
+    print("x:", [int(x[i].value()) for i in range(m)])
+    print("gcc:", [int(gcc[i].value()) for i in range(base)])
+    print("de Bruijn sequence:", [int(bin_code[i].value()) for i in range(m)])
     # for i in range(m):
     #    for j in range(n):
-    #        print binary[(i,j)].Value(),
+    #        print binary[(i,j)].value(),
     #    print
     # print
-  solver.EndSearch()
+  solver.end_search()
 
   if num_solutions == 0:
     print("No solution found")
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 base = 2
