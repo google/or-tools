@@ -31,7 +31,10 @@ ORTOOLS_LLVM_FLAGS = []
 ORTOOLS_LLVM_TEST_FLAGS = []
 
 # msvc
-ORTOOLS_MSVC_FLAGS = []
+ORTOOLS_MSVC_FLAGS = [
+    "/std:c++20",
+    "/Zc:preprocessor",  # Enable preprocessor conformance mode needed to correctly support __VA_OPT__
+]
 ORTOOLS_MSVC_LINKOPTS = []
 ORTOOLS_MSVC_TEST_FLAGS = []
 
@@ -44,10 +47,10 @@ ORTOOLS_DEFAULT_COPTS = select({
 })
 
 ORTOOLS_TEST_COPTS = select({
-    "@rules_cc//cc/compiler:msvc-cl": ORTOOLS_MSVC_TEST_FLAGS,
-    "@rules_cc//cc/compiler:clang-cl": ORTOOLS_CLANG_CL_TEST_FLAGS,
-    "@rules_cc//cc/compiler:clang": ORTOOLS_LLVM_TEST_FLAGS,
-    "@rules_cc//cc/compiler:gcc": ORTOOLS_GCC_TEST_FLAGS,
+    "@rules_cc//cc/compiler:msvc-cl": ORTOOLS_MSVC_FLAGS + ORTOOLS_MSVC_TEST_FLAGS,
+    "@rules_cc//cc/compiler:clang-cl": ORTOOLS_CLANG_CL_FLAGS + ORTOOLS_CLANG_CL_TEST_FLAGS,
+    "@rules_cc//cc/compiler:clang": ORTOOLS_LLVM_FLAGS + ORTOOLS_LLVM_TEST_FLAGS,
+    "@rules_cc//cc/compiler:gcc": ORTOOLS_GCC_FLAGS + ORTOOLS_GCC_TEST_FLAGS,
     "//conditions:default": [],
 })
 
