@@ -44,13 +44,13 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver('Safe cracking puzzle')
+  solver = cp.Solver('Safe cracking puzzle')
 
   #
   # data
@@ -62,41 +62,41 @@ def main():
   # variables
   #
 
-  LD = [solver.IntVar(digits, 'LD[%i]' % i) for i in range(n)]
+  LD = [solver.new_int_var(digits, 'LD[%i]' % i) for i in range(n)]
   C1, C2, C3, C4, C5, C6, C7, C8, C9 = LD
 
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(LD))
+  solver.add_all_different(LD)
 
-  solver.Add(C4 - C6 == C7)
-  solver.Add(C1 * C2 * C3 == C8 + C9)
-  solver.Add(C2 + C3 + C6 < C8)
-  solver.Add(C9 < C8)
+  solver.add(C4 - C6 == C7)
+  solver.add(C1 * C2 * C3 == C8 + C9)
+  solver.add(C2 + C3 + C6 < C8)
+  solver.add(C9 < C8)
   for i in range(n):
-    solver.Add(LD[i] != i + 1)
+    solver.add(LD[i] != i + 1)
 
   #
   # search and result
   #
-  db = solver.Phase(LD, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
+  db = solver.phase(LD, cp.IntVarStrategy.INT_VAR_DEFAULT, cp.IntValueStrategy.INT_VALUE_DEFAULT)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
 
   num_solutions = 0
 
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
-    print('LD:', [LD[i].Value() for i in range(n)])
+    print('LD:', [LD[i].value() for i in range(n)])
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print('num_solutions:', num_solutions)
-  print('failures:', solver.Failures())
-  print('branches:', solver.Branches())
-  print('WallTime:', solver.WallTime(), 'ms')
+  print('failures:', solver.num_failures)
+  print('branches:', solver.num_branches)
+  print('WallTime:', solver.wall_time_ms, 'ms')
 
 
 if __name__ == '__main__':

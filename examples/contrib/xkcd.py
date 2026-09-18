@@ -36,13 +36,13 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_cp_solver/
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver("xkcd knapsack")
+  solver = cp.Solver("xkcd knapsack")
 
   #
   # data
@@ -60,35 +60,35 @@ def main():
   # declare variables
 
   # how many items of each dish
-  x = [solver.IntVar(0, 10, "x%i" % i) for i in range(num_prices)]
-  z = solver.IntVar(0, 1505, "z")
+  x = [solver.new_int_var(0, 10, "x%i" % i) for i in range(num_prices)]
+  z = solver.new_int_var(0, 1505, "z")
 
   #
   # constraints
   #
-  solver.Add(z == solver.Sum([x[i] * price[i] for i in range(num_prices)]))
-  solver.Add(z == total)
+  solver.add(z == solver.sum([x[i] * price[i] for i in range(num_prices)]))
+  solver.add(z == total)
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add([x[i] for i in range(num_prices)])
-  solution.Add(z)
+  solution = solver.assignment()
+  solution.add([x[i] for i in range(num_prices)])
+  solution.add(z)
 
-  collector = solver.AllSolutionCollector(solution)
+  collector = solver.all_solution_collector(solution)
   # collector = solver.FirstSolutionCollector(solution)
-  # search_log = solver.SearchLog(100, x[0])
-  solver.Solve(
-      solver.Phase([x[i] for i in range(num_prices)], solver.INT_VAR_SIMPLE,
-                   solver.ASSIGN_MIN_VALUE), [collector])
+  # search_log = solver.search_log(100, x[0])
+  solver.solve(
+      solver.phase([x[i] for i in range(num_prices)], cp.IntVarStrategy.INT_VAR_SIMPLE,
+                   cp.IntValueStrategy.ASSIGN_MIN_VALUE), [collector])
 
-  num_solutions = collector.SolutionCount()
+  num_solutions = collector.solution_count
   print("num_solutions: ", num_solutions)
   if num_solutions > 0:
     for s in range(num_solutions):
-      print("z:", collector.Value(s, z) / 100.0)
-      xval = [collector.Value(s, x[i]) for i in range(num_prices)]
+      print("z:", collector.value(s, z) / 100.0)
+      xval = [collector.value(s, x[i]) for i in range(num_prices)]
       print("x:", xval)
       for i in range(num_prices):
         if xval[i] > 0:
@@ -97,9 +97,9 @@ def main():
 
     print()
     print("num_solutions:", num_solutions)
-    print("failures:", solver.Failures())
-    print("branches:", solver.Branches())
-    print("WallTime:", solver.WallTime())
+    print("failures:", solver.num_failures)
+    print("branches:", solver.num_branches)
+    print("WallTime:", solver.wall_time_ms)
 
   else:
     print("No solutions found")

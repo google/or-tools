@@ -38,13 +38,13 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver('Set covering Skiena')
+  solver = cp.Solver('Set covering Skiena')
 
   #
   # data
@@ -65,53 +65,53 @@ def main():
   #
   # variables
   #
-  x = [solver.IntVar(0, 1, 'x[%i]' % i) for i in range(num_sets)]
+  x = [solver.new_int_var(0, 1, 'x[%i]' % i) for i in range(num_sets)]
 
   # number of choosen sets
-  z = solver.IntVar(0, num_sets * 2, 'z')
+  z = solver.new_int_var(0, num_sets * 2, 'z')
 
   # total number of elements in the choosen sets
-  tot_elements = solver.IntVar(0, num_sets * num_elements)
+  tot_elements = solver.new_int_var(0, num_sets * num_elements)
 
   #
   # constraints
   #
-  solver.Add(z == solver.Sum(x))
+  solver.add(z == solver.sum(x))
 
   # all sets must be used
   for j in range(num_elements):
-    s = solver.Sum([belongs[i][j] * x[i] for i in range(num_sets)])
-    solver.Add(s >= 1)
+    s = solver.sum([belongs[i][j] * x[i] for i in range(num_sets)])
+    solver.add(s >= 1)
 
   # number of used elements
-  solver.Add(tot_elements == solver.Sum([
+  solver.add(tot_elements == solver.sum([
       x[i] * belongs[i][j] for i in range(num_sets) for j in range(num_elements)
   ]))
 
   # objective
-  objective = solver.Minimize(z, 1)
+  objective = solver.minimize(z, 1)
 
   #
   # search and result
   #
-  db = solver.Phase(x, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
+  db = solver.phase(x, cp.IntVarStrategy.INT_VAR_DEFAULT, cp.IntValueStrategy.INT_VALUE_DEFAULT)
 
-  solver.NewSearch(db, [objective])
+  solver.new_search(db, [objective])
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
-    print('z:', z.Value())
-    print('tot_elements:', tot_elements.Value())
-    print('x:', [x[i].Value() for i in range(num_sets)])
+    print('z:', z.value())
+    print('tot_elements:', tot_elements.value())
+    print('x:', [x[i].value() for i in range(num_sets)])
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print('num_solutions:', num_solutions)
-  print('failures:', solver.Failures())
-  print('branches:', solver.Branches())
-  print('WallTime:', solver.WallTime(), 'ms')
+  print('failures:', solver.num_failures)
+  print('branches:', solver.num_branches)
+  print('WallTime:', solver.wall_time_ms, 'ms')
 
 
 if __name__ == '__main__':

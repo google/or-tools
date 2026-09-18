@@ -24,7 +24,8 @@ Graph and flow algorithms
 
 Routing library and legacy Constraint Programming Solver
 
-@li @ref ortools.constraint_solver.pywrapcp,
+@li @ref ortools.constraint_solver.python.constraint_solver,
+@li @ref ortools.routing.python.routing,
 
 Minimalistic linear solver wrapper
 

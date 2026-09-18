@@ -47,7 +47,7 @@
 
 """
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 from collections import defaultdict
 
 #
@@ -64,7 +64,7 @@ from collections import defaultdict
 # 1..Q).  We reserve state 0 to be an always failing state.
 # '''
 #
-# x : IntVar array
+# x :.new_int_var array
 # Q : number of states
 # S : input_max
 # d : transition matrix
@@ -74,7 +74,7 @@ from collections import defaultdict
 
 def regular(x, Q, S, d, q0, F):
 
-  solver = x[0].solver()
+  solver = x[0].solver
 
   assert Q > 0, 'regular: "Q" must be greater than zero'
   assert S > 0, 'regular: "S" must be greater than zero'
@@ -105,25 +105,25 @@ def regular(x, Q, S, d, q0, F):
   m = 0
   n = len(x)
 
-  a = [solver.IntVar(0, Q + 1, 'a[%i]' % i) for i in range(m, n + 1)]
+  a = [solver.new_int_var(0, Q + 1, 'a[%i]' % i) for i in range(m, n + 1)]
 
   # Check that the final state is in F
-  solver.Add(solver.MemberCt(a[-1], F))
+  solver.add_member_ct(a[-1], F)
   # First state is q0
-  solver.Add(a[m] == q0)
+  solver.add(a[m] == q0)
   for i in x_range:
-    solver.Add(x[i] >= 1)
-    solver.Add(x[i] <= S)
+    solver.add(x[i] >= 1)
+    solver.add(x[i] <= S)
 
     # Determine a[i+1]: a[i+1] == d2[a[i], x[i]]
-    solver.Add(
-        a[i + 1] == solver.Element(d2_flatten, ((a[i]) * S) + (x[i] - 1)))
+    solver.add(
+        a[i + 1] == solver.element(d2_flatten, ((a[i]) * S) + (x[i] - 1)))
 
 
 def main(n):
 
   # Create the solver.
-  solver = pywrapcp.Solver('3 jugs problem using regular constraint')
+  solver = cp.Solver('3 jugs problem using regular constraint')
 
   #
   # data
@@ -213,7 +213,7 @@ def main(n):
   #
   # declare variables
   #
-  x = [solver.IntVar(1, input_max, 'x[%i]' % i) for i in range(n)]
+  x = [solver.new_int_var(1, input_max, 'x[%i]' % i) for i in range(n)]
 
   #
   # constraints
@@ -224,27 +224,27 @@ def main(n):
   #
   # solution and search
   #
-  db = solver.Phase(x, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
+  db = solver.phase(x, cp.IntVarStrategy.INT_VAR_DEFAULT, cp.IntValueStrategy.INT_VALUE_DEFAULT)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
 
   num_solutions = 0
   x_val = []
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
-    x_val = [1] + [x[i].Value() for i in range(n)]
+    x_val = [1] + [x[i].value() for i in range(n)]
     print('x:', x_val)
     for i in range(1, n + 1):
       print('%s -> %s' % (nodes[x_val[i - 1] - 1], nodes[x_val[i] - 1]))
 
-  solver.EndSearch()
+  solver.end_search()
 
   if num_solutions > 0:
     print()
     print('num_solutions:', num_solutions)
-    print('failures:', solver.Failures())
-    print('branches:', solver.Branches())
-    print('WallTime:', solver.WallTime(), 'ms')
+    print('failures:', solver.num_failures)
+    print('branches:', solver.num_branches)
+    print('WallTime:', solver.wall_time_ms, 'ms')
 
   # return the solution (or an empty array)
   return x_val

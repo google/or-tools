@@ -71,10 +71,6 @@ setup(
             '$<TARGET_FILE_NAME:dag_shortest_path_pybind11>',
             '*.pyi'],
         '@PYTHON_PROJECT@.gscip':['*.pyi'],
-        '@PYTHON_PROJECT@.constraint_solver':[
-            '$<TARGET_FILE_NAME:pywrapcp>',
-            '*.pyi'
-        ],
         '@PYTHON_PROJECT@.constraint_solver.python':[
             '$<TARGET_FILE_NAME:constraint_solver_pybind11>',
             '*.pyi'

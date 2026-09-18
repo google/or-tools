@@ -47,13 +47,13 @@
 """
 import sys
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(show_all_max=0):
 
   # Create the solver.
-  solver = pywrapcp.Solver("Photo problem")
+  solver = cp.Solver("Photo problem")
 
   #
   # data
@@ -82,51 +82,51 @@ def main(show_all_max=0):
   #
   # declare variables
   #
-  positions = [solver.IntVar(0, n - 1, "positions[%i]" % i) for i in range(n)]
+  positions = [solver.new_int_var(0, n - 1, "positions[%i]" % i) for i in range(n)]
 
   # successful preferences
-  z = solver.IntVar(0, n * n, "z")
+  z = solver.new_int_var(0, n * n, "z")
 
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(positions))
+  solver.add_all_different(positions)
 
   # calculate all the successful preferences
   b = [
-      solver.IsEqualCstVar(abs(positions[i] - positions[j]), 1)
+      solver.add_is_equal_cst_var(abs(positions[i] - positions[j]), 1)
       for i in range(n)
       for j in range(n)
       if preferences[i][j] == 1
   ]
-  solver.Add(z == solver.Sum(b))
+  solver.add(z == solver.sum(b))
 
   #
   # Symmetry breaking (from the Oz page):
   #   Fred is somewhere left of Betty
-  solver.Add(positions[3] < positions[0])
+  solver.add(positions[3] < positions[0])
 
   # objective
-  objective = solver.Maximize(z, 1)
+  objective = solver.maximize(z, 1)
   if show_all_max != 0:
     print("Showing all maximum solutions (z == 6).\n")
-    solver.Add(z == 6)
+    solver.add(z == 6)
 
   #
   # search and result
   #
-  db = solver.Phase(positions, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MAX_VALUE)
+  db = solver.phase(positions, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+                    cp.IntValueStrategy.ASSIGN_MAX_VALUE)
 
   if show_all_max == 0:
-    solver.NewSearch(db, [objective])
+    solver.new_search(db, [objective])
   else:
-    solver.NewSearch(db)
+    solver.new_search(db)
 
   num_solutions = 0
-  while solver.NextSolution():
-    print("z:", z.Value())
-    p = [positions[i].Value() for i in range(n)]
+  while solver.next_solution():
+    print("z:", z.value())
+    p = [positions[i].value() for i in range(n)]
 
     print(" ".join(
         [persons[j] for i in range(n) for j in range(n) if p[j] == i]))
@@ -138,13 +138,13 @@ def main(show_all_max=0):
     print()
     num_solutions += 1
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 show_all_max = 0  # show all maximal solutions

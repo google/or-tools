@@ -39,13 +39,13 @@
 """
 import sys
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(ranks, problem_name):
 
   # Create the solver
-  solver = pywrapcp.Solver("Stable marriage")
+  solver = cp.Solver("Stable marriage")
 
   #
   # data
@@ -60,8 +60,8 @@ def main(ranks, problem_name):
   #
   # declare variables
   #
-  wife = [solver.IntVar(0, n - 1, "wife[%i]" % i) for i in range(n)]
-  husband = [solver.IntVar(0, n - 1, "husband[%i]" % i) for i in range(n)]
+  wife = [solver.new_int_var(0, n - 1, "wife[%i]" % i) for i in range(n)]
+  husband = [solver.new_int_var(0, n - 1, "husband[%i]" % i) for i in range(n)]
 
   #
   # constraints
@@ -70,63 +70,63 @@ def main(ranks, problem_name):
   # forall(m in Men)
   #    cp.post(husband[wife[m]] == m);
   for m in range(n):
-    solver.Add(solver.Element(husband, wife[m]) == m)
+    solver.add(solver.element(husband, wife[m]) == m)
 
   # forall(w in Women)
   #    cp.post(wife[husband[w]] == w);
   for w in range(n):
-    solver.Add(solver.Element(wife, husband[w]) == w)
+    solver.add(solver.element(wife, husband[w]) == w)
 
   # forall(m in Men, o in Women)
   # cp.post(rankMen[m,o] < rankMen[m, wife[m]] => rankWomen[o,husband[o]] <
   # rankWomen[o,m]);
   for m in range(n):
     for o in range(n):
-      b1 = solver.IsGreaterCstVar(
-          solver.Element(rankMen[m], wife[m]), rankMen[m][o])
+      b1 = solver.add_is_greater_cst_var(
+          solver.element(rankMen[m], wife[m]), rankMen[m][o])
       b2 = (
-          solver.IsLessCstVar(
-              solver.Element(rankWomen[o], husband[o]), rankWomen[o][m]))
-      solver.Add(b1 - b2 <= 0)
+          solver.add_is_less_cst_var(
+              solver.element(rankWomen[o], husband[o]), rankWomen[o][m]))
+      solver.add(b1 - b2 <= 0)
 
   # forall(w in Women, o in Men)
   # cp.post(rankWomen[w,o] < rankWomen[w,husband[w]] => rankMen[o,wife[o]] <
   # rankMen[o,w]);
   for w in range(n):
     for o in range(n):
-      b1 = solver.IsGreaterCstVar(
-          solver.Element(rankWomen[w], husband[w]), rankWomen[w][o])
-      b2 = solver.IsLessCstVar(
-          solver.Element(rankMen[o], wife[o]), rankMen[o][w])
-      solver.Add(b1 - b2 <= 0)
+      b1 = solver.add_is_greater_cst_var(
+          solver.element(rankWomen[w], husband[w]), rankWomen[w][o])
+      b2 = solver.add_is_less_cst_var(
+          solver.element(rankMen[o], wife[o]), rankMen[o][w])
+      solver.add(b1 - b2 <= 0)
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(wife)
-  solution.Add(husband)
+  solution = solver.assignment()
+  solution.add(wife)
+  solution.add(husband)
 
-  db = solver.Phase(wife + husband, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(wife + husband, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+                    cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
   solutions = []
-  while solver.NextSolution():
-    # solutions.append([x[i].Value() for i in range(x_len)])
-    print("wife   : ", [wife[i].Value() for i in range(n)])
-    print("husband: ", [husband[i].Value() for i in range(n)])
+  while solver.next_solution():
+    # solutions.append([x[i].value() for i in range(x_len)])
+    print("wife   : ", [wife[i].value() for i in range(n)])
+    print("husband: ", [husband[i].value() for i in range(n)])
     print()
     num_solutions += 1
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
   print("#############")
   print()
 

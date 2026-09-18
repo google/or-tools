@@ -46,31 +46,31 @@
 """
 import sys
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 #
 # Partition the sets (binary matrix representation).
 #
 def partition_sets(x, num_sets, n):
-  solver = list(x.values())[0].solver()
+  solver = list(x.values())[0].solver
 
   for i in range(num_sets):
     for j in range(num_sets):
       if i != j:
-        b = solver.Sum([x[i, k] * x[j, k] for k in range(n)])
-        solver.Add(b == 0)
+        b = solver.sum([x[i, k] * x[j, k] for k in range(n)])
+        solver.add(b == 0)
 
   # ensure that all integers is in
   # (exactly) one partition
   b = [x[i, j] for i in range(num_sets) for j in range(n)]
-  solver.Add(solver.Sum(b) == n)
+  solver.add(solver.sum(b) == n)
 
 
 def main(n=16, num_sets=2):
 
   # Create the solver.
-  solver = pywrapcp.Solver("Set partition")
+  solver = cp.Solver("Set partition")
 
   #
   # data
@@ -90,7 +90,7 @@ def main(n=16, num_sets=2):
   a = {}
   for i in range(num_sets):
     for j in range(n):
-      a[i, j] = solver.IntVar(0, 1, "a[%i,%i]" % (i, j))
+      a[i, j] = solver.new_int_var(0, 1, "a[%i,%i]" % (i, j))
 
   a_flat = [a[i, j] for i in range(num_sets) for j in range(n)]
 
@@ -105,37 +105,37 @@ def main(n=16, num_sets=2):
     for j in range(i, num_sets):
 
       # same cardinality
-      solver.Add(
-          solver.Sum([a[i, k] for k in range(n)]) == solver.Sum(
+      solver.add(
+          solver.sum([a[i, k] for k in range(n)]) == solver.sum(
               [a[j, k] for k in range(n)]))
 
       # same sum
-      solver.Add(
-          solver.Sum([k * a[i, k] for k in range(n)]) == solver.Sum(
+      solver.add(
+          solver.sum([k * a[i, k] for k in range(n)]) == solver.sum(
               [k * a[j, k] for k in range(n)]))
 
       # same sum squared
-      solver.Add(
-          solver.Sum([(k * a[i, k]) * (k * a[i, k]) for k in range(n)]) ==
-          solver.Sum([(k * a[j, k]) * (k * a[j, k]) for k in range(n)]))
+      solver.add(
+          solver.sum([(k * a[i, k]) * (k * a[i, k]) for k in range(n)]) ==
+          solver.sum([(k * a[j, k]) * (k * a[j, k]) for k in range(n)]))
 
   # symmetry breaking for num_sets == 2
   if num_sets == 2:
-    solver.Add(a[0, 0] == 1)
+    solver.add(a[0, 0] == 1)
 
   #
   # search and result
   #
-  db = solver.Phase(a_flat, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
+  db = solver.phase(a_flat, cp.IntVarStrategy.INT_VAR_DEFAULT, cp.IntValueStrategy.INT_VALUE_DEFAULT)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     a_val = {}
     for i in range(num_sets):
       for j in range(n):
-        a_val[i, j] = a[i, j].Value()
+        a_val[i, j] = a[i, j].value()
 
     sq = sum([(j + 1) * a_val[0, j] for j in range(n)])
     print("sums:", sq)
@@ -153,13 +153,13 @@ def main(n=16, num_sets=2):
     print()
     num_solutions += 1
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 n = 16

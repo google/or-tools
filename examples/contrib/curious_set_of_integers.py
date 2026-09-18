@@ -58,18 +58,18 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def decreasing(solver, x):
   for i in range(len(x) - 1):
-    solver.Add(x[i] <= x[i + 1])
+    solver.add(x[i] <= x[i + 1])
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver("Curious set of integers")
+  solver = cp.Solver("Curious set of integers")
 
   #
   # data
@@ -80,46 +80,46 @@ def main():
   #
   # variables
   #
-  x = [solver.IntVar(0, max_val, "x[%i]" % i) for i in range(n)]
+  x = [solver.new_int_var(0, max_val, "x[%i]" % i) for i in range(n)]
 
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(x))
+  solver.add_all_different(x)
   decreasing(solver, x)
 
   for i in range(n):
     for j in range(n):
       if i != j:
-        p = solver.IntVar(0, max_val, "p[%i,%i]" % (i, j))
-        solver.Add(p * p - 1 == (x[i] * x[j]))
+        p = solver.new_int_var(0, max_val, "p[%i,%i]" % (i, j))
+        solver.add(p * p - 1 == (x[i] * x[j]))
 
   # This is the original problem:
   # Which is the fifth number?
   v = [1, 3, 8, 120]
-  b = [solver.IsMemberVar(x[i], v) for i in range(n)]
-  solver.Add(solver.Sum(b) == 4)
+  b = [solver.add_is_member_var(x[i], v) for i in range(n)]
+  solver.add(solver.sum(b) == 4)
 
   #
   # search and result
   #
-  db = solver.Phase(x, solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(x, cp.IntVarStrategy.CHOOSE_MIN_SIZE_LOWEST_MIN,
+                    cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
-    print("x:", [int(x[i].Value()) for i in range(n)])
+    print("x:", [int(x[i].value()) for i in range(n)])
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 if __name__ == "__main__":

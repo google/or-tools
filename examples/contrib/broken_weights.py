@@ -48,13 +48,13 @@
 """
 import sys
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(m=40, n=4):
 
   # Create the solver.
-  solver = pywrapcp.Solver('Broken weights')
+  solver = cp.Solver('Broken weights')
 
   #
   # data
@@ -66,11 +66,11 @@ def main(m=40, n=4):
   #
   # variables
   #
-  weights = [solver.IntVar(1, m, 'weights[%i]' % j) for j in range(n)]
+  weights = [solver.new_int_var(1, m, 'weights[%i]' % j) for j in range(n)]
   x = {}
   for i in range(m):
     for j in range(n):
-      x[i, j] = solver.IntVar(-1, 1, 'x[%i,%i]' % (i, j))
+      x[i, j] = solver.new_int_var(-1, 1, 'x[%i,%i]' % (i, j))
   x_flat = [x[i, j] for i in range(m) for j in range(n)]
 
   #
@@ -79,9 +79,9 @@ def main(m=40, n=4):
 
   # symmetry breaking
   for j in range(1, n):
-    solver.Add(weights[j - 1] < weights[j])
+    solver.add(weights[j - 1] < weights[j])
 
-  solver.Add(solver.SumEquality(weights, m))
+  solver.add_sum_equality(weights, m)
 
   # Check that all weights from 1 to 40 can be made.
   #
@@ -91,42 +91,42 @@ def main(m=40, n=4):
   # -1 is the weights on the left and 1 is on the right.
   #
   for i in range(m):
-    solver.Add(i + 1 == solver.Sum([weights[j] * x[i, j] for j in range(n)]))
+    solver.add(i + 1 == solver.sum([weights[j] * x[i, j] for j in range(n)]))
 
   # objective
-  objective = solver.Minimize(weights[n - 1], 1)
+  objective = solver.minimize(weights[n - 1], 1)
 
   #
   # search and result
   #
-  db = solver.Phase(weights + x_flat, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(weights + x_flat, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+                    cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  search_log = solver.SearchLog(1)
+  search_log = solver.search_log(1)
 
-  solver.NewSearch(db, [objective])
+  solver.new_search(db, [objective])
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
     print('weights:   ', end=' ')
-    for w in [weights[j].Value() for j in range(n)]:
+    for w in [weights[j].value() for j in range(n)]:
       print('%3i ' % w, end=' ')
     print()
     print('-' * 30)
     for i in range(m):
       print('weight  %2i:' % (i + 1), end=' ')
       for j in range(n):
-        print('%3i ' % x[i, j].Value(), end=' ')
+        print('%3i ' % x[i, j].value(), end=' ')
       print()
     print()
   print()
-  solver.EndSearch()
+  solver.end_search()
 
   print('num_solutions:', num_solutions)
-  print('failures :', solver.Failures())
-  print('branches :', solver.Branches())
-  print('WallTime:', solver.WallTime(), 'ms')
+  print('failures :', solver.num_failures)
+  print('branches :', solver.num_branches)
+  print('WallTime:', solver.wall_time_ms, 'ms')
 
 
 m = 40

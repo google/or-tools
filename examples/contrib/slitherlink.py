@@ -1,4 +1,4 @@
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 from collections import deque
 
 small = [[3, 2, -1, 3], [-1, -1, -1, 2], [3, -1, -1, -1], [3, -1, 3, 1]]
@@ -38,14 +38,14 @@ def PrintSolution(data, h_arcs, v_arcs):
     second_line = ''
     third_line = ''
     for j in range(num_columns):
-      h_arc = h_arcs[i][j].Value()
-      v_arc = v_arcs[j][i].Value()
+      h_arc = h_arcs[i][j].value()
+      v_arc = v_arcs[j][i].value()
       cnt = data[i][j]
       first_line += ' ---' if h_arc else '    '
       second_line += '|' if v_arc else ' '
       second_line += '   ' if cnt == -1 else ' %i ' % cnt
       third_line += '|   ' if v_arc == 1 else '    '
-    termination = v_arcs[num_columns][i].Value()
+    termination = v_arcs[num_columns][i].value()
     second_line += '|' if termination else ' '
     third_line += '|' if termination else ' '
     print(first_line)
@@ -54,100 +54,100 @@ def PrintSolution(data, h_arcs, v_arcs):
     print(third_line)
   last_line = ''
   for j in range(num_columns):
-    h_arc = h_arcs[num_rows][j].Value()
+    h_arc = h_arcs[num_rows][j].value()
     last_line += ' ---' if h_arc else '    '
   print(last_line)
 
 
-class BooleanSumEven(pywrapcp.PyConstraint):
+class BooleanSumEven(cp.PyConstraint):
 
   def __init__(self, solver, vars):
-    pywrapcp.PyConstraint.__init__(self, solver)
+    cp.PyConstraint.__init__(self, solver)
     self.__vars = vars
-    self.__num_possible_true_vars = pywrapcp.NumericalRevInteger(0)
-    self.__num_always_true_vars = pywrapcp.NumericalRevInteger(0)
+    self.__num_possible_true_vars = cp.RevInteger(0)
+    self.__num_always_true_vars = cp.RevInteger(0)
 
-  def Post(self):
+  def post(self):
     for i in range(len(self.__vars)):
       v = self.__vars[i]
-      if not v.Bound():
-        demon = self.Demon(BooleanSumEven.Update, i)
-        v.WhenBound(demon)
+      if not v.bound():
+        demon = self.demon(BooleanSumEven.Update, i)
+        v.when_bound(demon)
 
-  def InitialPropagate(self):
+  def initial_propagate(self):
     num_always_true = 0
     num_possible_true = 0
     possible_true_index = -1
     for i in range(len(self.__vars)):
       var = self.__vars[i]
-      if var.Min() == 1:
+      if var.min() == 1:
         num_always_true += 1
         num_possible_true += 1
-      elif var.Max() == 1:
+      elif var.max() == 1:
         num_possible_true += 1
         possible_true_index = i
 
     if num_always_true == num_possible_true and num_possible_true % 2 == 1:
-      self.solver().Fail()
+      self.solver.fail()
 
     if num_possible_true == num_always_true + 1:
-      self.__vars[possible_true_index].SetValue(num_always_true % 2)
+      self.__vars[possible_true_index].set_value(num_always_true % 2)
 
-    self.__num_possible_true_vars.SetValue(self.solver(), num_possible_true)
-    self.__num_always_true_vars.SetValue(self.solver(), num_always_true)
+    self.__num_possible_true_vars.set_value(self.solver, num_possible_true)
+    self.__num_always_true_vars.set_value(self.solver, num_always_true)
 
   def Update(self, index):
-    solver = self.solver()
-    value = self.__vars[index].Value()
+    solver = self.solver
+    value = self.__vars[index].value()
     if value == 0:
-      self.__num_possible_true_vars.Decr(solver)
+      self.__num_possible_true_vars.decr(solver)
     else:
-      self.__num_always_true_vars.Incr(solver)
+      self.__num_always_true_vars.incr(solver)
 
-    num_possible = self.__num_possible_true_vars.Value()
-    num_always = self.__num_always_true_vars.Value()
+    num_possible = self.__num_possible_true_vars.value()
+    num_always = self.__num_always_true_vars.value()
 
     if num_always == num_possible and num_possible % 2 == 1:
-      solver.Fail()
+      solver.fail()
 
     if num_possible == num_always + 1:
       possible_true_index = -1
       for i in range(len(self.__vars)):
-        if not self.__vars[i].Bound():
+        if not self.__vars[i].bound():
           possible_true_index = i
           break
 
       if possible_true_index != -1:
-        self.__vars[possible_true_index].SetValue(num_always % 2)
+        self.__vars[possible_true_index].set_value(num_always % 2)
 
-  def DebugString(self):
+  def __str__(self):
     return 'BooleanSumEven'
 
 
 # Dedicated constraint: There is a single path on the grid.
 # This constraint does not enforce the non-crossing, this is done
 # by the constraint on the degree of each node.
-class GridSinglePath(pywrapcp.PyConstraint):
+class GridSinglePath(cp.PyConstraint):
 
   def __init__(self, solver, h_arcs, v_arcs):
-    pywrapcp.PyConstraint.__init__(self, solver)
+    cp.PyConstraint.__init__(self, solver)
     self.__h_arcs = h_arcs
     self.__v_arcs = v_arcs
 
-  def Post(self):
-    demon = self.DelayedInitialPropagateDemon()
+  def post(self):
+    demon = self.delayed_initial_propagate_demon()
     for row in self.__h_arcs:
       for var in row:
-        var.WhenBound(demon)
+        var.when_bound(demon)
 
     for column in self.__v_arcs:
       for var in column:
-        var.WhenBound(demon)
+        var.when_bound(demon)
 
   # This constraint implements a single propagation.
   # If one point is on the path, it checks the reachability of all possible
   # nodes, and zero out the unreachable parts.
-  def InitialPropagate(self):
+  def initial_propagate(self):
     num_rows = len(self.__h_arcs)
     num_columns = len(self.__v_arcs)
 
@@ -159,27 +159,27 @@ class GridSinglePath(pywrapcp.PyConstraint):
     for i in range(num_rows):
       for j in range(num_columns - 1):
         h_arc = self.__h_arcs[i][j]
-        if h_arc.Max() == 1:
+        if h_arc.max() == 1:
           head = i * num_columns + j
           tail = i * num_columns + j + 1
           neighbors[head].append(tail)
           neighbors[tail].append(head)
           possible_points.add(head)
           possible_points.add(tail)
-          if root_node == -1 and h_arc.Min() == 1:
+          if root_node == -1 and h_arc.min() == 1:
             root_node = head
 
     for i in range(num_rows - 1):
       for j in range(num_columns):
         v_arc = self.__v_arcs[j][i]
-        if v_arc.Max() == 1:
+        if v_arc.max() == 1:
           head = i * num_columns + j
           tail = (i + 1) * num_columns + j
           neighbors[head].append(tail)
           neighbors[tail].append(head)
           possible_points.add(head)
           possible_points.add(tail)
-          if root_node == -1 and v_arc.Min() == 1:
+          if root_node == -1 and v_arc.min() == 1:
             root_node = head
 
     if root_node == -1:
@@ -208,20 +208,20 @@ class GridSinglePath(pywrapcp.PyConstraint):
         j = point % num_columns
         neighbors = NeighboringArcs(i, j, self.__h_arcs, self.__v_arcs)
         for var in neighbors:
-          var.SetMax(0)
+          var.set_max(0)
 
 
 def SlitherLink(data):
   num_rows = len(data)
   num_columns = len(data[0])
 
-  solver = pywrapcp.Solver('slitherlink')
+  solver = cp.Solver('slitherlink')
   h_arcs = [[
-      solver.BoolVar('h_arcs[%i][%i]' % (i, j)) for j in range(num_columns)
+      solver.new_bool_var('h_arcs[%i][%i]' % (i, j)) for j in range(num_columns)
   ] for i in range(num_rows + 1)]
 
   v_arcs = [[
-      solver.BoolVar('v_arcs[%i][%i]' % (i, j)) for j in range(num_rows)
+      solver.new_bool_var('v_arcs[%i][%i]' % (i, j)) for j in range(num_rows)
   ] for i in range(num_columns + 1)]
 
   # Constraint on the sum or arcs
@@ -229,40 +229,40 @@ def SlitherLink(data):
     for j in range(num_columns):
       if data[i][j] != -1:
         sq = [h_arcs[i][j], h_arcs[i + 1][j], v_arcs[j][i], v_arcs[j + 1][i]]
-        solver.Add(solver.SumEquality(sq, data[i][j]))
+        solver.add_sum_equality(sq, data[i][j])
 
   # Single loop: each node has a degree 0 or 2
   zero_or_two = [0, 2]
   for i in range(num_rows + 1):
     for j in range(num_columns + 1):
       neighbors = NeighboringArcs(i, j, h_arcs, v_arcs)
-      solver.Add(solver.Sum(neighbors).Member(zero_or_two))
+      solver.add(solver.sum(neighbors).member(zero_or_two))
 
   # Single loop: sum or arcs on row or column is even
   for i in range(num_columns):
     column = [h_arcs[j][i] for j in range(num_rows + 1)]
-    solver.Add(BooleanSumEven(solver, column))
+    solver.add(BooleanSumEven(solver, column))
 
   for i in range(num_rows):
     row = [v_arcs[j][i] for j in range(num_columns + 1)]
-    solver.Add(BooleanSumEven(solver, row))
+    solver.add(BooleanSumEven(solver, row))
 
   # Single loop: main constraint
-  solver.Add(GridSinglePath(solver, h_arcs, v_arcs))
+  solver.add(GridSinglePath(solver, h_arcs, v_arcs))
 
   # Special rule on corners: value == 3 implies 2 border arcs used.
   if data[0][0] == 3:
-    h_arcs[0][0].SetMin(1)
-    v_arcs[0][0].SetMin(1)
+    h_arcs[0][0].set_min(1)
+    v_arcs[0][0].set_min(1)
   if data[0][num_columns - 1] == 3:
-    h_arcs[0][num_columns - 1].SetMin(1)
-    v_arcs[num_columns][0].SetMin(1)
+    h_arcs[0][num_columns - 1].set_min(1)
+    v_arcs[num_columns][0].set_min(1)
   if data[num_rows - 1][0] == 3:
-    h_arcs[num_rows][0].SetMin(1)
-    v_arcs[0][num_rows - 1].SetMin(1)
+    h_arcs[num_rows][0].set_min(1)
+    v_arcs[0][num_rows - 1].set_min(1)
   if data[num_rows - 1][num_columns - 1] == 3:
-    h_arcs[num_rows][num_columns - 1].SetMin(1)
-    v_arcs[num_columns][num_rows - 1].SetMin(1)
+    h_arcs[num_rows][num_columns - 1].set_min(1)
+    v_arcs[num_columns][num_rows - 1].set_min(1)
 
   # Search
   all_vars = []
@@ -271,15 +271,15 @@ def SlitherLink(data):
   for column in v_arcs:
     all_vars.extend(column)
 
-  db = solver.Phase(all_vars, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MAX_VALUE)
+  db = solver.phase(all_vars, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+                    cp.IntValueStrategy.ASSIGN_MAX_VALUE)
 
-  log = solver.SearchLog(1000000)
+  log = solver.search_log(1000000)
 
-  solver.NewSearch(db, log)
-  while solver.NextSolution():
+  solver.new_search(db, [log])
+  while solver.next_solution():
     PrintSolution(data, h_arcs, v_arcs)
-  solver.EndSearch()
+  solver.end_search()
 
 
 if __name__ == '__main__':

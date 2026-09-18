@@ -57,7 +57,7 @@
 """
 import sys
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 from functools import reduce
 
 #
@@ -68,7 +68,7 @@ from functools import reduce
 
 def calc(cc, x, res):
 
-  solver = list(x.values())[0].solver()
+  solver = list(x.values())[0].solver
 
   if len(cc) == 2:
 
@@ -80,13 +80,13 @@ def calc(cc, x, res):
     a = x[c00 - 1, c01 - 1]
     b = x[c10 - 1, c11 - 1]
 
-    r1 = solver.IsEqualCstVar(a + b, res)
-    r2 = solver.IsEqualCstVar(a * b, res)
-    r3 = solver.IsEqualVar(a * res, b)
-    r4 = solver.IsEqualVar(b * res, a)
-    r5 = solver.IsEqualCstVar(a - b, res)
-    r6 = solver.IsEqualCstVar(b - a, res)
-    solver.Add(r1 + r2 + r3 + r4 + r5 + r6 >= 1)
+    r1 = solver.add_is_equal_cst_var(a + b, res)
+    r2 = solver.add_is_equal_cst_var(a * b, res)
+    r3 = solver.add_is_equal_var(a * res, b)
+    r4 = solver.add_is_equal_var(b * res, a)
+    r5 = solver.add_is_equal_cst_var(a - b, res)
+    r6 = solver.add_is_equal_cst_var(b - a, res)
+    solver.add(r1 + r2 + r3 + r4 + r5 + r6 >= 1)
 
   else:
 
@@ -96,20 +96,20 @@ def calc(cc, x, res):
 
     # Sum
     # # SumEquality don't work:
-    # this_sum = solver.SumEquality(xx, res)
-    this_sum = solver.IsEqualCstVar(solver.Sum(xx), res)
+    # this_sum = solver.add_sum_equality(xx, res)
+    this_sum = solver.add_is_equal_cst_var(solver.sum(xx), res)
 
     # Product
     # # Prod (or MakeProd) don't work:
-    # this_prod = solver.IsEqualCstVar(solver.Prod(xx), res)
-    this_prod = solver.IsEqualCstVar(reduce(lambda a, b: a * b, xx), res)
-    solver.Add(this_sum + this_prod >= 1)
+    # this_prod = solver.add_is_equal_cst_var(solver.Prod(xx), res)
+    this_prod = solver.add_is_equal_cst_var(reduce(lambda a, b: a * b, xx), res)
+    solver.add(this_sum + this_prod >= 1)
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver("KenKen")
+  solver = cp.Solver("KenKen")
 
   #
   # data
@@ -143,7 +143,7 @@ def main():
   x = {}
   for i in range(n):
     for j in range(n):
-      x[i, j] = solver.IntVar(1, n, "x[%i,%i]" % (i, j))
+      x[i, j] = solver.new_int_var(1, n, "x[%i,%i]" % (i, j))
 
   x_flat = [x[i, j] for i in range(n) for j in range(n)]
 
@@ -154,10 +154,10 @@ def main():
   # all rows and columns must be unique
   for i in range(n):
     row = [x[i, j] for j in range(n)]
-    solver.Add(solver.AllDifferent(row))
+    solver.add_all_different(row)
 
     col = [x[j, i] for j in range(n)]
-    solver.Add(solver.AllDifferent(col))
+    solver.add_all_different(col)
 
   # calculate the segments
   for (res, segment) in problem:
@@ -166,27 +166,27 @@ def main():
   #
   # search and solution
   #
-  db = solver.Phase(x_flat, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
+  db = solver.phase(x_flat, cp.IntVarStrategy.INT_VAR_DEFAULT, cp.IntValueStrategy.INT_VALUE_DEFAULT)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     for i in range(n):
       for j in range(n):
-        print(x[i, j].Value(), end=" ")
+        print(x[i, j].value(), end=" ")
       print()
 
     print()
     num_solutions += 1
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 if __name__ == "__main__":

@@ -691,8 +691,6 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:dag_shortest_path_pybind11> ${PYTHON_PROJECT}/graph/python
   COMMAND ${CMAKE_COMMAND} -E copy
-   $<TARGET_FILE:pywrapcp> ${PYTHON_PROJECT}/constraint_solver
-  COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:constraint_solver_pybind11> ${PYTHON_PROJECT}/constraint_solver/python
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:pywraplp> ${PYTHON_PROJECT}/linear_solver
@@ -742,7 +740,6 @@ add_custom_command(
     max_flow_pybind11
     min_cost_flow_pybind11
     dag_shortest_path_pybind11
-    pywrapcp
     constraint_solver_pybind11
     pywraprouting
     routing_pybind11
@@ -786,7 +783,6 @@ add_custom_command(
   COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.linear_sum_assignment --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.max_flow --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.min_cost_flow --output .
-  COMMAND ${stubgen_EXECUTABLE} -p ortools.constraint_solver.pywrapcp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.constraint_solver.python.constraint_solver --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.linear_solver.pywraplp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.linear_solver.python.model_builder_helper --output .

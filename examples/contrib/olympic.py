@@ -56,17 +56,17 @@
   http://www.hakank.org/google_or_tools/
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def minus(solver, x, y, z):
-  solver.Add(z == abs(x - y))
+  solver.add(z == abs(x - y))
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver('Olympic')
+  solver = cp.Solver('Olympic')
 
   #
   # data
@@ -76,15 +76,15 @@ def main():
   #
   # declare variables
   #
-  Vars = [solver.IntVar(1, n, 'Vars[%i]' % i) for i in range(n)]
+  Vars = [solver.new_int_var(1, n, 'Vars[%i]' % i) for i in range(n)]
   X1, X2, X3, X4, X5, X6, X7, X8, X9, X10 = Vars
 
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(Vars))
+  solver.add_all_different(Vars)
 
-  solver.Add(X1 == 3)
+  solver.add(X1 == 3)
   minus(solver, X2, X3, X1)
   minus(solver, X4, X5, X2)
   minus(solver, X5, X6, X3)
@@ -95,20 +95,20 @@ def main():
   #
   # solution and search
   #
-  db = solver.Phase(Vars, solver.INT_VAR_SIMPLE, solver.INT_VALUE_DEFAULT)
+  db = solver.phase(Vars, cp.IntVarStrategy.INT_VAR_SIMPLE, cp.IntValueStrategy.INT_VALUE_DEFAULT)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
-    print('Vars:', [Vars[i].Value() for i in range(n)])
+    print('Vars:', [Vars[i].value() for i in range(n)])
 
   print()
   print('num_solutions:', num_solutions)
-  print('failures:', solver.Failures())
-  print('branches:', solver.Branches())
-  print('WallTime:', solver.WallTime(), 'ms')
+  print('failures:', solver.num_failures)
+  print('branches:', solver.num_branches)
+  print('WallTime:', solver.wall_time_ms, 'ms')
 
 
 if __name__ == '__main__':

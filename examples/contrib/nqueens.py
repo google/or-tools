@@ -21,12 +21,12 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(n=8):
   # Create the solver.
-  solver = pywrapcp.Solver("n-queens")
+  solver = cp.Solver("n-queens")
 
   #
   # data
@@ -34,43 +34,43 @@ def main(n=8):
   # n = 8 # size of board (n x n)
 
   # declare variables
-  q = [solver.IntVar(0, n - 1, "x%i" % i) for i in range(n)]
+  q = [solver.new_int_var(0, n - 1, "x%i" % i) for i in range(n)]
 
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(q))
+  solver.add_all_different(q)
   for i in range(n):
     for j in range(i):
-      solver.Add(q[i] != q[j])
-      solver.Add(q[i] + i != q[j] + j)
-      solver.Add(q[i] - i != q[j] - j)
+      solver.add(q[i] != q[j])
+      solver.add(q[i] + i != q[j] + j)
+      solver.add(q[i] - i != q[j] - j)
 
   # for i in range(n):
   #     for j in range(i):
-  #         solver.Add(abs(q[i]-q[j]) != abs(i-j))
+  #         solver.add(abs(q[i]-q[j]) != abs(i-j))
 
   # symmetry breaking
-  # solver.Add(q[0] == 0)
+  # solver.add(q[0] == 0)
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add([q[i] for i in range(n)])
+  solution = solver.assignment()
+  solution.add([q[i] for i in range(n)])
 
-  collector = solver.AllSolutionCollector(solution)
+  collector = solver.all_solution_collector(solution)
   # collector = solver.FirstSolutionCollector(solution)
-  # search_log = solver.SearchLog(100, x[0])
-  solver.Solve(
-      solver.Phase([q[i] for i in range(n)], solver.INT_VAR_SIMPLE,
-                   solver.ASSIGN_MIN_VALUE), [collector])
+  # search_log = solver.search_log(100, x[0])
+  solver.solve(
+      solver.phase([q[i] for i in range(n)], cp.IntVarStrategy.INT_VAR_SIMPLE,
+                   cp.IntValueStrategy.ASSIGN_MIN_VALUE), [collector])
 
-  num_solutions = collector.SolutionCount()
+  num_solutions = collector.solution_count
   print("num_solutions: ", num_solutions)
   if num_solutions > 0:
     for s in range(num_solutions):
-      qval = [collector.Value(s, q[i]) for i in range(n)]
+      qval = [collector.value(s, q[i]) for i in range(n)]
       print("q:", qval)
       for i in range(n):
         for j in range(n):
@@ -83,9 +83,9 @@ def main(n=8):
 
     print()
     print("num_solutions:", num_solutions)
-    print("failures:", solver.Failures())
-    print("branches:", solver.Branches())
-    print("WallTime:", solver.WallTime())
+    print("failures:", solver.num_failures)
+    print("branches:", solver.num_branches)
+    print("WallTime:", solver.wall_time_ms)
 
   else:
     print("No solutions found")

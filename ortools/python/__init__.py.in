@@ -16,8 +16,11 @@ This repository contains several component:
 - `ortools.graph.python.max_flow`,
 - `ortools.graph.python.min_cost_flow`,
 
-### Routing library and legacy Constraint Programming Solver
- - `ortools.constraint_solver.pywrapcp`,
+### Legacy CP Solver wrapper
+- `ortools.constraint_solver.python.constraint_solver`,
+
+### Routing Solver wrapper
+- `ortools.routing.python.routing`,
 
 ### Minimalistic linear solver wrapper
 - `ortools.linear_solver.python.model_builder`

@@ -182,8 +182,6 @@ if __name__ == "__main__":
     # not compatible.
     from ortools.algorithms.python import \
         knapsack_solver  # pylint: disable=g-import-not-at-top,unused-import
-    from ortools.constraint_solver import \
-        _pywrapcp  # pylint: disable=g-import-not-at-top,unused-import
     from ortools.graph import \
         _pywrapgraph  # pylint: disable=g-import-not-at-top,unused-import
     from ortools.linear_solver import \

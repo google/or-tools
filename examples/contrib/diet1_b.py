@@ -45,12 +45,12 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(unused_argv):
   # Create the solver.
-  solver = pywrapcp.Solver("Diet")
+  solver = cp.Solver("Diet")
 
   #
   # data
@@ -68,41 +68,44 @@ def main(unused_argv):
   #
   # declare variables
   #
-  x = [solver.IntVar(0, 100, "x%d" % i) for i in range(n)]
-  cost = solver.IntVar(0, 10000, "cost")
+  x = [solver.new_int_var(0, 100, "x%d" % i) for i in range(n)]
+  cost = solver.new_int_var(0, 10000, "cost")
 
   #
   # constraints
   #
-  solver.Add(solver.ScalProd(x, calories) >= limits[0])
-  solver.Add(solver.ScalProd(x, chocolate) >= limits[1])
-  solver.Add(solver.ScalProd(x, sugar) >= limits[2])
-  solver.Add(solver.ScalProd(x, fat) >= limits[3])
+  solver.add(solver.weighted_sum(x, calories) >= limits[0])
+  solver.add(solver.weighted_sum(x, chocolate) >= limits[1])
+  solver.add(solver.weighted_sum(x, sugar) >= limits[2])
+  solver.add(solver.weighted_sum(x, fat) >= limits[3])
 
   # objective
-  objective = solver.Minimize(cost, 1)
+  objective = solver.minimize(cost, 1)
 
   #
   # solution
   #
-  solution = solver.Assignment()
-  solution.AddObjective(cost)
-  solution.Add(x)
+  solution = solver.assignment()
+  solution.add_objective(cost)
+  solution.add(x)
 
   # last solution since it's a minimization problem
-  collector = solver.LastSolutionCollector(solution)
-  search_log = solver.SearchLog(100, cost)
-  solver.Solve(
-      solver.Phase(x + [cost], solver.INT_VAR_SIMPLE, solver.ASSIGN_MIN_VALUE),
+  collector = solver.last_solution_collector(solution)
+  search_log = solver.search_log(100, cost)
+  solver.solve(
+      solver.phase(
+          x + [cost],
+          cp.IntVarStrategy.INT_VAR_SIMPLE,
+          cp.IntValueStrategy.ASSIGN_MIN_VALUE),
       [objective, search_log, collector])
 
   # get the first (and only) solution
-  print("cost:", collector.ObjectiveValue(0))
-  print([("abcdefghij" [i], collector.Value(0, x[i])) for i in range(n)])
+  print("cost:", collector.objective_value(0))
+  print([("abcdefghij" [i], collector.value(0, x[i])) for i in range(n)])
   print()
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
   print()
 
 

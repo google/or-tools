@@ -21,22 +21,22 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def knapsack(solver, values, weights, n):
-  z = solver.IntVar(0, 10000)
-  x = [solver.IntVar(0, 1, "x(%i)" % i) for i in range(len(values))]
-  solver.Add(z >= 0)
-  solver.Add(z == solver.ScalProd(x, values))
-  solver.Add(solver.ScalProd(x, weights) <= n)
+  z = solver.new_int_var(0, 10000)
+  x = [solver.new_int_var(0, 1, "x(%i)" % i) for i in range(len(values))]
+  solver.add(z >= 0)
+  solver.add(z == solver.weighted_sum(x, values))
+  solver.add(solver.weighted_sum(x, weights) <= n)
 
   return [x, z]
 
 
 def main(values, weights, n):
   # Create the solver.
-  solver = pywrapcp.Solver("knapsack_cp")
+  solver = cp.Solver("knapsack_cp")
 
   #
   # data
@@ -54,32 +54,32 @@ def main(values, weights, n):
   [x, z] = knapsack(solver, values, weights, n)
 
   # objective
-  objective = solver.Maximize(z, 1)
+  objective = solver.maximize(z, 1)
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(x)
-  solution.Add(z)
+  solution = solver.assignment()
+  solution.add(x)
+  solution.add(z)
 
   # db: DecisionBuilder
-  db = solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MAX_VALUE)
+  db = solver.phase(x, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND, cp.IntValueStrategy.ASSIGN_MAX_VALUE)
 
-  solver.NewSearch(db, [objective])
+  solver.new_search(db, [objective])
   num_solutions = 0
-  while solver.NextSolution():
-    print("x:", [x[i].Value() for i in range(len(values))])
-    print("z:", z.Value())
+  while solver.next_solution():
+    print("x:", [x[i].value() for i in range(len(values))])
+    print("z:", z.value())
     print()
     num_solutions += 1
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 values = [15, 100, 90, 60, 40, 15, 10, 1, 12, 12, 100]

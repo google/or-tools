@@ -67,7 +67,7 @@
 """
 import sys
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 #
@@ -84,7 +84,7 @@ from ortools.constraint_solver import pywrapcp
 # 1..Q).  We reserve state 0 to be an always failing state.
 # '''
 #
-# x : IntVar array
+# x :.new_int_var array
 # Q : number of states
 # S : input_max
 # d : transition matrix
@@ -92,7 +92,7 @@ from ortools.constraint_solver import pywrapcp
 # F : accepting states
 def regular(x, Q, S, d, q0, F):
 
-  solver = x[0].solver()
+  solver = x[0].solver
 
   assert Q > 0, 'regular: "Q" must be greater than zero'
   assert S > 0, 'regular: "S" must be greater than zero'
@@ -123,18 +123,18 @@ def regular(x, Q, S, d, q0, F):
   m = 0
   n = len(x)
 
-  a = [solver.IntVar(0, Q + 1, 'a[%i]' % i) for i in range(m, n + 1)]
+  a = [solver.new_int_var(0, Q + 1, 'a[%i]' % i) for i in range(m, n + 1)]
 
   # Check that the final state is in F
-  solver.Add(solver.MemberCt(a[-1], F))
+  solver.add_member_ct(a[-1], F)
   # First state is q0
-  solver.Add(a[m] == q0)
+  solver.add(a[m] == q0)
   for i in x_range:
-    solver.Add(x[i] >= 1)
-    solver.Add(x[i] <= S)
+    solver.add(x[i] >= 1)
+    solver.add(x[i] <= S)
     # Determine a[i+1]: a[i+1] == d2[a[i], x[i]]
-    solver.Add(
-        a[i + 1] == solver.Element(d2_flatten, ((a[i]) * S) + (x[i] - 1)))
+    solver.add(
+        a[i + 1] == solver.element(d2_flatten, ((a[i]) * S) + (x[i] - 1)))
 
 
 #
@@ -204,7 +204,7 @@ def make_transition_matrix(pattern):
 
 
 def check_rule(rules, y):
-  solver = y[0].solver()
+  solver = y[0].solver
 
   r_len = sum([1 for i in range(len(rules)) if rules[i] > 0])
   rules_tmp = []
@@ -227,7 +227,7 @@ def check_rule(rules, y):
 def main(rows, row_rule_len, row_rules, cols, col_rule_len, col_rules):
 
   # Create the solver.
-  solver = pywrapcp.Solver('Regular test')
+  solver = cp.Solver('Regular test')
 
   #
   # data
@@ -239,7 +239,7 @@ def main(rows, row_rule_len, row_rules, cols, col_rule_len, col_rules):
   board = {}
   for i in range(rows):
     for j in range(cols):
-      board[i, j] = solver.IntVar(1, 2, 'board[%i,%i]' % (i, j))
+      board[i, j] = solver.new_int_var(1, 2, 'board[%i,%i]' % (i, j))
   board_flat = [board[i, j] for i in range(rows) for j in range(cols)]
 
   # Flattened board for labeling.
@@ -269,17 +269,17 @@ def main(rows, row_rule_len, row_rules, cols, col_rule_len, col_rules):
   #
   # solution and search
   #
-  db = solver.Phase(board_label, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(board_label, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+                    cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     print()
     num_solutions += 1
     for i in range(rows):
-      row = [board[i, j].Value() - 1 for j in range(cols)]
+      row = [board[i, j].value() - 1 for j in range(cols)]
       row_pres = []
       for j in row:
         if j == 1:
@@ -295,12 +295,12 @@ def main(rows, row_rule_len, row_rules, cols, col_rule_len, col_rules):
       print('2 solutions is enough...')
       break
 
-  solver.EndSearch()
+  solver.end_search()
   print()
   print('num_solutions:', num_solutions)
-  print('failures:', solver.Failures())
-  print('branches:', solver.Branches())
-  print('WallTime:', solver.WallTime(), 'ms')
+  print('failures:', solver.num_failures)
+  print('branches:', solver.num_branches)
+  print('WallTime:', solver.wall_time_ms, 'ms')
 
 
 #

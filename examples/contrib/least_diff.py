@@ -36,77 +36,77 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_cp_solver/
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(unused_argv):
   # Create the solver.
-  solver = pywrapcp.Solver("Least diff")
+  solver = cp.Solver("Least diff")
 
   #
   # declare variables
   #
   digits = list(range(0, 10))
-  a = solver.IntVar(digits, "a")
-  b = solver.IntVar(digits, "b")
-  c = solver.IntVar(digits, "c")
-  d = solver.IntVar(digits, "d")
-  e = solver.IntVar(digits, "e")
+  a = solver.new_int_var(digits, "a")
+  b = solver.new_int_var(digits, "b")
+  c = solver.new_int_var(digits, "c")
+  d = solver.new_int_var(digits, "d")
+  e = solver.new_int_var(digits, "e")
 
-  f = solver.IntVar(digits, "f")
-  g = solver.IntVar(digits, "g")
-  h = solver.IntVar(digits, "h")
-  i = solver.IntVar(digits, "i")
-  j = solver.IntVar(digits, "j")
+  f = solver.new_int_var(digits, "f")
+  g = solver.new_int_var(digits, "g")
+  h = solver.new_int_var(digits, "h")
+  i = solver.new_int_var(digits, "i")
+  j = solver.new_int_var(digits, "j")
 
   letters = [a, b, c, d, e, f, g, h, i, j]
 
   digit_vector = [10000, 1000, 100, 10, 1]
-  x = solver.ScalProd(letters[0:5], digit_vector)
-  y = solver.ScalProd(letters[5:], digit_vector)
+  x = solver.weighted_sum(letters[0:5], digit_vector)
+  y = solver.weighted_sum(letters[5:], digit_vector)
   diff = x - y
 
   #
   # constraints
   #
-  solver.Add(diff > 0)
-  solver.Add(solver.AllDifferent(letters))
+  solver.add(diff > 0)
+  solver.add_all_different(letters)
 
   # objective
-  objective = solver.Minimize(diff, 1)
+  objective = solver.minimize(diff, 1)
 
   #
   # solution
   #
-  solution = solver.Assignment()
-  solution.Add(letters)
-  solution.Add(x)
-  solution.Add(y)
-  solution.Add(diff)
+  solution = solver.assignment()
+  solution.add(letters)
+  solution.add(x)
+  solution.add(y)
+  solution.add(diff)
 
   # last solution since it's a minimization problem
-  collector = solver.LastSolutionCollector(solution)
-  search_log = solver.SearchLog(100, diff)
+  collector = solver.last_solution_collector(solution)
+  search_log = solver.search_log(100, diff)
   # Note: I'm not sure what CHOOSE_PATH do, but it is fast:
   #       find the solution in just 4 steps
-  solver.Solve(
-      solver.Phase(letters, solver.CHOOSE_PATH, solver.ASSIGN_MIN_VALUE),
+  solver.solve(
+      solver.phase(letters, cp.IntVarStrategy.CHOOSE_PATH, cp.IntValueStrategy.ASSIGN_MIN_VALUE),
       [objective, search_log, collector])
 
   # get the first (and only) solution
 
-  xval = collector.Value(0, x)
-  yval = collector.Value(0, y)
-  diffval = collector.Value(0, diff)
+  xval = collector.value(0, x)
+  yval = collector.value(0, y)
+  diffval = collector.value(0, diff)
   print("x:", xval)
   print("y:", yval)
   print("diff:", diffval)
   print(xval, "-", yval, "=", diffval)
-  print([("abcdefghij" [i], collector.Value(0, letters[i])) for i in range(10)])
+  print([("abcdefghij" [i], collector.value(0, letters[i])) for i in range(10)])
   print()
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
   print()
 
 

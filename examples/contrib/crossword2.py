@@ -56,12 +56,12 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
   # Create the solver.
-  solver = pywrapcp.Solver("Problem")
+  solver = cp.Solver("Problem")
 
   #
   # data
@@ -136,59 +136,59 @@ def main():
   A = {}
   for I in range(num_words):
     for J in range(word_len):
-      A[(I, J)] = solver.IntVar(0, 26, "A(%i,%i)" % (I, J))
+      A[(I, J)] = solver.new_int_var(0, 26, "A(%i,%i)" % (I, J))
 
   A_flat = [A[(I, J)] for I in range(num_words) for J in range(word_len)]
-  E = [solver.IntVar(0, num_words, "E%i" % I) for I in range(n)]
+  E = [solver.new_int_var(0, num_words, "E%i" % I) for I in range(n)]
 
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(E))
+  solver.add_all_different(E)
 
   for I in range(num_words):
     for J in range(word_len):
-      solver.Add(A[(I, J)] == AA[I][J])
+      solver.add(A[(I, J)] == AA[I][J])
 
   for I in range(num_overlapping):
     # This is what I would do:
-    # solver.Add(A[(E[overlapping[I][0]], overlapping[I][1])] ==  A[(E[overlapping[I][2]], overlapping[I][3])])
+    # solver.add(A[(E[overlapping[I][0]], overlapping[I][1])] ==  A[(E[overlapping[I][2]], overlapping[I][3])])
 
     # But we must use Element explicitly
-    solver.Add(
-        solver.Element(A_flat, E[overlapping[I][0]] * word_len +
+    solver.add(
+        solver.element(A_flat, E[overlapping[I][0]] * word_len +
                        overlapping[I][1]) == solver
-        .Element(A_flat, E[overlapping[I][2]] * word_len + overlapping[I][3]))
+        .element(A_flat, E[overlapping[I][2]] * word_len + overlapping[I][3]))
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(E)
+  solution = solver.assignment()
+  solution.add(E)
 
   # db: DecisionBuilder
-  db = solver.Phase(E + A_flat, solver.INT_VAR_SIMPLE, solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(E + A_flat, cp.IntVarStrategy.INT_VAR_SIMPLE, cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     print(E)
     print_solution(A, E, alpha, n, word_len)
     num_solutions += 1
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 def print_solution(A, E, alpha, n, word_len):
   for ee in range(n):
-    print("%i: (%2i)" % (ee, E[ee].Value()), end=" ")
+    print("%i: (%2i)" % (ee, E[ee].value()), end=" ")
     print("".join(
-        ["%s" % (alpha[A[ee, ii].Value()]) for ii in range(word_len)]))
+        ["%s" % (alpha[A[ee, ii].value()]) for ii in range(word_len)]))
 
 
 if __name__ == "__main__":

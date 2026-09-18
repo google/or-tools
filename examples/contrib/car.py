@@ -30,13 +30,13 @@
 """
 import sys
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(num_sol=3):
 
   # Create the solver.
-  solver = pywrapcp.Solver("Car sequence")
+  solver = cp.Solver("Car sequence")
 
   #
   # data
@@ -70,28 +70,28 @@ def main(num_sol=3):
   #
   # declare variables
   #
-  slot = [solver.IntVar(0, nbCars - 1, "slot[%i]" % i) for i in Slots]
+  slot = [solver.new_int_var(0, nbCars - 1, "slot[%i]" % i) for i in Slots]
   setup = {}
   for i in Options:
     for j in Slots:
-      setup[(i, j)] = solver.IntVar(0, 1, "setup[%i,%i]" % (i, j))
+      setup[(i, j)] = solver.new_int_var(0, 1, "setup[%i,%i]" % (i, j))
   setup_flat = [setup[i, j] for i in Options for j in Slots]
 
   #
   # constraints
   #
   for c in Cars:
-    b = [solver.IsEqualCstVar(slot[s], c) for s in Slots]
-    solver.Add(solver.Sum(b) == demand[c])
+    b = [solver.add_is_equal_cst_var(slot[s], c) for s in Slots]
+    solver.add(solver.sum(b) == demand[c])
 
   for o in Options:
     for s in range(0, nbSlots - capacity[o][1] + 1):
       b = [setup[o, j] for j in range(s, s + capacity[o][1] - 1)]
-      solver.Add(solver.Sum(b) <= capacity[o][0])
+      solver.add(solver.sum(b) <= capacity[o][0])
 
   for o in Options:
     for s in Slots:
-      solver.Add(setup[(o, s)] == solver.Element(option[o], slot[s]))
+      solver.add(setup[(o, s)] == solver.element(option[o], slot[s]))
 
   for o in Options:
     for i in range(optionDemand[o]):
@@ -99,23 +99,23 @@ def main(num_sol=3):
       ss = [setup[o, s] for s in s_range]
       cc = optionDemand[o] - (i + 1) * capacity[o][0]
       if len(ss) > 0 and cc >= 0:
-        solver.Add(solver.Sum(ss) >= cc)
+        solver.add(solver.sum(ss) >= cc)
 
   #
   # search and result
   #
-  db = solver.Phase(slot + setup_flat, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(slot + setup_flat, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+                    cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
-  while solver.NextSolution():
-    print("slot:%s" % ",".join([str(slot[i].Value()) for i in Slots]))
+  while solver.next_solution():
+    print("slot:%s" % ",".join([str(slot[i].value()) for i in Slots]))
     print("setup:")
     for o in Options:
       print("%i/%i:" % (capacity[o][0], capacity[o][1]), end=" ")
       for s in Slots:
-        print(setup[o, s].Value(), end=" ")
+        print(setup[o, s].value(), end=" ")
       print()
     print()
     num_solutions += 1
@@ -123,13 +123,13 @@ def main(num_sol=3):
     if num_solutions >= num_sol:
       break
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 num_sol = 3

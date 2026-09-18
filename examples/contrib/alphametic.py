@@ -46,13 +46,13 @@
 import sys
 import re
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(problem_str="SEND+MORE=MONEY", base=10):
 
   # Create the solver.
-  solver = pywrapcp.Solver("Send most money")
+  solver = cp.Solver("Send most money")
 
   # data
   print("\nproblem:", problem_str)
@@ -76,47 +76,47 @@ def main(problem_str="SEND+MORE=MONEY", base=10):
   #
 
   # the digits
-  x = [solver.IntVar(0, base - 1, "x[%i]" % i) for i in range(n)]
+  x = [solver.new_int_var(0, base - 1, "x[%i]" % i) for i in range(n)]
   # the sums of each number (e.g. the three numbers SEND, MORE, MONEY)
-  sums = [solver.IntVar(1, 10**(lens[i]) - 1) for i in range(p_len)]
+  sums = [solver.new_int_var(1, 10**(lens[i]) - 1) for i in range(p_len)]
 
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(x))
+  solver.add_all_different(x)
 
   ix = 0
   for prob in problem:
     this_len = len(prob)
 
     # sum all the digits with proper exponents to a number
-    solver.Add(
-        sums[ix] == solver.Sum([(base**i) * x[lookup[prob[this_len - i - 1]]]
+    solver.add(
+        sums[ix] == solver.sum([(base**i) * x[lookup[prob[this_len - i - 1]]]
                                 for i in range(this_len)[::-1]]))
     # leading digits must be > 0
-    solver.Add(x[lookup[prob[0]]] > 0)
+    solver.add(x[lookup[prob[0]]] > 0)
     ix += 1
 
   # the last number is the sum of the previous numbers
-  solver.Add(solver.Sum([sums[i] for i in range(p_len - 1)]) == sums[-1])
+  solver.add(solver.sum([sums[i] for i in range(p_len - 1)]) == sums[-1])
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(x)
-  solution.Add(sums)
+  solution = solver.assignment()
+  solution.add(x)
+  solution.add(sums)
 
-  db = solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(x, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND, cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
     print("\nsolution #%i" % num_solutions)
     for i in range(n):
-      print(a[i], "=", x[i].Value())
+      print(a[i], "=", x[i].value())
     print()
     for prob in problem:
       for p in prob:
@@ -125,16 +125,16 @@ def main(problem_str="SEND+MORE=MONEY", base=10):
     print()
     for prob in problem:
       for p in prob:
-        print(x[lookup[p]].Value(), end=" ")
+        print(x[lookup[p]].value(), end=" ")
       print()
 
-    print("sums:", [sums[i].Value() for i in range(p_len)])
+    print("sums:", [sums[i].value() for i in range(p_len)])
     print()
 
   print("\nnum_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 def test_problems(base=10):

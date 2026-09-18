@@ -44,13 +44,13 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver("Just forgotten")
+  solver = cp.Solver("Just forgotten")
 
   #
   # data
@@ -64,28 +64,28 @@ def main():
   #
   # variables
   #
-  x = [solver.IntVar(0, 9, "x[%i]" % j) for j in range(cols)]
+  x = [solver.new_int_var(0, 9, "x[%i]" % j) for j in range(cols)]
 
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(x))
+  solver.add_all_different(x)
 
   for r in range(rows):
-    b = [solver.IsEqualCstVar(x[c], a[r][c]) for c in range(cols)]
-    solver.Add(solver.Sum(b) == 4)
+    b = [solver.add_is_equal_cst_var(x[c], a[r][c]) for c in range(cols)]
+    solver.add(solver.sum(b) == 4)
 
   #
   # search and result
   #
-  db = solver.Phase(x, solver.INT_VAR_SIMPLE, solver.INT_VALUE_DEFAULT)
+  db = solver.phase(x, cp.IntVarStrategy.INT_VAR_SIMPLE, cp.IntValueStrategy.INT_VALUE_DEFAULT)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
-    xval = [x[j].Value() for j in range(cols)]
+    xval = [x[j].value() for j in range(cols)]
     print("Account number:")
     for j in range(cols):
       print("%i " % xval[j], end=" ")
@@ -101,12 +101,12 @@ def main():
     print()
   print()
 
-  solver.EndSearch()
+  solver.end_search()
 
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 if __name__ == "__main__":

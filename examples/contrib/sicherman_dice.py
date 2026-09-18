@@ -59,13 +59,13 @@
   http://www.hakank.org/google_or_tools/
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver("Sicherman dice")
+  solver = cp.Solver("Sicherman dice")
 
   #
   # data
@@ -81,56 +81,56 @@ def main():
   #
 
   # the two dice
-  x1 = [solver.IntVar(0, m, "x1(%i)" % i) for i in range(n)]
-  x2 = [solver.IntVar(0, m, "x2(%i)" % i) for i in range(n)]
+  x1 = [solver.new_int_var(0, m, "x1(%i)" % i) for i in range(n)]
+  x2 = [solver.new_int_var(0, m, "x2(%i)" % i) for i in range(n)]
 
   #
   # constraints
   #
-  # [solver.Add(standard_dist[k] == solver.Sum([x1[i] + x2[j] == k+2 for i in range(n) for j in range(n)]))
+  # [solver.add(standard_dist[k] == solver.sum([x1[i] + x2[j] == k+2 for i in range(n) for j in range(n)]))
   # for k in range(len(standard_dist))]
   for k in range(len(standard_dist)):
-    tmp = [solver.BoolVar() for i in range(n) for j in range(n)]
+    tmp = [solver.new_bool_var() for i in range(n) for j in range(n)]
     for i in range(n):
       for j in range(n):
-        solver.Add(tmp[i * n + j] == solver.IsEqualCstVar(x1[i] + x2[j], k + 2))
-    solver.Add(standard_dist[k] == solver.Sum(tmp))
+        solver.add(tmp[i * n + j] == solver.add_is_equal_cst_var(x1[i] + x2[j], k + 2))
+    solver.add(standard_dist[k] == solver.sum(tmp))
 
   # symmetry breaking
-  [solver.Add(x1[i] <= x1[i + 1]) for i in range(n - 1)],
-  [solver.Add(x2[i] <= x2[i + 1]) for i in range(n - 1)],
-  [solver.Add(x1[i] <= x2[i]) for i in range(n - 1)],
+  [solver.add(x1[i] <= x1[i + 1]) for i in range(n - 1)],
+  [solver.add(x2[i] <= x2[i + 1]) for i in range(n - 1)],
+  [solver.add(x1[i] <= x2[i]) for i in range(n - 1)],
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(x1)
-  solution.Add(x2)
+  solution = solver.assignment()
+  solution.add(x1)
+  solution.add(x2)
 
   # db: DecisionBuilder
-  db = solver.Phase(x1 + x2, solver.INT_VAR_SIMPLE, solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(x1 + x2, cp.IntVarStrategy.INT_VAR_SIMPLE, cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
-  while solver.NextSolution():
-    print("x1:", [x1[i].Value() for i in range(n)])
-    print("x2:", [x2[i].Value() for i in range(n)])
+  while solver.next_solution():
+    print("x1:", [x1[i].value() for i in range(n)])
+    print("x2:", [x2[i].value() for i in range(n)])
     print()
 
     num_solutions += 1
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions, "solver.solutions:",
-        solver.Solutions())
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
-  print("MemoryUsage:", solver.MemoryUsage())
-  print("SearchDepth:", solver.SearchDepth())
-  print("SolveDepth:", solver.SolveDepth())
-  print("stamp:", solver.stamp())
+        solver.num_solutions)
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
+  print("MemoryUsage:", solver.memory_usage())
+  print("SearchDepth:", solver.search_depth)
+  print("SolveDepth:", solver.solve_depth)
+  print("stamp:", solver.stamp)
   print("solver", solver)
 
 

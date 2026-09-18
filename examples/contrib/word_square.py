@@ -37,12 +37,12 @@
 """
 import sys
 import re
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(words, word_len, num_answers=20):
   # Create the solver.
-  solver = pywrapcp.Solver("Problem")
+  solver = cp.Solver("Problem")
 
   #
   # data
@@ -57,58 +57,58 @@ def main(words, word_len, num_answers=20):
   A = {}
   for i in range(num_words):
     for j in range(word_len):
-      A[(i, j)] = solver.IntVar(0, 29, "A(%i,%i)" % (i, j))
+      A[(i, j)] = solver.new_int_var(0, 29, "A(%i,%i)" % (i, j))
 
   A_flat = [A[(i, j)] for i in range(num_words) for j in range(word_len)]
 
-  E = [solver.IntVar(0, num_words, "E%i" % i) for i in range(n)]
+  E = [solver.new_int_var(0, num_words, "E%i" % i) for i in range(n)]
 
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(E))
+  solver.add_all_different(E)
 
   # copy the words to a Matrix
   for I in range(num_words):
     for J in range(word_len):
-      solver.Add(A[(I, J)] == d[words[I][J]])
+      solver.add(A[(I, J)] == d[words[I][J]])
 
   for i in range(word_len):
     for j in range(word_len):
       # This is what I would like to do:
-      # solver.Add(A[(E[i],j)] == A[(E[j],i)])
+      # solver.add(A[(E[i],j)] == A[(E[j],i)])
 
       # We must use Element explicitly
-      solver.Add(
-          solver.Element(A_flat, E[i] * word_len +
-                         j) == solver.Element(A_flat, E[j] * word_len + i))
+      solver.add(
+          solver.element(A_flat, E[i] * word_len +
+                         j) == solver.element(A_flat, E[j] * word_len + i))
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(E)
+  solution = solver.assignment()
+  solution.add(E)
 
   # db: DecisionBuilder
-  db = solver.Phase(E + A_flat, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(E + A_flat, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+                    cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     # print E
     print_solution(E, words)
     num_solutions += 1
     if num_solutions > num_answers:
       break
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 #
@@ -129,7 +129,7 @@ def get_dict():
 def print_solution(E, words):
   # print E
   for e in E:
-    print(words[e.Value()])
+    print(words[e.value()])
   print()
 
 

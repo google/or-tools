@@ -53,7 +53,7 @@
 """
 import sys
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 #
 # Decomposition of modulo constraint
@@ -70,28 +70,28 @@ from ortools.constraint_solver import pywrapcp
 def my_mod(solver, x, y, r):
 
   if not isinstance(y, int):
-    solver.Add(y != 0)
+    solver.add(y != 0)
 
-  lbx = x.Min()
-  ubx = x.Max()
+  lbx = x.min()
+  ubx = x.max()
   ubx_neg = -ubx
   lbx_neg = -lbx
   min_x = min(lbx, ubx_neg)
   max_x = max(ubx, lbx_neg)
 
-  d = solver.IntVar(max(0, min_x), max_x, "d")
+  d = solver.new_int_var(max(0, min_x), max_x, "d")
 
   if not isinstance(r, int):
-    solver.Add(r >= 0)
-    solver.Add(x * r >= 0)
+    solver.add(r >= 0)
+    solver.add(x * r >= 0)
 
   if not isinstance(r, int) and not isinstance(r, int):
-    solver.Add(-abs(y) < r)
-    solver.Add(r < abs(y))
+    solver.add(-abs(y) < r)
+    solver.add(r < abs(y))
 
-  solver.Add(min_x <= d)
-  solver.Add(d <= max_x)
-  solver.Add(x == y * d + r)
+  solver.add(min_x <= d)
+  solver.add(d <= max_x)
+  solver.add(x == y * d + r)
 
 
 #
@@ -99,14 +99,14 @@ def my_mod(solver, x, y, r):
 #
 def toNum(solver, t, s, base):
   tlen = len(t)
-  solver.Add(
-      s == solver.Sum([(base**(tlen - i - 1)) * t[i] for i in range(tlen)]))
+  solver.add(
+      s == solver.sum([(base**(tlen - i - 1)) * t[i] for i in range(tlen)]))
 
 
 def main(base=10):
 
   # Create the solver.
-  solver = pywrapcp.Solver("Divisible by 9 through 1")
+  solver = cp.Solver("Divisible by 9 through 1")
 
   # data
   m = base**(base - 1) - 1
@@ -119,15 +119,15 @@ def main(base=10):
   # declare variables
 
   # the digits
-  x = [solver.IntVar(1, base - 1, "x[%i]" % i) for i in range(n)]
+  x = [solver.new_int_var(1, base - 1, "x[%i]" % i) for i in range(n)]
 
   # the numbers, t[0] contains the answer
-  t = [solver.IntVar(0, m, "t[%i]" % i) for i in range(n)]
+  t = [solver.new_int_var(0, m, "t[%i]" % i) for i in range(n)]
 
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(x))
+  solver.add_all_different(x)
 
   for i in range(n):
     mm = base - i - 1
@@ -137,27 +137,27 @@ def main(base=10):
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(x)
-  solution.Add(t)
+  solution = solver.assignment()
+  solution.add(x)
+  solution.add(t)
 
-  db = solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(x, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND, cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
-  while solver.NextSolution():
-    print("x: ", [x[i].Value() for i in range(n)])
-    print("t: ", [t[i].Value() for i in range(n)])
-    print("number base 10: %i base %i: %s" % (t[0].Value(), base, "".join(
-        [digits_str[x[i].Value() + 1] for i in range(n)])))
+  while solver.next_solution():
+    print("x: ", [x[i].value() for i in range(n)])
+    print("t: ", [t[i].value() for i in range(n)])
+    print("number base 10: %i base %i: %s" % (t[0].value(), base, "".join(
+        [digits_str[x[i].value() + 1] for i in range(n)])))
     print()
     num_solutions += 1
-  solver.EndSearch()
+  solver.end_search()
 
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 base = 10

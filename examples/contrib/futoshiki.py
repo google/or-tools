@@ -44,13 +44,13 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(values, lt):
 
   # Create the solver.
-  solver = pywrapcp.Solver("Futoshiki problem")
+  solver = cp.Solver("Futoshiki problem")
 
   #
   # data
@@ -65,7 +65,7 @@ def main(values, lt):
   field = {}
   for i in RANGE:
     for j in RANGE:
-      field[i, j] = solver.IntVar(1, size, "field[%i,%i]" % (i, j))
+      field[i, j] = solver.new_int_var(1, size, "field[%i,%i]" % (i, j))
   field_flat = [field[i, j] for i in RANGE for j in RANGE]
 
   #
@@ -75,45 +75,45 @@ def main(values, lt):
   for row in RANGE:
     for col in RANGE:
       if values[row][col] > 0:
-        solver.Add(field[row, col] == values[row][col])
+        solver.add(field[row, col] == values[row][col])
 
   # all rows have to be different
   for row in RANGE:
-    solver.Add(solver.AllDifferent([field[row, col] for col in RANGE]))
+    solver.add_all_different([field[row, col] for col in RANGE])
 
   # all columns have to be different
   for col in RANGE:
-    solver.Add(solver.AllDifferent([field[row, col] for row in RANGE]))
+    solver.add_all_different([field[row, col] for row in RANGE])
 
   # all < constraints are satisfied
   # Also: make 0-based
   for i in NUMQD:
-    solver.Add(
+    solver.add(
         field[lt[i][0] - 1, lt[i][1] - 1] < field[lt[i][2] - 1, lt[i][3] - 1])
 
   #
   # search and result
   #
-  db = solver.Phase(field_flat, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(field_flat, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+                    cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
     for i in RANGE:
       for j in RANGE:
-        print(field[i, j].Value(), end=" ")
+        print(field[i, j].value(), end=" ")
       print()
     print()
 
-  solver.EndSearch()
+  solver.end_search()
 
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 #

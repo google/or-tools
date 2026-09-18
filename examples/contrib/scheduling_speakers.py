@@ -28,13 +28,13 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver('Scheduling speakers')
+  solver = cp.Solver('Scheduling speakers')
 
   #
   # data
@@ -55,36 +55,36 @@ def main():
   #
   # variables
   #
-  x = [solver.IntVar(1, n, 'x[%i]' % i) for i in range(n)]
+  x = [solver.new_int_var(1, n, 'x[%i]' % i) for i in range(n)]
 
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(x))
+  solver.add_all_different(x)
 
   for i in range(n):
-    solver.Add(solver.MemberCt(x[i], available[i]))
+    solver.add_member_ct(x[i], available[i])
 
   #
   # search and result
   #
-  db = solver.Phase(x, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
+  db = solver.phase(x, cp.IntVarStrategy.INT_VAR_DEFAULT, cp.IntValueStrategy.INT_VALUE_DEFAULT)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
 
   num_solutions = 0
 
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
-    print('x:', [x[i].Value() for i in range(n)])
+    print('x:', [x[i].value() for i in range(n)])
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print('num_solutions:', num_solutions)
-  print('failures:', solver.Failures())
-  print('branches:', solver.Branches())
-  print('WallTime:', solver.WallTime(), 'ms')
+  print('failures:', solver.num_failures)
+  print('branches:', solver.num_branches)
+  print('WallTime:', solver.wall_time_ms, 'ms')
 
 
 if __name__ == '__main__':

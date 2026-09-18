@@ -37,14 +37,14 @@
 """
 import sys
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 from functools import reduce
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver("Grocery")
+  solver = cp.Solver("Grocery")
 
   #
   # data
@@ -55,37 +55,37 @@ def main():
   #
   # declare variables
   #
-  item = [solver.IntVar(0, c, "item[%i]" % i) for i in range(n)]
+  item = [solver.new_int_var(0, c, "item[%i]" % i) for i in range(n)]
 
   #
   # constraints
   #
-  solver.Add(solver.Sum(item) == c)
-  solver.Add(reduce(lambda x, y: x * y, item) == c * 100**3)
+  solver.add(solver.sum(item) == c)
+  solver.add(reduce(lambda x, y: x * y, item) == c * 100**3)
 
   # symmetry breaking
   for i in range(1, n):
-    solver.Add(item[i - 1] < item[i])
+    solver.add(item[i - 1] < item[i])
 
   #
   # search and result
   #
-  db = solver.Phase(item, solver.INT_VAR_SIMPLE, solver.INT_VALUE_SIMPLE)
+  db = solver.phase(item, cp.IntVarStrategy.INT_VAR_SIMPLE, cp.IntValueStrategy.INT_VALUE_SIMPLE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
-  while solver.NextSolution():
-    print("item:", [item[i].Value() for i in range(n)])
+  while solver.next_solution():
+    print("item:", [item[i].value() for i in range(n)])
     print()
     num_solutions += 1
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 if __name__ == "__main__":

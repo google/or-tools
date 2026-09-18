@@ -60,13 +60,13 @@
   http://www.hakank.org/google_or_tools/
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(r=0, c=0, rowsums=[], colsums=[], game=[]):
 
   # Create the solver.
-  solver = pywrapcp.Solver("Survo puzzle")
+  solver = cp.Solver("Survo puzzle")
 
   #
   # data
@@ -84,7 +84,7 @@ def main(r=0, c=0, rowsums=[], colsums=[], game=[]):
   x = {}
   for i in range(r):
     for j in range(c):
-      x[(i, j)] = solver.IntVar(1, r * c, "x %i %i" % (i, j))
+      x[(i, j)] = solver.new_int_var(1, r * c, "x %i %i" % (i, j))
 
   #
   # constraints
@@ -96,35 +96,35 @@ def main(r=0, c=0, rowsums=[], colsums=[], game=[]):
   for i in range(r):
     for j in range(c):
       if game[i][j] > 0:
-        solver.Add(x[i, j] == game[i][j])
+        solver.add(x[i, j] == game[i][j])
 
   xflat = [x[(i, j)] for i in range(r) for j in range(c)]
-  solver.Add(solver.AllDifferent(xflat))
+  solver.add_all_different(xflat)
   #
   # calculate rowsums and colsums
   #
   for i in range(r):
-    solver.Add(rowsums[i] == solver.Sum([x[i, j] for j in range(c)]))
+    solver.add(rowsums[i] == solver.sum([x[i, j] for j in range(c)]))
 
   for j in range(c):
-    solver.Add(colsums[j] == solver.Sum([x[i, j] for i in range(r)]))
+    solver.add(colsums[j] == solver.sum([x[i, j] for i in range(r)]))
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add([x[(i, j)] for i in range(r) for j in range(c)])
+  solution = solver.assignment()
+  solution.add([x[(i, j)] for i in range(r) for j in range(c)])
 
-  collector = solver.AllSolutionCollector(solution)
-  solver.Solve(
-      solver.Phase(xflat, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE),
+  collector = solver.all_solution_collector(solution)
+  solver.solve(
+      solver.phase(xflat, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND, cp.IntValueStrategy.ASSIGN_MIN_VALUE),
       [collector])
 
-  num_solutions = collector.SolutionCount()
+  num_solutions = collector.solution_count
   print("\nnum_solutions: ", num_solutions)
   if num_solutions > 0:
     for s in range(num_solutions):
-      xval = [collector.Value(s, x[(i, j)]) for i in range(r) for j in range(c)]
+      xval = [collector.value(s, x[(i, j)]) for i in range(r) for j in range(c)]
 
       for i in range(r):
         for j in range(c):
@@ -134,9 +134,9 @@ def main(r=0, c=0, rowsums=[], colsums=[], game=[]):
 
     print()
     print("num_solutions:", num_solutions)
-    print("failures:", solver.Failures())
-    print("branches:", solver.Branches())
-    print("WallTime:", solver.WallTime())
+    print("failures:", solver.num_failures)
+    print("branches:", solver.num_branches)
+    print("WallTime:", solver.wall_time_ms)
 
   else:
     print("No solutions found")

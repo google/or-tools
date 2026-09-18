@@ -39,16 +39,16 @@
   http://www.hakank.org/google_or_tools/
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def subset_sum(solver, values, total):
   n = len(values)
-  x = [solver.IntVar(0, n) for i in range(n)]
-  ss = solver.IntVar(0, n)
+  x = [solver.new_int_var(0, n) for i in range(n)]
+  ss = solver.new_int_var(0, n)
 
-  solver.Add(ss == solver.Sum(x))
-  solver.Add(total == solver.ScalProd(x, values))
+  solver.add(ss == solver.sum(x))
+  solver.add(total == solver.weighted_sum(x, values))
 
   return x, ss
 
@@ -56,7 +56,7 @@ def subset_sum(solver, values, total):
 def main(coins, total):
 
   # Create the solver.
-  solver = pywrapcp.Solver("n-queens")
+  solver = cp.Solver("n-queens")
 
   #
   # data
@@ -77,27 +77,27 @@ def main(coins, total):
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(x)
-  solution.Add(ss)
+  solution = solver.assignment()
+  solution.add(x)
+  solution.add(ss)
 
   # db: DecisionBuilder
-  db = solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(x, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND, cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
-  while solver.NextSolution():
-    print("ss:", ss.Value())
-    print("x: ", [x[i].Value() for i in range(len(x))])
+  while solver.next_solution():
+    print("ss:", ss.value())
+    print("x: ", [x[i].value() for i in range(len(x))])
     print()
     num_solutions += 1
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 coins = [16, 17, 23, 24, 39, 40]

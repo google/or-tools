@@ -62,7 +62,7 @@
 """
 import sys
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 #
 # converts a number (s) <-> an array of integers (t) in the specific base.
@@ -71,14 +71,14 @@ from ortools.constraint_solver import pywrapcp
 
 def toNum(solver, t, s, base):
   tlen = len(t)
-  solver.Add(
-      s == solver.Sum([(base**(tlen - i - 1)) * t[i] for i in range(tlen)]))
+  solver.add(
+      s == solver.sum([(base**(tlen - i - 1)) * t[i] for i in range(tlen)]))
 
 
 def main(base=10, start=1, len1=1, len2=4):
 
   # Create the solver.
-  solver = pywrapcp.Solver("Pandigital numbers")
+  solver = cp.Solver("Pandigital numbers")
 
   #
   # data
@@ -90,57 +90,57 @@ def main(base=10, start=1, len1=1, len2=4):
   #
   # declare variables
   #
-  num1 = solver.IntVar(0, max_num, "num1")
-  num2 = solver.IntVar(0, max_num, "num2")
-  res = solver.IntVar(0, max_num, "res")
+  num1 = solver.new_int_var(0, max_num, "num1")
+  num2 = solver.new_int_var(0, max_num, "num2")
+  res = solver.new_int_var(0, max_num, "res")
 
-  x = [solver.IntVar(start, max_d, "x[%i]" % i) for i in range(x_len)]
+  x = [solver.new_int_var(start, max_d, "x[%i]" % i) for i in range(x_len)]
 
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(x))
+  solver.add_all_different(x)
 
   toNum(solver, [x[i] for i in range(len1)], num1, base)
   toNum(solver, [x[i] for i in range(len1, len1 + len2)], num2, base)
   toNum(solver, [x[i] for i in range(len1 + len2, x_len)], res, base)
 
-  solver.Add(num1 * num2 == res)
+  solver.add(num1 * num2 == res)
 
   # no number must start with 0
-  solver.Add(x[0] > 0)
-  solver.Add(x[len1] > 0)
-  solver.Add(x[len1 + len2] > 0)
+  solver.add(x[0] > 0)
+  solver.add(x[len1] > 0)
+  solver.add(x[len1 + len2] > 0)
 
   # symmetry breaking
-  solver.Add(num1 < num2)
+  solver.add(num1 < num2)
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(x)
-  solution.Add(num1)
-  solution.Add(num2)
-  solution.Add(res)
+  solution = solver.assignment()
+  solution.add(x)
+  solution.add(num1)
+  solution.add(num2)
+  solution.add(res)
 
-  db = solver.Phase(x, solver.INT_VAR_SIMPLE, solver.INT_VALUE_DEFAULT)
+  db = solver.phase(x, cp.IntVarStrategy.INT_VAR_SIMPLE, cp.IntValueStrategy.INT_VALUE_DEFAULT)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
   solutions = []
-  while solver.NextSolution():
-    print_solution([x[i].Value() for i in range(x_len)], len1, len2, x_len)
+  while solver.next_solution():
+    print_solution([x[i].value() for i in range(x_len)], len1, len2, x_len)
     num_solutions += 1
 
-  solver.EndSearch()
+  solver.end_search()
 
   if 0 and num_solutions > 0:
     print()
     print("num_solutions:", num_solutions)
-    print("failures:", solver.Failures())
-    print("branches:", solver.Branches())
-    print("WallTime:", solver.WallTime())
+    print("failures:", solver.num_failures)
+    print("branches:", solver.num_branches)
+    print("WallTime:", solver.wall_time_ms)
     print()
 
 

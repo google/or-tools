@@ -28,7 +28,7 @@
   http://www.hakank.org/google_or_tools/
 
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 from collections import defaultdict
 
 #
@@ -45,7 +45,7 @@ from collections import defaultdict
 # 1..Q).  We reserve state 0 to be an always failing state.
 # '''
 #
-# x : IntVar array
+# x :.new_int_var array
 # Q : number of states
 # S : input_max
 # d : transition matrix
@@ -55,7 +55,7 @@ from collections import defaultdict
 
 def regular(x, Q, S, d, q0, F):
 
-  solver = x[0].solver()
+  solver = x[0].solver
 
   assert Q > 0, 'regular: "Q" must be greater than zero'
   assert S > 0, 'regular: "S" must be greater than zero'
@@ -86,25 +86,25 @@ def regular(x, Q, S, d, q0, F):
   m = 0
   n = len(x)
 
-  a = [solver.IntVar(0, Q + 1, 'a[%i]' % i) for i in range(m, n + 1)]
+  a = [solver.new_int_var(0, Q + 1, 'a[%i]' % i) for i in range(m, n + 1)]
 
   # Check that the final state is in F
-  solver.Add(solver.MemberCt(a[-1], F))
+  solver.add_member_ct(a[-1], F)
   # First state is q0
-  solver.Add(a[m] == q0)
+  solver.add(a[m] == q0)
   for i in x_range:
-    solver.Add(x[i] >= 1)
-    solver.Add(x[i] <= S)
+    solver.add(x[i] >= 1)
+    solver.add(x[i] <= S)
 
     # Determine a[i+1]: a[i+1] == d2[a[i], x[i]]
-    solver.Add(
-        a[i + 1] == solver.Element(d2_flatten, ((a[i]) * S) + (x[i] - 1)))
+    solver.add(
+        a[i + 1] == solver.element(d2_flatten, ((a[i]) * S) + (x[i] - 1)))
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver('Nurse rostering using regular')
+  solver = cp.Solver('Nurse rostering using regular')
 
   #
   # data
@@ -145,13 +145,13 @@ def main():
   x = {}
   for i in range(num_nurses):
     for j in range(num_days):
-      x[i, j] = solver.IntVar(shifts, 'x[%i,%i]' % (i, j))
+      x[i, j] = solver.new_int_var(shifts, 'x[%i,%i]' % (i, j))
 
   x_flat = [x[i, j] for i in range(num_nurses) for j in range(num_days)]
 
   # summary of the nurses
   nurse_stat = [
-      solver.IntVar(0, num_days, 'nurse_stat[%i]' % i)
+      solver.new_int_var(0, num_days, 'nurse_stat[%i]' % i)
       for i in range(num_nurses)
   ]
 
@@ -159,7 +159,7 @@ def main():
   day_stat = {}
   for i in range(num_days):
     for j in shifts:
-      day_stat[i, j] = solver.IntVar(0, num_nurses, 'day_stat[%i,%i]' % (i, j))
+      day_stat[i, j] = solver.new_int_var(0, num_nurses, 'day_stat[%i,%i]' % (i, j))
 
   day_stat_flat = [day_stat[i, j] for i in range(num_days) for j in shifts]
 
@@ -177,23 +177,23 @@ def main():
   for i in range(num_nurses):
     # number of worked days (day or night shift)
     b = [
-        solver.IsEqualCstVar(x[i, j], day_shift) + solver.IsEqualCstVar(
+        solver.add_is_equal_cst_var(x[i, j], day_shift) + solver.add_is_equal_cst_var(
             x[i, j], night_shift) for j in range(num_days)
     ]
-    solver.Add(nurse_stat[i] == solver.Sum(b))
+    solver.add(nurse_stat[i] == solver.sum(b))
 
     # Each nurse must work between 7 and 10
     # days during this period
-    solver.Add(nurse_stat[i] >= 7)
-    solver.Add(nurse_stat[i] <= 10)
+    solver.add(nurse_stat[i] >= 7)
+    solver.add(nurse_stat[i] <= 10)
 
   #
   # Statistics and constraints for each day
   #
   for j in range(num_days):
     for t in shifts:
-      b = [solver.IsEqualCstVar(x[i, j], t) for i in range(num_nurses)]
-      solver.Add(day_stat[j, t] == solver.Sum(b))
+      b = [solver.add_is_equal_cst_var(x[i, j], t) for i in range(num_nurses)]
+      solver.add(day_stat[j, t] == solver.sum(b))
 
     #
     # Some constraints for this day:
@@ -205,48 +205,48 @@ def main():
     #
     if j % 7 == 5 or j % 7 == 6:
       # special constraints for the weekends
-      solver.Add(day_stat[j, day_shift] == 2)
-      solver.Add(day_stat[j, night_shift] == 1)
-      solver.Add(day_stat[j, off_shift] == 4)
+      solver.add(day_stat[j, day_shift] == 2)
+      solver.add(day_stat[j, night_shift] == 1)
+      solver.add(day_stat[j, off_shift] == 4)
     else:
       # workdays:
 
       # - exactly 3 on day shift
-      solver.Add(day_stat[j, day_shift] == 3)
+      solver.add(day_stat[j, day_shift] == 3)
       # - exactly 2 on night
-      solver.Add(day_stat[j, night_shift] == 2)
+      solver.add(day_stat[j, night_shift] == 2)
       # - exactly 1 off duty
-      solver.Add(day_stat[j, off_shift] == 2)
+      solver.add(day_stat[j, off_shift] == 2)
 
   #
   # solution and search
   #
-  db = solver.Phase(day_stat_flat + x_flat + nurse_stat,
-                    solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(day_stat_flat + x_flat + nurse_stat,
+                    cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND, cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
 
     for i in range(num_nurses):
       print('Nurse%i: ' % i, end=' ')
       this_day_stat = defaultdict(int)
       for j in range(num_days):
-        d = days[x[i, j].Value() - 1]
+        d = days[x[i, j].value() - 1]
         this_day_stat[d] += 1
         print(d, end=' ')
       print(
           ' day_stat:', [(d, this_day_stat[d]) for d in this_day_stat], end=' ')
-      print('total:', nurse_stat[i].Value(), 'workdays')
+      print('total:', nurse_stat[i].value(), 'workdays')
     print()
 
     print('Statistics per day:')
     for j in range(num_days):
       print('Day%2i: ' % j, end=' ')
       for t in shifts:
-        print(day_stat[j, t].Value(), end=' ')
+        print(day_stat[j, t].value(), end=' ')
       print()
     print()
 
@@ -254,12 +254,12 @@ def main():
     if num_solutions >= 2:
       break
 
-  solver.EndSearch()
+  solver.end_search()
   print()
   print('num_solutions:', num_solutions)
-  print('failures:', solver.Failures())
-  print('branches:', solver.Branches())
-  print('WallTime:', solver.WallTime(), 'ms')
+  print('failures:', solver.num_failures)
+  print('branches:', solver.num_branches)
+  print('WallTime:', solver.wall_time_ms, 'ms')
 
 
 if __name__ == '__main__':

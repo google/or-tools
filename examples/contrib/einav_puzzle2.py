@@ -63,13 +63,13 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver("Einav puzzle")
+  solver = cp.Solver("Einav puzzle")
 
   #
   # data
@@ -121,21 +121,21 @@ def main():
   x = {}
   for i in range(rows):
     for j in range(cols):
-      x[i, j] = solver.IntVar(-100, 100, "x[%i,%i]" % (i, j))
+      x[i, j] = solver.new_int_var(-100, 100, "x[%i,%i]" % (i, j))
 
   x_flat = [x[i, j] for i in range(rows) for j in range(cols)]
 
-  row_signs = [solver.IntVar([-1, 1], "row_signs(%i)" % i) for i in range(rows)]
-  col_signs = [solver.IntVar([-1, 1], "col_signs(%i)" % j) for j in range(cols)]
+  row_signs = [solver.new_int_var([-1, 1], "row_signs(%i)" % i) for i in range(rows)]
+  col_signs = [solver.new_int_var([-1, 1], "col_signs(%i)" % j) for j in range(cols)]
 
   #
   # constraints
   #
   for i in range(rows):
     for j in range(cols):
-      solver.Add(x[i, j] == data[i][j] * row_signs[i] * col_signs[j])
+      solver.add(x[i, j] == data[i][j] * row_signs[i] * col_signs[j])
 
-  total_sum = solver.Sum([x[i, j] for i in range(rows) for j in range(cols)])
+  total_sum = solver.sum([x[i, j] for i in range(rows) for j in range(cols)])
 
   #
   # Note: In einav_puzzle.py row_sums and col_sums are decision variables.
@@ -143,49 +143,49 @@ def main():
 
   # row sums
   row_sums = [
-      solver.Sum([x[i, j] for j in range(cols)]).Var() for i in range(rows)
+      solver.sum([x[i, j] for j in range(cols)]).var() for i in range(rows)
   ]
   # >= 0
   for i in range(rows):
-    row_sums[i].SetMin(0)
+    row_sums[i].set_min(0)
 
   # column sums
   col_sums = [
-      solver.Sum([x[i, j] for i in range(rows)]).Var() for j in range(cols)
+      solver.sum([x[i, j] for i in range(rows)]).var() for j in range(cols)
   ]
   for j in range(cols):
-    col_sums[j].SetMin(0)
+    col_sums[j].set_min(0)
 
   # objective
-  objective = solver.Minimize(total_sum, 1)
+  objective = solver.minimize(total_sum, 1)
 
   #
   # search and result
   #
-  db = solver.Phase(col_signs + row_signs, solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                    solver.ASSIGN_MAX_VALUE)
+  db = solver.phase(col_signs + row_signs, cp.IntVarStrategy.CHOOSE_MIN_SIZE_LOWEST_MIN,
+                    cp.IntValueStrategy.ASSIGN_MAX_VALUE)
 
-  solver.NewSearch(db, [objective])
+  solver.new_search(db, [objective])
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
-    print("Sum =", objective.Best())
-    print("row_sums:", [row_sums[i].Value() for i in range(rows)])
-    print("col_sums:", [col_sums[j].Value() for j in range(cols)])
+    print("Sum =", objective.best())
+    print("row_sums:", [row_sums[i].value() for i in range(rows)])
+    print("col_sums:", [col_sums[j].value() for j in range(cols)])
     for i in range(rows):
       for j in range(cols):
-        print("%3i" % x[i, j].Value(), end=" ")
+        print("%3i" % x[i, j].value(), end=" ")
       print()
     print()
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 if __name__ == "__main__":

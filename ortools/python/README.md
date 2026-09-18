@@ -67,14 +67,8 @@ this layout:
    \- __init__.py
    \- .libs
       \- libortools.so
-   \- constraint_solver
-      \- __init__.py
-      \- pywrapcp.py
-      \- _pywrapcp.so
    \- ...
       \- __init__.py
-      \- pywrap....py
-      \- _pywrap....so
 ...
 ```
 note: `<platform>` could be `manylinux2014_x86_64`, `macosx_10_9_x86_64` or `win-amd64`.

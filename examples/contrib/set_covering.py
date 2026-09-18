@@ -30,13 +30,13 @@
   http://www.hakank.org/google_or_tools/
 
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(unused_argv):
 
   # Create the solver.
-  solver = pywrapcp.Solver("Set covering")
+  solver = cp.Solver("Set covering")
 
   #
   # data
@@ -51,40 +51,40 @@ def main(unused_argv):
   #
   # declare variables
   #
-  x = [solver.IntVar(0, 1, "x[%i]" % i) for i in range(num_cities)]
+  x = [solver.new_int_var(0, 1, "x[%i]" % i) for i in range(num_cities)]
 
   #
   # constraints
   #
 
   # objective to minimize
-  z = solver.Sum(x)
+  z = solver.sum(x)
 
   # ensure that all cities are covered
   for i in range(num_cities):
     b = [x[j] for j in range(num_cities) if distance[i][j] <= min_distance]
-    solver.Add(solver.SumGreaterOrEqual(b, 1))
+    solver.add_sum_greater_or_equal(b, 1)
 
-  objective = solver.Minimize(z, 1)
+  objective = solver.minimize(z, 1)
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(x)
-  solution.AddObjective(z)
+  solution = solver.assignment()
+  solution.add(x)
+  solution.add_objective(z)
 
-  collector = solver.LastSolutionCollector(solution)
-  solver.Solve(
-      solver.Phase(x + [z], solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT),
+  collector = solver.last_solution_collector(solution)
+  solver.solve(
+      solver.phase(x + [z], cp.IntVarStrategy.INT_VAR_DEFAULT, cp.IntValueStrategy.INT_VALUE_DEFAULT),
       [collector, objective])
 
-  print("z:", collector.ObjectiveValue(0))
-  print("x:", [collector.Value(0, x[i]) for i in range(num_cities)])
+  print("z:", collector.objective_value(0))
+  print("x:", [collector.value(0, x[i]) for i in range(num_cities)])
 
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 if __name__ == "__main__":

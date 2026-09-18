@@ -39,12 +39,12 @@
 
 
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
   # Create the solver.
-  solver = pywrapcp.Solver("Coins")
+  solver = cp.Solver("Coins")
 
   #
   # data
@@ -53,50 +53,50 @@ def main():
   variables = [1, 2, 5, 10, 25, 50]
 
   # declare variables
-  x = [solver.IntVar(0, 99, "x%i" % i) for i in range(n)]
-  num_coins = solver.IntVar(0, 99, "num_coins")
+  x = [solver.new_int_var(0, 99, "x%i" % i) for i in range(n)]
+  num_coins = solver.new_int_var(0, 99, "num_coins")
 
   #
   # constraints
   #
 
   # number of used coins, to be minimized
-  solver.Add(num_coins == solver.Sum(x))
+  solver.add(num_coins == solver.sum(x))
 
   # Check that all changes from 1 to 99 can be made.
   for j in range(1, 100):
-    tmp = [solver.IntVar(0, 99, "b%i" % i) for i in range(n)]
-    solver.Add(solver.ScalProd(tmp, variables) == j)
-    [solver.Add(tmp[i] <= x[i]) for i in range(n)]
+    tmp = [solver.new_int_var(0, 99, "b%i" % i) for i in range(n)]
+    solver.add(solver.weighted_sum(tmp, variables) == j)
+    [solver.add(tmp[i] <= x[i]) for i in range(n)]
 
   # objective
-  objective = solver.Minimize(num_coins, 1)
+  objective = solver.minimize(num_coins, 1)
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(x)
-  solution.Add(num_coins)
-  solution.AddObjective(num_coins)
+  solution = solver.assignment()
+  solution.add(x)
+  solution.add(num_coins)
+  solution.add_objective(num_coins)
 
-  db = solver.Phase(x, solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(x, cp.IntVarStrategy.CHOOSE_MIN_SIZE_LOWEST_MAX,
+                    cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db, [objective])
+  solver.new_search(db, [objective])
   num_solutions = 0
-  while solver.NextSolution():
-    print("x: ", [x[i].Value() for i in range(n)])
-    print("num_coins:", num_coins.Value())
+  while solver.next_solution():
+    print("x: ", [x[i].value() for i in range(n)])
+    print("num_coins:", num_coins.value())
     print()
     num_solutions += 1
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 if __name__ == "__main__":

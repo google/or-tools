@@ -34,13 +34,13 @@
 
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(num_buses_check=0):
 
   # Create the solver.
-  solver = pywrapcp.Solver("Bus scheduling")
+  solver = cp.Solver("Bus scheduling")
 
   # data
   time_slots = 6
@@ -48,55 +48,55 @@ def main(num_buses_check=0):
   max_num = sum(demands)
 
   # declare variables
-  x = [solver.IntVar(0, max_num, "x%i" % i) for i in range(time_slots)]
-  num_buses = solver.IntVar(0, max_num, "num_buses")
+  x = [solver.new_int_var(0, max_num, "x%i" % i) for i in range(time_slots)]
+  num_buses = solver.new_int_var(0, max_num, "num_buses")
 
   #
   # constraints
   #
-  solver.Add(num_buses == solver.Sum(x))
+  solver.add(num_buses == solver.sum(x))
 
   # Meet the demands for this and the next time slot
   for i in range(time_slots - 1):
-    solver.Add(x[i] + x[i + 1] >= demands[i])
+    solver.add(x[i] + x[i + 1] >= demands[i])
 
   # The demand "around the clock"
-  solver.Add(x[time_slots - 1] + x[0] == demands[time_slots - 1])
+  solver.add(x[time_slots - 1] + x[0] == demands[time_slots - 1])
 
   if num_buses_check > 0:
-    solver.Add(num_buses == num_buses_check)
+    solver.add(num_buses == num_buses_check)
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(x)
-  solution.Add(num_buses)
+  solution = solver.assignment()
+  solution.add(x)
+  solution.add(num_buses)
 
-  collector = solver.AllSolutionCollector(solution)
+  collector = solver.all_solution_collector(solution)
   cargs = [collector]
 
   # objective
   if num_buses_check == 0:
-    objective = solver.Minimize(num_buses, 1)
+    objective = solver.minimize(num_buses, 1)
     cargs.extend([objective])
 
-  solver.Solve(
-      solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE),
+  solver.solve(
+      solver.phase(x, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND, cp.IntValueStrategy.ASSIGN_MIN_VALUE),
       cargs)
 
-  num_solutions = collector.SolutionCount()
+  num_solutions = collector.solution_count
   num_buses_check_value = 0
   for s in range(num_solutions):
-    print("x:", [collector.Value(s, x[i]) for i in range(len(x))], end=" ")
-    num_buses_check_value = collector.Value(s, num_buses)
+    print("x:", [collector.value(s, x[i]) for i in range(len(x))], end=" ")
+    num_buses_check_value = collector.value(s, num_buses)
     print(" num_buses:", num_buses_check_value)
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
   print()
   if num_buses_check == 0:
     return num_buses_check_value

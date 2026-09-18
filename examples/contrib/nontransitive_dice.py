@@ -67,13 +67,13 @@
   http://www.hakank.org/google_or_tools/
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(m=3, n=6, minimize_val=0):
 
   # Create the solver.
-  solver = pywrapcp.Solver("Nontransitive dice")
+  solver = cp.Solver("Nontransitive dice")
 
   #
   # data
@@ -88,38 +88,38 @@ def main(m=3, n=6, minimize_val=0):
   dice = {}
   for i in range(m):
     for j in range(n):
-      dice[(i, j)] = solver.IntVar(1, n * 2, "dice(%i,%i)" % (i, j))
+      dice[(i, j)] = solver.new_int_var(1, n * 2, "dice(%i,%i)" % (i, j))
   dice_flat = [dice[(i, j)] for i in range(m) for j in range(n)]
 
   comp = {}
   for i in range(m):
     for j in range(2):
-      comp[(i, j)] = solver.IntVar(0, n * n, "comp(%i,%i)" % (i, j))
+      comp[(i, j)] = solver.new_int_var(0, n * n, "comp(%i,%i)" % (i, j))
   comp_flat = [comp[(i, j)] for i in range(m) for j in range(2)]
 
   # The following variables are for summaries or objectives
-  gap = [solver.IntVar(0, n * n, "gap(%i)" % i) for i in range(m)]
-  gap_sum = solver.IntVar(0, m * n * n, "gap_sum")
+  gap = [solver.new_int_var(0, n * n, "gap(%i)" % i) for i in range(m)]
+  gap_sum = solver.new_int_var(0, m * n * n, "gap_sum")
 
-  max_val = solver.IntVar(0, n * 2, "max_val")
-  max_win = solver.IntVar(0, n * n, "max_win")
+  max_val = solver.new_int_var(0, n * 2, "max_val")
+  max_win = solver.new_int_var(0, n * n, "max_win")
 
   # number of occurrences of each value of the dice
-  counts = [solver.IntVar(0, n * m, "counts(%i)" % i) for i in range(n * 2 + 1)]
+  counts = [solver.new_int_var(0, n * m, "counts(%i)" % i) for i in range(n * 2 + 1)]
 
   #
   # constraints
   #
 
   # number of occurrences for each number
-  solver.Add(solver.Distribute(dice_flat, list(range(n * 2 + 1)), counts))
+  solver.add_distribute(dice_flat, list(range(n * 2 + 1)), counts)
 
-  solver.Add(max_win == solver.Max(comp_flat))
-  solver.Add(max_val == solver.Max(dice_flat))
+  solver.add(max_win == solver.max(comp_flat))
+  solver.add(max_val == solver.max(dice_flat))
 
   # order of the number of each die, lowest first
   [
-      solver.Add(dice[(i, j)] <= dice[(i, j + 1)])
+      solver.add(dice[(i, j)] <= dice[(i, j + 1)])
       for i in range(m)
       for j in range(n - 1)
   ]
@@ -128,74 +128,74 @@ def main(m=3, n=6, minimize_val=0):
   [comp[i, 0] > comp[i, 1] for i in range(m)],
 
   # probability gap
-  [solver.Add(gap[i] == comp[i, 0] - comp[i, 1]) for i in range(m)]
-  [solver.Add(gap[i] > 0) for i in range(m)]
-  solver.Add(gap_sum == solver.Sum(gap))
+  [solver.add(gap[i] == comp[i, 0] - comp[i, 1]) for i in range(m)]
+  [solver.add(gap[i] > 0) for i in range(m)]
+  solver.add(gap_sum == solver.sum(gap))
 
   # and now we roll...
   #  Number of wins for [A vs B, B vs A]
   for d in range(m):
     b1 = [
-        solver.IsGreaterVar(dice[d % m, r1], dice[(d + 1) % m, r2])
+        solver.add_is_greater_var(dice[d % m, r1], dice[(d + 1) % m, r2])
         for r1 in range(n)
         for r2 in range(n)
     ]
-    solver.Add(comp[d % m, 0] == solver.Sum(b1))
+    solver.add(comp[d % m, 0] == solver.sum(b1))
 
     b2 = [
-        solver.IsGreaterVar(dice[(d + 1) % m, r1], dice[d % m, r2])
+        solver.add_is_greater_var(dice[(d + 1) % m, r1], dice[d % m, r2])
         for r1 in range(n)
         for r2 in range(n)
     ]
-    solver.Add(comp[d % m, 1] == solver.Sum(b2))
+    solver.add(comp[d % m, 1] == solver.sum(b2))
 
   # objective
   if minimize_val != 0:
     print("Minimizing max_val")
-    objective = solver.Minimize(max_val, 1)
+    objective = solver.minimize(max_val, 1)
     # other experiments
-    # objective = solver.Maximize(max_win, 1)
-    # objective = solver.Maximize(gap_sum, 1)
+    # objective = solver.maximize(max_win, 1)
+    # objective = solver.maximize(gap_sum, 1)
 
   #
   # solution and search
   #
-  db = solver.Phase(dice_flat + comp_flat, solver.INT_VAR_DEFAULT,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(dice_flat + comp_flat, cp.IntVarStrategy.INT_VAR_DEFAULT,
+                    cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
   if minimize_val:
-    solver.NewSearch(db, [objective])
+    solver.new_search(db, [objective])
   else:
-    solver.NewSearch(db)
+    solver.new_search(db)
 
   num_solutions = 0
-  while solver.NextSolution():
-    print("gap_sum:", gap_sum.Value())
-    print("gap:", [gap[i].Value() for i in range(m)])
-    print("max_val:", max_val.Value())
-    print("max_win:", max_win.Value())
+  while solver.next_solution():
+    print("gap_sum:", gap_sum.value())
+    print("gap:", [gap[i].value() for i in range(m)])
+    print("max_val:", max_val.value())
+    print("max_win:", max_win.value())
     print("dice:")
     for i in range(m):
       for j in range(n):
-        print(dice[(i, j)].Value(), end=" ")
+        print(dice[(i, j)].value(), end=" ")
       print()
     print("comp:")
     for i in range(m):
       for j in range(2):
-        print(comp[(i, j)].Value(), end=" ")
+        print(comp[(i, j)].value(), end=" ")
       print()
-    print("counts:", [counts[i].Value() for i in range(n * 2 + 1)])
+    print("counts:", [counts[i].value() for i in range(n * 2 + 1)])
     print()
 
     num_solutions += 1
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 m = 3  # number of dice

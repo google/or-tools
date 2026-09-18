@@ -49,7 +49,7 @@
 """
 
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 #
 # Decomposition of alldifferent_except_0
@@ -62,7 +62,7 @@ def alldifferent_except_0(solver, a):
   n = len(a)
   for i in range(n):
     for j in range(i):
-      solver.Add((a[i] != 0) * (a[j] != 0) <= (a[i] != a[j]))
+      solver.add((a[i] != 0) * (a[j] != 0) <= (a[i] != a[j]))
 
 
 # more compact version:
@@ -71,7 +71,7 @@ def alldifferent_except_0(solver, a):
 def alldifferent_except_0_b(solver, a):
   n = len(a)
   [
-      solver.Add((a[i] != 0) * (a[j] != 0) <= (a[i] != a[j]))
+      solver.add((a[i] != 0) * (a[j] != 0) <= (a[i] != a[j]))
       for i in range(n)
       for j in range(i)
   ]
@@ -79,15 +79,15 @@ def alldifferent_except_0_b(solver, a):
 
 def main(unused_argv):
   # Create the solver.
-  solver = pywrapcp.Solver("Alldifferent except 0")
+  solver = cp.Solver("Alldifferent except 0")
 
   # data
   n = 7
 
   # declare variables
-  x = [solver.IntVar(0, n - 1, "x%i" % i) for i in range(n)]
+  x = [solver.new_int_var(0, n - 1, "x%i" % i) for i in range(n)]
   # Number of zeros.
-  z = solver.Sum([x[i] == 0 for i in range(n)]).VarWithName("z")
+  z = solver.sum([x[i] == 0 for i in range(n)]).var_with_name("z")
 
   #
   # constraints
@@ -95,30 +95,30 @@ def main(unused_argv):
   alldifferent_except_0(solver, x)
 
   # we require 2 0's
-  solver.Add(z == 2)
+  solver.add(z == 2)
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add([x[i] for i in range(n)])
-  solution.Add(z)
+  solution = solver.assignment()
+  solution.add([x[i] for i in range(n)])
+  solution.add(z)
 
-  collector = solver.AllSolutionCollector(solution)
-  solver.Solve(
-      solver.Phase([x[i] for i in range(n)], solver.CHOOSE_FIRST_UNBOUND,
-                   solver.ASSIGN_MIN_VALUE), [collector])
+  collector = solver.all_solution_collector(solution)
+  solver.solve(
+      solver.phase([x[i] for i in range(n)], cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+                   cp.IntValueStrategy.ASSIGN_MIN_VALUE), [collector])
 
-  num_solutions = collector.SolutionCount()
+  num_solutions = collector.solution_count
   for s in range(num_solutions):
-    print("x:", [collector.Value(s, x[i]) for i in range(n)])
-    print("z:", collector.Value(s, z))
+    print("x:", [collector.value(s, x[i]) for i in range(n)])
+    print("z:", collector.value(s, z))
     print()
 
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 if __name__ == "__main__":

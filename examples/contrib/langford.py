@@ -45,13 +45,13 @@
 """
 import sys
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(k=8, num_sol=0):
 
   # Create the solver.
-  solver = pywrapcp.Solver("Langford")
+  solver = cp.Solver("Langford")
 
   #
   # data
@@ -62,43 +62,43 @@ def main(k=8, num_sol=0):
   #
   # declare variables
   #
-  position = [solver.IntVar(0, 2 * k - 1, "position[%i]" % i) for i in p]
-  solution = [solver.IntVar(1, k, "position[%i]" % i) for i in p]
+  position = [solver.new_int_var(0, 2 * k - 1, "position[%i]" % i) for i in p]
+  solution = [solver.new_int_var(1, k, "position[%i]" % i) for i in p]
 
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(position))
+  solver.add_all_different(position)
 
   for i in range(1, k + 1):
-    solver.Add(position[i + k - 1] == position[i - 1] + i + 1)
-    solver.Add(solver.Element(solution, position[i - 1]) == i)
-    solver.Add(solver.Element(solution, position[k + i - 1]) == i)
+    solver.add(position[i + k - 1] == position[i - 1] + i + 1)
+    solver.add(solver.element(solution, position[i - 1]) == i)
+    solver.add(solver.element(solution, position[k + i - 1]) == i)
 
   # symmetry breaking
-  solver.Add(solution[0] < solution[2 * k - 1])
+  solver.add(solution[0] < solution[2 * k - 1])
 
   #
   # search and result
   #
-  db = solver.Phase(position, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(position, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+                    cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
-  while solver.NextSolution():
-    print("solution:", ",".join([str(solution[i].Value()) for i in p]))
+  while solver.next_solution():
+    print("solution:", ",".join([str(solution[i].value()) for i in p]))
     num_solutions += 1
     if num_sol > 0 and num_solutions >= num_sol:
       break
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 k = 8

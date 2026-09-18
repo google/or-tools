@@ -27,12 +27,12 @@
   http://www.hakank.org/google_or_tools/
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(n=8, num_sol=0, print_sol=1):
   # Create the solver.
-  solver = pywrapcp.Solver("n-queens")
+  solver = cp.Solver("n-queens")
 
   #
   # data
@@ -42,30 +42,30 @@ def main(n=8, num_sol=0, print_sol=1):
   print("print_sol:", print_sol)
 
   # declare variables
-  q = [solver.IntVar(0, n - 1, "x%i" % i) for i in range(n)]
+  q = [solver.new_int_var(0, n - 1, "x%i" % i) for i in range(n)]
 
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(q))
-  solver.Add(solver.AllDifferent([q[i] + i for i in range(n)]))
-  solver.Add(solver.AllDifferent([q[i] - i for i in range(n)]))
+  solver.add_all_different(q)
+  solver.add_all_different([q[i] + i for i in range(n)])
+  solver.add_all_different([q[i] - i for i in range(n)])
 
   # symmetry breaking
-  # solver.Add(q[0] == 0)
+  # solver.add(q[0] == 0)
 
   #
   # search
   #
 
-  db = solver.Phase(q, solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
-                    solver.ASSIGN_CENTER_VALUE)
+  db = solver.phase(q, cp.IntVarStrategy.CHOOSE_MIN_SIZE_LOWEST_MAX,
+                    cp.IntValueStrategy.ASSIGN_CENTER_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     if print_sol:
-      qval = [q[i].Value() for i in range(n)]
+      qval = [q[i].value() for i in range(n)]
       print("q:", qval)
       for i in range(n):
         for j in range(n):
@@ -79,13 +79,13 @@ def main(n=8, num_sol=0, print_sol=1):
     if num_sol > 0 and num_solutions >= num_sol:
       break
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime(), "ms")
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms, "ms")
 
 
 n = 8

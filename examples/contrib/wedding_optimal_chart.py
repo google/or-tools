@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 from ortools.constraint_solver import solver_parameters_pb2
 """Finding an optimal wedding seating chart.
 
@@ -42,8 +42,8 @@ https://github.com/google/or-tools/blob/main/examples/csharp/wedding_optimal_cha
 
 def main():
   # Instantiate a CP solver.
-  parameters = pywrapcp.Solver.DefaultSolverParameters()
-  solver = pywrapcp.Solver("WeddingOptimalChart", parameters)
+  parameters = cp.Solver.default_solver_parameters()
+  solver = cp.Solver("WeddingOptimalChart", parameters)
 
   #
   # Data
@@ -95,9 +95,9 @@ def main():
   #
   # Decision variables
   #
-  tables = [solver.IntVar(0, n - 1, "x[%i]" % i) for i in MRANGE]
+  tables = [solver.new_int_var(0, n - 1, "x[%i]" % i) for i in MRANGE]
 
-  z = solver.Sum([
+  z = solver.sum([
       C[j][k] * (tables[j] == tables[k])
       for j in MRANGE
       for k in MRANGE
@@ -112,49 +112,49 @@ def main():
                  for j in MRANGE
                  for k in MRANGE
                  if j < k and C[j][k] > 0]
-    solver.Add(solver.Sum(minGuests) >= b)
+    solver.add(solver.sum(minGuests) >= b)
 
     maxGuests = [tables[j] == i for j in MRANGE]
-    solver.Add(solver.Sum(maxGuests) <= a)
+    solver.add(solver.sum(maxGuests) <= a)
 
   # Symmetry breaking
-  solver.Add(tables[0] == 0)
+  solver.add(tables[0] == 0)
 
   #
   # Objective
   #
-  objective = solver.Maximize(z, 1)
+  objective = solver.maximize(z, 1)
 
   #
   # Search
   #
-  db = solver.Phase(tables, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
+  db = solver.phase(tables, cp.IntVarStrategy.INT_VAR_DEFAULT, cp.IntValueStrategy.INT_VALUE_DEFAULT)
 
-  solver.NewSearch(db, [objective])
+  solver.new_search(db, [objective])
 
-  while solver.NextSolution():
+  while solver.next_solution():
     print("z:", z)
     print("Table: ")
     for j in MRANGE:
-      print(tables[j].Value(), " ")
+      print(tables[j].value(), " ")
     print()
 
     for i in NRANGE:
       print("Table %d: " % i)
       for j in MRANGE:
-        if tables[j].Value() == i:
+        if tables[j].value() == i:
           print(names[j] + " ")
       print()
 
     print()
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
-  print("Solutions: %d" % solver.Solutions())
-  print("WallTime: %dms" % solver.WallTime())
-  print("Failures: %d" % solver.Failures())
-  print("Branches: %d" % solver.Branches())
+  print("Solutions: %d" % solver.num_solutions)
+  print("WallTime: %dms" % solver.wall_time_ms)
+  print("Failures: %d" % solver.num_failures)
+  print("Branches: %d" % solver.num_branches)
 
 
 if __name__ == "__main__":

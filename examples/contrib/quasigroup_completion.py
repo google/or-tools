@@ -53,7 +53,7 @@
   http://www.hakank.org/google_or_tools/
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 default_n = 5
 X = 0
@@ -66,7 +66,7 @@ default_puzzle = [[1, X, X, X, 4], [X, 5, X, X, X], [4, X, X, 2, X],
 def main(puzzle="", n=0):
 
   # Create the solver.
-  solver = pywrapcp.Solver("Quasigroup completion")
+  solver = cp.Solver("Quasigroup completion")
 
   #
   # data
@@ -83,7 +83,7 @@ def main(puzzle="", n=0):
   x = {}
   for i in range(n):
     for j in range(n):
-      x[(i, j)] = solver.IntVar(1, n, "x %i %i" % (i, j))
+      x[(i, j)] = solver.new_int_var(1, n, "x %i %i" % (i, j))
 
   xflat = [x[(i, j)] for i in range(n) for j in range(n)]
 
@@ -97,57 +97,57 @@ def main(puzzle="", n=0):
   for i in range(n):
     for j in range(n):
       if puzzle[i][j] > X:
-        solver.Add(x[i, j] == puzzle[i][j])
+        solver.add(x[i, j] == puzzle[i][j])
 
   #
   # rows and columns must be different
   #
   for i in range(n):
-    solver.Add(solver.AllDifferent([x[i, j] for j in range(n)]))
-    solver.Add(solver.AllDifferent([x[j, i] for j in range(n)]))
+    solver.add_all_different([x[i, j] for j in range(n)])
+    solver.add_all_different([x[j, i] for j in range(n)])
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(xflat)
+  solution = solver.assignment()
+  solution.add(xflat)
 
   # This version prints out the solution directly, and
   # don't collect them as solver.FirstSolutionCollector(solution) do
   # (db: DecisionBuilder)
-  db = solver.Phase(xflat, solver.INT_VAR_SIMPLE, solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(xflat, cp.IntVarStrategy.INT_VAR_SIMPLE, cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
     print("Solution %i" % num_solutions)
-    xval = [x[(i, j)].Value() for i in range(n) for j in range(n)]
+    xval = [x[(i, j)].value() for i in range(n) for j in range(n)]
     for i in range(n):
       for j in range(n):
         print(xval[i * n + j], end=" ")
       print()
     print()
-  solver.EndSearch()
+  solver.end_search()
 
   if num_solutions == 0:
     print("No solutions found")
 
   # # Note: AllSolution may take very much RAM, hence I choose to
   # # show just the first solution.
-  # # collector = solver.AllSolutionCollector(solution)
+  # # collector = solver.all_solution_collector(solution)
   # collector = solver.FirstSolutionCollector(solution)
-  # solver.Solve(solver.Phase([x[(i,j)] for i in range(n) for j in range(n)],
-  #                           solver.CHOOSE_FIRST_UNBOUND,
-  #                           solver.ASSIGN_MIN_VALUE),
+  # solver.solve(solver.phase([x[(i,j)] for i in range(n) for j in range(n)],
+  #                           cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+  #                           cp.IntValueStrategy.ASSIGN_MIN_VALUE),
   #                           [collector])
   #
-  # num_solutions = collector.SolutionCount()
+  # num_solutions = collector.solution_count
   # print "\nnum_solutions: ", num_solutions
   # if num_solutions > 0:
   #     print "\nJust showing the first solution..."
   #     for s in range(num_solutions):
-  #         xval = [collector.Value(s, x[(i,j)]) for i in range(n) for j in range(n)]
+  #         xval = [collector.value(s, x[(i,j)]) for i in range(n) for j in range(n)]
   #         for i in range(n):
   #             for j in range(n):
   #                 print xval[i*n+j],
@@ -156,9 +156,9 @@ def main(puzzle="", n=0):
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 #

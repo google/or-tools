@@ -37,7 +37,7 @@
   http://www.hakank.org/google_or_tools/
 
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 #
@@ -54,7 +54,7 @@ from ortools.constraint_solver import pywrapcp
 # 1..Q).  We reserve state 0 to be an always failing state.
 # '''
 #
-# x : IntVar array
+# x :.new_int_var array
 # Q : number of states
 # S : input_max
 # d : transition matrix
@@ -62,7 +62,7 @@ from ortools.constraint_solver import pywrapcp
 # F : accepting states
 def regular(x, Q, S, d, q0, F):
 
-  solver = x[0].solver()
+  solver = x[0].solver
 
   assert Q > 0, 'regular: "Q" must be greater than zero'
   assert S > 0, 'regular: "S" must be greater than zero'
@@ -80,7 +80,7 @@ def regular(x, Q, S, d, q0, F):
       else:
         d2.append((i, j, d[i - 1][j - 1]))
 
-  solver.Add(solver.TransitionConstraint(x, d2, q0, F))
+  solver.add_transition_constraint(x, d2, q0, F)
 
 
 #
@@ -145,7 +145,7 @@ def make_transition_matrix(pattern):
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver('Regular test')
+  solver = cp.Solver('Regular test')
 
   #
   # data
@@ -166,7 +166,7 @@ def main():
 
   # declare variables
   reg_input = [
-      solver.IntVar(1, input_max, 'reg_input[%i]' % i) for i in range(this_len)
+      solver.new_int_var(1, input_max, 'reg_input[%i]' % i) for i in range(this_len)
   ]
 
   #
@@ -178,22 +178,22 @@ def main():
   #
   # solution and search
   #
-  db = solver.Phase(reg_input, solver.CHOOSE_MIN_SIZE_HIGHEST_MAX,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(reg_input, cp.IntVarStrategy.CHOOSE_MIN_SIZE_HIGHEST_MAX,
+                    cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
 
   num_solutions = 0
-  while solver.NextSolution():
-    print('reg_input:', [reg_input[i].Value() - 1 for i in range(this_len)])
+  while solver.next_solution():
+    print('reg_input:', [reg_input[i].value() - 1 for i in range(this_len)])
     num_solutions += 1
 
-  solver.EndSearch()
+  solver.end_search()
   print()
   print('num_solutions:', num_solutions)
-  print('failures:', solver.Failures())
-  print('branches:', solver.Branches())
-  print('WallTime:', solver.WallTime(), 'ms')
+  print('failures:', solver.num_failures)
+  print('branches:', solver.num_branches)
+  print('WallTime:', solver.wall_time_ms, 'ms')
 
 
 if __name__ == '__main__':

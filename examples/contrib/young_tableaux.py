@@ -61,13 +61,13 @@
   http://www.hakank.org/google_or_tools/
 """
 import sys
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(n=5):
 
   # Create the solver.
-  solver = pywrapcp.Solver("Problem")
+  solver = cp.Solver("Problem")
 
   #
   # data
@@ -80,12 +80,12 @@ def main(n=5):
   x = {}
   for i in range(n):
     for j in range(n):
-      x[(i, j)] = solver.IntVar(1, n + 1, "x(%i,%i)" % (i, j))
+      x[(i, j)] = solver.new_int_var(1, n + 1, "x(%i,%i)" % (i, j))
 
   x_flat = [x[(i, j)] for i in range(n) for j in range(n)]
 
   # partition structure
-  p = [solver.IntVar(0, n + 1, "p%i" % i) for i in range(n)]
+  p = [solver.new_int_var(0, n + 1, "p%i" % i) for i in range(n)]
 
   #
   # constraints
@@ -93,66 +93,66 @@ def main(n=5):
 
   # 1..n is used exactly once
   for i in range(1, n + 1):
-    solver.Add(solver.Count(x_flat, i, 1))
+    solver.add_count(x_flat, i, 1)
 
-  solver.Add(x[(0, 0)] == 1)
+  solver.add(x[(0, 0)] == 1)
 
   # row wise
   for i in range(n):
     for j in range(1, n):
-      solver.Add(x[(i, j)] >= x[(i, j - 1)])
+      solver.add(x[(i, j)] >= x[(i, j - 1)])
 
   # column wise
   for j in range(n):
     for i in range(1, n):
-      solver.Add(x[(i, j)] >= x[(i - 1, j)])
+      solver.add(x[(i, j)] >= x[(i - 1, j)])
 
   # calculate the structure (the partition)
   for i in range(n):
     # MiniZinc/Zinc version:
     # p[i] == sum(j in 1..n) (bool2int(x[i,j] <= n))
 
-    b = [solver.IsLessOrEqualCstVar(x[(i, j)], n) for j in range(n)]
-    solver.Add(p[i] == solver.Sum(b))
+    b = [solver.add_is_less_or_equal_cst_var(x[(i, j)], n) for j in range(n)]
+    solver.add(p[i] == solver.sum(b))
 
-  solver.Add(solver.Sum(p) == n)
+  solver.add(solver.sum(p) == n)
 
   for i in range(1, n):
-    solver.Add(p[i - 1] >= p[i])
+    solver.add(p[i - 1] >= p[i])
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(x_flat)
-  solution.Add(p)
+  solution = solver.assignment()
+  solution.add(x_flat)
+  solution.add(p)
 
   # db: DecisionBuilder
-  db = solver.Phase(x_flat + p, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(x_flat + p, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+                    cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
   num_solutions = 0
-  while solver.NextSolution():
-    print("p:", [p[i].Value() for i in range(n)])
+  while solver.next_solution():
+    print("p:", [p[i].value() for i in range(n)])
     print("x:")
     for i in range(n):
       for j in range(n):
-        val = x_flat[i * n + j].Value()
+        val = x_flat[i * n + j].value()
         if val <= n:
           print(val, end=" ")
-      if p[i].Value() > 0:
+      if p[i].value() > 0:
         print()
     print()
     num_solutions += 1
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print("num_solutions:", num_solutions)
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
+  print("failures:", solver.num_failures)
+  print("branches:", solver.num_branches)
+  print("WallTime:", solver.wall_time_ms)
 
 
 n = 5

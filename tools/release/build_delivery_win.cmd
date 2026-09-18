@@ -300,7 +300,6 @@ FOR %%v IN (9 10 11 12 13 14) DO (
   echo Check MYPY files... | tee.exe -a build.log
     FOR %%m IN (
       ortools\algorithms\python\knapsack_solver.pyi
-      ortools\constraint_solver\pywrapcp.pyi
       ortools\graph\python\linear_sum_assignment.pyi
       ortools\graph\python\max_flow.pyi
       ortools\graph\python\min_cost_flow.pyi

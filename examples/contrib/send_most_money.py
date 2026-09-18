@@ -38,26 +38,26 @@
 
 """
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(MONEY=0):
 
   # Create the solver.
-  solver = pywrapcp.Solver('Send most money')
+  solver = cp.Solver('Send most money')
 
   # data
 
   # declare variables
-  s = solver.IntVar(0, 9, 's')
-  e = solver.IntVar(0, 9, 'e')
-  n = solver.IntVar(0, 9, 'n')
-  d = solver.IntVar(0, 9, 'd')
-  m = solver.IntVar(0, 9, 'm')
-  o = solver.IntVar(0, 9, 'o')
-  t = solver.IntVar(0, 9, 't')
-  y = solver.IntVar(0, 9, 'y')
-  money = solver.IntVar(0, 100000, 'money')
+  s = solver.new_int_var(0, 9, 's')
+  e = solver.new_int_var(0, 9, 'e')
+  n = solver.new_int_var(0, 9, 'n')
+  d = solver.new_int_var(0, 9, 'd')
+  m = solver.new_int_var(0, 9, 'm')
+  o = solver.new_int_var(0, 9, 'o')
+  t = solver.new_int_var(0, 9, 't')
+  y = solver.new_int_var(0, 9, 'y')
+  money = solver.new_int_var(0, 100000, 'money')
 
   x = [s, e, n, d, m, o, t, y]
 
@@ -65,46 +65,46 @@ def main(MONEY=0):
   # constraints
   #
   if MONEY > 0:
-    solver.Add(money == MONEY)
+    solver.add(money == MONEY)
 
-  solver.Add(solver.AllDifferent(x))
-  solver.Add(money == m * 10000 + o * 1000 + n * 100 + e * 10 + y)
-  solver.Add(money > 0)
-  solver.Add(1000 * s + 100 * e + 10 * n + d + 1000 * m + 100 * o + 10 * s +
+  solver.add_all_different(x)
+  solver.add(money == m * 10000 + o * 1000 + n * 100 + e * 10 + y)
+  solver.add(money > 0)
+  solver.add(1000 * s + 100 * e + 10 * n + d + 1000 * m + 100 * o + 10 * s +
              t == money)
-  solver.Add(s > 0)
-  solver.Add(m > 0)
+  solver.add(s > 0)
+  solver.add(m > 0)
 
   #
   # solution and search
   #
-  solution = solver.Assignment()
-  solution.Add(x)
-  solution.Add(money)
+  solution = solver.assignment()
+  solution.add(x)
+  solution.add(money)
 
-  collector = solver.AllSolutionCollector(solution)
-  objective = solver.Maximize(money, 100)
+  collector = solver.all_solution_collector(solution)
+  objective = solver.maximize(money, 100)
   cargs = [collector]
   if MONEY == 0:
-    objective = solver.Maximize(money, 1)
+    objective = solver.maximize(money, 1)
     cargs.extend([objective])
 
-  solver.Solve(
-      solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MAX_VALUE),
+  solver.solve(
+      solver.phase(x, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND, cp.IntValueStrategy.ASSIGN_MAX_VALUE),
       cargs)
 
-  num_solutions = collector.SolutionCount()
+  num_solutions = collector.solution_count
   money_val = 0
   for s in range(num_solutions):
-    print('x:', [collector.Value(s, x[i]) for i in range(len(x))])
-    money_val = collector.Value(s, money)
+    print('x:', [collector.value(s, x[i]) for i in range(len(x))])
+    money_val = collector.value(s, money)
     print('money:', money_val)
     print()
 
   print('num_solutions:', num_solutions)
-  print('failures:', solver.Failures())
-  print('branches:', solver.Branches())
-  print('WallTime:', solver.WallTime())
+  print('failures:', solver.num_failures)
+  print('branches:', solver.num_branches)
+  print('WallTime:', solver.wall_time_ms)
 
   if MONEY == 0:
     return money_val

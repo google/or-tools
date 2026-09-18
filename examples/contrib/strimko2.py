@@ -44,13 +44,13 @@
 """
 import sys
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(streams='', placed=''):
 
   # Create the solver.
-  solver = pywrapcp.Solver('Strimko')
+  solver = cp.Solver('Strimko')
 
   #
   # default problem
@@ -77,7 +77,7 @@ def main(streams='', placed=''):
   x = {}
   for i in range(n):
     for j in range(n):
-      x[i, j] = solver.IntVar(1, n, 'x[%i,%i]' % (i, j))
+      x[i, j] = solver.new_int_var(1, n, 'x[%i,%i]' % (i, j))
 
   x_flat = [x[i, j] for i in range(n) for j in range(n)]
 
@@ -88,49 +88,49 @@ def main(streams='', placed=''):
   # all rows and columns must be unique, i.e. a Latin Square
   for i in range(n):
     row = [x[i, j] for j in range(n)]
-    solver.Add(solver.AllDifferent(row))
+    solver.add_all_different(row)
 
     col = [x[j, i] for j in range(n)]
-    solver.Add(solver.AllDifferent(col))
+    solver.add_all_different(col)
 
   #
   # streams
   #
   for s in range(1, n + 1):
     tmp = [x[i, j] for i in range(n) for j in range(n) if streams[i][j] == s]
-    solver.Add(solver.AllDifferent(tmp))
+    solver.add_all_different(tmp)
 
   #
   # placed
   #
   for i in range(num_placed):
     # note: also adjust to 0-based
-    solver.Add(x[placed[i][0] - 1, placed[i][1] - 1] == placed[i][2])
+    solver.add(x[placed[i][0] - 1, placed[i][1] - 1] == placed[i][2])
 
   #
   # search and solution
   #
-  db = solver.Phase(x_flat, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
+  db = solver.phase(x_flat, cp.IntVarStrategy.INT_VAR_DEFAULT, cp.IntValueStrategy.INT_VALUE_DEFAULT)
 
-  solver.NewSearch(db)
+  solver.new_search(db)
 
   num_solutions = 0
-  while solver.NextSolution():
+  while solver.next_solution():
     for i in range(n):
       for j in range(n):
-        print(x[i, j].Value(), end=' ')
+        print(x[i, j].value(), end=' ')
       print()
 
     print()
     num_solutions += 1
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print('num_solutions:', num_solutions)
-  print('failures:', solver.Failures())
-  print('branches:', solver.Branches())
-  print('WallTime:', solver.WallTime(), 'ms')
+  print('failures:', solver.num_failures)
+  print('branches:', solver.num_branches)
+  print('WallTime:', solver.wall_time_ms, 'ms')
 
 
 if __name__ == '__main__':

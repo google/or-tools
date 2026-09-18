@@ -12,7 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 import argparse
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 import random
 
 parser = argparse.ArgumentParser()
@@ -47,10 +47,10 @@ def BinPacking(solver, binvars, weights, loadvars):
 
   constraints forall j: loadvars[j] == sum_i (binvars[i] == j) * weights[i])
   """
-  pack = solver.Pack(binvars, len(binvars))
+  pack = solver.add_pack(binvars, len(binvars))
   pack.AddWeightedSumEqualVarDimension(weights, loadvars)
-  solver.Add(pack)
-  solver.Add(solver.SumEquality(loadvars, sum(weights)))
+  solver.add(pack)
+  solver.add_sum_equality(loadvars, sum(weights))
 
 
 # ---------- data reading ----------
@@ -82,7 +82,7 @@ def ReadData(filename):
 # ---------- dedicated search for this problem ----------
 
 
-class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
+class SteelDecisionBuilder(cp.PyDecisionBuilder):
   """Dedicated Decision Builder for steel mill slab.
 
   Search for the steel mill slab problem with Dynamic Symmetry
@@ -96,7 +96,7 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
   """
 
   def __init__(self, x, nb_slabs, weights, loss_array, loads):
-    pywrapcp.PyDecisionBuilder.__init__(self)
+    cp.PyDecisionBuilder.__init__(self)
     self.__x = x
     self.__nb_slabs = nb_slabs
     self.__weights = weights
@@ -108,10 +108,10 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
     var, weight = self.NextVar()
     if var:
       v = self.MaxBound()
-      if v + 1 == var.Min():
+      if v + 1 == var.min():
         # Symmetry breaking. If you need to assign to a new bin,
         # select the first one.
-        solver.Add(var == v + 1)
+        solver.add(var == v + 1)
         return self.Next(solver)
       else:
         # value heuristic (important for difficult problem):
@@ -120,10 +120,10 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
         loads = self.getLoads()
         l, v = min(
             (self.__loss_array[loads[i] + weight], i)
-            for i in range(var.Min(),
-                           var.Max() + 1)
+            for i in range(var.min(),
+                           var.max() + 1)
             if var.Contains(i) and loads[i] + weight <= self.__max_capacity)
-        decision = solver.AssignVariableValue(var, v)
+        decision = solver.AssignVariabl.value(var, v)
         return decision
     else:
       return None
@@ -132,13 +132,13 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
     load = [0] * len(self.__loads)
     for (w, x) in zip(self.__weights, self.__x):
       if x.Bound():
-        load[x.Min()] += w
+        load[x.min()] += w
     return load
 
   def MaxBound(self):
     """ returns the max value bound to a variable, -1 if no variables bound"""
     return max([-1] + [
-        self.__x[o].Min()
+        self.__x[o].min()
         for o in range(self.__nb_slabs)
         if self.__x[o].Bound()
     ])
@@ -161,11 +161,11 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
 # ----------- LNS Operator ----------
 
 
-class SteelRandomLns(pywrapcp.BaseLns):
+class SteelRandomLns(cp.BaseLns):
   """Random LNS for Steel."""
 
   def __init__(self, x, rand, lns_size):
-    pywrapcp.BaseLns.__init__(self, x)
+    cp.BaseLns.__init__(self, x)
     self.__random = rand
     self.__lns_size = lns_size
 
@@ -187,10 +187,10 @@ def main(args):
   (nb_slabs, capacity, max_capacity, weights, colors, loss, color_orders) =\
       ReadData(args.data)
   nb_colors = len(color_orders)
-  solver = pywrapcp.Solver('Steel Mill Slab')
-  x = [solver.IntVar(0, nb_slabs - 1, 'x' + str(i)) for i in range(nb_slabs)]
+  solver = cp.Solver('Steel Mill Slab')
+  x = [solver.new_int_var(0, nb_slabs - 1, 'x' + str(i)) for i in range(nb_slabs)]
   load_vars = [
-      solver.IntVar(0, max_capacity - 1, 'load_vars' + str(i))
+      solver.new_int_var(0, max_capacity - 1, 'load_vars' + str(i))
       for i in range(nb_slabs)
   ]
 
@@ -200,9 +200,9 @@ def main(args):
   BinPacking(solver, x, weights, load_vars)
   # At most two colors per slab.
   for s in range(nb_slabs):
-    solver.Add(
+    solver.add(
         solver.SumLessOrEqual([
-            solver.Max([solver.IsEqualCstVar(x[c], s)
+            solver.max([solver.add_is_equal_cst_var(x[c], s)
                         for c in o])
             for o in color_orders
         ], 2))
@@ -210,26 +210,26 @@ def main(args):
   # ----- Objective -----
 
   objective_var = \
-      solver.Sum([load_vars[s].IndexOf(loss) for s in range(nb_slabs)]).Var()
-  objective = solver.Minimize(objective_var, 1)
+      solver.sum([load_vars[s].index_of(loss) for s in range(nb_slabs)]).Var()
+  objective = solver.minimize(objective_var, 1)
 
   # ----- start the search and optimization -----
 
   assign_db = SteelDecisionBuilder(x, nb_slabs, weights, loss, load_vars)
-  first_solution = solver.Assignment()
-  first_solution.Add(x)
-  first_solution.AddObjective(objective_var)
+  first_solution = solver.assignment()
+  first_solution.add(x)
+  first_solution.add_objective(objective_var)
   store_db = solver.StoreAssignment(first_solution)
   first_solution_db = solver.Compose([assign_db, store_db])
   print('searching for initial solution,', end=' ')
-  solver.Solve(first_solution_db)
-  print('initial cost =', first_solution.ObjectiveValue())
+  solver.solve(first_solution_db)
+  print('initial cost =', first_solution.Objectiv.value())
 
   # To search a fragment, we use a basic randomized decision builder.
   # We can also use assign_db instead of inner_db.
-  inner_db = solver.Phase(x, solver.CHOOSE_RANDOM, solver.ASSIGN_MIN_VALUE)
+  inner_db = solver.phase(x, cp.IntVarStrategy.CHOOSE_RANDOM, cp.IntValueStrategy.ASSIGN_MIN_VALUE)
   # The most important aspect is to limit the time exploring each fragment.
-  inner_limit = solver.FailuresLimit(args.lns_fail_limit)
+  inner_limit = solver.failuresLimit(args.lns_fail_limit)
   continuation_db = solver.SolveOnce(inner_db, [inner_limit])
 
   # Now, we create the LNS objects.
@@ -242,18 +242,18 @@ def main(args):
   #                                                  args.lns_random_seed)
   local_search_parameters = solver.LocalSearchPhaseParameters(
       objective_var, local_search_operator, continuation_db)
-  local_search_db = solver.LocalSearchPhase(first_solution,
+  local_search_db = solver.LocalSearc.phase(first_solution,
                                             local_search_parameters)
   global_limit = solver.TimeLimit(args.time_limit)
 
   print('using LNS to improve the initial solution')
 
-  search_log = solver.SearchLog(100000, objective_var)
-  solver.NewSearch(local_search_db, [objective, search_log, global_limit])
-  while solver.NextSolution():
-    print('Objective:', objective_var.Value(),\
-        'check:', sum(loss[load_vars[s].Min()] for s in range(nb_slabs)))
-  solver.EndSearch()
+  search_log = solver.search_log(100000, objective_var)
+  solver.new_search(local_search_db, [objective, search_log, global_limit])
+  while solver.next_solution():
+    print('Objective:', objective_var.value(),\
+        'check:', sum(loss[load_vars[s].min()] for s in range(nb_slabs)))
+  solver.end_search()
 
 
 if __name__ == '__main__':

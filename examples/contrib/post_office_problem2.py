@@ -53,13 +53,13 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
 
   # Create the solver.
-  solver = pywrapcp.Solver('Post office problem')
+  solver = cp.Solver('Post office problem')
 
   #
   # data
@@ -81,48 +81,48 @@ def main():
   #
 
   # No. of workers starting at day i
-  x = [solver.IntVar(0, 100, 'x[%i]' % i) for i in days]
+  x = [solver.new_int_var(0, 100, 'x[%i]' % i) for i in days]
 
-  total_cost = solver.IntVar(0, 20000, 'total_cost')
-  num_workers = solver.IntVar(0, 100, 'num_workers')
+  total_cost = solver.new_int_var(0, 20000, 'total_cost')
+  num_workers = solver.new_int_var(0, 100, 'num_workers')
 
   #
   # constraints
   #
-  solver.Add(total_cost == solver.ScalProd(x, cost))
-  solver.Add(num_workers == solver.Sum(x))
+  solver.add(total_cost == solver.weighted_sum(x, cost))
+  solver.add(num_workers == solver.sum(x))
 
   for i in days:
-    s = solver.Sum(
+    s = solver.sum(
         [x[j] for j in days if j != (i + 5) % n and j != (i + 6) % n])
-    solver.Add(s >= need[i])
+    solver.add(s >= need[i])
 
   # objective
-  objective = solver.Minimize(total_cost, 1)
+  objective = solver.minimize(total_cost, 1)
 
   #
   # search and result
   #
-  db = solver.Phase(x, solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.phase(x, cp.IntVarStrategy.CHOOSE_MIN_SIZE_LOWEST_MIN,
+                    cp.IntValueStrategy.ASSIGN_MIN_VALUE)
 
-  solver.NewSearch(db, [objective])
+  solver.new_search(db, [objective])
 
   num_solutions = 0
 
-  while solver.NextSolution():
+  while solver.next_solution():
     num_solutions += 1
-    print('num_workers:', num_workers.Value())
-    print('total_cost:', total_cost.Value())
-    print('x:', [x[i].Value() for i in days])
+    print('num_workers:', num_workers.value())
+    print('total_cost:', total_cost.value())
+    print('x:', [x[i].value() for i in days])
 
-  solver.EndSearch()
+  solver.end_search()
 
   print()
   print('num_solutions:', num_solutions)
-  print('failures:', solver.Failures())
-  print('branches:', solver.Branches())
-  print('WallTime:', solver.WallTime())
+  print('failures:', solver.num_failures)
+  print('branches:', solver.num_branches)
+  print('WallTime:', solver.wall_time_ms)
 
 
 if __name__ == '__main__':
