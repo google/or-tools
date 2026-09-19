@@ -222,6 +222,33 @@ class SetCoverTest(absltest.TestCase):
             inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
         )
 
+    def test_dual_ascent_lower_bound(self):
+        model = create_knights_cover_model(8, 8)
+        self.assertTrue(model.compute_feasibility())
+
+        primal = set_cover.SetCoverInvariant(model)
+        self.assertTrue(set_cover.GreedySolutionOptimizer(primal).optimize())
+        upper_bound = primal.cost()
+
+        dual = set_cover.SetCoverInvariant(model)
+        self.assertTrue(set_cover.DualAscentOptimizer(dual).optimize())
+        lower_bound = dual.lower_bound()
+
+        # The dual ascent bound is a valid lower bound on the optimum, so it
+        # cannot exceed the cost of any feasible cover.
+        self.assertGreaterEqual(lower_bound, 0.0)
+        self.assertLessEqual(lower_bound, upper_bound)
+
+    def test_cost_or_lower_bound(self):
+        model = create_knights_cover_model(4, 4)
+        inv = set_cover.SetCoverInvariant(model)
+
+        self.assertTrue(set_cover.GreedySolutionOptimizer(inv).optimize())
+        if inv.is_cost_consistent():
+            self.assertEqual(inv.cost_or_lower_bound(), inv.cost())
+        else:
+            self.assertEqual(inv.cost_or_lower_bound(), inv.lower_bound())
+
     # TODO(user): KnightsCoverGreedyAndTabu, KnightsCoverGreedyRandomClear,
     # KnightsCoverElementDegreeRandomClear, KnightsCoverRandomClearMip,
     # KnightsCoverMip

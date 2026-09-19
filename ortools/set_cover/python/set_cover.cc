@@ -399,6 +399,9 @@ void BindInvariant(py::module& m) {
             *invariant.model() = model;
           })
       .def("cost", &SetCoverInvariant::cost)
+      .def("lower_bound", &SetCoverInvariant::LowerBound)
+      .def("cost_or_lower_bound", &SetCoverInvariant::CostOrLowerBound)
+      .def("is_cost_consistent", &SetCoverInvariant::is_cost_consistent)
       .def("num_uncovered_elements", &SetCoverInvariant::num_uncovered_elements)
       .def("is_selected",
            [](SetCoverInvariant& invariant) -> std::vector<bool> {
