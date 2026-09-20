@@ -150,6 +150,8 @@ $(TEMP_JAVA_DIR)/$1/%/pom.xml: \
  $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
 	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' \
  $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
+	$(SED) -i -e 's/@JAVA_RELEASE@/$(JAVA_RELEASE)/' \
+ $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
 	$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$(OR_TOOLS_MAJOR)/' \
  $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
 	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
@@ -202,6 +204,8 @@ $(TEMP_JAVA_DIR)/$1/%/pom.xml: \
  $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
 	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' \
  $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
+	$(SED) -i -e 's/@JAVA_RELEASE@/$(JAVA_RELEASE)/' \
+ $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
 	$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$(OR_TOOLS_MAJOR)/' \
  $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
 	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
@@ -248,6 +252,8 @@ $(TEMP_JAVA_DIR)/$1/%/pom.xml: \
 	$(SED) -i -e 's/@JAVA_TEST_PROJECT@/$$*/' \
  $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
 	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' \
+ $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
+	$(SED) -i -e 's/@JAVA_RELEASE@/$(JAVA_RELEASE)/' \
  $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
 	$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$(OR_TOOLS_MAJOR)/' \
  $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
@@ -506,6 +512,7 @@ $(INSTALL_JAVA_NAME)$(ARCHIVE_EXT): java \
 	$(COPY) tools$SREADME.java.md $(INSTALL_JAVA_NAME)$SREADME.md
 	$(COPY) tools$SMakefile.java.mk $(INSTALL_JAVA_NAME)$SMakefile
 	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' $(INSTALL_JAVA_NAME)$SMakefile
+	$(SED) -i -e 's/@JAVA_RELEASE@/$(JAVA_RELEASE)/' $(INSTALL_JAVA_NAME)$SMakefile
 ifeq ($(PLATFORM),WIN64)
 	$(MKDIR) $(INSTALL_JAVA_NAME)$Sbin
 	$(COPY) $(WHICH) $(INSTALL_JAVA_NAME)$Sbin$S

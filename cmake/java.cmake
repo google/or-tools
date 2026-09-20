@@ -15,6 +15,13 @@ if(NOT BUILD_JAVA)
   return()
 endif()
 
+# see: https://maven.apache.org/guides/mini/guide-naming-conventions.html
+if(RELEASE)
+  set(JAVA_RELEASE "")
+else()
+  set(JAVA_RELEASE "-rc1")
+endif()
+
 if(NOT TARGET ${PROJECT_NAMESPACE}::ortools)
   message(FATAL_ERROR "Java: missing ${PROJECT_NAMESPACE}::ortools TARGET")
 endif()
@@ -85,12 +92,6 @@ set(JAVA_PROJECT ${JAVA_ARTIFACT}-java)
 message(STATUS "Java project: ${JAVA_PROJECT}")
 set(JAVA_PROJECT_DIR ${PROJECT_BINARY_DIR}/java/${JAVA_PROJECT})
 message(STATUS "Java project build path: ${JAVA_PROJECT_DIR}")
-
-if(RELEASE)
-  set(JAVA_RELEASE "")
-else()
-  set(JAVA_RELEASE "-RC1")
-endif()
 
 ##################
 ##  PROTO FILE  ##

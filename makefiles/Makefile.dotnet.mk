@@ -128,6 +128,8 @@ endif
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@DOTNET_RELEASE@/$(DOTNET_RELEASE)/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$(OR_TOOLS_MAJOR)/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
@@ -202,6 +204,8 @@ endif
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@DOTNET_RELEASE@/$(DOTNET_RELEASE)/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$(OR_TOOLS_MAJOR)/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
@@ -272,6 +276,8 @@ endif
 	$(SED) -i -e 's/@TEST_NAME@/$$*/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' \
+ $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
+	$(SED) -i -e 's/@DOTNET_RELEASE@/$(DOTNET_RELEASE)/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$(OR_TOOLS_MAJOR)/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
@@ -604,6 +610,7 @@ $(INSTALL_DOTNET_NAME)$(ARCHIVE_EXT): dotnet \
 	$(COPY) tools$SREADME.dotnet.md $(INSTALL_DOTNET_NAME)$SREADME.md
 	$(COPY) tools$SMakefile.dotnet.mk $(INSTALL_DOTNET_NAME)$SMakefile
 	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' $(INSTALL_DOTNET_NAME)$SMakefile
+	$(SED) -i -e 's/@DOTNET_RELEASE@/$(DOTNET_RELEASE)/' $(INSTALL_DOTNET_NAME)$SMakefile
 ifeq ($(PLATFORM),WIN64)
 	$(MKDIR) $(INSTALL_DOTNET_NAME)$Sbin
 	$(COPY) $(WHICH) $(INSTALL_DOTNET_NAME)$Sbin$S
@@ -649,6 +656,8 @@ $(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/%.csproj: \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
+	$(SED) -i -e 's/@DOTNET_RELEASE@/$(DOTNET_RELEASE)/' \
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$(OR_TOOLS_MAJOR)/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
@@ -683,6 +692,8 @@ $(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/%.csproj: \
 	$(COPY) ortools$Sdotnet$SExample.csproj.in \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' \
+ $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
+	$(SED) -i -e 's/@DOTNET_RELEASE@/$(DOTNET_RELEASE)/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$(OR_TOOLS_MAJOR)/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj

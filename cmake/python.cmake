@@ -15,6 +15,13 @@ if(NOT BUILD_PYTHON)
   return()
 endif()
 
+# see: https://packaging.python.org/en/latest/specifications/version-specifiers/
+if(RELEASE)
+  set(PYTHON_RELEASE "")
+else()
+  set(PYTHON_RELEASE "rc1")
+endif()
+
 # Use latest UseSWIG module (3.14) and Python3 module (3.18)
 cmake_minimum_required(VERSION 3.18)
 
@@ -430,11 +437,6 @@ file(TOUCH ${PYTHON_PROJECT_DIR}/sat/python/py.typed)
 
 # setup.py.in contains cmake variable e.g. @PYTHON_PROJECT@ and
 # generator expression e.g. $<TARGET_FILE_NAME:pyFoo>
-if(RELEASE)
-  set(PYTHON_RELEASE "")
-else()
-  set(PYTHON_RELEASE "rc1")
-endif()
 configure_file(
   ${PROJECT_SOURCE_DIR}/ortools/python/setup.py.in
   ${PROJECT_BINARY_DIR}/python/setup.py.in
