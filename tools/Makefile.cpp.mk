@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-VERSION := @PROJECT_VERSION@
+VERSION := @PROJECT_VERSION@@CXX_RELEASE@
 # Let's discover something about where we run
 ifeq ($(OS),Windows_NT)
 OS = Windows

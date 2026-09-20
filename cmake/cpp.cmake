@@ -41,6 +41,13 @@ if(CHECK_TYPE)
   cmake_pop_check_state()
 endif()
 
+# see: https://semver.org/
+if(RELEASE)
+  set(CXX_RELEASE "")
+else()
+  set(CXX_RELEASE "-rc.1")
+endif()
+
 #############
 ##  FLAGS  ##
 #############
