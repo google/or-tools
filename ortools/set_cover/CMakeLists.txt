@@ -79,7 +79,7 @@ if(BUILD_CXX_TESTING)
         ${_FILE_NAME}
       LINK_LIBRARIES
         benchmark::benchmark
-        ortools_benchmark_main
+        benchmark::benchmark_main
         GTest::gtest
         GTest::gmock
       ${_ARGS}
