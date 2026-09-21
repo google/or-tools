@@ -35,7 +35,7 @@
 namespace operations_research {
 namespace glop {
 
-// Data templates.
+namespace {
 
 template <class Data>
 class DataWrapper {};
@@ -308,73 +308,46 @@ class DataWrapper<MPModelProto> {
   std::vector<int> semi_continuous_variables_;
 };
 
-namespace {
-
-// Translates MPSReader::Form into MPSReaderFormat, with `kAutoDetect` as
-// default value (even for invalid values of `form`).
-MPSReaderFormat TemplateFormat(MPSReader::Form form) {
-  return (form == MPSReader::FIXED)  ? MPSReaderFormat::kFixed
-         : (form == MPSReader::FREE) ? MPSReaderFormat::kFree
-                                     : MPSReaderFormat::kAutoDetect;
-}
-
 }  // namespace
 
-// Parses instance from a file.
-absl::Status MPSReader::ParseFile(absl::string_view file_name,
-                                  LinearProgram* data, Form form) {
-  DataWrapper<LinearProgram> data_wrapper(data);
-  return MPSReaderTemplate<DataWrapper<LinearProgram>>()
-      .ParseFile(file_name, &data_wrapper, TemplateFormat(form))
-      .status();
-}
-
-absl::Status MPSReader::ParseFile(absl::string_view file_name,
-                                  MPModelProto* data, Form form) {
-  DataWrapper<MPModelProto> data_wrapper(data);
-  return MPSReaderTemplate<DataWrapper<MPModelProto>>()
-      .ParseFile(file_name, &data_wrapper, TemplateFormat(form))
-      .status();
-}
-
-// Loads instance from string. Useful with MapReduce. Automatically detects
-// the file's format (free or fixed).
-absl::Status MPSReader::ParseProblemFromString(absl::string_view source,
-                                               LinearProgram* data,
-                                               MPSReader::Form form) {
-  DataWrapper<LinearProgram> data_wrapper(data);
-  return MPSReaderTemplate<DataWrapper<LinearProgram>>()
-      .ParseString(source, &data_wrapper, TemplateFormat(form))
-      .status();
-}
-
-absl::Status MPSReader::ParseProblemFromString(absl::string_view source,
-                                               MPModelProto* data,
-                                               MPSReader::Form form) {
-  DataWrapper<MPModelProto> data_wrapper(data);
-  return MPSReaderTemplate<DataWrapper<MPModelProto>>()
-      .ParseString(source, &data_wrapper, TemplateFormat(form))
-      .status();
-}
-
-absl::StatusOr<MPModelProto> MpsDataToMPModelProto(absl::string_view mps_data) {
-  MPModelProto model;
-  DataWrapper<MPModelProto> data_wrapper(&model);
+template <typename ModelT>
+absl::StatusOr<ModelT> MpsDataTo(absl::string_view mps_data) {
+  ModelT model;
+  DataWrapper<ModelT> data_wrapper(&model);
   ABSL_RETURN_IF_ERROR(
-      (MPSReaderTemplate<DataWrapper<MPModelProto>>()
+      (MPSReaderTemplate<DataWrapper<ModelT>>()
            .ParseString(mps_data, &data_wrapper, MPSReaderFormat::kAutoDetect)
            .status()));
   return model;
 }
 
-absl::StatusOr<MPModelProto> MpsFileToMPModelProto(absl::string_view mps_file) {
-  MPModelProto model;
-  DataWrapper<MPModelProto> data_wrapper(&model);
+absl::StatusOr<MPModelProto> MpsDataToMPModelProto(absl::string_view mps_data) {
+  return MpsDataTo<MPModelProto>(mps_data);
+}
+
+absl::StatusOr<LinearProgram> MpsDataToLinearProgram(
+    absl::string_view mps_data) {
+  return MpsDataTo<LinearProgram>(mps_data);
+}
+
+template <typename ModelT>
+absl::StatusOr<ModelT> MpsFileTo(absl::string_view mps_file) {
+  ModelT model;
+  DataWrapper<ModelT> data_wrapper(&model);
   ABSL_RETURN_IF_ERROR(
-      (MPSReaderTemplate<DataWrapper<MPModelProto>>()
+      (MPSReaderTemplate<DataWrapper<ModelT>>()
            .ParseFile(mps_file, &data_wrapper, MPSReaderFormat::kAutoDetect)
            .status()));
   return model;
+}
+
+absl::StatusOr<MPModelProto> MpsFileToMPModelProto(absl::string_view mps_file) {
+  return MpsFileTo<MPModelProto>(mps_file);
+}
+
+absl::StatusOr<LinearProgram> MpsFileToLinearProgram(
+    absl::string_view mps_file) {
+  return MpsFileTo<LinearProgram>(mps_file);
 }
 
 }  // namespace glop

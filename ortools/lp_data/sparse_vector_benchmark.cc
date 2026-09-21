@@ -179,6 +179,7 @@ void BM_PopulateFromDenseVector(benchmark::State& state) {
   state.SetBytesProcessed(sizeof(Fractional) * state.max_iterations *
                           vector_size);
 }
+BENCHMARK(BM_PopulateFromDenseVector)->Range(1, 1 << 20);
 
 // Measures the efficiency of iterating over all entries of the sparse vector
 // using a range for loop. The body of the loop either computes the sum of all
