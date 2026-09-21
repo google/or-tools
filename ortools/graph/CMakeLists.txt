@@ -97,7 +97,7 @@ if(BUILD_CXX_TESTING)
       LINK_LIBRARIES
         absl::status_matchers
         benchmark::benchmark
-        ortools_benchmark_main
+        benchmark::benchmark_main
         GTest::gtest
         GTest::gmock
       ${_ARGS}

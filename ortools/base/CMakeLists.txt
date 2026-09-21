@@ -82,20 +82,6 @@ if(BUILD_CXX_TESTING)
         GTest::gtest_main
     )
   endforeach()
-  # Benchmark
-  ortools_cxx_library(
-    NAME
-    ortools_benchmark_main
-    SOURCES
-      "benchmark_main.cc"
-    TYPE
-      STATIC
-    LINK_LIBRARIES
-    ortools::ortools_core
-    benchmark::benchmark
-    TESTING
-    NO_INSTALL
-  )
 
   file(GLOB _BENCHMARK_SRCS "*_benchmark.cc")
   set(_ARGS "")
@@ -112,7 +98,7 @@ if(BUILD_CXX_TESTING)
         ${_FILE_NAME}
       LINK_LIBRARIES
         benchmark::benchmark
-        ortools_benchmark_main
+        benchmark::benchmark_main
         GTest::gtest
         GTest::gmock
       ${_ARGS}
