@@ -579,9 +579,11 @@ absl::StatusOr<TerminationProto> HighsSolver::MakeTermination(
       return LimitTerminationProto(
           is_maximize, LIMIT_OTHER, optional_finite_primal_objective,
           optional_dual_objective, "Highs hit kMemoryLimit");
+    default:
+      break;
   }
   return ortools::InternalErrorBuilder()
-         << "HighsModelStatus unimplemented: "
+         << "unimplemented HighsModelStatus: "
          << static_cast<int>(highs_model_status);
 }
 
@@ -640,7 +642,7 @@ absl::StatusOr<std::optional<BasisProto>> HighsSolver::ExtractBasis() {
     return std::nullopt;
   }
   // We need the primal/dual solution to try and infer a more precise status
-  // for varaiables and constraints listed as kNonBasic.
+  // for variables and constraints listed as kNonBasic.
   if (!highs_solution.value_valid || !highs_solution.dual_valid) {
     return std::nullopt;
   }

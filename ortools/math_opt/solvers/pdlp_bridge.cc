@@ -33,6 +33,7 @@
 #include "ortools/math_opt/model_parameters.pb.h"
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
+#include "ortools/pdlp/primal_dual_hybrid_gradient.h"
 #include "ortools/pdlp/quadratic_program.h"
 
 namespace operations_research {

@@ -719,7 +719,7 @@ TEST_P(IncrementalMultiObjectiveTest,
     ASSERT_OK_AND_ASSIGN(const SolveResult result,
                          solver->Solve({.parameters = GetParam().parameters}));
     ASSERT_THAT(result, IsOptimalWithSolution(1.0, {{x, 1.0}, {y, 0.5}}));
-    ASSERT_OK_AND_ASSIGN(const SolveResultProto result_proto, result.Proto());
+    ASSERT_OK(result.Proto().status());
     EXPECT_EQ(result.objective_value(o), 4.5);
   }
 

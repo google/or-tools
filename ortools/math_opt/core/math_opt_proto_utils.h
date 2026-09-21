@@ -136,26 +136,6 @@ void ApplyAllFilters(const ModelSolveParametersProto& model_solve_params,
 absl::flat_hash_set<CallbackEventProto> EventSet(
     const CallbackRegistrationProto& callback_registration);
 
-// Sets the reason to TERMINATION_REASON_FEASIBLE if feasible = true and
-// TERMINATION_REASON_NO_SOLUTION_FOUND otherwise.
-ABSL_DEPRECATED("Use LimitTerminationProto() instead")
-TerminationProto TerminateForLimit(LimitProto limit, bool feasible,
-                                   absl::string_view detail = {});
-
-ABSL_DEPRECATED("Use FeasibleTerminationProto() instead")
-TerminationProto FeasibleTermination(LimitProto limit,
-                                     absl::string_view detail = {});
-
-ABSL_DEPRECATED("Use NoSolutionFound() instead")
-TerminationProto NoSolutionFoundTermination(LimitProto limit,
-                                            absl::string_view detail = {});
-
-ABSL_DEPRECATED(
-    "Use TerminateForReason(bool, TerminationReasonProto, absl::string_view) "
-    "instead")
-TerminationProto TerminateForReason(TerminationReasonProto reason,
-                                    absl::string_view detail = {});
-
 // Returns trivial bounds.
 //
 // Trivial bounds are:
