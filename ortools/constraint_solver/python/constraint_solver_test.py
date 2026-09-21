@@ -890,6 +890,7 @@ class ConstraintSolverTest(absltest.TestCase):
 
         collector = solver.all_solution_collector()
         collector.add([x, y])
+        collector.add(x + 1)
 
         db = solver.phase(
             [x, y],
@@ -900,10 +901,55 @@ class ConstraintSolverTest(absltest.TestCase):
 
         self.assertEqual(collector.solution_count, 11)
         self.assertTrue(collector.has_solution())
+        self.assertIsNotNone(collector.last_solution_or_null())
         for i in range(collector.solution_count):
             self.assertEqual(collector.value(i, x) + collector.value(i, y), 10)
+            self.assertEqual(collector.value(i, x + 1), collector.value(i, x) + 1)
+            self.assertGreaterEqual(collector.wall_time_ms(i), 0)
+            self.assertGreaterEqual(collector.branches(i), 0)
+            self.assertGreaterEqual(collector.failures(i), 0)
             sol = collector.solution(i)
             self.assertEqual(sol.value(x) + sol.value(y), 10)
+        self.assertEqual(
+            collector.last_solution_or_null().value(x),
+            collector.value(collector.solution_count - 1, x),
+        )
+
+    def test_solution_collector_no_solution(self):
+        solver = cp.Solver("test_solution_collector_no_solution")
+        x = solver.new_int_var(0, 5, "x")
+        solver.add(x > 10)
+
+        collector = solver.all_solution_collector()
+        collector.add(x)
+
+        db = solver.phase(
+            [x],
+            cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+            cp.IntValueStrategy.ASSIGN_MIN_VALUE,
+        )
+        solver.solve(db, [collector])
+
+        self.assertEqual(collector.solution_count, 0)
+        self.assertFalse(collector.has_solution())
+        self.assertIsNone(collector.last_solution_or_null())
+
+    def test_solution_collector_with_assignment(self):
+        solver = cp.Solver("test_solution_collector_with_assignment")
+        x = solver.new_int_var(0, 5, "x")
+        assignment = cp.Assignment(solver)
+        assignment.add(x)
+
+        collector = solver.first_solution_collector(assignment)
+        db = solver.phase(
+            [x],
+            cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+            cp.IntValueStrategy.ASSIGN_MAX_VALUE,
+        )
+        solver.solve(db, [collector])
+
+        self.assertEqual(collector.solution_count, 1)
+        self.assertEqual(collector.value(0, x), 5)
 
     def test_best_value_solution_collector(self):
         solver = cp.Solver("test_best_value_solution_collector")
@@ -927,6 +973,88 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(collector.value(0, x), 10)
         self.assertEqual(collector.value(0, y), 0)
         self.assertEqual(collector.objective_value(0), 10)
+        self.assertEqual(collector.objective_value_from_index(0, 0), 10)
+
+    def test_n_best_and_lexicographic_solution_collectors(self):
+        solver = cp.Solver("test_n_best_and_lexicographic_solution_collectors")
+        x = solver.new_int_var(0, 2, "x")
+        y = solver.new_int_var(0, 2, "y")
+
+        n_best = solver.n_best_value_solution_collector(2, True)
+        n_best.add([x, y])
+        n_best.add_objective(x)
+
+        lex_best = solver.best_lexicographic_value_solution_collector([True, False])
+        lex_best.add([x, y])
+        lex_best.add_objectives([x, y])
+
+        n_lex_best = solver.n_best_lexicographic_value_solution_collector(
+            2, [True, True]
+        )
+        n_lex_best.add([x, y])
+        n_lex_best.add_objectives([x, y])
+
+        db = solver.phase(
+            [x, y],
+            cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+            cp.IntValueStrategy.ASSIGN_MIN_VALUE,
+        )
+        solver.solve(db, [n_best, lex_best, n_lex_best])
+
+        self.assertEqual(n_best.solution_count, 2)
+        self.assertEqual(n_best.objective_value(0), 2)
+        self.assertEqual(n_best.objective_value(1), 2)
+
+        # Maximize x (=2), Minimize y (=0)
+        self.assertEqual(lex_best.solution_count, 1)
+        self.assertEqual(lex_best.value(0, x), 2)
+        self.assertEqual(lex_best.value(0, y), 0)
+        self.assertEqual(lex_best.objective_value_from_index(0, 0), 2)
+        self.assertEqual(lex_best.objective_value_from_index(0, 1), 0)
+
+        # Top 2 maximizing (x, y): (2, 2) and (2, 1)
+        self.assertEqual(n_lex_best.solution_count, 2)
+        best_pairs = {
+            (n_lex_best.value(i, x), n_lex_best.value(i, y)) for i in range(2)
+        }
+        self.assertEqual(best_pairs, {(2, 2), (2, 1)})
+
+    def test_solution_collector_intervals_and_sequences(self):
+        solver = cp.Solver("test_solution_collector_intervals_and_sequences")
+        t0 = solver.new_fixed_duration_interval_var(0, 0, 3, False, "t0")
+        t1 = solver.new_fixed_duration_interval_var(3, 3, 2, False, "t1")
+        t_opt = solver.new_fixed_duration_interval_var(0, 5, 2, True, "t_opt")
+        t_opt.set_performed(False)
+
+        disj = solver.add_disjunctive_constraint([t0, t1, t_opt], "disj")
+        seq = disj.make_sequence_var()
+
+        collector = solver.first_solution_collector()
+        collector.add(t0)
+        collector.add([t1, t_opt])
+        collector.add(seq)
+        collector.add([seq])
+
+        db_seq = solver.phase([seq], cp.SequenceStrategy.SEQUENCE_DEFAULT)
+        db_int = solver.phase([t0, t1, t_opt], cp.IntervalStrategy.INTERVAL_DEFAULT)
+        solver.solve(solver.compose([db_seq, db_int]), [collector])
+
+        self.assertEqual(collector.solution_count, 1)
+        self.assertEqual(collector.start_value(0, t0), 0)
+        self.assertEqual(collector.duration_value(0, t0), 3)
+        self.assertEqual(collector.end_value(0, t0), 3)
+        self.assertEqual(collector.performed_value(0, t0), 1)
+
+        self.assertEqual(collector.start_value(0, t1), 3)
+        self.assertEqual(collector.duration_value(0, t1), 2)
+        self.assertEqual(collector.end_value(0, t1), 5)
+        self.assertEqual(collector.performed_value(0, t1), 1)
+
+        self.assertEqual(collector.performed_value(0, t_opt), 0)
+
+        self.assertEqual(collector.forward_sequence(0, seq), [0, 1])
+        self.assertEqual(collector.backward_sequence(0, seq), [])
+        self.assertEqual(collector.unperformed(0, seq), [2])
 
     def test_first_last_solution_collector(self):
         solver = cp.Solver("test_first_last_solution_collector")
