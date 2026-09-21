@@ -553,7 +553,7 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
       response.set_best_objective_bound(best_objective_bound);
     }
 
-    response.mutable_variable_value()->Resize(variable_size, 0);
+    response.mutable_variable_value()->resize(variable_size, 0);
     RETURN_IF_GUROBI_ERROR(
         GRBgetdblattrarray(gurobi_model, GRB_DBL_ATTR_X, 0, variable_size,
                            response.mutable_variable_value()->mutable_data()));
@@ -570,7 +570,7 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
         };
     round_values_of_integer_variables_fn(response.mutable_variable_value());
     if (!has_integer_variables && model.general_constraint_size() == 0) {
-      response.mutable_dual_value()->Resize(model.constraint_size(), 0);
+      response.mutable_dual_value()->resize(model.constraint_size(), 0);
       RETURN_IF_GUROBI_ERROR(GRBgetdblattrarray(
           gurobi_model, GRB_DBL_ATTR_PI, 0, model.constraint_size(),
           response.mutable_dual_value()->mutable_data()));
@@ -583,7 +583,7 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
       RETURN_IF_GUROBI_ERROR(
           GRBsetintparam(model_env, GRB_INT_PAR_SOLUTIONNUMBER, i));
       MPSolution* solution = response.add_additional_solutions();
-      solution->mutable_variable_value()->Resize(variable_size, 0);
+      solution->mutable_variable_value()->resize(variable_size, 0);
       double objective_value = 0;
       RETURN_IF_GUROBI_ERROR(GRBgetdblattr(
           gurobi_model, GRB_DBL_ATTR_POOLOBJVAL, &objective_value));

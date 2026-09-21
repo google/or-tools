@@ -150,7 +150,7 @@ MPSolver::ResultStatus HighsInterface::Solve(const MPSolverParameters& param) {
 
   // The solution must be marked as synchronized even when no solution exists.
   sync_status_ = SOLUTION_SYNCHRONIZED;
-  result_status_ = static_cast<MPSolver::ResultStatus>(response->status());
+  result_status_ = MPSolverResponseStatusToResultStatus(response->status());
 
   if (response->status() == MPSOLVER_FEASIBLE ||
       response->status() == MPSOLVER_OPTIMAL) {

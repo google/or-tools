@@ -796,6 +796,18 @@ or_cc_test(
     ],
 )
 
+or_cc_test(
+    name = "linear_solver_test",
+    srcs = ["linear_solver_test.cc"],
+    deps = [
+        ":linear_solver",
+        ":linear_solver_cc_proto",
+        ":linear_solver_glop",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/status",
+    ],
+)
+
 or_cc_library(
     name = "solve_mp_model",
     srcs = ["solve_mp_model.cc"],

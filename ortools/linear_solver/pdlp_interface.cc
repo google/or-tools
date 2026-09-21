@@ -167,7 +167,7 @@ MPSolver::ResultStatus PdlpInterface::Solve(const MPSolverParameters& param) {
     // to return a proper status, and is not convertible to an MPSolver status.
     result_status_ = MPSolver::NOT_SOLVED;
   } else {
-    result_status_ = static_cast<MPSolver::ResultStatus>(response->status());
+    result_status_ = MPSolverResponseStatusToResultStatus(response->status());
   }
   if (response->has_solver_specific_info()) {
     if (!solve_log_.ParseFromString(response->solver_specific_info())) {
