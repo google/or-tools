@@ -223,7 +223,6 @@ or_cc_library(
     }),
     deps = [
         ":bitset",
-        "@abseil-cpp//absl/base",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
@@ -725,19 +724,7 @@ or_cc_test(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
-        "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/types:span",
-    ],
-)
-
-or_cc_binary(
-    name = "fp_utils_benchmark",
-    testonly = True,
-    srcs = ["fp_utils_benchmark.cc"],
-    deps = [
-        ":fp_utils",
-        "@abseil-cpp//absl/log:check",
-        "@google_benchmark//:benchmark_main",
     ],
 )
 

@@ -34,10 +34,12 @@
 #include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/deterministic_time.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -77,25 +79,29 @@ std::vector<VariableEncodingLocalModel> CreateVariableEncodingLocalModels(
 
   // Do a pass to gather all linear1 constraints.
   absl::flat_hash_map<int, absl::InlinedVector<int, 1>> var_to_linear1;
-  for (int i = 0; i < context->NumConstraints(); ++i) {
-    const ConstraintProto& ct = context->Constraint(i);
-    if (ct.constraint_case() == ConstraintProto::kBoolOr ||
-        ct.constraint_case() == ConstraintProto::kAtMostOne ||
-        ct.constraint_case() == ConstraintProto::kExactlyOne) {
-      constraint_encoding_or.push_back(i);
-      continue;
+  {
+    DeterministicTimer<{.scale = 1.6e-08, .offset = 1.0e-09}> timer(
+        context->time_limit(), context->NumConstraints());
+    for (int i = 0; i < context->NumConstraints(); ++i) {
+      const ConstraintProto& ct = context->Constraint(i);
+      if (ct.constraint_case() == ConstraintProto::kBoolOr ||
+          ct.constraint_case() == ConstraintProto::kAtMostOne ||
+          ct.constraint_case() == ConstraintProto::kExactlyOne) {
+        constraint_encoding_or.push_back(i);
+        continue;
+      }
+      if (!ConstraintIsEncodingBound(ct)) {
+        continue;
+      }
+      var_to_linear1[ct.linear().vars(0)].push_back(i);
     }
-    if (!ConstraintIsEncodingBound(ct)) {
-      continue;
-    }
-    var_to_linear1[ct.linear().vars(0)].push_back(i);
-  }
 
-  // Filter out the variables that do not have an interesting encoding.
-  absl::erase_if(var_to_linear1, [context](const auto& p) {
-    if (p.second.size() > 1) return false;
-    return context->VarToConstraints(p.first).size() > 2;
-  });
+    // Filter out the variables that do not have an interesting encoding.
+    absl::erase_if(var_to_linear1, [context](const auto& p) {
+      if (p.second.size() > 1) return false;
+      return context->VarToConstraints(p.first).size() > 2;
+    });
+  }
 
   if (var_to_linear1.empty()) return {};
 
@@ -109,36 +115,44 @@ std::vector<VariableEncodingLocalModel> CreateVariableEncodingLocalModels(
   // bool_or that are not linked to at least two of these booleans.
   Bitset64<int> booleans_potentially_encoding_domain(context->NumVariables());
 
-  for (const auto& [var, linear1_cts] : var_to_linear1) {
-    for (const int c : linear1_cts) {
+  {
+    DeterministicTimer<{.scale = 9.7e-08, .offset = 1.0e-09}> timer(
+        context->time_limit());
+    uint64_t work_done = 0;
+    for (const auto& [var, linear1_cts] : var_to_linear1) {
+      for (const int c : linear1_cts) {
+        const ConstraintProto& ct = context->Constraint(c);
+        const int bool_var = PositiveRef(ct.enforcement_literal(0));
+        booleans_potentially_encoding_domain.Set(bool_var);
+        bool_to_var_encodings[bool_var].push_back(var);
+      }
+      work_done += linear1_cts.size();
+    }
+    for (auto& [bool_var, var_encodings] : bool_to_var_encodings) {
+      // Remove the potential duplicate for the negation.
+      gtl::STLSortAndRemoveDuplicates(&var_encodings);
+      work_done += var_encodings.size();
+    }
+    int new_encoding_or_count = 0;
+    for (int i = 0; i < constraint_encoding_or.size(); ++i) {
+      const int c = constraint_encoding_or[i];
       const ConstraintProto& ct = context->Constraint(c);
-      const int bool_var = PositiveRef(ct.enforcement_literal(0));
-      booleans_potentially_encoding_domain.Set(bool_var);
-      bool_to_var_encodings[bool_var].push_back(var);
+      const BoolArgumentProto& bool_ct =
+          ct.constraint_case() == ConstraintProto::kAtMostOne
+              ? ct.at_most_one()
+              : (ct.constraint_case() == ConstraintProto::kExactlyOne
+                     ? ct.exactly_one()
+                     : ct.bool_or());
+      int count = 0;
+      for (const int ref : bool_ct.literals()) {
+        if (booleans_potentially_encoding_domain[PositiveRef(ref)]) ++count;
+      }
+      if (count < 2) continue;
+      constraint_encoding_or[new_encoding_or_count++] = c;
     }
+    constraint_encoding_or.resize(new_encoding_or_count);
+    timer.Advance(work_done + new_encoding_or_count);
   }
-  for (auto& [bool_var, var_encodings] : bool_to_var_encodings) {
-    // Remove the potential duplicate for the negation.
-    gtl::STLSortAndRemoveDuplicates(&var_encodings);
-  }
-  int new_encoding_or_count = 0;
-  for (int i = 0; i < constraint_encoding_or.size(); ++i) {
-    const int c = constraint_encoding_or[i];
-    const ConstraintProto& ct = context->Constraint(c);
-    const BoolArgumentProto& bool_ct =
-        ct.constraint_case() == ConstraintProto::kAtMostOne
-            ? ct.at_most_one()
-            : (ct.constraint_case() == ConstraintProto::kExactlyOne
-                   ? ct.exactly_one()
-                   : ct.bool_or());
-    int count = 0;
-    for (const int ref : bool_ct.literals()) {
-      if (booleans_potentially_encoding_domain[PositiveRef(ref)]) ++count;
-    }
-    if (count < 2) continue;
-    constraint_encoding_or[new_encoding_or_count++] = c;
-  }
-  constraint_encoding_or.resize(new_encoding_or_count);
 
   // Track the number of times a given boolean appears in the local model for a
   // given variable.
@@ -158,67 +172,82 @@ std::vector<VariableEncodingLocalModel> CreateVariableEncodingLocalModels(
   // Map from variable to the bools that appear in a given bool_or.
   absl::flat_hash_map<int, std::vector<int>> var_to_bools;
 
-  for (const int c : constraint_encoding_or) {
-    var_to_bools.clear();
-    const ConstraintProto& ct = context->Constraint(c);
-    const BoolArgumentProto& bool_ct =
-        ct.constraint_case() == ConstraintProto::kAtMostOne
-            ? ct.at_most_one()
-            : (ct.constraint_case() == ConstraintProto::kExactlyOne
-                   ? ct.exactly_one()
-                   : ct.bool_or());
-    for (const int ref : bool_ct.literals()) {
-      const int bool_var = PositiveRef(ref);
-      if (!booleans_potentially_encoding_domain[bool_var]) continue;
-      for (const int var : bool_to_var_encodings[bool_var]) {
-        var_to_bools[var].push_back(bool_var);
+  {
+    DeterministicTimer<{.scale = 7.0e-08}> timer(context->time_limit());
+    uint64_t work_done = 0;
+    for (const int c : constraint_encoding_or) {
+      var_to_bools.clear();
+      const ConstraintProto& ct = context->Constraint(c);
+      const BoolArgumentProto& bool_ct =
+          ct.constraint_case() == ConstraintProto::kAtMostOne
+              ? ct.at_most_one()
+              : (ct.constraint_case() == ConstraintProto::kExactlyOne
+                     ? ct.exactly_one()
+                     : ct.bool_or());
+      work_done += bool_ct.literals().size();
+      for (const int ref : bool_ct.literals()) {
+        const int bool_var = PositiveRef(ref);
+        if (!booleans_potentially_encoding_domain[bool_var]) continue;
+        for (const int var : bool_to_var_encodings[bool_var]) {
+          var_to_bools[var].push_back(bool_var);
+        }
       }
-    }
-    for (const auto& [var, bools] : var_to_bools) {
-      if (bools.size() >= 2) {
-        // We have two encodings of `var` in the same constraint `c`. Thus `c`
-        // should be part of the local model for `var`.
-        var_to_constraints_encoding_or[var].push_back(c);
-        for (const int bool_var : bools) {
-          var_bool_counts[{var, bool_var}].bool_or_count++;
+      for (const auto& [var, bools] : var_to_bools) {
+        if (bools.size() >= 2) {
+          // We have two encodings of `var` in the same constraint `c`. Thus `c`
+          // should be part of the local model for `var`.
+          var_to_constraints_encoding_or[var].push_back(c);
+          for (const int bool_var : bools) {
+            var_bool_counts[{var, bool_var}].bool_or_count++;
+          }
+          work_done += bools.size();
         }
       }
     }
+    timer.Advance(work_done);
   }
 
   std::vector<VariableEncodingLocalModel> local_models;
   // Now that we have all the information, we can create the local models.
-  for (const auto& [var, linear1_cts] : var_to_linear1) {
-    VariableEncodingLocalModel& encoding_model = local_models.emplace_back();
-    encoding_model.var = var;
-    encoding_model.linear1_constraints.assign(linear1_cts.begin(),
-                                              linear1_cts.end());
-    encoding_model.constraints_linking_two_encoding_booleans =
-        var_to_constraints_encoding_or[var];
-    absl::c_sort(encoding_model.constraints_linking_two_encoding_booleans);
-    encoding_model.var_in_more_than_one_constraint_outside_the_local_model =
-        (context->VarToConstraints(var).size() - linear1_cts.size() > 1);
-    for (const int ct : linear1_cts) {
-      const int bool_var =
-          PositiveRef(context->Constraint(ct).enforcement_literal(0));
-      encoding_model.bools_only_used_inside_the_local_model.insert(bool_var);
-      var_bool_counts[{var, bool_var}].linear1_count++;
+  {
+    DeterministicTimer<{.scale = 2.3e-07}> timer(context->time_limit());
+    uint64_t work_done = 0;
+    for (const auto& [var, linear1_cts] : var_to_linear1) {
+      VariableEncodingLocalModel& encoding_model = local_models.emplace_back();
+      encoding_model.var = var;
+      encoding_model.linear1_constraints.assign(linear1_cts.begin(),
+                                                linear1_cts.end());
+      encoding_model.constraints_linking_two_encoding_booleans =
+          var_to_constraints_encoding_or[var];
+      absl::c_sort(encoding_model.constraints_linking_two_encoding_booleans);
+      encoding_model.var_in_more_than_one_constraint_outside_the_local_model =
+          (context->VarToConstraints(var).size() - linear1_cts.size() > 1);
+      for (const int ct : linear1_cts) {
+        const int bool_var =
+            PositiveRef(context->Constraint(ct).enforcement_literal(0));
+        encoding_model.bools_only_used_inside_the_local_model.insert(bool_var);
+        var_bool_counts[{var, bool_var}].linear1_count++;
+      }
+      absl::erase_if(encoding_model.bools_only_used_inside_the_local_model,
+                     [context, v = var, &var_bool_counts](int bool_var) {
+                       const auto& counts = var_bool_counts[{v, bool_var}];
+                       return context->VarToConstraints(bool_var).size() !=
+                              counts.linear1_count + counts.bool_or_count;
+                     });
+      auto it = context->ObjectiveMap().find(var);
+      if (it != context->ObjectiveMap().end()) {
+        encoding_model.variable_coeff_in_objective = it->second;
+      }
+      work_done +=
+          linear1_cts.size() +
+          encoding_model.constraints_linking_two_encoding_booleans.size();
     }
-    absl::erase_if(encoding_model.bools_only_used_inside_the_local_model,
-                   [context, v = var, &var_bool_counts](int bool_var) {
-                     const auto& counts = var_bool_counts[{v, bool_var}];
-                     return context->VarToConstraints(bool_var).size() !=
-                            counts.linear1_count + counts.bool_or_count;
-                   });
-    auto it = context->ObjectiveMap().find(var);
-    if (it != context->ObjectiveMap().end()) {
-      encoding_model.variable_coeff_in_objective = it->second;
-    }
+    absl::c_sort(local_models, [](const VariableEncodingLocalModel& a,
+                                  const VariableEncodingLocalModel& b) {
+      return a.var < b.var;
+    });
+    timer.Advance(work_done);
   }
-  absl::c_sort(local_models, [](const VariableEncodingLocalModel& a,
-                                const VariableEncodingLocalModel& b) {
-    return a.var < b.var;
-  });
   return local_models;
 }
 
@@ -227,62 +256,74 @@ bool BasicPresolveAndGetFullyEncodedDomains(
     absl::flat_hash_map<int, Domain>* result, bool* changed) {
   *changed = false;
   absl::flat_hash_map<int, int> ref_to_linear1;
+  TimeLimit* time_limit = context->time_limit();
 
   // Fill ref_to_linear1 and do some basic presolving.
   Domain var_domain = context->DomainOf(local_model.var);
-  for (const int ct : local_model.linear1_constraints) {
-    ConstraintProto* ct_proto = context->MutableConstraint(ct);
-    DCHECK(ConstraintIsEncodingBound(*ct_proto));
-    const int ref = ct_proto->enforcement_literal(0);
-    const Domain domain = ReadDomainFromProto(ct_proto->linear());
-    if (!domain.OverlapsWith(var_domain)) {
-      *changed = true;
-      context->UpdateRuleStats(
-          "variables: linear1 with domain not included in variable domain");
-      if (!context->SetLiteralToFalse(ref)) {
-        return false;
-      }
-      ct_proto->Clear();
-      context->UpdateConstraintVariableUsage(ct);
-      continue;
-    }
-    auto [it, inserted] = ref_to_linear1.insert({ref, ct});
-    if (!inserted) {
-      *changed = true;
-      ConstraintProto* old_ct_proto = context->MutableConstraint(it->second);
-      const Domain old_ct_domain = ReadDomainFromProto(old_ct_proto->linear());
-      const Domain new_domain = domain.IntersectionWith(old_ct_domain);
-      ct_proto->Clear();
-      context->UpdateConstraintVariableUsage(ct);
-      if (new_domain.IsEmpty()) {
+  {
+    DeterministicTimer<{.scale = 1.3e-07}> timer(
+        time_limit, local_model.linear1_constraints.size());
+    for (const int ct : local_model.linear1_constraints) {
+      ConstraintProto* ct_proto = context->MutableConstraint(ct);
+      DCHECK(ConstraintIsEncodingBound(*ct_proto));
+      const int ref = ct_proto->enforcement_literal(0);
+      const Domain domain = ReadDomainFromProto(ct_proto->linear());
+      if (!domain.OverlapsWith(var_domain)) {
+        *changed = true;
         context->UpdateRuleStats(
-            "variables: linear1 with same variable and enforcement and "
-            "non-overlapping domain, setting enforcement to false");
+            "variables: linear1 with domain not included in variable domain");
         if (!context->SetLiteralToFalse(ref)) {
           return false;
         }
-        old_ct_proto->Clear();
-        context->UpdateConstraintVariableUsage(it->second);
-        ref_to_linear1.erase(ref);
-      } else {
-        FillDomainInProto(new_domain, old_ct_proto->mutable_linear());
-        context->UpdateRuleStats(
-            "variables: merged two linear1 with same variable and enforcement");
+        ct_proto->Clear();
+        context->UpdateConstraintVariableUsage(ct);
+        continue;
+      }
+      auto [it, inserted] = ref_to_linear1.insert({ref, ct});
+      if (!inserted) {
+        *changed = true;
+        ConstraintProto* old_ct_proto = context->MutableConstraint(it->second);
+        const Domain old_ct_domain =
+            ReadDomainFromProto(old_ct_proto->linear());
+        const Domain new_domain = domain.IntersectionWith(old_ct_domain);
+        ct_proto->Clear();
+        context->UpdateConstraintVariableUsage(ct);
+        if (new_domain.IsEmpty()) {
+          context->UpdateRuleStats(
+              "variables: linear1 with same variable and enforcement and "
+              "non-overlapping domain, setting enforcement to false");
+          if (!context->SetLiteralToFalse(ref)) {
+            return false;
+          }
+          old_ct_proto->Clear();
+          context->UpdateConstraintVariableUsage(it->second);
+          ref_to_linear1.erase(ref);
+        } else {
+          FillDomainInProto(new_domain, old_ct_proto->mutable_linear());
+          context->UpdateRuleStats(
+              "variables: merged two linear1 with same variable and "
+              "enforcement");
+        }
       }
     }
   }
 
   // Remove from the local model anything that was removed in the loop above.
   int new_linear1_size = 0;
-  for (int i = 0; i < local_model.linear1_constraints.size(); ++i) {
-    const int ct = local_model.linear1_constraints[i];
-    const ConstraintProto& ct_proto = context->Constraint(ct);
-    if (ct_proto.constraint_case() != ConstraintProto::kLinear) continue;
-    if (context->IsFixed(ct_proto.enforcement_literal(0))) {
-      continue;
+  {
+    DeterministicTimer2<{.scale1 = 1.0e-08, .scale2 = 2.4e-08}> timer(
+        time_limit);
+    for (int i = 0; i < local_model.linear1_constraints.size(); ++i) {
+      const int ct = local_model.linear1_constraints[i];
+      const ConstraintProto& ct_proto = context->Constraint(ct);
+      if (ct_proto.constraint_case() != ConstraintProto::kLinear) continue;
+      if (context->IsFixed(ct_proto.enforcement_literal(0))) {
+        continue;
+      }
+      DCHECK(ConstraintIsEncodingBound(ct_proto));
+      local_model.linear1_constraints[new_linear1_size++] = ct;
     }
-    DCHECK(ConstraintIsEncodingBound(ct_proto));
-    local_model.linear1_constraints[new_linear1_size++] = ct;
+    timer.Advance(local_model.linear1_constraints.size(), new_linear1_size);
   }
   if (new_linear1_size != local_model.linear1_constraints.size()) {
     *changed = true;
@@ -291,39 +332,44 @@ bool BasicPresolveAndGetFullyEncodedDomains(
     return true;
   }
 
-  for (const auto& [ref, ct] : ref_to_linear1) {
-    auto it = ref_to_linear1.find(NegatedRef(ref));
-    if (it == ref_to_linear1.end()) continue;
-    const ConstraintProto& positive_ct = context->Constraint(ct);
-    const ConstraintProto& negative_ct = context->Constraint(it->second);
-    const Domain positive_domain = ReadDomainFromProto(positive_ct.linear());
-    const Domain negative_domain = ReadDomainFromProto(negative_ct.linear());
-    // b => x in D1
-    // ~b => x in D2
-    //
-    // So x in (D1 U D2).
-    bool domain_modified = false;
-    if (!context->IntersectDomainWith(
-            local_model.var, positive_domain.UnionWith(negative_domain),
-            &domain_modified)) {
-      return false;
+  {
+    DeterministicTimer2<{.scale1 = 9.7e-09, .scale2 = 8.1e-07}> timer(
+        time_limit);
+    for (const auto& [ref, ct] : ref_to_linear1) {
+      auto it = ref_to_linear1.find(NegatedRef(ref));
+      if (it == ref_to_linear1.end()) continue;
+      const ConstraintProto& positive_ct = context->Constraint(ct);
+      const ConstraintProto& negative_ct = context->Constraint(it->second);
+      const Domain positive_domain = ReadDomainFromProto(positive_ct.linear());
+      const Domain negative_domain = ReadDomainFromProto(negative_ct.linear());
+      // b => x in D1
+      // ~b => x in D2
+      //
+      // So x in (D1 U D2).
+      bool domain_modified = false;
+      if (!context->IntersectDomainWith(
+              local_model.var, positive_domain.UnionWith(negative_domain),
+              &domain_modified)) {
+        return false;
+      }
+      if (domain_modified) {
+        *changed = true;
+        var_domain = context->DomainOf(local_model.var);
+        context->UpdateRuleStats(
+            "variables: restricted domain to union of a linear1 and its "
+            "negation");
+      }
+      if (!positive_domain.IntersectionWith(negative_domain).IsEmpty()) {
+        // This is not a fully encoded domain. For example, it could be
+        //    l => x in {-inf,inf}
+        //   ~l => x in {-inf,inf}
+        // which actually means that `l` doesn't really encode anything.
+        continue;
+      }
+      result->insert({ref, positive_domain});
+      result->insert({NegatedRef(ref), negative_domain});
     }
-    if (domain_modified) {
-      *changed = true;
-      var_domain = context->DomainOf(local_model.var);
-      context->UpdateRuleStats(
-          "variables: restricted domain to union of a linear1 and its "
-          "negation");
-    }
-    if (!positive_domain.IntersectionWith(negative_domain).IsEmpty()) {
-      // This is not a fully encoded domain. For example, it could be
-      //    l => x in {-inf,inf}
-      //   ~l => x in {-inf,inf}
-      // which actually means that `l` doesn't really encode anything.
-      continue;
-    }
-    result->insert({ref, positive_domain});
-    result->insert({NegatedRef(ref), negative_domain});
+    timer.Advance(ref_to_linear1.size(), result->size());
   }
 
   // Now detect a different way of fully encoding a domain:
@@ -335,6 +381,8 @@ bool BasicPresolveAndGetFullyEncodedDomains(
   //   bool_or(l1, l2, l3, ..., l_n)
   //
   // where D1, D2, ..., D_n are non-overlapping. This works too for exactly_one.
+  DeterministicTimer<{.scale = 2.5e-08, .offset = 3.2e-08}> timer(
+      time_limit, local_model.constraints_linking_two_encoding_booleans.size());
   for (const int ct : local_model.constraints_linking_two_encoding_booleans) {
     const ConstraintProto& ct_proto = context->Constraint(ct);
     if (ct_proto.constraint_case() != ConstraintProto::kBoolOr &&
@@ -350,20 +398,24 @@ bool BasicPresolveAndGetFullyEncodedDomains(
     bool encoding_detected = true;
     Domain non_overlapping_domain;
     std::vector<std::pair<int, Domain>> ref_and_domains;
-    for (const int ref : bool_or.literals()) {
-      auto it = ref_to_linear1.find(ref);
-      if (it == ref_to_linear1.end()) {
-        encoding_detected = false;
-        break;
+    {
+      DeterministicTimer<{.scale = 1.2e-05}> timer(time_limit);
+      for (const int ref : bool_or.literals()) {
+        auto it = ref_to_linear1.find(ref);
+        if (it == ref_to_linear1.end()) {
+          encoding_detected = false;
+          break;
+        }
+        const Domain domain =
+            ReadDomainFromProto(context->Constraint(it->second).linear());
+        ref_and_domains.push_back({ref, domain});
+        if (!non_overlapping_domain.IntersectionWith(domain).IsEmpty()) {
+          encoding_detected = false;
+          break;
+        }
+        non_overlapping_domain = non_overlapping_domain.UnionWith(domain);
       }
-      const Domain domain =
-          ReadDomainFromProto(context->Constraint(it->second).linear());
-      ref_and_domains.push_back({ref, domain});
-      if (!non_overlapping_domain.IntersectionWith(domain).IsEmpty()) {
-        encoding_detected = false;
-        break;
-      }
-      non_overlapping_domain = non_overlapping_domain.UnionWith(domain);
+      timer.Advance(ref_and_domains.size());
     }
     if (encoding_detected) {
       context->UpdateRuleStats("variables: detected fully encoded domain");
@@ -372,6 +424,8 @@ bool BasicPresolveAndGetFullyEncodedDomains(
                                         &domain_modified)) {
         return false;
       }
+      DeterministicTimer<{.scale = 9.5e-07}> timer(time_limit,
+                                                   ref_and_domains.size());
       if (domain_modified) {
         var_domain = context->DomainOf(local_model.var);
         context->UpdateRuleStats(
@@ -526,34 +580,41 @@ bool DetectEncodedComplexDomain(
     int complexity;
   };
   std::vector<Candidate> candidates;
-  candidates.reserve(literals.size());
-  for (int i = 0; i < literals.size(); ++i) {
-    const int lit_var = literals.Get(i);
-    if (!local_model.bools_only_used_inside_the_local_model.contains(
-            PositiveRef(lit_var))) {
-      continue;
-    }
-    auto it = fully_encoded_domains->find(lit_var);
-    if (it == fully_encoded_domains->end()) {
-      continue;
-    }
-    if (!var_domain.OverlapsWith(it->second)) {
-      // We will handle this on the next pass.
-      continue;
-    }
-    candidates.push_back(
-        {lit_var, it->second, encoding_complexity(it->second)});
-  }
-
-  absl::c_stable_sort(candidates, [](const auto& a, const auto& b) {
-    return a.domain.Max() < b.domain.Max();
-  });
-
-  if (candidates.size() < 2) return true;
-
   absl::flat_hash_map<int64_t, int> start_to_candidate_index;
-  for (int i = 0; i < candidates.size(); ++i) {
-    start_to_candidate_index[candidates[i].domain.Min()] = i;
+  TimeLimit* time_limit = context->time_limit();
+  {
+    DeterministicTimer2<{
+        .scale1 = 6.8e-09, .scale2 = 1.2e-07, .offset = 4.1e-08}>
+        timer(time_limit);
+    candidates.reserve(literals.size());
+    for (int i = 0; i < literals.size(); ++i) {
+      const int lit_var = literals.Get(i);
+      if (!local_model.bools_only_used_inside_the_local_model.contains(
+              PositiveRef(lit_var))) {
+        continue;
+      }
+      auto it = fully_encoded_domains->find(lit_var);
+      if (it == fully_encoded_domains->end()) {
+        continue;
+      }
+      if (!var_domain.OverlapsWith(it->second)) {
+        // We will handle this on the next pass.
+        continue;
+      }
+      candidates.push_back(
+          {lit_var, it->second, encoding_complexity(it->second)});
+    }
+    timer.Advance(literals.size(), candidates.size());
+
+    absl::c_stable_sort(candidates, [](const auto& a, const auto& b) {
+      return a.domain.Max() < b.domain.Max();
+    });
+
+    if (candidates.size() < 2) return true;
+
+    for (int i = 0; i < candidates.size(); ++i) {
+      start_to_candidate_index[candidates[i].domain.Min()] = i;
+    }
   }
 
   // This function checks whether we think applying the heuristic is a good
@@ -577,60 +638,72 @@ bool DetectEncodedComplexDomain(
   // So we need to first try to find a suitable set of encodings to merge with a
   // quick heuristic.
   int cur_candidate = 0;
-  while (cur_candidate < candidates.size()) {
-    const auto& candidate1 = candidates[cur_candidate];
-    // Look for a candidate that starts when this ends.
-    if (candidate1.domain.Max() >= kMaxIntegerValue) break;
-    auto it = start_to_candidate_index.find(candidate1.domain.Max() + 1);
-    if (it == start_to_candidate_index.end()) {
-      ++cur_candidate;
-      continue;
-    }
-    const int j = it->second;
-    DCHECK_NE(cur_candidate, j);
-    const auto& candidate2 = candidates[j];
-    if (merge_domains_and_compare_complexity(candidate1, candidate2,
-                                             &domain_new_var)) {
-      // We found a pair! Let's try greedily merging more intervals.
-      indexes_to_merge = {cur_candidate, j};
-      Candidate candidate_new_var;
-      candidate_new_var.domain = domain_new_var;
-      candidate_new_var.complexity =
-          encoding_complexity(candidate_new_var.domain);
-      if (candidate_new_var.domain.Max() >= kMaxIntegerValue) break;
-      auto it =
-          start_to_candidate_index.find(candidate_new_var.domain.Max() + 1);
-      while (it != start_to_candidate_index.end()) {
-        const auto& candidate = candidates[it->second];
-        Domain domain_new_var_tmp;
-        if (merge_domains_and_compare_complexity(candidate, candidate_new_var,
-                                                 &domain_new_var_tmp)) {
-          if (domain_new_var_tmp.Max() <= candidate_new_var.domain.Max()) {
-            // Avoid infinite loop in corner cases by making sure the resulting
-            // domain always increases its max.
+  {
+    DeterministicTimer2<{
+        .scale1 = 2.6e-09, .scale2 = 1.3e-07, .offset = 1.2e-07}>
+        timer(time_limit);
+    uint64_t work_done = 0;
+    while (cur_candidate < candidates.size()) {
+      const auto& candidate1 = candidates[cur_candidate];
+      // Look for a candidate that starts when this ends.
+      if (candidate1.domain.Max() >= kMaxIntegerValue) break;
+      auto it = start_to_candidate_index.find(candidate1.domain.Max() + 1);
+      if (it == start_to_candidate_index.end()) {
+        ++cur_candidate;
+        continue;
+      }
+      const int j = it->second;
+      DCHECK_NE(cur_candidate, j);
+      const auto& candidate2 = candidates[j];
+      if (merge_domains_and_compare_complexity(candidate1, candidate2,
+                                               &domain_new_var)) {
+        // We found a pair! Let's try greedily merging more intervals.
+        indexes_to_merge = {cur_candidate, j};
+        Candidate candidate_new_var;
+        candidate_new_var.domain = domain_new_var;
+        candidate_new_var.complexity =
+            encoding_complexity(candidate_new_var.domain);
+        if (candidate_new_var.domain.Max() >= kMaxIntegerValue) break;
+        auto it =
+            start_to_candidate_index.find(candidate_new_var.domain.Max() + 1);
+        while (it != start_to_candidate_index.end()) {
+          ++work_done;
+          const auto& candidate = candidates[it->second];
+          Domain domain_new_var_tmp;
+          if (merge_domains_and_compare_complexity(candidate, candidate_new_var,
+                                                   &domain_new_var_tmp)) {
+            if (domain_new_var_tmp.Max() <= candidate_new_var.domain.Max()) {
+              // Avoid infinite loop in corner cases by making sure the
+              // resulting domain always increases its max.
+              break;
+            }
+            indexes_to_merge.push_back(it->second);
+            candidate_new_var.complexity =
+                encoding_complexity(domain_new_var_tmp);
+            candidate_new_var.domain = std::move(domain_new_var_tmp);
+            domain_new_var = candidate_new_var.domain;
+          } else {
             break;
           }
-          indexes_to_merge.push_back(it->second);
-          candidate_new_var.complexity =
-              encoding_complexity(domain_new_var_tmp);
-          candidate_new_var.domain = std::move(domain_new_var_tmp);
-          domain_new_var = candidate_new_var.domain;
-        } else {
-          break;
+          it =
+              start_to_candidate_index.find(candidate_new_var.domain.Max() + 1);
         }
-        it = start_to_candidate_index.find(candidate_new_var.domain.Max() + 1);
+        break;
       }
-      break;
+      ++cur_candidate;
     }
-    ++cur_candidate;
+    timer.Advance(candidates.size(), work_done);
   }
 
   // If the greedy approach failed, we will just try all pairs if there are not
   // too many.
   if (indexes_to_merge.empty() && candidates.size() < 100) {
+    DeterministicTimer<{.scale = 6.8e-08, .offset = 1.8e-07}> timer(time_limit);
+    uint64_t work_done = 0;
     for (int i = 0; i < candidates.size(); ++i) {
       if (!indexes_to_merge.empty()) break;
       for (int j = i + 1; j < candidates.size(); ++j) {
+        ++work_done;
         const auto& candidate1 = candidates[i];
         const auto& candidate2 = candidates[j];
         if (merge_domains_and_compare_complexity(candidate1, candidate2,
@@ -640,6 +713,7 @@ bool DetectEncodedComplexDomain(
         }
       }
     }
+    timer.Advance(work_done);
   }
 
   if (indexes_to_merge.empty()) {
@@ -679,6 +753,8 @@ bool DetectEncodedComplexDomain(
     // domains where both literals are true.
     Domain intervals_union;
     Domain forbidden_domain;
+    DeterministicTimer<{.scale = 7.9e-08, .offset = 4.7e-08}> timer(
+        time_limit, indexes_to_merge.size());
     for (const int index : indexes_to_merge) {
       const auto& candidate = candidates[index];
       const Domain intersection_with_other_domain =
@@ -697,78 +773,91 @@ bool DetectEncodedComplexDomain(
 
   std::vector<int> literals_to_remove;
   absl::flat_hash_set<int> bools_to_remove_set;
-  for (const int index : indexes_to_merge) {
-    const int lit = candidates[index].lit_var;
-    literals_to_remove.push_back(lit);
-    bools_to_remove_set.insert(PositiveRef(lit));
-  }
-  // Now we want to build a new_lit = (lit1 or lit2 or ...) to use in the
-  // AMO/bool_or.
-  const int new_var = context->NewBoolVarWithClause(literals_to_remove);
-
-  const Domain domain_new_var_complement =
-      domain_new_var.Complement().SimplifyUsingImpliedDomain(var_domain);
-  if (domain_new_var.IsEmpty()) {
-    CHECK(context->SetLiteralToFalse(new_var));
-  } else if (domain_new_var_complement.IsEmpty()) {
-    CHECK(context->SetLiteralToTrue(new_var));
-  } else {
-    local_model.linear1_constraints.push_back(context->NumConstraints());
-    ConstraintProto* new_ct = context->AddConstraint();
-    new_ct->add_enforcement_literal(new_var);
-    new_ct->mutable_linear()->add_vars(local_model.var);
-    new_ct->mutable_linear()->add_coeffs(1);
-    FillDomainInProto(domain_new_var, new_ct->mutable_linear());
-    local_model.linear1_constraints.push_back(context->NumConstraints());
-    local_model.bools_only_used_inside_the_local_model.insert(
-        PositiveRef(new_var));
-    new_ct = context->AddConstraint();
-    new_ct->add_enforcement_literal(NegatedRef(new_var));
-    new_ct->mutable_linear()->add_vars(local_model.var);
-    new_ct->mutable_linear()->add_coeffs(1);
-    FillDomainInProto(domain_new_var_complement, new_ct->mutable_linear());
-    fully_encoded_domains->insert({new_var, domain_new_var});
-    fully_encoded_domains->insert(
-        {NegatedRef(new_var), domain_new_var_complement});
-  }
-
-  // Remove the two literals from the AMO.
-  int new_size = 0;
-  for (int i = 0; i < literals.size(); ++i) {
-    if (!bools_to_remove_set.contains(PositiveRef(literals.Get(i)))) {
-      literals.Set(new_size++, literals.Get(i));
+  {
+    DeterministicTimer<{.scale = 5.5e-08, .offset = 1.2e-06}> timer(
+        time_limit, indexes_to_merge.size());
+    for (const int index : indexes_to_merge) {
+      const int lit = candidates[index].lit_var;
+      literals_to_remove.push_back(lit);
+      bools_to_remove_set.insert(PositiveRef(lit));
     }
+
+    // Now we want to build a new_lit = (lit1 or lit2 or ...) to use in the
+    // AMO/bool_or.
+    const int new_var = context->NewBoolVarWithClause(literals_to_remove);
+
+    const Domain domain_new_var_complement =
+        domain_new_var.Complement().SimplifyUsingImpliedDomain(var_domain);
+    if (domain_new_var.IsEmpty()) {
+      CHECK(context->SetLiteralToFalse(new_var));
+    } else if (domain_new_var_complement.IsEmpty()) {
+      CHECK(context->SetLiteralToTrue(new_var));
+    } else {
+      local_model.linear1_constraints.push_back(context->NumConstraints());
+      ConstraintProto* new_ct = context->AddConstraint();
+      new_ct->add_enforcement_literal(new_var);
+      new_ct->mutable_linear()->add_vars(local_model.var);
+      new_ct->mutable_linear()->add_coeffs(1);
+      FillDomainInProto(domain_new_var, new_ct->mutable_linear());
+      local_model.linear1_constraints.push_back(context->NumConstraints());
+      local_model.bools_only_used_inside_the_local_model.insert(
+          PositiveRef(new_var));
+      new_ct = context->AddConstraint();
+      new_ct->add_enforcement_literal(NegatedRef(new_var));
+      new_ct->mutable_linear()->add_vars(local_model.var);
+      new_ct->mutable_linear()->add_coeffs(1);
+      FillDomainInProto(domain_new_var_complement, new_ct->mutable_linear());
+      fully_encoded_domains->insert({new_var, domain_new_var});
+      fully_encoded_domains->insert(
+          {NegatedRef(new_var), domain_new_var_complement});
+    }
+
+    // Remove the two literals from the AMO.
+    int new_size = 0;
+    for (int i = 0; i < literals.size(); ++i) {
+      if (!bools_to_remove_set.contains(PositiveRef(literals.Get(i)))) {
+        literals.Set(new_size++, literals.Get(i));
+      }
+    }
+    literals.Truncate(new_size);
+    literals.Add(new_var);
+    context->UpdateConstraintVariableUsage(ct_index);
   }
-  literals.Truncate(new_size);
-  literals.Add(new_var);
-  context->UpdateConstraintVariableUsage(ct_index);
 
   // Add the removed encodings to the mapping model. Note that we cannot just
   // simply copy the ones we removed, since we detect some full encodings that
   // were only full due to an exactly_one constraint.
   absl::flat_hash_set<int> already_added;
-  for (const int lit : literals_to_remove) {
-    auto [unused_it, inserted] = already_added.insert(PositiveRef(lit));
-    if (!inserted) continue;
-    for (const int l : {lit, NegatedRef(lit)}) {
-      ConstraintProto* ct = context->NewMappingConstraint(__FILE__, __LINE__);
-      const auto it = fully_encoded_domains->find(l);
-      CHECK(it != fully_encoded_domains->end());
-      ct->add_enforcement_literal(l);
-      ct->mutable_linear()->add_vars(local_model.var);
-      ct->mutable_linear()->add_coeffs(1);
-      FillDomainInProto(it->second, ct->mutable_linear());
+  {
+    DeterministicTimer<{.scale = 3.9e-07}> timer(time_limit,
+                                                 literals_to_remove.size());
+    for (const int lit : literals_to_remove) {
+      auto [unused_it, inserted] = already_added.insert(PositiveRef(lit));
+      if (!inserted) continue;
+      for (const int l : {lit, NegatedRef(lit)}) {
+        ConstraintProto* ct = context->NewMappingConstraint(__FILE__, __LINE__);
+        const auto it = fully_encoded_domains->find(l);
+        CHECK(it != fully_encoded_domains->end());
+        ct->add_enforcement_literal(l);
+        ct->mutable_linear()->add_vars(local_model.var);
+        ct->mutable_linear()->add_coeffs(1);
+        FillDomainInProto(it->second, ct->mutable_linear());
+      }
+    }
+
+    // Finally, move all the removable linear1 to the mapping model.
+    for (const int lit : literals_to_remove) {
+      fully_encoded_domains->erase(lit);
+      fully_encoded_domains->erase(NegatedRef(lit));
+      context->MarkVariableAsRemoved(PositiveRef(lit));
+      local_model.bools_only_used_inside_the_local_model.erase(
+          PositiveRef(lit));
     }
   }
 
-  // Finally, move all the removable linear1 to the mapping model.
-  for (const int lit : literals_to_remove) {
-    fully_encoded_domains->erase(lit);
-    fully_encoded_domains->erase(NegatedRef(lit));
-    context->MarkVariableAsRemoved(PositiveRef(lit));
-    local_model.bools_only_used_inside_the_local_model.erase(PositiveRef(lit));
-  }
   int new_linear1_size = 0;
+  DeterministicTimer<{.scale = 3.6e-08}> timer(
+      time_limit, local_model.linear1_constraints.size());
   for (int i = 0; i < local_model.linear1_constraints.size(); ++i) {
     const int ct = local_model.linear1_constraints[i];
     ConstraintProto* ct_proto = context->MutableConstraint(ct);
@@ -872,6 +961,8 @@ bool MaybeTransferLinear1ToAnotherVariable(
   }
 
   // Applies transfer_f to all linear1.
+  DeterministicTimer<{.scale = 6.4e-07, .offset = 4.5e-07}> timer(
+      context->time_limit(), to_rewrite.size());
   const Domain var_domain = context->DomainOf(var);
   for (const int c : to_rewrite) {
     ConstraintProto* ct = context->MutableConstraint(c);

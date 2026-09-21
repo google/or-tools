@@ -58,12 +58,12 @@ solve_with_time_limit_sample_sat()
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
 #include "absl/log/log.h"
-#include "ortools/util/sorted_interval_list.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -333,11 +333,11 @@ solve_and_print_intermediate_solutions_sample_sat()
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
 #include "absl/log/log.h"
-#include "ortools/util/sorted_interval_list.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -365,7 +365,7 @@ void SolveAndPrintIntermediateSolutionsSampleSat() {
     num_solutions++;
   }));
 
-  const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
+  SolveCpModel(cp_model.Build(), &model);
 
   LOG(INFO) << "Number of solutions found: " << num_solutions;
 }
@@ -698,12 +698,12 @@ To search for all solutions, a parameter of the SAT solver must be changed.
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
 #include "absl/log/log.h"
-#include "ortools/util/sorted_interval_list.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -733,7 +733,7 @@ void SearchAllSolutionsSampleSat() {
   SatParameters parameters;
   parameters.set_enumerate_all_solutions(true);
   model.Add(NewSatParameters(parameters));
-  const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
+  SolveCpModel(cp_model.Build(), &model);
 
   LOG(INFO) << "Number of solutions found: " << num_solutions;
 }
@@ -1031,12 +1031,12 @@ limit, and setting that bool to true.
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
 #include "absl/log/log.h"
-#include "ortools/util/sorted_interval_list.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {

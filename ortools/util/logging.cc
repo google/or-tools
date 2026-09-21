@@ -110,8 +110,7 @@ void SolverLogger::FlushPendingThrottledLogs(bool ignore_rates) {
   }
 }
 
-PresolveTimer::~PresolveTimer() {
-  time_limit_->AdvanceDeterministicTime(deterministic_time());
+ScopedTimeLogger::~ScopedTimeLogger() {
   const double dtime =
       time_limit_->GetElapsedDeterministicTime() - dtime_at_start_;
 

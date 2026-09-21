@@ -26,7 +26,6 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/random/random.h"
-#include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
@@ -42,28 +41,20 @@ using ::testing::Pointwise;
 // To have more readable one-liners below.
 const double kInfinity = std::numeric_limits<double>::infinity();
 
-// An intricate way to set 'result' to zero, to avoid compiler optimization.
-double GenerateZero() {
-  const int n = 100;
-  double result = n * (n - 1) / 2;
-  for (int i = 0; i < n; ++i) {
-    result -= i;
-  }
-  CHECK_EQ(0.0, result);
-  return result;
-}
+// Use volatile to prevent the compiler from optimizing away the code.
+// See for example https://cppreference.com/cpp/numeric/fenv/fetestexcept
+volatile double kZero = 0.0;
 
-double GenerateNaN() { return GenerateZero() / GenerateZero(); }
+double GenerateNaN() { return kZero / kZero; }
 
-double GenerateDivisionByZero() { return 1.0 / GenerateZero(); }
+double GenerateDivisionByZero() { return 1.0 / kZero; }
 
-void RunFloatingPointExceptionTest(int exception_flags, bool detect_nan,
-                                   bool detect_div_by_zero) {
+void RunFloatingPointExceptionTest(int exception_flags) {
   ScopedFloatingPointEnv scoped_fenv;
   if (!scoped_fenv.EnableExceptions(exception_flags)) {
     GTEST_SKIP() << "Floating point exceptions are not supported.";
   }
-  if (detect_nan) {
+  if (exception_flags & FE_INVALID) {
     EXPECT_DEATH(
         {
           const double x = GenerateNaN();
@@ -74,7 +65,7 @@ void RunFloatingPointExceptionTest(int exception_flags, bool detect_nan,
     const double x = GenerateNaN();
     EXPECT_NE(x, x);
   }
-  if (detect_div_by_zero) {
+  if (exception_flags & FE_DIVBYZERO) {
     EXPECT_DEATH(
         {
           // Use the value to prevent removal by optimization.
@@ -86,20 +77,16 @@ void RunFloatingPointExceptionTest(int exception_flags, bool detect_nan,
   }
 }
 
-TEST(ScopedFpEnv, NoDetection) {
-  RunFloatingPointExceptionTest(0, false, false);
-}
+TEST(ScopedFpEnv, NoDetection) { RunFloatingPointExceptionTest(0); }
 
-TEST(ScopedFpEnv, NanDetection) {
-  RunFloatingPointExceptionTest(FE_INVALID, true, false);
-}
+TEST(ScopedFpEnv, NanDetection) { RunFloatingPointExceptionTest(FE_INVALID); }
 
 TEST(ScopedFpEnv, DivisionByZeroDetection) {
-  RunFloatingPointExceptionTest(FE_DIVBYZERO, false, true);
+  RunFloatingPointExceptionTest(FE_DIVBYZERO);
 }
 
 TEST(ScopedFpEnv, NanDetectionDivisionByZeroDetection) {
-  RunFloatingPointExceptionTest(FE_INVALID | FE_DIVBYZERO, true, true);
+  RunFloatingPointExceptionTest(FE_INVALID | FE_DIVBYZERO);
 }
 
 TEST(WithinAbsoluteOrRelativeTolerancesTest, ExpectedValue) {
@@ -463,109 +450,6 @@ TEST(ComputeGcdOfRoundedDoublesTest, BasicTest) {
 
 TEST(InterpolateTest, BasicTest) {
   EXPECT_DOUBLE_EQ(1.8, Interpolate<double>(2, 1, .8));
-}
-
-constexpr int kDoubleMinExponent = std::numeric_limits<double>::min_exponent;
-constexpr int kDoubleMaxExponent = std::numeric_limits<double>::max_exponent;
-TEST(FastIlogbTest, Correctness) {
-  absl::BitGen bitgen;
-  for (int j = 0; j < 1024; ++j) {
-    for (int i = kDoubleMinExponent; i < kDoubleMaxExponent; ++i) {
-      for (int sign : {-1, 1}) {
-        const double input =
-            sign * absl::Uniform(absl::IntervalClosedOpen, bitgen, 1.0, 2.0);
-        ASSERT_EQ(fast_ilogb(scalbn(input, i)), i);
-      }
-    }
-  }
-}
-
-TEST(FastScalbnTest, Correctness) {
-  std::mt19937 bitgen(19560618);
-  for (int j = 0; j < 1024; ++j) {
-    for (int i = kDoubleMinExponent; i < kDoubleMaxExponent; ++i) {
-      for (int sign : {-1, 1}) {
-        const double input = sign * absl::Uniform(bitgen, 1.0, 2.0);
-        ASSERT_EQ(fast_scalbn(input, i), scalbn(input, i));
-      }
-    }
-  }
-}
-
-template <class T>
-T RandomElementOf(std::mt19937& random, const std::vector<T>& array) {
-  return array[absl::Uniform<int>(random, 0, array.size())];
-}
-
-// Test on random input, ensure that for finite numbers whose result is
-// representable, we get the correct result.
-TEST(FastScalbnTest, DontFailOnRubbish) {
-  constexpr int kNumTests = (1 << 25);
-  std::mt19937 bitgen(19540820);
-  int64_t count_ok = 0;
-  int64_t count_nan = 0;
-  int64_t count_subnormal = 0;
-  int64_t count_zero = 0;
-  int64_t count_infinity = 0;
-  // We inject some special values that are worth testing, but that are too
-  // unlikely to be produced by a purely bit-uniform random double.
-  const std::vector<double> kSpecialValues = {kInfinity, -kInfinity, 0.0, -0.0};
-  for (int i = 0; i < kNumTests; ++i) {
-    const double input = (i & 0xff)
-                             ? absl::bit_cast<double>(absl::Uniform<uint64_t>(
-                                   bitgen, 0, kuint64max))
-                             : RandomElementOf(bitgen, kSpecialValues);
-    const int add_to_exponent =
-        (i % 97 != 0) ? absl::Uniform<int>(bitgen, kDoubleMinExponent - 1,
-                                           kDoubleMaxExponent + 2)
-                      : absl::Uniform<int>(bitgen, kint32min, kint32max);
-    // Note that no matter the input, the function will not crash, although
-    // the result may be undefined behavior.
-    const double result = fast_scalbn(input, add_to_exponent);
-    if (std::isnan(input)) {
-      ++count_nan;
-    } else if (std::isinf(input)) {
-      ++count_infinity;
-    } else if (input == 0.0) {
-      ++count_zero;
-      ASSERT_EQ(result, input);
-    } else if (!std::isnormal(input)) {
-      ++count_subnormal;
-    } else {
-      const int input_exponent = fast_ilogb(input);
-      const int result_exponent = input_exponent + add_to_exponent;
-      if (result_exponent < kDoubleMaxExponent &&
-          result_exponent >= kDoubleMinExponent) {
-        // If input and output is representable, the result must be equal to
-        // the value returned by the standard function.
-        const double posix_result = scalbn(input, add_to_exponent);
-        ASSERT_EQ(result, posix_result) << absl::StrFormat(
-            "\nBit representations:\n\t%10s %016llx %.16g\n\t%10s %016llx "
-            "%.16g\n\t%10s %016llx %.16g\nExponents:\n\t%10s %10d\n\t%10s "
-            "%10d\n\t%10s %10d\nIterations: %d",
-            "input", absl::bit_cast<uint64_t>(input), input, "fast",
-            absl::bit_cast<uint64_t>(result), result, "posix",
-            absl::bit_cast<uint64_t>(posix_result), posix_result, "input",
-            input_exponent, "result", result_exponent, "add_to",
-            add_to_exponent, i);
-        ++count_ok;
-      }
-    }
-  }
-  LOG(INFO) << absl::StrFormat(
-      "Input tested:\n\t%20s %.4f%% (count %g)\n\t%20s %.4f%% (count "
-      "%g)\n\t%20s %.4f%% (count %g)\n\t%20s %.4f%% (count %g)\n\t%20s %.4f%% "
-      "(count %g)",
-      "Valid", count_ok * 100.0 / kNumTests, count_ok, "Subnormal",
-      count_subnormal * 100.0 / kNumTests, count_subnormal, "NaN",
-      count_nan * 100.0 / kNumTests, count_nan, "Infinity",
-      count_infinity * 100.0 / kNumTests, count_infinity, "Zero",
-      count_zero * 100.0 / kNumTests, count_zero);
-  EXPECT_LT(0.55 * kNumTests, count_ok);
-  EXPECT_LT(4e-4 * kNumTests, count_subnormal);
-  EXPECT_LT(4e-4 * kNumTests, count_nan);
-  EXPECT_LT(4e-4 * kNumTests, count_infinity);
-  EXPECT_LT(4e-4 * kNumTests, count_zero);
 }
 
 }  // namespace

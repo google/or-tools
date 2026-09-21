@@ -629,7 +629,10 @@ class RepeatedPtrField_string {
     JNIEnv* env = operations_research::util::java::GetThreadLocalJniEnv();
     int len = env->GetArrayLength(data);
     jbyte* buffer = env->GetByteArrayElements(data, nullptr);
-    $$self->ParsePartialFromArray(buffer, len);
+    if (!($$self->ParsePartialFromArray(buffer, len))) {
+      env->ThrowNew(env->FindClass("java/lang/RuntimeException"), "parse failure");
+      return;
+    }
     env->ReleaseByteArrayElements(data, buffer, JNI_ABORT);
   }
   void mergeFrom(const $0& other) {
@@ -661,7 +664,7 @@ class RepeatedPtrField_string {
     JNIEnv* env = operations_research::util::java::GetThreadLocalJniEnv();
     jbyteArray data = env->NewByteArray(len);
     jbyte* buffer = env->GetByteArrayElements(data, nullptr);
-    $$self->SerializeWithCachedSizesToArray(reinterpret_cast<uint8_t*>(buffer));
+    (void)$$self->SerializeWithCachedSizesToArray(reinterpret_cast<uint8_t*>(buffer));
     env->ReleaseByteArrayElements(data, buffer, 0);
     return data;
   }

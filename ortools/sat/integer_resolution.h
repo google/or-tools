@@ -31,6 +31,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research::sat {
 

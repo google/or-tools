@@ -41,6 +41,7 @@
 #include "ortools/base/timer.h"
 #include "ortools/graph_base/strongly_connected_components.h"
 #include "ortools/sat/container.h"
+#include "ortools/sat/deterministic_time.h"
 #include "ortools/sat/inclusion.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
@@ -2766,8 +2767,12 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
 
 bool BinaryImplicationGraph::MergeAtMostOnes(
     absl::Span<std::vector<Literal>> at_most_ones,
-    int64_t max_num_explored_nodes, double* dtime) {
+    int64_t max_num_explored_nodes) {
   // The code below assumes a DAG.
+  DeterministicTimer2<{.scale1 = 4.2e-09, .scale2 = 4.6e-09, .offset = 2.1e-11}>
+      timer(time_limit_);
+  // TODO(user): track deterministic time in DetectEquivalences and
+  // FilterAndSortAtMostOnes?
   if (!DetectEquivalences()) return false;
   work_done_in_mark_descendants_ = 0;
 
@@ -2906,10 +2911,7 @@ bool BinaryImplicationGraph::MergeAtMostOnes(
       if (num_extra == 0) break;
     }
   }
-  if (dtime != nullptr) {
-    *dtime +=
-        1e-8 * work_done_in_mark_descendants_ + 1e-9 * detector.work_done();
-  }
+  timer.Advance(work_done_in_mark_descendants_, detector.work_done());
   return true;
 }
 

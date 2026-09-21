@@ -380,7 +380,7 @@ typedef FileUtilsTest ReadFileToProtoStatusOrTest;
 TEST_F(ReadFileToProtoStatusOrTest, Success) {
   const FileUtilTestProto1 model = ParseTestProto("some_field:42");
   std::string model_text;
-  google::protobuf::TextFormat::PrintToString(model, &model_text);
+  ASSERT_TRUE(google::protobuf::TextFormat::PrintToString(model, &model_text));
   ASSERT_OK(file::SetContents(file_name_, model_text, file::Defaults()));
   EXPECT_THAT(ReadFileToProto<FileUtilTestProto1>(file_name_),
               IsOkAndHolds(EqualsProto(model)));

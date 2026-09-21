@@ -37,6 +37,7 @@
 #include "ortools/base/types.h"
 #include "ortools/graph_base/connected_components.h"
 #include "ortools/sat/clause.h"
+#include "ortools/sat/deterministic_time.h"
 #include "ortools/sat/gate_utils.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/sat_base.h"
@@ -113,12 +114,12 @@ void AppendBinaryClausesFromTruthTable(
 }  // namespace
 
 void GateCongruenceClosure::EarlyGateDetection() {
-  PresolveTimer timer("EarlyGateDetection", logger_, time_limit_);
-  timer.OverrideLogging(VLOG_IS_ON(2));
+  ScopedTimeLogger logger("EarlyGateDetection", logger_, time_limit_);
+  logger.OverrideLogging(VLOG_IS_ON(2));
 
   // Allow to fill old_truth_tables_bitset_ with tight values.
   // Note that this changes dtime and the solver behavior.
-  StructureExtraction(timer);
+  StructureExtraction(logger);
   tmp_binary_clauses_.clear();
   if (lrat_proof_handler_ != nullptr) {
     lrat_proof_handler_->DeleteTemporaryBinaryClauses();
@@ -130,7 +131,8 @@ void GateCongruenceClosure::EarlyGateDetection() {
 // Note that we include fixed variables. That is actually the point, since when
 // only the target of a function is fixed, we can still infer reduction by using
 // that function.
-void GateCongruenceClosure::ProcessPreviousTruthTables(PresolveTimer& timer) {
+void GateCongruenceClosure::ProcessPreviousTruthTables(
+    ScopedTimeLogger& logger) {
   ids2_.clear();
   ids3_.clear();
   ids4_.clear();
@@ -172,7 +174,7 @@ void GateCongruenceClosure::ProcessPreviousTruthTables(PresolveTimer& timer) {
     }
   }
 
-  timer.AddCounter("old_t3", new_inputs.size());
+  logger.AddCounter("old_t3", new_inputs.size());
   std::swap(truth_tables_inputs_, new_inputs);
 
   // TODO(user): We don't keep the actual bitmask, as it might be tricky
@@ -186,8 +188,8 @@ void GateCongruenceClosure::ProcessPreviousTruthTables(PresolveTimer& timer) {
 // Note that this is the "hot" part of the algo, once we have the and gates,
 // the congruence closure should be quite fast.
 void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
-    PresolveTimer& timer) {
-  ProcessPreviousTruthTables(timer);
+    ScopedTimeLogger& logger) {
+  ProcessPreviousTruthTables(logger);
   truth_tables_clauses_.clear();
   tmp_ids_.clear();
   tmp_clauses_.clear();
@@ -203,48 +205,51 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
   for (LiteralIndex a(0); a < implication_graph_->literal_size(); ++a) {
     // TODO(user): If we know we have too many implications for the time limit
     // we would be better off not doing that loop at all.
-    if (timer.WorkLimitIsReached()) break;
+    if (logger.WorkLimitIsReached()) break;
     if (implication_graph_->IsRedundant(Literal(a))) continue;
     const absl::Span<const Literal> implied =
         implication_graph_->Implications(Literal(a));
-    timer.TrackHashLookups(implied.size());
-    for (const Literal b : implied) {
-      if (implication_graph_->IsRedundant(b)) continue;
+    {
+      DeterministicTimer<{.scale = 6.4e-08, .offset = 5.0e-08}> timer(
+          time_limit_, implied.size());
+      for (const Literal b : implied) {
+        if (implication_graph_->IsRedundant(b)) continue;
 
-      std::array<BooleanVariable, 2> key2;
-      SmallBitset bitmask;
-      FillKeyAndBitmask({Literal(a).Negated(), b}, absl::MakeSpan(key2),
-                        bitmask);
-      auto [it, inserted] = ids2_.insert({key2, bitmask});
-      if (!inserted) {
-        const SmallBitset old = it->second;
-        it->second &= bitmask;
-        if (it->second != old) {
-          // This is either fixing or equivalence!
-          //
-          // Doing a run of DetectEquivalences() should fix that but then
-          // new clauses of size 3 might become binary, and the fix point might
-          // require a lot of steps. So it is important to do it here.
-          const SmallBitset bitset2 = it->second;
-          if (lrat_proof_handler_ != nullptr) {
-            binary_used.clear();
-            AppendBinaryClausesFromTruthTable(key2, bitset2, &binary_used);
+        std::array<BooleanVariable, 2> key2;
+        SmallBitset bitmask;
+        FillKeyAndBitmask({Literal(a).Negated(), b}, absl::MakeSpan(key2),
+                          bitmask);
+        auto [it, inserted] = ids2_.insert({key2, bitmask});
+        if (!inserted) {
+          const SmallBitset old = it->second;
+          it->second &= bitmask;
+          if (it->second != old) {
+            // This is either fixing or equivalence!
+            //
+            // Doing a run of DetectEquivalences() should fix that but then
+            // new clauses of size 3 might become binary, and the fix point
+            // might require a lot of steps. So it is important to do it here.
+            const SmallBitset bitset2 = it->second;
+            if (lrat_proof_handler_ != nullptr) {
+              binary_used.clear();
+              AppendBinaryClausesFromTruthTable(key2, bitset2, &binary_used);
+            }
+            // If we are equivalent, we always have 2 functions.
+            // But if we fix a variable (like bitset2 = 0011) we just have one.
+            const int num_added =
+                ProcessTruthTable(key2, bitset2, {}, binary_used);
+            CHECK_GE(num_added, 1) << std::bitset<4>(bitset2);
           }
-          // If we are equivalent, we always have 2 functions.
-          // But if we fix a variable (like bitset2 = 0011) we just have one.
-          const int num_added =
-              ProcessTruthTable(key2, bitset2, {}, binary_used);
-          CHECK_GE(num_added, 1) << std::bitset<4>(bitset2);
         }
       }
     }
   }
-  timer.AddCounter("t2", ids2_.size());
+  logger.AddCounter("t2", ids2_.size());
 
   std::vector<Literal> candidates;
   for (SatClause* clause : clause_manager_->AllClausesInCreationOrder()) {
-    if (timer.WorkLimitIsReached()) break;
-    if (clause->size() == 0) continue;
+    if (logger.WorkLimitIsReached()) break;
+    if (clause->empty()) continue;
 
     if (clause->size() == 3) {
       AddToTruthTable<3>(clause, ids3_);
@@ -263,21 +268,24 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
     Literal lit_with_less_implications;
 
     const int clause_size = clause->size();
-    timer.TrackSimpleLoop(clause_size);
     candidates.clear();
-    for (const Literal l : clause->AsSpan()) {
-      // TODO(user): using Implications() only considers pure binary
-      // clauses and not at_most_one. Also, if we do transitive reduction, we
-      // might skip important literals here. Maybe a better alternative is
-      // to detect clauses that "propagate" l back when we probe l...
-      const int num_implications = implication_graph_->Implications(l).size();
-      if (num_implications < min_num_implications) {
-        min_num_implications = num_implications;
-        lit_with_less_implications = l;
-      }
+    {
+      DeterministicTimer<{.scale = 1.1e-08, .offset = 1.8e-07}> timer(
+          time_limit_, clause_size);
+      for (const Literal l : clause->AsSpan()) {
+        // TODO(user): using Implications() only considers pure binary
+        // clauses and not at_most_one. Also, if we do transitive reduction, we
+        // might skip important literals here. Maybe a better alternative is
+        // to detect clauses that "propagate" l back when we probe l...
+        const int num_implications = implication_graph_->Implications(l).size();
+        if (num_implications < min_num_implications) {
+          min_num_implications = num_implications;
+          lit_with_less_implications = l;
+        }
 
-      if (num_implications >= clause_size - 1) {
-        candidates.push_back(l);
+        if (num_implications >= clause_size - 1) {
+          candidates.push_back(l);
+        }
       }
     }
     if (candidates.empty()) continue;
@@ -317,89 +325,99 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
       is_potential_target->Set(lit_with_less_implications);
       const absl::Span<const Literal> implications =
           implication_graph_->Implications(lit_with_less_implications);
-      timer.TrackFastLoop(implications.size());
-      for (const Literal implied : implications) {
-        is_potential_target->Set(implied.Negated());
+      {
+        DeterministicTimer<{.scale = 1.6e-08, .offset = 6.2e-09}> timer(
+            time_limit_, implications.size());
+        for (const Literal implied : implications) {
+          is_potential_target->Set(implied.Negated());
+        }
       }
     }
 
-    for (const Literal target : candidates) {
-      if (!(*is_potential_target)[target]) continue;
+    {
+      DeterministicTimer<{.scale = 1.6e-08, .offset = 1.5e-05}> timer(
+          time_limit_);
+      uint64_t work_done = 0;
+      for (const Literal target : candidates) {
+        if (!(*is_potential_target)[target]) continue;
 
-      int count = 0;
-      next_is_potential_target->ResetAllToFalse();
-      const absl::Span<const Literal> implications =
-          implication_graph_->Implications(target);
-      timer.TrackFastLoop(implications.size());
-      for (const Literal implied : implications) {
-        CHECK_NE(implied.Variable(), target.Variable());
+        int count = 0;
+        next_is_potential_target->ResetAllToFalse();
+        const absl::Span<const Literal> implications =
+            implication_graph_->Implications(target);
+        work_done += implications.size();
+        for (const Literal implied : implications) {
+          CHECK_NE(implied.Variable(), target.Variable());
 
-        if (is_clause_literal[implied.Negated()]) {
-          // Set next_is_potential_target to the intersection of
-          // is_potential_target and the one we see here.
-          if ((*is_potential_target)[implied.Negated()]) {
-            next_is_potential_target->Set(implied.Negated());
+          if (is_clause_literal[implied.Negated()]) {
+            // Set next_is_potential_target to the intersection of
+            // is_potential_target and the one we see here.
+            if ((*is_potential_target)[implied.Negated()]) {
+              next_is_potential_target->Set(implied.Negated());
+            }
+            ++count;
           }
-          ++count;
         }
-      }
-      std::swap(is_potential_target, next_is_potential_target);
+        std::swap(is_potential_target, next_is_potential_target);
 
-      // Target should imply all other literals in the base clause to false.
-      if (count < clause_size - 1) continue;
+        // Target should imply all other literals in the base clause to false.
+        if (count < clause_size - 1) continue;
 
-      // Using only the "count" requires that there are no duplicates. But
-      // depending when this is run in the inprocessing loop, we might have
-      // some. Redo a pass to double check.
-      int second_count = 0;
-      for (const Literal implied : implications) {
-        if (implied.Variable() == target.Variable()) continue;
-        if (is_clause_literal[implied.Negated()]) {
-          ++second_count;
-          marked_.Clear(implied.Negated());
+        // Using only the "count" requires that there are no duplicates. But
+        // depending when this is run in the inprocessing loop, we might have
+        // some. Redo a pass to double check.
+        int second_count = 0;
+        work_done += implications.size();
+        for (const Literal implied : implications) {
+          if (implied.Variable() == target.Variable()) continue;
+          if (is_clause_literal[implied.Negated()]) {
+            ++second_count;
+            marked_.Clear(implied.Negated());
+          }
         }
-      }
 
-      // Restore is_clause_literal.
-      for (const Literal l : clause->AsSpan()) {
-        marked_.Set(l);
-      }
-      if (second_count != clause_size - 1) continue;
+        // Restore is_clause_literal.
+        for (const Literal l : clause->AsSpan()) {
+          marked_.Set(l);
+        }
+        if (second_count != clause_size - 1) continue;
 
-      // We have an and_gate!
-      // Add the detected gate (its inputs are the negation of each clause
-      // literal other than the target).
-      gates_target_.push_back(target);
-      gates_type_.push_back(kAndGateType);
+        // We have an and_gate!
+        // Add the detected gate (its inputs are the negation of each clause
+        // literal other than the target).
+        gates_target_.push_back(target);
+        gates_type_.push_back(kAndGateType);
 
-      const GateId gate_id = GateId(gates_inputs_.Add({}));
-      for (const Literal l : clause->AsSpan()) {
-        if (l == target) continue;
-        gates_inputs_.AppendToLastVector(l.Negated());
-      }
-      if (lrat_proof_handler_ != nullptr) {
-        gates_clauses_.Add({clause});
-
-        // Create temporary size 2 clauses for the needed binary.
+        const GateId gate_id = GateId(gates_inputs_.Add({}));
         for (const Literal l : clause->AsSpan()) {
           if (l == target) continue;
-          tmp_binary_clauses_.emplace_back(
-              SatClause::Create({target.Negated(), l.Negated()}));
-          gates_clauses_.AppendToLastVector(tmp_binary_clauses_.back().get());
+          gates_inputs_.AppendToLastVector(l.Negated());
         }
+        if (lrat_proof_handler_ != nullptr) {
+          gates_clauses_.Add({clause});
+
+          // Create temporary size 2 clauses for the needed binary.
+          for (const Literal l : clause->AsSpan()) {
+            if (l == target) continue;
+            tmp_binary_clauses_.emplace_back(
+                SatClause::Create({target.Negated(), l.Negated()}));
+            gates_clauses_.AppendToLastVector(tmp_binary_clauses_.back().get());
+          }
+        }
+
+        // Canonicalize.
+        absl::Span<Literal> gate = gates_inputs_[gate_id];
+        std::sort(gate.begin(), gate.end());
+
+        // Even if we detected an and_gate from a base clause, we keep going
+        // as there could be more than one. In the extreme of an "exactly_one",
+        // a single base clause of size n will correspond to n and_gates!
       }
-
-      // Canonicalize.
-      absl::Span<Literal> gate = gates_inputs_[gate_id];
-      std::sort(gate.begin(), gate.end());
-
-      // Even if we detected an and_gate from a base clause, we keep going
-      // as there could be more than one. In the extreme of an "exactly_one",
-      // a single base clause of size n will correspond to n and_gates!
+      timer.Advance(work_done);
     }
   }
 
-  timer.AddCounter("and_gates", gates_inputs_.size());
+  logger.AddCounter("and_gates", gates_inputs_.size());
 }
 
 int GateCongruenceClosure::CanonicalizeShortGate(GateId id) {
@@ -623,7 +641,7 @@ BooleanVariable FindMissing(absl::Span<const BooleanVariable> vars_a,
 
 // TODO(user): It should be possible to extract ALL possible short gates, but
 // we are not there yet.
-void GateCongruenceClosure::ExtractShortGates(PresolveTimer& timer) {
+void GateCongruenceClosure::ExtractShortGates(ScopedTimeLogger& logger) {
   if (lrat_proof_handler_ != nullptr) {
     truth_tables_clauses_.ResetFromFlatMapping(
         tmp_ids_, tmp_clauses_,
@@ -869,13 +887,13 @@ void GateCongruenceClosure::ExtractShortGates(PresolveTimer& timer) {
     }
   }
 
-  timer.AddCounter("combine3", num_combinations);
-  timer.AddCounter("merges", num_merges);
-  timer.AddCounter("merges2", num_merges2);
+  logger.AddCounter("combine3", num_combinations);
+  logger.AddCounter("merges", num_merges);
+  logger.AddCounter("merges2", num_merges2);
 
   // Note that we only display non-zero counters.
   for (int i = 0; i < num_tables.size(); ++i) {
-    timer.AddCounter(absl::StrCat("t", i), num_tables[i]);
+    logger.AddCounter(absl::StrCat("t", i), num_tables[i]);
   }
 
   std::vector<int> num_functions(6);
@@ -885,7 +903,7 @@ void GateCongruenceClosure::ExtractShortGates(PresolveTimer& timer) {
     }
   }
   for (int i = 0; i < num_functions.size(); ++i) {
-    timer.AddCounter(absl::StrCat("fn", i), num_functions[i]);
+    logger.AddCounter(absl::StrCat("fn", i), num_functions[i]);
   }
 }
 
@@ -1259,7 +1277,7 @@ std::string GateCongruenceClosure::GateDebugString(GateId id) const {
   return result;
 }
 
-void GateCongruenceClosure::StructureExtraction(PresolveTimer& timer) {
+void GateCongruenceClosure::StructureExtraction(ScopedTimeLogger& logger) {
   const int num_variables(sat_solver_->NumVariables());
   const int num_literals(num_variables * 2);
   marked_.ClearAndResize(Literal(num_literals));
@@ -1271,8 +1289,8 @@ void GateCongruenceClosure::StructureExtraction(PresolveTimer& timer) {
   gates_type_.clear();
   gates_clauses_.clear();
 
-  ExtractAndGatesAndFillShortTruthTables(timer);
-  ExtractShortGates(timer);
+  ExtractAndGatesAndFillShortTruthTables(logger);
+  ExtractShortGates(logger);
 
   // All vectors have the same size.
   // Except gates_clauses_ which is only filled if we need proof.
@@ -1292,8 +1310,8 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   clause_manager_->AttachAllClauses();
 
-  PresolveTimer timer("GateCongruenceClosure", logger_, time_limit_);
-  timer.OverrideLogging(log_info || VLOG_IS_ON(2));
+  ScopedTimeLogger logger("GateCongruenceClosure", logger_, time_limit_);
+  logger.OverrideLogging(log_info || VLOG_IS_ON(2));
 
   // Let's release the memory on exit.
   CHECK(tmp_binary_clauses_.empty());
@@ -1306,7 +1324,7 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
 
   const int num_variables(sat_solver_->NumVariables());
   const int num_literals(num_variables * 2);
-  StructureExtraction(timer);
+  StructureExtraction(logger);
 
   // If two gates have the same type and the same inputs, their targets are
   // equivalent. We use a hash set to detect that the inputs are the same.
@@ -1342,14 +1360,14 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
   int num_processed = 0;
   int arity1_equivalences = 0;
   absl::Cleanup stat_cleanup = [&] {
-    total_wtime_ += timer.wtime();
-    total_dtime_ += timer.deterministic_time();
+    total_wtime_ += logger.wtime();
+    total_dtime_ += logger.deterministic_time();
     total_equivalences_ += num_equivalences;
     total_num_units_ += num_units;
-    timer.AddCounter("processed", num_processed);
-    timer.AddCounter("units", num_units);
-    timer.AddCounter("f1_equiv", arity1_equivalences);
-    timer.AddCounter("equiv", num_equivalences);
+    logger.AddCounter("processed", num_processed);
+    logger.AddCounter("units", num_units);
+    logger.AddCounter("f1_equiv", arity1_equivalences);
+    logger.AddCounter("equiv", num_equivalences);
   };
 
   // Starts with all gates in the queue.

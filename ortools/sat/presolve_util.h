@@ -30,6 +30,7 @@
 #include "ortools/util/bitset.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -180,7 +181,8 @@ class ActivityBoundHelper {
   // compute trivial bounds.
   void ClearAtMostOnes();
   void AddAtMostOne(absl::Span<const int> amo);
-  void AddAllAtMostOnes(const CpModelProto& proto);
+  // Returns the total number of literals of the added constraints.
+  uint64_t AddAllAtMostOnes(const CpModelProto& proto);
 
   // Computes the max/min activity of a linear expression involving only
   // Booleans.
@@ -351,16 +353,19 @@ inline bool ClauseIsEnforcementImpliesLiteral(absl::Span<const int> clause,
 // Same as LinearsDifferAtOneTerm() below but also fills the differing terms.
 bool FindSingleLinearDifference(const LinearConstraintProto& lin1,
                                 const LinearConstraintProto& lin2, int* var1,
-                                int64_t* coeff1, int* var2, int64_t* coeff2);
+                                int64_t* coeff1, int* var2, int64_t* coeff2,
+                                TimeLimit* time_limit);
 
 // Returns true iff the two linear constraints only differ at a single term.
 //
 // Preconditions: Constraint should be sorted by variable and of same size.
 inline bool LinearsDifferAtOneTerm(const LinearConstraintProto& lin1,
-                                   const LinearConstraintProto& lin2) {
+                                   const LinearConstraintProto& lin2,
+                                   TimeLimit* time_limit) {
   int var1, var2;
   int64_t coeff1, coeff2;
-  return FindSingleLinearDifference(lin1, lin2, &var1, &coeff1, &var2, &coeff2);
+  return FindSingleLinearDifference(lin1, lin2, &var1, &coeff1, &var2, &coeff2,
+                                    time_limit);
 }
 
 }  // namespace sat

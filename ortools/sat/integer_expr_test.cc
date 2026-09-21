@@ -1028,8 +1028,7 @@ TEST(ProductConstraintTest, CheckAllSolutionsRandomProblem) {
     prod->mutable_target()->add_coeffs(1);
 
     absl::btree_set<std::vector<int>> solutions;
-    const CpSolverResponse response =
-        SolveAndCheck(cp_model, "linearization_level:0", &solutions);
+    SolveAndCheck(cp_model, "linearization_level:0", &solutions);
 
     // Loop through the domains of x and y, and collect valid solutions.
     absl::btree_set<std::vector<int>> expected;
@@ -1722,8 +1721,7 @@ TEST(DivisionConstraintTest, CheckAllSolutionsOnExprs) {
     div->mutable_target()->set_offset(target_offset);
 
     absl::btree_set<std::vector<int>> solutions;
-    const CpSolverResponse response =
-        SolveAndCheck(initial_model, "linearization_level:0", &solutions);
+    SolveAndCheck(initial_model, "linearization_level:0", &solutions);
 
     // Loop through the domains of var and target, and collect valid solutions.
     absl::btree_set<std::vector<int>> expected;
@@ -1939,8 +1937,7 @@ TEST(ModuloConstraintTest, CheckAllSolutions) {
     modulo->mutable_target()->add_coeffs(target_coeff);
 
     absl::btree_set<std::vector<int>> solutions;
-    const CpSolverResponse response =
-        SolveAndCheck(initial_model, "linearization_level:0", &solutions);
+    SolveAndCheck(initial_model, "linearization_level:0", &solutions);
 
     // Loop through the domains of var and target, and collect valid solutions.
     absl::btree_set<std::vector<int>> expected;
@@ -2259,7 +2256,7 @@ TEST(SquareConstraintTest, CheckEnumerateAllSolutionsAllSign) {
 
   absl::btree_set<std::vector<int>> reference_solutions;
   for (int x = -15; x <= 15; ++x) {
-    if (x * x >= -10 & x * x <= 100) {
+    if ((x * x >= -10) && (x * x <= 100)) {
       reference_solutions.insert({x, x * x});
     }
   }
