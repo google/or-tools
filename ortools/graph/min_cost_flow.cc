@@ -222,9 +222,7 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::CheckResult()
       LOG(DFATAL) << "node_excess_[" << node << "] != 0";
       return false;
     }
-    for (OutgoingOrOppositeIncomingArcIterator it(*graph_, node); it.Ok();
-         it.Next()) {
-      const ArcIndex arc = it.Index();
+    for (const ArcIndex arc : graph_->OutgoingOrOppositeIncomingArcs(node)) {
       bool ok = true;
       if (residual_arc_capacity_[arc] < 0) {
         LOG(DFATAL) << "residual_arc_capacity_[" << arc << "] < 0";
@@ -255,9 +253,7 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::
   // Algorithm", A.V. Goldberg, Journal of Algorithms 22(1), January 1997, pp.
   // 1-29.
   DCHECK_GE(node_excess_[node], 0);
-  for (OutgoingOrOppositeIncomingArcIterator it(*graph_, node); it.Ok();
-       it.Next()) {
-    const ArcIndex arc = it.Index();
+  for (const ArcIndex arc : graph_->OutgoingOrOppositeIncomingArcs(node)) {
     DCHECK(!IsAdmissible(arc)) << DebugString("CheckRelabelPrecondition:", arc);
   }
   return true;
@@ -432,8 +428,7 @@ auto GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::FastReducedCost(
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
 auto GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::
     GetFirstOutgoingOrOppositeIncomingArc(NodeIndex node) const -> ArcIndex {
-  OutgoingOrOppositeIncomingArcIterator arc_it(*graph_, node);
-  return arc_it.Index();
+  return *graph_->OutgoingOrOppositeIncomingArcs(node).begin();
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
@@ -563,10 +558,9 @@ void GenericMinCostFlow<Graph, ArcFlowType,
   SCOPED_TIME_STAT(&stats_);
   for (NodeIndex node = 0; node < graph_->num_nodes(); ++node) {
     const CostValue tail_potential = node_potential_[node];
-    for (OutgoingOrOppositeIncomingArcIterator it(*graph_, node,
-                                                  first_admissible_arc_[node]);
-         it.Ok(); it.Next()) {
-      const ArcIndex arc = it.Index();
+    for (const ArcIndex arc :
+         graph_->OutgoingOrOppositeIncomingArcsStartingFrom(
+             node, first_admissible_arc_[node])) {
       if (FastIsAdmissible(arc, tail_potential)) {
         FastPushFlow(residual_arc_capacity_[arc], arc, node);
       }
@@ -676,11 +670,10 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::UpdatePrices() {
     for (; queue_index < bfs_queue.size(); ++queue_index) {
       DCHECK_GE(num_nodes, bfs_queue.size());
       const NodeIndex node = bfs_queue[queue_index];
-      for (OutgoingOrOppositeIncomingArcIterator it(*graph_, node); it.Ok();
-           it.Next()) {
-        const NodeIndex head = Head(it.Index());
+      for (const ArcIndex arc : graph_->OutgoingOrOppositeIncomingArcs(node)) {
+        const NodeIndex head = Head(arc);
         if (node_in_queue[head]) continue;
-        const ArcIndex opposite_arc = Opposite(it.Index());
+        const ArcIndex opposite_arc = Opposite(arc);
         if (residual_arc_capacity_[opposite_arc] > 0) {
           node_potential_[head] += potential_delta;
           if (node_potential_[head] < overflow_threshold_) {
@@ -814,10 +807,9 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Discharge(
     // inactive.
     DCHECK(IsActive(node));
     const CostValue tail_potential = node_potential_[node];
-    for (OutgoingOrOppositeIncomingArcIterator it(*graph_, node,
-                                                  first_admissible_arc_[node]);
-         it.Ok(); it.Next()) {
-      const ArcIndex arc = it.Index();
+    for (const ArcIndex arc :
+         graph_->OutgoingOrOppositeIncomingArcsStartingFrom(
+             node, first_admissible_arc_[node])) {
       if (!FastIsAdmissible(arc, tail_potential)) continue;
 
       // We look ahead to see if this node can accept the flow or will need
@@ -854,10 +846,8 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::
     NodeHasAdmissibleArc(NodeIndex node) {
   SCOPED_TIME_STAT(&stats_);
   const CostValue tail_potential = node_potential_[node];
-  for (OutgoingOrOppositeIncomingArcIterator it(*graph_, node,
-                                                first_admissible_arc_[node]);
-       it.Ok(); it.Next()) {
-    const ArcIndex arc = it.Index();
+  for (const ArcIndex arc : graph_->OutgoingOrOppositeIncomingArcsStartingFrom(
+           node, first_admissible_arc_[node])) {
     if (FastIsAdmissible(arc, tail_potential)) {
       first_admissible_arc_[node] = arc;
       return true;
@@ -899,9 +889,7 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Relabel(
   CostValue previous_min_non_admissible_potential = kMinCostValue;
   ArcIndex first_arc = Graph::kNilArc;
 
-  for (OutgoingOrOppositeIncomingArcIterator it(*graph_, node); it.Ok();
-       it.Next()) {
-    const ArcIndex arc = it.Index();
+  for (const ArcIndex arc : graph_->OutgoingOrOppositeIncomingArcs(node)) {
     if (residual_arc_capacity_[arc] > 0) {
       const CostValue min_non_admissible_potential_for_arc =
           node_potential_[Head(arc)] - scaled_arc_unit_cost_[arc];

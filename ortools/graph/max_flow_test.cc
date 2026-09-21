@@ -156,22 +156,17 @@ TEST(SimpleMaxFlowTest, CreateFlowModelProto) {
   EXPECT_THAT(model_proto,
               ::testing::EqualsProto(solver2.CreateFlowModelProto(0, 3)));
 
-  // Check that the proto is what we expect it is.
-  FlowModelProto expected;
-  google::protobuf::TextFormat::ParseFromString(
-      R"pb(
-        problem_type: MAX_FLOW
-        nodes { id: 0 supply: 1 }
-        nodes { id: 1 }
-        nodes { id: 2 }
-        nodes { id: 3 supply: -1 }
-        arcs { tail: 0 head: 1 capacity: 10 }
-        arcs { tail: 0 head: 2 capacity: 10 }
-        arcs { tail: 1 head: 2 capacity: 5 }
-        arcs { tail: 2 head: 3 capacity: 15 }
-      )pb",
-      &expected);
-  EXPECT_THAT(model_proto, testing::EqualsProto(expected));
+  EXPECT_THAT(model_proto, testing::EqualsProto(R"pb(
+                problem_type: MAX_FLOW
+                nodes { id: 0 supply: 1 }
+                nodes { id: 1 }
+                nodes { id: 2 }
+                nodes { id: 3 supply: -1 }
+                arcs { tail: 0 head: 1 capacity: 10 }
+                arcs { tail: 0 head: 2 capacity: 10 }
+                arcs { tail: 1 head: 2 capacity: 5 }
+                arcs { tail: 2 head: 3 capacity: 15 }
+              )pb"));
 }
 
 // A problem that was triggering a issue on 28/11/2014 (now fixed).

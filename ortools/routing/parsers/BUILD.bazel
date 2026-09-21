@@ -359,6 +359,7 @@ or_cc_library(
         "//ortools/constraint_solver:cp",
         "//ortools/routing",
         "//ortools/routing:index_manager",
+        "//ortools/routing:types",
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",

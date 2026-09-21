@@ -31,6 +31,7 @@
 #include "ortools/pdlp/quadratic_program.h"
 #include "ortools/pdlp/sharded_quadratic_program.h"
 #include "ortools/pdlp/sharder.h"
+#include "ortools/pdlp/solve_log.pb.h"
 
 namespace operations_research::pdlp {
 

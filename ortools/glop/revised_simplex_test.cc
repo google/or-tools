@@ -964,7 +964,7 @@ TEST(RevisedSimplexTest, PrimalUnbounded) {
             time_limit->GetElapsedDeterministicTime());
 }
 
-TEST(RevisedSimplexTest, DualUnboundedMaximization) {
+TEST(RevisedSimplexTest, PrimalUnboundedMaximization) {
   const std::string kLinearProgram =
       "max: 2x1 - x2;"
       "x1 >= 0;"

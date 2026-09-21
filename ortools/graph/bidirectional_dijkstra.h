@@ -362,7 +362,7 @@ void BidirectionalDijkstra<GraphType, DistanceType>::PerformHalfSearch(
     // other search thread when updating the same node, we use a Mutex on that
     // node.
     {
-      node_mutex_[top.node].Lock();
+      node_mutex_[top.node].lock();
       is_settled_[dir][top.node] = true;  // It's important to do this early.
       // Most meeting points are caught by the logic below (in the arc
       // relaxation loop), but not the meeting points that are on the sources
@@ -372,7 +372,7 @@ void BidirectionalDijkstra<GraphType, DistanceType>::PerformHalfSearch(
             top.distance + distances_[Reverse(dir)][top.node];
         // Release the node mutex, now that we can, to prevent deadlocks when
         // we try acquiring the global search mutex.
-        node_mutex_[top.node].Unlock();
+        node_mutex_[top.node].unlock();
         absl::MutexLock search_lock(search_mutex_);
         if (meeting_distance < best_meeting_point_.distance) {
           best_meeting_point_ = {top.node, meeting_distance};
@@ -380,7 +380,7 @@ void BidirectionalDijkstra<GraphType, DistanceType>::PerformHalfSearch(
                    << ": New best: " << best_meeting_point_.DebugString();
         }
       } else {
-        node_mutex_[top.node].Unlock();
+        node_mutex_[top.node].unlock();
       }
     }
 

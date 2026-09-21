@@ -163,7 +163,7 @@ class MathUtil {
     // is not the case is kMin for signed types (i.e. -2^N), but that is covered
     // by the fall-through below.
     if (exp <= std::numeric_limits<IntOut>::digits) {
-      return x;
+      return static_cast<IntOut>(x);
     }
 
     // Handle numbers with magnitude >= 2^N.

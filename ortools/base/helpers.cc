@@ -125,7 +125,7 @@ absl::Status GetTextProto(absl::string_view file_name,
 
     // Re-parse the ASCII, just to show the diagnostics (we could also get them
     // out of the ErrorCollector but this way is easier).
-    google::protobuf::TextFormat::ParseFromString(str, proto);
+    (void)google::protobuf::TextFormat::ParseFromString(str, proto);
     VLOG(1) << "Could not parse contents of '" << file_name << "'";
   }
   return absl::Status(
