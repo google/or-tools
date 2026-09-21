@@ -705,8 +705,7 @@ public final class LinearSolverTest {
     if (!MPSolver.supportsProblemType(problemType)) {
       return;
     }
-    final MPSolver solver =
-        new MPSolver("testSolveWithAndWithoutHint", problemType);
+    final MPSolver solver = new MPSolver("testSolveWithAndWithoutHint", problemType);
     assertNotNull(solver);
 
     final double infinity = MPSolver.infinity();
@@ -758,17 +757,16 @@ public final class LinearSolverTest {
 
   @Test
   public void testMPSolver_solveWithAndWithoutHint() {
-    for (MPSolver.OptimizationProblemType solverType :
-        new MPSolver.OptimizationProblemType[] {
-          MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING,
-          MPSolver.OptimizationProblemType.SCIP_MIXED_INTEGER_PROGRAMMING,
-          MPSolver.OptimizationProblemType.SAT_INTEGER_PROGRAMMING,
-          MPSolver.OptimizationProblemType.GUROBI_MIXED_INTEGER_PROGRAMMING,
-        }) {
+    for (MPSolver.OptimizationProblemType solverType : new MPSolver.OptimizationProblemType[] {
+             MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING,
+             MPSolver.OptimizationProblemType.SCIP_MIXED_INTEGER_PROGRAMMING,
+             MPSolver.OptimizationProblemType.SAT_INTEGER_PROGRAMMING,
+             MPSolver.OptimizationProblemType.GUROBI_MIXED_INTEGER_PROGRAMMING,
+         }) {
       // Solve without hint.
-      runSolveWithAndWithoutHint(solverType, /*useHint=*/ false);
+      runSolveWithAndWithoutHint(solverType, /*useHint=*/false);
       // Solve with hint.
-      runSolveWithAndWithoutHint(solverType, /*useHint=*/ true);
+      runSolveWithAndWithoutHint(solverType, /*useHint=*/true);
     }
   }
 
@@ -776,8 +774,7 @@ public final class LinearSolverTest {
     if (!MPSolver.supportsProblemType(problemType)) {
       return;
     }
-    final MPSolver solver =
-        new MPSolver("testSolveWithBadHint", problemType);
+    final MPSolver solver = new MPSolver("testSolveWithBadHint", problemType);
     assertNotNull(solver);
 
     final double infinity = MPSolver.infinity();
@@ -815,23 +812,17 @@ public final class LinearSolverTest {
 
   @Test
   public void testMPSolver_solveWithBadHint() {
-    runSolveWithBadHint(
-        MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
-    runSolveWithBadHint(
-        MPSolver.OptimizationProblemType.SCIP_MIXED_INTEGER_PROGRAMMING);
-    runSolveWithBadHint(
-        MPSolver.OptimizationProblemType.SAT_INTEGER_PROGRAMMING);
-    runSolveWithBadHint(
-        MPSolver.OptimizationProblemType.GUROBI_MIXED_INTEGER_PROGRAMMING);
+    runSolveWithBadHint(MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
+    runSolveWithBadHint(MPSolver.OptimizationProblemType.SCIP_MIXED_INTEGER_PROGRAMMING);
+    runSolveWithBadHint(MPSolver.OptimizationProblemType.SAT_INTEGER_PROGRAMMING);
+    runSolveWithBadHint(MPSolver.OptimizationProblemType.GUROBI_MIXED_INTEGER_PROGRAMMING);
   }
 
-  private void runSolveWithInfeasibleHint(
-      MPSolver.OptimizationProblemType problemType) {
+  private void runSolveWithInfeasibleHint(MPSolver.OptimizationProblemType problemType) {
     if (!MPSolver.supportsProblemType(problemType)) {
       return;
     }
-    final MPSolver solver =
-        new MPSolver("testSolveWithInfeasibleHint", problemType);
+    final MPSolver solver = new MPSolver("testSolveWithInfeasibleHint", problemType);
     assertNotNull(solver);
 
     final double infinity = MPSolver.infinity();
@@ -869,13 +860,9 @@ public final class LinearSolverTest {
 
   @Test
   public void testMPSolver_solveWithInfeasibleHint() {
-    runSolveWithInfeasibleHint(
-        MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
-    runSolveWithInfeasibleHint(
-        MPSolver.OptimizationProblemType.SCIP_MIXED_INTEGER_PROGRAMMING);
-    runSolveWithInfeasibleHint(
-        MPSolver.OptimizationProblemType.SAT_INTEGER_PROGRAMMING);
-    runSolveWithInfeasibleHint(
-        MPSolver.OptimizationProblemType.GUROBI_MIXED_INTEGER_PROGRAMMING);
+    runSolveWithInfeasibleHint(MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
+    runSolveWithInfeasibleHint(MPSolver.OptimizationProblemType.SCIP_MIXED_INTEGER_PROGRAMMING);
+    runSolveWithInfeasibleHint(MPSolver.OptimizationProblemType.SAT_INTEGER_PROGRAMMING);
+    runSolveWithInfeasibleHint(MPSolver.OptimizationProblemType.GUROBI_MIXED_INTEGER_PROGRAMMING);
   }
 }
