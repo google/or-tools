@@ -8,9 +8,9 @@ RUN apt-get update -qq \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Install .Net
-# see https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu-2304
+# see https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu-2604
 RUN apt-get update -qq \
-&& apt-get install -yq dotnet-sdk-8.0 \
+&& apt-get install -yq dotnet-sdk-10.0 \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 # Trigger first run experience by running arbitrary cmd
