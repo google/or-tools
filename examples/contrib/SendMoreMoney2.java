@@ -20,6 +20,7 @@ import java.util.*;
 
 public class SendMoreMoney2 {
   static Solver sol;
+
   // Some helper methods
   static IntExpr p(IntExpr a, int b, IntExpr c) {
     return sol.makeSum(sol.makeProd(a, b), c);

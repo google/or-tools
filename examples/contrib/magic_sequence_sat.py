@@ -12,40 +12,39 @@
 # limitations under the License.
 """Solve the magic sequence problem with the CP-SAT solver."""
 
-
 from ortools.sat.python import cp_model
 
 
 def main():
-  """Magic sequence problem."""
-  n = 100
-  values = range(n)
+    """Magic sequence problem."""
+    n = 100
+    values = range(n)
 
-  model = cp_model.CpModel()
+    model = cp_model.CpModel()
 
-  x = [model.NewIntVar(0, n, 'x%i' % i) for i in values]
+    x = [model.NewIntVar(0, n, "x%i" % i) for i in values]
 
-  for k in values:
-    tmp_array = []
-    for i in values:
-      tmp_var = model.NewBoolVar('')
-      model.Add(x[i] == k).OnlyEnforceIf(tmp_var)
-      model.Add(x[i] != k).OnlyEnforceIf(tmp_var.Not())
-      tmp_array.append(tmp_var)
-    model.Add(sum(tmp_array) == x[k])
+    for k in values:
+        tmp_array = []
+        for i in values:
+            tmp_var = model.NewBoolVar("")
+            model.Add(x[i] == k).OnlyEnforceIf(tmp_var)
+            model.Add(x[i] != k).OnlyEnforceIf(tmp_var.Not())
+            tmp_array.append(tmp_var)
+        model.Add(sum(tmp_array) == x[k])
 
-  # Redundant constraint.
-  model.Add(sum(x) == n)
+    # Redundant constraint.
+    model.Add(sum(x) == n)
 
-  solver = cp_model.CpSolver()
-  # No solution printer, this problem has only 1 solution.
-  solver.parameters.log_search_progress = True
-  solver.Solve(model)
-  print(solver.ResponseStats())
-  for k in values:
-    print('x[%i] = %i ' % (k, solver.Value(x[k])), end='')
-  print()
+    solver = cp_model.CpSolver()
+    # No solution printer, this problem has only 1 solution.
+    solver.parameters.log_search_progress = True
+    solver.Solve(model)
+    print(solver.ResponseStats())
+    for k in values:
+        print("x[%i] = %i " % (k, solver.Value(x[k])), end="")
+    print()
 
 
-if __name__ == '__main__':
-  main()
+if __name__ == "__main__":
+    main()

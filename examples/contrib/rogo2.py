@@ -11,160 +11,158 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Rogo puzzle solver in Google CP Solver.
+
+From http://www.rogopuzzle.co.nz/
+'''
+The object is to collect the biggest score possible using a given
+number of steps in a loop around a grid. The best possible score
+for a puzzle is given with it, so you can easily check that you have
+solved the puzzle. Rogo puzzles can also include forbidden squares,
+which must be avoided in your loop.
+'''
+
+Also see Mike Trick:
+'Operations Research, Sudoko, Rogo, and Puzzles'
+http://mat.tepper.cmu.edu/blog/?p=1302
+
+Problem instances:
+* http://www.hakank.org/google_or_tools/rogo_mike_trick.py
+* http://www.hakank.org/google_or_tools/rogo_20110106.py
+* http://www.hakank.org/google_or_tools/rogo_20110107.py
+
+
+Compare with the following models:
+* Answer Set Programming:
+   http://www.hakank.org/answer_set_programming/rogo2.lp
+* MiniZinc: http://www.hakank.org/minizinc/rogo2.mzn
+
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 
-  Rogo puzzle solver in Google CP Solver.
-
-  From http://www.rogopuzzle.co.nz/
-  '''
-  The object is to collect the biggest score possible using a given
-  number of steps in a loop around a grid. The best possible score
-  for a puzzle is given with it, so you can easily check that you have
-  solved the puzzle. Rogo puzzles can also include forbidden squares,
-  which must be avoided in your loop.
-  '''
-
-  Also see Mike Trick:
-  'Operations Research, Sudoko, Rogo, and Puzzles'
-  http://mat.tepper.cmu.edu/blog/?p=1302
-
-  Problem instances:
-  * http://www.hakank.org/google_or_tools/rogo_mike_trick.py
-  * http://www.hakank.org/google_or_tools/rogo_20110106.py
-  * http://www.hakank.org/google_or_tools/rogo_20110107.py
-
-
-  Compare with the following models:
-  * Answer Set Programming:
-     http://www.hakank.org/answer_set_programming/rogo2.lp
-  * MiniZinc: http://www.hakank.org/minizinc/rogo2.mzn
-
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
-
-"""
-import sys
 import re
+import sys
 
 from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(problem, rows, cols, max_steps):
 
-  # Create the solver.
-  solver = cp.Solver("Rogo grid puzzle")
+    # Create the solver.
+    solver = cp.Solver("Rogo grid puzzle")
 
-  #
-  # data
-  #
-  W = 0
-  B = -1
-  print("rows: %i cols: %i max_steps: %i" % (rows, cols, max_steps))
+    #
+    # data
+    #
+    W = 0
+    B = -1
+    print("rows: %i cols: %i max_steps: %i" % (rows, cols, max_steps))
 
-  problem_flatten = [problem[i][j] for i in range(rows) for j in range(cols)]
-  max_point = max(problem_flatten)
-  print("max_point:", max_point)
-  max_sum = sum(problem_flatten)
-  print("max_sum:", max_sum)
-  print()
-
-  #
-  # declare variables
-  #
-
-  # the coordinates
-  x = [solver.new_int_var(0, rows - 1, "x[%i]" % i) for i in range(max_steps)]
-  y = [solver.new_int_var(0, cols - 1, "y[%i]" % i) for i in range(max_steps)]
-
-  # the collected points
-  points = [
-      solver.new_int_var(0, max_point, "points[%i]" % i) for i in range(max_steps)
-  ]
-
-  # objective: sum of points in the path
-  sum_points = solver.new_int_var(0, max_sum)
-
-  #
-  # constraints
-  #
-
-  # all coordinates must be unique
-  for s in range(max_steps):
-    for t in range(s + 1, max_steps):
-      b1 = x[s] != x[t]
-      b2 = y[s] != y[t]
-      solver.add(b1 + b2 >= 1)
-
-  # calculate the points (to maximize)
-  for s in range(max_steps):
-    solver.add(points[s] == solver.element(problem_flatten, x[s] * cols + y[s]))
-
-  solver.add(sum_points == sum(points))
-
-  # ensure that there are not black cells in
-  # the path
-  for s in range(max_steps):
-    solver.add(solver.element(problem_flatten, x[s] * cols + y[s]) != B)
-
-  # get the path
-  for s in range(max_steps - 1):
-    solver.add(abs(x[s] - x[s + 1]) + abs(y[s] - y[s + 1]) == 1)
-
-  # close the path around the corner
-  solver.add(abs(x[max_steps - 1] - x[0]) + abs(y[max_steps - 1] - y[0]) == 1)
-
-  # symmetry breaking: the cell with lowest coordinates
-  # should be in the first step.
-  for i in range(1, max_steps):
-    solver.add(x[0] * cols + y[0] < x[i] * cols + y[i])
-
-  # symmetry breaking: second step is larger than
-  # first step
-  # solver.add(x[0]*cols+y[0] < x[1]*cols+y[1])
-
-  #
-  # objective
-  #
-  objective = solver.maximize(sum_points, 1)
-
-  #
-  # solution and search
-  #
-  # db = solver.phase(x + y,
-  #                    cp.IntVarStrategy.CHOOSE_MIN_SIZE_LOWEST_MIN,
-  #                    cp.IntValueStrategy.ASSIGN_MIN_VALUE)
-
-  # Default search
-  parameters = cp.DefaultPhaseParameters()
-
-  parameters.heuristic_period = 200000
-  # parameters.var_selection_schema = parameters.CHOOSE_MAX_SUM_IMPACT
-  parameters.var_selection_schema = parameters.CHOOSE_MAX_AVERAGE_IMPACT  # <-
-  # parameters.var_selection_schema = parameters.CHOOSE_MAX_VALUE_IMPACT
-
-  parameters.value_selection_schema = parameters.SELECT_MIN_IMPACT  # <-
-  # parameters.value_selection_schema = parameters.SELECT_MAX_IMPACT
-
-  # parameters.initialization_splits = 10
-
-  db = solver.default_phase(x + y, parameters)
-
-  solver.new_search(db, [objective])
-
-  num_solutions = 0
-  while solver.next_solution():
-    num_solutions += 1
-    print("sum_points:", sum_points.value())
-    print("adding 1 to coords...")
-    for s in range(max_steps):
-      print("%i %i" % (x[s].value() + 1, y[s].value() + 1))
+    problem_flatten = [problem[i][j] for i in range(rows) for j in range(cols)]
+    max_point = max(problem_flatten)
+    print("max_point:", max_point)
+    max_sum = sum(problem_flatten)
+    print("max_sum:", max_sum)
     print()
 
-  print("\nnum_solutions:", num_solutions)
-  print("failures:", solver.num_failures)
-  print("branches:", solver.num_branches)
-  print("WallTime:", solver.wall_time_ms)
+    #
+    # declare variables
+    #
+
+    # the coordinates
+    x = [solver.new_int_var(0, rows - 1, "x[%i]" % i) for i in range(max_steps)]
+    y = [solver.new_int_var(0, cols - 1, "y[%i]" % i) for i in range(max_steps)]
+
+    # the collected points
+    points = [
+        solver.new_int_var(0, max_point, "points[%i]" % i) for i in range(max_steps)
+    ]
+
+    # objective: sum of points in the path
+    sum_points = solver.new_int_var(0, max_sum)
+
+    #
+    # constraints
+    #
+
+    # all coordinates must be unique
+    for s in range(max_steps):
+        for t in range(s + 1, max_steps):
+            b1 = x[s] != x[t]
+            b2 = y[s] != y[t]
+            solver.add(b1 + b2 >= 1)
+
+    # calculate the points (to maximize)
+    for s in range(max_steps):
+        solver.add(points[s] == solver.element(problem_flatten, x[s] * cols + y[s]))
+
+    solver.add(sum_points == sum(points))
+
+    # ensure that there are not black cells in
+    # the path
+    for s in range(max_steps):
+        solver.add(solver.element(problem_flatten, x[s] * cols + y[s]) != B)
+
+    # get the path
+    for s in range(max_steps - 1):
+        solver.add(abs(x[s] - x[s + 1]) + abs(y[s] - y[s + 1]) == 1)
+
+    # close the path around the corner
+    solver.add(abs(x[max_steps - 1] - x[0]) + abs(y[max_steps - 1] - y[0]) == 1)
+
+    # symmetry breaking: the cell with lowest coordinates
+    # should be in the first step.
+    for i in range(1, max_steps):
+        solver.add(x[0] * cols + y[0] < x[i] * cols + y[i])
+
+    # symmetry breaking: second step is larger than
+    # first step
+    # solver.add(x[0]*cols+y[0] < x[1]*cols+y[1])
+
+    #
+    # objective
+    #
+    objective = solver.maximize(sum_points, 1)
+
+    #
+    # solution and search
+    #
+    # db = solver.phase(x + y,
+    #                    cp.IntVarStrategy.CHOOSE_MIN_SIZE_LOWEST_MIN,
+    #                    cp.IntValueStrategy.ASSIGN_MIN_VALUE)
+
+    # Default search
+    parameters = cp.DefaultPhaseParameters()
+
+    parameters.heuristic_period = 200000
+    # parameters.var_selection_schema = parameters.CHOOSE_MAX_SUM_IMPACT
+    parameters.var_selection_schema = parameters.CHOOSE_MAX_AVERAGE_IMPACT  # <-
+    # parameters.var_selection_schema = parameters.CHOOSE_MAX_VALUE_IMPACT
+
+    parameters.value_selection_schema = parameters.SELECT_MIN_IMPACT  # <-
+    # parameters.value_selection_schema = parameters.SELECT_MAX_IMPACT
+
+    # parameters.initialization_splits = 10
+
+    db = solver.default_phase(x + y, parameters)
+
+    solver.new_search(db, [objective])
+
+    num_solutions = 0
+    while solver.next_solution():
+        num_solutions += 1
+        print("sum_points:", sum_points.value())
+        print("adding 1 to coords...")
+        for s in range(max_steps):
+            print("%i %i" % (x[s].value() + 1, y[s].value() + 1))
+        print()
+
+    print("\nnum_solutions:", num_solutions)
+    print("failures:", solver.num_failures)
+    print("branches:", solver.num_branches)
+    print("WallTime:", solver.wall_time_ms)
 
 
 # Default problem:
@@ -180,10 +178,14 @@ cols = 9
 max_steps = 12
 W = 0
 B = -1
-problem = [[2, W, W, W, W, W, W, W, W], [W, 3, W, W, 1, W, W, 2, W],
-           [W, W, W, W, W, W, B, W, 2], [W, W, 2, B, W, W, W, W, W],
-           [W, W, W, W, 2, W, W, 1, W]]
+problem = [
+    [2, W, W, W, W, W, W, W, W],
+    [W, 3, W, W, 1, W, W, 2, W],
+    [W, W, W, W, W, W, B, W, 2],
+    [W, W, 2, B, W, W, W, W, W],
+    [W, W, W, W, 2, W, W, 1, W],
+]
 if __name__ == "__main__":
-  if len(sys.argv) > 1:
-    exec(compile(open(sys.argv[1]).read(), sys.argv[1], "exec"))
-  main(problem, rows, cols, max_steps)
+    if len(sys.argv) > 1:
+        exec(compile(open(sys.argv[1]).read(), sys.argv[1], "exec"))
+    main(problem, rows, cols, max_steps)

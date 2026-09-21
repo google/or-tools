@@ -11,100 +11,112 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""SEND+MORE=MONEY in 'any' base in Google CP Solver.
+
+Alphametic problem SEND+MORE=MONEY in any base.
+
+Examples:
+Base 10 has one solution:
+   {9, 5, 6, 7, 1, 0, 8, 2}
+Base 11 has three soltutions:
+   {10, 5, 6, 8, 1, 0, 9, 2}
+   {10, 6, 7, 8, 1, 0, 9, 3}
+   {10, 7, 8, 6, 1, 0, 9, 2}
+
+Also, compare with the following models:
+* Comet   : http://www.hakank.org/comet/send_more_money_any_base.co
+* ECLiPSE : http://www.hakank.org/eclipse/send_more_money_any_base.ecl
+* Essence : http://www.hakank.org/tailor/send_more_money_any_base.eprime
+* Gecode  : http://www.hakank.org/gecode/send_more_money_any_base.cpp
+* Gecode/R: http://www.hakank.org/gecode_r/send_more_money_any_base.rb
+* MiniZinc: http://www.hakank.org/minizinc/send_more_money_any_base.mzn
+* Zinc: http://www.hakank.org/minizinc/send_more_money_any_base.zinc
+* SICStus: http://www.hakank.org/sicstus/send_more_money_any_base.pl
+
+
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 
-  SEND+MORE=MONEY in 'any' base in Google CP Solver.
-
-  Alphametic problem SEND+MORE=MONEY in any base.
-
-  Examples:
-  Base 10 has one solution:
-     {9, 5, 6, 7, 1, 0, 8, 2}
-  Base 11 has three soltutions:
-     {10, 5, 6, 8, 1, 0, 9, 2}
-     {10, 6, 7, 8, 1, 0, 9, 3}
-     {10, 7, 8, 6, 1, 0, 9, 2}
-
-  Also, compare with the following models:
-  * Comet   : http://www.hakank.org/comet/send_more_money_any_base.co
-  * ECLiPSE : http://www.hakank.org/eclipse/send_more_money_any_base.ecl
-  * Essence : http://www.hakank.org/tailor/send_more_money_any_base.eprime
-  * Gecode  : http://www.hakank.org/gecode/send_more_money_any_base.cpp
-  * Gecode/R: http://www.hakank.org/gecode_r/send_more_money_any_base.rb
-  * MiniZinc: http://www.hakank.org/minizinc/send_more_money_any_base.mzn
-  * Zinc: http://www.hakank.org/minizinc/send_more_money_any_base.zinc
-  * SICStus: http://www.hakank.org/sicstus/send_more_money_any_base.pl
-
-
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
-
-"""
 import sys
+
 from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(base=10):
 
-  # Create the solver.
-  solver = cp.Solver('Send most money')
+    # Create the solver.
+    solver = cp.Solver("Send most money")
 
-  # data
-  print('base:', base)
+    # data
+    print("base:", base)
 
-  # declare variables
-  s = solver.new_int_var(0, base - 1, 's')
-  e = solver.new_int_var(0, base - 1, 'e')
-  n = solver.new_int_var(0, base - 1, 'n')
-  d = solver.new_int_var(0, base - 1, 'd')
-  m = solver.new_int_var(0, base - 1, 'm')
-  o = solver.new_int_var(0, base - 1, 'o')
-  r = solver.new_int_var(0, base - 1, 'r')
-  y = solver.new_int_var(0, base - 1, 'y')
+    # declare variables
+    s = solver.new_int_var(0, base - 1, "s")
+    e = solver.new_int_var(0, base - 1, "e")
+    n = solver.new_int_var(0, base - 1, "n")
+    d = solver.new_int_var(0, base - 1, "d")
+    m = solver.new_int_var(0, base - 1, "m")
+    o = solver.new_int_var(0, base - 1, "o")
+    r = solver.new_int_var(0, base - 1, "r")
+    y = solver.new_int_var(0, base - 1, "y")
 
-  x = [s, e, n, d, m, o, r, y]
+    x = [s, e, n, d, m, o, r, y]
 
-  #
-  # constraints
-  #
-  solver.add_all_different(x)
-  solver.add(
-      s * base**3 + e * base**2 + n * base + d + m * base**3 + o * base**2 +
-      r * base + e == m * base**4 + o * base**3 + n * base**2 + e * base + y,)
-  solver.add(s > 0)
-  solver.add(m > 0)
+    #
+    # constraints
+    #
+    solver.add_all_different(x)
+    solver.add(
+        s * base**3
+        + e * base**2
+        + n * base
+        + d
+        + m * base**3
+        + o * base**2
+        + r * base
+        + e
+        == m * base**4 + o * base**3 + n * base**2 + e * base + y,
+    )
+    solver.add(s > 0)
+    solver.add(m > 0)
 
-  #
-  # solution and search
-  #
-  solution = solver.assignment()
-  solution.add(x)
+    #
+    # solution and search
+    #
+    solution = solver.assignment()
+    solution.add(x)
 
-  collector = solver.all_solution_collector(solution)
+    collector = solver.all_solution_collector(solution)
 
-  solver.solve(
-      solver.phase(x, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND, cp.IntValueStrategy.ASSIGN_MAX_VALUE),
-      [collector])
+    solver.solve(
+        solver.phase(
+            x,
+            cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+            cp.IntValueStrategy.ASSIGN_MAX_VALUE,
+        ),
+        [collector],
+    )
 
-  num_solutions = collector.solution_count
-  money_val = 0
-  for s in range(num_solutions):
-    print('x:', [collector.value(s, x[i]) for i in range(len(x))])
+    num_solutions = collector.solution_count
+    money_val = 0
+    for s in range(num_solutions):
+        print("x:", [collector.value(s, x[i]) for i in range(len(x))])
 
-  print()
-  print('num_solutions:', num_solutions)
-  print('failures:', solver.num_failures)
-  print('branches:', solver.num_branches)
-  print('WallTime:', solver.wall_time_ms)
-  print()
+    print()
+    print("num_solutions:", num_solutions)
+    print("failures:", solver.num_failures)
+    print("branches:", solver.num_branches)
+    print("WallTime:", solver.wall_time_ms)
+    print()
 
 
 base = 10
-if __name__ == '__main__':
-  # for base in range(10,30):
-  #    main(base)
-  if len(sys.argv) > 1:
-    base = int(sys.argv[1])
+if __name__ == "__main__":
+    # for base in range(10,30):
+    #    main(base)
+    if len(sys.argv) > 1:
+        base = int(sys.argv[1])
 
-  main(base)
+    main(base)

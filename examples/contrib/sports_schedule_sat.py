@@ -47,13 +47,13 @@ Added CSV output.
 
 For a version with pool constraints, plus tests, etc, see
 https://github.com/jmarca/sports_scheduling
-
 """
+
 import argparse
-import os
-import re
 import csv
 import math
+import os
+import re
 
 from ortools.sat.python import cp_model
 
@@ -71,10 +71,10 @@ def csv_dump_results(solver, fixtures, num_teams, num_matchdays, csv_basename):
                     game += 1
                     # each row: day,game,home,away
                     row = {
-                        'day': d + 1,
-                        'game': game,
-                        'home': home + 1,
-                        'away': away + 1
+                        "day": d + 1,
+                        "game": game,
+                        "home": home + 1,
+                        "away": away + 1,
                     }
                     vcsv.append(row)
 
@@ -84,8 +84,10 @@ def csv_dump_results(solver, fixtures, num_teams, num_matchdays, csv_basename):
     match = re.search(r"\.csv", checkname)
     if not match:
         print(
-            'looking for a .csv ending in passed in CSV file name.  Did not find it, so appending .csv to',
-            csv_basename)
+            "looking for a .csv ending in passed in CSV file name.  Did not find"
+            " it, so appending .csv to",
+            csv_basename,
+        )
         csv_basename += ".csv"
 
     checkname = csv_basename
@@ -95,8 +97,8 @@ def csv_dump_results(solver, fixtures, num_teams, num_matchdays, csv_basename):
         # or just get rid of it, but that is often undesireable
         # os.unlink(csv_basename)
 
-    with open(checkname, 'w', newline='') as csvfile:
-        fieldnames = ['day', 'game', 'home', 'away']
+    with open(checkname, "w", newline="") as csvfile:
+        fieldnames = ["day", "game", "home", "away"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         writer.writeheader()
@@ -116,38 +118,55 @@ def screen_dump_results(solver, fixtures, num_teams, num_matchdays):
                 match_on = solver.Value(fixtures[d][home][away])
                 if match_on:
                     game += 1
-                    print('day %i game %i home %i away %i' %
-                          (d + 1, game, home + 1, away + 1))
+                    print(
+                        "day %i game %i home %i away %i"
+                        % (d + 1, game, home + 1, away + 1)
+                    )
         total_games += game
 
 
-def assign_matches(num_teams,
-                   num_matchdays,
-                   num_matches_per_day,
-                   max_home_stand,
-                   time_limit=None,
-                   num_cpus=None,
-                   csv=None,
-                   debug=None):
+def assign_matches(
+    num_teams,
+    num_matchdays,
+    num_matches_per_day,
+    max_home_stand,
+    time_limit=None,
+    num_cpus=None,
+    csv=None,
+    debug=None,
+):
     """Assign matches between teams in a league.
 
     Keyword arguments:
     num_teams -- the number of teams
-    num_matchdays -- the number of match days to play.  Should be greater than one day.  Note that if num_matchdays is exactly some multipe (`n`) of `num_teams - 1` then each team with play every other team exactly `n` times.  If the number of match days is less than or greater than a perfect multiple, then some teams will not play each other `n` times.
-    num_matches_per_day -- how many matches can be played in a day.  The assumption is one match per day, and really this code was not tested with different values.
+    num_matchdays -- the number of match days to play.  Should be greater than one
+    day.  Note that if num_matchdays is exactly some multipe (`n`) of `num_teams -
+    1` then each team with play every other team exactly `n` times.  If the number
+    of match days is less than or greater than a perfect multiple, then some teams
+    will not play each other `n` times.
+    num_matches_per_day -- how many matches can be played in a day.  The
+    assumption is one match per day, and really this code was not tested with
+    different values.
     max_home_stand -- how many home games are allowed to be in a row.
     time_limit -- the time in minutes to allow the solver to work on the problem.
     num_cpus -- the number of processors to use for the solution
     csv -- a file name to save the output to a CSV file
-    debug -- boolean value stating whether to ask the solver to show its progress or not
-
+    debug -- boolean value stating whether to ask the solver to show its progress
+    or not
     """
 
     model = cp_model.CpModel()
 
-    print('num_teams', num_teams, 'num_matchdays', num_matchdays,
-          'num_matches_per_day', num_matches_per_day, 'max_home_stand',
-          max_home_stand)
+    print(
+        "num_teams",
+        num_teams,
+        "num_matchdays",
+        num_matchdays,
+        "num_matches_per_day",
+        num_matches_per_day,
+        "max_home_stand",
+        max_home_stand,
+    )
 
     matchdays = range(num_matchdays)
     matches = range(num_matches_per_day)
@@ -168,21 +187,28 @@ def assign_matches(num_teams,
     # there is a special case, if total games / unique games == total
     # games // unique games, then the constraint can be ==, not <=
     matchups_exact = False
-    if (total_games % unique_games == 0):
+    if total_games % unique_games == 0:
         matchups_exact = True
         matchups = int(total_games // unique_games)
 
-    print('expected matchups per pair', matchups, 'exact?', matchups_exact)
+    print("expected matchups per pair", matchups, "exact?", matchups_exact)
 
     days_to_play = int(unique_games // num_matches_per_day)
-    print('unique_games', unique_games, '\nnum matches per day',
-          num_matches_per_day, '\ndays to play', days_to_play,
-          '\ntotal games possible', total_games)
+    print(
+        "unique_games",
+        unique_games,
+        "\nnum matches per day",
+        num_matches_per_day,
+        "\ndays to play",
+        days_to_play,
+        "\ntotal games possible",
+        total_games,
+    )
 
-    fixtures = [
-    ]  # all possible games, list of lists of lists: fixture[day][iteam][jteam]
-    at_home = [
-    ]  # whether or not a team plays at home on matchday, list of lists
+    fixtures = (
+        []
+    )  # all possible games, list of lists of lists: fixture[day][iteam][jteam]
+    at_home = []  # whether or not a team plays at home on matchday, list of lists
 
     # Does team i receive team j at home on day d?
     for d in matchdays:
@@ -199,8 +225,9 @@ def assign_matches(num_teams,
                 # team j is the away team.
                 fixtures[d][i].append(
                     model.NewBoolVar(
-                        'fixture: home team %i, opponent %i, matchday %i' %
-                        (i, j, d)))
+                        "fixture: home team %i, opponent %i, matchday %i" % (i, j, d)
+                    )
+                )
                 if i == j:
                     # It is not possible for team i to play itself,
                     # but it is cleaner to add the fixture than it is
@@ -215,7 +242,8 @@ def assign_matches(num_teams,
         for i in teams:
             # is team i playing at home on day d?
             at_home[d].append(
-                model.NewBoolVar('team %i is home on matchday %i' % (i, d)))
+                model.NewBoolVar("team %i is home on matchday %i" % (i, d))
+            )
 
     # each day, team t plays either home or away, but only once
     for d in matchdays:
@@ -229,8 +257,7 @@ def assign_matches(num_teams,
                 possible_opponents.append(fixtures[d][t][opponent])
                 # t is away possibility
                 possible_opponents.append(fixtures[d][opponent][t])
-            model.Add(
-                sum(possible_opponents) == 1)  # can only play one game per day
+            model.Add(sum(possible_opponents) == 1)  # can only play one game per day
 
     # "Each fixture happens once per season" is not a valid constraint
     # in this formulation.  in the C++ program, there are exactly a
@@ -241,7 +268,7 @@ def assign_matches(num_teams,
     # season, where Matchups is the number of times each team plays every
     # other team.
     fixture_repeats = int(math.ceil(matchups / 2))
-    print('fixture repeats expected is', fixture_repeats)
+    print("fixture repeats expected is", fixture_repeats)
 
     for t in teams:
         for opponent in teams:
@@ -281,8 +308,7 @@ def assign_matches(num_teams,
                 # if m = matchups - 1, then last time through
                 days = int(days_to_play)
                 if m == matchups - 1:
-                    days = int(
-                        min(days_to_play, num_matchdays - m * days_to_play))
+                    days = int(min(days_to_play, num_matchdays - m * days_to_play))
                 # print('days',days)
                 for d in range(days):
                     theday = int(d + m * days_to_play)
@@ -315,21 +341,21 @@ def assign_matches(num_teams,
                 # if the [t][opp] fixture is true, then at home is true for t
                 model.AddImplication(fixtures[d][t][opponent], at_home[d][t])
                 # if the [t][opp] fixture is true, then at home false for opponent
-                model.AddImplication(fixtures[d][t][opponent],
-                                     at_home[d][opponent].Not())
+                model.AddImplication(
+                    fixtures[d][t][opponent], at_home[d][opponent].Not()
+                )
 
     # balance home and away games via the following "breaks" logic
     # forbid sequence of "max_home_stand" home games or away games in a row
     # In sports like baseball, homestands can be quite long.
     for t in teams:
         for d in range(num_matchdays - max_home_stand):
-            model.AddBoolOr([
-                at_home[d + offset][t] for offset in range(max_home_stand + 1)
-            ])
-            model.AddBoolOr([
-                at_home[d + offset][t].Not()
-                for offset in range(max_home_stand + 1)
-            ])
+            model.AddBoolOr(
+                [at_home[d + offset][t] for offset in range(max_home_stand + 1)]
+            )
+            model.AddBoolOr(
+                [at_home[d + offset][t].Not() for offset in range(max_home_stand + 1)]
+            )
             # note, this works because AddBoolOr means at least one
             # element must be true.  if it was just AddBoolOr([home0,
             # home1, ..., homeN]), then that would mean that one or
@@ -354,17 +380,15 @@ def assign_matches(num_teams,
         for d in range(num_matchdays - 1):
             breaks.append(
                 model.NewBoolVar(
-                    'two home or two away for team %i, starting on matchday %i'
-                    % (t, d)))
+                    "two home or two away for team %i, starting on matchday %i" % (t, d)
+                )
+            )
 
             model.AddBoolOr([at_home[d][t], at_home[d + 1][t], breaks[-1]])
-            model.AddBoolOr(
-                [at_home[d][t].Not(), at_home[d + 1][t].Not(), breaks[-1]])
+            model.AddBoolOr([at_home[d][t].Not(), at_home[d + 1][t].Not(), breaks[-1]])
 
-            model.AddBoolOr(
-                [at_home[d][t].Not(), at_home[d + 1][t], breaks[-1].Not()])
-            model.AddBoolOr(
-                [at_home[d][t], at_home[d + 1][t].Not(), breaks[-1].Not()])
+            model.AddBoolOr([at_home[d][t].Not(), at_home[d + 1][t], breaks[-1].Not()])
+            model.AddBoolOr([at_home[d][t], at_home[d + 1][t].Not(), breaks[-1].Not()])
 
             # I couldn't figure this out, so I wrote a little program
             # and proved it.  These effectively are identical to
@@ -393,7 +417,7 @@ def assign_matches(num_teams,
     #
     # That research doesn't *quite* apply here, as the authors were
     # assuming a single round-robin tournament
-    #.
+    # .
     # Here there is not an exact round-robin tournament multiple, but
     # still the implication is that the number of breaks cannot be
     # less than the number of matchdays.
@@ -414,7 +438,7 @@ def assign_matches(num_teams,
         else:
             optimal_value = min(num_matchdays, optimal_value)
 
-    print('expected optimal value is', optimal_value)
+    print("expected optimal value is", optimal_value)
     model.Add(sum(breaks) >= optimal_value)
 
     model.Minimize(sum(breaks))
@@ -428,30 +452,30 @@ def assign_matches(num_teams,
     # solution, this isn't really
     # necessary I think
     status = solver.Solve(model)
-    print('Solve status: %s' % solver.StatusName(status))
-    print('Statistics')
-    print('  - conflicts : %i' % solver.NumConflicts())
-    print('  - branches  : %i' % solver.NumBranches())
-    print('  - wall time : %f s' % solver.WallTime())
+    print("Solve status: %s" % solver.StatusName(status))
+    print("Statistics")
+    print("  - conflicts : %i" % solver.NumConflicts())
+    print("  - branches  : %i" % solver.NumBranches())
+    print("  - wall time : %f s" % solver.WallTime())
 
     if status == cp_model.INFEASIBLE:
         return status
 
     if status == cp_model.UNKNOWN:
-        print('Not enough time allowed to compute a solution')
-        print('Add more time using the --timelimit command line option')
+        print("Not enough time allowed to compute a solution")
+        print("Add more time using the --timelimit command line option")
         return status
 
-    print('Optimal objective value: %i' % solver.ObjectiveValue())
+    print("Optimal objective value: %i" % solver.ObjectiveValue())
 
     screen_dump_results(solver, fixtures, num_teams, num_matchdays)
 
     if status != cp_model.OPTIMAL and solver.WallTime() >= time_limit:
-        print('Please note that solver reached maximum time allowed %i.' %
-              time_limit)
+        print("Please note that solver reached maximum time allowed %i." % time_limit)
         print(
-            'A better solution than %i might be found by adding more time using the --timelimit command line option'
-            % solver.ObjectiveValue())
+            "A better solution than %i might be found by adding more time using the"
+            " --timelimit command line option" % solver.ObjectiveValue()
+        )
 
     if csv:
         csv_dump_results(solver, fixtures, num_teams, num_matchdays, csv)
@@ -465,64 +489,81 @@ def assign_matches(num_teams,
 def main():
     """Entry point of the program."""
     parser = argparse.ArgumentParser(
-        description='Solve sports league match play assignment problem')
-    parser.add_argument('-t,--teams',
-                        type=int,
-                        dest='num_teams',
-                        default=10,
-                        help='Number of teams in the league')
+        description="Solve sports league match play assignment problem"
+    )
+    parser.add_argument(
+        "-t,--teams",
+        type=int,
+        dest="num_teams",
+        default=10,
+        help="Number of teams in the league",
+    )
 
     parser.add_argument(
-        '-d,--days',
+        "-d,--days",
         type=int,
-        dest='num_matchdays',
+        dest="num_matchdays",
         default=2 * 10 - 2,
-        help=
-        'Number of days on which matches are played.  Default is enough days such that every team can play every other team, or (number of teams - 1)'
+        help=(
+            "Number of days on which matches are played.  Default is enough days"
+            " such that every team can play every other team, or (number of teams"
+            " - 1)"
+        ),
     )
 
     parser.add_argument(
-        '--matches_per_day',
+        "--matches_per_day",
         type=int,
-        dest='num_matches_per_day',
+        dest="num_matches_per_day",
         default=10 - 1,
-        help=
-        'Number of matches played per day.  Default is number of teams divided by 2.  If greater than the number of teams, then this implies some teams will play each other more than once.  In that case, home and away should alternate between the teams in repeated matchups.'
+        help=(
+            "Number of matches played per day.  Default is number of teams"
+            " divided by 2.  If greater than the number of teams, then this"
+            " implies some teams will play each other more than once.  In that"
+            " case, home and away should alternate between the teams in repeated"
+            " matchups."
+        ),
     )
 
     parser.add_argument(
-        '--csv',
+        "--csv",
         type=str,
-        dest='csv',
-        default='output.csv',
-        help='A file to dump the team assignments.  Default is output.csv')
-
-    parser.add_argument(
-        '--timelimit',
-        type=int,
-        dest='time_limit',
-        default=60,
-        help='Maximum run time for solver, in seconds.  Default is 60 seconds.')
-
-    parser.add_argument(
-        '--cpu',
-        type=int,
-        dest='cpu',
-        help=
-        'Number of workers (CPUs) to use for solver.  Default is 6 or number of CPUs available, whichever is lower'
+        dest="csv",
+        default="output.csv",
+        help="A file to dump the team assignments.  Default is output.csv",
     )
 
-    parser.add_argument('--debug',
-                        action='store_true',
-                        help="Turn on some print statements.")
+    parser.add_argument(
+        "--timelimit",
+        type=int,
+        dest="time_limit",
+        default=60,
+        help="Maximum run time for solver, in seconds.  Default is 60 seconds.",
+    )
 
     parser.add_argument(
-        '--max_home_stand',
+        "--cpu",
         type=int,
-        dest='max_home_stand',
+        dest="cpu",
+        help=(
+            "Number of workers (CPUs) to use for solver.  Default is 6 or number"
+            " of CPUs available, whichever is lower"
+        ),
+    )
+
+    parser.add_argument(
+        "--debug", action="store_true", help="Turn on some print statements."
+    )
+
+    parser.add_argument(
+        "--max_home_stand",
+        type=int,
+        dest="max_home_stand",
         default=2,
-        help=
-        "Maximum consecutive home or away games.  Default to 2, which means three home or away games in a row is forbidden."
+        help=(
+            "Maximum consecutive home or away games.  Default to 2, which means"
+            " three home or away games in a row is forbidden."
+        ),
     )
 
     args = parser.parse_args()
@@ -539,30 +580,41 @@ def main():
     cpu = args.cpu
     if not cpu:
         cpu = min(6, ncpu)
-        print('Setting number of search workers to %i' % cpu)
+        print("Setting number of search workers to %i" % cpu)
 
     if cpu > ncpu:
         print(
-            'You asked for %i workers to be used, but the os only reports %i CPUs available.  This might slow down processing'
-            % (cpu, ncpu))
+            "You asked for %i workers to be used, but the os only reports %i CPUs"
+            " available.  This might slow down processing" % (cpu, ncpu)
+        )
 
     if cpu != 6:
         # don't whinge at user if cpu is set to 6
         if cpu < ncpu:
             print(
-                'Using %i workers, but there are %i CPUs available.  You might get faster results by using the command line option --cpu %i, but be aware ORTools CP-SAT solver is tuned to 6 CPUs'
-                % (cpu, ncpu, ncpu))
+                "Using %i workers, but there are %i CPUs available.  You might get"
+                " faster results by using the command line option --cpu %i, but be"
+                " aware ORTools CP-SAT solver is tuned to 6 CPUs" % (cpu, ncpu, ncpu)
+            )
 
         if cpu > 6:
             print(
-                'Using %i workers.  Be aware ORTools CP-SAT solver is tuned to 6 CPUs'
-                % cpu)
+                "Using %i workers.  Be aware ORTools CP-SAT solver is tuned to 6 CPUs"
+                % cpu
+            )
 
     # assign_matches()
-    assign_matches(args.num_teams, args.num_matchdays, num_matches_per_day,
-                   args.max_home_stand, args.time_limit, cpu, args.csv,
-                   args.debug)
+    assign_matches(
+        args.num_teams,
+        args.num_matchdays,
+        num_matches_per_day,
+        args.max_home_stand,
+        args.time_limit,
+        cpu,
+        args.csv,
+        args.debug,
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

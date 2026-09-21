@@ -19,14 +19,13 @@ must be processed on each machine in sequence and all jobs have to be processed
 in the same order on every machine. The objective is to minimize the makespan.
 """
 
-from typing import Sequence
 from dataclasses import dataclass
 from itertools import product
+from typing import Sequence
 
 import numpy as np
+from absl import app, flags
 
-from absl import app
-from absl import flags
 from ortools.sat.python import cp_model
 
 _PARAMS = flags.DEFINE_string(
@@ -50,9 +49,7 @@ _LOG = flags.DEFINE_boolean(
 
 @dataclass
 class TaskType:
-    """
-    Small wrapper to hold the start, end, and interval variables of a task.
-    """
+    """Small wrapper to hold the start, end, and interval variables of a task."""
 
     start: cp_model.IntVar
     end: cp_model.IntVar
@@ -60,13 +57,9 @@ class TaskType:
 
 
 def permutation_flow_shop(
-    processing_times: np.ndarray,
-    time_limit: float,
-    log: bool,
-    params: str
+    processing_times: np.ndarray, time_limit: float, log: bool, params: str
 ):
-    """
-    Solves the given permutation flow shop problem instance with OR-Tools.
+    """Solves the given permutation flow shop problem instance with OR-Tools.
 
     Parameters
     ----------
@@ -140,9 +133,7 @@ def permutation_flow_shop(
 
     # Set minimizing makespan as objective.
     obj_var = m.new_int_var(0, horizon, "makespan")
-    completion_times = [
-        tasks[(job, num_machines - 1)].end for job in range(num_jobs)
-    ]
+    completion_times = [tasks[(job, num_machines - 1)].end for job in range(num_jobs)]
     m.add_max_equality(obj_var, completion_times)
     m.minimize(obj_var)
 
@@ -187,4 +178,4 @@ def main(argv: Sequence[str]) -> None:
 
 
 if __name__ == "__main__":
-    app.run(main)    
+    app.run(main)

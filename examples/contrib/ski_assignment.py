@@ -11,42 +11,41 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Ski assignment in Google CP Solver.
+
+From   Jeffrey Lee Hellrung, Jr.:
+PIC 60, Fall 2008 Final Review, December 12, 2008
+http://www.math.ucla.edu/~jhellrun/course_files/Fall%25202008/PIC%252060%2520-%2520Data%2520Structures%2520and%2520Algorithms/final_review.pdf
+'''
+5. Ski Optimization! Your job at Snapple is pleasant but in the winter
+you've decided to become a ski bum. You've hooked up with the Mount
+Baldy Ski Resort. They'll let you ski all winter for free in exchange
+for helping their ski rental shop with an algorithm to assign skis to
+skiers. Ideally, each skier should obtain a pair of skis whose height
+matches his or her own height exactly. Unfortunately, this is generally
+not possible. We define the disparity between a skier and his or her
+skis to be the absolute value of the difference between the height of
+the skier and the pair of skis. Our objective is to find an assignment
+of skis to skiers that minimizes the sum of the disparities.
+...
+Illustrate your algorithm by explicitly filling out the A[i, j] table
+for the following sample data:
+  * Ski heights: 1, 2, 5, 7, 13, 21.
+  * Skier heights: 3, 4, 7, 11, 18.
+'''
+
+Compare with the following models:
+* Comet   : http://www.hakank.org/comet/ski_assignment.co
+* MiniZinc: http://hakank.org/minizinc/ski_assignment.mzn
+* ECLiPSe : http://www.hakank.org/eclipse/ski_assignment.ecl
+* SICStus: http://hakank.org/sicstus/ski_assignment.pl
+* Gecode: http://hakank.org/gecode/ski_assignment.cpp
+
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 
-  Ski assignment in Google CP Solver.
-
-  From   Jeffrey Lee Hellrung, Jr.:
-  PIC 60, Fall 2008 Final Review, December 12, 2008
-  http://www.math.ucla.edu/~jhellrun/course_files/Fall%25202008/PIC%252060%2520-%2520Data%2520Structures%2520and%2520Algorithms/final_review.pdf
-  '''
-  5. Ski Optimization! Your job at Snapple is pleasant but in the winter
-  you've decided to become a ski bum. You've hooked up with the Mount
-  Baldy Ski Resort. They'll let you ski all winter for free in exchange
-  for helping their ski rental shop with an algorithm to assign skis to
-  skiers. Ideally, each skier should obtain a pair of skis whose height
-  matches his or her own height exactly. Unfortunately, this is generally
-  not possible. We define the disparity between a skier and his or her
-  skis to be the absolute value of the difference between the height of
-  the skier and the pair of skis. Our objective is to find an assignment
-  of skis to skiers that minimizes the sum of the disparities.
-  ...
-  Illustrate your algorithm by explicitly filling out the A[i, j] table
-  for the following sample data:
-    * Ski heights: 1, 2, 5, 7, 13, 21.
-    * Skier heights: 3, 4, 7, 11, 18.
-  '''
-
-  Compare with the following models:
-  * Comet   : http://www.hakank.org/comet/ski_assignment.co
-  * MiniZinc: http://hakank.org/minizinc/ski_assignment.mzn
-  * ECLiPSe : http://www.hakank.org/eclipse/ski_assignment.ecl
-  * SICStus: http://hakank.org/sicstus/ski_assignment.pl
-  * Gecode: http://hakank.org/gecode/ski_assignment.cpp
-
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
-"""
 import sys
 
 from ortools.constraint_solver.python import constraint_solver as cp
@@ -54,66 +53,72 @@ from ortools.constraint_solver.python import constraint_solver as cp
 
 def main():
 
-  # Create the solver.
-  solver = cp.Solver('Ski assignment')
+    # Create the solver.
+    solver = cp.Solver("Ski assignment")
 
-  #
-  # data
-  #
-  num_skis = 6
-  num_skiers = 5
-  ski_heights = [1, 2, 5, 7, 13, 21]
-  skier_heights = [3, 4, 7, 11, 18]
+    #
+    # data
+    #
+    num_skis = 6
+    num_skiers = 5
+    ski_heights = [1, 2, 5, 7, 13, 21]
+    skier_heights = [3, 4, 7, 11, 18]
 
-  #
-  # variables
-  #
+    #
+    # variables
+    #
 
-  # which ski to choose for each skier
-  x = [solver.new_int_var(0, num_skis - 1, 'x[%i]' % i) for i in range(num_skiers)]
-  z = solver.new_int_var(0, sum(ski_heights), 'z')
+    # which ski to choose for each skier
+    x = [solver.new_int_var(0, num_skis - 1, "x[%i]" % i) for i in range(num_skiers)]
+    z = solver.new_int_var(0, sum(ski_heights), "z")
 
-  #
-  # constraints
-  #
-  solver.add_all_different(x)
+    #
+    # constraints
+    #
+    solver.add_all_different(x)
 
-  z_tmp = [
-      abs(solver.element(ski_heights, x[i]) - skier_heights[i])
-      for i in range(num_skiers)
-  ]
-  solver.add(z == sum(z_tmp))
+    z_tmp = [
+        abs(solver.element(ski_heights, x[i]) - skier_heights[i])
+        for i in range(num_skiers)
+    ]
+    solver.add(z == sum(z_tmp))
 
-  # objective
-  objective = solver.minimize(z, 1)
+    # objective
+    objective = solver.minimize(z, 1)
 
-  #
-  # search and result
-  #
-  db = solver.phase(x, cp.IntVarStrategy.INT_VAR_DEFAULT, cp.IntValueStrategy.INT_VALUE_DEFAULT)
+    #
+    # search and result
+    #
+    db = solver.phase(
+        x,
+        cp.IntVarStrategy.INT_VAR_DEFAULT,
+        cp.IntValueStrategy.INT_VALUE_DEFAULT,
+    )
 
-  solver.new_search(db, [objective])
+    solver.new_search(db, [objective])
 
-  num_solutions = 0
-  while solver.next_solution():
-    num_solutions += 1
-    print('total differences:', z.value())
-    for i in range(num_skiers):
-      x_val = x[i].value()
-      ski_height = ski_heights[x[i].value()]
-      diff = ski_height - skier_heights[i]
-      print('Skier %i: Ski %i with length %2i (diff: %2i)' %\
-            (i, x_val, ski_height, diff))
+    num_solutions = 0
+    while solver.next_solution():
+        num_solutions += 1
+        print("total differences:", z.value())
+        for i in range(num_skiers):
+            x_val = x[i].value()
+            ski_height = ski_heights[x[i].value()]
+            diff = ski_height - skier_heights[i]
+            print(
+                "Skier %i: Ski %i with length %2i (diff: %2i)"
+                % (i, x_val, ski_height, diff)
+            )
+        print()
+
+    solver.end_search()
+
     print()
-
-  solver.end_search()
-
-  print()
-  print('num_solutions:', num_solutions)
-  print('failures:', solver.num_failures)
-  print('branches:', solver.num_branches)
-  print('WallTime:', solver.wall_time_ms)
+    print("num_solutions:", num_solutions)
+    print("failures:", solver.num_failures)
+    print("branches:", solver.num_branches)
+    print("WallTime:", solver.wall_time_ms)
 
 
-if __name__ == '__main__':
-  main()
+if __name__ == "__main__":
+    main()

@@ -14,30 +14,35 @@ from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def dudeney(n):
-  solver = cp.Solver('Dudeney')
-  x = [solver.new_int_var(list(range(10)), 'x' + str(i)) for i in range(n)]
-  nb = solver.new_int_var(list(range(3, 10**n)), 'nb')
-  s = solver.new_int_var(list(range(1, 9 * n + 1)), 's')
+    solver = cp.Solver("Dudeney")
+    x = [solver.new_int_var(list(range(10)), "x" + str(i)) for i in range(n)]
+    nb = solver.new_int_var(list(range(3, 10**n)), "nb")
+    s = solver.new_int_var(list(range(1, 9 * n + 1)), "s")
 
-  solver.add(nb == s * s * s)
-  solver.add(sum([10**(n - i - 1) * x[i] for i in range(n)]) == nb)
-  solver.add(sum([x[i] for i in range(n)]) == s)
+    solver.add(nb == s * s * s)
+    solver.add(sum([10 ** (n - i - 1) * x[i] for i in range(n)]) == nb)
+    solver.add(sum([x[i] for i in range(n)]) == s)
 
-  solution = solver.assignment()
-  solution.add(nb)
-  collector = solver.all_solution_collector(solution)
+    solution = solver.assignment()
+    solution.add(nb)
+    collector = solver.all_solution_collector(solution)
 
-  solver.solve(
-      solver.phase(x, cp.IntVarStrategy.INT_VAR_DEFAULT, cp.IntValueStrategy.INT_VALUE_DEFAULT),
-      [collector])
+    solver.solve(
+        solver.phase(
+            x,
+            cp.IntVarStrategy.INT_VAR_DEFAULT,
+            cp.IntValueStrategy.INT_VALUE_DEFAULT,
+        ),
+        [collector],
+    )
 
-  for i in range(collector.solution_count):
-    nbsol = collector.value(i, nb)
-    print(nbsol)
+    for i in range(collector.solution_count):
+        nbsol = collector.value(i, nb)
+        print(nbsol)
 
-  print('#fails:', solver.num_failures)
-  print('time:', solver.wall_time_ms, 'ms')
+    print("#fails:", solver.num_failures)
+    print("time:", solver.wall_time_ms, "ms")
 
 
-if __name__ == '__main__':
-  dudeney(6)
+if __name__ == "__main__":
+    dudeney(6)

@@ -11,125 +11,127 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Seseman Convent problem in Google CP Solver.
+
+n is the length of a border
+There are (n-2)^2 "holes", i.e.
+there are n^2 - (n-2)^2 variables to find out.
+
+The simplest problem, n = 3 (n x n matrix)
+which is represented by the following matrix:
+
+ a b c
+ d   e
+ f g h
+
+Where the following constraints must hold:
+
+  a + b + c = border_sum
+  a + d + f = border_sum
+  c + e + h = border_sum
+  f + g + h = border_sum
+  a + b + c + d + e + f = total_sum
+
+
+Compare with the following models:
+* Tailor/Essence': http://hakank.org/tailor/seseman.eprime
+* MiniZinc: http://hakank.org/minizinc/seseman.mzn
+* SICStus: http://hakank.org/sicstus/seseman.pl
+* Zinc: http://hakank.org/minizinc/seseman.zinc
+* Choco: http://hakank.org/choco/Seseman.java
+* Comet: http://hakank.org/comet/seseman.co
+* ECLiPSe: http://hakank.org/eclipse/seseman.ecl
+* Gecode: http://hakank.org/gecode/seseman.cpp
+* Gecode/R: http://hakank.org/gecode_r/seseman.rb
+* JaCoP: http://hakank.org/JaCoP/Seseman.java
+
+
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 
-  Seseman Convent problem in Google CP Solver.
-
-
-  n is the length of a border
-  There are (n-2)^2 "holes", i.e.
-  there are n^2 - (n-2)^2 variables to find out.
-
-  The simplest problem, n = 3 (n x n matrix)
-  which is represented by the following matrix:
-
-   a b c
-   d   e
-   f g h
-
-  Where the following constraints must hold:
-
-    a + b + c = border_sum
-    a + d + f = border_sum
-    c + e + h = border_sum
-    f + g + h = border_sum
-    a + b + c + d + e + f = total_sum
-
-
-  Compare with the following models:
-  * Tailor/Essence': http://hakank.org/tailor/seseman.eprime
-  * MiniZinc: http://hakank.org/minizinc/seseman.mzn
-  * SICStus: http://hakank.org/sicstus/seseman.pl
-  * Zinc: http://hakank.org/minizinc/seseman.zinc
-  * Choco: http://hakank.org/choco/Seseman.java
-  * Comet: http://hakank.org/comet/seseman.co
-  * ECLiPSe: http://hakank.org/eclipse/seseman.ecl
-  * Gecode: http://hakank.org/gecode/seseman.cpp
-  * Gecode/R: http://hakank.org/gecode_r/seseman.rb
-  * JaCoP: http://hakank.org/JaCoP/Seseman.java
-
-
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
-"""
 from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(unused_argv):
-  # Create the solver.
-  solver = cp.Solver("Seseman Convent problem")
+    # Create the solver.
+    solver = cp.Solver("Seseman Convent problem")
 
-  # data
-  n = 3
-  border_sum = n * n
+    # data
+    n = 3
+    border_sum = n * n
 
-  # declare variables
-  total_sum = solver.new_int_var(1, n * n * n * n, "total_sum")
-  # x[0..n-1,0..n-1]
-  x = {}
-  for i in range(n):
-    for j in range(n):
-      x[(i, j)] = solver.new_int_var(0, n * n, "x %i %i" % (i, j))
-
-  #
-  # constraints
-  #
-  # zero all middle cells
-  for i in range(1, n - 1):
-    for j in range(1, n - 1):
-      solver.add(x[(i, j)] == 0)
-
-  # all borders must be >= 1
-  for i in range(n):
-    for j in range(n):
-      if i == 0 or j == 0 or i == n - 1 or j == n - 1:
-        solver.add(x[(i, j)] >= 1)
-
-  # sum the borders (border_sum)
-  solver.add(solver.sum([x[(i, 0)] for i in range(n)]) == border_sum)
-  solver.add(solver.sum([x[(i, n - 1)] for i in range(n)]) == border_sum)
-  solver.add(solver.sum([x[(0, i)] for i in range(n)]) == border_sum)
-  solver.add(solver.sum([x[(n - 1, i)] for i in range(n)]) == border_sum)
-
-  # total
-  solver.add(
-      solver.sum([x[(i, j)] for i in range(n) for j in range(n)]) == total_sum)
-
-  #
-  # solution and search
-  #
-  solution = solver.assignment()
-  solution.add([x[(i, j)] for i in range(n) for j in range(n)])
-  solution.add(total_sum)
-
-  # all solutions
-  collector = solver.all_solution_collector(solution)
-  # search_log = solver.search_log(100, total_sum)
-  solver.solve(
-      solver.phase([x[(i, j)] for i in range(n) for j in range(n)],
-                   cp.IntVarStrategy.CHOOSE_PATH, cp.IntValueStrategy.ASSIGN_MIN_VALUE), [collector])
-  #[collector, search_log])
-
-  num_solutions = collector.solution_count
-  # print "x:", x
-  print("num_solutions:", num_solutions)
-  print()
-  for s in range(num_solutions):
-    # print [collector.value(s, x[(i,j)])
-    #        for i in range(n) for j in range(n)]
-    print("total_sum:", collector.value(s, total_sum))
+    # declare variables
+    total_sum = solver.new_int_var(1, n * n * n * n, "total_sum")
+    # x[0..n-1,0..n-1]
+    x = {}
     for i in range(n):
-      for j in range(n):
-        print(collector.value(s, x[(i, j)]), end=" ")
-      print()
-    print()
+        for j in range(n):
+            x[(i, j)] = solver.new_int_var(0, n * n, "x %i %i" % (i, j))
 
-  print("failures:", solver.num_failures)
-  print("branches:", solver.num_branches)
-  print("WallTime:", solver.wall_time_ms)
-  print("num_solutions:", num_solutions)
+    #
+    # constraints
+    #
+    # zero all middle cells
+    for i in range(1, n - 1):
+        for j in range(1, n - 1):
+            solver.add(x[(i, j)] == 0)
+
+    # all borders must be >= 1
+    for i in range(n):
+        for j in range(n):
+            if i == 0 or j == 0 or i == n - 1 or j == n - 1:
+                solver.add(x[(i, j)] >= 1)
+
+    # sum the borders (border_sum)
+    solver.add(solver.sum([x[(i, 0)] for i in range(n)]) == border_sum)
+    solver.add(solver.sum([x[(i, n - 1)] for i in range(n)]) == border_sum)
+    solver.add(solver.sum([x[(0, i)] for i in range(n)]) == border_sum)
+    solver.add(solver.sum([x[(n - 1, i)] for i in range(n)]) == border_sum)
+
+    # total
+    solver.add(solver.sum([x[(i, j)] for i in range(n) for j in range(n)]) == total_sum)
+
+    #
+    # solution and search
+    #
+    solution = solver.assignment()
+    solution.add([x[(i, j)] for i in range(n) for j in range(n)])
+    solution.add(total_sum)
+
+    # all solutions
+    collector = solver.all_solution_collector(solution)
+    # search_log = solver.search_log(100, total_sum)
+    solver.solve(
+        solver.phase(
+            [x[(i, j)] for i in range(n) for j in range(n)],
+            cp.IntVarStrategy.CHOOSE_PATH,
+            cp.IntValueStrategy.ASSIGN_MIN_VALUE,
+        ),
+        [collector],
+    )
+    # [collector, search_log])
+
+    num_solutions = collector.solution_count
+    # print "x:", x
+    print("num_solutions:", num_solutions)
+    print()
+    for s in range(num_solutions):
+        # print [collector.value(s, x[(i,j)])
+        #        for i in range(n) for j in range(n)]
+        print("total_sum:", collector.value(s, total_sum))
+        for i in range(n):
+            for j in range(n):
+                print(collector.value(s, x[(i, j)]), end=" ")
+            print()
+        print()
+
+    print("failures:", solver.num_failures)
+    print("branches:", solver.num_branches)
+    print("WallTime:", solver.wall_time_ms)
+    print("num_solutions:", num_solutions)
 
 
 if __name__ == "__main__":
-  main("cp sample")
+    main("cp sample")

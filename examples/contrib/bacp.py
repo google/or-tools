@@ -13,78 +13,82 @@
 #   limitations under the License.
 
 import argparse
+
 from ortools.constraint_solver.python import constraint_solver as cp
 
 parser = argparse.ArgumentParser()
 
 parser.add_argument(
-    '--data', default='examples/contrib/bacp.txt', help='path to data file')
+    "--data", default="examples/contrib/bacp.txt", help="path to data file"
+)
 
-#----------------helper for binpacking posting----------------
+# ----------------helper for binpacking posting----------------
 
 
 def BinPacking(solver, binvars, weights, loadvars):
-  """post the load constraint on bins.
+    """post the load constraint on bins.
 
-  constraints forall j: loadvars[j] == sum_i (binvars[i] == j) * weights[i])
-  """
-  pack = solver.add_pack(binvars, len(loadvars))
-  pack.AddWeightedSumEqualVarDimension(weights, loadvars)
-  solver.add(pack)
-  solver.add_sum_equality(loadvars, sum(weights))
+    constraints forall j: loadvars[j] == sum_i (binvars[i] == j) * weights[i])
+    """
+    pack = solver.add_pack(binvars, len(loadvars))
+    pack.AddWeightedSumEqualVarDimension(weights, loadvars)
+    solver.add(pack)
+    solver.add_sum_equality(loadvars, sum(weights))
 
 
-#------------------------------data reading-------------------
+# ------------------------------data reading-------------------
 
 
 def ReadData(filename):
-  """Read data from <filename>."""
-  f = open(filename)
-  nb_courses, nb_periods, min_credit, max_credit, nb_prereqs =\
-      [int(nb) for nb in f.readline().split()]
-  credits = [int(nb) for nb in f.readline().split()]
-  prereq = [int(nb) for nb in f.readline().split()]
-  prereq = [(prereq[i * 2], prereq[i * 2 + 1]) for i in range(nb_prereqs)]
-  return (credits, nb_periods, prereq)
+    """Read data from <filename>."""
+    f = open(filename)
+    nb_courses, nb_periods, min_credit, max_credit, nb_prereqs = [
+        int(nb) for nb in f.readline().split()
+    ]
+    credits = [int(nb) for nb in f.readline().split()]
+    prereq = [int(nb) for nb in f.readline().split()]
+    prereq = [(prereq[i * 2], prereq[i * 2 + 1]) for i in range(nb_prereqs)]
+    return (credits, nb_periods, prereq)
 
 
 def main(args):
-  #------------------solver and variable declaration-------------
+    # ------------------solver and variable declaration-------------
 
-  credits, nb_periods, prereq = ReadData(args.data)
-  nb_courses = len(credits)
+    credits, nb_periods, prereq = ReadData(args.data)
+    nb_courses = len(credits)
 
-  solver = cp.Solver('Balanced Academic Curriculum Problem')
+    solver = cp.Solver("Balanced Academic Curriculum Problem")
 
-  x = [
-      solver.new_int_var(0, nb_periods - 1, 'x' + str(i)) for i in range(nb_courses)
-  ]
-  load_vars = [
-      solver.new_int_var(0, sum(credits), 'load_vars' + str(i))
-      for i in range(nb_periods)
-  ]
+    x = [solver.new_int_var(0, nb_periods - 1, "x" + str(i)) for i in range(nb_courses)]
+    load_vars = [
+        solver.new_int_var(0, sum(credits), "load_vars" + str(i))
+        for i in range(nb_periods)
+    ]
 
-  #-------------------post of the constraints--------------
+    # -------------------post of the constraints--------------
 
-  # Bin Packing.
-  BinPacking(solver, x, credits, load_vars)
-  # Add dependencies.
-  for i, j in prereq:
-    solver.add(x[i] < x[j])
+    # Bin Packing.
+    BinPacking(solver, x, credits, load_vars)
+    # Add dependencies.
+    for i, j in prereq:
+        solver.add(x[i] < x[j])
 
-  #----------------Objective-------------------------------
+    # ----------------Objective-------------------------------
 
-  objective_var = solver.max(load_vars)
-  objective = solver.minimize(objective_var, 1)
+    objective_var = solver.max(load_vars)
+    objective = solver.minimize(objective_var, 1)
 
-  #------------start the search and optimization-----------
+    # ------------start the search and optimization-----------
 
-  db = solver.phase(x, cp.IntVarStrategy.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                    cp.IntValueStrategy.INT_VALUE_DEFAULT)
+    db = solver.phase(
+        x,
+        cp.IntVarStrategy.CHOOSE_MIN_SIZE_LOWEST_MIN,
+        cp.IntValueStrategy.INT_VALUE_DEFAULT,
+    )
 
-  search_log = solver.search_log(100000, objective_var)
-  solver.solve(db, [objective, search_log])
+    search_log = solver.search_log(100000, objective_var)
+    solver.solve(db, [objective, search_log])
 
 
-if __name__ == '__main__':
-  main(parser.parse_args())
+if __name__ == "__main__":
+    main(parser.parse_args())

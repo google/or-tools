@@ -3,10 +3,10 @@ package com.google.ortools.contrib;
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.routing.FirstSolutionStrategy;
+import com.google.ortools.routing.Globals;
 import com.google.ortools.routing.IndexManager;
 import com.google.ortools.routing.Model;
 import com.google.ortools.routing.RoutingSearchParameters;
-import com.google.ortools.routing.Globals;
 import java.util.ArrayList;
 import java.util.function.LongBinaryOperator;
 
@@ -80,7 +80,7 @@ public class SimpleRoutingTest {
     if (solution != null) {
       int route_number = 0;
       for (long node = routing.start(route_number); !routing.isEnd(node);
-           node = solution.value(routing.nextVar(node))) {
+          node = solution.value(routing.nextVar(node))) {
         globalRes.add((int) node);
       }
     }
