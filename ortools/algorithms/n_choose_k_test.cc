@@ -42,7 +42,9 @@ TEST(NChooseKTest, TrivialErrorCases) {
                                           HasSubstr("n is negative")));
     EXPECT_THAT(NChooseK(x, -1), StatusIs(absl::StatusCode::kInvalidArgument,
                                           HasSubstr("k is negative")));
-    if (x != kint64max) EXPECT_THAT(NChooseK(x, x + 1), IsOkAndHolds(0));
+    if (x != kint64max) {
+      EXPECT_THAT(NChooseK(x, x + 1), IsOkAndHolds(0));
+    }
     ASSERT_FALSE(HasFailure()) << DUMP_VARS(t, x);
   }
 }
@@ -226,7 +228,9 @@ TEST(NChooseKTest, ComparisonAgainstPascalTriangleForK5OrAbove) {
   for (int k = 5; k < max_n; ++k) {
     int num_overflows = 0;
     for (int n = k + 5; n < max_n; ++n) {
-      if (num_overflows > 0) EXPECT_EQ(triangle[n][k], -1);
+      if (num_overflows > 0) {
+        EXPECT_EQ(triangle[n][k], -1);
+      }
       if (triangle[n][k] < 0) {
         ++num_overflows;
         EXPECT_THAT(NChooseK(n, k), StatusIs(absl::StatusCode::kInvalidArgument,

@@ -25,7 +25,10 @@
 
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/constraint_solver/assignment.h"
+#include "ortools/routing/index_manager.h"
 #include "ortools/routing/routing.h"
+#include "ortools/routing/types.h"
 
 namespace operations_research::routing {
 

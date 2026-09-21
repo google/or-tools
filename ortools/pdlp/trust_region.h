@@ -24,6 +24,7 @@
 #include "absl/algorithm/container.h"
 #include "absl/log/check.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/pdlp/quadratic_program.h"
 #include "ortools/pdlp/sharded_quadratic_program.h"
 #include "ortools/pdlp/sharder.h"
 

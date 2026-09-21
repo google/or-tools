@@ -200,7 +200,7 @@ TEST(BidirectionalDijkstraTest, RandomizedCorrectnessTest) {
         continue;
       }
       const std::vector<int> ref_arc_path =
-          ref_dijkstra.ArcPathToNode(ref_dests[0]);
+          ref_dijkstra.ArcPathTo(ref_dests[0]);
       const auto path = tested_dijkstra.SetToSetShortestPath(srcs, dsts);
       std::vector<int> arc_path = path.forward_arc_path;
       for (const int arc : ::gtl::reversed_view(path.backward_arc_path)) {
