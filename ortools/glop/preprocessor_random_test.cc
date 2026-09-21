@@ -166,12 +166,6 @@ class RandomPreprocessorTest : public ::testing::TestWithParam<int> {
  protected:
 };
 
-std::string StatusDebugString(ProblemStatus with, ProblemStatus without) {
-  return absl::StrFormat("Problem %s with presolve and %s without.",
-                         GetProblemStatusString(with),
-                         GetProblemStatusString(without));
-}
-
 TEST_P(RandomPreprocessorTest, SolveWithAndWithoutPresolve) {
   std::mt19937 random(/*seed=*/GetParam());
   LinearProgram lp;
