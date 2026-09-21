@@ -15,6 +15,7 @@
 
 #include <limits>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -1545,6 +1546,40 @@ TEST(LinearProgramTest, RemoveNearZeroEntries) {
   EXPECT_EQ(linear_program.Dump(), expected_program.Dump());
   EXPECT_EQ(linear_program.GetSparseMatrix().num_entries(),
             linear_program.GetTransposeSparseMatrix().num_entries());
+}
+
+TEST(LinearProgramTest, MoveCtor) {
+  const std::string kLinearProgram = R"(min:1 + x1 + 2 x3;
+r0: + x1 + x3 = 0;
+1 <= x1 <= 3;
+1 <= x3 <= 4;
+)";
+  LinearProgram src;
+  ASSERT_TRUE(ParseLp(kLinearProgram, &src));
+  EXPECT_EQ(src.Dump(), kLinearProgram);
+  LinearProgram dst = std::move(src);
+  EXPECT_EQ(dst.Dump(), kLinearProgram);
+}
+
+TEST(LinearProgramTest, MoveAssignment) {
+  const std::string kLinearProgram = R"(min:1 + x1 + 2 x3;
+r0: + x1 + x3 = 0;
+1 <= x1 <= 3;
+1 <= x3 <= 4;
+)";
+  LinearProgram src;
+  ASSERT_TRUE(ParseLp(kLinearProgram, &src));
+  EXPECT_EQ(src.Dump(), kLinearProgram);
+  LinearProgram dst;
+  const std::string kLinearProgram2 = R"(min:3 + x1 + 2 x3;
+r0: + x1 + x3 = 5;
+1 <= x1 <= 41;
+1 <= x3 <= 42;
+)";
+  ASSERT_TRUE(ParseLp(kLinearProgram2, &dst));
+  EXPECT_EQ(dst.Dump(), kLinearProgram2);
+  dst = std::move(src);
+  EXPECT_EQ(dst.Dump(), kLinearProgram);
 }
 
 }  // namespace

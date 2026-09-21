@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <cmath>
 #include <random>
+#include <utility>
 #include <vector>
 
 #include "absl/log/log.h"
@@ -44,7 +45,6 @@ using ::testing::ContainerEq;
 
 TEST(SparseMatrixTest, BraceInitializationAndDump) {
   SparseMatrix matrix{
-      // Commenting each row so that clang-format doesn't collapse them.
       {0, 4, 0},  // 0
       {5, 0, 0},  // 1
       {5, 2, 0},  // 2
@@ -54,6 +54,42 @@ TEST(SparseMatrixTest, BraceInitializationAndDump) {
   EXPECT_EQ(matrix.num_cols(), ColIndex(3));
   EXPECT_EQ(matrix.num_entries(), EntryIndex(5));
   EXPECT_EQ(matrix.Dump(),
+            "{ 0 4 0 }\n"
+            "{ 5 0 0 }\n"
+            "{ 5 2 0 }\n"
+            "{ 7 0 0 }\n");
+}
+
+TEST(SparseMatrixTest, MoveCtor) {
+  SparseMatrix src{
+      {0, 4, 0},  // 0
+      {5, 0, 0},  // 1
+      {5, 2, 0},  // 2
+      {7, 0, 0}   // 3
+  };
+  SparseMatrix dst = std::move(src);
+  EXPECT_EQ(dst.Dump(),
+            "{ 0 4 0 }\n"
+            "{ 5 0 0 }\n"
+            "{ 5 2 0 }\n"
+            "{ 7 0 0 }\n");
+}
+
+TEST(SparseMatrixTest, MoveAssignment) {
+  SparseMatrix src{
+      {0, 4, 0},  // 0
+      {5, 0, 0},  // 1
+      {5, 2, 0},  // 2
+      {7, 0, 0}   // 3
+  };
+  SparseMatrix dst{
+      {0, 0, 0},  // 0
+      {0, 0, 1},  // 1
+      {1, 0, 0},  // 2
+      {7, 0, 0}   // 3
+  };
+  dst = std::move(src);
+  EXPECT_EQ(dst.Dump(),
             "{ 0 4 0 }\n"
             "{ 5 0 0 }\n"
             "{ 5 2 0 }\n"

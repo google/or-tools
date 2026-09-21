@@ -64,9 +64,10 @@ class LinearProgram {
 
   LinearProgram();
 
-  // This type is neither copyable nor movable.
   LinearProgram(const LinearProgram&) = delete;
   LinearProgram& operator=(const LinearProgram&) = delete;
+  LinearProgram(LinearProgram&&);
+  LinearProgram& operator=(LinearProgram&&);
 
   // Clears, i.e. reset the object to its initial value.
   void Clear();
@@ -654,6 +655,9 @@ class LinearProgram {
   friend void Scale(LinearProgram* lp, SparseMatrixScaler* scaler,
                     GlopParameters::ScalingAlgorithm scaling_method);
 };
+
+inline LinearProgram::LinearProgram(LinearProgram&&) = default;
+inline LinearProgram& LinearProgram::operator=(LinearProgram&&) = default;
 
 // --------------------------------------------------------
 // ProblemSolution

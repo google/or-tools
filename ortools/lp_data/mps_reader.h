@@ -42,33 +42,13 @@ absl::StatusOr<MPModelProto> MpsDataToMPModelProto(absl::string_view mps_data);
 // Parses an MPS model from a file.
 absl::StatusOr<MPModelProto> MpsFileToMPModelProto(absl::string_view mps_file);
 
-// Implementation class. Please use the 2 functions above.
-//
-// Reads a linear program in the mps format.
-//
-// All Parse() methods clear the previously parsed instance and store the result
-// in the given Data class.
-//
-// TODO(user): Remove the MPSReader class.
-class ABSL_DEPRECATED("Use the direct methods instead") MPSReader {
- public:
-  enum Form { AUTO_DETECT, FREE, FIXED };
+// Parses an MPS model from a string.
+absl::StatusOr<LinearProgram> MpsDataToLinearProgram(
+    absl::string_view mps_data);
 
-  // Parses instance from a file.
-  absl::Status ParseFile(absl::string_view file_name, LinearProgram* data,
-                         Form form = AUTO_DETECT);
-
-  absl::Status ParseFile(absl::string_view file_name, MPModelProto* data,
-                         Form form = AUTO_DETECT);
-  // Loads instance from string. Useful with MapReduce. Automatically detects
-  // the file's format (free or fixed).
-  absl::Status ParseProblemFromString(absl::string_view source,
-                                      LinearProgram* data,
-                                      MPSReader::Form form = AUTO_DETECT);
-  absl::Status ParseProblemFromString(absl::string_view source,
-                                      MPModelProto* data,
-                                      MPSReader::Form form = AUTO_DETECT);
-};
+// Parses an MPS model from a file.
+absl::StatusOr<LinearProgram> MpsFileToLinearProgram(
+    absl::string_view mps_file);
 
 }  // namespace glop
 }  // namespace operations_research

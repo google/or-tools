@@ -423,7 +423,7 @@ void RandomizeLinearProgram(int seed, int num_cols, int num_rows,
     if (absl::Bernoulli(random, 1.0 / 2)) {
       lp->SetConstraintName(row, absl::StrCat("named_constraint_", i));
     }
-    const float p = absl::Uniform(random, 0.0, 1.0);
+    const double p = absl::Uniform(random, 0.0, 1.0);
     if (p < 0.2) {
       lp->SetConstraintBounds(row, -kInfinity,
                               absl::Uniform<double>(random, -10, 10));

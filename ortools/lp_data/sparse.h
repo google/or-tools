@@ -76,9 +76,10 @@ class SparseMatrix {
   SparseMatrix(
       std::initializer_list<std::initializer_list<Fractional>> init_list);
 
-  // This type is neither copyable nor movable.
   SparseMatrix(const SparseMatrix&) = delete;
   SparseMatrix& operator=(const SparseMatrix&) = delete;
+  SparseMatrix(SparseMatrix&&);
+  SparseMatrix& operator=(SparseMatrix&&);
 
   // Clears internal data structure, i.e. erases all the columns and set
   // the number of rows to zero.
@@ -218,6 +219,9 @@ class SparseMatrix {
   // number of rows.
   RowIndex num_rows_;
 };
+
+inline SparseMatrix::SparseMatrix(SparseMatrix&&) = default;
+inline SparseMatrix& SparseMatrix::operator=(SparseMatrix&&) = default;
 
 // A matrix constructed from a list of already existing SparseColumn. This class
 // does not take ownership of the underlying columns, and thus they must outlive
