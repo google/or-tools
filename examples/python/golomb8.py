@@ -27,7 +27,7 @@ from absl import app
 from ortools.constraint_solver.python import constraint_solver as cp
 
 # We disable the following warning because it is a false positive on constraints
-# like: solver.Add(x == 0)
+# like: solver.add(x == 0)
 # pylint: disable=g-explicit-bool-comparison
 
 
@@ -57,18 +57,18 @@ def main(_) -> None:
         solver.add(marks[i + 1] > marks[i])
 
     solution = solver.assignment()
-    solution.Add(marks[size - 1])
+    solution.add(marks[size - 1])
     collector = solver.all_solution_collector(solution)
 
     solver.solve(
         solver.phase(
             marks,
             cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
-            cp.IntValueStrategy.ASSIGN_MIN_VALUE
+            cp.IntValueStrategy.ASSIGN_MIN_VALUE,
         ),
         [objective, collector],
     )
-    for i in range(0, collector.solution_count()):
+    for i in range(0, collector.solution_count):
         obj_value = collector.value(i, marks[size - 1])
         time = collector.wall_time_ms(i)
         branches = collector.branches(i)
@@ -77,9 +77,9 @@ def main(_) -> None:
             "Solution #%i: value = %i, failures = %i, branches = %i,time = %i ms"
             % (i, obj_value, failures, branches, time)
         )
-    time = solver.wall_time_ms()
-    branches = solver.branches()
-    failures = solver.failures()
+    time = solver.wall_time_ms
+    branches = solver.num_branches
+    failures = solver.num_failures
     print(
         (
             "Total run : failures = %i, branches = %i, time = %i ms"
