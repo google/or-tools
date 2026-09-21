@@ -15,6 +15,15 @@ if(NOT BUILD_PYTHON)
   return()
 endif()
 
+# When ON (the upstream default), the pybind11_abseil Python module is staged
+# next to the ortools package and bundled into the wheel so that a bare
+# `pip install ortools` is self-contained. Distributions that ship
+# pybind11_abseil as a separate runtime package (e.g. Debian)
+# must turn this OFF to avoid shipping a second copy of
+# pybind11_abseil/status.*.cpython-*.so.
+option(VENDOR_PYBIND11_ABSEIL
+  "Stage the pybind11_abseil Python module into the ortools wheel" ON)
+
 # Use latest UseSWIG module (3.14) and Python3 module (3.18)
 cmake_minimum_required(VERSION 3.18)
 
@@ -311,7 +320,9 @@ file(GENERATE
   OUTPUT ${PYTHON_PROJECT_DIR}/__init__.py
   INPUT ${PROJECT_BINARY_DIR}/python/__init__.py.in)
 
-file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/../pybind11_abseil/__init__.py CONTENT "")
+if(VENDOR_PYBIND11_ABSEIL)
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/../pybind11_abseil/__init__.py CONTENT "")
+endif()
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/algorithms/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/algorithms/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/bop/__init__.py CONTENT "")
@@ -706,7 +717,7 @@ add_custom_command(
    $<IF:$<BOOL:${BUILD_MATH_OPT}>,copy,true>
    $<TARGET_FILE:math_opt_io_pybind11> ${PYTHON_PROJECT}/math_opt/io/python
   COMMAND ${CMAKE_COMMAND} -E
-   $<IF:$<BOOL:${BUILD_MATH_OPT}>,copy,true>
+   $<IF:$<BOOL:${VENDOR_PYBIND11_ABSEIL}>,copy,true>
    $<TARGET_FILE:status_py_extension_stub> ${PYTHON_PROJECT}/../pybind11_abseil
   COMMAND ${CMAKE_COMMAND} -E
    $<IF:$<TARGET_EXISTS:pdlp_pybind11>,copy,true>
