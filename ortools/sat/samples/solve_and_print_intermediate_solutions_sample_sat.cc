@@ -62,7 +62,7 @@ void SolveAndPrintIntermediateSolutionsSampleSat() {
   // [END print_solution]
 
   // [START solve]
-  const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
+  SolveCpModel(cp_model.Build(), &model);
   // [END solve]
 
   LOG(INFO) << "Number of solutions found: " << num_solutions;

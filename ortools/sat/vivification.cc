@@ -34,8 +34,8 @@ namespace operations_research::sat {
 
 bool Vivifier::MinimizeByPropagation(bool log_info, double dtime_budget,
                                      bool minimize_new_clauses_only) {
-  PresolveTimer timer("Vivification", logger_, time_limit_);
-  timer.OverrideLogging(log_info || VLOG_IS_ON(2));
+  ScopedTimeLogger logger("Vivification", logger_, time_limit_);
+  logger.OverrideLogging(log_info || VLOG_IS_ON(2));
 
   sat_solver_->AdvanceDeterministicTime(time_limit_);
   const double threshold =
@@ -87,9 +87,9 @@ bool Vivifier::MinimizeByPropagation(bool log_info, double dtime_budget,
       counters_.num_clauses_vivified - old_counter.num_clauses_vivified;
   last_num_literals_removed_ =
       counters_.num_removed_literals - old_counter.num_removed_literals;
-  timer.AddCounter("num_vivified", last_num_vivified_);
-  timer.AddCounter("literals_removed", last_num_literals_removed_);
-  timer.AddCounter("loops", clause_manager_->NumToMinimizeIndexResets());
+  logger.AddCounter("num_vivified", last_num_vivified_);
+  logger.AddCounter("literals_removed", last_num_literals_removed_);
+  logger.AddCounter("loops", clause_manager_->NumToMinimizeIndexResets());
 
   clause_manager_->DeleteRemovedClauses();
   return result;

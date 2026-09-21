@@ -127,11 +127,11 @@ class GateCongruenceClosure {
   // As we presolve the model, some clauses can be shrunk and we can lose
   // some structural information. This seeds the small truth-table detection
   // with information we already had.
-  void ProcessPreviousTruthTables(PresolveTimer& timer);
+  void ProcessPreviousTruthTables(ScopedTimeLogger& logger);
 
   // Initialize data-structures and call
   // ExtractAndGatesAndFillShortTruthTables() then ExtractShortGates().
-  void StructureExtraction(PresolveTimer& timer);
+  void StructureExtraction(ScopedTimeLogger& logger);
 
   // Recovers "target_literal = and(literals)" from the model.
   //
@@ -143,11 +143,11 @@ class GateCongruenceClosure {
   // - for all i, target_literal => literal_i  (direct binary implication)
   // - all literals at true => target_literal, this is a clause:
   //   (not(literal[i]) for all i, target_literal).
-  void ExtractAndGatesAndFillShortTruthTables(PresolveTimer& timer);
+  void ExtractAndGatesAndFillShortTruthTables(ScopedTimeLogger& logger);
 
   // From possible assignment of small set of variables (truth_tables), extract
   // functions of the form one_var = f(other_vars).
-  void ExtractShortGates(PresolveTimer& timer);
+  void ExtractShortGates(ScopedTimeLogger& logger);
 
   // Detects gates encoded in the given truth table, and add them to the set
   // of gates. Returns the number of gates detected.

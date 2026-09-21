@@ -392,7 +392,7 @@ bool HittingSetOptimizer::ComputeInitialLinearModel() {
 void HittingSetOptimizer::TightenHitSetModel() {
   // Update the variable bounds from the SAT level 0 bounds.
   for (const auto& [var, var_proto] : extracted_variables_info_) {
-    var_proto->mutable_domain()->Resize(2, 0);
+    var_proto->mutable_domain()->resize(2, 0);
     var_proto->set_domain(0, integer_trail_->LevelZeroLowerBound(var).value());
     var_proto->set_domain(1, integer_trail_->LevelZeroUpperBound(var).value());
   }

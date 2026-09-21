@@ -32,6 +32,7 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -446,10 +447,11 @@ TEST(FindSingleLinearDifferenceTest, TwoDiff1) {
   LinearConstraintProto lin2 = GetLinear({{0, 2}, {1, 1}, {2, 2}});
   int var1, var2;
   int64_t coeff1, coeff2;
-  EXPECT_FALSE(
-      FindSingleLinearDifference(lin1, lin2, &var1, &coeff1, &var2, &coeff2));
-  EXPECT_FALSE(
-      FindSingleLinearDifference(lin2, lin1, &var1, &coeff1, &var2, &coeff2));
+  TimeLimit time_limit;
+  EXPECT_FALSE(FindSingleLinearDifference(lin1, lin2, &var1, &coeff1, &var2,
+                                          &coeff2, &time_limit));
+  EXPECT_FALSE(FindSingleLinearDifference(lin2, lin1, &var1, &coeff1, &var2,
+                                          &coeff2, &time_limit));
 }
 
 TEST(FindSingleLinearDifferenceTest, TwoDiff2) {
@@ -457,10 +459,11 @@ TEST(FindSingleLinearDifferenceTest, TwoDiff2) {
   LinearConstraintProto lin2 = GetLinear({{0, 2}, {1, 1}, {2, 1}});
   int var1, var2;
   int64_t coeff1, coeff2;
-  EXPECT_FALSE(
-      FindSingleLinearDifference(lin1, lin2, &var1, &coeff1, &var2, &coeff2));
-  EXPECT_FALSE(
-      FindSingleLinearDifference(lin2, lin1, &var1, &coeff1, &var2, &coeff2));
+  TimeLimit time_limit;
+  EXPECT_FALSE(FindSingleLinearDifference(lin1, lin2, &var1, &coeff1, &var2,
+                                          &coeff2, &time_limit));
+  EXPECT_FALSE(FindSingleLinearDifference(lin2, lin1, &var1, &coeff1, &var2,
+                                          &coeff2, &time_limit));
 }
 
 TEST(FindSingleLinearDifferenceTest, OkNotSameVariable) {
@@ -468,10 +471,11 @@ TEST(FindSingleLinearDifferenceTest, OkNotSameVariable) {
   LinearConstraintProto lin2 = GetLinear({{0, 1}, {2, 1}, {3, 1}});
   int var1, var2;
   int64_t coeff1, coeff2;
-  EXPECT_TRUE(
-      FindSingleLinearDifference(lin2, lin1, &var1, &coeff1, &var2, &coeff2));
-  EXPECT_TRUE(
-      FindSingleLinearDifference(lin1, lin2, &var1, &coeff1, &var2, &coeff2));
+  TimeLimit time_limit;
+  EXPECT_TRUE(FindSingleLinearDifference(lin2, lin1, &var1, &coeff1, &var2,
+                                         &coeff2, &time_limit));
+  EXPECT_TRUE(FindSingleLinearDifference(lin1, lin2, &var1, &coeff1, &var2,
+                                         &coeff2, &time_limit));
   EXPECT_EQ(var1, 1);
   EXPECT_EQ(coeff1, 1);
   EXPECT_EQ(var2, 2);
@@ -483,10 +487,11 @@ TEST(FindSingleLinearDifferenceTest, OkNotSameCoeff) {
   LinearConstraintProto lin2 = GetLinear({{0, 1}, {1, 3}, {3, 1}});
   int var1, var2;
   int64_t coeff1, coeff2;
-  EXPECT_TRUE(
-      FindSingleLinearDifference(lin2, lin1, &var1, &coeff1, &var2, &coeff2));
-  EXPECT_TRUE(
-      FindSingleLinearDifference(lin1, lin2, &var1, &coeff1, &var2, &coeff2));
+  TimeLimit time_limit;
+  EXPECT_TRUE(FindSingleLinearDifference(lin2, lin1, &var1, &coeff1, &var2,
+                                         &coeff2, &time_limit));
+  EXPECT_TRUE(FindSingleLinearDifference(lin1, lin2, &var1, &coeff1, &var2,
+                                         &coeff2, &time_limit));
   EXPECT_EQ(var1, 1);
   EXPECT_EQ(coeff1, 1);
   EXPECT_EQ(var2, 1);
@@ -498,10 +503,11 @@ TEST(FindSingleLinearDifferenceTest, OkNotSamePosition) {
   LinearConstraintProto lin2 = GetLinear({{0, 1}, {1, 3}, {3, 1}});
   int var1, var2;
   int64_t coeff1, coeff2;
-  EXPECT_TRUE(
-      FindSingleLinearDifference(lin2, lin1, &var1, &coeff1, &var2, &coeff2));
-  EXPECT_TRUE(
-      FindSingleLinearDifference(lin1, lin2, &var1, &coeff1, &var2, &coeff2));
+  TimeLimit time_limit;
+  EXPECT_TRUE(FindSingleLinearDifference(lin2, lin1, &var1, &coeff1, &var2,
+                                         &coeff2, &time_limit));
+  EXPECT_TRUE(FindSingleLinearDifference(lin1, lin2, &var1, &coeff1, &var2,
+                                         &coeff2, &time_limit));
   EXPECT_EQ(var1, 5);
   EXPECT_EQ(coeff1, 1);
   EXPECT_EQ(var2, 1);

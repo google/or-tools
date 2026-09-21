@@ -60,6 +60,7 @@
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_symmetries.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/deterministic_time.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/inclusion.h"
 #include "ortools/sat/integer.h"
@@ -158,13 +159,22 @@ void CpModelPresolver::ProcessAtMostOneAndLinear() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
   if (context_->params().presolve_inclusion_work_limit() == 0) return;
-  PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
+  ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   ActivityBoundHelper amo_in_linear;
-  amo_in_linear.AddAllAtMostOnes(context_->WorkingModel());
+  {
+    DeterministicTimer2<{
+        .scale1 = 7.9e-09, .scale2 = 4.6e-08, .offset = 4.3e-09}>
+        timer(time_limit_);
+    const uint64_t num_added =
+        amo_in_linear.AddAllAtMostOnes(context_->WorkingModel());
+    timer.Advance(context_->NumConstraints(), num_added);
+  }
 
   int num_changes = 0;
   const int num_constraints = context_->NumConstraints();
+  DeterministicTimer2<{.scale1 = 1.3e-08, .scale2 = 1.3e-14, .offset = 6.9e-09}>
+      timer(time_limit_);
   temp_ct_.Clear();
   for (int c = 0; c < num_constraints; ++c) {
     ConstraintProto* ct = context_->MutableConstraint(c);
@@ -184,8 +194,9 @@ void CpModelPresolver::ProcessAtMostOneAndLinear() {
       ++num_changes;
     }
   }
+  timer.Advance(num_constraints, num_changes);
 
-  timer.AddCounter("num_changes", num_changes);
+  logger.AddCounter("num_changes", num_changes);
 }
 
 // TODO(user): Similarly amo and bool_or intersection or amo and enforcement
@@ -198,6 +209,8 @@ void CpModelPresolver::ProcessOneLinearWithAmo(int ct_index,
                                                ActivityBoundHelper* helper) {
   if (ct->constraint_case() != ConstraintProto::kLinear) return;
   if (ct->linear().vars().size() <= 1) return;
+  DeterministicTimer<{.scale = 3.0e-07, .offset = 1.3e-06}> timer(
+      time_limit_, ct->linear().vars().size());
 
   // TODO(user): It is possible in some corner-case that the linear constraint
   // is NOT canonicalized. This is because we might detect equivalence here and
@@ -479,6 +492,8 @@ void CpModelPresolver::ProcessOneLinearWithAmo(int ct_index,
 void CpModelPresolver::ExtractAtMostOneFromLinear(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return;
   if (HasEnforcementLiteral(*ct)) return;
+  DeterministicTimer<{.scale = 8.6e-08, .offset = 0.0e+00}> timer(
+      time_limit_, ct->linear().vars_size());
   const Domain rhs = ReadDomainFromProto(ct->linear());
 
   const LinearConstraintProto& arg = ct->linear();
@@ -598,17 +613,22 @@ void ExtractClausesToContext(absl::Span<const int> amo_or_exo_still_present,
   // The algo here is fast but doesn't work if there are too many amo/exo, so
   // we have a limit in place.
   SimpleDuplicateImplicationDetector already_there;
-  for (const int c : amo_or_exo_still_present) {
-    const ConstraintProto& ct = context->Constraint(c);
-    CHECK(ct.enforcement_literal().empty());
-    if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
-      already_there.AddAtMostOneImplicationsIfNotTooBig(
-          ct.exactly_one().literals());
-    } else {
-      CHECK_EQ(ct.constraint_case(), ConstraintProto::kAtMostOne);
-      already_there.AddAtMostOneImplicationsIfNotTooBig(
-          ct.at_most_one().literals());
+  {
+    DeterministicTimer<{.scale = 1.4e-07, .offset = 0.0e+00}> timer(
+        context->time_limit());
+    for (const int c : amo_or_exo_still_present) {
+      const ConstraintProto& ct = context->Constraint(c);
+      CHECK(ct.enforcement_literal().empty());
+      if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
+        already_there.AddAtMostOneImplicationsIfNotTooBig(
+            ct.exactly_one().literals());
+      } else {
+        CHECK_EQ(ct.constraint_case(), ConstraintProto::kAtMostOne);
+        already_there.AddAtMostOneImplicationsIfNotTooBig(
+            ct.at_most_one().literals());
+      }
     }
+    timer.Advance(already_there.NumAdded());
   }
 
   // We regroup the "implication" into bool_and to have a more concise proto and
@@ -618,9 +638,13 @@ void ExtractClausesToContext(absl::Span<const int> amo_or_exo_still_present,
   // since the order of the constraints might be important there depending on
   // how we perform the postsolve.
   absl::flat_hash_map<int, int> ref_to_bool_and;
+  DeterministicTimer2<{.scale1 = 3.6e-09, .scale2 = 1.2e-07, .offset = 6.8e-09}>
+      timer(context->time_limit());
+  int num_non_empty_clauses = 0;
   for (int i = 0; i < container.NumClauses(); ++i) {
     const auto& clause = container.Clause(i);
     if (clause.empty()) continue;
+    ++num_non_empty_clauses;
 
     // bool_and.
     //
@@ -651,13 +675,17 @@ void ExtractClausesToContext(absl::Span<const int> amo_or_exo_still_present,
       }
     }
   }
+  timer.Advance(container.NumClauses(), num_non_empty_clauses);
 
   DCHECK(context->ConstraintVariableUsageIsConsistent());
 }
 
 void ExtractClausesToMappingModelProto(absl::Span<const int> index_mapping,
                                        const SatPostsolver& container,
-                                       CpModelProto* proto) {
+                                       CpModelProto* proto,
+                                       TimeLimit* time_limit) {
+  DeterministicTimer<{.scale = 1.1e-07, .offset = 1.0e-08}> timer(
+      time_limit, container.NumClauses());
   const std::string debug_name =
       absl::GetFlag(FLAGS_cp_model_debug_postsolve) ? "sat_postsolver" : "";
 
@@ -692,6 +720,8 @@ void ExtractClausesToMappingModelProto(absl::Span<const int> index_mapping,
 // global place during all the presolve, and just output them at the end
 // rather than modifying more than once the proto.
 void CpModelPresolver::ConvertToBoolAnd() {
+  DeterministicTimer2<{.scale1 = 1.1e-08, .scale2 = 7.2e-08, .offset = 5.4e-09}>
+      timer(time_limit_);
   absl::flat_hash_map<int, int> ref_to_bool_and;
   const int num_constraints = context_->NumConstraints();
   std::vector<int> to_remove;
@@ -717,6 +747,7 @@ void CpModelPresolver::ConvertToBoolAnd() {
       continue;
     }
   }
+  timer.Advance(num_constraints, to_remove.size());
 
   DCHECK(context_->ConstraintVariableUsageIsConsistent());
   for (const int c : to_remove) {
@@ -730,10 +761,11 @@ void CpModelPresolver::ConvertToBoolAnd() {
 // TODO(user): It might make sense to run this in parallel. The same apply for
 // other expansive and self-contains steps like symmetry detection, etc...
 void CpModelPresolver::Probe() {
-  auto probing_timer =
-      std::make_unique<PresolveTimer>(__FUNCTION__, logger_, time_limit_);
+  auto probing_logger =
+      std::make_unique<ScopedTimeLogger>(__FUNCTION__, logger_, time_limit_);
 
   Model model;
+  // TODO(user): advance deterministic time in this function.
   if (!LoadModelForProbing(context_, &model)) return;
 
   // Probe.
@@ -758,13 +790,13 @@ void CpModelPresolver::Probe() {
   // TODO(user): Improve the algo?
   const auto& assignment = sat_solver->Assignment();
   prober->SetPropagationCallback([&](Literal decision) {
-    if (probing_timer->WorkLimitIsReached()) return;
+    if (probing_logger->WorkLimitIsReached()) return;
     const int decision_var =
         mapping->GetProtoVariableFromBooleanVariable(decision.Variable());
     if (decision_var < 0) return;
-    probing_timer->TrackSimpleLoop(
-        context_->VarToConstraints(decision_var).size());
     std::vector<int> to_update;
+    DeterministicTimer<{.scale = 1.0e-07, .offset = 0.0e+00}> timer(
+        time_limit_, context_->VarToConstraints(decision_var).size());
     for (const int c : context_->VarToConstraints(decision_var)) {
       if (c < 0) continue;
       const ConstraintProto& ct = context_->Constraint(c);
@@ -785,21 +817,24 @@ void CpModelPresolver::Probe() {
         bool decision_is_positive = false;
         bool has_false_literal = false;
         bool simplification_possible = false;
-        probing_timer->TrackSimpleLoop(ct.enforcement_literal().size());
-        for (const int ref : ct.enforcement_literal()) {
-          const Literal lit = mapping->Literal(ref);
-          if (PositiveRef(ref) == decision_var) {
-            decision_ref = ref;
-            decision_is_positive = assignment.LiteralIsTrue(lit);
-            if (!decision_is_positive) break;
-            continue;
-          }
-          if (assignment.LiteralIsFalse(lit)) {
-            false_ref = ref;
-            has_false_literal = true;
-          } else if (assignment.LiteralIsTrue(lit)) {
-            // If decision => l, we can remove l from the list.
-            simplification_possible = true;
+        {
+          DeterministicTimer<{.scale = 4.0e-09, .offset = 6.0e-08}> timer(
+              time_limit_, ct.enforcement_literal().size());
+          for (const int ref : ct.enforcement_literal()) {
+            const Literal lit = mapping->Literal(ref);
+            if (PositiveRef(ref) == decision_var) {
+              decision_ref = ref;
+              decision_is_positive = assignment.LiteralIsTrue(lit);
+              if (!decision_is_positive) break;
+              continue;
+            }
+            if (assignment.LiteralIsFalse(lit)) {
+              false_ref = ref;
+              has_false_literal = true;
+            } else if (assignment.LiteralIsTrue(lit)) {
+              // If decision => l, we can remove l from the list.
+              simplification_possible = true;
+            }
           }
         }
         if (!decision_is_positive) continue;
@@ -842,21 +877,24 @@ void CpModelPresolver::Probe() {
       bool decision_is_negative = false;
       bool has_true_literal = false;
       bool simplification_possible = false;
-      probing_timer->TrackSimpleLoop(ct.bool_or().literals().size());
-      for (const int ref : ct.bool_or().literals()) {
-        const Literal lit = mapping->Literal(ref);
-        if (PositiveRef(ref) == decision_var) {
-          decision_ref = ref;
-          decision_is_negative = assignment.LiteralIsFalse(lit);
-          if (!decision_is_negative) break;
-          continue;
-        }
-        if (assignment.LiteralIsTrue(lit)) {
-          true_ref = ref;
-          has_true_literal = true;
-        } else if (assignment.LiteralIsFalse(lit)) {
-          // If not(l1) => not(l2), we can remove l2 from the clause.
-          simplification_possible = true;
+      {
+        DeterministicTimer<{.scale = 2.5e-09, .offset = 1.2e-07}> timer(
+            time_limit_, ct.bool_or().literals().size());
+        for (const int ref : ct.bool_or().literals()) {
+          const Literal lit = mapping->Literal(ref);
+          if (PositiveRef(ref) == decision_var) {
+            decision_ref = ref;
+            decision_is_negative = assignment.LiteralIsFalse(lit);
+            if (!decision_is_negative) break;
+            continue;
+          }
+          if (assignment.LiteralIsTrue(lit)) {
+            true_ref = ref;
+            has_true_literal = true;
+          } else if (assignment.LiteralIsFalse(lit)) {
+            // If not(l1) => not(l2), we can remove l2 from the clause.
+            simplification_possible = true;
+          }
         }
       }
       if (!decision_is_negative) continue;
@@ -922,9 +960,7 @@ void CpModelPresolver::Probe() {
         kMinIntegerValue, ub);
   }
 
-  probing_timer->AddCounter("probed", prober->num_decisions());
-  probing_timer->AddToWork(
-      model.GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime());
+  probing_logger->AddCounter("probed", prober->num_decisions());
   if (sat_solver->ModelIsUnsat() || !implication_graph->DetectEquivalences()) {
     return (void)context_->NotifyThatModelIsUnsat("during probing");
   }
@@ -944,44 +980,50 @@ void CpModelPresolver::Probe() {
       if (!context_->SetLiteralToTrue(ref)) return;
     }
   }
-  probing_timer->AddCounter("fixed_bools", num_fixed);
+  probing_logger->AddCounter("fixed_bools", num_fixed);
 
   int num_equiv = 0;
   int num_changed_bounds = 0;
   const int num_variables = context_->NumVariables();
-  auto* integer_trail = model.GetOrCreate<IntegerTrail>();
-  for (int var = 0; var < num_variables; ++var) {
-    // Restrict IntegerVariable domain.
-    // Note that Boolean are already dealt with above.
-    if (!mapping->IsBoolean(var)) {
-      bool changed = false;
-      if (!context_->IntersectDomainWith(
-              var, integer_trail->LevelZeroDomain(mapping->Integer(var)),
-              &changed)) {
-        return;
+  {
+    DeterministicTimer2<{
+        .scale1 = 4.0e-09, .scale2 = 7.1e-07, .offset = 1.4e-08}>
+        timer(time_limit_);
+    auto* integer_trail = model.GetOrCreate<IntegerTrail>();
+    for (int var = 0; var < num_variables; ++var) {
+      // Restrict IntegerVariable domain.
+      // Note that Boolean are already dealt with above.
+      if (!mapping->IsBoolean(var)) {
+        bool changed = false;
+        if (!context_->IntersectDomainWith(
+                var, integer_trail->LevelZeroDomain(mapping->Integer(var)),
+                &changed)) {
+          return;
+        }
+        if (changed) ++num_changed_bounds;
+        continue;
       }
-      if (changed) ++num_changed_bounds;
-      continue;
-    }
 
-    // Add Boolean equivalence relations.
-    const Literal l = mapping->Literal(var);
-    const Literal r = implication_graph->RepresentativeOf(l);
-    if (r != l) {
-      ++num_equiv;
-      const int r_var =
-          mapping->GetProtoVariableFromBooleanVariable(r.Variable());
-      CHECK_GE(r_var, 0);
-      if (!context_->StoreBooleanEqualityRelation(
-              var, r.IsPositive() ? r_var : NegatedRef(r_var))) {
-        return;
+      // Add Boolean equivalence relations.
+      const Literal l = mapping->Literal(var);
+      const Literal r = implication_graph->RepresentativeOf(l);
+      if (r != l) {
+        ++num_equiv;
+        const int r_var =
+            mapping->GetProtoVariableFromBooleanVariable(r.Variable());
+        CHECK_GE(r_var, 0);
+        if (!context_->StoreBooleanEqualityRelation(
+                var, r.IsPositive() ? r_var : NegatedRef(r_var))) {
+          return;
+        }
       }
     }
+    timer.Advance(num_variables, num_changed_bounds + num_equiv);
   }
-  probing_timer->AddCounter("new_bounds", num_changed_bounds);
-  probing_timer->AddCounter("equiv", num_equiv);
-  probing_timer->AddCounter("new_binary_clauses",
-                            prober->num_new_binary_clauses());
+  probing_logger->AddCounter("new_bounds", num_changed_bounds);
+  probing_logger->AddCounter("equiv", num_equiv);
+  probing_logger->AddCounter("new_binary_clauses",
+                             prober->num_new_binary_clauses());
 
   // Note that we prefer to run this after we exported all equivalence to the
   // context, so that our enforcement list can be presolved to the best of our
@@ -989,12 +1031,12 @@ void CpModelPresolver::Probe() {
   DetectDuplicateConstraintsWithDifferentEnforcements(
       mapping, implication_graph, model.GetOrCreate<Trail>());
 
-  // Stop probing timer now and display info.
-  probing_timer.reset();
+  // Display info.
+  probing_logger.reset();
 
   // Run clique merging using detected implications from probing.
   if (context_->params().merge_at_most_one_work_limit() > 0.0) {
-    PresolveTimer timer("MaxClique", logger_, time_limit_);
+    ScopedTimeLogger max_clique_logger("MaxClique", logger_, time_limit_);
     std::vector<std::vector<Literal>> cliques;
     std::vector<int> clique_ct_index;
 
@@ -1002,29 +1044,38 @@ void CpModelPresolver::Probe() {
     // clearing and updating the constraint variable graph...
     int64_t num_literals_before = 0;
     const int num_constraints = context_->NumConstraints();
-    for (int c = 0; c < num_constraints; ++c) {
-      ConstraintProto* ct = context_->MutableConstraint(c);
-      if (ct->constraint_case() == ConstraintProto::kAtMostOne) {
-        std::vector<Literal> clique;
-        for (const int ref : ct->at_most_one().literals()) {
-          clique.push_back(mapping->Literal(ref));
+    {
+      DeterministicTimer2<{
+          .scale1 = 1.1e-08, .scale2 = 6.8e-08, .offset = 3.9e-09}>
+          timer(time_limit_);
+      int work_done = 0;
+      for (int c = 0; c < num_constraints; ++c) {
+        ConstraintProto* ct = context_->MutableConstraint(c);
+        if (ct->constraint_case() == ConstraintProto::kAtMostOne) {
+          std::vector<Literal> clique;
+          work_done += ct->at_most_one().literals().size();
+          for (const int ref : ct->at_most_one().literals()) {
+            clique.push_back(mapping->Literal(ref));
+          }
+          num_literals_before += clique.size();
+          cliques.push_back(clique);
+          ct->Clear();
+          context_->UpdateConstraintVariableUsage(c);
+        } else if (ct->constraint_case() == ConstraintProto::kBoolAnd) {
+          if (ct->enforcement_literal().size() != 1) continue;
+          const Literal enforcement =
+              mapping->Literal(ct->enforcement_literal(0));
+          work_done += ct->bool_and().literals().size();
+          for (const int ref : ct->bool_and().literals()) {
+            if (ref == ct->enforcement_literal(0)) continue;
+            num_literals_before += 2;
+            cliques.push_back({enforcement, mapping->Literal(ref).Negated()});
+          }
+          ct->Clear();
+          context_->UpdateConstraintVariableUsage(c);
         }
-        num_literals_before += clique.size();
-        cliques.push_back(clique);
-        ct->Clear();
-        context_->UpdateConstraintVariableUsage(c);
-      } else if (ct->constraint_case() == ConstraintProto::kBoolAnd) {
-        if (ct->enforcement_literal().size() != 1) continue;
-        const Literal enforcement =
-            mapping->Literal(ct->enforcement_literal(0));
-        for (const int ref : ct->bool_and().literals()) {
-          if (ref == ct->enforcement_literal(0)) continue;
-          num_literals_before += 2;
-          cliques.push_back({enforcement, mapping->Literal(ref).Negated()});
-        }
-        ct->Clear();
-        context_->UpdateConstraintVariableUsage(c);
       }
+      timer.Advance(num_constraints, work_done);
     }
     const int64_t num_old_cliques = cliques.size();
 
@@ -1036,38 +1087,41 @@ void CpModelPresolver::Probe() {
       limit *= num_literals_before / 1e6;
     }
 
-    double dtime = 0.0;
     implication_graph->MergeAtMostOnes(absl::MakeSpan(cliques),
-                                       SafeDoubleToInt64(limit), &dtime);
-    timer.AddToWork(dtime);
+                                       SafeDoubleToInt64(limit));
 
     // Note that because TransformIntoMaxCliques() extend cliques, we are ok
     // to ignore any unmapped literal. In case of equivalent literals, we always
     // use the smaller indices as a representative, so we should be good.
     int num_new_cliques = 0;
     int64_t num_literals_after = 0;
-    for (const std::vector<Literal>& clique : cliques) {
-      if (clique.empty()) continue;
-      num_new_cliques++;
-      num_literals_after += clique.size();
-      ConstraintProto* ct = context_->AddConstraint();
-      for (const Literal literal : clique) {
-        const int var =
-            mapping->GetProtoVariableFromBooleanVariable(literal.Variable());
-        if (var < 0) continue;
-        if (literal.IsPositive()) {
-          ct->mutable_at_most_one()->add_literals(var);
-        } else {
-          ct->mutable_at_most_one()->add_literals(NegatedRef(var));
+    {
+      DeterministicTimer<{.scale = 9.6e-08, .offset = 3.7e-09}> timer(
+          time_limit_);
+      for (const std::vector<Literal>& clique : cliques) {
+        if (clique.empty()) continue;
+        num_new_cliques++;
+        num_literals_after += clique.size();
+        ConstraintProto* ct = context_->AddConstraint();
+        for (const Literal literal : clique) {
+          const int var =
+              mapping->GetProtoVariableFromBooleanVariable(literal.Variable());
+          if (var < 0) continue;
+          if (literal.IsPositive()) {
+            ct->mutable_at_most_one()->add_literals(var);
+          } else {
+            ct->mutable_at_most_one()->add_literals(NegatedRef(var));
+          }
         }
-      }
 
-      // Make sure we do not have duplicate variable reference.
-      //
-      // Tricky: note that it is important to not use dual reduction here as not
-      // all constraints are in the proto during the loop.
-      constraint_presolver_->PresolveAtMostOne(ct,
-                                               /*use_dual_reduction=*/false);
+        // Make sure we do not have duplicate variable reference.
+        //
+        // Tricky: note that it is important to not use dual reduction here as
+        // not all constraints are in the proto during the loop.
+        constraint_presolver_->PresolveAtMostOne(ct,
+                                                 /*use_dual_reduction=*/false);
+      }
+      timer.Advance(num_literals_after);
     }
     if (num_new_cliques != num_old_cliques) {
       context_->UpdateRuleStats("at_most_one: transformed into max clique");
@@ -1075,7 +1129,7 @@ void CpModelPresolver::Probe() {
 
     if (num_old_cliques != num_new_cliques ||
         num_literals_before != num_literals_after) {
-      timer.AddMessage(
+      max_clique_logger.AddMessage(
           absl::StrCat("Merged ", Plural(num_old_cliques, "constraint"),
                        " with ", Plural(num_literals_before, "literal"),
                        " into ", Plural(num_new_cliques, "constraint"),
@@ -1478,7 +1532,7 @@ bool CpModelPresolver::PresolvePureSatPart() {
 
   // Add the sat_postsolver clauses to mapping_model.
   ExtractClausesToMappingModelProto(new_to_old_index, sat_postsolver,
-                                    context_->mapping_model);
+                                    context_->mapping_model, time_limit_);
   return true;
 }
 
@@ -1593,7 +1647,7 @@ bool CpModelPresolver::PresolvePureSatProblem() {
   if (!sat_solver->ExtractClauses(&clauses_container)) return false;
   ExtractClausesToContext({}, new_to_old_index, clauses_container, context_);
   ExtractClausesToMappingModelProto(new_to_old_index, sat_postsolver,
-                                    context_->mapping_model);
+                                    context_->mapping_model, time_limit_);
 
   // We mark as removed any variables removed by the pure SAT presolve.
   // This is mainly to discover or avoid bugs as we might have stale entries
@@ -1765,7 +1819,7 @@ bool IsLinearEqualityConstraint(const ConstraintProto& ct) {
 void CpModelPresolver::ExpandObjective() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
-  PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
+  ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   // The objective is already loaded in the context, but we re-canonicalize
   // it with the latest information.
@@ -2035,17 +2089,17 @@ void CpModelPresolver::ExpandObjective() {
                               num_expands);
   }
 
-  timer.AddCounter("propagations", num_propagations);
-  timer.AddCounter("entries", num_entries);
-  timer.AddCounter("tight_variables", num_tight_variables);
-  timer.AddCounter("tight_constraints", num_tight_constraints);
-  timer.AddCounter("expands", num_expands);
-  timer.AddCounter("issues", num_issues);
+  logger.AddCounter("propagations", num_propagations);
+  logger.AddCounter("entries", num_entries);
+  logger.AddCounter("tight_variables", num_tight_variables);
+  logger.AddCounter("tight_constraints", num_tight_constraints);
+  logger.AddCounter("expands", num_expands);
+  logger.AddCounter("issues", num_issues);
 }
 
 bool CpModelPresolver::MergeCliqueConstraintsHelper(
     std::vector<std::vector<Literal>>& cliques, std::string_view entry_name,
-    PresolveTimer& timer) {
+    ScopedTimeLogger& logger) {
   if (cliques.empty()) return false;  // Nothing has changed.
   const int num_constraints = context_->NumConstraints();
   int old_num_clique_constraints = cliques.size();
@@ -2084,7 +2138,7 @@ bool CpModelPresolver::MergeCliqueConstraintsHelper(
 
   if (old_num_clique_constraints != new_num_clique_constraints ||
       old_num_entries != new_num_entries) {
-    timer.AddMessage(absl::StrCat(
+    logger.AddMessage(absl::StrCat(
         "Merged ", Plural(old_num_clique_constraints, "constraint"), " with ",
         Plural(old_num_entries, entry_name), " into ",
         Plural(new_num_clique_constraints, "constraint"), " with ",
@@ -2096,7 +2150,7 @@ bool CpModelPresolver::MergeCliqueConstraintsHelper(
 }
 
 bool CpModelPresolver::MergeNoOverlapConstraints() {
-  PresolveTimer timer("MergeNoOverlap", logger_, time_limit_);
+  ScopedTimeLogger logger("MergeNoOverlap", logger_, time_limit_);
   if (context_->ModelIsUnsat()) return false;
   if (time_limit_->LimitReached()) return true;
 
@@ -2118,7 +2172,7 @@ bool CpModelPresolver::MergeNoOverlapConstraints() {
     disjunctive_index.push_back(c);
   }
 
-  if (!MergeCliqueConstraintsHelper(cliques, "interval", timer)) {
+  if (!MergeCliqueConstraintsHelper(cliques, "interval", logger)) {
     return true;  // Nothing to do, and model is SAT.
   }
 
@@ -2143,7 +2197,7 @@ bool CpModelPresolver::MergeNoOverlapConstraints() {
 }
 
 bool CpModelPresolver::MergeNoOverlap2DConstraints() {
-  PresolveTimer timer("MergeNoOverlap2D", logger_, time_limit_);
+  ScopedTimeLogger logger("MergeNoOverlap2D", logger_, time_limit_);
   if (context_->ModelIsUnsat()) return false;
   if (time_limit_->LimitReached()) return true;
 
@@ -2172,7 +2226,7 @@ bool CpModelPresolver::MergeNoOverlap2DConstraints() {
     no_overlap2d_index.push_back(c);
   }
 
-  if (!MergeCliqueConstraintsHelper(cliques, "rectangle", timer)) {
+  if (!MergeCliqueConstraintsHelper(cliques, "rectangle", logger)) {
     return true;  // Nothing to do, and model is SAT.
   }
 
@@ -2199,7 +2253,7 @@ bool CpModelPresolver::MergeNoOverlap2DConstraints() {
 }
 
 void CpModelPresolver::DetectEncodedComplexDomains(PresolveContext* context) {
-  PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
+  ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
   if (context->ModelIsUnsat()) return;
   if (time_limit_->LimitReached()) return;
 
@@ -2330,7 +2384,7 @@ void CpModelPresolver::TransformIntoMaxCliques() {
 void CpModelPresolver::SplitNoOverlapAndCumulativeConstraints() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
-  PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
+  ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
   std::vector<int> all_no_overlap_intervals;
   std::vector<int> all_no_overlap_or_cumulative_constraints;
   for (int c = 0; c < context_->NumConstraints(); ++c) {
@@ -2452,13 +2506,13 @@ void CpModelPresolver::SplitNoOverlapAndCumulativeConstraints() {
       }
     }
   }
-  timer.AddCounter("num_split_constraints", num_split_constraints);
+  logger.AddCounter("num_split_constraints", num_split_constraints);
 }
 
 void CpModelPresolver::TransformClausesToExactlyOne() {
   if (context_->ModelIsUnsat()) return;
   if (!context_->params().find_clauses_that_are_exactly_one()) return;
-  PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
+  ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   auto convert = [](int ref) {
     if (RefIsPositive(ref)) return Literal(BooleanVariable(ref), true);
@@ -2560,38 +2614,50 @@ void CpModelPresolver::TransformClausesToExactlyOne() {
     const int clause_size = clauses[i].size();
 
     // First heuristic scan.
-    timer.TrackSimpleLoop(clause_size);
     const uint64_t clause_signature = signature(clauses[i]);
-    for (const Literal l : clauses[i]) {
-      if (count[l] == 0) continue;
-      if (count[l] < clause_size || (clause_signature & ~signatures[l])) {
-        is_exo = false;
-        break;
-      }
-    }
-    if (!is_exo) continue;
-
-    timer.TrackSimpleLoop(clause_size);
-    for (const Literal l : clauses[i]) {
-      graph->ResetWorkDone();
-      absl::Span<const Literal> implied = graph->GetAllImpliedLiterals(l);
-      CHECK_GT(implied.size(), 0);  // Always contain l.
-      count[l] = implied.size();
-      signatures[l] = implied_signature(implied);
-      timer.AddToWork(graph->WorkDone() * 1e-9);
-      if (implied.size() < clause_size || (clause_signature & ~signatures[l])) {
-        is_exo = false;
-        break;
-      }
-      timer.TrackSimpleLoop(clause_size);
-      for (const Literal o : clauses[i]) {
-        if (o == l) continue;
-        if (!graph->LiteralIsImplied(o.Negated())) {
+    {
+      DeterministicTimer<{.scale = 4.0e-10, .offset = 3.3e-08}> timer(
+          time_limit_, clause_size);
+      for (const Literal l : clauses[i]) {
+        if (count[l] == 0) continue;
+        if (count[l] < clause_size || (clause_signature & ~signatures[l])) {
           is_exo = false;
           break;
         }
       }
-      if (!is_exo) break;
+    }
+    if (!is_exo) continue;
+
+    {
+      DeterministicTimer<{.scale = 3.2e-09, .offset = 3.0e-07}> timer(
+          time_limit_);
+      uint64_t graph_work = 0;
+      for (const Literal l : clauses[i]) {
+        graph->ResetWorkDone();
+        absl::Span<const Literal> implied = graph->GetAllImpliedLiterals(l);
+        CHECK_GT(implied.size(), 0);  // Always contain l.
+        count[l] = implied.size();
+        signatures[l] = implied_signature(implied);
+        graph_work += graph->WorkDone();
+        if (implied.size() < clause_size ||
+            (clause_signature & ~signatures[l])) {
+          is_exo = false;
+          break;
+        }
+        {
+          DeterministicTimer<{.scale = 5.5e-10, .offset = 2.0e-08}> loop_timer(
+              time_limit_, clause_size);
+          for (const Literal o : clauses[i]) {
+            if (o == l) continue;
+            if (!graph->LiteralIsImplied(o.Negated())) {
+              is_exo = false;
+              break;
+            }
+          }
+        }
+        if (!is_exo) break;
+      }
+      timer.Advance(graph_work);
     }
     if (is_exo) {
       ++num_transformed;
@@ -2602,13 +2668,13 @@ void CpModelPresolver::TransformClausesToExactlyOne() {
             ->mutable_exactly_one()
             ->mutable_literals()) = tmp;
     }
-    if (timer.WorkLimitIsReached()) break;
+    if (logger.WorkLimitIsReached()) break;
   }
 
-  timer.AddCounter("num_amos", num_amos);
-  timer.AddCounter("num_clauses", clauses.size());
-  timer.AddCounter("num_transformed", num_transformed);
-  timer.AddCounter("num_checked", num_checked);
+  logger.AddCounter("num_amos", num_amos);
+  logger.AddCounter("num_clauses", clauses.size());
+  logger.AddCounter("num_transformed", num_transformed);
+  logger.AddCounter("num_checked", num_checked);
 }
 
 // Returns false iff the model is UNSAT.
@@ -2814,7 +2880,9 @@ void CpModelPresolver::ProcessSetPPC() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
   if (context_->params().presolve_inclusion_work_limit() == 0) return;
-  PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
+  DeterministicTimer2<{.scale1 = 8.1e-08, .scale2 = 4.0e-09, .offset = 4.3e-10}>
+      timer(time_limit_);
+  ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   // TODO(user): compute on the fly instead of temporary storing variables?
   CompactVectorVector<int> storage;
@@ -2917,16 +2985,17 @@ void CpModelPresolver::ProcessSetPPC() {
     }
   });
 
-  timer.AddToWork(detector.work_done() * 1e-9);
-  timer.AddCounter("relevant_constraints", relevant_constraints.size());
-  timer.AddCounter("num_inclusions", num_inclusions);
+  timer.Advance(num_constraints, detector.work_done());
+  logger.AddCounter("relevant_constraints", relevant_constraints.size());
+  logger.AddCounter("num_inclusions", num_inclusions);
 }
 
 void CpModelPresolver::DetectIncludedEnforcement() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
   if (context_->params().presolve_inclusion_work_limit() == 0) return;
-  PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
+  DeterministicTimer<{.scale = 0.0, .offset = 0.0}> timer(time_limit_);
+  ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   // TODO(user): compute on the fly instead of temporary storing variables?
   std::vector<int> relevant_constraints;
@@ -3030,9 +3099,9 @@ void CpModelPresolver::DetectIncludedEnforcement() {
     }
   });
 
-  timer.AddToWork(1e-9 * static_cast<double>(detector.work_done()));
-  timer.AddCounter("relevant_constraints", relevant_constraints.size());
-  timer.AddCounter("num_inclusions", num_inclusions);
+  timer.Advance(detector.work_done());
+  logger.AddCounter("relevant_constraints", relevant_constraints.size());
+  logger.AddCounter("num_inclusions", num_inclusions);
 }
 
 // Note that because we remove the linear constraint, this will not be called
@@ -3225,7 +3294,7 @@ void CpModelPresolver::DetectDuplicateColumns() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
   if (context_->params().keep_all_feasible_solutions_in_presolve()) return;
-  PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
+  ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   const int num_vars = context_->NumVariables();
   const int num_constraints = context_->NumConstraints();
@@ -3496,14 +3565,14 @@ void CpModelPresolver::DetectDuplicateColumns() {
                               num_var_reduction);
   }
 
-  timer.AddCounter("num_equiv_classes", num_equivalent_classes);
-  timer.AddCounter("num_removed_vars", num_var_reduction);
+  logger.AddCounter("num_equiv_classes", num_equivalent_classes);
+  logger.AddCounter("num_removed_vars", num_var_reduction);
 }
 
 void CpModelPresolver::DetectDuplicateConstraints() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
-  PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
+  ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   // We need the objective written for this.
   if (context_->WorkingModel().has_objective()) {
@@ -3522,7 +3591,7 @@ void CpModelPresolver::DetectDuplicateConstraints() {
   const std::vector<std::pair<int, int>> duplicates = FindDuplicateConstraints(
       context_->WorkingModel(), /*ignore_enforcement=*/false,
       /*ignore_linear_domain=*/true, /*ignore_target_of_expression=*/true);
-  timer.AddCounter("duplicates", duplicates.size());
+  logger.AddCounter("duplicates", duplicates.size());
   for (const auto& [dup, rep] : duplicates) {
     // Note that it is important to look at the type of the representative in
     // case the constraint became empty.
@@ -3659,7 +3728,7 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
     Trail* trail) {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
-  PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
+  ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   // We need the objective written for this.
   if (context_->WorkingModel().has_objective()) {
@@ -3678,10 +3747,10 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
                                /*ignore_enforcement=*/true,
                                /*ignore_linear_domain=*/false,
                                /*ignore_target_of_expression=*/false);
-  timer.AddCounter("without_enforcements",
-                   duplicates_without_enforcement.size());
+  logger.AddCounter("without_enforcements",
+                    duplicates_without_enforcement.size());
   for (const auto& [dup, rep] : duplicates_without_enforcement) {
-    if (timer.WorkLimitIsReached()) break;
+    if (logger.WorkLimitIsReached()) break;
     auto* dup_ct = context_->MutableConstraint(dup);
     auto* rep_ct = context_->MutableConstraint(rep);
 
@@ -3828,18 +3897,24 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
           DCHECK(!trail->Assignment().LiteralIsAssigned(lit));
           enforcement_vars.insert(lit);
         }
-        for (const int proto_lit : ct_a.enforcement_literal()) {
-          const Literal lit = mapping->Literal(proto_lit);
-          DCHECK(!trail->Assignment().LiteralIsAssigned(lit));
-          absl::Span<const Literal> implied =
-              implication_graph->DirectImplications(lit);
-          timer.TrackSimpleLoop(implied.size());
-          for (const Literal implication_lit : implied) {
-            auto extracted = enforcement_vars.extract(implication_lit);
-            if (!extracted.empty() && lit != implication_lit) {
-              implications_used.push_back({lit, implication_lit});
+        {
+          DeterministicTimer<{.scale = 1.2e-08, .offset = 1.5e-06}> timer(
+              time_limit_);
+          uint64_t work_done = 0;
+          for (const int proto_lit : ct_a.enforcement_literal()) {
+            const Literal lit = mapping->Literal(proto_lit);
+            DCHECK(!trail->Assignment().LiteralIsAssigned(lit));
+            absl::Span<const Literal> implied =
+                implication_graph->DirectImplications(lit);
+            work_done += implied.size();
+            for (const Literal implication_lit : implied) {
+              auto extracted = enforcement_vars.extract(implication_lit);
+              if (!extracted.empty() && lit != implication_lit) {
+                implications_used.push_back({lit, implication_lit});
+              }
             }
           }
+          timer.Advance(work_done);
         }
         if (enforcement_vars.empty()) {
           // Tricky: Because we keep track of literal <=> var == value, we
@@ -3940,7 +4015,7 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
 void CpModelPresolver::DetectDifferentVariables() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
-  PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
+  ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   // List the variable that are pairwise different, also store in offset[x, y]
   // the offsets such that x >= y + offset.second OR y >= x + offset.first.
@@ -4264,9 +4339,9 @@ void CpModelPresolver::DetectDifferentVariables() {
       }
     }
 
-    timer.AddCounter("different", different_vars.size());
-    timer.AddCounter("cliques", num_cliques);
-    timer.AddCounter("size", cumulative_size);
+    logger.AddCounter("different", different_vars.size());
+    logger.AddCounter("cliques", num_cliques);
+    logger.AddCounter("size", cumulative_size);
   }
 }
 
@@ -4305,7 +4380,9 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
   if (context_->params().presolve_inclusion_work_limit() == 0) return;
-  PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
+  DeterministicTimer2<{.scale1 = 1.3e-08, .scale2 = 1.0e-08, .offset = 9.2e-10}>
+      timer(time_limit_);
+  ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   // Because we only deal with linear constraint and we want to ignore the
   // enforcement part, we reuse the variable list in the inclusion detector.
@@ -4569,10 +4646,10 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
     context_->UpdateConstraintVariableUsage(c);
   }
 
-  timer.AddToWork(1e-9 * static_cast<double>(detector.work_done()));
-  timer.AddCounter("relevant_constraints", detector.num_potential_supersets());
-  timer.AddCounter("num_inclusions", num_inclusions);
-  timer.AddCounter("num_redundant", constraint_indices_to_clean.size());
+  timer.Advance(num_constraints, detector.work_done());
+  logger.AddCounter("relevant_constraints", detector.num_potential_supersets());
+  logger.AddCounter("num_inclusions", num_inclusions);
+  logger.AddCounter("num_redundant", constraint_indices_to_clean.size());
 }
 
 // TODO(user): Also substitute if this appear in the objective?
@@ -4734,7 +4811,7 @@ void CpModelPresolver::FindBigAtMostOneAndLinearOverlap(
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
   if (context_->params().presolve_inclusion_work_limit() == 0) return;
-  PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
+  ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   int64_t num_blocks = 0;
   int64_t nz_reduction = 0;
@@ -4754,18 +4831,24 @@ void CpModelPresolver::FindBigAtMostOneAndLinearOverlap(
     // We pick a variable x that appear in some AMO.
     if (helper->NumAmoForVariable(x) == 0) continue;
     if (time_limit_->LimitReached()) break;
-    if (timer.WorkLimitIsReached()) break;
+    if (logger.WorkLimitIsReached()) break;
 
     amo_cts.clear();
-    timer.TrackSimpleLoop(context_->VarToConstraints(x).size());
-    for (const int c : context_->VarToConstraints(x)) {
-      if (c < 0) continue;
-      const ConstraintProto& ct = context_->Constraint(c);
-      if (ct.constraint_case() == ConstraintProto::kAtMostOne) {
-        amo_cts.push_back(c);
-      } else if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
-        amo_cts.push_back(c);
+    {
+      DeterministicTimer<{.scale = 4.5e-08, .offset = 1.1e-07}> timer(
+          time_limit_);
+      uint64_t work_done = 0;
+      for (const int c : context_->VarToConstraints(x)) {
+        if (c < 0) continue;
+        work_done++;
+        const ConstraintProto& ct = context_->Constraint(c);
+        if (ct.constraint_case() == ConstraintProto::kAtMostOne) {
+          amo_cts.push_back(c);
+        } else if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
+          amo_cts.push_back(c);
+        }
       }
+      timer.Advance(work_done);
     }
     if (amo_cts.empty()) continue;
 
@@ -4782,6 +4865,8 @@ void CpModelPresolver::FindBigAtMostOneAndLinearOverlap(
     common_part_sign.clear();
     int base_ct_index;
     {
+      DeterministicTimer<{.scale = 3.0e-08, .offset = 3.4e-07}> timer(
+          time_limit_);
       // For determinism.
       std::sort(amo_cts.begin(), amo_cts.end());
       const int random_c =
@@ -4791,7 +4876,6 @@ void CpModelPresolver::FindBigAtMostOneAndLinearOverlap(
       const auto& literals = ct.constraint_case() == ConstraintProto::kAtMostOne
                                  ? ct.at_most_one().literals()
                                  : ct.exactly_one().literals();
-      timer.TrackSimpleLoop(5 * literals.size());  // hash insert are slow.
       for (const int literal : literals) {
         amo_literals.push_back(literal);
         common_part.push_back(PositiveRef(literal));
@@ -4800,6 +4884,7 @@ void CpModelPresolver::FindBigAtMostOneAndLinearOverlap(
             var_in_amo.insert({PositiveRef(literal), RefIsPositive(literal)});
         CHECK(inserted);
       }
+      timer.Advance(literals.size());
     }
 
     const int64_t x_multiplier = var_in_amo.at(x) ? 1 : -1;
@@ -4809,41 +4894,46 @@ void CpModelPresolver::FindBigAtMostOneAndLinearOverlap(
     std::vector<int> block_cts;
     std::vector<int> linear_cts;
     int max_common_part = 0;
-    timer.TrackSimpleLoop(context_->VarToConstraints(x).size());
-    for (const int c : context_->VarToConstraints(x)) {
-      if (c < 0) continue;
-      const ConstraintProto& ct = context_->Constraint(c);
-      if (ct.constraint_case() != ConstraintProto::kLinear) continue;
-      const int num_terms = ct.linear().vars().size();
-      if (num_terms < 2) continue;
+    {
+      DeterministicTimer<{.scale = 4.3e-09, .offset = 3.2e-07}> timer(
+          time_limit_);
+      uint64_t work_done = 0;
+      for (const int c : context_->VarToConstraints(x)) {
+        if (c < 0) continue;
+        const ConstraintProto& ct = context_->Constraint(c);
+        if (ct.constraint_case() != ConstraintProto::kLinear) continue;
+        const int num_terms = ct.linear().vars().size();
+        if (num_terms < 2) continue;
 
-      timer.TrackSimpleLoop(2 * num_terms);
-      const int64_t x_coeff = x_multiplier * FindVarCoeff(x, ct);
-      if (x_coeff == 0) continue;  // could be in enforcement.
+        work_done += num_terms;
+        const int64_t x_coeff = x_multiplier * FindVarCoeff(x, ct);
+        if (x_coeff == 0) continue;  // could be in enforcement.
 
-      int num_in_amo = 0;
-      for (int k = 0; k < num_terms; ++k) {
-        const int var = ct.linear().vars(k);
-        if (!RefIsPositive(var)) {
-          num_in_amo = 0;  // Abort.
-          break;
+        int num_in_amo = 0;
+        for (int k = 0; k < num_terms; ++k) {
+          const int var = ct.linear().vars(k);
+          if (!RefIsPositive(var)) {
+            num_in_amo = 0;  // Abort.
+            break;
+          }
+          const auto it = var_in_amo.find(var);
+          if (it == var_in_amo.end()) continue;
+          int64_t coeff = ct.linear().coeffs(k);
+          if (!it->second) coeff = -coeff;
+          if (coeff != x_coeff) continue;
+          ++num_in_amo;
         }
-        const auto it = var_in_amo.find(var);
-        if (it == var_in_amo.end()) continue;
-        int64_t coeff = ct.linear().coeffs(k);
-        if (!it->second) coeff = -coeff;
-        if (coeff != x_coeff) continue;
-        ++num_in_amo;
-      }
-      if (num_in_amo < 2) continue;
+        if (num_in_amo < 2) continue;
 
-      max_common_part += num_in_amo;
-      if (num_in_amo == common_part.size()) {
-        // This is a perfect match!
-        block_cts.push_back(c);
-      } else {
-        linear_cts.push_back(c);
+        max_common_part += num_in_amo;
+        if (num_in_amo == common_part.size()) {
+          // This is a perfect match!
+          block_cts.push_back(c);
+        } else {
+          linear_cts.push_back(c);
+        }
       }
+      timer.Advance(work_done);
     }
     if (linear_cts.empty() && block_cts.empty()) continue;
     if (max_common_part < 100) continue;
@@ -4855,55 +4945,61 @@ void CpModelPresolver::FindBigAtMostOneAndLinearOverlap(
     int best_block_size = block_cts.size();
     int best_saved_nz =
         ComputeNonZeroReduction(block_cts.size() + 1, common_part.size());
+    {
+      DeterministicTimer2<{
+          .scale1 = 0.0e+00, .scale2 = 7.8e-09, .offset = 6.2e-07}>
+          timer(time_limit_);
+      uint64_t work_done = 0;
+      // For determinism.
+      std::sort(block_cts.begin(), block_cts.end());
+      std::sort(linear_cts.begin(), linear_cts.end());
 
-    // For determinism.
-    std::sort(block_cts.begin(), block_cts.end());
-    std::sort(linear_cts.begin(), linear_cts.end());
+      // We will just greedily compute a big block with a random order.
+      // TODO(user): We could sort by match with the full constraint instead.
+      std::shuffle(linear_cts.begin(), linear_cts.end(), context_->random());
+      for (const int c : linear_cts) {
+        const ConstraintProto& ct = context_->Constraint(c);
+        const int num_terms = ct.linear().vars().size();
+        work_done += num_terms;
+        const int64_t x_coeff = x_multiplier * FindVarCoeff(x, ct);
+        CHECK_NE(x_coeff, 0);
 
-    // We will just greedily compute a big block with a random order.
-    // TODO(user): We could sort by match with the full constraint instead.
-    std::shuffle(linear_cts.begin(), linear_cts.end(), context_->random());
-    for (const int c : linear_cts) {
-      const ConstraintProto& ct = context_->Constraint(c);
-      const int num_terms = ct.linear().vars().size();
-      timer.TrackSimpleLoop(2 * num_terms);
-      const int64_t x_coeff = x_multiplier * FindVarCoeff(x, ct);
-      CHECK_NE(x_coeff, 0);
+        common_part.clear();
+        common_part_sign.clear();
+        for (int k = 0; k < num_terms; ++k) {
+          const int var = ct.linear().vars(k);
+          const auto it = var_in_amo.find(var);
+          if (it == var_in_amo.end()) continue;
+          int64_t coeff = ct.linear().coeffs(k);
+          if (!it->second) coeff = -coeff;
+          if (coeff != x_coeff) continue;
+          common_part.push_back(var);
+          common_part_sign.push_back(it->second);
+        }
+        if (common_part.size() < 2) continue;
 
-      common_part.clear();
-      common_part_sign.clear();
-      for (int k = 0; k < num_terms; ++k) {
-        const int var = ct.linear().vars(k);
-        const auto it = var_in_amo.find(var);
-        if (it == var_in_amo.end()) continue;
-        int64_t coeff = ct.linear().coeffs(k);
-        if (!it->second) coeff = -coeff;
-        if (coeff != x_coeff) continue;
-        common_part.push_back(var);
-        common_part_sign.push_back(it->second);
-      }
-      if (common_part.size() < 2) continue;
+        // Change var_in_amo;
+        block_cts.push_back(c);
+        if (common_part.size() < var_in_amo.size()) {
+          var_in_amo.clear();
+          for (int i = 0; i < common_part.size(); ++i) {
+            var_in_amo[common_part[i]] = common_part_sign[i];
+          }
+        }
 
-      // Change var_in_amo;
-      block_cts.push_back(c);
-      if (common_part.size() < var_in_amo.size()) {
-        var_in_amo.clear();
-        for (int i = 0; i < common_part.size(); ++i) {
-          var_in_amo[common_part[i]] = common_part_sign[i];
+        // We have a block that can be replaced with a single new boolean +
+        // defining exo constraint. Note that we can also replace in the base
+        // constraint, hence the +1 to the block size.
+        const int64_t saved_nz =
+            ComputeNonZeroReduction(block_cts.size() + 1, common_part.size());
+        if (saved_nz > best_saved_nz) {
+          best_block_size = block_cts.size();
+          best_saved_nz = saved_nz;
+          best_common_part = common_part;
+          best_common_part_sign = common_part_sign;
         }
       }
-
-      // We have a block that can be replaced with a single new boolean +
-      // defining exo constraint. Note that we can also replace in the base
-      // constraint, hence the +1 to the block size.
-      const int64_t saved_nz =
-          ComputeNonZeroReduction(block_cts.size() + 1, common_part.size());
-      if (saved_nz > best_saved_nz) {
-        best_block_size = block_cts.size();
-        best_saved_nz = saved_nz;
-        best_common_part = common_part;
-        best_common_part_sign = common_part_sign;
-      }
+      timer.Advance(linear_cts.size(), work_done);
     }
     if (best_saved_nz < 100) continue;
 
@@ -5019,8 +5115,8 @@ void CpModelPresolver::FindBigAtMostOneAndLinearOverlap(
     }
   }
 
-  timer.AddCounter("blocks", num_blocks);
-  timer.AddCounter("saved_nz", nz_reduction);
+  logger.AddCounter("blocks", num_blocks);
+  logger.AddCounter("saved_nz", nz_reduction);
   DCHECK(context_->ConstraintVariableUsageIsConsistent());
 }
 
@@ -5030,47 +5126,56 @@ void CpModelPresolver::FindBigVerticalLinearOverlap(
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
   if (context_->params().presolve_inclusion_work_limit() == 0) return;
-  PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
+  ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   int64_t num_blocks = 0;
   int64_t nz_reduction = 0;
   absl::flat_hash_map<int, int64_t> coeff_map;
   for (int x = 0; x < context_->NumVariables(); ++x) {
-    if (timer.WorkLimitIsReached()) break;
+    if (logger.WorkLimitIsReached()) break;
 
     bool in_enforcement = false;
     std::vector<int> linear_cts;
-    timer.TrackSimpleLoop(context_->VarToConstraints(x).size());
-    for (const int c : context_->VarToConstraints(x)) {
-      if (c < 0) continue;
-      const ConstraintProto& ct = context_->Constraint(c);
-      if (ct.constraint_case() != ConstraintProto::kLinear) continue;
+    {
+      DeterministicTimer<{.scale = 5.8e-08, .offset = 1.1e-18}> timer(
+          time_limit_, context_->VarToConstraints(x).size());
+      for (const int c : context_->VarToConstraints(x)) {
+        if (c < 0) continue;
+        const ConstraintProto& ct = context_->Constraint(c);
+        if (ct.constraint_case() != ConstraintProto::kLinear) continue;
 
-      const int num_terms = ct.linear().vars().size();
-      if (num_terms < 2) continue;
-      bool is_canonical = true;
-      timer.TrackSimpleLoop(num_terms);
-      for (int k = 0; k < num_terms; ++k) {
-        if (!RefIsPositive(ct.linear().vars(k))) {
-          is_canonical = false;
-          break;
+        const int num_terms = ct.linear().vars().size();
+        if (num_terms < 2) continue;
+        bool is_canonical = true;
+        {
+          DeterministicTimer<{.scale = 1.1e-09, .offset = 4.5e-08}> timer(
+              time_limit_, num_terms);
+          for (int k = 0; k < num_terms; ++k) {
+            if (!RefIsPositive(ct.linear().vars(k))) {
+              is_canonical = false;
+              break;
+            }
+          }
         }
-      }
-      if (!is_canonical) continue;
+        if (!is_canonical) continue;
 
-      // We don't care about enforcement literal, but we don't want x inside.
-      timer.TrackSimpleLoop(ct.enforcement_literal().size());
-      for (const int lit : ct.enforcement_literal()) {
-        if (PositiveRef(lit) == x) {
-          in_enforcement = true;
-          break;
+        // We don't care about enforcement literal, but we don't want x inside.
+        {
+          DeterministicTimer<{.scale = 2.2e-09, .offset = 2.3e-08}> timer(
+              time_limit_, ct.enforcement_literal().size());
+          for (const int lit : ct.enforcement_literal()) {
+            if (PositiveRef(lit) == x) {
+              in_enforcement = true;
+              break;
+            }
+          }
         }
-      }
 
-      // Note(user): We will actually abort right away in this case, but we
-      // want work_done to be deterministic! so we do the work anyway.
-      if (in_enforcement) continue;
-      linear_cts.push_back(c);
+        // Note(user): We will actually abort right away in this case, but we
+        // want work_done to be deterministic! so we do the work anyway.
+        if (in_enforcement) continue;
+        linear_cts.push_back(c);
+      }
     }
 
     // If a Boolean is used in enforcement, we prefer not to combine it with
@@ -5092,53 +5197,60 @@ void CpModelPresolver::FindBigVerticalLinearOverlap(
 
     std::vector<std::pair<int, int64_t>> block;
     std::vector<std::pair<int, int64_t>> common_part;
-    for (const int c : linear_cts) {
-      const ConstraintProto& ct = context_->Constraint(c);
-      const int num_terms = ct.linear().vars().size();
-      timer.TrackSimpleLoop(num_terms);
+    {
+      DeterministicTimer2<{
+          .scale1 = 1.2e-07, .scale2 = 9.6e-09, .offset = 1.2e-06}>
+          timer(time_limit_);
+      uint64_t work_done = 0;
+      for (const int c : linear_cts) {
+        const ConstraintProto& ct = context_->Constraint(c);
+        const int num_terms = ct.linear().vars().size();
+        work_done += num_terms;
 
-      // Compute the coeff of x.
-      const int64_t x_coeff = FindVarCoeff(x, ct);
-      if (x_coeff == 0) continue;
+        // Compute the coeff of x.
+        const int64_t x_coeff = FindVarCoeff(x, ct);
+        if (x_coeff == 0) continue;
 
-      if (block.empty()) {
-        // This is our base constraint.
-        coeff_map.clear();
-        for (int k = 0; k < num_terms; ++k) {
-          coeff_map[ct.linear().vars(k)] = ct.linear().coeffs(k);
+        if (block.empty()) {
+          // This is our base constraint.
+          coeff_map.clear();
+          for (int k = 0; k < num_terms; ++k) {
+            coeff_map[ct.linear().vars(k)] = ct.linear().coeffs(k);
+          }
+          if (coeff_map.size() < 2) continue;
+          block.push_back({c, x_coeff});
+          continue;
         }
-        if (coeff_map.size() < 2) continue;
+
+        // We are looking for a common divisor of coeff_map and this constraint.
+        const int64_t gcd =
+            std::gcd(std::abs(coeff_map.at(x)), std::abs(x_coeff));
+        const int64_t multiple_base = coeff_map.at(x) / gcd;
+        const int64_t multiple_ct = x_coeff / gcd;
+        common_part.clear();
+        for (int k = 0; k < num_terms; ++k) {
+          const int64_t coeff = ct.linear().coeffs(k);
+          if (coeff % multiple_ct != 0) continue;
+
+          const auto it = coeff_map.find(ct.linear().vars(k));
+          if (it == coeff_map.end()) continue;
+          if (it->second % multiple_base != 0) continue;
+          if (it->second / multiple_base != coeff / multiple_ct) continue;
+
+          common_part.push_back({ct.linear().vars(k), coeff / multiple_ct});
+        }
+
+        // Skip bad constraint.
+        if (common_part.size() < 2) continue;
+
+        // Update coeff_map.
         block.push_back({c, x_coeff});
-        continue;
+        coeff_map.clear();
+        for (const auto [var, coeff] : common_part) {
+          coeff_map[var] = coeff;
+        }
       }
-
-      // We are looking for a common divisor of coeff_map and this constraint.
-      const int64_t gcd =
-          std::gcd(std::abs(coeff_map.at(x)), std::abs(x_coeff));
-      const int64_t multiple_base = coeff_map.at(x) / gcd;
-      const int64_t multiple_ct = x_coeff / gcd;
-      common_part.clear();
-      for (int k = 0; k < num_terms; ++k) {
-        const int64_t coeff = ct.linear().coeffs(k);
-        if (coeff % multiple_ct != 0) continue;
-
-        const auto it = coeff_map.find(ct.linear().vars(k));
-        if (it == coeff_map.end()) continue;
-        if (it->second % multiple_base != 0) continue;
-        if (it->second / multiple_base != coeff / multiple_ct) continue;
-
-        common_part.push_back({ct.linear().vars(k), coeff / multiple_ct});
-      }
-
-      // Skip bad constraint.
-      if (common_part.size() < 2) continue;
-
-      // Update coeff_map.
-      block.push_back({c, x_coeff});
-      coeff_map.clear();
-      for (const auto [var, coeff] : common_part) {
-        coeff_map[var] = coeff;
-      }
+      timer.Advance(linear_cts.size(), work_done);
     }
 
     // We have a candidate.
@@ -5176,8 +5288,8 @@ void CpModelPresolver::FindBigVerticalLinearOverlap(
     context_->UpdateRuleStats("linear matrix: common vertical rectangle");
   }
 
-  timer.AddCounter("blocks", num_blocks);
-  timer.AddCounter("saved_nz", nz_reduction);
+  logger.AddCounter("blocks", num_blocks);
+  logger.AddCounter("saved_nz", nz_reduction);
   DCHECK(context_->ConstraintVariableUsageIsConsistent());
 }
 
@@ -5193,7 +5305,7 @@ void CpModelPresolver::FindBigHorizontalLinearOverlap(
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
   if (context_->params().presolve_inclusion_work_limit() == 0) return;
-  PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
+  ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   const int num_constraints = context_->NumConstraints();
   std::vector<std::pair<int, int>> to_sort;
@@ -5221,7 +5333,7 @@ void CpModelPresolver::FindBigHorizontalLinearOverlap(
   for (int i = 0; i < sorted_linear.size(); ++i) {
     const int c = sorted_linear[i];
     if (c < 0) continue;
-    if (timer.WorkLimitIsReached()) break;
+    if (logger.WorkLimitIsReached()) break;
 
     for (const int var : var_to_coeff_non_zeros) {
       var_to_coeff[var] = 0;
@@ -5230,7 +5342,8 @@ void CpModelPresolver::FindBigHorizontalLinearOverlap(
     {
       const ConstraintProto& ct = context_->Constraint(c);
       const int num_terms = ct.linear().vars().size();
-      timer.TrackSimpleLoop(num_terms);
+      DeterministicTimer<{.scale = 7.3e-09, .offset = 6.4e-08}> timer(
+          time_limit_, num_terms);
       for (int k = 0; k < num_terms; ++k) {
         const int var = ct.linear().vars(k);
         var_to_coeff[var] = ct.linear().coeffs(k);
@@ -5261,12 +5374,15 @@ void CpModelPresolver::FindBigHorizontalLinearOverlap(
       if (best_saved_nz <= saved_nz) break;
 
       // This is the hot loop here.
-      timer.TrackSimpleLoop(num_terms);
-      common_part.clear();
-      for (int k = 0; k < num_terms; ++k) {
-        const int var = ct.linear().vars(k);
-        if (var_to_coeff[var] == ct.linear().coeffs(k)) {
-          common_part.push_back({var, ct.linear().coeffs(k)});
+      {
+        DeterministicTimer<{.scale = 4.9e-09, .offset = 1.0e-07}> timer(
+            time_limit_, num_terms);
+        common_part.clear();
+        for (int k = 0; k < num_terms; ++k) {
+          const int var = ct.linear().vars(k);
+          if (var_to_coeff[var] == ct.linear().coeffs(k)) {
+            common_part.push_back({var, ct.linear().coeffs(k)});
+          }
         }
       }
 
@@ -5339,9 +5455,9 @@ void CpModelPresolver::FindBigHorizontalLinearOverlap(
     }
   }
 
-  timer.AddCounter("blocks", num_blocks);
-  timer.AddCounter("saved_nz", nz_reduction);
-  timer.AddCounter("linears", sorted_linear.size());
+  logger.AddCounter("blocks", num_blocks);
+  logger.AddCounter("saved_nz", nz_reduction);
+  logger.AddCounter("linears", sorted_linear.size());
   DCHECK(context_->ConstraintVariableUsageIsConsistent());
 }
 
@@ -5357,7 +5473,7 @@ void CpModelPresolver::FindAlmostIdenticalLinearConstraints() {
   // Work tracking is required, since in the worst case (n identical
   // constraints), we are in O(n^3). In practice we are way faster though. And
   // identical constraints should have already be removed when we call this.
-  PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
+  ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   // Only keep non-enforced linear equality of size > 2. Sort by size.
   std::vector<std::pair<int, int>> to_sort;
@@ -5416,7 +5532,7 @@ void CpModelPresolver::FindAlmostIdenticalLinearConstraints() {
     // than once per presolve, we should be mostly good. For larger constraint,
     // we shouldn't miss much.
     for (int i1 = start; i1 < end; ++i1) {
-      if (timer.WorkLimitIsReached()) break;
+      if (logger.WorkLimitIsReached()) break;
       const int c1 = to_sort[i1].second;
       const LinearConstraintProto& lin1 = context_->Constraint(c1).linear();
       bool skip = false;
@@ -5426,7 +5542,7 @@ void CpModelPresolver::FindAlmostIdenticalLinearConstraints() {
 
           // TODO(user): we could easily deal with * -1 or other multiples.
           if (coeff2 != lin1.coeffs(i)) continue;
-          if (timer.WorkLimitIsReached()) break;
+          if (logger.WorkLimitIsReached()) break;
 
           // Skip if we processed this earlier and deleted it.
           const ConstraintProto& ct2 = context_->Constraint(c2);
@@ -5434,13 +5550,8 @@ void CpModelPresolver::FindAlmostIdenticalLinearConstraints() {
           const LinearConstraintProto& lin2 = context_->Constraint(c2).linear();
           if (lin2.vars().size() != length) continue;
 
-          // TODO(user): In practice LinearsDifferAtOneTerm() will abort
-          // early if the constraints differ early, so we are even faster than
-          // this.
-          timer.TrackSimpleLoop(length);
-
           ++num_tested_pairs;
-          if (LinearsDifferAtOneTerm(lin1, lin2)) {
+          if (LinearsDifferAtOneTerm(lin1, lin2, time_limit_)) {
             // The two equalities only differ at one term !
             // do c1 -= c2 and presolve c1 right away.
             // We should detect new affine relation and remove it.
@@ -5471,8 +5582,8 @@ void CpModelPresolver::FindAlmostIdenticalLinearConstraints() {
     }
   }
 
-  timer.AddCounter("num_tested_pairs", num_tested_pairs);
-  timer.AddCounter("found", num_affine_relations);
+  logger.AddCounter("num_tested_pairs", num_tested_pairs);
+  logger.AddCounter("found", num_affine_relations);
   DCHECK(context_->ConstraintVariableUsageIsConsistent());
 }
 
@@ -5480,7 +5591,7 @@ void CpModelPresolver::ExtractEncodingFromLinear() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
   if (context_->params().presolve_inclusion_work_limit() == 0) return;
-  PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
+  ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   // TODO(user): compute on the fly instead of temporary storing variables?
   std::vector<int> relevant_constraints;
@@ -5582,13 +5693,13 @@ void CpModelPresolver::ExtractEncodingFromLinear() {
     detector.StopProcessingCurrentSubset();
   });
 
-  timer.AddCounter("potential_supersets", detector.num_potential_supersets());
-  timer.AddCounter("potential_subsets", detector.num_potential_subsets());
-  timer.AddCounter("amo_encodings", num_at_most_one_encodings);
-  timer.AddCounter("exo_encodings", num_exactly_one_encodings);
-  timer.AddCounter("unique_terms", num_unique_terms);
-  timer.AddCounter("multiple_terms", num_multiple_terms);
-  timer.AddCounter("literals", num_literals);
+  logger.AddCounter("potential_supersets", detector.num_potential_supersets());
+  logger.AddCounter("potential_subsets", detector.num_potential_subsets());
+  logger.AddCounter("amo_encodings", num_at_most_one_encodings);
+  logger.AddCounter("exo_encodings", num_exactly_one_encodings);
+  logger.AddCounter("unique_terms", num_unique_terms);
+  logger.AddCounter("multiple_terms", num_multiple_terms);
+  logger.AddCounter("literals", num_literals);
 }
 
 void CpModelPresolver::MaybeRemoveLinkingVariable(int var, int c_linear1,
@@ -6394,7 +6505,7 @@ bool CpModelPresolver::ProcessChangedVariables(std::vector<bool>* in_queue,
 void CpModelPresolver::PresolveToFixPoint() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
-  PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
+  ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   // We do at most 2 tests per PresolveToFixPoint() call since this can be slow.
   int num_dominance_tests = 0;
@@ -6594,7 +6705,7 @@ void CpModelPresolver::PresolveToFixPoint() {
     // TODO(user): This can be slow, remove from fix-point loop?
     if (num_dominance_tests++ < 2) {
       if (context_->ModelIsUnsat()) return;
-      PresolveTimer timer("DetectDominanceRelations", logger_, time_limit_);
+      ScopedTimeLogger logger("DetectDominanceRelations", logger_, time_limit_);
       VarDomination var_dom;
       ScanModelForDominanceDetection(*context_, &var_dom);
       if (!ExploitDominanceRelations(var_dom, context_)) return;
@@ -6670,8 +6781,8 @@ void CpModelPresolver::PresolveToFixPoint() {
     }
   }
 
-  timer.AddCounter("num_loops", num_loops);
-  timer.AddCounter("num_dual_strengthening", num_dual_strengthening);
+  logger.AddCounter("num_loops", num_loops);
+  logger.AddCounter("num_dual_strengthening", num_dual_strengthening);
   context_->deductions.MarkProcessingAsDoneForNow();
 }
 
@@ -6684,7 +6795,7 @@ void CpModelPresolver::PresolveToFixPoint() {
 // x for other enforcement list if the rhs literals are shared.
 void CpModelPresolver::MergeClauses() {
   if (context_->ModelIsUnsat()) return;
-  PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
+  ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   // Constraint index that changed.
   std::vector<int> to_clean;
@@ -6769,24 +6880,28 @@ void CpModelPresolver::MergeClauses() {
     ConstraintProto* ct = context_->MutableConstraint(c);
 
     bool merged = false;
-    timer.TrackSimpleLoop(ct->bool_or().literals().size());
-    if (timer.WorkLimitIsReached()) break;
-    for (const int ref : ct->bool_or().literals()) {
-      const uint64_t hash = hasher.HashWithout(c, ref);
-      const auto it = bool_and_map.find(hash);
-      if (it != bool_and_map.end()) {
-        ++num_collisions;
-        const int base_c = it->second;
-        auto* and_ct = context_->MutableConstraint(base_c);
-        if (ClauseIsEnforcementImpliesLiteral(
-                ct->bool_or().literals(), and_ct->enforcement_literal(), ref)) {
-          ++num_merges;
-          num_saved_literals += ct->bool_or().literals().size() - 1;
-          merged = true;
-          and_ct->mutable_bool_and()->add_literals(ref);
-          ct->Clear();
-          context_->UpdateConstraintVariableUsage(c);
-          break;
+    if (logger.WorkLimitIsReached()) break;
+    {
+      DeterministicTimer<{.scale = 1.1e-08, .offset = 7.2e-08}> timer(
+          time_limit_, ct->bool_or().literals().size());
+      for (const int ref : ct->bool_or().literals()) {
+        const uint64_t hash = hasher.HashWithout(c, ref);
+        const auto it = bool_and_map.find(hash);
+        if (it != bool_and_map.end()) {
+          ++num_collisions;
+          const int base_c = it->second;
+          auto* and_ct = context_->MutableConstraint(base_c);
+          if (ClauseIsEnforcementImpliesLiteral(ct->bool_or().literals(),
+                                                and_ct->enforcement_literal(),
+                                                ref)) {
+            ++num_merges;
+            num_saved_literals += ct->bool_or().literals().size() - 1;
+            merged = true;
+            and_ct->mutable_bool_and()->add_literals(ref);
+            ct->Clear();
+            context_->UpdateConstraintVariableUsage(c);
+            break;
+          }
         }
       }
     }
@@ -6839,9 +6954,9 @@ void CpModelPresolver::MergeClauses() {
         context_->tmp_literals.begin(), context_->tmp_literals.end());
   }
 
-  timer.AddCounter("num_collisions", num_collisions);
-  timer.AddCounter("num_merges", num_merges);
-  timer.AddCounter("num_saved_literals", num_saved_literals);
+  logger.AddCounter("num_collisions", num_collisions);
+  logger.AddCounter("num_merges", num_merges);
+  logger.AddCounter("num_saved_literals", num_saved_literals);
 }
 
 // =============================================================================
@@ -8059,7 +8174,7 @@ std::vector<std::pair<int, int>> FindDuplicateConstraints(
 void CpModelPresolver::DetectUnenforcedEnforcedLinearPair() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
-  PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
+  ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
   const CpModelProto& model_proto = context_->WorkingModel();
   const int num_constraints = model_proto.constraints().size();
@@ -8067,19 +8182,24 @@ void CpModelPresolver::DetectUnenforcedEnforcedLinearPair() {
   // Quick check.
   int num_enforced_linear = 0;
   int num_unenforced_linear = 0;
-  timer.TrackSimpleLoop(num_constraints);
-  for (int c = 0; c < num_constraints; ++c) {
-    const auto type = model_proto.constraints(c).constraint_case();
-    if (type != ConstraintProto::kLinear) continue;
-    if (model_proto.constraints(c).enforcement_literal().empty()) {
-      ++num_unenforced_linear;
-    } else {
-      ++num_enforced_linear;
+  {
+    DeterministicTimer2<{
+        .scale1 = 1.1e-08, .scale2 = 1.5e-08, .offset = 0.0e+00}>
+        timer(time_limit_);
+    for (int c = 0; c < num_constraints; ++c) {
+      const auto type = model_proto.constraints(c).constraint_case();
+      if (type != ConstraintProto::kLinear) continue;
+      if (model_proto.constraints(c).enforcement_literal().empty()) {
+        ++num_unenforced_linear;
+      } else {
+        ++num_enforced_linear;
+      }
     }
+    timer.Advance(num_constraints, num_enforced_linear + num_unenforced_linear);
   }
   if (num_enforced_linear == 0 || num_unenforced_linear == 0) return;
-  timer.AddCounter("num_enforced", num_enforced_linear);
-  timer.AddCounter("num_unenforced", num_unenforced_linear);
+  logger.AddCounter("num_enforced", num_enforced_linear);
+  logger.AddCounter("num_unenforced", num_unenforced_linear);
 
   // We use a map hash that uses the underlying constraint to compute the hash
   // and the equality for the indices.
@@ -8097,47 +8217,55 @@ void CpModelPresolver::DetectUnenforcedEnforcedLinearPair() {
                             ignore_linear_domain, ignore_target_of_expression});
 
   // First pass, add all non-enforced linear.
-  timer.TrackSimpleLoop(num_constraints);
-  for (int c = 0; c < num_constraints; ++c) {
-    const auto type = model_proto.constraints(c).constraint_case();
-    if (type != ConstraintProto::kLinear) continue;
-    if (!model_proto.constraints(c).enforcement_literal().empty()) continue;
-    equiv_constraints.insert({c, c});
+  {
+    DeterministicTimer<{.scale = 1.3e-08, .offset = 2.3e-09}> timer(
+        time_limit_, num_constraints);
+    for (int c = 0; c < num_constraints; ++c) {
+      const auto type = model_proto.constraints(c).constraint_case();
+      if (type != ConstraintProto::kLinear) continue;
+      if (!model_proto.constraints(c).enforcement_literal().empty()) continue;
+      equiv_constraints.insert({c, c});
+    }
   }
 
   // Second pass. Find identical enforced constraint.
   int num_changes = 0;
-  timer.TrackSimpleLoop(num_constraints);
-  for (int c = 0; c < num_constraints; ++c) {
-    const auto type = model_proto.constraints(c).constraint_case();
-    if (type != ConstraintProto::kLinear) continue;
-    if (model_proto.constraints(c).enforcement_literal().empty()) continue;
-    const auto it = equiv_constraints.find(c);
-    if (it == equiv_constraints.end()) continue;
+  {
+    DeterministicTimer2<{
+        .scale1 = 1.5e-08, .scale2 = 7.2e-08, .offset = 8.8e-09}>
+        timer(time_limit_);
+    for (int c = 0; c < num_constraints; ++c) {
+      const auto type = model_proto.constraints(c).constraint_case();
+      if (type != ConstraintProto::kLinear) continue;
+      if (model_proto.constraints(c).enforcement_literal().empty()) continue;
+      const auto it = equiv_constraints.find(c);
+      if (it == equiv_constraints.end()) continue;
 
-    const Domain always_true =
-        ReadDomainFromProto(context_->Constraint(it->second).linear());
-    const Domain rhs = ReadDomainFromProto(context_->Constraint(c).linear());
-    const Domain new_rhs = rhs.IntersectionWith(always_true);
-    if (new_rhs.IsEmpty()) {
-      ++num_changes;
-      (void)constraint_presolver_->MarkConstraintAsFalse(
-          context_->MutableConstraint(c),
-          "duplicate: infeasible enforced constraint");
-      context_->UpdateConstraintVariableUsage(c);
-      continue;
-    }
+      const Domain always_true =
+          ReadDomainFromProto(context_->Constraint(it->second).linear());
+      const Domain rhs = ReadDomainFromProto(context_->Constraint(c).linear());
+      const Domain new_rhs = rhs.IntersectionWith(always_true);
+      if (new_rhs.IsEmpty()) {
+        ++num_changes;
+        (void)constraint_presolver_->MarkConstraintAsFalse(
+            context_->MutableConstraint(c),
+            "duplicate: infeasible enforced constraint");
+        context_->UpdateConstraintVariableUsage(c);
+        continue;
+      }
 
-    if (new_rhs != rhs) {
-      ++num_changes;
-      context_->UpdateRuleStats(
-          "duplicate: tightened enforced constraint domain");
-      FillDomainInProto(new_rhs,
-                        context_->MutableConstraint(c)->mutable_linear());
+      if (new_rhs != rhs) {
+        ++num_changes;
+        context_->UpdateRuleStats(
+            "duplicate: tightened enforced constraint domain");
+        FillDomainInProto(new_rhs,
+                          context_->MutableConstraint(c)->mutable_linear());
+      }
     }
+    timer.Advance(num_constraints, num_changes);
   }
 
-  timer.AddCounter("num_changes", num_changes);
+  logger.AddCounter("num_changes", num_changes);
 }
 
 }  // namespace sat

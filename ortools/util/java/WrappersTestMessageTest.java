@@ -12,6 +12,7 @@
 // limitations under the License.
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.ortools.Loader;
@@ -84,7 +85,7 @@ public class WrappersTestMessageTest {
     intList.set(0, 15);
     assertEquals(Integer.valueOf(15), intList.get(0));
 
-    intList.remove(0);
+    intList.remove(/* index */ 0);
     assertEquals(1, intList.size());
     assertEquals(Integer.valueOf(20), intList.get(0));
 
@@ -120,6 +121,34 @@ public class WrappersTestMessageTest {
     WrappersTestMessage msg2 = new WrappersTestMessage();
     assertTrue(msg2.parseTextFormat(text));
     assertEquals(123, msg2.getInt32Field());
+  }
+
+  @Test
+  public void testSerializeParse() {
+    WrappersTestMessage src = new WrappersTestMessage();
+    src.setInt32Field(123);
+    WrappersTestMessage dst = WrappersTestMessage.parseFrom(src.toByteArray());
+    assertEquals(123, dst.getInt32Field());
+  }
+
+  @Test
+  public void testMergeFrom() {
+    WrappersTestMessage src = new WrappersTestMessage();
+    src.setInt32Field(123);
+    WrappersTestMessage dst = new WrappersTestMessage();
+    dst.setInt32Field(456);
+    dst.mergeFrom(src.toByteArray());
+    assertEquals(123, src.getInt32Field());
+    assertEquals(123, dst.getInt32Field());
+  }
+
+  @Test
+  public void testMergeFromBadData() {
+    WrappersTestMessage src1 = new WrappersTestMessage();
+    src1.setInt32Field(123);
+    WrappersTestMessage dst = new WrappersTestMessage();
+    dst.setInt32Field(456);
+    assertThrows(RuntimeException.class, () -> dst.mergeFrom(new byte[] {0, 0, 0}));
   }
 
   @Test

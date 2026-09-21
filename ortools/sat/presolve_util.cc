@@ -31,11 +31,13 @@
 #include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/deterministic_time.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -259,16 +261,20 @@ void ActivityBoundHelper::AddAtMostOne(absl::Span<const int> amo) {
 }
 
 // TODO(user): Add long ones first, or at least the ones of size 2 after.
-void ActivityBoundHelper::AddAllAtMostOnes(const CpModelProto& proto) {
+uint64_t ActivityBoundHelper::AddAllAtMostOnes(const CpModelProto& proto) {
+  uint64_t num_added = 0;
   for (const ConstraintProto& ct : proto.constraints()) {
     const auto type = ct.constraint_case();
     if (type == ConstraintProto::kAtMostOne) {
       AddAtMostOne(ct.at_most_one().literals());
+      num_added += ct.at_most_one().literals().size();
     } else if (type == ConstraintProto::kExactlyOne) {
       AddAtMostOne(ct.exactly_one().literals());
+      num_added += ct.exactly_one().literals().size();
     } else if (type == ConstraintProto::kBoolAnd) {
       if (ct.enforcement_literal().size() == 1) {
         const int a = ct.enforcement_literal(0);
+        num_added += ct.bool_and().literals().size() * 2;
         for (const int b : ct.bool_and().literals()) {
           // a => b same as amo(a, not(b)).
           AddAtMostOne({a, NegatedRef(b)});
@@ -276,6 +282,7 @@ void ActivityBoundHelper::AddAllAtMostOnes(const CpModelProto& proto) {
       }
     }
   }
+  return num_added;
 }
 
 int64_t ActivityBoundHelper::ComputeActivity(
@@ -721,7 +728,9 @@ uint64_t ClauseWithOneMissingHasher::HashOfNegatedLiterals(
 
 bool FindSingleLinearDifference(const LinearConstraintProto& lin1,
                                 const LinearConstraintProto& lin2, int* var1,
-                                int64_t* coeff1, int* var2, int64_t* coeff2) {
+                                int64_t* coeff1, int* var2, int64_t* coeff2,
+                                TimeLimit* time_limit) {
+  DeterministicTimer<{.scale = 2.7e-09, .offset = 1.4e-07}> timer(time_limit);
   const int size = lin1.vars().size();
   CHECK_EQ(size, lin2.vars().size());
   *coeff1 = 0;
@@ -743,7 +752,10 @@ bool FindSingleLinearDifference(const LinearConstraintProto& lin1,
     // We have a diff.
     // term i not in lin2.
     if (v1 < v2) {
-      if (*coeff1 != 0) return false;  // Returns if second diff.
+      if (*coeff1 != 0) {
+        timer.Advance(i + j);
+        return false;  // Returns if second diff.
+      }
       *var1 = v1;
       *coeff1 = lin1.coeffs(i);
       ++i;
@@ -752,7 +764,10 @@ bool FindSingleLinearDifference(const LinearConstraintProto& lin1,
 
     // term j not in lin1.
     if (v1 > v2) {
-      if (*coeff2 != 0) return false;  // Returns if second diff.
+      if (*coeff2 != 0) {
+        timer.Advance(i + j);
+        return false;  // Returns if second diff.
+      }
       *var2 = v2;
       *coeff2 = lin2.coeffs(j);
       ++j;
@@ -760,7 +775,10 @@ bool FindSingleLinearDifference(const LinearConstraintProto& lin1,
     }
 
     // Coefficients differ. Returns if we had a diff previously.
-    if (*coeff1 != 0 || *coeff2 != 0) return false;
+    if (*coeff1 != 0 || *coeff2 != 0) {
+      timer.Advance(i + j);
+      return false;
+    }
     *var1 = v1;
     *var2 = v2;
     *coeff1 = lin1.coeffs(i);
@@ -768,6 +786,7 @@ bool FindSingleLinearDifference(const LinearConstraintProto& lin1,
     ++i;
     ++j;
   }
+  timer.Advance(i + j);
 
   return *coeff1 != 0 && *coeff2 != 0;
 }

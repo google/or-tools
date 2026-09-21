@@ -2117,7 +2117,9 @@ TEST(ExtractAllSubsetsFromForestTest, Random) {
     int root = -1;
     for (const int n : subset) {
       if (in_subset[parents[n]]) continue;
-      if (root != -1) EXPECT_EQ(parents[n], root);
+      if (root != -1) {
+        EXPECT_EQ(parents[n], root);
+      }
       root = parents[n];
     }
 

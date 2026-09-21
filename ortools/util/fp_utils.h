@@ -251,11 +251,6 @@ inline FloatType Interpolate(FloatType x, FloatType y, FloatType alpha) {
   return alpha * x + (1 - alpha) * y;
 }
 
-inline int fast_ilogb(double value) { return ilogb(value); }
-inline double fast_scalbn(double value, int exponent) {
-  return scalbn(value, exponent);
-}
-
 }  // namespace operations_research
 
 #endif  // ORTOOLS_UTIL_FP_UTILS_H_

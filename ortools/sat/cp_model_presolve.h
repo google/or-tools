@@ -262,7 +262,7 @@ class CpModelPresolver {
 
   bool MergeCliqueConstraintsHelper(std::vector<std::vector<Literal>>& cliques,
                                     std::string_view entry_name,
-                                    PresolveTimer& timer);
+                                    ScopedTimeLogger& logger);
   bool MergeNoOverlapConstraints();
   bool MergeNoOverlap2DConstraints();
 

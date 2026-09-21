@@ -2120,8 +2120,7 @@ TEST(ExpandInverseTest, ExpressionsWithDuplicateVariables) {
       f_inverse->set_offset(coeff_and_offsets[k].second);
     }
     absl::btree_set<std::vector<int>> solutions;
-    const CpSolverResponse response =
-        SolveAndCheck(initial_model, "", &solutions);
+    SolveAndCheck(initial_model, "", &solutions);
 
     int num_expected_solutions = 0;
     for (int j = 0; j < 6 * 6 * 6 * 6; ++j) {

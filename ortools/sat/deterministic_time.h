@@ -43,6 +43,12 @@ struct DeterministicTimeSpec {
   double offset;
 };
 
+struct DeterministicTimeSpec2 {
+  double scale1;
+  double scale2;
+  double offset;
+};
+
 // A convenience template for advancing the deterministic time of a TimeLimit.
 //
 // DeterministicTimers should be declared at the beginning of a syntactic scope,
@@ -70,6 +76,43 @@ class DeterministicTimer {
   // Advances the time limit's deterministic time by spec.scale * time_units.
   void Advance(uint64_t time_units) {
     time_limit_->AdvanceDeterministicTime(spec.scale * time_units);
+  }
+
+ private:
+  TimeLimit* const time_limit_;
+};
+
+// A convenience template for advancing the deterministic time of a TimeLimit.
+//
+// DeterministicTimers should be declared at the beginning of a syntactic scope,
+// and should not be passed as parameters to functions, or stored in static or
+// class variables.
+template <DeterministicTimeSpec2 spec>
+class DeterministicTimer2 {
+ public:
+  // Advances the time limit's deterministic time by spec.offset.
+  explicit DeterministicTimer2(TimeLimit* time_limit)
+      : time_limit_(time_limit) {
+    DCHECK(time_limit != nullptr);
+    if constexpr (spec.offset > 0.0) {
+      time_limit_->AdvanceDeterministicTime(spec.offset);
+    }
+  }
+
+  // Advances the time limit's deterministic time by spec.scale1 * time_units1 +
+  // spec.scale2 * time_units2 + spec.offset.
+  DeterministicTimer2(TimeLimit* time_limit, uint64_t time_units1,
+                      uint64_t time_units2)
+      : time_limit_(time_limit) {
+    time_limit_->AdvanceDeterministicTime(
+        spec.scale1 * time_units1 + spec.scale2 * time_units2 + spec.offset);
+  }
+
+  // Advances the time limit's deterministic time by spec.scale1 * time_units1 +
+  // spec.scale2 * time_units2.
+  void Advance(uint64_t time_units1, uint64_t time_units2) {
+    time_limit_->AdvanceDeterministicTime(spec.scale1 * time_units1 +
+                                          spec.scale2 * time_units2);
   }
 
  private:
@@ -116,100 +159,131 @@ struct DeterministicTimeSpec {
 //   E = sum(y_i - (scale.x_i + offset))^2
 // where (x_i, y_i) are n samples.
 //
-// Deriving E with respect to scale and offset, and setting to 0, gives:
-// - sum(x_i^2).scale + sum(x_i).offset = sum(x_i.y_i)
-// - sum(x_i).scale + n.offset = sum(y_i)
-// Dividing by n yields:
-// - avg(x_i^2).scale + avg(x_i).offset = avg(x_i.y_i)
-// - avg(x_i).scale + offset = avg(y_i)
-// And finally:
-// - scale = [avg(x_i.y_i) - avg(y_i).avg(x_i)] / [avg(x_i^2) - avg(x_i)^2]
-// - offset = avg(y_i) - avg(x_i).scale
-// - E/n = avg(y_i^2) + scale^2.avg(x_i^2) + offset^2 +
-//         2.(scale.offset.avg(x_i) - scale.avg(x_i.y_i) - offset.avg(y_i))
+// Developing this expression, and dividing by the number of samples, we get:
+//   E = x^T P x + Q^T x
+// where:
+//   P = [[1,     x_avg],
+//        [x_avg, x_times_x_avg]]
+//   Q = [-2*y_avg, -2*x_times_y_avg]
+//   x = [offset, scale]^T
 //
-// By noting
-// - xy_cov = avg(x_i.y_i) - avg(x_i).avg(y_i)
-// - x_var = avg(x_i^2) - avg(x_i)^2
-// - y_var = avg(y_i^2) - avg(y_i)^2
-// we can rewrite the equations as:
-// - scale = xy_cov / x_var
-// - offset = avg(y_i) - avg(x_i).scale
-// - E/n = y_var - xy_cov^2 / x_var
-class SampleStatistics {
+// This can be solved with OSQP (osqp.org), subject to offset >= 0, scale >= 0.
+struct SampleStatistics {
  public:
-  SampleStatistics() = default;
-  SampleStatistics(uint64_t num_samples, uint64_t x_sum, uint64_t y_sum,
-                   absl::uint128 x_times_x_sum, absl::uint128 x_times_y_sum)
-      : num_samples_(num_samples),
-        x_sum_(x_sum),
-        y_sum_(y_sum),
-        x_times_x_sum_(x_times_x_sum),
-        x_times_y_sum_(x_times_y_sum) {}
+  uint64_t num_samples = 0;
+  uint64_t x_sum = 0;
+  uint64_t y_sum = 0;
+  absl::uint128 x_times_x_sum = 0;
+  absl::uint128 x_times_y_sum = 0;
+  double y_fit_sum = 0.0;
 
-  void AddSample(uint64_t x, uint64_t y) {
+  // y_fit is the value of the linear regression at x, using the current
+  // linear regression parameters. It can be used to evaluate its deviation
+  // from the actual y.
+  void AddSample(uint64_t x, uint64_t y, double y_fit) {
     // TODO(user): stop accumulating samples as soon as adding one would
     // cause an overflow?
-    num_samples_++;
-    x_sum_ += x;
-    y_sum_ += y;
-    x_times_x_sum_ += x * x;
-    x_times_y_sum_ += x * y;
-    y_times_y_sum_ += y * y;
+    num_samples++;
+    x_sum += x;
+    y_sum += y;
+    x_times_x_sum += static_cast<absl::uint128>(x) * x;
+    x_times_y_sum += static_cast<absl::uint128>(x) * y;
+    y_fit_sum += y_fit;
   }
 
   void AddSamples(const SampleStatistics& other) {
-    num_samples_ += other.num_samples_;
-    x_sum_ += other.x_sum_;
-    y_sum_ += other.y_sum_;
-    x_times_x_sum_ += other.x_times_x_sum_;
-    x_times_y_sum_ += other.x_times_y_sum_;
-    y_times_y_sum_ += other.y_times_y_sum_;
-  }
-
-  double FitParameters(double* scale, double* offset) const {
-    if (num_samples_ == 0) {
-      *scale = 0.0;
-      *offset = 0.0;
-      return 0.0;
-    }
-    double x_avg = static_cast<double>(x_sum_) / num_samples_;
-    double y_avg = static_cast<double>(y_sum_) / num_samples_;
-    double x_times_x_avg = static_cast<double>(x_times_x_sum_) / num_samples_;
-    double y_times_y_avg = static_cast<double>(y_times_y_sum_) / num_samples_;
-    double x_times_y_avg = static_cast<double>(x_times_y_sum_) / num_samples_;
-    double xy_covariance = x_times_y_avg - x_avg * y_avg;
-    double x_variance = x_times_x_avg - x_avg * x_avg;
-    double y_variance = y_times_y_avg - y_avg * y_avg;
-    *scale = x_variance == 0.0 ? 0.0 : xy_covariance / x_variance;
-    *offset = y_avg - x_avg * (*scale);
-    if (*scale < 0.0 || *offset < 0.0) {
-      // Fit a linear model y = scale * x instead.
-      *scale = x_times_y_avg / x_times_x_avg;
-      *offset = 0.0;
-    }
-    double mse = 0.0;
-    if (x_variance != 0.0) {
-      mse = y_variance - xy_covariance * xy_covariance / x_variance;
-    }
-    return std::sqrt(std::max(0.0, mse));
+    num_samples += other.num_samples;
+    x_sum += other.x_sum;
+    y_sum += other.y_sum;
+    x_times_x_sum += other.x_times_x_sum;
+    x_times_y_sum += other.x_times_y_sum;
+    y_fit_sum += other.y_fit_sum;
   }
 
   std::string ToString() const {
-    double scale, offset;
-    double rmse = FitParameters(&scale, &offset);
-    return absl::StrFormat("%d,%d,%d,%d,%d,%d,%e,%e,%e", num_samples_, x_sum_,
-                           y_sum_, x_times_x_sum_, x_times_y_sum_,
-                           y_times_y_sum_, scale, offset, rmse);
+    return absl::StrFormat("%d,%d,%d,%d,%d,%e", num_samples, x_sum, y_sum,
+                           x_times_x_sum, x_times_y_sum, y_fit_sum);
+  }
+};
+
+// The calibration parameters and source location of a deterministic timer.
+struct DeterministicTimeSpec2 {
+  double scale1;
+  double scale2;
+  double offset;
+  CompileTimeSourceLocation loc =
+      CompileTimeSourceLocation(absl::SourceLocation::current());
+};
+
+// Statistics about a set of (x1_i, x2_i, y_i) samples allowing to compute scale
+// and offset parameters for a linear model y = scale1 * x1 + scale2 * x2 +
+// offset that best fits these samples.
+//
+// We want to find the scale and offset values minimizing the squared error
+//   E = sum(y_i - (scale1.x1_i + scale2.x2_i + offset))^2
+// where (x1_i, x2_i, y_i) are n samples.
+//
+// Developing this expression, and dividing by the number of samples, we get:
+//   E = x^T P x + Q^T x
+// where:
+//   P = [[1,      x1_avg,          x2_avg],
+//        [x1_avg, x1_times_x1_avg, x1_times_x2_avg],
+//        [x2_avg, x1_times_x2_avg, x2_times_x2_avg]]
+//   Q = [-2*y_avg, -2*x1_times_y_avg, -2*x2_times_y_avg]
+//   x = [offset, scale1, scale2]^T
+//
+// This can be solved with OSQP (osqp.org), subject to
+//   offset >= 0, scale1 >= 0, scale2 >= 0.
+struct SampleStatistics2 {
+ public:
+  uint64_t num_samples = 0;
+  uint64_t x1_sum = 0;
+  uint64_t x2_sum = 0;
+  uint64_t y_sum = 0;
+  absl::uint128 x1_times_x1_sum = 0;
+  absl::uint128 x1_times_x2_sum = 0;
+  absl::uint128 x2_times_x2_sum = 0;
+  absl::uint128 x1_times_y_sum = 0;
+  absl::uint128 x2_times_y_sum = 0;
+  double y_fit_sum = 0.0;
+
+  // y_fit is the value of the linear regression at x, using the current
+  // linear regression parameters. It can be used to evaluate its deviation
+  // from the actual y.
+  void AddSample(uint64_t x1, uint64_t x2, uint64_t y, double y_fit) {
+    // TODO(user): stop accumulating samples as soon as adding one would
+    // cause an overflow?
+    num_samples++;
+    x1_sum += x1;
+    x2_sum += x2;
+    y_sum += y;
+    x1_times_x1_sum += static_cast<absl::uint128>(x1) * x1;
+    x1_times_x2_sum += static_cast<absl::uint128>(x1) * x2;
+    x2_times_x2_sum += static_cast<absl::uint128>(x2) * x2;
+    x1_times_y_sum += static_cast<absl::uint128>(x1) * y;
+    x2_times_y_sum += static_cast<absl::uint128>(x2) * y;
+    y_fit_sum += y_fit;
   }
 
- private:
-  uint64_t num_samples_ = 0;
-  uint64_t x_sum_ = 0;
-  uint64_t y_sum_ = 0;
-  absl::uint128 x_times_x_sum_ = 0;
-  absl::uint128 x_times_y_sum_ = 0;
-  absl::uint128 y_times_y_sum_ = 0;
+  void AddSamples(const SampleStatistics2& other) {
+    num_samples += other.num_samples;
+    x1_sum += other.x1_sum;
+    x2_sum += other.x2_sum;
+    y_sum += other.y_sum;
+    x1_times_x1_sum += other.x1_times_x1_sum;
+    x1_times_x2_sum += other.x1_times_x2_sum;
+    x2_times_x2_sum += other.x2_times_x2_sum;
+    x1_times_y_sum += other.x1_times_y_sum;
+    x2_times_y_sum += other.x2_times_y_sum;
+    y_fit_sum += other.y_fit_sum;
+  }
+
+  std::string ToString() const {
+    return absl::StrFormat("%d,%d,%d,%d,%d,%d,%d,%d,%d,%e", num_samples, x1_sum,
+                           x2_sum, y_sum, x1_times_x1_sum, x1_times_x2_sum,
+                           x2_times_x2_sum, x1_times_y_sum, x2_times_y_sum,
+                           y_fit_sum);
+  }
 };
 
 // A registry of all the deterministic timer statistics, over all threads. It is
@@ -221,6 +295,11 @@ class AllDeterministicTimeStats {
     for (const auto& [source_location, stats] : all_stats_) {
       const auto& [file, line] = source_location;
       std::cout << "dtime stats: " << file << "," << line << ","
+                << stats.ToString() << std::endl;
+    }
+    for (const auto& [source_location, stats] : all_stats2_) {
+      const auto& [file, line] = source_location;
+      std::cout << "dtime2 stats: " << file << "," << line << ","
                 << stats.ToString() << std::endl;
     }
   }
@@ -241,12 +320,20 @@ class AllDeterministicTimeStats {
     all_stats_[{file, line}].AddSamples(stats);
   }
 
+  void AddStats2(std::string_view file, int line,
+                 const SampleStatistics2& stats) {
+    absl::MutexLock lock(mutex_);
+    all_stats2_[{file, line}].AddSamples(stats);
+  }
+
  private:
   AllDeterministicTimeStats() = default;
 
   absl::Mutex mutex_;
   absl::btree_map<std::pair<std::string_view, int>, SampleStatistics> all_stats_
       ABSL_GUARDED_BY(mutex_);
+  absl::btree_map<std::pair<std::string_view, int>, SampleStatistics2>
+      all_stats2_ ABSL_GUARDED_BY(mutex_);
 };
 
 // Statistics from a single deterministic timer (identified by an ID
@@ -266,8 +353,10 @@ class BaseDeterministicTimeStats {
   // Adds a sample to the statistics.
   // - time_units: the number of time units that were advanced by the timer.
   // - measured_duration_ns: the corresponding actual duration in nanoseconds.
-  void AddSample(uint64_t time_units, uint64_t measured_duration_ns) {
-    stats_.AddSample(time_units, measured_duration_ns);
+  // - fitted_duration: the duration predicted by the current linear regression.
+  void AddSample(uint64_t time_units, uint64_t measured_duration_ns,
+                 double fitted_duration) {
+    stats_.AddSample(time_units, measured_duration_ns, fitted_duration);
   }
 
  protected:
@@ -283,40 +372,56 @@ class DeterministicTimeStats : public BaseDeterministicTimeStats {
 
 // An abstract deterministic timer, corresponding to a single source location
 // (defined in subclasses), and a single thread.
-class BaseDeterministicTimer {
+class AbstractDeterministicTimer {
  public:
-  explicit BaseDeterministicTimer(TimeLimit* time_limit)
+  explicit AbstractDeterministicTimer(TimeLimit* time_limit)
       : time_limit_(time_limit), start_time_(absl::GetCurrentTimeNanos()) {
     timers_stack_.push(this);
   }
+
+  void SubtractNestedTimerDuration(uint64_t duration) {
+    // Deduct the time spent in a nested timer from the time spent in this one
+    // by adding its duration to the start time.
+    start_time_ += duration;
+  }
+
+ protected:
+  // The time limit to use for advancing the deterministic time.
+  TimeLimit* const time_limit_;
+  // The time in nanoseconds when the timer was constructed.
+  uint64_t start_time_;
+
+  // The stack of currently active timers in the current thread. This is used to
+  // deduct the time spent in nested timers (we assume that timers are destroyed
+  // in the reverse order of their construction).
+  static thread_local std::stack<AbstractDeterministicTimer*> timers_stack_;
+};
+
+// A deterministic timer with a single scale, corresponding to an abstract
+// source location (defined in subclasses), and a single thread.
+class BaseDeterministicTimer : public AbstractDeterministicTimer {
+ public:
+  explicit BaseDeterministicTimer(TimeLimit* time_limit)
+      : AbstractDeterministicTimer(time_limit) {}
 
  protected:
   // Measures the elapsed time between the construction of this timer and this
   // method call, and adds it to the given statistics (with the corresponding
   // number of time units that were advanced by the timer).
-  void AddStatsSample(BaseDeterministicTimeStats& stats) {
+  void AddStatsSample(double fitted_elapsed_time,
+                      BaseDeterministicTimeStats& stats) {
     const uint64_t end_time = absl::GetCurrentTimeNanos();
     const uint64_t elapsed_time = end_time - start_time_;
     timers_stack_.pop();
     if (!timers_stack_.empty()) {
-      // Deduct the time spent in this timer from the time spent in its parent
-      // (by adding it to the start time of the parent timer).
-      timers_stack_.top()->start_time_ += elapsed_time;
+      // Deduct the time spent in this timer from the time spent in its parent.
+      timers_stack_.top()->SubtractNestedTimerDuration(elapsed_time);
     }
-    stats.AddSample(time_units_, elapsed_time);
+    stats.AddSample(time_units_, elapsed_time, fitted_elapsed_time);
   }
 
-  // The time limit to use for advancing the deterministic time.
-  TimeLimit* const time_limit_;
-  // The time in nanoseconds when the timer was constructed.
-  uint64_t start_time_;
   // The number of time units that were advanced by the timer.
   uint64_t time_units_ = 0;
-
-  // The stack of currently active timers in the current thread. This is used to
-  // deduct the time spent in nested timers (we assume that timers are destroyed
-  // in the reverse order of their construction).
-  static thread_local std::stack<BaseDeterministicTimer*> timers_stack_;
 };
 
 // A deterministic timer which collects statistics about the actual time
@@ -351,7 +456,9 @@ class DeterministicTimer : public BaseDeterministicTimer {
     time_units_ += time_units;
   }
 
-  ~DeterministicTimer() { AddStatsSample(stats_); }
+  ~DeterministicTimer() {
+    AddStatsSample(spec.offset + spec.scale * time_units_, stats_);
+  }
 
   // Advances the time limit's deterministic time by spec.scale * time_units.
   void Advance(uint64_t time_units) {
@@ -365,6 +472,127 @@ class DeterministicTimer : public BaseDeterministicTimer {
 
 template <DeterministicTimeSpec spec>
 thread_local DeterministicTimeStats<spec.loc> DeterministicTimer<spec>::stats_;
+
+// Statistics from a single deterministic timer (identified by an ID
+// corresponding to a specific source location), and a single thread.
+class BaseDeterministicTimeStats2 {
+ public:
+  explicit BaseDeterministicTimeStats2(const CompileTimeSourceLocation& loc)
+      : loc_(loc) {}
+
+  // This is called when the thread exits (stats are stored in thread_local
+  // variables, one per source location).
+  ~BaseDeterministicTimeStats2() {
+    AllDeterministicTimeStats::Get().AddStats2(loc_.file_name(), loc_.line(),
+                                               stats_);
+  }
+
+  // Adds a sample to the statistics.
+  // - time_units: the number of time units that were advanced by the timer.
+  // - measured_duration_ns: the corresponding actual duration in nanoseconds.
+  // - fitted_duration: the duration predicted by the current linear regression.
+  void AddSample(uint64_t time_units1, uint64_t time_units2,
+                 uint64_t measured_duration_ns, double fitted_duration) {
+    stats_.AddSample(time_units1, time_units2, measured_duration_ns,
+                     fitted_duration);
+  }
+
+ protected:
+  const CompileTimeSourceLocation loc_;
+  SampleStatistics2 stats_;
+};
+
+template <CompileTimeSourceLocation loc>
+class DeterministicTimeStats2 : public BaseDeterministicTimeStats2 {
+ public:
+  DeterministicTimeStats2() : BaseDeterministicTimeStats2(loc) {}
+};
+
+// A deterministic timer with two scales, corresponding to an abstract source
+// location (defined in subclasses), and a single thread.
+class BaseDeterministicTimer2 : public AbstractDeterministicTimer {
+ public:
+  explicit BaseDeterministicTimer2(TimeLimit* time_limit)
+      : AbstractDeterministicTimer(time_limit) {}
+
+ protected:
+  // Measures the elapsed time between the construction of this timer and this
+  // method call, and adds it to the given statistics (with the corresponding
+  // number of time units that were advanced by the timer).
+  void AddStatsSample(double fitted_elapsed_time,
+                      BaseDeterministicTimeStats2& stats) {
+    const uint64_t end_time = absl::GetCurrentTimeNanos();
+    const uint64_t elapsed_time = end_time - start_time_;
+    timers_stack_.pop();
+    if (!timers_stack_.empty()) {
+      // Deduct the time spent in this timer from the time spent in its parent.
+      timers_stack_.top()->SubtractNestedTimerDuration(elapsed_time);
+    }
+    stats.AddSample(time_units1_, time_units2_, elapsed_time,
+                    fitted_elapsed_time);
+  }
+
+  // The number of time units that were advanced by the timer.
+  uint64_t time_units1_ = 0;
+  uint64_t time_units2_ = 0;
+};
+
+// A deterministic timer which collects statistics about the actual time
+// corresponding to the advanced time units. This allows updating its scale and
+// offset parameters with a linear regression.
+//
+// DeterministicTimers should be declared at the beginning of a syntactic scope,
+// and should not be passed as parameters to functions, or stored in static or
+// class variables. This ensures that the timers are destroyed in the reverse
+// order of their construction. This property is used to deduct the time spent
+// in nested timers, which is necessary to obtain accurate scale and offset
+// parameters.
+template <DeterministicTimeSpec2 spec>
+class DeterministicTimer2 : public BaseDeterministicTimer2 {
+ public:
+  // Advances the time limit's deterministic time by the given offset.
+  explicit DeterministicTimer2(TimeLimit* time_limit)
+      : BaseDeterministicTimer2(time_limit) {
+    DCHECK(time_limit != nullptr);
+    if constexpr (spec.offset > 0.0) {
+      time_limit_->AdvanceDeterministicTime(spec.offset);
+    }
+  }
+
+  // Advances the time limit's deterministic time by spec.scale1 * time_units1 +
+  // spec.scale2 * time_units2 + spec.offset.
+  DeterministicTimer2(TimeLimit* time_limit, uint64_t time_units1,
+                      uint64_t time_units2)
+      : BaseDeterministicTimer2(time_limit) {
+    DCHECK(time_limit != nullptr);
+    time_limit_->AdvanceDeterministicTime(
+        spec.scale1 * time_units1 + spec.scale2 * time_units2 + spec.offset);
+    time_units1_ += time_units1;
+    time_units2_ += time_units2;
+  }
+
+  ~DeterministicTimer2() {
+    AddStatsSample(
+        spec.scale1 * time_units1_ + spec.scale2 * time_units2_ + spec.offset,
+        stats_);
+  }
+
+  // Advances the time limit's deterministic time by spec.scale1 * time_units1 +
+  // spec.scale2 * time_units2.
+  void Advance(uint64_t time_units1, uint64_t time_units2) {
+    time_limit_->AdvanceDeterministicTime(spec.scale1 * time_units1 +
+                                          spec.scale2 * time_units2);
+    time_units1_ += time_units1;
+    time_units2_ += time_units2;
+  }
+
+ private:
+  static thread_local DeterministicTimeStats2<spec.loc> stats_;
+};
+
+template <DeterministicTimeSpec2 spec>
+thread_local DeterministicTimeStats2<spec.loc>
+    DeterministicTimer2<spec>::stats_;
 
 #endif  // OR_TOOLS_SAT_DETERMINISTIC_TIME_PROFILING
 

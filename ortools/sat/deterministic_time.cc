@@ -21,8 +21,8 @@ namespace operations_research::sat {
 
 #ifdef OR_TOOLS_SAT_DETERMINISTIC_TIME_PROFILING
 
-thread_local std::stack<BaseDeterministicTimer*>
-    BaseDeterministicTimer::timers_stack_;
+thread_local std::stack<AbstractDeterministicTimer*>
+    AbstractDeterministicTimer::timers_stack_;
 
 #endif  // OR_TOOLS_SAT_DETERMINISTIC_TIME_PROFILING
 

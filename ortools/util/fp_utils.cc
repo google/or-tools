@@ -23,7 +23,6 @@
 #include <limits>
 #include <utility>
 
-#include "absl/base/casts.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/util/bitset.h"

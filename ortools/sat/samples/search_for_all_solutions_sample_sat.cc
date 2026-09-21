@@ -63,7 +63,7 @@ void SearchAllSolutionsSampleSat() {
   SatParameters parameters;
   parameters.set_enumerate_all_solutions(true);
   model.Add(NewSatParameters(parameters));
-  const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
+  SolveCpModel(cp_model.Build(), &model);
   // [END solve]
 
   LOG(INFO) << "Number of solutions found: " << num_solutions;

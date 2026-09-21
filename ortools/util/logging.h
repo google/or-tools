@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <functional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/str_cat.h"  // IWYU pragma: export
@@ -118,15 +119,12 @@ class SolverLogger {
 #define FORCED_SOLVER_LOG(logger, ...) \
   (logger)->LogInfo(__FILE__, __LINE__, absl::StrCat(__VA_ARGS__))
 
-// Simple helper class to:
-// - log in an uniform way a "time-consuming" presolve operation.
-// - track a deterministic work limit.
-// - update the deterministic time on finish.
-//
-// TODO(user): this is not presolve specific. Rename.
-class PresolveTimer {
+// Simple helper class to log counters related to "time-consuming" operations,
+// together with the elapsed wall time and deterministic time.
+class ScopedTimeLogger {
  public:
-  PresolveTimer(std::string name, SolverLogger* logger, TimeLimit* time_limit)
+  ScopedTimeLogger(std::string name, SolverLogger* logger,
+                   TimeLimit* time_limit)
       : name_(std::move(name)),
         dtime_at_start_(time_limit->GetElapsedDeterministicTime()),
         logger_(logger),
@@ -134,12 +132,7 @@ class PresolveTimer {
     timer_.Start();
   }
 
-  // Track the work done (which is also the deterministic time).
   // By default we want a limit of around 1 deterministic seconds.
-  void AddToWork(double dtime) { work_ += dtime; }
-  void TrackSimpleLoop(int size) { work_int_ += 5 * size; }
-  void TrackHashLookups(int size) { work_int_ += 50 * size; }
-  void TrackFastLoop(int size) { work_int_ += size; }
   bool WorkLimitIsReached() const { return deterministic_time() >= 1.0; }
 
   // Extra stats=value to display at the end.
@@ -152,8 +145,8 @@ class PresolveTimer {
   // Extra info at the end of the log line.
   void AddMessage(std::string name) { extra_infos_.push_back(std::move(name)); }
 
-  // Updates dtime and log operation summary.
-  ~PresolveTimer();
+  // Log operation summary.
+  ~ScopedTimeLogger();
 
   // Can be used to bypass logger_->LoggingIsEnabled() to either always disable
   // in some code path or to always log when debugging.
@@ -162,7 +155,9 @@ class PresolveTimer {
     log_when_override_ = value;
   };
 
-  double deterministic_time() const { return work_ + 1e-9 * work_int_; }
+  double deterministic_time() const {
+    return time_limit_->GetElapsedDeterministicTime() - dtime_at_start_;
+  }
   double wtime() const { return timer_.Get(); }
 
  private:
@@ -175,8 +170,6 @@ class PresolveTimer {
 
   bool override_logging_ = false;
   bool log_when_override_ = false;
-  int64_t work_int_ = 0;
-  double work_ = 0.0;
   std::vector<std::pair<std::string, int64_t>> counters_;
   std::vector<std::string> extra_infos_;
 };

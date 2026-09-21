@@ -344,10 +344,10 @@ void PresolveContext::AddImplyInDomain(int b, int x, const Domain& domain) {
 
   // Doing it like this seems to use slightly less memory.
   // TODO(user): Find the best way to create such small proto.
-  imply->mutable_enforcement_literal()->Resize(1, b);
+  imply->mutable_enforcement_literal()->resize(1, b);
   LinearConstraintProto* mutable_linear = imply->mutable_linear();
-  mutable_linear->mutable_vars()->Resize(1, x);
-  mutable_linear->mutable_coeffs()->Resize(1, 1);
+  mutable_linear->mutable_vars()->resize(1, x);
+  mutable_linear->mutable_coeffs()->resize(1, 1);
   FillDomainInProto(domain, mutable_linear);
 }
 
@@ -355,7 +355,7 @@ void PresolveContext::AddImplyInDomain(int b, const LinearExpressionProto& expr,
                                        const Domain& domain) {
   ConstraintProto* const imply = working_model_->add_constraints();
 
-  imply->mutable_enforcement_literal()->Resize(1, b);
+  imply->mutable_enforcement_literal()->resize(1, b);
   LinearConstraintProto* mutable_linear = imply->mutable_linear();
   FillDomainInProto(domain, mutable_linear);
   AddLinearExpressionToLinearConstraint(expr, 1, imply->mutable_linear());

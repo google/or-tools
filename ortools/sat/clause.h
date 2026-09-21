@@ -712,8 +712,7 @@ class BinaryImplicationGraph : public SatPropagator {
   //
   // TODO(user): Switch to a dtime limit.
   bool MergeAtMostOnes(absl::Span<std::vector<Literal>> at_most_ones,
-                       int64_t max_num_explored_nodes = 1e8,
-                       double* dtime = nullptr);
+                       int64_t max_num_explored_nodes);
 
   // LP clique cut heuristic. Returns a set of "at most one" constraints on the
   // given literals or their negation that are violated by the current LP
