@@ -108,25 +108,15 @@ or_cc_test(
 
 or_cc_binary(
     name = "constant_divisor_benchmark",
+    testonly = True,
     srcs = ["constant_divisor_benchmark.cc"],
     deps = [
-        ":benchmark_main",
         ":constant_divisor",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:bit_gen_ref",
         "@abseil-cpp//absl/random:distributions",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
-)
-
-or_cc_library(
-    name = "benchmark_main",
-    srcs = ["benchmark_main.cc"],
-    deps = [
-        "//ortools/base",
-        "@google_benchmark//:benchmark",
-    ],
-    alwayslink = True,
 )
 
 or_cc_library(

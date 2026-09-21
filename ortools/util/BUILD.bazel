@@ -566,14 +566,14 @@ or_cc_test(
 
 or_cc_binary(
     name = "dense_set_benchmark",
+    testonly = True,
     srcs = ["dense_set_benchmark.cc"],
     deps = [
         ":dense_set",
-        "//ortools/base:benchmark_main",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:bit_gen_ref",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -612,14 +612,14 @@ or_cc_test(
 
 or_cc_binary(
     name = "flat_matrix_benchmark",
+    testonly = True,
     srcs = ["flat_matrix_benchmark.cc"],
     deps = [
         ":flat_matrix",
         ":random_engine",
-        "//ortools/base:benchmark_main",
         "@abseil-cpp//absl/base",
         "@abseil-cpp//absl/log:check",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -732,12 +732,12 @@ or_cc_test(
 
 or_cc_binary(
     name = "fp_utils_benchmark",
+    testonly = True,
     srcs = ["fp_utils_benchmark.cc"],
     deps = [
         ":fp_utils",
-        "//ortools/base:benchmark_main",
         "@abseil-cpp//absl/log:check",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -765,13 +765,13 @@ or_cc_test(
 
 or_cc_binary(
     name = "time_limit_benchmark",
+    testonly = True,
     srcs = ["time_limit_benchmark.cc"],
     deps = [
         ":time_limit",
-        "//ortools/base:benchmark_main",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -812,13 +812,13 @@ or_cc_test(
 
 or_cc_binary(
     name = "saturated_arithmetic_benchmark",
+    testonly = True,
     srcs = ["saturated_arithmetic_benchmark.cc"],
     deps = [
         ":saturated_arithmetic",
-        "//ortools/base:benchmark_main",
         "//ortools/base:types",
         "@abseil-cpp//absl/log",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -937,12 +937,12 @@ or_cc_test(
 
 or_cc_binary(
     name = "random_subset_benchmark",
+    testonly = True,
     srcs = ["random_subset_benchmark.cc"],
     deps = [
         ":random_subset",
-        "//ortools/base:benchmark_main",
         "@abseil-cpp//absl/random",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 

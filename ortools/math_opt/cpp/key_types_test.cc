@@ -20,7 +20,6 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
-#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
@@ -30,7 +29,6 @@ namespace operations_research::math_opt::internal {
 namespace {
 
 using ::testing::ElementsAre;
-using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::status::StatusIs;
 
@@ -39,26 +37,6 @@ using ::testing::status::StatusIs;
 #else
 #define NO_SANITIZE_NULLABILITY_ATTR
 #endif
-
-TEST(CheckModelStorageTest, NullExpected) {
-  ModelStorage model;
-  // The compiler will prevent us from passing nullptr to a function expecting
-  // a `ModelStorageCPtr`. So we launder the `nullptr` to test the behavior of
-  // `CheckModelStorage()` in that case.
-  ModelStorage* laundered_nullptr = nullptr;
-  benchmark::DoNotOptimize(laundered_nullptr);
-
-  [&]() NO_SANITIZE_NULLABILITY_ATTR {
-    EXPECT_THAT(
-        CheckModelStorage(/*storage=*/nullptr,
-                          /*expected_storage=*/laundered_nullptr),
-        StatusIs(absl::StatusCode::kInternal, HasSubstr("expected_storage")));
-    EXPECT_THAT(
-        CheckModelStorage(/*storage=*/&model,
-                          /*expected_storage=*/laundered_nullptr),
-        StatusIs(absl::StatusCode::kInternal, HasSubstr("expected_storage")));
-  }();
-}
 
 TEST(CheckModelStorageTest, SingleModel) {
   ModelStorage model;

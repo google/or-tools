@@ -2839,11 +2839,11 @@ or_cc_test(
 
 or_cc_binary(
     name = "integer_benchmark",
+    testonly = True,
     srcs = ["integer_benchmark.cc"],
     deps = [
         ":integer_base",
-        "//ortools/base:benchmark_main",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -3956,12 +3956,12 @@ or_cc_test(
 
 or_cc_binary(
     name = "util_benchmark",
+    testonly = True,
     srcs = ["util_benchmark.cc"],
     deps = [
         ":util",
-        "//ortools/base:benchmark_main",
         "//ortools/util:random_engine",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -4209,15 +4209,15 @@ or_cc_test(
 
 or_cc_binary(
     name = "2d_packing_brute_force_benchmark",
+    testonly = True,
     srcs = ["2d_packing_brute_force_benchmark.cc"],
     deps = [
         ":2d_packing_brute_force",
         ":integer_base",
-        "//ortools/base:benchmark_main",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:bit_gen_ref",
         "@abseil-cpp//absl/random:distributions",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -4306,7 +4306,7 @@ or_cc_test(
 
 or_cc_binary(
     name = "2d_orthogonal_packing_benchmark",
-    testonly = 1,
+    testonly = True,
     srcs = ["2d_orthogonal_packing_benchmark.cc"],
     deps = [
         ":2d_orthogonal_packing",
@@ -4314,11 +4314,10 @@ or_cc_binary(
         ":diffn_util",
         ":integer_base",
         ":synchronization",
-        "//ortools/base:benchmark_main",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:bit_gen_ref",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -4403,19 +4402,18 @@ or_cc_test(
 
 or_cc_binary(
     name = "diffn_util_benchmark",
-    testonly = 1,
+    testonly = True,
     srcs = ["diffn_util_benchmark.cc"],
     deps = [
         ":2d_orthogonal_packing_testing",
         ":diffn_util",
         ":integer_base",
-        "//ortools/base:benchmark_main",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:bit_gen_ref",
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/types:span",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 

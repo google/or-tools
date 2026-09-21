@@ -458,6 +458,7 @@ or_cc_library(
 
 or_cc_test(
     name = "key_types_test",
+    testonly = True,
     srcs = ["key_types_test.cc"],
     deps = [
         ":key_types",
@@ -467,7 +468,6 @@ or_cc_test(
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/status",
-        "@google_benchmark//:benchmark",
     ],
 )
 

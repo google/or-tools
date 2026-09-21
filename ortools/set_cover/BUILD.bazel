@@ -66,12 +66,12 @@ or_cc_test(
 
 or_cc_binary(
     name = "base_types_benchmark",
+    testonly = True,
     srcs = ["base_types_benchmark.cc"],
     deps = [
         ":base_types",
-        "//ortools/base:benchmark_main",
         "@abseil-cpp//absl/random",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -392,7 +392,6 @@ or_cc_test(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/time",
-        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -423,14 +422,14 @@ or_cc_test(
 
 or_cc_binary(
     name = "knights_benchmark",
+    testonly = True,
     srcs = ["knights_benchmark.cc"],
     deps = [
         ":base_types",
         ":set_cover_heuristics",
         ":set_cover_invariant",
         ":set_cover_model",
-        "//ortools/base:benchmark_main",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 

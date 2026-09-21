@@ -14,7 +14,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <random>
-#include <vector>
 
 #include "absl/random/random.h"
 #include "benchmark/benchmark.h"
@@ -36,6 +35,14 @@ SparseRow GenerateRandomSparseRow(size_t size, int64_t max_value) {
   return sparse_row;
 }
 
+static void SetBenchmarkArgs(benchmark::Benchmark* b) {
+  for (int vector_size : {100'000, 100'000'000}) {
+    for (int delta_range : {1 << 8, 1 << 16}) {
+      b->Args({vector_size, delta_range});
+    }
+  }
+}
+
 static void BM_StrongVectorIteration(benchmark::State& state) {
   const size_t size = state.range(0);
   const int64_t delta_range = state.range(1);
@@ -48,8 +55,7 @@ static void BM_StrongVectorIteration(benchmark::State& state) {
     benchmark::DoNotOptimize(sum);  // Prevent optimization
   }
 }
-BENCHMARK(BM_StrongVectorIteration)
-    ->ArgsProduct({{100'000, 100'000'000}, {1 << 8, 1 << 16}});
+BENCHMARK(BM_StrongVectorIteration)->Apply(SetBenchmarkArgs);
 
 }  // namespace
 }  // namespace operations_research

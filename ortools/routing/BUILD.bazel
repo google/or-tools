@@ -350,12 +350,12 @@ or_cc_library(
 
 or_cc_binary(
     name = "fourier_solver_benchmark",
+    testonly = True,
     srcs = ["fourier_solver_benchmark.cc"],
     deps = [
         ":fourier_solver",
-        "//ortools/base:benchmark_main",
         "@abseil-cpp//absl/algorithm:container",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
