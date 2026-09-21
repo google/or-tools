@@ -39,7 +39,7 @@ def main(argv):
     all_vars = [solver.new_int_var(0, size, "vars_%d" % i) for i in all_values]
 
     # The number of variables equal to j shall be the value of all_vars[j].
-    solver.add(solver.distribute(all_vars, all_values, all_vars))
+    solver.add(solver.add_distribute(all_vars, all_values, all_vars))
 
     # The sum of all the values shall be equal to the size.
     # (This constraint is redundant, but speeds up the search.)
@@ -49,7 +49,7 @@ def main(argv):
         solver.phase(
             all_vars,
             cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
-            cp.IntValueStrategy.ASSIGN_MIN_VALUE
+            cp.IntValueStrategy.ASSIGN_MIN_VALUE,
         )
     )
     solver.next_solution()
