@@ -136,10 +136,25 @@ if(BUILD_CXX_TESTING)
   endif ()
 
   if(USE_XPRESS)
-    add_executable(test_xprs_interface xpress_interface_test.cc)
-    target_compile_features(test_xprs_interface PRIVATE cxx_std_17)
-    target_link_libraries(test_xprs_interface PRIVATE ortools::ortools GTest::gtest_main)
-
-    add_test(NAME cxx_unittests_xpress_interface COMMAND test_xprs_interface)
+    ortools_cxx_test(
+      NAME
+        xpress_interface_test
+      SOURCES
+        xpress_interface_test.cc
+      LINK_LIBRARIES
+        ortools::ortools
+        GTest::gtest_main
+    )
   endif()
+
+  ortools_cxx_test(
+    NAME
+      linear_solver_test
+    SOURCES
+      linear_solver_test.cc
+    LINK_LIBRARIES
+      ortools::ortools
+      GTest::gtest_main
+  )
+
 endif ()

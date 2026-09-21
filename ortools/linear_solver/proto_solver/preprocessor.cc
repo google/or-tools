@@ -151,6 +151,9 @@ glop::Preprocessor::Result BoundPropagationPreprocessor::Run(
     LinearProgram* linear_program) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_VALUE_IF_NULL(linear_program, {.postsolve_is_needed = false});
+  if (!parameters_.use_bound_propagation_preprocessor()) {
+    return {.postsolve_is_needed = false};
+  }
   const Fractional tolerance = integer_solution_tolerance_;
 
   // Starts by adding all the row in the 'to_process' queue.

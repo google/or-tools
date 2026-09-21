@@ -1624,6 +1624,13 @@ class
 // see the RPC error itself (error code + error message).
 bool MPSolverResponseStatusIsRpcError(MPSolverResponseStatus status);
 
+// Converts an MPSolverResponseStatus to an MPSolver::ResultStatus safely.
+// Unmapped or unknown statuses (such as MPSOLVER_UNKNOWN_STATUS or
+// MPSOLVER_CANCELLED_BY_USER) are mapped to MPSolver::ABNORMAL to prevent
+// out-of-range enum values in client bindings (Java, .NET, etc.).
+MPSolver::ResultStatus MPSolverResponseStatusToResultStatus(
+    MPSolverResponseStatus status);
+
 // This class wraps the actual mathematical programming solvers. Each
 // solver (GLOP, CLP, CBC, GLPK, SCIP) has its own interface class that
 // derives from this abstract class. This class is never directly

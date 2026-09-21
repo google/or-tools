@@ -327,7 +327,7 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
     response.set_objective_value(objective_value);
     response.set_best_objective_bound(objective_value);
 
-    response.mutable_variable_value()->Resize(variable_size, 0);
+    response.mutable_variable_value()->resize(variable_size, 0);
     for (int column = 0; column < variable_size; column++) {
       response.mutable_variable_value()->mutable_data()[column] =
           highs.getSolution().col_value[column];
@@ -344,7 +344,7 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
 
     if (response.status() == MPSOLVER_OPTIMAL && !has_integer_variables &&
         model.general_constraint_size() == 0) {
-      response.mutable_dual_value()->Resize(model.constraint_size(), 0);
+      response.mutable_dual_value()->resize(model.constraint_size(), 0);
       for (int row = 0; row < model.constraint_size(); row++) {
         response.set_dual_value(row, highs.getSolution().row_value[row]);
       }
