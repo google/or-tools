@@ -18,6 +18,7 @@
 
 #include <cstdlib>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/flags/flag.h"
@@ -67,7 +68,7 @@ using operations_research::glop::GlopParameters;
 using operations_research::glop::LinearProgram;
 using operations_research::glop::LPSolver;
 using operations_research::glop::MPModelProtoToLinearProgram;
-using operations_research::glop::MPSReader;
+using operations_research::glop::MpsFileToLinearProgram;
 using operations_research::glop::SolveStatus;
 using operations_research::glop::ToDouble;
 
@@ -106,16 +107,17 @@ int main(int argc, char* argv[]) {
   file_list.push_back(absl::GetFlag(FLAGS_input));
   for (int i = 0; i < file_list.size(); ++i) {
     const std::string& file_name = file_list[i];
-    MPSReader mps_reader;
     operations_research::MPModelProto model_proto;
     if (absl::EndsWith(file_name, ".mps") ||
         absl::EndsWith(file_name, ".mps.gz")) {
-      const absl::Status parse_status =
-          mps_reader.ParseFile(file_name, &linear_program);
-      if (!parse_status.ok()) {
-        LOG(INFO) << "Parse error for " << file_name << ": " << parse_status;
+      absl::StatusOr<LinearProgram> maybe_program =
+          MpsFileToLinearProgram(file_name);
+      if (!maybe_program.ok()) {
+        LOG(INFO) << "Parse error for " << file_name << ": "
+                  << maybe_program.status();
         continue;
       }
+      linear_program = std::move(maybe_program).value();
     } else {
       const absl::Status status = ReadFileToProto(file_name, &model_proto);
       if (!status.ok()) {

@@ -24,7 +24,7 @@ package operations_research.glop;
 option java_package = "com.google.ortools.glop";
 option java_multiple_files = true;
 option csharp_namespace = "Google.OrTools.Glop";
-// next id = 75
+// next id = 90
 message GlopParameters {
   // Supported algorithms for scaling:
   // EQUILIBRATION - progressive scaling by row and column norms until the
@@ -500,4 +500,26 @@ message GlopParameters {
   // make the solution more "integral". This is useful in a MIP context.
   optional bool primal_polish = 73 [default = false];
   optional bool dual_polish = 74 [default = false];
+
+  // If the presolver is enabled, use the corresponding preprocessor pass.
+  // The corresponding preprocessor can be found in
+  // //glop/presolve/preprocessors.h.
+  // This is intended for testing purposes only. Do not change these values in
+  // production.
+  optional bool use_shift_variable_bounds_preprocessor = 75 [default = true];
+  optional bool use_fixed_variable_preprocessor = 76 [default = true];
+  optional bool use_singleton_preprocessor = 77 [default = true];
+  optional bool use_forcing_and_implied_free_constraint_preprocessor = 78
+      [default = true];
+  optional bool use_free_constraint_preprocessor = 79 [default = true];
+  optional bool use_unconstrained_variable_preprocessor = 80 [default = true];
+  optional bool use_doubleton_free_column_preprocessor = 81 [default = true];
+  optional bool use_doubleton_equality_row_preprocessor = 82 [default = true];
+  optional bool use_empty_column_preprocessor = 83 [default = true];
+  optional bool use_empty_constraint_preprocessor = 84 [default = true];
+  optional bool use_proportional_column_preprocessor = 85 [default = true];
+  optional bool use_proportional_row_preprocessor = 86 [default = true];
+  optional bool use_singleton_column_sign_preprocessor = 87 [default = true];
+  optional bool use_dualizer_preprocessor = 88 [default = true];
+  optional bool use_bound_propagation_preprocessor = 89 [default = true];
 }
