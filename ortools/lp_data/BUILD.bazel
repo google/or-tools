@@ -122,12 +122,11 @@ or_cc_binary(
     deps = [
         ":lp_types",
         ":sparse_vector",
-        "//ortools/base:benchmark_main",
         "//ortools/util:strong_integers",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random:bit_gen_ref",
         "@abseil-cpp//absl/random:distributions",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -231,9 +230,8 @@ or_cc_binary(
         ":lp_types",
         ":lp_utils",
         ":sparse",
-        "//ortools/base:benchmark_main",
         "@abseil-cpp//absl/random:bit_gen_ref",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -397,14 +395,14 @@ or_cc_test(
 
 or_cc_binary(
     name = "lp_utils_benchmark",
+    testonly = True,
     srcs = ["lp_utils_benchmark.cc"],
     copts = SAFE_FP_CODE,
     deps = [
         ":lp_types",
         ":lp_utils",
-        "//ortools/base:benchmark_main",
         "@abseil-cpp//absl/log:check",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -675,9 +673,8 @@ or_cc_binary(
         ":lp_types",
         ":lp_utils",
         ":sparse",
-        "//ortools/base:benchmark_main",
         "@abseil-cpp//absl/random:bit_gen_ref",
         "@abseil-cpp//absl/random:distributions",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )

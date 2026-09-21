@@ -101,7 +101,7 @@ or_cc_test(
 
 or_cc_binary(
     name = "elemental_benchmark",
-    testonly = 1,
+    testonly = True,
     srcs = ["elemental_benchmark.cc"],
     deps = [
         ":attr_key",
@@ -110,9 +110,8 @@ or_cc_binary(
         ":elements",
         ":symmetry",
         ":testing",
-        "//ortools/base:benchmark_main",
         "@abseil-cpp//absl/log:check",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -171,12 +170,11 @@ or_cc_test(
 
 or_cc_binary(
     name = "element_storage_benchmark",
-    testonly = 1,
+    testonly = True,
     srcs = ["element_storage_benchmark.cc"],
     deps = [
         ":element_storage",
-        "//ortools/base:benchmark_main",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -249,14 +247,13 @@ or_cc_test(
 
 or_cc_binary(
     name = "attr_storage_benchmark",
-    testonly = 1,
+    testonly = True,
     srcs = ["attr_storage_benchmark.cc"],
     deps = [
         ":attr_key",
         ":attr_storage",
         ":symmetry",
-        "//ortools/base:benchmark_main",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -315,17 +312,16 @@ or_cc_test(
 
 or_cc_binary(
     name = "attr_key_benchmark",
-    testonly = 1,
+    testonly = True,
     srcs = ["attr_key_benchmark.cc"],
     deps = [
         ":attr_key",
         ":symmetry",
         ":testing",
-        "//ortools/base:benchmark_main",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 

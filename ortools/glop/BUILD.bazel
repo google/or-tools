@@ -628,13 +628,12 @@ or_cc_binary(
         ":basis_representation",
         ":update_row",
         ":variables_info",
-        "//ortools/base:benchmark_main",
         "//ortools/lp_data:lp_test_utils",
         "//ortools/lp_data:lp_types",
         "//ortools/lp_data:sparse",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random:distributions",
-        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
