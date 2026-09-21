@@ -71,10 +71,11 @@ this layout:
       \- __init__.py
 ...
 ```
-note: `<platform>` could be `manylinux2014_x86_64`, `macosx_10_9_x86_64` or `win-amd64`.
+note: `<platform>` could be `manylinux2014_x86_64`, `macosx_10_9_x86_64` or
+`win-amd64`.
 
-tips: since wheel package are just zip archive you can use `unzip -l <package>.whl`
-to study their layout.
+tips: since wheel package are just zip archive you can use
+`unzip -l <package>.whl` to study their layout.
 
 ## Appendices
 
@@ -85,7 +86,7 @@ Few links on the subject...
 * [Packaging Python Project](https://packaging.python.org/tutorials/packaging-projects/)
 * [PEP 513 -- A Platform Tag for Portable Linux Built Distributions](https://www.python.org/dev/peps/pep-0513/)
 * [PEP 571 -- The manylinux2010 Platform Tag](https://www.python.org/dev/peps/pep-0571/)
-* [PEP 600  Future 'manylinux' Platform Tags](https://www.python.org/dev/peps/pep-0600/)
+* [PEP 600 Future 'manylinux' Platform Tags](https://www.python.org/dev/peps/pep-0600/)
 
 ## Misc
 
