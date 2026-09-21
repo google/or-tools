@@ -16,7 +16,9 @@
 #include <setjmp.h>
 
 #include <cstdint>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/cleanup/cleanup.h"
@@ -977,15 +979,8 @@ PYBIND11_MODULE(constraint_solver, m) {
       .def(py::init<Solver*>(), py::arg("solver"))
       .def(
           "add",
-          [](SolutionCollector* sc, IntExpr* var) { sc->Add(var->Var()); },
+          [](SolutionCollector& sc, IntExpr* var) { sc.Add(var->Var()); },
           py::arg("var"))
-      .def(
-          "add",
-          [](SolutionCollector* sc,
-             const std::vector<PropagationBaseObject*>& vars) {
-            sc->Add(ToIntVarArray(vars));
-          },
-          py::arg("vars"))
       .def("add", py::overload_cast<IntervalVar*>(&SolutionCollector::Add),
            py::arg("var"))
       .def("add",
@@ -999,9 +994,16 @@ PYBIND11_MODULE(constraint_solver, m) {
                &SolutionCollector::Add),
            py::arg("vars"))
       .def(
+          "add",
+          [](SolutionCollector& sc,
+             const std::vector<PropagationBaseObject*>& vars) {
+            sc.Add(ToIntVarArray(vars));
+          },
+          py::arg("vars"))
+      .def(
           "add_objective",
-          [](SolutionCollector* sc, IntExpr* objective) {
-            sc->AddObjective(objective->Var());
+          [](SolutionCollector& sc, IntExpr* objective) {
+            sc.AddObjective(objective->Var());
           },
           py::arg("objective"))
       .def("add_objectives", &SolutionCollector::AddObjectives,
@@ -1022,8 +1024,8 @@ PYBIND11_MODULE(constraint_solver, m) {
            py::arg("index"))
       .def(
           "value",
-          [](SolutionCollector* sc, int n, IntExpr* var) {
-            return sc->Value(n, var->Var());
+          [](const SolutionCollector& sc, int n, IntExpr* var) {
+            return sc.Value(n, var->Var());
           },
           py::arg("n"), py::arg("var"))
       .def("start_value", &SolutionCollector::StartValue, py::arg("n"),
