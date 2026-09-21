@@ -11,100 +11,103 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Bus scheduling in Google CP Solver.
+
+Problem from Taha "Introduction to Operations Research", page 58.
+
+This is a slightly more general model than Taha's.
+
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/bus_scheduling.mzn
+* Comet   : http://www.hakank.org/comet/bus_schedule.co
+* ECLiPSe : http://www.hakank.org/eclipse/bus_schedule.ecl
+* Gecode  : http://www.hakank.org/gecode/bus_schedule.cpp
+* Tailor/Essence'  : http://www.hakank.org/tailor/bus_schedule.eprime
+* SICStus: http://hakank.org/sicstus/bus_schedule.pl
+
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 
-  Bus scheduling in Google CP Solver.
-
-
-  Problem from Taha "Introduction to Operations Research", page 58.
-
-  This is a slightly more general model than Taha's.
-
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/bus_scheduling.mzn
-  * Comet   : http://www.hakank.org/comet/bus_schedule.co
-  * ECLiPSe : http://www.hakank.org/eclipse/bus_schedule.ecl
-  * Gecode  : http://www.hakank.org/gecode/bus_schedule.cpp
-  * Tailor/Essence'  : http://www.hakank.org/tailor/bus_schedule.eprime
-  * SICStus: http://hakank.org/sicstus/bus_schedule.pl
-
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
-
-"""
 import sys
+
 from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(num_buses_check=0):
 
-  # Create the solver.
-  solver = cp.Solver("Bus scheduling")
+    # Create the solver.
+    solver = cp.Solver("Bus scheduling")
 
-  # data
-  time_slots = 6
-  demands = [8, 10, 7, 12, 4, 4]
-  max_num = sum(demands)
+    # data
+    time_slots = 6
+    demands = [8, 10, 7, 12, 4, 4]
+    max_num = sum(demands)
 
-  # declare variables
-  x = [solver.new_int_var(0, max_num, "x%i" % i) for i in range(time_slots)]
-  num_buses = solver.new_int_var(0, max_num, "num_buses")
+    # declare variables
+    x = [solver.new_int_var(0, max_num, "x%i" % i) for i in range(time_slots)]
+    num_buses = solver.new_int_var(0, max_num, "num_buses")
 
-  #
-  # constraints
-  #
-  solver.add(num_buses == solver.sum(x))
+    #
+    # constraints
+    #
+    solver.add(num_buses == solver.sum(x))
 
-  # Meet the demands for this and the next time slot
-  for i in range(time_slots - 1):
-    solver.add(x[i] + x[i + 1] >= demands[i])
+    # Meet the demands for this and the next time slot
+    for i in range(time_slots - 1):
+        solver.add(x[i] + x[i + 1] >= demands[i])
 
-  # The demand "around the clock"
-  solver.add(x[time_slots - 1] + x[0] == demands[time_slots - 1])
+    # The demand "around the clock"
+    solver.add(x[time_slots - 1] + x[0] == demands[time_slots - 1])
 
-  if num_buses_check > 0:
-    solver.add(num_buses == num_buses_check)
+    if num_buses_check > 0:
+        solver.add(num_buses == num_buses_check)
 
-  #
-  # solution and search
-  #
-  solution = solver.assignment()
-  solution.add(x)
-  solution.add(num_buses)
+    #
+    # solution and search
+    #
+    solution = solver.assignment()
+    solution.add(x)
+    solution.add(num_buses)
 
-  collector = solver.all_solution_collector(solution)
-  cargs = [collector]
+    collector = solver.all_solution_collector(solution)
+    cargs = [collector]
 
-  # objective
-  if num_buses_check == 0:
-    objective = solver.minimize(num_buses, 1)
-    cargs.extend([objective])
+    # objective
+    if num_buses_check == 0:
+        objective = solver.minimize(num_buses, 1)
+        cargs.extend([objective])
 
-  solver.solve(
-      solver.phase(x, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND, cp.IntValueStrategy.ASSIGN_MIN_VALUE),
-      cargs)
+    solver.solve(
+        solver.phase(
+            x,
+            cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+            cp.IntValueStrategy.ASSIGN_MIN_VALUE,
+        ),
+        cargs,
+    )
 
-  num_solutions = collector.solution_count
-  num_buses_check_value = 0
-  for s in range(num_solutions):
-    print("x:", [collector.value(s, x[i]) for i in range(len(x))], end=" ")
-    num_buses_check_value = collector.value(s, num_buses)
-    print(" num_buses:", num_buses_check_value)
+    num_solutions = collector.solution_count
+    num_buses_check_value = 0
+    for s in range(num_solutions):
+        print("x:", [collector.value(s, x[i]) for i in range(len(x))], end=" ")
+        num_buses_check_value = collector.value(s, num_buses)
+        print(" num_buses:", num_buses_check_value)
 
-  print()
-  print("num_solutions:", num_solutions)
-  print("failures:", solver.num_failures)
-  print("branches:", solver.num_branches)
-  print("WallTime:", solver.wall_time_ms)
-  print()
-  if num_buses_check == 0:
-    return num_buses_check_value
+    print()
+    print("num_solutions:", num_solutions)
+    print("failures:", solver.num_failures)
+    print("branches:", solver.num_branches)
+    print("WallTime:", solver.wall_time_ms)
+    print()
+    if num_buses_check == 0:
+        return num_buses_check_value
 
 
 if __name__ == "__main__":
-  print("Check for minimun number of buses")
-  num_buses_check = main()
-  print("... got ", num_buses_check, "buses")
-  print("All solutions:")
-  main(num_buses_check)
+    print("Check for minimun number of buses")
+    num_buses_check = main()
+    print("... got ", num_buses_check, "buses")
+    print("All solutions:")
+    main(num_buses_check)

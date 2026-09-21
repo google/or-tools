@@ -11,184 +11,186 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""de Bruijn sequences in Google CP Solver.
+
+Implementation of de Bruijn sequences in Minizinc, both 'classical' and
+'arbitrary'.
+The 'arbitrary' version is when the length of the sequence (m here) is <
+base**n.
+
+
+Compare with the web based programs:
+  http://www.hakank.org/comb/debruijn.cgi
+  http://www.hakank.org/comb/debruijn_arb.cgi
+
+Compare with the following models:
+* Tailor/Essence': http://hakank.org/tailor/debruijn.eprime
+* MiniZinc: http://hakank.org/minizinc/debruijn_binary.mzn
+* SICStus: http://hakank.org/sicstus/debruijn.pl
+* Zinc: http://hakank.org/minizinc/debruijn_binary.zinc
+* Choco: http://hakank.org/choco/DeBruijn.java
+* Comet: http://hakank.org/comet/debruijn.co
+* ECLiPSe: http://hakank.org/eclipse/debruijn.ecl
+* Gecode: http://hakank.org/gecode/debruijn.cpp
+* Gecode/R: http://hakank.org/gecode_r/debruijn_binary.rb
+* JaCoP: http://hakank.org/JaCoP/DeBruijn.java
+
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 
-  de Bruijn sequences in Google CP Solver.
-
-  Implementation of de Bruijn sequences in Minizinc, both 'classical' and
-  'arbitrary'.
-  The 'arbitrary' version is when the length of the sequence (m here) is <
-  base**n.
-
-
-  Compare with the web based programs:
-    http://www.hakank.org/comb/debruijn.cgi
-    http://www.hakank.org/comb/debruijn_arb.cgi
-
-  Compare with the following models:
-  * Tailor/Essence': http://hakank.org/tailor/debruijn.eprime
-  * MiniZinc: http://hakank.org/minizinc/debruijn_binary.mzn
-  * SICStus: http://hakank.org/sicstus/debruijn.pl
-  * Zinc: http://hakank.org/minizinc/debruijn_binary.zinc
-  * Choco: http://hakank.org/choco/DeBruijn.java
-  * Comet: http://hakank.org/comet/debruijn.co
-  * ECLiPSe: http://hakank.org/eclipse/debruijn.ecl
-  * Gecode: http://hakank.org/gecode/debruijn.cpp
-  * Gecode/R: http://hakank.org/gecode_r/debruijn_binary.rb
-  * JaCoP: http://hakank.org/JaCoP/DeBruijn.java
-
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
-"""
 import sys
+
 from ortools.constraint_solver.python import constraint_solver as cp
 
 # converts a number (s) <-> an array of numbers (t) in the specific base.
 
 
 def toNum(solver, t, s, base):
-  tlen = len(t)
-  solver.add(
-      s == solver.sum([(base**(tlen - i - 1)) * t[i] for i in range(tlen)]))
+    tlen = len(t)
+    solver.add(s == solver.sum([(base ** (tlen - i - 1)) * t[i] for i in range(tlen)]))
 
 
 def main(base=2, n=3, m=8):
-  # Create the solver.
-  solver = cp.Solver("de Bruijn sequences")
+    # Create the solver.
+    solver = cp.Solver("de Bruijn sequences")
 
-  #
-  # data
-  #
-  # base = 2  # the base to use, i.e. the alphabet 0..n-1
-  # n    = 3  # number of bits to use (n = 4 -> 0..base^n-1 = 0..2^4 -1, i.e. 0..15)
-  # m    = base**n  # the length of the sequence. For "arbitrary" de Bruijn
-  # sequences
+    #
+    # data
+    #
+    # base = 2  # the base to use, i.e. the alphabet 0..n-1
+    # n    = 3  # number of bits to use (n = 4 -> 0..base^n-1 = 0..2^4 -1, i.e. 0..15)
+    # m    = base**n  # the length of the sequence. For "arbitrary" de Bruijn
+    # sequences
 
-  # base = 4
-  # n    = 4
-  # m    = base**n
+    # base = 4
+    # n    = 4
+    # m    = base**n
 
-  # harder problem
-  #base = 13
-  #n = 4
-  #m = 52
+    # harder problem
+    # base = 13
+    # n = 4
+    # m = 52
 
-  # for n = 4 with different value of base
-  # base = 2  0.030 seconds  16 failures
-  # base = 3  0.041         108
-  # base = 4  0.070         384
-  # base = 5  0.231        1000
-  # base = 6  0.736        2160
-  # base = 7  2.2 seconds  4116
-  # base = 8  6 seconds    7168
-  # base = 9  16 seconds  11664
-  # base = 10 42 seconds  18000
-  # base = 6
-  # n = 4
-  # m = base**n
+    # for n = 4 with different value of base
+    # base = 2  0.030 seconds  16 failures
+    # base = 3  0.041         108
+    # base = 4  0.070         384
+    # base = 5  0.231        1000
+    # base = 6  0.736        2160
+    # base = 7  2.2 seconds  4116
+    # base = 8  6 seconds    7168
+    # base = 9  16 seconds  11664
+    # base = 10 42 seconds  18000
+    # base = 6
+    # n = 4
+    # m = base**n
 
-  # if True then ensure that the number of occurrences of 0..base-1 is
-  # the same (and if m mod base = 0)
-  check_same_gcc = True
+    # if True then ensure that the number of occurrences of 0..base-1 is
+    # the same (and if m mod base = 0)
+    check_same_gcc = True
 
-  print("base: %i n: %i m: %i" % (base, n, m))
-  if check_same_gcc:
-    print("Checks gcc")
+    print("base: %i n: %i m: %i" % (base, n, m))
+    if check_same_gcc:
+        print("Checks gcc")
 
-  # declare variables
-  x = [solver.new_int_var(0, (base**n) - 1, "x%i" % i) for i in range(m)]
-  binary = {}
-  for i in range(m):
-    for j in range(n):
-      binary[(i, j)] = solver.new_int_var(0, base - 1, "x_%i_%i" % (i, j))
+    # declare variables
+    x = [solver.new_int_var(0, (base**n) - 1, "x%i" % i) for i in range(m)]
+    binary = {}
+    for i in range(m):
+        for j in range(n):
+            binary[(i, j)] = solver.new_int_var(0, base - 1, "x_%i_%i" % (i, j))
 
-  bin_code = [solver.new_int_var(0, base - 1, "bin_code%i" % i) for i in range(m)]
+    bin_code = [solver.new_int_var(0, base - 1, "bin_code%i" % i) for i in range(m)]
 
-  #
-  # constraints
-  #
-  #solver.add(solver.add_all_different([x[i] for i in range(m)]))
-  solver.add_all_different(x)
+    #
+    # constraints
+    #
+    # solver.add(solver.add_all_different([x[i] for i in range(m)]))
+    solver.add_all_different(x)
 
-  # converts x <-> binary
-  for i in range(m):
-    t = [solver.new_int_var(0, base - 1, "t_%i" % j) for j in range(n)]
-    toNum(solver, t, x[i], base)
-    for j in range(n):
-      solver.add(binary[(i, j)] == t[j])
+    # converts x <-> binary
+    for i in range(m):
+        t = [solver.new_int_var(0, base - 1, "t_%i" % j) for j in range(n)]
+        toNum(solver, t, x[i], base)
+        for j in range(n):
+            solver.add(binary[(i, j)] == t[j])
 
-  # the de Bruijn condition
-  # the first elements in binary[i] is the same as the last
-  # elements in binary[i-i]
-  for i in range(1, m - 1):
-    for j in range(1, n - 1):
-      solver.add(binary[(i - 1, j)] == binary[(i, j - 1)])
+    # the de Bruijn condition
+    # the first elements in binary[i] is the same as the last
+    # elements in binary[i-i]
+    for i in range(1, m - 1):
+        for j in range(1, n - 1):
+            solver.add(binary[(i - 1, j)] == binary[(i, j - 1)])
 
-  # ... and around the corner
-  for j in range(1, n):
-    solver.add(binary[(m - 1, j)] == binary[(0, j - 1)])
+    # ... and around the corner
+    for j in range(1, n):
+        solver.add(binary[(m - 1, j)] == binary[(0, j - 1)])
 
-  # converts binary -> bin_code
-  for i in range(m):
-    solver.add(bin_code[i] == binary[(i, 0)])
+    # converts binary -> bin_code
+    for i in range(m):
+        solver.add(bin_code[i] == binary[(i, 0)])
 
-  # extra: ensure that all the numbers in the de Bruijn sequence
-  # (bin_code) has the same occurrences (if check_same_gcc is True
-  # and mathematically possible)
-  gcc = [solver.new_int_var(0, m, "gcc%i" % i) for i in range(base)]
-  solver.add_distribute(bin_code, list(range(base)), gcc)
-  if check_same_gcc and m % base == 0:
-    for i in range(1, base):
-      solver.add(gcc[i] == gcc[i - 1])
+    # extra: ensure that all the numbers in the de Bruijn sequence
+    # (bin_code) has the same occurrences (if check_same_gcc is True
+    # and mathematically possible)
+    gcc = [solver.new_int_var(0, m, "gcc%i" % i) for i in range(base)]
+    solver.add_distribute(bin_code, list(range(base)), gcc)
+    if check_same_gcc and m % base == 0:
+        for i in range(1, base):
+            solver.add(gcc[i] == gcc[i - 1])
 
-  #
-  # solution and search
-  #
-  solution = solver.assignment()
-  solution.add([x[i] for i in range(m)])
-  solution.add([bin_code[i] for i in range(m)])
-  # solution.add([binary[(i,j)] for i in range(m) for j in range(n)])
-  solution.add([gcc[i] for i in range(base)])
+    #
+    # solution and search
+    #
+    solution = solver.assignment()
+    solution.add([x[i] for i in range(m)])
+    solution.add([bin_code[i] for i in range(m)])
+    # solution.add([binary[(i,j)] for i in range(m) for j in range(n)])
+    solution.add([gcc[i] for i in range(base)])
 
-  db = solver.phase([x[i] for i in range(m)] + [bin_code[i] for i in range(m)],
-                    cp.IntVarStrategy.CHOOSE_MIN_SIZE_LOWEST_MAX, cp.IntValueStrategy.ASSIGN_MIN_VALUE)
+    db = solver.phase(
+        [x[i] for i in range(m)] + [bin_code[i] for i in range(m)],
+        cp.IntVarStrategy.CHOOSE_MIN_SIZE_LOWEST_MAX,
+        cp.IntValueStrategy.ASSIGN_MIN_VALUE,
+    )
 
-  num_solutions = 0
-  solver.new_search(db)
-  num_solutions = 0
-  while solver.next_solution():
-    num_solutions += 1
-    print("\nSolution %i" % num_solutions)
-    print("x:", [int(x[i].value()) for i in range(m)])
-    print("gcc:", [int(gcc[i].value()) for i in range(base)])
-    print("de Bruijn sequence:", [int(bin_code[i].value()) for i in range(m)])
-    # for i in range(m):
-    #    for j in range(n):
-    #        print binary[(i,j)].value(),
-    #    print
-    # print
-  solver.end_search()
+    num_solutions = 0
+    solver.new_search(db)
+    num_solutions = 0
+    while solver.next_solution():
+        num_solutions += 1
+        print("\nSolution %i" % num_solutions)
+        print("x:", [int(x[i].value()) for i in range(m)])
+        print("gcc:", [int(gcc[i].value()) for i in range(base)])
+        print("de Bruijn sequence:", [int(bin_code[i].value()) for i in range(m)])
+        # for i in range(m):
+        #    for j in range(n):
+        #        print binary[(i,j)].value(),
+        #    print
+        # print
+    solver.end_search()
 
-  if num_solutions == 0:
-    print("No solution found")
+    if num_solutions == 0:
+        print("No solution found")
 
-  print()
-  print("num_solutions:", num_solutions)
-  print("failures:", solver.num_failures)
-  print("branches:", solver.num_branches)
-  print("WallTime:", solver.wall_time_ms)
+    print()
+    print("num_solutions:", num_solutions)
+    print("failures:", solver.num_failures)
+    print("branches:", solver.num_branches)
+    print("WallTime:", solver.wall_time_ms)
 
 
 base = 2
 n = 3
 m = base**n
 if __name__ == "__main__":
-  if len(sys.argv) > 1:
-    base = int(sys.argv[1])
-  if len(sys.argv) > 2:
-    n = int(sys.argv[2])
-  if len(sys.argv) > 3:
-    m = int(sys.argv[3])
+    if len(sys.argv) > 1:
+        base = int(sys.argv[1])
+    if len(sys.argv) > 2:
+        n = int(sys.argv[2])
+    if len(sys.argv) > 3:
+        m = int(sys.argv[3])
 
-  main(base, n, m)
+    main(base, n, m)

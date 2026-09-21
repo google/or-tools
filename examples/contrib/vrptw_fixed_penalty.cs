@@ -70,8 +70,7 @@ public class VrpTimeWindowFixedPenalty
     /// <summary>
     ///   Print the solution.
     /// </summary>
-    static void PrintSolution(in DataModel data, in Model routing, in IndexManager manager,
-                              in Assignment solution)
+    static void PrintSolution(in DataModel data, in Model routing, in IndexManager manager, in Assignment solution)
     {
         Dimension timeDimension = routing.GetMutableDimension("Time");
         // Inspect solution.
@@ -102,8 +101,7 @@ public class VrpTimeWindowFixedPenalty
         DataModel data = new DataModel();
 
         // Create Routing Index Manager
-        IndexManager manager =
-            new IndexManager(data.TimeMatrix.GetLength(0), data.VehicleNumber, data.Depot);
+        IndexManager manager = new IndexManager(data.TimeMatrix.GetLength(0), data.VehicleNumber, data.Depot);
 
         // Create Routing Model.
         Model routing = new Model(manager);
@@ -158,8 +156,7 @@ public class VrpTimeWindowFixedPenalty
         }
 
         // Setting first solution heuristic.
-        RoutingSearchParameters searchParameters =
-            RoutingGlobals.DefaultRoutingSearchParameters();
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
         searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
 
         // Solve the problem.

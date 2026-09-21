@@ -11,60 +11,63 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Volsay problem in Google or-tools.
+
+From the OPL model volsay.mod
+
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 
-  Volsay problem in Google or-tools.
-
-  From the OPL model volsay.mod
-
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
-"""
 from ortools.linear_solver import pywraplp
 
 
 def main(unused_argv):
 
-  # Create the solver.
+    # Create the solver.
 
-  # using GLPK
-  #solver = pywraplp.Solver('CoinsGridGLPK',
-  #                         pywraplp.Solver.GLPK_LINEAR_PROGRAMMING)
+    # using GLPK
+    # solver = pywraplp.Solver('CoinsGridGLPK',
+    #                         pywraplp.Solver.GLPK_LINEAR_PROGRAMMING)
 
-  # Using CLP
-  solver = pywraplp.Solver.CreateSolver('CLP')
-  if not solver:
-    return
+    # Using CLP
+    solver = pywraplp.Solver.CreateSolver("CLP")
+    if not solver:
+        return
 
-  # data
+    # data
 
-  # declare variables
-  Gas = solver.NumVar(0, 100000, 'Gas')
-  Chloride = solver.NumVar(0, 100000, 'Cloride')
+    # declare variables
+    Gas = solver.NumVar(0, 100000, "Gas")
+    Chloride = solver.NumVar(0, 100000, "Cloride")
 
-  #
-  # constraints
-  #
-  solver.Add(Gas + Chloride <= 50)
-  solver.Add(3 * Gas + 4 * Chloride <= 180)
+    #
+    # constraints
+    #
+    solver.Add(Gas + Chloride <= 50)
+    solver.Add(3 * Gas + 4 * Chloride <= 180)
 
-  # objective
-  objective = solver.Maximize(40 * Gas + 50 * Chloride)
+    # objective
+    objective = solver.Maximize(40 * Gas + 50 * Chloride)
 
-  print('NumConstraints:', solver.NumConstraints())
+    print("NumConstraints:", solver.NumConstraints())
 
-  #
-  # solution and search
-  #
-  solver.Solve()
+    #
+    # solution and search
+    #
+    solver.Solve()
 
-  print()
-  print('objective = ', solver.Objective().Value())
-  print('Gas = ', Gas.SolutionValue(), 'ReducedCost =', Gas.ReducedCost())
-  print('Chloride:', Chloride.SolutionValue(), 'ReducedCost =',
-        Chloride.ReducedCost())
+    print()
+    print("objective = ", solver.Objective().Value())
+    print("Gas = ", Gas.SolutionValue(), "ReducedCost =", Gas.ReducedCost())
+    print(
+        "Chloride:",
+        Chloride.SolutionValue(),
+        "ReducedCost =",
+        Chloride.ReducedCost(),
+    )
 
 
-if __name__ == '__main__':
-  main('Volsay')
+if __name__ == "__main__":
+    main("Volsay")

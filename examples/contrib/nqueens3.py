@@ -11,98 +11,101 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""n-queens problem in Google CP Solver.
+
+N queens problem.
+
+Faster than the previous versions:
+- http://www.hakank.org/gogle_cp_solver/nqueens.py
+- http://www.hakank.org/gogle_cp_solver/nqueens2.py
+
+
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 
-  n-queens problem in Google CP Solver.
-
-  N queens problem.
-
-  Faster than the previous versions:
-  - http://www.hakank.org/gogle_cp_solver/nqueens.py
-  - http://www.hakank.org/gogle_cp_solver/nqueens2.py
-
-
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
-"""
 import sys
+
 from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main(n=8, num_sol=0, print_sol=1):
-  # Create the solver.
-  solver = cp.Solver("n-queens")
+    # Create the solver.
+    solver = cp.Solver("n-queens")
 
-  #
-  # data
-  #
-  print("n:", n)
-  print("num_sol:", num_sol)
-  print("print_sol:", print_sol)
+    #
+    # data
+    #
+    print("n:", n)
+    print("num_sol:", num_sol)
+    print("print_sol:", print_sol)
 
-  # declare variables
-  q = [solver.new_int_var(0, n - 1, "x%i" % i) for i in range(n)]
+    # declare variables
+    q = [solver.new_int_var(0, n - 1, "x%i" % i) for i in range(n)]
 
-  #
-  # constraints
-  #
-  solver.add_all_different(q)
-  solver.add_all_different([q[i] + i for i in range(n)])
-  solver.add_all_different([q[i] - i for i in range(n)])
+    #
+    # constraints
+    #
+    solver.add_all_different(q)
+    solver.add_all_different([q[i] + i for i in range(n)])
+    solver.add_all_different([q[i] - i for i in range(n)])
 
-  # symmetry breaking
-  # solver.add(q[0] == 0)
+    # symmetry breaking
+    # solver.add(q[0] == 0)
 
-  #
-  # search
-  #
+    #
+    # search
+    #
 
-  db = solver.phase(q, cp.IntVarStrategy.CHOOSE_MIN_SIZE_LOWEST_MAX,
-                    cp.IntValueStrategy.ASSIGN_CENTER_VALUE)
+    db = solver.phase(
+        q,
+        cp.IntVarStrategy.CHOOSE_MIN_SIZE_LOWEST_MAX,
+        cp.IntValueStrategy.ASSIGN_CENTER_VALUE,
+    )
 
-  solver.new_search(db)
-  num_solutions = 0
-  while solver.next_solution():
-    if print_sol:
-      qval = [q[i].value() for i in range(n)]
-      print("q:", qval)
-      for i in range(n):
-        for j in range(n):
-          if qval[i] == j:
-            print("Q", end=" ")
-          else:
-            print("_", end=" ")
-        print()
-      print()
-    num_solutions += 1
-    if num_sol > 0 and num_solutions >= num_sol:
-      break
+    solver.new_search(db)
+    num_solutions = 0
+    while solver.next_solution():
+        if print_sol:
+            qval = [q[i].value() for i in range(n)]
+            print("q:", qval)
+            for i in range(n):
+                for j in range(n):
+                    if qval[i] == j:
+                        print("Q", end=" ")
+                    else:
+                        print("_", end=" ")
+                print()
+            print()
+        num_solutions += 1
+        if num_sol > 0 and num_solutions >= num_sol:
+            break
 
-  solver.end_search()
+    solver.end_search()
 
-  print()
-  print("num_solutions:", num_solutions)
-  print("failures:", solver.num_failures)
-  print("branches:", solver.num_branches)
-  print("WallTime:", solver.wall_time_ms, "ms")
+    print()
+    print("num_solutions:", num_solutions)
+    print("failures:", solver.num_failures)
+    print("branches:", solver.num_branches)
+    print("WallTime:", solver.wall_time_ms, "ms")
 
 
 n = 8
 num_sol = 0
 print_sol = 1
 if __name__ == "__main__":
-  if len(sys.argv) > 1:
-    n = int(sys.argv[1])
-  if len(sys.argv) > 2:
-    num_sol = int(sys.argv[2])
-  if len(sys.argv) > 3:
-    print_sol = int(sys.argv[3])
+    if len(sys.argv) > 1:
+        n = int(sys.argv[1])
+    if len(sys.argv) > 2:
+        num_sol = int(sys.argv[2])
+    if len(sys.argv) > 3:
+        print_sol = int(sys.argv[3])
 
-  main(n, num_sol, print_sol)
+    main(n, num_sol, print_sol)
 
-  # print_sol = False
-  # show_all = False
-  # for n in range(1000,1001):
-  #     print
-  #     main(n, num_sol, print_sol)
+    # print_sol = False
+    # show_all = False
+    # for n in range(1000,1001):
+    #     print
+    #     main(n, num_sol, print_sol)

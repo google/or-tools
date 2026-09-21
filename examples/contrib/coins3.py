@@ -11,93 +11,94 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Coin application in Google CP Solver.
+
+From 'Constraint Logic Programming using ECLiPSe'
+pages 99f and 234 ff.
+The solution in ECLiPSe is at page 236.
+
+'''
+What is the minimum number of coins that allows one to pay _exactly_
+any amount smaller than one Euro? Recall that there are six different
+euro cents, of denomination 1, 2, 5, 10, 20, 50
+'''
+
+Compare with the following models:
+* MiniZinc: http://hakank.org/minizinc/coins3.mzn
+* Comet   : http://www.hakank.org/comet/coins3.co
+* Gecode  : http://hakank.org/gecode/coins3.cpp
+* SICStus : http://hakank.org/sicstus/coins3.pl
+
+
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
-
-  Coin application in Google CP Solver.
-
-  From 'Constraint Logic Programming using ECLiPSe'
-  pages 99f and 234 ff.
-  The solution in ECLiPSe is at page 236.
-
-  '''
-  What is the minimum number of coins that allows one to pay _exactly_
-  any amount smaller than one Euro? Recall that there are six different
-  euro cents, of denomination 1, 2, 5, 10, 20, 50
-  '''
-
-  Compare with the following models:
-  * MiniZinc: http://hakank.org/minizinc/coins3.mzn
-  * Comet   : http://www.hakank.org/comet/coins3.co
-  * Gecode  : http://hakank.org/gecode/coins3.cpp
-  * SICStus : http://hakank.org/sicstus/coins3.pl
-
-
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
-"""
-
 
 import sys
+
 from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
-  # Create the solver.
-  solver = cp.Solver("Coins")
+    # Create the solver.
+    solver = cp.Solver("Coins")
 
-  #
-  # data
-  #
-  n = 6  # number of different coins
-  variables = [1, 2, 5, 10, 25, 50]
+    #
+    # data
+    #
+    n = 6  # number of different coins
+    variables = [1, 2, 5, 10, 25, 50]
 
-  # declare variables
-  x = [solver.new_int_var(0, 99, "x%i" % i) for i in range(n)]
-  num_coins = solver.new_int_var(0, 99, "num_coins")
+    # declare variables
+    x = [solver.new_int_var(0, 99, "x%i" % i) for i in range(n)]
+    num_coins = solver.new_int_var(0, 99, "num_coins")
 
-  #
-  # constraints
-  #
+    #
+    # constraints
+    #
 
-  # number of used coins, to be minimized
-  solver.add(num_coins == solver.sum(x))
+    # number of used coins, to be minimized
+    solver.add(num_coins == solver.sum(x))
 
-  # Check that all changes from 1 to 99 can be made.
-  for j in range(1, 100):
-    tmp = [solver.new_int_var(0, 99, "b%i" % i) for i in range(n)]
-    solver.add(solver.weighted_sum(tmp, variables) == j)
-    [solver.add(tmp[i] <= x[i]) for i in range(n)]
+    # Check that all changes from 1 to 99 can be made.
+    for j in range(1, 100):
+        tmp = [solver.new_int_var(0, 99, "b%i" % i) for i in range(n)]
+        solver.add(solver.weighted_sum(tmp, variables) == j)
+        [solver.add(tmp[i] <= x[i]) for i in range(n)]
 
-  # objective
-  objective = solver.minimize(num_coins, 1)
+    # objective
+    objective = solver.minimize(num_coins, 1)
 
-  #
-  # solution and search
-  #
-  solution = solver.assignment()
-  solution.add(x)
-  solution.add(num_coins)
-  solution.add_objective(num_coins)
+    #
+    # solution and search
+    #
+    solution = solver.assignment()
+    solution.add(x)
+    solution.add(num_coins)
+    solution.add_objective(num_coins)
 
-  db = solver.phase(x, cp.IntVarStrategy.CHOOSE_MIN_SIZE_LOWEST_MAX,
-                    cp.IntValueStrategy.ASSIGN_MIN_VALUE)
+    db = solver.phase(
+        x,
+        cp.IntVarStrategy.CHOOSE_MIN_SIZE_LOWEST_MAX,
+        cp.IntValueStrategy.ASSIGN_MIN_VALUE,
+    )
 
-  solver.new_search(db, [objective])
-  num_solutions = 0
-  while solver.next_solution():
-    print("x: ", [x[i].value() for i in range(n)])
-    print("num_coins:", num_coins.value())
+    solver.new_search(db, [objective])
+    num_solutions = 0
+    while solver.next_solution():
+        print("x: ", [x[i].value() for i in range(n)])
+        print("num_coins:", num_coins.value())
+        print()
+        num_solutions += 1
+    solver.end_search()
+
     print()
-    num_solutions += 1
-  solver.end_search()
-
-  print()
-  print("num_solutions:", num_solutions)
-  print("failures:", solver.num_failures)
-  print("branches:", solver.num_branches)
-  print("WallTime:", solver.wall_time_ms)
+    print("num_solutions:", num_solutions)
+    print("failures:", solver.num_failures)
+    print("branches:", solver.num_branches)
+    print("WallTime:", solver.wall_time_ms)
 
 
 if __name__ == "__main__":
-  main()
+    main()

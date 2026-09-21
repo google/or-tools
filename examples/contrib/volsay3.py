@@ -11,81 +11,81 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Volsay problem in Google or-tools.
+
+From the OPL model volsay.mod
+Using arrays.
+
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 
-  Volsay problem in Google or-tools.
-
-  From the OPL model volsay.mod
-  Using arrays.
-
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
-"""
 from ortools.linear_solver import pywraplp
 
 
 def main(unused_argv):
 
-  # Create the solver.
+    # Create the solver.
 
-  # using GLPK
-  # solver = pywraplp.Solver('CoinsGridGLPK',
-  #                          pywraplp.Solver.GLPK_LINEAR_PROGRAMMING)
+    # using GLPK
+    # solver = pywraplp.Solver('CoinsGridGLPK',
+    #                          pywraplp.Solver.GLPK_LINEAR_PROGRAMMING)
 
-  # Using CLP
-  solver = pywraplp.Solver.CreateSolver('CLP')
-  if not solver:
-    return
+    # Using CLP
+    solver = pywraplp.Solver.CreateSolver("CLP")
+    if not solver:
+        return
 
-  # data
-  num_products = 2
+    # data
+    num_products = 2
 
-  products = ['Gas', 'Chloride']
-  components = ['nitrogen', 'hydrogen', 'chlorine']
+    products = ["Gas", "Chloride"]
+    components = ["nitrogen", "hydrogen", "chlorine"]
 
-  demand = [[1, 3, 0], [1, 4, 1]]
-  profit = [30, 40]
-  stock = [50, 180, 40]
+    demand = [[1, 3, 0], [1, 4, 1]]
+    profit = [30, 40]
+    stock = [50, 180, 40]
 
-  # declare variables
-  production = [
-      solver.NumVar(0, 100000, 'production[%i]' % i)
-      for i in range(num_products)
-  ]
+    # declare variables
+    production = [
+        solver.NumVar(0, 100000, "production[%i]" % i) for i in range(num_products)
+    ]
 
-  #
-  # constraints
-  #
-  for c in range(len(components)):
-    solver.Add(
-        solver.Sum([demand[p][c] * production[p]
-                    for p in range(len(products))]) <= stock[c])
+    #
+    # constraints
+    #
+    for c in range(len(components)):
+        solver.Add(
+            solver.Sum([demand[p][c] * production[p] for p in range(len(products))])
+            <= stock[c]
+        )
 
-  # objective
-  # Note: there is no support for solver.ScalProd in the LP/IP interface
-  objective = solver.Maximize(
-      solver.Sum([production[p] * profit[p] for p in range(num_products)]))
+    # objective
+    # Note: there is no support for solver.ScalProd in the LP/IP interface
+    objective = solver.Maximize(
+        solver.Sum([production[p] * profit[p] for p in range(num_products)])
+    )
 
-  print('NumConstraints:', solver.NumConstraints())
-  print('NumVariables:', solver.NumVariables())
-  print()
+    print("NumConstraints:", solver.NumConstraints())
+    print("NumVariables:", solver.NumVariables())
+    print()
 
-  #
-  # solution and search
-  #
-  solver.Solve()
+    #
+    # solution and search
+    #
+    solver.Solve()
 
-  print()
-  print('objective = ', solver.Objective().Value())
-  for i in range(num_products):
-    print(products[i], '=', production[i].SolutionValue(), end=' ')
-    print('ReducedCost = ', production[i].ReducedCost())
+    print()
+    print("objective = ", solver.Objective().Value())
+    for i in range(num_products):
+        print(products[i], "=", production[i].SolutionValue(), end=" ")
+        print("ReducedCost = ", production[i].ReducedCost())
 
-  print()
-  print('walltime  :', solver.WallTime(), 'ms')
-  print('iterations:', solver.Iterations())
+    print()
+    print("walltime  :", solver.WallTime(), "ms")
+    print("iterations:", solver.Iterations())
 
 
-if __name__ == '__main__':
-  main('Volsay')
+if __name__ == "__main__":
+    main("Volsay")

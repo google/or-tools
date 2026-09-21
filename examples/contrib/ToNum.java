@@ -23,6 +23,7 @@ import java.util.*;
 public class ToNum {
   /**
    * toNum(solver, a, num, base)
+   *
    * <p>channelling between the array a and the number num
    */
   private static void toNum(Solver solver, IntVar[] a, IntVar num, int base) {

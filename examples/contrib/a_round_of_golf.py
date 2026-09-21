@@ -11,156 +11,155 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""A Round of Golf puzzle (Dell Logic Puzzles) in Google CP Solver.
+
+From http://brownbuffalo.sourceforge.net/RoundOfGolfClues.html
+'''
+Title: A Round of Golf
+Author: Ellen K. Rodehorst
+Publication: Dell Favorite Logic Problems
+Issue: Summer, 2000
+Puzzle #: 9
+Stars: 1
+
+When the Sunny Hills Country Club golf course isn't in use by club members,
+of course, it's open to the club's employees. Recently, Jack and three other
+workers at the golf course got together on their day off to play a round of
+eighteen holes of golf.
+Afterward, all four, including Mr. Green, went to the clubhouse to total
+their scorecards. Each man works at a different job (one is a short-order
+cook), and each shot a different score in the game. No one scored below
+70 or above 85 strokes. From the clues below, can you discover each man's
+full name, job and golf score?
+
+1. Bill, who is not the maintenance man, plays golf often and had the lowest
+score of the foursome.
+2. Mr. Clubb, who isn't Paul, hit several balls into the woods and scored ten
+strokes more than the pro-shop clerk.
+3. In some order, Frank and the caddy scored four and seven more strokes than
+Mr. Sands.
+4. Mr. Carter thought his score of 78 was one of his better games, even
+   though Frank's score  was lower.
+5. None of the four scored exactly 81 strokes.
+
+Determine: First Name - Last Name - Job - Score
+'''
+
+Compare with the F1 model:
+http://www.f1compiler.com/samples/A 20Round 20of 20Golf.f1.html
+
+
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/a_round_of_golf.mzn
+* Comet   : http://www.hakank.org/comet/a_round_of_golf.co
+* ECLiPSe : http://www.hakank.org/eclipse/a_round_of_golf.ecl
+* Gecode  :  http://hakank.org/gecode/a_round_of_golf.cpp
+* SICStus : http://hakank.org/sicstus/a_round_of_golf.pl
+
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
-
-  A Round of Golf puzzle (Dell Logic Puzzles) in Google CP Solver.
-
-  From http://brownbuffalo.sourceforge.net/RoundOfGolfClues.html
-  '''
-  Title: A Round of Golf
-  Author: Ellen K. Rodehorst
-  Publication: Dell Favorite Logic Problems
-  Issue: Summer, 2000
-  Puzzle #: 9
-  Stars: 1
-
-  When the Sunny Hills Country Club golf course isn't in use by club members,
-  of course, it's open to the club's employees. Recently, Jack and three other
-  workers at the golf course got together on their day off to play a round of
-  eighteen holes of golf.
-  Afterward, all four, including Mr. Green, went to the clubhouse to total
-  their scorecards. Each man works at a different job (one is a short-order
-  cook), and each shot a different score in the game. No one scored below
-  70 or above 85 strokes. From the clues below, can you discover each man's
-  full name, job and golf score?
-
-  1. Bill, who is not the maintenance man, plays golf often and had the lowest
-  score of the foursome.
-  2. Mr. Clubb, who isn't Paul, hit several balls into the woods and scored ten
-  strokes more than the pro-shop clerk.
-  3. In some order, Frank and the caddy scored four and seven more strokes than
-  Mr. Sands.
-  4. Mr. Carter thought his score of 78 was one of his better games, even
-     though Frank's score  was lower.
-  5. None of the four scored exactly 81 strokes.
-
-  Determine: First Name - Last Name - Job - Score
-  '''
-
-  Compare with the F1 model:
-  http://www.f1compiler.com/samples/A 20Round 20of 20Golf.f1.html
-
-
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/a_round_of_golf.mzn
-  * Comet   : http://www.hakank.org/comet/a_round_of_golf.co
-  * ECLiPSe : http://www.hakank.org/eclipse/a_round_of_golf.ecl
-  * Gecode  :  http://hakank.org/gecode/a_round_of_golf.cpp
-  * SICStus : http://hakank.org/sicstus/a_round_of_golf.pl
-
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
-
-"""
-
 
 from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
 
-  # Create the solver.
-  solver = cp.Solver("All interval")
+    # Create the solver.
+    solver = cp.Solver("All interval")
 
-  #
-  # data
-  #
-  n = 4
-  [Jack, Bill, Paul, Frank] = [i for i in range(n)]
+    #
+    # data
+    #
+    n = 4
+    [Jack, Bill, Paul, Frank] = [i for i in range(n)]
 
-  #
-  # declare variables
-  #
-  last_name = [solver.new_int_var(0, n - 1, "last_name[%i]" % i) for i in range(n)]
-  [Green, Clubb, Sands, Carter] = last_name
+    #
+    # declare variables
+    #
+    last_name = [solver.new_int_var(0, n - 1, "last_name[%i]" % i) for i in range(n)]
+    [Green, Clubb, Sands, Carter] = last_name
 
-  job = [solver.new_int_var(0, n - 1, "job[%i]" % i) for i in range(n)]
-  [cook, maintenance_man, clerk, caddy] = job
+    job = [solver.new_int_var(0, n - 1, "job[%i]" % i) for i in range(n)]
+    [cook, maintenance_man, clerk, caddy] = job
 
-  score = [solver.new_int_var(70, 85, "score[%i]" % i) for i in range(n)]
+    score = [solver.new_int_var(70, 85, "score[%i]" % i) for i in range(n)]
 
-  #
-  # constraints
-  #
-  solver.add_all_different(last_name)
-  solver.add_all_different(job)
-  solver.add_all_different(score)
+    #
+    # constraints
+    #
+    solver.add_all_different(last_name)
+    solver.add_all_different(job)
+    solver.add_all_different(score)
 
-  # 1. Bill, who is not the maintenance man, plays golf often and had
-  #    the lowest score of the foursome.
-  solver.add(Bill != maintenance_man)
-  solver.add(score[Bill] < score[Jack])
-  solver.add(score[Bill] < score[Paul])
-  solver.add(score[Bill] < score[Frank])
+    # 1. Bill, who is not the maintenance man, plays golf often and had
+    #    the lowest score of the foursome.
+    solver.add(Bill != maintenance_man)
+    solver.add(score[Bill] < score[Jack])
+    solver.add(score[Bill] < score[Paul])
+    solver.add(score[Bill] < score[Frank])
 
-  # 2. Mr. Clubb, who isn't Paul, hit several balls into the woods and
-  #    scored ten strokes more than the pro-shop clerk.
-  solver.add(Clubb != Paul)
-  solver.add(solver.element(score, Clubb) == solver.element(score, clerk) + 10)
+    # 2. Mr. Clubb, who isn't Paul, hit several balls into the woods and
+    #    scored ten strokes more than the pro-shop clerk.
+    solver.add(Clubb != Paul)
+    solver.add(solver.element(score, Clubb) == solver.element(score, clerk) + 10)
 
-  # 3. In some order, Frank and the caddy scored four and seven more
-  #    strokes than Mr. Sands.
-  solver.add(Frank != caddy)
-  solver.add(Frank != Sands)
-  solver.add(caddy != Sands)
+    # 3. In some order, Frank and the caddy scored four and seven more
+    #    strokes than Mr. Sands.
+    solver.add(Frank != caddy)
+    solver.add(Frank != Sands)
+    solver.add(caddy != Sands)
 
-  b3_a_1 = solver.add_is_equal_var(solver.element(score, Sands) + 4, score[Frank])
-  b3_a_2 = solver.add_is_equal_var(
-      solver.element(score, caddy),
-      solver.element(score, Sands) + 7)
+    b3_a_1 = solver.add_is_equal_var(solver.element(score, Sands) + 4, score[Frank])
+    b3_a_2 = solver.add_is_equal_var(
+        solver.element(score, caddy), solver.element(score, Sands) + 7
+    )
 
-  b3_b_1 = solver.add_is_equal_var(solver.element(score, Sands) + 7, score[Frank])
-  b3_b_2 = solver.add_is_equal_var(
-      solver.element(score, caddy),
-      solver.element(score, Sands) + 4)
+    b3_b_1 = solver.add_is_equal_var(solver.element(score, Sands) + 7, score[Frank])
+    b3_b_2 = solver.add_is_equal_var(
+        solver.element(score, caddy), solver.element(score, Sands) + 4
+    )
 
-  solver.add((b3_a_1 * b3_a_2) + (b3_b_1 * b3_b_2) == 1)
+    solver.add((b3_a_1 * b3_a_2) + (b3_b_1 * b3_b_2) == 1)
 
-  # 4. Mr. Carter thought his score of 78 was one of his better games,
-  #    even though Frank's score was lower.
-  solver.add(Frank != Carter)
-  solver.add(solver.element(score, Carter) == 78)
-  solver.add(score[Frank] < solver.element(score, Carter))
+    # 4. Mr. Carter thought his score of 78 was one of his better games,
+    #    even though Frank's score was lower.
+    solver.add(Frank != Carter)
+    solver.add(solver.element(score, Carter) == 78)
+    solver.add(score[Frank] < solver.element(score, Carter))
 
-  # 5. None of the four scored exactly 81 strokes.
-  [solver.add(score[i] != 81) for i in range(n)]
+    # 5. None of the four scored exactly 81 strokes.
+    [solver.add(score[i] != 81) for i in range(n)]
 
-  #
-  # solution and search
-  #
-  solution = solver.assignment()
-  solution.add(last_name)
-  solution.add(job)
-  solution.add(score)
+    #
+    # solution and search
+    #
+    solution = solver.assignment()
+    solution.add(last_name)
+    solution.add(job)
+    solution.add(score)
 
-  db = solver.phase(last_name + job + score, cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
-                    cp.IntValueStrategy.INT_VALUE_DEFAULT)
+    db = solver.phase(
+        last_name + job + score,
+        cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+        cp.IntValueStrategy.INT_VALUE_DEFAULT,
+    )
 
-  solver.new_search(db)
-  num_solutions = 0
-  while solver.next_solution():
-    print("last_name:", [last_name[i].value() for i in range(n)])
-    print("job      :", [job[i].value() for i in range(n)])
-    print("score    :", [score[i].value() for i in range(n)])
-    num_solutions += 1
-    print()
+    solver.new_search(db)
+    num_solutions = 0
+    while solver.next_solution():
+        print("last_name:", [last_name[i].value() for i in range(n)])
+        print("job      :", [job[i].value() for i in range(n)])
+        print("score    :", [score[i].value() for i in range(n)])
+        num_solutions += 1
+        print()
 
-  print("num_solutions:", num_solutions)
-  print("failures:", solver.num_failures)
-  print("branches:", solver.num_branches)
-  print("WallTime:", solver.wall_time_ms)
+    print("num_solutions:", num_solutions)
+    print("failures:", solver.num_failures)
+    print("branches:", solver.num_branches)
+    print("WallTime:", solver.wall_time_ms)
 
 
 if __name__ == "__main__":
-  main()
+    main()
