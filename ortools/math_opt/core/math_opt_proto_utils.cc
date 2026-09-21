@@ -133,41 +133,6 @@ absl::flat_hash_set<CallbackEventProto> EventSet(
   return events;
 }
 
-TerminationProto TerminateForLimit(const LimitProto limit, const bool feasible,
-                                   const absl::string_view detail) {
-  TerminationProto result;
-  if (feasible) {
-    result.set_reason(TERMINATION_REASON_FEASIBLE);
-  } else {
-    result.set_reason(TERMINATION_REASON_NO_SOLUTION_FOUND);
-  }
-  result.set_limit(limit);
-  if (!detail.empty()) {
-    result.set_detail(detail);
-  }
-  return result;
-}
-
-TerminationProto FeasibleTermination(const LimitProto limit,
-                                     const absl::string_view detail) {
-  return TerminateForLimit(limit, /*feasible=*/true, detail);
-}
-
-TerminationProto NoSolutionFoundTermination(const LimitProto limit,
-                                            const absl::string_view detail) {
-  return TerminateForLimit(limit, /*feasible=*/false, detail);
-}
-
-TerminationProto TerminateForReason(const TerminationReasonProto reason,
-                                    const absl::string_view detail) {
-  TerminationProto result;
-  result.set_reason(reason);
-  if (!detail.empty()) {
-    result.set_detail(detail);
-  }
-  return result;
-}
-
 ObjectiveBoundsProto MakeTrivialBounds(const bool is_maximize) {
   ObjectiveBoundsProto bounds;
   bounds.set_primal_bound(is_maximize ? -kInf : +kInf);

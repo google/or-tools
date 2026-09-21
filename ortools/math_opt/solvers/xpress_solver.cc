@@ -837,8 +837,9 @@ absl::Status InvokeOrtoolsCallback(OrtoolsCallbackContext* ctx, XPRSprob prob,
     }
   }
 
-  if (!cutsToCommit.start.empty())
+  if (!cutsToCommit.start.empty()) {
     ABSL_RETURN_IF_ERROR(cutsToCommit.AddManagedCuts(prob));
+  }
 
   // Process any solutions that were added.
   for (SparseDoubleVectorProto const& solution_vector :
@@ -1197,9 +1198,10 @@ class ScopedSolverContext {
       SolverInterface::Callback callback, const SolveInterrupter* interrupter,
       absl::linked_hash_map<XpressSolver::VarId,
                             XpressSolver::XpressVariableIndex> const& varMap) {
-    if (message_callback)
+    if (message_callback) {
       ABSL_RETURN_IF_ERROR(
           message_callback_.Add(&shared_ctx_, message_callback));
+    }
     if (interrupter) {
       /* To be extra safe we add two ways to interrupt Xpress:
        * 1. We register a checktime callback that polls the interrupter.
@@ -1348,17 +1350,20 @@ class ScopedSolverContext {
     if (parameters.has_solution_limit()) {
       ABSL_RETURN_IF_ERROR(Set(XPRS_MAXMIPSOL, parameters.solution_limit()));
     }
-    if (parameters.has_threads() && parameters.threads() > 0)
+    if (parameters.has_threads() && parameters.threads() > 0) {
       ABSL_RETURN_IF_ERROR(Set(XPRS_THREADS, parameters.threads()));
+    }
     if (parameters.has_random_seed()) {
       ABSL_RETURN_IF_ERROR(Set(XPRS_RANDOMSEED, parameters.random_seed()));
     }
-    if (parameters.has_absolute_gap_tolerance())
+    if (parameters.has_absolute_gap_tolerance()) {
       ABSL_RETURN_IF_ERROR(
           Set(XPRS_MIPABSSTOP, parameters.absolute_gap_tolerance()));
-    if (parameters.has_relative_gap_tolerance())
+    }
+    if (parameters.has_relative_gap_tolerance()) {
       ABSL_RETURN_IF_ERROR(
           Set(XPRS_MIPRELSTOP, parameters.relative_gap_tolerance()));
+    }
     if (parameters.has_solution_pool_size()) {
       warnings.emplace_back("XpressSolver does not support solution_pool_size");
     }
@@ -1410,8 +1415,9 @@ class ScopedSolverContext {
                      << EmphasisProto_Name(parameters.presolve())
                      << " unknown, error setting Xpress parameters";
       }
-      if (presolvePasses > 0)
+      if (presolvePasses > 0) {
         ABSL_RETURN_IF_ERROR(Set(XPRS_PRESOLVEPASSES, presolvePasses));
+      }
     }
     if (parameters.cuts() != EMPHASIS_UNSPECIFIED) {
       switch (parameters.cuts()) {
@@ -2612,8 +2618,9 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
   // an extended time limit, for example. We defer postsolve until the latest
   // point possible. This means we call it in ::Update() and
   // ::ComputeInfeasibleSubsystem()
-  if (force_postsolve_)
+  if (force_postsolve_) {
     ABSL_RETURN_IF_ERROR(xpress_->PostSolve()) << "XPRSpostsolve() failed";
+  }
 
   ABSL_ASSIGN_OR_RETURN(
       SolveResultProto solve_result,

@@ -34,13 +34,19 @@ SolveResultProto ResultForIntegerInfeasible(const bool is_maximize,
                    "in domain, e.g. integer variable with id: ",
                    bad_variable_id, " had bounds: [", RoundTripDoubleFormat(lb),
                    ", ", RoundTripDoubleFormat(ub), "]."));
-  result.mutable_solve_stats()->mutable_problem_status()->set_primal_status(
-      FEASIBILITY_STATUS_INFEASIBLE);
-  result.mutable_solve_stats()->mutable_problem_status()->set_dual_status(
-      FEASIBILITY_STATUS_UNDETERMINED);
+  ProblemStatusProto problem_status;
+  problem_status.set_primal_status(FEASIBILITY_STATUS_INFEASIBLE);
+  problem_status.set_dual_status(FEASIBILITY_STATUS_UNDETERMINED);
+  auto& termination = *result.mutable_termination();
+  *termination.mutable_problem_status() = problem_status;
   const double objective_value = is_maximize ? -kInf : kInf;
-  result.mutable_solve_stats()->set_best_primal_bound(objective_value);
-  result.mutable_solve_stats()->set_best_dual_bound(-objective_value);
+  termination.mutable_objective_bounds()->set_primal_bound(objective_value);
+  termination.mutable_objective_bounds()->set_dual_bound(-objective_value);
+  // TODO(b/290091715): Remove once there are no users the deprecated fields.
+  auto& deprecated_fields = *result.mutable_solve_stats();
+  *deprecated_fields.mutable_problem_status() = problem_status;
+  deprecated_fields.set_best_primal_bound(objective_value);
+  deprecated_fields.set_best_dual_bound(-objective_value);
   return result;
 }
 
