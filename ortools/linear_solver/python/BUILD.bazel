@@ -126,8 +126,49 @@ py_binary(
     ],
 )
 
-py_library(
-    name = "linear_solver_natural_api",
-    srcs = ["linear_solver_natural_api.py"],
+or_pybind_extension(
+    name = "pywraplp",
+    srcs = ["pywraplp.cc"],
     visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/linear_solver:linear_solver_all",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/linear_solver:linear_solver_lib",
+        "//ortools/linear_solver:model_exporter",
+        "//ortools/linear_solver:model_validator",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+py_test(
+    name = "pywraplp_test",
+    size = "small",
+    srcs = ["pywraplp_test.py"],
+    deps = [
+        ":pywraplp",
+        requirement("absl-py"),
+        "//ortools/linear_solver:linear_solver_bop",
+        "//ortools/linear_solver:linear_solver_glop",
+        "//ortools/linear_solver:linear_solver_pdlp",
+        "//ortools/linear_solver:linear_solver_py_pb2",
+        "@protobuf//:protobuf_python",
+    ],
+)
+
+py_test(
+    name = "set_starting_basis_test",
+    size = "small",
+    srcs = ["set_starting_basis_test.py"],
+    deps = [
+        ":pywraplp",
+        "//ortools/linear_solver:linear_solver_all",
+        requirement("absl-py"),
+    ],
 )

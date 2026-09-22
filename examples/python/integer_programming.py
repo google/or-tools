@@ -14,7 +14,7 @@
 
 """Integer programming examples that show how to use the APIs."""
 
-from ortools.linear_solver import pywraplp
+from ortools.linear_solver.python import pywraplp
 
 
 def Announce(solver, api_type):

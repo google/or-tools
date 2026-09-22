@@ -14,7 +14,7 @@
 
 """Linear programming examples that show how to use the APIs."""
 
-from ortools.linear_solver import pywraplp
+from ortools.linear_solver.python import pywraplp
 
 
 def Announce(solver, api_type):
@@ -48,7 +48,9 @@ def RunLinearExampleNaturalLanguageAPI(optimization_problem_type):
         solver, [x1, x2, x3], [c0, c1, c2], optimization_problem_type != "PDLP"
     )
     # Print a linear expression's solution value.
-    print("Sum of vars: %s = %s" % (sum_of_vars, sum_of_vars.solution_value()))
+    print(
+        "Sum of vars: %s = %s" % (sum_of_vars, sum_of_vars.solution_value())
+    )  # pyrefly: ignore[missing-attribute]
 
 
 def RunLinearExampleCppStyleAPI(optimization_problem_type):

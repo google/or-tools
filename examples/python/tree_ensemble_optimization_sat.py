@@ -303,14 +303,18 @@ def main(_):
     )
 
     # CP-SAT exact solve
-    cp_point, cp_obj, status = solve_with_cpsat(_TREES, _CANDIDATES)
+    cp_point, cp_obj, status = solve_with_cpsat(
+        _TREES, _CANDIDATES
+    )  # pyrefly: ignore[bad-argument-type]
     print(f"CP-SAT  [{status}]")
     for f, v in cp_point.items():
         print(f"  {f} = {v}")
     print(f"  objective = {cp_obj:.6f}")
 
     # Brute-force verification
-    bf_point, bf_obj = solve_brute_force(_TREES, _CANDIDATES)
+    bf_point, bf_obj = solve_brute_force(
+        _TREES, _CANDIDATES
+    )  # pyrefly: ignore[bad-argument-type]
     print("\nBrute-force")
     for f, v in bf_point.items():
         print(f"  {f} = {v}")

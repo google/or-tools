@@ -111,6 +111,7 @@ or_cc_binary(
         "//ortools/base",
         "//ortools/base:log_severity",
         "//ortools/constraint_solver:cp",
+        "//ortools/port:sysinfo",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],

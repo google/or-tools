@@ -16,7 +16,7 @@
 """Solve a multiple knapsack problem using a MIP solver."""
 
 # [START import]
-from ortools.linear_solver import pywraplp
+from ortools.linear_solver.python import pywraplp
 
 # [END import]
 

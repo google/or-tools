@@ -75,12 +75,9 @@ setup(
             '$<TARGET_FILE_NAME:constraint_solver_pybind11>',
             '*.pyi'
         ],
-        '@PYTHON_PROJECT@.linear_solver':[
-            '$<TARGET_FILE_NAME:pywraplp>',
-            '*.pyi'
-        ],
         '@PYTHON_PROJECT@.linear_solver.python':[
             '$<TARGET_FILE_NAME:model_builder_helper_pybind11>',
+            '$<TARGET_FILE_NAME:pywraplp_pybind11>',
             '*.pyi',
             'py.typed'
         ],

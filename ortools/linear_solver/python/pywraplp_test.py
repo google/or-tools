@@ -18,7 +18,8 @@ import unittest
 
 from google.protobuf import text_format
 
-from ortools.linear_solver import linear_solver_pb2, pywraplp
+from ortools.linear_solver import linear_solver_pb2
+from ortools.linear_solver.python import pywraplp
 
 TEXT_MODEL = """
 variable {
@@ -274,6 +275,9 @@ class PyWrapLp(unittest.TestCase):
         solver.SetHint([x1, x2], [1.0, 0.0])
         self.assertEqual(2, len(solver.variables()))
         self.assertEqual(1, len(solver.constraints()))
+
+        with self.assertRaises(ValueError):
+            solver.SetHint([x1, x2], [1.0])
 
     def test_bop_infeasible(self):
         solver = pywraplp.Solver("test", pywraplp.Solver.BOP_INTEGER_PROGRAMMING)

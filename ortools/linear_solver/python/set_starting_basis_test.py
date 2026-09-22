@@ -19,7 +19,7 @@ import random
 from absl import app
 from absl.testing import absltest
 
-from ortools.linear_solver import pywraplp
+from ortools.linear_solver.python import pywraplp
 
 
 class TestSetStartingBasis(absltest.TestCase):

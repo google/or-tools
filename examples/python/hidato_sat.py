@@ -217,7 +217,7 @@ def solve_hidato(puzzle: list[list[int]], index: int) -> None:
 
 def main(_):
     for pb in range(1, 7):
-        solve_hidato(build_puzzle(pb), pb)
+        solve_hidato(build_puzzle(pb), pb)  # pyrefly: ignore[bad-argument-type]
 
 
 if __name__ == "__main__":

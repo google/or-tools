@@ -22,7 +22,7 @@ http://www.hakank.org/google_or_tools/
 
 import sys
 
-from ortools.linear_solver import pywraplp
+from ortools.linear_solver.python import pywraplp
 
 
 def main(sol="CBC"):

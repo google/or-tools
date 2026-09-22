@@ -16,7 +16,7 @@
 """Solve assignment problem for given group of workers."""
 
 # [START import]
-from ortools.linear_solver import pywraplp
+from ortools.linear_solver.python import pywraplp
 
 # [END import]
 
