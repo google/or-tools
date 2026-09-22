@@ -25,10 +25,16 @@ FROM build AS test
 RUN CTEST_OUTPUT_ON_FAILURE=1 cmake --build build --target test
 
 FROM env AS install_env
-COPY --from=build /usr/local /usr/local/
+WORKDIR /home/sample
+COPY --from=build /home/project/build/java/ortools-linux-*/target/*.jar ./
+RUN rm *-sources.jar \
+&& for f in ortools-linux-*.jar; do mvn install:install-file -Dfile="$f"; break; done
+
+COPY --from=build /home/project/build/java/ortools-java/target/*.jar ./
+RUN rm *-sources.jar *-javadoc.jar \
+&& for f in ortools-java-*.jar; do mvn install:install-file -Dfile="$f"; break; done
 
 FROM install_env AS install_devel
-WORKDIR /home/sample
 COPY cmake/samples/java .
 
 FROM install_devel AS install_build
