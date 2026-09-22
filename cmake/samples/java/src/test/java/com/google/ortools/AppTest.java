@@ -13,30 +13,57 @@
 
 package com.google.ortools;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-/** Unit test for simple App. */
-public class AppTest extends TestCase {
-  /**
-   * Create the test case
-   *
-   * @param testName name of the test case
-   */
-  public AppTest(String testName) {
-    super(testName);
+import com.google.ortools.init.OrToolsVersion;
+import com.google.ortools.linearsolver.MPConstraint;
+import com.google.ortools.linearsolver.MPObjective;
+import com.google.ortools.linearsolver.MPSolver;
+import com.google.ortools.linearsolver.MPVariable;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+/** Test the OR-Tools java interface. */
+public final class AppTest {
+  @BeforeEach
+  public void setUp() {
+    Loader.loadNativeLibraries();
   }
 
-  /**
-   * @return the suite of tests being tested
-   */
-  public static Test suite() {
-    return new TestSuite(AppTest.class);
-  }
-
-  /** Rigourous Test :-) */
+  @Test
   public void testApp() {
-    assertTrue(true);
+    System.out.println("Google OR-Tools version: " + OrToolsVersion.getVersionString());
+    MPSolver solver = MPSolver.createSolver("GLOP");
+    assertNotNull(solver);
+
+    MPVariable x = solver.makeNumVar(0.0, 1.0, "x");
+    MPVariable y = solver.makeNumVar(0.0, 2.0, "y");
+    assertEquals(solver.numVariables(), 2);
+
+    double infinity = Double.POSITIVE_INFINITY;
+    // Create a linear constraint, x + y <= 2.
+    MPConstraint ct = solver.makeConstraint(-infinity, 2.0, "ct");
+    ct.setCoefficient(x, 1);
+    ct.setCoefficient(y, 1);
+    assertEquals(solver.numConstraints(), 1);
+
+    // Create the objective function, 3 * x + y.
+    MPObjective objective = solver.objective();
+    objective.setCoefficient(x, 3);
+    objective.setCoefficient(y, 1);
+    objective.setMaximization();
+
+    System.out.println("Solving with " + solver.solverVersion());
+    final MPSolver.ResultStatus resultStatus = solver.solve();
+    assertEquals(resultStatus, MPSolver.ResultStatus.OPTIMAL);
+
+    System.out.println("Solution:");
+    System.out.println("Objective value = " + objective.value());
+    System.out.println("x = " + x.solutionValue());
+    System.out.println("y = " + y.solutionValue());
+
+    System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
+    System.out.println("Problem solved in " + solver.iterations() + " iterations");
   }
 }
