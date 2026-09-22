@@ -15,10 +15,8 @@
 """Generate SVG for a Routing problem."""
 
 # [START import]
-from typing import Any, Dict
 import argparse
 
-from ortools.constraint_solver.python import constraint_solver
 from ortools.routing import enums_pb2, parameters_pb2
 from ortools.routing.python import routing
 
@@ -838,10 +836,10 @@ class SVGPrinter:  # pylint: disable=too-many-instance-attributes
             print("<!-- No solution found. -->")
         # Display dropped nodes.
         dropped_nodes = []
-        for node in range(self._routing_model.Size()):
-            if self._routing_model.IsStart(node) or self._routing_model.is_end(node):
+        for node in range(self._routing_model.size()):
+            if self._routing_model.is_start(node) or self._routing_model.is_end(node):
                 continue
-            if self._assignment.Value(self._routing_model.next_var(node)) == node:
+            if self._assignment.value(self._routing_model.next_var(node)) == node:
                 dropped_nodes.append(self._manager.index_to_node(node))
         color = self._color_palette.value_from_name("black")
         for node_idx in dropped_nodes:
@@ -856,12 +854,12 @@ class SVGPrinter:  # pylint: disable=too-many-instance-attributes
             return []
         routes = []
         for vehicle_id in range(self._data.num_vehicles):
-            index = self._routing_model.Start(vehicle_id)
+            index = self._routing_model.start(vehicle_id)
             route = []
             while not self._routing_model.is_end(index):
                 node_index = self._manager.index_to_node(index)
                 route.append(node_index)
-                index = self._assignment.Value(self._routing_model.next_var(index))
+                index = self._assignment.value(self._routing_model.next_var(index))
             node_index = self._manager.index_to_node(index)
             route.append(node_index)
             routes.append(route)
@@ -908,7 +906,7 @@ class SVGPrinter:  # pylint: disable=too-many-instance-attributes
         loc_routes = []
         tw_routes = []
         for vehicle_id in range(self._data.num_vehicles):
-            index = self._routing_model.Start(vehicle_id)
+            index = self._routing_model.start(vehicle_id)
             # index = self._assignment.value(self._routing_model.next_var(index))
             loc_route = []
             tw_route = []
@@ -1105,7 +1103,9 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
         from_node = manager.index_to_node(from_index)
         return data.demands[from_node]
 
-    demand_callback_index = routing_model.register_unary_transit_callback(demand_callback)
+    demand_callback_index = routing_model.register_unary_transit_callback(
+        demand_callback
+    )
 
     if args["time_windows"] or args["resources"]:
         routing_model.set_arc_cost_evaluator_of_all_vehicles(time_callback_index)
@@ -1114,7 +1114,9 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
 
     if args["global_span"] or args["pickup_delivery"]:
         dimension_name = "Distance"
-        routing_model.add_dimension(distance_callback_index, 0, 3000, True, dimension_name)
+        routing_model.add_dimension(
+            distance_callback_index, 0, 3000, True, dimension_name
+        )
         distance_dimension = routing_model.get_dimension_or_die(dimension_name)
         distance_dimension.set_global_span_cost_coefficient(100)
 
@@ -1131,17 +1133,20 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
 
     if args["pickup_delivery"]:
         dimension_name = "Distance"
-        routing_model.add_dimension(distance_callback_index, 0, 3000, True, dimension_name)
+        routing_model.add_dimension(
+            distance_callback_index, 0, 3000, True, dimension_name
+        )
         distance_dimension = routing_model.get_dimension_or_die(dimension_name)
         distance_dimension.set_global_span_cost_coefficient(100)
         for request in data.pickups_deliveries:
             pickup_index = manager.node_to_index(request[0])
             delivery_index = manager.node_to_index(request[1])
             routing_model.add_pickup_and_delivery(pickup_index, delivery_index)
-            routing_model.solver().Add(
-                routing_model.Vehicle_var(pickup_index) == routing_model.vehicle_var(delivery_index)
+            routing_model.solver.add(
+                routing_model.vehicle_var(pickup_index)
+                == routing_model.vehicle_var(delivery_index)
             )
-            routing_model.solver().Add(
+            routing_model.solver.add(
                 distance_dimension.cumul_var(pickup_index)
                 <= distance_dimension.cumul_var(delivery_index)
             )
@@ -1156,7 +1161,9 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
 
     if args["starts_ends"]:
         dimension_name = "Distance"
-        routing_model.add_dimension(distance_callback_index, 0, 2000, True, dimension_name)
+        routing_model.add_dimension(
+            distance_callback_index, 0, 2000, True, dimension_name
+        )
         distance_dimension = routing_model.get_dimension_or_die(dimension_name)
         distance_dimension.set_global_span_cost_coefficient(100)
 
@@ -1192,12 +1199,12 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
     if args["resources"]:
         # Add resource constraints at the depot.
         time_dimension = routing_model.get_dimension_or_die(time)
-        solver = routing_model.solver()
+        solver = routing_model.solver
         intervals = []
         for i in range(data.num_vehicles):
             # Add loading time at start of routes
             intervals.append(
-                solver.fixed_duration_interval_var(
+                solver.new_fixed_duration_interval_var(
                     time_dimension.cumul_var(routing_model.start(i)),
                     data.vehicle_load_time,
                     "depot_interval",
@@ -1205,21 +1212,19 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
             )
             # Add unloading time at end of routes.
             intervals.append(
-                solver.fixed_duration_interval_var(
+                solver.new_fixed_duration_interval_var(
                     time_dimension.cumul_var(routing_model.end(i)),
                     data.vehicle_unload_time,
                     "depot_interval ",
                 )
             )
 
-        depot_usage = [1 for i in range(data.num_vehicles * 2)]
-        solver.add_constraint(
-            solver.Cumulative(intervals, depot_usage, data.depot_capacity, "depot")
-        )
+        depot_usage = [1 for _ in range(data.num_vehicles * 2)]
+        solver.add_cumulative(intervals, depot_usage, data.depot_capacity, "depot")
 
     # Setting first solution heuristic (cheapest addition).
     search_parameters: parameters_pb2.RoutingSearchParameters = (
-        routing_model.default_routing_search_parameters()
+        routing.default_routing_search_parameters()
     )
     # pylint: disable=no-member
     if not args["pickup_delivery"]:

@@ -32,8 +32,8 @@ from google3.third_party.ortools.ortools.routing.python import routing
 
 ## Naming Conventions
 
-The most significant change is the shift from `CamelCase` to `snake_case` for method
-names and functions. Class names remain `CamelCase`.
+The most significant change is the shift from `CamelCase` to `snake_case` for
+method names and functions. Class names remain `CamelCase`.
 
 Feature               | Legacy (SWIG)                                       | New (pybind11)
 :-------------------- | :-------------------------------------------------- | :-------------
@@ -205,7 +205,8 @@ def main():
 
 ## Dimensions and Variables
 
-When working with dimensions, the variable accessors also change to `snake_case`.
+When working with dimensions, the variable accessors also change to
+`snake_case`.
 
 ### Legacy
 
