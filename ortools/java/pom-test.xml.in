@@ -103,6 +103,7 @@
       <artifactId>maven-surefire-plugin</artifactId>
       <version>3.5.0</version>
       <configuration>
+        <argLine>--enable-native-access=ALL-UNNAMED</argLine>
         <!-- Activate the use of TCP to transmit events to the plugin -->
         <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
       </configuration>
