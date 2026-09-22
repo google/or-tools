@@ -11,4 +11,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-exports_files(["configure_copts.bzl"])
+load("@pip_deps//:requirements.bzl", "requirement")
+load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
+
+py_library(
+    name = "copts",
+    srcs = ["copts.py"],
+)
+
+py_binary(
+    name = "generate_copts",
+    srcs = ["generate_copts.py"],
+    data = [
+        ":GENERATED_ORToolsCopts.cmake",
+        ":GENERATED_copts.bzl",
+    ],
+    deps = [":copts"],
+)
+
+py_test(
+    name = "generate_copts_test",
+    srcs = ["generate_copts_test.py"],
+    data = [
+        ":GENERATED_ORToolsCopts.cmake",
+        ":GENERATED_copts.bzl",
+    ],
+    deps = [
+        ":generate_copts",
+        requirement("absl-py"),
+        "@rules_python//python/runfiles",
+    ],
+)

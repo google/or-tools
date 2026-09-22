@@ -164,6 +164,7 @@ def java_wrap_cc(
         swig_includes = [],
         use_directors = False,
         module = None,
+        copts = [],
         visibility = None,
         **kwargs):
     """Wraps C++ in Java using Swig.
@@ -180,6 +181,7 @@ def java_wrap_cc(
         swig_opt: optional defines passed to the swig command.
         swig_includes: list of swig files included by the current swig file.
         use_directors: Boolean flag.
+        copts: C++ compiler options.
         visibility: global visibility of the rule.
         **kwargs: extra generic arguments, usually passed to sub-rules.
 
@@ -213,6 +215,7 @@ def java_wrap_cc(
         name = cc_name,
         srcs = [outfile],
         hdrs = [outhdr] if use_directors else [],
+        copts = copts,
         deps = deps + [Label("@bazel_tools//tools/jdk:jni")],
         alwayslink = True,
         visibility = visibility,
