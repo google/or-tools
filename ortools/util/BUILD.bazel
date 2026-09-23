@@ -721,9 +721,9 @@ or_cc_test(
         "//ortools/base:gmock_main",
         "//ortools/base:types",
         "@abseil-cpp//absl/base",
-        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/types:span",
     ],
 )
@@ -964,5 +964,31 @@ or_cc_test(
         "//ortools/base:gmock_main",
         "//ortools/base:strong_int",
         "@abseil-cpp//absl/strings:string_view",
+    ],
+)
+
+or_cc_library(
+    name = "full_precision_inequalities",
+    srcs = ["full_precision_inequalities.cc"],
+    hdrs = ["full_precision_inequalities.h"],
+    deps = [
+        "//ortools/algorithms:multikey_radix_sort",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/functional:any_invocable",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/numeric:int128",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+or_cc_test(
+    name = "full_precision_inequalities_test",
+    srcs = ["full_precision_inequalities_test.cc"],
+    deps = [
+        ":full_precision_inequalities",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/types:span",
     ],
 )

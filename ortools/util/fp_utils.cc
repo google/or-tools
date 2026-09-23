@@ -13,13 +13,10 @@
 
 #include "ortools/util/fp_utils.h"
 
-#include <limits.h>
-#include <stdint.h>
-
 #include <algorithm>
+#include <cfenv>  // NOLINT
 #include <cmath>
 #include <cstdint>
-#include <cstdlib>
 #include <limits>
 #include <utility>
 
@@ -27,10 +24,50 @@
 #include "absl/types/span.h"
 #include "ortools/util/bitset.h"
 
+// To enable floating-point traps on Android/Bionic or BSD platforms, extend
+// the preprocessor guard below with the corresponding platform macros (such as
+// `__BIONIC__`, `__FreeBSD__`, `__NetBSD__`, or `__OpenBSD__`). Because these
+// platforms evolve over time, consult their current `<fenv.h>` documentation
+// (or an AI assistant) for the required feature-test macros (e.g.,
+// `__BSD_VISIBLE`, `_NETBSD_SOURCE`, or `_GNU_SOURCE`).
+#if defined(__GLIBC__) && defined(__x86_64__)
+#define OR_TOOLS_FP_TRAPS_GNU 1
+#if !defined(_GNU_SOURCE)
+#error "glibc only declares feenableexcept() when _GNU_SOURCE is defined."
+#endif  // !defined(_GNU_SOURCE)
+#endif  // defined(__GLIBC__) && defined(__x86_64__)
+
 namespace operations_research {
+
+ScopedFloatingPointEnv::ScopedFloatingPointEnv(const int excepts) {
+#if defined(OR_TOOLS_FP_TRAPS_GNU)
+  // feenableexcept() returns the previously enabled exceptions, or -1 if the
+  // requested exceptions could not be enabled.
+  saved_excepts_ = feenableexcept(excepts & FE_ALL_EXCEPT);
+  exceptions_enabled_ = (saved_excepts_ != -1);
+#else
+  (void)excepts;
+  (void)saved_excepts_;
+#endif  // defined(OR_TOOLS_FP_TRAPS_GNU)
+}
+
+ScopedFloatingPointEnv::~ScopedFloatingPointEnv() {
+#if defined(OR_TOOLS_FP_TRAPS_GNU)
+  if (exceptions_enabled_) {
+    CHECK_NE(-1, fedisableexcept(FE_ALL_EXCEPT));
+    CHECK_NE(-1, feenableexcept(saved_excepts_));
+  }
+#endif  // defined(OR_TOOLS_FP_TRAPS_GNU)
+}
 
 namespace {
 
+// Returns the reordered and capped min and max of the two terms.
+// The minimum of the two cannot be larger than 0.0 and the maximum cannot be
+// smaller than 0.0.
+// For example, if a = 1.0 and b = -2.0, returns {-2.0, 1.0}.
+// If a = 1.0 and b = 2.0, returns {0.0, 2.0}.
+// If a = -1.0 and b = -2.0, returns {-2.0, 0.0}.
 void ReorderAndCapTerms(double* min, double* max) {
   if (*min > *max) std::swap(*min, *max);
   if (*min > 0.0) *min = 0.0;

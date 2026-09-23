@@ -13,8 +13,6 @@
 
 #include "ortools/util/fp_utils.h"
 
-#include <math.h>
-
 #include <cfenv>  // NOLINT(build/c++11)
 #include <cmath>
 #include <cstdint>
@@ -24,7 +22,7 @@
 
 #include "absl/base/casts.h"
 #include "absl/log/check.h"
-#include "absl/log/log.h"
+#include "absl/random/distributions.h"
 #include "absl/random/random.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
@@ -49,9 +47,9 @@ double GenerateNaN() { return kZero / kZero; }
 
 double GenerateDivisionByZero() { return 1.0 / kZero; }
 
-void RunFloatingPointExceptionTest(int exception_flags) {
-  ScopedFloatingPointEnv scoped_fenv;
-  if (!scoped_fenv.EnableExceptions(exception_flags)) {
+void RunFloatingPointExceptionTest(const int exception_flags) {
+  ScopedFloatingPointEnv scoped_fenv(exception_flags);
+  if (!scoped_fenv.exceptions_enabled()) {
     GTEST_SKIP() << "Floating point exceptions are not supported.";
   }
   if (exception_flags & FE_INVALID) {
@@ -87,6 +85,36 @@ TEST(ScopedFpEnv, DivisionByZeroDetection) {
 
 TEST(ScopedFpEnv, NanDetectionDivisionByZeroDetection) {
   RunFloatingPointExceptionTest(FE_INVALID | FE_DIVBYZERO);
+}
+
+TEST(ScopedFpEnv, RestoresDefaultMaskAfterScope) {
+  {
+    ScopedFloatingPointEnv scoped_fenv(FE_DIVBYZERO);
+    if (!scoped_fenv.exceptions_enabled()) {
+      GTEST_SKIP() << "Floating point exceptions are not supported.";
+    }
+  }
+  EXPECT_EQ(kInfinity, GenerateDivisionByZero());
+}
+
+TEST(ScopedFpEnv, RestoresPreviousMaskAfterNestedScope) {
+  ScopedFloatingPointEnv outer_fenv(FE_INVALID);
+  if (!outer_fenv.exceptions_enabled()) {
+    GTEST_SKIP() << "Floating point exceptions are not supported.";
+  }
+  {
+    ScopedFloatingPointEnv inner_fenv(FE_DIVBYZERO);
+    ASSERT_TRUE(inner_fenv.exceptions_enabled());
+  }
+  // Division by zero should no longer trap after inner_fenv is destroyed.
+  EXPECT_EQ(kInfinity, GenerateDivisionByZero());
+  // NaN generation should still trap because outer_fenv is still active.
+  EXPECT_DEATH(
+      {
+        const double x = GenerateNaN();
+        EXPECT_NE(x, x);
+      },
+      "");
 }
 
 TEST(WithinAbsoluteOrRelativeTolerancesTest, ExpectedValue) {
@@ -279,11 +307,12 @@ TEST(GetBestScalingOfDoublesToInt64Test, ZeroBounds) {
 }
 
 TEST(GetBestScalingOfDoublesToInt64Test, PowerOfTwo) {
-  std::vector<double> input{ldexp(1.0, 100), ldexp(-1.0, 10), ldexp(1.0, -10)};
+  std::vector<double> input{std::ldexp(1.0, 100), std::ldexp(-1.0, 10),
+                            std::ldexp(1.0, -10)};
   double scale;
   double error;
   GetBestScalingOfDoublesToInt64(input, int64_t{1} << 60, &scale, &error);
-  EXPECT_EQ(scale, ldexp(1.0, 60 - 100));
+  EXPECT_EQ(scale, std::ldexp(1.0, 60 - 100));
   EXPECT_EQ(error, 1.0);  // The last value just disappeared...
 }
 
@@ -308,7 +337,7 @@ TEST(GetBestScalingOfDoublesToInt64Test, MaxSum) {
 
 void CheckNoError(absl::Span<const double> input, double scale) {
   for (double x : input) {
-    EXPECT_EQ(round(x * scale) / scale, x);
+    EXPECT_EQ(std::round(x * scale) / scale, x);
   }
 }
 
@@ -324,10 +353,10 @@ TEST(GetBestScalingOfDoublesToInt64Test, NoErrorForIntegers) {
 
   // Note that if the exponent of all number are shifted, then this still work.
   for (int i = 0; i < input.size(); ++i) {
-    input[i] = ldexp(input[i], -123);
+    input[i] = std::ldexp(input[i], -123);
   }
   GetBestScalingOfDoublesToInt64(input, int64_t{1} << 60, &scale, &error);
-  EXPECT_EQ(scale, ldexp(32.0, 123));
+  EXPECT_EQ(scale, std::ldexp(32.0, 123));
   EXPECT_EQ(error, 0.0);
   CheckNoError(input, scale);
 }
@@ -361,18 +390,18 @@ TEST(GetBestScalingOfDoublesToInt64Test, NoErrorForCloseDoubles) {
 TEST(GetBestScalingOfDoublesToInt64Test, BoundOnSumIsCorrect) {
   std::mt19937 random(12345);
   const double x = static_cast<double>((1LL << 32) - 1);
-  std::vector<double> input{1.0, x - 1, ldexp(x, 32)};
+  std::vector<double> input{1.0, x - 1, std::ldexp(x, 32)};
   double scale;
   double error;
   GetBestScalingOfDoublesToInt64(input, kint64max, &scale, &error);
 
   // Scaling by 0.5 is not enough, because the sum will be kint64max + 1
   // as shown by the following 3 lines:
-  EXPECT_EQ(1, static_cast<int64_t>(round(input[0] * 0.5)));
+  EXPECT_EQ(1, static_cast<int64_t>(std::round(input[0] * 0.5)));
   EXPECT_EQ((int64_t{1} << 31) - 1,
-            static_cast<int64_t>(round(input[1] * 0.5)));
+            static_cast<int64_t>(std::round(input[1] * 0.5)));
   EXPECT_EQ(((int64_t{1} << 32) - 1) << 31,
-            static_cast<int64_t>(round(input[2] * 0.5)));
+            static_cast<int64_t>(std::round(input[2] * 0.5)));
 
   EXPECT_GT(error, 0.0);
   EXPECT_EQ(scale, 1.0 / 4.0);
@@ -391,7 +420,8 @@ TEST(GetBestScalingOfDoublesToInt64Test, Infinity) {
   double error;
   GetBestScalingOfDoublesToInt64(input, kint64max, &scale, &error);
   EXPECT_LT(scale, std::numeric_limits<double>::infinity());
-  EXPECT_EQ(scale, ldexp(1.0, std::numeric_limits<double>::max_exponent - 1));
+  EXPECT_EQ(scale,
+            std::ldexp(1.0, std::numeric_limits<double>::max_exponent - 1));
 }
 
 TEST(GetBestScalingOfDoublesToInt64Test, Robustness) {

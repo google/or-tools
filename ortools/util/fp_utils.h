@@ -25,110 +25,82 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <cstdlib>
-#include <limits>
-// Needed before fenv_access. See https://github.com/microsoft/STL/issues/2613.
-#include <numeric>  // IWYU pragma:keep.
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 
-#if defined(_MSC_VER)
-#pragma fenv_access(on)  // NOLINT
-#else
-#include <cfenv>  // NOLINT
-#endif
-
-#ifdef __SSE__
-#include <xmmintrin.h>
-#endif
-
-#if defined(_MSC_VER)
-static inline double isnan(double value) { return _isnan(value); }
-static inline double round(double value) { return floor(value + 0.5); }
-#elif defined(__APPLE__) || __GNUC__ >= 5
-using std::isnan;
-#endif
-
 namespace operations_research {
 
-// ScopedFloatingPointEnv is used to easily enable Floating-point exceptions.
-// The initial state is automatically restored when the object is deleted.
+// WARNING: A DEBUGGING TOOL, AND NOTHING ELSE. Do not instantiate this class
+// in production code, in a library meant for production code, or in a solver
+// path that a user can reach. Unmasking an exception makes the process abort
+// on an operation that IEEE 754 defines as valid and that the rest of the code
+// is entitled to rely on: a library that computes with a NaN deliberately, a
+// probe that overflows on purpose, a vectorized loop that evaluates both
+// branches, and a good deal of third-party numerical code all become crashes.
+// The failure lands wherever the object happens to be alive, including in
+// unrelated code called from there, so shipping one turns a correct program
+// into a fragile one.
 //
-// Note(user): For some reason, this causes an FPE exception to be triggered for
-// unknown reasons when compiled in 32 bits. Because of this, we do not turn
-// on FPE exception if __x86_64__ is not defined.
+// What it does: the constructor unmasks the requested floating-point
+// exceptions, so that raising one of them traps instead of merely setting a
+// status flag, and the destructor restores the previously enabled exceptions.
+// The point is to find, in a test or under a debugger, the operation that
+// manufactures a NaN or an infinity, by turning it into a crash at the
+// instruction that causes it.
 //
-// TODO(user): Make it work on 32 bits.
-// TODO(user): Make it work on msvc, currently calls to _controlfp crash.
-
+// Examples, each trapping the operation on the right:
+//
+//   ScopedFloatingPointEnv trap(FE_DIVBYZERO);  // 1.0 / 0.0
+//   ScopedFloatingPointEnv trap(FE_OVERFLOW);   // 1e308 * 10.0
+//   ScopedFloatingPointEnv trap(FE_INVALID);    // 0.0 / 0.0, and other NaNs
+//   ScopedFloatingPointEnv trap(FE_DIVBYZERO | FE_OVERFLOW);  // either one
+//
+// FE_INVALID catches the operation that manufactures a NaN out of operands
+// that are not NaNs, not the later ones that merely propagate it.
+//
+// Platform dependencies: trapping is supported on 64-bit x86 Linux with glibc
+// via `feenableexcept()` and `fedisableexcept()`. On all other platforms, the
+// class is a no-op and `exceptions_enabled()` returns false. An object that
+// silently does nothing on unsupported platforms is one more reason not to
+// build anything on top of this class.
+//
+// Note to open-source users:
+//  - Platforms that provide `feenableexcept()` and `fedisableexcept()` may
+//    work as-is on `x86_64` or other architectures once added to the
+//    `OR_TOOLS_FP_TRAPS_GNU` preprocessor guard in `fp_utils.cc`. See the
+//    comments in `fp_utils.cc` for details.
+//  - Windows/MSVC requires platform-specific code (`_controlfp_s()` and
+//    `#pragma fenv_access(on)`).
+//  - Apple macOS and iOS do not provide `feenableexcept()` in the Apple SDK,
+//    and Apple Silicon (`arm64`) CPUs do not support trapped floating-point
+//    exceptions in hardware (the Arm architecture makes the `FPCR` trap-enable
+//    bits optional, and Apple cores hardwire them to zero). On `arm64` Darwin
+//    targets where hardware traps are present, the kernel delivers them as
+//    `SIGILL` (`ILL_ILLTRP`) rather than `SIGFPE`, so platform-specific code
+//    would also need to install a `SIGILL` signal handler to dispatch
+//    floating-point exceptions.
+//  - Bug reports, test feedback, ports to new platforms, and contributions are
+//    welcome.
 class ScopedFloatingPointEnv {
  public:
-  ScopedFloatingPointEnv() {
-#if defined(_MSC_VER)
-    // saved_control_ = _controlfp(0, 0);
-#elif (defined(__GNUC__) || defined(__llvm__)) && defined(__x86_64__)
-    CHECK_EQ(0, fegetenv(&saved_fenv_));
-#endif
-  }
+  // `excepts` is an or-combination of FE_XXX constants, possibly empty.
+  explicit ScopedFloatingPointEnv(int excepts);
+  ~ScopedFloatingPointEnv();
 
-  ~ScopedFloatingPointEnv() {
-#if defined(_MSC_VER)
-    // CHECK_EQ(saved_control_, _controlfp(saved_control_, 0xFFFFFFFF));
-#elif defined(__x86_64__) && defined(__GLIBC__)
-    CHECK_EQ(0, fesetenv(&saved_fenv_));
-#endif
-  }
+  // The floating-point environment is per-thread state; copying an active
+  // guard would restore the saved mask twice or out of LIFO order.
+  ScopedFloatingPointEnv(const ScopedFloatingPointEnv&) = delete;
+  ScopedFloatingPointEnv& operator=(const ScopedFloatingPointEnv&) = delete;
 
-  // Enables the provided exceptions, an or-combination of FE_XXX constants.
-  //
-  // Returns true if there where successfully set. Returns false if the current
-  // platform does not support setting enabling them.
-  bool EnableExceptions(int excepts) {
-    // To add some clarity, the #if/#elif/#else/#endif are labeled by a number,
-    // e.g. *1*.
-#if defined(_MSC_VER)  // *1*
-    // _controlfp(static_cast<unsigned int>(excepts), _MCW_EM);
-    return false;
-#elif (defined(__GNUC__) || defined(__llvm__)) && defined(__x86_64__) && \
-    !defined(__ANDROID__)                             // *1*
-    CHECK_EQ(0, fegetenv(&fenv_));
-    excepts &= FE_ALL_EXCEPT;
-#if defined(__APPLE__)                                // *2*
-    fenv_.__control &= ~excepts;
-#elif (defined(__FreeBSD__) || defined(__OpenBSD__))  // *2*
-    fenv_.__x87.__control &= ~excepts;
-#elif defined(__NetBSD__)                             // *2*
-    fenv_.x87.control &= ~excepts;
-#else                                                 // *2* Linux
-    fenv_.__control_word &= ~excepts;
-#endif                                                // *2*
-#if defined(__NetBSD__)                               // *3*
-    fenv_.mxcsr &= ~(excepts << 7);
-#else                                                 // *3*
-    fenv_.__mxcsr &= ~(excepts << 7);
-#endif                                                // *3*
-    CHECK_EQ(0, fesetenv(&fenv_));
-    return true;
-#else
-    return false;
-#endif  // *1*
-  }
+  // Whether the exceptions requested at construction are actually trapping.
+  // An empty request counts as enabled on supported platforms.
+  bool exceptions_enabled() const { return exceptions_enabled_; }
 
  private:
-#if defined(_MSC_VER)
-  // unsigned int saved_control_;
-#elif (defined(__GNUC__) || defined(__llvm__)) && defined(__x86_64__)
-  fenv_t fenv_;
-  mutable fenv_t saved_fenv_;
-#endif
+  int saved_excepts_ = 0;
+  bool exceptions_enabled_ = false;
 };
-
-template <typename FloatType>
-inline bool IsPositiveOrNegativeInfinity(FloatType x) {
-  return x == std::numeric_limits<FloatType>::infinity() ||
-         x == -std::numeric_limits<FloatType>::infinity();
-}
 
 // Tests whether x and y are close to one another using absolute and relative
 // tolerances.
@@ -144,14 +116,14 @@ bool AreWithinAbsoluteOrRelativeTolerances(FloatType x, FloatType y,
   DCHECK_LE(0.0, relative_tolerance);
   DCHECK_LE(0.0, absolute_tolerance);
   DCHECK_GT(1.0, relative_tolerance);
-  if (IsPositiveOrNegativeInfinity(x) || IsPositiveOrNegativeInfinity(y)) {
+  if (std::isinf(x) || std::isinf(y)) {
     return x == y;
   }
-  const FloatType difference = fabs(x - y);
+  const FloatType difference = std::fabs(x - y);
   if (difference <= absolute_tolerance) {
     return true;
   }
-  const FloatType largest_magnitude = std::max(fabs(x), fabs(y));
+  const FloatType largest_magnitude = std::max(std::fabs(x), std::fabs(y));
   return difference <= largest_magnitude * relative_tolerance;
 }
 
@@ -164,17 +136,17 @@ template <typename FloatType>
 bool AreWithinAbsoluteTolerance(FloatType x, FloatType y,
                                 FloatType absolute_tolerance) {
   DCHECK_LE(0.0, absolute_tolerance);
-  if (IsPositiveOrNegativeInfinity(x) || IsPositiveOrNegativeInfinity(y)) {
+  if (std::isinf(x) || std::isinf(y)) {
     return x == y;
   }
-  return fabs(x - y) <= absolute_tolerance;
+  return std::fabs(x - y) <= absolute_tolerance;
 }
 
-// Returns true if x is less than y or slighlty greater than y with the given
+// Returns true if x is less than y or slightly greater than y with the given
 // absolute or relative tolerance.
 template <typename FloatType>
 bool IsSmallerWithinTolerance(FloatType x, FloatType y, FloatType tolerance) {
-  if (IsPositiveOrNegativeInfinity(y)) return x <= y;
+  if (std::isinf(y)) return x <= y;
   return x <= y + tolerance * std::max(FloatType(1.0),
                                        std::min(std::abs(x), std::abs(y)));
 }
@@ -184,7 +156,7 @@ bool IsSmallerWithinTolerance(FloatType x, FloatType y, FloatType tolerance) {
 template <typename FloatType>
 inline bool IsIntegerWithinTolerance(FloatType x, FloatType tolerance) {
   DCHECK_LE(0.0, tolerance);
-  if (IsPositiveOrNegativeInfinity(x)) return false;
+  if (std::isinf(x)) return false;
   return std::abs(x - std::round(x)) <= tolerance;
 }
 
@@ -248,7 +220,7 @@ int64_t ComputeGcdOfRoundedDoubles(absl::Span<const double> x,
 // Returns alpha * x + (1 - alpha) * y.
 template <typename FloatType>
 inline FloatType Interpolate(FloatType x, FloatType y, FloatType alpha) {
-  return alpha * x + (1 - alpha) * y;
+  return alpha * x + (1.0 - alpha) * y;
 }
 
 }  // namespace operations_research
