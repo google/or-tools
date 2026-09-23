@@ -52,7 +52,7 @@ function test_cpp() {
 function test_dotnet() {
   command -v dotnet | xargs echo "dotnet: " | tee -a test.log
 
-  echo "Clear dotnet cache" | tee -a test.log
+  echo "Clear dotnet local package cache" | tee -a test.log
   dotnet nuget locals all --clear
 
   echo "TODO" | tee -a test.log
@@ -62,6 +62,9 @@ function test_dotnet() {
 
 function test_java() {
   command -v mvn | xargs echo "mvn: " | tee -a test.log
+
+  echo "Clear maven local package cache" | tee -a test.log
+  rm -rf ~/.m2/repository/com/google/ortools
 
   echo "TODO" | tee -a test.log
   # install artifacts

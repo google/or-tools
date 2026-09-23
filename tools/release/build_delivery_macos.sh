@@ -166,9 +166,9 @@ function build_java() {
     echo "Check java version..."
     java -version 2>&1 | head -n 1 | xargs echo "java version: " | tee -a build.log
     if [[ ${PLATFORM} == "arm64" ]]; then
-      java -version 2>&1 | head -n 1 | grep "\b2[156]\.0"
+      java -version 2>&1 | head -n 1 | grep "\b2[1567]\(\.0\)\?"
     else
-      java -version 2>&1 | head -n 1 | grep "\b2[156]\.0"
+      java -version 2>&1 | head -n 1 | grep "\b2[1567]\(\.0\)\?"
     fi
   fi
   # Maven central need gpg sign and we store the release key encoded using openssl
