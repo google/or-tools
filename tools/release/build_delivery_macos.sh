@@ -121,12 +121,13 @@ function build_dotnet() {
   rm -rf "${ROOT_DIR}/temp_dotnet"
   echo "DONE" | tee -a build.log
 
-  echo "Build .Net..." | tee -a build.log
+  echo -n "Build .Net..." | tee -a build.log
   cmake -S. -Btemp_dotnet -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOTNET=ON
-  cmake --build temp_dotnet -j8 -v
+  cmake --build temp_dotnet
+  echo "DONE" | tee -a build.log
+
   echo -n "  Check libortools.dylib..." | tee -a build.log
   otool -L temp_dotnet/lib/libortools.dylib | grep -vqz "/Users"
-  echo "DONE" | tee -a build.log
   echo "DONE" | tee -a build.log
   #cmake --build temp_dotnet --target test
   #echo "cmake test: DONE" | tee -a build.log
@@ -165,10 +166,10 @@ function build_java() {
     command -v mvn | xargs echo "mvn: " | tee -a build.log
     echo "Check java version..."
     java -version 2>&1 | head -n 1 | xargs echo "java version: " | tee -a build.log
-    if [[ ${PLATFORM} == "arm64" ]]; then
-      java -version 2>&1 | head -n 1 | grep "\b2[156]\.0"
+    if [[ ${ARCH} == "arm64" ]]; then
+      java -version 2>&1 | head -n 1 | grep "\b2[1567]\(\.0\)\?"
     else
-      java -version 2>&1 | head -n 1 | grep "\b2[156]\.0"
+      java -version 2>&1 | head -n 1 | grep "\b2[1567]\(\.0\)\?"
     fi
   fi
   # Maven central need gpg sign and we store the release key encoded using openssl
@@ -214,6 +215,8 @@ function build_java() {
   cmake -S. -Btemp_java -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
  -DBUILD_JAVA=ON -DSKIP_GPG=OFF ${GPG_EXTRA}
   cmake --build temp_java
+  echo "DONE" | tee -a build.log
+
   echo -n "  Check libortools.dylib..." | tee -a build.log
   otool -L temp_java/lib/libortools.dylib | grep -vqz "/Users"
   echo "DONE" | tee -a build.log
@@ -221,7 +224,7 @@ function build_java() {
   #echo "cmake test: DONE" | tee -a build.log
 
   # copy jar to export
-  if [[ ${PLATFORM} == "arm64" ]]; then
+  if [[ ${ARCH} == "arm64" ]]; then
     cp temp_java/java/ortools-darwin-aarch64/target/*.jar* export/
   else
     cp temp_java/java/ortools-darwin-x86-64/target/*.jar* export/
@@ -284,7 +287,7 @@ function build_python() {
     "ortools/graph/python/min_cost_flow.pyi"
     "ortools/init/python/init.pyi"
     "ortools/linear_solver/python/model_builder_helper.pyi"
-    "ortools/linear_solver/pywraplp.pyi"
+    "ortools/linear_solver/python/pywraplp.pyi"
     "ortools/pdlp/python/pdlp.pyi"
     "ortools/sat/python/cp_model_helper.pyi"
     "ortools/scheduling/python/rcpsp.pyi"
@@ -330,7 +333,7 @@ function build_python() {
   # Fix wheel naming
   pushd export
   for WHEEL_FILE in *_universal2.whl; do
-    if [[ ${PLATFORM} == "arm64" ]]; then
+    if [[ ${ARCH} == "arm64" ]]; then
       mv "${WHEEL_FILE}" "${WHEEL_FILE%_universal2.whl}_arm64.whl"
     else
       mv "${WHEEL_FILE}" "${WHEEL_FILE%_universal2.whl}_x86_64.whl" || true
@@ -362,25 +365,28 @@ function build_archive() {
   make clean_archive
   echo "DONE" | tee -a build.log
 
-  echo "Make cpp archive..." | tee -a build.log
+  echo -n "Make cpp archive..." | tee -a build.log
   make archive_cpp
+  echo "DONE" | tee -a build.log
+
   echo -n "  Check libortools.dylib..." | tee -a build.log
   otool -L "build_make/lib/libortools.dylib" | grep -vqz "/Users"
   echo "DONE" | tee -a build.log
-  echo "DONE" | tee -a build.log
 
-  echo "Make dotnet archive..." | tee -a build.log
+  echo -n "Make dotnet archive..." | tee -a build.log
   make archive_dotnet
-  echo -n "  Check libortools.dylib..." | tee -a build.log
-  otool -L "build_make/lib/libortools.dylib" | grep -vqz "/Users"
-  echo "DONE" | tee -a build.log
   echo "DONE" | tee -a build.log
 
-  echo "Make java archive..." | tee -a build.log
-  make archive_java
   echo -n "  Check libortools.dylib..." | tee -a build.log
   otool -L "build_make/lib/libortools.dylib" | grep -vqz "/Users"
   echo "DONE" | tee -a build.log
+
+  echo -n "Make java archive..." | tee -a build.log
+  make archive_java
+  echo "DONE" | tee -a build.log
+
+  echo -n "  Check libortools.dylib..." | tee -a build.log
+  otool -L "build_make/lib/libortools.dylib" | grep -vqz "/Users"
   echo "DONE" | tee -a build.log
 
   # move archive to export
@@ -421,8 +427,6 @@ function build_examples() {
   make dotnet_examples_archive UNIX_PYTHON_VER=3
   echo "DONE" | tee -a build.log
 
-  echo "DONE" | tee -a build.log
-
   # move example to export/
   mv or-tools_*_examples_*.tar.gz export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/examples_build"
@@ -455,24 +459,30 @@ function main() {
       help; exit ;;
   esac
 
-  assert_defined ORTOOLS_TOKEN
-  echo "ORTOOLS_TOKEN: FOUND" | tee -a build.log
-
-  local -r PLATFORM=$(uname -m)
-  echo "PLATFORM: '${PLATFORM}'" | tee -a build.log
+  local -r ARCH=$(uname -m)
+  echo "ARCH: '${ARCH}'" | tee -a build.log
   local -r OS=$(uname -s)
   echo "OS: '${OS}'" | tee -a build.log
 
   local -r ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
   echo "ROOT_DIR: '${ROOT_DIR}'" | tee -a build.log
 
-  local -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
-  echo "RELEASE_DIR: '${RELEASE_DIR}'" | tee -a build.log
-
-  (cd "${ROOT_DIR}" && make print-OR_TOOLS_VERSION | tee -a build.log)
+  # shellcheck source=/dev/null
+  source "${ROOT_DIR}/Version.txt"
+  assert_defined OR_TOOLS_MAJOR
+  assert_defined OR_TOOLS_MINOR
+  echo "ORTOOLS_VERSION: '${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}'" | tee -a build.log
 
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  echo "ORTOOLS_BRANCH: '${ORTOOLS_BRANCH}'" | tee -a build.log
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
+  echo "ORTOOLS_SHA1: '${ORTOOLS_SHA1}'" | tee -a build.log
+
+  assert_defined ORTOOLS_TOKEN
+  echo "ORTOOLS_TOKEN: FOUND" | tee -a build.log
+
+  local -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
+  echo "RELEASE_DIR: '${RELEASE_DIR}'" | tee -a build.log
 
   mkdir -p "${ROOT_DIR}/export"
 

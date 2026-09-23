@@ -51,21 +51,51 @@ function test_cpp() {
 
 function test_dotnet() {
   command -v dotnet | xargs echo "dotnet: " | tee -a test.log
+  dotnet --version | xargs echo "dotnet version: " | tee -a test.log
 
-  echo "Clear dotnet cache" | tee -a test.log
+  echo "Clear dotnet local package cache" | tee -a test.log
   dotnet nuget locals all --clear
 
-  echo "TODO" | tee -a test.log
-  # install artifacts
-  # Try to build and run cmake/samples/dotnet
+  echo "Copy exported nupkg to sample" | tee -a test.log
+  cd "${ROOT_DIR}" || exit 2
+  cp export/*.nupkg cmake/samples/dotnet
+
+  echo "Build .Net sample" | tee -a test.log
+  cd cmake/samples/dotnet
+  dotnet build --nologo -c Release
+
+  echo "Pack .Net sample" | tee -a test.log
+  dotnet pack --nologo -c Release
+
+  echo "Run sample" | tee -a test.log
+  dotnet run --no-build -c Release
 }
 
 function test_java() {
   command -v mvn | xargs echo "mvn: " | tee -a test.log
+  mvn --version -q | xargs echo "mvn version: " | tee -a test.log
 
-  echo "TODO" | tee -a test.log
-  # install artifacts
-  # Try to build and run cmake/samples/java
+  echo "Clear maven local package cache" | tee -a test.log
+  rm -rf ~/.m2/repository/com/google/ortools
+
+  echo "Install jar packages" | tee -a test.log
+  cd "${ROOT_DIR}/export" || exit 2
+  rm *-sources.jar *-javadoc.jar
+  for f in ortools-linux-*.jar; do mvn install:install-file -Dfile="$f"; break; done
+  for f in ortools-java-*.jar; do mvn install:install-file -Dfile="$f"; break; done
+
+  echo "Compile Java sample" | tee -a test.log
+  cd "${ROOT_DIR}/cmake/samples/java"
+  mvn compile -B
+
+  echo "Package Java sample" | tee -a test.log
+  mvn package -B
+
+  echo "Run sample" | tee -a test.log
+  mvn exec:java
+
+  echo "Run tests sample" | tee -a test.log
+  mvn test
 }
 
 function test_python() {
@@ -75,6 +105,8 @@ function test_python() {
   fi
   local -r PY_VERSION="3.$1"
 
+  # Check Python env
+  echo "check python${PY_VERSION}..."
   command -v "python${PY_VERSION}" | xargs echo "python${PY_VERSION}: " | tee -a test.log
   python${PY_VERSION} --version | grep "${PY_VERSION}"
 
@@ -106,6 +138,20 @@ function main() {
   echo "ARCH: '${ARCH}'" | tee -a test.log
   local -r OS=$(uname -s)
   echo "OS: '${OS}'" | tee -a test.log
+
+  local -r ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
+  echo "ROOT_DIR: '${ROOT_DIR}'" | tee -a test.log
+
+  # shellcheck source=/dev/null
+  source "${ROOT_DIR}/Version.txt"
+  assert_defined OR_TOOLS_MAJOR
+  assert_defined OR_TOOLS_MINOR
+  echo "ORTOOLS_VERSION: '${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}'" | tee -a test.log
+
+  local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  echo "ORTOOLS_BRANCH: '${ORTOOLS_BRANCH}'" | tee -a test.log
+  local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
+  echo "ORTOOLS_SHA1: '${ORTOOLS_SHA1}'" | tee -a test.log
 
   case ${1} in
     cpp|dotnet|java)
