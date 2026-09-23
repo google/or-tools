@@ -90,12 +90,15 @@ function build_dotnet() {
   fi
 
   cd "${ROOT_DIR}" || exit 2
-  echo "check swig..."
+  echo -n "check swig..."
   command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
-  echo "check dotnet..."
+  echo "DONE" | tee -a build.log
+
+  echo -n "check dotnet..."
   command -v dotnet
   command -v dotnet | xargs echo "dotnet: " | tee -a build.log
+  echo "DONE" | tee -a build.log
 
   # Install .Net SNK
   echo -n "Install .Net SNK..." | tee -a build.log
@@ -103,13 +106,14 @@ function build_dotnet() {
   if [[ -x $(command -v openssl11) ]]; then
     OPENSSL_PRG=openssl11
   fi
-  echo "check ${OPENSSL_PRG}..."
+  echo "DONE" | tee -a build.log
+  echo -n "check ${OPENSSL_PRG}..."
   command -v ${OPENSSL_PRG} | xargs echo "openssl: " | tee -a build.log
 
   $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
     -in "${RELEASE_DIR}/or-tools.snk.enc" \
     -out "${ROOT_DIR}/export/or-tools.snk" -d
-  DOTNET_SNK=export/or-tools.snk
+  export DOTNET_SNK=export/or-tools.snk
   echo "DONE" | tee -a build.log
 
   # Clean dotnet
@@ -159,7 +163,7 @@ function build_java() {
     command -v mvn | xargs echo "mvn: " | tee -a build.log
     echo "Check java version..."
     java -version 2>&1 | head -n 1 | xargs echo "java version: " | tee -a build.log
-    java -version 2>&1 | head -n 1 | grep "\b21\.0\."
+    java -version 2>&1 | head -n 1 | grep "\b2[1567]\(\.0\)\?"
   fi
   # Maven central need gpg sign and we store the release key encoded using openssl
   local OPENSSL_PRG=openssl
@@ -195,7 +199,7 @@ function build_java() {
   echo "DONE" | tee -a build.log
 
   echo "Build Java..." | tee -a build.log
-  if [[ ! -v GPG_ARGS ]]; then
+  if [ -z "${GPG_ARGS}" ]; then
     GPG_EXTRA=""
   else
     GPG_EXTRA="-DGPG_ARGS=${GPG_ARGS}"
@@ -209,7 +213,7 @@ function build_java() {
   #echo "cmake test: DONE" | tee -a build.log
 
   # copy jar to export
-  if [[ ${PLATFORM} == "aarch64" ]]; then
+  if [[ ${ARCH} == "aarch64" ]]; then
     cp temp_java/java/ortools-linux-aarch64/target/*.jar* export/
   else
     cp temp_java/java/ortools-linux-x86-64/target/*.jar* export/
@@ -250,13 +254,15 @@ function build_julia() {
   cp -r ortools/julia/ORToolsGenerated.jl "${JULIA_EXPORT_PKG_DIR}/"
 
   local -r ORTOOLS_VERSION=$(cd "${ROOT_DIR}" && make print-OR_TOOLS_VERSION | cut -d'=' -f2 | tr -d ' ')
-  local -r ARCHIVE_NAME="or-tools_julia_${PLATFORM}_v${ORTOOLS_VERSION}.tar.gz"
+  local -r ARCHIVE_NAME="or-tools_julia_${ARCH}_v${ORTOOLS_VERSION}.tar.gz"
   tar --no-same-owner -czvf "export/${ARCHIVE_NAME}" -C "export" julia_pkg
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/julia_build"
 }
 
 # Python 3
 # TODO(user) Use `make --directory tools/docker python` instead
+# shellcheck disable=2317
+# shellcheck disable=2329
 function build_python() {
   if [ -z "$1" ]; then
     >&2 echo "No python version supplied"
@@ -287,6 +293,20 @@ function build_python() {
   protoc-gen-mypy --version | xargs echo "protoc-gen-mypy version: " | tee -a build.log
   protoc-gen-mypy --version | grep "5\.1\.0"
 
+  declare -a MYPY_FILES=(
+    "ortools/algorithms/python/knapsack_solver.pyi"
+    "ortools/graph/python/linear_sum_assignment.pyi"
+    "ortools/graph/python/max_flow.pyi"
+    "ortools/graph/python/min_cost_flow.pyi"
+    "ortools/init/python/init.pyi"
+    "ortools/linear_solver/python/model_builder_helper.pyi"
+    "ortools/linear_solver/python/pywraplp.pyi"
+    "ortools/pdlp/python/pdlp.pyi"
+    "ortools/sat/python/cp_model_helper.pyi"
+    "ortools/scheduling/python/rcpsp.pyi"
+    "ortools/util/python/sorted_interval_list.pyi"
+  )
+
   # Clean and build
   echo -n "Cleaning Python3..." | tee -a build.log
   rm -rf "temp_python"
@@ -306,6 +326,7 @@ function build_python() {
 }
 
 # Create Archive
+# shellcheck disable=2329
 function build_archive() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/archive_build" -; then
     echo "build archive up to date!" | tee -a build.log
@@ -314,7 +335,9 @@ function build_archive() {
 
   # Clean archive
   cd "${ROOT_DIR}" || exit 2
+  echo -n "Clean previous archive..." | tee -a build.log
   make clean_archive
+  echo "DONE" | tee -a build.log
 
   echo -n "Make cpp archive..." | tee -a build.log
   make archive_cpp
@@ -334,6 +357,8 @@ function build_archive() {
 }
 
 # Build Examples
+# shellcheck disable=2317
+# shellcheck disable=2329
 function build_examples() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/examples_build" -; then
     echo "build examples up to date!" | tee -a build.log
@@ -342,12 +367,20 @@ function build_examples() {
 
   cd "${ROOT_DIR}" || exit 2
 
+  echo -n "Clean previous example archives..." | tee -a build.log
   rm -rf temp ./*.tar.gz
-  echo -n "Build examples archives..." | tee -a build.log
+  echo "DONE" | tee -a build.log
+
+  echo "Build examples archives..." | tee -a build.log
+
   echo -n "  Python examples archive..." | tee -a build.log
   make python_examples_archive UNIX_PYTHON_VER=3
+  echo "DONE" | tee -a build.log
+
   echo -n "  Java examples archive..." | tee -a build.log
   make java_examples_archive UNIX_PYTHON_VER=3
+  echo "DONE" | tee -a build.log
+
   echo -n "  .Net examples archive..." | tee -a build.log
   make dotnet_examples_archive UNIX_PYTHON_VER=3
   echo "DONE" | tee -a build.log
@@ -384,24 +417,30 @@ function main() {
       help; exit ;;
   esac
 
-  assert_defined ORTOOLS_TOKEN
-  echo "ORTOOLS_TOKEN: FOUND" | tee -a build.log
-
-  local -r PLATFORM=$(uname -m)
-  echo "PLATFORM: '${PLATFORM}'" | tee -a build.log
+  local -r ARCH=$(uname -m)
+  echo "ARCH: '${ARCH}'" | tee -a build.log
   local -r OS=$(uname -s)
   echo "OS: '${OS}'" | tee -a build.log
 
   local -r ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
   echo "ROOT_DIR: '${ROOT_DIR}'" | tee -a build.log
 
-  local -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
-  echo "RELEASE_DIR: '${RELEASE_DIR}'" | tee -a build.log
-
-  (cd "${ROOT_DIR}" && make print-OR_TOOLS_VERSION | tee -a build.log)
+  # shellcheck source=/dev/null
+  source "${ROOT_DIR}/Version.txt"
+  assert_defined OR_TOOLS_MAJOR
+  assert_defined OR_TOOLS_MINOR
+  echo "ORTOOLS_VERSION: '${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}'" | tee -a build.log
 
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  echo "ORTOOLS_BRANCH: '${ORTOOLS_BRANCH}'" | tee -a build.log
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
+  echo "ORTOOLS_SHA1: '${ORTOOLS_SHA1}'" | tee -a build.log
+
+  assert_defined ORTOOLS_TOKEN
+  echo "ORTOOLS_TOKEN: FOUND" | tee -a build.log
+
+  local -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
+  echo "RELEASE_DIR: '${RELEASE_DIR}'" | tee -a build.log
 
   mkdir -p "${ROOT_DIR}/export"
 
