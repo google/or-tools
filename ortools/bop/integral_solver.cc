@@ -228,7 +228,7 @@ class IntegralVariable {
   // true).
   std::vector<bool> GetBooleanSolutionValues(int64_t integral_value) const;
 
-  std::string DebugString() const;
+  [[maybe_unused]] std::string DebugString() const;
 
  private:
   // The value of the integral variable is expressed as
