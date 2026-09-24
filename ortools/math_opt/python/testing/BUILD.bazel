@@ -22,8 +22,8 @@ py_library(
     testonly = 1,
     srcs = ["compare_proto.py"],
     deps = [
-        requirement("absl-py"),
         "//ortools/math_opt/python:normalize",
+        requirement("absl-py"),
         "@protobuf//:protobuf_python",
     ],
 )
@@ -33,9 +33,9 @@ py_test(
     srcs = ["compare_proto_test.py"],
     deps = [
         ":compare_proto",
-        requirement("absl-py"),
         "//ortools/math_opt:model_py_pb2",
         "//ortools/math_opt/python:normalize",
+        requirement("absl-py"),
     ],
 )
 
@@ -54,8 +54,8 @@ py_test(
     srcs = ["proto_matcher_test.py"],
     deps = [
         ":proto_matcher",
-        requirement("absl-py"),
         "//ortools/math_opt:model_update_py_pb2",
         "//ortools/math_opt:sparse_containers_py_pb2",
+        requirement("absl-py"),
     ],
 )
