@@ -774,7 +774,7 @@ std::optional<LazyMutableCopy<MPModelProto>> GetMPModelOrPopulateResponse(
     return std::nullopt;
   }
 
-  return std::move(model);
+  return model;
 }
 
 // TODO(user): Add a general FindFeasibilityErrorInSolution() and factor out the

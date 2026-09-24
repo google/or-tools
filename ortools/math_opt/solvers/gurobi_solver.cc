@@ -1453,8 +1453,7 @@ absl::StatusOr<std::optional<BasisProto>> GurobiSolver::GetBasisIfAvailable() {
     } else if (grb_termination == GRB_UNBOUNDED) {
       basis.set_basic_dual_feasibility(SOLUTION_STATUS_INFEASIBLE);
     }
-    // TODO(b/195295177): double check if the move is needed
-    return std::move(basis);
+    return basis;
   }
   return std::nullopt;
 }

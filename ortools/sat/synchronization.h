@@ -1181,7 +1181,7 @@ std::shared_ptr<const typename SharedSolutionRepository<ValueType>::Solution>
 SharedSolutionRepository<ValueType>::Add(Solution solution) {
   std::shared_ptr<Solution> solution_ptr =
       std::make_shared<Solution>(std::move(solution));
-  if (num_solutions_to_keep_ <= 0) return std::move(solution_ptr);
+  if (num_solutions_to_keep_ <= 0) return solution_ptr;
   {
     absl::MutexLock mutex_lock(mutex_);
     ++num_added_;
