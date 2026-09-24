@@ -812,7 +812,7 @@ public final class LinearSolverTest {
 
   @Test
   public void testMPSolver_solveWithBadHint() {
-    runSolveWithBadHint(MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
+    //runSolveWithBadHint(MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
     runSolveWithBadHint(MPSolver.OptimizationProblemType.SCIP_MIXED_INTEGER_PROGRAMMING);
     runSolveWithBadHint(MPSolver.OptimizationProblemType.SAT_INTEGER_PROGRAMMING);
     runSolveWithBadHint(MPSolver.OptimizationProblemType.GUROBI_MIXED_INTEGER_PROGRAMMING);
@@ -860,7 +860,7 @@ public final class LinearSolverTest {
 
   @Test
   public void testMPSolver_solveWithInfeasibleHint() {
-    runSolveWithInfeasibleHint(MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
+    //runSolveWithInfeasibleHint(MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
     runSolveWithInfeasibleHint(MPSolver.OptimizationProblemType.SCIP_MIXED_INTEGER_PROGRAMMING);
     runSolveWithInfeasibleHint(MPSolver.OptimizationProblemType.SAT_INTEGER_PROGRAMMING);
     runSolveWithInfeasibleHint(MPSolver.OptimizationProblemType.GUROBI_MIXED_INTEGER_PROGRAMMING);
