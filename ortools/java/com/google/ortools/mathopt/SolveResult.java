@@ -22,7 +22,6 @@ import com.google.ortools.GScipOutput;
 import com.google.ortools.mathopt.FeasibilityStatusProto;
 import com.google.ortools.mathopt.LimitProto;
 import com.google.ortools.mathopt.ObjectiveBoundsProto;
-import com.google.ortools.mathopt.OsqpOutput;
 import com.google.ortools.mathopt.ProblemStatusProto;
 import com.google.ortools.mathopt.SolveResultProto;
 import com.google.ortools.mathopt.SolveStatsProto;
@@ -44,7 +43,6 @@ public final class SolveResult {
   private final ImmutableList<Solution.PrimalRay> primalRays;
   private final ImmutableList<Solution.DualRay> dualRays;
   private final @Nullable GScipOutput gscipSolverSpecificOutput;
-  private final @Nullable OsqpOutput osqpSolverSpecificOutput;
   private final SolveResultProto.@Nullable PdlpOutput pdlpSolverSpecificOutput;
 
   /**
@@ -618,11 +616,6 @@ public final class SolveResult {
     return gscipSolverSpecificOutput;
   }
 
-  /** Solver specific output form OSQP. Only populated if OSQP is used. */
-  public @Nullable OsqpOutput getOsqpSolverSpecificOutput() {
-    return osqpSolverSpecificOutput;
-  }
-
   /** Solver specific output form PDLP. Only populated if PDLP is used. */
   public SolveResultProto.@Nullable PdlpOutput getPdlpSolverSpecificOutput() {
     return pdlpSolverSpecificOutput;
@@ -890,11 +883,9 @@ public final class SolveResult {
     this.dualRays = dualRaysBuilder.build();
 
     GScipOutput gscipOutput = null;
-    OsqpOutput osqpOutput = null;
     SolveResultProto.PdlpOutput pdlpOutput = null;
     switch (proto.getSolverSpecificOutputCase()) {
       case GSCIP_OUTPUT -> gscipOutput = proto.getGscipOutput();
-      case OSQP_OUTPUT -> osqpOutput = proto.getOsqpOutput();
       case PDLP_OUTPUT -> pdlpOutput = proto.getPdlpOutput();
       case SOLVERSPECIFICOUTPUT_NOT_SET -> {
       }
@@ -903,7 +894,6 @@ public final class SolveResult {
             + proto.getSolverSpecificOutputCase());
     }
     this.gscipSolverSpecificOutput = gscipOutput;
-    this.osqpSolverSpecificOutput = osqpOutput;
     this.pdlpSolverSpecificOutput = pdlpOutput;
   }
 }

@@ -169,7 +169,6 @@ proto_library(
     srcs = ["result.proto"],
     deps = [
         ":solution_proto",
-        "//ortools/math_opt/solvers:osqp_proto",
         "//ortools/math_opt/solvers/gscip:gscip_proto",
         "//ortools/pdlp:solve_log_proto",
         "@protobuf//:duration_proto",
@@ -237,11 +236,9 @@ proto_library(
     name = "rpc_proto",
     srcs = ["rpc.proto"],
     deps = [
-        ":callback_proto",
         ":infeasible_subsystem_proto",
         ":model_parameters_proto",
         ":model_proto",
-        ":model_update_proto",
         ":parameters_proto",
         ":result_proto",
         "//ortools/util:status_proto",

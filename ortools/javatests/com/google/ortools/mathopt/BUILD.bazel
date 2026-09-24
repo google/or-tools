@@ -422,7 +422,6 @@ java_junit5_test(
         "//ortools/java/com/google/ortools/mathopt:variable",
         "//ortools/math_opt:result_java_proto",
         "//ortools/math_opt:solution_java_proto",
-        "//ortools/math_opt/solvers:osqp_java_proto",
         "//ortools/math_opt/solvers/gscip:gscip_java_proto",
         "//ortools/pdlp:solve_log_java_proto",
         "@maven//:com_google_truth_truth",

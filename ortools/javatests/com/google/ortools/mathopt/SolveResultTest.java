@@ -26,7 +26,6 @@ import com.google.ortools.mathopt.DualSolutionProto;
 import com.google.ortools.mathopt.FeasibilityStatusProto;
 import com.google.ortools.mathopt.LimitProto;
 import com.google.ortools.mathopt.ObjectiveBoundsProto;
-import com.google.ortools.mathopt.OsqpOutput;
 import com.google.ortools.mathopt.PrimalRayProto;
 import com.google.ortools.mathopt.PrimalSolutionProto;
 import com.google.ortools.mathopt.ProblemStatusProto;
@@ -357,7 +356,6 @@ public final class SolveResultTest {
     assertThat(solveResult.getDualRays()).hasSize(1);
     assertThat(solveResult.getGscipSolverSpecificOutput().getStatus())
         .isEqualTo(GScipOutput.Status.NODE_LIMIT);
-    assertThat(solveResult.getOsqpSolverSpecificOutput()).isNull();
     assertThat(solveResult.getPdlpSolverSpecificOutput()).isNull();
     assertTrue(solveResult.hasPrimalFeasibleSolution());
     assertThat(solveResult.getObjectiveValue()).isEqualTo(1.0);
@@ -411,20 +409,6 @@ public final class SolveResultTest {
   }
 
   @Test
-  public void solveResult_osqpSolverSpecificOutput() {
-    Model model = new Model("test_model");
-    SolveResultProto.Builder proto = minimalValidProto();
-    proto.setOsqpOutput(OsqpOutput.newBuilder().setInitializedUnderlyingSolver(true).build());
-
-    SolveResult solveResult = new SolveResult(model, proto.build());
-
-    assertThat(solveResult.getGscipSolverSpecificOutput()).isNull();
-    assertThat(solveResult.getOsqpSolverSpecificOutput()).isNotNull();
-    assertTrue(solveResult.getOsqpSolverSpecificOutput().getInitializedUnderlyingSolver());
-    assertThat(solveResult.getPdlpSolverSpecificOutput()).isNull();
-  }
-
-  @Test
   public void solveResult_pdlpSolverSpecificOutput() {
     Model model = new Model("test_model");
     SolveResultProto.Builder proto = minimalValidProto();
@@ -436,7 +420,6 @@ public final class SolveResultTest {
     SolveResult solveResult = new SolveResult(model, proto.build());
 
     assertThat(solveResult.getGscipSolverSpecificOutput()).isNull();
-    assertThat(solveResult.getOsqpSolverSpecificOutput()).isNull();
     assertThat(solveResult.getPdlpSolverSpecificOutput()
                    .getConvergenceInformation()
                    .getCorrectedDualObjective())
@@ -573,7 +556,6 @@ public final class SolveResultTest {
     var result = new SolveResult(model, proto.build());
 
     assertThat(result.getGscipSolverSpecificOutput()).isNull();
-    assertThat(result.getOsqpSolverSpecificOutput()).isNull();
     assertThat(result.getPdlpSolverSpecificOutput()).isNull();
   }
 }

@@ -19,7 +19,6 @@ package operations_research.math_opt;
 import "google/protobuf/duration.proto";
 import "ortools/math_opt/solution.proto";
 import "ortools/math_opt/solvers/gscip/gscip.proto";
-import "ortools/math_opt/solvers/osqp.proto";
 import "ortools/pdlp/solve_log.proto";
 
 option java_package = "com.google.ortools.mathopt";
@@ -312,9 +311,9 @@ message SolveResultProto {
 
   oneof solver_specific_output {
     GScipOutput gscip_output = 7;
-    OsqpOutput osqp_output = 8;
     PdlpOutput pdlp_output = 9;
   }
 
   reserved 1;  // Deleted fields.
+  reserved 8;
 }
