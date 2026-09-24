@@ -38,9 +38,9 @@ py_test(
     srcs = ["mps_converter_test.py"],
     deps = [
         ":mps_converter",
-        requirement("absl-py"),
         "//ortools/math_opt:model_py_pb2",
         "//ortools/math_opt/python:mathopt",
         "//ortools/math_opt/python/testing:compare_proto",
+        requirement("absl-py"),
     ],
 )

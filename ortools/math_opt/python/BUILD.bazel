@@ -95,11 +95,11 @@ py_test(
         ":linear_constraints",
         ":model",
         ":variables",
-        requirement("absl-py"),
         "//ortools/math_opt:model_py_pb2",
         "//ortools/math_opt:model_update_py_pb2",
         "//ortools/math_opt:sparse_containers_py_pb2",
         "//ortools/math_opt/python/testing:compare_proto",
+        requirement("absl-py"),
     ],
 )
 
@@ -148,9 +148,9 @@ py_test(
         ":quadratic_constraints",
         ":sparse_containers",
         ":variables",
-        requirement("absl-py"),
         "//ortools/math_opt:sparse_containers_py_pb2",
         "//ortools/math_opt/python/testing:compare_proto",
+        requirement("absl-py"),
     ],
 )
 
@@ -175,10 +175,10 @@ py_test(
     deps = [
         ":model",
         ":solution",
-        requirement("absl-py"),
         "//ortools/math_opt:solution_py_pb2",
         "//ortools/math_opt:sparse_containers_py_pb2",
         "//ortools/math_opt/python/testing:compare_proto",
+        requirement("absl-py"),
     ],
 )
 
@@ -258,8 +258,8 @@ py_test(
         ":model",
         ":objectives",
         ":variables",
-        requirement("absl-py"),
         "//ortools/math_opt/elemental/python:cpp_elemental",
+        requirement("absl-py"),
     ],
 )
 
@@ -271,11 +271,11 @@ py_test(
         ":model",
         ":objectives",
         ":variables",
-        requirement("absl-py"),
         "//ortools/math_opt:model_py_pb2",
         "//ortools/math_opt:model_update_py_pb2",
         "//ortools/math_opt:sparse_containers_py_pb2",
         "//ortools/math_opt/python/testing:compare_proto",
+        requirement("absl-py"),
     ],
 )
 
@@ -302,7 +302,6 @@ py_test(
     srcs = ["parameters_test.py"],
     deps = [
         ":parameters",
-        requirement("absl-py"),
         "//ortools/glop:parameters_py_pb2",
         "//ortools/math_opt:parameters_py_pb2",
         "//ortools/math_opt/python/testing:compare_proto",
@@ -314,6 +313,7 @@ py_test(
         "//ortools/math_opt/solvers/gscip:gscip_py_pb2",
         "//ortools/pdlp:solvers_py_pb2",
         "//ortools/sat:sat_parameters_py_pb2",
+        requirement("absl-py"),
     ],
 )
 
@@ -340,11 +340,11 @@ py_test(
         ":model_parameters",
         ":solution",
         ":sparse_containers",
-        requirement("absl-py"),
         "//ortools/math_opt:model_parameters_py_pb2",
         "//ortools/math_opt:solution_py_pb2",
         "//ortools/math_opt:sparse_containers_py_pb2",
         "//ortools/math_opt/python/testing:compare_proto",
+        requirement("absl-py"),
     ],
 )
 
@@ -368,10 +368,10 @@ py_test(
         ":callback",
         ":model",
         ":sparse_containers",
-        requirement("absl-py"),
         "//ortools/math_opt:callback_py_pb2",
         "//ortools/math_opt:sparse_containers_py_pb2",
         "//ortools/math_opt/python/testing:compare_proto",
+        requirement("absl-py"),
     ],
 )
 
@@ -396,9 +396,9 @@ py_test(
         ":compute_infeasible_subsystem_result",
         ":model",
         ":result",
-        requirement("absl-py"),
         "//ortools/math_opt:infeasible_subsystem_py_pb2",
         "//ortools/math_opt/python/testing:compare_proto",
+        requirement("absl-py"),
     ],
 )
 
@@ -514,7 +514,6 @@ py_test(
     srcs = ["normalize_test.py"],
     deps = [
         ":normalize",
-        requirement("absl-py"),
         "//ortools/math_opt:model_parameters_py_pb2",
         "//ortools/math_opt:model_py_pb2",
         "//ortools/math_opt:model_update_py_pb2",
@@ -522,6 +521,7 @@ py_test(
         "//ortools/math_opt:result_py_pb2",
         "//ortools/math_opt:sparse_containers_py_pb2",
         "//ortools/math_opt/python/testing:compare_proto",
+        requirement("absl-py"),
     ],
 )
 
@@ -555,9 +555,9 @@ py_test(
     srcs = ["solver_resources_test.py"],
     deps = [
         ":solver_resources",
-        requirement("absl-py"),
         "//ortools/math_opt:rpc_py_pb2",
         "//ortools/math_opt/python/testing:compare_proto",
+        requirement("absl-py"),
     ],
 )
 
@@ -575,9 +575,9 @@ py_test(
     srcs = ["errors_test.py"],
     deps = [
         ":errors",
-        requirement("absl-py"),
         "//ortools/util:status_py_pb2",
         "//ortools/util/python:status_streaming",
+        requirement("absl-py"),
     ],
 )
 
@@ -595,9 +595,9 @@ py_test(
     srcs = ["init_arguments_test.py"],
     deps = [
         ":init_arguments",
-        requirement("absl-py"),
         "//ortools/math_opt:parameters_py_pb2",
         "//ortools/math_opt/python/testing:compare_proto",
         "//ortools/math_opt/solvers:gurobi_py_pb2",
+        requirement("absl-py"),
     ],
 )
