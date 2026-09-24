@@ -14,6 +14,8 @@
 #include "ortools/util/full_precision_inequalities.h"
 
 #include <cmath>
+#include <compare>
+#include <limits>
 #include <utility>
 #include <vector>
 
@@ -22,6 +24,78 @@
 
 namespace operations_research {
 namespace {
+
+constexpr double kInf = std::numeric_limits<double>::infinity();
+
+std::vector<double> Negate(const std::vector<double>& v) {
+  std::vector<double> negated;
+  negated.reserve(v.size());
+  for (const double x : v) {
+    negated.push_back(-x);
+  }
+  return negated;
+}
+
+struct ComputeSumSignTestCase {
+  std::vector<double> v;
+  std::strong_ordering expected_sign;
+};
+
+using ComputeSumSignTest = testing::TestWithParam<ComputeSumSignTestCase>;
+
+TEST_P(ComputeSumSignTest, Pos) {
+  const auto& param = GetParam();
+  EXPECT_EQ(ComputeSumSign(param.v), param.expected_sign);
+}
+
+TEST_P(ComputeSumSignTest, Neg) {
+  const auto& param = GetParam();
+  // See https://en.cppreference.com/cpp/utility/compare/strong_ordering for the
+  // definition of <=>.
+  const std::strong_ordering opposite_sign = 0 <=> param.expected_sign;
+  EXPECT_EQ(ComputeSumSign(Negate(param.v)), opposite_sign);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    Values, ComputeSumSignTest,
+    testing::Values(
+        ComputeSumSignTestCase{.v = {},
+                               .expected_sign = std::strong_ordering::equal},
+        ComputeSumSignTestCase{.v = {0.0},
+                               .expected_sign = std::strong_ordering::equal},
+        ComputeSumSignTestCase{.v = {-0.0},
+                               .expected_sign = std::strong_ordering::equal},
+        ComputeSumSignTestCase{.v = {1.0},
+                               .expected_sign = std::strong_ordering::greater},
+        ComputeSumSignTestCase{.v = {1e-308},
+                               .expected_sign = std::strong_ordering::greater},
+        ComputeSumSignTestCase{.v = {1.0, 2.0, -3.0},
+                               .expected_sign = std::strong_ordering::equal},
+        ComputeSumSignTestCase{.v = {1.0, 2.0, -2.9},
+                               .expected_sign = std::strong_ordering::greater},
+        ComputeSumSignTestCase{.v = {1.0, 2.0, -3.1},
+                               .expected_sign = std::strong_ordering::less},
+        ComputeSumSignTestCase{.v = {1e16, 1.0, -1e16},
+                               .expected_sign = std::strong_ordering::greater},
+        ComputeSumSignTestCase{.v = {1e16, -1.0, -1e16},
+                               .expected_sign = std::strong_ordering::less},
+        ComputeSumSignTestCase{.v = {1e16, 1e-16, -1e16},
+                               .expected_sign = std::strong_ordering::greater},
+        ComputeSumSignTestCase{.v = {1e16, -1e-16, -1e16},
+                               .expected_sign = std::strong_ordering::less},
+        ComputeSumSignTestCase{.v = {1e100, 1e-100, -1e100},
+                               .expected_sign = std::strong_ordering::greater},
+        ComputeSumSignTestCase{.v = {1e100, -1e-100, -1e100},
+                               .expected_sign = std::strong_ordering::less},
+        ComputeSumSignTestCase{.v = {1e100, 1.0, -1.0, -1e100},
+                               .expected_sign = std::strong_ordering::equal},
+        ComputeSumSignTestCase{.v = {std::numeric_limits<double>::max(),
+                                     std::numeric_limits<double>::denorm_min(),
+                                     -std::numeric_limits<double>::max()},
+                               .expected_sign = std::strong_ordering::greater},
+        ComputeSumSignTestCase{
+            .v = {1e100, kInf, -1.0, kInf},
+            .expected_sign = std::strong_ordering::greater}));
 
 struct IsDotProductCmpOrEqualTestCase {
   std::vector<double> a;
@@ -33,37 +107,28 @@ struct IsDotProductCmpOrEqualTestCase {
 using IsDotProductCmpOrEqualTest =
     testing::TestWithParam<IsDotProductCmpOrEqualTestCase>;
 
-std::vector<double> Negate(const std::vector<double>& v) {
-  std::vector<double> negated;
-  negated.reserve(v.size());
-  for (const double x : v) {
-    negated.push_back(-x);
-  }
-  return negated;
-}
-
 TEST_P(IsDotProductCmpOrEqualTest, PosPos) {
   auto param = GetParam();
-  EXPECT_EQ(IsDotProductSmallerOrEqual(param.a, param.b, param.bound),
+  EXPECT_EQ(DotProductIsSmallerOrEqual(param.a, param.b, param.bound),
             param.expect_smaller_or_equal);
 }
 
 TEST_P(IsDotProductCmpOrEqualTest, PosNeg) {
   auto param = GetParam();
-  EXPECT_EQ(IsDotProductGreaterOrEqual(param.a, Negate(param.b), -param.bound),
+  EXPECT_EQ(DotProductIsGreaterOrEqual(param.a, Negate(param.b), -param.bound),
             param.expect_smaller_or_equal);
 }
 
 TEST_P(IsDotProductCmpOrEqualTest, NegPos) {
   auto param = GetParam();
-  EXPECT_EQ(IsDotProductGreaterOrEqual(Negate(param.a), param.b, -param.bound),
+  EXPECT_EQ(DotProductIsGreaterOrEqual(Negate(param.a), param.b, -param.bound),
             param.expect_smaller_or_equal);
 }
 
 TEST_P(IsDotProductCmpOrEqualTest, NegNeg) {
   auto param = GetParam();
   EXPECT_EQ(
-      IsDotProductSmallerOrEqual(Negate(param.a), Negate(param.b), param.bound),
+      DotProductIsSmallerOrEqual(Negate(param.a), Negate(param.b), param.bound),
       param.expect_smaller_or_equal);
 }
 
@@ -105,7 +170,33 @@ INSTANTIATE_TEST_SUITE_P(
         IsDotProductCmpOrEqualTestCase{.a = {1e16, -1e-16, -1e16},
                                        .b = {1.0, 1.0, 1.0},
                                        .bound = 0.0,
+                                       .expect_smaller_or_equal = true},
+        IsDotProductCmpOrEqualTestCase{.a = {kInf, -1e-16, 1e16},
+                                       .b = {1.0, 1.0, kInf},
+                                       .bound = 0.0,
+                                       .expect_smaller_or_equal = false},
+        IsDotProductCmpOrEqualTestCase{.a = {-kInf, -1e-16, -1e16},
+                                       .b = {1.0, 1.0, kInf},
+                                       .bound = 0.0,
                                        .expect_smaller_or_equal = true}));
+
+// Test that overflows are handled correctly. This test was failing because of
+// overflowing int128.
+TEST(IsDotProductCmpOrEqualTest, VeryLongSum) {
+  // Compensated sum of (1 << 23) + (1 << 24) = 3 << 23 terms.
+  // (1 << 23) * 2 - (1 << 24) * 1
+  std::vector<double> v((3 << 23) - 1, 1.0);
+  std::vector<double> w(1 << 23, 2.0);
+  w.insert(w.end(), (1 << 24) - 1, -1.0);
+
+  EXPECT_EQ(CmpDotProduct(v, w, 0.0), std::strong_ordering::greater);
+  v.push_back(1.0);
+  w.push_back(-1.0);
+  EXPECT_EQ(CmpDotProduct(v, w, 0.0), std::strong_ordering::equal);
+  v.push_back(1.0);
+  w.push_back(-1.0);
+  EXPECT_EQ(CmpDotProduct(v, w, 0.0), std::strong_ordering::less);
+}
 
 struct GetTightDotProductBoundsTestCase {
   std::vector<double> a;
