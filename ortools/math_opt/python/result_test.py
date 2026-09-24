@@ -664,28 +664,6 @@ class SolveResultTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
         assert actual_res.gscip_specific_output is not None
         self.assertEqual("gscip_detail", actual_res.gscip_specific_output.status_detail)
         self.assertIsNone(actual_res.pdlp_specific_output)
-        self.assertIsNone(actual_res.osqp_specific_output)
-
-        # result -> proto
-        self.assert_protos_equiv(res.to_proto(), proto)
-
-    def test_solve_result_osqp_output(self) -> None:
-        mod = model.Model(name="test_model")
-        res = _make_undetermined_solve_result()
-        res.osqp_specific_output = osqp_pb2.OsqpOutput(
-            initialized_underlying_solver=True
-        )
-
-        proto = _make_undetermined_result_proto()
-        proto.osqp_output.initialized_underlying_solver = True
-
-        # proto -> result
-        actual_res = result.parse_solve_result(proto, mod)
-        self.assertIsNotNone(actual_res.osqp_specific_output)
-        assert actual_res.osqp_specific_output is not None
-        self.assertTrue(actual_res.osqp_specific_output.initialized_underlying_solver)
-        self.assertIsNone(actual_res.pdlp_specific_output)
-        self.assertIsNone(actual_res.gscip_specific_output)
 
         # result -> proto
         self.assert_protos_equiv(res.to_proto(), proto)
@@ -710,20 +688,10 @@ class SolveResultTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
             actual_res.pdlp_specific_output.convergence_information.primal_objective,
             1.0,
         )
-        self.assertIsNone(actual_res.osqp_specific_output)
         self.assertIsNone(actual_res.gscip_specific_output)
 
         # result -> proto
         self.assert_protos_equiv(res.to_proto(), proto)
-
-    def test_multiple_solver_specific_outputs_error(self) -> None:
-        res = _make_undetermined_solve_result()
-        res.gscip_specific_output = gscip_pb2.GScipOutput(status_detail="gscip_detail")
-        res.osqp_specific_output = osqp_pb2.OsqpOutput(
-            initialized_underlying_solver=False
-        )
-        with self.assertRaisesRegex(ValueError, "solver specific output"):
-            res.to_proto()
 
     def test_solve_result_from_proto_missing_bounds_in_termination(
         self,

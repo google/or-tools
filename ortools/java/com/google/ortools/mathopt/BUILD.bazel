@@ -261,7 +261,6 @@ java_library(
         ":variable",
         "//ortools/java/com/google/ortools/util:proto_duration_conversion",
         "//ortools/math_opt:result_java_proto",
-        "//ortools/math_opt/solvers:osqp_java_proto",
         "//ortools/math_opt/solvers/gscip:gscip_java_proto",
         "@maven//:com_google_guava_guava",
         "@maven//:org_jspecify_jspecify",

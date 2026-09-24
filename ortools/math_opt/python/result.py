@@ -426,7 +426,6 @@ class SolveResult:
     dual_rays: List[solution.DualRay] = dataclasses.field(default_factory=list)
     # At most one of the below will be set
     gscip_specific_output: Optional[gscip_pb2.GScipOutput] = None
-    osqp_specific_output: Optional[osqp_pb2.OsqpOutput] = None
     pdlp_specific_output: Optional[result_pb2.SolveResultProto.PdlpOutput] = None
 
     def solve_time(self) -> datetime.timedelta:
@@ -992,9 +991,6 @@ class SolveResult:
         if self.gscip_specific_output is not None:
             has_solver_specific_output("gscip")
             proto.gscip_output.CopyFrom(self.gscip_specific_output)
-        if self.osqp_specific_output is not None:
-            has_solver_specific_output("osqp")
-            proto.osqp_output.CopyFrom(self.osqp_specific_output)
         if self.pdlp_specific_output is not None:
             has_solver_specific_output("pdlp")
             proto.pdlp_output.CopyFrom(self.pdlp_specific_output)
@@ -1060,8 +1056,6 @@ def parse_solve_result(
         )
     if proto.HasField("gscip_output"):
         result.gscip_specific_output = proto.gscip_output
-    elif proto.HasField("osqp_output"):
-        result.osqp_specific_output = proto.osqp_output
     elif proto.HasField("pdlp_output"):
         result.pdlp_specific_output = proto.pdlp_output
     return result
