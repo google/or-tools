@@ -37,8 +37,11 @@
 #include "ortools/sat/container.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_assignment.h"
+#include "ortools/sat/sat_clause.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_trail.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/stats.h"
@@ -111,7 +114,7 @@ class ClauseManager : public SatPropagator {
   SatClause* ReasonClauseOrNull(BooleanVariable var) const;
 
   // Returns true iff the clause is the reason for an assigned variable.
-  bool ClauseIsUsedAsReason(SatClause* clause) const;
+  bool ClauseIsUsedAsReason(const SatClause* clause) const;
 
   // Adds a new clause and performs initial propagation for this clause only.
   bool AddClause(SatClause* clause, Trail* trail, int lbd);
@@ -132,7 +135,7 @@ class ClauseManager : public SatPropagator {
   //
   // Note that we remove the clause from clauses_info_ right away.
   // Callers must not reattach `clause` after calling this method.
-  void LazyDelete(SatClause* clause, DeletionSourceForStat source);
+  void LazyDelete(const SatClause* clause, DeletionSourceForStat source);
 
   // Removes all watchers for any clauses that have been lazily detached.
   void CleanUpWatchers();
@@ -146,7 +149,10 @@ class ClauseManager : public SatPropagator {
   // O(num_clauses()).
   void DeleteRemovedClauses();
   int64_t num_clauses() const { return clauses_.size(); }
-  const std::vector<SatClause*>& AllClausesInCreationOrder() const {
+  absl::Span<const SatClause* const> AllClausesInCreationOrder() const {
+    return clauses_;
+  }
+  absl::Span<SatClause* const> AllMutableClausesInCreationOrder() {
     return clauses_;
   }
 
@@ -154,19 +160,19 @@ class ClauseManager : public SatPropagator {
   // This is the case for clauses that were learned during search. Note however
   // that some learned clauses are kept forever (heuristics) and do not appear
   // here.
-  bool IsRemovable(SatClause* const clause) const {
+  bool IsRemovable(const SatClause* const clause) const {
     return clauses_info_.contains(clause);
   }
   int64_t num_removable_clauses() const { return clauses_info_.size(); }
-  absl::flat_hash_map<SatClause*, ClauseInfo>* mutable_clauses_info() {
+  absl::flat_hash_map<const SatClause*, ClauseInfo>* mutable_clauses_info() {
     return &clauses_info_;
   }
-  int LbdOrZeroIfNotRemovable(SatClause* const clause) const {
+  int LbdOrZeroIfNotRemovable(const SatClause* const clause) const {
     auto it = clauses_info_.find(clause);
     if (it == clauses_info_.end()) return 0;
     return it->second.lbd;
   }
-  void KeepClauseForever(SatClause* const clause) {
+  void KeepClauseForever(const SatClause* const clause) {
     clauses_info_.erase(clause);
   }
   void RescaleClauseActivities(double scaling_factor) {
@@ -177,7 +183,7 @@ class ClauseManager : public SatPropagator {
 
   // If the new lbd is better than the stored one, update it.
   // And return the result of IsRemovable() (this saves one hash lookup).
-  void ChangeLbdIfBetter(SatClause* clause, int new_lbd);
+  void ChangeLbdIfBetter(const SatClause* clause, int new_lbd);
 
   // Total number of clauses inspected during calls to Propagate().
   int64_t num_inspected_clauses() const { return num_inspected_clauses_; }
@@ -373,7 +379,7 @@ class ClauseManager : public SatPropagator {
                      SatClause* clause);
 
   // Common code between LazyDelete() and Detach().
-  void InternalDetach(SatClause* clause, DeletionSourceForStat source);
+  void InternalDetach(const SatClause* clause, DeletionSourceForStat source);
 
   util_intops::StrongVector<LiteralIndex, std::vector<Watcher>>
       watchers_on_false_;
@@ -417,7 +423,7 @@ class ClauseManager : public SatPropagator {
   int to_probe_index_ = 0;
 
   // Only contains removable clauses.
-  absl::flat_hash_map<SatClause*, ClauseInfo> clauses_info_;
+  absl::flat_hash_map<const SatClause*, ClauseInfo> clauses_info_;
 
   LratProofHandler* lrat_proof_handler_ = nullptr;
 

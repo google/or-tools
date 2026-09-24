@@ -21,7 +21,8 @@
 #include "absl/types/span.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
+#include "ortools/sat/sat_trail.h"
 #include "ortools/util/stats.h"
 
 namespace operations_research {

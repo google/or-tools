@@ -41,8 +41,10 @@
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/probing.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_assignment.h"
+#include "ortools/sat/sat_clause.h"
 #include "ortools/sat/sat_decision.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/bitset.h"
@@ -466,7 +468,8 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
 
     clause_manager_->DeleteRemovedClauses();
     clause_manager_->DetachAllClauses();
-    for (SatClause* clause : clause_manager_->AllClausesInCreationOrder()) {
+    for (SatClause* const clause :
+         clause_manager_->AllMutableClausesInCreationOrder()) {
       bool removed = false;
       bool need_rewrite = false;
 
@@ -548,7 +551,8 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
   // left.
   if (DEBUG_MODE) {
     const auto& assignment = trail_->Assignment();
-    for (SatClause* clause : clause_manager_->AllClausesInCreationOrder()) {
+    for (const SatClause* const clause :
+         clause_manager_->AllClausesInCreationOrder()) {
       for (const Literal lit : clause->AsSpan()) {
         CHECK(!assignment.LiteralIsAssigned(lit));
         CHECK(!implication_graph_->IsRedundant(lit));
@@ -594,9 +598,10 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
 
   // Process clauses by increasing sizes.
   // TODO(user): probably faster without the size indirection.
-  std::vector<SatClause*> clauses_copy =
-      clause_manager_->AllClausesInCreationOrder();
-  absl::c_stable_sort(clauses_copy, [](SatClause* a, SatClause* b) {
+  std::vector<SatClause*> clauses_copy(
+      clause_manager_->AllMutableClausesInCreationOrder().begin(),
+      clause_manager_->AllMutableClausesInCreationOrder().end());
+  absl::c_stable_sort(clauses_copy, [](const SatClause* a, const SatClause* b) {
     return a->size() < b->size();
   });
   absl::Span<SatClause*> clauses = absl::MakeSpan(clauses_copy);
@@ -619,7 +624,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
   // Literals which can be removed, and the reason why.
   std::vector<std::pair<Literal, int>> candidates_for_removal;
   for (int clause_index = 0; clause_index < clauses.size(); ++clause_index) {
-    SatClause* clause = clauses[clause_index];
+    SatClause* const clause = clauses[clause_index];
     DCHECK(!SomeLiteralAreAssigned(trail_->Assignment(), clause->AsSpan()));
 
     // TODO(user): Better abort limit. We could also limit the watcher sizes and
@@ -1131,7 +1136,8 @@ bool StampingSimplifier::ProcessClauses() {
   clause_manager_->DeleteRemovedClauses();
   clause_manager_->DetachAllClauses();
   tmp_proof_.clear();
-  for (SatClause* clause : clause_manager_->AllClausesInCreationOrder()) {
+  for (SatClause* const clause :
+       clause_manager_->AllMutableClausesInCreationOrder()) {
     const auto span = clause->AsSpan();
     if (span.empty()) continue;
 
@@ -1340,7 +1346,8 @@ void BlockedClauseSimplifier::InitializeForNewRound() {
   clauses_.clear();
   clause_manager_->DeleteRemovedClauses();
   clause_manager_->DetachAllClauses();
-  for (SatClause* c : clause_manager_->AllClausesInCreationOrder()) {
+  for (const SatClause* const c :
+       clause_manager_->AllClausesInCreationOrder()) {
     // We ignore redundant clauses. This shouldn't cause any validity issue.
     if (clause_manager_->IsRemovable(c)) continue;
 
@@ -1518,7 +1525,8 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
   removable_clauses_.clear();
   clause_manager_->DeleteRemovedClauses();
   clause_manager_->DetachAllClauses();
-  for (SatClause* c : clause_manager_->AllClausesInCreationOrder()) {
+  for (SatClause* const c :
+       clause_manager_->AllMutableClausesInCreationOrder()) {
     // We ignore redundant clauses. This shouldn't cause any validity issue.
     // TODO(user): but we shouldn't keep clauses containing removed literals.
     // It is still valid to do so, but it should be less efficient.
@@ -1592,7 +1600,8 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
 
   // Remove all redundant clauses containing a removed literal. This avoids
   // re-introducing a removed literal via conflict learning.
-  for (SatClause* c : clause_manager_->AllClausesInCreationOrder()) {
+  for (const SatClause* const c :
+       clause_manager_->AllClausesInCreationOrder()) {
     bool remove = false;
     for (const Literal l : c->AsSpan()) {
       if (implication_graph_->IsRemoved(l)) {

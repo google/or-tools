@@ -17,6 +17,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <queue>
 #include <tuple>
 #include <utility>
@@ -25,6 +26,7 @@
 #include "absl/base/nullability.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
+#include "ortools/util/piecewise_linear_function.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research::routing {
@@ -175,6 +177,39 @@ bool FindMostExpensiveArcsOnRoute(
 
   *first_expensive_arc_indices = {0, 1};
   return true;
+}
+
+std::vector<SlopeAndYIntercept> PiecewiseLinearFunctionToSlopeAndYIntercept(
+    const FloatSlopePiecewiseLinearFunction& pwl_function, int index_start,
+    int index_end) {
+  const auto& x_anchors = pwl_function.x_anchors();
+  const auto& y_anchors = pwl_function.y_anchors();
+  if (index_end < 0) index_end = x_anchors.size() - 1;
+  const int num_segments = index_end - index_start;
+  DCHECK_GE(num_segments, 1);
+  std::vector<SlopeAndYIntercept> slope_and_y_intercept(num_segments);
+  for (int seg = index_start; seg < index_end; ++seg) {
+    auto& [slope, y_intercept] = slope_and_y_intercept[seg - index_start];
+    slope = (y_anchors[seg + 1] - y_anchors[seg]) /
+            static_cast<double>(x_anchors[seg + 1] - x_anchors[seg]);
+    y_intercept = y_anchors[seg] - slope * x_anchors[seg];
+  }
+  return slope_and_y_intercept;
+}
+
+std::vector<bool> SlopeAndYInterceptToConvexityRegions(
+    absl::Span<const SlopeAndYIntercept> slope_and_y_intercept) {
+  CHECK(!slope_and_y_intercept.empty());
+  std::vector<bool> convex(slope_and_y_intercept.size(), false);
+  double previous_slope = std::numeric_limits<double>::max();
+  for (int i = 0; i < slope_and_y_intercept.size(); ++i) {
+    const auto& pair = slope_and_y_intercept[i];
+    if (pair.slope < previous_slope) {
+      convex[i] = true;
+    }
+    previous_slope = pair.slope;
+  }
+  return convex;
 }
 
 }  // namespace operations_research::routing

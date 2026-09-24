@@ -196,7 +196,7 @@ class VarDomination {
   // We don't use absl::Span() because the underlying buffer can be resized.
   // This however serves the same purpose.
   struct IntegerVariableSpan {
-    int start = 0;
+    int64_t start = 0;
     int size = 0;
   };
 

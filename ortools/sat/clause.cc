@@ -45,8 +45,11 @@
 #include "ortools/sat/inclusion.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_assignment.h"
+#include "ortools/sat/sat_clause.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_trail.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/stats.h"
@@ -307,7 +310,7 @@ SatClause* ClauseManager::ReasonClauseOrNull(BooleanVariable var) const {
   return result;
 }
 
-bool ClauseManager::ClauseIsUsedAsReason(SatClause* clause) const {
+bool ClauseManager::ClauseIsUsedAsReason(const SatClause* clause) const {
   DCHECK(clause != nullptr);
   if (clause->empty()) return false;
   return clause == ReasonClauseOrNull(clause->PropagatedLiteral().Variable());
@@ -405,11 +408,11 @@ void ClauseManager::Attach(SatClause* clause, Trail* trail) {
   AttachOnFalse(literals[1], literals[0], clause);
 }
 
-void ClauseManager::InternalDetach(SatClause* clause,
+void ClauseManager::InternalDetach(const SatClause* clause,
                                    DeletionSourceForStat source) {
   // Double-deletion.
   // TODO(user): change that to a check?
-  if (clause->size() == 0) return;
+  if (clause->IsRemoved()) return;
 
   --num_watched_clauses_;
   if (lrat_proof_handler_ != nullptr) {
@@ -418,10 +421,10 @@ void ClauseManager::InternalDetach(SatClause* clause,
   }
   deletion_counters_[static_cast<int>(source)]++;
   clauses_info_.erase(clause);
-  clause->Clear();
+  clause->MarkForRemoval();
 }
 
-void ClauseManager::LazyDelete(SatClause* clause,
+void ClauseManager::LazyDelete(const SatClause* clause,
                                DeletionSourceForStat source) {
   InternalDetach(clause, source);
   if (all_clauses_are_attached_) {
@@ -482,7 +485,8 @@ bool ClauseManager::InprocessingFixLiteral(Literal true_literal,
   return implication_graph_->FixLiteral(true_literal, proof);
 }
 
-void ClauseManager::ChangeLbdIfBetter(SatClause* clause, int new_lbd) {
+void ClauseManager::ChangeLbdIfBetter(const SatClause* const clause,
+                                      int new_lbd) {
   auto it = clauses_info_.find(clause);
   if (it == clauses_info_.end()) return;
 
@@ -591,7 +595,7 @@ bool ClauseManager::InprocessingRewriteClause(
     // We must eagerly detach the clause
     // TODO(user): If we were to create a totally new clause instead of
     // reusing the memory we could use LazyDelete. Investigate.
-    clause->Clear();
+    clause->MarkForRemoval();
     for (const Literal l : {clause->FirstLiteral(), clause->SecondLiteral()}) {
       needs_cleaning_.Clear(l);
       OpenSourceEraseIf(watchers_on_false_[l], [](const Watcher& watcher) {

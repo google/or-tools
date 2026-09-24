@@ -135,9 +135,11 @@ struct ConstraintScaler {
   double min_scaling_factor = std::numeric_limits<double>::infinity();
 
   // Statistics for enforcement extraction.
-  int num_enforcements = 0;
-  int num_integer_enforcements = 0;
-  double max_enforcement_magnitude = 0.0;
+  int64_t num_trivial_constraints = 0;
+  int64_t num_enforcements = 0;
+  int64_t num_integer_enforcements = 0;
+  double max_boolean_enforcement_magnitude = 0.0;
+  double max_integer_enforcement_magnitude = 0.0;
 
   // Parameters. Whether we ignore or copy the mp_constraint.name() field.
   bool keep_names = false;

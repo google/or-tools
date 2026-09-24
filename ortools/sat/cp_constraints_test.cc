@@ -26,7 +26,7 @@
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/old_precedences_propagator.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_solver.h"
 
 namespace operations_research {

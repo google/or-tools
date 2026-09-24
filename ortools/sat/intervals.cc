@@ -31,8 +31,9 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/no_overlap_2d_helper.h"
 #include "ortools/sat/precedences.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/sat_trail.h"
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/util/strong_integers.h"
 

@@ -42,9 +42,12 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/restart.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_assignment.h"
+#include "ortools/sat/sat_clause.h"
 #include "ortools/sat/sat_decision.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_trail.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
@@ -416,7 +419,8 @@ class SatSolver {
     // currently processes the clauses in order.
     out->SetNumVariables(NumVariables());
     binary_implication_graph_->ExtractAllBinaryClauses(out);
-    for (SatClause* clause : clauses_propagator_->AllClausesInCreationOrder()) {
+    for (const SatClause* const clause :
+         clauses_propagator_->AllClausesInCreationOrder()) {
       if (!clauses_propagator_->IsRemovable(clause)) {
         out->AddClause(clause->AsSpan());
       }

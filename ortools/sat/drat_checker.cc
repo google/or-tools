@@ -33,7 +33,8 @@
 #include "ortools/base/hash.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_assignment.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 

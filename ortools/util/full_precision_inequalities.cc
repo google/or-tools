@@ -46,10 +46,33 @@ std::pair<double, double> GetLooseDotProductBounds(
 
   double dp_ub = 0.0;
   double dp_lb = 0.0;
+  std::optional<std::strong_ordering> inf_sign = std::nullopt;
   for (int i = 0; i < a.size(); ++i) {
+    // Handle infinite values. This is a rare case, but it should be checked to
+    // avoid absurd nan results. Also some downstream code assumes that infinite
+    // values have been filtered out here.
+    if (!std::isfinite(a[i]) || !std::isfinite(b[i])) {
+      CHECK(!std::isnan(a[i]) && !std::isnan(b[i]))
+          << "NaN value not supported.";
+      CHECK(a[i] != 0.0 && b[i] != 0.0) << "NaN value obtained from 0 * inf";
+      const std::strong_ordering current_inf_sign =
+          (a[i] < 0.0) == (b[i] < 0.0) ? std::strong_ordering::greater
+                                       : std::strong_ordering::less;
+      if (!inf_sign.has_value()) {
+        inf_sign = current_inf_sign;
+      } else {
+        CHECK_EQ(*inf_sign, current_inf_sign)
+            << "Inconsistent infinite values found.";
+      }
+    }
     const double prod = a[i] * b[i];
     dp_ub = std::nextafter(dp_ub + std::nextafter(prod, kInf), kInf);
     dp_lb = std::nextafter(dp_lb + std::nextafter(prod, -kInf), -kInf);
+  }
+  if (inf_sign.has_value()) {
+    return (*inf_sign == std::strong_ordering::greater)
+               ? std::make_pair(kInf, kInf)
+               : std::make_pair(-kInf, -kInf);
   }
   return {dp_lb, dp_ub};
 }
@@ -156,16 +179,18 @@ void AddWithOverflow(RealNumber& a, uint64_t& overflow, const RealNumber& b) {
 }
 
 // Returns the comparison of the sum of the given real numbers with 0.
-// The algorithm avoids use of floating point arithmetic. Note that it reorder
-// the input vector.
-std::strong_ordering SumSign(std::vector<RealNumber>& terms) {
-  if (terms.empty()) return std::strong_ordering::equal;
-
-  // Sort by increasing exponent.
-  absl::c_sort(terms, [](const RealNumber& a, const RealNumber& b) {
+// The algorithm avoids use of floating point arithmetic. Precondition: the
+// input vector is sorted by increasing exponent.
+// If additional_term is present, it is added to the sum.
+std::strong_ordering ExponentOrderedSumSign(
+    const std::vector<RealNumber>& terms,
+    std::optional<RealNumber> additional_term) {
+  DCHECK(absl::c_is_sorted(terms, [](const RealNumber& a, const RealNumber& b) {
     return a.exponent < b.exponent;
-  });
-  RealNumber remainder = terms.front();
+  }));
+  RealNumber remainder = {.negative = false,
+                          .mantissa = 0,
+                          .exponent = std::numeric_limits<int>::min()};
   // Stores the part of the remainder that has been dropped due to overflow. It
   // cannot overflow itself as it would need (1 << 64) overflows in remainder,
   // see below.
@@ -177,7 +202,12 @@ std::strong_ordering SumSign(std::vector<RealNumber>& terms) {
   // with equal exponents together as long as there is no overflow. No overflow
   // is guaranteed for less than 1 << (128 - 2 * 53) = 1 << 22 terms if we
   // assume that the initial numbers are at most product of two doubles.
-  for (int i = 1; i < terms.size(); ++i) {
+  for (int i = 0; i < terms.size() || additional_term.has_value(); ++i) {
+    const bool use_additional_term =
+        additional_term.has_value() &&
+        (i == terms.size() || additional_term->exponent <= terms[i].exponent);
+    const RealNumber& current_term =
+        use_additional_term ? *additional_term : terms[i];
     // Invariant:
     // S = sum(j >= i, terms[j]) + remainder + dropped_part holds with:
     //  * remainder.exponent <= terms[i].exponent,
@@ -186,7 +216,7 @@ std::strong_ordering SumSign(std::vector<RealNumber>& terms) {
 
     // Shift right the remainder to match the exponent of terms[i].
     const std::strong_ordering cur_dropped_part_cmp_zero = ShiftRight(
-        remainder, rem_overflow, terms[i].exponent - remainder.exponent);
+        remainder, rem_overflow, current_term.exponent - remainder.exponent);
     if (cur_dropped_part_cmp_zero != std::strong_ordering::equal) {
       dropped_part_cmp_zero = cur_dropped_part_cmp_zero;
     }
@@ -197,12 +227,16 @@ std::strong_ordering SumSign(std::vector<RealNumber>& terms) {
     //  * dropped_part_cmp_zero is the comparison of the dropped part with 0.
 
     // Compute remainder += terms[i].
-    AddWithOverflow(remainder, rem_overflow, terms[i]);
+    AddWithOverflow(remainder, rem_overflow, current_term);
     // Invariant:
     // S = sum(j > i, terms[j]) + remainder + dropped_part holds with:
     //  * remainder.exponent = terms[i].exponent,
     //  * abs(dropped_part) < 2^{remainder.exponent},
     //  * dropped_part_cmp_zero is the comparison of the dropped part with 0.
+    if (use_additional_term) {
+      additional_term.reset();
+      --i;
+    }
   }
   // We want to return true if S <=> 0.
   // S = remainder + dropped_part.
@@ -211,6 +245,19 @@ std::strong_ordering SumSign(std::vector<RealNumber>& terms) {
                               : std::strong_ordering::greater;
   }
   return dropped_part_cmp_zero;
+}
+
+// Returns the comparison of the sum of the given real numbers with 0.
+// The algorithm avoids use of floating point arithmetic. Note that it reorder
+// the input vector.
+std::strong_ordering SumSign(std::vector<RealNumber>& terms) {
+  if (terms.empty()) return std::strong_ordering::equal;
+
+  // Sort by increasing exponent.
+  absl::c_sort(terms, [](const RealNumber& a, const RealNumber& b) {
+    return a.exponent < b.exponent;
+  });
+  return ExponentOrderedSumSign(terms, std::nullopt);
 }
 
 }  // namespace
@@ -356,12 +403,24 @@ std::pair<double, double> GetTightDotProductBounds(
       CmpDotProduct(a, b, ub) == std::strong_ordering::equal) {
     return {ub, ub};
   }
+
+  // Coherent infinite terms are not possible here as they would have led to a
+  // return in GetLooseDotProductBounds.
+  std::vector<RealNumber> terms;
+  terms.reserve(a.size());
+  for (int i = 0; i < a.size(); ++i) {
+    terms.push_back(Prod(a[i], b[i]));
+  }
+  absl::c_sort(terms, [](const RealNumber& a, const RealNumber& b) {
+    return a.exponent < b.exponent;
+  });
+
   // Perform a dichotomy.
   while (std::nextafter(lb, ub) != ub) {
     const double mid = CardinalMidpoint(lb, ub);
-    // Note that this could be optimized as a part of the call of CmpDotProduct
-    // is common to all calls.
-    const auto cmp = CmpDotProduct(a, b, mid);
+    RealNumber mid_real = FromDouble(mid);
+    mid_real.negative = !mid_real.negative;
+    const auto cmp = ExponentOrderedSumSign(terms, mid_real);
     if (cmp == std::strong_ordering::equal) return {mid, mid};
 
     if (cmp == std::strong_ordering::less) {

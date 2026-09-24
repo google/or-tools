@@ -54,7 +54,7 @@
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/routing_cuts.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/scheduling_cuts.h"

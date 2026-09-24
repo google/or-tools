@@ -23,6 +23,7 @@ Java and .Net. Each language have different requirements for the code samples.
 #include "absl/log/globals.h"
 #include "absl/log/log.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/port/sysinfo.h"
 
 namespace operations_research {
 
@@ -59,9 +60,12 @@ void SimpleCpProgram() {
 
   LOG(INFO) << "Advanced usage:" << std::endl
             << "Problem solved in " << std::to_string(solver.wall_time())
-            << "ms" << std::endl
-            << "Memory usage: " << std::to_string(Solver::MemoryUsage())
-            << "bytes";
+            << "ms" << std::endl;
+  if (auto memory_usage = sysinfo::MemoryUsageProcess();
+      memory_usage.has_value()) {
+    LOG(INFO) << "Memory usage: " << std::to_string(memory_usage.value())
+              << "bytes";
+  }
 }
 
 }  // namespace operations_research
@@ -177,10 +181,7 @@ public class SimpleCpProgram {
     solver.endSearch();
     logger.info("Number of solutions found: " + solver.solutions());
 
-    logger.info(
-        String.format(
-            "Advanced usage:\nProblem solved in %d ms\nMemory usage: %d bytes",
-            solver.wallTime(), Solver.memoryUsage()));
+    logger.info(String.format("Advanced usage:\nProblem solved in %d ms\n", solver.wallTime()));
   }
 }
 ```

@@ -30,7 +30,7 @@
 #include "ortools/sat/linear_propagation.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/timetable.h"

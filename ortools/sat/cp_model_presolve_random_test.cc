@@ -252,6 +252,7 @@ TEST_P(RandomPreprocessorTest, TestHintSurvivePresolve) {
   tighten_params.set_fill_tightened_domains_in_response(true);
   const CpSolverResponse with_tighten =
       SolveWithParameters(model_proto, tighten_params);
+  ASSERT_EQ(with_tighten.status(), CpSolverStatus::OPTIMAL);
   EXPECT_EQ(with_tighten.tightened_variables().size(), num_vars);
   for (int i = 0; i < num_vars; i++) {
     EXPECT_TRUE(ReadDomainFromProto(with_tighten.tightened_variables(i))

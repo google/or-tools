@@ -178,21 +178,34 @@ void FourierSolver::RemoveDominatedConstraints() {
   }
 }
 
+// Converts value to int64_t if it is an integer within the int64_t range,
+// otherwise returns 1. Used to compute the gcd of coefficients and bounds.
+int64_t ConvertToInt64OrOne(double value) {
+  constexpr double kInt64MaxAsDouble =
+      static_cast<double>(std::numeric_limits<int64_t>::max());
+  constexpr double kInt64MinAsDouble =
+      static_cast<double>(std::numeric_limits<int64_t>::min());
+  if (value > kInt64MaxAsDouble || value < kInt64MinAsDouble) return 1;
+  const int64_t i64_value = static_cast<int64_t>(value);
+  if (static_cast<double>(i64_value) != value) return 1;
+  return i64_value;
+}
+
 double FourierSolver::RescaleConstraint(FourierSolver::Constraint& ct) {
   auto& [coefs, lb, ub, _combination] = ct;
   int64_t scale = 0;
   for (const double coef : coefs) {
     // Reminder: std::gcd(0, x) = abs(x).
-    const int64_t i64_coef = static_cast<int64_t>(coef);
-    if (static_cast<double>(i64_coef) != coef) return 1.0;
+    const int64_t i64_coef = ConvertToInt64OrOne(coef);
     scale = std::gcd(scale, i64_coef);
+    if (scale == 1) return 1.0;
   }
   if (scale == 0 || scale == 1) return 1.0;
   for (const double bound : {lb, ub}) {
-    if (!std::isfinite(bound)) continue;
-    const int64_t i64_bound = static_cast<int64_t>(bound);
-    if (static_cast<double>(i64_bound) != bound) return 1.0;
-    scale = std::gcd(scale, static_cast<int64_t>(bound));
+    if (!std::isfinite(bound)) continue;  // Infinite rescaling is idempotent.
+    const int64_t i64_bound = ConvertToInt64OrOne(bound);
+    scale = std::gcd(scale, i64_bound);
+    if (scale == 1) return 1.0;
   }
   for (double& coef : coefs) coef /= scale;
   lb /= scale;
@@ -349,8 +362,8 @@ bool FourierSolver::Solve() {
         if (absl::popcount(combination) > num_eliminations + 1) continue;
 
         const int64_t scale =
-            std::gcd(static_cast<int64_t>(pos_ct.coefs[min_var]),
-                     static_cast<int64_t>(neg_ct.coefs[min_var]));
+            std::gcd(ConvertToInt64OrOne(pos_ct.coefs[min_var]),
+                     ConvertToInt64OrOne(neg_ct.coefs[min_var]));
         const double pos_mult = pos_ct.coefs[min_var] / scale;
         const double neg_mult = -neg_ct.coefs[min_var] / scale;
         // Compute new constraint p_coef * nrow + n_coef * prow. This particular

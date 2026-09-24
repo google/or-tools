@@ -2109,6 +2109,17 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
     return NotifyThatModelIsUnsat("empty objective domain");
   }
 
+  // Recompute objective_overflow_detection_ after canonicalizing variables and
+  // dividing by GCD.
+  objective_overflow_detection_ = 0;
+  for (const auto [var, coeff] : objective_map_) {
+    const int64_t var_max_magnitude =
+        std::max(std::abs(MinOf(var)), std::abs(MaxOf(var)));
+    objective_overflow_detection_ =
+        CapAdd(objective_overflow_detection_,
+               CapProd(var_max_magnitude, std::abs(coeff)));
+  }
+
   // Detect if the objective domain does not limit the "optimal" objective
   // value. If this is true, then we can apply any reduction that reduces the
   // objective value without any issues.
@@ -2209,6 +2220,8 @@ bool PresolveContext::SubstituteVariableInObjective(
   const int64_t multiplier = coeff_in_objective / coeff_in_equality;
 
   // Abort if the new objective seems to violate our overflow preconditions.
+  // PossibleIntegerOverflow() in ValidateObjective() requires both sum_min >=
+  // -kint64max / 2 and sum_max <= kint64max / 2.
   int64_t change = 0;
   for (int i = 0; i < equality.linear().vars().size(); ++i) {
     int var = equality.linear().vars(i);
@@ -2223,8 +2236,7 @@ bool PresolveContext::SubstituteVariableInObjective(
                  std::abs(coeff_in_equality) *
                      std::max(std::abs(MinOf(var_in_equality)),
                               std::abs(MaxOf(var_in_equality))));
-  if (new_value == kint64max) return false;
-  objective_overflow_detection_ = new_value;
+  if (new_value > kint64max / 2) return false;
 
   // Compute the objective offset change.
   Domain offset = ReadDomainFromProto(equality.linear());
@@ -2236,6 +2248,7 @@ bool PresolveContext::SubstituteVariableInObjective(
 
   // We also need to make sure the integer_offset will not overflow.
   if (!AddToObjectiveOffset(offset.Min())) return false;
+  objective_overflow_detection_ = new_value;
 
   // Perform the substitution.
   for (int i = 0; i < equality.linear().vars().size(); ++i) {
@@ -2333,31 +2346,47 @@ bool PresolveContext::ExploitExactlyOneInObjective(
 bool PresolveContext::ShiftCostInExactlyOne(absl::Span<const int> exactly_one,
                                             int64_t shift) {
   if (shift == 0) return true;
+  if (shift == kint64min) return false;
 
   // We have to be careful because shifting costs like this might increase the
-  // min/max possible activity of the sum.
+  // min/max possible activity of the sum. PossibleIntegerOverflow() in
+  // ValidateObjective() requires both sum_min >= -kint64max / 2 and sum_max <=
+  // kint64max / 2, and shifting costs in an exactly_one can give most terms the
+  // same sign.
   //
   // TODO(user): Be more precise with this objective_overflow_detection_ and
   // always keep it up to date on each offset / coeff change.
   int64_t sum = 0;
   int64_t new_sum = 0;
+  int64_t offset = shift;
   for (const int ref : exactly_one) {
     const int var = PositiveRef(ref);
     const int64_t obj = ObjectiveCoeff(var);
     sum = CapAdd(sum, std::abs(obj));
 
-    const int64_t new_obj = RefIsPositive(ref) ? obj - shift : obj + shift;
+    const int64_t new_obj =
+        RefIsPositive(ref) ? CapSub(obj, shift) : CapAdd(obj, shift);
+    if (AtMinOrMaxInt64(new_obj)) return false;
     new_sum = CapAdd(new_sum, std::abs(new_obj));
+    if (!RefIsPositive(ref)) {
+      offset = CapSub(offset, shift);
+      if (AtMinOrMaxInt64(offset)) return false;
+    }
   }
   if (AtMinOrMaxInt64(new_sum)) return false;
+  if (AtMinOrMaxInt64(CapAdd(objective_integer_before_offset_, offset))) {
+    return false;
+  }
   if (new_sum > sum) {
     const int64_t new_value =
         CapAdd(objective_overflow_detection_, new_sum - sum);
-    if (AtMinOrMaxInt64(new_value)) return false;
+    if (new_value > kint64max / 2) return false;
     objective_overflow_detection_ = new_value;
+  } else {
+    objective_overflow_detection_ =
+        std::max<int64_t>(0, objective_overflow_detection_ - (sum - new_sum));
   }
 
-  int64_t offset = shift;
   objective_proto_is_up_to_date_ = false;
   for (const int ref : exactly_one) {
     const int var = PositiveRef(ref);
@@ -2381,12 +2410,11 @@ bool PresolveContext::ShiftCostInExactlyOne(absl::Span<const int> exactly_one,
       if (map_ref == 0) {
         RemoveVariableFromObjective(var);
       }
-      offset -= shift;
     }
   }
 
   // Note that the domain never includes the offset, so we need to update it.
-  if (offset != 0) AddToObjectiveOffset(offset);
+  if (offset != 0) CHECK(AddToObjectiveOffset(offset));
 
   // When we shift the cost using an exactly one, our objective implied bounds
   // might be more or less precise. If the objective domain is not constraining

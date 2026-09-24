@@ -19,6 +19,7 @@
 #include <deque>
 #include <limits>
 #include <utility>
+#include <vector>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -29,6 +30,7 @@
 #include "ortools/lp_data/sparse.h"
 #include "ortools/lp_data/sparse_column.h"
 #include "ortools/util/fp_utils.h"
+#include "ortools/util/full_precision_inequalities.h"
 #include "ortools/util/return_macros.h"
 #include "ortools/util/stats.h"
 
@@ -37,7 +39,6 @@ using ::operations_research::glop::ColToRowIndex;
 using ::operations_research::glop::Fractional;
 using ::operations_research::glop::kInfinity;
 using ::operations_research::glop::LinearProgram;
-using ::operations_research::glop::ProblemStatus;
 using ::operations_research::glop::RowIndex;
 using ::operations_research::glop::SparseColumn;
 using ::operations_research::glop::SparseMatrix;
@@ -167,6 +168,8 @@ glop::Preprocessor::Result BoundPropagationPreprocessor::Run(
 
   // This preprocessor will need to access the constraints row by row.
   const SparseMatrix& transpose = linear_program->GetTransposeSparseMatrix();
+  std::vector<double> alpha;
+  std::vector<double> beta;
 
   // Now process all the rows until none are left, or a limit on the number of
   // processed rows is reached. The limit is mainly here to prevent infinite
@@ -215,6 +218,66 @@ glop::Preprocessor::Result BoundPropagationPreprocessor::Run(
     lb_sum.Add(-linear_program->constraint_upper_bounds()[row]);
     ub_sum.Add(-linear_program->constraint_lower_bounds()[row]);
 
+    auto compute_exact_ub_other = [&](ColIndex target_col) -> Fractional {
+      const Fractional ct_lb = linear_program->constraint_lower_bounds()[row];
+      DCHECK(std::isfinite(ct_lb));
+      alpha.clear();
+      beta.clear();
+      if (ct_lb != 0.0) {
+        alpha.push_back(-1.0);
+        beta.push_back(ct_lb);
+      }
+      if (tolerance != 0.0) {
+        alpha.push_back(1.0);
+        beta.push_back(tolerance);
+      }
+      for (const SparseColumn::Entry e_other :
+           transpose.column(RowToColIndex(row))) {
+        const ColIndex col_other = RowToColIndex(e_other.row());
+        if (col_other == target_col) continue;
+        const Fractional c = e_other.coefficient();
+        const Fractional b =
+            (c > 0.0) ? linear_program->variable_upper_bounds()[col_other]
+                      : linear_program->variable_lower_bounds()[col_other];
+        DCHECK(std::isfinite(b));
+        if (c != 0.0 && b != 0.0) {
+          alpha.push_back(c);
+          beta.push_back(b);
+        }
+      }
+      return GetLooseDotProductBounds(alpha, beta).second;
+    };
+
+    auto compute_exact_lb_other = [&](ColIndex target_col) -> Fractional {
+      const Fractional ct_ub = linear_program->constraint_upper_bounds()[row];
+      DCHECK(std::isfinite(ct_ub));
+      alpha.clear();
+      beta.clear();
+      if (ct_ub != 0.0) {
+        alpha.push_back(-1.0);
+        beta.push_back(ct_ub);
+      }
+      if (tolerance != 0.0) {
+        alpha.push_back(-1.0);
+        beta.push_back(tolerance);
+      }
+      for (const SparseColumn::Entry e_other :
+           transpose.column(RowToColIndex(row))) {
+        const ColIndex col_other = RowToColIndex(e_other.row());
+        if (col_other == target_col) continue;
+        const Fractional c = e_other.coefficient();
+        const Fractional b =
+            (c > 0.0) ? linear_program->variable_lower_bounds()[col_other]
+                      : linear_program->variable_upper_bounds()[col_other];
+        DCHECK(std::isfinite(b));
+        if (c != 0.0 && b != 0.0) {
+          alpha.push_back(c);
+          beta.push_back(b);
+        }
+      }
+      return GetLooseDotProductBounds(alpha, beta).first;
+    };
+
     // Process the variables one by one and check if the implied bounds are
     // more restrictive.
     for (const SparseColumn::Entry e : transpose.column(RowToColIndex(row))) {
@@ -240,24 +303,41 @@ glop::Preprocessor::Result BoundPropagationPreprocessor::Run(
         implied_ub = std::floor(implied_ub + tolerance);
       }
 
-      // more restrictive? If yes, sets the bounds, and add all the impacted
-      // row back into to_process if they are not already there.
+      // more restrictive? If yes, re-check with exact dot product bounds
+      // (GetLooseDotProductBounds) before setting the bounds. This is
+      // relatively cheap if done only when the heuristic triggers, and avoiding
+      // errors compounding.
       if (implied_lb > var_lb || implied_ub < var_ub) {
-        Fractional new_lb = std::max(implied_lb, var_lb);
-        Fractional new_ub = std::min(implied_ub, var_ub);
+        Fractional exact_implied_lb = var_lb;
+        Fractional exact_implied_ub = var_ub;
+        if (implied_lb > var_lb) {
+          const Fractional other_bound = (coeff > 0.0)
+                                             ? compute_exact_ub_other(col)
+                                             : compute_exact_lb_other(col);
+          exact_implied_lb = std::nextafter(-other_bound / coeff, -kInfinity);
+          if (linear_program->IsVariableInteger(col)) {
+            exact_implied_lb = std::ceil(exact_implied_lb - tolerance);
+          }
+        }
+        if (implied_ub < var_ub) {
+          const Fractional other_bound = (coeff > 0.0)
+                                             ? compute_exact_lb_other(col)
+                                             : compute_exact_ub_other(col);
+          exact_implied_ub = std::nextafter(-other_bound / coeff, kInfinity);
+          if (linear_program->IsVariableInteger(col)) {
+            exact_implied_ub = std::floor(exact_implied_ub + tolerance);
+          }
+        }
+
+        Fractional new_lb = std::max(exact_implied_lb, var_lb);
+        Fractional new_ub = std::min(exact_implied_ub, var_ub);
         if (new_lb > new_ub) {
-          // TODO(user): Investigate what tolerance we should use here.
-          if (new_lb - tolerance > new_ub) {
+          if (linear_program->IsVariableInteger(col) &&
+              new_lb - tolerance <= new_ub) {
+            new_lb = new_ub = std::round(new_lb);
+          } else {
             return {.postsolve_is_needed = false,
                     .solve_status = glop::PrimalInfeasibleSolveStatus()};
-          } else {
-            // We choose the nearest integer for an integer variable, or the
-            // middle value for a non-integer one.
-            if (linear_program->IsVariableInteger(col)) {
-              new_lb = new_ub = round(new_lb);
-            } else {
-              new_lb = new_ub = (new_lb + new_ub) / 2.0;
-            }
           }
         }
 

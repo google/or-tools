@@ -28,6 +28,7 @@ endif()
 
 target_link_libraries(constraint_solver_pybind11 PRIVATE
   ${PROJECT_NAMESPACE}::ortools
+  pybind11_abseil::absl_casters
   pybind11_native_proto_caster)
 add_library(${PROJECT_NAMESPACE}::constraint_solver_pybind11 ALIAS constraint_solver_pybind11)
 

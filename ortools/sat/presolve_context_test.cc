@@ -15,11 +15,11 @@
 
 #include <cstdint>
 
-#include "absl/container/flat_hash_set.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
@@ -416,6 +416,38 @@ TEST(PresolveContextTest, ExploitAtMostOneInObjectiveNegatedRef) {
     }
   )pb");
   EXPECT_THAT(working_model, testing::EqualsProto(expected));
+}
+
+TEST(PresolveContextTest,
+     ShiftCostInExactlyOneRejectsOverflowAboveHalfInt64Max) {
+  Model model;
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints { exactly_one { literals: [ 0, 1, 2, 3 ] } }
+    constraints { bool_or { literals: [ 0, 4 ] } }
+  )pb");
+  const int64_t kQuarterMax = kint64max / 4;
+  working_model.mutable_objective()->add_vars(0);
+  working_model.mutable_objective()->add_coeffs(kQuarterMax);
+  working_model.mutable_objective()->add_vars(4);
+  working_model.mutable_objective()->add_coeffs(1);
+
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+  context.ReadObjectiveFromProto();
+  EXPECT_TRUE(context.CanonicalizeObjective());
+
+  // Shifting {0, 1, 2, 3} by kQuarterMax would produce objective terms
+  // -kQuarterMax * x1 - kQuarterMax * x2 - kQuarterMax * x3 + x4, which has
+  // sum_min = -3 * kQuarterMax < -kint64max / 2 (failing ValidateObjective's
+  // PossibleIntegerOverflow check) even though 3 * kQuarterMax + 1 < kint64max.
+  EXPECT_FALSE(context.ShiftCostInExactlyOne({0, 1, 2, 3}, kQuarterMax));
+  EXPECT_EQ(context.ObjectiveCoeff(0), kQuarterMax);
+  EXPECT_EQ(context.ObjectiveCoeff(1), 0);
 }
 
 TEST(PresolveContextTest, ObjectiveSubstitution) {

@@ -35,11 +35,14 @@
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/probing.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_assignment.h"
+#include "ortools/sat/sat_clause.h"
 #include "ortools/sat/sat_decision.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/sat_sweeping.h"
+#include "ortools/sat/sat_trail.h"
 #include "ortools/sat/util.h"
 #include "ortools/sat/vivification.h"
 #include "ortools/util/integer_pq.h"
@@ -332,7 +335,7 @@ class BlockedClauseSimplifier {
   // We compute the occurrence graph just once at the beginning of each round
   // and we do not shrink it as we remove blocked clauses.
   DEFINE_STRONG_INDEX_TYPE(rat_literal_clause_index);
-  util_intops::StrongVector<ClauseIndex, SatClause*> clauses_;
+  util_intops::StrongVector<ClauseIndex, const SatClause*> clauses_;
   util_intops::StrongVector<LiteralIndex, std::vector<ClauseIndex>>
       literal_to_clauses_;
 };
@@ -426,7 +429,7 @@ class BoundedVariableElimination {
   // clauses.
   DEFINE_STRONG_INDEX_TYPE(ClauseIndex);
   util_intops::StrongVector<ClauseIndex, SatClause*> clauses_;
-  util_intops::StrongVector<ClauseIndex, SatClause*> removable_clauses_;
+  util_intops::StrongVector<ClauseIndex, const SatClause*> removable_clauses_;
   util_intops::StrongVector<LiteralIndex, std::vector<ClauseIndex>>
       literal_to_clauses_;
   util_intops::StrongVector<LiteralIndex, std::vector<ClauseIndex>>

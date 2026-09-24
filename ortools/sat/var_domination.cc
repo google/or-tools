@@ -191,7 +191,7 @@ void VarDomination::Initialize(absl::Span<IntegerVariableWithRank> span) {
     }
   }
 
-  const int future_start = shared_buffer_.size();
+  const int64_t future_start = shared_buffer_.size();
   int first_start = -1;
   const int size = span.size();
   for (int i = 0; i < size; ++i) {
@@ -206,7 +206,7 @@ void VarDomination::Initialize(absl::Span<IntegerVariableWithRank> span) {
     if (first_start == -1) first_start = entry.rank;
     has_initial_candidates_[entry.var] = true;
     initial_candidates_[entry.var] = {
-        future_start - first_start + static_cast<int>(entry.rank),
+        future_start - first_start + static_cast<int64_t>(entry.rank),
         num_candidates};
   }
 
@@ -236,7 +236,7 @@ bool VarDomination::EndFirstPhase() {
       num_vars_with_negation_, false);
 
   // Fill the initial domination candidates.
-  int non_cropped_size = 0;
+  int64_t non_cropped_size = 0;
   std::vector<IntegerVariable> partition_data;
   const std::vector<absl::Span<const IntegerVariable>> elements_by_part =
       partition_->GetParts(&partition_data);
@@ -244,7 +244,7 @@ bool VarDomination::EndFirstPhase() {
     if (can_freely_decrease_[var]) continue;
 
     const int part = partition_->PartOf(var.value());
-    const int start = buffer_.size();
+    const int64_t start = buffer_.size();
     const uint64_t var_sig = block_down_signatures_[var];
     const uint64_t not_var_sig = block_down_signatures_[NegationOf(var)];
     absl::Span<const IntegerVariable> to_scan =
@@ -266,6 +266,7 @@ bool VarDomination::EndFirstPhase() {
         if (new_size >= kMaxInitialSize) {
           is_cropped[var] = true;
           cropped_vars.insert(var);
+          break;
         }
       }
     } else {
@@ -294,7 +295,7 @@ bool VarDomination::EndFirstPhase() {
   //
   // Compute how much extra space we need for transposed values.
   // Note that it cannot be more than twice.
-  int total_extra_space = 0;
+  int64_t total_extra_space = 0;
   util_intops::StrongVector<IntegerVariable, int> extra_space(
       num_vars_with_negation_, 0);
   for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
@@ -306,7 +307,7 @@ bool VarDomination::EndFirstPhase() {
   }
 
   // Copy into a new buffer.
-  int copy_index = 0;
+  int64_t copy_index = 0;
   other_buffer_.resize(buffer_.size() + total_extra_space);
   for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
     IntegerVariableSpan& s = dominating_vars_[var];
@@ -324,7 +325,7 @@ bool VarDomination::EndFirstPhase() {
   // Fill the free spaces with transposed values.
   // But do not use new values !
   for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
-    const int start = dominating_vars_[var].start;
+    const int64_t start = dominating_vars_[var].start;
     const int size = extra_space[var];
     for (int i = 0; i < size; ++i) {
       const IntegerVariable dom = buffer_[start + i];
@@ -963,7 +964,9 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
                 context->HasVarValueEncoding(var, value, &encoding_lit);
           }
 
-          if (has_encoding) {
+          DCHECK(!context->VariableWasRemoved(PositiveRef(ref)));
+          if (has_encoding &&
+              !context->VariableWasRemoved(PositiveRef(encoding_lit))) {
             // If it is different, we have an equivalence now, and we can
             // remove the constraint.
             if (rhs.IsFixed()) {
@@ -1087,6 +1090,8 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
               // hint to false to preserve the hint feasibility despite the new
               // Boolean equality constraint.
               crush.UpdateLiteralsToFalseIfDifferent(ref, other_ref);
+              DCHECK(!context->VariableWasRemoved(PositiveRef(ref)));
+              DCHECK(!context->VariableWasRemoved(PositiveRef(other_ref)));
               if (!context->StoreBooleanEqualityRelation(ref, other_ref)) {
                 return false;
               }
@@ -1098,6 +1103,67 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
               context->UpdateConstraintVariableUsage(ct_index);
               continue;
             }
+          }
+        }
+      }
+
+      // If a variable is only blocked by coeff * X + offset, see if we can
+      // make it equivalent to that !
+      if (ct.constraint_case() == ConstraintProto::kLinear &&
+          ct.linear().vars().size() == 2 && ct.enforcement_literal().empty()) {
+        // Canonicalize the constraint into:
+        // positive_ref + cb * b \in [min, (don't care), max].
+        int64_t min = ct.linear().domain(0);
+        int64_t max = ct.linear().domain(ct.linear().domain().size() - 1);
+        int a = ct.linear().vars(0);
+        int b = ct.linear().vars(1);
+        int64_t ca = ct.linear().coeffs(0);
+        int64_t cb = ct.linear().coeffs(1);
+        if (positive_ref == b) {
+          std::swap(a, b);
+          std::swap(ca, cb);
+        }
+        if (ca < 0) {
+          ca = -ca;
+          cb = -cb;
+          std::swap(min, max);
+          min = -min;
+          max = -max;
+        }
+
+        if (ca != 1) {
+          // TODO(user): can we handle more complex coeff ? It doesn't seems
+          // easy in general as the maximum X satisfying aX + bY <= max will
+          // not be at aX + bY == max, if max - bY is not divisible by a.
+          context->UpdateRuleStats("TODO dual: only one blocking linear2?");
+        } else if (!processed[b]) {
+          bool equiv = false;
+          int64_t offset = 0;
+          const Domain da = context->DomainOf(a);
+          const Domain db = context->DomainOf(b);
+          const Domain d_rhs = db.ContinuousMultiplicationBy(-cb);
+
+          // a can freely decrease and we can always have a + cb * b == min.
+          if (ref == a && d_rhs.AdditionWith(Domain(min)).IsIncludedIn(da)) {
+            equiv = true;
+            offset = min;
+          }
+
+          // a can freely increase and we can always have a + cb * b == max.
+          if (ref == NegatedRef(a) &&
+              d_rhs.AdditionWith(Domain(max)).IsIncludedIn(da)) {
+            equiv = true;
+            offset = max;
+          }
+
+          if (equiv) {
+            context->UpdateRuleStats(
+                "dual: removed var only blocked by coeff * X + offset");
+            crush.SetVarToLinearExpression(a, {{b, -cb}}, offset);
+            if (!context->StoreAffineRelation(a, b, -cb, offset)) return false;
+            processed[a] = true;
+            processed[b] = true;
+            continue;
           }
         }
       }
@@ -1118,7 +1184,6 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
       }
       continue;
     }
-    if (ct.enforcement_literal().size() != 1) continue;
 
     // If (a => b) is the only constraint blocking a literal a in the up
     // direction, then we can set a == b !
@@ -1134,38 +1199,47 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     // if that is interesting. This could always be done on a max-2sat problem
     // in one of the two directions. Also think about max-2sat specific
     // presolve.
-    int a = ct.enforcement_literal(0);
-    int b = 1;
-    if (PositiveRef(a) == positive_ref &&
-        num_locks_[RefToIntegerVariable(NegatedRef(a))] == 1) {
-      // Here, we can only add the equivalence if the literal is the only
-      // on the lhs, otherwise there are actually more locks.
-      if (ct.bool_and().literals().size() != 1) continue;
-      b = ct.bool_and().literals(0);
-    } else {
-      bool found = false;
-      b = NegatedRef(ct.enforcement_literal(0));
-      for (const int lhs : ct.bool_and().literals()) {
-        if (PositiveRef(lhs) == positive_ref &&
-            num_locks_[RefToIntegerVariable(lhs)] == 1) {
-          found = true;
-          a = NegatedRef(lhs);
-          break;
+    if (ct.constraint_case() == ConstraintProto::kBoolAnd &&
+        ct.enforcement_literal().size() == 1) {
+      CHECK_EQ(ct.constraint_case(), ConstraintProto::kBoolAnd);
+      int a = ct.enforcement_literal(0);
+      int b = 1;
+      if (PositiveRef(a) == positive_ref &&
+          num_locks_[RefToIntegerVariable(NegatedRef(a))] == 1) {
+        // Here, we can only add the equivalence if the literal is the only
+        // on the lhs, otherwise there are actually more locks.
+        if (ct.bool_and().literals().size() != 1) continue;
+        b = ct.bool_and().literals(0);
+      } else {
+        bool found = false;
+        b = NegatedRef(ct.enforcement_literal(0));
+        for (const int lhs : ct.bool_and().literals()) {
+          if (PositiveRef(lhs) == positive_ref &&
+              num_locks_[RefToIntegerVariable(lhs)] == 1) {
+            found = true;
+            a = NegatedRef(lhs);
+            break;
+          }
         }
+        CHECK(found);
       }
-      CHECK(found);
-    }
-    CHECK_EQ(num_locks_[RefToIntegerVariable(NegatedRef(a))], 1);
+      CHECK_EQ(num_locks_[RefToIntegerVariable(NegatedRef(a))], 1);
 
-    processed[PositiveRef(a)] = true;
-    processed[PositiveRef(b)] = true;
-    // If hint(a) is false we can always set it to hint(b) since this can only
-    // increase its value. If hint(a) is true then hint(b) must be true as well
-    // if the hint is feasible, due to the a => b constraint. Setting hint(a) to
-    // hint(b) is thus always safe. The opposite is true as well.
-    crush.MakeLiteralsEqual(a, b);
-    if (!context->StoreBooleanEqualityRelation(a, b)) return false;
-    context->UpdateRuleStats("dual: enforced equivalence");
+      if (!processed[PositiveRef(a)] && !processed[PositiveRef(b)]) {
+        DCHECK(!context->VariableWasRemoved(PositiveRef(a)));
+        DCHECK(!context->VariableWasRemoved(PositiveRef(b)));
+        processed[PositiveRef(a)] = true;
+        processed[PositiveRef(b)] = true;
+        // If hint(a) is false we can always set it to hint(b) since this can
+        // only increase its value. If hint(a) is true then hint(b) must be true
+        // as well if the hint is feasible, due to the a => b constraint.
+        // Setting hint(a) to hint(b) is thus always safe. The opposite is true
+        // as well.
+        crush.MakeLiteralsEqual(a, b);
+        if (!context->StoreBooleanEqualityRelation(a, b)) return false;
+        context->UpdateRuleStats("dual: enforced equivalence");
+      }
+    }
   }
 
   if (num_bool_in_near_duplicate_ct) {

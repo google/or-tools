@@ -32,9 +32,12 @@
 #include "ortools/sat/gate_utils.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_assignment.h"
+#include "ortools/sat/sat_clause.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/sat_trail.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
@@ -158,7 +161,7 @@ class GateCongruenceClosure {
 
   // Add a small clause to the corresponding truth table.
   template <int arity>
-  void AddToTruthTable(SatClause* clause,
+  void AddToTruthTable(const SatClause* clause,
                        absl::flat_hash_map<std::array<BooleanVariable, arity>,
                                            TruthTableId>& ids);
 
@@ -237,14 +240,14 @@ class GateCongruenceClosure {
   absl::flat_hash_map<std::array<BooleanVariable, 5>, TruthTableId> ids5_;
   CompactVectorVector<TruthTableId, BooleanVariable> truth_tables_inputs_;
   util_intops::StrongVector<TruthTableId, SmallBitset> truth_tables_bitset_;
-  CompactVectorVector<TruthTableId, SatClause*> truth_tables_clauses_;
+  CompactVectorVector<TruthTableId, const SatClause*> truth_tables_clauses_;
 
   // Only used for logs.
   util_intops::StrongVector<TruthTableId, SmallBitset> old_truth_tables_bitset_;
 
   // Temporary vector used to construct truth_tables_clauses_.
   std::vector<TruthTableId> tmp_ids_;
-  std::vector<SatClause*> tmp_clauses_;
+  std::vector<const SatClause*> tmp_clauses_;
 
   // Temporary SatClause* for binary, so we don't need to specialize too much
   // code for them.

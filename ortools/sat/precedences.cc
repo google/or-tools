@@ -42,8 +42,10 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_clause.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/sat_trail.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
@@ -1200,7 +1202,7 @@ int GreaterThanAtLeastOneOfDetector::AddGreaterThanAtLeastOneOfConstraints(
 
   int num_added_constraints = 0;
   SOLVER_LOG(logger, "[Precedences] num_relations=", repository_.size(),
-             " num_clauses=", clauses->AllClausesInCreationOrder().size());
+             " num_clauses=", clauses->num_clauses());
 
   CompactVectorVector<LiteralIndex, IntegerLiteral> implied_bounds_by_literal;
   {
@@ -1224,8 +1226,7 @@ int GreaterThanAtLeastOneOfDetector::AddGreaterThanAtLeastOneOfConstraints(
   // TODO(user): Do more extensive experiment. Remove the second approach as
   // it is more time consuming? or identify when it makes sense. Note that the
   // first approach also allows to use "incomplete" at least one between arcs.
-  if (!auto_detect_clauses &&
-      clauses->AllClausesInCreationOrder().size() < 1e6) {
+  if (!auto_detect_clauses && clauses->num_clauses() < 1e6) {
     // TODO(user): This does not take into account clauses of size 2 since they
     // are stored in the BinaryImplicationGraph instead. Some ideas specific
     // to size 2:
@@ -1233,7 +1234,7 @@ int GreaterThanAtLeastOneOfDetector::AddGreaterThanAtLeastOneOfConstraints(
     //   them. We need to experiment.
     // - The automatic clause detection might be a better approach and it
     //   could be combined with probing.
-    for (const SatClause* clause : clauses->AllClausesInCreationOrder()) {
+    for (const SatClause* const clause : clauses->AllClausesInCreationOrder()) {
       if (time_limit->LimitReached()) return num_added_constraints;
       if (solver->ModelIsUnsat()) return num_added_constraints;
       num_added_constraints += AddGreaterThanAtLeastOneOfConstraintsFromClause(

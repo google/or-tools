@@ -2501,7 +2501,7 @@ IntExpr* Solver::MakeDifference(IntExpr* left, IntExpr* right) {
     return MakeDifference(left->Min(), right);
   }
   if (right->Bound()) {
-    return MakeSum(left, -right->Min());
+    return MakeSum(left, CapOpp(right->Min()));
   }
   IntExpr* sub_left = nullptr;
   IntExpr* sub_right = nullptr;
@@ -2509,7 +2509,11 @@ IntExpr* Solver::MakeDifference(IntExpr* left, IntExpr* right) {
   int64_t right_coef = 1;
   if (IsExprProduct(left, &sub_left, &left_coef) &&
       IsExprProduct(right, &sub_right, &right_coef)) {
-    const int64_t abs_gcd = std::gcd(std::abs(left_coef), std::abs(right_coef));
+    const int64_t abs_left =
+        left_coef == kint64min ? kint64max : std::abs(left_coef);
+    const int64_t abs_right =
+        right_coef == kint64min ? kint64max : std::abs(right_coef);
+    const int64_t abs_gcd = std::gcd(abs_left, abs_right);
     if (abs_gcd != 0 && abs_gcd != 1) {
       return MakeProd(MakeDifference(MakeProd(sub_left, left_coef / abs_gcd),
                                      MakeProd(sub_right, right_coef / abs_gcd)),
@@ -2536,8 +2540,7 @@ IntExpr* Solver::MakeDifference(IntExpr* left, IntExpr* right) {
 IntExpr* Solver::MakeDifference(int64_t value, IntExpr* expr) {
   CHECK_EQ(this, expr->solver());
   if (expr->Bound()) {
-    DCHECK(!SubOverflows(value, expr->Min()));
-    return MakeIntConst(value - expr->Min());
+    return MakeIntConst(CapSub(value, expr->Min()));
   }
   if (value == 0) {
     return MakeOpposite(expr);

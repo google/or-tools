@@ -15,11 +15,10 @@
 # some generic utilities for SWIG python.
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@pybind11_bazel//:build_defs.bzl", "pybind_library")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
 load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library")
-load("//bazel:or_pybind_rules.bzl", "or_pybind_extension")
+load("//bazel:or_pybind_rules.bzl", "or_pybind_extension", "or_pybind_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -40,7 +39,7 @@ or_pybind_extension(
     ],
 )
 
-pybind_library(
+or_pybind_library(
     name = "sorted_interval_list_deps",
     srcs = ["sorted_interval_list.cc"],
     visibility = ["//visibility:public"],
@@ -69,7 +68,7 @@ or_pybind_extension(
     ],
 )
 
-pybind_library(
+or_pybind_library(
     name = "piecewise_linear_function_deps",
     srcs = ["piecewise_linear_function.cc"],
     visibility = ["//visibility:public"],

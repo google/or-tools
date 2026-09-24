@@ -23,7 +23,8 @@
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
 #include "ortools/base/path.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_assignment.h"
+#include "ortools/sat/sat_literal.h"
 
 namespace operations_research {
 namespace sat {

@@ -30,7 +30,7 @@
 #include "ortools/base/types.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/strong_integers.h"
 

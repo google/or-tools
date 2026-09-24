@@ -26,7 +26,7 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/util.h"
 

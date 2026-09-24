@@ -11,64 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_clause.h"
 
 #include <memory>
 #include <vector>
 
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/sat/sat_literal.h"
 
 namespace operations_research {
 namespace sat {
 namespace {
-
-TEST(BooleanVariableTest, Api) {
-  BooleanVariable var1(1);
-  BooleanVariable var2(2);
-  BooleanVariable var3(2);
-  EXPECT_NE(var1, var2);
-  EXPECT_EQ(var2, var3);
-}
-
-TEST(LiteralTest, Api) {
-  BooleanVariable var1(1);
-  BooleanVariable var2(2);
-  Literal l1(var1, true);
-  Literal l2(var2, false);
-  Literal l3 = l2.Negated();
-  EXPECT_EQ(l1.Variable(), var1);
-  EXPECT_EQ(l2.Variable(), var2);
-  EXPECT_EQ(l3.Variable(), var2);
-  EXPECT_TRUE(l1.IsPositive());
-  EXPECT_TRUE(l2.IsNegative());
-  EXPECT_TRUE(l3.IsPositive());
-}
-
-TEST(VariablesAssignmentTest, Api) {
-  BooleanVariable var0(0);
-  BooleanVariable var1(1);
-  BooleanVariable var2(2);
-
-  VariablesAssignment assignment;
-  assignment.Resize(3);
-  assignment.AssignFromTrueLiteral(Literal(var0, true));
-  assignment.AssignFromTrueLiteral(Literal(var1, false));
-
-  EXPECT_TRUE(assignment.LiteralIsTrue(Literal(var0, true)));
-  EXPECT_TRUE(assignment.LiteralIsFalse(Literal(var0, false)));
-  EXPECT_TRUE(assignment.LiteralIsTrue(Literal(var1, false)));
-  EXPECT_FALSE(assignment.VariableIsAssigned(var2));
-
-  assignment.UnassignLiteral(Literal(var0, true));
-  EXPECT_FALSE(assignment.VariableIsAssigned(var0));
-
-  assignment.AssignFromTrueLiteral(Literal(var2, false));
-  EXPECT_TRUE(assignment.LiteralIsTrue(Literal(var2, false)));
-  EXPECT_FALSE(assignment.LiteralIsTrue(Literal(var2, true)));
-  EXPECT_TRUE(assignment.LiteralIsFalse(Literal(var2, true)));
-  EXPECT_FALSE(assignment.LiteralIsFalse(Literal(var2, false)));
-}
 
 TEST(SatClauseTest, BasicAllocation) {
   std::unique_ptr<SatClause> clause(SatClause::Create(Literals({+1, -2, +4})));

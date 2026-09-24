@@ -70,8 +70,7 @@ public class SimpleCpProgram {
     // [END print_solution]
 
     // [START advanced]
-    logger.info(String.format("Advanced usage:\nProblem solved in %d ms\nMemory usage: %d bytes",
-        solver.wallTime(), Solver.memoryUsage()));
+    logger.info(String.format("Advanced usage:\nProblem solved in %d ms\n", solver.wallTime()));
     // [END advanced]
   }
 }

@@ -37,7 +37,7 @@
 #include "ortools/base/macros/os_support.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 

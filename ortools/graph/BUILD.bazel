@@ -17,6 +17,47 @@ load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
+or_cc_library(name = "graph")
+
+or_cc_library(name = "generic_graph")
+
+or_cc_library(
+    name = "graph_generator",
+)
+
+or_cc_library(
+    name = "random_graph",
+    testonly = 1,
+)
+
+or_cc_library(name = "io")
+
+or_cc_library(name = "util")
+
+or_cc_library(
+    name = "test_util",
+)
+
+or_cc_library(name = "iterators")
+
+or_cc_library(
+    name = "bfs",
+)
+
+or_cc_library(name = "strongly_connected_components")
+
+or_cc_library(name = "topologicalsorter")
+
+or_cc_library(name = "hash_or_tree_container")
+
+or_cc_library(name = "index")
+
+or_cc_library(name = "connected_components")
+
+or_cc_library(
+    name = "flow_graph",
+)
+
 or_cc_library(
     name = "bounded_dijkstra",
     hdrs = ["bounded_dijkstra.h"],

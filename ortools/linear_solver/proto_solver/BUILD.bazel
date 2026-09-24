@@ -205,10 +205,12 @@ or_cc_library(
         "//ortools/lp_data:sparse",
         "//ortools/lp_data:sparse_column",
         "//ortools/util:fp_utils",
+        "//ortools/util:full_precision_inequalities",
         "//ortools/util:return_macros",
         "//ortools/util:stats",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 

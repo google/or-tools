@@ -21,7 +21,7 @@
 #include "ortools/base/gmock.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_solver.h"
 
 namespace operations_research {
@@ -45,7 +45,7 @@ TEST(InprocessingTest, ClauseCleanupWithFixedVariables) {
   EXPECT_TRUE(inprocessing->DetectEquivalencesAndStamp(false, log_info));
   EXPECT_TRUE(inprocessing->RemoveFixedAndEquivalentVariables(log_info));
   {
-    const auto& all_clauses = clause_manager->AllClausesInCreationOrder();
+    const auto all_clauses = clause_manager->AllClausesInCreationOrder();
     EXPECT_EQ(all_clauses.size(), 3);
     EXPECT_EQ(all_clauses[2]->AsSpan(), Literals({+2, -2, -3, +1, +1}));
   }
@@ -56,7 +56,7 @@ TEST(InprocessingTest, ClauseCleanupWithFixedVariables) {
   EXPECT_TRUE(inprocessing->DetectEquivalencesAndStamp(false, log_info));
   EXPECT_TRUE(inprocessing->RemoveFixedAndEquivalentVariables(log_info));
   {
-    const auto& all_clauses = clause_manager->AllClausesInCreationOrder();
+    const auto all_clauses = clause_manager->AllClausesInCreationOrder();
     EXPECT_EQ(all_clauses.size(), 3);
     EXPECT_EQ(all_clauses[0]->AsSpan(), Literals({}));  // +3 true.
     EXPECT_EQ(all_clauses[1]->AsSpan(), Literals({+1, -2, +5}));
@@ -86,7 +86,7 @@ TEST(InprocessingTest, ClauseCleanupWithEquivalence) {
   EXPECT_TRUE(inprocessing->DetectEquivalencesAndStamp(false, log_info));
   EXPECT_TRUE(inprocessing->RemoveFixedAndEquivalentVariables(log_info));
   {
-    const auto& all_clauses = clause_manager->AllClausesInCreationOrder();
+    const auto all_clauses = clause_manager->AllClausesInCreationOrder();
     EXPECT_EQ(all_clauses.size(), 4);
     EXPECT_EQ(all_clauses[0]->AsSpan(), Literals({+1, +2, +3, +4}));
     EXPECT_EQ(all_clauses[1]->AsSpan(), Literals({}));
@@ -122,7 +122,7 @@ TEST(InprocessingTest, ClauseSubsumptionAndStrengthening) {
   EXPECT_TRUE(inprocessing->SubsumeAndStrenghtenRound(log_info));
 
   // This function removes empty clauses.
-  const auto& all_clauses = clause_manager->AllClausesInCreationOrder();
+  const auto all_clauses = clause_manager->AllClausesInCreationOrder();
   EXPECT_GE(all_clauses.size(), 0);
 
   // We added {+1, +2} and {+1, -3} here.
@@ -194,7 +194,7 @@ TEST(StampingSimplifierTest, BasicSimplification) {
 
   // Results. I cover all 4 possibilities, 2 strengthenings for clauses 0 and 2,
   // one subsumption for clause 3 and nothing for clause 1.
-  const auto& all_clauses = clause_manager->AllClausesInCreationOrder();
+  const auto all_clauses = clause_manager->AllClausesInCreationOrder();
   EXPECT_EQ(all_clauses.size(), 4);
   EXPECT_EQ(all_clauses[0]->AsSpan(), Literals({+7, +8, +9}));
   EXPECT_EQ(all_clauses[1]->AsSpan(), Literals({+1, -6, +8, +9}));
@@ -223,7 +223,7 @@ TEST(BlockedClauseSimplifierTest, BasicSimplification) {
   simplifier->DoOneRound(/*log_info=*/true);
 
   clause_manager->DeleteRemovedClauses();
-  const auto& all_clauses = clause_manager->AllClausesInCreationOrder();
+  const auto all_clauses = clause_manager->AllClausesInCreationOrder();
   EXPECT_EQ(all_clauses.size(), 0);
 }
 
@@ -247,7 +247,7 @@ TEST(BoundedVariableEliminationTest, BasicSimplification) {
 
   // The problem is so simple that everything should be simplified.
   clause_manager->DeleteRemovedClauses();
-  const auto& all_clauses = clause_manager->AllClausesInCreationOrder();
+  const auto all_clauses = clause_manager->AllClausesInCreationOrder();
   EXPECT_EQ(all_clauses.size(), 0);
 }
 

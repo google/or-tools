@@ -34,7 +34,7 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/fp_utils_testing.h"
 #include "ortools/util/sorted_interval_list.h"

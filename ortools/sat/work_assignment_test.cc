@@ -31,7 +31,8 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_clause.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/synchronization.h"
 

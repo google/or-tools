@@ -17,26 +17,30 @@ load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library", "or_cc_test")
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//ortools/routing:__pkg__"])
 
 proto_library(
     name = "enums_proto",
     srcs = ["enums.proto"],
+    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "enums_cc_proto",
+    visibility = ["//visibility:public"],
     deps = [":enums_proto"],
 )
 
 java_proto_library(
     name = "enums_java_proto",
+    visibility = ["//visibility:public"],
     deps = [":enums_proto"],
 )
 
 proto_library(
     name = "ils_proto",
     srcs = ["ils.proto"],
+    visibility = ["//visibility:public"],
     deps = [
         ":enums_proto",
         ":heuristic_parameters_proto",
@@ -45,22 +49,26 @@ proto_library(
 
 cc_proto_library(
     name = "ils_cc_proto",
+    visibility = ["//visibility:public"],
     deps = [":ils_proto"],
 )
 
 py_proto_library(
     name = "ils_py_pb2",
+    visibility = ["//visibility:public"],
     deps = [":ils_proto"],
 )
 
 java_proto_library(
     name = "ils_java_proto",
+    visibility = ["//visibility:public"],
     deps = [":ils_proto"],
 )
 
 proto_library(
     name = "parameters_proto",
     srcs = ["parameters.proto"],
+    visibility = ["//visibility:public"],
     deps = [
         ":enums_proto",
         ":heuristic_parameters_proto",
@@ -74,21 +82,25 @@ proto_library(
 
 cc_proto_library(
     name = "parameters_cc_proto",
+    visibility = ["//visibility:public"],
     deps = [":parameters_proto"],
 )
 
 java_proto_library(
     name = "parameters_java_proto",
+    visibility = ["//visibility:public"],
     deps = [":parameters_proto"],
 )
 
 py_proto_library(
     name = "parameters_py_pb2",
+    visibility = ["//visibility:public"],
     deps = [":parameters_proto"],
 )
 
 py_proto_library(
     name = "enums_py_pb2",
+    visibility = ["//visibility:public"],
     deps = [":enums_proto"],
 )
 
@@ -96,6 +108,7 @@ or_cc_library(
     name = "parameters",
     srcs = ["parameters.cc"],
     hdrs = ["parameters.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":enums_cc_proto",
         ":heuristic_parameters_cc_proto",
@@ -148,6 +161,7 @@ or_cc_library(
 or_cc_library(
     name = "types",
     hdrs = ["types.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//ortools/util:piecewise_linear_function",
         "//ortools/util:strong_integers",
@@ -159,6 +173,7 @@ or_cc_library(
     srcs = ["utils.cc"],
     hdrs = ["utils.h"],
     deps = [
+        "//ortools/util:piecewise_linear_function",
         "//ortools/util:saturated_arithmetic",
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/log:check",
@@ -189,6 +204,7 @@ or_cc_library(
     name = "index_manager",
     srcs = ["index_manager.cc"],
     hdrs = ["index_manager.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":types",
         "//ortools/base:base_export",
@@ -215,6 +231,62 @@ or_cc_library(
 )
 
 or_cc_library(
+    name = "lp_scheduling",
+    srcs = [
+        "lp_scheduling.cc",
+        "routing.h",
+    ],
+    hdrs = ["lp_scheduling.h"],
+    deps = [
+        ":enums_cc_proto",
+        ":heuristic_parameters_cc_proto",
+        ":index_manager",
+        ":parameters_cc_proto",
+        ":types",
+        ":utils",
+        "//ortools/base:base_export",
+        "//ortools/base:dump_vars",
+        "//ortools/base:log_severity",
+        "//ortools/base:map_util",
+        "//ortools/base:mathutil",
+        "//ortools/base:strong_vector",
+        "//ortools/base:types",
+        "//ortools/constraint_solver:cp",
+        "//ortools/constraint_solver:reversible_data",
+        "//ortools/constraint_solver:reversible_engine",
+        "//ortools/glop:lp_solver",
+        "//ortools/glop:parameters_cc_proto",
+        "//ortools/graph:min_cost_flow",
+        "//ortools/graph_base:graph",
+        "//ortools/lp_data",
+        "//ortools/lp_data:lp_types",
+        "//ortools/port:proto_utils",
+        "//ortools/sat:cp_model_cc_proto",
+        "//ortools/sat:cp_model_solver",
+        "//ortools/sat:lp_utils",
+        "//ortools/sat:model",
+        "//ortools/sat:sat_parameters_cc_proto",
+        "//ortools/util:flat_matrix",
+        "//ortools/util:piecewise_linear_function",
+        "//ortools/util:range_query_function",
+        "//ortools/util:saturated_arithmetic",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/functional:any_invocable",
+        "@abseil-cpp//absl/hash",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+or_cc_library(
     name = "routing",
     srcs = [
         "constraints.cc",
@@ -223,7 +295,6 @@ or_cc_library(
         "flow.cc",
         "ils.cc",
         "insertion_lns.cc",
-        "lp_scheduling.cc",
         "routing.cc",
         "sat.cc",
         "search.cc",
@@ -234,17 +305,19 @@ or_cc_library(
         "filters.h",
         "ils.h",
         "insertion_lns.h",
-        "lp_scheduling.h",
         "routing.h",
         "search.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":breaks",
         ":enums_cc_proto",
         ":filter_committables",
+        ":fourier_solver",
         ":heuristic_parameters_cc_proto",
         ":ils_cc_proto",
         ":index_manager",
+        ":lp_scheduling",
         ":neighborhoods",
         ":parameters",
         ":parameters_cc_proto",
@@ -253,7 +326,6 @@ or_cc_library(
         ":utils",
         "//ortools/base:adjustable_priority_queue",
         "//ortools/base:base_export",
-        "//ortools/base:dump_vars",
         "//ortools/base:log_severity",
         "//ortools/base:map_util",
         "//ortools/base:mathutil",
@@ -265,24 +337,17 @@ or_cc_library(
         "//ortools/constraint_solver:reversible_data",
         "//ortools/constraint_solver:reversible_engine",
         "//ortools/constraint_solver:solver_parameters_cc_proto",
-        "//ortools/glop:lp_solver",
-        "//ortools/glop:parameters_cc_proto",
         "//ortools/graph:christofides",
         "//ortools/graph:linear_assignment",
         "//ortools/graph:min_cost_flow",
         "//ortools/graph_base:connected_components",
         "//ortools/graph_base:graph",
         "//ortools/graph_base:index",
-        "//ortools/lp_data",
-        "//ortools/lp_data:lp_types",
-        "//ortools/port:proto_utils",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
-        "//ortools/sat:lp_utils",
         "//ortools/sat:model",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:bitset",
-        "//ortools/util:flat_matrix",
         "//ortools/util:optional_boolean_cc_proto",
         "//ortools/util:piecewise_linear_function",
         "//ortools/util:range_minimum_query",
@@ -377,19 +442,23 @@ or_cc_test(
 proto_library(
     name = "heuristic_parameters_proto",
     srcs = ["heuristic_parameters.proto"],
+    visibility = ["//visibility:public"],
 )
 
 java_proto_library(
     name = "heuristic_parameters_java_proto",
+    visibility = ["//visibility:public"],
     deps = [":heuristic_parameters_proto"],
 )
 
 cc_proto_library(
     name = "heuristic_parameters_cc_proto",
+    visibility = ["//visibility:public"],
     deps = [":heuristic_parameters_proto"],
 )
 
 py_proto_library(
     name = "heuristic_parameters_py_pb2",
+    visibility = ["//visibility:public"],
     deps = [":heuristic_parameters_proto"],
 )

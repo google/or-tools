@@ -43,9 +43,12 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/restart.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_assignment.h"
+#include "ortools/sat/sat_clause.h"
 #include "ortools/sat/sat_decision.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_trail.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
@@ -2149,7 +2152,8 @@ bool SatSolver::ProcessNewlyFixedVariables() {
   // others. Note that none of the clauses should be all false because we should
   // have detected a conflict before this is called.
   int saved_index = trail_->Index();
-  for (SatClause* clause : clauses_propagator_->AllClausesInCreationOrder()) {
+  for (SatClause* const clause :
+       clauses_propagator_->AllMutableClausesInCreationOrder()) {
     if (clause->IsRemoved()) continue;
 
     const size_t old_size = clause->size();
@@ -3148,7 +3152,7 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
 
   // Creates a list of clauses that can be deleted. Note that only the clauses
   // that appear in clauses_info can potentially be removed.
-  typedef std::pair<SatClause*, ClauseInfo> Entry;
+  typedef std::pair<const SatClause*, ClauseInfo> Entry;
   std::vector<Entry> entries;
   auto& clauses_info = *(clauses_propagator_->mutable_clauses_info());
   for (auto& entry : clauses_info) {
@@ -3218,7 +3222,7 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
   if (num_deleted_clauses > 0) {
     entries.resize(num_deleted_clauses);
     for (const Entry& entry : entries) {
-      SatClause* clause = entry.first;
+      const SatClause* clause = entry.first;
       counters_.num_literals_forgotten += clause->size();
       clauses_propagator_->LazyDelete(clause,
                                       DeletionSourceForStat::GARBAGE_COLLECTED);

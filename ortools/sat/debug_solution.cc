@@ -25,7 +25,7 @@
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research {

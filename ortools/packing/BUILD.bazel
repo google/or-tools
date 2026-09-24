@@ -43,7 +43,6 @@ or_cc_test(
     deps = [
         ":arc_flow_builder",
         "//ortools/base:gmock_main",
-        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -78,6 +77,7 @@ or_cc_test(
         ":vector_bin_packing_cc_proto",
         "//ortools/base:gmock_main",
         "//ortools/base:parse_text_proto",
+        "//ortools/linear_solver:linear_solver_lib",
         "//ortools/linear_solver:linear_solver_sat",
     ],
 )

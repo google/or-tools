@@ -33,7 +33,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"

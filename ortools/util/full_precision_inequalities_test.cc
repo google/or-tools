@@ -255,7 +255,10 @@ INSTANTIATE_TEST_SUITE_P(
         GetTightDotProductBoundsTestCase{
             .a = {3.0, std::nextafter(0.0, 1.0)},
             .b = {1.0, std::nextafter(0.0, -1.0)},
-            .expected_bounds = {std::nextafter(3.0, 2.0), 3.0}}));
+            .expected_bounds = {std::nextafter(3.0, 2.0), 3.0}},
+        GetTightDotProductBoundsTestCase{.a = {+kInf, -1.0},
+                                         .b = {1.0, -kInf},
+                                         .expected_bounds = {+kInf, +kInf}}));
 
 }  // namespace
 }  // namespace operations_research

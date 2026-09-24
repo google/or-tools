@@ -26,6 +26,7 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "absl/time/time.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/assignment.pb.h"
 #include "ortools/constraint_solver/interval.h"
@@ -37,12 +38,14 @@
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/constraint_solver/sequence_var.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
+#include "ortools/port/sysinfo.h"
 #include "ortools/util/tuple_set.h"
 #include "pybind11/cast.h"
 #include "pybind11/functional.h"
 #include "pybind11/gil.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
+#include "pybind11_abseil/absl_casters.h"
 #include "pybind11_protobuf/native_proto_caster.h"
 
 namespace py = ::pybind11;
@@ -1900,7 +1903,11 @@ PYBIND11_MODULE(constraint_solver, m) {
       .def_property_readonly("solve_depth", &Solver::SolveDepth)
       .def_property_readonly("stamp", &Solver::stamp)
       .def_property_readonly("wall_time_ms", &Solver::wall_time)
-      .def_static("memory_usage", &Solver::MemoryUsage)
+      .def_static("memory_usage",
+                  []() {
+                    return operations_research::sysinfo::MemoryUsageProcess()
+                        .value_or(-1);
+                  })
       .def("default_solver_parameters", &Solver::DefaultSolverParameters)
       .def_property_readonly("parameters", &Solver::parameters)
       .def("assignment", py::overload_cast<>(&Solver::MakeAssignment),
@@ -1911,8 +1918,9 @@ PYBIND11_MODULE(constraint_solver, m) {
            py::arg("proto"),
            py::return_value_policy::reference_internal)
       .def("limit",
-           [](Solver* s, int64_t time, int64_t branches, int64_t failures,
-              int64_t solutions, bool smart_time_check, bool cumulative) {
+           [](Solver* s, absl::Duration time, int64_t branches,
+              int64_t failures, int64_t solutions, bool smart_time_check,
+              bool cumulative) {
              return s->MakeLimit(time, branches, failures, solutions,
                                  smart_time_check, cumulative);
            },

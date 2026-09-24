@@ -24,9 +24,10 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/sat_trail.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {

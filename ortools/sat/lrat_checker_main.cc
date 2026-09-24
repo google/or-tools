@@ -39,8 +39,9 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/lrat_checker.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_clause.h"
 #include "ortools/sat/sat_cnf_reader.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
 ABSL_FLAG(std::string, cnf, "", "Input CNF file");

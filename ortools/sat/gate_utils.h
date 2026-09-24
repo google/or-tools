@@ -30,7 +30,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/util.h"
 
 namespace operations_research::sat {

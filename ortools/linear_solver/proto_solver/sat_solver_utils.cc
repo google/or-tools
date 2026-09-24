@@ -84,7 +84,7 @@ glop::ProblemStatus ApplyMipPresolveSteps(
 
   // These preprocessors do not need postsolve.
   ADD_LP_PREPROCESSOR(IntegerBoundsPreprocessor, 1e-6);
-  ADD_LP_PREPROCESSOR(BoundPropagationPreprocessor, 1e-6);
+  ADD_LP_PREPROCESSOR(BoundPropagationPreprocessor, 1e-7);
   ADD_LP_PREPROCESSOR(ImpliedIntegerPreprocessor, 1e-6);
 
   // We need to re-run this after the ImpliedIntegerPreprocessor because the

@@ -259,14 +259,6 @@ int64_t EvaluateLinearExpression(const LinearExpressionProto& expr,
   return value;
 }
 
-bool LinearExpressionIsFixed(const LinearExpressionProto& expr,
-                             absl::Span<const Domain> domains) {
-  for (const int var : expr.vars()) {
-    if (!domains[var].IsFixed()) return false;
-  }
-  return true;
-}
-
 // Checks if the affine expression can evaluate to value given the domains.
 // If it can, returns true and writes the required value of the inner variable
 // on inner_var_value (which must not be null).

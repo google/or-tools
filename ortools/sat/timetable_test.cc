@@ -33,8 +33,9 @@
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/old_precedences_propagator.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/sat_trail.h"
 #include "ortools/sat/scheduling_helpers.h"
 
 namespace operations_research {

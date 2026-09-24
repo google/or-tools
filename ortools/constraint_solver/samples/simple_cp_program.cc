@@ -23,6 +23,7 @@
 #include "ortools/base/init_google.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/port/sysinfo.h"
 // [END import]
 
 namespace operations_research {
@@ -71,9 +72,12 @@ void SimpleCpProgram() {
   // [START advanced]
   LOG(INFO) << "Advanced usage:" << std::endl
             << "Problem solved in " << std::to_string(solver.wall_time())
-            << "ms" << std::endl
-            << "Memory usage: " << std::to_string(Solver::MemoryUsage())
-            << "bytes";
+            << "ms" << std::endl;
+  if (auto memory_usage = sysinfo::MemoryUsageProcess();
+      memory_usage.has_value()) {
+    LOG(INFO) << "Memory usage: " << std::to_string(memory_usage.value())
+              << "bytes";
+  }
   // [END advanced]
 }
 

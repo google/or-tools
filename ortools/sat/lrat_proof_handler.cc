@@ -36,7 +36,8 @@
 #include "ortools/sat/lrat_checker.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/recordio.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_clause.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/synchronization.h"
 
 #if defined(_MSC_VER)

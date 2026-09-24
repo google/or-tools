@@ -50,6 +50,7 @@
 #include "ortools/routing/parameters.pb.h"
 #include "ortools/routing/routing.h"
 #include "ortools/routing/types.h"
+#include "ortools/routing/utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/lp_utils.h"
 #include "ortools/util/flat_matrix.h"
@@ -343,14 +344,14 @@ LocalDimensionCumulOptimizer::ComputeRouteCumulsWithTransitTargets(
     const std::function<int64_t(int64_t)>& next_accessor,
     absl::Span<const int64_t> transit_targets,
     DimensionCumulOptimizerCore::TransitTargetCost transit_target_cost,
-    std::vector<int64_t>* optimal_transits,
+    std::vector<int64_t>* optimal_variable_transits,
     std::vector<int64_t>* optimal_cumuls,
     std::vector<int64_t>* optimal_breaks) {
   DCHECK_GT(solve_duration_ratio, 0);
   DCHECK_LE(solve_duration_ratio, 1);
   return optimizer_core_.OptimizeSingleRouteWithTransitTargets(
       vehicle, solve_duration_ratio, next_accessor, transit_targets,
-      transit_target_cost, solver_[vehicle].get(), optimal_transits,
+      transit_target_cost, solver_[vehicle].get(), optimal_variable_transits,
       optimal_cumuls, optimal_breaks);
 }
 
@@ -1265,10 +1266,10 @@ DimensionCumulOptimizerCore::OptimizeSingleRouteWithTransitTargets(
     const std::function<int64_t(int64_t)>& next_accessor,
     absl::Span<const int64_t> transit_targets,
     TransitTargetCost transit_target_cost, LinearSolverWrapper* solver,
-    std::vector<int64_t>* optimal_transits,
+    std::vector<int64_t>* optimal_variable_transits,
     std::vector<int64_t>* optimal_cumuls,
     std::vector<int64_t>* optimal_breaks) {
-  ClearIfNonNull(optimal_transits);
+  ClearIfNonNull(optimal_variable_transits);
   ClearIfNonNull(optimal_cumuls);
   ClearIfNonNull(optimal_breaks);
   InitOptimizer(solver);
@@ -1407,17 +1408,7 @@ DimensionCumulOptimizerCore::OptimizeSingleRouteWithTransitTargets(
   SetValuesFromLP(current_route_break_variables_, cumul_offset, kint64min,
                   solver, optimal_breaks);
   SetValuesFromLP(current_route_variable_transit_variables_, 0, 0, solver,
-                  optimal_transits);
-  if (optimal_transits != nullptr) {
-    DCHECK_EQ(optimal_transits->size(), current_route_nodes_.size() - 1);
-    // Add the fixed transit on each arc to optimal_transits.
-    for (int pos = 0; pos < optimal_transits->size(); ++pos) {
-      const int64_t fixed_transit = transit_evaluator(
-          current_route_nodes_[pos], current_route_nodes_[pos + 1]);
-      DCHECK_GE(transit_targets[pos], fixed_transit);
-      CapAddTo(fixed_transit, &(*optimal_transits)[pos]);
-    }
-  }
+                  optimal_variable_transits);
   solver->Clear();
   return status;
 }
@@ -1504,39 +1495,6 @@ bool DimensionCumulOptimizerCore::TightenRouteCumulBounds(
     }
   }
   return true;
-}
-
-std::vector<SlopeAndYIntercept> PiecewiseLinearFunctionToSlopeAndYIntercept(
-    const FloatSlopePiecewiseLinearFunction& pwl_function, int index_start,
-    int index_end) {
-  const auto& x_anchors = pwl_function.x_anchors();
-  const auto& y_anchors = pwl_function.y_anchors();
-  if (index_end < 0) index_end = x_anchors.size() - 1;
-  const int num_segments = index_end - index_start;
-  DCHECK_GE(num_segments, 1);
-  std::vector<SlopeAndYIntercept> slope_and_y_intercept(num_segments);
-  for (int seg = index_start; seg < index_end; ++seg) {
-    auto& [slope, y_intercept] = slope_and_y_intercept[seg - index_start];
-    slope = (y_anchors[seg + 1] - y_anchors[seg]) /
-            static_cast<double>(x_anchors[seg + 1] - x_anchors[seg]);
-    y_intercept = y_anchors[seg] - slope * x_anchors[seg];
-  }
-  return slope_and_y_intercept;
-}
-
-std::vector<bool> SlopeAndYInterceptToConvexityRegions(
-    absl::Span<const SlopeAndYIntercept> slope_and_y_intercept) {
-  CHECK(!slope_and_y_intercept.empty());
-  std::vector<bool> convex(slope_and_y_intercept.size(), false);
-  double previous_slope = std::numeric_limits<double>::max();
-  for (int i = 0; i < slope_and_y_intercept.size(); ++i) {
-    const auto& pair = slope_and_y_intercept[i];
-    if (pair.slope < previous_slope) {
-      convex[i] = true;
-    }
-    previous_slope = pair.slope;
-  }
-  return convex;
 }
 
 namespace {

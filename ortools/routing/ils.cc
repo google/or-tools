@@ -1540,18 +1540,20 @@ std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
       criterion = std::make_unique<GreedyDescentAcceptanceCriterion>(
           acceptance_strategy.greedy_descent().late_acceptance_window());
       break;
-      case AcceptanceStrategy::kSimulatedAnnealing:
-        const SimulatedAnnealingAcceptanceStrategy& sa_params =
-            acceptance_strategy.simulated_annealing();
-        const auto [initial_temperature, final_temperature] =
-            GetSimulatedAnnealingTemperatures(model, sa_params, rnd);
-        criterion = std::make_unique<SimulatedAnnealingAcceptanceCriterion>(
-            MakeCoolingSchedule(sa_params.cooling_schedule_strategy(),
-                                initial_temperature, final_temperature,
-                                final_search_state),
-            rnd);
-    } break;
-    case AcceptanceStrategy::kThresholdAcceptingDeterministicAnnealing:
+    }
+    case AcceptanceStrategy::kSimulatedAnnealing: {
+      const SimulatedAnnealingAcceptanceStrategy& sa_params =
+          acceptance_strategy.simulated_annealing();
+      const auto [initial_temperature, final_temperature] =
+          GetSimulatedAnnealingTemperatures(model, sa_params, rnd);
+      criterion = std::make_unique<SimulatedAnnealingAcceptanceCriterion>(
+          MakeCoolingSchedule(sa_params.cooling_schedule_strategy(),
+                              initial_temperature, final_temperature,
+                              final_search_state),
+          rnd);
+      break;
+    }
+    case AcceptanceStrategy::kThresholdAcceptingDeterministicAnnealing: {
       criterion = std::make_unique<
           ThresholdAcceptingDeterministicAnnealingAcceptanceCriterion>(
           MakeCoolingSchedule(
@@ -1563,28 +1565,34 @@ std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
                   .final_threshold(),
               final_search_state));
       break;
-    case AcceptanceStrategy::kRecordToRecordTravelDeterministicAnnealing:
+    }
+    case AcceptanceStrategy::kRecordToRecordTravelDeterministicAnnealing: {
       criterion = std::make_unique<
           RecordToRecordTravelDeterministicAnnealingAcceptanceCriterion>(
           acceptance_strategy.record_to_record_travel_deterministic_annealing()
               .deviation(),
           initial_best_solution_cost);
       break;
-    case AcceptanceStrategy::kAllNodesPerformed:
+    }
+    case AcceptanceStrategy::kAllNodesPerformed: {
       criterion = std::make_unique<AllNodesPerformedAcceptanceCriterion>(model);
       break;
-    case AcceptanceStrategy::kMoreNodesPerformed:
+    }
+    case AcceptanceStrategy::kMoreNodesPerformed: {
       criterion =
           std::make_unique<MoreNodesPerformedAcceptanceCriterion>(model);
       break;
-    case AcceptanceStrategy::kAbsencesBased:
+    }
+    case AcceptanceStrategy::kAbsencesBased: {
       criterion = std::make_unique<AbsencesBasedAcceptanceCriterion>(
           model, acceptance_strategy.absences_based()
                      .remove_route_with_lowest_absences());
       break;
-    default:
+    }
+    default: {
       LOG(DFATAL) << "Unsupported acceptance strategy.";
       return nullptr;
+    }
   }
   event_manager->AddSubscriber(criterion.get());
   return criterion;

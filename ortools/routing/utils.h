@@ -16,11 +16,13 @@
 
 #include <cstdint>
 #include <functional>
+#include <ostream>
 #include <utility>
 #include <vector>
 
 #include "absl/base/nullability.h"
 #include "absl/types/span.h"
+#include "ortools/util/piecewise_linear_function.h"
 
 namespace operations_research::routing {
 
@@ -90,6 +92,37 @@ bool FindMostExpensiveArcsOnRoute(
     std::vector<std::pair<int64_t, int>>* absl_nonnull
         most_expensive_arc_starts_and_ranks,
     std::pair<int, int>* absl_nonnull first_expensive_arc_indices);
+
+// Structure to store the slope and y_intercept of a segment of a piecewise
+// linear function.
+struct SlopeAndYIntercept {
+  double slope;
+  double y_intercept;
+
+  friend ::std::ostream& operator<<(::std::ostream& os,
+                                    const SlopeAndYIntercept& it) {
+    return os << "{" << it.slope << ", " << it.y_intercept << "}";
+  }
+};
+
+// Given a FloatSlopePiecewiseLinearFunction, returns a vector of slope and
+// y-intercept corresponding to each segment. Only the segments in
+// [index_start, index_end[ will be considered.
+// TODO(user): Consider making the following two functions methods of
+// FloatSlopePiecewiseLinearFunction. They're only called in lp_scheduling.cc
+// and ../tour_optimization/model_test.cc, but they might come in handy.
+std::vector<SlopeAndYIntercept> PiecewiseLinearFunctionToSlopeAndYIntercept(
+    const FloatSlopePiecewiseLinearFunction& pwl_function, int index_start = 0,
+    int index_end = -1);
+
+// Converts a vector of SlopeAndYIntercept to a vector of convexity regions.
+// Convexity regions are defined such that, all segment in a convexity region
+// form a convex function. The boolean in the vector is set to true if the
+// segment associated to it starts a new convexity region. Therefore, a convex
+// function would yield {true, false, false, ...} and a concave function would
+// yield {true, true, true, ...}.
+std::vector<bool> SlopeAndYInterceptToConvexityRegions(
+    absl::Span<const SlopeAndYIntercept> slope_and_y_intercept);
 
 }  // namespace operations_research::routing
 

@@ -979,10 +979,6 @@ class Solver : public ReversibleEngine {
   /// misc debug string.
   std::string DebugString() const;
 
-  /// Current memory usage in bytes
-  ABSL_DEPRECATED("Use sysinfo::MemoryUsageProcess() instead.")
-  static int64_t MemoryUsage();
-
   /// The 'absolute time' as seen by the solver. Unless a user-provided clock
   /// was injected via SetClock() (eg. for unit tests), this is a real walltime,
   /// shifted so that it was 0 at construction. All so-called "walltime" limits
@@ -2341,14 +2337,6 @@ class Solver : public ReversibleEngine {
 
   /// Creates a search limit that constrains the running time.
   ABSL_MUST_USE_RESULT RegularLimit* MakeTimeLimit(absl::Duration time);
-#if !defined(SWIG)
-  ABSL_DEPRECATED("Use the version taking absl::Duration() as argument")
-#endif  // !defined(SWIG)
-  ABSL_MUST_USE_RESULT RegularLimit* MakeTimeLimit(int64_t time_in_ms) {
-    return MakeTimeLimit(time_in_ms == kint64max
-                             ? absl::InfiniteDuration()
-                             : absl::Milliseconds(time_in_ms));
-  }
 
   /// Creates a search limit that constrains the number of branches
   /// explored in the search tree.
@@ -2375,15 +2363,6 @@ class Solver : public ReversibleEngine {
   /// Creates a search limit from its protobuf description
   ABSL_MUST_USE_RESULT RegularLimit* MakeLimit(
       const RegularLimitParameters& proto);
-
-#if !defined(SWIG)
-  ABSL_DEPRECATED("Use other MakeLimit() versions")
-#endif  // !defined(SWIG)
-  ABSL_MUST_USE_RESULT RegularLimit* MakeLimit(int64_t time, int64_t branches,
-                                               int64_t failures,
-                                               int64_t solutions,
-                                               bool smart_time_check = false,
-                                               bool cumulative = false);
 
   /// Creates a regular limit proto containing default values.
   RegularLimitParameters MakeDefaultRegularLimitParameters() const;

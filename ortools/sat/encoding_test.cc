@@ -20,7 +20,7 @@
 #include "absl/random/distributions.h"
 #include "gtest/gtest.h"
 #include "ortools/sat/pb_constraint.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_solver.h"
 
 namespace operations_research {

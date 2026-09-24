@@ -29,12 +29,22 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_assignment.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/sat_trail.h"
 #include "ortools/sat/synchronization.h"
 
 namespace operations_research::sat {
+
+GlobalTrailIndex GlobalTrailIndexFromAssignmentInfo(
+    const AssignmentInfo& info) {
+  return GlobalTrailIndex{
+      // `info.level` is a 28-bit `uint32`, so it always fits in an int.
+      .level = static_cast<int>(info.level),
+      .bool_index = info.trail_index};
+}
 
 IntegerConflictResolution::IntegerConflictResolution(Model* model)
     : trail_(model->GetOrCreate<Trail>()),
@@ -232,7 +242,7 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
 
       tmp_bool_index_seen_.Set(info.trail_index);
 
-      const GlobalTrailIndex index{info.level, info.trail_index};
+      const GlobalTrailIndex index = GlobalTrailIndexFromAssignmentInfo(info);
       tmp_queue_.push_back(index);
       DCHECK_LT(tmp_queue_.back(), source_index);
     }
@@ -621,7 +631,8 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
               ++num_associated_literal_use_;
               continue;
             }
-            const GlobalTrailIndex new_top{info.level, info.trail_index};
+            const GlobalTrailIndex new_top =
+                GlobalTrailIndexFromAssignmentInfo(info);
             tmp_bool_index_seen_.Set(info.trail_index);
 
             data.bound = kMinIntegerValue;
@@ -666,7 +677,8 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
             const auto& info = trail_->Info(new_lit.Variable());
             CHECK_GE(info.level, top_index.level);
             CHECK_EQ((*trail_)[info.trail_index], new_lit);
-            const GlobalTrailIndex new_top{info.level, info.trail_index};
+            const GlobalTrailIndex new_top =
+                GlobalTrailIndexFromAssignmentInfo(info);
 
             tmp_bool_index_seen_.Set(info.trail_index);
             data.bound = kMinIntegerValue;

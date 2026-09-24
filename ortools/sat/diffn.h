@@ -28,7 +28,7 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/no_overlap_2d_helper.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/synchronization.h"
