@@ -117,7 +117,7 @@ std::optional<absl::AnyInvocable<void() &&>> ThreadPool::DequeueWork() {
   if (!queue_.empty()) {
     SignalWaiter();
   }
-  return std::move(result);
+  return result;
 }
 
 void ThreadPool::Schedule(absl::AnyInvocable<void() &&> callback) {
