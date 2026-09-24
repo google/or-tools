@@ -16,24 +16,21 @@
 This file simply selects the correct options from the generated files
 """
 
-# TODO(user): Autogenerate these lists to keep them in sync with CMake.
-
-# clang-cl
-ORTOOLS_CLANG_CL_FLAGS = []
-ORTOOLS_CLANG_CL_TEST_FLAGS = []
-
-# gcc
-ORTOOLS_GCC_FLAGS = []
-ORTOOLS_GCC_TEST_FLAGS = []
-
-# llvm
-ORTOOLS_LLVM_FLAGS = []
-ORTOOLS_LLVM_TEST_FLAGS = []
-
-# msvc
-ORTOOLS_MSVC_FLAGS = []
-ORTOOLS_MSVC_LINKOPTS = []
-ORTOOLS_MSVC_TEST_FLAGS = []
+load(
+    "//ortools/copts:GENERATED_copts.bzl",
+    "ORTOOLS_CLANG_CL_FLAGS",
+    "ORTOOLS_CLANG_CL_LINKOPTS",
+    "ORTOOLS_CLANG_CL_TEST_FLAGS",
+    "ORTOOLS_GCC_FLAGS",
+    "ORTOOLS_GCC_LINKOPTS",
+    "ORTOOLS_GCC_TEST_FLAGS",
+    "ORTOOLS_LLVM_FLAGS",
+    "ORTOOLS_LLVM_LINKOPTS",
+    "ORTOOLS_LLVM_TEST_FLAGS",
+    "ORTOOLS_MSVC_FLAGS",
+    "ORTOOLS_MSVC_LINKOPTS",
+    "ORTOOLS_MSVC_TEST_FLAGS",
+)
 
 ORTOOLS_DEFAULT_COPTS = select({
     "@rules_cc//cc/compiler:msvc-cl": ORTOOLS_MSVC_FLAGS,
@@ -53,5 +50,8 @@ ORTOOLS_TEST_COPTS = select({
 
 ORTOOLS_DEFAULT_LINKOPTS = select({
     "@rules_cc//cc/compiler:msvc-cl": ORTOOLS_MSVC_LINKOPTS,
+    "@rules_cc//cc/compiler:clang-cl": ORTOOLS_CLANG_CL_LINKOPTS,
+    "@rules_cc//cc/compiler:clang": ORTOOLS_LLVM_LINKOPTS,
+    "@rules_cc//cc/compiler:gcc": ORTOOLS_GCC_LINKOPTS,
     "//conditions:default": [],
 })

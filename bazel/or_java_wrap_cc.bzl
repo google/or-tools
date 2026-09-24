@@ -15,13 +15,16 @@
 
 load("//bazel:swig_java.bzl", "java_wrap_cc")
 
-def or_java_wrap_cc(name, deps = [], java_deps = [], **kwargs):
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS")
+
+def or_java_wrap_cc(name, copts = [], deps = [], java_deps = [], **kwargs):
     """
     A wrapper around java_wrap_cc that combines deps and java_deps.
     """
 
     java_wrap_cc(
         name = name,
+        copts = ORTOOLS_DEFAULT_COPTS + copts,
         deps = deps,
         java_deps = java_deps,
         **kwargs

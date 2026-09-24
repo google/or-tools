@@ -19,7 +19,7 @@ flags across all exported pybind11 extension targets.
 """
 
 load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
-load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
+load("@pybind11_bazel//:build_defs.bzl", "pybind_extension", "pybind_library")
 
 def or_pybind_extension(name, copts = [], linkopts = [], **kwargs):
     """Wrapper around pybind_extension that adds OR-Tools default copts and linkopts.
@@ -31,6 +31,22 @@ def or_pybind_extension(name, copts = [], linkopts = [], **kwargs):
       **kwargs: Additional keyword arguments forwarded to pybind_extension.
     """
     pybind_extension(
+        name = name,
+        copts = ORTOOLS_DEFAULT_COPTS + copts,
+        linkopts = ORTOOLS_DEFAULT_LINKOPTS + linkopts,
+        **kwargs
+    )
+
+def or_pybind_library(name, copts = [], linkopts = [], **kwargs):
+    """Wrapper around pybind_library that adds OR-Tools default copts and linkopts.
+
+    Args:
+      name: The name of the pybind_library target.
+      copts: Additional compiler options to append after ORTOOLS_DEFAULT_COPTS.
+      linkopts: Additional linker options to append after ORTOOLS_DEFAULT_LINKOPTS.
+      **kwargs: Additional keyword arguments forwarded to pybind_library.
+    """
+    pybind_library(
         name = name,
         copts = ORTOOLS_DEFAULT_COPTS + copts,
         linkopts = ORTOOLS_DEFAULT_LINKOPTS + linkopts,
