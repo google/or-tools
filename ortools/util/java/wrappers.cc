@@ -14,6 +14,7 @@
 #include "ortools/util/java/wrappers.h"
 
 #include <cctype>
+#include <initializer_list>
 #include <string>
 #include <utility>
 #include <vector>
@@ -26,7 +27,6 @@
 #include "absl/strings/str_replace.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
-#include "absl/strings/substitute.h"
 #include "absl/types/span.h"
 #include "google/protobuf/descriptor.h"
 
@@ -155,59 +155,48 @@ class Generator {
       all_enums_.insert(pb_enum);
     }
 
-    absl::StrAppend(&out_,
-                    "%{ \n#include "
-                    "\"ortools/util/java/jni_helper.h\"\n%} \n");
-
-    absl::StrAppend(&out_, "%typemap(javafinalize) SWIGTYPE \"\"\n");
-
-    absl::StrAppend(&out_, "%include \"enums.swg\"\n");
+    SubstituteAndAppend(R"(%{ 
+#include "ortools/util/java/jni_helper.h"
+%} 
+%typemap(javafinalize) SWIGTYPE ""
+%include "enums.swg"
+)");
 
     for (const auto* msg : all_messages_) {
       const std::string cpp_name = GetQualifiedCppName(*msg);
       const std::string java_name = GetJavaName(*msg);
 
-      absl::SubstituteAndAppend(&out_, "%typemap(javacode) $0 %{\n", cpp_name);
-      absl::SubstituteAndAppend(
-          &out_, "  public static class Builder extends $0 {\n", java_name);
-      absl::StrAppend(&out_,
-                      "    public Builder(long cPtr, boolean cMemoryOwn) {\n");
-      absl::StrAppend(&out_, "      super(cPtr, cMemoryOwn);\n");
-      absl::StrAppend(&out_, "    }\n");
-      absl::SubstituteAndAppend(&out_, "    public $0 build() {\n", java_name);
-      absl::StrAppend(&out_, "      return this;\n");
-      absl::StrAppend(&out_, "    }\n");
-      absl::StrAppend(&out_, "  }\n");
-      absl::StrAppend(&out_, "  public Builder toBuilder() {\n");
-      absl::StrAppend(&out_, "    return new Builder(getCPtr(this), false);\n");
-      absl::StrAppend(&out_, "  }\n");
-
-      // Add equals and hashCode.
-      absl::StrAppend(&out_, "  @Override\n");
-      absl::StrAppend(&out_, "  public boolean equals(Object obj) {\n");
-      absl::SubstituteAndAppend(&out_, "    if (obj instanceof $0) {\n",
-                                java_name);
-      absl::SubstituteAndAppend(
-          &out_, "      return getCPtr(this) == getCPtr(($0)obj);\n",
-          java_name);
-      absl::StrAppend(&out_, "    }\n");
-      absl::StrAppend(&out_, "    return false;\n");
-      absl::StrAppend(&out_, "  }\n");
-      absl::StrAppend(&out_, "  @Override\n");
-      absl::StrAppend(&out_, "  public int hashCode() {\n");
-      absl::StrAppend(&out_, "    return (int)getCPtr(this);\n");
-      absl::StrAppend(&out_, "  }\n");
-
-      absl::StrAppend(&out_, "%}\n");
-
-      absl::SubstituteAndAppend(
-          &out_, "%typemap(jstype) $0* newBuilder \"$1.Builder\"\n", cpp_name,
-          java_name);
-      absl::SubstituteAndAppend(&out_, "%typemap(javaout) $0* newBuilder {\n",
-                                cpp_name);
-      absl::SubstituteAndAppend(
-          &out_, "    return new $0.Builder($$jnicall, true);\n", java_name);
-      absl::StrAppend(&out_, "  }\n");
+      SubstituteAndAppend(
+          R"(%typemap(javacode) ${cpp_name} %{
+  public static class Builder extends ${java_name} {
+    public Builder(long cPtr, boolean cMemoryOwn) {
+      super(cPtr, cMemoryOwn);
+    }
+    public ${java_name} build() {
+      return this;
+    }
+  }
+  public Builder toBuilder() {
+    return new Builder(getCPtr(this), false);
+  }
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof ${java_name}) {
+      return getCPtr(this) == getCPtr((${java_name})obj);
+    }
+    return false;
+  }
+  @Override
+  public int hashCode() {
+    return (int)getCPtr(this);
+  }
+%}
+%typemap(jstype) ${cpp_name}* newBuilder "${java_name}.Builder"
+%typemap(javaout) ${cpp_name}* newBuilder {
+    return new ${java_name}.Builder($jnicall, true);
+  }
+)",
+          {{"${cpp_name}", cpp_name}, {"${java_name}", java_name}});
 
       for (int i = 0; i < msg->field_count(); ++i) {
         const auto* field = msg->field(i);
@@ -219,49 +208,33 @@ class Generator {
           const std::string camel_name = ToPascalCase(field->name());
 
           if (field->is_repeated()) {
-            absl::SubstituteAndAppend(
-                &out_, "%typemap(jstype) $0* add$1Builder \"$2.Builder\"\n",
-                field_cpp_name, camel_name, field_java_name);
-            absl::SubstituteAndAppend(&out_,
-                                      "%typemap(javaout) $0* add$1Builder {\n",
-                                      field_cpp_name, camel_name);
-            absl::SubstituteAndAppend(
-                &out_, "    return new $0.Builder($$jnicall, false);\n",
-                field_java_name);
-            absl::StrAppend(&out_, "  }\n");
-
-            absl::SubstituteAndAppend(
-                &out_, "%typemap(jstype) $0* get$1Builder \"$2.Builder\"\n",
-                field_cpp_name, camel_name, field_java_name);
-            absl::SubstituteAndAppend(&out_,
-                                      "%typemap(javaout) $0* get$1Builder {\n",
-                                      field_cpp_name, camel_name);
-            absl::SubstituteAndAppend(
-                &out_, "    return new $0.Builder($$jnicall, false);\n",
-                field_java_name);
-            absl::StrAppend(&out_, "  }\n");
+            SubstituteAndAppend(
+                R"(%typemap(jstype) ${field_cpp_name}* add${camel_name}Builder "${field_java_name}.Builder"
+%typemap(javaout) ${field_cpp_name}* add${camel_name}Builder {
+    return new ${field_java_name}.Builder($jnicall, false);
+  }
+%typemap(jstype) ${field_cpp_name}* get${camel_name}Builder "${field_java_name}.Builder"
+%typemap(javaout) ${field_cpp_name}* get${camel_name}Builder {
+    return new ${field_java_name}.Builder($jnicall, false);
+  }
+)",
+                {{"${field_cpp_name}", field_cpp_name},
+                 {"${camel_name}", camel_name},
+                 {"${field_java_name}", field_java_name}});
           } else {
-            absl::SubstituteAndAppend(
-                &out_, "%typemap(jstype) $0* get$1Builder \"$2.Builder\"\n",
-                field_cpp_name, camel_name, field_java_name);
-            absl::SubstituteAndAppend(&out_,
-                                      "%typemap(javaout) $0* get$1Builder {\n",
-                                      field_cpp_name, camel_name);
-            absl::SubstituteAndAppend(
-                &out_, "    return new $0.Builder($$jnicall, false);\n",
-                field_java_name);
-            absl::StrAppend(&out_, "  }\n");
-
-            absl::SubstituteAndAppend(
-                &out_, "%typemap(jstype) $0* mutable$1 \"$2.Builder\"\n",
-                field_cpp_name, camel_name, field_java_name);
-            absl::SubstituteAndAppend(&out_,
-                                      "%typemap(javaout) $0* mutable$1 {\n",
-                                      field_cpp_name, camel_name);
-            absl::SubstituteAndAppend(
-                &out_, "    return new $0.Builder($$jnicall, false);\n",
-                field_java_name);
-            absl::StrAppend(&out_, "  }\n");
+            SubstituteAndAppend(
+                R"(%typemap(jstype) ${field_cpp_name}* get${camel_name}Builder "${field_java_name}.Builder"
+%typemap(javaout) ${field_cpp_name}* get${camel_name}Builder {
+    return new ${field_java_name}.Builder($jnicall, false);
+  }
+%typemap(jstype) ${field_cpp_name}* mutable${camel_name} "${field_java_name}.Builder"
+%typemap(javaout) ${field_cpp_name}* mutable${camel_name} {
+    return new ${field_java_name}.Builder($jnicall, false);
+  }
+)",
+                {{"${field_cpp_name}", field_cpp_name},
+                 {"${camel_name}", camel_name},
+                 {"${field_java_name}", field_java_name}});
           }
         }
       }
@@ -269,16 +242,17 @@ class Generator {
 
     for (const auto* e : all_enums_) {
       const std::string cpp_enum_name = GetQualifiedCppName(*e);
-      absl::SubstituteAndAppend(&out_, "%typemap(javacode) $0 %{\n",
-                                cpp_enum_name);
-      absl::StrAppend(&out_, "  public final int getNumber() {\n");
-      absl::StrAppend(&out_, "    return swigValue();\n");
-      absl::StrAppend(&out_, "  }\n");
-      absl::SubstituteAndAppend(
-          &out_, "  public static $0 forNumber(int value) {\n", e->name());
-      absl::SubstituteAndAppend(&out_, "    return swigToEnum(value);\n");
-      absl::StrAppend(&out_, "  }\n");
-      absl::StrAppend(&out_, "%}\n");
+      SubstituteAndAppend(
+          R"(%typemap(javacode) ${cpp_enum_name} %{
+  public final int getNumber() {
+    return swigValue();
+  }
+  public static ${enum_name} forNumber(int value) {
+    return swigToEnum(value);
+  }
+%}
+)",
+          {{"${cpp_enum_name}", cpp_enum_name}, {"${enum_name}", e->name()}});
     }
 
     // Grouping by namespace/package for declarations.
@@ -292,90 +266,70 @@ class Generator {
     for (const auto& pkg : packages) {
       std::vector<std::string> parts = absl::StrSplit(pkg, '.');
       for (const auto& part : parts)
-        absl::SubstituteAndAppend(&out_, "namespace $0 {\n", part);
+        SubstituteAndAppend("namespace ${part} {\n", {{"${part}", part}});
       for (const auto* msg : all_messages_) {
         if (msg->file()->package() == pkg &&
             msg->containing_type() == nullptr) {
-          absl::SubstituteAndAppend(&out_, "class $0;\n", msg->name());
+          SubstituteAndAppend("class ${name};\n", {{"${name}", msg->name()}});
         }
       }
-      for (int i = 0; i < parts.size(); ++i) absl::StrAppend(&out_, "}\n");
+      for (int i = 0; i < parts.size(); ++i) SubstituteAndAppend("}\n");
     }
 
     for (const auto* msg : repeated_ptr_types_) {
       const std::string clean_name = GetEscapedName(*msg);
       const std::string java_name = GetJavaName(*msg);
 
-      absl::SubstituteAndAppend(
-          &out_, "%rename(getInternal) RepeatedPtrField_$0::get;\n",
-          clean_name);
-      absl::SubstituteAndAppend(
-          &out_, "%rename(setInternal) RepeatedPtrField_$0::set;\n",
-          clean_name);
-      absl::SubstituteAndAppend(
-          &out_, "%rename(removeInternal) RepeatedPtrField_$0::remove;\n",
-          clean_name);
-      absl::SubstituteAndAppend(
-          &out_,
-          "%rename(addInternal) RepeatedPtrField_$0::add(int, const $1&);\n",
-          clean_name, GetQualifiedCppName(*msg));
+      SubstituteAndAppend(
+          R"(%rename(getInternal) RepeatedPtrField_${clean_name}::get;
+%rename(setInternal) RepeatedPtrField_${clean_name}::set;
+%rename(removeInternal) RepeatedPtrField_${clean_name}::remove;
+%rename(addInternal) RepeatedPtrField_${clean_name}::add(int, const ${cpp_name}&);
+%typemap(javabase) RepeatedPtrField_${clean_name} "java.util.AbstractList<${java_name}>";
+%typemap(javacode) RepeatedPtrField_${clean_name} %{
 
-      absl::SubstituteAndAppend(&out_,
-                                "%typemap(javabase) RepeatedPtrField_$0 "
-                                "\"java.util.AbstractList<$1>\";\n",
-                                clean_name, java_name);
-      absl::SubstituteAndAppend(
-          &out_, "%typemap(javacode) RepeatedPtrField_$0 %{\n", clean_name);
-      absl::SubstituteAndAppend(&out_, R"(
   @Override
-  public $0 get(int index) {
+  public ${java_name} get(int index) {
     return getInternal(index);
   }
 
   @Override
-  public boolean add($0 e) {
+  public boolean add(${java_name} e) {
     append(e);
     return true;
   }
 
   @Override
-  public void add(int index, $0 element) {
+  public void add(int index, ${java_name} element) {
     addInternal(index, element);
   }
 
   @Override
-  public $0 set(int index, $0 element) {
-    $0 old = get(index);
+  public ${java_name} set(int index, ${java_name} element) {
+    ${java_name} old = get(index);
     setInternal(index, element);
     return old;
   }
 
   @Override
-  public $0 remove(int index) {
-    $0 old = get(index);
+  public ${java_name} remove(int index) {
+    ${java_name} old = get(index);
     removeInternal(index);
     return old;
   }
 %})",
-                                java_name);
+          {{"${clean_name}", clean_name},
+           {"${cpp_name}", GetQualifiedCppName(*msg)},
+           {"${java_name}", java_name}});
     }
 
-    absl::SubstituteAndAppend(
-        &out_, "%rename(getInternal) RepeatedPtrField_string::get;\n");
-    absl::SubstituteAndAppend(
-        &out_, "%rename(setInternal) RepeatedPtrField_string::set;\n");
-    absl::SubstituteAndAppend(
-        &out_, "%rename(removeInternal) RepeatedPtrField_string::remove;\n");
-    absl::SubstituteAndAppend(&out_,
-                              "%rename(addInternal) "
-                              "RepeatedPtrField_string::add(int, const "
-                              "std::string&);\n");
+    SubstituteAndAppend(R"(%rename(getInternal) RepeatedPtrField_string::get;
+%rename(setInternal) RepeatedPtrField_string::set;
+%rename(removeInternal) RepeatedPtrField_string::remove;
+%rename(addInternal) RepeatedPtrField_string::add(int, const std::string&);
+%typemap(javabase) RepeatedPtrField_string "java.util.AbstractList<String>";
+%typemap(javacode) RepeatedPtrField_string %{
 
-    absl::StrAppend(&out_,
-                    "%typemap(javabase) RepeatedPtrField_string "
-                    "\"java.util.AbstractList<String>\";\n");
-    absl::StrAppend(&out_, "%typemap(javacode) RepeatedPtrField_string %{\n");
-    absl::StrAppend(&out_, R"(
   @Override
   public String get(int index) {
     return getInternal(index);
@@ -411,123 +365,107 @@ class Generator {
       std::string clean_name = GetJavaUnboxedType(scalar);
       const std::string boxed_type = GetJavaBoxedType(clean_name);
 
-      absl::SubstituteAndAppend(
-          &out_, "%rename(getInternal) RepeatedField_$0::get;\n", clean_name);
-      absl::SubstituteAndAppend(
-          &out_, "%rename(setInternal) RepeatedField_$0::set;\n", clean_name);
-      absl::SubstituteAndAppend(
-          &out_, "%rename(removeInternal) RepeatedField_$0::remove;\n",
-          clean_name);
-      absl::SubstituteAndAppend(
-          &out_, "%rename(addInternal) RepeatedField_$0::add(int, $1);\n",
-          clean_name, scalar);
+      SubstituteAndAppend(
+          R"(%rename(getInternal) RepeatedField_${clean_name}::get;
+%rename(setInternal) RepeatedField_${clean_name}::set;
+%rename(removeInternal) RepeatedField_${clean_name}::remove;
+%rename(addInternal) RepeatedField_${clean_name}::add(int, ${scalar});
+%javamethodmodifiers RepeatedField_${clean_name}::append(${scalar} value) "@com.google.errorprone.annotations.CanIgnoreReturnValue\n  public";
+%typemap(javabase) RepeatedField_${clean_name} "java.util.AbstractList<${boxed_type}>";
+%typemap(javacode) RepeatedField_${clean_name} %{
 
-      absl::SubstituteAndAppend(
-          &out_,
-          "%javamethodmodifiers RepeatedField_$0::append($1 value) "
-          "\"  "
-          "public\";\n",
-          clean_name, scalar);
-
-      absl::SubstituteAndAppend(&out_,
-                                "%typemap(javabase) RepeatedField_$0 "
-                                "\"java.util.AbstractList<$1>\";\n",
-                                clean_name, boxed_type);
-      absl::SubstituteAndAppend(
-          &out_, "%typemap(javacode) RepeatedField_$0 %{\n", clean_name);
-      absl::SubstituteAndAppend(&out_, R"(
   @Override
-  public $0 get(int index) {
+  public ${boxed_type} get(int index) {
     return getInternal(index);
   }
 
   @Override
-  public boolean add($0 e) {
+  public boolean add(${boxed_type} e) {
     append(e);
     return true;
   }
 
   @Override
-  public void add(int index, $0 element) {
+  public void add(int index, ${boxed_type} element) {
     addInternal(index, element);
   }
 
   @Override
-  public $0 set(int index, $0 element) {
-    $0 old = get(index);
+  public ${boxed_type} set(int index, ${boxed_type} element) {
+    ${boxed_type} old = get(index);
     Object unused = setInternal(index, element);
     return old;
   }
 
   @Override
-  public $0 remove(int index) {
-    $0 old = get(index);
+  public ${boxed_type} remove(int index) {
+    ${boxed_type} old = get(index);
     removeInternal(index);
     return old;
   }
 %})",
-                                boxed_type);
+          {{"${clean_name}", clean_name},
+           {"${scalar}", scalar},
+           {"${boxed_type}", boxed_type}});
     }
-    absl::StrAppend(
-        &out_,
-        "%javamethodmodifiers RepeatedPtrField_string::append(const "
-        "std::string& value) "
-        "\"  "
-        "public\";\n");
 
     // 2. Non-template classes for repeated fields (for SWIG).
-    absl::StrAppend(&out_, "%inline %{\n");
+    SubstituteAndAppend(
+        R"(%javamethodmodifiers RepeatedPtrField_string::append(const std::string& value) "@com.google.errorprone.annotations.CanIgnoreReturnValue\n  public";
+%inline %{
+)");
     for (const auto* msg : repeated_ptr_types_) {
-      std::string full_name(msg->full_name());
-      absl::StrReplaceAll({{".", "::"}}, &full_name);
+      std::string full_name = GetQualifiedCppName(*msg);
       std::string clean_name = GetEscapedName(*msg);
-      absl::SubstituteAndAppend(&out_, R"(
-class RepeatedPtrField_$0 {
+      SubstituteAndAppend(
+          R"(
+class RepeatedPtrField_${clean_name} {
  public:
-  int size() const { return reinterpret_cast<const google::protobuf::RepeatedPtrField<$1>*>(this)->size(); }
-  void clear() { reinterpret_cast<google::protobuf::RepeatedPtrField<$1>*>(this)->Clear(); }
-  $1* add() { return reinterpret_cast<google::protobuf::RepeatedPtrField<$1>*>(this)->Add(); }
-  void append(const $1& value) { *reinterpret_cast<google::protobuf::RepeatedPtrField<$1>*>(this)->Add() = value; }
-  void add(int index, const $1& value) {
-    auto* field = reinterpret_cast<google::protobuf::RepeatedPtrField<$1>*>(this);
+  int size() const { return reinterpret_cast<const google::protobuf::RepeatedPtrField<${full_name}>*>(this)->size(); }
+  void clear() { reinterpret_cast<google::protobuf::RepeatedPtrField<${full_name}>*>(this)->Clear(); }
+  ${full_name}* add() { return reinterpret_cast<google::protobuf::RepeatedPtrField<${full_name}>*>(this)->Add(); }
+  void append(const ${full_name}& value) { *reinterpret_cast<google::protobuf::RepeatedPtrField<${full_name}>*>(this)->Add() = value; }
+  void add(int index, const ${full_name}& value) {
+    auto* field = reinterpret_cast<google::protobuf::RepeatedPtrField<${full_name}>*>(this);
     *field->Add() = value;
     for (int i = field->size() - 1; i > index; --i) {
       field->SwapElements(i, i - 1);
     }
   }
-  $1* get(int index) { return reinterpret_cast<google::protobuf::RepeatedPtrField<$1>*>(this)->Mutable(index); }
-  void set(int index, const $1& value) { *reinterpret_cast<google::protobuf::RepeatedPtrField<$1>*>(this)->Mutable(index) = value; }
-  void remove(int index) { reinterpret_cast<google::protobuf::RepeatedPtrField<$1>*>(this)->DeleteSubrange(index, 1); }
+  ${full_name}* get(int index) { return reinterpret_cast<google::protobuf::RepeatedPtrField<${full_name}>*>(this)->Mutable(index); }
+  void set(int index, const ${full_name}& value) { *reinterpret_cast<google::protobuf::RepeatedPtrField<${full_name}>*>(this)->Mutable(index) = value; }
+  void remove(int index) { reinterpret_cast<google::protobuf::RepeatedPtrField<${full_name}>*>(this)->DeleteSubrange(index, 1); }
 };
 )",
-                                clean_name, full_name);
+          {{"${clean_name}", clean_name}, {"${full_name}", full_name}});
     }
     for (const auto& scalar : repeated_scalar_types_) {
       std::string clean_name = GetJavaUnboxedType(scalar);
-      absl::SubstituteAndAppend(&out_, R"(
-class RepeatedField_$0 {
+      SubstituteAndAppend(
+          R"(
+class RepeatedField_${clean_name} {
  public:
-  int size() const { return reinterpret_cast<const google::protobuf::RepeatedField<$1>*>(this)->size(); }
-  void clear() { reinterpret_cast<google::protobuf::RepeatedField<$1>*>(this)->Clear(); }
-  RepeatedField_$0* append($1 value) { reinterpret_cast<google::protobuf::RepeatedField<$1>*>(this)->Add(value); return this; }
-  void add(int index, $1 value) {
-    auto* field = reinterpret_cast<google::protobuf::RepeatedField<$1>*>(this);
+  int size() const { return reinterpret_cast<const google::protobuf::RepeatedField<${scalar}>*>(this)->size(); }
+  void clear() { reinterpret_cast<google::protobuf::RepeatedField<${scalar}>*>(this)->Clear(); }
+  RepeatedField_${clean_name}* append(${scalar} value) { reinterpret_cast<google::protobuf::RepeatedField<${scalar}>*>(this)->Add(value); return this; }
+  void add(int index, ${scalar} value) {
+    auto* field = reinterpret_cast<google::protobuf::RepeatedField<${scalar}>*>(this);
     field->Add(value);
     for (int i = field->size() - 1; i > index; --i) {
       field->SwapElements(i, i - 1);
     }
   }
-  $1 get(int index) const { return reinterpret_cast<const google::protobuf::RepeatedField<$1>*>(this)->Get(index); }
-  RepeatedField_$0* set(int index, $1 value) { reinterpret_cast<google::protobuf::RepeatedField<$1>*>(this)->Set(index, value); return this; }
+  ${scalar} get(int index) const { return reinterpret_cast<const google::protobuf::RepeatedField<${scalar}>*>(this)->Get(index); }
+  RepeatedField_${clean_name}* set(int index, ${scalar} value) { reinterpret_cast<google::protobuf::RepeatedField<${scalar}>*>(this)->Set(index, value); return this; }
   void remove(int index) {
-    auto* field = reinterpret_cast<google::protobuf::RepeatedField<$1>*>(this);
+    auto* field = reinterpret_cast<google::protobuf::RepeatedField<${scalar}>*>(this);
     field->erase(field->begin() + index);
   }
 };
 )",
-                                clean_name, scalar);
+          {{"${clean_name}", clean_name}, {"${scalar}", scalar}});
     }
-    absl::StrAppend(&out_, R"(
+    SubstituteAndAppend(R"(
 class RepeatedPtrField_string {
  public:
   int size() const { return reinterpret_cast<const google::protobuf::RepeatedPtrField<std::string>*>(this)->size(); }
@@ -544,13 +482,13 @@ class RepeatedPtrField_string {
   RepeatedPtrField_string* set(int index, const std::string& value) { *reinterpret_cast<google::protobuf::RepeatedPtrField<std::string>*>(this)->Mutable(index) = std::string(value); return this; }
   void remove(int index) { reinterpret_cast<google::protobuf::RepeatedPtrField<std::string>*>(this)->DeleteSubrange(index, 1); }
 };
+%}
 )");
-    absl::StrAppend(&out_, "%}\n");
 
     for (const auto& pkg : packages) {
       std::vector<std::string> parts = absl::StrSplit(pkg, '.');
       for (const auto& part : parts)
-        absl::SubstituteAndAppend(&out_, "namespace $0 {\n", part);
+        SubstituteAndAppend("namespace ${part} {\n", {{"${part}", part}});
       for (const auto* msg : all_messages_) {
         if (msg->file()->package() == pkg &&
             msg->containing_type() == nullptr) {
@@ -562,7 +500,7 @@ class RepeatedPtrField_string {
           GenerateEnumDecl(*e);
         }
       }
-      for (int i = 0; i < parts.size(); ++i) absl::StrAppend(&out_, "}\n");
+      for (int i = 0; i < parts.size(); ++i) SubstituteAndAppend("}\n");
     }
 
     // Now generate %extend for each message
@@ -574,25 +512,34 @@ class RepeatedPtrField_string {
   std::string Result() && { return std::move(out_); }
 
  private:
+  void SubstituteAndAppend(
+      absl::string_view format,
+      std::initializer_list<std::pair<absl::string_view, absl::string_view>>
+          replacements = {}) {
+    absl::StrAppend(&out_, absl::StrReplaceAll(format, replacements));
+  }
+
   void GenerateMinimalDecl(const google::protobuf::Descriptor& msg) {
-    absl::SubstituteAndAppend(&out_, "class $0 {\n public:\n", msg.name());
+    SubstituteAndAppend("class ${name} {\n public:\n",
+                        {{"${name}", msg.name()}});
     for (int i = 0; i < msg.nested_type_count(); ++i) {
       GenerateMinimalDecl(*msg.nested_type(i));
     }
     for (int i = 0; i < msg.enum_type_count(); ++i) {
       GenerateEnumDecl(*msg.enum_type(i));
     }
-    absl::StrAppend(&out_, "};\n");
+    SubstituteAndAppend("};\n");
   }
 
   void GenerateEnumDecl(const google::protobuf::EnumDescriptor& pb_enum) {
-    absl::SubstituteAndAppend(&out_, "enum $0 {\n", pb_enum.name());
+    SubstituteAndAppend("enum ${name} {\n", {{"${name}", pb_enum.name()}});
     for (int i = 0; i < pb_enum.value_count(); ++i) {
       const google::protobuf::EnumValueDescriptor& value = *pb_enum.value(i);
-      absl::SubstituteAndAppend(&out_, "  $0 = $1,\n", value.name(),
-                                value.number());
+      SubstituteAndAppend("  ${name} = ${number},\n",
+                          {{"${name}", value.name()},
+                           {"${number}", absl::StrCat(value.number())}});
     }
-    absl::StrAppend(&out_, "};\n");
+    SubstituteAndAppend("};\n");
   }
 
   template <typename DescriptorT>
@@ -612,40 +559,37 @@ class RepeatedPtrField_string {
     const std::string cpp_name = GetQualifiedCppName(msg);
     const std::string unqualified_name(msg.name());
 
-    absl::SubstituteAndAppend(&out_, "%extend $0 {\n", cpp_name);
-
     // Default constructor for mirror classes. MUST be unqualified name in SWIG.
-    absl::SubstituteAndAppend(&out_, "  $0() { return new $1(); }\n",
-                              unqualified_name, cpp_name);
-    absl::SubstituteAndAppend(
-        &out_, "  static $0* create() { return new $0(); }\n", cpp_name);
+    // Plus parseFrom and toByteArray for bridge.
+    SubstituteAndAppend(
+        R"(%extend ${cpp_name} {
+  ${unqualified_name}() { return new ${cpp_name}(); }
+  static ${cpp_name}* create() { return new ${cpp_name}(); }
 
-    // parseFrom and toByteArray for bridge.
-    absl::SubstituteAndAppend(&out_, R"(
-  static $0* newBuilder() { return new $0(); }
-  $0* getBuilder() { return $$self; }
-  $0* build() { return $$self; }
+  static ${cpp_name}* newBuilder() { return new ${cpp_name}(); }
+  ${cpp_name}* getBuilder() { return $self; }
+  ${cpp_name}* build() { return $self; }
   void mergeFrom(jbyteArray data) {
     JNIEnv* env = operations_research::util::java::GetThreadLocalJniEnv();
     int len = env->GetArrayLength(data);
     jbyte* buffer = env->GetByteArrayElements(data, nullptr);
-    if (!($$self->ParsePartialFromArray(buffer, len))) {
+    if (!($self->ParsePartialFromArray(buffer, len))) {
       env->ThrowNew(env->FindClass("java/lang/RuntimeException"), "parse failure");
       return;
     }
     env->ReleaseByteArrayElements(data, buffer, JNI_ABORT);
   }
-  void mergeFrom(const $0& other) {
-    $$self->MergeFrom(other);
+  void mergeFrom(const ${cpp_name}& other) {
+    $self->MergeFrom(other);
   }
-  void copyFrom(const $0& other) {
-    $$self->CopyFrom(other);
+  void copyFrom(const ${cpp_name}& other) {
+    $self->CopyFrom(other);
   }
-  static $0* parseFrom(jbyteArray data) {
+  static ${cpp_name}* parseFrom(jbyteArray data) {
     JNIEnv* env = operations_research::util::java::GetThreadLocalJniEnv();
     int len = env->GetArrayLength(data);
     jbyte* buffer = env->GetByteArrayElements(data, nullptr);
-    $0* proto = new $0;
+    ${cpp_name}* proto = new ${cpp_name};
     bool success = proto->ParseFromArray(buffer, len);
     env->ReleaseByteArrayElements(data, buffer, JNI_ABORT);
     if (!success) {
@@ -656,28 +600,28 @@ class RepeatedPtrField_string {
   }
 
   bool parseTextFormat(const std::string& text) {
-    return google::protobuf::TextFormat::ParseFromString(text, $$self);
+    return google::protobuf::TextFormat::ParseFromString(text, $self);
   }
 
   jbyteArray toByteArray() const {
-    int len = $$self->ByteSizeLong();
+    int len = $self->ByteSizeLong();
     JNIEnv* env = operations_research::util::java::GetThreadLocalJniEnv();
     jbyteArray data = env->NewByteArray(len);
     jbyte* buffer = env->GetByteArrayElements(data, nullptr);
-    (void)$$self->SerializeWithCachedSizesToArray(reinterpret_cast<uint8_t*>(buffer));
+    (void)$self->SerializeWithCachedSizesToArray(reinterpret_cast<uint8_t*>(buffer));
     env->ReleaseByteArrayElements(data, buffer, 0);
     return data;
   }
 
   std::string toString() const {
-    return operations_research::ProtobufDebugString(*$$self);
+    return operations_research::ProtobufDebugString(*$self);
   }
 
   void clear() {
-    $$self->Clear();
+    $self->Clear();
   }
 )",
-                              cpp_name);
+        {{"${cpp_name}", cpp_name}, {"${unqualified_name}", unqualified_name}});
 
     for (int i = 0; i < msg.field_count(); ++i) {
       const google::protobuf::FieldDescriptor& field =
@@ -687,190 +631,213 @@ class RepeatedPtrField_string {
         const google::protobuf::Descriptor* msg_type = field.message_type();
         if (msg_type != nullptr) {
           const std::string escaped_name = GetEscapedName(*msg_type);
-          absl::SubstituteAndAppend(&out_, R"(
-  RepeatedPtrField_$0* get$1List() {
-    return (RepeatedPtrField_$0*)$$self->mutable_$2();
+          SubstituteAndAppend(
+              R"(
+  RepeatedPtrField_${escaped_name}* get${camel_name}List() {
+    return (RepeatedPtrField_${escaped_name}*)$self->mutable_${field_name}();
   }
-  RepeatedPtrField_$0* mutable$1() {
-    return (RepeatedPtrField_$0*)$$self->mutable_$2();
+  RepeatedPtrField_${escaped_name}* mutable${camel_name}() {
+    return (RepeatedPtrField_${escaped_name}*)$self->mutable_${field_name}();
   }
-  int get$1Count() const {
-    return $$self->$2_size();
+  int get${camel_name}Count() const {
+    return $self->${field_name}_size();
   }
-  const $3& get$1(int index) const {
-    return $$self->$2(index);
+  const ${field_cpp_name}& get${camel_name}(int index) const {
+    return $self->${field_name}(index);
   }
-  $3* add$1() {
-    return $$self->add_$2();
+  ${field_cpp_name}* add${camel_name}() {
+    return $self->add_${field_name}();
   }
-  $3* add$1Builder() {
-    return $$self->add_$2();
+  ${field_cpp_name}* add${camel_name}Builder() {
+    return $self->add_${field_name}();
   }
-  $3* get$1Builder(int index) {
-    return $$self->mutable_$2(index);
+  ${field_cpp_name}* get${camel_name}Builder(int index) {
+    return $self->mutable_${field_name}(index);
   }
-  void set$1(int index, const $3& value) {
-    *$$self->mutable_$2(index) = value;
+  void set${camel_name}(int index, const ${field_cpp_name}& value) {
+    *$self->mutable_${field_name}(index) = value;
   }
-  %typemap(jstype) $4* add$1 "$5.Builder"
-  %typemap(javaout) $4* add$1 {
-    long cPtr = $$jnicall;
-    return this instanceof $5.Builder ? ($5.Builder)this : new $5.Builder(cPtr, false);
+  %typemap(jstype) ${unqualified_name}* add${camel_name} "${java_name}.Builder"
+  %typemap(javaout) ${unqualified_name}* add${camel_name} {
+    long cPtr = $jnicall;
+    return this instanceof ${java_name}.Builder ? (${java_name}.Builder)this : new ${java_name}.Builder(cPtr, false);
   }
-  %javamethodmodifiers add$1(const $3& value) "public";
-  $4* add$1(const $3& value) {
-    *$$self->add_$2() = value;
-    return $$self;
+  %javamethodmodifiers add${camel_name}(const ${field_cpp_name}& value) "@com.google.errorprone.annotations.CanIgnoreReturnValue\n  public";
+  ${unqualified_name}* add${camel_name}(const ${field_cpp_name}& value) {
+    *$self->add_${field_name}() = value;
+    return $self;
   }
 )",
-                                    escaped_name, camel_name, field.name(),
-                                    GetQualifiedCppName(*msg_type),
-                                    unqualified_name, java_name);
+              {{"${escaped_name}", escaped_name},
+               {"${camel_name}", camel_name},
+               {"${field_name}", field.name()},
+               {"${field_cpp_name}", GetQualifiedCppName(*msg_type)},
+               {"${unqualified_name}", unqualified_name},
+               {"${java_name}", java_name}});
         } else {
           const std::string cpp_type = GetCppType(field.cpp_type(), field);
           if (field.cpp_type() ==
               google::protobuf::FieldDescriptor::CPPTYPE_STRING) {
-            absl::SubstituteAndAppend(&out_, R"(
-  RepeatedPtrField_string* get$0List() {
-    return (RepeatedPtrField_string*)$$self->mutable_$1();
+            SubstituteAndAppend(
+                R"(
+  RepeatedPtrField_string* get${camel_name}List() {
+    return (RepeatedPtrField_string*)$self->mutable_${field_name}();
   }
-  RepeatedPtrField_string* mutable$0() {
-    return (RepeatedPtrField_string*)$$self->mutable_$1();
+  RepeatedPtrField_string* mutable${camel_name}() {
+    return (RepeatedPtrField_string*)$self->mutable_${field_name}();
   }
-  int get$0Count() const {
-    return $$self->$1_size();
+  int get${camel_name}Count() const {
+    return $self->${field_name}_size();
   }
-  const std::string& get$0(int index) const {
-    return $$self->$1(index);
+  const std::string& get${camel_name}(int index) const {
+    return $self->${field_name}(index);
   }
-  void set$0(int index, const std::string& value) {
-    *$$self->mutable_$1(index) = value;
+  void set${camel_name}(int index, const std::string& value) {
+    *$self->mutable_${field_name}(index) = value;
   }
-  %typemap(jstype) $2* add$0 "$3.Builder"
-  %typemap(javaout) $2* add$0 {
-    long cPtr = $$jnicall;
-    return this instanceof $3.Builder ? ($3.Builder)this : new $3.Builder(cPtr, false);
+  %typemap(jstype) ${unqualified_name}* add${camel_name} "${java_name}.Builder"
+  %typemap(javaout) ${unqualified_name}* add${camel_name} {
+    long cPtr = $jnicall;
+    return this instanceof ${java_name}.Builder ? (${java_name}.Builder)this : new ${java_name}.Builder(cPtr, false);
   }
-  %javamethodmodifiers add$0(const std::string& value) "public";
-  $2* add$0(const std::string& value) {
-    $$self->add_$1(value);
-    return $$self;
+  %javamethodmodifiers add${camel_name}(const std::string& value) "@com.google.errorprone.annotations.CanIgnoreReturnValue\n  public";
+  ${unqualified_name}* add${camel_name}(const std::string& value) {
+    $self->add_${field_name}(value);
+    return $self;
   }
 )",
-                                      camel_name, field.name(),
-                                      unqualified_name, java_name);
+                {{"${camel_name}", camel_name},
+                 {"${field_name}", field.name()},
+                 {"${unqualified_name}", unqualified_name},
+                 {"${java_name}", java_name}});
           } else {
             std::string clean_scalar_type = GetJavaUnboxedType(cpp_type);
-            absl::SubstituteAndAppend(&out_, R"(
-  RepeatedField_$0* get$1List() {
-    return (RepeatedField_$0*)$$self->mutable_$2();
+            SubstituteAndAppend(
+                R"(
+  RepeatedField_${clean_scalar_type}* get${camel_name}List() {
+    return (RepeatedField_${clean_scalar_type}*)$self->mutable_${field_name}();
   }
-  RepeatedField_$0* mutable$1() {
-    return (RepeatedField_$0*)$$self->mutable_$2();
+  RepeatedField_${clean_scalar_type}* mutable${camel_name}() {
+    return (RepeatedField_${clean_scalar_type}*)$self->mutable_${field_name}();
   }
-  int get$1Count() const {
-    return $$self->$2_size();
+  int get${camel_name}Count() const {
+    return $self->${field_name}_size();
   }
-  $3 get$1(int index) const {
-    return $$self->$2(index);
+  ${cpp_type} get${camel_name}(int index) const {
+    return $self->${field_name}(index);
   }
-  void set$1(int index, $3 value) {
-    $$self->set_$2(index, value);
+  void set${camel_name}(int index, ${cpp_type} value) {
+    $self->set_${field_name}(index, value);
   }
-  %typemap(jstype) $4* add$1 "$5.Builder"
-  %typemap(javaout) $4* add$1 {
-    long cPtr = $$jnicall;
-    return this instanceof $5.Builder ? ($5.Builder)this : new $5.Builder(cPtr, false);
+  %typemap(jstype) ${unqualified_name}* add${camel_name} "${java_name}.Builder"
+  %typemap(javaout) ${unqualified_name}* add${camel_name} {
+    long cPtr = $jnicall;
+    return this instanceof ${java_name}.Builder ? (${java_name}.Builder)this : new ${java_name}.Builder(cPtr, false);
   }
-  %javamethodmodifiers add$1($3 value) "public";
-  $4* add$1($3 value) {
-    $$self->add_$2(value);
-    return $$self;
+  %javamethodmodifiers add${camel_name}(${cpp_type} value) "@com.google.errorprone.annotations.CanIgnoreReturnValue\n  public";
+  ${unqualified_name}* add${camel_name}(${cpp_type} value) {
+    $self->add_${field_name}(value);
+    return $self;
   }
 )",
-                                      clean_scalar_type, camel_name,
-                                      field.name(), cpp_type, unqualified_name,
-                                      java_name);
+                {{"${clean_scalar_type}", clean_scalar_type},
+                 {"${camel_name}", camel_name},
+                 {"${field_name}", field.name()},
+                 {"${cpp_type}", cpp_type},
+                 {"${unqualified_name}", unqualified_name},
+                 {"${java_name}", java_name}});
           }
         }
       } else {
         const std::string cpp_type = GetCppType(field.cpp_type(), field);
         if (field.message_type() != nullptr) {
-          absl::SubstituteAndAppend(&out_, R"(
-  $0* get$1() {
-    return $$self->mutable_$2();
+          SubstituteAndAppend(
+              R"(
+  ${cpp_type}* get${camel_name}() {
+    return $self->mutable_${field_name}();
   }
-  $0* get$1Builder() {
-    return $$self->mutable_$2();
+  ${cpp_type}* get${camel_name}Builder() {
+    return $self->mutable_${field_name}();
   }
-  %javamethodmodifiers mutable$1() "public";
-  $0* mutable$1() {
-    return $$self->mutable_$2();
+  %javamethodmodifiers mutable${camel_name}() "@com.google.errorprone.annotations.CanIgnoreReturnValue\n  public";
+  ${cpp_type}* mutable${camel_name}() {
+    return $self->mutable_${field_name}();
   }
-  %typemap(jstype) $3* set$1 "$4.Builder"
-  %typemap(javaout) $3* set$1 {
-    long cPtr = $$jnicall;
-    return this instanceof $4.Builder ? ($4.Builder)this : new $4.Builder(cPtr, false);
+  %typemap(jstype) ${unqualified_name}* set${camel_name} "${java_name}.Builder"
+  %typemap(javaout) ${unqualified_name}* set${camel_name} {
+    long cPtr = $jnicall;
+    return this instanceof ${java_name}.Builder ? (${java_name}.Builder)this : new ${java_name}.Builder(cPtr, false);
   }
-  %javamethodmodifiers set$1(const $0& value) "public";
-  $3* set$1(const $0& value) {
-    *$$self->mutable_$2() = value;
-    return $$self;
+  %javamethodmodifiers set${camel_name}(const ${cpp_type}& value) "@com.google.errorprone.annotations.CanIgnoreReturnValue\n  public";
+  ${unqualified_name}* set${camel_name}(const ${cpp_type}& value) {
+    *$self->mutable_${field_name}() = value;
+    return $self;
   }
-  bool has$1() const {
-    return $$self->has_$2();
+  bool has${camel_name}() const {
+    return $self->has_${field_name}();
   }
 )",
-                                    cpp_type, camel_name, field.name(),
-                                    unqualified_name, java_name);
+              {{"${cpp_type}", cpp_type},
+               {"${camel_name}", camel_name},
+               {"${field_name}", field.name()},
+               {"${unqualified_name}", unqualified_name},
+               {"${java_name}", java_name}});
         } else {
-          absl::SubstituteAndAppend(&out_, R"(
-  %typemap(jstype) $3* set$1 "$4.Builder"
-  %typemap(javaout) $3* set$1 {
-    long cPtr = $$jnicall;
-    return this instanceof $4.Builder ? ($4.Builder)this : new $4.Builder(cPtr, false);
+          SubstituteAndAppend(
+              R"(
+  %typemap(jstype) ${unqualified_name}* set${camel_name} "${java_name}.Builder"
+  %typemap(javaout) ${unqualified_name}* set${camel_name} {
+    long cPtr = $jnicall;
+    return this instanceof ${java_name}.Builder ? (${java_name}.Builder)this : new ${java_name}.Builder(cPtr, false);
   }
-  %javamethodmodifiers set$1($0 val) "public";
-  $3* set$1($0 val) {
-    $$self->set_$2(val);
-    return $$self;
+  %javamethodmodifiers set${camel_name}(${cpp_type} val) "@com.google.errorprone.annotations.CanIgnoreReturnValue\n  public";
+  ${unqualified_name}* set${camel_name}(${cpp_type} val) {
+    $self->set_${field_name}(val);
+    return $self;
   }
-  $0 get$1() const {
-    return $$self->$2();
+  ${cpp_type} get${camel_name}() const {
+    return $self->${field_name}();
   }
 )",
-                                    cpp_type, camel_name, field.name(),
-                                    unqualified_name, java_name);
+              {{"${cpp_type}", cpp_type},
+               {"${camel_name}", camel_name},
+               {"${field_name}", field.name()},
+               {"${unqualified_name}", unqualified_name},
+               {"${java_name}", java_name}});
         }
         if (field.has_presence() && field.message_type() == nullptr) {
-          absl::SubstituteAndAppend(&out_, R"(
-  bool has$0() const {
-    return $$self->has_$1();
+          SubstituteAndAppend(
+              R"(
+  bool has${camel_name}() const {
+    return $self->has_${field_name}();
   }
 )",
-                                    camel_name, field.name());
+              {{"${camel_name}", camel_name}, {"${field_name}", field.name()}});
         }
       }
-      absl::SubstituteAndAppend(&out_, R"(
-  void clear$0() {
-    $$self->clear_$1();
+      SubstituteAndAppend(
+          R"(
+  void clear${camel_name}() {
+    $self->clear_${field_name}();
   }
 )",
-                                camel_name, field.name());
+          {{"${camel_name}", camel_name}, {"${field_name}", field.name()}});
     }
 
     for (int i = 0; i < msg.oneof_decl_count(); ++i) {
       const google::protobuf::OneofDescriptor& oneof =
           *ABSL_DIE_IF_NULL(msg.oneof_decl(i));
-      absl::SubstituteAndAppend(&out_, R"(
-  void clear$0() {
-    $$self->clear_$1();
+      SubstituteAndAppend(
+          R"(
+  void clear${camel_name}() {
+    $self->clear_${oneof_name}();
   }
 )",
-                                ToPascalCase(oneof.name()), oneof.name());
+          {{"${camel_name}", ToPascalCase(oneof.name())},
+           {"${oneof_name}", oneof.name()}});
     }
 
-    absl::StrAppend(&out_, "}\n");
+    SubstituteAndAppend("}\n");
   }
 
   // Output buffer.
