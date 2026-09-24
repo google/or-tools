@@ -35,6 +35,7 @@ ORTOOLS_GCC_FLAGS = [
     # go/keep-sorted start prefix_order="-D,"-f,"-Wno-,"-W"
     "-DNOMINMAX",  # Don't define min and max macros (Build on Windows using gcc)
     "-ffp-contract=off",  # Disable automatic fused-multiply-add insertion
+    "-Wno-comment",  # Disables warnings for comments that contain non-ASCII characters
     "-Wno-sign-compare",  # Disables warnings when comparing signed and unsigned values because of internal Style Guide.
     "-Wall",  # Enables a core set of warnings about questionable constructs
     "-Wcast-qual",  # Warns when a pointer is cast to remove a type qualifier (e.g., const)
@@ -57,8 +58,6 @@ ORTOOLS_GCC_FLAGS = [
     # keeping the warnings low on the CI but they all need to be either removed
     # or adopted as an official flag.
     # go/keep-sorted start prefix_order="-D,"-f,"-Wno-,"-W"
-    "-Wno-cast-qual",  # Disables warnings when a pointer is cast to remove a type qualifier (e.g., const)
-    "-Wno-comment",  # Disables warnings for comments that contain non-ASCII characters
     "-Wno-deprecated-declarations",  # Disables warnings about uses of functions, variables, or types marked as deprecated
     "-Wno-float-conversion",  # Disables warnings for implicit conversions that reduce floating-point precision
     "-Wno-format-security",  # Disables warnings about uses of format functions that represent possible security problems
@@ -67,7 +66,6 @@ ORTOOLS_GCC_FLAGS = [
     "-Wno-missing-declarations",  # Disables warnings if a global function is defined without a previous declaration
     "-Wno-missing-field-initializers",  # Disables warnings when a class has uninitialized members
     "-Wno-range-loop-construct",  # Disables warnings when a range-based for loop is used with a non-range type
-    "-Wno-redundant-move",  # Disables warnings when a value is moved to itself with std::move
     "-Wno-sign-compare",  # Disables warnings when comparing signed and unsigned values
     "-Wno-sign-conversion",  # Disables warnings for implicit conversions that may change the sign of an integer value
     "-Wno-type-limits",  # Disables warnings when a type is too small to hold a value
@@ -104,6 +102,7 @@ ORTOOLS_LLVM_BASE_FLAGS = [
     # go/keep-sorted start prefix_order="-D,"-f,"-Wno-,"-W"
     "-DNOMINMAX",  # Don't define min and max macros (Build on Windows using clang)
     "-ffp-contract=off",  # Disable automatic fused-multiply-add insertion
+    "-Wno-comment",  # Disables warnings for comments that contain non-ASCII characters
     "-Wno-float-conversion",  # Warnings that are enabled by group warning flags like -Wall that we explicitly disable.
     "-Wno-implicit-float-conversion",  # Disables warnings for implicit conversions that reduce floating-point precision or convert float to integer
     "-Wno-implicit-int-float-conversion",  # Disables warnings for implicit conversions from integer types to floating-point types that may lose precision

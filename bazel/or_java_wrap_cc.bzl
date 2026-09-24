@@ -24,7 +24,13 @@ def or_java_wrap_cc(name, copts = [], deps = [], java_deps = [], **kwargs):
 
     java_wrap_cc(
         name = name,
-        copts = ORTOOLS_DEFAULT_COPTS + copts,
+        copts = ORTOOLS_DEFAULT_COPTS + copts + select({
+            "@rules_cc//cc/compiler:msvc-cl": [],
+            "@rules_cc//cc/compiler:clang-cl": ["/clang:-Wno-cast-qual"],
+            "@rules_cc//cc/compiler:clang": ["-Wno-cast-qual"],
+            "@rules_cc//cc/compiler:gcc": ["-Wno-cast-qual"],
+            "//conditions:default": [],
+        }),
         deps = deps,
         java_deps = java_deps,
         **kwargs
