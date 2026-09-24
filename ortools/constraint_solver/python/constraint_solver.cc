@@ -91,6 +91,8 @@ using ::operations_research::SolutionCollector;
 using ::operations_research::Solver;
 using ::operations_research::SubDagComputer;
 
+namespace {
+
 // There is no proper error propagation in `constraint_solver` but some
 // operation may fail and end-up calling `Solver::Fail()`. `Solver` offers a
 // `set_fail_intercept` method we can use to _break_ and return control flow to
@@ -724,6 +726,8 @@ std::vector<IntVar*> ToIntVarArray(
   }
   return vars;
 }
+
+}  // namespace
 
 PYBIND11_MODULE(constraint_solver, m) {
   pybind11_protobuf::ImportNativeProtoCasters();
