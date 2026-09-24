@@ -34,7 +34,7 @@ inline bool GunzipString(absl::string_view str, std::string* out) {
     return false;
   }
 
-  zs.next_in = (Bytef*)str.data();
+  zs.next_in = const_cast<Bytef*>(reinterpret_cast<const Bytef*>(str.data()));
   zs.avail_in = str.size();
 
   int status;
@@ -78,7 +78,8 @@ inline bool GzipString(absl::string_view uncompressed,
     return false;
   }
 
-  zs.next_in = (Bytef*)uncompressed.data();
+  zs.next_in =
+      const_cast<Bytef*>(reinterpret_cast<const Bytef*>(uncompressed.data()));
   zs.avail_in = uncompressed.size();  // set the z_stream's input
 
   int status;
