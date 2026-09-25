@@ -310,6 +310,7 @@ or_cc_test(
         ":tsptw_parser",
         "//ortools/base:gmock_main",
         "//ortools/util:data_path_resolver",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 

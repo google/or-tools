@@ -150,6 +150,7 @@ or_cc_library(
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:lazy_mutable_copy",
         "//ortools/util:logging",
+        "//ortools/util:mp_model_solution_checker",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",

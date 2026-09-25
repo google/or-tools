@@ -135,19 +135,103 @@ std::string Model::RouteDimensionTravelInfo::TransitionInfo::DebugString(
       line_prefix, travel_compression_cost.DebugString(line_prefix + "\t"));
 }
 
-const Assignment* Model::PackCumulsOfOptimizerDimensionsFromAssignment(
+void Model::AppendDecisionBuildersForPackingCumuls(
+    std::vector<DecisionBuilder*>* decision_builders) const {
+  DCHECK(!local_dimension_optimizers_.empty() ||
+         !global_dimension_optimizers_.empty());
+  for (auto& [lp_optimizer, mp_optimizer] : local_dimension_optimizers_) {
+    if (HasGlobalCumulOptimizer(*lp_optimizer->dimension())) {
+      // Don't set cumuls of dimensions with a global optimizer.
+      continue;
+    }
+    decision_builders->push_back(MakeSetCumulsFromLocalDimensionCosts(
+        solver_.get(), lp_optimizer.get(), mp_optimizer.get(),
+        /*optimize_and_pack=*/true));
+  }
+  for (auto& [lp_optimizer, mp_optimizer] : global_dimension_optimizers_) {
+    decision_builders->push_back(MakeSetCumulsFromGlobalDimensionCosts(
+        solver_.get(), lp_optimizer.get(), mp_optimizer.get(),
+        /*optimize_and_pack=*/true));
+  }
+}
+
+bool Model::AppendDecisionBuilderForOptimizingCumulsWithDimensionTravelInfo(
+    const Dimension* dimension,
+    std::vector<RouteDimensionTravelInfo> dimension_travel_info_per_route,
+    std::vector<DecisionBuilder*>* decision_builders) const {
+  DCHECK_NE(dimension, nullptr);
+  DCHECK_EQ(dimension->model(), this);
+  // NOTE: We disable the packing steps when optimizing for cumul-dependent
+  // transits to avoid failures due to precision errors for this complex
+  // optimizer objective function.
+  const bool pack = false;
+  // NOTE: When LP scheduling is explicitly disabled in the
+  // RoutingSearchParameters through
+  // disable_scheduling_beware_this_may_degrade_performance, optimizers aren't
+  // created for this dimension. We use the 'has_optimizer' boolean to keep
+  // track of this information and return early if we can't optimize cumuls
+  // according to the cumul-dependent transits.
+  bool has_optimizer = false;
+  if (HasGlobalCumulOptimizer(*dimension)) {
+    has_optimizer = true;
+    GlobalDimensionCumulOptimizer* global_mp_optimizer =
+        GetMutableGlobalCumulMPOptimizer(*dimension);
+    decision_builders->push_back(MakeSetCumulsFromGlobalDimensionCosts(
+        solver_.get(), global_mp_optimizer, global_mp_optimizer, pack,
+        std::move(dimension_travel_info_per_route)));
+  } else {
+    LocalDimensionCumulOptimizer* mp_optimizer;
+    if (HasLocalCumulOptimizer(*dimension)) {
+      mp_optimizer = GetMutableLocalCumulMPOptimizer(*dimension);
+      DCHECK_NE(mp_optimizer, nullptr);
+    } else {
+      // Get the local MP optimizer created specifically for cumul-dependent
+      // transits.
+      mp_optimizer =
+          dimension_local_optimizer_for_cumul_dependent_transits_[dimension
+                                                                      ->index()]
+              .get();
+    }
+    if (mp_optimizer != nullptr) {
+      has_optimizer = true;
+      decision_builders->push_back(MakeSetCumulsFromLocalDimensionCosts(
+          solver_.get(), mp_optimizer, mp_optimizer, pack,
+          std::move(dimension_travel_info_per_route)));
+    }
+  }
+  return has_optimizer;
+}
+
+const Assignment* Model::OptimizeCumulsFromAssignmentInternal(
     const Assignment* original_assignment, absl::Duration duration_limit,
+    const Dimension* dimension,
+    std::vector<RouteDimensionTravelInfo> dimension_travel_info_per_route,
     bool* time_limit_was_reached) {
-  CHECK(closed_);
+  DCHECK(closed_);
+
+  const bool has_dim_travel_info = !dimension_travel_info_per_route.empty();
+  if (!has_dim_travel_info) {
+    // We pack the relevant dimensions based on the optimizers.
+    DCHECK_EQ(dimension, nullptr);
+  } else {
+    // Optimizing cumuls with dimension travel info.
+    DCHECK_NE(dimension, nullptr);
+    DCHECK_EQ(dimension->model(), this);
+    DCHECK(
+        dimension_cumuls_optimized_with_dimension_travel_info_[dimension
+                                                                   ->index()]);
+  }
+
   if (original_assignment == nullptr) return nullptr;
   if (duration_limit <= absl::ZeroDuration()) {
     if (time_limit_was_reached) *time_limit_was_reached = true;
     return original_assignment;
   }
-  if (global_dimension_optimizers_.empty() &&
+  if (!has_dim_travel_info && global_dimension_optimizers_.empty() &&
       local_dimension_optimizers_.empty()) {
     return original_assignment;
   }
+
   RegularLimit* const limit = GetOrCreateLimit();
   limit->UpdateLimits(duration_limit, kint64max, kint64max, kint64max);
 
@@ -155,43 +239,48 @@ const Assignment* Model::PackCumulsOfOptimizerDimensionsFromAssignment(
   cumulative_limit->UpdateLimits(duration_limit, kint64max, kint64max,
                                  kint64max);
 
-  // Initialize the packed_assignment with the Next values in the
+  // Initialize the optimized_assignment with the Next values in the
   // original_assignment.
-  Assignment* packed_assignment = solver_->MakeAssignment();
-  packed_assignment->Add(Nexts());
+  Assignment* optimized_assignment = solver_->MakeAssignment();
+  optimized_assignment->Add(Nexts());
   // Also keep the Resource values to avoid unnecessary re-optimizations.
-  for (const Dimension* const dimension : dimensions_) {
-    for (int rg_index : GetDimensionResourceGroupIndices(dimension)) {
-      DCHECK(HasLocalCumulOptimizer(*dimension));
-      packed_assignment->Add(resource_vars_[rg_index]);
+  {
+    auto add_resource_vars = [&](const Dimension* dim) {
+      DCHECK_NE(dim, nullptr);
+      for (int rg_index : GetDimensionResourceGroupIndices(dim)) {
+        DCHECK(HasLocalCumulOptimizer(*dim));
+        optimized_assignment->Add(resource_vars_[rg_index]);
+      }
+    };
+    if (has_dim_travel_info) {
+      add_resource_vars(dimension);
+    } else {
+      for (const Dimension* const dim : dimensions_) {
+        add_resource_vars(dim);
+      }
     }
-  }
-  packed_assignment->CopyIntersection(original_assignment);
+  }  // local scope
+  optimized_assignment->CopyIntersection(original_assignment);
 
   std::vector<DecisionBuilder*> decision_builders;
   decision_builders.push_back(solver_->MakeRestoreAssignment(preassignment_));
   decision_builders.push_back(
-      solver_->MakeRestoreAssignment(packed_assignment));
-  for (auto& [lp_optimizer, mp_optimizer] : local_dimension_optimizers_) {
-    if (HasGlobalCumulOptimizer(*lp_optimizer->dimension())) {
-      // Don't set cumuls of dimensions with a global optimizer.
-      continue;
-    }
-    decision_builders.push_back(MakeSetCumulsFromLocalDimensionCosts(
-        solver_.get(), lp_optimizer.get(), mp_optimizer.get(),
-        /*optimize_and_pack=*/true));
-  }
-  for (auto& [lp_optimizer, mp_optimizer] : global_dimension_optimizers_) {
-    decision_builders.push_back(MakeSetCumulsFromGlobalDimensionCosts(
-        solver_.get(), lp_optimizer.get(), mp_optimizer.get(),
-        /*optimize_and_pack=*/true));
+      solver_->MakeRestoreAssignment(optimized_assignment));
+
+  if (!has_dim_travel_info) {
+    AppendDecisionBuildersForPackingCumuls(&decision_builders);
+  } else if (!AppendDecisionBuilderForOptimizingCumulsWithDimensionTravelInfo(
+                 dimension, std::move(dimension_travel_info_per_route),
+                 &decision_builders)) {
+    return original_assignment;
   }
   decision_builders.push_back(finalizer_variables_->CreateFinalizer());
 
-  DecisionBuilder* restore_pack_and_finalize =
+  DecisionBuilder* restore_optimize_and_finalize =
       solver_->Compose(decision_builders);
-  solver_->Solve(restore_pack_and_finalize,
+  solver_->Solve(restore_optimize_and_finalize,
                  optimized_dimensions_assignment_collector_, limit);
+
   const bool limit_was_reached = limit->Check();
   if (time_limit_was_reached) *time_limit_was_reached = limit_was_reached;
   if (optimized_dimensions_assignment_collector_->solution_count() != 1) {
@@ -206,11 +295,19 @@ const Assignment* Model::PackCumulsOfOptimizerDimensionsFromAssignment(
     return nullptr;
   }
 
-  packed_assignment->Copy(original_assignment);
-  packed_assignment->CopyIntersection(
+  optimized_assignment->Copy(original_assignment);
+  optimized_assignment->CopyIntersection(
       optimized_dimensions_assignment_collector_->solution(0));
 
-  return packed_assignment;
+  return optimized_assignment;
+}
+
+const Assignment* Model::PackCumulsOfOptimizerDimensionsFromAssignment(
+    const Assignment* original_assignment, absl::Duration duration_limit,
+    bool* time_limit_was_reached) {
+  return OptimizeCumulsFromAssignmentInternal(
+      original_assignment, duration_limit, /*dimension=*/nullptr,
+      /*dimension_travel_info_per_route=*/{}, time_limit_was_reached);
 }
 
 void Model::SetSweepArranger(SweepArranger* sweep_arranger) {
@@ -7457,7 +7554,8 @@ void Dimension::CloseModel(bool use_light_propagation) {
     IntVar* const fixed_transit = fixed_transits_[i];
     const auto transit_vehicle_evaluator = [this, i](int64_t to,
                                                      int64_t eval_index) {
-      return eval_index >= 0 ? transit_evaluator(eval_index)(i, to) : 0;
+      return eval_index >= 0 ? transit_evaluator(eval_index)(i, to)
+                             : fixed_transits_[i]->Min();
     };
     if (use_light_propagation) {
       if (class_evaluators_.size() == 1) {

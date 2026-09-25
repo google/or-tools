@@ -2625,6 +2625,21 @@ class OR_ROUTING_DLL Model {
       const RoutingSearchParameters& search_parameters) const;
   GetTabuVarsCallback tabu_var_callback_;
 
+  // Internal methods allowing a refactoring of the code for
+  // PackCumulsOfOptimizerDimensionsFromAssignment() and
+  // OptimizeCumulsOfDimensionFromAssignmentWithDimensionTravelInfo().
+  const Assignment* OptimizeCumulsFromAssignmentInternal(
+      const Assignment* original_assignment, absl::Duration duration_limit,
+      const Dimension* dimension,
+      std::vector<RouteDimensionTravelInfo> dimension_travel_info_per_route,
+      bool* time_limit_was_reached);
+  void AppendDecisionBuildersForPackingCumuls(
+      std::vector<DecisionBuilder*>* decision_builders) const;
+  bool AppendDecisionBuilderForOptimizingCumulsWithDimensionTravelInfo(
+      const Dimension* dimension,
+      std::vector<RouteDimensionTravelInfo> dimension_travel_info_per_route,
+      std::vector<DecisionBuilder*>* decision_builders) const;
+
   // Detects implicit pickup delivery pairs. These pairs are
   // non-pickup/delivery pairs for which there exists a unary dimension such
   // that the demand d of the implicit pickup is positive and the demand of the
@@ -2702,6 +2717,21 @@ class OR_ROUTING_DLL Model {
   std::vector<DimensionCumulOptimizers<LocalDimensionCumulOptimizer>>
       local_dimension_optimizers_;
   util_intops::StrongVector<DimensionIndex, int> local_optimizer_index_;
+
+  /// Whether or not a given dimension's cumuls could be optimized with
+  /// cumul-dependent transits. This is false by default for all dimensions, and
+  /// can be set to true specifically for a dimension through
+  /// SetOptimizedWithDimensionTravelInfo().
+  util_intops::StrongVector<DimensionIndex, bool>
+      dimension_cumuls_optimized_with_dimension_travel_info_;
+  /// When dimension_cumuls_optimized_with_cumul_dependent_transits_[d] = true
+  /// for a dimension which doesn't require an LP/MP optimizer based on the
+  /// constraints, we create and store a local MP optimizer required for
+  /// optimizing with cumul-dependent transits.
+  util_intops::StrongVector<DimensionIndex,
+                            std::unique_ptr<LocalDimensionCumulOptimizer>>
+      dimension_local_optimizer_for_cumul_dependent_transits_;
+
   std::string primary_constrained_dimension_;
   /// Costs
   operations_research::IntVar* cost_ = nullptr;

@@ -151,11 +151,12 @@ absl::StatusOr<bool> SolutionIsFeasible(const MPModelProto& model,
 
       const auto [lb, ub] = GetTightDotProductBounds(coefficients, var_values);
       add_violation(
-          absl::StrCat(message_prefix, " ", constraint.name(),
-                       " lower bound violated: computed_value in [",
-                       RoundTripDoubleFormat(lb), "..",
-                       RoundTripDoubleFormat(ub), "], lower_bound=",
-                       RoundTripDoubleFormat(constraint.lower_bound())),
+          absl::StrCat(message_prefix, " '", constraint.name(), "'",
+                       " >= ", RoundTripDoubleFormat(constraint.lower_bound()),
+                       " violated by ",
+                       RoundTripDoubleFormat(constraint.lower_bound() - ub),
+                       " exact activity in [", RoundTripDoubleFormat(lb), ", ",
+                       RoundTripDoubleFormat(ub), "]"),
           constraint.lower_bound() - ub);
     }
 
@@ -168,11 +169,12 @@ absl::StatusOr<bool> SolutionIsFeasible(const MPModelProto& model,
 
       const auto [lb, ub] = GetTightDotProductBounds(coefficients, var_values);
       add_violation(
-          absl::StrCat(message_prefix, " ", constraint.name(),
-                       " upper bound violated: computed_value in [",
-                       RoundTripDoubleFormat(lb), "..",
-                       RoundTripDoubleFormat(ub), "], upper_bound=",
-                       RoundTripDoubleFormat(constraint.upper_bound())),
+          absl::StrCat(message_prefix, " '", constraint.name(), "'",
+                       " <= ", RoundTripDoubleFormat(constraint.upper_bound()),
+                       " violated by ",
+                       RoundTripDoubleFormat(lb - constraint.upper_bound()),
+                       " exact activity in [", RoundTripDoubleFormat(lb), ", ",
+                       RoundTripDoubleFormat(ub), "]"),
           lb - constraint.upper_bound());
     }
     return absl::OkStatus();

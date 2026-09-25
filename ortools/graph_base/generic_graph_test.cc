@@ -121,7 +121,14 @@ TEST(GenericGraphTest, BuilderAndGraphAreMovable) {
 TEST(GenericGraphDeathTest, AddMoreNodesThanReserved) {
   GenericGraph<char>::Builder builder(/*num_nodes=*/2, /*num_edges=*/3);
   builder.AddEdge('a', 'b');
-  if constexpr (DEBUG_MODE) {
+  // We don't use `if constexpr (DEBUG_MODE)` here since EXPECT_DEATH() uses
+  // `goto` with a local label and MSVC fails to build with an error saying the
+  // label is not define (C2094). It turns out the issue comes from having a
+  // label inside a `if constexpr` branch, which is a "control-flow-limited
+  // statement" (see https://cppreference.com/cpp/language/goto).
+  //
+  // Another solution would be to wrap EXPECT_DEATH() inside a lambda.
+  if (DEBUG_MODE) {
     EXPECT_DEATH(builder.AddEdge('c', 'a'), "const_capacities");
   } else {
     builder.AddEdge('c', 'a');

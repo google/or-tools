@@ -241,7 +241,7 @@ py_test(
     srcs = ["status_streaming_test.py"],
     deps = [
         ":status_streaming",
-        requirement("absl-py"),
         "//ortools/util:status_py_pb2",
+        requirement("absl-py"),
     ],
 )

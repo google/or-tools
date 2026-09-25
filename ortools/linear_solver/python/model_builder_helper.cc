@@ -229,7 +229,7 @@ std::shared_ptr<LinearExpr> SumArguments(py::args args,
     // Normal list or tuple argument.
     const py::sequence elements = args[0].cast<py::sequence>();
     linear_exprs.reserve(elements.size());
-    for (const py::handle arg : elements) {
+    for (const py::handle& arg : elements) {
       if (py::isinstance<LinearExpr>(arg)) {
         linear_exprs.push_back(arg.cast<std::shared_ptr<LinearExpr>>());
       } else {

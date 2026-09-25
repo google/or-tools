@@ -840,6 +840,7 @@ std::vector<double> DetectImpliedIntegers(MPModelProto* mp_model,
 
   int num_fail_due_to_rhs = 0;
   int num_fail_due_to_large_multiplier = 0;
+  double max_failed_multiplier = 0.0;
   int num_processed_constraints = 0;
   while (!constraint_queue.empty()) {
     const int top_ct_index = constraint_queue.back();
@@ -878,8 +879,8 @@ std::vector<double> DetectImpliedIntegers(MPModelProto* mp_model,
         // terms in the constraint integer.
         const double coeff =
             multiplier * ct.coefficient(i) / var_scaling[ct.var_index(i)];
-        multiplier *=
-            FindRationalFactor(coeff, /*limit=*/100, multiplier * tolerance);
+        multiplier *= FindRationalFactor(coeff, /*limit=*/max_multiplier,
+                                         multiplier * tolerance);
         if (multiplier == 0 || multiplier > max_multiplier) {
           break;
         }
@@ -887,6 +888,8 @@ std::vector<double> DetectImpliedIntegers(MPModelProto* mp_model,
     }
 
     if (multiplier == 0 || multiplier > max_multiplier) {
+      max_failed_multiplier =
+          std::max(max_failed_multiplier, std::abs(multiplier));
       ++num_fail_due_to_large_multiplier;
       continue;
     }
@@ -930,7 +933,8 @@ std::vector<double> DetectImpliedIntegers(MPModelProto* mp_model,
   // Note that turning such a variable into an integer cannot in turn trigger
   // new integer detection, so there is no point doing that in a loop.
   int num_in_inequalities = 0;
-  int num_to_be_handled = 0;
+  int num_inequality_fail_due_to_coeff = 0;
+  int num_inequality_fail_due_to_domain = 0;
   for (int var = 0; var < num_variables; ++var) {
     if (mp_model->variable(var).is_integer()) continue;
 
@@ -962,53 +966,63 @@ std::vector<double> DetectImpliedIntegers(MPModelProto* mp_model,
     // know that X * c_i can take an integer value without changing constraint
     // i's meaning.
     //
-    // For now we take the min, and scale only if all c_i / min are integer.
-    double scaling = scaled_coeffs[0];
+    // For now we only deal with all the max_coeff / coeff integer and scale
+    // by max_coeff. This should be correct:
+    //
+    // For instance, if we have X \in A, and 2X \in B, with A and B intervals
+    // with integer bounds. Then this is the same as 2X \in 2A ∩ B which is also
+    // an integer interval. So we can only look for solution where 2X is
+    // integral.
+    double scaling = std::abs(scaled_coeffs[0]);
     for (const double c : scaled_coeffs) {
-      scaling = std::min(scaling, c);
+      scaling = std::max(scaling, std::abs(c));
     }
-    CHECK_GT(scaling, 0.0);
     for (const double c : scaled_coeffs) {
-      const double fraction = c / scaling;
+      const double fraction = scaling / c;
       if (std::abs(std::round(fraction) - fraction) > tolerance) {
         ok = false;
         break;
       }
     }
+    CHECK_GT(scaling, 0.0);
     if (!ok) {
-      // TODO(user): be smarter! we should be able to handle these cases.
-      ++num_to_be_handled;
+      ++num_inequality_fail_due_to_coeff;
       continue;
     }
 
-    // Tricky, we also need the bound of the scaled variable to be integer.
-    for (const double bound : {mp_model->variable(var).lower_bound(),
-                               mp_model->variable(var).upper_bound()}) {
-      if (!std::isfinite(bound)) continue;
-      if (std::abs(std::round(bound * scaling) - bound * scaling) >
-          tolerance * scaling) {
-        ok = false;
-        break;
-      }
-    }
-    if (!ok) {
-      // TODO(user): If we scale more we might be able to turn it into an
-      // integer.
-      ++num_to_be_handled;
-      continue;
+    // Tricky: there is another corner case to deal with.
+    //
+    // At this point, the set of constraints will only enforce on the scaled
+    // variable a range [integer_lb, integer_ub]. So as long as the domain of
+    // (var / scaling) contains an integer, we are good to go and if there is a
+    // solution, an integer one will be there too.
+    const Fractional scaled_var_lb =
+        (mp_model->variable(var).lower_bound() - tolerance) * scaling;
+    const Fractional scaled_var_ub =
+        (mp_model->variable(var).upper_bound() + tolerance) * scaling;
+    if (std::ceil(scaled_var_lb) > std::floor(scaled_var_ub)) {
+      ++num_inequality_fail_due_to_domain;
+      ok = false;
+      break;
     }
 
     ++num_in_inequalities;
     scale_and_mark_as_integer(var, scaling);
   }
-  VLOG(1) << "num_new_integer: " << num_detected
-          << " num_processed_constraints: " << num_processed_constraints
-          << " num_rhs_fail: " << num_fail_due_to_rhs
-          << " num_multiplier_fail: " << num_fail_due_to_large_multiplier;
-
-  if (num_to_be_handled > 0) {
-    SOLVER_LOG(logger, "Missed ", num_to_be_handled,
-               " potential implied integer.");
+  const int num_missed =
+      num_fail_due_to_rhs + num_fail_due_to_large_multiplier +
+      num_inequality_fail_due_to_coeff + num_inequality_fail_due_to_domain;
+  if (num_missed > 0) {
+    VLOG(1) << "num_new_integer: " << num_detected
+            << "\n num_processed_constraints: " << num_processed_constraints
+            << "\n num_rhs_fail: " << num_fail_due_to_rhs
+            << "\n num_multiplier_fail: " << num_fail_due_to_large_multiplier
+            << " largest: " << max_failed_multiplier
+            << "\n num_inequality_fail_due_to_coeff: "
+            << num_inequality_fail_due_to_coeff
+            << "\n num_inequality_fail_due_to_domain: "
+            << num_inequality_fail_due_to_domain;
+    SOLVER_LOG(logger, "Missed ", num_missed, " potential implied integer.");
   }
 
   const int num_integers = initial_num_integers + num_detected;
@@ -1047,6 +1061,22 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
     ConstraintProto* constraint) {
   if (keep_names && !name.empty()) constraint->set_name(name);
 
+  // We relax the constraint bound by the wanted_precision before scaling. Note
+  // that this is needed because now that the scaled constraint activity is
+  // integer, we will floor/ceil these bounds.
+  //
+  // It might make more sense to use a relative precision here for large bounds,
+  // but absolute is usually what is used in the MIP world. Also if the problem
+  // was a pure integer problem, and a user asked for sum == 10k, we want to
+  // stay exact here.
+  if (use_tight_bounds) {
+    ct_lower_bound -= tight_precision;
+    ct_upper_bound += tight_precision;
+  } else {
+    ct_lower_bound -= wanted_precision;
+    ct_upper_bound += wanted_precision;
+  }
+
   // Constraint statistic used below.
   double min_activity = 0.0;
   double max_activity = 0.0;
@@ -1084,10 +1114,10 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   // Relax bound using activity and skip trivial constraints (with double
   // precision + tolerance).
   const double kInfinity = std::numeric_limits<double>::infinity();
-  if (min_activity >= ct_lower_bound - wanted_precision) {
+  if (min_activity >= ct_lower_bound) {
     ct_lower_bound = -kInfinity;
   }
-  if (max_activity <= ct_upper_bound + wanted_precision) {
+  if (max_activity <= ct_upper_bound) {
     ct_upper_bound = kInfinity;
   }
   auto* mutable_linear = constraint->mutable_linear();
@@ -1136,7 +1166,7 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
     }
 
     std::vector<int> to_remove;
-    const double limit = (ct_lower_bound - wanted_precision) - min_activity;
+    const double limit = ct_lower_bound - min_activity;
     DCHECK_GE(limit, 0);
     if (max_coeff_magnitude >= limit) {
       for (int i = 0; i < num_terms; ++i) {
@@ -1203,11 +1233,9 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
 
   // Finds the best scaling within given parameters.
   //
-  // TODO(user): If the variable domains are still large, and some value make
-  // the constraint trivially true/false, we could "reduce" the bounds used for
-  // the error computation to get tighter error bounds. For instance if you have
-  // terms >= ub, and a variable in [0, 1e6] already make the constraint trivial
-  // if >= 10, we really don't need to use 1e6 in our error computation.
+  // TODO(user): add an option to use the tighter error bounds of the
+  // TightScalingErrorHelper to scale the coefficients less while staying under
+  // the requested precision.
   double relative_coeff_error;
   double scaled_sum_error;
   const double scaling_factor = FindBestScalingAndComputeErrors(
@@ -1224,6 +1252,12 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   min_scaling_factor = std::min(scaling_factor, min_scaling_factor);
   max_absolute_rhs_error =
       std::max(max_absolute_rhs_error, scaled_sum_error / scaling_factor);
+
+  if (use_tight_bounds) {
+    tight_error_helper.LoadUnscaledConstraint(coefficients, lower_bounds,
+                                              upper_bounds);
+    tight_error_helper.LoadScalingFactor(scaling_factor);
+  }
 
   // Write the scaled constraint content.
   int new_bound_size = 0;
@@ -1243,23 +1277,44 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   lower_bounds.resize(new_bound_size);
   upper_bounds.resize(new_bound_size);
 
-  // We relax the constraint bound by the wanted_precision before scaling. Note
-  // that this is needed because now that the scaled constraint activity is
-  // integer, we will floor/ceil these bounds.
+  // Compute tighter rhs errors on the rounding(1)/unrounding(2) if asked.
   //
-  // It might make more sense to use a relative precision here for large bounds,
-  // but absolute is usually what is used in the MIP world. Also if the problem
-  // was a pure integer problem, and a user asked for sum == 10k, we want to
-  // stay exact here.
-  //
-  // TODO(user): we should probably relax the bound a bit less because when we
-  // scale back our solution, we will add another error, so even if the worst
-  // absolute error of the scaling above is 'error', we are only guaranteed to:
-  // - Keep feasible solution of the original problem up to (tolerance - error).
-  // - Return solution that can be out of bound by (tolerance + error).
-  // That said, one can always tweak the wanted_precision if needed.
-  const Fractional lb = ct_lower_bound - wanted_precision;
-  const Fractional ub = ct_upper_bound + wanted_precision;
+  // Note that the "unrounding" errors are just informative, these are the
+  // worst error we could make when scaling back a feasible solution, but it
+  // might happen than our optimal solution is well within the original bound
+  // when unscaled.
+  if (use_tight_bounds) {
+    double lb_error1 = 0.0;
+    double lb_error2 = 0.0;
+    if (ct_lower_bound != -kInfinity) {
+      lb_error1 = tight_error_helper.GetLowerBoundRoundingError(
+                      ct_lower_bound * scaling_factor) /
+                  scaling_factor;
+      lb_error2 = tight_error_helper.GetLowerBoundUnroundingError(
+                      ct_lower_bound * scaling_factor) /
+                  scaling_factor;
+    }
+    double ub_error1 = 0.0;
+    double ub_error2 = 0.0;
+    if (ct_upper_bound != kInfinity) {
+      ub_error1 = tight_error_helper.GetUpperBoundRoundingError(
+                      ct_upper_bound * scaling_factor) /
+                  scaling_factor;
+      ub_error2 = tight_error_helper.GetUpperBoundUnroundingError(
+                      ct_upper_bound * scaling_factor) /
+                  scaling_factor;
+    }
+
+    max_rounding_error = std::max({max_rounding_error, lb_error1, ub_error1});
+    max_unrounding_error =
+        std::max({max_unrounding_error, lb_error2, ub_error2});
+
+    // Relax the bound to never loose a feasible solution of the original
+    // problem that is within tight_precision. However, we don't relax too much
+    // if we are not precise, and just hope for the best
+    ct_lower_bound -= std::min(wanted_precision, lb_error1);
+    ct_upper_bound += std::min(wanted_precision, ub_error1);
+  }
 
   // Add the constraint bounds. Because we are sure the scaled constraint fits
   // in an int64_t, if the scaled bounds are too large, the constraint is either
@@ -1268,11 +1323,13 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   // Note that since the min/max scaled activity magnitude should be under the
   // scaling_target (<< kint64max) it is okay to compare to kint64min/kint64max
   // casted to double.
-  const Fractional scaled_lb = std::ceil(lb * scaling_factor);
-  if (lb == kInfinity || scaled_lb >= kint64max) {
+  const Fractional scaled_lb = std::ceil(ct_lower_bound * scaling_factor);
+  if (ct_lower_bound == kInfinity ||
+      scaled_lb >= static_cast<double>(kint64max)) {
     // Corner case: infeasible model.
     mutable_linear->add_domain(kint64max);
-  } else if (lb == -kInfinity || scaled_lb <= kint64min) {
+  } else if (ct_lower_bound == -kInfinity ||
+             scaled_lb <= static_cast<double>(kint64min)) {
     mutable_linear->add_domain(kint64min);
   } else {
     mutable_linear->add_domain(
@@ -1281,11 +1338,13 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
             .value());
   }
 
-  const Fractional scaled_ub = std::floor(ub * scaling_factor);
-  if (ub == -kInfinity || scaled_ub <= kint64min) {
+  const Fractional scaled_ub = std::floor(ct_upper_bound * scaling_factor);
+  if (ct_upper_bound == -kInfinity ||
+      scaled_ub <= static_cast<double>(kint64min)) {
     // Corner case: infeasible model.
     mutable_linear->add_domain(kint64min);
-  } else if (ub == kInfinity || scaled_ub >= kint64max) {
+  } else if (ct_upper_bound == kInfinity ||
+             scaled_ub >= static_cast<double>(kint64max)) {
     mutable_linear->add_domain(kint64max);
   } else {
     mutable_linear->add_domain(
@@ -1346,8 +1405,9 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
       // integer enforcement.
       LinearOverflowChecker checker;
       for (int i = 0; i < mutable_linear->coeffs().size(); ++i) {
-        if (!checker.AddTerm(mutable_linear->coeffs(i), lower_bounds[i],
-                             upper_bounds[i])) {
+        if (!checker.AddTerm(mutable_linear->coeffs(i),
+                             static_cast<int64_t>(lower_bounds[i]),
+                             static_cast<int64_t>(upper_bounds[i]))) {
           return absl::InvalidArgumentError(
               "Overflow issue while adding back integer enforcement.");
         }
@@ -1556,6 +1616,8 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
   const int64_t kScalingTarget = int64_t{1}
                                  << params.mip_max_activity_exponent();
   scaler.wanted_precision = kWantedPrecision;
+  scaler.use_tight_bounds = params.mip_use_tight_bounds();
+  scaler.tight_precision = params.mip_tight_precision();
   scaler.scaling_target = kScalingTarget;
   scaler.keep_names = keep_names;
 
@@ -1660,7 +1722,9 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
         logger, "[Scaling] Skipped ",
         FormatCounter(scaler.num_trivial_constraints),
         " trivial constraints (activity computed with doubles, tolerance=",
-        kWantedPrecision, ").");
+        params.mip_tight_precision() ? params.mip_tight_precision()
+                                     : params.mip_wanted_precision(),
+        ").");
   }
   if (scaler.num_enforcements > 0) {
     SOLVER_LOG(logger, "[Scaling] Extracted ",
@@ -1684,6 +1748,14 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
              (scaler.max_absolute_rhs_error > params.mip_check_precision()
                   ? " [Potentially IMPRECISE]"
                   : ""));
+  if (params.mip_use_tight_bounds()) {
+    SOLVER_LOG(logger, "[Scaling] Tighter worst case rounding_error: ",
+               scaler.max_rounding_error,
+               " unrounding_error: ", scaler.max_unrounding_error,
+               (scaler.max_rounding_error > params.mip_wanted_precision()
+                    ? " [IMPRECISE]"
+                    : ""));
+  }
   SOLVER_LOG(logger, "[Scaling] Constraint scaling factor range: [",
              scaler.min_scaling_factor, ", ", scaler.max_scaling_factor, "]");
 

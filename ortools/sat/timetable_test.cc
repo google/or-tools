@@ -435,7 +435,7 @@ TEST(ReservoirTest, FindAllParenthesis) {
   }
 
   // To help debug the code.
-  for (const auto entry : sequence_to_count) {
+  for (const auto& entry : sequence_to_count) {
     LOG(INFO) << entry.first << " : " << entry.second;
   }
   LOG(INFO) << "decisions: " << model.GetOrCreate<SatSolver>()->num_branches();
@@ -493,7 +493,7 @@ TEST(ReservoirTest, FindAllParenthesisWithOptionality) {
   }
 
   // To help debug the code.
-  for (const auto entry : sequence_to_count) {
+  for (const auto& entry : sequence_to_count) {
     LOG(INFO) << entry.first << " : " << entry.second;
   }
   LOG(INFO) << "decisions: " << model.GetOrCreate<SatSolver>()->num_branches();
@@ -547,7 +547,7 @@ TEST(ReservoirTest, VariableLevelChange) {
   }
 
   // To help debug the code.
-  for (const auto entry : sequence_to_count) {
+  for (const auto& entry : sequence_to_count) {
     LOG(INFO) << entry.first << " : " << entry.second;
   }
   LOG(INFO) << "decisions: " << model.GetOrCreate<SatSolver>()->num_branches();

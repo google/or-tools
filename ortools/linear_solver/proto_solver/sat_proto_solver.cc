@@ -48,6 +48,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/lazy_mutable_copy.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/mp_model_solution_checker.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -189,6 +190,12 @@ MPSolutionResponse SatSolveProtoInternal(
   // ownership from the LazyMutableCopy<MPModelProto>().
   std::unique_ptr<MPModelProto> mp_model =
       std::move(optional_model).value().copy_or_move_as_unique_ptr();
+
+  // To enable solution checking we do need to keep a copy of the input model :(
+  MPModelProto copy_for_solution_check;
+  if (params.mip_verify_solution()) {
+    copy_for_solution_check = *mp_model;
+  }
 
   // The request is no longer needed after this.
   // Important: we need to copy the model above before clearing this.
@@ -346,7 +353,7 @@ MPSolutionResponse SatSolveProtoInternal(
     }
   }
 
-  // We no longer need the mp_model after this, reclaime its memory.
+  // We no longer need the mp_model after this, reclaim its memory.
   const int old_num_variables = mp_model->variable().size();
   const int old_num_constraints = mp_model->constraint().size();
   const bool is_maximize = mp_model->maximize();
@@ -400,6 +407,40 @@ MPSolutionResponse SatSolveProtoInternal(
     MPSolution post_solved_solution = post_solve(*cp_response);
     *response.mutable_variable_value() =
         std::move(*post_solved_solution.mutable_variable_value());
+
+    if (params.mip_verify_solution()) {
+      // We should have no variable out of bounds nor integral variable that
+      // are not integral, and we use the default tolerance of zero for these.
+      //
+      // Note that we ignore the checker result, this is just for informative
+      // display. We also use a low tolerance to have an idea of the
+      // max-violation, even if it is small.
+      //
+      // TODO(user): What I would actually prefer is just to always display
+      // the maximum violation if it is non-zero.
+      const std::string old_prefix(logger->LoggingPrefix());
+      logger->SetLoggingPrefix(
+          absl::StrCat(old_prefix, "[MIP solution checker] "));
+      CheckerOptions options;
+      options.constraint_tolerance = params.mip_tight_precision();
+      options.logger = logger;
+      absl::StatusOr<bool> status_or_verified = SolutionIsFeasible(
+          copy_for_solution_check, response.variable_value(), options);
+      if (!status_or_verified.ok()) {
+        SOLVER_LOG(logger,
+                   "Preconditions failed during solution verification ?? ",
+                   status_or_verified.status());
+      } else {
+        const bool verified = *status_or_verified;
+        if (verified) {
+          SOLVER_LOG(logger, "The solution passed verification with tolerance ",
+                     params.mip_tight_precision());
+        } else {
+          SOLVER_LOG(logger, "The solution FAILED verification.");
+        }
+      }
+      logger->SetLoggingPrefix(old_prefix);
+    }
   }
 
   // Copy and postsolve any additional solutions.

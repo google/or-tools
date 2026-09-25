@@ -84,6 +84,10 @@ class SolverLogger {
   // limit.
   void FlushPendingThrottledLogs(bool ignore_rates = false);
 
+  // All messages will contains this prefix.
+  void SetLoggingPrefix(absl::string_view prefix) { logging_prefix_ = prefix; }
+  absl::string_view LoggingPrefix() const { return logging_prefix_; }
+
  private:
   struct ThrottlingData {
     int64_t num_displayed_logs = 0;
@@ -100,6 +104,7 @@ class SolverLogger {
 
   bool is_enabled_ = false;
   bool log_to_stdout_ = false;
+  std::string logging_prefix_;
   std::vector<std::function<void(const std::string& message)>> info_callbacks_;
 
   // TODO(user): Expose? for now we never change this. We start throttling after

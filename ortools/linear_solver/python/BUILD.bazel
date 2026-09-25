@@ -107,9 +107,9 @@ py_test(
         "//ortools/linear_solver:linear_solver_glop",
         "//ortools/linear_solver:linear_solver_py_pb2",
         requirement("absl-py"),
-        "@protobuf//:protobuf_python",
         requirement("numpy"),
         requirement("pandas"),
+        "@protobuf//:protobuf_python",
     ],
 )
 
@@ -153,11 +153,11 @@ py_test(
     srcs = ["pywraplp_test.py"],
     deps = [
         ":pywraplp",
-        requirement("absl-py"),
         "//ortools/linear_solver:linear_solver_bop",
         "//ortools/linear_solver:linear_solver_glop",
         "//ortools/linear_solver:linear_solver_pdlp",
         "//ortools/linear_solver:linear_solver_py_pb2",
+        requirement("absl-py"),
         "@protobuf//:protobuf_python",
     ],
 )

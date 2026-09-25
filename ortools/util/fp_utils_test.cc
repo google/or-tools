@@ -13,6 +13,7 @@
 
 #include "ortools/util/fp_utils.h"
 
+#include <algorithm>
 #include <cfenv>  // NOLINT(build/c++11)
 #include <cmath>
 #include <cstdint>
@@ -447,6 +448,24 @@ TEST(GetBestScalingOfDoublesToInt64Test, Robustness) {
   }
 }
 
+TEST(ComputeGcdOfRoundedDoublesTest, BasicTest) {
+  EXPECT_EQ(1, ComputeGcdOfRoundedDoubles({}, 1.0));
+  EXPECT_EQ(1, ComputeGcdOfRoundedDoubles({0.1, -0.2, 0.3}, 1.0));
+  EXPECT_EQ(10, ComputeGcdOfRoundedDoubles({50, 0, 40, 60}, 1.0));
+  EXPECT_EQ(1, ComputeGcdOfRoundedDoubles({7, 5, 25, 14}, 1.0));
+  EXPECT_EQ(1, ComputeGcdOfRoundedDoubles({-7, -5, 25, -14}, 1.0));
+  EXPECT_EQ(7, ComputeGcdOfRoundedDoubles({7, 0}, 1.0));
+  EXPECT_EQ(7, ComputeGcdOfRoundedDoubles({0, 7}, 1.0));
+  EXPECT_EQ(7, ComputeGcdOfRoundedDoubles({-7, 0}, 1.0));
+  EXPECT_EQ(7, ComputeGcdOfRoundedDoubles({0, -7}, 1.0));
+  EXPECT_EQ(18, ComputeGcdOfRoundedDoubles({1, 0, 2, 3}, 18.0));
+  EXPECT_EQ(18, ComputeGcdOfRoundedDoubles({1, 0, 2, 3}, -18.0));
+}
+
+TEST(InterpolateTest, BasicTest) {
+  EXPECT_DOUBLE_EQ(1.8, Interpolate<double>(2, 1, .8));
+}
+
 TEST(ComputeScalingErrorTest, BasicTest) {
   std::vector<double> coeffs = {1.1, 0.7, -1.3};
   std::vector<double> lbs = {0, 0, 0};
@@ -464,22 +483,145 @@ TEST(ComputeScalingErrorTest, BasicTest) {
   EXPECT_NEAR(sum_max_error, 6.0, 1e-10);
 }
 
-TEST(ComputeGcdOfRoundedDoublesTest, BasicTest) {
-  EXPECT_EQ(1, ComputeGcdOfRoundedDoubles({}, 1.0));
-  EXPECT_EQ(1, ComputeGcdOfRoundedDoubles({0.1, -0.2, 0.3}, 1.0));
-  EXPECT_EQ(10, ComputeGcdOfRoundedDoubles({50, 0, 40, 60}, 1.0));
-  EXPECT_EQ(1, ComputeGcdOfRoundedDoubles({7, 5, 25, 14}, 1.0));
-  EXPECT_EQ(1, ComputeGcdOfRoundedDoubles({-7, -5, 25, -14}, 1.0));
-  EXPECT_EQ(7, ComputeGcdOfRoundedDoubles({7, 0}, 1.0));
-  EXPECT_EQ(7, ComputeGcdOfRoundedDoubles({0, 7}, 1.0));
-  EXPECT_EQ(7, ComputeGcdOfRoundedDoubles({-7, 0}, 1.0));
-  EXPECT_EQ(7, ComputeGcdOfRoundedDoubles({0, -7}, 1.0));
-  EXPECT_EQ(18, ComputeGcdOfRoundedDoubles({1, 0, 2, 3}, 18.0));
-  EXPECT_EQ(18, ComputeGcdOfRoundedDoubles({1, 0, 2, 3}, -18.0));
+TEST(TightScalingErrorHelperTest, BasicLowerBound) {
+  TightScalingErrorHelper helper;
+  // 1.4 * x0 + 0.7 * x1 >= 14.0, with x0, x1 in [0, 10].
+  // With scaling_factor = 1.0:
+  //   scaled_coeffs = {1.4, 0.7}, rounded_coeffs = {1.0, 1.0}
+  //   deltas = {-0.4, +0.3}, ratios = {-0.4 / 1.4, +0.3 / 0.7}
+  // To reach activity 14.0 while minimizing rounded activity, we pick x0 = 10
+  // (gives activity 14.0, delta_sum = -0.4 * 10 = -4.0).
+  // Indeed at (x0, x1) = (10, 0), scaled = 14.0 and rounded = 10.0.
+  helper.LoadUnscaledConstraint(/*input_coeffs=*/{1.4, 0.7},
+                                /*input_lbs=*/{0.0, 0.0},
+                                /*input_ubs=*/{10.0, 10.0});
+  helper.LoadScalingFactor(1.0);
+  EXPECT_NEAR(helper.GetLowerBoundRoundingError(14.0), 4.0, 1e-10);
+
+  // For unrounding: rounded constraint is 1.0 * x0 + 1.0 * x1 >= 10.0.
+  // Deltas (scaled - rounded) are {+0.4, -0.3}.
+  // Minimum scaled activity at x0 + x1 >= 10.0 is at (x0, x1) = (0, 10),
+  // where rounded = 10.0 and scaled = 7.0 (error = 3.0).
+  EXPECT_NEAR(helper.GetLowerBoundUnroundingError(10.0), 3.0, 1e-10);
 }
 
-TEST(InterpolateTest, BasicTest) {
-  EXPECT_DOUBLE_EQ(1.8, Interpolate<double>(2, 1, .8));
+TEST(TightScalingErrorHelperTest, BasicUpperBound) {
+  TightScalingErrorHelper helper;
+  // 0.6 * x0 + 1.4 * x1 <= 6.0, with x0, x1 in [0, 10].
+  // With scaling_factor = 1.0:
+  //   scaled_coeffs = {0.6, 1.4}, rounded_coeffs = {1.0, 1.0}.
+  // At (x0, x1) = (10, 0), scaled activity is 6.0 <= 6.0, while rounded
+  // activity is 1.0 * 10 + 1.0 * 0 = 10.0 (exceeds 6.0 by +4.0).
+  helper.LoadUnscaledConstraint(/*input_coeffs=*/{0.6, 1.4},
+                                /*input_lbs=*/{0.0, 0.0},
+                                /*input_ubs=*/{10.0, 10.0});
+  helper.LoadScalingFactor(1.0);
+  EXPECT_NEAR(helper.GetUpperBoundRoundingError(6.0), 4.0, 1e-10);
+
+  // For unrounding: rounded constraint is 1.0 * x0 + 1.0 * x1 <= 10.0.
+  // Maximum scaled activity at x0 + x1 <= 10.0 is at (x0, x1) = (0, 10),
+  // where rounded = 10.0 and scaled = 14.0 (exceeds 10.0 by +4.0).
+  EXPECT_NEAR(helper.GetUpperBoundUnroundingError(10.0), 4.0, 1e-10);
+}
+
+TEST(TightScalingErrorHelperTest, NonZeroBoundsAndNegativeCoeffs) {
+  TightScalingErrorHelper helper;
+  // 1.4 * x0 >= 14.0 with x0 in [10, 20], scaling_factor = 1.0.
+  // Here min_activity = 14.0 (so slack = 0.0 at ct_lb = 14.0).
+  // x0 = 10 satisfies 1.4 * 10 >= 14.0, and its rounded activity is 1.0 * 10 =
+  // 10.0, so the rounding error at ct_lb = 14.0 is -4.0.
+  helper.LoadUnscaledConstraint(/*input_coeffs=*/{1.4},
+                                /*input_lbs=*/{10.0},
+                                /*input_ubs=*/{20.0});
+  helper.LoadScalingFactor(1.0);
+  EXPECT_NEAR(helper.GetLowerBoundRoundingError(14.0), 4.0, 1e-10);
+
+  // Similarly with a negative coefficient: -0.6 * x0 >= -3.0 with x0 in
+  // [0, 10] (canonicalized to 0.6 * y0 >= -3.0 with y0 in [-10, 0]).
+  // At x0 = 5, scaled = -3.0 >= -3.0, rounded = -1.0 * 5 = -5.0 (error = -2.0).
+  helper.LoadUnscaledConstraint(/*input_coeffs=*/{-0.6},
+                                /*input_lbs=*/{0.0},
+                                /*input_ubs=*/{10.0});
+  helper.LoadScalingFactor(1.0);
+  EXPECT_NEAR(helper.GetLowerBoundRoundingError(-3.0), 2.0, 1e-10);
+}
+
+TEST(TightScalingErrorHelperTest, BruteForceComparisonWithAllIntegerSolutions) {
+  absl::BitGen random;
+  TightScalingErrorHelper helper;
+  for (int trial = 0; trial < 50; ++trial) {
+    std::vector<double> coeffs(3);
+    std::vector<double> lbs(3);
+    std::vector<double> ubs(3);
+    for (int i = 0; i < 3; ++i) {
+      coeffs[i] = absl::Uniform<double>(random, 0.2, 2.5) *
+                  (absl::Bernoulli(random, 0.5) ? 1.0 : -1.0);
+      const int lb = absl::Uniform<int>(random, -3, 3);
+      const int ub = lb + absl::Uniform<int>(random, 1, 6);
+      lbs[i] = lb;
+      ubs[i] = ub;
+    }
+    const double scaling_factor = 1.0;
+
+    // Enumerate all integer points in the domain and record exact/rounded sums.
+    struct PointActivity {
+      double scaled;
+      double rounded;
+    };
+    std::vector<PointActivity> activities;
+    double min_scaled = kInfinity;
+    double max_scaled = -kInfinity;
+    double min_rounded = kInfinity;
+    double max_rounded = -kInfinity;
+    for (int x0 = lbs[0]; x0 <= ubs[0]; ++x0) {
+      for (int x1 = lbs[1]; x1 <= ubs[1]; ++x1) {
+        for (int x2 = lbs[2]; x2 <= ubs[2]; ++x2) {
+          const int x[3] = {x0, x1, x2};
+          double scaled = 0.0;
+          double rounded = 0.0;
+          for (int i = 0; i < 3; ++i) {
+            const double sc = coeffs[i] * scaling_factor;
+            scaled += sc * x[i];
+            rounded += std::round(sc) * x[i];
+          }
+          activities.push_back({scaled, rounded});
+          min_scaled = std::min(min_scaled, scaled);
+          max_scaled = std::max(max_scaled, scaled);
+          min_rounded = std::min(min_rounded, rounded);
+          max_rounded = std::max(max_rounded, rounded);
+        }
+      }
+    }
+
+    helper.LoadUnscaledConstraint(coeffs, lbs, ubs);
+    helper.LoadScalingFactor(scaling_factor);
+
+    const double ct_lb = absl::Uniform<double>(random, min_scaled, max_scaled);
+    const double ct_ub = absl::Uniform<double>(random, min_scaled, max_scaled);
+    const double lb_round_err = helper.GetLowerBoundRoundingError(ct_lb);
+    const double ub_round_err = helper.GetUpperBoundRoundingError(ct_ub);
+    for (const auto& act : activities) {
+      if (act.scaled >= ct_lb) {
+        EXPECT_GE(act.rounded, ct_lb - lb_round_err - 1e-9);
+      }
+      if (act.scaled <= ct_ub) {
+        EXPECT_LE(act.rounded, ct_ub + ub_round_err + 1e-9);
+      }
+    }
+
+    const double r_lb = absl::Uniform<double>(random, min_rounded, max_rounded);
+    const double r_ub = absl::Uniform<double>(random, min_rounded, max_rounded);
+    const double lb_unround_err = helper.GetLowerBoundUnroundingError(r_lb);
+    const double ub_unround_err = helper.GetUpperBoundUnroundingError(r_ub);
+    for (const auto& act : activities) {
+      if (act.rounded >= r_lb) {
+        EXPECT_GE(act.scaled, r_lb - lb_unround_err - 1e-9);
+      }
+      if (act.rounded <= r_ub) {
+        EXPECT_LE(act.scaled, r_ub + ub_unround_err + 1e-9);
+      }
+    }
+  }
 }
 
 }  // namespace

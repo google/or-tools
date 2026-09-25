@@ -1016,7 +1016,21 @@ class ShiftVariableBoundsPreprocessor final : public Preprocessor {
 
   const DenseRow& offsets() const { return offsets_; }
 
+  // If true only shift by an integer value.
+  //
+  // For instance this would avoid shifting [0.5, 10] to [0, 9.5] which makes a
+  // big difference when talking to CP-SAT since the later will assume
+  // integrality of the variable. Especially if the 0.5 comes from our bound
+  // propagation.
+  //
+  // TODO(user): Improve the situation, for instance our "implied integer"
+  // detection code do not handle a variable that was detected to be offset +
+  // INTEGER * coeff for non-zero offset.
+  void OnlyShiftByIntegerValue() { only_shift_by_integer_values_ = true; }
+
  private:
+  bool only_shift_by_integer_values_ = false;
+
   // Contains for each variable by how much its bounds where shifted during
   // presolve. Note that the shift was negative (new bound = initial bound -
   // offset).

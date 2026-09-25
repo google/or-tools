@@ -30,6 +30,7 @@
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/fp_utils.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research {
@@ -134,6 +135,9 @@ struct ConstraintScaler {
   double max_scaling_factor = 0.0;
   double min_scaling_factor = std::numeric_limits<double>::infinity();
 
+  // Used when params.use_mip_tight_bounds() is true.
+  TightScalingErrorHelper tight_error_helper;
+
   // Statistics for enforcement extraction.
   int64_t num_trivial_constraints = 0;
   int64_t num_enforcements = 0;
@@ -146,8 +150,12 @@ struct ConstraintScaler {
 
   // Parameters passed to FindBestScalingAndComputeErrors(), see documentation
   // there to understand their meaning.
+  bool use_tight_bounds = false;
+  double tight_precision = 1e-8;
   double wanted_precision = 1e-6;
   int64_t scaling_target = int64_t{1} << 50;
+  double max_rounding_error = 0.0;
+  double max_unrounding_error = 0.0;
 
   // Private temporary field to reuse memory.
   std::vector<int> var_indices;

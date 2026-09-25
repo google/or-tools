@@ -7,6 +7,7 @@ ORTOOLS_GCC_FLAGS = [
     "-DNOMINMAX",
     "-ffp-contract=off",
     "-Wno-comment",
+    "-Wno-range-loop-construct",
     "-Wno-sign-compare",
     "-Wall",
     "-Wcast-qual",
@@ -30,7 +31,6 @@ ORTOOLS_GCC_FLAGS = [
     "-Wno-implicit-fallthrough",
     "-Wno-missing-declarations",
     "-Wno-missing-field-initializers",
-    "-Wno-range-loop-construct",
     "-Wno-sign-compare",
     "-Wno-sign-conversion",
     "-Wno-type-limits",
@@ -44,6 +44,7 @@ ORTOOLS_GCC_TEST_FLAGS = [
     "-DNOMINMAX",
     "-ffp-contract=off",
     "-Wno-comment",
+    "-Wno-range-loop-construct",
     "-Wno-sign-compare",
     "-Wall",
     "-Wcast-qual",
@@ -66,7 +67,6 @@ ORTOOLS_GCC_TEST_FLAGS = [
     "-Wno-implicit-fallthrough",
     "-Wno-missing-declarations",
     "-Wno-missing-field-initializers",
-    "-Wno-range-loop-construct",
     "-Wno-sign-compare",
     "-Wno-sign-conversion",
     "-Wno-type-limits",
@@ -311,6 +311,7 @@ ORTOOLS_CLANG_CL_TEST_FLAGS = [
 ORTOOLS_CLANG_CL_LINKOPTS = [
 ]
 ORTOOLS_MSVC_FLAGS = [
+    "/Zc:inline",
     "/Zc:preprocessor",
     "/bigobj",
     "/W3",
@@ -328,6 +329,7 @@ ORTOOLS_MSVC_FLAGS = [
     "/D_SCL_SECURE_NO_WARNINGS",
 ]
 ORTOOLS_MSVC_TEST_FLAGS = [
+    "/Zc:inline",
     "/Zc:preprocessor",
     "/bigobj",
     "/W3",

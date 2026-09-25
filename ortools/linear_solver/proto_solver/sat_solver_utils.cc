@@ -84,7 +84,7 @@ glop::ProblemStatus ApplyMipPresolveSteps(
 
   // These preprocessors do not need postsolve.
   ADD_LP_PREPROCESSOR(IntegerBoundsPreprocessor, 1e-6);
-  ADD_LP_PREPROCESSOR(BoundPropagationPreprocessor, 1e-7);
+  ADD_LP_PREPROCESSOR(BoundPropagationPreprocessor, 1e-6);
   ADD_LP_PREPROCESSOR(ImpliedIntegerPreprocessor, 1e-6);
 
   // We need to re-run this after the ImpliedIntegerPreprocessor because the
@@ -114,6 +114,7 @@ glop::ProblemStatus ApplyMipPresolveSteps(
     auto shift_bounds =
         std::make_unique<glop::ShiftVariableBoundsPreprocessor>(&glop_params);
     shift_bounds->UseInMipContext();
+    shift_bounds->OnlyShiftByIntegerValue();
     const glop::Preprocessor::Result result = shift_bounds->Run(&lp);
     if (result.solve_status.has_value()) {
       return result.solve_status->problem_status();

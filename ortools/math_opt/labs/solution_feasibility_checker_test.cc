@@ -261,7 +261,7 @@ TEST(CheckPrimalSolutionFeasibilityTest, Sos1ConstraintAllSubsets) {
     expressions.push_back(variables.back());
   }
   const Sos1Constraint c = model.AddSos1Constraint(expressions);
-  for (const absl::flat_hash_set<int> subset : AllSubsets(kN)) {
+  for (const absl::flat_hash_set<int>& subset : AllSubsets(kN)) {
     VariableMap<double> values;
     for (int i = 0; i < kN; ++i) {
       values[variables[i]] =
@@ -317,7 +317,7 @@ TEST(CheckPrimalSolutionFeasibilityTest, Sos2ConstraintAllSubsets) {
     expressions.push_back(variables.back());
   }
   const Sos2Constraint c = model.AddSos2Constraint(expressions);
-  for (const absl::flat_hash_set<int> subset : AllSubsets(kN)) {
+  for (const absl::flat_hash_set<int>& subset : AllSubsets(kN)) {
     VariableMap<double> values;
     for (int i = 0; i < kN; ++i) {
       values[variables[i]] =
