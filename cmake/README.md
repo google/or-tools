@@ -6,6 +6,7 @@
 | arm64 MacOS   | [![Status][arm64_macos_cpp_svg]][arm64_macos_cpp_link] | [![Status][arm64_macos_python_svg]][arm64_macos_python_link] | [![Status][arm64_macos_java_svg]][arm64_macos_java_link] | [![Status][arm64_macos_dotnet_svg]][arm64_macos_dotnet_link] |
 | amd64 MacOS   | [![Status][amd64_macos_cpp_svg]][amd64_macos_cpp_link] | [![Status][amd64_macos_python_svg]][amd64_macos_python_link] | [![Status][amd64_macos_java_svg]][amd64_macos_java_link] | [![Status][amd64_macos_dotnet_svg]][amd64_macos_dotnet_link] |
 | amd64 Windows | [![Status][windows_cpp_svg]][windows_cpp_link] | [![Status][windows_python_svg]][windows_python_link] | [![Status][windows_java_svg]][windows_java_link] | [![Status][windows_dotnet_svg]][windows_dotnet_link] |
+| arm64 Windows | | [![Status][arm64_windows_python_svg]][arm64_windows_python_link] | | |
 
 [linux_cpp_svg]: ./../../../actions/workflows/amd64_linux_cmake_cpp.yml/badge.svg?branch=main
 [linux_cpp_link]: ./../../../actions/workflows/amd64_linux_cmake_cpp.yml
@@ -42,6 +43,9 @@
 [windows_java_link]: ./../../../actions/workflows/amd64_windows_cmake_java.yml
 [windows_dotnet_svg]: ./../../../actions/workflows/amd64_windows_cmake_dotnet.yml/badge.svg?branch=main
 [windows_dotnet_link]: ./../../../actions/workflows/amd64_windows_cmake_dotnet.yml
+
+[arm64_windows_python_svg]: ./../../../actions/workflows/arm64_windows_cmake_python.yml/badge.svg?branch=main
+[arm64_windows_python_link]: ./../../../actions/workflows/arm64_windows_cmake_python.yml
 
 Dockers:
 \[AlmaLinux, Alpine, Archlinux, Debian, Fedora, OpenSuse, RockyLinux, Ubuntu\]x

@@ -107,3 +107,18 @@ index c6ce7283..6b6b1fc8 100644
  install(FILES "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/scip-config.cmake"
                ${PROJECT_BINARY_DIR}/scip-config-version.cmake
          DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/scip)
+diff --git a/src/scip/intervalarith.c b/src/scip/intervalarith.c
+index 7d53fb9..ce81c4b 100644
+--- a/src/scip/intervalarith.c
++++ b/src/scip/intervalarith.c
+@@ -301,8 +301,9 @@ double negate(
+ 
+ /* cl or icl compiler on 32bit windows or icl compiler on 64bit windows
+  * cl on 64bit windows does not seem to support inline assembler
++ * cl on arm windows does not support inline assembler at all
+  */
+-#elif defined(_MSC_VER) && (defined(__INTEL_COMPILER) || !defined(_M_X64))
++#elif defined(_MSC_VER) && !defined(_M_ARM) && !defined(_M_ARM64) && !defined(_M_ARM64EC) && (defined(__INTEL_COMPILER) || !defined(_M_X64))
+ 
+ /** gets the negation of a double
+  * Do this in a way that the compiler does not "optimize" it away, which usually does not considers rounding modes.
