@@ -22,7 +22,7 @@ function help() {
 ${BOLD}NAME${RESET}
 \t$NAME - Build delivery using the ${BOLD}local host system${RESET}.
 ${BOLD}SYNOPSIS${RESET}
-\t$NAME [-h|--help|help] [cpp|dotnet|java|python X.Y|examples|all|reset]
+\t$NAME [-h|--help|help] [cpp|dotnet|java|julia|python X.Y|examples|all|reset]
 ${BOLD}DESCRIPTION${RESET}
 \tBuild Google OR-Tools deliveries.
 \tYou ${BOLD}MUST${RESET} define the following variables before running this script:
@@ -33,6 +33,7 @@ ${BOLD}OPTIONS${RESET}
 \tcpp: build C++ (CMake based) prebuilt archive
 \tdotnet: build all .Net packages
 \tjava: build all Java packages
+\tjulia: build Julia package
 \tpython <X.Y>: build Pyhon X.Y package
 \tarchive: build all (C++, .Net, Java) archives
 \texamples: build examples archives
@@ -217,6 +218,43 @@ function build_java() {
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/java_build"
 }
 
+function build_julia() {
+  if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/julia_build" -; then
+    echo "build Julia up to date!" | tee -a build.log
+    return 0
+  fi
+
+  echo -n "Cleaning Julia..." | tee -a build.log
+  cd "${ROOT_DIR}" || exit 2
+  rm -rf "temp_julia"
+  echo "DONE" | tee -a build.log
+
+  # A Julia build is mostly a C++ build.
+  # Many flags to disable features that make no sense for Julia.
+  local -r JULIA_EXPORT_PKG_DIR="export/julia_pkg"
+  echo "Build Julia..." | tee -a build.log
+  cmake -S. -Btemp_julia \
+    -DBUILD_TESTING=OFF -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
+    -DBUILD_PYTHON=OFF -DBUILD_JAVA=OFF -DBUILD_DOTNET=OFF \
+    -DUSE_COINOR=OFF -DUSE_HIGHS=OFF -DUSE_SCIP=OFF -DUSE_XPRESS=OFF -DBUILD_FLATZINC=OFF \
+    -DCMAKE_INSTALL_PREFIX="${JULIA_EXPORT_PKG_DIR}"
+  cmake --build temp_julia
+  echo "Install Julia into ${JULIA_EXPORT_PKG_DIR}..." | tee -a build.log
+  cmake --build temp_julia --target install
+  echo "DONE" | tee -a build.log
+
+  # Make Julia package from scratch: the Julia packages and an installed
+  # OR-Tools.
+  cp -r ortools/julia/ORTools.jl "${JULIA_EXPORT_PKG_DIR}/"
+  cp -r ortools/julia/ORToolsBinaries.jl "${JULIA_EXPORT_PKG_DIR}/"
+  cp -r ortools/julia/ORToolsGenerated.jl "${JULIA_EXPORT_PKG_DIR}/"
+
+  local -r ORTOOLS_VERSION=$(cd "${ROOT_DIR}" && make print-OR_TOOLS_VERSION | cut -d'=' -f2 | tr -d ' ')
+  local -r ARCHIVE_NAME="or-tools_julia_${PLATFORM}_v${ORTOOLS_VERSION}.tar.gz"
+  tar --no-same-owner -czvf "export/${ARCHIVE_NAME}" -C "export" julia_pkg
+  echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/julia_build"
+}
+
 # Python 3
 # TODO(user) Use `make --directory tools/docker python` instead
 function build_python() {
@@ -368,7 +406,7 @@ function main() {
   mkdir -p "${ROOT_DIR}/export"
 
   case ${1} in
-    cpp|dotnet|java|archive|examples)
+    cpp|dotnet|java|julia|archive|examples)
       "build_$1"
       exit ;;
     python)
