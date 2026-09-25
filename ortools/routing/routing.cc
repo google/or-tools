@@ -7457,7 +7457,8 @@ void Dimension::CloseModel(bool use_light_propagation) {
     IntVar* const fixed_transit = fixed_transits_[i];
     const auto transit_vehicle_evaluator = [this, i](int64_t to,
                                                      int64_t eval_index) {
-      return eval_index >= 0 ? transit_evaluator(eval_index)(i, to) : 0;
+      return eval_index >= 0 ? transit_evaluator(eval_index)(i, to)
+                             : fixed_transits_[i]->Min();
     };
     if (use_light_propagation) {
       if (class_evaluators_.size() == 1) {
