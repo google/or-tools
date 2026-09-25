@@ -6797,6 +6797,13 @@ void RoutingDimension::InitializeTransitVariables(int64_t slack_max) {
         min_fixed_transit =
             std::min(min_fixed_transit, unary_transit_callback(i));
       }
+      // When several transit classes/evaluators are used, CloseModel() computes
+      // the fixed transit of a node that is not served (VehicleVar(i) == -1)
+      // as 0, so 0 must be part of the variable's domain; otherwise the model
+      // becomes infeasible as soon as rejecting a node is required.
+      if (class_evaluators_.size() > 1) {
+        min_fixed_transit = std::min(min_fixed_transit, int64_t{0});
+      }
     }
     fixed_transits_[i] = solver->MakeIntVar(
         is_unary                      ? min_fixed_transit

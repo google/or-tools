@@ -416,6 +416,52 @@ class TestPyWrapRoutingModel(absltest.TestCase):
                 cumul += vehicle + 1
                 node = next_node
 
+    def testDimensionWithVehicleTransitDropsNodes(self):
+        """Crash/regression test for google/or-tools#5283.
+
+        When a dimension is created with several vehicle transit callbacks
+        (one transit per vehicle) and unary transit callbacks, dropping
+        (dismissing) nodes must be feasible. The fixed transit variable of a
+        node that is not served by any vehicle is 0, so its domain must allow
+        0; otherwise any solution that needs to drop a node (e.g. because
+        serving all customers would exceed the vehicle capacities) is wrongly
+        reported as infeasible.
+        """
+        # Create routing model.
+        manager = pywrapcp.RoutingIndexManager(11, 2, 0)
+        self.assertIsNotNone(manager)
+        model = pywrapcp.RoutingModel(manager)
+        self.assertIsNotNone(model)
+        # One unary transit callback per vehicle, each with a positive demand.
+        transits = []
+        for vehicle in range(2):
+            demand = 10
+            transits.append(
+                model.RegisterUnaryTransitCallback(
+                    lambda i, d=demand: 0 if manager.IndexToNode(i) == 0 else d
+                )
+            )
+        # Capacity per vehicle is 30, so with 10 customers and a demand of 10
+        # (or 20) per customer the capacity dimension forces some nodes to be
+        # dropped in every feasible solution.
+        model.AddDimensionWithVehicleTransitAndCapacity(
+            transits, 0, [30, 30], True, "d"
+        )
+        penalty = 10**6
+        for customer in range(1, 11):
+            model.AddDisjunction([manager.NodeToIndex(customer)], penalty)
+        # Solve with all customers dropped: a trivially feasible solution, which
+        # was wrongly rejected before the fix (see #5283).
+        for customer in range(1, 11):
+            model.ActiveVar(manager.NodeToIndex(customer)).SetValue(0)
+        search_parameters = pywrapcp.DefaultRoutingSearchParameters()
+        search_parameters.first_solution_strategy = (
+            routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+        )
+        search_parameters.time_limit.seconds = 5
+        assignment = model.SolveWithParameters(search_parameters)
+        self.assertIsNotNone(assignment)
+
     def testConstantDimensionTSP(self):
         # Create routing model
         manager = pywrapcp.RoutingIndexManager(10, 3, 0)
