@@ -1373,37 +1373,63 @@ class LnsSolver : public SubSolver {
   }
 
   std::function<void()> GenerateTask(int64_t task_id) override {
-    return [task_id, this]() {
-      if (shared_->SearchIsDone()) return;
+    // The seed depends on task_id and lns_parameters_base_.random_seed(), so
+    // changing the latter changes the LNS behavior. One engine is shared by
+    // the biased draw and the later neighborhood draws.
+    const int32_t low = static_cast<int32_t>(task_id);
+    const int32_t high = static_cast<int32_t>(task_id >> 32);
+    std::seed_seq seed{low, high, lns_parameters_base_.random_seed()};
+    random_engine_t random(seed);
 
-      // Create a random number generator whose seed depends both on the task_id
-      // and on the parameters_.random_seed() so that changing the latter will
-      // change the LNS behavior.
-      const int32_t low = static_cast<int32_t>(task_id);
-      const int32_t high = static_cast<int32_t>(task_id >> 32);
-      std::seed_seq seed{low, high, lns_parameters_base_.random_seed()};
-      random_engine_t random(seed);
+    // DeterministicLoop() calls GenerateTask() on one thread, in task-id
+    // order, before any worker runs the closure. GetSolutionToImprove() calls
+    // GetRandomBiasedSolution(), which advances num_selected, and past the
+    // exploration threshold the uniform draw uses this engine. An interleaved
+    // search therefore draws here and keeps the base for the closure.
+    // Non-interleaved search still draws inside the closure.
+    bool base_chosen_up_front = false;
+    std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
+        base_solution;
+    IntegerValue initial_best_objective(0);
+    if (lns_parameters_base_.interleave_search()) {
+      base_solution =
+          shared_->response->SolutionPool().GetSolutionToImprove(random);
+      initial_best_objective = shared_->response->GetBestSolutionObjective();
+      base_chosen_up_front = true;
+    }
+
+    return [task_id, this, random = std::move(random),
+            base_solution = std::move(base_solution), initial_best_objective,
+            base_chosen_up_front]() mutable {
+      if (shared_->SearchIsDone()) return;
 
       NeighborhoodGenerator::SolveData data;
       data.task_id = task_id;
       data.difficulty = generator_->difficulty();
       data.deterministic_limit = generator_->deterministic_limit();
-      data.initial_best_objective =
-          shared_->response->GetBestSolutionObjective();
 
-      // Choose a base solution for this neighborhood.
-      const auto base_solution =
-          shared_->response->SolutionPool().GetSolutionToImprove(random);
+      std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
+          chosen_base = base_solution;
+      if (base_chosen_up_front) {
+        data.initial_best_objective = initial_best_objective;
+      } else {
+        data.initial_best_objective =
+            shared_->response->GetBestSolutionObjective();
+        // Choose a base solution for this neighborhood.
+        chosen_base =
+            shared_->response->SolutionPool().GetSolutionToImprove(random);
+      }
+
       CpSolverResponse base_response;
-      if (base_solution != nullptr) {
+      if (chosen_base != nullptr) {
         base_response.set_status(CpSolverStatus::FEASIBLE);
         base_response.mutable_solution()->Assign(
-            base_solution->variable_values.begin(),
-            base_solution->variable_values.end());
+            chosen_base->variable_values.begin(),
+            chosen_base->variable_values.end());
 
         // Note: We assume that the solution rank is the solution internal
         // objective.
-        data.base_objective = base_solution->rank;
+        data.base_objective = chosen_base->rank;
       } else {
         base_response.set_status(CpSolverStatus::UNKNOWN);
 
