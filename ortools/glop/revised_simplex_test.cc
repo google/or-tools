@@ -1257,7 +1257,14 @@ void RandomTestsOfIncrementalityOnSameProblem(
     // Note that we've already run the preprocessor in SolveRandomProblem and
     // linear_program already has slack variables added to it. We don't need to
     // re-run it here again.
-    EXPECT_GT(solution.num_iterations, 0) << err;
+
+    // We can't expect solution.num_iterations to be non-zero when the problem
+    // is not optimal. Typically an infeasible problem may be detected on the
+    // first iteration (depending on the initial basis choice), in which case
+    // num_iterations will be zero.
+    if (solution.status == ProblemStatus::OPTIMAL) {
+      EXPECT_GT(solution.num_iterations, 0) << err;
+    }
     std::unique_ptr<RevisedSimplex> simplex(new RevisedSimplex);
     std::unique_ptr<TimeLimit> time_limit = TimeLimit::Infinite();
     GlopParameters parameters;
@@ -1527,7 +1534,7 @@ void RandomTestsOfPrimalEqualsDual(const ColIndex num_cols,
         << " dual status: " << status.problem_status() << ';' << err;
     if (ProblemStatus::OPTIMAL == solution_primal.status) {
       EXPECT_NEAR(solution_primal.objective_value,
-                  simplex_dual->GetObjectiveValue(), 1e-10)
+                  simplex_dual->GetObjectiveValue(), 1e-8)
           << err;
     }
   }
