@@ -20,6 +20,7 @@
 // ./cgc_main --input_file=testdata/cgc/my_input_file.in
 // Other examples of input files in testdata/cgc/.
 
+#include <cstdlib>
 #include <memory>
 #include <string>
 #include <utility>
@@ -72,11 +73,13 @@ int main(int argc, char** argv) {
     if (absl::GetFlag(FLAGS_print_solution)) {
       cgc.PrintSolution();
     } else if (absl::GetFlag(FLAGS_print_maximum_value)) {
-      absl::PrintF("%d", cgc.MaximumValue());
+      absl::PrintF("%d\n", cgc.MaximumValue());
     } else {
       LOG(INFO) << "The maximum value found is: " << cgc.MaximumValue();
     }
   } else {
-    absl::PrintF("There was no solution found in %v ms.\n", time_limit);
+    absl::PrintF("There was no solution found in %v.\n", time_limit);
+    return EXIT_FAILURE;
   }
+  return EXIT_SUCCESS;
 }
