@@ -684,9 +684,10 @@ void GurobiInterface::Reset() {
   // solver_specific_parameter_string_ at the start of the solve; other
   // parameters set by previous calls are only kept in the Gurobi model.
   //
-  // TODO - b/328604189: Fix logging issue upstream, switch to a different API
-  // for copying parameters, or avoid calling Reset() in more places.
-  CheckedGurobiCall(GRBcopyparams(GRBgetenv(model_), GRBgetenv(old_model)));
+  // TODO - b/328604189: Fix logging issue upstream, or avoid calling Reset() in
+  // more places. GRBcopyparams is not exported by Gurobi 13, so we fall back to
+  // copying changed parameters explicitly.
+  CHECK_OK(CopyGurobiParameters(GRBgetenv(model_), GRBgetenv(old_model)));
 
   CheckedGurobiCall(GRBfreemodel(old_model));
   old_model = nullptr;
