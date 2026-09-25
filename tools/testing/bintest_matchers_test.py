@@ -85,6 +85,10 @@ class BintestMatchersTest(absltest.TestCase):
     def test_check(self):
         # text
         check("Hello world!", "world")
+        with self.assertRaises(bintest_matchers.MatchError):
+            check("There was no solution found.", "@num(>0)")
+        with self.assertRaises(bintest_matchers.MatchError):
+            check("", "@num(>0)")
         # approx float
         check("Hello 1!", "Hello @num(1)")
         check("0.9999999", "@num(1)")
