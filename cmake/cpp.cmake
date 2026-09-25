@@ -142,12 +142,17 @@ else()
   set(OR_TOOLS_LINK_OPTIONS "")
 endif()
 
+if(MSVC)
+  list(APPEND OR_TOOLS_COMPILE_OPTIONS
+    "/Zc:inline" # Remove unreferenced COMDAT
+  )
+endif()
+
 # These flags are currently not defined in ortools/copts/GENERATED_ORToolsCopts.cmake
 # Check if we need to add them.
 
 # if(MSVC)
 #   list(APPEND OR_TOOLS_COMPILE_OPTIONS
-#     "/Zc:inline" # Remove unreferenced COMDAT
 #     "/fp:precise"
 #     )
 #   # MSVC warning suppressions
