@@ -292,7 +292,7 @@ void JsspParser::ProcessFlexibleLine(const std::string& line) {
 }
 void JsspParser::ProcessSdstLine(const std::string& line) {
   const std::vector<std::string> words =
-      absl::StrSplit(line, ' ', absl::SkipEmpty());
+      absl::StrSplit(line, ' ', absl::SkipWhitespace());
   switch (parser_state_) {
     case START: {
       if (words.size() == 2) {
