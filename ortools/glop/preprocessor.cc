@@ -3785,14 +3785,15 @@ Preprocessor::Result ShiftVariableBoundsPreprocessor::Run(LinearProgram* lp) {
     if (0.0 < variable_initial_lbs_[col] || 0.0 > variable_initial_ubs_[col]) {
       Fractional offset = MinInMagnitudeOrZeroIfInfinite(
           variable_initial_lbs_[col], variable_initial_ubs_[col]);
-      if (in_mip_context_ && lp->IsVariableInteger(col)) {
-        // In the integer case, we truncate the number because if for instance
+      if (only_shift_by_integer_values_ ||
+          (in_mip_context_ && lp->IsVariableInteger(col))) {
+        // In the integer case, we round the number because if for instance
         // the lower bound is a positive integer + epsilon, we only want to
         // shift by the integer and leave the lower bound at epsilon.
         //
         // TODO(user): This would not be needed, if we always make the bound
         // of an integer variable integer before applying this preprocessor.
-        offset = trunc(offset);
+        offset = std::round(offset);
       } else {
         DCHECK_NE(offset, 0.0);
       }
