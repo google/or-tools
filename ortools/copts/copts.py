@@ -36,6 +36,7 @@ ORTOOLS_GCC_FLAGS = [
     "-DNOMINMAX",  # Don't define min and max macros (Build on Windows using gcc)
     "-ffp-contract=off",  # Disable automatic fused-multiply-add insertion
     "-Wno-comment",  # Disables warnings for comments that contain non-ASCII characters
+    "-Wno-range-loop-construct",  # Disables warnings when a range-based for loop is used with a non-range type
     "-Wno-sign-compare",  # Disables warnings when comparing signed and unsigned values because of internal Style Guide.
     "-Wall",  # Enables a core set of warnings about questionable constructs
     "-Wcast-qual",  # Warns when a pointer is cast to remove a type qualifier (e.g., const)
@@ -65,7 +66,6 @@ ORTOOLS_GCC_FLAGS = [
     "-Wno-implicit-fallthrough",  # Disables warnings for implicit fallthrough in switch statements
     "-Wno-missing-declarations",  # Disables warnings if a global function is defined without a previous declaration
     "-Wno-missing-field-initializers",  # Disables warnings when a class has uninitialized members
-    "-Wno-range-loop-construct",  # Disables warnings when a range-based for loop is used with a non-range type
     "-Wno-sign-compare",  # Disables warnings when comparing signed and unsigned values
     "-Wno-sign-conversion",  # Disables warnings for implicit conversions that may change the sign of an integer value
     "-Wno-type-limits",  # Disables warnings when a type is too small to hold a value
@@ -182,6 +182,7 @@ MSVC_BIG_WARNING_FLAGS = [
 
 MSVC_BASE_FLAGS = [
     # go/keep-sorted start
+    "/Zc:inline",  # Enable inline-function conformance mode and reducing symbols exported from DLLs
     "/Zc:preprocessor",  # Enable preprocessor conformance mode needed to correctly support __VA_OPT__
     "/bigobj",  # Increase the number of sections available in object files
     # go/keep-sorted end
