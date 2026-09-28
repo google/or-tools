@@ -20,9 +20,7 @@
 
 #include <vector>
 
-#include "absl/strings/str_join.h"
 #include "gtest/gtest.h"
-#include "ortools/base/gmock.h"
 
 namespace operations_research {
 namespace packing {

@@ -16,6 +16,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_text_proto.h"
+#include "ortools/linear_solver/linear_solver.h"
 #include "ortools/packing/vector_bin_packing.pb.h"
 
 namespace operations_research {
