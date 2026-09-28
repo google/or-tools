@@ -205,7 +205,9 @@ def solve_rcpsp(
         # Create the demand variable of the task for each resource.
         for res in all_resources:
             demands = [demand_matrix[(res, recipe)] for recipe in all_recipes]
-            task_resource_to_fixed_demands[(t, res)] = demands
+            task_resource_to_fixed_demands[(t, res)] = (
+                demands  # pyrefly: ignore[unsupported-operation]
+            )
             demand_var = model.new_int_var_from_domain(
                 cp_model.Domain.from_values(demands), f"demand_{t}_{res}"
             )
@@ -363,7 +365,7 @@ def solve_rcpsp(
 
     # A good default set of workers as of Jul 2026.
     if not solver.parameters.subsolvers and solver.parameters.num_workers == 16:
-        print("Overriding the set of subsolvers for 16 workers.")
+        print("Overriding the set of subsolvers for 16 workers.", flush=True)
         solver.parameters.subsolvers.append("fixed_no_lp")
         solver.parameters.subsolvers.append("max_lp")
         solver.parameters.subsolvers.append("no_lp")

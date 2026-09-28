@@ -43,7 +43,7 @@ py_test(
     srcs = ["set_cover_test.py"],
     deps = [
         ":set_cover",
-        requirement("absl-py"),
         "//ortools/set_cover:set_cover_py_pb2",
+        requirement("absl-py"),
     ],
 )
