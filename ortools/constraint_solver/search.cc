@@ -4582,7 +4582,7 @@ SearchLimit* RegularLimit::MakeClone() const { return MakeIdenticalClone(); }
 
 RegularLimit* RegularLimit::MakeIdenticalClone() const {
   Solver* const s = solver();
-  return s->MakeLimit(wall_time(), branches_, failures_, solutions_,
+  return s->MakeLimit(duration_limit(), branches_, failures_, solutions_,
                       smart_time_check_);
 }
 
@@ -4709,13 +4709,6 @@ RegularLimit* Solver::MakeFailuresLimit(int64_t failures) {
 RegularLimit* Solver::MakeSolutionsLimit(int64_t solutions) {
   return MakeLimit(absl::InfiniteDuration(), kint64max, kint64max, solutions,
                    /*smart_time_check=*/false, /*cumulative=*/false);
-}
-
-RegularLimit* Solver::MakeLimit(int64_t time, int64_t branches,
-                                int64_t failures, int64_t solutions,
-                                bool smart_time_check, bool cumulative) {
-  return MakeLimit(absl::Milliseconds(time), branches, failures, solutions,
-                   smart_time_check, cumulative);
 }
 
 RegularLimit* Solver::MakeLimit(absl::Duration time, int64_t branches,

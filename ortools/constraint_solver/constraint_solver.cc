@@ -989,10 +989,6 @@ std::string Solver::DebugString() const {
   return out;
 }
 
-int64_t Solver::MemoryUsage() {
-  return operations_research::sysinfo::MemoryUsageProcess().value_or(-1);
-}
-
 int64_t Solver::wall_time() const {
   return absl::ToInt64Milliseconds(timer_->GetDuration());
 }
@@ -1026,7 +1022,10 @@ ConstraintSolverStatistics Solver::GetConstraintSolverStatistics() const {
   stats.set_num_branches(branches());
   stats.set_num_failures(failures());
   stats.set_num_solutions(solutions());
-  stats.set_bytes_used(MemoryUsage());
+  if (auto memory_usage = sysinfo::MemoryUsageProcess();
+      memory_usage.has_value()) {
+    stats.set_bytes_used(memory_usage.value());
+  }
   stats.set_duration_seconds(absl::ToDoubleSeconds(timer_->GetDuration()));
   return stats;
 }
