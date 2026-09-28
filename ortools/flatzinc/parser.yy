@@ -569,8 +569,7 @@ argument:
     const double d = context->float_map.at(id);
     $$ = Argument::FloatValue(d);
   } else if (context->float_array_map.contains(id)) {
-    const auto& double_values = context->float_array_map.at(id);
-    $$ = Argument::FloatList(std::move(double_values));
+    $$ = Argument::FloatList(context->float_array_map.at(id));
   } else if (context->variable_map.contains(id)) {
     $$ = Argument::VarRef(context->variable_map.at(id));
   } else if (context->variable_array_map.contains(id)) {
