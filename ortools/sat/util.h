@@ -39,7 +39,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/random_engine.h"

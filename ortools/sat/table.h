@@ -19,7 +19,7 @@
 
 #include "absl/types/span.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 
 namespace operations_research {
 namespace sat {

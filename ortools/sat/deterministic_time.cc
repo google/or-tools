@@ -14,12 +14,53 @@
 #include "ortools/sat/deterministic_time.h"
 
 #ifdef OR_TOOLS_SAT_DETERMINISTIC_TIME_PROFILING
+#include <cstdint>
+#include <iostream>
+#include <memory>
 #include <stack>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
+
+#include "absl/debugging/stacktrace.h"
+
 #endif  // OR_TOOLS_SAT_DETERMINISTIC_TIME_PROFILING
 
 namespace operations_research::sat {
 
 #ifdef OR_TOOLS_SAT_DETERMINISTIC_TIME_PROFILING
+
+namespace profiling {
+std::vector<void*> GetTimerStackTrace() {
+  constexpr int kMaxDepth = 50;
+  std::vector<void*> result(kMaxDepth);
+  int depth = absl::GetStackTrace(result.data(), kMaxDepth, /*skip_count=*/2);
+  for (int i = 0; i < depth; ++i) {
+    // This seems necessary to get the exact line number of the deterministic
+    // timer constructor in the profile (otherwise we get the line of the next
+    // statement, possibly after some local variable declarations).
+    result[i] =
+        reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(result[i]) - 1);
+  }
+  result.resize(depth);
+  return result;
+}
+
+}  // namespace profiling
+
+AllDeterministicTimeStats::~AllDeterministicTimeStats() {
+  for (const auto& [source_location, stats] : all_stats_) {
+    const auto& [file, line] = source_location;
+    std::cout << "dtime stats: " << file << "," << line << ","
+              << stats.ToString() << std::endl;
+  }
+  for (const auto& [source_location, stats] : all_stats2_) {
+    const auto& [file, line] = source_location;
+    std::cout << "dtime2 stats: " << file << "," << line << ","
+              << stats.ToString() << std::endl;
+  }
+}
 
 thread_local std::stack<AbstractDeterministicTimer*>
     AbstractDeterministicTimer::timers_stack_;

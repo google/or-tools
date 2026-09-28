@@ -912,6 +912,7 @@ TEST(ElementExpandTest, FixedIndex) {
   absl::btree_set<std::vector<int>> found_solutions;
   const CpSolverResponse response =
       SolveAndCheck(initial_model, "cp_model_presolve:false", &found_solutions);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   absl::btree_set<std::vector<int>> expected{{2, 3}};
   EXPECT_EQ(found_solutions, expected);
 }
@@ -937,6 +938,7 @@ TEST(ElementExpandTest, InfeasibleFixedIndexWithEnforcementLiteral) {
   absl::btree_set<std::vector<int>> found_solutions;
   const CpSolverResponse response =
       SolveAndCheck(initial_model, "cp_model_presolve:false", &found_solutions);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   absl::btree_set<std::vector<int>> expected;
   for (int index = 4; index <= 5; ++index) {
     for (int target = 0; target <= 7; ++target) {
@@ -967,6 +969,7 @@ TEST(ElementExpandTest, FixedIndexWithEnforcementLiteral) {
   absl::btree_set<std::vector<int>> found_solutions;
   const CpSolverResponse response =
       SolveAndCheck(initial_model, "cp_model_presolve:false", &found_solutions);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   absl::btree_set<std::vector<int>> expected{{3, 2, 1}};
   for (int index = 3; index <= 5; ++index) {
     for (int target = 0; target <= 7; ++target) {
@@ -995,6 +998,7 @@ TEST(ElementExpandTest, SharedVariable) {
   absl::btree_set<std::vector<int>> found_solutions;
   const CpSolverResponse response =
       SolveAndCheck(initial_model, "cp_model_presolve:false", &found_solutions);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   absl::btree_set<std::vector<int>> expected{{1}, {2}};
   EXPECT_EQ(found_solutions, expected);
 }
@@ -1020,6 +1024,7 @@ TEST(ElementExpandTest, SharedVariableWithEnforcementLiteral) {
   absl::btree_set<std::vector<int>> found_solutions;
   const CpSolverResponse response =
       SolveAndCheck(initial_model, "cp_model_presolve:false", &found_solutions);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   absl::btree_set<std::vector<int>> expected{{0, 0}, {1, 0}, {2, 0}, {3, 0},
                                              {4, 0}, {5, 0}, {6, 0}, {7, 0},
                                              {1, 1}, {2, 1}};
@@ -1046,6 +1051,7 @@ TEST(ElementExpandTest, ConstantArray) {
   absl::btree_set<std::vector<int>> found_solutions;
   const CpSolverResponse response =
       SolveAndCheck(initial_model, "", &found_solutions);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   absl::btree_set<std::vector<int>> expected{
       {0, 1, 3, 4, 5, 1}, {1, 1, 3, 4, 5, 3}, {2, 1, 3, 4, 5, 4},
       {3, 1, 3, 4, 5, 5}, {4, 1, 3, 4, 5, 1},
@@ -1075,6 +1081,7 @@ TEST(ElementExpandTest, ConstantArrayWithEnforcementLiteral) {
   absl::btree_set<std::vector<int>> found_solutions;
   const CpSolverResponse response =
       SolveAndCheck(initial_model, "", &found_solutions);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   absl::btree_set<std::vector<int>> expected{
       {0, 1, 1}, {1, 3, 1}, {2, 4, 1}, {3, 5, 1}, {4, 1, 1}};
   for (int index = -1; index <= 5; ++index) {
@@ -1117,6 +1124,7 @@ TEST(AutomatonExpandTest, NonogramRule) {
   absl::btree_set<std::vector<int>> found_solutions;
   const CpSolverResponse response =
       SolveAndCheck(initial_model, "", &found_solutions);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   absl::btree_set<std::vector<int>> expected{
       {0, 0, 1, 1, 1, 0, 1, 1, 0, 1}, {0, 1, 1, 1, 0, 0, 1, 1, 0, 1},
       {0, 1, 1, 1, 0, 1, 1, 0, 0, 1}, {0, 1, 1, 1, 0, 1, 1, 0, 1, 0},
@@ -1151,6 +1159,7 @@ TEST(AutomatonExpandTest, Bug1753_1) {
   absl::btree_set<std::vector<int>> found_solutions;
   const CpSolverResponse response =
       SolveAndCheck(initial_model, "", &found_solutions);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   absl::btree_set<std::vector<int>> expected{{1, 2, 1}};
   EXPECT_EQ(found_solutions, expected);
 }
@@ -1182,6 +1191,7 @@ TEST(AutomatonExpandTest, Bug1753WithEnforcementLiteral_1) {
   absl::btree_set<std::vector<int>> found_solutions;
   const CpSolverResponse response =
       SolveAndCheck(initial_model, "", &found_solutions);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   absl::btree_set<std::vector<int>> expected{{1, 2, 1, 1}};
   for (int i = 0; i <= 2; ++i) {
     for (int j = 0; j <= 2; ++j) {
@@ -1235,6 +1245,7 @@ TEST(AutomatonExpandTest, Bug1753_2) {
   absl::btree_set<std::vector<int>> found_solutions;
   const CpSolverResponse response =
       SolveAndCheck(initial_model, "", &found_solutions);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   absl::btree_set<std::vector<int>> expected{{0, 0, 1}, {1, 2, 1}};
   EXPECT_EQ(found_solutions, expected);
 }
@@ -1283,6 +1294,7 @@ TEST(AutomatonExpandTest, Bug1753WithEnforcementLiteral_2) {
   absl::btree_set<std::vector<int>> found_solutions;
   const CpSolverResponse response =
       SolveAndCheck(initial_model, "", &found_solutions);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   absl::btree_set<std::vector<int>> expected{{0, 0, 1, 1}, {1, 2, 1, 1}};
   for (int i = 0; i <= 2; ++i) {
     for (int j = 0; j <= 2; ++j) {
@@ -1948,6 +1960,7 @@ TEST(ExpandAllDiffTest, Permutation) {
   absl::btree_set<std::vector<int>> found_solutions;
   const CpSolverResponse response =
       SolveAndCheck(initial_model, "cp_model_presolve:false", &found_solutions);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   absl::btree_set<std::vector<int>> expected{
       {0, 2, 1}, {2, 0, 1}, {1, 2, 0}, {2, 1, 0}};
   EXPECT_EQ(found_solutions, expected);
@@ -2204,6 +2217,7 @@ TEST(LinMaxExpansionTest, SimpleEnumeration) {
   absl::btree_set<std::vector<int>> found_solutions;
   const CpSolverResponse response = SolveAndCheck(
       initial_model, "max_lin_max_size_for_expansion:4", &found_solutions);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   absl::btree_set<std::vector<int>> expected{
       {0, 0, 4}, {1, 0, 5}, {1, 1, 0}, {1, 1, 1}, {1, 1, 2}, {1, 1, 3},
       {1, 1, 4}, {1, 1, 5}, {2, 0, 6}, {2, 1, 6}, {3, 2, 0}, {3, 2, 1},
