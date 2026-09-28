@@ -137,6 +137,73 @@ TEST(SharedSolutionRepository, GetRandomBiasedSolution) {
   }
 }
 
+TEST(SharedSolutionRepository, NumSelectedIsFixedBetweenSynchronize) {
+  // One best solution and one worse one. Until the published selection count
+  // passes the exploration threshold, every draw must return the best. A
+  // single best solution makes that check exact: the threshold is crossed
+  // only when Synchronize() publishes the live count.
+  SharedSolutionRepository<int64_t> repository(2);
+  repository.SetSynchronizationMode(false);
+
+  repository.Add({1, {1}});
+  repository.Add({5, {2}});
+  repository.Synchronize();
+  ASSERT_EQ(repository.NumSolutions(), 2);
+
+  random_engine_t random(0);
+  int num_best = 0;
+  for (int i = 0; i < 200; ++i) {
+    if (repository.GetRandomBiasedSolution(random)->rank == 1) {
+      ++num_best;
+    }
+  }
+  EXPECT_EQ(num_best, 200);
+
+  const auto best = repository.GetSolution(0);
+  const auto worse = repository.GetSolution(1);
+  ASSERT_NE(best, nullptr);
+  ASSERT_NE(worse, nullptr);
+  ASSERT_EQ(best->rank, 1);
+  ASSERT_EQ(worse->rank, 5);
+  EXPECT_EQ(best->num_selected, 200);
+  EXPECT_EQ(worse->num_selected, 0);
+  EXPECT_EQ(best->num_selected_at_last_sync, 0);
+  EXPECT_EQ(worse->num_selected_at_last_sync, 0);
+
+  // No new solutions: the early return must still publish the counts.
+  repository.Synchronize();
+  EXPECT_EQ(best->num_selected_at_last_sync, 200);
+  EXPECT_EQ(worse->num_selected_at_last_sync, 0);
+  EXPECT_GT(best->num_selected_at_last_sync, 100);
+
+  bool saw_worse = false;
+  for (int i = 0; i < 100 && !saw_worse; ++i) {
+    if (repository.GetRandomBiasedSolution(random)->rank != 1) {
+      saw_worse = true;
+    }
+  }
+  EXPECT_TRUE(saw_worse);
+}
+
+TEST(SharedSolutionRepository, NumSelectedUpdatesEagerlyByDefault) {
+  SharedSolutionRepository<int64_t> repository(2);
+  repository.Add({1, {1}});
+  repository.Add({5, {2}});
+  repository.Synchronize();
+  ASSERT_EQ(repository.NumSolutions(), 2);
+
+  random_engine_t random(0);
+  int num_best = 0;
+  for (int i = 0; i < 200; ++i) {
+    if (repository.GetRandomBiasedSolution(random)->rank == 1) {
+      ++num_best;
+    }
+  }
+  // Past the exploration threshold the draw is uniform over the pool.
+  EXPECT_LT(num_best, 200);
+  EXPECT_GT(repository.GetSolution(0)->num_selected_at_last_sync, 100);
+}
+
 TEST(SharedLPSolutionRepository, NewLPSolution) {
   SharedLPSolutionRepository lp_solutions(1);
 

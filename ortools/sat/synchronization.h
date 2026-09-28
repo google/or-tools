@@ -113,6 +113,11 @@ class SharedSolutionRepository {
     // Should be private: only SharedSolutionRepository should modify this.
     mutable int num_selected = 0;
 
+    // num_selected as of the last Synchronize(). Selection reads this so the
+    // visible count stays fixed between syncs. With always_synchronize_, it is
+    // refreshed on each selection instead.
+    mutable int num_selected_at_last_sync = 0;
+
     int source_id;  // Internal information.
 
     bool operator==(const Solution& other) const {
@@ -146,6 +151,10 @@ class SharedSolutionRepository {
   ValueType GetVariableValueInSolution(int var_index, int solution_index) const;
 
   // Returns a random solution biased towards good solutions.
+  //
+  // The bias uses num_selected as of the last Synchronize(). If
+  // SetSynchronizationMode(true) was called (the default), that copy is
+  // refreshed on each call.
   std::shared_ptr<const Solution> GetRandomBiasedSolution(
       absl::BitGenRef random) const;
 
@@ -167,6 +176,14 @@ class SharedSolutionRepository {
   // If f() is provided, it will be called on all new solutions.
   void Synchronize(
       const std::function<void(const Solution& solution)>& f = nullptr);
+
+  // If false, GetRandomBiasedSolution() keeps using num_selected as of the
+  // last Synchronize() until the next one. If true (the default), that copy
+  // is updated on each call.
+  void SetSynchronizationMode(bool always_synchronize) {
+    absl::MutexLock mutex_lock(mutex_);
+    always_synchronize_ = always_synchronize;
+  }
 
   std::vector<std::string> TableLineStats() const {
     absl::MutexLock mutex_lock(mutex_);
@@ -213,6 +230,7 @@ class SharedSolutionRepository {
 
   mutable int64_t num_queried_at_last_sync_ ABSL_GUARDED_BY(mutex_) = 0;
   mutable int64_t num_non_improving_ ABSL_GUARDED_BY(mutex_) = 0;
+  bool always_synchronize_ ABSL_GUARDED_BY(mutex_) = true;
 
   // Our two solution pools, the current one and the new one that will be
   // merged into the current one on each Synchronize() call.
@@ -223,6 +241,9 @@ class SharedSolutionRepository {
   // For computing orthogonality.
   std::vector<int64_t> ABSL_GUARDED_BY(mutex_) distances_;
   std::vector<int64_t> ABSL_GUARDED_BY(mutex_) buffer_;
+
+ private:
+  void UpdateNumSelectedSnapshot() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 };
 
 // Solutions coming from the LP.
@@ -276,6 +297,11 @@ class SharedSolutionPool {
       SharedSolutionRepository<int64_t>::Solution solution);
 
   void Synchronize(absl::BitGenRef random);
+
+  void SetSynchronizationMode(bool always_synchronize) {
+    best_solutions_.SetSynchronizationMode(always_synchronize);
+    alternative_path_.SetSynchronizationMode(always_synchronize);
+  }
 
   void AddTableStats(std::vector<std::vector<std::string>>* table) const {
     table->push_back(best_solutions_.TableLineStats());
@@ -1160,9 +1186,9 @@ SharedSolutionRepository<ValueType>::GetRandomBiasedSolution(
     // explored too much, we select one uniformly. Otherwise, we select a
     // solution from the pool uniformly.
     //
-    // Note(user): Because of the increase of num_selected, this is dependent on
-    // the order of calls. It should be fine for "determinism" because we do
-    // generate the task of a batch always in the same order.
+    // Selection reads num_selected as of the last Synchronize(), so every
+    // caller between two syncs sees the same counts. With always_synchronize_,
+    // that copy is updated below on each call.
     const int kExplorationThreshold = 100;
 
     // Select all the best solutions with a low enough selection count.
@@ -1170,7 +1196,7 @@ SharedSolutionRepository<ValueType>::GetRandomBiasedSolution(
     for (int i = 0; i < solutions_.size(); ++i) {
       std::shared_ptr<const Solution> solution = solutions_[i];
       if (solution->rank == best_rank &&
-          solution->num_selected <= kExplorationThreshold) {
+          solution->num_selected_at_last_sync <= kExplorationThreshold) {
         tmp_indices_.push_back(i);
       }
     }
@@ -1185,7 +1211,18 @@ SharedSolutionRepository<ValueType>::GetRandomBiasedSolution(
   CHECK_GE(index, 0);
   CHECK_LT(index, solutions_.size());
   solutions_[index]->num_selected++;
+  if (always_synchronize_) {
+    solutions_[index]->num_selected_at_last_sync =
+        solutions_[index]->num_selected;
+  }
   return solutions_[index];
+}
+
+template <typename ValueType>
+void SharedSolutionRepository<ValueType>::UpdateNumSelectedSnapshot() {
+  for (const auto& solution : solutions_) {
+    solution->num_selected_at_last_sync = solution->num_selected;
+  }
 }
 
 template <typename ValueType>
@@ -1208,6 +1245,7 @@ void SharedSolutionRepository<ValueType>::Synchronize(
     const std::function<void(const Solution& solution)>& f) {
   absl::MutexLock mutex_lock(mutex_);
   if (new_solutions_.empty()) {
+    UpdateNumSelectedSnapshot();
     const int64_t diff = num_queried_ - num_queried_at_last_sync_;
     num_non_improving_ += diff;
     num_queried_at_last_sync_ = num_queried_;
@@ -1342,6 +1380,7 @@ void SharedSolutionRepository<ValueType>::Synchronize(
     num_non_improving_ += diff;
   }
   num_queried_at_last_sync_ = num_queried_;
+  UpdateNumSelectedSnapshot();
 }
 
 // Thread-safe.

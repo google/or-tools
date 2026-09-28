@@ -2225,6 +2225,10 @@ SharedClasses::SharedClasses(const CpModelProto* proto, Model* global_model)
   const bool always_synchronize =
       !params.interleave_search() || params.num_workers() <= 1;
   response->SetSynchronizationMode(always_synchronize);
+  ls_hints->SetSynchronizationMode(always_synchronize);
+  if (lp_solutions != nullptr) {
+    lp_solutions->SetSynchronizationMode(always_synchronize);
+  }
   if (params.share_binary_clauses() && params.num_workers() > 1) {
     clauses = std::make_unique<SharedClausesManager>(always_synchronize);
   }
