@@ -19,7 +19,6 @@
 #include <utility>
 
 #include "absl/cleanup/cleanup.h"
-#include "absl/flags/declare.h"
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
 #include "absl/log/log.h"
@@ -29,6 +28,8 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/log_severity.h"
+#include "ortools/glop/parameters.pb.h"
+#include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_parser.h"
 #include "ortools/lp_data/lp_test_utils.h"
