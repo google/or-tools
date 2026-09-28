@@ -227,7 +227,6 @@ public class SimpleCpProgram {
 
     Console.WriteLine("Advanced usage:");
     Console.WriteLine($"Problem solved in {solver.WallTime()}ms");
-    Console.WriteLine($"Memory usage: {Solver.MemoryUsage()}bytes");
   }
 }
 ```
