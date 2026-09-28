@@ -14,15 +14,14 @@
 #ifndef ORTOOLS_BASE_HASH_H_
 #define ORTOOLS_BASE_HASH_H_
 
-#include <array>
+#include <cstddef>
 #include <cstdint>
-#include <string>
-#include <utility>
 
 // In SWIG mode, we don't want anything besides these top-level includes.
 #if !defined(SWIG)
 
 namespace operations_research {
+
 uint64_t fasthash64(const void* buf, size_t len, uint64_t seed);
 
 // 64 bit version.

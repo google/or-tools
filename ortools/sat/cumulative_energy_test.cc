@@ -221,8 +221,7 @@ bool SolveUsingNaiveModel(const EnergyInstance& instance) {
     }
   }
 
-  SatParameters params =
-      model.Add(NewSatParameters("use_overload_checker_in_cumulative:true"));
+  model.Add(NewSatParameters("use_overload_checker_in_cumulative:true"));
   AddCumulative(/*enforcement_literals=*/{}, intervals, consumptions,
                 AffineExpression(IntegerValue(instance.capacity)), &model);
 

@@ -61,19 +61,15 @@ ORTOOLS_GCC_FLAGS = [
     # go/keep-sorted start prefix_order="-D,"-f,"-Wno-,"-W"
     "-Wno-deprecated-declarations",  # Disables warnings about uses of functions, variables, or types marked as deprecated
     "-Wno-float-conversion",  # Disables warnings for implicit conversions that reduce floating-point precision
-    "-Wno-format-security",  # Disables warnings about uses of format functions that represent possible security problems
     "-Wno-ignored-qualifiers",  # Disables warnings when a qualifier is applied to a type that has no effect
-    "-Wno-implicit-fallthrough",  # Disables warnings for implicit fallthrough in switch statements
     "-Wno-missing-declarations",  # Disables warnings if a global function is defined without a previous declaration
     "-Wno-missing-field-initializers",  # Disables warnings when a class has uninitialized members
     "-Wno-sign-compare",  # Disables warnings when comparing signed and unsigned values
     "-Wno-sign-conversion",  # Disables warnings for implicit conversions that may change the sign of an integer value
-    "-Wno-type-limits",  # Disables warnings when a type is too small to hold a value
     "-Wno-undef",  # Disables warnings when an undefined identifier is evaluated in an #if directive
     "-Wno-unused-but-set-variable",  # Disables warnings when a variable is assigned but never used
     "-Wno-unused-parameter",  # Disables warnings whenever a function parameter is unused aside from its declaration
     "-Wno-unused-result",  # Disables warnings when the result of a function is unused
-    "-Wno-unused-variable",  # Disables warnings when a variable is declared but never used
     # go/keep-sorted end
 ]
 
@@ -81,10 +77,8 @@ ORTOOLS_GCC_TEST_ADDITIONAL_FLAGS = [
     # go/keep-sorted start prefix_order="-D,"-f,"-Wno-,"-W"
     "-Wno-deprecated-declarations",  # Disables warnings about uses of functions, variables, or types marked as deprecated
     "-Wno-missing-declarations",  # Disables warnings if a global function is defined without a previous declaration
-    "-Wno-self-move",  # Disables warnings when a value is moved to itself with std::move
     "-Wno-unused-function",  # Disables warnings whenever a static or inline function is declared but not used
     "-Wno-unused-parameter",  # Disables warnings whenever a function parameter is unused aside from its declaration
-    "-Wno-unused-private-field",  # Disables warnings when a private class field is declared but never used
     # go/keep-sorted end
 ]
 

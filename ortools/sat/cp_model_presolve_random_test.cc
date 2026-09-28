@@ -242,7 +242,7 @@ TEST_P(RandomPreprocessorTest, TestHintSurvivePresolve) {
   params.set_debug_crash_on_bad_hint(true);
   params.set_debug_crash_if_presolve_breaks_hint(true);
   params.set_stop_after_first_solution(true);
-  const CpSolverResponse with_hint = SolveWithParameters(model_proto, params);
+  SolveWithParameters(model_proto, params);
 
   // Let's also test that the tightened domains contain the hint.
   model_proto.clear_objective();
@@ -252,6 +252,7 @@ TEST_P(RandomPreprocessorTest, TestHintSurvivePresolve) {
   tighten_params.set_fill_tightened_domains_in_response(true);
   const CpSolverResponse with_tighten =
       SolveWithParameters(model_proto, tighten_params);
+  ASSERT_EQ(with_tighten.status(), CpSolverStatus::OPTIMAL);
   EXPECT_EQ(with_tighten.tightened_variables().size(), num_vars);
   for (int i = 0; i < num_vars; i++) {
     EXPECT_TRUE(ReadDomainFromProto(with_tighten.tightened_variables(i))
