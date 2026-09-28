@@ -326,6 +326,7 @@ void SharedResponseManager::InitializeObjective(const CpModelProto& cp_model) {
 void SharedResponseManager::SetSynchronizationMode(bool always_synchronize) {
   absl::MutexLock mutex_lock(mutex_);
   always_synchronize_ = always_synchronize;
+  solution_pool_.SetSynchronizationMode(always_synchronize);
 }
 
 void SharedResponseManager::SetUpdateGapIntegralOnEachChange(bool set) {
