@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import re
-
 from absl.testing import absltest
 
 from tools.testing import bintest_matchers
@@ -48,7 +46,7 @@ class BintestMatchersTest(absltest.TestCase):
         self.assertNotRegex("@numb)foo)", pattern)
 
     def test_number_regex(self):
-        pattern = bintest_matchers.Re.NUMBER
+        pattern = "^" + bintest_matchers.Re.NUMBER + "$"
         self.assertRegex("123", pattern)
         self.assertRegex("123.456", pattern)
         self.assertRegex("123e-06", pattern)
@@ -56,6 +54,7 @@ class BintestMatchersTest(absltest.TestCase):
         self.assertRegex("123e+6", pattern)
         self.assertRegex("1.23e10", pattern)
         self.assertRegex("123.456e-7", pattern)
+        self.assertRegex("1.", pattern)
         self.assertRegex(".1", pattern)
         self.assertRegex("+123", pattern)
         self.assertRegex("+123.456", pattern)
@@ -76,11 +75,17 @@ class BintestMatchersTest(absltest.TestCase):
         self.assertRegex("123E+6", pattern)
         self.assertRegex("1.23E10", pattern)
         self.assertRegex("123.456E-7", pattern)
-        self.assertIsNone(re.fullmatch(pattern, " "))
-        self.assertIsNone(re.fullmatch(pattern, "123.456e"))
-        self.assertIsNone(re.fullmatch(pattern, "123e"))
-        self.assertIsNone(re.fullmatch(pattern, "123e-"))
-        self.assertIsNone(re.fullmatch(pattern, "."))
+        self.assertNotRegex("", pattern)
+        self.assertNotRegex(" ", pattern)
+        self.assertNotRegex("+", pattern)
+        self.assertNotRegex("-", pattern)
+        self.assertNotRegex("+-1", pattern)
+        self.assertNotRegex("-+1", pattern)
+        self.assertNotRegex("123.456.789", pattern)
+        self.assertNotRegex("123.456e", pattern)
+        self.assertNotRegex("123e", pattern)
+        self.assertNotRegex("123e-", pattern)
+        self.assertNotRegex(".", pattern)
 
     def test_check(self):
         # text
