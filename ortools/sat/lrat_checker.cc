@@ -28,7 +28,8 @@
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 #include "ortools/base/log_severity.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_clause.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/util/bitset.h"
 
 namespace operations_research {

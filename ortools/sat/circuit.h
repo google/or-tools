@@ -26,7 +26,9 @@
 #include "ortools/sat/enforcement_helper.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_assignment.h"
+#include "ortools/sat/sat_literal.h"
+#include "ortools/sat/sat_trail.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/rev.h"
 

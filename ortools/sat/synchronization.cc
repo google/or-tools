@@ -56,7 +56,7 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/symmetry_util.h"
 #include "ortools/sat/util.h"
@@ -1315,6 +1315,19 @@ CompactVectorVector<int> UniqueClauseStream::NextBatch() {
   }
   dropped_literals_since_last_batch_ = 0;
   return batch;
+}
+
+std::vector<absl::Span<const int>> UniqueClauseStream::PeekBatch() const {
+  int to_fill = kMaxLiteralsPerBatch;
+  std::vector<absl::Span<const int>> result;
+  for (int size = kMinClauseSize; size <= kMaxClauseSize; ++size) {
+    absl::Span<const int> buffer = BufferForSize(size);
+    for (int i = NumClausesOfSize(size) - 1; i >= 0 && to_fill >= size; --i) {
+      result.push_back(buffer.subspan(i * size, size));
+      to_fill -= size;
+    }
+  }
+  return result;
 }
 
 int UniqueClauseStream::NumBufferedLiterals() const {

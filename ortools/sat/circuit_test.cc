@@ -34,7 +34,7 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 
@@ -325,7 +325,7 @@ TEST(NoCyclePropagatorTest, CountAllSolutions) {
     components.clear();
     FindStronglyConnectedComponents(num_nodes, subgraph, &components);
     bool has_cycle = false;
-    for (const std::vector<int> compo : components) {
+    for (const std::vector<int>& compo : components) {
       if (compo.size() > 1) {
         has_cycle = true;
         break;

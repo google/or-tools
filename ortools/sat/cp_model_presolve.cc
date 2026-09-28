@@ -72,10 +72,12 @@
 #include "ortools/sat/presolve_encoding.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/probing.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_assignment.h"
 #include "ortools/sat/sat_inprocessing.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/sat_trail.h"
 #include "ortools/sat/scheduling_model.h"
 #include "ortools/sat/simplification.h"
 #include "ortools/sat/solution_crush.h"
@@ -1710,12 +1712,12 @@ void CpModelPresolver::ShiftObjectiveWithExactlyOnes() {
         }
       }
       if (second_min == 0) continue;
-      ++num_shifts;
       if (!context_->ShiftCostInExactlyOne(ct.exactly_one().literals(),
                                            second_min)) {
         if (context_->ModelIsUnsat()) return;
         continue;
       }
+      ++num_shifts;
     }
   }
   if (num_shifts > 0) {

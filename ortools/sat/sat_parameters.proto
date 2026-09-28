@@ -26,7 +26,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 370
+// NEXT TAG: 373
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -1997,4 +1997,21 @@ message SatParameters {
   // much of that presolve we do. It can help to better scale floating point
   // model, but it is not always behaving nicely.
   optional int32 mip_presolve_level = 261 [default = 2];
+
+  // Experimental. If true, we do not change how the scaling is done, but:
+  // - We compute tighter error bounds on the result.
+  // - We try to relax the constraint bound just enough so that a feasible
+  //   solution of the original problem with mip_tight_precision is not lost.
+  // - But we still do not relax more than mip_wanted_precision and hope for the
+  //   best.
+  optional bool mip_use_tight_bounds = 370 [default = true];
+  optional double mip_tight_precision = 371 [default = 1e-9];
+
+  // If true, we check that the returned solution is feasible with respect to
+  // the input problem. This currently just display some logs with the maximum
+  // constraint violation or variable bounds error of the returned solution.
+  //
+  // It is off by default because this require keeping a copy of the original
+  // input model before we do any presolving to it.
+  optional bool mip_verify_solution = 372 [default = false];
 }

@@ -11,13 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_clause.h"
 
 #include <string>
 #include <utility>
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
+#include "ortools/sat/sat_assignment.h"
+#include "ortools/sat/sat_literal.h"
 
 namespace operations_research {
 namespace sat {
@@ -29,13 +31,9 @@ SatClause* SatClause::Create(absl::Span<const Literal> literals) {
 }
 
 SatClause* SatClause::CreateInternal(absl::Span<const Literal> literals) {
-  SatClause* clause = reinterpret_cast<SatClause*>(
-      ::operator new(sizeof(SatClause) + literals.size() * sizeof(Literal)));
-  clause->size_ = literals.size();
-  for (int i = 0; i < literals.size(); ++i) {
-    clause->literals_[i] = literals[i];
-  }
-  return clause;
+  char* const storage =
+      new char[sizeof(SatClause) + literals.size() * sizeof(Literal)];
+  return new (storage) SatClause(literals);
 }
 
 // Note that for an attached clause, removing fixed literals is okay because if

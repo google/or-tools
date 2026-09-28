@@ -85,8 +85,8 @@
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/primary_variables.h"
 #include "ortools/sat/routing_cuts.h"
-#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_inprocessing.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/scheduling_local_search.h"
@@ -3422,6 +3422,13 @@ bool CpModelSolver::StopAfterPresolve() {
                "\nPresolvedNumConstraints: ",
                presolved_model_proto_->constraints().size(),
                "\nPresolvedNumTerms: ", num_terms);
+
+    if (presolved_model_proto_->has_objective()) {
+      // Always initialize the objective, otherwise the response will contain a
+      // wrong objective bound of 0 if we timeout on presolve.
+      shared_response_manager_->InitializeObjective(*presolved_model_proto_);
+      shared_response_manager_->SetGapLimitsFromParameters(params_);
+    }
 
     CpSolverResponse status_response;
     shared_response_manager_->FillSolveStatsInResponse(model_,

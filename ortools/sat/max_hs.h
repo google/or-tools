@@ -31,7 +31,7 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_relaxation.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"

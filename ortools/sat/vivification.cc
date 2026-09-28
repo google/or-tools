@@ -26,7 +26,10 @@
 #include "absl/log/vlog_is_on.h"
 #include "absl/types/span.h"
 #include "ortools/sat/clause.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_assignment.h"
+#include "ortools/sat/sat_clause.h"
+#include "ortools/sat/sat_literal.h"
+#include "ortools/sat/sat_trail.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
 

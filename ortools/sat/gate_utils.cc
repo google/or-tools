@@ -40,7 +40,7 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
 

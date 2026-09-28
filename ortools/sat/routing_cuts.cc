@@ -60,10 +60,13 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/routes_support_graph.pb.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_assignment.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_trail.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/strong_integers.h"
 
 ABSL_FLAG(bool, cp_model_dump_routes_support_graphs, false,
@@ -398,6 +401,9 @@ int SpecialBinPackingHelper::ComputeMinNumberOfBins(
   bool all_demands_are_non_negative = true;
   for (const ItemOrBin& obj : objects) {
     sum_of_demands = CapAddI(sum_of_demands, obj.demand);
+    // TODO(user): we can probably handle a couple of extra cases rather than
+    // just bailing out here and below.
+    if (AtMinOrMaxInt64I(sum_of_demands)) return 0;
     if (obj.type != MUST_BE_BIN) {
       ++max_num_items;
       if (obj.demand < 0) {
@@ -409,10 +415,6 @@ int SpecialBinPackingHelper::ComputeMinNumberOfBins(
       max_capacity = std::max(max_capacity, obj.capacity.value());
     }
   }
-
-  // TODO(user): we can probably handle a couple of extra cases rather than just
-  // bailing out here and below.
-  if (AtMinOrMaxInt64I(sum_of_demands)) return 0;
 
   // If the gcd of all the demand terms is positive, we can divide everything.
   if (gcd > 1) {
@@ -508,10 +510,15 @@ int SpecialBinPackingHelper::ComputeMinNumberOfBinsInternal(
                      return a.capacity + a.demand > b.capacity + b.demand;
                    });
 
-  // Note that we already checked for overflow.
+  // We already checked that the overall sum does not overflow, but since we've
+  // reordered the terms, we could now *temporarily* overflow while computing
+  // it: 50 + -100 + kint64max didn't overflow, but 50 + kint64max + -100 will.
+  // We simply let the temporary overflow happen, safely, via overflow-friendly
+  // addition.
   IntegerValue sum_of_demands(0);
   for (const ItemOrBin& obj : objects) {
-    sum_of_demands += obj.demand;
+    sum_of_demands = IntegerValue(
+        TwosComplementAddition(sum_of_demands.value(), obj.demand.value()));
   }
 
   // We start with no bins (sum_of_demands=everything, sum_of_capacity=0) and

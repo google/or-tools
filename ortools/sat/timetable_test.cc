@@ -33,8 +33,9 @@
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/old_precedences_propagator.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/sat_trail.h"
 #include "ortools/sat/scheduling_helpers.h"
 
 namespace operations_research {
@@ -434,7 +435,7 @@ TEST(ReservoirTest, FindAllParenthesis) {
   }
 
   // To help debug the code.
-  for (const auto entry : sequence_to_count) {
+  for (const auto& entry : sequence_to_count) {
     LOG(INFO) << entry.first << " : " << entry.second;
   }
   LOG(INFO) << "decisions: " << model.GetOrCreate<SatSolver>()->num_branches();
@@ -492,7 +493,7 @@ TEST(ReservoirTest, FindAllParenthesisWithOptionality) {
   }
 
   // To help debug the code.
-  for (const auto entry : sequence_to_count) {
+  for (const auto& entry : sequence_to_count) {
     LOG(INFO) << entry.first << " : " << entry.second;
   }
   LOG(INFO) << "decisions: " << model.GetOrCreate<SatSolver>()->num_branches();
@@ -546,7 +547,7 @@ TEST(ReservoirTest, VariableLevelChange) {
   }
 
   // To help debug the code.
-  for (const auto entry : sequence_to_count) {
+  for (const auto& entry : sequence_to_count) {
     LOG(INFO) << entry.first << " : " << entry.second;
   }
   LOG(INFO) << "decisions: " << model.GetOrCreate<SatSolver>()->num_branches();

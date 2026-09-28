@@ -25,7 +25,8 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
+#include "ortools/sat/sat_trail.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {

@@ -16,20 +16,21 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <iostream>
 #include <memory>
 #include <stack>
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "absl/base/thread_annotations.h"
-#include "absl/container/btree_map.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_format.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/clock.h"
+#include "absl/time/time.h"
 #include "absl/types/source_location.h"
 #include "ortools/util/time_limit.h"
 
@@ -286,23 +287,33 @@ struct SampleStatistics2 {
   }
 };
 
+namespace profiling {
+
+std::vector<void*> GetTimerStackTrace();
+
+struct ProfilingSamples {
+  uint64_t count = 0;
+  double total_dtime = 0;
+
+  void AddSample(double dtime) {
+    count++;
+    total_dtime += dtime;
+  }
+
+  void AddSamples(const ProfilingSamples& other) {
+    count += other.count;
+    total_dtime += other.total_dtime;
+  }
+};
+
+}  // namespace profiling
+
 // A registry of all the deterministic timer statistics, over all threads. It is
 // updated each time a thread exits, and logs all the statistics when the
 // program exits.
 class AllDeterministicTimeStats {
  public:
-  ~AllDeterministicTimeStats() {
-    for (const auto& [source_location, stats] : all_stats_) {
-      const auto& [file, line] = source_location;
-      std::cout << "dtime stats: " << file << "," << line << ","
-                << stats.ToString() << std::endl;
-    }
-    for (const auto& [source_location, stats] : all_stats2_) {
-      const auto& [file, line] = source_location;
-      std::cout << "dtime2 stats: " << file << "," << line << ","
-                << stats.ToString() << std::endl;
-    }
-  }
+  ~AllDeterministicTimeStats();
 
   static AllDeterministicTimeStats& Get() {
     static auto instance = std::unique_ptr<AllDeterministicTimeStats>(
@@ -326,14 +337,26 @@ class AllDeterministicTimeStats {
     all_stats2_[{file, line}].AddSamples(stats);
   }
 
+  void AddProfilingStats(
+      const absl::flat_hash_map<std::vector<void*>,
+                                profiling::ProfilingSamples>& stats) {
+    absl::MutexLock lock(mutex_);
+    for (const auto& [stack, samples] : stats) {
+      all_profiling_stats_[stack].AddSamples(samples);
+    }
+  }
+
  private:
   AllDeterministicTimeStats() = default;
 
+  absl::Time start_time_ = absl::Now();
   absl::Mutex mutex_;
-  absl::btree_map<std::pair<std::string_view, int>, SampleStatistics> all_stats_
-      ABSL_GUARDED_BY(mutex_);
-  absl::btree_map<std::pair<std::string_view, int>, SampleStatistics2>
+  absl::flat_hash_map<std::pair<std::string_view, int>, SampleStatistics>
+      all_stats_ ABSL_GUARDED_BY(mutex_);
+  absl::flat_hash_map<std::pair<std::string_view, int>, SampleStatistics2>
       all_stats2_ ABSL_GUARDED_BY(mutex_);
+  absl::flat_hash_map<std::vector<void*>, profiling::ProfilingSamples>
+      all_profiling_stats_ ABSL_GUARDED_BY(mutex_);
 };
 
 // Statistics from a single deterministic timer (identified by an ID
@@ -348,6 +371,9 @@ class BaseDeterministicTimeStats {
   ~BaseDeterministicTimeStats() {
     AllDeterministicTimeStats::Get().AddStats(loc_.file_name(), loc_.line(),
                                               stats_);
+#ifdef OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+    AllDeterministicTimeStats::Get().AddProfilingStats(call_stack_to_stats_);
+#endif  // OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
   }
 
   // Adds a sample to the statistics.
@@ -355,13 +381,21 @@ class BaseDeterministicTimeStats {
   // - measured_duration_ns: the corresponding actual duration in nanoseconds.
   // - fitted_duration: the duration predicted by the current linear regression.
   void AddSample(uint64_t time_units, uint64_t measured_duration_ns,
-                 double fitted_duration) {
+                 double fitted_duration,
+                 std::vector<void*>* call_stack = nullptr) {
     stats_.AddSample(time_units, measured_duration_ns, fitted_duration);
+#ifdef OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+    call_stack_to_stats_[*call_stack].AddSample(fitted_duration);
+#endif  // OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
   }
 
  protected:
   const CompileTimeSourceLocation loc_;
   SampleStatistics stats_;
+#ifdef OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+  absl::flat_hash_map<std::vector<void*>, profiling::ProfilingSamples>
+      call_stack_to_stats_;
+#endif  // OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
 };
 
 template <CompileTimeSourceLocation loc>
@@ -390,6 +424,9 @@ class AbstractDeterministicTimer {
   TimeLimit* const time_limit_;
   // The time in nanoseconds when the timer was constructed.
   uint64_t start_time_;
+#ifdef OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+  std::vector<void*> call_stack_ = profiling::GetTimerStackTrace();
+#endif
 
   // The stack of currently active timers in the current thread. This is used to
   // deduct the time spent in nested timers (we assume that timers are destroyed
@@ -417,7 +454,12 @@ class BaseDeterministicTimer : public AbstractDeterministicTimer {
       // Deduct the time spent in this timer from the time spent in its parent.
       timers_stack_.top()->SubtractNestedTimerDuration(elapsed_time);
     }
+#ifdef OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+    stats.AddSample(time_units_, elapsed_time, fitted_elapsed_time,
+                    &call_stack_);
+#else
     stats.AddSample(time_units_, elapsed_time, fitted_elapsed_time);
+#endif  // OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
   }
 
   // The number of time units that were advanced by the timer.
@@ -485,6 +527,9 @@ class BaseDeterministicTimeStats2 {
   ~BaseDeterministicTimeStats2() {
     AllDeterministicTimeStats::Get().AddStats2(loc_.file_name(), loc_.line(),
                                                stats_);
+#ifdef OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+    AllDeterministicTimeStats::Get().AddProfilingStats(call_stack_to_stats_);
+#endif  // OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
   }
 
   // Adds a sample to the statistics.
@@ -492,14 +537,22 @@ class BaseDeterministicTimeStats2 {
   // - measured_duration_ns: the corresponding actual duration in nanoseconds.
   // - fitted_duration: the duration predicted by the current linear regression.
   void AddSample(uint64_t time_units1, uint64_t time_units2,
-                 uint64_t measured_duration_ns, double fitted_duration) {
+                 uint64_t measured_duration_ns, double fitted_duration,
+                 std::vector<void*>* call_stack = nullptr) {
     stats_.AddSample(time_units1, time_units2, measured_duration_ns,
                      fitted_duration);
+#ifdef OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+    call_stack_to_stats_[*call_stack].AddSample(fitted_duration);
+#endif  // OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
   }
 
  protected:
   const CompileTimeSourceLocation loc_;
   SampleStatistics2 stats_;
+#ifdef OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+  absl::flat_hash_map<std::vector<void*>, profiling::ProfilingSamples>
+      call_stack_to_stats_;
+#endif  // OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
 };
 
 template <CompileTimeSourceLocation loc>
@@ -528,8 +581,13 @@ class BaseDeterministicTimer2 : public AbstractDeterministicTimer {
       // Deduct the time spent in this timer from the time spent in its parent.
       timers_stack_.top()->SubtractNestedTimerDuration(elapsed_time);
     }
+#ifdef OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+    stats.AddSample(time_units1_, time_units2_, elapsed_time,
+                    fitted_elapsed_time, &call_stack_);
+#else
     stats.AddSample(time_units1_, time_units2_, elapsed_time,
                     fitted_elapsed_time);
+#endif
   }
 
   // The number of time units that were advanced by the timer.

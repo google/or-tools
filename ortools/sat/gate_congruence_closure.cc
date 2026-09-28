@@ -40,9 +40,11 @@
 #include "ortools/sat/deterministic_time.h"
 #include "ortools/sat/gate_utils.h"
 #include "ortools/sat/lrat_proof_handler.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_clause.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/sat_trail.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
@@ -65,7 +67,7 @@ GateCongruenceClosure::~GateCongruenceClosure() {
 
 template <int arity>
 void GateCongruenceClosure::AddToTruthTable(
-    SatClause* clause,
+    const SatClause* clause,
     absl::flat_hash_map<std::array<BooleanVariable, arity>, TruthTableId>&
         ids) {
   CHECK_EQ(clause->size(), arity);
@@ -247,7 +249,8 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
   logger.AddCounter("t2", ids2_.size());
 
   std::vector<Literal> candidates;
-  for (SatClause* clause : clause_manager_->AllClausesInCreationOrder()) {
+  for (const SatClause* const clause :
+       clause_manager_->AllClausesInCreationOrder()) {
     if (logger.WorkLimitIsReached()) break;
     if (clause->empty()) continue;
 

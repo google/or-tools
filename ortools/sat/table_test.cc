@@ -31,9 +31,10 @@
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/sat_trail.h"
 
 namespace operations_research {
 namespace sat {
@@ -373,6 +374,7 @@ TEST(NegatedTableConstraintTest, BasicTest) {
   // Tell the solver to enumerate all solutions.
   SetEnumerateAllSolutions(&model);
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
 
   absl::btree_set<std::vector<int64_t>> expected{{1, 1, 1},
                                                  {1, 1, 2},
@@ -488,6 +490,7 @@ TEST(AutomatonTest, LoopingAutomatonMultipleFinalStates) {
 
   SetEnumerateAllSolutions(&model);
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
 
   absl::btree_set<std::vector<int64_t>> expected{
       {0, 0, 0, 0, 0, 0, 0, 0, 1, 2}, {0, 0, 0, 0, 0, 0, 0, 1, 2, 0},
@@ -541,6 +544,7 @@ TEST(AutomatonTest, NonogramRule) {
 
   SetEnumerateAllSolutions(&model);
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
 
   absl::btree_set<std::vector<int64_t>> expected{
       {0, 0, 1, 1, 1, 0, 1, 1, 0, 1}, {0, 1, 1, 1, 0, 0, 1, 1, 0, 1},
@@ -587,6 +591,7 @@ TEST(AutomatonTest, AnotherAutomaton) {
 
   SetEnumerateAllSolutions(&model);
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
 
   // Out of the 2**7 tuples, the ones that contain 4 consecutive 1s are:
   // - 1111??? (8)

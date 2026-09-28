@@ -27,7 +27,7 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/logging.h"

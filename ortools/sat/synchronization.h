@@ -48,7 +48,7 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
@@ -814,10 +814,22 @@ class UniqueClauseStream {
   // too many clauses were dropped.
   CompactVectorVector<int> NextBatch();
 
+  // Returns the clauses that will be exported in the next batch, without
+  // clearing the internal buffer, the spans are only valid until the next call
+  // to Add() or NextBatch().
+  std::vector<absl::Span<const int>> PeekBatch() const;
+
   void ClearFingerprints() {
     old_fingerprints_.clear();
     fingerprints_.clear();
     fingerprints_.reserve(kMaxFingerprints);
+  }
+
+  void Clear() {
+    ClearFingerprints();
+    for (auto& buffer : clauses_by_size_) {
+      buffer.clear();
+    }
   }
 
   // Returns the number of buffered literals in clauses of a given size.

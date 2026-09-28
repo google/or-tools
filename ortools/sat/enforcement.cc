@@ -23,7 +23,8 @@
 #include "absl/types/span.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_literal.h"
+#include "ortools/sat/sat_trail.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {

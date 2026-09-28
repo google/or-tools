@@ -22,7 +22,8 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_clause.h"
+#include "ortools/sat/sat_literal.h"
 
 namespace operations_research {
 namespace sat {
