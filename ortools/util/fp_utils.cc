@@ -264,4 +264,43 @@ int64_t ComputeGcdOfRoundedDoubles(absl::Span<const double> x,
   return gcd > 0 ? gcd : 1;
 }
 
+void TightScalingErrorHelper::LoadUnscaledConstraint(
+    absl::Span<const double> input_coeffs, absl::Span<const double> input_lbs,
+    absl::Span<const double> input_ubs) {
+  // To simplify code, lets make all coefficient positive.
+  // Beeing super-fast here shouldn't matter that much since we will only
+  // do that once per constraint.
+  const int num_terms = input_coeffs.size();
+  coeffs_.assign(input_coeffs.begin(), input_coeffs.end());
+  lbs_.assign(input_lbs.begin(), input_lbs.end());
+  ubs_.assign(input_ubs.begin(), input_ubs.end());
+  for (int i = 0; i < num_terms; ++i) {
+    // Bounds should only be integer.
+    // TODO(user): If we want to compute bound EXACTLY, take int64_t instead ?
+    CHECK_EQ(std::round(lbs_[i]), lbs_[i]);
+    CHECK_EQ(std::round(ubs_[i]), ubs_[i]);
+    CHECK_NE(coeffs_[i], 0.0);
+
+    // Canonicalized the domain and the coefficient.
+    // We only care about the set of integer feasible solution.
+    if (coeffs_[i] < 0) {
+      std::swap(lbs_[i], ubs_[i]);
+      lbs_[i] = -lbs_[i];
+      ubs_[i] = -ubs_[i];
+      coeffs_[i] = -coeffs_[i];
+    }
+  }
+}
+
+void TightScalingErrorHelper::LoadScalingFactor(double scaling_factor) {
+  const int num_terms = coeffs_.size();
+  scaled_coeffs_.resize(num_terms);
+  rounded_coeffs_.resize(num_terms);
+  for (int i = 0; i < num_terms; ++i) {
+    const double scaled = scaling_factor * coeffs_[i];
+    scaled_coeffs_[i] = scaled;
+    rounded_coeffs_[i] = std::round(scaled);
+  }
+}
+
 }  // namespace operations_research

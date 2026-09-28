@@ -983,6 +983,38 @@ or_cc_library(
     ],
 )
 
+or_cc_library(
+    name = "mp_model_solution_checker",
+    srcs = ["mp_model_solution_checker.cc"],
+    hdrs = ["mp_model_solution_checker.h"],
+    deps = [
+        ":fp_roundtrip_conv",
+        ":full_precision_inequalities",
+        ":logging",
+        "//ortools/base:status_builder",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
+        "@abseil-cpp//absl/strings:string_view",
+        "@abseil-cpp//absl/types:source_location",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+or_cc_test(
+    name = "mp_model_solution_checker_test",
+    srcs = ["mp_model_solution_checker_test.cc"],
+    deps = [
+        ":logging",
+        ":mp_model_solution_checker",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_text_proto",
+        "@abseil-cpp//absl/status",
+    ],
+)
+
 or_cc_test(
     name = "full_precision_inequalities_test",
     srcs = ["full_precision_inequalities_test.cc"],
