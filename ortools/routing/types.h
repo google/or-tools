@@ -38,6 +38,7 @@ DEFINE_STRONG_INDEX_TYPE(DimensionIndex);
 DEFINE_STRONG_INDEX_TYPE(DisjunctionIndex);
 DEFINE_STRONG_INDEX_TYPE(VehicleClassIndex);
 DEFINE_STRONG_INDEX_TYPE(ResourceClassIndex);
+DEFINE_STRONG_INDEX_TYPE(DimensionOptimizerIndex);
 
 /// Pickup and delivery pair representation, including alternatives for pickups
 /// and deliveries respectively.

@@ -41,12 +41,10 @@
 #include "absl/flags/flag.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/functional/bind_front.h"
-#include "absl/hash/hash.h"
 #include "absl/log/check.h"
 #include "absl/log/die_if_null.h"
 #include "absl/log/log.h"
 #include "absl/memory/memory.h"
-#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
@@ -64,12 +62,12 @@
 #include "ortools/constraint_solver/expressions.h"
 #include "ortools/constraint_solver/interval.h"
 #include "ortools/constraint_solver/local_search.h"
+#include "ortools/constraint_solver/search_stats.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
 #include "ortools/constraint_solver/trace.h"
 #include "ortools/graph/linear_assignment.h"
 #include "ortools/graph_base/connected_components.h"
 #include "ortools/graph_base/graph.h"
-#include "ortools/graph_base/index.h"
 #include "ortools/routing/constraints.h"
 #include "ortools/routing/decision_builders.h"
 #include "ortools/routing/enums.pb.h"
@@ -85,7 +83,6 @@
 #include "ortools/routing/search.h"
 #include "ortools/routing/types.h"
 #include "ortools/routing/utils.h"
-#include "ortools/util/bitset.h"
 #include "ortools/util/optional_boolean.pb.h"
 #include "ortools/util/piecewise_linear_function.h"
 #include "ortools/util/range_query_function.h"
@@ -137,9 +134,10 @@ std::string Model::RouteDimensionTravelInfo::TransitionInfo::DebugString(
 
 void Model::AppendDecisionBuildersForPackingCumuls(
     std::vector<DecisionBuilder*>* decision_builders) const {
-  DCHECK(!local_dimension_optimizers_.empty() ||
-         !global_dimension_optimizers_.empty());
-  for (auto& [lp_optimizer, mp_optimizer] : local_dimension_optimizers_) {
+  DCHECK(!local_dimension_optimizers_info_.optimizers.empty() ||
+         !global_dimension_optimizers_info_.optimizers.empty());
+  for (auto& [lp_optimizer, mp_optimizer] :
+       local_dimension_optimizers_info_.optimizers) {
     if (HasGlobalCumulOptimizer(*lp_optimizer->dimension())) {
       // Don't set cumuls of dimensions with a global optimizer.
       continue;
@@ -148,7 +146,8 @@ void Model::AppendDecisionBuildersForPackingCumuls(
         solver_.get(), lp_optimizer.get(), mp_optimizer.get(),
         /*optimize_and_pack=*/true));
   }
-  for (auto& [lp_optimizer, mp_optimizer] : global_dimension_optimizers_) {
+  for (auto& [lp_optimizer, mp_optimizer] :
+       global_dimension_optimizers_info_.optimizers) {
     decision_builders->push_back(MakeSetCumulsFromGlobalDimensionCosts(
         solver_.get(), lp_optimizer.get(), mp_optimizer.get(),
         /*optimize_and_pack=*/true));
@@ -227,8 +226,9 @@ const Assignment* Model::OptimizeCumulsFromAssignmentInternal(
     if (time_limit_was_reached) *time_limit_was_reached = true;
     return original_assignment;
   }
-  if (!has_dim_travel_info && global_dimension_optimizers_.empty() &&
-      local_dimension_optimizers_.empty()) {
+  if (!has_dim_travel_info &&
+      global_dimension_optimizers_info_.optimizers.empty() &&
+      local_dimension_optimizers_info_.optimizers.empty()) {
     return original_assignment;
   }
 
@@ -1133,58 +1133,72 @@ std::vector<std::string> Model::GetAllDimensionNames() const {
 
 GlobalDimensionCumulOptimizer* Model::GetMutableGlobalCumulLPOptimizer(
     const Dimension& dimension) const {
-  const int optimizer_index = GetGlobalCumulOptimizerIndex(dimension);
+  const DimensionOptimizerIndex optimizer_index =
+      GetGlobalCumulOptimizerIndex(dimension);
   return optimizer_index < 0
              ? nullptr
-             : global_dimension_optimizers_[optimizer_index].lp_optimizer.get();
+             : global_dimension_optimizers_info_.optimizers[optimizer_index]
+                   .lp_optimizer.get();
 }
 
 GlobalDimensionCumulOptimizer* Model::GetMutableGlobalCumulMPOptimizer(
     const Dimension& dimension) const {
-  const int optimizer_index = GetGlobalCumulOptimizerIndex(dimension);
+  const DimensionOptimizerIndex optimizer_index =
+      GetGlobalCumulOptimizerIndex(dimension);
   return optimizer_index < 0
              ? nullptr
-             : global_dimension_optimizers_[optimizer_index].mp_optimizer.get();
+             : global_dimension_optimizers_info_.optimizers[optimizer_index]
+                   .mp_optimizer.get();
 }
 
-int Model::GetGlobalCumulOptimizerIndex(const Dimension& dimension) const {
+DimensionOptimizerIndex Model::GetGlobalCumulOptimizerIndex(
+    const Dimension& dimension) const {
   DCHECK(closed_);
   const DimensionIndex dim_index = dimension.index();
-  if (dim_index < 0 || dim_index >= global_optimizer_index_.size() ||
-      global_optimizer_index_[dim_index] < 0) {
-    return -1;
+  const auto& optimizer_indices =
+      global_dimension_optimizers_info_.dimension_to_optimizer_index;
+  if (dim_index < 0 || dim_index >= optimizer_indices.size() ||
+      optimizer_indices[dim_index] < 0) {
+    return DimensionOptimizerIndex(-1);
   }
-  const int optimizer_index = global_optimizer_index_[dim_index];
-  DCHECK_LT(optimizer_index, global_dimension_optimizers_.size());
-  return optimizer_index;
+  const DimensionOptimizerIndex opt_index = optimizer_indices[dim_index];
+  DCHECK_LT(opt_index, global_dimension_optimizers_info_.optimizers.size());
+  return opt_index;
 }
 
 LocalDimensionCumulOptimizer* Model::GetMutableLocalCumulLPOptimizer(
     const Dimension& dimension) const {
-  const int optimizer_index = GetLocalCumulOptimizerIndex(dimension);
+  const DimensionOptimizerIndex optimizer_index =
+      GetLocalCumulOptimizerIndex(dimension);
   return optimizer_index < 0
              ? nullptr
-             : local_dimension_optimizers_[optimizer_index].lp_optimizer.get();
+             : local_dimension_optimizers_info_.optimizers[optimizer_index]
+                   .lp_optimizer.get();
 }
 
 LocalDimensionCumulOptimizer* Model::GetMutableLocalCumulMPOptimizer(
     const Dimension& dimension) const {
-  const int optimizer_index = GetLocalCumulOptimizerIndex(dimension);
+  const DimensionOptimizerIndex optimizer_index =
+      GetLocalCumulOptimizerIndex(dimension);
   return optimizer_index < 0
              ? nullptr
-             : local_dimension_optimizers_[optimizer_index].mp_optimizer.get();
+             : local_dimension_optimizers_info_.optimizers[optimizer_index]
+                   .mp_optimizer.get();
 }
 
-int Model::GetLocalCumulOptimizerIndex(const Dimension& dimension) const {
+DimensionOptimizerIndex Model::GetLocalCumulOptimizerIndex(
+    const Dimension& dimension) const {
   DCHECK(closed_);
   const DimensionIndex dim_index = dimension.index();
-  if (dim_index < 0 || dim_index >= local_optimizer_index_.size() ||
-      local_optimizer_index_[dim_index] < 0) {
-    return -1;
+  const auto& optimizer_indices =
+      local_dimension_optimizers_info_.dimension_to_optimizer_index;
+  if (dim_index < 0 || dim_index >= optimizer_indices.size() ||
+      optimizer_indices[dim_index] < 0) {
+    return DimensionOptimizerIndex(-1);
   }
-  const int optimizer_index = local_optimizer_index_[dim_index];
-  DCHECK_LT(optimizer_index, local_dimension_optimizers_.size());
-  return optimizer_index;
+  const DimensionOptimizerIndex opt_index = optimizer_indices[dim_index];
+  DCHECK_LT(opt_index, local_dimension_optimizers_info_.optimizers.size());
+  return opt_index;
 }
 
 bool Model::HasDimension(absl::string_view dimension_name) const {
@@ -3740,8 +3754,9 @@ const Assignment* Model::SolveFromAssignmentsWithParameters(
   // We set this time limit based on whether local/global dimension optimizers
   // are used in the finalizer to avoid going over the general time limit.
   // TODO(user): Adapt this when absolute timeouts are given to the model.
-  const int time_limit_shares = 1 + !global_dimension_optimizers_.empty() +
-                                !local_dimension_optimizers_.empty();
+  const int time_limit_shares =
+      1 + !global_dimension_optimizers_info_.optimizers.empty() +
+      !local_dimension_optimizers_info_.optimizers.empty();
   const absl::Duration first_solution_lns_time_limit =
       std::max(GetTimeLimit(parameters) / time_limit_shares,
                GetLnsTimeLimit(parameters));
@@ -5991,11 +6006,19 @@ void Model::StoreDimensionCumulOptimizers(
       solver_->MakeAssignment();
   optimized_dimensions_collector_assignment->AddObjective(CostVar());
   const int num_dimensions = dimensions_.size();
-  local_optimizer_index_.resize(num_dimensions, -1);
-  global_optimizer_index_.resize(num_dimensions, -1);
+  auto& local_optimizer_index =
+      local_dimension_optimizers_info_.dimension_to_optimizer_index;
+  auto& global_optimizer_index =
+      global_dimension_optimizers_info_.dimension_to_optimizer_index;
+  local_optimizer_index.resize(num_dimensions, DimensionOptimizerIndex(-1));
+  global_optimizer_index.resize(num_dimensions, DimensionOptimizerIndex(-1));
   if (parameters.disable_scheduling_beware_this_may_degrade_performance()) {
     return;
   }
+  auto& global_dimension_optimizers =
+      global_dimension_optimizers_info_.optimizers;
+  auto& local_dimension_optimizers =
+      local_dimension_optimizers_info_.optimizers;
   for (DimensionIndex dim = DimensionIndex(0); dim < num_dimensions; dim++) {
     Dimension* dimension = dimensions_[dim];
     DCHECK_EQ(dimension->model(), this);
@@ -6006,8 +6029,8 @@ void Model::StoreDimensionCumulOptimizers(
         !dimension->GetNodePrecedences().empty() || num_resource_groups > 1) {
       // Use global optimizer.
       needs_optimizer = true;
-      global_optimizer_index_[dim] = global_dimension_optimizers_.size();
-      global_dimension_optimizers_.push_back(
+      global_optimizer_index[dim] = global_dimension_optimizers.size();
+      global_dimension_optimizers.push_back(
           {std::make_unique<GlobalDimensionCumulOptimizer>(
                dimension, parameters.continuous_scheduling_solver(),
                &search_stats_),
@@ -6084,8 +6107,8 @@ void Model::StoreDimensionCumulOptimizers(
         num_linear_constraints >= 2) {
       needs_optimizer = true;
       dimension->SetVehicleOffsetsForLocalOptimizer(std::move(vehicle_offsets));
-      local_optimizer_index_[dim] = local_dimension_optimizers_.size();
-      local_dimension_optimizers_.push_back(
+      local_optimizer_index[dim] = local_dimension_optimizers.size();
+      local_dimension_optimizers.push_back(
           {std::make_unique<LocalDimensionCumulOptimizer>(
                dimension, parameters.continuous_scheduling_solver(),
                &search_stats_),
@@ -6152,7 +6175,8 @@ std::vector<const Dimension*> Model::GetDimensionsWithGlobalCumulOptimizers()
     const {
   DCHECK(closed_);
   std::vector<const Dimension*> global_optimizer_dimensions;
-  for (auto& [lp_optimizer, mp_optimizer] : global_dimension_optimizers_) {
+  for (auto& [lp_optimizer, mp_optimizer] :
+       global_dimension_optimizers_info_.optimizers) {
     DCHECK_NE(lp_optimizer.get(), nullptr);
     DCHECK_NE(mp_optimizer.get(), nullptr);
     global_optimizer_dimensions.push_back(lp_optimizer->dimension());
@@ -6164,7 +6188,8 @@ std::vector<const Dimension*> Model::GetDimensionsWithLocalCumulOptimizers()
     const {
   DCHECK(closed_);
   std::vector<const Dimension*> local_optimizer_dimensions;
-  for (auto& [lp_optimizer, mp_optimizer] : local_dimension_optimizers_) {
+  for (auto& [lp_optimizer, mp_optimizer] :
+       local_dimension_optimizers_info_.optimizers) {
     DCHECK_NE(lp_optimizer.get(), nullptr);
     DCHECK_NE(mp_optimizer.get(), nullptr);
     local_optimizer_dimensions.push_back(lp_optimizer->dimension());
@@ -6209,9 +6234,11 @@ DecisionBuilder* Model::CreateSolutionFinalizer(
   }
   const bool can_use_dimension_cumul_optimizers =
       !parameters.disable_scheduling_beware_this_may_degrade_performance();
-  DCHECK(local_dimension_optimizers_.empty() ||
+  const auto& local_dimension_optimizers =
+      local_dimension_optimizers_info_.optimizers;
+  DCHECK(local_dimension_optimizers.empty() ||
          can_use_dimension_cumul_optimizers);
-  for (auto& [lp_optimizer, mp_optimizer] : local_dimension_optimizers_) {
+  for (auto& [lp_optimizer, mp_optimizer] : local_dimension_optimizers) {
     const Dimension* const dim = lp_optimizer->dimension();
     if (HasGlobalCumulOptimizer(*dim)) {
       // Don't set cumuls of dimensions having a global optimizer.
@@ -6222,9 +6249,11 @@ DecisionBuilder* Model::CreateSolutionFinalizer(
         solver_.get(), lp_optimizer.get(), mp_optimizer.get()));
   }
 
-  DCHECK(global_dimension_optimizers_.empty() ||
+  const auto& global_dimension_optimizers =
+      global_dimension_optimizers_info_.optimizers;
+  DCHECK(global_dimension_optimizers.empty() ||
          can_use_dimension_cumul_optimizers);
-  for (auto& [lp_optimizer, mp_optimizer] : global_dimension_optimizers_) {
+  for (auto& [lp_optimizer, mp_optimizer] : global_dimension_optimizers) {
     decision_builders.push_back(MakeSetCumulsFromGlobalDimensionCosts(
         solver_.get(), lp_optimizer.get(), mp_optimizer.get()));
   }

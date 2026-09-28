@@ -311,6 +311,8 @@ class OR_ROUTING_DLL Model {
   using DisjunctionIndex = ::operations_research::routing::DisjunctionIndex;
   using VehicleClassIndex = ::operations_research::routing::VehicleClassIndex;
   using ResourceClassIndex = ::operations_research::routing::ResourceClassIndex;
+  using DimensionOptimizerIndex =
+      ::operations_research::routing::DimensionOptimizerIndex;
   using TransitCallback1 = ::operations_research::routing::TransitCallback1;
   using TransitCallback2 = ::operations_research::routing::TransitCallback2;
   using CumulDependentTransitCallback2 =
@@ -1703,8 +1705,8 @@ class OR_ROUTING_DLL Model {
   void AddToAssignment(operations_research::IntVar* var);
   void AddIntervalToAssignment(IntervalVar* interval);
   /// For every dimension in the model with an optimizer in
-  /// local/global_dimension_optimizers_, this method tries to pack the cumul
-  /// values of the dimension, such that:
+  /// local/global_dimension_optimizers_info_.dimension_optimizers, this method
+  /// tries to pack the cumul values of the dimension, such that:
   /// - The cumul costs (span costs, soft lower and upper bound costs, etc) are
   ///   minimized.
   /// - The cumuls of the ends of the routes are minimized for this given
@@ -2365,6 +2367,17 @@ class OR_ROUTING_DLL Model {
     std::unique_ptr<DimensionCumulOptimizer> mp_optimizer;
   };
 
+  /// Internal struct used to store information about local and global
+  /// optimizers for related dimensions.
+  template <class DimensionCumulOptimizer>
+  struct DimensionCumulOptimizersInfo {
+    util_intops::StrongVector<DimensionIndex, DimensionOptimizerIndex>
+        dimension_to_optimizer_index;
+    util_intops::StrongVector<DimensionOptimizerIndex,
+                              DimensionCumulOptimizers<DimensionCumulOptimizer>>
+        optimizers;
+  };
+
   /// Internal methods.
   void Initialize();
   void AddNoCycleConstraintInternal();
@@ -2668,8 +2681,10 @@ class OR_ROUTING_DLL Model {
 
   /// Returns the internal global/local optimizer index for the given dimension
   /// if any, and -1 otherwise.
-  int GetGlobalCumulOptimizerIndex(const Dimension& dimension) const;
-  int GetLocalCumulOptimizerIndex(const Dimension& dimension) const;
+  DimensionOptimizerIndex GetGlobalCumulOptimizerIndex(
+      const Dimension& dimension) const;
+  DimensionOptimizerIndex GetLocalCumulOptimizerIndex(
+      const Dimension& dimension) const;
 
   /// Model
   std::unique_ptr<Solver> solver_;
@@ -2708,15 +2723,10 @@ class OR_ROUTING_DLL Model {
   util_intops::StrongVector<DimensionIndex, std::vector<int>>
       dimension_resource_group_indices_;
 
-  /// TODO(user): Define a new Dimension[Global|Local]OptimizerIndex type
-  /// and use it to define ITIVectors and for the dimension to optimizer index
-  /// mappings below.
-  std::vector<DimensionCumulOptimizers<GlobalDimensionCumulOptimizer>>
-      global_dimension_optimizers_;
-  util_intops::StrongVector<DimensionIndex, int> global_optimizer_index_;
-  std::vector<DimensionCumulOptimizers<LocalDimensionCumulOptimizer>>
-      local_dimension_optimizers_;
-  util_intops::StrongVector<DimensionIndex, int> local_optimizer_index_;
+  DimensionCumulOptimizersInfo<GlobalDimensionCumulOptimizer>
+      global_dimension_optimizers_info_;
+  DimensionCumulOptimizersInfo<LocalDimensionCumulOptimizer>
+      local_dimension_optimizers_info_;
 
   /// Whether or not a given dimension's cumuls could be optimized with
   /// cumul-dependent transits. This is false by default for all dimensions, and
