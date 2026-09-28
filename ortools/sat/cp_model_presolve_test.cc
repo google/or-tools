@@ -1369,8 +1369,7 @@ TEST(PresolveCpModelTest, NoOverlapDuplicateNonZeroSizedInterval) {
   SatParameters params;
   params.set_keep_all_feasible_solutions_in_presolve(true);
 
-  const CpModelProto presolved_model =
-      PresolveForTest(initial_model, params, CpSolverStatus::INFEASIBLE);
+  PresolveForTest(initial_model, params, CpSolverStatus::INFEASIBLE);
 }
 
 TEST(PresolveCpModelTest, NoOverlapDuplicatePossiblyZeroSizedInterval) {

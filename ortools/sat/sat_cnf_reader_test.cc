@@ -174,7 +174,7 @@ TEST(SatCnfReader, ClausesNumberMustMatch) {
 
   // Note that we changed that requirement since now we dynamically infer sizes.
   // We just log errors.
-  LinearBooleanProblem problem = LoadCnfFile(reader, file_content);
+  LoadCnfFile(reader, file_content);
 }
 
 TEST(SatCnfReader, WcnfFormat) {

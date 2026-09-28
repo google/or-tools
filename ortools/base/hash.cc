@@ -13,6 +13,9 @@
 
 #include "ortools/base/hash.h"
 
+#include <cstddef>
+#include <cstdint>
+
 namespace operations_research {
 
 // This is a copy of the code from https://github.com/ztanml/fast-hash
@@ -53,16 +56,22 @@ uint64_t fasthash64(const void* buf, size_t len, uint64_t seed) {
   switch (len & 7) {
     case 7:
       v ^= (uint64_t)pos2[6] << 48;
+      [[fallthrough]];
     case 6:
       v ^= (uint64_t)pos2[5] << 40;
+      [[fallthrough]];
     case 5:
       v ^= (uint64_t)pos2[4] << 32;
+      [[fallthrough]];
     case 4:
       v ^= (uint64_t)pos2[3] << 24;
+      [[fallthrough]];
     case 3:
       v ^= (uint64_t)pos2[2] << 16;
+      [[fallthrough]];
     case 2:
       v ^= (uint64_t)pos2[1] << 8;
+      [[fallthrough]];
     case 1:
       v ^= (uint64_t)pos2[0];
       h ^= mix_internal(v);

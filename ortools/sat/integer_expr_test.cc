@@ -1459,8 +1459,7 @@ TEST(DivisionConstraintTest, CheckAllSolutions) {
     div->mutable_target()->add_coeffs(1);
 
     absl::btree_set<std::vector<int>> solutions;
-    const CpSolverResponse response =
-        SolveAndCheck(cp_model, "linearization_level:0", &solutions);
+    SolveAndCheck(cp_model, "linearization_level:0", &solutions);
 
     // Loop through the domains of x and y, and collect valid solutions.
     absl::btree_set<std::vector<int>> expected;

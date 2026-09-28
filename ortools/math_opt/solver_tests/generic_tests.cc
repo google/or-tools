@@ -223,8 +223,8 @@ TEST_P(GenericTest, EnableOutputPrintsToStdOut) {
 // characters in [1, 0x7f].
 std::string AllAsciiCharacters() {
   std::ostringstream oss;
-  for (char c = '\x1'; c < '\x80'; ++c) {
-    oss << c;
+  for (int c = 1; c <= 127; ++c) {
+    oss << static_cast<char>(c);
   }
   return oss.str();
 }

@@ -539,6 +539,7 @@ TEST(CpModelTest, TestLinearizedBoolAndEqual) {
   model.Add(NewFeasibleSolutionObserver(
       [&](const CpSolverResponse& /*r*/) { num_solutions++; }));
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   EXPECT_EQ(num_solutions, 4);
 }
 
@@ -902,6 +903,7 @@ TEST(CpModelTest, TestAllowedAssignment) {
   model.Add(NewFeasibleSolutionObserver(
       [&](const CpSolverResponse& /*r*/) { num_solutions++; }));
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   EXPECT_EQ(num_solutions, 3);
 }
 
@@ -929,6 +931,7 @@ TEST(CpModelTest, TestForbiddenAssignments) {
   model.Add(NewFeasibleSolutionObserver(
       [&](const CpSolverResponse&) { num_solutions++; }));
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   EXPECT_EQ(num_solutions, 4 * 4 * 4 - 3);
 }
 

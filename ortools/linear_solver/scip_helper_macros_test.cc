@@ -42,7 +42,7 @@ using ::testing::status::StatusIs;
 [[nodiscard]] std::string CallSCIPmessagePrintErrorCapturingStderr(
     const char error[]) {
   ScopedStdStreamCapture stderr_capture(CapturedStream::kStderr);
-  SCIPmessagePrintError(error);
+  SCIPmessagePrintError("%s", error);
   return std::move(stderr_capture).StopCaptureAndReturnContents();
 }
 
