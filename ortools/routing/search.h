@@ -15,7 +15,6 @@
 #define ORTOOLS_ROUTING_SEARCH_H_
 
 #include <algorithm>
-#include <compare>
 #include <cstddef>
 #include <cstdint>
 #include <deque>
@@ -566,6 +565,12 @@ class GlobalCheapestInsertionFilteredHeuristic
     int delivery_insert_after() const { return delivery_insert_after_; }
     int vehicle() const { return vehicle_; }
     void set_vehicle(int vehicle) { vehicle_ = vehicle; }
+    int pickup_entries_index() const { return pickup_entries_index_; }
+    void set_pickup_entries_index(int index) { pickup_entries_index_ = index; }
+    int delivery_entries_index() const { return delivery_entries_index_; }
+    void set_delivery_entries_index(int index) {
+      delivery_entries_index_ = index;
+    }
 
    private:
     int64_t value_;
@@ -576,9 +581,11 @@ class GlobalCheapestInsertionFilteredHeuristic
     int delivery_insert_after_;
     int vehicle_;
     int64_t bucket_;
+    int pickup_entries_index_ = -1;
+    int delivery_entries_index_ = -1;
   };
 
-  typedef absl::flat_hash_set<PairEntry*> PairEntries;
+  typedef std::vector<PairEntry*> PairEntries;
 
   /// Priority queue entry allocator.
   template <typename T>

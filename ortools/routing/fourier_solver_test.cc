@@ -13,6 +13,7 @@
 
 #include "ortools/routing/fourier_solver.h"
 
+#include <cstdint>
 #include <limits>
 #include <string>
 #include <tuple>
@@ -492,6 +493,51 @@ TEST(FMESolverTest, RoutingTestSymbolic2) {
     solver.SetSymbolicVariableValue(end_max, 10);
     EXPECT_EQ(solver.EvaluateObjective(), (8 - 2) * 3 + (8 - 2 - 5) * 7);
   }
+}
+
+TEST(FMESolverTest, RoutingTestSymbolicLargeInt64MaxCost) {
+  FourierSolver solver;
+  using ColIndex = FourierSolver::ColIndex;
+  constexpr double kInfinity = std::numeric_limits<double>::infinity();
+  constexpr double kMaxInt64Cost =
+      static_cast<double>(std::numeric_limits<int64_t>::max());
+
+  const ColIndex start = solver.AddVariable(0, kInfinity);
+  const ColIndex duration = solver.AddVariable(0, kInfinity);
+  const ColIndex end = solver.AddVariable(0, kInfinity);
+
+  const ColIndex start_min = solver.AddVariable(0, kInfinity, true);
+  const ColIndex start_max = solver.AddVariable(0, kInfinity, true);
+  const ColIndex end_min = solver.AddVariable(0, kInfinity, true);
+  const ColIndex end_max = solver.AddVariable(0, kInfinity, true);
+  const ColIndex duration_min = solver.AddVariable(0, kInfinity, true);
+  const ColIndex duration_max = solver.AddVariable(0, kInfinity, true);
+
+  auto add_bounds = [&](ColIndex var, ColIndex var_min, ColIndex var_max) {
+    solver.AddConstraint(0, kInfinity, {{1, var}, {-1, var_min}});
+    solver.AddConstraint(0, kInfinity, {{-1, var}, {1, var_max}});
+  };
+  add_bounds(start, start_min, start_max);
+  add_bounds(end, end_min, end_max);
+  add_bounds(duration, duration_min, duration_max);
+  solver.AddConstraint(0, 0, {{1, start}, {1, duration}, {-1, end}});
+
+  // Soft duration max at 0 with cost = static_cast<double>(kint64max) (2^63).
+  const ColIndex violation = solver.AddVariable(0, kInfinity);
+  solver.AddConstraint(-kInfinity, 0, {{1, duration}, {-1, violation}});
+  solver.SetObjectiveCoefficient(violation, kMaxInt64Cost);
+
+  ASSERT_TRUE(solver.Solve());
+  solver.SetSymbolicVariableValue(start_min, 0);
+  solver.SetSymbolicVariableValue(start_max, 10);
+  solver.SetSymbolicVariableValue(end_min, 0);
+  solver.SetSymbolicVariableValue(end_max, 10);
+  solver.SetSymbolicVariableValue(duration_min, 0);
+  solver.SetSymbolicVariableValue(duration_max, 10);
+  EXPECT_EQ(solver.EvaluateObjective(), 0.0);
+
+  solver.SetSymbolicVariableValue(duration_min, 1);
+  EXPECT_EQ(solver.EvaluateObjective(), kMaxInt64Cost);
 }
 
 // Assignment

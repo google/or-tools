@@ -1371,12 +1371,11 @@ bool GlobalCheapestInsertionFilteredHeuristic::
       // have been added when next_fixed_cost_empty_vehicle >= 0 (see the next
       // branch).
       const int64_t new_empty_vehicle_start = model()->Start(new_empty_vehicle);
-      const std::vector<PairEntry*> to_remove(
-          pickup_to_entries->at(new_empty_vehicle_start).begin(),
-          pickup_to_entries->at(new_empty_vehicle_start).end());
-      for (PairEntry* entry : to_remove) {
-        DeletePairEntry(entry, priority_queue, pickup_to_entries,
-                        delivery_to_entries);
+      PairEntries& new_empty_vehicle_pickup_entries =
+          pickup_to_entries->at(new_empty_vehicle_start);
+      while (!new_empty_vehicle_pickup_entries.empty()) {
+        DeletePairEntry(new_empty_vehicle_pickup_entries.back(), priority_queue,
+                        pickup_to_entries, delivery_to_entries);
       }
       if (!AddPairEntriesWithPickupAfter(
               pair_indices, new_empty_vehicle, new_empty_vehicle_start,
@@ -1392,16 +1391,13 @@ bool GlobalCheapestInsertionFilteredHeuristic::
     DCHECK(VehicleIsEmpty(next_fixed_cost_empty_vehicle));
     // Update the pair entry to correspond to an insertion on this
     // next_fixed_cost_empty_vehicle instead of the previous entry_vehicle.
-    pair_entry->set_vehicle(next_fixed_cost_empty_vehicle);
-    pickup_to_entries->at(pair_entry->pickup_insert_after()).erase(pair_entry);
-    pair_entry->set_pickup_insert_after(
-        model()->Start(next_fixed_cost_empty_vehicle));
-    pickup_to_entries->at(pair_entry->pickup_insert_after()).insert(pair_entry);
     DCHECK_EQ(pair_entry->delivery_insert_after(), pickup);
-    if (!UpdatePairEntry(pair_entry, priority_queue)) {
-      DeletePairEntry(pair_entry, priority_queue, pickup_to_entries,
-                      delivery_to_entries);
-    }
+    DeletePairEntry(pair_entry, priority_queue, pickup_to_entries,
+                    delivery_to_entries);
+    AddPairEntry(
+        pickup, model()->Start(next_fixed_cost_empty_vehicle), delivery,
+        /*delivery_insert_after=*/pickup, next_fixed_cost_empty_vehicle,
+        priority_queue, pickup_to_entries, delivery_to_entries);
   } else {
     DeletePairEntry(pair_entry, priority_queue, pickup_to_entries,
                     delivery_to_entries);
@@ -1879,8 +1875,9 @@ bool GlobalCheapestInsertionFilteredHeuristic::InitializePairPositions(
   priority_queue->Clear();
   pickup_to_entries->clear();
   pickup_to_entries->resize(model()->Size());
-  delivery_to_entries->clear();
+  for (PairEntries& entries : *pickup_to_entries) entries.clear();
   delivery_to_entries->resize(model()->Size());
+  for (PairEntries& entries : *delivery_to_entries) entries.clear();
   const std::vector<PickupDeliveryPair>& pickup_delivery_pairs =
       model()->GetPickupAndDeliveryPairs();
   for (int index : pair_indices) {
@@ -2030,12 +2027,9 @@ bool GlobalCheapestInsertionFilteredHeuristic::UpdateAfterPairInsertion(
     std::vector<PairEntries>* delivery_to_entries) {
   // Clearing any entries created after the pickup; these entries are the ones
   // where the delivery is to be inserted immediately after the pickup.
-  const std::vector<PairEntry*> to_remove(
-      delivery_to_entries->at(pickup).begin(),
-      delivery_to_entries->at(pickup).end());
-  for (PairEntry* pair_entry : to_remove) {
-    DeletePairEntry(pair_entry, priority_queue, pickup_to_entries,
-                    delivery_to_entries);
+  while (!delivery_to_entries->at(pickup).empty()) {
+    DeletePairEntry(delivery_to_entries->at(pickup).back(), priority_queue,
+                    pickup_to_entries, delivery_to_entries);
   }
   DCHECK(pickup_to_entries->at(pickup).empty());
   DCHECK(pickup_to_entries->at(delivery).empty());
@@ -2078,30 +2072,21 @@ bool GlobalCheapestInsertionFilteredHeuristic::UpdateExistingPairEntriesAfter(
   DCHECK(!model()->IsEnd(insert_after));
   // Remove entries at 'insert_after' with nodes which have already been
   // inserted and update remaining entries.
-  std::vector<PairEntry*> to_remove;
-  for (const PairEntries* pair_entries :
+  for (PairEntries* const pair_entries :
        {&pickup_to_entries->at(insert_after),
         &delivery_to_entries->at(insert_after)}) {
     if (StopSearchAndCleanup(priority_queue)) return false;
-    for (PairEntry* const pair_entry : *pair_entries) {
-      DCHECK(priority_queue->Contains(pair_entry));
+    for (int i = 0; i < pair_entries->size();) {
+      PairEntry* const pair_entry = (*pair_entries)[i];
       if (Contains(pair_entry->pickup_to_insert()) ||
-          Contains(pair_entry->delivery_to_insert())) {
-        to_remove.push_back(pair_entry);
+          Contains(pair_entry->delivery_to_insert()) ||
+          !UpdatePairEntry(pair_entry, priority_queue)) {
+        DeletePairEntry(pair_entry, priority_queue, pickup_to_entries,
+                        delivery_to_entries);
       } else {
-        DCHECK(pickup_to_entries->at(pair_entry->pickup_insert_after())
-                   .contains(pair_entry));
-        DCHECK(delivery_to_entries->at(pair_entry->delivery_insert_after())
-                   .contains(pair_entry));
-        if (!UpdatePairEntry(pair_entry, priority_queue)) {
-          to_remove.push_back(pair_entry);
-        }
+        ++i;
       }
     }
-  }
-  for (PairEntry* const pair_entry : to_remove) {
-    DeletePairEntry(pair_entry, priority_queue, pickup_to_entries,
-                    delivery_to_entries);
   }
   return true;
 }
@@ -2207,13 +2192,29 @@ void GlobalCheapestInsertionFilteredHeuristic::DeletePairEntry(
         GlobalCheapestInsertionFilteredHeuristic::PairEntry>* priority_queue,
     std::vector<PairEntries>* pickup_to_entries,
     std::vector<PairEntries>* delivery_to_entries) {
-  priority_queue->Remove(entry);
   if (entry->pickup_insert_after() != -1) {
-    pickup_to_entries->at(entry->pickup_insert_after()).erase(entry);
+    PairEntries& pickup_entries =
+        pickup_to_entries->at(entry->pickup_insert_after());
+    const int index = entry->pickup_entries_index();
+    DCHECK_EQ(pickup_entries[index], entry);
+    if (index != pickup_entries.size() - 1) {
+      pickup_entries[index] = pickup_entries.back();
+      pickup_entries[index]->set_pickup_entries_index(index);
+    }
+    pickup_entries.pop_back();
   }
   if (entry->delivery_insert_after() != -1) {
-    delivery_to_entries->at(entry->delivery_insert_after()).erase(entry);
+    PairEntries& delivery_entries =
+        delivery_to_entries->at(entry->delivery_insert_after());
+    const int index = entry->delivery_entries_index();
+    DCHECK_EQ(delivery_entries[index], entry);
+    if (index != delivery_entries.size() - 1) {
+      delivery_entries[index] = delivery_entries.back();
+      delivery_entries[index]->set_delivery_entries_index(index);
+    }
+    delivery_entries.pop_back();
   }
+  priority_queue->Remove(entry);
   pair_entry_allocator_.FreeEntry(entry);
 }
 
@@ -2273,9 +2274,12 @@ void GlobalCheapestInsertionFilteredHeuristic::AddPairEntry(
   pair_entry->set_value(CapSub(*insertion_cost, penalty_shift));
 
   // Add entry to priority_queue and pickup_/delivery_entries.
-  DCHECK(!priority_queue->Contains(pair_entry));
-  pickup_entries->at(pickup_insert_after).insert(pair_entry);
-  delivery_entries->at(delivery_insert_after).insert(pair_entry);
+  PairEntries& p_entries = pickup_entries->at(pickup_insert_after);
+  pair_entry->set_pickup_entries_index(p_entries.size());
+  p_entries.push_back(pair_entry);
+  PairEntries& d_entries = delivery_entries->at(delivery_insert_after);
+  pair_entry->set_delivery_entries_index(d_entries.size());
+  d_entries.push_back(pair_entry);
   priority_queue->Add(pair_entry);
 }
 

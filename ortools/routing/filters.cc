@@ -22,6 +22,7 @@
 #include <deque>
 #include <functional>
 #include <initializer_list>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -50,6 +51,7 @@
 #include "ortools/constraint_solver/interval.h"
 #include "ortools/routing/breaks.h"
 #include "ortools/routing/filter_committables.h"
+#include "ortools/routing/fourier_solver.h"
 #include "ortools/routing/lp_scheduling.h"
 #include "ortools/routing/parameters.pb.h"
 #include "ortools/routing/routing.h"
@@ -1923,6 +1925,19 @@ class PathCumulFilter : public BasePathFilter {
   // True iff this object may use an LP or MP optimizer to solve sub-problems.
   const bool may_use_optimizers_;
   const bool propagate_own_objective_value_;
+
+  std::vector<FourierSolver> fourier_solver_of_path_;
+  struct FourierVariables {
+    int64_t offset;  // Actual start min value = start_min + offset.
+    FourierSolver::ColIndex start_min;
+    FourierSolver::ColIndex start_max;
+    FourierSolver::ColIndex end_min;
+    FourierSolver::ColIndex end_max;
+    FourierSolver::ColIndex duration_min;
+    FourierSolver::ColIndex duration_max;
+  };
+  std::vector<FourierVariables> fourier_variables_of_path_;
+  std::vector<bool> fourier_solver_is_initialized_;
 };
 
 namespace {
@@ -2358,6 +2373,8 @@ bool PathCumulFilter::AcceptPath(int64_t path_start, int64_t /*chain_start*/,
     CapAddTo(CapProd(cost, std::max<int64_t>(0, CapSub(span.min, bound))),
              &new_path_cost);
   }
+  // Cost from start/duration/end: linear soft min/max, and slack cost.
+  int64_t cost_from_sde = new_path_cost;
   if (dimension_.HasQuadraticCostSoftSpanUpperBounds()) {
     const auto [bound, cost] =
         dimension_.GetQuadraticCostSoftSpanUpperBoundForVehicle(path);
@@ -2369,18 +2386,20 @@ bool PathCumulFilter::AcceptPath(int64_t path_start, int64_t /*chain_start*/,
   if (!cumul_soft_lower_bounds_.empty()) {
     for (int r = 0; r < num_path_nodes; ++r) {
       const auto [bound, coef] = cumul_soft_lower_bounds_[nodes[r]];
-      CapAddTo(
-          CapProd(coef, std::max<int64_t>(0, CapSub(bound, cumuls[r].max))),
-          &new_path_cost);
+      const int64_t cost =
+          CapProd(coef, std::max<int64_t>(0, CapSub(bound, cumuls[r].max)));
+      CapAddTo(cost, &new_path_cost);
+      if (r == 0 || r == num_path_nodes - 1) CapAddTo(cost, &cost_from_sde);
     }
   }
   // Add soft cumul upper bound costs.
   if (!cumul_soft_upper_bounds_.empty()) {
     for (int r = 0; r < num_path_nodes; ++r) {
       const auto [bound, coef] = cumul_soft_upper_bounds_[nodes[r]];
-      CapAddTo(
-          CapProd(coef, std::max<int64_t>(0, CapSub(cumuls[r].min, bound))),
-          &new_path_cost);
+      const int64_t cost =
+          CapProd(coef, std::max<int64_t>(0, CapSub(cumuls[r].min, bound)));
+      CapAddTo(cost, &new_path_cost);
+      if (r == 0 || r == num_path_nodes - 1) CapAddTo(cost, &cost_from_sde);
     }
   }
   // Add piecewise linear costs.
@@ -2392,6 +2411,137 @@ bool PathCumulFilter::AcceptPath(int64_t path_start, int64_t /*chain_start*/,
           cumul_piecewise_linear_costs_[nodes[r]];
       if (cost == nullptr) continue;
       CapAddTo(cost->Value(cumuls[r].min), &new_path_cost);
+    }
+  }
+  // Fourier solver is initialized lazily, on first use of a path, only works
+  // if duration min >= 0.
+  // TODO(user): support more types of dimensions.
+  if (span.min >= 0 && (fourier_solver_is_initialized_.empty() ||
+                        !fourier_solver_is_initialized_[path])) {
+    const int num_paths = cost_of_path_.Size();
+    fourier_solver_is_initialized_.resize(num_paths, false);
+    fourier_solver_is_initialized_[path] = true;
+    fourier_variables_of_path_.resize(num_paths);
+    fourier_solver_of_path_.resize(num_paths);
+    FourierSolver& solver = fourier_solver_of_path_[path];
+    const int start = dimension_values_.Nodes(path).front();
+    const int end = dimension_values_.Nodes(path).back();
+    const Interval start_cumul = initial_cumul_[start];
+    const Interval end_cumul = initial_cumul_[end];
+    // Often, the user represents time with actual Unix time, as of 2027 this
+    // implies values >= 1_800_000_000. Offsetting time values will help against
+    // numerical problems.
+    const int64_t time_offset =
+        start_cumul.min == kint64min ? 0 : start_cumul.min;
+
+    constexpr double kInf = std::numeric_limits<double>::infinity();
+    // Each of start, end and duration has three variables:
+    // - the actual variable, that is eliminated by Fourier elimination
+    //   during Solve().
+    // - min and max bounds, those are symbolic variables that are kept as
+    //   describing the polyhedron of feasible values for the actual variables.
+    //   They are kept by Solve(), and will be used to evaluate the objective
+    //   for different configurations of the bounds.
+    // For each actual variable, we add constraints min <= var <= max.
+    auto add_variable = [&](Interval bounds, int64_t offset,
+                            bool is_symbolic = false) {
+      return solver.AddVariable(
+          bounds.min == kint64min ? -kInf : bounds.min - offset,
+          bounds.max == kint64max ? kInf : bounds.max - offset, is_symbolic);
+    };
+
+    using ColIndex = FourierSolver::ColIndex;
+    const ColIndex start_var = add_variable(start_cumul, time_offset);
+    const Interval duration_bounds{
+        .min = 0,
+        .max = std::min(path_span_upper_bounds_[path],
+                        CapSub(end_cumul.max, start_cumul.min))};
+    const ColIndex duration_var = add_variable(duration_bounds, 0);
+    const ColIndex end_var = add_variable(end_cumul, time_offset);
+
+    const FourierVariables path_vars{
+        .offset = time_offset,
+        .start_min = add_variable(start_cumul, time_offset, true),
+        .start_max = add_variable(start_cumul, time_offset, true),
+        .end_min = add_variable(end_cumul, time_offset, true),
+        .end_max = add_variable(end_cumul, time_offset, true),
+        .duration_min = add_variable(duration_bounds, 0, true),
+        .duration_max = add_variable(duration_bounds, 0, true),
+    };
+    fourier_variables_of_path_[path] = path_vars;
+
+    auto add_bounds = [&](ColIndex var, ColIndex var_min, ColIndex var_max) {
+      solver.AddConstraint(0, kInf, {{1, var}, {-1, var_min}});
+      solver.AddConstraint(0, kInf, {{-1, var}, {1, var_max}});
+    };
+    add_bounds(start_var, path_vars.start_min, path_vars.start_max);
+    add_bounds(end_var, path_vars.end_min, path_vars.end_max);
+    add_bounds(duration_var, path_vars.duration_min, path_vars.duration_max);
+    // start + duration = end.
+    solver.AddConstraint(0, 0,
+                         {{1, start_var}, {1, duration_var}, {-1, end_var}});
+    // Cost of duration.
+    solver.SetObjectiveCoefficient(duration_var,
+                                   path_total_slack_cost_coefficients_[path]);
+    // Soft costs for duration, start and end.
+    auto add_soft_max = [&](ColIndex var, double soft_max, double cost) {
+      if (cost == 0) return;
+      // var - violation <= soft_max.
+      const ColIndex violation = solver.AddVariable(0, kInf);
+      solver.AddConstraint(-kInf, soft_max, {{1, var}, {-1, violation}});
+      solver.SetObjectiveCoefficient(violation, cost);
+    };
+    auto add_soft_min = [&](ColIndex var, double soft_min, double cost) {
+      if (cost == 0) return;
+      // soft_min <= var + violation.
+      const ColIndex violation = solver.AddVariable(0, kInf);
+      solver.AddConstraint(soft_min, kInf, {{1, var}, {1, violation}});
+      solver.SetObjectiveCoefficient(violation, cost);
+    };
+    if (dimension_.HasSoftSpanUpperBounds()) {
+      const auto [max, cost] = dimension_.GetSoftSpanUpperBoundForVehicle(path);
+      add_soft_max(duration_var, max, cost);
+    }
+    if (!cumul_soft_lower_bounds_.empty()) {
+      const auto [smin, scost] = cumul_soft_lower_bounds_[start];
+      add_soft_min(start_var, smin - time_offset, scost);
+      const auto [emin, ecost] = cumul_soft_lower_bounds_[end];
+      add_soft_min(end_var, emin - time_offset, ecost);
+    }
+    if (!cumul_soft_upper_bounds_.empty()) {
+      const auto [smax, scost] = cumul_soft_upper_bounds_[start];
+      add_soft_max(start_var, smax - time_offset, scost);
+      const auto [emax, ecost] = cumul_soft_upper_bounds_[end];
+      add_soft_max(end_var, emax - time_offset, ecost);
+    }
+    // Solve() "compiles" the polyhedron representing the feasible values in
+    // terms of the bounds of start/end/duration.
+    // Infeasibility must be detected before reaching this point.
+    const bool is_feasible = solver.Solve();
+    DCHECK(is_feasible);
+  }
+  if (!fourier_solver_is_initialized_.empty() &&
+      fourier_solver_is_initialized_[path]) {
+    FourierSolver& solver = fourier_solver_of_path_[path];
+    const auto& vars = fourier_variables_of_path_[path];
+    solver.SetSymbolicVariableValue(vars.start_min,
+                                    cumuls[0].min - vars.offset);
+    solver.SetSymbolicVariableValue(vars.start_max,
+                                    cumuls[0].max - vars.offset);
+    solver.SetSymbolicVariableValue(vars.end_min,
+                                    cumuls.back().min - vars.offset);
+    solver.SetSymbolicVariableValue(vars.end_max,
+                                    cumuls.back().max - vars.offset);
+    solver.SetSymbolicVariableValue(vars.duration_min, span.min);
+    solver.SetSymbolicVariableValue(vars.duration_max, span.max);
+    const double objective = solver.EvaluateObjective();
+    // The cost of travel is already included in new_path_cost.
+    const int64_t objective_value = CapSub(
+        static_cast<int64_t>(objective),
+        CapProd(total_travel, path_total_slack_cost_coefficients_[path]));
+    if (objective_value > cost_from_sde) {
+      CapSubFrom(cost_from_sde, &new_path_cost);
+      CapAddTo(objective_value, &new_path_cost);
     }
   }
   // Replace committed cost of this path new cost.
