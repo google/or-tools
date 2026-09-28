@@ -93,6 +93,10 @@ const PathDistance kDisconnectedPathDistance = kuint32max;
 namespace internal {
 template <class NodeIndex, NodeIndex kNilNode>
 class PathContainerImpl;
+
+template <class GraphType>
+using NodesSpan = absl::Span<const typename GraphType::NodeIndex>;
+
 }  // namespace internal
 
 // Container class storing paths and distances along the paths. It is used in
@@ -173,17 +177,6 @@ class GenericPathContainer {
   std::unique_ptr<Impl> container_;
 };
 
-template <class GraphType>
-void GetGraphNodesFromGraph(const GraphType& graph,
-                            std::vector<typename GraphType::NodeIndex>* nodes) {
-  CHECK(nodes != nullptr);
-  nodes->clear();
-  nodes->reserve(graph.num_nodes());
-  for (const typename GraphType::NodeIndex node : graph.AllNodes()) {
-    nodes->push_back(node);
-  }
-}
-
 // In all the functions below the arc_lengths vector represents the lengths of
 // the arcs of the graph (`arc_lengths[arc]` is the length of `arc`).
 // Resulting shortest paths are stored in a path container `path_container`.
@@ -194,22 +187,20 @@ void ComputeOneToAllShortestPaths(
     const GraphType& graph, const std::vector<PathDistance>& arc_lengths,
     typename GraphType::NodeIndex source,
     GenericPathContainer<GraphType>* const path_container) {
-  std::vector<typename GraphType::NodeIndex> all_nodes;
-  GetGraphNodesFromGraph<GraphType>(graph, &all_nodes);
-  ComputeOneToManyShortestPaths(graph, arc_lengths, source, all_nodes,
+  ComputeOneToManyShortestPaths(graph, arc_lengths, source, graph.AllNodes(),
                                 path_container);
 }
 
 // Computes shortest paths from the node `source` to nodes in `destinations`.
-template <class GraphType>
+template <class GraphType,
+          class DestinationsRange = internal::NodesSpan<GraphType>>
 void ComputeOneToManyShortestPaths(
     const GraphType& graph, const std::vector<PathDistance>& arc_lengths,
-    typename GraphType::NodeIndex source,
-    const std::vector<typename GraphType::NodeIndex>& destinations,
+    typename GraphType::NodeIndex source, const DestinationsRange& destinations,
     GenericPathContainer<GraphType>* const path_container) {
-  std::vector<typename GraphType::NodeIndex> sources(1, source);
   ComputeManyToManyShortestPathsWithMultipleThreads(
-      graph, arc_lengths, sources, destinations, 1, path_container);
+      graph, arc_lengths, absl::MakeSpan(&source, 1), destinations, 1,
+      path_container);
 }
 
 // Computes the shortest path from the node `source` to the node `destination`
@@ -246,10 +237,9 @@ void ComputeManyToAllShortestPathsWithMultipleThreads(
     const GraphType& graph, const std::vector<PathDistance>& arc_lengths,
     const std::vector<typename GraphType::NodeIndex>& sources, int num_threads,
     GenericPathContainer<GraphType>* const path_container) {
-  std::vector<typename GraphType::NodeIndex> all_nodes;
-  GetGraphNodesFromGraph<GraphType>(graph, &all_nodes);
   ComputeManyToManyShortestPathsWithMultipleThreads(
-      graph, arc_lengths, sources, all_nodes, num_threads, path_container);
+      graph, arc_lengths, sources, graph.AllNodes(), num_threads,
+      path_container);
 }
 
 // Computes shortest paths between all nodes of the graph.
@@ -257,10 +247,9 @@ template <class GraphType>
 void ComputeAllToAllShortestPathsWithMultipleThreads(
     const GraphType& graph, const std::vector<PathDistance>& arc_lengths,
     int num_threads, GenericPathContainer<GraphType>* const path_container) {
-  std::vector<typename GraphType::NodeIndex> all_nodes;
-  GetGraphNodesFromGraph<GraphType>(graph, &all_nodes);
   ComputeManyToManyShortestPathsWithMultipleThreads(
-      graph, arc_lengths, all_nodes, all_nodes, num_threads, path_container);
+      graph, arc_lengths, graph.AllNodes(), graph.AllNodes(), num_threads,
+      path_container);
 }
 
 // =============================================================================
@@ -723,25 +712,26 @@ GenericPathContainer<GraphType>::BuildInMemoryCompactPathContainer() {
           NodeIndex, GraphType::kNilNode>>());
 }
 
-template <class GraphType>
+template <class GraphType, class SourcesRange = internal::NodesSpan<GraphType>,
+          class DestinationsRange = internal::NodesSpan<GraphType>>
 void ComputeManyToManyShortestPathsWithMultipleThreads(
     const GraphType& graph, const std::vector<PathDistance>& arc_lengths,
-    const std::vector<typename GraphType::NodeIndex>& sources,
-    const std::vector<typename GraphType::NodeIndex>& destinations,
+    const SourcesRange& sources, const DestinationsRange& destinations,
     int num_threads, GenericPathContainer<GraphType>* const paths) {
   if (graph.num_nodes() > 0) {
     CHECK_EQ(graph.num_arcs(), arc_lengths.size())
         << "Number of arcs in graph must match arc length vector size";
     // Removing duplicate sources to allow mutex-free implementation (and it's
     // more efficient); same with destinations for efficiency reasons.
-    std::vector<typename GraphType::NodeIndex> unique_sources = sources;
+    std::vector<typename GraphType::NodeIndex> unique_sources(sources.begin(),
+                                                              sources.end());
     std::sort(unique_sources.begin(), unique_sources.end());
     unique_sources.erase(
         std::unique(unique_sources.begin(), unique_sources.end()),
         unique_sources.end());
 
-    std::vector<typename GraphType::NodeIndex> unique_destinations =
-        destinations;
+    std::vector<typename GraphType::NodeIndex> unique_destinations(
+        destinations.begin(), destinations.end());
     std::sort(unique_destinations.begin(), unique_destinations.end());
     unique_destinations.erase(
         std::unique(unique_destinations.begin(), unique_destinations.end()),
