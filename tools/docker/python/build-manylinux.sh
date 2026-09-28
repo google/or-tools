@@ -128,7 +128,7 @@ function check_wheel() {
     "ortools/graph/python/min_cost_flow.pyi"
     "ortools/init/python/init.pyi"
     "ortools/linear_solver/python/model_builder_helper.pyi"
-    "ortools/linear_solver/pywraplp.pyi"
+    "ortools/linear_solver/python/pywraplp.pyi"
     "ortools/pdlp/python/pdlp.pyi"
     "ortools/sat/python/cp_model_helper.pyi"
     "ortools/scheduling/python/rcpsp.pyi"
