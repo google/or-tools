@@ -25,7 +25,6 @@
 #include "absl/log/log.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
-#include "absl/strings/str_format.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/log_severity.h"
