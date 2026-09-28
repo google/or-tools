@@ -14,6 +14,7 @@
 
 """Test Constraint Solver API."""
 
+import datetime
 import sys
 
 from absl.testing import absltest
@@ -603,7 +604,7 @@ class SearchMonitorTest(absltest.TestCase):
         solver = cp.Solver("test_limit")
         # TODO(user): expose the proto-based MakeLimit() API in or-tools and test it
         # here.
-        time = 10000  # ms
+        time = datetime.timedelta(seconds=10)
         branches = 10
         failures = sys.maxsize
         solutions = sys.maxsize

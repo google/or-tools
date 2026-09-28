@@ -14,11 +14,10 @@
 # Description: python wrapping of the code in ../
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@pybind11_bazel//:build_defs.bzl", "pybind_library")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
 load("//bazel:or_cc_rules.bzl", "or_cc_library")
-load("//bazel:or_pybind_rules.bzl", "or_pybind_extension")
+load("//bazel:or_pybind_rules.bzl", "or_pybind_extension", "or_pybind_library")
 
 or_cc_library(
     name = "constraint_solver_doc",
@@ -38,16 +37,19 @@ or_pybind_extension(
         "//ortools/constraint_solver:reversible_engine",
         "//ortools/constraint_solver:search_limit_cc_proto",
         "//ortools/constraint_solver:solver_parameters_cc_proto",
+        "//ortools/port:sysinfo",
         "//ortools/util:tuple_set",
         "//ortools/util/python:piecewise_linear_function_deps",
         "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/functional:function_ref",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+        "@pybind11_abseil//pybind11_abseil:absl_casters",
         "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
-pybind_library(
+or_pybind_library(
     name = "constraint_solver_deps",
     srcs = ["constraint_solver.cc"],
     visibility = ["//ortools/routing/python:__pkg__"],
@@ -59,11 +61,14 @@ pybind_library(
         "//ortools/constraint_solver:reversible_engine",
         "//ortools/constraint_solver:search_limit_cc_proto",
         "//ortools/constraint_solver:solver_parameters_cc_proto",
+        "//ortools/port:sysinfo",
         "//ortools/util:tuple_set",
         "//ortools/util/python:piecewise_linear_function_deps",
         "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/functional:function_ref",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+        "@pybind11_abseil//pybind11_abseil:absl_casters",
         "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )

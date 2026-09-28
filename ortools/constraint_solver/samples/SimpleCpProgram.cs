@@ -65,7 +65,6 @@ public class SimpleCpProgram
         // [START advanced]
         Console.WriteLine("Advanced usage:");
         Console.WriteLine($"Problem solved in {solver.WallTime()}ms");
-        Console.WriteLine($"Memory usage: {Solver.MemoryUsage()}bytes");
         // [END advanced]
     }
 }

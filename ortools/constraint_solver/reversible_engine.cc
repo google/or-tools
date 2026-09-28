@@ -32,17 +32,38 @@ namespace operations_research {
 
 // This template class is used internally to implement reversibility.
 // It stores an address and the value that was at the address.
+//
+// `addrval<T>` is designed to have no padding so that we can directly alias
+// into arrays of `addrval<T>`.
 template <class T>
-struct addrval {
+class addrval {
  public:
-  addrval() : address(nullptr) {}
-  explicit addrval(T* adr) : address(adr), old_value(*adr) {}
-  void restore() const { (*address) = old_value; }
+  static_assert(std::is_trivial_v<T>);
+
+  addrval() = default;
+  explicit addrval(T* address) {
+    address_data_ = std::bit_cast<TPtr>(address);
+    old_value_data_ = std::bit_cast<TVal>(*address);
+  }
+  void restore() const {
+    T* const address = std::bit_cast<T*>(address_data_);
+    *address = std::bit_cast<T>(old_value_data_);
+  }
 
  private:
-  T* address;
-  T old_value;
+  struct TPtr {
+    char data[sizeof(T*)] = {};
+  };
+  struct TVal {
+    char data[sizeof(T)] = {};
+  };
+  TPtr address_data_;
+  TVal old_value_data_;
 };
+static_assert(alignof(addrval<int>) == 1 &&
+              sizeof(addrval<int>) == sizeof(int*) + sizeof(int));
+static_assert(alignof(addrval<double>) == 1 &&
+              sizeof(addrval<double>) == sizeof(double*) + sizeof(double));
 
 // ---------- Trail Packer ---------
 // Abstract class to pack trail blocks.
@@ -138,8 +159,8 @@ class CompressedTrail {
       : block_size_(block_size),
         blocks_(nullptr),
         free_blocks_(nullptr),
-        data_(new addrval<T>[block_size]),
-        buffer_(new addrval<T>[block_size]),
+        data_(std::make_unique<addrval<T>[]>(block_size)),
+        buffer_(std::make_unique<addrval<T>[]>(block_size)),
         buffer_used_(false),
         current_(0),
         size_(0) {
@@ -156,14 +177,6 @@ class CompressedTrail {
         LOG(ERROR) << "Should not be here";
       }
     }
-
-    // We zero all memory used by addrval arrays.
-    // Because of padding, all bytes may not be initialized, while compression
-    // will read them all, even if the uninitialized bytes are never used.
-    // This makes valgrind happy.
-
-    memset(data_.get(), 0, sizeof(*data_.get()) * block_size);
-    memset(buffer_.get(), 0, sizeof(*buffer_.get()) * block_size);
   }
   ~CompressedTrail() {
     FreeBlocks(blocks_);

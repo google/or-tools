@@ -22,6 +22,7 @@
 #include "ortools/base/init_google.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/port/sysinfo.h"
 
 namespace operations_research {
 void RunConstraintProgrammingExample() {
@@ -56,7 +57,10 @@ void RunConstraintProgrammingExample() {
   LOG(INFO) << "";
   LOG(INFO) << "Advanced usage:";
   LOG(INFO) << "Problem solved in " << solver.wall_time() << "ms";
-  LOG(INFO) << "Memory usage: " << Solver::MemoryUsage() << " bytes";
+  if (auto memory_usage = sysinfo::MemoryUsageProcess();
+      memory_usage.has_value()) {
+    LOG(INFO) << "Memory usage: " << memory_usage.value() << " bytes";
+  }
 }
 }  // namespace operations_research
 
