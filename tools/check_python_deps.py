@@ -182,7 +182,11 @@ if __name__ == "__main__":
     # not compatible.
     from ortools.algorithms.python import \
         knapsack_solver  # pylint: disable=g-import-not-at-top,unused-import
-    from ortools.graph import \
-        _pywrapgraph  # pylint: disable=g-import-not-at-top,unused-import
-    from ortools.linear_solver import \
-        _pywraplp  # pylint: disable=g-import-not-at-top,unused-import
+    from ortools.constraint_solver.python import \
+        constraint_solver  # pylint: disable=g-import-not-at-top,unused-import
+    from ortools.graph.python import (  # pylint: disable=g-import-not-at-top,unused-import
+        max_flow, min_cost_flow)
+    from ortools.linear_solver.python import \
+        pywraplp  # pylint: disable=g-import-not-at-top,unused-import
+    from ortools.routing.python import \
+        routing  # pylint: disable=g-import-not-at-top,unused-import
