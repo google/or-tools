@@ -15,6 +15,7 @@
 
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
 #include "ortools/util/data_path_resolver.h"
 
@@ -30,7 +31,7 @@ TEST(TspTWParserTest, LoadDataSet) {
   const double service_times[] = {250, 0, 0};
   const bool has_coordinates[] = {false, false, true};
   int count = 0;
-  for (const std::string& data :
+  for (absl::string_view data :
        {"ortools/routing/parsers/testdata/rc201.0",
         "ortools/routing/parsers/testdata/n20w20.001.txt",
         "ortools/routing/parsers/testdata/"
