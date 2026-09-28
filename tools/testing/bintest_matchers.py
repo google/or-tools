@@ -45,7 +45,7 @@ class Re:
     _SQ_STRING = _enclosed("''")
     _DQ_STRING = _enclosed('""')
     STRING = f"({_SQ_STRING}|{_DQ_STRING})"
-    NUMBER = r"([-+]?[0-9]*(?:\.[0-9]+)?(?:[eE][-+]?[0-9]+)?)"
+    NUMBER = r"([-+]?(?:\d+\.\d*|\.?\d+)(?:[eE][-+]?\d+)?)"
 
     _PARENTHESIZED_EXPR = _enclosed("()")
     _KEYWORD_EXPR = f"(@num{_PARENTHESIZED_EXPR})"
@@ -215,8 +215,6 @@ def extract(log: str, *patterns: str, check_matcher_specs: bool) -> Sequence[flo
             raise MatchError(f"No match for {pattern!r}")
         assert len(match.groups()) == len(check_functions)
         for float_str, check_fn in zip(match.groups(), check_functions):
-            if not float_str:
-                raise MatchError(f"Empty float string for {pattern!r}")
             actual_float = float(float_str)
             check_fn(actual_float)
             floats.append(actual_float)
