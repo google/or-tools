@@ -25,6 +25,8 @@ build --define pfm=0
 
 # Fix the python version
 build --@rules_python//python/config_settings:python_version=3.12
+# Silence non-actionable rules_python repository warnings.
+common --repo_env=RULES_PYTHON_REPO_DEBUG_VERBOSITY=FAIL
 
 # Fix the Java version
 build --java_language_version=21 # Version of the source files
@@ -43,7 +45,6 @@ build --enable_platform_specific_config
 # Disable warnings in anything but //ortools. Those are not actionable and pollute CI logs.
 build:linux --per_file_copt=//.*,-//ortools/.*@--no-warnings --host_per_file_copt=//.*,-//ortools/.*@--no-warnings
 build:macos --per_file_copt=//.*,-//ortools/.*@--no-warnings --host_per_file_copt=//.*,-//ortools/.*@--no-warnings
-build:windows --per_file_copt=//.*,-//ortools/.*@/W0 --host_per_file_copt=//.*,-//ortools/.*@/W0
 
 ###############################################################################
 # Options for Linux.
@@ -65,6 +66,7 @@ build:macos --cxxopt=-std=c++20 --host_cxxopt=-std=c++20
 ###############################################################################
 
 build:windows --cxxopt=/std:c++20 --host_cxxopt=/std:c++20
+build:windows --features=-default_cpp_std # https://github.com/bazelbuild/rules_cc/issues/591
 
 # Enable the runfiles symlink tree on Windows. This makes it possible to build
 # the pip package on Windows without an intermediate data-file archive, as the
