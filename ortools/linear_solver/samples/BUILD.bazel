@@ -32,6 +32,13 @@ or_cc_test(
     ],
 )
 
+py_test(
+    name = "assignment_mip_py3",
+    srcs = ["assignment_mip.py"],
+    main = "assignment_mip.py",
+    deps = ["//ortools/linear_solver/python:pywraplp"],
+)
+
 or_cc_test(
     name = "assignment_groups_mip_test",
     srcs = ["assignment_groups_mip.cc"],
@@ -44,6 +51,13 @@ or_cc_test(
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/strings:str_format",
     ],
+)
+
+py_test(
+    name = "assignment_groups_mip_py3",
+    srcs = ["assignment_groups_mip.py"],
+    main = "assignment_groups_mip.py",
+    deps = ["//ortools/linear_solver/python:pywraplp"],
 )
 
 or_cc_test(
@@ -60,6 +74,13 @@ or_cc_test(
     ],
 )
 
+py_test(
+    name = "assignment_task_sizes_mip_py3",
+    srcs = ["assignment_task_sizes_mip.py"],
+    main = "assignment_task_sizes_mip.py",
+    deps = ["//ortools/linear_solver/python:pywraplp"],
+)
+
 or_cc_test(
     name = "assignment_teams_mip_test",
     srcs = ["assignment_teams_mip.cc"],
@@ -72,6 +93,13 @@ or_cc_test(
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/strings:str_format",
     ],
+)
+
+py_test(
+    name = "assignment_teams_mip_py3",
+    srcs = ["assignment_teams_mip.py"],
+    main = "assignment_teams_mip.py",
+    deps = ["//ortools/linear_solver/python:pywraplp"],
 )
 
 or_cc_test(
@@ -87,6 +115,13 @@ or_cc_test(
     ],
 )
 
+py_test(
+    name = "basic_example_py3",
+    srcs = ["basic_example.py"],
+    main = "basic_example.py",
+    deps = ["//ortools/linear_solver/python:pywraplp"],
+)
+
 or_cc_test(
     name = "bin_packing_mip_test",
     srcs = ["bin_packing_mip.cc"],
@@ -94,6 +129,13 @@ or_cc_test(
         "//ortools/linear_solver:linear_solver_lib",
         "@abseil-cpp//absl/log",
     ],
+)
+
+py_test(
+    name = "bin_packing_mip_py3",
+    srcs = ["bin_packing_mip.py"],
+    main = "bin_packing_mip.py",
+    deps = ["//ortools/linear_solver/python:pywraplp"],
 )
 
 or_cc_test(
@@ -108,6 +150,13 @@ or_cc_test(
     ],
 )
 
+py_test(
+    name = "linear_programming_example_py3",
+    srcs = ["linear_programming_example.py"],
+    main = "linear_programming_example.py",
+    deps = ["//ortools/linear_solver/python:pywraplp"],
+)
+
 or_cc_test(
     name = "integer_programming_example_test",
     srcs = ["integer_programming_example.cc"],
@@ -120,6 +169,13 @@ or_cc_test(
     ],
 )
 
+py_test(
+    name = "integer_programming_example_py3",
+    srcs = ["integer_programming_example.py"],
+    main = "integer_programming_example.py",
+    deps = ["//ortools/linear_solver/python:pywraplp"],
+)
+
 or_cc_test(
     name = "mip_var_array_test",
     srcs = ["mip_var_array.cc"],
@@ -130,6 +186,13 @@ or_cc_test(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],
+)
+
+py_test(
+    name = "mip_var_array_py3",
+    srcs = ["mip_var_array.py"],
+    main = "mip_var_array.py",
+    deps = ["//ortools/linear_solver/python:pywraplp"],
 )
 
 or_cc_test(
@@ -145,6 +208,13 @@ or_cc_test(
     ],
 )
 
+py_test(
+    name = "multiple_knapsack_mip_py3",
+    srcs = ["multiple_knapsack_mip.py"],
+    main = "multiple_knapsack_mip.py",
+    deps = ["//ortools/linear_solver/python:pywraplp"],
+)
+
 or_cc_test(
     name = "simple_lp_program_test",
     srcs = ["simple_lp_program.cc"],
@@ -156,6 +226,13 @@ or_cc_test(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],
+)
+
+py_test(
+    name = "simple_lp_program_py3",
+    srcs = ["simple_lp_program.py"],
+    main = "simple_lp_program.py",
+    deps = ["//ortools/linear_solver/python:pywraplp"],
 )
 
 or_cc_test(
@@ -170,6 +247,13 @@ or_cc_test(
     ],
 )
 
+py_test(
+    name = "simple_mip_program_py3",
+    srcs = ["simple_mip_program.py"],
+    main = "simple_mip_program.py",
+    deps = ["//ortools/linear_solver/python:pywraplp"],
+)
+
 or_cc_test(
     name = "stigler_diet_test",
     srcs = ["stigler_diet.cc"],
@@ -180,6 +264,16 @@ or_cc_test(
         "//ortools/linear_solver:linear_solver_lib",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+py_test(
+    name = "stigler_diet_py3",
+    srcs = ["stigler_diet.py"],
+    main = "stigler_diet.py",
+    deps = [
+        "//ortools/linear_solver:linear_solver_glop",
+        "//ortools/linear_solver/python:pywraplp",
     ],
 )
 

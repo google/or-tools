@@ -48,6 +48,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/lazy_mutable_copy.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/mp_model_solution_checker.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -346,7 +347,7 @@ MPSolutionResponse SatSolveProtoInternal(
     }
   }
 
-  // We no longer need the mp_model after this, reclaime its memory.
+  // We no longer need the mp_model after this, reclaim its memory.
   const int old_num_variables = mp_model->variable().size();
   const int old_num_constraints = mp_model->constraint().size();
   const bool is_maximize = mp_model->maximize();
