@@ -369,9 +369,6 @@ file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/util/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/util/python/__init__.py CONTENT "")
 
 file(COPY
-  ortools/linear_solver/python/linear_solver_natural_api.py
-  DESTINATION ${PYTHON_PROJECT_DIR}/linear_solver/python)
-file(COPY
   ortools/linear_solver/python/model_builder.py
   ortools/linear_solver/python/model_builder_numbers.py
   DESTINATION ${PYTHON_PROJECT_DIR}/linear_solver/python)
@@ -695,7 +692,7 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:constraint_solver_pybind11> ${PYTHON_PROJECT}/constraint_solver/python
   COMMAND ${CMAKE_COMMAND} -E copy
-   $<TARGET_FILE:pywraplp> ${PYTHON_PROJECT}/linear_solver
+   $<TARGET_FILE:pywraplp_pybind11> ${PYTHON_PROJECT}/linear_solver/python
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:model_builder_helper_pybind11> ${PYTHON_PROJECT}/linear_solver/python
   COMMAND ${CMAKE_COMMAND} -E
@@ -742,7 +739,7 @@ add_custom_command(
     dag_shortest_path_pybind11
     constraint_solver_pybind11
     routing_pybind11
-    pywraplp
+    pywraplp_pybind11
     model_builder_helper_pybind11
     $<$<BOOL:${BUILD_MATH_OPT}>:math_opt_core_pybind11>
     $<$<BOOL:${BUILD_MATH_OPT}>:math_opt_elemental_pybind11>
@@ -783,7 +780,7 @@ add_custom_command(
   COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.max_flow --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.min_cost_flow --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.constraint_solver.python.constraint_solver --output .
-  COMMAND ${stubgen_EXECUTABLE} -p ortools.linear_solver.pywraplp --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.linear_solver.python.pywraplp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.linear_solver.python.model_builder_helper --output .
   COMMAND ${stubgen_EXECUTABLE} -p pybind11_abseil.status --output .
   COMMAND ${stubgen_EXECUTABLE} -p pybind11_abseil.absl_casters --output .

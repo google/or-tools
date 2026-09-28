@@ -25,7 +25,7 @@ ratio of appointment types.
 # [START import]
 from absl import app, flags
 
-from ortools.linear_solver import pywraplp
+from ortools.linear_solver.python import pywraplp
 from ortools.sat.python import cp_model
 
 # [END import]
