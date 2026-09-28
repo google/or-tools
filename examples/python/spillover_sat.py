@@ -331,7 +331,7 @@ def _solve_spillover_problem(problem: SpilloverProblem) -> None:
     solver = cp_model.CpSolver()
     solver.parameters.num_workers = 16
     solver.parameters.log_search_progress = True
-    solver.max_time_in_seconds = 30.0
+    solver.max_time_in_seconds = 30.0  # pyrefly: ignore[missing-attribute]
     status = solver.solve(model)
     if status != cp_model.OPTIMAL:
         raise RuntimeError(f"expected optimal, found: {status}")

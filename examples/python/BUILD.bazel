@@ -26,10 +26,10 @@ py_binary(
         "not_run:arm",
     ],
     deps = [
+        "//ortools/linear_solver/python:model_builder",
         "//ortools/sat/python:cp_model",
         requirement("absl-py"),
         requirement("numpy"),
-        "//ortools/linear_solver/python:model_builder",
     ],
 )
 
@@ -194,8 +194,8 @@ py_binary(
     main = "gate_scheduling_sat.py",
     deps = [
         "//ortools/sat/colab:visualization",
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 
@@ -371,8 +371,8 @@ py_binary(
     srcs = ["music_playlist_sat.py"],
     main = "music_playlist_sat.py",
     deps = [
-        requirement("absl-py"),
         "//ortools/sat/python:cp_model",
+        requirement("absl-py"),
     ],
 )
 

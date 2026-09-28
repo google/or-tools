@@ -63,7 +63,9 @@ def chemical_balance():
         int(
             math.ceil(
                 min(
-                    max_quantities[q][1] * 1000 / chemical_set[s][q + 1]
+                    max_quantities[q][1]
+                    * 1000
+                    / chemical_set[s][q + 1]  # pyrefly: ignore[unsupported-operation]
                     for q in all_products
                     if chemical_set[s][q + 1] != 0
                 )
@@ -105,7 +107,9 @@ def chemical_balance():
             name = max_quantities[p][0]
             max_quantity = max_quantities[p][1]
             quantity = sum(
-                solver.value(set_vars[s]) / 1000.0 * chemical_set[s][p + 1]
+                solver.value(set_vars[s])
+                / 1000.0
+                * chemical_set[s][p + 1]  # pyrefly: ignore[unsupported-operation]
                 for s in all_sets
             )
             print(f"{name}: {quantity:.3f} out of {max_quantity}")
