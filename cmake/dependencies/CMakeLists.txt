@@ -200,7 +200,7 @@ if(BUILD_Eigen3)
   list(APPEND CMAKE_MESSAGE_INDENT "  ")
   FetchContent_Declare(
     eigen3
-    GIT_REPOSITORY "https://gitlab.com/libeigen/eigen.git"
+    GIT_REPOSITORY "https://github.com/eigen-mirror/eigen.git"
     GIT_TAG "3.4.0"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
