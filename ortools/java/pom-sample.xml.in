@@ -51,8 +51,7 @@
 <properties>
   <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   <exec.mainClass>@JAVA_MAIN_CLASS@</exec.mainClass>
-  <maven.compiler.source>21</maven.compiler.source>
-  <maven.compiler.target>21</maven.compiler.target>
+  <maven.compiler.release>21</maven.compiler.release>
 </properties>
 
 <dependencies>
@@ -88,21 +87,7 @@
     <plugin>
       <groupId>org.apache.maven.plugins</groupId>
       <artifactId>maven-javadoc-plugin</artifactId>
-      <version>3.8.0</version>
-      <configuration>
-        <detectJavaApiLink>false</detectJavaApiLink>
-        <source>${maven.compiler.source}</source>
-        <target>${maven.compiler.target}</target>
-        <additionalJOption>-Xdoclint:none</additionalJOption>
-      </configuration>
-      <executions>
-        <execution>
-          <id>attach-javadocs</id>
-          <goals>
-            <goal>jar</goal>
-          </goals>
-        </execution>
-      </executions>
+      <version>3.12.0</version>
     </plugin>
     <plugin>
       <groupId>org.apache.maven.plugins</groupId>
