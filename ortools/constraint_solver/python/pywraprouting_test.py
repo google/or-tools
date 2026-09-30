@@ -99,6 +99,15 @@ class TestPyWrapRoutingModel(absltest.TestCase):
             self.assertEqual(7, manager.IndexToNode(model.Start(i)))
             self.assertEqual(7, manager.IndexToNode(model.End(i)))
 
+    def testAddSameActivityGroupAcceptsPythonList(self):
+        # Regression for https://github.com/google/or-tools/issues/5415:
+        # AddSameActivityGroup takes absl::Span<const int>; without a SWIG
+        # typemap, Python lists failed with TypeError naming the Span type.
+        manager = pywrapcp.RoutingIndexManager(5, 1, 0)
+        model = pywrapcp.RoutingModel(manager)
+        model.AddSameActivityGroup([1, 2, 3])
+        model.AddSameActivityGroup((1, 2))
+
     def testSolve(self):
         manager = pywrapcp.RoutingIndexManager(42, 3, 7)
         self.assertIsNotNone(manager)

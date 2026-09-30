@@ -88,6 +88,43 @@ PY_LIST_INPUT_OUTPUT_TYPEMAP(int64_t, SwigPyIntOrLong_Check, PyLong_FromLongLong
 PY_LIST_INPUT_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
 PY_LIST_INPUT_OUTPUT_TYPEMAP(std::string, SwigString_Check, SwigString_FromString);
 
+// absl::Span<const T> input. Several RoutingModel APIs take Span (e.g.
+// AddSameActivityGroup). Without a typemap, SWIG exposes the raw C++ type and
+// Python list/tuple arguments fail with:
+//   TypeError: argument 2 of type 'absl::Span< int const >'
+// Reuse the same sequence conversion as std::vector, keep a temporary vector
+// for the duration of the call, and view it as a Span.
+%{
+#include "absl/types/span.h"
+%}
+%define PY_SPAN_CONST_INPUT_TYPEMAP(type, checker)
+%typecheck(SWIG_TYPECHECK_POINTER) absl::Span<const type> {
+  if (!PyTuple_Check($input) && !PyList_Check($input)) {
+    $1 = 0;
+  } else {
+    const bool is_tuple = PyTuple_Check($input);
+    const size_t size = is_tuple ? PyTuple_Size($input) : PyList_Size($input);
+    size_t i = 0;
+    while (i < size && checker(is_tuple ? PyTuple_GetItem($input, i)
+                                        : PyList_GetItem($input, i))) {
+      ++i;
+    }
+    $1 = i == size;
+  }
+}
+%typemap(in) absl::Span<const type> (std::vector<type> temp) {
+  if (!vector_input_helper($input, &temp, PyObjAs<type>)) {
+    if (!PyErr_Occurred())
+      SWIG_Error(SWIG_TypeError, "sequence(type) expected");
+    return NULL;
+  }
+  $1 = absl::MakeConstSpan(temp);
+}
+%enddef  // PY_SPAN_CONST_INPUT_TYPEMAP
+
+PY_SPAN_CONST_INPUT_TYPEMAP(int, PyInt_Check);
+PY_SPAN_CONST_INPUT_TYPEMAP(int64_t, SwigPyIntOrLong_Check);
+
 // Add conversion list(tuple(int)) -> std::vector<std::vector>.
 // TODO(user): see if we can also get rid of this and utilize already
 // existing code.
