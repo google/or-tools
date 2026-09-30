@@ -133,12 +133,12 @@ $(TEMP_JAVA_DIR)/$1: | $(TEMP_JAVA_DIR)
 	-$(MKDIR) $(TEMP_JAVA_DIR)$S$1
 
 $(TEMP_JAVA_DIR)/$1/%: \
- $(SRC_DIR)/ortools/$1/samples/%.java \
+ $(SRC_DIR)/ortools/$1/samples/java/%.java \
  | $(TEMP_JAVA_DIR)/$1
 	-$(MKDIR) $(TEMP_JAVA_DIR)$S$1$S$$*
 
 $(TEMP_JAVA_DIR)/$1/%/pom.xml: \
- $(SRC_DIR)/ortools/$1/samples/%.java \
+ $(SRC_DIR)/ortools/$1/samples/java/%.java \
  ${SRC_DIR}/ortools/java/pom-sample.xml.in \
  | $(TEMP_JAVA_DIR)/$1/%
 	$(SED) -e "s/@JAVA_PACKAGE@/$(JAVA_ORTOOLS_PACKAGE)/" \
@@ -162,15 +162,15 @@ $(TEMP_JAVA_DIR)/$1/%/pom.xml: \
  $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml
 
 $(TEMP_JAVA_DIR)/$1/%/$(JAVA_SRC_DIR)/%.java: \
- $(SRC_DIR)/ortools/$1/samples/%.java \
+ $(SRC_DIR)/ortools/$1/samples/java/%.java \
  | $(TEMP_JAVA_DIR)/$1/%
 	$(MKDIR_P) $(TEMP_JAVA_DIR)$S$1$S$$*$S$(JAVA_SRC_PATH)
-	$(COPY) $(SRC_DIR)$Sortools$S$1$Ssamples$S$$*.java \
+	$(COPY) $(SRC_DIR)$Sortools$S$1$Ssamples$Sjava$S$$*.java \
  $(TEMP_JAVA_DIR)$S$1$S$$*$S$(JAVA_SRC_PATH)
 
 rjava_%: \
  java \
- $(SRC_DIR)/ortools/$1/samples/%.java \
+ $(SRC_DIR)/ortools/$1/samples/java/%.java \
  $(TEMP_JAVA_DIR)/$1/%/pom.xml \
  $(TEMP_JAVA_DIR)/$1/%/$(JAVA_SRC_DIR)/%.java \
  FORCE
@@ -178,7 +178,7 @@ rjava_%: \
 	cd $(TEMP_JAVA_DIR)$S$1$S$$* && "$(MVN_BIN)" exec:java $(ARGS)
 endef
 
-JAVA_SAMPLES := init algorithms graph constraint_solver linear_solver routing sat util
+JAVA_SAMPLES := init algorithms graph constraint_solver linear_solver model_builder routing sat util
 $(foreach sample,$(JAVA_SAMPLES),$(eval $(call java-sample-target,$(sample),$(subst _,,$(sample)))))
 
 # Examples
@@ -474,11 +474,11 @@ $(INSTALL_JAVA_NAME)/examples: | $(INSTALL_JAVA_NAME)
 define java-sample-archive =
 $(INSTALL_JAVA_NAME)/examples/%/pom.xml: \
  $(TEMP_JAVA_DIR)/$1/%/pom.xml \
- $(SRC_DIR)/ortools/$1/samples/%.java \
+ $(SRC_DIR)/ortools/$1/samples/java/%.java \
  | $(INSTALL_JAVA_NAME)/examples
 	-$(MKDIR_P) $(INSTALL_JAVA_NAME)$Sexamples$S$$*$S$(JAVA_SRC_PATH)
 	$(COPY) $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml $(INSTALL_JAVA_NAME)$Sexamples$S$$*
-	$(COPY) $(SRC_DIR)$Sortools$S$1$Ssamples$S$$*.java $(INSTALL_JAVA_NAME)$Sexamples$S$$*$S$(JAVA_SRC_PATH)
+	$(COPY) $(SRC_DIR)$Sortools$S$1$Ssamples$Sjava$S$$*.java $(INSTALL_JAVA_NAME)$Sexamples$S$$*$S$(JAVA_SRC_PATH)
 endef
 
 $(foreach sample,$(JAVA_SAMPLES),$(eval $(call java-sample-archive,$(sample))))
@@ -496,7 +496,7 @@ endef
 $(foreach example,$(JAVA_EXAMPLES),$(eval $(call java-example-archive,$(example))))
 
 SAMPLE_JAVA_FILES = \
-  $(addsuffix /pom.xml,$(addprefix $(INSTALL_JAVA_NAME)/examples/,$(basename $(notdir $(wildcard ortools/*/samples/*.java)))))
+  $(addsuffix /pom.xml,$(addprefix $(INSTALL_JAVA_NAME)/examples/,$(basename $(notdir $(wildcard ortools/*/samples/java/*.java)))))
 
 EXAMPLE_JAVA_FILES = \
   $(addsuffix /pom.xml,$(addprefix $(INSTALL_JAVA_NAME)/examples/,$(basename $(notdir $(wildcard examples/contrib/*.java))))) \
@@ -563,10 +563,10 @@ $(TEMP_JAVA_DIR)/ortools_examples/examples/java: | $(TEMP_JAVA_DIR)/ortools_exam
 define java-sample-archive =
 $(TEMP_JAVA_DIR)/ortools_examples/examples/java/%/pom.xml: \
  $(TEMP_JAVA_DIR)/$1/%/pom.xml \
- ortools/$1/samples/%.java \
+ ortools/$1/samples/java/%.java \
  | $(TEMP_JAVA_DIR)/ortools_examples/examples/java
 	-$(MKDIR_P) $(TEMP_JAVA_DIR)$Sortools_examples$Sexamples$Sjava$S$$*$S$(JAVA_SRC_PATH)
-	$(COPY) $(SRC_DIR)$Sortools$S$1$Ssamples$S$$*.java \
+	$(COPY) $(SRC_DIR)$Sortools$S$1$Ssamples$Sjava$S$$*.java \
  $(TEMP_JAVA_DIR)$Sortools_examples$Sexamples$Sjava$S$$*$S$(JAVA_SRC_PATH)
 	$(COPY) $(TEMP_JAVA_DIR)$S$1$S$$*$Spom.xml \
  $(TEMP_JAVA_DIR)$Sortools_examples$Sexamples$Sjava$S$$*
@@ -589,7 +589,7 @@ endef
 $(foreach example,$(JAVA_EXAMPLES),$(eval $(call java-example-archive,$(example))))
 
 SAMPLE_JAVA_FILES = \
-  $(addsuffix /pom.xml,$(addprefix $(TEMP_JAVA_DIR)/ortools_examples/examples/java/,$(basename $(notdir $(wildcard ortools/*/samples/*.java)))))
+  $(addsuffix /pom.xml,$(addprefix $(TEMP_JAVA_DIR)/ortools_examples/examples/java/,$(basename $(notdir $(wildcard ortools/*/samples/java/*.java)))))
 
 EXAMPLE_JAVA_FILES = \
   $(addsuffix /pom.xml,$(addprefix $(TEMP_JAVA_DIR)/ortools_examples/examples/java/,$(basename $(notdir $(wildcard examples/contrib/*.java))))) \
