@@ -83,14 +83,58 @@ exit /B 0
 REM Test .Net
 :TEST_DOTNET
 title Test .Net
-echo ToDo .Net
+which.exe dotnet || exit 1
+which.exe dotnet | tee.exe -a test.log
+
+echo Clear dotnet local package cache... | tee.exe -a test.log
+dotnet nuget locals all --clear
+
+echo Copy exported nupkg to sample... | tee.exe -a test.log
+FOR %%i IN (export\*.nupkg) DO copy %%i cmake\samples\dotnet\.
+
+echo Build .Net sample... | tee.exe -a test.log
+cd cmake\samples\dotnet
+dotnet build --nologo -c Release || exit 1
+
+echo Pack .Net sample... | tee.exe -a test.log
+dotnet pack --nologo -c Release || exit 1
+
+echo Run sample... | tee.exe -a test.log
+dotnet run --no-build -c Release || exit 1
+cd ..\..\..
 exit /B 0
 
 
 REM Test Java
 :TEST_JAVA
 title Test Java
-echo ToDo Java
+which.exe java || exit 1
+which.exe java | tee.exe -a test.log
+which.exe mvn || exit 1
+which.exe mvn | tee.exe -a test.log
+
+echo Clear maven local package cache... | tee.exe -a test.log
+rm.exe -rf %userprofile%\.m2\repository\com\google\ortools
+
+echo Install jar packages... | tee.exe -a test.log
+cd export
+del /f /q *-sources.jar *-javadoc.jar
+FOR %%i IN (ortools-*.jar) DO call mvn.cmd install:install-file -Dfile="%%i" || exit 1
+cd ..
+
+echo Compile Java sample... | tee.exe -a test.log
+cd cmake\samples\java
+call mvn.cmd compile -B || exit 1
+
+echo Package Java sample... | tee.exe -a test.log
+call mvn.cmd package -B || exit 1
+
+echo Run sample... | tee.exe -a test.log
+call mvn.cmd exec:java || exit 1
+
+echo Run tests sample... | tee.exe -a test.log
+call mvn.cmd test || exit 1
+cd ..\..\..
 exit /B 0
 
 
