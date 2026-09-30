@@ -61,10 +61,15 @@ function build_dotnet() {
   fi
 
   cd "${ROOT_DIR}" || exit 2
+  echo -n "check swig..."
   command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
+  echo "DONE" | tee -a build.log
+
+  echo -n "check dotnet..."
   command -v dotnet
   command -v dotnet | xargs echo "dotnet: " | tee -a build.log
+  echo "DONE" | tee -a build.log
 
   # Install .Net SNK
   echo -n "Install .Net SNK..." | tee -a build.log
@@ -72,12 +77,18 @@ function build_dotnet() {
   if [[ -x $(command -v openssl11) ]]; then
     OPENSSL_PRG=openssl11
   fi
+  echo "DONE" | tee -a build.log
+  echo -n "check ${OPENSSL_PRG}..."
+  command -v ${OPENSSL_PRG} | xargs echo "openssl: " | tee -a build.log
 
   $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
-    -in "${RELEASE_DIR}"/or-tools.snk.enc \
-    -out "${ROOT_DIR}"/export_meta/or-tools.snk -d
-  DOTNET_SNK=export_meta/or-tools.snk
+    -in "${RELEASE_DIR}/or-tools.snk.enc" \
+    -out "${ROOT_DIR}/export_meta/or-tools.snk" -d
+  export DOTNET_SNK=export_meta/or-tools.snk
   echo "DONE" | tee -a build.log
+
+  echo "Clear dotnet local package cache..." | tee -a build.log
+  dotnet nuget locals all --clear
 
   # Clean dotnet
   echo -n "Clean .Net..." | tee -a build.log
@@ -88,13 +99,14 @@ function build_dotnet() {
   echo -n "Build .Net..." | tee -a build.log
   cmake -S. -Btemp_meta_dotnet -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
   -DBUILD_DOTNET=ON -DUSE_DOTNET_462=ON -DUNIVERSAL_DOTNET_PACKAGE=ON
-  cmake --build temp_meta_dotnet -j8 -v
+  cp "${ROOT_DIR}"/export/Google.OrTools.runtime.*.nupkg "${ROOT_DIR}/temp_meta_dotnet/dotnet/packages/"
+  cmake --build temp_meta_dotnet
   echo "DONE" | tee -a build.log
   #cmake --build temp_meta_dotnet --target test
   #echo "cmake test: DONE" | tee -a build.log
 
   # copy nupkg to export
-  cp temp_meta_dotnet/dotnet/packages/Google.OrTools.9.*nupkg export_meta/
+  cp "${ROOT_DIR}"/temp_meta_dotnet/dotnet/packages/Google.OrTools."${OR_TOOLS_MAJOR}"."${OR_TOOLS_MINOR}".*nupkg "${ROOT_DIR}/export_meta/"
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export_meta/meta_dotnet_build"
 }
 
@@ -106,25 +118,37 @@ function build_java() {
   fi
 
   cd "${ROOT_DIR}" || exit 2
+  echo -n "check swig..."
   command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
+  echo "DONE" | tee -a build.log
+
   # maven require JAVA_HOME
   if [[ -z "${JAVA_HOME}" ]]; then
     echo "JAVA_HOME: not found !" | tee -a build.log
     exit 1
   else
     echo "JAVA_HOME: ${JAVA_HOME}" | tee -a build.log
+    echo "check java..."
     command -v java | xargs echo "java: " | tee -a build.log
+    echo "check javac..."
     command -v javac | xargs echo "javac: " | tee -a build.log
+    echo "check jar..."
     command -v jar | xargs echo "jar: " | tee -a build.log
+    echo "check mvn..."
     command -v mvn | xargs echo "mvn: " | tee -a build.log
+    echo "Check java version..."
+    java -version 2>&1 | head -n 1 | xargs echo "java version: " | tee -a build.log
+    java -version 2>&1 | head -n 1 | grep "\b2[1567]\(\.0\)\?"
   fi
   # Maven central need gpg sign and we store the release key encoded using openssl
   local OPENSSL_PRG=openssl
   if [[ -x $(command -v openssl11) ]]; then
     OPENSSL_PRG=openssl11
   fi
-  command -v $OPENSSL_PRG | xargs echo "openssl: " | tee -a build.log
+  echo "check ${OPENSSL_PRG}..."
+  command -v ${OPENSSL_PRG} | xargs echo "openssl: " | tee -a build.log
+  echo "check gpg..."
   command -v gpg
   command -v gpg | xargs echo "gpg: " | tee -a build.log
 
@@ -144,15 +168,26 @@ function build_java() {
   -out ~/.m2/settings.xml -d
   echo "DONE" | tee -a build.log
 
+  echo "Clear maven local package cache..." | tee -a build.log
+  rm -rf ~/.m2/repository/com/google/ortools
+
+  echo "Install native jar packages..." | tee -a build.log
+  for f in "${ROOT_DIR}"/export/ortools-*.jar; do
+    case "$f" in
+      *-sources.jar | *-javadoc.jar | *ortools-java-*) ;;
+      *) mvn install:install-file -Dfile="$f" ;;
+    esac
+  done
+  echo "DONE" | tee -a build.log
+
   # Clean java
   echo -n "Clean Java..." | tee -a build.log
   cd "${ROOT_DIR}" || exit 2
   rm -rf "${ROOT_DIR}/temp_meta_java"
   echo "DONE" | tee -a build.log
 
-  echo -n "Build Java..." | tee -a build.log
-
-  if [[ ! -v GPG_ARGS ]]; then
+  echo "Build Java..." | tee -a build.log
+  if [ -z "${GPG_ARGS}" ]; then
     GPG_EXTRA=""
   else
     GPG_EXTRA="-DGPG_ARGS=${GPG_ARGS}"
@@ -162,17 +197,12 @@ function build_java() {
   cmake -S. -Btemp_meta_java -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
  -DBUILD_JAVA=ON -DUNIVERSAL_JAVA_PACKAGE=ON \
  -DSKIP_GPG=OFF ${GPG_EXTRA}
-  cmake --build temp_meta_java -j8 -v
+  cmake --build temp_meta_java
   echo "DONE" | tee -a build.log
   #cmake --build temp_meta_java --target test
   #echo "cmake test: DONE" | tee -a build.log
 
   # copy meta jar to export
-  #if [ ${PLATFORM} == "aarch64" ]; then
-  #  cp temp_meta_java/java/ortools-linux-aarch64/target/*.jar* export_meta/
-  #else
-  #  cp temp_meta_java/java/ortools-linux-x86-64/target/*.jar* export_meta/
-  #fi
   cp temp_meta_java/java/ortools-java/target/*.jar* export_meta/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export_meta/meta_java_build"
 }
@@ -202,20 +232,30 @@ function main() {
       help; exit ;;
   esac
 
-  assert_defined ORTOOLS_TOKEN
-  echo "ORTOOLS_TOKEN: FOUND" | tee -a build.log
+  local -r ARCH=$(uname -m)
+  echo "ARCH: '${ARCH}'" | tee -a build.log
+  local -r OS=$(uname -s)
+  echo "OS: '${OS}'" | tee -a build.log
 
   local -r ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
   echo "ROOT_DIR: '${ROOT_DIR}'" | tee -a build.log
 
-  local -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
-  echo "RELEASE_DIR: '${RELEASE_DIR}'" | tee -a build.log
-
-  #(cd "${ROOT_DIR}" && make print-OR_TOOLS_VERSION | tee -a build.log)
+  # shellcheck source=/dev/null
+  source "${ROOT_DIR}/Version.txt"
+  assert_defined OR_TOOLS_MAJOR
+  assert_defined OR_TOOLS_MINOR
+  echo "ORTOOLS_VERSION: '${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}'" | tee -a build.log
 
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  echo "ORTOOLS_BRANCH: '${ORTOOLS_BRANCH}'" | tee -a build.log
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
-  local -r PLATFORM=$(uname -m)
+  echo "ORTOOLS_SHA1: '${ORTOOLS_SHA1}'" | tee -a build.log
+
+  assert_defined ORTOOLS_TOKEN
+  echo "ORTOOLS_TOKEN: FOUND" | tee -a build.log
+
+  local -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
+  echo "RELEASE_DIR: '${RELEASE_DIR}'" | tee -a build.log
 
   mkdir -p "${ROOT_DIR}/export_meta"
 

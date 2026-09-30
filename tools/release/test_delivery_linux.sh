@@ -41,6 +41,13 @@ EOF
   echo -e "$help"
 }
 
+function assert_defined(){
+  if [[ -z "${!1}" ]]; then
+    >&2 echo "Variable '${1}' must be defined"
+    exit 1
+  fi
+}
+
 function test_cpp() {
   command -v cmake | xargs echo "cmake: " | tee -a test.log
 
@@ -80,9 +87,10 @@ function test_java() {
 
   echo "Install jar packages" | tee -a test.log
   cd "${ROOT_DIR}/export" || exit 2
-  rm *-sources.jar *-javadoc.jar
-  for f in ortools-linux-*.jar; do mvn install:install-file -Dfile="$f"; break; done
-  for f in ortools-java-*.jar; do mvn install:install-file -Dfile="$f"; break; done
+  rm -f ./*-sources.jar ./*-javadoc.jar
+  for f in ortools-*.jar; do
+    mvn install:install-file -Dfile="$f"
+  done
 
   echo "Compile Java sample" | tee -a test.log
   cd "${ROOT_DIR}/cmake/samples/java"
