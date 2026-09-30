@@ -20,9 +20,8 @@ from ortools.constraint_solver.python import constraint_solver as cp
 # from ortools.graph.python import linear_sum_assignment
 # from ortools.graph.python import max_flow
 # from ortools.graph.python import min_cost_flow
-from ortools.linear_solver import pywraplp
+from ortools.linear_solver.python import pywraplp
 
-# from ortools.linear_solver import linear_solver_pb2
 # from ortools.sat.python import cp_model_helper
 # from ortools.sat.python import cp_model
 # from ortools.scheduling import rcpsp
@@ -32,8 +31,19 @@ from ortools.linear_solver import pywraplp
 def lpsolver_test():
     """Test pywraplp."""
     print("Test lpsolver...")
-    lpsolver = pywraplp.Solver("LinearTest", pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
-    lpsolver.Solve()
+    solver = pywraplp.Solver.CreateSolver("GLOP")
+    infinity = solver.infinity()
+    x = solver.NumVar(0.0, infinity, "x")
+    y = solver.NumVar(0.0, infinity, "y")
+    solver.Add(x + 7 * y <= 17.5)
+    solver.Add(x <= 3.5)
+    solver.Maximize(x + 10 * y)
+    status = solver.Solve()
+    if status == pywraplp.Solver.OPTIMAL:
+        print("Solution:")
+        print("Objective value =", solver.Objective().Value())
+        print("x =", x.solution_value())
+        print("y =", y.solution_value())
     print("Test lpsolver...DONE")
 
 
