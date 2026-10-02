@@ -75,6 +75,7 @@ jobs:
         run: >
           cmake -S. -Bbuild
           -G "${{matrix.cmake.generator}}"
+          -DCMAKE_BUILD_TYPE=${{matrix.cmake.config}}
           -DCMAKE_CONFIGURATION_TYPES=${{matrix.cmake.config}}
           -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
           -DBUILD_JAVA=ON
