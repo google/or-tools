@@ -777,7 +777,7 @@ if(BUILD_CORE)
   endif()
 
   if(MSVC AND BUILD_SHARED_LIBS)
-    target_compile_definitions(ortools_core PUBLIC "OR_ORTOOLS_DLL=__declspec(dllimport)")
+    target_compile_definitions(ortools_core PUBLIC "OR_ORTOOLS_PROTO_DLL=__declspec(dllimport)")
   else()
     target_compile_definitions(ortools_core PUBLIC "OR_ORTOOLS_PROTO_DLL=")
   endif()
