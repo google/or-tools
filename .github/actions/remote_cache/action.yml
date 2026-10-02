@@ -32,8 +32,6 @@ runs:
         echo "SCCACHE_GCS_BUCKET=or-tools-github-remote-caching" >> $GITHUB_ENV
         echo "SCCACHE_GCS_KEY_PREFIX=cmake" >> $GITHUB_ENV
         echo "SCCACHE_GCS_RW_MODE=READ_WRITE" >> $GITHUB_ENV
-        echo "CMAKE_C_COMPILER_LAUNCHER=${{env.SCCACHE_PATH}}" >> $GITHUB_ENV
-        echo "CMAKE_CXX_COMPILER_LAUNCHER=${{env.SCCACHE_PATH}}" >> $GITHUB_ENV
     - name: Install HOME .bazel_rc
       if: inputs.enable == 'true' && inputs.set_home_bazelrc == 'true'
       shell: bash
