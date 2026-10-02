@@ -20,7 +20,7 @@ runs:
       with:
         credentials_json: ${{inputs.credentials_json}}
     - name: Install sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.10
+      uses: mozilla-actions/sccache-action@v0.0.11
       if: inputs.enable == 'true' && inputs.set_cmake_sccache_launcher == 'true'
       env:
         SCCACHE_GCS_KEY_PATH: ${{env.GOOGLE_GHA_CREDS_PATH}}
