@@ -240,6 +240,7 @@ CMake Option                    | Default Value   | Note
 `USE_DOTNET_46`                 | OFF             | Enable .Net Framework 4.6 support<br>Only available if `BUILD_DOTNET=ON`
 `USE_DOTNET_461`                | OFF             | Enable .Net Framework 4.6.1 support<br>Only available if `BUILD_DOTNET=ON`
 `USE_DOTNET_462`                | OFF             | Enable .Net Framework 4.6.2 support<br>Only available if `BUILD_DOTNET=ON`
+`USE_DOTNET_472`                | OFF             | Enable .Net Framework 4.7.2 support<br>Only available if `BUILD_DOTNET=ON`
 `USE_DOTNET_48`                 | OFF             | Enable .Net Framework 4.8 support<br>Only available if `BUILD_DOTNET=ON`
 `USE_DOTNET_STD_21`             | OFF             | Enable .Net Standard 2.1 support<br>Only available if `BUILD_DOTNET=ON` and not targeting arm64 platform
 `USE_DOTNET_CORE_31`            | OFF             | Enable .Net Core 3.1 LTS support<br>Only available if `BUILD_DOTNET=ON` and not targeting arm64 platform
