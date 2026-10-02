@@ -11,21 +11,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if(NOT UNIX OR CMAKE_C_COMPILER_LAUNCHER OR CMAKE_CXX_COMPILER_LAUNCHER)
-  message(STATUS "Configuring CCache - skipped")
+if(CMAKE_C_COMPILER_LAUNCHER OR CMAKE_CXX_COMPILER_LAUNCHER)
+  message(STATUS "Configuring SCCache - skipped")
   return()
 endif()
 
-find_program(CCACHE_PROGRAM ccache)
-if(CCACHE_PROGRAM)
+find_program(SCCACHE_PROGRAM sccache)
+if(SCCACHE_PROGRAM)
   if(WIN32)
-    set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
-    set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+    set(CMAKE_C_COMPILER_LAUNCHER ${SCCACHE_PROGRAM})
+    set(CMAKE_CXX_COMPILER_LAUNCHER ${SCCACHE_PROGRAM})
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
+    cmake_policy(SET CMP0141 NEW)
   else()
     # Set up wrapper scripts
-    set(C_LAUNCHER   "${CCACHE_PROGRAM}")
-    set(CXX_LAUNCHER "${CCACHE_PROGRAM}")
+    set(C_LAUNCHER   "${SCCACHE_PROGRAM}")
+    set(CXX_LAUNCHER "${SCCACHE_PROGRAM}")
 
     file(WRITE "${CMAKE_BINARY_DIR}/launch-c"
       "#!/usr/bin/env sh\n"
@@ -34,7 +35,6 @@ if(CCACHE_PROGRAM)
       "if [ \"$1\" = \"${CMAKE_C_COMPILER}\" ]; then\n"
       "  shift\n"
       "fi\n"
-      "export CCACHE_CPP2=true\n"
       "exec \"${C_LAUNCHER}\" \"${CMAKE_C_COMPILER}\" \"$@\"\n"
     )
     file(WRITE "${CMAKE_BINARY_DIR}/launch-cxx"
@@ -44,7 +44,6 @@ if(CCACHE_PROGRAM)
       "if [ \"$1\" = \"${CMAKE_CXX_COMPILER}\" ]; then\n"
       "  shift\n"
       "fi\n"
-      "export CCACHE_CPP2=true\n"
       "exec \"${CXX_LAUNCHER}\" \"${CMAKE_CXX_COMPILER}\" \"$@\"\n"
     )
     file(CHMOD
@@ -68,7 +67,7 @@ if(CCACHE_PROGRAM)
       set(CMAKE_CXX_COMPILER_LAUNCHER "${CMAKE_BINARY_DIR}/launch-cxx")
     endif()
   endif()
-  message(STATUS "Configuring CCache - done")
+  message(STATUS "Configuring SCCache - done")
 else()
-  message(STATUS "Looking for CCache - not found")
+  message(STATUS "Looking for SCCache - not found")
 endif()

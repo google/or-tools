@@ -12,7 +12,7 @@
 # limitations under the License.
 
 # This file is just an orchestration
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.25)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # Enable output of compile commands during generation.
@@ -31,6 +31,11 @@ message(STATUS "${PROJECT_NAME} version: ${PROJECT_VERSION} release: ${RELEASE}"
 #message(STATUS "major: ${PROJECT_VERSION_MAJOR}")
 #message(STATUS "minor: ${PROJECT_VERSION_MINOR}")
 #message(STATUS "patch: ${PROJECT_VERSION_PATCH}")
+
+# Enable SCCache if any
+include(sccache)
+# Enable CCache if any
+include(ccache)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -89,9 +94,6 @@ endif()
 if(MSVC AND BUILD_SHARED_LIBS)
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
-
-# Enable CCache if any
-include(ccache)
 
 # By default only build the C++ library which agregate all components.
 option(BUILD_PYTHON "Build Python Library" OFF)
