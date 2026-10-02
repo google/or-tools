@@ -372,6 +372,8 @@ if(BUILD_DOTNET)
   message(STATUS ".Net: Use .Net Framework 4.6.1 support: ${USE_DOTNET_461}")
   option(USE_DOTNET_462 "Use .Net Framework 4.6.2 support" OFF)
   message(STATUS ".Net: Use .Net Framework 4.6.2 support: ${USE_DOTNET_462}")
+  option(USE_DOTNET_472 "Use .Net Framework 4.7.2 support" OFF)
+  message(STATUS ".Net: Use .Net Framework 4.7.2 support: ${USE_DOTNET_472}")
 
   option(USE_DOTNET_48 "Use .Net Framework 4.8 support" OFF)
   message(STATUS ".Net: Use .Net Framework 4.8 support: ${USE_DOTNET_48}")
