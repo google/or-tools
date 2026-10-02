@@ -18,15 +18,14 @@ jobs:
     strategy:
       matrix:
         cmake: [
-          {name: "VS2026", generator: "Visual Studio 18 2026", config: Release},
-          # {name: "VS2026", generator: "Visual Studio 18 2026", config: Debug}, # too many symbols
+          {name: "Ninja", generator: "Ninja", config: Release, build_target: all, test_target: test, install_target: install},
+          #{name: "VS26", generator: "Visual Studio 18 2026", config: Release, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: INSTALL},
+          #{name: "VS26", generator: "Visual Studio 18 2026", config: Debug, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: INSTALL},
         ]
       fail-fast: false
     name: amd64•Windows•CMake(${{matrix.cmake.name}},${{matrix.cmake.config}})•C++
     runs-on: windows-latest
     env:
-      deps_src_key: amd64_windows_cpp_deps_src
-      deps_build_key: amd64_windows_cpp_deps_build_${{matrix.cmake.config}}
       CTEST_OUTPUT_ON_FAILURE: 1
     steps:
       - uses: actions/checkout@v7
@@ -34,21 +33,12 @@ jobs:
         with:
           credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
           set_cmake_sccache_launcher: true
-
-      # CONFIGURING CACHES
-      - name: Cache CMake dependency source code
-        uses: actions/cache@v6
+      # Extract and inject MSVC environment variables
+      - name: Set up MSVC x64
+        if: ${{matrix.cmake.generator == 'Ninja'}}
+        uses: ilammy/msvc-dev-cmd@v1
         with:
-          key: ${{env.deps_src_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
-          path: ${{github.workspace}}/build/_deps/*-src
-      - name: Cache CMake dependency build
-        uses: actions/cache@v6
-        with:
-          key: ${{env.deps_build_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
-          path: |
-            ${{github.workspace}}/build/_deps/*-build
-            ${{github.workspace}}/build/_deps/*-subbuild
-
+          arch: x64
       - name: Check CMake
         run: |
           cmake --version
@@ -67,21 +57,21 @@ jobs:
         run: >
           cmake --build build
           --config ${{matrix.cmake.config}}
-          --target ALL_BUILD
+          --target ${{matrix.cmake.build_target}}
           -j${{ steps.num_cores.outputs.cores }}
           -v
       - name: Test
         run: >
           cmake --build build
           --config ${{matrix.cmake.config}}
-          --target RUN_TESTS
+          --target ${{matrix.cmake.test_target}}
           -j${{ steps.num_cores.outputs.cores }}
           -v
       - name: Install
         run: >
           cmake --build build
           --config ${{matrix.cmake.config}}
-          --target INSTALL
+          --target ${{matrix.cmake.install_target}}
           -v
 
   amd64_windows_cmake_cpp:
