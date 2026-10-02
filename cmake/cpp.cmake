@@ -58,9 +58,6 @@ set(OR_TOOLS_LINK_OPTIONS)
 
 if(MSVC AND BUILD_SHARED_LIBS)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "OR_BUILD_DLL")
-  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "OR_ORTOOLS_PROTO_DLL=__declspec(dllimport)")
- else()
-  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "OR_ORTOOLS_PROTO_DLL=")
 endif()
 
 # Optional built-in components
@@ -778,6 +775,13 @@ if(BUILD_CORE)
     target_sources(ortools_core PRIVATE
       ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/core_version.cpp)
   endif()
+
+  if(MSVC AND BUILD_SHARED_LIBS)
+    target_compile_definitions(ortools_core PUBLIC "OR_ORTOOLS_DLL=__declspec(dllimport)")
+  else()
+    target_compile_definitions(ortools_core PUBLIC "OR_ORTOOLS_PROTO_DLL=")
+  endif()
+
   target_link_libraries(ortools PUBLIC ortools_core)
 endif()
 
