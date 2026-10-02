@@ -98,7 +98,7 @@ function build_dotnet() {
 
   echo -n "Build .Net..." | tee -a build.log
   cmake -S. -Btemp_meta_dotnet -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
-  -DBUILD_DOTNET=ON -DUSE_DOTNET_472=ON -DUNIVERSAL_DOTNET_PACKAGE=ON
+  -DBUILD_DOTNET=ON -DUNIVERSAL_DOTNET_PACKAGE=ON
   cp "${ROOT_DIR}"/export/Google.OrTools.runtime.*.nupkg "${ROOT_DIR}/temp_meta_dotnet/dotnet/packages/"
   cmake --build temp_meta_dotnet
   echo "DONE" | tee -a build.log
