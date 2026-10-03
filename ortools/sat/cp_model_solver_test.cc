@@ -1059,6 +1059,110 @@ TEST(SolveCpModelTest, IntProdWithEnforcementLiteralButNoTerms) {
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
 }
 
+TEST(SolveCpModelTest, LinMaxObjectiveMatchesReturnedSolution) {
+  // Replacing t = max(x, 2 * y) with precedences allows slack in t. Fixed
+  // search chooses t = 20, x = 10, y = 0, but postsolve changes t to 10.
+  // The objective must be preserved for intermediate solutions as well.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 30 ] }
+    constraints {
+      lin_max {
+        target { vars: 2 coeffs: 1 }
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 2 }
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 0, 10 ]
+      }
+    }
+    objective {
+      vars: [ 0, 1, 2 ]
+      coeffs: [ -1, -2, 1 ]
+      offset: 7
+      scaling_factor: 1
+    }
+    search_strategy {
+      exprs { vars: 2 coeffs: 1 }
+      exprs { vars: 0 coeffs: 1 }
+      exprs { vars: 1 coeffs: 1 }
+      domain_reduction_strategy: SELECT_MAX_VALUE
+    }
+  )pb");
+  for (const bool negate_target : {false, true}) {
+    for (const bool maximize : {false, true}) {
+      for (const bool stop_after_first_solution : {false, true}) {
+        SCOPED_TRACE(testing::Message() << "negate_target=" << negate_target
+                                        << ", maximize=" << maximize
+                                        << ", stop_after_first_solution="
+                                        << stop_after_first_solution);
+        CpModelProto model_proto = initial_model;
+        if (negate_target) {
+          model_proto.mutable_variables(2)->set_domain(0, -30);
+          model_proto.mutable_variables(2)->set_domain(1, 0);
+          model_proto.mutable_constraints(0)
+              ->mutable_lin_max()
+              ->mutable_target()
+              ->set_coeffs(0, -1);
+          model_proto.mutable_objective()->set_coeffs(2, -1);
+          model_proto.mutable_search_strategy(0)->mutable_exprs(0)->set_coeffs(
+              0, -1);
+        }
+        if (maximize) {
+          model_proto.mutable_objective()->set_scaling_factor(-1);
+        }
+        const auto objective_value = [&](const CpSolverResponse& response) {
+          const int64_t target =
+              negate_target ? -response.solution(2) : response.solution(2);
+          const int64_t value =
+              target - response.solution(0) - 2 * response.solution(1) + 7;
+          return maximize ? -value : value;
+        };
+        SatParameters params;
+        params.set_num_workers(1);
+        params.set_search_branching(SatParameters::FIXED_SEARCH);
+        params.set_stop_after_first_solution(stop_after_first_solution);
+        Model model;
+        model.Add(NewSatParameters(params));
+        int num_solutions = 0;
+        double previous_objective = 0;
+        model.Add(
+            NewFeasibleSolutionObserver([&](const CpSolverResponse& response) {
+              EXPECT_TRUE(SolutionIsFeasible(model_proto, response.solution()));
+              EXPECT_EQ(response.objective_value(), objective_value(response));
+              if (num_solutions > 0) {
+                if (maximize) {
+                  EXPECT_GT(response.objective_value(), previous_objective);
+                } else {
+                  EXPECT_LT(response.objective_value(), previous_objective);
+                }
+              }
+              previous_objective = response.objective_value();
+              ++num_solutions;
+            }));
+        const CpSolverResponse response = SolveCpModel(model_proto, &model);
+        ASSERT_GT(num_solutions, 0);
+        ASSERT_THAT(response.status(),
+                    AnyOf(CpSolverStatus::FEASIBLE, CpSolverStatus::OPTIMAL));
+        EXPECT_TRUE(SolutionIsFeasible(model_proto, response.solution()));
+        EXPECT_EQ(response.objective_value(), objective_value(response));
+        EXPECT_EQ(response.objective_value(), previous_objective);
+        if (!stop_after_first_solution) {
+          EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+          EXPECT_EQ(response.objective_value(), maximize ? -1 : 1);
+          EXPECT_EQ(response.best_objective_bound(),
+                    response.objective_value());
+        }
+      }
+    }
+  }
+}
+
 TEST(SolveCpModelTest, LinMaxObjectiveDomainLowerBoundInfeasible) {
   const CpModelProto model_proto = ParseTestProto(R"pb(
     variables { domain: [ 0, 5 ] }

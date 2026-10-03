@@ -1332,23 +1332,10 @@ bool CpConstraintPresolver::PresolveLinMax(int c, ConstraintProto* ct) {
     return RemoveConstraint(ct);
   }
 
-  // If the target is only used in the objective, and safe, we can simplify the
-  // constraint.
-  if (linear_target_domain_contains_max_domain &&
-      context_->VariableWithCostIsUniqueAndRemovable(target.vars(0)) &&
-      (target.coeffs(0) > 0) ==
-          (context_->ObjectiveCoeff(target.vars(0)) > 0)) {
-    context_->UpdateRuleStats("lin_max: rewrite with precedences");
-    for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
-      LinearConstraintProto* prec = context_->AddConstraint()->mutable_linear();
-      prec->add_domain(0);
-      prec->add_domain(kint64max);
-      AddLinearExpressionToLinearConstraint(target, 1, prec);
-      AddLinearExpressionToLinearConstraint(expr, -1, prec);
-    }
-    context_->NewMappingConstraint(*ct, __FILE__, __LINE__);
-    return RemoveConstraint(ct);
-  }
+  // Keep the equality when the target is used in the objective. Replacing it
+  // with precedences preserves the optimum but allows slack in intermediate
+  // solutions. PostsolveLinMax() would then change the target and its cost,
+  // breaking the objective-preserving correspondence with the original model.
 
   // Deal with fixed target case.
   if (target_min == target_max) {
