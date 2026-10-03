@@ -108,6 +108,16 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         model.AddSameActivityGroup([1, 2, 3])
         model.AddSameActivityGroup((1, 2))
 
+    def testApplyLocksAcceptsPythonList(self):
+        # Companion coverage for the Span<const int64_t> typemap (ApplyLocks),
+        # so int and int64_t registrations stay symmetric.
+        manager = pywrapcp.RoutingIndexManager(5, 1, 0)
+        model = pywrapcp.RoutingModel(manager)
+        end_var = model.ApplyLocks([1, 2, 3])
+        self.assertIsNotNone(end_var)
+        end_var_tuple = model.ApplyLocks((1, 2))
+        self.assertIsNotNone(end_var_tuple)
+
     def testSolve(self):
         manager = pywrapcp.RoutingIndexManager(42, 3, 7)
         self.assertIsNotNone(manager)

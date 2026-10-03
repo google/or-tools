@@ -89,11 +89,14 @@ PY_LIST_INPUT_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
 PY_LIST_INPUT_OUTPUT_TYPEMAP(std::string, SwigString_Check, SwigString_FromString);
 
 // absl::Span<const T> input. Several RoutingModel APIs take Span (e.g.
-// AddSameActivityGroup). Without a typemap, SWIG exposes the raw C++ type and
-// Python list/tuple arguments fail with:
+// AddSameActivityGroup for Span<const int>, ApplyLocks for Span<const
+// int64_t>). Without a typemap, SWIG exposes the raw C++ type and Python
+// list/tuple arguments fail with:
 //   TypeError: argument 2 of type 'absl::Span< int const >'
-// Reuse the same sequence conversion as std::vector, keep a temporary vector
-// for the duration of the call, and view it as a Span.
+// Reuse the same sequence conversion as std::vector. The typemap's local
+// std::vector temp lives for the full wrapped call (SWIG "in" typemap
+// lifetime), so MakeConstSpan(temp) is safe: the view is only consumed
+// synchronously by the C++ callee before temp is destroyed.
 %{
 #include "absl/types/span.h"
 %}
