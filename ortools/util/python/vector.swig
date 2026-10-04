@@ -88,6 +88,55 @@ PY_LIST_INPUT_OUTPUT_TYPEMAP(int64_t, SwigPyIntOrLong_Check, PyLong_FromLongLong
 PY_LIST_INPUT_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
 PY_LIST_INPUT_OUTPUT_TYPEMAP(std::string, SwigString_Check, SwigString_FromString);
 
+// absl::Span<const T> input. Several RoutingModel APIs take Span (e.g.
+// AddSameActivityGroup for Span<const int>, ApplyLocks for Span<const
+// int64_t>). Without a typemap, SWIG exposes the raw C++ type and Python
+// list/tuple arguments fail with:
+//   TypeError: argument 2 of type 'absl::Span< int const >'
+// Reuse the same sequence conversion as std::vector. The typemap's local
+// std::vector temp lives for the full wrapped call (SWIG "in" typemap
+// lifetime), so MakeConstSpan(temp) is safe: the view is only consumed
+// synchronously by the C++ callee before temp is destroyed. The callee
+// must not retain the Span (e.g. store it beyond the call); this typemap
+// would be unsafe for any API that did.
+//
+// Empty list/tuple is an intentional typecheck match (size == 0 => match):
+// the C++ Span APIs treat empty as a no-op (AddSameActivityGroup returns
+// early for size <= 1; ApplyLocks returns nullptr). Covered by ([]) cases
+// in pywraprouting_test.
+%{
+#include "absl/types/span.h"
+%}
+%define PY_SPAN_CONST_INPUT_TYPEMAP(type, checker)
+%typecheck(SWIG_TYPECHECK_POINTER) absl::Span<const type> {
+  if (!PyTuple_Check($input) && !PyList_Check($input)) {
+    $1 = 0;
+  } else {
+    // Empty sequences match: size == 0 makes the loop a no-op and
+    // (i == size) true. Intentional — see comment above.
+    const bool is_tuple = PyTuple_Check($input);
+    const size_t size = is_tuple ? PyTuple_Size($input) : PyList_Size($input);
+    size_t i = 0;
+    while (i < size && checker(is_tuple ? PyTuple_GetItem($input, i)
+                                        : PyList_GetItem($input, i))) {
+      ++i;
+    }
+    $1 = i == size;
+  }
+}
+%typemap(in) absl::Span<const type> (std::vector<type> temp) {
+  if (!vector_input_helper($input, &temp, PyObjAs<type>)) {
+    if (!PyErr_Occurred())
+      SWIG_Error(SWIG_TypeError, "sequence(type) expected");
+    return NULL;
+  }
+  $1 = absl::MakeConstSpan(temp);
+}
+%enddef  // PY_SPAN_CONST_INPUT_TYPEMAP
+
+PY_SPAN_CONST_INPUT_TYPEMAP(int, PyInt_Check);
+PY_SPAN_CONST_INPUT_TYPEMAP(int64_t, SwigPyIntOrLong_Check);
+
 // Add conversion list(tuple(int)) -> std::vector<std::vector>.
 // TODO(user): see if we can also get rid of this and utilize already
 // existing code.
