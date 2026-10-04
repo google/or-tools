@@ -96,7 +96,14 @@ PY_LIST_INPUT_OUTPUT_TYPEMAP(std::string, SwigString_Check, SwigString_FromStrin
 // Reuse the same sequence conversion as std::vector. The typemap's local
 // std::vector temp lives for the full wrapped call (SWIG "in" typemap
 // lifetime), so MakeConstSpan(temp) is safe: the view is only consumed
-// synchronously by the C++ callee before temp is destroyed.
+// synchronously by the C++ callee before temp is destroyed. The callee
+// must not retain the Span (e.g. store it beyond the call); this typemap
+// would be unsafe for any API that did.
+//
+// Empty list/tuple is an intentional typecheck match (size == 0 => match):
+// the C++ Span APIs treat empty as a no-op (AddSameActivityGroup returns
+// early for size <= 1; ApplyLocks returns nullptr). Covered by ([]) cases
+// in pywraprouting_test.
 %{
 #include "absl/types/span.h"
 %}
@@ -105,6 +112,8 @@ PY_LIST_INPUT_OUTPUT_TYPEMAP(std::string, SwigString_Check, SwigString_FromStrin
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     $1 = 0;
   } else {
+    // Empty sequences match: size == 0 makes the loop a no-op and
+    // (i == size) true. Intentional — see comment above.
     const bool is_tuple = PyTuple_Check($input);
     const size_t size = is_tuple ? PyTuple_Size($input) : PyList_Size($input);
     size_t i = 0;

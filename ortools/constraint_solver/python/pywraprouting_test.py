@@ -107,6 +107,16 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         model = pywrapcp.RoutingModel(manager)
         model.AddSameActivityGroup([1, 2, 3])
         model.AddSameActivityGroup((1, 2))
+        # Empty Span is accepted explicitly (C++ early-returns for size <= 1).
+        model.AddSameActivityGroup([])
+        model.AddSameActivityGroup(())
+        # Negative coverage: typemap must still reject non-sequences / bad elems.
+        with self.assertRaises(TypeError):
+            model.AddSameActivityGroup(1)
+        with self.assertRaises(TypeError):
+            model.AddSameActivityGroup("123")
+        with self.assertRaises(TypeError):
+            model.AddSameActivityGroup([1, "x"])
 
     def testApplyLocksAcceptsPythonList(self):
         # Companion coverage for the Span<const int64_t> typemap (ApplyLocks),
@@ -115,8 +125,23 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         model = pywrapcp.RoutingModel(manager)
         end_var = model.ApplyLocks([1, 2, 3])
         self.assertIsNotNone(end_var)
+        # ApplyLocks returns NextVar of the last lock; catch a conversion that
+        # hands back a dummy object without applying locks.
+        self.assertEqual(end_var, model.NextVar(3))
+        # Locked indices remain valid routing indices (usable end-of-chain).
+        self.assertEqual(3, manager.IndexToNode(3))
         end_var_tuple = model.ApplyLocks((1, 2))
         self.assertIsNotNone(end_var_tuple)
+        self.assertEqual(end_var_tuple, model.NextVar(2))
+        # Empty Span accepted: ApplyLocks returns None when there are no locks.
+        self.assertIsNone(model.ApplyLocks([]))
+        self.assertIsNone(model.ApplyLocks(()))
+        with self.assertRaises(TypeError):
+            model.ApplyLocks(1)
+        with self.assertRaises(TypeError):
+            model.ApplyLocks("123")
+        with self.assertRaises(TypeError):
+            model.ApplyLocks([1, "x"])
 
     def testSolve(self):
         manager = pywrapcp.RoutingIndexManager(42, 3, 7)
