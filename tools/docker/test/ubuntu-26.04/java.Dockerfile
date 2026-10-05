@@ -12,7 +12,7 @@ RUN apt-get update -qq \
 && DEBIAN_FRONTEND=noninteractive apt-get install -yq openjdk-21-jdk maven \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-ENV JAVA_HOME=/usr/lib/jvm/java-openjdk
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
 
 WORKDIR /root
 ADD or-tools_amd64_ubuntu-26.04_java_v*.tar.gz .
