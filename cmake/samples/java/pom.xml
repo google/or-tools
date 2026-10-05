@@ -33,6 +33,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <exec.mainClass>com.google.ortools.App</exec.mainClass>
     <maven.compiler.release>21</maven.compiler.release>
   </properties>
 

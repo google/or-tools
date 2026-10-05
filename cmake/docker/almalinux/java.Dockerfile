@@ -41,4 +41,5 @@ FROM install_devel AS install_build
 RUN mvn compile
 
 FROM install_build AS install_test
+RUN mvn exec:java
 RUN mvn test
