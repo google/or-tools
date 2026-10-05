@@ -135,7 +135,7 @@ echo DONE | tee.exe -a build.log
 
 echo Build cpp: ... | tee.exe -a build.log
 set Platform=any
-cmake -S. -Btemp_cpp -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DEPS=ON
+cmake -S. -Btemp_cpp -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DEPS=ON
 cmake --build temp_cpp --config Release
 echo DONE | tee.exe -a build.log
 
@@ -175,7 +175,7 @@ echo DONE | tee.exe -a build.log
 
 echo Build dotnet: ... | tee.exe -a build.log
 set Platform=any
-cmake -S. -Btemp_dotnet -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOTNET=ON -DUSE_DOTNET_472=ON
+cmake -S. -Btemp_dotnet -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOTNET=ON -DUSE_DOTNET_472=ON
 cmake --build temp_dotnet --config Release -j8 -v
 echo DONE | tee.exe -a build.log
 
@@ -224,7 +224,7 @@ rm.exe -rf temp_java
 echo DONE | tee.exe -a build.log
 
 echo Build java: ... | tee.exe -a build.log
-cmake -S. -Btemp_java -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_JAVA=ON -DSKIP_GPG=OFF
+cmake -S. -Btemp_java -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_JAVA=ON -DSKIP_GPG=OFF
 cmake --build temp_java --config Release -j8 -v
 echo DONE | tee.exe -a build.log
 REM cmake --build temp_java --config Release --target RUN_TEST || exit 1
@@ -271,7 +271,7 @@ rm.exe -rf temp_python3%1
 echo Cleaning Python 3.%1...DONE | tee.exe -a build.log
 
 echo Build Python 3.%1... | tee.exe -a build.log
-cmake -S. -Btemp_python3%1 -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON
+cmake -S. -Btemp_python3%1 -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON
 REM -DPython3_ROOT_DIR=C:\python3%1-64
 cmake --build temp_python3%1 --config Release -j8 -v
 echo Build Python 3.%1...DONE | tee.exe -a build.log
@@ -393,7 +393,7 @@ FOR %%v IN (10 11 12 13 14) DO (
   echo Cleaning Python 3.%%v...DONE | tee.exe -a build.log
 
   echo Build Python 3.%%v... | tee.exe -a build.log
-  cmake -S. -Btemp_python3%%v -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON -DPython3_ROOT_DIR=C:\python3%%v-64
+  cmake -S. -Btemp_python3%%v -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON -DPython3_ROOT_DIR=C:\python3%%v-64
   cmake --build temp_python3%%v --config Release -j8 -v
   echo Build Python 3.%%v...DONE | tee.exe -a build.log
 

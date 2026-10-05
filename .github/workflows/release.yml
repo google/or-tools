@@ -71,7 +71,10 @@ jobs:
         echo "$HOME/.local/bin" >> $GITHUB_PATH
     - name: Setup windows
       if: ${{matrix.platform.os == 'windows'}}
-      run: dir
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
     - id: num_cores
       uses: ./.github/actions/num_cores
     - name: Setup CMake env
