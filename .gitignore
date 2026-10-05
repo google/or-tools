@@ -34,6 +34,7 @@ objs/
 cmake/protobuf-*.cmake
 classes/
 packages/
+target/
 temp_test/
 temp_fz/
 temp_fz_test/

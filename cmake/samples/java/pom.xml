@@ -40,7 +40,7 @@
     <dependency>
     <groupId>com.google.ortools</groupId>
     <artifactId>ortools-java</artifactId>
-    <version>[10.0,)</version>
+    <version>[10.0.0-alpha,)</version>
       <type>jar</type>
       <scope>compile</scope>
     </dependency>

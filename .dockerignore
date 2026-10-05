@@ -52,6 +52,7 @@ classes
 lib
 objs
 packages
+target/
 build/
 build_cmake/
 build_all/
