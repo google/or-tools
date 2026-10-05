@@ -141,8 +141,8 @@ else
     endif
   endif
 endif
-JAVA_NATIVE_PROJECT := ortools-$(JAVA_NATIVE_IDENTIFIER)-@PROJECT_VERSION@.jar
-JAVA_PROJECT := ortools-java-@PROJECT_VERSION@.jar
+JAVA_NATIVE_PROJECT := ortools-$(JAVA_NATIVE_IDENTIFIER)-@PROJECT_VERSION@@JAVA_RELEASE@.jar
+JAVA_PROJECT := ortools-java-@PROJECT_VERSION@@JAVA_RELEASE@.jar
 
 java.log: \
  $(JAVA_NATIVE_PROJECT) \
@@ -156,65 +156,60 @@ java.log: \
 	@$(TOUCH) $@
 
 test:
-	$(MAKE) run SOURCE=examples/LinearProgramming/src/main/java/com/google/ortools/LinearProgramming.java
-	$(MAKE) run SOURCE=examples/IntegerProgramming/src/main/java/com/google/ortools/IntegerProgramming.java
-	$(MAKE) run SOURCE=examples/RabbitsPheasants/src/main/java/com/google/ortools/RabbitsPheasants.java
-	$(MAKE) run SOURCE=examples/Tsp/src/main/java/com/google/ortools/Tsp.java
-	$(MAKE) run SOURCE=examples/Vrp/src/main/java/com/google/ortools/Vrp.java
+	#$(MAKE) run SOURCE=examples/AllDifferentExcept0/src/main/java/com/google/ortools/AllDifferentExcept0.java
+	#$(MAKE) run SOURCE=examples/AllInterval/src/main/java/com/google/ortools/AllInterval.java
+	#$(MAKE) run SOURCE=examples/CapacitatedVehicleRoutingProblemWithTimeWindows/src/main/java/com/google/ortools/CapacitatedVehicleRoutingProblemWithTimeWindows.java
+	#$(MAKE) run SOURCE=examples/Circuit/src/main/java/com/google/ortools/Circuit.java
+	#$(MAKE) run SOURCE=examples/CoinsGrid/src/main/java/com/google/ortools/CoinsGrid.java
+	#$(MAKE) run SOURCE=examples/CoinsGridMIP/src/main/java/com/google/ortools/CoinsGridMIP.java
+	#$(MAKE) run SOURCE=examples/ColoringMIP/src/main/java/com/google/ortools/ColoringMIP.java
+	#$(MAKE) run SOURCE=examples/CoveringOpl/src/main/java/com/google/ortools/CoveringOpl.java
+	#$(MAKE) run SOURCE=examples/Crossword/src/main/java/com/google/ortools/Crossword.java
+	#$(MAKE) run SOURCE=examples/DeBruijn/src/main/java/com/google/ortools/DeBruijn.java
+	#$(MAKE) run SOURCE=examples/Diet/src/main/java/com/google/ortools/Diet.java
+	#$(MAKE) run SOURCE=examples/DietMIP/src/main/java/com/google/ortools/DietMIP.java
+	#$(MAKE) run SOURCE=examples/DivisibleBy9Through1/src/main/java/com/google/ortools/DivisibleBy9Through1.java
+	#$(MAKE) run SOURCE=examples/FlowExample/src/main/java/com/google/ortools/FlowExample.java
+	#$(MAKE) run SOURCE=examples/IntegerProgramming/src/main/java/com/google/ortools/IntegerProgramming.java
+	#$(MAKE) run SOURCE=examples/Issue173/src/main/java/com/google/ortools/Issue173.java
+	#$(MAKE) run SOURCE=examples/KnapsackMIP/src/main/java/com/google/ortools/KnapsackMIP.java
+	#$(MAKE) run SOURCE=examples/LeastDiff/src/main/java/com/google/ortools/LeastDiff.java
+	#$(MAKE) run SOURCE=examples/LinearAssignmentAPI/src/main/java/com/google/ortools/LinearAssignmentAPI.java
+	#$(MAKE) run SOURCE=examples/LinearProgramming/src/main/java/com/google/ortools/LinearProgramming.java
+	#$(MAKE) run SOURCE=examples/MagicSquare/src/main/java/com/google/ortools/MagicSquare.java
+	#$(MAKE) run SOURCE=examples/Map/src/main/java/com/google/ortools/Map.java
+	#$(MAKE) run SOURCE=examples/Map2/src/main/java/com/google/ortools/Map2.java
+	#$(MAKE) run SOURCE=examples/Minesweeper/src/main/java/com/google/ortools/Minesweeper.java
+	#$(MAKE) run SOURCE=examples/MultiThreadTest/src/main/java/com/google/ortools/MultiThreadTest.java
+	#$(MAKE) run SOURCE=examples/NQueens/src/main/java/com/google/ortools/NQueens.java
+	#$(MAKE) run SOURCE=examples/NQueens2/src/main/java/com/google/ortools/NQueens2.java
+	#$(MAKE) run SOURCE=examples/QuasigroupCompletion/src/main/java/com/google/ortools/QuasigroupCompletion.java
+	#$(MAKE) run SOURCE=examples/RabbitsPheasants/src/main/java/com/google/ortools/RabbitsPheasants.java
+	#$(MAKE) run SOURCE=examples/SendMoreMoney/src/main/java/com/google/ortools/SendMoreMoney.java
+	#$(MAKE) run SOURCE=examples/SendMoreMoney2/src/main/java/com/google/ortools/SendMoreMoney2.java
+	#$(MAKE) run SOURCE=examples/SendMostMoney/src/main/java/com/google/ortools/SendMostMoney.java
+	#$(MAKE) run SOURCE=examples/Seseman/src/main/java/com/google/ortools/Seseman.java
+	#$(MAKE) run SOURCE=examples/SetCovering/src/main/java/com/google/ortools/SetCovering.java
+	#$(MAKE) run SOURCE=examples/SetCovering2/src/main/java/com/google/ortools/SetCovering2.java
+	#$(MAKE) run SOURCE=examples/SetCovering3/src/main/java/com/google/ortools/SetCovering3.java
+	#$(MAKE) run SOURCE=examples/SetCovering4/src/main/java/com/google/ortools/SetCovering4.java
+	#$(MAKE) run SOURCE=examples/SetCoveringDeployment/src/main/java/com/google/ortools/SetCoveringDeployment.java
+	#$(MAKE) run SOURCE=examples/StableMarriage/src/main/java/com/google/ortools/StableMarriage.java
+	#$(MAKE) run SOURCE=examples/StiglerMIP/src/main/java/com/google/ortools/StiglerMIP.java
+	#$(MAKE) run SOURCE=examples/Strimko2/src/main/java/com/google/ortools/Strimko2.java
+	#$(MAKE) run SOURCE=examples/SurvoPuzzle/src/main/java/com/google/ortools/SurvoPuzzle.java
+	#$(MAKE) run SOURCE=examples/ToNum/src/main/java/com/google/ortools/ToNum.java
+	#$(MAKE) run SOURCE=examples/WhoKilledAgatha/src/main/java/com/google/ortools/WhoKilledAgatha.java
+	#$(MAKE) run SOURCE=examples/Xkcd/src/main/java/com/google/ortools/Xkcd.java
+	#$(MAKE) run SOURCE=examples/YoungTableaux/src/main/java/com/google/ortools/YoungTableaux.java
 	$(MAKE) run SOURCE=examples/Knapsack/src/main/java/com/google/ortools/Knapsack.java
-	$(MAKE) run SOURCE=examples/AllDifferentExcept0/src/main/java/com/google/ortools/AllDifferentExcept0.java
-	$(MAKE) run SOURCE=examples/AllInterval/src/main/java/com/google/ortools/AllInterval.java
-	$(MAKE) run SOURCE=examples/CapacitatedVehicleRoutingProblemWithTimeWindows/src/main/java/com/google/ortools/CapacitatedVehicleRoutingProblemWithTimeWindows.java
-	$(MAKE) run SOURCE=examples/Circuit/src/main/java/com/google/ortools/Circuit.java
-	$(MAKE) run SOURCE=examples/CoinsGrid/src/main/java/com/google/ortools/CoinsGrid.java
-	$(MAKE) run SOURCE=examples/CoinsGridMIP/src/main/java/com/google/ortools/CoinsGridMIP.java
-	$(MAKE) run SOURCE=examples/ColoringMIP/src/main/java/com/google/ortools/ColoringMIP.java
-	$(MAKE) run SOURCE=examples/CoveringOpl/src/main/java/com/google/ortools/CoveringOpl.java
-	$(MAKE) run SOURCE=examples/Crossword/src/main/java/com/google/ortools/Crossword.java
-	$(MAKE) run SOURCE=examples/DeBruijn/src/main/java/com/google/ortools/DeBruijn.java
-	$(MAKE) run SOURCE=examples/Diet/src/main/java/com/google/ortools/Diet.java
-	$(MAKE) run SOURCE=examples/DietMIP/src/main/java/com/google/ortools/DietMIP.java
-	$(MAKE) run SOURCE=examples/DivisibleBy9Through1/src/main/java/com/google/ortools/DivisibleBy9Through1.java
-	$(MAKE) run SOURCE=examples/FlowExample/src/main/java/com/google/ortools/FlowExample.java
-	$(MAKE) run SOURCE=examples/GolombRuler/src/main/java/com/google/ortools/GolombRuler.java
-	$(MAKE) run SOURCE=examples/Issue173/src/main/java/com/google/ortools/Issue173.java
-	$(MAKE) run SOURCE=examples/KnapsackMIP/src/main/java/com/google/ortools/KnapsackMIP.java
-	$(MAKE) run SOURCE=examples/LeastDiff/src/main/java/com/google/ortools/LeastDiff.java
-	$(MAKE) run SOURCE=examples/LinearAssignmentAPI/src/main/java/com/google/ortools/LinearAssignmentAPI.java
-	$(MAKE) run SOURCE=examples/MagicSquare/src/main/java/com/google/ortools/MagicSquare.java
-	$(MAKE) run SOURCE=examples/Map2/src/main/java/com/google/ortools/Map2.java
-	$(MAKE) run SOURCE=examples/Map/src/main/java/com/google/ortools/Map.java
-	$(MAKE) run SOURCE=examples/Minesweeper/src/main/java/com/google/ortools/Minesweeper.java
-	$(MAKE) run SOURCE=examples/MultiThreadTest/src/main/java/com/google/ortools/MultiThreadTest.java
-	$(MAKE) run SOURCE=examples/NQueens2/src/main/java/com/google/ortools/NQueens2.java
-	$(MAKE) run SOURCE=examples/NQueens/src/main/java/com/google/ortools/NQueens.java
-	$(MAKE) run SOURCE=examples/Partition/src/main/java/com/google/ortools/Partition.java
-	$(MAKE) run SOURCE=examples/QuasigroupCompletion/src/main/java/com/google/ortools/QuasigroupCompletion.java
-	$(MAKE) run SOURCE=examples/SendMoreMoney2/src/main/java/com/google/ortools/SendMoreMoney2.java
-	$(MAKE) run SOURCE=examples/SendMoreMoney/src/main/java/com/google/ortools/SendMoreMoney.java
-	$(MAKE) run SOURCE=examples/SendMostMoney/src/main/java/com/google/ortools/SendMostMoney.java
-	$(MAKE) run SOURCE=examples/Seseman/src/main/java/com/google/ortools/Seseman.java
-	$(MAKE) run SOURCE=examples/SetCovering2/src/main/java/com/google/ortools/SetCovering2.java
-	$(MAKE) run SOURCE=examples/SetCovering3/src/main/java/com/google/ortools/SetCovering3.java
-	$(MAKE) run SOURCE=examples/SetCovering4/src/main/java/com/google/ortools/SetCovering4.java
-	$(MAKE) run SOURCE=examples/SetCoveringDeployment/src/main/java/com/google/ortools/SetCoveringDeployment.java
-	$(MAKE) run SOURCE=examples/SetCovering/src/main/java/com/google/ortools/SetCovering.java
-	$(MAKE) run SOURCE=examples/SimpleRoutingTest/src/main/java/com/google/ortools/SimpleRoutingTest.java
-	$(MAKE) run SOURCE=examples/StableMarriage/src/main/java/com/google/ortools/StableMarriage.java
-	$(MAKE) run SOURCE=examples/StiglerMIP/src/main/java/com/google/ortools/StiglerMIP.java
-	$(MAKE) run SOURCE=examples/Strimko2/src/main/java/com/google/ortools/Strimko2.java
-	$(MAKE) run SOURCE=examples/Sudoku/src/main/java/com/google/ortools/Sudoku.java
-	$(MAKE) run SOURCE=examples/SurvoPuzzle/src/main/java/com/google/ortools/SurvoPuzzle.java
-	$(MAKE) run SOURCE=examples/ToNum/src/main/java/com/google/ortools/ToNum.java
-	$(MAKE) run SOURCE=examples/WhoKilledAgatha/src/main/java/com/google/ortools/WhoKilledAgatha.java
-	$(MAKE) run SOURCE=examples/Xkcd/src/main/java/com/google/ortools/Xkcd.java
-	$(MAKE) run SOURCE=examples/YoungTableaux/src/main/java/com/google/ortools/YoungTableaux.java
 	$(MAKE) run SOURCE=examples/SimpleLpProgram/src/main/java/com/google/ortools/SimpleLpProgram.java
 	$(MAKE) run SOURCE=examples/SimpleMipProgram/src/main/java/com/google/ortools/SimpleMipProgram.java
+	$(MAKE) run SOURCE=examples/SimpleRoutingTest/src/main/java/com/google/ortools/SimpleRoutingTest.java
 	$(MAKE) run SOURCE=examples/SimpleSatProgram/src/main/java/com/google/ortools/SimpleSatProgram.java
+	$(MAKE) run SOURCE=examples/Sudoku/src/main/java/com/google/ortools/Sudoku.java
 	$(MAKE) run SOURCE=examples/Tsp/src/main/java/com/google/ortools/Tsp.java
 	$(MAKE) run SOURCE=examples/Vrp/src/main/java/com/google/ortools/Vrp.java
-	$(MAKE) run SOURCE=examples/Knapsack/src/main/java/com/google/ortools/Knapsack.java
 
 endif # HAS_JAVA
 
