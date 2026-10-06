@@ -23,24 +23,21 @@ env:
 jobs:
 ###############################################################################
 # Build Native Delivery
-  delivery:
+  native_delivery:
     strategy:
       fail-fast: false
       matrix:
         platform: [
-          { runner: "ubuntu-22.04",     arch: "amd64", os: "linux",   generator: "Ninja" },
-          { runner: "ubuntu-22.04-arm", arch: "arm64", os: "linux",   generator: "Ninja" },
-          { runner: "macos-15-intel",   arch: "amd64", os: "macos",   generator: "Ninja" },
-          { runner: "macos-latest",     arch: "arm64", os: "macos",   generator: "Ninja" },
-          { runner: "windows-latest",   arch: "amd64", os: "windows", generator: "Visual Studio 18 2026" }
+          { runner: "ubuntu-22.04",     arch: "amd64", os: "linux" },
+          { runner: "ubuntu-22.04-arm", arch: "arm64", os: "linux" },
+          { runner: "macos-15-intel",   arch: "amd64", os: "macos" },
+          { runner: "macos-latest",     arch: "arm64", os: "macos" },
+          { runner: "windows-latest",   arch: "amd64", os: "windows" }
         ]
         target: [
-          { name: "cpp",       lang: "cpp" },
-          { name: "dotnet",    lang: "dotnet" },
-          { name: "java",      lang: "java" },
-          #{ name: "python310", lang: "python", python_version: "10" },
-          { name: "python312", lang: "python", python_version: "12" },
-          #{ name: "python314", lang: "python", python_version: "14" }
+          { name: "cpp",       lang: "cpp",    version: "20" },
+          { name: "dotnet",    lang: "dotnet", version: "8.0.x" },
+          { name: "java",      lang: "java",   version: "21" },
         ]
     name: Build(${{matrix.platform.arch}}•${{matrix.platform.os}}•${{matrix.target.name}})
     runs-on: ${{matrix.platform.runner}}
@@ -50,102 +47,23 @@ jobs:
       with:
         credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
         set_cmake_sccache_launcher: true
-
-# SYSTEM BUILD DEPS
-    - name: Setup linux
-      if: ${{matrix.platform.os == 'linux'}}
-      run: |
-        sudo apt install -y ninja-build
-        wget -q "https://downloads.sourceforge.net/project/swig/swig/swig-4.5.1/swig-4.5.1.tar.gz" && tar xvf swig-4.5.1.tar.gz && rm swig-4.5.1.tar.gz
-        cd swig-4.5.1 && ./configure --prefix=$HOME/.local && make -j 4 && make install
-        rm -rf swig-4.5.1
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
-    - name: Setup macos
-      # can't use brew swig (4.4) since Director python support is broken on macos
-      # see: https://github.com/swig/swig/issues/3279
-      if: ${{matrix.platform.os == 'macos'}}
-      run: |
-        brew install ninja
-        wget -q https://downloads.sourceforge.net/project/swig/swig/swig-4.3.1/swig-4.3.1.tar.gz && tar xzvf swig-4.3.1.tar.gz && rm swig-4.3.1.tar.gz
-        cd swig-4.3.1 && ./configure --prefix=$HOME/.local && make -j 4 && make install
-        rm -rf swig-4.3.1
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
-    - name: Setup windows
-      if: ${{matrix.platform.os == 'windows'}}
-      uses: ilammy/msvc-dev-cmd@v1
+    - uses: ./.github/actions/setup
       with:
-        arch: x64
-
-    - id: num_cores
-      uses: ./.github/actions/num_cores
-    - name: Setup CMake env
-      run: echo "CMAKE_BUILD_PARALLEL_LEVEL=${{steps.num_cores.outputs.cores}}" >> $GITHUB_ENV
-
-# Setup .Net
-    - name: Setup .NET 8.0
-      uses: actions/setup-dotnet@v6
-      if: ${{matrix.target.lang == 'dotnet'}}
-      with:
-        dotnet-version: 8.0.x
-    - name: Check dotnet
-      if: ${{matrix.target.lang == 'dotnet'}}
-      run: dotnet --info
-
-# Setup Java
-    - uses: actions/setup-java@v6
-      if: ${{ matrix.target.lang == 'java'}}
-      with:
-        distribution: ${{env.JAVA_DISTRIBUTION}}
-        java-version: ${{env.JAVA_VERSION}}
-    - name: Check java
-      if: ${{matrix.target.lang == 'java'}}
-      run: |
-        java -version
-        mvn --version
-
-# Setup Python
-    - uses: actions/setup-python@v7
-      if: ${{matrix.target.lang == 'python'}}
-      with:
-        python-version: 3.${{matrix.target.python_version}}
-    - name: Install python3 deps
-      if: ${{matrix.target.lang == 'python'}}
-      run: python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas
-    - name: Setup Linux Python Env
-      if: ${{matrix.target.lang == 'python' && matrix.platform.os == 'linux'}}
-      run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-    - name: Setup MacOs Python Env
-      if: ${{matrix.target.lang == 'python' && matrix.platform.os == 'macos'}}
-      run: |
-        echo "$HOME/Library/Python/3.${{matrix.target.python_version}}/bin" >> $GITHUB_PATH
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
-    - name: Setup Windows Python Env
-      if: ${{matrix.target.lang == 'python' && matrix.platform.os == 'windows'}}
-      run: >
-        echo "$((Get-Item ~).FullName)/AppData/Roaming/Python/${{matrix.python.dir}}/Scripts" |
-        Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-    - name: Check Python
-      if: ${{matrix.target.lang == 'python'}}
-      run: python3 --version
-
-# Build Delivery
+        arch: ${{matrix.platform.arch}}
+        os: ${{matrix.platform.os}}
+        lang: ${{matrix.target.lang}}
+        version: ${{matrix.target.version}}
     - name: Build Linux ${{matrix.target.name}} Delivery
       if: ${{matrix.platform.os == 'linux'}}
-      run: ./tools/release/build_delivery_linux.sh ${{matrix.target.lang}} ${{matrix.target.python_version}}
+      run: ./tools/release/build_delivery_linux.sh ${{matrix.target.lang}} ${{matrix.target.version}}
     - name: Build MacOS ${{matrix.target.name}} Delivery
       if: ${{matrix.platform.os == 'macos'}}
-      run: ./tools/release/build_delivery_macos.sh ${{matrix.target.lang}} ${{matrix.target.python_version}}
+      run: ./tools/release/build_delivery_macos.sh ${{matrix.target.lang}} ${{matrix.target.version}}
     - name: Build Windows ${{matrix.target.name}} Delivery
       if: ${{matrix.platform.os == 'windows'}}
-      run: ./tools/release/build_delivery_windows.cmd ${{matrix.target.lang}} ${{matrix.target.python_version}}
-
-    - name: Check Unix export
-      if: ${{matrix.platform.os == 'linux' || matrix.platform.os == 'macos'}}
-      run: ls export
-    - name: Check Windows export
-      if: ${{matrix.platform.os == 'windows'}}
-      run: dir export
-# Upload Artifact
+      run: ./tools/release/build_delivery_windows.cmd ${{matrix.target.lang}} ${{matrix.target.version}}
+    - name: Check export dir
+      run: ls -R export
     - name: Upload Tarball Artifact
       uses: actions/upload-artifact@v7
       with:
@@ -160,99 +78,51 @@ jobs:
         if-no-files-found: error
         retention-days: 1
 
-
 ###############################################################################
 # Test Delivery
-  test:
+  test_native_delivery:
     strategy:
       fail-fast: false
       matrix:
         platform: [
-          { runner: "ubuntu-22.04",     arch: "amd64", os: "linux",   generator: "Ninja" },
-          { runner: "ubuntu-22.04-arm", arch: "arm64", os: "linux",   generator: "Ninja" },
-          { runner: "macos-15-intel",   arch: "amd64", os: "macos",   generator: "Ninja" },
-          { runner: "macos-latest",     arch: "arm64", os: "macos",   generator: "Ninja" },
-          { runner: "windows-latest",   arch: "amd64", os: "windows", generator: "Visual Studio 18 2026" }
+          { runner: "ubuntu-22.04",     arch: "amd64", os: "linux" },
+          { runner: "ubuntu-22.04-arm", arch: "arm64", os: "linux" },
+          { runner: "macos-15-intel",   arch: "amd64", os: "macos" },
+          { runner: "macos-latest",     arch: "arm64", os: "macos" },
+          { runner: "windows-latest",   arch: "amd64", os: "windows" }
         ]
         target: [
-          { name: "cpp",       lang: "cpp" },
-          { name: "dotnet",    lang: "dotnet" },
-          { name: "java",      lang: "java" },
-          #{ name: "python310", lang: "python", python_version: "10" },
-          { name: "python312", lang: "python", python_version: "12" },
-          #{ name: "python314", lang: "python", python_version: "14" }
+          { name: "cpp",       lang: "cpp",    version: "20" },
+          { name: "dotnet",    lang: "dotnet", version: "8.0.x" },
+          { name: "java",      lang: "java",   version: "21" },
         ]
     name: Test(${{matrix.platform.arch}}•${{matrix.platform.os}}•${{matrix.target.name}})
     runs-on: ${{matrix.platform.runner}}
-    needs: delivery
+    needs: native_delivery
     steps:
     - uses: actions/checkout@v7
-
-# SYSTEM BUILD DEPS
-    - name: Setup linux
-      if: ${{matrix.platform.os == 'linux'}}
-      run: sudo apt install -y ninja-build
-    - name: Setup macos
-      if: ${{matrix.platform.os == 'macos'}}
-      run: brew install ninja
-    - name: Setup windows
-      if: ${{matrix.platform.os == 'windows'}}
-      run: dir
-    - id: num_cores
-      uses: ./.github/actions/num_cores
-    - name: Setup CMake env
-      run: echo "CMAKE_BUILD_PARALLEL_LEVEL=${{steps.num_cores.outputs.cores}}" >> $GITHUB_ENV
-
-# Setup .Net
-    - name: Setup .NET 8.0
-      uses: actions/setup-dotnet@v6
-      if: ${{matrix.target.lang == 'dotnet'}}
+    - uses: ./.github/actions/setup
       with:
-        dotnet-version: 8.0.x
-    - name: Check dotnet
-      if: ${{matrix.target.lang == 'dotnet'}}
-      run: dotnet --info
-
-# Setup Java
-    - uses: actions/setup-java@v6
-      if: ${{ matrix.target.lang == 'java'}}
-      with:
-        distribution: ${{env.JAVA_DISTRIBUTION}}
-        java-version: ${{env.JAVA_VERSION}}
-    - name: Check java
-      if: ${{matrix.target.lang == 'java'}}
-      run: |
-        java -version
-        mvn --version
-
-# Setup Python
-    - uses: actions/setup-python@v7
-      if: ${{matrix.target.lang == 'python'}}
-      with:
-        python-version: 3.${{matrix.target.python_version}}
-    - name: Check Python
-      if: ${{matrix.target.lang == 'python'}}
-      run: python3 --version
-
-# Download Artifact
+        arch: ${{matrix.platform.arch}}
+        os: ${{matrix.platform.os}}
+        lang: ${{matrix.target.lang}}
+        version: ${{matrix.target.version}}
     - name: Download Tarball Artifact
       uses: actions/download-artifact@v8
       with:
         name: ortools-${{matrix.platform.arch}}-${{matrix.platform.os}}-${{matrix.target.name}}
         path: .
-    - name: Check Export dir
+    - name: Check export dir
       run: ls -R export
-
-# Test Delivery
     - name: Test Linux ${{matrix.target.name}} Delivery
       if: ${{matrix.platform.os == 'linux'}}
-      run: ./tools/release/test_delivery_linux.sh ${{matrix.target.lang}} ${{matrix.target.python_version}}
+      run: ./tools/release/test_delivery_linux.sh ${{matrix.target.lang}} ${{matrix.target.version}}
     - name: Test MacOS ${{matrix.target.name}} Delivery
       if: ${{matrix.platform.os == 'macos'}}
-      run: ./tools/release/test_delivery_macos.sh ${{matrix.target.lang}} ${{matrix.target.python_version}}
+      run: ./tools/release/test_delivery_macos.sh ${{matrix.target.lang}} ${{matrix.target.version}}
     - name: Test Windows ${{matrix.target.name}} Delivery
       if: ${{matrix.platform.os == 'windows'}}
-      run: ./tools/release/test_delivery_windows.cmd ${{matrix.target.lang}} ${{matrix.target.python_version}}
+      run: ./tools/release/test_delivery_windows.cmd ${{matrix.target.lang}} ${{matrix.target.version}}
 
 ###############################################################################
 # Build Meta Delivery
@@ -261,55 +131,24 @@ jobs:
       fail-fast: false
       matrix:
         target: [
-          { name: "dotnet", lang: "dotnet" },
-          { name: "java",   lang: "java" }
+          { name: "dotnet", lang: "dotnet", version: "8.0.x" },
+          { name: "java",   lang: "java",   version: "21" }
         ]
     name: Build(meta•${{matrix.target.name}})
     runs-on: ubuntu-22.04
-    needs: delivery
+    needs: native_delivery
     steps:
     - uses: actions/checkout@v7
     - uses: ./.github/actions/remote_cache
       with:
         credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
         set_cmake_sccache_launcher: true
-
-# SYSTEM BUILD DEPS
-    - name: Setup linux
-      run: |
-        sudo apt install -y ninja-build
-        wget -q "https://downloads.sourceforge.net/project/swig/swig/swig-4.5.1/swig-4.5.1.tar.gz" && tar xvf swig-4.5.1.tar.gz && rm swig-4.5.1.tar.gz
-        cd swig-4.5.1 && ./configure --prefix=$HOME/.local && make -j 4 && make install
-        rm -rf swig-4.5.1
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
-    - id: num_cores
-      uses: ./.github/actions/num_cores
-    - name: Setup CMake env
-      run: echo "CMAKE_BUILD_PARALLEL_LEVEL=${{steps.num_cores.outputs.cores}}" >> $GITHUB_ENV
-
-# Setup .Net
-    - name: Setup .NET 8.0
-      uses: actions/setup-dotnet@v6
-      if: ${{matrix.target.lang == 'dotnet'}}
+    - uses: ./.github/actions/setup
       with:
-        dotnet-version: 8.0.x
-    - name: Check dotnet
-      if: ${{matrix.target.lang == 'dotnet'}}
-      run: dotnet --info
-
-# Setup Java
-    - uses: actions/setup-java@v6
-      if: ${{ matrix.target.lang == 'java'}}
-      with:
-        distribution: ${{env.JAVA_DISTRIBUTION}}
-        java-version: ${{env.JAVA_VERSION}}
-    - name: Check java
-      if: ${{matrix.target.lang == 'java'}}
-      run: |
-        java -version
-        mvn --version
-
-# Download Native Artifacts
+        arch: amd64
+        os: linux
+        lang: ${{matrix.target.lang}}
+        version: ${{matrix.target.version}}
     - name: Download Native Artifacts
       uses: actions/download-artifact@v8
       with:
@@ -318,14 +157,10 @@ jobs:
         path: .
     - name: Check Export dir
       run: ls -R export
-
-# Build Meta Delivery
     - name: Build ${{matrix.target.name}} Meta Delivery
       run: ./tools/release/build_delivery_meta.sh ${{matrix.target.lang}}
     - name: Check export_meta
       run: ls export_meta
-
-# Upload Artifact
     - name: Upload Meta Artifact
       uses: actions/upload-artifact@v7
       with:
@@ -346,60 +181,27 @@ jobs:
       fail-fast: false
       matrix:
         platform: [
-          { runner: "ubuntu-22.04",     arch: "amd64", os: "linux",   generator: "Ninja" },
-          { runner: "ubuntu-22.04-arm", arch: "arm64", os: "linux",   generator: "Ninja" },
-          { runner: "macos-15-intel",   arch: "amd64", os: "macos",   generator: "Ninja" },
-          { runner: "macos-latest",     arch: "arm64", os: "macos",   generator: "Ninja" },
-          { runner: "windows-latest",   arch: "amd64", os: "windows", generator: "Visual Studio 18 2026" }
+          { runner: "ubuntu-22.04",     arch: "amd64", os: "linux" },
+          { runner: "ubuntu-22.04-arm", arch: "arm64", os: "linux" },
+          { runner: "macos-15-intel",   arch: "amd64", os: "macos" },
+          { runner: "macos-latest",     arch: "arm64", os: "macos" },
+          { runner: "windows-latest",   arch: "amd64", os: "windows" }
         ]
         target: [
-          { name: "dotnet", lang: "dotnet" },
-          { name: "java",   lang: "java" }
+          { name: "dotnet", lang: "dotnet", version: "8.0.x" },
+          { name: "java",   lang: "java",   version: "21" }
         ]
     name: Test(${{matrix.platform.arch}}•${{matrix.platform.os}}•meta•${{matrix.target.name}})
     runs-on: ${{matrix.platform.runner}}
     needs: meta_delivery
     steps:
     - uses: actions/checkout@v7
-
-# SYSTEM BUILD DEPS
-    - name: Setup linux
-      if: ${{matrix.platform.os == 'linux'}}
-      run: sudo apt install -y ninja-build
-    - name: Setup macos
-      if: ${{matrix.platform.os == 'macos'}}
-      run: brew install ninja
-    - name: Setup windows
-      if: ${{matrix.platform.os == 'windows'}}
-      run: dir
-    - id: num_cores
-      uses: ./.github/actions/num_cores
-    - name: Setup CMake env
-      run: echo "CMAKE_BUILD_PARALLEL_LEVEL=${{steps.num_cores.outputs.cores}}" >> $GITHUB_ENV
-
-# Setup .Net
-    - name: Setup .NET 8.0
-      uses: actions/setup-dotnet@v6
-      if: ${{matrix.target.lang == 'dotnet'}}
+    - uses: ./.github/actions/setup
       with:
-        dotnet-version: 8.0.x
-    - name: Check dotnet
-      if: ${{matrix.target.lang == 'dotnet'}}
-      run: dotnet --info
-
-# Setup Java
-    - uses: actions/setup-java@v6
-      if: ${{ matrix.target.lang == 'java'}}
-      with:
-        distribution: ${{env.JAVA_DISTRIBUTION}}
-        java-version: ${{env.JAVA_VERSION}}
-    - name: Check java
-      if: ${{matrix.target.lang == 'java'}}
-      run: |
-        java -version
-        mvn --version
-
-# Download Artifact
+        arch: ${{matrix.platform.arch}}
+        os: ${{matrix.platform.os}}
+        lang: ${{matrix.target.lang}}
+        version: ${{matrix.target.version}}
     - name: Download Native Artifacts
       uses: actions/download-artifact@v8
       with:
@@ -416,8 +218,6 @@ jobs:
       run: cp -f export_meta/* export/
     - name: Check Export dir
       run: ls -R export
-
-# Test Meta Delivery
     - name: Test Linux ${{matrix.target.name}} Meta Delivery
       if: ${{matrix.platform.os == 'linux'}}
       run: ./tools/release/test_delivery_linux.sh ${{matrix.target.lang}}
@@ -430,25 +230,25 @@ jobs:
 
 ###############################################################################
 # DOCKER ARCHIVES
-  distro:
+  distro_archives:
     strategy:
       fail-fast: false
       matrix:
         arch: [amd64]
         os: [
           almalinux-10,
-          #alpine-edge,
-          #archlinux,
-          #debian-sid,
-          #debian-13,
-          #debian-12,
-          #fedora-44,
-          #fedora-43,
-          #opensuse-leap,
-          #rockylinux-10,
+          alpine-edge,
+          archlinux,
+          debian-sid,
+          debian-13,
+          debian-12,
+          fedora-44,
+          fedora-43,
+          opensuse-leap,
+          rockylinux-10,
           ubuntu-26.04,
-          #ubuntu-24.04,
-          #ubuntu-22.04,
+          ubuntu-24.04,
+          ubuntu-22.04,
         ]
         lang: [cpp, dotnet, java, python]
     name: Distro(${{matrix.arch}}•${{matrix.os}}•${{matrix.lang}})
@@ -477,10 +277,10 @@ jobs:
         if-no-files-found: error
         retention-days: 1
 
-
 ###############################################################################
-# Python Manylinux
-  python:
+# Pythons
+## Python Manylinux
+  python_manylinux:
     strategy:
       fail-fast: false
       matrix:
@@ -488,9 +288,9 @@ jobs:
         distro: [manylinux, musllinux]
         python: [
           310,
-          #311,
+          311,
           312,
-          #313,
+          313,
           314
         ]
     name: Python(${{matrix.arch}}•${{matrix.distro}}•cp${{matrix.python}})
@@ -515,3 +315,109 @@ jobs:
         archive: false
         if-no-files-found: error
         retention-days: 1
+
+##  Python MacOS & Windows
+  python_mac_win:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [
+          { runner: "macos-15-intel",   arch: "amd64", os: "macos" },
+          { runner: "macos-latest",     arch: "arm64", os: "macos" },
+          { runner: "windows-latest",   arch: "amd64", os: "windows" }
+        ]
+        target: [
+          { name: "python310", lang: "python", version: "10" },
+          { name: "python311", lang: "python", version: "11" },
+          { name: "python312", lang: "python", version: "12" },
+          { name: "python313", lang: "python", version: "13" },
+          { name: "python314", lang: "python", version: "14" }
+        ]
+    name: Build(${{matrix.platform.arch}}•${{matrix.platform.os}}•${{matrix.target.name}})
+    runs-on: ${{matrix.platform.runner}}
+    steps:
+    - uses: actions/checkout@v7
+    - uses: ./.github/actions/remote_cache
+      with:
+        credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
+        set_cmake_sccache_launcher: true
+    - uses: ./.github/actions/setup
+      with:
+        arch: ${{matrix.platform.arch}}
+        os: ${{matrix.platform.os}}
+        lang: ${{matrix.target.lang}}
+        version: ${{matrix.target.version}}
+        build_deps: true
+    - name: Build Linux ${{matrix.target.name}} Delivery
+      if: ${{matrix.platform.os == 'linux'}}
+      run: ./tools/release/build_delivery_linux.sh ${{matrix.target.lang}} ${{matrix.target.version}}
+    - name: Build MacOS ${{matrix.target.name}} Delivery
+      if: ${{matrix.platform.os == 'macos'}}
+      run: ./tools/release/build_delivery_macos.sh ${{matrix.target.lang}} ${{matrix.target.version}}
+    - name: Build Windows ${{matrix.target.name}} Delivery
+      if: ${{matrix.platform.os == 'windows'}}
+      run: ./tools/release/build_delivery_windows.cmd ${{matrix.target.lang}} ${{matrix.target.version}}
+    - name: Check Unix export
+      if: ${{matrix.platform.os == 'linux' || matrix.platform.os == 'macos'}}
+      run: ls export
+    - name: Check Windows export
+      if: ${{matrix.platform.os == 'windows'}}
+      run: dir export
+    - name: Upload Tarball Artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: ortools-${{matrix.platform.arch}}-${{matrix.platform.os}}-${{matrix.target.name}}
+        path: |
+          build.log
+          export/*.tar.gz
+          export/*.zip
+          export/*.nupkg
+          export/*.jar
+          export/*.whl
+        if-no-files-found: error
+        retention-days: 1
+
+## Test Python MacOS & Windows
+  test_python_mac_win:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [
+          { runner: "macos-15-intel",   arch: "amd64", os: "macos" },
+          { runner: "macos-latest",     arch: "arm64", os: "macos" },
+          { runner: "windows-latest",   arch: "amd64", os: "windows" }
+        ]
+        target: [
+          { name: "python310", lang: "python", version: "10" },
+          { name: "python311", lang: "python", version: "11" },
+          { name: "python312", lang: "python", version: "12" },
+          { name: "python313", lang: "python", version: "13" },
+          { name: "python314", lang: "python", version: "14" }
+        ]
+    name: Test(${{matrix.platform.arch}}•${{matrix.platform.os}}•${{matrix.target.name}})
+    runs-on: ${{matrix.platform.runner}}
+    needs: python_mac_win
+    steps:
+    - uses: actions/checkout@v7
+    - uses: ./.github/actions/setup
+      with:
+        arch: ${{matrix.platform.arch}}
+        os: ${{matrix.platform.os}}
+        lang: ${{matrix.target.lang}}
+        version: ${{matrix.target.version}}
+    - name: Download Tarball Artifact
+      uses: actions/download-artifact@v8
+      with:
+        name: ortools-${{matrix.platform.arch}}-${{matrix.platform.os}}-${{matrix.target.name}}
+        path: .
+    - name: Check Export dir
+      run: ls -R export
+    - name: Test Linux ${{matrix.target.name}} Delivery
+      if: ${{matrix.platform.os == 'linux'}}
+      run: ./tools/release/test_delivery_linux.sh ${{matrix.target.lang}} ${{matrix.target.version}}
+    - name: Test MacOS ${{matrix.target.name}} Delivery
+      if: ${{matrix.platform.os == 'macos'}}
+      run: ./tools/release/test_delivery_macos.sh ${{matrix.target.lang}} ${{matrix.target.version}}
+    - name: Test Windows ${{matrix.target.name}} Delivery
+      if: ${{matrix.platform.os == 'windows'}}
+      run: ./tools/release/test_delivery_windows.cmd ${{matrix.target.lang}} ${{matrix.target.version}}

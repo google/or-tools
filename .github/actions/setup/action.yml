@@ -1,0 +1,139 @@
+name: 'Setup build and language dependencies'
+description: 'Install system build dependencies and setup language environment'
+inputs:
+  arch:
+    description: "Architecture (amd64, arm64)"
+    default: ""
+  os:
+    description: "Operating system (linux, macos, windows)"
+    default: ""
+  lang:
+    description: "Target language (cpp, dotnet, java, python)"
+    default: ""
+  version:
+    description: "Language version (e.g. 10/11/12/13/14 for python, 21 for java, 8.0.x for dotnet)"
+    default: ""
+outputs:
+  cores:
+    description: "Number of cores detected"
+    value: ${{ steps.num_cores.outputs.cores }}
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Linux
+      if: inputs.os == 'linux'
+      shell: bash
+      run: |
+        sudo apt install -y ninja-build
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Install SWIG on Linux
+      if: inputs.os == 'linux'
+      shell: bash
+      run: |
+        wget -q "https://downloads.sourceforge.net/project/swig/swig/swig-4.5.1/swig-4.5.1.tar.gz" && tar xvf swig-4.5.1.tar.gz && rm swig-4.5.1.tar.gz
+        cd swig-4.5.1 && ./configure --prefix=$HOME/.local && make -j 4 && make install
+        rm -rf swig-4.5.1
+
+    - name: Setup macOS
+      if: inputs.os == 'macos'
+      shell: bash
+      run: |
+        brew install ninja
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Install SWIG on macOS
+      # can't use brew swig (4.4) since Director python support is broken on macos
+      # see: https://github.com/swig/swig/issues/3279
+      if: inputs.os == 'macos'
+      shell: bash
+      run: |
+        wget -q https://downloads.sourceforge.net/project/swig/swig/swig-4.3.1/swig-4.3.1.tar.gz && tar xzvf swig-4.3.1.tar.gz && rm swig-4.3.1.tar.gz
+        cd swig-4.3.1 && ./configure --prefix=$HOME/.local && make -j 4 && make install
+        rm -rf swig-4.3.1
+
+    - name: Setup Windows MSVC
+      if: inputs.os == 'windows'
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: ${{ inputs.arch == 'arm64' && 'arm64' || 'x64' }}
+
+    - id: num_cores
+      uses: ./.github/actions/num_cores
+    - name: Setup CMake env
+      shell: bash
+      run: echo "CMAKE_BUILD_PARALLEL_LEVEL=${{steps.num_cores.outputs.cores}}" >> $GITHUB_ENV
+
+    # Setup .NET
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v6
+      if: inputs.lang == 'dotnet'
+      with:
+        dotnet-version: ${{ inputs.version }}
+    - name: Check dotnet
+      if: inputs.lang == 'dotnet'
+      shell: bash
+      run: dotnet --info
+
+    # Setup Java
+    - name: Setup Java
+      uses: actions/setup-java@v6
+      if: inputs.lang == 'java'
+      with:
+        distribution: "temurin"
+        java-version: ${{ inputs.version }}
+    - name: Check java
+      if: inputs.lang == 'java'
+      shell: bash
+      run: |
+        java -version
+        mvn --version
+
+    # Setup Python
+    - name: Setup Python
+      uses: actions/setup-python@v7
+      if: inputs.lang == 'python' && startsWith(inputs.version, '3.')
+      with:
+        python-version: ${{ inputs.version }}
+    - name: Setup Python (minor version)
+      uses: actions/setup-python@v7
+      if: inputs.lang == 'python' && !startsWith(inputs.version, '3.')
+      with:
+        python-version: 3.${{ inputs.version }}
+    - name: Install python3 deps
+      if: inputs.lang == 'python'
+      shell: bash
+      run: python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas
+
+    - name: Setup Linux Python Env
+      if: inputs.os == 'linux'
+      shell: bash
+      run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Setup macOS Python Env
+      if: inputs.os == 'macos'
+      shell: bash
+      run: |
+        PYTHON_BIN=$(python3 -c "import site, os; print(os.path.join(site.USER_BASE, 'bin'))" 2>/dev/null || true)
+        if [ -n "$PYTHON_BIN" ]; then
+          echo "$PYTHON_BIN" >> $GITHUB_PATH
+        fi
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Setup Windows Python Env
+      if: inputs.os == 'windows'
+      shell: pwsh
+      run: |
+        $scripts = python -c "import site, os; print(os.path.join(site.USER_BASE, 'Scripts'))" 2>$null
+        if (-not $scripts) {
+          $scripts = python3 -c "import site, os; print(os.path.join(site.USER_BASE, 'Scripts'))" 2>$null
+        }
+        if ($scripts) {
+          echo $scripts | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        }
+
+    - name: Check Python
+      if: inputs.lang == 'python'
+      shell: bash
+      run: |
+        if command -v python3 >/dev/null 2>&1; then
+          python3 --version
+        else
+          python --version
+        fi
