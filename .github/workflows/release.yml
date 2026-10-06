@@ -19,6 +19,7 @@ env:
   # By default, secrets are not passed to workflows triggered from forks, including Dependabot.
   USE_GOOGLE_CLOUD_STORAGE: ${{! (github.event.pull_request.head.repo.fork || false)}}
   ORTOOLS_TOKEN: ${{secrets.ORTOOLS_TOKEN}}
+  OR_TOOLS_PATCH: 0
 jobs:
 ###############################################################################
 # Build Native Delivery
