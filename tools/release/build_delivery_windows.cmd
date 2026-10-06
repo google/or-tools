@@ -135,8 +135,8 @@ echo DONE | tee.exe -a build.log
 
 echo Build cpp: ... | tee.exe -a build.log
 set Platform=any
-cmake -S. -Btemp_cpp -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DEPS=ON
-cmake --build temp_cpp --config Release
+cmake -S. -Btemp_cpp -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DEPS=ON || exit 1
+cmake --build temp_cpp --config Release || exit 1
 echo DONE | tee.exe -a build.log
 
 FOR %%i IN (temp_cpp\pack\*.zip) do (
@@ -175,8 +175,8 @@ echo DONE | tee.exe -a build.log
 
 echo Build dotnet: ... | tee.exe -a build.log
 set Platform=any
-cmake -S. -Btemp_dotnet -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOTNET=ON -DUSE_DOTNET_472=ON
-cmake --build temp_dotnet --config Release -j8 -v
+cmake -S. -Btemp_dotnet -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOTNET=ON || exit 1
+cmake --build temp_dotnet --config Release || exit 1
 echo DONE | tee.exe -a build.log
 
 FOR %%i IN (temp_dotnet\dotnet\packages\*.nupkg*) do (
@@ -224,8 +224,8 @@ rm.exe -rf temp_java
 echo DONE | tee.exe -a build.log
 
 echo Build java: ... | tee.exe -a build.log
-cmake -S. -Btemp_java -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_JAVA=ON -DSKIP_GPG=OFF
-cmake --build temp_java --config Release -j8 -v
+cmake -S. -Btemp_java -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_JAVA=ON -DSKIP_GPG=OFF || exit 1
+cmake --build temp_java --config Release || exit 1
 echo DONE | tee.exe -a build.log
 REM cmake --build temp_java --config Release --target RUN_TEST || exit 1
 REM echo cmake test_java: DONE | tee.exe -a build.log
@@ -271,9 +271,9 @@ rm.exe -rf temp_python3%1
 echo Cleaning Python 3.%1...DONE | tee.exe -a build.log
 
 echo Build Python 3.%1... | tee.exe -a build.log
-cmake -S. -Btemp_python3%1 -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON
+cmake -S. -Btemp_python3%1 -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON || exit 1
 REM -DPython3_ROOT_DIR=C:\python3%1-64
-cmake --build temp_python3%1 --config Release -j8 -v
+cmake --build temp_python3%1 --config Release || exit 1
 echo Build Python 3.%1...DONE | tee.exe -a build.log
 
 echo Check MYPY files... | tee.exe -a build.log
