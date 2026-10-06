@@ -5,10 +5,10 @@ FROM opensuse/leap
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
 RUN zypper refresh \
-&& zypper install -y git make gcc11 gcc11-c++ cmake \
+&& zypper install -y git make gcc gcc-c++ cmake \
  wget which lsb-release util-linux pkgconfig autoconf libtool zlib-devel gzip \
 && zypper clean -a
-ENV CC=gcc-11 CXX=g++-11
+ENV CC=gcc CXX=g++
 ENTRYPOINT ["/usr/bin/bash", "-c"]
 CMD ["/usr/bin/bash"]
 

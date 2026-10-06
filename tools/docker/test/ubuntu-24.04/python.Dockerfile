@@ -7,6 +7,12 @@ RUN apt-get update -qq \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+# Install Python
+RUN apt-get update -qq \
+&& apt-get install -qq python3 python3-pip \
+&& apt-get clean \
+&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
 WORKDIR /root
 ADD or-tools_amd64_ubuntu-24.04_python_v*.tar.gz .
 

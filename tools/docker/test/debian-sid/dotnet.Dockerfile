@@ -1,22 +1,17 @@
 # ref: https://hub.docker.com/_/debian
 FROM debian:sid
 
-RUN apt-get update \
-&& apt-get install -y -q build-essential zlib1g-dev \
+RUN apt-get update -qq \
+&& apt-get install -yq \
+ wget build-essential zlib1g-dev libicu-dev \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Install .Net
-# see https://docs.microsoft.com/en-us/dotnet/core/install/linux-debian#debian-13-
-RUN apt-get update -qq \
-&& apt-get install -qq gpg apt-transport-https \
-&& wget -q "https://packages.microsoft.com/config/debian/13/packages-microsoft-prod.deb" -O packages-microsoft-prod.deb \
-&& dpkg -i packages-microsoft-prod.deb \
-&& rm packages-microsoft-prod.deb \
-&& apt-get update -qq \
-&& apt-get install -qq dotnet-sdk-8.0 \
-&& apt-get clean \
-&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# see: https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#scripted-install
+RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
+&& chmod a+x dotnet-install.sh \
+&& ./dotnet-install.sh -c 8.0 -i /usr/local/bin
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
