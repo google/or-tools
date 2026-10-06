@@ -7,10 +7,10 @@ FROM opensuse/leap AS env
 #############
 ENV PATH=/usr/local/bin:$PATH
 RUN zypper refresh \
-&& zypper install -y git gcc11 gcc11-c++ cmake \
+&& zypper install -y git gcc gcc-c++ cmake \
  wget which lsb-release util-linux pkgconfig autoconf libtool gzip zlib-devel \
 && zypper clean -a
-ENV CC=gcc-11 CXX=g++-11
+ENV CC=gcc CXX=g++
 ENTRYPOINT ["/usr/bin/bash", "-c"]
 CMD ["/usr/bin/bash"]
 
@@ -21,7 +21,7 @@ RUN zypper refresh \
 
 # Install .Net
 RUN zypper refresh \
-&& zypper install -y wget tar gzip libicu-devel
+&& zypper install -y wget tar gzip findutils libicu-devel
 # see: https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#scripted-install
 RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
 && chmod a+x dotnet-install.sh \
@@ -34,9 +34,9 @@ RUN zypper install -y java-21-openjdk java-21-openjdk-devel maven \
 && zypper clean -a
 
 # Install Python
-RUN zypper install -y python311-devel python311-pip \
+RUN zypper install -y python3-devel python3-pip \
 && zypper clean -a
-RUN python3.11 -m pip install absl-py mypy mypy-protobuf
+RUN python3 -m pip install absl-py mypy mypy-protobuf
 
 ################
 ##  OR-TOOLS  ##

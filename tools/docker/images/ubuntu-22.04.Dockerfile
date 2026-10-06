@@ -42,11 +42,12 @@ RUN apt-get update -qq \
 && apt-get install -yq openjdk-21-jdk maven \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
 
 # Install Python
 RUN apt-get update -qq \
-&& apt-get install -qq python3 python3-dev python3-pip python3-venv \
+&& apt-get install -qq python3 python3-dev python3-pip python3-setuptools \
+ python3-venv \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 RUN python3 -m pip install absl-py mypy mypy-protobuf

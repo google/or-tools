@@ -8,6 +8,10 @@ RUN apt-get update \
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD ["/bin/bash"]
 
+# Install Python
+RUN apt-get update -qq \
+&& apt-get install -qq python3 python3-pip
+
 WORKDIR /root
 ADD or-tools_amd64_debian-sid_python_v*.tar.gz .
 

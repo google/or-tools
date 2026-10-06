@@ -14,7 +14,7 @@ CMD ["/usr/bin/bash"]
 
 # .Net Install
 RUN zypper refresh \
-&& zypper install -y wget tar gzip libicu-devel
+&& zypper install -y wget tar gzip findutils libicu-devel
 # see: https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#scripted-install
 RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
 && chmod a+x dotnet-install.sh \

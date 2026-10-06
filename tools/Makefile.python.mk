@@ -79,7 +79,7 @@ else
 endif
 
 python.log:
-	"$(PYTHON_BIN)" -m pip install --user "$(firstword $(wildcard ortools*.whl))"
+	"$(PYTHON_BIN)" -m pip install --user --break-system-packages "$(firstword $(wildcard ortools*.whl))"
 	@$(TOUCH) $@
 
 ##############

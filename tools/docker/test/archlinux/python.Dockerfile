@@ -12,9 +12,10 @@ CMD [ "/bin/bash" ]
 
 # Install Python
 RUN pacman -Syu --noconfirm python python-pip python-numpy
-RUN python -m pip install absl-py mypy mypy-protobuf
+RUN python -m pip install --break-system-package \
+ absl-py mypy mypy-protobuf
 
 WORKDIR /root
-ADD or-tools_amd64_alpine-edge_python_v*.tar.gz .
+ADD or-tools_amd64_archlinux_python_v*.tar.gz .
 
 RUN cd or-tools_*_v* && make test

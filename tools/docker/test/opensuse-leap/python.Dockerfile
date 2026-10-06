@@ -7,7 +7,7 @@ ENV PATH=/usr/local/bin:$PATH
 RUN zypper refresh \
 && zypper install -y make \
 && zypper clean -a
-ENV CC=gcc-11 CXX=g++-11
+ENV CC=gcc CXX=g++
 ENTRYPOINT ["/usr/bin/bash", "-c"]
 CMD ["/usr/bin/bash"]
 

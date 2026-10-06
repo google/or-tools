@@ -8,6 +8,11 @@ RUN dnf -y update \
 && dnf -y install gcc-c++ cmake \
 && dnf clean all
 
+# Install Python
+RUN dnf -y update \
+&& dnf -y install python3 python3-pip \
+&& dnf clean all
+
 WORKDIR /root
 ADD or-tools_amd64_fedora-44_python_v*.tar.gz .
 
