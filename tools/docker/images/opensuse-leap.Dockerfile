@@ -30,8 +30,10 @@ RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
 RUN dotnet --info
 
 # Install Java (openjdk-21)
-RUN zypper install -y java-21-openjdk java-21-openjdk-devel maven \
+RUN zypper update -y \
+&& zypper install -y java-21-openjdk-devel maven \
 && zypper clean -a
+ENV JAVA_HOME=/usr/lib64/jvm/java-21-openjdk
 
 # Install Python
 RUN zypper install -y python3-devel python3-pip \
