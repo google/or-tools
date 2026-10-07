@@ -370,14 +370,9 @@ jobs:
     - name: Upload Tarball Artifact
       uses: actions/upload-artifact@v7
       with:
-        name: ortools-${{matrix.platform.arch}}-${{matrix.platform.os}}-${{matrix.target.name}}
         path: |
-          build.log
-          export/*.tar.gz
-          export/*.zip
-          export/*.nupkg
-          export/*.jar
           export/*.whl
+        archive: false
         if-no-files-found: error
         retention-days: 1
 
@@ -387,9 +382,9 @@ jobs:
       fail-fast: false
       matrix:
         platform: [
-          { runner: "macos-15-intel",   arch: "amd64", os: "macos" },
-          { runner: "macos-latest",     arch: "arm64", os: "macos" },
-          { runner: "windows-latest",   arch: "amd64", os: "windows" }
+          { runner: "macos-15-intel",   arch: "amd64", os: "macos",   py_os: "macosx", py_arch: "x86_64" },
+          { runner: "macos-latest",     arch: "arm64", os: "macos",   py_os: "macosx", py_arch: "arm64" },
+          { runner: "windows-latest",   arch: "amd64", os: "windows", py_os: "win",    py_arch: "amd64" }
         ]
         target: [
           { name: "python310", lang: "python", version: "10" },
@@ -416,8 +411,8 @@ jobs:
     - name: Download Tarball Artifact
       uses: actions/download-artifact@v8
       with:
-        name: ortools-${{matrix.platform.arch}}-${{matrix.platform.os}}-${{matrix.target.name}}
-        path: .
+        name: ortools-*-cp3${{matrix.target.version}}-*-${{matrix.platform.py_os}}_*_${{matrix.platform.py_arch}}.whl
+        path: export/
     - name: Check Export dir
       run: ls -R export
     - name: Test Linux ${{matrix.target.name}} Delivery
