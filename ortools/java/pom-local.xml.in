@@ -112,6 +112,16 @@
   <plugins>
     <plugin>
       <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-compiler-plugin</artifactId>
+      <version>3.16.0</version>
+      <configuration>
+        <release>21</release>
+        <source>21</source>
+        <target>21</target>
+      </configuration>
+    </plugin>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
       <artifactId>maven-source-plugin</artifactId>
       <version>3.3.1</version>
       <executions>
