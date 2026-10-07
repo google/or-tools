@@ -14,12 +14,12 @@ make.exe print-OR_TOOLS_VERSION | tee.exe publish.log
 :: Display help if no argument
 if "%1"=="" (
 call :PRINT_HELP
-exit /B %ERRORLEVEL%
+exit /B
 )
 
 if "%1"=="help" (
 call :PRINT_HELP
-exit /B %ERRORLEVEL%
+exit /B
 )
 
 if "%ORTOOLS_TOKEN%"=="" (
@@ -34,18 +34,18 @@ echo SHA1: %SHA1% | tee.exe -a publish.log
 
 if "%1"=="java" (
 call :PUBLISH_JAVA
-exit /B %ERRORLEVEL%
+exit /B
 )
 
 if "%1"=="python" (
 call :PUBLISH_PYTHON
-exit /B %ERRORLEVEL%
+exit /B
 )
 
 if "%1"=="all" (
-call :PUBLISH_JAVA
-call :PUBLISH_PYTHON
-exit /B %ERRORLEVEL%
+call :PUBLISH_JAVA || exit /B 1
+call :PUBLISH_PYTHON || exit /B 1
+exit /B
 )
 
 echo unknow target %1

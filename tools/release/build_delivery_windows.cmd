@@ -15,12 +15,12 @@ make.exe print-OR_TOOLS_VERSION | tee.exe build.log
 :: Display help if no argument
 if "%1"=="" (
 call :PRINT_HELP
-exit /B %ERRORLEVEL%
+exit /B
 )
 
 if "%1"=="help" (
 call :PRINT_HELP
-exit /B %ERRORLEVEL%
+exit /B
 )
 
 if "%ORTOOLS_TOKEN%"=="" (
@@ -37,52 +37,52 @@ if not exist .\export md .\export
 
 if "%1"=="cpp" (
 call :BUILD_CPP
-exit /B %ERRORLEVEL%
+exit /B
 )
 
 if "%1"=="dotnet" (
 call :BUILD_DOTNET
-exit /B %ERRORLEVEL%
+exit /B
 )
 
 if "%1"=="java" (
 call :BUILD_JAVA
-exit /B %ERRORLEVEL%
+exit /B
 )
 
 if "%1"=="python" (
-call :BUILD_PYTHON "%2"
-exit /B %ERRORLEVEL%
+call :BUILD_PYTHON %2
+exit /B
 )
 
 if "%1"=="python_all" (
 call :BUILD_PYTHON_ALL
-exit /B %ERRORLEVEL%
+exit /B
 )
 
 if "%1"=="archive" (
 call :BUILD_ARCHIVE
-exit /B %ERRORLEVEL%
+exit /B
 )
 
 if "%1"=="examples" (
 call :BUILD_EXAMPLES
-exit /B %ERRORLEVEL%
+exit /B
 )
 
 if "%1"=="all" (
-call :BUILD_CPP
-call :BUILD_DOTNET
-call :BUILD_JAVA
-:: call :BUILD_ARCHIVE
-:: call :BUILD_EXAMPLES
-:: call :BUILD_PYTHON_ALL
-exit /B %ERRORLEVEL%
+call :BUILD_CPP || exit /B 1
+call :BUILD_DOTNET || exit /B 1
+call :BUILD_JAVA || exit /B 1
+:: call :BUILD_ARCHIVE || exit /B 1
+:: call :BUILD_EXAMPLES || exit /B 1
+:: call :BUILD_PYTHON_ALL || exit /B 1
+exit /B
 )
 
 if "%1"=="reset" (
 call :RESET
-exit /B %ERRORLEVEL%
+exit /B
 )
 
 echo unknow target %1
