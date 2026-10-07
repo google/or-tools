@@ -251,6 +251,10 @@ jobs:
           ubuntu-22.04,
         ]
         lang: [cpp, dotnet, java, python]
+        exclude:
+          # debian-12 only provide openjdk 17
+          - os: debian-12
+            lang: java
     name: Distro(${{matrix.arch}}•${{matrix.os}}•${{matrix.lang}})
     runs-on: ubuntu-latest
     steps:
@@ -333,6 +337,10 @@ jobs:
           { name: "python313", lang: "python", version: "13" },
           { name: "python314", lang: "python", version: "14" }
         ]
+        exclude:
+          # setup/python do not provide python 3.10 alias
+          - platform: {os: macos, arch: amd64 }
+            target: {lang: python, version: 10 }
     name: Build(${{matrix.platform.arch}}•${{matrix.platform.os}}•${{matrix.target.name}})
     runs-on: ${{matrix.platform.runner}}
     steps:
@@ -390,6 +398,10 @@ jobs:
           { name: "python313", lang: "python", version: "13" },
           { name: "python314", lang: "python", version: "14" }
         ]
+        exclude:
+          # setup/python do not provide python 3.10 alias
+          - platform: {os: macos, arch: amd64 }
+            target: {lang: python, version: 10 }
     name: Test(${{matrix.platform.arch}}•${{matrix.platform.os}}•${{matrix.target.name}})
     runs-on: ${{matrix.platform.runner}}
     needs: python_mac_win
