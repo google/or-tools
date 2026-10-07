@@ -15,37 +15,37 @@ make.exe print-OR_TOOLS_VERSION | tee.exe test.log
 :: Display help if no argument
 if "%1"=="" (
 call :PRINT_HELP
-exit /B %ERRORLEVEL%
+exit /B
 )
 
 if "%1"=="help" (
 call :PRINT_HELP
-exit /B %ERRORLEVEL%
+exit /B
 )
 
 if "%1"=="cpp" (
 call :TEST_CPP
-exit /B %ERRORLEVEL%
+exit /B
 )
 
 if "%1"=="dotnet" (
 call :TEST_DOTNET
-exit /B %ERRORLEVEL%
+exit /B
 )
 
 if "%1"=="java" (
 call :TEST_JAVA
-exit /B %ERRORLEVEL%
+exit /B
 )
 
 if "%1"=="python" (
-call :TEST_PYTHON "%2"
-exit /B %ERRORLEVEL%
+call :TEST_PYTHON %2
+exit /B
 )
 
 if "%1"=="python_all" (
 call :TEST_PYTHON_ALL
-exit /B %ERRORLEVEL%
+exit /B
 )
 
 echo unknow target %1
