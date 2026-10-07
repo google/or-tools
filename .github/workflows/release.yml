@@ -160,7 +160,7 @@ jobs:
     - name: Build ${{matrix.target.name}} Meta Delivery
       run: ./tools/release/build_delivery_meta.sh ${{matrix.target.lang}}
     - name: Check export_meta
-      run: ls export_meta
+      run: ls -R export_meta
     - name: Upload Meta Artifact
       uses: actions/upload-artifact@v7
       with:
@@ -357,12 +357,8 @@ jobs:
     - name: Build Windows ${{matrix.target.name}} Delivery
       if: ${{matrix.platform.os == 'windows'}}
       run: ./tools/release/build_delivery_windows.cmd ${{matrix.target.lang}} ${{matrix.target.version}}
-    - name: Check Unix export
-      if: ${{matrix.platform.os == 'linux' || matrix.platform.os == 'macos'}}
-      run: ls export
-    - name: Check Windows export
-      if: ${{matrix.platform.os == 'windows'}}
-      run: dir export
+    - name: Check export dir
+      run: ls -R export
     - name: Upload Tarball Artifact
       uses: actions/upload-artifact@v7
       with:
