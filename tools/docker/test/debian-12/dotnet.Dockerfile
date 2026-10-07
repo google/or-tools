@@ -3,7 +3,7 @@ FROM debian:12
 
 RUN apt-get update -qq \
 && apt-get install -yq \
- wget build-essential zlib1g-dev \
+ wget build-essential zlib1g-dev libicu-dev \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
