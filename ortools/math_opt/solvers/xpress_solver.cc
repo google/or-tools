@@ -1602,8 +1602,7 @@ class ScopedSolverContext {
     }
 
     // Install branching priorities.
-    if (model_parameters.has_branching_priorities() &&
-        model_parameters.branching_priorities().ids_size() > 0) {
+    if (!model_parameters.branching_priorities().ids().empty()) {
       // XPRSloaddirs() will raise an error if called on a model in presolved
       // state. We still trap this already here because otherwise dimensions
       // do not match and we may produce an out-of-bounds write while setting
