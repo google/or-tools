@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <numeric>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -237,25 +238,6 @@ int64_t MaxOfExpression(const CpModelProto& model,
   return sum_max;
 }
 
-bool ExpressionIsFixed(const CpModelProto& model,
-                       const LinearExpressionProto& expr) {
-  for (int i = 0; i < expr.vars_size(); ++i) {
-    if (expr.coeffs(i) == 0) continue;
-    const IntegerVariableProto& var_proto = model.variables(expr.vars(i));
-    if (var_proto.domain_size() != 2 ||
-        var_proto.domain(0) != var_proto.domain(1)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-int64_t ExpressionFixedValue(const CpModelProto& model,
-                             const LinearExpressionProto& expr) {
-  DCHECK(ExpressionIsFixed(model, expr));
-  return MinOfExpression(model, expr);
-}
-
 int64_t IntervalSizeMax(const CpModelProto& model, int interval_index) {
   DCHECK_EQ(ConstraintProto::ConstraintCase::kInterval,
             model.constraints(interval_index).constraint_case());
@@ -394,21 +376,55 @@ std::string ValidateIntDivConstraint(const CpModelProto& model,
   RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, ct.int_div().exprs(1)));
   RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, ct.int_div().target()));
 
+  // Canonicalize the divisor: merge repeated variables and fold fixed
+  // variables into the offset, so that the checks below see the expression
+  // the solver will actually divide by.
   const LinearExpressionProto& denom = ct.int_div().exprs(1);
-  const int64_t offset = denom.offset();
-  if (ExpressionIsFixed(model, denom)) {
-    if (ExpressionFixedValue(model, denom) == 0) {
+  int64_t offset = denom.offset();
+  absl::btree_map<int, int64_t> terms;
+  for (int i = 0; i < denom.vars_size(); ++i) {
+    const int var = denom.vars(i);
+    const int64_t coeff = denom.coeffs(i);
+    if (coeff == 0) continue;
+    if (MinOfRef(model, var) == MaxOfRef(model, var)) {
+      offset += coeff * MinOfRef(model, var);
+    } else {
+      terms[var] += coeff;
+    }
+  }
+  absl::erase_if(terms, [](const auto& term) { return term.second == 0; });
+
+  bool divisor_can_be_zero;
+  if (terms.empty()) {
+    if (offset == 0) {
       return absl::StrCat("Division by 0: ", ProtobufShortDebugString(ct));
     }
-  } else {
-    const int64_t coeff = denom.coeffs(0);
-    CHECK_NE(coeff, 0);
+    divisor_can_be_zero = false;
+  } else if (terms.size() == 1) {
+    // Exact check for an affine divisor, so that a domain with a hole at zero
+    // is accepted.
+    const auto [var, coeff] = *terms.begin();
     const int64_t inverse_of_zero = -offset / coeff;
-    if (inverse_of_zero * coeff + offset == 0 &&
-        DomainOfRef(model, denom.vars(0)).Contains(inverse_of_zero)) {
-      return absl::StrCat("The domain of the divisor cannot contain 0: ",
-                          ProtobufShortDebugString(ct));
+    divisor_can_be_zero = inverse_of_zero * coeff + offset == 0 &&
+                          DomainOfRef(model, var).Contains(inverse_of_zero);
+  } else {
+    // With several terms, the divisor can only be 0 if the gcd of the
+    // coefficients divides the offset and 0 is within its bounds.
+    int64_t gcd = 0;
+    int64_t min = offset;
+    int64_t max = offset;
+    for (const auto [var, coeff] : terms) {
+      gcd = std::gcd(gcd, std::abs(coeff));
+      min += coeff > 0 ? coeff * MinOfRef(model, var)
+                       : coeff * MaxOfRef(model, var);
+      max += coeff > 0 ? coeff * MaxOfRef(model, var)
+                       : coeff * MinOfRef(model, var);
     }
+    divisor_can_be_zero = offset % gcd == 0 && min <= 0 && max >= 0;
+  }
+  if (divisor_can_be_zero) {
+    return absl::StrCat("The domain of the divisor cannot contain 0: ",
+                        ProtobufShortDebugString(ct));
   }
   return "";
 }
