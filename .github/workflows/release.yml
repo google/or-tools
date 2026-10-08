@@ -411,7 +411,7 @@ jobs:
     - name: Download Tarball Artifact
       uses: actions/download-artifact@v8
       with:
-        name: "ortools-*-cp3${{matrix.target.version}}-${{matrix.platform.py_os}}_*${{matrix.platform.py_arch}}.whl"
+        pattern: "ortools-*-cp3${{matrix.target.version}}-${{matrix.platform.py_os}}_*${{matrix.platform.py_arch}}.whl"
         path: export/
     - name: Check Export dir
       run: ls -R export
