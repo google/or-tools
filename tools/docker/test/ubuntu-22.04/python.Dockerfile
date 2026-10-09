@@ -17,5 +17,5 @@ WORKDIR /root
 ADD or-tools_amd64_ubuntu-22.04_python_v*.tar.gz .
 
 RUN cd or-tools_*_v* \
-&& sed -i s/--break-system-packages //g Makefile \
+&& sed -i 's/--break-system-packages //g' Makefile \
 && make test
