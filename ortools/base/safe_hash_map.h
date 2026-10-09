@@ -202,20 +202,36 @@ static_assert(EMH_MALIGN >= 16 && 0 == (EMH_MALIGN & (EMH_MALIGN - 1)));
 static_assert((int)INACTIVE < 0, "INACTIVE must negative (to int)");
 #endif
 
-// count the leading zero bit
-static inline size_type CTZ(size_t n) {
-#if defined(__x86_64__) || defined(_WIN32) || \
-    (__BYTE_ORDER__ && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
-
-#elif __BIG_ENDIAN__ || \
-    (__BYTE_ORDER__ && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
-  n = __builtin_bswap64(n);
+// Endianness of the host. The bitmask is a byte array (bit_type == uint8_t),
+// where bucket b lives in bit (b % 8) of byte (b / 8). To read it a machine
+// word at a time, the bytes must be interpreted as a little-endian integer.
+#if defined(__BIG_ENDIAN__) || \
+    (defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+#define EMH_BIG_ENDIAN 1
 #else
-  static uint32_t endianness = 0x12345678;
-  const auto is_big = *(const char*)&endianness == 0x12;
-  if (is_big) n = __builtin_bswap64(n);
+#define EMH_BIG_ENDIAN 0
 #endif
 
+// Loads a size_t from the (possibly unaligned) bitmask bytes at `ptr` and
+// returns it as a little-endian value, so that bit i of the result is bit
+// (i % 8) of byte (i / 8). This is what every consumer (shifts, masks, CTZ)
+// expects; it is the identity on little-endian hosts.
+static inline size_t load_bitmask_word(const void* ptr) {
+  size_t val;
+  std::memcpy(&val, ptr, sizeof(val));
+#if EMH_BIG_ENDIAN
+#if SIZE_MAX == UINT64_MAX
+  val = __builtin_bswap64(val);
+#else
+  val = __builtin_bswap32(val);
+#endif
+#endif
+  return val;
+}
+
+// Count the trailing zero bits. The argument must already be a logical
+// (little-endian) bitmask word, i.e. loaded through load_bitmask_word().
+static inline size_type CTZ(size_t n) {
 #if _WIN32
   unsigned long index;
 #if defined(_WIN64)
@@ -392,7 +408,7 @@ class safe_hash_map {
     void init() {
       _from = (_bucket / SIZE_BIT) * SIZE_BIT;
       if (_bucket < _map->bucket_count()) {
-        _bmask = *(size_t*)((size_t*)_map->_bitmask + _from / SIZE_BIT);
+        _bmask = _map->bitmask_word(_from / SIZE_BIT);
         _bmask |= (1ull << _bucket % SIZE_BIT) - 1;
         _bmask = ~_bmask;
       } else {
@@ -456,8 +472,7 @@ class safe_hash_map {
       }
 
       do {
-        _bmask = ~*(size_t*)((size_t*)_map->_bitmask +
-                             (_from += SIZE_BIT) / SIZE_BIT);
+        _bmask = ~_map->bitmask_word((_from += SIZE_BIT) / SIZE_BIT);
       } while (_bmask == 0);
 
       _bucket = _from + CTZ(_bmask);
@@ -501,7 +516,7 @@ class safe_hash_map {
     void init() {
       _from = (_bucket / SIZE_BIT) * SIZE_BIT;
       if (_bucket < _map->bucket_count()) {
-        _bmask = *(size_t*)((size_t*)_map->_bitmask + _from / SIZE_BIT);
+        _bmask = _map->bitmask_word(_from / SIZE_BIT);
         _bmask |= (1ull << _bucket % SIZE_BIT) - 1;
         _bmask = ~_bmask;
       } else {
@@ -548,8 +563,7 @@ class safe_hash_map {
       }
 
       do {
-        _bmask = ~*(size_t*)((size_t*)_map->_bitmask +
-                             (_from += SIZE_BIT) / SIZE_BIT);
+        _bmask = ~_map->bitmask_word((_from += SIZE_BIT) / SIZE_BIT);
       } while (_bmask == 0);
 
       _bucket = _from + CTZ(_bmask);
@@ -722,7 +736,7 @@ class safe_hash_map {
     if (0 == _num_filled) return {this, _num_buckets};
 #endif
 
-    const auto bmask = ~(*(size_t*)_bitmask);
+    const auto bmask = ~bitmask_word(0);
     if (bmask != 0) return {this, (size_type)CTZ(bmask)};
 
     iterator it(this, sizeof(bmask) * 8 - 1);
@@ -735,7 +749,7 @@ class safe_hash_map {
     if (0 == _num_filled) return {this, _num_buckets};
 #endif
 
-    const auto bmask = ~(*(size_t*)_bitmask);
+    const auto bmask = ~bitmask_word(0);
     if (bmask != 0) return {this, (size_type)CTZ(bmask)};
 
     iterator it(this, sizeof(bmask) * 8 - 1);
@@ -1467,8 +1481,7 @@ class safe_hash_map {
     const auto boset = bucket_from % 8;
     auto* const align = (uint8_t*)_bitmask + bucket_from / 8;
     (void)main_bucket;
-    size_t bmask;
-    memcpy(&bmask, align + 0, sizeof(bmask));
+    size_t bmask = load_bitmask_word(align);
     bmask >>= boset;  // bmask |= ((size_t)align[8] << (SIZE_BIT - boset));
     if (EMH_LIKELY(bmask != 0)) return bucket_from + CTZ(bmask);
 #else
@@ -1476,7 +1489,7 @@ class safe_hash_map {
     auto* const align = (uint8_t*)_bitmask + bucket_from / 8;
     (void)main_bucket;
     const size_t bmask =
-        (*(size_t*)(align) >> boset);  // & 0xF0F0F0F0FF0FF0FFull;//
+        (load_bitmask_word(align) >> boset);  // & 0xF0F0F0F0FF0FF0FFull;//
     if (EMH_LIKELY(bmask != 0)) return bucket_from + CTZ(bmask);
 #endif
 
@@ -1484,11 +1497,11 @@ class safe_hash_map {
     auto& last = EMH_BUCKET(_pairs, _num_buckets);
     for (;;) {
       last &= qmask;
-      const auto bmask2 = *((size_t*)_bitmask + last);
+      const auto bmask2 = bitmask_word(last);
       if (bmask2 != 0) return last * SIZE_BIT + CTZ(bmask2);
 #if 1
       const auto next1 = (qmask / 2 + last) & qmask;
-      const auto bmask1 = *((size_t*)_bitmask + next1);
+      const auto bmask1 = bitmask_word(next1);
       if (bmask1 != 0) {
         last = next1;
         return next1 * SIZE_BIT + CTZ(bmask1);
@@ -1501,7 +1514,7 @@ class safe_hash_map {
         next_bucket &= qmask;
       }
 
-      const auto bmask1 = *((size_t*)_bitmask + next_bucket);
+      const auto bmask1 = bitmask_word(next_bucket);
       if (bmask1 != 0) {
         last = next_bucket;
         return next_bucket * SIZE_BIT + CTZ(bmask1);
@@ -1517,19 +1530,17 @@ class safe_hash_map {
     auto* const align = (uint8_t*)_bitmask + bucket_from / 8;
 
 #if EMH_ITER_SAFE
-    size_t bmask;
-    memcpy(&bmask, align + 0, sizeof(bmask));
+    size_t bmask = load_bitmask_word(align);
     bmask >>= boset;
 #else
     const auto bmask =
-        (*(size_t*)(align) >> boset);  // maybe not aligned and warning
+        (load_bitmask_word(align) >> boset);  // maybe not aligned and warning
 #endif
     if (EMH_LIKELY(bmask != 0)) return bucket_from + CTZ(bmask);
 
     const auto qmask = _mask / SIZE_BIT;
     for (auto last = (bucket_from + _mask) & qmask;;) {
-      const auto bmask2 =
-          *((size_t*)_bitmask + last);  // & 0xF0F0F0F0FF0FF0FFull;
+      const auto bmask2 = bitmask_word(last);  // & 0xF0F0F0F0FF0FF0FFull;
       if (EMH_LIKELY(bmask2 != 0)) return last * SIZE_BIT + CTZ(bmask2);
       last = (last + 1) & qmask;
     }
@@ -1656,6 +1667,11 @@ class safe_hash_map {
 
   size_type _num_filled;
   uint32_t _mlf;
+
+  size_t bitmask_word(size_type idx) const {
+    return load_bitmask_word((const char*)_bitmask +
+                             (size_t)idx * sizeof(size_t));
+  }
 
  private:
   static constexpr uint32_t BIT_PACK = sizeof(uint64_t);
