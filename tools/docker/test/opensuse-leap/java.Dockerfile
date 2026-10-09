@@ -5,7 +5,7 @@ FROM opensuse/leap
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
 RUN zypper refresh \
-&& zypper install -y git gcc gcc-c++ \
+&& zypper install -y git make gcc gcc-c++ \
  wget which lsb-release util-linux pkgconfig autoconf libtool zlib-devel \
 && zypper clean -a
 ENV CC=gcc CXX=g++
