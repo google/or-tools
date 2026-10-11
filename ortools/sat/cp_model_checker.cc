@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <iterator>
 #include <numeric>
 #include <optional>
 #include <string>
@@ -39,6 +40,7 @@
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/primary_variables.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -407,8 +409,15 @@ std::string ValidateIntDivConstraint(const CpModelProto& model,
     const int64_t inverse_of_zero = -offset / coeff;
     divisor_can_be_zero = inverse_of_zero * coeff + offset == 0 &&
                           DomainOfRef(model, var).Contains(inverse_of_zero);
+  } else if (terms.size() == 2) {
+    // Also exact with two terms.
+    const auto [var_a, coeff_a] = *terms.begin();
+    const auto [var_b, coeff_b] = *std::next(terms.begin());
+    divisor_can_be_zero = DiophantineEquationOfSizeTwoHasSolutionInDomain(
+        DomainOfRef(model, var_a), coeff_a, DomainOfRef(model, var_b), coeff_b,
+        -offset);
   } else {
-    // With several terms, the divisor can only be 0 if the gcd of the
+    // With more terms, the divisor can only be 0 if the gcd of the
     // coefficients divides the offset and 0 is within its bounds.
     int64_t gcd = 0;
     int64_t min = offset;
