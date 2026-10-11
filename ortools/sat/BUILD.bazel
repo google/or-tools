@@ -830,6 +830,7 @@ or_cc_library(
         ":diffn_util",
         ":primary_variables",
         ":sat_parameters_cc_proto",
+        ":util",
         "//ortools/base:types",
         "//ortools/port:proto_utils",
         "//ortools/util:saturated_arithmetic",

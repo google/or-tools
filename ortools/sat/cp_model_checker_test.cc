@@ -597,6 +597,44 @@ TEST(ValidateCpModelTest, DivisorSpanningAcrossZero) {
   EXPECT_TRUE(ValidateCpModel(model).empty());
 }
 
+TEST(ValidateCpModelTest, TwoTermDivisorNeverZero) {
+  // a + b with a in {-2, 2} and b in {-1, 1} is never 0, even though 0 lies
+  // between its min and max.
+  const CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ -2, -2, 2, 2 ] }
+    variables { domain: [ -1, -1, 1, 1 ] }
+    constraints {
+      int_div {
+        target { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 vars: 3 coeffs: 1 coeffs: 1 }
+      }
+    }
+  )pb");
+  EXPECT_TRUE(ValidateCpModel(model).empty());
+}
+
+TEST(ValidateCpModelTest, TwoTermDivisorCanBeZero) {
+  // 2 * a + b - 1 is 0 for a = 0 and b = 1.
+  const CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      int_div {
+        target { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 vars: 3 coeffs: 2 coeffs: 1 offset: -1 }
+      }
+    }
+  )pb");
+  EXPECT_THAT(ValidateCpModel(model),
+              HasSubstr("The domain of the divisor cannot contain 0"));
+}
+
 TEST(ValidateCpModelTest, DivisorIsZero) {
   const CpModelProto model = ParseTestProto(R"pb(
     variables { domain: [ 0, 10 ] }
