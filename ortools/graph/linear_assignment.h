@@ -764,9 +764,11 @@ class LinearSumAssignment {
   // Proof: Suppose the price decrease of every node in the iteration
   // with epsilon_ == x is bounded by B(x) which is proportional to x
   // (not surprisingly, this will be the same function B() as
-  // above). Assume for simplicity that C, the largest cost magnitude,
-  // is a power of alpha. Then the price of each node, tallied across
-  // all iterations is bounded
+  // above). Let C be the initial value of epsilon_, i.e. the width of the
+  // range of arc costs, taken to include 0 (see FinalizeSetup()); for
+  // non-negative costs this is the largest cost magnitude. Assume for
+  // simplicity that C is a power of alpha. Then the price of each node,
+  // tallied across all iterations is bounded
   //   p(v) > 2 * B(C/alpha) + 2 * B(C/alpha^2) + ... + 2 * B(kMinEpsilon)
   //        == 2 * B(C/alpha) * alpha / (alpha - 1)
   //        == 2 * B(C) / (alpha - 1).
@@ -811,7 +813,9 @@ class LinearSumAssignment {
   // A bound on the amount by which a node's price can be reduced
   // during the current iteration, used only for slack
   // relabelings. Where epsilon is the first iteration's error
-  // parameter and C is the largest magnitude of an arc cost, we set
+  // parameter and C is the width of the range of arc costs (taken to
+  // include 0, so the largest cost magnitude when costs are non-negative),
+  // we set
   //   slack_relabeling_price_ = -B(C, epsilon)
   //                           = (C + epsilon) * (n-2)/2.
   //
