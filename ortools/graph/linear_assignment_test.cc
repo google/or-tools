@@ -296,6 +296,23 @@ TYPED_TEST(LinearSumAssignmentTestWithGraphBuilder,
   EXPECT_EQ(-75 + -85 + -125 + -115, setup.assignment->GetCost());
 }
 
+TYPED_TEST(LinearSumAssignmentTestWithGraphBuilder,
+           FeasibleProblemWithCostsOfBothSigns) {
+  // The only perfect matching is 0 -> 3, 1 -> 2. To move left node 0 from its
+  // cheapest arc (cost -38) to the arc of cost 75, the price of node 2 has to
+  // drop by 113, which is more than the largest cost magnitude. This used to
+  // be reported as infeasible.
+  AssignmentProblemSetup<TypeParam> setup(2, 3);
+  setup.CreateArcWithCost(0, 2, -38);
+  setup.CreateArcWithCost(0, 3, 75);
+  setup.CreateArcWithCost(1, 2, 21);
+  setup.Finalize();
+  ASSERT_TRUE(setup.assignment->ComputeAssignment());
+  EXPECT_EQ(75 + 21, setup.assignment->GetCost());
+  EXPECT_EQ(3, setup.assignment->GetMate(0));
+  EXPECT_EQ(2, setup.assignment->GetMate(1));
+}
+
 TYPED_TEST(LinearSumAssignmentTestWithGraphBuilder, InfeasibleProblems) {
   // No arcs in the graph at all.
   AssignmentProblemSetup<TypeParam> setup0(1, 0);
