@@ -17,6 +17,8 @@ load("@protobuf//bazel:proto_library.bzl", "proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
+exports_files(["qap_example1.txt"])
+
 proto_library(
     name = "wrappers_test_message_proto",
     srcs = ["wrappers_test_message.proto"],

@@ -463,3 +463,19 @@ py_proto_library(
     visibility = ["//visibility:public"],
     deps = [":heuristic_parameters_proto"],
 )
+
+or_cc_library(
+    name = "lp_scheduling_test_utils",
+    srcs = ["lp_scheduling_test_utils.cc"],
+    hdrs = ["lp_scheduling_test_utils.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":routing",
+        "//ortools/base:types",
+        "//ortools/util:piecewise_linear_function",
+        "//ortools/util:random_engine",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:distributions",
+    ],
+)
