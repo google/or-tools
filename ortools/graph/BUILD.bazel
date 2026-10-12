@@ -584,6 +584,7 @@ or_cc_test(
     name = "one_tree_lower_bound_test",
     size = "medium",
     srcs = ["one_tree_lower_bound_test.cc"],
+    shard_count = 12,
     deps = [
         ":one_tree_lower_bound",
         "//ortools/base:gmock_main",
@@ -615,6 +616,11 @@ or_cc_test(
     name = "shortest_paths_test",
     size = "enormous",
     srcs = ["shortest_paths_test.cc"],
+
+    # Jul 2016 : 49 tests, 35 taking 10+ secs (the rest <1s).
+    # NOTE(user): The limit for the sharding of a 'medium' test (timeout=5min)
+    # in TAP is 36, because 36 * 5min = 3h.
+    shard_count = 35,
     tags = ["noci"],  # Times out occasionally in ASAN mode.
     deps = [
         ":shortest_paths",
@@ -720,6 +726,7 @@ or_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":flow_problem_cc_proto",
+        "//ortools/util:bitset",
         "//ortools/util:stats",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
@@ -784,8 +791,9 @@ or_cc_library(
 
 or_cc_test(
     name = "min_cost_flow_test",
-    size = "medium",
+    size = "large",
     srcs = ["min_cost_flow_test.cc"],
+    shard_count = 8,  # 53 tests; OSS export uses GLOP instead of CLP.
     tags = ["noci"],
     deps = [
         ":min_cost_flow",
@@ -1011,7 +1019,6 @@ or_cc_library(
 or_cc_test(
     name = "dag_constrained_shortest_path_test",
     srcs = ["dag_constrained_shortest_path_test.cc"],
-    tags = ["noci"],
     deps = [
         ":dag_constrained_shortest_path",
         "//ortools/base:dump_vars",
