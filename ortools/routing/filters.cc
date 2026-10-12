@@ -54,6 +54,7 @@
 #include "ortools/routing/fourier_solver.h"
 #include "ortools/routing/lp_scheduling.h"
 #include "ortools/routing/parameters.pb.h"
+#include "ortools/routing/path_state.h"
 #include "ortools/routing/routing.h"
 #include "ortools/routing/types.h"
 #include "ortools/util/bitset.h"
@@ -1608,10 +1609,34 @@ void FillPrePostVisitValues(
 
 bool PropagateLightweightVehicleBreaks(
     int path, DimensionValues& dimension_values,
-    absl::Span<const std::pair<int64_t, int64_t>> interbreaks) {
+    absl::Span<const std::pair<int64_t, int64_t>> interbreaks,
+    bool breaks_are_ordered) {
   using Interval = DimensionValues::Interval;
   using VehicleBreak = DimensionValues::VehicleBreak;
   const int64_t total_travel = dimension_values.TravelSums(path).back();
+  if (breaks_are_ordered && dimension_values.VehicleBreaks(path).size() > 1) {
+    int64_t min_start = kint64min;
+    std::vector<VehicleBreak>& vehicle_breaks =
+        dimension_values.MutableVehicleBreaks(path);
+    for (VehicleBreak& br : vehicle_breaks) {
+      if (br.is_performed.min == 0) continue;
+      if (!br.start.IncreaseMin(min_start) ||
+          !br.end.IncreaseMin(CapAdd(br.start.min, br.duration.min))) {
+        return false;
+      }
+      min_start = br.end.min;
+    }
+    int64_t max_end = kint64max;
+    for (int i = vehicle_breaks.size() - 1; i >= 0; --i) {
+      VehicleBreak& br = vehicle_breaks[i];
+      if (br.is_performed.min == 0) continue;
+      if (!br.end.DecreaseMax(max_end) ||
+          !br.start.DecreaseMax(CapSub(br.end.max, br.duration.min))) {
+        return false;
+      }
+      max_end = br.start.max;
+    }
+  }
   // Improve bounds on span/start max/end min using time windows: breaks that
   // must occur inside the path have their duration accumulated into
   // lb_span_tw, they also widen [start_max, end_min).
@@ -1620,7 +1645,7 @@ bool PropagateLightweightVehicleBreaks(
   Interval& start = cumuls.front();
   Interval& end = cumuls.back();
   // TODO(user): consider adding deductions from the path to the break.
-  for (const VehicleBreak& br : dimension_values.MutableVehicleBreaks(path)) {
+  for (const VehicleBreak& br : dimension_values.VehicleBreaks(path)) {
     // If the break may be performed before the path, after the path, or if it
     // is not performed at all, ignore the break.
     if (br.is_performed.min == 0) continue;
@@ -1643,7 +1668,7 @@ bool PropagateLightweightVehicleBreaks(
   if (!end.DecreaseMax(CapAdd(start.max, span.max))) return false;
 
   int num_feasible_breaks = 0;
-  for (const VehicleBreak& br : dimension_values.MutableVehicleBreaks(path)) {
+  for (const VehicleBreak& br : dimension_values.VehicleBreaks(path)) {
     if (start.min <= br.start.max && br.end.min <= end.max) {
       break_start_min = std::min(break_start_min, br.start.min);
       break_end_max = std::max(break_end_max, br.end.max);
@@ -1705,33 +1730,24 @@ class PathCumulFilter : public BasePathFilter {
                ? 0
                : accepted_objective_value_;
   }
-  bool UsesDimensionOptimizers() {
-    if (!may_use_optimizers_) return false;
-    for (int vehicle = 0; vehicle < routing_model_.vehicles(); ++vehicle) {
-      if (FilterWithDimensionCumulOptimizerForVehicle(vehicle)) return true;
-    }
-    return false;
+  bool UsesDimensionOptimizers() const {
+    return !use_local_optimizer_for_vehicle_.empty();
   }
 
  private:
   using Interval = DimensionValues::Interval;
-  struct SoftBound {
-    int64_t bound = -1;
-    int64_t coefficient = 0;
-  };
 
   // Data extractors used in constructor.
   std::vector<Interval> ExtractInitialCumulIntervals();
   std::vector<Interval> ExtractInitialSlackIntervals();
   std::vector<std::vector<Dimension::NodePrecedence>>
   ExtractNodeIndexToPrecedences() const;
-  std::vector<SoftBound> ExtractCumulSoftUpperBounds() const;
-  std::vector<SoftBound> ExtractCumulSoftLowerBounds() const;
   std::vector<const PiecewiseLinearFunction*> ExtractCumulPiecewiseLinearCosts()
       const;
   std::vector<const TransitCallback2*> ExtractEvaluators() const;
   using VehicleBreak = DimensionValues::VehicleBreak;
   std::vector<std::vector<VehicleBreak>> ExtractInitialVehicleBreaks() const;
+  std::vector<bool> ExtractLocalOptimizerUsageForVehicles() const;
 
   bool InitializeAcceptPath() override {
     accepted_objective_value_ = synchronized_objective_value_;
@@ -1778,11 +1794,6 @@ class PathCumulFilter : public BasePathFilter {
            (!dimension_.GetBreakIntervalsOfVehicle(path).empty() ||
             !dimension_.GetBreakDistanceDurationOfVehicle(path).empty());
   }
-  // Returns true iff the given path has a linear soft span cost.
-  bool FilterSoftSpanCost(int path) const {
-    return dimension_.HasSoftSpanUpperBounds() &&
-           dimension_.GetSoftSpanUpperBoundForVehicle(path).cost > 0;
-  }
   // Returns true iff the given path has a quadratic soft span cost.
   bool FilterSoftSpanQuadraticCost(int path) const {
     if (!dimension_.HasQuadraticCostSoftSpanUpperBounds()) return false;
@@ -1790,30 +1801,7 @@ class PathCumulFilter : public BasePathFilter {
         dimension_.GetQuadraticCostSoftSpanUpperBoundForVehicle(path);
     return bound < kint64max && cost != 0;
   }
-  // Returns true iff an LP/MP optimizer should be used for the given vehicle.
-  bool FilterWithDimensionCumulOptimizerForVehicle(int vehicle) const {
-    if (!may_use_optimizers_) return false;
-    if (!cumul_piecewise_linear_costs_.empty()) return false;
 
-    if (FilterVehicleBreaks(vehicle)) return true;
-
-    int num_linear_constraints = 0;
-    if (dimension_.GetSpanCostCoefficientForVehicle(vehicle) > 0 ||
-        dimension_.GetSlackCostCoefficientForVehicle(vehicle) > 0) {
-      ++num_linear_constraints;
-    }
-    if (FilterSoftSpanCost(vehicle)) ++num_linear_constraints;
-    if (!cumul_soft_upper_bounds_.empty()) ++num_linear_constraints;
-    if (!cumul_soft_lower_bounds_.empty()) ++num_linear_constraints;
-    if (path_span_upper_bounds_[vehicle] < kint64max) {
-      ++num_linear_constraints;
-    }
-    // The DimensionCumulOptimizer is used to compute a more precise value of
-    // the cost related to the cumul values (soft bounds and span/slack costs).
-    // It is also used to guarantee feasibility with complex mixes of
-    // constraints.
-    return num_linear_constraints >= 2 && filter_objective_cost_;
-  }
   // Data about the routing problem, used as read-only input.
   const Model& routing_model_;
   const Dimension& dimension_;
@@ -1870,9 +1858,9 @@ class PathCumulFilter : public BasePathFilter {
   CommittableValue<int64_t> global_span_cost_;
 
   // Empty if there are no soft bounds, otherwise maps each node to its bound.
-  const std::vector<SoftBound> cumul_soft_upper_bounds_;
+  const std::vector<BoundCost> cumul_soft_upper_bounds_;
   // Empty if there are no soft bounds, otherwise maps each node to its bound.
-  const std::vector<SoftBound> cumul_soft_lower_bounds_;
+  const std::vector<BoundCost> cumul_soft_lower_bounds_;
   // Empty if there are no linear costs, otherwise maps each node to its cost.
   const std::vector<const PiecewiseLinearFunction*>
       cumul_piecewise_linear_costs_;
@@ -1925,6 +1913,10 @@ class PathCumulFilter : public BasePathFilter {
   // True iff this object may use an LP or MP optimizer to solve sub-problems.
   const bool may_use_optimizers_;
   const bool propagate_own_objective_value_;
+  // Keeps track of whether or not the local optimizers should be used to filter
+  // each vehicle. If none of the vehicles require the optimizer, the vector
+  // remains empty.
+  const std::vector<bool> use_local_optimizer_for_vehicle_;
 
   std::vector<FourierSolver> fourier_solver_of_path_;
   struct FourierVariables {
@@ -1969,39 +1961,6 @@ PathCumulFilter::ExtractInitialSlackIntervals() {
     intervals.push_back({slack->Min(), slack->Max()});
   }
   return intervals;
-}
-
-std::vector<PathCumulFilter::SoftBound>
-PathCumulFilter::ExtractCumulSoftUpperBounds() const {
-  const int num_cumuls = dimension_.cumuls().size();
-  std::vector<SoftBound> bounds(num_cumuls,
-                                {.bound = kint64max, .coefficient = 0});
-  bool has_some_bound = false;
-  for (int i = 0; i < num_cumuls; ++i) {
-    if (!dimension_.HasCumulVarSoftUpperBound(i)) continue;
-    const int64_t bound = dimension_.GetCumulVarSoftUpperBound(i);
-    const int64_t coeff = dimension_.GetCumulVarSoftUpperBoundCoefficient(i);
-    bounds[i] = {.bound = bound, .coefficient = coeff};
-    has_some_bound |= bound < kint64max && coeff != 0;
-  }
-  if (!has_some_bound) bounds.clear();
-  return bounds;
-}
-
-std::vector<PathCumulFilter::SoftBound>
-PathCumulFilter::ExtractCumulSoftLowerBounds() const {
-  const int num_cumuls = dimension_.cumuls().size();
-  std::vector<SoftBound> bounds(num_cumuls, {.bound = 0, .coefficient = 0});
-  bool has_some_bound = false;
-  for (int i = 0; i < num_cumuls; ++i) {
-    if (!dimension_.HasCumulVarSoftLowerBound(i)) continue;
-    const int64_t bound = dimension_.GetCumulVarSoftLowerBound(i);
-    const int64_t coeff = dimension_.GetCumulVarSoftLowerBoundCoefficient(i);
-    bounds[i] = {.bound = bound, .coefficient = coeff};
-    has_some_bound |= bound > 0 && coeff != 0;
-  }
-  if (!has_some_bound) bounds.clear();
-  return bounds;
 }
 
 std::vector<const PiecewiseLinearFunction*>
@@ -2066,6 +2025,32 @@ PathCumulFilter::ExtractInitialVehicleBreaks() const {
   return vehicle_breaks;
 }
 
+std::vector<bool> PathCumulFilter::ExtractLocalOptimizerUsageForVehicles()
+    const {
+  if (lp_optimizer_ == nullptr || !may_use_optimizers_ ||
+      !cumul_piecewise_linear_costs_.empty()) {
+    return {};
+  }
+  // The DimensionCumulOptimizer is used to compute a more precise value of
+  // the cost related to the cumul values (soft bounds and span/slack costs).
+  // It is also used to guarantee feasibility with complex mixes of
+  // constraints.
+  bool has_any_vehicle_using_local_optimizer = false;
+  std::vector<bool> use_local_optimizer_for_vehicle(routing_model_.vehicles(),
+                                                    false);
+  for (int vehicle = 0; vehicle < routing_model_.vehicles(); ++vehicle) {
+    const Dimension::VehicleLinearConstraintsInfo linear_constraints_info =
+        dimension_.GetLinearConstraintsInfoForVehicle(vehicle);
+    use_local_optimizer_for_vehicle[vehicle] =
+        linear_constraints_info.has_break_constraints ||
+        (filter_objective_cost_ && linear_constraints_info.bitset.count() >= 2);
+    has_any_vehicle_using_local_optimizer |=
+        use_local_optimizer_for_vehicle[vehicle];
+  }
+  return has_any_vehicle_using_local_optimizer ? use_local_optimizer_for_vehicle
+                                               : std::vector<bool>();
+}
+
 PathCumulFilter::PathCumulFilter(const Model& routing_model,
                                  const Dimension& dimension,
                                  bool propagate_own_objective_value,
@@ -2087,15 +2072,14 @@ PathCumulFilter::PathCumulFilter(const Model& routing_model,
                        dimension.vehicle_slack_cost_coefficients())),
       global_span_cost_coefficient_(dimension.global_span_cost_coefficient()),
       global_span_cost_(0),
-      cumul_soft_upper_bounds_(ExtractCumulSoftUpperBounds()),
-      cumul_soft_lower_bounds_(ExtractCumulSoftLowerBounds()),
+      cumul_soft_upper_bounds_(dimension.GetCumulVarSoftUpperBounds()),
+      cumul_soft_lower_bounds_(dimension.GetCumulVarSoftLowerBounds()),
       cumul_piecewise_linear_costs_(ExtractCumulPiecewiseLinearCosts()),
       has_forbidden_intervals_(
           absl::c_any_of(dimension.forbidden_intervals(),
                          [](const SortedDisjointIntervalList& intervals) {
                            return intervals.NumIntervals() > 0;
                          })),
-
       dimension_values_(routing_model.vehicles(), dimension.cumuls().size()),
       visits_(routing_model.vehicles(), dimension.cumuls().size()),
       break_propagator_(dimension.cumuls().size()),
@@ -2112,7 +2096,9 @@ PathCumulFilter::PathCumulFilter(const Model& routing_model,
       path_accessor_([this](int64_t node) { return GetNext(node); }),
       filter_objective_cost_(filter_objective_cost),
       may_use_optimizers_(may_use_optimizers),
-      propagate_own_objective_value_(propagate_own_objective_value) {
+      propagate_own_objective_value_(propagate_own_objective_value),
+      use_local_optimizer_for_vehicle_(
+          ExtractLocalOptimizerUsageForVehicles()) {
   for (int node = 0; node < node_index_to_precedences_.size(); ++node) {
     for (const auto [first_node, second_node, offset,
                      unused_performed_constraint] :
@@ -2123,13 +2109,41 @@ PathCumulFilter::PathCumulFilter(const Model& routing_model,
     }
   }
   if constexpr (DEBUG_MODE) {
-    for (int vehicle = 0; vehicle < routing_model.vehicles(); vehicle++) {
-      if (FilterWithDimensionCumulOptimizerForVehicle(vehicle)) {
-        DCHECK_NE(lp_optimizer_, nullptr);
-        DCHECK_NE(mp_optimizer_, nullptr);
+    if (!use_local_optimizer_for_vehicle_.empty()) {
+      for (int vehicle = 0; vehicle < routing_model.vehicles(); vehicle++) {
+        if (use_local_optimizer_for_vehicle_[vehicle]) {
+          DCHECK_NE(lp_optimizer_, nullptr);
+          DCHECK_NE(mp_optimizer_, nullptr);
+        }
       }
     }
-  }
+
+    const std::vector<IntVar*>& cumuls = dimension_.cumuls();
+    if (!cumul_soft_upper_bounds_.empty()) {
+      bool has_soft_upper_bound = false;
+      DCHECK_EQ(cumul_soft_upper_bounds_.size(), cumuls.size());
+      for (int i = 0; i < cumul_soft_upper_bounds_.size(); ++i) {
+        const auto& [bound, cost] = cumul_soft_upper_bounds_[i];
+        if (bound < cumuls[i]->Max() && cost > 0) {
+          has_soft_upper_bound = true;
+          break;
+        }
+      }
+      DCHECK(has_soft_upper_bound);
+    }
+    if (!cumul_soft_lower_bounds_.empty()) {
+      bool has_soft_lower_bound = false;
+      DCHECK_EQ(cumul_soft_lower_bounds_.size(), cumuls.size());
+      for (int i = 0; i < cumul_soft_lower_bounds_.size(); ++i) {
+        const auto& [bound, cost] = cumul_soft_lower_bounds_[i];
+        if (bound > cumuls[i]->Min() && cost > 0) {
+          has_soft_lower_bound = true;
+          break;
+        }
+      }
+      DCHECK(has_soft_lower_bound);
+    }
+  }  // if constexpr (DEBUG_MODE)
 }
 
 bool PathCumulFilter::PropagateTransitsAndSpans(int path) {
@@ -2280,9 +2294,13 @@ bool PathCumulFilter::PropagatePickupToDeliveryLimits(int path) {
 }
 
 bool PathCumulFilter::PropagateVehicleBreaks(int path) {
-  return PropagateLightweightVehicleBreaks(
-      path, dimension_values_,
-      dimension_.GetBreakDistanceDurationOfVehicle(path));
+  const auto& interbreaks = dimension_.GetBreakDistanceDurationOfVehicle(path);
+  const bool breaks_are_ordered =
+      dimension_.GetBreakIntervalsOrderingOfVehicle(path) ==
+          Dimension::BreakIntervalsOrdering::kOrdered ||
+      !interbreaks.empty();
+  return PropagateLightweightVehicleBreaks(path, dimension_values_, interbreaks,
+                                           breaks_are_ordered);
 }
 
 bool PathCumulFilter::AcceptPath(int64_t path_start, int64_t /*chain_start*/,
@@ -2679,14 +2697,15 @@ bool PathCumulFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
   }
 
   // Filtering on objective value, calling LPs and MIPs if needed.
-  if (may_use_optimizers_ && lp_optimizer_ != nullptr &&
+  if (!use_local_optimizer_for_vehicle_.empty() &&
       accepted_objective_value_ <= objective_max) {
+    DCHECK_NE(lp_optimizer_, nullptr);
     std::vector<int> paths_requiring_mp_optimizer;
     // TODO(user): Further optimize the LPs when we find feasible-only
     // solutions with the original time shares, if there's time left in the end.
     int solve_duration_shares = dimension_values_.ChangedPaths().size();
     for (const int vehicle : dimension_values_.ChangedPaths()) {
-      if (!FilterWithDimensionCumulOptimizerForVehicle(vehicle)) {
+      if (!use_local_optimizer_for_vehicle_[vehicle]) {
         continue;
       }
       int64_t path_cost_with_lp = 0;
@@ -4113,177 +4132,6 @@ IntVarLocalSearchFilter* MakeCPFeasibilityFilter(Model* routing_model) {
       new CPFeasibilityFilter(routing_model));
 }
 
-PathState::PathState(int num_nodes, std::vector<int> path_start,
-                     std::vector<int> path_end)
-    : num_nodes_(num_nodes),
-      num_paths_(path_start.size()),
-      num_nodes_threshold_(std::max(16, 4 * num_nodes_))  // Arbitrary value.
-{
-  DCHECK_EQ(path_start.size(), num_paths_);
-  DCHECK_EQ(path_end.size(), num_paths_);
-  for (int p = 0; p < num_paths_; ++p) {
-    path_start_end_.push_back({path_start[p], path_end[p]});
-  }
-  Reset();
-}
-
-void PathState::Reset() {
-  is_invalid_ = false;
-  // Initial state is all unperformed: paths go from start to end directly.
-  committed_index_.assign(num_nodes_, -1);
-  committed_paths_.assign(num_nodes_, kUnassigned);
-  committed_nodes_.assign(2 * num_paths_, -1);
-  chains_.assign(num_paths_ + 1, {-1, -1});  // Reserve 1 more for sentinel.
-  paths_.assign(num_paths_, {-1, -1});
-  for (int path = 0; path < num_paths_; ++path) {
-    const int index = 2 * path;
-    const auto& [start, end] = path_start_end_[path];
-    committed_index_[start] = index;
-    committed_index_[end] = index + 1;
-
-    committed_nodes_[index] = start;
-    committed_nodes_[index + 1] = end;
-
-    committed_paths_[start] = path;
-    committed_paths_[end] = path;
-
-    chains_[path] = {index, index + 2};
-    paths_[path] = {path, path + 1};
-  }
-  chains_[num_paths_] = {0, 0};  // Sentinel.
-  // Nodes that are not starts or ends are not in any path, but they still need
-  // to be represented in the committed state.
-  for (int node = 0; node < num_nodes_; ++node) {
-    if (committed_index_[node] != -1) continue;  // node is start or end.
-    committed_index_[node] = committed_nodes_.size();
-    committed_nodes_.push_back(node);
-  }
-}
-
-PathState::ChainRange PathState::Chains(int path) const {
-  const PathBounds bounds = paths_[path];
-  return PathState::ChainRange(chains_.data() + bounds.begin_index,
-                               chains_.data() + bounds.end_index,
-                               committed_nodes_.data());
-}
-
-PathState::NodeRange PathState::Nodes(int path) const {
-  const PathBounds bounds = paths_[path];
-  return PathState::NodeRange(chains_.data() + bounds.begin_index,
-                              chains_.data() + bounds.end_index,
-                              committed_nodes_.data());
-}
-
-void PathState::ChangePath(int path, absl::Span<const ChainBounds> chains) {
-  changed_paths_.push_back(path);
-  const int path_begin_index = chains_.size();
-  chains_.insert(chains_.end(), chains.begin(), chains.end());
-  const int path_end_index = chains_.size();
-  paths_[path] = {path_begin_index, path_end_index};
-  chains_.emplace_back(0, 0);  // Sentinel.
-}
-
-void PathState::ChangeLoops(absl::Span<const int> new_loops) {
-  for (const int loop : new_loops) {
-    // If the node was already a loop, do not add it.
-    // If it was not assigned, it becomes a loop.
-    if (Path(loop) == kLoop) continue;
-    changed_loops_.push_back(loop);
-  }
-}
-
-void PathState::Commit() {
-  DCHECK(!IsInvalid());
-  if (committed_nodes_.size() < num_nodes_threshold_) {
-    IncrementalCommit();
-  } else {
-    FullCommit();
-  }
-}
-
-void PathState::Revert() {
-  is_invalid_ = false;
-  chains_.resize(num_paths_ + 1);  // One per path + sentinel.
-  for (const int path : changed_paths_) {
-    paths_[path] = {path, path + 1};
-  }
-  changed_paths_.clear();
-  changed_loops_.clear();
-}
-
-void PathState::CopyNewPathAtEndOfNodes(int path) {
-  // Copy path's nodes, chain by chain.
-  const PathBounds path_bounds = paths_[path];
-  for (int i = path_bounds.begin_index; i < path_bounds.end_index; ++i) {
-    const ChainBounds chain_bounds = chains_[i];
-    committed_nodes_.insert(committed_nodes_.end(),
-                            committed_nodes_.data() + chain_bounds.begin_index,
-                            committed_nodes_.data() + chain_bounds.end_index);
-    if (committed_paths_[committed_nodes_.back()] == path) continue;
-    for (int i = chain_bounds.begin_index; i < chain_bounds.end_index; ++i) {
-      const int node = committed_nodes_[i];
-      committed_paths_[node] = path;
-    }
-  }
-}
-
-// TODO(user): Instead of copying paths at the end systematically,
-// reuse some of the memory when possible.
-void PathState::IncrementalCommit() {
-  const int new_nodes_begin = committed_nodes_.size();
-  for (const int path : ChangedPaths()) {
-    const int chain_begin = committed_nodes_.size();
-    CopyNewPathAtEndOfNodes(path);
-    const int chain_end = committed_nodes_.size();
-    chains_[path] = {chain_begin, chain_end};
-  }
-  // Re-index all copied nodes.
-  const int new_nodes_end = committed_nodes_.size();
-  for (int i = new_nodes_begin; i < new_nodes_end; ++i) {
-    const int node = committed_nodes_[i];
-    committed_index_[node] = i;
-  }
-  // New loops stay in place: only change their path to kLoop,
-  // committed_index_ does not change.
-  for (const int loop : ChangedLoops()) {
-    committed_paths_[loop] = kLoop;
-  }
-  // Committed part of the state is set up, erase incremental changes.
-  Revert();
-}
-
-void PathState::FullCommit() {
-  // Copy all paths at the end of committed_nodes_,
-  // then remove all old committed_nodes_.
-  const int old_num_nodes = committed_nodes_.size();
-  for (int path = 0; path < num_paths_; ++path) {
-    const int new_path_begin = committed_nodes_.size() - old_num_nodes;
-    CopyNewPathAtEndOfNodes(path);
-    const int new_path_end = committed_nodes_.size() - old_num_nodes;
-    chains_[path] = {new_path_begin, new_path_end};
-  }
-  committed_nodes_.erase(committed_nodes_.begin(),
-                         committed_nodes_.begin() + old_num_nodes);
-
-  // Reindex path nodes, then loop nodes.
-  constexpr int kUnindexed = -1;
-  committed_index_.assign(num_nodes_, kUnindexed);
-  int index = 0;
-  for (const int node : committed_nodes_) {
-    committed_index_[node] = index++;
-  }
-  for (int node = 0; node < num_nodes_; ++node) {
-    if (committed_index_[node] != kUnindexed) continue;
-    committed_index_[node] = index++;
-    committed_nodes_.push_back(node);
-  }
-  for (const int loop : ChangedLoops()) {
-    committed_paths_[loop] = kLoop;
-  }
-  // Committed part of the state is set up, erase incremental changes.
-  Revert();
-}
-
 namespace {
 
 class PathStateFilter : public LocalSearchFilter {
@@ -4336,6 +4184,7 @@ class PathStateFilter : public LocalSearchFilter {
   std::vector<IndexArc> arcs_by_head_index_;
   std::vector<int> next_arc_;
   std::vector<PathState::ChainBounds> path_chains_;
+  static constexpr int kSmallChangeThreshold = 8;
 };
 
 PathStateFilter::PathStateFilter(std::unique_ptr<PathState> path_state,
@@ -4426,7 +4275,8 @@ void PathStateFilter::CutChains() {
   changed_arcs_.resize(num_changed_arcs);
 
   path_state_->ChangeLoops(changed_loops_);
-  if (tail_head_indices_.size() + changed_paths_.size() <= 8) {
+  if (tail_head_indices_.size() + changed_paths_.size() <=
+      kSmallChangeThreshold) {
     MakeChainsFromChangedPathsAndArcsWithSelectionAlgorithm();
   } else {
     MakeChainsFromChangedPathsAndArcsWithGenericAlgorithm();
@@ -4435,43 +4285,48 @@ void PathStateFilter::CutChains() {
 
 void PathStateFilter::
     MakeChainsFromChangedPathsAndArcsWithSelectionAlgorithm() {
-  int num_visited_changed_arcs = 0;
-  const int num_changed_arcs = tail_head_indices_.size();
+  if (path_chains_.size() < kSmallChangeThreshold) {
+    path_chains_.resize(kSmallChangeThreshold);
+  }
+  PathState::ChainBounds* const path_chains = path_chains_.data();
+  TailHeadIndices* tail_head_indices = tail_head_indices_.data();
+  const TailHeadIndices* const tail_head_indices_end =
+      tail_head_indices + tail_head_indices_.size();
   // For every path, find all its chains.
   for (const int path : changed_paths_) {
-    path_chains_.clear();
+    int num_chains = 0;
     const auto [start_index, end_index] = path_state_->CommittedPathRange(path);
+    const int last_index = end_index - 1;
     int current_index = start_index;
-    while (true) {
+    while (tail_head_indices < tail_head_indices_end) {
       // Look for smallest non-visited tail_index that is no smaller than
-      // current_index.
-      int selected_arc = -1;
-      int selected_tail_index = kint32max;
-      for (int i = num_visited_changed_arcs; i < num_changed_arcs; ++i) {
-        const int tail_index = tail_head_indices_[i].tail_index;
-        if (current_index <= tail_index && tail_index < selected_tail_index) {
-          selected_arc = i;
-          selected_tail_index = tail_index;
+      // current_index. Since indices are non-negative, tail_index -
+      // current_index underflows to >= 0x80000000u in unsigned arithmetic.
+      TailHeadIndices* selected_arc = tail_head_indices;
+      uint32_t min_diff = tail_head_indices->tail_index - current_index;
+      for (TailHeadIndices* arc = tail_head_indices + 1;
+           arc < tail_head_indices_end; ++arc) {
+        const uint32_t diff = arc->tail_index - current_index;
+        if (diff < min_diff) {
+          selected_arc = arc;
+          min_diff = diff;
         }
       }
       // If there is no such tail index, or more generally if the next chain
-      // would be cut by end of path,
-      // stack {current_index, end_index + 1} in chains_, and go to next path.
-      // Otherwise, stack {current_index, tail_index+1} in chains_,
-      // set current_index = head_index, set pair to visited.
-      if (start_index <= current_index && current_index < end_index &&
-          end_index <= selected_tail_index) {
-        path_chains_.emplace_back(current_index, end_index);
+      // would be cut by end of path, stack {current_index, end_index} in
+      // path_chains, and go to next path.
+      // Otherwise, stack {current_index, selected_tail_index + 1} in
+      // path_chains, set current_index = head_index, and discard selected_arc.
+      if (static_cast<uint32_t>(last_index - current_index) < min_diff) {
         break;
-      } else {
-        path_chains_.emplace_back(current_index, selected_tail_index + 1);
-        current_index = tail_head_indices_[selected_arc].head_index;
-        std::swap(tail_head_indices_[num_visited_changed_arcs],
-                  tail_head_indices_[selected_arc]);
-        ++num_visited_changed_arcs;
       }
+      path_chains[num_chains++] = {
+          current_index, current_index + static_cast<int>(min_diff) + 1};
+      current_index = selected_arc->head_index;
+      *selected_arc = *tail_head_indices++;
     }
-    path_state_->ChangePath(path, path_chains_);
+    path_chains[num_chains++] = {current_index, end_index};
+    path_state_->ChangePath(path, absl::MakeConstSpan(path_chains, num_chains));
   }
 }
 

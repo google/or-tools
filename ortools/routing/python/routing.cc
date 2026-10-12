@@ -156,11 +156,21 @@ PYBIND11_MODULE(routing, m) {
           DOC(operations_research, routing, IndexManager, IndicesToNodes))
       .def_readonly_static("k_unassigned", &IndexManager::kUnassigned);
 
-  pybind11::class_<Dimension>(m, "Dimension",
-                              DOC(operations_research, routing, Dimension))
-      .def("model", &Dimension::model,
-           pybind11::return_value_policy::reference_internal,
-           DOC(operations_research, routing, Dimension, model))
+  pybind11::class_<Dimension> dim(m, "Dimension",
+                                  DOC(operations_research, routing, Dimension));
+  pybind11::enum_<Dimension::BreakIntervalsOrdering>(
+      dim, "BreakIntervalsOrdering",
+      DOC(operations_research, routing, Dimension, BreakIntervalsOrdering))
+      .value("kUnordered", Dimension::BreakIntervalsOrdering::kUnordered,
+             DOC(operations_research, routing, Dimension,
+                 BreakIntervalsOrdering, kUnordered))
+      .value("kOrdered", Dimension::BreakIntervalsOrdering::kOrdered,
+             DOC(operations_research, routing, Dimension,
+                 BreakIntervalsOrdering, kOrdered))
+      .export_values();
+  dim.def("model", &Dimension::model,
+          pybind11::return_value_policy::reference_internal,
+          DOC(operations_research, routing, Dimension, model))
       .def("get_transit_value", &Dimension::GetTransitValue,
            py::arg("from_index"), py::arg("to_index"), py::arg("vehicle"),
            DOC(operations_research, routing, Dimension, GetTransitValue))
@@ -282,6 +292,15 @@ PYBIND11_MODULE(routing, m) {
            pybind11::return_value_policy::reference_internal, py::arg("index"),
            DOC(operations_research, routing, Dimension,
                GetCumulVarPiecewiseLinearCost))
+      .def("set_break_intervals_ordering_of_vehicle",
+           &Dimension::SetBreakIntervalsOrderingOfVehicle, py::arg("vehicle"),
+           py::arg("ordering"),
+           DOC(operations_research, routing, Dimension,
+               SetBreakIntervalsOrderingOfVehicle))
+      .def("get_break_intervals_ordering_of_vehicle",
+           &Dimension::GetBreakIntervalsOrderingOfVehicle, py::arg("vehicle"),
+           DOC(operations_research, routing, Dimension,
+               GetBreakIntervalsOrderingOfVehicle))
       .def("set_break_distance_duration_of_vehicle",
            &Dimension::SetBreakDistanceDurationOfVehicle, py::arg("distance"),
            py::arg("duration"), py::arg("vehicle"),
