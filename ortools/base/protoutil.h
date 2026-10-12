@@ -14,35 +14,23 @@
 #ifndef ORTOOLS_BASE_PROTOUTIL_H_
 #define ORTOOLS_BASE_PROTOUTIL_H_
 
-#include <cstdint>
-
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "google/protobuf/duration.pb.h"
 
 namespace util_time {
 
-inline ::absl::StatusOr<google::protobuf::Duration> EncodeGoogleApiProto(
-    absl::Duration d) {
-  google::protobuf::Duration proto;
-  const int64_t d_in_nano = ToInt64Nanoseconds(d);
-  proto.set_seconds(static_cast<int64_t>(d_in_nano / 1000000000));
-  proto.set_nanos(static_cast<int>(d_in_nano % 1000000000));
-  return proto;
-}
+::absl::Status Validate(const google::protobuf::Duration& d);
 
-inline ::absl::Status EncodeGoogleApiProto(absl::Duration d,
-                                           google::protobuf::Duration* proto) {
-  *proto = EncodeGoogleApiProto(d).value();
-  return absl::OkStatus();
-}
+::absl::Status EncodeGoogleApiProto(absl::Duration d,
+                                    google::protobuf::Duration* proto);
 
-inline ::absl::StatusOr<absl::Duration> DecodeGoogleApiProto(
-    const google::protobuf::Duration& proto) {
-  return absl::Seconds(proto.seconds() + 1e-9 * proto.nanos());
-}
+::absl::StatusOr<google::protobuf::Duration> EncodeGoogleApiProto(
+    absl::Duration d);
+
+::absl::StatusOr<absl::Duration> DecodeGoogleApiProto(
+    const google::protobuf::Duration& proto);
 
 }  // namespace util_time
 
