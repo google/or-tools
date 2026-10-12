@@ -355,6 +355,7 @@ or_cc_test(
         "//operations_research_data/operations_research_data/SET_COVERING:rail",
         "//operations_research_data/operations_research_data/SET_COVERING:scp",
     ],
+    shard_count = 50,  # June 2026: about 180 test cases.
     tags = ["manual"],
     deps = [
         ":base_types",
@@ -377,6 +378,7 @@ or_cc_test(
     size = "medium",
     timeout = "eternal",
     srcs = ["set_cover_test.cc"],
+    shard_count = 6,  # November 2023: a handful take a long time, possibly minutes in DEBUG mode.
     tags = ["manual"],
     deps = [
         ":base_types",
@@ -400,6 +402,7 @@ or_cc_test(
     size = "medium",
     timeout = "eternal",
     srcs = ["knights_test.cc"],
+    shard_count = 6,
     tags = ["manual"],
     deps = [
         ":base_types",
