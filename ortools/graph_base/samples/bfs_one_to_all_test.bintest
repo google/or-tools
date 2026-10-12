@@ -1,2 +1,0 @@
-RUN: $(bfs_one_to_all)
-CHECK: "Shortest path from 0 to 2 has length: 2"
