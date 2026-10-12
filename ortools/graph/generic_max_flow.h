@@ -135,6 +135,7 @@
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
 #include "ortools/graph/flow_problem.pb.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/stats.h"
 
 namespace operations_research {
@@ -530,7 +531,7 @@ class GenericMaxFlow : public MaxFlowStatusClass {
 
   // BFS queue used by the GlobalUpdate() function. We do not use a C++ queue
   // because we need access to the vector for different optimizations.
-  std::vector<bool> node_in_bfs_queue_;
+  Bitset64<NodeIndex> node_in_bfs_queue_;
   std::vector<NodeIndex> bfs_queue_;
 
   // Statistics about this class.
@@ -999,11 +1000,12 @@ void GenericMaxFlow<Graph, ArcFlowT, FlowSumT>::PushFlowExcessBackToSource() {
 template <typename Graph, typename ArcFlowT, typename FlowSumT>
 void GenericMaxFlow<Graph, ArcFlowT, FlowSumT>::GlobalUpdate() {
   SCOPED_TIME_STAT(&stats_);
-  bfs_queue_.clear();
-  int queue_index = 0;
   const NodeIndex num_nodes = graph_->num_nodes();
-  node_in_bfs_queue_.assign(num_nodes, false);
-  node_in_bfs_queue_[sink_] = true;
+
+  // We cache the view as this is a hot-loop and we don't want bound checking.
+  node_in_bfs_queue_.ClearAndResize(num_nodes);
+  auto in_queue = node_in_bfs_queue_.view();
+  in_queue.Set(sink_);
 
   // We cache this as this is a hot-loop and we don't want bound checking.
   FlowSumType* const node_excess = node_excess_.get();
@@ -1013,11 +1015,18 @@ void GenericMaxFlow<Graph, ArcFlowT, FlowSumT>::GlobalUpdate() {
   // presence of integer overflow), the source cannot reach the sink in the
   // residual graph. If there is possible overflow and the source is reachable,
   // we still do not want to relabel it, so we start with the source marked.
-  node_in_bfs_queue_[source_] = true;
-  bfs_queue_.push_back(sink_);
+  in_queue.Set(source_);
 
-  while (queue_index != bfs_queue_.size()) {
-    const NodeIndex node = bfs_queue_[queue_index];
+  // We manipulate the indices and size manually to avoid push_back().
+  // We also "cache" the pointer to bfs_queue_.data().
+  bfs_queue_.resize(num_nodes);
+  int queue_index = 0;
+  int queue_size = 0;
+  bfs_queue_[queue_size++] = sink_;
+  NodeIndex* const bfs_queue = bfs_queue_.data();
+
+  while (queue_index < queue_size) {
+    const NodeIndex node = bfs_queue[queue_index];
     ++queue_index;
     const NodeIndex candidate_distance = node_potential_[node] + 1;
     for (const ArcIndex arc : graph_->OutgoingOrOppositeIncomingArcs(node)) {
@@ -1025,7 +1034,7 @@ void GenericMaxFlow<Graph, ArcFlowT, FlowSumT>::GlobalUpdate() {
 
       // Skip the arc if the height of head was already set to the correct
       // value (Remember we are doing reverse BFS).
-      if (node_in_bfs_queue_[head]) continue;
+      if (in_queue[head]) continue;
 
       // TODO(user): By using more memory we can speed this up quite a bit by
       // avoiding to take the opposite arc here, too options:
@@ -1059,8 +1068,8 @@ void GenericMaxFlow<Graph, ArcFlowT, FlowSumT>::GlobalUpdate() {
         // Note that there is no need to touch first_admissible_arc_[node]
         // because of the relaxed Relabel() we use.
         node_potential_[head] = candidate_distance;
-        node_in_bfs_queue_[head] = true;
-        bfs_queue_.push_back(head);
+        in_queue.Set(head);
+        bfs_queue[queue_size++] = head;
       }
     }
   }
@@ -1077,7 +1086,7 @@ void GenericMaxFlow<Graph, ArcFlowT, FlowSumT>::GlobalUpdate() {
   // SaturateOutgoingArcsFromSource() will push the flow to n again.
   // TODO(user): This is another argument for another anti-overflow algorithm.
   for (NodeIndex node = 0; node < num_nodes; ++node) {
-    if (!node_in_bfs_queue_[node]) {
+    if (!in_queue[node]) {
       node_potential_[node] = 2 * num_nodes - 1;
     }
   }
@@ -1085,7 +1094,7 @@ void GenericMaxFlow<Graph, ArcFlowT, FlowSumT>::GlobalUpdate() {
   // Reset the active nodes. Doing it like this pushes the nodes in increasing
   // order of height. Note that bfs_queue_[0] is the sink_ so we skip it.
   DCHECK(IsEmptyActiveNodeContainer());
-  for (int i = 1; i < bfs_queue_.size(); ++i) {
+  for (int i = 1; i < queue_size; ++i) {
     const NodeIndex node = bfs_queue_[i];
     if (node_excess_[node] > 0) {
       DCHECK(IsActive(node));
@@ -1367,11 +1376,11 @@ void GenericMaxFlow<Graph, ArcFlowT, FlowSumT>::ComputeReachableNodes(
     return;
   }
   bfs_queue_.clear();
-  node_in_bfs_queue_.assign(num_nodes, false);
+  node_in_bfs_queue_.ClearAndResize(num_nodes);
 
   int queue_index = 0;
   bfs_queue_.push_back(start);
-  node_in_bfs_queue_[start] = true;
+  node_in_bfs_queue_.Set(start);
   while (queue_index != bfs_queue_.size()) {
     const NodeIndex node = bfs_queue_[queue_index];
     ++queue_index;
@@ -1379,7 +1388,7 @@ void GenericMaxFlow<Graph, ArcFlowT, FlowSumT>::ComputeReachableNodes(
       const NodeIndex head = Head(arc);
       if (node_in_bfs_queue_[head]) continue;
       if (residual_arc_capacity_[reverse ? Opposite(arc) : arc] == 0) continue;
-      node_in_bfs_queue_[head] = true;
+      node_in_bfs_queue_.Set(head);
       bfs_queue_.push_back(head);
     }
   }
