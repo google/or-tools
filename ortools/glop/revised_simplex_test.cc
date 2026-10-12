@@ -15,6 +15,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <ostream>
@@ -2212,6 +2213,33 @@ TEST(RevisedSimplexTest, BasisStateWithNoElement) {
   simplex->LoadStateForNextSolve(state);
   EXPECT_THAT(simplex->Solve(*linear_program, *time_limit),
               Not(SolveStatusWith<SolveStatus::Abnormal>(_)));
+}
+
+TEST(RevisedSimplexTest, SubnormalStepToBoundUnderflow) {
+  LinearProgram lp;
+  const ColIndex x = lp.CreateNewVariable();
+  const ColIndex y = lp.CreateNewVariable();
+  const RowIndex r = lp.CreateNewConstraint();
+  lp.SetVariableBounds(x, 0.0, 1.0);
+  lp.SetVariableBounds(y, 0.0, 1.0);
+  lp.SetObjectiveCoefficient(x, -1.0);
+  lp.SetObjectiveCoefficient(y, 0.0);
+  const Fractional kDenormMin = std::numeric_limits<Fractional>::denorm_min();
+  lp.SetConstraintBounds(r, kDenormMin, kDenormMin);
+  lp.SetCoefficient(r, x, 2.0);
+  lp.SetCoefficient(r, y, 1.0);
+  lp.AddSlackVariablesWhereNecessary(false);
+
+  BasisState state;
+  state.statuses = {VariableStatus::AT_LOWER_BOUND, VariableStatus::BASIC,
+                    VariableStatus::FIXED_VALUE};
+
+  RevisedSimplex simplex;
+  std::unique_ptr<TimeLimit> limit = TimeLimit::Infinite();
+  simplex.LoadStateForNextSolve(state);
+  EXPECT_THAT(simplex.Solve(lp, *limit),
+              Not(SolveStatusWith<SolveStatus::Abnormal>(_)));
+  EXPECT_EQ(simplex.GetProblemStatus(), ProblemStatus::OPTIMAL);
 }
 
 }  // namespace

@@ -3567,17 +3567,20 @@ RevisedSimplex::PendingStatus RevisedSimplex::PrimalMinimize(
     // step.
     bool is_degenerate = false;
     if (leaving_row != kInvalidRow) {
+      // Also check `step_to_bound == 0.0` in case `(val - target_bound) / dir`
+      // underflows to 0.0 and triggers a degenerate ministep.
+      const Fractional step_to_bound =
+          ComputeStepToMoveBasicVariableToBound(leaving_row, target_bound);
       Fractional dir = -direction_[leaving_row] * step;
       is_degenerate =
-          (dir == 0.0) ||
+          (dir == 0.0) || (step_to_bound == 0.0) ||
           (dir > 0.0 && variable_values_.Get(leaving_col) >= target_bound) ||
           (dir < 0.0 && variable_values_.Get(leaving_col) <= target_bound);
 
       // If the iteration is not degenerate, the leaving variable should go to
       // its exact target bound (it is how the step is computed).
       if (!is_degenerate) {
-        DCHECK_EQ(step, ComputeStepToMoveBasicVariableToBound(leaving_row,
-                                                              target_bound));
+        DCHECK_EQ(step, step_to_bound);
       }
     }
 
@@ -4094,17 +4097,18 @@ AbnormalityStatus RevisedSimplex::PrimalPush(TimeLimit& time_limit) {
     // is pivoted in exactly once.
     bool is_degenerate = false;
     if (leaving_row != kInvalidRow) {
+      const Fractional step_to_bound =
+          ComputeStepToMoveBasicVariableToBound(leaving_row, target_bound);
       Fractional dir = -direction_[leaving_row] * step;
       is_degenerate =
-          (dir == 0.0) ||
+          (dir == 0.0) || (step_to_bound == 0.0) ||
           (dir > 0.0 && variable_values_.Get(leaving_col) >= target_bound) ||
           (dir < 0.0 && variable_values_.Get(leaving_col) <= target_bound);
 
       // If the iteration is not degenerate, the leaving variable should go to
       // its exact target bound (it is how the step is computed).
       if (!is_degenerate) {
-        DCHECK_EQ(step, ComputeStepToMoveBasicVariableToBound(leaving_row,
-                                                              target_bound));
+        DCHECK_EQ(step, step_to_bound);
       }
     }
 
