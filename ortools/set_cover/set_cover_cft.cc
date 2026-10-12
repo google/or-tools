@@ -27,7 +27,6 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/random/distributions.h"
-#include "absl/strings/str_cat.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "ortools/base/stl_util.h"
@@ -383,7 +382,7 @@ class HeuristicCallback : public SubgradientCallback {
 // CoreModel extractor. Stores a pointer to the full model and specialized
 // UpdateCore in such a way to update the CoreModel (stored as base class) and
 // focus the search on a small window of the full model.
-class PricingModel : public CoreModel {
+class [[maybe_unused]] PricingModel : public CoreModel {
   // Trigger variables to control update frequency.
   struct UpdateTrigger {
     // Countdown value.
@@ -1427,7 +1426,7 @@ std::vector<FullModelSubsetIndex> SelectColumnByGapContribution(
 
 // Full To Core Pricing.
 
-std::vector<FullModelSubsetIndex> ComputeTentativeFocus(
+[[maybe_unused]] std::vector<FullModelSubsetIndex> ComputeTentativeFocus(
     FullModelView full_model) {
   DCHECK_GE(full_model.num_subsets(), 0);
   std::vector<FullModelSubsetIndex> columns_in_focus;
