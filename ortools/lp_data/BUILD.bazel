@@ -576,6 +576,39 @@ or_cc_library(
     ],
 )
 
+or_cc_test(
+    name = "mps_reader_test",
+    size = "small",
+    timeout = "moderate",
+    srcs = ["mps_reader_test.cc"],
+    copts = SAFE_FP_CODE,
+    data = [
+    ],
+    deps = [
+        ":lp_data",
+        ":lp_types",
+        ":lp_types_testing",
+        ":mps_reader",
+        ":proto_utils",
+        "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
+        "//ortools/base:parse_test_proto",
+        "//ortools/base:path",
+        "//ortools/glop:lp_solver",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/util:data_path_resolver",
+        "//ortools/util:file_util",
+        "//ortools/util:fp_utils_testing",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@re2",
+    ],
+)
+
 or_cc_library(
     name = "sol_reader",
     srcs = ["sol_reader.cc"],
@@ -593,6 +626,27 @@ or_cc_library(
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:string_view",
+    ],
+)
+
+or_cc_test(
+    name = "sol_reader_test",
+    size = "small",
+    srcs = ["sol_reader_test.cc"],
+    data = [
+    ],
+    deps = [
+        ":lp_data",
+        ":lp_types",
+        ":mps_reader",
+        ":proto_utils",
+        ":sol_reader",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_test_proto",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/util:data_path_resolver",
+        "//ortools/util:file_util",
+        "@abseil-cpp//absl/status",
     ],
 )
 

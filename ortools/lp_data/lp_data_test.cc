@@ -1582,6 +1582,89 @@ r0: + x1 + x3 = 5;
   EXPECT_EQ(dst.Dump(), kLinearProgram);
 }
 
+TEST(ProblemSolutionTest, DebugString) {
+  ProblemSolution solution(RowIndex(2), ColIndex(3));
+  solution.primal_values[ColIndex(0)] = -3.0;
+  solution.primal_values[ColIndex(1)] = 0.0;
+  solution.primal_values[ColIndex(2)] = 4.5;
+  solution.dual_values[RowIndex(0)] = 2.25;
+  solution.dual_values[RowIndex(1)] = 0.0;
+  solution.variable_statuses[ColIndex(0)] = VariableStatus::BASIC;
+  solution.variable_statuses[ColIndex(1)] = VariableStatus::FREE;
+  solution.variable_statuses[ColIndex(2)] = VariableStatus::AT_LOWER_BOUND;
+  solution.constraint_statuses[RowIndex(0)] = ConstraintStatus::AT_UPPER_BOUND;
+  solution.constraint_statuses[RowIndex(1)] = ConstraintStatus::BASIC;
+
+  EXPECT_EQ(solution.DebugString(),
+            "Problem status: OPTIMAL\n"
+            "  Var #0: BASIC -3\n"
+            "  Var #1: FREE 0\n"
+            "  Var #2: AT_LOWER_BOUND 4.5\n"
+            "------------------------------\n"
+            "  Constraint #0: AT_UPPER_BOUND 2.25\n"
+            "  Constraint #1: BASIC 0");
+
+  // Add a primal ray.
+  {
+    DenseRow& primal_ray = solution.primal_ray.emplace(ColIndex(3));
+    primal_ray[ColIndex(0)] = 2.25;
+    primal_ray[ColIndex(1)] = 0.0;
+    primal_ray[ColIndex(2)] = -1.125;
+    EXPECT_EQ(solution.DebugString(),
+              "Problem status: OPTIMAL\n"
+              "  Var #0: BASIC -3\n"
+              "  Var #1: FREE 0\n"
+              "  Var #2: AT_LOWER_BOUND 4.5\n"
+              "------------------------------\n"
+              "  Constraint #0: AT_UPPER_BOUND 2.25\n"
+              "  Constraint #1: BASIC 0\n"
+              "------------------------------\n"
+              "Primal Ray:\n"
+              "  Var #0: 2.25\n"
+              "  Var #1: 0\n"
+              "  Var #2: -1.125");
+  }
+
+  // Add a dual ray.
+  {
+    DenseColumn& dual_ray = solution.dual_ray.emplace(RowIndex(2));
+    dual_ray[RowIndex(0)] = -4.0;
+    dual_ray[RowIndex(1)] = 2.75;
+    EXPECT_EQ(solution.DebugString(),
+              "Problem status: OPTIMAL\n"
+              "  Var #0: BASIC -3\n"
+              "  Var #1: FREE 0\n"
+              "  Var #2: AT_LOWER_BOUND 4.5\n"
+              "------------------------------\n"
+              "  Constraint #0: AT_UPPER_BOUND 2.25\n"
+              "  Constraint #1: BASIC 0\n"
+              "------------------------------\n"
+              "Primal Ray:\n"
+              "  Var #0: 2.25\n"
+              "  Var #1: 0\n"
+              "  Var #2: -1.125\n"
+              "------------------------------\n"
+              "Dual Ray:\n"
+              "  Constraint #0: -4\n"
+              "  Constraint #1: 2.75");
+  }
+
+  // Remote the primal ray, keeping only the primal ray.
+  solution.primal_ray.reset();
+  EXPECT_EQ(solution.DebugString(),
+            "Problem status: OPTIMAL\n"
+            "  Var #0: BASIC -3\n"
+            "  Var #1: FREE 0\n"
+            "  Var #2: AT_LOWER_BOUND 4.5\n"
+            "------------------------------\n"
+            "  Constraint #0: AT_UPPER_BOUND 2.25\n"
+            "  Constraint #1: BASIC 0\n"
+            "------------------------------\n"
+            "Dual Ray:\n"
+            "  Constraint #0: -4\n"
+            "  Constraint #1: 2.75");
+}
+
 }  // namespace
 }  // namespace glop
 }  // namespace operations_research
