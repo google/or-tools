@@ -127,7 +127,7 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
     def test_bad_element_type_raises(self):
         e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         with self.assertRaisesRegex(TypeError, "incompatible function arguments"):
-            e.add_elements(-42, 1)
+            e.add_elements(-42, 1)  # pyrefly: ignore[bad-argument-type]
 
     def test_attr0(self):
         e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
@@ -294,14 +294,14 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
     def test_attr0_bad_attr_id_raises(self):
         e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
         with self.assertRaisesRegex(TypeError, "incompatible function arguments"):
-            e.get_attrs(-42, np.array([1]))
+            e.get_attrs(-42, np.array([1]))  # pyrefly: ignore[bad-argument-type]
         # Note: `assertRaisesRegex` does not seem to work with multiline regexps.
         with self.assertRaisesRegex(TypeError, "incompatible function arguments"):
-            e.get_attrs(_VARIABLE, ())
+            e.get_attrs(_VARIABLE, ())  # pyrefly: ignore[bad-argument-type]
         with self.assertRaisesRegex(TypeError, "attr: BoolAttr0"):
-            e.get_attrs(_VARIABLE, ())
+            e.get_attrs(_VARIABLE, ())  # pyrefly: ignore[bad-argument-type]
         with self.assertRaisesRegex(TypeError, "attr: DoubleAttr1"):
-            e.get_attrs(_VARIABLE, ())
+            e.get_attrs(_VARIABLE, ())  # pyrefly: ignore[bad-argument-type]
 
     def test_attr1_bad_element_id_raises(self):
         e = cpp_elemental.CppElemental()  # pyrefly: ignore[bad-instantiation]
