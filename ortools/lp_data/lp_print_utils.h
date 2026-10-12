@@ -18,22 +18,18 @@
 
 #include <string>
 
-#include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/types.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/util/fp_roundtrip_conv.h"
 
 namespace operations_research {
 namespace glop {
 
 // Returns a string representing a floating-point number in decimal,
 // with a precision corresponding to the type of the argument.
-inline std::string Stringify(const float a) {
-  return absl::StrFormat("%.7g", a);
-}
-
+std::string Stringify(float) = delete;  // Not implemented.
 inline std::string Stringify(const double a) {
-  return absl::StrFormat("%.16g", a);
+  return RoundTripDoubleFormat::ToString(a);
 }
 
 // Returns a string "num/den" representing the rational approximation of x.
