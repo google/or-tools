@@ -41,14 +41,9 @@ runs:
         brew install ninja
         echo "$HOME/.local/bin" >> $GITHUB_PATH
     - name: Install SWIG on macOS
-      # can't use brew swig (4.4) since Director python support is broken on macos
-      # see: https://github.com/swig/swig/issues/3279
       if: inputs.os == 'macos'
       shell: bash
-      run: |
-        wget -q https://downloads.sourceforge.net/project/swig/swig/swig-4.3.1/swig-4.3.1.tar.gz && tar xzvf swig-4.3.1.tar.gz && rm swig-4.3.1.tar.gz
-        cd swig-4.3.1 && ./configure --prefix=$HOME/.local && make -j 4 && make install
-        rm -rf swig-4.3.1
+      run: brew install swig
 
     - name: Setup Windows MSVC
       if: inputs.os == 'windows'
