@@ -104,7 +104,7 @@ We will now show an example solving this problem using
 [`dag_shortest_path.h`](/ortools/graph/dag_shortest_path.h).
 Unlike the previous example, we must use the lower level API of
 `ShortestPathsOnDagWrapper`, which requires building a `util::StaticGraph` from
-[`graph.h`](/ortools/graph_base/graph.h symbol:StaticGraph) to get
+[`graph.h`](/ortools/graph/graph.h symbol:StaticGraph) to get
 started. (This was done for us by `ShortestPathsOnDag()` in the above examples).
 
 The example below can be found at
@@ -143,8 +143,8 @@ code:
 #include "absl/status/status_macros.h"
 #include "absl/strings/str_join.h"
 #include "ortools/graph/dag_shortest_path.h"
-#include "ortools/graph_base/graph.h"
-#include "ortools/graph_base/topologicalsorter.h"
+#include "ortools/graph/graph.h"
+#include "ortools/graph/topologicalsorter.h"
 
 namespace {
 absl::Status Main() {
@@ -201,7 +201,7 @@ int main(int argc, char** argv) {
 ```
 
 > NOTE :You can use a `util::ListGraph` from
-> [`graph.h`](/ortools/graph_base/graph.h) instead of `util::StaticGraph`
+> [`graph.h`](/ortools/graph/graph.h) instead of `util::StaticGraph`
 > above, which is simpler as it does not require a `Build()` step and does not
 > permute the edges, but it is slower.
 
@@ -320,7 +320,7 @@ The code is below:
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "ortools/graph/dag_shortest_path.h"
-#include "ortools/graph_base/graph.h"
+#include "ortools/graph/graph.h"
 
 int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);

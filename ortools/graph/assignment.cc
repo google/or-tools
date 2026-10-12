@@ -19,8 +19,8 @@
 #include <optional>
 #include <vector>
 
+#include "ortools/graph/graph.h"
 #include "ortools/graph/linear_assignment.h"
-#include "ortools/graph_base/graph.h"
 
 namespace operations_research {
 

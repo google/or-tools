@@ -39,7 +39,7 @@
 
 #include "absl/log/check.h"  // for CHECK*
 #include "absl/strings/str_format.h"
-#include "ortools/graph_base/iterators.h"
+#include "ortools/graph/iterators.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/permutation.h"
 #include "ortools/util/return_macros.h"

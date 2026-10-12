@@ -20,8 +20,8 @@
 
 #include "absl/base/casts.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/graph_base/hash_or_tree_container.h"
-#include "ortools/graph_base/index.h"
+#include "ortools/graph/hash_or_tree_container.h"
+#include "ortools/graph/index.h"
 
 namespace operations_research {
 

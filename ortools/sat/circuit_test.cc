@@ -26,7 +26,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
-#include "ortools/graph_base/strongly_connected_components.h"
+#include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_solver.h"

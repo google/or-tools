@@ -249,7 +249,7 @@ The code is below:
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "ortools/graph/dag_constrained_shortest_path.h"
-#include "ortools/graph_base/graph.h"
+#include "ortools/graph/graph.h"
 
 int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);

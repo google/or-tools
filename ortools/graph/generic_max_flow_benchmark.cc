@@ -22,9 +22,9 @@
 #include "absl/random/random.h"
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
+#include "ortools/graph/flow_graph.h"
 #include "ortools/graph/generic_max_flow.h"
-#include "ortools/graph_base/flow_graph.h"
-#include "ortools/graph_base/graph.h"
+#include "ortools/graph/graph.h"
 
 namespace operations_research {
 namespace {

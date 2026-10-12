@@ -18,8 +18,8 @@
 #include "absl/log/check.h"
 #include "absl/random/distributions.h"
 #include "benchmark/benchmark.h"
+#include "ortools/graph/graph.h"
 #include "ortools/graph/minimum_spanning_tree.h"
-#include "ortools/graph_base/graph.h"
 
 namespace operations_research {
 namespace {

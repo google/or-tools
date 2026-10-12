@@ -5,20 +5,21 @@
 Below, we give several examples of how to solve shortest path problems on
 directed and undirected graphs with **unit arc/edge lengths** (all edges/arcs
 have length one) using breadth first search (BFS). These examples use the
-functions and classes defined in [`bfs.h`](/ortools/graph_base/bfs.h).
-This is a special case of shortest path with nonnegative edge lengths (as
-discussed with [Dijkstra's Algorithm](shortest_path_dijkstra.md)) that we can
-solve more quickly with breadth first search. Specifically, for a directed graph
-$$G = (N, A)$$ with nodes $$N$$ and arcs $$A$$, these algorithms run in $$O(|N|
+functions and classes defined in
+[`bfs.h`](/ortools/graph/bfs.h). This is a
+special case of shortest path with nonnegative edge lengths (as discussed with
+[Dijkstra's Algorithm](shortest_path_dijkstra.md)) that we can solve more
+quickly with breadth first search. Specifically, for a directed graph $$G = (N,
+A)$$ with nodes $$N$$ and arcs $$A$$, these algorithms run in $$O(|N|
 
-+ |A|)$$. A forthcoming page will help you determine if the methods in this page
-(based on BFS) are best for your problem.
++   |A|)$$. A forthcoming page will help you determine if the methods in this
+    page (based on BFS) are best for your problem.
 
 ## Directed Graphs
 
 Below, we give an example showing how to solve a shortest path problem on a
 directed graph with unit arc lengths. This example can be found at
-[`bfs_directed.cc`](/ortools/graph_base/samples/bfs_directed.cc).
+[`bfs_directed.cc`](/ortools/graph/samples/bfs_directed.cc).
 Consider the directed graph below:
 
 ```dot
@@ -42,10 +43,10 @@ Our goal is to find the shortest path from 0 to 5 (shown in red in the image)
 and its total length.
 
 We solve this using `GetBFSRootedTree()` and `GetBFSShortestPath()` and from
-[`bfs.h`](/ortools/graph_base/bfs.h) below:
+[`bfs.h`](/ortools/graph/bfs.h) below:
 
 ```cpp
-// Snippet from ortools/graph_base/samples/bfs_directed.cc
+// Snippet from ortools/graph/samples/bfs_directed.cc
 #include <iostream>
 #include <utility>
 #include <vector>
@@ -55,7 +56,7 @@ We solve this using `GetBFSRootedTree()` and `GetBFSShortestPath()` and from
 #include "absl/status/status.h"
 #include "absl/status/status_macros.h"
 #include "absl/strings/str_join.h"
-#include "ortools/graph_base/bfs.h"
+#include "ortools/graph/bfs.h"
 
 namespace {
 
@@ -110,7 +111,7 @@ Shortest path nodes: 0, 2, 5
 
 Below, we give an example showing how to solve a shortest path problem on a
 undirected graph with unit arc lengths. This example can be found at
-[`bfs_undirected.cc`](/ortools/graph_base/samples/bfs_directed.cc).
+[`bfs_undirected.cc`](/ortools/graph/samples/bfs_undirected.cc).
 Consider the directed graph below:
 
 ```dot
@@ -128,12 +129,13 @@ Our goal is to find the shortest path from 0 to 3 (shown in red in the image) as
 measured by the number of edges.
 
 Again, we solve this using `GetBFSRootedTree()` and `GetBFSShortestPath()` and
-from [`bfs.h`](/ortools/graph_base/bfs.h). Since these functions only work
-on **directed graphs**, we simply include two copies of the edge when creating
-the input arcs, one in each direction. The code is below:
+from [`bfs.h`](/ortools/graph/bfs.h). Since
+these functions only work on **directed graphs**, we simply include two copies
+of the edge when creating the input arcs, one in each direction. The code is
+below:
 
 ```cpp
-// Snippet from ortools/graph_base/samples/bfs_undirected.cc
+// Snippet from ortools/graph/samples/bfs_undirected.cc
 #include <iostream>
 #include <utility>
 #include <vector>
@@ -143,7 +145,7 @@ the input arcs, one in each direction. The code is below:
 #include "absl/status/status.h"
 #include "absl/status/status_macros.h"
 #include "absl/strings/str_join.h"
-#include "ortools/graph_base/bfs.h"
+#include "ortools/graph/bfs.h"
 
 namespace {
 
@@ -213,10 +215,10 @@ A few variations of this problem can be reduced to this case:
     [above](#undirected-graphs).
 
 Again, we solve this using `GetBFSRootedTree()` and `GetBFSShortestPath()` and
-from [`bfs.h`](/ortools/graph_base/bfs.h).
+from [`bfs.h`](/ortools/graph/bfs.h).
 
 The example below can be found at
-[`bfs_one_to_all.cc`](/ortools/graph_base/samples/bfs_one_to_all.cc).
+[`bfs_one_to_all.cc`](/ortools/graph/samples/bfs_one_to_all.cc).
 
 Consider the directed graph below:
 
@@ -239,7 +241,7 @@ graph, and its total length (note that 4 is not reachable from 0). We write the
 code:
 
 ```cpp
-// Snippet from ortools/graph_base/samples/bfs_one_to_all.cc
+// Snippet from ortools/graph/samples/bfs_one_to_all.cc
 #include <iostream>
 #include <utility>
 #include <vector>
@@ -249,7 +251,7 @@ code:
 #include "absl/status/status.h"
 #include "absl/status/status_macros.h"
 #include "absl/strings/str_join.h"
-#include "ortools/graph_base/bfs.h"
+#include "ortools/graph/bfs.h"
 
 namespace {
 

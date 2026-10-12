@@ -21,7 +21,7 @@
 #include "absl/random/distributions.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/graph_base/iterators.h"
+#include "ortools/graph/iterators.h"
 #include "ortools/lp_data/lp_test_utils.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/permutation.h"

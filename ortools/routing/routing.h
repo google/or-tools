@@ -154,6 +154,7 @@ Keywords: Vehicle Routing, Traveling Salesman Problem, TSP, VRP, CVRPTW, PDP.
 
 #include <algorithm>
 #include <atomic>
+#include <bitset>
 #include <cstdint>
 #include <deque>
 #include <functional>
@@ -182,7 +183,7 @@ Keywords: Vehicle Routing, Traveling Salesman Problem, TSP, VRP, CVRPTW, PDP.
 #include "ortools/constraint_solver/local_search.h"
 #include "ortools/constraint_solver/reversible_data.h"
 #include "ortools/constraint_solver/reversible_engine.h"
-#include "ortools/graph_base/graph.h"
+#include "ortools/graph/graph.h"
 #include "ortools/routing/enums.pb.h"
 #include "ortools/routing/heuristic_parameters.pb.h"
 #include "ortools/routing/index_manager.h"

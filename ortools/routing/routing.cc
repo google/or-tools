@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <bitset>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -41,6 +42,7 @@
 #include "absl/flags/flag.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/functional/bind_front.h"
+#include "absl/hash/hash.h"
 #include "absl/log/check.h"
 #include "absl/log/die_if_null.h"
 #include "absl/log/log.h"
@@ -65,9 +67,10 @@
 #include "ortools/constraint_solver/search_stats.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
 #include "ortools/constraint_solver/trace.h"
+#include "ortools/graph/connected_components.h"
+#include "ortools/graph/graph.h"
+#include "ortools/graph/index.h"
 #include "ortools/graph/linear_assignment.h"
-#include "ortools/graph_base/connected_components.h"
-#include "ortools/graph_base/graph.h"
 #include "ortools/routing/constraints.h"
 #include "ortools/routing/decision_builders.h"
 #include "ortools/routing/enums.pb.h"
@@ -80,9 +83,11 @@
 #include "ortools/routing/neighborhoods.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/parameters.pb.h"
+#include "ortools/routing/path_state.h"
 #include "ortools/routing/search.h"
 #include "ortools/routing/types.h"
 #include "ortools/routing/utils.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/optional_boolean.pb.h"
 #include "ortools/util/piecewise_linear_function.h"
 #include "ortools/util/range_query_function.h"

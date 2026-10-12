@@ -225,7 +225,7 @@ We will now show an example solving this problem using
 [`bounded_dijkstra.h`](/ortools/graph/bounded_dijkstra.h).
 Unlike the previous examples, we must use the lower level API of
 `BoundedDijkstraWrapper`, which requires building a `util::StaticGraph` from
-[`graph.h`](/ortools/graph_base/graph.h) to get started. (This was done
+[`graph.h`](/ortools/graph/graph.h) to get started. (This was done
 for us by `SimpleOneToOneShortestPath()` in the above examples).
 
 The example below can be found at
@@ -262,7 +262,7 @@ code:
 #include "ortools/base/types.h"
 #include "absl/strings/str_join.h"
 #include "ortools/graph/bounded_dijkstra.h"
-#include "ortools/graph_base/graph.h"
+#include "ortools/graph/graph.h"
 
 int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);
@@ -307,7 +307,7 @@ int main(int argc, char** argv) {
 ```
 
 > NOTE: You can use a `util::ListGraph` from
-> [`graph.h`](/ortools/graph_base/graph.h) instead of `util::StaticGraph`
+> [`graph.h`](/ortools/graph/graph.h) instead of `util::StaticGraph`
 > above, which is simpler as it does not require a `Build()` step and does not
 > permute the edges, but it is slower.
 
@@ -421,7 +421,7 @@ The code is below:
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "ortools/graph/bounded_dijkstra.h"
-#include "ortools/graph_base/graph.h"
+#include "ortools/graph/graph.h"
 
 int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);

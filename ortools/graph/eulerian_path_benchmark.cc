@@ -14,7 +14,7 @@
 #include "absl/log/check.h"
 #include "benchmark/benchmark.h"
 #include "ortools/graph/eulerian_path.h"
-#include "ortools/graph_base/graph.h"
+#include "ortools/graph/graph.h"
 
 namespace operations_research {
 namespace {

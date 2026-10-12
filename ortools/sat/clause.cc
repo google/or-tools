@@ -39,7 +39,7 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
-#include "ortools/graph_base/strongly_connected_components.h"
+#include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/container.h"
 #include "ortools/sat/deterministic_time.h"
 #include "ortools/sat/inclusion.h"

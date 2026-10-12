@@ -32,7 +32,7 @@
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/types.h"
-#include "ortools/graph_base/strongly_connected_components.h"
+#include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/circuit.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"

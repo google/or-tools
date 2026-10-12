@@ -42,9 +42,9 @@
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/base/types.h"
-#include "ortools/graph_base/graph.h"
-#include "ortools/graph_base/iterators.h"
-#include "ortools/graph_base/util.h"
+#include "ortools/graph/graph.h"
+#include "ortools/graph/iterators.h"
+#include "ortools/graph/util.h"
 #include "ortools/util/bitset.h"
 
 ABSL_FLAG(bool, minimize_permutation_support_size, false,

@@ -28,7 +28,7 @@
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/graph/bounded_dijkstra.h"
-#include "ortools/graph_base/graph.h"
+#include "ortools/graph/graph.h"
 
 namespace operations_research {
 namespace {

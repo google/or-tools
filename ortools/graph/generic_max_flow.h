@@ -135,6 +135,7 @@
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
 #include "ortools/graph/flow_problem.pb.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/stats.h"
 
 namespace operations_research {
@@ -214,8 +215,8 @@ class MaxFlowStatusClass {
 // associated to an unique reverse arc going in the opposite direction
 // 'head -> tail'. We must also have reverse[reverse[arc]] = arc.
 //
-// This works with all the reverse arc graphs from 'ortools/graph_base/graph.h'
-// and uses the API defined there.
+// This works with all the reverse arc graphs from 'ortools/graph/graph.h' and
+// uses the API defined there.
 //
 // We actually support two kind of graphs with "reverse" arcs depending on the
 // value of Graph::kHasNegativeReverseArcs:

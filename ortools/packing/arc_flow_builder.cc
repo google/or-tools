@@ -24,7 +24,7 @@
 #include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/graph_base/topologicalsorter.h"
+#include "ortools/graph/topologicalsorter.h"
 
 namespace operations_research {
 namespace packing {

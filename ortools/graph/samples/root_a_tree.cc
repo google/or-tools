@@ -23,8 +23,8 @@
 #include "absl/status/status_macros.h"
 #include "absl/strings/str_join.h"
 #include "ortools/base/init_google.h"
+#include "ortools/graph/graph.h"
 #include "ortools/graph/rooted_tree.h"
-#include "ortools/graph_base/graph.h"
 // [END imports]
 
 namespace {

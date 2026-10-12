@@ -40,7 +40,7 @@
 #include "ortools/base/hash.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/base/types.h"
-#include "ortools/graph_base/graph.h"
+#include "ortools/graph/graph.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_mapping.h"
