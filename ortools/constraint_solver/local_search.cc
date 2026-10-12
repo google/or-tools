@@ -369,16 +369,19 @@ class TwoOpt : public PathOperator<ignore_path_vars> {
          std::function<int(int64_t)> start_empty_path_class,
          NeighborAccessor get_incoming_neighbors,
          NeighborAccessor get_outgoing_neighbors)
-      : PathOperator<ignore_path_vars>(vars, secondary_vars,
-                                       (get_incoming_neighbors == nullptr &&
-                                        get_outgoing_neighbors == nullptr)
-                                           ? 2
-                                           : 1,
-                                       /*skip_locally_optimal_paths=*/true,
-                                       /*accept_path_end_base=*/true,
-                                       std::move(start_empty_path_class),
-                                       std::move(get_incoming_neighbors),
-                                       std::move(get_outgoing_neighbors)),
+      : PathOperator<ignore_path_vars>(
+            vars, secondary_vars,
+            {
+                .number_of_base_nodes = (get_incoming_neighbors == nullptr &&
+                                         get_outgoing_neighbors == nullptr)
+                                            ? 2
+                                            : 1,
+                .skip_locally_optimal_paths = true,
+                .accept_path_end_base = true,
+                .start_empty_path_class = std::move(start_empty_path_class),
+                .get_incoming_neighbors = std::move(get_incoming_neighbors),
+                .get_outgoing_neighbors = std::move(get_outgoing_neighbors),
+            }),
         last_base_(-1),
         last_(-1) {}
   ~TwoOpt() override = default;
@@ -651,16 +654,19 @@ class Exchange : public PathOperator<ignore_path_vars> {
            std::function<int(int64_t)> start_empty_path_class,
            NeighborAccessor get_incoming_neighbors,
            NeighborAccessor get_outgoing_neighbors)
-      : PathOperator<ignore_path_vars>(vars, secondary_vars,
-                                       (get_incoming_neighbors == nullptr &&
-                                        get_outgoing_neighbors == nullptr)
-                                           ? 2
-                                           : 1,
-                                       /*skip_locally_optimal_paths=*/true,
-                                       /*accept_path_end_base=*/false,
-                                       std::move(start_empty_path_class),
-                                       std::move(get_incoming_neighbors),
-                                       std::move(get_outgoing_neighbors)) {}
+      : PathOperator<ignore_path_vars>(
+            vars, secondary_vars,
+            {
+                .number_of_base_nodes = (get_incoming_neighbors == nullptr &&
+                                         get_outgoing_neighbors == nullptr)
+                                            ? 2
+                                            : 1,
+                .skip_locally_optimal_paths = true,
+                .accept_path_end_base = false,
+                .start_empty_path_class = std::move(start_empty_path_class),
+                .get_incoming_neighbors = std::move(get_incoming_neighbors),
+                .get_outgoing_neighbors = std::move(get_outgoing_neighbors),
+            }) {}
   ~Exchange() override = default;
   bool MakeNeighbor() override;
 
@@ -715,16 +721,19 @@ class Cross : public PathOperator<ignore_path_vars> {
         std::function<int(int64_t)> start_empty_path_class,
         NeighborAccessor get_incoming_neighbors,
         NeighborAccessor get_outgoing_neighbors)
-      : PathOperator<ignore_path_vars>(vars, secondary_vars,
-                                       (get_incoming_neighbors == nullptr &&
-                                        get_outgoing_neighbors == nullptr)
-                                           ? 2
-                                           : 1,
-                                       /*skip_locally_optimal_paths=*/true,
-                                       /*accept_path_end_base=*/true,
-                                       std::move(start_empty_path_class),
-                                       std::move(get_incoming_neighbors),
-                                       std::move(get_outgoing_neighbors)) {}
+      : PathOperator<ignore_path_vars>(
+            vars, secondary_vars,
+            {
+                .number_of_base_nodes = (get_incoming_neighbors == nullptr &&
+                                         get_outgoing_neighbors == nullptr)
+                                            ? 2
+                                            : 1,
+                .skip_locally_optimal_paths = true,
+                .accept_path_end_base = true,
+                .start_empty_path_class = std::move(start_empty_path_class),
+                .get_incoming_neighbors = std::move(get_incoming_neighbors),
+                .get_outgoing_neighbors = std::move(get_outgoing_neighbors),
+            }) {}
   ~Cross() override = default;
   bool MakeNeighbor() override;
 
@@ -1973,6 +1982,18 @@ LocalSearchOperator* Solver::MakeNeighborhoodLimit(
 // ----- Concatenation of operators -----
 
 namespace {
+
+class NoOpOperator : public LocalSearchOperator {
+ public:
+  NoOpOperator() = default;
+  ~NoOpOperator() override = default;
+  void Start(const Assignment* assignment) override {}
+  bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override {
+    return false;
+  }
+  std::string DebugString() const override { return ""; }
+};
+
 class CompoundOperator : public LocalSearchOperator {
  public:
   CompoundOperator(std::vector<LocalSearchOperator*> operators,
@@ -1985,57 +2006,52 @@ class CompoundOperator : public LocalSearchOperator {
   bool HasFragments() const override { return has_fragments_; }
   bool HoldsDelta() const override { return true; }
 
-  std::string DebugString() const override {
-    return operators_.empty()
-               ? ""
-               : operators_[operator_indices_[index_]]->DebugString();
-  }
-  const LocalSearchOperator* Self() const override {
-    return operators_.empty() ? this
-                              : operators_[operator_indices_[index_]]->Self();
-  }
+  std::string DebugString() const override { return state_.op->DebugString(); }
+  const LocalSearchOperator* Self() const override { return state_.op->Self(); }
 
  private:
-  class OperatorComparator {
-   public:
-    OperatorComparator(std::function<int64_t(int, int)> evaluator,
-                       int active_operator)
-        : evaluator_(std::move(evaluator)), active_operator_(active_operator) {}
-    bool operator()(int lhs, int rhs) const {
-      const int64_t lhs_value = Evaluate(lhs);
-      const int64_t rhs_value = Evaluate(rhs);
-      return lhs_value < rhs_value || (lhs_value == rhs_value && lhs < rhs);
-    }
-
-   private:
-    int64_t Evaluate(int operator_index) const {
-      return evaluator_(active_operator_, operator_index);
-    }
-
-    std::function<int64_t(int, int)> evaluator_;
-    const int active_operator_;
+  struct OperatorState {
+    int64_t index = 0;
+    int64_t operator_index = 0;
+    LocalSearchOperator* op = nullptr;
+    bool must_profile = false;
+    bool holds_delta = false;
   };
+  bool UpdateState(int64_t index) {
+    if (index >= operators_.size()) {
+      UpdateState(0);
+      return false;
+    }
+    state_.index = index;
+    state_.operator_index = operator_indices_[index];
+    state_.op = operators_[state_.operator_index];
+    state_.must_profile =
+        is_local_search_profiling_enabled_ && (state_.op == state_.op->Self());
+    state_.holds_delta = state_.op->HoldsDelta();
+    return true;
+  }
 
-  int64_t index_;
+  OperatorState state_;
   std::vector<LocalSearchOperator*> operators_;
   std::vector<int> operator_indices_;
   std::function<int64_t(int, int)> evaluator_;
-  Bitset64<> started_;
+  std::vector<int> started_;
+  bool is_local_search_profiling_enabled_;
   const Assignment* start_assignment_;
   bool has_fragments_;
 };
 
 CompoundOperator::CompoundOperator(std::vector<LocalSearchOperator*> operators,
                                    std::function<int64_t(int, int)> evaluator)
-    : index_(0),
-      operators_(std::move(operators)),
+    : operators_(std::move(operators)),
+      operator_indices_(operators_.size()),
       evaluator_(std::move(evaluator)),
-      started_(operators_.size()),
+      started_(operators_.size(), 0),
+      is_local_search_profiling_enabled_(false),
       start_assignment_(nullptr),
       has_fragments_(false) {
-  operators_.erase(std::remove(operators_.begin(), operators_.end(), nullptr),
-                   operators_.end());
-  operator_indices_.resize(operators_.size());
+  DCHECK(!operators_.empty());
+  for (const LocalSearchOperator* const op : operators_) DCHECK_NE(op, nullptr);
   absl::c_iota(operator_indices_, 0);
   for (LocalSearchOperator* const op : operators_) {
     if (op->HasFragments()) {
@@ -2043,14 +2059,15 @@ CompoundOperator::CompoundOperator(std::vector<LocalSearchOperator*> operators,
       break;
     }
   }
+  UpdateState(0);
 }
 
 void CompoundOperator::EnterSearch() {
   absl::c_iota(operator_indices_, 0);
-  index_ = 0;
   for (LocalSearchOperator* const op : operators_) {
     op->EnterSearch();
   }
+  UpdateState(0);
 }
 
 void CompoundOperator::Reset() {
@@ -2061,48 +2078,40 @@ void CompoundOperator::Reset() {
 
 void CompoundOperator::Start(const Assignment* assignment) {
   start_assignment_ = assignment;
-  started_.ClearAll();
-  if (!operators_.empty()) {
-    std::sort(operator_indices_.begin(), operator_indices_.end(),
-              OperatorComparator(evaluator_, operator_indices_[index_]));
-    index_ = 0;
-  }
+  is_local_search_profiling_enabled_ =
+      assignment->solver()->IsLocalSearchProfilingEnabled();
+  started_.assign(operators_.size(), 0);
+  absl::c_sort(operator_indices_, [this](int lhs, int rhs) {
+    const int64_t lhs_value = evaluator_(state_.operator_index, lhs);
+    const int64_t rhs_value = evaluator_(state_.operator_index, rhs);
+    return std::tie(lhs_value, lhs) < std::tie(rhs_value, rhs);
+  });
+  UpdateState(0);
 }
 
 bool CompoundOperator::MakeNextNeighbor(Assignment* delta,
                                         Assignment* deltadelta) {
-  const auto is_leaf = [](const LocalSearchOperator* op) {
-    return op == op->Self();
-  };
-  if (!operators_.empty()) {
-    Solver* solver = delta->solver();
-    do {
-      // TODO(user): keep copy of delta in case MakeNextNeighbor
-      // pollutes delta on a fail.
-      const int64_t operator_index = operator_indices_[index_];
-      LocalSearchOperator* op = operators_[operator_index];
-      if (!started_[operator_index]) {
-        op->Start(start_assignment_);
-        started_.Set(operator_index);
-      }
-      if (!op->HoldsDelta()) {
-        delta->Clear();
-      }
-      if (is_leaf(op)) {
-        solver->GetLocalSearchMonitor()->BeginMakeNextNeighbor(op);
-      }
-      if (op->MakeNextNeighbor(delta, deltadelta)) return true;
-      if (is_leaf(op)) {
-        solver->GetLocalSearchMonitor()->EndMakeNextNeighbor(
-            op, /*has_neighbor*/ false, delta, deltadelta);
-      }
-      ++index_;
+  do {
+    // TODO(user): keep copy of delta in case MakeNextNeighbor
+    // pollutes delta on a fail.
+    if (started_[state_.operator_index] == 0) {
+      state_.op->Start(start_assignment_);
+      started_[state_.operator_index] = 1;
+    }
+    if (!state_.holds_delta) {
       delta->Clear();
-      if (index_ == operators_.size()) {
-        index_ = 0;
-      }
-    } while (index_ != 0);
-  }
+    }
+    if (state_.must_profile) {
+      delta->solver()->GetLocalSearchMonitor()->BeginMakeNextNeighbor(
+          state_.op);
+    }
+    if (state_.op->MakeNextNeighbor(delta, deltadelta)) return true;
+    if (state_.must_profile) {
+      delta->solver()->GetLocalSearchMonitor()->EndMakeNextNeighbor(
+          state_.op, /*has_neighbor*/ false, delta, deltadelta);
+    }
+    delta->Clear();
+  } while (UpdateState(state_.index + 1));
   return false;
 }
 
@@ -2133,6 +2142,15 @@ LocalSearchOperator* Solver::ConcatenateOperators(
 LocalSearchOperator* Solver::ConcatenateOperators(
     const std::vector<LocalSearchOperator*>& ops,
     std::function<int64_t(int, int)> evaluator) {
+  if (ops.empty()) {
+    return RevAlloc(new NoOpOperator());
+  }
+  for (const LocalSearchOperator* const op : ops) {
+    if (op == nullptr) {
+      LOG(DFATAL) << "Null operator in ConcatenateOperators";
+      return RevAlloc(new NoOpOperator());
+    }
+  }
   return RevAlloc(new CompoundOperator(ops, std::move(evaluator)));
 }
 

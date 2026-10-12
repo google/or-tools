@@ -25,6 +25,45 @@
 
 namespace operations_research {
 
+namespace internal {
+
+// This template class is used internally to implement reversibility.
+// It stores an address and the value that was at the address.
+//
+// `addrval<T>` is designed to have no padding so that we can directly alias
+// into arrays of `addrval<T>`.
+template <class T>
+class addrval {
+ public:
+  static_assert(std::is_trivial_v<T>);
+
+  addrval() = default;
+  explicit addrval(T* address) {
+    address_data_ = std::bit_cast<TPtr>(address);
+    old_value_data_ = std::bit_cast<TVal>(*address);
+  }
+  void restore() const {
+    T* const address = std::bit_cast<T*>(address_data_);
+    *address = std::bit_cast<T>(old_value_data_);
+  }
+
+ private:
+  struct TPtr {
+    char data[sizeof(T*)] = {};
+  };
+  struct TVal {
+    char data[sizeof(T)] = {};
+  };
+  TPtr address_data_;
+  TVal old_value_data_;
+};
+static_assert(alignof(addrval<int>) == 1 &&
+              sizeof(addrval<int>) == sizeof(int*) + sizeof(int));
+static_assert(alignof(addrval<double>) == 1 &&
+              sizeof(addrval<double>) == sizeof(double*) + sizeof(double));
+
+}  // namespace internal
+
 class Constraint;
 class IntExpr;
 class IntVar;

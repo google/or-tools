@@ -1,0 +1,739 @@
+// Copyright 2010-2025 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include <stddef.h>
+
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "absl/strings/string_view.h"
+#include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/constraint_solver_test_util.h"
+
+namespace operations_research {
+namespace {
+
+using ::testing::_;
+using ::testing::Return;
+
+inline int factorial(int n) {
+  int res = 1;
+  for (int i = 2; i <= n; ++i) res *= i;
+  return res;
+}
+
+class MockIntVar : public IntVar {
+ public:
+  MockIntVar(Solver* const s, const std::string& mock_name)
+      : IntVar(s, mock_name), mock_name_(mock_name) {}
+  MOCK_METHOD(bool, Bound, (), (const, override));
+  MOCK_METHOD(int64_t, Value, (), (const, override));
+  MOCK_METHOD(void, RemoveValue, (int64_t), (override));
+  MOCK_METHOD(void, WhenBound, (Demon*), (override));  // NOLINT
+  MOCK_METHOD(void, WhenRange, (Demon*), (override));  // NOLINT
+
+  int64_t Min() const override { return 0; }
+  int64_t Max() const override { return 10; }
+  uint64_t Size() const override { return 11; }
+  bool Contains(int64_t v) const override { return true; }
+  void SetMin(int64_t v) override {}
+  void SetMax(int64_t v) override {}
+  void SetValue(int64_t v) override {}
+  void WhenDomain(Demon* d) override {}
+  IntVarIterator* MakeHoleIterator(bool rev) const override { return nullptr; }
+  IntVarIterator* MakeDomainIterator(bool rev) const override {
+    return nullptr;
+  }
+  MOCK_METHOD(void, RemoveInterval, (int64_t, int64_t), (override));
+  std::string DebugString() const override { return "MockVariable"; }
+  int64_t OldMin() const override { return 0LL; }
+  int64_t OldMax() const override { return 10LL; }
+  const std::string& mock_name() const { return mock_name_; }
+  IntVar* IsEqual(int64_t constant) override { return nullptr; }
+
+  IntVar* IsDifferent(int64_t constant) override { return nullptr; }
+
+  IntVar* IsGreaterOrEqual(int64_t constant) override { return nullptr; }
+
+  IntVar* IsLessOrEqual(int64_t constant) override { return nullptr; }
+
+ protected:
+  const std::string mock_name_;
+};
+
+// Range factory to generate variable ranges
+class RangeFactory {
+ public:
+  virtual void MakeRange(int index, int* l, int* u) = 0;
+  virtual ~RangeFactory() {}
+};
+
+class UniqueValue : public RangeFactory {
+ public:
+  explicit UniqueValue(int unique_value) : unique_value_(unique_value) {}
+  void MakeRange(int /*index*/, int* l, int* u) override {
+    *l = unique_value_;
+    *u = unique_value_;
+  }
+
+ protected:
+  int unique_value_;
+};
+
+class UniqueRange : public RangeFactory {
+ public:
+  UniqueRange(int l, int u) : l_(l), u_(u) {}
+  void MakeRange(int /*index*/, int* l, int* u) override {
+    *l = l_;
+    *u = u_;
+  }
+
+ protected:
+  int l_;
+  int u_;
+};
+
+class IndexValue : public RangeFactory {
+ public:
+  void MakeRange(int index, int* l, int* u) override {
+    *l = index;
+    *u = index;
+  }
+};
+
+class AllDifferentTest : public testing::Test {
+ protected:
+  static const int kAllDifferentSize;
+
+  IntVar* MakeIntVariable(int64_t l, int64_t u) {
+    return solver_->MakeIntVar(l, u);
+  }
+  MockIntVar* MakeMockIntVariable(const std::string& name) {
+    return solver_->RevAlloc(new MockIntVar(solver_.get(), name));
+  }
+  void MakeMockIntVariables(const std::string& name,
+                            std::vector<IntVar*>* vars);
+  virtual Constraint* MakeAllDifferent(const std::vector<IntVar*>& vars) = 0;
+
+  // Check build of AllDifferent constraints
+  void CheckMake(Constraint* all_different, std::vector<IntVar*>* vars,
+                 absl::string_view header,
+                 absl::string_view mock_variable_name);
+  // Check the variables are the ones expected (based on DebugString method)
+  void CheckContent(Constraint* all_different, absl::string_view header,
+                    absl::string_view expected_variable_name);
+  // Check the array of IntVar* gets copied when passed to the
+  // AllDifferent constraints; warning: this will clear vars
+  void CheckCopy(Constraint* all_different, std::vector<IntVar*>* vars,
+                 absl::string_view header,
+                 absl::string_view expected_variable_name);
+  // Check a full model composed of a single AllDifferent constraint
+  // on variables with a range generated by range_factory
+  void CheckModel(RangeFactory* range_factory, int expected_number_of_failures,
+                  int expected_number_of_solutions);
+  // Check solver in constraint is the solver passed in the constructor
+  void CheckSolver(Constraint* all_different);
+  void SetUp() override {
+    // Code here will be called before *each* test.
+    solver_ = std::make_unique<Solver>("AllDiffTest");
+  }
+  std::unique_ptr<Solver> solver_;
+};
+
+const int AllDifferentTest::kAllDifferentSize(5);
+
+void AllDifferentTest::MakeMockIntVariables(const std::string& name,
+                                            std::vector<IntVar*>* vars) {
+  for (int i = 0; i < kAllDifferentSize; ++i) {
+    vars->push_back(MakeMockIntVariable(name));
+  }
+}
+
+void AllDifferentTest::CheckMake(Constraint* all_different,
+                                 std::vector<IntVar*>* vars,
+                                 absl::string_view header,
+                                 absl::string_view mock_variable_name) {
+  CheckSolver(all_different);
+  CheckContent(all_different, header, mock_variable_name);
+  CheckCopy(all_different, vars, header, mock_variable_name);
+}
+
+void AllDifferentTest::CheckContent(Constraint* all_different,
+                                    absl::string_view header,
+                                    absl::string_view expected_variable_name) {
+  std::string output = all_different->DebugString();
+  std::string expected_output(header);
+  expected_output.append("(");
+  for (int i = 0; i < kAllDifferentSize; ++i) {
+    if (i != 0) {
+      expected_output.append(", ");
+    }
+    expected_output.append(expected_variable_name);
+  }
+  expected_output.append(")");
+  EXPECT_EQ(expected_output, output);
+}
+
+void AllDifferentTest::CheckCopy(Constraint* all_different,
+                                 std::vector<IntVar*>* vars,
+                                 absl::string_view header,
+                                 absl::string_view expected_variable_name) {
+  vars->clear();
+  CheckContent(all_different, header, expected_variable_name);
+}
+
+void AllDifferentTest::CheckModel(RangeFactory* range_factory,
+                                  int expected_number_of_failures,
+                                  int expected_number_of_solutions) {
+  std::vector<IntVar*> vars;
+  for (int i = 0; i < kAllDifferentSize; ++i) {
+    int l = 0;
+    int u = 0;
+    range_factory->MakeRange(i, &l, &u);
+    IntVar* var = MakeIntVariable(l, u);
+    vars.push_back(var);
+  }
+  solver_->AddConstraint(MakeAllDifferent(vars));
+  DecisionBuilder* db = solver_->MakePhase(vars, Solver::CHOOSE_FIRST_UNBOUND,
+                                           Solver::ASSIGN_MIN_VALUE);
+  SolutionCollector* solutions = solver_->MakeAllSolutionCollector(nullptr);
+  ASSERT_EQ(expected_number_of_solutions > 0, solver_->Solve(db, solutions));
+  EXPECT_EQ(expected_number_of_failures, solver_->failures());
+  EXPECT_EQ(expected_number_of_solutions, solutions->solution_count());
+}
+
+void AllDifferentTest::CheckSolver(Constraint* all_different) {
+  EXPECT_EQ(solver_.get(), all_different->solver());
+}
+
+class ValueAllDifferentTest : public AllDifferentTest {
+ public:
+  Constraint* MakeAllDifferent(const std::vector<IntVar*>& vars) override {
+    return solver_->MakeAllDifferent(vars, false);
+  }
+};
+
+class RangeAllDifferentTest : public AllDifferentTest {
+ public:
+  Constraint* MakeAllDifferent(const std::vector<IntVar*>& vars) override {
+    return solver_->MakeAllDifferent(vars, true);
+  }
+};
+
+// Small unit tests for the ValueAllDifferent class
+
+TEST_F(ValueAllDifferentTest, AllDifferentFromVector) {
+  std::vector<IntVar*> vars;
+  const std::string mock_variable_name = "MockVariable";
+  MakeMockIntVariables(mock_variable_name, &vars);
+  Constraint* all_different(MakeAllDifferent(vars));
+  CheckMake(all_different, &vars, "ValueAllDifferent", mock_variable_name);
+}
+
+TEST_F(ValueAllDifferentTest, AllDifferentPost) {
+  std::vector<IntVar*> vars;
+  const std::string mock_variable_name = "MockVariable";
+  for (int i = 0; i < kAllDifferentSize; ++i) {
+    MockIntVar* mock_variable = MakeMockIntVariable(mock_variable_name);
+    EXPECT_CALL(*mock_variable, WhenBound(_)).Times(1);
+    vars.push_back(mock_variable);
+  }
+  Constraint* all_different(MakeAllDifferent(vars));
+  all_different->Post();
+}
+
+TEST_F(ValueAllDifferentTest, AllDifferentPropagate) {
+  std::vector<IntVar*> vars;
+  const std::string mock_variable_name = "MockVariable";
+  for (int i = 0; i < kAllDifferentSize; ++i) {
+    MockIntVar* mock_variable = MakeMockIntVariable(mock_variable_name);
+    EXPECT_CALL(*mock_variable, Bound()).WillRepeatedly(Return(i == 0));
+    EXPECT_CALL(*mock_variable, Value()).WillRepeatedly(Return(i));
+    const int times = (i == 0) ? 0 : 1;
+    EXPECT_CALL(*mock_variable, RemoveValue(_)).Times(times);
+    vars.push_back(mock_variable);
+  }
+  Constraint* all_different(MakeAllDifferent(vars));
+  all_different->InitialPropagate();
+}
+
+TEST_F(ValueAllDifferentTest, AllDifferentPropagateAllBound) {
+  std::vector<IntVar*> vars;
+  const std::string mock_variable_name = "MockVariable";
+  for (int i = 0; i < kAllDifferentSize; ++i) {
+    MockIntVar* mock_variable = MakeMockIntVariable(mock_variable_name);
+    EXPECT_CALL(*mock_variable, Bound()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_variable, Value()).WillRepeatedly(Return(i));
+    EXPECT_CALL(*mock_variable, RemoveValue(_)).Times(0);
+    vars.push_back(mock_variable);
+  }
+  Constraint* all_different(MakeAllDifferent(vars));
+  all_different->InitialPropagate();
+}
+
+// Small unit tests for the RangeAllDifferent class - partially incomplete
+// due to missing APIs and unimplemented code
+
+TEST_F(RangeAllDifferentTest, AllDifferentFromVector) {
+  std::vector<IntVar*> vars;
+  const std::string mock_variable_name = "MockVariable";
+  MakeMockIntVariables(mock_variable_name, &vars);
+  Constraint* all_different(MakeAllDifferent(vars));
+  CheckMake(all_different, &vars, "BoundsAllDifferent", mock_variable_name);
+}
+
+TEST_F(RangeAllDifferentTest, AllDifferentPost) {
+  std::vector<IntVar*> vars;
+  const std::string mock_variable_name = "MockVariable";
+  for (int i = 0; i < kAllDifferentSize; ++i) {
+    MockIntVar* mock_variable = MakeMockIntVariable(mock_variable_name);
+    EXPECT_CALL(*mock_variable, WhenRange(_)).Times(1);
+    EXPECT_CALL(*mock_variable, WhenBound(_)).Times(1);
+    vars.push_back(mock_variable);
+  }
+  Constraint* all_different(MakeAllDifferent(vars));
+  all_different->Post();
+}
+
+TEST_F(RangeAllDifferentTest, AllDifferentPropagate) {
+  std::vector<IntVar*> vars;
+  const std::string mock_variable_name = "MockVariable";
+  for (int i = 0; i < kAllDifferentSize; ++i) {
+    MockIntVar* mock_variable = MakeMockIntVariable(mock_variable_name);
+    EXPECT_CALL(*mock_variable, Bound()).WillOnce(Return(true));
+    EXPECT_CALL(*mock_variable, Value()).WillRepeatedly(Return(i));
+    EXPECT_CALL(*mock_variable, RemoveValue(_)).Times(kAllDifferentSize - 1);
+    vars.push_back(mock_variable);
+  }
+  Constraint* all_different(MakeAllDifferent(vars));
+  all_different->InitialPropagate();
+}
+
+// Testing ValueAllDifferent in a no-mock environment
+
+// If all variables are bound to different values, the search should find
+// a solution
+TEST_F(ValueAllDifferentTest, VariablesAllBoundToDifferentValues) {
+  std::unique_ptr<RangeFactory> range_factory(new IndexValue);
+  CheckModel(range_factory.get(), 1, 1);
+}
+
+// If all variables are bound to the same value, the search should fail
+TEST_F(ValueAllDifferentTest, VariablesAllBoundToSameValue) {
+  static const int kUniqueValue = 1;
+  std::unique_ptr<RangeFactory> range_factory(new UniqueValue(kUniqueValue));
+  CheckModel(range_factory.get(), 1, 0);
+}
+
+// If there are fewer possible values than variables, the search should fail;
+// the "Value" version of AllDifferent doesn't detect this in the initial
+// propagation phase and needs backtracking (n! backtracks, where n is the
+// size of the variable domains)
+TEST_F(ValueAllDifferentTest, DomainSmallerThanNumberOfVariables) {
+  static const int kRange = kAllDifferentSize - 1;
+  std::unique_ptr<RangeFactory> range_factory(new UniqueRange(0, kRange - 1));
+  CheckModel(range_factory.get(), factorial(kRange), 0);
+}
+
+// Solve a problem with as many values a variables, should find !n solutions;
+// the "Value" version should not backtrack (except after a solution is found)
+TEST_F(ValueAllDifferentTest, DomainEqualToNumberOfVariables) {
+  static const int kRange = kAllDifferentSize;
+  std::unique_ptr<RangeFactory> range_factory(new UniqueRange(0, kRange - 1));
+  CheckModel(range_factory.get(), factorial(kRange), factorial(kRange));
+}
+
+// ----- Sorted -----
+
+#define SORT_CREATE_MODEL(solver, vars, sorted)        \
+  std::vector<IntVar*> vars;                           \
+  vars.push_back(solver->MakeIntVar(1, 3));            \
+  vars.push_back(solver->MakeIntVar(1, 4));            \
+  vars.push_back(solver->MakeIntVar(2, 3));            \
+  vars.push_back(solver->MakeIntVar(1, 5));            \
+  std::vector<IntVar*> sorted;                         \
+  solver->MakeIntVarArray(vars.size(), 0, 5, &sorted); \
+  solver->AddConstraint(solver->MakeSortingConstraint(vars, sorted));
+
+TEST_IN_PROPAGATION(SortingConstraintTest, PropagationToSorted, solver, true) {
+  SORT_CREATE_MODEL(solver, vars, sorted);
+  EXPECT_EQ_RANGE(sorted[0], 1, 3);
+  EXPECT_EQ_RANGE(sorted[1], 1, 3);
+  EXPECT_EQ_RANGE(sorted[2], 1, 4);
+  EXPECT_EQ_RANGE(sorted[3], 2, 5);
+  return nullptr;
+}
+
+TEST_IN_PROPAGATION(SortingConstraintTest, PropagationFromSortedMax, solver,
+                    true) {
+  SORT_CREATE_MODEL(solver, vars, sorted);
+  sorted[3]->SetMax(3);
+  EXPECT_EQ_RANGE(vars[1], 1, 3);
+  EXPECT_EQ_RANGE(vars[3], 1, 3);
+  return nullptr;
+}
+
+TEST_IN_PROPAGATION(SortingConstraintTest, PropagationFromSortedMin, solver,
+                    true) {
+  SORT_CREATE_MODEL(solver, vars, sorted);
+  sorted[0]->SetMin(2);
+  EXPECT_EQ_RANGE(vars[0], 2, 3);
+  EXPECT_EQ_RANGE(vars[1], 2, 4);
+  EXPECT_EQ_RANGE(vars[2], 2, 3);
+  EXPECT_EQ_RANGE(vars[3], 2, 5);
+  return nullptr;
+}
+
+TEST_IN_PROPAGATION(SortingConstraintTest, PropagationFromSortedValue, solver,
+                    true) {
+  std::vector<IntVar*> vars;
+  vars.push_back(solver->MakeIntVar(1, 2));
+  vars.push_back(solver->MakeIntVar(1, 4));
+  vars.push_back(solver->MakeIntVar(2, 3));
+  vars.push_back(solver->MakeIntVar(1, 5));
+  std::vector<IntVar*> sorted;
+  solver->MakeIntVarArray(vars.size(), 0, 5, &sorted);
+  solver->AddConstraint(solver->MakeSortingConstraint(vars, sorted));
+  sorted[1]->SetValue(3);
+  EXPECT_EQ_RANGE(vars[0], 1, 2);
+  EXPECT_EQ_RANGE(vars[1], 3, 4);
+  EXPECT_EQ_RANGE(vars[2], 3, 3);
+  EXPECT_EQ_RANGE(vars[3], 3, 5);
+  return nullptr;
+}
+
+TEST_IN_PROPAGATION(SortingConstraintTest, PropagationFalseMin, solver, false) {
+  Constraint* ct = nullptr;
+  {
+    std::vector<IntVar*> vars;
+    vars.push_back(solver->MakeIntVar(1, 2));
+    vars.push_back(solver->MakeIntVar(1, 4));
+    vars.push_back(solver->MakeIntVar(2, 3));
+    vars.push_back(solver->MakeIntVar(1, 5));
+    std::vector<IntVar*> sorted;
+    solver->MakeIntVarArray(vars.size(), 0, 1, &sorted);
+    ct = solver->MakeSortingConstraint(vars, sorted);
+  }
+  solver->AddConstraint(ct);
+  return nullptr;
+}
+
+TEST_IN_PROPAGATION(SortingConstraintTest, PropagationFalseMax, solver, false) {
+  Constraint* ct = nullptr;
+  {
+    std::vector<IntVar*> vars;
+    vars.push_back(solver->MakeIntVar(1, 2));
+    vars.push_back(solver->MakeIntVar(1, 4));
+    vars.push_back(solver->MakeIntVar(2, 3));
+    vars.push_back(solver->MakeIntVar(1, 5));
+    std::vector<IntVar*> sorted;
+    solver->MakeIntVarArray(vars.size(), 3, 5, &sorted);
+    ct = solver->MakeSortingConstraint(vars, sorted);
+  }
+  solver->AddConstraint(ct);
+  return nullptr;
+}
+#undef SORT_CREATE_MODEL
+
+static const int kAllDifferentExceptVarCount = 10;
+static const int kAllDifferentExceptVarMax = 4;
+static const int kAllDifferentExceptOneValue = 1;
+
+class AllDifferentExcept : public testing::Test {
+ protected:
+  void SetUp() override {
+    solver_ = std::make_unique<Solver>("AllDifferentExcept");
+    solver_->MakeIntVarArray(kAllDifferentExceptVarCount, 0,
+                             kAllDifferentExceptVarMax, &vars_);
+  }
+  std::unique_ptr<Solver> solver_;
+  std::vector<IntVar*> vars_;
+};
+
+TEST_IN_PROPAGATION1(AllDifferentExcept, SingleAssignment, s, true,
+                     const std::vector<IntVar*>&, vars_) {
+  s->AddConstraint(s->MakeAllDifferentExcept(vars_, kAllDifferentExceptVarMax));
+  for (int i = 0; i < kAllDifferentExceptVarCount; ++i) {
+    EXPECT_TRUE(vars_[i]->Contains(0));
+  }
+  vars_[0]->SetValue(0);
+  for (int i = 1; i < kAllDifferentExceptVarCount; ++i) {
+    EXPECT_FALSE(vars_[i]->Contains(0));
+  }
+  return nullptr;
+}
+
+TEST_IN_PROPAGATION1(AllDifferentExcept, SingleAssignmentEscape, s, true,
+                     const std::vector<IntVar*>&, vars_) {
+  s->AddConstraint(s->MakeAllDifferentExcept(vars_, kAllDifferentExceptVarMax));
+  for (int i = 0; i < kAllDifferentExceptVarCount; ++i) {
+    EXPECT_TRUE(vars_[i]->Contains(kAllDifferentExceptVarMax));
+  }
+  vars_[0]->SetValue(kAllDifferentExceptVarMax);
+  for (int i = 1; i < kAllDifferentExceptVarCount; ++i) {
+    EXPECT_TRUE(vars_[i]->Contains(kAllDifferentExceptVarMax));
+  }
+  return nullptr;
+}
+
+TEST_IN_PROPAGATION1(AllDifferentExcept, SingleAssignmentOther, s, true,
+                     const std::vector<IntVar*>&, vars_) {
+  s->AddConstraint(
+      s->MakeAllDifferentExcept(vars_, kAllDifferentExceptOneValue));
+  vars_[0]->SetValue(0);
+  for (int i = 1; i < kAllDifferentExceptVarCount; ++i) {
+    EXPECT_FALSE(vars_[i]->Contains(0));
+  }
+  return nullptr;
+}
+
+TEST_IN_PROPAGATION1(AllDifferentExcept, SingleAssignmentEscapeOther, s, true,
+                     const std::vector<IntVar*>&, vars_) {
+  s->AddConstraint(
+      s->MakeAllDifferentExcept(vars_, kAllDifferentExceptOneValue));
+  for (int i = 0; i < kAllDifferentExceptVarCount; ++i) {
+    EXPECT_TRUE(vars_[i]->Contains(kAllDifferentExceptOneValue));
+  }
+  vars_[0]->SetValue(kAllDifferentExceptOneValue);
+  for (int i = 1; i < kAllDifferentExceptVarCount; ++i) {
+    EXPECT_TRUE(vars_[i]->Contains(kAllDifferentExceptOneValue));
+  }
+  return nullptr;
+}
+
+TEST_IN_PROPAGATION1(AllDifferentExcept, Conflict, s, false,
+                     const std::vector<IntVar*>&, vars_) {
+  s->AddConstraint(s->MakeAllDifferentExcept(vars_, kAllDifferentExceptVarMax));
+  vars_[0]->SetValue(0);
+  vars_[1]->SetValue(0);
+  return nullptr;
+}
+
+TEST_IN_PROPAGATION1(AllDifferentExcept, NoConflict, s, true,
+                     const std::vector<IntVar*>&, vars_) {
+  s->AddConstraint(s->MakeAllDifferentExcept(vars_, kAllDifferentExceptVarMax));
+  vars_[0]->SetValue(kAllDifferentExceptVarMax);
+  vars_[1]->SetValue(kAllDifferentExceptVarMax);
+  return nullptr;
+}
+
+static const int kNullIntersectVarCount = 10;
+static const int kNullIntersectVarMax = 4;
+static const int kNullIntersectOneValue = 1;
+
+class NullIntersect : public testing::Test {
+ protected:
+  void SetUp() override {
+    solver_ = std::make_unique<Solver>("NullIntersect");
+    solver_->MakeIntVarArray(kNullIntersectVarCount, 0, kNullIntersectVarMax,
+                             &left_);
+    solver_->MakeIntVarArray(kNullIntersectVarCount, 0, kNullIntersectVarMax,
+                             &right_);
+  }
+  std::unique_ptr<Solver> solver_;
+  std::vector<IntVar*> left_;
+  std::vector<IntVar*> right_;
+};
+
+TEST_IN_PROPAGATION2(NullIntersect, SingleAssignmentLeft, s, true,
+                     const std::vector<IntVar*>&, left_,
+                     const std::vector<IntVar*>&, right_) {
+  s->AddConstraint(s->MakeNullIntersect(left_, right_));
+  for (int i = 0; i < kNullIntersectVarCount; ++i) {
+    EXPECT_TRUE(left_[i]->Contains(kNullIntersectOneValue));
+    EXPECT_TRUE(right_[i]->Contains(kNullIntersectOneValue));
+  }
+  left_[0]->SetValue(kNullIntersectOneValue);
+  for (int i = 1; i < kNullIntersectVarCount; ++i) {
+    EXPECT_TRUE(left_[i]->Contains(kNullIntersectOneValue));
+    EXPECT_FALSE(right_[i]->Contains(kNullIntersectOneValue));
+  }
+  return nullptr;
+}
+
+TEST_IN_PROPAGATION2(NullIntersect, SingleAssignmentRight, s, true,
+                     const std::vector<IntVar*>&, left_,
+                     const std::vector<IntVar*>&, right_) {
+  s->AddConstraint(s->MakeNullIntersect(left_, right_));
+  for (int i = 0; i < kNullIntersectVarCount; ++i) {
+    EXPECT_TRUE(left_[i]->Contains(kNullIntersectOneValue));
+    EXPECT_TRUE(right_[i]->Contains(kNullIntersectOneValue));
+  }
+  right_[0]->SetValue(kNullIntersectOneValue);
+  for (int i = 1; i < kNullIntersectVarCount; ++i) {
+    EXPECT_FALSE(left_[i]->Contains(kNullIntersectOneValue));
+    EXPECT_TRUE(right_[i]->Contains(kNullIntersectOneValue));
+  }
+  return nullptr;
+}
+
+TEST_IN_PROPAGATION2(NullIntersect, Conflict, s, false,
+                     const std::vector<IntVar*>&, left_,
+                     const std::vector<IntVar*>&, right_) {
+  s->AddConstraint(s->MakeNullIntersect(left_, right_));
+  left_[0]->SetValue(kNullIntersectOneValue);
+  right_[0]->SetValue(kNullIntersectOneValue);
+  return nullptr;
+}
+
+TEST_IN_PROPAGATION2(NullIntersect, NoConflictLeft, s, true,
+                     const std::vector<IntVar*>&, left_,
+                     const std::vector<IntVar*>&, right_) {
+  s->AddConstraint(s->MakeNullIntersect(left_, right_));
+  left_[0]->SetValue(kNullIntersectOneValue);
+  left_[1]->SetValue(0);
+  return nullptr;
+}
+
+TEST_IN_PROPAGATION2(NullIntersect, NoConflictRight, s, true,
+                     const std::vector<IntVar*>&, left_,
+                     const std::vector<IntVar*>&, right_) {
+  s->AddConstraint(s->MakeNullIntersect(left_, right_));
+  right_[0]->SetValue(kNullIntersectOneValue);
+  right_[1]->SetValue(kNullIntersectOneValue);
+  return nullptr;
+}
+
+static const int kNullIntersectExceptVarCount = 10;
+static const int kNullIntersectExceptVarMax = 4;
+static const int kNullIntersectExceptOneValue = 1;
+static const int kNullIntersectExceptEscape = 3;
+
+class NullIntersectExcept : public testing::Test {
+ protected:
+  void SetUp() override {
+    solver_ = std::make_unique<Solver>("NullIntersectExcept");
+    solver_->MakeIntVarArray(kNullIntersectExceptVarCount, 0,
+                             kNullIntersectExceptVarMax, &left_);
+    solver_->MakeIntVarArray(kNullIntersectExceptVarCount, 0,
+                             kNullIntersectExceptVarMax, &right_);
+  }
+  std::unique_ptr<Solver> solver_;
+  std::vector<IntVar*> left_;
+  std::vector<IntVar*> right_;
+};
+
+TEST_IN_PROPAGATION2(NullIntersectExcept, SingleAssignmentLeft, s, true,
+                     const std::vector<IntVar*>&, left_,
+                     const std::vector<IntVar*>&, right_) {
+  s->AddConstraint(
+      s->MakeNullIntersectExcept(left_, right_, kNullIntersectExceptEscape));
+  for (int i = 0; i < kNullIntersectExceptVarCount; ++i) {
+    EXPECT_TRUE(left_[i]->Contains(kNullIntersectExceptOneValue));
+    EXPECT_TRUE(right_[i]->Contains(kNullIntersectExceptOneValue));
+  }
+  left_[0]->SetValue(kNullIntersectExceptOneValue);
+  for (int i = 1; i < kNullIntersectExceptVarCount; ++i) {
+    EXPECT_TRUE(left_[i]->Contains(kNullIntersectExceptOneValue));
+    EXPECT_FALSE(right_[i]->Contains(kNullIntersectExceptOneValue));
+  }
+  return nullptr;
+}
+
+TEST_IN_PROPAGATION2(NullIntersectExcept, SingleAssignmentRight, s, true,
+                     const std::vector<IntVar*>&, left_,
+                     const std::vector<IntVar*>&, right_) {
+  s->AddConstraint(
+      s->MakeNullIntersectExcept(left_, right_, kNullIntersectExceptEscape));
+  for (int i = 0; i < kNullIntersectExceptVarCount; ++i) {
+    EXPECT_TRUE(left_[i]->Contains(kNullIntersectExceptOneValue));
+    EXPECT_TRUE(right_[i]->Contains(kNullIntersectExceptOneValue));
+  }
+  right_[0]->SetValue(kNullIntersectExceptOneValue);
+  for (int i = 1; i < kNullIntersectExceptVarCount; ++i) {
+    EXPECT_FALSE(left_[i]->Contains(kNullIntersectExceptOneValue));
+    EXPECT_TRUE(right_[i]->Contains(kNullIntersectExceptOneValue));
+  }
+  return nullptr;
+}
+
+TEST_IN_PROPAGATION2(NullIntersectExcept, SingleAssignmentEscapeLeft, s, true,
+                     const std::vector<IntVar*>&, left_,
+                     const std::vector<IntVar*>&, right_) {
+  s->AddConstraint(
+      s->MakeNullIntersectExcept(left_, right_, kNullIntersectExceptEscape));
+  for (int i = 0; i < kNullIntersectExceptVarCount; ++i) {
+    EXPECT_TRUE(left_[i]->Contains(kNullIntersectExceptEscape));
+    EXPECT_TRUE(right_[i]->Contains(kNullIntersectExceptEscape));
+  }
+  left_[0]->SetValue(kNullIntersectExceptEscape);
+  for (int i = 1; i < kNullIntersectExceptVarCount; ++i) {
+    EXPECT_TRUE(left_[i]->Contains(kNullIntersectExceptEscape));
+    EXPECT_TRUE(right_[i]->Contains(kNullIntersectExceptEscape));
+  }
+  return nullptr;
+}
+
+TEST_IN_PROPAGATION2(NullIntersectExcept, SingleAssignmentEscapeRight, s, true,
+                     const std::vector<IntVar*>&, left_,
+                     const std::vector<IntVar*>&, right_) {
+  s->AddConstraint(
+      s->MakeNullIntersectExcept(left_, right_, kNullIntersectExceptEscape));
+  for (int i = 0; i < kNullIntersectExceptVarCount; ++i) {
+    EXPECT_TRUE(left_[i]->Contains(kNullIntersectExceptEscape));
+    EXPECT_TRUE(right_[i]->Contains(kNullIntersectExceptEscape));
+  }
+  right_[0]->SetValue(kNullIntersectExceptEscape);
+  for (int i = 1; i < kNullIntersectExceptVarCount; ++i) {
+    EXPECT_TRUE(left_[i]->Contains(kNullIntersectExceptEscape));
+    EXPECT_TRUE(right_[i]->Contains(kNullIntersectExceptEscape));
+  }
+  return nullptr;
+}
+
+TEST_IN_PROPAGATION2(NullIntersectExcept, Conflict, s, false,
+                     const std::vector<IntVar*>&, left_,
+                     const std::vector<IntVar*>&, right_) {
+  s->AddConstraint(
+      s->MakeNullIntersectExcept(left_, right_, kNullIntersectExceptEscape));
+  left_[0]->SetValue(kNullIntersectExceptOneValue);
+  right_[0]->SetValue(kNullIntersectExceptOneValue);
+  return nullptr;
+}
+
+TEST_IN_PROPAGATION2(NullIntersectExcept, ConflictEscape, s, true,
+                     const std::vector<IntVar*>&, left_,
+                     const std::vector<IntVar*>&, right_) {
+  s->AddConstraint(
+      s->MakeNullIntersectExcept(left_, right_, kNullIntersectExceptEscape));
+  left_[0]->SetValue(kNullIntersectExceptEscape);
+  right_[0]->SetValue(kNullIntersectExceptEscape);
+  return nullptr;
+}
+
+TEST_IN_PROPAGATION2(NullIntersectExcept, NoConflictLeft, s, true,
+                     const std::vector<IntVar*>&, left_,
+                     const std::vector<IntVar*>&, right_) {
+  s->AddConstraint(
+      s->MakeNullIntersectExcept(left_, right_, kNullIntersectExceptEscape));
+  left_[0]->SetValue(kNullIntersectExceptOneValue);
+  left_[1]->SetValue(kNullIntersectExceptOneValue);
+  return nullptr;
+}
+
+TEST_IN_PROPAGATION2(NullIntersectExcept, NoConflictRight, s, true,
+                     const std::vector<IntVar*>&, left_,
+                     const std::vector<IntVar*>&, right_) {
+  s->AddConstraint(
+      s->MakeNullIntersectExcept(left_, right_, kNullIntersectExceptEscape));
+  right_[0]->SetValue(kNullIntersectExceptOneValue);
+  right_[1]->SetValue(kNullIntersectExceptOneValue);
+  return nullptr;
+}
+
+}  // namespace
+}  // namespace operations_research
