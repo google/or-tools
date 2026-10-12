@@ -22,6 +22,7 @@
 #include <optional>
 #include <random>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -3674,7 +3675,7 @@ class LocalSearchProfiler : public LocalSearchMonitor {
       UpdateTime();
       last_operator_ = op->Self();
     }
-    make_next_neighbor_timer_.Start();
+    make_next_neighbor_timer_.Restart();
   }
   void EndMakeNextNeighbor(const LocalSearchOperator* op, bool neighbor_found,
                            const Assignment*, const Assignment*) override {
@@ -3696,7 +3697,7 @@ class LocalSearchProfiler : public LocalSearchMonitor {
     }
   }
   void BeginAcceptNeighbor(const LocalSearchOperator*) override {
-    accept_neighbor_timer_.Start();
+    accept_neighbor_timer_.Restart();
   }
   void EndAcceptNeighbor(const LocalSearchOperator* op,
                          bool neighbor_found) override {
@@ -3711,7 +3712,7 @@ class LocalSearchProfiler : public LocalSearchMonitor {
     FilterStats& filter_stats =
         filter_stats_per_context_[solver()->context()][filter];
     filter_stats.calls++;
-    filter_timer_.Start();
+    filter_timer_.Restart();
   }
   void EndFiltering(const LocalSearchFilter* filter, bool reject) override {
     filter_timer_.Stop();
@@ -3734,7 +3735,7 @@ class LocalSearchProfiler : public LocalSearchMonitor {
       timer_.Stop();
       operator_stats_[last_operator_].seconds += timer_.Get();
     }
-    timer_.Start();
+    timer_.Restart();
   }
 
   struct OperatorStats {

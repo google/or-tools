@@ -57,6 +57,7 @@ set(ABSL_DEPS
   absl::strings
   absl::synchronization
   absl::time
+  absl::clock_interface
   absl::any
   )
 
