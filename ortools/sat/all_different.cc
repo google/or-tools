@@ -32,7 +32,6 @@
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/sat_trail.h"
-#include "ortools/util/deterministic_time.h"
 #include "ortools/util/sort.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"

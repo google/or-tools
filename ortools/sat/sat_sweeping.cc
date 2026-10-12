@@ -42,7 +42,6 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/util.h"
-#include "ortools/util/deterministic_time.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {

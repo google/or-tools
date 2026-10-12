@@ -2179,7 +2179,6 @@ or_cc_library(
         "//ortools/base:timer",
         "//ortools/base:types",
         "//ortools/util:bitset",
-        "//ortools/util:deterministic_time",
         "//ortools/util:integer_pq",
         "//ortools/util:logging",
         "//ortools/util:strong_integers",
