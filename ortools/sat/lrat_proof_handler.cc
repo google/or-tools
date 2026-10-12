@@ -385,7 +385,7 @@ bool LratMerger::ReadPresolveProof(const std::string& filename) {
         std::sort(literals.begin(), literals.end());
         shared_clauses[global_id] = literals;
         if (lrat_checker_ != nullptr) {
-          const ClausePtr clause = ClausePtr(literals);
+          const ClausePtr clause = NewAllocatedClausePtr(literals);
           DCHECK(!global_id_to_clause_.contains(global_id));
           global_id_to_clause_[global_id] = clause;
           if (!lrat_checker_->AddProblemClause(clause)) {
@@ -514,7 +514,7 @@ bool LratMerger::RemapInferredClause(int proof_index,
       tmp_literals_.push_back(Literal(LiteralIndex(index)));
     }
     DCHECK(!global_id_to_clause_.contains(global_id));
-    global_id_to_clause_[global_id] = ClausePtr(tmp_literals_);
+    global_id_to_clause_[global_id] = NewAllocatedClausePtr(tmp_literals_);
   }
   return true;
 }
@@ -704,7 +704,8 @@ bool LratProofHandler::AddProblemClause(ClausePtr clause,
   if (clause.IsBinaryClausePtr()) {
     if (!binary_clauses_.insert({clause, false}).second) {
       if (lrat_writer_ != nullptr && one_based_cnf_index > 0) {
-        const ClausePtr clause_ptr = ClausePtr(clause.GetLiterals());
+        const ClausePtr clause_ptr =
+            NewAllocatedClausePtr(clause.GetLiterals());
         lrat_writer_->AddImportedClause(clause_ptr, one_based_cnf_index);
         lrat_writer_->DeleteClause(clause_ptr);
         delete clause_ptr.GetSatClause();
@@ -803,7 +804,7 @@ bool LratProofHandler::ExportClause(ClausePtr clause) {
   return true;
 }
 
-void LratProofHandler::DeleteClause(ClausePtr clause, bool delete_sat_clause) {
+void LratProofHandler::DeleteClause(ClausePtr clause) {
   VLOG(2) << "DeleteClause: ptr=" << clause
           << " literals=" << absl::StrJoin(clause.GetLiterals(), ",");
   if (clause.IsBinaryClausePtr()) {
@@ -813,9 +814,6 @@ void LratProofHandler::DeleteClause(ClausePtr clause, bool delete_sat_clause) {
     binary_clauses_.erase(it);
   }
   DeleteClauseInternal(clause);
-  if (delete_sat_clause && clause.IsSatClausePtr()) {
-    delete clause.GetSatClause();
-  }
 }
 
 void LratProofHandler::DeleteClauseInternal(ClausePtr clause) {
@@ -1073,8 +1071,8 @@ bool LratProofHandler::AddAndProveInferredClauseByEnumeration(
       // Prove it from the two clauses at k + 1.
       const int higher1 = index ^ ((0b11) << k);
       const int higher2 = index ^ ((0b10) << k);
-      const ClausePtr clause1 = intermediate_clauses[higher1];
-      const ClausePtr clause2 = intermediate_clauses[higher2];
+      ClausePtr clause1 = intermediate_clauses[higher1];
+      ClausePtr clause2 = intermediate_clauses[higher2];
       if (clause1 == kNullClausePtr || clause2 == kNullClausePtr) {
         return error(
             absl::StrCat("missing higher level clauses in the resolution.",
@@ -1083,7 +1081,8 @@ bool LratProofHandler::AddAndProveInferredClauseByEnumeration(
                          " higher2: ", std::bitset<8>(higher2).to_string()));
       }
 
-      intermediate_clauses[index] = k == 0 ? new_clause : ClausePtr(tmp_clause);
+      intermediate_clauses[index] =
+          k == 0 ? new_clause : NewAllocatedClausePtr(tmp_clause);
       if (k != 0) {
         VLOG(2) << "temporary !! " << intermediate_clauses[index] << " "
                 << tmp_clause;
@@ -1102,10 +1101,12 @@ bool LratProofHandler::AddAndProveInferredClauseByEnumeration(
       if (id_need_deletion[higher1]) {
         VLOG(2) << "deleting: " << clause1 << " " << clause1.GetLiterals();
         DeleteClause(clause1);
+        clause1.DeleteIfAllocated();
       }
       if (id_need_deletion[higher2]) {
         VLOG(2) << "deleting: " << clause2 << " " << clause2.GetLiterals();
         DeleteClause(clause2);
+        clause2.DeleteIfAllocated();
       }
     }
   }

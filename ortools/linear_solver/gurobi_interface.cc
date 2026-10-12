@@ -70,7 +70,6 @@
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver_callback.h"
 #include "ortools/linear_solver/proto_solver/gurobi_proto_solver.h"
-#include "ortools/linear_solver/proto_solver/proto_utils.h"
 #include "ortools/third_party_solvers/gurobi_environment.h"
 #include "ortools/util/lazy_mutable_copy.h"
 #include "ortools/util/status_streaming.h"
@@ -101,12 +100,10 @@ class GurobiInterface : public MPSolverInterface {
   MPSolutionResponse DirectlySolveProto(LazyMutableCopy<MPModelRequest> request,
                                         std::atomic<bool>* interrupt) override {
     DCHECK_EQ(interrupt, nullptr);
-    const bool log_error = request->enable_internal_solver_output();
 
     // Here we reuse the Gurobi environment to support single-use license that
     // forbids creating a second environment if one already exists.
-    return ConvertStatusOrMPSolutionResponse(
-        log_error, GurobiSolveProto(std::move(request), global_env_));
+    return GurobiSolveProto(std::move(request), global_env_);
   }
 
   // Writes the model.

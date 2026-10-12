@@ -35,6 +35,7 @@
 #include "ortools/lp_data/permutation.h"
 #include "ortools/lp_data/sparse.h"
 #include "ortools/lp_data/sparse_column.h"
+#include "ortools/util/fp_roundtrip_conv.h"
 #include "ortools/util/fp_utils.h"
 
 namespace operations_research {
@@ -366,13 +367,13 @@ bool LinearProgram::IsCleanedUp() const {
 
 std::string LinearProgram::GetVariableName(ColIndex col) const {
   return col >= variable_names_.size() || variable_names_[col].empty()
-             ? absl::StrFormat("c%d", col.value())
+             ? absl::StrFormat("c%v", col)
              : variable_names_[col];
 }
 
 std::string LinearProgram::GetConstraintName(RowIndex row) const {
   return row >= constraint_names_.size() || constraint_names_[row].empty()
-             ? absl::StrFormat("r%d", row.value())
+             ? absl::StrFormat("r%v", row)
              : constraint_names_[row];
 }
 
@@ -434,10 +435,8 @@ std::string LinearProgram::GetDimensionString() const {
   Fractional max_magnitude = 0.0;
   matrix_.ComputeMinAndMaxMagnitudes(&min_magnitude, &max_magnitude);
   return absl::StrFormat(
-      "%d rows, %d columns, %d entries with magnitude in [%e, %e]",
-      num_constraints().value(), num_variables().value(),
-      // static_cast<int64_t> is needed because the Android port uses int32_t.
-      static_cast<int64_t>(num_entries().value()), min_magnitude,
+      "%v rows, %v columns, %v entries with magnitude in [%e, %e]",
+      num_constraints(), num_variables(), num_entries(), min_magnitude,
       max_magnitude);
 }
 
@@ -659,48 +658,48 @@ std::string LinearProgram::DumpSolution(const DenseRow& variable_values) const {
   for (ColIndex col(0); col < variable_values.size(); ++col) {
     if (!output.empty()) absl::StrAppend(&output, ", ");
     absl::StrAppend(&output, GetVariableName(col), " = ",
-                    (variable_values[col]));
+                    RoundTripDoubleFormat(variable_values[col]));
   }
   return output;
 }
 
 std::string LinearProgram::GetProblemStats() const {
   return ProblemStatFormatter(
-      "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
-      "%d,%d,%d,%d");
+      "%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,"
+      "%v,%v,%v,%v");
 }
 
 std::string LinearProgram::GetPrettyProblemStats() const {
   return ProblemStatFormatter(
-      "Number of rows                               : %d\n"
-      "Number of variables in file                  : %d\n"
-      "Number of entries (non-zeros)                : %d\n"
-      "Number of entries in the objective           : %d\n"
-      "Number of entries in the right-hand side     : %d\n"
-      "Number of <= constraints                     : %d\n"
-      "Number of >= constraints                     : %d\n"
-      "Number of = constraints                      : %d\n"
-      "Number of range constraints                  : %d\n"
-      "Number of non-negative variables             : %d\n"
-      "Number of boxed variables                    : %d\n"
-      "Number of free variables                     : %d\n"
-      "Number of fixed variables                    : %d\n"
-      "Number of other variables                    : %d\n"
-      "Number of integer variables                  : %d\n"
-      "Number of binary variables                   : %d\n"
-      "Number of non-binary integer variables       : %d\n"
-      "Number of continuous variables               : %d\n");
+      "Number of rows                               : %v\n"
+      "Number of variables in file                  : %v\n"
+      "Number of entries (non-zeros)                : %v\n"
+      "Number of entries in the objective           : %v\n"
+      "Number of entries in the right-hand side     : %v\n"
+      "Number of <= constraints                     : %v\n"
+      "Number of >= constraints                     : %v\n"
+      "Number of = constraints                      : %v\n"
+      "Number of range constraints                  : %v\n"
+      "Number of non-negative variables             : %v\n"
+      "Number of boxed variables                    : %v\n"
+      "Number of free variables                     : %v\n"
+      "Number of fixed variables                    : %v\n"
+      "Number of other variables                    : %v\n"
+      "Number of integer variables                  : %v\n"
+      "Number of binary variables                   : %v\n"
+      "Number of non-binary integer variables       : %v\n"
+      "Number of continuous variables               : %v\n");
 }
 
 std::string LinearProgram::GetNonZeroStats() const {
-  return NonZeroStatFormatter("%.2f%%,%d,%.2f,%.2f,%d,%.2f,%.2f");
+  return NonZeroStatFormatter("%.2f%%,%v,%.2f,%.2f,%v,%.2f,%.2f");
 }
 
 std::string LinearProgram::GetPrettyNonZeroStats() const {
   return NonZeroStatFormatter(
       "Fill rate                                    : %.2f%%\n"
-      "Entries in row (Max / average / std. dev.)   : %d / %.2f / %.2f\n"
-      "Entries in column (Max / average / std. dev.): %d / %.2f / %.2f\n");
+      "Entries in row (Max / average / std. dev.)   : %v / %.2f / %.2f\n"
+      "Entries in column (Max / average / std. dev.): %v / %.2f / %.2f\n");
 }
 
 void LinearProgram::AddSlackVariablesWhereNecessary(
@@ -745,7 +744,7 @@ void LinearProgram::AddSlackVariablesWhereNecessary(
     }
     const ColIndex slack_col = CreateNewSlackVariable(
         has_integer_slack_variable[row], -constraint_upper_bounds_[row],
-        -constraint_lower_bounds_[row], absl::StrCat("s", row.value()));
+        -constraint_lower_bounds_[row], absl::StrCat("s", row));
     SetCoefficient(row, slack_col, 1.0);
     SetConstraintBounds(row, 0.0, 0.0);
   }
@@ -1431,12 +1430,12 @@ std::string LinearProgram::ProblemStatFormatter(
   const int num_continuous_variables =
       ColToIntIndex(num_variables()) - num_integer_variables;
   auto format_runtime =
-      absl::ParsedFormat<'d', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd',
-                         'd', 'd', 'd', 'd', 'd', 'd', 'd'>::New(format);
+      absl::ParsedFormat<'v', 'v', 'v', 'v', 'v', 'v', 'v', 'v', 'v', 'v', 'v',
+                         'v', 'v', 'v', 'v', 'v', 'v', 'v'>::New(format);
   CHECK(format_runtime);
   return absl::StrFormat(
       *format_runtime, RowToIntIndex(num_constraints()),
-      ColToIntIndex(num_variables()), matrix_.num_entries().value(),
+      ColToIntIndex(num_variables()), matrix_.num_entries(),
       num_objective_non_zeros, num_rhs_non_zeros, num_less_than_constraints,
       num_greater_than_constraints, num_equal_constraints,
       num_range_constraints, num_non_negative_variables, num_boxed_variables,
@@ -1470,12 +1469,12 @@ std::string LinearProgram::NonZeroStatFormatter(
                            static_cast<double>(height * width);
 
   auto format_runtime =
-      absl::ParsedFormat<'f', 'd', 'f', 'f', 'd', 'f', 'f'>::New(format);
+      absl::ParsedFormat<'f', 'v', 'f', 'f', 'v', 'f', 'f'>::New(format);
   return absl::StrFormat(
-      *format_runtime, fill_rate, GetMaxElement(num_entries_in_row).value(),
+      *format_runtime, fill_rate, GetMaxElement(num_entries_in_row),
       Average(num_entries_in_row), StandardDeviation(num_entries_in_row),
-      GetMaxElement(num_entries_in_column).value(),
-      Average(num_entries_in_column), StandardDeviation(num_entries_in_column));
+      GetMaxElement(num_entries_in_column), Average(num_entries_in_column),
+      StandardDeviation(num_entries_in_column));
 }
 
 void LinearProgram::ResizeRowsIfNeeded(RowIndex row) {
@@ -1509,7 +1508,7 @@ bool LinearProgram::BoundsOfIntegerVariablesAreInteger(
          !IsIntegerWithinTolerance(variable_lower_bounds_[col], tolerance)) ||
         (IsFinite(variable_upper_bounds_[col]) &&
          !IsIntegerWithinTolerance(variable_upper_bounds_[col], tolerance))) {
-      VLOG(1) << "Bounds of variable " << col.value() << " are non-integer ("
+      VLOG(1) << "Bounds of variable " << col << " are non-integer ("
               << variable_lower_bounds_[col] << ", "
               << variable_upper_bounds_[col] << ").";
       return false;
@@ -1546,8 +1545,8 @@ bool LinearProgram::BoundsOfIntegerConstraintsAreInteger(
           (IsFinite(constraint_upper_bounds_[row]) &&
            !IsIntegerWithinTolerance(constraint_upper_bounds_[row],
                                      tolerance))) {
-        VLOG(1) << "Bounds of constraint " << row.value()
-                << " are non-integer (" << constraint_lower_bounds_[row] << ", "
+        VLOG(1) << "Bounds of constraint " << row << " are non-integer ("
+                << constraint_lower_bounds_[row] << ", "
                 << constraint_upper_bounds_[row] << ").";
         return false;
       }
@@ -1585,15 +1584,32 @@ void LinearProgram::RemoveNearZeroEntries(Fractional threshold) {
 std::string ProblemSolution::DebugString() const {
   std::string s = "Problem status: " + GetProblemStatusString(status);
   for (ColIndex col(0); col < primal_values.size(); ++col) {
-    absl::StrAppendFormat(&s, "\n  Var #%d: %s %g", col.value(),
+    absl::StrAppendFormat(&s, "\n  Var #%v: %s %v", col,
                           GetVariableStatusString(variable_statuses[col]),
-                          primal_values[col]);
+                          RoundTripDoubleFormat(primal_values[col]));
   }
-  s += "\n------------------------------";
+  constexpr absl::string_view kSeparator = "\n------------------------------";
+  s += kSeparator;
   for (RowIndex row(0); row < dual_values.size(); ++row) {
-    absl::StrAppendFormat(&s, "\n  Constraint #%d: %s %g", row.value(),
+    absl::StrAppendFormat(&s, "\n  Constraint #%v: %s %v", row,
                           GetConstraintStatusString(constraint_statuses[row]),
-                          dual_values[row]);
+                          RoundTripDoubleFormat(dual_values[row]));
+  }
+  if (primal_ray.has_value()) {
+    s += kSeparator;
+    s += "\nPrimal Ray:";
+    for (ColIndex col(0); col < primal_ray->size(); ++col) {
+      absl::StrAppendFormat(&s, "\n  Var #%v: %v", col,
+                            RoundTripDoubleFormat((*primal_ray)[col]));
+    }
+  }
+  if (dual_ray.has_value()) {
+    s += kSeparator;
+    s += "\nDual Ray:";
+    for (RowIndex row(0); row < dual_ray->size(); ++row) {
+      absl::StrAppendFormat(&s, "\n  Constraint #%v: %v", row,
+                            RoundTripDoubleFormat((*dual_ray)[row]));
+    }
   }
   return s;
 }

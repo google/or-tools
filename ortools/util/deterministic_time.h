@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_SAT_DETERMINISTIC_TIME_H_
-#define ORTOOLS_SAT_DETERMINISTIC_TIME_H_
+#ifndef ORTOOLS_UTIL_DETERMINISTIC_TIME_H_
+#define ORTOOLS_UTIL_DETERMINISTIC_TIME_H_
 
 #include <cstddef>
 #include <cstdint>
@@ -34,11 +34,15 @@
 #include "absl/types/source_location.h"
 #include "ortools/util/time_limit.h"
 
-namespace operations_research::sat {
+namespace operations_research {
 
-#ifndef OR_TOOLS_SAT_DETERMINISTIC_TIME_PROFILING
+#ifndef OR_TOOLS_UTIL_DETERMINISTIC_TIME_PROFILING
 
 // The calibration parameters of a deterministic timer.
+struct LinearDeterministicTimeSpec {
+  double scale;
+};
+
 struct DeterministicTimeSpec {
   double scale;
   double offset;
@@ -48,6 +52,55 @@ struct DeterministicTimeSpec2 {
   double scale1;
   double scale2;
   double offset;
+};
+
+// A convenience template for advancing a deterministic time counter.
+//
+// This timer can be used in instance fields and/or passed to functions, unlike
+// the ones below. On the other hand, it does not provide automatic support for
+// nested timers.
+template <LinearDeterministicTimeSpec spec>
+class LinearDeterministicTimer {
+ public:
+  void Reset() {
+#ifndef NDEBUG
+    CHECK(!started_);
+#endif  // NDEBUG
+    time_units_ = 0;
+  }
+
+  // Starts or restarts the timer. This has no effect if profiling is disabled,
+  // but must be called anyway so that, when profiling is enabled, wall time
+  // samples and their corresponding deterministic time can be collected for
+  // fitting.
+  void Start() {
+#ifndef NDEBUG
+    CHECK(!started_);
+    started_ = true;
+#endif  // NDEBUG
+  }
+
+  // Advances the deterministic time by time_units * spec.scale. If profiling is
+  // enabled, this also records the elapsed wall time since the last call to
+  // Start() and the corresponding time units.
+  void Stop(int time_units) {
+#ifndef NDEBUG
+    CHECK(started_);
+    started_ = false;
+#endif  // NDEBUG
+    time_units_ += time_units;
+  }
+
+  // Returns the total elapsed deterministic time in seconds between the Start()
+  // and Stop() calls since the construction of the timer, or since the last
+  // call to Reset().
+  double GetDeterministicTime() const { return spec.scale * time_units_; }
+
+ private:
+#ifndef NDEBUG
+  bool started_ = false;
+#endif  // NDEBUG
+  uint64_t time_units_ = 0;
 };
 
 // A convenience template for advancing the deterministic time of a TimeLimit.
@@ -72,6 +125,12 @@ class DeterministicTimer {
       : time_limit_(time_limit) {
     time_limit_->AdvanceDeterministicTime(spec.scale * time_units +
                                           spec.offset);
+  }
+
+  // Returns the deterministic time in seconds for the given number of time
+  // units.
+  double dtime(uint64_t time_units) const {
+    return spec.scale * time_units + spec.offset;
   }
 
   // Advances the time limit's deterministic time by spec.scale * time_units.
@@ -107,6 +166,12 @@ class DeterministicTimer2 {
       : time_limit_(time_limit) {
     time_limit_->AdvanceDeterministicTime(
         spec.scale1 * time_units1 + spec.scale2 * time_units2 + spec.offset);
+  }
+
+  // Returns the deterministic time in seconds for the given number of time
+  // units.
+  double dtime(uint64_t time_units1, uint64_t time_units2) const {
+    return spec.scale1 * time_units1 + spec.scale2 * time_units2 + spec.offset;
   }
 
   // Advances the time limit's deterministic time by spec.scale1 * time_units1 +
@@ -145,6 +210,12 @@ class CompileTimeSourceLocation {
 };
 
 // The calibration parameters and source location of a deterministic timer.
+struct LinearDeterministicTimeSpec {
+  double scale;
+  CompileTimeSourceLocation loc =
+      CompileTimeSourceLocation(absl::SourceLocation::current());
+};
+
 struct DeterministicTimeSpec {
   double scale;
   double offset;
@@ -371,9 +442,9 @@ class BaseDeterministicTimeStats {
   ~BaseDeterministicTimeStats() {
     AllDeterministicTimeStats::Get().AddStats(loc_.file_name(), loc_.line(),
                                               stats_);
-#ifdef OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+#ifdef OR_TOOLS_UTIL_DETERMINISTIC_TIME_SAMPLING
     AllDeterministicTimeStats::Get().AddProfilingStats(call_stack_to_stats_);
-#endif  // OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+#endif  // OR_TOOLS_UTIL_DETERMINISTIC_TIME_SAMPLING
   }
 
   // Adds a sample to the statistics.
@@ -384,18 +455,18 @@ class BaseDeterministicTimeStats {
                  double fitted_duration,
                  std::vector<void*>* call_stack = nullptr) {
     stats_.AddSample(time_units, measured_duration_ns, fitted_duration);
-#ifdef OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+#ifdef OR_TOOLS_UTIL_DETERMINISTIC_TIME_SAMPLING
     call_stack_to_stats_[*call_stack].AddSample(fitted_duration);
-#endif  // OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+#endif  // OR_TOOLS_UTIL_DETERMINISTIC_TIME_SAMPLING
   }
 
  protected:
-  const CompileTimeSourceLocation loc_;
+  const CompileTimeSourceLocation& loc_;
   SampleStatistics stats_;
-#ifdef OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+#ifdef OR_TOOLS_UTIL_DETERMINISTIC_TIME_SAMPLING
   absl::flat_hash_map<std::vector<void*>, profiling::ProfilingSamples>
       call_stack_to_stats_;
-#endif  // OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+#endif  // OR_TOOLS_UTIL_DETERMINISTIC_TIME_SAMPLING
 };
 
 template <CompileTimeSourceLocation loc>
@@ -424,7 +495,7 @@ class AbstractDeterministicTimer {
   TimeLimit* const time_limit_;
   // The time in nanoseconds when the timer was constructed.
   uint64_t start_time_;
-#ifdef OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+#ifdef OR_TOOLS_UTIL_DETERMINISTIC_TIME_SAMPLING
   std::vector<void*> call_stack_ = profiling::GetTimerStackTrace();
 #endif
 
@@ -454,17 +525,43 @@ class BaseDeterministicTimer : public AbstractDeterministicTimer {
       // Deduct the time spent in this timer from the time spent in its parent.
       timers_stack_.top()->SubtractNestedTimerDuration(elapsed_time);
     }
-#ifdef OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+#ifdef OR_TOOLS_UTIL_DETERMINISTIC_TIME_SAMPLING
     stats.AddSample(time_units_, elapsed_time, fitted_elapsed_time,
                     &call_stack_);
 #else
     stats.AddSample(time_units_, elapsed_time, fitted_elapsed_time);
-#endif  // OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+#endif  // OR_TOOLS_UTIL_DETERMINISTIC_TIME_SAMPLING
   }
 
   // The number of time units that were advanced by the timer.
   uint64_t time_units_ = 0;
 };
+
+template <LinearDeterministicTimeSpec spec>
+class LinearDeterministicTimer {
+ public:
+  void Reset() { time_units_ = 0; }
+
+  void Start() { start_time_ = absl::GetCurrentTimeNanos(); }
+
+  void Stop(int time_units) {
+    const uint64_t elapsed_time = absl::GetCurrentTimeNanos() - start_time_;
+    time_units_ += time_units;
+    stats_.AddSample(time_units, elapsed_time, spec.scale * time_units);
+  }
+
+  double GetDeterministicTime() const { return spec.scale * time_units_; }
+
+ private:
+  // The time in nanoseconds when the timer was started for the last time.
+  uint64_t start_time_;
+  uint64_t time_units_ = 0;
+  static thread_local DeterministicTimeStats<spec.loc> stats_;
+};
+
+template <LinearDeterministicTimeSpec spec>
+thread_local DeterministicTimeStats<spec.loc>
+    LinearDeterministicTimer<spec>::stats_;
 
 // A deterministic timer which collects statistics about the actual time
 // corresponding to the advanced time units. This allows updating its scale and
@@ -502,6 +599,12 @@ class DeterministicTimer : public BaseDeterministicTimer {
     AddStatsSample(spec.offset + spec.scale * time_units_, stats_);
   }
 
+  // Returns the deterministic time in seconds for the given number of time
+  // units.
+  double dtime(uint64_t time_units) const {
+    return spec.scale * time_units + spec.offset;
+  }
+
   // Advances the time limit's deterministic time by spec.scale * time_units.
   void Advance(uint64_t time_units) {
     time_limit_->AdvanceDeterministicTime(spec.scale * time_units);
@@ -527,9 +630,9 @@ class BaseDeterministicTimeStats2 {
   ~BaseDeterministicTimeStats2() {
     AllDeterministicTimeStats::Get().AddStats2(loc_.file_name(), loc_.line(),
                                                stats_);
-#ifdef OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+#ifdef OR_TOOLS_UTIL_DETERMINISTIC_TIME_SAMPLING
     AllDeterministicTimeStats::Get().AddProfilingStats(call_stack_to_stats_);
-#endif  // OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+#endif  // OR_TOOLS_UTIL_DETERMINISTIC_TIME_SAMPLING
   }
 
   // Adds a sample to the statistics.
@@ -541,18 +644,18 @@ class BaseDeterministicTimeStats2 {
                  std::vector<void*>* call_stack = nullptr) {
     stats_.AddSample(time_units1, time_units2, measured_duration_ns,
                      fitted_duration);
-#ifdef OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+#ifdef OR_TOOLS_UTIL_DETERMINISTIC_TIME_SAMPLING
     call_stack_to_stats_[*call_stack].AddSample(fitted_duration);
-#endif  // OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+#endif  // OR_TOOLS_UTIL_DETERMINISTIC_TIME_SAMPLING
   }
 
  protected:
-  const CompileTimeSourceLocation loc_;
+  const CompileTimeSourceLocation& loc_;
   SampleStatistics2 stats_;
-#ifdef OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+#ifdef OR_TOOLS_UTIL_DETERMINISTIC_TIME_SAMPLING
   absl::flat_hash_map<std::vector<void*>, profiling::ProfilingSamples>
       call_stack_to_stats_;
-#endif  // OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+#endif  // OR_TOOLS_UTIL_DETERMINISTIC_TIME_SAMPLING
 };
 
 template <CompileTimeSourceLocation loc>
@@ -581,7 +684,7 @@ class BaseDeterministicTimer2 : public AbstractDeterministicTimer {
       // Deduct the time spent in this timer from the time spent in its parent.
       timers_stack_.top()->SubtractNestedTimerDuration(elapsed_time);
     }
-#ifdef OR_TOOLS_SAT_DETERMINISTIC_TIME_SAMPLING
+#ifdef OR_TOOLS_UTIL_DETERMINISTIC_TIME_SAMPLING
     stats.AddSample(time_units1_, time_units2_, elapsed_time,
                     fitted_elapsed_time, &call_stack_);
 #else
@@ -635,6 +738,12 @@ class DeterministicTimer2 : public BaseDeterministicTimer2 {
         stats_);
   }
 
+  // Returns the deterministic time in seconds for the given number of time
+  // units.
+  double dtime(uint64_t time_units1, uint64_t time_units2) const {
+    return spec.scale1 * time_units1 + spec.scale2 * time_units2 + spec.offset;
+  }
+
   // Advances the time limit's deterministic time by spec.scale1 * time_units1 +
   // spec.scale2 * time_units2.
   void Advance(uint64_t time_units1, uint64_t time_units2) {
@@ -652,8 +761,8 @@ template <DeterministicTimeSpec2 spec>
 thread_local DeterministicTimeStats2<spec.loc>
     DeterministicTimer2<spec>::stats_;
 
-#endif  // OR_TOOLS_SAT_DETERMINISTIC_TIME_PROFILING
+#endif  // OR_TOOLS_UTIL_DETERMINISTIC_TIME_PROFILING
 
-}  // namespace operations_research::sat
+}  // namespace operations_research
 
-#endif  // ORTOOLS_SAT_DETERMINISTIC_TIME_H_
+#endif  // ORTOOLS_UTIL_DETERMINISTIC_TIME_H_

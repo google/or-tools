@@ -629,6 +629,33 @@ InvertedBounds GlopSolver::ListInvertedBounds() const {
 void GlopSolver::FillSolution(const glop::SolveStatus& status,
                               const ModelSolveParametersProto& model_parameters,
                               SolveResultProto& solve_result) {
+  // Sets rays first. We can get dual rays with
+  // glop::SolveStatus::PrimalInfeasible (from primal simplex phase I), for
+  // which we don't create a SolutionProto, so we exit early.
+  auto sorted_variables = GetSortedIs(variables_);
+  auto sorted_constraints = GetSortedIs(linear_constraints_);
+  if (lp_solver_.primal_ray().has_value()) {
+    PrimalRayProto* const primal_ray = solve_result.add_primal_rays();
+
+    *primal_ray->mutable_variable_values() = FillSparseDoubleVector(
+        sorted_variables, variables_, *lp_solver_.primal_ray(),
+        model_parameters.variable_values_filter());
+  }
+  // By construction both should be set, or neither should be set.
+  DCHECK_EQ(lp_solver_.constraints_dual_ray().has_value(),
+            lp_solver_.variable_bounds_dual_ray().has_value());
+  if (lp_solver_.constraints_dual_ray().has_value() &&
+      lp_solver_.variable_bounds_dual_ray().has_value()) {
+    DualRayProto* const dual_ray = solve_result.add_dual_rays();
+    *dual_ray->mutable_dual_values() =
+        FillSparseDoubleVector(sorted_constraints, linear_constraints_,
+                               *lp_solver_.constraints_dual_ray(),
+                               model_parameters.dual_values_filter());
+    *dual_ray->mutable_reduced_costs() = FillSparseDoubleVector(
+        sorted_variables, variables_, *lp_solver_.variable_bounds_dual_ray(),
+        model_parameters.reduced_costs_filter());
+  }
+
   // Meaningful solutions are available if optimality is proven in
   // preprocessing or after 1 simplex iteration.
   //
@@ -645,8 +672,6 @@ void GlopSolver::FillSolution(const glop::SolveStatus& status,
       !phase_I_solution_available) {
     return;
   }
-  auto sorted_variables = GetSortedIs(variables_);
-  auto sorted_constraints = GetSortedIs(linear_constraints_);
   SolutionProto* const solution = solve_result.add_solutions();
   BasisProto* const basis = solution->mutable_basis();
   PrimalSolutionProto* const primal_solution =
@@ -718,25 +743,6 @@ void GlopSolver::FillSolution(const glop::SolveStatus& status,
   *dual_solution->mutable_reduced_costs() = FillSparseDoubleVector(
       sorted_variables, variables_, lp_solver_.reduced_costs(),
       model_parameters.reduced_costs_filter());
-
-  if (!lp_solver_.primal_ray().empty()) {
-    PrimalRayProto* const primal_ray = solve_result.add_primal_rays();
-
-    *primal_ray->mutable_variable_values() = FillSparseDoubleVector(
-        sorted_variables, variables_, lp_solver_.primal_ray(),
-        model_parameters.variable_values_filter());
-  }
-  if (!lp_solver_.constraints_dual_ray().empty() &&
-      !lp_solver_.variable_bounds_dual_ray().empty()) {
-    DualRayProto* const dual_ray = solve_result.add_dual_rays();
-    *dual_ray->mutable_dual_values() =
-        FillSparseDoubleVector(sorted_constraints, linear_constraints_,
-                               lp_solver_.constraints_dual_ray(),
-                               model_parameters.dual_values_filter());
-    *dual_ray->mutable_reduced_costs() = FillSparseDoubleVector(
-        sorted_variables, variables_, lp_solver_.variable_bounds_dual_ray(),
-        model_parameters.reduced_costs_filter());
-  }
 }
 
 absl::Status GlopSolver::FillSolveStats(const absl::Duration solve_time,

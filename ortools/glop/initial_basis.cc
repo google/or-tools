@@ -447,8 +447,18 @@ bool InitialBasis::TriangularColumnComparator::operator()(
     return initial_basis_.compact_matrix_.column(col_a).num_entries() >
            initial_basis_.compact_matrix_.column(col_b).num_entries();
   }
-  return initial_basis_.GetColumnPenalty(col_a) >
-         initial_basis_.GetColumnPenalty(col_b);
+
+  const Fractional penalty_a = initial_basis_.GetColumnPenalty(col_a);
+  const Fractional penalty_b = initial_basis_.GetColumnPenalty(col_b);
+  if (penalty_a != penalty_b) {
+    return penalty_a > penalty_b;
+  }
+
+  // When everything is equal but the column, we don't want to depend on the
+  // order that the implementation of std::priority_queue provides. This order
+  // is unspecified by the C++ standard, and we observed that different
+  // implementations have different orders.
+  return col_a > col_b;
 }
 
 }  // namespace glop

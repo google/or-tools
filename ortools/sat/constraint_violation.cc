@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -41,6 +42,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/dense_set.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
@@ -278,6 +280,8 @@ void LinearIncrementalEvaluator::UpdateScoreOnWeightUpdate(
 
   DCHECK_EQ(num_false_enforcement_[c], 0);
   const SpanData& data = rows_[c];
+  DeterministicTimer<{.scale = 5e-9}> timer(&dtime_);
+  uint64_t num_ops = 0;
 
   // Update enforcement part. Because we only update weight of currently
   // infeasible constraints, all changes are 0 -> 1 transitions and change by
@@ -286,7 +290,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnWeightUpdate(
   if (enforcement_change != 0.0) {
     int i = data.start;
     const int end = data.num_pos_literal + data.num_neg_literal;
-    num_ops_ += end;
+    num_ops += end;
     for (int k = 0; k < end; ++k, ++i) {
       const int var = row_var_buffer_[i];
       if (!last_affected_variables_[var]) {
@@ -303,7 +307,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnWeightUpdate(
     const int* row_vars = &row_var_buffer_[data.start + data.num_pos_literal +
                                            data.num_neg_literal];
     const int64_t* row_coeffs = &row_coeff_buffer_[data.linear_start];
-    num_ops_ += 2 * data.num_linear_entries;
+    num_ops += 2 * data.num_linear_entries;
 
     // Computing general Domain distance is slow.
     // TODO(user): optimize even more for one-sided constraints.
@@ -337,11 +341,14 @@ void LinearIncrementalEvaluator::UpdateScoreOnWeightUpdate(
       }
     }
   }
+  timer.Advance(num_ops);
 }
 
 void LinearIncrementalEvaluator::UpdateScoreOnNewlyEnforced(
     int c, double weight, absl::Span<const int64_t> jump_deltas,
     absl::Span<double> jump_scores) {
+  DeterministicTimer<{.scale = 5e-9}> timer(&dtime_);
+  uint64_t num_ops = 0;
   const SpanData& data = rows_[c];
 
   // Everyone else had a zero-cost transition that now becomes enforced ->
@@ -351,7 +358,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnNewlyEnforced(
   if (weight_time_violation > 0.0) {
     int i = data.start;
     const int end = data.num_pos_literal + data.num_neg_literal;
-    num_ops_ += end;
+    num_ops += end;
     for (int k = 0; k < end; ++k, ++i) {
       const int var = row_var_buffer_[i];
       jump_scores[var] -= weight_time_violation;
@@ -363,7 +370,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnNewlyEnforced(
   {
     int i = data.start + data.num_pos_literal + data.num_neg_literal;
     int j = data.linear_start;
-    num_ops_ += 2 * data.num_linear_entries;
+    num_ops += 2 * data.num_linear_entries;
     const int64_t old_distance = distances_[c];
     for (int k = 0; k < data.num_linear_entries; ++k, ++i, ++j) {
       const int var = row_var_buffer_[i];
@@ -375,12 +382,15 @@ void LinearIncrementalEvaluator::UpdateScoreOnNewlyEnforced(
       last_affected_variables_.Set(var);
     }
   }
+  timer.Advance(num_ops);
 }
 
 void LinearIncrementalEvaluator::UpdateScoreOnNewlyUnenforced(
     int c, double weight, absl::Span<const int64_t> jump_deltas,
     absl::Span<double> jump_scores) {
   const SpanData& data = rows_[c];
+  DeterministicTimer<{.scale = 5e-9}> timer(&dtime_);
+  uint64_t num_ops = 0;
 
   // Everyone else had an enforced -> unenforced transition that now becomes
   // zero. So they all have a worse score, and we don't need to update
@@ -390,7 +400,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnNewlyUnenforced(
   if (weight_time_violation > 0.0) {
     int i = data.start;
     const int end = data.num_pos_literal + data.num_neg_literal;
-    num_ops_ += end;
+    num_ops += end;
     for (int k = 0; k < end; ++k, ++i) {
       const int var = row_var_buffer_[i];
       jump_scores[var] += weight_time_violation;
@@ -401,7 +411,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnNewlyUnenforced(
   {
     int i = data.start + data.num_pos_literal + data.num_neg_literal;
     int j = data.linear_start;
-    num_ops_ += 2 * data.num_linear_entries;
+    num_ops += 2 * data.num_linear_entries;
     const int64_t old_distance = distances_[c];
     for (int k = 0; k < data.num_linear_entries; ++k, ++i, ++j) {
       const int var = row_var_buffer_[i];
@@ -413,6 +423,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnNewlyUnenforced(
       last_affected_variables_.Set(var);
     }
   }
+  timer.Advance(num_ops);
 }
 
 // We just need to modify the old/new transition that decreases the number of
@@ -421,10 +432,12 @@ void LinearIncrementalEvaluator::UpdateScoreOfEnforcementIncrease(
     int c, double score_change, absl::Span<const int64_t> jump_deltas,
     absl::Span<double> jump_scores) {
   if (score_change == 0.0) return;
+  DeterministicTimer<{.scale = 5e-9}> timer(&dtime_);
+  uint64_t num_ops = 0;
 
   const SpanData& data = rows_[c];
   int i = data.start;
-  num_ops_ += data.num_pos_literal;
+  num_ops += data.num_pos_literal;
   for (int k = 0; k < data.num_pos_literal; ++k, ++i) {
     const int var = row_var_buffer_[i];
     if (jump_deltas[var] == 1) {
@@ -434,7 +447,7 @@ void LinearIncrementalEvaluator::UpdateScoreOfEnforcementIncrease(
       }
     }
   }
-  num_ops_ += data.num_neg_literal;
+  num_ops += data.num_neg_literal;
   for (int k = 0; k < data.num_neg_literal; ++k, ++i) {
     const int var = row_var_buffer_[i];
     if (jump_deltas[var] == -1) {
@@ -444,6 +457,7 @@ void LinearIncrementalEvaluator::UpdateScoreOfEnforcementIncrease(
       }
     }
   }
+  timer.Advance(num_ops);
 }
 
 void LinearIncrementalEvaluator::UpdateScoreOnActivityChange(
@@ -476,6 +490,11 @@ void LinearIncrementalEvaluator::UpdateScoreOnActivityChange(
   // If the violation delta was zero and will still always be zero, we can skip.
   if (Domain(min_range, max_range).IsIncludedIn(domains_[c])) return;
 
+  DeterministicTimer<{.scale = 5e-9}> timer(&dtime_);
+  uint64_t num_ops = 0;
+  auto cleanup =
+      absl::MakeCleanup([&timer, &num_ops] { timer.Advance(num_ops); });
+
   // Enforcement is always enforced -> un-enforced.
   // So it was -weight_time_distance and is now -weight_time_new_distance.
   const double delta =
@@ -484,7 +503,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnActivityChange(
   if (delta != 0.0) {
     int i = data.start;
     const int end = data.num_pos_literal + data.num_neg_literal;
-    num_ops_ += end;
+    num_ops += end;
     for (int k = 0; k < end; ++k, ++i) {
       const int var = row_var_buffer_[i];
       jump_scores[var] += delta;
@@ -504,7 +523,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnActivityChange(
     const int* row_vars = &row_var_buffer_[data.start + data.num_pos_literal +
                                            data.num_neg_literal];
     const int64_t* row_coeffs = &row_coeff_buffer_[data.linear_start];
-    num_ops_ += 2 * data.num_linear_entries;
+    num_ops += 2 * data.num_linear_entries;
 
     const int64_t old_a_minus_new_a =
         distances_[c] - domains_[c].Distance(new_activity);
@@ -586,10 +605,12 @@ void LinearIncrementalEvaluator::UpdateVariableAndScores(
   DCHECK(!creation_phase_);
   DCHECK_NE(delta, 0);
   if (var >= columns_.size()) return;
+  DeterministicTimer<{.scale = 5e-9}> timer(&dtime_);
+  uint64_t num_ops = 0;
 
   const SpanData& data = columns_[var];
   int i = data.start;
-  num_ops_ += data.num_pos_literal;
+  num_ops += data.num_pos_literal;
   for (int k = 0; k < data.num_pos_literal; ++k, ++i) {
     const int c = ct_buffer_[i];
     const int64_t v0 = Violation(c);
@@ -621,7 +642,7 @@ void LinearIncrementalEvaluator::UpdateVariableAndScores(
       constraints_with_changed_violation->push_back(c);
     }
   }
-  num_ops_ += data.num_neg_literal;
+  num_ops += data.num_neg_literal;
   for (int k = 0; k < data.num_neg_literal; ++k, ++i) {
     const int c = ct_buffer_[i];
     const int64_t v0 = Violation(c);
@@ -654,7 +675,7 @@ void LinearIncrementalEvaluator::UpdateVariableAndScores(
     }
   }
   int j = data.linear_start;
-  num_ops_ += 2 * data.num_linear_entries;
+  num_ops += 2 * data.num_linear_entries;
   for (int k = 0; k < data.num_linear_entries; ++k, ++i, ++j) {
     const int c = ct_buffer_[i];
     const int64_t v0 = Violation(c);
@@ -684,6 +705,7 @@ void LinearIncrementalEvaluator::UpdateVariableAndScores(
       constraints_with_changed_violation->push_back(c);
     }
   }
+  timer.Advance(num_ops);
 }
 
 int64_t LinearIncrementalEvaluator::Activity(int c) const {
@@ -734,10 +756,12 @@ double LinearIncrementalEvaluator::WeightedViolationDelta(
   DCHECK_NE(delta, 0);
   if (var >= columns_.size()) return 0.0;
   const SpanData& data = columns_[var];
+  DeterministicTimer<{.scale = 5e-9}> timer(&dtime_);
+  uint64_t num_ops = 0;
 
   int i = data.start;
   double result = 0.0;
-  num_ops_ += data.num_pos_literal;
+  num_ops += data.num_pos_literal;
   for (int k = 0; k < data.num_pos_literal; ++k, ++i) {
     const int c = ct_buffer_[i];
     if (num_false_enforcement_[c] == 0) {
@@ -751,7 +775,7 @@ double LinearIncrementalEvaluator::WeightedViolationDelta(
     }
   }
 
-  num_ops_ += data.num_neg_literal;
+  num_ops += data.num_neg_literal;
   for (int k = 0; k < data.num_neg_literal; ++k, ++i) {
     const int c = ct_buffer_[i];
     if (num_false_enforcement_[c] == 0) {
@@ -766,7 +790,7 @@ double LinearIncrementalEvaluator::WeightedViolationDelta(
   }
 
   int j = data.linear_start;
-  num_ops_ += 2 * data.num_linear_entries;
+  num_ops += 2 * data.num_linear_entries;
   for (int k = 0; k < data.num_linear_entries; ++k, ++i, ++j) {
     const int c = ct_buffer_[i];
     if (num_false_enforcement_[c] > 0) continue;
@@ -777,6 +801,7 @@ double LinearIncrementalEvaluator::WeightedViolationDelta(
     result += weights[c] * static_cast<double>(new_distance - old_distance);
   }
 
+  timer.Advance(num_ops);
   return result;
 }
 
@@ -1788,7 +1813,7 @@ void AddCircuitFlowConstraints(LinearIncrementalEvaluator& linear_evaluator,
 LsEvaluator::LsEvaluator(const CpModelProto& cp_model,
                          const SatParameters& params, TimeLimit* time_limit)
     : cp_model_(cp_model), params_(params), time_limit_(time_limit) {
-  var_to_dtime_estimate_.resize(cp_model_.variables_size());
+  var_to_violation_delta_work_estimate_.resize(cp_model_.variables_size());
   jump_value_optimal_.resize(cp_model_.variables_size(), true);
   num_violated_constraint_per_var_ignoring_objective_.assign(
       cp_model_.variables_size(), 0);
@@ -1806,7 +1831,7 @@ LsEvaluator::LsEvaluator(
     absl::Span<const ConstraintProto> additional_constraints,
     TimeLimit* time_limit)
     : cp_model_(cp_model), params_(params), time_limit_(time_limit) {
-  var_to_dtime_estimate_.resize(cp_model_.variables_size());
+  var_to_violation_delta_work_estimate_.resize(cp_model_.variables_size());
   jump_value_optimal_.resize(cp_model_.variables_size(), true);
   num_violated_constraint_per_var_ignoring_objective_.assign(
       cp_model_.variables_size(), 0);
@@ -1823,10 +1848,10 @@ void LsEvaluator::BuildVarConstraintGraph() {
   for (int ct_index = 0; ct_index < constraints_.size(); ++ct_index) {
     constraint_to_vars_.Add(constraints_[ct_index]->UsedVariables(cp_model_));
 
-    const double dtime = 1e-8 * constraint_to_vars_[ct_index].size();
+    const int constraint_size = constraint_to_vars_[ct_index].size();
     for (const int var : constraint_to_vars_[ct_index]) {
       var_to_constraints_builder.Add(var, ct_index);
-      var_to_dtime_estimate_[var] += dtime;
+      var_to_violation_delta_work_estimate_[var] += constraint_size;
     }
   }
   var_to_constraints_.ResetFromBuilder(var_to_constraints_builder,
@@ -2364,7 +2389,8 @@ void LsEvaluator::UpdateLinearScores(int var, int64_t old_value,
 
 void LsEvaluator::UpdateViolatedList() {
   // Maintain the list of violated constraints.
-  dtime_ += 1e-8 * last_update_violation_changes_.size();
+  DeterministicTimer<{.scale = 1e-8}> timer(
+      &dtime_, last_update_violation_changes_.size());
   for (const int c : last_update_violation_changes_) {
     UpdateViolatedList(c);
   }
@@ -2469,7 +2495,8 @@ double LsEvaluator::WeightedViolationDelta(
 
   // We assume linear time delta computation in number of variables.
   // TODO(user): refine on a per constraint basis.
-  dtime_ += var_to_dtime_estimate_[var];
+  DeterministicTimer<{.scale = 1e-8}> timer(
+      &dtime_, var_to_violation_delta_work_estimate_[var]);
 
   const int num_linear_constraints = linear_evaluator_.num_constraints();
   const std::unique_ptr<CompiledConstraint>* data = constraints_.data();
@@ -2508,7 +2535,8 @@ void LsEvaluator::UpdateViolatedList(const int c) {
     // The constraint is violated. Add if needed.
     if (!inserted) return;
     if (IsObjectiveConstraint(c)) return;
-    dtime_ += 1e-8 * ConstraintToVars(c).size();
+    DeterministicTimer<{.scale = 1e-8}> timer(&dtime_,
+                                              ConstraintToVars(c).size());
     for (const int v : ConstraintToVars(c)) {
       num_violated_constraint_per_var_ignoring_objective_[v] += 1;
     }
@@ -2516,7 +2544,8 @@ void LsEvaluator::UpdateViolatedList(const int c) {
   }
   if (violated_constraints_.erase(c) == 1) {
     if (IsObjectiveConstraint(c)) return;
-    dtime_ += 1e-8 * ConstraintToVars(c).size();
+    DeterministicTimer<{.scale = 1e-8}> timer(&dtime_,
+                                              ConstraintToVars(c).size());
     for (const int v : ConstraintToVars(c)) {
       num_violated_constraint_per_var_ignoring_objective_[v] -= 1;
     }

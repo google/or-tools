@@ -17,8 +17,10 @@
 #include <utility>
 
 #include "absl/log/log.h"
+#include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/sat/mp_model_wrapper.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research {
@@ -33,9 +35,10 @@ struct CheckerOptions {
   int max_logged_violations = 20;
 };
 
-// Returns whether the given solution is feasible for the given MPModelProto.
-// This is an exact checker, it is a slower than using double arithmetic, so
-// you might need something else if you have millions of solutions to check.
+// Returns whether the given solution is feasible for the given
+// MPModelProtoWrapper. This is an exact checker, it is slower than using double
+// arithmetic, so you might need something else if you have millions of
+// solutions to check.
 //
 // constraint_tolerance and variable_tolerance are absolute tolerances used to
 // determine whether a constraint or variable bound value is violated.
@@ -44,19 +47,19 @@ struct CheckerOptions {
 // If a logger is provided, detailed logs will be written to it.
 //
 // Preconditions:
-//   model has only linear constraints and indicator constraints;
-//   solution.size() == model.variable_size();
+//   solution.size() == model.num_variables();
 //   constraint_tolerance >= 0;
-//   variable_tolerance >= 0.
+//   variable_tolerance >= 0;
+//   integer_tolerance >= 0.
 //
 // In case of violation of the preconditions, the function returns a status.
-absl::StatusOr<bool> SolutionIsFeasible(const MPModelProto& model,
+absl::StatusOr<bool> SolutionIsFeasible(const sat::MPModelProtoWrapper& model,
                                         absl::Span<const double> solution,
                                         const CheckerOptions& options);
 
 // Gives a tight interval containing the objective value of the given solution.
 absl::StatusOr<std::pair<double, double>> GetTightObjectiveBounds(
-    const MPModelProto& model, absl::Span<const double> solution);
+    const sat::MPModelProtoWrapper& model, absl::Span<const double> solution);
 
 }  // namespace operations_research
 

@@ -87,8 +87,12 @@ ClausePtr NewClausePtr(absl::Span<const Literal> literals) {
     case 2:
       return ClausePtr(literals[0], literals[1]);
     default:
-      return ClausePtr(literals);
+      return ClausePtr(SatClause::CreateInternal(literals));
   }
+}
+
+ClausePtr NewAllocatedClausePtr(absl::Span<const Literal> literals) {
+  return ClausePtr(SatClause::CreateInternal(literals));
 }
 
 }  // namespace sat

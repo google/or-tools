@@ -226,9 +226,10 @@ bool SatSolver::AddProblemClause(absl::Span<const Literal> literals,
 
   auto maybe_delete_lrat_problem_clause = [&]() {
     if (lrat_proof_handler_ != nullptr && one_based_cnf_index > 0) {
-      const ClausePtr clause = ClausePtr(literals);
+      ClausePtr clause = NewAllocatedClausePtr(literals);
       lrat_proof_handler_->AddProblemClause(clause, one_based_cnf_index);
       lrat_proof_handler_->DeleteClause(clause);
+      clause.DeleteIfAllocated();
     }
   };
 
@@ -278,7 +279,7 @@ bool SatSolver::AddProblemClause(absl::Span<const Literal> literals,
   if (lrat_proof_handler_ != nullptr) {
     clause = NewClausePtr(tmp_literals_);
     // Add the original problem clause.
-    const ClausePtr original_clause =
+    ClausePtr original_clause =
         tmp_proof_.empty() ? clause : NewClausePtr(literals);
     if (one_based_cnf_index > 0) {
       lrat_proof_handler_->AddProblemClause(original_clause,
@@ -292,6 +293,7 @@ bool SatSolver::AddProblemClause(absl::Span<const Literal> literals,
       tmp_proof_.push_back(original_clause);
       lrat_proof_handler_->AddInferredClause(clause, tmp_proof_);
       lrat_proof_handler_->DeleteClause(original_clause);
+      original_clause.DeleteIfAllocated();
     }
   }
 
@@ -504,37 +506,39 @@ bool SatSolver::AddLinearConstraint(bool use_lower_bound,
   return true;
 }
 
-// TODO(user): Refactor to always have a proper ClausePtr, even when lrat is
-// off. This should simplify things, and remove the need to also pass literals.
 int SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
-    ClausePtr ptr, absl::Span<const Literal> literals, bool is_redundant,
-    int min_lbd_of_subsumed_clauses) {
+    ClausePtr ptr, bool is_redundant, int min_lbd_of_subsumed_clauses) {
   SCOPED_TIME_STAT(&stats_);
 
   // Note that we might learn more than one conflict per "failure" actually.
   // TODO(user): this should be called num_conflicts.
   ++counters_.num_failures;
 
-  if (literals.size() == 1) {
+  DCHECK(ptr.GetType() != ClausePtr::kEmptyClause);
+
+  if (ptr.GetType() == ClausePtr::kInlineUnitClause) {
+    const Literal literal = ptr.GetFirstLiteral();
     // Corner case where we "learn" more than one conflict.
-    if (Assignment().LiteralIsTrue(literals[0])) return 1;
-    CHECK(!Assignment().LiteralIsFalse(literals[0]));
+    if (Assignment().LiteralIsTrue(literal)) return 1;
+    CHECK(!Assignment().LiteralIsFalse(literal));
 
     if (!trail_->ChronologicalBacktrackingEnabled()) {
       // A length 1 clause fixes a literal for all the search.
       // ComputeBacktrackLevel() should have returned 0.
       CHECK_EQ(CurrentDecisionLevel(), 0);
     }
-    trail_->EnqueueWithUnitReason(literals[0]);
+    trail_->EnqueueWithUnitReason(literal);
     return /*lbd=*/1;
   }
 
-  if (literals.size() == 2) {
+  if (ptr.GetType() == ClausePtr::kInlineBinaryClause) {
+    const Literal l1 = ptr.GetFirstLiteral();
+    const Literal l2 = ptr.GetSecondLiteral();
     if (track_binary_clauses_) {
       // This clause MUST be new, otherwise something is wrong.
-      CHECK(binary_clauses_.Add(BinaryClause(literals[0], literals[1])));
+      CHECK(binary_clauses_.Add(BinaryClause(l1, l2)));
     }
-    CHECK(binary_implication_graph_->AddBinaryClause(literals[0], literals[1]));
+    CHECK(binary_implication_graph_->AddBinaryClause(l1, l2));
     return /*lbd=*/2;
   }
 
@@ -542,9 +546,9 @@ int SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
 
   // Important: Even though the only literal at the last decision level has
   // been unassigned, its level was not modified, so ComputeLbd() works.
-  SatClause* clause =
-      ptr.IsSatClausePtr() ? ptr.GetSatClause() : SatClause::Create(literals);
-  const int lbd = std::min(min_lbd_of_subsumed_clauses, ComputeLbd(literals));
+  SatClause* clause = ptr.GetSatClause();
+  const int lbd =
+      std::min(min_lbd_of_subsumed_clauses, ComputeLbd(clause->AsSpan()));
   if (is_redundant && lbd > parameters_->clause_cleanup_lbd_bound()) {
     --num_learned_clause_before_cleanup_;
 
@@ -1008,7 +1012,7 @@ bool SatSolver::ProcessCurrentConflict(
   // database. This is because we already backtracked and some of the clauses
   // that were needed to infer the conflict may not be "reasons" anymore and
   // may be deleted.
-  ClausePtr learned_conflict_clause = kNullClausePtr;
+  const ClausePtr learned_conflict_clause = NewClausePtr(learned_conflict_);
   if (lrat_proof_handler_ != nullptr) {
     if (!proof_for_minimization->empty()) {
       // Concatenate the minimized conflict proof with the learned conflict
@@ -1025,7 +1029,6 @@ bool SatSolver::ProcessCurrentConflict(
       }
       proof_for_1iup = proof_for_minimization;
     }
-    learned_conflict_clause = NewClausePtr(learned_conflict_);
     if (!lrat_proof_handler_->AddInferredClause(learned_conflict_clause,
                                                 *proof_for_1iup)) {
       VLOG(1) << "WARNING: invalid LRAT inferred clause!";
@@ -1047,10 +1050,15 @@ bool SatSolver::ProcessCurrentConflict(
 
   // Note that this should happen after the new_conflict "proof", but before
   // we backtrack and add the new conflict to the clause_propagator_.
+  DCHECK(learned_clauses_.empty());
   const auto [is_redundant, min_lbd_of_subsumed_clauses] =
       SubsumptionsInConflictResolution(learned_conflict_clause,
-                                       learned_conflict_,
-                                       reason_used_to_infer_the_conflict_);
+                                       reason_used_to_infer_the_conflict_,
+                                       learned_clauses_);
+  // Add the conflict here, so we process all "newly learned" clauses in the
+  // same way.
+  learned_clauses_.push_back(
+      {learned_conflict_clause, is_redundant, min_lbd_of_subsumed_clauses});
 
   // Backtrack and add the reason to the set of learned clauses.
   counters_.num_literals_learned += learned_conflict_.size();
@@ -1065,23 +1073,29 @@ bool SatSolver::ProcessCurrentConflict(
                                   ? ComputePropagationLevel(learned_conflict_)
                                   : std::max(0, conflict_level - 1);
   Backtrack(backtrack_level);
-  DCHECK(ClauseIsValidUnderDebugAssignment(learned_conflict_));
-
-  // Add the conflict here, so we process all "newly learned" clauses in the
-  // same way.
-  learned_clauses_.push_back({learned_conflict_clause, is_redundant,
-                              min_lbd_of_subsumed_clauses,
-                              std::move(learned_conflict_)});
+  DCHECK(
+      ClauseIsValidUnderDebugAssignment(learned_conflict_clause.GetLiterals()));
 
   // Preprocess the new clauses.
   // We might need to backtrack further !
-  for (auto& [clause, is_redundant, min_lbd, literals] : learned_clauses_) {
-    if (literals.empty()) return SetModelUnsat();
+  for (auto& [clause, is_redundant, min_lbd] : learned_clauses_) {
+    if (clause.GetType() == ClausePtr::kEmptyClause) return SetModelUnsat();
 
-    // This can modify both of its arguments.
-    if (!RemoveRedundantLiteralFromConflict(clause, literals)) {
-      LOG(FATAL) << "learned a trivial clause ?? " << literals;
+    const ClausePtr canonicalized_clause =
+        RemoveRedundantLiteralFromConflict(clause);
+    if (canonicalized_clause == kNullClausePtr) {
+      LOG(FATAL) << "learned a trivial clause ?? " << clause.GetLiterals();
     }
+    if (canonicalized_clause != clause) {
+      // Replace the learned clause with the canonicalized one.
+      if (lrat_proof_handler_ != nullptr) {
+        lrat_proof_handler_->DeleteClause(clause);
+      }
+      clause.DeleteIfAllocated();
+      clause = canonicalized_clause;
+    }
+
+    const absl::Span<const Literal> literals = clause.GetLiterals();
 
     // Tricky: in case of propagation not at the right level we might need to
     // backjump further.
@@ -1108,22 +1122,25 @@ bool SatSolver::ProcessCurrentConflict(
 
   // Learn the new clauses.
   int best_lbd = kint32max;
-  for (const auto& [clause, is_redundant, min_lbd, literals] :
-       learned_clauses_) {
-    DCHECK((lrat_proof_handler_ == nullptr) || (clause != kNullClausePtr));
+  for (const auto& [clause, is_redundant, min_lbd] : learned_clauses_) {
+    DCHECK(clause != kNullClausePtr);
     const int lbd = AddLearnedClauseAndEnqueueUnitPropagation(
-        clause, literals, is_redundant, min_lbd);
+        clause, is_redundant, min_lbd);
     best_lbd = std::min(best_lbd, lbd);
   }
+  // Clear the temporary learned clauses vector, ownership has been transferred
+  // in the loop above.
+  learned_clauses_.clear();
   restart_->OnConflict(conflict_trail_index, conflict_level, best_lbd);
   return true;
 }
 
-bool SatSolver::RemoveRedundantLiteralFromConflict(
-    ClausePtr& clause, std::vector<Literal>& literals,
-    bool delete_old_lrat_clause) {
+ClausePtr SatSolver::RemoveRedundantLiteralFromConflict(ClausePtr clause) {
+  DCHECK(clause != kNullClausePtr);
   bool some_change = false;
   tmp_proof_.clear();
+  std::vector<Literal>& literals = tmp_literals_;
+  literals.assign(clause.GetLiterals().begin(), clause.GetLiterals().end());
   for (Literal& lit : literals) {
     const Literal rep = binary_implication_graph_->RepresentativeOf(lit);
     if (rep != lit) {
@@ -1135,14 +1152,14 @@ bool SatSolver::RemoveRedundantLiteralFromConflict(
       lit = rep;
     }
   }
-  if (!some_change) return true;
+  if (!some_change) return clause;
 
   gtl::STLSortAndRemoveDuplicates(&literals);
 
   // This shouldn't happen since it is a new learned clause, otherwise
   // something is wrong.
   for (int i = 1; i < literals.size(); ++i) {
-    if (literals[i] == literals[i - 1].Negated()) return false;
+    if (literals[i] == literals[i - 1].Negated()) return kNullClausePtr;
   }
 
   // We need a new clause for the canonicalized version, and the proof for
@@ -1152,15 +1169,9 @@ bool SatSolver::RemoveRedundantLiteralFromConflict(
     DCHECK_NE(new_clause, clause);
     tmp_proof_.push_back(clause);
     lrat_proof_handler_->AddInferredClause(new_clause, tmp_proof_);
-    if (delete_old_lrat_clause) {
-      lrat_proof_handler_->DeleteClause(clause, /*delete_sat_clause=*/false);
-    }
   }
-  if (delete_old_lrat_clause && clause.IsSatClausePtr()) {
-    delete clause.GetSatClause();
-  }
-  clause = new_clause;
-  return true;
+  DCHECK(new_clause != kNullClausePtr);
+  return new_clause;
 }
 
 namespace {
@@ -1179,10 +1190,10 @@ bool ClauseSubsumption(absl::Span<const Literal> a, SatClause* b) {
 }  // namespace
 
 std::pair<bool, int> SatSolver::SubsumptionsInConflictResolution(
-    ClausePtr learned_conflict, absl::Span<const Literal> conflict,
-    absl::Span<const Literal> reason_used) {
+    ClausePtr learned_conflict, absl::Span<const Literal> reason_used,
+    std::vector<NewClauses>& learned_clauses) {
   CHECK_NE(CurrentDecisionLevel(), 0);
-  learned_clauses_.clear();
+  const absl::Span<const Literal> conflict = learned_conflict.GetLiterals();
 
   // This is used to see if the learned conflict subsumes some clauses.
   // Note that conflict is not yet in the clauses_propagator_.
@@ -1301,10 +1312,8 @@ std::pair<bool, int> SatSolver::SubsumptionsInConflictResolution(
 
     // We can only add them after backtracking, since these are currently
     // conflicts.
-    learned_clauses_.push_back(
-        {new_clause, new_clause_is_redundant, new_clause_min_lbd,
-         std::vector<Literal>(subsuming_clauses_[i].begin(),
-                              subsuming_clauses_[i].end())});
+    learned_clauses.push_back(
+        {new_clause, new_clause_is_redundant, new_clause_min_lbd});
   }
 
   bool is_redundant = true;
@@ -1394,8 +1403,8 @@ std::pair<bool, int> SatSolver::SubsumptionsInConflictResolution(
     }
 
     // Also learn the "decision" conflict.
-    learned_clauses_.push_back(
-        {new_clause, decision_is_redundant, decision_min_lbd, decision_clause});
+    learned_clauses.push_back(
+        {new_clause, decision_is_redundant, decision_min_lbd});
   }
 
   // Sparse clear.
@@ -1441,7 +1450,8 @@ void SatSolver::AppendLratProofForFailingClause(std::vector<ClausePtr>* proof) {
     }
   }
   if (failing_clause == kNullClausePtr) {
-    lrat_proof_handler_->AddAssumedClause(ClausePtr(trail_->FailingClause()));
+    lrat_proof_handler_->AddAssumedClause(
+        NewAllocatedClausePtr(trail_->FailingClause()));
   }
   proof->push_back(failing_clause);
 }
@@ -1464,7 +1474,7 @@ void SatSolver::AppendLratProofFromReasons(absl::Span<const Literal> reasons,
     if (clause == kNullClausePtr) {
       DCHECK_NE(trail_->AssignmentLevel(literal), 0);
       lrat_proof_handler_->AddAssumedClause(
-          ClausePtr(trail_->Reason(literal.Variable())));
+          NewAllocatedClausePtr(trail_->Reason(literal.Variable())));
     }
     proof->push_back(clause);
   }
@@ -1757,8 +1767,7 @@ void SatSolver::ProveIncompatibleDecisions(absl::Span<const Literal> literals,
   // Make sure we delete the old clause from LRAT.
   if (lrat_proof_handler_ != nullptr &&
       incompatible_decisions_.underlying_memory != nullptr) {
-    lrat_proof_handler_->DeleteClause(incompatible_decisions_.clause_ptr,
-                                      /*delete_sat_clause=*/false);
+    lrat_proof_handler_->DeleteClause(incompatible_decisions_.clause_ptr);
   }
   incompatible_decisions_.clause_ptr = kNullClausePtr;
   incompatible_decisions_.underlying_memory.reset(nullptr);
@@ -1864,29 +1873,25 @@ void SatSolver::MaybeLearnOnAssumptionUnsat() {
       incompatible_decisions_.decisions.size() <=
           parameters_->clause_cleanup_lbd_bound()) {
     // Remove assumptions that have potentially a different representative.
-    absl::Span<const Literal> span =
-        incompatible_decisions_.clause_ptr.GetLiterals();
-    tmp_literals_.assign(span.begin(), span.end());
-    ClausePtr learned_clause = incompatible_decisions_.clause_ptr;
+    const ClausePtr learned_clause = incompatible_decisions_.clause_ptr;
     // Do not delete incompatible_decisions_.clause_ptr from the LRAT proof if
     // some redundant literals are removed, because it can be used in further
     // proofs when returned by GetLastIncompatibleDecisionsAsClausePtr(). It
     // will be deleted lazily in the next ProveIncompatibleDecisions() call (if
     // any).
-    const bool ok = RemoveRedundantLiteralFromConflict(
-        learned_clause, tmp_literals_, /*delete_old_lrat_clause=*/false);
+    const ClausePtr canonical_clause =
+        RemoveRedundantLiteralFromConflict(learned_clause);
 
     // Because of the way we handle assumptions, we just backtrack to level
     // zero before learning the clause.
-    if (ok) {
-      if (learned_clause == incompatible_decisions_.clause_ptr) {
+    if (canonical_clause != kNullClausePtr) {
+      if (canonical_clause == learned_clause) {
         // Tricky. The ownership will be transferred to the ClauseManager.
         incompatible_decisions_.underlying_memory.release();
       }
       BacktrackAndPropagateReimplications(0);
       AddLearnedClauseAndEnqueueUnitPropagation(
-          learned_clause, learned_clause.GetLiterals(), true,
-          std::numeric_limits<int>::max());
+          canonical_clause, true, std::numeric_limits<int>::max());
     }
   }
 }

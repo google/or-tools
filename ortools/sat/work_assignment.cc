@@ -650,11 +650,12 @@ void SharedTreeEncoder::DeleteClause(ClausePtr clause) {
   // Binary clauses could get deleted by other code, so NewImportedClause and
   // NewInferredClause use a fake SatClause instead for them to guarantee they
   // have a unique ID that won't be deleted.
-  DCHECK_NE(clause.GetType(), ClausePtr::kBinaryClause);
+  DCHECK_NE(clause.GetType(), ClausePtr::kInlineBinaryClause);
   // Don't delete unit or empty clauses as these may be referenced at level 0 on
   // the trail, and thus must remain in the proof past a call to Clear.
-  if (clause.GetType() != ClausePtr::kSatClause) return;
+  if (clause.GetType() != ClausePtr::kAllocatedSatClause) return;
   lrat_proof_handler_->DeleteClause(clause);
+  clause.DeleteIfAllocated();
 }
 
 ClausePtr SharedTreeEncoder::NewImportedClause(
@@ -663,8 +664,8 @@ ClausePtr SharedTreeEncoder::NewImportedClause(
   // Tricky: To ensure binary clauses are not deleted while we are still using
   // them, we make sure we use an allocated SatClause for binary and larger
   // clauses.
-  ClausePtr clause =
-      literals.size() <= 1 ? NewClausePtr(literals) : ClausePtr(literals);
+  ClausePtr clause = literals.size() <= 1 ? NewClausePtr(literals)
+                                          : NewAllocatedClausePtr(literals);
   lrat_proof_handler_->AddImportedClause(clause);
   return clause;
 }
@@ -675,8 +676,8 @@ ClausePtr SharedTreeEncoder::NewInferredClause(
   // Tricky: To ensure binary clauses are not deleted while we are still using
   // them, we make sure we use an allocated SatClause for binary and larger
   // clauses.
-  ClausePtr clause =
-      literals.size() <= 1 ? NewClausePtr(literals) : ClausePtr(literals);
+  ClausePtr clause = literals.size() <= 1 ? NewClausePtr(literals)
+                                          : NewAllocatedClausePtr(literals);
   lrat_proof_handler_->AddInferredClause(clause, proof, /*exported=*/true);
   return clause;
 }

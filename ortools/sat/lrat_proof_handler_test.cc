@@ -53,7 +53,7 @@ TEST(AddAndProveInferredClauseByEnumerationTest, XorEquivalence) {
   // Let's create ClausePtrs for all these clauses.
   std::vector<ClausePtr> clauses_for_proof;
   for (int i = 0; i < clauses.size(); ++i) {
-    const ClausePtr clause = ClausePtr(clauses[i]);
+    const ClausePtr clause = NewAllocatedClausePtr(clauses[i]);
     clauses_for_proof.push_back(clause);
     lrat->AddProblemClause(clause);
   }

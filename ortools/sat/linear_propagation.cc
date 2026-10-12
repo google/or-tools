@@ -45,6 +45,7 @@
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
@@ -189,8 +190,8 @@ void LinearPropagator::OnVariableChange(IntegerVariable var, IntegerValue lb,
 void LinearPropagator::AddVarConstraintsToQueue(IntegerVariable var) {
   const int size = var_to_constraint_ids_[var].size();
   if (size == 0) return;
+  DeterministicTimer<{.scale = 1e-9}> timer(time_limit_, size);
   Bitset64<int>::View in_queue = in_queue_.view();
-  time_limit_->AdvanceDeterministicTime(static_cast<double>(size) * 1e-9);
   for (const int id : var_to_constraint_ids_[var]) {
     if (in_queue[id]) continue;
     in_queue.Set(id);
@@ -222,10 +223,10 @@ bool LinearPropagator::Propagate() {
   }
 
   // Cleanup.
+  DeterministicTimer<{.scale = 1e-9}> timer(time_limit_);
   num_terms_for_dtime_update_ = 0;
-  const auto cleanup = ::absl::MakeCleanup([this]() {
-    time_limit_->AdvanceDeterministicTime(
-        static_cast<double>(num_terms_for_dtime_update_) * 1e-9);
+  const auto cleanup = ::absl::MakeCleanup([&timer, this]() {
+    timer.Advance(num_terms_for_dtime_update_);
     modified_vars_.ClearAndResize(integer_trail_->NumIntegerVariables());
   });
 
@@ -977,8 +978,8 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_tight) {
 
     disassemble_branch_.push_back({prev_id, var, increase});
 
-    time_limit_->AdvanceDeterministicTime(
-        static_cast<double>(var_to_constraint_ids_[var].size()) * 1e-9);
+    DeterministicTimer<{.scale = 1e-9}> timer(
+        time_limit_, var_to_constraint_ids_[var].size());
     for (const int id : var_to_constraint_ids_[var]) {
       if (id == root_id) {
         // TODO(user): Check previous slack vs var coeff?
@@ -1020,20 +1021,21 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_tight) {
       IntegerValue var_coeff(0);
       disassemble_candidates_.clear();
       ++num_explored_in_disassemble_;
-      time_limit_->AdvanceDeterministicTime(static_cast<double>(info.rev_size) *
-                                            1e-9);
-      for (int i = 0; i < info.rev_size; ++i) {
-        if (vars[i] == var) {
-          var_coeff = coeffs[i];
-          continue;
-        }
-        const IntegerVariable next_var = NegationOf(vars[i]);
-        if (propagated_by_[next_var] == id) {
-          disassemble_candidates_.push_back({next_var, coeffs[i]});
+      {
+        DeterministicTimer<{.scale = 1e-9}> timer(time_limit_, info.rev_size);
+        for (int i = 0; i < info.rev_size; ++i) {
+          if (vars[i] == var) {
+            var_coeff = coeffs[i];
+            continue;
+          }
+          const IntegerVariable next_var = NegationOf(vars[i]);
+          if (propagated_by_[next_var] == id) {
+            disassemble_candidates_.push_back({next_var, coeffs[i]});
 
-          // We will propagate var again later, so clear all this for now.
-          propagated_by_[next_var] = -1;
-          id_to_count[id]--;
+            // We will propagate var again later, so clear all this for now.
+            propagated_by_[next_var] = -1;
+            id_to_count[id]--;
+          }
         }
       }
 

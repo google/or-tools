@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <numeric>
@@ -53,7 +54,6 @@
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_table.h"
 #include "ortools/sat/cp_model_utils.h"
-#include "ortools/sat/deterministic_time.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/diophantine.h"
 #include "ortools/sat/integer.h"
@@ -68,6 +68,7 @@
 #include "ortools/sat/util.h"
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -4605,6 +4606,211 @@ void CpConstraintPresolver::LowerThanCoeffStrengthening(bool from_lower_bound,
   }
 }
 
+bool CpConstraintPresolver::DetectSimpleSum(int c, ConstraintProto* ct) {
+  if (ct->constraint_case() != ConstraintProto::kLinear) return false;
+  if (ct->linear().domain().size() != 2) return false;
+  if (context_->ModelIsUnsat()) return false;
+  DeterministicTimer<{.scale = 1e-9, .offset = 0.0}> timer(time_limit_);
+
+  // Compute basic constraint stats.
+  int64_t min_activity = 0;
+  int64_t max_activity = 0;
+  int64_t max_coeff_magnitude = 0;
+  int64_t min_coeff_magnitude = kint64max;
+  const LinearConstraintProto& linear = ct->linear();
+  const int initial_num_terms = linear.vars().size();
+  if (initial_num_terms == 0) return false;
+  for (int i = 0; i < initial_num_terms; ++i) {
+    const int var = linear.vars(i);
+    const int64_t coeff = linear.coeffs(i);
+    if (coeff > 0) {
+      min_coeff_magnitude = std::min(min_coeff_magnitude, coeff);
+      max_coeff_magnitude = std::max(max_coeff_magnitude, coeff);
+      min_activity += coeff * context_->MinOf(var);
+      max_activity += coeff * context_->MaxOf(var);
+    } else {
+      min_coeff_magnitude = std::min(min_coeff_magnitude, -coeff);
+      max_coeff_magnitude = std::max(max_coeff_magnitude, -coeff);
+      min_activity += coeff * context_->MaxOf(var);
+      max_activity += coeff * context_->MinOf(var);
+    }
+  }
+  timer.Advance(initial_num_terms);
+
+  // Optimization: abort early if the constraint is already a simple sum. It
+  // will be simplified by its gcd later if the magnitude is not one.
+  if (min_coeff_magnitude == max_coeff_magnitude) {
+    return false;
+  }
+
+  // Canonicalize the constraint to:
+  //    shifted_lb <= sum magnitude * X_i <= shifted_ub
+  // with each Xi in [0, range_i].
+  //
+  // TODO(user): many "coefficient" reductions could be tried on this
+  // canonicalized & sorted form, and it would make sense to do it once, and try
+  // various strategy.
+  struct Term {
+    int64_t range;
+    int64_t magnitude;
+  };
+  std::vector<Term> canonicalized;
+  for (int i = 0; i < initial_num_terms; ++i) {
+    const int var = linear.vars(i);
+    const int64_t magnitude = std::abs(linear.coeffs(i));
+    const int64_t range = context_->MaxOf(var) - context_->MinOf(var);
+    if (!canonicalized.empty() && magnitude == canonicalized.back().magnitude) {
+      // Optimization: canonicalized terms with same coeff can be merged. This
+      // is just best effort here, we can do a proper merge after the sort.
+      //
+      // TODO(user): alternatively, we could use hash_map, or do a quick scan as
+      // long as the number of terms is small. But this is not critical.
+      canonicalized.back().range += range;
+    } else {
+      canonicalized.push_back({range, magnitude});
+    }
+  }
+  const int64_t ct_lb = ct->linear().domain(0);
+  const int64_t ct_ub = ct->linear().domain(ct->linear().domain().size() - 1);
+  const int64_t shifted_ub = ct_ub - min_activity;
+  const int64_t shifted_lb = ct_lb - min_activity;
+
+  // Sort canonicalized by increasing magnitude.
+  absl::c_sort(canonicalized, [](const Term& a, const Term& b) {
+    return a.magnitude < b.magnitude;
+  });
+  const double n = static_cast<double>(canonicalized.size());
+  timer.Advance(static_cast<int64_t>(n * std::log(n)));
+
+  // Merge identicaly terms.
+  {
+    int new_size = 1;
+    for (int i = 1; i < canonicalized.size(); ++i) {
+      if (canonicalized[i].magnitude == canonicalized[new_size - 1].magnitude) {
+        canonicalized[new_size - 1].range += canonicalized[i].range;
+      } else {
+        canonicalized[new_size++] = canonicalized[i];
+      }
+    }
+    canonicalized.resize(new_size);
+  }
+
+  bool simplify = true;
+  int64_t min_number_of_items = 0;
+  int64_t max_number_of_items = 0;
+
+  // Upper-bound side. We are trying to see if the constraint is equivalent to a
+  // "simple sum" where all coefficients are one.
+  if (max_activity > ct_ub) {
+    // Compute max_number_of_items assuming constraint is satisfied.
+    // I.e. constraint satisfied => (simple_sum <= max_number_of_items)
+    int64_t slack = shifted_ub;
+    for (const auto [range, magnitude] : canonicalized) {
+      if (range * magnitude <= slack) {
+        slack -= range * magnitude;
+        max_number_of_items += range;
+      } else {
+        max_number_of_items += FloorRatio(slack, magnitude).value();
+        break;
+      }
+    }
+
+    // What is the maximum reachable with max_number_of_items ?
+    int64_t num_item_left = max_number_of_items;
+    int64_t maximum_reachable = 0;
+    for (int i = canonicalized.size(); --i >= 0;) {  // By decreasing order.
+      const auto [range, magnitude] = canonicalized[i];
+      if (range < num_item_left) {
+        maximum_reachable += range * magnitude;
+        num_item_left -= range;
+      } else {
+        maximum_reachable += num_item_left * magnitude;
+        break;
+      }
+    }
+
+    // If maximum_reachable <= shifted_ub, then we have the other side!
+    // (simple_sum <= max_number_of_items) => constraint is satisfied.
+    if (maximum_reachable > shifted_ub) {
+      simplify = false;
+    }
+  }
+
+  // Lower-bound side.
+  if (simplify && shifted_lb > 0) {
+    // Compute min_number_of_items assuming constraint is satisfied.
+    // I.e constraint => (simple_sum >= min_number_of_items)
+    int64_t slack = shifted_lb;
+    for (int i = canonicalized.size(); --i >= 0;) {  // By decreasing order.
+      const auto [range, magnitude] = canonicalized[i];
+      if (range * magnitude <= slack) {
+        slack -= range * magnitude;
+        min_number_of_items += range;
+      } else {
+        min_number_of_items += CeilRatio(slack, magnitude).value();
+        break;
+      }
+    }
+
+    // What is the minimum reachable with min_number_of_items ?
+    int64_t num_item_left = min_number_of_items;
+    int64_t minimum_reachable = 0;
+    for (const auto [range, magnitude] : canonicalized) {
+      if (range < num_item_left) {
+        minimum_reachable += range * magnitude;
+        num_item_left -= range;
+      } else {
+        minimum_reachable += num_item_left * magnitude;
+        break;
+      }
+    }
+    if (minimum_reachable < shifted_lb) {
+      // TODO(user): If one side is simplifiable and not the other, it might
+      // be worth splitting the constraint in two. This is a bit harder to
+      // evaluate though, because it is not a "clearly good" change.
+      simplify = false;
+    }
+  }
+
+  if (simplify) {
+    // Note that once we know this is equivalent to a simple sum, we can apply
+    // the transformation easily directly on the initial constraint.
+    context_->UpdateRuleStats("linear: detected simple sum in range");
+    int64_t simple_activity_min = 0;
+    int64_t simple_activity_max = 0;
+    for (int i = 0; i < initial_num_terms; ++i) {
+      if (linear.coeffs(i) > 0) {
+        ct->mutable_linear()->set_coeffs(i, 1);
+        simple_activity_min += context_->MinOf(linear.vars(i));
+        simple_activity_max += context_->MaxOf(linear.vars(i));
+      } else {
+        ct->mutable_linear()->set_coeffs(i, -1);
+        simple_activity_min -= context_->MaxOf(linear.vars(i));
+        simple_activity_max -= context_->MinOf(linear.vars(i));
+      }
+    }
+    ct->mutable_linear()->set_domain(
+        0, min_activity < ct_lb ? min_number_of_items + simple_activity_min
+                                : simple_activity_min);
+    ct->mutable_linear()->set_domain(
+        1, max_activity > ct_ub ? max_number_of_items + simple_activity_min
+                                : simple_activity_max);
+
+    // Special case: we don't want to output infeasible constraint as this will
+    // cause check fail down the road.
+    if (ct->linear().domain(0) > ct->linear().domain(1)) {
+      (void)MarkConstraintAsFalse(
+          ct, "linear: detected infeasible during simple sum rewrite.");
+    }
+    return true;
+  } else if (canonicalized.size() == 2) {
+    context_->UpdateRuleStats(
+        "TODO linear: only two different coefficients, might be simplifiable.");
+  }
+
+  return false;
+}
+
 // Identify Boolean variable that makes the constraint always true when set to
 // true or false. Moves such literal to the constraint enforcement literals
 // list.
@@ -8109,6 +8315,10 @@ bool CpConstraintPresolver::PresolveOneConstraint(int c) {
 
       if (PresolveDiophantine(ct)) {
         context_->UpdateConstraintVariableUsage(c);
+      }
+
+      if (DetectSimpleSum(c, ct)) {
+        return true;
       }
 
       TryToReduceCoefficientsOfLinearConstraint(c, ct);

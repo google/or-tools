@@ -21,6 +21,7 @@
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse.h"
+#include "ortools/util/deterministic_time.h"
 
 namespace operations_research {
 namespace glop {
@@ -161,10 +162,11 @@ class RankOneUpdateFactorization {
   // Left-solves all systems from right to left, i.e. y_i = y_{i+1}.(T_i)^{-1}
   void LeftSolve(DenseRow* y) const {
     RETURN_IF_NULL(y);
+    deterministic_timer_.Start();
     for (int i = elementary_matrices_.size() - 1; i >= 0; --i) {
       elementary_matrices_[i].LeftSolve(y);
     }
-    dtime_ += DeterministicTimeForFpOperations(num_entries_.value());
+    deterministic_timer_.Stop(num_entries_.value());
   }
 
   // Same as LeftSolve(), but if the given non_zeros are not empty, then all
@@ -178,6 +180,7 @@ class RankOneUpdateFactorization {
 
     // y->is_non_zero is always all false before and after this code.
     DCHECK(y->is_non_zero.IsAllFalse());
+    deterministic_timer_.Start();
     y->RepopulateSparseMask();
     bool use_dense = y->ShouldUseDenseIteration(hypersparse_ratio_);
     for (int i = elementary_matrices_.size() - 1; i >= 0; --i) {
@@ -190,17 +193,18 @@ class RankOneUpdateFactorization {
     }
     y->ClearSparseMask();
     y->ClearNonZerosIfTooDense(hypersparse_ratio_);
-    dtime_ += DeterministicTimeForFpOperations(num_entries_.value());
+    deterministic_timer_.Stop(num_entries_.value());
   }
 
   // Right-solves all systems from left to right, i.e. T_i.d_{i+1} = d_i
   void RightSolve(DenseColumn* d) const {
     RETURN_IF_NULL(d);
+    deterministic_timer_.Start();
     const size_t end = elementary_matrices_.size();
     for (int i = 0; i < end; ++i) {
       elementary_matrices_[i].RightSolve(d);
     }
-    dtime_ += DeterministicTimeForFpOperations(num_entries_.value());
+    deterministic_timer_.Stop(num_entries_.value());
   }
 
   // Same as RightSolve(), but if the given non_zeros are not empty, then all
@@ -211,6 +215,7 @@ class RankOneUpdateFactorization {
       RightSolve(&d->values);
       return;
     }
+    deterministic_timer_.Start();
 
     // d->is_non_zero is always all false before and after this code.
     DCHECK(d->is_non_zero.IsAllFalse());
@@ -227,7 +232,7 @@ class RankOneUpdateFactorization {
     }
     d->ClearSparseMask();
     d->ClearNonZerosIfTooDense(hypersparse_ratio_);
-    dtime_ += DeterministicTimeForFpOperations(num_entries_.value());
+    deterministic_timer_.Stop(num_entries_.value());
   }
 
   EntryIndex num_entries() const { return num_entries_; }
@@ -238,11 +243,20 @@ class RankOneUpdateFactorization {
   // each elementary solves, if the scalar product involved is zero, we skip
   // some of the operations counted here. Is it worth spending a bit more time
   // to be more precise here?
-  double DeterministicTimeSinceLastReset() const { return dtime_; }
-  void ResetDeterministicTime() { dtime_ = 0.0; }
+  //
+  // Note that many solve functions in BasisFactorization have a pattern
+  // deterministic_timer_.Start() / Stop() with a rank_one_factorization Solve()
+  // call in the middle. This is OK because this deterministic time is not added
+  // to the basis factorization timer, and is thus not counted twice. Instead,
+  // BasisFactorization::DeterministicTimeUnitsForSolve() includes the
+  // number of operations done in this class.
+  double DeterministicTimeSinceLastReset() const {
+    return deterministic_timer_.GetDeterministicTime();
+  }
+  void ResetDeterministicTime() { deterministic_timer_.Reset(); }
 
  private:
-  mutable double dtime_ = 0.0;
+  mutable LinearDeterministicTimer<{.scale = 2e-9}> deterministic_timer_;
 
   double hypersparse_ratio_;
   EntryIndex num_entries_;

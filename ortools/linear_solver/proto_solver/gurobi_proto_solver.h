@@ -15,7 +15,6 @@
 #define ORTOOLS_LINEAR_SOLVER_PROTO_SOLVER_GUROBI_PROTO_SOLVER_H_
 
 #include "absl/status/status.h"
-#include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/third_party_solvers/gurobi_environment.h"
@@ -32,8 +31,8 @@ namespace operations_research {
 //
 // Please note though that the provided environment should not be actively used
 // by another thread at the same time.
-absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
-    LazyMutableCopy<MPModelRequest> request, GRBenv* gurobi_env = nullptr);
+MPSolutionResponse GurobiSolveProto(LazyMutableCopy<MPModelRequest> request,
+                                    GRBenv* gurobi_env = nullptr);
 
 // Set parameters specified in the string. The format of the string is a series
 // of tokens separated by either '\n' or by ',' characters.

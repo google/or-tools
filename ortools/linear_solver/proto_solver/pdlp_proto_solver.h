@@ -16,7 +16,6 @@
 
 #include <atomic>
 
-#include "absl/status/statusor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/util/lazy_mutable_copy.h"
 
@@ -40,7 +39,7 @@ namespace operations_research {
 // Returns an error if the conversion from MPModelProto to
 // pdlp::QuadraticProgram fails. The lack of an error does not imply success.
 // Check the SolveLog's termination_reason for more refined status details.
-absl::StatusOr<MPSolutionResponse> PdlpSolveProto(
+MPSolutionResponse PdlpSolveProto(
     LazyMutableCopy<MPModelRequest> request,
     bool relax_integer_variables = false,
     const std::atomic<bool>* interrupt_solve = nullptr);

@@ -220,9 +220,10 @@ class LratProofHandler {
   // which are always exported.
   bool ExportClause(ClausePtr clause);
 
-  // Deletes a problem or inferred clause. If `delete_sat_clause` is true and
-  // `clause` is a SatClause pointer, then this SatClause* is deleted.
-  void DeleteClause(ClausePtr clause, bool delete_sat_clause = true);
+  // Drops a problem or inferred clause from the proof. This means it will not
+  // longer be used there. The caller retains the ownership of the clause
+  // pointer.
+  void DeleteClause(ClausePtr clause);
 
   // Defines a mapping of variable indices for the next clauses added to the
   // merged proof. This mapping is only used in LratMerger. For efficiency, it

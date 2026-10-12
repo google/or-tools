@@ -29,6 +29,7 @@
 #include "absl/types/span.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/mp_model_wrapper.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/fp_utils.h"
 #include "ortools/util/logging.h"
@@ -119,14 +120,14 @@ struct ConstraintScaler {
       absl::Span<const IntegerVariableProto* const> var_domains,
       ConstraintProto* constraint);
 
-  // Scales an individual MPConstraintProto constraint and adds it to the given
+  // Scales an individual EnforcedLinearConstraint and adds it to the given
   // CpModelProto.
   //
   // This is a wrapper around the other ScaleAndAddConstraint() that uses the
-  // var_index, coefficient, lower_bound and upper_bound fields of the given
+  // vars, coeffs, lower_bound, upper_bound and enforcements of the given
   // mp_constraint.
-  absl::Status ScaleAndAddConstraint(const MPConstraintProto& mp_constraint,
-                                     CpModelProto* cp_model);
+  absl::Status ScaleAndAddConstraint(
+      const EnforcedLinearConstraint& mp_constraint, CpModelProto* cp_model);
 
   // Statistics over all scaled constraints. This can be inspected to know the
   // final error produced by ScaleAndAddConstraint().
@@ -138,12 +139,8 @@ struct ConstraintScaler {
   // Used when params.use_mip_tight_bounds() is true.
   TightScalingErrorHelper tight_error_helper;
 
-  // Statistics for enforcement extraction.
+  // Statistics for trivial constraints.
   int64_t num_trivial_constraints = 0;
-  int64_t num_enforcements = 0;
-  int64_t num_integer_enforcements = 0;
-  double max_boolean_enforcement_magnitude = 0.0;
-  double max_integer_enforcement_magnitude = 0.0;
 
   // Parameters. Whether we ignore or copy the mp_constraint.name() field.
   bool keep_names = false;
@@ -163,6 +160,52 @@ struct ConstraintScaler {
   std::vector<double> lower_bounds;
   std::vector<double> upper_bounds;
 };
+
+// Given a set of edges on a graph with nodes [0, n), can we partition the
+// nodes into two subsets such that all the edge "constraints" (same_partition
+// or not) are satisfied?
+//
+// We are a bit more generic if the set of edges form disjoint components.
+// We will return for each node a number partition[i] equal to:
+// - -1 if there is no possible partition for this component.
+// - 0/1 if this component can be properly partitioned.
+struct EdgeConstraintForPartition {
+  int a;
+  int b;
+  bool same_partition;
+};
+std::vector<int> PartitionGraph(
+    int n, absl::Span<const EdgeConstraintForPartition> edges);
+
+// Once all integer variables have a value, we can split the model into separate
+// components. If a given component is totally unimodular, then there exist a
+// solution of that component with variable taking only integer value, we mark
+// them as such.
+//
+// Note that we don't detect all totally unimodular residual matrices (TUM), we
+// use Heller & Tompkins criterion:
+//
+// A matrix A with entries in {-1, 0, 1} is TUM if:
+// 1/ Every column contains at most two non-zero entries.
+// 2/ The rows can be partitioned into two sets, R and R' such that for any
+//    column with exactly two entries:
+//     - if they are of the same sign, one row is in R and the other in R'
+//     - if they are of opposite sign, both rows are in the same set (R or R').
+//
+// Note that in addition to the matrix, we also need the constraints/variables
+// bounds of a totally unimodular LP to be integer to guarantee existence of a
+// fully integer solution.
+//
+// Note that if there is duplicate variable in a constraint (not presolved),
+// this might fail to detect TUM submatrices. It will however not wrongly detect
+// any.
+//
+// If params.mip_automatically_scale_variables() is true, we also detect
+// some residual component that are 2-modular, in the sense that any LP optimal
+// basic solution is half-integer (multiple of 1/2). In this case we return a
+// non-empty scaling vector.
+std::vector<double> MarkResidualTotallyUnimodularVariableAsInteger(
+    const SatParameters& params, MPModelProto* mp_model, SolverLogger* logger);
 
 // Multiplies all continuous variables by the given scaling parameters and
 // changes the rest of the model accordingly. The returned vector contains the
@@ -192,7 +235,8 @@ std::vector<double> ScaleContinuousVariablesUpToMaxBound(
     SolverLogger* logger);
 
 // This simple step helps and should be done first. Returns false if the model
-// is trivially infeasible because of crossing bounds.
+// is trivially infeasible because of crossing bounds. The version with the
+// scaling, make the bound of the scaled variable integer.
 bool MakeBoundsOfIntegerVariablesInteger(const SatParameters& params,
                                          MPModelProto* mp_model,
                                          SolverLogger* logger);
@@ -207,8 +251,13 @@ bool MakeBoundsOfIntegerVariablesInteger(const SatParameters& params,
 // mixed with bound propagation. Doing a single pass can still help remove
 // all [0, infinity) variables on models like uccase7.mps for instance.
 void RestrictBoundsWithDualReasoning(const SatParameters& params,
-                                     MPModelProto* mp_model,
+                                     MPModelProtoWrapper* mp_model,
                                      SolverLogger* logger);
+
+// Prints a single-line with variable stats and whether the problem is a MIP or
+// a pure IP.
+void DisplayVariableStatistics(const MPModelProto& mp_model,
+                               SolverLogger* logger);
 
 // This function changes bounds of variables or constraints that have a
 // magnitude greater than mip_max_valid_magnitude.
@@ -236,8 +285,20 @@ void RemoveNearZeroTerms(const SatParameters& params, MPModelProto* mp_model,
 //
 // TODO(user): Actually implement the offset part. This currently only happens
 // on the 3 neos-46470* miplib problems where we have a non-integer rhs.
-std::vector<double> DetectImpliedIntegers(MPModelProto* mp_model,
+std::vector<double> DetectImpliedIntegers(const SatParameters& params,
+                                          MPModelProtoWrapper* mp_model,
                                           SolverLogger* logger);
+
+// Clamps variable bounds to [-mip_max_bound, mip_max_bound]. Returns false if
+// a variable domain does not intersect this interval.
+bool ClampVariableBounds(const SatParameters& params, MPModelProto* mp_model,
+                         SolverLogger* logger);
+
+// Extracts enforcement literals (and integer enforcements) from one-sided
+// constraints in the given MPModelProtoWrapper.
+void ExtractEnforcementLiterals(const SatParameters& params,
+                                MPModelProtoWrapper* mp_model,
+                                SolverLogger* logger);
 
 // Converts a MIP problem to a CpModel. Returns false if the coefficients
 // couldn't be converted to integers with a good enough precision.
@@ -245,7 +306,7 @@ std::vector<double> DetectImpliedIntegers(MPModelProto* mp_model,
 // There are a bunch of caveats and you can find more details on the
 // SatParameters proto documentation for the mip_* parameters.
 bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
-                                       const MPModelProto& mp_model,
+                                       const MPModelProtoWrapper& mp_model,
                                        CpModelProto* cp_model,
                                        SolverLogger* logger);
 

@@ -807,14 +807,6 @@ class VectorIterator : EntryType {
   const Entry& operator*() const { return *this; }
 };
 
-// This is used during the deterministic time computation to convert a given
-// number of floating-point operations to something in the same order of
-// magnitude as a second (on a 2014 desktop).
-static inline double DeterministicTimeForFpOperations(int64_t n) {
-  const double kConversionFactor = 2e-9;
-  return kConversionFactor * static_cast<double>(n);
-}
-
 namespace internal {
 
 // Thin wrapper around AbnormalityCause that implicit converts to:

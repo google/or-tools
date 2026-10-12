@@ -311,7 +311,7 @@ class LinearBase(metaclass=abc.ABCMeta):
 
     def __eq__(
         self, rhs: LinearTypes
-    ) -> BoundedLinearExpression:  # overriding-return-type-checks
+    ) -> BoundedLinearExpression:  # pyrefly: ignore[bad-override]
         # Note: when rhs is a QuadraticBase, this will cause rhs.__eq__(self) to be
         # invoked, which is defined.
         if isinstance(rhs, QuadraticBase):
@@ -322,7 +322,7 @@ class LinearBase(metaclass=abc.ABCMeta):
             _raise_binary_operator_type_error("==", type(self), type(rhs))
         return BoundedLinearExpression(0.0, self - rhs, 0.0)
 
-    def __ne__(self, rhs: LinearTypes) -> NoReturn:  # overriding-return-type-checks
+    def __ne__(self, rhs: LinearTypes) -> NoReturn:  # pyrefly: ignore[bad-override]
         _raise_ne_not_supported()
 
     @typing.overload
@@ -497,14 +497,14 @@ class QuadraticBase(metaclass=abc.ABCMeta):
 
     def __eq__(
         self, rhs: QuadraticTypes
-    ) -> BoundedQuadraticExpression:  # overriding-return-type-checks
+    ) -> BoundedQuadraticExpression:  # pyrefly: ignore[bad-override]
         if isinstance(rhs, (int, float)):
             return BoundedQuadraticExpression(rhs, self, rhs)
         if not isinstance(rhs, (LinearBase, QuadraticBase)):
             _raise_binary_operator_type_error("==", type(self), type(rhs))
         return BoundedQuadraticExpression(0.0, self - rhs, 0.0)
 
-    def __ne__(self, rhs: QuadraticTypes) -> NoReturn:  # overriding-return-type-checks
+    def __ne__(self, rhs: QuadraticTypes) -> NoReturn:  # pyrefly: ignore[bad-override]
         _raise_ne_not_supported()
 
     @typing.overload
@@ -726,7 +726,7 @@ class Variable(LinearBase, from_model.FromModel):
                 QuadraticTermKey(self, other.variable), other.coefficient
             )
         if isinstance(other, LinearBase):
-            return LinearLinearProduct(self, other)  # pytype: disable=bad-return-type
+            return LinearLinearProduct(self, other)
         return LinearTerm(self, other)
 
     def __rmul__(
@@ -807,7 +807,7 @@ class LinearTerm(LinearBase):
                 self._coefficient * other.coefficient,
             )
         if isinstance(other, LinearBase):
-            return LinearLinearProduct(self, other)  # pytype: disable=bad-return-type
+            return LinearLinearProduct(self, other)
         return LinearTerm(self._variable, self._coefficient * other)
 
     def __rmul__(

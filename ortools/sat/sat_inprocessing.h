@@ -267,7 +267,7 @@ class StampingSimplifier {
   bool stamps_are_already_computed_ = false;
 
   // Reset at each round.
-  double dtime_ = 0.0;
+  double work_done_ = 0.0;
   int64_t num_subsumed_clauses_ = 0;
   int64_t num_removed_literals_ = 0;
   int64_t num_fixed_ = 0;
@@ -320,7 +320,6 @@ class BlockedClauseSimplifier {
   PostsolveClauses* postsolve_;
   TimeLimit* time_limit_;
 
-  double dtime_ = 0.0;
   int32_t num_blocked_clauses_ = 0;
   int64_t num_inspected_literals_ = 0;
 
@@ -388,7 +387,7 @@ class BoundedVariableElimination {
 
   LratProofHandler* lrat_proof_handler_;
 
-  double dtime_ = 0.0;
+  uint64_t work_done_ = 0;
   int64_t num_inspected_literals_ = 0;
   int64_t num_simplifications_ = 0;
   int64_t num_blocked_clauses_ = 0;

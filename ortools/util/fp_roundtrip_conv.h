@@ -45,8 +45,11 @@ ABSL_CONST_INIT extern const bool kStdToCharsDoubleIsSupported;
 //  const std::string x_str =
 //    absl::StrCat("x: ", RoundTripDoubleFormat(x));
 //
+//  const std::string x_fmt_str =
+//    absl::StrFormat("x = %v", RoundTripDoubleFormat(x));
+//
 //  ABSL_ASSIGN_OR_RETURN(const double y,
-//                   RoundTripDoubleFormat::Parse(x_str));
+//                        RoundTripDoubleFormat::Parse(x_str));
 //
 // Note that some operating systems do not support std::to_chars() for double
 // yet but only implement it for integers (see kStdToCharsDoubleIsSupported). On

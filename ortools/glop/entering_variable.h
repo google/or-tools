@@ -14,18 +14,16 @@
 #ifndef ORTOOLS_GLOP_ENTERING_VARIABLE_H_
 #define ORTOOLS_GLOP_ENTERING_VARIABLE_H_
 
-#include <cstdint>
 #include <string>
 #include <vector>
 
-#include "absl/base/attributes.h"
 #include "absl/random/bit_gen_ref.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/reduced_costs.h"
-#include "ortools/glop/status.h"
 #include "ortools/glop/update_row.h"
 #include "ortools/glop/variables_info.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/stats.h"
 
 #if !SWIG
@@ -79,7 +77,7 @@ class EnteringVariable {
   //
   // TODO(user): Be exhaustive and more precise.
   double DeterministicTime() const {
-    return DeterministicTimeForFpOperations(num_operations_);
+    return deterministic_timer_.GetDeterministicTime();
   }
 
  private:
@@ -133,8 +131,7 @@ class EnteringVariable {
   // Temporary vector used to hold breakpoints.
   std::vector<ColWithRatio> breakpoints_;
 
-  // Counter for the deterministic time.
-  int64_t num_operations_ = 0;
+  LinearDeterministicTimer<{.scale = 2e-9}> deterministic_timer_;
 };
 
 }  // namespace glop

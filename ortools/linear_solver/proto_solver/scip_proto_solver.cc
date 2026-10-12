@@ -20,6 +20,7 @@
 #include <numeric>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/base/attributes.h"
@@ -716,7 +717,9 @@ std::string FindErrorInMPModelForScip(const MPModelProto& model, SCIP* scip) {
   return "";
 }
 
-absl::StatusOr<MPSolutionResponse> ScipSolveProto(
+namespace {
+
+absl::StatusOr<MPSolutionResponse> ScipSolveProtoInternal(
     LazyMutableCopy<MPModelRequest> request) {
   MPSolutionResponse response;
   const std::optional<LazyMutableCopy<MPModelProto>> optional_model =
@@ -1005,6 +1008,20 @@ absl::StatusOr<MPSolutionResponse> ScipSolveProto(
 
   VLOG(1) << "ScipSolveProto() status="
           << MPSolverResponseStatus_Name(response.status()) << ".";
+  return response;
+}
+
+}  // namespace
+
+MPSolutionResponse ScipSolveProto(LazyMutableCopy<MPModelRequest> request) {
+  absl::StatusOr<MPSolutionResponse> response_or =
+      ScipSolveProtoInternal(std::move(request));
+  if (response_or.ok()) {
+    return *std::move(response_or);
+  }
+  MPSolutionResponse response;
+  response.set_status(MPSOLVER_MODEL_INVALID);
+  response.set_status_str(response_or.status().ToString());
   return response;
 }
 

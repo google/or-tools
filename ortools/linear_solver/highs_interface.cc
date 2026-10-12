@@ -26,7 +26,6 @@
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/proto_solver/highs_proto_solver.h"
-#include "ortools/linear_solver/proto_solver/proto_utils.h"
 #include "ortools/util/lazy_mutable_copy.h"
 
 namespace operations_research {
@@ -46,9 +45,7 @@ class HighsInterface : public MPSolverInterface {
   MPSolutionResponse DirectlySolveProto(LazyMutableCopy<MPModelRequest> request,
                                         std::atomic<bool>* interrupt) override {
     DCHECK_EQ(interrupt, nullptr);
-    const bool log_error = request->enable_internal_solver_output();
-    return ConvertStatusOrMPSolutionResponse(
-        log_error, HighsSolveProto(std::move(request)));
+    return HighsSolveProto(std::move(request));
   }
 
   // ----- Model modifications and extraction -----
@@ -140,21 +137,16 @@ MPSolver::ResultStatus HighsInterface::Solve(const MPSolverParameters& param) {
 
   // Set parameters.
   solve_info_ = HighsSolveInfo();
-  absl::StatusOr<MPSolutionResponse> response =
+  const MPSolutionResponse response =
       HighsSolveProto(std::move(request), &*solve_info_);
-
-  if (!response.ok()) {
-    LOG(ERROR) << "Unexpected error solving with Highs: " << response.status();
-    return MPSolver::ABNORMAL;
-  }
 
   // The solution must be marked as synchronized even when no solution exists.
   sync_status_ = SOLUTION_SYNCHRONIZED;
-  result_status_ = MPSolverResponseStatusToResultStatus(response->status());
+  result_status_ = MPSolverResponseStatusToResultStatus(response.status());
 
-  if (response->status() == MPSOLVER_FEASIBLE ||
-      response->status() == MPSOLVER_OPTIMAL) {
-    const absl::Status result = solver_->LoadSolutionFromProto(*response);
+  if (response.status() == MPSOLVER_FEASIBLE ||
+      response.status() == MPSOLVER_OPTIMAL) {
+    const absl::Status result = solver_->LoadSolutionFromProto(response);
     if (!result.ok()) {
       LOG(ERROR) << "LoadSolutionFromProto failed: " << result;
     }

@@ -33,8 +33,10 @@
 #include "ortools/sat/cp_model_test_utils.h"
 #include "ortools/sat/lp_utils.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/mp_model_wrapper.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/subsolver.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research {
@@ -526,7 +528,7 @@ TEST(SolveCpModelTest, TrivialLinearTranslatedModel) {
 }
 
 TEST(ConvertMPModelProtoToCpModelProtoTest, SimpleLinearExampleWithMaximize) {
-  const MPModelProto mp_model = ParseTestProto(R"pb(
+  MPModelProto mp_model = ParseTestProto(R"pb(
     maximize: true
     objective_offset: 0
     variable {
@@ -552,8 +554,8 @@ TEST(ConvertMPModelProtoToCpModelProtoTest, SimpleLinearExampleWithMaximize) {
   )pb");
   CpModelProto cp_model;
   SolverLogger logger;
-  ConvertMPModelProtoToCpModelProto(SatParameters(), mp_model, &cp_model,
-                                    &logger);
+  ConvertMPModelProtoToCpModelProto(
+      SatParameters(), MPModelProtoWrapper(&mp_model), &cp_model, &logger);
   Model model;
   model.Add(NewSatParameters("cp_model_presolve:false"));
   const CpSolverResponse response = SolveCpModel(cp_model, &model);
@@ -2352,6 +2354,54 @@ TEST(PresolveCpModelTest, EmptyExactlyOne) {
   Model model;
   const CpSolverResponse response = SolveCpModel(cp_model, &model);
   EXPECT_EQ(response.status(), CpSolverStatus::INFEASIBLE);
+}
+
+TEST(PresolveCpModelTest, PresolveStatusChangeCallbacks) {
+  const CpModelProto cp_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 5, 5 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 1, 2 ]
+        coeffs: [ 1, -1 ]
+        domain: [ 0, 0 ]
+      }
+    }
+    objective {
+      vars: [ 0, 2 ]
+      coeffs: [ 1, 2 ]
+    }
+  )pb");
+  Model model;
+  std::vector<SolverStatusChangeInfo> presolve_events;
+  model.GetOrCreate<SharedResponseManager>()->AddStatusChangeCallback(
+      [&presolve_events](const SolverStatusChangeInfo& info) {
+        if (info.presolve_started || info.presolve_ended) {
+          presolve_events.push_back(info);
+        }
+      });
+  const CpSolverResponse response = SolveCpModel(cp_model, &model);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  ASSERT_EQ(presolve_events.size(), 2);
+  EXPECT_TRUE(presolve_events[0].presolve_started);
+  EXPECT_FALSE(presolve_events[0].presolve_ended);
+  EXPECT_EQ(presolve_events[0].num_variables, 3);
+  EXPECT_EQ(presolve_events[0].num_constraints, 2);
+  EXPECT_EQ(presolve_events[0].num_terms, 4);
+
+  EXPECT_FALSE(presolve_events[1].presolve_started);
+  EXPECT_TRUE(presolve_events[1].presolve_ended);
+  EXPECT_EQ(presolve_events[1].num_variables, 0);
+  EXPECT_EQ(presolve_events[1].num_constraints, 0);
+  EXPECT_EQ(presolve_events[1].num_terms, 0);
 }
 
 TEST(PresolveCpModelTest, EmptyConstantProduct) {

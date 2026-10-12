@@ -35,6 +35,7 @@
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/timetable.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/scheduling.h"
 #include "ortools/util/sort.h"
 #include "ortools/util/strong_integers.h"
@@ -1226,11 +1227,10 @@ bool DisjunctivePrecedences::Propagate() {
 
 bool DisjunctivePrecedences::PropagateSubwindow(absl::Span<TaskTime> window) {
   // This function can be slow, so count it in the dtime.
+  DeterministicTimer<{.scale = 5e-8}> timer(time_limit_);
   int64_t num_hash_lookup = 0;
-  auto cleanup = ::absl::MakeCleanup([&num_hash_lookup, this]() {
-    time_limit_->AdvanceDeterministicTime(static_cast<double>(num_hash_lookup) *
-                                          5e-8);
-  });
+  auto cleanup = ::absl::MakeCleanup(
+      [&timer, &num_hash_lookup]() { timer.Advance(num_hash_lookup); });
 
   // TODO(user): We shouldn't consider ends for fixed intervals here. But
   // then we should do a better job of computing the min-end of a subset of

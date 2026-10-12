@@ -42,6 +42,7 @@
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/fp_utils.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/testing_utils.h"
 
 #if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
 static_assert(operations_research::kTargetOsSupportsFile);
@@ -123,7 +124,7 @@ void DumpLinearProgramIfRequiredByFlags(const LinearProgram& linear_program,
 // LPSolver
 // --------------------------------------------------------
 
-LPSolver::LPSolver() : num_solves_(0) {}
+LPSolver::LPSolver() : solution_(RowIndex(0), ColIndex(0)), num_solves_(0) {}
 
 std::string LPSolver::GlopVersion() {
   return absl::StrCat("Glop solver v", OrToolsVersionString());
@@ -162,12 +163,12 @@ SolveStatus LPSolver::Solve(const LinearProgram& lp, TimeLimit& time_limit) {
   DumpLinearProgramIfRequiredByFlags(lp, num_solves_);
 
   // Display a warning if running in non-opt, unless we're inside a unit test.
-  DLOG(WARNING)
+  DLOG_IF_EVERY_N_SEC(WARNING, !ProbablyRunningInsideUnitTest(), 1)
       << "\n******************************************************************"
          "\n* WARNING: Glop will be very slow because it will use DCHECKs    *"
          "\n* to verify the results and the precision of the solver.         *"
          "\n* You can gain at least an order of magnitude speedup by         *"
-         "\n* compiling with optimizations enabled and by defining NDEBUG.   *"
+         "\n* compiling with -c opt.                                         *"
          "\n******************************************************************";
 
   // Setup the logger.
@@ -237,17 +238,6 @@ SolveStatus LPSolver::Solve(const LinearProgram& lp, TimeLimit& time_limit) {
     SOLVER_LOG(&logger_, "Bounds stats: ",
                current_linear_program_.GetBoundsStatsString());
   }
-
-  // LoadAndVerifySolution() below updates primal_values_, dual_values_,
-  // variable_statuses_ and constraint_statuses_ with the values stored in
-  // solution by RunPrimalDualPathFollowingMethodIfNeeded() and
-  // RunRevisedSimplex(), and hence clears any results stored in them from a
-  // previous run. In contrast, primal_ray_, constraints_dual_ray_, and
-  // variable_bounds_dual_ray_ are modified directly by RunRevisedSimplex(), so
-  // we explicitly clear them from previous run results.
-  primal_ray_.clear();
-  constraints_dual_ray_.clear();
-  variable_bounds_dual_ray_.clear();
 
   // Compute the solution and the status of the solve.
   auto [solve_status,
@@ -417,10 +407,7 @@ SolveStatus LPSolver::LoadAndVerifySolutionInternal(
   }
 
   // Load the solution.
-  primal_values_ = solution.primal_values;
-  dual_values_ = solution.dual_values;
-  variable_statuses_ = solution.variable_statuses;
-  constraint_statuses_ = solution.constraint_statuses;
+  solution_ = solution;
 
   SolveStatus status = initial_status;
 
@@ -450,6 +437,8 @@ SolveStatus LPSolver::LoadAndVerifySolutionInternal(
 
   ComputeReducedCosts(lp);
   ComputeConstraintActivities(lp);
+  // TODO: b/571465495 - Validate the rays numerical properties.
+  ComputeVariableBoundsDualRay(lp);
 
   // These will be set to true if the associated "infeasibility" is too large.
   //
@@ -570,10 +559,11 @@ bool LPSolver::IsOptimalSolutionOnFacet(const LinearProgram& lp) {
   const Fractional kBoundTolerance = 1e-7;
   const ColIndex num_cols = lp.num_variables();
   for (ColIndex col(0); col < num_cols; ++col) {
-    if (variable_statuses_[col] == VariableStatus::FIXED_VALUE) continue;
+    if (solution_.variable_statuses[col] == VariableStatus::FIXED_VALUE)
+      continue;
     const Fractional lower_bound = lp.variable_lower_bounds()[col];
     const Fractional upper_bound = lp.variable_upper_bounds()[col];
-    const Fractional value = primal_values_[col];
+    const Fractional value = solution_.primal_values[col];
     if (AreWithinAbsoluteTolerance(reduced_costs_[col], Fractional(0.0),
                                    kReducedCostTolerance) &&
         (AreWithinAbsoluteTolerance(value, lower_bound, kBoundTolerance) ||
@@ -583,11 +573,12 @@ bool LPSolver::IsOptimalSolutionOnFacet(const LinearProgram& lp) {
   }
   const RowIndex num_rows = lp.num_constraints();
   for (RowIndex row(0); row < num_rows; ++row) {
-    if (constraint_statuses_[row] == ConstraintStatus::FIXED_VALUE) continue;
+    if (solution_.constraint_statuses[row] == ConstraintStatus::FIXED_VALUE)
+      continue;
     const Fractional lower_bound = lp.constraint_lower_bounds()[row];
     const Fractional upper_bound = lp.constraint_upper_bounds()[row];
     const Fractional activity = constraint_activities_[row];
-    if (AreWithinAbsoluteTolerance(dual_values_[row], Fractional(0.0),
+    if (AreWithinAbsoluteTolerance(solution_.dual_values[row], Fractional(0.0),
                                    kReducedCostTolerance) &&
         (AreWithinAbsoluteTolerance(activity, lower_bound, kBoundTolerance) ||
          AreWithinAbsoluteTolerance(activity, upper_bound, kBoundTolerance))) {
@@ -624,24 +615,26 @@ double LPSolver::DeterministicTime() const {
 
 void LPSolver::MovePrimalValuesWithinBounds(const LinearProgram& lp) {
   const ColIndex num_cols = lp.num_variables();
-  DCHECK_EQ(num_cols, primal_values_.size());
+  DCHECK_EQ(num_cols, solution_.primal_values.size());
   Fractional error = 0.0;
   for (ColIndex col(0); col < num_cols; ++col) {
     const Fractional lower_bound = lp.variable_lower_bounds()[col];
     const Fractional upper_bound = lp.variable_upper_bounds()[col];
     DCHECK_LE(lower_bound, upper_bound);
 
-    error = std::max(error, primal_values_[col] - upper_bound);
-    error = std::max(error, lower_bound - primal_values_[col]);
-    primal_values_[col] = std::min(primal_values_[col], upper_bound);
-    primal_values_[col] = std::max(primal_values_[col], lower_bound);
+    error = std::max(error, solution_.primal_values[col] - upper_bound);
+    error = std::max(error, lower_bound - solution_.primal_values[col]);
+    solution_.primal_values[col] =
+        std::min(solution_.primal_values[col], upper_bound);
+    solution_.primal_values[col] =
+        std::max(solution_.primal_values[col], lower_bound);
   }
   SOLVER_LOG(&logger_, "Max. primal values move = ", error);
 }
 
 void LPSolver::MoveDualValuesWithinBounds(const LinearProgram& lp) {
   const RowIndex num_rows = lp.num_constraints();
-  DCHECK_EQ(num_rows, dual_values_.size());
+  DCHECK_EQ(num_rows, solution_.dual_values.size());
   const Fractional optimization_sign = lp.IsMaximizationProblem() ? -1.0 : 1.0;
   Fractional error = 0.0;
   for (RowIndex row(0); row < num_rows; ++row) {
@@ -649,7 +642,8 @@ void LPSolver::MoveDualValuesWithinBounds(const LinearProgram& lp) {
     const Fractional upper_bound = lp.constraint_upper_bounds()[row];
 
     // For a minimization problem, we want a lower bound.
-    Fractional minimization_dual_value = optimization_sign * dual_values_[row];
+    Fractional minimization_dual_value =
+        optimization_sign * solution_.dual_values[row];
     if (lower_bound == -kInfinity && minimization_dual_value > 0.0) {
       error = std::max(error, minimization_dual_value);
       minimization_dual_value = 0.0;
@@ -658,19 +652,19 @@ void LPSolver::MoveDualValuesWithinBounds(const LinearProgram& lp) {
       error = std::max(error, -minimization_dual_value);
       minimization_dual_value = 0.0;
     }
-    dual_values_[row] = optimization_sign * minimization_dual_value;
+    solution_.dual_values[row] = optimization_sign * minimization_dual_value;
   }
   SOLVER_LOG(&logger_, "Max. dual values move = ", error);
 }
 
 void LPSolver::ResizeSolution(RowIndex num_rows, ColIndex num_cols) {
-  primal_values_.resize(num_cols, 0.0);
+  solution_.primal_values.resize(num_cols, 0.0);
   reduced_costs_.resize(num_cols, 0.0);
-  variable_statuses_.resize(num_cols, VariableStatus::FREE);
+  solution_.variable_statuses.resize(num_cols, VariableStatus::FREE);
 
-  dual_values_.resize(num_rows, 0.0);
+  solution_.dual_values.resize(num_rows, 0.0);
   constraint_activities_.resize(num_rows, 0.0);
-  constraint_statuses_.resize(num_rows, ConstraintStatus::FREE);
+  solution_.constraint_statuses.resize(num_rows, ConstraintStatus::FREE);
 }
 
 std::pair<SolveStatus, ProblemSolution> LPSolver::RunRevisedSimplex(
@@ -716,31 +710,56 @@ std::pair<SolveStatus, ProblemSolution> LPSolver::RunRevisedSimplex(
     solution.constraint_statuses[row] =
         revised_simplex_->GetConstraintStatus(row);
   }
-  if (!parameters_.use_preprocessing() && !parameters_.use_scaling()) {
-    if (solve_status.Is<SolveStatus::PrimalUnbounded>()) {
-      primal_ray_ = revised_simplex_->GetPrimalRay();
-      // Make sure we do not copy the slacks added by revised_simplex_.
-      primal_ray_.resize(num_cols);
-    } else if (solve_status.Is<SolveStatus::DualUnbounded>()) {
-      constraints_dual_ray_ = revised_simplex_->GetDualRay();
-      variable_bounds_dual_ray_ = revised_simplex_->GetDualRayRowCombination();
-      // Make sure we do not copy the slacks added by revised_simplex_.
-      variable_bounds_dual_ray_.resize(num_cols);
-      // Revised simplex's GetDualRay is always such that GetDualRay.rhs < 0,
-      // which is a cost improving direction for the dual if the primal is a
-      // maximization problem (i.e. when the dual is a minimization problem).
-      // Hence, we change the sign of constraints_dual_ray_ for min problems.
-      //
-      // Revised simplex's GetDualRayRowCombination = A^T GetDualRay and
-      // we must have variable_bounds_dual_ray_ = - A^T constraints_dual_ray_.
-      // Then we need to change the sign of variable_bounds_dual_ray_, but for
-      // min problems this change is implicit because of the sign change of
-      // constraints_dual_ray_ described above.
-      if (current_linear_program_.IsMaximizationProblem()) {
-        ChangeSign(&variable_bounds_dual_ray_);
-      } else {
-        ChangeSign(&constraints_dual_ray_);
-      }
+  if (solve_status.Is<SolveStatus::PrimalUnbounded>()) {
+    solution.primal_ray = revised_simplex_->GetPrimalRay();
+    // Make sure we do not copy the slacks added by revised_simplex_.
+    solution.primal_ray->resize(num_cols);
+  } else if (solve_status.Is<SolveStatus::DualUnbounded>() ||
+             solve_status.Is<SolveStatus::PrimalInfeasible>()) {
+    // The dual ray returned by RevisedSimplex is one in the model in
+    // "computational form". We transformed:
+    //
+    //   min  c^T⋅x
+    //   s.t. L ≤ A⋅x ≤ U
+    //        l ≤ x ≤ u
+    //
+    // into:
+    //
+    //   min  c'^T⋅x'          x' = [x|x_s] (x_s slack variables)
+    //                         c' = [c|0]
+    //   s.t. A'⋅x' = 0        A' = [A|I]
+    //        l' ≤ x' ≤ u'     l' = [l|-U]
+    //                         u' = [u|-L]
+    //
+    // We note that the slack variables x_s have the bounds reversed and
+    // negated from the corresponding bounds of the constraints.
+    //
+    // The original dual is:
+    //
+    //   max  L^T⋅y_l + U^T⋅y_u + l^T⋅v + u^T⋅w
+    //   s.t. A^T⋅(y_l + y_u) + v + w = c
+    //        y_l ≥ 0
+    //        y_u ≤ 0
+    //        v ≥ 0
+    //        w ≤ 0
+    //
+    // and the computational form:
+    //
+    //   max  l'^T⋅v' + u'^T⋅w'
+    //   s.t. A'^T⋅y' + v' + w' = c'
+    //        v' ≥ 0
+    //        w' ≤ 0
+    //
+    // we can show that (y_l + y_u,v,w) = (y', v'[:n], w'[:n]) is a dual
+    // solution of the original dual problem. Since GetDualRay() return -y'
+    // though we must switch the sign to get the proper values signs.
+    //
+    // As documented on GetDualRay() & GetDualRayRowCombination(), the
+    // returned ray is one that assume the problem is a minimization, even
+    // when it is a maximization. We also need to fix the signs here.
+    solution.dual_ray = revised_simplex_->GetDualRay();
+    if (!current_linear_program_.IsMaximizationProblem()) {
+      ChangeSign(&*solution.dual_ray);
     }
   }
   return {solve_status, std::move(solution)};
@@ -908,7 +927,7 @@ Fractional LPSolver::ComputeMaxCostPerturbationToEnforceOptimality(
     // thus the dual objective value will be a lower bound of the primal
     // objective.
     const Fractional reduced_cost = optimization_sign * reduced_costs_[col];
-    const VariableStatus status = variable_statuses_[col];
+    const VariableStatus status = solution_.variable_statuses[col];
     if (status == VariableStatus::BASIC || status == VariableStatus::FREE ||
         (status == VariableStatus::AT_UPPER_BOUND && reduced_cost > 0.0) ||
         (status == VariableStatus::AT_LOWER_BOUND && reduced_cost < 0.0)) {
@@ -934,7 +953,7 @@ Fractional LPSolver::ComputeMaxRhsPerturbationToEnforceOptimality(
     const Fractional lower_bound = lp.constraint_lower_bounds()[row];
     const Fractional upper_bound = lp.constraint_upper_bounds()[row];
     const Fractional activity = constraint_activities_[row];
-    const ConstraintStatus status = constraint_statuses_[row];
+    const ConstraintStatus status = solution_.constraint_statuses[row];
 
     Fractional rhs_error = 0.0;
     Fractional allowed_error = 0.0;
@@ -956,38 +975,61 @@ Fractional LPSolver::ComputeMaxRhsPerturbationToEnforceOptimality(
 void LPSolver::ComputeConstraintActivities(const LinearProgram& lp) {
   const RowIndex num_rows = lp.num_constraints();
   const ColIndex num_cols = lp.num_variables();
-  DCHECK_EQ(num_cols, primal_values_.size());
+  DCHECK_EQ(num_cols, solution_.primal_values.size());
   constraint_activities_.assign(num_rows, 0.0);
   for (ColIndex col(0); col < num_cols; ++col) {
-    lp.GetSparseColumn(col).AddMultipleToDenseVector(primal_values_[col],
-                                                     &constraint_activities_);
+    lp.GetSparseColumn(col).AddMultipleToDenseVector(
+        solution_.primal_values[col], &constraint_activities_);
   }
 }
 
 void LPSolver::ComputeReducedCosts(const LinearProgram& lp) {
   const RowIndex num_rows = lp.num_constraints();
   const ColIndex num_cols = lp.num_variables();
-  DCHECK_EQ(num_rows, dual_values_.size());
+  DCHECK_EQ(num_rows, solution_.dual_values.size());
   reduced_costs_.resize(num_cols, 0.0);
   for (ColIndex col(0); col < num_cols; ++col) {
-    reduced_costs_[col] = lp.objective_coefficients()[col] -
-                          ScalarProduct(dual_values_, lp.GetSparseColumn(col));
+    reduced_costs_[col] =
+        lp.objective_coefficients()[col] -
+        ScalarProduct(solution_.dual_values, lp.GetSparseColumn(col));
+  }
+}
+
+void LPSolver::ComputeVariableBoundsDualRay(const LinearProgram& lp) {
+  if (!solution_.dual_ray.has_value()) {
+    variable_bounds_dual_ray_ = std::nullopt;
+    return;
+  }
+
+  const DenseColumn& dual_ray = *solution_.dual_ray;
+
+  const RowIndex num_rows = lp.num_constraints();
+  const ColIndex num_cols = lp.num_variables();
+  DCHECK_EQ(num_rows, solution_.dual_ray->size());
+
+  if (!variable_bounds_dual_ray_.has_value()) {
+    variable_bounds_dual_ray_.emplace();
+  }
+  variable_bounds_dual_ray_->resize(num_cols, 0.0);
+  for (ColIndex col(0); col < num_cols; ++col) {
+    (*variable_bounds_dual_ray_)[col] =
+        -ScalarProduct(dual_ray, lp.GetSparseColumn(col));
   }
 }
 
 double LPSolver::ComputeObjective(const LinearProgram& lp) {
   const ColIndex num_cols = lp.num_variables();
-  DCHECK_EQ(num_cols, primal_values_.size());
+  DCHECK_EQ(num_cols, solution_.primal_values.size());
   KahanSum sum;
   for (ColIndex col(0); col < num_cols; ++col) {
-    sum.Add(lp.objective_coefficients()[col] * primal_values_[col]);
+    sum.Add(lp.objective_coefficients()[col] * solution_.primal_values[col]);
   }
   return sum.Value();
 }
 
 // By the duality theorem, the dual "objective" is a bound on the primal
 // objective obtained by taking the linear combination of the constraints
-// given by dual_values_.
+// given by solution_.dual_values.
 //
 // As it is written now, this has no real precise meaning since we ignore
 // infeasible reduced costs. This is almost the same as computing the objective
@@ -1012,12 +1054,13 @@ double LPSolver::ComputeDualObjective(const LinearProgram& lp) {
     const Fractional upper_bound = lp.constraint_upper_bounds()[row];
 
     // We correct the optimization_sign so we have to compute a lower bound.
-    const Fractional corrected_value = optimization_sign * dual_values_[row];
+    const Fractional corrected_value =
+        optimization_sign * solution_.dual_values[row];
     if (corrected_value > 0.0 && lower_bound != -kInfinity) {
-      dual_objective.Add(dual_values_[row] * lower_bound);
+      dual_objective.Add(solution_.dual_values[row] * lower_bound);
     }
     if (corrected_value < 0.0 && upper_bound != kInfinity) {
-      dual_objective.Add(dual_values_[row] * upper_bound);
+      dual_objective.Add(solution_.dual_values[row] * upper_bound);
     }
   }
 
@@ -1049,13 +1092,15 @@ double LPSolver::ComputeDualObjective(const LinearProgram& lp) {
     // We do not do any correction if the reduced cost is 'infeasible', which is
     // the same as computing the objective of the perturbed problem.
     Fractional correction = 0.0;
-    if (variable_statuses_[col] == VariableStatus::AT_LOWER_BOUND &&
+    if (solution_.variable_statuses[col] == VariableStatus::AT_LOWER_BOUND &&
         reduced_cost > 0.0) {
       correction = reduced_cost * lower_bound;
-    } else if (variable_statuses_[col] == VariableStatus::AT_UPPER_BOUND &&
+    } else if (solution_.variable_statuses[col] ==
+                   VariableStatus::AT_UPPER_BOUND &&
                reduced_cost < 0.0) {
       correction = reduced_cost * upper_bound;
-    } else if (variable_statuses_[col] == VariableStatus::FIXED_VALUE) {
+    } else if (solution_.variable_statuses[col] ==
+               VariableStatus::FIXED_VALUE) {
       correction = reduced_cost * upper_bound;
     }
     // Now apply the correction in the right direction!
@@ -1066,15 +1111,16 @@ double LPSolver::ComputeDualObjective(const LinearProgram& lp) {
 
 double LPSolver::ComputeMaxExpectedObjectiveError(const LinearProgram& lp) {
   const ColIndex num_cols = lp.num_variables();
-  DCHECK_EQ(num_cols, primal_values_.size());
+  DCHECK_EQ(num_cols, solution_.primal_values.size());
   const Fractional tolerance = parameters_.solution_feasibility_tolerance();
   Fractional primal_objective_error = 0.0;
   for (ColIndex col(0); col < num_cols; ++col) {
     // TODO(user): Be more precise since the non-BASIC variables are exactly at
     // their bounds, so for them the error bound is just the term magnitude
     // times std::numeric_limits<double>::epsilon() with KahanSum.
-    primal_objective_error += std::abs(lp.objective_coefficients()[col]) *
-                              AllowedError(tolerance, primal_values_[col]);
+    primal_objective_error +=
+        std::abs(lp.objective_coefficients()[col]) *
+        AllowedError(tolerance, solution_.primal_values[col]);
   }
   return primal_objective_error;
 }
@@ -1087,21 +1133,22 @@ double LPSolver::ComputePrimalValueInfeasibility(const LinearProgram& lp,
   for (ColIndex col(0); col < num_cols; ++col) {
     const Fractional lower_bound = lp.variable_lower_bounds()[col];
     const Fractional upper_bound = lp.variable_upper_bounds()[col];
-    DCHECK(IsFinite(primal_values_[col]));
+    DCHECK(IsFinite(solution_.primal_values[col]));
 
     if (lower_bound == upper_bound) {
-      const Fractional error = std::abs(primal_values_[col] - upper_bound);
+      const Fractional error =
+          std::abs(solution_.primal_values[col] - upper_bound);
       infeasibility = std::max(infeasibility, error);
       *is_too_large |= error > AllowedError(tolerance, upper_bound);
       continue;
     }
-    if (primal_values_[col] > upper_bound) {
-      const Fractional error = primal_values_[col] - upper_bound;
+    if (solution_.primal_values[col] > upper_bound) {
+      const Fractional error = solution_.primal_values[col] - upper_bound;
       infeasibility = std::max(infeasibility, error);
       *is_too_large |= error > AllowedError(tolerance, upper_bound);
     }
-    if (primal_values_[col] < lower_bound) {
-      const Fractional error = lower_bound - primal_values_[col];
+    if (solution_.primal_values[col] < lower_bound) {
+      const Fractional error = lower_bound - solution_.primal_values[col];
       infeasibility = std::max(infeasibility, error);
       *is_too_large |= error > AllowedError(tolerance, lower_bound);
     }
@@ -1167,7 +1214,7 @@ double LPSolver::ComputeDualValueInfeasibility(const LinearProgram& lp,
   Fractional infeasibility = 0.0;
   const RowIndex num_rows = lp.num_constraints();
   for (RowIndex row(0); row < num_rows; ++row) {
-    const Fractional dual_value = dual_values_[row];
+    const Fractional dual_value = solution_.dual_values[row];
     const Fractional lower_bound = lp.constraint_lower_bounds()[row];
     const Fractional upper_bound = lp.constraint_upper_bounds()[row];
     DCHECK(IsFinite(dual_value));

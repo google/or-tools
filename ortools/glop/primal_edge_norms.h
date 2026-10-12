@@ -14,7 +14,6 @@
 #ifndef ORTOOLS_GLOP_PRIMAL_EDGE_NORMS_H_
 #define ORTOOLS_GLOP_PRIMAL_EDGE_NORMS_H_
 
-#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -25,6 +24,7 @@
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/time_limit.h"
 
@@ -100,8 +100,8 @@ class PrimalEdgeNorms {
   const DenseRow& GetMatrixColumnNorms();
 
   // Compares the current entering edge norm with its precise version (using the
-  // direction that wasn't avaible before) and triggers a full recomputation if
-  // the precision is not good enough (see recompute_edges_norm_threshold in
+  // direction that wasn't available before) and triggers a full recomputation
+  // if the precision is not good enough (see recompute_edges_norm_threshold in
   // GlopParameters). As a side effect, this replace the entering_col edge
   // norm with its precise version.
   //
@@ -143,7 +143,7 @@ class PrimalEdgeNorms {
 
   // Deterministic time used by the scalar product computation of this class.
   double DeterministicTime() const {
-    return DeterministicTimeForFpOperations(num_operations_);
+    return deterministic_timer_.GetDeterministicTime();
   }
 
   void SetTimeLimit(TimeLimit* time_limit) { time_limit_ = time_limit; }
@@ -226,8 +226,7 @@ class PrimalEdgeNorms {
   // 'a'.
   ScatteredRow direction_left_inverse_;
 
-  // Used by DeterministicTime().
-  int64_t num_operations_;
+  LinearDeterministicTimer<{.scale = 2e-9}> deterministic_timer_;
 
   // Boolean(s) to set to false when the norms are changed outside of the
   // UpdateBeforeBasisPivot() function.

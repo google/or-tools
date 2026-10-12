@@ -53,6 +53,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/timetable.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -865,6 +866,7 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   // TODO(user): We might still propagate the x end in this setting, but the
   // current code will just abort below in SplitDisjointBoxes() anyway.
   {
+    DeterministicTimer<{.scale = 1e-8}> timer(time_limit_);
     rectangles_.clear();
     rectangles_.reserve(boxes.size());
     for (const auto [box, y_mandatory_start, y_mandatory_end] : boxes) {
@@ -877,9 +879,7 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
     const auto opt_pair = FindOneIntersectionIfPresent(rectangles_);
     {
       const size_t n = rectangles_.size();
-      time_limit_->AdvanceDeterministicTime(
-          static_cast<double>(n) * static_cast<double>(absl::bit_width(n)) *
-          1e-8);
+      timer.Advance(n * absl::bit_width(n));
     }
     if (opt_pair == std::nullopt) {
       return true;
@@ -898,24 +898,27 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   ConstructOverlappingSets(boxes, &events_overlapping_boxes_, order_);
 
   // Split lists of boxes into disjoint sets of boxes (w.r.t. overlap).
-  boxes_to_propagate_.clear();
-  reduced_overlapping_boxes_.clear();
-  int work_done = boxes.size();
-  for (const absl::Span<const int> overlapping_boxes :
-       events_overlapping_boxes_) {
-    work_done += overlapping_boxes.size();
-    SplitDisjointBoxes(*x, overlapping_boxes, &disjoint_boxes_);
-    for (const absl::Span<const int> sub_boxes : disjoint_boxes_) {
-      // Boxes are sorted in a stable manner in the Split method.
-      // Note that we do not use reduced_overlapping_boxes_ directly so that
-      // the order of iteration is deterministic.
-      const auto& insertion = reduced_overlapping_boxes_.insert(sub_boxes);
-      if (insertion.second) boxes_to_propagate_.push_back(sub_boxes);
+  {
+    DeterministicTimer<{.scale = 1e-8}> timer(time_limit_);
+    boxes_to_propagate_.clear();
+    reduced_overlapping_boxes_.clear();
+    int work_done = boxes.size();
+    for (const absl::Span<const int> overlapping_boxes :
+         events_overlapping_boxes_) {
+      work_done += overlapping_boxes.size();
+      SplitDisjointBoxes(*x, overlapping_boxes, &disjoint_boxes_);
+      for (const absl::Span<const int> sub_boxes : disjoint_boxes_) {
+        // Boxes are sorted in a stable manner in the Split method.
+        // Note that we do not use reduced_overlapping_boxes_ directly so that
+        // the order of iteration is deterministic.
+        const auto& insertion = reduced_overlapping_boxes_.insert(sub_boxes);
+        if (insertion.second) boxes_to_propagate_.push_back(sub_boxes);
+      }
     }
-  }
 
-  // TODO(user): This is a poor dtime, but we want it not to be zero here.
-  time_limit_->AdvanceDeterministicTime(static_cast<double>(work_done) * 1e-8);
+    // TODO(user): This is a poor dtime, but we want it not to be zero here.
+    timer.Advance(work_done);
+  }
 
   // And finally propagate.
   //

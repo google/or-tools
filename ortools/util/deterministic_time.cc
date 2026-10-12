@@ -11,9 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/sat/deterministic_time.h"
+#include "ortools/util/deterministic_time.h"
 
-#ifdef OR_TOOLS_SAT_DETERMINISTIC_TIME_PROFILING
+#ifdef OR_TOOLS_UTIL_DETERMINISTIC_TIME_PROFILING
 #include <cstdint>
 #include <iostream>
 #include <memory>
@@ -25,11 +25,11 @@
 
 #include "absl/debugging/stacktrace.h"
 
-#endif  // OR_TOOLS_SAT_DETERMINISTIC_TIME_PROFILING
+#endif  // OR_TOOLS_UTIL_DETERMINISTIC_TIME_PROFILING
 
 namespace operations_research::sat {
 
-#ifdef OR_TOOLS_SAT_DETERMINISTIC_TIME_PROFILING
+#ifdef OR_TOOLS_UTIL_DETERMINISTIC_TIME_PROFILING
 
 namespace profiling {
 std::vector<void*> GetTimerStackTrace() {
@@ -65,6 +65,6 @@ AllDeterministicTimeStats::~AllDeterministicTimeStats() {
 thread_local std::stack<AbstractDeterministicTimer*>
     AbstractDeterministicTimer::timers_stack_;
 
-#endif  // OR_TOOLS_SAT_DETERMINISTIC_TIME_PROFILING
+#endif  // OR_TOOLS_UTIL_DETERMINISTIC_TIME_PROFILING
 
 }  // namespace operations_research::sat

@@ -26,7 +26,6 @@
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/proto_solver/pdlp_proto_solver.h"
-#include "ortools/linear_solver/proto_solver/proto_utils.h"
 #include "ortools/pdlp/solve_log.pb.h"
 #include "ortools/pdlp/solvers.pb.h"
 #include "ortools/port/proto_utils.h"
@@ -47,10 +46,8 @@ class PdlpInterface : public MPSolverInterface {
   }
   MPSolutionResponse DirectlySolveProto(LazyMutableCopy<MPModelRequest> request,
                                         std::atomic<bool>* interrupt) override {
-    const bool log_error = request->enable_internal_solver_output();
-    return ConvertStatusOrMPSolutionResponse(
-        log_error, PdlpSolveProto(std::move(request),
-                                  /*relax_integer_variables=*/true, interrupt));
+    return PdlpSolveProto(std::move(request),
+                          /*relax_integer_variables=*/true, interrupt);
   }
 
   // ----- Model modifications and extraction -----
@@ -152,33 +149,28 @@ MPSolver::ResultStatus PdlpInterface::Solve(const MPSolverParameters& param) {
     LOG(QFATAL) << "Error converting parameters to text format: "
                 << ProtobufDebugString(parameters_);
   }
-  absl::StatusOr<MPSolutionResponse> response = PdlpSolveProto(
+  const MPSolutionResponse response = PdlpSolveProto(
       std::move(request), /*relax_integer_variables=*/true, &interrupt_solver_);
-
-  if (!response.ok()) {
-    LOG(ERROR) << "Unexpected error solving with PDLP: " << response.status();
-    return MPSolver::ABNORMAL;
-  }
 
   // The solution must be marked as synchronized even when no solution exists.
   sync_status_ = SOLUTION_SYNCHRONIZED;
-  if (response->status() == MPSOLVER_CANCELLED_BY_USER) {
+  if (response.status() == MPSOLVER_CANCELLED_BY_USER) {
     // MPSOLVER_CANCELLED_BY_USER is only for when the solver didn't have time
     // to return a proper status, and is not convertible to an MPSolver status.
     result_status_ = MPSolver::NOT_SOLVED;
   } else {
-    result_status_ = MPSolverResponseStatusToResultStatus(response->status());
+    result_status_ = MPSolverResponseStatusToResultStatus(response.status());
   }
-  if (response->has_solver_specific_info()) {
-    if (!solve_log_.ParseFromString(response->solver_specific_info())) {
+  if (response.has_solver_specific_info()) {
+    if (!solve_log_.ParseFromString(response.solver_specific_info())) {
       LOG(DFATAL)
           << "Unable to parse PDLP's SolveLog from solver_specific_info";
     }
   }
 
-  if (response->status() == MPSOLVER_FEASIBLE ||
-      response->status() == MPSOLVER_OPTIMAL) {
-    const absl::Status result = solver_->LoadSolutionFromProto(*response);
+  if (response.status() == MPSOLVER_FEASIBLE ||
+      response.status() == MPSOLVER_OPTIMAL) {
+    const absl::Status result = solver_->LoadSolutionFromProto(response);
     if (!result.ok()) {
       LOG(ERROR) << "LoadSolutionFromProto failed: " << result;
     }

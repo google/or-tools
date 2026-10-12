@@ -1429,6 +1429,20 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
     objective_need_to_be_tight = !automatic_domain.IsIncludedIn(user_domain);
   }
 
+  // Tricky: The code below will create the LP constraint and do the initial
+  // propagation. To have proper objective in the logs, we need to set the
+  // offset/scaling before that. The rest of CpObjectiveProto will be filled
+  // below.
+  if (model_proto.has_objective()) {
+    const CpObjectiveProto& objective_proto = model_proto.objective();
+    auto* objective_definition = model->GetOrCreate<ObjectiveDefinition>();
+    objective_definition->scaling_factor = objective_proto.scaling_factor();
+    if (objective_definition->scaling_factor == 0.0) {
+      objective_definition->scaling_factor = 1.0;
+    }
+    objective_definition->offset = objective_proto.offset();
+  }
+
   // Create an objective variable and its associated linear constraint if
   // needed.
   IntegerVariable objective_var = kNoIntegerVariable;
@@ -1471,12 +1485,6 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
   if (objective_var != kNoIntegerVariable) {
     const CpObjectiveProto& objective_proto = model_proto.objective();
     auto* objective_definition = model->GetOrCreate<ObjectiveDefinition>();
-
-    objective_definition->scaling_factor = objective_proto.scaling_factor();
-    if (objective_definition->scaling_factor == 0.0) {
-      objective_definition->scaling_factor = 1.0;
-    }
-    objective_definition->offset = objective_proto.offset();
     objective_definition->objective_var = objective_var;
 
     const int size = objective_proto.vars_size();
