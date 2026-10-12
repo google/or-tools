@@ -2313,8 +2313,6 @@ mutable struct PdlpTerminationCriteria
             },
         },
     }
-    eps_optimal_absolute::Float64
-    eps_optimal_relative::Float64
     eps_primal_infeasible::Float64
     eps_dual_infeasible::Float64
     time_sec_limit::Float64
@@ -2324,8 +2322,6 @@ mutable struct PdlpTerminationCriteria
     function PdlpTerminationCriteria(;
         optimality_norm = PdlpOptimalityNorm.OPTIMALITY_NORM_L2,
         optimality_criteria = nothing,
-        eps_optimal_absolute = 1.0e-6,
-        eps_optimal_relative = 1.0e-6,
         eps_primal_infeasible = 1.0e-8,
         eps_dual_infeasible = 1.0e-8,
         time_sec_limit = Inf,
@@ -2335,8 +2331,6 @@ mutable struct PdlpTerminationCriteria
         new(
             optimality_norm,
             optimality_criteria,
-            eps_optimal_absolute,
-            eps_optimal_relative,
             eps_primal_infeasible,
             eps_dual_infeasible,
             time_sec_limit,
