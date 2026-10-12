@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/graph_base/hash_or_tree_container.h"
+#include "ortools/graph/hash_or_tree_container.h"
 
 #include <functional>
 #include <string>

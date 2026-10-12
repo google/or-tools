@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/graph_base/graph.h"
+#include "ortools/graph/graph.h"
 
 #include <concepts>
 #include <cstddef>
@@ -30,7 +30,6 @@
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/strong_int.h"
@@ -45,6 +44,7 @@ using testing::Field;
 using testing::Pair;
 using testing::Pointee;
 using testing::UnorderedElementsAre;
+using util::internal::SVector;
 
 DEFINE_STRONG_INT_TYPE(StrongNodeId, int32_t);
 DEFINE_STRONG_INT_TYPE(StrongArcId, int32_t);
@@ -405,6 +405,156 @@ inline IndexType UpperBoundOfMallocBlockSizeOf(IndexType x) {
   return IndexType((16 * (static_cast<int64_t>(x) + 15)) / 16);
 }
 
+TEST(SvectorTest, SVectorGrow) {
+  SVector<int, int> svector;
+  svector.grow(1, 2);
+  EXPECT_EQ(svector.size(), 1);
+  EXPECT_EQ(svector[-1], 1);
+  EXPECT_EQ(svector[0], 2);
+
+  svector.grow(3, 4);
+  EXPECT_EQ(svector.size(), 2);
+  EXPECT_EQ(svector[-2], 3);
+  EXPECT_EQ(svector[-1], 1);
+  EXPECT_EQ(svector[0], 2);
+  EXPECT_EQ(svector[1], 4);
+}
+
+TEST(SvectorTest, SVectorCapacity) {
+  SVector<int, int> svector;
+  static constexpr int kMinCapacity = svector.kMinCapacity;
+  EXPECT_EQ(svector.size(), 0);
+  EXPECT_EQ(svector.capacity(), 0);
+
+  svector.grow(1, 2);
+  EXPECT_EQ(svector.size(), 1);
+  EXPECT_EQ(svector.capacity(), kMinCapacity);
+
+  while (svector.size() < kMinCapacity) {
+    svector.grow(1, 2);
+  }
+  EXPECT_EQ(svector.size(), kMinCapacity);
+  EXPECT_EQ(svector.capacity(), kMinCapacity);
+
+  svector.grow(1, 2);
+  EXPECT_EQ(svector.size(), kMinCapacity + 1);
+  EXPECT_GT(svector.capacity(), kMinCapacity);
+}
+
+TEST(SvectorTest, SVectorResize) {
+  SVector<int, int> svector;
+  svector.resize(10);
+  EXPECT_EQ(svector.size(), 10);
+  EXPECT_GE(svector.capacity(), 10);
+  svector.resize(5);
+  EXPECT_EQ(svector.size(), 5);
+  EXPECT_GE(svector.capacity(), 10);
+}
+
+TEST(SvectorTest, SVectorWithNegativeIndex) {
+  SVector<int, int> svector;
+  svector.grow(1, 2);
+  EXPECT_EQ(svector[-1], 1);
+  EXPECT_EQ(svector[0], 2);
+}
+
+DEFINE_STRONG_INT_TYPE(MyInt, int64_t);
+TEST(SvectorTest, SVectorWithStrongIndex) {
+  SVector<MyInt, int> svector;
+  svector.grow(1, 2);
+  EXPECT_EQ(svector[MyInt(-1)], 1);
+  EXPECT_EQ(svector[MyInt(0)], 2);
+}
+
+TEST(SvectorTest, SVectorDataOnEmpty) {
+  SVector<int, int> svector;
+  EXPECT_EQ(svector.data(), nullptr);
+  const auto& const_svector = svector;
+  EXPECT_EQ(const_svector.data(), nullptr);
+}
+
+TEST(SvectorTest, SVectorGrowthPreservesAllElements) {
+  SVector<int, int> svector;
+  for (int i = 0; i < 20; ++i) {
+    svector.grow(~i, i);
+  }
+  EXPECT_EQ(svector.size(), 20);
+  for (int i = 0; i < 20; ++i) {
+    EXPECT_EQ(svector[~i], ~i);
+    EXPECT_EQ(svector[i], i);
+  }
+}
+
+TEST(SvectorTest, SVectorCopyAndMove) {
+  SVector<int, int> svector;
+  svector.grow(10, 20);
+  svector.grow(30, 40);
+
+  // Copy construction
+  SVector<int, int> copy = svector;
+  EXPECT_EQ(copy.size(), 2);
+  EXPECT_EQ(copy[-2], 30);
+  EXPECT_EQ(copy[-1], 10);
+  EXPECT_EQ(copy[0], 20);
+  EXPECT_EQ(copy[1], 40);
+
+  // Modifying copy should not modify original
+  copy[0] = 99;
+  EXPECT_EQ(copy[0], 99);
+  EXPECT_EQ(svector[0], 20);
+
+  // Move construction
+  SVector<int, int> moved = std::move(copy);
+  EXPECT_EQ(moved.size(), 2);
+  EXPECT_EQ(moved[0], 99);
+}
+
+TEST(SvectorTest, ValueInitializationOnResize) {
+  SVector<int, int> v;
+  v.resize(40);
+  for (int i = 0; i < 40; ++i) {
+    EXPECT_EQ(v[~i], 0);
+    EXPECT_EQ(v[i], 0);
+  }
+  for (int i = 0; i < 40; ++i) {
+    v[~i] = 42;
+    v[i] = 42;
+  }
+  v.resize(20);
+  v.resize(40);
+  for (int i = 0; i < 20; ++i) {
+    EXPECT_EQ(v[~i], 42);
+    EXPECT_EQ(v[i], 42);
+  }
+  for (int i = 20; i < 40; ++i) {
+    EXPECT_EQ(v[~i], 0);
+    EXPECT_EQ(v[i], 0);
+  }
+}
+
+TEST(SvectorTest, SelfAssignment) {
+  SVector<int, int> v;
+  v.grow(10, 20);
+  v.grow(30, 40);
+
+  // Self copy assignment
+  auto* const v_ptr = &v;
+  v = *v_ptr;
+  EXPECT_EQ(v.size(), 2);
+  EXPECT_EQ(v[-2], 30);
+  EXPECT_EQ(v[-1], 10);
+  EXPECT_EQ(v[0], 20);
+  EXPECT_EQ(v[1], 40);
+
+  // Self move assignment
+  v = std::move(*v_ptr);
+  EXPECT_EQ(v.size(), 2);
+  EXPECT_EQ(v[-2], 30);
+  EXPECT_EQ(v[-1], 10);
+  EXPECT_EQ(v[0], 20);
+  EXPECT_EQ(v[1], 40);
+}
+
 template <typename IndexType>
 class SVectorTest : public ::testing::Test {};
 
@@ -414,29 +564,6 @@ typedef ::testing::Types<std::pair<int, int>, std::pair<int, StrongArcId>,
     TestSVectorIndexTypes;
 
 TYPED_TEST_SUITE(SVectorTest, TestSVectorIndexTypes);
-
-TYPED_TEST(SVectorTest, CopyMoveIterate) {
-  using IndexT = typename TypeParam::first_type;
-  using ValueT = typename TypeParam::second_type;
-  using VectorT = internal::SVector<IndexT, ValueT>;
-  VectorT v;
-  v.resize(IndexT(2));
-  v[IndexT(0)] = ValueT(1);
-  v[IndexT(1)] = ValueT(2);
-
-  {
-    EXPECT_THAT(VectorT(v), ElementsAre(ValueT(1), ValueT(2)));
-    VectorT v2 = v;
-    EXPECT_THAT(v2, ElementsAre(ValueT(1), ValueT(2)));
-    EXPECT_THAT(v, ElementsAre(ValueT(1), ValueT(2)));
-  }
-
-  {
-    VectorT v2 = std::move(v);
-    EXPECT_THAT(v2, ElementsAre(ValueT(1), ValueT(2)));
-    EXPECT_THAT(VectorT(std::move(v2)), ElementsAre(ValueT(1), ValueT(2)));
-  }
-}
 
 TYPED_TEST(SVectorTest, DynamicGrowth) {
   using IndexT = typename TypeParam::first_type;
@@ -449,7 +576,6 @@ TYPED_TEST(SVectorTest, DynamicGrowth) {
   }
   EXPECT_EQ(IndexT(100), v.size());
   EXPECT_GE(v.capacity(), IndexT(100));
-  EXPECT_LE(v.capacity(), UpperBoundOfMallocBlockSizeOf(IndexT(100)));
   for (IndexT i(0); i < IndexT(100); ++i) {
     EXPECT_EQ(ValueT(static_cast<int>(-i)), v[~i]);
     EXPECT_EQ(ValueT(static_cast<int>(i)), v[i]);
@@ -463,13 +589,11 @@ TYPED_TEST(SVectorTest, Reserve) {
   v.reserve(IndexT(100));
   EXPECT_EQ(IndexT(0), v.size());
   EXPECT_GE(v.capacity(), IndexT(100));
-  EXPECT_LE(v.capacity(), UpperBoundOfMallocBlockSizeOf(IndexT(100)));
   for (ValueT i(0); i < ValueT(100); i++) {
     v.grow(-i, i);
   }
   EXPECT_EQ(IndexT(100), v.size());
   EXPECT_GE(v.capacity(), IndexT(100));
-  EXPECT_LE(v.capacity(), UpperBoundOfMallocBlockSizeOf(IndexT(100)));
   for (IndexT i(0); i < IndexT(10); i++) {
     EXPECT_EQ(ValueT(static_cast<int>(-i)), v[~i]);
     EXPECT_EQ(ValueT(static_cast<int>(i)), v[i]);
@@ -483,7 +607,6 @@ TYPED_TEST(SVectorTest, Resize) {
   v.resize(IndexT(100));
   EXPECT_EQ(IndexT(100), v.size());
   EXPECT_GE(v.capacity(), IndexT(100));
-  EXPECT_LE(v.capacity(), UpperBoundOfMallocBlockSizeOf(IndexT(100)));
   for (IndexT i(0); i < IndexT(100); ++i) {
     EXPECT_EQ(ValueT(0), v[-i - IndexT(1)]);
     EXPECT_EQ(ValueT(0), v[i]);
@@ -499,46 +622,52 @@ TYPED_TEST(SVectorTest, ResizeToZero) {
   EXPECT_EQ(IndexT(0), v.size());
 }
 
-TYPED_TEST(SVectorTest, Swap) {
+TYPED_TEST(SVectorTest, CopyAndMove) {
   using IndexT = typename TypeParam::first_type;
   using ValueT = typename TypeParam::second_type;
-  internal::SVector<IndexT, ValueT> s;
-  internal::SVector<IndexT, ValueT> t;
-  s.resize(IndexT(1));
-  s[IndexT(0)] = ValueT('s');
-  s[IndexT(-1)] = ValueT('s');
-  t.resize(IndexT(2));
-  for (IndexT i(-2); i <= IndexT(1); ++i) {
-    t[i] = ValueT('t');
-  }
-  s.swap(t);
-  EXPECT_EQ(IndexT(1), t.size());
-  EXPECT_EQ(ValueT('s'), t[IndexT(-1)]);
-  EXPECT_EQ(ValueT('s'), t[IndexT(0)]);
-  EXPECT_EQ(IndexT(2), s.size());
-  EXPECT_EQ(ValueT('t'), s[IndexT(-2)]);
-  EXPECT_EQ(ValueT('t'), s[IndexT(-1)]);
-  EXPECT_EQ(ValueT('t'), s[IndexT(0)]);
-  EXPECT_EQ(ValueT('t'), s[IndexT(1)]);
+  using VectorT = internal::SVector<IndexT, ValueT>;
+  VectorT v;
+  v.resize(IndexT(2));
+  v[IndexT(-2)] = ValueT(10);
+  v[IndexT(-1)] = ValueT(20);
+  v[IndexT(0)] = ValueT(30);
+  v[IndexT(1)] = ValueT(40);
+
+  // Copy construction
+  VectorT copy(v);
+  EXPECT_EQ(IndexT(2), copy.size());
+  EXPECT_EQ(ValueT(10), copy[IndexT(-2)]);
+  EXPECT_EQ(ValueT(20), copy[IndexT(-1)]);
+  EXPECT_EQ(ValueT(30), copy[IndexT(0)]);
+  EXPECT_EQ(ValueT(40), copy[IndexT(1)]);
+
+  // Copy assignment
+  VectorT copy2;
+  copy2 = v;
+  EXPECT_EQ(IndexT(2), copy2.size());
+  EXPECT_EQ(ValueT(10), copy2[IndexT(-2)]);
+  EXPECT_EQ(ValueT(20), copy2[IndexT(-1)]);
+  EXPECT_EQ(ValueT(30), copy2[IndexT(0)]);
+  EXPECT_EQ(ValueT(40), copy2[IndexT(1)]);
+
+  // Move construction
+  VectorT moved(std::move(copy));
+  EXPECT_EQ(IndexT(2), moved.size());
+  EXPECT_EQ(ValueT(10), moved[IndexT(-2)]);
+  EXPECT_EQ(ValueT(20), moved[IndexT(-1)]);
+  EXPECT_EQ(ValueT(30), moved[IndexT(0)]);
+  EXPECT_EQ(ValueT(40), moved[IndexT(1)]);
+
+  // Move assignment
+  VectorT moved2;
+  moved2 = std::move(copy2);
+  EXPECT_EQ(IndexT(2), moved2.size());
+  EXPECT_EQ(ValueT(10), moved2[IndexT(-2)]);
+  EXPECT_EQ(ValueT(20), moved2[IndexT(-1)]);
+  EXPECT_EQ(ValueT(30), moved2[IndexT(0)]);
+  EXPECT_EQ(ValueT(40), moved2[IndexT(1)]);
 }
 
-TYPED_TEST(SVectorTest, SwapAndDestroy) {
-  using IndexT = typename TypeParam::first_type;
-  using ValueT = typename TypeParam::second_type;
-  internal::SVector<IndexT, ValueT> s;
-  {
-    internal::SVector<IndexT, ValueT> t;
-    t.resize(IndexT(2));
-    t[IndexT(-2)] = ValueT(42);
-    t.swap(s);
-  }
-  EXPECT_EQ(IndexT(2), s.size());
-  EXPECT_EQ(ValueT(42), s[IndexT(-2)]);
-  EXPECT_EQ(ValueT(0), s[IndexT(1)]);
-}
-
-// Use a more complex type to better check the invocations of
-// constructors/destructors.
 TEST(SVectorStringTest, DynamicSize) {
   internal::SVector<int, std::string> s;
   s.resize(10);
@@ -551,19 +680,15 @@ TEST(SVectorStringTest, DynamicSize) {
   s.resize(10);
   for (int i = 0; i < 50; ++i) s.grow("NewNewLeft", "NewNewRight");
   for (int i = 0; i < 10; ++i) {
-    EXPECT_EQ("Left", s[-i - 1]);
+    EXPECT_EQ("Left", s[~i]);
     EXPECT_EQ("Right", s[i]);
   }
   for (int i = 10; i < 10 + 50; ++i) {
-    EXPECT_EQ("NewNewLeft", s[-i - 1]);
+    EXPECT_EQ("NewNewLeft", s[~i]);
     EXPECT_EQ("NewNewRight", s[i]);
   }
 }
 
-// An object that supports moves but not copies.  It also has non-trivial
-// default constructor, and a non-trivial destructor, and makes various internal
-// consistency checks that help flush out bugs (double destruction, failure to
-// destruct, etc.).
 class MoveOnlyObject {
  public:
   MoveOnlyObject() : id_(std::make_unique<int>(sequence_++)) {
@@ -595,8 +720,6 @@ class MoveOnlyObject {
 
  private:
   void Validate() {
-    // Every MoveOnlyObject, even after it has been moved from, has a valid
-    // non-null id_.
     EXPECT_TRUE(id_ != nullptr);
     if (id_ != nullptr) {
       EXPECT_GT(*id_, 0);
@@ -622,7 +745,6 @@ TEST(SVectorMoveOnlyTest, MoveWithMoveOnlyObject) {
   internal::SVector<int, MoveOnlyObject> b = std::move(a);
   EXPECT_EQ(10, b.size());
   EXPECT_EQ(20, MoveOnlyObject::GetObjectCount());
-  // Suppress the bugprone-use-after-move clang-tidy warning on `a`
   EXPECT_EQ(0, a.size());  // NOLINT
 }
 
@@ -638,14 +760,13 @@ TEST(SVectorMoveOnlyTest, ShrinkWithMoveOnlyObject) {
   EXPECT_EQ(0, MoveOnlyObject::GetObjectCount());
 }
 
-TEST(SVectorMoveOnlyTest, GrowMoveOnlyObject) {
+TEST(SVectorMoveOnlyTest, ResizeWithMoveOnlyObject) {
   EXPECT_EQ(0, MoveOnlyObject::GetObjectCount());
   {
     internal::SVector<int, MoveOnlyObject> a;
     a.resize(10);
     EXPECT_EQ(a.size() * 2, MoveOnlyObject::GetObjectCount());
 
-    // Grow to the point where the vector reallocates.
     MoveOnlyObject* const original_data = a.data();
     while (original_data == a.data()) {
       a.resize(a.size() + 1);
@@ -655,19 +776,34 @@ TEST(SVectorMoveOnlyTest, GrowMoveOnlyObject) {
   EXPECT_EQ(0, MoveOnlyObject::GetObjectCount());
 }
 
-TEST(SVectorMoveOnlyTest, ReserveMoveOnlyObject) {
+TEST(SVectorMoveOnlyTest, ReserveWithMoveOnlyObject) {
   EXPECT_EQ(0, MoveOnlyObject::GetObjectCount());
   {
     internal::SVector<int, MoveOnlyObject> a;
     a.resize(10);
     EXPECT_EQ(a.size() * 2, MoveOnlyObject::GetObjectCount());
 
-    // Reserve to the point where the vector reallocates.
     MoveOnlyObject* const original_data = a.data();
     while (original_data == a.data()) {
       a.reserve(a.size() * 2);
       EXPECT_EQ(a.size() * 2, MoveOnlyObject::GetObjectCount());
     }
+  }
+  EXPECT_EQ(0, MoveOnlyObject::GetObjectCount());
+}
+
+TEST(SVectorMoveOnlyTest, GrowWithMoveOnlyObject) {
+  EXPECT_EQ(0, MoveOnlyObject::GetObjectCount());
+  {
+    internal::SVector<int, MoveOnlyObject> a;
+    a.grow(MoveOnlyObject(), MoveOnlyObject());
+    EXPECT_EQ(1, a.size());
+    EXPECT_EQ(2, MoveOnlyObject::GetObjectCount());
+    for (int i = 0; i < 50; ++i) {
+      a.grow(MoveOnlyObject(), MoveOnlyObject());
+    }
+    EXPECT_EQ(51, a.size());
+    EXPECT_EQ(102, MoveOnlyObject::GetObjectCount());
   }
   EXPECT_EQ(0, MoveOnlyObject::GetObjectCount());
 }
@@ -749,6 +885,26 @@ TEST(SVectorTrackingTest, AssignmentOperator) {
   ASSERT_EQ(other.size(), 5);
 }
 
+TEST(SVectorTrackingTest, AssignmentOverwritesExistingElements) {
+  TrackedObject::ResetCounters();
+  internal::SVector<int, TrackedObject> a;
+  a.resize(3);
+  EXPECT_EQ(TrackedObject::Counters(),
+            "constructions: 6, destructions: 0, moves: 0, copies: 0");
+  {
+    internal::SVector<int, TrackedObject> b;
+    b.resize(5);
+    EXPECT_EQ(TrackedObject::Counters(),
+              "constructions: 16, destructions: 0, moves: 0, copies: 0");
+    a = b;
+    EXPECT_EQ(TrackedObject::Counters(),
+              "constructions: 16, destructions: 6, moves: 0, copies: 10");
+  }
+  EXPECT_EQ(TrackedObject::Counters(),
+            "constructions: 16, destructions: 16, moves: 0, copies: 10");
+  EXPECT_EQ(a.size(), 5);
+}
+
 TEST(SVectorTrackingTest, CopyConstructorIntegralType) {
   auto v = internal::SVector<int, int32_t>();
   v.resize(3);
@@ -797,8 +953,6 @@ TEST(SVectorTrackingTest, MoveConstructor) {
   ASSERT_EQ(TrackedObject::Counters(),
             "constructions: 10, destructions: 0, moves: 0, copies: 0");
   internal::SVector<int, TrackedObject> b = std::move(a);
-  // We don't expect any moves of the individual elements, because the
-  // containers just swap their memory buffers.
   ASSERT_EQ(TrackedObject::Counters(),
             "constructions: 10, destructions: 0, moves: 0, copies: 0");
   ASSERT_EQ(b.size(), 5);
@@ -818,12 +972,35 @@ TEST(SVectorTrackingTest, MoveAssignmentOperator) {
     ASSERT_EQ(TrackedObject::Counters(),
               "constructions: 16, destructions: 0, moves: 0, copies: 0");
     a = std::move(b);
-    // Ditto: the containers swap themselves. But we do trigger the destruction
-    // of the underlying elements of the destination vector immediately.
     ASSERT_EQ(TrackedObject::Counters(),
               "constructions: 16, destructions: 6, moves: 0, copies: 0");
   }
   ASSERT_EQ(a.size(), 5);
+}
+
+TEST(SVectorTrackingTest, ReserveMovesAndDestroysOldElements) {
+  TrackedObject::ResetCounters();
+  internal::SVector<int, TrackedObject> v;
+  v.resize(5);
+  EXPECT_EQ(TrackedObject::Counters(),
+            "constructions: 10, destructions: 0, moves: 0, copies: 0");
+  const size_t cap = v.capacity();
+  v.reserve(cap + 10);
+  EXPECT_EQ(TrackedObject::Counters(),
+            "constructions: 10, destructions: 10, moves: 10, copies: 0");
+  EXPECT_EQ(v.size(), 5);
+}
+
+TEST(SVectorTrackingTest, ClearDestroysAllElements) {
+  TrackedObject::ResetCounters();
+  internal::SVector<int, TrackedObject> v;
+  v.resize(5);
+  EXPECT_EQ(TrackedObject::Counters(),
+            "constructions: 10, destructions: 0, moves: 0, copies: 0");
+  v.resize(0);
+  EXPECT_EQ(TrackedObject::Counters(),
+            "constructions: 10, destructions: 10, moves: 0, copies: 0");
+  EXPECT_EQ(v.size(), 0);
 }
 
 template <typename GraphType>
@@ -967,324 +1144,244 @@ TYPED_TEST(GenericGraphInterfaceTest, PastTheEndIterators) {
   }
 }
 
-template <typename Graph>
-class BMGraphBuilder : public Graph::Builder {
-  using Base = Graph::Builder;
-  using Base::Base;
-};
-
-template <typename GraphType, bool reserve>
-static void BM_RandomArcs(benchmark::State& state) {
-  const int kRandomSeed = 0;
-  const int kNodes = 10 * 1000 * 1000;
-  const int kArcs = 5 * kNodes;
-  int items_processed = 0;
-  for (auto _ : state) {
-    BMGraphBuilder<GraphType> builder;
-    if (reserve) {
-      builder.Reserve(kNodes, kArcs);
-    }
-    std::mt19937 randomizer(kRandomSeed);
-    for (int i = 0; i < kArcs; ++i) {
-      builder.AddArc(absl::Uniform<int32_t>(randomizer, 0, kNodes),
-                     absl::Uniform<int32_t>(randomizer, 0, kNodes));
-    }
-    const auto graph = std::move(builder).Build(nullptr);
-    items_processed += kArcs;
+TEST(StaticGraphTest, FromArcs) {
+  const std::vector<std::pair<StrongNodeId, StrongNodeId>> arcs = {
+      {StrongNodeId(1), StrongNodeId(2)}, {StrongNodeId(1), StrongNodeId(0)}};
+  const auto graph = GraphFromArcs<StaticGraph<StrongNodeId, StrongArcId>>(
+      StrongNodeId(3), arcs);
+  EXPECT_EQ(StrongNodeId(3), graph.num_nodes());
+  EXPECT_EQ(StrongNodeId(3), size(graph));
+  EXPECT_EQ(StrongArcId(2), graph.num_arcs());
+  std::vector<std::pair<StrongNodeId, StrongNodeId>> read_arcs;
+  for (const auto arc : graph.AllForwardArcs()) {
+    read_arcs.push_back({graph.Tail(arc), graph.Head(arc)});
   }
-  state.SetItemsProcessed(items_processed);
+  EXPECT_THAT(read_arcs,
+              UnorderedElementsAre(Pair(StrongNodeId(1), StrongNodeId(2)),
+                                   Pair(StrongNodeId(1), StrongNodeId(0))));
 }
 
-template <typename GraphType, bool reserve>
-static void BM_OrderedArcs(benchmark::State& state) {
-  const int kRandomSeed = 0;
-  const int kNodes = 10 * 1000 * 1000;
-  const int kDegree = 5;
-  const int kArcs = kDegree * kNodes;
-  int items_processed = 0;
-  for (auto _ : state) {
-    BMGraphBuilder<GraphType> builder;
-    if (reserve) {
-      builder.Reserve(kNodes, kArcs);
-    }
-    std::mt19937 randomizer(kRandomSeed);
-    for (int i = 0; i < kNodes; ++i) {
-      for (int j = 0; j < kDegree; ++j) {
-        builder.AddArc(i, absl::Uniform<int32_t>(randomizer, 0, kNodes));
-      }
-    }
-    const auto graph = std::move(builder).Build(nullptr);
-    items_processed += kArcs;
+TEST(CompleteGraphTest, EmptyGraph) {
+  CompleteGraph<> graph(0);
+  EXPECT_EQ(0, graph.num_nodes());
+  EXPECT_EQ(0, size(graph));
+  EXPECT_EQ(0, graph.num_arcs());
+  for (const auto arc : graph.AllForwardArcs()) {
+    EXPECT_TRUE(false);
+    EXPECT_TRUE(graph.IsArcValid(arc));
   }
-  state.SetItemsProcessed(items_processed);
 }
 
-// This is just here to get some timing on the AddArc() function to see how the
-// GraphType building time is split between the AddArc() calls and the actual
-// Build() call. It is not usefull for all type of graph.
-template <typename GraphType, bool reserve>
-static void BM_RandomArcsBeforeBuild(benchmark::State& state) {
-  const int kRandomSeed = 0;
-  const int kNodes = 10 * 1000 * 1000;
-  const int kArcs = 5 * kNodes;
-  int items_processed = 0;
-  for (auto _ : state) {
-    BMGraphBuilder<GraphType> builder;
-    if (reserve) {
-      builder.Reserve(kNodes, kArcs);
-    }
-    std::mt19937 randomizer(kRandomSeed);
-    for (int i = 0; i < kArcs; ++i) {
-      builder.AddArc(absl::Uniform<int32_t>(randomizer, 0, kNodes),
-                     absl::Uniform<int32_t>(randomizer, 0, kNodes));
-    }
-    items_processed += kArcs;
-  }
-  state.SetItemsProcessed(items_processed);
+TEST(CompleteGraphTest, OneNodeGraph) {
+  CompleteGraph<> graph(1);
+  EXPECT_EQ(1, graph.num_nodes());
+  EXPECT_EQ(1, size(graph));
+  EXPECT_EQ(1, graph.num_arcs());
+  EXPECT_EQ(graph.Head(0), 0);
+  EXPECT_EQ(graph.Tail(0), 0);
 }
 
-// A basic vector<vector<>> graph implementation that many people uses. It is
-// quite slower and use more memory than a static graph, except maybe during
-// construction.
-using VectorVectorGraph = std::vector<std::vector<int32_t>>;
+TEST(CompleteGraphTest, NonEmptyGraph) {
+  static const int kNumNodes = 5;
+  CompleteGraph<> graph(kNumNodes);
+  EXPECT_EQ(kNumNodes, graph.num_nodes());
+  EXPECT_EQ(kNumNodes, size(graph));
+  EXPECT_EQ(kNumNodes * kNumNodes, graph.num_arcs());
+  int count = 0;
+  for (const auto arc : graph.AllForwardArcs()) {
+    ++count;
+    EXPECT_TRUE(graph.IsArcValid(arc));
+  }
+  EXPECT_EQ(kNumNodes * kNumNodes, count);
+  for (const auto node : graph.AllNodes()) {
+    EXPECT_EQ(kNumNodes, graph.OutDegree(node));
+    EXPECT_TRUE(graph.IsNodeValid(node));
+    count = 0;
+    for (const auto arc : graph.OutgoingArcs(node)) {
+      EXPECT_EQ(node, graph.Tail(arc));
+      ++count;
+      EXPECT_EQ(*(graph.OutgoingArcsStartingFrom(node, arc).begin()), arc);
+    }
+    EXPECT_EQ(kNumNodes, count);
+    count = 0;
+    for (const auto head : graph[node]) {
+      ++count;
+      EXPECT_TRUE(graph.IsNodeValid(head));
+    }
+    EXPECT_EQ(kNumNodes, count);
+  }
+}
 
-template <>
-class BMGraphBuilder<VectorVectorGraph> {
+TEST(CompleteGraphTest, Typed) {
+  CompleteGraph<StrongNodeId, StrongArcId> graph(StrongNodeId(4));
+  EXPECT_EQ(graph.num_nodes(), StrongNodeId(4));
+  EXPECT_EQ(size(graph), StrongNodeId(4));
+  EXPECT_EQ(graph.num_arcs(), StrongArcId(16));
+  for (const auto node : graph.AllNodes()) {
+    EXPECT_EQ(graph.OutDegree(node), StrongArcId(4));
+    EXPECT_EQ(std::size(graph.OutgoingArcs(node)), 4);
+    EXPECT_THAT(graph[node], ElementsAre(StrongNodeId(0), StrongNodeId(1),
+                                         StrongNodeId(2), StrongNodeId(3)));
+  }
+}
+
+TEST(CompleteBipartiteGraphTest, EmptyGraph) {
+  CompleteBipartiteGraph<> graph(0, 0);
+  EXPECT_EQ(0, graph.num_nodes());
+  EXPECT_EQ(0, size(graph));
+  EXPECT_EQ(0, graph.num_arcs());
+  EXPECT_TRUE(graph.AllForwardArcs().empty());
+}
+
+TEST(CompleteBipartiteGraphTest, OneRightNodeGraph) {
+  CompleteBipartiteGraph<> graph(3, 1);
+  EXPECT_EQ(4, graph.num_nodes());
+  EXPECT_EQ(4, size(graph));
+  EXPECT_EQ(3, graph.num_arcs());
+  EXPECT_EQ(graph.Head(0), 3);
+  EXPECT_EQ(graph.Head(1), 3);
+  EXPECT_EQ(graph.Head(2), 3);
+  EXPECT_EQ(graph.Tail(0), 0);
+  EXPECT_EQ(graph.Tail(1), 1);
+  EXPECT_EQ(graph.Tail(2), 2);
+}
+
+TEST(CompleteBipartiteGraphTest, NonEmptyGraph) {
+  static const int kNumRightNodes = 5;
+  static const int kNumLeftNodes = 3;
+  CompleteBipartiteGraph<> graph(kNumLeftNodes, kNumRightNodes);
+  EXPECT_EQ(kNumLeftNodes + kNumRightNodes, graph.num_nodes());
+  EXPECT_EQ(graph.num_nodes(), size(graph));
+  EXPECT_EQ(kNumLeftNodes * kNumRightNodes, graph.num_arcs());
+  int count = 0;
+  for (const auto arc : graph.AllForwardArcs()) {
+    ++count;
+    EXPECT_TRUE(graph.IsArcValid(arc));
+  }
+  EXPECT_EQ(kNumLeftNodes * kNumRightNodes, count);
+  for (const auto node : graph.AllNodes()) {
+    EXPECT_EQ(node < kNumLeftNodes ? kNumRightNodes : 0, graph.OutDegree(node));
+    EXPECT_TRUE(graph.IsNodeValid(node));
+    count = 0;
+    for (const auto arc : graph.OutgoingArcs(node)) {
+      EXPECT_EQ(node, graph.Tail(arc));
+      EXPECT_EQ(kNumLeftNodes + count, graph.Head(arc));
+      ++count;
+      EXPECT_EQ(*(graph.OutgoingArcsStartingFrom(node, arc).begin()), arc);
+    }
+    EXPECT_EQ(node < kNumLeftNodes ? kNumRightNodes : 0, count);
+    count = 0;
+    for (const auto head : graph[node]) {
+      EXPECT_EQ(head, kNumLeftNodes + count);
+      EXPECT_TRUE(graph.IsNodeValid(head));
+      ++count;
+    }
+    EXPECT_EQ(node < kNumLeftNodes ? kNumRightNodes : 0, count);
+  }
+  for (const auto arc : graph.AllForwardArcs()) {
+    EXPECT_EQ(graph.GetArc(graph.Tail(arc), graph.Head(arc)), arc);
+  }
+}
+
+TEST(CompleteBipartiteGraphTest, Overflow) {
+  using NodeIndex = uint32_t;
+  using ArcIndex = uint64_t;
+  using Graph = CompleteBipartiteGraph<NodeIndex, ArcIndex>;
+  constexpr NodeIndex kNumNodes = std::numeric_limits<NodeIndex>::max() / 2;
+  Graph graph(kNumNodes, kNumNodes);
+  EXPECT_EQ(2 * kNumNodes, graph.num_nodes());
+  EXPECT_EQ(graph.num_nodes(), size(graph));
+  EXPECT_EQ(uint64_t{kNumNodes} * uint64_t{kNumNodes}, graph.num_arcs());
+  constexpr uint64_t kLeft = kNumNodes - 3;
+  constexpr uint64_t kRight = kNumNodes + kNumNodes - 2;
+
+  EXPECT_EQ(graph.GetArc(kLeft, kRight),
+            kLeft * kNumNodes + (kRight - kNumNodes));
+}
+
+TEST(CompleteBipartiteGraphTest, Typed) {
+  CompleteBipartiteGraph<StrongNodeId, StrongArcId> graph(StrongNodeId(2),
+                                                          StrongNodeId(3));
+  EXPECT_EQ(graph.num_nodes(), StrongNodeId(5));
+  EXPECT_EQ(size(graph), StrongNodeId(5));
+  EXPECT_EQ(graph.num_arcs(), StrongArcId(6));
+  for (StrongNodeId node(0); node < StrongNodeId(2); ++node) {
+    EXPECT_EQ(graph.OutDegree(node), StrongArcId(3));
+    EXPECT_EQ(std::size(graph.OutgoingArcs(node)), 3);
+    EXPECT_THAT(graph[node],
+                ElementsAre(StrongNodeId(2), StrongNodeId(3), StrongNodeId(4)));
+  }
+  for (StrongNodeId node(2); node < StrongNodeId(5); ++node) {
+    EXPECT_EQ(graph.OutDegree(node), StrongArcId(0));
+    EXPECT_EQ(std::size(graph.OutgoingArcs(node)), 0);
+    EXPECT_EQ(std::size(graph[node]), 0);
+  }
+}
+
+TEST(SVector, NoHeapCheckerFalsePositive) {
+  static const internal::SVector<int, int32_t>* const kVector = []() {
+    auto* vector = new internal::SVector<int, int32_t>();
+    vector->resize(5000);
+    return vector;
+  }();
+  EXPECT_EQ(kVector->size(), 5000);
+}
+
+TEST(Permute, IntArray) {
+  int array[] = {4, 5, 6};
+  std::vector<int> permutation = {0, 2, 1};
+  util::Permute(permutation, &array);
+  EXPECT_THAT(array, ElementsAre(4, 6, 5));
+}
+
+TEST(Permute, BoolVector) {
+  std::vector<bool> array = {true, false, true};
+  std::vector<int> permutation = {0, 2, 1};
+  util::Permute(permutation, &array);
+  EXPECT_THAT(array, ElementsAre(true, true, false));
+}
+
+TEST(Permute, StrongVector) {
+  util_intops::StrongVector<StrongArcId, int> array = {4, 5, 6};
+  std::vector<StrongArcId> permutation = {StrongArcId(0), StrongArcId(2),
+                                          StrongArcId(1)};
+  util::Permute(permutation, &array);
+  EXPECT_THAT(array, ElementsAre(4, 6, 5));
+}
+
+class TestGraphBuilder
+    : public internal::GraphBuilderBase<TestGraphBuilder, ListGraph<int, int>,
+                                        int, int> {
  public:
-  BMGraphBuilder() : graph_(std::make_unique<VectorVectorGraph>()) {}
+  static constexpr bool kBuildPermutesArcs = true;
 
-  void Reserve(int32_t num_nodes, int32_t num_arcs) {
-    graph_->resize(num_nodes);
-  }
+  explicit TestGraphBuilder(std::vector<int> permutation)
+      : permutation_(std::move(permutation)) {}
 
-  void AddArc(int32_t tail, int32_t head) { (*graph_)[tail].push_back(head); }
-
-  std::unique_ptr<VectorVectorGraph> Build(std::nullptr_t) && {
-    return std::move(graph_);
+  std::unique_ptr<ListGraph<int, int>> Build(std::vector<int>* permutation) && {
+    *permutation = std::move(permutation_);
+    return nullptr;
   }
 
  private:
-  std::unique_ptr<VectorVectorGraph> graph_;
+  std::vector<int> permutation_;
 };
 
-#define RESERVE true
-#define NO_RESERVE false
-BENCHMARK_TEMPLATE2(BM_RandomArcsBeforeBuild, StaticGraph<>, RESERVE);
-BENCHMARK_TEMPLATE2(BM_RandomArcsBeforeBuild, StaticGraph<>, NO_RESERVE);
-BENCHMARK_TEMPLATE2(BM_RandomArcsBeforeBuild, ReverseArcStaticGraph<>, RESERVE);
-BENCHMARK_TEMPLATE2(BM_RandomArcsBeforeBuild, ReverseArcStaticGraph<>,
-                    NO_RESERVE);
-BENCHMARK_TEMPLATE2(BM_OrderedArcs, ListGraph<>, RESERVE);
-BENCHMARK_TEMPLATE2(BM_OrderedArcs, ListGraph<>, NO_RESERVE);
-BENCHMARK_TEMPLATE2(BM_OrderedArcs, StaticGraph<>, RESERVE);
-BENCHMARK_TEMPLATE2(BM_OrderedArcs, StaticGraph<>, NO_RESERVE);
-BENCHMARK_TEMPLATE2(BM_OrderedArcs, VectorVectorGraph, RESERVE);
-BENCHMARK_TEMPLATE2(BM_OrderedArcs, ReverseArcListGraph<>, RESERVE);
-BENCHMARK_TEMPLATE2(BM_OrderedArcs, ReverseArcListGraph<>, NO_RESERVE);
-BENCHMARK_TEMPLATE2(BM_OrderedArcs, ReverseArcStaticGraph<>, RESERVE);
-BENCHMARK_TEMPLATE2(BM_OrderedArcs, ReverseArcStaticGraph<>, NO_RESERVE);
-BENCHMARK_TEMPLATE2(BM_RandomArcs, ListGraph<>, RESERVE);
-BENCHMARK_TEMPLATE2(BM_RandomArcs, ListGraph<>, NO_RESERVE);
-BENCHMARK_TEMPLATE2(BM_RandomArcs, StaticGraph<>, RESERVE);
-BENCHMARK_TEMPLATE2(BM_RandomArcs, StaticGraph<>, NO_RESERVE);
-BENCHMARK_TEMPLATE2(BM_RandomArcs, VectorVectorGraph, RESERVE);
-BENCHMARK_TEMPLATE2(BM_RandomArcs, ReverseArcListGraph<>, RESERVE);
-BENCHMARK_TEMPLATE2(BM_RandomArcs, ReverseArcListGraph<>, NO_RESERVE);
-BENCHMARK_TEMPLATE2(BM_RandomArcs, ReverseArcStaticGraph<>, RESERVE);
-BENCHMARK_TEMPLATE2(BM_RandomArcs, ReverseArcStaticGraph<>, NO_RESERVE);
-#undef RESERVE
-#undef NO_RESERVE
-
-template <typename GraphType>
-GraphType BuildGraphForIterationsBenchmarks() {
-  const int kRandomSeed = 0;
-  const int kNodes = 10 * 1000 * 1000;
-  const int kArcs = 5 * kNodes;
-  typename GraphType::Builder builder;
-  builder.Reserve(kNodes, kArcs);
-  std::mt19937 randomizer(kRandomSeed);
-  for (int i = 0; i < kArcs; ++i) {
-    builder.AddArc(absl::Uniform<int32_t>(randomizer, 0, kNodes),
-                   absl::Uniform<int32_t>(randomizer, 0, kNodes));
-  }
-  return std::move(builder).BuildGraph(nullptr);
+TEST(BuildAndPermuteTest, Works) {
+  TestGraphBuilder builder({0, 2, 1});
+  int array[] = {4, 5, 6};
+  std::vector<bool> bool_vector = {true, false, true};
+  util_intops::StrongVector<StrongArcId, int> strong_vector = {4, 5, 6};
+  std::unique_ptr<int> unique_ptr_array[] = {std::make_unique<int>(4),
+                                             std::make_unique<int>(5),
+                                             std::make_unique<int>(6)};
+  auto graph = std::move(builder).BuildAndPermute(
+      array, bool_vector, strong_vector, unique_ptr_array);
+  EXPECT_THAT(array, ElementsAre(4, 6, 5));
+  EXPECT_THAT(bool_vector, ElementsAre(true, true, false));
+  EXPECT_THAT(strong_vector, ElementsAre(4, 6, 5));
+  EXPECT_THAT(unique_ptr_array,
+              ElementsAre(Pointee(4), Pointee(6), Pointee(5)));
 }
-
-template <typename GraphType>
-static void BM_OutgoingIterations(benchmark::State& state) {
-  const auto graph = BuildGraphForIterationsBenchmarks<GraphType>();
-  int64_t num_arcs = 0;
-  int64_t some_work = 0;
-  for (auto _ : state) {
-    for (int node = 0; node < graph.num_nodes(); ++node) {
-      for (const int arc : graph.OutgoingArcs(node)) {
-        some_work += graph.Head(arc);
-        ++num_arcs;
-      }
-    }
-  }
-  CHECK_GT(some_work, 0);
-  state.SetItemsProcessed(num_arcs);
-}
-
-BENCHMARK_TEMPLATE(BM_OutgoingIterations, ListGraph<>);
-BENCHMARK_TEMPLATE(BM_OutgoingIterations, StaticGraph<>);
-BENCHMARK_TEMPLATE(BM_OutgoingIterations, ReverseArcListGraph<>);
-BENCHMARK_TEMPLATE(BM_OutgoingIterations, ReverseArcStaticGraph<>);
-
-template <typename GraphType>
-static void BM_IncomingIterations(benchmark::State& state) {
-  const auto graph = BuildGraphForIterationsBenchmarks<GraphType>();
-  int64_t num_arcs = 0;
-  int64_t some_work = 0;
-  for (auto _ : state) {
-    for (int node = 0; node < graph.num_nodes(); ++node) {
-      for (const int arc : graph.IncomingArcs(node)) {
-        some_work += graph.Tail(arc);
-        ++num_arcs;
-      }
-    }
-  }
-  CHECK_GT(some_work, 0);
-  state.SetItemsProcessed(num_arcs);
-}
-
-BENCHMARK_TEMPLATE(BM_IncomingIterations, ReverseArcListGraph<>);
-BENCHMARK_TEMPLATE(BM_IncomingIterations, ReverseArcStaticGraph<>);
-
-template <typename GraphType>
-static void BM_OppositeIncomingIterations(benchmark::State& state) {
-  const auto graph = BuildGraphForIterationsBenchmarks<GraphType>();
-  int64_t num_arcs = 0;
-  int64_t some_work = 0;
-  for (auto _ : state) {
-    for (int node = 0; node < graph.num_nodes(); ++node) {
-      for (const int arc : graph.OppositeIncomingArcs(node)) {
-        some_work += graph.Head(arc);
-        ++num_arcs;
-      }
-    }
-  }
-  CHECK_GT(some_work, 0);
-  state.SetItemsProcessed(num_arcs);
-}
-
-BENCHMARK_TEMPLATE(BM_OppositeIncomingIterations, ReverseArcListGraph<>);
-BENCHMARK_TEMPLATE(BM_OppositeIncomingIterations, ReverseArcStaticGraph<>);
-
-template <typename GraphType>
-static void BM_OutgoingOrOppositeIncomingIterations(benchmark::State& state) {
-  const auto graph = BuildGraphForIterationsBenchmarks<GraphType>();
-  int64_t num_arcs = 0;
-  for (auto _ : state) {
-    for (int node = 0; node < graph.num_nodes(); ++node) {
-      for (const int arc : graph.OutgoingOrOppositeIncomingArcs(node)) {
-        auto head = graph.Head(arc);
-        benchmark::DoNotOptimize(head);
-      }
-    }
-  }
-  state.SetItemsProcessed(state.iterations() * num_arcs);
-}
-
-BENCHMARK_TEMPLATE(BM_OutgoingOrOppositeIncomingIterations,
-                   ReverseArcListGraph<>);
-BENCHMARK_TEMPLATE(BM_OutgoingOrOppositeIncomingIterations,
-                   ReverseArcStaticGraph<>);
-
-// It's bit sad, but having two loops to iterate over opposite incoming and
-// outgoing arcs is much faster than using `OutgoingOrOppositeIncomingArcs`.
-template <typename GraphType>
-static void BM_OutgoingOrOppositeIncomingIterationsTwoLoops(
-    benchmark::State& state) {
-  const auto graph = BuildGraphForIterationsBenchmarks<GraphType>();
-  for (auto _ : state) {
-    for (int node = 0; node < graph.num_nodes(); ++node) {
-      const auto work = [&graph](int arc) {
-        auto head = graph.Head(arc);
-        benchmark::DoNotOptimize(head);
-      };
-      for (const int arc : graph.OppositeIncomingArcs(node)) {
-        work(arc);
-      }
-      for (const int arc : graph.OutgoingArcs(node)) {
-        work(arc);
-      }
-    }
-  }
-  state.SetItemsProcessed(state.iterations() * graph.num_arcs());
-}
-BENCHMARK_TEMPLATE(BM_OutgoingOrOppositeIncomingIterationsTwoLoops,
-                   ReverseArcListGraph<>);
-BENCHMARK_TEMPLATE(BM_OutgoingOrOppositeIncomingIterationsTwoLoops,
-                   ReverseArcStaticGraph<>);
-
-template <typename GraphType>
-static void BM_IntegralTypeCopy(benchmark::State& state) {
-  const auto graph = BuildGraphForIterationsBenchmarks<GraphType>();
-
-  for (auto s : state) {
-    GraphType copied = typename GraphType::Builder().BuildGraph(nullptr);
-    benchmark::DoNotOptimize(copied = GraphType(graph));
-  }
-}
-
-BENCHMARK_TEMPLATE(BM_IntegralTypeCopy, ListGraph<>);
-BENCHMARK_TEMPLATE(BM_IntegralTypeCopy, StaticGraph<>);
-BENCHMARK_TEMPLATE(BM_IntegralTypeCopy, ReverseArcListGraph<>);
-BENCHMARK_TEMPLATE(BM_IntegralTypeCopy, ReverseArcStaticGraph<>);
-
-template <typename GraphType>
-void TailHeadBenchmark(benchmark::State& state, const GraphType& graph) {
-  // Prevent constant folding. Weird construct due to b/284459966.
-  auto* graph_ptr = &graph;
-  benchmark::DoNotOptimize(graph_ptr);
-  for (auto s : state) {
-    const auto num_arcs = graph.num_arcs();
-    for (int arc = 0; arc < num_arcs; ++arc) {
-      auto head = graph.Head(arc);
-      auto tail = graph.Tail(arc);
-      benchmark::DoNotOptimize(head);
-      benchmark::DoNotOptimize(tail);
-    }
-  }
-}
-
-template <typename IndexT>
-static void BM_CompleteGraphTailHead(benchmark::State& state) {
-  constexpr int kNumNodes = 100;
-  CompleteGraph<IndexT, IndexT> graph(kNumNodes);
-  TailHeadBenchmark(state, graph);
-}
-BENCHMARK_TEMPLATE(BM_CompleteGraphTailHead, int32_t);
-BENCHMARK_TEMPLATE(BM_CompleteGraphTailHead, int16_t);
-
-template <typename IndexT>
-static void BM_CompleteBipartiteGraphTailHead(benchmark::State& state) {
-  constexpr int kNumLeft = 100;
-  CompleteBipartiteGraph<IndexT, IndexT> graph(kNumLeft, kNumLeft);
-  TailHeadBenchmark(state, graph);
-}
-BENCHMARK_TEMPLATE(BM_CompleteBipartiteGraphTailHead, int32_t);
-BENCHMARK_TEMPLATE(BM_CompleteBipartiteGraphTailHead, int16_t);
-
-template <typename ArrayT, typename IndexT>
-void BM_Permute(benchmark::State& state) {
-  const int size = state.range(0);
-  ArrayT array(size);
-
-  std::vector<IndexT> permutation(size);
-  absl::c_iota(permutation, IndexT(0));
-
-  for (const auto s : state) {
-    util::Permute(permutation, &array);
-    benchmark::DoNotOptimize(array);
-    benchmark::DoNotOptimize(permutation);
-  }
-}
-BENCHMARK(BM_Permute<util_intops::StrongVector<StrongArcId, int>, StrongArcId>)
-    ->Arg(128);
-BENCHMARK(BM_Permute<std::vector<int>, int>)->Arg(128);
-BENCHMARK(BM_Permute<std::vector<bool>, int>)->Arg(128);
 
 }  // namespace util

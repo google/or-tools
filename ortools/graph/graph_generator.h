@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef UTIL_GRAPH_GRAPH_GENERATOR_H_
-#define UTIL_GRAPH_GRAPH_GENERATOR_H_
+#ifndef ORTOOLS_GRAPH_GRAPH_GENERATOR_H_
+#define ORTOOLS_GRAPH_GRAPH_GENERATOR_H_
 
 #include <utility>
 
@@ -22,11 +22,11 @@
 // connected by an edge.
 // The graph is represented using the provided `Graph` template.
 //
-// Consider using `CompleteGraph` (util/graph/graph.h) instead of this function
-// in production code, as it uses constant memory to store the graph. Instead,
-// this function explicitly creates the graph using the template type, which is
-// mostly useful for tests or when you have to tweak the graph after creation
-// (i.e. a complete graph is just the core of your final graph).
+// Consider using `CompleteGraph` (ortools/graph/graph.h) instead of this
+// function in production code, as it uses constant memory to store the graph.
+// Instead, this function explicitly creates the graph using the template type,
+// which is mostly useful for tests or when you have to tweak the graph after
+// creation (i.e. a complete graph is just the core of your final graph).
 //
 // Args:
 //   num_nodes: The number of nodes in the graph.
@@ -85,11 +85,11 @@ Graph GenerateCompleteUndirectedBipartiteGraph(
 // part towards the second part.
 // The graph is represented using the provided `Graph` template.
 //
-// Consider using `CompleteBipartiteGraph` (util/graph/graph.h) instead of this
-// function in production code, as it uses constant memory to store the graph.
-// Instead, this function explicitly creates the graph using the template type,
-// which is mostly useful for tests or when you have to tweak the graph after
-// creation (i.e. a complete graph is just the core of your final graph).
+// Consider using `CompleteBipartiteGraph` (ortools/graph/graph.h) instead of
+// this function in production code, as it uses constant memory to store the
+// graph. Instead, this function explicitly creates the graph using the template
+// type, which is mostly useful for tests or when you have to tweak the graph
+// after creation (i.e. a complete graph is just the core of your final graph).
 //
 // Args:
 //   num_nodes_1: The number of nodes in the first part of the graph.
@@ -112,4 +112,4 @@ Graph GenerateCompleteDirectedBipartiteGraph(
   return std::move(*std::move(builder).Build(nullptr));
 }
 
-#endif  // UTIL_GRAPH_GRAPH_GENERATOR_H_
+#endif  // ORTOOLS_GRAPH_GRAPH_GENERATOR_H_

@@ -22,8 +22,8 @@
 // [Dense]ConnectedComponentsFinder class, which uses the union-find algorithm
 // aka disjoint sets: https://en.wikipedia.org/wiki/Disjoint-set_data_structure.
 
-#ifndef UTIL_GRAPH_CONNECTED_COMPONENTS_H_
-#define UTIL_GRAPH_CONNECTED_COMPONENTS_H_
+#ifndef ORTOOLS_GRAPH_CONNECTED_COMPONENTS_H_
+#define ORTOOLS_GRAPH_CONNECTED_COMPONENTS_H_
 
 #include <algorithm>
 #include <concepts>
@@ -34,7 +34,7 @@
 #include "absl/log/log.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/base/map_util.h"
-#include "ortools/graph_base/hash_or_tree_container.h"
+#include "ortools/graph/hash_or_tree_container.h"
 
 namespace util {
 // Generic version of GetConnectedComponents() (see below) that supports other
@@ -371,4 +371,4 @@ ConnectedComponentsFinder<T, CompareOrHashT, Eq>::FindConnectedComponents(
   return components;
 }
 
-#endif  // UTIL_GRAPH_CONNECTED_COMPONENTS_H_
+#endif  // ORTOOLS_GRAPH_CONNECTED_COMPONENTS_H_

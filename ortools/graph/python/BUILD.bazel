@@ -50,8 +50,8 @@ or_pybind_extension(
     srcs = ["dag_shortest_path.cc"],
     visibility = ["//visibility:public"],
     deps = [
+        "//ortools/graph",
         "//ortools/graph:dag_shortest_path",
-        "//ortools/graph_base:graph",
         "@abseil-cpp//absl/strings",
     ],
 )

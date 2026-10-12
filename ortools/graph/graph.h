@@ -158,7 +158,7 @@
 // because it covers most of the use cases. It is possible to extend the
 // interface with more dynamicity (like removing arcs), but this is not done at
 // this point. Note that a "dynamic" implementation will break some assumptions
-// we make on what node or arc are valid and also on the indices returned by
+// we make on what nodes or arcs are valid and also on the indices returned by
 // AddArc(). Some arguments for simplifying the interface at the cost of
 // dynamicity are:
 //
@@ -168,8 +168,8 @@
 //   property incrementally rather than calling an algorithm that starts from
 //   scratch each time.
 
-#ifndef UTIL_GRAPH_GRAPH_H_
-#define UTIL_GRAPH_GRAPH_H_
+#ifndef ORTOOLS_GRAPH_GRAPH_H_
+#define ORTOOLS_GRAPH_GRAPH_H_
 
 #include <algorithm>
 #include <cstddef>
@@ -188,13 +188,13 @@
 #include "absl/base/attributes.h"
 #include "absl/base/macros.h"
 #include "absl/base/nullability.h"
-#include "absl/debugging/leak_check.h"
+#include "absl/base/optimization.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "absl/types/span.h"
 #include "ortools/base/constant_divisor.h"
-#include "ortools/graph_base/iterators.h"
+#include "ortools/graph/iterators.h"
 
 namespace util {
 
@@ -328,8 +328,7 @@ class MutableGraphBuilder
 // constructible/convertible from/to integers.
 template <typename Impl, typename NodeIndexType = int32_t,
           typename ArcIndexType = int32_t, bool HasNegativeReverseArcs = false>
-class BaseGraph  //
-{
+class BaseGraph {
  public:
   // Typedef so you can use Graph::NodeIndex and Graph::ArcIndex to be generic
   // but also to improve the readability of your code. We also recommend
@@ -343,8 +342,6 @@ class BaseGraph  //
   BaseGraph& operator=(const BaseGraph&) = default;
   BaseGraph(BaseGraph&&) = default;
   BaseGraph& operator=(BaseGraph&&) = default;
-
-  virtual ~BaseGraph() = default;
 
   // Returns the number of valid nodes in the graph.
   NodeIndexType num_nodes() const {
@@ -425,6 +422,9 @@ class BaseGraph  //
   }
 
  protected:
+  // Prevent slicing by making the destructor protected.
+  ~BaseGraph() = default;
+
   // Functions commented when defined because they are implementation details.
   void BuildStartAndForwardHead(
       internal::SVector<ArcIndexType, NodeIndexType>* head,
@@ -462,21 +462,21 @@ class MutableGraph : public BaseGraph<Impl, NodeIndexType, ArcIndexType,
   // - A valid arc does not fall into the new arc range.
   // In non-debug mode, const_capacities_ is ignored and nothing will happen
   // if the new capacity value for the arcs or the nodes is too small.
-  virtual void ReserveNodes(NodeIndexType bound) {
+  void ReserveNodes(NodeIndexType bound) {
     DCHECK(!const_capacities_);
     DCHECK_GE(bound, num_nodes_);
     if (bound <= num_nodes_) return;
     node_capacity_ = bound;
   }
-  virtual void ReserveArcs(ArcIndexType bound) {
+  void ReserveArcs(ArcIndexType bound) {
     DCHECK(!const_capacities_);
     DCHECK_GE(bound, num_arcs_);
     if (bound <= num_arcs_) return;
     arc_capacity_ = bound;
   }
   void Reserve(NodeIndexType node_capacity, ArcIndexType arc_capacity) {
-    ReserveNodes(node_capacity);
-    ReserveArcs(arc_capacity);
+    static_cast<Impl*>(this)->ReserveNodes(node_capacity);
+    static_cast<Impl*>(this)->ReserveArcs(arc_capacity);
   }
 
   // FreezeCapacities() makes any future attempt to change the graph capacities
@@ -601,206 +601,191 @@ class Vector : public std::vector<T> {
   IndexT size() const { return IndexT(std::vector<T>::size()); }
 };
 
-// A vector-like class where valid indices are in [- size_, size_) and reserved
-// indices for future growth are in [- capacity_, capacity_). It is used to hold
-// arc related information for graphs with reverse arcs.
-// It supports only up to 2^31-1 elements, for compactness. If you ever need
-// more, consider using templates for the size/capacity integer types.
+// Helper class for SVector that manages raw storage for `2 * half_size_bytes`
+// bytes and places the 0-th element (`ptr_`) at the midpoint of the buffer.
 //
-// Sample usage:
-//
-// SVector<int> v;
-// v.grow(left_value, right_value);
-// v.resize(10);
-// v.clear();
-// v.swap(new_v);
-// std:swap(v[i], v[~i]);
-template <typename IndexT, typename T>
-class SVector {
+// Like `std::vector`, `SVector` may allocate more storage than it currently
+// uses, so only a subset of the raw memory is live at any given time.
+// Accordingly, `SVectorStorage` is move-only and only handles raw memory
+// allocation and deallocation, while `SVector` manages object construction,
+// destruction, and copying.
+class SVectorStorage {
  public:
-  using value_type = T;
+  SVectorStorage() = default;
 
-  SVector() : base_(nullptr), size_(0), capacity_(0) {}
+  explicit SVectorStorage(size_t half_size_bytes)
+      : allocated_(
+            std::make_unique_for_overwrite<std::byte[]>(2 * half_size_bytes)),
+        ptr_(allocated_.get() + half_size_bytes) {}
 
-  ~SVector() { clear_and_dealloc(); }
+  SVectorStorage(SVectorStorage&& other) noexcept = default;
+  SVectorStorage& operator=(SVectorStorage&& other) noexcept = default;
 
-  // Copy constructor and assignment operator.
-  SVector(const SVector& other) : SVector() { *this = other; }
-  SVector& operator=(const SVector& other) {
-    if (capacity_ < other.size_) {
-      clear_and_dealloc();
-      // NOTE(user): Alternatively, our capacity could inherit from the other
-      // vector's capacity, which can be (much) greater than its size.
-      capacity_ = other.size_;
-      base_ = Allocate(capacity_);
-      CHECK(base_ != nullptr);
-      base_ += static_cast<ptrdiff_t>(capacity_);
-    } else {  // capacity_ >= other.size
-      clear();
-    }
-    // Perform the actual copy of the payload.
-    size_ = other.size_;
-    CopyInternal(other, std::is_integral<T>());
-    return *this;
-  }
-
-  // Move constructor and move assignment operator.
-  SVector(SVector&& other) noexcept : SVector() { swap(other); }
-  SVector& operator=(SVector&& other) noexcept {
-    // NOTE(user): We could just swap() and let the other's destruction take
-    // care of the clean-up, but it is probably less bug-prone to perform the
-    // destruction immediately.
-    clear_and_dealloc();
-    swap(other);
-    return *this;
-  }
-
-  T& operator[](IndexT n) {
-    DCHECK_LT(n, size_);
-    DCHECK_GE(n, -size_);
-    return base_[static_cast<ptrdiff_t>(n)];
-  }
-
-  const T& operator[](IndexT n) const {
-    DCHECK_LT(n, size_);
-    DCHECK_GE(n, -size_);
-    return base_[static_cast<ptrdiff_t>(n)];
-  }
-
-  void resize(IndexT n) {
-    reserve(n);
-    for (IndexT i = -n; i < -size_; ++i) {
-      new (base_ + static_cast<ptrdiff_t>(i)) T();
-    }
-    for (IndexT i = size_; i < n; ++i) {
-      new (base_ + static_cast<ptrdiff_t>(i)) T();
-    }
-    for (IndexT i = -size_; i < -n; ++i) {
-      base_[static_cast<ptrdiff_t>(i)].~T();
-    }
-    for (IndexT i = n; i < size_; ++i) {
-      base_[static_cast<ptrdiff_t>(i)].~T();
-    }
-    DCHECK_GE(n, IndexT(0));
-    DCHECK_LE(n, capacity_);
-    size_ = n;
-  }
-
-  void clear() { resize(IndexT(0)); }
-
-  T* data() const { return base_; }
-
-  const T* begin() const { return base_; }
-  const T* end() const { return base_ + static_cast<ptrdiff_t>(size_); }
-
-  void swap(SVector<IndexT, T>& x) noexcept {
-    std::swap(base_, x.base_);
-    std::swap(size_, x.size_);
-    std::swap(capacity_, x.capacity_);
-  }
-
-  void reserve(IndexT n) {
-    DCHECK_GE(n, IndexT(0));
-    DCHECK_LE(n, max_size());
-    if (n > capacity_) {
-      const IndexT new_capacity = std::min(n, max_size());
-      DCHECK_GE(new_capacity, IndexT(0));
-      T* new_storage = Allocate(new_capacity);
-      CHECK(new_storage != nullptr);
-      T* new_base = new_storage + static_cast<ptrdiff_t>(new_capacity);
-      // Note: There is no aliasing between input and output ranges.
-      const ptrdiff_t ssize = static_cast<ptrdiff_t>(size_);
-      std::uninitialized_move(base_ - ssize, base_ + ssize, new_base - ssize);
-      IndexT saved_size = size_;
-      clear_and_dealloc();
-      DCHECK_GE(saved_size, IndexT(0));
-      DCHECK_LE(saved_size, new_capacity);
-      size_ = saved_size;
-      base_ = new_base;
-      capacity_ = new_capacity;
-    }
-  }
-
-  // NOTE(user): This doesn't currently support movable-only objects, but we
-  // could fix that.
-  void grow(const T& left = T(), const T& right = T()) {
-    if (size_ == capacity_) {
-      // We have to copy the elements because they are allowed to be element of
-      // *this.
-      T left_copy(left);    // NOLINT
-      T right_copy(right);  // NOLINT
-      reserve(NewCapacity(IndexT(1)));
-      new (base_ + static_cast<ptrdiff_t>(size_)) T(right_copy);
-      new (base_ - static_cast<ptrdiff_t>(size_) - 1) T(left_copy);
-      ++size_;
-    } else {
-      new (base_ + static_cast<ptrdiff_t>(size_)) T(right);
-      new (base_ - static_cast<ptrdiff_t>(size_) - 1) T(left);
-      ++size_;
-    }
-    DCHECK_LE(size_, capacity_);
-  }
-
-  IndexT size() const { return size_; }
-
-  IndexT capacity() const { return capacity_; }
-
-  IndexT max_size() const { return std::numeric_limits<IndexT>::max(); }
-
-  void clear_and_dealloc() {
-    if (base_ == nullptr) return;
-    clear();
-    if (capacity_ > IndexT(0)) {
-      free(base_ - static_cast<ptrdiff_t>(capacity_));
-    }
-    capacity_ = IndexT(0);
-    base_ = nullptr;
-  }
+  // Returns the midpoint pointer of the buffer, corresponding to the location
+  // of the 0-th element.
+  std::byte* GetMidpoint() const { return ptr_; }
 
  private:
-  // Copies other.base_ to base_ in this SVector. Avoids iteration by copying
-  // entire memory range in a single shot for the most commonly used integral
-  // types which should be safe to copy in this way.
-  void CopyInternal(const SVector& other, std::true_type) {
-    std::memcpy(base_ - static_cast<ptrdiff_t>(other.size_),
-                other.base_ - static_cast<ptrdiff_t>(other.size_),
-                2LL * static_cast<ptrdiff_t>(other.size_) * sizeof(T));
+  std::unique_ptr<std::byte[]> allocated_;
+  std::byte* ptr_ = nullptr;
+};
+
+// A vector with fast access (bypassing hardening bounds checking) and support
+// for negative / typed indices.
+template <typename IndexT, typename T>
+class SVector {
+  static_assert(alignof(T) <= alignof(std::max_align_t),
+                "SVector does not support over-aligned types.");
+  // Marked `NOINLINE` to keep the computation out of inlined `grow()` call
+  // sites on the cold reallocation path, and `static` (taking
+  // `current_capacity` by value) so the out-of-line call does not take `this`
+  // or force `this` fields to memory.
+  ABSL_ATTRIBUTE_NOINLINE static size_t GetNewCapacity(
+      size_t current_capacity) {
+    return std::max(
+        {kMinCapacity, current_capacity * 13 / 10, current_capacity + 1});
   }
 
-  // Copies other.base_ to base_ in this SVector. Safe for all types as it uses
-  // constructor for each entry.
-  void CopyInternal(const SVector& other, std::false_type) {
-    for (IndexT i = -size_; i < size_; ++i) {
-      new (base_ + static_cast<ptrdiff_t>(i))
-          T(other.base_[static_cast<ptrdiff_t>(i)]);
+ public:
+  using value_type = T;
+  static constexpr size_t kMinCapacity = 16;
+
+  SVector() = default;
+
+  ~SVector() { InternalDestroy(); }
+
+  SVector(const SVector& other)
+      : storage_(other.size_ * sizeof(T)),
+        size_(other.size_),
+        capacity_(other.size_) {
+    std::uninitialized_copy_n(GetBegin(other.storage_, size_), 2 * size_,
+                              GetBegin(storage_, size_));
+  }
+
+  SVector& operator=(const SVector& other) {
+    if (this != &other) {
+      *this = SVector(other);
+    }
+    return *this;
+  }
+
+  SVector(SVector&& other) noexcept
+      : storage_(std::move(other.storage_)),
+        size_(std::exchange(other.size_, 0)),
+        capacity_(std::exchange(other.capacity_, 0)) {}
+
+  SVector& operator=(SVector&& other) noexcept {
+    if (this != &other) {
+      InternalDestroy();
+      storage_ = std::move(other.storage_);
+      size_ = std::exchange(other.size_, 0);
+      capacity_ = std::exchange(other.capacity_, 0);
+    }
+    return *this;
+  }
+
+  T& operator[](IndexT index) { return data()[GetIndex(index)]; }
+  const T& operator[](IndexT index) const { return data()[GetIndex(index)]; }
+
+  IndexT size() const { return IndexT(size_); }
+  IndexT capacity() const { return IndexT(capacity_); }
+
+  void reserve(IndexT new_capacity) {
+    InternalReserve(static_cast<size_t>(new_capacity));
+  }
+  void resize(IndexT new_size) {
+    InternalResize(static_cast<size_t>(new_size));
+  }
+
+  void grow(T left, T right) {
+    const size_t size = size_;
+    if (ABSL_PREDICT_FALSE(size == capacity_)) {
+      InternalReserve(GetNewCapacity(size));
+    }
+    // Load `ptr` into a local before placement-new so storing `left` to
+    // `ptr - size - 1` cannot alias `this->size_` or `this->storage_.ptr_`.
+    T* const ptr = GetStorageMidpoint(storage_);
+    new (ptr - size - 1) T(std::move(left));
+    new (ptr + size) T(std::move(right));
+    size_ = size + 1;
+  }
+
+  T* data() { return GetStorageMidpoint(storage_); }
+  const T* data() const { return GetStorageMidpoint(storage_); }
+
+ private:
+  static T* GetStorageMidpoint(const SVectorStorage& storage) {
+    return reinterpret_cast<T*>(storage.GetMidpoint());
+  }
+  static T* GetBegin(const SVectorStorage& storage, size_t size) {
+    return GetStorageMidpoint(storage) - size;
+  }
+  static T* GetEnd(const SVectorStorage& storage, size_t size) {
+    return GetStorageMidpoint(storage) + size;
+  }
+
+  // Fuses move-construction and destruction into a single pass over hot cache
+  // lines with non-aliasing source and destination pointers.
+  static void UninitializedMoveAndDestroy(T* __restrict src, T* __restrict dst,
+                                          size_t count) {
+    for (size_t i = 0; i < count; ++i) {
+      new (dst + i) T(std::move(src[i]));
+      std::destroy_at(src + i);
     }
   }
 
-  T* Allocate(IndexT capacity) const {
-    return absl::IgnoreLeak(static_cast<T*>(
-        malloc(2LL * static_cast<ptrdiff_t>(capacity) * sizeof(T))));
+  void InternalDestroy() {
+    std::destroy(GetBegin(storage_, size_), GetEnd(storage_, size_));
   }
 
-  IndexT NewCapacity(IndexT delta) {
-    // TODO(user): check validity.
-    double candidate = 1.3 * static_cast<size_t>(capacity_);
-    if (candidate > static_cast<size_t>(max_size())) {
-      candidate = static_cast<size_t>(max_size());
+  void InternalReserve(size_t new_capacity) {
+    if (new_capacity <= capacity_) return;
+    SVectorStorage new_storage(new_capacity * sizeof(T));
+    if (const size_t size = size_; size > 0) {
+      UninitializedMoveAndDestroy(GetBegin(storage_, size),
+                                  GetBegin(new_storage, size), 2 * size);
     }
-    IndexT new_capacity(candidate);
-    if (new_capacity > capacity_ + delta) {
-      return new_capacity;
-    }
-    return capacity_ + delta;
+    storage_ = std::move(new_storage);
+    capacity_ = new_capacity;
   }
 
-  // Invariants:
-  //  - 0 <= capacity_.
-  //  - 0 <= size_ <= capacity_.
-  //  - base_ == nullptr iff capacity_ == 0.
-  T* base_;          // Pointer to the element of index 0.
-  IndexT size_;      // Valid index are [- size_, size_).
-  IndexT capacity_;  // Reserved index are [- capacity_, capacity_).
+  void InternalResize(size_t new_size) {
+    // Capture `old_size` before `InternalReserve` and update `size_` and
+    // boundary pointers before constructing/destroying elements so
+    // `this->size_` and `this->storage_.ptr_` are not reloaded across element
+    // writes.
+    const size_t old_size = size_;
+    if (new_size == old_size) return;
+    if (new_size > old_size) {
+      InternalReserve(new_size);
+    }
+    size_ = new_size;
+    T* const old_begin = GetBegin(storage_, old_size);
+    T* const old_end = GetEnd(storage_, old_size);
+    T* const new_begin = GetBegin(storage_, new_size);
+    T* const new_end = GetEnd(storage_, new_size);
+    if (old_size == 0) {
+      // Single contiguous call (one `memset` for trivially constructible `T`).
+      std::uninitialized_value_construct(new_begin, new_end);
+    } else if (new_size > old_size) {
+      std::uninitialized_value_construct(new_begin, old_begin);
+      std::uninitialized_value_construct(old_end, new_end);
+    } else {
+      std::destroy(old_begin, new_begin);
+      std::destroy(new_end, old_end);
+    }
+  }
+
+  std::ptrdiff_t GetIndex(IndexT index) const {
+    const std::ptrdiff_t i = static_cast<std::ptrdiff_t>(index);
+    DCHECK_GE(i, -static_cast<std::ptrdiff_t>(size_));
+    DCHECK_LT(i, static_cast<std::ptrdiff_t>(size_));
+    return i;
+  }
+
+  SVectorStorage storage_;
+  size_t size_ = 0;
+  size_t capacity_ = 0;
 };
 
 }  // namespace internal
@@ -953,13 +938,13 @@ class ListGraph : public MutableGraph<ListGraph<NodeIndexType, ArcIndexType>,
             OutgoingHeadIterator()};
   }
 
-  void ReserveNodes(NodeIndexType bound) override {
+  void ReserveNodes(NodeIndexType bound) {
     Base::ReserveNodes(bound);
     if (bound <= num_nodes_) return;
     start_.reserve(bound);
   }
 
-  void ReserveArcs(ArcIndexType bound) override {
+  void ReserveArcs(ArcIndexType bound) {
     Base::ReserveArcs(bound);
     if (bound <= num_arcs_) return;
     head_.reserve(bound);
@@ -990,9 +975,8 @@ class ListGraph : public MutableGraph<ListGraph<NodeIndexType, ArcIndexType>,
 // StaticGraphWithoutTail<>. This almost corresponds to a past implementation
 // of StaticGraph<> @CL 116144340.
 template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
-class StaticGraph final
-    : public BaseGraph<StaticGraph<NodeIndexType, ArcIndexType>, NodeIndexType,
-                       ArcIndexType, false> {
+class StaticGraph : public BaseGraph<StaticGraph<NodeIndexType, ArcIndexType>,
+                                     NodeIndexType, ArcIndexType, false> {
   typedef BaseGraph<StaticGraph<NodeIndexType, ArcIndexType>, NodeIndexType,
                     ArcIndexType, false>
       Base;
@@ -1268,7 +1252,7 @@ class ReverseArcListGraph
 // - The reverse arcs from a node are sorted by head (so we could add a log()
 //   time lookup function).
 template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
-class ReverseArcStaticGraph final
+class ReverseArcStaticGraph
     : public MutableGraph<ReverseArcStaticGraph<NodeIndexType, ArcIndexType>,
                           NodeIndexType, ArcIndexType, true> {
   static_assert(internal::IsSigned<ArcIndexType>(),
@@ -1382,7 +1366,7 @@ class ReverseArcStaticGraph final
         static_cast<size_t>(DirectArcLimit(node) - start_[node]));
   }
 
-  void ReserveArcs(ArcIndexType bound) override {
+  void ReserveArcs(ArcIndexType bound) {
     Base::ReserveArcs(bound);
     if (bound <= num_arcs_) return;
     head_.reserve(bound);
@@ -2193,4 +2177,4 @@ GraphT GraphFromArcs(typename GraphT::NodeIndex num_nodes,
 
 }  // namespace util
 
-#endif  // UTIL_GRAPH_GRAPH_H_
+#endif  // ORTOOLS_GRAPH_GRAPH_H_

@@ -13,8 +13,8 @@
 
 // Helper classes to make it easy to implement range-based for loops.
 
-#ifndef UTIL_GRAPH_ITERATORS_H_
-#define UTIL_GRAPH_ITERATORS_H_
+#ifndef ORTOOLS_GRAPH_ITERATORS_H_
+#define ORTOOLS_GRAPH_ITERATORS_H_
 
 #include <compare>
 #include <cstddef>
@@ -268,4 +268,4 @@ class ChasingIterator {
 
 }  // namespace util
 
-#endif  // UTIL_GRAPH_ITERATORS_H_
+#endif  // ORTOOLS_GRAPH_ITERATORS_H_

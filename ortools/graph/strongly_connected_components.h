@@ -49,16 +49,16 @@
 //            GenericGraph<std::string>::FromEdges(edges));
 //
 //    → components = {{"b", "c"}, {"a"}}
-#ifndef UTIL_GRAPH_STRONGLY_CONNECTED_COMPONENTS_H_
-#define UTIL_GRAPH_STRONGLY_CONNECTED_COMPONENTS_H_
+#ifndef ORTOOLS_GRAPH_STRONGLY_CONNECTED_COMPONENTS_H_
+#define ORTOOLS_GRAPH_STRONGLY_CONNECTED_COMPONENTS_H_
 
 #include <limits>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/graph_base/generic_graph.h"
-#include "ortools/graph_base/graph.h"
+#include "ortools/graph/generic_graph.h"
+#include "ortools/graph/graph.h"
 
 // Simple API that works with generic node types and returns the components.
 template <typename Node>
@@ -100,7 +100,7 @@ void FindStronglyConnectedComponents(NodeIndex num_nodes, const Graph& graph,
 // allocating many vectors can save both space and speed if your graph is large.
 //
 // Note: If this matters, you probably don't want to use vector<vector<int>> as
-// an input either. See StaticGraph in util/graph/graph.h
+// an input either. See StaticGraph in ortools/graph/graph.h
 // for an efficient graph data structure compatible with this algorithm.
 template <typename NodeIndex>
 struct SccCounterOutput {
@@ -295,4 +295,4 @@ void FindStronglyConnectedComponents(const NodeIndex num_nodes,
   return helper.FindStronglyConnectedComponents(num_nodes, graph, components);
 }
 
-#endif  // UTIL_GRAPH_STRONGLY_CONNECTED_COMPONENTS_H_
+#endif  // ORTOOLS_GRAPH_STRONGLY_CONNECTED_COMPONENTS_H_

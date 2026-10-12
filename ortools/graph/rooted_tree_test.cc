@@ -21,7 +21,7 @@
 #include "absl/status/status.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/graph_base/graph.h"
+#include "ortools/graph/graph.h"
 
 namespace operations_research {
 namespace {

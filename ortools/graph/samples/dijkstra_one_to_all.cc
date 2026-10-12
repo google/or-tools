@@ -22,7 +22,7 @@
 #include "ortools/base/init_google.h"
 #include "ortools/base/types.h"
 #include "ortools/graph/bounded_dijkstra.h"
-#include "ortools/graph_base/graph.h"
+#include "ortools/graph/graph.h"
 // [END imports]
 
 int main(int argc, char** argv) {

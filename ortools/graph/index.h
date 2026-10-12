@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef UTIL_GRAPH_INDEX_H_
-#define UTIL_GRAPH_INDEX_H_
+#ifndef ORTOOLS_GRAPH_INDEX_H_
+#define ORTOOLS_GRAPH_INDEX_H_
 
 #include <concepts>
 #include <cstddef>
@@ -27,7 +27,7 @@
 #include "absl/base/attributes.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/graph_base/hash_or_tree_container.h"
+#include "ortools/graph/hash_or_tree_container.h"
 
 namespace util {
 namespace graph {
@@ -307,4 +307,4 @@ struct Index<T, CompareOrHashT, Eq>::Impl::EqWrapper : public FunctorWrapper {
 }  // namespace graph
 }  // namespace util
 
-#endif  // UTIL_GRAPH_INDEX_H_
+#endif  // ORTOOLS_GRAPH_INDEX_H_

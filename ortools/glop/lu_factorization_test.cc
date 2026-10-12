@@ -22,7 +22,7 @@
 #include "ortools/base/gmock.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/glop/parameters.pb.h"
-#include "ortools/graph_base/iterators.h"
+#include "ortools/graph/iterators.h"
 #include "ortools/lp_data/lp_test_utils.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_types_testing.h"

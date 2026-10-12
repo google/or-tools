@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/graph_base/random_graph.h"
+#include "ortools/graph/random_graph.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -23,7 +23,7 @@
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
-#include "ortools/graph_base/graph.h"
+#include "ortools/graph/graph.h"
 
 namespace util {
 

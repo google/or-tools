@@ -43,7 +43,7 @@
 #include "ortools/base/macros/os_support.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/version.h"  // IWYU pragma: keep
-#include "ortools/graph_base/connected_components.h"
+#include "ortools/graph/connected_components.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/continuous_prober.h"

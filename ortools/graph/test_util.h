@@ -13,15 +13,11 @@
 
 // Unit test utilities related to graph.h.
 
-#ifndef UTIL_GRAPH_TEST_UTIL_H_
-#define UTIL_GRAPH_TEST_UTIL_H_
+#ifndef ORTOOLS_GRAPH_TEST_UTIL_H_
+#define ORTOOLS_GRAPH_TEST_UTIL_H_
 
 #include <cstdint>
 #include <memory>
-
-#include "absl/memory/memory.h"
-#include "ortools/base/types.h"
-#include "ortools/graph_base/graph.h"
 
 namespace util {
 
@@ -61,4 +57,4 @@ std::unique_ptr<Graph> Create2DGridGraph(int64_t width, int64_t height) {
 
 }  // namespace util
 
-#endif  // UTIL_GRAPH_TEST_UTIL_H_
+#endif  // ORTOOLS_GRAPH_TEST_UTIL_H_

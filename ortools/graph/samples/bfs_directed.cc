@@ -22,7 +22,7 @@
 #include "absl/status/status_macros.h"
 #include "absl/strings/str_join.h"
 #include "ortools/base/init_google.h"
-#include "ortools/graph_base/bfs.h"
+#include "ortools/graph/bfs.h"
 // [END imports]
 
 namespace {

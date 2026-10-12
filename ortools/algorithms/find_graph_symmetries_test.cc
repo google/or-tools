@@ -57,9 +57,9 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/options.h"
 #include "ortools/base/path.h"
-#include "ortools/graph_base/graph.h"
-#include "ortools/graph_base/io.h"
-#include "ortools/graph_base/util.h"
+#include "ortools/graph/graph.h"
+#include "ortools/graph/io.h"
+#include "ortools/graph/util.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {

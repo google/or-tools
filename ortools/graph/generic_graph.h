@@ -23,27 +23,26 @@
 //       graph.Nodes(util::graph::FindCycleInGraph(graph.Graph()));
 //
 // It holds a *directed* graph where nodes can be any type supporting either
-// hash or <. It is a thin wrapper around StaticGraph (see util/graph/graph.h)
-// and does the bidirectional mapping from nodes objects to dense integer
-// indices for you.
-// Use this when you need to invoke an algorithm on StaticGraph but your nodes
-// are not already dense integers.
-// Note the arcs are permuted a construction time: if you re-access them via,
-// e.g., graph.Graph().AllForwardArcs(), they won't be in insertion order.
+// hash or <. It is a thin wrapper around StaticGraph (see
+// ortools/graph/graph.h) and does the bidirectional mapping from nodes objects
+// to dense integer indices for you. Use this when you need to invoke an
+// algorithm on StaticGraph but your nodes are not already dense integers. Note
+// the arcs are permuted a construction time: if you re-access them via, e.g.,
+// graph.Graph().AllForwardArcs(), they won't be in insertion order.
 //
 // The API can be extended as needed, contact util-graph@.
 
-#ifndef UTIL_GRAPH_GENERIC_GRAPH_H_
-#define UTIL_GRAPH_GENERIC_GRAPH_H_
+#ifndef ORTOOLS_GRAPH_GENERIC_GRAPH_H_
+#define ORTOOLS_GRAPH_GENERIC_GRAPH_H_
 
 #include <optional>
 #include <utility>
 #include <vector>
 
 #include "absl/types/span.h"
-#include "ortools/graph_base/graph.h"
-#include "ortools/graph_base/hash_or_tree_container.h"
-#include "ortools/graph_base/index.h"
+#include "ortools/graph/graph.h"
+#include "ortools/graph/hash_or_tree_container.h"
+#include "ortools/graph/index.h"
 
 namespace util {
 namespace graph {
@@ -179,4 +178,4 @@ using GenericGraphBuilder =
 }  // namespace graph
 }  // namespace util
 
-#endif  // UTIL_GRAPH_GENERIC_GRAPH_H_
+#endif  // ORTOOLS_GRAPH_GENERIC_GRAPH_H_

@@ -16,7 +16,7 @@
 // It sorts ancestor nodes before their descendants. Multi-arcs are fine.
 //
 // If your graph is not a DAG and you're reading this, you are probably
-// looking for util/graph/strongly_connected_components.h which does
+// looking for ortools/graph/strongly_connected_components.h which does
 // the topological decomposition of a directed graph.
 //
 // USAGE:
@@ -27,8 +27,8 @@
 // - If you need more control (cycle extraction?), or a step-by-step topological
 //   sort, see the TopologicalSorter classes below.
 
-#ifndef UTIL_GRAPH_TOPOLOGICALSORTER_H__
-#define UTIL_GRAPH_TOPOLOGICALSORTER_H__
+#ifndef ORTOOLS_GRAPH_TOPOLOGICALSORTER_H__
+#define ORTOOLS_GRAPH_TOPOLOGICALSORTER_H__
 
 #include <cstddef>
 #include <functional>
@@ -49,8 +49,8 @@
 #include "ortools/base/container_logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/graph_base/generic_graph.h"
-#include "ortools/graph_base/graph.h"
+#include "ortools/graph/generic_graph.h"
+#include "ortools/graph/graph.h"
 
 namespace util {
 namespace graph {
@@ -785,4 +785,4 @@ FindCycleInGraph(const AdjacencyLists& adj) {
 }  // namespace graph
 }  // namespace util
 
-#endif  // UTIL_GRAPH_TOPOLOGICALSORTER_H__
+#endif  // ORTOOLS_GRAPH_TOPOLOGICALSORTER_H__

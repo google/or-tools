@@ -93,7 +93,7 @@ or_cc_library(
     deps = [
         ":lp_types",
         ":permutation",
-        "//ortools/graph_base:iterators",
+        "//ortools/graph:iterators",
         "//ortools/util:return_macros",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:str_format",
@@ -190,7 +190,7 @@ or_cc_library(
         ":permutation",
         ":scattered_vector",
         ":sparse_column",
-        "//ortools/graph_base:iterators",
+        "//ortools/graph:iterators",
         "//ortools/util:bitset",
         "//ortools/util:fp_roundtrip_conv",
         "//ortools/util:return_macros",
@@ -292,6 +292,7 @@ or_cc_library(
         ":sparse_column",
         "//ortools/base:strong_vector",
         "//ortools/glop:parameters_cc_proto",
+        "//ortools/util:fp_roundtrip_conv",
         "//ortools/util:fp_utils",
         "//ortools/util:strong_integers",
         "@abseil-cpp//absl/container:flat_hash_map",
@@ -481,10 +482,9 @@ or_cc_library(
     copts = SAFE_FP_CODE,
     deps = [
         ":lp_types",
-        "//ortools/base:types",
+        "//ortools/util:fp_roundtrip_conv",
         "//ortools/util:rational_approximation",
         "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/strings:string_view",
     ],
 )

@@ -194,7 +194,6 @@ ORTOOLS_PKG_TO_CMAKE = {
     "//ortools/base": "ortools_base",
     "//ortools/constraint_solver": "ortools_constraint_solver",
     "//ortools/glop": "ortools_glop",
-    "//ortools/graph_base": "ortools_graph_base",
     "//ortools/graph": "ortools_graph",
     "//ortools/linear_solver": "ortools_linear_solver",
     "//ortools/lp_data": "ortools_lp_data",

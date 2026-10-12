@@ -127,8 +127,8 @@ or_cc_binary(
     srcs = ["root_a_tree.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/graph",
         "//ortools/graph:rooted_tree",
-        "//ortools/graph_base:graph",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:status_macros",
@@ -199,8 +199,8 @@ or_cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/base:types",
+        "//ortools/graph",
         "//ortools/graph:bounded_dijkstra",
-        "//ortools/graph_base:graph",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -217,8 +217,8 @@ or_cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/base:types",
+        "//ortools/graph",
         "//ortools/graph:bounded_dijkstra",
-        "//ortools/graph_base:graph",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
     ],
@@ -236,8 +236,8 @@ or_cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/base:types",
+        "//ortools/graph",
         "//ortools/graph:bounded_dijkstra",
-        "//ortools/graph_base:graph",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log:check",
@@ -273,9 +273,9 @@ or_cc_binary(
     srcs = ["dag_shortest_path_one_to_all.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/graph",
         "//ortools/graph:dag_shortest_path",
-        "//ortools/graph_base:graph",
-        "//ortools/graph_base:topologicalsorter",
+        "//ortools/graph:topologicalsorter",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:status_macros",
@@ -294,8 +294,8 @@ or_cc_binary(
     srcs = ["dag_shortest_path_sequential.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/graph",
         "//ortools/graph:dag_shortest_path",
-        "//ortools/graph_base:graph",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -327,9 +327,9 @@ or_cc_binary(
     srcs = ["dag_multiple_shortest_paths_one_to_all.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/graph",
         "//ortools/graph:dag_shortest_path",
-        "//ortools/graph_base:graph",
-        "//ortools/graph_base:topologicalsorter",
+        "//ortools/graph:topologicalsorter",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:status_macros",
@@ -348,8 +348,8 @@ or_cc_binary(
     srcs = ["dag_multiple_shortest_paths_sequential.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/graph",
         "//ortools/graph:dag_shortest_path",
-        "//ortools/graph_base:graph",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -382,8 +382,8 @@ or_cc_binary(
     srcs = ["dag_constrained_shortest_path_sequential.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/graph",
         "//ortools/graph:dag_constrained_shortest_path",
-        "//ortools/graph_base:graph",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -392,4 +392,61 @@ bintest(
     name = "dag_constrained_shortest_path_sequential_test",
     srcs = [":dag_constrained_shortest_path_sequential_test.bintest"],
     named_data = {"dag_constrained_shortest_path_sequential": ":dag_constrained_shortest_path_sequential"},
+)
+
+or_cc_binary(
+    name = "bfs_directed",
+    srcs = ["bfs_directed.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph:bfs",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+bintest(
+    name = "bfs_directed_test",
+    srcs = [":bfs_directed_test.bintest"],
+    named_data = {"bfs_directed": ":bfs_directed"},
+)
+
+or_cc_binary(
+    name = "bfs_undirected",
+    srcs = ["bfs_undirected.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph:bfs",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+bintest(
+    name = "bfs_undirected_test",
+    srcs = [":bfs_undirected_test.bintest"],
+    named_data = {"bfs_undirected": ":bfs_undirected"},
+)
+
+or_cc_binary(
+    name = "bfs_one_to_all",
+    srcs = ["bfs_one_to_all.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph:bfs",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+bintest(
+    name = "bfs_one_to_all_test",
+    srcs = [":bfs_one_to_all_test.bintest"],
+    named_data = {"bfs_one_to_all": ":bfs_one_to_all"},
 )

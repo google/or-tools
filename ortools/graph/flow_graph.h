@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef UTIL_GRAPH_FLOW_GRAPH_H_
-#define UTIL_GRAPH_FLOW_GRAPH_H_
+#ifndef ORTOOLS_GRAPH_FLOW_GRAPH_H_
+#define ORTOOLS_GRAPH_FLOW_GRAPH_H_
 
 #include <cstddef>
 #include <cstdint>
@@ -23,13 +23,13 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/unique_array.h"
-#include "ortools/graph_base/graph.h"
-#include "ortools/graph_base/iterators.h"
+#include "ortools/graph/graph.h"
+#include "ortools/graph/iterators.h"
 
 namespace util {
 
 // Graph specialized for max-flow/min-cost-flow algorithms.
-// It follows the util/graph/graph.h interface.
+// It follows the ortools/graph/graph.h interface.
 //
 // For max-flow or min-cost-flow we need a directed graph where each arc from
 // tail to head has a "reverse" arc from head to tail. In practice many input
@@ -498,4 +498,4 @@ FlowGraph<NodeIndexType, ArcIndexType>::Builder::Build(
 
 }  // namespace util
 
-#endif  // UTIL_GRAPH_FLOW_GRAPH_H_
+#endif  // ORTOOLS_GRAPH_FLOW_GRAPH_H_

@@ -12,13 +12,13 @@
 // limitations under the License.
 
 // A collection of functions to be used in unit tests involving the
-// util/graph/... library.
+// ortools/graph/... library.
 
-#ifndef UTIL_GRAPH_RANDOM_GRAPH_H_
-#define UTIL_GRAPH_RANDOM_GRAPH_H_
+#ifndef ORTOOLS_GRAPH_RANDOM_GRAPH_H_
+#define ORTOOLS_GRAPH_RANDOM_GRAPH_H_
 
 #include "absl/random/bit_gen_ref.h"
-#include "ortools/graph_base/graph.h"
+#include "ortools/graph/graph.h"
 
 namespace util {
 
@@ -45,4 +45,4 @@ StaticGraph<>::Builder GenerateRandomUndirectedSimpleGraph(int num_nodes,
 
 }  // namespace util
 
-#endif  // UTIL_GRAPH_RANDOM_GRAPH_H_
+#endif  // ORTOOLS_GRAPH_RANDOM_GRAPH_H_

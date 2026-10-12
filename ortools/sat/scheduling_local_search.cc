@@ -33,7 +33,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/types.h"
-#include "ortools/graph_base/topologicalsorter.h"
+#include "ortools/graph/topologicalsorter.h"
 #include "ortools/sat/combine_solutions.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"

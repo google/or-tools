@@ -30,7 +30,7 @@ Specific algorithms for paths:
   acyclic graphs. If you have such a graph, this implementation is likely to be
   the fastest. Unlike most implementations, these algorithms have two interfaces
   : a "simple" one (list of edges and weights) and a standard one (taking as
-  input a graph data structure from [`//ortools/graph_base/graph.h`][graph_h]).
+  input a graph data structure from [`//ortools/graph/graph.h`][graph_h]).
 * [`dag_constrained_shortest_path.`][dag_constrained_shortest_path_h]: shortest
   paths on directed acyclic graphs with resource constraints.
 * [`hamiltonian_path.h`][hamiltonian_path_h]: entry point for computing minimum
@@ -201,7 +201,7 @@ node.
 You can find some canonical examples in [`samples`][samples].
 
 <!-- Links used throughout the document. -->
-[graph_h]: /ortools/graph_base/graph.h
+[graph_h]: /ortools/graph/graph.h
 [bounded_dijkstra_h]: /ortools/graph/bounded_dijkstra.h
 [bidirectional_dijkstra_h]: /ortools/graph/bidirectional_dijkstra.h
 [shortest_paths_h]: /ortools/graph/shortest_paths.h
@@ -216,4 +216,4 @@ You can find some canonical examples in [`samples`][samples].
 [max_flow_h]: /ortools/graph/max_flow.h
 [min_cost_flow_h]: /ortools/graph/min_cost_flow.h
 [samples]: /ortools/graph/samples/
-[graph]: /ortools/graph_base/
+[graph]: /ortools/graph/

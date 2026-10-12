@@ -13,8 +13,8 @@
 
 // A collections of utilities for the Graph classes in ./graph.h.
 
-#ifndef UTIL_GRAPH_UTIL_H_
-#define UTIL_GRAPH_UTIL_H_
+#ifndef ORTOOLS_GRAPH_UTIL_H_
+#define ORTOOLS_GRAPH_UTIL_H_
 
 #include <algorithm>
 #include <climits>
@@ -32,9 +32,9 @@
 #include "absl/types/span.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/base/map_util.h"
-#include "ortools/graph_base/connected_components.h"
-#include "ortools/graph_base/graph.h"
-#include "ortools/graph_base/iterators.h"
+#include "ortools/graph/connected_components.h"
+#include "ortools/graph/graph.h"
+#include "ortools/graph/iterators.h"
 
 namespace util {
 
@@ -481,4 +481,4 @@ std::vector<int> ComputeOnePossibleReverseArcMapping(
 
 }  // namespace util
 
-#endif  // UTIL_GRAPH_UTIL_H_
+#endif  // ORTOOLS_GRAPH_UTIL_H_

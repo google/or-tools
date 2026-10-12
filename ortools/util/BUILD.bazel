@@ -938,8 +938,8 @@ or_cc_library(
     hdrs = ["strong_index_map.h"],
     deps = [
         "//ortools/base:strong_vector",
-        "//ortools/graph_base:hash_or_tree_container",
-        "//ortools/graph_base:index",
+        "//ortools/graph:hash_or_tree_container",
+        "//ortools/graph:index",
         "@abseil-cpp//absl/base",
     ],
 )

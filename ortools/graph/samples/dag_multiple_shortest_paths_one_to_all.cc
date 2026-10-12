@@ -24,8 +24,8 @@
 #include "absl/strings/str_join.h"
 #include "ortools/base/init_google.h"
 #include "ortools/graph/dag_shortest_path.h"
-#include "ortools/graph_base/graph.h"
-#include "ortools/graph_base/topologicalsorter.h"
+#include "ortools/graph/graph.h"
+#include "ortools/graph/topologicalsorter.h"
 // [END imports]
 
 namespace {

@@ -22,7 +22,7 @@
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "ortools/graph/dag_shortest_path.h"
-#include "ortools/graph_base/graph.h"
+#include "ortools/graph/graph.h"
 
 namespace operations_research {
 namespace {

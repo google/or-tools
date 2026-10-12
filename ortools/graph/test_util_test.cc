@@ -11,11 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/graph_base/test_util.h"
+#include "ortools/graph/test_util.h"
 
 #include "gtest/gtest.h"
-#include "ortools/graph_base/graph.h"
-#include "ortools/graph_base/io.h"
+#include "ortools/graph/graph.h"
+#include "ortools/graph/io.h"
 
 namespace util {
 namespace {

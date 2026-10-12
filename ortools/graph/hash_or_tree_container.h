@@ -15,8 +15,8 @@
 // or maps of objects to integers, depending on whether the user provides a
 // hash functor or a comparator. See usage examples in connected_components.h.
 
-#ifndef UTIL_GRAPH_HASH_OR_TREE_CONTAINER_H_
-#define UTIL_GRAPH_HASH_OR_TREE_CONTAINER_H_
+#ifndef ORTOOLS_GRAPH_HASH_OR_TREE_CONTAINER_H_
+#define ORTOOLS_GRAPH_HASH_OR_TREE_CONTAINER_H_
 
 #include <functional>
 #include <type_traits>
@@ -113,4 +113,4 @@ struct HashOrTreeContainer {
 }  // namespace graph
 }  // namespace util
 
-#endif  // UTIL_GRAPH_HASH_OR_TREE_CONTAINER_H_
+#endif  // ORTOOLS_GRAPH_HASH_OR_TREE_CONTAINER_H_

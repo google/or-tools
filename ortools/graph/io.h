@@ -13,8 +13,8 @@
 
 // A collections of i/o utilities for the Graph classes in ./graph.h.
 
-#ifndef UTIL_GRAPH_IO_H_
-#define UTIL_GRAPH_IO_H_
+#ifndef ORTOOLS_GRAPH_IO_H_
+#define ORTOOLS_GRAPH_IO_H_
 
 #include <algorithm>
 #include <cstddef>
@@ -177,4 +177,4 @@ absl::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
 
 }  // namespace util
 
-#endif  // UTIL_GRAPH_IO_H_
+#endif  // ORTOOLS_GRAPH_IO_H_
