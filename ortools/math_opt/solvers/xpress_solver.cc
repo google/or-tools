@@ -222,12 +222,12 @@ class ScopedCallback : public ScopedCallbackBase {
 
   // Specialization to deduce the callback return and arguments types
   template <typename R, typename... Args>
-  struct ExWrapper<R (*)(XPRSprob, void*, Args...)> {
+  struct ExWrapper<R(XPRS_CC*)(XPRSprob, void*, Args...)> {
     // The static function that will be directly invoked by Xpress
     // Note: Xpress callbacks return either void or int. All callbacks
     //       that return int treat zero as "continue" and non-zero as "stop"
     //       (either explicit stop request or error).
-    static R low_level_cb(XPRSprob prob, void* cbdata, Args... args) {
+    static R XPRS_CC low_level_cb(XPRSprob prob, void* cbdata, Args... args) {
       ScopedCallback* cb = reinterpret_cast<ScopedCallback*>(cbdata);
 #ifdef ABSL_HAVE_EXCEPTIONS
       try {
@@ -291,20 +291,20 @@ class ScopedCallback : public ScopedCallbackBase {
  * The effect of the macro is an alias CB_NAME####ScopedCb =
  * ScopedCallback<...>.
  */
-#define DEFINE_SCOPED_CB(CB_NAME, ORTOOLS_CB, CB_RET_TYPE, ARGS)           \
-  absl::Status CB_NAME##GlueFn ARGS;                                       \
-  struct CB_NAME##Traits {                                                 \
-    using proto_type = CB_RET_TYPE(XPRS_CC*) ARGS;                         \
-    static constexpr absl::Status(XPRS_CC* glueFn) ARGS = CB_NAME##GlueFn; \
-    static absl::Status Add(Xpress* xpress, proto_type fn, void* data,     \
-                            int prio = 0) {                                \
-      return xpress->AddCb##CB_NAME(fn, data, prio);                       \
-    }                                                                      \
-    static void Remove(Xpress* xpress, proto_type fn, void* data) {        \
-      CHECK_OK(xpress->RemoveCb##CB_NAME(fn, data));                       \
-    }                                                                      \
-  };                                                                       \
-  using CB_NAME##ScopedCb = ScopedCallback<CB_NAME##Traits, ORTOOLS_CB>;   \
+#define DEFINE_SCOPED_CB(CB_NAME, ORTOOLS_CB, CB_RET_TYPE, ARGS)         \
+  absl::Status CB_NAME##GlueFn ARGS;                                     \
+  struct CB_NAME##Traits {                                               \
+    using proto_type = CB_RET_TYPE(XPRS_CC*) ARGS;                       \
+    static constexpr absl::Status(*glueFn) ARGS = CB_NAME##GlueFn;       \
+    static absl::Status Add(Xpress* xpress, proto_type fn, void* data,   \
+                            int prio = 0) {                              \
+      return xpress->AddCb##CB_NAME(fn, data, prio);                     \
+    }                                                                    \
+    static void Remove(Xpress* xpress, proto_type fn, void* data) {      \
+      CHECK_OK(xpress->RemoveCb##CB_NAME(fn, data));                     \
+    }                                                                    \
+  };                                                                     \
+  using CB_NAME##ScopedCb = ScopedCallback<CB_NAME##Traits, ORTOOLS_CB>; \
   absl::Status CB_NAME##GlueFn ARGS
 
 /** Define the message callback.
