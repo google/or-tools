@@ -384,6 +384,17 @@ std::shared_ptr<LinearExpr> WeightedSumArguments(py::sequence expressions,
   }
 }
 
+// Google3 contains pybind11 version 3, which reduced the expected refcount
+// by 1 relative to earlier versions.
+// This code however is exported to github where pybind11 v2 is still used,
+// so we must ensure compatibility with both.
+constexpr Py_ssize_t EXPECTED_PYBIND_REFCOUNT =
+#if PYBIND11_INTERNALS_VERSION >= 12
+    2;
+#else
+    3;
+#endif
+
 #if PY_VERSION_HEX >= 0x030E00A7 && !defined(PYPY_VERSION)
 bool was_optimized_in_function_call(PyObject* op) {
   PyFrameObject* frame = PyEval_GetFrame();
@@ -407,13 +418,14 @@ bool was_optimized_in_function_call(PyObject* op) {
 
 bool IsOnwedExclusivelyThroughPyBind11(PyObject* op) {
 #if !defined(Py_GIL_DISABLED)
-  return Py_REFCNT(op) == 3;
+  return Py_REFCNT(op) == EXPECTED_PYBIND_REFCOUNT;
 #else
   // NOTE: the entire ob_ref_shared field must be zero, including flags, to
   // ensure that other threads cannot concurrently create new references to
   // this object.
   return (_Py_IsOwnedByCurrentThread(op) &&
-          _Py_atomic_load_uint32_relaxed(&op->ob_ref_local) == 3 &&
+          _Py_atomic_load_uint32_relaxed(&op->ob_ref_local) ==
+              EXPECTED_PYBIND_REFCOUNT &&
           _Py_atomic_load_ssize_relaxed(&op->ob_ref_shared) == 0);
 #endif
 }
@@ -427,7 +439,7 @@ bool IsFree(std::shared_ptr<T> expr) {
 #else
 template <class T>
 bool IsFree(std::shared_ptr<T> expr) {
-  return Py_REFCNT(py::cast(expr).ptr()) == 4;
+  return Py_REFCNT(py::cast(expr).ptr()) == EXPECTED_PYBIND_REFCOUNT + 1;
 }
 #endif
 
