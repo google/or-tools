@@ -561,6 +561,28 @@ void AutoRadixSort(Container& values) {
   AutoRadixSort<Direction>(values, [](const auto& val) { return val; });
 }
 
+// Sorts a container of items by key using radix sort, reusing a caller-provided
+// buffer to avoid dynamic heap reallocations across invocations.
+template <RadixSortDirection Direction = RadixSortDirection::kIncreasing,
+          typename Container, typename KeyAccessor>
+void AutoRadixSort(Container& values, Container& buffer,
+                   const KeyAccessor get_key) {
+  if (std::size(values) <= 1) return;
+  namespace rsi = radix_sort_internal;
+  rsi::ResizeProtoOrStl(buffer, std::size(values));
+  rsi::AutoRadixSortImpl<Direction>(values, buffer, get_key);
+}
+
+// Version on a container of integral, enum, or floating-point types with a
+// default key callable, reusing a caller-provided buffer to avoid dynamic heap
+// reallocations.
+template <RadixSortDirection Direction = RadixSortDirection::kIncreasing,
+          typename Container>
+void AutoRadixSort(Container& values, Container& buffer) {
+  radix_sort_internal::CheckIntegralEnumOrFloat<Container>();
+  AutoRadixSort<Direction>(values, buffer, [](const auto& val) { return val; });
+}
+
 // External API for the radix sort with key bounds. Sorts a container of items
 // by multiple keys using LSD (Least Significant Digit) radix sort, with given
 // key bounds.
