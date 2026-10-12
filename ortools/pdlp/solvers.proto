@@ -64,6 +64,8 @@ enum SchedulerType {
 // (4) The termination criteria for SCS is in section 3.5 of
 // https://arxiv.org/pdf/1312.3039.pdf.
 message TerminationCriteria {
+  reserved 2, 3;
+
   // The norm that we are measuring the optimality criteria in.
   optional OptimalityNorm optimality_norm = 1 [default = OPTIMALITY_NORM_L2];
 
@@ -134,26 +136,10 @@ message TerminationCriteria {
     optional double eps_optimal_objective_gap_relative = 6 [default = 1.0e-6];
   }
 
-  // If none are set explicitly the deprecated eps_optimal_absolute and
-  // eps_optimal_relative are used to construct a SimpleOptimalityCriteria.
   oneof optimality_criteria {
     SimpleOptimalityCriteria simple_optimality_criteria = 9;
     DetailedOptimalityCriteria detailed_optimality_criteria = 10;
   }
-
-  // Absolute tolerance on primal residual, dual residual, and the objective
-  // gap.
-  // Deprecated, use simple_optimality_criteria instead.
-  // TODO(b/241462829) delete this deprecated field.
-  optional double eps_optimal_absolute = 2
-      [deprecated = true, default = 1.0e-6];
-
-  // Relative tolerance on primal residual, dual residual, and the objective
-  // gap.
-  // Deprecated, use simple_optimality_criteria instead.
-  // TODO(b/241462829) delete this deprecated field.
-  optional double eps_optimal_relative = 3
-      [deprecated = true, default = 1.0e-6];
 
   // If the following two conditions hold we say that we have obtained an
   // approximate dual ray, which is an approximate certificate of primal

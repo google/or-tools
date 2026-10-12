@@ -47,14 +47,6 @@ absl::Status ValidateTerminationCriteria(const TerminationCriteria& criteria) {
       criteria.optimality_norm() != OPTIMALITY_NORM_L_INF_COMPONENTWISE) {
     return InvalidArgumentError("invalid value for optimality_norm");
   }
-  if (criteria.has_eps_optimal_absolute()) {
-    return InvalidArgumentError(
-        "eps_optimal_absolute should not be set (deprecated)");
-  }
-  if (criteria.has_eps_optimal_relative()) {
-    return InvalidArgumentError(
-        "eps_optimal_relative should not be set (deprecated)");
-  }
   if (criteria.has_detailed_optimality_criteria()) {
     ABSL_RETURN_IF_ERROR(CheckNonNegative(
         criteria.detailed_optimality_criteria()
@@ -80,18 +72,13 @@ absl::Status ValidateTerminationCriteria(const TerminationCriteria& criteria) {
         criteria.detailed_optimality_criteria()
             .eps_optimal_objective_gap_relative(),
         "detailed_optimality_criteria.eps_optimal_objective_gap_relative"));
-  } else if (criteria.has_simple_optimality_criteria()) {
+  } else {
     ABSL_RETURN_IF_ERROR(CheckNonNegative(
         criteria.simple_optimality_criteria().eps_optimal_absolute(),
         "simple_optimality_criteria.eps_optimal_absolute"));
     ABSL_RETURN_IF_ERROR(CheckNonNegative(
         criteria.simple_optimality_criteria().eps_optimal_relative(),
         "simple_optimality_criteria.eps_optimal_relative"));
-  } else {
-    ABSL_RETURN_IF_ERROR(CheckNonNegative(criteria.eps_optimal_absolute(),
-                                          "eps_optimal_absolute"));
-    ABSL_RETURN_IF_ERROR(CheckNonNegative(criteria.eps_optimal_relative(),
-                                          "eps_optimal_relative"));
   }
   ABSL_RETURN_IF_ERROR(CheckNonNegative(criteria.eps_primal_infeasible(),
                                         "eps_primal_infeasible"));
