@@ -144,22 +144,21 @@ public class Loader {
         URI resourceURI = getNativeResourceURI();
         Path tempPath = unpackNativeResources(resourceURI);
         // libraries order does matter <LibraryName, isMandatory> !
-        List<Map.Entry<String, Boolean>> dlls =
-            Arrays.asList((new AbstractMap.SimpleEntry("z", true)),
-                (new AbstractMap.SimpleEntry("bz2", true)),
-                (new AbstractMap.SimpleEntry("abseil_dll", true)),
-                (new AbstractMap.SimpleEntry("re2", true)),
-                (new AbstractMap.SimpleEntry("libutf8_validity", true)),
-                (new AbstractMap.SimpleEntry("libprotobuf", true)),
-                (new AbstractMap.SimpleEntry("highs", false)),
-                (new AbstractMap.SimpleEntry("libscip", false)),
-                (new AbstractMap.SimpleEntry("ortools_core", true)),
-                (new AbstractMap.SimpleEntry("ortools_math_opt", true)),
-                (new AbstractMap.SimpleEntry("ortools_packing", true)),
-                (new AbstractMap.SimpleEntry("ortools_routing", true)),
-                (new AbstractMap.SimpleEntry("ortools_scheduling", true)),
-                (new AbstractMap.SimpleEntry("ortools", true)),
-                (new AbstractMap.SimpleEntry("jniortools", true)));
+        List<Map.Entry<String, Boolean>> dlls = Arrays.asList(
+            (new AbstractMap.SimpleEntry("z", true)), (new AbstractMap.SimpleEntry("bz2", true)),
+            (new AbstractMap.SimpleEntry("abseil_dll", true)),
+            (new AbstractMap.SimpleEntry("re2", true)),
+            (new AbstractMap.SimpleEntry("libutf8_validity", true)),
+            (new AbstractMap.SimpleEntry("libprotobuf", true)),
+            (new AbstractMap.SimpleEntry("highs", false)),
+            (new AbstractMap.SimpleEntry("libscip", false)),
+            (new AbstractMap.SimpleEntry("ortools_core", true)),
+            (new AbstractMap.SimpleEntry("ortools_math_opt", true)),
+            (new AbstractMap.SimpleEntry("ortools_packing", true)),
+            (new AbstractMap.SimpleEntry("ortools_routing", true)),
+            (new AbstractMap.SimpleEntry("ortools_scheduling", true)),
+            (new AbstractMap.SimpleEntry("ortools", true)),
+            (new AbstractMap.SimpleEntry("jniortools", true)));
 
         for (Map.Entry<String, Boolean> dll : dlls) {
           try {
