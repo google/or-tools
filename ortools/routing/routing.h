@@ -154,7 +154,6 @@ Keywords: Vehicle Routing, Traveling Salesman Problem, TSP, VRP, CVRPTW, PDP.
 
 #include <algorithm>
 #include <atomic>
-#include <bitset>
 #include <cstdint>
 #include <deque>
 #include <functional>
