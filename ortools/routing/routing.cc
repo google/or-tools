@@ -17,7 +17,6 @@
 
 #include <algorithm>
 #include <atomic>
-#include <bitset>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -42,7 +41,6 @@
 #include "absl/flags/flag.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/functional/bind_front.h"
-#include "absl/hash/hash.h"
 #include "absl/log/check.h"
 #include "absl/log/die_if_null.h"
 #include "absl/log/log.h"
@@ -83,11 +81,9 @@
 #include "ortools/routing/neighborhoods.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/parameters.pb.h"
-#include "ortools/routing/path_state.h"
 #include "ortools/routing/search.h"
 #include "ortools/routing/types.h"
 #include "ortools/routing/utils.h"
-#include "ortools/util/bitset.h"
 #include "ortools/util/optional_boolean.pb.h"
 #include "ortools/util/piecewise_linear_function.h"
 #include "ortools/util/range_query_function.h"
