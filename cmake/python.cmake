@@ -515,6 +515,7 @@ add_custom_command(
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::base_cpu_detect>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::city>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::civil_time>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::clock_interface>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::cord>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::cord_internal>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::cordz_functions>>

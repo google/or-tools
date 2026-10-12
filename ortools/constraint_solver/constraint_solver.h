@@ -91,6 +91,7 @@ Solver(name = "pheasant",
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "absl/time/clock_interface.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/base_export.h"
@@ -117,6 +118,7 @@ namespace operations_research {
 class Assignment;
 class AssignmentProto;
 class CastConstraint;
+class ClockTimer;
 class Constraint;
 class Decision;
 class DecisionBuilder;
@@ -978,6 +980,10 @@ class Solver : public ReversibleEngine {
 
   /// misc debug string.
   std::string DebugString() const;
+
+  /// Set the clock in the timer. Does not take ownership. For dependency
+  /// injection.
+  void SetClock(absl::Clock* clock);
 
   /// The 'absolute time' as seen by the solver. Unless a user-provided clock
   /// was injected via SetClock() (eg. for unit tests), this is a real walltime,
