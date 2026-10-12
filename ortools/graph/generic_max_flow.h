@@ -135,7 +135,6 @@
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
 #include "ortools/graph/flow_problem.pb.h"
-#include "ortools/util/bitset.h"
 #include "ortools/util/stats.h"
 
 namespace operations_research {
