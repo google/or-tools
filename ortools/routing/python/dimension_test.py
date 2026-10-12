@@ -348,7 +348,9 @@ class DimensionTest(absltest.TestCase):
         dim.set_slack_cost_coefficient_for_vehicle(2, 0)
         node = manager.node_to_index(1)
         dim.set_cumul_var_soft_upper_bound(node, 10, 100)
-        dim.set_cumul_var_soft_lower_bound(node, 0, 100)
+        # Soft lower bound has to be greater than the hard lower bound set below to
+        # have any effect.
+        dim.set_cumul_var_soft_lower_bound(node, 1, 100)
         self.assertEqual(1, dim.get_transit_value(0, 1, 0))
         self.assertIsNotNone(dim.cumul_var(0))
         self.assertIsNotNone(dim.transit_var(0))
@@ -366,7 +368,7 @@ class DimensionTest(absltest.TestCase):
 
         self.assertFalse(dim.has_cumul_var_soft_lower_bound(0))
         self.assertTrue(dim.has_cumul_var_soft_lower_bound(node))
-        self.assertEqual(0, dim.get_cumul_var_soft_lower_bound(node))
+        self.assertEqual(1, dim.get_cumul_var_soft_lower_bound(node))
         self.assertEqual(100, dim.get_cumul_var_soft_lower_bound_coefficient(node))
 
         dim.set_soft_span_upper_bound_for_vehicle(routing.BoundCost(100, 10), 0)
@@ -434,6 +436,19 @@ class DimensionTest(absltest.TestCase):
         # Test InitializeBreaks and HasBreakConstraints
         self.assertTrue(dim.has_break_constraints())
         self.assertTrue(hasattr(dim, "initialize_breaks"))
+
+        # Test break intervals ordering
+        self.assertEqual(
+            routing.Dimension.BreakIntervalsOrdering.kUnordered,
+            dim.get_break_intervals_ordering_of_vehicle(0),
+        )
+        dim.set_break_intervals_ordering_of_vehicle(
+            0, routing.Dimension.BreakIntervalsOrdering.kOrdered
+        )
+        self.assertEqual(
+            routing.Dimension.BreakIntervalsOrdering.kOrdered,
+            dim.get_break_intervals_ordering_of_vehicle(0),
+        )
 
 
 if __name__ == "__main__":

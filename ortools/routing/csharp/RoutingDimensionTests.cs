@@ -130,5 +130,26 @@ public class RoutingDimensionTest
         }
         Assert.True(dimension.HasQuadraticCostSoftSpanUpperBounds());
     }
+
+    [Fact]
+    public void TestBreakIntervalsOrdering()
+    {
+        IndexManager manager = new IndexManager(31 /*locations*/, 7 /*vehicle*/, 3 /*depot*/);
+        Model routing = new Model(manager);
+        int transitIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) =>
+                                                           {
+                                                               var fromNode = manager.IndexToNode(fromIndex);
+                                                               var toNode = manager.IndexToNode(toIndex);
+                                                               return Math.Abs(toNode - fromNode);
+                                                           });
+        Assert.True(routing.AddDimension(transitIndex, 100, 100, true, "Dimension"));
+        Dimension dimension = routing.GetDimensionOrDie("Dimension");
+        foreach (int v in Enumerable.Range(0, manager.GetNumberOfVehicles()).ToArray())
+        {
+            Assert.Equal(Dimension.kUnordered, dimension.GetBreakIntervalsOrderingOfVehicle(v));
+            dimension.SetBreakIntervalsOrderingOfVehicle(v, Dimension.kOrdered);
+            Assert.Equal(Dimension.kOrdered, dimension.GetBreakIntervalsOrderingOfVehicle(v));
+        }
+    }
 }
 } // namespace Google.OrTools.Tests

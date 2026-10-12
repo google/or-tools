@@ -112,4 +112,22 @@ public final class RoutingDimensionTest {
     }
     assertTrue(dimension.hasQuadraticCostSoftSpanUpperBounds());
   }
+
+  @Test
+  public void testRoutingDimension_breakIntervalsOrdering() {
+    final IndexManager manager = new IndexManager(31, 7, 3);
+    final Model model = new Model(manager);
+    final int transitIndex = model.registerTransitCallback((long fromIndex, long toIndex) -> {
+      final int fromNode = manager.indexToNode(fromIndex);
+      final int toNode = manager.indexToNode(toIndex);
+      return (long) Math.abs(toNode - fromNode);
+    });
+    assertTrue(model.addDimension(transitIndex, 100, 100, true, "Dimension"));
+    final Dimension dimension = model.getMutableDimension("Dimension");
+    for (int v : IntStream.range(0, manager.getNumberOfVehicles()).toArray()) {
+      assertEquals(Dimension.kUnordered, dimension.getBreakIntervalsOrderingOfVehicle(v));
+      dimension.setBreakIntervalsOrderingOfVehicle(v, Dimension.kOrdered);
+      assertEquals(Dimension.kOrdered, dimension.getBreakIntervalsOrderingOfVehicle(v));
+    }
+  }
 }

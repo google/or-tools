@@ -430,6 +430,7 @@ import java.util.function.LongBinaryOperator;
 %rename (cumulVar) Dimension::CumulVar;
 %rename (fixedTransitVar) Dimension::FixedTransitVar;
 %rename (getBreakIntervalsOfVehicle) Dimension::GetBreakIntervalsOfVehicle;
+%rename (getBreakIntervalsOrderingOfVehicle) Dimension::GetBreakIntervalsOrderingOfVehicle;
 %rename (getCumulVarSoftLowerBound) Dimension::GetCumulVarSoftLowerBound;
 %rename (getCumulVarSoftLowerBoundCoefficient) Dimension::GetCumulVarSoftLowerBoundCoefficient;
 %rename (getCumulVarSoftUpperBound) Dimension::GetCumulVarSoftUpperBound;
@@ -453,6 +454,7 @@ import java.util.function.LongBinaryOperator;
 %rename (hasPickupToDeliveryLimits) Dimension::HasPickupToDeliveryLimits;
 %rename (setBreakDistanceDurationOfVehicle) Dimension::SetBreakDistanceDurationOfVehicle;
 %rename (setBreakIntervalsOfVehicle) Dimension::SetBreakIntervalsOfVehicle;
+%rename (setBreakIntervalsOrderingOfVehicle) Dimension::SetBreakIntervalsOrderingOfVehicle;
 %rename (setCumulVarSoftLowerBound) Dimension::SetCumulVarSoftLowerBound;
 %rename (setCumulVarSoftUpperBound) Dimension::SetCumulVarSoftUpperBound;
 %rename (setGlobalSpanCostCoefficient) Dimension::SetGlobalSpanCostCoefficient;
@@ -467,6 +469,10 @@ import java.util.function.LongBinaryOperator;
 %unignore Dimension::cumuls;
 %unignore Dimension::slacks;
 %unignore Dimension::transits;
+// Dimension nested enum
+%unignore Dimension::BreakIntervalsOrdering;
+%unignore Dimension::kUnordered;
+%unignore Dimension::kOrdered;
 
 // RoutingFilteredDecisionBuilder
 %unignore RoutingFilteredDecisionBuilder;

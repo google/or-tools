@@ -2358,7 +2358,9 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     }
   }
   if (!solver->IsCPSATSolver()) return true;
-  if (!dimension_->GetBreakDistanceDurationOfVehicle(vehicle).empty()) {
+  if (!dimension_->GetBreakDistanceDurationOfVehicle(vehicle).empty() ||
+      dimension_->GetBreakIntervalsOrderingOfVehicle(vehicle) ==
+          Dimension::BreakIntervalsOrdering::kOrdered) {
     // If there is an optional interval, the following model would be wrong.
     // TODO(user): support optional intervals.
     for (const IntervalVar* interval :

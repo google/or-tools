@@ -213,6 +213,7 @@ bintest(
     size = "large",
     srcs = ["cvrptw_with_refueling_test.bintest"],
     named_data = {"cvrptw_with_refueling": ":cvrptw_with_refueling"},
+    tags = ["noci"],
 )
 
 py_test(

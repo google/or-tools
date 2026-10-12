@@ -496,6 +496,19 @@ static const char*
         R"doc(Returns true iff the transit evaluator of 'vehicle' is positive 
 for all arcs.)doc";
 
+static const char*
+    __doc_operations_research_routing_Dimension_BreakIntervalsOrdering =  // NOLINT
+    R"doc(Describes whether the break intervals of a vehicle are ordered in time
+(each break starts after the previous break ends) or unordered.)doc";
+
+static const char*
+    __doc_operations_research_routing_Dimension_BreakIntervalsOrdering_kUnordered =  // NOLINT
+    R"doc()doc";
+
+static const char*
+    __doc_operations_research_routing_Dimension_BreakIntervalsOrdering_kOrdered =  // NOLINT
+    R"doc()doc";
+
 static const char* __doc_operations_research_routing_Dimension_CloseModel =
     R"doc(Finalize the model of the dimension.)doc";
 
@@ -524,6 +537,10 @@ static const char*
     __doc_operations_research_routing_Dimension_GetBreakIntervalsOfVehicle =
         R"doc(Returns the break intervals set by 
 SetBreakIntervalsOfVehicle().)doc";
+
+static const char*
+    __doc_operations_research_routing_Dimension_GetBreakIntervalsOrderingOfVehicle =  // NOLINT
+    R"doc(Returns whether the break intervals of the given vehicle are ordered.)doc";
 
 static const char* __doc_operations_research_routing_Dimension_GetCumulVarMax =
     R"doc(Gets the current maximum of the cumul variable associated to 
@@ -770,6 +787,11 @@ static const char*
     __doc_operations_research_routing_Dimension_SetBreakIntervalsOfVehicle_3 =
         R"doc(Deprecated, sets pre_travel(i, j) = node_visit_transit[i] and
 post_travel(i, j) = delays(i, j).)doc";
+
+static const char*
+    __doc_operations_research_routing_Dimension_SetBreakIntervalsOrderingOfVehicle =  // NOLINT
+    R"doc(Sets whether the break intervals of the given vehicle are ordered.
+If not called, the default is kUnordered.)doc";
 
 static const char*
     __doc_operations_research_routing_Dimension_SetCumulVarPiecewiseLinearCost =

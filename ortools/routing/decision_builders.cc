@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <functional>
-#include <limits>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -33,6 +32,7 @@
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/interval.h"
+#include "ortools/constraint_solver/reversible_data.h"
 #include "ortools/routing/lp_scheduling.h"
 #include "ortools/routing/routing.h"
 #include "ortools/routing/types.h"
@@ -221,10 +221,8 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
         dimension_travel_info_per_route_(
             std::move(dimension_travel_info_per_route)),
         decision_level_(0) {
-    if (!dimension_travel_info_per_route_.empty()) {
-      DCHECK(optimize_and_pack_);
-      DCHECK_EQ(dimension_travel_info_per_route_.size(), model_.vehicles());
-    }
+    DCHECK(dimension_travel_info_per_route_.empty() ||
+           dimension_travel_info_per_route_.size() == model_.vehicles());
   }
 
   Decision* Next(Solver* solver) override {
@@ -253,13 +251,8 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
     DCHECK(DimensionFixedTransitsEqualTransitEvaluators(dimension_));
     cp_variables_.clear();
     cp_values_.clear();
-    vehicles_without_resource_assignment_.clear();
-    vehicles_with_resource_assignment_.clear();
 
-    used_resources_per_class_.clear();
-    DetermineVehiclesRequiringResourceAssignment(
-        &vehicles_without_resource_assignment_,
-        &vehicles_with_resource_assignment_, &used_resources_per_class_);
+    DetermineVehiclesRequiringResourceAssignment();
 
     const auto next = [&model = model_](int64_t n) {
       return model.NextVar(n)->Value();
@@ -274,15 +267,13 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
     for (int vehicle : vehicles_without_resource_assignment_) {
       // This can trigger a fail if the time limit is reached.
       solver->TopPeriodicCheck();
-      cumul_values_.clear();
-      break_start_end_values_.clear();
       // TODO(user): Distinguish between FEASIBLE and OPTIMAL statuses to
       // keep track of the FEASIBLE-only cases, and resolve the feasible-only
       // cases with the remaining time (if any) after all routes have been
       // scheduled with the initial 'solve_duration_ratio'.
       if (!ComputeCumulAndBreakValuesForVehicle(
               vehicle, /*solve_duration_ratio=*/1.0 / solve_duration_shares,
-              next, &cumul_values_, &break_start_end_values_)) {
+              next)) {
         return false;
       }
       solve_duration_shares--;
@@ -297,10 +288,9 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
 
     // Do resource assignment for the vehicles requiring it and append the
     // corresponding var and values.
-    resource_indices_.clear();
     if (!ComputeVehicleResourceClassValuesAndIndices(
-            vehicles_with_resource_assignment_, used_resources_per_class_, next,
-            &resource_indices_)) {
+            vehicles_with_resource_assignment_, used_resources_per_class_,
+            next)) {
       return false;
     }
     DCHECK_EQ(resource_indices_.size(), model_.vehicles());
@@ -333,14 +323,11 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
     return true;
   }
 
-  void DetermineVehiclesRequiringResourceAssignment(
-      std::vector<int>* vehicles_without_resource_assignment,
-      std::vector<int>* vehicles_with_resource_assignment,
-      util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>*
-          used_resources_per_class) const {
-    DCHECK(vehicles_without_resource_assignment->empty());
-    DCHECK(vehicles_with_resource_assignment->empty());
-    DCHECK(used_resources_per_class->empty());
+  void DetermineVehiclesRequiringResourceAssignment() {
+    vehicles_without_resource_assignment_.clear();
+    vehicles_with_resource_assignment_.clear();
+    used_resources_per_class_.clear();
+
     struct VehicleInfo {
       int vehicle_index;
       int route_size;
@@ -363,15 +350,15 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
         vehicle_info.emplace_back(v, route_size, false);
       }
       absl::c_sort(vehicle_info);
-      vehicles_without_resource_assignment->resize(model_.vehicles());
+      vehicles_without_resource_assignment_.resize(model_.vehicles());
       absl::c_transform(vehicle_info,
-                        vehicles_without_resource_assignment->begin(),
+                        vehicles_without_resource_assignment_.begin(),
                         [](const VehicleInfo& v) { return v.vehicle_index; });
       return;
     }
 
     DCHECK_NE(resource_group_, nullptr);
-    used_resources_per_class->resize(
+    used_resources_per_class_.resize(
         resource_group_->GetResourceClassesCount());
     int num_vehicles_with_resource_assignment = 0;
     for (int v = 0; v < model_.vehicles(); ++v) {
@@ -386,8 +373,8 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
           needs_resource = false;
           const int resource_idx = model_.ResourceVar(v, rg_index_)->Value();
           DCHECK_GE(resource_idx, 0);
-          used_resources_per_class
-              ->at(resource_group_->GetResourceClassIndex(resource_idx))
+          used_resources_per_class_[resource_group_->GetResourceClassIndex(
+                                        resource_idx)]
               .insert(resource_idx);
         } else {
           num_vehicles_with_resource_assignment++;
@@ -397,29 +384,27 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
                                 needs_resource);
     }
     absl::c_sort(vehicle_info);
-    vehicles_with_resource_assignment->reserve(
+    vehicles_with_resource_assignment_.reserve(
         num_vehicles_with_resource_assignment);
-    vehicles_without_resource_assignment->reserve(
+    vehicles_without_resource_assignment_.reserve(
         model_.vehicles() - num_vehicles_with_resource_assignment);
     for (const VehicleInfo& v_info : vehicle_info) {
       if (v_info.requires_resource) {
-        vehicles_with_resource_assignment->push_back(v_info.vehicle_index);
+        vehicles_with_resource_assignment_.push_back(v_info.vehicle_index);
       } else {
-        vehicles_without_resource_assignment->push_back(v_info.vehicle_index);
+        vehicles_without_resource_assignment_.push_back(v_info.vehicle_index);
       }
     }
-    DCHECK_EQ(vehicles_without_resource_assignment->size() +
-                  vehicles_with_resource_assignment->size(),
+    DCHECK_EQ(vehicles_without_resource_assignment_.size() +
+                  vehicles_with_resource_assignment_.size(),
               model_.vehicles());
   }
 
   bool ComputeCumulAndBreakValuesForVehicle(
       int vehicle, double solve_duration_ratio,
-      const std::function<int64_t(int64_t)>& next_accessor,
-      std::vector<int64_t>* cumul_values,
-      std::vector<int64_t>* break_start_end_values) {
-    cumul_values->clear();
-    break_start_end_values->clear();
+      const std::function<int64_t(int64_t)>& next_accessor) {
+    cumul_values_.clear();
+    break_start_end_values_.clear();
     const RouteDimensionTravelInfo* const dimension_travel_info =
         dimension_travel_info_per_route_.empty()
             ? nullptr
@@ -444,12 +429,12 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
     DimensionSchedulingStatus status =
         optimize_and_pack_ ? optimizer->ComputePackedRouteCumuls(
                                  vehicle, solve_duration_ratio, next_accessor,
-                                 dimension_travel_info, resource, cumul_values,
-                                 break_start_end_values)
+                                 dimension_travel_info, resource,
+                                 &cumul_values_, &break_start_end_values_)
                            : optimizer->ComputeRouteCumuls(
                                  vehicle, solve_duration_ratio, next_accessor,
-                                 dimension_travel_info, resource, cumul_values,
-                                 break_start_end_values);
+                                 dimension_travel_info, resource,
+                                 &cumul_values_, &break_start_end_values_);
     // If relaxation is not feasible, try the MP optimizer.
     if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY) {
       DCHECK(!use_mp_optimizer);
@@ -457,12 +442,12 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
       status = optimize_and_pack_
                    ? mp_optimizer_->ComputePackedRouteCumuls(
                          vehicle, solve_duration_ratio, next_accessor,
-                         dimension_travel_info, resource, cumul_values,
-                         break_start_end_values)
+                         dimension_travel_info, resource, &cumul_values_,
+                         &break_start_end_values_)
                    : mp_optimizer_->ComputeRouteCumuls(
                          vehicle, solve_duration_ratio, next_accessor,
-                         dimension_travel_info, resource, cumul_values,
-                         break_start_end_values);
+                         dimension_travel_info, resource, &cumul_values_,
+                         &break_start_end_values_);
     }
     return status != DimensionSchedulingStatus::INFEASIBLE;
   }
@@ -471,9 +456,8 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
       absl::Span<const int> vehicles_to_assign,
       const util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>&
           used_resources_per_class,
-      const std::function<int64_t(int64_t)>& next_accessor,
-      std::vector<int>* resource_indices) {
-    resource_indices->assign(model_.vehicles(), -1);
+      const std::function<int64_t(int64_t)>& next_accessor) {
+    resource_indices_.assign(model_.vehicles(), -1);
     if (vehicles_to_assign.empty()) return true;
     DCHECK_NE(resource_group_, nullptr);
 
@@ -500,7 +484,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
                [&vehicle_rc_values = vehicle_resource_class_values_](int v) {
                  return &vehicle_rc_values[v].assignment_costs;
                },
-               resource_indices) >= 0;
+               &resource_indices_) >= 0;
   }
 
   const Model& model_;

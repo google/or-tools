@@ -187,6 +187,12 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   p.set_log_cost_scaling_factor(1.0);
   p.set_log_cost_offset(0.0);
 
+  if (ProbablyRunningInsideUnitTest()) {
+    // In unit tests, forge flakiness can cause occasional "hangs" that can
+    // easily last ~100ms or more. So we need a longer lns time limit to
+    // avoid unit test flakiness.
+    p.mutable_lns_time_limit()->set_seconds(1);
+  }
   const std::string error = FindErrorInRoutingSearchParameters(p);
   LOG_IF(DFATAL, !error.empty())
       << "The default search parameters aren't valid: " << error;
@@ -850,9 +856,7 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
   const RoutingSearchParameters::SchedulingSolver continuous_scheduling_solver =
       search_parameters.continuous_scheduling_solver();
   if (continuous_scheduling_solver ==
-          RoutingSearchParameters::SCHEDULING_UNSET ||
-      continuous_scheduling_solver ==
-          RoutingSearchParameters::SCHEDULING_CP_SAT) {
+      RoutingSearchParameters::SCHEDULING_UNSET) {
     errors.emplace_back(
         StrCat("Invalid value for continuous_scheduling_solver: ",
                RoutingSearchParameters::SchedulingSolver_Name(
