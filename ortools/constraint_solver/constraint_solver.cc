@@ -127,7 +127,7 @@ constexpr typename std::underlying_type<E>::type to_underlying(E e) {
 
 ConstraintSolverParameters Solver::DefaultSolverParameters() {
   ConstraintSolverParameters params;
-  params.set_compress_trail(ConstraintSolverParameters::NO_COMPRESSION);
+  params.set_compress_trail(ConstraintSolverParameters::COMPRESS_WITH_ZLIB);
   params.set_trail_block_size(8000);
   params.set_array_split_size(16);
   params.set_store_names(true);

@@ -23,47 +23,13 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
+#include "ortools/base/gzipstring.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
 #include "zlib.h"
 
 namespace operations_research {
 
-// ----- addrval struct -----
-
-// This template class is used internally to implement reversibility.
-// It stores an address and the value that was at the address.
-//
-// `addrval<T>` is designed to have no padding so that we can directly alias
-// into arrays of `addrval<T>`.
-template <class T>
-class addrval {
- public:
-  static_assert(std::is_trivial_v<T>);
-
-  addrval() = default;
-  explicit addrval(T* address) {
-    address_data_ = std::bit_cast<TPtr>(address);
-    old_value_data_ = std::bit_cast<TVal>(*address);
-  }
-  void restore() const {
-    T* const address = std::bit_cast<T*>(address_data_);
-    *address = std::bit_cast<T>(old_value_data_);
-  }
-
- private:
-  struct TPtr {
-    char data[sizeof(T*)] = {};
-  };
-  struct TVal {
-    char data[sizeof(T)] = {};
-  };
-  TPtr address_data_;
-  TVal old_value_data_;
-};
-static_assert(alignof(addrval<int>) == 1 &&
-              sizeof(addrval<int>) == sizeof(int*) + sizeof(int));
-static_assert(alignof(addrval<double>) == 1 &&
-              sizeof(addrval<double>) == sizeof(double*) + sizeof(double));
+using internal::addrval;
 
 // ---------- Trail Packer ---------
 // Abstract class to pack trail blocks.
@@ -83,6 +49,31 @@ class TrailPacker {
 
  private:
   const int block_size_;
+};
+
+template <class T>
+class GZipTrailPacker : public TrailPacker<T> {
+ public:
+  explicit GZipTrailPacker(int block_size) : TrailPacker<T>(block_size) {}
+
+  // This type is neither copyable nor movable.
+  GZipTrailPacker(const GZipTrailPacker&) = delete;
+  GZipTrailPacker& operator=(const GZipTrailPacker&) = delete;
+  ~GZipTrailPacker() override {}
+  void Pack(const addrval<T>* block, std::string* packed_block) override {
+    DCHECK(block != nullptr);
+    DCHECK(packed_block != nullptr);
+    absl::string_view block_str(reinterpret_cast<const char*>(block),
+                                this->input_size());
+    GzipString(block_str, packed_block);
+  }
+  void Unpack(const std::string& packed_block, addrval<T>* block) override {
+    DCHECK(block != nullptr);
+    std::string uncompressed_block;
+    const bool ok = GunzipString(packed_block, &uncompressed_block);
+    DCHECK(ok);
+    memcpy(block, uncompressed_block.c_str(), uncompressed_block.size());
+  }
 };
 
 template <class T>
@@ -171,6 +162,10 @@ class CompressedTrail {
       }
       case ConstraintSolverParameters::COMPRESS_WITH_ZLIB: {
         packer_.reset(new ZlibTrailPacker<T>(block_size));
+        break;
+      }
+      case ConstraintSolverParameters::COMPRESS_WITH_GZIP: {
+        packer_.reset(new GZipTrailPacker<T>(block_size));
         break;
       }
       default: {

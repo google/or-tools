@@ -18,7 +18,8 @@ load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_python//python:py_library.bzl", "py_library")
-load("//bazel:or_cc_rules.bzl", "or_cc_library")
+load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library", "or_cc_test")
+load("//tools/testing:bintest.bzl", "bintest")
 
 proto_library(
     name = "assignment_proto",
@@ -290,4 +291,525 @@ or_cc_library(
         "@abseil-cpp//absl/time:clock_interface",
         "@abseil-cpp//absl/types:span",
     ],
+)
+
+or_cc_library(
+    name = "constraint_solver_test_util",
+    testonly = 1,
+    srcs = ["constraint_solver_test_util.cc"],
+    hdrs = ["constraint_solver_test_util.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cp",
+        "//ortools/base:gmock",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+or_cc_test(
+    name = "alldiff_test",
+    size = "small",
+    srcs = ["alldiff_test.cc"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+or_cc_test(
+    name = "assignment_test",
+    size = "small",
+    srcs = ["assignment_test.cc"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        "//ortools/base:gmock_main",
+        "//ortools/base:path",
+        "//ortools/base:types",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+or_cc_binary(
+    name = "assignment_benchmark",
+    testonly = True,
+    srcs = ["assignment_benchmark.cc"],
+    deps = [
+        ":cp",
+        "@google_benchmark//:benchmark_main",
+    ],
+)
+
+or_cc_test(
+    name = "compact_table_test",
+    size = "small",
+    srcs = ["table_test.cc"],
+    copts = ["-DUSE_COMPACT_TABLE"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        "//ortools/base:gmock_main",
+        "//ortools/util:tuple_set",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+    ],
+)
+
+or_cc_test(
+    name = "constraints_test",
+    size = "small",
+    srcs = ["constraints_test.cc"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        "//ortools/base:gmock_main",
+        "//ortools/base:types",
+    ],
+)
+
+or_cc_test(
+    name = "count_cst_test",
+    size = "small",
+    srcs = ["count_cst_test.cc"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+or_cc_test(
+    name = "diffn_test",
+    size = "small",
+    srcs = ["diffn_test.cc"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+or_cc_test(
+    name = "default_search_test",
+    size = "small",
+    srcs = ["default_search_test.cc"],
+    deps = [
+        ":cp",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+or_cc_test(
+    name = "domain_test",
+    size = "medium",
+    srcs = ["domain_test.cc"],
+    deps = [
+        ":cp",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+or_cc_test(
+    name = "deviation_test",
+    size = "small",
+    srcs = ["deviation_test.cc"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+or_cc_test(
+    name = "element_test",
+    size = "small",
+    srcs = ["element_test.cc"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        "//ortools/base:gmock_main",
+        "//ortools/base:types",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+or_cc_binary(
+    name = "element_benchmark",
+    testonly = True,
+    srcs = ["element_benchmark.cc"],
+    deps = [
+        ":cp",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:distributions",
+        "@google_benchmark//:benchmark_main",
+    ],
+)
+
+or_cc_test(
+    name = "expressions_test",
+    size = "large",
+    timeout = "short",
+    srcs = ["expressions_test.cc"],
+    shard_count = 50,
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        ":reversible_data",
+        ":reversible_engine",
+        "//ortools/base:gmock_main",
+        "//ortools/base:types",
+        "//ortools/util:piecewise_linear_function",
+        "//ortools/util:saturated_arithmetic",
+        "@abseil-cpp//absl/container:linked_hash_set",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+or_cc_test(
+    name = "expr_array_test",
+    size = "small",
+    srcs = ["expr_array_test.cc"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        ":solver_parameters_cc_proto",
+        "//ortools/base:gmock_main",
+        "//ortools/base:types",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+or_cc_test(
+    name = "small_expr_array_test",
+    size = "small",
+    srcs = ["expr_array_test.cc"],
+    copts = ["-DSMALL_ARRAY"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        ":solver_parameters_cc_proto",
+        "//ortools/base:gmock_main",
+        "//ortools/base:types",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+or_cc_test(
+    name = "expr_cst_test",
+    size = "small",
+    srcs = ["expr_cst_test.cc"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        "//ortools/base:gmock_main",
+        "//ortools/base:types",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/log",
+    ],
+)
+
+or_cc_test(
+    name = "graph_constraints_test",
+    size = "small",
+    srcs = ["graph_constraints_test.cc"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/container:flat_hash_map",
+    ],
+)
+
+or_cc_test(
+    name = "graph_delayed_constraints_test",
+    size = "small",
+    srcs = ["graph_constraints_test.cc"],
+    copts = ["-DDELAYED_PATH_CUMUL"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/container:flat_hash_map",
+    ],
+)
+
+or_cc_test(
+    name = "interval_test",
+    size = "small",
+    srcs = ["interval_test.cc"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        "//ortools/base:gmock_main",
+        "//ortools/base:types",
+    ],
+)
+
+or_cc_test(
+    name = "constraint_solver_test",
+    size = "small",
+    srcs = ["constraint_solver_test.cc"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        ":reversible_data",
+        ":reversible_engine",
+        "//ortools/base:gmock_main",
+        "//ortools/base:gzipstring",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
+or_cc_test(
+    name = "local_search_test",
+    size = "medium",
+    srcs = ["local_search_test.cc"],
+    tags = ["noci"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        ":search_stats_cc_proto",
+        ":solver_parameters_cc_proto",
+        "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
+        "//ortools/base:strong_vector",
+        "//ortools/base:types",
+        "//ortools/util:testing_utils",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+or_cc_binary(
+    name = "local_search_benchmark",
+    testonly = True,
+    srcs = ["local_search_benchmark.cc"],
+    deps = [
+        ":cp",
+        "//ortools/base:types",
+        "@abseil-cpp//absl/types:span",
+        "@google_benchmark//:benchmark_main",
+    ],
+)
+
+or_cc_test(
+    name = "model_cache_test",
+    size = "small",
+    srcs = ["model_cache_test.cc"],
+    deps = [
+        ":cp",
+        ":model_cache",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+or_cc_test(
+    name = "pack_test",
+    size = "small",
+    srcs = ["pack_test.cc"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+or_cc_test(
+    name = "range_cst_test",
+    size = "small",
+    srcs = ["range_cst_test.cc"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        "//ortools/base:gmock_main",
+        "//ortools/base:types",
+        "@abseil-cpp//absl/log",
+    ],
+)
+
+or_cc_test(
+    name = "resource_test",
+    size = "small",
+    srcs = ["resource_test.cc"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        "//ortools/base:gmock_main",
+        "//ortools/base:types",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
+    ],
+)
+
+or_cc_test(
+    name = "search_test",
+    size = "small",
+    srcs = ["search_test.cc"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        ":search_limit_cc_proto",
+        "//ortools/base:gmock_main",
+        "//ortools/base:types",
+        "//ortools/graph:index",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:log_entry",
+        "@abseil-cpp//absl/log:log_sink",
+        "@abseil-cpp//absl/log:log_sink_registry",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/time:simulated_clock",
+    ],
+)
+
+or_cc_test(
+    name = "sched_search_test",
+    size = "small",
+    srcs = ["sched_search_test.cc"],
+    deps = [
+        ":cp",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/log",
+    ],
+)
+
+or_cc_test(
+    name = "sched_constraints_test",
+    size = "small",
+    srcs = ["sched_constraints_test.cc"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+or_cc_test(
+    name = "sched_expr_test",
+    size = "small",
+    srcs = ["sched_expr_test.cc"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+or_cc_test(
+    name = "table_test",
+    size = "small",
+    srcs = ["table_test.cc"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        "//ortools/base:gmock_main",
+        "//ortools/util:tuple_set",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+    ],
+)
+
+or_cc_test(
+    name = "timetabling_test",
+    size = "small",
+    srcs = ["timetabling_test.cc"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+or_cc_test(
+    name = "reversible_data_test",
+    size = "small",
+    srcs = ["reversible_data_test.cc"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        ":reversible_data",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+or_cc_test(
+    name = "watcher_test",
+    size = "small",
+    srcs = ["watcher_test.cc"],
+    deps = [
+        ":constraint_solver_test_util",
+        ":cp",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+or_cc_test(
+    name = "tsp_test",
+    size = "small",
+    srcs = ["tsp_test.cc"],
+    deps = [
+        ":cp",
+        "//ortools/base:gmock_main",
+        "//ortools/base:strtoint",
+        "//ortools/base:types",
+        "//ortools/routing/parsers:simple_graph",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+or_cc_binary(
+    name = "alldiff_bench",
+    srcs = ["alldiff_bench.cc"],
+    deps = [
+        ":cp",
+        "//ortools/base",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+bintest(
+    name = "alldiff_bench_test",
+    size = "medium",
+    srcs = [":alldiff_bench_test.bintest"],
+    named_data = {
+        "alldiff_bench": ":alldiff_bench",
+    },
 )
