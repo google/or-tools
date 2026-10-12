@@ -32,7 +32,7 @@ namespace {
 class ClauseFactory {
  public:
   ClausePtr NewClause(absl::Span<const int> literals) {
-    const ClausePtr clause = ClausePtr(Literals(literals));
+    const ClausePtr clause = NewAllocatedClausePtr(Literals(literals));
     sat_clauses_.push_back(absl::WrapUnique(clause.GetSatClause()));
     return clause;
   }

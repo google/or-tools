@@ -15,11 +15,13 @@
 #define ORTOOLS_GLOP_LP_SOLVER_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 
 #include "absl/base/nullability.h"
 #include "absl/flags/declare.h"
+#include "absl/types/optional_ref.h"
 #include "ortools/base/base_export.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/revised_simplex.h"
@@ -117,10 +119,10 @@ class LPSolver {
   Fractional GetObjectiveValue() const;
 
   // Accessors to information related to variables.
-  const DenseRow& variable_values() const { return primal_values_; }
+  const DenseRow& variable_values() const { return solution_.primal_values; }
   const DenseRow& reduced_costs() const { return reduced_costs_; }
   const VariableStatusRow& variable_statuses() const {
-    return variable_statuses_;
+    return solution_.variable_statuses;
   }
 
   // Accessors to information related to constraints. The activity of a
@@ -129,24 +131,33 @@ class LPSolver {
   //
   // Note that the dual_values() do not take into account an eventual objective
   // scaling of the solved LinearProgram.
-  const DenseColumn& dual_values() const { return dual_values_; }
+  const DenseColumn& dual_values() const { return solution_.dual_values; }
   const DenseColumn& constraint_activities() const {
     return constraint_activities_;
   }
   const ConstraintStatusColumn& constraint_statuses() const {
-    return constraint_statuses_;
+    return solution_.constraint_statuses;
   }
 
-  // Accessors to information related to unboundedness. A primal ray is returned
-  // for primal unbounded problems and a dual ray is returned for dual unbounded
-  // problems. constraints_dual_ray corresponds to dual multiplier for
-  // constraints and variable_bounds_dual_ray corresponds to dual multipliers
-  // for variable bounds (cf. reduced_costs).
-  const DenseRow& primal_ray() const { return primal_ray_; }
-  const DenseColumn& constraints_dual_ray() const {
-    return constraints_dual_ray_;
+  // Accessors to information related to unboundedness/infeasibilities.
+  //
+  // A primal ray is returned for primal unbounded problems.
+  //
+  // A dual ray is returned for dual unbounded or primal infeasible problems
+  // (depending on the algorithm, primal simplex or dual simplex, that detected
+  // the unboundness/infeasibility). See RevisedSimplex::GetDualRay()
+  // documentation for more details.
+  //
+  // constraints_dual_ray corresponds to dual multiplier for constraints and
+  // variable_bounds_dual_ray corresponds to dual multipliers for variable
+  // bounds (cf. reduced_costs).
+  absl::optional_ref<const DenseRow> primal_ray() const {
+    return solution_.primal_ray;
   }
-  const DenseRow& variable_bounds_dual_ray() const {
+  absl::optional_ref<const DenseColumn> constraints_dual_ray() const {
+    return solution_.dual_ray;
+  }
+  absl::optional_ref<const DenseRow> variable_bounds_dual_ray() const {
     return variable_bounds_dual_ray_;
   }
 
@@ -230,6 +241,7 @@ class LPSolver {
   // Computes derived quantities from the solution.
   void ComputeReducedCosts(const LinearProgram& lp);
   void ComputeConstraintActivities(const LinearProgram& lp);
+  void ComputeVariableBoundsDualRay(const LinearProgram& lp);
 
   // Computes the primal/dual objectives (without the offset). Note that the
   // dual objective needs the reduced costs in addition to the dual values.
@@ -295,25 +307,17 @@ class LPSolver {
   // The number of revised simplex iterations used by the last Solve().
   int num_revised_simplex_iterations_;
 
-  // The current ProblemSolution.
-  // TODO(user): use a ProblemSolution directly? Note, that primal_ray_,
-  // constraints_dual_ray_ and variable_bounds_dual_ray_ are not currently in
-  // ProblemSolution and are filled directly by RunRevisedSimplex().
-  DenseRow primal_values_;
-  DenseColumn dual_values_;
-  VariableStatusRow variable_statuses_;
-  ConstraintStatusColumn constraint_statuses_;
-  DenseRow primal_ray_;
-  DenseColumn constraints_dual_ray_;
-  DenseRow variable_bounds_dual_ray_;
+  // The solution of the last solve.
+  ProblemSolution solution_;
 
-  // Quantities computed from the solution and the linear program.
+  // Quantities computed from the solution_ and the linear program.
   DenseRow reduced_costs_;
   DenseColumn constraint_activities_;
   Fractional problem_objective_value_ = 0.0;
   bool may_have_multiple_solutions_;
   Fractional max_absolute_primal_infeasibility_;
   Fractional max_absolute_dual_infeasibility_;
+  std::optional<DenseRow> variable_bounds_dual_ray_;
 
   // Proto holding all the parameters of the algorithm.
   GlopParameters parameters_;

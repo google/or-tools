@@ -41,7 +41,6 @@
 #include "ortools/base/timer.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/container.h"
-#include "ortools/sat/deterministic_time.h"
 #include "ortools/sat/inclusion.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
@@ -52,6 +51,7 @@
 #include "ortools/sat/sat_trail.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -416,8 +416,7 @@ void ClauseManager::InternalDetach(const SatClause* clause,
 
   --num_watched_clauses_;
   if (lrat_proof_handler_ != nullptr) {
-    lrat_proof_handler_->DeleteClause(ClausePtr(clause),
-                                      /*delete_sat_clause=*/false);
+    lrat_proof_handler_->DeleteClause(ClausePtr(clause));
   }
   deletion_counters_[static_cast<int>(source)]++;
   clauses_info_.erase(clause);
@@ -2122,6 +2121,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   WallTimer wall_timer;
   wall_timer.Start();
   log_info |= VLOG_IS_ON(1);
+  DeterministicTimer2<{.scale1 = 4e-8, .scale2 = 1e-8}> timer(time_limit_);
 
   // Let's remove all fixed/duplicate variables first.
   if (!RemoveDuplicatesAndFixedVariables()) return false;
@@ -2135,14 +2135,14 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   util_intops::StrongVector<LiteralIndex, LiteralIndex> parents;
   std::vector<Literal> to_fix;
   std::vector<Literal> parent_of_to_fix;
-  double dtime = 0.0;
+  uint64_t graph_work_done = 0;
   {
     SccGraph::SccFinder finder;
     SccGraph graph(&finder, &implications_and_amos_, &at_most_one_buffer_,
                    lrat_helper_ != nullptr ? &parents : nullptr, &to_fix,
                    lrat_helper_ != nullptr ? &parent_of_to_fix : nullptr);
     finder.FindStronglyConnectedComponents(size, graph, &scc);
-    dtime += 4e-8 * graph.work_done_;
+    graph_work_done = graph.work_done_;
   }
 
   // The old values will still be valid.
@@ -2151,6 +2151,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
 
   int num_equivalences = 0;
   int num_new_redundant_literals = 0;
+  uint64_t work_done = 0;
 
   // We increment num_redundant_literals_ only at the end, to avoid breaking the
   // invariant "num_redundant_literals_ % 2 == 0" in case of early return.
@@ -2249,7 +2250,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
           representative_list.PushBackLiteral(rep);
         }
       }
-      dtime += 1e-8 * static_cast<double>(ref.num_literals());
+      work_done += ref.num_literals();
 
       // Add representative <=> literal.
       representative_list.PushBackLiteral(literal);
@@ -2354,7 +2355,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   // call to RemoveFixedVariables().
   num_redundant_literals_ += num_new_redundant_literals;
   num_current_equivalences_ = num_equivalences;
-  time_limit_->AdvanceDeterministicTime(dtime);
+  timer.Advance(graph_work_done, work_done);
   const int num_fixed_during_scc =
       trail_->Index() - num_processed_fixed_variables_;
 
@@ -2364,16 +2365,13 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
 
   DeleteUnusedLratImplications();
   DCHECK(InvariantsAreOk());
-  LOG_IF(INFO, log_info) << "SCC. " << num_equivalences
-                         << " redundant equivalent literals. "
-                         << num_fixed_during_scc << " fixed. "
-                         << ComputeNumImplicationsForLog()
-                         << " implications left. "
-                         << implications_and_amos_.size() << " literals."
-                         << " size of at_most_one buffer = "
-                         << at_most_one_buffer_.size() << "."
-                         << " dtime: " << dtime
-                         << " wtime: " << wall_timer.Get();
+  LOG_IF(INFO, log_info)
+      << "SCC. " << num_equivalences << " redundant equivalent literals. "
+      << num_fixed_during_scc << " fixed. " << ComputeNumImplicationsForLog()
+      << " implications left. " << implications_and_amos_.size() << " literals."
+      << " size of at_most_one buffer = " << at_most_one_buffer_.size() << "."
+      << " dtime: " << timer.dtime(graph_work_done, work_done)
+      << " wtime: " << wall_timer.Get();
   return true;
 }
 
@@ -2399,6 +2397,7 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
   log_info |= VLOG_IS_ON(1);
   WallTimer wall_timer;
   wall_timer.Start();
+  DeterministicTimer<{.scale = 1e-8}> timer(time_limit_);
 
   int64_t num_fixed = 0;
   int64_t num_new_redundant_implications = 0;
@@ -2581,8 +2580,7 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
   DCHECK(InvariantsAreOk());
 
   gtl::STLClearObject(&tmp_removed_);
-  const double dtime = 1e-8 * work_done_in_mark_descendants_;
-  time_limit_->AdvanceDeterministicTime(dtime);
+  timer.Advance(work_done_in_mark_descendants_);
   num_redundant_implications_ += num_new_redundant_implications;
   LOG_IF(INFO, log_info) << "Transitive reduction removed "
                          << num_new_redundant_implications << " literals. "
@@ -2590,7 +2588,8 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
                          << ComputeNumImplicationsForLog()
                          << " implications left. "
                          << implications_and_amos_.size() << " literals."
-                         << " dtime: " << dtime
+                         << " dtime: "
+                         << timer.dtime(work_done_in_mark_descendants_)
                          << " wtime: " << wall_timer.Get()
                          << (aborted ? " Aborted." : "");
   return true;

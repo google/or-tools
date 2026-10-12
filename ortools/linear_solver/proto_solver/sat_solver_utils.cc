@@ -82,17 +82,6 @@ glop::ProblemStatus ApplyMipPresolveSteps(
     ADD_LP_PREPROCESSOR(glop::UnconstrainedVariablePreprocessor);
   }
 
-  // These preprocessors do not need postsolve.
-  ADD_LP_PREPROCESSOR(IntegerBoundsPreprocessor, 1e-6);
-  ADD_LP_PREPROCESSOR(BoundPropagationPreprocessor, 1e-6);
-  ADD_LP_PREPROCESSOR(ImpliedIntegerPreprocessor, 1e-6);
-
-  // We need to re-run this after the ImpliedIntegerPreprocessor because the
-  // latter does not round the bounds of the constraints involving only
-  // integer variables and coefficients.
-  ADD_LP_PREPROCESSOR(IntegerBoundsPreprocessor, 1e-6);
-  ADD_LP_PREPROCESSOR(ReduceCostOverExclusiveOrConstraintPreprocessor);
-
   for (int i = 0; i < lp_preprocessors.size(); ++i) {
     if (time_limit->LimitReached()) break;
     auto& preprocessor = lp_preprocessors[i];
@@ -106,21 +95,6 @@ glop::ProblemStatus ApplyMipPresolveSteps(
     }
     if (result.postsolve_is_needed) {
       for_postsolve->push_back(std::move(preprocessor));
-    }
-  }
-
-  // Finally, we make sure all domains contain zero.
-  if (!hint_is_present) {
-    auto shift_bounds =
-        std::make_unique<glop::ShiftVariableBoundsPreprocessor>(&glop_params);
-    shift_bounds->UseInMipContext();
-    shift_bounds->OnlyShiftByIntegerValue();
-    const glop::Preprocessor::Result result = shift_bounds->Run(&lp);
-    if (result.solve_status.has_value()) {
-      return result.solve_status->problem_status();
-    }
-    if (result.postsolve_is_needed) {
-      for_postsolve->push_back(std::move(shift_bounds));
     }
   }
 

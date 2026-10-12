@@ -186,9 +186,12 @@ absl::Status CheckPrimalSolutionAndTerminationConsistency(
   }
   if (termination.problem_status().primal_status() !=
       FEASIBILITY_STATUS_FEASIBLE) {
-    return absl::InvalidArgumentError(
-        "primal feasibility status is not FEASIBILITY_STATUS_FEASIBLE, but "
-        "primal feasible solution is returned.");
+    return ortools::InvalidArgumentErrorBuilder()
+           << "a primal feasible solution is returned but the primal "
+              "feasibility status is "
+           << FeasibilityStatusProto_Name(
+                  termination.problem_status().primal_status())
+           << " instead of FEASIBILITY_STATUS_FEASIBLE";
   }
   const double best_objective = GetBestPrimalObjective(solutions, maximize);
   const double primal_bound = termination.objective_bounds().primal_bound();
@@ -208,9 +211,12 @@ absl::Status CheckDualSolutionAndStatusConsistency(
   if (termination.problem_status().dual_status() !=
           FEASIBILITY_STATUS_FEASIBLE &&
       HasDualFeasibleSolution(solutions)) {
-    return absl::InvalidArgumentError(
-        "dual feasibility status is not FEASIBILITY_STATUS_FEASIBLE, but "
-        "dual feasible solution is returned.");
+    return ortools::InvalidArgumentErrorBuilder()
+           << "a dual feasible solution is returned but the dual feasibility "
+              "status is "
+           << FeasibilityStatusProto_Name(
+                  termination.problem_status().dual_status())
+           << " instead of FEASIBILITY_STATUS_FEASIBLE";
   }
   const double best_objective = GetBestDualObjective(solutions, maximize);
   const double dual_bound = termination.objective_bounds().dual_bound();

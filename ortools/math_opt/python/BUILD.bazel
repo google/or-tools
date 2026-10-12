@@ -505,7 +505,9 @@ py_test(
 py_library(
     name = "normalize",
     srcs = ["normalize.py"],
-    visibility = ["//ortools/math_opt/python:__subpackages__"],
+    visibility = [
+        "//ortools/math_opt/python:__subpackages__",
+    ],
     deps = ["@protobuf//:protobuf_python"],
 )
 

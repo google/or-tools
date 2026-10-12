@@ -366,9 +366,6 @@ class LinearConstraintManager {
   bool objective_norm_computed_ = false;
   double objective_l2_norm_ = 0.0;
 
-  // Total deterministic time spent in this class.
-  double dtime_ = 0.0;
-
   // Sparse representation of the objective coeffs indexed by positive variable
   // indices. Important: We cannot use a dense representation here in the corner
   // case where we have many independent LPs. Alternatively, we could share a

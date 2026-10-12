@@ -1243,6 +1243,188 @@ TEST(DualizerPreprocessorTest, SmallProgram) {
   dualizer_preprocessor.RecoverSolution(solve_status, &solution);
 }
 
+TEST(DualizerPreprocessorTest, BasisFreeRecoversInteriorPrimalAndDualValues) {
+  std::unique_ptr<TimeLimit> time_limit = TimeLimit::Infinite();
+  GlopParameters params;
+  params.set_solve_dual_problem(GlopParameters::ALWAYS_DO);
+
+  // c0: lower-bounded [2, inf), shift = 2.
+  // c1: upper-bounded (-inf, -3], shift = -3.
+  // c2: boxed [1, 5], shift = 1.
+  // c3: fixed [4, 4], shift = 4.
+  // c4: free (-inf, inf), shift = 0.
+  const std::string kLinearProgram =
+      "min: 0 c0 + 0 c1 + 0 c2 + 0 c3 + 0 c4;"
+      "r0: 1 c0 + 2 c2 = 5;"
+      "r1: -1 c1 + 1 c3 + 3 c4 <= 10;"
+      "c0 >= 2;"
+      "c1 <= -3;"
+      "1 <= c2 <= 5;"
+      "4 <= c3 <= 4;";
+  LinearProgram lp;
+  ASSERT_TRUE(ParseLp(kLinearProgram, &lp));
+
+  DualizerPreprocessor basis_free_preprocessor(&params);
+  basis_free_preprocessor.SetRequiresBasis(false);
+  basis_free_preprocessor.SetTimeLimit(time_limit.get());
+  EXPECT_THAT(basis_free_preprocessor.Run(&lp),
+              PreprocessorResultIs(/*postsolve_is_needed=*/true,
+                                   /*status=*/std::nullopt));
+  // Dual LP has 5 rows (from 5 primal cols) and 8 cols:
+  // - cols 0..1: 2 primal constraints
+  // - cols 2..4: lower bounds of primal cols 0, 2, 3
+  // - cols 5..7: upper bounds of primal cols 1, 2, 3
+  ASSERT_EQ(RowIndex(5), lp.num_constraints());
+  ASSERT_EQ(ColIndex(8), lp.num_variables());
+
+  SolveStatus solve_status = OptimalSolveStatus();
+  ProblemSolution solution(RowIndex(5), ColIndex(8));
+  // Simulate a basis-free solver that populates dummy BASIC statuses.
+  solution.variable_statuses.assign(ColIndex(8), VariableStatus::BASIC);
+  solution.constraint_statuses.assign(RowIndex(5), ConstraintStatus::BASIC);
+  // Shifted interior primal values (dual_values of the dual LP).
+  solution.dual_values = {1.5, -0.5, 2.2, 0.0, -7.25};
+  // Dual variables (primal_values of the dual LP):
+  // [y0, y1, z_l0, z_l2, z_l3, z_u1, z_u2, z_u3].
+  solution.primal_values = {10.0, -4.0, 0.75, 1.25, 5.0, -2.5, -0.25, -1.5};
+
+  basis_free_preprocessor.RecoverSolution(solve_status, &solution);
+
+  // Interior primal values must be preserved (unshifted) without snapping to
+  // bounds despite all dual statuses being BASIC.
+  EXPECT_EQ(ColIndex(5), solution.primal_values.size());
+  EXPECT_DOUBLE_EQ(3.5, solution.primal_values[ColIndex(0)]);
+  EXPECT_DOUBLE_EQ(-3.5, solution.primal_values[ColIndex(1)]);
+  EXPECT_DOUBLE_EQ(3.2, solution.primal_values[ColIndex(2)]);
+  EXPECT_DOUBLE_EQ(4.0, solution.primal_values[ColIndex(3)]);
+  EXPECT_DOUBLE_EQ(-7.25, solution.primal_values[ColIndex(4)]);
+
+  EXPECT_EQ(RowIndex(2), solution.dual_values.size());
+  EXPECT_DOUBLE_EQ(10.0, solution.dual_values[RowIndex(0)]);
+  EXPECT_DOUBLE_EQ(-4.0, solution.dual_values[RowIndex(1)]);
+
+  // Basis-free mode leaves all recovered statuses as FREE.
+  for (ColIndex col(0); col < ColIndex(5); ++col) {
+    EXPECT_EQ(VariableStatus::FREE, solution.variable_statuses[col]);
+  }
+  for (RowIndex row(0); row < RowIndex(2); ++row) {
+    EXPECT_EQ(ConstraintStatus::FREE, solution.constraint_statuses[row]);
+  }
+}
+
+TEST(DualizerPreprocessorTest, BasisFreeMaximizationAndRangedRow) {
+  std::unique_ptr<TimeLimit> time_limit = TimeLimit::Infinite();
+  GlopParameters params;
+  params.set_solve_dual_problem(GlopParameters::ALWAYS_DO);
+
+  // r0 is a ranged constraint, which PopulateFromDual duplicates.
+  const std::string kLinearProgram =
+      "max: 0 c0 + 0 c1;"
+      "r0: -2 <= 1 c0 + 2 c1 <= 6;"
+      "r1: 3 c0 >= 1;"
+      "1 <= c0 <= 4;"
+      "c1 >= 0;";
+  LinearProgram lp;
+  ASSERT_TRUE(ParseLp(kLinearProgram, &lp));
+
+  DualizerPreprocessor preprocessor(&params);
+  preprocessor.SetRequiresBasis(false);
+  preprocessor.SetTimeLimit(time_limit.get());
+  EXPECT_THAT(preprocessor.Run(&lp),
+              PreprocessorResultIs(/*postsolve_is_needed=*/true,
+                                   /*status=*/std::nullopt));
+  // Dual LP has 2 rows and 6 cols:
+  // - col 0: r0 upper bound
+  // - col 1: r1 lower bound
+  // - col 2: c0 lower bound
+  // - col 3: c1 lower bound
+  // - col 4: c0 upper bound
+  // - col 5: duplicated row for r0 lower bound
+  ASSERT_EQ(RowIndex(2), lp.num_constraints());
+  ASSERT_EQ(ColIndex(6), lp.num_variables());
+
+  SolveStatus solve_status = OptimalSolveStatus();
+  ProblemSolution solution(RowIndex(2), ColIndex(6));
+  solution.variable_statuses.assign(ColIndex(6), VariableStatus::BASIC);
+  solution.constraint_statuses.assign(RowIndex(2), ConstraintStatus::BASIC);
+  solution.dual_values = {1.5, 2.5};
+  solution.primal_values = {-3.0, 2.0, 1.2, 0.4, -0.2, 0.5};
+
+  preprocessor.RecoverSolution(solve_status, &solution);
+
+  EXPECT_DOUBLE_EQ(2.5, solution.primal_values[ColIndex(0)]);
+  EXPECT_DOUBLE_EQ(2.5, solution.primal_values[ColIndex(1)]);
+  // For maximization, sign = -1.0 is applied to both primary and duplicated
+  // row columns.
+  EXPECT_DOUBLE_EQ(2.5, solution.dual_values[RowIndex(0)]);
+  EXPECT_DOUBLE_EQ(-2.0, solution.dual_values[RowIndex(1)]);
+}
+
+TEST(DualizerPreprocessorTest, MainLpPreprocessorBasisFreeEndToEnd) {
+  // Original minimization LP with 3 rows, 1 empty column x0, and 2 active
+  // columns x1, x2 with shifted bounds:
+  //   min 3.5 x0 + 4.0 x1 - 2.0 x2
+  //   s.t.
+  //     r0: x1 + 2 x2 <= 14
+  //     r1: 2 x1 - x2 <= 8
+  //     r2: x1 + x2 >= 5
+  //     1 <= x0 <= 5, 2 <= x1 <= 6, 1 <= x2 <= 6
+  const std::string kLinearProgram =
+      "min: 3.5 x0 + 4 x1 - 2 x2;"
+      "0 x0 + 1 x1 + 2 x2 <= 14;"
+      "0 x0 + 2 x1 - 1 x2 <= 8;"
+      "0 x0 + 1 x1 + 1 x2 >= 5;"
+      "1 <= x0 <= 5;"
+      "2 <= x1 <= 6;"
+      "1 <= x2 <= 6;";
+  LinearProgram lp;
+  ASSERT_TRUE(ParseLp(kLinearProgram, &lp));
+
+  GlopParameters params;
+  params.set_solve_dual_problem(GlopParameters::ALWAYS_DO);
+  params.set_use_scaling(false);
+  // Keep EmptyColumnPreprocessor, ShiftVariableBoundsPreprocessor, and
+  // DualizerPreprocessor active while disabling reductions that would
+  // eliminate rows/cols prior to dualization on this small test instance.
+  params.set_use_singleton_preprocessor(false);
+  params.set_use_forcing_and_implied_free_constraint_preprocessor(false);
+  params.set_use_bound_propagation_preprocessor(false);
+
+  MainLpPreprocessor main_preprocessor(&params);
+  main_preprocessor.SetRequiresBasis(false);
+  std::unique_ptr<TimeLimit> time_limit = TimeLimit::Infinite();
+  main_preprocessor.SetTimeLimit(time_limit.get());
+  EXPECT_THAT(main_preprocessor.Run(&lp),
+              PreprocessorResultIs(/*postsolve_is_needed=*/true,
+                                   /*status=*/std::nullopt));
+  // After EmptyColumnPreprocessor removes x0, the 3x2 LP is dualized into a
+  // 2x7 dual LP.
+  ASSERT_EQ(RowIndex(2), lp.num_constraints());
+  ASSERT_EQ(ColIndex(7), lp.num_variables());
+
+  SolveStatus solve_status = OptimalSolveStatus();
+  ProblemSolution solution(RowIndex(2), ColIndex(7));
+  solution.variable_statuses.assign(ColIndex(7), VariableStatus::BASIC);
+  solution.constraint_statuses.assign(RowIndex(2), ConstraintStatus::BASIC);
+  // Shifted primal values for x1 (shift 2) and x2 (shift 1):
+  // x1 = 3.25 -> 1.25, x2 = 4.5 -> 3.5.
+  solution.dual_values = {1.25, 3.5};
+  // Dual cols: [y0, y1, y2, z_l1, z_l2, z_u1, z_u2].
+  solution.primal_values = {-1.0, -0.5, 2.0, 4.0, 0.0, 0.0, -2.5};
+
+  main_preprocessor.RecoverSolution(solve_status, &solution);
+
+  ASSERT_EQ(ColIndex(3), solution.primal_values.size());
+  EXPECT_DOUBLE_EQ(1.0, solution.primal_values[ColIndex(0)]);
+  EXPECT_DOUBLE_EQ(3.25, solution.primal_values[ColIndex(1)]);
+  EXPECT_DOUBLE_EQ(4.5, solution.primal_values[ColIndex(2)]);
+
+  ASSERT_EQ(RowIndex(3), solution.dual_values.size());
+  EXPECT_DOUBLE_EQ(-1.0, solution.dual_values[RowIndex(0)]);
+  EXPECT_DOUBLE_EQ(-0.5, solution.dual_values[RowIndex(1)]);
+  EXPECT_DOUBLE_EQ(2.0, solution.dual_values[RowIndex(2)]);
+}
+
 // --------------------------------------------------------
 // ToMinimizationPreprocessor
 // --------------------------------------------------------

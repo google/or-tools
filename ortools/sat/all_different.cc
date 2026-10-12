@@ -32,6 +32,7 @@
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/sat_trail.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/sort.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -485,8 +486,7 @@ bool AllDifferentBoundsPropagator::PropagateLowerBounds() {
   // TODO(user): The running time can be dominated by this sort. For the
   // "permutation" case where we have as many bounds as possible lb, maybe a
   // radix sort is more efficient.
-  time_limit_->AdvanceDeterministicTime(static_cast<double>(bounds_.size()) *
-                                        1e-8);
+  DeterministicTimer<{.scale = 1e-8}> timer(time_limit_, bounds_.size());
   IncrementalSort(
       bounds_.begin(), bounds_.end(),
       [](const CachedBounds& a, const CachedBounds& b) { return a.lb < b.lb; });

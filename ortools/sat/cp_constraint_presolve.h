@@ -151,6 +151,17 @@ class CpConstraintPresolver {
   // integer coefficients in a floating-point constraint.
   void TryToReduceCoefficientsOfLinearConstraint(int c, ConstraintProto* ct);
 
+  // Detects if the given linear constraint is equivalent to sum vars \in
+  // domain. This is a bit costly: O(n log n); but it does trigger often enough
+  // that it seems worth it.
+  //
+  // Returns true if the detection triggered and the constraint was rewritten.
+  //
+  // TODO(user): We could probably handle other simple coefficient reduction
+  // case. In particular, look at the case of only two different coefficient
+  // magnitude.
+  bool DetectSimpleSum(int c, ConstraintProto* ct);
+
   // Presolve a no_overlap_2d constraint where all the non-fixed rectangles are
   // framed by exactly four fixed rectangles and at most one single box can fit
   // inside the frame. This is a rather specific situation, but it is fast to

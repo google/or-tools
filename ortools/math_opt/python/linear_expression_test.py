@@ -385,11 +385,10 @@ class BoundedLinearExprErrorTest(absltest.TestCase):
             x == "x"  # pylint: disable=pointless-statement
 
         # pylint: disable=pointless-statement
-        # pytype: disable=unsupported-operands
         with self.assertRaisesWithLiteralMatch(
             TypeError, "unsupported operand type(s) for ==: 'Variable' and 'str'"
         ):
-            x.__eq__("x")
+            x.__eq__("x")  # pyrefly: ignore[no-matching-overload]
         # pylint: enable=pointless-statement
         # pylint: enable=unsupported-operands
 
@@ -461,7 +460,7 @@ class BoundedLinearExprErrorTest(absltest.TestCase):
             f" {type(lower_bounded_expr).__name__!r} and"
             f" {type(rhs_expr).__name__!r}",
         ):
-            lower_bounded_expr <= rhs_expr
+            lower_bounded_expr <= rhs_expr  # pyrefly: ignore[unsupported-operation]
         # pylint: enable=pointless-statement
 
     def test_lower_bounded_expr_geq_expr(self) -> None:
@@ -479,7 +478,7 @@ class BoundedLinearExprErrorTest(absltest.TestCase):
             f"unsupported operand type(s) for <=: {type(rhs_expr).__name__!r} and"
             f" {type(lower_bounded_expr).__name__!r}",
         ):
-            lower_bounded_expr >= rhs_expr
+            lower_bounded_expr >= rhs_expr  # pyrefly: ignore[unsupported-operation]
         # pylint: enable=pointless-statement
 
     def test_lower_bounded_expr_geq_float(self) -> None:
@@ -496,7 +495,7 @@ class BoundedLinearExprErrorTest(absltest.TestCase):
             "'>=' not supported between instances of"
             f" {type(lower_bounded_expr).__name__!r} and 'float'",
         ):
-            lower_bounded_expr >= 2.0
+            lower_bounded_expr >= 2.0  # pyrefly: ignore[unsupported-operation]
         # pylint: enable=pointless-statement
 
     def test_upper_bounded_expr_geq_expr(self) -> None:
@@ -515,7 +514,7 @@ class BoundedLinearExprErrorTest(absltest.TestCase):
             f" {type(upper_bounded_expr).__name__!r} and"
             f" {type(rhs_expr).__name__!r}",
         ):
-            upper_bounded_expr >= rhs_expr
+            upper_bounded_expr >= rhs_expr  # pyrefly: ignore[unsupported-operation]
         # pylint: enable=pointless-statement
 
     def test_upper_bounded_expr_leq_expr(self) -> None:
@@ -533,7 +532,7 @@ class BoundedLinearExprErrorTest(absltest.TestCase):
             f"unsupported operand type(s) for >=: {type(rhs_expr).__name__!r} and"
             f" {type(upper_bounded_expr).__name__!r}",
         ):
-            upper_bounded_expr <= rhs_expr
+            upper_bounded_expr <= rhs_expr  # pyrefly: ignore[unsupported-operation]
         # pylint: enable=pointless-statement
 
     def test_upper_bounded_expr_leq_float(self) -> None:
@@ -550,7 +549,7 @@ class BoundedLinearExprErrorTest(absltest.TestCase):
             "'<=' not supported between instances of"
             f" {type(upper_bounded_expr).__name__!r} and 'float'",
         ):
-            upper_bounded_expr <= 2.0
+            upper_bounded_expr <= 2.0  # pyrefly: ignore[unsupported-operation]
         # pylint: enable=pointless-statement
 
     def test_bounded_expr_leq_expr(self) -> None:
@@ -580,7 +579,7 @@ class BoundedLinearExprErrorTest(absltest.TestCase):
             "'<=' not supported between instances of"
             f" {type(bounded_expr).__name__!r} and 'float'",
         ):
-            bounded_expr <= 2.0
+            bounded_expr <= 2.0  # pyrefly: ignore[unsupported-operation]
         # pylint: enable=pointless-statement
 
     def test_bounded_expr_geq_expr(self) -> None:
@@ -610,7 +609,7 @@ class BoundedLinearExprErrorTest(absltest.TestCase):
             "'>=' not supported between instances of"
             f" {type(bounded_expr).__name__!r} and 'float'",
         ):
-            bounded_expr >= 2.0
+            bounded_expr >= 2.0  # pyrefly: ignore[unsupported-operation]
         # pylint: enable=pointless-statement
 
 
@@ -766,7 +765,7 @@ class BoundedQuadraticExpressionTest(absltest.TestCase):
         mod = model.Model()
         x = mod.add_variable()
         with self.assertRaisesRegex(TypeError, "<=.*str"):
-            5.0 * x * x <= "test"  # pylint: disable=pointless-statement
+            5.0 * x * x <= "test"  # pylint: disable=pointless-statement  # pyrefly: ignore[unsupported-operation]
 
     def test_quad_ge_float(self) -> None:
         mod = model.Model()
@@ -800,7 +799,7 @@ class BoundedQuadraticExpressionTest(absltest.TestCase):
         mod = model.Model()
         x = mod.add_variable()
         with self.assertRaisesRegex(TypeError, ">=.*str"):
-            5.0 * x * x >= "test"  # pylint: disable=pointless-statement
+            5.0 * x * x >= "test"  # pylint: disable=pointless-statement  # pyrefly: ignore[unsupported-operation]
 
     def test_ge_twice(self) -> None:
         mod = model.Model()
@@ -818,7 +817,9 @@ class BoundedQuadraticExpressionTest(absltest.TestCase):
         mod = model.Model()
         x = mod.add_variable()
         with self.assertRaisesRegex(TypeError, "'BoundedExpression' and 'float'"):
-            (x <= 5.0 * x * x) <= 2.0  # pylint: disable=pointless-statement
+            (
+                x <= 5.0 * x * x
+            ) <= 2.0  # pylint: disable=pointless-statement  # pyrefly: ignore[unsupported-operation]
 
     def test_no_quad_ge_bounded_expr(self) -> None:
         mod = model.Model()
@@ -842,7 +843,9 @@ class BoundedQuadraticExpressionTest(absltest.TestCase):
         mod = model.Model()
         x = mod.add_variable()
         with self.assertRaisesRegex(TypeError, "'BoundedExpression' and 'float'"):
-            (x >= 5.0 * x * x) >= 2.0  # pylint: disable=pointless-statement
+            (
+                x >= 5.0 * x * x
+            ) >= 2.0  # pylint: disable=pointless-statement  # pyrefly: ignore[unsupported-operation]
 
     def test_no_quad_le_bounded_expr(self) -> None:
         mod = model.Model()
@@ -1194,7 +1197,7 @@ class LinearNumberOpTests(parameterized.TestCase):
                 f"unsupported operand type(s) for /: {type(constant).__name__!r} "
                 f"and {type(linear).__name__!r}",
             ):
-                s = constant / linear  # pytype: disable=unsupported-operands
+                s = constant / linear  # pyrefly: ignore[unsupported-operation]
 
         # Also check __itruediv__
         if linear_first:
@@ -1210,7 +1213,7 @@ class LinearNumberOpTests(parameterized.TestCase):
                 f"and {type(linear).__name__!r}",
             ):
                 expr = constant
-                expr /= linear  # pytype: disable=unsupported-operands
+                expr /= linear  # pyrefly: ignore[unsupported-operation]
 
     @parameterized.named_parameters(
         (p.test_suffix(), p.linear_type, p.constant, p.linear_first)
@@ -1496,7 +1499,7 @@ class QuadraticNumberOpTests(parameterized.TestCase):
                 f"unsupported operand type(s) for /: {type(constant).__name__!r} "
                 f"and {type(quadratic).__name__!r}",
             ):
-                s = constant / quadratic  # pytype: disable=unsupported-operands
+                s = constant / quadratic  # pyrefly: ignore[unsupported-operation]
 
         # Also check __itruediv__
         if quadratic_first:
@@ -1515,7 +1518,7 @@ class QuadraticNumberOpTests(parameterized.TestCase):
                 f"and {type(quadratic).__name__!r}",
             ):
                 expr = constant
-                expr /= quadratic  # pytype: disable=unsupported-operands
+                expr /= quadratic  # pyrefly: ignore[unsupported-operation]
 
     def test_add(
         self,
@@ -2476,16 +2479,12 @@ class UnsupportedProductOperandTest(parameterized.TestCase):
         expected_string = f"unsupported operand.*[*].*{lhs_type}.*and.*{rhs_type}"
 
         # pylint: disable=pointless-statement
-        # pytype: disable=unsupported-operands
+        with self.assertRaisesRegex(TypeError, expected_string):
+            lhs * rhs  # pyrefly: ignore[unsupported-operation]
 
         with self.assertRaisesRegex(TypeError, expected_string):
-            lhs * rhs
-
-        with self.assertRaisesRegex(TypeError, expected_string):
-            lhs *= rhs
+            lhs *= rhs  # pyrefly: ignore[unsupported-operation]
         # pylint: enable=pointless-statement
-        # pytype: enable=unsupported-operands
-        # pytype: enable=wrong-arg-types
 
     @parameterized.named_parameters(
         (p.test_suffix(), p.lhs_type, p.rhs_type)
@@ -2498,18 +2497,14 @@ class UnsupportedProductOperandTest(parameterized.TestCase):
         expected_string = f"unsupported operand.*[/].*{lhs_type}.*and.*{rhs_type}"
 
         # pylint: disable=pointless-statement
-        # pytype: disable=unsupported-operands
-
         with self.assertRaisesRegex(TypeError, expected_string):
-            lhs / rhs
+            lhs / rhs  # pyrefly: ignore[unsupported-operation]
 
         if lhs_type == "str":
             expected_string = f"unsupported operand.*[/].*{lhs_type}.*and.*{rhs_type}"
         with self.assertRaisesRegex(TypeError, expected_string):
-            lhs /= rhs
+            lhs /= rhs  # pyrefly: ignore[unsupported-operation]
         # pylint: enable=pointless-statement
-        # pytype: enable=unsupported-operands
-        # pytype: enable=wrong-arg-types
 
 
 class UnsupportedAdditionOperandTestParams(NamedTuple):
@@ -2563,22 +2558,18 @@ class UnsupportedAdditionOperandTest(parameterized.TestCase):
             )
 
         # pylint: disable=pointless-statement
-        # pytype: disable=unsupported-operands
+        with self.assertRaisesRegex(TypeError, expected_string):
+            if linear_or_quadratic_first:
+                linear_or_quadratic + other  # pyrefly: ignore[unsupported-operation]
+            else:
+                other + linear_or_quadratic  # pyrefly: ignore[unsupported-operation]
 
         with self.assertRaisesRegex(TypeError, expected_string):
             if linear_or_quadratic_first:
-                linear_or_quadratic + other
+                linear_or_quadratic += other  # pyrefly: ignore[unsupported-operation]
             else:
-                other + linear_or_quadratic
-
-        with self.assertRaisesRegex(TypeError, expected_string):
-            if linear_or_quadratic_first:
-                linear_or_quadratic += other
-            else:
-                other += linear_or_quadratic
+                other += linear_or_quadratic  # pyrefly: ignore[unsupported-operation]
         # pylint: enable=pointless-statement
-        # pytype: enable=unsupported-operands
-        # pytype: enable=wrong-arg-types
 
     def test_sub(
         self, linear_or_quadratic_type: str, linear_or_quadratic_first: bool
@@ -2599,109 +2590,93 @@ class UnsupportedAdditionOperandTest(parameterized.TestCase):
             )
 
         # pylint: disable=pointless-statement
-        # pytype: disable=unsupported-operands
+        with self.assertRaisesRegex(TypeError, expected_string):
+            if linear_or_quadratic_first:
+                linear_or_quadratic - other  # pyrefly: ignore[unsupported-operation]
+            else:
+                other - linear_or_quadratic  # pyrefly: ignore[unsupported-operation]
 
         with self.assertRaisesRegex(TypeError, expected_string):
             if linear_or_quadratic_first:
-                linear_or_quadratic - other
+                linear_or_quadratic -= other  # pyrefly: ignore[unsupported-operation]
             else:
-                other - linear_or_quadratic
-
-        with self.assertRaisesRegex(TypeError, expected_string):
-            if linear_or_quadratic_first:
-                linear_or_quadratic -= other
-            else:
-                other -= linear_or_quadratic
+                other -= linear_or_quadratic  # pyrefly: ignore[unsupported-operation]
         # pylint: enable=pointless-statement
-        # pytype: enable=unsupported-operands
-        # pytype: enable=wrong-arg-types
 
 
 class UnsupportedInitializationTest(parameterized.TestCase):
 
     def test_linear_sum_not_tuple(self):
-
         with self.assertRaisesRegex(TypeError, "object is not iterable"):
-            variables.LinearSum(2.0)
-        # pytype: enable=wrong-arg-types
+            variables.LinearSum(2.0)  # pyrefly: ignore[bad-argument-type]
 
     def test_linear_sum_not_linear_in_tuple(self):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
-
         with self.assertRaisesRegex(TypeError, "unsupported type in iterable argument"):
-            variables.LinearSum((2.0, x * x))
-        # pytype: enable=wrong-arg-types
+            variables.LinearSum((2.0, x * x))  # pyrefly: ignore[bad-argument-type]
 
     def test_quadratic_sum_not_tuple(self):
-
         with self.assertRaisesRegex(TypeError, "object is not iterable"):
-            variables.QuadraticSum(2.0)
-        # pytype: enable=wrong-arg-types
+            variables.QuadraticSum(2.0)  # pyrefly: ignore[bad-argument-type]
 
     def test_quadratic_sum_not_linear_in_tuple(self):
-
         with self.assertRaisesRegex(TypeError, "unsupported type in iterable argument"):
-            variables.QuadraticSum((2.0, "string"))
-        # pytype: enable=wrong-arg-types
+            variables.QuadraticSum(
+                (2.0, "string")
+            )  # pyrefly: ignore[bad-argument-type]
 
     def test_linear_product_not_scalar(self):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
-
         with self.assertRaisesRegex(
             TypeError, "unsupported type for scalar argument in LinearProduct"
         ):
-            variables.LinearProduct(x, x)
-        # pytype: enable=wrong-arg-types
+            variables.LinearProduct(x, x)  # pyrefly: ignore[bad-argument-type]
 
     def test_linear_product_not_linear(self):
-
         with self.assertRaisesRegex(
             TypeError, "unsupported type for linear argument in LinearProduct"
         ):
-            variables.LinearProduct(2.0, "string")
-        # pytype: enable=wrong-arg-types
+            variables.LinearProduct(2.0, "string")  # pyrefly: ignore[bad-argument-type]
 
     def test_quadratic_product_not_scalar(self):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
-
         with self.assertRaisesRegex(
             TypeError, "unsupported type for scalar argument in QuadraticProduct"
         ):
-            variables.QuadraticProduct(x, x)
-        # pytype: enable=wrong-arg-types
+            variables.QuadraticProduct(x, x)  # pyrefly: ignore[bad-argument-type]
 
     def test_quadratic_product_not_quadratic(self):
-
         with self.assertRaisesRegex(
             TypeError, "unsupported type for linear argument in QuadraticProduct"
         ):
-            variables.QuadraticProduct(2.0, "string")
-        # pytype: enable=wrong-arg-types
+            variables.QuadraticProduct(
+                2.0, "string"
+            )  # pyrefly: ignore[bad-argument-type]
 
     def test_linear_linear_product_first_not_linear(self):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
-
         with self.assertRaisesRegex(
             TypeError,
             "unsupported type for first_linear argument in LinearLinearProduct",
         ):
-            variables.LinearLinearProduct("string", x)
-        # pytype: enable=wrong-arg-types
+            variables.LinearLinearProduct(
+                "string", x
+            )  # pyrefly: ignore[bad-argument-type]
 
     def test_linear_linear_product_second_not_linear(self):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
-
         with self.assertRaisesRegex(
             TypeError,
             "unsupported type for second_linear argument in LinearLinearProduct",
         ):
-            variables.LinearLinearProduct(x, "string")
-        # pytype: enable=wrong-arg-types
+            variables.LinearLinearProduct(
+                x, "string"
+            )  # pyrefly: ignore[bad-argument-type]
 
 
 @parameterized.named_parameters(("_python_sum", True), ("LinearSum", False))
@@ -2991,7 +2966,7 @@ class LinearExpressionTest(absltest.TestCase):
         y = mod.add_binary_variable(name="y")
         expression = variables.LinearExpression(y - 2 * x + 1)
         with self.assertRaisesRegex(TypeError, "does not support item assignment"):
-            expression.terms[x] += 1  # pytype: disable=unsupported-operands
+            expression.terms[x] += 1  # pyrefly: ignore[unsupported-operation]
 
     def test_no_copy_of_linear_expression(self) -> None:
         mod = model.Model()
@@ -3024,11 +2999,11 @@ class QuadraticExpressionTest(absltest.TestCase):
         yy = variables.QuadraticTermKey(y, y)
         expression = variables.QuadraticExpression(y * y - 2 * x + 1)
         with self.assertRaisesRegex(TypeError, "does not support item assignment"):
-            expression.linear_terms[x] += 1  # pytype: disable=unsupported-operands
+            expression.linear_terms[x] += 1  # pyrefly: ignore[unsupported-operation]
         with self.assertRaisesRegex(TypeError, "does not support item assignment"):
             expression.quadratic_terms[  # pyrefly: ignore[unsupported-operation]
                 yy
-            ] += 1  # pytype: disable=unsupported-operands
+            ] += 1
 
     def test_no_copy_of_quadratic_expression(self) -> None:
         mod = model.Model()

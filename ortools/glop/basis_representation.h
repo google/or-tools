@@ -26,6 +26,7 @@
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse.h"
 #include "ortools/lp_data/sparse_column.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/stats.h"
 
 namespace operations_research {
@@ -327,9 +328,9 @@ class BasisFactorization {
   AbnormalityStatus MiddleProductFormUpdate(ColIndex entering_col,
                                             RowIndex leaving_variable_row);
 
-  // Increases the deterministic time for a solve operation with a vector having
+  // Returns the number of time_units for a solve operation with a vector having
   // this number of non-zero entries (it can be an approximation).
-  void BumpDeterministicTimeForSolve(int num_entries) const;
+  int DeterministicTimeUnitsForSolve(int num_entries) const;
 
   // Stats about this class.
   struct Stats : public StatsGroup {
@@ -395,7 +396,8 @@ class BasisFactorization {
 
   // mutable because the Solve() functions are const but need to update this.
   double last_factorization_deterministic_time_ = 0.0;
-  mutable double deterministic_time_;
+  double total_factorization_deterministic_time_ = 0.0;
+  mutable LinearDeterministicTimer<{.scale = 2e-9}> deterministic_timer_;
 };
 
 }  // namespace glop

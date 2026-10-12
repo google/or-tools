@@ -581,6 +581,12 @@ class SatSolver {
   void BlockClauseDeletion(bool value) { block_clause_deletion_ = value; }
 
  private:
+  struct NewClauses {
+    ClausePtr clause;
+    bool is_redundant;
+    int min_lbd_of_subsumed_clauses;
+  };
+
   // All Solve() functions end up calling this one.
   Status SolveInternal(TimeLimit* time_limit, int64_t max_number_of_conflicts);
 
@@ -676,8 +682,7 @@ class SatSolver {
   //
   // Returns the LBD of the clause.
   int AddLearnedClauseAndEnqueueUnitPropagation(
-      ClausePtr ptr, absl::Span<const Literal> literals, bool is_redundant,
-      int min_lbd_of_subsumed_clauses);
+      ClausePtr ptr, bool is_redundant, int min_lbd_of_subsumed_clauses);
 
   // Creates a new decision which corresponds to setting the given literal to
   // True and Enqueue() this change.
@@ -717,8 +722,8 @@ class SatSolver {
   // Returns the pair <is_redundant, minimum_lbd of the subsumed clauses>.
   // A clause will be marked as redundant only if all the subsumed clauses are.
   std::pair<bool, int> SubsumptionsInConflictResolution(
-      ClausePtr learned_conflict, absl::Span<const Literal> conflict,
-      absl::Span<const Literal> reason_used);
+      ClausePtr learned_conflict, absl::Span<const Literal> reason_used,
+      std::vector<NewClauses>& learned_clauses);
 
   // Append the necessary `proof` for the corresponding part of an LRAT
   // proof. Note that the first function modifies is_marked_.
@@ -812,19 +817,18 @@ class SatSolver {
   std::string StatusString(Status status) const;
   std::string RunningStatisticsString() const;
 
-  // Make sure each clause is "canonicalized" with respect to equivalent
-  // literals. This assumes that the ClausePtr has ownership of its memory.
-  //
-  // TODO(user): The literals are a bit redundant with what is stored in clause.
-  // Clean up.
+  // Returns a "canonicalized" version of the given clause with respect to
+  // equivalent literals.
   //
   // TODO(user): Maybe we should do that on each reason before we use them in
   // conflict analysis/minimization, but it might be a bit costly.
   //
-  // Returns false if the "canonicalized" clause is trivially true.
-  bool RemoveRedundantLiteralFromConflict(ClausePtr& clause,
-                                          std::vector<Literal>& literals,
-                                          bool delete_old_lrat_clause = true);
+  // Returns:
+  //  - kNullClausePtr if the "canonicalized" clause is trivially true.
+  //  - `clause` if no change was made.
+  //  - A new clause otherwise. Ownership of the new clause is transferred to
+  //   the caller.
+  ClausePtr RemoveRedundantLiteralFromConflict(ClausePtr clause);
 
   // This is used by the old non-model constructor.
   Model* model_;
@@ -934,15 +938,9 @@ class SatSolver {
   CompactVectorVector<int, Literal> subsuming_clauses_;
   CompactVectorVector<int, SatClause*> subsuming_groups_;
 
+  // Temporary vector for `ProcessCurrentConflict`.
   // On each conflict, we learn at least one clause, but depending on the cases,
   // we can learn more than one.
-  struct NewClauses {
-    // Can point to an already allocated SatClause for 'literals'.
-    ClausePtr clause;
-    bool is_redundant;
-    int min_lbd_of_subsumed_clauses;
-    std::vector<Literal> literals;
-  };
   std::vector<NewClauses> learned_clauses_;
 
   // This is used by GetLastIncompatibleDecisions().

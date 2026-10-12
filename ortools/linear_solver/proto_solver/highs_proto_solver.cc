@@ -24,7 +24,6 @@
 #include "Highs.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
-#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
@@ -62,7 +61,7 @@ void HighsCallbackAdapter(int callback_type, const std::string& message,
 
 }  // namespace
 
-absl::StatusOr<MPSolutionResponse> HighsSolveProto(
+MPSolutionResponse HighsSolveProto(
     LazyMutableCopy<MPModelRequest> request, HighsSolveInfo* solve_info,
     const std::function<void(const std::string&)>* logging_callback) {
   MPSolutionResponse response;

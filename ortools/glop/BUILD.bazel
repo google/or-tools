@@ -28,6 +28,7 @@ or_cc_library(
         "//ortools/lp_data:lp_utils",
         "//ortools/lp_data:scattered_vector",
         "//ortools/lp_data:sparse",
+        "//ortools/util:deterministic_time",
         "@abseil-cpp//absl/log:check",
     ],
 )
@@ -91,6 +92,7 @@ or_cc_library(
         "//ortools/lp_data:scattered_vector",
         "//ortools/lp_data:sparse",
         "//ortools/lp_data:sparse_column",
+        "//ortools/util:deterministic_time",
         "//ortools/util:return_macros",
         "//ortools/util:stats",
         "@abseil-cpp//absl/log",
@@ -150,12 +152,11 @@ or_cc_library(
     deps = [
         ":parameters_cc_proto",
         ":reduced_costs",
-        ":status",
         ":update_row",
         ":variables_info",
         "//ortools/lp_data:lp_types",
+        "//ortools/util:deterministic_time",
         "//ortools/util:stats",
-        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random:bit_gen_ref",
@@ -200,6 +201,7 @@ or_cc_library(
         "//ortools/lp_data:scattered_vector",
         "//ortools/lp_data:sparse",
         "//ortools/util:bitset",
+        "//ortools/util:deterministic_time",
         "//ortools/util:stats",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
@@ -280,6 +282,7 @@ or_cc_test(
     size = "medium",
     srcs = ["preprocessor_random_test.cc"],
     copts = SAFE_FP_CODE,
+    shard_count = 30,  # > 10000 random tests.
     deps = [
         ":lp_solver",
         ":parameters_cc_proto",
@@ -309,6 +312,7 @@ or_cc_library(
         "//ortools/lp_data:permutation",
         "//ortools/lp_data:sparse",
         "//ortools/lp_data:sparse_column",
+        "//ortools/util:deterministic_time",
         "//ortools/util:stats",
         "@abseil-cpp//absl/container:inlined_vector",
         "@abseil-cpp//absl/log",
@@ -405,6 +409,7 @@ or_cc_library(
         "//ortools/lp_data:sparse",
         "//ortools/lp_data:sparse_column",
         "//ortools/lp_data:sparse_row",
+        "//ortools/util:deterministic_time",
         "//ortools/util:logging",
         "//ortools/util:random_engine",
         "//ortools/util:return_macros",
@@ -434,7 +439,9 @@ or_cc_test(
     timeout = "moderate",
     srcs = ["revised_simplex_test.cc"],
     copts = SAFE_FP_CODE,
+    shard_count = 10,
     deps = [
+        ":glop_testing",
         ":parameters_cc_proto",
         ":preprocessor",
         ":preprocessor_testing",
@@ -447,6 +454,7 @@ or_cc_test(
         "//ortools/lp_data:lp_types_testing",
         "//ortools/lp_data:scattered_vector",
         "//ortools/lp_data:sparse_row",
+        "//ortools/util:fp_roundtrip_conv",
         "//ortools/util:fp_utils_testing",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/algorithm:container",
@@ -477,7 +485,9 @@ or_cc_test(
         "--v=1",
     ],
     copts = SAFE_FP_CODE,
+    shard_count = 10,
     deps = [
+        ":glop_testing",
         ":parameters_cc_proto",
         ":preprocessor",
         ":preprocessor_testing",
@@ -490,6 +500,7 @@ or_cc_test(
         "//ortools/lp_data:lp_types_testing",
         "//ortools/lp_data:scattered_vector",
         "//ortools/lp_data:sparse_row",
+        "//ortools/util:fp_roundtrip_conv",
         "//ortools/util:fp_utils_testing",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/algorithm:container",
@@ -594,7 +605,9 @@ or_cc_library(
         "//ortools/lp_data:lp_utils",
         "//ortools/lp_data:scattered_vector",
         "//ortools/lp_data:sparse",
+        "//ortools/util:deterministic_time",
         "//ortools/util:stats",
+        "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
@@ -666,6 +679,7 @@ or_cc_library(
         "@abseil-cpp//absl/log:vlog_is_on",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:optional_ref",
         "@protobuf",
     ],
 )
@@ -676,6 +690,7 @@ or_cc_test(
     srcs = ["lp_solver_test.cc"],
     copts = SAFE_FP_CODE,
     deps = [
+        ":glop_testing",
         ":lp_solver",
         ":parameters_cc_proto",
         "//ortools/base:gmock_main",
@@ -686,17 +701,21 @@ or_cc_test(
         "//ortools/lp_data:lp_test_utils",
         "//ortools/lp_data:lp_types",
         "//ortools/lp_data:lp_types_testing",
+        "//ortools/lp_data:lp_utils",
         "//ortools/lp_data:proto_utils",
         "//ortools/port:scoped_std_stream_capture",
         "//ortools/util:file_util",
+        "//ortools/util:fp_roundtrip_conv",
         "//ortools/util:fp_utils_testing",
         "//ortools/util:time_limit",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:flags",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:optional_ref",
     ],
 )
 
@@ -713,6 +732,7 @@ or_cc_library(
         "//ortools/lp_data:lp_utils",
         "//ortools/lp_data:scattered_vector",
         "//ortools/lp_data:sparse",
+        "//ortools/util:deterministic_time",
         "//ortools/util:stats",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/log",
@@ -746,6 +766,7 @@ or_cc_test(
     size = "small",
     srcs = ["lu_factorization_test.cc"],
     copts = SAFE_FP_CODE,
+    shard_count = 10,
     deps = [
         ":lu_factorization",
         ":parameters_cc_proto",
@@ -785,6 +806,13 @@ or_cc_library(
         "//ortools/lp_data:lp_types",
         "//ortools/lp_data:lp_types_testing",
     ],
+)
+
+or_cc_library(
+    name = "glop_testing",
+    testonly = True,
+    srcs = ["glop_testing.cc"],
+    hdrs = ["glop_testing.h"],
 )
 
 proto_library(

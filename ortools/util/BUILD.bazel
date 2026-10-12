@@ -199,6 +199,26 @@ or_cc_library(
 )
 
 or_cc_library(
+    name = "deterministic_time",
+    srcs = ["deterministic_time.cc"],
+    hdrs = ["deterministic_time.h"],
+    deps = [
+        ":time_limit",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/debugging:stacktrace",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/numeric:int128",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:source_location",
+    ],
+)
+
+or_cc_library(
     name = "sigint",
     srcs = ["sigint.cc"],
     hdrs = ["sigint.h"],
@@ -975,7 +995,9 @@ or_cc_library(
         "//ortools/algorithms:multikey_radix_sort",
         "//ortools/port:attributes",
         "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base",
         "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/container:inlined_vector",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/numeric:int128",
@@ -993,10 +1015,13 @@ or_cc_library(
         ":logging",
         "//ortools/base:status_builder",
         "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/sat:mp_model_wrapper",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:status_macros",
+        "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings:string_view",
         "@abseil-cpp//absl/types:source_location",
         "@abseil-cpp//absl/types:span",
@@ -1011,6 +1036,8 @@ or_cc_test(
         ":mp_model_solution_checker",
         "//ortools/base:gmock_main",
         "//ortools/base:parse_text_proto",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/sat:mp_model_wrapper",
         "@abseil-cpp//absl/status",
     ],
 )
@@ -1018,6 +1045,7 @@ or_cc_test(
 or_cc_test(
     name = "full_precision_inequalities_test",
     srcs = ["full_precision_inequalities_test.cc"],
+    tags = ["noci"],
     deps = [
         ":full_precision_inequalities",
         "//ortools/base:gmock_main",

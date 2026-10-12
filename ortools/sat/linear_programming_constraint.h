@@ -429,6 +429,10 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   void ComputeIntegerLpScalingFactors();
   void FillLpData();
 
+  // For debugging. Dump the current integer_lp as a MPModelProto in
+  // "/tmp/integer_lp_i.pb".
+  void DumpIntegerLp();
+
   // For ComputeIntegerLpScalingFactors().
   std::vector<double> row_factors_;
   std::vector<double> col_factors_;
@@ -663,6 +667,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   int64_t num_root_level_solves_ = 0;
   double last_root_level_deterministic_duration_ = 0.0;
   double last_root_level_deterministic_time_ = 0.0;
+
+  int dump_index_ = 0;
 };
 
 // A class that stores which LP propagator is associated to each variable.

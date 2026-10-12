@@ -16,7 +16,6 @@
 
 #include <string>
 
-#include "absl/status/statusor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/util/lazy_mutable_copy.h"
 #include "scip/type_scip.h"
@@ -27,8 +26,7 @@ namespace operations_research {
 // *differs* from `MPSolver::Solve()` which sets the feasibility tolerance to
 // 1e-7, and the gap limit to 0.0001 (whereas SCIP defaults are 1e-6 and 0,
 // respectively, and they are being used here).
-absl::StatusOr<MPSolutionResponse> ScipSolveProto(
-    LazyMutableCopy<MPModelRequest> request);
+MPSolutionResponse ScipSolveProto(LazyMutableCopy<MPModelRequest> request);
 
 std::string FindErrorInMPModelForScip(const MPModelProto& model, SCIP* scip);
 

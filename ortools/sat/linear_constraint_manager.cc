@@ -48,6 +48,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -708,7 +709,6 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
                                        int* num_new_constraints) {
   VLOG(3) << "Enter ChangeLP, scan " << constraint_infos_.size()
           << " constraints";
-  const double saved_dtime = dtime_;
   std::vector<std::pair<ConstraintIndex, double>> new_constraints_by_score;
   std::vector<double> new_constraints_efficacies;
   std::vector<double> new_constraints_orthogonalities;
@@ -722,69 +722,74 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
   // of potential new constraints.
   bool rescale_active_count = false;
   const double tolerance = 1e-6;
-  for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
-    // Inprocessing of the constraint.
-    if (simplify_constraints &&
-        SimplifyConstraint(&constraint_infos_[i].constraint)) {
-      ++num_simplifications_;
+  {
+    DeterministicTimer<{.scale = 1.7e-9}> timer(time_limit_);
+    uint64_t work_done = 0;
+    for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
+      // Inprocessing of the constraint.
+      if (simplify_constraints &&
+          SimplifyConstraint(&constraint_infos_[i].constraint)) {
+        ++num_simplifications_;
 
-      // Note that the canonicalization shouldn't be needed since the order
-      // of the variable is not changed by the simplification, and we only
-      // reduce the coefficients at both end of the spectrum.
-      DivideByGCD(&constraint_infos_[i].constraint);
-      MakeFirstCoefficientPositive(&constraint_infos_[i].constraint);
-      DCHECK(DebugCheckConstraint(constraint_infos_[i].constraint,
-                                  /*only_check_ub=*/false));
+        // Note that the canonicalization shouldn't be needed since the order
+        // of the variable is not changed by the simplification, and we only
+        // reduce the coefficients at both end of the spectrum.
+        DivideByGCD(&constraint_infos_[i].constraint);
+        MakeFirstCoefficientPositive(&constraint_infos_[i].constraint);
+        DCHECK(DebugCheckConstraint(constraint_infos_[i].constraint,
+                                    /*only_check_ub=*/false));
 
-      constraint_infos_[i].objective_parallelism_computed = false;
-      constraint_infos_[i].l2_norm =
-          ComputeL2Norm(constraint_infos_[i].constraint);
-      FillDerivedFields(&constraint_infos_[i]);
+        constraint_infos_[i].objective_parallelism_computed = false;
+        constraint_infos_[i].l2_norm =
+            ComputeL2Norm(constraint_infos_[i].constraint);
+        FillDerivedFields(&constraint_infos_[i]);
 
-      if (constraint_infos_[i].is_in_lp) current_lp_is_changed_ = true;
-      equiv_constraints_.erase(constraint_infos_[i].hash);
-      constraint_infos_[i].hash =
-          ComputeHashOfTerms(constraint_infos_[i].constraint);
+        if (constraint_infos_[i].is_in_lp) current_lp_is_changed_ = true;
+        equiv_constraints_.erase(constraint_infos_[i].hash);
+        constraint_infos_[i].hash =
+            ComputeHashOfTerms(constraint_infos_[i].constraint);
 
-      // TODO(user): Because we simplified this constraint, it is possible that
-      // it is now a duplicate of another one. Merge them.
-      equiv_constraints_[constraint_infos_[i].hash] = i;
-    }
-
-    if (constraint_infos_[i].is_in_lp) continue;
-
-    // ComputeActivity() often represents the bulk of the time spent in
-    // ChangeLP().
-    dtime_ +=
-        1.7e-9 * static_cast<double>(constraint_infos_[i].constraint.num_terms);
-    const double activity =
-        ComputeActivity(constraint_infos_[i].constraint, expanded_lp_solution_);
-    const double lb_violation =
-        ToDouble(constraint_infos_[i].constraint.lb) - activity;
-    const double ub_violation =
-        activity - ToDouble(constraint_infos_[i].constraint.ub);
-    const double violation = std::max(lb_violation, ub_violation);
-    if (violation >= tolerance) {
-      constraint_infos_[i].inactive_count = 0;
-      if (objective_is_defined_ &&
-          !constraint_infos_[i].objective_parallelism_computed) {
-        ComputeObjectiveParallelism(i);
-      } else if (!objective_is_defined_) {
-        constraint_infos_[i].objective_parallelism = 0.0;
+        // TODO(user): Because we simplified this constraint, it is possible
+        // that it is now a duplicate of another one. Merge them.
+        equiv_constraints_[constraint_infos_[i].hash] = i;
       }
 
-      const double score = violation / constraint_infos_[i].l2_norm +
-                           constraint_infos_[i].objective_parallelism;
-      new_constraints_by_score.push_back({i, score});
+      if (constraint_infos_[i].is_in_lp) continue;
 
-      if (constraint_infos_[i].is_deletable) {
-        constraint_infos_[i].active_count += constraint_active_count_increase_;
-        if (constraint_infos_[i].active_count >
-            sat_parameters_.cut_max_active_count_value()) {
-          rescale_active_count = true;
+      // ComputeActivity() often represents the bulk of the time spent in
+      // ChangeLP().
+      work_done += constraint_infos_[i].constraint.num_terms;
+      const double activity = ComputeActivity(constraint_infos_[i].constraint,
+                                              expanded_lp_solution_);
+      const double lb_violation =
+          ToDouble(constraint_infos_[i].constraint.lb) - activity;
+      const double ub_violation =
+          activity - ToDouble(constraint_infos_[i].constraint.ub);
+      const double violation = std::max(lb_violation, ub_violation);
+      if (violation >= tolerance) {
+        constraint_infos_[i].inactive_count = 0;
+        if (objective_is_defined_ &&
+            !constraint_infos_[i].objective_parallelism_computed) {
+          ComputeObjectiveParallelism(i);
+        } else if (!objective_is_defined_) {
+          constraint_infos_[i].objective_parallelism = 0.0;
+        }
+
+        const double score = violation / constraint_infos_[i].l2_norm +
+                             constraint_infos_[i].objective_parallelism;
+        new_constraints_by_score.push_back({i, score});
+
+        if (constraint_infos_[i].is_deletable) {
+          constraint_infos_[i].active_count +=
+              constraint_active_count_increase_;
+          if (constraint_infos_[i].active_count >
+              sat_parameters_.cut_max_active_count_value()) {
+            rescale_active_count = true;
+          }
         }
       }
     }
+    timer.Advance(work_done);
   }
 
   // Bump activities of active constraints in LP.
@@ -987,8 +992,6 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
   if (num_deletable_constraints_ > sat_parameters_.max_num_cuts()) {
     PermanentlyRemoveSomeConstraints();
   }
-
-  time_limit_->AdvanceDeterministicTime(dtime_ - saved_dtime);
 
   // The LP changed only if we added new constraints or if some constraints
   // already inside changed (simplification or tighter bounds).

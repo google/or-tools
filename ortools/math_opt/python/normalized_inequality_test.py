@@ -59,7 +59,9 @@ class NormalizedLinearInequalityTest(absltest.TestCase):
         mod = model.Model()
         x = mod.add_variable()
         with self.assertRaises(TypeError):
-            normalized_inequality.NormalizedLinearInequality(lb=1.0, expr=x * x, ub=2.0)
+            normalized_inequality.NormalizedLinearInequality(
+                lb=1.0, expr=x * x, ub=2.0
+            )  # pyrefly: ignore[bad-argument-type]
 
     def test_as_normalized_inequality_from_parts(self) -> None:
         mod = model.Model()
@@ -191,7 +193,7 @@ class NormalizedQuadraticInequalityTest(absltest.TestCase):
         with self.assertRaises(TypeError):
             normalized_inequality.NormalizedQuadraticInequality(
                 lb=1.0, expr="dog", ub=2.0
-            )
+            )  # pyrefly: ignore[bad-argument-type]
 
     def test_as_normalized_inequality_from_parts(self) -> None:
         mod = model.Model()

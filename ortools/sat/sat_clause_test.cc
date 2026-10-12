@@ -42,15 +42,15 @@ TEST(ClausePtrTest, Accessors) {
   const ClausePtr unit = ClausePtr(a);
   const ClausePtr binary = ClausePtr(a, b);
   const ClausePtr sat_clause = ClausePtr(clause);
-  const ClausePtr sat_empty = ClausePtr(std::vector<Literal>());
-  const ClausePtr sat_unit = ClausePtr(std::vector<Literal>({a}));
+  const ClausePtr sat_empty = NewAllocatedClausePtr({});
+  const ClausePtr sat_unit = NewAllocatedClausePtr({a});
 
   EXPECT_EQ(empty.GetType(), ClausePtr::kEmptyClause);
-  EXPECT_EQ(unit.GetType(), ClausePtr::kUnitClause);
-  EXPECT_EQ(binary.GetType(), ClausePtr::kBinaryClause);
-  EXPECT_EQ(sat_clause.GetType(), ClausePtr::kSatClause);
-  EXPECT_EQ(sat_empty.GetType(), ClausePtr::kSatClause);
-  EXPECT_EQ(sat_unit.GetType(), ClausePtr::kSatClause);
+  EXPECT_EQ(unit.GetType(), ClausePtr::kInlineUnitClause);
+  EXPECT_EQ(binary.GetType(), ClausePtr::kInlineBinaryClause);
+  EXPECT_EQ(sat_clause.GetType(), ClausePtr::kAllocatedSatClause);
+  EXPECT_EQ(sat_empty.GetType(), ClausePtr::kAllocatedSatClause);
+  EXPECT_EQ(sat_unit.GetType(), ClausePtr::kAllocatedSatClause);
 
   EXPECT_EQ(unit.GetFirstLiteral(), a);
   EXPECT_THAT(std::vector<Literal>(

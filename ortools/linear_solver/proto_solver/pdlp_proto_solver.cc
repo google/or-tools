@@ -15,10 +15,10 @@
 
 #include <atomic>
 #include <optional>
+#include <string>
 #include <utility>
 
 #include "absl/log/check.h"
-#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
@@ -32,9 +32,9 @@
 
 namespace operations_research {
 
-absl::StatusOr<MPSolutionResponse> PdlpSolveProto(
-    LazyMutableCopy<MPModelRequest> request, const bool relax_integer_variables,
-    const std::atomic<bool>* interrupt_solve) {
+MPSolutionResponse PdlpSolveProto(LazyMutableCopy<MPModelRequest> request,
+                                  const bool relax_integer_variables,
+                                  const std::atomic<bool>* interrupt_solve) {
   pdlp::PrimalDualHybridGradientParams params;
   if (request->enable_internal_solver_output()) {
     params.set_verbosity_level(3);
@@ -62,9 +62,14 @@ absl::StatusOr<MPSolutionResponse> PdlpSolveProto(
       GetMPModelOrPopulateResponse(request, &response);
   if (!optional_model) return response;
 
-  ABSL_ASSIGN_OR_RETURN(
-      pdlp::QuadraticProgram qp,
-      pdlp::QpFromMpModelProto(**optional_model, relax_integer_variables));
+  absl::StatusOr<pdlp::QuadraticProgram> qp_or =
+      pdlp::QpFromMpModelProto(**optional_model, relax_integer_variables);
+  if (!qp_or.ok()) {
+    response.set_status(MPSOLVER_MODEL_INVALID);
+    response.set_status_str(std::string(qp_or.status().message()));
+    return response;
+  }
+  pdlp::QuadraticProgram qp = std::move(*qp_or);
 
   // We can now clear the request and optional_model.
   std::move(request).dispose();

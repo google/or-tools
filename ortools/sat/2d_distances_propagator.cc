@@ -21,7 +21,6 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
@@ -40,6 +39,7 @@
 #include "ortools/sat/sat_trail.h"
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -181,10 +181,7 @@ bool Precedences2DPropagator::Propagate() {
   CollectNewPairsOfBoxesWithNonTrivialDistance();
 
   num_calls_++;
-
-  absl::Cleanup increase_dtime = [this, size = pair_data_.size()]() {
-    time_limit_->AdvanceDeterministicTime(size * 5e-9);
-  };
+  DeterministicTimer<{.scale = 5e-9}> timer(time_limit_, pair_data_.size());
 
   for (const PairData& pair_data : pair_data_) {
     if (!absl::c_all_of(pair_data.pair_presence_literals,

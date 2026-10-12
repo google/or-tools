@@ -781,9 +781,10 @@ bool Prober::FixProbedDnfLiterals(
       const Literal propagated_lit(literal_index);
       const absl::Span<ClausePtr> clauses = propagation_clauses[i++];
       for (int j = 0; j < dnf.size(); ++j) {
-        const ClausePtr clause = clauses[j];
+        ClausePtr clause = clauses[j];
         if (clause == kNullClausePtr) continue;
         lrat_proof_handler_->DeleteClause(clause);
+        clause.DeleteIfAllocated();
       }
     }
   });
@@ -816,6 +817,7 @@ bool Prober::FixProbedDnfLiterals(
     auto cleanup = absl::MakeCleanup([&] {
       if (first_false_literal_clause != kNullClausePtr) {
         lrat_proof_handler_->DeleteClause(first_false_literal_clause);
+        first_false_literal_clause.DeleteIfAllocated();
       }
     });
 
@@ -825,7 +827,7 @@ bool Prober::FixProbedDnfLiterals(
       if (assignment_.LiteralIsAssigned(lit)) {
         if (assignment_.LiteralIsTrue(lit)) continue;
         first_false_literal = lit.Index();
-        first_false_literal_clause = ClausePtr(tmp_literals_);
+        first_false_literal_clause = NewAllocatedClausePtr(tmp_literals_);
         tmp_proof_.clear();
         clause_manager_->AppendClausesFixing({lit.Negated()}, &tmp_proof_);
         lrat_proof_handler_->AddInferredClause(first_false_literal_clause,
@@ -839,7 +841,7 @@ bool Prober::FixProbedDnfLiterals(
                                    absl::Span<const Literal> conflict_clause) {
         if (first_false_literal != kNoLiteralIndex) return;
         first_false_literal = lit.Index();
-        first_false_literal_clause = ClausePtr(tmp_literals_);
+        first_false_literal_clause = NewAllocatedClausePtr(tmp_literals_);
         tmp_proof_.clear();
         clause_manager_->AppendClausesFixing(conflict_clause, &tmp_proof_);
         tmp_proof_.push_back(conflict);
@@ -878,7 +880,7 @@ bool Prober::FixProbedDnfLiterals(
         clause_manager_->AppendClausesFixing({propagated_lit}, &tmp_proof_);
       }
       // Add the inferred clause to the LratProofHandler.
-      const ClausePtr clause = ClausePtr(tmp_literals_);
+      const ClausePtr clause = NewAllocatedClausePtr(tmp_literals_);
       lrat_proof_handler_->AddInferredClause(clause, tmp_proof_);
       propagations[conjunction_index] = clause;
     }
@@ -987,13 +989,13 @@ bool Prober::FixLiteralImpliedByAnAtLeastOneCombinationDnf(
           propagated_lit, tmp_literals_);
       const ClausePtr new_clause = num_literals_per_conjunction == 1
                                        ? ClausePtr(propagated_lit)
-                                       : ClausePtr(tmp_literals_);
+                                       : NewAllocatedClausePtr(tmp_literals_);
       lrat_proof_handler_->AddInferredClause(new_clause, tmp_proof_);
       // Delete the clauses used to derive the new one.
       for (const int index : {i, i + stride}) {
         if (clauses[index] == kNullClausePtr) continue;
         lrat_proof_handler_->DeleteClause(clauses[index]);
-        clauses[index] = kNullClausePtr;
+        clauses[index].DeleteIfAllocated();
       }
       if (num_literals_per_conjunction == 1) {
         return clause_manager_->InprocessingAddUnitClause(propagated_lit);

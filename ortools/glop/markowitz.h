@@ -85,6 +85,7 @@
 #include "ortools/lp_data/permutation.h"
 #include "ortools/lp_data/sparse.h"
 #include "ortools/lp_data/sparse_column.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/stats.h"
 
 namespace operations_research {
@@ -481,6 +482,9 @@ class Markowitz {
 
   // Number of floating point operations of the last factorization.
   int64_t num_fp_operations_;
+
+  // Deterministic time of the last factorization.
+  LinearDeterministicTimer<{.scale = 2e-9}> deterministic_timer_;
 };
 
 }  // namespace glop

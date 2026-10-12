@@ -59,6 +59,7 @@ namespace operations_research {
 namespace sat {
 
 struct SolverStatusChangeInfo {
+  // These fields will always be filled on each event.
   double best_objective_value = std::numeric_limits<double>::quiet_NaN();
   double cur_objective_value_lb = std::numeric_limits<double>::quiet_NaN();
   double cur_objective_value_ub = std::numeric_limits<double>::quiet_NaN();
@@ -73,6 +74,14 @@ struct SolverStatusChangeInfo {
   // objective.
   bool new_lower_bound = false;
   bool new_upper_bound = false;
+
+  // Set to true at the start or end of presolve. When either is true,
+  // num_variables, num_constraints, and num_terms are populated.
+  bool presolve_started = false;
+  bool presolve_ended = false;
+  int64_t num_variables = 0;
+  int64_t num_constraints = 0;
+  int64_t num_terms = 0;
 
   // Whether the solver finished the search. The callback will not be called
   // again after this is true.
@@ -336,6 +345,10 @@ class SharedSolutionPool {
 // that violate as few constraints as possible. This can be used to set the
 // phase during SAT search.
 //
+// Selection reads num_selected as of the last Synchronize(), so every
+// caller between two syncs sees the same counts. With always_synchronize_,
+// that copy is updated below on each call.
+//
 // TODO(user): We could also use it after first solution to orient a SAT search
 // towards better solutions. But then it is a bit trickier to rank solutions
 // compared to the old ones.
@@ -535,6 +548,12 @@ class SharedResponseManager {
   void UpdateInnerObjectiveBounds(const std::string& update_info,
                                   IntegerValue lb, IntegerValue ub);
 
+  // Notifies registered status change callbacks of the start or end of
+  // presolve, reporting the number of variables, constraints, and terms in
+  // model_proto.
+  void NotifyPresolveStart(const CpModelProto& model_proto);
+  void NotifyPresolveEnd(const CpModelProto& model_proto);
+
   // Reads the new solution from the response and updates our state. For an
   // optimization problem, we only do something if the solution is strictly
   // improving. Returns a shared pointer to the solution that was potentially
@@ -601,6 +620,7 @@ class SharedResponseManager {
 
   SolverStatusChangeInfo GetSolverStatusChangeInfo()
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  void NotifyPresolveStatusChange(bool start, const CpModelProto& model_proto);
 
   void UpdateBestStatus(const CpSolverStatus& status)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
@@ -1185,10 +1205,6 @@ SharedSolutionRepository<ValueType>::GetRandomBiasedSolution(
     // As long as we have solutions with the best objective that haven't been
     // explored too much, we select one uniformly. Otherwise, we select a
     // solution from the pool uniformly.
-    //
-    // Selection reads num_selected as of the last Synchronize(), so every
-    // caller between two syncs sees the same counts. With always_synchronize_,
-    // that copy is updated below on each call.
     const int kExplorationThreshold = 100;
 
     // Select all the best solutions with a low enough selection count.

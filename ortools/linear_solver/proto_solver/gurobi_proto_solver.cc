@@ -271,8 +271,8 @@ absl::Status SetSolverSpecificParameters(absl::string_view parameters,
   return absl::InvalidArgumentError(absl::StrJoin(error_messages, "\n"));
 }
 
-absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
-    LazyMutableCopy<MPModelRequest> request, GRBenv* gurobi_env) {
+MPSolutionResponse GurobiSolveProto(LazyMutableCopy<MPModelRequest> request,
+                                    GRBenv* gurobi_env) {
   MPSolutionResponse response;
   const std::optional<LazyMutableCopy<MPModelProto>> optional_model =
       GetMPModelOrPopulateResponse(request, &response);
@@ -289,7 +289,13 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
     }
   });
   if (gurobi_env == nullptr) {
-    ABSL_ASSIGN_OR_RETURN(gurobi_env, GetGurobiEnv());
+    auto status_or_env = GetGurobiEnv();
+    if (!status_or_env.ok()) {
+      response.set_status(MPSOLVER_ABNORMAL);
+      response.set_status_str(status_or_env.status().ToString());
+      return response;
+    }
+    gurobi_env = *status_or_env;
     gurobi_env_was_created = true;
   }
 
@@ -301,10 +307,17 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
         << GRBgeterrormsg(gurobi_env);
   });
 
-// `gurobi_env` references ther GRBenv argument.
-#define RETURN_IF_GUROBI_ERROR(x) \
-  ABSL_RETURN_IF_ERROR(           \
-      GurobiCodeToUtilStatus(x, __FILE__, __LINE__, #x, gurobi_env));
+// `gurobi_env` references the GRBenv argument.
+#define RETURN_IF_GUROBI_ERROR(x)                                      \
+  do {                                                                 \
+    const absl::Status _status =                                       \
+        GurobiCodeToUtilStatus(x, __FILE__, __LINE__, #x, gurobi_env); \
+    if (!_status.ok()) {                                               \
+      response.set_status(MPSOLVER_ABNORMAL);                          \
+      response.set_status_str(_status.ToString());                     \
+      return response;                                                 \
+    }                                                                  \
+  } while (false)
 
   RETURN_IF_GUROBI_ERROR(GRBnewmodel(gurobi_env, &gurobi_model,
                                      model.name().c_str(),
@@ -461,9 +474,11 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
           break;
         }
         default:
-          return absl::UnimplementedError(
+          response.set_status(MPSOLVER_ABNORMAL);
+          response.set_status_str(
               absl::StrFormat("General constraints of type %i not supported.",
                               gen_cst.general_constraint_case()));
+          return response;
       }
     }
   }

@@ -514,7 +514,8 @@ class FeasibilityJumpSolver : public SubSolver {
   bool SlowCheckNumViolatedConstraints() const;
 
   double DeterministicTime() const {
-    return evaluator_->DeterministicTime() + num_ops_ * 1e-8;
+    return evaluator_->DeterministicTime() +
+           dtime_.GetElapsedDeterministicTime();
   }
 
   const CpModelProto& input_model_proto_;
@@ -574,8 +575,8 @@ class FeasibilityJumpSolver : public SubSolver {
 
   std::vector<int64_t> tmp_breakpoints_;
 
-  // For counting the dtime. See DeterministicTime().
-  int64_t num_ops_ = 0;
+  // Used for tracking the deterministic time only. See DeterministicTime().
+  TimeLimit dtime_;
 };
 
 // This class helps keep track of moves that change more than one variable.

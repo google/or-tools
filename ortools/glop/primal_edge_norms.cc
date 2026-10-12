@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 
 #include "absl/log/check.h"
@@ -44,8 +45,7 @@ PrimalEdgeNorms::PrimalEdgeNorms(const CompactSparseMatrix& compact_matrix,
       edge_squared_norms_(),
       matrix_column_norms_(),
       devex_weights_(),
-      direction_left_inverse_(),
-      num_operations_(0) {}
+      direction_left_inverse_() {}
 
 void PrimalEdgeNorms::Clear() {
   SCOPED_TIME_STAT(&stats_);
@@ -148,11 +148,14 @@ void PrimalEdgeNorms::UpdateBeforeBasisPivot(ColIndex entering_col,
 
 void PrimalEdgeNorms::ComputeMatrixColumnNorms() {
   SCOPED_TIME_STAT(&stats_);
+  deterministic_timer_.Start();
+  int64_t num_operations = 0;
   matrix_column_norms_.resize(compact_matrix_.num_cols(), 0.0);
   for (ColIndex col(0); col < compact_matrix_.num_cols(); ++col) {
     matrix_column_norms_[col] = SquaredNorm(compact_matrix_.column(col));
-    num_operations_ += compact_matrix_.column(col).num_entries().value();
+    num_operations += compact_matrix_.column(col).num_entries().value();
   }
+  deterministic_timer_.Stop(num_operations);
 }
 
 void PrimalEdgeNorms::ComputeEdgeSquaredNorms() {
@@ -233,6 +236,7 @@ void PrimalEdgeNorms::UpdateEdgeSquaredNorms(ColIndex entering_col,
                                              const DenseColumn& direction,
                                              const UpdateRow& update_row) {
   SCOPED_TIME_STAT(&stats_);
+  deterministic_timer_.Start();
 
   // 'pivot' is the value of the entering_edge at 'leaving_row'.
   // The edge of the 'leaving_col' in the new basis is equal to
@@ -255,13 +259,14 @@ void PrimalEdgeNorms::UpdateEdgeSquaredNorms(ColIndex entering_col,
   auto output = edge_squared_norms_.view();
   const auto direction_left_inverse =
       direction_left_inverse_.values.const_view();
+  int64_t num_operations = 0;
   for (const ColIndex col : update_row.GetNonZeroPositions()) {
     const Fractional coeff = update_row.GetCoefficient(col);
     const Fractional scalar_product =
         col >= first_slack
             ? direction_left_inverse_[col - first_slack]
             : view.ColumnScalarProduct(col, direction_left_inverse);
-    num_operations_ += view.ColumnNumEntries(col).value();
+    num_operations += view.ColumnNumEntries(col).value();
 
     // Update the edge squared norm of this column. Note that the update
     // formula used is important to maximize the precision. See an explanation
@@ -282,6 +287,7 @@ void PrimalEdgeNorms::UpdateEdgeSquaredNorms(ColIndex entering_col,
   }
   output[leaving_col] = leaving_squared_norm;
   stats_.lower_bounded_norms.Add(stat_lower_bounded_norms);
+  deterministic_timer_.Stop(num_operations);
 }
 
 void PrimalEdgeNorms::UpdateDevexWeights(

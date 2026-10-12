@@ -14,6 +14,7 @@
 #include "ortools/sat/cp_model_solver.h"
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <cmath>
 #include <cstdint>
@@ -274,6 +275,61 @@ void DumpNoOverlap2dProblem(const ConstraintProto& ct,
   VLOG(3) << "Sizes: " << RenderDot(bounding_box, sizes_to_render);
 }
 
+template <size_t N>
+struct FixedString {
+  char buf[N]{};
+  constexpr FixedString(const char (&s)[N]) {
+    for (size_t i = 0; i < N; ++i) buf[i] = s[i];
+  }
+  constexpr std::string_view view() const { return {buf, N - 1}; }
+};
+
+constexpr std::string_view extra_debug_names_arr[] = {
+    "kLinear0", "kLinear1", "kLinear2",
+    "kLinear3", "kLinearN", "kBoolAndClauses"};
+constexpr absl::Span<const std::string_view> extra_debug_names =
+    extra_debug_names_arr;
+
+constexpr std::array<std::string_view,
+                     extra_debug_names.size() + kLargestConstraintType + 1>
+    kDebugNames = []() {
+      std::array<std::string_view,
+                 extra_debug_names.size() + kLargestConstraintType + 1>
+          result;
+      for (int i = 0; i <= kLargestConstraintType; ++i) {
+        result[i] =
+            ConstraintCaseName(static_cast<ConstraintProto::ConstraintCase>(i));
+      }
+      for (int i = 0; i < extra_debug_names.size(); ++i) {
+        result[kLargestConstraintType + 1 + i] = extra_debug_names[i];
+      }
+      return result;
+    }();
+
+template <FixedString Name>
+consteval int GetIndex() {
+  constexpr int index = []() {
+    for (int i = 0; i < kDebugNames.size(); ++i) {
+      if (kDebugNames[i] == Name.view()) {
+        return i;
+      }
+    }
+    return -1;
+  }();
+
+  // 2. Safely evaluate the static_assert against the computed result
+  static_assert(index != -1, "GetIndex() called with unknown name");
+
+  return index;
+}
+
+template <size_t N>
+FixedString(const char (&)[N]) -> FixedString<N>;
+
+// Check that the constraints and their name index position match.
+static_assert(GetIndex<"kCumulative">() ==
+              ConstraintProto::ConstraintCase::kCumulative);
+
 }  // namespace.
 
 // =============================================================================
@@ -284,13 +340,13 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   // Note that we only store pointer to "constant" string literals. This is
   // slightly faster and takes less space for models with millions of
   // constraints.
-  absl::flat_hash_map<char const*, int> name_to_num_constraints;
-  absl::flat_hash_map<char const*, int> name_to_num_reified;
-  absl::flat_hash_map<char const*, int> name_to_num_multi_reified;
-  absl::flat_hash_map<char const*, int> name_to_num_literals;
-  absl::flat_hash_map<char const*, int> name_to_num_terms;
-  absl::flat_hash_map<char const*, int> name_to_num_complex_domain;
-  absl::flat_hash_map<char const*, int> name_to_num_expressions;
+  std::array<int, kDebugNames.size()> name_to_num_constraints = {0};
+  std::array<int, kDebugNames.size()> name_to_num_reified = {0};
+  std::array<int, kDebugNames.size()> name_to_num_multi_reified = {0};
+  std::array<int, kDebugNames.size()> name_to_num_literals = {0};
+  std::array<int, kDebugNames.size()> name_to_num_terms = {0};
+  std::array<int, kDebugNames.size()> name_to_num_complex_domain = {0};
+  std::array<int, kDebugNames.size()> name_to_num_expressions = {0};
 
   int no_overlap_2d_num_rectangles = 0;
   int no_overlap_2d_num_optional_rectangles = 0;
@@ -316,28 +372,28 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   for (const ConstraintProto& ct : model_proto.constraints()) {
     // We split the linear constraints into 3 buckets as it gives more insight
     // on the type of problem we are facing.
-    char const* name;
+    int name_index;
     if (ct.constraint_case() == ConstraintProto::kLinear) {
-      if (ct.linear().vars_size() == 0) name = "kLinear0";
-      if (ct.linear().vars_size() == 1) name = "kLinear1";
-      if (ct.linear().vars_size() == 2) name = "kLinear2";
-      if (ct.linear().vars_size() == 3) name = "kLinear3";
-      if (ct.linear().vars_size() > 3) name = "kLinearN";
+      if (ct.linear().vars_size() == 0) name_index = GetIndex<"kLinear0">();
+      if (ct.linear().vars_size() == 1) name_index = GetIndex<"kLinear1">();
+      if (ct.linear().vars_size() == 2) name_index = GetIndex<"kLinear2">();
+      if (ct.linear().vars_size() == 3) name_index = GetIndex<"kLinear3">();
+      if (ct.linear().vars_size() > 3) name_index = GetIndex<"kLinearN">();
     } else if (ct.constraint_case() == ConstraintProto::kBoolAnd &&
                ct.enforcement_literal().size() > 1) {
       // BoolAnd of the form "n literals => m literals" with n > 1 are just a
       // compact way to encode m clauses of size n + 1. We report them
       // separately as they are not handled in the same way internally.
-      name = "kBoolAndClauses";
+      name_index = GetIndex<"kBoolAndClauses">();
     } else {
-      name = ConstraintCaseName(ct.constraint_case()).data();
+      name_index = ct.constraint_case();
     }
 
-    name_to_num_constraints[name]++;
+    name_to_num_constraints[name_index]++;
     if (!ct.enforcement_literal().empty()) {
-      name_to_num_reified[name]++;
+      name_to_num_reified[name_index]++;
       if (ct.enforcement_literal().size() > 1) {
-        name_to_num_multi_reified[name]++;
+        name_to_num_multi_reified[name_index]++;
       }
     }
 
@@ -381,20 +437,20 @@ std::string CpModelStats(const CpModelProto& model_proto) {
     // For pure Boolean constraints, we also display the total number of
     // literals involved as this gives a good idea of the problem size.
     if (ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolOr) {
-      name_to_num_literals[name] += ct.bool_or().literals().size();
+      name_to_num_literals[name_index] += ct.bool_or().literals().size();
     } else if (ct.constraint_case() ==
                ConstraintProto::ConstraintCase::kBoolAnd) {
-      name_to_num_literals[name] +=
+      name_to_num_literals[name_index] +=
           ct.enforcement_literal().size() + ct.bool_and().literals().size();
     } else if (ct.constraint_case() ==
                ConstraintProto::ConstraintCase::kAtMostOne) {
-      name_to_num_literals[name] += ct.at_most_one().literals().size();
+      name_to_num_literals[name_index] += ct.at_most_one().literals().size();
     } else if (ct.constraint_case() ==
                ConstraintProto::ConstraintCase::kExactlyOne) {
-      name_to_num_literals[name] += ct.exactly_one().literals().size();
+      name_to_num_literals[name_index] += ct.exactly_one().literals().size();
     } else if (ct.constraint_case() ==
                ConstraintProto::ConstraintCase::kLinMax) {
-      name_to_num_expressions[name] += ct.lin_max().exprs().size();
+      name_to_num_expressions[name_index] += ct.lin_max().exprs().size();
     } else if (ct.constraint_case() ==
                ConstraintProto::ConstraintCase::kInterval) {
       if (interval_is_fixed(ct)) num_fixed_intervals++;
@@ -463,11 +519,11 @@ std::string CpModelStats(const CpModelProto& model_proto) {
 
     if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinear &&
         ct.linear().vars_size() > 3) {
-      name_to_num_terms[name] += ct.linear().vars_size();
+      name_to_num_terms[name_index] += ct.linear().vars_size();
     }
     if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinear &&
         ct.linear().vars_size() > 1 && ct.linear().domain().size() > 2) {
-      name_to_num_complex_domain[name]++;
+      name_to_num_complex_domain[name_index]++;
     }
   }
 
@@ -606,41 +662,47 @@ std::string CpModelStats(const CpModelProto& model_proto) {
 
   std::vector<std::string> constraints;
   constraints.reserve(name_to_num_constraints.size());
-  for (const auto& [c_name, count] : name_to_num_constraints) {
-    const std::string name(c_name);
+  for (int c_name_index = 0; c_name_index < kDebugNames.size();
+       ++c_name_index) {
+    if (name_to_num_constraints[c_name_index] == 0) continue;
+    const std::string_view name(kDebugNames[c_name_index]);
+    const int count = name_to_num_constraints[c_name_index];
     constraints.push_back(absl::StrCat("#", name, ": ", FormatCounter(count)));
-    if (name_to_num_reified.contains(c_name)) {
-      if (name_to_num_multi_reified.contains(c_name)) {
+    if (name_to_num_reified[c_name_index] != 0) {
+      if (name_to_num_multi_reified[c_name_index] != 0) {
         absl::StrAppend(
             &constraints.back(),
-            " (#enforced: ", FormatCounter(name_to_num_reified[c_name]),
-            " #multi: ", FormatCounter(name_to_num_multi_reified[c_name]), ")");
+            " (#enforced: ", FormatCounter(name_to_num_reified[c_name_index]),
+            " #multi: ", FormatCounter(name_to_num_multi_reified[c_name_index]),
+            ")");
       } else {
         absl::StrAppend(&constraints.back(), " (#enforced: ",
-                        FormatCounter(name_to_num_reified[c_name]), ")");
+                        FormatCounter(name_to_num_reified[c_name_index]), ")");
       }
     }
-    if (name_to_num_literals.contains(c_name)) {
+    if (name_to_num_literals[c_name_index] != 0) {
       absl::StrAppend(&constraints.back(), " (#literals: ",
-                      FormatCounter(name_to_num_literals[c_name]), ")");
+                      FormatCounter(name_to_num_literals[c_name_index]), ")");
     }
-    if (name_to_num_terms.contains(c_name)) {
-      absl::StrAppend(&constraints.back(),
-                      " (#terms: ", FormatCounter(name_to_num_terms[c_name]),
+    if (name_to_num_terms[c_name_index] != 0) {
+      absl::StrAppend(&constraints.back(), " (#terms: ",
+                      FormatCounter(name_to_num_terms[c_name_index]), ")");
+    }
+    if (name_to_num_expressions[c_name_index] != 0) {
+      absl::StrAppend(&constraints.back(), " (#expressions: ",
+                      FormatCounter(name_to_num_expressions[c_name_index]),
                       ")");
     }
-    if (name_to_num_expressions.contains(c_name)) {
-      absl::StrAppend(&constraints.back(), " (#expressions: ",
-                      FormatCounter(name_to_num_expressions[c_name]), ")");
-    }
-    if (name_to_num_complex_domain.contains(c_name)) {
+    if (name_to_num_complex_domain[c_name_index] != 0) {
       absl::StrAppend(&constraints.back(), " (#complex_domain: ",
-                      FormatCounter(name_to_num_complex_domain[c_name]), ")");
+                      FormatCounter(name_to_num_complex_domain[c_name_index]),
+                      ")");
     }
-    if (name == "kInterval" && num_fixed_intervals > 0) {
+    if (c_name_index == ConstraintProto::ConstraintCase::kInterval &&
+        num_fixed_intervals > 0) {
       absl::StrAppend(&constraints.back(),
                       " (#fixed: ", FormatCounter(num_fixed_intervals), ")");
-    } else if (name == "kNoOverlap2D") {
+    } else if (c_name_index == ConstraintProto::ConstraintCase::kNoOverlap2D) {
       absl::StrAppend(&constraints.back(), " (#rectangles: ",
                       FormatCounter(no_overlap_2d_num_rectangles));
       if (no_overlap_2d_num_optional_rectangles > 0) {
@@ -660,7 +722,7 @@ std::string CpModelStats(const CpModelProto& model_proto) {
                         FormatCounter(no_overlap_2d_num_fixed_rectangles));
       }
       absl::StrAppend(&constraints.back(), ")");
-    } else if (name == "kCumulative") {
+    } else if (c_name_index == ConstraintProto::ConstraintCase::kCumulative) {
       absl::StrAppend(&constraints.back(), " (#intervals: ",
                       FormatCounter(cumulative_num_intervals));
       if (cumulative_num_optional_intervals > 0) {
@@ -680,7 +742,7 @@ std::string CpModelStats(const CpModelProto& model_proto) {
                         FormatCounter(cumulative_num_fixed_intervals));
       }
       absl::StrAppend(&constraints.back(), ")");
-    } else if (name == "kNoOverlap") {
+    } else if (c_name_index == ConstraintProto::ConstraintCase::kNoOverlap) {
       absl::StrAppend(&constraints.back(), " (#intervals: ",
                       FormatCounter(no_overlap_num_intervals));
       if (no_overlap_num_optional_intervals > 0) {
@@ -1670,7 +1732,8 @@ class LnsSolver : public SubSolver {
           const int mapped_ref =
               variable_mapping.empty() ? i : variable_mapping[i];
           if (mapped_ref != kNoVariableMapping) {
-            int64_t value = local_solution_values[PositiveRef(mapped_ref)];
+            const int64_t value =
+                local_solution_values[PositiveRef(mapped_ref)];
             if (RefIsPositive(mapped_ref)) {
               solution_values.push_back(value);
             } else {
@@ -1685,6 +1748,23 @@ class LnsSolver : public SubSolver {
         }
         local_response.mutable_solution()->Assign(solution_values.begin(),
                                                   solution_values.end());
+        CHECK(!lns_fragment.has_floating_point_objective());
+        if (!helper_->ModelProto().has_objective()) {
+          // Some postsolve transformation might "polish" the solution which
+          // might lead to a better objective value. For instance, moving a
+          // free variable to one of its implied bound with best objective.
+          // So we need to recompute it.
+          const CpObjectiveProto& objective = helper_->ModelProto().objective();
+          const double objective_value = ScaleObjectiveValue(
+              objective,
+              ComputeInnerObjective(objective, local_response.solution()));
+          local_response.set_objective_value(objective_value);
+        }
+        if (helper_->ModelProto().has_floating_point_objective()) {
+          local_response.set_objective_value(ComputeFloatObjectiveValue(
+              helper_->ModelProto().floating_point_objective(),
+              local_response.solution()));
+        }
       } else {
         CHECK(local_response.solution().empty());
       }
@@ -2604,6 +2684,21 @@ void RegisterSearchStatisticCallback(Model* global_model) {
 }
 
 void MergeParamsWithFlagsAndDefaults(SatParameters* params) {
+  // If we are in a test code, we change some parameters to randomize the solve
+  // process. This is to avoid golden tests that depend on one particular
+  // optimal solution when there are many.
+  if (ProbablyRunningInsideUnitTest()) {
+    if (!params->has_permute_presolve_constraint_order()) {
+      params->set_permute_presolve_constraint_order(true);
+    }
+    if (!params->has_permute_variable_randomly()) {
+      params->set_permute_variable_randomly(true);
+    }
+    if (!params->has_use_absl_random()) {
+      params->set_use_absl_random(true);
+    }
+  }
+
   if constexpr (std::is_base_of_v<google::protobuf::Message, SatParameters>) {
     // Override parameters?
     if (!absl::GetFlag(FLAGS_cp_model_params).empty()) {
@@ -2999,6 +3094,7 @@ bool CpModelSolver::CopyInputProto() {
 bool CpModelSolver::Presolve() {
   SOLVER_LOG(logger_, absl::StrFormat("Starting presolve at %.2fs",
                                       model_->GetOrCreate<WallTimer>()->Get()));
+  shared_response_manager_->NotifyPresolveStart(*presolved_model_proto_);
   // We need a solution crush proto to crush the solution found in parallel of
   // presolve, if any.
   if (params_.cp_model_presolve() && params_.cp_model_direct_solve()) {
@@ -3022,6 +3118,7 @@ bool CpModelSolver::Presolve() {
   // If the mode is not degraded, we will hopefully report a small subset
   // in case there is no feasible solution under these assumptions.
   if (!FixAssumptionsIfNotSupported(context.get())) {
+    shared_response_manager_->NotifyPresolveEnd(CpModelProto());
     return false;
   }
 
@@ -3058,11 +3155,13 @@ bool CpModelSolver::Presolve() {
         model_->GetOrCreate<SharedLratProofStatus>();
     LratMerger(model_).Merge(lrat_proof_status->GetProofFilenames());
     lrat_proof_status->Log(logger_);
+    shared_response_manager_->NotifyPresolveEnd(CpModelProto());
     return false;
   }
 
   SOLVER_LOG(logger_, "");
   SOLVER_LOG(logger_, "Presolved ", CpModelStats(*presolved_model_proto_));
+  shared_response_manager_->NotifyPresolveEnd(*presolved_model_proto_);
   return true;
 }
 
@@ -3327,6 +3426,21 @@ void CpModelSolver::AddSolutionPostsolveCallback() {
         ref = RefIsPositive(ref)
                   ? postsolve_mapping_[ref]
                   : NegatedRef(postsolve_mapping_[PositiveRef(ref)]);
+      }
+      if (!response->solution().empty() && model_proto_.has_objective()) {
+        // Some postsolve transformation might "polish" the solution which
+        // might lead to a better objective value. For instance, moving a
+        // free variable to one of its implied bound with best objective.
+        // So we need to recompute it.
+        const CpObjectiveProto& objective = model_proto_.objective();
+        const double objective_value = ScaleObjectiveValue(
+            objective, ComputeInnerObjective(objective, response->solution()));
+        response->set_objective_value(objective_value);
+      }
+      if (!response->solution().empty() &&
+          model_proto_.has_floating_point_objective()) {
+        response->set_objective_value(ComputeFloatObjectiveValue(
+            model_proto_.floating_point_objective(), response->solution()));
       }
     });
   } else {

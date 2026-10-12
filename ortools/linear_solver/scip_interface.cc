@@ -37,7 +37,6 @@
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/linear_solver_callback.h"
-#include "ortools/linear_solver/proto_solver/proto_utils.h"
 #include "ortools/linear_solver/proto_solver/scip_params.h"
 #include "ortools/linear_solver/proto_solver/scip_proto_solver.h"
 #include "ortools/linear_solver/scip_callback.h"
@@ -915,9 +914,7 @@ bool SCIPInterface::SupportsDirectlySolveProto(
 
 MPSolutionResponse SCIPInterface::DirectlySolveProto(
     LazyMutableCopy<MPModelRequest> request, std::atomic<bool>*) {
-  const bool log_error = request->enable_internal_solver_output();
-  return ConvertStatusOrMPSolutionResponse(log_error,
-                                           ScipSolveProto(std::move(request)));
+  return ScipSolveProto(std::move(request));
 }
 
 int SCIPInterface::SolutionCount() { return SCIPgetNSols(scip_); }

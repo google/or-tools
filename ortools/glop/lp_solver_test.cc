@@ -15,19 +15,28 @@
 
 #include <atomic>
 #include <limits>
+#include <optional>
+#include <ostream>
+#include <sstream>
 #include <string>
+#include <tuple>
 #include <utility>
+#include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
 #include "absl/log/log.h"
+#include "absl/strings/escaping.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "absl/types/optional_ref.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/log_severity.h"
+#include "ortools/glop/glop_testing.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
@@ -35,9 +44,11 @@
 #include "ortools/lp_data/lp_test_utils.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_types_testing.h"
+#include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/proto_utils.h"
 #include "ortools/port/scoped_std_stream_capture.h"
 #include "ortools/util/file_util.h"
+#include "ortools/util/fp_roundtrip_conv.h"
 #include "ortools/util/fp_utils_testing.h"
 #include "ortools/util/time_limit.h"
 
@@ -46,9 +57,23 @@ namespace glop {
 namespace {
 
 using ::testing::_;
+using ::testing::AnyOfArray;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 using ::testing::EqualsProto;
+using ::testing::Optional;
+
+// Returns a copy of a referenced optional value.
+//
+// This is used in unit test as there is no printer for
+// absl::optional_ref<>. Without we get messages like:
+//
+//   8-byte object <A0-6E 9B-27 FC-7F 00-00>
+//
+template <typename T>
+std::optional<T> OptionalRefValue(const absl::optional_ref<T>& opt_ref) {
+  return opt_ref.has_value() ? std::make_optional(T(*opt_ref)) : std::nullopt;
+}
 
 // Note that double is used instead of Fractional to be able to use C-style
 // const inline arrays.
@@ -921,22 +946,16 @@ TEST(LPSolverTest, NoLogsToStdoutInVerbose) {
 //
 //   min/max x_1
 //
-//     x_1 + x_2 == 1  (c1)
+//     x_1 + x_2 == 0  (c1)
 //
 // The unique (up to positive scaling) cost improving directions for the min and
 // max problems are x = (-1, 1) and x = (1, -1) respectively.
 TEST(LPSolverTest, PrimalRay) {
-  LinearProgram linear_program;
-  ColIndex col_x_1 = linear_program.FindOrCreateVariable("x1");
-  ColIndex col_x_2 = linear_program.FindOrCreateVariable("x2");
-  RowIndex row_c_1 = linear_program.FindOrCreateConstraint("c1");
-  linear_program.SetVariableBounds(col_x_1, -kInfinity, kInfinity);
-  linear_program.SetVariableBounds(col_x_2, -kInfinity, kInfinity);
-  linear_program.SetObjectiveCoefficient(col_x_1, 1);
-  linear_program.SetConstraintBounds(row_c_1, 0, 0);
-  linear_program.SetCoefficient(row_c_1, col_x_1, 1);
-  linear_program.SetCoefficient(row_c_1, col_x_2, 1);
-  linear_program.CleanUp();
+  LinearProgram lp;
+  ASSERT_TRUE(
+      ParseLp("min: 1 x1 + 0 x2;"
+              "c1: 1 x1 + 1 x2 = 0;",
+              &lp));
 
   GlopParameters parameters;
   parameters.set_use_preprocessing(false);
@@ -945,148 +964,293 @@ TEST(LPSolverTest, PrimalRay) {
 
   LPSolver min_solver;
   min_solver.SetParameters(parameters);
-  linear_program.SetMaximizationProblem(false);
-  EXPECT_THAT(min_solver.Solve(linear_program),
+  lp.SetMaximizationProblem(false);
+  EXPECT_THAT(min_solver.Solve(lp),
               SolveStatusWith<SolveStatus::PrimalUnbounded>(_));
-  EXPECT_THAT(min_solver.primal_ray(), ElementsAre(-1.0, 1.0));
+  EXPECT_THAT(OptionalRefValue(min_solver.primal_ray()),
+              Optional(ElementsAre(-1.0, 1.0)));
 
   LPSolver max_solver;
   max_solver.SetParameters(parameters);
-  linear_program.SetMaximizationProblem(true);
-  EXPECT_THAT(max_solver.Solve(linear_program),
+  lp.SetMaximizationProblem(true);
+  EXPECT_THAT(max_solver.Solve(lp),
               SolveStatusWith<SolveStatus::PrimalUnbounded>(_));
-  EXPECT_THAT(max_solver.primal_ray(), ElementsAre(1.0, -1.0));
+  EXPECT_THAT(OptionalRefValue(max_solver.primal_ray()),
+              Optional(ElementsAre(1.0, -1.0)));
 
   // Check that primal ray is cleared between incremental solves.
-  linear_program.SetVariableBounds(col_x_1, -1, 1);
-  EXPECT_THAT(max_solver.Solve(linear_program),
-              SolveStatusWith<SolveStatus::Optimal>(_));
-  EXPECT_TRUE(max_solver.primal_ray().empty());
+  lp.SetVariableBounds(ColIndex(0), -1, 1);
+  EXPECT_THAT(max_solver.Solve(lp), SolveStatusWith<SolveStatus::Optimal>(_));
+  EXPECT_EQ(OptionalRefValue(max_solver.primal_ray()), std::nullopt);
 }
 
-// We solve the pair of problems
-//
-//   min/max x_1 + x_2
-//
-//     x_1 + x_2 == 1  (c1)
-//     x_1 + x_2 == 0  (c2)
-//
-// whose duals are
-//
-//   max/min  y_1
-//
-//      y_1 + y_2 == 1
-//      y_1 + y_2 == 1
-//
-// Any unbounded direction for the dual problems satisfies y1 = - y2. For the
-// max dual the unique (up to positive scaling) ray that improves the objective
-// is y = (1, -1) and for the min dual it is y = (-1, 1).
-TEST(LPSolverTest, DualRayPureConstraints) {
-  LinearProgram linear_program;
-  ColIndex col_x_1 = linear_program.FindOrCreateVariable("x1");
-  ColIndex col_x_2 = linear_program.FindOrCreateVariable("x2");
-  RowIndex row_c_1 = linear_program.FindOrCreateConstraint("c1");
-  RowIndex row_c_2 = linear_program.FindOrCreateConstraint("c2");
-  linear_program.SetVariableBounds(col_x_1, -kInfinity, kInfinity);
-  linear_program.SetVariableBounds(col_x_2, -kInfinity, kInfinity);
-  linear_program.SetObjectiveCoefficient(col_x_1, 1);
-  linear_program.SetObjectiveCoefficient(col_x_2, 1);
-  linear_program.SetConstraintBounds(row_c_1, 1, 1);
-  linear_program.SetConstraintBounds(row_c_2, 0, 0);
-  linear_program.SetCoefficient(row_c_1, col_x_1, 1);
-  linear_program.SetCoefficient(row_c_1, col_x_2, 1);
-  linear_program.SetCoefficient(row_c_2, col_x_1, 1);
-  linear_program.SetCoefficient(row_c_2, col_x_2, 1);
-  linear_program.CleanUp();
+// A test model for LPSolverDualRayTest parametric test.
+struct LPSolverDualRayTestModel {
+  // An expected dual ray.
+  struct DualRay {
+    // Dual values of the constraints.
+    DenseColumn constraints ABSL_REQUIRE_EXPLICIT_INIT;
 
-  GlopParameters parameters;
-  parameters.set_use_preprocessing(false);
-  parameters.set_use_dual_simplex(true);
-  parameters.set_use_scaling(false);
+    // Dual values of the constraints.
+    DenseRow bounds ABSL_REQUIRE_EXPLICIT_INIT;
+  };
 
-  LPSolver min_solver;
-  min_solver.SetParameters(parameters);
-  linear_program.SetMaximizationProblem(false);
-  EXPECT_THAT(min_solver.Solve(linear_program),
-              SolveStatusWith<SolveStatus::DualUnbounded>(_));
-  EXPECT_THAT(min_solver.constraints_dual_ray(), ElementsAre(1.0, -1.0));
+  // Name of the model. It is used as a part of the name of the test, thus it
+  // must only contains characters, numbers and underscores (NO spaces, commas,
+  // ...).
+  std::string name ABSL_REQUIRE_EXPLICIT_INIT;
 
-  LPSolver max_solver;
-  max_solver.SetParameters(parameters);
-  linear_program.SetMaximizationProblem(true);
-  EXPECT_THAT(max_solver.Solve(linear_program),
-              SolveStatusWith<SolveStatus::DualUnbounded>(_));
-  EXPECT_THAT(max_solver.constraints_dual_ray(), ElementsAre(-1.0, 1.0));
+  // The model that will parsed by ParseLp().
+  //
+  // The objective direction is overwritten by the test, as a convention it
+  // should be written as a minimization to align with the rays in
+  // expected_minimization_dual_rays.
+  std::string lp_model ABSL_REQUIRE_EXPLICIT_INIT;
 
-  // Check that dual ray is cleared between incremental solves.
-  linear_program.SetConstraintBounds(row_c_2, 1, 1);
-  EXPECT_THAT(max_solver.Solve(linear_program),
-              SolveStatusWith<SolveStatus::Optimal>(_));
-  EXPECT_TRUE(max_solver.constraints_dual_ray().empty());
+  // An exhaustive list of dual rays that can be produced by:
+  // * either the phase II of the dual simplex,
+  // * or the phase I of the primal simplex,
+  // when solving a minimization of lp_model (rays for maximization are the
+  // opposite).
+  //
+  // See RevisedSimplexDualRayTestModel documentation in revised_simplex_test.cc
+  // for details on how to produce those for non trivial models.
+  std::vector<DualRay> expected_minimization_dual_rays
+      ABSL_REQUIRE_EXPLICIT_INIT;
+};
+
+std::ostream& operator<<(std::ostream& out,
+                         const LPSolverDualRayTestModel::DualRay& dual_ray) {
+  const auto write_vector = [&](const auto& vec) {
+    out << '[';
+    bool first = true;
+    for (const Fractional value : vec) {
+      if (first) {
+        first = false;
+      } else {
+        out << ", ";
+      }
+      out << RoundTripDoubleFormat(value);
+    }
+    out << ']';
+  };
+
+  out << "{ constraints: ";
+  write_vector(dual_ray.constraints);
+  out << ", bounds: ";
+  write_vector(dual_ray.bounds);
+  out << " }";
+  return out;
 }
 
-// We solve
-//
-//   min x_1 + x_2
-//
-//     x_1 + x_2 <= -1  (c1)
-//      x_1, x_2 >= 0
-//
-// whose dual is
-//
-//   max  -y_1
-//
-//      y_1 + r_1 == 1
-//      y_1 + r_2 == 1
-//            y_1 <= 0
-//       r_1, r_2 >= 0
-//
-// where r_1 and r_2 are the dual multipliers associated to the variable bounds.
-// The unique (up to positive scaling) cost-improving unboundedness direction
-// for the dual is y_1 = -1 and r = (1, 1). If we change the primal to max (and
-// the dual to min) the cost-improving unboundedness direction is multiplied by
-// -1.
-TEST(LPSolverTest, DualRayConstraintAndBounds) {
-  LinearProgram linear_program;
-  ColIndex col_x_1 = linear_program.FindOrCreateVariable("x1");
-  ColIndex col_x_2 = linear_program.FindOrCreateVariable("x2");
-  RowIndex row_c_1 = linear_program.FindOrCreateConstraint("c1");
-  linear_program.SetVariableBounds(col_x_1, 0, kInfinity);
-  linear_program.SetVariableBounds(col_x_2, 0, kInfinity);
-  linear_program.SetObjectiveCoefficient(col_x_1, 1);
-  linear_program.SetObjectiveCoefficient(col_x_2, 1);
-  linear_program.SetConstraintBounds(row_c_1, -kInfinity, -1);
-  linear_program.SetCoefficient(row_c_1, col_x_1, 1);
-  linear_program.SetCoefficient(row_c_1, col_x_2, 1);
-  linear_program.CleanUp();
+std::ostream& operator<<(std::ostream& out,
+                         const LPSolverDualRayTestModel& model) {
+  out << "{ name: " << model.name << ", lp_model: '"
+      << absl::CEscape(model.lp_model)
+      << "', expected_minimization_dual_rays: [";
+  bool first = true;
+  for (const auto& dual_ray : model.expected_minimization_dual_rays) {
+    if (first) {
+      first = false;
+    } else {
+      out << ", ";
+    }
+    out << dual_ray;
+  }
+  out << "] }";
+  return out;
+}
 
-  GlopParameters parameters;
-  parameters.set_use_preprocessing(false);
-  parameters.set_use_dual_simplex(true);
-  parameters.set_use_scaling(false);
+struct LPSolverDualRayTest
+    : ::testing::TestWithParam<
+          std::tuple<LPSolverDualRayTestModel, TestAlgorithm, TestDirection>> {
+ protected:
+  // Shortcuts to get parameters.
+  TestDirection direction() const {
+    return std::get<TestDirection>(GetParam());
+  }
+  TestAlgorithm algorithm() const {
+    return std::get<TestAlgorithm>(GetParam());
+  }
+};
 
-  LPSolver min_solver;
-  min_solver.SetParameters(parameters);
-  linear_program.SetMaximizationProblem(false);
-  EXPECT_THAT(min_solver.Solve(linear_program),
-              SolveStatusWith<SolveStatus::DualUnbounded>(_));
-  EXPECT_THAT(min_solver.constraints_dual_ray(), ElementsAre(-1.0));
-  EXPECT_THAT(min_solver.variable_bounds_dual_ray(), ElementsAre(1.0, 1.0));
+TEST_P(LPSolverDualRayTest, Optimize) {
+  LinearProgram lp;
+  ASSERT_TRUE(
+      ParseLp(std::get<LPSolverDualRayTestModel>(GetParam()).lp_model, &lp));
+  lp.SetMaximizationProblem(direction() == TestDirection::kMaximize);
 
-  LPSolver max_solver;
-  max_solver.SetParameters(parameters);
-  linear_program.SetMaximizationProblem(true);
-  EXPECT_THAT(max_solver.Solve(linear_program),
-              SolveStatusWith<SolveStatus::DualUnbounded>(_));
-  EXPECT_THAT(max_solver.constraints_dual_ray(), ElementsAre(1.0));
-  EXPECT_THAT(max_solver.variable_bounds_dual_ray(), ElementsAre(-1.0, -1.0));
+  LPSolver solver;
+  // As of today (2026-09) rays can only be returned without pre-processing or
+  // scaling.
+  solver.GetMutableParameters()->set_use_preprocessing(false);
+  solver.GetMutableParameters()->set_use_scaling(false);
 
-  // Check that dual ray is cleared between incremental solves.
-  linear_program.SetConstraintBounds(row_c_1, 0, 1);
-  EXPECT_THAT(max_solver.Solve(linear_program),
-              SolveStatusWith<SolveStatus::Optimal>(_));
-  EXPECT_TRUE(max_solver.constraints_dual_ray().empty());
-  EXPECT_TRUE(max_solver.variable_bounds_dual_ray().empty());
+  solver.GetMutableParameters()->set_use_dual_simplex(
+      algorithm() == TestAlgorithm::kDualSimplex);
+
+  const SolveStatus solve_status = solver.Solve(lp);
+  switch (algorithm()) {
+    case TestAlgorithm::kPrimalSimplex:
+      EXPECT_THAT(solve_status,
+                  SolveStatusWith<SolveStatus::PrimalInfeasible>(_));
+      break;
+    case TestAlgorithm::kDualSimplex:
+      EXPECT_THAT(solve_status, SolveStatusWith<SolveStatus::DualUnbounded>(_));
+      break;
+  }
+
+  std::vector<std::pair<DenseColumn, DenseRow>> expected_dual_rays;
+  for (const auto& expected_minimization_dual_ray :
+       std::get<LPSolverDualRayTestModel>(GetParam())
+           .expected_minimization_dual_rays) {
+    auto expected_dual_ray =
+        std::make_pair(expected_minimization_dual_ray.constraints,
+                       expected_minimization_dual_ray.bounds);
+    if (direction() == TestDirection::kMaximize) {
+      ChangeSign(&expected_dual_ray.first);
+      ChangeSign(&expected_dual_ray.second);
+    }
+    expected_dual_rays.push_back(std::move(expected_dual_ray));
+  }
+  EXPECT_THAT(
+      std::make_pair(OptionalRefValue(solver.constraints_dual_ray()),
+                     OptionalRefValue(solver.variable_bounds_dual_ray())),
+      AnyOfArray(expected_dual_rays));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    All, LPSolverDualRayTest,
+    testing::Combine(
+        testing::Values(
+            LPSolverDualRayTestModel{
+                .name = "bounds_on_constraints_only",
+                .lp_model = ("min: 1 x1 + 1 x2;"
+                             "c1:  1 <= 1 x1 + 1 x2 <= 1;"
+                             "c2:  0 <= 1 x1 + 1 x2 <= 0;"),
+                // Dual:
+                //
+                //   max y_1
+                //
+                //      y_1 + y_2 == 1
+                //      y_1 + y_2 == 1
+                //
+                // Any unbounded direction for the dual problems satisfies y1 =
+                // - y2. For the max dual the unique (up to positive scaling)
+                // ray that improves the objective is y = (1, -1) and for the
+                // min dual it is y = (-1, 1).
+                //
+                .expected_minimization_dual_rays =
+                    {
+                        {.constraints = {1.0, -1.0}, .bounds = {0.0, 0.0}},
+                    },
+            },
+            LPSolverDualRayTestModel{
+                .name = "bounds_variables_and_constraints",
+                .lp_model = ("min: 1 x1 + 1 x2;"
+                             "x1 >= 0;"
+                             "x2 >= 0;"
+                             "c1: 1 x1 + 1 x2 <= -1;"),
+                // Dual:
+                //
+                //   max  -y_1
+                //
+                //      y_1 + r_1 == 1
+                //      y_1 + r_2 == 1
+                //            y_1 <= 0
+                //       r_1, r_2 >= 0
+                //
+                // where r_1 and r_2 are the dual multipliers associated to the
+                // variable bounds.  The unique (up to positive scaling)
+                // cost-improving unboundedness direction for the dual is y_1 =
+                // -1 and r = (1, 1). If we change the primal to max (and the
+                // dual to min) the cost-improving unboundedness direction is
+                // multiplied by -1.
+                .expected_minimization_dual_rays =
+                    {
+                        {.constraints = {-1.0}, .bounds = {1.0, 1.0}},
+                    },
+            },
+            LPSolverDualRayTestModel{
+                .name = "random_with_different_primal_dual_simplex_rays",
+                // A randomly generated problem that has:
+                // * multiple rays candidates,
+                // * different depending on the simplex algorithm,
+                // * with power-of-two values.
+                //
+                // Note that the constraint "c1" is always broken, but the dual
+                // simplex may not include it as "c2" is enough to proof
+                // infeasibility. Taking the dual ray where "c1" coeff is 0 and
+                // combining the constraint and bounds leads to:
+                //
+                //   8 *  6 <=   x2
+                //  -1 *                x3 <= 9
+                //  -1 *       8 x2 - 1 x3 <= -4
+                //
+                //       48 <=  8 x2
+                //       -9 <=       - x3
+                //        4 <= -8 x2 + x3
+                //
+                //       43 <= 0 (obvious infeasibility)
+                //
+                // Here the primal simplex will not do that; instead it will
+                // always return a combination of both constraints.
+                .lp_model = ("min: 0 x1 + 4 x2 + 4 x3;"
+                             "6 <= x2 <= 8;"
+                             "x3 <= 9;"
+                             "c1: 0 x1 <= -1;"
+                             "c2: -6 <= 8 x2 - 1 x3 <= -4;"),
+                .expected_minimization_dual_rays =
+                    {
+                        // Dual-simplex rays (only on constraint).
+                        {.constraints = {-1.0, 0.0}, .bounds = {0.0, 0.0, 0.0}},
+                        {.constraints = {0.0, -1.0},
+                         .bounds = {0.0, 8.0, -1.0}},
+                        // Primal-simplex rays (always both constraints).
+                        {.constraints = {-1.0, -1.0 / 8.0},
+                         .bounds = {0.0, 1.0, -1.0 / 8.0}},
+                        {.constraints = {-1.0, -1.0},
+                         .bounds = {0.0, 8.0, -1.0}},
+                    },
+            }),
+        testing::Values(TestAlgorithm::kPrimalSimplex,
+                        TestAlgorithm::kDualSimplex),
+        testing::Values(TestDirection::kMinimize, TestDirection::kMaximize)),
+    [](const testing::TestParamInfo<LPSolverDualRayTest::ParamType>& info) {
+      std::ostringstream oss;
+      oss << std::get<LPSolverDualRayTestModel>(info.param).name << "__"
+          << std::get<TestAlgorithm>(info.param) << "__"
+          << std::get<TestDirection>(info.param);
+      return oss.str();
+    });
+
+TEST(LPSolverTest, DualRayClearedWithIncrementalSolve) {
+  LinearProgram lp;
+
+  ASSERT_TRUE(
+      ParseLp("min: 1 x1 + 1 x2;"
+              "x1 >= 0;"
+              "x2 >= 0;"
+              "c1: 1 x1 + 1 x2 <= -1;",
+              &lp));
+
+  // Generate a dual ray.
+  LPSolver solver;
+  solver.GetMutableParameters()->set_use_preprocessing(false);
+  solver.GetMutableParameters()->set_use_dual_simplex(true);
+  solver.GetMutableParameters()->set_use_scaling(false);
+
+  EXPECT_THAT(solver.Solve(lp), SolveStatusWith<SolveStatus::DualUnbounded>(_));
+  EXPECT_THAT(OptionalRefValue(solver.constraints_dual_ray()),
+              Optional(ElementsAre(-1.0)));
+  EXPECT_THAT(OptionalRefValue(solver.variable_bounds_dual_ray()),
+              Optional(ElementsAre(1.0, 1.0)));
+
+  // Make the problem feasible and resolve.
+  lp.SetConstraintBounds(RowIndex{0}, 0, 1);
+  EXPECT_THAT(solver.Solve(lp), SolveStatusWith<SolveStatus::Optimal>(_));
+  EXPECT_EQ(OptionalRefValue(solver.constraints_dual_ray()), std::nullopt);
+  EXPECT_EQ(OptionalRefValue(solver.variable_bounds_dual_ray()), std::nullopt);
 }
 
 TEST(LPSolverTest, TimeLimit) {

@@ -48,6 +48,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/integer_pq.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/strong_integers.h"
@@ -435,6 +436,7 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
   // Start the round.
   WallTimer wall_timer;
   wall_timer.Start();
+  DeterministicTimer<{.scale = 1e-8}> timer(time_limit_);
 
   int64_t num_removed_literals = 0;
   int64_t num_inspected_literals = 0;
@@ -560,11 +562,10 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
     }
   }
 
-  // TODO(user): find a way to auto-tune that after a run on borg...
-  const double dtime = static_cast<double>(num_inspected_literals) * 1e-8;
-  time_limit_->AdvanceDeterministicTime(dtime);
+  timer.Advance(num_inspected_literals);
   LOG_IF(INFO, log_info) << "Cleanup. num_removed_literals: "
-                         << num_removed_literals << " dtime: " << dtime
+                         << num_removed_literals
+                         << " dtime: " << timer.dtime(num_inspected_literals)
                          << " wtime: " << wall_timer.Get();
 
   return true;
@@ -578,6 +579,7 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
 bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
   WallTimer wall_timer;
   wall_timer.Start();
+  DeterministicTimer2<{.scale1 = 1e-8, .scale2 = 5e-9}> timer(time_limit_);
 
   int64_t num_subsumed_clauses = 0;
   int64_t num_removed_literals = 0;
@@ -834,15 +836,13 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
   // We might have fixed variables, finish the propagation.
   if (!LevelZeroPropagate()) return false;
 
-  // TODO(user): tune the deterministic time.
-  const double dtime = static_cast<double>(num_inspected_signatures) * 1e-8 +
-                       static_cast<double>(num_inspected_literals) * 5e-9;
-  time_limit_->AdvanceDeterministicTime(dtime);
+  timer.Advance(num_inspected_signatures, num_inspected_literals);
   LOG_IF(INFO, log_info) << "Subsume. num_removed_literals: "
                          << FormatCounter(num_removed_literals)
                          << " num_subsumed: "
-                         << FormatCounter(num_subsumed_clauses)
-                         << " dtime: " << dtime
+                         << FormatCounter(num_subsumed_clauses) << " dtime: "
+                         << timer.dtime(num_inspected_signatures,
+                                        num_inspected_literals)
                          << " wtime: " << wall_timer.Get();
   return true;
 }
@@ -850,8 +850,9 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
 bool StampingSimplifier::DoOneRound(bool log_info) {
   WallTimer wall_timer;
   wall_timer.Start();
+  DeterministicTimer<{.scale = 1.5e-8}> timer(time_limit_);
 
-  dtime_ = 0.0;
+  work_done_ = 0.0;
   num_subsumed_clauses_ = 0;
   num_removed_literals_ = 0;
   num_fixed_ = 0;
@@ -872,11 +873,12 @@ bool StampingSimplifier::DoOneRound(bool log_info) {
 
   // Note that num_removed_literals_ does not count the literals of the subsumed
   // clauses.
-  time_limit_->AdvanceDeterministicTime(dtime_);
+  timer.Advance(static_cast<uint64_t>(work_done_));
   LOG_IF(INFO, log_info) << "Stamping. num_removed_literals: "
                          << num_removed_literals_
                          << " num_subsumed: " << num_subsumed_clauses_
-                         << " num_fixed: " << num_fixed_ << " dtime: " << dtime_
+                         << " num_fixed: " << num_fixed_ << " dtime: "
+                         << timer.dtime(static_cast<uint64_t>(work_done_))
                          << " wtime: " << wall_timer.Get();
   return true;
 }
@@ -884,7 +886,8 @@ bool StampingSimplifier::DoOneRound(bool log_info) {
 bool StampingSimplifier::ComputeStampsForNextRound(bool log_info) {
   WallTimer wall_timer;
   wall_timer.Start();
-  dtime_ = 0.0;
+  DeterministicTimer<{.scale = 1.5e-8}> timer(time_limit_);
+  work_done_ = 0.0;
   num_fixed_ = 0;
 
   if (implication_graph_->IsEmpty()) return true;
@@ -896,9 +899,10 @@ bool StampingSimplifier::ComputeStampsForNextRound(bool log_info) {
   stamps_are_already_computed_ = true;
 
   // TODO(user): compute some dtime, it is always zero currently.
-  time_limit_->AdvanceDeterministicTime(dtime_);
+  timer.Advance(static_cast<uint64_t>(work_done_));
   LOG_IF(INFO, log_info) << "Prestamping."
-                         << " num_fixed: " << num_fixed_ << " dtime: " << dtime_
+                         << " num_fixed: " << num_fixed_ << " dtime: "
+                         << timer.dtime(static_cast<uint64_t>(work_done_))
                          << " wtime: " << wall_timer.Get();
   return true;
 }
@@ -1165,7 +1169,7 @@ bool StampingSimplifier::ProcessClauses() {
     // The sort should be dominant.
     if (!entries.empty()) {
       const double n = static_cast<double>(entries.size());
-      dtime_ += 1.5e-8 * n * std::log(n);
+      work_done_ += n * std::log(n);
       std::sort(entries.begin(), entries.end());
     }
 
@@ -1314,8 +1318,8 @@ void StampingSimplifier::AppendImplicationChain(Literal a, Literal b,
 void BlockedClauseSimplifier::DoOneRound(bool log_info) {
   WallTimer wall_timer;
   wall_timer.Start();
+  DeterministicTimer<{.scale = 1e-8}> timer(time_limit_);
 
-  dtime_ = 0.0;
   num_blocked_clauses_ = 0;
   num_inspected_literals_ = 0;
 
@@ -1334,11 +1338,11 @@ void BlockedClauseSimplifier::DoOneRound(bool log_info) {
   // Release some memory.
   literal_to_clauses_.clear();
 
-  dtime_ += 1e-8 * num_inspected_literals_;
-  time_limit_->AdvanceDeterministicTime(dtime_);
+  timer.Advance(num_inspected_literals_);
   log_info |= VLOG_IS_ON(2);
   LOG_IF(INFO, log_info) << "Blocked clause. num_blocked_clauses: "
-                         << num_blocked_clauses_ << " dtime: " << dtime_
+                         << num_blocked_clauses_
+                         << " dtime: " << timer.dtime(num_inspected_literals_)
                          << " wtime: " << wall_timer.Get();
 }
 
@@ -1503,8 +1507,9 @@ bool BlockedClauseSimplifier::ClauseIsBlocked(
 bool BoundedVariableElimination::DoOneRound(bool log_info) {
   WallTimer wall_timer;
   wall_timer.Start();
+  DeterministicTimer<{.scale = 1e-8}> timer(time_limit_);
 
-  dtime_ = 0.0;
+  work_done_ = 0;
   num_inspected_literals_ = 0;
   num_eliminated_variables_ = 0;
   num_literals_diff_ = 0;
@@ -1568,7 +1573,8 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
 
   // TODO(user): adapt the dtime limit depending on how much we want to spend on
   // inprocessing.
-  while (!time_limit_->LimitReached() && !queue_.IsEmpty() && dtime_ < 10.0) {
+  while (!time_limit_->LimitReached() && !queue_.IsEmpty() &&
+         timer.dtime(work_done_) < 10.0) {
     const BooleanVariable top = queue_.Top().var;
     queue_.Pop();
 
@@ -1617,7 +1623,7 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
   literal_to_clauses_.clear();
   literal_to_num_clauses_.clear();
 
-  time_limit_->AdvanceDeterministicTime(dtime_);
+  timer.Advance(work_done_);
   log_info |= VLOG_IS_ON(2);
   LOG_IF(INFO, log_info) << "BVE."
                          << " num_fixed: "
@@ -1627,7 +1633,7 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
                          << " num_eliminations: " << num_eliminated_variables_
                          << " num_literals_diff: " << num_literals_diff_
                          << " num_clause_diff: " << num_clauses_diff_
-                         << " dtime: " << dtime_
+                         << " dtime: " << timer.dtime(work_done_)
                          << " wtime: " << wall_timer.Get();
   return true;
 }
@@ -2012,12 +2018,12 @@ bool BoundedVariableElimination::CrossProduct(BooleanVariable var) {
   for (const ClauseIndex i : literal_to_clauses_[lit]) {
     const auto c = clauses_[i]->AsSpan();
     if (!c.empty()) score += clause_weight + c.size();
-    dtime_ += 1e-8 * c.size();
+    work_done_ += c.size();
   }
   for (const ClauseIndex i : literal_to_clauses_[not_lit]) {
     const auto c = clauses_[i]->AsSpan();
     if (!c.empty()) score += clause_weight + c.size();
-    dtime_ += 1.0e-8 * c.size();
+    work_done_ += c.size();
   }
 
   // Compute the new score after BVE.

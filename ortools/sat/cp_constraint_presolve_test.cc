@@ -660,6 +660,31 @@ TEST(PresolveCpModelTest, BoolXorChangedToBoolOrIfAlwaysFalseWhenEnforced3) {
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
+TEST(PresolveCpModelTest, DetectSimpleSum) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 10, 10, 10, 3 ]
+        domain: [ 0, 22 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto presolved = PresolveOneConstraint(initial_model, 0);
+  ASSERT_EQ(presolved.constraints_size(), 1);
+  const auto& lin = presolved.constraints(0).linear();
+  EXPECT_THAT(lin, testing::EqualsProto(R"pb(
+                vars: [ 0, 1, 2, 3 ]
+                coeffs: [ 1, 1, 1, 1 ]
+                domain: [ 0, 2 ]
+              )pb"));
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

@@ -14,6 +14,7 @@
 #include "ortools/sat/feasibility_jump.h"
 
 #include <stdlib.h>
+#include <sys/types.h>
 
 #include <algorithm>
 #include <cmath>
@@ -26,6 +27,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/cleanup/cleanup.h"
 #include "absl/flags/flag.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/functional/bind_front.h"
@@ -52,6 +54,7 @@
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
@@ -765,18 +768,21 @@ void FeasibilityJumpSolver::UpdateViolatedConstraintWeights() {
   // Note that ViolatedConstraints() might contain only linear constraints
   // depending on how it was initialized and updated.
   bool rescale = false;
-  num_ops_ += evaluator_->ViolatedConstraints().size();
-  for (const int c : evaluator_->ViolatedConstraints()) {
-    DCHECK(evaluator_->IsViolated(c));
-    if (state_->options.use_compound_moves) {
-      DCHECK_EQ(state_->compound_weights[c], state_->weights[c]);
-    }
-    state_->weights[c] += state_->bump_value;
-    if (state_->options.use_compound_moves) {
-      state_->compound_weights[c] = state_->weights[c];
-    }
-    if (state_->weights[c] > kMaxWeight) {
-      rescale = true;
+  {
+    DeterministicTimer<{.scale = 1e-8}> timer(
+        &dtime_, evaluator_->ViolatedConstraints().size());
+    for (const int c : evaluator_->ViolatedConstraints()) {
+      DCHECK(evaluator_->IsViolated(c));
+      if (state_->options.use_compound_moves) {
+        DCHECK_EQ(state_->compound_weights[c], state_->weights[c]);
+      }
+      state_->weights[c] += state_->bump_value;
+      if (state_->options.use_compound_moves) {
+        state_->compound_weights[c] = state_->weights[c];
+      }
+      if (state_->weights[c] > kMaxWeight) {
+        rescale = true;
+      }
     }
   }
 
@@ -803,15 +809,18 @@ void FeasibilityJumpSolver::UpdateViolatedConstraintWeights() {
       evaluator_->MutableLinearEvaluator();
   linear_evaluator->ClearAffectedVariables();
   for_weight_update_.resize(num_variables);
-  num_ops_ += evaluator_->ViolatedConstraints().size();
-  for (const int c : evaluator_->ViolatedConstraints()) {
-    if (c < evaluator_->NumLinearConstraints()) {
-      linear_evaluator->UpdateScoreOnWeightUpdate(
-          c, jumps_.Deltas(), absl::MakeSpan(for_weight_update_));
-    } else {
-      for (const int v : evaluator_->ConstraintToVars(c)) {
-        jumps_.Recompute(v);
-        AddVarToScan(v);
+  {
+    DeterministicTimer<{.scale = 1e-8}> timer(
+        &dtime_, evaluator_->ViolatedConstraints().size());
+    for (const int c : evaluator_->ViolatedConstraints()) {
+      if (c < evaluator_->NumLinearConstraints()) {
+        linear_evaluator->UpdateScoreOnWeightUpdate(
+            c, jumps_.Deltas(), absl::MakeSpan(for_weight_update_));
+      } else {
+        for (const int v : evaluator_->ConstraintToVars(c)) {
+          jumps_.Recompute(v);
+          AddVarToScan(v);
+        }
       }
     }
   }
@@ -914,13 +923,16 @@ void FeasibilityJumpSolver::MarkJumpsThatNeedToBeRecomputed(int changed_var) {
   // the known score/jump of undoing the move.
   jumps_.Recompute(changed_var);
 
+  DeterministicTimer<{.scale = 1e-8}> timer(&dtime_);
+  uint64_t num_ops = 0;
+
   // Generic part.
   // No optimization there, we just update all touched variables.
   // We need to do this before the Linear part, so that the status is correct in
   // AddVarToScan() for variables with two values.
-  num_ops_ += evaluator_->VarToGeneralConstraints(changed_var).size();
+  num_ops += evaluator_->VarToGeneralConstraints(changed_var).size();
   for (const int c : evaluator_->VarToGeneralConstraints(changed_var)) {
-    num_ops_ += evaluator_->GeneralConstraintToVars(c).size();
+    num_ops += evaluator_->GeneralConstraintToVars(c).size();
     for (const int var : evaluator_->GeneralConstraintToVars(c)) {
       jumps_.Recompute(var);
       AddVarToScan(var);
@@ -928,13 +940,14 @@ void FeasibilityJumpSolver::MarkJumpsThatNeedToBeRecomputed(int changed_var) {
   }
 
   // Linear part.
-  num_ops_ += evaluator_->VariablesAffectedByLastLinearUpdate().size();
+  num_ops += evaluator_->VariablesAffectedByLastLinearUpdate().size();
   for (const int var : evaluator_->VariablesAffectedByLastLinearUpdate()) {
     if (!dense_model_.var_domains().HasTwoValues(var)) {
       jumps_.Recompute(var);
     }
     AddVarToScan(var);
   }
+  timer.Advance(num_ops);
 }
 
 bool FeasibilityJumpSolver::DoSomeGeneralIterations() {
@@ -1057,7 +1070,8 @@ bool FeasibilityJumpSolver::DoSomeGeneralIterations() {
 void FeasibilityJumpSolver::ResetChangedCompoundWeights() {
   if (!state_->options.use_compound_moves) return;
   DCHECK_EQ(state_->move->Size(), 0);
-  num_ops_ += state_->compound_weight_changed.size();
+  DeterministicTimer<{.scale = 1e-8}> timer(&dtime_);
+  uint64_t num_ops = state_->compound_weight_changed.size();
   for (const int c : state_->compound_weight_changed) {
     state_->in_compound_weight_changed[c] = false;
     const double expected_weight =
@@ -1065,13 +1079,14 @@ void FeasibilityJumpSolver::ResetChangedCompoundWeights() {
         state_->weights[c];
     if (state_->compound_weights[c] == expected_weight) continue;
     state_->compound_weights[c] = expected_weight;
-    num_ops_ += evaluator_->ConstraintToVars(c).size();
+    num_ops += evaluator_->ConstraintToVars(c).size();
     for (const int var : evaluator_->ConstraintToVars(c)) {
       jumps_.Recompute(var);
       AddVarToScan(var);
     }
   }
   state_->compound_weight_changed.clear();
+  timer.Advance(num_ops);
 }
 
 bool FeasibilityJumpSolver::ShouldExtendCompoundMove(double score,
@@ -1090,6 +1105,11 @@ bool FeasibilityJumpSolver::ScanRelevantVariables(int num_to_scan,
   if (state_->move->Discrepancy() > state_->compound_move_max_discrepancy) {
     return false;
   }
+  DeterministicTimer<{.scale = 1e-8}> timer(&dtime_);
+  uint64_t num_ops = 0;
+  auto clearup =
+      absl::MakeCleanup([&timer, &num_ops] { timer.Advance(num_ops); });
+
   double best_scan_score = 0.0;
   int num_good = 0;
   int best_index = -1;
@@ -1105,7 +1125,7 @@ bool FeasibilityJumpSolver::ScanRelevantVariables(int num_to_scan,
     }
   };
   while (!vars_to_scan_.empty() && num_good < num_to_scan) {
-    num_ops_ += 6;  // We are slow here.
+    num_ops += 6;  // We are slow here.
     const int index = absl::Uniform<int>(random_, 0, vars_to_scan_.size());
     const int var = vars_to_scan_[index];
     DCHECK_GE(var, 0);
@@ -1220,13 +1240,15 @@ void FeasibilityJumpSolver::RecomputeVarsToScan() {
     in_vars_to_scan_[var] = true;
   }
 
-  num_ops_ += evaluator_->ViolatedConstraints().size();
+  DeterministicTimer<{.scale = 1e-8}> timer(&dtime_);
+  uint64_t num_ops = evaluator_->ViolatedConstraints().size();
   for (const int c : evaluator_->ViolatedConstraints()) {
-    num_ops_ += evaluator_->ConstraintToVars(c).size();
+    num_ops += evaluator_->ConstraintToVars(c).size();
     for (const int v : evaluator_->ConstraintToVars(c)) {
       AddVarToScan(v);
     }
   }
+  timer.Advance(num_ops);
 }
 
 void FeasibilityJumpSolver::OnValueChange(int var, int64_t value) {

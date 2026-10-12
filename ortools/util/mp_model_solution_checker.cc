@@ -15,11 +15,13 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <limits>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/status_macros.h"
@@ -28,6 +30,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/sat/mp_model_wrapper.h"
 #include "ortools/util/fp_roundtrip_conv.h"
 #include "ortools/util/full_precision_inequalities.h"
 #include "ortools/util/logging.h"
@@ -45,9 +48,98 @@ double MaxPropagatesNan(const double a, const double b) {
   return std::max(a, b);
 }
 
+// Class that checks a single constraint on a fixed solution and adds violations
+// to the violation adder.
+//
+// We use a class to reuse memory across multiple constraints.
+template <typename ViolationAdder>
+class ConstraintChecker {
+ public:
+  ConstraintChecker(
+      const ViolationAdder& add_violation ABSL_ATTRIBUTE_LIFETIME_BOUND,
+      const CheckerOptions& options ABSL_ATTRIBUTE_LIFETIME_BOUND,
+      const absl::Span<const double> solution ABSL_ATTRIBUTE_LIFETIME_BOUND)
+      : add_violation_(add_violation), options_(options), solution_(solution) {}
+
+  absl::Status Check(const MPConstraintProto& constraint,
+                     const absl::string_view message_prefix) {
+    coefficients_.clear();
+    coefficients_.reserve(constraint.var_index_size() + 1);
+
+    var_values_.clear();
+    var_values_.reserve(constraint.var_index_size() + 1);
+    for (int j = 0; j < constraint.var_index_size(); ++j) {
+      coefficients_.push_back(constraint.coefficient(j));
+
+      auto var_index = constraint.var_index(j);
+      if (var_index < 0 || var_index >= solution_.size()) {
+        return ortools::InvalidArgumentErrorBuilder()
+               << "Invalid variable index " << var_index << " in "
+               << message_prefix << " " << constraint.name();
+      }
+      var_values_.push_back(solution_[constraint.var_index(j)]);
+    }
+    var_values_.push_back(options_.constraint_tolerance);
+
+    coefficients_.push_back(1.0);
+    if (constraint.has_lower_bound() &&
+        !DotProductIsGreaterOrEqual(coefficients_, var_values_,
+                                    constraint.lower_bound())) {
+      // Skip tolerance.
+      coefficients_.back() = 0.0;
+
+      const auto [lb, ub] =
+          GetTightDotProductBounds(coefficients_, var_values_);
+      add_violation_(
+          absl::StrCat(message_prefix, " '", constraint.name(), "'",
+                       " >= ", RoundTripDoubleFormat(constraint.lower_bound()),
+                       " violated by ",
+                       RoundTripDoubleFormat(constraint.lower_bound() - ub),
+                       " exact activity in [", RoundTripDoubleFormat(lb), ", ",
+                       RoundTripDoubleFormat(ub), "]"),
+          constraint.lower_bound() - ub);
+    }
+
+    coefficients_.back() = -1.0;
+    if (constraint.has_upper_bound() &&
+        !DotProductIsSmallerOrEqual(coefficients_, var_values_,
+                                    constraint.upper_bound())) {
+      // Skip tolerance.
+      coefficients_.back() = 0.0;
+
+      const auto [lb, ub] =
+          GetTightDotProductBounds(coefficients_, var_values_);
+      add_violation_(
+          absl::StrCat(message_prefix, " '", constraint.name(), "'",
+                       " <= ", RoundTripDoubleFormat(constraint.upper_bound()),
+                       " violated by ",
+                       RoundTripDoubleFormat(lb - constraint.upper_bound()),
+                       " exact activity in [", RoundTripDoubleFormat(lb), ", ",
+                       RoundTripDoubleFormat(ub), "]"),
+          lb - constraint.upper_bound());
+    }
+    return absl::OkStatus();
+  }
+
+ private:
+  const ViolationAdder& add_violation_;
+  const CheckerOptions& options_;
+  const absl::Span<const double> solution_;
+
+  // Avoid reallocations.
+  std::vector<double> coefficients_;
+  std::vector<double> var_values_;
+};
+
+// Deduction guide for ConstraintChecker.
+template <class ViolationAdder>
+ConstraintChecker(const ViolationAdder&, const CheckerOptions&,
+                  absl::Span<const double>)
+    -> ConstraintChecker<ViolationAdder>;
+
 }  // namespace
 
-absl::StatusOr<bool> SolutionIsFeasible(const MPModelProto& model,
+absl::StatusOr<bool> SolutionIsFeasible(const sat::MPModelProtoWrapper& model,
                                         const absl::Span<const double> solution,
                                         const CheckerOptions& options) {
   if (options.constraint_tolerance < 0) {
@@ -65,19 +157,11 @@ absl::StatusOr<bool> SolutionIsFeasible(const MPModelProto& model,
            << "Integer tolerance (" << options.integer_tolerance
            << ") is negative.";
   }
-  if (solution.size() != model.variable_size()) {
+  if (solution.size() != model.num_variables()) {
     return ortools::InvalidArgumentErrorBuilder()
            << "Solution size (" << solution.size()
-           << ") does not match model variable size (" << model.variable_size()
+           << ") does not match model variable size (" << model.num_variables()
            << ")";
-  }
-  for (const MPGeneralConstraintProto& general_constraint :
-       model.general_constraint()) {
-    if (!general_constraint.has_indicator_constraint()) {
-      return ortools::InvalidArgumentErrorBuilder()
-             << "General constraint " << general_constraint
-             << " is not an indicator constraint.";
-    }
   }
   int num_violations = 0;
   double max_observed_error = 0.0;
@@ -91,15 +175,15 @@ absl::StatusOr<bool> SolutionIsFeasible(const MPModelProto& model,
       options.logger->LogInfo(loc.file_name(), loc.line(), message);
     }
   };
-  for (int i = 0; i < model.variable_size(); ++i) {
+  for (int i = 0; i < model.num_variables(); ++i) {
     const double v = solution[i];
     if (std::isnan(v)) {
-      add_violation(absl::StrCat("Variable ", model.variable(i).name(), "(", i,
+      add_violation(absl::StrCat("Variable ", model.variables(i).name(), "(", i,
                                  ") is NaN"),
                     kInf);
       continue;
     }
-    const MPVariableProto& var = model.variable(i);
+    const MPVariableProto& var = model.variables(i);
     if (SumIsNegative({v, -var.lower_bound(), options.variable_tolerance}) ||
         SumIsPositive({v, -var.upper_bound(), -options.variable_tolerance})) {
       add_violation(
@@ -119,80 +203,22 @@ absl::StatusOr<bool> SolutionIsFeasible(const MPModelProto& model,
           std::abs(v - std::round(v)));
     }
   }
-  const auto check_constraint =
-      [&](const MPConstraintProto& constraint,
-          const absl::string_view message_prefix) -> absl::Status {
-    // Keep the vectors in scope to avoid reallocations.
-    static std::vector<double> coefficients;
-    coefficients.clear();
-    coefficients.reserve(constraint.var_index_size() + 1);
-    static std::vector<double> var_values;
-    var_values.clear();
-    var_values.reserve(constraint.var_index_size() + 1);
-    for (int j = 0; j < constraint.var_index_size(); ++j) {
-      coefficients.push_back(constraint.coefficient(j));
 
-      auto var_index = constraint.var_index(j);
-      if (var_index < 0 || var_index >= solution.size()) {
-        return ortools::InvalidArgumentErrorBuilder()
-               << "Invalid variable index " << var_index << " in "
-               << message_prefix << " " << constraint.name();
+  ConstraintChecker checker(add_violation, options, solution);
+  for (int i = 0; i < model.num_constraints(); ++i) {
+    const sat::EnforcedLinearConstraint& ct = model.constraints(i);
+    bool is_active = true;
+    for (int k = 0; k < ct.enforcement_vars().size(); ++k) {
+      const int enf_var = ct.enforcement_vars()[k];
+      if (static_cast<int64_t>(std::round(solution[enf_var])) !=
+          ct.enforcement_values()[k]) {
+        is_active = false;
+        break;
       }
-      var_values.push_back(solution[constraint.var_index(j)]);
     }
-    var_values.push_back(options.constraint_tolerance);
-
-    coefficients.push_back(1.0);
-    if (constraint.has_lower_bound() &&
-        !DotProductIsGreaterOrEqual(coefficients, var_values,
-                                    constraint.lower_bound())) {
-      // Skip tolerance.
-      coefficients.back() = 0.0;
-
-      const auto [lb, ub] = GetTightDotProductBounds(coefficients, var_values);
-      add_violation(
-          absl::StrCat(message_prefix, " '", constraint.name(), "'",
-                       " >= ", RoundTripDoubleFormat(constraint.lower_bound()),
-                       " violated by ",
-                       RoundTripDoubleFormat(constraint.lower_bound() - ub),
-                       " exact activity in [", RoundTripDoubleFormat(lb), ", ",
-                       RoundTripDoubleFormat(ub), "]"),
-          constraint.lower_bound() - ub);
-    }
-
-    coefficients.back() = -1.0;
-    if (constraint.has_upper_bound() &&
-        !DotProductIsSmallerOrEqual(coefficients, var_values,
-                                    constraint.upper_bound())) {
-      // Skip tolerance.
-      coefficients.back() = 0.0;
-
-      const auto [lb, ub] = GetTightDotProductBounds(coefficients, var_values);
-      add_violation(
-          absl::StrCat(message_prefix, " '", constraint.name(), "'",
-                       " <= ", RoundTripDoubleFormat(constraint.upper_bound()),
-                       " violated by ",
-                       RoundTripDoubleFormat(lb - constraint.upper_bound()),
-                       " exact activity in [", RoundTripDoubleFormat(lb), ", ",
-                       RoundTripDoubleFormat(ub), "]"),
-          lb - constraint.upper_bound());
-    }
-    return absl::OkStatus();
-  };
-  for (int i = 0; i < model.constraint_size(); ++i) {
-    ABSL_RETURN_IF_ERROR(check_constraint(
-        model.constraint(i), absl::StrCat("linear constraint ", i)));
-  }
-  for (int i = 0; i < model.general_constraint_size(); ++i) {
-    const MPIndicatorConstraint& indicator_constraint =
-        model.general_constraint(i).indicator_constraint();
-    if (static_cast<int>(
-            std::round(solution[indicator_constraint.var_index()])) ==
-        indicator_constraint.var_value()) {
-      ABSL_RETURN_IF_ERROR(
-          check_constraint(indicator_constraint.constraint(),
-                           absl::StrCat("indicator constraint ", i)));
-    }
+    if (!is_active) continue;
+    ABSL_RETURN_IF_ERROR(
+        checker.Check(ct.proto(), absl::StrCat("indicator constraint ", i)));
   }
   if (num_violations > 0 && options.logger != nullptr) {
     if (num_violations > options.max_logged_violations) {
@@ -212,19 +238,20 @@ absl::StatusOr<bool> SolutionIsFeasible(const MPModelProto& model,
 }
 
 absl::StatusOr<std::pair<double, double>> GetTightObjectiveBounds(
-    const MPModelProto& model, const absl::Span<const double> solution) {
-  if (solution.size() != model.variable_size()) {
+    const sat::MPModelProtoWrapper& model,
+    const absl::Span<const double> solution) {
+  if (solution.size() != model.num_variables()) {
     return ortools::InvalidArgumentErrorBuilder()
            << "Solution size (" << solution.size()
-           << ") does not match model variable size (" << model.variable_size()
+           << ") does not match model variable size (" << model.num_variables()
            << ")";
   }
   std::vector<double> coefficients;
-  coefficients.reserve(model.variable_size() + 1);
+  coefficients.reserve(model.num_variables() + 1);
   std::vector<double> var_values;
-  var_values.reserve(model.variable_size() + 1);
-  for (int i = 0; i < model.variable_size(); ++i) {
-    coefficients.push_back(model.variable(i).objective_coefficient());
+  var_values.reserve(model.num_variables() + 1);
+  for (int i = 0; i < model.num_variables(); ++i) {
+    coefficients.push_back(model.variables(i).objective_coefficient());
     var_values.push_back(solution[i]);
   }
   coefficients.push_back(1.0);
