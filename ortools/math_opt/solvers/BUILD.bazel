@@ -268,6 +268,7 @@ or_cc_library(
 or_cc_test(
     name = "glop_solver_test",
     srcs = ["glop_solver_test.cc"],
+    shard_count = 10,
     tags = ["no_test_wasm"],  # TODO(b/240593929): we should test wasm
     deps = [
         ":glop_solver",
@@ -298,6 +299,7 @@ or_cc_test(
 or_cc_test(
     name = "cp_sat_solver_test",
     srcs = ["cp_sat_solver_test.cc"],
+    shard_count = 10,
     tags = [
         # `--config=android_arm` and `--config=android_arm64` both timeout on
         # this test.
@@ -423,6 +425,7 @@ or_cc_test(
     name = "pdlp_solver_test",
     size = "small",
     srcs = ["pdlp_solver_test.cc"],
+    shard_count = 10,
     deps = [
         ":pdlp_solver",
         "//ortools/base:gmock",
@@ -584,6 +587,7 @@ or_cc_test(
 or_cc_test(
     name = "glpk_solver_test",
     srcs = ["glpk_solver_test.cc"],
+    shard_count = 10,
     tags = [
         # GLPK does not build on darwin_x86_64 with duplicated DEBUG macro
         # issue.
@@ -700,6 +704,7 @@ or_cc_test(
     name = "highs_solver_test",
     srcs = ["highs_solver_test.cc"],
     flaky = 1,
+    shard_count = 10,
     # Highs fails to build with WASM in //third_party/zstr.
     tags = [
         "no_test_wasm",

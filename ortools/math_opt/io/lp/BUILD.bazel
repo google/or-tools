@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("//bazel:or_cc_rules.bzl", "or_cc_library")
+load("//bazel:or_cc_rules.bzl", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
@@ -35,6 +35,39 @@ or_cc_library(
     ],
 )
 
+or_cc_test(
+    name = "lp_model_test",
+    srcs = ["lp_model_test.cc"],
+    deps = [
+        ":lp_model",
+        ":matchers",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/status",
+    ],
+)
+
+or_cc_library(
+    name = "matchers",
+    testonly = 1,
+    srcs = ["matchers.cc"],
+    hdrs = ["matchers.h"],
+    deps = [
+        ":lp_model",
+        ":model_utils",
+        "//ortools/base:gmock",
+    ],
+)
+
+or_cc_test(
+    name = "matchers_test",
+    srcs = ["matchers_test.cc"],
+    deps = [
+        ":lp_model",
+        ":matchers",
+        "//ortools/base:gmock_main",
+    ],
+)
+
 or_cc_library(
     name = "lp_name",
     srcs = ["lp_name.cc"],
@@ -44,6 +77,17 @@ or_cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:string_view",
+    ],
+)
+
+or_cc_test(
+    name = "lp_name_test",
+    srcs = ["lp_name_test.cc"],
+    deps = [
+        ":lp_name",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -59,5 +103,18 @@ or_cc_library(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
+    ],
+)
+
+or_cc_test(
+    name = "model_utils_test",
+    srcs = ["model_utils_test.cc"],
+    deps = [
+        ":lp_model",
+        ":matchers",
+        ":model_utils",
+        "//ortools/base:gmock_main",
+        "//ortools/base:strong_vector",
+        "@abseil-cpp//absl/status",
     ],
 )
