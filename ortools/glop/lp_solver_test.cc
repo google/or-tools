@@ -24,7 +24,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/attributes.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
@@ -49,6 +48,7 @@
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/proto_utils.h"
 #include "ortools/lp_data/sparse.h"
+#include "ortools/port/attributes.h"
 #include "ortools/port/scoped_std_stream_capture.h"
 #include "ortools/util/file_util.h"
 #include "ortools/util/fp_roundtrip_conv.h"
@@ -959,14 +959,14 @@ struct LPSolverPrimalRayTestModel {
   // Name of the model. It is used as a part of the name of the test, thus it
   // must only contains characters, numbers and underscores (NO spaces, commas,
   // ...).
-  std::string name ABSL_REQUIRE_EXPLICIT_INIT;
+  std::string name ORTOOLS_REQUIRE_EXPLICIT_INIT;
 
   // The model that will parsed by ParseLp().
   //
   // The objective direction is overwritten by the test, as a convention it
   // should be written as a minimization to align with the rays in
   // expected_minimization_primal_rays.
-  std::string lp_model ABSL_REQUIRE_EXPLICIT_INIT;
+  std::string lp_model ORTOOLS_REQUIRE_EXPLICIT_INIT;
 
   // An exhaustive list of primal rays that can be produced by:
   // * either the phase II of the primal simplex,
@@ -978,7 +978,7 @@ struct LPSolverPrimalRayTestModel {
   // revised_simplex_test.cc for details on how to produce those for non trivial
   // models.
   std::vector<DenseRow> expected_minimization_primal_rays
-      ABSL_REQUIRE_EXPLICIT_INIT;
+      ORTOOLS_REQUIRE_EXPLICIT_INIT;
 };
 
 std::ostream& operator<<(std::ostream& out,
@@ -1244,23 +1244,23 @@ struct LPSolverDualRayTestModel {
   // An expected dual ray.
   struct DualRay {
     // Dual values of the constraints.
-    DenseColumn constraints ABSL_REQUIRE_EXPLICIT_INIT;
+    DenseColumn constraints ORTOOLS_REQUIRE_EXPLICIT_INIT;
 
     // Dual values of the constraints.
-    DenseRow bounds ABSL_REQUIRE_EXPLICIT_INIT;
+    DenseRow bounds ORTOOLS_REQUIRE_EXPLICIT_INIT;
   };
 
   // Name of the model. It is used as a part of the name of the test, thus it
   // must only contains characters, numbers and underscores (NO spaces, commas,
   // ...).
-  std::string name ABSL_REQUIRE_EXPLICIT_INIT;
+  std::string name ORTOOLS_REQUIRE_EXPLICIT_INIT;
 
   // The model that will parsed by ParseLp().
   //
   // The objective direction is overwritten by the test, as a convention it
   // should be written as a minimization to align with the rays in
   // expected_minimization_dual_rays.
-  std::string lp_model ABSL_REQUIRE_EXPLICIT_INIT;
+  std::string lp_model ORTOOLS_REQUIRE_EXPLICIT_INIT;
 
   // An exhaustive list of dual rays that can be produced by:
   // * either the phase II of the dual simplex,
@@ -1271,7 +1271,7 @@ struct LPSolverDualRayTestModel {
   // See RevisedSimplexDualRayTestModel documentation in revised_simplex_test.cc
   // for details on how to produce those for non trivial models.
   std::vector<DualRay> expected_minimization_dual_rays
-      ABSL_REQUIRE_EXPLICIT_INIT;
+      ORTOOLS_REQUIRE_EXPLICIT_INIT;
 };
 
 std::ostream& operator<<(std::ostream& out,
