@@ -27,7 +27,6 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "absl/base/attributes.h"
 #include "absl/base/no_destructor.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/flags/declare.h"
@@ -57,6 +56,7 @@
 #include "ortools/lp_data/lp_types_testing.h"
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse_row.h"
+#include "ortools/port/attributes.h"
 #include "ortools/util/fp_roundtrip_conv.h"
 #include "ortools/util/fp_utils_testing.h"
 #include "ortools/util/time_limit.h"
@@ -110,13 +110,13 @@ struct RandomWithFixableSeed {
   // The seed used to initialize the std::mt19937.
   struct Seed {
     // The seed value.
-    std::mt19937::result_type value ABSL_REQUIRE_EXPLICIT_INIT;
+    std::mt19937::result_type value ORTOOLS_REQUIRE_EXPLICIT_INIT;
 
     // True if the seed used has been fixed by the --revised_simplex_test_seed
     // flag.
     //
     // This value is always the same as the one returned by fixed().
-    bool fixed ABSL_REQUIRE_EXPLICIT_INIT;
+    bool fixed ORTOOLS_REQUIRE_EXPLICIT_INIT;
 
     friend std::ostream& operator<<(std::ostream& out, const Seed& seed) {
       out << "RandomWithFixableSeed::Seed{.value=" << seed.value
@@ -1000,14 +1000,14 @@ struct RevisedSimplexDualRayTestModel {
   // Name of the model. It is used as a part of the name of the test, thus it
   // must only contains characters, numbers and underscores (NO spaces, commas,
   // ...).
-  std::string name ABSL_REQUIRE_EXPLICIT_INIT;
+  std::string name ORTOOLS_REQUIRE_EXPLICIT_INIT;
 
   // The model that will parsed by ParseLp().
   //
   // The objective direction is overwritten by the test, as a convention it
   // should be written as a minimization to align with the rays in
   // expected_minimization_dual_rays.
-  std::string lp_model ABSL_REQUIRE_EXPLICIT_INIT;
+  std::string lp_model ORTOOLS_REQUIRE_EXPLICIT_INIT;
 
   // An exhaustive list of dual rays that can be produced by:
   // * either the phase II of the dual simplex,
@@ -1045,7 +1045,7 @@ struct RevisedSimplexDualRayTestModel {
   //       basic dual solution. Glop can do bounds inversion in dual-simplex,
   //       which could lead to a ray with different feasible dual signs.
   std::vector<DenseRow> expected_minimization_dual_ray_row_combinations
-      ABSL_REQUIRE_EXPLICIT_INIT;
+      ORTOOLS_REQUIRE_EXPLICIT_INIT;
 };
 
 std::ostream& operator<<(std::ostream& out,
