@@ -151,7 +151,7 @@ TEST(FileLinesTest, LargeLinesAndEmptyLines) {
 
 TEST(FileLinesTest, NonExistentFile) {
   int num_lines = 0;
-  for (const __attribute__((unused)) std::string& line :
+  for ([[maybe_unused]] const std::string& line :
        FileLines("inexistent_filename")) {
     ++num_lines;
   }
