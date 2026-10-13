@@ -13,7 +13,6 @@
 
 # Python wrapper for init module.
 
-load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:py_test.bzl", "py_test")
 load("//bazel:or_cc_rules.bzl", "or_cc_library")
 load("//bazel:or_pybind_rules.bzl", "or_pybind_extension")
@@ -41,6 +40,6 @@ py_test(
     srcs = ["init_test.py"],
     deps = [
         ":init",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )

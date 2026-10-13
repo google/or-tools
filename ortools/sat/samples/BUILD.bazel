@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_go//go:def.bzl", "go_binary")
 load("@rules_python//python:py_test.bzl", "py_test")
 load("//bazel:or_cc_rules.bzl", "or_cc_test")
@@ -46,7 +45,7 @@ py_test(
     main = "assignment_sat.py",
     deps = [
         "//ortools/sat/python:cp_model",
-        requirement("pandas"),
+        "@pip_deps//pandas",
     ],
 )
 
@@ -192,7 +191,7 @@ py_test(
     main = "bin_packing_sat.py",
     deps = [
         "//ortools/sat/python:cp_model",
-        requirement("pandas"),
+        "@pip_deps//pandas",
     ],
 )
 
@@ -360,8 +359,8 @@ py_test(
     tags = ["noci"],
     deps = [
         "//ortools/sat/python:cp_model",
-        requirement("absl-py"),
-        requirement("pandas"),
+        "@pip_deps//absl_py",
+        "@pip_deps//pandas",
     ],
 )
 

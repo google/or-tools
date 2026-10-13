@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@pip_deps//:requirements.bzl", "requirement")
 load("//bazel:or_cc_rules.bzl", "or_cc_binary")
 load("//tools/testing:bintest.bzl", "py_bintest")
 
@@ -324,7 +323,7 @@ py_bintest(
         "not_build:arm",
         "not_run:arm",
     ],
-    deps = [requirement("absl-py")],
+    deps = ["@pip_deps//absl_py"],
 )
 
 or_cc_binary(
@@ -356,5 +355,5 @@ py_bintest(
         "not_build:arm",
         "not_run:arm",
     ],
-    deps = [requirement("absl-py")],
+    deps = ["@pip_deps//absl_py"],
 )

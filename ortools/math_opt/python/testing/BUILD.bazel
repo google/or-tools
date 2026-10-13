@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
 
@@ -23,7 +22,7 @@ py_library(
     srcs = ["compare_proto.py"],
     deps = [
         "//ortools/math_opt/python:normalize",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
         "@protobuf//:protobuf_python",
     ],
 )
@@ -35,7 +34,7 @@ py_test(
         ":compare_proto",
         "//ortools/math_opt:model_py_pb2",
         "//ortools/math_opt/python:normalize",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -56,6 +55,6 @@ py_test(
         ":proto_matcher",
         "//ortools/math_opt:model_update_py_pb2",
         "//ortools/math_opt:sparse_containers_py_pb2",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )

@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:py_binary.bzl", "py_binary")
 
 py_binary(
@@ -20,6 +19,6 @@ py_binary(
     deps = [
         "//ortools/math_opt/python:mathopt",
         "//ortools/math_opt/python/ipc:remote_http_solve",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )

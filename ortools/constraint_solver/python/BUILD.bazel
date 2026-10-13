@@ -13,7 +13,6 @@
 
 # Description: python wrapping of the code in ../
 
-load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
 load("//bazel:or_cc_rules.bzl", "or_cc_library")
@@ -91,7 +90,7 @@ py_test(
     srcs = ["constraint_solver_test.py"],
     deps = [
         ":constraint_solver_py",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -101,7 +100,7 @@ py_test(
     srcs = ["constraint_solver_extension_test.py"],
     deps = [
         ":constraint_solver_py",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -111,7 +110,7 @@ py_test(
     srcs = ["local_search_test.py"],
     deps = [
         ":constraint_solver_py",
-        requirement("absl-py"),
-        requirement("numpy"),
+        "@pip_deps//absl_py",
+        "@pip_deps//numpy",
     ],
 )
