@@ -100,6 +100,14 @@ class Sum {
 
   double TightUb() const { return TightBounds().second; }
 
+  // Returns {floor(sum), ceil(sum)}, clamped to
+  // [std::numeric_limits<int64_t>::min(), std::numeric_limits<int64_t>::max()].
+  std::pair<int64_t, int64_t> SaturatedInt64Bounds() const;
+
+  int64_t SaturatedFloor() const { return SaturatedInt64Bounds().first; }
+
+  int64_t SaturatedCeil() const { return SaturatedInt64Bounds().second; }
+
   // A term of the sum. This is public to be used in implementation functions.
   // However, it is not part of the public API (it could be used only as a
   // struct from outside as no member of Sum give access to terms).

@@ -31,6 +31,7 @@
 #include "absl/numeric/int128.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/multikey_radix_sort.h"
+#include "ortools/base/types.h"
 
 namespace operations_research {
 
@@ -683,6 +684,50 @@ void Sum::AddTerm(const Term& term) {
   if (terms_.size() == terms_sorted_before_ ||
       !AddIfExact(terms_.back(), term)) {
     terms_.push_back(term);
+  }
+}
+
+namespace {
+
+constexpr double kSmallestDoubleAboveInt64Max = 1.0 * (1ULL << 63);
+
+int64_t SaturatedDoubleToInt64(const double x) {
+  if (x <= -kSmallestDoubleAboveInt64Max) {
+    return kint64min;
+  }
+  if (x >= kSmallestDoubleAboveInt64Max) {
+    return kint64max;
+  }
+  return static_cast<int64_t>(x);
+}
+
+}  // namespace
+
+std::pair<int64_t, int64_t> Sum::SaturatedInt64Bounds() const {
+  // TODO(user): if this turns out to be performance-critical, we can
+  // write an implementation similar to ExponentOrderedSumBounds() that would
+  // compute those bounds without needing a binary search.
+  int64_t low = SaturatedDoubleToInt64(lb_);
+  int64_t high = SaturatedDoubleToInt64(ub_);
+  while (true) {
+    // Invariant: low - 1 < sum < high + 1
+    DCHECK(low == kint64min || low - 1 < *this);
+    DCHECK(high == kint64max || *this < high + 1);
+
+    const int64_t mid = std::midpoint(low, high);
+    const std::strong_ordering cmp = *this <=> mid;
+    if (cmp == std::strong_ordering::equal) {
+      return {mid, mid};
+    }
+    if (cmp == std::strong_ordering::less) {
+      if (mid == kint64min) return {kint64min, kint64min};
+      if (mid == low) return {low - 1, low};
+      high = mid - 1;
+    } else {
+      if (mid == kint64max) return {kint64max, kint64max};
+      if (mid == high) return {high, high + 1};
+      low = mid + 1;
+    }
   }
 }
 
