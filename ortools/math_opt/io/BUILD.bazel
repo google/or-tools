@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("//bazel:or_cc_rules.bzl", "or_cc_library")
+load("//bazel:or_cc_rules.bzl", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -39,6 +39,29 @@ or_cc_library(
     ],
 )
 
+or_cc_test(
+    name = "proto_converter_test",
+    srcs = ["proto_converter_test.cc"],
+    # TODO: b/475194473 - Stop using ParseTextProtoOrDie().
+    tags = [
+        "no_test_android",
+        "no_test_wasm",
+    ],
+    deps = [
+        ":proto_converter",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_test_proto",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_parameters_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
 or_cc_library(
     name = "mps_converter",
     srcs = ["mps_converter.cc"],
@@ -55,6 +78,27 @@ or_cc_library(
     ],
 )
 
+or_cc_test(
+    name = "mps_converter_test",
+    srcs = ["mps_converter_test.cc"],
+    data = [
+        "test_data/unbounded_integers.mps",
+        "test_data/unbounded_integers.mps.gz",
+    ],
+    # TODO: b/475196802 - Stop using EquivToProto().
+    tags = [
+        "no_test_android",
+        "no_test_wasm",
+    ],
+    deps = [
+        ":mps_converter",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/util:data_path_resolver",
+        "@abseil-cpp//absl/status",
+    ],
+)
+
 or_cc_library(
     name = "names_removal",
     srcs = ["names_removal.cc"],
@@ -62,6 +106,16 @@ or_cc_library(
     deps = [
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
+    ],
+)
+
+or_cc_test(
+    name = "names_removal_test",
+    srcs = ["names_removal_test.cc"],
+    deps = [
+        ":names_removal",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/cpp:math_opt",
     ],
 )
 
@@ -76,6 +130,17 @@ or_cc_library(
         "//ortools/math_opt:model_cc_proto",
         "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
+    ],
+)
+
+or_cc_test(
+    name = "lp_converter_test",
+    srcs = ["lp_converter_test.cc"],
+    deps = [
+        ":lp_converter",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/cpp:math_opt",
+        "@abseil-cpp//absl/status",
     ],
 )
 
@@ -98,5 +163,22 @@ or_cc_library(
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@scip",
+    ],
+)
+
+or_cc_test(
+    name = "lp_parser_test",
+    srcs = ["lp_parser_test.cc"],
+    # TODO: b/475196802 - Stop using EquivToProto().
+    tags = [
+        "no_test_android",
+        "no_test_wasm",
+    ],
+    deps = [
+        ":lp_converter",
+        ":lp_parser",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/cpp:math_opt",
+        "@abseil-cpp//absl/status",
     ],
 )
