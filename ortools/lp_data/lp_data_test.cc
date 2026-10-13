@@ -500,7 +500,7 @@ TEST(LinearProgramTest, AddSlackVariablesForAllEligibleRows) {
   LinearProgram with_int_slack;
   with_int_slack.PopulateFromLinearProgram(linear_program);
   with_int_slack.AddSlackVariablesWhereNecessary(true);
-  with_int_slack.SetCoefficient(RowIndex(6), y, 1.6);
+  with_int_slack.SetCoefficient(RowIndex(6), y, 1.75);
   with_int_slack.SetConstraintBounds(RowIndex(6), -2.0, 2.0);
   with_int_slack.AddSlackVariablesWhereNecessary(true);
   // Calling the same method without adding any new constraint.
@@ -513,7 +513,7 @@ TEST(LinearProgramTest, AddSlackVariablesForAllEligibleRows) {
       "r3: + y + s3 = 0;\n"
       "r4: + x + y + s4 = 0;\n"
       "r5: + 1.5 y + s5 = 0;\n"
-      "r6: + 1.6 y + s6 = 0;\n"
+      "r6: + 1.75 y + s6 = 0;\n"
       "x >= 0;\n"
       "y >= 0;\n"
       "s0 <= -0;\n"
