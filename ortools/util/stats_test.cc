@@ -12,13 +12,13 @@
 // limitations under the License.
 
 #include <cmath>
-#include <ctime>
 #include <limits>
 #include <string>
 #include <type_traits>
 
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
+#include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
@@ -192,10 +192,17 @@ TEST(GroupStatTest, Formatting) {
 }
 
 TEST(TimeDistributionTest, BasicBehavior) {
+#ifdef _WIN32
+  // absl::SleepFor() on Windows uses Sleep(), which has 1ms precision. Thus it
+  // is unlikely this test could work.
+  //
+  // https://stackoverflow.com/questions/7827062/is-there-a-windows-equivalent-of-nanosleep
+  // has proposition to have short sleeps, but non is easy to deploy.
+  GTEST_SKIP() << "No nanosleep() on Win32.";
+#endif  // _WIN32
   TimeDistribution stat("timer stat");
   stat.StartTimer();
-  timespec sleep_time = {/*seconds=*/0, /*nanoseconds=*/1000000};
-  nanosleep(&sleep_time, nullptr);
+  absl::SleepFor(absl::Milliseconds(1));
   stat.StopTimerAndAddElapsedTime();
   EXPECT_EQ(1, stat.Num());
   EXPECT_EQ(stat.Min(), stat.Max());
