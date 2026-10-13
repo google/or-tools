@@ -1386,5 +1386,176 @@ TEST(SumDeathTest, InvalidInputsCrash) {
   EXPECT_DEATH((DotProduct<double, double>({1.0}, {1.0, 2.0})), "");
 }
 
+struct SumSaturatedFloorCeilTestCase {
+  std::vector<double> terms;
+  int64_t expected_floor;
+  int64_t expected_ceil;
+};
+
+using SumSaturatedFloorCeilTest =
+    testing::TestWithParam<SumSaturatedFloorCeilTestCase>;
+
+TEST_P(SumSaturatedFloorCeilTest, SaturatedFloorAndCeilMatchExpected) {
+  constexpr int64_t kMinInt = std::numeric_limits<int64_t>::min();
+  constexpr int64_t kMaxInt = std::numeric_limits<int64_t>::max();
+  const auto& param = GetParam();
+
+  // Test on fresh Sum instances (exercising both loose-bounds and tight-bounds
+  // paths) as well as after TightBounds() is cached.
+  EXPECT_EQ(SumAll<double>(param.terms).SaturatedInt64Bounds(),
+            std::make_pair(param.expected_floor, param.expected_ceil));
+  EXPECT_EQ(SumAll<double>(param.terms).SaturatedFloor(), param.expected_floor);
+  EXPECT_EQ(SumAll<double>(param.terms).SaturatedCeil(), param.expected_ceil);
+
+  Sum sum = SumAll<double>(param.terms);
+  sum.TightBounds();
+  EXPECT_EQ(sum.SaturatedInt64Bounds(),
+            std::make_pair(param.expected_floor, param.expected_ceil));
+  EXPECT_EQ(sum.SaturatedFloor(), param.expected_floor);
+  EXPECT_EQ(sum.SaturatedCeil(), param.expected_ceil);
+
+  // Verify mathematical floor/ceil order invariants against CompareTo(int64_t).
+  if (param.expected_floor > kMinInt) {
+    EXPECT_GE(sum, param.expected_floor);
+  }
+  if (param.expected_floor < kMaxInt) {
+    EXPECT_LT(sum, param.expected_floor + 1);
+  }
+  if (param.expected_ceil < kMaxInt) {
+    EXPECT_LE(sum, param.expected_ceil);
+  }
+  if (param.expected_ceil > kMinInt) {
+    EXPECT_GT(sum, param.expected_ceil - 1);
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    Values, SumSaturatedFloorCeilTest,
+    testing::Values(
+        SumSaturatedFloorCeilTestCase{
+            .terms = {}, .expected_floor = 0, .expected_ceil = 0},
+        SumSaturatedFloorCeilTestCase{
+            .terms = {3.0}, .expected_floor = 3, .expected_ceil = 3},
+        SumSaturatedFloorCeilTestCase{
+            .terms = {-3.0}, .expected_floor = -3, .expected_ceil = -3},
+        SumSaturatedFloorCeilTestCase{
+            .terms = {3.25}, .expected_floor = 3, .expected_ceil = 4},
+        SumSaturatedFloorCeilTestCase{
+            .terms = {-3.25}, .expected_floor = -4, .expected_ceil = -3},
+        // Subnormal perturbations around integers.
+        SumSaturatedFloorCeilTestCase{
+            .terms = {1.0, std::numeric_limits<double>::denorm_min()},
+            .expected_floor = 1,
+            .expected_ceil = 2},
+        SumSaturatedFloorCeilTestCase{
+            .terms = {1.0, -std::numeric_limits<double>::denorm_min()},
+            .expected_floor = 0,
+            .expected_ceil = 1},
+        SumSaturatedFloorCeilTestCase{
+            .terms = {-1.0, std::numeric_limits<double>::denorm_min()},
+            .expected_floor = -1,
+            .expected_ceil = 0},
+        SumSaturatedFloorCeilTestCase{
+            .terms = {-1.0, -std::numeric_limits<double>::denorm_min()},
+            .expected_floor = -2,
+            .expected_ceil = -1},
+        // Massive cancellation.
+        SumSaturatedFloorCeilTestCase{.terms = {1e100, 3.25, -1e100},
+                                      .expected_floor = 3,
+                                      .expected_ceil = 4},
+        SumSaturatedFloorCeilTestCase{.terms = {1e100, 1e-100, -1e100},
+                                      .expected_floor = 0,
+                                      .expected_ceil = 1},
+        SumSaturatedFloorCeilTestCase{.terms = {1e100, -1e-100, -1e100},
+                                      .expected_floor = -1,
+                                      .expected_ceil = 0},
+        // High-precision values with >53 significant bits (requiring binary
+        // search between adjacent doubles).
+        SumSaturatedFloorCeilTestCase{.terms = {std::ldexp(1.0, 53), 0.5},
+                                      .expected_floor = int64_t{1} << 53,
+                                      .expected_ceil = (int64_t{1} << 53) + 1},
+        SumSaturatedFloorCeilTestCase{.terms = {std::ldexp(1.0, 53), 1.0},
+                                      .expected_floor = (int64_t{1} << 53) + 1,
+                                      .expected_ceil = (int64_t{1} << 53) + 1},
+        SumSaturatedFloorCeilTestCase{.terms = {std::ldexp(1.0, 53), 1.5},
+                                      .expected_floor = (int64_t{1} << 53) + 1,
+                                      .expected_ceil = (int64_t{1} << 53) + 2},
+        SumSaturatedFloorCeilTestCase{
+            .terms = {1e100, std::ldexp(1.0, 60), 123.25, -1e100},
+            .expected_floor = (int64_t{1} << 60) + 123,
+            .expected_ceil = (int64_t{1} << 60) + 124},
+        SumSaturatedFloorCeilTestCase{
+            .terms = {-1e100, -std::ldexp(1.0, 60), -123.25, 1e100},
+            .expected_floor = -(int64_t{1} << 60) - 124,
+            .expected_ceil = -(int64_t{1} << 60) - 123},
+        // Boundaries and saturation near INT64_MAX (2^63 - 1).
+        SumSaturatedFloorCeilTestCase{
+            .terms = {std::ldexp(1.0, 63), -1.5},
+            .expected_floor = std::numeric_limits<int64_t>::max() - 1,
+            .expected_ceil = std::numeric_limits<int64_t>::max()},
+        SumSaturatedFloorCeilTestCase{
+            .terms = {std::ldexp(1.0, 63), -1.0},
+            .expected_floor = std::numeric_limits<int64_t>::max(),
+            .expected_ceil = std::numeric_limits<int64_t>::max()},
+        SumSaturatedFloorCeilTestCase{
+            .terms = {std::ldexp(1.0, 63), -0.5},
+            .expected_floor = std::numeric_limits<int64_t>::max(),
+            .expected_ceil = std::numeric_limits<int64_t>::max()},
+        SumSaturatedFloorCeilTestCase{
+            .terms = {std::ldexp(1.0, 63)},
+            .expected_floor = std::numeric_limits<int64_t>::max(),
+            .expected_ceil = std::numeric_limits<int64_t>::max()},
+        SumSaturatedFloorCeilTestCase{
+            .terms = {1e100},
+            .expected_floor = std::numeric_limits<int64_t>::max(),
+            .expected_ceil = std::numeric_limits<int64_t>::max()},
+        SumSaturatedFloorCeilTestCase{
+            .terms = {kInf, -1e100},
+            .expected_floor = std::numeric_limits<int64_t>::max(),
+            .expected_ceil = std::numeric_limits<int64_t>::max()},
+        // Boundaries and saturation near INT64_MIN (-2^63).
+        SumSaturatedFloorCeilTestCase{
+            .terms = {-std::ldexp(1.0, 63), 1.0},
+            .expected_floor = std::numeric_limits<int64_t>::min() + 1,
+            .expected_ceil = std::numeric_limits<int64_t>::min() + 1},
+        SumSaturatedFloorCeilTestCase{
+            .terms = {-std::ldexp(1.0, 63), 0.5},
+            .expected_floor = std::numeric_limits<int64_t>::min(),
+            .expected_ceil = std::numeric_limits<int64_t>::min() + 1},
+        SumSaturatedFloorCeilTestCase{
+            .terms = {-std::ldexp(1.0, 63)},
+            .expected_floor = std::numeric_limits<int64_t>::min(),
+            .expected_ceil = std::numeric_limits<int64_t>::min()},
+        SumSaturatedFloorCeilTestCase{
+            .terms = {-std::ldexp(1.0, 63), -0.5},
+            .expected_floor = std::numeric_limits<int64_t>::min(),
+            .expected_ceil = std::numeric_limits<int64_t>::min()},
+        SumSaturatedFloorCeilTestCase{
+            .terms = {-std::ldexp(1.0, 63), -1.0},
+            .expected_floor = std::numeric_limits<int64_t>::min(),
+            .expected_ceil = std::numeric_limits<int64_t>::min()},
+        SumSaturatedFloorCeilTestCase{
+            .terms = {-1e100},
+            .expected_floor = std::numeric_limits<int64_t>::min(),
+            .expected_ceil = std::numeric_limits<int64_t>::min()},
+        SumSaturatedFloorCeilTestCase{
+            .terms = {-kInf, 1e100},
+            .expected_floor = std::numeric_limits<int64_t>::min(),
+            .expected_ceil = std::numeric_limits<int64_t>::min()}));
+
+TEST(SumTest, SaturatedFloorAndCeilUnderflowSubnormals) {
+  const double kDenormMin = std::numeric_limits<double>::denorm_min();
+
+  Sum pos_underflow;
+  pos_underflow.AddProd(kDenormMin, PowerOfTwo(-1));
+  EXPECT_EQ(pos_underflow.SaturatedFloor(), 0);
+  EXPECT_EQ(pos_underflow.SaturatedCeil(), 1);
+
+  Sum neg_underflow;
+  neg_underflow.AddProd(-kDenormMin, PowerOfTwo(-1));
+  EXPECT_EQ(neg_underflow.SaturatedFloor(), -1);
+  EXPECT_EQ(neg_underflow.SaturatedCeil(), 0);
+}
+
 }  // namespace
 }  // namespace operations_research
