@@ -14,6 +14,7 @@
 #include "ortools/glop/lp_solver.h"
 
 #include <atomic>
+#include <cmath>
 #include <limits>
 #include <optional>
 #include <ostream>
@@ -26,6 +27,7 @@
 #include "absl/base/attributes.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/log/flags.h"
 #include "absl/log/log.h"
 #include "absl/strings/escaping.h"
@@ -46,6 +48,7 @@
 #include "ortools/lp_data/lp_types_testing.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/proto_utils.h"
+#include "ortools/lp_data/sparse.h"
 #include "ortools/port/scoped_std_stream_capture.h"
 #include "ortools/util/file_util.h"
 #include "ortools/util/fp_roundtrip_conv.h"
@@ -58,10 +61,19 @@ namespace {
 
 using ::testing::_;
 using ::testing::AnyOfArray;
+using ::testing::DoubleNear;
+using ::testing::Each;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 using ::testing::EqualsProto;
+using ::testing::Ge;
+using ::testing::IsNan;
+using ::testing::Le;
 using ::testing::Optional;
+
+// When evaluating primal/dual ray, this tolerance is used to test that they
+// have a significant contribution to the primal/dual objective.
+constexpr Fractional kRayObjectiveContributionZeroTolerance = 1e-3;
 
 // Returns a copy of a referenced optional value.
 //
@@ -942,15 +954,267 @@ TEST(LPSolverTest, NoLogsToStdoutInVerbose) {
   }
 }
 
-// We solve the pair of problems
+// A test model for LPSolverPrimalRayTest parametric test.
+struct LPSolverPrimalRayTestModel {
+  // Name of the model. It is used as a part of the name of the test, thus it
+  // must only contains characters, numbers and underscores (NO spaces, commas,
+  // ...).
+  std::string name ABSL_REQUIRE_EXPLICIT_INIT;
+
+  // The model that will parsed by ParseLp().
+  //
+  // The objective direction is overwritten by the test, as a convention it
+  // should be written as a minimization to align with the rays in
+  // expected_minimization_primal_rays.
+  std::string lp_model ABSL_REQUIRE_EXPLICIT_INIT;
+
+  // An exhaustive list of primal rays that can be produced by:
+  // * either the phase II of the primal simplex,
+  // * or the phase I of the dual simplex,
+  // when solving a minimization of lp_model (rays for maximization are the
+  // opposite).
+  //
+  // See RevisedSimplexPrimalRayTestModel documentation in
+  // revised_simplex_test.cc for details on how to produce those for non trivial
+  // models.
+  std::vector<DenseRow> expected_minimization_primal_rays
+      ABSL_REQUIRE_EXPLICIT_INIT;
+};
+
+std::ostream& operator<<(std::ostream& out,
+                         const LPSolverPrimalRayTestModel& model) {
+  out << "{ name: " << model.name << ", lp_model: '"
+      << absl::CEscape(model.lp_model)
+      << "', expected_minimization_primal_rays: [";
+  bool first_ray = true;
+  for (const auto& primal_ray : model.expected_minimization_primal_rays) {
+    if (first_ray) {
+      first_ray = false;
+    } else {
+      out << ", ";
+    }
+    out << '[';
+    bool first_value = true;
+    for (const Fractional value : primal_ray) {
+      if (first_value) {
+        first_value = false;
+      } else {
+        out << ", ";
+      }
+      out << RoundTripDoubleFormat(value);
+    }
+    out << ']';
+  }
+  out << "] }";
+  return out;
+}
+
+struct LPSolverPrimalRayTest
+    : ::testing::TestWithParam<
+          std::tuple<LPSolverPrimalRayTestModel, TestAlgorithm, TestDirection,
+                     TestUseScaling>> {
+ protected:
+  // Shortcuts to get parameters.
+  TestDirection direction() const {
+    return std::get<TestDirection>(GetParam());
+  }
+  TestAlgorithm algorithm() const {
+    return std::get<TestAlgorithm>(GetParam());
+  }
+  TestUseScaling use_scaling() const {
+    return std::get<TestUseScaling>(GetParam());
+  }
+};
+
+// Returns a matcher for each column/row based on the expected sign of values of
+// x or A⋅x based on the bounds of columns/rows.
 //
-//   min/max x_1
+// Index template parameter is either ColIndex or RowIndex.
 //
-//     x_1 + x_2 == 0  (c1)
+// The zero_tolerance parameter is the absolute tolerance used to compare to
+// zero (x = 0 is tested with |x| ≤ zero_tolerance).
 //
-// The unique (up to positive scaling) cost improving directions for the min and
-// max problems are x = (-1, 1) and x = (1, -1) respectively.
-TEST(LPSolverTest, PrimalRay) {
+// See LPSolverPrimalRayTest.Optimize for details.
+template <typename Index>
+std::vector<testing::Matcher<Fractional>> PrimalRaySignsMatchers(
+    const StrictITIVector<Index, Fractional>& lower_bounds,
+    const StrictITIVector<Index, Fractional>& upper_bounds,
+    const Fractional zero_tolerance) {
+  CHECK_EQ(lower_bounds.size(), upper_bounds.size());
+  const Index num_elts = lower_bounds.size();
+
+  std::vector<testing::Matcher<Fractional>> matchers;
+  matchers.reserve(num_elts.value());
+  for (Index i(0); i < num_elts; ++i) {
+    const bool lb_is_finite = std::isfinite(lower_bounds[i]);
+    const bool ub_is_finite = std::isfinite(upper_bounds[i]);
+    if (lb_is_finite && ub_is_finite) {
+      matchers.push_back(DoubleNear(0.0, zero_tolerance));
+    } else if (lb_is_finite) {  // ub == +∞
+      matchers.push_back(Ge(-zero_tolerance));
+    } else if (ub_is_finite) {  // lb == -∞
+      matchers.push_back(Le(zero_tolerance));
+    } else {
+      // Both bounds are infinite; only test that it is a number.
+      matchers.push_back(Not(IsNan()));
+    }
+  }
+  return matchers;
+}
+
+TEST_P(LPSolverPrimalRayTest, Optimize) {
+  if (algorithm() == TestAlgorithm::kDualSimplex) {
+    // TODO: b/553095297 - Add support of primal rays on dual infeasibility.
+    GTEST_SKIP() << "Currently only primal simplex returns primal rays.";
+  }
+
+  LinearProgram lp;
+  ASSERT_TRUE(
+      ParseLp(std::get<LPSolverPrimalRayTestModel>(GetParam()).lp_model, &lp));
+  lp.SetMaximizationProblem(direction() == TestDirection::kMaximize);
+
+  LPSolver solver;
+  // As of today (2026-09) rays can only be returned without pre-processing.
+  solver.GetMutableParameters()->set_use_preprocessing(false);
+  solver.GetMutableParameters()->set_use_scaling(use_scaling() ==
+                                                 TestUseScaling::kYes);
+
+  solver.GetMutableParameters()->set_use_dual_simplex(
+      algorithm() == TestAlgorithm::kDualSimplex);
+
+  const SolveStatus solve_status = solver.Solve(lp);
+  switch (algorithm()) {
+    case TestAlgorithm::kPrimalSimplex:
+      EXPECT_THAT(solve_status,
+                  SolveStatusWith<SolveStatus::PrimalUnbounded>(_));
+      break;
+    case TestAlgorithm::kDualSimplex:
+      EXPECT_THAT(solve_status,
+                  SolveStatusWith<SolveStatus::DualInfeasible>(_));
+      break;
+  }
+
+  // We check the ray is a primal unbound ray.
+  //
+  // Using the notation in LPSolver::RunRevisedSimplex(), a primal unbound ray
+  // is a vector x such:
+  // * it is primal feasible (i.e. they have the proper sign):
+  //   - ∀ i / L_i ≠ -∞, 0 ≤ A_i⋅x
+  //   - ∀ i / U_i ≠ +∞,     A_i⋅x ≤ 0
+  //   - ∀ j / l_j ≠ -∞, 0 ≤ x_j
+  //   - ∀ j / u_j ≠ +∞,     x_j ≤ 0
+  // * it improves the objective:
+  //   - primal min: c^T⋅x < 0
+  //   - primal max: c^T⋅x > 0
+
+  // Check x signs.
+  EXPECT_THAT(
+      solver.primal_ray(),
+      Optional(ElementsAreArray(PrimalRaySignsMatchers(
+          lp.variable_lower_bounds(), lp.variable_upper_bounds(), 1e-7))));
+  // Check A.x signs.
+  {
+    ASSERT_THAT(OptionalRefValue(solver.primal_ray()), Optional(_));
+    const SparseMatrix& transposed_matrix = lp.GetTransposeSparseMatrix();
+    const RowIndex num_rows = lp.num_constraints();
+    DenseColumn columns_combination(num_rows, 0.0);
+    for (RowIndex row(0); row < num_rows; ++row) {
+      columns_combination[row] = ScalarProduct(
+          *solver.primal_ray(), transposed_matrix.column(RowToColIndex(row)));
+    }
+    EXPECT_THAT(columns_combination,
+                ElementsAreArray(PrimalRaySignsMatchers(
+                    /*lower_bounds=*/lp.constraint_lower_bounds(),
+                    /*upper_bounds=*/lp.constraint_upper_bounds(),
+                    /*zero_tolerance=*/
+                    solver.GetParameters().primal_feasibility_tolerance())));
+  }
+  // Then test the objective contribution sign.
+  {
+    ASSERT_THAT(OptionalRefValue(solver.primal_ray()), Optional(_));
+    const Fractional objective_contribution =
+        ScalarProduct(*solver.primal_ray(), lp.objective_coefficients());
+
+    // We expect a number significatively not close to zero.
+    if (direction() == TestDirection::kMaximize) {
+      EXPECT_GE(objective_contribution, kRayObjectiveContributionZeroTolerance);
+    } else {
+      EXPECT_LE(objective_contribution,
+                -kRayObjectiveContributionZeroTolerance);
+    }
+  }
+
+  // Only test specific values when not using scaling.
+  //
+  // With scaling, if the problem contains independent subproblems, we can end
+  // up a ray that is not proportional to any of the rays RevisedSimplex is
+  // expected to produce.
+  if (use_scaling() == TestUseScaling::kNo) {
+    std::vector<DenseRow> expected_primal_rays;
+    for (const auto& expected_minimization_primal_ray :
+         std::get<LPSolverPrimalRayTestModel>(GetParam())
+             .expected_minimization_primal_rays) {
+      auto expected_primal_ray = expected_minimization_primal_ray;
+      if (direction() == TestDirection::kMaximize) {
+        ChangeSign(&expected_primal_ray);
+      }
+      expected_primal_rays.push_back(std::move(expected_primal_ray));
+    }
+    EXPECT_THAT(OptionalRefValue(solver.primal_ray()),
+                AnyOfArray(expected_primal_rays));
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    All, LPSolverPrimalRayTest,
+    testing::Combine(
+        testing::Values(
+            LPSolverPrimalRayTestModel{
+                .name = "basic_ray",
+                // We solve:
+                //
+                //   min x_1
+                //
+                //     x_1 + x_2 == 0  (c1)
+                //
+                // The unique (up to positive scaling) cost improving directions
+                // for the min and max problems are x = (-1, 1) and x = (1, -1)
+                // respectively.
+                .lp_model = ("min: 1 x1 + 0 x2;"
+                             "c1: 1 x1 + 1 x2 = 0;"),
+                .expected_minimization_primal_rays =
+                    {
+                        {-1.0, 1.0},
+                    },
+            },
+            // Test that when using scaling we properly produce a ray. In this
+            // test the RevisedSimplex will received a scaled problem for which
+            // the dual ray is {1.0, 1.0} but this ray is not an unbound ray of
+            // the original problem.
+            LPSolverPrimalRayTestModel{
+                .name = "primal_scaling",
+                .lp_model = ("min: 1 x1 + 0.125 x2;"
+                             "c1: -2 <= 1 x1 - 0.125 x2 <= 2;"),
+                .expected_minimization_primal_rays =
+                    {
+                        {-1.0, -8.0},
+                        {-1.0 / 8.0, -1.0},
+                    },
+            }),
+        testing::Values(TestAlgorithm::kPrimalSimplex,
+                        TestAlgorithm::kDualSimplex),
+        testing::Values(TestDirection::kMinimize, TestDirection::kMaximize),
+        testing::Values(TestUseScaling::kYes, TestUseScaling::kNo)),
+    [](const testing::TestParamInfo<LPSolverPrimalRayTest::ParamType>& info) {
+      std::ostringstream oss;
+      oss << std::get<LPSolverPrimalRayTestModel>(info.param).name << "__"
+          << std::get<TestAlgorithm>(info.param) << "__"
+          << std::get<TestDirection>(info.param) << "__"
+          << std::get<TestUseScaling>(info.param);
+      return oss.str();
+    });
+
+TEST(LPSolverTest, PrimalRayClearedWithIncrementalSolve) {
   LinearProgram lp;
   ASSERT_TRUE(
       ParseLp("min: 1 x1 + 0 x2;"
@@ -960,28 +1224,19 @@ TEST(LPSolverTest, PrimalRay) {
   GlopParameters parameters;
   parameters.set_use_preprocessing(false);
   parameters.set_use_dual_simplex(false);
-  parameters.set_use_scaling(false);
 
-  LPSolver min_solver;
-  min_solver.SetParameters(parameters);
-  lp.SetMaximizationProblem(false);
-  EXPECT_THAT(min_solver.Solve(lp),
+  // Generate a primal ray.
+  LPSolver solver;
+  solver.SetParameters(parameters);
+  EXPECT_THAT(solver.Solve(lp),
               SolveStatusWith<SolveStatus::PrimalUnbounded>(_));
-  EXPECT_THAT(OptionalRefValue(min_solver.primal_ray()),
+  EXPECT_THAT(OptionalRefValue(solver.primal_ray()),
               Optional(ElementsAre(-1.0, 1.0)));
-
-  LPSolver max_solver;
-  max_solver.SetParameters(parameters);
-  lp.SetMaximizationProblem(true);
-  EXPECT_THAT(max_solver.Solve(lp),
-              SolveStatusWith<SolveStatus::PrimalUnbounded>(_));
-  EXPECT_THAT(OptionalRefValue(max_solver.primal_ray()),
-              Optional(ElementsAre(1.0, -1.0)));
 
   // Check that primal ray is cleared between incremental solves.
   lp.SetVariableBounds(ColIndex(0), -1, 1);
-  EXPECT_THAT(max_solver.Solve(lp), SolveStatusWith<SolveStatus::Optimal>(_));
-  EXPECT_EQ(OptionalRefValue(max_solver.primal_ray()), std::nullopt);
+  EXPECT_THAT(solver.Solve(lp), SolveStatusWith<SolveStatus::Optimal>(_));
+  EXPECT_EQ(OptionalRefValue(solver.primal_ray()), std::nullopt);
 }
 
 // A test model for LPSolverDualRayTest parametric test.
@@ -1063,7 +1318,8 @@ std::ostream& operator<<(std::ostream& out,
 
 struct LPSolverDualRayTest
     : ::testing::TestWithParam<
-          std::tuple<LPSolverDualRayTestModel, TestAlgorithm, TestDirection>> {
+          std::tuple<LPSolverDualRayTestModel, TestAlgorithm, TestDirection,
+                     TestUseScaling>> {
  protected:
   // Shortcuts to get parameters.
   TestDirection direction() const {
@@ -1072,7 +1328,42 @@ struct LPSolverDualRayTest
   TestAlgorithm algorithm() const {
     return std::get<TestAlgorithm>(GetParam());
   }
+  TestUseScaling use_scaling() const {
+    return std::get<TestUseScaling>(GetParam());
+  }
 };
+
+// Returns the objective contribution of the dual values from the bounds of
+// columns/rows.
+//
+// When negate_dual_values is true, swap the signs of dual values.
+//
+// Index template parameter is either ColIndex or RowIndex.
+//
+// See LPSolverDualRayTest.Optimize for details.
+template <typename Index>
+Fractional DualValuesObjectiveContribution(
+    const bool negate_dual_values,
+    const StrictITIVector<Index, Fractional>& dual_values,
+    const StrictITIVector<Index, Fractional>& lower_bounds,
+    const StrictITIVector<Index, Fractional>& upper_bounds) {
+  CHECK_EQ(lower_bounds.size(), upper_bounds.size());
+  CHECK_EQ(dual_values.size(), lower_bounds.size());
+  const Index num_elts = lower_bounds.size();
+
+  Fractional objective_contribution = 0.0;
+  const Fractional sign_factor = negate_dual_values ? -1.0 : 1.0;
+  for (Index i(0); i < num_elts; ++i) {
+    const Fractional dual_value = sign_factor * dual_values[i];
+    CHECK(!std::isnan(dual_value));
+    if (dual_value > 0) {
+      objective_contribution += dual_value * lower_bounds[i];
+    } else if (dual_value < 0) {
+      objective_contribution += dual_value * upper_bounds[i];
+    }
+  }
+  return objective_contribution;
+}
 
 TEST_P(LPSolverDualRayTest, Optimize) {
   LinearProgram lp;
@@ -1081,10 +1372,10 @@ TEST_P(LPSolverDualRayTest, Optimize) {
   lp.SetMaximizationProblem(direction() == TestDirection::kMaximize);
 
   LPSolver solver;
-  // As of today (2026-09) rays can only be returned without pre-processing or
-  // scaling.
+  // As of today (2026-09) rays can only be returned without pre-processing.
   solver.GetMutableParameters()->set_use_preprocessing(false);
-  solver.GetMutableParameters()->set_use_scaling(false);
+  solver.GetMutableParameters()->set_use_scaling(use_scaling() ==
+                                                 TestUseScaling::kYes);
 
   solver.GetMutableParameters()->set_use_dual_simplex(
       algorithm() == TestAlgorithm::kDualSimplex);
@@ -1100,23 +1391,96 @@ TEST_P(LPSolverDualRayTest, Optimize) {
       break;
   }
 
-  std::vector<std::pair<DenseColumn, DenseRow>> expected_dual_rays;
-  for (const auto& expected_minimization_dual_ray :
-       std::get<LPSolverDualRayTestModel>(GetParam())
-           .expected_minimization_dual_rays) {
-    auto expected_dual_ray =
-        std::make_pair(expected_minimization_dual_ray.constraints,
-                       expected_minimization_dual_ray.bounds);
-    if (direction() == TestDirection::kMaximize) {
-      ChangeSign(&expected_dual_ray.first);
-      ChangeSign(&expected_dual_ray.second);
+  // We check the ray is a dual unbound ray.
+  //
+  // Using the notation in LPSolver::RunRevisedSimplex(), a dual unbound ray is
+  // a set of (y_l, y_u, v, w) such:
+  // * they are dual feasible:
+  //   - primal min: y_l ≥ 0, y_u ≤ 0, v ≥ 0, w ≤ 0,
+  //   - primal max: y_l ≤ 0, y_u ≥ 0, v ≤ 0, w ≥ 0,
+  // * they satisfy:
+  //   A^T⋅(y_l + y_u) + v + w = 0
+  // * their improve the objective:
+  //   - primal min: L^T⋅y_l + U^T⋅y_u + l^T⋅v + u^T⋅w > 0
+  //   - primal max: L^T⋅y_l + U^T⋅y_u + l^T⋅v + u^T⋅w < 0
+  //
+  // In practice we consider the sum of the dual values (as one if zero when the
+  // other is not):
+  // * y = y_l + y_u (LPSolver::constraints_dual_ray())
+  // * vw = v + w     (LPSolver::variable_bounds_dual_ray())
+  //
+  // When we maximize we can simply consider the opposite of the dual values:
+  // * y' = -y,
+  // * vw' = -vw
+  // and we end up with similar conditions as for minimization.
+  //
+  // Rewriting the conditions for minimization (the dual feasiblity conditions
+  // are included in testing that the selected bound based on the dual sign is
+  // finite):
+  // * A^T⋅y + vw = 0
+  // * sum y_i⋅(L_i if y_i > 0 else U_i) + sum d_j⋅(l_j if d_j > 0 else u_j) > 0
+  //
+  // First check A^T⋅y + vw = 0.
+  {
+    ASSERT_THAT(OptionalRefValue(solver.constraints_dual_ray()), Optional(_));
+    ASSERT_THAT(OptionalRefValue(solver.variable_bounds_dual_ray()),
+                Optional(_));
+    const ColIndex num_cols = lp.num_variables();
+    DenseRow sum(num_cols, 0.0);
+    for (ColIndex col(0); col < num_cols; ++col) {
+      sum[col] = ScalarProduct(*solver.constraints_dual_ray(),
+                               lp.GetSparseColumn(col)) +
+                 (*solver.variable_bounds_dual_ray())[col];
     }
-    expected_dual_rays.push_back(std::move(expected_dual_ray));
+    EXPECT_THAT(sum,
+                Each(DoubleNear(
+                    0.0, solver.GetParameters().dual_feasibility_tolerance())));
   }
-  EXPECT_THAT(
-      std::make_pair(OptionalRefValue(solver.constraints_dual_ray()),
-                     OptionalRefValue(solver.variable_bounds_dual_ray())),
-      AnyOfArray(expected_dual_rays));
+  // Then test the objective contribution:
+  //
+  // sum y_i⋅(L_i if y_i > 0 else U_i) + sum d_j⋅(l_j if d_j > 0 else u_j) > 0
+  {
+    ASSERT_THAT(OptionalRefValue(solver.constraints_dual_ray()), Optional(_));
+    ASSERT_THAT(OptionalRefValue(solver.variable_bounds_dual_ray()),
+                Optional(_));
+    EXPECT_GE(DualValuesObjectiveContribution(
+                  /*negate_dual_values=*/lp.IsMaximizationProblem(),
+                  /*dual_values=*/*solver.constraints_dual_ray(),
+                  /*lower_bounds=*/lp.constraint_lower_bounds(),
+                  /*upper_bounds=*/lp.constraint_upper_bounds()) +
+                  DualValuesObjectiveContribution(
+                      /*negate_dual_values=*/lp.IsMaximizationProblem(),
+                      /*dual_values=*/*solver.variable_bounds_dual_ray(),
+                      /*lower_bounds=*/lp.variable_lower_bounds(),
+                      /*upper_bounds=*/lp.variable_upper_bounds()),
+              kRayObjectiveContributionZeroTolerance);
+  }
+
+  // Only test specific values when not using scaling.
+  //
+  // With scaling, if the problem contains independent subproblems, we can end
+  // up a ray that is not proportional to any of the rays RevisedSimplex is
+  // expected to produce (this happens with
+  // random_with_different_primal_dual_simplex_rays model for example).
+  if (use_scaling() == TestUseScaling::kNo) {
+    std::vector<std::pair<DenseColumn, DenseRow>> expected_dual_rays;
+    for (const auto& expected_minimization_dual_ray :
+         std::get<LPSolverDualRayTestModel>(GetParam())
+             .expected_minimization_dual_rays) {
+      auto expected_dual_ray =
+          std::make_pair(expected_minimization_dual_ray.constraints,
+                         expected_minimization_dual_ray.bounds);
+      if (direction() == TestDirection::kMaximize) {
+        ChangeSign(&expected_dual_ray.first);
+        ChangeSign(&expected_dual_ray.second);
+      }
+      expected_dual_rays.push_back(std::move(expected_dual_ray));
+    }
+    EXPECT_THAT(
+        std::make_pair(OptionalRefValue(solver.constraints_dual_ray()),
+                       OptionalRefValue(solver.variable_bounds_dual_ray())),
+        AnyOfArray(expected_dual_rays));
+  }
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -1171,6 +1535,26 @@ INSTANTIATE_TEST_SUITE_P(
                         {.constraints = {-1.0}, .bounds = {1.0, 1.0}},
                     },
             },
+            // Test that when using scaling we properly produce a ray. In this
+            // test the RevisedSimplex will received a scaled problem for which
+            // the dual ray is {1.0, 1.0} but this ray is not an unbound ray of
+            // the original problem.
+            LPSolverDualRayTestModel{
+                .name = "dual_scaling",
+                // Here the two rows are clearly not compatible (c2 expression
+                // is -16 times c1 but the bounds are incompatible).
+                .lp_model = ("min: 0.125 x1 + 0.5 x2;"
+                             "x1 >= 0;"
+                             "x2 >= 0;"
+                             "c1: 0.125 <= 0.125 x1 + 0.125 x2 <= 2;"
+                             "c2: -1 <= -2 x1 - 2 x2 <= 2;"),
+                .expected_minimization_dual_rays =
+                    {
+                        {.constraints = {1.0, 1.0 / 16.0},
+                         .bounds = {0.0, 0.0}},
+                        {.constraints = {16.0, 1.0}, .bounds = {0.0, 0.0}},
+                    },
+            },
             LPSolverDualRayTestModel{
                 .name = "random_with_different_primal_dual_simplex_rays",
                 // A randomly generated problem that has:
@@ -1215,12 +1599,14 @@ INSTANTIATE_TEST_SUITE_P(
             }),
         testing::Values(TestAlgorithm::kPrimalSimplex,
                         TestAlgorithm::kDualSimplex),
-        testing::Values(TestDirection::kMinimize, TestDirection::kMaximize)),
+        testing::Values(TestDirection::kMinimize, TestDirection::kMaximize),
+        testing::Values(TestUseScaling::kYes, TestUseScaling::kNo)),
     [](const testing::TestParamInfo<LPSolverDualRayTest::ParamType>& info) {
       std::ostringstream oss;
       oss << std::get<LPSolverDualRayTestModel>(info.param).name << "__"
           << std::get<TestAlgorithm>(info.param) << "__"
-          << std::get<TestDirection>(info.param);
+          << std::get<TestDirection>(info.param) << "__"
+          << std::get<TestUseScaling>(info.param);
       return oss.str();
     });
 
@@ -1238,7 +1624,6 @@ TEST(LPSolverTest, DualRayClearedWithIncrementalSolve) {
   LPSolver solver;
   solver.GetMutableParameters()->set_use_preprocessing(false);
   solver.GetMutableParameters()->set_use_dual_simplex(true);
-  solver.GetMutableParameters()->set_use_scaling(false);
 
   EXPECT_THAT(solver.Solve(lp), SolveStatusWith<SolveStatus::DualUnbounded>(_));
   EXPECT_THAT(OptionalRefValue(solver.constraints_dual_ray()),

@@ -1121,6 +1121,7 @@ class ScalingPreprocessor final : public Preprocessor {
   ScalingPreprocessor(const ScalingPreprocessor&) = delete;
   ScalingPreprocessor& operator=(const ScalingPreprocessor&) = delete;
   ~ScalingPreprocessor() final = default;
+  bool CanRecoverRays() const final { return true; }
   Result Run(LinearProgram* lp) final;
   void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 

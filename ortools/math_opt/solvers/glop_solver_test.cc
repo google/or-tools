@@ -58,7 +58,6 @@ SimpleLpTestParameters GlopDefaults() {
 SimpleLpTestParameters PrimalSimplexWithRays() {
   SolveParameters parameters;
   parameters.presolve = Emphasis::kOff;
-  parameters.scaling = Emphasis::kOff;
   parameters.lp_algorithm = LPAlgorithm::kPrimalSimplex;
   parameters.enable_output = true;
   return SimpleLpTestParameters(
@@ -72,7 +71,6 @@ SolveParameters ForceDualRaysSolveParameters() {
   return SolveParameters{
       .lp_algorithm = LPAlgorithm::kDualSimplex,
       .presolve = Emphasis::kOff,
-      .scaling = Emphasis::kOff,
   };
 }
 

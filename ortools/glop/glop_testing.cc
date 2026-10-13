@@ -41,4 +41,16 @@ std::ostream& operator<<(std::ostream& out, const TestDirection direction) {
   return out;
 }
 
+std::ostream& operator<<(std::ostream& out, const TestUseScaling use_scaling) {
+  switch (use_scaling) {
+    case TestUseScaling::kNo:
+      out << "no_scaling";
+      break;
+    case TestUseScaling::kYes:
+      out << "with_scaling";
+      break;
+  }
+  return out;
+}
+
 }  // namespace operations_research::glop

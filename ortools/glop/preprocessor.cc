@@ -3914,14 +3914,23 @@ void ScalingPreprocessor::RecoverSolutionImpl(SolveStatus& solve_status,
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
 
-  scaler_.ScaleRowVector(false, &(solution->primal_values));
+  scaler_.ScaleRowVector(false, &solution->primal_values);
   for (ColIndex col(0); col < solution->primal_values.size(); ++col) {
     solution->primal_values[col] *= bound_scaling_factor_;
   }
-
-  scaler_.ScaleColumnVector(false, &(solution->dual_values));
+  scaler_.ScaleColumnVector(false, &solution->dual_values);
   for (RowIndex row(0); row < solution->dual_values.size(); ++row) {
     solution->dual_values[row] *= cost_scaling_factor_;
+  }
+  // Unscale the rays. Note that we **do not** apply the constant scaling
+  // factors (bound_scaling_factor_, cost_scaling_factor_) here as those are
+  // rays and their norm is arbitrary. Apply a scaling here would add to the
+  // numerical errors.
+  if (solution->primal_ray.has_value()) {
+    scaler_.ScaleRowVector(false, &*solution->primal_ray);
+  }
+  if (solution->dual_ray.has_value()) {
+    scaler_.ScaleColumnVector(false, &*solution->dual_ray);
   }
 
   // Make sure the variable are at they exact bounds according to their status.
