@@ -18,7 +18,6 @@
 # - graph-tool: https://graph-tool.skewed.de/
 # - NetworkX: https://networkx.org/
 
-load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:py_test.bzl", "py_test")
 load("//bazel:or_pybind_rules.bzl", "or_pybind_extension")
 
@@ -61,6 +60,6 @@ py_test(
     srcs = ["dag_shortest_path_test.py"],
     deps = [
         ":dag_shortest_path",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )

@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
 load("//bazel:or_pybind_rules.bzl", "or_pybind_extension")
@@ -33,7 +32,7 @@ py_library(
         "//ortools/math_opt/python:__subpackages__",
     ],
     deps = [
-        requirement("numpy"),
+        "@pip_deps//numpy",
     ],
 )
 
@@ -70,7 +69,7 @@ py_test(
     srcs = ["enums_test.py"],
     deps = [
         ":enums",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -83,7 +82,7 @@ py_test(
         "//ortools/math_opt:model_py_pb2",
         "//ortools/math_opt:model_update_py_pb2",
         "//ortools/math_opt/python/testing:compare_proto",
-        requirement("absl-py"),
-        requirement("numpy"),
+        "@pip_deps//absl_py",
+        "@pip_deps//numpy",
     ],
 )

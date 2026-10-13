@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:py_library.bzl", "py_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -25,7 +24,7 @@ py_library(
         "//ortools/math_opt:rpc_py_pb2",
         "//ortools/math_opt/python:mathopt",
         "//ortools/service/v1:optimization_py_pb2",
-        requirement("requests"),
+        "@pip_deps//requests",
         "@protobuf//:protobuf_python",
     ],
 )

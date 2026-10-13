@@ -13,7 +13,6 @@
 
 # Description: python wrapping of the C++ code of the routing library.
 
-load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
 load("//bazel:or_cc_rules.bzl", "or_cc_library")
@@ -93,7 +92,7 @@ py_test(
         "//ortools/routing:parameters_py_pb2",
         "//ortools/util/python:piecewise_linear_function",  # buildcleaner: keep: OSS export
         "//ortools/util/python:sorted_interval_list",  # buildcleaner: keep: OSS export
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -108,7 +107,7 @@ py_test(
         "//ortools/routing:parameters_py_pb2",  # buildcleaner: keep: OSS export
         "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",  # buildcleaner: keep: OSS export
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -121,7 +120,7 @@ py_test(
         "//ortools/constraint_solver/python:constraint_solver",  # buildcleaner: keep: OSS export
         "//ortools/util/python:piecewise_linear_function",  # buildcleaner: keep: OSS export
         "//ortools/util/python:sorted_interval_list",  # buildcleaner: keep: OSS export
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -138,6 +137,6 @@ py_test(
         "//ortools/util:optional_boolean_py_pb2",
         "//ortools/util/python:piecewise_linear_function",  # buildcleaner: keep: OSS export
         "//ortools/util/python:sorted_interval_list",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )

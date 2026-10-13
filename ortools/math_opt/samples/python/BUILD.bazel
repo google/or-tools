@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:py_binary.bzl", "py_binary")
 
 package(default_visibility = ["//visibility:public"])
@@ -25,8 +24,8 @@ py_binary(
     ],
     deps = [
         "//ortools/math_opt/python:mathopt",
-        requirement("absl-py"),
-        requirement("svgwrite"),
+        "@pip_deps//absl_py",
+        "@pip_deps//svgwrite",
     ],
 )
 
@@ -35,7 +34,7 @@ py_binary(
     srcs = ["basic_example.py"],
     deps = [
         "//ortools/math_opt/python:mathopt",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -44,7 +43,7 @@ py_binary(
     srcs = ["linear_programming.py"],
     deps = [
         "//ortools/math_opt/python:mathopt",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -53,7 +52,7 @@ py_binary(
     srcs = ["integer_programming.py"],
     deps = [
         "//ortools/math_opt/python:mathopt",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -62,7 +61,7 @@ py_binary(
     srcs = ["advanced_linear_programming.py"],
     deps = [
         "//ortools/math_opt/python:mathopt",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -71,7 +70,7 @@ py_binary(
     srcs = ["cutting_stock.py"],
     deps = [
         "//ortools/math_opt/python:mathopt",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -84,8 +83,8 @@ py_binary(
     ],
     deps = [
         "//ortools/math_opt/python:mathopt",
-        requirement("absl-py"),
-        requirement("numpy"),
+        "@pip_deps//absl_py",
+        "@pip_deps//numpy",
     ],
 )
 
@@ -98,8 +97,8 @@ py_binary(
     ],
     deps = [
         "//ortools/math_opt/python:mathopt",
-        requirement("absl-py"),
-        requirement("numpy"),
+        "@pip_deps//absl_py",
+        "@pip_deps//numpy",
     ],
 )
 
@@ -112,8 +111,8 @@ py_binary(
     ],
     deps = [
         "//ortools/math_opt/python:mathopt",
-        requirement("absl-py"),
-        requirement("numpy"),
+        "@pip_deps//absl_py",
+        "@pip_deps//numpy",
     ],
 )
 
@@ -122,7 +121,7 @@ py_binary(
     srcs = ["spillover.py"],
     deps = [
         "//ortools/math_opt/python:mathopt",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -131,7 +130,7 @@ py_binary(
     srcs = ["time_indexed_scheduling.py"],
     deps = [
         "//ortools/math_opt/python:mathopt",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -144,7 +143,7 @@ py_binary(
     ],
     deps = [
         "//ortools/math_opt/python:mathopt",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -157,6 +156,6 @@ py_binary(
     ],
     deps = [
         "//ortools/math_opt/python:mathopt",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )

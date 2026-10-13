@@ -13,7 +13,6 @@
 
 """Macros to test binaries."""
 
-load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:py_test.bzl", "py_test")
 
 def _get_path(label):
@@ -78,7 +77,7 @@ def bintest(name, srcs, named_data = {}, **kwargs):
         data = srcs + named_data.values(),
         env = _get_env(named_data),
         deps = [
-            requirement("absl-py"),
+            "@pip_deps//absl_py",
             "//tools/testing:bintest_script_runner",
         ],
         **kwargs

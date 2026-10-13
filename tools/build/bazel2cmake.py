@@ -75,8 +75,7 @@ def extract_bazel_calls(
         | {"ORTOOLS_DEFAULT_LINKOPTS": []}
         | {"ORTOOLS_TEST_COPTS": []}
         | {foo: record(foo) for foo in extract_functions}
-        | {foo: discard() for foo in discard_functions}
-        | {"requirement": lambda value: f"requirement({value})"},
+        | {foo: discard() for foo in discard_functions},
         {},
     )
     return calls
@@ -492,15 +491,15 @@ def map_py_binary(ctx: BazelContext, name: str, **kwargs) -> CMakeCall:
 CALL_MAPPERS = {
     "bintest": map_bintest,
     "build_test": None,
-    "cc_binary": map_cc_binary,
-    "cc_library": map_cc_library,
     "cc_proto_library": None,
     "cc_stubby_library": None,
-    "cc_test": None,
     "filegroup": None,
     "java_proto_library": None,
     "java_stubby_library": None,
     "load": None,
+    "or_cc_binary": map_cc_binary,
+    "or_cc_library": map_cc_library,
+    "or_cc_test": None,
     "package": None,
     "proto_library": None,
     "py_binary": map_py_binary,

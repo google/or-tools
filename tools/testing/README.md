@@ -161,7 +161,7 @@ py_bintest(
         "print_args": ":print_args",
         "data_file": ":print_args_data.txt",
     },
-    deps = ["//testing/pybase"], # MOE:replace deps = [requirement("absl-py")],
+    deps = ["//testing/pybase"], # MOE:replace deps = ["@pip_deps//absl_py"],
 )
 ```
 
