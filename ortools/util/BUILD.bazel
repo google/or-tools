@@ -497,6 +497,7 @@ or_cc_library(
     srcs = ["fp_roundtrip_conv.cc"],
     hdrs = ["fp_roundtrip_conv.h"],
     deps = [
+        "//ortools/base:base_export",
         "//ortools/base:status_builder",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log:check",

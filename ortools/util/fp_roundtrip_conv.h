@@ -23,6 +23,7 @@
 #include "absl/base/attributes.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "ortools/base/base_export.h"
 
 namespace operations_research {
 
@@ -30,7 +31,7 @@ namespace operations_research {
 //
 // std::to_chars() for double is not yet supported on Emscripten, Android and
 // iOS; they only implement std::to_chars() for integers.
-ABSL_CONST_INIT extern const bool kStdToCharsDoubleIsSupported;
+OR_DLL ABSL_CONST_INIT extern const bool kStdToCharsDoubleIsSupported;
 
 // Formatter using std::to_chars() to print a `double` so that a round trip
 // conversion back to double will result in the same number (using
