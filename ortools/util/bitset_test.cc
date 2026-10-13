@@ -71,27 +71,35 @@ struct TestCase {
 // Shorthand for all available types.
 using LSB_32_Basic = TestCase<Function::kLSB, uint32_t, Impl::kBasic,
                               LeastSignificantBitPosition32Default>;
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
 using LSB_32_Builtin = TestCase<Function::kLSB, uint32_t, Impl::kBuiltin,
                                 LeastSignificantBitPosition32Fast>;
+#endif
 using LSB_32_DeBruijn = TestCase<Function::kLSB, uint32_t, Impl::kDeBruijn,
                                  LeastSignificantBitPosition32DeBruijn>;
 using LSB_32_Std = TestCase<Function::kLSB, uint32_t, Impl::kStd, LSB32Std>;
 using LSB_64_Basic = TestCase<Function::kLSB, uint64_t, Impl::kBasic,
                               LeastSignificantBitPosition64Default>;
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
 using LSB_64_Builtin = TestCase<Function::kLSB, uint64_t, Impl::kBuiltin,
                                 LeastSignificantBitPosition64Fast>;
+#endif
 using LSB_64_DeBruijn = TestCase<Function::kLSB, uint64_t, Impl::kDeBruijn,
                                  LeastSignificantBitPosition64DeBruijn>;
 using LSB_64_Std = TestCase<Function::kLSB, uint64_t, Impl::kStd, LSB64Std>;
 using MSB_32_Basic = TestCase<Function::kMSB, uint32_t, Impl::kBasic,
                               MostSignificantBitPosition32Default>;
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
 using MSB_32_Builtin = TestCase<Function::kMSB, uint32_t, Impl::kBuiltin,
                                 MostSignificantBitPosition32Fast>;
+#endif
 using MSB_32_Std = TestCase<Function::kMSB, uint32_t, Impl::kStd, MSB32Std>;
 using MSB_64_Basic = TestCase<Function::kMSB, uint64_t, Impl::kBasic,
                               MostSignificantBitPosition64Default>;
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
 using MSB_64_Builtin = TestCase<Function::kMSB, uint64_t, Impl::kBuiltin,
                                 MostSignificantBitPosition64Fast>;
+#endif
 using MSB_64_Std = TestCase<Function::kMSB, uint64_t, Impl::kStd, MSB64Std>;
 
 // This help produce readable names for the typed tests.
@@ -134,10 +142,23 @@ template <typename TestCase>
 class BitIndex : public testing::Test {};
 
 using BitIndexTypes =
-    ::testing::Types<LSB_32_Basic, LSB_32_Builtin, LSB_32_DeBruijn, LSB_32_Std,
-                     LSB_64_Basic, LSB_64_Builtin, LSB_64_DeBruijn, LSB_64_Std,
-                     MSB_32_Basic, MSB_32_Builtin, MSB_32_Std,  //
-                     MSB_64_Basic, MSB_64_Builtin, MSB_64_Std>;
+    ::testing::Types<LSB_32_Basic,
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
+                     LSB_32_Builtin,
+#endif
+                     LSB_32_DeBruijn, LSB_32_Std, LSB_64_Basic,
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
+                     LSB_64_Builtin,
+#endif
+                     LSB_64_DeBruijn, LSB_64_Std, MSB_32_Basic,
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
+                     MSB_32_Builtin,
+#endif
+                     MSB_32_Std, MSB_64_Basic,
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
+                     MSB_64_Builtin,
+#endif
+                     MSB_64_Std>;
 TYPED_TEST_SUITE(BitIndex, BitIndexTypes, NameGenerator);
 
 TYPED_TEST(BitIndex, SingleBit) {

@@ -72,10 +72,11 @@ inline uint32_t LeastSignificantBitWord32(uint32_t n) { return n & ~(n - 1); }
 // Both are always much faster than the Default algorithm.
 #define USE_DEBRUIJN true  // if true, use de Bruijn bit forward scanner.
 #if defined(__GNUC__) || defined(__llvm__)
-#define USE_FAST_LEAST_SIGNIFICANT_BIT true  // if true, use fast lsb.
+#define ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT \
+  true  // if true, use fast lsb.
 #endif
 
-#if defined(USE_FAST_LEAST_SIGNIFICANT_BIT)
+#if defined(ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT)
 inline int LeastSignificantBitPosition64Fast(uint64_t n) {
   return __builtin_ctzll(n);
 }
@@ -129,7 +130,7 @@ inline int LeastSignificantBitPosition64Default(uint64_t n) {
 
 inline int LeastSignificantBitPosition64(uint64_t n) {
   DCHECK_NE(n, 0);
-#ifdef USE_FAST_LEAST_SIGNIFICANT_BIT
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
   return LeastSignificantBitPosition64Fast(n);
 #elif defined(USE_DEBRUIJN)
   return LeastSignificantBitPosition64DeBruijn(n);
@@ -138,7 +139,7 @@ inline int LeastSignificantBitPosition64(uint64_t n) {
 #endif
 }
 
-#if defined(USE_FAST_LEAST_SIGNIFICANT_BIT)
+#if defined(ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT)
 inline int LeastSignificantBitPosition32Fast(uint32_t n) {
   return __builtin_ctzl(n);
 }
@@ -184,7 +185,7 @@ inline int LeastSignificantBitPosition32Default(uint32_t n) {
 
 inline int LeastSignificantBitPosition32(uint32_t n) {
   DCHECK_NE(n, 0);
-#ifdef USE_FAST_LEAST_SIGNIFICANT_BIT
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
   return LeastSignificantBitPosition32Fast(n);
 #elif defined(USE_DEBRUIJN)
   return LeastSignificantBitPosition32DeBruijn(n);
@@ -194,7 +195,7 @@ inline int LeastSignificantBitPosition32(uint32_t n) {
 }
 
 // Returns the most significant bit position in n.
-#if USE_FAST_LEAST_SIGNIFICANT_BIT
+#if ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
 inline int MostSignificantBitPosition64Fast(uint64_t n) {
   // __builtin_clzll(1) should always return 63. There is no penalty in
   // using offset, and the code looks more like its uint32_t counterpart.
@@ -232,14 +233,14 @@ inline int MostSignificantBitPosition64Default(uint64_t n) {
 }
 
 inline int MostSignificantBitPosition64(uint64_t n) {
-#ifdef USE_FAST_LEAST_SIGNIFICANT_BIT
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
   return MostSignificantBitPosition64Fast(n);
 #else
   return MostSignificantBitPosition64Default(n);
 #endif
 }
 
-#if USE_FAST_LEAST_SIGNIFICANT_BIT
+#if ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
 inline int MostSignificantBitPosition32Fast(uint32_t n) {
   // The constant here depends on whether we are on a 32-bit or 64-bit machine.
   // __builtin_clzl(1) returns 63 on a 64-bit machine and 31 on a 32-bit
@@ -274,7 +275,7 @@ inline int MostSignificantBitPosition32Default(uint32_t n) {
 }
 
 inline int MostSignificantBitPosition32(uint32_t n) {
-#ifdef USE_FAST_LEAST_SIGNIFICANT_BIT
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
   return MostSignificantBitPosition32Fast(n);
 #else
   return MostSignificantBitPosition32Default(n);
@@ -282,7 +283,6 @@ inline int MostSignificantBitPosition32(uint32_t n) {
 }
 
 #undef USE_DEBRUIJN
-#undef USE_FAST_LEAST_SIGNIFICANT_BIT
 
 // Returns a word with bits from s to e set.
 inline uint64_t OneRange64(uint64_t s, uint64_t e) {
