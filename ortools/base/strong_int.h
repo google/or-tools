@@ -685,7 +685,7 @@ StrongIntRange<IntType> MakeStrongIntRange(IntType begin, IntType end) {
   };                                                                        \
   typedef ::util_intops::StrongInt<type_name##_strong_int_tag_, value_type, \
                                    ::util_intops::NullStrongIntValidator>   \
-      type_name;
+      type_name
 
 // Numeric_limits override for strong int.
 namespace std {
