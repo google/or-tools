@@ -13,8 +13,6 @@
 
 #include "ortools/routing/lp_scheduling.h"
 
-#include <linux/limits.h>
-
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
