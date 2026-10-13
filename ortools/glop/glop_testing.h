@@ -31,6 +31,12 @@ enum TestDirection { kMinimize, kMaximize };
 // Prints a snake_case string.
 std::ostream& operator<<(std::ostream& out, const TestDirection direction);
 
+// If scaling is enabled in the test of not.
+enum TestUseScaling { kNo, kYes };
+
+// Prints a snake_case string.
+std::ostream& operator<<(std::ostream& out, const TestUseScaling use_scaling);
+
 }  // namespace operations_research::glop
 
 #endif  // ORTOOLS_GLOP_GLOP_TESTING_H_
