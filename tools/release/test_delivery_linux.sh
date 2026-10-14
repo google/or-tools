@@ -48,6 +48,7 @@ function assert_defined(){
   fi
 }
 
+# shellcheck disable=SC2329
 function test_cpp() {
   command -v cmake | xargs echo "cmake: " | tee -a test.log
 
@@ -56,6 +57,7 @@ function test_cpp() {
   # Try to build and run cmake/samples/cpp
 }
 
+# shellcheck disable=SC2329
 function test_dotnet() {
   command -v dotnet | xargs echo "dotnet: " | tee -a test.log
   dotnet --version | xargs echo "dotnet version: " | tee -a test.log
@@ -78,6 +80,7 @@ function test_dotnet() {
   dotnet run --no-build -c Release
 }
 
+# shellcheck disable=SC2329
 function test_java() {
   command -v mvn | xargs echo "mvn: " | tee -a test.log
   mvn --version -q | xargs echo "mvn version: " | tee -a test.log
@@ -106,6 +109,7 @@ function test_java() {
   mvn test
 }
 
+# shellcheck disable=SC2329
 function test_python() {
   if [ -z "$1" ]; then
     >&2 echo "No python version supplied"
@@ -116,7 +120,7 @@ function test_python() {
   # Check Python env
   echo "check python${PY_VERSION}..."
   command -v "python${PY_VERSION}" | xargs echo "python${PY_VERSION}: " | tee -a test.log
-  python${PY_VERSION} --version | grep "${PY_VERSION}"
+  "python${PY_VERSION}" --version | grep "${PY_VERSION}"
 
   echo "Creating Python${PY_VERSION} venv..." | tee -a test.log
   VENV_DIR=venv

@@ -41,18 +41,22 @@ EOF
   echo -e "$help"
 }
 
+# shellcheck disable=SC2329
 function test_cpp() {
   echo "TODO" | tee -a test.log
 }
 
+# shellcheck disable=SC2329
 function test_dotnet() {
   echo "TODO" | tee -a test.log
 }
 
+# shellcheck disable=SC2329
 function test_java() {
   echo "TODO" | tee -a test.log
 }
 
+# shellcheck disable=SC2329
 function test_python() {
   if [ -z "$1" ]; then
     >&2 echo "No python version supplied"

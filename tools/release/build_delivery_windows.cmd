@@ -2,7 +2,7 @@
 REM /!\ THIS SCRIPT SUPPOSE A FIXED PATH FOR PYTHON /!\
 REM Each blocks could be triggered independently (i.e. commenting others)
 REM run it as:
-REM cmd /c tools\release\build_delivery_win.cmd all
+REM cmd /c tools\release\build_delivery_win.cmd cpp
 
 REM make few tools available
 set PATH=tools;tools\win;%PATH%
@@ -70,16 +70,6 @@ call :BUILD_EXAMPLES
 exit /B
 )
 
-if "%1"=="all" (
-call :BUILD_CPP || exit /B 1
-call :BUILD_DOTNET || exit /B 1
-call :BUILD_JAVA || exit /B 1
-:: call :BUILD_ARCHIVE || exit /B 1
-:: call :BUILD_EXAMPLES || exit /B 1
-:: call :BUILD_PYTHON_ALL || exit /B 1
-exit /B
-)
-
 if "%1"=="reset" (
 call :RESET
 exit /B
@@ -93,7 +83,7 @@ exit /B 1
 echo NAME
 echo   %PRG% - Build delivery using the local host system.
 echo SYNOPSIS
-echo   %PRG% [help] cpp^|dotnet^|java^|python^|archive^|examples^|all^|reset
+echo   %PRG% [help] cpp^|dotnet^|java^|python^|archive^|examples^|reset
 echo DESCRIPTION
 echo   Build Google OR-Tools deliveries.
 echo   You MUST define the following variables before running this script:
@@ -107,7 +97,6 @@ echo   java: Build java packages
 echo   python: Build python packages
 echo   archive: Build all (C++, .Net, Java) archives
 echo   examples: Build examples archives
-echo   all: build everything
 echo   reset: delete all artifacts and suppress cache file
 echo.
 echo EXAMPLES
