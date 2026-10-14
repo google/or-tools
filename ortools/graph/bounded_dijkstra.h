@@ -28,7 +28,7 @@
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/top_n.h"
-#include "ortools/graph_base/graph.h"
+#include "ortools/graph/graph.h"
 #include "ortools/util/bitset.h"
 
 namespace operations_research {

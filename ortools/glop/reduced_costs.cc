@@ -363,6 +363,7 @@ void ReducedCosts::ComputeReducedCosts() {
   if (recompute_basic_objective_left_inverse_) {
     ComputeBasicObjectiveLeftInverse();
   }
+  deterministic_timer_.Start();
   Fractional dual_residual_error(0.0);
   const ColIndex num_cols = matrix_.num_cols();
   const ColIndex first_slack = num_cols - RowToColIndex(matrix_.num_rows());
@@ -391,8 +392,6 @@ void ReducedCosts::ComputeReducedCosts() {
     }
   }
 
-  deterministic_time_ +=
-      DeterministicTimeForFpOperations(matrix_.num_entries().value());
   recompute_reduced_costs_ = false;
   are_reduced_costs_recomputed_ = true;
   are_reduced_costs_precise_ = basis_factorization_.IsRefactorized();
@@ -407,6 +406,7 @@ void ReducedCosts::ComputeReducedCosts() {
     VLOG(2) << "Changing dual_feasibility_tolerance to " << dual_residual_error;
     dual_feasibility_tolerance_ = dual_residual_error;
   }
+  deterministic_timer_.Stop(matrix_.num_entries().value());
 }
 
 void ReducedCosts::ComputeBasicObjectiveLeftInverse() {

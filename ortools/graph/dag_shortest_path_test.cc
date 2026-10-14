@@ -32,8 +32,8 @@
 #include "ortools/base/log_severity.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/graph_base/graph.h"
-#include "ortools/graph_base/io.h"
+#include "ortools/graph/graph.h"
+#include "ortools/graph/io.h"
 #include "ortools/util/flat_matrix.h"
 
 namespace operations_research {

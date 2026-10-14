@@ -161,7 +161,7 @@ or_cc_test(
     name = "primal_dual_hybrid_gradient_test",
     size = "medium",
     srcs = ["primal_dual_hybrid_gradient_test.cc"],
-    tags = ["noci"],
+    shard_count = 3,
     deps = [
         ":iteration_stats",
         ":primal_dual_hybrid_gradient",

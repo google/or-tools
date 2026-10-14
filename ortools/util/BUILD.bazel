@@ -199,6 +199,26 @@ or_cc_library(
 )
 
 or_cc_library(
+    name = "deterministic_time",
+    srcs = ["deterministic_time.cc"],
+    hdrs = ["deterministic_time.h"],
+    deps = [
+        ":time_limit",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/debugging:stacktrace",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/numeric:int128",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:source_location",
+    ],
+)
+
+or_cc_library(
     name = "sigint",
     srcs = ["sigint.cc"],
     hdrs = ["sigint.h"],
@@ -446,10 +466,13 @@ or_cc_library(
 
 or_cc_library(
     name = "testing_utils",
+    srcs = ["testing_utils.cc"],
     hdrs = ["testing_utils.h"],
     deps = [
         "//ortools/base:log_severity",
         "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/synchronization",
     ],
 )
 
@@ -474,10 +497,10 @@ or_cc_library(
     srcs = ["fp_roundtrip_conv.cc"],
     hdrs = ["fp_roundtrip_conv.h"],
     deps = [
+        "//ortools/base:base_export",
         "//ortools/base:status_builder",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
@@ -938,8 +961,8 @@ or_cc_library(
     hdrs = ["strong_index_map.h"],
     deps = [
         "//ortools/base:strong_vector",
-        "//ortools/graph_base:hash_or_tree_container",
-        "//ortools/graph_base:index",
+        "//ortools/graph:hash_or_tree_container",
+        "//ortools/graph:index",
         "@abseil-cpp//absl/base",
     ],
 )
@@ -973,9 +996,12 @@ or_cc_library(
     hdrs = ["full_precision_inequalities.h"],
     deps = [
         "//ortools/algorithms:multikey_radix_sort",
+        "//ortools/base:types",
         "//ortools/port:attributes",
         "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base",
         "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/container:inlined_vector",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/numeric:int128",
@@ -993,10 +1019,13 @@ or_cc_library(
         ":logging",
         "//ortools/base:status_builder",
         "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/sat:mp_model_wrapper",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:status_macros",
+        "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings:string_view",
         "@abseil-cpp//absl/types:source_location",
         "@abseil-cpp//absl/types:span",
@@ -1011,6 +1040,8 @@ or_cc_test(
         ":mp_model_solution_checker",
         "//ortools/base:gmock_main",
         "//ortools/base:parse_text_proto",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/sat:mp_model_wrapper",
         "@abseil-cpp//absl/status",
     ],
 )
@@ -1018,9 +1049,355 @@ or_cc_test(
 or_cc_test(
     name = "full_precision_inequalities_test",
     srcs = ["full_precision_inequalities_test.cc"],
+    tags = ["noci"],
     deps = [
         ":full_precision_inequalities",
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/types:span",
+    ],
+)
+
+or_cc_binary(
+    name = "full_precision_inequalities_benchmark",
+    testonly = True,
+    srcs = ["full_precision_inequalities_benchmark.cc"],
+    deps = [
+        ":full_precision_inequalities",
+        "@abseil-cpp//absl/random:distributions",
+        "@google_benchmark//:benchmark_main",
+    ],
+)
+
+or_cc_test(
+    name = "filelineiter_test",
+    size = "small",
+    srcs = ["filelineiter_test.cc"],
+    deps = [
+        ":filelineiter",
+        "//ortools/base:file",
+        "//ortools/base:gmock_main",
+        "//ortools/base:temp_file",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+or_cc_test(
+    name = "bitset_test",
+    size = "small",
+    srcs = ["bitset_test.cc"],
+    deps = [
+        ":bitset",
+        ":strong_integers",
+        "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
+        "//ortools/base:stl_util",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+or_cc_binary(
+    name = "bitset_benchmark",
+    testonly = True,
+    srcs = ["bitset_benchmark.cc"],
+    deps = [
+        ":bitset",
+        ":strong_integers",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@google_benchmark//:benchmark_main",
+    ],
+)
+
+or_cc_library(
+    name = "piecewise_linear_function_test_utils",
+    testonly = True,
+    srcs = ["piecewise_linear_function_test_utils.cc"],
+    hdrs = ["piecewise_linear_function_test_utils.h"],
+    deps = [
+        ":piecewise_linear_function",
+        ":random_engine",
+        "//ortools/routing:lp_scheduling_test_utils",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:distributions",
+    ],
+)
+
+or_cc_library(
+    name = "recycled_var_guard",
+    hdrs = ["recycled_var_guard.h"],
+    deps = [
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log:check",
+    ],
+)
+
+or_cc_test(
+    name = "piecewise_linear_function_test",
+    size = "small",
+    srcs = ["piecewise_linear_function_test.cc"],
+    deps = [
+        ":piecewise_linear_function",
+        ":piecewise_linear_function_test_utils",
+        ":random_engine",
+        ":saturated_arithmetic",
+        "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
+        "//ortools/base:stl_util",
+        "//ortools/base:types",
+        "@abseil-cpp//absl/random:distributions",
+    ],
+)
+
+or_cc_test(
+    name = "sorted_interval_list_test",
+    size = "small",
+    srcs = ["sorted_interval_list_test.cc"],
+    deps = [
+        ":saturated_arithmetic",
+        ":sorted_interval_list",
+        "//ortools/base:dump_vars",
+        "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
+        "//ortools/base:types",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/numeric:int128",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+or_cc_binary(
+    name = "sorted_interval_list_benchmark",
+    testonly = True,
+    srcs = ["sorted_interval_list_benchmark.cc"],
+    deps = [
+        ":sorted_interval_list",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:distributions",
+        "@google_benchmark//:benchmark_main",
+    ],
+)
+
+or_cc_test(
+    name = "stats_test",
+    size = "small",
+    srcs = ["stats_test.cc"],
+    deps = [
+        ":fp_utils_testing",
+        ":stats",
+        ":testing_utils",
+        "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
+or_cc_binary(
+    name = "stats_benchmark",
+    testonly = True,
+    srcs = ["stats_benchmark.cc"],
+    deps = [
+        ":stats",
+        "@google_benchmark//:benchmark_main",
+    ],
+)
+
+or_cc_test(
+    name = "monoid_operation_tree_test",
+    size = "small",
+    srcs = ["monoid_operation_tree_test.cc"],
+    deps = [
+        ":monoid_operation_tree",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+or_cc_test(
+    name = "range_minimum_query_test",
+    srcs = ["range_minimum_query_test.cc"],
+    deps = [
+        ":range_minimum_query",
+        "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
+        "//ortools/base:types",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+or_cc_binary(
+    name = "range_minimum_query_benchmark",
+    testonly = True,
+    srcs = ["range_minimum_query_benchmark.cc"],
+    deps = [
+        ":bitset",
+        ":range_minimum_query",
+        "@abseil-cpp//absl/container:fixed_array",
+        "@google_benchmark//:benchmark_main",
+    ],
+)
+
+or_cc_test(
+    name = "qap_reader_test",
+    size = "small",
+    srcs = ["qap_reader_test.cc"],
+    data = ["//ortools/util/testdata:qap_example1.txt"],
+    deps = [
+        ":data_path_resolver",
+        ":qap_reader",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+or_cc_test(
+    name = "sort_test",
+    size = "large",
+    srcs = ["sort_test.cc"],
+    tags = ["noci"],
+    deps = [
+        ":sort",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random:distributions",
+    ],
+)
+
+or_cc_binary(
+    name = "sort_benchmark",
+    testonly = True,
+    srcs = ["sort_benchmark.cc"],
+    deps = [
+        ":sort",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random:distributions",
+        "@google_benchmark//:benchmark_main",
+    ],
+)
+
+or_cc_test(
+    name = "integer_pq_test",
+    size = "small",
+    srcs = ["integer_pq_test.cc"],
+    deps = [
+        ":integer_pq",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+    ],
+)
+
+or_cc_binary(
+    name = "integer_pq_benchmark",
+    testonly = True,
+    srcs = ["integer_pq_benchmark.cc"],
+    deps = [
+        ":integer_pq",
+        "//ortools/base:adjustable_priority_queue",
+        "@abseil-cpp//absl/random",
+        "@google_benchmark//:benchmark_main",
+    ],
+)
+
+or_cc_test(
+    name = "fp_roundtrip_conv_test",
+    srcs = ["fp_roundtrip_conv_test.cc"],
+    deps = [
+        ":fp_roundtrip_conv",
+        ":random_subset",
+        "//ortools/base:gmock_main",
+        "//ortools/base:types",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/base:no_destructor",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
+or_cc_binary(
+    name = "fp_roundtrip_conv_benchmark",
+    testonly = True,
+    srcs = ["fp_roundtrip_conv_benchmark.cc"],
+    deps = [
+        ":fp_roundtrip_conv",
+        "@abseil-cpp//absl/base:no_destructor",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@google_benchmark//:benchmark_main",
+    ],
+)
+
+or_cc_test(
+    name = "parse_proto_test",
+    srcs = ["parse_proto_test.cc"],
+    deps = [
+        ":parse_proto",
+        ":status_cc_proto",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+or_cc_test(
+    name = "fixed_shape_binary_tree_test",
+    srcs = ["fixed_shape_binary_tree_test.cc"],
+    tags = ["noci"],
+    deps = [
+        ":fixed_shape_binary_tree",
+        "//ortools/base:gmock_main",
+        "//ortools/base:strong_vector",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/numeric:bits",
+    ],
+)
+
+or_cc_test(
+    name = "scheduling_test",
+    srcs = ["scheduling_test.cc"],
+    deps = [
+        ":scheduling",
+        ":strong_integers",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+or_cc_test(
+    name = "recycled_var_guard_test",
+    srcs = ["recycled_var_guard_test.cc"],
+    deps = [
+        ":recycled_var_guard",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/base:core_headers",
+    ],
+)
+
+or_cc_binary(
+    name = "scheduling_benchmark",
+    testonly = True,
+    srcs = ["scheduling_benchmark.cc"],
+    deps = [
+        ":random_engine",
+        ":scheduling",
+        ":strong_integers",
+        "@google_benchmark//:benchmark_main",
     ],
 )

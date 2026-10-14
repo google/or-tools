@@ -531,6 +531,38 @@ void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
   }
 }
 
+void SharedResponseManager::NotifyPresolveStart(
+    const CpModelProto& model_proto) {
+  NotifyPresolveStatusChange(/*start=*/true, model_proto);
+}
+
+void SharedResponseManager::NotifyPresolveEnd(const CpModelProto& model_proto) {
+  NotifyPresolveStatusChange(/*start=*/false, model_proto);
+}
+
+void SharedResponseManager::NotifyPresolveStatusChange(
+    bool start, const CpModelProto& model_proto) {
+  absl::MutexLock mutex_lock(mutex_);
+  if (status_change_callbacks_.empty()) return;
+
+  SolverStatusChangeInfo info = GetSolverStatusChangeInfo();
+  if (start) {
+    info.presolve_started = true;
+  } else {
+    info.presolve_ended = true;
+  }
+  info.num_variables = model_proto.variables().size();
+  info.num_constraints = model_proto.constraints().size();
+  int64_t num_terms = 0;
+  for (const ConstraintProto& ct : model_proto.constraints()) {
+    num_terms += static_cast<int>(UsedVariables(ct).size());
+  }
+  info.num_terms = num_terms;
+  for (const auto& callback : status_change_callbacks_) {
+    callback(info);
+  }
+}
+
 void SharedResponseManager::AddUnsatCore(const std::vector<int>& core) {
   absl::MutexLock mutex_lock(mutex_);
   unsat_cores_ = core;

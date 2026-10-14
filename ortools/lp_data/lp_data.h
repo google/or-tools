@@ -25,6 +25,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <optional>
 #include <string>  // for string
 #include <vector>  // for vector
 
@@ -694,6 +695,16 @@ struct ProblemSolution {
   //    carry this exact information during post-solve.
   VariableStatusRow variable_statuses;
   ConstraintStatusColumn constraint_statuses;
+
+  // Primal ray potentially set for primal unbounded or dual infeasible
+  // problems.
+  std::optional<DenseRow> primal_ray;
+
+  // Dual ray potentially set for dual unbounded or primal infeasible
+  // problems. Only the dual values of the constraints are provided. The dual
+  // values for the bounds of the variables can be easily recomputed and are
+  // omitted.
+  std::optional<DenseColumn> dual_ray;
 
   std::string DebugString() const;
 };

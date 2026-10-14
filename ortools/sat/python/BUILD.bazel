@@ -13,7 +13,6 @@
 
 # Description: python wrapping of the C++ code at ../
 
-load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
 load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library")
@@ -155,8 +154,8 @@ py_test(
     deps = [
         ":cp_model_helper",
         "//ortools/util/python:sorted_interval_list",
-        requirement("absl-py"),
-        requirement("numpy"),  # buildcleaner: keep
+        "@pip_deps//absl_py",
+        "@pip_deps//numpy",  # buildcleaner: keep
     ],
 )
 
@@ -167,8 +166,8 @@ py_library(
     deps = [
         ":cp_model_helper",
         "//ortools/util/python:sorted_interval_list",
-        requirement("numpy"),
-        requirement("pandas"),
+        "@pip_deps//numpy",
+        "@pip_deps//pandas",
     ],
 )
 
@@ -180,8 +179,8 @@ py_test(
     deps = [
         ":cp_model",
         ":cp_model_helper",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
+        "@pip_deps//absl_py",
+        "@pip_deps//numpy",
+        "@pip_deps//pandas",
     ],
 )

@@ -20,7 +20,7 @@
 #include "ortools/base/init_google.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/graph/generic_max_flow.h"
-#include "ortools/graph_base/graph.h"
+#include "ortools/graph/graph.h"
 
 namespace operations_research {
 

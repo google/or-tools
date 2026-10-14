@@ -46,6 +46,7 @@ AbnormalityStatus Markowitz::ComputeRowAndColumnPermutation(
   basis_matrix_ = &basis_matrix;
 
   // Initialize all the matrices.
+  deterministic_timer_.Start();
   lower_.Reset(num_rows, num_cols);
   upper_.Reset(num_rows, num_cols);
   permuted_lower_.Reset(num_cols);
@@ -92,6 +93,7 @@ AbnormalityStatus Markowitz::ComputeRowAndColumnPermutation(
         std::abs(pivot_coefficient) <= singularity_threshold) {
       VLOG(1) << absl::StrFormat("The matrix is singular! pivot = %E",
                                  pivot_coefficient);
+      deterministic_timer_.Stop(num_fp_operations_);
       return AbnormalityStatus(
           AbnormalityCause::kLuFactorizationMarkowitzPivotTooSmall);
     }
@@ -151,6 +153,7 @@ AbnormalityStatus Markowitz::ComputeRowAndColumnPermutation(
       1.0 * stats_num_pivots_without_fill_in / num_rows.value());
   stats_.degree_two_pivot_columns.Add(1.0 * stats_degree_two_pivot_columns /
                                       num_rows.value());
+  deterministic_timer_.Stop(num_fp_operations_);
   return OkAbnormalityStatus();
 }
 
@@ -181,6 +184,7 @@ void Markowitz::Clear() {
   residual_matrix_non_zero_.Clear();
   examined_col_.clear();
   num_fp_operations_ = 0;
+  deterministic_timer_.Reset();
   is_col_by_degree_initialized_ = false;
 }
 
@@ -551,7 +555,7 @@ void Markowitz::UpdateResidualMatrix(RowIndex pivot_row, ColIndex pivot_col) {
 }
 
 double Markowitz::DeterministicTimeOfLastFactorization() const {
-  return DeterministicTimeForFpOperations(num_fp_operations_);
+  return deterministic_timer_.GetDeterministicTime();
 }
 
 void MatrixNonZeroPattern::Clear() {

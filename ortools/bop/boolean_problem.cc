@@ -37,8 +37,8 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
 #include "ortools/bop/boolean_problem.pb.h"
-#include "ortools/graph_base/graph.h"
-#include "ortools/graph_base/util.h"
+#include "ortools/graph/graph.h"
+#include "ortools/graph/util.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/pb_constraint.h"
@@ -50,7 +50,7 @@
 
 #if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
 static_assert(operations_research::kTargetOsSupportsFile);
-#include "ortools/graph_base/io.h"
+#include "ortools/graph/io.h"
 #else
 static_assert(!operations_research::kTargetOsSupportsFile);
 #endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)

@@ -49,8 +49,8 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/types.h"
-#include "ortools/graph_base/strongly_connected_components.h"
-#include "ortools/graph_base/topologicalsorter.h"
+#include "ortools/graph/strongly_connected_components.h"
+#include "ortools/graph/topologicalsorter.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_constraint_presolve.h"
@@ -60,7 +60,6 @@
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_symmetries.h"
 #include "ortools/sat/cp_model_utils.h"
-#include "ortools/sat/deterministic_time.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/inclusion.h"
 #include "ortools/sat/integer.h"
@@ -86,6 +85,7 @@
 #include "ortools/sat/variable_expand.h"
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -797,8 +797,10 @@ void CpModelPresolver::Probe() {
         mapping->GetProtoVariableFromBooleanVariable(decision.Variable());
     if (decision_var < 0) return;
     std::vector<int> to_update;
-    DeterministicTimer<{.scale = 1.0e-07, .offset = 0.0e+00}> timer(
-        time_limit_, context_->VarToConstraints(decision_var).size());
+    DeterministicTimer2<{
+        .scale1 = 1.0e-07, .scale2 = 2.5e-09, .offset = 0.0e+00}>
+        timer(time_limit_);
+    uint64_t work_done = 0;
     for (const int c : context_->VarToConstraints(decision_var)) {
       if (c < 0) continue;
       const ConstraintProto& ct = context_->Constraint(c);
@@ -819,24 +821,21 @@ void CpModelPresolver::Probe() {
         bool decision_is_positive = false;
         bool has_false_literal = false;
         bool simplification_possible = false;
-        {
-          DeterministicTimer<{.scale = 4.0e-09, .offset = 6.0e-08}> timer(
-              time_limit_, ct.enforcement_literal().size());
-          for (const int ref : ct.enforcement_literal()) {
-            const Literal lit = mapping->Literal(ref);
-            if (PositiveRef(ref) == decision_var) {
-              decision_ref = ref;
-              decision_is_positive = assignment.LiteralIsTrue(lit);
-              if (!decision_is_positive) break;
-              continue;
-            }
-            if (assignment.LiteralIsFalse(lit)) {
-              false_ref = ref;
-              has_false_literal = true;
-            } else if (assignment.LiteralIsTrue(lit)) {
-              // If decision => l, we can remove l from the list.
-              simplification_possible = true;
-            }
+        work_done += ct.enforcement_literal().size();
+        for (const int ref : ct.enforcement_literal()) {
+          const Literal lit = mapping->Literal(ref);
+          if (PositiveRef(ref) == decision_var) {
+            decision_ref = ref;
+            decision_is_positive = assignment.LiteralIsTrue(lit);
+            if (!decision_is_positive) break;
+            continue;
+          }
+          if (assignment.LiteralIsFalse(lit)) {
+            false_ref = ref;
+            has_false_literal = true;
+          } else if (assignment.LiteralIsTrue(lit)) {
+            // If decision => l, we can remove l from the list.
+            simplification_possible = true;
           }
         }
         if (!decision_is_positive) continue;
@@ -879,24 +878,21 @@ void CpModelPresolver::Probe() {
       bool decision_is_negative = false;
       bool has_true_literal = false;
       bool simplification_possible = false;
-      {
-        DeterministicTimer<{.scale = 2.5e-09, .offset = 1.2e-07}> timer(
-            time_limit_, ct.bool_or().literals().size());
-        for (const int ref : ct.bool_or().literals()) {
-          const Literal lit = mapping->Literal(ref);
-          if (PositiveRef(ref) == decision_var) {
-            decision_ref = ref;
-            decision_is_negative = assignment.LiteralIsFalse(lit);
-            if (!decision_is_negative) break;
-            continue;
-          }
-          if (assignment.LiteralIsTrue(lit)) {
-            true_ref = ref;
-            has_true_literal = true;
-          } else if (assignment.LiteralIsFalse(lit)) {
-            // If not(l1) => not(l2), we can remove l2 from the clause.
-            simplification_possible = true;
-          }
+      work_done += ct.bool_or().literals().size();
+      for (const int ref : ct.bool_or().literals()) {
+        const Literal lit = mapping->Literal(ref);
+        if (PositiveRef(ref) == decision_var) {
+          decision_ref = ref;
+          decision_is_negative = assignment.LiteralIsFalse(lit);
+          if (!decision_is_negative) break;
+          continue;
+        }
+        if (assignment.LiteralIsTrue(lit)) {
+          true_ref = ref;
+          has_true_literal = true;
+        } else if (assignment.LiteralIsFalse(lit)) {
+          // If not(l1) => not(l2), we can remove l2 from the clause.
+          simplification_possible = true;
         }
       }
       if (!decision_is_negative) continue;
@@ -930,6 +926,7 @@ void CpModelPresolver::Probe() {
         to_update.push_back(c);
       }
     }
+    timer.Advance(context_->VarToConstraints(decision_var).size(), work_done);
 
     absl::c_sort(to_update);
     for (const int c : to_update) {

@@ -21,8 +21,8 @@
 #include "absl/random/random.h"
 #include "benchmark/benchmark.h"
 #include "ortools/graph/bounded_dijkstra.h"
-#include "ortools/graph_base/graph.h"
-#include "ortools/graph_base/test_util.h"
+#include "ortools/graph/graph.h"
+#include "ortools/graph/test_util.h"
 
 namespace operations_research {
 namespace {

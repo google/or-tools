@@ -13,7 +13,6 @@
 
 # Description: python wrapping of the libraries in ../
 
-load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:py_test.bzl", "py_test")
 load("//bazel:or_pybind_rules.bzl", "or_pybind_extension")
 
@@ -44,6 +43,6 @@ py_test(
     deps = [
         ":set_cover",
         "//ortools/set_cover:set_cover_py_pb2",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )

@@ -13,9 +13,11 @@
 
 #include "ortools/glop/update_row.h"
 
+#include <cstdint>
 #include <cstdlib>
 #include <string>
 
+#include "absl/cleanup/cleanup.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/types/span.h"
@@ -45,7 +47,6 @@ UpdateRow::UpdateRow(const CompactSparseMatrix& matrix,
       non_zero_position_list_(),
       non_zero_position_set_(),
       coefficient_(),
-      num_operations_(0),
       parameters_(),
       stats_() {}
 
@@ -89,6 +90,14 @@ void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
   update_row_computed_for_ = leaving_row;
   ComputeUnitRowLeftInverse(leaving_row);
   SCOPED_TIME_STAT(&stats_);
+  deterministic_timer_.Start();
+  int64_t num_operations = 0;
+  auto cleanup = absl::MakeCleanup([this, num_operations] {
+    deterministic_timer_.Stop(num_operations);
+    IF_STATS_ENABLED(stats_.update_row_density.Add(
+        static_cast<double>(num_non_zeros_) /
+        static_cast<double>(matrix_.num_cols().value())));
+  });
 
   if (parameters_.use_transposed_matrix()) {
     // Number of entries that ComputeUpdatesRowWise() will need to look at.
@@ -132,10 +141,7 @@ void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
     if (unit_row_left_inverse_filtered_non_zeros_.size() == 1) {
       ComputeUpdatesForSingleRow(
           unit_row_left_inverse_filtered_non_zeros_.front());
-      num_operations_ += num_row_wise_entries.value();
-      IF_STATS_ENABLED(stats_.update_row_density.Add(
-          static_cast<double>(num_non_zeros_) /
-          static_cast<double>(matrix_.num_cols().value())));
+      num_operations += num_row_wise_entries.value();
       return;
     }
 
@@ -153,27 +159,23 @@ void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
 
         // We use a multiplicative factor because these entries are often widely
         // spread in memory. There is also some overhead to each fp operations.
-        num_operations_ +=
+        num_operations +=
             5 * num_row_wise_entries.value() + matrix_.num_cols().value() / 64;
       } else {
         ComputeUpdatesRowWise();
-        num_operations_ +=
+        num_operations +=
             num_row_wise_entries.value() + matrix_.num_rows().value();
       }
     } else {
       ComputeUpdatesColumnWise();
-      num_operations_ +=
+      num_operations +=
           num_col_wise_entries.value() + matrix_.num_cols().value();
     }
   } else {
     ComputeUpdatesColumnWise();
-    num_operations_ +=
-        variables_info_.GetNumEntriesInRelevantColumns().value() +
-        matrix_.num_cols().value();
+    num_operations += variables_info_.GetNumEntriesInRelevantColumns().value() +
+                      matrix_.num_cols().value();
   }
-  IF_STATS_ENABLED(stats_.update_row_density.Add(
-      static_cast<double>(num_non_zeros_) /
-      static_cast<double>(matrix_.num_cols().value())));
 }
 
 void UpdateRow::ComputeUpdateRowForBenchmark(const DenseRow& lhs,

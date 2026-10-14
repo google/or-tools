@@ -615,7 +615,6 @@ if(BUILD_CORE)
     "ortools/port/*.proto"
     "ortools/util/*.proto"
     "ortools/algorithms/*.proto"
-    "ortools/graph_base/*.proto"
     "ortools/graph/*.proto"
     "ortools/bop/*.proto"
     "ortools/glop/*.proto"
@@ -718,7 +717,7 @@ endif()
 # Generate sub library to avoid to have too many symbols
 if(BUILD_CORE)
   set(CORE_SRCS)
-  foreach(SUBPROJECT IN ITEMS base port util algorithms graph_base graph
+  foreach(SUBPROJECT IN ITEMS base port util algorithms graph
     bop glop ${PDLP_DIR} sat set_cover third_party_solvers lp_data linear_solver
   )
     add_subdirectory(ortools/${SUBPROJECT})

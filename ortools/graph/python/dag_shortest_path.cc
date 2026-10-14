@@ -20,7 +20,7 @@
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
-#include "ortools/graph_base/graph.h"
+#include "ortools/graph/graph.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
@@ -117,7 +117,7 @@ PYBIND11_MODULE(dag_shortest_path, m) {
 
   // TODO(user): template this once the graph implementations are properly
   // wrapped (so that users can choose their own).
-  // TODO(user): also wrap FastTopologicalSort (ortools/graph_base/graph.h) in
+  // TODO(user): also wrap FastTopologicalSort (ortools/graph/graph.h) in
   // Python.
   py::class_<ShortestPathsOnDagWrapper<StaticGraph<>>,
              std::shared_ptr<ShortestPathsOnDagWrapper<StaticGraph<>>>>(

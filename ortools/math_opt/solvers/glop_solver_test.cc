@@ -42,6 +42,7 @@ namespace math_opt {
 namespace {
 using testing::ValuesIn;
 
+// Returns the parameters for SimpleLpTest using Glop defaults.
 SimpleLpTestParameters GlopDefaults() {
   return SimpleLpTestParameters(
       SolverType::kGlop, SolveParameters(), /*supports_duals=*/true,
@@ -50,16 +51,19 @@ SimpleLpTestParameters GlopDefaults() {
       /*disallows_infeasible_or_unbounded=*/false);
 }
 
-SimpleLpTestParameters ForcePrimalRays() {
+// Returns the parameters for SimpleLpTest to use the primal simplex and produce
+// rays:
+// * primal ray: when primal unbounded,
+// * dual ray: when primal infeasible.
+SimpleLpTestParameters PrimalSimplexWithRays() {
   SolveParameters parameters;
   parameters.presolve = Emphasis::kOff;
-  parameters.scaling = Emphasis::kOff;
   parameters.lp_algorithm = LPAlgorithm::kPrimalSimplex;
   parameters.enable_output = true;
   return SimpleLpTestParameters(
       SolverType::kGlop, parameters, /*supports_duals=*/true,
       /*supports_basis=*/true,
-      /*ensures_primal_ray=*/true, /*ensures_dual_ray=*/false,
+      /*ensures_primal_ray=*/true, /*ensures_dual_ray=*/true,
       /*disallows_infeasible_or_unbounded=*/true);
 }
 
@@ -67,11 +71,10 @@ SolveParameters ForceDualRaysSolveParameters() {
   return SolveParameters{
       .lp_algorithm = LPAlgorithm::kDualSimplex,
       .presolve = Emphasis::kOff,
-      .scaling = Emphasis::kOff,
   };
 }
 
-SimpleLpTestParameters ForceDualRays() {
+SimpleLpTestParameters DualSimplexWithRays() {
   return SimpleLpTestParameters(
       SolverType::kGlop, ForceDualRaysSolveParameters(),
       /*supports_duals=*/true,
@@ -81,8 +84,9 @@ SimpleLpTestParameters ForceDualRays() {
 }
 
 INSTANTIATE_TEST_SUITE_P(GlopSimpleLpTest, SimpleLpTest,
-                         testing::Values(GlopDefaults(), ForcePrimalRays(),
-                                         ForceDualRays()));
+                         testing::Values(GlopDefaults(),
+                                         PrimalSimplexWithRays(),
+                                         DualSimplexWithRays()));
 
 INSTANTIATE_TEST_SUITE_P(
     GlopMinCostFlowTest, MinCostFlowTest,

@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:py_binary.bzl", "py_binary")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
@@ -34,7 +33,7 @@ py_test(
     srcs = ["bintest_run_utils_test.py"],
     deps = [
         ":bintest_run_utils",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -48,7 +47,7 @@ py_test(
     srcs = ["bintest_matchers_test.py"],
     deps = [
         ":bintest_matchers",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -58,7 +57,7 @@ py_library(
     deps = [
         ":bintest_matchers",
         ":bintest_run_utils",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -68,7 +67,7 @@ py_library(
     deps = [
         ":bintest_matchers",
         ":bintest_run_utils",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -103,7 +102,7 @@ py_test(
     },
     deps = [
         ":bintest_script_runner",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -130,5 +129,5 @@ py_bintest(
         "print_args": ":print_args",
         "data_file": ":print_args_data.txt",
     },
-    deps = [requirement("absl-py")],
+    deps = ["@pip_deps//absl_py"],
 )

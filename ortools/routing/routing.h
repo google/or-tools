@@ -154,6 +154,7 @@ Keywords: Vehicle Routing, Traveling Salesman Problem, TSP, VRP, CVRPTW, PDP.
 
 #include <algorithm>
 #include <atomic>
+#include <bitset>
 #include <cstdint>
 #include <deque>
 #include <functional>
@@ -182,7 +183,7 @@ Keywords: Vehicle Routing, Traveling Salesman Problem, TSP, VRP, CVRPTW, PDP.
 #include "ortools/constraint_solver/local_search.h"
 #include "ortools/constraint_solver/reversible_data.h"
 #include "ortools/constraint_solver/reversible_engine.h"
-#include "ortools/graph_base/graph.h"
+#include "ortools/graph/graph.h"
 #include "ortools/routing/enums.pb.h"
 #include "ortools/routing/heuristic_parameters.pb.h"
 #include "ortools/routing/index_manager.h"
@@ -286,6 +287,7 @@ class PathsMetadata {
 
 struct SearchStats {
   int64_t num_cp_sat_calls_in_lp_scheduling = 0;
+  int64_t num_cp_sat_cache_hits_in_lp_scheduling = 0;
   int64_t num_glop_calls_in_lp_scheduling = 0;
   int64_t num_min_cost_flow_calls = 0;
   int64_t num_cp_sat_calls_in_routing = 0;
@@ -880,17 +882,13 @@ class OR_ROUTING_DLL Model {
   /// Returns dimensions for which all transit evaluators are unary.
   std::vector<Dimension*> GetUnaryDimensions() const;
 
-  /// Returns the dimensions which have [global|local]_dimension_optimizers_.
+  /// Returns the dimensions which have global/local dimension optimizers.
   std::vector<const Dimension*> GetDimensionsWithGlobalCumulOptimizers() const;
   std::vector<const Dimension*> GetDimensionsWithLocalCumulOptimizers() const;
 
   /// Returns whether the given dimension has global/local cumul optimizers.
-  bool HasGlobalCumulOptimizer(const Dimension& dimension) const {
-    return GetGlobalCumulOptimizerIndex(dimension) >= 0;
-  }
-  bool HasLocalCumulOptimizer(const Dimension& dimension) const {
-    return GetLocalCumulOptimizerIndex(dimension) >= 0;
-  }
+  bool HasGlobalCumulOptimizer(const Dimension& dimension) const;
+  bool HasLocalCumulOptimizer(const Dimension& dimension) const;
   /// Returns the global/local dimension cumul optimizer for a given dimension,
   /// or nullptr if there is none.
   GlobalDimensionCumulOptimizer* GetMutableGlobalCumulLPOptimizer(
@@ -901,6 +899,16 @@ class OR_ROUTING_DLL Model {
       const Dimension& dimension) const;
   LocalDimensionCumulOptimizer* GetMutableLocalCumulMPOptimizer(
       const Dimension& dimension) const;
+  /// Returns the pair of mutable {lp, mp} global/local dimension cumul
+  /// optimizers for a given dimension.
+  /// If the optimizers do not already exist, they are created and stored in
+  /// secondary_global/local_dimension_optimizers_info_ if
+  /// search_parameters_.disable_scheduling_beware_this_may_degrade_performance
+  /// is false. Returns nullptr otherwise.
+  std::pair<GlobalDimensionCumulOptimizer*, GlobalDimensionCumulOptimizer*>
+  GetOrCreateGlobalCumulOptimizers(const Dimension& dimension);
+  std::pair<LocalDimensionCumulOptimizer*, LocalDimensionCumulOptimizer*>
+  GetOrCreateLocalCumulOptimizers(const Dimension& dimension);
 
   /// Returns true if a dimension exists for a given dimension name.
   bool HasDimension(absl::string_view dimension_name) const;
@@ -2402,8 +2410,8 @@ class OR_ROUTING_DLL Model {
   DimensionIndex GetDimensionIndex(absl::string_view dimension_name) const;
 
   /// Creates global and local cumul optimizers for the dimensions needing them,
-  /// and stores them in the corresponding [local|global]_dimension_optimizers_
-  /// vectors.
+  /// and stores them in the corresponding
+  /// [local|global]_dimension_optimizers_info_.dimension_optimizers vectors.
   /// This function also computes and stores the "offsets" for these dimensions,
   /// used in the local/global optimizers to simplify LP computations.
   ///
@@ -2648,10 +2656,10 @@ class OR_ROUTING_DLL Model {
       bool* time_limit_was_reached);
   void AppendDecisionBuildersForPackingCumuls(
       std::vector<DecisionBuilder*>* decision_builders) const;
-  bool AppendDecisionBuilderForOptimizingCumulsWithDimensionTravelInfo(
+  void AppendDecisionBuilderForOptimizingCumulsWithDimensionTravelInfo(
       const Dimension* dimension,
       std::vector<RouteDimensionTravelInfo> dimension_travel_info_per_route,
-      std::vector<DecisionBuilder*>* decision_builders) const;
+      std::vector<DecisionBuilder*>* decision_builders);
 
   // Detects implicit pickup delivery pairs. These pairs are
   // non-pickup/delivery pairs for which there exists a unary dimension such
@@ -2679,12 +2687,18 @@ class OR_ROUTING_DLL Model {
     same_active_var_groups_[group].push_back(index);
   }
 
-  /// Returns the internal global/local optimizer index for the given dimension
-  /// if any, and -1 otherwise.
-  DimensionOptimizerIndex GetGlobalCumulOptimizerIndex(
-      const Dimension& dimension) const;
-  DimensionOptimizerIndex GetLocalCumulOptimizerIndex(
-      const Dimension& dimension) const;
+  /// Internal method allowing to refactor the code for
+  /// GetOrCreateGlobal/LocalCumulOptimizers().
+  /// Note this method is made a class member to avoid exposing the
+  /// DimensionCumulOptimizersInfo externally.
+  template <class DimensionCumulOptimizer>
+  std::pair<DimensionCumulOptimizer*, DimensionCumulOptimizer*>
+  GetOrCreateCumulOptimizersInternal(
+      const Dimension& dimension,
+      const DimensionCumulOptimizersInfo<DimensionCumulOptimizer>&
+          primary_optimizer_info,
+      DimensionCumulOptimizersInfo<DimensionCumulOptimizer>*
+          secondary_optimizer_info);
 
   /// Model
   std::unique_ptr<Solver> solver_;
@@ -2723,24 +2737,23 @@ class OR_ROUTING_DLL Model {
   util_intops::StrongVector<DimensionIndex, std::vector<int>>
       dimension_resource_group_indices_;
 
+  /// Stores the global and local dimension cumul optimizers for dimensions
+  /// requiring them. This is done automatically when calling
+  /// StoreDimensionCumulOptimizers() when the model is closed.
   DimensionCumulOptimizersInfo<GlobalDimensionCumulOptimizer>
       global_dimension_optimizers_info_;
   DimensionCumulOptimizersInfo<LocalDimensionCumulOptimizer>
       local_dimension_optimizers_info_;
 
-  /// Whether or not a given dimension's cumuls could be optimized with
-  /// cumul-dependent transits. This is false by default for all dimensions, and
-  /// can be set to true specifically for a dimension through
-  /// SetOptimizedWithDimensionTravelInfo().
-  util_intops::StrongVector<DimensionIndex, bool>
-      dimension_cumuls_optimized_with_dimension_travel_info_;
-  /// When dimension_cumuls_optimized_with_cumul_dependent_transits_[d] = true
-  /// for a dimension which doesn't require an LP/MP optimizer based on the
-  /// constraints, we create and store a local MP optimizer required for
-  /// optimizing with cumul-dependent transits.
-  util_intops::StrongVector<DimensionIndex,
-                            std::unique_ptr<LocalDimensionCumulOptimizer>>
-      dimension_local_optimizer_for_cumul_dependent_transits_;
+  /// The following members are used to store global/local dimension optimizers
+  /// when one is not necessarily required for the dimension and hence not
+  /// automatically created and stored in the primary members above.
+  /// These are created on-the-fly when needed when
+  /// GetOrCreateGlobal/LocalDimensionCumulOptimizer() is called.
+  DimensionCumulOptimizersInfo<GlobalDimensionCumulOptimizer>
+      secondary_global_dimension_optimizers_info_;
+  DimensionCumulOptimizersInfo<LocalDimensionCumulOptimizer>
+      secondary_local_dimension_optimizers_info_;
 
   std::string primary_constrained_dimension_;
   /// Costs
@@ -3429,6 +3442,8 @@ class Dimension {
   /// Returns true if a soft upper bound has been set for a given variable
   /// index.
   bool HasCumulVarSoftUpperBound(int64_t index) const;
+  /// Returns true if a soft upper bound has been set for any variable index.
+  bool HasCumulVarSoftUpperBounds() const;
   /// Returns the soft upper bound of a cumul variable for a given variable
   /// index. The "hard" upper bound of the variable is returned if no soft upper
   /// bound has been set.
@@ -3437,6 +3452,10 @@ class Dimension {
   /// for a given variable index. If no soft upper bound has been set, 0 is
   /// returned.
   int64_t GetCumulVarSoftUpperBoundCoefficient(int64_t index) const;
+  /// Returns the soft upper bounds of all cumul variables.
+  const std::vector<BoundCost>& GetCumulVarSoftUpperBounds() const {
+    return soft_upper_bound_of_cumul_;
+  }
 
   /// Sets a soft lower bound to the cumul variable of a given variable index.
   /// If the value of the cumul variable is less than the bound, a cost
@@ -3452,6 +3471,8 @@ class Dimension {
   /// Returns true if a soft lower bound has been set for a given variable
   /// index.
   bool HasCumulVarSoftLowerBound(int64_t index) const;
+  /// Returns true if a soft lower bound has been set for any variable index.
+  bool HasCumulVarSoftLowerBounds() const;
   /// Returns the soft lower bound of a cumul variable for a given variable
   /// index. The "hard" lower bound of the variable is returned if no soft lower
   /// bound has been set.
@@ -3460,6 +3481,10 @@ class Dimension {
   /// for a given variable index. If no soft lower bound has been set, 0 is
   /// returned.
   int64_t GetCumulVarSoftLowerBoundCoefficient(int64_t index) const;
+  /// Returns the soft lower bounds of all cumul variables.
+  const std::vector<BoundCost>& GetCumulVarSoftLowerBounds() const {
+    return soft_lower_bound_of_cumul_;
+  }
   /// Sets the breaks for a given vehicle. Breaks are represented by
   /// IntervalVars. They may interrupt transits between nodes and increase
   /// the value of corresponding slack variables.
@@ -3485,6 +3510,21 @@ class Dimension {
   /// Deprecated, sets pre_travel(i, j) = node_visit_transit[i].
   void SetBreakIntervalsOfVehicle(std::vector<IntervalVar*> breaks, int vehicle,
                                   std::vector<int64_t> node_visit_transits);
+
+  /// Describes whether the break intervals of a vehicle are ordered in time
+  /// (each break starts after the previous break ends) or unordered.
+  enum BreakIntervalsOrdering {
+    kUnordered,
+    kOrdered,
+  };
+
+  /// Sets whether the break intervals of the given vehicle are ordered.
+  /// If not called, the default is kUnordered.
+  void SetBreakIntervalsOrderingOfVehicle(int vehicle,
+                                          BreakIntervalsOrdering ordering);
+
+  /// Returns whether the break intervals of the given vehicle are ordered.
+  BreakIntervalsOrdering GetBreakIntervalsOrderingOfVehicle(int vehicle) const;
 
   /// With breaks supposed to be consecutive, this forces the distance between
   /// breaks of size at least minimum_break_duration to be at most distance.
@@ -3729,6 +3769,34 @@ class Dimension {
     return vehicle_quadratic_cost_soft_span_upper_bound_->bound_cost(vehicle);
   }
 
+  /// Enum used to keep track of the possible linear constraints of a vehicle
+  /// for this dimension. This enum is then used to set the relevant constraint
+  /// bits in the VehicleLinearConstraintsInfo's bitset.
+  enum LinearConstraintBit {
+    kHasSpanOrSlackCost = 0,
+    kHasSpanUpperBound,
+    kHasSoftSpanUpperBound,
+    kHasQuadraticCostSoftSpanUpperBound,
+    kHasCumulVarSoftLowerBounds,
+    kHasCumulVarSoftUpperBounds,
+    kNumLinearConstraintBits
+  };
+  struct VehicleLinearConstraintsInfo {
+    /// Contains the bitset indicating the vehicle's active linear constraints.
+    std::bitset<kNumLinearConstraintBits> bitset;
+    /// Whether or not the vehicle has a break constraint.
+    bool has_break_constraints = false;
+  };
+  /// Returns the linear constraints info for the given vehicle, i.e. the
+  /// bitset indicating the active linear constraints and whether or not the
+  /// vehicle has break constraints.
+  VehicleLinearConstraintsInfo GetLinearConstraintsInfoForVehicle(
+      int vehicle) const;
+  /// Returns whether or not the dimension requires a local cumul optimizer,
+  /// based on the number of active linear constraints on the dimension
+  /// (see LinearConstraintBit).
+  bool RequiresLocalCumulOptimizer() const;
+
  private:
   struct PiecewiseLinearCost {
     PiecewiseLinearCost() : var(nullptr), cost(nullptr) {}
@@ -3755,10 +3823,10 @@ class Dimension {
                                   bool has_variable_transits);
   /// Sets up the cost variables related to cumul soft upper bounds.
   void SetupCumulVarSoftUpperBoundCosts(
-      std::vector<operations_research::IntVar*>* cost_elements) const;
+      std::vector<operations_research::IntVar*>* cost_elements);
   /// Sets up the cost variables related to cumul soft lower bounds.
   void SetupCumulVarSoftLowerBoundCosts(
-      std::vector<operations_research::IntVar*>* cost_elements) const;
+      std::vector<operations_research::IntVar*>* cost_elements);
   void SetupCumulVarPiecewiseLinearCosts(
       std::vector<operations_research::IntVar*>* cost_elements) const;
   /// Sets up the cost variables related to the global span and per-vehicle span
@@ -3823,6 +3891,7 @@ class Dimension {
   // Used if some vehicle has breaks in this dimension, typically time.
   bool break_constraints_are_initialized_ = false;
   std::vector<std::vector<IntervalVar*>> vehicle_break_intervals_;
+  std::vector<BreakIntervalsOrdering> vehicle_break_intervals_ordering_;
   std::vector<std::vector<std::pair<int64_t, int64_t>>>
       vehicle_break_distance_duration_;
   // For each vehicle, stores the part of travel that is made directly

@@ -46,7 +46,7 @@
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/status.h"
 #include "ortools/glop/variables_info.h"
-#include "ortools/graph_base/iterators.h"
+#include "ortools/graph/iterators.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_print_utils.h"
 #include "ortools/lp_data/lp_types.h"
@@ -606,7 +606,10 @@ SolveStatus RevisedSimplex::SolveInternalImpl(
         solve_status = ImpreciseSolveStatus();
       }
     }
+  }
 
+  if (solve_status.Is<SolveStatus::DualUnbounded>() ||
+      solve_status.Is<SolveStatus::PrimalInfeasible>()) {
     // Validate the dual ray that prove primal infeasibility.
     //
     // By taking the linear combination of the constraint, we should arrive
@@ -633,6 +636,7 @@ SolveStatus RevisedSimplex::SolveInternalImpl(
     }
     SOLVER_LOG(logger_, "Dual ray error=", error,
                " infeasibility=", implied_lb);
+    const Fractional tolerance = parameters_.solution_feasibility_tolerance();
     if (implied_lb < tolerance || error > tolerance) {
       SOLVER_LOG(logger_,
                  "DUAL_UNBOUNDED was reported, but the dual ray is not "
@@ -925,13 +929,17 @@ const DenseRow& RevisedSimplex::GetPrimalRay() const {
 }
 const DenseColumn& RevisedSimplex::GetDualRay() const {
   DCHECK(solve_status_.has_value());
-  DCHECK(solve_status_->Is<SolveStatus::DualUnbounded>()) << *solve_status_;
+  DCHECK(solve_status_->Is<SolveStatus::DualUnbounded>() ||
+         solve_status_->Is<SolveStatus::PrimalInfeasible>())
+      << *solve_status_;
   return solution_dual_ray_;
 }
 
 const DenseRow& RevisedSimplex::GetDualRayRowCombination() const {
   DCHECK(solve_status_.has_value());
-  DCHECK(solve_status_->Is<SolveStatus::DualUnbounded>()) << *solve_status_;
+  DCHECK(solve_status_->Is<SolveStatus::DualUnbounded>() ||
+         solve_status_->Is<SolveStatus::PrimalInfeasible>())
+      << *solve_status_;
   return solution_dual_ray_row_combination_;
 }
 
@@ -961,7 +969,7 @@ std::string RevisedSimplex::GetPrettySolverStats() const {
 
 double RevisedSimplex::DeterministicTime() const {
   // TODO(user): Count what is missing.
-  return DeterministicTimeForFpOperations(num_update_price_operations_) +
+  return update_price_timer_.GetDeterministicTime() +
          basis_factorization_.DeterministicTime() +
          update_row_.DeterministicTime() +
          entering_variable_.DeterministicTime() +
@@ -2526,6 +2534,8 @@ void RevisedSimplex::DualPhaseIUpdatePriceOnReducedCostChange(
   const DenseRow::ConstView reduced_costs = reduced_costs_.GetReducedCosts();
   const Fractional tolerance = reduced_costs_.GetDualFeasibilityTolerance();
   auto improvement_direction = dual_infeasibility_improvement_direction_.view();
+  update_price_timer_.Start();
+  int64_t num_update_price_operations = 0;
   for (const ColIndex col : cols) {
     const Fractional reduced_cost = reduced_costs[col];
     const Fractional sign =
@@ -2546,7 +2556,7 @@ void RevisedSimplex::DualPhaseIUpdatePriceOnReducedCostChange(
       }
 
       // We add a factor 10 because of the scattered access.
-      num_update_price_operations_ +=
+      num_update_price_operations +=
           10 * compact_matrix_.column(col).num_entries().value();
       compact_matrix_.ColumnAddMultipleToSparseScatteredColumn(
           col, sign - improvement_direction[col],
@@ -2554,6 +2564,7 @@ void RevisedSimplex::DualPhaseIUpdatePriceOnReducedCostChange(
       improvement_direction[col] = sign;
     }
   }
+  update_price_timer_.Stop(num_update_price_operations);
   if (something_to_do) {
     initially_all_zero_scratchpad_.ClearNonZerosIfTooDense();
     initially_all_zero_scratchpad_.ClearSparseMask();
@@ -3293,6 +3304,151 @@ RevisedSimplex::PendingStatus RevisedSimplex::PrimalMinimize(
           }
           VLOG(1) << "Infeasible problem! infeasibility = "
                   << primal_infeasibility;
+
+          // If we can't find an entering column, this means that the modified
+          // phase I problem is dual feasible (see
+          // PrimalPrices::UpdateEnteringCandidates()). In this branch we know
+          // that the primal is still infeasible though.
+          //
+          // The objective function of this modified phase I problem (see
+          // VariableValues::UpdatePrimalPhaseICosts()) is:
+          // * -1 for basic variables below their lower bound
+          // * +1 for basic variables above their upper bound
+          //
+          // Using the same notations as in Achim Koberstein, "The dual simplex
+          // method, techniques for a fast and stable implementation", PhD,
+          // Paderborn, Univ., 2005. (https://d-nb.info/978580478/34) (using b=0
+          // though):
+          //
+          // Primal and dual are:
+          //
+          //   min  c^T⋅x        max  l^T⋅v + u^T⋅w
+          //   s.t. A⋅x = 0      s.t. A^T⋅y + v + w = c
+          //        l ≤ x ≤ u         v ≥ 0
+          //                          w ≤ 0
+          //
+          //   * y: the dual values of the A⋅x = 0 constraints
+          //   * v: the dual values of the l ≤ x constraints
+          //   * w: the dual values of the x ≤ u constraints
+          //
+          // As explained above, we have a basic dual-feasible solution:
+          //
+          //   x̂       := the primal basic solution (infeasible)
+          //   (ŷ,v̂,ŵ) := the dual basic solution (feasible)
+          //
+          // As stated above, the phase I objective is not the original
+          // objective, but one set after pivoting to a new bases depending on
+          // its primal solution x̂. We can split this objective between -1 and
+          // +1 coefficients:
+          //
+          //   c := c_u + c_l
+          //   c_u_j :=  1 if x̂_j > u_j, else 0
+          //   c_l_j := -1 if x̂_j < l_j, else 0
+          //
+          // Since we have a basic dual solution, we know that:
+          //
+          //   A^T⋅ŷ + v̂ + ŵ = c
+          //   A^T⋅ŷ + v̂ + ŵ = c_u + c_l
+          //   A^T⋅ŷ + (v̂ - c_l) + (ŵ - c_u) = 0
+          //
+          // We note here that:
+          //   * since (ŷ,v̂,ŵ) is feasible: v̂ ≥ 0 and ŵ ≤ 0
+          //   * by definition: c_l ≤ 0 and c_u ≥ 0
+          //   * thus: v̂ - c_l ≥ 0 and ŵ - c_u ≤ 0
+          //
+          // So the dual values (ŷ,(v̂ - c_l),(ŵ - c_u)) are feasible. We also
+          // shown that:
+          //
+          //   A^T⋅ŷ + (v̂ - c_l) + (ŵ - c_u) = 0
+          //
+          // then we can add a non-negative multiple of (ŷ,(v̂ - c_l),(ŵ - c_u))
+          // to any feasible dual solution and still have a feasible
+          // solution. We have a dual ray.
+          //
+          // By construction we know that the primal and dual objective are
+          // equal:
+          //
+          //   c^T⋅x̂             = l^T⋅v̂ + u^T⋅ŵ
+          //   c_u^T⋅x̂ + c_l^T⋅x̂ = l^T⋅v̂ + u^T⋅ŵ
+          //
+          // we can remove a constant term (c_u^T⋅u + c_l^T⋅l) on both sides:
+          //
+          //     c_u^T⋅x̂ + c_l^T⋅x̂ - c_u^T⋅u - c_l^T⋅l
+          //   = l^T⋅v̂ + u^T⋅ŵ - c_u^T⋅u - c_l^T⋅l
+          //
+          //   c_u^T⋅(x̂ - u) + c_l^T⋅(x̂ - l) = l^T⋅(v̂ - c_l) + u^T⋅(ŵ - c_u)
+          //
+          // the left-hand-side is the sum of the absolute values of primal
+          // infeasibilities (remember that c_l is negative when x̂_l < l_j). As
+          // stated above the primal is infeasible, which means:
+          //
+          //   c_u^T⋅(x̂ - u) + c_l^T⋅(x̂ - l) > 0
+          //
+          // Thus we have this conclusion on the right-hand-side:
+          //
+          //   l^T⋅(v̂ - c_l) + u^T⋅(ŵ - c_u) > 0
+          //
+          // This corresponds to the impact on the objective of moving along the
+          // dual ray (ŷ,(v̂ - c_l),(ŵ - c_u)) by one unit. Since this is
+          // positive, we can make the dual objective as big as we want by
+          // moving in this direction.
+          //
+          // So (ŷ,(v̂ - c_l),(ŵ - c_u)) is a dual unbounded ray.
+          //
+          // We can see it is a proof of infeasibility as well by multiplying
+          // the equality:
+          //
+          //   A^T⋅ŷ + (v̂ - c_l) + (ŵ - c_u) = 0
+          //
+          // with any primal feasible x:
+          //
+          //   ∀ x / l ≤ x ≤ u,
+          //      A^T⋅ŷ⋅x   + (v̂ - c_l)⋅x   + (ŵ - c_u)⋅x   = 0
+          //      ŷ^T⋅(A⋅x) + x^T⋅(v̂ - c_l) + x^T⋅(ŵ - c_u) = 0
+          //                  x^T⋅(v̂ - c_l) + x^T⋅(ŵ - c_u) = 0
+          //
+          // Due to the signs of (v̂ - c_l) and (ŵ - c_u) we can produce an
+          // inequality based on the bounds of x:
+          //
+          //   l^T⋅(v̂ - c_l) + u^T⋅(ŵ - c_u) ≤ x^T⋅(v̂ - c_l) + x^T⋅(ŵ - c_u)
+          //   l^T⋅(v̂ - c_l) + u^T⋅(ŵ - c_u) ≤ 0
+          //
+          // but we shown before that we have a dual unbounded ray:
+          //
+          //   l^T⋅(v̂ - c_l) + u^T⋅(ŵ - c_u) > 0
+          //
+          // we have a contraction! Hence a proof of infeasibility.
+          //
+          // To summarize we have a dual unbounded ray defined by:
+          //
+          //   (ŷ,(v̂ - c_l),(ŵ - c_u))
+          //
+          // that is a proof of infeasibility.
+          //
+          // Note that we leverage A^T⋅ŷ + (v̂ - c_l) + (ŵ - c_u) = 0 to compute
+          // the dual values of bounds:
+          //
+          //   (v̂ - c_l) + (ŵ - c_u) = -ŷ^T⋅A
+          //
+          // For Glop solution_dual_ray_ is the row combination factors that
+          // produce solution_dual_ray_row_combination_, the dual values of the
+          // bounds; thus:
+          //   * solution_dual_ray_ = -ŷ
+          //   * solution_dual_ray_row_combination_ = -ŷ^T⋅A
+          solution_dual_ray_ = reduced_costs_.GetDualValues();
+          ChangeSign(&solution_dual_ray_);
+
+          // Compute -ŷ^T⋅A.
+          const auto matrix_view = compact_matrix_.view();
+          const DenseRow& transposed_solution_dual_ray =
+              Transpose(solution_dual_ray_);
+          solution_dual_ray_row_combination_.resize(num_cols_);
+          for (ColIndex c = {}; c < num_cols_; ++c) {
+            solution_dual_ray_row_combination_[c] =
+                matrix_view.ColumnScalarProduct(
+                    c, transposed_solution_dual_ray.const_view());
+          }
+
           return PrimalInfeasibleSolveStatus();
         }
         return OptimalSolveStatus();
@@ -3411,17 +3567,20 @@ RevisedSimplex::PendingStatus RevisedSimplex::PrimalMinimize(
     // step.
     bool is_degenerate = false;
     if (leaving_row != kInvalidRow) {
+      // Also check `step_to_bound == 0.0` in case `(val - target_bound) / dir`
+      // underflows to 0.0 and triggers a degenerate ministep.
+      const Fractional step_to_bound =
+          ComputeStepToMoveBasicVariableToBound(leaving_row, target_bound);
       Fractional dir = -direction_[leaving_row] * step;
       is_degenerate =
-          (dir == 0.0) ||
+          (dir == 0.0) || (step_to_bound == 0.0) ||
           (dir > 0.0 && variable_values_.Get(leaving_col) >= target_bound) ||
           (dir < 0.0 && variable_values_.Get(leaving_col) <= target_bound);
 
       // If the iteration is not degenerate, the leaving variable should go to
       // its exact target bound (it is how the step is computed).
       if (!is_degenerate) {
-        DCHECK_EQ(step, ComputeStepToMoveBasicVariableToBound(leaving_row,
-                                                              target_bound));
+        DCHECK_EQ(step, step_to_bound);
       }
     }
 
@@ -3938,17 +4097,18 @@ AbnormalityStatus RevisedSimplex::PrimalPush(TimeLimit& time_limit) {
     // is pivoted in exactly once.
     bool is_degenerate = false;
     if (leaving_row != kInvalidRow) {
+      const Fractional step_to_bound =
+          ComputeStepToMoveBasicVariableToBound(leaving_row, target_bound);
       Fractional dir = -direction_[leaving_row] * step;
       is_degenerate =
-          (dir == 0.0) ||
+          (dir == 0.0) || (step_to_bound == 0.0) ||
           (dir > 0.0 && variable_values_.Get(leaving_col) >= target_bound) ||
           (dir < 0.0 && variable_values_.Get(leaving_col) <= target_bound);
 
       // If the iteration is not degenerate, the leaving variable should go to
       // its exact target bound (it is how the step is computed).
       if (!is_degenerate) {
-        DCHECK_EQ(step, ComputeStepToMoveBasicVariableToBound(leaving_row,
-                                                              target_bound));
+        DCHECK_EQ(step, step_to_bound);
       }
     }
 

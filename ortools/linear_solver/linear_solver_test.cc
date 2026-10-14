@@ -14,6 +14,8 @@
 #include "ortools/linear_solver/linear_solver.h"
 
 #include "absl/status/status.h"
+#include "absl/time/clock.h"
+#include "absl/time/time.h"
 #include "gtest/gtest.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 

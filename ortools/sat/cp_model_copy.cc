@@ -801,6 +801,7 @@ bool ModelCopy::CopyBoolOrWithDupSupport(const ConstraintProto& ct,
       lrat_proof_handler_->AddInferredClause(new_clause, temp_proof_);
       DCHECK_GT(temp_clause_.size(), 1);
       lrat_proof_handler_->DeleteClause(tmp_clause);
+      tmp_clause.DeleteIfAllocated();
       tmp_clause = new_clause;
     }
     if (tmp_clause.IsSatClausePtr()) {

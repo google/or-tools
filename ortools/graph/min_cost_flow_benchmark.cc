@@ -19,8 +19,8 @@
 #include "absl/log/log.h"
 #include "absl/random/distributions.h"
 #include "benchmark/benchmark.h"
+#include "ortools/graph/graph.h"
 #include "ortools/graph/min_cost_flow.h"
-#include "ortools/graph_base/graph.h"
 
 namespace operations_research {
 namespace {

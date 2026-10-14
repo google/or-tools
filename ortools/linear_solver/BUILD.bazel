@@ -417,6 +417,18 @@ or_cc_library(
     ],
 )
 
+or_cc_test(
+    name = "scip_callback_test",
+    srcs = ["scip_callback_test.cc"],
+    deps = [
+        ":linear_solver_lib",
+        ":linear_solver_scip",
+        ":scip_callback",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+    ],
+)
+
 # Recommended target for mixed integer programming.
 #
 # NOTE: You can change the default underlying LP engine (Soplex) to GLOP or CLP
@@ -598,10 +610,8 @@ or_cc_library(
         "//ortools/linear_solver/proto_solver:sat_proto_solver",
         "//ortools/port:proto_utils",
         "//ortools/sat:cp_model_cc_proto",
-        "//ortools/sat:cp_model_solver",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:lazy_mutable_copy",
-        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
@@ -680,6 +690,18 @@ or_cc_library(
         "//ortools/lp_data:lp_types",
         "@abseil-cpp//absl/functional:overload",
         "@abseil-cpp//absl/log",
+    ],
+)
+
+or_cc_test(
+    name = "glop_utils_test",
+    size = "small",
+    srcs = ["glop_utils_test.cc"],
+    deps = [
+        ":glop_utils",
+        ":linear_solver_lib",
+        "//ortools/base:gmock_main",
+        "//ortools/lp_data:lp_types",
     ],
 )
 
@@ -805,6 +827,7 @@ or_cc_test(
         ":linear_solver_glop",
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/time",
     ],
 )
 

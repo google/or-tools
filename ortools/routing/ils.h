@@ -158,9 +158,8 @@ class CloseRoutesRemovalRuinProcedure : public RuinProcedure {
                                   size_t num_routes,
                                   int num_neighbors_for_route_selection);
   // Returns next accessors where at most num_routes routes have been shortcut,
-  // i.e., next(shortcut route begin) = shortcut route end.
-  // Next accessors for nodes belonging to shortcut routes are still set to
-  // their original value and should not be used.
+  // i.e., next(shortcut route begin) = shortcut route end, and visits belonging
+  // to shortcut routes self-loop, i.e., next(node) = node.
   std::function<int64_t(int64_t)> Ruin(
       const Assignment* absl_nonnull assignment) override;
 

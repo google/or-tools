@@ -126,7 +126,7 @@ class SparseVectorFilter(Generic[VarOrConstraintType]):
             None
             if filtered_items is None
             else frozenset(filtered_items)  # pyrefly: ignore[bad-assignment]
-        )  # pytype: disable=annotation-type-mismatch  # attribute-variable-annotations
+        )
 
     @property
     def skip_zero_values(self) -> bool:
@@ -134,9 +134,7 @@ class SparseVectorFilter(Generic[VarOrConstraintType]):
 
     @property
     def filtered_items(self) -> Optional[FrozenSet[VarOrConstraintType]]:
-        return (
-            self._filtered_items
-        )  # pytype: disable=bad-return-type  # attribute-variable-annotations
+        return self._filtered_items  # pyrefly: ignore[bad-return]
 
     def to_proto(self) -> sparse_containers_pb2.SparseVectorFilterProto:
         """Returns an equivalent proto representation."""

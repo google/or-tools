@@ -77,14 +77,19 @@ class Preprocessor {
   // result. See Result documentation for details.
   virtual Result Run(LinearProgram* lp) = 0;
 
+  // Returns true if RecoverSolutionImpl() can also fix primal & dual rays of
+  // the solution. If it returns false, the caller should ignore the rays.
+  virtual bool CanRecoverRays() const { return false; }
+
   // Stores the optimal solution of the linear program that was passed to
   // Run(). The given solution needs to be set to the optimal solution of the
   // linear program "modified" by Run().
   //
-  // The SolveStatus and solution.status should be kept in sync. If the
-  // presolver needs to modify it, it should update the other.
-  virtual void RecoverSolution(SolveStatus& solve_status,
-                               ProblemSolution* solution) const = 0;
+  // If CanRecoverRays() returns false; the solution rays will be removed.
+  //
+  // It is implemented in RecoverSolutionImpl().
+  void RecoverSolution(SolveStatus& solve_status,
+                       ProblemSolution* solution) const;
 
   // Some preprocessors only need minimal changes when used with integer
   // variables in a MIP context. Setting this to true allows to consider integer
@@ -94,9 +99,27 @@ class Preprocessor {
   // function on them will cause a LOG(FATAL).
   virtual void UseInMipContext() { in_mip_context_ = true; }
 
+  // Configures whether postsolve requires a valid simplex basis (true by
+  // default). Setting this to false allows interior-point and basis-free
+  // solvers to recover interior primal and dual values without expecting a
+  // simplex basis.
+  virtual void SetRequiresBasis(bool requires_basis) {
+    requires_basis_ = requires_basis;
+  }
+
   void SetTimeLimit(TimeLimit* time_limit) { time_limit_ = time_limit; }
 
  protected:
+  // Implementation of RecoverSolution().
+  //
+  // Note that RecoverSolution() will remove the primal/dual rays if
+  // CanRecoverRays() returns false, before calling this function.
+  //
+  // The SolveStatus and solution.status should be kept in sync. If the
+  // presolver needs to modify it, it should update the other.
+  virtual void RecoverSolutionImpl(SolveStatus& solve_status,
+                                   ProblemSolution* solution) const = 0;
+
   // Returns true if a is less than b (or slighlty greater than b with a given
   // tolerance).
   bool IsSmallerWithinFeasibilityTolerance(Fractional a, Fractional b) const {
@@ -112,6 +135,7 @@ class Preprocessor {
 
   const GlopParameters& parameters_;
   bool in_mip_context_;
+  bool requires_basis_;
   std::unique_ptr<TimeLimit> infinite_time_limit_;
   TimeLimit* time_limit_;
 };
@@ -130,8 +154,10 @@ class MainLpPreprocessor : public Preprocessor {
   ~MainLpPreprocessor() override = default;
 
   Result Run(LinearProgram* lp) final;
-  void RecoverSolution(SolveStatus& solve_status,
-                       ProblemSolution* solution) const override;
+
+  // Note that we return true here but underlying presolvers may remove the rays
+  // if they don't support them.
+  bool CanRecoverRays() const final { return true; }
 
   // Like RecoverSolution but destroys data structures as it goes to reduce peak
   // RAM use. After calling this the MainLpPreprocessor object may no longer be
@@ -142,6 +168,9 @@ class MainLpPreprocessor : public Preprocessor {
   void SetLogger(SolverLogger* logger) { logger_ = logger; }
 
  private:
+  void RecoverSolutionImpl(SolveStatus& solve_status,
+                           ProblemSolution* solution) const override;
+
   // Runs the given preprocessor and push it on preprocessors_ for the postsolve
   // step when needed.
   void RunAndPushIfRelevant(std::unique_ptr<Preprocessor> preprocessor,
@@ -298,10 +327,11 @@ class EmptyColumnPreprocessor final : public Preprocessor {
   EmptyColumnPreprocessor& operator=(const EmptyColumnPreprocessor&) = delete;
   ~EmptyColumnPreprocessor() final = default;
   Result Run(LinearProgram* lp) final;
-  void RecoverSolution(SolveStatus& solve_status,
-                       ProblemSolution* solution) const final;
 
  private:
+  void RecoverSolutionImpl(SolveStatus& solve_status,
+                           ProblemSolution* solution) const final;
+
   ColumnDeletionHelper column_deletion_helper_;
 };
 
@@ -325,11 +355,12 @@ class ProportionalColumnPreprocessor final : public Preprocessor {
       const ProportionalColumnPreprocessor&) = delete;
   ~ProportionalColumnPreprocessor() final = default;
   Result Run(LinearProgram* lp) final;
-  void RecoverSolution(SolveStatus& solve_status,
-                       ProblemSolution* solution) const final;
   void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 
  private:
+  void RecoverSolutionImpl(SolveStatus& solve_status,
+                           ProblemSolution* solution) const final;
+
   // Postsolve information about proportional columns with the same scaled cost
   // that were merged during presolve.
 
@@ -366,10 +397,11 @@ class ProportionalRowPreprocessor final : public Preprocessor {
       delete;
   ~ProportionalRowPreprocessor() final = default;
   Result Run(LinearProgram* lp) final;
-  void RecoverSolution(SolveStatus& solve_status,
-                       ProblemSolution* solution) const final;
 
  private:
+  void RecoverSolutionImpl(SolveStatus& solve_status,
+                           ProblemSolution* solution) const final;
+
   // Informations about proportional rows, only filled for such rows.
   DenseColumn row_factors_;
   RowMapping upper_bound_sources_;
@@ -466,10 +498,11 @@ class SingletonPreprocessor final : public Preprocessor {
   SingletonPreprocessor& operator=(const SingletonPreprocessor&) = delete;
   ~SingletonPreprocessor() final = default;
   Result Run(LinearProgram* lp) final;
-  void RecoverSolution(SolveStatus& solve_status,
-                       ProblemSolution* solution) const final;
 
  private:
+  void RecoverSolutionImpl(SolveStatus& solve_status,
+                           ProblemSolution* solution) const final;
+
   // Returns the MatrixEntry of the given singleton row or column, taking into
   // account the rows and columns that were already deleted.
   MatrixEntry GetSingletonColumnMatrixEntry(ColIndex col,
@@ -560,10 +593,11 @@ class FixedVariablePreprocessor final : public Preprocessor {
       delete;
   ~FixedVariablePreprocessor() final = default;
   Result Run(LinearProgram* lp) final;
-  void RecoverSolution(SolveStatus& solve_status,
-                       ProblemSolution* solution) const final;
 
  private:
+  void RecoverSolutionImpl(SolveStatus& solve_status,
+                           ProblemSolution* solution) const final;
+
   ColumnDeletionHelper column_deletion_helper_;
 };
 
@@ -598,10 +632,11 @@ class ForcingAndImpliedFreeConstraintPreprocessor final : public Preprocessor {
       const ForcingAndImpliedFreeConstraintPreprocessor&) = delete;
   ~ForcingAndImpliedFreeConstraintPreprocessor() final = default;
   Result Run(LinearProgram* lp) final;
-  void RecoverSolution(SolveStatus& solve_status,
-                       ProblemSolution* solution) const final;
 
  private:
+  void RecoverSolutionImpl(SolveStatus& solve_status,
+                           ProblemSolution* solution) const final;
+
   bool lp_is_maximization_problem_;
   DenseRow costs_;
   DenseBooleanColumn is_forcing_up_;
@@ -642,12 +677,13 @@ class ImpliedFreePreprocessor final : public Preprocessor {
   ImpliedFreePreprocessor& operator=(const ImpliedFreePreprocessor&) = delete;
   ~ImpliedFreePreprocessor() final = default;
   Result Run(LinearProgram* lp) final;
-  void RecoverSolution(SolveStatus& solve_status,
-                       ProblemSolution* solution) const final;
 
  private:
+  void RecoverSolutionImpl(SolveStatus& solve_status,
+                           ProblemSolution* solution) const final;
+
   // This preprocessor adds fixed offsets to some variables. We remember those
-  // here to un-offset them in RecoverSolution().
+  // here to un-offset them in RecoverSolutionImpl().
   DenseRow variable_offsets_;
 
   // This preprocessor causes some variables who would normally be
@@ -691,10 +727,11 @@ class DoubletonFreeColumnPreprocessor final : public Preprocessor {
       const DoubletonFreeColumnPreprocessor&) = delete;
   ~DoubletonFreeColumnPreprocessor() final = default;
   Result Run(LinearProgram* lp) final;
-  void RecoverSolution(SolveStatus& solve_status,
-                       ProblemSolution* solution) const final;
 
  private:
+  void RecoverSolutionImpl(SolveStatus& solve_status,
+                           ProblemSolution* solution) const final;
+
   enum RowChoice : int {
     DELETED = 0,
     MODIFIED = 1,
@@ -743,8 +780,6 @@ class UnconstrainedVariablePreprocessor final : public Preprocessor {
       const UnconstrainedVariablePreprocessor&) = delete;
   ~UnconstrainedVariablePreprocessor() final = default;
   Result Run(LinearProgram* lp) final;
-  void RecoverSolution(SolveStatus& solve_status,
-                       ProblemSolution* solution) const final;
 
   // Removes the given variable and all the rows in which it appears: If a
   // variable is unconstrained with a zero cost, then all the constraints in
@@ -761,6 +796,9 @@ class UnconstrainedVariablePreprocessor final : public Preprocessor {
                                            LinearProgram* lp);
 
  private:
+  void RecoverSolutionImpl(SolveStatus& solve_status,
+                           ProblemSolution* solution) const final;
+
   // Lower/upper bounds on the feasible dual value. We use constraints and
   // variables unbounded in one direction to derive these bounds. We use these
   // bounds to compute bounds on the reduced costs of the problem variables.
@@ -795,10 +833,11 @@ class FreeConstraintPreprocessor final : public Preprocessor {
       delete;
   ~FreeConstraintPreprocessor() final = default;
   Result Run(LinearProgram* lp) final;
-  void RecoverSolution(SolveStatus& solve_status,
-                       ProblemSolution* solution) const final;
 
  private:
+  void RecoverSolutionImpl(SolveStatus& solve_status,
+                           ProblemSolution* solution) const final;
+
   RowDeletionHelper row_deletion_helper_;
 };
 
@@ -815,10 +854,11 @@ class EmptyConstraintPreprocessor final : public Preprocessor {
       delete;
   ~EmptyConstraintPreprocessor() final = default;
   Result Run(LinearProgram* lp) final;
-  void RecoverSolution(SolveStatus& solve_status,
-                       ProblemSolution* solution) const final;
 
  private:
+  void RecoverSolutionImpl(SolveStatus& solve_status,
+                           ProblemSolution* solution) const final;
+
   RowDeletionHelper row_deletion_helper_;
 };
 
@@ -839,10 +879,11 @@ class SingletonColumnSignPreprocessor final : public Preprocessor {
       const SingletonColumnSignPreprocessor&) = delete;
   ~SingletonColumnSignPreprocessor() final = default;
   Result Run(LinearProgram* lp) final;
-  void RecoverSolution(SolveStatus& solve_status,
-                       ProblemSolution* solution) const final;
 
  private:
+  void RecoverSolutionImpl(SolveStatus& solve_status,
+                           ProblemSolution* solution) const final;
+
   std::vector<ColIndex> changed_columns_;
 };
 
@@ -862,10 +903,11 @@ class DoubletonEqualityRowPreprocessor final : public Preprocessor {
       const DoubletonEqualityRowPreprocessor&) = delete;
   ~DoubletonEqualityRowPreprocessor() final = default;
   Result Run(LinearProgram* lp) final;
-  void RecoverSolution(SolveStatus& solve_status,
-                       ProblemSolution* solution) const final;
 
  private:
+  void RecoverSolutionImpl(SolveStatus& solve_status,
+                           ProblemSolution* solution) const final;
+
   enum ColChoice : int {
     DELETED = 0,
     MODIFIED = 1,
@@ -942,6 +984,30 @@ void FixConstraintWithFixedStatuses(const DenseColumn& row_lower_bounds,
 //
 // IMPORTANT: FreeConstraintPreprocessor() must be called first since this
 // preprocessor does not deal correctly with free constraints.
+//
+// Postsolve (`RecoverSolution`) depends on `requires_basis_`:
+//
+// 1. `requires_basis_ == true` (default):
+//    Intended for basis-providing solvers (such as simplex or crossover).
+//    Requires `solution->variable_statuses` and `solution->constraint_statuses`
+//    to describe a valid basis of the dualized problem. Uses basis statuses to
+//    reconstruct primal `variable_statuses` and `constraint_statuses`, and
+//    snaps non-basic primal variables to their exact bounds when the
+//    corresponding dual bound slack/surplus variable is basic.
+//
+// 2. `requires_basis_ == false` (set via `SetRequiresBasis(false)`):
+//    Intended for interior-point and basis-free solvers where basis statuses
+//    are unavailable or set to dummy placeholders (e.g.,
+//    `VariableStatus::BASIC` / `ConstraintStatus::BASIC`). Never reads incoming
+//    `variable_statuses` or `constraint_statuses`:
+//    - Recovers primal variable values directly as
+//      `solution->dual_values[row] + shift` without snapping interior values
+//      to bounds.
+//    - Recovers primal dual values (row multipliers) from the first
+//      `primal_num_rows_` entries of `solution->primal_values` (plus any
+//      duplicated ranged rows), negated for maximization problems.
+//    - Sets output `variable_statuses` to `VariableStatus::FREE` and
+//      `constraint_statuses` to `ConstraintStatus::FREE`.
 class DualizerPreprocessor final : public Preprocessor {
  public:
   explicit DualizerPreprocessor(const GlopParameters* parameters)
@@ -950,14 +1016,15 @@ class DualizerPreprocessor final : public Preprocessor {
   DualizerPreprocessor& operator=(const DualizerPreprocessor&) = delete;
   ~DualizerPreprocessor() final = default;
   Result Run(LinearProgram* lp) final;
-  void RecoverSolution(SolveStatus& solve_status,
-                       ProblemSolution* solution) const final;
   void UseInMipContext() final {
     LOG(FATAL) << "In the presence of integer variables, "
                << "there is no notion of a dual problem.";
   }
 
  private:
+  void RecoverSolutionImpl(SolveStatus& solve_status,
+                           ProblemSolution* solution) const final;
+
   // Convert the given solve result to the one of its dual.
   static SolveStatus ChangeResultToDualResult(SolveStatus result);
 
@@ -1011,8 +1078,6 @@ class ShiftVariableBoundsPreprocessor final : public Preprocessor {
       const ShiftVariableBoundsPreprocessor&) = delete;
   ~ShiftVariableBoundsPreprocessor() final = default;
   Result Run(LinearProgram* lp) final;
-  void RecoverSolution(SolveStatus& solve_status,
-                       ProblemSolution* solution) const final;
 
   const DenseRow& offsets() const { return offsets_; }
 
@@ -1029,6 +1094,9 @@ class ShiftVariableBoundsPreprocessor final : public Preprocessor {
   void OnlyShiftByIntegerValue() { only_shift_by_integer_values_ = true; }
 
  private:
+  void RecoverSolutionImpl(SolveStatus& solve_status,
+                           ProblemSolution* solution) const final;
+
   bool only_shift_by_integer_values_ = false;
 
   // Contains for each variable by how much its bounds where shifted during
@@ -1053,12 +1121,14 @@ class ScalingPreprocessor final : public Preprocessor {
   ScalingPreprocessor(const ScalingPreprocessor&) = delete;
   ScalingPreprocessor& operator=(const ScalingPreprocessor&) = delete;
   ~ScalingPreprocessor() final = default;
+  bool CanRecoverRays() const final { return true; }
   Result Run(LinearProgram* lp) final;
-  void RecoverSolution(SolveStatus& solve_status,
-                       ProblemSolution* solution) const final;
   void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 
  private:
+  void RecoverSolutionImpl(SolveStatus& solve_status,
+                           ProblemSolution* solution) const final;
+
   DenseRow variable_lower_bounds_;
   DenseRow variable_upper_bounds_;
   Fractional cost_scaling_factor_;
@@ -1079,8 +1149,10 @@ class ToMinimizationPreprocessor final : public Preprocessor {
       delete;
   ~ToMinimizationPreprocessor() final = default;
   Result Run(LinearProgram* lp) final;
-  void RecoverSolution(SolveStatus& solve_status,
-                       ProblemSolution* solution) const final;
+
+ private:
+  void RecoverSolutionImpl(SolveStatus& solve_status,
+                           ProblemSolution* solution) const final;
 };
 
 // --------------------------------------------------------
@@ -1111,10 +1183,11 @@ class AddSlackVariablesPreprocessor final : public Preprocessor {
       const AddSlackVariablesPreprocessor&) = delete;
   ~AddSlackVariablesPreprocessor() final = default;
   Result Run(LinearProgram* lp) final;
-  void RecoverSolution(SolveStatus& solve_status,
-                       ProblemSolution* solution) const final;
 
  private:
+  void RecoverSolutionImpl(SolveStatus& solve_status,
+                           ProblemSolution* solution) const final;
+
   ColIndex first_slack_col_;
 };
 

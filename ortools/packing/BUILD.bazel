@@ -28,7 +28,7 @@ or_cc_library(
     copts = SAFE_FP_CODE,
     deps = [
         "//ortools/base:stl_util",
-        "//ortools/graph_base:topologicalsorter",
+        "//ortools/graph:topologicalsorter",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",

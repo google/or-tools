@@ -38,6 +38,7 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/lp_utils.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/mp_model_wrapper.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/logging.h"
@@ -375,8 +376,9 @@ TEST(PresolveCpModelTest, BasicLinearConstraintPresolve) {
   LinearProgramToMPModelProto(lp, &mp_model);
   CpModelProto initial_model;
   SolverLogger logger;
-  ConvertMPModelProtoToCpModelProto(SatParameters(), mp_model, &initial_model,
-                                    &logger);
+  CHECK(ClampVariableBounds(SatParameters(), &mp_model, &logger));
+  ConvertMPModelProtoToCpModelProto(
+      SatParameters(), MPModelProtoWrapper(&mp_model), &initial_model, &logger);
 
   const CpModelProto mapping_model = GetMappingModel(initial_model);
 

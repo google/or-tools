@@ -18,7 +18,6 @@
 #include <functional>
 #include <string>
 
-#include "absl/status/statusor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/util/lazy_mutable_copy.h"
 
@@ -32,7 +31,7 @@ struct HighsSolveInfo {
 // Solve the input MIP model with the HIGHS solver and fills `solve_info` if
 // provided. When `logging_callback` is non-null and points to a callable
 // function, solver log messages are sent to it instead of the console.
-absl::StatusOr<MPSolutionResponse> HighsSolveProto(
+MPSolutionResponse HighsSolveProto(
     LazyMutableCopy<MPModelRequest> request,
     HighsSolveInfo* solve_info = nullptr,
     const std::function<void(const std::string&)>* logging_callback = nullptr);

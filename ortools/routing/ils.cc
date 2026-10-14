@@ -1092,12 +1092,10 @@ std::function<int64_t(int64_t)> CloseRoutesRemovalRuinProcedure::Ruin(
   }
 
   return [this, assignment](int64_t node) {
-    // Shortcut removed routes to remove associated nodes.
-    if (model_.IsStart(node)) {
-      const int route = assignment->Value(model_.VehicleVar(node));
-      if (removed_routes_[route]) {
-        return model_.End(route);
-      }
+    DCHECK(!model_.IsEnd(node));
+    const int route = assignment->Value(model_.VehicleVar(node));
+    if (route >= 0 && removed_routes_[route]) {
+      return model_.IsStart(node) ? model_.End(route) : node;
     }
     return assignment->Value(model_.NextVar(node));
   };

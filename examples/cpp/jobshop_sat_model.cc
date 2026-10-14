@@ -25,7 +25,7 @@
 #include "absl/types/span.h"
 #include "google/protobuf/wrappers.pb.h"
 #include "ortools/base/types.h"
-#include "ortools/graph_base/connected_components.h"
+#include "ortools/graph/connected_components.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"

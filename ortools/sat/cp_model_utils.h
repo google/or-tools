@@ -138,7 +138,7 @@ void ApplyToAllIntervalIndices(absl::FunctionRef<void(int*)> function,
 
 // Returns the name of the ConstraintProto::ConstraintCase oneof enum.
 // Note(user): There is no such function in the proto API as of 16/01/2017.
-absl::string_view ConstraintCaseName(
+constexpr absl::string_view ConstraintCaseName(
     ConstraintProto::ConstraintCase constraint_case);
 
 // Returns the sorted list of variables used by a constraint.
@@ -276,6 +276,9 @@ inline int64_t PresolveInnerObjectiveValue(const CpObjectiveProto& proto,
 // to get the user-facing objective.
 int64_t ComputeInnerObjective(const CpObjectiveProto& objective,
                               absl::Span<const int64_t> solution);
+
+double ComputeFloatObjectiveValue(const FloatObjectiveProto& proto,
+                                  absl::Span<const int64_t> solution);
 
 // Returns true if a linear expression can be reduced to a single ref.
 // That is -var or +var.
@@ -517,6 +520,61 @@ constexpr ConstraintProto::ConstraintCase kLargestConstraintType =
 // kLargestConstraintType should be less than 2^kConstraintTypeBitSize.
 constexpr int kConstraintTypeBitSize = 5;
 static_assert(kLargestConstraintType < (1 << kConstraintTypeBitSize));
+
+constexpr absl::string_view ConstraintCaseName(
+    ConstraintProto::ConstraintCase constraint_case) {
+  switch (constraint_case) {
+    case ConstraintProto::ConstraintCase::kBoolOr:
+      return "kBoolOr";
+    case ConstraintProto::ConstraintCase::kBoolAnd:
+      return "kBoolAnd";
+    case ConstraintProto::ConstraintCase::kAtMostOne:
+      return "kAtMostOne";
+    case ConstraintProto::ConstraintCase::kExactlyOne:
+      return "kExactlyOne";
+    case ConstraintProto::ConstraintCase::kBoolXor:
+      return "kBoolXor";
+    case ConstraintProto::ConstraintCase::kIntDiv:
+      return "kIntDiv";
+    case ConstraintProto::ConstraintCase::kIntMod:
+      return "kIntMod";
+    case ConstraintProto::ConstraintCase::kLinMax:
+      return "kLinMax";
+    case ConstraintProto::ConstraintCase::kIntProd:
+      return "kIntProd";
+    case ConstraintProto::ConstraintCase::kLinear:
+      return "kLinear";
+    case ConstraintProto::ConstraintCase::kAllDiff:
+      return "kAllDiff";
+    case ConstraintProto::ConstraintCase::kDummyConstraint:
+      return "kDummyConstraint";
+    case ConstraintProto::ConstraintCase::kElement:
+      return "kElement";
+    case ConstraintProto::ConstraintCase::kCircuit:
+      return "kCircuit";
+    case ConstraintProto::ConstraintCase::kRoutes:
+      return "kRoutes";
+    case ConstraintProto::ConstraintCase::kInverse:
+      return "kInverse";
+    case ConstraintProto::ConstraintCase::kReservoir:
+      return "kReservoir";
+    case ConstraintProto::ConstraintCase::kTable:
+      return "kTable";
+    case ConstraintProto::ConstraintCase::kAutomaton:
+      return "kAutomaton";
+    case ConstraintProto::ConstraintCase::kInterval:
+      return "kInterval";
+    case ConstraintProto::ConstraintCase::kNoOverlap:
+      return "kNoOverlap";
+    case ConstraintProto::ConstraintCase::kNoOverlap2D:
+      return "kNoOverlap2D";
+    case ConstraintProto::ConstraintCase::kCumulative:
+      return "kCumulative";
+    case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
+      return "kEmpty";
+  }
+  return "kUnknown";
+}
 
 }  // namespace sat
 }  // namespace operations_research

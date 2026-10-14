@@ -27,6 +27,7 @@
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/stats.h"
 
 namespace operations_research {
@@ -193,7 +194,9 @@ class ReducedCosts {
   const DenseRow& GetCostPerturbations() const { return cost_perturbations_; }
 
   // The deterministic time used by this class.
-  double DeterministicTime() const { return deterministic_time_; }
+  double DeterministicTime() const {
+    return deterministic_timer_.GetDeterministicTime();
+  }
 
   // Registers a boolean that will be set to true each time the reduced costs
   // are or will be recomputed. This allows anyone that depends on this to know
@@ -290,7 +293,7 @@ class ReducedCosts {
   // UpdateBeforeBasisPivot() function.
   std::vector<bool*> watchers_;
 
-  double deterministic_time_ = 0.0;
+  LinearDeterministicTimer<{.scale = 2e-9}> deterministic_timer_;
 };
 
 // Maintains the list of dual infeasible positions and their associated prices.

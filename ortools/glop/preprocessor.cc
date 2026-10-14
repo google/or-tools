@@ -66,9 +66,19 @@ double trunc(double d) { return d > 0 ? floor(d) : ceil(d); }
 Preprocessor::Preprocessor(const GlopParameters* parameters)
     : parameters_(*parameters),
       in_mip_context_(false),
+      requires_basis_(true),
       infinite_time_limit_(TimeLimit::Infinite()),
       time_limit_(infinite_time_limit_.get()) {}
 Preprocessor::~Preprocessor() {}
+
+void Preprocessor::RecoverSolution(SolveStatus& solve_status,
+                                   ProblemSolution* solution) const {
+  if (!CanRecoverRays()) {
+    solution->primal_ray.reset();
+    solution->dual_ray.reset();
+  }
+  RecoverSolutionImpl(solve_status, solution);
+}
 
 std::ostream& operator<<(std::ostream& out,
                          const Preprocessor::Result& result) {
@@ -185,6 +195,7 @@ void MainLpPreprocessor::RunAndPushIfRelevant(
 
   const double start_time = time_limit->GetElapsedTime();
   preprocessor->SetTimeLimit(time_limit);
+  preprocessor->SetRequiresBasis(requires_basis_);
 
   // No need to run the preprocessor if the lp is empty.
   // TODO(user): without this test, the code is failing as of 2013-03-18.
@@ -222,8 +233,8 @@ void MainLpPreprocessor::RunAndPushIfRelevant(
   }
 }
 
-void MainLpPreprocessor::RecoverSolution(SolveStatus& solve_status,
-                                         ProblemSolution* solution) const {
+void MainLpPreprocessor::RecoverSolutionImpl(SolveStatus& solve_status,
+                                             ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   for (const auto& p : gtl::reversed_view(preprocessors_)) {
     p->RecoverSolution(solve_status, solution);
@@ -271,6 +282,7 @@ const SparseColumn& ColumnsSaver::SavedOrEmptyColumn(ColIndex col) const {
 void ColumnDeletionHelper::Clear() {
   is_column_deleted_.clear();
   stored_value_.clear();
+  stored_status_.clear();
 }
 
 void ColumnDeletionHelper::MarkColumnForDeletion(ColIndex col) {
@@ -472,8 +484,8 @@ Preprocessor::Result EmptyColumnPreprocessor::Run(LinearProgram* lp) {
   return {.postsolve_is_needed = !column_deletion_helper_.IsEmpty()};
 }
 
-void EmptyColumnPreprocessor::RecoverSolution(SolveStatus& solve_status,
-                                              ProblemSolution* solution) const {
+void EmptyColumnPreprocessor::RecoverSolutionImpl(
+    SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
   column_deletion_helper_.RestoreDeletedColumns(solution);
@@ -761,7 +773,7 @@ Preprocessor::Result ProportionalColumnPreprocessor::Run(LinearProgram* lp) {
   return {.postsolve_is_needed = !column_deletion_helper_.IsEmpty()};
 }
 
-void ProportionalColumnPreprocessor::RecoverSolution(
+void ProportionalColumnPreprocessor::RecoverSolutionImpl(
     SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
@@ -1054,7 +1066,7 @@ Preprocessor::Result ProportionalRowPreprocessor::Run(LinearProgram* lp) {
   return {.postsolve_is_needed = !row_deletion_helper_.IsEmpty()};
 }
 
-void ProportionalRowPreprocessor::RecoverSolution(
+void ProportionalRowPreprocessor::RecoverSolutionImpl(
     SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
@@ -1153,7 +1165,7 @@ Preprocessor::Result FixedVariablePreprocessor::Run(LinearProgram* lp) {
   return {.postsolve_is_needed = !column_deletion_helper_.IsEmpty()};
 }
 
-void FixedVariablePreprocessor::RecoverSolution(
+void FixedVariablePreprocessor::RecoverSolutionImpl(
     SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
@@ -1333,7 +1345,7 @@ Preprocessor::Result ForcingAndImpliedFreeConstraintPreprocessor::Run(
   return {.postsolve_is_needed = !column_deletion_helper_.IsEmpty()};
 }
 
-void ForcingAndImpliedFreeConstraintPreprocessor::RecoverSolution(
+void ForcingAndImpliedFreeConstraintPreprocessor::RecoverSolutionImpl(
     SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
@@ -1622,8 +1634,8 @@ Preprocessor::Result ImpliedFreePreprocessor::Run(LinearProgram* lp) {
   return {.postsolve_is_needed = num_implied_free_variables > 0};
 }
 
-void ImpliedFreePreprocessor::RecoverSolution(SolveStatus& solve_status,
-                                              ProblemSolution* solution) const {
+void ImpliedFreePreprocessor::RecoverSolutionImpl(
+    SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
   const ColIndex num_cols = solution->variable_statuses.size();
@@ -1756,7 +1768,7 @@ Preprocessor::Result DoubletonFreeColumnPreprocessor::Run(LinearProgram* lp) {
   return {.postsolve_is_needed = false};
 }
 
-void DoubletonFreeColumnPreprocessor::RecoverSolution(
+void DoubletonFreeColumnPreprocessor::RecoverSolutionImpl(
     SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   row_deletion_helper_.RestoreDeletedRows(solution);
@@ -2003,12 +2015,12 @@ Preprocessor::Result UnconstrainedVariablePreprocessor::Run(LinearProgram* lp) {
                 .solve_status = InfeasibleOrUnboundedSolveStatus()};
       } else {
         // We can remove this column and all its constraints! We just need to
-        // choose proper variable values during the call to RecoverSolution()
-        // that make all the constraints satisfiable. Unfortunately, this is not
-        // so easy to do in the general case, so we only deal with a simpler
-        // case when the cost of the variable is zero, and none of the
-        // constraints (even the deleted one) block the variable moving to its
-        // infinite target_bound.
+        // choose proper variable values during the call to
+        // RecoverSolutionImpl() that make all the constraints
+        // satisfiable. Unfortunately, this is not so easy to do in the general
+        // case, so we only deal with a simpler case when the cost of the
+        // variable is zero, and none of the constraints (even the deleted one)
+        // block the variable moving to its infinite target_bound.
         //
         // TODO(user): deal with the more generic case.
         if (col_cost != 0.0) continue;
@@ -2123,7 +2135,7 @@ Preprocessor::Result UnconstrainedVariablePreprocessor::Run(LinearProgram* lp) {
                                  !row_deletion_helper_.IsEmpty()};
 }
 
-void UnconstrainedVariablePreprocessor::RecoverSolution(
+void UnconstrainedVariablePreprocessor::RecoverSolutionImpl(
     SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
@@ -2234,7 +2246,7 @@ Preprocessor::Result FreeConstraintPreprocessor::Run(LinearProgram* lp) {
   return {.postsolve_is_needed = !row_deletion_helper_.IsEmpty()};
 }
 
-void FreeConstraintPreprocessor::RecoverSolution(
+void FreeConstraintPreprocessor::RecoverSolutionImpl(
     SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
@@ -2285,7 +2297,7 @@ Preprocessor::Result EmptyConstraintPreprocessor::Run(LinearProgram* lp) {
   return {.postsolve_is_needed = !row_deletion_helper_.IsEmpty()};
 }
 
-void EmptyConstraintPreprocessor::RecoverSolution(
+void EmptyConstraintPreprocessor::RecoverSolutionImpl(
     SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
@@ -2986,8 +2998,8 @@ Preprocessor::Result SingletonPreprocessor::Run(LinearProgram* lp) {
                                  !row_deletion_helper_.IsEmpty()};
 }
 
-void SingletonPreprocessor::RecoverSolution(SolveStatus& solve_status,
-                                            ProblemSolution* solution) const {
+void SingletonPreprocessor::RecoverSolutionImpl(
+    SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
 
@@ -3081,7 +3093,7 @@ Preprocessor::Result SingletonColumnSignPreprocessor::Run(LinearProgram* lp) {
   return {.postsolve_is_needed = !changed_columns_.empty()};
 }
 
-void SingletonColumnSignPreprocessor::RecoverSolution(
+void SingletonColumnSignPreprocessor::RecoverSolutionImpl(
     SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
@@ -3324,7 +3336,7 @@ Preprocessor::Result DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp) {
   return {.postsolve_is_needed = !column_deletion_helper_.IsEmpty()};
 }
 
-void DoubletonEqualityRowPreprocessor::RecoverSolution(
+void DoubletonEqualityRowPreprocessor::RecoverSolutionImpl(
     SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
@@ -3608,8 +3620,8 @@ Preprocessor::Result DualizerPreprocessor::Run(LinearProgram* lp) {
 // Note(user): This assumes that LinearProgram.PopulateFromDual() uses
 // the first ColIndex and RowIndex for the rows and columns of the given
 // problem.
-void DualizerPreprocessor::RecoverSolution(SolveStatus& solve_status,
-                                           ProblemSolution* solution) const {
+void DualizerPreprocessor::RecoverSolutionImpl(
+    SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
 
@@ -3618,7 +3630,7 @@ void DualizerPreprocessor::RecoverSolution(SolveStatus& solve_status,
                                           VariableStatus::FREE);
   DCHECK_LE(primal_num_cols_, RowToColIndex(solution->dual_values.size()));
   for (ColIndex col(0); col < primal_num_cols_; ++col) {
-    RowIndex row = ColToRowIndex(col);
+    const RowIndex row = ColToRowIndex(col);
     const Fractional lower = variable_lower_bounds_[col];
     const Fractional upper = variable_upper_bounds_[col];
 
@@ -3627,40 +3639,42 @@ void DualizerPreprocessor::RecoverSolution(SolveStatus& solve_status,
     const Fractional shift = MinInMagnitudeOrZeroIfInfinite(lower, upper);
     new_primal_values[col] = solution->dual_values[row] + shift;
 
-    // A variable will be VariableStatus::BASIC if the dual constraint is not.
-    if (solution->constraint_statuses[row] != ConstraintStatus::BASIC) {
-      new_variable_statuses[col] = VariableStatus::BASIC;
-    } else {
-      // Otherwise, the dual value must be zero (if the solution is feasible),
-      // and the variable is at an exact bound or zero if it is
-      // VariableStatus::FREE. Note that this works because the bounds are
-      // shifted to 0.0 in the presolve!
-      new_variable_statuses[col] = ComputeVariableStatus(shift, lower, upper);
+    if (requires_basis_) {
+      // A variable will be VariableStatus::BASIC if the dual constraint is not.
+      if (solution->constraint_statuses[row] != ConstraintStatus::BASIC) {
+        new_variable_statuses[col] = VariableStatus::BASIC;
+      } else {
+        // Otherwise, the dual value must be zero (if the solution is feasible),
+        // and the variable is at an exact bound or zero if it is
+        // VariableStatus::FREE. Note that this works because the bounds are
+        // shifted to 0.0 in the presolve!
+        new_variable_statuses[col] = ComputeVariableStatus(shift, lower, upper);
+      }
     }
   }
 
-  // A basic variable that corresponds to slack/surplus variable is the same as
-  // a basic row. The new variable status (that was just set to
-  // VariableStatus::BASIC above)
-  // needs to be corrected and depends on the variable type (slack/surplus).
-  const ColIndex begin = RowToColIndex(primal_num_rows_);
-  const ColIndex end = dual_status_correspondence_.size();
-  DCHECK_GE(solution->variable_statuses.size(), end);
-  DCHECK_EQ(end - begin, slack_or_surplus_mapping_.size());
-  for (ColIndex index(begin); index < end; ++index) {
-    if (solution->variable_statuses[index] == VariableStatus::BASIC) {
-      const ColIndex col = slack_or_surplus_mapping_[index - begin];
-      const VariableStatus status = dual_status_correspondence_[index];
+  if (requires_basis_) {
+    // Here, a basic variable is the same as a basic row, so the primal variable
+    // will be non-basic and at the bound corresponding to the slack variable.
+    const ColIndex begin = RowToColIndex(primal_num_rows_);
+    const ColIndex end = dual_status_correspondence_.size();
+    DCHECK_EQ(end - begin, slack_or_surplus_mapping_.size());
+    DCHECK_GE(solution->variable_statuses.size(), end);
+    for (ColIndex index(begin); index < end; ++index) {
+      if (solution->variable_statuses[index] == VariableStatus::BASIC) {
+        const ColIndex col = slack_or_surplus_mapping_[index - begin];
+        const VariableStatus status = dual_status_correspondence_[index];
 
-      // The new variable value is set to its exact bound because the dual
-      // variable value can be imprecise.
-      new_variable_statuses[col] = status;
-      if (status == VariableStatus::AT_UPPER_BOUND ||
-          status == VariableStatus::FIXED_VALUE) {
-        new_primal_values[col] = variable_upper_bounds_[col];
-      } else {
-        DCHECK_EQ(status, VariableStatus::AT_LOWER_BOUND);
-        new_primal_values[col] = variable_lower_bounds_[col];
+        // The new variable value is set to its exact bound because the dual
+        // variable value can be imprecise.
+        new_variable_statuses[col] = status;
+        if (status == VariableStatus::AT_UPPER_BOUND ||
+            status == VariableStatus::FIXED_VALUE) {
+          new_primal_values[col] = variable_upper_bounds_[col];
+        } else {
+          DCHECK_EQ(status, VariableStatus::AT_LOWER_BOUND);
+          new_primal_values[col] = variable_lower_bounds_[col];
+        }
       }
     }
   }
@@ -3675,28 +3689,11 @@ void DualizerPreprocessor::RecoverSolution(SolveStatus& solve_status,
   // Note that the sign need to be corrected because of the special behavior of
   // PopulateFromDual() on a maximization problem, see the comment in the
   // declaration of PopulateFromDual().
-  Fractional sign = primal_is_maximization_problem_ ? -1 : 1;
+  const Fractional sign = primal_is_maximization_problem_ ? -1.0 : 1.0;
+
   for (RowIndex row(0); row < primal_num_rows_; ++row) {
     const ColIndex col = RowToColIndex(row);
     new_dual_values[row] = sign * solution->primal_values[col];
-
-    // A constraint will be ConstraintStatus::BASIC if the dual variable is not.
-    if (solution->variable_statuses[col] != VariableStatus::BASIC) {
-      new_constraint_statuses[row] = ConstraintStatus::BASIC;
-      if (duplicated_rows_[row] != kInvalidCol) {
-        if (solution->variable_statuses[duplicated_rows_[row]] ==
-            VariableStatus::BASIC) {
-          // The duplicated row is always about the lower bound.
-          new_constraint_statuses[row] = ConstraintStatus::AT_LOWER_BOUND;
-        }
-      }
-    } else {
-      // ConstraintStatus::AT_LOWER_BOUND/ConstraintStatus::AT_UPPER_BOUND/
-      // ConstraintStatus::FIXED depend on the type of the constraint at this
-      // position.
-      new_constraint_statuses[row] =
-          VariableToConstraintStatus(dual_status_correspondence_[col]);
-    }
 
     // If the original row was duplicated, we need to take into account the
     // value of the corresponding dual column.
@@ -3705,10 +3702,31 @@ void DualizerPreprocessor::RecoverSolution(SolveStatus& solve_status,
           sign * solution->primal_values[duplicated_rows_[row]];
     }
 
-    // Because non-basic variable values are exactly at one of their bounds, a
-    // new basic constraint will have a dual value exactly equal to zero.
-    DCHECK(new_dual_values[row] == 0 ||
-           new_constraint_statuses[row] != ConstraintStatus::BASIC);
+    if (requires_basis_) {
+      // A constraint will be ConstraintStatus::BASIC if the dual variable is
+      // not.
+      if (solution->variable_statuses[col] != VariableStatus::BASIC) {
+        new_constraint_statuses[row] = ConstraintStatus::BASIC;
+        if (duplicated_rows_[row] != kInvalidCol) {
+          if (solution->variable_statuses[duplicated_rows_[row]] ==
+              VariableStatus::BASIC) {
+            // The duplicated row is always about the lower bound.
+            new_constraint_statuses[row] = ConstraintStatus::AT_LOWER_BOUND;
+          }
+        }
+      } else {
+        // ConstraintStatus::AT_LOWER_BOUND/ConstraintStatus::AT_UPPER_BOUND/
+        // ConstraintStatus::FIXED depend on the type of the constraint at this
+        // position.
+        new_constraint_statuses[row] =
+            VariableToConstraintStatus(dual_status_correspondence_[col]);
+      }
+
+      // Because non-basic variable values are exactly at one of their bounds, a
+      // new basic constraint will have a dual value exactly equal to zero.
+      DCHECK(new_dual_values[row] == 0 ||
+             new_constraint_statuses[row] != ConstraintStatus::BASIC);
+    }
   }
 
   solve_status = ChangeResultToDualResult(solve_status);
@@ -3836,7 +3854,7 @@ Preprocessor::Result ShiftVariableBoundsPreprocessor::Run(LinearProgram* lp) {
   return {.postsolve_is_needed = true};
 }
 
-void ShiftVariableBoundsPreprocessor::RecoverSolution(
+void ShiftVariableBoundsPreprocessor::RecoverSolutionImpl(
     SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
@@ -3855,9 +3873,9 @@ void ShiftVariableBoundsPreprocessor::RecoverSolution(
           solution->primal_values[col] = variable_initial_ubs_[col];
           break;
         case VariableStatus::BASIC:
-          solution->primal_values[col] += offsets_[col];
-          break;
+          ABSL_FALLTHROUGH_INTENDED;
         case VariableStatus::FREE:
+          solution->primal_values[col] += offsets_[col];
           break;
       }
     }
@@ -3891,19 +3909,28 @@ Preprocessor::Result ScalingPreprocessor::Run(LinearProgram* lp) {
   return {.postsolve_is_needed = true};
 }
 
-void ScalingPreprocessor::RecoverSolution(SolveStatus& solve_status,
-                                          ProblemSolution* solution) const {
+void ScalingPreprocessor::RecoverSolutionImpl(SolveStatus& solve_status,
+                                              ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
 
-  scaler_.ScaleRowVector(false, &(solution->primal_values));
+  scaler_.ScaleRowVector(false, &solution->primal_values);
   for (ColIndex col(0); col < solution->primal_values.size(); ++col) {
     solution->primal_values[col] *= bound_scaling_factor_;
   }
-
-  scaler_.ScaleColumnVector(false, &(solution->dual_values));
+  scaler_.ScaleColumnVector(false, &solution->dual_values);
   for (RowIndex row(0); row < solution->dual_values.size(); ++row) {
     solution->dual_values[row] *= cost_scaling_factor_;
+  }
+  // Unscale the rays. Note that we **do not** apply the constant scaling
+  // factors (bound_scaling_factor_, cost_scaling_factor_) here as those are
+  // rays and their norm is arbitrary. Apply a scaling here would add to the
+  // numerical errors.
+  if (solution->primal_ray.has_value()) {
+    scaler_.ScaleRowVector(false, &*solution->primal_ray);
+  }
+  if (solution->dual_ray.has_value()) {
+    scaler_.ScaleColumnVector(false, &*solution->dual_ray);
   }
 
   // Make sure the variable are at they exact bounds according to their status.
@@ -3949,7 +3976,7 @@ Preprocessor::Result ToMinimizationPreprocessor::Run(LinearProgram* lp) {
   return {.postsolve_is_needed = false};
 }
 
-void ToMinimizationPreprocessor::RecoverSolution(
+void ToMinimizationPreprocessor::RecoverSolutionImpl(
     SolveStatus& solve_status, ProblemSolution* solution) const {}
 
 // --------------------------------------------------------
@@ -3965,7 +3992,7 @@ Preprocessor::Result AddSlackVariablesPreprocessor::Run(LinearProgram* lp) {
   return {.postsolve_is_needed = true};
 }
 
-void AddSlackVariablesPreprocessor::RecoverSolution(
+void AddSlackVariablesPreprocessor::RecoverSolutionImpl(
     SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);

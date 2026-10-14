@@ -75,6 +75,7 @@ or_cc_library(
 or_cc_test(
     name = "radix_sort_test",
     srcs = ["radix_sort_test.cc"],
+    shard_count = 10,
     tags = ["noci"],
     deps = [
         ":radix_sort",
@@ -136,6 +137,35 @@ or_cc_library(
     ],
 )
 
+or_cc_test(
+    name = "duplicate_remover_test",
+    srcs = ["duplicate_remover_test.cc"],
+    tags = ["noci"],
+    deps = [
+        ":duplicate_remover",
+        "//ortools/base:dump_vars",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/types:span",
+        "@protobuf",
+    ],
+)
+
+or_cc_binary(
+    name = "duplicate_remover_benchmark",
+    testonly = True,
+    srcs = ["duplicate_remover_benchmark.cc"],
+    deps = [
+        ":duplicate_remover",
+        "//ortools/util:random_engine",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/random:distributions",
+        "@google_benchmark//:benchmark_main",
+    ],
+)
+
 or_cc_library(
     name = "hungarian",
     srcs = ["hungarian.cc"],
@@ -192,6 +222,7 @@ or_cc_test(
     size = "large",
     timeout = "eternal",
     srcs = ["adjustable_k_ary_heap_stress_test.cc"],
+    shard_count = 10,
     tags = ["manual"],
     deps = [
         ":adjustable_k_ary_heap",
@@ -385,9 +416,9 @@ or_cc_library(
         "//ortools/base:log_severity",
         "//ortools/base:murmur",
         "//ortools/base:types",
-        "//ortools/graph_base:graph",
-        "//ortools/graph_base:iterators",
-        "//ortools/graph_base:util",
+        "//ortools/graph",
+        "//ortools/graph:iterators",
+        "//ortools/graph:util",
         "//ortools/util:bitset",
         "//ortools/util:stats",
         "//ortools/util:time_limit",
@@ -420,10 +451,10 @@ or_cc_test(
         "//ortools/base:log_severity",
         "//ortools/base:map_util",
         "//ortools/base:path",
-        "//ortools/graph_base:graph",
-        "//ortools/graph_base:io",
-        "//ortools/graph_base:random_graph",
-        "//ortools/graph_base:util",
+        "//ortools/graph",
+        "//ortools/graph:io",
+        "//ortools/graph:random_graph",
+        "//ortools/graph:util",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
@@ -499,7 +530,6 @@ or_cc_library(
 or_cc_test(
     name = "n_choose_k_test",
     srcs = ["n_choose_k_test.cc"],
-    tags = ["noci"],
     deps = [
         ":n_choose_k",
         "//ortools/base:dump_vars",

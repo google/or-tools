@@ -34,6 +34,8 @@
 namespace operations_research {
 namespace sat {
 
+class ClausePtr;
+
 // This is how the SatSolver stores a clause. A clause is just a disjunction of
 // literals. In many places, we just use vector<literal> to encode one. But in
 // the critical propagation code, we use this class to remove one memory
@@ -97,7 +99,8 @@ class SatClause {
   // call MarkForRemoval()/Rewrite. ClausePtr needs CreateInternal() to be able
   // to create instances with fewer than two literals.
   friend class ClauseManager;
-  friend class ClausePtr;
+  friend ClausePtr NewClausePtr(absl::Span<const Literal>);
+  friend ClausePtr NewAllocatedClausePtr(absl::Span<const Literal>);
 
   static SatClause* CreateInternal(absl::Span<const Literal> literals);
 
@@ -145,10 +148,14 @@ class SatClause {
 class ClausePtr {
  public:
   enum Type {
+    // An empty clause (always inline).
     kEmptyClause,
-    kUnitClause,
-    kBinaryClause,
-    kSatClause,
+    // An inline unit clause.
+    kInlineUnitClause,
+    // An inline binary clause.
+    kInlineBinaryClause,
+    // An allocated n-ary SatClause. Note that `n` can be 2.
+    kAllocatedSatClause,
   };
 
   // Returns `kNullClausePtr`.
@@ -161,7 +168,7 @@ class ClausePtr {
 
   // Creates the pointer to the given unit clause.
   explicit ClausePtr(Literal a)
-      : ClausePtr({a.Index(), LiteralIndex(kUnitClauseBit)}) {}
+      : ClausePtr({a.Index(), LiteralIndex(kInlineUnitClauseBit)}) {}
 
   // Creates the pointer to the given binary clause. The two literals must be
   // different. The result does not depend on their order.
@@ -176,15 +183,19 @@ class ClausePtr {
     static_assert(sizeof(uint64_t) >= sizeof(uintptr_t));
     static_assert(alignof(SatClause) >= 2);
     const uintptr_t ptr_rep = absl::bit_cast<uintptr_t>(clause);
-    const uint64_t bits = kSatClauseBit | (static_cast<uint64_t>(ptr_rep) >> 1);
+    const uint64_t bits =
+        kAllocatedSatClauseBit | (static_cast<uint64_t>(ptr_rep) >> 1);
     rep_ = rep_from_uint64(bits);
   }
 
-  // Creates a SatClause with the given literals and returns its pointer. This
-  // always creates a `kSatClause` ClausePtr, even if there are 2 literals or
-  // less.
-  explicit ClausePtr(absl::Span<const Literal> literals)
-      : ClausePtr(SatClause::CreateInternal(literals)) {}
+  // Deletes the underlying `SatClause` if it is a `kAllocatedSatClause`, and
+  // resets the pointer to nullptr (kNullClausePtr).
+  void DeleteIfAllocated() {
+    if (IsSatClausePtr()) {
+      delete GetSatClause();
+      *this = ClausePtr();
+    }
+  }
 
   // Returns the type of this pointer, which must not be null.
   Type GetType() const {
@@ -199,38 +210,38 @@ class ClausePtr {
     switch (((bits >> 61) & 4) | ((bits >> 30) & 3)) {
       case 0b000:
       case 0b001:
-        return kBinaryClause;
+        return kInlineBinaryClause;
       case 0b010:
-        return kUnitClause;
+        return kInlineUnitClause;
       case 0b011:
         return kEmptyClause;
       default:
-        return kSatClause;
+        return kAllocatedSatClause;
     }
   }
 
-  // Returns true if this pointer is a `kBinaryClause` pointer.
+  // Returns true if this pointer is a `kInlineBinaryClause` pointer.
   bool IsBinaryClausePtr() const {
     const uint64_t bits = uint64_from_rep(rep_);
-    const uint64_t kBinaryClauseBits = 0x80000000'80000000;
-    return bits != 0 && (bits & kBinaryClauseBits) == 0;
+    const uint64_t kInlineBinaryClauseBits = 0x80000000'80000000;
+    return bits != 0 && (bits & kInlineBinaryClauseBits) == 0;
   }
 
   // Returns the first literal of the pointer's target clause. The pointer must
-  // not be null and must be a `kUnitClause` or `kBinaryClause` pointer. For
-  // binary clauses, the literal order is unspecified.
+  // not be null and must be a `kInlineUnitClause` or `kInlineBinaryClause`
+  // pointer. For binary clauses, the literal order is unspecified.
   Literal GetFirstLiteral() const {
     DCHECK_NE(*this, ClausePtr());
-    DCHECK(GetType() == kUnitClause || GetType() == kBinaryClause);
+    DCHECK(GetType() == kInlineUnitClause || GetType() == kInlineBinaryClause);
     return rep_[1];
   }
 
   // Returns the second literal of the pointer's target clause. The pointer must
-  // not be null and must be a `kBinaryClause` pointer. The literal order is
-  // unspecified.
+  // not be null and must be a `kInlineBinaryClause` pointer. The literal order
+  // is unspecified.
   Literal GetSecondLiteral() const {
     DCHECK_NE(*this, ClausePtr());
-    DCHECK_EQ(GetType(), kBinaryClause);
+    DCHECK_EQ(GetType(), kInlineBinaryClause);
     return rep_[0];
   }
 
@@ -241,18 +252,18 @@ class ClausePtr {
     switch (GetType()) {
       case kEmptyClause:
         return absl::Span<const Literal>();
-      case kUnitClause:
+      case kInlineUnitClause:
         return absl::Span<const Literal>(rep_.data() + 1, 1);
-      case kBinaryClause:
+      case kInlineBinaryClause:
         return absl::Span<const Literal>(rep_.data(), 2);
       default:
         return GetSatClause()->AsSpan();
     }
   }
 
-  // Returns true if this pointer is a `kSatClause` pointer.
+  // Returns true if this pointer is a `kAllocatedSatClause` pointer.
   bool IsSatClausePtr() const {
-    return (rep_[1].Index().value() & (kSatClauseBit >> 32)) != 0;
+    return (rep_[1].Index().value() & (kAllocatedSatClauseBit >> 32)) != 0;
   }
 
   // Returns the SatClause pointer corresponding to this pointer.
@@ -291,8 +302,8 @@ class ClausePtr {
 
  private:
   static constexpr uint32_t kEmptyClauseBits = 0xC0000000;
-  static constexpr uint32_t kUnitClauseBit = 0x80000000;
-  static constexpr uint64_t kSatClauseBit = 0x80000000'00000000;
+  static constexpr uint32_t kInlineUnitClauseBit = 0x80000000;
+  static constexpr uint64_t kAllocatedSatClauseBit = 0x80000000'00000000;
 
   // literals.first, literals.second must be rep_[1], rep_[0], respectively.
   constexpr explicit ClausePtr(std::pair<LiteralIndex, LiteralIndex> literals)
@@ -337,6 +348,10 @@ constexpr ClausePtr kNullClausePtr = ClausePtr();
 // Creates a clause pointer for the given literals. If there are more than 2
 // literals, allocates a SatClause and returns its pointer.
 ClausePtr NewClausePtr(absl::Span<const Literal> literals);
+
+// Creates a clause pointer for the given literals, but never inline the
+// literals (always create a `kAllocatedSatClause`,  even for `n <= 2`).
+ClausePtr NewAllocatedClausePtr(absl::Span<const Literal> literals);
 
 }  // namespace sat
 }  // namespace operations_research

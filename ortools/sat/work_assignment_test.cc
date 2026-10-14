@@ -980,8 +980,9 @@ TEST(SharedTreeEncoderTest, VariableBoundsResolutionLratProof) {
   EXPECT_THAT(manager.GetNode(NodeId(1))->reason_clauses(),
               testing::UnorderedElementsAre(
                   testing::Pair(manager.Decode(leaf_implication), testing::_)));
-  for (ClausePtr clause : leaf_clauses) {
+  for (ClausePtr& clause : leaf_clauses) {
     lrat->DeleteClause(clause);
+    clause.DeleteIfAllocated();
   }
 }
 

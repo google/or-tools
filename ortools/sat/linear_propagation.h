@@ -40,6 +40,7 @@
 #include "ortools/sat/sat_trail.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/rev.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -116,6 +117,7 @@ class ConstraintPropagationOrder {
   int NextId() {
     if (ids_.empty()) return -1;
 
+    DeterministicTimer<{.scale = 5e-9}> timer(time_limit_);
     int best_id = 0;
     int best_num_vars = 0;
     int best_degree = kint32max;
@@ -168,8 +170,7 @@ class ConstraintPropagationOrder {
     }
 
     if (work_done > 100) {
-      time_limit_->AdvanceDeterministicTime(static_cast<double>(work_done) *
-                                            5e-9);
+      timer.Advance(work_done);
     }
 
     // We didn't find any degree zero, we scanned the whole queue.

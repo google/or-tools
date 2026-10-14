@@ -12,6 +12,10 @@
 # limitations under the License.
 
 file(GLOB _SRCS "*.h" "*.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_benchmark.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_bench.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test_util.*")
 set(NAME ${PROJECT_NAME}_constraint_solver)
 
 # Will be merge in libortools.so
@@ -30,6 +34,7 @@ target_include_directories(${NAME} PRIVATE
 target_link_libraries(${NAME} PRIVATE
   ZLIB::ZLIB
   absl::base
+  absl::clock_interface
   absl::memory
   absl::strings
   absl::str_format

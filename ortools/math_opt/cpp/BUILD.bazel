@@ -197,7 +197,6 @@ or_cc_library(
 or_cc_test(
     name = "variable_and_expressions_test",
     srcs = ["variable_and_expressions_test.cc"],
-    tags = ["noci"],
     deps = [
         ":matchers",
         ":math_opt",

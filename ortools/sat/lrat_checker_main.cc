@@ -81,7 +81,7 @@ int Main() {
       for (const int ref : ct.bool_or().literals()) {
         clause.push_back(ref_to_literal(ref));
       }
-      const ClausePtr clause_ptr = ClausePtr(clause);
+      const ClausePtr clause_ptr = NewAllocatedClausePtr(clause);
       CHECK(checker.AddProblemClause(clause_ptr));
       all_clauses[i + 1] = clause_ptr;
     }
@@ -155,7 +155,7 @@ int Main() {
               return error(
                   "second 0 should only appear at the end of the line");
             }
-            const ClausePtr clause_ptr = ClausePtr(clause);
+            const ClausePtr clause_ptr = NewAllocatedClausePtr(clause);
             all_clauses[id] = clause_ptr;
             if (!checker.AddInferredClause(clause_ptr, rup_clauses,
                                            rat_clauses)) {

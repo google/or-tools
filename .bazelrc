@@ -27,6 +27,7 @@ build --define pfm=0
 build --@rules_python//python/config_settings:python_version=3.12
 # Silence non-actionable rules_python repository warnings.
 common --repo_env=RULES_PYTHON_REPO_DEBUG_VERBOSITY=FAIL
+build --incompatible_default_to_explicit_init_py # Stops automatically creating empty __init__.py files in runfiles.
 
 # Fix the Java version
 build --java_language_version=21 # Version of the source files
@@ -93,6 +94,12 @@ build:ci --test_tag_filters=-noci
 
 # Print information only about tests executed
 build:ci --test_summary=short
+
+# Options for nightly full test runs (includes slow tests tagged "noci").
+build:nightly --config=ci
+build:nightly --test_tag_filters=
+build:nightly --test_keep_going
+
 
 ###############################################################################
 # Options for asan.

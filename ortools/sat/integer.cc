@@ -42,6 +42,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/sat_trail.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/rev.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -2216,6 +2217,7 @@ void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output,
   // We process the entries by highest trail_index first. The content of the
   // queue will always be a valid reason for the literals we already added to
   // the output.
+  DeterministicTimer<{.scale = 5e-9}> timer(time_limit_);
   int64_t work_done = 0;
   while (!tmp_queue_.empty()) {
     ++work_done;
@@ -2375,8 +2377,7 @@ void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output,
     tmp_var_to_trail_index_in_queue_[var] = 0;
   }
   tmp_to_clear_.clear();
-
-  time_limit_->AdvanceDeterministicTime(work_done * 5e-9);
+  timer.Advance(work_done);
 }
 
 // TODO(user): If this is called many times on the same variables, it could be
@@ -2559,13 +2560,13 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
 
   // Increase the deterministic time depending on some basic facts about our
   // propagation.
+  DeterministicTimer2<{.scale1 = 1e-8, .scale2 = 1e-7}> timer(time_limit_);
   int64_t num_propagate_calls = 0;
   const int64_t old_enqueue = integer_trail_->num_enqueues();
   auto cleanup =
-      ::absl::MakeCleanup([&num_propagate_calls, old_enqueue, this]() {
+      ::absl::MakeCleanup([&timer, &num_propagate_calls, old_enqueue, this]() {
         const int64_t diff = integer_trail_->num_enqueues() - old_enqueue;
-        time_limit_->AdvanceDeterministicTime(1e-8 * num_propagate_calls +
-                                              1e-7 * diff);
+        timer.Advance(num_propagate_calls, diff);
       });
 
   // Note that the priority may be set to -1 inside the loop in order to restart

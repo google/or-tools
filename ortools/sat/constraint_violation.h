@@ -130,7 +130,7 @@ class LinearIncrementalEvaluator {
   bool ViolationChangeIsConvex(int var) const;
 
   double DeterministicTime() const {
-    return 5e-9 * static_cast<double>(num_ops_);
+    return dtime_.GetElapsedDeterministicTime();
   }
 
   int64_t ObjectiveCoefficient(int var) const {
@@ -239,7 +239,8 @@ class LinearIncrementalEvaluator {
 
   SparseBitset<int> last_affected_variables_;
 
-  mutable size_t num_ops_ = 0;
+  // Used for tracking the deterministic time only.
+  mutable TimeLimit dtime_;
 };
 
 // View of a generic (non-linear) constraint for the LsEvaluator.
@@ -457,7 +458,8 @@ class LsEvaluator {
 
   // TODO(user): Properly account all big time consumers.
   double DeterministicTime() const {
-    return linear_evaluator_.DeterministicTime() + dtime_;
+    return linear_evaluator_.DeterministicTime() +
+           dtime_.GetElapsedDeterministicTime();
   }
 
  private:
@@ -475,7 +477,7 @@ class LsEvaluator {
   LinearIncrementalEvaluator linear_evaluator_;
   std::vector<std::unique_ptr<CompiledConstraint>> constraints_;
   CompactVectorVector<int> var_to_constraints_;
-  std::vector<double> var_to_dtime_estimate_;
+  std::vector<uint64_t> var_to_violation_delta_work_estimate_;
   CompactVectorVector<int> constraint_to_vars_;
   std::vector<bool> jump_value_optimal_;
   TimeLimit* time_limit_;
@@ -486,7 +488,8 @@ class LsEvaluator {
   // Constraint index with changed violations.
   std::vector<int> last_update_violation_changes_;
 
-  mutable double dtime_ = 0;
+  // Used for tracking the deterministic time without updating time_limit_.
+  mutable TimeLimit dtime_;
 };
 
 // ================================

@@ -304,10 +304,12 @@ or_cc_library(
 
 or_cc_library(
     name = "protoutil",
+    srcs = ["protoutil.cc"],
     hdrs = ["protoutil.h"],
     deps = [
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/time",
         "@protobuf//:duration_cc_proto",
     ],
@@ -371,7 +373,6 @@ or_cc_test(
     size = "small",
     timeout = "long",
     srcs = ["strong_int_test.cc"],
-    tags = ["noci"],
     deps = [
         ":strong_int",
         "//ortools/base:gmock_main",

@@ -14,7 +14,6 @@
 # Description: python wrapping of (some of) the code in ../, plus
 # some generic utilities for SWIG python.
 
-load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
 load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library")
@@ -55,7 +54,7 @@ py_test(
     srcs = ["sorted_interval_list_test.py"],
     deps = [
         ":sorted_interval_list",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -133,7 +132,7 @@ py_test(
     deps = [
         ":pybind_solve_interrupter",
         ":pybind_solve_interrupter_testing",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -144,7 +143,7 @@ py_library(
     deps = [
         ":py_solve_interrupter_lib",
         ":pybind_solve_interrupter",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -155,7 +154,7 @@ py_test(
         ":py_solve_interrupter_testing_lib",
         ":pybind_solve_interrupter_testing",
         ":solve_interrupter",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -226,7 +225,7 @@ py_test(
     srcs = ["wrappers_test_message_test.py"],
     deps = [
         ":wrappers_test_message_extension",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -242,6 +241,6 @@ py_test(
     deps = [
         ":status_streaming",
         "//ortools/util:status_py_pb2",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )

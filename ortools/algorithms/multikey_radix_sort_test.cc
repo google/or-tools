@@ -1278,5 +1278,34 @@ TEST(IndirectAutoRadixSortTest, SortCascadedStructs) {
                           CascadedStruct{2, 5}, CascadedStruct{2, 10}));
 }
 
+TEST(AutoRadixSortWithScratchTest, DefaultKeyCallable) {
+  std::vector<int> items = {50, 10, 90, 30, 20};
+  std::vector<int> scratch;
+  AutoRadixSort(items, scratch);
+  EXPECT_THAT(items, ElementsAre(10, 20, 30, 50, 90));
+}
+
+TEST(AutoRadixSortWithScratchTest, LargeRandomMatchesStdStableSort) {
+  absl::BitGen rng;
+  constexpr size_t kSize = 10000;
+  using Pair = std::pair<float, size_t>;
+  std::vector<Pair> items(kSize);
+  for (size_t i = 0; i < kSize; ++i) {
+    // Generate float values in range [-250.0f, 250.0f] with discrete steps so
+    // there are duplicates, allowing verification of sort stability via the
+    // original index.
+    items[i] = {static_cast<float>(absl::Uniform<int>(rng, -250, 250)), i};
+  }
+  std::vector<Pair> expected = items;
+  std::stable_sort(
+      expected.begin(), expected.end(),
+      [](const Pair& a, const Pair& b) { return a.first < b.first; });
+
+  std::vector<Pair> scratch;
+  AutoRadixSort(items, scratch, [](const Pair& p) { return p.first; });
+
+  EXPECT_EQ(items, expected);
+}
+
 }  // namespace
 }  // namespace operations_research

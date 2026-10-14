@@ -14,6 +14,7 @@
 #include "ortools/glop/entering_variable.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdlib>
 #include <limits>
 #include <random>
@@ -46,6 +47,7 @@ ColIndex EnteringVariable::DualChooseEnteringColumn(
   const auto update_coefficients = update_row.GetCoefficients().const_view();
   const auto reduced_costs = reduced_costs_->GetReducedCosts();
   SCOPED_TIME_STAT(&stats_);
+  deterministic_timer_.Start();
 
   breakpoints_.clear();
   breakpoints_.reserve(update_row.GetNonZeroPositions().size());
@@ -84,7 +86,7 @@ ColIndex EnteringVariable::DualChooseEnteringColumn(
       parameters_.degenerate_ministep_factor() *
       reduced_costs_->GetDualFeasibilityTolerance();
 
-  num_operations_ += 10 * update_row.GetNonZeroPositions().size();
+  int64_t num_operations = 10 * update_row.GetNonZeroPositions().size();
   for (const ColIndex col : update_row.GetNonZeroPositions()) {
     // We will add ratio * coeff to this column with a ratio positive or zero.
     // cost_variation makes sure the leaving variable will be dual-feasible
@@ -223,7 +225,10 @@ ColIndex EnteringVariable::DualChooseEnteringColumn(
         stats_.num_perfect_ties.Add(equivalent_entering_choices_.size()));
   }
 
-  if (entering_col == kInvalidCol) return entering_col;
+  if (entering_col == kInvalidCol) {
+    deterministic_timer_.Stop(num_operations);
+    return entering_col;
+  }
 
   // If best_coeff is small and they are potential bound flips, we can take a
   // smaller step but use a good pivot.
@@ -242,6 +247,7 @@ ColIndex EnteringVariable::DualChooseEnteringColumn(
     }
   }
 
+  deterministic_timer_.Stop(num_operations);
   return entering_col;
 }
 
@@ -251,6 +257,7 @@ ColIndex EnteringVariable::DualPhaseIChooseEnteringColumn(
   const auto update_coefficients = update_row.GetCoefficients().const_view();
   const auto reduced_costs = reduced_costs_->GetReducedCosts();
   SCOPED_TIME_STAT(&stats_);
+  deterministic_timer_.Start();
 
   // List of breakpoints where a variable change from feasibility to
   // infeasibility or the opposite.
@@ -272,7 +279,7 @@ ColIndex EnteringVariable::DualPhaseIChooseEnteringColumn(
   const DenseBitRow::ConstView can_increase =
       variables_info_.GetCanIncreaseBitRow().const_view();
   const VariableTypeRow& variable_type = variables_info_.GetTypeRow();
-  num_operations_ += 10 * update_row.GetNonZeroPositions().size();
+  int64_t num_operations = 10 * update_row.GetNonZeroPositions().size();
   for (const ColIndex col : update_row.GetNonZeroPositions()) {
     // Boxed variables shouldn't be in the update position list because they
     // will be dealt with afterwards by MakeBoxedVariableDualFeasible().
@@ -359,6 +366,7 @@ ColIndex EnteringVariable::DualPhaseIChooseEnteringColumn(
     std::pop_heap(breakpoints_.begin(), breakpoints_.end());
     breakpoints_.pop_back();
   }
+  deterministic_timer_.Stop(num_operations);
   return entering_col;
 }
 

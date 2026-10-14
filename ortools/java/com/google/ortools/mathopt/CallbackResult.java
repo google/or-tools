@@ -297,7 +297,7 @@ public final class CallbackResult {
   }
 
   /** Returns a protocol buffer equivalent to {@code this}. */
-  CallbackResultProto toProto() {
+  public CallbackResultProto toProto() {
     var result = CallbackResultProto.newBuilder();
     result.setTerminate(terminate);
     for (ImmutableMap<Variable, Double> solution : suggestedSolutions) {

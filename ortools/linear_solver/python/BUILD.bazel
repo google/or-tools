@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:py_binary.bzl", "py_binary")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
@@ -59,9 +58,9 @@ py_test(
         "//ortools/linear_solver:linear_solver_glop",
         "//ortools/linear_solver:linear_solver_pdlp",
         "//ortools/linear_solver:linear_solver_py_pb2",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("scipy"),
+        "@pip_deps//absl_py",
+        "@pip_deps//numpy",
+        "@pip_deps//scipy",
     ],
 )
 
@@ -69,7 +68,7 @@ py_library(
     name = "model_builder_numbers",
     srcs = ["model_builder_numbers.py"],
     deps = [
-        requirement("numpy"),
+        "@pip_deps//numpy",
     ],
 )
 
@@ -84,8 +83,8 @@ py_library(
         ":model_builder_helper",
         ":model_builder_numbers",
         "//ortools/linear_solver:linear_solver_py_pb2",
-        requirement("numpy"),
-        requirement("pandas"),
+        "@pip_deps//numpy",
+        "@pip_deps//pandas",
     ],
 )
 
@@ -106,9 +105,9 @@ py_test(
         ":model_builder_helper",
         "//ortools/linear_solver:linear_solver_glop",
         "//ortools/linear_solver:linear_solver_py_pb2",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
+        "@pip_deps//absl_py",
+        "@pip_deps//numpy",
+        "@pip_deps//pandas",
         "@protobuf//:protobuf_python",
     ],
 )
@@ -122,7 +121,7 @@ py_binary(
     ],
     deps = [
         ":model_builder",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )
 
@@ -157,7 +156,7 @@ py_test(
         "//ortools/linear_solver:linear_solver_glop",
         "//ortools/linear_solver:linear_solver_pdlp",
         "//ortools/linear_solver:linear_solver_py_pb2",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
         "@protobuf//:protobuf_python",
     ],
 )
@@ -169,6 +168,6 @@ py_test(
     deps = [
         ":pywraplp",
         "//ortools/linear_solver:linear_solver_all",
-        requirement("absl-py"),
+        "@pip_deps//absl_py",
     ],
 )

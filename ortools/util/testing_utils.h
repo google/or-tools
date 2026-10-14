@@ -18,12 +18,23 @@
 
 namespace operations_research {
 
-inline constexpr bool kDebugMode = false;
+inline constexpr bool kDebugMode = DEBUG_MODE;
+
 inline constexpr bool kAsanEnabled = false;
 inline constexpr bool kHwAsanEnabled = false;
 inline constexpr bool kMsanEnabled = false;
 inline constexpr bool kTsanEnabled = false;
-inline bool ProbablyRunningInsideUnitTest() { return false; }
+
+// DO NOT USE: Exposed here for benchmarking. Use the cached version.
+bool UncachedProbablyRunningInsideUnitTest();
+
+// Whether the current binary seems to be running inside a test. Thread-safe.
+// PERFORMANCE: In opt, this takes ~100ns the first time, and ~20ns for any
+// subsequent call.
+bool ProbablyRunningInsideUnitTest();
+
+// Returns true if the program is currently enabling code coverage.
+bool HACK_CodeCoverageIsEnabled();
 
 inline constexpr bool kAnyXsanEnabled =
     kAsanEnabled || kMsanEnabled || kTsanEnabled || kHwAsanEnabled;

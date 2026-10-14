@@ -14,6 +14,7 @@
 file(GLOB _SRCS "*.h" "*.cc")
 list(FILTER _SRCS EXCLUDE REGEX ".*/.*_benchmark.cc")
 list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test_utils.*")
 set(NAME ${PROJECT_NAME}_routing_solver)
 
 # Will be merge in libortools.so

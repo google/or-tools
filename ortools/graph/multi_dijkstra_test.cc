@@ -27,8 +27,8 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/log_severity.h"
-#include "ortools/graph_base/graph.h"
-#include "ortools/graph_base/random_graph.h"
+#include "ortools/graph/graph.h"
+#include "ortools/graph/random_graph.h"
 
 namespace operations_research {
 namespace {

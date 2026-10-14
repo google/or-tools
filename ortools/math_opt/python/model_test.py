@@ -393,7 +393,9 @@ class ModelTest(compare_proto.MathOptProtoAssertions, parameterized.TestCase):
         with self.assertRaisesRegex(
             TypeError, "Unsupported type for expr argument.*str"
         ):
-            mod.add_linear_constraint(expr="string")
+            mod.add_linear_constraint(
+                expr="string"
+            )  # pyrefly: ignore[bad-argument-type]
 
         with self.assertRaisesRegex(ValueError, ".*infinite offset."):
             mod.add_linear_constraint(expr=math.inf, lb=0.0)
@@ -659,29 +661,29 @@ class WrongAttributeTest(absltest.TestCase):
         mod = model.Model(name="test_model")
         x = mod.add_variable()
         with self.assertRaises(AttributeError):
-            x.loer_bnd = 4  # pytype: disable=not-writable
+            x.loer_bnd = 4  # pyrefly: ignore[missing-attribute]
 
     def test_linear_constraint(self) -> None:
         mod = model.Model(name="test_model")
         c = mod.add_linear_constraint()
         with self.assertRaises(AttributeError):
-            c.uper_bound = 8  # pytype: disable=not-writable
+            c.uper_bound = 8  # pyrefly: ignore[missing-attribute]
 
     def test_objective(self) -> None:
         mod = model.Model(name="test_model")
         with self.assertRaises(AttributeError):
-            mod.objective.matimuze = True  # pytype: disable=not-writable
+            mod.objective.matimuze = True  # pyrefly: ignore[missing-attribute]
 
     def test_aux_objective(self) -> None:
         mod = model.Model(name="test_model")
         aux = mod.add_auxiliary_objective(priority=1)
         with self.assertRaises(AttributeError):
-            aux.matimuze = True  # pytype: disable=not-writable
+            aux.matimuze = True  # pyrefly: ignore[missing-attribute]
 
     def test_model(self) -> None:
         mod = model.Model(name="test_model")
         with self.assertRaises(AttributeError):
-            mod.objectize = None  # pytype: disable=not-writable
+            mod.objectize = None  # pyrefly: ignore[missing-attribute]
 
 
 if __name__ == "__main__":

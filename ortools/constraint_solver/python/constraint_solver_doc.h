@@ -15,6 +15,8 @@
   This file contains docstrings for use in the Python bindings.
   Do not edit! They were automatically extracted by pybind11_mkdoc.
  */
+#ifndef ORTOOLS_CONSTRAINT_SOLVER_PYTHON_CONSTRAINT_SOLVER_DOC_H_
+#define ORTOOLS_CONSTRAINT_SOLVER_PYTHON_CONSTRAINT_SOLVER_DOC_H_
 
 #define __EXPAND(x) x
 #define __COUNT(_1, _2, _3, _4, _5, _6, _7, COUNT, ...) COUNT
@@ -6146,3 +6148,5 @@ static const char* __doc_util_Clock = R"doc()doc";
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif
+
+#endif  // ORTOOLS_CONSTRAINT_SOLVER_PYTHON_CONSTRAINT_SOLVER_DOC_H_

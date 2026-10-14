@@ -44,39 +44,57 @@ bazel_dep(name = "eigen", version = "3.4.0.bcr.3")
 bazel_dep(name = "glpk", version = "5.0.bcr.4")
 bazel_dep(name = "google_benchmark", version = "1.9.5")
 bazel_dep(name = "googletest", version = "1.18.0")
-bazel_dep(name = "highs", version = "1.14.0")
+bazel_dep(name = "highs", version = "1.15.1")
 bazel_dep(name = "protobuf-matchers", version = "0.1.2")
 bazel_dep(name = "protobuf", version = "35.1")
-git_override(
+
+# Prefer archive_override with a pinned `integrity` hash over git_override:
+# git_override runs `git fetch` directly into the output base and bypasses
+# Bazel's content-addressable `--repository_cache`, whereas archive_override
+# caches the downloaded tarball in `--repository_cache` (pre-populated in the
+# CI container image), avoiding repeated network fetches and git clone flakes.
+#
+# To compute `integrity` when updating a commit:
+#   HASH=$(curl -fsSL <url> | openssl dgst -sha256 -binary | openssl base64 -A)
+#   echo "sha256-${HASH}"
+archive_override(
     module_name = "protobuf",
-    commit = "35cd01f9fe9afbeea38cc7b979a3b6bfcde82c03",
+    integrity = "sha256-+CZMblax/lnQaqG5nugfdiRu0rRs8shrilD4SC+gVmU=",
     patch_strip = 1,
     patches = ["//:patches/protobuf-v35.1.patch"],
-    remote = "https://github.com/protocolbuffers/protobuf.git",
+    strip_prefix = "protobuf-35cd01f9fe9afbeea38cc7b979a3b6bfcde82c03",
+    urls = ["https://github.com/protocolbuffers/protobuf/archive/35cd01f9fe9afbeea38cc7b979a3b6bfcde82c03.tar.gz"],
 )
+
 bazel_dep(name = "re2", version = "2025-11-05.bcr.1")
 bazel_dep(name = "scip", version = "10.0.3")
 bazel_dep(name = "zlib", version = "1.3.2")
 
 # OR-Tools wrappers dependencies
-bazel_dep(name = "gazelle", version = "0.43.0")
+bazel_dep(name = "gazelle", version = "0.47.0")
 bazel_dep(name = "pybind11_bazel", version = "3.0.1")
 bazel_dep(name = "pybind11_abseil", version = "202402.0")
-git_override(
+
+# Use archive_override instead of git_override so `--repository_cache` caches the archive.
+archive_override(
     module_name = "pybind11_abseil",
-    commit = "70f8b693b3b70573ca785ef62d9f48054f45d786",
+    integrity = "sha256-KPc6HpKkquQ9MBfG49fYKSU8DOHth+rMN/FsR4OQQjM=",
     patch_strip = 1,
     patches = ["//:patches/pybind11_abseil.patch"],
-    remote = "https://github.com/pybind/pybind11_abseil.git",
+    strip_prefix = "pybind11_abseil-70f8b693b3b70573ca785ef62d9f48054f45d786",
+    urls = ["https://github.com/pybind/pybind11_abseil/archive/70f8b693b3b70573ca785ef62d9f48054f45d786.tar.gz"],
 )
 
 bazel_dep(name = "pybind11_protobuf", version = "0.0.0-20240524-1d7a729")
-git_override(
+
+# Use archive_override instead of git_override so `--repository_cache` caches the archive.
+archive_override(
     module_name = "pybind11_protobuf",
-    commit = "f02a2b7653bc50eb5119d125842a3870db95d251",
+    integrity = "sha256-bHEspfweFd8u0fVb2XTDKjBl5lhINhbz/adgdUbbM6s=",
     patch_strip = 1,
     patches = ["//:patches/pybind11_protobuf.patch"],
-    remote = "https://github.com/pybind/pybind11_protobuf.git",
+    strip_prefix = "pybind11_protobuf-f02a2b7653bc50eb5119d125842a3870db95d251",
+    urls = ["https://github.com/pybind/pybind11_protobuf/archive/f02a2b7653bc50eb5119d125842a3870db95d251.tar.gz"],
 )
 
 bazel_dep(name = "swig", version = "4.3.0")

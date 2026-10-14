@@ -1,0 +1,10 @@
+# Test alldiff_bench binary
+
+RUN: $(alldiff_bench)
+CHECK: "=== Size = 1, 1 variables: 1 solutions"
+
+RUN: $(alldiff_bench) --use_range
+CHECK: "=== Size = 1, 1 variables: 1 solutions"
+
+RUN: $(alldiff_bench) --size 5 --print --nb_loops 2
+CHECK: "=== Size = 5, 5 variables: 120 solutions"

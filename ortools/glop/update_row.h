@@ -14,7 +14,6 @@
 #ifndef ORTOOLS_GLOP_UPDATE_ROW_H_
 #define ORTOOLS_GLOP_UPDATE_ROW_H_
 
-#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -25,6 +24,7 @@
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/stats.h"
 
 namespace operations_research {
@@ -108,7 +108,7 @@ class UpdateRow {
 
   // Deterministic time used by the scalar product computation of this class.
   double DeterministicTime() const {
-    return DeterministicTimeForFpOperations(num_operations_);
+    return deterministic_timer_.GetDeterministicTime();
   }
 
   // This returns the asked unit row left inverse. It temporarily invalidate
@@ -161,9 +161,7 @@ class UpdateRow {
     RatioDistribution update_row_density;
   };
 
-  // Track the number of basic floating point multiplication.
-  // Used by DeterministicTime().
-  int64_t num_operations_;
+  LinearDeterministicTimer<{.scale = 2e-9}> deterministic_timer_;
 
   // Glop standard classes.
   GlopParameters parameters_;

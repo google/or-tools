@@ -44,7 +44,7 @@
 #include "ortools/base/macros/buildenv.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/types.h"
-#include "ortools/graph_base/connected_components.h"
+#include "ortools/graph/connected_components.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_copy.h"
 #include "ortools/sat/cp_model_mapping.h"

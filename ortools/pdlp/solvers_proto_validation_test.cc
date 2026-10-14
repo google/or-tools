@@ -71,22 +71,6 @@ void TestDetailedOptimalityCriteriaFieldValidation(
       full_field_name);
 }
 
-// TODO(user): Consider breaking the validations up into separate
-// tests to reduce the risk of accidentally using data from another test.
-TEST(ValidateTerminationCriteria, BadEpsOptimalAbsolute) {
-  TestTerminationCriteriaValidation("eps_optimal_absolute: -1.0",
-                                    "eps_optimal_absolute");
-  TestTerminationCriteriaValidation("eps_optimal_absolute: nan",
-                                    "eps_optimal_absolute");
-}
-
-TEST(ValidateTerminationCriteria, BadEpsOptimalRelative) {
-  TestTerminationCriteriaValidation("eps_optimal_relative: -1.0",
-                                    "eps_optimal_relative");
-  TestTerminationCriteriaValidation("eps_optimal_relative: nan",
-                                    "eps_optimal_relative");
-}
-
 TEST(ValidateTerminationCriteria, BadSimpleEpsOptimalAbsolute) {
   TestTerminationCriteriaValidation(
       "simple_optimality_criteria { eps_optimal_absolute: -1.0}",
@@ -133,24 +117,6 @@ TEST(ValidateTerminationCriteria, BadDetailedEpsOptimalDualityGapAbsolute) {
 TEST(ValidateTerminationCriteria, BadDetailedEpsOptimalDualityGapRelative) {
   TestDetailedOptimalityCriteriaFieldValidation(
       "eps_optimal_objective_gap_relative");
-}
-
-TEST(ValidateTerminationCriteria, DeprecatedAbsoluteOptimalityCriteria) {
-  TerminationCriteria termination_criteria =
-      ParseTextOrDie<TerminationCriteria>("eps_optimal_absolute: 1.0");
-  const absl::Status status = ValidateTerminationCriteria(termination_criteria);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(),
-              HasSubstr("eps_optimal_absolute should not be set (deprecated)"));
-}
-
-TEST(ValidateTerminationCriteria, DeprecatedRelativeOptimalityCriteria) {
-  TerminationCriteria termination_criteria =
-      ParseTextOrDie<TerminationCriteria>("eps_optimal_relative: 1.0");
-  const absl::Status status = ValidateTerminationCriteria(termination_criteria);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(),
-              HasSubstr("eps_optimal_relative should not be set (deprecated)"));
 }
 
 TEST(ValidateTerminationCriteria, BadEpsPriamlInfeasible) {

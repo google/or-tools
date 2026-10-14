@@ -31,7 +31,7 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/types.h"
-#include "ortools/graph_base/strongly_connected_components.h"
+#include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/sat_assignment.h"
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"

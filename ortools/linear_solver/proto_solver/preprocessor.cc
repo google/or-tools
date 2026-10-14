@@ -17,20 +17,26 @@
 #include <cmath>
 #include <cstdint>
 #include <deque>
+#include <functional>
 #include <limits>
 #include <utility>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "ortools/base/types.h"
 #include "ortools/glop/preprocessor.h"
+#include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/sparse.h"
 #include "ortools/lp_data/sparse_column.h"
+#include "ortools/sat/mp_model_wrapper.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/fp_utils.h"
 #include "ortools/util/full_precision_inequalities.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/return_macros.h"
 #include "ortools/util/stats.h"
 
@@ -42,7 +48,6 @@ using ::operations_research::glop::LinearProgram;
 using ::operations_research::glop::RowIndex;
 using ::operations_research::glop::SparseColumn;
 using ::operations_research::glop::SparseMatrix;
-using ::operations_research::glop::StrictITIVector;
 using ::operations_research::glop::SumWithNegativeInfiniteAndOneMissing;
 using ::operations_research::glop::SumWithPositiveInfiniteAndOneMissing;
 
@@ -60,126 +65,124 @@ inline bool AreBoundsValid(Fractional lower_bound, Fractional upper_bound) {
 }
 
 // --------------------------------------------------------
-// IntegerBoundsPreprocessor
+// MakeBoundsInteger
 // --------------------------------------------------------
 
-glop::Preprocessor::Result IntegerBoundsPreprocessor::Run(
-    LinearProgram* linear_program) {
-  SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(linear_program, {.postsolve_is_needed = false});
-  const Fractional tolerance = integer_solution_tolerance_;
-
+bool MakeBoundsInteger(double tolerance, sat::MPModelProtoWrapper* model,
+                       SolverLogger* logger) {
   // Make integer the bounds of integer variables.
   // NOTE(user): it may happen that the new bound will be less strict (but at
-  // most it will be off by integer_solution_tolerance).
-  int64_t num_changed_bounds = 0;
-  for (ColIndex col : linear_program->IntegerVariablesList()) {
-    const Fractional lb =
-        ceil(linear_program->variable_lower_bounds()[col] - tolerance);
-    const Fractional ub =
-        floor(linear_program->variable_upper_bounds()[col] + tolerance);
+  // most it will be off by tolerance).
+  int64_t num_changed_var_bounds = 0;
+  const int num_variables = model->num_variables();
+  for (int col = 0; col < num_variables; ++col) {
+    const MPVariableProto& var = model->variables(col);
+    if (!var.is_integer()) continue;
+    const Fractional lb = std::ceil(var.lower_bound() - tolerance);
+    const Fractional ub = std::floor(var.upper_bound() + tolerance);
     if (!AreBoundsValid(lb, ub)) {
-      return {.postsolve_is_needed = false,
-              .solve_status = glop::PrimalInfeasibleSolveStatus()};
+      return false;
     }
-    if (lb != linear_program->variable_lower_bounds()[col] ||
-        ub != linear_program->variable_upper_bounds()[col]) {
-      num_changed_bounds++;
+    if (lb != var.lower_bound() || ub != var.upper_bound()) {
+      num_changed_var_bounds++;
+      model->mutable_variables(col)->set_lower_bound(lb);
+      model->mutable_variables(col)->set_upper_bound(ub);
     }
-    linear_program->SetVariableBounds(col, lb, ub);
   }
-  VLOG(2) << "IntegerBoundsPreprocessor changed " << num_changed_bounds
-          << " variable bounds.";
 
-  // Make integer the bounds of integer constraints, if it makes them stricter.
-  const SparseMatrix& transpose = linear_program->GetTransposeSparseMatrix();
-  num_changed_bounds = 0;
-  for (RowIndex row = RowIndex(0); row < linear_program->num_constraints();
-       ++row) {
+  // Make integer the bounds of EXACT integer constraints.
+  int64_t num_changed_ct_bounds = 0;
+  const int num_constraints = model->num_constraints();
+  for (int row = 0; row < num_constraints; ++row) {
+    const sat::EnforcedLinearConstraint& ct = model->constraints(row);
+    const int num_terms = ct.num_terms();
     bool integer_constraint = true;
-    for (const SparseColumn::Entry var : transpose.column(RowToColIndex(row))) {
+    for (int i = 0; i < num_terms; ++i) {
+      const Fractional coeff = ct.coeffs(i);
+      if (coeff == 0.0) continue;
+
       // Don't affect the constraint if it has a non-integer variable.
-      if (!linear_program->IsVariableInteger(RowToColIndex(var.row()))) {
+      if (!model->variables(ct.vars(i)).is_integer()) {
         integer_constraint = false;
         break;
       }
+
       // Don't affect the constraint if it has a non-integer coefficient. Note
       // that we require each coefficient to be precisely an integer in order to
       // avoid floating point errors.
-      //
-      // TODO(user): checking integer constraints can go further, e.g.,
-      // x + 2 * y = 4 for binary x and y can never be satisfied. But this
-      // perhaps starts to resemble bound propagation, which might be too much
-      // for a lightweighted preprocessor like this one.
-      if (round(var.coefficient()) != var.coefficient()) {
+      if (std::round(coeff) != coeff) {
         integer_constraint = false;
         break;
       }
     }
     if (integer_constraint) {
-      const Fractional lb =
-          std::ceil(linear_program->constraint_lower_bounds()[row] - tolerance);
-      const Fractional ub = std::floor(
-          linear_program->constraint_upper_bounds()[row] + tolerance);
+      const Fractional lb = std::ceil(ct.lower_bound() - tolerance);
+      const Fractional ub = std::floor(ct.upper_bound() + tolerance);
       if (!AreBoundsValid(lb, ub)) {
-        return {.postsolve_is_needed = false,
-                .solve_status = glop::PrimalInfeasibleSolveStatus()};
+        if (ct.IsEnforced()) continue;
+        return false;
       }
-      if (lb != linear_program->constraint_lower_bounds()[row] ||
-          ub != linear_program->constraint_upper_bounds()[row]) {
-        num_changed_bounds++;
+      if (lb != ct.lower_bound() || ub != ct.upper_bound()) {
+        num_changed_ct_bounds++;
+        model->mutable_constraints(row)->set_lower_bound(lb);
+        model->mutable_constraints(row)->set_upper_bound(ub);
       }
-      linear_program->SetConstraintBounds(row, lb, ub);
     }
   }
-  VLOG(2) << "IntegerBoundsPreprocessor changed " << num_changed_bounds
-          << " constraint bounds.";
-  DCHECK(linear_program->BoundsOfIntegerVariablesAreInteger(tolerance));
-  DCHECK(linear_program->BoundsOfIntegerConstraintsAreInteger(tolerance));
-  return {.postsolve_is_needed = false};
+  if (logger != nullptr &&
+      (num_changed_var_bounds > 0 || num_changed_ct_bounds > 0)) {
+    SOLVER_LOG(
+        logger, "[IntegerBounds] Tightened ",
+        FormatCounter(num_changed_var_bounds), " integer variable bounds and ",
+        FormatCounter(num_changed_ct_bounds), " integer constraint bounds.");
+  }
+  return true;
 }
 
 // --------------------------------------------------------
-// BoundPropagationPreprocessor
+// PropagateBounds
 // --------------------------------------------------------
+
 // TODO(user): This preprocessor is not as efficient as it could be because each
 // time we process a constraint, we rescan all the involved variables. Make it
 // more efficient if it becomes needed. Note that this kind of propagation is
 // probably something we want to do each time we take a branch in the mip
 // search, so probably an efficient class for this will be created at some
 // point.
-glop::Preprocessor::Result BoundPropagationPreprocessor::Run(
-    LinearProgram* linear_program) {
-  SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(linear_program, {.postsolve_is_needed = false});
-  if (!parameters_.use_bound_propagation_preprocessor()) {
-    return {.postsolve_is_needed = false};
-  }
-  const Fractional tolerance = integer_solution_tolerance_;
-
+bool PropagateBounds(double constraint_tolerance, bool relax_to_integer,
+                     sat::MPModelProtoWrapper* model, SolverLogger* logger) {
   // Starts by adding all the row in the 'to_process' queue.
-  StrictITIVector<RowIndex, bool> in_queue(linear_program->num_constraints(),
-                                           false);
-  std::deque<RowIndex> to_process;
-  for (RowIndex row(0); row < linear_program->num_constraints(); ++row) {
-    to_process.push_back(row);
+  const int num_constraints = model->num_constraints();
+  const int num_variables = model->num_variables();
+  std::vector<bool> in_queue(num_constraints, false);
+  std::deque<int> to_process;
+  sat::CompactVectorVectorBuilder<int, int> var_to_constraints_builder;
+  for (int row = 0; row < num_constraints; ++row) {
+    if (model->constraints(row).IsEnforced()) continue;
     in_queue[row] = true;
+    to_process.push_back(row);
+    for (const int col : model->constraints(row).vars()) {
+      var_to_constraints_builder.Add(col, row);
+    }
   }
+  const sat::CompactVectorVector<int, int> var_to_constraints(
+      var_to_constraints_builder, num_variables);
 
-  // This preprocessor will need to access the constraints row by row.
-  const SparseMatrix& transpose = linear_program->GetTransposeSparseMatrix();
   std::vector<double> alpha;
   std::vector<double> beta;
 
   // Now process all the rows until none are left, or a limit on the number of
   // processed rows is reached. The limit is mainly here to prevent infinite
   // loops on corner cases problems. It should not be reached often in practice.
-  const int kMaxNumberOfProcessedRows =
-      linear_program->num_constraints().value() * 10;
+  const int kMaxNumberOfProcessedRows = num_constraints * 10;
+  int num_pushes = 0;
   for (int i = 0; i < kMaxNumberOfProcessedRows && !to_process.empty(); ++i) {
-    const RowIndex row = to_process.front();
+    const int row = to_process.front();
     in_queue[row] = false;
     to_process.pop_front();
+
+    const sat::EnforcedLinearConstraint& ct = model->constraints(row);
+    const int num_terms = ct.num_terms();
 
     // For each variable of a constraint on n variables, we want the bound
     // implied by the (n - 1) other variables and the constraint bounds. We use
@@ -190,13 +193,13 @@ glop::Preprocessor::Result BoundPropagationPreprocessor::Run(
 
     // Initialize the sums.
     bool skip = false;
-    for (const SparseColumn::Entry e : transpose.column(RowToColIndex(row))) {
-      const ColIndex col = RowToColIndex(e.row());
-      Fractional entry_lb =
-          e.coefficient() * linear_program->variable_lower_bounds()[col];
-      Fractional entry_ub =
-          e.coefficient() * linear_program->variable_upper_bounds()[col];
-      if (e.coefficient() < 0.0) std::swap(entry_lb, entry_ub);
+    for (int term_idx = 0; term_idx < num_terms; ++term_idx) {
+      const int col = ct.vars(term_idx);
+      const Fractional coeff = ct.coeffs(term_idx);
+      if (coeff == 0.0) continue;
+      Fractional entry_lb = coeff * model->variables(col).lower_bound();
+      Fractional entry_ub = coeff * model->variables(col).upper_bound();
+      if (coeff < 0.0) std::swap(entry_lb, entry_ub);
       if (entry_lb == kInfinity || entry_ub == -kInfinity) {
         // TODO(user): our SumWithOneMissing does not deal well with infinity of
         // the wrong sign. For now when this happen we skip this constraint.
@@ -215,11 +218,11 @@ glop::Preprocessor::Result BoundPropagationPreprocessor::Run(
     //    sum(entries) + (-activity) = 0,
     // where (-activity) has bounds [-constraint_ub, -constraint_lb].
     // We use this latter convention to simplify our code.
-    lb_sum.Add(-linear_program->constraint_upper_bounds()[row]);
-    ub_sum.Add(-linear_program->constraint_lower_bounds()[row]);
+    lb_sum.Add(-ct.upper_bound());
+    ub_sum.Add(-ct.lower_bound());
 
-    auto compute_exact_ub_other = [&](ColIndex target_col) -> Fractional {
-      const Fractional ct_lb = linear_program->constraint_lower_bounds()[row];
+    auto compute_exact_ub_other = [&](int target_col) -> Fractional {
+      const Fractional ct_lb = ct.lower_bound();
       DCHECK(std::isfinite(ct_lb));
       alpha.clear();
       beta.clear();
@@ -227,18 +230,17 @@ glop::Preprocessor::Result BoundPropagationPreprocessor::Run(
         alpha.push_back(-1.0);
         beta.push_back(ct_lb);
       }
-      if (tolerance != 0.0) {
+      if (constraint_tolerance != 0.0) {
         alpha.push_back(1.0);
-        beta.push_back(tolerance);
+        beta.push_back(constraint_tolerance);
       }
-      for (const SparseColumn::Entry e_other :
-           transpose.column(RowToColIndex(row))) {
-        const ColIndex col_other = RowToColIndex(e_other.row());
+      for (int term_idx = 0; term_idx < num_terms; ++term_idx) {
+        const int col_other = ct.vars(term_idx);
         if (col_other == target_col) continue;
-        const Fractional c = e_other.coefficient();
-        const Fractional b =
-            (c > 0.0) ? linear_program->variable_upper_bounds()[col_other]
-                      : linear_program->variable_lower_bounds()[col_other];
+        const Fractional c = ct.coeffs(term_idx);
+        const Fractional b = (c > 0.0)
+                                 ? model->variables(col_other).upper_bound()
+                                 : model->variables(col_other).lower_bound();
         DCHECK(std::isfinite(b));
         if (c != 0.0 && b != 0.0) {
           alpha.push_back(c);
@@ -248,8 +250,8 @@ glop::Preprocessor::Result BoundPropagationPreprocessor::Run(
       return GetLooseDotProductBounds(alpha, beta).second;
     };
 
-    auto compute_exact_lb_other = [&](ColIndex target_col) -> Fractional {
-      const Fractional ct_ub = linear_program->constraint_upper_bounds()[row];
+    auto compute_exact_lb_other = [&](int target_col) -> Fractional {
+      const Fractional ct_ub = ct.upper_bound();
       DCHECK(std::isfinite(ct_ub));
       alpha.clear();
       beta.clear();
@@ -257,18 +259,17 @@ glop::Preprocessor::Result BoundPropagationPreprocessor::Run(
         alpha.push_back(-1.0);
         beta.push_back(ct_ub);
       }
-      if (tolerance != 0.0) {
+      if (constraint_tolerance != 0.0) {
         alpha.push_back(-1.0);
-        beta.push_back(tolerance);
+        beta.push_back(constraint_tolerance);
       }
-      for (const SparseColumn::Entry e_other :
-           transpose.column(RowToColIndex(row))) {
-        const ColIndex col_other = RowToColIndex(e_other.row());
+      for (int term_idx = 0; term_idx < num_terms; ++term_idx) {
+        const int col_other = ct.vars(term_idx);
         if (col_other == target_col) continue;
-        const Fractional c = e_other.coefficient();
-        const Fractional b =
-            (c > 0.0) ? linear_program->variable_lower_bounds()[col_other]
-                      : linear_program->variable_upper_bounds()[col_other];
+        const Fractional c = ct.coeffs(term_idx);
+        const Fractional b = (c > 0.0)
+                                 ? model->variables(col_other).lower_bound()
+                                 : model->variables(col_other).upper_bound();
         DCHECK(std::isfinite(b));
         if (c != 0.0 && b != 0.0) {
           alpha.push_back(c);
@@ -280,11 +281,12 @@ glop::Preprocessor::Result BoundPropagationPreprocessor::Run(
 
     // Process the variables one by one and check if the implied bounds are
     // more restrictive.
-    for (const SparseColumn::Entry e : transpose.column(RowToColIndex(row))) {
-      const ColIndex col = RowToColIndex(e.row());
-      const Fractional coeff = e.coefficient();
-      const Fractional var_lb = linear_program->variable_lower_bounds()[col];
-      const Fractional var_ub = linear_program->variable_upper_bounds()[col];
+    for (int term_idx = 0; term_idx < num_terms; ++term_idx) {
+      const int col = ct.vars(term_idx);
+      const Fractional coeff = ct.coeffs(term_idx);
+      if (coeff == 0.0) continue;
+      const Fractional var_lb = model->variables(col).lower_bound();
+      const Fractional var_ub = model->variables(col).upper_bound();
       Fractional entry_lb = coeff * var_lb;
       Fractional entry_ub = coeff * var_ub;
       if (coeff < 0.0) std::swap(entry_lb, entry_ub);
@@ -298,9 +300,10 @@ glop::Preprocessor::Result BoundPropagationPreprocessor::Run(
       if (coeff < 0.0) std::swap(implied_lb, implied_ub);
 
       // If the variable is integer, make the implied bounds integer.
-      if (linear_program->IsVariableInteger(col)) {
-        implied_lb = std::ceil(implied_lb - tolerance);
-        implied_ub = std::floor(implied_ub + tolerance);
+      const bool is_integer = model->variables(col).is_integer();
+      if (is_integer) {
+        implied_lb = std::ceil(implied_lb - constraint_tolerance);
+        implied_ub = std::floor(implied_ub + constraint_tolerance);
       }
 
       // more restrictive? If yes, re-check with exact dot product bounds
@@ -315,8 +318,13 @@ glop::Preprocessor::Result BoundPropagationPreprocessor::Run(
                                              ? compute_exact_ub_other(col)
                                              : compute_exact_lb_other(col);
           exact_implied_lb = std::nextafter(-other_bound / coeff, -kInfinity);
-          if (linear_program->IsVariableInteger(col)) {
-            exact_implied_lb = std::ceil(exact_implied_lb - tolerance);
+          if (is_integer) {
+            // Note that there is no need to use tolerance here. If we are past
+            // the exact bound, the activity should be more than tolerance away
+            // from the constraint bound.
+            exact_implied_lb = std::ceil(exact_implied_lb);
+          } else if (relax_to_integer) {
+            exact_implied_lb = std::floor(exact_implied_lb);
           }
         }
         if (implied_ub < var_ub) {
@@ -324,31 +332,34 @@ glop::Preprocessor::Result BoundPropagationPreprocessor::Run(
                                              ? compute_exact_lb_other(col)
                                              : compute_exact_ub_other(col);
           exact_implied_ub = std::nextafter(-other_bound / coeff, kInfinity);
-          if (linear_program->IsVariableInteger(col)) {
-            exact_implied_ub = std::floor(exact_implied_ub + tolerance);
+          if (is_integer) {
+            // Same as above, no tolerance needed here.
+            exact_implied_ub = std::floor(exact_implied_ub);
+          } else if (relax_to_integer) {
+            exact_implied_ub = std::ceil(exact_implied_ub);
           }
         }
 
         Fractional new_lb = std::max(exact_implied_lb, var_lb);
         Fractional new_ub = std::min(exact_implied_ub, var_ub);
         if (new_lb > new_ub) {
-          if (linear_program->IsVariableInteger(col) &&
-              new_lb - tolerance <= new_ub) {
+          if (is_integer && new_lb - constraint_tolerance <= new_ub) {
             new_lb = new_ub = std::round(new_lb);
           } else {
-            return {.postsolve_is_needed = false,
-                    .solve_status = glop::PrimalInfeasibleSolveStatus()};
+            return false;
           }
         }
 
         // This extra test avoids reprocessing many rows for no reason.
         // It can be false if we run into the case new_lb > new_ub above.
         if (new_ub != var_ub || new_lb != var_lb) {
-          linear_program->SetVariableBounds(col, new_lb, new_ub);
-          for (SparseColumn::Entry e : linear_program->GetSparseColumn(col)) {
-            if (!in_queue[e.row()]) {
-              to_process.push_back(e.row());
-              in_queue[e.row()] = true;
+          ++num_pushes;
+          model->mutable_variables(col)->set_lower_bound(new_lb);
+          model->mutable_variables(col)->set_upper_bound(new_ub);
+          for (const int c : var_to_constraints[col]) {
+            if (!in_queue[c]) {
+              to_process.push_back(c);
+              in_queue[c] = true;
             }
           }
         }
@@ -360,16 +371,18 @@ glop::Preprocessor::Result BoundPropagationPreprocessor::Run(
         << "Propagation limit reached in the BoundPropagationPreprocessor, "
         << "maybe the limit should be increased.";
   }
-  DCHECK(linear_program->BoundsOfIntegerVariablesAreInteger(
-      integer_solution_tolerance_));
-  DCHECK(linear_program->BoundsOfIntegerConstraintsAreInteger(
-      integer_solution_tolerance_));
-  return {.postsolve_is_needed = false};
+  if (logger != nullptr && num_pushes > 0) {
+    SOLVER_LOG(logger, "[BoundPropagation] Pushed ", FormatCounter(num_pushes),
+               " bounds.");
+  }
+
+  return true;
 }
 
 // --------------------------------------------------------
 // ImpliedIntegerPreprocessor
 // --------------------------------------------------------
+
 glop::Preprocessor::Result ImpliedIntegerPreprocessor::Run(
     LinearProgram* linear_program) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
@@ -574,6 +587,108 @@ glop::Preprocessor::Result ReduceCostOverExclusiveOrConstraintPreprocessor::Run(
     }
   }
   return {.postsolve_is_needed = false};
+}
+
+// --------------------------------------------------------
+// ShiftVariableBounds
+// --------------------------------------------------------
+
+std::vector<double> ShiftVariableBounds(
+    const std::function<double(const MPVariableProto&)>& get_var_shift,
+    sat::MPModelProtoWrapper* model, SolverLogger* logger) {
+  const int num_cols = model->num_variables();
+  std::vector<double> offsets(num_cols, 0.0);
+  int num_shifted = 0;
+  double max_shift = 0.0;
+  glop::KahanSum objective_offset;
+  for (int col = 0; col < num_cols; ++col) {
+    const MPVariableProto& var = model->variables(col);
+    const double offset = get_var_shift(var);
+    if (offset != 0.0) {
+      // We should never shift an integer variable by a non-integer value, this
+      // is not correct.
+      CHECK(std::isfinite(offset));
+      if (var.is_integer()) CHECK_EQ(offset, std::round(offset));
+
+      ++num_shifted;
+      offsets[col] = offset;
+      objective_offset.Add(var.objective_coefficient() * offset);
+      max_shift = std::max(max_shift, std::abs(offset));
+    }
+  }
+
+  if (num_shifted == 0) return {};
+  if (!std::isfinite(objective_offset.Value())) return {};
+
+  const int num_rows = model->num_constraints();
+  std::vector<double> row_offsets(num_rows, 0.0);
+  for (int row = 0; row < num_rows; ++row) {
+    const sat::EnforcedLinearConstraint& ct = model->constraints(row);
+    const int num_terms = ct.num_terms();
+    glop::KahanSum sum;
+    for (int k = 0; k < num_terms; ++k) {
+      const int col = ct.vars(k);
+      const Fractional offset = offsets[col];
+      if (offset != 0.0) {
+        sum.Add(ct.coeffs(k) * offset);
+      }
+    }
+    if (!std::isfinite(sum.Value())) return {};
+    row_offsets[row] = sum.Value();
+  }
+
+  // Do the actual shifting.
+  for (int col = 0; col < num_cols; ++col) {
+    const Fractional offset = offsets[col];
+    if (offset != 0.0) {
+      MPVariableProto* var = model->mutable_variables(col);
+      var->set_lower_bound(var->lower_bound() - offset);
+      var->set_upper_bound(var->upper_bound() - offset);
+    }
+  }
+  for (int row = 0; row < num_rows; ++row) {
+    sat::EnforcedLinearConstraint* ct = model->mutable_constraints(row);
+    for (int i = 0; i < ct->enforcement_vars().size(); ++i) {
+      const int col = ct->enforcement_vars()[i];
+      if (offsets[col] != 0.0) {
+        // Note that we should only have integer enforcement with a domain
+        // containing integer value expressible as int.
+        DCHECK_LE(offsets[col], static_cast<double>(kint64max));
+        DCHECK_GE(offsets[col], static_cast<double>(kint64min));
+        ct->set_enforcement_values(i, ct->enforcement_values()[i] -
+                                          static_cast<int64_t>(offsets[col]));
+      }
+    }
+    const Fractional row_offset = row_offsets[row];
+    if (row_offset != 0.0) {
+      ct->set_lower_bound(ct->lower_bound() - row_offset);
+      ct->set_upper_bound(ct->upper_bound() - row_offset);
+    }
+  }
+  if (objective_offset.Value() != 0.0) {
+    model->set_objective_offset(model->objective_offset() +
+                                objective_offset.Value());
+  }
+
+  // Update the hint if any.
+  if (model->mutable_underlying_model()->has_solution_hint()) {
+    PartialVariableAssignment* hint =
+        model->mutable_underlying_model()->mutable_solution_hint();
+    for (int i = 0; i < hint->var_index_size(); ++i) {
+      const int col = hint->var_index(i);
+      if (col >= 0 && col < num_cols) {
+        hint->set_var_value(i, hint->var_value(i) - offsets[col]);
+      }
+    }
+  }
+
+  if (logger != nullptr && num_shifted > 0) {
+    SOLVER_LOG(logger, "[Shifting] Shifted ", FormatCounter(num_shifted),
+               " variable towards zero with max shift magnitude ", max_shift,
+               ".");
+  }
+
+  return offsets;
 }
 
 }  // namespace operations_research

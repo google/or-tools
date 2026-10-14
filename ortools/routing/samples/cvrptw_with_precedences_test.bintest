@@ -1,1 +1,0 @@
-RUN: $(cvrptw_with_precedences) --vrp_use_deterministic_random_seed

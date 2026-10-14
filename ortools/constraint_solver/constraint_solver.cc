@@ -21,7 +21,6 @@
 #include <cstdint>
 #include <deque>
 #include <iosfwd>
-#include <limits>
 #include <memory>
 #include <ostream>
 #include <string>
@@ -34,6 +33,7 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/time/clock_interface.h"
 #include "absl/time/time.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
@@ -127,7 +127,7 @@ constexpr typename std::underlying_type<E>::type to_underlying(E e) {
 
 ConstraintSolverParameters Solver::DefaultSolverParameters() {
   ConstraintSolverParameters params;
-  params.set_compress_trail(ConstraintSolverParameters::NO_COMPRESSION);
+  params.set_compress_trail(ConstraintSolverParameters::COMPRESS_WITH_ZLIB);
   params.set_trail_block_size(8000);
   params.set_array_split_size(16);
   params.set_store_names(true);
@@ -853,6 +853,28 @@ class BalancingDecision : public Decision {
 
 Decision* Solver::MakeFailDecision() { return fail_decision_.get(); }
 
+// ---------- Clock timer ----------
+// Similar to WallTimer but uses Clock to allow dependency injection for
+// unit-testing purposes.
+
+class ClockTimer {
+ public:
+  ClockTimer() { SetClock(&absl::Clock::GetRealClock()); }
+  absl::Duration GetDuration() const {
+    return clock_->TimeNow() - GetStartTime();
+  }
+  absl::Time GetStartTime() const { return clock_offset_; }
+  void SetClock(absl::Clock* clock) {
+    clock_ = clock;
+    clock_offset_ = clock_->TimeNow();
+  }
+  void Restart() { clock_offset_ = clock_->TimeNow(); }
+
+ private:
+  absl::Clock* clock_ = nullptr;
+  absl::Time clock_offset_;
+};
+
 // ------------------ Solver class -----------------
 
 extern PropagationMonitor* BuildTrace(Solver* s);
@@ -988,6 +1010,8 @@ std::string Solver::DebugString() const {
       demon_runs_[VAR_PRIORITY], demon_runs_[NORMAL_PRIORITY], wall_time());
   return out;
 }
+
+void Solver::SetClock(absl::Clock* clock) { timer_->SetClock(clock); }
 
 int64_t Solver::wall_time() const {
   return absl::ToInt64Milliseconds(timer_->GetDuration());
@@ -1486,7 +1510,7 @@ class ReverseDecision : public Decision {
   std::string DebugString() const override {
     std::string str = "Reverse(";
     str += decision_->DebugString();
-    str += ")";
+    str += ')';
     return str;
   }
 
@@ -2117,7 +2141,7 @@ ProfiledDecisionBuilder::ProfiledDecisionBuilder(DecisionBuilder* db)
     : db_(db), name_(db_->GetName()), seconds_(0) {}
 
 Decision* ProfiledDecisionBuilder::Next(Solver* solver) {
-  timer_.Start();
+  timer_.Restart();
   solver->set_context(name());
   // In case db_->Next() fails, gathering the running time on backtrack.
   solver->AddBacktrackAction(

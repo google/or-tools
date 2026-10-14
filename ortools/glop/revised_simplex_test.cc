@@ -15,15 +15,18 @@
 
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <ostream>
 #include <random>
+#include <sstream>
 #include <string>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "absl/base/attributes.h"
 #include "absl/base/no_destructor.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/flags/declare.h"
@@ -33,6 +36,7 @@
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
+#include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
@@ -41,6 +45,7 @@
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/glop/glop_testing.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/preprocessor.h"
 #include "ortools/glop/preprocessor_testing.h"
@@ -51,6 +56,8 @@
 #include "ortools/lp_data/lp_types_testing.h"
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse_row.h"
+#include "ortools/port/attributes.h"
+#include "ortools/util/fp_roundtrip_conv.h"
 #include "ortools/util/fp_utils_testing.h"
 #include "ortools/util/time_limit.h"
 
@@ -63,6 +70,7 @@ namespace {
 
 using ::testing::_;
 using ::testing::AnyOf;
+using ::testing::AnyOfArray;
 using ::testing::ElementsAre;
 
 // Duration of tests that use a loop where they generate random data and repeat
@@ -102,13 +110,13 @@ struct RandomWithFixableSeed {
   // The seed used to initialize the std::mt19937.
   struct Seed {
     // The seed value.
-    std::mt19937::result_type value ABSL_REQUIRE_EXPLICIT_INIT;
+    std::mt19937::result_type value ORTOOLS_REQUIRE_EXPLICIT_INIT;
 
     // True if the seed used has been fixed by the --revised_simplex_test_seed
     // flag.
     //
     // This value is always the same as the one returned by fixed().
-    bool fixed ABSL_REQUIRE_EXPLICIT_INIT;
+    bool fixed ORTOOLS_REQUIRE_EXPLICIT_INIT;
 
     friend std::ostream& operator<<(std::ostream& out, const Seed& seed) {
       out << "RandomWithFixableSeed::Seed{.value=" << seed.value
@@ -987,48 +995,269 @@ TEST(RevisedSimplexTest, PrimalUnboundedMaximization) {
             time_limit->GetElapsedDeterministicTime());
 }
 
-TEST(RevisedSimplexTest, DualUnbounded) {
-  std::unique_ptr<LinearProgram> lp(new LinearProgram);
-  const ColIndex a = lp->CreateNewVariable();
-  const ColIndex b = lp->CreateNewVariable();
-  const RowIndex r = lp->CreateNewConstraint();
-  const RowIndex s = lp->CreateNewConstraint();
+// A test model for RevisedSimplexDualRayTest parametric test.
+struct RevisedSimplexDualRayTestModel {
+  // Name of the model. It is used as a part of the name of the test, thus it
+  // must only contains characters, numbers and underscores (NO spaces, commas,
+  // ...).
+  std::string name ORTOOLS_REQUIRE_EXPLICIT_INIT;
 
-  lp->SetVariableBounds(a, 0.0, kInfinity);
-  lp->SetVariableBounds(b, 0.0, kInfinity);
+  // The model that will parsed by ParseLp().
+  //
+  // The objective direction is overwritten by the test, as a convention it
+  // should be written as a minimization to align with the rays in
+  // expected_minimization_dual_rays.
+  std::string lp_model ORTOOLS_REQUIRE_EXPLICIT_INIT;
 
-  // r: a + b = 1;
-  lp->SetConstraintBounds(r, 1.0, 1.0);
-  lp->SetCoefficient(r, a, 1.0);
-  lp->SetCoefficient(r, b, 1.0);
+  // An exhaustive list of dual rays that can be produced by:
+  // * either the phase II of the dual simplex,
+  // * or the phase I of the primal simplex,
+  // when solving a minimization of lp_model (rays for maximization are the
+  // opposite).
+  //
+  // Only the values of RevisedSimplex::GetDualRayRowCombination() are specified
+  // here. By designed of the problem in computational form (A'⋅x' = 0 where
+  // A'=[A|I] and x'=[x|slacks]), the RevisedSimplex::GetDualRay() will
+  // correspond to the values of the constraints' slack variables.
+  //
+  // For non trivial models, this list can be obtained by
+  // iterating on all non-singular basis. For each basis:
+  //
+  // * to generate primal simplex phase I ray:
+  //   - modify the objective like VariableValues::UpdatePrimalPhaseICosts(),
+  //   - compute the basic solution of the minimization,
+  //   - if this solution is dual feasible, the opposite of the solution dual
+  //     values of the constraints is the ray; the resulting row combination
+  //     will produce the dual values for the bounds.
+  //
+  // * to generate dual simplex phase II rays:
+  //   - compute the basic solution of the minimization,
+  //   - if it is dual feasible, for each primal infeasibility:
+  //     - compute -B^-1^T ⋅ t e_j where j is the column of the infeasibility
+  //       t=-1 if the infeasibility is due to the lower-bound, t=+1 if it is
+  //       the upper-bound (i.e. the same as
+  //       VariableValues::UpdatePrimalPhaseICosts() but with only one
+  //       infeasibility, not all at once),
+  //     - if the implied lower-bound (see RevisedSimplex::SolveInternalImpl())
+  //       of the dual ray is positive, i.e. the ray is a proof of
+  //       infeasibility, keep the ray. Note that here we must not test that the
+  //       ray dual values for all bounds have the same sign as the feasible
+  //       basic dual solution. Glop can do bounds inversion in dual-simplex,
+  //       which could lead to a ray with different feasible dual signs.
+  std::vector<DenseRow> expected_minimization_dual_ray_row_combinations
+      ORTOOLS_REQUIRE_EXPLICIT_INIT;
+};
 
-  // s: a + b = 0;
-  lp->SetConstraintBounds(s, 0.0, 0.0);
-  lp->SetCoefficient(s, a, 1.0);
-  lp->SetCoefficient(s, b, 1.0);
+std::ostream& operator<<(std::ostream& out,
+                         const RevisedSimplexDualRayTestModel& model) {
+  out << "{ name: " << model.name << ", lp_model: '"
+      << absl::CEscape(model.lp_model)
+      << "', expected_minimization_dual_ray_row_combinations: [";
+  bool first_ray = true;
+  for (const auto& dual_ray :
+       model.expected_minimization_dual_ray_row_combinations) {
+    if (first_ray) {
+      first_ray = false;
+    } else {
+      out << ", ";
+    }
 
-  std::unique_ptr<RevisedSimplex> solver(new RevisedSimplex);
-  std::unique_ptr<TimeLimit> time_limit = TimeLimit::Infinite();
-  GlopParameters parameters;
-  AddSlackVariablesPreprocessor preprocessor(&parameters);
-  preprocessor.SetTimeLimit(time_limit.get());
-  EXPECT_THAT(preprocessor.Run(lp.get()),
-              PreprocessorResultIs(/*postsolve_is_needed=*/true,
-                                   /*status=*/std::nullopt));
-
-  parameters.set_use_dual_simplex(true);
-  solver->SetParameters(parameters);
-  EXPECT_THAT(solver->Solve(*lp, *time_limit),
-              SolveStatusWith<SolveStatus::DualUnbounded>(_));
-  EXPECT_EQ(ProblemStatus::DUAL_UNBOUNDED, solver->GetProblemStatus());
-  EXPECT_EQ(kInfinity, solver->GetObjectiveValue());
-
-  // This vector is such that ray.A >= 0 and ray.rhs < 0.
-  DenseColumn ray = solver->GetDualRay();
-  EXPECT_THAT(ray, ElementsAre(-1.0, 1.0));
-  EXPECT_EQ(solver->DeterministicTime(),
-            time_limit->GetElapsedDeterministicTime());
+    out << '[';
+    bool first = true;
+    for (const Fractional value : dual_ray) {
+      if (first) {
+        first = false;
+      } else {
+        out << ", ";
+      }
+      out << RoundTripDoubleFormat(value);
+    }
+    out << ']';
+  }
+  out << "] }";
+  return out;
 }
+
+struct RevisedSimplexDualRayTest
+    : ::testing::TestWithParam<std::tuple<RevisedSimplexDualRayTestModel,
+                                          TestAlgorithm, TestDirection>> {
+ protected:
+  // Shortcuts to get parameters.
+  const RevisedSimplexDualRayTestModel& model() const {
+    return std::get<RevisedSimplexDualRayTestModel>(GetParam());
+  }
+  TestDirection direction() const {
+    return std::get<TestDirection>(GetParam());
+  }
+  TestAlgorithm algorithm() const {
+    return std::get<TestAlgorithm>(GetParam());
+  }
+};
+
+TEST_P(RevisedSimplexDualRayTest, Optimize) {
+  LinearProgram lp;
+  ASSERT_TRUE(ParseLp(
+      std::get<RevisedSimplexDualRayTestModel>(GetParam()).lp_model, &lp));
+  lp.SetMaximizationProblem(direction() == TestDirection::kMaximize);
+
+  // As of today (2026-09) rays can only be returned without pre-processing or
+  // scaling.
+  GlopParameters parameters;
+  parameters.set_use_preprocessing(false);
+  parameters.set_use_scaling(false);
+
+  parameters.set_use_dual_simplex(algorithm() == TestAlgorithm::kDualSimplex);
+
+  RevisedSimplex solver;
+  solver.SetParameters(parameters);
+
+  std::unique_ptr<TimeLimit> time_limit = TimeLimit::Infinite();
+  const SolveStatus solve_status = solver.Solve(lp, *time_limit);
+  switch (algorithm()) {
+    case TestAlgorithm::kPrimalSimplex:
+      EXPECT_THAT(solve_status,
+                  SolveStatusWith<SolveStatus::PrimalInfeasible>(_));
+      break;
+    case TestAlgorithm::kDualSimplex:
+      EXPECT_THAT(solve_status, SolveStatusWith<SolveStatus::DualUnbounded>(_));
+      break;
+  }
+
+  // Note that the dual ray of the RevisedSimplex sign is always the one of a
+  // minimization. As of writing (2026-09), the dual ray API is used by SCIP and
+  // thus can't be modified.
+  EXPECT_THAT(
+      solver.GetDualRayRowCombination(),
+      AnyOfArray(model().expected_minimization_dual_ray_row_combinations));
+  // Extract the constraints combination factors from the corresponding
+  // constraints slack columns.
+  std::vector<DenseColumn> expected_dual_rays;
+  const ColIndex first_slack_col = lp.num_variables();
+  for (const DenseRow& dual_ray_row_combination :
+       model().expected_minimization_dual_ray_row_combinations) {
+    DenseColumn expected_dual_ray;
+    for (RowIndex r = {}; r < solver.GetProblemNumRows(); ++r) {
+      const ColIndex slack_col = first_slack_col + ColIndex(r.value());
+      expected_dual_ray.push_back(dual_ray_row_combination[slack_col]);
+    }
+    expected_dual_rays.push_back(std::move(expected_dual_ray));
+  }
+  EXPECT_THAT(solver.GetDualRay(), AnyOfArray(expected_dual_rays));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    All, RevisedSimplexDualRayTest,
+    testing::Combine(
+        testing::Values(
+            RevisedSimplexDualRayTestModel{
+                .name = "incompatible_equality_constraints",
+                .lp_model = ("min: 0;"
+                             "r: + a + b = 1;"
+                             "s: + a + b = 0;"
+                             "a >= 0;"
+                             "b >= 0;"),
+                .expected_minimization_dual_ray_row_combinations =
+                    {
+                        {0.0, 0.0, -1.0, 1.0},
+                    }},
+            RevisedSimplexDualRayTestModel{
+                .name = "bounds_on_constraints_only",
+                .lp_model = ("min: 1 x1 + 1 x2;"
+                             "c1:  1 <= 1 x1 + 1 x2 <= 1;"
+                             "c2:  0 <= 1 x1 + 1 x2 <= 0;"),
+                // Dual:
+                //
+                //   max y_1
+                //
+                //      y_1 + y_2 == 1
+                //      y_1 + y_2 == 1
+                //
+                // Any unbounded direction for the dual problems satisfies y1 =
+                // - y2. For the max dual the unique (up to positive scaling)
+                // ray that improves the objective is y = (1, -1) and for the
+                // min dual it is y = (-1, 1).
+                //
+                .expected_minimization_dual_ray_row_combinations =
+                    {
+                        {0.0, 0.0, -1.0, 1.0},
+                    },
+            },
+            RevisedSimplexDualRayTestModel{
+                .name = "bounds_variables_and_constraints",
+                .lp_model = ("min: 1 x1 + 1 x2;"
+                             "x1 >= 0;"
+                             "x2 >= 0;"
+                             "c1: 1 x1 + 1 x2 <= -1;"),
+                // Dual:
+                //
+                //   max  -y_1
+                //
+                //      y_1 + r_1 == 1
+                //      y_1 + r_2 == 1
+                //            y_1 <= 0
+                //       r_1, r_2 >= 0
+                //
+                // where r_1 and r_2 are the dual multipliers associated to the
+                // variable bounds.  The unique (up to positive scaling)
+                // cost-improving unboundedness direction for the dual is y_1 =
+                // -1 and r = (1, 1). If we change the primal to max (and the
+                // dual to min) the cost-improving unboundedness direction is
+                // multiplied by -1.
+                .expected_minimization_dual_ray_row_combinations =
+                    {
+                        {1.0, 1.0, 1.0},
+                    },
+            },
+            RevisedSimplexDualRayTestModel{
+                .name = "random_with_different_primal_dual_simplex_rays",
+                // A randomly generated problem that has:
+                // * multiple rays candidates,
+                // * different depending on the simplex algorithm,
+                // * with power-of-two values.
+                //
+                // Note that the constraint "c1" is always broken, but the dual
+                // simplex may not include it as "c2" is enough to proof
+                // infeasibility. Taking the dual ray where "c1" coeff is 0 and
+                // combining the constraint and bounds leads to:
+                //
+                //   8 *  6 <=   x2
+                //  -1 *                x3 <= 9
+                //  -1 *       8 x2 - 1 x3 <= -4
+                //
+                //       48 <=  8 x2
+                //       -9 <=       - x3
+                //        4 <= -8 x2 + x3
+                //
+                //       43 <= 0 (obvious infeasibility)
+                //
+                // Here the primal simplex will not do that; instead it will
+                // always return a combination of both constraints.
+                .lp_model = ("min: 0 x1 + 4 x2 + 4 x3;"
+                             "6 <= x2 <= 8;"
+                             "x3 <= 9;"
+                             "c1: 0 x1 <= -1;"
+                             "c2: -6 <= 8 x2 - 1 x3 <= -4;"),
+                .expected_minimization_dual_ray_row_combinations =
+                    {
+                        // Dual-simplex rays (only one constraint).
+                        {0.0, 0.0, 0.0, 1.0, 0.0},
+                        {0.0, 8.0, -1.0, 0.0, 1.0},
+                        // Primal-simplex rays (always both constraints).
+                        {0.0, 1.0, -1.0 / 8.0, 1.0, 1.0 / 8.0},
+                        {0.0, 8.0, -1.0, 1.0, 1.0},
+                    },
+            }),
+        testing::Values(TestAlgorithm::kPrimalSimplex,
+                        TestAlgorithm::kDualSimplex),
+        testing::Values(TestDirection::kMinimize, TestDirection::kMaximize)),
+    [](const testing::TestParamInfo<RevisedSimplexDualRayTest::ParamType>&
+           info) {
+      std::ostringstream oss;
+      oss << std::get<RevisedSimplexDualRayTestModel>(info.param).name << "__"
+          << std::get<TestAlgorithm>(info.param) << "__"
+          << std::get<TestDirection>(info.param);
+      return oss.str();
+    });
 
 TEST(RevisedSimplexTest, PrimalOrDualAlgorithmAutoSelection) {
   // Generate a random problem with a clear feasible solution (0).
@@ -1984,6 +2213,33 @@ TEST(RevisedSimplexTest, BasisStateWithNoElement) {
   simplex->LoadStateForNextSolve(state);
   EXPECT_THAT(simplex->Solve(*linear_program, *time_limit),
               Not(SolveStatusWith<SolveStatus::Abnormal>(_)));
+}
+
+TEST(RevisedSimplexTest, SubnormalStepToBoundUnderflow) {
+  LinearProgram lp;
+  const ColIndex x = lp.CreateNewVariable();
+  const ColIndex y = lp.CreateNewVariable();
+  const RowIndex r = lp.CreateNewConstraint();
+  lp.SetVariableBounds(x, 0.0, 1.0);
+  lp.SetVariableBounds(y, 0.0, 1.0);
+  lp.SetObjectiveCoefficient(x, -1.0);
+  lp.SetObjectiveCoefficient(y, 0.0);
+  const Fractional kDenormMin = std::numeric_limits<Fractional>::denorm_min();
+  lp.SetConstraintBounds(r, kDenormMin, kDenormMin);
+  lp.SetCoefficient(r, x, 2.0);
+  lp.SetCoefficient(r, y, 1.0);
+  lp.AddSlackVariablesWhereNecessary(false);
+
+  BasisState state;
+  state.statuses = {VariableStatus::AT_LOWER_BOUND, VariableStatus::BASIC,
+                    VariableStatus::FIXED_VALUE};
+
+  RevisedSimplex simplex;
+  std::unique_ptr<TimeLimit> limit = TimeLimit::Infinite();
+  simplex.LoadStateForNextSolve(state);
+  EXPECT_THAT(simplex.Solve(lp, *limit),
+              Not(SolveStatusWith<SolveStatus::Abnormal>(_)));
+  EXPECT_EQ(simplex.GetProblemStatus(), ProblemStatus::OPTIMAL);
 }
 
 }  // namespace

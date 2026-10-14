@@ -64,6 +64,7 @@
 #include "ortools/util/fp_utils.h"
 #include "ortools/util/lazy_mutable_copy.h"
 #include "ortools/util/status_streaming.h"
+#include "ortools/util/testing_utils.h"
 #include "ortools/util/time_limit.h"
 
 ABSL_FLAG(bool, verify_solution, false,
@@ -1449,6 +1450,16 @@ MPSolver::ResultStatus MPSolver::Solve() {
 }
 
 MPSolver::ResultStatus MPSolver::Solve(const MPSolverParameters& param) {
+  DLOG_IF_FIRST_N(WARNING, !ProbablyRunningInsideUnitTest(), 1) << R"msg(
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!                    WARNING                         !!!!
+!!!!         Solving in non-optimized mode.             !!!!
+!!!! It is highly recommended to compile with '-c opt'. !!!!
+!!!!      It is highly recommended to compile with      !!!!
+!!!!               optimizations enabled.               !!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+)msg";
+
   // Special case for infeasible constraints so that all solvers have
   // the same behavior.
   // TODO(user): replace this by model extraction to proto + proto validation

@@ -30,6 +30,7 @@
 #include "absl/algorithm/container.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
@@ -45,12 +46,14 @@
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/glop/variables_info.h"
+#include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data_utils.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_mapping.h"
+#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
@@ -71,6 +74,11 @@
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
+
+ABSL_FLAG(bool, cp_model_dump_root_lps, false,
+          "DEBUG ONLY. If true, dump root level LP so we can investigate the "
+          "relaxation. This should be only used in single-thread and also when "
+          "we don't have multiple independent LPs.");
 
 namespace operations_research {
 namespace sat {
@@ -593,6 +601,12 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
   }
   integer_objective_.resize(new_size);
 
+  // For debugging / testing the strength of the linear relaxation.
+  if (trail_->CurrentDecisionLevel() == 0 &&
+      absl::GetFlag(FLAGS_cp_model_dump_root_lps)) {
+    DumpIntegerLp();
+  }
+
   // Scale everything.
   // TODO(user): As we have an idea of the LP optimal after the first solves,
   // maybe we can adapt the scaling accordingly.
@@ -628,6 +642,56 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
           << constraint_manager_.AllConstraints().size()
           << " Managed constraints.";
   return true;
+}
+
+void LinearProgrammingConstraint::DumpIntegerLp() {
+  MPModelProto proto;
+
+  // Set variable and objective (with the proper offset/scaling).
+  const int num_vars = integer_variables_.size();
+  const double factor = objective_definition_->scaling_factor;
+  for (int i = 0; i < num_vars; ++i) {
+    auto* var = proto.add_variable();
+    var->set_is_integer(true);
+    var->set_lower_bound(
+        integer_trail_->LowerBound(integer_variables_[i]).value());
+    var->set_upper_bound(
+        integer_trail_->UpperBound(integer_variables_[i]).value());
+  }
+  for (const auto [col, i_coeff] : integer_objective_) {
+    proto.mutable_variable(col.value())
+        ->set_objective_coefficient(static_cast<double>(i_coeff.value()) *
+                                    factor);
+  }
+  proto.set_objective_offset(
+      (static_cast<double>(integer_objective_offset_.value()) +
+       objective_definition_->offset) *
+      factor);
+
+  // Set constraints.
+  const double kInfinity = std::numeric_limits<double>::infinity();
+  IntegerValue* coeffs = integer_lp_coeffs_.data();
+  glop::ColIndex* cols = integer_lp_cols_.data();
+  for (int i = 0; i < integer_lp_.size(); ++i) {
+    const LinearConstraintInternal& ct = integer_lp_[glop::RowIndex(i)];
+    auto* new_ct = proto.add_constraint();
+    new_ct->set_lower_bound(
+        ct.lb_is_trivial ? -kInfinity : static_cast<double>(ct.lb.value()));
+    new_ct->set_upper_bound(
+        ct.ub_is_trivial ? kInfinity : static_cast<double>(ct.ub.value()));
+    for (int i = 0; i < ct.num_terms; ++i) {
+      const int index = ct.start_in_buffer + i;
+      const int col = cols[index].value();
+      const double coeff = static_cast<double>(coeffs[index].value());
+      new_ct->add_var_index(col);
+      new_ct->add_coefficient(coeff);
+    }
+  }
+
+  const std::string filename =
+      absl::StrCat("/tmp/integer_lp_", dump_index_++, ".pb.txt");
+  LOG(INFO) << "Dumping '" << filename << "'";
+  CHECK(WriteModelProtoToFile(proto, filename));
 }
 
 // TODO(user): This is a duplicate of glop scaling code, but it allows to

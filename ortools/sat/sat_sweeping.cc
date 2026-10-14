@@ -31,7 +31,7 @@
 #include "ortools/base/log_severity.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
-#include "ortools/graph_base/connected_components.h"
+#include "ortools/graph/connected_components.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_checker.h"
 #include "ortools/sat/model.h"
@@ -42,6 +42,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -213,24 +214,26 @@ bool EquivalenceSatSweeping::DoOneRound(
     util_intops::StrongVector<ClauseIndex, absl::Span<const Literal>>& clauses;
   };
 
-  ExtractedClausesHelper helper(clauses_, max_num_boolean_variables_);
-  if (!sat_solver_->ExtractClauses(&helper)) return false;
-
-  if (clauses_.empty()) {
-    VLOG(2) << "No clauses extracted, skipping sweeping.";
-    return true;
-  }
-
   const int num_vars = sat_solver_->NumVariables();
 
-  struct GetVarMapper {
-    BooleanVariable operator()(Literal l) const { return l.Variable(); }
-  };
-  var_to_clauses_.ResetFromTransposeMap<GetVarMapper>(clauses_, num_vars);
-  lit_representative_.clear();
+  {
+    DeterministicTimer<{.scale = 1.0e-7}> timer(global_time_limit_,
+                                                clause_manager_->num_clauses());
+    ExtractedClausesHelper helper(clauses_, max_num_boolean_variables_);
+    if (!sat_solver_->ExtractClauses(&helper)) return false;
 
-  global_time_limit_->AdvanceDeterministicTime(clause_manager_->num_clauses() *
-                                               1.0e-7);
+    if (clauses_.empty()) {
+      VLOG(2) << "No clauses extracted, skipping sweeping.";
+      return true;
+    }
+
+    struct GetVarMapper {
+      BooleanVariable operator()(Literal l) const { return l.Variable(); }
+    };
+    var_to_clauses_.ResetFromTransposeMap<GetVarMapper>(clauses_, num_vars);
+    lit_representative_.clear();
+  }
+
   TimeLimit sweep_time_limit;
   sweep_time_limit.ChangeDeterministicLimit(1.0);
   sweep_time_limit.MergeWithGlobalTimeLimit(global_time_limit_);

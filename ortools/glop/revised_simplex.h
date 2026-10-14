@@ -123,6 +123,7 @@
 #include "ortools/lp_data/sparse.h"
 #include "ortools/lp_data/sparse_column.h"
 #include "ortools/lp_data/sparse_row.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/random_engine.h"
 #include "ortools/util/stats.h"
@@ -209,19 +210,54 @@ class RevisedSimplex {
     return variables_info_.GetNotBasicBitRow();
   }
 
-  // If the problem status is PRIMAL_UNBOUNDED (respectively DUAL_UNBOUNDED),
-  // then the solver has a corresponding primal (respectively dual) ray to show
-  // the unboundness. From a primal (respectively dual) feasible solution any
+  // If the problem status is PRIMAL_UNBOUNDED (respectively
+  // DUAL_UNBOUNDED/PRIMAL_INFEASIBLE), then the solver has a corresponding
+  // primal (respectively dual) ray to show the unboundness (respectively
+  // infeasibility). From a primal (respectively dual) feasible solution any
   // positive multiple of this ray can be added to the solution and keep it
   // feasible. Moreover, by doing so, the objective of the problem will improve
   // and its magnitude will go to infinity.
   //
-  // Note that when the problem is DUAL_UNBOUNDED, the dual ray is also known as
-  // the Farkas proof of infeasibility of the problem.
+  // Note that when the problem is DUAL_UNBOUNDED/PRIMAL_INFEASIBLE, the dual
+  // ray is also known as the Farkas proof of infeasibility of the problem.
+  //
+  // When the status is PRIMAL_INFEASIBLE, this means that the dual ray has been
+  // produced by the primal-simplex algorithm from the infeasibility detected in
+  // the phase I. This ray has been produced by combining all infeasibilities
+  // that were left at that point. On the contrary when the status is
+  // DUAL_UNBOUNDED, the ray has been produced by the dual-simplex from a single
+  // infeasibility detected in the phase II. As an example if you combine two
+  // infeasible problems in the same model:
+  // * the primal simplex will return a ray that proves the infeasibility of
+  //   each initial problems,
+  // * the dual simplex will return a ray that proves the infeasibility of only
+  //   one of the two initial problems.
+  //
+  // If the primal/dual are defined as in Achim Koberstein, "The dual simplex
+  // method, techniques for a fast and stable implementation", PhD, Paderborn,
+  // Univ., 2005. (https://d-nb.info/978580478/34):
+  //
+  //   min  c^T⋅x        max  l^T⋅v + u^T⋅w
+  //   s.t. A⋅x = 0      s.t. A^T⋅y + v + w = c
+  //        l ≤ x ≤ u         v ≥ 0
+  //                          w ≤ 0
+  //
+  //   * y: the dual values of the A⋅x = 0 constraints
+  //   * v: the dual values of the l ≤ x constraints
+  //   * w: the dual values of the x ≤ u constraints
+  //
+  // then a dual ray (y,v,w) such that:
+  //
+  //   A^T⋅y + v + w = 0
+  //
+  // and Glop will return:
+  // * GetDualRay() = -y
+  // * GetDualRayRowCombination() = -A^T⋅y = v + w
+  //
+  // GetDualRay() and GetDualRayRowCombination() always return a ray as if the
+  // primal was a minimization. This is not the case for GetPrimalRay() though.
   const DenseRow& GetPrimalRay() const;
   const DenseColumn& GetDualRay() const;
-
-  // This is the "dual ray" linear combination of the matrix rows.
   const DenseRow& GetDualRayRowCombination() const;
 
   // Returns the index of the column in the basis and the basis factorization.
@@ -863,7 +899,7 @@ class RevisedSimplex {
   uint64_t num_push_iterations_ = 0;
 
   // Deterministic time for DualPhaseIUpdatePriceOnReducedCostChange().
-  int64_t num_update_price_operations_ = 0;
+  LinearDeterministicTimer<{.scale = 2e-9}> update_price_timer_;
 
   // Total time spent in Solve().
   double total_time_ = 0.0;

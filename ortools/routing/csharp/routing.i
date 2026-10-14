@@ -240,6 +240,7 @@ using Google.OrTools.ConstraintSolver;
 %unignore Dimension::~Dimension;
 %unignore Dimension::CumulVar;
 %unignore Dimension::FixedTransitVar;
+%unignore Dimension::GetBreakIntervalsOrderingOfVehicle;
 %unignore Dimension::GetCumulVarMax;
 %unignore Dimension::GetCumulVarMin;
 %unignore Dimension::GetQuadraticCostSoftSpanUpperBoundForVehicle;
@@ -253,6 +254,7 @@ using Google.OrTools.ConstraintSolver;
 %unignore Dimension::InitializeBreaks;
 %unignore Dimension::model;
 %unignore Dimension::SetBreakIntervalsOfVehicle;
+%unignore Dimension::SetBreakIntervalsOrderingOfVehicle;
 %unignore Dimension::SetBreakDistanceDurationOfVehicle;
 %unignore Dimension::SetCumulVarSoftLowerBound;
 %unignore Dimension::SetCumulVarRange;
@@ -274,6 +276,10 @@ using Google.OrTools.ConstraintSolver;
 %csmethodmodifiers Dimension::transits "private";
 %unignore Dimension::transits;
 %unignore Dimension::TransitVar;
+// Dimension nested enum
+%unignore Dimension::BreakIntervalsOrdering;
+%unignore Dimension::kUnordered;
+%unignore Dimension::kOrdered;
 
 // Routing Model
 %unignore Model;

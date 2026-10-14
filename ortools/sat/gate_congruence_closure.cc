@@ -35,9 +35,8 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
-#include "ortools/graph_base/connected_components.h"
+#include "ortools/graph/connected_components.h"
 #include "ortools/sat/clause.h"
-#include "ortools/sat/deterministic_time.h"
 #include "ortools/sat/gate_utils.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/sat_clause.h"
@@ -47,6 +46,7 @@
 #include "ortools/sat/sat_trail.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/strong_integers.h"
 
@@ -1157,7 +1157,9 @@ class LratGateCongruenceHelper {
     }
 
     for (const int i : tmp_index_to_delete_) {
-      lrat_proof_handler_->DeleteClause(tmp_proof_clauses_[i]);
+      ClausePtr clause_to_delete = tmp_proof_clauses_[i];
+      lrat_proof_handler_->DeleteClause(clause_to_delete);
+      clause_to_delete.DeleteIfAllocated();
     }
     return {rep_a_implies_rep_b, rep_b_implies_rep_a};
   }
@@ -1172,7 +1174,9 @@ class LratGateCongruenceHelper {
         to_fix_clause, tmp_proof_clauses_);
 
     for (const int i : tmp_index_to_delete_) {
-      lrat_proof_handler_->DeleteClause(tmp_proof_clauses_[i]);
+      ClausePtr clause_to_delete = tmp_proof_clauses_[i];
+      lrat_proof_handler_->DeleteClause(clause_to_delete);
+      clause_to_delete.DeleteIfAllocated();
     }
     return to_fix_clause;
   }

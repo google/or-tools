@@ -36,6 +36,7 @@
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_trail.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/deterministic_time.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
@@ -276,30 +277,32 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
   // Compute the new lower bound and update the reversible structures.
   absl::int128 lb_128 = 0;
   IntegerValue lb_unfixed_vars = IntegerValue(0);
-  for (int i = num_fixed_vars; i < size_; ++i) {
-    const IntegerVariable var = vars_[i];
-    const IntegerValue coeff = coeffs_[i];
-    const IntegerValue lb = shared_->integer_trail->LowerBound(var);
-    const IntegerValue ub = shared_->integer_trail->UpperBound(var);
-    if (use_int128) {
-      lb_128 += absl::int128(lb.value()) * absl::int128(coeff.value());
-      continue;
-    }
+  {
+    DeterministicTimer<{.scale = 5e-9}> timer(shared_->time_limit,
+                                              size_ - num_fixed_vars);
+    for (int i = num_fixed_vars; i < size_; ++i) {
+      const IntegerVariable var = vars_[i];
+      const IntegerValue coeff = coeffs_[i];
+      const IntegerValue lb = shared_->integer_trail->LowerBound(var);
+      const IntegerValue ub = shared_->integer_trail->UpperBound(var);
+      if (use_int128) {
+        lb_128 += absl::int128(lb.value()) * absl::int128(coeff.value());
+        continue;
+      }
 
-    if (lb != ub) {
-      max_variations_[i] = (ub - lb) * coeff;
-      lb_unfixed_vars += lb * coeff;
-    } else {
-      // Update the set of fixed variables.
-      std::swap(vars_[i], vars_[num_fixed_vars]);
-      std::swap(coeffs_[i], coeffs_[num_fixed_vars]);
-      std::swap(max_variations_[i], max_variations_[num_fixed_vars]);
-      num_fixed_vars++;
-      lb_fixed_vars += lb * coeff;
+      if (lb != ub) {
+        max_variations_[i] = (ub - lb) * coeff;
+        lb_unfixed_vars += lb * coeff;
+      } else {
+        // Update the set of fixed variables.
+        std::swap(vars_[i], vars_[num_fixed_vars]);
+        std::swap(coeffs_[i], coeffs_[num_fixed_vars]);
+        std::swap(max_variations_[i], max_variations_[num_fixed_vars]);
+        num_fixed_vars++;
+        lb_fixed_vars += lb * coeff;
+      }
     }
   }
-  shared_->time_limit->AdvanceDeterministicTime(
-      static_cast<double>(size_ - num_fixed_vars) * 5e-9);
 
   // Save the current sum of fixed variables.
   if (is_registered_ && num_fixed_vars != rev_num_fixed_vars_) {
@@ -398,20 +401,22 @@ bool LinearConstraintPropagator<use_int128>::PropagateAtLevelZero() {
   // Compute the new lower bound and update the reversible structures.
   absl::int128 lb_128 = 0;
   IntegerValue min_activity = IntegerValue(0);
-  for (int i = 0; i < size_; ++i) {
-    const IntegerVariable var = vars_[i];
-    const IntegerValue coeff = coeffs_[i];
-    const IntegerValue lb = shared_->integer_trail->LevelZeroLowerBound(var);
-    if (use_int128) {
-      lb_128 += absl::int128(lb.value()) * absl::int128(coeff.value());
-    } else {
-      const IntegerValue ub = shared_->integer_trail->LevelZeroUpperBound(var);
-      max_variations_[i] = (ub - lb) * coeff;
-      min_activity += lb * coeff;
+  {
+    DeterministicTimer<{.scale = 1e-9}> timer(shared_->time_limit, size_);
+    for (int i = 0; i < size_; ++i) {
+      const IntegerVariable var = vars_[i];
+      const IntegerValue coeff = coeffs_[i];
+      const IntegerValue lb = shared_->integer_trail->LevelZeroLowerBound(var);
+      if (use_int128) {
+        lb_128 += absl::int128(lb.value()) * absl::int128(coeff.value());
+      } else {
+        const IntegerValue ub =
+            shared_->integer_trail->LevelZeroUpperBound(var);
+        max_variations_[i] = (ub - lb) * coeff;
+        min_activity += lb * coeff;
+      }
     }
   }
-  shared_->time_limit->AdvanceDeterministicTime(
-      static_cast<double>(size_ * 1e-9));
 
   // Conflict?
   IntegerValue slack;
@@ -690,20 +695,21 @@ bool GreaterThanMinOfExprsPropagator::PropagateLinearUpperBound(
     absl::Span<const IntegerValue> coeffs, const IntegerValue upper_bound) {
   IntegerValue sum_lb = IntegerValue(0);
   const int num_vars = vars.size();
-  max_variations_.resize(num_vars);
-  for (int i = 0; i < num_vars; ++i) {
-    const IntegerVariable var = vars[i];
-    const IntegerValue coeff = coeffs[i];
-    // The coefficients are assumed to be positive for this to work properly.
-    DCHECK_GE(coeff, 0);
-    const IntegerValue lb = integer_trail_.LowerBound(var);
-    const IntegerValue ub = integer_trail_.UpperBound(var);
-    max_variations_[i] = (ub - lb) * coeff;
-    sum_lb += lb * coeff;
+  {
+    DeterministicTimer<{.scale = 1e-9}> timer(model_->GetOrCreate<TimeLimit>(),
+                                              num_vars);
+    max_variations_.resize(num_vars);
+    for (int i = 0; i < num_vars; ++i) {
+      const IntegerVariable var = vars[i];
+      const IntegerValue coeff = coeffs[i];
+      // The coefficients are assumed to be positive for this to work properly.
+      DCHECK_GE(coeff, 0);
+      const IntegerValue lb = integer_trail_.LowerBound(var);
+      const IntegerValue ub = integer_trail_.UpperBound(var);
+      max_variations_[i] = (ub - lb) * coeff;
+      sum_lb += lb * coeff;
+    }
   }
-
-  model_->GetOrCreate<TimeLimit>()->AdvanceDeterministicTime(
-      static_cast<double>(num_vars) * 1e-9);
 
   const EnforcementStatus status = enforcement_helper_.Status(enforcement_id_);
   const IntegerValue slack = upper_bound - sum_lb;

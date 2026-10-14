@@ -44,13 +44,17 @@ MakeRelocateNeighborsOperator<ignore_path_vars>::MakeRelocateNeighborsOperator(
     NeighborAccessor get_outgoing_neighbors, TransitCallback2 arc_evaluator)
     : PathOperator<ignore_path_vars>(
           vars, secondary_vars,
-          /*number_of_base_nodes=*/
-          get_incoming_neighbors == nullptr && get_outgoing_neighbors == nullptr
-              ? 2
-              : 1,
-          /*skip_locally_optimal_paths=*/true,
-          /*accept_path_end_base=*/false, std::move(start_empty_path_class),
-          std::move(get_incoming_neighbors), std::move(get_outgoing_neighbors)),
+          {
+              .number_of_base_nodes = get_incoming_neighbors == nullptr &&
+                                              get_outgoing_neighbors == nullptr
+                                          ? 2
+                                          : 1,
+              .skip_locally_optimal_paths = true,
+              .accept_path_end_base = false,
+              .start_empty_path_class = std::move(start_empty_path_class),
+              .get_incoming_neighbors = std::move(get_incoming_neighbors),
+              .get_outgoing_neighbors = std::move(get_outgoing_neighbors),
+          }),
       arc_evaluator_(std::move(arc_evaluator)) {}
 
 template <bool ignore_path_vars>
@@ -688,12 +692,15 @@ GroupPairAndRelocateOperator<ignore_path_vars>::GroupPairAndRelocateOperator(
     const std::vector<PickupDeliveryPair>& pairs)
     : PathOperator<ignore_path_vars>(
           vars, secondary_vars,
-          /*number_of_base_nodes=*/
-          get_outgoing_neighbors == nullptr ? 2 : 1,
-          /*skip_locally_optimal_paths=*/true,
-          /*accept_path_end_base=*/false, std::move(start_empty_path_class),
-          nullptr,  // We don't use incoming neighbors for this operator.
-          std::move(get_outgoing_neighbors)) {
+          {
+              .number_of_base_nodes = get_outgoing_neighbors == nullptr ? 2 : 1,
+              .skip_locally_optimal_paths = true,
+              .accept_path_end_base = false,
+              .start_empty_path_class = std::move(start_empty_path_class),
+              // We don't use incoming neighbors for this operator.
+              .get_incoming_neighbors = nullptr,
+              .get_outgoing_neighbors = std::move(get_outgoing_neighbors),
+          }) {
   this->AddPairAlternativeSets(pairs);
 }
 
@@ -758,12 +765,15 @@ LightPairRelocateOperator<ignore_path_vars>::LightPairRelocateOperator(
     std::function<bool(int64_t)> force_lifo)
     : PathOperator<ignore_path_vars>(
           vars, secondary_vars,
-          /*number_of_base_nodes=*/
-          get_outgoing_neighbors == nullptr ? 2 : 1,
-          /*skip_locally_optimal_paths=*/true,
-          /*accept_path_end_base=*/false, std::move(start_empty_path_class),
-          nullptr,  // Incoming neighbors not used as of 09/2024.
-          std::move(get_outgoing_neighbors)),
+          {
+              .number_of_base_nodes = get_outgoing_neighbors == nullptr ? 2 : 1,
+              .skip_locally_optimal_paths = true,
+              .accept_path_end_base = false,
+              .start_empty_path_class = std::move(start_empty_path_class),
+              // Incoming neighbors not used as of 09/2024.
+              .get_incoming_neighbors = nullptr,
+              .get_outgoing_neighbors = std::move(get_outgoing_neighbors),
+          }),
       force_lifo_(std::move(force_lifo)) {
   this->AddPairAlternativeSets(pairs);
 }
@@ -887,14 +897,17 @@ PairExchangeOperator<ignore_path_vars>::PairExchangeOperator(
     const std::vector<PickupDeliveryPair>& pairs)
     : PathOperator<ignore_path_vars>(
           vars, secondary_vars,
-          /*number_of_base_nodes=*/
-          get_incoming_neighbors == nullptr && get_outgoing_neighbors == nullptr
-              ? 2
-              : 1,
-          /*skip_locally_optimal_paths=*/true,
-          /*accept_path_end_base=*/false, std::move(start_empty_path_class),
-          std::move(get_incoming_neighbors),
-          std::move(get_outgoing_neighbors)) {
+          {
+              .number_of_base_nodes = get_incoming_neighbors == nullptr &&
+                                              get_outgoing_neighbors == nullptr
+                                          ? 2
+                                          : 1,
+              .skip_locally_optimal_paths = true,
+              .accept_path_end_base = false,
+              .start_empty_path_class = std::move(start_empty_path_class),
+              .get_incoming_neighbors = std::move(get_incoming_neighbors),
+              .get_outgoing_neighbors = std::move(get_outgoing_neighbors),
+          }) {
   this->AddPairAlternativeSets(pairs);
 }
 
@@ -1518,12 +1531,15 @@ RelocateSubtrip<ignore_path_vars>::RelocateSubtrip(
     absl::Span<const PickupDeliveryPair> pairs)
     : PathOperator<ignore_path_vars>(
           vars, secondary_vars,
-          /*number_of_base_nodes=*/
-          get_outgoing_neighbors == nullptr ? 2 : 1,
-          /*skip_locally_optimal_paths=*/true,
-          /*accept_path_end_base=*/false, std::move(start_empty_path_class),
-          nullptr,  // Incoming neighbors aren't supported as of 09/2024.
-          std::move(get_outgoing_neighbors)),
+          {
+              .number_of_base_nodes = get_outgoing_neighbors == nullptr ? 2 : 1,
+              .skip_locally_optimal_paths = true,
+              .accept_path_end_base = false,
+              .start_empty_path_class = std::move(start_empty_path_class),
+              // Incoming neighbors aren't supported as of 09/2024.
+              .get_incoming_neighbors = nullptr,
+              .get_outgoing_neighbors = std::move(get_outgoing_neighbors),
+          }),
       pd_data_(this->number_of_nexts_, pairs),
       covered_nodes_(this->number_of_nexts_) {
   opened_pairs_set_.resize(pairs.size(), false);
@@ -1710,12 +1726,15 @@ ExchangeSubtrip<ignore_path_vars>::ExchangeSubtrip(
     absl::Span<const PickupDeliveryPair> pairs)
     : PathOperator<ignore_path_vars>(
           vars, secondary_vars,
-          /*number_of_base_nodes=*/
-          get_outgoing_neighbors == nullptr ? 2 : 1,
-          /*skip_locally_optimal_paths=*/true,
-          /*accept_path_end_base=*/false, std::move(start_empty_path_class),
-          nullptr,  // Incoming neighbors aren't supported as of 09/2024.
-          std::move(get_outgoing_neighbors)),
+          {
+              .number_of_base_nodes = get_outgoing_neighbors == nullptr ? 2 : 1,
+              .skip_locally_optimal_paths = true,
+              .accept_path_end_base = false,
+              .start_empty_path_class = std::move(start_empty_path_class),
+              // Incoming neighbors aren't supported as of 09/2024.
+              .get_incoming_neighbors = nullptr,
+              .get_outgoing_neighbors = std::move(get_outgoing_neighbors),
+          }),
       pd_data_(this->number_of_nexts_, pairs) {
   opened_pairs_set_.resize(pairs.size(), false);
 }
