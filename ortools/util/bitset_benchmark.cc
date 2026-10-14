@@ -58,27 +58,35 @@ struct TestCase {
 // Shorthand for all available types.
 using LSB_32_Basic = TestCase<Function::kLSB, uint32_t, Impl::kBasic,
                               LeastSignificantBitPosition32Default>;
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
 using LSB_32_Builtin = TestCase<Function::kLSB, uint32_t, Impl::kBuiltin,
                                 LeastSignificantBitPosition32Fast>;
+#endif
 using LSB_32_DeBruijn = TestCase<Function::kLSB, uint32_t, Impl::kDeBruijn,
                                  LeastSignificantBitPosition32DeBruijn>;
 using LSB_32_Std = TestCase<Function::kLSB, uint32_t, Impl::kStd, LSB32Std>;
 using LSB_64_Basic = TestCase<Function::kLSB, uint64_t, Impl::kBasic,
                               LeastSignificantBitPosition64Default>;
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
 using LSB_64_Builtin = TestCase<Function::kLSB, uint64_t, Impl::kBuiltin,
                                 LeastSignificantBitPosition64Fast>;
+#endif
 using LSB_64_DeBruijn = TestCase<Function::kLSB, uint64_t, Impl::kDeBruijn,
                                  LeastSignificantBitPosition64DeBruijn>;
 using LSB_64_Std = TestCase<Function::kLSB, uint64_t, Impl::kStd, LSB64Std>;
 using MSB_32_Basic = TestCase<Function::kMSB, uint32_t, Impl::kBasic,
                               MostSignificantBitPosition32Default>;
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
 using MSB_32_Builtin = TestCase<Function::kMSB, uint32_t, Impl::kBuiltin,
                                 MostSignificantBitPosition32Fast>;
+#endif
 using MSB_32_Std = TestCase<Function::kMSB, uint32_t, Impl::kStd, MSB32Std>;
 using MSB_64_Basic = TestCase<Function::kMSB, uint64_t, Impl::kBasic,
                               MostSignificantBitPosition64Default>;
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
 using MSB_64_Builtin = TestCase<Function::kMSB, uint64_t, Impl::kBuiltin,
                                 MostSignificantBitPosition64Fast>;
+#endif
 using MSB_64_Std = TestCase<Function::kMSB, uint64_t, Impl::kStd, MSB64Std>;
 
 enum class LoopVectorize { kYes, kNo };
@@ -111,32 +119,48 @@ void BM_BitIndex(benchmark::State& state) {
 }
 
 BENCHMARK(BM_BitIndex<LoopVectorize::kNo, LSB_32_Basic>);
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
 BENCHMARK(BM_BitIndex<LoopVectorize::kNo, LSB_32_Builtin>);
+#endif
 BENCHMARK(BM_BitIndex<LoopVectorize::kNo, LSB_32_DeBruijn>);
 BENCHMARK(BM_BitIndex<LoopVectorize::kNo, LSB_32_Std>);
 BENCHMARK(BM_BitIndex<LoopVectorize::kNo, LSB_64_Basic>);
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
 BENCHMARK(BM_BitIndex<LoopVectorize::kNo, LSB_64_Builtin>);
+#endif
 BENCHMARK(BM_BitIndex<LoopVectorize::kNo, LSB_64_DeBruijn>);
 BENCHMARK(BM_BitIndex<LoopVectorize::kNo, LSB_64_Std>);
 BENCHMARK(BM_BitIndex<LoopVectorize::kNo, MSB_32_Basic>);
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
 BENCHMARK(BM_BitIndex<LoopVectorize::kNo, MSB_32_Builtin>);
+#endif
 BENCHMARK(BM_BitIndex<LoopVectorize::kNo, MSB_32_Std>);
 BENCHMARK(BM_BitIndex<LoopVectorize::kNo, MSB_64_Basic>);
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
 BENCHMARK(BM_BitIndex<LoopVectorize::kNo, MSB_64_Builtin>);
+#endif
 BENCHMARK(BM_BitIndex<LoopVectorize::kNo, MSB_64_Std>);
 BENCHMARK(BM_BitIndex<LoopVectorize::kYes, LSB_32_Basic>);
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
 BENCHMARK(BM_BitIndex<LoopVectorize::kYes, LSB_32_Builtin>);
+#endif
 BENCHMARK(BM_BitIndex<LoopVectorize::kYes, LSB_32_DeBruijn>);
 BENCHMARK(BM_BitIndex<LoopVectorize::kYes, LSB_32_Std>);
 BENCHMARK(BM_BitIndex<LoopVectorize::kYes, LSB_64_Basic>);
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
 BENCHMARK(BM_BitIndex<LoopVectorize::kYes, LSB_64_Builtin>);
+#endif
 BENCHMARK(BM_BitIndex<LoopVectorize::kYes, LSB_64_DeBruijn>);
 BENCHMARK(BM_BitIndex<LoopVectorize::kYes, LSB_64_Std>);
 BENCHMARK(BM_BitIndex<LoopVectorize::kYes, MSB_32_Basic>);
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
 BENCHMARK(BM_BitIndex<LoopVectorize::kYes, MSB_32_Builtin>);
+#endif
 BENCHMARK(BM_BitIndex<LoopVectorize::kYes, MSB_32_Std>);
 BENCHMARK(BM_BitIndex<LoopVectorize::kYes, MSB_64_Basic>);
+#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
 BENCHMARK(BM_BitIndex<LoopVectorize::kYes, MSB_64_Builtin>);
+#endif
 BENCHMARK(BM_BitIndex<LoopVectorize::kYes, MSB_64_Std>);
 
 }  // namespace bitset_index
