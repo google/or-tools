@@ -22,7 +22,7 @@ function help() {
 ${BOLD}NAME${RESET}
 \t$NAME - Build delivery using the ${BOLD}local host system${RESET}.
 ${BOLD}SYNOPSIS${RESET}
-\t$NAME [-h|--help|help] [cpp|dotnet|java|julia|python X.Y|examples|all|reset]
+\t$NAME [-h|--help|help] [cpp|dotnet|java|julia|python X.Y|examples|reset]
 ${BOLD}DESCRIPTION${RESET}
 \tBuild Google OR-Tools deliveries.
 \tYou ${BOLD}MUST${RESET} define the following variables before running this script:
@@ -37,7 +37,6 @@ ${BOLD}OPTIONS${RESET}
 \tpython <X.Y>: build Pyhon X.Y package
 \tarchive: build all (C++, .Net, Java) archives
 \texamples: build examples archives
-\tall: build cpp, dotnet and java
 
 ${BOLD}EXAMPLES${RESET}
 Using export to define the ${BOLD}ORTOOLS_TOKEN${RESET} env and only building the Java packages:
@@ -59,6 +58,7 @@ function assert_defined(){
 }
 
 # Create C++ export
+# shellcheck disable=SC2329
 function build_cpp() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/cpp_build" -; then
     echo "build C++ up to date!" | tee -a build.log
@@ -83,6 +83,7 @@ function build_cpp() {
 }
 
 # .Net build
+# shellcheck disable=SC2329
 function build_dotnet() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/dotnet_build" -; then
     echo "build .Net up to date!" | tee -a build.log
@@ -108,7 +109,7 @@ function build_dotnet() {
   fi
   echo "DONE" | tee -a build.log
   echo -n "check ${OPENSSL_PRG}..."
-  command -v ${OPENSSL_PRG} | xargs echo "openssl: " | tee -a build.log
+  command -v "${OPENSSL_PRG}" | xargs echo "openssl: " | tee -a build.log
 
   $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
     -in "${RELEASE_DIR}/or-tools.snk.enc" \
@@ -135,6 +136,7 @@ function build_dotnet() {
 }
 
 # Java build
+# shellcheck disable=SC2329
 function build_java() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/java_build" -; then
     echo "build Java up to date!" | tee -a build.log
@@ -163,7 +165,7 @@ function build_java() {
     command -v mvn | xargs echo "mvn: " | tee -a build.log
     echo "Check java version..."
     java -version 2>&1 | head -n 1 | xargs echo "java version: " | tee -a build.log
-    java -version 2>&1 | head -n 1 | grep "\b2[1567]\(\.0\)\?"
+    java -version 2>&1 | head -n 1 | grep -q '"2[1567]'
   fi
   # Maven central need gpg sign and we store the release key encoded using openssl
   local OPENSSL_PRG=openssl
@@ -171,7 +173,7 @@ function build_java() {
     OPENSSL_PRG=openssl11
   fi
   echo "check ${OPENSSL_PRG}..."
-  command -v ${OPENSSL_PRG} | xargs echo "openssl: " | tee -a build.log
+  command -v "${OPENSSL_PRG}" | xargs echo "openssl: " | tee -a build.log
   echo "check gpg..."
   command -v gpg
   command -v gpg | xargs echo "gpg: " | tee -a build.log
@@ -222,6 +224,7 @@ function build_java() {
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/java_build"
 }
 
+# shellcheck disable=SC2329
 function build_julia() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/julia_build" -; then
     echo "build Julia up to date!" | tee -a build.log
@@ -261,8 +264,8 @@ function build_julia() {
 
 # Python 3
 # TODO(user) Use `make --directory tools/docker python` instead
-# shellcheck disable=2317
-# shellcheck disable=2329
+# shellcheck disable=SC2317
+# shellcheck disable=SC2329
 function build_python() {
   if [ -z "$1" ]; then
     >&2 echo "No python version supplied"
@@ -311,12 +314,12 @@ function build_python() {
   echo -n "Cleaning Python3..." | tee -a build.log
   rm -rf "temp_python"
   echo "DONE" | tee -a build.log
-  echo -n "Build Python3..." | tee -a build.log
+  echo "Build Python3..." | tee -a build.log
   echo -n "  CMake configure..." | tee -a build.log
   cmake -S. -Btemp_python -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON
   echo "DONE" | tee -a build.log
 
-  echo -n "  Cmake build..." | tee -a build.log
+  echo -n "  CMake build..." | tee -a build.log
   cmake --build temp_python
   echo "DONE" | tee -a build.log
 
@@ -326,7 +329,7 @@ function build_python() {
 }
 
 # Create Archive
-# shellcheck disable=2329
+# shellcheck disable=SC2329
 function build_archive() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/archive_build" -; then
     echo "build archive up to date!" | tee -a build.log
@@ -357,8 +360,8 @@ function build_archive() {
 }
 
 # Build Examples
-# shellcheck disable=2317
-# shellcheck disable=2329
+# shellcheck disable=SC2317
+# shellcheck disable=SC2329
 function build_examples() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/examples_build" -; then
     echo "build examples up to date!" | tee -a build.log
@@ -393,9 +396,7 @@ function build_examples() {
 # Cleaning everything
 function reset() {
   echo "Cleaning everything..."
-
   cd "${ROOT_DIR}" || exit 2
-
   make clean
   rm -rf temp_cpp
   rm -rf temp_dotnet
@@ -453,11 +454,6 @@ function main() {
       exit ;;
     reset)
       reset
-      exit ;;
-    all)
-      build_cpp
-      build_dotnet
-      build_java
       exit ;;
     *)
       >&2 echo "Target '${1}' unknown"

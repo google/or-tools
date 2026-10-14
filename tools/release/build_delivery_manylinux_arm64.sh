@@ -22,7 +22,7 @@ function help() {
 ${BOLD}NAME${RESET}
 \t$NAME - Build delivery using a ${BOLD}Manylinux 2.28 aarch64 docker image${RESET}.
 ${BOLD}SYNOPSIS${RESET}
-\t$NAME [-h|--help|help] [examples|dotnet|java|python|all|reset]
+\t$NAME [-h|--help|help] [cpp|dotnet|java|julia|python X.Y|examples|reset]
 ${BOLD}DESCRIPTION${RESET}
 \tBuild Google OR-Tools deliveries.
 \tYou ${BOLD}MUST${RESET} define the following variables before running this script:
@@ -33,10 +33,10 @@ ${BOLD}OPTIONS${RESET}
 \tcpp: build C++ (CMake based) prebuilt archive
 \tdotnet: build all .Net packages
 \tjava: build all Java packages
+\tjulia: build Julia package
 \tpython <X.Y>: build Pyhon X.Y package
 \tarchive: build all (C++, .Net, Java) archives
 \texamples: build examples archives
-\tall: build cpp, dotnet and java
 
 ${BOLD}EXAMPLES${RESET}
 Using export to define the ${BOLD}ORTOOLS_TOKEN${RESET} env and only building the Java packages:
@@ -57,8 +57,9 @@ function assert_defined(){
   fi
 }
 
+# shellcheck disable=SC2329
 function build_delivery() {
-  assert_defined PLATFORM
+  assert_defined ARCH
   assert_defined ORTOOLS_BRANCH
   assert_defined ORTOOLS_SHA1
   assert_defined ORTOOLS_TOKEN
@@ -67,7 +68,7 @@ function build_delivery() {
   assert_defined ORTOOLS_IMG
 
   # Enable docker over QEMU support
-  if [[ ${PLATFORM} != "arm64" ]]; then
+  if [[ ${ARCH} != "arm64" && ${ARCH} != "aarch64" ]]; then
     docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
   fi
 
@@ -81,6 +82,7 @@ function build_delivery() {
   cd "${RELEASE_DIR}" || exit 2
 
   # Build env
+  # https://github.com/containerd/containerd/blob/v1.4.3/platforms/platforms.go#L63
   echo -n "Build ${ORTOOLS_IMG}:env..." | tee -a "${ROOT_DIR}/build.log"
   docker buildx build --platform linux/arm64 \
     --tag "${ORTOOLS_IMG}":env \
@@ -113,7 +115,8 @@ function build_delivery() {
   echo "DONE" | tee -a "${ROOT_DIR}/build.log"
 }
 
-# Cpp build
+# C++ build
+# shellcheck disable=SC2329
 function build_cpp() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/arm64_cpp_build" -; then
     echo "build C++ up to date!" | tee -a build.log
@@ -134,6 +137,7 @@ function build_cpp() {
 }
 
 # .Net build
+# shellcheck disable=SC2329
 function build_dotnet() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/arm64_dotnet_build" -; then
     echo "build .Net up to date!" | tee -a build.log
@@ -154,6 +158,7 @@ function build_dotnet() {
 }
 
 # Java build
+# shellcheck disable=SC2329
 function build_java() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/arm64_java_build" -; then
     echo "build Java up to date!" | tee -a build.log
@@ -174,6 +179,7 @@ function build_java() {
 }
 
 # Python build
+# shellcheck disable=SC2329
 function build_python() {
   if [ -z "$1" ]; then
     >&2 echo "No python version supplied"
@@ -199,6 +205,7 @@ function build_python() {
 }
 
 # Create Archive
+# shellcheck disable=SC2329
 function build_archive() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/arm64_archive_build" -; then
     echo "build archive up to date!" | tee -a build.log
@@ -218,6 +225,8 @@ function build_archive() {
 }
 
 # Build Examples
+# shellcheck disable=SC2317
+# shellcheck disable=SC2329
 function build_examples() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/amd64_examples_build" -; then
     echo "build examples up to date!" | tee -a build.log
@@ -232,23 +241,23 @@ function build_examples() {
 
 # Cleaning everything
 function reset() {
+  echo "Cleaning docker images..."
   assert_defined ORTOOLS_IMG
-
-  cd "${ROOT_DIR}" || exit 2
-
-  echo "Cleaning everything..."
-  rm -rf export/
-  docker image rm -f "${ORTOOLS_IMG}":archive 2>/dev/null
-  docker image rm -f "${ORTOOLS_IMG}":examples 2>/dev/null
+  docker image rm -f "${ORTOOLS_IMG}":cpp 2>/dev/null
   docker image rm -f "${ORTOOLS_IMG}":dotnet 2>/dev/null
   docker image rm -f "${ORTOOLS_IMG}":java 2>/dev/null
   docker image rm -f "${ORTOOLS_IMG}":python 2>/dev/null
+  docker image rm -f "${ORTOOLS_IMG}":archive 2>/dev/null
+  docker image rm -f "${ORTOOLS_IMG}":examples 2>/dev/null
 
   docker image rm -f "${ORTOOLS_IMG}":devel 2>/dev/null
   docker image rm -f "${ORTOOLS_IMG}":env 2>/dev/null
-  rm -f "${ROOT_DIR}/*.log"
-  rm -rf "${ROOT_DIR}/export"
+  echo "DONE"
 
+  echo "Cleaning everything..."
+  cd "${ROOT_DIR}" || exit 2
+  rm -rf export
+  rm -f ./*.log
   echo "DONE"
 }
 
@@ -259,27 +268,40 @@ function main() {
       help; exit ;;
   esac
 
-  assert_defined ORTOOLS_TOKEN
-  echo "ORTOOLS_TOKEN: FOUND" | tee -a build.log
+  local -r ARCH=$(uname -m)
+  echo "ARCH: '${ARCH}'" | tee -a build.log
+  local -r OS=$(uname -s)
+  echo "OS: '${OS}'" | tee -a build.log
 
   local -r ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
   echo "ROOT_DIR: '${ROOT_DIR}'" | tee -a build.log
 
+  # shellcheck source=/dev/null
+  source "${ROOT_DIR}/Version.txt"
+  assert_defined OR_TOOLS_MAJOR
+  assert_defined OR_TOOLS_MINOR
+  echo "ORTOOLS_VERSION: '${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}'" | tee -a build.log
+
+  local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  echo "ORTOOLS_BRANCH: '${ORTOOLS_BRANCH}'" | tee -a build.log
+  local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
+  echo "ORTOOLS_SHA1: '${ORTOOLS_SHA1}'" | tee -a build.log
+
+  assert_defined ORTOOLS_TOKEN
+  echo "ORTOOLS_TOKEN: FOUND" | tee -a build.log
+
   local -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
   echo "RELEASE_DIR: '${RELEASE_DIR}'" | tee -a build.log
 
-  (cd "${ROOT_DIR}" && make print-OR_TOOLS_VERSION | tee -a build.log)
-
-  local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-  local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
   local -r DOCKERFILE="arm64.Dockerfile"
+  echo "DOCKERFILE: '${DOCKERFILE}'" | tee -a build.log
   local -r ORTOOLS_IMG="ortools/manylinux_delivery_arm64"
-  local -r PLATFORM=$(uname -m)
+  echo "ORTOOLS_IMG: '${ORTOOLS_IMG}'" | tee -a build.log
 
   mkdir -p "${ROOT_DIR}/export"
 
   case ${1} in
-    cpp|dotnet|java|archive|examples)
+    cpp|dotnet|java|julia|archive|examples)
       "build_$1"
       exit ;;
     python)
@@ -287,11 +309,6 @@ function main() {
       exit ;;
     reset)
       reset
-      exit ;;
-    all)
-      build_cpp
-      build_dotnet
-      build_java
       exit ;;
     *)
       >&2 echo "Target '${1}' unknown"

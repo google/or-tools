@@ -32,14 +32,13 @@ ${BOLD}OPTIONS${RESET}
 \t-h --help: display this help text
 \tjava: publish the Java runtime packages
 \tpython: publish all Pyhon packages
-\tall: publish everything (default)
 
 ${BOLD}EXAMPLES${RESET}
 Using export to define the ${BOLD}ORTOOLS_TOKEN${RESET} env and only publishing the Java packages:
 export ORTOOLS_TOKEN=SECRET
 $0 java
 
-note: the 'export ORTOOLS_TOKEN=...' should be placed in your bashrc to avoid any leak
+note: the 'export ...' should be placed in your bashrc to avoid any leak
 of the secret in your bash history
 EOF
 )
@@ -54,6 +53,7 @@ function assert_defined(){
 }
 
 # Java publish
+# shellcheck disable=SC2329
 function publish_java() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/java_publish" -; then
     echo "publish Java up to date!"
@@ -66,19 +66,64 @@ function publish_java() {
     exit 1
   else
     echo "JAVA_HOME: ${JAVA_HOME}" | tee -a publish.log
-    command -v mvn
+    echo "check java..."
+    command -v java | xargs echo "java: " | tee -a publish.log
+    echo "check javac..."
+    command -v javac | xargs echo "javac: " | tee -a publish.log
+    echo "check jar..."
+    command -v jar | xargs echo "jar: " | tee -a publish.log
+    echo "check mvn..."
     command -v mvn | xargs echo "mvn: " | tee -a publish.log
-    java -version 2>&1 | tee -a publish.log
-    java -version 2>&1 | head -n 1 | grep -q "1.8"
+    echo "Check java version..."
+    java -version 2>&1 | head -n 1 | xargs echo "java version: " | tee -a publish.log
+    java -version 2>&1 | head -n 1 | grep -q '"2[1567]'
   fi
   # Maven central need gpg sign and we store the release key encoded using openssl
   local OPENSSL_PRG=openssl
-  if [[ -x "$(command -v openssl11)" ]]; then
+  if [[ -x $(command -v openssl11) ]]; then
     OPENSSL_PRG=openssl11
   fi
-  command -v $OPENSSL_PRG | xargs echo "openssl: " | tee -a publish.log
+  echo "check ${OPENSSL_PRG}..."
+  command -v "$OPENSSL_PRG" | xargs echo "openssl: " | tee -a publish.log
+  echo "check gpg..."
   command -v gpg
   command -v gpg | xargs echo "gpg: " | tee -a publish.log
+
+  # Install Java GPG
+  echo -n "Install Java GPG..." | tee -a publish.log
+  $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
+  -in tools/release/private-key.gpg.enc \
+  -out private-key.gpg -d
+  gpg --batch --import private-key.gpg
+  # Don't need to trust the key
+  #expect -c "spawn gpg --edit-key "corentinl@google.com" trust quit; send \"5\ry\r\"; expect eof"
+
+  # Install the maven settings.xml having the GPG passphrase
+  mkdir -p ~/.m2
+  $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
+  -in tools/release/settings.xml.enc \
+  -out ~/.m2/settings.xml -d
+  echo "DONE" | tee -a publish.log
+
+  # Clean java
+  #echo -n "Clean Java..." | tee -a publish.log
+  #cd "${ROOT_DIR}" || exit 2
+  #rm -rf "${ROOT_DIR}/temp_java"
+  #echo "DONE" | tee -a publish.log
+
+  echo "Build Java..." | tee -a publish.log
+  if [ -z "${GPG_ARGS}" ]; then
+    GPG_EXTRA=""
+  else
+    GPG_EXTRA="-DGPG_ARGS=${GPG_ARGS}"
+  fi
+  # shellcheck disable=SC2086 # cmake fail to parse empty string ""
+  cmake -S. -Btemp_java -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
+ -DBUILD_JAVA=ON -DSKIP_GPG=OFF ${GPG_EXTRA}
+  cmake --build temp_java --target java_native_package
+  echo "DONE" | tee -a publish.log
+  #cmake --build temp_java --target test
+  #echo "cmake test: DONE" | tee -a publish.log
 
   echo -n "Publish native Java..." | tee -a publish.log
   cmake --build temp_java --target java_native_deploy -v
@@ -88,6 +133,7 @@ function publish_java() {
 }
 
 # Python publish
+# shellcheck disable=SC2329
 function publish_python() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/python_publish" -; then
     echo "publish Python up to date!"
@@ -109,38 +155,46 @@ function publish_python() {
 # Main
 function main() {
   case ${1} in
-    -h | --help)
+    -h | --help | help)
       help; exit ;;
   esac
 
-  assert_defined ORTOOLS_TOKEN
-  echo "ORTOOLS_TOKEN: FOUND" | tee publish.log
-  make print-OR_TOOLS_VERSION | tee -a publish.log
+  local -r ARCH=$(uname -m)
+  echo "ARCH: '${ARCH}'" | tee -a publish.log
+  local -r OS=$(uname -s)
+  echo "OS: '${OS}'" | tee -a publish.log
 
   local -r ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
-  echo "ROOT_DIR: '${ROOT_DIR}'"
+  echo "ROOT_DIR: '${ROOT_DIR}'" | tee -a publish.log
 
-  local -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
-  echo "RELEASE_DIR: '${RELEASE_DIR}'"
+  # shellcheck source=/dev/null
+  source "${ROOT_DIR}/Version.txt"
+  assert_defined OR_TOOLS_MAJOR
+  assert_defined OR_TOOLS_MINOR
+  echo "ORTOOLS_VERSION: '${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}'" | tee -a publish.log
 
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  echo "ORTOOLS_BRANCH: '${ORTOOLS_BRANCH}'" | tee -a publish.log
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
+  echo "ORTOOLS_SHA1: '${ORTOOLS_SHA1}'" | tee -a publish.log
 
-  mkdir -p export
+  assert_defined ORTOOLS_TOKEN
+  echo "ORTOOLS_TOKEN: FOUND" | tee publish.log
+
+  local -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
+  echo "RELEASE_DIR: '${RELEASE_DIR}'" | tee -a publish.log
+
+  mkdir -p "${ROOT_DIR}/export"
+
   case ${1} in
     java|python)
       "publish_$1"
-      exit ;;
-    all)
-      publish_java
-      publish_python
       exit ;;
     *)
       >&2 echo "Target '${1}' unknown"
       exit 1
   esac
-  exit 0
 }
 
-main "${1:-all}"
+main "${1:-help}"
 
