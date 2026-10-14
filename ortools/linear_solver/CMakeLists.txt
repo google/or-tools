@@ -48,9 +48,9 @@ if(USE_GUROBI)
   list(APPEND _SRCS gurobi_util.h gurobi_interface.cc gurobi_util.cc)
 endif()
 
-if(USE_MOSEK)
-  list(APPEND _SRCS mosek_interface.cc)
-endif()
+#if(USE_MOSEK)
+#  list(APPEND _SRCS mosek_interface.cc)
+#endif()
 
 if(USE_GLPK)
   list(APPEND _SRCS glpk_interface.cc)

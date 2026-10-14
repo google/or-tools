@@ -14,6 +14,7 @@
 #include "mosek_solver.h"
 
 #include <absl/container/flat_hash_map.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include <algorithm>
@@ -27,6 +28,7 @@
 #include <memory>
 #include <optional>
 #include <span>
+#include <sstream>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -92,16 +94,6 @@ absl::Status MosekSolver::AddVariables(const VariablesProto& vars) {
         return absl::InternalError((std::stringstream() << rname << ": " << msg).str());
     }
 
-
-    // {
-    //   int i = 0;
-    //   for (const auto& v : vars.lower_bounds()) lbx[i++] = v;
-    // }
-    // {
-    //   int i = 0;
-    //   for (const auto& v : vars.upper_bounds()) ubx[i++] = v;
-    // }
-
     {
         int i = 0;
         for (const bool is_integer : vars.integers()) {
@@ -149,6 +141,7 @@ absl::Status MosekSolver::ReplaceObjective(const ObjectiveProto& obj) {
 absl::Status MosekSolver::AddConstraints(const LinearConstraintsProto& cons,
                                          const SparseDoubleMatrixProto& adata)
 {
+    //std::cerr << __FILE__ << ":" << __LINE__ << ": MosekSolver::AddConstraints" << std::endl;
     int64_t first_con = MSK::get_num_con(task.get());
     int64_t first_row = MSK::get_num_row(task.get());
 
@@ -774,6 +767,7 @@ absl::StatusOr<PrimalSolutionProto> MosekSolver::PrimalSolution(
                     return absl::InternalError((std::stringstream() << rname << ": " << msg).str());
                 }
 
+                sol.set_objective_value(pobj);
                 SparseDoubleVectorProto vals;
 
                 for (auto k : ordered_var_ids) {
@@ -783,6 +777,13 @@ absl::StatusOr<PrimalSolutionProto> MosekSolver::PrimalSolution(
                         vals.add_values(v);
                     }
                 }
+
+
+                //std::cerr << __FILE__ << ":" << __LINE__ << ": MosekSolver::PrimalSolution pobj : " << pobj << std::endl;
+                // if (numvar > 0) {
+                //     for (auto x : xx)
+                //         std::cerr << __FILE__ << ":" << __LINE__ << ": MosekSolver::PrimalSolution xx : " << x << std::endl;
+                // }
 
                 *sol.mutable_variable_values() = std::move(vals);
             }
@@ -809,23 +810,25 @@ absl::StatusOr<DualSolutionProto> MosekSolver::DualSolution(
         return absl::InternalError((std::stringstream() << rname << ": " << msg).str());
     }
 
+
     switch (dsta) {
         case MSK::SolSta::OPTIMAL:
         case MSK::SolSta::FEASIBLE:
             {
+                //std::cerr << __FILE__ << ":" << __LINE__ << ": DualSolution : OPTIMAL/FEASIBLE" << std::endl;
                 double dobj;
                 int32_t numvar = MSK::get_num_var(task.get());
                 int64_t numcon = MSK::get_num_con(task.get());
                 int64_t numconrow;
                 std::vector<double> slx(numvar);
                 std::vector<double> sux(numvar);
-                //std::vector<double> y(numconrow);
 
                 if (MSK::RES_OK != MSK::get_con_slice_num_row(task.get(),0,numcon,&numconrow) ||
                     MSK::RES_OK != MSK::get_dual_obj(task.get(),sol_index,&dobj) ||
                     MSK::RES_OK != MSK::get_sol_slx_slice(task.get(),sol_index,0,numvar,slx.data()) ||
                     MSK::RES_OK != MSK::get_sol_sux_slice(task.get(),sol_index,0,numvar,sux.data()))
                 {
+                    //std::cerr << __FILE__ << ":" << __LINE__ << ": DualSolution : failed" << std::endl;
                     auto [rname,rdesc,msg] = last_error();
                     return absl::InternalError((std::stringstream() << rname << ": " << msg).str());
                 }
@@ -846,16 +849,18 @@ absl::StatusOr<DualSolutionProto> MosekSolver::DualSolution(
                 }
                 {
                     SparseDoubleVectorProto vals;
-                    double slc,suc;
+                    double slc = -999,suc = -999;
                     for (auto k : ordered_y_ids) {
                         auto [con_lo,con_up,rowi] = linconstr_map[k];
-                        if (MSK::RES_OK != MSK::get_sol_y_slice(task.get(),sol_index,con_lo,con_lo+1,1,&slc) ||
-                            MSK::RES_OK != MSK::get_sol_y_slice(task.get(),sol_index,con_up,con_up+1,1,&suc))
+                        //std::cerr << __FILE__ << ":" << __LINE__ << ": DualSolution : " << con_lo << "/" << con_up << "/" << rowi << std::endl;
+                        if (MSK::RES_OK != MSK::get_sol_y_slice(task.get(),sol_index,con_lo,1,1,&slc) ||
+                            MSK::RES_OK != MSK::get_sol_y_slice(task.get(),sol_index,con_up,1,1,&suc))
                         {
                             auto [rname,rdesc,msg] = last_error();
                             return absl::InternalError((std::stringstream() << rname << ": " << msg).str());
                         }
-                        double v = slc-suc;
+                        //std::cerr << __FILE__ << ":" << __LINE__ << ": DualSolution : " << slc << "/" << suc << std::endl;
+                        double v = slc+suc;
                         if (!skip_y_zeros || v < 0.0 || v > 0.0) {
                             vals.add_ids(k);
                             vals.add_values(v);
@@ -867,7 +872,8 @@ absl::StatusOr<DualSolutionProto> MosekSolver::DualSolution(
             }
             break;
         default:
-            return absl::NotFoundError("Primal solution not available");
+            //std::cerr << __FILE__ << ":" << __LINE__ << ": DualSolution : failed" << std::endl;
+            return absl::NotFoundError("Dual solution not available");
     }
     return sol;
 }
@@ -887,12 +893,16 @@ absl::StatusOr<SolutionProto> MosekSolver::Solution(
     SolutionProto sol;
     {
         auto r = PrimalSolution(sol_index, ordered_xx_ids, skip_xx_zeros);
+        //std::cerr << __FILE__ << ":" << __LINE__ << ": Solution/Primal : " << r.ok() << std::endl;
         if (r.ok()) *sol.mutable_primal_solution() = std::move(*r);
     }
     {
         auto r = DualSolution(sol_index, ordered_y_ids, skip_y_zeros, ordered_yx_ids,
                             skip_yx_zeros);
-        if (r.ok()) *sol.mutable_dual_solution() = std::move(*r);
+        //std::cerr << __FILE__ << ":" << __LINE__ << ": Solution/Dual : " << r.ok() << std::endl;
+        if (r.ok()) {
+            *sol.mutable_dual_solution() = std::move(*r);
+        }
     }
 
     MSK::SolType soltp;
@@ -1232,6 +1242,8 @@ absl::StatusOr<SolveResultProto> MosekSolver::Solve(
         MSK::put_int_param(task.get(),"dpar_intpnt_co_tol_rel_gap", dpar_intpnt_co_tol_rel_gap,&ok);
     });
 
+    //std::cerr << __FILE__ << ":" << __LINE__ << ": MSK::optimize " << std::endl;
+
     if (parameters.has_time_limit()) {
         OR_ASSIGN_OR_RETURN3(
             const absl::Duration time_limit,
@@ -1358,13 +1370,48 @@ absl::StatusOr<SolveResultProto> MosekSolver::Solve(
         BufferedMessageCallback bmsg_cb(message_cb);
         // TODO: Use model_parameters
 
-        MSK::put_stream_callback(task.get(),MSK::StreamType::LOG,&bmsg_cb,stream_cb);
-        auto _guard_reset_stream_cb = absl::MakeCleanup([&]() {
-            MSK::put_stream_callback(task.get(),MSK::StreamType::LOG,nullptr,nullptr);
-        });
+        //MSK::put_stream_callback(task.get(),MSK::StreamType::LOG,&bmsg_cb,stream_cb);
+        //auto _guard_reset_stream_cb = absl::MakeCleanup([&]() {
+        //    MSK::put_stream_callback(task.get(),MSK::StreamType::LOG,nullptr,nullptr);
+        //});
 
-        MSK::put_stream_callback(task.get(),MSK::StreamType::LOG,nullptr,msgprn);
+
+        // Expected: is OK and has a value that ((is an object whose field `termination` (is an object whose field
+        // `reason` is equal to optimal) and (is an object whose field `problem_status` (is an object whose field
+        // `primal_status` is equal to feasible) and (is an object whose field `dual_status` is equal to feasible) and
+        // (is an object whose field `primal_or_dual_infeasible` is equal to false))) and (is an object whose property
+        // `has_primal_feasible_solution` is equal to true) and (is an object whose property `objective_value` is
+        // approximately 1 (absolute error <= 1.0000000000000001e-05))) and (is an object whose field `solutions`
+        // contains at least one element that is an object whose field `primal_solution` value (is an object whose field
+        // `variable_values` has identical keys to {{__var#0__, 1}} and values within 1e-05) and (is an object whose
+        // field `objective_value` is approximately 1 (absolute error <= 1.0000000000000001e-05)) and (is an object
+        // whose field `feasibility_status` is equal to feasible))
+        //
+        // Actual: {
+        //     termination: {
+        //         reason: optimal,
+        //         problem_status: {
+        //             primal_status: feasible,
+        //             dual_status: feasible,
+        //             primal_or_dual_infeasible: false
+        //         },
+        //         objective_bounds: {primal_bound: 1, dual_bound: 0}
+        //     },
+        //     solve_stats: {
+        //         solve_time: 0,
+        //         simplex_iterations: 0,
+        //         barrier_iterations: 0,
+        //         first_order_iterations: 0,
+        //         node_count: 0 },
+        //     solutions: [1 available],
+        //     primal_rays: [],
+        //     dual_rays: []
+        // },
+        // whose property `objective_value` is 0 (of type double), which is -1 from 1
+
+        //MSK::put_stream_callback(task.get(),MSK::StreamType::LOG,nullptr,msgprn);
         if (cb) {
+            //std::cerr << __FILE__ << ":" << __LINE__ << ": MSK::optimize_callback()" << std::endl;
             bool terminate;
             std::tuple<Callback&,std::vector<int64_t>&,absl::flat_hash_map<int64_t, int32_t>&,bool,bool&> handle(cb,ordered_xx_ids,variable_map,skip_xx_zeros,terminate);
             std::tuple<Callback&,bool&> cbh(cb,terminate);
@@ -1373,11 +1420,30 @@ absl::StatusOr<SolveResultProto> MosekSolver::Solve(
             }
         }
         else {
-            if (MSK::RES_OK != MSK::optimize(task.get(),&trm)) {
+            //std::cerr << __FILE__ << ":" << __LINE__ << ": MSK::optimize_callback()" << std::endl;
+            auto r = MSK::optimize(task.get(),&trm);
+            //std::cerr << __FILE__ << ":" << __LINE__ << ": MSK::optimize -> " << r << ", trm = " << trm << std::endl;
+            if (MSK::RES_OK != r) {
                 return absl::InternalError("Failed to extract solution data");
             }
         }
+
+#if 1
+        for (int i = 0; ; ++i) {
+            std::ostringstream s;  s  << "outfile_" << i << ".jtask";
+            std::ostringstream s2; s2 << "outfile_" << i << ".ptf";
+            FILE * f = fopen(s.str().c_str(),"rb");
+            if (f) { fclose(f); }
+            else {
+                //std::cerr << __FILE__ << ":" << __LINE__ << ": MosekSolver::PrimalSolution -> " << s.str() << std::endl;
+                MSK::write_task_to_file(task.get(),s.str().c_str());
+                MSK::write_task_to_file(task.get(),s2.str().c_str());
+                break;
+            }
+        }
+#endif
     }
+    //std::cerr << __FILE__ << ":" << __LINE__ << ": MSK::optimize" << std::endl;
 
     int sol_index = -1;
     MSK::SolType sol_type;
@@ -1401,52 +1467,65 @@ absl::StatusOr<SolveResultProto> MosekSolver::Solve(
     TerminationProto trmp{};
     MSK::ProSta prosta{};
     MSK::SolSta psolsta{},dsolsta{};
+    MSK::ResCode r;
     bool ismax = MSK::get_obj_sense(task.get()) == MSK::ObjSense::MAXIMIZE;
     if (!soldef) {
+        //std::cerr << __FILE__ << ":" << __LINE__ << ": No solutions " << std::endl;
         //auto [msg, name, code] = last_error();
         trmp = TerminateForReason(
             ismax,
             TerminationReasonProto::TERMINATION_REASON_NO_SOLUTION_FOUND, "No solution found");
         trmp.set_limit(LimitProto::LIMIT_UNSPECIFIED);
     }
-    else if (MSK::RES_OK != MSK::get_problem_status(task.get(),sol_index,&prosta) ||
-             MSK::RES_OK != MSK::get_sol_status(task.get(),sol_index,&psolsta,&dsolsta))
+    else if (MSK::RES_OK != (r = MSK::get_problem_status(task.get(),sol_index,&prosta)) ||
+             MSK::RES_OK != (r = MSK::get_sol_status(task.get(),sol_index,&psolsta,&dsolsta)))
     {
+        //std::cerr << __FILE__ << ":" << __LINE__ << ": Failed get startus : " << r << std::endl;
         return absl::InternalError("Failed to extract solution data");
     }
     else {
+        //std::cerr << __FILE__ << ":" << __LINE__ << ": MSK::optimize" << std::endl;
         // Attempt to determine TerminationProto from Mosek Termination code,
         // problem status and solution status.
 
         bool ismax = MSK::get_obj_sense(task.get()) == MSK::ObjSense::MAXIMIZE;
         if (psolsta == MSK::SolSta::INTEGER_OPTIMAL) {
             double pobj;
-            if (MSK::RES_OK != MSK::get_primal_obj(task.get(),sol_index,&pobj)) {
+            if (MSK::RES_OK != (r = MSK::get_primal_obj(task.get(),sol_index,&pobj))) {
                 return absl::InternalError("Failed to extract solution data");
             }
-            trmp = OptimalTerminationProto(pobj,0.0,"");
+            //std::cerr << __FILE__ << ":" << __LINE__ << ": INTEGER_OPTIMAL pobj = "  << pobj << std::endl;
+            trmp = OptimalTerminationProto(pobj,pobj,"");
             //trmp.set_limit(LimitProto::LIMIT_SOLUTION);
         }
         else if (psolsta == MSK::SolSta::OPTIMAL &&
                  dsolsta == MSK::SolSta::OPTIMAL) {
             double pobj,dobj;
-            if (MSK::RES_OK != MSK::get_primal_obj(task.get(),sol_index,&pobj) ||
-                MSK::RES_OK != MSK::get_dual_obj(task.get(),sol_index,&dobj))
-                return absl::InternalError("Optimization failedcode");
+            if (MSK::RES_OK != (r = MSK::get_primal_obj(task.get(),sol_index,&pobj)) ||
+                MSK::RES_OK != (r = MSK::get_dual_obj(task.get(),sol_index,&dobj))) {
+                    //std::cerr << __FILE__ << ":" << __LINE__ << ": r = " << r << std::endl;
+                    return absl::InternalError("Optimization failedcode");
+                }
+            //std::cerr << __FILE__ << ":" << __LINE__ << ": OPTIMAL objective " << pobj << "/" << dobj << std::endl;
             trmp = OptimalTerminationProto(pobj,dobj, "");
-        } else if (dsolsta == MSK::SolSta::INFEAS_CERT) {
+        }
+        else if (dsolsta == MSK::SolSta::INFEAS_CERT) {
+            //std::cerr << __FILE__ << ":" << __LINE__ << ": !! " << std::endl;
 
             trmp = InfeasibleTerminationProto(
                 ismax,
                 FeasibilityStatusProto::FEASIBILITY_STATUS_FEASIBLE);
         }
         else if (prosta == MSK::ProSta::PRIMAL_INFEASIBLE_OR_UNBOUNDED) {
+            //std::cerr << __FILE__ << ":" << __LINE__ << ": !! " << std::endl;
             trmp = InfeasibleOrUnboundedTerminationProto(ismax);
         }
         else if (psolsta == MSK::SolSta::INFEAS_CERT) {
+            //std::cerr << __FILE__ << ":" << __LINE__ << ": !! " << std::endl;
             trmp = UnboundedTerminationProto(ismax);
         }
         else if (psolsta == MSK::SolSta::FEASIBLE) {
+            //std::cerr << __FILE__ << ":" << __LINE__ << ": !! " << std::endl;
             LimitProto lim = LimitProto::LIMIT_UNSPECIFIED;
             std::string_view trmname(MSK::get_trm_name(trm));
             if      (0 == trmname.compare("res_trm_max_iterations"))
@@ -1487,6 +1566,7 @@ absl::StatusOr<SolveResultProto> MosekSolver::Solve(
             }
 
         } else {
+            //std::cerr << __FILE__ << ":" << __LINE__ << ": !! " << std::endl;
             trmp = NoSolutionFoundTerminationProto(ismax,LimitProto::LIMIT_UNSPECIFIED);
         }
     }
@@ -1504,6 +1584,7 @@ absl::StatusOr<SolveResultProto> MosekSolver::Solve(
             auto r = Solution(sol_index, ordered_xc_ids, ordered_xx_ids,
                               skip_xx_zeros, ordered_y_ids, skip_y_zeros,
                               ordered_yx_ids, skip_yx_zeros);
+            //std::cerr << __FILE__ << ":" << __LINE__ << ": r.ok() = " << r.ok() << std::endl;
             if (r.ok()) {
                 *result.add_solutions() = std::move(*r);
             }
@@ -1511,6 +1592,7 @@ absl::StatusOr<SolveResultProto> MosekSolver::Solve(
         else if (psolsta == MSK::SolSta::INFEAS_CERT)
         {
             auto r = PrimalRay(sol_index, ordered_xx_ids, skip_xx_zeros);
+            //std::cerr << __FILE__ << ":" << __LINE__ << ": r.ok() = " << r.ok() << std::endl;
             if (r.ok()) {
                 *result.add_primal_rays() = std::move(*r);
             }
@@ -1518,12 +1600,14 @@ absl::StatusOr<SolveResultProto> MosekSolver::Solve(
         else if (dsolsta == MSK::SolSta::INFEAS_CERT)
         {
             auto r = DualRay(sol_index, ordered_y_ids, skip_y_zeros, ordered_yx_ids, skip_yx_zeros);
+            //std::cerr << __FILE__ << ":" << __LINE__ << ": r.ok() = " << r.ok() << std::endl;
             if (r.ok()) {
                 *result.add_dual_rays() = std::move(*r);
             }
         }
         else
         {
+            //std::cerr << __FILE__ << ":" << __LINE__ << std::endl;
         }
     }
     return result;
