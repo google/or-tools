@@ -256,7 +256,7 @@ function build_julia() {
   cp -r ortools/julia/ORToolsBinaries.jl "${JULIA_EXPORT_PKG_DIR}/"
   cp -r ortools/julia/ORToolsGenerated.jl "${JULIA_EXPORT_PKG_DIR}/"
 
-  local -r ORTOOLS_VERSION=$(cd "${ROOT_DIR}" && make print-OR_TOOLS_VERSION | cut -d'=' -f2 | tr -d ' ')
+  local -r ORTOOLS_VERSION="${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}.0"
   local -r ARCHIVE_NAME="or-tools_julia_${ARCH}_v${ORTOOLS_VERSION}.tar.gz"
   tar --no-same-owner -czvf "export/${ARCHIVE_NAME}" -C "export" julia_pkg
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/julia_build"
