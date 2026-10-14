@@ -4,7 +4,7 @@ REM Each blocks could be triggered independently (i.e. commenting others)
 REM run it as:
 REM cmd /c tools\release\publish_delivery_win.cmd all
 
-REM make few tools available
+REM add few tools to path
 set PATH=tools;tools\win;%PATH%
 ::echo "path base: %PATH%"
 set PRG=%0
