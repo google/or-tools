@@ -323,6 +323,14 @@ function build_python() {
   cmake --build temp_python
   echo "DONE" | tee -a build.log
 
+  # Check mypy files
+  for FILE in "${MYPY_FILES[@]}"; do
+    if [[ ! -f "temp_python/python/${FILE}" ]]; then
+      echo "error: ${FILE} missing in the python project" | tee -a build.log
+      exit 2
+    fi
+  done
+
   cp temp_python/python/dist/*.whl export/
 
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/python_build"
