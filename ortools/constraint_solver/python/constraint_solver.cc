@@ -737,19 +737,25 @@ PYBIND11_MODULE(constraint_solver, m) {
 
   pybind11::module::import("ortools.util.python.piecewise_linear_function");
 
+  // py::keep_alive ties the lifetime of RevBool and RevInteger to the Solver
+  // object.
   py::class_<Rev<bool>>(m, "RevBool")
       .def(py::init<bool>(), py::arg("val"))
       .def("value", &Rev<bool>::Value)
-      .def("set_value", &Rev<bool>::SetValue, py::arg("s"), py::arg("val"));
+      .def("set_value", &Rev<bool>::SetValue, py::arg("s"), py::arg("val"),
+           py::keep_alive<2, 1>());
 
   py::class_<NumericalRev<int64_t>>(m, "RevInteger")
       .def(py::init<int64_t>(), py::arg("val"))
       .def("value", &NumericalRev<int64_t>::Value)
       .def("set_value", &NumericalRev<int64_t>::SetValue, py::arg("s"),
-           py::arg("val"))
-      .def("add", &NumericalRev<int64_t>::Add, py::arg("s"), py::arg("to_add"))
-      .def("incr", &NumericalRev<int64_t>::Incr, py::arg("s"))
-      .def("decr", &NumericalRev<int64_t>::Decr, py::arg("s"));
+           py::arg("val"), py::keep_alive<2, 1>())
+      .def("add", &NumericalRev<int64_t>::Add, py::arg("s"), py::arg("to_add"),
+           py::keep_alive<2, 1>())
+      .def("incr", &NumericalRev<int64_t>::Incr, py::arg("s"),
+           py::keep_alive<2, 1>())
+      .def("decr", &NumericalRev<int64_t>::Decr, py::arg("s"),
+           py::keep_alive<2, 1>());
 
   py::class_<DefaultPhaseParameters> default_phase_parameters(
       m, "DefaultPhaseParameters");
