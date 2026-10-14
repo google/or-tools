@@ -22,7 +22,7 @@ function help() {
 ${BOLD}NAME${RESET}
 \t$NAME - Build delivery using the ${BOLD}local host system${RESET}.
 ${BOLD}SYNOPSIS${RESET}
-\t$NAME [-h|--help|help] [cpp|dotnet|java|julia|python X.Y|examples|reset]
+\t$NAME [-h|--help|help] [cpp|dotnet|java|julia|python X.Y|reset]
 ${BOLD}DESCRIPTION${RESET}
 \tBuild Google OR-Tools deliveries.
 \tYou ${BOLD}MUST${RESET} define the following variables before running this script:
@@ -34,8 +34,6 @@ ${BOLD}OPTIONS${RESET}
 \tdotnet: build all .Net packages
 \tjava: build all Java packages
 \tpython <X.Y>: build Pyhon X.Y package
-\tarchive: build all (C++, .Net, Java) archives
-\texamples: build examples archives
 
 ${BOLD}EXAMPLES${RESET}
 Using export to define the ${BOLD}ORTOOLS_TOKEN${RESET} env and only building the Java packages:
@@ -344,97 +342,10 @@ function build_python() {
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/python${PY_VERSION}_build"
 }
 
-# Create Archive
-# shellcheck disable=SC2329
-function build_archive() {
-  if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/archive_build" -; then
-    echo "build archive up to date!" | tee -a build.log
-    return 0
-  fi
-
-  # Clean archive
-  cd "${ROOT_DIR}" || exit 2
-  echo "Check Make version..."
-  make --version 2>&1 | head -n 1 | grep "\b4\.4"
-  echo "Check Sed version..."
-  sed --version 2>&1 | head -n 1 | grep "GNU sed.*\b4"
-
-  echo -n "Clean previous archive..." | tee -a build.log
-  make clean_archive
-  echo "DONE" | tee -a build.log
-
-  echo -n "Make cpp archive..." | tee -a build.log
-  make archive_cpp
-  echo "DONE" | tee -a build.log
-
-  echo -n "  Check libortools.dylib..." | tee -a build.log
-  otool -L "build_make/lib/libortools.dylib" | grep -vqz "/Users"
-  echo "DONE" | tee -a build.log
-
-  echo -n "Make dotnet archive..." | tee -a build.log
-  make archive_dotnet
-  echo "DONE" | tee -a build.log
-
-  echo -n "  Check libortools.dylib..." | tee -a build.log
-  otool -L "build_make/lib/libortools.dylib" | grep -vqz "/Users"
-  echo "DONE" | tee -a build.log
-
-  echo -n "Make java archive..." | tee -a build.log
-  make archive_java
-  echo "DONE" | tee -a build.log
-
-  echo -n "  Check libortools.dylib..." | tee -a build.log
-  otool -L "build_make/lib/libortools.dylib" | grep -vqz "/Users"
-  echo "DONE" | tee -a build.log
-
-  # move archive to export
-  mv or-tools_*.tar.gz export/
-  echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/archive_build"
-}
-
-# Build Examples
-# shellcheck disable=SC2317
-# shellcheck disable=SC2329
-function build_examples() {
-  if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/examples_build" -; then
-    echo "build examples up to date!" | tee -a build.log
-    return 0
-  fi
-
-  cd "${ROOT_DIR}" || exit 2
-  echo "Check Make version..."
-  make --version 2>&1 | head -n 1 | grep "\b4\.3"
-  echo "Check Sed version..."
-  sed --version 2>&1 | head -n 1 | grep "GNU sed.*\b4"
-
-  echo -n "Clean previous example archives..." | tee -a build.log
-  rm -rf temp ./*.tar.gz
-  echo "DONE" | tee -a build.log
-
-  echo "Build examples archives..." | tee -a build.log
-
-  echo -n "  Python examples archive..." | tee -a build.log
-  make python_examples_archive UNIX_PYTHON_VER=3
-  echo "DONE" | tee -a build.log
-
-  echo -n "  Java examples archive..." | tee -a build.log
-  make java_examples_archive UNIX_PYTHON_VER=3
-  echo "DONE" | tee -a build.log
-
-  echo -n "  .Net examples archive..." | tee -a build.log
-  make dotnet_examples_archive UNIX_PYTHON_VER=3
-  echo "DONE" | tee -a build.log
-
-  # move example to export/
-  mv or-tools_*_examples_*.tar.gz export/
-  echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/examples_build"
-}
-
 # Cleaning everything
 function reset() {
   echo "Cleaning everything..."
   cd "${ROOT_DIR}" || exit 2
-  make clean
   rm -rf temp_cpp
   rm -rf temp_dotnet
   rm -rf temp_java
@@ -483,7 +394,7 @@ function main() {
   mkdir -p "${ROOT_DIR}/export"
 
   case ${1} in
-    cpp|dotnet|java|archive|examples)
+    cpp|dotnet|java)
       "build_$1"
       exit ;;
     python)

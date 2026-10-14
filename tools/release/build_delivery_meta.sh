@@ -211,10 +211,7 @@ function build_java() {
 # Cleaning everything
 function reset() {
   echo "Cleaning everything..."
-
   cd "${ROOT_DIR}" || exit 2
-
-  make clean
   rm -rf temp_meta_dotnet
   rm -rf temp_meta_java
   rm -rf export_meta
