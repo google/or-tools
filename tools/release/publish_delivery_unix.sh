@@ -38,7 +38,7 @@ Using export to define the ${BOLD}ORTOOLS_TOKEN${RESET} env and only publishing 
 export ORTOOLS_TOKEN=SECRET
 $0 java
 
-note: the 'export ...' should be placed in your bashrc to avoid any leak
+note: the 'export ORTOOLS_TOKEN=...' should be placed in your bashrc to avoid any leak
 of the secret in your bash history
 EOF
 )
@@ -60,7 +60,7 @@ function log() {
 # shellcheck disable=SC2329
 function publish_java() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/java_publish" -; then
-    echo "publish Java up to date!"
+    log "publish Java up to date!"
     return 0
   fi
 
@@ -90,7 +90,6 @@ function publish_java() {
   echo "check ${OPENSSL_PRG}..."
   command -v "$OPENSSL_PRG" | xargs echo "openssl: " | tee -a publish.log
   echo "check gpg..."
-  command -v gpg
   command -v gpg | xargs echo "gpg: " | tee -a publish.log
 
   # Install Java GPG
@@ -119,9 +118,11 @@ function publish_java() {
   cmake --build temp_java --target java_native_package
   log "DONE"
 
-  log -n "  Check libortools.dylib..."
-  otool -L temp_java/lib/libortools.dylib | grep -vqz "/Users"
-  log "DONE"
+  if [[ "${OS}" == "Darwin" ]]; then
+    log -n "  Check libortools.dylib..."
+    otool -L temp_java/lib/libortools.dylib | grep -vqz "/Users"
+    log "DONE"
+  fi
 
   log -n "Publish native Java..."
   cmake --build temp_java --target java_native_deploy -v
@@ -134,11 +135,10 @@ function publish_java() {
 # shellcheck disable=SC2329
 function publish_python() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/python_publish" -; then
-    echo "publish Python up to date!"
+    log "publish Python up to date!"
     return 0
   fi
 
-  command -v twine
   command -v twine | xargs echo "twine: " | tee -a publish.log
 
   log -n "Publish Python..."

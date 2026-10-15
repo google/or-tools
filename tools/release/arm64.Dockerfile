@@ -76,8 +76,8 @@ ARG ORTOOLS_TOKEN
 ENV ORTOOLS_TOKEN=${ORTOOLS_TOKEN}
 ARG ORTOOLS_DELIVERY
 ENV ORTOOLS_DELIVERY=${ORTOOLS_DELIVERY:-help}
-RUN ./tools/release/build_delivery_linux.sh "${ORTOOLS_DELIVERY}"
+RUN ./tools/release/build_delivery_unix.sh "${ORTOOLS_DELIVERY}"
 
 # Publish delivery
 FROM delivery AS publish
-RUN ./tools/release/publish_delivery_linux.sh "${ORTOOLS_DELIVERY}"
+RUN ./tools/release/publish_delivery_unix.sh "${ORTOOLS_DELIVERY}"

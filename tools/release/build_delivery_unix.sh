@@ -33,6 +33,7 @@ ${BOLD}OPTIONS${RESET}
 \tcpp: build C++ (CMake based) prebuilt archive
 \tdotnet: build all .Net packages
 \tjava: build all Java packages
+\tjulia: build Julia package
 \tpython <X.Y>: build Pyhon X.Y package
 
 ${BOLD}EXAMPLES${RESET}
@@ -54,25 +55,29 @@ function assert_defined(){
   fi
 }
 
+function log() {
+  echo "$@" | tee -a "${ROOT_DIR}/build.log"
+}
+
 # Create C++ export
 # shellcheck disable=SC2329
 function build_cpp() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/cpp_build" -; then
-    echo "build C++ up to date!" | tee -a build.log
+    log "build C++ up to date!"
     return 0
   fi
 
   # Clean dotnet
-  echo -n "Clean C++..." | tee -a build.log
+  log -n "Clean C++..."
   cd "${ROOT_DIR}" || exit 2
   rm -rf "${ROOT_DIR}/temp_cpp"
-  echo "DONE" | tee -a build.log
+  log "DONE"
 
-  echo -n "Build C++..." | tee -a build.log
+  log -n "Build C++..."
   cmake -S. -Btemp_cpp -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DEPS=ON
   cmake --build temp_cpp --target all
   (cd temp_cpp && cpack -B pack)
-  echo "DONE" | tee -a build.log
+  log "DONE"
 
   # move archive to export
   mv temp_cpp/pack/*.tar.gz export/
@@ -83,28 +88,26 @@ function build_cpp() {
 # shellcheck disable=SC2329
 function build_dotnet() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/dotnet_build" -; then
-    echo "build .Net up to date!" | tee -a build.log
+    log "build .Net up to date!"
     return 0
   fi
 
   cd "${ROOT_DIR}" || exit 2
   echo -n "check swig..."
-  command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
-  echo "DONE" | tee -a build.log
+  log "DONE"
 
   echo -n "check dotnet..."
-  command -v dotnet
   command -v dotnet | xargs echo "dotnet: " | tee -a build.log
-  echo "DONE" | tee -a build.log
+  log "DONE"
 
   # Install .Net SNK
-  echo -n "Install .Net SNK..." | tee -a build.log
+  log -n "Install .Net SNK..."
   local OPENSSL_PRG=openssl
   if [[ -x $(command -v openssl11) ]]; then
     OPENSSL_PRG=openssl11
   fi
-  echo "DONE" | tee -a build.log
+  log "DONE"
   echo -n "check ${OPENSSL_PRG}..."
   command -v "${OPENSSL_PRG}" | xargs echo "openssl: " | tee -a build.log
 
@@ -112,22 +115,24 @@ function build_dotnet() {
     -in "${RELEASE_DIR}/or-tools.snk.enc" \
     -out "${ROOT_DIR}/export/or-tools.snk" -d
   export DOTNET_SNK=export/or-tools.snk
-  echo "DONE" | tee -a build.log
+  log "DONE"
 
   # Clean dotnet
-  echo -n "Clean .Net..." | tee -a build.log
+  log -n "Clean .Net..."
   cd "${ROOT_DIR}" || exit 2
   rm -rf "${ROOT_DIR}/temp_dotnet"
-  echo "DONE" | tee -a build.log
+  log "DONE"
 
-  echo -n "Build .Net..." | tee -a build.log
+  log -n "Build .Net..."
   cmake -S. -Btemp_dotnet -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOTNET=ON
   cmake --build temp_dotnet
-  echo "DONE" | tee -a build.log
+  log "DONE"
 
-  echo -n "  Check libortools.dylib..." | tee -a build.log
-  otool -L temp_dotnet/lib/libortools.dylib | grep -vqz "/Users"
-  echo "DONE" | tee -a build.log
+  if [[ "${OS}" == "Darwin" ]]; then
+    log -n "  Check libortools.dylib..."
+    otool -L temp_dotnet/lib/libortools.dylib | grep -vqz "/Users"
+    log "DONE"
+  fi
   #cmake --build temp_dotnet --target test
   #echo "cmake test: DONE" | tee -a build.log
 
@@ -140,22 +145,21 @@ function build_dotnet() {
 # shellcheck disable=SC2329
 function build_java() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/java_build" -; then
-    echo "build Java up to date!" | tee -a build.log
+    log "build Java up to date!"
     return 0
   fi
 
   cd "${ROOT_DIR}" || exit 2
   echo -n "check swig..."
-  command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
-  echo "DONE" | tee -a build.log
+  log "DONE"
 
   # maven require JAVA_HOME
   if [[ -z "${JAVA_HOME}" ]]; then
-    echo "JAVA_HOME: not found !" | tee -a build.log
+    log "JAVA_HOME: not found !"
     exit 1
   else
-    echo "JAVA_HOME: ${JAVA_HOME}" | tee -a build.log
+    log "JAVA_HOME: ${JAVA_HOME}"
     echo "check java..."
     command -v java | xargs echo "java: " | tee -a build.log
     echo "check javac..."
@@ -176,11 +180,10 @@ function build_java() {
   echo "check ${OPENSSL_PRG}..."
   command -v "${OPENSSL_PRG}" | xargs echo "openssl: " | tee -a build.log
   echo "check gpg..."
-  command -v gpg
   command -v gpg | xargs echo "gpg: " | tee -a build.log
 
   # Install Java GPG
-  echo -n "Install Java GPG..." | tee -a build.log
+  log -n "Install Java GPG..."
   $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
   -in tools/release/private-key.gpg.enc \
   -out private-key.gpg -d
@@ -193,15 +196,15 @@ function build_java() {
   $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
   -in tools/release/settings.xml.enc \
   -out ~/.m2/settings.xml -d
-  echo "DONE" | tee -a build.log
+  log "DONE"
 
   # Clean java
-  echo -n "Clean Java..." | tee -a build.log
+  log -n "Clean Java..."
   cd "${ROOT_DIR}" || exit 2
   rm -rf "${ROOT_DIR}/temp_java"
-  echo "DONE" | tee -a build.log
+  log "DONE"
 
-  echo "Build Java..." | tee -a build.log
+  log "Build Java..."
   if [ -z "${GPG_ARGS}" ]; then
     GPG_EXTRA=""
   else
@@ -211,22 +214,70 @@ function build_java() {
   cmake -S. -Btemp_java -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
  -DBUILD_JAVA=ON -DSKIP_GPG=OFF ${GPG_EXTRA}
   cmake --build temp_java
-  echo "DONE" | tee -a build.log
+  log "DONE"
 
-  echo -n "  Check libortools.dylib..." | tee -a build.log
-  otool -L temp_java/lib/libortools.dylib | grep -vqz "/Users"
-  echo "DONE" | tee -a build.log
+  if [[ "${OS}" == "Darwin" ]]; then
+    log -n "  Check libortools.dylib..."
+    otool -L temp_java/lib/libortools.dylib | grep -vqz "/Users"
+    log "DONE"
+  fi
   #cmake --build temp_java --target test
   #echo "cmake test: DONE" | tee -a build.log
 
   # copy jar to export
-  if [[ ${ARCH} == "arm64" ]]; then
-    cp temp_java/java/ortools-darwin-aarch64/target/*.jar* export/
+  if [[ "${OS}" == "Darwin" ]]; then
+    if [[ ${ARCH} == "arm64" ]]; then
+      cp temp_java/java/ortools-darwin-aarch64/target/*.jar* export/
+    else
+      cp temp_java/java/ortools-darwin-x86-64/target/*.jar* export/
+    fi
   else
-    cp temp_java/java/ortools-darwin-x86-64/target/*.jar* export/
+    if [[ ${ARCH} == "aarch64" ]]; then
+      cp temp_java/java/ortools-linux-aarch64/target/*.jar* export/
+    else
+      cp temp_java/java/ortools-linux-x86-64/target/*.jar* export/
+    fi
   fi
   cp temp_java/java/ortools-java/target/*.jar* export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/java_build"
+}
+
+# shellcheck disable=SC2329
+function build_julia() {
+  if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/julia_build" -; then
+    log "build Julia up to date!"
+    return 0
+  fi
+
+  log -n "Cleaning Julia..."
+  cd "${ROOT_DIR}" || exit 2
+  rm -rf "temp_julia"
+  log "DONE"
+
+  # A Julia build is mostly a C++ build.
+  # Many flags to disable features irrelevant for Julia.
+  local -r JULIA_EXPORT_PKG_DIR="export/julia_pkg"
+  log "Build Julia..."
+  cmake -S. -Btemp_julia \
+    -DBUILD_TESTING=OFF -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
+    -DBUILD_PYTHON=OFF -DBUILD_JAVA=OFF -DBUILD_DOTNET=OFF \
+    -DUSE_COINOR=OFF -DUSE_HIGHS=OFF -DUSE_SCIP=OFF -DUSE_XPRESS=OFF -DBUILD_FLATZINC=OFF \
+    -DCMAKE_INSTALL_PREFIX="${JULIA_EXPORT_PKG_DIR}"
+  cmake --build temp_julia
+  log "Install Julia into ${JULIA_EXPORT_PKG_DIR}..."
+  cmake --build temp_julia --target install
+  log "DONE"
+
+  # Make Julia package from scratch: the Julia packages and an installed
+  # OR-Tools.
+  cp -r ortools/julia/ORTools.jl "${JULIA_EXPORT_PKG_DIR}/"
+  cp -r ortools/julia/ORToolsBinaries.jl "${JULIA_EXPORT_PKG_DIR}/"
+  cp -r ortools/julia/ORToolsGenerated.jl "${JULIA_EXPORT_PKG_DIR}/"
+
+  local -r ORTOOLS_VERSION="${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}.0"
+  local -r ARCHIVE_NAME="or-tools_julia_${ARCH}_v${ORTOOLS_VERSION}.tar.gz"
+  tar --no-same-owner -czvf "export/${ARCHIVE_NAME}" -C "export" julia_pkg
+  echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/julia_build"
 }
 
 # Python 3
@@ -241,27 +292,28 @@ function build_python() {
   local -r PY_VERSION="3.$1"
 
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/python${PY_VERSION}_build" -; then
-    echo "build python up to date!" | tee -a build.log
+    log "build python up to date!"
     return 0
   fi
 
   # Save PATH
-  PATH_BCKP=${PATH}
+  local -r PATH_BCKP=${PATH}
 
   cd "${ROOT_DIR}" || exit 2
   echo "check swig..."
-  command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
-  echo "DONE" | tee -a build.log
+  log "DONE"
 
-  # Check python interpreter
-  # Need the one form python.org not from homebrew to be compatible with older macOS
-  PY_PATH="/Library/Frameworks/Python.framework/Versions/${PY_VERSION}"
-  if [[ ! -d "$PY_PATH" ]]; then
-    echo "Error: Python ${PY_VERSION} is not found (${PY_PATH})." | tee -a build.log
-    exit 1
+  if [[ "${OS}" == "Darwin" ]]; then
+    # Check python interpreter
+    # Need the one form python.org not from homebrew to be compatible with older macOS
+    PY_PATH="/Library/Frameworks/Python.framework/Versions/${PY_VERSION}"
+    if [[ ! -d "$PY_PATH" ]]; then
+      log "Error: Python ${PY_VERSION} is not found (${PY_PATH})."
+      exit 1
+    fi
+    export PATH="${HOME}/Library/Python/${PY_VERSION}/bin:${PY_PATH}/bin:${PATH_BCKP}"
   fi
-  export PATH="${HOME}/Library/Python/${PY_VERSION}/bin:${PY_PATH}/bin:${PATH_BCKP}"
 
   # Check Python env
   echo "check python3..."
@@ -269,8 +321,13 @@ function build_python() {
   python3 --version | grep "${PY_VERSION}"
   command -v "python${PY_VERSION}" | xargs echo "python${PY_VERSION}: " | tee -a build.log
   python3 -c "import platform as p; print(p.platform())" | tee -a build.log
-  python3 -m pip install --upgrade --user pip
-  python3 -m pip install --upgrade --user wheel absl-py mypy mypy-protobuf protobuf virtualenv
+  if [[ "${OS}" == "Darwin" ]]; then
+    python3 -m pip install --upgrade --user pip
+    python3 -m pip install --upgrade --user wheel absl-py mypy mypy-protobuf protobuf virtualenv "typing-extensions>=4.12"
+  else
+    python3 -m pip install --upgrade --user --break-system-package pip
+    python3 -m pip install --upgrade --user --break-system-package wheel absl-py mypy mypy-protobuf protobuf virtualenv "typing-extensions>=4.12"
+  fi
   echo "check protoc-gen-mypy..."
   command -v protoc-gen-mypy | xargs echo "protoc-gen-mypy: " | tee -a build.log
   protoc-gen-mypy --version | xargs echo "protoc-gen-mypy version: " | tee -a build.log
@@ -291,51 +348,68 @@ function build_python() {
   )
 
   # Clean and build
-  echo -n "Cleaning Python3..." | tee -a build.log
-  rm -rf "temp_python${PY_VERSION}"
-  echo "DONE" | tee -a build.log
-  echo "Build Python3..." | tee -a build.log
-  echo -n "  CMake configure..." | tee -a build.log
-  cmake -S. -B"temp_python${PY_VERSION}" -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON -DPython3_ROOT_DIR="$PY_PATH"
-  echo "DONE" | tee -a build.log
+  local -r TEMP_DIR="temp_python${PY_VERSION}"
+  log -n "Cleaning Python3..."
+  rm -rf "${TEMP_DIR}"
+  log "DONE"
+  log "Build Python3..."
+  log -n "  CMake configure..."
+  if [[ "${OS}" == "Darwin" ]]; then
+    cmake -S. -B"${TEMP_DIR}" \
+      -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
+      -DBUILD_PYTHON=ON -DPython3_ROOT_DIR="$PY_PATH"
+  else
+    cmake -S. -B"${TEMP_DIR}" \
+      -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
+      -DBUILD_PYTHON=ON
+  fi
+  log "DONE"
 
-  echo -n "  CMake build ortools..." | tee -a build.log
-  cmake --build "temp_python${PY_VERSION}" --target ortools
-  echo "DONE" | tee -a build.log
+  if [[ "${OS}" == "Darwin" ]]; then
+    log -n "  CMake build ortools..."
+    cmake --build "${TEMP_DIR}" --target ortools
+    log "DONE"
 
-  echo -n "  Build all few times..." | tee -a build.log
-  # on macos stubgen will timeout -> need to build few times
-  cmake --build "temp_python${PY_VERSION}" || true
-  sleep 10
-  cmake --build "temp_python${PY_VERSION}" || true
-  echo "DONE" | tee -a build.log
-  echo -n "  ReBuild all..." | tee -a build.log
-  cmake --build "temp_python${PY_VERSION}"
-  echo "DONE" | tee -a build.log
+    log -n "  Build all few times..."
+    # on macos stubgen will timeout -> need to build few times
+    cmake --build "${TEMP_DIR}" || true
+    sleep 10
+    cmake --build "${TEMP_DIR}" || true
+    log "DONE"
+    log -n "  ReBuild all..."
+    cmake --build "${TEMP_DIR}"
+    log "DONE"
 
-  echo -n "  Check libortools.dylib..." | tee -a build.log
-  otool -L "temp_python${PY_VERSION}/lib/libortools.dylib" | grep -vqz "/Users"
-  echo "DONE" | tee -a build.log
+    log -n "  Check libortools.dylib..."
+    otool -L "${TEMP_DIR}/lib/libortools.dylib" | grep -vqz "/Users"
+    log "DONE"
+  else
+    log -n "  CMake build..."
+    cmake --build "${TEMP_DIR}"
+    log "DONE"
+  fi
 
   # Check mypy files
   for FILE in "${MYPY_FILES[@]}"; do
-    if [[ ! -f "temp_python${PY_VERSION}/python/${FILE}" ]]; then
-      echo "error: ${FILE} missing in the python project" | tee -a build.log
+    if [[ ! -f "${TEMP_DIR}/python/${FILE}" ]]; then
+      log "error: ${FILE} missing in the python project"
       exit 2
     fi
   done
 
-  cp "temp_python${PY_VERSION}"/python/dist/*.whl export/
-  # Fix wheel naming
-  pushd export
-  for WHEEL_FILE in *_universal2.whl; do
-    if [[ ${ARCH} == "arm64" ]]; then
-      mv "${WHEEL_FILE}" "${WHEEL_FILE%_universal2.whl}_arm64.whl"
-    else
-      mv "${WHEEL_FILE}" "${WHEEL_FILE%_universal2.whl}_x86_64.whl" || true
-    fi
-  done
-  popd
+  cp "${TEMP_DIR}"/python/dist/*.whl export/
+  if [[ "${OS}" == "Darwin" ]]; then
+    # Fix wheel naming
+    pushd export
+    for WHEEL_FILE in *_universal2.whl; do
+      if [[ ${ARCH} == "arm64" ]]; then
+        mv "${WHEEL_FILE}" "${WHEEL_FILE%_universal2.whl}_arm64.whl"
+      else
+        mv "${WHEEL_FILE}" "${WHEEL_FILE%_universal2.whl}_x86_64.whl" || true
+      fi
+    done
+    popd
+  fi
   # Reset PATH
   export PATH=${PATH_BCKP}
 
@@ -366,35 +440,35 @@ function main() {
       help; exit ;;
   esac
 
-  local -r ARCH=$(uname -m)
-  echo "ARCH: '${ARCH}'" | tee -a build.log
-  local -r OS=$(uname -s)
-  echo "OS: '${OS}'" | tee -a build.log
-
   local -r ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
-  echo "ROOT_DIR: '${ROOT_DIR}'" | tee -a build.log
+  log "ROOT_DIR: '${ROOT_DIR}'"
+
+  local -r ARCH=$(uname -m)
+  log "ARCH: '${ARCH}'"
+  local -r OS=$(uname -s)
+  log "OS: '${OS}'"
 
   # shellcheck source=/dev/null
   source "${ROOT_DIR}/Version.txt"
   assert_defined OR_TOOLS_MAJOR
   assert_defined OR_TOOLS_MINOR
-  echo "ORTOOLS_VERSION: '${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}'" | tee -a build.log
+  log "ORTOOLS_VERSION: '${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}'"
 
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-  echo "ORTOOLS_BRANCH: '${ORTOOLS_BRANCH}'" | tee -a build.log
+  log "ORTOOLS_BRANCH: '${ORTOOLS_BRANCH}'"
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
-  echo "ORTOOLS_SHA1: '${ORTOOLS_SHA1}'" | tee -a build.log
+  log "ORTOOLS_SHA1: '${ORTOOLS_SHA1}'"
 
   assert_defined ORTOOLS_TOKEN
-  echo "ORTOOLS_TOKEN: FOUND" | tee -a build.log
+  log "ORTOOLS_TOKEN: FOUND"
 
   local -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
-  echo "RELEASE_DIR: '${RELEASE_DIR}'" | tee -a build.log
+  log "RELEASE_DIR: '${RELEASE_DIR}'"
 
   mkdir -p "${ROOT_DIR}/export"
 
   case ${1} in
-    cpp|dotnet|java)
+    cpp|dotnet|java|julia)
       "build_$1"
       exit ;;
     python)

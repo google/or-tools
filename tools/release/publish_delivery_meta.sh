@@ -59,13 +59,12 @@ function log() {
 # shellcheck disable=SC2329
 function publish_java() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export_meta/meta_java_publish" -; then
-    echo "publish Java up to date!"
+    log "publish Java up to date!"
     return 0
   fi
 
   cd "${ROOT_DIR}" || exit 2
   echo -n "check swig..."
-  command -v swig
   command -v swig | xargs echo "swig: " | tee -a publish.log
   log "DONE"
 
@@ -95,7 +94,6 @@ function publish_java() {
   echo "check ${OPENSSL_PRG}..."
   command -v "${OPENSSL_PRG}" | xargs echo "openssl: " | tee -a publish.log
   echo "check gpg..."
-  command -v gpg
   command -v gpg | xargs echo "gpg: " | tee -a publish.log
 
   # Install Java GPG

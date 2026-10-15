@@ -53,12 +53,9 @@ jobs:
         os: ${{matrix.platform.os}}
         lang: ${{matrix.target.lang}}
         version: ${{matrix.target.version}}
-    - name: Build Linux ${{matrix.target.name}} Delivery
-      if: ${{matrix.platform.os == 'linux'}}
-      run: ./tools/release/build_delivery_linux.sh ${{matrix.target.lang}} ${{matrix.target.version}}
-    - name: Build MacOS ${{matrix.target.name}} Delivery
-      if: ${{matrix.platform.os == 'macos'}}
-      run: ./tools/release/build_delivery_macos.sh ${{matrix.target.lang}} ${{matrix.target.version}}
+    - name: Build Unix ${{matrix.target.name}} Delivery
+      if: ${{matrix.platform.os == 'linux' || matrix.platform.os == 'macos'}}
+      run: ./tools/release/build_delivery_unix.sh ${{matrix.target.lang}} ${{matrix.target.version}}
     - name: Build Windows ${{matrix.target.name}} Delivery
       if: ${{matrix.platform.os == 'windows'}}
       run: ./tools/release/build_delivery_windows.cmd ${{matrix.target.lang}} ${{matrix.target.version}}
@@ -114,12 +111,9 @@ jobs:
         path: .
     - name: Check export dir
       run: ls -R export
-    - name: Test Linux ${{matrix.target.name}} Delivery
-      if: ${{matrix.platform.os == 'linux'}}
-      run: ./tools/release/test_delivery_linux.sh ${{matrix.target.lang}} ${{matrix.target.version}}
-    - name: Test MacOS ${{matrix.target.name}} Delivery
-      if: ${{matrix.platform.os == 'macos'}}
-      run: ./tools/release/test_delivery_macos.sh ${{matrix.target.lang}} ${{matrix.target.version}}
+    - name: Test Unix ${{matrix.target.name}} Delivery
+      if: ${{matrix.platform.os == 'linux' || matrix.platform.os == 'macos'}}
+      run: ./tools/release/test_delivery_unix.sh ${{matrix.target.lang}} ${{matrix.target.version}}
     - name: Test Windows ${{matrix.target.name}} Delivery
       if: ${{matrix.platform.os == 'windows'}}
       run: ./tools/release/test_delivery_windows.cmd ${{matrix.target.lang}} ${{matrix.target.version}}
@@ -218,12 +212,9 @@ jobs:
       run: cp -f export_meta/* export/
     - name: Check Export dir
       run: ls -R export
-    - name: Test Linux ${{matrix.target.name}} Meta Delivery
-      if: ${{matrix.platform.os == 'linux'}}
-      run: ./tools/release/test_delivery_linux.sh ${{matrix.target.lang}}
-    - name: Test MacOS ${{matrix.target.name}} Meta Delivery
-      if: ${{matrix.platform.os == 'macos'}}
-      run: ./tools/release/test_delivery_macos.sh ${{matrix.target.lang}}
+    - name: Test Unix ${{matrix.target.name}} Meta Delivery
+      if: ${{matrix.platform.os == 'linux' || matrix.platform.os == 'macos'}}
+      run: ./tools/release/test_delivery_unix.sh ${{matrix.target.lang}}
     - name: Test Windows ${{matrix.target.name}} Meta Delivery
       if: ${{matrix.platform.os == 'windows'}}
       run: ./tools/release/test_delivery_windows.cmd ${{matrix.target.lang}}
@@ -356,12 +347,9 @@ jobs:
         lang: ${{matrix.target.lang}}
         version: ${{matrix.target.version}}
         build_deps: true
-    - name: Build Linux ${{matrix.target.name}} Delivery
-      if: ${{matrix.platform.os == 'linux'}}
-      run: ./tools/release/build_delivery_linux.sh ${{matrix.target.lang}} ${{matrix.target.version}}
-    - name: Build MacOS ${{matrix.target.name}} Delivery
-      if: ${{matrix.platform.os == 'macos'}}
-      run: ./tools/release/build_delivery_macos.sh ${{matrix.target.lang}} ${{matrix.target.version}}
+    - name: Build Unix ${{matrix.target.name}} Delivery
+      if: ${{matrix.platform.os == 'linux' || matrix.platform.os == 'macos'}}
+      run: ./tools/release/build_delivery_unix.sh ${{matrix.target.lang}} ${{matrix.target.version}}
     - name: Build Windows ${{matrix.target.name}} Delivery
       if: ${{matrix.platform.os == 'windows'}}
       run: ./tools/release/build_delivery_windows.cmd ${{matrix.target.lang}} ${{matrix.target.version}}
@@ -415,12 +403,9 @@ jobs:
         path: export/
     - name: Check Export dir
       run: ls -R export
-    - name: Test Linux ${{matrix.target.name}} Delivery
-      if: ${{matrix.platform.os == 'linux'}}
-      run: ./tools/release/test_delivery_linux.sh ${{matrix.target.lang}} ${{matrix.target.version}}
-    - name: Test MacOS ${{matrix.target.name}} Delivery
-      if: ${{matrix.platform.os == 'macos'}}
-      run: ./tools/release/test_delivery_macos.sh ${{matrix.target.lang}} ${{matrix.target.version}}
+    - name: Test Unix ${{matrix.target.name}} Delivery
+      if: ${{matrix.platform.os == 'linux' || matrix.platform.os == 'macos'}}
+      run: ./tools/release/test_delivery_unix.sh ${{matrix.target.lang}} ${{matrix.target.version}}
     - name: Test Windows ${{matrix.target.name}} Delivery
       if: ${{matrix.platform.os == 'windows'}}
       run: ./tools/release/test_delivery_windows.cmd ${{matrix.target.lang}} ${{matrix.target.version}}
