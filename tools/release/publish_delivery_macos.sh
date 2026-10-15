@@ -52,6 +52,10 @@ function assert_defined(){
   fi
 }
 
+function log() {
+  echo "$@" | tee -a "${ROOT_DIR}/publish.log"
+}
+
 # Java publish
 # shellcheck disable=SC2329
 function publish_java() {
@@ -62,10 +66,10 @@ function publish_java() {
 
   # maven require JAVA_HOME
   if [[ -z "${JAVA_HOME}" ]]; then
-    echo "JAVA_HOME: not found !" | tee publish.log
+    log "JAVA_HOME: not found !"
     exit 1
   else
-    echo "JAVA_HOME: ${JAVA_HOME}" | tee -a publish.log
+    log "JAVA_HOME: ${JAVA_HOME}"
     echo "check java..."
     command -v java | xargs echo "java: " | tee -a publish.log
     echo "check javac..."
@@ -90,28 +94,20 @@ function publish_java() {
   command -v gpg | xargs echo "gpg: " | tee -a publish.log
 
   # Install Java GPG
-  echo -n "Install Java GPG..." | tee -a publish.log
+  log -n "Install Java GPG..."
   $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
   -in tools/release/private-key.gpg.enc \
   -out private-key.gpg -d
   gpg --batch --import private-key.gpg
-  # Don't need to trust the key
-  #expect -c "spawn gpg --edit-key "corentinl@google.com" trust quit; send \"5\ry\r\"; expect eof"
 
   # Install the maven settings.xml having the GPG passphrase
   mkdir -p ~/.m2
   $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
   -in tools/release/settings.xml.enc \
   -out ~/.m2/settings.xml -d
-  echo "DONE" | tee -a publish.log
+  log "DONE"
 
-  # Clean java
-  #echo -n "Clean Java..." | tee -a publish.log
-  #cd "${ROOT_DIR}" || exit 2
-  #rm -rf "${ROOT_DIR}/temp_java"
-  #echo "DONE" | tee -a publish.log
-
-  echo "Build Java..." | tee -a publish.log
+  log "Build Java..."
   if [ -z "${GPG_ARGS}" ]; then
     GPG_EXTRA=""
   else
@@ -121,17 +117,15 @@ function publish_java() {
   cmake -S. -Btemp_java -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
  -DBUILD_JAVA=ON -DSKIP_GPG=OFF ${GPG_EXTRA}
   cmake --build temp_java --target java_native_package
-  echo "DONE" | tee -a publish.log
+  log "DONE"
 
-  echo -n "  Check libortools.dylib..." | tee -a publish.log
+  log -n "  Check libortools.dylib..."
   otool -L temp_java/lib/libortools.dylib | grep -vqz "/Users"
-  echo "DONE" | tee -a publish.log
-  #cmake --build temp_java --target test
-  #echo "cmake test: DONE" | tee -a publish.log
+  log "DONE"
 
-  echo -n "Publish native Java..." | tee -a publish.log
+  log -n "Publish native Java..."
   cmake --build temp_java --target java_native_deploy -v
-  echo "DONE" | tee -a publish.log
+  log "DONE"
 
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/java_publish"
 }
@@ -147,11 +141,11 @@ function publish_python() {
   command -v twine
   command -v twine | xargs echo "twine: " | tee -a publish.log
 
-  echo -n "Publish Python..." | tee -a publish.log
+  log -n "Publish Python..."
   pushd export
   twine upload "*.whl"
   popd
-  echo "DONE" | tee -a publish.log
+  log "DONE"
 
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/python_publish"
 }
@@ -163,30 +157,30 @@ function main() {
       help; exit ;;
   esac
 
-  local -r ARCH=$(uname -m)
-  echo "ARCH: '${ARCH}'" | tee -a publish.log
-  local -r OS=$(uname -s)
-  echo "OS: '${OS}'" | tee -a publish.log
-
   local -r ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
-  echo "ROOT_DIR: '${ROOT_DIR}'" | tee -a publish.log
+  log "ROOT_DIR: '${ROOT_DIR}'"
+
+  local -r ARCH=$(uname -m)
+  log "ARCH: '${ARCH}'"
+  local -r OS=$(uname -s)
+  log "OS: '${OS}'"
 
   # shellcheck source=/dev/null
   source "${ROOT_DIR}/Version.txt"
   assert_defined OR_TOOLS_MAJOR
   assert_defined OR_TOOLS_MINOR
-  echo "ORTOOLS_VERSION: '${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}'" | tee -a publish.log
+  log "ORTOOLS_VERSION: '${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}'"
 
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-  echo "ORTOOLS_BRANCH: '${ORTOOLS_BRANCH}'" | tee -a publish.log
+  log "ORTOOLS_BRANCH: '${ORTOOLS_BRANCH}'"
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
-  echo "ORTOOLS_SHA1: '${ORTOOLS_SHA1}'" | tee -a publish.log
+  log "ORTOOLS_SHA1: '${ORTOOLS_SHA1}'"
 
   assert_defined ORTOOLS_TOKEN
-  echo "ORTOOLS_TOKEN: FOUND" | tee publish.log
+  log "ORTOOLS_TOKEN: FOUND"
 
   local -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
-  echo "RELEASE_DIR: '${RELEASE_DIR}'" | tee -a publish.log
+  log "RELEASE_DIR: '${RELEASE_DIR}'"
 
   mkdir -p "${ROOT_DIR}/export"
 

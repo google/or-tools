@@ -41,19 +41,23 @@ EOF
   echo -e "$help"
 }
 
+function log() {
+  echo "$@" | tee -a "${ROOT_DIR}/test.log"
+}
+
 # shellcheck disable=SC2329
 function test_cpp() {
-  echo "TODO" | tee -a test.log
+  log "TODO"
 }
 
 # shellcheck disable=SC2329
 function test_dotnet() {
-  echo "TODO" | tee -a test.log
+  log "TODO"
 }
 
 # shellcheck disable=SC2329
 function test_java() {
-  echo "TODO" | tee -a test.log
+  log "TODO"
 }
 
 # shellcheck disable=SC2329
@@ -62,7 +66,7 @@ function test_python() {
     >&2 echo "No python version supplied"
     exit 1
   fi
-  echo "TODO" | tee -a test.log
+  log "TODO"
 }
 
 # Main
@@ -72,10 +76,13 @@ function main() {
       help; exit ;;
   esac
 
+  local -r ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
+  log "ROOT_DIR: '${ROOT_DIR}'"
+
   local -r ARCH=$(uname -m)
-  echo "ARCH: '${ARCH}'" | tee -a test.log
+  log "ARCH: '${ARCH}'"
   local -r OS=$(uname -s)
-  echo "OS: '${OS}'" | tee -a test.log
+  log "OS: '${OS}'"
 
   case ${1} in
     cpp|dotnet|java)

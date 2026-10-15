@@ -99,16 +99,10 @@ mkdir -p %userprofile%/.m2
 openssl aes-256-cbc -iter 42 -pass pass:%ORTOOLS_TOKEN% -in tools\release\settings.xml.enc -out %userprofile%/.m2/settings.xml -d
 echo Install Java GPG: DONE | tee -a build.log
 
-REM echo Cleaning Java... | tee.exe -a publish.log
-REM rm.exe -rf temp_java
-REM echo DONE | tee.exe -a publish.log
-
 echo Build native java: ... | tee.exe -a publish.log
 cmake -S. -Btemp_java -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_JAVA=ON -DSKIP_GPG=OFF || exit 1
 cmake --build temp_java --config Release --target java_native_package || exit 1
 echo DONE | tee.exe -a publish.log
-REM cmake --build temp_java --config Release --target RUN_TEST || exit 1
-REM echo cmake test_java: DONE | tee.exe -a publish.log
 
 echo Publish native Java... | tee.exe -a publish.log
 cmake --build temp_java --config Release --target java_native_deploy -v
