@@ -57,6 +57,10 @@ function assert_defined(){
   fi
 }
 
+function log() {
+  echo "$@" | tee -a "${ROOT_DIR}/build.log"
+}
+
 # shellcheck disable=SC2329
 function build_delivery() {
   assert_defined ARCH
@@ -72,37 +76,37 @@ function build_delivery() {
   fi
 
   # Clean
-  echo -n "Remove previous docker images..." | tee -a "${ROOT_DIR}/build.log"
+  log -n "Remove previous docker images..."
   docker image rm -f "${ORTOOLS_IMG}":"${ORTOOLS_DELIVERY}" 2>/dev/null
   docker image rm -f "${ORTOOLS_IMG}":devel 2>/dev/null
   docker image rm -f "${ORTOOLS_IMG}":env 2>/dev/null
-  echo "DONE" | tee -a "${ROOT_DIR}/build.log"
+  log "DONE"
 
   cd "${RELEASE_DIR}" || exit 2
 
   # Build env
   # https://github.com/containerd/containerd/blob/v1.4.3/platforms/platforms.go#L63
-  echo -n "Build ${ORTOOLS_IMG}:env..." | tee -a "${ROOT_DIR}/build.log"
+  log -n "Build ${ORTOOLS_IMG}:env..."
   docker buildx build --platform linux/amd64 \
     --tag "${ORTOOLS_IMG}":env \
     --build-arg ORTOOLS_GIT_BRANCH="${ORTOOLS_BRANCH}" \
     --build-arg ORTOOLS_GIT_SHA1="${ORTOOLS_SHA1}" \
     --target=env \
     -f "${DOCKERFILE}" .
-  echo "DONE" | tee -a "${ROOT_DIR}/build.log"
+  log "DONE"
 
   # Build devel
-  echo -n "Build ${ORTOOLS_IMG}:devel..." | tee -a "${ROOT_DIR}/build.log"
+  log -n "Build ${ORTOOLS_IMG}:devel..."
   docker buildx build --platform linux/amd64 \
     --tag "${ORTOOLS_IMG}":devel \
     --build-arg ORTOOLS_GIT_BRANCH="${ORTOOLS_BRANCH}" \
     --build-arg ORTOOLS_GIT_SHA1="${ORTOOLS_SHA1}" \
     --target=devel \
     -f "${DOCKERFILE}" .
-  echo "DONE" | tee -a "${ROOT_DIR}/build.log"
+  log "DONE"
 
   # Build delivery
-  echo -n "Build ${ORTOOLS_IMG}:${ORTOOLS_DELIVERY}..." | tee -a "${ROOT_DIR}/build.log"
+  log -n "Build ${ORTOOLS_IMG}:${ORTOOLS_DELIVERY}..."
   docker buildx build --platform linux/amd64 \
     --tag "${ORTOOLS_IMG}":"${ORTOOLS_DELIVERY}" \
     --build-arg ORTOOLS_GIT_BRANCH="${ORTOOLS_BRANCH}" \
@@ -111,14 +115,14 @@ function build_delivery() {
     --build-arg ORTOOLS_DELIVERY="${ORTOOLS_DELIVERY}" \
     --target=delivery \
     -f "${DOCKERFILE}" .
-  echo "DONE" | tee -a "${ROOT_DIR}/build.log"
+  log "DONE"
 }
 
 # C++ build
 # shellcheck disable=SC2329
 function build_cpp() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/amd64_cpp_build" -; then
-    echo "build C++ up to date!" | tee -a build.log
+    log "build C++ up to date!"
     return 0
   fi
 
@@ -139,7 +143,7 @@ function build_cpp() {
 # shellcheck disable=SC2329
 function build_dotnet() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/amd64_dotnet_build" -; then
-    echo "build .Net up to date!" | tee -a build.log
+    log "build .Net up to date!"
     return 0
   fi
 
@@ -160,7 +164,7 @@ function build_dotnet() {
 # shellcheck disable=SC2329
 function build_java() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/amd64_java_build" -; then
-    echo "build Java up to date!" | tee -a build.log
+    log "build Java up to date!"
     return 0
   fi
 
@@ -187,7 +191,7 @@ function build_python() {
   local -r PY_VERSION="3.$1"
 
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/amd64_python_build" -; then
-    echo "build python up to date!" | tee -a build.log
+    log "build python up to date!"
     return 0
   fi
 
@@ -207,7 +211,7 @@ function build_python() {
 # shellcheck disable=SC2329
 function build_archive() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/amd64_archive_build" -; then
-    echo "build archive up to date!" | tee -a build.log
+    log "build archive up to date!"
     return 0
   fi
 
@@ -228,7 +232,7 @@ function build_archive() {
 # shellcheck disable=SC2329
 function build_examples() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/amd64_examples_build" -; then
-    echo "build examples up to date!" | tee -a build.log
+    log "build examples up to date!"
     return 0
   fi
 
@@ -267,35 +271,35 @@ function main() {
       help; exit ;;
   esac
 
-  local -r ARCH=$(uname -m)
-  echo "ARCH: '${ARCH}'" | tee -a build.log
-  local -r OS=$(uname -s)
-  echo "OS: '${OS}'" | tee -a build.log
-
   local -r ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
-  echo "ROOT_DIR: '${ROOT_DIR}'" | tee -a build.log
+  log "ROOT_DIR: '${ROOT_DIR}'"
+
+  local -r ARCH=$(uname -m)
+  log "ARCH: '${ARCH}'"
+  local -r OS=$(uname -s)
+  log "OS: '${OS}'"
 
   # shellcheck source=/dev/null
   source "${ROOT_DIR}/Version.txt"
   assert_defined OR_TOOLS_MAJOR
   assert_defined OR_TOOLS_MINOR
-  echo "ORTOOLS_VERSION: '${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}'" | tee -a build.log
+  log "ORTOOLS_VERSION: '${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}'"
 
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-  echo "ORTOOLS_BRANCH: '${ORTOOLS_BRANCH}'" | tee -a build.log
+  log "ORTOOLS_BRANCH: '${ORTOOLS_BRANCH}'"
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
-  echo "ORTOOLS_SHA1: '${ORTOOLS_SHA1}'" | tee -a build.log
+  log "ORTOOLS_SHA1: '${ORTOOLS_SHA1}'"
 
   assert_defined ORTOOLS_TOKEN
-  echo "ORTOOLS_TOKEN: FOUND" | tee -a build.log
+  log "ORTOOLS_TOKEN: FOUND"
 
   local -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
-  echo "RELEASE_DIR: '${RELEASE_DIR}'" | tee -a build.log
+  log "RELEASE_DIR: '${RELEASE_DIR}'"
 
   local -r DOCKERFILE="amd64.Dockerfile"
-  echo "DOCKERFILE: '${DOCKERFILE}'" | tee -a build.log
+  log "DOCKERFILE: '${DOCKERFILE}'"
   local -r ORTOOLS_IMG="ortools/manylinux_delivery_amd64"
-  echo "ORTOOLS_IMG: '${ORTOOLS_IMG}'" | tee -a build.log
+  log "ORTOOLS_IMG: '${ORTOOLS_IMG}'"
 
   mkdir -p "${ROOT_DIR}/export"
 
