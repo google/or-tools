@@ -48,11 +48,15 @@ function assert_defined(){
   fi
 }
 
+function log() {
+  echo "$@" | tee -a "${ROOT_DIR}/test.log"
+}
+
 # shellcheck disable=SC2329
 function test_cpp() {
   command -v cmake | xargs echo "cmake: " | tee -a test.log
 
-  echo "TODO" | tee -a test.log
+  log "TODO"
   # untar artifact
   # Try to build and run cmake/samples/cpp
 }
@@ -62,21 +66,21 @@ function test_dotnet() {
   command -v dotnet | xargs echo "dotnet: " | tee -a test.log
   dotnet --version | xargs echo "dotnet version: " | tee -a test.log
 
-  echo "Clear dotnet local package cache" | tee -a test.log
+  log "Clear dotnet local package cache"
   dotnet nuget locals all --clear
 
-  echo "Copy exported nupkg to sample" | tee -a test.log
+  log "Copy exported nupkg to sample"
   cd "${ROOT_DIR}" || exit 2
   cp export/*.nupkg cmake/samples/dotnet
 
-  echo "Build .Net sample" | tee -a test.log
+  log "Build .Net sample"
   cd cmake/samples/dotnet
   dotnet build --nologo -c Release
 
-  echo "Pack .Net sample" | tee -a test.log
+  log "Pack .Net sample"
   dotnet pack --nologo -c Release
 
-  echo "Run sample" | tee -a test.log
+  log "Run sample"
   dotnet run --no-build -c Release
 }
 
@@ -85,27 +89,27 @@ function test_java() {
   command -v mvn | xargs echo "mvn: " | tee -a test.log
   mvn --version -q | xargs echo "mvn version: " | tee -a test.log
 
-  echo "Clear maven local package cache" | tee -a test.log
+  log "Clear maven local package cache"
   rm -rf ~/.m2/repository/com/google/ortools
 
-  echo "Install jar packages" | tee -a test.log
+  log "Install jar packages"
   cd "${ROOT_DIR}/export" || exit 2
   rm -f ./*-sources.jar ./*-javadoc.jar
   for f in ortools-*.jar; do
     mvn install:install-file -Dfile="$f"
   done
 
-  echo "Compile Java sample" | tee -a test.log
+  log "Compile Java sample"
   cd "${ROOT_DIR}/cmake/samples/java"
   mvn compile -B
 
-  echo "Package Java sample" | tee -a test.log
+  log "Package Java sample"
   mvn package -B
 
-  echo "Run sample" | tee -a test.log
+  log "Run sample"
   mvn exec:java
 
-  echo "Run tests sample" | tee -a test.log
+  log "Run tests sample"
   mvn test
 }
 
@@ -122,20 +126,20 @@ function test_python() {
   command -v "python${PY_VERSION}" | xargs echo "python${PY_VERSION}: " | tee -a test.log
   "python${PY_VERSION}" --version | grep "${PY_VERSION}"
 
-  echo "Creating Python${PY_VERSION} venv..." | tee -a test.log
+  log "Creating Python${PY_VERSION} venv..."
   VENV_DIR=venv
   "python${PY_VERSION}" -m pip install --user virtualenv
   "python${PY_VERSION}" -m virtualenv "${VENV_DIR}"
-  echo "Creating Python${PY_VERSION} venv...DONE" | tee -a test.log
+  log "Creating Python${PY_VERSION} venv...DONE"
 
-  echo "Installing ortools Python${PY_VERSION} venv..." | tee -a test.log
+  log "Installing ortools Python${PY_VERSION} venv..."
   "${VENV_DIR}/bin/python" -m pip install export/ortools*.whl
-  echo "Installing ortools Python${PY_VERSION} venv...DONE" | tee -a test.log
+  log "Installing ortools Python${PY_VERSION} venv...DONE"
 
   set +e
-  echo "Testing ortools Python${PY_VERSION}..." | tee -a test.log
+  log "Testing ortools Python${PY_VERSION}..."
   "${VENV_DIR}/bin/python" "cmake/samples/python/sample.py" 2>&1 | tee -a test.log
-  echo "Testing ortools Python${PY_VERSION}...DONE" | tee -a test.log
+  log "Testing ortools Python${PY_VERSION}...DONE"
   set -e
 }
 
@@ -146,24 +150,24 @@ function main() {
       help; exit ;;
   esac
 
-  local -r ARCH=$(uname -m)
-  echo "ARCH: '${ARCH}'" | tee -a test.log
-  local -r OS=$(uname -s)
-  echo "OS: '${OS}'" | tee -a test.log
-
   local -r ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
-  echo "ROOT_DIR: '${ROOT_DIR}'" | tee -a test.log
+  log "ROOT_DIR: '${ROOT_DIR}'"
+
+  local -r ARCH=$(uname -m)
+  log "ARCH: '${ARCH}'"
+  local -r OS=$(uname -s)
+  log "OS: '${OS}'"
 
   # shellcheck source=/dev/null
   source "${ROOT_DIR}/Version.txt"
   assert_defined OR_TOOLS_MAJOR
   assert_defined OR_TOOLS_MINOR
-  echo "ORTOOLS_VERSION: '${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}'" | tee -a test.log
+  log "ORTOOLS_VERSION: '${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}'"
 
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-  echo "ORTOOLS_BRANCH: '${ORTOOLS_BRANCH}'" | tee -a test.log
+  log "ORTOOLS_BRANCH: '${ORTOOLS_BRANCH}'"
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
-  echo "ORTOOLS_SHA1: '${ORTOOLS_SHA1}'" | tee -a test.log
+  log "ORTOOLS_SHA1: '${ORTOOLS_SHA1}'"
 
   case ${1} in
     cpp|dotnet|java)

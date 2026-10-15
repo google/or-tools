@@ -52,6 +52,10 @@ function assert_defined(){
   fi
 }
 
+function log() {
+  echo "$@" | tee -a "${ROOT_DIR}/publish.log"
+}
+
 # shellcheck disable=SC2329
 function publish_delivery() {
   assert_defined ARCH
@@ -67,14 +71,14 @@ function publish_delivery() {
   fi
 
   # Clean
-  echo -n "Remove previous docker images..." | tee -a "${ROOT_DIR}/publish.log"
+  log -n "Remove previous docker images..."
   docker image rm -f "${ORTOOLS_IMG}":"publish_${ORTOOLS_DELIVERY}" 2>/dev/null
-  echo "DONE" | tee -a "${ROOT_DIR}/publish.log"
+  log "DONE"
 
   cd "${RELEASE_DIR}" || exit 2
 
   # Publish delivery
-  echo -n "Build ${ORTOOLS_IMG}:publish_${ORTOOLS_DELIVERY}..." | tee -a "${ROOT_DIR}/publish.log"
+  log -n "Build ${ORTOOLS_IMG}:publish_${ORTOOLS_DELIVERY}..."
   docker buildx build --platform linux/amd64 \
     --tag "${ORTOOLS_IMG}":"publish_${ORTOOLS_DELIVERY}" \
     --build-arg ORTOOLS_GIT_BRANCH="${ORTOOLS_BRANCH}" \
@@ -83,7 +87,7 @@ function publish_delivery() {
     --build-arg ORTOOLS_DELIVERY="${ORTOOLS_DELIVERY}" \
     --target=publish \
     -f "${DOCKERFILE}" .
-  echo "DONE" | tee -a "${ROOT_DIR}/publish.log"
+  log "DONE"
 }
 
 # Java publish
@@ -107,30 +111,30 @@ function main() {
       help; exit ;;
   esac
 
-  local -r ARCH=$(uname -m)
-  echo "ARCH: '${ARCH}'" | tee -a publish.log
-  local -r OS=$(uname -s)
-  echo "OS: '${OS}'" | tee -a publish.log
-
   local -r ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
-  echo "ROOT_DIR: '${ROOT_DIR}'" | tee -a publish.log
+  log "ROOT_DIR: '${ROOT_DIR}'"
+
+  local -r ARCH=$(uname -m)
+  log "ARCH: '${ARCH}'"
+  local -r OS=$(uname -s)
+  log "OS: '${OS}'"
 
   # shellcheck source=/dev/null
   source "${ROOT_DIR}/Version.txt"
   assert_defined OR_TOOLS_MAJOR
   assert_defined OR_TOOLS_MINOR
-  echo "ORTOOLS_VERSION: '${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}'" | tee -a publish.log
+  log "ORTOOLS_VERSION: '${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}'"
 
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-  echo "ORTOOLS_BRANCH: '${ORTOOLS_BRANCH}'" | tee -a publish.log
+  log "ORTOOLS_BRANCH: '${ORTOOLS_BRANCH}'"
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
-  echo "ORTOOLS_SHA1: '${ORTOOLS_SHA1}'" | tee -a publish.log
+  log "ORTOOLS_SHA1: '${ORTOOLS_SHA1}'"
 
   assert_defined ORTOOLS_TOKEN
-  echo "ORTOOLS_TOKEN: FOUND" | tee publish.log
+  log "ORTOOLS_TOKEN: FOUND"
 
   local -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
-  echo "RELEASE_DIR: '${RELEASE_DIR}'" | tee -a publish.log
+  log "RELEASE_DIR: '${RELEASE_DIR}'"
 
   local -r DOCKERFILE="amd64.Dockerfile"
   local -r ORTOOLS_IMG="ortools/manylinux_delivery_amd64"
