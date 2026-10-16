@@ -25,6 +25,7 @@ or_cc_library(
         "//ortools/util:parse_proto",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/strings:string_view",

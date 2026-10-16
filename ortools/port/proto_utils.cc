@@ -15,6 +15,7 @@
 
 #include <string>
 
+#include "absl/log/check.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/message.h"
@@ -28,7 +29,7 @@ std::string ProtobufTextFormatPrintToStringForFlag(
   std::string result;
   google::protobuf::TextFormat::Printer printer;
   printer.SetSingleLineMode(true);
-  printer.PrintToString(proto, &result);
+  CHECK(printer.PrintToString(proto, &result));
   // TextFormat may add an empty space at the end of the string (e.g. "cpu: 3.5
   // "), likely because it always add a space after each field; we simply remove
   // it here.

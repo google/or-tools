@@ -18,6 +18,7 @@
 #include <utility>
 
 #include "absl/algorithm/container.h"
+#include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/escaping.h"
@@ -78,7 +79,7 @@ std::string ProtobufShortDebugString(const P& message) {
     std::string output;
     google::protobuf::TextFormat::Printer printer;
     printer.SetSingleLineMode(true);
-    printer.PrintToString(message, &output);
+    CHECK(printer.PrintToString(message, &output));
     absl::StripTrailingAsciiWhitespace(&output);
     return output;
   } else if constexpr (std::is_base_of_v<google::protobuf::MessageLite, P>) {
