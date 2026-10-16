@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_UTIL_BASICTYPES_H_
-#define ORTOOLS_UTIL_BASICTYPES_H_
+#ifndef ORTOOLS_BASE_BASICTYPES_H_
+#define ORTOOLS_BASE_BASICTYPES_H_
 
 // Argument type used in interfaces that can optionally take ownership
 // of a passed in argument.  If TAKE_OWNERSHIP is passed, the called
@@ -23,4 +23,4 @@
 // See go/cppprimer#google_pointers for more suggestions.
 enum Ownership { DO_NOT_TAKE_OWNERSHIP, TAKE_OWNERSHIP };
 
-#endif  // ORTOOLS_UTIL_BASICTYPES_H_
+#endif  // ORTOOLS_BASE_BASICTYPES_H_

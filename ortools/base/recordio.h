@@ -41,7 +41,9 @@ class OR_DLL RecordWriter {
   template <class P>
   bool WriteProtocolMessage(const P& proto) {
     std::string uncompressed_buffer;
-    proto.SerializeToString(&uncompressed_buffer);
+    if (!proto.SerializeToString(&uncompressed_buffer)) {
+      return false;
+    }
     const uint64_t uncompressed_size = uncompressed_buffer.size();
     const std::string compressed_buffer =
         use_compression_ ? Compress(uncompressed_buffer) : "";
@@ -119,8 +121,7 @@ class RecordReader {
         return false;
       }
     }
-    proto->ParseFromArray(buffer.get(), usize);
-    return true;
+    return proto->ParseFromArray(buffer.get(), usize);
   }
 
   // Closes the underlying file.
