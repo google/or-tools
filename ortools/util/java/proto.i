@@ -83,7 +83,7 @@
 %typemap(out) CppProtoType {
   const long size = $1.ByteSizeLong();
   std::unique_ptr<jbyte[]> buf(new jbyte[size]);
-  $1.SerializeWithCachedSizesToArray(reinterpret_cast<uint8_t*>(buf.get()));
+  (void)$1.SerializeWithCachedSizesToArray(reinterpret_cast<uint8_t*>(buf.get()));
   $result = jenv->NewByteArray(size);
   jenv->SetByteArrayRegion($result, 0, size, buf.get());
 }
@@ -93,7 +93,7 @@
 %typemap(directorin, descriptor="L"JavaProtoTypeWithSlashes";") const CppProtoType& %{
   const size_t size = $1.ByteSizeLong();
   const std::unique_ptr<jbyte[]> buf(new jbyte[size]);
-  $1.SerializeWithCachedSizesToArray(reinterpret_cast<uint8_t*>(buf.get()));
+  (void)$1.SerializeWithCachedSizesToArray(reinterpret_cast<uint8_t*>(buf.get()));
   $input = jenv->NewByteArray(size);
   jenv->SetByteArrayRegion($input, 0, size, buf.get());
   Swig::LocalRefGuard $1_refguard(jenv, $input);
