@@ -27,25 +27,28 @@
 #include "absl/log/vlog_is_on.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
-#include "google/protobuf/text_format.h"
 #include "ortools/base/macros/os_support.h"
 #include "ortools/base/version.h"  // IWYU pragma: keep
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/preprocessor.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/glop/variables_info.h"
-#include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
-#include "ortools/lp_data/proto_utils.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/fp_utils.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/testing_utils.h"
 
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
+#include "google/protobuf/text_format.h"
+#endif
+
 #if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
 static_assert(operations_research::kTargetOsSupportsFile);
+#include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/lp_data/proto_utils.h"
 // TODO(user): abstract this in some way to the port directory.
 #include "ortools/util/file_util.h"
 #else
