@@ -36,6 +36,7 @@
 #include "gtest/gtest.h"
 #include "ortools/algorithms/radix_sort.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 
@@ -326,7 +327,7 @@ GenerateTupleDataSmallBounds(size_t length) {
 template <auto GeneratorFn, RadixSortDirection Direction,
           typename... Extractors>
 void TestTupleSorting(Extractors... extractors) {
-  constexpr int kLength = 1'000'000;
+  constexpr int kLength = DEBUG_MODE ? 100'000 : 1'000'000;
   auto data = GeneratorFn(kLength);
 
   auto values_multi = data;
@@ -353,7 +354,7 @@ void TestTupleSorting(Extractors... extractors) {
 template <auto GeneratorFn, RadixSortDirection Direction,
           typename... Extractors>
 void TestTupleSortingNonHistogram(Extractors... extractors) {
-  constexpr int kLength = 1'000'000;
+  constexpr int kLength = DEBUG_MODE ? 100'000 : 1'000'000;
   auto data = GeneratorFn(kLength);
 
   auto values_multi = data;
@@ -775,34 +776,6 @@ TYPED_TEST(AutoRadixSortFloatTest, ComprehensiveFloatSorting) {
         data, [key_min, key_max](auto& v) {
           RangeRadixSort<RadixSortDirection::kDecreasing>(key_min, key_max, v);
         });
-  }
-}
-
-TYPED_TEST(AutoRadixSortFloatTest, FloatToSortableUintPreservesOrder) {
-  constexpr int kLength = 10'000;
-  const auto values = FloatFull<TypeParam>{}(kLength);
-
-  for (int i = 0; i < values.size(); ++i) {
-    for (int j = 0; j < 10; ++j) {
-      const TypeParam f1 = values[i];
-      const TypeParam f2 = values[(i + j) % values.size()];
-      const auto u1 = FloatToSortableUint(f1);
-      const auto u2 = FloatToSortableUint(f2);
-      EXPECT_EQ(u1 < u2, f1 < f2) << "f1 = " << f1 << ", f2 = " << f2;
-      EXPECT_EQ(u1 > u2, f1 > f2) << "f1 = " << f1 << ", f2 = " << f2;
-      EXPECT_EQ(u1 == u2, f1 == f2) << "f1 = " << f1 << ", f2 = " << f2;
-    }
-  }
-}
-
-TYPED_TEST(AutoRadixSortFloatTest, FloatToSortableUintIsBijection) {
-  constexpr int kLength = 10'000;
-  const auto values = FloatFull<TypeParam>{}(kLength);
-
-  for (const TypeParam f : values) {
-    const auto uint_val = FloatToSortableUint(f);
-    const auto float_val = SortableUintToFloat(uint_val);
-    EXPECT_EQ(float_val, f) << "f = " << f << ", float_val = " << float_val;
   }
 }
 

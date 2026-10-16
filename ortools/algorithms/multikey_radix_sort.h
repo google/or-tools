@@ -27,79 +27,11 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "absl/base/casts.h"
 #include "absl/log/check.h"
 #include "absl/numeric/bits.h"
+#include "ortools/algorithms/float_ordinal_bijection.h"
 
 namespace operations_research {
-
-// Transformation Functions. These are bijections from a floating point number
-// to an unsigned integer number of the same size. They preserve the order of
-// the numbers. This makes it possible to sort floating point numbers using
-// integer-based sorting algorithms like radix sort, while keeping the stability
-// of the sort.
-//
-// Although it was rediscovered here, the idea is not new, but still quite
-// recent considering the history of sorting algorithms. The following
-// references, mostly from the graphics and game development world, describe the
-// transformation in detail.
-
-// Pierre Terdiman, 2000, "Radix Sort Revisited",
-// https://codercorner.com/RadixSortRevisited.htm
-// Michael Herf, 2001, "Radix Tricks", https://stereopsis.com/radix.html
-
-// Mapping from float to sortable uint.
-// 1. IEEE 754 floats are sign-magnitude. For positive values, the raw bits
-// already sort correctly. For negative values, larger magnitudes have
-// larger raw integer values, which is the inverse of the desired order.
-// 2. If the float is negative (MSB is 1):
-// - We flip all the bits (one's complement).
-// - This flips the magnitude bits (reversing the order) AND flips the
-// sign bit to 0.
-// - Result: Large negative magnitudes (like -inf) become small integers,
-//   and -0.0 becomes the largest value in the lower half (0x7FF...FF).
-// 3. If the float is positive (MSB is 0):
-// - We only flip the MSB to 1 (i,e. add 0x80...00 to shift the range)
-// - Result: 0.0 becomes 0x80...00, and positive values fill the
-//  range up to 0xFF...FF (Positive NaNs).
-// 4. This places all negative numbers below all positive numbers and
-// ensures -0.0 and 0.0 are adjacent (0x7F...FF and 0x80...00).
-template <typename T>
-  requires std::is_same_v<T, float> || std::is_same_v<T, double>
-auto FloatToSortableUint(const T f) {
-  static_assert(std::numeric_limits<T>::is_iec559);
-  static_assert(std::numeric_limits<T>::radix == 2);
-  static_assert(sizeof(float) == sizeof(uint32_t), "float must be 32 bits.");
-  static_assert(sizeof(double) == sizeof(uint64_t), "double must be 64 bits.");
-  using U = std::conditional_t<
-      std::is_same_v<T, float>, uint32_t,
-      std::conditional_t<std::is_same_v<T, double>, uint64_t, void>>;
-  const U u = absl::bit_cast<U>(f);
-  const U msb_only = U{1} << (std::numeric_limits<U>::digits - 1);
-  const bool msb_set = u & msb_only;
-  // Take one's complement if float is negative, and just flip the sign bit if
-  // positive.
-  return msb_set ? ~u : u ^ msb_only;
-}
-
-// Inverse mapping from sortable uint to float.
-// 1. In the sortable space, we check the MSB.
-// 2. If MSB is 1:
-// - The value was originally positive: only flip the MSB back to 0.
-// 3. If MSB is 0:
-// - The value was originally negative: flip all bits (one's complement).
-// Note that the function is very similar to FloatToSortableUint.
-template <typename U>
-  requires std::is_same_v<U, uint32_t> || std::is_same_v<U, uint64_t>
-auto SortableUintToFloat(const U u) {
-  using T = std::conditional_t<
-      std::is_same_v<U, uint32_t>, float,
-      std::conditional_t<std::is_same_v<U, uint64_t>, double, void>>;
-  const U msb_only = U{1} << (std::numeric_limits<U>::digits - 1);
-  const bool msb_set = u & msb_only;
-  // Take one's complement if negative, and just flip the sign bit if positive.
-  return absl::bit_cast<T>(msb_set ? u ^ msb_only : ~u);
-}
 
 enum class RadixSortDirection {
   kIncreasing,
@@ -220,9 +152,9 @@ uint64_t GetRadixKey(const uint64_t mask, const int shift, const KeyType key,
   uint64_t integer_key;
   if constexpr (std::is_floating_point_v<KeyType>) {
     if constexpr (Direction == RadixSortDirection::kIncreasing) {
-      integer_key = FloatToSortableUint(key) - FloatToSortableUint(key_min);
+      integer_key = FloatToOrdinal(key) - FloatToOrdinal(key_min);
     } else {
-      integer_key = FloatToSortableUint(key_max) - FloatToSortableUint(key);
+      integer_key = FloatToOrdinal(key_max) - FloatToOrdinal(key);
     }
   } else {
     if constexpr (Direction == RadixSortDirection::kIncreasing) {
@@ -411,8 +343,8 @@ void RadixSortImpl(const KeyType key_min, const KeyType key_max,
 
   int num_bits = 0;
   if constexpr (std::is_floating_point_v<KeyType>) {
-    num_bits = absl::bit_width(FloatToSortableUint(key_max) -
-                               FloatToSortableUint(key_min));
+    num_bits =
+        absl::bit_width(FloatToOrdinal(key_max) - FloatToOrdinal(key_min));
   } else {
     num_bits = absl::bit_width(static_cast<uint64_t>(key_max) -
                                static_cast<uint64_t>(key_min));
@@ -443,8 +375,8 @@ void HistogramRadixSortImpl(const KeyType key_min, const KeyType key_max,
 
   int num_bits = 0;
   if constexpr (std::is_floating_point_v<KeyType>) {
-    num_bits = absl::bit_width(FloatToSortableUint(key_max) -
-                               FloatToSortableUint(key_min));
+    num_bits =
+        absl::bit_width(FloatToOrdinal(key_max) - FloatToOrdinal(key_min));
   } else {
     num_bits = absl::bit_width(static_cast<uint64_t>(key_max) -
                                static_cast<uint64_t>(key_min));
