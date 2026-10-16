@@ -29,3 +29,16 @@ index 5ca857b..8b00a4e 100644
                                       int field_number,
                                       FileDescriptorProto* output) override {
        try {
+diff --git a/pybind11_protobuf/proto_caster_impl.h b/pybind11_protobuf/proto_caster_impl.h
+index 2423d50..8f084fd 100644
+--- a/pybind11_protobuf/proto_caster_impl.h
++++ b/pybind11_protobuf/proto_caster_impl.h
+@@ -53,7 +53,7 @@ struct proto_caster_load_impl {
+     const ::google::protobuf::Message *message =
+         pybind11_protobuf::PyProtoGetCppMessagePointer(src);
+     if (message) {
+-      value = ::google::protobuf::DynamicCastToGenerated<ProtoType>(message);
++      value = ::google::protobuf::DynamicCastMessage<ProtoType>(message);
+       if (value) {
+         // If the capability were available, then we could probe PyProto_API and
+         // allow c++ mutability based on the python reference count.
