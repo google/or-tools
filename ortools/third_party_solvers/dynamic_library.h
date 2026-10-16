@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_BASE_DYNAMIC_LIBRARY_H_
-#define ORTOOLS_BASE_DYNAMIC_LIBRARY_H_
+#ifndef ORTOOLS_THIRD_PARTY_SOLVERS_DYNAMIC_LIBRARY_H_
+#define ORTOOLS_THIRD_PARTY_SOLVERS_DYNAMIC_LIBRARY_H_
 
 #include <functional>
 #include <string>
@@ -117,4 +117,4 @@ class DynamicLibrary {
   };
 };
 
-#endif  // ORTOOLS_BASE_DYNAMIC_LIBRARY_H_
+#endif  // ORTOOLS_THIRD_PARTY_SOLVERS_DYNAMIC_LIBRARY_H_
