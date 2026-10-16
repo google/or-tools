@@ -74,7 +74,7 @@ void ApplyVariableMapping(absl::Span<int> mapping, CpModelProto* cp_model,
 //   problems will take little time in practice because the propagation will
 //   basically do all the work.
 //
-// Note(user): an optimization model can be transformed into a decision problem,
+// NOTE(user): an optimization model can be transformed into a decision problem,
 // if for instance the objective is fixed, or independent from the rest of the
 // problem.
 //

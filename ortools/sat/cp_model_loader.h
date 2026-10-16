@@ -33,7 +33,7 @@ namespace sat {
 //    BooleanVariables will also have an IntegerVariable corresponding to its
 //    "integer view".
 //
-// Note(user): We could create IntegerVariable on the fly as they are needed,
+// NOTE(user): We could create IntegerVariable on the fly as they are needed,
 // but that loses the original variable order which might be useful in
 // heuristics later.
 void LoadVariables(const CpModelProto& model_proto,

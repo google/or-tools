@@ -60,7 +60,7 @@ bool CoeffComparator(const LiteralWithCoeff& a, const LiteralWithCoeff& b) {
 bool ComputeBooleanLinearExpressionCanonicalForm(
     std::vector<LiteralWithCoeff>* cst, Coefficient* bound_shift,
     Coefficient* max_value) {
-  // Note(user): For some reason, the IntType checking doesn't work here?! That
+  // NOTE(user): For some reason, the IntType checking doesn't work here?! That
   // is a bit worrying, but the code seems to behave correctly.
   *bound_shift = 0;
   *max_value = 0;

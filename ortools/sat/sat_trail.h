@@ -34,6 +34,7 @@
 #include "ortools/sat/sat_assignment.h"
 #include "ortools/sat/sat_clause.h"
 #include "ortools/sat/sat_literal.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -452,7 +453,7 @@ class Trail {
   // old type is saved in old_type_ and can be retrieved by
   // AssignmentType().
   //
-  // Note(user): Changing the type is not "clean" but it is efficient. The idea
+  // NOTE(user): Changing the type is not "clean" but it is efficient. The idea
   // is that it is important to do as little as possible when pushing/popping
   // literals on the trail. Computing the reason happens a lot less often, so it
   // is okay to do slightly more work then. Note also, that we don't need to

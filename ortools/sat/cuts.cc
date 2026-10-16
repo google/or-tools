@@ -742,7 +742,7 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
     // valid. So we just divide divisor into max_scaling bucket. The
     // rhs_remainder will be in the bucket 0.
     //
-    // Note(user): This seems the same as just increasing t, modulo integer
+    // NOTE(user): This seems the same as just increasing t, modulo integer
     // overflows. Maybe we should just always do the computation like this so
     // that we can use larger t even if coeff is close to kint64max.
     return [t, divisor, max_scaling](IntegerValue coeff) {
@@ -985,7 +985,7 @@ double IntegerRoundingCutHelper::GetScaledViolation(
   // Here we scale by the L2 norm over the "relevant" positions. This seems
   // to work slightly better in practice.
   //
-  // Note(user): The non-relevant positions have an LP value of zero. If their
+  // NOTE(user): The non-relevant positions have an LP value of zero. If their
   // coefficient is positive, it seems good not to take it into account in the
   // norm since the larger this coeff is, the stronger the cut. If the coeff
   // is negative though, a large coeff means a small increase from zero of the
@@ -1504,7 +1504,7 @@ int CoverCutHelper::GetCoverSizeForBooleans() {
 
   // If the rhs is now negative, we have a cut.
   //
-  // Note(user): past this point, now that a given "base" cover has been chosen,
+  // NOTE(user): past this point, now that a given "base" cover has been chosen,
   // we basically compute the cut (of the form sum X <= bound) with the maximum
   // possible violation. Note also that we lift as much as possible, so we don't
   // necessarily optimize for the cut efficacy though. But we do get a

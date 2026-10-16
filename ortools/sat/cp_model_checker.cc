@@ -85,7 +85,7 @@ bool VariableReferenceIsValid(const CpModelProto& model, int reference) {
   return reference >= -static_cast<int>(model.variables_size());
 }
 
-// Note(user): Historically we always accepted positive or negative variable
+// NOTE(user): Historically we always accepted positive or negative variable
 // references everywhere, but now that we can always substitute affine
 // relations, we start to transition to positive references only, which are
 // clearer. Note that this doesn't concern literal references though.
@@ -381,6 +381,10 @@ std::string ValidateIntDivConstraint(const CpModelProto& model,
   // Canonicalize the divisor: merge repeated variables and fold fixed
   // variables into the offset, so that the checks below see the expression
   // the solver will actually divide by.
+  //
+  // TODO(user): Remove all this complexity by simply handling any kind of
+  // divisor. Just document/enforce that any feasible solution of an enforced
+  // int_div must have a divisor that is non-zero.
   const LinearExpressionProto& denom = ct.int_div().exprs(1);
   int64_t offset = denom.offset();
   absl::btree_map<int, int64_t> terms;

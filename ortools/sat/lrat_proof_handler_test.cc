@@ -52,8 +52,10 @@ TEST(AddAndProveInferredClauseByEnumerationTest, XorEquivalence) {
 
   // Let's create ClausePtrs for all these clauses.
   std::vector<ClausePtr> clauses_for_proof;
+  std::vector<ClauseUniquePtr> owned_clauses;
   for (int i = 0; i < clauses.size(); ++i) {
-    const ClausePtr clause = NewAllocatedClausePtr(clauses[i]);
+    const ClausePtr clause =
+        owned_clauses.emplace_back(NewAllocatedClausePtr(clauses[i])).get();
     clauses_for_proof.push_back(clause);
     lrat->AddProblemClause(clause);
   }
@@ -67,11 +69,6 @@ TEST(AddAndProveInferredClauseByEnumerationTest, XorEquivalence) {
   {
     EXPECT_TRUE(lrat->AddAndProveInferredClauseByEnumeration(
         ClausePtr(a.Negated(), b), clauses_for_proof));
-  }
-  for (const ClausePtr clause : clauses_for_proof) {
-    if (clause.IsSatClausePtr()) {
-      delete clause.GetSatClause();
-    }
   }
 }
 

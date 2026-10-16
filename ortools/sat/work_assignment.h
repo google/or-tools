@@ -189,7 +189,8 @@ class SharedTreeEncoder {
     // will contain a subset of the negated decoded decisions on the path from
     // this node to the root including at least all non-implied nodes. This will
     // be empty if LRAT is not enabled.
-    const absl::flat_hash_map<Literal, ClausePtr>& reason_clauses() const {
+    const absl::flat_hash_map<Literal, ClauseUniquePtr>& reason_clauses()
+        const {
       return reason_clauses_;
     }
 
@@ -214,7 +215,7 @@ class SharedTreeEncoder {
 
     // If lrat is enabled, this will contain the reason clause for each
     // literal implied at this node.
-    absl::flat_hash_map<Literal, ClausePtr> reason_clauses_;
+    absl::flat_hash_map<Literal, ClauseUniquePtr> reason_clauses_;
 
     SharedTreeEncoder* encoder_ = nullptr;
     Node* parent_node_ = nullptr;
@@ -254,7 +255,7 @@ class SharedTreeEncoder {
   // encoder will import a clause with the same literals as
   // `importable_reason_clauses[implied]`.
   Node* ImportNode(const SharedTreeNode& node,
-                   const absl::flat_hash_map<Literal, ClausePtr>&
+                   const absl::flat_hash_map<Literal, ClauseUniquePtr>&
                        importable_reason_clauses = {});
 
   // Convenience function to add children to `parent`.
@@ -317,9 +318,9 @@ class SharedTreeEncoder {
   // If LRAT is enabled, and any new implications are added to `node`, the
   // encoder will import a clause containing the literals in
   // `importable_reason_clauses[implication]`.
-  void UpdateNode(
-      const SharedTreeNode& other,
-      const absl::flat_hash_map<Literal, ClausePtr>& importable_reason_clauses);
+  void UpdateNode(const SharedTreeNode& other,
+                  const absl::flat_hash_map<Literal, ClauseUniquePtr>&
+                      importable_reason_clauses);
 
   // Resolves variable bounds on the path from the root to `leaf` that have been
   // updated since the last sync.
@@ -332,9 +333,9 @@ class SharedTreeEncoder {
   // decisions of all implied nodes on the path from the root to `node`.
   void SetProofToPropagateImpliedNodes(Node* node_id);
 
-  ClausePtr NewImportedClause(absl::Span<const Literal> literals);
-  ClausePtr NewInferredClause(absl::Span<const Literal> literals,
-                              absl::Span<const ClausePtr> proof);
+  ClauseUniquePtr NewImportedClause(absl::Span<const Literal> literals);
+  ClauseUniquePtr NewInferredClause(absl::Span<const Literal> literals,
+                                    absl::Span<const ClausePtr> proof);
 
   // Moves any new reason clauses from `implied_node` to the start of its
   // level. If the start of the level is the root, we only move reason
@@ -342,8 +343,9 @@ class SharedTreeEncoder {
   // are implied at level 0.
   void MoveReasonClausesToLevelStart(Node* implied_node);
 
-  // Deletes clause if it is non-unit.
+  // Drops clause if it is non-unit.
   // `clause` must have been returned by NewImportedClause or NewInferredClause.
+  // The caller retains ownership of `clause`.
   void DeleteClause(ClausePtr clause);
 
   LratProofHandler* lrat_proof_handler_ = nullptr;

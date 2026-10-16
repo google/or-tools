@@ -42,15 +42,15 @@ TEST(ClausePtrTest, Accessors) {
   const ClausePtr unit = ClausePtr(a);
   const ClausePtr binary = ClausePtr(a, b);
   const ClausePtr sat_clause = ClausePtr(clause);
-  const ClausePtr sat_empty = NewAllocatedClausePtr({});
-  const ClausePtr sat_unit = NewAllocatedClausePtr({a});
+  const ClauseUniquePtr sat_empty = NewAllocatedClausePtr({});
+  const ClauseUniquePtr sat_unit = NewAllocatedClausePtr({a});
 
   EXPECT_EQ(empty.GetType(), ClausePtr::kEmptyClause);
   EXPECT_EQ(unit.GetType(), ClausePtr::kInlineUnitClause);
   EXPECT_EQ(binary.GetType(), ClausePtr::kInlineBinaryClause);
   EXPECT_EQ(sat_clause.GetType(), ClausePtr::kAllocatedSatClause);
-  EXPECT_EQ(sat_empty.GetType(), ClausePtr::kAllocatedSatClause);
-  EXPECT_EQ(sat_unit.GetType(), ClausePtr::kAllocatedSatClause);
+  EXPECT_EQ(sat_empty.get().GetType(), ClausePtr::kAllocatedSatClause);
+  EXPECT_EQ(sat_unit.get().GetType(), ClausePtr::kAllocatedSatClause);
 
   EXPECT_EQ(unit.GetFirstLiteral(), a);
   EXPECT_THAT(std::vector<Literal>(
@@ -61,8 +61,8 @@ TEST(ClausePtrTest, Accessors) {
   EXPECT_THAT(unit.GetLiterals(), testing::ElementsAre(a));
   EXPECT_THAT(binary.GetLiterals(), testing::UnorderedElementsAre(a, b));
   EXPECT_THAT(sat_clause.GetLiterals(), testing::ElementsAre(a, b, c));
-  EXPECT_THAT(sat_empty.GetLiterals(), testing::IsEmpty());
-  EXPECT_THAT(sat_unit.GetLiterals(), testing::ElementsAre(a));
+  EXPECT_THAT(sat_empty.get().GetLiterals(), testing::IsEmpty());
+  EXPECT_THAT(sat_unit.get().GetLiterals(), testing::ElementsAre(a));
 
   EXPECT_EQ(binary, ClausePtr(b, a));
 
@@ -70,21 +70,19 @@ TEST(ClausePtrTest, Accessors) {
   EXPECT_FALSE(unit.IsBinaryClausePtr());
   EXPECT_TRUE(binary.IsBinaryClausePtr());
   EXPECT_FALSE(sat_clause.IsBinaryClausePtr());
-  EXPECT_FALSE(sat_empty.IsBinaryClausePtr());
-  EXPECT_FALSE(sat_unit.IsBinaryClausePtr());
+  EXPECT_FALSE(sat_empty.get().IsBinaryClausePtr());
+  EXPECT_FALSE(sat_unit.get().IsBinaryClausePtr());
 
   EXPECT_FALSE(empty.IsSatClausePtr());
   EXPECT_FALSE(unit.IsSatClausePtr());
   EXPECT_FALSE(binary.IsSatClausePtr());
   EXPECT_TRUE(sat_clause.IsSatClausePtr());
-  EXPECT_TRUE(sat_empty.IsSatClausePtr());
-  EXPECT_TRUE(sat_unit.IsSatClausePtr());
+  EXPECT_TRUE(sat_empty.get().IsSatClausePtr());
+  EXPECT_TRUE(sat_unit.get().IsSatClausePtr());
 
   EXPECT_EQ(sat_clause.GetSatClause(), clause);
 
   delete sat_clause.GetSatClause();
-  delete sat_empty.GetSatClause();
-  delete sat_unit.GetSatClause();
 }
 
 }  // namespace

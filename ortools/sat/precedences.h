@@ -665,7 +665,7 @@ class Linear2BoundsFromLinear3 {
 
   // This stores linear2 <= AffineExpression / divisor.
   //
-  // Note(user): This is a "cheap way" to not have to deal with backtracking, If
+  // NOTE(user): This is a "cheap way" to not have to deal with backtracking, If
   // we have many possible AffineExpression that bounds a LinearExpression2, we
   // keep the best one during "search dive" but on backtrack we might have a
   // sub-optimal relation.

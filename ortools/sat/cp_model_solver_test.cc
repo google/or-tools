@@ -554,8 +554,9 @@ TEST(ConvertMPModelProtoToCpModelProtoTest, SimpleLinearExampleWithMaximize) {
   )pb");
   CpModelProto cp_model;
   SolverLogger logger;
-  ConvertMPModelProtoToCpModelProto(
-      SatParameters(), MPModelProtoWrapper(&mp_model), &cp_model, &logger);
+  ConvertMPModelProtoToCpModelProto(SatParameters(),
+                                    MPModelProtoWrapper(&mp_model),
+                                    /*num_clamped=*/0, &cp_model, &logger);
   Model model;
   model.Add(NewSatParameters("cp_model_presolve:false"));
   const CpSolverResponse response = SolveCpModel(cp_model, &model);
@@ -2098,6 +2099,29 @@ TEST(SolveCpModelTest, ObjectiveInnerObjectiveBasic) {
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   EXPECT_EQ(response.objective_value(), 10 * (6 + 5));
   EXPECT_EQ(response.best_objective_bound(), 10 * (6 + 5));
+  EXPECT_EQ(response.inner_objective_lower_bound(), 6);
+}
+
+TEST(SolveCpModelTest, ObjectiveInnerObjectiveFixedByUnaryConstraint) {
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      linear {
+        vars: [ 0 ]
+        coeffs: [ 1 ]
+        domain: [ 2, 2 ]
+      }
+    }
+    objective {
+      vars: [ 0 ]
+      coeffs: [ 3 ]
+    }
+  )pb");
+
+  const CpSolverResponse response = Solve(model_proto);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(response.objective_value(), 6);
+  EXPECT_EQ(response.best_objective_bound(), 6);
   EXPECT_EQ(response.inner_objective_lower_bound(), 6);
 }
 

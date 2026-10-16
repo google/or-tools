@@ -217,7 +217,7 @@ class ModelCopy {
   //
   // It does not clear the constraints part of the working model of the context.
   //
-  // Note(user): If first_copy is true, we will reorder the scheduling
+  // NOTE(user): If first_copy is true, we will reorder the scheduling
   // constraints so that they only use references to previously defined
   // intervals. This allows being more efficient later in a few preprocessing
   // steps.
@@ -226,12 +226,14 @@ class ModelCopy {
       const std::function<bool(int)>& active_constraints = nullptr);
 
   // Imports and writes the objective.
-  ABSL_MUST_USE_RESULT bool ImportObjective(const CpModelProto& in_model);
+  ABSL_MUST_USE_RESULT bool ImportObjective(const CpModelProto& in_model,
+                                            bool clear_internal_fields);
 
   // Copies the non-constraint, non-variable part of the model. `copy_symmetry`
   // is only supported if there is no variable mapping.
   ABSL_MUST_USE_RESULT bool ImportEverythingExceptVariablesConstraintsAndHint(
-      const CpModelProto& in_model, bool copy_symmetry = true);
+      const CpModelProto& in_model, bool clear_internal_fields,
+      bool copy_symmetry = true);
 
   // This must be called to finish the copy. Note that variables proto will only
   // be filled at this stage in the out_model.
@@ -326,7 +328,8 @@ class ModelCopy {
   void CopyAndMapNoOverlap2D(const ConstraintProto& ct);
   bool CopyAndMapCumulative(const ConstraintProto& ct);
 
-  bool CopyObjective(const CpObjectiveProto& objective);
+  bool CopyObjective(const CpObjectiveProto& objective,
+                     bool clear_internal_fields);
   void CopyFloatingPointObjective(const FloatObjectiveProto& objective);
 
   // Expands linear expressions with more than one variable in constraints which
@@ -437,12 +440,12 @@ class ModelCopy {
 // This should only be called on the first copy of the user given model.
 // Note that this reorders all constraints that use intervals last. We lose the
 // user-defined order, but hopefully that should not matter too much.
-bool CopyModel(const CpModelProto& in_proto, CpModelProto* out_proto,
-               Model* model);
+bool CopyModel(const CpModelProto& in_proto, bool clear_internal_fields,
+               CpModelProto* out_proto, Model* model);
 
 // Same as CopyModel() except that variable domains are read from domains and
 // constraints might be filtered.
-bool CopyModelAdvanced(const CpModelProto& in_proto,
+bool CopyModelAdvanced(const CpModelProto& in_proto, bool clear_internal_fields,
                        absl::Span<const Domain> domains,
                        std::function<bool(int)> active_constraints,
                        std::vector<int>* interval_mapping,

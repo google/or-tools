@@ -146,7 +146,7 @@ void RestartPolicy::OnConflict(int conflict_trail_index,
   lbd_running_average_.Add(conflict_lbd);
 
   // Block the restart.
-  // Note(user): glucose only activates this after 10000 conflicts.
+  // NOTE(user): glucose only activates this after 10000 conflicts.
   if (parameters_.use_blocking_restart()) {
     if (lbd_running_average_.IsWindowFull() &&
         dl_running_average_.IsWindowFull() &&

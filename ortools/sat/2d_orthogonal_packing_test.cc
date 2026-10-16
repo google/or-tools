@@ -29,6 +29,7 @@
 #include "gtest/gtest.h"
 #include "ortools/algorithms/binary_search.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/2d_orthogonal_packing_testing.h"
 #include "ortools/sat/diffn_util.h"
@@ -333,7 +334,7 @@ TEST(DualFeasibility2Test, Random) {
   absl::BitGen random;
   SharedStatistics stats;
   OrthogonalPackingInfeasibilityDetector opp_solver(random, &stats);
-  constexpr int num_runs = 40000;
+  constexpr int num_runs = DEBUG_MODE ? 4000 : 40000;
   const int size = absl::Uniform(random, 10, 30);
   for (int k = 0; k < num_runs; k++) {
     const OppProblem problem = CreateRandomOppProblem(random, size);

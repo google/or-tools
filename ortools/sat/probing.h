@@ -161,7 +161,7 @@ class Prober {
   // replaces these with kNullClausePtr values.
   bool FixLiteralImpliedByAnAtLeastOneCombinationDnf(
       absl::Span<const std::vector<Literal>> conjunctions,
-      absl::Span<ClausePtr> clauses, Literal propagated_lit);
+      absl::Span<ClauseUniquePtr> clauses, Literal propagated_lit);
 
   // Model owned classes.
   const Trail& trail_;
@@ -194,7 +194,7 @@ class Prober {
 
   std::vector<ClausePtr> tmp_proof_;
   std::vector<Literal> tmp_literals_;
-  CompactVectorVector<int, ClausePtr> tmp_dnf_clauses_;
+  CompactVectorVector<int, ClauseUniquePtr> tmp_dnf_clauses_;
 
   // Probing statistics.
   struct Counters {

@@ -212,7 +212,6 @@ LinearConstraint ScatteredIntegerVector::ConvertToLinearConstraint(
       IntegerValue coeff = dense_vector_[col];
       if (coeff == 0) continue;
       result.vars[new_size] = integer_variables[col.value()];
-      result.coeffs[new_size] = coeff;
 
       // Corner case if the extra term is part of the linear constraint.
       if (extra_term != std::nullopt &&
@@ -222,6 +221,7 @@ LinearConstraint ScatteredIntegerVector::ConvertToLinearConstraint(
         if (coeff == 0) continue;
       }
 
+      result.coeffs[new_size] = coeff;
       ++new_size;
     }
   } else {
@@ -463,7 +463,7 @@ void LinearProgrammingConstraint::RegisterWith(Model* model) {
 
   // Copy objective data to the constraint_manager_.
   //
-  // Note(user): the sort is not really needed but should lead to better cache
+  // NOTE(user): the sort is not really needed but should lead to better cache
   // locality.
   std::sort(integer_objective_.begin(), integer_objective_.end());
   objective_infinity_norm_ = 0;
@@ -616,6 +616,8 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
   FillLpData();
 
   // Fills the helper.
+  // TODO(user): Experiment with AverageMagnitudeBoundScaling() instead of
+  // ContainOneBoundScaling().
   scaler_.ConfigureFromFactors(row_factors_, col_factors_);
   scaler_.AverageCostScaling(&obj_with_slack_);
   scaler_.ContainOneBoundScaling(simplex_.MutableLowerBounds(),
@@ -858,7 +860,7 @@ void LinearProgrammingConstraint::FillLpData() {
   const int num_vars = integer_variables_.size();
   for (int i = 0; i < num_vars; i++) {
     const IntegerVariable cp_var = integer_variables_[i];
-    const double factor = col_factors[i];
+    const double factor = 1.0 / col_factors[i];
     lb_with_slack[i] =
         ToDouble(integer_trail_->LevelZeroLowerBound(cp_var)) * factor;
     ub_with_slack[i] =
@@ -1032,9 +1034,11 @@ bool LinearProgrammingConstraint::SolveLp() {
     lp_at_level_zero_is_final_ = false;
   }
 
-  const double unscaling_factor = 1.0 / scaler_.ObjectiveScalingFactor();
+  const double factor =
+      scaler_.ObjectiveScalingFactor() * scaler_.BoundsScalingFactor();
+  const double unscaling_factor = 1.0 / factor;
   const double offset_before_unscaling =
-      ToDouble(integer_objective_offset_) * scaler_.ObjectiveScalingFactor();
+      ToDouble(integer_objective_offset_) * factor;
   auto status = simplex_.MinimizeFromTransposedMatrixWithSlack(
       obj_with_slack_, unscaling_factor, offset_before_unscaling, *time_limit_);
   DCHECK_EQ(simplex_.GetProblemNumRows(), integer_lp_.size());
@@ -1417,18 +1421,26 @@ bool LinearProgrammingConstraint::PreprocessCut(IntegerVariable first_slack,
         // bounds of the constraint before this code.
         const int slack_index = (var.value() - first_slack.value()) / 2;
         const glop::RowIndex row = tmp_slack_rows_[slack_index];
+        const LinearConstraintManager::ConstraintIndex ct_index =
+            constraint_manager_.LpConstraints()[row.value()];
         if (term.expr_coeffs[0] == 1) {
           // slack = ct + offset <= bound_diff;
           const IntegerValue new_ub = term.bound_diff - term.expr_offset;
           if (constraint_manager_.UpdateConstraintUb(row, new_ub)) {
-            integer_lp_[row].ub = new_ub;
+            integer_lp_[row].ub =
+                constraint_manager_.AllConstraints()[ct_index].constraint.ub;
+            integer_lp_[row].ub_is_trivial =
+                constraint_manager_.AllConstraints()[ct_index].ub_is_trivial;
           }
         } else {
           // slack = offset - ct <= bound_diff;
           CHECK_EQ(term.expr_coeffs[0], -1);
           const IntegerValue new_lb = term.expr_offset - term.bound_diff;
           if (constraint_manager_.UpdateConstraintLb(row, new_lb)) {
-            integer_lp_[row].lb = new_lb;
+            integer_lp_[row].lb =
+                constraint_manager_.AllConstraints()[ct_index].constraint.lb;
+            integer_lp_[row].lb_is_trivial =
+                constraint_manager_.AllConstraints()[ct_index].lb_is_trivial;
           }
         }
       }
@@ -1792,7 +1804,6 @@ void LinearProgrammingConstraint::AddCGCuts() {
     // Size 1 is already done with MIR.
     if (tmp_lp_multipliers_.size() <= 1) continue;
 
-    IntegerValue scaling;
     for (int i = 0; i < 2; ++i) {
       tmp_cg_multipliers_ = tmp_lp_multipliers_;
       if (i == 1) {
@@ -1816,9 +1827,9 @@ void LinearProgrammingConstraint::AddCGCuts() {
         if (tmp_cg_multipliers_.size() <= 1) continue;
       }
       ScaleMultipliers(tmp_cg_multipliers_,
-                       /*take_objective_into_account=*/false, &scaling,
+                       /*take_objective_into_account=*/false,
                        &tmp_integer_multipliers_);
-      if (scaling != 0) {
+      if (!tmp_integer_multipliers_.empty()) {
         if (AddCutFromConstraints("CG", tmp_integer_multipliers_)) {
           ++num_added;
         }
@@ -1982,7 +1993,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
     // implementation (or at least an early version of it), a more complex score
     // is used.
     //
-    // Note(user): Because we only consider tight rows under the current lp
+    // NOTE(user): Because we only consider tight rows under the current lp
     // solution (i.e. non-basic rows), most should have a non-zero dual values.
     // But there are some degenerate problems where these rows have a really low
     // weight (or even zero), and having only weights of exactly zero in
@@ -2010,7 +2021,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
 
     // First try to generate a cut directly from this base row (MIR1).
     //
-    // Note(user): We abort on success like it seems to be done in the
+    // NOTE(user): We abort on success like it seems to be done in the
     // literature. Note that we don't succeed that often in generating an
     // efficient cut, so I am not sure aborting will make a big difference
     // speedwise. We might generate similar cuts though, but hopefully the cut
@@ -2457,9 +2468,9 @@ bool LinearProgrammingConstraint::ScalingCanOverflow(
   int64_t rhs_bound = 0;
 
   // Start with the objective if requested.
-  const int64_t factor = int64_t{1} << power;
-  const double factor_as_double = static_cast<double>(factor);
   if (take_objective_into_account) {
+    if (power >= 63) return true;
+    const int64_t factor = int64_t{1} << std::max(0, power);
     bound = CapProd(factor, objective_infinity_norm_.value());
     if (bound >= overflow_cap) return true;
 
@@ -2468,6 +2479,7 @@ bool LinearProgrammingConstraint::ScalingCanOverflow(
   }
 
   // Then add the contribution of all the involved rows.
+  const double factor_as_double = std::ldexp(1.0, power);
   for (const auto [row, double_coeff] : multipliers) {
     const double magnitude =
         std::abs(std::round(double_coeff * factor_as_double));
@@ -2504,25 +2516,30 @@ void LinearProgrammingConstraint::IgnoreTrivialConstraintMultipliers(
   lp_multipliers->resize(new_size);
 }
 
-void LinearProgrammingConstraint::ScaleMultipliers(
+IntegerValue LinearProgrammingConstraint::ScaleMultipliers(
     absl::Span<const std::pair<RowIndex, double>> lp_multipliers,
-    bool take_objective_into_account, IntegerValue* scaling,
+    bool take_objective_into_account,
     std::vector<std::pair<RowIndex, IntegerValue>>* output) const {
-  *scaling = 0;
-
   output->clear();
   if (lp_multipliers.empty()) {
     // Empty linear combination.
-    return;
+    return IntegerValue(0);
   }
 
-  // TODO(user): we currently do not support scaling down, so we just abort
-  // if with a scaling of 1, we reach the overflow_cap.
+  double max_magnitude = 0.0;
+  for (const auto [row, double_coeff] : lp_multipliers) {
+    max_magnitude = std::max(max_magnitude, std::abs(double_coeff));
+  }
+  if (max_magnitude == 0.0 || !std::isfinite(max_magnitude)) {
+    return IntegerValue(0);
+  }
+  const int exp = std::ilogb(max_magnitude);
+
   const int64_t overflow_cap = kint64max;
-  if (ScalingCanOverflow(/*power=*/0, take_objective_into_account,
+  if (ScalingCanOverflow(/*power=*/-exp, take_objective_into_account,
                          lp_multipliers, overflow_cap)) {
     ++num_scaling_issues_;
-    return;
+    return IntegerValue(0);
   }
 
   // Note that we don't try to scale by more than 63 since in practice the
@@ -2537,15 +2554,17 @@ void LinearProgrammingConstraint::ScaleMultipliers(
     // with a large power.
     if (candidate >= 63) return false;
 
-    return !ScalingCanOverflow(candidate, take_objective_into_account,
+    return !ScalingCanOverflow(candidate - exp, take_objective_into_account,
                                lp_multipliers, overflow_cap);
   });
-  *scaling = int64_t{1} << power;
 
-  // Scale the multipliers by *scaling.
+  // Scale the multipliers by 2^(power - exp).
   // Note that we use the exact same formula as in ScalingCanOverflow().
-  int64_t gcd = scaling->value();
-  const double scaling_as_double = static_cast<double>(scaling->value());
+  int64_t obj_scale = (take_objective_into_account && power - exp >= 0)
+                          ? (int64_t{1} << (power - exp))
+                          : 0;
+  int64_t gcd = obj_scale;
+  const double scaling_as_double = std::ldexp(1.0, power - exp);
   for (const auto [row, double_coeff] : lp_multipliers) {
     const IntegerValue coeff(std::round(double_coeff * scaling_as_double));
     if (coeff != 0) {
@@ -2554,11 +2573,12 @@ void LinearProgrammingConstraint::ScaleMultipliers(
     }
   }
   if (gcd > 1) {
-    *scaling /= gcd;
+    obj_scale /= gcd;
     for (auto& entry : *output) {
       entry.second /= gcd;
     }
   }
+  return IntegerValue(obj_scale);
 }
 
 template <bool check_overflow>
@@ -2843,11 +2863,11 @@ bool LinearProgrammingConstraint::PropagateExactLpReason() {
     take_objective_into_account = false;
   }
 
-  IntegerValue scaling = 0;
   IgnoreTrivialConstraintMultipliers(&tmp_lp_multipliers_);
-  ScaleMultipliers(tmp_lp_multipliers_, take_objective_into_account, &scaling,
-                   &tmp_integer_multipliers_);
-  if (scaling == 0) {
+  const IntegerValue obj_scale =
+      ScaleMultipliers(tmp_lp_multipliers_, take_objective_into_account,
+                       &tmp_integer_multipliers_);
+  if (tmp_integer_multipliers_.empty()) {
     VLOG(1) << simplex_.GetProblemStatus();
     VLOG(1) << "Issue while computing the exact LP reason. Aborting.";
     return true;
@@ -2859,10 +2879,9 @@ bool LinearProgrammingConstraint::PropagateExactLpReason() {
 
   std::optional<std::pair<IntegerVariable, IntegerValue>> extra_term =
       std::nullopt;
-  if (take_objective_into_account) {
+  if (obj_scale != 0) {
     // The "objective constraint" behaves as if the unscaled cp multiplier was
-    // 1.0, so we will multiply it by this number and add it to reduced_costs.
-    const IntegerValue obj_scale = scaling;
+    // 1.0, so we will multiply it by obj_scale and add it to reduced_costs.
 
     // TODO(user): Maybe avoid this conversion.
     tmp_cols_.clear();
@@ -2924,7 +2943,6 @@ bool LinearProgrammingConstraint::PropagateExactLpReason() {
 }
 
 bool LinearProgrammingConstraint::PropagateExactDualRay() {
-  IntegerValue scaling;
   const glop::DenseColumn ray = simplex_.GetDualRay();
   DCHECK_EQ(ray.size(), integer_lp_.size());
   tmp_lp_multipliers_.clear();
@@ -2938,16 +2956,15 @@ bool LinearProgrammingConstraint::PropagateExactDualRay() {
   }
   IgnoreTrivialConstraintMultipliers(&tmp_lp_multipliers_);
   ScaleMultipliers(tmp_lp_multipliers_, /*take_objective_into_account=*/false,
-                   &scaling, &tmp_integer_multipliers_);
-  if (scaling == 0) {
+                   &tmp_integer_multipliers_);
+  if (tmp_integer_multipliers_.empty()) {
     VLOG(1) << "Issue while computing the exact dual ray reason. Aborting.";
     return true;
   }
 
   IntegerValue new_constraint_ub;
   CHECK(ComputeNewLinearConstraint</*check_overflow=*/false>(
-      tmp_integer_multipliers_, &tmp_scattered_vector_, &new_constraint_ub))
-      << scaling;
+      tmp_integer_multipliers_, &tmp_scattered_vector_, &new_constraint_ub));
 
   AdjustNewLinearConstraint(&tmp_integer_multipliers_, &tmp_scattered_vector_,
                             &new_constraint_ub);
@@ -2988,8 +3005,9 @@ void LinearProgrammingConstraint::ReducedCostStrengtheningDeductions(
     double cp_objective_delta) {
   deductions_.clear();
 
-  const double lp_objective_delta =
-      cp_objective_delta / scaler_.ObjectiveScalingFactor();
+  const double lp_objective_delta = cp_objective_delta *
+                                    scaler_.ObjectiveScalingFactor() *
+                                    scaler_.BoundsScalingFactor();
   const int num_vars = integer_variables_.size();
   for (int i = 0; i < num_vars; i++) {
     const IntegerVariable cp_var = integer_variables_[i];

@@ -1810,7 +1810,7 @@ void QuickSolveWithHint(const CpModelProto& model_proto, Model* model) {
   // propagation will be a lot more efficient in this case. That requires
   // creating all relevant literals beforehand though.
   //
-  // Note(user): I am not sure always creating all such associated literals when
+  // NOTE(user): I am not sure always creating all such associated literals when
   // we have a hint is good... especially in LNS subsolvers? that said it might
   // orient the solution around the hint. And if the hint was full and valid,
   // this is exactly what the HINT_SEARCH would have done.

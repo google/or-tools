@@ -48,7 +48,8 @@ TEST(ModelCopyTest, IntervalsAddLinearConstraints) {
 
   Model model;
   CpModelProto new_cp_model;
-  CopyModel(initial_model, &new_cp_model, &model);
+  CopyModel(initial_model, /*clear_internal_fields=*/false, &new_cp_model,
+            &model);
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ -10, 10 ] }
@@ -99,7 +100,8 @@ TEST(ModelCopyTest, IntervalsWithFixedStartAndEnd) {
 
   Model model;
   CpModelProto new_cp_model;
-  CopyModel(initial_model, &new_cp_model, &model);
+  CopyModel(initial_model, /*clear_internal_fields=*/false, &new_cp_model,
+            &model);
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: [ 10, 10 ] }
     variables { domain: [ 10, 10 ] }
@@ -112,6 +114,29 @@ TEST(ModelCopyTest, IntervalsWithFixedStartAndEnd) {
       }
     }
   )pb");
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
+}
+
+TEST(ModelCopyTest, ClearInternalFields) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 2, 2 ] }
+    objective {
+      vars: [ 0 ]
+      coeffs: [ 3 ]
+      integer_before_offset: 10
+      integer_after_offset: 20
+      integer_scaling_factor: 5
+    }
+    symmetry {}
+  )pb");
+  const CpModelProto expected_model = ParseTestProto(R"pb(
+    variables { domain: [ 2, 2 ] }
+    objective { offset: 6 integer_before_offset: 6 }
+  )pb");
+  CpModelProto new_cp_model;
+  Model model;
+  EXPECT_TRUE(CopyModel(initial_model, /*clear_internal_fields=*/true,
+                        &new_cp_model, &model));
   EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
@@ -147,7 +172,8 @@ TEST(ModelCopyTest, RemoveDuplicateFromClauses) {
   )pb");
   CpModelProto new_cp_model;
   Model model;
-  CopyModel(initial_model, &new_cp_model, &model);
+  CopyModel(initial_model, /*clear_internal_fields=*/false, &new_cp_model,
+            &model);
   EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
@@ -198,7 +224,8 @@ TEST(ModelCopyTest, RemoveDuplicateFromEnforcementLiterals) {
   Model model;
   model.GetOrCreate<SatParameters>()
       ->set_keep_all_feasible_solutions_in_presolve(true);
-  CopyModel(initial_model, &new_cp_model, &model);
+  CopyModel(initial_model, /*clear_internal_fields=*/false, &new_cp_model,
+            &model);
   EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
@@ -545,7 +572,7 @@ TEST(ModelCopyTest, RemapVariablesInObjective) {
   EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
                                                       /*first_copy=*/true));
   EXPECT_TRUE(model_copy.ImportEverythingExceptVariablesConstraintsAndHint(
-      initial_model));
+      initial_model, /*clear_internal_fields=*/false));
   EXPECT_TRUE(model_copy.FinishCopy(initial_model));
 
   // 5x + 6y \in [0, 50] is remapped to 5x + 6.not(x) = 6 - x \in [0, 50].
@@ -581,7 +608,7 @@ TEST(ModelCopyTest, RemapVariablesInFloatingPointObjective) {
   EXPECT_TRUE(model_copy.ImportAndSimplifyConstraints(initial_model,
                                                       /*first_copy=*/true));
   EXPECT_TRUE(model_copy.ImportEverythingExceptVariablesConstraintsAndHint(
-      initial_model));
+      initial_model, /*clear_internal_fields=*/false));
   EXPECT_TRUE(model_copy.FinishCopy(initial_model));
 
   // 5.5x + 6.25y + 2.75 is remapped to 5.5x + 6.25 * (1 - x) + 2.75.
@@ -618,7 +645,7 @@ TEST(ModelCopyTest, RemapVariablesInSearchStrategyAssumptionsAndHint) {
                                                       /*first_copy=*/true));
   model_copy.ImportSolutionHint(initial_model);
   EXPECT_TRUE(model_copy.ImportEverythingExceptVariablesConstraintsAndHint(
-      initial_model));
+      initial_model, /*clear_internal_fields=*/false));
   EXPECT_TRUE(model_copy.FinishCopy(initial_model));
 
   const CpModelProto expected_model = ParseTestProto(R"pb(
@@ -677,7 +704,8 @@ TEST(ModelCopyTest, ChangeEnforcedAtMostOrExactlyOneToLinear) {
   Model model;
   model.GetOrCreate<SatParameters>()
       ->set_keep_all_feasible_solutions_in_presolve(true);
-  CopyModel(initial_model, &new_cp_model, &model);
+  CopyModel(initial_model, /*clear_internal_fields=*/false, &new_cp_model,
+            &model);
   EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
@@ -715,7 +743,8 @@ TEST(ModelCopyTest, LegacyElementConstraint) {
   Model model;
   model.GetOrCreate<SatParameters>()
       ->set_keep_all_feasible_solutions_in_presolve(true);
-  CopyModel(initial_model, &new_cp_model, &model);
+  CopyModel(initial_model, /*clear_internal_fields=*/false, &new_cp_model,
+            &model);
   EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
@@ -754,7 +783,8 @@ TEST(ModelCopyTest, ElementConstraint) {
   Model model;
   model.GetOrCreate<SatParameters>()
       ->set_keep_all_feasible_solutions_in_presolve(true);
-  CopyModel(initial_model, &new_cp_model, &model);
+  CopyModel(initial_model, /*clear_internal_fields=*/false, &new_cp_model,
+            &model);
   EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 
@@ -805,7 +835,8 @@ TEST(ModelCopyTest, ExpandedNonAffineExpressionsShareVariableWhenPossible) {
   Model model;
   model.GetOrCreate<SatParameters>()
       ->set_keep_all_feasible_solutions_in_presolve(true);
-  CopyModel(initial_model, &new_cp_model, &model);
+  CopyModel(initial_model, /*clear_internal_fields=*/false, &new_cp_model,
+            &model);
   EXPECT_THAT(new_cp_model, EqualsProto(expected_model));
 }
 

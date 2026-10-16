@@ -184,7 +184,7 @@ int SharedTreeEncoder::Node::GetLevel() {
 ClausePtr SharedTreeEncoder::Node::ReasonClauseOrNull(Literal literal) const {
   auto it = reason_clauses_.find(literal);
   if (it == reason_clauses_.end()) return kNullClausePtr;
-  return it->second;
+  return it->second.get();
 }
 
 void SharedTreeEncoder::Node::SetObjectiveLowerBound(
@@ -210,8 +210,8 @@ bool SharedTreeEncoder::Node::LiteralIsTrue(ProtoLiteral literal) {
 }
 
 void SharedTreeEncoder::Node::Cleanup() {
-  for (auto [literal, clause] : reason_clauses()) {
-    encoder_->DeleteClause(clause);
+  for (const auto& [literal, clause] : reason_clauses_) {
+    encoder_->DeleteClause(clause.get());
   }
   gtl::STLClearObject(&shared_.var_lower_bounds);
   gtl::STLClearObject(&reason_clauses_);
@@ -295,7 +295,8 @@ std::optional<ProtoLiteral> SharedTreeEncoder::EncodeLiteral(Literal literal) {
 
 SharedTreeEncoder::Node* SharedTreeEncoder::ImportNode(
     const SharedTreeNode& node,
-    const absl::flat_hash_map<Literal, ClausePtr>& importable_reason_clauses) {
+    const absl::flat_hash_map<Literal, ClauseUniquePtr>&
+        importable_reason_clauses) {
   Node* decoded_node = EnsureNodeExists(node.id, node.parent_id, node.decision);
   if (!node.is_root()) {
     // Ensure that if a node has any children, it has both.
@@ -337,7 +338,7 @@ void SharedTreeEncoder::CloseNodeInternal(Node* node,
                                           bool parent_is_closed) {
   if (node->shared().is_closed()) return;
 
-  ClausePtr closing_clause = kNullClausePtr;
+  ClauseUniquePtr closing_clause(kNullClausePtr);
   if (!parent_is_closed) {
     // If any node in a level is closed, the whole level is closed, so we close
     // the start of the level unless we are just closing children of an already
@@ -372,9 +373,9 @@ void SharedTreeEncoder::CloseNodeInternal(Node* node,
   closed_leaves_ += node->is_leaf();
   node->shared_.objective_lb = kMaxIntegerValue + 1;
   if (!node->shared().is_root() && !parent_is_closed) {
-    ProcessImpliedNode(node->sibling(), closing_clause);
+    ProcessImpliedNode(node->sibling(), closing_clause.get());
   } else {
-    DeleteClause(closing_clause);
+    DeleteClause(closing_clause.get());
   }
   // Make sure the children of a closed node are closed.
   if (!node->is_leaf()) {
@@ -460,7 +461,8 @@ SharedTreeEncoder::Node* SharedTreeEncoder::EnsureNodeExists(
 
 void SharedTreeEncoder::UpdateNode(
     const SharedTreeNode& other,
-    const absl::flat_hash_map<Literal, ClausePtr>& importable_reason_clauses) {
+    const absl::flat_hash_map<Literal, ClauseUniquePtr>&
+        importable_reason_clauses) {
   Node* node = GetNode(other.id);
   if (node->shared().is_closed()) return;
   if (other.is_closed()) {
@@ -468,10 +470,15 @@ void SharedTreeEncoder::UpdateNode(
         node->shared().is_root()
             ? nullptr
             : GetNode(node->shared().parent_id)->GetLevelStart();
-    ClausePtr clause = node->shared().is_root()
-                           ? NewImportedClause({})
-                           : prev_level_start->ReasonClauseOrNull(
-                                 node->decoded_decision().Negated());
+    ClausePtr clause;
+    if (node->shared().is_root()) {
+      ClauseUniquePtr owned_clause = NewImportedClause({});
+      DCHECK(owned_clause.get().GetType() == ClausePtr::kEmptyClause);
+      clause = owned_clause.release();
+    } else {
+      clause = prev_level_start->ReasonClauseOrNull(
+          node->decoded_decision().Negated());
+    }
     if (lrat_proof_handler_ != nullptr && prev_level_start != nullptr) {
       CHECK_NE(clause, kNullClausePtr);
     }
@@ -502,16 +509,17 @@ void SharedTreeEncoder::UpdateNode(
     if (level_start->AddImplication(implied) &&
         lrat_proof_handler_ != nullptr) {
       const Literal decoded = Decode(implied);
-      ClausePtr clause = NewImportedClause(
-          importable_reason_clauses.at(decoded).GetLiterals());
+      ClauseUniquePtr clause = NewImportedClause(
+          importable_reason_clauses.at(decoded).get().GetLiterals());
       if (node->shared().id != level_start->shared().id) {
-        tmp_proof_.push_back(clause);
-        clause = NewInferredClause(
+        tmp_proof_.push_back(clause.get());
+        ClauseUniquePtr new_clause = NewInferredClause(
             level_start->ExpectedReasonClauseLiterals(decoded), tmp_proof_);
-        DeleteClause(tmp_proof_.back());
+        DeleteClause(clause.get());
+        clause = std::move(new_clause);
         tmp_proof_.pop_back();
       }
-      level_start->reason_clauses_.emplace(decoded, clause);
+      level_start->reason_clauses_.emplace(decoded, std::move(clause));
     }
   }
 }
@@ -617,7 +625,7 @@ void SharedTreeEncoder::SetProofToPropagateImpliedNodes(Node* node) {
     while (node != level_start) {
       DCHECK(node->shared().is_implied);
       tmp_proof_.push_back(
-          level_start->reason_clauses().at(node->decoded_decision()));
+          level_start->reason_clauses().at(node->decoded_decision()).get());
       DCHECK_NE(tmp_proof_.back(), kNullClausePtr);
       node = node->parent();
     }
@@ -636,7 +644,7 @@ void SharedTreeEncoder::MoveReasonClausesToLevelStart(Node* implied_node) {
     auto [it, inserted] =
         new_level_start->reason_clauses_.emplace(implied, kNullClausePtr);
     if (inserted) {
-      tmp_proof_.push_back(clause);
+      tmp_proof_.push_back(clause.get());
       it->second = NewInferredClause(
           new_level_start->ExpectedReasonClauseLiterals(implied), tmp_proof_);
       tmp_proof_.pop_back();
@@ -655,30 +663,32 @@ void SharedTreeEncoder::DeleteClause(ClausePtr clause) {
   // the trail, and thus must remain in the proof past a call to Clear.
   if (clause.GetType() != ClausePtr::kAllocatedSatClause) return;
   lrat_proof_handler_->DeleteClause(clause);
-  clause.DeleteIfAllocated();
 }
 
-ClausePtr SharedTreeEncoder::NewImportedClause(
+ClauseUniquePtr SharedTreeEncoder::NewImportedClause(
     absl::Span<const Literal> literals) {
-  if (lrat_proof_handler_ == nullptr) return kNullClausePtr;
+  if (lrat_proof_handler_ == nullptr) return ClauseUniquePtr(kNullClausePtr);
   // Tricky: To ensure binary clauses are not deleted while we are still using
   // them, we make sure we use an allocated SatClause for binary and larger
   // clauses.
-  ClausePtr clause = literals.size() <= 1 ? NewClausePtr(literals)
-                                          : NewAllocatedClausePtr(literals);
-  lrat_proof_handler_->AddImportedClause(clause);
+  ClauseUniquePtr clause = literals.size() <= 1
+                               ? NewClausePtr(literals)
+                               : NewAllocatedClausePtr(literals);
+  lrat_proof_handler_->AddImportedClause(clause.get());
   return clause;
 }
 
-ClausePtr SharedTreeEncoder::NewInferredClause(
+ClauseUniquePtr SharedTreeEncoder::NewInferredClause(
     absl::Span<const Literal> literals, absl::Span<const ClausePtr> proof) {
-  if (lrat_proof_handler_ == nullptr) return kNullClausePtr;
+  if (lrat_proof_handler_ == nullptr) return ClauseUniquePtr(kNullClausePtr);
   // Tricky: To ensure binary clauses are not deleted while we are still using
   // them, we make sure we use an allocated SatClause for binary and larger
   // clauses.
-  ClausePtr clause = literals.size() <= 1 ? NewClausePtr(literals)
-                                          : NewAllocatedClausePtr(literals);
-  lrat_proof_handler_->AddInferredClause(clause, proof, /*exported=*/true);
+  ClauseUniquePtr clause = literals.size() <= 1
+                               ? NewClausePtr(literals)
+                               : NewAllocatedClausePtr(literals);
+  lrat_proof_handler_->AddInferredClause(clause.get(), proof,
+                                         /*exported=*/true);
   return clause;
 }
 
@@ -688,12 +698,14 @@ void SharedTreeEncoder::NormalizeReasonClauses(Node* node) {
   SetProofToPropagateImpliedNodes(node);
   std::vector<Literal> reason_literals = node->NegatedDecisions();
   for (auto& [literal, clause] : node->reason_clauses_) {
-    if (clause.GetLiterals().size() > level + 1) {
-      tmp_proof_.push_back(clause);
+    if (clause.get().GetLiterals().size() > level + 1) {
+      tmp_proof_.push_back(clause.get());
       reason_literals.push_back(literal);
-      clause = NewInferredClause(reason_literals, tmp_proof_);
+      ClauseUniquePtr new_clause =
+          NewInferredClause(reason_literals, tmp_proof_);
       reason_literals.pop_back();
-      DeleteClause(tmp_proof_.back());
+      DeleteClause(clause.get());
+      clause = std::move(new_clause);
       tmp_proof_.pop_back();
     }
   }
@@ -725,8 +737,8 @@ bool SharedTreeEncoder::CheckInvariants() {
       for (const auto& [var, bound] : node->shared().var_lower_bounds) {
         const Literal implied = Decode(ProtoLiteral(var, bound));
         CHECK(node->reason_clauses().contains(implied));
-        CHECK(ReasonClauseIsValidForDebug(node, implied,
-                                          node->reason_clauses().at(implied)));
+        CHECK(ReasonClauseIsValidForDebug(
+            node, implied, node->reason_clauses().at(implied).get()));
       }
     }
     if (node->shared().is_root()) continue;
@@ -752,8 +764,9 @@ bool SharedTreeEncoder::CheckInvariants() {
               sibling_node->decoded_decision()));
           CHECK(ReasonClauseIsValidForDebug(
               level_start, sibling_node->decoded_decision(),
-              level_start->reason_clauses().at(
-                  sibling_node->decoded_decision())));
+              level_start->reason_clauses()
+                  .at(sibling_node->decoded_decision())
+                  .get()));
         }
       }
     } else {

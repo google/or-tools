@@ -49,7 +49,7 @@ class SubSolver {
   // Synchronizes with the external world from this SubSolver's point of view.
   // Also incorporates the results of the latest completed tasks if any.
   //
-  // Note(user): The intended implementation for determinism is that tasks
+  // NOTE(user): The intended implementation for determinism is that tasks
   // update asynchronously (and so non-deterministically) global "shared"
   // classes, but this global state is incorporated by the Subsolver only when
   // Synchronize() is called.

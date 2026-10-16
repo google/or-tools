@@ -336,11 +336,7 @@ bool VarDomination::EndFirstPhase() {
   }
 
   // Remove any duplicates.
-  //
-  // TODO(user): Maybe we should do that with all lists in case the
-  // input functions are called with duplicates too.
-  for (const IntegerVariable var : cropped_vars) {
-    DCHECK(is_cropped[var]);
+  for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
     IntegerVariableSpan& s = dominating_vars_[var];
     if (s.size == 0) continue;
     IntegerVariable* pt = &buffer_[s.start];
@@ -805,12 +801,10 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
   // a few situations.
   //
   // TODO(user): Cover all the cases.
-  std::vector<bool> processed(num_vars, false);
   int64_t num_bool_in_near_duplicate_ct = 0;
   for (IntegerVariable var(0); var < num_locks_.size(); ++var) {
     const int ref = VarDomination::IntegerVariableToRef(var);
     const int positive_ref = PositiveRef(ref);
-    if (processed[positive_ref]) continue;
     if (context->IsFixed(positive_ref)) continue;
     if (context->VariableIsNotUsedAnymore(positive_ref)) continue;
     if (context->VariableWasRemoved(positive_ref)) continue;
@@ -855,6 +849,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           if (!context->IntersectDomainWith(positive_ref, Domain(bound))) {
             return false;
           }
+          CannotMove({enf, positive_ref});
           continue;
         }
         if (implied.IsFixed()) {
@@ -864,15 +859,15 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
             if (!context->IntersectDomainWith(positive_ref, implied)) {
               return false;
             }
+            CannotMove({positive_ref});
             continue;
           }
 
-          // Note(user): If we have enforced => var fixed, we could actually
+          // NOTE(user): If we have enforced => var fixed, we could actually
           // just have removed var from the constraint if it was implied by
           // another constraint. If not, because of the new affine relation we
           // could remove it right away.
-          processed[PositiveRef(enf)] = true;
-          processed[positive_ref] = true;
+          CannotMove({enf, positive_ref});
           context->UpdateRuleStats("dual: affine relation");
           // The new affine relation added below can break the hint if hint(enf)
           // is 0. In this case the only constraint blocking `ref` from
@@ -901,8 +896,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
         if (context->CanBeUsedAsLiteral(positive_ref)) {
           // If we have a literal, we always add the implication.
           // This seems like a good thing to do.
-          processed[PositiveRef(enf)] = true;
-          processed[positive_ref] = true;
+          CannotMove({enf, positive_ref});
           context->UpdateRuleStats("dual: add implication");
           // The new implication can break the hint if hint(enf) is 0 and
           // hint(ref) is 1. In this case the only locking constraint `ct` does
@@ -933,16 +927,14 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           if (!context->SetLiteralToFalse(ct.enforcement_literal(0))) {
             return false;
           }
-          processed[PositiveRef(ref)] = true;
-          processed[PositiveRef(var)] = true;
+          CannotMove({ref, var});
           context->ClearConstraint(ct_index);
           context->UpdateConstraintVariableUsage(ct_index);
           continue;
         }
         if (rhs == var_domain) {
           context->UpdateRuleStats("linear1: always true");
-          processed[PositiveRef(ref)] = true;
-          processed[PositiveRef(var)] = true;
+          CannotMove({ref, var});
           context->ClearConstraint(ct_index);
           context->UpdateConstraintVariableUsage(ct_index);
           continue;
@@ -994,18 +986,16 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
             }
             context->ClearConstraint(ct_index);
             context->UpdateConstraintVariableUsage(ct_index);
-            processed[PositiveRef(ref)] = true;
-            processed[PositiveRef(var)] = true;
+            CannotMove({ref, var});
             // `encoding_lit` was maybe a new variable added during this loop,
             // so make sure we cannot go out-of-bound.
-            if (PositiveRef(encoding_lit) < processed.size()) {
-              processed[PositiveRef(encoding_lit)] = true;
+            if (PositiveRef(encoding_lit) < num_vars) {
+              CannotMove({encoding_lit});
             }
             continue;
           }
 
-          processed[PositiveRef(ref)] = true;
-          processed[PositiveRef(var)] = true;
+          CannotMove({ref, var});
           // The `new_ct` constraint `ref` => (`var` in `complement`) below can
           // break the hint if hint(var) is not in `complement`. In this case,
           // set the hint of `ref` to false. This should be safe since the only
@@ -1062,28 +1052,29 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           // Already present!
           const auto [other_c_with_same_hash, other_ref] = it->second;
           CHECK_NE(other_c_with_same_hash, ct_index);
-          const auto& other_ct = context->Constraint(other_c_with_same_hash);
-          TransformLinearWithSpecialBoolean(other_ct, other_ref,
-                                            &other_temp_data);
-          if (temp_data == other_temp_data) {
-            // Corner case: We just discovered l => ct and not(l) => ct.
-            // So ct must just always be true. And since that was the only
-            // blocking constraint for l, we can just set l to an arbitrary
-            // value.
-            if (ref == NegatedRef(other_ref)) {
-              context->UpdateRuleStats(
-                  "dual: detected l => ct and not(l) => ct with unused l!");
-              if (!context->IntersectDomainWith(ref, Domain(0))) {
-                return false;
+          if (num_locks_[RefToIntegerVariable(other_ref)] == 1 &&
+              !context->IsFixed(other_ref)) {
+            const auto& other_ct = context->Constraint(other_c_with_same_hash);
+            TransformLinearWithSpecialBoolean(other_ct, other_ref,
+                                              &other_temp_data);
+            if (temp_data == other_temp_data) {
+              // Corner case: We just discovered l => ct and not(l) => ct.
+              // So ct must just always be true. And since that was the only
+              // blocking constraint for l, we can just set l to an arbitrary
+              // value.
+              if (ref == NegatedRef(other_ref)) {
+                context->UpdateRuleStats(
+                    "dual: detected l => ct and not(l) => ct with unused l!");
+                if (!context->IntersectDomainWith(ref, Domain(0))) {
+                  return false;
+                }
+                CannotMove({ref});
+                continue;
               }
-              continue;
-            }
 
-            // We have a true equality. The two refs can be made equivalent.
-            if (!processed[PositiveRef(other_ref)]) {
+              // We have a true equality. The two refs can be made equivalent.
               ++num_bool_in_near_duplicate_ct;
-              processed[PositiveRef(ref)] = true;
-              processed[PositiveRef(other_ref)] = true;
+              CannotMove({ref, other_ref});
               // If the two hints are different, and since both refs have an
               // equivalent blocking constraint, then the constraint is actually
               // not blocking the ref at 1 from decreasing. Hence we can set its
@@ -1136,7 +1127,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           // easy in general as the maximum X satisfying aX + bY <= max will
           // not be at aX + bY == max, if max - bY is not divisible by a.
           context->UpdateRuleStats("TODO dual: only one blocking linear2?");
-        } else if (!processed[b]) {
+        } else {
           bool equiv = false;
           int64_t offset = 0;
           const Domain da = context->DomainOf(a);
@@ -1161,8 +1152,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
                 "dual: removed var only blocked by coeff * X + offset");
             crush.SetVarToLinearExpression(a, {{b, -cb}}, offset);
             if (!context->StoreAffineRelation(a, b, -cb, offset)) return false;
-            processed[a] = true;
-            processed[b] = true;
+            CannotMove({a, b});
             continue;
           }
         }
@@ -1225,20 +1215,17 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
       }
       CHECK_EQ(num_locks_[RefToIntegerVariable(NegatedRef(a))], 1);
 
-      if (!processed[PositiveRef(a)] && !processed[PositiveRef(b)]) {
-        DCHECK(!context->VariableWasRemoved(PositiveRef(a)));
-        DCHECK(!context->VariableWasRemoved(PositiveRef(b)));
-        processed[PositiveRef(a)] = true;
-        processed[PositiveRef(b)] = true;
-        // If hint(a) is false we can always set it to hint(b) since this can
-        // only increase its value. If hint(a) is true then hint(b) must be true
-        // as well if the hint is feasible, due to the a => b constraint.
-        // Setting hint(a) to hint(b) is thus always safe. The opposite is true
-        // as well.
-        crush.MakeLiteralsEqual(a, b);
-        if (!context->StoreBooleanEqualityRelation(a, b)) return false;
-        context->UpdateRuleStats("dual: enforced equivalence");
-      }
+      DCHECK(!context->VariableWasRemoved(PositiveRef(a)));
+      DCHECK(!context->VariableWasRemoved(PositiveRef(b)));
+      CannotMove({a, b});
+      // If hint(a) is false we can always set it to hint(b) since this can
+      // only increase its value. If hint(a) is true then hint(b) must be true
+      // as well if the hint is feasible, due to the a => b constraint.
+      // Setting hint(a) to hint(b) is thus always safe. The opposite is true
+      // as well.
+      crush.MakeLiteralsEqual(a, b);
+      if (!context->StoreBooleanEqualityRelation(a, b)) return false;
+      context->UpdateRuleStats("dual: enforced equivalence");
     }
   }
 
@@ -1851,7 +1838,7 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
           // Any increase such that coeff * delta >= slack makes the constraint
           // trivial.
           //
-          // Note(user): It looks like even if any of the upper bounds of the
+          // NOTE(user): It looks like even if any of the upper bounds of the
           // dominating vars decrease, this should still be valid. Here we only
           // decrease such a bound due to a dominance relation, so the slack
           // when all dominating variables are at their bounds should not really

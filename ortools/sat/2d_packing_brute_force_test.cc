@@ -27,6 +27,7 @@
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -185,7 +186,7 @@ TEST(CheckSolutionTest, CheckWithCPSat) {
 
   absl::BitGen random;
   int feasible = 0;
-  for (int i = 0; i < 1000; ++i) {
+  for (int i = 0; i < (DEBUG_MODE ? 100 : 1000); ++i) {
     const OppProblem problem = CreateRandomOppProblem(random, 6);
     const auto brute_force_solution = BruteForceOrthogonalPacking(
         problem.items_x_sizes, problem.items_y_sizes, problem.bb_sizes,

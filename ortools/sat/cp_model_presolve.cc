@@ -1860,7 +1860,7 @@ void CpModelPresolver::ExpandObjective() {
     // Deal with exactly one.
     // An exactly one is always tight on the upper bound of one term.
     //
-    // Note(user): This code assume there is no fixed variable in the exactly
+    // NOTE(user): This code assume there is no fixed variable in the exactly
     // one. We thus make sure the constraint is re-presolved if for some reason
     // we didn't reach the fixed point before calling this code.
     if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
@@ -1958,7 +1958,7 @@ void CpModelPresolver::ExpandObjective() {
     if (is_tight) ++num_tight_constraints;
   }
 
-  // Note(user): We assume the fixed point was already reached by the linear
+  // NOTE(user): We assume the fixed point was already reached by the linear
   // presolve, so we don't add extra code here for that. But we still abort if
   // some are left to cover corner cases where linear are still not propagated.
   if (num_propagations > 0) {
@@ -2738,7 +2738,7 @@ bool CpModelPresolver::ProcessSetPPCSubset(int subset_c, int superset_c,
     return true;
   }
 
-  // Note(user): Only the exactly one should really be needed, the intersection
+  // NOTE(user): Only the exactly one should really be needed, the intersection
   // is taken care of by ProcessAtMostOneAndLinear() in a better way.
   if (subset_ct->constraint_case() == ConstraintProto::kExactlyOne &&
       superset_ct->constraint_case() == ConstraintProto::kLinear) {
@@ -3933,7 +3933,7 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
           // This is wrong because the constraint "b => X=1" is needed for the
           // equivalence (a <=> X=1), but we lost that fact.
           //
-          // Note(user): In the scenario above we can see that a <=> b, and if
+          // NOTE(user): In the scenario above we can see that a <=> b, and if
           // we know that fact, then the transformation is correctly handled.
           // The bug was triggered when the Probing finished early due to time
           // limit and we never detected that equivalence.
@@ -4211,7 +4211,7 @@ void CpModelPresolver::DetectDifferentVariables() {
   // TODO(user): To avoid doing that more than once, we only run it if there
   // is no all-diff in the model already. This is not perfect.
   //
-  // Note(user): The all diff added here will not be expanded since we run this
+  // NOTE(user): The all diff added here will not be expanded since we run this
   // after expansion. This is fragile though. Not even sure this is what we
   // want.
   //
@@ -5170,7 +5170,7 @@ void CpModelPresolver::FindBigVerticalLinearOverlap(
           }
         }
 
-        // Note(user): We will actually abort right away in this case, but we
+        // NOTE(user): We will actually abort right away in this case, but we
         // want work_done to be deterministic! so we do the work anyway.
         if (in_enforcement) continue;
         linear_cts.push_back(c);
@@ -5296,7 +5296,7 @@ void CpModelPresolver::FindBigVerticalLinearOverlap(
 // it should be beneficial to identify a common part between many linear
 // constraints.
 //
-// Note(user): This was made to work on var-smallemery-m6j6.pb.gz, but applies
+// NOTE(user): This was made to work on var-smallemery-m6j6.pb.gz, but applies
 // to quite a few miplib problems. Try to improve the heuristics and algorithm
 // to be faster and detect larger blocks.
 void CpModelPresolver::FindBigHorizontalLinearOverlap(
@@ -5990,7 +5990,7 @@ void CpModelPresolver::PresolveVarOnlyInLinearAndLinear(int var,
     return;
   }
 
-  // Note(user): Only one constraint should be enough given how the postsolve
+  // NOTE(user): Only one constraint should be enough given how the postsolve
   // work. However that will not work for the case where we postsolve by solving
   // the mapping model (debug_postsolve_with_full_solver:true). Moreover, the
   // postsolve works better if the mapping constraints are non-ambiguous.

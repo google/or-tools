@@ -855,7 +855,7 @@ bool PresolveContext::HasUnusedAffineVariable() const {
 // fixed to zero. This is important because it allows simply using the same
 // representative for any referenced literals.
 //
-// Note(user): When both domains contain [0,1] and later the wrong variable
+// NOTE(user): When both domains contain [0,1] and later the wrong variable
 // becomes usable as boolean, then we have a bug. Because of that, the code
 // for GetLiteralRepresentative() is not as simple as it should be.
 bool PresolveContext::AddRelation(int x, int y, int64_t c, int64_t o,
@@ -1286,7 +1286,7 @@ int PresolveContext::GetLiteralRepresentative(int ref) const {
 
   CHECK(CanBeUsedAsLiteral(ref));
   if (!CanBeUsedAsLiteral(r.representative)) {
-    // Note(user): This can happen in some corner cases where the affine
+    // NOTE(user): This can happen in some corner cases where the affine
     // relations were added before the variable became usable as Boolean. When
     // this is the case, the domain will be of the form [x, x + 1] and should be
     // later remapped to a Boolean variable.
@@ -1655,7 +1655,7 @@ bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
           << (imply_eq ? ") == " : ") != ") << value;
   UpdateRuleStats("variables: detect half reified value encoding");
 
-  // Note(user): We don't expect a lot of literals in these sets, so doing
+  // NOTE(user): We don't expect a lot of literals in these sets, so doing
   // a scan should be okay.
   auto& other_set = imply_eq ? neq_half_encoding_ : eq_half_encoding_;
   auto it = other_set.find({NegatedRef(literal), var});

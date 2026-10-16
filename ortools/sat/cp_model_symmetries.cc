@@ -577,7 +577,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         break;
       }
       case ConstraintProto::kNoOverlap: {
-        // Note(user): This requires that intervals appear before they are used.
+        // NOTE(user): This requires that intervals appear before they are used.
         // We currently enforce this at validation, otherwise we need two passes
         // here and in a bunch of other places.
         CHECK_EQ(constraint_node, new_node(color));
@@ -588,7 +588,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         break;
       }
       case ConstraintProto::kNoOverlap2D: {
-        // Note(user): This requires that intervals appear before they are used.
+        // NOTE(user): This requires that intervals appear before they are used.
         // We currently enforce this at validation, otherwise we need two passes
         // here and in a bunch of other places.
         CHECK_EQ(constraint_node, new_node(color));
@@ -618,7 +618,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         break;
       }
       case ConstraintProto::kCumulative: {
-        // Note(user): This requires that intervals appear before they are used.
+        // NOTE(user): This requires that intervals appear before they are used.
         // We currently enforce this at validation, otherwise we need two passes
         // here and in a bunch of other places.
         const CumulativeConstraintProto& ct = constraint.cumulative();
@@ -1096,6 +1096,8 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   const SatParameters& params = context->params();
   const CpModelProto& proto = context->WorkingModel();
 
+  if (context->ModelIsUnsat()) return false;
+
   // We need to make sure the proto is up to date before computing symmetries!
   if (proto.has_objective()) {
     context->WriteObjectiveToProto();
@@ -1149,7 +1151,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
 
   // Collect the at most ones.
   //
-  // Note(user): This relies on the fact that the pointers remain stable when
+  // NOTE(user): This relies on the fact that the pointers remain stable when
   // we add new constraints. It should be the case, but it is a bit unsafe.
   // On the other hand it is annoying to deal with both cases below.
   std::vector<const google::protobuf::RepeatedField<int32_t>*> at_most_ones;
@@ -1495,7 +1497,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     // TODO(user): for 1/ and 2/ we could add an at most one constraint on the
     // full row if it is not already there!
     //
-    // Note(user): On the miplib, only 1/ and 2/ happen currently. Not sure
+    // NOTE(user): On the miplib, only 1/ and 2/ happen currently. Not sure
     // with LNS though.
     for (const google::protobuf::RepeatedField<int32_t>* literals :
          at_most_ones) {
@@ -1514,7 +1516,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       // An at most one touching two positions in an orbitope row can be
       // extended to include the full row.
       //
-      // Note(user): I am not sure we care about that here. By symmetry, if we
+      // NOTE(user): I am not sure we care about that here. By symmetry, if we
       // have an at most one touching two positions, then we should have others
       // touching all pairs of positions. And the at most one expansion would
       // already have extended it. So this is more FYI.

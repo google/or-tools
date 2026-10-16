@@ -143,6 +143,49 @@ TEST(WeightedSumLowerOrEqualTest, UnaryRounding) {
   EXPECT_EQ(model.Get(LowerBound(var)), 4);
 }
 
+TEST(WeightedSumLowerOrEqualTest, CycleDetectionUsesAccumulatedIncrease) {
+  Model model;
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 10000));
+  const IntegerVariable y = model.Add(NewIntegerVariable(0, 10000));
+
+  // x - 2*y <= -1 and 2*y - x <= 0 form an infeasible cycle.
+  // In the first constraint, x has a smaller coefficient (1) than -y (2),
+  // so detecting the cycle requires using the accumulated increase of x (2)
+  // through the second constraint rather than a unit increase (1).
+  AddWeightedSumLowerOrEqual({x, y}, {1, -2}, -1, &model);
+  AddWeightedSumLowerOrEqual({y, x}, {2, -1}, 0, &model);
+
+  EXPECT_FALSE(model.GetOrCreate<SatSolver>()->Propagate());
+  EXPECT_LT(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 20);
+}
+
+TEST(WeightedSumLowerOrEqualTest,
+     DisassemblePreservesPropagatedByWhenIncreaseIsZero) {
+  Model model;
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 10000));
+  const IntegerVariable y = model.Add(NewIntegerVariable(0, 10000));
+  const IntegerVariable z = model.Add(NewIntegerVariable(0, 10000));
+
+  // Cycle:
+  //   c0: z - 2*x <= -1           (pushes x >= (z + 1) / 2)
+  //   c1: 4*x - y <= 0            (pushes y >= 4*x)
+  //   c2: x + 51*y - 100*z <= 50  (pushes z >= (x + 51*y - 50) / 100)
+  // Only c0 can detect the cycle as root_id (all other roots and the
+  // upper-bound cycle round down to increase = 0 before closing). When c0
+  // disassembles x with increase = 1, inspecting c2 from x gives
+  // next_increase = (1 * 1) / 100 = 0 for z, while inspecting c1 from x pushes
+  // y with increase = 4, which then reaches c2 with
+  // next_increase = (51 * 4) / 100 = 2. Clearing z's propagated_by on the
+  // zero-increase visit from x would prevent the visit from y from completing
+  // the cycle.
+  AddWeightedSumLowerOrEqual({z, x}, {1, -2}, -1, &model);
+  AddWeightedSumLowerOrEqual({x, y}, {4, -1}, 0, &model);
+  AddWeightedSumLowerOrEqual({x, y, z}, {1, 51, -100}, 50, &model);
+
+  EXPECT_FALSE(model.GetOrCreate<SatSolver>()->Propagate());
+  EXPECT_LT(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 20);
+}
+
 TEST(ReifiedWeightedSumLeTest, ReifToBoundPropagation) {
   Model model;
   const Literal r = Literal(model.Add(NewBooleanVariable()), true);

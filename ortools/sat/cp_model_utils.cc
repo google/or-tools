@@ -932,7 +932,7 @@ class InlineMessagePrinter
              google::protobuf::TextFormat::BaseTextGenerator* generator)
       const override {
     buffer_.clear();
-    printer_.PrintToString(message, &buffer_);
+    CHECK(printer_.PrintToString(message, &buffer_));
     generator->Print(buffer_.data(), buffer_.size());
   }
 

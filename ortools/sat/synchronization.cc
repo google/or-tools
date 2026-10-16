@@ -395,7 +395,7 @@ void SharedResponseManager::TestGapLimitsIfNeeded() {
                " reached.");
     UpdateBestStatus(CpSolverStatus::OPTIMAL);
 
-    // Note(user): Some code path in single-thread assumes that the problem
+    // NOTE(user): Some code path in single-thread assumes that the problem
     // can only be solved when they have proven infeasibility and do not check
     // the ProblemIsSolved() method. So we force a stop here.
     if (always_synchronize_) shared_time_limit_->Stop();
@@ -1291,15 +1291,12 @@ bool UniqueClauseStream::Add(absl::Span<const int> clause, int lbd) {
   if (buffer->size() + clause.size() <= kMaxLiteralsPerBatch) {
     buffer->insert(buffer->end(), clause.begin(), clause.end());
   } else {
-    // Maybe replace an old buffered clause of the same size if it has a smaller
-    // hash value. This means that the buffer will contain a deterministic
-    // sample of the clauses added, independent of insertion order.
+    // Replace an old buffered clause of the same size.
     const int64_t replaced_clause_id =
         HashClause(clause, 1) % NumClausesOfSize(clause.size());
     absl::Span<int> replaced_clause = absl::MakeSpan(*buffer).subspan(
         replaced_clause_id * clause.size(), clause.size());
     dropped_literals_since_last_batch_ += clause.size();
-    if (HashClause(clause, 2) >= HashClause(replaced_clause, 2)) return false;
     absl::c_copy(clause, replaced_clause.begin());
   }
   return true;

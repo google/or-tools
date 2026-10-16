@@ -13,10 +13,14 @@
 
 #include "ortools/sat/var_domination.h"
 
+#include <cstdint>
+#include <vector>
+
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_context.h"
@@ -1025,6 +1029,143 @@ TEST(DualBoundReductionTest, EquivalenceDetection) {
   // Equivalence between a and b.
   EXPECT_EQ(context.GetLiteralRepresentative(1), 0);
   EXPECT_EQ(context.solution_crush().GetVarValues()[0], 1);
+}
+
+// Regression test for duplicate entries in `DominatingVariables(ref)`:
+// When a constraint such as `bool_or` contains duplicate literals
+// (`literals: [0, 1, 1]`), `InitialDominatingCandidates(X)` contains duplicate
+// entries `[X, Y, Y]`. `VarDomination::EndFirstPhase()` deduplicates
+// `dominating_vars_[var]` for all variables (not just cropped lists), ensuring
+// `var_dom.DominatingVariables(X) == [Y]` so `get_delta` in
+// `ExploitDominanceRelations` does not double-count `Y`'s slack.
+TEST(
+    VarDominationTest,
+    Counterexample_DuplicateDominatingVarsDoubleCountsDeltaAndMakesModelUnsat) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables {
+      name: "X"
+      domain: [ 0, 1 ]
+    }
+    variables {
+      name: "Y"
+      domain: [ 0, 1 ]
+    }
+    variables {
+      name: "Z"
+      domain: [ 0, 1 ]
+    }
+    constraints { bool_or { literals: [ 0, 1, 1 ] } }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 1, 1, 2 ]
+        domain: [ 0, 2 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 1, 1, 1 ]
+        domain: [ 2, 3 ]
+      }
+    }
+    solution_hint {
+      vars: [ 0, 1, 2 ]
+      values: [ 1, 1, 0 ]
+    }
+  )pb");
+
+  // 1. Model is valid according to ValidateCpModel (and has no duplicate vars
+  //    in any linear constraint).
+  ASSERT_EQ(ValidateCpModel(model_proto), "");
+
+  // 2. Before presolve, (X = 1, Y = 1, Z = 0) is the unique feasible solution
+  //    of model_proto.
+  const std::vector<int64_t> initial_assignment = {1, 1, 0};
+  ASSERT_TRUE(SolutionIsFeasible(model_proto, initial_assignment));
+
+  // 3. Run ScanModelForDominanceDetection: EndFirstPhase deduplicates
+  //    DominatingVariables(X) to {Y}.
+  VarDomination var_dom;
+  Model model;
+  PresolveContext context(&model, &model_proto, nullptr);
+  context.InitializeNewDomains();
+  context.ReadObjectiveFromProto();
+  context.LoadAndClampSolutionHint();
+  ScanModelForDominanceDetection(context, &var_dom);
+
+  const IntegerVariable X = VarDomination::RefToIntegerVariable(0);
+  const IntegerVariable Y = VarDomination::RefToIntegerVariable(1);
+  EXPECT_THAT(var_dom.DominatingVariables(X), ElementsAre(Y));
+
+  // 4. ExploitDominanceRelations preserves satisfiability and keeps the unique
+  //    feasible solution (1, 1, 0).
+  EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
+  EXPECT_FALSE(context.ModelIsUnsat());
+  context.WriteVariableDomainsToProto();
+
+  EXPECT_THAT(context.solution_crush().GetVarValues(), ElementsAre(1, 1, 0));
+  EXPECT_TRUE(
+      SolutionIsFeasible(model_proto, context.solution_crush().GetVarValues()));
+}
+
+TEST(DualBoundReductionTest, MultipleEquivalenceDetection) {
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      # a1 => b
+      enforcement_literal: 0
+      bool_and { literals: [ 2 ] }
+    }
+    constraints {
+      # a2 => b
+      enforcement_literal: 1
+      bool_and { literals: [ 2 ] }
+    }
+    constraints {
+      linear {
+        # b == c (we just want b and c not to freely vary)
+        vars: [ 2, 3 ]
+        coeffs: [ 1, -1 ]
+        domain: [ 0, 0 ]
+      }
+    }
+    constraints {
+      bool_or {
+        literals: [ 0, 3 ]  # a1 + c >= 1
+      }
+    }
+    constraints {
+      bool_or {
+        literals: [ 1, 3 ]  # a2 + c >= 1
+      }
+    }
+    solution_hint {
+      vars: [ 0, 1, 2, 3 ]
+      values: [ 0, 0, 1, 1 ]
+    }
+  )pb");
+  DualBoundStrengthening dual_bound_strengthening;
+  Model model;
+  PresolveContext context(&model, &model_proto, nullptr);
+  context.InitializeNewDomains();
+  context.LoadAndClampSolutionHint();
+  context.ReadObjectiveFromProto();
+  ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
+
+  EXPECT_TRUE(dual_bound_strengthening.Strengthen(&context));
+
+  // Both a1 and a2 should be made equivalent to b in a single pass.
+  EXPECT_EQ(context.GetLiteralRepresentative(1),
+            context.GetLiteralRepresentative(0));
+  EXPECT_EQ(context.GetLiteralRepresentative(2),
+            context.GetLiteralRepresentative(0));
+  EXPECT_EQ(context.solution_crush().GetVarValues()[0], 1);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[1], 1);
+  EXPECT_EQ(context.solution_crush().GetVarValues()[2], 1);
 }
 
 }  // namespace

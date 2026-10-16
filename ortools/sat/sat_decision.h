@@ -95,7 +95,7 @@ class SatDecisionPolicy {
   // activities. Larger weights will be selected first. A weight of zero is the
   // default value for the other variables.
   //
-  // Note(user): Having a lot of different weights may slow down the priority
+  // NOTE(user): Having a lot of different weights may slow down the priority
   // queue operations if there are millions of variables.
   void SetAssignmentPreference(Literal literal, float weight);
 
@@ -184,7 +184,7 @@ class SatDecisionPolicy {
     // Priority order. The IntegerPriorityQueue returns the largest element
     // first.
     //
-    // Note(user): We used to also break ties using the variable index, however
+    // NOTE(user): We used to also break ties using the variable index, however
     // this has two drawbacks:
     // - On problems with many variables, this slows down quite a lot the
     //   priority queue operations (which do as little work as possible and
@@ -194,7 +194,7 @@ class SatDecisionPolicy {
     //   queue will automatically diversify the choice of the top variables
     //   amongst the ones with the same priority.
     //
-    // Note(user): For the same reason as explained above, it is probably a good
+    // NOTE(user): For the same reason as explained above, it is probably a good
     // idea not to have too many different values for the tie_breaker field. I
     // am not even sure we should have such a field...
     bool operator<(const WeightedVarQueueElement& other) const {

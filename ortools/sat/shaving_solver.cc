@@ -579,8 +579,9 @@ void VariablesShavingSolver::CopyModelConnectedToVar(
   };
 
   std::vector<int> interval_mapping;
-  CopyModelAdvanced(model_proto_, var_domains_, active_constraints,
-                    &interval_mapping, shaving_proto, local_model);
+  CopyModelAdvanced(model_proto_, /*clear_internal_fields=*/false, var_domains_,
+                    active_constraints, &interval_mapping, shaving_proto,
+                    local_model);
 
   // Now copy the ignored constraints "partially".
   for (const int c : ignored_constraints) {

@@ -341,7 +341,7 @@ bool ReservoirTimeTabling::TryToDecreaseMax(int event) {
   // would overflow.
   FillReasonForProfileAtGivenTime(new_end, event);
 
-  // Note(user): I don't think this is possible since it would have been
+  // NOTE(user): I don't think this is possible since it would have been
   // detected at profile construction, but then, since the bound might have been
   // updated, better be defensive.
   if (new_end < start) {

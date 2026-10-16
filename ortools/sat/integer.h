@@ -634,7 +634,7 @@ class IntegerTrail final : public SatPropagator {
   // Same as AddIntegerVariable(value, value), but this is a bit more efficient
   // because it reuses another constant with the same value if it exists.
   //
-  // Note(user): Creating constant integer variables is a bit wasteful, but not
+  // NOTE(user): Creating constant integer variables is a bit wasteful, but not
   // that much, and it allows to simplify a lot of constraints that do not need
   // to handle this case any differently than the general one. Maybe there is a
   // better solution, but this is not really high priority as of December 2016.
@@ -770,7 +770,7 @@ class IntegerTrail final : public SatPropagator {
   // IMPORTANT: Notice the inversed sign in the literal reason. This is a bit
   // confusing but internally SAT uses this direction for efficiency.
   //
-  // Note(user): Duplicate Literals/IntegerLiterals are supported because we
+  // NOTE(user): Duplicate Literals/IntegerLiterals are supported because we
   // call STLSortAndRemoveDuplicates() in MergeReasonInto(), but maybe they
   // shouldn't for efficiency reasons.
   //
@@ -880,7 +880,7 @@ class IntegerTrail final : public SatPropagator {
   // Returns the number of enqueues that changed a variable's bounds. We don't
   // count enqueues called with a less restrictive bound than the current one.
   //
-  // Note(user): this can be used to see if any of the bounds changed. Just
+  // NOTE(user): this can be used to see if any of the bounds changed. Just
   // looking at the integer trail index is not enough because at level zero it
   // doesn't change since we directly update the "fixed" bounds.
   int64_t num_enqueues() const { return num_enqueues_; }

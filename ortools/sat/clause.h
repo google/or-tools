@@ -117,11 +117,15 @@ class ClauseManager : public SatPropagator {
   bool ClauseIsUsedAsReason(const SatClause* clause) const;
 
   // Adds a new clause and performs initial propagation for this clause only.
+  // Takes ownership of `clause`.
+  // TODO(b/563286155): This should probably accept a `ClauseUniquePtr`.
   bool AddClause(SatClause* clause, Trail* trail, int lbd);
   bool AddClause(absl::Span<const Literal> literals);
 
   // Same as AddClause() for a removable clause. This is only called on learned
   // conflict, so this should never have all its literals at false (CHECKED).
+  // Takes ownership of `clause`.
+  // TODO(b/563286155): This should probably accept a `ClauseUniquePtr`.
   void AddRemovableClause(SatClause* clause, Trail* trail, int lbd);
 
   // Returns the number of deletions for each DeletionSourceForStat type.
@@ -492,16 +496,16 @@ class LratEquivalenceHelper;
 // the reduction before the solve. We should consider doing more in-processing.
 // The code could probably still be improved too.
 //
-// Note(user): All the variables in a strongly connected component are
+// NOTE(user): All the variables in a strongly connected component are
 // equivalent and can thus be merged into one. This is relatively cheap to
 // compute from time to time (linear complexity). We will also get a
 // contradiction (a <=> not a) this way. This is done by DetectEquivalences().
 //
-// Note(user): An implication (a => not a) implies that a is false. I am not
+// NOTE(user): An implication (a => not a) implies that a is false. I am not
 // sure it is worth detecting that because if the solver assigns a to true, it
 // will learn that right away. I don't think we can do it faster.
 //
-// Note(user): The implication graph can be pruned. This is called the
+// NOTE(user): The implication graph can be pruned. This is called the
 // transitive reduction of a graph. For instance if a => {b,c} and b => {c},
 // then there is no need to store a => {c}. The transitive reduction is unique
 // on an acyclic graph. Computing it will allow for a faster propagation and
@@ -510,12 +514,12 @@ class LratEquivalenceHelper;
 // will never be redundant (but they could introduce cycles). This is done
 // by ComputeTransitiveReduction().
 //
-// Note(user): This class natively supports at most one constraints. This is
+// NOTE(user): This class natively supports at most one constraints. This is
 // a way to reduce significantly the memory and size of some 2-SAT instances.
 // However, it is not fully exploited for pure SAT problems. See
 // TransformIntoMaxCliques().
 //
-// Note(user): Add a preprocessor to remove duplicates in the implication lists.
+// NOTE(user): Add a preprocessor to remove duplicates in the implication lists.
 // Note that all the learned clauses we add will never create duplicates.
 //
 // References for most of the above and more:
@@ -803,7 +807,7 @@ class BinaryImplicationGraph : public SatPropagator {
     for (LiteralIndex i(0); i < implications_and_amos_.size(); ++i) {
       const Literal a = Literal(i).Negated();
       for (const Literal b : implications_and_amos_[i].literals()) {
-        // Note(user): We almost always have both a => b and not(b) => not(a) in
+        // NOTE(user): We almost always have both a => b and not(b) => not(a) in
         // our implications_ database. Except if ComputeTransitiveReduction()
         // was aborted early, but in this case, if only one is present, the
         // other could be removed, so we shouldn't need to output it.

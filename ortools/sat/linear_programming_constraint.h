@@ -342,18 +342,21 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Returns number of non-basic variables with zero reduced costs.
   int64_t CalculateDegeneracy();
 
-  // From a set of row multipliers (at LP scale), scale them back to the CP
-  // world and then make them integer (eventually multiplying them by a new
-  // scaling factor returned in *scaling).
+  // From a set of row multipliers (at CP scale), make them integer by
+  // multiplying them by a power of two, rounding them, and dividing by their
+  // gcd. When take_objective_into_account is true, returns the integer
+  // multiplier to use for the objective. This will always be non-negative, but
+  // can be zero. Otherwise returns 0.
   //
   // Note that this will lose some precision, but our subsequent computation
   // will still be exact as it will work for any set of multipliers.
+  IntegerValue ScaleMultipliers(
+      absl::Span<const std::pair<glop::RowIndex, double>> lp_multipliers,
+      bool take_objective_into_account,
+      std::vector<std::pair<glop::RowIndex, IntegerValue>>* output) const;
+
   void IgnoreTrivialConstraintMultipliers(
       std::vector<std::pair<glop::RowIndex, double>>* lp_multipliers);
-  void ScaleMultipliers(
-      absl::Span<const std::pair<glop::RowIndex, double>> lp_multipliers,
-      bool take_objective_into_account, IntegerValue* scaling,
-      std::vector<std::pair<glop::RowIndex, IntegerValue>>* output) const;
 
   // Can we have an overflow if we scale each coefficient with
   // std::round(std::ldexp(coeff, power)) ?

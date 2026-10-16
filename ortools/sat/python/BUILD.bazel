@@ -20,9 +20,8 @@ load("//bazel:or_pybind_rules.bzl", "or_pybind_extension", "or_pybind_library")
 
 package(default_visibility = ["//visibility:public"])
 
-# This file is generated manually by running pybind11_mkdoc on linear_expr.h
 or_cc_library(
-    name = "linear_expr_doc",
+    name = "linear_expr_doc_cc",
     hdrs = ["linear_expr_doc.h"],
 )
 
@@ -52,7 +51,7 @@ or_pybind_library(
     linkstatic = 1,
     deps = [
         ":linear_expr",
-        ":linear_expr_doc",
+        ":linear_expr_doc_cc",
         "//ortools/base:types",
         "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/base:dynamic_annotations",
@@ -128,7 +127,7 @@ or_pybind_extension(
     visibility = ["//visibility:public"],
     deps = [
         ":linear_expr",
-        ":linear_expr_doc",
+        ":linear_expr_doc_cc",
         ":proto_builder_pybind11",
         ":pybind_constraint",
         ":pybind_linearexpr",
@@ -175,7 +174,7 @@ py_test(
     name = "cp_model_test",
     size = "medium",
     srcs = ["cp_model_test.py"],
-    tags = ["noci"],  # Times out occasionally in ASAN mode.
+    tags = ["noci"],
     deps = [
         ":cp_model",
         ":cp_model_helper",
