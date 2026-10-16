@@ -147,7 +147,7 @@ namespace operations_research {
 // in O(num elements in the queue). Elements with the same priority are
 // retrieved with LIFO order.
 //
-// Note(user): As far as I know, this is an original idea and is the only code
+// NOTE(user): As far as I know, this is an original idea and is the only code
 // that use this in the Maximum Flow context. Papers usually refer to an
 // height-indexed array of simple linked lists of active node with the same
 // height. Even worse, sometimes they use double-linked list to allow arbitrary
@@ -837,7 +837,7 @@ void GenericMaxFlow<Graph, ArcFlowT, FlowSumT>::InitializePreflow() {
   }
 }
 
-// Note(user): Calling this function will break the property on the node
+// NOTE(user): Calling this function will break the property on the node
 // potentials because of the way we cancel flow on cycle. However, we only call
 // that at the end of the algorithm, or just before a GlobalUpdate() that will
 // restore the precondition on the node potentials.
@@ -1044,7 +1044,7 @@ void GenericMaxFlow<Graph, ArcFlowT, FlowSumT>::GlobalUpdate() {
       // function running time, which is the bottleneck on many instances.
       const ArcIndex opposite_arc = Opposite(arc);
       if (residual_arc_capacity_[opposite_arc] > 0) {
-        // Note(user): We used to have a DCHECK_GE(candidate_distance,
+        // NOTE(user): We used to have a DCHECK_GE(candidate_distance,
         // node_potential_[head]); which is always true except in the case
         // where we can push more than kMaxFlowSum out of the source. The
         // problem comes from the fact that in this case, we call
@@ -1055,7 +1055,7 @@ void GenericMaxFlow<Graph, ArcFlowT, FlowSumT>::GlobalUpdate() {
 
         // If head is active, we can steal some or all of its excess.
         // This brings a huge gain on some problems.
-        // Note(user): I haven't seen this anywhere in the literature.
+        // NOTE(user): I haven't seen this anywhere in the literature.
         // TODO(user): Investigate more and maybe write a publication :)
         if (node_excess[head] > 0) {
           PushAsMuchFlowAsPossible(head, opposite_arc, node_excess);
@@ -1160,7 +1160,7 @@ void GenericMaxFlow<Graph, ArcFlowT, FlowSumT>::PushFlow(ArcFlowType flow,
 
   // Update the excesses at the tail and head of the arc.
   //
-  // Note(user): node_excess_ should be always greater than or equal to 0 except
+  // NOTE(user): node_excess_ should be always greater than or equal to 0 except
   // for the source where it should always be smaller than or equal to 0. Note
   // however that we cannot check this because when we cancel the flow on a
   // cycle in PushFlowExcessBackToSource(), we may break this invariant during
@@ -1367,7 +1367,7 @@ template <bool reverse>
 void GenericMaxFlow<Graph, ArcFlowT, FlowSumT>::ComputeReachableNodes(
     NodeIndex start, std::vector<NodeIndex>* result) {
   // If start is not a valid node index, it can reach only itself.
-  // Note(user): This is needed because source and sink are given independently
+  // NOTE(user): This is needed because source and sink are given independently
   // of the graph and sometimes before it is even constructed.
   const NodeIndex num_nodes = graph_->num_nodes();
   if (start >= num_nodes) {

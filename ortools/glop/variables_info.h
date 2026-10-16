@@ -49,7 +49,7 @@ struct BasisState {
 // Class responsible for maintaining diverse information for each variable that
 // depend on its bounds and status.
 //
-// Note(user): Not all information is needed at all time, but it is cheap to
+// NOTE(user): Not all information is needed at all time, but it is cheap to
 // maintain it since it only requires a few calls to Update() per simplex
 // iteration.
 class VariablesInfo {

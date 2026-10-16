@@ -119,7 +119,7 @@ class SparseVector {
   //
   // Note that this can only be used when the vector has no duplicates.
   //
-  // Note(user): using either "const SparseVector<int>::Entry&" or
+  // NOTE(user): using either "const SparseVector<int>::Entry&" or
   // "const SparseVector<int>::Entry" yields the exact same performance on the
   // netlib, thus we recommend to use the latter version, for consistency.
   Iterator begin() const;
@@ -643,7 +643,7 @@ template <typename IndexType, typename IteratorType>
 bool SparseVector<IndexType, IteratorType>::CheckNoDuplicates(
     StrictITIVector<IndexType, bool>* boolean_vector) const {
   RETURN_VALUE_IF_NULL(boolean_vector, false);
-  // Note(user): Using num_entries() or any function that call
+  // NOTE(user): Using num_entries() or any function that call
   // CheckNoDuplicates() again will cause an infinite loop!
   if (!may_contain_duplicates_ || num_entries_ <= 1) return true;
 

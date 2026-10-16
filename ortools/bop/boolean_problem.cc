@@ -416,7 +416,7 @@ bool IsAssignmentValid(const LinearBooleanProblem& problem,
   return true;
 }
 
-// Note(user): This function makes a few assumptions about the format of the
+// NOTE(user): This function makes a few assumptions about the format of the
 // given LinearBooleanProblem. All constraint coefficients must be 1 (and of the
 // form >= 1) and all objective weights must be strictly positive.
 std::string LinearBooleanProblemToCnfString(

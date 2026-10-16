@@ -93,7 +93,7 @@ ToMPSolverResultStatus(const glop::SolveStatus& status) {
                                   ToMPSolverResultStatusStr(status));
           },
           [&](const glop::SolveStatus::InfeasibleOrUnbounded&) -> Ret {
-            // Note(user): MPSolver does not have the equivalent of
+            // NOTE(user): MPSolver does not have the equivalent of
             // INFEASIBLE_OR_UNBOUNDED however UNBOUNDED is almost never
             // relevant in applications, so we decided to report this status as
             // INFEASIBLE since it should almost always be the

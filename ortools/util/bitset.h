@@ -802,7 +802,7 @@ class BitQueue64 {
       bucket = data_[--bucket_index];
     }
 
-    // Note(user): I experimented with reversing the bit order in a bucket to
+    // NOTE(user): I experimented with reversing the bit order in a bucket to
     // use LeastSignificantBitPosition64() and it is only slightly faster at the
     // cost of a lower Set() speed. So I preferred this version.
     top_ = static_cast<int>(BitShift64(bucket_index) +

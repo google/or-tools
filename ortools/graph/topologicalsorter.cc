@@ -54,7 +54,7 @@ void DenseIntTopologicalSorterTpl<stable_sort>::AddNode(int node_index) {
 // Up to a point, we detect duplicates up front and do not insert them.
 // Then we switch to using RemoveDuplicates(), see below.
 //
-// Note(user): I did benchmarks on this in November 2011, and while
+// NOTE(user): I did benchmarks on this in November 2011, and while
 // 32 seemed too large, I did not see very significant performance
 // differences with 0, 4, 8 or 16. But since larger values of this
 // threshold mean that there will be slightly less space used up by
@@ -241,7 +241,7 @@ int DenseIntTopologicalSorterTpl<stable_sort>::RemoveDuplicates(
   return num_duplicates_removed;
 }
 
-// Note(user): as of 2012-09, this implementation works in
+// NOTE(user): as of 2012-09, this implementation works in
 // O(number of edges + number of nodes), which is the theoretical best.
 // It could probably be optimized to gain a significant constant speed-up;
 // but at the cost of more code complexity.

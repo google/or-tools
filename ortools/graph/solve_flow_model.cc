@@ -14,7 +14,7 @@
 // This code loads flow-graph models (as Dimacs file or binary FlowModel proto)
 // and solves them with the OR-tools flow algorithms.
 //
-// Note(user): only min-cost flow is supported at this point.
+// NOTE(user): only min-cost flow is supported at this point.
 // TODO(user): move this DIMACS parser to its own class, like the ones in
 // routing/. This change would improve searchability of the parser.
 
@@ -106,7 +106,7 @@ void ConvertFlowModelToDimacs(const FlowModelProto& flow_model,
   dimacs->append("c\n");
 }
 
-// Note(user): Going from Dimacs to flow adds an extra copy, but for now we
+// NOTE(user): Going from Dimacs to flow adds an extra copy, but for now we
 // don't really care of the Dimacs file reading performance.
 // Returns true if the file was converted correctly.
 bool ConvertDimacsToFlowModel(absl::string_view file,

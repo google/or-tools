@@ -112,7 +112,7 @@ TEST(ProtobufTextFormatPrintToStringForFlagTest, OneLine) {
 
 #else
 static_assert(!operations_research::kTargetOsSupportsProtoDescriptor);
-// Note(user): we are intentionally testing this on the enum
+// NOTE(user): we are intentionally testing this on the enum
 // MPModelRequest::SolverType, because the values of the enums are
 // nonconsecutive.
 TEST(ProtoEnumToStringTest, GoodValues) {

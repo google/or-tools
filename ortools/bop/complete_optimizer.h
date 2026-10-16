@@ -20,7 +20,7 @@
 // because in some situation they can improve the current upper/lower bound or
 // even solve the problem to optimality.
 //
-// Note(user): The GuidedSatFirstSolutionGenerator can also be used as a
+// NOTE(user): The GuidedSatFirstSolutionGenerator can also be used as a
 // complete SAT solver provided that we keep running it after it has found a
 // first solution. This is the default behavior of the kNotGuided policy.
 

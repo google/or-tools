@@ -1620,7 +1620,7 @@ void RandomTestsOfBasisLoadOnSameProblem(const ColIndex num_cols,
     // Run the revised simplex 1 iteration at a time, for the same number of
     // total iterations which is required when running simplex continuously.
     //
-    // Note(user): Like in RandomTestsOfIncrementalityOnSameProblem(),
+    // NOTE(user): Like in RandomTestsOfIncrementalityOnSameProblem(),
     // the number of iterations can actually vary slighlty, so we go a bit
     // further than the original number. See the comment in that function for
     // more details.

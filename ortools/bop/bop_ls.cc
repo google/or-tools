@@ -748,7 +748,7 @@ void LocalSearchAssignmentIterator::SynchronizeSatWrapper() {
   sat_wrapper_->BacktrackAll();
   maintainer_.BacktrackAll();
 
-  // Note(user): at this stage, the sat trail contains the fixed variables.
+  // NOTE(user): at this stage, the sat trail contains the fixed variables.
   // There will almost always be at the same value in the reference solution.
   // However since the objective may be over-constrained in the sat_solver, it
   // is possible that some variable where propagated to some other values.
@@ -767,7 +767,7 @@ void LocalSearchAssignmentIterator::UseCurrentStateAsReference() {
   maintainer_.UseCurrentStateAsReference();
   sat_wrapper_->BacktrackAll();
 
-  // Note(user): Here, there should be no discrepancies between the fixed
+  // NOTE(user): Here, there should be no discrepancies between the fixed
   // variable and the new reference, so there is no need to do:
   // maintainer_.Assign(sat_wrapper_->FullSatTrail());
 

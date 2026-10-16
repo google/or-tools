@@ -54,7 +54,7 @@ inline bool AtMinOrMaxInt64(int64_t x) {
   return x == kint64min || x == kint64max;
 }
 
-// Note(user): -kint64min != kint64max, but kint64max == ~kint64min.
+// NOTE(user): -kint64min != kint64max, but kint64max == ~kint64min.
 inline int64_t CapOpp(int64_t v) { return v == kint64min ? ~v : -v; }
 
 inline int64_t CapAbs(int64_t v) {
@@ -113,7 +113,7 @@ inline bool SubHadOverflow(int64_t x, int64_t y, int64_t diff) {
 // kint64min and kint64max are treated as infinity.
 // Thus if the computation overflows, the result is always kint64m(ax/in).
 //
-// Note(user): this is actually wrong: when computing A-B, if A is kint64max
+// NOTE(user): this is actually wrong: when computing A-B, if A is kint64max
 // and B is finite, then A-B won't be kint64max: overflows aren't sticky.
 // TODO(user): consider making some operations overflow-sticky, some others
 // not, but make an explicit choice throughout.

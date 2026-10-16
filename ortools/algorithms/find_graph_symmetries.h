@@ -221,7 +221,7 @@ class GraphSymmetryFinder {
   // This also uses and updates "min_potential_mismatching_part_index_io"
   // to incrementally search for mismatching parts along the partitions.
   //
-  // Note(user): there may be false positives, i.e. this method may return true
+  // NOTE(user): there may be false positives, i.e. this method may return true
   // even if the partitions aren't actually a full match, because it uses
   // fingerprints to compare part. This should almost never happen.
   bool ConfirmFullMatchOrFindNextMappingDecision(

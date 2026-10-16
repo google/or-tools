@@ -373,7 +373,7 @@ class DisabledScopedTimeStats {
 // to the distribution (from the given StatsGroup) with the same name as the
 // enclosing function.
 //
-// Note(user): This adds more extra overhead around the measured code compared
+// NOTE(user): This adds more extra overhead around the measured code compared
 // to defining your own TimeDistribution stat in your StatsGroup. About 80ns
 // per measurement compared to about 20ns (as of 2012-06, on my workstation).
 class EnabledScopedTimeStats {

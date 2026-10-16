@@ -180,7 +180,7 @@ void VariableValues::UpdateOnPivoting(const ScatteredColumn& direction,
   SCOPED_TIME_STAT(&stats_);
   DCHECK(IsFinite(step));
 
-  // Note(user): Some positions are ignored during the primal ratio test:
+  // NOTE(user): Some positions are ignored during the primal ratio test:
   // - The rows for which direction_[row] < tolerance.
   // - The non-zeros of direction_ignored_position_ in case of degeneracy.
   // Such positions may result in basic variables going out of their bounds by
@@ -295,7 +295,7 @@ void VariableValues::UpdateDualPrices(absl::Span<const RowIndex> rows) {
     return;
   }
 
-  // Note(user): this is the same as the code in RecomputeDualPrices(), but we
+  // NOTE(user): this is the same as the code in RecomputeDualPrices(), but we
   // do need the clear part.
   SCOPED_TIME_STAT(&stats_);
   const Fractional tolerance = parameters_.primal_feasibility_tolerance();

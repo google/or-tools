@@ -639,7 +639,7 @@ absl::Status GraphSymmetryFinder::FindSymmetries(
         MergeNodeEquivalenceClassesAccordingToPermutation(
             *permutation, &node_equivalence_classes,
             &representatives_sorted_by_index_in_partition);
-        // HACK(user): to make sure that we keep root_image_node as the
+        // NOTE(user): to make sure that we keep root_image_node as the
         // representant of its part, we temporarily move it to the front
         // of the vector, then move it again to the back so that it gets
         // deleted by the pop_back() below.
@@ -854,7 +854,7 @@ GraphSymmetryFinder::FindOneSuitablePermutation(
       DCHECK_EQ(min_potential_mismatching_part_index,
                 base_partition->NumParts());
       // We have a permutation candidate!
-      // Note(user): we also deal with (extremely rare) false positives for
+      // NOTE(user): we also deal with (extremely rare) false positives for
       // "partitions_are_full_match" here: in case they aren't a full match,
       // IsGraphAutomorphism() will catch that; and we'll simply deepen the
       // search.

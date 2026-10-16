@@ -628,7 +628,7 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::UpdatePrices() {
   // no node with positive excess that is not in S. Note that this is not
   // described in the paper.
   //
-  // Note(user): The triggering mechanism of this UpdatePrices() is really
+  // NOTE(user): The triggering mechanism of this UpdatePrices() is really
   // important; if it is not done properly it may degrade performance!
 
   // This represents the set S.

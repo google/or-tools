@@ -399,7 +399,7 @@ void ConstructAndCheckGraph(
 // bytes.
 template <typename IndexType>
 inline IndexType UpperBoundOfMallocBlockSizeOf(IndexType x) {
-  // Note(user): as of 2012-09, the rule seems to be: round x up to the
+  // NOTE(user): as of 2012-09, the rule seems to be: round x up to the
   // next multiple of 16.
   // WARNING: This may change, and may already be wrong for small values.
   return IndexType((16 * (static_cast<int64_t>(x) + 15)) / 16);

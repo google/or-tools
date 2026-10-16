@@ -573,7 +573,7 @@ Preprocessor::Result ProportionalColumnPreprocessor::Run(LinearProgram* lp) {
           << " columns which belong to " << num_proportionality_classes
           << " proportionality classes.";
 
-  // Note(user): using the first coefficient may not give the best precision.
+  // NOTE(user): using the first coefficient may not give the best precision.
   const ColIndex num_cols = lp->num_variables();
   column_factors_.assign(num_cols, 0.0);
   for (const ColIndex col : proportional_columns) {
@@ -900,7 +900,7 @@ Preprocessor::Result ProportionalRowPreprocessor::Run(LinearProgram* lp) {
   // Use the first coefficient of each row to compute the proportionality
   // factor. Note that the sign is important.
   //
-  // Note(user): using the first coefficient may not give the best precision.
+  // NOTE(user): using the first coefficient may not give the best precision.
   row_factors_.assign(num_rows, 0.0);
   for (RowIndex row(0); row < num_rows; ++row) {
     const SparseColumn& row_transpose = transpose.column(RowToColIndex(row));
@@ -3413,7 +3413,7 @@ void DoubletonEqualityRowPreprocessor::RecoverSolutionImpl(
   // was in the submatrix we have a singleton column. If it is outside, we have
   // 2 n - 1 entries for a matrix with n columns, so one must be singleton.
   //
-  // Note(user): Another advantage of working on the "original" matrix before
+  // NOTE(user): Another advantage of working on the "original" matrix before
   // this presolve is an increased precision.
   //
   // TODO(user): We can probably use something better than a vector of set,
@@ -3617,7 +3617,7 @@ Preprocessor::Result DualizerPreprocessor::Run(LinearProgram* lp) {
   return {.postsolve_is_needed = true};
 }
 
-// Note(user): This assumes that LinearProgram.PopulateFromDual() uses
+// NOTE(user): This assumes that LinearProgram.PopulateFromDual() uses
 // the first ColIndex and RowIndex for the rows and columns of the given
 // problem.
 void DualizerPreprocessor::RecoverSolutionImpl(

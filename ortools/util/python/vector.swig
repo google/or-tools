@@ -26,7 +26,7 @@
 //    bundled with the base.i rule.
 // 2) We use a lot of function overloading, so we must add extra typechecks.
 //
-// Note(user): for an unknown reason, using the (handy) method PyObjAs()
+// NOTE(user): for an unknown reason, using the (handy) method PyObjAs()
 // defined in base/swig/python-swig.cc seems to cause issues, so we can't
 // use a generic, templated type checker.
 // Get const std::vector<std::string>& "in" typemap.

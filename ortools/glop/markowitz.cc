@@ -394,7 +394,7 @@ int64_t Markowitz::FindPivot(const RowPermutation& row_perm,
     }
   }
 
-  // Note(user): we use int64_t since this is a product of two ints, moreover
+  // NOTE(user): we use int64_t since this is a product of two ints, moreover
   // the ints should be relatively small, so that should be fine for a while.
   int64_t min_markowitz_number = kint64max;
   examined_col_.clear();
@@ -412,10 +412,10 @@ int64_t Markowitz::FindPivot(const RowPermutation& row_perm,
     // derive a lower bound on the best markowitz number we can get by exploring
     // this column. If we cannot beat this number, we can stop here.
     //
-    // Note(user): we still process extra column if we can meet the lower bound
+    // NOTE(user): we still process extra column if we can meet the lower bound
     // to eventually have a better pivot.
     //
-    // Todo(user): keep the minimum row degree to have a better bound?
+    // TODO(user): keep the minimum row degree to have a better bound?
     const int64_t markowitz_lower_bound = col_degree - 1;
     if (min_markowitz_number < markowitz_lower_bound) break;
 
@@ -453,7 +453,7 @@ int64_t Markowitz::FindPivot(const RowPermutation& row_perm,
         *pivot_row = e.row();
         *pivot_coefficient = e.coefficient();
 
-        // Note(user): We could abort early here if the markowitz_lower_bound is
+        // NOTE(user): We could abort early here if the markowitz_lower_bound is
         // reached, but finishing to loop over this column is fast and may lead
         // to a pivot with a greater magnitude (i.e. a more robust
         // factorization).
@@ -710,7 +710,7 @@ void MatrixNonZeroPattern::Update(RowIndex pivot_row, ColIndex pivot_col,
     DCHECK_LT(row_degree_[row], max_row_degree);
 
     // We only clean row_non_zero_[row] if there are more than 4 entries to
-    // delete. Note(user): the 4 is somewhat arbitrary, but gives good results
+    // delete. NOTE(user): the 4 is somewhat arbitrary, but gives good results
     // on the Netlib (23/04/2013). Note that calling
     // RemoveDeletedColumnsFromRow() is not mandatory and does not change the LU
     // decomposition, so we could call it all the time or never and the

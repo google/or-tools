@@ -205,8 +205,8 @@ MPSolutionResponse LocalSolve(const MPModelRequest& request_proto) {
                                                       &error_message);
     // Note, the underlying MPSolver treats time limit equal to 0 as no limit.
     if (status != MPSOLVER_MODEL_IS_VALID) {
-      // HACK(user): For SAT solves, when the model is invalid we directly
-      // exit here.
+      // NOTE(user): For SAT solves, when the model is invalid we directly exit
+      // here.
       if (request_proto.solver_type() ==
           MPModelRequest::SAT_INTEGER_PROGRAMMING) {
         sat::CpSolverResponse sat_response;

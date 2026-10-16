@@ -402,7 +402,7 @@ SolveStatus RevisedSimplex::SolveInternalImpl(
 
     // Remove the bound and cost shifts (or perturbations).
     //
-    // Note(user): Currently, we never do both at the same time, so we could
+    // NOTE(user): Currently, we never do both at the same time, so we could
     // be a bit faster here, but then this is quick anyway.
     variable_values_.ResetAllNonBasicVariableValues(variable_starting_values_);
     GLOP_RETURN_IF_ABNORMAL(basis_factorization_.Refactorize());
@@ -781,7 +781,7 @@ RevisedSimplex::PendingStatus RevisedSimplex::DualPhaseI(
     }
 
     if (!IsSolveStatus<SolveStatus::DualInfeasible>(pending_status)) {
-      // Note(user): In most cases, the matrix will already be refactorized
+      // NOTE(user): In most cases, the matrix will already be refactorized
       // and both Refactorize() and PermuteBasis() will do nothing. However,
       // if the time limit is reached during the first phase, this might not
       // be the case and RecomputeBasicVariableValues() below DCHECKs that the
@@ -1027,7 +1027,7 @@ bool RevisedSimplex::BasisIsConsistent() const {
   return true;
 }
 
-// Note(user): The basis factorization is not updated by this function but by
+// NOTE(user): The basis factorization is not updated by this function but by
 // UpdateAndPivot().
 void RevisedSimplex::UpdateBasis(ColIndex entering_col, RowIndex basis_row,
                                  VariableStatus leaving_variable_status) {
@@ -2186,7 +2186,7 @@ void RevisedSimplex::ChooseLeavingVariableRow(
       *step_length = current_ratio;
     }
 
-    // Note(user): Testing the pivot at each iteration is useful for debugging
+    // NOTE(user): Testing the pivot at each iteration is useful for debugging
     // an LU factorization problem. Remove the false if you need to investigate
     // this, it makes sure that this will be compiled away.
     if (/* DISABLES CODE */ (false)) {
@@ -2325,7 +2325,7 @@ void RevisedSimplex::PrimalPhaseIChooseLeavingVariableRow(
     // tolerances here, but when the step will be performed, it will move the
     // variable to the target bound (possibly taking a small negative step).
     //
-    // Note(user): The negative step will only happen when the leaving variable
+    // NOTE(user): The negative step will only happen when the leaving variable
     // was slightly infeasible (less than tolerance). Moreover, the overall
     // infeasibility will not necessarily increase since it doesn't take into
     // account all the variables with an infeasibility smaller than the

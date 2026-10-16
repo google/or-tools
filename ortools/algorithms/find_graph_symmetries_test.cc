@@ -129,7 +129,7 @@ TEST(RecursivelyRefinePartitionByAdjacencyTest, Chain) {
 
 TEST(RecursivelyRefinePartitionByAdjacencyTest, FlowerOfCycles) {
   // A bunch of cycles of different or same sizes that all share node 0.
-  // Note(user): this is only fully refined because we refine both on outwards
+  // NOTE(user): this is only fully refined because we refine both on outwards
   // and inward adjacency of node parts.
   EXPECT_EQ("0 | 1 4 | 2 5 | 3 6 | 7 | 8 | 9", FullyRefineGraph({
                                                    {0, 1},
@@ -473,7 +473,7 @@ double LogFactorial(int n) {
 }
 
 TEST_F(FindSymmetriesTest, Clique) {
-  // Note(user): as of 2014-01-22, the symetry finder is extremely inefficient
+  // NOTE(user): as of 2014-01-22, the symetry finder is extremely inefficient
   // on this test for size = 6 (7s in fastbuild), while it takes only a
   // fraction of that time for larger sizes.
   // TODO(user): fix this inefficiency and enlarge the test space.
@@ -497,7 +497,7 @@ TEST_F(FindSymmetriesTest, Clique) {
 }
 
 TEST_F(FindSymmetriesTest, DirectedStar) {
-  // Note(user): as of 2014-01-22, the symmetry finder is extremely inefficient
+  // NOTE(user): as of 2014-01-22, the symmetry finder is extremely inefficient
   // on this test for size = 6 (and relatively too, for size = 5): it takes only
   // a fraction of time for larger sizes, but about 16s in fastbuild mode for 6.
   // TODO(user): fix this inefficiency and enlarge the test space.
@@ -606,7 +606,7 @@ TEST_F(FindSymmetriesTest, DirectedHypercube) {
   // hamming weight to higher hamming weight.
   // The symmetries are all permutations of the bits of the node indices.
   //
-  // Note(user): As of 2014-01-22, dimension=6 exhibits the same peculiar slow
+  // NOTE(user): As of 2014-01-22, dimension=6 exhibits the same peculiar slow
   // behavior (much slower than larger or smaller dimensions).
   //
   // TODO(user): Increase kMaxDimension to at least 15 in opt mode, when the
@@ -654,7 +654,7 @@ TEST_F(FindSymmetriesTest, InwardGrid) {
   //                ↑   ↑   ↑   ↑
   //                12→ 13↔ 14← 15
   //
-  // Note(user): this test proved very useful: it exercises the code path where
+  // NOTE(user): this test proved very useful: it exercises the code path where
   // we find a perfect permutation match that is not an automorphism, and it
   // also uncovered the suspected flaw of the code as of CL 59849337 (overly
   // aggressive pruning).

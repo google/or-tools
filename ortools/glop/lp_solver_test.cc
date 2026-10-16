@@ -313,7 +313,7 @@ TEST(LPSolverTest, SingularMatrix) {
   }
 }
 
-// Note(user): There are actually many optimal solutions to the problem below!
+// NOTE(user): There are actually many optimal solutions to the problem below!
 // One with x=8, t=2 and the other with x=4, t=6. In order to have a unique
 // solution, the objective has been perturbed by 1e-8 for x and t.
 TEST(LPSolverTest, Maximize) {

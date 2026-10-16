@@ -574,7 +574,7 @@ class MPSolver {
    * `interrupt` is non-const because the internal solver may set it to true
    * itself, in some cases.
    *
-   * Note(user): This attempts to first use `DirectlySolveProto()` (if
+   * NOTE(user): This attempts to first use `DirectlySolveProto()` (if
    * implemented). Consequently, this most likely does *not* override any of
    * the default parameters of the underlying solver. This behavior *differs*
    * from `MPSolver::Solve()` which by default sets the feasibility tolerance
@@ -953,7 +953,7 @@ class MPSolver {
   // Initial values for all or some of the problem variables that can be
   // exploited as a starting hint by a solver.
   //
-  // Note(user): as of 05/05/2015, we can't use >> because of some SWIG errors.
+  // NOTE(user): as of 05/05/2015, we can't use >> because of some SWIG errors.
   //
   // TODO(user): replace by two vectors, a std::vector<bool> to indicate if a
   // hint is provided and a std::vector<double> for the hint value.

@@ -906,7 +906,7 @@ class TriangularMatrix : private CompactSparseMatrix {
   // that it was implied by some other path starting at the current node and we
   // can prune it and remove it from the adjacency list of the current node.
   //
-  // Note(user): I couldn't find any reference for this algorithm, even though
+  // NOTE(user): I couldn't find any reference for this algorithm, even though
   // I suspect I am not the first one to need something similar.
   mutable DenseBooleanColumn marked_;
 

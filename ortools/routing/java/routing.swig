@@ -153,7 +153,7 @@ import com.google.ortools.constraintsolver.IntVar;
 %unignore operations_research::routing;
 namespace operations_research::routing {
 // parameters.h
-// IMPORTANT(user): These functions are global, so in Java, they are in the
+// NOTE(user): These functions are global, so in Java, they are in the
 // Globals.java file. (import com.[...].routing.Globals).
 %rename (defaultRoutingSearchParameters) DefaultRoutingSearchParameters;
 %rename (defaultRoutingModelParameters) DefaultRoutingModelParameters;

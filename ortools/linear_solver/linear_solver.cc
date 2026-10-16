@@ -257,7 +257,7 @@ void MPObjective::Clear() {
 }
 
 void MPObjective::SetOptimizationDirection(bool maximize) {
-  // Note(user): The maximize_ bool would more naturally belong to the
+  // NOTE(user): The maximize_ bool would more naturally belong to the
   // MPObjective, but it actually has to be a member of MPSolverInterface,
   // because some implementations (such as GLPK) need that bool for the
   // MPSolverInterface constructor, i.e. at a time when the MPObjective is not
@@ -272,14 +272,14 @@ bool MPObjective::maximization() const { return interface_->maximize_; }
 bool MPObjective::minimization() const { return !interface_->maximize_; }
 
 double MPObjective::Value() const {
-  // Note(user): implementation-wise, the objective value belongs more
+  // NOTE(user): implementation-wise, the objective value belongs more
   // naturally to the MPSolverInterface, since all of its implementations write
   // to it directly.
   return interface_->objective_value();
 }
 
 double MPObjective::BestBound() const {
-  // Note(user): the best objective bound belongs to the interface for the
+  // NOTE(user): the best objective bound belongs to the interface for the
   // same reasons as the objective value does.
   return interface_->best_objective_bound();
 }
@@ -391,7 +391,7 @@ MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
 namespace {
 int NumDigits(int n) {
 // Number of digits needed to write a non-negative integer in base 10.
-// Note(user): max(1, log(0) + 1) == max(1, -inf) == 1.
+// NOTE(user): max(1, log(0) + 1) == max(1, -inf) == 1.
 #if defined(_MSC_VER)
   return static_cast<int>(std::max(1.0L, log(1.0L * n) / log(10.0L) + 1.0));
 #else

@@ -226,7 +226,7 @@ MPSolutionResponse SatSolveProtoInternal(
   // We remove them right away according to our parameters.
   RemoveNearZeroTerms(params, mp_model.get(), logger);
 
-  // Note(user): the LP presolvers API is a bit weird and keep a reference to
+  // NOTE(user): the LP presolvers API is a bit weird and keep a reference to
   // the given GlopParameters, so we need to make sure it outlive them.
   const glop::GlopParameters glop_params;
   std::vector<std::unique_ptr<glop::Preprocessor>> for_postsolve;
@@ -320,6 +320,7 @@ MPSolutionResponse SatSolveProtoInternal(
   }
   sat::RestrictBoundsWithDualReasoning(params, &mp_model_wrapper, logger);
 
+  // TODO(user): move into ExactPresolve().
   sat::ExtractEnforcementLiterals(params, &mp_model_wrapper, logger);
 
   const int num_variables = mp_model_wrapper.num_variables();

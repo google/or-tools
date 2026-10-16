@@ -2359,7 +2359,7 @@ class OR_ROUTING_DLL Model {
   struct CostCacheElement {
     /// This is usually an int64_t, but using an int here decreases the RAM
     /// usage, and should be fine since in practice we never have more than
-    /// 1<<31 vars. Note(user): on 2013-11, microbenchmarks on the arc costs
+    /// 1<<31 vars. NOTE(user): on 2013-11, microbenchmarks on the arc costs
     /// callbacks also showed a 2% speed-up thanks to using int rather than
     /// int64_t.
     int index;

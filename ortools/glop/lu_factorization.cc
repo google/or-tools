@@ -73,7 +73,7 @@ AbnormalityStatus LuFactorization::ComputeFactorization(
     stats_.basis_num_entries.Add(matrix.num_entries().value());
   });
 
-  // Note(user): This might fail on badly scaled matrices. I still prefer to
+  // NOTE(user): This might fail on badly scaled matrices. I still prefer to
   // keep it as a DCHECK() for tests though, but I only test it for small
   // matrices.
   DCHECK(matrix.num_rows() > 100 ||
@@ -387,7 +387,7 @@ bool LuFactorization::LeftSolveLWithNonZeros(
   }
 
   if (result_before_permutation == nullptr) {
-    // Note(user): For the behavior of the two functions to be exactly the same,
+    // NOTE(user): For the behavior of the two functions to be exactly the same,
     // we need the positions listed in nz to be the "exact" non-zeros of x. This
     // should be the case because the hyper-sparse functions makes sure of that.
     // We also DCHECK() this below.

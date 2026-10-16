@@ -605,7 +605,7 @@ class LinearProgram {
   StrictITIVector<ColIndex, VariableType> variable_types_;
 
   // The vector of the indices of variables constrained to be integer.
-  // Note(user): the set of indices in integer_variables_list_ is the union
+  // NOTE(user): the set of indices in integer_variables_list_ is the union
   // of the set of indices in binary_variables_list_ and of the set of indices
   // in non_binary_variables_list_ below.
   mutable std::vector<ColIndex> integer_variables_list_;

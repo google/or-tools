@@ -552,7 +552,7 @@ double LinearRelaxation::ComputeLowerBoundUsingStrongBranching(
     CHECK_EQ(0.0, lp_model_.variable_lower_bounds()[col]);
     CHECK_EQ(1.0, lp_model_.variable_upper_bounds()[col]);
 
-    // Note(user): Experiments show that iterating on all variables can be
+    // NOTE(user): Experiments show that iterating on all variables can be
     // costly and doesn't lead to better solutions when a SAT optimizer is used
     // afterward, e.g. BopSatLpFirstSolutionGenerator, and no feasible solutions
     // are available.

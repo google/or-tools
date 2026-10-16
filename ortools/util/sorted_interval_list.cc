@@ -133,7 +133,7 @@ std::ostream& operator<<(std::ostream& out, const Domain& domain) {
 
 Domain::Domain(int64_t value) : intervals_({{value, value}}) {}
 
-// HACK(user): We spare significant time if we use an initializer here, because
+// NOTE(user): We spare significant time if we use an initializer here, because
 // InlineVector<1> is able to recognize the fast path or "exactly one element".
 // I was unable to obtain the same performance with any other recipe, I always
 // had at least 1 more cycle. See BM_SingleIntervalDomainConstructor.
@@ -1016,7 +1016,7 @@ SortedDisjointIntervalList::Iterator SortedDisjointIntervalList::InsertInterval(
   const int64_t new_start = std::min(it1->start, start);
   const int64_t new_end = std::max(it3->end, end);
   auto it = intervals_.erase(it1, it3);
-  // HACK(user): set iterators point to *const* values. Which is expected,
+  // NOTE(user): set iterators point to *const* values. Which is expected,
   // because if one alters a set element's value, then it collapses the set
   // property! But in this very special case, we know that we can just overwrite
   // it->start, so we do it.

@@ -302,7 +302,7 @@ class BoundedDijkstraWrapper {
     DistanceType distance;  // Its distance from the source.
 
     bool operator<(const NodeDistance& other) const {
-      // PERFORMANCE(user): Here are some versions of the comparison operator:
+      // NOTE(user): Here are some versions of the comparison operator:
       // 0) distance != other.distance ? distance < other.distance
       //                               : node < other.node
       // 1) Same, with ABSL_PREDICT_TRUE() around the first test.

@@ -554,7 +554,7 @@ SolveStatus LPSolver::LoadAndVerifySolutionInternal(
 }
 
 bool LPSolver::IsOptimalSolutionOnFacet(const LinearProgram& lp) {
-  // Note(user): We use the following same two tolerances for the dual and
+  // NOTE(user): We use the following same two tolerances for the dual and
   // primal values.
   // TODO(user): investigate whether to use the tolerances defined in
   // parameters.proto.
@@ -1039,7 +1039,7 @@ double LPSolver::ComputeObjective(const LinearProgram& lp) {
 // to the perturbed problem, but then we don't use the perturbed rhs. It is just
 // here as an extra "consistency" check.
 //
-// Note(user): We could actually compute an EXACT lower bound for the cost of
+// NOTE(user): We could actually compute an EXACT lower bound for the cost of
 // the non-cost perturbed problem. The idea comes from "Safe bounds in linear
 // and mixed-integer linear programming", Arnold Neumaier , Oleg Shcherbina,
 // Math Prog, 2003. Note that this requires having some variable bounds that may

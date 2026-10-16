@@ -266,7 +266,7 @@ class LPSolver {
   // ComputeReducedCostInfeasibility() but looks for optimality rather than just
   // feasibility.
   //
-  // Note(user): We could get EXACT bounds on these perturbations by changing
+  // NOTE(user): We could get EXACT bounds on these perturbations by changing
   // the rounding mode appropriately during these computations. But this is
   // probably not needed.
   Fractional ComputeMaxCostPerturbationToEnforceOptimality(

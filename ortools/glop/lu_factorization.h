@@ -54,7 +54,7 @@ class LuFactorization {
   // there was an error, then the factorization is reset to the one of the
   // identity matrix, and an error is reported.
   //
-  // Note(user): Since a client must use the result, there is little chance of
+  // NOTE(user): Since a client must use the result, there is little chance of
   // it being confused by this revert to identity factorization behavior. The
   // reason behind it is that this way, calling any public function of this
   // class will never cause a crash of the program.

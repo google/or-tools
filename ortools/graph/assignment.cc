@@ -66,7 +66,7 @@ SimpleLinearSumAssignment::Status SimpleLinearSumAssignment::Solve() {
   assignment_arcs_.clear();
   if (NumNodes() == 0) return OPTIMAL;
 
-  // HACK(user): Detect overflows early. In ./linear_assignment.h, the cost of
+  // NOTE(user): Detect overflows early. In ./linear_assignment.h, the cost of
   // each arc is internally multiplied by cost_scaling_factor_ (which is equal
   // to (num_nodes + 1)) without overflow checking.
   const CostValue max_supported_arc_cost =

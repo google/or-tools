@@ -64,7 +64,7 @@ void DynamicPermutation::UndoLastMappings(
   undone_mapping_src->insert(undone_mapping_src->begin(),
                              mapping_src_stack_.begin() + num_mappings_before,
                              mapping_src_stack_.end());
-  // Note(user): the mappings should be undone in reverse order, because the
+  // NOTE(user): the mappings should be undone in reverse order, because the
   // code that keeps "tails" up to date depends on it.
   for (int i = num_mappings_now - 1; i >= num_mappings_before; --i) {
     const int s = mapping_src_stack_[i];

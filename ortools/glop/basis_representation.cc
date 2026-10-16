@@ -328,7 +328,7 @@ AbnormalityStatus BasisFactorization::Update(ColIndex entering_col,
     // We try to equilibrate the factorization time with the EXTRA solve time
     // incurred since the last factorization.
     //
-    // Note(user): The deterministic time is not really super precise for now.
+    // NOTE(user): The deterministic time is not really super precise for now.
     // We tend to undercount the factorization, but this tends to favorize more
     // refactorization which is good for numerical stability.
     if (last_factorization_deterministic_time_ <
@@ -337,7 +337,7 @@ AbnormalityStatus BasisFactorization::Update(ColIndex entering_col,
     }
   }
 
-  // Note(user): in some rare case (to investigate!) MiddleProductFormUpdate()
+  // NOTE(user): in some rare case (to investigate!) MiddleProductFormUpdate()
   // will trigger a full refactorization. Because of this, it is important to
   // increment num_updates_ first as this counter is used by IsRefactorized().
   SCOPED_TIME_STAT(&stats_);

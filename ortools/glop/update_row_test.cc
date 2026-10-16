@@ -146,7 +146,7 @@ TEST(UpdateRowTest, ResultIsTheSameWithAllAlgorithmVersions) {
       // done in the same order, this is not true in the real code, because
       // the non-zeros of lhs are not necessarily in order.
       //
-      // Note(user): This is no longer true because of the loop expansion used
+      // NOTE(user): This is no longer true because of the loop expansion used
       // in the column-wise algo. So we use double_eq here.
       EXPECT_NEAR(base_coefficients[col], coefficients[col], 1e-10);
     }

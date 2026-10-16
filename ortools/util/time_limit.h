@@ -280,7 +280,7 @@ class OR_DLL TimeLimit {
    * We have seen that in some situation two Booleans are required, but we
    * haven't needed more than two yet.
    *
-   * Note(user): It was also easier to just add a second one rather to refactor
+   * NOTE(user): It was also easier to just add a second one rather to refactor
    * all clients to use a vector for instance.
    */
   void RegisterSecondaryExternalBooleanAsLimit(

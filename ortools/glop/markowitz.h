@@ -358,7 +358,7 @@ class Markowitz {
   // column permutation that move these columns in order to form an identity
   // sub-matrix on the upper left.
   //
-  // Note(user): Linear programming bases usually have a reasonable percentage
+  // NOTE(user): Linear programming bases usually have a reasonable percentage
   // of slack columns in them, so this gives a big speedup.
   void ExtractSingletonColumns(const CompactSparseMatrixView& basis_matrix,
                                RowPermutation* row_perm,

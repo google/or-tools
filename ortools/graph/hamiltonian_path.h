@@ -319,7 +319,7 @@ class LatticeMemoryManager {
 
   // Returns the base offset in memory for f(s, node), with node contained in s.
   // This is useful in the Dynamic Programming iterations.
-  // Note(user): inlining this function gains about 5%.
+  // NOTE(user): inlining this function gains about 5%.
   // TODO(user): Investigate how to compute BaseOffset(card - 1, s \ { n })
   // from BaseOffset(card, n) to speed up the DP iteration.
   inline uint64_t BaseOffset(int card, Set s) const;
@@ -436,7 +436,7 @@ uint64_t LatticeMemoryManager<Set, CostType>::BaseOffset(int card,
     ++node_rank;
   }
   DCHECK_EQ(card, node_rank);
-  // Note(user): It is possible to get rid of base_offset_[card] by using a 2-D
+  // NOTE(user): It is possible to get rid of base_offset_[card] by using a 2-D
   // array. It would also make it possible to free all the memory but the layer
   // being constructed and the preceding one, if another lattice of paths is
   // constructed.

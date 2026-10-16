@@ -75,7 +75,7 @@ class VariableValues {
   // column. If free_initial_values is empty, then we have the default behavior
   // of starting at zero for all FREE variables.
   //
-  // Note(user): It is okay to always use the same value to reset a FREE
+  // NOTE(user): It is okay to always use the same value to reset a FREE
   // variable because as soon as a FREE variable value is modified, this
   // variable shouldn't be FREE anymore. It will either move to a bound or enter
   // the basis, these are the only options.

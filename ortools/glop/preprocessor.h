@@ -712,7 +712,7 @@ class ImpliedFreePreprocessor final : public Preprocessor {
 // DoubletonEqualityRowPreprocessor since when taking the dual, an equality row
 // becomes a free variable and vice versa.
 //
-// Note(user): As far as I know, this doubleton free column procedure is more
+// NOTE(user): As far as I know, this doubleton free column procedure is more
 // general than what can be found in the research papers or in any of the linear
 // solver open source codes as of July 2013. All of them only process such
 // columns if one of the two rows is also an equality which is not actually

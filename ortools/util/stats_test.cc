@@ -125,7 +125,7 @@ TEST(DistributionStatTest, InfinityAndNaN) {
 
 TEST(DistributionStatTest, SquareUnderflow) {
   DoubleDistribution stat("test");
-  // Note(user): A naive computation of the standard deviation, eg. avg of
+  // NOTE(user): A naive computation of the standard deviation, eg. avg of
   // squares - square of the average, would underflow, because the sum of
   // squares would be zero (1e-324 underflows to zero).
   for (int i = 0; i < 1000000; ++i) {
@@ -135,7 +135,7 @@ TEST(DistributionStatTest, SquareUnderflow) {
   EXPECT_EQ(1e-162, stat.Min());
   EXPECT_EQ(1e-162, stat.Max());
 
-  // Note(user): If you are like me, it may surprise you that the sum is not
+  // NOTE(user): If you are like me, it may surprise you that the sum is not
   // exactly equals to 1e-156 in this case, but this is just because in binary
   // 1e-156 is not just 1 on the mantissa.
   EXPECT_THAT(stat.Sum(), WithinSameAbsoluteOrRelativeTolerance(1e-156, 1e-11));
@@ -235,7 +235,7 @@ TEST(ScopedTimeDistributionUpdater, BasicBehavior) {
 
 // By skew, we mean the error in the measure due to the time taken by the
 // instrumentation code.
-// Note(user): The skew on my computer in non-optimized mode is about 25
+// NOTE(user): The skew on my computer in non-optimized mode is about 25
 // cycles in the first case and 100 cycles in the second one. We take the min
 // of kMeasurements run to be sure we measure something without any
 // context-switch.
