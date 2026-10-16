@@ -521,33 +521,6 @@ public final class SolveResultTest {
   }
 
   @Test
-  public void solveResult_missingTerminationProblemStatus_recoveredFromSolveStats() {
-    Model model = new Model("test_model");
-    SolveResultProto.Builder proto = minimalValidProto();
-    proto.getSolveStatsBuilder().setProblemStatus(proto.getTermination().getProblemStatus());
-    proto.getTerminationBuilder().clearProblemStatus();
-
-    SolveResult solveResult = new SolveResult(model, proto.build());
-    assertThat(solveResult.getTermination().getProblemStatus().getPrimalStatus())
-        .isEqualTo(SolveResult.FeasibilityStatus.FEASIBLE);
-    assertThat(solveResult.getTermination().getProblemStatus().getDualStatus())
-        .isEqualTo(SolveResult.FeasibilityStatus.FEASIBLE);
-    assertFalse(solveResult.getTermination().getProblemStatus().getPrimalOrDualInfeasible());
-  }
-
-  @Test
-  public void solveResult_missingTerminationObjectiveBounds_recoveredFromSolveStats() {
-    Model model = new Model("test_model");
-    SolveResultProto.Builder proto = minimalValidProto();
-    proto.getSolveStatsBuilder().setBestPrimalBound(10.0).setBestDualBound(20.0);
-    proto.getTerminationBuilder().clearObjectiveBounds();
-
-    SolveResult solveResult = new SolveResult(model, proto.build());
-    assertThat(solveResult.getTermination().getObjectiveBounds().getPrimalBound()).isEqualTo(10.0);
-    assertThat(solveResult.getTermination().getObjectiveBounds().getDualBound()).isEqualTo(20.0);
-  }
-
-  @Test
   public void solveResult_emptySolverSpecificOutput_ok() {
     Model model = new Model("test_model");
     SolveResultProto.Builder proto = minimalValidProto();

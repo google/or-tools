@@ -205,7 +205,6 @@ or_cc_library(
     deps = [
         ":base_solver",
         ":concurrent_calls_guard",
-        ":math_opt_proto_utils",
         ":model_summary",
         ":non_streamable_solver_init_arguments",
         ":solver_debug",

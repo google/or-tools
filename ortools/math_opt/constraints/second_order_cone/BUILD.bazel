@@ -89,6 +89,22 @@ or_cc_test(
 )
 
 or_cc_library(
+    name = "storage_test_helper",
+    testonly = True,
+    hdrs = ["storage_test_helper.h"],
+    deps = [
+        ":storage",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_update_cc_proto",
+        "//ortools/math_opt/storage:atomic_constraint_testing",
+        "//ortools/math_opt/storage:linear_expression_data",
+        "//ortools/math_opt/storage:sparse_coefficient_map",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+or_cc_library(
     name = "validator",
     srcs = ["validator.cc"],
     hdrs = ["validator.h"],

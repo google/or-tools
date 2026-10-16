@@ -693,60 +693,6 @@ class SolveResultTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
         # result -> proto
         self.assert_protos_equiv(res.to_proto(), proto)
 
-    def test_solve_result_from_proto_missing_bounds_in_termination(
-        self,
-    ) -> None:
-        mod = model.Model(name="test_model")
-        proto = result_pb2.SolveResultProto(
-            termination=result_pb2.TerminationProto(
-                reason=result_pb2.TERMINATION_REASON_INFEASIBLE,
-                detail="",
-                problem_status=result_pb2.ProblemStatusProto(
-                    primal_status=result_pb2.FEASIBILITY_STATUS_INFEASIBLE,
-                    dual_status=result_pb2.FEASIBILITY_STATUS_INFEASIBLE,
-                    primal_or_dual_infeasible=False,
-                ),
-            ),
-            solve_stats=result_pb2.SolveStatsProto(
-                best_primal_bound=10.0,
-                best_dual_bound=20.0,
-            ),
-        )
-        res = result.parse_solve_result(proto, mod)
-        self.assertEqual(10.0, res.termination.objective_bounds.primal_bound)
-        self.assertEqual(20.0, res.termination.objective_bounds.dual_bound)
-        self.assertFalse(res.termination.problem_status.primal_or_dual_infeasible)
-
-    def test_solve_result_from_proto_missing_status_in_termination(
-        self,
-    ) -> None:
-        mod = model.Model(name="test_model")
-        proto = result_pb2.SolveResultProto(
-            termination=result_pb2.TerminationProto(
-                reason=result_pb2.TERMINATION_REASON_INFEASIBLE,
-                detail="",
-                objective_bounds=result_pb2.ObjectiveBoundsProto(
-                    primal_bound=10.0, dual_bound=20.0
-                ),
-            ),
-            solve_stats=result_pb2.SolveStatsProto(
-                problem_status=result_pb2.ProblemStatusProto(
-                    primal_status=result_pb2.FEASIBILITY_STATUS_INFEASIBLE,
-                    dual_status=result_pb2.FEASIBILITY_STATUS_FEASIBLE,
-                    primal_or_dual_infeasible=False,
-                ),
-            ),
-        )
-        res = result.parse_solve_result(proto, mod)
-        self.assertEqual(
-            result.FeasibilityStatus.INFEASIBLE,
-            res.termination.problem_status.primal_status,
-        )
-        self.assertEqual(
-            result.FeasibilityStatus.FEASIBLE,
-            res.termination.problem_status.dual_status,
-        )
-
     def test_solve_result_from_proto_double_infeasible_multiple_rays(
         self,
     ) -> None:
@@ -800,15 +746,6 @@ class SolveResultTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
             ],
         )
         proto.solve_stats.node_count = 10
-        proto.solve_stats.problem_status.primal_status = (
-            result_pb2.FEASIBILITY_STATUS_INFEASIBLE
-        )
-        proto.solve_stats.problem_status.dual_status = (
-            result_pb2.FEASIBILITY_STATUS_INFEASIBLE
-        )
-        proto.solve_stats.problem_status.primal_or_dual_infeasible = False
-        proto.solve_stats.best_primal_bound = math.inf
-        proto.solve_stats.best_dual_bound = -math.inf
         res = result.parse_solve_result(proto, mod)
 
         self.assertEqual(result.TerminationReason.INFEASIBLE, res.termination.reason)
@@ -930,15 +867,6 @@ class SolveResultTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
         )
 
         proto.solve_stats.node_count = 10
-        proto.solve_stats.problem_status.primal_status = (
-            result_pb2.FEASIBILITY_STATUS_FEASIBLE
-        )
-        proto.solve_stats.problem_status.dual_status = (
-            result_pb2.FEASIBILITY_STATUS_FEASIBLE
-        )
-        proto.solve_stats.problem_status.primal_or_dual_infeasible = False
-        proto.solve_stats.best_primal_bound = 10
-        proto.solve_stats.best_dual_bound = 10
         res = result.parse_solve_result(proto, mod)
 
         self.assertEqual(result.TerminationReason.OPTIMAL, res.termination.reason)

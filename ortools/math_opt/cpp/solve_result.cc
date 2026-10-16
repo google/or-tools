@@ -34,7 +34,6 @@
 #include "absl/types/span.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/result.pb.h"
@@ -522,31 +521,12 @@ absl::StatusOr<SolveResultProto> SolveResult::Proto() const {
   }
   return result;
 }
-namespace {
-TerminationProto UpgradedTerminationProtoForStatsMigration(
-    const SolveResultProto& solve_result_proto) {
-  TerminationProto termination;
-  termination.set_reason(solve_result_proto.termination().reason());
-  termination.set_limit(solve_result_proto.termination().limit());
-  termination.set_detail(solve_result_proto.termination().detail());
-  *termination.mutable_problem_status() = GetProblemStatus(solve_result_proto);
-  *termination.mutable_objective_bounds() =
-      GetObjectiveBounds(solve_result_proto);
-  return termination;
-}
 
-}  // namespace
 absl::StatusOr<SolveResult> SolveResult::FromProto(
     const ModelStorageCPtr model, const SolveResultProto& solve_result_proto) {
-  OR_ASSIGN_OR_RETURN3(
-      auto termination,
-      Termination::FromProto(
-          // TODO(b/290091715): Remove once solve_stats proto no longer has
-          // best_primal/dual_bound/problem_status and
-          // problem_status/objective_bounds are guaranteed to be present in
-          // termination proto.
-          UpgradedTerminationProtoForStatsMigration(solve_result_proto)),
-      _ << "invalid termination");
+  OR_ASSIGN_OR_RETURN3(auto termination,
+                       Termination::FromProto(solve_result_proto.termination()),
+                       _ << "invalid termination");
   SolveResult result(std::move(termination));
   OR_ASSIGN_OR_RETURN3(result.solve_stats,
                        SolveStats::FromProto(solve_result_proto.solve_stats()),

@@ -80,18 +80,6 @@ message SolveStatsProto {
   // Solver::Solve(). Note: this does not include work done building the model.
   google.protobuf.Duration solve_time = 1;
 
-  // Deprecated in favor of ObjectiveBoundsProto.primal_bound found in
-  // TerminationProto.
-  double best_primal_bound = 2 [deprecated = true];
-
-  // Deprecated in favor of ObjectiveBoundsProto.dual_bound found in
-  // TerminationProto.
-  double best_dual_bound = 3 [deprecated = true];
-
-  // The presence of problem_status in SolverStatsProto is deprecated in favor
-  // of the same ProblemStatusProto message found in TerminationProto.
-  ProblemStatusProto problem_status = 4 [deprecated = true];
-
   int64 simplex_iterations = 5;
 
   int64 barrier_iterations = 6;
@@ -99,6 +87,8 @@ message SolveStatsProto {
   int64 first_order_iterations = 8;
 
   int64 node_count = 7;
+
+  reserved 2, 3, 4;  // Deleted fields.
 
   // Next id: 9
 }
@@ -118,7 +108,7 @@ enum TerminationReasonProto {
   TERMINATION_REASON_UNBOUNDED = 3;
 
   // The primal problem is either infeasible or unbounded. More details on the
-  // problem status may be available in solve_stats.problem_status. Note that
+  // problem status may be available in termination.problem_status. Note that
   // Gurobi's unbounded status may be mapped here.
   TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED = 4;
 
@@ -253,16 +243,9 @@ message TerminationProto {
   string detail = 3;
 
   // Feasibility statuses for primal and dual problems.
-  // As of July 18, 2023 this message may be missing. If missing, problem_status
-  // can be found in SolveResultProto.solve_stats.
   ProblemStatusProto problem_status = 4;
 
   // Bounds on the optimal objective value.
-  // As of July 18, 2023 this message may be missing. If missing,
-  // objective_bounds.primal_bound can be found in
-  // SolveResultProto.solve.stats.best_primal_bound and
-  // objective_bounds.dual_bound can be found in
-  // SolveResultProto.solve.stats.best_dual_bound
   ObjectiveBoundsProto objective_bounds = 5;
 }
 

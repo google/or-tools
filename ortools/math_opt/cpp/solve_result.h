@@ -109,7 +109,7 @@ struct SolveStats {
 
   int node_count = 0;
 
-  // Returns an error if converting the problem_status or solve_time fails.
+  // Returns an error if converting the solve_time fails.
   static absl::StatusOr<SolveStats> FromProto(
       const SolveStatsProto& solve_stats_proto);
 

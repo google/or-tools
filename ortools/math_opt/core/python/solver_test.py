@@ -246,7 +246,7 @@ class PybindSolverTest(parameterized.TestCase):
         self.assertEqual(
             result.termination.reason, result_pb2.TERMINATION_REASON_OPTIMAL
         )
-        self.assertAlmostEqual(result.solve_stats.best_primal_bound, 2.0)
+        self.assertAlmostEqual(result.termination.objective_bounds.primal_bound, 2.0)
         update = model_update_pb2.ModelUpdateProto()
         update.variable_updates.upper_bounds.ids.append(0)
         update.variable_updates.upper_bounds.values.append(2.5)
@@ -262,7 +262,7 @@ class PybindSolverTest(parameterized.TestCase):
         self.assertEqual(
             result.termination.reason, result_pb2.TERMINATION_REASON_OPTIMAL
         )
-        self.assertAlmostEqual(result.solve_stats.best_primal_bound, 2.5)
+        self.assertAlmostEqual(result.termination.objective_bounds.primal_bound, 2.5)
 
 
 if __name__ == "__main__":

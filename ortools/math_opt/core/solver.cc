@@ -24,7 +24,6 @@
 #include "absl/strings/str_cat.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/concurrent_calls_guard.h"
-#include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/non_streamable_solver_init_arguments.h"
 #include "ortools/math_opt/core/solver_debug.h"
@@ -137,9 +136,6 @@ absl::StatusOr<SolveResultProto> Solver::Solve(const SolveArgs& arguments) {
           arguments.parameters, arguments.model_parameters,
           arguments.message_callback, arguments.callback_registration, cb,
           arguments.interrupter));
-  // TODO(b/290091715): Remove once language specific structs can use new
-  // messages.
-  UpgradeSolveResultProtoForStatsMigration(result);
   // We consider errors in `result` to be internal errors, but
   // `ValidateResult()` will return an InvalidArgumentError. So here we convert
   // the error.

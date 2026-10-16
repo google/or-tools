@@ -34,19 +34,6 @@
 
 namespace operations_research::math_opt {
 
-// Returns solve_result.termination.objective_bounds if present. Otherwise,
-// it builds ObjectiveBoundsProto from
-// solve_result.solve_stats.best_primal/dual_bound
-// TODO(b/290091715): Remove once solve_stats.best_primal/dual_bound is removed
-// and we know termination.objective_bounds will always be present.
-ObjectiveBoundsProto GetObjectiveBounds(const SolveResultProto& solve_result);
-
-// Returns solve_result.termination.problem_status if present. Otherwise,
-// it returns solve_result.solve_stats.problem_status
-// TODO(b/290091715): Remove once solve_stats.problem_status is removed and we
-// know termination.problem_status will always be present.
-ProblemStatusProto GetProblemStatus(const SolveResultProto& solve_result);
-
 inline int NumVariables(const VariablesProto& variables) {
   return variables.ids_size();
 }
@@ -322,9 +309,6 @@ absl::Status ModelSolveParametersAreSupported(
     const ModelSolveParametersProto& model_parameters,
     const SupportedProblemStructures& support_menu,
     absl::string_view solver_name);
-
-void UpgradeSolveResultProtoForStatsMigration(
-    SolveResultProto& solve_result_proto);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Inline functions implementations.

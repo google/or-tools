@@ -520,40 +520,6 @@ TEST(GlpkSolverTest, FailedUpdateFromAnotherThread) {
                                          HasSubstr("GLPK is not thread-safe")));
 }
 
-// TODO(b/290091715): Remove once new validators are added.
-TEST(GlpkSolverTest, InfeasibleMax) {
-  Model model("model");
-  const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
-  const Variable y = model.AddContinuousVariable(0.0, 1.0, "y");
-  model.AddLinearConstraint(x + y >= 3.0, "c");
-  model.Maximize(x);
-
-  ASSERT_OK_AND_ASSIGN(const SolveResult result,
-                       Solve(model, SolverType::kGlpk, {}));
-
-  ASSERT_THAT(result, TerminatesWith(TerminationReason::kInfeasible));
-  ASSERT_EQ(result.termination.problem_status.dual_status,
-            FeasibilityStatus::kFeasible);
-  EXPECT_EQ(result.termination.objective_bounds.dual_bound, -kInf);
-}
-
-// TODO(b/290091715): Remove once new validators are added.
-TEST(GlpkSolverTest, InfeasibleMin) {
-  Model model("model");
-  const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
-  const Variable y = model.AddContinuousVariable(0.0, 1.0, "y");
-  model.AddLinearConstraint(x + y >= 3.0, "c");
-  model.Minimize(-x);
-
-  ASSERT_OK_AND_ASSIGN(const SolveResult result,
-                       Solve(model, SolverType::kGlpk, {}));
-
-  ASSERT_THAT(result, TerminatesWith(TerminationReason::kInfeasible));
-  ASSERT_EQ(result.termination.problem_status.dual_status,
-            FeasibilityStatus::kFeasible);
-  EXPECT_EQ(result.termination.objective_bounds.dual_bound, +kInf);
-}
-
 // TODO(b/187027049): move this in LpTest.
 TEST(GlpkSolverTest, PrimalRayMaximization) {
   Model model("model");
@@ -570,9 +536,6 @@ TEST(GlpkSolverTest, PrimalRayMaximization) {
              }}));
   EXPECT_THAT(result, TerminatesWith(TerminationReason::kUnbounded));
   EXPECT_THAT(result, HasPrimalRay({{x, 1}, {y, -2}}));
-  // TODO(b/290091715): Remove once new validators are added.
-
-  EXPECT_EQ(result.termination.objective_bounds.primal_bound, kInf);
 }
 
 // TODO(b/187027049): move this in LpTest.
@@ -591,8 +554,6 @@ TEST(GlpkSolverTest, PrimalRayMinimization) {
              }}));
   EXPECT_THAT(result, TerminatesWith(TerminationReason::kUnbounded));
   EXPECT_THAT(result, HasPrimalRay({{x, -1}, {y, 2}}));
-  // TODO(b/290091715): Remove once new validators are added.
-  EXPECT_EQ(result.termination.objective_bounds.primal_bound, -kInf);
 }
 
 // Test the case where the dual simplex is applied to a primal unbounded problem
