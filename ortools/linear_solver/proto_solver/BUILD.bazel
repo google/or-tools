@@ -282,8 +282,11 @@ or_cc_library(
         "//ortools/lp_data:lp_utils",
         "//ortools/lp_data:sparse",
         "//ortools/lp_data:sparse_column",
+        "//ortools/sat:lp_utils",
         "//ortools/sat:mp_model_wrapper",
+        "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/sat:util",
+        "//ortools/util:fp_roundtrip_conv",
         "//ortools/util:fp_utils",
         "//ortools/util:full_precision_inequalities",
         "//ortools/util:logging",
@@ -291,6 +294,7 @@ or_cc_library(
         "//ortools/util:stats",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -311,9 +315,11 @@ or_cc_test(
         "//ortools/lp_data:proto_utils",
         "//ortools/lp_data:sparse_column",
         "//ortools/sat:mp_model_wrapper",
+        "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:string_view",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -326,6 +332,7 @@ or_cc_binary(
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/lp_data:lp_types",
         "//ortools/sat:mp_model_wrapper",
+        "@abseil-cpp//absl/types:span",
         "@google_benchmark//:benchmark_main",
     ],
 )

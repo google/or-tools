@@ -84,6 +84,8 @@ class LpScalingHelper {
   // Extra scaling function, to scale objective/bounds.
   void AverageCostScaling(DenseRow* objective);
   void ContainOneBoundScaling(DenseRow* upper_bounds, DenseRow* lower_bounds);
+  void AverageMagnitudeBoundScaling(DenseRow* upper_bounds,
+                                    DenseRow* lower_bounds);
 
   // Visible for testing. All variable/constraint bounds of the original LP
   // where multiplied by this factor. Nothing else changed.

@@ -107,8 +107,8 @@ Fractional LpScalingHelper::VariableScalingFactorWithSlack(ColIndex col) const {
   if (col < num_cols) {
     return col_unscaling_factors_[col] * bound_scaling_factor_;
   }
-  return row_unscaling_factors_[ColToRowIndex(col - num_cols)] *
-         bound_scaling_factor_;
+  return bound_scaling_factor_ /
+         row_unscaling_factors_[ColToRowIndex(col - num_cols)];
 }
 
 Fractional LpScalingHelper::ScaleVariableValue(ColIndex col,
@@ -254,6 +254,39 @@ void LpScalingHelper::ContainOneBoundScaling(DenseRow* upper_bounds,
     }
   }
 
+  if (bound_scaling_factor_ == 1.0) return;
+  for (Fractional& f : *lower_bounds) {
+    f *= bound_scaling_factor_;
+  }
+  for (Fractional& f : *upper_bounds) {
+    f *= bound_scaling_factor_;
+  }
+}
+
+void LpScalingHelper::AverageMagnitudeBoundScaling(DenseRow* upper_bounds,
+                                                   DenseRow* lower_bounds) {
+  const double infinity = std::numeric_limits<double>::infinity();
+  Fractional sum = 0.0;
+  int num_terms = 0;
+  for (const Fractional f : *lower_bounds) {
+    const Fractional m = std::abs(f);
+    if (m == 0 || m == infinity) continue;
+    ++num_terms;
+    sum += m;
+  }
+  for (const Fractional f : *upper_bounds) {
+    const Fractional m = std::abs(f);
+    if (m == 0 || m == infinity) continue;
+    ++num_terms;
+    sum += m;
+  }
+  if (num_terms == 0) {
+    bound_scaling_factor_ = 1.0;
+    return;
+  }
+
+  const Fractional average = sum / static_cast<double>(num_terms);
+  bound_scaling_factor_ = 1.0 / average;
   if (bound_scaling_factor_ == 1.0) return;
   for (Fractional& f : *lower_bounds) {
     f *= bound_scaling_factor_;

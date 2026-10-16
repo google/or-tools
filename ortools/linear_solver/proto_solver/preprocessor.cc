@@ -24,6 +24,7 @@
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/types/span.h"
 #include "ortools/base/types.h"
 #include "ortools/glop/preprocessor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -32,8 +33,10 @@
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/sparse.h"
 #include "ortools/lp_data/sparse_column.h"
+#include "ortools/sat/lp_utils.h"
 #include "ortools/sat/mp_model_wrapper.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/fp_roundtrip_conv.h"
 #include "ortools/util/fp_utils.h"
 #include "ortools/util/full_precision_inequalities.h"
 #include "ortools/util/logging.h"
@@ -149,40 +152,42 @@ bool MakeBoundsInteger(double tolerance, sat::MPModelProtoWrapper* model,
 // probably something we want to do each time we take a branch in the mip
 // search, so probably an efficient class for this will be created at some
 // point.
-bool PropagateBounds(double constraint_tolerance, bool relax_to_integer,
-                     sat::MPModelProtoWrapper* model, SolverLogger* logger) {
+bool PropagateBounds(const sat::MPModelProtoWrapper& mp_model,
+                     absl::Span<double> var_lbs, absl::Span<double> var_ubs,
+                     SolverLogger* logger) {
   // Starts by adding all the row in the 'to_process' queue.
-  const int num_constraints = model->num_constraints();
-  const int num_variables = model->num_variables();
+  const int num_constraints = mp_model.num_constraints();
+  const int num_variables = mp_model.num_variables();
   std::vector<bool> in_queue(num_constraints, false);
   std::deque<int> to_process;
   sat::CompactVectorVectorBuilder<int, int> var_to_constraints_builder;
   for (int row = 0; row < num_constraints; ++row) {
-    if (model->constraints(row).IsEnforced()) continue;
+    if (mp_model.constraints(row).IsEnforced()) continue;
     in_queue[row] = true;
     to_process.push_back(row);
-    for (const int col : model->constraints(row).vars()) {
+    for (const int col : mp_model.constraints(row).vars()) {
       var_to_constraints_builder.Add(col, row);
     }
   }
   const sat::CompactVectorVector<int, int> var_to_constraints(
       var_to_constraints_builder, num_variables);
 
-  std::vector<double> alpha;
-  std::vector<double> beta;
+  sat::LeftRightActivityBounds bounds;
 
   // Now process all the rows until none are left, or a limit on the number of
   // processed rows is reached. The limit is mainly here to prevent infinite
   // loops on corner cases problems. It should not be reached often in practice.
   const int kMaxNumberOfProcessedRows = num_constraints * 10;
   int num_pushes = 0;
+  double max_change = 0.0;
   for (int i = 0; i < kMaxNumberOfProcessedRows && !to_process.empty(); ++i) {
     const int row = to_process.front();
     in_queue[row] = false;
     to_process.pop_front();
 
-    const sat::EnforcedLinearConstraint& ct = model->constraints(row);
+    const sat::EnforcedLinearConstraint& ct = mp_model.constraints(row);
     const int num_terms = ct.num_terms();
+    if (num_terms == 0) continue;
 
     // For each variable of a constraint on n variables, we want the bound
     // implied by the (n - 1) other variables and the constraint bounds. We use
@@ -197,8 +202,8 @@ bool PropagateBounds(double constraint_tolerance, bool relax_to_integer,
       const int col = ct.vars(term_idx);
       const Fractional coeff = ct.coeffs(term_idx);
       if (coeff == 0.0) continue;
-      Fractional entry_lb = coeff * model->variables(col).lower_bound();
-      Fractional entry_ub = coeff * model->variables(col).upper_bound();
+      Fractional entry_lb = coeff * var_lbs[col];
+      Fractional entry_ub = coeff * var_ubs[col];
       if (coeff < 0.0) std::swap(entry_lb, entry_ub);
       if (entry_lb == kInfinity || entry_ub == -kInfinity) {
         // TODO(user): our SumWithOneMissing does not deal well with infinity of
@@ -218,75 +223,20 @@ bool PropagateBounds(double constraint_tolerance, bool relax_to_integer,
     //    sum(entries) + (-activity) = 0,
     // where (-activity) has bounds [-constraint_ub, -constraint_lb].
     // We use this latter convention to simplify our code.
-    lb_sum.Add(-ct.upper_bound());
-    ub_sum.Add(-ct.lower_bound());
+    const double ct_lb = ct.lower_bound();
+    const double ct_ub = ct.upper_bound();
+    lb_sum.Add(-ct_ub);
+    ub_sum.Add(-ct_lb);
 
-    auto compute_exact_ub_other = [&](int target_col) -> Fractional {
-      const Fractional ct_lb = ct.lower_bound();
-      DCHECK(std::isfinite(ct_lb));
-      alpha.clear();
-      beta.clear();
-      if (ct_lb != 0.0) {
-        alpha.push_back(-1.0);
-        beta.push_back(ct_lb);
-      }
-      if (constraint_tolerance != 0.0) {
-        alpha.push_back(1.0);
-        beta.push_back(constraint_tolerance);
-      }
-      for (int term_idx = 0; term_idx < num_terms; ++term_idx) {
-        const int col_other = ct.vars(term_idx);
-        if (col_other == target_col) continue;
-        const Fractional c = ct.coeffs(term_idx);
-        const Fractional b = (c > 0.0)
-                                 ? model->variables(col_other).upper_bound()
-                                 : model->variables(col_other).lower_bound();
-        DCHECK(std::isfinite(b));
-        if (c != 0.0 && b != 0.0) {
-          alpha.push_back(c);
-          beta.push_back(b);
-        }
-      }
-      return GetLooseDotProductBounds(alpha, beta).second;
-    };
-
-    auto compute_exact_lb_other = [&](int target_col) -> Fractional {
-      const Fractional ct_ub = ct.upper_bound();
-      DCHECK(std::isfinite(ct_ub));
-      alpha.clear();
-      beta.clear();
-      if (ct_ub != 0.0) {
-        alpha.push_back(-1.0);
-        beta.push_back(ct_ub);
-      }
-      if (constraint_tolerance != 0.0) {
-        alpha.push_back(-1.0);
-        beta.push_back(constraint_tolerance);
-      }
-      for (int term_idx = 0; term_idx < num_terms; ++term_idx) {
-        const int col_other = ct.vars(term_idx);
-        if (col_other == target_col) continue;
-        const Fractional c = ct.coeffs(term_idx);
-        const Fractional b = (c > 0.0)
-                                 ? model->variables(col_other).lower_bound()
-                                 : model->variables(col_other).upper_bound();
-        DCHECK(std::isfinite(b));
-        if (c != 0.0 && b != 0.0) {
-          alpha.push_back(c);
-          beta.push_back(b);
-        }
-      }
-      return GetLooseDotProductBounds(alpha, beta).first;
-    };
-
-    // Process the variables one by one and check if the implied bounds are
-    // more restrictive.
+    // First, detect using fast double arithmetic if any propagation looks
+    // possible.
+    bool propagation_is_possible = false;
     for (int term_idx = 0; term_idx < num_terms; ++term_idx) {
       const int col = ct.vars(term_idx);
       const Fractional coeff = ct.coeffs(term_idx);
       if (coeff == 0.0) continue;
-      const Fractional var_lb = model->variables(col).lower_bound();
-      const Fractional var_ub = model->variables(col).upper_bound();
+      const Fractional var_lb = var_lbs[col];
+      const Fractional var_ub = var_ubs[col];
       Fractional entry_lb = coeff * var_lb;
       Fractional entry_ub = coeff * var_ub;
       if (coeff < 0.0) std::swap(entry_lb, entry_ub);
@@ -295,72 +245,58 @@ bool PropagateBounds(double constraint_tolerance, bool relax_to_integer,
       // variables and of (-activity), then coeff * X + Y = 0. Since Y's bounds
       // are [lb_sum without X, ub_sum without X], it is easy to derive the
       // implied bounds on X.
-      Fractional implied_lb = -ub_sum.SumWithout(entry_ub) / coeff;
-      Fractional implied_ub = -lb_sum.SumWithout(entry_lb) / coeff;
-      if (coeff < 0.0) std::swap(implied_lb, implied_ub);
+      Fractional inexact_implied_lb = -ub_sum.SumWithout(entry_ub) / coeff;
+      Fractional inexact_implied_ub = -lb_sum.SumWithout(entry_lb) / coeff;
+      if (coeff < 0.0) std::swap(inexact_implied_lb, inexact_implied_ub);
 
-      // If the variable is integer, make the implied bounds integer.
-      const bool is_integer = model->variables(col).is_integer();
-      if (is_integer) {
-        implied_lb = std::ceil(implied_lb - constraint_tolerance);
-        implied_ub = std::floor(implied_ub + constraint_tolerance);
+      if (inexact_implied_lb > var_lb || inexact_implied_ub < var_ub) {
+        propagation_is_possible = true;
+        break;
+      }
+    }
+    if (!propagation_is_possible) continue;
+
+    // Propagate bounds exactly using LeftRightActivityBounds.
+    bounds.FillFromConstraint(var_lbs, var_ubs, ct.proto());
+    for (int term_idx = 0; term_idx < num_terms; ++term_idx) {
+      const int var = ct.vars(term_idx);
+      const double coeff = ct.coeffs(term_idx);
+      if (coeff == 0.0) continue;
+
+      double primal_lb = sat::ExactScaledSumLb(
+          ct_lb, -bounds.max_activity_of_others[term_idx], coeff);
+      double primal_ub = sat::ExactScaledSumUb(
+          ct_ub, -bounds.min_activity_of_others[term_idx], coeff);
+      if (coeff < 0.0) {
+        std::swap(primal_lb, primal_ub);
+      }
+      if (mp_model.variables(var).is_integer()) {
+        primal_lb = std::ceil(primal_lb);
+        primal_ub = std::floor(primal_ub);
       }
 
-      // more restrictive? If yes, re-check with exact dot product bounds
-      // (GetLooseDotProductBounds) before setting the bounds. This is
-      // relatively cheap if done only when the heuristic triggers, and avoiding
-      // errors compounding.
-      if (implied_lb > var_lb || implied_ub < var_ub) {
-        Fractional exact_implied_lb = var_lb;
-        Fractional exact_implied_ub = var_ub;
-        if (implied_lb > var_lb) {
-          const Fractional other_bound = (coeff > 0.0)
-                                             ? compute_exact_ub_other(col)
-                                             : compute_exact_lb_other(col);
-          exact_implied_lb = std::nextafter(-other_bound / coeff, -kInfinity);
-          if (is_integer) {
-            // Note that there is no need to use tolerance here. If we are past
-            // the exact bound, the activity should be more than tolerance away
-            // from the constraint bound.
-            exact_implied_lb = std::ceil(exact_implied_lb);
-          } else if (relax_to_integer) {
-            exact_implied_lb = std::floor(exact_implied_lb);
-          }
-        }
-        if (implied_ub < var_ub) {
-          const Fractional other_bound = (coeff > 0.0)
-                                             ? compute_exact_lb_other(col)
-                                             : compute_exact_ub_other(col);
-          exact_implied_ub = std::nextafter(-other_bound / coeff, kInfinity);
-          if (is_integer) {
-            // Same as above, no tolerance needed here.
-            exact_implied_ub = std::floor(exact_implied_ub);
-          } else if (relax_to_integer) {
-            exact_implied_ub = std::ceil(exact_implied_ub);
-          }
-        }
+      bool changed = false;
+      if (primal_ub < var_ubs[var]) {
+        changed = true;
+        max_change = std::max(max_change, var_ubs[var] - primal_ub);
+        var_ubs[var] = primal_ub;
+      }
+      if (primal_lb > var_lbs[var]) {
+        changed = true;
+        max_change = std::max(max_change, primal_lb - var_lbs[var]);
+        var_lbs[var] = primal_lb;
+      }
+      if (var_lbs[var] > var_ubs[var]) {
+        return false;  // Infeasible.
+      }
 
-        Fractional new_lb = std::max(exact_implied_lb, var_lb);
-        Fractional new_ub = std::min(exact_implied_ub, var_ub);
-        if (new_lb > new_ub) {
-          if (is_integer && new_lb - constraint_tolerance <= new_ub) {
-            new_lb = new_ub = std::round(new_lb);
-          } else {
-            return false;
-          }
-        }
-
-        // This extra test avoids reprocessing many rows for no reason.
-        // It can be false if we run into the case new_lb > new_ub above.
-        if (new_ub != var_ub || new_lb != var_lb) {
-          ++num_pushes;
-          model->mutable_variables(col)->set_lower_bound(new_lb);
-          model->mutable_variables(col)->set_upper_bound(new_ub);
-          for (const int c : var_to_constraints[col]) {
-            if (!in_queue[c]) {
-              to_process.push_back(c);
-              in_queue[c] = true;
-            }
+      // This extra test avoids reprocessing many rows for no reason.
+      if (changed) {
+        ++num_pushes;
+        for (const int c : var_to_constraints[var]) {
+          if (!in_queue[c]) {
+            to_process.push_back(c);
+            in_queue[c] = true;
           }
         }
       }
@@ -373,7 +309,7 @@ bool PropagateBounds(double constraint_tolerance, bool relax_to_integer,
   }
   if (logger != nullptr && num_pushes > 0) {
     SOLVER_LOG(logger, "[BoundPropagation] Pushed ", FormatCounter(num_pushes),
-               " bounds.");
+               " bounds. Max change ", max_change, ".");
   }
 
   return true;
@@ -689,6 +625,123 @@ std::vector<double> ShiftVariableBounds(
   }
 
   return offsets;
+}
+
+// --------------------------------------------------------
+// ExactPresolve
+// --------------------------------------------------------
+
+bool ExactPresolve(const sat::SatParameters& params,
+                   sat::MPModelProtoWrapper* mp_model_wrapper,
+                   SolverLogger* logger) {
+  // For now we use the same variable/constraint tolerance and use the tight
+  // one.
+  const double tolerance = params.mip_tight_precision();
+
+  // Enlarge the variables by tolerance. The algorithm will directly work on
+  // these vectors. We will push the computed bounds at the end.
+  //
+  // Note that using the tolerance initially allows chaining propagation in
+  // an exact way (without re-adding tolerance in the middle).
+  const int num_variables = mp_model_wrapper->num_variables();
+  std::vector<double> var_lbs(num_variables);
+  std::vector<double> var_ubs(num_variables);
+  for (int v = 0; v < num_variables; ++v) {
+    const MPVariableProto& var_proto = mp_model_wrapper->variables(v);
+    var_lbs[v] = TightSum()
+                     .Add(var_proto.lower_bound())
+                     .Add(-tolerance)
+                     .TightLowerBound();
+    var_ubs[v] = TightSum()
+                     .Add(var_proto.upper_bound())
+                     .Add(+tolerance)
+                     .TightUpperBound();
+    if (var_proto.is_integer()) {
+      var_lbs[v] = std::ceil(var_lbs[v]);
+      var_ubs[v] = std::floor(var_ubs[v]);
+    }
+    if (var_lbs[v] > var_ubs[v]) {
+      if (logger != nullptr) {
+        SOLVER_LOG(logger, "Variable ", v,
+                   " has infeasible bound at the beginning of ExactPresolve: [",
+                   var_proto.lower_bound(), ",", var_proto.upper_bound(), "]");
+      }
+      return false;
+    }
+  }
+
+  // Save the constraint bounds, and enlarge the current ones by tolerance. We
+  // will restore them at the end. This allows not worrying about tolerance in
+  // the algorithms. But we still keep the old bounds at the end because some
+  // reasoning does need them.
+  const int num_constraints = mp_model_wrapper->num_constraints();
+  std::vector<double> saved_constraint_lb(num_constraints);
+  std::vector<double> saved_constraint_ub(num_constraints);
+  for (int c = 0; c < num_constraints; ++c) {
+    sat::EnforcedLinearConstraint* ct =
+        mp_model_wrapper->mutable_constraints(c);
+    saved_constraint_lb[c] = ct->lower_bound();
+    saved_constraint_ub[c] = ct->upper_bound();
+    ct->set_lower_bound(
+        TightSum().Add(ct->lower_bound()).Add(-tolerance).TightLowerBound());
+    ct->set_upper_bound(
+        TightSum().Add(ct->upper_bound()).Add(+tolerance).TightUpperBound());
+  }
+
+  const bool feasible =
+      PropagateBounds(*mp_model_wrapper, absl::MakeSpan(var_lbs),
+                      absl::MakeSpan(var_ubs), logger);
+
+  // Restore constraint bounds.
+  for (int c = 0; c < num_constraints; ++c) {
+    sat::EnforcedLinearConstraint* ct =
+        mp_model_wrapper->mutable_constraints(c);
+    ct->set_lower_bound(saved_constraint_lb[c]);
+    ct->set_upper_bound(saved_constraint_ub[c]);
+  }
+  if (!feasible) return false;
+
+  // Note that we remove the constraint tolerance before this, so that we
+  // don't exclude points allowing to satisfy the initial constraint
+  // exactly. For instance if we just have X >= 1.5, this will propagate
+  // X <= 1.5, not X <= 1.5 - tolerance!
+  sat::RestrictBoundsWithDualReasoning(params, *mp_model_wrapper,
+                                       absl::MakeSpan(var_lbs),
+                                       absl::MakeSpan(var_ubs), logger);
+
+  // Integrate the propagated bounds. Note that to keep things simple for
+  // things like implied variable detection, we always enlarge them to the
+  // nearest integer. So we always propagate INTEGER bounds.
+  int num_changed = 0;
+  double min_of_all_domains = kInfinity;
+  double max_of_all_domains = -kInfinity;
+  double max_change = 0.0;
+  for (int v = 0; v < num_variables; ++v) {
+    MPVariableProto* var_proto = mp_model_wrapper->mutable_variables(v);
+    var_lbs[v] = std::floor(var_lbs[v]);
+    var_ubs[v] = std::ceil(var_ubs[v]);
+
+    if (var_lbs[v] > var_proto->lower_bound()) {
+      ++num_changed;
+      max_change = std::max(max_change, var_lbs[v] - var_proto->lower_bound());
+      var_proto->set_lower_bound(var_lbs[v]);
+    }
+    if (var_ubs[v] < var_proto->upper_bound()) {
+      ++num_changed;
+      max_change = std::max(max_change, var_proto->upper_bound() - var_ubs[v]);
+      var_proto->set_upper_bound(var_ubs[v]);
+    }
+    min_of_all_domains = std::min(min_of_all_domains, var_proto->lower_bound());
+    max_of_all_domains = std::max(max_of_all_domains, var_proto->upper_bound());
+  }
+  if (num_changed > 0 && logger != nullptr) {
+    SOLVER_LOG(logger, "[ExactPresolve] ", FormatCounter(num_changed),
+               " bounds were tightened. Max change ",
+               RoundTripDoubleFormat(max_change), ". All variables in [",
+               min_of_all_domains, ",", max_of_all_domains, "].");
+  }
+
+  return true;
 }
 
 }  // namespace operations_research
