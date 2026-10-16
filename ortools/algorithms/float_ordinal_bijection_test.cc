@@ -14,6 +14,8 @@
 #include "ortools/algorithms/float_ordinal_bijection.h"
 
 #include <algorithm>
+#include <bit>
+#include <bitset>
 #include <cmath>
 #include <cstddef>
 #include <limits>
@@ -44,6 +46,23 @@ std::vector<Float> GenerateRandomFloatVector(const std::size_t length) {
   return values;
 }
 
+// Generates a vector of `length` uniformly distributed random unsigned integer
+// ordinals of type `Ordinal<Float>` across the full bit-width range.
+template <typename Float>
+std::vector<Ordinal<Float>> GenerateRandomOrdinalVector(
+    const std::size_t length) {
+  static_assert(std::is_floating_point_v<Float>);
+  absl::BitGen bitgen;
+  std::vector<Ordinal<Float>> values(length);
+  for (std::size_t i = 0; i < length; ++i) {
+    values[i] = absl::Uniform<Ordinal<Float>>(
+        absl::IntervalClosedClosed, bitgen,
+        std::numeric_limits<Ordinal<Float>>::lowest(),
+        std::numeric_limits<Ordinal<Float>>::max());
+  }
+  return values;
+}
+
 // Test fixture for order-preserving floating-point to unsigned integer ordinal
 // bijections across `float` and `double`.
 template <typename Float>
@@ -56,14 +75,14 @@ TYPED_TEST(FloatOrdinalBijectionTest, FloatToOrdinalPreservesOrder) {
   constexpr std::size_t kLength = 10'000;
   const std::vector<TypeParam> values =
       GenerateRandomFloatVector<TypeParam>(kLength);
-  using UintType = decltype(FloatToOrdinal(TypeParam{0}));
+  using Ordinal = Ordinal<TypeParam>;
 
   for (std::size_t i = 0; i < values.size(); ++i) {
     for (std::size_t j = 0; j < 10; ++j) {
       const TypeParam f1 = values[i];
       const TypeParam f2 = values[(i + j) % values.size()];
-      const UintType u1 = FloatToOrdinal(f1);
-      const UintType u2 = FloatToOrdinal(f2);
+      const Ordinal u1 = FloatToOrdinal(f1);
+      const Ordinal u2 = FloatToOrdinal(f2);
       EXPECT_EQ(u1 < u2, f1 < f2) << "f1 = " << f1 << ", f2 = " << f2;
       EXPECT_EQ(u1 > u2, f1 > f2) << "f1 = " << f1 << ", f2 = " << f2;
       EXPECT_EQ(u1 == u2, f1 == f2) << "f1 = " << f1 << ", f2 = " << f2;
@@ -71,16 +90,41 @@ TYPED_TEST(FloatOrdinalBijectionTest, FloatToOrdinalPreservesOrder) {
   }
 }
 
-TYPED_TEST(FloatOrdinalBijectionTest, FloatToOrdinalIsBijection) {
+TYPED_TEST(FloatOrdinalBijectionTest,
+           OrdinalToFloatIsLeftInverseOfFloatToOrdinal) {
   constexpr std::size_t kLength = 10'000;
-  const std::vector<TypeParam> values =
-      GenerateRandomFloatVector<TypeParam>(kLength);
-  using UintType = decltype(FloatToOrdinal(TypeParam{0}));
+  using Ordinal = Ordinal<TypeParam>;
+  const std::vector<Ordinal> values =
+      GenerateRandomOrdinalVector<TypeParam>(kLength);
 
-  for (const TypeParam f : values) {
-    const UintType uint_val = FloatToOrdinal(f);
+  for (const Ordinal f_bits : values) {
+    const TypeParam f = std::bit_cast<TypeParam>(f_bits);
+    const Ordinal uint_val = FloatToOrdinal(f);
     const TypeParam float_val = OrdinalToFloat(uint_val);
-    EXPECT_EQ(float_val, f) << "f = " << f << ", float_val = " << float_val;
+    if (std::isnan(f)) {
+      EXPECT_TRUE(std::isnan(float_val))
+          << "f = " << f << ", float_val = " << float_val << " ("
+          << std::bitset<8 * sizeof(TypeParam)>(f_bits) << ")";
+    } else {
+      EXPECT_EQ(float_val, f)
+          << "f = " << f << ", float_val = " << float_val << " ("
+          << std::bitset<8 * sizeof(TypeParam)>(f_bits) << ")";
+    }
+  }
+}
+
+TYPED_TEST(FloatOrdinalBijectionTest,
+           FloatToOrdinalIsLeftInverseOfOrdinalToFloat) {
+  constexpr std::size_t kLength = 10'000;
+  using Ordinal = Ordinal<TypeParam>;
+  const std::vector<Ordinal> values =
+      GenerateRandomOrdinalVector<TypeParam>(kLength);
+
+  for (const Ordinal u : values) {
+    const TypeParam float_val = OrdinalToFloat(u);
+    const Ordinal uint_val = FloatToOrdinal(float_val);
+    EXPECT_EQ(uint_val, u) << "u = " << u << ", uint_val = " << uint_val << " ("
+                           << std::bitset<8 * sizeof(TypeParam)>(u) << ")";
   }
 }
 
@@ -89,7 +133,6 @@ TYPED_TEST(FloatOrdinalBijectionTest,
   constexpr std::size_t kLength = 10'000;
   const std::vector<TypeParam> values =
       GenerateRandomFloatVector<TypeParam>(kLength);
-  using UintType = decltype(FloatToOrdinal(TypeParam{0}));
 
   EXPECT_EQ(OrdinalMidpoint(TypeParam{-0.0}, TypeParam{0.0}), TypeParam{0.0});
   EXPECT_EQ(OrdinalMidpoint(TypeParam{0.0}, TypeParam{-0.0}), TypeParam{0.0});
@@ -105,9 +148,6 @@ TYPED_TEST(FloatOrdinalBijectionTest,
       const TypeParam mid = OrdinalMidpoint(f1, f2);
       EXPECT_GE(mid, std::min(f1, f2)) << "f1 = " << f1 << ", f2 = " << f2;
       EXPECT_LE(mid, std::max(f1, f2)) << "f1 = " << f1 << ", f2 = " << f2;
-      const UintType expected_uint =
-          std::midpoint(FloatToOrdinal(f1), FloatToOrdinal(f2));
-      EXPECT_EQ(FloatToOrdinal(mid), expected_uint);
     }
   }
 }
@@ -115,7 +155,7 @@ TYPED_TEST(FloatOrdinalBijectionTest,
 TYPED_TEST(FloatOrdinalBijectionTest,
            OrdinalMidpointBisectionConvergesInBitWidthSteps) {
   constexpr int kMaxSteps = sizeof(TypeParam) * 8;
-  using UintType = decltype(FloatToOrdinal(TypeParam{0}));
+  using Ordinal = Ordinal<TypeParam>;
   const std::vector<TypeParam> targets = {
       std::numeric_limits<TypeParam>::lowest(),
       TypeParam{-1e10},
@@ -129,10 +169,10 @@ TYPED_TEST(FloatOrdinalBijectionTest,
   };
 
   for (const TypeParam target : targets) {
-    TypeParam low = std::numeric_limits<TypeParam>::lowest();
-    TypeParam high = std::numeric_limits<TypeParam>::max();
+    TypeParam low = -std::numeric_limits<TypeParam>::infinity();
+    TypeParam high = std::numeric_limits<TypeParam>::infinity();
     int steps = 0;
-    while (low < high && steps < kMaxSteps) {
+    while (low < high) {
       const TypeParam mid = OrdinalMidpoint(low, high);
       if (mid == low || mid == high) {
         break;
@@ -145,8 +185,8 @@ TYPED_TEST(FloatOrdinalBijectionTest,
       ++steps;
     }
     EXPECT_LE(steps, kMaxSteps);
-    EXPECT_LE(FloatToOrdinal(high) - FloatToOrdinal(low), UintType{1});
-    EXPECT_TRUE(low == target || high == target);
+    EXPECT_LE(FloatToOrdinal(high) - FloatToOrdinal(low), Ordinal{1});
+    EXPECT_EQ(high, target);
   }
 }
 
@@ -207,6 +247,17 @@ BisectionResult<Float> OrdinalBisectMonotonic(const Float low, const Float high,
           .num_steps = num_steps};
 }
 
+// Evaluates `std::midpoint(a, b)`. Taking the address of a non-member standard
+// library function such as `std::midpoint<Float>` has unspecified behavior in
+// C++20 (`[namespace.std]` §16.4.5.2.1), and `<numeric>` also overloads
+// `std::midpoint` for both arithmetic types `T(T, T)` and pointers `T*(T*,
+// T*)`, making `std::midpoint<Float>` an ambiguous overload set when passed to
+// a deduced template parameter `MidpointFn`.
+template <typename Float>
+Float StdMidpoint(const Float a, const Float b) {
+  return std::midpoint(a, b);
+}
+
 // Evaluates `exp(x) - kOffset`, using `std::expm1(x)` when `kOffset == 1.0` to
 // avoid catastrophic cancellation when `|x| <= 2^-digits` and preserve sign
 // accuracy down to `kSubnormalMin`.
@@ -219,6 +270,86 @@ Float ExpM(const Float x) {
   }
 }
 
+// Evaluates `x * x - 2` to bisect `sqrt(2)`.
+template <typename Float>
+Float Sqrt2Residual(const Float x) {
+  return x * x - Float{2};
+}
+
+// Evaluates Isaac Newton's historical cubic `y^3 - 2 * y - 5` from *De analysi
+// per aequationes numero terminorum infinitas* (1669, published 1711) and
+// *Methodus fluxionum et serierum infinitarum* (1671, published 1736), which
+// has a unique real root at `y* ~= 2.09455148154232659148`.
+template <typename Float>
+Float NewtonCubicResidual(const Float y) {
+  return y * y * y - Float{2} * y - Float{5};
+}
+
+// Runs `BisectMonotonic` with `OrdinalMidpoint` and `OrdinalBisectMonotonic`
+// on `[low, high]` for `fn`, verifying 1-ULP root bracketing and that both
+// take `expected_ordinal_steps`. When `expected_std_steps >= 0`, also runs
+// `BisectMonotonic` with `std::midpoint` and verifies that it converges to
+// the same bracket in `expected_std_steps`. Returns the converged bracket.
+template <typename Float, typename Function>
+BisectionResult<Float> VerifyBisectionBracket(
+    const Float low, const Float high, Function fn,
+    const int expected_std_steps, const int expected_ordinal_steps) {
+  const BisectionResult<Float> ordinal_res =
+      BisectMonotonic(low, high, fn, OrdinalMidpoint<Float>);
+  const BisectionResult<Float> direct_res =
+      OrdinalBisectMonotonic(low, high, fn);
+
+  EXPECT_EQ(std::nextafter(ordinal_res.low, ordinal_res.high),
+            ordinal_res.high);
+  EXPECT_LE(fn(ordinal_res.low), Float{0});
+  EXPECT_GE(fn(ordinal_res.high), Float{0});
+  EXPECT_EQ(ordinal_res.num_steps, expected_ordinal_steps);
+
+  EXPECT_EQ(direct_res.low, ordinal_res.low);
+  EXPECT_EQ(direct_res.high, ordinal_res.high);
+  EXPECT_EQ(direct_res.num_steps, expected_ordinal_steps);
+
+  if (expected_std_steps >= 0) {
+    const BisectionResult<Float> std_res =
+        BisectMonotonic(low, high, fn, StdMidpoint<Float>);
+    EXPECT_EQ(std_res.low, ordinal_res.low);
+    EXPECT_EQ(std_res.high, ordinal_res.high);
+    EXPECT_EQ(std_res.num_steps, expected_std_steps);
+  }
+  return ordinal_res;
+}
+
+// Verifies bisection of `fn` (whose unique root has unbiased IEEE 754
+// exponent `kRootExponent`) across `[0, max]`, `[-max, max]`, and
+// `[-inf, inf]`, asserting that all brackets converge to the same 1-ULP
+// interval.
+template <typename Float, int kRootExponent, typename Function>
+BisectionResult<Float> VerifyWidePositiveRootBisection(Function fn) {
+  constexpr Float kMax = std::numeric_limits<Float>::max();
+  constexpr Float kInf = std::numeric_limits<Float>::infinity();
+  constexpr int kNumBits = sizeof(Float) * 8;
+  constexpr int kMantissaBits = std::numeric_limits<Float>::digits - 1;
+  constexpr int kExponentHalvings =
+      std::numeric_limits<Float>::max_exponent - kRootExponent;
+
+  // `std::midpoint` requires `kExponentHalvings + kMantissaBits` steps on
+  // `[0, kMax]` (`+1` on `[-kMax, kMax]`), whereas `OrdinalMidpoint` and
+  // `OrdinalBisectMonotonic` take `kNumBits - 1` steps on `[0, kMax]` and
+  // `kNumBits` steps on `[-kMax, kMax]` and `[-kInf, kInf]`.
+  const BisectionResult<Float> nonneg_res = VerifyBisectionBracket(
+      Float{0}, kMax, fn, kExponentHalvings + kMantissaBits, kNumBits - 1);
+  const BisectionResult<Float> sym_res = VerifyBisectionBracket(
+      -kMax, kMax, fn, kExponentHalvings + 1 + kMantissaBits, kNumBits);
+  const BisectionResult<Float> inf_res =
+      VerifyBisectionBracket(-kInf, kInf, fn, -1, kNumBits);
+
+  EXPECT_EQ(sym_res.low, nonneg_res.low);
+  EXPECT_EQ(sym_res.high, nonneg_res.high);
+  EXPECT_EQ(inf_res.low, nonneg_res.low);
+  EXPECT_EQ(inf_res.high, nonneg_res.high);
+  return nonneg_res;
+}
+
 TYPED_TEST(FloatOrdinalBijectionTest, ExpMBisection) {
   using Float = TypeParam;
   constexpr Float kMax = std::numeric_limits<Float>::max();
@@ -226,52 +357,10 @@ TYPED_TEST(FloatOrdinalBijectionTest, ExpMBisection) {
   constexpr Float kInf = std::numeric_limits<Float>::infinity();
   constexpr int kNumBits = sizeof(Float) * 8;
   constexpr int kMantissaBits = std::numeric_limits<Float>::digits - 1;
-  const auto FloatMidPoint = [](const Float a, const Float b) -> Float {
-    return std::midpoint(a, b);
-  };
 
-  // 1. Bisect `exp(x) - kBigValue = 0`, where `kBigValue = 1e38`. Its root
-  // `38 * ln(10) ~= 87.498` lies in `[64, 128) = [2^6, 2^7)` (unbiased exponent
-  // `e* = 6`), while staying below `FLT_MAX ~= 3.4e38` for `float`.
-  constexpr Float kBigValue = Float{1e38};
-  constexpr int kRootExponent = 6;
-  constexpr int kExponentHalvings =
-      std::numeric_limits<Float>::max_exponent - kRootExponent;
-
-  const BisectionResult<Float> std_midpoint_res =
-      BisectMonotonic(Float{0}, kMax, ExpM<kBigValue>, FloatMidPoint);
-  const BisectionResult<Float> wide_std_midpoint_res =
-      BisectMonotonic(-kMax, kMax, ExpM<kBigValue>, FloatMidPoint);
-  const BisectionResult<Float> ordinal_midpoint_res =
-      BisectMonotonic(Float{0}, kMax, ExpM<kBigValue>, OrdinalMidpoint<Float>);
-  const BisectionResult<Float> inf_midpoint_res =
-      BisectMonotonic(-kInf, kInf, ExpM<kBigValue>, OrdinalMidpoint<Float>);
-
-  // Verify that all runs converge to the exact same 1-ULP bracket around the
-  // root.
-  EXPECT_EQ(std::nextafter(ordinal_midpoint_res.low, ordinal_midpoint_res.high),
-            ordinal_midpoint_res.high);
-  EXPECT_LE(ExpM<kBigValue>(ordinal_midpoint_res.low), Float{0});
-  EXPECT_GE(ExpM<kBigValue>(ordinal_midpoint_res.high), Float{0});
-
-  EXPECT_EQ(std_midpoint_res.low, ordinal_midpoint_res.low);
-  EXPECT_EQ(std_midpoint_res.high, ordinal_midpoint_res.high);
-  EXPECT_EQ(wide_std_midpoint_res.low, ordinal_midpoint_res.low);
-  EXPECT_EQ(wide_std_midpoint_res.high, ordinal_midpoint_res.high);
-  EXPECT_EQ(inf_midpoint_res.low, ordinal_midpoint_res.low);
-  EXPECT_EQ(inf_midpoint_res.high, ordinal_midpoint_res.high);
-
-  // `std::midpoint` requires `kExponentHalvings` steps (`122` for `float`,
-  // `1,018` for `double`) on `[0, kMax]` plus `kMantissaBits` steps (`23` for
-  // `float`, `52` for `double`), totaling `145` steps for `float` and `1,070`
-  // steps for `double` (`146` and `1,071` on `[-kMax, kMax]`).
-  // `OrdinalMidpoint` takes `kNumBits - 1` steps (`31` / `63`) on `[0, kMax]`
-  // and `kNumBits` steps (`32` / `64`) on `[-inf, +inf]`.
-  EXPECT_EQ(std_midpoint_res.num_steps, kExponentHalvings + kMantissaBits);
-  EXPECT_EQ(wide_std_midpoint_res.num_steps,
-            kExponentHalvings + 1 + kMantissaBits);
-  EXPECT_EQ(ordinal_midpoint_res.num_steps, kNumBits - 1);
-  EXPECT_EQ(inf_midpoint_res.num_steps, kNumBits);
+  // 1. Bisect `exp(x) - 1e38 = 0`, whose root `38 * ln(10) ~= 87.498` lies in
+  // `[64, 128) = [2^6, 2^7)` (unbiased exponent `e* = 6`).
+  VerifyWidePositiveRootBisection<Float, 6>(ExpM<Float{1e38}>);
 
   // 2. Bisect `exp(x) - 1 = 0` (`x* = 0`), which reaches the maximum number of
   // exponent-halving steps across IEEE 754 floating-point numbers.
@@ -279,135 +368,69 @@ TYPED_TEST(FloatOrdinalBijectionTest, ExpMBisection) {
       std::numeric_limits<Float>::max_exponent -
       std::numeric_limits<Float>::min_exponent + 1;
 
-  // On `[0, kMax]`, `std::midpoint` performs `kMaxNormalExponentHalvings`
-  // normal exponent halvings (`254` for `float`, `2,046` for `double`) plus
-  // `kMantissaBits` subnormal halvings (`23` for `float`, `52` for `double`),
-  // totaling `277` steps for `float` and `2,098` steps for `double`.
-  const BisectionResult<Float> nonneg_std_res =
-      BisectMonotonic(Float{0}, kMax, ExpM<Float{1.0}>, FloatMidPoint);
-  const BisectionResult<Float> nonneg_ordinal_res =
-      BisectMonotonic(Float{0}, kMax, ExpM<Float{1.0}>, OrdinalMidpoint<Float>);
-
-  EXPECT_EQ(nonneg_std_res.low, Float{0});
-  EXPECT_EQ(nonneg_std_res.high, kSubnormalMin);
-  EXPECT_EQ(nonneg_ordinal_res.low, Float{0});
-  EXPECT_EQ(nonneg_ordinal_res.high, kSubnormalMin);
-  EXPECT_EQ(nonneg_std_res.num_steps,
-            kMaxNormalExponentHalvings + kMantissaBits);
-  EXPECT_EQ(nonneg_ordinal_res.num_steps, kNumBits - 2);
+  const BisectionResult<Float> nonneg_res = VerifyBisectionBracket(
+      Float{0}, kMax, ExpM<Float{1.0}>,
+      kMaxNormalExponentHalvings + kMantissaBits, kNumBits - 2);
+  EXPECT_EQ(nonneg_res.low, Float{0});
+  EXPECT_EQ(nonneg_res.high, kSubnormalMin);
 
   // On `[-kMax, kMax]`, `std::midpoint` requires 1 additional halving to reach
-  // the global maximum of `278` steps for `float` and `2,099` steps for
-  // `double`.
+  // the global maximum of `278` steps (`float`) / `2,099` steps (`double`).
   const BisectionResult<Float> max_std_res =
-      BisectMonotonic(-kMax, kMax, ExpM<Float{1.0}>, FloatMidPoint);
-  const BisectionResult<Float> wide_ordinal_res = BisectMonotonic(
+      BisectMonotonic(-kMax, kMax, ExpM<Float{1.0}>, StdMidpoint<Float>);
+  const BisectionResult<Float> asym_ordinal_res = BisectMonotonic(
       Float{-0.5} * kMax, kMax, ExpM<Float{1.0}>, OrdinalMidpoint<Float>);
-
   EXPECT_EQ(max_std_res.low, Float{0});
   EXPECT_EQ(max_std_res.high, kSubnormalMin);
-  EXPECT_EQ(wide_ordinal_res.low, Float{0});
-  EXPECT_EQ(wide_ordinal_res.high, kSubnormalMin);
   EXPECT_EQ(max_std_res.num_steps,
             kMaxNormalExponentHalvings + 1 + kMantissaBits);
-  EXPECT_EQ(wide_ordinal_res.num_steps, kNumBits - 1);
-}
+  EXPECT_EQ(asym_ordinal_res.low, Float{0});
+  EXPECT_EQ(asym_ordinal_res.high, kSubnormalMin);
+  EXPECT_EQ(asym_ordinal_res.num_steps, kNumBits - 1);
 
-// Evaluates `x * x - 2` to bisect `sqrt(2)`.
-template <typename Float>
-Float Sqrt2Residual(const Float x) {
-  return x * x - Float{2};
+  // Because `OrdinalBisectMonotonic` checks termination on integer ordinals
+  // rather than floating-point equality, it distinguishes `-0.0` and `+0.0`
+  // even on symmetric intervals `[-kMax, kMax]` and `[-kInf, kInf]`.
+  const BisectionResult<Float> sym_direct_res =
+      OrdinalBisectMonotonic(-kMax, kMax, ExpM<Float{1.0}>);
+  const BisectionResult<Float> inf_direct_res =
+      OrdinalBisectMonotonic(-kInf, kInf, ExpM<Float{1.0}>);
+  EXPECT_EQ(sym_direct_res.low, Float{0});
+  EXPECT_EQ(sym_direct_res.high, kSubnormalMin);
+  EXPECT_EQ(sym_direct_res.num_steps, kNumBits);
+  EXPECT_EQ(inf_direct_res.low, Float{0});
+  EXPECT_EQ(inf_direct_res.high, kSubnormalMin);
+  EXPECT_EQ(inf_direct_res.num_steps, kNumBits);
 }
 
 TYPED_TEST(FloatOrdinalBijectionTest, SqrtBisection) {
   using Float = TypeParam;
   constexpr int kMantissaBits = std::numeric_limits<Float>::digits - 1;
-  const auto FloatMidPoint = [](const Float a, const Float b) -> Float {
-    return std::midpoint(a, b);
-  };
 
   // Within the single binade `[1, 2]`, `FloatToOrdinal` is affine in `x`
-  // (`FloatToOrdinal(2) - FloatToOrdinal(1) == 2^M`), so `OrdinalMidpoint` and
-  // `std::midpoint` follow the exact same trajectory and both converge in
-  // `kMantissaBits` steps (`23` for `float`, `52` for `double`).
-  const BisectionResult<Float> std_midpoint_res =
-      BisectMonotonic(Float{1}, Float{2}, Sqrt2Residual<Float>, FloatMidPoint);
-  const BisectionResult<Float> ordinal_midpoint_res = BisectMonotonic(
-      Float{1}, Float{2}, Sqrt2Residual<Float>, OrdinalMidpoint<Float>);
-
-  EXPECT_EQ(std::nextafter(ordinal_midpoint_res.low, ordinal_midpoint_res.high),
-            ordinal_midpoint_res.high);
-  EXPECT_LE(Sqrt2Residual(ordinal_midpoint_res.low), Float{0});
-  EXPECT_GE(Sqrt2Residual(ordinal_midpoint_res.high), Float{0});
-
-  EXPECT_EQ(std_midpoint_res.low, ordinal_midpoint_res.low);
-  EXPECT_EQ(std_midpoint_res.high, ordinal_midpoint_res.high);
-  EXPECT_EQ(std_midpoint_res.num_steps, kMantissaBits);
-  EXPECT_EQ(ordinal_midpoint_res.num_steps, kMantissaBits);
+  // (`FloatToOrdinal(2) - FloatToOrdinal(1) == 2^M`), so `OrdinalMidpoint`,
+  // `OrdinalBisectMonotonic`, and `std::midpoint` follow the exact same
+  // trajectory in `kMantissaBits` steps (`23` for `float`, `52` for `double`).
+  VerifyBisectionBracket(Float{1}, Float{2}, Sqrt2Residual<Float>,
+                         kMantissaBits, kMantissaBits);
 }
 
-TYPED_TEST(FloatOrdinalBijectionTest, OrdinalBisectMonotonicExpM) {
-  using Float = TypeParam;
-  constexpr Float kMax = std::numeric_limits<Float>::max();
-  constexpr Float kSubnormalMin = std::numeric_limits<Float>::denorm_min();
-  constexpr Float kInf = std::numeric_limits<Float>::infinity();
-  constexpr int kNumBits = sizeof(Float) * 8;
-
-  // 1. Bisect `exp(x) - kBigValue = 0`, where `kBigValue = 1e38`.
-  constexpr Float kBigValue = Float{1e38};
-  const BisectionResult<Float> expected_big_res =
-      BisectMonotonic(Float{0}, kMax, ExpM<kBigValue>, OrdinalMidpoint<Float>);
-  const BisectionResult<Float> nonneg_big_res =
-      OrdinalBisectMonotonic(Float{0}, kMax, ExpM<kBigValue>);
-  const BisectionResult<Float> wide_big_res =
-      OrdinalBisectMonotonic(-kMax, kMax, ExpM<kBigValue>);
-  const BisectionResult<Float> inf_big_res =
-      OrdinalBisectMonotonic(-kInf, kInf, ExpM<kBigValue>);
-
-  EXPECT_EQ(nonneg_big_res.low, expected_big_res.low);
-  EXPECT_EQ(nonneg_big_res.high, expected_big_res.high);
-  EXPECT_EQ(wide_big_res.low, expected_big_res.low);
-  EXPECT_EQ(wide_big_res.high, expected_big_res.high);
-  EXPECT_EQ(inf_big_res.low, expected_big_res.low);
-  EXPECT_EQ(inf_big_res.high, expected_big_res.high);
-  EXPECT_EQ(nonneg_big_res.num_steps, kNumBits - 1);
-  EXPECT_EQ(wide_big_res.num_steps, kNumBits);
-  EXPECT_EQ(inf_big_res.num_steps, kNumBits);
-
-  // 2. Bisect `exp(x) - 1 = 0` (`x* = 0`). Because `OrdinalBisectMonotonic`
-  // checks termination on integer ordinals rather than floating-point equality,
-  // it distinguishes `-0.0` and `+0.0` even on symmetric intervals `[-kMax,
-  // kMax]` and `[-kInf, kInf]`.
-  const BisectionResult<Float> nonneg_one_res =
-      OrdinalBisectMonotonic(Float{0}, kMax, ExpM<Float{1.0}>);
-  const BisectionResult<Float> wide_one_res =
-      OrdinalBisectMonotonic(-kMax, kMax, ExpM<Float{1.0}>);
-  const BisectionResult<Float> inf_one_res =
-      OrdinalBisectMonotonic(-kInf, kInf, ExpM<Float{1.0}>);
-
-  EXPECT_EQ(nonneg_one_res.low, Float{0});
-  EXPECT_EQ(nonneg_one_res.high, kSubnormalMin);
-  EXPECT_EQ(wide_one_res.low, Float{0});
-  EXPECT_EQ(wide_one_res.high, kSubnormalMin);
-  EXPECT_EQ(inf_one_res.low, Float{0});
-  EXPECT_EQ(inf_one_res.high, kSubnormalMin);
-  EXPECT_EQ(nonneg_one_res.num_steps, kNumBits - 2);
-  EXPECT_EQ(wide_one_res.num_steps, kNumBits);
-  EXPECT_EQ(inf_one_res.num_steps, kNumBits);
-}
-
-TYPED_TEST(FloatOrdinalBijectionTest, OrdinalBisectMonotonicSqrt) {
+TYPED_TEST(FloatOrdinalBijectionTest, NewtonCubicBisection) {
   using Float = TypeParam;
   constexpr int kMantissaBits = std::numeric_limits<Float>::digits - 1;
 
-  const BisectionResult<Float> expected_res = BisectMonotonic(
-      Float{1}, Float{2}, Sqrt2Residual<Float>, OrdinalMidpoint<Float>);
-  const BisectionResult<Float> ordinal_bisect_res =
-      OrdinalBisectMonotonic(Float{1}, Float{2}, Sqrt2Residual<Float>);
+  // On Newton's historical bracket `[2, 3]` (half of binade `[2, 4]`), all
+  // three methods take `kMantissaBits - 1` steps (`22` for `float`, `51` for
+  // `double`) and converge to the same bracket as wide-range bisection (`e* =
+  // 1`).
+  const BisectionResult<Float> bracket_23_res =
+      VerifyBisectionBracket(Float{2}, Float{3}, NewtonCubicResidual<Float>,
+                             kMantissaBits - 1, kMantissaBits - 1);
+  const BisectionResult<Float> wide_res =
+      VerifyWidePositiveRootBisection<Float, 1>(NewtonCubicResidual<Float>);
 
-  EXPECT_EQ(ordinal_bisect_res.low, expected_res.low);
-  EXPECT_EQ(ordinal_bisect_res.high, expected_res.high);
-  EXPECT_EQ(ordinal_bisect_res.num_steps, kMantissaBits);
+  EXPECT_EQ(wide_res.low, bracket_23_res.low);
+  EXPECT_EQ(wide_res.high, bracket_23_res.high);
 }
 
 }  // namespace

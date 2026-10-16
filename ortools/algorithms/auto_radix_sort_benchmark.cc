@@ -23,7 +23,7 @@
 #include "absl/random/random.h"
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
-#include "ortools/algorithms/multikey_radix_sort.h"
+#include "ortools/algorithms/auto_radix_sort.h"
 #include "ortools/algorithms/radix_sort.h"
 
 namespace operations_research {
