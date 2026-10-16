@@ -26,11 +26,13 @@
 #include <utility>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/casts.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/numeric/int128.h"
 #include "absl/types/span.h"
-#include "ortools/algorithms/multikey_radix_sort.h"
+#include "ortools/algorithms/float_ordinal_bijection.h"
 #include "ortools/base/types.h"
 
 namespace operations_research {
@@ -44,12 +46,6 @@ inline int CountLZero(const absl::uint128 n) {
   const uint64_t hi = absl::Uint128High64(n);
   return hi == 0 ? 64 + std::countl_zero(absl::Uint128Low64(n))
                  : std::countl_zero(hi);
-}
-
-inline int CountRZero(const absl::uint128 n) {
-  const uint64_t lo = absl::Uint128Low64(n);
-  return lo == 0 ? 64 + std::countr_zero(absl::Uint128High64(n))
-                 : std::countr_zero(lo);
 }
 
 // Returns a * b +/- c, with the sign of c given by c_negative. The result is
@@ -88,7 +84,7 @@ inline std::tuple<absl::uint128, absl::uint128, bool> ProdSum(
 
 // Note that this is slow. However, it is called only when a product of three or
 // more terms is added to the sum.
-void Sum::MultiplyLastTerm() {
+void TightSum::MultiplyLastTerm() {
   int i = terms_.size() - 1;
   // Fast algorithm when there is no overflow.
   int k = 0;
@@ -128,8 +124,8 @@ void Sum::MultiplyLastTerm() {
       terms_[u].negative = rem_negative;
     }
     if (rem_mantissa != 0) {
-      terms_.push_back({.negative = rem_negative,
-                        .mantissa = rem_mantissa,
+      terms_.push_back({.mantissa = rem_mantissa,
+                        .negative = rem_negative,
                         .exponent = 128 + terms_.back().exponent});
     }
   }
@@ -192,7 +188,7 @@ namespace {
 // shift and adapt the exponent. Returns the comparison of the lost part with 0.
 // The overflow is meant to be added to r mantissa with a factor (1 << 128).
 // Note that overflow cannot increase.
-std::strong_ordering ShiftRight(Sum::Term& r, uint64_t& overflow,
+std::strong_ordering ShiftRight(TightSum::Term& r, uint64_t& overflow,
                                 const int shift) {
   if (shift == 0) return std::strong_ordering::equal;
 
@@ -239,7 +235,8 @@ std::strong_ordering ShiftRight(Sum::Term& r, uint64_t& overflow,
 
 // Adds b to a updating its overflow. Precondition: a.exponent == b.exponent.
 // Note that overflow change by at most 1 unit.
-void AddWithOverflow(Sum::Term& a, uint64_t& overflow, const Sum::Term& b) {
+void AddWithOverflow(TightSum::Term& a, uint64_t& overflow,
+                     const TightSum::Term& b) {
   DCHECK_EQ(a.exponent, b.exponent);
   if (a.negative == b.negative) {
     a.mantissa += b.mantissa;
@@ -258,7 +255,7 @@ void AddWithOverflow(Sum::Term& a, uint64_t& overflow, const Sum::Term& b) {
 
 // Adds b to a if the exact sum fits in a without overflow; otherwise leaves a
 // unchanged and returns false.
-bool AddIfExact(Sum::Term& a, const Sum::Term& b) {
+bool AddIfExact(TightSum::Term& a, const TightSum::Term& b) {
   if (b.mantissa == 0) return true;
   if (a.mantissa == 0) {
     a = b;
@@ -270,14 +267,14 @@ bool AddIfExact(Sum::Term& a, const Sum::Term& b) {
   int exponent = a.exponent;
   if (a.exponent > b.exponent) {
     const int shift = a.exponent - b.exponent;
-    if (shift >= 128 || a_mantissa >= (absl::uint128{1} << (128 - shift))) {
+    if (shift > CountLZero(a_mantissa)) {
       return false;
     }
     a_mantissa <<= shift;
     exponent = b.exponent;
   } else if (b.exponent > a.exponent) {
     const int shift = b.exponent - a.exponent;
-    if (shift >= 128 || b_mantissa >= (absl::uint128{1} << (128 - shift))) {
+    if (shift > CountLZero(b_mantissa)) {
       return false;
     }
     b_mantissa <<= shift;
@@ -299,6 +296,16 @@ bool AddIfExact(Sum::Term& a, const Sum::Term& b) {
   }
   a.exponent = exponent;
   return true;
+}
+
+double ReconstructDouble(uint64_t mantissa, int64_t biased_exp,
+                         bool negative = false) {
+  static_assert(std::numeric_limits<double>::is_iec559);
+  static_assert(std::numeric_limits<double>::radix == 2);
+  static_assert(sizeof(double) == sizeof(uint64_t), "double must be 64 bits.");
+  return absl::bit_cast<double>((negative ? uint64_t{1} << 63 : 0) |
+                                (biased_exp << 52) |
+                                (mantissa & ~(uint64_t{1} << 52)));
 }
 
 // Returns {lb, ub} where lb <= (hi * 2^128 + lo) * 2^exp <= ub and the bounds
@@ -357,8 +364,8 @@ std::pair<double, double> HiLowBounds(uint64_t hi, absl::uint128 lo, int exp) {
     }
   }
 
-  const double lower =
-      std::ldexp(static_cast<double>(mantissa), binary_exp + 1 - sig_bits);
+  const uint64_t biased_exp = std::max(binary_exp + 1023, 0);
+  const double lower = ReconstructDouble(mantissa, biased_exp);
   if (is_exact) {
     return {lower, lower};
   } else {
@@ -375,18 +382,19 @@ std::pair<double, double> HiLowBounds(uint64_t hi, absl::uint128 lo, int exp) {
 // Precondition: the input vector is sorted by increasing exponent.
 // If additional_term is present, it is added to the sum.
 std::pair<double, double> ExponentOrderedSumBounds(
-    const absl::Span<const Sum::Term> terms,
-    std::optional<Sum::Term> additional_term) {
-  DCHECK(absl::c_is_sorted(terms, [](const Sum::Term& a, const Sum::Term& b) {
-    return a.exponent < b.exponent;
-  }));
+    const absl::Span<const TightSum::Term> terms,
+    std::optional<TightSum::Term> additional_term) {
+  DCHECK(absl::c_is_sorted(
+      terms, [](const TightSum::Term& a, const TightSum::Term& b) {
+        return a.exponent < b.exponent;
+      }));
   DCHECK(!terms.empty());
   const int min_exponent =
       additional_term.has_value()
           ? std::min(terms.front().exponent, additional_term->exponent)
           : terms.front().exponent;
-  Sum::Term remainder = {
-      .negative = false, .mantissa = 0, .exponent = min_exponent};
+  TightSum::Term remainder = {
+      .mantissa = 0, .negative = false, .exponent = min_exponent};
   // Stores the part of the remainder that has been dropped due to overflow. It
   // cannot overflow itself as it would need (1 << 64) overflows in remainder,
   // see below.
@@ -402,7 +410,7 @@ std::pair<double, double> ExponentOrderedSumBounds(
     const bool use_additional_term =
         additional_term.has_value() &&
         (i == terms.size() || additional_term->exponent <= terms[i].exponent);
-    const Sum::Term& current_term =
+    const TightSum::Term& current_term =
         use_additional_term ? *additional_term : terms[i];
     // Invariant:
     // S = sum(j >= i, terms[j]) + remainder + dropped_part holds with:
@@ -481,51 +489,14 @@ std::pair<double, double> ExponentOrderedSumBounds(
              : std::make_pair(mag_lb, mag_ub);
 }
 
-// Returns tight bounds around x * 2^exponent.
-std::pair<double, double> LdExpBounds(const double x, const int exponent) {
-  static_assert(std::numeric_limits<double>::is_iec559);
-  static_assert(std::numeric_limits<double>::radix == 2);
-  static_assert(sizeof(double) == sizeof(uint64_t), "double must be 64 bits.");
-
-  if (x == 0.0) return {0.0, 0.0};
-
-  int result_exp;
-  const double normalized_x = std::frexp(x, &result_exp);
-  result_exp += exponent;
-
-  if (result_exp > 1024) {
-    // Overflow.
-    return x > 0.0 ? std::make_pair(kDoubleMax, kInf)
-                   : std::make_pair(-kInf, -kDoubleMax);
-  }
-  const double candidate = std::ldexp(normalized_x, result_exp);
-  if (result_exp >= -1021) {
-    // The result is not subnormal and not overflowing.
-    return {candidate, candidate};
-  }
-  const double candidate_scaled = std::ldexp(candidate, -result_exp);
-  const double lb =
-      candidate_scaled > normalized_x ? FastStepDown(candidate) : candidate;
-  const double ub =
-      candidate_scaled < normalized_x ? FastStepUp(candidate) : candidate;
-  return {lb, ub};
-}
-
 // Returns tight bounds for t, where t is a term.
-std::pair<double, double> TermDoubleBounds(const Sum::Term& t) {
-  static_assert(std::numeric_limits<double>::is_iec559);
-  static_assert(std::numeric_limits<double>::radix == 2);
-  static_assert(sizeof(double) == sizeof(uint64_t), "double must be 64 bits.");
+std::pair<double, double> TermDoubleBounds(const TightSum::Term& t) {
   if (t.mantissa == 0) return {0.0, 0.0};
 
-  const int init_rz = CountRZero(t.mantissa);
-  const absl::uint128 mantissa = t.mantissa >> init_rz;
-  const int exponent = t.exponent + init_rz;
-
   // Original significand.
-  const int sig_bits = 128 - CountLZero(mantissa);
+  const int sig_bits = 128 - CountLZero(t.mantissa);
   // result is u * 2^result_normalized_exp where u is in [1, 2).
-  const int result_normalized_exp = sig_bits + exponent - 1;
+  const int result_normalized_exp = sig_bits + t.exponent - 1;
   if (result_normalized_exp > 1023) {
     // Overflow.
     return t.negative ? std::make_pair(-kInf, -kDoubleMax)
@@ -538,25 +509,21 @@ std::pair<double, double> TermDoubleBounds(const Sum::Term& t) {
   }
   // Number of bits in the significand of the result.
   const int sig_bits_double = std::min(53, 1075 + result_normalized_exp);
+  const int biased_exp = std::max(result_normalized_exp + 1023, 0);
   if (sig_bits <= sig_bits_double) {
     // No loss of precision.
-    const uint64_t double_mantissa =
-        (absl::Uint128Low64(mantissa) << (sig_bits_double - sig_bits)) &
-        ~(uint64_t{1} << 52);
-    const int double_exponent = std::max(result_normalized_exp + 1023, 0);
-    const double res = std::bit_cast<double>(
-        (t.negative ? int64_t{1} << 63 : 0) |
-        (static_cast<uint64_t>(double_exponent) << 52) | double_mantissa);
+    const uint64_t double_mantissa = absl::Uint128Low64(t.mantissa)
+                                     << (sig_bits_double - sig_bits);
+    const double res =
+        ReconstructDouble(double_mantissa, biased_exp, t.negative);
     return {res, res};
   }
   const int lost_digits = sig_bits - sig_bits_double;
   const uint64_t double_mantissa =
-      absl::Uint128Low64(mantissa >> lost_digits) & ~(uint64_t{1} << 52);
-  const int double_exponent = std::max(result_normalized_exp + 1023, 0);
-  const double lb_abs = std::bit_cast<double>(
-      (static_cast<uint64_t>(double_exponent) << 52) | double_mantissa);
+      absl::Uint128Low64(t.mantissa >> lost_digits);
+  const double lb_abs = ReconstructDouble(double_mantissa, biased_exp);
   const double ub_abs =
-      (mantissa & ((absl::uint128{1} << lost_digits) - 1)) == 0
+      (t.mantissa & ((absl::uint128{1} << lost_digits) - 1)) == 0
           ? lb_abs
           : FastStepUp(lb_abs);
   return t.negative ? std::make_pair(-ub_abs, -lb_abs)
@@ -564,47 +531,85 @@ std::pair<double, double> TermDoubleBounds(const Sum::Term& t) {
 }
 
 // Returns a value strictly between a and b, which is as close as possible to
-// the middle cardinal-wise, with the aim to make dichotomy converge faster when
+// the middle ordinal-wise, with the aim to make dichotomy converge faster when
 // double are 64 bits IEC 559. In this case, the convergence takes at most 64
-// steps, rather than at most 2045 steps with usual dichotomy (e.g. if we search
+// steps, rather than at most 2099 steps with usual dichotomy (e.g. if we search
 // nextafter(0) from the initial interval [0, 2^1022]).
-double CardinalMidpoint(const double a, const double b) {
+double OrdinalOrStandardMidpoint(const double a, const double b) {
   CHECK(!std::isnan(a));
   CHECK(!std::isnan(b));
-  // All static asserts of FloatToSortableUint.
-  constexpr bool kCanCallFloatToSortableUint =
-      std::numeric_limits<double>::is_iec559 &&
-      std::numeric_limits<double>::radix == 2 &&
-      sizeof(double) == sizeof(uint64_t) && sizeof(float) == sizeof(uint32_t);
-  if constexpr (!kCanCallFloatToSortableUint) {
+  if constexpr (kOrdinalBijectionCompatible<double>) {
+    return OrdinalMidpoint(a, b);
+  } else {
     // Fallback for incompatible types.
     return std::midpoint(a, b);
-  } else {
-    // a_index / b_index indexes the position of a / b within ordered doubles.
-    const uint64_t a_index = FloatToSortableUint(a);
-    const uint64_t b_index = FloatToSortableUint(b);
-    return SortableUintToFloat(std::midpoint(a_index, b_index));
   }
 }
 
 }  // namespace
 
-void Sum::SortIfNeeded() const {
+void TightSum::SortAndCompressIfNeeded() const {
   if (terms_sorted_before_ == terms_.size()) return;
+  DCHECK_GT(terms_.size(), 0);
 
   const auto cmp = [](const Term& a, const Term& b) {
     return a.exponent < b.exponent;
   };
+  // Sort and compress the newly added terms in [terms_sorted_before_, end).
   std::sort(terms_.begin() + terms_sorted_before_, terms_.end(), cmp);
-  if (terms_sorted_before_ > 0) {
-    std::inplace_merge(terms_.begin(), terms_.begin() + terms_sorted_before_,
-                       terms_.end(), cmp);
+  int new_end = terms_sorted_before_;
+  for (int j = terms_sorted_before_; j < terms_.size(); ++j) {
+    if (new_end == terms_sorted_before_ ||
+        !AddIfExact(terms_[new_end - 1], terms_[j])) {
+      terms_[new_end++] = terms_[j];
+    }
   }
+  terms_.resize(new_end, ToTerm(0));
+  if (terms_sorted_before_ == 0) {
+    terms_sorted_before_ = terms_.size();
+    return;
+  }
+
+  // Merge [0, terms_sorted_before_) with [terms_sorted_before_, terms_.size()),
+  // calling AddIfExact only on pairs involving a newly added term.
+  const absl::InlinedVector<Term, 16> old_terms(
+      terms_.begin(), terms_.begin() + terms_sorted_before_);
+  int i_old = 0;
+  int i_new = terms_sorted_before_;
+  int out = -1;
+  bool out_is_from_new = false;
+
+  auto append = [&](const Term& t, const bool is_from_new) {
+    if (out >= 0 &&
+        (is_from_new || out_is_from_new || terms_[out].mantissa == 0)) {
+      if (AddIfExact(terms_[out], t)) {
+        out_is_from_new = false;
+        return;
+      }
+    }
+    terms_[++out] = t;
+    out_is_from_new = is_from_new;
+  };
+
+  while (i_old < old_terms.size() && i_new < terms_.size()) {
+    if (old_terms[i_old].exponent <= terms_[i_new].exponent) {
+      append(old_terms[i_old++], /*is_from_new=*/false);
+    } else {
+      append(terms_[i_new++], /*is_from_new=*/true);
+    }
+  }
+  while (i_new < terms_.size()) {
+    append(terms_[i_new++], /*is_from_new=*/true);
+  }
+  while (i_old < old_terms.size()) {
+    append(old_terms[i_old++], /*is_from_new=*/false);
+  }
+  terms_.resize(out + 1, ToTerm(0));
   terms_sorted_before_ = terms_.size();
 }
 
 template <typename Number>
-std::strong_ordering Sum::SlowCompareTo(const Number x) const {
+std::strong_ordering TightSum::SlowCompareTo(const Number x) const {
   constexpr bool kIsDouble = std::is_same_v<Number, double>;
   if constexpr (kIsDouble) {
     CHECK(!std::isnan(x));
@@ -615,7 +620,7 @@ std::strong_ordering Sum::SlowCompareTo(const Number x) const {
     }
   }
 
-  SortIfNeeded();
+  SortAndCompressIfNeeded();
   // Avoid overflow by negating x on int64_t.
   Term extra_term = ToTerm(x);
   extra_term.negative = !extra_term.negative;
@@ -643,11 +648,11 @@ std::strong_ordering Sum::SlowCompareTo(const Number x) const {
   }
   return std::strong_ordering::equal;
 }
-template std::strong_ordering Sum::SlowCompareTo<double>(double x) const;
-template std::strong_ordering Sum::SlowCompareTo<int64_t>(int64_t x) const;
+template std::strong_ordering TightSum::SlowCompareTo<double>(double x) const;
+template std::strong_ordering TightSum::SlowCompareTo<int64_t>(int64_t x) const;
 
-std::pair<double, double> Sum::SlowTightBounds() const {
-  SortIfNeeded();
+std::pair<double, double> TightSum::SlowTightBounds() const {
+  SortAndCompressIfNeeded();
 
   tight_bounds_ = true;
   {
@@ -660,7 +665,7 @@ std::pair<double, double> Sum::SlowTightBounds() const {
   // Perform a dichotomy (only needed if >52 leading bits cancelled out at the
   // largest exponent).
   while (FastStepUp(lb_) != ub_) {
-    const double mid = CardinalMidpoint(lb_, ub_);
+    const double mid = OrdinalOrStandardMidpoint(lb_, ub_);
     const auto cmp = *this <=> mid;
     if (cmp == std::strong_ordering::equal) {
       lb_ = mid;
@@ -677,7 +682,7 @@ std::pair<double, double> Sum::SlowTightBounds() const {
   return {lb_, ub_};
 }
 
-void Sum::AddTerm(const Term& term) {
+void TightSum::AddTerm(const Term& term) {
   if (term.mantissa == 0) return;
 
   AddTermToBounds(term);
@@ -703,7 +708,8 @@ int64_t SaturatedDoubleToInt64(const double x) {
 
 }  // namespace
 
-std::pair<int64_t, int64_t> Sum::SaturatedInt64Bounds() const {
+std::pair<std::optional<int64_t>, std::optional<int64_t>>
+TightSum::Int64Bounds() const {
   // TODO(user): if this turns out to be performance-critical, we can
   // write an implementation similar to ExponentOrderedSumBounds() that would
   // compute those bounds without needing a binary search.
@@ -720,18 +726,18 @@ std::pair<int64_t, int64_t> Sum::SaturatedInt64Bounds() const {
       return {mid, mid};
     }
     if (cmp == std::strong_ordering::less) {
-      if (mid == kint64min) return {kint64min, kint64min};
+      if (mid == kint64min) return {std::nullopt, kint64min};
       if (mid == low) return {low - 1, low};
       high = mid - 1;
     } else {
-      if (mid == kint64max) return {kint64max, kint64max};
+      if (mid == kint64max) return {kint64max, std::nullopt};
       if (mid == high) return {high, high + 1};
       low = mid + 1;
     }
   }
 }
 
-void Sum::AddTermToBounds(const Term& term) const {
+void TightSum::AddTermToBounds(const Term& term) const {
   if (term.mantissa == 0) return;
 
   const auto [lb, ub] = TermDoubleBounds(term);
@@ -742,7 +748,7 @@ void Sum::AddTermToBounds(const Term& term) const {
 }
 
 std::strong_ordering ComputeSumSign(const absl::Span<const double> v) {
-  return SumAll(v) <=> 0.0;
+  return TightSumOf(v) <=> 0.0;
 }
 
 bool SumIsPositive(const absl::Span<const double> v) {
@@ -769,15 +775,7 @@ std::strong_ordering CmpDotProduct(const absl::Span<const double> a,
   if (dp_ub < bound) return std::strong_ordering::less;
   if (dp_ub == bound && dp_lb == bound) return std::strong_ordering::equal;
 
-  return DotProduct(a, b) <=> bound;
-}
-
-std::pair<double, double> GetTightDotProductBounds(
-    const absl::Span<const double> a, const absl::Span<const double> b) {
-  // We could use DCHECK, but this is fast compared to the algorithm itself.
-  CHECK_EQ(a.size(), b.size());
-
-  return DotProduct(a, b).TightBounds();
+  return TightDotProduct(a, b) <=> bound;
 }
 
 bool DotProductIsSmallerOrEqual(const absl::Span<const double> a,
@@ -806,57 +804,47 @@ bool DotProductIsEqual(const absl::Span<const double> a,
   return CmpDotProduct(a, b, res) == std::strong_ordering::equal;
 }
 
-std::pair<double, double> ProdBounds(const int64_t a, const int64_t b) {
-  const absl::uint128 abs_prod = static_cast<absl::uint128>(std::abs(a)) *
-                                 static_cast<absl::uint128>(std::abs(b));
-  const int leading_zeros =
-      absl::Uint128High64(abs_prod) == 0
-          ? 64 + std::countl_zero(absl::Uint128Low64(abs_prod))
-          : std::countl_zero(absl::Uint128High64(abs_prod));
-  const int lost_digits = 128 - leading_zeros - 53;
-  if (lost_digits <= 0) {
-    const double res = a > 0 == b > 0 ? static_cast<double>(abs_prod)
-                                      : -static_cast<double>(abs_prod);
-    return {res, res};
-  }
-  const double lb =
-      std::ldexp(static_cast<double>(abs_prod >> lost_digits), lost_digits);
-  const double ub = (abs_prod & ((absl::uint128{1} << lost_digits) - 1)) == 0
-                        ? lb
-                        : FastStepUp(lb);
-  if (a < 0 == b < 0) {
-    return {lb, ub};
-  } else {
-    return {-ub, -lb};
-  }
+std::pair<double, double> ProdBounds(const int64_t a, const int64_t b,
+                                     const PowerOfTwo p) {
+  return TermDoubleBounds({.mantissa = static_cast<absl::uint128>(std::abs(a)) *
+                                       static_cast<absl::uint128>(std::abs(b)),
+                           .negative = (a < 0) != (b < 0),
+                           .exponent = p.exponent});
 }
 
-std::pair<double, double> ProdBounds(const int64_t a, const double b) {
+std::pair<double, double> ProdBounds(const int64_t a, const double b,
+                                     const PowerOfTwo p) {
   // Only deal with finite values. Could do infinite, but the case 0 x inf would
   // be invalid anyway.
   CHECK(std::isfinite(b));
   int e;
   const int64_t b_mantissa =
       static_cast<int64_t>(std::ldexp(std::frexp(b, &e), 53));
-  const auto [lb_m, ub_m] = ProdBounds(a, b_mantissa);
-  return {LdExpBounds(lb_m, e - 53).first, LdExpBounds(ub_m, e - 53).second};
+  return TermDoubleBounds(
+      {.mantissa = static_cast<absl::uint128>(std::abs(a)) *
+                   static_cast<absl::uint128>(std::abs(b_mantissa)),
+       .negative = (a < 0) != (b < 0.0),
+       .exponent = p.exponent + e - 53});
 }
 
-std::pair<double, double> ProdBounds(const double a, const int64_t b) {
-  return ProdBounds(b, a);
+std::pair<double, double> ProdBounds(const double a, const int64_t b,
+                                     const PowerOfTwo p) {
+  return ProdBounds(b, a, p);
 }
 
-std::pair<double, double> ProdBounds(const double a, const double b) {
+std::pair<double, double> ProdBounds(const double a, const double b,
+                                     const PowerOfTwo p) {
   int e_a;
   const int64_t a_mantissa =
       static_cast<int64_t>(std::ldexp(std::frexp(a, &e_a), 53));
   int e_b;
   const int64_t b_mantissa =
       static_cast<int64_t>(std::ldexp(std::frexp(b, &e_b), 53));
-  const auto [lb_m, ub_m] = ProdBounds(a_mantissa, b_mantissa);
-  double lb = LdExpBounds(lb_m, e_a + e_b - 106).first;
-  double ub = LdExpBounds(ub_m, e_a + e_b - 106).second;
-  return {lb, ub};
+  return TermDoubleBounds(
+      {.mantissa = static_cast<absl::uint128>(std::abs(a_mantissa)) *
+                   static_cast<absl::uint128>(std::abs(b_mantissa)),
+       .negative = (a < 0.0) != (b < 0.0),
+       .exponent = p.exponent + e_a + e_b - 106});
 }
 
 std::pair<double, double> Int64DoubleBounds(const int64_t n) {
@@ -879,20 +867,6 @@ std::pair<double, double> Int64DoubleBounds(const int64_t n) {
   } else {
     return {lb, ub};
   }
-}
-
-std::pair<double, double> FuseAddMultiplyAdd(const double scale,
-                                             const double shift,
-                                             const double pre_shift,
-                                             const int64_t n) {
-  DCHECK(std::isfinite(scale));
-  DCHECK(std::isfinite(shift));
-  DCHECK(std::isfinite(pre_shift));
-  return Sum()
-      .AddProd(scale, n)
-      .AddProd(scale, pre_shift)
-      .Add(shift)
-      .TightBounds();
 }
 
 }  // namespace operations_research

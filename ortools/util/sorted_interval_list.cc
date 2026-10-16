@@ -42,10 +42,11 @@ std::string ClosedInterval::DebugString() const {
 bool IntervalsAreSortedAndNonAdjacent(
     absl::Span<const ClosedInterval> intervals) {
   for (int i = 1; i < intervals.size(); ++i) {
-    if (intervals[i - 1].start > intervals[i - 1].end) return false;
-    // First test make sure that intervals[i - 1].end + 1 will not overflow.
-    if (intervals[i - 1].end >= intervals[i].start ||
-        intervals[i - 1].end + 1 >= intervals[i].start) {
+    const ClosedInterval& prev = intervals[i - 1];
+    const ClosedInterval& curr = intervals[i];
+    if (prev.start > prev.end) return false;
+    // First test make sure that prev.end + 1 will not overflow.
+    if (prev.end == kint64max || prev.end + 1 >= curr.start) {
       return false;
     }
   }

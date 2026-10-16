@@ -363,6 +363,14 @@ TEST(TimeLimitTest, ResetDeterministicTimeLimit) {
   EXPECT_EQ(limit.GetDeterministicLimit(), 4.0);
 }
 
+TEST(TimeLimitTest, ResetHistory) {
+  TimeLimit limit(/*limit_in_seconds=*/0.5 * kTimeMultiplier);
+  EXPECT_FALSE(limit.LimitReached());
+  absl::SleepFor(absl::Milliseconds(300) * kTimeMultiplier);
+  limit.ResetHistory();
+  EXPECT_FALSE(limit.LimitReached());
+}
+
 TEST(SharedTimeLimitTest, IsThreadSafe) {
   absl::BitGen gen;
 

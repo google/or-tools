@@ -995,7 +995,7 @@ or_cc_library(
     srcs = ["full_precision_inequalities.cc"],
     hdrs = ["full_precision_inequalities.h"],
     deps = [
-        "//ortools/algorithms:multikey_radix_sort",
+        "//ortools/algorithms:float_ordinal_bijection",
         "//ortools/base:types",
         "//ortools/port:attributes",
         "@abseil-cpp//absl/algorithm:container",

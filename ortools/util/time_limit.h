@@ -327,7 +327,10 @@ class OR_DLL TimeLimit {
    * limit changes in a way such that past intervals between checks are no
    * longer representative of the future ones.
    */
-  void ResetHistory() { running_max_.Reset(); }
+  void ResetHistory() {
+    running_max_.Reset();
+    last_ns_ = absl::GetCurrentTimeNanos();
+  }
 
   /**
    * Returns information about the time limit object in a human-readable form.

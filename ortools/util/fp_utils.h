@@ -230,6 +230,14 @@ class TightScalingErrorHelper {
   // compute the error for multiple scaling factor on the same constraint.
   void LoadScalingFactor(double scaling_factor);
 
+  // Alternative to LoadUnscaledConstraint()/LoadScalingFactor(), this loads
+  // directly the scaled/rounded pair. Note that we keep the same name, but the
+  // two set of coeff can really be anything as long as they have the same size.
+  void LoadBothConstraints(absl::Span<const double> scaled_coeff,
+                           absl::Span<const double> rounded_coeffs,
+                           absl::Span<const double> input_lbs,
+                           absl::Span<const double> input_ubs);
+
   // We can compute 4 different errors. To avoid division, they are all
   // expressed in the scaled domain. One can divide the errors by scaling_factor
   // to be in the original constraint domain.
@@ -271,10 +279,20 @@ class TightScalingErrorHelper {
                            constraint_ub);
   }
 
+  // Assuming ROUNDED_TERMS >= constraint_lb, returns a lower bound on
+  // SCALED_TERMS.
+  double GetScaledLowerBoundFromRoundedLowerBound(double constraint_lb) {
+    return Optimize<true, /*compute_error=*/false>(
+        rounded_coeffs_, scaled_coeffs_, lbs_, ubs_, constraint_lb);
+  }
+
  private:
   // Returns the minimum of (sum new_coeffs[i] * Xi) - bound where:
   // - Xi in [lower_bounds[i], upper_bounds[i]],
   // - sum coeffs[i] * Xi >= bound.
+  //
+  // If `compute_error` is false, returns the minimum of
+  // (sum new_coeffs[i] * Xi) directly instead of subtracting `bound`.
   //
   // If we declare that we have `upper_bounds[i] - lower_bounds[i]` items of
   // cost `new_coeffs[i]`, the problem we are solving can be seen as a knapsack
@@ -288,7 +306,7 @@ class TightScalingErrorHelper {
   //
   // Note that since this shouldn't be used on an infeasible problem, we don't
   // explicitly detect infeasibility and still return something in this case.
-  template <bool is_ge_constraint>
+  template <bool is_ge_constraint, bool compute_error = true>
   double Optimize(absl::Span<const double> coeffs,
                   absl::Span<const double> new_coeffs,
                   absl::Span<const double> lower_bounds,
@@ -312,7 +330,8 @@ class TightScalingErrorHelper {
           is_ge_constraint ? upper_bounds[i] : lower_bounds[i];
       initial_activity += coeffs[i] * initial_bound;
 
-      const double delta = new_coeffs[i] - coeff;
+      const double delta =
+          compute_error ? new_coeffs[i] - coeff : new_coeffs[i];
       double gain = 0.0;
       if (delta != 0.0) {
         if (coeff != 0.0) {
@@ -335,7 +354,7 @@ class TightScalingErrorHelper {
     // not at its lower/upper bound.
     double delta_sum = 0.0;
     for (const auto& item : items_) {
-      if (slack <= 0) {
+      if (slack <= 0 || item.coeff == 0.0) {
         delta_sum += item.delta * item.initial_bound;
         continue;
       }
