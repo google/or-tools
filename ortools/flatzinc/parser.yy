@@ -129,7 +129,7 @@ predicates:
 | predicates error ';' { yyerrok; }  // Minimal error recovery.
 | /* empty */
 
-// TODO(user): Implement better error recovery.
+// TODO(lperron): Implement better error recovery.
 
 predicate:
   PREDICATE IDENTIFIER '(' predicate_arguments ')'
@@ -171,7 +171,7 @@ variable_or_constant_declaration:
 
 
   if (!assignment.HasOneValue()) {
-    // TODO(user): Check that the assignment is included in the domain.
+    // TODO(lperron): Check that the assignment is included in the domain.
     context->domain_map[identifier] = assignment;
   } else {
     const int64_t value = assignment.values.front();
@@ -190,7 +190,7 @@ variable_or_constant_declaration:
   const std::vector<int64_t>* const assignments = $14;
   CHECK(assignments != nullptr);
   CHECK_EQ(num_constants, assignments->size());
-  // TODO(user): CHECK all values within domain.
+  // TODO(lperron): CHECK all values within domain.
   context->integer_array_map[identifier] = *assignments;
   delete assignments;
   delete annotations;
@@ -216,7 +216,7 @@ variable_or_constant_declaration:
   const std::vector<double>* const assignments = $14;
   CHECK(assignments != nullptr);
   CHECK_EQ(num_constants, assignments->size());
-  // TODO(user): CHECK all values within domain.
+  // TODO(lperron): CHECK all values within domain.
   context->float_array_map[identifier] = *assignments;
   delete assignments;
   delete annotations;
@@ -269,7 +269,7 @@ variable_or_constant_declaration:
       var = model->AddVariable(
           identifier, Domain::FloatValue(value), introduced);
     } else if (assignment.is_domain) {
-      // TODO(user): Check that the assignment is included in the domain.
+      // TODO(lperron): Check that the assignment is included in the domain.
       // We force the set domain because we can have the following code:
       //   var set of {0,18}: x = {0,18};
       // where the second domain is not tagged as a set.
@@ -325,7 +325,7 @@ variable_or_constant_declaration:
         vars[i] =
             model->AddVariable(var_name, Domain::FloatValue(value), introduced);
       } else if ((*assignments)[i].is_domain) {
-        // TODO(user): Check that the assignment is included in the domain.
+        // TODO(lperron): Check that the assignment is included in the domain.
         // We force the set domain because we can have the following code:
         //   var set of {0,18}: x = {0,18};
         // where the second domain is not tagged as a set.
