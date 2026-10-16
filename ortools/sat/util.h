@@ -20,7 +20,6 @@
 #include <cstdint>
 #include <deque>
 #include <iterator>
-#include <limits>
 #include <memory>
 #include <string>
 #include <type_traits>
@@ -72,7 +71,8 @@ class CompactVectorVector;
 template <typename K = int, typename V = int>
 class CompactVectorVectorBuilder {
  public:
-  void Add(const K& key, const V& value);
+  template <typename T = V>
+  void Add(const K& key, T&& value);
 
   void ReserveNumItems(int64_t num_items);
 
@@ -100,9 +100,15 @@ class CompactVectorVector {
   using value_type = V;
 
   CompactVectorVector() = default;
+
   explicit CompactVectorVector(const CompactVectorVectorBuilder<K, V>& builder,
                                int minimum_num_keys = 0) {
     ResetFromBuilder(builder, minimum_num_keys);
+  }
+
+  explicit CompactVectorVector(CompactVectorVectorBuilder<K, V>&& builder,
+                               int minimum_num_keys = 0) {
+    ResetFromBuilder(std::move(builder), minimum_num_keys);
   }
 
   // Size of the "key" space, always in [0, size()).
@@ -133,8 +139,8 @@ class CompactVectorVector {
     buffer_.reserve(num_entries);
   }
 
-  void ResetFromBuilder(const CompactVectorVectorBuilder<K, V>& builder,
-                        int minimum_num_keys = 0);
+  template <typename BuilderT>
+  void ResetFromBuilder(BuilderT&& builder, int minimum_num_keys = 0);
 
   // Given a flat mapping (keys[i] -> values[i]) with two parallel vectors, not
   // necessarily sorted by key, regroup the same key so that
@@ -175,9 +181,29 @@ class CompactVectorVector {
 
   // Append a new entry.
   // Returns the previous size() as this is convenient for how we use it.
-  int Add(absl::Span<const V> values);
-  void AppendToLastVector(const V& value);
-  void AppendToLastVector(absl::Span<const V> values);
+  template <typename = void>
+  int Add(absl::Span<const V> values) {
+    return Add(values.begin(), values.end());
+  }
+  template <typename It>
+  int Add(It begin, It end);
+
+  // Appends a new empty entry. Usage: `Add({})`.
+  int Add(std::nullptr_t) {
+    const int index = size();
+    starts_.push_back(buffer_.size());
+    sizes_.push_back(0);
+    return index;
+  }
+
+  template <typename T = V>
+  void AppendToLastVector(T&& value);
+
+  void AppendAllToLastVector(absl::Span<const V> values) {
+    AppendAllToLastVector(values.begin(), values.end());
+  }
+  template <typename It>
+  void AppendAllToLastVector(It begin, It end);
 
   // Hacky: same as Add() but for sat::Literal or any type from which we can get
   // a value type V via L.Index().value().
@@ -200,7 +226,11 @@ class CompactVectorVector {
 
   // Replace the values at the given key.
   // This will crash if there are more values than before.
-  void ReplaceValuesBySmallerSet(K key, absl::Span<const V> values);
+  void ReplaceValuesBySmallerSet(K key, absl::Span<const V> values) {
+    ReplaceValuesBySmallerSet(key, values.begin(), values.end());
+  }
+  template <typename It>
+  void ReplaceValuesBySmallerSet(K key, It begin, It end);
 
   // Sorts the values at the given key and removes duplicates.
   void SortAndRemoveDuplicateValues(K key);
@@ -481,13 +511,15 @@ class FixedCapacityVector {
   FixedCapacityVector() = default;
   explicit FixedCapacityVector(absl::Span<const T> span) {
     size_ = span.size();
-    data_.reset(new T[size_]);
-    std::copy(span.begin(), span.end(), data_.get());
+    if (size_ > 0) {
+      data_.reset(new T[size_]);
+      std::copy(span.begin(), span.end(), data_.get());
+    }
   }
 
   void ClearAndReserve(size_t size) {
     size_ = 0;
-    data_.reset(new T[size]);
+    data_.reset(size > 0 ? new T[size] : nullptr);
   }
 
   T* data() const { return data_.get(); }
@@ -529,7 +561,7 @@ std::string FormatTable(std::vector<std::vector<std::string>>& table,
 // This DCHECKs that x is in [0, m).
 // This is integer overflow safe.
 //
-// Note(user): I didn't find this in an easily usable standard library.
+// NOTE(user): I didn't find this in an easily usable standard library.
 int64_t ModularInverse(int64_t x, int64_t m);
 
 // Just returns x % m but with a result always in [0, m).
@@ -581,7 +613,7 @@ int64_t CeilSquareRoot(int64_t a);
 // Converts a double to int64_t and caps large magnitudes at kint64min/max.
 // We also arbitrarily return 0 for NaNs.
 //
-// Note(user): This is similar to SaturatingFloatToInt(), but we use our own
+// NOTE(user): This is similar to SaturatingFloatToInt(), but we use our own
 // since we need to open source it and the code is simple enough.
 int64_t SafeDoubleToInt64(double value);
 
@@ -595,7 +627,7 @@ int64_t ClosestMultiple(int64_t value, int64_t base);
 // this returns a heuristic decomposition of the literals into disjoint at most
 // ones.
 //
-// Note(user): Symmetrize the matrix if not already, maybe rephrase in terms
+// NOTE(user): Symmetrize the matrix if not already, maybe rephrase in terms
 // of undirected graph, and clique decomposition.
 std::vector<absl::Span<int>> AtMostOneDecomposition(
     const std::vector<std::vector<int>>& graph, absl::BitGenRef random,
@@ -1127,11 +1159,12 @@ inline int InternalKey(K key) {
 }  // namespace compact_vector_vector_detail
 
 template <typename K, typename V>
-void CompactVectorVectorBuilder<K, V>::Add(const K& key, const V& value) {
+template <typename T>
+void CompactVectorVectorBuilder<K, V>::Add(const K& key, T&& value) {
   using compact_vector_vector_detail::InternalKey;
   max_key_ = std::max(max_key_, key);
   key_buffer_.push_back(key);
-  value_buffer_.push_back(value);
+  value_buffer_.push_back(std::forward<T>(value));
 }
 
 template <typename K, typename V>
@@ -1148,34 +1181,39 @@ void CompactVectorVectorBuilder<K, V>::Clear() {
 }
 
 template <typename K, typename V>
-inline int CompactVectorVector<K, V>::Add(absl::Span<const V> values) {
+template <typename It>
+inline int CompactVectorVector<K, V>::Add(It begin, It end) {
   const int index = size();
   starts_.push_back(buffer_.size());
-  sizes_.push_back(values.size());
-  buffer_.insert(buffer_.end(), values.begin(), values.end());
+  sizes_.push_back(std::distance(begin, end));
+  buffer_.insert(buffer_.end(), begin, end);
   return index;
 }
 
 template <typename K, typename V>
-inline void CompactVectorVector<K, V>::AppendToLastVector(const V& value) {
+template <typename T>
+inline void CompactVectorVector<K, V>::AppendToLastVector(T&& value) {
   sizes_.back()++;
-  buffer_.push_back(value);
+  buffer_.push_back(std::forward<T>(value));
 }
 
 template <typename K, typename V>
-inline void CompactVectorVector<K, V>::AppendToLastVector(
-    absl::Span<const V> values) {
-  sizes_.back() += values.size();
-  buffer_.insert(buffer_.end(), values.begin(), values.end());
+template <typename It>
+inline void CompactVectorVector<K, V>::AppendAllToLastVector(It begin, It end) {
+  sizes_.back() += std::distance(begin, end);
+  buffer_.insert(buffer_.end(), begin, end);
 }
 
 template <typename K, typename V>
-inline void CompactVectorVector<K, V>::ReplaceValuesBySmallerSet(
-    K key, absl::Span<const V> values) {
-  CHECK_LE(values.size(), sizes_[key]);
-  sizes_[key] = values.size();
-  if (values.empty()) return;
-  memcpy(&buffer_[starts_[key]], values.data(), sizeof(V) * values.size());
+template <typename It>
+inline void CompactVectorVector<K, V>::ReplaceValuesBySmallerSet(K key,
+                                                                 It begin,
+                                                                 It end) {
+  const int size = std::distance(begin, end);
+  CHECK_LE(size, sizes_[key]);
+  sizes_[key] = size;
+  if (size == 0) return;
+  std::copy(begin, end, &buffer_[starts_[key]]);
 }
 
 template <typename K, typename V>
@@ -1310,8 +1348,9 @@ inline void CompactVectorVector<K, V>::ResetFromFlatMapping(
 }
 
 template <typename K, typename V>
-inline void CompactVectorVector<K, V>::ResetFromBuilder(
-    const CompactVectorVectorBuilder<K, V>& builder, int minimum_num_keys) {
+template <typename BuilderT>
+inline void CompactVectorVector<K, V>::ResetFromBuilder(BuilderT&& builder,
+                                                        int minimum_num_keys) {
   using compact_vector_vector_detail::InternalKey;
 
   if (builder.key_buffer_.empty()) {
@@ -1341,9 +1380,11 @@ inline void CompactVectorVector<K, V>::ResetFromBuilder(
 
   buffer_.resize(num_items);
   const K* keys = builder.key_buffer_.data();
-  const V* values = builder.value_buffer_.data();
+  // `auto` is either `V` or `const V` depending on whether `BuilderT` is
+  // `const` or not.
+  auto* values = builder.value_buffer_.data();
   for (int i = 0; i < num_items; ++i) {
-    buffer_[starts_[InternalKey(keys[i])]++] = values[i];
+    buffer_[starts_[InternalKey(keys[i])]++] = std::move(values[i]);
   }
 
   // Restore starts_.

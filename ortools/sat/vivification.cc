@@ -81,7 +81,7 @@ bool Vivifier::MinimizeByPropagation(bool log_info, double dtime_budget,
     }
   }
 
-  // Note(user): In some corner cases, the function above might find a
+  // NOTE(user): In some corner cases, the function above might find a
   // feasible assignment. I think it is okay to ignore this special case
   // that should only happen on trivial problems and just reset the solver.
   const bool result = sat_solver_->ResetToLevelZero();

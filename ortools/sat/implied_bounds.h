@@ -181,7 +181,7 @@ class ImpliedBounds {
   absl::flat_hash_map<std::pair<LiteralIndex, IntegerVariable>, IntegerValue>
       bounds_;
 
-  // Note(user): This is currently only used during cut generation, so only the
+  // NOTE(user): This is currently only used during cut generation, so only the
   // literals with an IntegerView that can be used in the LP relaxation need to
   // be kept here.
   //

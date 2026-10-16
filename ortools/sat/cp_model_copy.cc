@@ -457,9 +457,10 @@ bool ModelCopy::ImportAndSimplifyConstraints(
   return true;
 }
 
-bool ModelCopy::ImportObjective(const CpModelProto& in_model) {
+bool ModelCopy::ImportObjective(const CpModelProto& in_model,
+                                const bool clear_internal_fields) {
   if (in_model.has_objective()) {
-    return CopyObjective(in_model.objective());
+    return CopyObjective(in_model.objective(), clear_internal_fields);
   }
   return true;
 }
@@ -541,12 +542,15 @@ void ModelCopy::ImportSolutionHint(const CpModelProto& in_model) {
 }
 
 bool ModelCopy::ImportEverythingExceptVariablesConstraintsAndHint(
-    const CpModelProto& in_model, bool copy_symmetry) {
+    const CpModelProto& in_model, const bool clear_internal_fields,
+    const bool copy_symmetry) {
   if (!in_model.name().empty()) {
     working_model_->set_name(in_model.name());
   }
   if (in_model.has_objective()) {
-    if (!CopyObjective(in_model.objective())) return false;
+    if (!CopyObjective(in_model.objective(),
+                       /*clear_internal_fields=*/clear_internal_fields))
+      return false;
   }
   if (in_model.has_floating_point_objective()) {
     CopyFloatingPointObjective(in_model.floating_point_objective());
@@ -588,8 +592,12 @@ bool ModelCopy::ImportEverythingExceptVariablesConstraintsAndHint(
     }
   }
   if (in_model.has_symmetry() && copy_symmetry) {
-    CHECK(variable_mapping_.empty());
-    *working_model_->mutable_symmetry() = in_model.symmetry();
+    if (clear_internal_fields) {
+      SOLVER_LOG(logger_, "Ignoring internal symmetry field");
+    } else {
+      CHECK(variable_mapping_.empty());
+      *working_model_->mutable_symmetry() = in_model.symmetry();
+    }
   }
   return true;
 }
@@ -780,8 +788,9 @@ bool ModelCopy::CopyBoolOrWithDupSupport(const ConstraintProto& ct,
     for (const int lit : ct.bool_or().literals()) {
       temp_clause_.push_back(RefToLiteral(lit));
     }
-    ClausePtr tmp_clause = NewClausePtr(temp_clause_);
-    lrat_proof_handler_->AddProblemClause(tmp_clause, one_based_cnf_index);
+    ClauseUniquePtr tmp_clause = NewClausePtr(temp_clause_);
+    lrat_proof_handler_->AddProblemClause(tmp_clause.get(),
+                                          one_based_cnf_index);
 
     const auto& lit_refs = temp_literals_.PositionsSetAtLeastOnce();
     if (lit_refs.size() != temp_clause_.size()) {
@@ -791,21 +800,17 @@ bool ModelCopy::CopyBoolOrWithDupSupport(const ConstraintProto& ct,
           temp_proof_.push_back(ClausePtr(lit.Negated()));
         }
       }
-      temp_proof_.push_back(tmp_clause);
+      temp_proof_.push_back(tmp_clause.get());
       temp_simplified_clause_.clear();
       for (const PositiveOnlyLitIndex idx : lit_refs) {
         temp_simplified_clause_.push_back(
             RefToLiteral(GetRefFromPositiveIndex(idx)));
       }
-      const ClausePtr new_clause = NewClausePtr(temp_simplified_clause_);
-      lrat_proof_handler_->AddInferredClause(new_clause, temp_proof_);
+      ClauseUniquePtr new_clause = NewClausePtr(temp_simplified_clause_);
+      lrat_proof_handler_->AddInferredClause(new_clause.get(), temp_proof_);
       DCHECK_GT(temp_clause_.size(), 1);
-      lrat_proof_handler_->DeleteClause(tmp_clause);
-      tmp_clause.DeleteIfAllocated();
-      tmp_clause = new_clause;
-    }
-    if (tmp_clause.IsSatClausePtr()) {
-      delete tmp_clause.GetSatClause();
+      lrat_proof_handler_->DeleteClause(tmp_clause.get());
+      tmp_clause = std::move(new_clause);
     }
   }
   return FinishBoolOrCopy();
@@ -1654,7 +1659,8 @@ bool ModelCopy::CopyAndMapCumulative(const ConstraintProto& ct) {
   return true;
 }
 
-bool ModelCopy::CopyObjective(const CpObjectiveProto& objective) {
+bool ModelCopy::CopyObjective(const CpObjectiveProto& objective,
+                              const bool clear_internal_fields) {
   int64_t offset = FillNonFixedTermsAndReturnOffset(objective);
   CanonicalizeLinearExpression(/*enforcement_literals=*/nullptr,
                                non_fixed_terms_, offset);
@@ -1663,6 +1669,16 @@ bool ModelCopy::CopyObjective(const CpObjectiveProto& objective) {
   new_objective = objective;
   new_objective.clear_vars();
   new_objective.clear_coeffs();
+  if (clear_internal_fields) {
+    if (new_objective.integer_scaling_factor() != 0 ||
+        new_objective.integer_before_offset() != 0 ||
+        new_objective.integer_after_offset() != 0) {
+      SOLVER_LOG(logger_, "Ignoring internal objective.integer_* fields.");
+      new_objective.clear_integer_scaling_factor();
+      new_objective.clear_integer_before_offset();
+      new_objective.clear_integer_after_offset();
+    }
+  }
   int64_t min_activity = 0;
   int64_t max_activity = 0;
   for (const auto [var, coeff] : non_fixed_terms_) {
@@ -1727,7 +1743,7 @@ bool ModelCopy::CreateUnsatModel(int c, const ConstraintProto& ct) {
   static_assert(kTargetOsSupportsProtoDescriptor);
   google::protobuf::TextFormat::Printer printer;
   SetupTextFormatPrinter(&printer);
-  printer.PrintToString(ct, &proto_string);
+  CHECK(printer.PrintToString(ct, &proto_string));
 #else
   static_assert(!kTargetOsSupportsProtoDescriptor);
 #endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
@@ -1963,8 +1979,8 @@ int ModelCopy::GetTrueMappedLiteral() {
   return *true_mapped_literal_;
 }
 
-bool CopyModel(const CpModelProto& in_proto, CpModelProto* out_proto,
-               Model* model) {
+bool CopyModel(const CpModelProto& in_proto, const bool clear_internal_fields,
+               CpModelProto* out_proto, Model* model) {
   out_proto->Clear();
   ModelCopy copier(out_proto, model);
   if (!copier.ImportVariables(in_proto)) return false;
@@ -1972,7 +1988,8 @@ bool CopyModel(const CpModelProto& in_proto, CpModelProto* out_proto,
   if (!copier.ImportAndSimplifyConstraints(in_proto, /*first_copy=*/true)) {
     return false;
   }
-  if (!copier.ImportEverythingExceptVariablesConstraintsAndHint(in_proto)) {
+  if (!copier.ImportEverythingExceptVariablesConstraintsAndHint(
+          in_proto, /*clear_internal_fields=*/clear_internal_fields)) {
     return false;
   }
   if (!copier.FinishCopy(in_proto)) {
@@ -1983,6 +2000,7 @@ bool CopyModel(const CpModelProto& in_proto, CpModelProto* out_proto,
 }
 
 bool CopyModelAdvanced(const CpModelProto& in_proto,
+                       const bool clear_internal_fields,
                        absl::Span<const Domain> domains,
                        std::function<bool(int)> active_constraints,
                        std::vector<int>* interval_mapping,
@@ -1997,7 +2015,8 @@ bool CopyModelAdvanced(const CpModelProto& in_proto,
                                            active_constraints)) {
     return false;
   }
-  if (!copier.ImportEverythingExceptVariablesConstraintsAndHint(in_proto)) {
+  if (!copier.ImportEverythingExceptVariablesConstraintsAndHint(
+          in_proto, /*clear_internal_fields=*/clear_internal_fields)) {
     return false;
   }
   if (!copier.FinishCopy(in_proto)) {
@@ -2189,7 +2208,8 @@ bool DenseModelCopy::ApplyVariableMapping() {
     return false;
   }
   if (!copier.ImportEverythingExceptVariablesConstraintsAndHint(
-          input_model_proto_, /*copy_symmetry=*/false)) {
+          input_model_proto_, /*clear_internal_fields=*/false,
+          /*copy_symmetry=*/false)) {
     return false;
   }
   if (!copier.FinishCopy(input_model_proto_)) {

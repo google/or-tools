@@ -219,14 +219,14 @@ TEST(SharedTreeEncoderTest, SyncNodesOnPathHandlesImpliedNodes) {
   shared.SplitNode(NodeId(2), ProtoLiteral(1, 1), NodeId(4));
 
   shared.SyncNodesOnPath(NodeId(4), worker);
-  ClausePtr node2_implied_clause =
+  const ClauseUniquePtr node2_implied_clause =
       NewClausePtr({Literal(BooleanVariable(0), true)});
-  lrat->AddProblemClause(node2_implied_clause);
-  ClausePtr node4_implied_clause = NewClausePtr(
+  lrat->AddProblemClause(node2_implied_clause.get());
+  const ClauseUniquePtr node4_implied_clause = NewClausePtr(
       {Literal(BooleanVariable(1), true), Literal(BooleanVariable(0), false)});
-  lrat->AddProblemClause(node4_implied_clause);
-  shared.CloseNode(NodeId(3), {node2_implied_clause});
-  worker.CloseNode(NodeId(5), {node4_implied_clause});
+  lrat->AddProblemClause(node4_implied_clause.get());
+  shared.CloseNode(NodeId(3), {node2_implied_clause.get()});
+  worker.CloseNode(NodeId(5), {node4_implied_clause.get()});
   shared.SyncNodesOnPath(NodeId(4), worker);
 
   EXPECT_THAT(
@@ -257,19 +257,20 @@ TEST(SharedTreeEncoderTest, CloseSubtreeLratProof) {
   encoder.SplitNode(NodeId(2), ProtoLiteral(1, 1), NodeId(4));
 
   // Close leaf Node 4
-  ClausePtr clause4 = NewClausePtr(
+  const ClauseUniquePtr clause4 = NewClausePtr(
       {Literal(BooleanVariable(1), false), Literal(BooleanVariable(0), false)});
-  lrat->AddProblemClause(clause4);
-  encoder.CloseNode(NodeId(4), {clause4});
+  lrat->AddProblemClause(clause4.get());
+  encoder.CloseNode(NodeId(4), {clause4.get()});
   // And node 5.
-  ClausePtr clause5 = NewClausePtr(
+  const ClauseUniquePtr clause5 = NewClausePtr(
       {Literal(BooleanVariable(1), true), Literal(BooleanVariable(0), false)});
-  lrat->AddProblemClause(clause5);
-  encoder.CloseNode(NodeId(5), {clause5});
+  lrat->AddProblemClause(clause5.get());
+  encoder.CloseNode(NodeId(5), {clause5.get()});
   // Close Node 3 to fully exhaust root
-  ClausePtr clause3 = NewClausePtr({Literal(BooleanVariable(0), true)});
-  lrat->AddProblemClause(clause3);
-  encoder.CloseNode(NodeId(3), {clause3});
+  const ClauseUniquePtr clause3 =
+      NewClausePtr({Literal(BooleanVariable(0), true)});
+  lrat->AddProblemClause(clause3.get());
+  encoder.CloseNode(NodeId(3), {clause3.get()});
 
   EXPECT_TRUE(encoder.GetNode(NodeId(1))->shared().is_closed());
   EXPECT_EQ(lrat->Check(), SharedLratProofStatus::VALID);
@@ -297,12 +298,14 @@ TEST(SharedTreeEncoderTest, SyncNodesOnPathClosesLratProofWithInvalidLeaf) {
 
   shared_tree_manager->ReplaceTree(kNoNodeId, worker1, phase);
   shared_tree_manager->TrySplitTree(NodeId(1), {ProtoLiteral(0, 1)}, worker1);
-  ClausePtr clause2 = NewClausePtr({Literal(BooleanVariable(0), false)});
-  lrat1->AddProblemClause(clause2);
-  worker1.CloseNode(NodeId(2), {clause2});
-  ClausePtr clause3 = NewClausePtr({Literal(BooleanVariable(0), true)});
-  lrat1->AddProblemClause(clause3);
-  worker1.CloseNode(NodeId(3), {clause3});
+  const ClauseUniquePtr clause2 =
+      NewClausePtr({Literal(BooleanVariable(0), false)});
+  lrat1->AddProblemClause(clause2.get());
+  worker1.CloseNode(NodeId(2), {clause2.get()});
+  const ClauseUniquePtr clause3 =
+      NewClausePtr({Literal(BooleanVariable(0), true)});
+  lrat1->AddProblemClause(clause3.get());
+  worker1.CloseNode(NodeId(3), {clause3.get()});
   shared_tree_manager->SyncTree(NodeId(2), worker1);
   shared_tree_manager->SyncTree(NodeId(3), worker1);
 
@@ -324,9 +327,10 @@ TEST(SharedTreeEncoderTest, CloseNodeDeletesReasonClauses) {
   encoder.ImportNode(
       {.id = NodeId(1), .decision = ProtoLiteral(), .objective_lb = 0});
   encoder.SplitNode(NodeId(1), ProtoLiteral(0, 1), NodeId(2));
-  ClausePtr clause = NewClausePtr({Literal(BooleanVariable(0), false)});
-  lrat->AddProblemClause(clause);
-  std::vector<ClausePtr> proof = {clause};
+  const ClauseUniquePtr clause =
+      NewClausePtr({Literal(BooleanVariable(0), false)});
+  lrat->AddProblemClause(clause.get());
+  std::vector<ClausePtr> proof = {clause.get()};
   Literal implied_literal = Literal(BooleanVariable(1), true);
   encoder.GetNode(NodeId(2))->AddImplication(
       encoder.Encode(implied_literal).value());
@@ -960,7 +964,7 @@ TEST(SharedTreeEncoderTest, VariableBoundsResolutionLratProof) {
   manager.SplitNode(NodeId(2), ProtoLiteral(1, 1), NodeId(4));
   manager.SplitNode(NodeId(3), ProtoLiteral(2, 1), NodeId(6));
   ProtoLiteral leaf_implication(3, 1);
-  std::vector<ClausePtr> leaf_clauses;
+  std::vector<ClauseUniquePtr> leaf_clauses;
 
   for (NodeId node : {NodeId(4), NodeId(7), NodeId(6), NodeId(5)}) {
     SharedTreeEncoder worker(lrat.get());
@@ -969,10 +973,10 @@ TEST(SharedTreeEncoderTest, VariableBoundsResolutionLratProof) {
     std::vector<Literal> lits = worker_node->ExpectedReasonClauseLiterals(
         worker.Decode(leaf_implication));
     leaf_clauses.push_back(NewClausePtr(lits));
-    lrat->AddProblemClause(leaf_clauses.back());
+    lrat->AddProblemClause(leaf_clauses.back().get());
     worker_node->AddImplication(leaf_implication);
     worker.GetNode(node)->ExportInferredReasonClause(
-        worker.Decode(leaf_implication), {leaf_clauses.back()});
+        worker.Decode(leaf_implication), {leaf_clauses.back().get()});
     manager.SyncNodesOnPath(node, worker);
   }
   EXPECT_THAT(manager.GetNode(NodeId(1))->shared().var_lower_bounds,
@@ -980,9 +984,8 @@ TEST(SharedTreeEncoderTest, VariableBoundsResolutionLratProof) {
   EXPECT_THAT(manager.GetNode(NodeId(1))->reason_clauses(),
               testing::UnorderedElementsAre(
                   testing::Pair(manager.Decode(leaf_implication), testing::_)));
-  for (ClausePtr& clause : leaf_clauses) {
-    lrat->DeleteClause(clause);
-    clause.DeleteIfAllocated();
+  for (ClauseUniquePtr& clause : leaf_clauses) {
+    lrat->DeleteClause(clause.get());
   }
 }
 

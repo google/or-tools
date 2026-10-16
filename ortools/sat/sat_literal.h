@@ -13,8 +13,8 @@
 
 // Sat Literal (a boolean variable or its negation).
 
-#ifndef ORTOOLS_SAT_LITERAL_H_
-#define ORTOOLS_SAT_LITERAL_H_
+#ifndef ORTOOLS_SAT_SAT_LITERAL_H_
+#define ORTOOLS_SAT_SAT_LITERAL_H_
 
 #include <algorithm>
 #include <ostream>
@@ -166,4 +166,4 @@ inline std::vector<Literal> Literals(absl::Span<const int> input) {
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // ORTOOLS_SAT_LITERAL_H_
+#endif  // ORTOOLS_SAT_SAT_LITERAL_H_

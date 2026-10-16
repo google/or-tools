@@ -376,6 +376,7 @@ bool LinearConstraintManager::UpdateConstraintLb(glop::RowIndex index_in_lp,
   ++num_constraint_updates_;
   current_lp_is_changed_ = true;
   info.constraint.lb = new_lb;
+  FillDerivedFields(&info);
   return true;
 }
 
@@ -387,6 +388,7 @@ bool LinearConstraintManager::UpdateConstraintUb(glop::RowIndex index_in_lp,
   ++num_constraint_updates_;
   current_lp_is_changed_ = true;
   info.constraint.ub = new_ub;
+  FillDerivedFields(&info);
   return true;
 }
 

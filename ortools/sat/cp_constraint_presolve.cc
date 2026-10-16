@@ -1797,7 +1797,7 @@ bool CpConstraintPresolver::PresolveIntProd(ConstraintProto* ct) {
     // coeff * X + offset must be a multiple of constant_factor, so
     // we can rewrite X so that this property is clear.
     //
-    // Note(user): it is important for this to have a restricted target domain
+    // NOTE(user): it is important for this to have a restricted target domain
     // so we can choose a better representative.
     const LinearExpressionProto old_target = ct->int_prod().target();
     if (!context_->IsFixed(old_target)) {

@@ -311,7 +311,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnWeightUpdate(
 
     // Computing general Domain distance is slow.
     // TODO(user): optimize even more for one-sided constraints.
-    // Note(user): I tried to factor the two usages of this, but it is slower.
+    // NOTE(user): I tried to factor the two usages of this, but it is slower.
     const Domain& rhs = domains_[c];
     const int64_t rhs_min = rhs.Min();
     const int64_t rhs_max = rhs.Max();
@@ -530,7 +530,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnActivityChange(
 
     // Computing general Domain distance is slow.
     // TODO(user): optimize even more for one-sided constraints.
-    // Note(user): I tried to factor the two usages of this, but it is slower.
+    // NOTE(user): I tried to factor the two usages of this, but it is slower.
     const Domain& rhs = domains_[c];
     const int64_t rhs_min = rhs.Min();
     const int64_t rhs_max = rhs.Max();

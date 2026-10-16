@@ -86,7 +86,7 @@ class VarDomination {
   // assumed to have the same coefficients. CanOnlyDominateEachOther() is
   // basically the same as ActivityShouldNotChange() without any coefficients.
   //
-  // Note(user): It is better complexity wise to first refine the underlying
+  // NOTE(user): It is better complexity wise to first refine the underlying
   // partition as much as possible, and then process all
   // ActivityShouldNotIncrease() and ActivityShouldNotDecrease() in two passes.
   // Experiment with it, it might require changing the API slightly since the

@@ -76,7 +76,7 @@ class SatPostsolver {
 
   // Extracts the current assignment of the given solver and postsolves it.
   //
-  // Note(user): This can currently be called only once (but this is easy to
+  // NOTE(user): This can currently be called only once (but this is easy to
   // change since only some CHECK will fail).
   std::vector<bool> ExtractAndPostsolveSolution(const SatSolver& solver);
   std::vector<bool> PostsolveSolution(const std::vector<bool>& solution);

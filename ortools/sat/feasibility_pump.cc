@@ -71,7 +71,7 @@ FeasibilityPump::FeasibilityPump(Model* model)
       binary_implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()) {
   // Tweak the default parameters to make the solve incremental.
   glop::GlopParameters parameters;
-  // Note(user): Primal simplex does better here since we have a limit on
+  // NOTE(user): Primal simplex does better here since we have a limit on
   // simplex iterations. So dual simplex sometimes fails to find an LP feasible
   // solution.
   parameters.set_use_dual_simplex(false);

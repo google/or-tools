@@ -21,6 +21,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -187,11 +188,6 @@ LratMerger::~LratMerger() {
       LOG(FATAL) << "LRAT error: " << lrat_checker_->error_message();
     }
     lrat_checker_->AddStats();
-  }
-  for (const auto& [global_id, clause] : global_id_to_clause_) {
-    if (clause.IsSatClausePtr()) {
-      delete clause.GetSatClause();
-    }
   }
   proof_status_->NewSubsolverProofStatus(status, lrat_checker_ != nullptr,
                                          /*num_assumed_clauses=*/0);
@@ -385,10 +381,10 @@ bool LratMerger::ReadPresolveProof(const std::string& filename) {
         std::sort(literals.begin(), literals.end());
         shared_clauses[global_id] = literals;
         if (lrat_checker_ != nullptr) {
-          const ClausePtr clause = NewAllocatedClausePtr(literals);
-          DCHECK(!global_id_to_clause_.contains(global_id));
-          global_id_to_clause_[global_id] = clause;
-          if (!lrat_checker_->AddProblemClause(clause)) {
+          const auto [it, inserted] = global_id_to_clause_.emplace(
+              global_id, NewAllocatedClausePtr(literals));
+          DCHECK(inserted);
+          if (!lrat_checker_->AddProblemClause(it->second.get())) {
             return LratError();
           }
         }
@@ -566,11 +562,11 @@ bool LratMerger::WriteInferredClause(
     const LratInferredClause& inferred_clause) {
   if (lrat_checker_ != nullptr) {
     const ClausePtr clause =
-        global_id_to_clause_[GlobalId(inferred_clause.clause_id())];
+        global_id_to_clause_[GlobalId(inferred_clause.clause_id())].get();
     tmp_proof_.clear();
     tmp_proof_.reserve(inferred_clause.rup_clause_ids_size());
     for (const int64_t id : inferred_clause.rup_clause_ids()) {
-      tmp_proof_.push_back(global_id_to_clause_[GlobalId(id)]);
+      tmp_proof_.push_back(global_id_to_clause_[GlobalId(id)].get());
     }
     tmp_rat_clauses_.clear();
     tmp_rat_clauses_.reserve(inferred_clause.rat_infos_size());
@@ -579,10 +575,11 @@ bool LratMerger::WriteInferredClause(
       std::vector<ClausePtr> proof;
       proof.reserve(rat_info.rup_clause_ids_size());
       for (const int64_t id : rat_info.rup_clause_ids()) {
-        proof.push_back(global_id_to_clause_[GlobalId(id)]);
+        proof.push_back(global_id_to_clause_[GlobalId(id)].get());
       }
       tmp_rat_clauses_.push_back(
-          {global_id_to_clause_[GlobalId(rat_info.resolvant_id())], proof});
+          {global_id_to_clause_[GlobalId(rat_info.resolvant_id())].get(),
+           proof});
     }
     if (!lrat_checker_->AddInferredClause(clause, tmp_proof_,
                                           tmp_rat_clauses_)) {
@@ -615,6 +612,7 @@ bool LratMerger::WriteInferredClause(
 void LratMerger::WriteDeletedClauses(absl::Span<const GlobalId> global_ids) {
   if (global_ids.empty()) return;
   if (lrat_checker_ != nullptr) {
+    std::vector<ClauseUniquePtr> clauses_owner;
     std::vector<ClausePtr> clauses;
     clauses.reserve(global_ids.size());
     for (const GlobalId id : global_ids) {
@@ -622,16 +620,12 @@ void LratMerger::WriteDeletedClauses(absl::Span<const GlobalId> global_ids) {
       if (it == global_id_to_clause_.end()) {
         Error(absl::StrCat("deleted clause ", id, " not found"));
       } else {
-        clauses.push_back(it->second);
+        clauses.push_back(it->second.get());
+        clauses_owner.push_back(std::move(it->second));
         global_id_to_clause_.erase(it);
       }
     }
     lrat_checker_->DeleteClauses(clauses);
-    for (const ClausePtr clause : clauses) {
-      if (clause.IsSatClausePtr()) {
-        delete clause.GetSatClause();
-      }
-    }
   }
   merged_proof_file_ << last_written_global_id_ << " d";
   for (const GlobalId id : global_ids) {
@@ -704,11 +698,11 @@ bool LratProofHandler::AddProblemClause(ClausePtr clause,
   if (clause.IsBinaryClausePtr()) {
     if (!binary_clauses_.insert({clause, false}).second) {
       if (lrat_writer_ != nullptr && one_based_cnf_index > 0) {
-        const ClausePtr clause_ptr =
+        const ClauseUniquePtr allocated_clause =
             NewAllocatedClausePtr(clause.GetLiterals());
-        lrat_writer_->AddImportedClause(clause_ptr, one_based_cnf_index);
-        lrat_writer_->DeleteClause(clause_ptr);
-        delete clause_ptr.GetSatClause();
+        lrat_writer_->AddImportedClause(allocated_clause.get(),
+                                        one_based_cnf_index);
+        lrat_writer_->DeleteClause(allocated_clause.get());
       }
       return true;
     }
@@ -782,16 +776,18 @@ bool LratProofHandler::AddImportedClause(ClausePtr clause) {
   return true;
 }
 
-bool LratProofHandler::AddAssumedClause(ClausePtr clause) {
-  VLOG(2) << "AddAssumedClause: ptr=" << clause
-          << " literals=" << absl::StrJoin(clause.GetLiterals(), ",");
+bool LratProofHandler::AddAssumedClause(ClauseUniquePtr clause) {
+  VLOG(2) << "AddAssumedClause: ptr=" << clause.get()
+          << " literals=" << absl::StrJoin(clause.get().GetLiterals(), ",");
   if (debug_crash_on_error_) {
     LOG(FATAL) << "LRAT error: assumed clauses are not supposed to happen";
   }
   ++num_assumed_clauses_;
-  if (lrat_checker_ != nullptr && !lrat_checker_->AddProblemClause(clause)) {
+  if (lrat_checker_ != nullptr &&
+      !lrat_checker_->AddProblemClause(clause.get())) {
     return LratError("In AddAssumedClause");
   }
+  assumed_clauses_.push_back(std::move(clause));
   return true;
 }
 
@@ -1081,8 +1077,9 @@ bool LratProofHandler::AddAndProveInferredClauseByEnumeration(
                          " higher2: ", std::bitset<8>(higher2).to_string()));
       }
 
+      // TODO(b/563286155): Clarify ownership semantics.
       intermediate_clauses[index] =
-          k == 0 ? new_clause : NewAllocatedClausePtr(tmp_clause);
+          k == 0 ? new_clause : NewAllocatedClausePtr(tmp_clause).release();
       if (k != 0) {
         VLOG(2) << "temporary !! " << intermediate_clauses[index] << " "
                 << tmp_clause;

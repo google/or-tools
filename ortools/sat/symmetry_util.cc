@@ -96,7 +96,7 @@ std::vector<std::vector<int>> BasicOrbitopeExtraction(
     // We want to find a column such that g sends it to variables not already
     // in the orbitope matrix.
     //
-    // Note(user): This relies on the cycles in each permutation to be ordered
+    // NOTE(user): This relies on the cycles in each permutation to be ordered
     // by smallest element first. This way we don't have to account for any row
     // permutation of the orbitope matrix. The code that detects the symmetries
     // of the problem should already return permutations in this canonical

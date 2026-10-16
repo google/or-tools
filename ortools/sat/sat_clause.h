@@ -23,6 +23,7 @@
 #include <string>
 #include <utility>
 
+#include "absl/base/attributes.h"
 #include "absl/base/casts.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -34,7 +35,7 @@
 namespace operations_research {
 namespace sat {
 
-class ClausePtr;
+class ClauseUniquePtr;
 
 // This is how the SatSolver stores a clause. A clause is just a disjunction of
 // literals. In many places, we just use vector<literal> to encode one. But in
@@ -99,8 +100,8 @@ class SatClause {
   // call MarkForRemoval()/Rewrite. ClausePtr needs CreateInternal() to be able
   // to create instances with fewer than two literals.
   friend class ClauseManager;
-  friend ClausePtr NewClausePtr(absl::Span<const Literal>);
-  friend ClausePtr NewAllocatedClausePtr(absl::Span<const Literal>);
+  friend ClauseUniquePtr NewClausePtr(absl::Span<const Literal>);
+  friend ClauseUniquePtr NewAllocatedClausePtr(absl::Span<const Literal>);
 
   static SatClause* CreateInternal(absl::Span<const Literal> literals);
 
@@ -247,7 +248,7 @@ class ClausePtr {
 
   // Returns the literals of the pointer's target clause. The pointer must not
   // be null.
-  absl::Span<const Literal> GetLiterals() const {
+  absl::Span<const Literal> GetLiterals() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
     DCHECK_NE(*this, ClausePtr());
     switch (GetType()) {
       case kEmptyClause:
@@ -345,13 +346,48 @@ class ClausePtr {
 // The null clause pointer.
 constexpr ClausePtr kNullClausePtr = ClausePtr();
 
+// A ClausePtr with ownership.
+class ClauseUniquePtr {
+ public:
+  ClauseUniquePtr() = default;  // `kNullClausePtr`.
+  explicit ClauseUniquePtr(ClausePtr ptr) : ptr_(ptr) {}
+  ~ClauseUniquePtr() { ptr_.DeleteIfAllocated(); }
+
+  ClauseUniquePtr(const ClauseUniquePtr&) = delete;
+  ClauseUniquePtr& operator=(const ClauseUniquePtr&) = delete;
+  ClauseUniquePtr(ClauseUniquePtr&& other) noexcept {
+    ptr_ = other.ptr_;
+    other.ptr_ = kNullClausePtr;
+  }
+  ClauseUniquePtr& operator=(ClauseUniquePtr&& other) noexcept {
+    ptr_.DeleteIfAllocated();
+    ptr_ = other.ptr_;
+    other.ptr_ = kNullClausePtr;
+    return *this;
+  }
+
+  // Note that we're returning a const *reference* to the underlying pointer,
+  // which has fancy pointer semantics.
+  // This allows doing thinkgs like `clause_unique_ptr.get().GetLiterals()`.
+  const ClausePtr& get() const ABSL_ATTRIBUTE_LIFETIME_BOUND { return ptr_; }
+
+  ClausePtr release() {
+    ClausePtr ptr = ptr_;
+    ptr_ = kNullClausePtr;
+    return ptr;
+  }
+
+ private:
+  ClausePtr ptr_;
+};
+
 // Creates a clause pointer for the given literals. If there are more than 2
 // literals, allocates a SatClause and returns its pointer.
-ClausePtr NewClausePtr(absl::Span<const Literal> literals);
+ClauseUniquePtr NewClausePtr(absl::Span<const Literal> literals);
 
 // Creates a clause pointer for the given literals, but never inline the
 // literals (always create a `kAllocatedSatClause`,  even for `n <= 2`).
-ClausePtr NewAllocatedClausePtr(absl::Span<const Literal> literals);
+ClauseUniquePtr NewAllocatedClausePtr(absl::Span<const Literal> literals);
 
 }  // namespace sat
 }  // namespace operations_research

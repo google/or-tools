@@ -643,7 +643,7 @@ class SchedulingDemandHelper {
 
   // Returns the energy min in [start, end].
   //
-  // Note(user): These functions are not in O(1) if the decomposition is used,
+  // NOTE(user): These functions are not in O(1) if the decomposition is used,
   // so we have to be careful in not calling them too often.
   IntegerValue EnergyMinInWindow(int t, IntegerValue window_start,
                                  IntegerValue window_end);

@@ -77,7 +77,7 @@ TEST(FPTest, InfeasibilityTest) {
   FeasibilityPump* fp = model.Create<FeasibilityPump>();
   fp->SetMaxFPIterations(3);
 
-  // Note(user): We don't rely on the imprecise LP to report infeasibility.
+  // NOTE(user): We don't rely on the imprecise LP to report infeasibility.
   model.GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
   // x = 1/4
   LinearConstraintBuilder ct(IntegerValue(1), IntegerValue(1));

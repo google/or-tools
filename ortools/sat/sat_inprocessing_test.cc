@@ -13,8 +13,6 @@
 
 #include "ortools/sat/sat_inprocessing.h"
 
-#include <vector>
-
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"

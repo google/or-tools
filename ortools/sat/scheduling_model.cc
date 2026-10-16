@@ -1035,11 +1035,9 @@ bool VerifySingleSchedulingProblem(const SchedulingProblem& problem,
 
     // Skip if the task is not present.
     bool is_present = false;
-    int active_machine_idx = 0;
     for (int a = 0; a < task.compatible_machine.size(); ++a) {
       int lit = task.presence_literals[a];
       if (lit == kint32max || lit_value(lit)) {
-        active_machine_idx = a;
         is_present = true;
         break;
       }

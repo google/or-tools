@@ -330,7 +330,7 @@ class CompiledConstraintWithProto : public CompiledConstraint {
 //
 // TODO(user): Ideas for constraint generated moves or sequences of moves?
 
-// Note(user): This class does not handle ALL constraints yet. So it is not
+// NOTE(user): This class does not handle ALL constraints yet. So it is not
 // because there is no violation here that the solution will be feasible. It is
 // important to check feasibility once this is used. Note that in practice, we
 // can be lucky, and feasible on a subset of hard constraints is enough.
@@ -763,7 +763,7 @@ class CompiledNoOverlap2dWithTwoBoxes : public CompiledConstraint {
     return violation_;
   }
 
-  // Note(user): this is the same implementation as the base one, but it
+  // NOTE(user): this is the same implementation as the base one, but it
   // avoids one virtual call!
   int64_t ViolationDelta(
       int /*var*/, int64_t /*old_value*/,

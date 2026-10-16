@@ -140,7 +140,7 @@ class LratMerger {
   absl::flat_hash_set<GlobalId> shared_global_ids_;
   std::vector<LratProofStep> last_read_steps_;
 
-  absl::flat_hash_map<GlobalId, ClausePtr> global_id_to_clause_;
+  absl::flat_hash_map<GlobalId, ClauseUniquePtr> global_id_to_clause_;
 
   // Remapping of local to global variable indices (possibly empty).
   std::vector<int> local_to_global_var_;
@@ -211,7 +211,7 @@ class LratProofHandler {
 
   // Adds a clause which is assumed to be true, without proof. Always returns
   // true.
-  bool AddAssumedClause(ClausePtr clause);
+  bool AddAssumedClause(ClauseUniquePtr clause);
 
   // Exports a clause so that it can be imported by other workers. If you know
   // whether a clause must be exported when it is inferred, it is more efficient
@@ -294,6 +294,10 @@ class LratProofHandler {
   // The clauses in `binary_clauses_` which might not be in the
   // BinaryImplicationGraph.
   std::vector<ClausePtr> temporary_binary_clauses_;
+
+  // TODO(b/563286155): Can we shorten the lifetime of these clauses ? See
+  // comments on cl/995749448.
+  std::vector<ClauseUniquePtr> assumed_clauses_;
 };
 
 }  // namespace sat

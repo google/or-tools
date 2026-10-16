@@ -137,7 +137,7 @@ void ApplyToAllIntervalIndices(absl::FunctionRef<void(int*)> function,
                                ConstraintProto* ct);
 
 // Returns the name of the ConstraintProto::ConstraintCase oneof enum.
-// Note(user): There is no such function in the proto API as of 16/01/2017.
+// NOTE(user): There is no such function in the proto API as of 16/01/2017.
 constexpr absl::string_view ConstraintCaseName(
     ConstraintProto::ConstraintCase constraint_case);
 
@@ -428,7 +428,7 @@ std::string PrettyPrintModelProto([[maybe_unused]] const M& proto) {
   std::string proto_string;
   google::protobuf::TextFormat::Printer printer;
   SetupTextFormatPrinter(&printer);
-  printer.PrintToString(proto, &proto_string);
+  CHECK(printer.PrintToString(proto, &proto_string));
   return proto_string;
 }
 #endif  // ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR

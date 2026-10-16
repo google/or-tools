@@ -149,11 +149,11 @@ inline void AddGreaterThanAtLeastOneOf(
 // The target variable is equal to exactly one of the candidate variables. The
 // equality is controlled by the given "selector" literals.
 //
-// Note(user): This only propagates from the min/max of still possible
+// NOTE(user): This only propagates from the min/max of still possible
 // candidates to the min/max of the target variable. The full constraint also
 // requires dealing with the case when one of the literals is true.
 //
-// Note(user): If there is just one or two candidates, this doesn't add
+// NOTE(user): If there is just one or two candidates, this doesn't add
 // anything.
 inline void AddPartialIsOneOfVar(IntegerVariable target_var,
                                  absl::Span<const IntegerVariable> vars,

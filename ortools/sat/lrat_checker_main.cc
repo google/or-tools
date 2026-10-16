@@ -22,6 +22,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -54,7 +55,7 @@ int Main() {
   LratChecker checker(&model);
   checker.EnableRatProofs();
 
-  absl::flat_hash_map<uint64_t, ClausePtr> all_clauses;
+  absl::flat_hash_map<uint64_t, ClauseUniquePtr> all_clauses;
 
   WallTimer timer;
   timer.Start();
@@ -81,9 +82,9 @@ int Main() {
       for (const int ref : ct.bool_or().literals()) {
         clause.push_back(ref_to_literal(ref));
       }
-      const ClausePtr clause_ptr = NewAllocatedClausePtr(clause);
-      CHECK(checker.AddProblemClause(clause_ptr));
-      all_clauses[i + 1] = clause_ptr;
+      ClauseUniquePtr clause_ptr = NewAllocatedClausePtr(clause);
+      CHECK(checker.AddProblemClause(clause_ptr.get()));
+      all_clauses[i + 1] = std::move(clause_ptr);
     }
   }
 
@@ -104,6 +105,7 @@ int Main() {
   std::vector<Literal> clause;
   std::vector<ClausePtr> rup_clauses;
   std::vector<LratChecker::RatClauses> rat_clauses;
+  std::vector<ClauseUniquePtr> clause_owner;
   while (std::getline(proof, line)) {
     ++line_number;
     std::vector<std::string_view> terms = absl::StrSplit(line, ' ');
@@ -132,14 +134,13 @@ int Main() {
           if (it == all_clauses.end()) {
             return error(absl::StrCat("Clause ", ref, " not found"));
           }
-          rup_clauses.push_back(it->second);
+          rup_clauses.push_back(it->second.get());
+          clause_owner.push_back(std::move(it->second));
           all_clauses.erase(it);
         }
       }
       checker.DeleteClauses(rup_clauses);
-      for (const ClausePtr clause_ptr : rup_clauses) {
-        delete clause_ptr.GetSatClause();
-      }
+      clause_owner.clear();
     } else {
       bool clause_done = false;
       for (int i = 1; i < terms.size(); ++i) {
@@ -155,9 +156,10 @@ int Main() {
               return error(
                   "second 0 should only appear at the end of the line");
             }
-            const ClausePtr clause_ptr = NewAllocatedClausePtr(clause);
-            all_clauses[id] = clause_ptr;
-            if (!checker.AddInferredClause(clause_ptr, rup_clauses,
+            const auto [it, inserted] =
+                all_clauses.emplace(id, NewAllocatedClausePtr(clause));
+            DCHECK(inserted);
+            if (!checker.AddInferredClause(it->second.get(), rup_clauses,
                                            rat_clauses)) {
               return error(absl::StrCat("Invalid inferred clause: ",
                                         checker.error_message()));
@@ -171,24 +173,21 @@ int Main() {
             return error(absl::StrCat("Clause ", ref, " not found"));
           }
           if (rat_clauses.empty()) {
-            rup_clauses.push_back(it->second);
+            rup_clauses.push_back(it->second.get());
           } else {
-            rat_clauses.back().rup_clauses.push_back(it->second);
+            rat_clauses.back().rup_clauses.push_back(it->second.get());
           }
         } else {
           auto it = all_clauses.find(-ref);
           if (it == all_clauses.end()) {
             return error(absl::StrCat("Clause ", -ref, " not found"));
           }
-          rat_clauses.push_back({.resolvant = it->second});
+          rat_clauses.push_back({.resolvant = it->second.get()});
         }
       }
     }
   }
   proof.close();
-  for (const auto& [ref, clause_ptr] : all_clauses) {
-    delete clause_ptr.GetSatClause();
-  }
   std::cout << "Check done in " << timer.GetDuration() << std::endl;
   if (checker.Check()) {
     std::cout << "VERIFIED UNSAT" << std::endl;

@@ -312,7 +312,7 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   // Do basic presolving to have a more precise graph.
   // Here we just remove trivially true constraints.
   //
-  // Note(user): We do that each time a new variable is fixed. It might be too
+  // NOTE(user): We do that each time a new variable is fixed. It might be too
   // much, but on the miplib and in 1200s, we do that only about 1k times on the
   // worst case problem.
   //
@@ -363,7 +363,10 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
         return;
       }
     }
-    if (!copier.ImportObjective(model_proto_)) return;
+    if (!copier.ImportObjective(model_proto_,
+                                /*clear_internal_fields=*/false)) {
+      return;
+    }
     if (!copier.FinishCopy(model_proto_)) return;
   }
 
@@ -1930,7 +1933,7 @@ Neighborhood DecompositionGraphNeighborhoodGenerator::Generate(
   int num_zero_score = 0;
   std::vector<int> relaxed_variables;
 
-  // Note(user): The algo is slower than the other graph generator, so we
+  // NOTE(user): The algo is slower than the other graph generator, so we
   // might not want to lock the graph for so long? it is just a reader lock
   // though.
   {

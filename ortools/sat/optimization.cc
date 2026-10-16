@@ -617,7 +617,7 @@ bool CoreBasedOptimizer::CoverOptimization() {
     IntegerValue best =
         std::min(term.cover_ub, integer_trail_->UpperBound(var));
 
-    // Note(user): this can happen in some corner cases because each time we
+    // NOTE(user): this can happen in some corner cases because each time we
     // find a solution, we constrain the objective to be smaller than it, so
     // it is possible that a previous best is now infeasible.
     if (best <= integer_trail_->LowerBound(var)) continue;

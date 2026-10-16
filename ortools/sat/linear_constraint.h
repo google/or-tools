@@ -210,7 +210,7 @@ LinearExpression CanonicalizeExpr(const LinearExpression& expr);
 // difference shouldn't overflow. Note that we don't validate the rhs, but if
 // the bounds are properly relaxed, then this shouldn't cause any issues.
 //
-// Note(user): We should avoid doing this test too often as it can be slow. At
+// NOTE(user): We should avoid doing this test too often as it can be slow. At
 // least do not do it more than once on each constraint.
 bool ValidateLinearConstraintForOverflow(const LinearConstraint& constraint,
                                          const IntegerTrail& integer_trail);

@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/base/thread_annotations.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
@@ -51,6 +52,7 @@
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/recycled_var_guard.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -141,7 +143,7 @@ class SatSolver {
   // problem is detected to be UNSAT. If the constraint is always true, this
   // detects it and does nothing.
   //
-  // Note(user): There is an optimization if the same constraint is added
+  // NOTE(user): There is an optimization if the same constraint is added
   // consecutively (even if the bounds are different). This is particularly
   // useful for an optimization problem when we want to constrain the objective
   // of the problem more and more. Just re-adding such constraints is relatively
@@ -315,7 +317,7 @@ class SatSolver {
   // the current decision and the one we are trying to take are not compatible
   // together and FEASIBLE if all decisions are taken.
   //
-  // Note(user): This function can be called with an already assigned literal.
+  // NOTE(user): This function can be called with an already assigned literal.
   Status EnqueueDecisionAndBacktrackOnConflict(
       Literal true_literal, int* first_propagation_index = nullptr);
 
@@ -323,7 +325,7 @@ class SatSolver {
   // Returns true if no conflict occurred. Otherwise, returns false and restores
   // the solver to the state just before this was called.
   //
-  // Note(user): With this function, the solver doesn't learn anything.
+  // NOTE(user): With this function, the solver doesn't learn anything.
   bool EnqueueDecisionIfNotConflicting(Literal true_literal);
 
   // Restores the state to the given target decision level. The decision at that
@@ -415,7 +417,7 @@ class SatSolver {
     }
     clauses_propagator_->DeleteRemovedClauses();
 
-    // Note(user): Putting the binary clauses first helps because the presolver
+    // NOTE(user): Putting the binary clauses first helps because the presolver
     // currently processes the clauses in order.
     out->SetNumVariables(NumVariables());
     binary_implication_graph_->ExtractAllBinaryClauses(out);
@@ -582,7 +584,7 @@ class SatSolver {
 
  private:
   struct NewClauses {
-    ClausePtr clause;
+    ClauseUniquePtr clause;
     bool is_redundant;
     int min_lbd_of_subsumed_clauses;
   };
@@ -660,7 +662,7 @@ class SatSolver {
 
   // Add a problem clause. The clause is assumed to be "cleaned", that is no
   // duplicate variables (not strictly required) and not empty.
-  bool AddProblemClauseInternal(ClausePtr ptr,
+  bool AddProblemClauseInternal(ClauseUniquePtr ptr,
                                 absl::Span<const Literal> literals);
 
   // This is used by all the Add*LinearConstraint() functions. It detects
@@ -682,7 +684,7 @@ class SatSolver {
   //
   // Returns the LBD of the clause.
   int AddLearnedClauseAndEnqueueUnitPropagation(
-      ClausePtr ptr, bool is_redundant, int min_lbd_of_subsumed_clauses);
+      ClauseUniquePtr ptr, bool is_redundant, int min_lbd_of_subsumed_clauses);
 
   // Creates a new decision which corresponds to setting the given literal to
   // True and Enqueue() this change.
@@ -721,6 +723,7 @@ class SatSolver {
   //
   // Returns the pair <is_redundant, minimum_lbd of the subsumed clauses>.
   // A clause will be marked as redundant only if all the subsumed clauses are.
+  // Does not take ownership of `learned_conflict`.
   std::pair<bool, int> SubsumptionsInConflictResolution(
       ClausePtr learned_conflict, absl::Span<const Literal> reason_used,
       std::vector<NewClauses>& learned_clauses);
@@ -824,11 +827,11 @@ class SatSolver {
   // conflict analysis/minimization, but it might be a bit costly.
   //
   // Returns:
-  //  - kNullClausePtr if the "canonicalized" clause is trivially true.
-  //  - `clause` if no change was made.
-  //  - A new clause otherwise. Ownership of the new clause is transferred to
-  //   the caller.
-  ClausePtr RemoveRedundantLiteralFromConflict(ClausePtr clause);
+  //  - nullopt if the "canonicalized" clause is trivially true.
+  //  - kNullClausePtr if no change was made.
+  //  - A new clause otherwise.
+  std::optional<ClauseUniquePtr> RemoveRedundantLiteralFromConflict(
+      ClausePtr clause);
 
   // This is used by the old non-model constructor.
   Model* model_;
@@ -902,46 +905,64 @@ class SatSolver {
   int64_t minimization_by_propagation_threshold_ = 0;
 
   // Temporary members used during conflict analysis.
-  Bitset64<LiteralIndex> tmp_literal_set_;
-  Bitset64<LiteralIndex> tmp_decision_set_;
   SparseBitset<BooleanVariable> is_marked_;
   SparseBitset<BooleanVariable> is_marked_for_lrat_;
   SparseBitset<BooleanVariable> is_independent_;
-  SparseBitset<BooleanVariable> tmp_mark_;
+  [[no_unique_address]] RecycledVarGuard tmp_mark_guard_;
+  SparseBitset<BooleanVariable> tmp_mark_ ABSL_GUARDED_BY(tmp_mark_guard_);
   std::vector<int> min_trail_index_per_level_;
 
-  // Temporary members used by CanBeInferredFromConflictVariables().
-  std::vector<BooleanVariable> dfs_stack_;
-  std::vector<BooleanVariable> variable_to_process_;
+  // Temporary members used for DFS.
+  [[no_unique_address]] RecycledVarGuard dfs_guard_;
+  std::vector<BooleanVariable> dfs_stack_ ABSL_GUARDED_BY(dfs_guard_);
+  std::vector<BooleanVariable> variable_to_process_ ABSL_GUARDED_BY(dfs_guard_);
 
   // Temporary member used when adding clauses.
-  std::vector<Literal> tmp_literals_;
+  [[no_unique_address]] RecycledVarGuard tmp_literals_guard_;
+  std::vector<Literal> tmp_literals_ ABSL_GUARDED_BY(tmp_literals_guard_);
 
   // Temporary members used when adding LRAT inferred clauses.
-  std::vector<ClausePtr> tmp_proof_;
-  std::vector<ClausePtr> tmp_proof_for_1uip_;
-  std::vector<ClausePtr> tmp_proof_for_minimization_;
-  absl::flat_hash_set<ClausePtr> tmp_clauses_set_;
+  [[no_unique_address]] RecycledVarGuard tmp_proof_guard_;
+  std::vector<ClausePtr> tmp_proof_ ABSL_GUARDED_BY(tmp_proof_guard_);
+
+  [[no_unique_address]] RecycledVarGuard tmp_clauses_set_guard_;
+  absl::flat_hash_set<ClausePtr> tmp_clauses_set_
+      ABSL_GUARDED_BY(tmp_clauses_set_guard_);
 
   // A boolean vector used to temporarily mark decision levels.
   DEFINE_STRONG_INDEX_TYPE(SatDecisionLevel);
   SparseBitset<SatDecisionLevel> is_level_marked_;
 
-  // Temporary vectors used by EnqueueDecisionAndBackjumpOnConflict().
-  std::vector<Literal> learned_conflict_;
-  std::vector<Literal> reason_used_to_infer_the_conflict_;
-  std::vector<Literal> extra_reason_literals_;
-
-  std::vector<SatClause*> subsumed_clauses_;
-
-  std::vector<int> subsuming_lrat_index_;
-  CompactVectorVector<int, Literal> subsuming_clauses_;
-  CompactVectorVector<int, SatClause*> subsuming_groups_;
-
-  // Temporary vector for `ProcessCurrentConflict`.
+  // Temporary vectors used by ProcessCurrentConflict().
+  [[no_unique_address]] RecycledVarGuard process_current_conflict_guard_;
+  std::vector<ClausePtr> tmp_proof_for_1uip_
+      ABSL_GUARDED_BY(process_current_conflict_guard_);
+  std::vector<ClausePtr> tmp_proof_for_minimization_
+      ABSL_GUARDED_BY(process_current_conflict_guard_);
+  std::vector<Literal> learned_conflict_
+      ABSL_GUARDED_BY(process_current_conflict_guard_);
+  std::vector<Literal> reason_used_to_infer_the_conflict_
+      ABSL_GUARDED_BY(process_current_conflict_guard_);
+  std::vector<Literal> extra_reason_literals_
+      ABSL_GUARDED_BY(process_current_conflict_guard_);
   // On each conflict, we learn at least one clause, but depending on the cases,
   // we can learn more than one.
-  std::vector<NewClauses> learned_clauses_;
+  std::vector<NewClauses> learned_clauses_
+      ABSL_GUARDED_BY(process_current_conflict_guard_);
+  // The current pseudo-Boolean conflict used in PB conflict analysis.
+  MutableUpperBoundedLinearConstraint pb_conflict_
+      ABSL_GUARDED_BY(process_current_conflict_guard_);
+
+  // Temporary vectors used by subsumption.
+  [[no_unique_address]] RecycledVarGuard subsumption_guard_;
+  std::vector<SatClause*> subsumed_clauses_ ABSL_GUARDED_BY(subsumption_guard_);
+  std::vector<int> subsuming_lrat_index_ ABSL_GUARDED_BY(subsumption_guard_);
+  CompactVectorVector<int, Literal> subsuming_clauses_
+      ABSL_GUARDED_BY(subsumption_guard_);
+  CompactVectorVector<int, SatClause*> subsuming_groups_
+      ABSL_GUARDED_BY(subsumption_guard_);
+  Bitset64<LiteralIndex> tmp_literal_set_ ABSL_GUARDED_BY(subsumption_guard_);
+  Bitset64<LiteralIndex> tmp_decision_set_ ABSL_GUARDED_BY(subsumption_guard_);
 
   // This is used by GetLastIncompatibleDecisions().
   //
@@ -958,10 +979,10 @@ class SatSolver {
     std::vector<Literal> decisions;
 
     // Associated clause (the negation of decisions).
-    ClausePtr clause_ptr;
+    ClausePtr clause_ptr = kNullClausePtr;
 
-    // In some cases, clause_ptr will point to this "temporary" SatClause.
-    std::unique_ptr<SatClause> underlying_memory;
+    // Owns `clause_ptr` unless ownership was transferred to the ClauseManager.
+    ClauseUniquePtr owned_clause = ClauseUniquePtr(kNullClausePtr);
   };
   IncompatibleDecisions incompatible_decisions_;
 
@@ -978,9 +999,6 @@ class SatSolver {
 
   // Boolean used to include/exclude constraints from the core computation.
   bool is_relevant_for_core_computation_;
-
-  // The current pseudo-Boolean conflict used in PB conflict analysis.
-  MutableUpperBoundedLinearConstraint pb_conflict_;
 
   // The deterministic time when the time limit was updated.
   // As the deterministic time in the time limit has to be advanced manually,
@@ -1099,7 +1117,7 @@ inline void AddEnforcedClause(absl::Span<const Literal> enforcement_literals,
 
 // r <=> (all literals are true).
 //
-// Note(user): we could have called ReifiedBoolOr() with everything negated.
+// NOTE(user): we could have called ReifiedBoolOr() with everything negated.
 inline void AddReifiedBoolAnd(absl::Span<const Literal> literals, Literal r,
                               Model* model) {
   std::vector<Literal> clause;

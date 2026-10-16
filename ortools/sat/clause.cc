@@ -152,7 +152,7 @@ bool ClauseManager::Propagate(Trail* trail) {
         (*trail)[propagation_trail_index_++].Negated();
     std::vector<Watcher>& watchers = watchers_on_false_[false_literal];
 
-    // Note(user): It sounds better to inspect the list in order; this is
+    // NOTE(user): It sounds better to inspect the list in order; this is
     // because small clauses like binary or ternary clauses will often propagate
     // and thus stay at the beginning of the list.
     auto new_it = watchers.begin();
@@ -221,7 +221,7 @@ bool ClauseManager::Propagate(Trail* trail) {
       if (helper.LiteralIsFalse(other_watched_literal)) {
         // Conflict: All literals of it->clause are false.
         //
-        // Note(user): we could avoid a copy here, but the conflict analysis
+        // NOTE(user): we could avoid a copy here, but the conflict analysis
         // complexity will be a lot higher than this anyway.
         trail->MutableConflict()->assign(it->clause->begin(),
                                          it->clause->end());
@@ -317,6 +317,7 @@ bool ClauseManager::ClauseIsUsedAsReason(const SatClause* clause) const {
 }
 
 bool ClauseManager::AddClause(absl::Span<const Literal> literals) {
+  DCHECK_GT(literals.size(), 2);
   return AddClause(SatClause::Create(literals), trail_, -1);
 }
 
@@ -1366,14 +1367,14 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
 
     const int level = trail->AssignmentLevel(true_literal);
 
-    // Note(user): This update is not exactly correct because in case of
+    // NOTE(user): This update is not exactly correct because in case of
     // conflict we don't inspect that many clauses. But doing ++num_inspections_
     // inside the loop does slow down the code by a few percent.
     const auto implied = implications[true_literal.Index().value()].literals();
     num_inspections_ += implied.size();
     for (const Literal literal : implied) {
       if (helper.LiteralIsTrue(literal)) {
-        // Note(user): I tried to update the reason here if the literal was
+        // NOTE(user): I tried to update the reason here if the literal was
         // enqueued after the true_literal on the trail. This property is
         // important for ComputeFirstUIPConflict() to work since it needs the
         // trail order to be a topological order for the deduction graph.
@@ -2628,7 +2629,7 @@ BinaryImplicationGraph::FilterAndSortAtMostOnes(
     std::vector<Literal>& clique = at_most_ones[index];
     if (clique.size() <= 1) continue;
 
-    // Note(user): Because we always use literals with the smallest variable
+    // NOTE(user): Because we always use literals with the smallest variable
     // indices as representatives, this makes sure that if possible, we express
     // the clique in terms of user-provided variables (that are always created
     // first).

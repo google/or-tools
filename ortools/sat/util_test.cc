@@ -18,7 +18,9 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
+#include <iterator>
 #include <limits>
+#include <memory>
 #include <numeric>
 #include <string>
 #include <tuple>
@@ -93,6 +95,72 @@ TEST(CompactVectorVectorTest, ResetFromFlatMappingWithMinimumNumNodes) {
   EXPECT_THAT(storage[3], IsEmpty());
   EXPECT_THAT(storage[4], IsEmpty());
 }
+
+TEST(CompactVectorVectorTest, MoveOnlyType) {
+  CompactVectorVector<int, std::unique_ptr<int>> storage;
+  std::vector<std::unique_ptr<int>> first;
+  first.push_back(std::make_unique<int>(1));
+  first.push_back(std::make_unique<int>(2));
+
+  int index0 = storage.Add(std::move_iterator(first.begin()),
+                           std::move_iterator(first.end()));
+  EXPECT_EQ(index0, 0);
+  EXPECT_EQ(storage.size(), 1);
+  ASSERT_EQ(storage[0].size(), 2);
+  EXPECT_EQ(*storage[0][0], 1);
+  EXPECT_EQ(*storage[0][1], 2);
+
+  storage.AppendToLastVector(std::make_unique<int>(3));
+  ASSERT_EQ(storage[0].size(), 3);
+  EXPECT_EQ(*storage[0][2], 3);
+
+  std::vector<std::unique_ptr<int>> second;
+  second.push_back(std::make_unique<int>(4));
+  storage.AppendAllToLastVector(std::move_iterator(second.begin()),
+                                std::move_iterator(second.end()));
+  ASSERT_EQ(storage[0].size(), 4);
+  EXPECT_EQ(*storage[0][3], 4);
+
+  storage.Add({});
+  EXPECT_EQ(storage.size(), 2);
+  EXPECT_EQ(storage[1].size(), 0);
+}
+
+TEST(CompactVectorVectorTest, MoveOnlyTypeWithBuilder) {
+  CompactVectorVectorBuilder<int, std::unique_ptr<int>> builder;
+  builder.Add(1, std::make_unique<int>(10));
+  builder.Add(2, std::make_unique<int>(20));
+  builder.Add(1, std::make_unique<int>(11));
+
+  CompactVectorVector<int, std::unique_ptr<int>> storage;
+  storage.ResetFromBuilder(std::move(builder));
+  ASSERT_EQ(storage.size(), 3);
+  ASSERT_EQ(storage[1].size(), 2);
+  EXPECT_EQ(*storage[1][0], 10);
+  EXPECT_EQ(*storage[1][1], 11);
+  ASSERT_EQ(storage[2].size(), 1);
+  EXPECT_EQ(*storage[2][0], 20);
+
+  std::vector<std::unique_ptr<int>> replacement;
+  replacement.push_back(std::make_unique<int>(100));
+  storage.ReplaceValuesBySmallerSet(1, std::move_iterator(replacement.begin()),
+                                    std::move_iterator(replacement.end()));
+  ASSERT_EQ(storage[1].size(), 1);
+  EXPECT_EQ(*storage[1][0], 100);
+}
+
+struct MoveTracker {
+  MoveTracker(int value) : value(value) {}
+  MoveTracker(const MoveTracker& other) = default;
+  MoveTracker& operator=(const MoveTracker& other) = default;
+  MoveTracker(MoveTracker&& other) : value(std::exchange(other.value, -1)) {}
+  MoveTracker& operator=(MoveTracker&& other) {
+    value = std::exchange(other.value, -1);
+    return *this;
+  }
+
+  int value;
+};
 
 TEST(CompactVectorVectorTest, RemoveBySwap) {
   CompactVectorVector<int, int> storage;

@@ -126,7 +126,7 @@ void AddRandomDuplicateRow(absl::BitGen* random, CpModelProto* proto) {
 // Adds a column to the given problem which is a duplicate (with a random
 // proportionality factor) of a random column.
 //
-// Note(user): This is not super efficient as we rescan the whole problem for
+// NOTE(user): This is not super efficient as we rescan the whole problem for
 // this.
 void AddRandomDuplicateColumn(absl::BitGen* random, CpModelProto* proto) {
   const int new_var = proto->variables().size();

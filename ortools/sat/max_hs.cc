@@ -622,7 +622,7 @@ SatSolver::Status HittingSetOptimizer::Optimize() {
 
     // Update the objective lower bound with our current bound.
     //
-    // Note(user): This is not needed for correctness, but it might cause
+    // NOTE(user): This is not needed for correctness, but it might cause
     // more propagation and is nice to have for reporting/logging purposes.
     if (!integer_trail_->Enqueue(
             IntegerLiteral::GreaterOrEqual(objective_definition_.objective_var,

@@ -526,7 +526,7 @@ class SharedResponseManager {
   // on UpdateGapIntegral() which should be called in the main subsolver
   // synchronization loop.
   //
-  // Note(user): In the literature, people use the relative gap to the optimal
+  // NOTE(user): In the literature, people use the relative gap to the optimal
   // solution (or the best known one), but this is ill-defined in many cases
   // (like if the optimal cost is zero), so I prefer this version.
   double GapIntegral() const;

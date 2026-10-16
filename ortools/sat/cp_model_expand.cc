@@ -2866,8 +2866,6 @@ void ExpandCpModel(PresolveContext* context) {
   // Clear the precedence cache.
   context->ClearPrecedenceCache();
 
-  bool has_all_diffs = false;
-
   // First pass: we look at constraints that may fully encode variables.
   for (int c = 0; c < context->NumConstraints(); ++c) {
     const ConstraintProto& ct = context->Constraint(c);
@@ -2923,10 +2921,6 @@ void ExpandCpModel(PresolveContext* context) {
             context->params().max_lin_max_size_for_expansion()) {
           ExpandLinMax(context->MutableConstraint(c), context);
         }
-        break;
-      case ConstraintProto::kAllDiff:
-        has_all_diffs = true;
-        skip = true;
         break;
       default:
         skip = true;

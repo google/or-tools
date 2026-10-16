@@ -32,13 +32,12 @@ namespace {
 class ClauseFactory {
  public:
   ClausePtr NewClause(absl::Span<const int> literals) {
-    const ClausePtr clause = NewAllocatedClausePtr(Literals(literals));
-    sat_clauses_.push_back(absl::WrapUnique(clause.GetSatClause()));
-    return clause;
+    return sat_clauses_.emplace_back(NewAllocatedClausePtr(Literals(literals)))
+        .get();
   }
 
  private:
-  std::vector<std::unique_ptr<SatClause>> sat_clauses_;
+  std::vector<ClauseUniquePtr> sat_clauses_;
 };
 
 TEST(LratCheckerTest, LiteralEquivalentToItsNegationIsUnsat) {

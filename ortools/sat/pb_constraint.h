@@ -440,7 +440,7 @@ class UpperBoundedLinearConstraint {
   // the given conflict. The sum doesn't take into account literals assigned
   // with a trail index smaller than the given one.
   //
-  // Note(user): Currently, this is only used in DCHECKs.
+  // NOTE(user): Currently, this is only used in DCHECKs.
   Coefficient ComputeCancelation(
       const Trail& trail, int trail_index,
       const MutableUpperBoundedLinearConstraint& conflict);
@@ -634,7 +634,7 @@ class PbConstraints : public SatPropagator {
   // Each constraint managed by this class is associated with an index.
   // The set of indices is always [0, num_constraints_).
   //
-  // Note(user): this complicates things during deletion, but the propagation is
+  // NOTE(user): this complicates things during deletion, but the propagation is
   // about two times faster with this implementation than one with direct
   // pointer to an UpperBoundedLinearConstraint. The main reason for this is
   // probably that the thresholds_ vector is a lot more efficient cache-wise.

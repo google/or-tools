@@ -146,7 +146,7 @@ struct AssignmentInfo {
 
   // The type of assignment (see AssignmentType below).
   //
-  // Note(user): We currently don't support more than 16 types of assignment.
+  // NOTE(user): We currently don't support more than 16 types of assignment.
   // This is checked in RegisterPropagator().
   mutable uint32_t type : 4;
 

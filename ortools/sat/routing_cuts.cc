@@ -3131,7 +3131,7 @@ void SeparateSubtourInequalities(RoutingCutHelper& helper,
   // min-cut for all possible pairs of nodes. This is achieved by computing a
   // Gomory-Hu tree, still with n-1 max flow calls.
   //
-  // Note(user): Compared to any min-cut, these cuts have some nice properties
+  // NOTE(user): Compared to any min-cut, these cuts have some nice properties
   // since they are "included" in each other. This might help with combining
   // them within our generic IP cuts framework.
   //

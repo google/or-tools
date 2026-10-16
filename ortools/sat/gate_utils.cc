@@ -1370,7 +1370,7 @@ constexpr uint8_t kOr = 0b1110;   // a OR b
 // processing column by column (bits 0 to m-1) using 3-to-2 and 2-to-2
 // compressor trees.
 //
-// Note(user): Apparently this is Dadda/Wallace addition.
+// NOTE(user): Apparently this is Dadda/Wallace addition.
 BinaryCircuit BuildColumnWiseLinearCombinationCircuit(
     int m, absl::Span<const uint32_t> constants) {
   const int n = constants.size();
@@ -1465,7 +1465,7 @@ BinaryCircuit BuildColumnWiseLinearCombinationCircuit(
 }
 
 // == Adapted from Gemini ======================================================
-// Note(user): I asked for a different implementation of the n-way adder, which
+// NOTE(user): I asked for a different implementation of the n-way adder, which
 // should be more robust to the input order, which is important for ease of
 // verification.
 

@@ -595,7 +595,7 @@ int GateCongruenceClosure::ProcessTruthTable(
       if (lrat_proof_handler_ != nullptr) {
         gates_clauses_.Add({});
         for (const TruthTableId id : ids_for_proof) {
-          gates_clauses_.AppendToLastVector(truth_tables_clauses_[id]);
+          gates_clauses_.AppendAllToLastVector(truth_tables_clauses_[id]);
         }
         for (const auto [a, b] : binary_used) {
           tmp_binary_clauses_.emplace_back(SatClause::Create({a, b}));
@@ -1093,7 +1093,7 @@ class LratGateCongruenceHelper {
         // If there is some change, we add a temporary clause with the proof to
         // go from the original clause to this one.
         tmp_proof_.push_back(new_clause);
-        new_clause = NewClausePtr(tmp_literals_);
+        new_clause = NewClausePtr(tmp_literals_).release();
         lrat_proof_handler_->AddInferredClause(new_clause, tmp_proof_);
         if (new_clause.IsSatClausePtr()) {
           tmp_index_to_delete_.push_back(tmp_proof_clauses_.size());

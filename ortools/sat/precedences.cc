@@ -500,7 +500,7 @@ IntegerValue EnforcedLinear2Bounds::GetUpperBoundFromEnforced(
       }
     }
 
-    // Note(user): We used to check
+    // NOTE(user): We used to check
     //   entry.rhs <= root_level_bounds_->LevelZeroUpperBound(index));
     // But that assumed level zero bounds were only added at level zero, if we
     // add them at a higher level, some of the enforced relations here might be

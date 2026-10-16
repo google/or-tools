@@ -359,7 +359,7 @@ TEST(PresolveCpModelTest, SimplifyRemovableConstraint) {
 }
 
 TEST(PresolveCpModelTest, BasicLinearConstraintPresolve) {
-  // Note(user): I tried a random small problem. Note that the conversion to LP
+  // NOTE(user): I tried a random small problem. Note that the conversion to LP
   // put artificial large bounds to x and y which allow to start the round of
   // propagations that reduces the domains of the variables.
   //
@@ -377,8 +377,9 @@ TEST(PresolveCpModelTest, BasicLinearConstraintPresolve) {
   CpModelProto initial_model;
   SolverLogger logger;
   CHECK(ClampVariableBounds(SatParameters(), &mp_model, &logger));
-  ConvertMPModelProtoToCpModelProto(
-      SatParameters(), MPModelProtoWrapper(&mp_model), &initial_model, &logger);
+  ConvertMPModelProtoToCpModelProto(SatParameters(),
+                                    MPModelProtoWrapper(&mp_model),
+                                    /*num_clamped=*/0, &initial_model, &logger);
 
   const CpModelProto mapping_model = GetMappingModel(initial_model);
 

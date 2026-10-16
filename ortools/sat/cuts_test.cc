@@ -158,7 +158,7 @@ TEST(CoverCutHelperTest, SimpleExample) {
   std::vector<IntegerValue> lbs = IntegerValueVector({0, 0, 0});
   std::vector<double> lp_values{1.0, 0.5, 0.1};  // Tight.
 
-  // Note(user): the ub of the last variable is not used. But the first two
+  // NOTE(user): the ub of the last variable is not used. But the first two
   // are, even though only the second one is required for the validity of the
   // cut.
   std::vector<IntegerValue> ubs = IntegerValueVector({1, 1, 10});

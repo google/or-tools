@@ -765,13 +765,14 @@ bool Prober::FixProbedDnfLiterals(
   // conjunction, a temporary LRAT clause "conjunction => propagated literal"
   // (or kNullClausePtr if "conjunction" contains "propagated_literal", if the
   // clause has not been created yet, or has been deleted).
-  CompactVectorVector<int, ClausePtr>& propagation_clauses = tmp_dnf_clauses_;
+  CompactVectorVector<int, ClauseUniquePtr>& propagation_clauses =
+      tmp_dnf_clauses_;
   propagation_clauses.clear();
   propagation_clauses.reserve(propagated_literals.size() * dnf.size());
   for (int i = 0; i < propagated_literals.size(); ++i) {
     propagation_clauses.Add({});
     for (int j = 0; j < dnf.size(); ++j) {
-      propagation_clauses.AppendToLastVector(kNullClausePtr);
+      propagation_clauses.AppendToLastVector(ClauseUniquePtr(kNullClausePtr));
     }
   }
   // Delete the temporary LRAT clauses.
@@ -779,12 +780,11 @@ bool Prober::FixProbedDnfLiterals(
     int i = 0;
     for (const LiteralIndex literal_index : propagated_literals) {
       const Literal propagated_lit(literal_index);
-      const absl::Span<ClausePtr> clauses = propagation_clauses[i++];
+      const absl::Span<ClauseUniquePtr> clauses = propagation_clauses[i++];
       for (int j = 0; j < dnf.size(); ++j) {
-        ClausePtr clause = clauses[j];
+        ClausePtr clause = clauses[j].get();
         if (clause == kNullClausePtr) continue;
         lrat_proof_handler_->DeleteClause(clause);
-        clause.DeleteIfAllocated();
       }
     }
   });
@@ -813,11 +813,10 @@ bool Prober::FixProbedDnfLiterals(
     // and a temporary LRAT clause proving that the previous literals of
     // `conjunction` imply this.
     LiteralIndex first_false_literal = kNoLiteralIndex;
-    ClausePtr first_false_literal_clause = kNullClausePtr;
+    ClauseUniquePtr first_false_literal_clause;
     auto cleanup = absl::MakeCleanup([&] {
-      if (first_false_literal_clause != kNullClausePtr) {
-        lrat_proof_handler_->DeleteClause(first_false_literal_clause);
-        first_false_literal_clause.DeleteIfAllocated();
+      if (first_false_literal_clause.get() != kNullClausePtr) {
+        lrat_proof_handler_->DeleteClause(first_false_literal_clause.get());
       }
     });
 
@@ -830,7 +829,7 @@ bool Prober::FixProbedDnfLiterals(
         first_false_literal_clause = NewAllocatedClausePtr(tmp_literals_);
         tmp_proof_.clear();
         clause_manager_->AppendClausesFixing({lit.Negated()}, &tmp_proof_);
-        lrat_proof_handler_->AddInferredClause(first_false_literal_clause,
+        lrat_proof_handler_->AddInferredClause(first_false_literal_clause.get(),
                                                tmp_proof_);
         break;
       }
@@ -845,7 +844,7 @@ bool Prober::FixProbedDnfLiterals(
         tmp_proof_.clear();
         clause_manager_->AppendClausesFixing(conflict_clause, &tmp_proof_);
         tmp_proof_.push_back(conflict);
-        lrat_proof_handler_->AddInferredClause(first_false_literal_clause,
+        lrat_proof_handler_->AddInferredClause(first_false_literal_clause.get(),
                                                tmp_proof_);
       };
       sat_solver_->EnqueueDecisionAndBackjumpOnConflict(lit, conflict_callback);
@@ -859,7 +858,7 @@ bool Prober::FixProbedDnfLiterals(
     int i = 0;
     for (const LiteralIndex literal_index : propagated_literals) {
       const Literal propagated_lit(literal_index);
-      absl::Span<ClausePtr> propagations = propagation_clauses[i++];
+      absl::Span<ClauseUniquePtr> propagations = propagation_clauses[i++];
       // Create the clause "conjunction => propagated_lit".
       if (!GetConjunctionImpliesLiteralClause(conjunction, propagated_lit,
                                               tmp_literals_)) {
@@ -868,11 +867,11 @@ bool Prober::FixProbedDnfLiterals(
       }
       // Compute its proof.
       tmp_proof_.clear();
-      if (first_false_literal_clause != kNullClausePtr) {
+      if (first_false_literal_clause.get() != kNullClausePtr) {
         // If some literals of `conjunction` imply that another one is false,
         // the corresponding LRAT clause is sufficient to prove that
         // `conjunction` is false and thus that "conjunction => propagated_lit".
-        tmp_proof_.push_back(first_false_literal_clause);
+        tmp_proof_.push_back(first_false_literal_clause.get());
       } else {
         // TODO(user): processing the propagated literals in trail order
         // and reusing the previous proofs to compute new ones could reduce the
@@ -880,9 +879,9 @@ bool Prober::FixProbedDnfLiterals(
         clause_manager_->AppendClausesFixing({propagated_lit}, &tmp_proof_);
       }
       // Add the inferred clause to the LratProofHandler.
-      const ClausePtr clause = NewAllocatedClausePtr(tmp_literals_);
-      lrat_proof_handler_->AddInferredClause(clause, tmp_proof_);
-      propagations[conjunction_index] = clause;
+      ClauseUniquePtr clause = NewAllocatedClausePtr(tmp_literals_);
+      lrat_proof_handler_->AddInferredClause(clause.get(), tmp_proof_);
+      propagations[conjunction_index] = std::move(clause);
     }
   }
 
@@ -892,7 +891,7 @@ bool Prober::FixProbedDnfLiterals(
   int i = 0;
   for (const LiteralIndex literal_index : propagated_literals) {
     const Literal propagated_lit(literal_index);
-    absl::Span<ClausePtr> propagations = propagation_clauses[i++];
+    absl::Span<ClauseUniquePtr> propagations = propagation_clauses[i++];
     if (assignment_.LiteralIsTrue(propagated_lit)) continue;
 
     ++counters_.num_new_literals_fixed;
@@ -905,9 +904,9 @@ bool Prober::FixProbedDnfLiterals(
         // itself, they prove that propagated_lit is true.
         CHECK_NE(dnf_clause, nullptr);
         tmp_proof_.clear();
-        for (const ClausePtr clause : propagations) {
-          if (clause == kNullClausePtr) continue;
-          tmp_proof_.push_back(clause);
+        for (const ClauseUniquePtr& clause : propagations) {
+          if (clause.get() == kNullClausePtr) continue;
+          tmp_proof_.push_back(clause.get());
         }
         for (const Literal lit : dnf_clause->AsSpan()) {
           if (assignment_.LiteralIsAssigned(lit)) {
@@ -927,9 +926,9 @@ bool Prober::FixProbedDnfLiterals(
         // propagated_lit", in this order. These are sufficient to prove that
         // propagated_lit is true.
         tmp_proof_.clear();
-        for (const ClausePtr clause : propagations) {
-          if (clause == kNullClausePtr) continue;
-          tmp_proof_.push_back(clause);
+        for (const ClauseUniquePtr& clause : propagations) {
+          if (clause.get() == kNullClausePtr) continue;
+          tmp_proof_.push_back(clause.get());
         }
         if (!clause_manager_->InprocessingFixLiteral(propagated_lit,
                                                      tmp_proof_)) {
@@ -949,7 +948,7 @@ bool Prober::FixProbedDnfLiterals(
 
 bool Prober::FixLiteralImpliedByAnAtLeastOneCombinationDnf(
     absl::Span<const std::vector<Literal>> conjunctions,
-    absl::Span<ClausePtr> clauses, Literal propagated_lit) {
+    absl::Span<ClauseUniquePtr> clauses, Literal propagated_lit) {
   const int num_clauses = clauses.size();
   CHECK_EQ(conjunctions.size(), num_clauses);
   // Combine the clauses 2 by 2 repeatedly, to remove one literal from each
@@ -976,31 +975,32 @@ bool Prober::FixLiteralImpliedByAnAtLeastOneCombinationDnf(
       // propagated_lit" prove that "... => propagated_lit".
       tmp_proof_.clear();
       // Tautologies have no clause pointer.
-      if (clauses[i] != kNullClausePtr) {
-        tmp_proof_.push_back(clauses[i]);
+      if (clauses[i].get() != kNullClausePtr) {
+        tmp_proof_.push_back(clauses[i].get());
       }
-      if (clauses[i + stride] != kNullClausePtr) {
-        tmp_proof_.push_back(clauses[i + stride]);
+      if (clauses[i + stride].get() != kNullClausePtr) {
+        tmp_proof_.push_back(clauses[i + stride].get());
       }
       if (tmp_proof_.empty()) continue;
       GetConjunctionImpliesLiteralClause(
           absl::MakeConstSpan(conjunctions[i])
               .subspan(0, num_literals_per_conjunction - 1),
           propagated_lit, tmp_literals_);
-      const ClausePtr new_clause = num_literals_per_conjunction == 1
-                                       ? ClausePtr(propagated_lit)
-                                       : NewAllocatedClausePtr(tmp_literals_);
-      lrat_proof_handler_->AddInferredClause(new_clause, tmp_proof_);
+      ClauseUniquePtr new_clause =
+          num_literals_per_conjunction == 1
+              ? ClauseUniquePtr(ClausePtr(propagated_lit))
+              : NewAllocatedClausePtr(tmp_literals_);
+      lrat_proof_handler_->AddInferredClause(new_clause.get(), tmp_proof_);
       // Delete the clauses used to derive the new one.
       for (const int index : {i, i + stride}) {
-        if (clauses[index] == kNullClausePtr) continue;
-        lrat_proof_handler_->DeleteClause(clauses[index]);
-        clauses[index].DeleteIfAllocated();
+        if (clauses[index].get() == kNullClausePtr) continue;
+        lrat_proof_handler_->DeleteClause(clauses[index].get());
+        clauses[index] = ClauseUniquePtr(kNullClausePtr);
       }
       if (num_literals_per_conjunction == 1) {
         return clause_manager_->InprocessingAddUnitClause(propagated_lit);
       }
-      clauses[i] = new_clause;
+      clauses[i] = std::move(new_clause);
     }
     num_literals_per_conjunction--;
     stride *= 2;
@@ -1245,7 +1245,7 @@ bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
         // Because the BinaryImplicationGraph has the highest priority of all
         // propagators, this should cover most of the cases.
         //
-        // Note(user): This is not 100% true, since when we launch the clause
+        // NOTE(user): This is not 100% true, since when we launch the clause
         // propagation for one literal we do finish it before calling again
         // the binary propagation.
         if (trail_.AssignmentType(l.Variable()) != binary_propagator_id_) {

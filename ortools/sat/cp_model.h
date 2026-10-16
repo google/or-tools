@@ -1332,7 +1332,7 @@ std::string VarDebugString(const CpModelProto& proto, int index);
 // ============================================================================
 // Minimal support for "natural" API to create LinearExpr.
 //
-// Note(user): This might be optimized further by optimizing LinearExpr for
+// NOTE(user): This might be optimized further by optimizing LinearExpr for
 // holding one term, or introducing a LinearTerm class, but these should mainly
 // be used to construct small expressions. Revisit if we run into performance
 // issues. Note that if perf becomes a bottleneck for a client, then probably

@@ -1609,7 +1609,8 @@ class LnsSolver : public SubSolver {
         // Copy the rest of the model, except symmetries (we don't want to use
         // the symmetry of the main problem in the LNS presolved problem).
         if (!copier.ImportEverythingExceptVariablesConstraintsAndHint(
-                helper_->ModelProto(), /*copy_symmetry=*/false)) {
+                helper_->ModelProto(), /*clear_internal_fields=*/false,
+                /*copy_symmetry=*/false)) {
           return;
         }
 
@@ -2734,24 +2735,6 @@ void FixVariablesToHintValue(const PartialVariableAssignment& solution_hint,
   }
 }
 
-void ClearInternalFields(CpModelProto* model_proto, SolverLogger* logger) {
-  if (model_proto->has_symmetry()) {
-    SOLVER_LOG(logger, "Ignoring internal symmetry field");
-    model_proto->clear_symmetry();
-  }
-  if (model_proto->has_objective()) {
-    CpObjectiveProto* objective = model_proto->mutable_objective();
-    if (objective->integer_scaling_factor() != 0 ||
-        objective->integer_before_offset() != 0 ||
-        objective->integer_after_offset() != 0) {
-      SOLVER_LOG(logger, "Ignoring internal objective.integer_* fields.");
-      objective->clear_integer_scaling_factor();
-      objective->clear_integer_before_offset();
-      objective->clear_integer_after_offset();
-    }
-  }
-}
-
 class CpModelSolver {
  public:
   struct Options {
@@ -3043,7 +3026,8 @@ bool CpModelSolver::CopyInputProto() {
     model_->Register<LratProofHandler>(presolve_lrat_proof_handler_.get());
   }
 
-  if (!CopyModel(model_proto_, presolved_model_proto_, model_)) {
+  if (!CopyModel(model_proto_, /*clear_internal_fields=*/true,
+                 presolved_model_proto_, model_)) {
     const std::string info = "Problem proved infeasible during initial copy.";
     SOLVER_LOG(logger_, info);
     if (model_->Mutable<LratProofHandler>() != nullptr) {
@@ -3072,8 +3056,6 @@ bool CpModelSolver::CopyInputProto() {
                " dimension(s) automatically inferred for ", num_routes,
                " routes constraint(s).");
   }
-
-  ClearInternalFields(presolved_model_proto_, logger_);
 
   if (absl::GetFlag(FLAGS_cp_model_ignore_objective) &&
       (presolved_model_proto_->has_objective() ||
@@ -3231,10 +3213,44 @@ void CpModelSolver::AddFloatingPointObjectiveResponsePostprocessor() {
   if (model_proto_.has_floating_point_objective()) {
     shared_response_manager_->AddFinalResponsePostprocessor(
         [&](CpSolverResponse* response) {
+          const auto& float_obj = model_proto_.floating_point_objective();
+
+          // Also copy the scaled objective which must be in the mapping model.
+          // This can be useful for some client, like if they want to do
+          // multi-objective optimization in stages.
+          if (mapping_proto_->has_objective()) {
+            const CpObjectiveProto& integer_obj = mapping_proto_->objective();
+            *response->mutable_integer_objective() = integer_obj;
+
+            // If requested, compute a correct lb from the one on the integer
+            // objective. We only do that if some errors were introduced by the
+            // scaling algorithm.
+            if (params_.mip_compute_true_objective_bound() &&
+                !integer_obj.scaling_was_exact()) {
+              const int64_t integer_lb =
+                  response->inner_objective_lower_bound();
+              const double lb = ComputeTrueObjectiveLowerBound(
+                  model_proto_, integer_obj, integer_lb);
+              SOLVER_LOG(logger_, "[Scaling] scaled_objective_bound: ",
+                         response->best_objective_bound(),
+                         " corrected_bound: ", lb,
+                         " delta: ", response->best_objective_bound() - lb);
+
+              // To avoid small errors that can be confusing, we take the
+              // min/max with the objective value.
+              if (float_obj.maximize()) {
+                response->set_best_objective_bound(
+                    std::max(lb, response->objective_value()));
+              } else {
+                response->set_best_objective_bound(
+                    std::min(lb, response->objective_value()));
+              }
+            }
+          }
+
           if (response->solution().empty()) return;
 
           // Compute the true objective of the best returned solution.
-          const auto& float_obj = model_proto_.floating_point_objective();
           double value = float_obj.offset();
           const int num_terms = float_obj.vars().size();
           for (int i = 0; i < num_terms; ++i) {
@@ -3242,37 +3258,6 @@ void CpModelSolver::AddFloatingPointObjectiveResponsePostprocessor() {
                      static_cast<double>(response->solution(float_obj.vars(i)));
           }
           response->set_objective_value(value);
-
-          // Also copy the scaled objective which must be in the mapping model.
-          // This can be useful for some client, like if they want to do
-          // multi-objective optimization in stages.
-          if (!mapping_proto_->has_objective()) return;
-          const CpObjectiveProto& integer_obj = mapping_proto_->objective();
-          *response->mutable_integer_objective() = integer_obj;
-
-          // If requested, compute a correct lb from the one on the integer
-          // objective. We only do that if some errors were introduced by the
-          // scaling algorithm.
-          if (params_.mip_compute_true_objective_bound() &&
-              !integer_obj.scaling_was_exact()) {
-            const int64_t integer_lb = response->inner_objective_lower_bound();
-            const double lb = ComputeTrueObjectiveLowerBound(
-                model_proto_, integer_obj, integer_lb);
-            SOLVER_LOG(logger_, "[Scaling] scaled_objective_bound: ",
-                       response->best_objective_bound(),
-                       " corrected_bound: ", lb,
-                       " delta: ", response->best_objective_bound() - lb);
-
-            // To avoid small errors that can be confusing, we take the
-            // min/max with the objective value.
-            if (float_obj.maximize()) {
-              response->set_best_objective_bound(
-                  std::max(lb, response->objective_value()));
-            } else {
-              response->set_best_objective_bound(
-                  std::min(lb, response->objective_value()));
-            }
-          }
 
           // Check the absolute gap, and display warning if needed.
           // TODO(user): Change status to IMPRECISE?
