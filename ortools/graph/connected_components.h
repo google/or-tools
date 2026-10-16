@@ -199,8 +199,9 @@ class ConnectedComponentsFinder {
   // Returns true if the two nodes are newly connected, and false if they were
   // already connected.
   bool AddEdge(T node1, T node2) {
-    return delegate_.AddEdge(LookupOrInsertNode<false>(node1),
-                             LookupOrInsertNode<false>(node2));
+    const int id1 = LookupOrInsertNode<false>(node1);
+    const int id2 = LookupOrInsertNode<false>(node2);
+    return delegate_.AddEdge(id1, id2);
   }
 
   // Returns true iff both nodes are in the same connected component.

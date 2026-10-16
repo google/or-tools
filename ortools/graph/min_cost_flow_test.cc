@@ -26,6 +26,7 @@
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/algorithms/binary_search.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/types.h"
 #include "ortools/graph/graph.h"
 #include "ortools/linear_solver/linear_solver.h"
@@ -838,6 +839,7 @@ void FullRandomFlow(typename MinCostFlowSolver<Graph>::Solver f,
 
 #define LP_ONLY_TEST(test_name, size, expected_cost1, expected_cost2)          \
   TEST(LPMinCostFlowTest, test_name##size) {                                   \
+    if constexpr (DEBUG_MODE) GTEST_SKIP() << "Too slow in non-opt mode.";     \
     test_name<util::ReverseArcListGraph<>>(SolveMinCostFlowWithLP, size, size, \
                                            expected_cost1, expected_cost2);    \
   }

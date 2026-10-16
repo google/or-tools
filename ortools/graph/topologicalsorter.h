@@ -27,8 +27,8 @@
 // - If you need more control (cycle extraction?), or a step-by-step topological
 //   sort, see the TopologicalSorter classes below.
 
-#ifndef ORTOOLS_GRAPH_TOPOLOGICALSORTER_H__
-#define ORTOOLS_GRAPH_TOPOLOGICALSORTER_H__
+#ifndef ORTOOLS_GRAPH_TOPOLOGICALSORTER_H_
+#define ORTOOLS_GRAPH_TOPOLOGICALSORTER_H_
 
 #include <cstddef>
 #include <functional>
@@ -785,4 +785,4 @@ FindCycleInGraph(const AdjacencyLists& adj) {
 }  // namespace graph
 }  // namespace util
 
-#endif  // ORTOOLS_GRAPH_TOPOLOGICALSORTER_H__
+#endif  // ORTOOLS_GRAPH_TOPOLOGICALSORTER_H_
