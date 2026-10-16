@@ -715,10 +715,7 @@ class LocalCompressedTrail {
         buffer_(new local_addrval<T>[block_size]),
         buffer_used_(false),
         current_(0),
-        size_(0) {
-    memset(data_.get(), 0, sizeof(*data_.get()) * block_size);
-    memset(buffer_.get(), 0, sizeof(*buffer_.get()) * block_size);
-  }
+        size_(0) {}
   ~LocalCompressedTrail() {
     FreeBlocks(blocks_);
     FreeBlocks(free_blocks_);

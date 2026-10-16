@@ -14,8 +14,8 @@
 // This file provides utilities for writing unit tests for the constraint solver
 // and local search library.
 
-#ifndef OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_TEST_UTIL_H_
-#define OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_TEST_UTIL_H_
+#ifndef ORTOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_TEST_UTIL_H_
+#define ORTOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_TEST_UTIL_H_
 
 #include <cstdint>
 #include <vector>
@@ -413,4 +413,4 @@ class ExpectedSolutionsSearchMonitor : public SearchMonitor {
 };
 
 }  // namespace operations_research
-#endif  // OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_TEST_UTIL_H_
+#endif  // ORTOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_TEST_UTIL_H_

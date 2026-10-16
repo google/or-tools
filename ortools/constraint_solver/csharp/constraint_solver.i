@@ -766,7 +766,7 @@ namespace operations_research {
 %feature("director") RegularLimit;
 %unignore RegularLimit;
 %ignore RegularLimit::duration_limit;
-%ignore RegularLimit::AbsoluteSolverDeadline;
+%ignore RegularLimit::RemainingTime;
 
 // Searchlog
 %unignore SearchLog;

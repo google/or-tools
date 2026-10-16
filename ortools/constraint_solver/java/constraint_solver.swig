@@ -1400,7 +1400,7 @@ import java.util.function.LongBinaryOperator;
 // RegularLimit
 %unignore RegularLimit;
 %ignore RegularLimit::duration_limit;
-%ignore RegularLimit::AbsoluteSolverDeadline;
+%ignore RegularLimit::RemainingTime;
 
 // SearchLog
 %unignore SearchLog;

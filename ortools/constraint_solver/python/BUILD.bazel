@@ -19,7 +19,7 @@ load("//bazel:or_cc_rules.bzl", "or_cc_library")
 load("//bazel:or_pybind_rules.bzl", "or_pybind_extension", "or_pybind_library")
 
 or_cc_library(
-    name = "constraint_solver_doc",
+    name = "constraint_solver_doc_cc",
     hdrs = ["constraint_solver_doc.h"],
     visibility = ["//visibility:public"],
 )
@@ -29,7 +29,7 @@ or_pybind_extension(
     srcs = ["constraint_solver.cc"],
     visibility = ["//visibility:public"],
     deps = [
-        ":constraint_solver_doc",
+        ":constraint_solver_doc_cc",
         "//ortools/constraint_solver:assignment_cc_proto",
         "//ortools/constraint_solver:cp",
         "//ortools/constraint_solver:reversible_data",
@@ -53,7 +53,7 @@ or_pybind_library(
     srcs = ["constraint_solver.cc"],
     visibility = ["//ortools/routing/python:__pkg__"],
     deps = [
-        ":constraint_solver_doc",
+        ":constraint_solver_doc_cc",
         "//ortools/constraint_solver:assignment_cc_proto",
         "//ortools/constraint_solver:cp",
         "//ortools/constraint_solver:reversible_data",

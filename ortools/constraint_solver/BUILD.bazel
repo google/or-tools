@@ -687,7 +687,6 @@ or_cc_test(
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/time",
-        "@abseil-cpp//absl/time:simulated_clock",
     ],
 )
 

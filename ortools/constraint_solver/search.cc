@@ -36,11 +36,11 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
+#include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/bitmap.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/mathutil.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/assignment.h"
@@ -4544,10 +4544,7 @@ RegularLimit::RegularLimit(Solver* s, absl::Duration time, int64_t branches,
                            bool smart_time_check, bool cumulative)
     : SearchLimit(s),
       duration_limit_(time),
-      solver_time_at_limit_start_(s->Now()),
-      last_time_elapsed_(absl::ZeroDuration()),
-      check_count_(0),
-      next_check_(0),
+      time_limit_ns_(0),
       smart_time_check_(smart_time_check),
       branches_(branches),
       branches_offset_(0),
@@ -4555,7 +4552,16 @@ RegularLimit::RegularLimit(Solver* s, absl::Duration time, int64_t branches,
       failures_offset_(0),
       solutions_(solutions),
       solutions_offset_(0),
-      cumulative_(cumulative) {}
+      cumulative_(cumulative) {
+  ResetDeadline();
+}
+
+void RegularLimit::ResetDeadline() {
+  time_limit_ns_ = duration_limit_ == absl::InfiniteDuration()
+                       ? kint64max
+                       : CapAdd(absl::GetCurrentTimeNanos(),
+                                absl::ToInt64Nanoseconds(duration_limit_));
+}
 
 RegularLimit::~RegularLimit() {}
 
@@ -4569,7 +4575,7 @@ void RegularLimit::Install() {
 
 void RegularLimit::Copy(const SearchLimit* limit) {
   const RegularLimit* const regular =
-      reinterpret_cast<const RegularLimit* const>(limit);
+      reinterpret_cast<const RegularLimit*>(limit);
   duration_limit_ = regular->duration_limit_;
   branches_ = regular->branches_;
   failures_ = regular->failures_;
@@ -4611,11 +4617,8 @@ void RegularLimit::Init() {
   Solver* const s = solver();
   branches_offset_ = s->branches();
   failures_offset_ = s->failures();
-  solver_time_at_limit_start_ = s->Now();
-  last_time_elapsed_ = absl::ZeroDuration();
   solutions_offset_ = s->solutions();
-  check_count_ = 0;
-  next_check_ = 0;
+  ResetDeadline();
 }
 
 void RegularLimit::ExitSearch() {
@@ -4624,15 +4627,15 @@ void RegularLimit::ExitSearch() {
     Solver* const s = solver();
     branches_ -= s->branches() - branches_offset_;
     failures_ -= s->failures() - failures_offset_;
-    duration_limit_ -= s->Now() - solver_time_at_limit_start_;
+    duration_limit_ -= TimeElapsed();
     solutions_ -= s->solutions() - solutions_offset_;
   }
 }
 
 void RegularLimit::UpdateLimits(absl::Duration time, int64_t branches,
                                 int64_t failures, int64_t solutions) {
-  Init();
   duration_limit_ = time;
+  Init();
   branches_ = branches;
   failures_ = failures;
   solutions_ = solutions;
@@ -4668,27 +4671,19 @@ void RegularLimit::Accept(ModelVisitor* visitor) const {
 }
 
 bool RegularLimit::CheckTime(absl::Duration offset) {
-  return TimeElapsed() >= duration_limit() - offset;
+  return absl::GetCurrentTimeNanos() >=
+         time_limit_ns_ - absl::ToInt64Nanoseconds(offset);
 }
 
 absl::Duration RegularLimit::TimeElapsed() {
-  const int64_t kMaxSkip = 100;
-  const int64_t kCheckWarmupIterations = 100;
-  ++check_count_;
-  if (duration_limit() != absl::InfiniteDuration() &&
-      next_check_ <= check_count_) {
-    Solver* const s = solver();
-    absl::Duration elapsed = s->Now() - solver_time_at_limit_start_;
-    if (smart_time_check_ && check_count_ > kCheckWarmupIterations &&
-        elapsed > absl::ZeroDuration()) {
-      const int64_t estimated_check_count_at_limit = MathUtil::Round<int64_t>(
-          check_count_ * absl::FDivDuration(duration_limit_, elapsed));
-      next_check_ =
-          std::min(check_count_ + kMaxSkip, estimated_check_count_at_limit);
-    }
-    last_time_elapsed_ = elapsed;
-  }
-  return last_time_elapsed_;
+  if (time_limit_ns_ == kint64max) return absl::ZeroDuration();
+  return duration_limit_ -
+         absl::Nanoseconds(time_limit_ns_ - absl::GetCurrentTimeNanos());
+}
+
+absl::Duration RegularLimit::RemainingTime() const {
+  if (time_limit_ns_ == kint64max) return absl::InfiniteDuration();
+  return absl::Nanoseconds(time_limit_ns_ - absl::GetCurrentTimeNanos());
 }
 
 RegularLimit* Solver::MakeTimeLimit(absl::Duration time) {
@@ -4788,7 +4783,7 @@ void ImprovementSearchLimit::Init() {
 
 void ImprovementSearchLimit::Copy(const SearchLimit* limit) {
   const ImprovementSearchLimit* const improv =
-      reinterpret_cast<const ImprovementSearchLimit* const>(limit);
+      reinterpret_cast<const ImprovementSearchLimit*>(limit);
   objective_vars_ = improv->objective_vars_;
   maximize_ = improv->maximize_;
   objective_scaling_factors_ = improv->objective_scaling_factors_;
@@ -5007,8 +5002,7 @@ bool CustomLimit::CheckWithOffset(absl::Duration) {
 void CustomLimit::Init() {}
 
 void CustomLimit::Copy(const SearchLimit* limit) {
-  const CustomLimit* const custom =
-      reinterpret_cast<const CustomLimit* const>(limit);
+  const CustomLimit* const custom = reinterpret_cast<const CustomLimit*>(limit);
   limiter_ = custom->limiter_;
 }
 
