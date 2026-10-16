@@ -2163,7 +2163,7 @@ class OR_ROUTING_DLL Model {
   /// Returns the time left in the search limit.
   absl::Duration RemainingTime() const {
     DCHECK(limit_ != nullptr);
-    return limit_->AbsoluteSolverDeadline() - solver_->Now();
+    return limit_->RemainingTime();
   }
 
   /// Updates the time limit of the search limit.
@@ -2174,18 +2174,18 @@ class OR_ROUTING_DLL Model {
 
   /// Helper method to update time limits.
   bool UpdateLimits(const RoutingSearchParameters& parameters,
-                    int64_t start_time_ms,
+                    int64_t start_time_ns,
                     bool leave_secondary_solve_buffer = true);
 
   /// Helper method to initialize the search. Returns the start time of the
-  /// search in milliseconds or std::nullopt if the search could not be
+  /// search in nanoseconds or std::nullopt if the search could not be
   /// started.
   std::optional<int64_t> InitializeSearch(
       const RoutingSearchParameters& search_parameters);
 
   /// Helper method to update the status on a search failure.
   void UpdateStatusOnFailure(const RoutingSearchParameters& parameters,
-                             int64_t start_time_ms);
+                             int64_t start_time_ns);
 
   /// Returns the time buffer to safely return a solution.
   absl::Duration TimeBuffer() const { return time_buffer_; }
@@ -2561,7 +2561,7 @@ class OR_ROUTING_DLL Model {
   /// Log a solution.
   void LogSolution(const RoutingSearchParameters& parameters,
                    absl::string_view description, int64_t solution_cost,
-                   int64_t start_time_ms);
+                   int64_t start_time_ns);
   /// See CompactAssignment. Checks the final solution if
   /// check_compact_assignment is true.
   operations_research::Assignment* CompactAssignmentInternal(

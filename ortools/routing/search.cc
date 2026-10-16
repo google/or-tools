@@ -46,6 +46,7 @@
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/adjustable_priority_queue.h"
@@ -118,12 +119,11 @@ absl::Duration GetTimeLimit(const RoutingSearchParameters& search_parameters) {
 // TODO(user): Refactor this function with other versions living in
 // routing.cc.
 // TODO(user): Should we update solution limits as well?
-bool UpdateTimeLimits(Solver* solver, int64_t start_time_ms,
-                      absl::Duration time_limit,
+bool UpdateTimeLimits(int64_t start_time_ns, absl::Duration time_limit,
                       RoutingSearchParameters& search_parameters) {
   if (!search_parameters.has_time_limit()) return true;
   const absl::Duration elapsed_time =
-      absl::Milliseconds(solver->wall_time() - start_time_ms);
+      absl::Nanoseconds(absl::GetCurrentTimeNanos() - start_time_ns);
   const absl::Duration time_left =
       std::min(time_limit - elapsed_time, GetTimeLimit(search_parameters));
   if (time_left <= absl::ZeroDuration()) return false;
@@ -160,7 +160,7 @@ const Assignment* SolveFromAssignmentWithAlternativeSolversAndParameters(
     const std::vector<Model*>& alternative_models,
     const std::vector<RoutingSearchParameters>& alternative_parameters,
     int max_non_improving_iterations) {
-  const int64_t start_time_ms = primary_model->solver()->wall_time();
+  const int64_t start_time_ns = absl::GetCurrentTimeNanos();
   if (max_non_improving_iterations < 0) return nullptr;
   // Shortcut if no alternative models will be explored.
   if (max_non_improving_iterations == 0 || alternative_models.empty()) {
@@ -219,7 +219,7 @@ const Assignment* SolveFromAssignmentWithAlternativeSolversAndParameters(
           mutable_alternative_parameters.empty()
               ? mutable_search_parameters
               : mutable_alternative_parameters[i];
-      if (!UpdateTimeLimits(primary_model->solver(), start_time_ms, time_limit,
+      if (!UpdateTimeLimits(start_time_ns, time_limit,
                             mutable_alternative_parameter)) {
         return best_assignment;
       }
@@ -230,7 +230,7 @@ const Assignment* SolveFromAssignmentWithAlternativeSolversAndParameters(
       if (solution == nullptr) {
         solution = first_solutions[i];
       }
-      if (!UpdateTimeLimits(primary_model->solver(), start_time_ms, time_limit,
+      if (!UpdateTimeLimits(start_time_ns, time_limit,
                             mutable_search_parameters)) {
         return best_assignment;
       }
@@ -255,8 +255,7 @@ const Assignment* SolveFromAssignmentWithAlternativeSolversAndParameters(
     }
   }
   if (run_metaheuristic_phase &&
-      UpdateTimeLimits(primary_model->solver(), start_time_ms, time_limit,
-                       mutable_search_parameters)) {
+      UpdateTimeLimits(start_time_ns, time_limit, mutable_search_parameters)) {
     mutable_search_parameters.set_local_search_metaheuristic(metaheuristic);
     return primary_model->SolveFromAssignmentWithParameters(
         best_assignment, mutable_search_parameters);

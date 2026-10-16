@@ -3581,8 +3581,8 @@ TEST(VehicleResourceAssignmentTest, SimpleResourcesTest) {
     for (int64_t span_upper_bound : {int64_t{5}, kint64max}) {
       for (auto fs : EnumerateEnumValues<FirstSolutionStrategy::Value>()) {
         FirstSolutionStrategy::Value strategy;
-        FirstSolutionStrategy_Value_Parse(FirstSolutionStrategy_Value_Name(fs),
-                                          &strategy);
+        ASSERT_TRUE(FirstSolutionStrategy_Value_Parse(
+            FirstSolutionStrategy_Value_Name(fs), &strategy));
         if (strategy == FirstSolutionStrategy::EVALUATOR_STRATEGY ||
             strategy == FirstSolutionStrategy::SWEEP) {
           continue;
@@ -6153,7 +6153,7 @@ TEST(FirstSolutionStrategyTest, FirstSolutionStrategyFromParameters) {
     RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
     const std::string& fs_name = FirstSolutionStrategy_Value_Name(i);
     FirstSolutionStrategy::Value fs;
-    FirstSolutionStrategy_Value_Parse(fs_name, &fs);
+    ASSERT_TRUE(FirstSolutionStrategy_Value_Parse(fs_name, &fs));
     parameters.set_first_solution_strategy(fs);
     SCOPED_TRACE(fs);
     IndexManager manager(5, 1, NodeIndex(0));

@@ -17,7 +17,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
-#include <initializer_list>
 #include <iterator>
 #include <memory>
 #include <string>
@@ -29,7 +28,6 @@
 #include "absl/functional/bind_front.h"
 #include "absl/strings/str_cat.h"
 #include "absl/time/clock.h"
-#include "absl/time/simulated_clock.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "google/protobuf/duration.pb.h"
@@ -2700,93 +2698,99 @@ TEST_P(PathCheapestArcTest, WithSingleVehicleAndPickupAndDelivery) {
   EXPECT_EQ(6, assignment->ObjectiveValue());
 }
 
-// Utility filter to mock time passing by in the search.
+// Utility filter to make time pass by in the search.
 class ClockFilter : public LocalSearchFilter {
  public:
-  explicit ClockFilter(absl::SimulatedClock* const clock) : clock_(clock) {}
+  explicit ClockFilter(absl::Duration sleep_duration = absl::Milliseconds(10))
+      : sleep_duration_(sleep_duration) {}
   bool Accept(const Assignment* /*delta*/, const Assignment* /*deltadelta*/,
               int64_t /*lower_bound*/, int64_t /*upper_bound*/) override {
-    clock_->AdvanceTime(absl::Seconds(1));
+    absl::SleepFor(sleep_duration_);
     return true;
   }
   void Synchronize(const Assignment* /*assignment*/,
                    const Assignment* /*delta*/) override {}
 
  private:
-  absl::SimulatedClock* const clock_;
+  const absl::Duration sleep_duration_;
 };
+
+using FirstSolutionHeuristicTest =
+    ::testing::TestWithParam<FirstSolutionStrategy::Value>;
 
 // Test first solution heuristics with time limits, making sure they are
 // enforced.
-TEST(FirstSolutionHeuristicTest, CheckLimits) {
-  for (auto heuristic :
-       {FirstSolutionStrategy::PATH_CHEAPEST_ARC,
-        FirstSolutionStrategy::PATH_MOST_CONSTRAINED_ARC,
-        FirstSolutionStrategy::SAVINGS, FirstSolutionStrategy::CHRISTOFIDES,
-        FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION,
-        FirstSolutionStrategy::SEQUENTIAL_CHEAPEST_INSERTION,
-        FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION}) {
-    SCOPED_TRACE(FirstSolutionStrategy_Value_Name(heuristic));
-    IndexManager manager(20, 1, NodeIndex(0));
-    Model model(manager);
-    absl::SimulatedClock clock;
-    absl::Time start_time = clock.TimeNow();
-    model.solver()->SetClock(&clock);
-    model.SetFixedCostOfAllVehicles(10);
-    for (NodeIndex node(1); node < 20; ++node) {
-      model.AddDisjunction({manager.NodeToIndex(node)}, 1);
-    }
-    ClockFilter filter(&clock);
-    model.AddLocalSearchFilter(&filter);
-    RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
-    parameters.set_first_solution_strategy(heuristic);
-    parameters.mutable_time_limit()->set_seconds(5);
-    parameters.mutable_time_limit()->set_nanos(1e8);
-    const Assignment* const assignment = model.SolveWithParameters(parameters);
-    // Heuristic should have been interrupted by time limit after 5s.
-    EXPECT_GE(clock.TimeNow() - start_time, absl::Seconds(5));
-    EXPECT_LE(clock.TimeNow() - start_time, absl::Seconds(7));
-    EXPECT_NE(assignment, nullptr);
+TEST_P(FirstSolutionHeuristicTest, CheckLimits) {
+  const FirstSolutionStrategy::Value heuristic = GetParam();
+  IndexManager manager(200, 1, NodeIndex(0));
+  Model model(manager);
+  model.SetFixedCostOfAllVehicles(10);
+  for (NodeIndex node(1); node < 200; ++node) {
+    model.AddDisjunction({manager.NodeToIndex(node)}, 1);
   }
+  ClockFilter filter;
+  model.AddLocalSearchFilter(&filter);
+  RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
+  parameters.set_first_solution_strategy(heuristic);
+  parameters.mutable_time_limit()->set_seconds(1);
+  parameters.mutable_time_limit()->set_nanos(0);
+  parameters.set_solution_limit(1);
+  model.CloseModelWithParameters(parameters);
+  const int64_t start_time_ns = absl::GetCurrentTimeNanos();
+  const Assignment* const assignment = model.SolveWithParameters(parameters);
+  const int64_t end_time_ns = absl::GetCurrentTimeNanos();
+  const absl::Duration solve_duration =
+      absl::Nanoseconds(end_time_ns - start_time_ns);
+  // Heuristic may be interrupted after only ~950ms, because of time buffers.
+  EXPECT_GE(solve_duration, absl::Milliseconds(950));
+  EXPECT_LE(solve_duration, absl::Milliseconds(1100));
+  EXPECT_NE(assignment, nullptr);
 }
 
 // Test first solution heuristics with time limits, making sure they are
 // enforced for models with pairs.
-TEST(FirstSolutionHeuristicTest, CheckLimitsWithPairs) {
-  for (auto heuristic :
-       {FirstSolutionStrategy::PATH_CHEAPEST_ARC,
-        FirstSolutionStrategy::PATH_MOST_CONSTRAINED_ARC,
-        FirstSolutionStrategy::SAVINGS, FirstSolutionStrategy::CHRISTOFIDES,
-        FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION,
-        FirstSolutionStrategy::SEQUENTIAL_CHEAPEST_INSERTION,
-        FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION}) {
-    SCOPED_TRACE(FirstSolutionStrategy_Value_Name(heuristic));
-    IndexManager manager(21, 1, NodeIndex(0));
-    Model model(manager);
-    for (NodeIndex node(1); node < NodeIndex(21); node += 2) {
-      model.AddPickupAndDelivery(manager.NodeToIndex(node),
-                                 manager.NodeToIndex(node + 1));
-      model.AddDisjunction({manager.NodeToIndex(node)}, 1);
-      model.AddDisjunction({manager.NodeToIndex(node + 1)}, 1);
-    }
-    absl::SimulatedClock clock;
-    absl::Time start_time = clock.TimeNow();
-    model.solver()->SetClock(&clock);
-    model.SetFixedCostOfAllVehicles(10);
-    ClockFilter filter(&clock);
-    model.AddLocalSearchFilter(&filter);
-    RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
-    parameters.set_first_solution_strategy(heuristic);
-    parameters.mutable_time_limit()->set_seconds(5);
-    parameters.mutable_time_limit()->set_nanos(1e8);
-    parameters.set_solution_limit(1);
-    const Assignment* const assignment = model.SolveWithParameters(parameters);
-    // Heuristic should have been interrupted by time limit after 5s.
-    EXPECT_GE(clock.TimeNow() - start_time, absl::Seconds(5));
-    EXPECT_LE(clock.TimeNow() - start_time, absl::Seconds(7));
-    EXPECT_NE(assignment, nullptr);
+TEST_P(FirstSolutionHeuristicTest, CheckLimitsWithPairs) {
+  const FirstSolutionStrategy::Value heuristic = GetParam();
+  IndexManager manager(201, 1, NodeIndex(0));
+  Model model(manager);
+  for (NodeIndex node(1); node < NodeIndex(201); node += 2) {
+    model.AddPickupAndDelivery(manager.NodeToIndex(node),
+                               manager.NodeToIndex(node + 1));
+    model.AddDisjunction({manager.NodeToIndex(node)}, 1);
+    model.AddDisjunction({manager.NodeToIndex(node + 1)}, 1);
   }
+  model.SetFixedCostOfAllVehicles(10);
+  ClockFilter filter;
+  model.AddLocalSearchFilter(&filter);
+  RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
+  parameters.set_first_solution_strategy(heuristic);
+  parameters.mutable_time_limit()->set_seconds(1);
+  parameters.mutable_time_limit()->set_nanos(0);
+  parameters.set_solution_limit(1);
+  model.CloseModelWithParameters(parameters);
+  const int64_t start_time_ns = absl::GetCurrentTimeNanos();
+  const Assignment* const assignment = model.SolveWithParameters(parameters);
+  const int64_t end_time_ns = absl::GetCurrentTimeNanos();
+  const absl::Duration solve_duration =
+      absl::Nanoseconds(end_time_ns - start_time_ns);
+  // Heuristic may be interrupted after only ~950ms, because of time buffers.
+  EXPECT_GE(solve_duration, absl::Milliseconds(950));
+  EXPECT_LE(solve_duration, absl::Milliseconds(1100));
+  EXPECT_NE(assignment, nullptr);
 }
+
+INSTANTIATE_TEST_SUITE_P(
+    FirstSolutionHeuristicTestInstance, FirstSolutionHeuristicTest,
+    ::testing::Values(FirstSolutionStrategy::PATH_CHEAPEST_ARC,
+                      FirstSolutionStrategy::PATH_MOST_CONSTRAINED_ARC,
+                      FirstSolutionStrategy::SAVINGS,
+                      FirstSolutionStrategy::CHRISTOFIDES,
+                      FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION,
+                      FirstSolutionStrategy::SEQUENTIAL_CHEAPEST_INSERTION,
+                      FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION),
+    [](const ::testing::TestParamInfo<FirstSolutionStrategy::Value>& info) {
+      return FirstSolutionStrategy_Value_Name(info.param);
+    });
 
 using FirstSolutionHeuristicWithUnaryCallbackTest =
     ::testing::TestWithParam<bool>;
@@ -5171,8 +5175,7 @@ TEST(GlobalCheapestInsertionTest, SequentialRouteConstructionWithNodePenalty) {
       {145, 165, 150, 120, 0, 145, 165}};
 
   const int penalty_limit = 100;
-  for (int64_t penalty : std::initializer_list<int64_t>{0, 25, 50, 75, 99, 100,
-                                                        150, 100000, inf}) {
+  for (int64_t penalty : {0L, 25L, 50L, 75L, 99L, 100L, 150L, 100000L, inf}) {
     for (bool add_unperformed_entries : {true, false}) {
       SCOPED_TRACE(absl::StrCat(
           "penalty = ", penalty,
