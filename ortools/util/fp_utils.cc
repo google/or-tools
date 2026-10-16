@@ -292,6 +292,39 @@ void TightScalingErrorHelper::LoadUnscaledConstraint(
   }
 }
 
+void TightScalingErrorHelper::LoadBothConstraints(
+    absl::Span<const double> scaled_coeffs,
+    absl::Span<const double> rounded_coeffs, absl::Span<const double> input_lbs,
+    absl::Span<const double> input_ubs) {
+  // To simplify code, lets make all coefficient positive.
+  // Beeing super-fast here shouldn't matter that much since we will only
+  // do that once per constraint.
+  const int num_terms = scaled_coeffs.size();
+  scaled_coeffs_.assign(scaled_coeffs.begin(), scaled_coeffs.end());
+  rounded_coeffs_.assign(rounded_coeffs.begin(), rounded_coeffs.end());
+  lbs_.assign(input_lbs.begin(), input_lbs.end());
+  ubs_.assign(input_ubs.begin(), input_ubs.end());
+  for (int i = 0; i < num_terms; ++i) {
+    // Bounds should only be integer.
+    CHECK_EQ(std::round(lbs_[i]), lbs_[i]);
+    CHECK_EQ(std::round(ubs_[i]), ubs_[i]);
+    CHECK_NE(scaled_coeffs[i], 0.0);
+
+    // Canonicalized the domain and the coefficient.
+    // We only care about the set of integer feasible solution.
+    if (scaled_coeffs_[i] < 0) {
+      std::swap(lbs_[i], ubs_[i]);
+      lbs_[i] = -lbs_[i];
+      ubs_[i] = -ubs_[i];
+      scaled_coeffs_[i] = -scaled_coeffs_[i];
+      rounded_coeffs_[i] = -rounded_coeffs_[i];
+    }
+
+    // Coeff should be of the same sign!
+    CHECK_GE(rounded_coeffs_[i], 0.0);
+  }
+}
+
 void TightScalingErrorHelper::LoadScalingFactor(double scaling_factor) {
   const int num_terms = coeffs_.size();
   scaled_coeffs_.resize(num_terms);

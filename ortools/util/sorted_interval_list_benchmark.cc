@@ -103,7 +103,7 @@ void BM_ShortStructCopyIteration(benchmark::State& state) {
   const int count = state.range(0);
   auto intervals = MakeSortedDisjointIntervalList(count);
   for (auto _ : state) {
-    for (const ClosedInterval interval : intervals) {
+    for (ClosedInterval interval : intervals) {
       benchmark::DoNotOptimize(interval);
     }
   }
@@ -116,7 +116,7 @@ void BM_ShortStructReferenceIteration(benchmark::State& state) {
   auto intervals = MakeSortedDisjointIntervalList(count);
   for (auto _ : state) {
     for (const ClosedInterval& interval : intervals) {
-      benchmark::DoNotOptimize(interval);
+      benchmark::DoNotOptimize(const_cast<ClosedInterval&>(interval));
     }
   }
 }

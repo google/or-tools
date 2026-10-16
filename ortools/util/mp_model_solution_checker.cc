@@ -19,7 +19,6 @@
 #include <limits>
 #include <string>
 #include <utility>
-#include <vector>
 
 #include "absl/base/attributes.h"
 #include "absl/log/check.h"
@@ -37,9 +36,9 @@
 
 namespace operations_research {
 
-constexpr double kInf = std::numeric_limits<double>::infinity();
-
 namespace {
+
+constexpr double kInf = std::numeric_limits<double>::infinity();
 
 double MaxPropagatesNan(const double a, const double b) {
   if (std::isnan(a) || std::isnan(b)) {
@@ -63,33 +62,24 @@ class ConstraintChecker {
 
   absl::Status Check(const MPConstraintProto& constraint,
                      const absl::string_view message_prefix) {
-    coefficients_.clear();
-    coefficients_.reserve(constraint.var_index_size() + 1);
-
-    var_values_.clear();
-    var_values_.reserve(constraint.var_index_size() + 1);
+    sum_.Clear();
     for (int j = 0; j < constraint.var_index_size(); ++j) {
-      coefficients_.push_back(constraint.coefficient(j));
-
       auto var_index = constraint.var_index(j);
       if (var_index < 0 || var_index >= solution_.size()) {
         return ortools::InvalidArgumentErrorBuilder()
                << "Invalid variable index " << var_index << " in "
                << message_prefix << " " << constraint.name();
       }
-      var_values_.push_back(solution_[constraint.var_index(j)]);
+      sum_.AddProd(constraint.coefficient(j),
+                   solution_[constraint.var_index(j)]);
     }
-    var_values_.push_back(options_.constraint_tolerance);
+    sum_.Add(options_.constraint_tolerance);
 
-    coefficients_.push_back(1.0);
-    if (constraint.has_lower_bound() &&
-        !DotProductIsGreaterOrEqual(coefficients_, var_values_,
-                                    constraint.lower_bound())) {
+    if (constraint.has_lower_bound() && sum_ < constraint.lower_bound()) {
       // Skip tolerance.
-      coefficients_.back() = 0.0;
+      sum_.Add(-options_.constraint_tolerance);
 
-      const auto [lb, ub] =
-          GetTightDotProductBounds(coefficients_, var_values_);
+      const auto [lb, ub] = sum_.TightBounds();
       add_violation_(
           absl::StrCat(message_prefix, " '", constraint.name(), "'",
                        " >= ", RoundTripDoubleFormat(constraint.lower_bound()),
@@ -98,17 +88,16 @@ class ConstraintChecker {
                        " exact activity in [", RoundTripDoubleFormat(lb), ", ",
                        RoundTripDoubleFormat(ub), "]"),
           constraint.lower_bound() - ub);
+      sum_.Add(options_.constraint_tolerance);
     }
-
-    coefficients_.back() = -1.0;
-    if (constraint.has_upper_bound() &&
-        !DotProductIsSmallerOrEqual(coefficients_, var_values_,
-                                    constraint.upper_bound())) {
+    // Subtract twice the tolerance in order to replace +tolerance by
+    // -tolerance.
+    sum_.AddProd(-2, options_.constraint_tolerance);
+    if (constraint.has_upper_bound() && sum_ > constraint.upper_bound()) {
       // Skip tolerance.
-      coefficients_.back() = 0.0;
+      sum_.Add(options_.constraint_tolerance);
 
-      const auto [lb, ub] =
-          GetTightDotProductBounds(coefficients_, var_values_);
+      const auto [lb, ub] = sum_.TightBounds();
       add_violation_(
           absl::StrCat(message_prefix, " '", constraint.name(), "'",
                        " <= ", RoundTripDoubleFormat(constraint.upper_bound()),
@@ -127,8 +116,7 @@ class ConstraintChecker {
   const absl::Span<const double> solution_;
 
   // Avoid reallocations.
-  std::vector<double> coefficients_;
-  std::vector<double> var_values_;
+  TightSum sum_;
 };
 
 // Deduction guide for ConstraintChecker.
@@ -184,15 +172,16 @@ absl::StatusOr<bool> SolutionIsFeasible(const sat::MPModelProtoWrapper& model,
       continue;
     }
     const MPVariableProto& var = model.variables(i);
-    if (SumIsNegative({v, -var.lower_bound(), options.variable_tolerance}) ||
-        SumIsPositive({v, -var.upper_bound(), -options.variable_tolerance})) {
+    if (TightSum().Add(v).Add(options.variable_tolerance) < var.lower_bound() ||
+        TightSum().Add(v).Add(-options.variable_tolerance) >
+            var.upper_bound()) {
       add_violation(
           absl::StrCat("Variable ", var.name(), "(", i,
                        ") is out of bounds: ", RoundTripDoubleFormat(v),
                        " not in [", RoundTripDoubleFormat(var.lower_bound()),
                        ", ", RoundTripDoubleFormat(var.upper_bound()), "]"),
-          MaxPropagatesNan(std::abs(v - var.lower_bound()),
-                           std::abs(v - var.upper_bound())));
+          MaxPropagatesNan(MaxPropagatesNan(var.lower_bound() - v, 0.0),
+                           MaxPropagatesNan(v - var.upper_bound(), 0.0)));
     }
     if (var.is_integer() &&
         (SumIsPositive({v, -std::round(v), -options.integer_tolerance}) ||
@@ -246,18 +235,13 @@ absl::StatusOr<std::pair<double, double>> GetTightObjectiveBounds(
            << ") does not match model variable size (" << model.num_variables()
            << ")";
   }
-  std::vector<double> coefficients;
-  coefficients.reserve(model.num_variables() + 1);
-  std::vector<double> var_values;
-  var_values.reserve(model.num_variables() + 1);
+  TightSum objective;
   for (int i = 0; i < model.num_variables(); ++i) {
-    coefficients.push_back(model.variables(i).objective_coefficient());
-    var_values.push_back(solution[i]);
+    objective.AddProd(model.variables(i).objective_coefficient(), solution[i]);
   }
-  coefficients.push_back(1.0);
-  var_values.push_back(model.objective_offset());
+  objective.Add(model.objective_offset());
 
-  return GetTightDotProductBounds(coefficients, var_values);
+  return objective.TightBounds();
 }
 
 }  // namespace operations_research

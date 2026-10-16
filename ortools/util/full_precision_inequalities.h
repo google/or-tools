@@ -14,11 +14,11 @@
 #ifndef ORTOOLS_UTIL_FULL_PRECISION_INEQUALITIES_H_
 #define ORTOOLS_UTIL_FULL_PRECISION_INEQUALITIES_H_
 
-#include <bit>
 #include <cmath>
 #include <compare>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <type_traits>
 #include <utility>
 
@@ -42,8 +42,9 @@ double FastStepUp(double v);
 // faster since it doesn't need to set or check CPU flags.
 double FastStepDown(double v);
 
-// Represents a power of two, i.e. 2^exponent. Used for the API of Sum. Supports
-// between 2^-30 and 2^30 (the reason is to avoid overflows in the exponent).
+// Represents a power of two, i.e. 2^exponent. Used for the API of TightSum.
+// Supports between 2^-30 and 2^30 (the reason is to avoid overflows in the
+// exponent).
 struct PowerOfTwo {
   PowerOfTwo(int exponent);
   int exponent;
@@ -51,30 +52,32 @@ struct PowerOfTwo {
 
 // Represents a sum of terms with full precision. The sum is not necessarily
 // representable as a double. This is not thread-safe.
-class Sum {
+class TightSum {
  public:
+  void Clear();
+
   // Adds the product of the given arguments to the sum. arguments can be of
   // type double, int64_t, or PowerOfTwo. Returns itself for chaining.
   // Two versions to simplify the implementation.
   template <typename Arg>
-  Sum& Add(Arg arg);
+  TightSum& Add(Arg arg);
   template <typename Arg1, typename Arg2, typename... OtherArgs>
-  Sum& AddProd(Arg1 arg1, Arg2 arg2, OtherArgs... other_args);
+  TightSum& AddProd(Arg1 arg1, Arg2 arg2, OtherArgs... other_args);
 
-  friend std::strong_ordering operator<=>(const Sum& a, const double x) {
+  friend std::strong_ordering operator<=>(const TightSum& a, const double x) {
     return a.CompareTo(x);
   }
 
-  friend std::strong_ordering operator<=>(const double x, const Sum& a) {
+  friend std::strong_ordering operator<=>(const double x, const TightSum& a) {
     // 0 <=> ? defined as opposite for std::strong_ordering.
     return 0 <=> a.CompareTo(x);
   }
 
-  friend std::strong_ordering operator<=>(const Sum& a, const int64_t x) {
+  friend std::strong_ordering operator<=>(const TightSum& a, const int64_t x) {
     return a.CompareTo(x);
   }
 
-  friend std::strong_ordering operator<=>(const int64_t x, const Sum& a) {
+  friend std::strong_ordering operator<=>(const int64_t x, const TightSum& a) {
     // 0 <=> ? defined as opposite for std::strong_ordering.
     return 0 <=> a.CompareTo(x);
   }
@@ -82,9 +85,9 @@ class Sum {
   // Returns currently known bounds on the sum.
   std::pair<double, double> LooseBounds() const { return {lb_, ub_}; }
 
-  double LooseLb() const { return lb_; }
+  double LooseLowerBound() const { return lb_; }
 
-  double LooseUb() const { return ub_; }
+  double LooseUpperBound() const { return ub_; }
 
   // Returns the tight bounds of the sum. In other words, returns [lb, ub]
   // such that lb <= sum <= ub and
@@ -96,35 +99,42 @@ class Sum {
     return SlowTightBounds();
   }
 
-  double TightLb() const { return TightBounds().first; }
+  double TightLowerBound() const { return TightBounds().first; }
 
-  double TightUb() const { return TightBounds().second; }
+  double TightUpperBound() const { return TightBounds().second; }
 
-  // Returns {floor(sum), ceil(sum)}, clamped to
-  // [std::numeric_limits<int64_t>::min(), std::numeric_limits<int64_t>::max()].
-  std::pair<int64_t, int64_t> SaturatedInt64Bounds() const;
+  // Returns {floor(sum), ceil(sum)}.
+  // * If sum > std::numeric_limits<int64_t>::max(), returns
+  //   {std::numeric_limits<int64_t>::max(), nullopt}.
+  // * If sum < std::numeric_limits<int64_t>::min(), returns
+  //   {nullopt, std::numeric_limits<int64_t>::min()}.
+  std::pair<std::optional<int64_t>, std::optional<int64_t>> Int64Bounds() const;
 
-  int64_t SaturatedFloor() const { return SaturatedInt64Bounds().first; }
+  std::optional<int64_t> Int64Floor() const { return Int64Bounds().first; }
 
-  int64_t SaturatedCeil() const { return SaturatedInt64Bounds().second; }
+  std::optional<int64_t> Int64Ceil() const { return Int64Bounds().second; }
 
   // A term of the sum. This is public to be used in implementation functions.
   // However, it is not part of the public API (it could be used only as a
-  // struct from outside as no member of Sum give access to terms).
+  // struct from outside as no member of TightSum give access to terms).
+  // Note that a term needs not to be canonical: it is valid to represent 4.0 as
+  // 1.0 * 2^2 or 2.0 * 2^1 or 4.0 * 2^0.
   struct Term {
     // These are used as sentinels for infinite values exponents. A value with
     // such an exponent is infinite with sign given by the negative field.
     // mantissa must be 1.
     constexpr static int kExpInf = std::numeric_limits<int>::max();
 
-    bool negative ABSL_REQUIRE_EXPLICIT_INIT;
     absl::uint128 mantissa ORTOOLS_REQUIRE_EXPLICIT_INIT;
+    bool negative ABSL_REQUIRE_EXPLICIT_INIT;
     int exponent ABSL_REQUIRE_EXPLICIT_INIT;
   };
 
  private:
   static Term ToTerm(double x);
+  static Term ToTerm(float x);
   static Term ToTerm(int64_t n);
+  static Term ToTerm(int n);
   static Term ToTerm(PowerOfTwo p);
 
   // Returns the comparison between the sum and x. Formally sum <=> x where <=>
@@ -146,10 +156,10 @@ class Sum {
   // bounds.
   void AddTermToBounds(const Term& term) const;
 
-  void SortIfNeeded() const;
+  void SortAndCompressIfNeeded() const;
 
-  // Replaces Sum by infinity if the incoming product is infinite. Crashes if it
-  // would be NaN.
+  // Replaces TightSum by infinity if the incoming product is infinite. Crashes
+  // if it would be NaN.
   template <typename Arg1, typename... OtherArgs>
   void SetInfIfNeeded(Arg1 arg1, OtherArgs... other_args);
 
@@ -181,11 +191,12 @@ class Sum {
 
 // Returns the sum of a vector of doubles or int64_t.
 template <typename Number>
-Sum SumAll(absl::Span<const Number> v);
+TightSum TightSumOf(absl::Span<const Number> v);
 
-// Returns the DotProduct of two vectors of double or int64_t.
+// Returns the dot product of two vectors of double or int64_t.
 template <typename Number1, typename Number2>
-Sum DotProduct(absl::Span<const Number1> v, absl::Span<const Number2> w);
+TightSum TightDotProduct(absl::Span<const Number1> v,
+                         absl::Span<const Number2> w);
 
 // TODO(user): All these function should be removed. However, keep them here
 // during the transition to the new API.
@@ -216,19 +227,6 @@ bool SumIsNegative(absl::Span<const double> v);
 std::pair<double, double> GetLooseDotProductBounds(absl::Span<const double> a,
                                                    absl::Span<const double> b);
 
-// Returns a pair of lb, ub such that lb <= dot_product(a, b) <= ub provably,
-// for the actual dot product of a and b (in R). These bounds are tight:
-//  * if dot_product(a, b) is representable as a double, then lb == ub ==
-//    dot_product(a, b);
-//  * otherwise, ub = nextafter(lb, inf).
-// Note that the algorithm is in O(n * log n * err) where n is the size of the
-// vectors and err is the number of loose bits in GetLooseDotProductBounds,
-// hence is better than full precision arithmetic which would be O(n^2).
-//
-// tl;dr: it is tighter but (much) slower than GetLooseDotProductBounds.
-std::pair<double, double> GetTightDotProductBounds(absl::Span<const double> a,
-                                                   absl::Span<const double> b);
-
 // Returns the comparison between dot product and bound. Formally a.b <=> bound
 // where <=> has the semantics of the three way operator. NaN are not handled.
 std::strong_ordering CmpDotProduct(absl::Span<const double> a,
@@ -249,22 +247,20 @@ bool DotProductIsGreaterOrEqual(absl::Span<const double> a,
 bool DotProductIsEqual(absl::Span<const double> a, absl::Span<const double> b,
                        double res);
 
-// For any combination of int64_t and finite double, ProdBounds(a, b) returns a
-// tight pair of bounds [lb, ub] such that lb <= a * b <= ub in R.
-std::pair<double, double> ProdBounds(int64_t a, int64_t b);
-std::pair<double, double> ProdBounds(int64_t a, double b);
-std::pair<double, double> ProdBounds(double a, int64_t b);
-std::pair<double, double> ProdBounds(double a, double b);
+// For any combination of int64_t, finite double and PowerOfTwo, ProdBounds(a,
+// b, p) returns a tight pair of bounds [lb, ub] such that lb <= a * b * p <= ub
+// in R.
+std::pair<double, double> ProdBounds(int64_t a, int64_t b,
+                                     PowerOfTwo p = PowerOfTwo(0));
+std::pair<double, double> ProdBounds(int64_t a, double b,
+                                     PowerOfTwo p = PowerOfTwo(0));
+std::pair<double, double> ProdBounds(double a, int64_t b,
+                                     PowerOfTwo p = PowerOfTwo(0));
+std::pair<double, double> ProdBounds(double a, double b,
+                                     PowerOfTwo p = PowerOfTwo(0));
 
 // Returns a tight double interval containing n.
 std::pair<double, double> Int64DoubleBounds(int64_t n);
-
-// Returns tight bounds for scale * (n + pre_shift) + shift.
-// TODO(user): improve the API. In particular, it is very close to
-// `GetTightDotProductBounds`. We should deduplicate the code.
-// Preconditions: scale, shift, and pre_shift are finite.
-std::pair<double, double> FuseAddMultiplyAdd(double scale, double shift,
-                                             double pre_shift, int64_t n);
 
 inline double FastStepUp(const double v) {
   static_assert(std::numeric_limits<double>::is_iec559);
@@ -298,7 +294,7 @@ inline double FastStepDown(const double v) {
   return absl::bit_cast<double>(i);
 }
 
-// Inline implementation of class Sum for cases where speed matters (short
+// Inline implementation of class TightSum for cases where speed matters (short
 // functions).
 
 inline PowerOfTwo::PowerOfTwo(const int exponent) : exponent(exponent) {
@@ -306,8 +302,17 @@ inline PowerOfTwo::PowerOfTwo(const int exponent) : exponent(exponent) {
   DCHECK_GE(exponent, -(1 << 30));
 }
 
+inline void TightSum::Clear() {
+  terms_.clear();
+  inf_sign_ = std::strong_ordering::equal;
+  terms_sorted_before_ = 0;
+  lb_ = 0.0;
+  ub_ = 0.0;
+  tight_bounds_ = true;
+}
+
 template <typename Arg>
-Sum& Sum::Add(Arg arg) {
+TightSum& TightSum::Add(Arg arg) {
   SetInfIfNeeded(arg);
   if (inf_sign_ != std::strong_ordering::equal) return *this;
 
@@ -316,7 +321,7 @@ Sum& Sum::Add(Arg arg) {
 }
 
 template <typename Arg1, typename Arg2, typename... OtherArgs>
-Sum& Sum::AddProd(Arg1 arg1, Arg2 arg2, OtherArgs... other_args) {
+TightSum& TightSum::AddProd(Arg1 arg1, Arg2 arg2, OtherArgs... other_args) {
   SetInfIfNeeded(arg1, arg2, other_args...);
   if (inf_sign_ != std::strong_ordering::equal) return *this;
 
@@ -341,42 +346,53 @@ Sum& Sum::AddProd(Arg1 arg1, Arg2 arg2, OtherArgs... other_args) {
   return *this;
 }
 
-inline Sum::Term Sum::ToTerm(const double x) {
+inline TightSum::Term TightSum::ToTerm(const double x) {
+  static_assert(std::numeric_limits<double>::is_iec559);
+  static_assert(std::numeric_limits<double>::radix == 2);
+  static_assert(sizeof(double) == sizeof(uint64_t), "double must be 64 bits.");
+
   CHECK(!std::isnan(x));
-  if (!std::isfinite(x)) {
-    return {.negative = x < 0, .mantissa = 1, .exponent = Sum::Term::kExpInf};
+  const int64_t bits = absl::bit_cast<int64_t>(x);
+  const bool negative = bits < 0;
+  int biased_exp = (bits >> 52) & 0x7ff;
+  if (biased_exp == 0x7ff) {
+    return {.mantissa = 1,
+            .negative = negative,
+            .exponent = TightSum::Term::kExpInf};
   }
-  int exp;
-  const double frac = std::frexp(std::abs(x), &exp);
-  uint64_t mantissa = static_cast<uint64_t>(std::ldexp(frac, 53));
-  if (mantissa != 0) {
-    const int trailing_z = std::countr_zero(mantissa);
-    mantissa >>= trailing_z;
-    exp += trailing_z;
+  uint64_t mantissa = bits & ((uint64_t{1} << 52) - 1);
+  if (biased_exp > 0) {
+    mantissa |= uint64_t{1} << 52;
+  } else {
+    biased_exp = 1;
   }
-  return {.negative = x < 0, .mantissa = mantissa, .exponent = exp - 53};
+  return {.mantissa = mantissa,
+          .negative = negative,
+          .exponent = biased_exp - 1075};
 }
 
-inline Sum::Term Sum::ToTerm(const int64_t n) {
-  uint64_t mantissa =
+inline TightSum::Term TightSum::ToTerm(const float x) {
+  return ToTerm(static_cast<double>(x));
+}
+
+inline TightSum::Term TightSum::ToTerm(const int64_t n) {
+  const uint64_t mantissa =
       n == std::numeric_limits<int64_t>::min()  // Avoid overflow of std::abs.
           ? uint64_t{1} << 63
           : static_cast<uint64_t>(std::abs(n));
-  int exp = 0;
-  if (mantissa != 0) {
-    const int trailing_z = std::countr_zero(mantissa);
-    mantissa >>= trailing_z;
-    exp = trailing_z;
-  }
-  return {.negative = n < 0, .mantissa = mantissa, .exponent = exp};
+  return {.mantissa = mantissa, .negative = n < 0, .exponent = 0};
 }
 
-inline Sum::Term Sum::ToTerm(const PowerOfTwo p) {
-  return {.negative = false, .mantissa = 1, .exponent = p.exponent};
+inline TightSum::Term TightSum::ToTerm(const int n) {
+  return ToTerm(static_cast<int64_t>(n));
+}
+
+inline TightSum::Term TightSum::ToTerm(const PowerOfTwo p) {
+  return {.mantissa = 1, .negative = false, .exponent = p.exponent};
 }
 
 template <typename Arg1, typename... OtherArgs>
-void Sum::SetInfIfNeeded(Arg1 arg1, OtherArgs... other_args) {
+void TightSum::SetInfIfNeeded(Arg1 arg1, OtherArgs... other_args) {
   auto isinf = [](auto arg) {
     if constexpr (std::is_same_v<decltype(arg), double>) {
       CHECK(!std::isnan(arg)) << "NaN not supported";
@@ -421,7 +437,7 @@ void Sum::SetInfIfNeeded(Arg1 arg1, OtherArgs... other_args) {
   }
 }
 
-inline std::strong_ordering Sum::CompareTo(const double x) const {
+inline std::strong_ordering TightSum::CompareTo(const double x) const {
   if (ub_ < x) return std::strong_ordering::less;
   if (lb_ > x) return std::strong_ordering::greater;
   if (ub_ == x && lb_ == x) return std::strong_ordering::equal;
@@ -432,7 +448,7 @@ inline std::strong_ordering Sum::CompareTo(const double x) const {
   return SlowCompareTo(x);
 }
 
-inline std::strong_ordering Sum::CompareTo(const int64_t x) const {
+inline std::strong_ordering TightSum::CompareTo(const int64_t x) const {
   const auto [x_lb, x_ub] = Int64DoubleBounds(x);
   if (ub_ < x_lb) return std::strong_ordering::less;
   if (lb_ > x_ub) return std::strong_ordering::greater;
@@ -441,19 +457,20 @@ inline std::strong_ordering Sum::CompareTo(const int64_t x) const {
 }
 
 template <typename Number>
-Sum SumAll(const absl::Span<const Number> v) {
-  Sum res;
+TightSum TightSumOf(const absl::Span<const Number> v) {
+  TightSum res;
   for (const Number& n : v) {
     res.Add(n);
   }
   return res;
 }
 
-// Returns the DotProduct of two vectors of double or int64_t.
+// Returns the dot product of two vectors of double or int64_t.
 template <typename Number1, typename Number2>
-Sum DotProduct(absl::Span<const Number1> v, absl::Span<const Number2> w) {
+TightSum TightDotProduct(absl::Span<const Number1> v,
+                         absl::Span<const Number2> w) {
   CHECK_EQ(v.size(), w.size());
-  Sum res;
+  TightSum res;
   for (int i = 0; i < v.size(); ++i) {
     res.AddProd(v[i], w[i]);
   }
