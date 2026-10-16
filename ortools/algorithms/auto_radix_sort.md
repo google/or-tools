@@ -2,7 +2,7 @@
 
 This document explains the design, variants, and usage of the high-performance
 Radix Sort implementations provided in
-[`multikey_radix_sort.h`](/ortools/algorithms/multikey_radix_sort.h).
+[`auto_radix_sort.h`](/ortools/algorithms/auto_radix_sort.h).
 
 ---
 
@@ -141,7 +141,7 @@ AutoHistogramRadixSort<RadixSortDirection::kDecreasing>(
 
 ### How Direction Works Under the Hood
 Instead of duplicating the counting and distribution loops with reverse indexing
-logic, `multikey_radix_sort.h` elegantly transforms the extracted radix key at
+logic, `auto_radix_sort.h` elegantly transforms the extracted radix key at
 the lowest level (`GetRadixKey`).
 
 *   **Increasing (`kIncreasing`):** The integer key is shifted by the minimum

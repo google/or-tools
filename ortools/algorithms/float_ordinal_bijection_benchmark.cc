@@ -19,15 +19,18 @@
 //
 // Problem (Bracket)   | Type   | Std (ns) | Ord (ns) | Direct | vs Ord / Std
 // --------------------+--------+----------+----------+--------+--------------
-// exp(x)-1e38 [0,max] | float  |    1,971 |      583 |    210 | 2.78x / 9.39x
-// exp(x)-1e38 [0,max] | double |   15,265 |    1,674 |    670 | 2.50x / 22.8x
-// exp(x)-1    [0,max] | float  |    2,830 |      342 |    123 | 2.78x / 23.0x
-// exp(x)-1    [0,max] | double |   33,372 |      878 |    351 | 2.50x / 95.1x
-// x * x - 2   [1, 2]  | float  |      111 |      212 |   35.7 | 5.94x / 3.11x
-// x * x - 2   [1, 2]  | double |      237 |      422 |   65.2 | 6.47x / 3.63x
+// exp(x)-1e38 [0,max] | float  |    1,979 |      588 |    206 | 2.85x / 9.61x
+// exp(x)-1e38 [0,max] | double |   14,363 |    1,610 |    664 | 2.42x / 21.6x
+// exp(x)-1    [0,max] | float  |    2,838 |      344 |    105 | 3.28x / 27.0x
+// exp(x)-1    [0,max] | double |   32,017 |      927 |    298 | 3.11x / 107x
+// x * x - 2   [1, 2]  | float  |      101 |      206 |   36.9 | 5.58x / 2.74x
+// x * x - 2   [1, 2]  | double |      233 |      436 |   65.6 | 6.65x / 3.55x
+// y^3-2*y-5   [0,max] | float  |      914 |      330 |   47.9 | 6.89x / 19.1x
+// y^3-2*y-5   [0,max] | double |    6,569 |      627 |   84.0 | 7.46x / 78.2x
+// y^3-2*y-5   [2, 3]  | float  |      132 |      233 |   35.7 | 6.53x / 3.70x
+// y^3-2*y-5   [2, 3]  | double |      311 |      500 |   69.9 | 7.15x / 4.45x
 //
-// Why `OrdinalBisectMonotonic` is faster even within a single binade
-// (`[1,2]`):
+// Key observations:
 // 1. No per-step forward transforms or XMM <-> GPR round-trips: in
 //    `BisectMonotonic` with `OrdinalMidpoint`, `(low, high)` are stored as
 //    floats, forcing each step to move `low` and `high` from floating-point
@@ -35,12 +38,21 @@
 //    and move the result back (`OrdinalToFloat`). `OrdinalBisectMonotonic`
 //    keeps `(low_ordinal, high_ordinal)` in integer registers for the entire
 //    loop and performs only a single `OrdinalToFloat(mid_ordinal)` per step.
-// 2. Faster than `std::midpoint` on `[1, 2]` (`3.1x`-`3.6x`): even when both
+// 2. Faster than `std::midpoint` on `[1, 2]` (`2.7x`-`3.6x`): even when both
 //    methods take the exact same `M` steps (`23` for `float`, `52` for
 //    `double`), `std::midpoint(float, float)` executes magnitude range checks
 //    and branches at every step to guard against overflow and underflow,
 //    whereas `std::midpoint(low_ordinal, high_ordinal)` compiles to a
 //    branchless integer subtraction, right-shift, and addition.
+// 3. Low penalty for wide initial brackets (`[0, max]` or `[0, +inf]` vs
+//    `[2, 3]` on `y^3 - 2*y - 5`): omitting domain-specific bracket narrowing
+//    and starting directly from `[0, max]` (or `[0, +inf]`) adds only `E`
+//    exponent-halving steps (`8` for `float`, `11` for `double`) on top of the
+//    `M` significand steps (`23` for `float`, `52` for `double`). With the
+//    ordinal transform, `[0, max]` costs only `1.20x`-`1.34x` (`Direct`) or
+//    `1.25x`-`1.42x` (`Ord`) as much as `[2, 3]`, whereas `std::midpoint` pays
+//    a `6.9x` (`float`) to `21.1x` (`double`) penalty to step through every
+//    binade linearly.
 
 #include <cmath>
 #include <limits>
@@ -121,185 +133,118 @@ Float ExpM(const Float x) {
   }
 }
 
+// Evaluates `std::midpoint(a, b)`. Taking the address of a non-member standard
+// library function such as `std::midpoint<Float>` has unspecified behavior in
+// C++20 (`[namespace.std]` §16.4.5.2.1), and `<numeric>` also overloads
+// `std::midpoint` for both arithmetic types `T(T, T)` and pointers `T*(T*,
+// T*)`, making `std::midpoint<Float>` an ambiguous overload set when passed to
+// a deduced template parameter `MidpointFn`.
+template <typename Float>
+Float StdMidpoint(const Float a, const Float b) {
+  return std::midpoint(a, b);
+}
+
 // Evaluates `x * x - 2` to bisect `sqrt(2)`.
 template <typename Float>
 Float Sqrt2Residual(const Float x) {
   return x * x - Float{2};
 }
 
-// Benchmarks `BisectMonotonic` with `std::midpoint` on `exp(x) - 1e38 = 0` over
-// `[0, max]` using Google Benchmark `state`.
+// Evaluates Isaac Newton's historical cubic `y^3 - 2 * y - 5` from *De analysi
+// per aequationes numero terminorum infinitas* (1669, published 1711) and
+// *Methodus fluxionum et serierum infinitarum* (1671, published 1736), which
+// has a unique real root at `y* ~= 2.09455148154232659148`.
 template <typename Float>
-void BM_BisectExpMBig_StdMidpoint(benchmark::State& state) {
-  constexpr Float kBigValue = Float{1e38};
-  const auto float_midpoint = [](const Float a, const Float b) -> Float {
-    return std::midpoint(a, b);
-  };
+Float NewtonCubicResidual(const Float y) {
+  return y * y * y - Float{2} * y - Float{5};
+}
+
+// Benchmarks `BisectMonotonic` with `std::midpoint` on `kFn` over
+// `[kLow, kHigh]` using Google Benchmark `state`.
+template <typename Float, Float (*kFn)(Float), Float kLow = Float{0},
+          Float kHigh = std::numeric_limits<Float>::max()>
+void BM_Bisect_StdMidpoint(benchmark::State& state) {
   for (const auto _ : state) {
-    Float low = Float{0};
-    Float high = std::numeric_limits<Float>::max();
+    Float low = kLow;
+    Float high = kHigh;
     benchmark::DoNotOptimize(low);
     benchmark::DoNotOptimize(high);
     BisectionResult<Float> res =
-        BisectMonotonic(low, high, ExpM<kBigValue>, float_midpoint);
+        BisectMonotonic(low, high, kFn, StdMidpoint<Float>);
     benchmark::DoNotOptimize(res);
   }
 }
-BENCHMARK(BM_BisectExpMBig_StdMidpoint<float>);
-BENCHMARK(BM_BisectExpMBig_StdMidpoint<double>);
 
-// Benchmarks `BisectMonotonic` with `OrdinalMidpoint` on `exp(x) - 1e38 = 0`
-// over `[0, max]` using Google Benchmark `state`.
-template <typename Float>
-void BM_BisectExpMBig_OrdinalMidpoint(benchmark::State& state) {
-  constexpr Float kBigValue = Float{1e38};
-  const auto ordinal_midpoint = [](const Float a, const Float b) -> Float {
-    return OrdinalMidpoint(a, b);
-  };
+// Benchmarks `BisectMonotonic` with `OrdinalMidpoint` on `kFn` over
+// `[kLow, kHigh]` using Google Benchmark `state`.
+template <typename Float, Float (*kFn)(Float), Float kLow = Float{0},
+          Float kHigh = std::numeric_limits<Float>::max()>
+void BM_Bisect_OrdinalMidpoint(benchmark::State& state) {
   for (const auto _ : state) {
-    Float low = Float{0};
-    Float high = std::numeric_limits<Float>::max();
+    Float low = kLow;
+    Float high = kHigh;
     benchmark::DoNotOptimize(low);
     benchmark::DoNotOptimize(high);
     BisectionResult<Float> res =
-        BisectMonotonic(low, high, ExpM<kBigValue>, ordinal_midpoint);
+        BisectMonotonic(low, high, kFn, OrdinalMidpoint<Float>);
     benchmark::DoNotOptimize(res);
   }
 }
-BENCHMARK(BM_BisectExpMBig_OrdinalMidpoint<float>);
-BENCHMARK(BM_BisectExpMBig_OrdinalMidpoint<double>);
 
-// Benchmarks `OrdinalBisectMonotonic` on `exp(x) - 1e38 = 0` over `[0, max]`
-// using Google Benchmark `state`.
-template <typename Float>
-void BM_BisectExpMBig_OrdinalBisect(benchmark::State& state) {
-  constexpr Float kBigValue = Float{1e38};
-  for (const auto _ : state) {
-    Float low = Float{0};
-    Float high = std::numeric_limits<Float>::max();
-    benchmark::DoNotOptimize(low);
-    benchmark::DoNotOptimize(high);
-    BisectionResult<Float> res =
-        OrdinalBisectMonotonic(low, high, ExpM<kBigValue>);
-    benchmark::DoNotOptimize(res);
-  }
-}
-BENCHMARK(BM_BisectExpMBig_OrdinalBisect<float>);
-BENCHMARK(BM_BisectExpMBig_OrdinalBisect<double>);
-
-// Benchmarks `BisectMonotonic` with `std::midpoint` on `exp(x) - 1 = 0` over
-// `[0, max]` using Google Benchmark `state`.
-template <typename Float>
-void BM_BisectExpMOne_StdMidpoint(benchmark::State& state) {
-  const auto float_midpoint = [](const Float a, const Float b) -> Float {
-    return std::midpoint(a, b);
-  };
-  for (const auto _ : state) {
-    Float low = Float{0};
-    Float high = std::numeric_limits<Float>::max();
-    benchmark::DoNotOptimize(low);
-    benchmark::DoNotOptimize(high);
-    BisectionResult<Float> res =
-        BisectMonotonic(low, high, ExpM<Float{1.0}>, float_midpoint);
-    benchmark::DoNotOptimize(res);
-  }
-}
-BENCHMARK(BM_BisectExpMOne_StdMidpoint<float>);
-BENCHMARK(BM_BisectExpMOne_StdMidpoint<double>);
-
-// Benchmarks `BisectMonotonic` with `OrdinalMidpoint` on `exp(x) - 1 = 0` over
-// `[0, max]` using Google Benchmark `state`.
-template <typename Float>
-void BM_BisectExpMOne_OrdinalMidpoint(benchmark::State& state) {
-  const auto ordinal_midpoint = [](const Float a, const Float b) -> Float {
-    return OrdinalMidpoint(a, b);
-  };
-  for (const auto _ : state) {
-    Float low = Float{0};
-    Float high = std::numeric_limits<Float>::max();
-    benchmark::DoNotOptimize(low);
-    benchmark::DoNotOptimize(high);
-    BisectionResult<Float> res =
-        BisectMonotonic(low, high, ExpM<Float{1.0}>, ordinal_midpoint);
-    benchmark::DoNotOptimize(res);
-  }
-}
-BENCHMARK(BM_BisectExpMOne_OrdinalMidpoint<float>);
-BENCHMARK(BM_BisectExpMOne_OrdinalMidpoint<double>);
-
-// Benchmarks `OrdinalBisectMonotonic` on `exp(x) - 1 = 0` over `[0, max]` using
+// Benchmarks `OrdinalBisectMonotonic` on `kFn` over `[kLow, kHigh]` using
 // Google Benchmark `state`.
-template <typename Float>
-void BM_BisectExpMOne_OrdinalBisect(benchmark::State& state) {
+template <typename Float, Float (*kFn)(Float), Float kLow = Float{0},
+          Float kHigh = std::numeric_limits<Float>::max()>
+void BM_Bisect_OrdinalBisect(benchmark::State& state) {
   for (const auto _ : state) {
-    Float low = Float{0};
-    Float high = std::numeric_limits<Float>::max();
+    Float low = kLow;
+    Float high = kHigh;
     benchmark::DoNotOptimize(low);
     benchmark::DoNotOptimize(high);
-    BisectionResult<Float> res =
-        OrdinalBisectMonotonic(low, high, ExpM<Float{1.0}>);
+    BisectionResult<Float> res = OrdinalBisectMonotonic(low, high, kFn);
     benchmark::DoNotOptimize(res);
   }
 }
-BENCHMARK(BM_BisectExpMOne_OrdinalBisect<float>);
-BENCHMARK(BM_BisectExpMOne_OrdinalBisect<double>);
 
-// Benchmarks `BisectMonotonic` with `std::midpoint` on `x * x - 2 = 0` over
-// `[1, 2]` using Google Benchmark `state`.
-template <typename Float>
-void BM_BisectSqrt2_StdMidpoint(benchmark::State& state) {
-  const auto float_midpoint = [](const Float a, const Float b) -> Float {
-    return std::midpoint(a, b);
-  };
-  for (const auto _ : state) {
-    Float low = Float{1};
-    Float high = Float{2};
-    benchmark::DoNotOptimize(low);
-    benchmark::DoNotOptimize(high);
-    BisectionResult<Float> res =
-        BisectMonotonic(low, high, Sqrt2Residual<Float>, float_midpoint);
-    benchmark::DoNotOptimize(res);
-  }
-}
-BENCHMARK(BM_BisectSqrt2_StdMidpoint<float>);
-BENCHMARK(BM_BisectSqrt2_StdMidpoint<double>);
+// 1. `exp(x) - 1e38 = 0` on `[0, max]`.
+BENCHMARK(BM_Bisect_StdMidpoint<float, ExpM<float{1e38}>>);
+BENCHMARK(BM_Bisect_StdMidpoint<double, ExpM<double{1e38}>>);
+BENCHMARK(BM_Bisect_OrdinalMidpoint<float, ExpM<float{1e38}>>);
+BENCHMARK(BM_Bisect_OrdinalMidpoint<double, ExpM<double{1e38}>>);
+BENCHMARK(BM_Bisect_OrdinalBisect<float, ExpM<float{1e38}>>);
+BENCHMARK(BM_Bisect_OrdinalBisect<double, ExpM<double{1e38}>>);
 
-// Benchmarks `BisectMonotonic` with `OrdinalMidpoint` on `x * x - 2 = 0` over
-// `[1, 2]` using Google Benchmark `state`.
-template <typename Float>
-void BM_BisectSqrt2_OrdinalMidpoint(benchmark::State& state) {
-  const auto ordinal_midpoint = [](const Float a, const Float b) -> Float {
-    return OrdinalMidpoint(a, b);
-  };
-  for (const auto _ : state) {
-    Float low = Float{1};
-    Float high = Float{2};
-    benchmark::DoNotOptimize(low);
-    benchmark::DoNotOptimize(high);
-    BisectionResult<Float> res =
-        BisectMonotonic(low, high, Sqrt2Residual<Float>, ordinal_midpoint);
-    benchmark::DoNotOptimize(res);
-  }
-}
-BENCHMARK(BM_BisectSqrt2_OrdinalMidpoint<float>);
-BENCHMARK(BM_BisectSqrt2_OrdinalMidpoint<double>);
+// 2. `exp(x) - 1 = 0` on `[0, max]`.
+BENCHMARK(BM_Bisect_StdMidpoint<float, ExpM<float{1.0}>>);
+BENCHMARK(BM_Bisect_StdMidpoint<double, ExpM<double{1.0}>>);
+BENCHMARK(BM_Bisect_OrdinalMidpoint<float, ExpM<float{1.0}>>);
+BENCHMARK(BM_Bisect_OrdinalMidpoint<double, ExpM<double{1.0}>>);
+BENCHMARK(BM_Bisect_OrdinalBisect<float, ExpM<float{1.0}>>);
+BENCHMARK(BM_Bisect_OrdinalBisect<double, ExpM<double{1.0}>>);
 
-// Benchmarks `OrdinalBisectMonotonic` on `x * x - 2 = 0` over `[1, 2]` using
-// Google Benchmark `state`.
-template <typename Float>
-void BM_BisectSqrt2_OrdinalBisect(benchmark::State& state) {
-  for (const auto _ : state) {
-    Float low = Float{1};
-    Float high = Float{2};
-    benchmark::DoNotOptimize(low);
-    benchmark::DoNotOptimize(high);
-    BisectionResult<Float> res =
-        OrdinalBisectMonotonic(low, high, Sqrt2Residual<Float>);
-    benchmark::DoNotOptimize(res);
-  }
-}
-BENCHMARK(BM_BisectSqrt2_OrdinalBisect<float>);
-BENCHMARK(BM_BisectSqrt2_OrdinalBisect<double>);
+// 3. `x * x - 2 = 0` on `[1, 2]`.
+BENCHMARK(BM_Bisect_StdMidpoint<float, Sqrt2Residual, 1.0f, 2.0f>);
+BENCHMARK(BM_Bisect_StdMidpoint<double, Sqrt2Residual, 1.0, 2.0>);
+BENCHMARK(BM_Bisect_OrdinalMidpoint<float, Sqrt2Residual, 1.0f, 2.0f>);
+BENCHMARK(BM_Bisect_OrdinalMidpoint<double, Sqrt2Residual, 1.0, 2.0>);
+BENCHMARK(BM_Bisect_OrdinalBisect<float, Sqrt2Residual, 1.0f, 2.0f>);
+BENCHMARK(BM_Bisect_OrdinalBisect<double, Sqrt2Residual, 1.0, 2.0>);
+
+// 4. `y^3 - 2 * y - 5 = 0` on `[0, max]`.
+BENCHMARK(BM_Bisect_StdMidpoint<float, NewtonCubicResidual>);
+BENCHMARK(BM_Bisect_StdMidpoint<double, NewtonCubicResidual>);
+BENCHMARK(BM_Bisect_OrdinalMidpoint<float, NewtonCubicResidual>);
+BENCHMARK(BM_Bisect_OrdinalMidpoint<double, NewtonCubicResidual>);
+BENCHMARK(BM_Bisect_OrdinalBisect<float, NewtonCubicResidual>);
+BENCHMARK(BM_Bisect_OrdinalBisect<double, NewtonCubicResidual>);
+
+// 5. `y^3 - 2 * y - 5 = 0` on `[2, 3]`.
+BENCHMARK(BM_Bisect_StdMidpoint<float, NewtonCubicResidual, 2.0f, 3.0f>);
+BENCHMARK(BM_Bisect_StdMidpoint<double, NewtonCubicResidual, 2.0, 3.0>);
+BENCHMARK(BM_Bisect_OrdinalMidpoint<float, NewtonCubicResidual, 2.0f, 3.0f>);
+BENCHMARK(BM_Bisect_OrdinalMidpoint<double, NewtonCubicResidual, 2.0, 3.0>);
+BENCHMARK(BM_Bisect_OrdinalBisect<float, NewtonCubicResidual, 2.0f, 3.0f>);
+BENCHMARK(BM_Bisect_OrdinalBisect<double, NewtonCubicResidual, 2.0, 3.0>);
 
 }  // namespace
 }  // namespace operations_research

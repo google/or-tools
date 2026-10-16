@@ -547,14 +547,20 @@ or_cc_binary(
 )
 
 or_cc_library(
-    name = "multikey_radix_sort",
-    hdrs = ["multikey_radix_sort.h"],
+    name = "auto_radix_sort",
+    hdrs = ["auto_radix_sort.h"],
     deps = [
         ":float_ordinal_bijection",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/numeric:bits",
     ],
+)
+
+or_cc_library(
+    name = "multikey_radix_sort",
+    hdrs = ["multikey_radix_sort.h"],
+    deps = [":auto_radix_sort"],
 )
 
 or_cc_test(
@@ -575,12 +581,12 @@ or_cc_test(
 )
 
 or_cc_test(
-    name = "multikey_radix_sort_test",
-    srcs = ["multikey_radix_sort_test.cc"],
+    name = "auto_radix_sort_test",
+    srcs = ["auto_radix_sort_test.cc"],
     shard_count = 10,
     tags = ["noci"],
     deps = [
-        ":multikey_radix_sort",
+        ":auto_radix_sort",
         ":radix_sort",
         "//ortools/base:gmock_main",
         "//ortools/base:log_severity",
@@ -596,11 +602,11 @@ or_cc_test(
 )
 
 or_cc_binary(
-    name = "multikey_radix_sort_benchmark",
+    name = "auto_radix_sort_benchmark",
     testonly = True,
-    srcs = ["multikey_radix_sort_benchmark.cc"],
+    srcs = ["auto_radix_sort_benchmark.cc"],
     deps = [
-        ":multikey_radix_sort",
+        ":auto_radix_sort",
         ":radix_sort",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
