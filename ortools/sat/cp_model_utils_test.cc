@@ -300,9 +300,18 @@ TEST(FingerprintTest, BasicApi) {
     coeffs: [ -1, -14, -35 ]
     offset: 11
   )pb");
-  EXPECT_EQ(uint64_t{0x871AE5CE74BFBE37},
+
+#if defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+  constexpr uint64_t kExpectedExpression = 0x07809CD94FE850D0;
+  constexpr uint64_t kExpectedRepeatedField = 0x79F1E751683C9518;
+#else
+  constexpr uint64_t kExpectedExpression = 0x871AE5CE74BFBE37;
+  constexpr uint64_t kExpectedRepeatedField = 0x3E7E7DEAEF2AB62C;
+#endif
+
+  EXPECT_EQ(kExpectedExpression,
             FingerprintExpression(lin, kDefaultFingerprintSeed));
-  EXPECT_EQ(uint64_t{0x3E7E7DEAEF2AB62C},
+  EXPECT_EQ(kExpectedRepeatedField,
             FingerprintRepeatedField(lin.vars(), kDefaultFingerprintSeed));
   EXPECT_EQ(uint64_t{0x85715ADBDFD6F8AD},
             FingerprintSingleField(lin.offset(), kDefaultFingerprintSeed));
