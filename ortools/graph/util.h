@@ -130,13 +130,13 @@ class UndirectedAdjacencyListsOfDirectedGraph {
     template <typename OtherArcIt>
     friend bool operator==(const AdjacencyListIterator& l,
                            const AdjacencyListIterator<OtherArcIt>& r) {
-      return l.arc_it_ == r.arc_it_;
+      return l.arc_it_ == r.internal_arc_it();
     }
 
     template <typename OtherArcIt>
     friend bool operator!=(const AdjacencyListIterator& l,
                            const AdjacencyListIterator<OtherArcIt>& r) {
-      return l.arc_it_ != r.arc_it_;
+      return l.arc_it_ != r.internal_arc_it();
     }
 
     AdjacencyListIterator& operator++() {
@@ -149,6 +149,10 @@ class UndirectedAdjacencyListsOfDirectedGraph {
       ++(*this);
       return tmp;
     }
+
+    // TODO: This is currently needed to support GCC 11.4.0 that fails to
+    // understand the friend class below.
+    auto internal_arc_it() const { return arc_it_; }
 
    private:
     template <typename T>
