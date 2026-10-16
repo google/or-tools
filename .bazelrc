@@ -37,7 +37,7 @@ build --java_runtime_version=remotejdk_21 # Hermetic JRE
 # Per plaform options
 ###############################################################################
 
-# TODO(user): Most of these flags should be per-compiler instead of
+# TODO(gchatelet): Most of these flags should be per-compiler instead of
 # per-platform.
 
 # By default, build with various extra flags per platform.
