@@ -38,6 +38,7 @@ ORTOOLS_GCC_FLAGS = [
     "-Wno-comment",  # Disables warnings for comments that contain non-ASCII characters
     "-Wno-range-loop-construct",  # Disables warnings when a range-based for loop is used with a non-range type
     "-Wno-sign-compare",  # Disables warnings when comparing signed and unsigned values because of internal Style Guide.
+    "-Wno-unused-parameter",  # Disables warnings whenever a function parameter is unused aside from its declaration
     "-Wall",  # Enables a core set of warnings about questionable constructs
     "-Wcast-qual",  # Warns when a pointer is cast to remove a type qualifier (e.g., const)
     "-Wconversion-null",  # Warns for conversions between NULL and non-pointer types
@@ -59,17 +60,11 @@ ORTOOLS_GCC_FLAGS = [
     # keeping the warnings low on the CI but they all need to be either removed
     # or adopted as an official flag.
     # go/keep-sorted start prefix_order="-D,"-f,"-Wno-,"-W"
-    "-Wno-deprecated-declarations",  # Disables warnings about uses of functions, variables, or types marked as deprecated
     "-Wno-float-conversion",  # Disables warnings for implicit conversions that reduce floating-point precision
-    "-Wno-ignored-qualifiers",  # Disables warnings when a qualifier is applied to a type that has no effect
     "-Wno-missing-declarations",  # Disables warnings if a global function is defined without a previous declaration
     "-Wno-missing-field-initializers",  # Disables warnings when a class has uninitialized members
-    "-Wno-sign-compare",  # Disables warnings when comparing signed and unsigned values
     "-Wno-sign-conversion",  # Disables warnings for implicit conversions that may change the sign of an integer value
     "-Wno-undef",  # Disables warnings when an undefined identifier is evaluated in an #if directive
-    "-Wno-unused-but-set-variable",  # Disables warnings when a variable is assigned but never used
-    "-Wno-unused-parameter",  # Disables warnings whenever a function parameter is unused aside from its declaration
-    "-Wno-unused-result",  # Disables warnings when the result of a function is unused
     # go/keep-sorted end
 ]
 
@@ -78,7 +73,6 @@ ORTOOLS_GCC_TEST_ADDITIONAL_FLAGS = [
     "-Wno-deprecated-declarations",  # Disables warnings about uses of functions, variables, or types marked as deprecated
     "-Wno-missing-declarations",  # Disables warnings if a global function is defined without a previous declaration
     "-Wno-unused-function",  # Disables warnings whenever a static or inline function is declared but not used
-    "-Wno-unused-parameter",  # Disables warnings whenever a function parameter is unused aside from its declaration
     # go/keep-sorted end
 ]
 
@@ -103,6 +97,7 @@ ORTOOLS_LLVM_BASE_FLAGS = [
     "-Wno-sign-compare",  # Disables warnings when comparing signed and unsigned values because of internal Style Guide.
     "-Wno-unknown-warning-option",  # Disable warnings on unknown warning flags (when warning flags are unknown on older compiler versions)
     "-Wno-unused-command-line-argument",  # Disables warnings when a command-line argument is not used by the compiler
+    "-Wno-unused-parameter",  # Disables warnings whenever a function parameter is unused aside from its declaration
     "-Wc++98-compat-extra-semi",  # Warns about redundant semicolons outside of a function (incompatible with C++98)
     "-Wcast-qual",  # Warns when a pointer is cast to remove a type qualifier (e.g., const)
     "-Wconversion",  # Warns for implicit conversions that may alter a value
@@ -159,7 +154,6 @@ ORTOOLS_LLVM_TEST_ADDITIONAL_FLAGS = [
     "-Wno-unreachable-code-loop-increment",  # Disables warnings when a loop increment expression is unreachable
     "-Wno-unused-function",  # Disables warnings whenever a static or inline function is declared but not used
     "-Wno-unused-member-function",  # Disables warnings when an internal/private member function is unused
-    "-Wno-unused-parameter",  # Disables warnings whenever a function parameter is unused aside from its declaration
     "-Wno-unused-private-field",  # Disables warnings when a private class field is declared but never used
     "-Wno-unused-template",  # Disables warnings when an internal/unexported template is unused
     "-Wno-used-but-marked-unused",  # Disables warnings when a symbol marked with the unused attribute is actually used
