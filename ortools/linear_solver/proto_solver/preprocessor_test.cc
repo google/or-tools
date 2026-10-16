@@ -16,9 +16,11 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/glop/parameters.pb.h"
@@ -32,6 +34,7 @@
 #include "ortools/lp_data/proto_utils.h"
 #include "ortools/lp_data/sparse_column.h"
 #include "ortools/sat/mp_model_wrapper.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -152,16 +155,34 @@ void CheckMipPreprocessorBehavior(
   }
 }
 
+bool RunPropagateBounds(sat::MPModelProtoWrapper* wrapper) {
+  const int num_variables = wrapper->num_variables();
+  std::vector<double> var_lbs(num_variables);
+  std::vector<double> var_ubs(num_variables);
+  for (int v = 0; v < num_variables; ++v) {
+    var_lbs[v] = wrapper->variables(v).lower_bound();
+    var_ubs[v] = wrapper->variables(v).upper_bound();
+  }
+  if (!PropagateBounds(*wrapper, absl::MakeSpan(var_lbs),
+                       absl::MakeSpan(var_ubs))) {
+    return false;
+  }
+  for (int v = 0; v < num_variables; ++v) {
+    wrapper->mutable_variables(v)->set_lower_bound(var_lbs[v]);
+    wrapper->mutable_variables(v)->set_upper_bound(var_ubs[v]);
+  }
+  return true;
+}
+
 void CheckBoundPropagationPreprocessorBehavior(
     absl::string_view input_problem,
-    absl::string_view expected_preprocessed_problem,
-    Fractional constraint_tolerance) {
+    absl::string_view expected_preprocessed_problem) {
   LinearProgram linear_program;
   ASSERT_TRUE(ParseLp(input_problem, &linear_program));
   MPModelProto model_proto;
   glop::LinearProgramToMPModelProto(linear_program, &model_proto);
   sat::MPModelProtoWrapper wrapper(&model_proto, nullptr);
-  EXPECT_TRUE(PropagateBounds(constraint_tolerance, false, &wrapper));
+  EXPECT_TRUE(RunPropagateBounds(&wrapper));
   glop::MPModelProtoToLinearProgram(model_proto, &linear_program);
 
   ExpectLinearProgramMatches(linear_program, expected_preprocessed_problem);
@@ -264,20 +285,46 @@ TEST(BoundPropagationPreprocessorTest, InfeasibleMerge) {
   MPModelProto model_proto;
   glop::LinearProgramToMPModelProto(linear_program, &model_proto);
   sat::MPModelProtoWrapper wrapper(&model_proto, nullptr);
-  EXPECT_FALSE(PropagateBounds(1e-6, false, &wrapper));
+  EXPECT_FALSE(RunPropagateBounds(&wrapper));
 }
 
 TEST(BoundPropagationPreprocessorTest, AlmostInfeasibleMerge) {
   const std::string kLinearProgram =
-      "x1 <= -1e-10;"
+      "x1 <= 0;"
       "r1: x1 >= 1e-10;"
       "int x1;";
   const std::string kOutputProgram =
       "r1: x1 >= 1e-10;"
       "x1 = 0;"
       "int x1;";
-  CheckBoundPropagationPreprocessorBehavior(kLinearProgram, kOutputProgram,
-                                            1e-6);
+  LinearProgram linear_program;
+  ASSERT_TRUE(ParseLp(kLinearProgram, &linear_program));
+  MPModelProto model_proto;
+  glop::LinearProgramToMPModelProto(linear_program, &model_proto);
+  sat::MPModelProtoWrapper wrapper(&model_proto, nullptr);
+  EXPECT_TRUE(ExactPresolve(sat::SatParameters(), &wrapper));
+  glop::MPModelProtoToLinearProgram(model_proto, &linear_program);
+  ExpectLinearProgramMatches(linear_program, kOutputProgram);
+}
+
+TEST(BoundPropagationPreprocessorTest, ExactPresolveDualRestrictionOnIntegers) {
+  LinearProgram linear_program;
+  ASSERT_TRUE(
+      ParseLp("0 <= b <= 1;"
+              "0 <= x <= 10;"
+              "int b, x;"
+              "r1: 2 x >= 5;",
+              &linear_program));
+  MPModelProto model_proto;
+  glop::LinearProgramToMPModelProto(linear_program, &model_proto);
+  sat::MPModelProtoWrapper wrapper(&model_proto, nullptr);
+  wrapper.mutable_constraints(0)->AddEnforcement(0, 1);
+
+  EXPECT_TRUE(ExactPresolve(sat::SatParameters(), &wrapper));
+  // 2*x >= 5 is satisfied for x >= 2.5, so dual reasoning restricts the upper
+  // bound of integer x to ceil(2.5) = 3 (not floor(2.5) = 2).
+  EXPECT_EQ(wrapper.variables(1).lower_bound(), 0.0);
+  EXPECT_EQ(wrapper.variables(1).upper_bound(), 3.0);
 }
 
 TEST(BoundPropagationPreprocessorTest, BasicPropagation) {
@@ -291,8 +338,7 @@ TEST(BoundPropagationPreprocessorTest, BasicPropagation) {
       "0 <= x <= 4;"
       "2 <= y <= 6;"
       "4 <= z <= 8;";
-  CheckBoundPropagationPreprocessorBehavior(kLinearProgram, kOutputProgram,
-                                            9.9e-7);
+  CheckBoundPropagationPreprocessorBehavior(kLinearProgram, kOutputProgram);
 }
 
 TEST(BoundPropagationPreprocessorTest, ChainedPropagation) {
@@ -309,8 +355,7 @@ TEST(BoundPropagationPreprocessorTest, ChainedPropagation) {
       "y = 2;"
       "z = -2;"
       "t = 8;";
-  CheckBoundPropagationPreprocessorBehavior(kLinearProgram, kOutputProgram,
-                                            9.9e-7);
+  CheckBoundPropagationPreprocessorBehavior(kLinearProgram, kOutputProgram);
 }
 
 TEST(BoundPropagationPreprocessorTest, EnforcedConstraintSkipped) {
@@ -329,7 +374,7 @@ TEST(BoundPropagationPreprocessorTest, EnforcedConstraintSkipped) {
   // Constraint 0 (r1: x <= 3) is enforced by b == 1, so it is skipped.
   wrapper.mutable_constraints(0)->AddEnforcement(0, 1);
 
-  EXPECT_TRUE(PropagateBounds(1e-6, true, &wrapper));
+  EXPECT_TRUE(RunPropagateBounds(&wrapper));
   // Constraint 1 (r2: x + y <= 7 with y >= 0) propagates x <= 7, while enforced
   // Constraint 0 (r1: x <= 3) is skipped.
   EXPECT_EQ(wrapper.variables(1).lower_bound(), 0.0);

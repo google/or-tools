@@ -280,11 +280,9 @@ MPSolutionResponse SatSolveProtoInternal(
 
   std::vector<double> var_shifts;
   if (params.mip_presolve_level() > 0) {
-    if (!PropagateBounds(params.mip_tight_precision(),
-                         /*relax_to_integer=*/true, &mp_model_wrapper,
-                         logger)) {
-      return InfeasibleResponse(
-          *logger, "Problem proven infeasible in PropagateBounds()");
+    if (!ExactPresolve(params, &mp_model_wrapper, logger)) {
+      return InfeasibleResponse(*logger,
+                                "Problem proven infeasible in ExactPresolve()");
     }
     var_shifts =
         ShiftVariableBounds(IntegerShifts(), &mp_model_wrapper, logger);
@@ -298,33 +296,41 @@ MPSolutionResponse SatSolveProtoInternal(
   RemoveNearZeroTerms(params, mp_model_wrapper.mutable_underlying_model(),
                       logger);
 
-  // Try to restrict bounds further before we scale. Doing this before clamping
-  // allow to know a bit better how many variable we really need to clamp below.
-  sat::RestrictBoundsWithDualReasoning(params, &mp_model_wrapper, logger);
-
   // Clamp variable.
-  if (!sat::ClampVariableBounds(
-          params, mp_model_wrapper.mutable_underlying_model(), logger)) {
+  int num_clamped = 0;
+  if (!sat::ClampVariableBounds(params,
+                                mp_model_wrapper.mutable_underlying_model(),
+                                logger, &num_clamped)) {
     return InvalidModelResponse(*logger,
                                 "Failed to convert model into CP-SAT model");
   }
 
   // Redo a round of propagation after clamping.
   if (params.mip_presolve_level() > 0) {
-    if (!PropagateBounds(params.mip_tight_precision(),
-                         /*relax_to_integer=*/true, &mp_model_wrapper,
-                         logger)) {
+    if (!ExactPresolve(params, &mp_model_wrapper, logger)) {
       return InfeasibleResponse(
-          *logger, "Problem proven infeasible during MIP presolve");
+          *logger,
+          "Problem proven infeasible in ExactPresolve() after clamping");
     }
   }
-  sat::RestrictBoundsWithDualReasoning(params, &mp_model_wrapper, logger);
 
   // TODO(user): move into ExactPresolve().
   sat::ExtractEnforcementLiterals(params, &mp_model_wrapper, logger);
 
   const int num_variables = mp_model_wrapper.num_variables();
   std::vector<double> var_scaling(num_variables, 1.0);
+
+  const auto update_shifts = [&](absl::Span<const double> new_shifts) {
+    if (new_shifts.size() > var_shifts.size()) {
+      var_shifts.resize(num_variables);
+    }
+    for (int var = 0; var < new_shifts.size(); ++var) {
+      if (new_shifts[var] != 0) {
+        var_shifts[var] += new_shifts[var] / var_scaling[var];
+      }
+    }
+  };
+
   const auto update_scaling = [&var_scaling](absl::Span<const double> scaling) {
     for (int var = 0; var < scaling.size(); ++var) {
       if (scaling[var] == 1.0) continue;
@@ -351,39 +357,36 @@ MPSolutionResponse SatSolveProtoInternal(
   // as that will be done in the scaling. Even this is redundant with what
   // happen in ConvertMPModelProtoToCpModelProto(), we should probably clean
   // that up.
-  //
-  // TODO(user): This apply the tolerance on the scaled variable, which is not
-  // the same. But we usually want to interpret variable bounds almost exactly
-  // as we already relax the constraint. This just allow to not miss an integer
-  // point because of double precision computation.
   if (!sat::MakeBoundsOfIntegerVariablesInteger(
-          params, mp_model_wrapper.mutable_underlying_model(), logger)) {
+          params, var_scaling, mp_model_wrapper.mutable_underlying_model(),
+          logger)) {
     return InfeasibleResponse(
         *logger, "A detected integer variable has an empty domain");
   }
 
-  sat::DisplayVariableStatistics(*mp_model_wrapper.mutable_underlying_model(),
-                                 logger);
-
   if (params.mip_scale_to_max_bound()) {
+    update_shifts(
+        ShiftVariableBounds(ShiftBeforeScaling(), &mp_model_wrapper, logger));
     update_scaling(sat::ScaleContinuousVariablesUpToMaxBound(
-        params.mip_max_bound(), params.mip_wanted_precision(),
-        mp_model_wrapper.mutable_underlying_model(), logger));
+        params, mp_model_wrapper.mutable_underlying_model(), logger,
+        var_scaling));
   } else if (params.mip_var_scaling() != 1.0) {
-    const double max_bound = params.mip_scale_large_domain()
-                                 ? std::numeric_limits<double>::infinity()
-                                 : params.mip_max_bound();
     update_scaling(sat::ScaleContinuousVariables(
-        params.mip_var_scaling(), max_bound,
-        mp_model_wrapper.mutable_underlying_model()));
+        params, mp_model_wrapper.mutable_underlying_model(), var_scaling));
   }
 
   // Clamp again now that we potentially scalled more some variable.
-  if (!sat::ClampVariableBounds(
-          params, mp_model_wrapper.mutable_underlying_model(), logger)) {
+  int num_extra_clamp = 0;
+  if (!sat::ClampVariableBounds(params,
+                                mp_model_wrapper.mutable_underlying_model(),
+                                logger, &num_extra_clamp)) {
     return InvalidModelResponse(*logger,
                                 "Failed to convert model into CP-SAT model");
   }
+  num_clamped += num_extra_clamp;
+
+  sat::DisplayVariableStatistics(*mp_model_wrapper.mutable_underlying_model(),
+                                 logger);
 
   // Abort if one only want to solve pure-IP model and we don't have one.
   if (params.only_solve_ip()) {
@@ -405,23 +408,13 @@ MPSolutionResponse SatSolveProtoInternal(
   }
 
   // Final shift before the conversion.
-  {
-    const std::vector<double> new_shifts =
-        ShiftVariableBounds(FinalCpSatShift(params.mip_wanted_precision()),
-                            &mp_model_wrapper, logger);
-    if (new_shifts.size() > var_shifts.size()) {
-      var_shifts.resize(num_variables);
-    }
-    for (int var = 0; var < new_shifts.size(); ++var) {
-      if (new_shifts[var] != 0) {
-        var_shifts[var] += new_shifts[var] / var_scaling[var];
-      }
-    }
-  }
+  update_shifts(
+      ShiftVariableBounds(FinalCpSatShift(params.mip_wanted_precision()),
+                          &mp_model_wrapper, logger));
 
   sat::CpModelProto cp_model;
-  if (!ConvertMPModelProtoToCpModelProto(params, mp_model_wrapper, &cp_model,
-                                         logger)) {
+  if (!ConvertMPModelProtoToCpModelProto(params, mp_model_wrapper, num_clamped,
+                                         &cp_model, logger)) {
     return InvalidModelResponse(*logger,
                                 "Failed to convert model into CP-SAT model");
   }

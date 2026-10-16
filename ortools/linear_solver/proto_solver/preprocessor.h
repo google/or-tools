@@ -18,12 +18,14 @@
 #include <functional>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/preprocessor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/mp_model_wrapper.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research {
@@ -166,22 +168,37 @@ bool MakeBoundsInteger(double integer_solution_tolerance,
 // This preprocessor just does that until no more bounds can be propagated or
 // a given limit on the number of propagations is reached.
 //
+// WARNING: this assumes tolerances have already been applied to constraint
+// and/or variable bounds and propagates all bounds EXACTLY.
+//
 // TODO(user): We could also remove fixed enforcement, and if there is a single
 // one, propagate it to false if the enforced constraint is infeasible. This is
 // not really important at this stage for conversion to CP-SAT though.
 //
-// When `relax_to_integer` is true, we will only restrict bounds to integer
-// multiple, even for continuous variables. This makes sure that variables that
-// are later detected to be integer already have an integer bound. Note that for
-// talking to CP-SAT, we don't care too much about propagating super tight
-// bound: being 1 away shouldn't matter too much for the scaling to integer
-// that happen later. This avoid changing "nice" bounds like [0, 10] to
-// something like [0, 5 + tolerance] that we don't handle well later.
-//
 // Returns false if the model is proven infeasible.
-bool PropagateBounds(double constraint_tolerance, bool relax_to_integer,
-                     sat::MPModelProtoWrapper* model,
+bool PropagateBounds(const sat::MPModelProtoWrapper& mp_model,
+                     absl::Span<double> var_lbs, absl::Span<double> var_ubs,
                      SolverLogger* logger = nullptr);
+
+// --------------------------------------------------------
+// ExactPresolve (work on the MPModelProtoWrapper)
+// --------------------------------------------------------
+
+// Performs some basic presolving using only EXACT bound computation.
+//
+// This will relax variable/constraint bounds by params.mip_tight_precision()
+// before propagation, so it will never cut solutions that were feasible up
+// to that tolerance and not dominated via dual reasoning.
+//
+// Currently this just combines PropagateBounds() and
+// RestrictBoundsWithDualReasoning().
+//
+// TODO(user): Add more like enforcement extraction, but this is a bit trickier
+// to explain what happens to updated constraint bounds if the update is not
+// exact.
+bool ExactPresolve(const sat::SatParameters& params,
+                   sat::MPModelProtoWrapper* mp_model_wrapper,
+                   SolverLogger* logger = nullptr);
 
 // --------------------------------------------------------
 // ShiftVariableBounds (work on the MPModelProtoWrapper)
@@ -242,6 +259,22 @@ inline std::function<double(const MPVariableProto& mp_var)> FinalCpSatShift(
     // Case 2/
     if (std::isfinite(lb) && lb > tolerance) return std::ceil(lb);
     if (std::isfinite(ub) && ub < -tolerance) return std::floor(ub);
+
+    return 0.0;
+  };
+}
+
+// When we are going to scale floating point variables, it makes sense to shift
+// one bound to 0.0 if the domain does not contain zero.
+inline std::function<double(const MPVariableProto& mp_var)>
+ShiftBeforeScaling() {
+  return [](const MPVariableProto& var) {
+    const double lb = var.lower_bound();
+    const double ub = var.upper_bound();
+    if (!var.is_integer()) {
+      if (std::isfinite(lb) && lb > 0.0) return lb;
+      if (std::isfinite(ub) && ub < 0.0) return ub;
+    }
 
     return 0.0;
   };

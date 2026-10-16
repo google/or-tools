@@ -13,6 +13,7 @@
 
 #include <vector>
 
+#include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/proto_solver/preprocessor.h"
@@ -91,8 +92,16 @@ void BM_Propagation(benchmark::State& state) {
     }
   }
   sat::MPModelProtoWrapper wrapper(&model, nullptr);
+  const int num_variables = wrapper.num_variables();
+  std::vector<double> var_lbs(num_variables);
+  std::vector<double> var_ubs(num_variables);
+  for (int v = 0; v < num_variables; ++v) {
+    var_lbs[v] = wrapper.variables(v).lower_bound();
+    var_ubs[v] = wrapper.variables(v).upper_bound();
+  }
   while (state.KeepRunning()) {
-    [[maybe_unused]] const bool result = PropagateBounds(1e-6, false, &wrapper);
+    [[maybe_unused]] const bool result = PropagateBounds(
+        wrapper, absl::MakeSpan(var_lbs), absl::MakeSpan(var_ubs));
   }
 }
 
