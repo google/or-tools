@@ -12,7 +12,9 @@
 // limitations under the License.
 
 // The solution to an optimization model.
-
+// (-- api-linter: core::0191::java-outer-classname=disabled
+//     aip.dev/not-precedent: We need to do this because message match file
+//     names. --)
 syntax = "proto3";
 
 package operations_research.service.v1.mathopt;
