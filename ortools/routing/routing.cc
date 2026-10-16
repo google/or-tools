@@ -50,6 +50,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "google/protobuf/util/message_differencer.h"
@@ -3574,7 +3575,7 @@ bool Model::AppendAssignmentIfFeasible(
 
 void Model::LogSolution(const RoutingSearchParameters& parameters,
                         absl::string_view description, int64_t solution_cost,
-                        int64_t start_time_ms) {
+                        int64_t start_time_ns) {
   const std::string memory_str = operations_research::MemoryUsage();
   const double cost_scaling_factor = parameters.log_cost_scaling_factor();
   const double cost_offset = parameters.log_cost_offset();
@@ -3586,14 +3587,16 @@ void Model::LogSolution(const RoutingSearchParameters& parameters,
                 cost_scaling_factor * (solution_cost + cost_offset));
   LOG(INFO) << absl::StrFormat(
       "%s (%s, time = %d ms, memory used = %s)", description, cost_string,
-      solver_->wall_time() - start_time_ms, memory_str);
+      absl::ToInt64Milliseconds(
+          absl::Nanoseconds(absl::GetCurrentTimeNanos() - start_time_ns)),
+      memory_str);
 }
 
 bool Model::UpdateLimits(const RoutingSearchParameters& parameters,
-                         int64_t start_time_ms,
+                         int64_t start_time_ns,
                          bool leave_secondary_solve_buffer) {
   const absl::Duration elapsed_time =
-      absl::Milliseconds(solver_->wall_time() - start_time_ms);
+      absl::Nanoseconds(absl::GetCurrentTimeNanos() - start_time_ns);
   const absl::Duration time_left = GetTimeLimit(parameters) - elapsed_time;
 
   if (time_left < absl::ZeroDuration()) return false;
@@ -3619,18 +3622,18 @@ bool Model::UpdateLimits(const RoutingSearchParameters& parameters,
 
 std::optional<int64_t> Model::InitializeSearch(
     const RoutingSearchParameters& search_parameters) {
-  const int64_t start_time_ms = solver_->wall_time();
+  const int64_t start_time_ns = absl::GetCurrentTimeNanos();
   QuietCloseModelWithParameters(search_parameters);
   UpdateSearchFromParametersIfNeeded(search_parameters);
   if (status_ == RoutingSearchStatus::ROUTING_INVALID) return std::nullopt;
   status_ = RoutingSearchStatus::ROUTING_NOT_SOLVED;
-  return start_time_ms;
+  return start_time_ns;
 }
 
 void Model::UpdateStatusOnFailure(
-    const RoutingSearchParameters& search_parameters, int64_t start_time_ms) {
+    const RoutingSearchParameters& search_parameters, int64_t start_time_ns) {
   const absl::Duration elapsed_time =
-      absl::Milliseconds(solver_->wall_time() - start_time_ms);
+      absl::Nanoseconds(absl::GetCurrentTimeNanos() - start_time_ns);
   if (elapsed_time >= GetTimeLimit(search_parameters)) {
     status_ = RoutingSearchStatus::ROUTING_FAIL_TIMEOUT;
   } else {
@@ -3657,9 +3660,9 @@ const Assignment* Model::FastSolveFromAssignmentWithParameters(
                 << search_parameters.local_search_metaheuristic();
     return nullptr;
   }
-  const std::optional<int64_t> start_time_ms =
+  const std::optional<int64_t> start_time_ns =
       InitializeSearch(search_parameters);
-  if (!start_time_ms.has_value()) return nullptr;
+  if (!start_time_ns.has_value()) return nullptr;
   if (assignment == nullptr) return nullptr;
   limit_->UpdateLimits(GetTimeLimit(search_parameters), kint64max, kint64max,
                        search_parameters.solution_limit());
@@ -3679,15 +3682,15 @@ const Assignment* Model::FastSolveFromAssignmentWithParameters(
     }
   }
   if (status_ != RoutingSearchStatus::ROUTING_SUCCESS) {
-    UpdateStatusOnFailure(search_parameters, *start_time_ms);
+    UpdateStatusOnFailure(search_parameters, *start_time_ns);
   }
   return solution;
 }
 
 const Assignment* Model::InsertNodesInAssignmentWithParameters(
     const Assignment& assignment, const RoutingSearchParameters& parameters) {
-  std::optional<int64_t> start_time_ms = InitializeSearch(parameters);
-  if (!start_time_ms.has_value()) return nullptr;
+  std::optional<int64_t> start_time_ns = InitializeSearch(parameters);
+  if (!start_time_ns.has_value()) return nullptr;
 
   // Detect infeasibilities at the root of the search tree.
   if (!solver_->CheckConstraint(solver_->MakeTrueConstraint())) {
@@ -3695,7 +3698,7 @@ const Assignment* Model::InsertNodesInAssignmentWithParameters(
     return nullptr;
   }
 
-  if (!UpdateLimits(parameters, *start_time_ms)) {
+  if (!UpdateLimits(parameters, *start_time_ns)) {
     status_ = RoutingSearchStatus::ROUTING_FAIL_TIMEOUT;
     return nullptr;
   }
@@ -3782,7 +3785,7 @@ const Assignment* Model::InsertNodesInAssignmentWithParameters(
   if (collect_assignments_->has_solution()) {
     status_ = RoutingSearchStatus::ROUTING_SUCCESS;
   } else {
-    UpdateStatusOnFailure(parameters, *start_time_ms);
+    UpdateStatusOnFailure(parameters, *start_time_ns);
   }
   return collect_assignments_->last_solution_or_null();
 }
@@ -3791,8 +3794,8 @@ const Assignment* Model::SolveFromAssignmentsWithParameters(
     const std::vector<const Assignment*>& assignments,
     const RoutingSearchParameters& parameters,
     std::vector<const Assignment*>* solutions) {
-  const std::optional<int64_t> start_time_ms = InitializeSearch(parameters);
-  if (!start_time_ms.has_value()) return nullptr;
+  const std::optional<int64_t> start_time_ns = InitializeSearch(parameters);
+  if (!start_time_ns.has_value()) return nullptr;
   if (solutions != nullptr) solutions->clear();
 
   // Detect infeasibilities at the root of the search tree.
@@ -3804,7 +3807,7 @@ const Assignment* Model::SolveFromAssignmentsWithParameters(
   const bool perform_secondary_ls =
       GetTimeLimit(parameters) != absl::InfiniteDuration() &&
       parameters.secondary_ls_time_limit_ratio() > 0;
-  if (!UpdateLimits(parameters, *start_time_ms)) {
+  if (!UpdateLimits(parameters, *start_time_ns)) {
     status_ = RoutingSearchStatus::ROUTING_FAIL_TIMEOUT;
     return nullptr;
   }
@@ -3833,9 +3836,9 @@ const Assignment* Model::SolveFromAssignmentsWithParameters(
   objective_lower_bound_ = kint64min;
   if (parameters.use_cp() == BOOL_TRUE) {
     const auto run_secondary_ls = [this, perform_secondary_ls, &parameters,
-                                   &start_time_ms]() {
+                                   &start_time_ns]() {
       if (collect_assignments_->has_solution() && perform_secondary_ls &&
-          UpdateLimits(parameters, *start_time_ms,
+          UpdateLimits(parameters, *start_time_ns,
                        /*leave_secondary_solve_buffer=*/false)) {
         assignment_->CopyIntersection(
             collect_assignments_->last_solution_or_null());
@@ -3848,12 +3851,12 @@ const Assignment* Model::SolveFromAssignmentsWithParameters(
         Assignment matching(solver_.get());
         // TODO(user): Pass time limits to the flow.
         if (SolveMatchingModel(&matching, parameters) &&
-            UpdateLimits(parameters, *start_time_ms,
+            UpdateLimits(parameters, *start_time_ns,
                          /*leave_secondary_solve_buffer=*/false) &&
             AppendAssignmentIfFeasible(matching, &solution_pool)) {
           if (parameters.log_search()) {
             LogSolution(parameters, "Min-Cost Flow Solution",
-                        solution_pool.back()->ObjectiveValue(), *start_time_ms);
+                        solution_pool.back()->ObjectiveValue(), *start_time_ns);
           }
           solution_found = true;
           local_optimum_reached_ = true;
@@ -3864,15 +3867,15 @@ const Assignment* Model::SolveFromAssignmentsWithParameters(
         // solver does not manage to build something better.
         Assignment unperformed(solver_.get());
         MakeAllUnperformedInAssignment(this, &unperformed);
-        if (UpdateLimits(parameters, *start_time_ms,
+        if (UpdateLimits(parameters, *start_time_ns,
                          /*leave_secondary_solve_buffer=*/false) &&
             AppendAssignmentIfFeasible(unperformed, &solution_pool, false) &&
             parameters.log_search()) {
           LogSolution(parameters, "All Unperformed Solution",
-                      solution_pool.back()->ObjectiveValue(), *start_time_ms);
+                      solution_pool.back()->ObjectiveValue(), *start_time_ns);
         }
         local_optimum_reached_ = false;
-        if (UpdateLimits(parameters, *start_time_ms)) {
+        if (UpdateLimits(parameters, *start_time_ns)) {
           solver_->Solve(solve_db_, monitors_);
           run_secondary_ls();
         }
@@ -3883,12 +3886,12 @@ const Assignment* Model::SolveFromAssignmentsWithParameters(
         solver_->Solve(improve_db_, monitors_);
         run_secondary_ls();
         if (collect_assignments_->solution_count() >= 1 ||
-            !UpdateLimits(parameters, *start_time_ms)) {
+            !UpdateLimits(parameters, *start_time_ns)) {
           break;
         }
       }
       if (collect_assignments_->solution_count() == 0 &&
-          UpdateLimits(parameters, *start_time_ms) && hint_ != nullptr) {
+          UpdateLimits(parameters, *start_time_ns) && hint_ != nullptr) {
         solver_->Solve(solve_db_, monitors_);
         run_secondary_ls();
       }
@@ -3900,7 +3903,7 @@ const Assignment* Model::SolveFromAssignmentsWithParameters(
           ? collect_secondary_ls_assignments_
           : collect_assignments_;
 
-  if (UpdateLimits(parameters, *start_time_ms,
+  if (UpdateLimits(parameters, *start_time_ns,
                    /*leave_secondary_solve_buffer=*/false) &&
       (parameters.use_cp_sat() == BOOL_TRUE ||
        parameters.use_generalized_cp_sat() == BOOL_TRUE ||
@@ -3911,12 +3914,12 @@ const Assignment* Model::SolveFromAssignmentsWithParameters(
     Assignment sat_solution(solver_.get());
     if (SolveModelWithSat(this, &search_stats_, parameters, cp_solution,
                           &sat_solution) &&
-        UpdateLimits(parameters, *start_time_ms,
+        UpdateLimits(parameters, *start_time_ns,
                      /*leave_secondary_solve_buffer=*/false) &&
         AppendAssignmentIfFeasible(sat_solution, &solution_pool)) {
       if (parameters.log_search()) {
         LogSolution(parameters, "SAT", solution_pool.back()->ObjectiveValue(),
-                    *start_time_ms);
+                    *start_time_ns);
       }
       local_optimum_reached_ = true;
       if (sat_solution.HasObjective()) {
@@ -3991,7 +3994,7 @@ const Assignment* Model::SolveFromAssignmentsWithParameters(
     }
     return solver_->MakeAssignment(best_assignment);
   } else {
-    UpdateStatusOnFailure(parameters, *start_time_ms);
+    UpdateStatusOnFailure(parameters, *start_time_ns);
     return nullptr;
   }
 }
@@ -4004,7 +4007,7 @@ const Assignment* Model::SolveWithIteratedLocalSearch(
     return nullptr;
   }
 
-  const int64_t start_time_ms = solver_->wall_time();
+  const int64_t start_time_ns = absl::GetCurrentTimeNanos();
   QuietCloseModelWithParameters(parameters);
   UpdateSearchFromParametersIfNeeded(parameters);
   if (status_ == RoutingSearchStatus::ROUTING_INVALID) {
@@ -4059,9 +4062,9 @@ const Assignment* Model::SolveWithIteratedLocalSearch(
 
   // TODO(user): This lambda can probably be refactored into a function as a
   // similar version in used in another place.
-  const auto update_time_limits = [this, start_time_ms, &parameters]() {
+  const auto update_time_limits = [this, start_time_ns, &parameters]() {
     const absl::Duration elapsed_time =
-        absl::Milliseconds(solver_->wall_time() - start_time_ms);
+        absl::Nanoseconds(absl::GetCurrentTimeNanos() - start_time_ns);
     const absl::Duration time_left = GetTimeLimit(parameters) - elapsed_time;
     if (time_left < absl::ZeroDuration()) {
       return false;
@@ -4128,7 +4131,7 @@ const Assignment* Model::SolveWithIteratedLocalSearch(
     event_manager.OnLocalOptimumReached(neighbor_solution);
 
     absl::Duration elapsed_time =
-        absl::Milliseconds(solver_->wall_time() - start_time_ms);
+        absl::Nanoseconds(absl::GetCurrentTimeNanos() - start_time_ns);
 
     if (best_acceptance_criterion->Accept({elapsed_time, explored_solutions},
                                           neighbor_solution, best_solution)) {

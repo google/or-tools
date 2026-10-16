@@ -370,13 +370,13 @@ PYBIND11_MODULE(routing, m) {
            return new Model(routing_index_manager);
          }),
          py::arg("routing_index_manager"),
-         DOC(operations_research, routing, Model, RoutingModel));
+         DOC(operations_research, routing, Model, Model));
   rm.def(pybind11::init([](const IndexManager& routing_index_manager,
                            const RoutingModelParameters& parameters) {
            return new Model(routing_index_manager, parameters);
          }),
          py::arg("routing_index_manager"), py::arg("parameters"),
-         DOC(operations_research, routing, Model, RoutingModel));
+         DOC(operations_research, routing, Model, Model));
   rm.def(
       "register_transit_matrix",
       [](Model* routing_model,

@@ -21,7 +21,7 @@ load("//bazel:or_pybind_rules.bzl", "or_pybind_extension")
 package(default_visibility = ["//visibility:public"])
 
 or_cc_library(
-    name = "doc",
+    name = "doc_cc",
     hdrs = [
         "doc.h",
         "index_manager_doc.h",
@@ -34,7 +34,7 @@ or_pybind_extension(
     srcs = ["routing.cc"],
     visibility = ["//visibility:public"],
     deps = [
-        ":doc",
+        ":doc_cc",
         "//ortools/constraint_solver:cp",
         "//ortools/constraint_solver:search_stats_cc_proto",
         "//ortools/constraint_solver:solver_parameters_cc_proto",
