@@ -28,7 +28,9 @@ option csharp_namespace = "Google.OrTools.Service";
 
 // A One Platform API exposing a set of optimization solvers for high-level
 // operations research problems.
-
+// (-- api-linter: core::0192::only-leading-comments=disabled
+//     aip.dev/not-precedent: We need to do this because we have copybara
+//     annotations. --)
 service Optimization {
   // Solves the input model and returns the result at once. Use this when you
   // don't need callbacks, incrementality and don't need to track the progress
