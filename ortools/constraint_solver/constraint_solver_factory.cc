@@ -89,8 +89,7 @@ Constraint* Solver::MakeAllDifferent(const std::vector<IntVar*>& vars,
   if (size < 2) {
     return MakeTrueConstraint();
   } else if (size == 2) {
-    return MakeNonEquality(const_cast<IntVar* const>(vars[0]),
-                           const_cast<IntVar* const>(vars[1]));
+    return MakeNonEquality(vars[0], vars[1]);
   } else {
     if (stronger_propagation) {
       return RevAlloc(new BoundsAllDifferent(this, vars));

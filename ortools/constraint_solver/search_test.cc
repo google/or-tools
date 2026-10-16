@@ -35,7 +35,7 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
-#include "absl/time/simulated_clock.h"
+#include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
@@ -1929,7 +1929,7 @@ class RegularLimitTest : public SearchLimitTest {
     solver_ = std::make_unique<Solver>("RegularLimitTest");
   }
   void TestBranchLimit(RegularLimit* limit, int branch_limit);
-  void TestTimeLimit(RegularLimit* limit, int num_solutions);
+  void TestTimeLimit(RegularLimit* limit);
   void TestFailureLimit(RegularLimit* limit, int failure_limit);
   void TestSolutionLimit(RegularLimit* limit, int solution_limit);
 };
@@ -2024,43 +2024,24 @@ TEST_F(RegularLimitTest, Cumulative) {
   EXPECT_EQ(kSolutionLimit - 3, collector->solution_count());
 }
 
-class AdvanceClock : public SearchMonitor {
- public:
-  AdvanceClock(Solver* const solver, absl::SimulatedClock* const clock)
-      : SearchMonitor(solver), clock_(clock) {}
-  ~AdvanceClock() override {}
-  bool AtSolution() override {
-    const absl::Duration kOneSecond = absl::Seconds(1);
-    clock_->AdvanceTime(kOneSecond);
-    return true;
-  }
-
- private:
-  absl::SimulatedClock* const clock_;
-};
-
-// Test the time limit. The given limit is expected to have a time limit
-// equal to num_solutions * 1000.
-void RegularLimitTest::TestTimeLimit(RegularLimit* limit, int num_solutions) {
-  absl::SimulatedClock clock;
-  solver_->SetClock(&clock);
-  IntVar* const var = solver_->MakeIntVar(0, 2 * num_solutions, "var");
-  DecisionBuilder* const db = solver_->MakePhase(
-      var, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_MIN_VALUE);
-  Assignment* const assignment = solver_->MakeAssignment();
-  assignment->Add(var);
-  SolutionCollector* const collector =
-      solver_->MakeAllSolutionCollector(assignment);
-
-  AdvanceClock* const advance_clock =
-      solver_->RevAlloc(new AdvanceClock(solver_.get(), &clock));
-  ASSERT_TRUE(solver_->Solve(db, collector, limit, advance_clock));
-  EXPECT_EQ(num_solutions, collector->solution_count());
-  for (int i = 0; i < num_solutions; ++i) {
-    EXPECT_EQ(i, collector->solution(i)->Value(var));
+void RegularLimitTest::TestTimeLimit(RegularLimit* limit) {
+  const absl::Duration duration = limit->duration_limit();
+  const absl::Duration start_before =
+      absl::Nanoseconds(absl::GetCurrentTimeNanos());
+  limit->Init();
+  const absl::Duration start_after =
+      absl::Nanoseconds(absl::GetCurrentTimeNanos());
+  for (int i = 0; i < 25; ++i) {
+    const absl::Duration offset = i * absl::Milliseconds(10);
+    const absl::Duration time_before =
+        absl::Nanoseconds(absl::GetCurrentTimeNanos()) - start_after;
+    const bool check = limit->CheckWithOffset(offset);
+    const absl::Duration time_after =
+        absl::Nanoseconds(absl::GetCurrentTimeNanos()) - start_before;
+    EXPECT_LE(time_before + offset >= duration, check);
+    EXPECT_LE(check, time_after + offset >= duration);
   }
   EXPECT_FALSE(limit->DebugString().empty());
-  EXPECT_TRUE(limit->crossed());
 }
 
 void RegularLimitTest::TestFailureLimit(RegularLimit* limit,
@@ -2084,11 +2065,10 @@ void RegularLimitTest::TestFailureLimit(RegularLimit* limit,
 }
 
 TEST_F(RegularLimitTest, TimeLimit) {
-  const int kNumberOfSolutions = 5;
-  const absl::Duration kTimeLimit = absl::Seconds(kNumberOfSolutions);
+  const absl::Duration kTimeLimit = absl::Milliseconds(200);
   RegularLimit* const limit = solver_->MakeTimeLimit(kTimeLimit);
   ExpectLimits(limit, kTimeLimit, kint64max, kint64max, kint64max);
-  TestTimeLimit(limit, kNumberOfSolutions);
+  TestTimeLimit(limit);
 }
 
 TEST_F(RegularLimitTest, FailureLimit) {
@@ -2184,12 +2164,11 @@ TEST_F(RegularLimitTest, ProtobufDefault) {
 }
 
 TEST_F(RegularLimitTest, ProtobufTimeLimit) {
-  const int kNumberOfSolutions = 3;
-  const int64_t kTimeLimitMs = kNumberOfSolutions * 1000;
+  const int64_t kTimeLimitMs = 200;
   RegularLimitParameters proto = solver_->MakeDefaultRegularLimitParameters();
   proto.set_time(kTimeLimitMs);
   RegularLimit* const limit = solver_->MakeLimit(proto);
-  TestTimeLimit(limit, kNumberOfSolutions);
+  TestTimeLimit(limit);
 }
 
 TEST_F(RegularLimitTest, ProtobufBranchLimit) {

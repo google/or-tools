@@ -2360,6 +2360,7 @@ class Solver : public ReversibleEngine {
   /// 'solutions' limits. 'smart_time_check' reduces the calls to the wall
   // timer by estimating the number of remaining calls, and 'cumulative' means
   // that the limit applies cumulatively, instead of search-by-search.
+  // TODO(user): Remove the unused smart_time_check parameter.
   ABSL_MUST_USE_RESULT RegularLimit* MakeLimit(absl::Duration time,
                                                int64_t branches,
                                                int64_t failures,
@@ -4205,6 +4206,7 @@ class SearchLimit : public SearchMonitor {
 /// number of failures in the search tree
 class RegularLimit : public SearchLimit {
  public:
+  // TODO(user): Remove the unused smart_time_check parameter.
   RegularLimit(Solver* s, absl::Duration time, int64_t branches,
                int64_t failures, int64_t solutions, bool smart_time_check,
                bool cumulative);
@@ -4231,13 +4233,14 @@ class RegularLimit : public SearchLimit {
   std::string DebugString() const override;
   void Install() override;
 
-  absl::Time AbsoluteSolverDeadline() const {
-    return solver_time_at_limit_start_ + duration_limit_;
-  }
+  absl::Duration RemainingTime() const;
 
   void Accept(ModelVisitor* visitor) const override;
 
  private:
+  // (Re)computes deadline_ from the current duration_limit_ and the
+  // current steady_clock time. Called when the limit (re)starts.
+  void ResetDeadline();
   bool CheckTime(absl::Duration offset);
   absl::Duration TimeElapsed();
   static int64_t GetPercent(int64_t value, int64_t offset, int64_t total) {
@@ -4246,10 +4249,10 @@ class RegularLimit : public SearchLimit {
   }
 
   absl::Duration duration_limit_;
-  absl::Time solver_time_at_limit_start_;
-  absl::Duration last_time_elapsed_;
-  int64_t check_count_;
-  int64_t next_check_;
+  // Absolute deadline for this limit, in nanoseconds on the same epoch as
+  // absl::GetCurrentTimeNanos(). Equals kint64max when the limit is infinite.
+  int64_t time_limit_ns_;
+  // TODO(user): Remove the unused smart_time_check_ member.
   bool smart_time_check_;
   int64_t branches_;
   int64_t branches_offset_;
