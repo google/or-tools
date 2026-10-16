@@ -2238,7 +2238,7 @@ std::string MPSolver::GetMPModelRequestLoggingInfo(
   abbreviated_request = request;
   abbreviated_request.clear_model();
   abbreviated_request.clear_model_delta();
-  google::protobuf::TextFormat::PrintToString(abbreviated_request, &out);
+  CHECK(google::protobuf::TextFormat::PrintToString(abbreviated_request, &out));
 #else   // ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR
   static_assert(!kTargetOsSupportsProtoDescriptor);
   out = "<Info unavailable because proto descriptor is not supported.>\n";

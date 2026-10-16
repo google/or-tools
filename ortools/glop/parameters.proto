@@ -406,7 +406,7 @@ message GlopParameters {
   // advanced farther than the other.
   optional int32 random_seed = 43 [default = 1];
 
-  // Whether to use absl::BitGen instead of MTRandom.
+  // Whether to use absl::BitGen instead of random_engine_t.
   optional bool use_absl_random = 72 [default = false];
 
   // Number of threads in the OMP parallel sections. If left to 1, the code will
