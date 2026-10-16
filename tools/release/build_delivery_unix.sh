@@ -322,11 +322,11 @@ function build_python() {
   command -v "python${PY_VERSION}" | xargs echo "python${PY_VERSION}: " | tee -a build.log
   python3 -c "import platform as p; print(p.platform())" | tee -a build.log
   if [[ "${OS}" == "Darwin" ]]; then
-    python3 -m pip install --upgrade --user pip
-    python3 -m pip install --upgrade --user wheel absl-py mypy mypy-protobuf protobuf virtualenv "typing-extensions>=4.12"
+    python3 -m pip install --upgrade --user \
+      pip wheel absl-py mypy mypy-protobuf protobuf virtualenv "typing-extensions>=4.12"
   else
-    python3 -m pip install --upgrade --user --break-system-package pip
-    python3 -m pip install --upgrade --user --break-system-package wheel absl-py mypy mypy-protobuf protobuf virtualenv "typing-extensions>=4.12"
+    python3 -m pip install --upgrade --user --break-system-package \
+      pip wheel absl-py mypy mypy-protobuf protobuf virtualenv "typing-extensions>=4.12"
   fi
   echo "check protoc-gen-mypy..."
   command -v protoc-gen-mypy | xargs echo "protoc-gen-mypy: " | tee -a build.log
