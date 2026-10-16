@@ -517,11 +517,41 @@ or_cc_library(
 )
 
 or_cc_library(
+    name = "float_ordinal_bijection",
+    hdrs = ["float_ordinal_bijection.h"],
+    deps = [
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/log:check",
+    ],
+)
+
+or_cc_test(
+    name = "float_ordinal_bijection_test",
+    srcs = ["float_ordinal_bijection_test.cc"],
+    deps = [
+        ":float_ordinal_bijection",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
+    ],
+)
+
+or_cc_binary(
+    name = "float_ordinal_bijection_benchmark",
+    testonly = True,
+    srcs = ["float_ordinal_bijection_benchmark.cc"],
+    deps = [
+        ":float_ordinal_bijection",
+        "@google_benchmark//:benchmark_main",
+    ],
+)
+
+or_cc_library(
     name = "multikey_radix_sort",
     hdrs = ["multikey_radix_sort.h"],
     deps = [
+        ":float_ordinal_bijection",
         "@abseil-cpp//absl/algorithm:container",
-        "@abseil-cpp//absl/base",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/numeric:bits",
     ],
@@ -547,11 +577,13 @@ or_cc_test(
 or_cc_test(
     name = "multikey_radix_sort_test",
     srcs = ["multikey_radix_sort_test.cc"],
+    shard_count = 10,
     tags = ["noci"],
     deps = [
         ":multikey_radix_sort",
         ":radix_sort",
         "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
         "//ortools/base:strong_int",
         "//ortools/base:strong_vector",
         "@abseil-cpp//absl/algorithm:container",

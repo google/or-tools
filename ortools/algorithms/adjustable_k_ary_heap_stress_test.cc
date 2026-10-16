@@ -13,6 +13,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <random>
 #include <vector>
 
 #include "absl/flags/flag.h"

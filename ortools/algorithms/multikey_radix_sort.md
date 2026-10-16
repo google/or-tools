@@ -108,8 +108,8 @@ The library supports sorting containers whose extracted keys are:
 2.  **Enumerations:** C++ `enum` and `enum class` types.
 3.  **Floating-Point Numbers (`float`, `double`):**
     *   Floating-point keys are correctly and stably sorted using an
-        order-preserving bitwise bijection (`FloatToSortableUint` /
-        `SortableUintToFloat`).
+        order-preserving bitwise bijection (`FloatToOrdinal` /
+        `OrdinalToFloat`).
     *   IEEE 754 floating-point representation is transformed such that negative
         numbers (including `-inf`), `-0.0`, `+0.0`, positive numbers, and NaNs
         sort in the correct mathematical continuum.
@@ -146,11 +146,11 @@ the lowest level (`GetRadixKey`).
 
 *   **Increasing (`kIncreasing`):** The integer key is shifted by the minimum
     value: `key - key_min` (or
-    `FloatToSortableUint(key) - FloatToSortableUint(key_min)` for floating-point
+    `FloatToOrdinal(key) - FloatToOrdinal(key_min)` for floating-point
     types).
 *   **Decreasing (`kDecreasing`):** The integer key is inverted relative to the
     maximum value: `key_max - key` (or
-    `FloatToSortableUint(key_max) - FloatToSortableUint(key)` for floating-point
+    `FloatToOrdinal(key_max) - FloatToOrdinal(key)` for floating-point
     types). This maps the largest original keys to the smallest radix buckets,
     achieving a perfectly stable descending sort with zero branching overhead in
     the core loops.
