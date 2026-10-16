@@ -451,7 +451,7 @@ class [[maybe_unused]] PricingModel : public CoreModel {
 
  public:
   // Constructor.
-  explicit PricingModel(const SetCoverModel& full_model);
+  [[maybe_unused]] explicit PricingModel(const SetCoverModel& full_model);
 
   // Fixes additional columns to be part of the final solution.
   Cost FixMoreColumns(const std::vector<SubsetIndex>& columns_to_fix) override;
