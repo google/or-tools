@@ -89,8 +89,8 @@ void LinearTermsFromMPModelToMathOpt(
     linear_terms_in_order.push_back({in_ids[i], in_coeffs[i]});
   }
   absl::c_sort(linear_terms_in_order);
-  out_ids.Resize(num_terms, -1);
-  out_coeffs.Resize(num_terms, std::numeric_limits<double>::quiet_NaN());
+  out_ids.resize(num_terms, -1);
+  out_coeffs.resize(num_terms, std::numeric_limits<double>::quiet_NaN());
   for (int i = 0; i < num_terms; ++i) {
     out_ids.Set(i, linear_terms_in_order[i].first);
     out_coeffs.Set(i, linear_terms_in_order[i].second);

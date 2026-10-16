@@ -357,7 +357,6 @@ or_cc_library(
         "//ortools/base:status_builder",
         "//ortools/math_opt:result_cc_proto",
         "//ortools/math_opt:solution_cc_proto",
-        "//ortools/math_opt/core:math_opt_proto_utils",
         "//ortools/math_opt/solvers/gscip:gscip_cc_proto",
         "//ortools/math_opt/storage:model_storage",
         "//ortools/port:proto_utils",

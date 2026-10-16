@@ -11,9 +11,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("//bazel:or_cc_rules.bzl", "or_cc_library")
+load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
+load("//bazel:or_cc_rules.bzl", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
+
+or_cc_test(
+    name = "model_storage_item_test",
+    srcs = ["model_storage_item_test.cc"],
+    deps = [
+        ":model_storage",
+        ":model_storage_item",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/elemental:elements",
+        "@abseil-cpp//absl/hash:hash_testing",
+        "@abseil-cpp//absl/strings:string_view",
+    ],
+)
 
 or_cc_library(
     name = "model_storage_types",
@@ -29,10 +44,28 @@ or_cc_library(
     hdrs = ["range.h"],
 )
 
+or_cc_test(
+    name = "range_test",
+    srcs = ["range_test.cc"],
+    deps = [
+        ":range",
+        "//ortools/base:gmock_main",
+    ],
+)
+
 or_cc_library(
     name = "iterators",
     hdrs = ["iterators.h"],
     deps = [":range"],
+)
+
+or_cc_test(
+    name = "iterators_test",
+    srcs = ["iterators_test.cc"],
+    deps = [
+        ":iterators",
+        "//ortools/base:gmock_main",
+    ],
 )
 
 or_cc_library(
@@ -46,6 +79,17 @@ or_cc_library(
         "//ortools/math_opt:sparse_containers_cc_proto",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/meta:type_traits",
+    ],
+)
+
+or_cc_test(
+    name = "sparse_coefficient_map_test",
+    srcs = ["sparse_coefficient_map_test.cc"],
+    deps = [
+        ":model_storage_types",
+        ":sparse_coefficient_map",
+        "//ortools/base:gmock_main",
+        "//ortools/base:strong_int",
     ],
 )
 
@@ -67,6 +111,26 @@ or_cc_library(
     ],
 )
 
+or_cc_test(
+    name = "sparse_matrix_test",
+    srcs = ["sparse_matrix_test.cc"],
+
+    # TODO: b/475196802 - Stop using EquivToProto().
+    tags = [
+        "no_test_android",
+        "no_test_wasm",
+    ],
+    deps = [
+        ":model_storage_types",
+        ":sparse_matrix",
+        "//ortools/base:gmock_main",
+        "//ortools/base:strong_int",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
 or_cc_library(
     name = "linear_expression_data",
     hdrs = ["linear_expression_data.h"],
@@ -75,6 +139,18 @@ or_cc_library(
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:sorted",
         "@abseil-cpp//absl/container:flat_hash_map",
+    ],
+)
+
+or_cc_test(
+    name = "linear_expression_data_test",
+    srcs = ["linear_expression_data_test.cc"],
+    deps = [
+        ":linear_expression_data",
+        ":sparse_coefficient_map",
+        "//ortools/base:gmock_main",
+        "//ortools/base:strong_int",
+        "//ortools/math_opt:sparse_containers_cc_proto",
     ],
 )
 
@@ -89,6 +165,15 @@ or_cc_library(
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/synchronization",
+    ],
+)
+
+or_cc_test(
+    name = "update_trackers_test",
+    srcs = ["update_trackers_test.cc"],
+    deps = [
+        ":update_trackers",
+        "//ortools/base:gmock_main",
     ],
 )
 
@@ -112,6 +197,27 @@ or_cc_library(
     ],
 )
 
+or_cc_test(
+    name = "variable_storage_test",
+    srcs = ["variable_storage_test.cc"],
+
+    # TODO: b/475196802 - Stop using EquivToProto().
+    tags = [
+        "no_test_android",
+        "no_test_wasm",
+    ],
+    deps = [
+        ":model_storage_types",
+        ":range",
+        ":variable_storage",
+        "//ortools/base:gmock_main",
+        "//ortools/base:strong_int",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_update_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+    ],
+)
+
 or_cc_library(
     name = "objective_storage",
     srcs = ["objective_storage.cc"],
@@ -132,6 +238,25 @@ or_cc_library(
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:string_view",
+        "@abseil-cpp//absl/types:span",
+        "@protobuf",
+    ],
+)
+
+or_cc_test(
+    name = "objective_storage_test",
+    srcs = ["objective_storage_test.cc"],
+
+    # TODO: b/475196802 - Stop using EquivToProto().
+    tags = [
+        "no_test_android",
+        "no_test_wasm",
+    ],
+    deps = [
+        ":objective_storage",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_update_cc_proto",
         "@abseil-cpp//absl/types:span",
         "@protobuf",
     ],
@@ -161,6 +286,23 @@ or_cc_library(
     ],
 )
 
+or_cc_test(
+    name = "linear_constraint_storage_test",
+    srcs = ["linear_constraint_storage_test.cc"],
+
+    # TODO: b/475196802 - Stop using EquivToProto().
+    tags = [
+        "no_test_android",
+        "no_test_wasm",
+    ],
+    deps = [
+        ":linear_constraint_storage",
+        ":model_storage_types",
+        ":range",
+        "//ortools/base:gmock_main",
+    ],
+)
+
 or_cc_library(
     name = "atomic_constraint_storage",
     hdrs = ["atomic_constraint_storage.h"],
@@ -176,6 +318,60 @@ or_cc_library(
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
         "@protobuf",
+    ],
+)
+
+proto_library(
+    name = "atomic_test_proto",
+    testonly = True,
+    srcs = ["atomic_constraint_storage_test.proto"],
+)
+
+cc_proto_library(
+    name = "atomic_test_cc_proto",
+    testonly = True,
+    deps = [":atomic_test_proto"],
+)
+
+or_cc_library(
+    name = "atomic_constraint_testing",
+    testonly = True,
+    hdrs = ["atomic_constraint_testing.h"],
+    deps = [
+        ":model_storage",
+        ":model_storage_types",
+        "//ortools/base:gmock",
+        "//ortools/base:parse_text_proto",
+        "//ortools/base:strong_int",
+        "//ortools/math_opt/elemental:elements",
+        "//ortools/math_opt/validators:model_validator",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@protobuf",
+    ],
+)
+
+or_cc_test(
+    name = "atomic_constraint_storage_test",
+    srcs = ["atomic_constraint_storage_test.cc"],
+
+    # TODO: b/475196802 - Stop using EquivToProto().
+    tags = [
+        "no_test_android",
+        "no_test_wasm",
+    ],
+    deps = [
+        ":atomic_constraint_storage",
+        ":atomic_test_cc_proto",
+        ":model_storage_types",
+        ":range",
+        "//ortools/algorithms:multikey_radix_sort",
+        "//ortools/base:gmock_main",
+        "//ortools/base:strong_int",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -223,6 +419,90 @@ or_cc_library(
     ],
 )
 
+or_cc_test(
+    name = "model_storage_test",
+    srcs = ["model_storage_test.cc"],
+
+    # TODO: b/475194473 - Stop using ParseTextProtoOrDie().
+    # TODO: b/475196802 - Stop using EquivToProto().
+    tags = [
+        "no_test_android",
+        "no_test_wasm",
+    ],
+    deps = [
+        ":atomic_constraint_testing",
+        ":model_storage",
+        ":model_storage_types",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_text_proto",
+        "//ortools/base:strong_int",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_update_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/constraints/indicator:storage_test_helper",
+        "//ortools/math_opt/constraints/quadratic:storage_test_helper",
+        "//ortools/math_opt/constraints/second_order_cone:storage_test_helper",
+        "//ortools/math_opt/constraints/sos:storage_test_helper",
+        "//ortools/math_opt/validators:model_validator",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+    ],
+)
+
+or_cc_library(
+    name = "model_storage_v2",
+    srcs = ["model_storage_v2.cc"],
+    hdrs = ["model_storage_v2.h"],
+    deps = [
+        ":atomic_constraint_storage",
+        ":atomic_constraints_v2",
+        ":model_storage_types",
+        "//ortools/algorithms:multikey_radix_sort",
+        "//ortools/base:strong_int",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_update_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/constraints/indicator:storage",
+        "//ortools/math_opt/constraints/quadratic:storage",
+        "//ortools/math_opt/constraints/sos:storage",
+        "//ortools/math_opt/elemental",
+        "//ortools/math_opt/elemental:attr_key",
+        "//ortools/math_opt/elemental:attributes",
+        "//ortools/math_opt/elemental:derived_data",
+        "//ortools/math_opt/elemental:elements",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings:string_view",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+or_cc_library(
+    name = "atomic_constraints_v2",
+    hdrs = ["atomic_constraints_v2.h"],
+    deps = [
+        ":atomic_constraint_storage",
+        ":model_storage_types",
+        "//ortools/math_opt/constraints/indicator:storage",
+        "//ortools/math_opt/constraints/quadratic:storage",
+        "//ortools/math_opt/elemental",
+        "//ortools/math_opt/elemental:attr_key",
+        "//ortools/math_opt/elemental:attributes",
+        "//ortools/math_opt/elemental:derived_data",
+        "//ortools/math_opt/elemental:elements",
+        "@abseil-cpp//absl/log:check",
+    ],
+)
+
 or_cc_library(
     name = "model_storage_item",
     srcs = ["model_storage_item.cc"],
@@ -232,5 +512,37 @@ or_cc_library(
         "//ortools/math_opt/elemental:elements",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:string_view",
+    ],
+)
+
+or_cc_test(
+    name = "model_storage_v2_test",
+    srcs = ["model_storage_v2_test.cc"],
+
+    # TODO: b/475194473 - Stop using ParseTextProtoOrDie().
+    # TODO: b/475196802 - Stop using EquivToProto().
+    tags = [
+        "no_test_android",
+        "no_test_wasm",
+    ],
+    deps = [
+        ":atomic_constraint_testing",
+        ":model_storage_types",
+        ":model_storage_v2",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_text_proto",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_update_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/constraints/indicator:storage",
+        "//ortools/math_opt/constraints/indicator:storage_test_helper",
+        "//ortools/math_opt/constraints/quadratic:storage",
+        "//ortools/math_opt/constraints/quadratic:storage_test_helper",
+        "//ortools/math_opt/constraints/second_order_cone:storage_test_helper",
+        "//ortools/math_opt/constraints/sos:storage_test_helper",
+        "//ortools/math_opt/elemental:elements",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
     ],
 )

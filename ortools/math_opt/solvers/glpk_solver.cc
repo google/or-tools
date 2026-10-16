@@ -935,129 +935,6 @@ GlpkSolver::~GlpkSolver() {
   glp_delete_prob(problem_);
 }
 
-namespace {
-
-ProblemStatusProto GetMipProblemStatusProto(const int rc, const int mip_status,
-                                            const bool has_finite_dual_bound) {
-  ProblemStatusProto problem_status;
-  problem_status.set_primal_status(FEASIBILITY_STATUS_UNDETERMINED);
-  problem_status.set_dual_status(FEASIBILITY_STATUS_UNDETERMINED);
-
-  switch (rc) {
-    case GLP_ENOPFS:
-      problem_status.set_primal_status(FEASIBILITY_STATUS_INFEASIBLE);
-      return problem_status;
-    case GLP_ENODFS:
-      problem_status.set_dual_status(FEASIBILITY_STATUS_INFEASIBLE);
-      return problem_status;
-  }
-
-  switch (mip_status) {
-    case GLP_OPT:
-      problem_status.set_primal_status(FEASIBILITY_STATUS_FEASIBLE);
-      problem_status.set_dual_status(FEASIBILITY_STATUS_FEASIBLE);
-      return problem_status;
-    case GLP_FEAS:
-      problem_status.set_primal_status(FEASIBILITY_STATUS_FEASIBLE);
-      break;
-    case GLP_NOFEAS:
-      problem_status.set_primal_status(FEASIBILITY_STATUS_INFEASIBLE);
-      break;
-  }
-
-  if (has_finite_dual_bound) {
-    problem_status.set_dual_status(FEASIBILITY_STATUS_FEASIBLE);
-  }
-  return problem_status;
-}
-
-absl::StatusOr<FeasibilityStatusProto> TranslateProblemStatus(
-    const int glpk_status, const absl::string_view fn_name) {
-  switch (glpk_status) {
-    case GLP_FEAS:
-      return FEASIBILITY_STATUS_FEASIBLE;
-    case GLP_NOFEAS:
-      return FEASIBILITY_STATUS_INFEASIBLE;
-    case GLP_INFEAS:
-    case GLP_UNDEF:
-      return FEASIBILITY_STATUS_UNDETERMINED;
-    default:
-      return absl::InternalError(
-          absl::StrCat(fn_name, " returned the unexpected value ",
-                       SolutionStatusString(glpk_status)));
-  }
-}
-
-// Builds problem status from:
-//   * glp_simplex_rc: code returned by glp_simplex.
-//   * glpk_primal_status: primal status returned by glp_get_prim_stat.
-//   * glpk_dual_status: dual status returned by glp_get_dual_stat.
-absl::StatusOr<ProblemStatusProto> GetSimplexProblemStatusProto(
-    const int glp_simplex_rc, const int glpk_primal_status,
-    const int glpk_dual_status) {
-  ProblemStatusProto problem_status;
-  problem_status.set_primal_status(FEASIBILITY_STATUS_UNDETERMINED);
-  problem_status.set_dual_status(FEASIBILITY_STATUS_UNDETERMINED);
-
-  switch (glp_simplex_rc) {
-    case GLP_ENOPFS:
-      // LP presolver concluded primal infeasibility.
-      problem_status.set_primal_status(FEASIBILITY_STATUS_INFEASIBLE);
-      return problem_status;
-    case GLP_ENODFS:
-      // LP presolver concluded dual infeasibility.
-      problem_status.set_dual_status(FEASIBILITY_STATUS_INFEASIBLE);
-      return problem_status;
-    default: {
-      // Get primal status from basic solution.
-      ABSL_ASSIGN_OR_RETURN(
-          const FeasibilityStatusProto primal_status,
-          TranslateProblemStatus(glpk_primal_status, "glp_get_prim_stat"));
-      problem_status.set_primal_status(primal_status);
-
-      // Get dual status from basic solution.
-      ABSL_ASSIGN_OR_RETURN(
-          const FeasibilityStatusProto dual_status,
-          TranslateProblemStatus(glpk_dual_status, "glp_get_dual_stat"));
-      problem_status.set_dual_status(dual_status);
-      return problem_status;
-    }
-  }
-}
-
-absl::StatusOr<ProblemStatusProto> GetBarrierProblemStatusProto(
-    const int glp_interior_rc, const int ipt_status) {
-  ProblemStatusProto problem_status;
-  problem_status.set_primal_status(FEASIBILITY_STATUS_UNDETERMINED);
-  problem_status.set_dual_status(FEASIBILITY_STATUS_UNDETERMINED);
-
-  switch (glp_interior_rc) {
-    case 0:
-      // We only use the glp_ipt_status() result when glp_interior() returned 0.
-      switch (ipt_status) {
-        case GLP_OPT:
-          problem_status.set_primal_status(FEASIBILITY_STATUS_FEASIBLE);
-          problem_status.set_dual_status(FEASIBILITY_STATUS_FEASIBLE);
-          return problem_status;
-        case GLP_INFEAS:
-          return problem_status;
-        case GLP_NOFEAS:
-          problem_status.set_primal_or_dual_infeasible(true);
-          return problem_status;
-        case GLP_UNDEF:
-          return problem_status;
-        default:
-          return absl::InternalError(
-              absl::StrCat("glp_ipt_status returned the unexpected value ",
-                           SolutionStatusString(ipt_status)));
-      }
-    default:
-      return problem_status;
-  }
-}
-
-}  // namespace
-
 absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
     const SolveParametersProto& parameters,
     const ModelSolveParametersProto& model_parameters,
@@ -1134,9 +1011,6 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
   double (*row_dual)(glp_prob*, int) = nullptr;
   double (*col_dual)(glp_prob*, int) = nullptr;
 
-  const bool maximize = glp_get_obj_dir(problem_) == GLP_MAX;
-  double best_dual_bound = maximize ? kInf : -kInf;
-
   // Here we use different solve algorithms depending on the type of problem:
   //   * For MIPs: glp_intopt()
   //   * For LPs:
@@ -1198,12 +1072,6 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
         BuildTermination(problem_, "glp_intopt", rc, MipTerminationOnSuccess,
                          &mip_cb_data, feasible_solution_objective_value,
                          glpk_parameters.mip_gap));
-    if (mip_cb_data.best_bound().has_value()) {
-      best_dual_bound = *mip_cb_data.best_bound();
-    }
-    *result.mutable_solve_stats()->mutable_problem_status() =
-        GetMipProblemStatusProto(rc, mip_status,
-                                 std::isfinite(best_dual_bound));
   } else {
     if (parameters.lp_algorithm() == LP_ALGORITHM_BARRIER) {
       get_prim_stat = glp_ipt_status;
@@ -1240,11 +1108,6 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
             /*finite_primal_objective=*/objective_value,
             /*dual_objective=*/objective_value,
             "glp_interior() not called since the model is empty");
-        result.mutable_solve_stats()
-            ->mutable_problem_status()
-            ->set_primal_status(FEASIBILITY_STATUS_FEASIBLE);
-        result.mutable_solve_stats()->mutable_problem_status()->set_dual_status(
-            FEASIBILITY_STATUS_FEASIBLE);
       } else {
         // TODO(b/187027049): add solver specific parameters for
         // glp_iptcp.ord_alg.
@@ -1262,10 +1125,6 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
                              /*mip_cb_data=*/nullptr,
                              feasible_solution_objective_value,
                              /*gap_limit=*/kNaN));
-        ABSL_ASSIGN_OR_RETURN(
-            *result.mutable_solve_stats()->mutable_problem_status(),
-            GetBarrierProblemStatusProto(/*glp_interior_rc=*/glp_interior_rc,
-                                         /*ipt_status=*/ipt_status));
       }
     } else {
       get_prim_stat = glp_get_prim_stat;
@@ -1299,20 +1158,6 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
                            feasible_solution_objective_value,
                            /*gap_limit=*/kNaN));
 
-      // If the primal is proven infeasible and the dual is feasible, the dual
-      // is unbounded. Thus we can compute a better dual bound rather than the
-      // default value.
-      if (glp_get_prim_stat(problem_) == GLP_NOFEAS &&
-          glp_get_dual_stat(problem_) == GLP_FEAS) {
-        best_dual_bound = maximize ? -kInf : +kInf;
-      }
-
-      ABSL_ASSIGN_OR_RETURN(
-          *result.mutable_solve_stats()->mutable_problem_status(),
-          GetSimplexProblemStatusProto(
-              /*glp_simplex_rc=*/glp_simplex_rc,
-              /*glpk_primal_status=*/prim_stat,
-              /*glpk_dual_status=*/glp_get_dual_stat(problem_)));
       VLOG(1) << "glp_get_status: "
               << SolutionStatusString(glp_get_status(problem_))
               << " glp_get_prim_stat: " << SolutionStatusString(prim_stat)
@@ -1324,26 +1169,9 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
   // Unregister the callback and flush the potential last unfinished line.
   std::move(message_cb_cleanup).Invoke();
 
-  switch (result.termination().reason()) {
-    case TERMINATION_REASON_OPTIMAL:
-    case TERMINATION_REASON_FEASIBLE:
-      result.mutable_solve_stats()->set_best_primal_bound(obj_val(problem_));
-      break;
-    case TERMINATION_REASON_UNBOUNDED:
-      // Here we can't use obj_val(problem_) as it would be a finite value of
-      // the feasible solution found.
-      result.mutable_solve_stats()->set_best_primal_bound(maximize ? +kInf
-                                                                   : -kInf);
-      break;
-    default:
-      result.mutable_solve_stats()->set_best_primal_bound(maximize ? -kInf
-                                                                   : kInf);
-      break;
-  }
   // TODO(b/187027049): compute the dual value when the dual is feasible (or
   // problem optimal for interior point) based on the bounds and the dual values
   // for LPs.
-  result.mutable_solve_stats()->set_best_dual_bound(best_dual_bound);
   SolutionProto solution;
   AddPrimalSolution(get_prim_stat, obj_val, col_val, model_parameters,
                     solution);

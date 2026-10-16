@@ -813,33 +813,6 @@ public final class SolveResult {
     return solutions.get(0).getBasis().get().getVariableStatus();
   }
 
-  private ProblemStatusProto getProblemStatusProto(SolveResultProto proto) {
-    if (proto.getTermination().hasProblemStatus()) {
-      return proto.getTermination().getProblemStatus();
-    }
-    return proto.getSolveStats().getProblemStatus();
-  }
-
-  private ObjectiveBoundsProto getObjectiveBoundsProto(SolveResultProto proto) {
-    if (proto.getTermination().hasObjectiveBounds()) {
-      return proto.getTermination().getObjectiveBounds();
-    }
-    return ObjectiveBoundsProto.newBuilder()
-        .setPrimalBound(proto.getSolveStats().getBestPrimalBound())
-        .setDualBound(proto.getSolveStats().getBestDualBound())
-        .build();
-  }
-
-  private TerminationProto upgradeTermination(SolveResultProto proto) {
-    return TerminationProto.newBuilder()
-        .setReason(proto.getTermination().getReason())
-        .setLimit(proto.getTermination().getLimit())
-        .setDetail(proto.getTermination().getDetail())
-        .setProblemStatus(getProblemStatusProto(proto))
-        .setObjectiveBounds(getObjectiveBoundsProto(proto))
-        .build();
-  }
-
   /**
    * Creates a new SolveResult from a SolveResult.
    *
@@ -858,10 +831,7 @@ public final class SolveResult {
    *     FromProto() methods for each of these classes for more details.
    */
   public SolveResult(Model model, SolveResultProto proto) {
-    // TODO(b/290091715): Remove upgradeTermination once solve_stats proto no longer has
-    // best_primal/dual_bound/problem_status and problem_status/objective_bounds are guaranteed to
-    // be present in termination proto.
-    this.termination = new Termination(upgradeTermination(proto));
+    this.termination = new Termination(proto.getTermination());
     this.solveStats = new SolveStats(proto.getSolveStats());
 
     ImmutableList.Builder<Solution> solutionsBuilder = ImmutableList.builder();

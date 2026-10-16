@@ -42,11 +42,6 @@ SolveResultProto ResultForIntegerInfeasible(const bool is_maximize,
   const double objective_value = is_maximize ? -kInf : kInf;
   termination.mutable_objective_bounds()->set_primal_bound(objective_value);
   termination.mutable_objective_bounds()->set_dual_bound(-objective_value);
-  // TODO(b/290091715): Remove once there are no users the deprecated fields.
-  auto& deprecated_fields = *result.mutable_solve_stats();
-  *deprecated_fields.mutable_problem_status() = problem_status;
-  deprecated_fields.set_best_primal_bound(objective_value);
-  deprecated_fields.set_best_dual_bound(-objective_value);
   return result;
 }
 

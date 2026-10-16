@@ -45,31 +45,6 @@ namespace {
 constexpr double kInf = std::numeric_limits<double>::infinity();
 }  // namespace
 
-ObjectiveBoundsProto GetObjectiveBounds(const SolveResultProto& solve_result) {
-  if (solve_result.termination().has_objective_bounds()) {
-    return solve_result.termination().objective_bounds();
-  }
-  ObjectiveBoundsProto objective_bounds;
-  objective_bounds.set_primal_bound(
-      solve_result.solve_stats().best_primal_bound());
-  objective_bounds.set_dual_bound(solve_result.solve_stats().best_dual_bound());
-  return objective_bounds;
-}
-
-ProblemStatusProto GetProblemStatus(const SolveResultProto& solve_result) {
-  if (solve_result.termination().has_problem_status()) {
-    return solve_result.termination().problem_status();
-  }
-  ProblemStatusProto problem_status;
-  problem_status.set_primal_status(
-      solve_result.solve_stats().problem_status().primal_status());
-  problem_status.set_dual_status(
-      solve_result.solve_stats().problem_status().dual_status());
-  problem_status.set_primal_or_dual_infeasible(
-      solve_result.solve_stats().problem_status().primal_or_dual_infeasible());
-  return problem_status;
-}
-
 SparseVectorFilterPredicate::SparseVectorFilterPredicate(
     const SparseVectorFilterProto& filter)
     : filter_(filter) {
@@ -524,20 +499,6 @@ absl::Status ModelSolveParametersAreSupported(
         support_menu.multi_objectives));
   }
   return absl::OkStatus();
-}
-
-void UpgradeSolveResultProtoForStatsMigration(
-    SolveResultProto& solve_result_proto) {
-  *solve_result_proto.mutable_termination()->mutable_problem_status() =
-      GetProblemStatus(solve_result_proto);
-  *solve_result_proto.mutable_solve_stats()->mutable_problem_status() =
-      GetProblemStatus(solve_result_proto);
-  *solve_result_proto.mutable_termination()->mutable_objective_bounds() =
-      GetObjectiveBounds(solve_result_proto);
-  solve_result_proto.mutable_solve_stats()->set_best_primal_bound(
-      solve_result_proto.termination().objective_bounds().primal_bound());
-  solve_result_proto.mutable_solve_stats()->set_best_dual_bound(
-      solve_result_proto.termination().objective_bounds().dual_bound());
 }
 
 }  // namespace math_opt

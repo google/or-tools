@@ -622,41 +622,6 @@ TEST(SolveResultTest, MinimalSolveResultRoundTrips) {
               IsOkAndHolds(IsConsistentWith(solve_result, StrictCheck())));
 }
 
-TEST(SolveResultTest, ProblemStatusInStatsButNotTermination) {
-  ModelStorage model;
-  SolveResultProto proto = MinimalSolveResultProto();
-  *proto.mutable_solve_stats()->mutable_problem_status() =
-      proto.termination().problem_status();
-  proto.mutable_termination()->clear_problem_status();
-
-  ASSERT_OK_AND_ASSIGN(const SolveResult solve_result,
-                       SolveResult::FromProto(&model, proto));
-  EXPECT_EQ(solve_result.termination.problem_status.primal_status,
-            FeasibilityStatus::kFeasible);
-  EXPECT_EQ(solve_result.termination.problem_status.dual_status,
-            FeasibilityStatus::kFeasible);
-  EXPECT_FALSE(
-      solve_result.termination.problem_status.primal_or_dual_infeasible);
-  EXPECT_THAT(SolveResult::FromProto(&model, proto),
-              IsOkAndHolds(IsConsistentWith(solve_result, StrictCheck())));
-}
-
-TEST(SolveResultTest, ObjectiveBoundsInStatsButNotTermination) {
-  ModelStorage model;
-  SolveResultProto proto = MinimalSolveResultProto();
-  proto.mutable_solve_stats()->set_best_primal_bound(10.0);
-  proto.mutable_solve_stats()->set_best_dual_bound(20.0);
-  proto.mutable_termination()->clear_objective_bounds();
-
-  ASSERT_OK_AND_ASSIGN(const SolveResult solve_result,
-                       SolveResult::FromProto(&model, proto));
-  EXPECT_DOUBLE_EQ(solve_result.termination.objective_bounds.primal_bound,
-                   10.0);
-  EXPECT_DOUBLE_EQ(solve_result.termination.objective_bounds.dual_bound, 20.0);
-  EXPECT_THAT(SolveResult::FromProto(&model, proto),
-              IsOkAndHolds(IsConsistentWith(solve_result, StrictCheck())));
-}
-
 TEST(SolveResultTest, SolveTimeRoundTrip) {
   ModelStorage model;
   const absl::Duration time = absl::Seconds(10);

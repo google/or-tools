@@ -226,7 +226,7 @@ class TerminationReason(enum.Enum):
            can be found along a primal ray.
        * INFEASIBLE_OR_UNBOUNDED: The primal problem is either infeasible or
            unbounded. More details on the problem status may be available in
-           solve_stats.problem_status. Note that Gurobi's unbounded status may be
+           termination.problem_status. Note that Gurobi's unbounded status may be
            mapped here as explained in
            go/mathopt-solver-specific#gurobi-inf-or-unb.
        * IMPRECISE: The problem was solved to one of the criteria above (Optimal,
@@ -997,37 +997,6 @@ class SolveResult:
         return proto
 
 
-def _get_problem_status(
-    result_proto: result_pb2.SolveResultProto,
-) -> result_pb2.ProblemStatusProto:
-    if result_proto.termination.HasField("problem_status"):
-        return result_proto.termination.problem_status
-    return result_proto.solve_stats.problem_status
-
-
-def _get_objective_bounds(
-    result_proto: result_pb2.SolveResultProto,
-) -> result_pb2.ObjectiveBoundsProto:
-    if result_proto.termination.HasField("objective_bounds"):
-        return result_proto.termination.objective_bounds
-    return result_pb2.ObjectiveBoundsProto(
-        primal_bound=result_proto.solve_stats.best_primal_bound,
-        dual_bound=result_proto.solve_stats.best_dual_bound,
-    )
-
-
-def _upgrade_termination(
-    result_proto: result_pb2.SolveResultProto,
-) -> result_pb2.TerminationProto:
-    return result_pb2.TerminationProto(
-        reason=result_proto.termination.reason,
-        limit=result_proto.termination.limit,
-        detail=result_proto.termination.detail,
-        problem_status=_get_problem_status(result_proto),
-        objective_bounds=_get_objective_bounds(result_proto),
-    )
-
-
 def parse_solve_result(
     proto: result_pb2.SolveResultProto,
     mod: model.Model,
@@ -1036,11 +1005,7 @@ def parse_solve_result(
 ) -> SolveResult:
     """Returns a SolveResult equivalent to the input proto."""
     result = SolveResult()
-    # TODO(b/290091715): change to parse_termination(proto.termination)
-    # once solve_stats proto no longer has best_primal/dual_bound/problem_status
-    # and problem_status/objective_bounds are guaranteed to be present in
-    # termination proto.
-    result.termination = parse_termination(_upgrade_termination(proto))
+    result.termination = parse_termination(proto.termination)
     result.solve_stats = parse_solve_stats(proto.solve_stats)
     for solution_proto in proto.solutions:
         result.solutions.append(

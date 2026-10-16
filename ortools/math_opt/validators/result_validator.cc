@@ -19,7 +19,6 @@
 #include "absl/status/status_macros.h"
 #include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/model_parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
@@ -229,71 +228,10 @@ absl::Status CheckDualSolutionAndStatusConsistency(
   return absl::OkStatus();
 }
 
-namespace {
-// TODO(b/290091715): Delete once problem_status and objective bounds are
-// removed from solve_stats and their presence is guaranteed in termination.
-absl::Status ValidateSolveStatsTerminationEqualities(
-    const SolveResultProto& solve_result) {
-  const ObjectiveBoundsProto objective_bounds =
-      GetObjectiveBounds(solve_result);
-  const SolveStatsProto& solve_stats = solve_result.solve_stats();
-  const ProblemStatusProto problem_status = GetProblemStatus(solve_result);
-  if (problem_status.primal_status() !=
-      solve_stats.problem_status().primal_status()) {
-    return ortools::InvalidArgumentErrorBuilder()
-           << problem_status.primal_status()
-           << " = termination.problem_status.primal_status != "
-              "solve_stats.problem_status.primal_status = "
-           << solve_stats.problem_status().primal_status();
-  }
-  if (problem_status.dual_status() !=
-      solve_stats.problem_status().dual_status()) {
-    return ortools::InvalidArgumentErrorBuilder()
-           << problem_status.dual_status()
-           << " = termination.problem_status.dual_status != "
-              "solve_stats.problem_status.dual_status = "
-           << solve_stats.problem_status().dual_status();
-  }
-  if (problem_status.primal_or_dual_infeasible() !=
-      solve_stats.problem_status().primal_or_dual_infeasible()) {
-    return ortools::InvalidArgumentErrorBuilder()
-           << problem_status.primal_or_dual_infeasible()
-           << " = termination.problem_status.primal_or_dual_infeasible != "
-              "solve_stats.problem_status.primal_or_dual_infeasible = "
-           << solve_stats.problem_status().primal_or_dual_infeasible();
-  }
-  if (objective_bounds.primal_bound() != solve_stats.best_primal_bound()) {
-    return ortools::InvalidArgumentErrorBuilder()
-           << objective_bounds.primal_bound()
-           << " = termination.objective_bounds.primal_bound != "
-              "solve_stats.best_primal_bound = "
-           << solve_stats.best_primal_bound();
-  }
-  if (objective_bounds.dual_bound() != solve_stats.best_dual_bound()) {
-    return ortools::InvalidArgumentErrorBuilder()
-           << objective_bounds.dual_bound()
-           << " = termination.objective_bounds.dual_bound != "
-              "solve_stats.best_dual_bound = "
-           << solve_stats.best_dual_bound();
-  }
-  return absl::OkStatus();
-}
-
-}  // namespace
-
 absl::Status ValidateResult(const SolveResultProto& result,
                             const ModelSolveParametersProto& parameters,
                             const ModelSummary& model_summary) {
-  // TODO(b/290091715): Remove once problem_status and objective bounds are
-  // removed from solve_stats and their presence is guaranteed in termination.
-  ABSL_RETURN_IF_ERROR(ValidateSolveStatsTerminationEqualities(result));
-  // TODO(b/290091715): Replace by
-  // TerminationProto termination = result.termination();
-  // once problem_status and objective bounds are removed from solve_stats and
-  // their presence is guaranteed in termination.
-  TerminationProto termination = result.termination();
-  *termination.mutable_objective_bounds() = GetObjectiveBounds(result);
-  *termination.mutable_problem_status() = GetProblemStatus(result);
+  const TerminationProto& termination = result.termination();
 
   ABSL_RETURN_IF_ERROR(
       ValidateTermination(termination, model_summary.maximize));

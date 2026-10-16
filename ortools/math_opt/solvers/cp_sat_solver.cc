@@ -187,6 +187,7 @@ std::vector<std::string> SetSolveParameters(
     switch (parameters.presolve()) {
       case EMPHASIS_OFF:
         sat_parameters.set_cp_model_presolve(false);
+        sat_parameters.set_mip_presolve_level(0);
         break;
       case EMPHASIS_LOW:
       case EMPHASIS_MEDIUM:

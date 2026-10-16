@@ -100,9 +100,9 @@ SolveResultProto BasicLp::OptimalResult(
     const absl::flat_hash_set<Variable>& vars, bool after_update) const {
   SolveResultProto result;
   result.mutable_termination()->set_reason(TERMINATION_REASON_OPTIMAL);
-  result.mutable_solve_stats()->mutable_problem_status()->set_primal_status(
+  result.mutable_termination()->mutable_problem_status()->set_primal_status(
       FEASIBILITY_STATUS_FEASIBLE);
-  result.mutable_solve_stats()->mutable_problem_status()->set_dual_status(
+  result.mutable_termination()->mutable_problem_status()->set_dual_status(
       FEASIBILITY_STATUS_FEASIBLE);
   PrimalSolutionProto* const solution =
       result.add_solutions()->mutable_primal_solution();
