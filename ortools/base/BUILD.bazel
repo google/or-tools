@@ -25,6 +25,15 @@ or_cc_library(
     hdrs = ["accurate_sum.h"],
 )
 
+or_cc_test(
+    name = "accurate_sum_test",
+    srcs = ["accurate_sum_test.cc"],
+    deps = [
+        ":accurate_sum",
+        ":gmock_main",
+    ],
+)
+
 or_cc_library(
     name = "adjustable_priority_queue",
     hdrs = [
@@ -97,8 +106,8 @@ or_cc_test(
     srcs = ["constant_divisor_test.cc"],
     deps = [
         ":constant_divisor",
-        "//ortools/base:gmock_main",
-        "//ortools/base:types",
+        ":gmock_main",
+        ":types",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:bit_gen_ref",
@@ -122,7 +131,7 @@ or_cc_binary(
 or_cc_library(
     name = "container_logging",
     hdrs = ["container_logging.h"],
-    deps = ["//ortools/base:types"],
+    deps = [":types"],
 )
 
 or_cc_library(
@@ -248,7 +257,7 @@ or_cc_library(
 or_cc_library(
     name = "murmur",
     hdrs = ["murmur.h"],
-    deps = ["//ortools/base:hash"],
+    deps = [":hash"],
 )
 
 or_cc_library(
@@ -256,7 +265,7 @@ or_cc_library(
     srcs = ["numbers.cc"],
     hdrs = ["numbers.h"],
     deps = [
-        "//ortools/base:types",
+        ":types",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -278,7 +287,7 @@ or_cc_library(
     testonly = True,
     hdrs = ["parse_test_proto.h"],
     deps = [
-        "//ortools/base:gmock",
+        ":gmock",
         "@protobuf",
     ],
 )
@@ -349,6 +358,17 @@ or_cc_library(
     ],
 )
 
+or_cc_test(
+    name = "status_builder_test",
+    srcs = ["status_builder_test.cc"],
+    deps = [
+        ":gmock_main",
+        ":status_builder",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_builder",
+    ],
+)
+
 or_cc_library(
     name = "stl_util",
     hdrs = ["stl_util.h"],
@@ -374,8 +394,8 @@ or_cc_test(
     timeout = "long",
     srcs = ["strong_int_test.cc"],
     deps = [
+        ":gmock_main",
         ":strong_int",
-        "//ortools/base:gmock_main",
         "@abseil-cpp//absl/container:node_hash_map",
         "@abseil-cpp//absl/flags:marshalling",
         "@abseil-cpp//absl/hash:hash_testing",
@@ -411,9 +431,9 @@ or_cc_test(
     size = "small",
     srcs = ["strtoint_test.cc"],
     deps = [
+        ":gmock_main",
         ":strtoint",
-        "//ortools/base:gmock_main",
-        "//ortools/base:types",
+        ":types",
     ],
 )
 
@@ -530,8 +550,8 @@ or_cc_test(
     srcs = ["gzipfile_test.cc"],
     deps = [
         ":file",
+        ":gmock_main",
         ":gzipfile",
-        "//ortools/base:gmock_main",
         "@abseil-cpp//absl/strings",
         "@zlib",
     ],
@@ -557,7 +577,7 @@ or_cc_test(
     deps = [
         ":bzip2file",
         ":file",
-        "//ortools/base:gmock_main",
+        ":gmock_main",
         "@abseil-cpp//absl/strings",
         "@bzip2//:bz2",
     ],
