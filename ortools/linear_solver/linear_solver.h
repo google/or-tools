@@ -236,6 +236,8 @@ class MPSolver {
     XPRESS_MIXED_INTEGER_PROGRAMMING = 102,
     COPT_LINEAR_PROGRAMMING = 103,
     COPT_MIXED_INTEGER_PROGRAMMING = 104,
+    MOSEK_LINEAR_PROGRAMMING = 105,
+    MOSEK_MIXED_INTEGER_PROGRAMMING = 106,
   };
 
   /// Create a solver with the given name and underlying solver backend.
@@ -274,6 +276,7 @@ class MPSolver {
    *   - CPLEX_MIXED_INTEGER_PROGRAMMING or CPLEX or CPLEX_MIP
    *   - XPRESS_LINEAR_PROGRAMMING or XPRESS_LP
    *   - XPRESS_MIXED_INTEGER_PROGRAMMING or XPRESS or XPRESS_MIP
+   *   - MOSEK_MIXED_INTEGER_PROGRAMMING or MOSEK or MOSEK_MIP
    *   - GLPK_LINEAR_PROGRAMMING or GLPK_LP
    *   - GLPK_MIXED_INTEGER_PROGRAMMING or GLPK or GLPK_MIP
    */
@@ -891,6 +894,7 @@ class MPSolver {
   friend class GurobiInterface;
   friend class CplexInterface;
   friend class XpressInterface;
+  friend class MosekInterface;
   friend class SLMInterface;
   friend class MPSolverInterface;
   friend class GLOPInterface;
@@ -1123,6 +1127,7 @@ class MPObjective {
   friend class GurobiInterface;
   friend class CplexInterface;
   friend class XpressInterface;
+  friend class MosekInterface;
   friend class GLOPInterface;
   friend class BopInterface;
   friend class SatInterface;
@@ -1235,6 +1240,7 @@ class MPVariable {
   friend class GLPKInterface;
   friend class GurobiInterface;
   friend class HighsInterface;
+  friend class MosekInterface;
   friend class KnapsackInterface;
   friend class MPSolver;
   friend class MPSolverInterface;
@@ -1386,12 +1392,14 @@ class MPConstraint {
   friend class GurobiInterface;
   friend class CplexInterface;
   friend class XpressInterface;
+  friend class MosekInterface;
   friend class GLOPInterface;
   friend class BopInterface;
   friend class SatInterface;
   friend class PdlpInterface;
   friend class HighsInterface;
   friend class KnapsackInterface;
+  friend class MosekInterface;
 
   // Constructor. A constraint points to a single MPSolverInterface
   // that is specified in the constructor. A constraint cannot belong

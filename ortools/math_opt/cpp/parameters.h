@@ -116,6 +116,12 @@ enum class SolverType {
   // A fast option, but has special licensing.
   kXpress = SOLVER_TYPE_XPRESS,
 
+  // Fico XPRESS solver (third party).
+  //
+  // Supports LP, MIP, and nonconvex integer quadratic problems.
+  // A fast option, but has special licensing.
+  kMosek = SOLVER_TYPE_MOSEK,
+
   // Google's Min-Cost Flow solver.
   //
   // Uses a specialized solver for Min-Cost Flow problems (see
