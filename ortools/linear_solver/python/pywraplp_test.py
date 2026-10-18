@@ -382,6 +382,20 @@ class PyWrapLp(unittest.TestCase):
         mps_str = solver.ExportModelAsMpsFormat(fixed_format=False, obfuscate=False)
         self.assertIn("ExportMps", mps_str)
 
+    def test_export_to_mps_preserves_bound_precision(self):
+        """Test MPS export preserves the precision of variable bounds."""
+        solver = pywraplp.Solver(
+            "MpsBoundPrecision", pywraplp.Solver.GLOP_LINEAR_PROGRAMMING
+        )
+        x = solver.NumVar(1234566, 1234568, "x")
+        solver.Minimize(x)
+
+        mps_str = solver.ExportModelAsMpsFormat(fixed_format=False, obfuscate=False)
+
+        self.assertIn("1234566", mps_str)
+        self.assertIn("1234568", mps_str)
+
 
 if __name__ == "__main__":
     unittest.main()
+

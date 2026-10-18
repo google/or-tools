@@ -392,6 +392,11 @@ std::string DoubleToStringWithForcedSign(double d) {
 
 std::string DoubleToString(double d) { return absl::StrCat((d)); }
 
+std::string MpsDoubleToString(double d) {
+  // MPS numeric values must retain enough digits to round-trip a double.
+  return absl::StrFormat("%.17g", d);
+}
+
 }  // namespace
 
 bool MPModelProtoExporter::AppendConstraint(const MPConstraintProto& ct_proto,
@@ -722,7 +727,7 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(
 
 void MPModelProtoExporter::AppendMpsPair(absl::string_view name, double value,
                                          std::string* output) const {
-  absl::StrAppendFormat(output, *mps_format_, name, DoubleToString(value));
+  absl::StrAppendFormat(output, *mps_format_, name, MpsDoubleToString(value));
 }
 
 void MPModelProtoExporter::AppendMpsLineHeader(absl::string_view id,
@@ -985,3 +990,4 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(
 
 }  // namespace
 }  // namespace operations_research
+
