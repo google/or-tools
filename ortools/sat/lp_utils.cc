@@ -477,7 +477,7 @@ void LeftRightActivityBounds::FillFromConstraint(
         min_left_activity[i + 1] = -kInfinity;
       } else if constexpr (exact) {
         if (coeff != 0.0) tmp_min_sum.AddProd(coeff, lb);
-        min_left_activity[i + 1] = tmp_min_sum.LooseLowerBound();
+        min_left_activity[i + 1] = tmp_min_sum.TightLowerBound();
       } else {
         min_left_activity[i + 1] = min_left_activity[i] + coeff * lb;
       }
@@ -487,7 +487,7 @@ void LeftRightActivityBounds::FillFromConstraint(
         max_left_activity[i + 1] = kInfinity;
       } else if constexpr (exact) {
         if (coeff != 0.0) tmp_max_sum.AddProd(coeff, ub);
-        max_left_activity[i + 1] = tmp_max_sum.LooseUpperBound();
+        max_left_activity[i + 1] = tmp_max_sum.TightUpperBound();
       } else {
         max_left_activity[i + 1] = max_left_activity[i] + coeff * ub;
       }
@@ -519,7 +519,7 @@ void LeftRightActivityBounds::FillFromConstraint(
         min_right_activity[i - 1] = -kInfinity;
       } else if constexpr (exact) {
         if (coeff != 0.0) tmp_min_sum.AddProd(coeff, lb);
-        min_right_activity[i - 1] = tmp_min_sum.LooseLowerBound();
+        min_right_activity[i - 1] = tmp_min_sum.TightLowerBound();
       } else {
         min_right_activity[i - 1] = min_right_activity[i] + coeff * lb;
       }
@@ -529,7 +529,7 @@ void LeftRightActivityBounds::FillFromConstraint(
         max_right_activity[i - 1] = kInfinity;
       } else if constexpr (exact) {
         if (coeff != 0.0) tmp_max_sum.AddProd(coeff, ub);
-        max_right_activity[i - 1] = tmp_max_sum.LooseUpperBound();
+        max_right_activity[i - 1] = tmp_max_sum.TightUpperBound();
       } else {
         max_right_activity[i - 1] = max_right_activity[i] + coeff * ub;
       }
@@ -2598,10 +2598,6 @@ bool ScaleAndSetObjective(const SatParameters& params,
       objective_proto->add_vars(var_indices[i]);
       objective_proto->add_coeffs(value * mult);
     }
-  }
-
-  if (scaled_sum_error == 0.0) {
-    objective_proto->set_scaling_was_exact(true);
   }
 
   return true;

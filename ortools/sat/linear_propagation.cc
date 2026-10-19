@@ -263,9 +263,7 @@ bool LinearPropagator::Propagate() {
   const bool push_affine_ub = push_affine_ub_for_binary_relations_ ||
                               trail_->CurrentDecisionLevel() == 0;
   TimeLimitCheckEveryNCalls time_limit_check(1000, time_limit_);
-  while (true) {
-    if (time_limit_check.LimitReached()) return true;
-
+  while (!time_limit_check.LimitReached()) {
     // We always process the whole queue in FIFO order.
     // Note that the order really only matters for infeasible constraints so it
     // shouldn't have a big impact.
@@ -991,7 +989,7 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_tight) {
         CHECK(!disassemble_branch_.empty());
 
         // This is a corner case in which there is actually no cycle.
-        const auto [test_id, root_var, root_increase] = disassemble_branch_[0];
+        const auto [test_id, root_var, var_increase] = disassemble_branch_[0];
         CHECK_EQ(test_id, root_id);
         CHECK_NE(var, root_var);
         if (var == NegationOf(root_var)) continue;
@@ -1000,7 +998,7 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_tight) {
         // all coefficients are non-increasing.
         const auto [var_coeff, root_coeff] =
             GetCycleCoefficients(id, var, root_var);
-        if (CapProdI(increase, var_coeff) >= root_coeff) {
+        if (CapProdI(var_increase, var_coeff) >= root_coeff) {
           ++num_cycles_;
           return ReportConflictingCycle();
         }
@@ -1034,6 +1032,10 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_tight) {
           const IntegerVariable next_var = NegationOf(vars[i]);
           if (propagated_by_[next_var] == id) {
             disassemble_candidates_.push_back({next_var, coeffs[i]});
+
+            // We will propagate var again later, so clear all this for now.
+            propagated_by_[next_var] = -1;
+            id_to_count[id]--;
           }
         }
       }
@@ -1047,10 +1049,6 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_tight) {
         const IntegerValue next_increase =
             FloorRatio(CapProdI(var_coeff, increase), next_var_coeff);
         if (next_increase > 0) {
-          // We will propagate var again later, so clear all this for now.
-          propagated_by_[next_var] = -1;
-          id_to_count[id]--;
-
           disassemble_queue_.push_back({id, next_var, next_increase});
 
           // We know this will push later, so we register it with a sentinel

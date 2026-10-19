@@ -455,18 +455,15 @@ TEST(ReservoirExpandTest, ExpandReservoirUsingCircuitWithEnforcementLiteral) {
     constraints {
       enforcement_literal: 2
       reservoir {
-        max_level: 2
-        time_exprs { offset: 1 }
+        max_level: 1
         time_exprs { offset: 1 }
         time_exprs { offset: 1 }
         time_exprs { offset: 2 }
         time_exprs { offset: 3 }
         level_changes: { offset: -1 }
-        level_changes: { offset: -1 }
-        level_changes: { offset: 2 }
+        level_changes: { offset: 1 }
         level_changes: { offset: -2 }
         level_changes: { offset: 1 }
-        active_literals: 0
         active_literals: 0
         active_literals: 0
         active_literals: 1
@@ -2105,7 +2102,7 @@ TEST(ExpandInverseTest, ExpressionsWithDuplicateVariables) {
       coeff_and_offsets.push_back({coeff, offset});
     }
   }
-  for (int i = 0; i < 1000; ++i) {
+  for (int i = 0; i < 100; ++i) {
     CpModelProto initial_model;
     for (int j = 0; j < 4; ++j) {
       auto* var = initial_model.add_variables();

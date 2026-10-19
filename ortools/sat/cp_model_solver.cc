@@ -3223,10 +3223,8 @@ void CpModelSolver::AddFloatingPointObjectiveResponsePostprocessor() {
             *response->mutable_integer_objective() = integer_obj;
 
             // If requested, compute a correct lb from the one on the integer
-            // objective. We only do that if some errors were introduced by the
-            // scaling algorithm.
-            if (params_.mip_compute_true_objective_bound() &&
-                !integer_obj.scaling_was_exact()) {
+            // objective.
+            if (params_.mip_compute_true_objective_bound()) {
               const int64_t integer_lb =
                   response->inner_objective_lower_bound();
               const double lb = ComputeTrueObjectiveLowerBound(
