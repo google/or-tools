@@ -770,7 +770,6 @@ TEST(ValidateBasisTest, MissingConstraintStatusOk) {
   ModelSummary summary;
   summary.variables = {{2, "x"}};
 
-  ModelSolveParametersProto parameters;
   BasisProto basis;
   basis.mutable_variable_status()->add_ids(2);
   basis.mutable_variable_status()->add_values(BASIS_STATUS_FIXED_VALUE);
@@ -783,7 +782,6 @@ TEST(ValidateBasisTest, MissingConstraintStatusNotOk) {
   summary.variables = {{2, "x"}};
   summary.linear_constraints = {{0, "c"}};
 
-  ModelSolveParametersProto parameters;
   BasisProto basis;
   basis.mutable_variable_status()->add_ids(2);
   basis.mutable_variable_status()->add_values(BASIS_STATUS_FIXED_VALUE);
@@ -800,7 +798,6 @@ TEST(ValidateBasisTest, MissingVariableStatusNotOk) {
   summary.variables = {{2, "x"}};
   summary.linear_constraints = {{0, "c"}};
 
-  ModelSolveParametersProto parameters;
   BasisProto basis;
   basis.mutable_constraint_status()->add_ids(0);
   basis.mutable_constraint_status()->add_values(BASIS_STATUS_FIXED_VALUE);

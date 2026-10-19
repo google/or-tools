@@ -23,7 +23,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/algorithms/multikey_radix_sort.h"
+#include "ortools/algorithms/auto_radix_sort.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/core/sorted.h"
 #include "ortools/math_opt/model.pb.h"

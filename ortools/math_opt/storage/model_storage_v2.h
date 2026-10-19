@@ -30,7 +30,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "ortools/algorithms/multikey_radix_sort.h"
+#include "ortools/algorithms/auto_radix_sort.h"
 #include "ortools/math_opt/constraints/indicator/storage.h"  // IWYU pragma: export
 #include "ortools/math_opt/constraints/quadratic/storage.h"  // IWYU pragma: export
 #include "ortools/math_opt/constraints/sos/storage.h"  // IWYU pragma: export
@@ -1124,12 +1124,14 @@ template <typename IdType>
 std::vector<IdType> ModelStorageV2::ConstraintsWithVariable(
     const VariableId) const {
   LOG(FATAL) << "not implementable for ModelStorageV2";
+  return {};
 }
 
 template <typename IdType>
 std::vector<VariableId> ModelStorageV2::VariablesInConstraint(
     const IdType) const {
   LOG(FATAL) << "not implementable for ModelStorageV2";
+  return {};
 }
 
 }  // namespace operations_research::math_opt

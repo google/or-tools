@@ -22,7 +22,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/types/span.h"
-#include "ortools/algorithms/multikey_radix_sort.h"
+#include "ortools/algorithms/auto_radix_sort.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/storage/model_storage_types.h"
 
