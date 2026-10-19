@@ -18,12 +18,11 @@
 #include <cstdint>
 #include <vector>
 
-#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "google/protobuf/map.h"
-#include "ortools/algorithms/multikey_radix_sort.h"
+#include "ortools/algorithms/auto_radix_sort.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/core/sorted.h"

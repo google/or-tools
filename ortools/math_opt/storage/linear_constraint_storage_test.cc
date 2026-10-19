@@ -140,7 +140,6 @@ TEST(LinearConstraintStorageTest, DeleteConstraintIds) {
   expected_constraints.add_upper_bounds(-2.0);
   expected_constraints.add_names("c");
   expected_constraints.add_names("e");
-  SparseDoubleMatrixProto expected_matrix;
   const auto [actual_constraints, actual_matrix] = storage.Proto();
   EXPECT_THAT(actual_constraints, EquivToProto(expected_constraints));
   EXPECT_THAT(actual_matrix, EquivToProto(SparseDoubleMatrixProto()));

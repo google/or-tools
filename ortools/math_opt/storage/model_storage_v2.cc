@@ -28,7 +28,7 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/algorithms/multikey_radix_sort.h"
+#include "ortools/algorithms/auto_radix_sort.h"
 #include "ortools/math_opt/elemental/attributes.h"
 #include "ortools/math_opt/elemental/elemental.h"
 #include "ortools/math_opt/elemental/elements.h"
