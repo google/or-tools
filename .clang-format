@@ -9,8 +9,7 @@ Language:        Java
 BasedOnStyle:  Google
 ---
 Language:      CSharp
-BasedOnStyle:  Microsoft
-NamespaceIndentation: None
+BasedOnStyle:  Google
 ---
 Language:       Proto
 BasedOnStyle:  Google

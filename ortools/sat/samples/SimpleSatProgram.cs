@@ -17,47 +17,42 @@ using System;
 using Google.OrTools.Sat;
 // [END import]
 
-public class SimpleSatProgram
-{
-    static void Main()
-    {
-        // Creates the model.
-        // [START model]
-        CpModel model = new CpModel();
-        // [END model]
+public class SimpleSatProgram {
+  static void Main() {
+    // Creates the model.
+    // [START model]
+    CpModel model = new CpModel();
+    // [END model]
 
-        // Creates the variables.
-        // [START variables]
-        int num_vals = 3;
+    // Creates the variables.
+    // [START variables]
+    int num_vals = 3;
 
-        IntVar x = model.NewIntVar(0, num_vals - 1, "x");
-        IntVar y = model.NewIntVar(0, num_vals - 1, "y");
-        IntVar z = model.NewIntVar(0, num_vals - 1, "z");
-        // [END variables]
+    IntVar x = model.NewIntVar(0, num_vals - 1, "x");
+    IntVar y = model.NewIntVar(0, num_vals - 1, "y");
+    IntVar z = model.NewIntVar(0, num_vals - 1, "z");
+    // [END variables]
 
-        // Creates the constraints.
-        // [START constraints]
-        model.Add(x != y);
-        // [END constraints]
+    // Creates the constraints.
+    // [START constraints]
+    model.Add(x != y);
+    // [END constraints]
 
-        // Creates a solver and solves the model.
-        // [START solve]
-        CpSolver solver = new CpSolver();
-        CpSolverStatus status = solver.Solve(model);
-        // [END solve]
+    // Creates a solver and solves the model.
+    // [START solve]
+    CpSolver solver = new CpSolver();
+    CpSolverStatus status = solver.Solve(model);
+    // [END solve]
 
-        // [START print_solution]
-        if (status == CpSolverStatus.Optimal || status == CpSolverStatus.Feasible)
-        {
-            Console.WriteLine("x = " + solver.Value(x));
-            Console.WriteLine("y = " + solver.Value(y));
-            Console.WriteLine("z = " + solver.Value(z));
-        }
-        else
-        {
-            Console.WriteLine("No solution found.");
-        }
-        // [END print_solution]
+    // [START print_solution]
+    if (status == CpSolverStatus.Optimal || status == CpSolverStatus.Feasible) {
+      Console.WriteLine("x = " + solver.Value(x));
+      Console.WriteLine("y = " + solver.Value(y));
+      Console.WriteLine("z = " + solver.Value(z));
+    } else {
+      Console.WriteLine("No solution found.");
     }
+    // [END print_solution]
+  }
 }
 // [END program]

@@ -17,96 +17,84 @@ using Xunit;
 using Google.OrTools.ConstraintSolver;
 using Google.OrTools.Routing;
 
-namespace Google.OrTools.Tests
-{
-public class RoutingIndexManagerTest
-{
+namespace Google.OrTools.Tests {
+  public class RoutingIndexManagerTest {
     [Fact]
-    public void TestSingleDepot()
-    {
-        const int numNodes = 10;
-        const int numVehicles = 5;
-        const int depotIndex = 1;
-        IndexManager manager = new IndexManager(numNodes, numVehicles, depotIndex);
-        Assert.Equal(numNodes, manager.GetNumberOfNodes());
-        Assert.Equal(numVehicles, manager.GetNumberOfVehicles());
-        Assert.Equal(numNodes + 2 * numVehicles - 1, manager.GetNumberOfIndices());
-        Assert.Equal(1, manager.GetNumberOfUniqueDepots());
+    public void TestSingleDepot() {
+      const int numNodes = 10;
+      const int numVehicles = 5;
+      const int depotIndex = 1;
+      IndexManager manager = new IndexManager(numNodes, numVehicles, depotIndex);
+      Assert.Equal(numNodes, manager.GetNumberOfNodes());
+      Assert.Equal(numVehicles, manager.GetNumberOfVehicles());
+      Assert.Equal(numNodes + 2 * numVehicles - 1, manager.GetNumberOfIndices());
+      Assert.Equal(1, manager.GetNumberOfUniqueDepots());
 
-        long[] expectedStarts = { 1, 10, 11, 12, 13 };
-        long[] expectedEnds = { 14, 15, 16, 17, 18 };
-        for (int i = 0; i < numVehicles; i++)
+      long[] expectedStarts = { 1, 10, 11, 12, 13 };
+      long[] expectedEnds = { 14, 15, 16, 17, 18 };
+      for (int i = 0; i < numVehicles; i++) {
+        Assert.Equal(expectedStarts[i], manager.GetStartIndex(i));
+        Assert.Equal(expectedEnds[i], manager.GetEndIndex(i));
+      }
+
+      for (int i = 0; i < manager.GetNumberOfIndices(); i++) {
+        if (i >= numNodes)  // start or end nodes
         {
-            Assert.Equal(expectedStarts[i], manager.GetStartIndex(i));
-            Assert.Equal(expectedEnds[i], manager.GetEndIndex(i));
+          Assert.Equal(depotIndex, manager.IndexToNode(i));
+        } else {
+          Assert.Equal(i, manager.IndexToNode(i));
         }
+      }
 
-        for (int i = 0; i < manager.GetNumberOfIndices(); i++)
-        {
-            if (i >= numNodes) // start or end nodes
-            {
-                Assert.Equal(depotIndex, manager.IndexToNode(i));
-            }
-            else
-            {
-                Assert.Equal(i, manager.IndexToNode(i));
-            }
-        }
+      long[] inputIndices = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 };
+      int[] expectedNodes = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+      Assert.Equal(expectedNodes, manager.IndicesToNodes(inputIndices));
 
-        long[] inputIndices = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 };
-        int[] expectedNodes = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
-        Assert.Equal(expectedNodes, manager.IndicesToNodes(inputIndices));
+      for (int i = 0; i < manager.GetNumberOfNodes(); i++) {
+        Assert.Equal(i, manager.NodeToIndex(i));
+      }
 
-        for (int i = 0; i < manager.GetNumberOfNodes(); i++)
-        {
-            Assert.Equal(i, manager.NodeToIndex(i));
-        }
-
-        int[] inputNodes = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-        long[] expectedIndicesFromNodes = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-        Assert.Equal(expectedIndicesFromNodes, manager.NodesToIndices(inputNodes));
+      int[] inputNodes = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+      long[] expectedIndicesFromNodes = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+      Assert.Equal(expectedIndicesFromNodes, manager.NodesToIndices(inputNodes));
     }
 
     [Fact]
-    public void TestMultipleDepot()
-    {
-        const int numNodes = 10;
-        const int numVehicles = 5;
-        int[] starts = { 0, 3, 9, 2, 2 };
-        int[] ends = { 0, 9, 3, 2, 1 };
-        IndexManager manager = new IndexManager(numNodes, numVehicles, starts, ends);
-        Assert.Equal(numNodes, manager.GetNumberOfNodes());
-        Assert.Equal(numVehicles, manager.GetNumberOfVehicles());
-        Assert.Equal(numNodes + 2 * numVehicles - 5, manager.GetNumberOfIndices());
-        Assert.Equal(5, manager.GetNumberOfUniqueDepots());
+    public void TestMultipleDepot() {
+      const int numNodes = 10;
+      const int numVehicles = 5;
+      int[] starts = { 0, 3, 9, 2, 2 };
+      int[] ends = { 0, 9, 3, 2, 1 };
+      IndexManager manager = new IndexManager(numNodes, numVehicles, starts, ends);
+      Assert.Equal(numNodes, manager.GetNumberOfNodes());
+      Assert.Equal(numVehicles, manager.GetNumberOfVehicles());
+      Assert.Equal(numNodes + 2 * numVehicles - 5, manager.GetNumberOfIndices());
+      Assert.Equal(5, manager.GetNumberOfUniqueDepots());
 
-        long[] expectedStarts = { 0, 2, 8, 1, 9 };
-        long[] expectedEnds = { 10, 11, 12, 13, 14 };
-        for (int i = 0; i < numVehicles; i++)
-        {
-            Assert.Equal(expectedStarts[i], manager.GetStartIndex(i));
-            Assert.Equal(expectedEnds[i], manager.GetEndIndex(i));
-        }
+      long[] expectedStarts = { 0, 2, 8, 1, 9 };
+      long[] expectedEnds = { 10, 11, 12, 13, 14 };
+      for (int i = 0; i < numVehicles; i++) {
+        Assert.Equal(expectedStarts[i], manager.GetStartIndex(i));
+        Assert.Equal(expectedEnds[i], manager.GetEndIndex(i));
+      }
 
-        int[] expectedNodes = { 0, 2, 3, 4, 5, 6, 7, 8, 9, 2, 0, 9, 3, 2, 1 };
-        for (int i = 0; i < manager.GetNumberOfIndices(); i++)
-        {
-            Assert.Equal(expectedNodes[i], manager.IndexToNode(i));
-        }
+      int[] expectedNodes = { 0, 2, 3, 4, 5, 6, 7, 8, 9, 2, 0, 9, 3, 2, 1 };
+      for (int i = 0; i < manager.GetNumberOfIndices(); i++) {
+        Assert.Equal(expectedNodes[i], manager.IndexToNode(i));
+      }
 
-        long[] allIndices = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 };
-        Assert.Equal(expectedNodes, manager.IndicesToNodes(allIndices));
+      long[] allIndices = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 };
+      Assert.Equal(expectedNodes, manager.IndicesToNodes(allIndices));
 
-        long unassignedIndex = IndexManager.kUnassigned;
-        long[] expectedIndices = { 0, unassignedIndex, 1, 2, 3, 4, 5, 6, 7, 8 };
-        for (int i = 0; i < manager.GetNumberOfNodes(); i++)
-        {
-            Assert.Equal(expectedIndices[i], manager.NodeToIndex(i));
-        }
+      long unassignedIndex = IndexManager.kUnassigned;
+      long[] expectedIndices = { 0, unassignedIndex, 1, 2, 3, 4, 5, 6, 7, 8 };
+      for (int i = 0; i < manager.GetNumberOfNodes(); i++) {
+        Assert.Equal(expectedIndices[i], manager.NodeToIndex(i));
+      }
 
-        int[] inputNodes = { 0, 2, 3, 4, 5, 6, 7, 8, 9 };
-        long[] expectedIndicesFromNodes = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
-        Assert.Equal(expectedIndicesFromNodes, manager.NodesToIndices(inputNodes));
+      int[] inputNodes = { 0, 2, 3, 4, 5, 6, 7, 8, 9 };
+      long[] expectedIndicesFromNodes = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
+      Assert.Equal(expectedIndicesFromNodes, manager.NodesToIndices(inputNodes));
     }
-}
-} // namespace Google.OrTools.Tests
+  }
+}  // namespace Google.OrTools.Tests

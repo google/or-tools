@@ -15,29 +15,29 @@
 using System;
 using Google.OrTools.Sat;
 
-public class OptionalIntervalSampleSat
-{
-    static void Main()
-    {
-        CpModel model = new CpModel();
-        int horizon = 100;
+public class OptionalIntervalSampleSat {
+  static void Main() {
+    CpModel model = new CpModel();
+    int horizon = 100;
 
-        // C# code supports constant of affine expressions.
-        IntVar start_var = model.NewIntVar(0, horizon, "start");
-        IntVar end_var = model.NewIntVar(0, horizon, "end");
-        BoolVar presence_var = model.NewBoolVar("presence");
-        IntervalVar interval = model.NewOptionalIntervalVar(start_var, 10, end_var + 2, presence_var, "interval");
-        Console.WriteLine(interval);
+    // C# code supports constant of affine expressions.
+    IntVar start_var = model.NewIntVar(0, horizon, "start");
+    IntVar end_var = model.NewIntVar(0, horizon, "end");
+    BoolVar presence_var = model.NewBoolVar("presence");
+    IntervalVar interval =
+        model.NewOptionalIntervalVar(start_var, 10, end_var + 2, presence_var, "interval");
+    Console.WriteLine(interval);
 
-        // If the size is fixed, a simpler version uses the start expression, the size and the
-        // literal.
-        IntervalVar fixedSizeIntervalVar =
-            model.NewOptionalFixedSizeIntervalVar(start_var, 10, presence_var, "fixed_size_interval_var");
-        Console.WriteLine(fixedSizeIntervalVar);
+    // If the size is fixed, a simpler version uses the start expression, the size and the
+    // literal.
+    IntervalVar fixedSizeIntervalVar = model.NewOptionalFixedSizeIntervalVar(
+        start_var, 10, presence_var, "fixed_size_interval_var");
+    Console.WriteLine(fixedSizeIntervalVar);
 
-        // A fixed interval can be created using the same API.
-        IntervalVar fixedInterval = model.NewOptionalFixedSizeIntervalVar(5, 10, presence_var, "fixed_interval");
-        Console.WriteLine(fixedInterval);
-    }
+    // A fixed interval can be created using the same API.
+    IntervalVar fixedInterval =
+        model.NewOptionalFixedSizeIntervalVar(5, 10, presence_var, "fixed_interval");
+    Console.WriteLine(fixedInterval);
+  }
 }
 // [END program]

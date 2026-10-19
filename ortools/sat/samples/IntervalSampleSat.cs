@@ -15,27 +15,26 @@
 using System;
 using Google.OrTools.Sat;
 
-public class IntervalSampleSat
-{
-    static void Main()
-    {
-        CpModel model = new CpModel();
-        int horizon = 100;
+public class IntervalSampleSat {
+  static void Main() {
+    CpModel model = new CpModel();
+    int horizon = 100;
 
-        // C# code supports constant of affine expressions.
-        IntVar start_var = model.NewIntVar(0, horizon, "start");
-        IntVar end_var = model.NewIntVar(0, horizon, "end");
-        IntervalVar interval = model.NewIntervalVar(start_var, 10, end_var + 2, "interval");
-        Console.WriteLine(interval);
+    // C# code supports constant of affine expressions.
+    IntVar start_var = model.NewIntVar(0, horizon, "start");
+    IntVar end_var = model.NewIntVar(0, horizon, "end");
+    IntervalVar interval = model.NewIntervalVar(start_var, 10, end_var + 2, "interval");
+    Console.WriteLine(interval);
 
-        // If the size is fixed, a simpler version uses the start expression, the size and the
-        // literal.
-        IntervalVar fixedSizeIntervalVar = model.NewFixedSizeIntervalVar(start_var, 10, "fixed_size_interval_var");
-        Console.WriteLine(fixedSizeIntervalVar);
+    // If the size is fixed, a simpler version uses the start expression, the size and the
+    // literal.
+    IntervalVar fixedSizeIntervalVar =
+        model.NewFixedSizeIntervalVar(start_var, 10, "fixed_size_interval_var");
+    Console.WriteLine(fixedSizeIntervalVar);
 
-        // A fixed interval can be created using the same API.
-        IntervalVar fixedInterval = model.NewFixedSizeIntervalVar(5, 10, "fixed_interval");
-        Console.WriteLine(fixedInterval);
-    }
+    // A fixed interval can be created using the same API.
+    IntervalVar fixedInterval = model.NewFixedSizeIntervalVar(5, 10, "fixed_interval");
+    Console.WriteLine(fixedInterval);
+  }
 }
 // [END program]

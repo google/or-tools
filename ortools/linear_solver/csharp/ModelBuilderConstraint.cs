@@ -11,90 +11,65 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Google.OrTools.ModelBuilder
-{
-using Google.OrTools.Util;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using Google.Protobuf.Collections;
+namespace Google.OrTools.ModelBuilder {
+  using Google.OrTools.Util;
+  using System;
+  using System.Collections;
+  using System.Collections.Generic;
+  using System.Linq;
+  using System.Runtime.CompilerServices;
+  using Google.Protobuf.Collections;
 
-/// <summary>
-/// Wrapper around a linear constraint stored in the ModelBuilderHelper instance.
-/// </summary>
-public class LinearConstraint
-{
-    public LinearConstraint(ModelBuilderHelper helper)
-    {
-        helper_ = helper;
-        index_ = helper_.AddLinearConstraint();
+  /// <summary>
+  /// Wrapper around a linear constraint stored in the ModelBuilderHelper instance.
+  /// </summary>
+  public class LinearConstraint {
+    public LinearConstraint(ModelBuilderHelper helper) {
+      helper_ = helper;
+      index_ = helper_.AddLinearConstraint();
     }
 
-    public LinearConstraint(ModelBuilderHelper helper, int index)
-    {
-        helper_ = helper;
-        index_ = index;
+    public LinearConstraint(ModelBuilderHelper helper, int index) {
+      helper_ = helper;
+      index_ = index;
     }
 
     /// <summary>
     /// Returns the index of the constraint in the model.
     /// </summary>
-    public int Index
-    {
-        get {
-            return index_;
-        }
+    public int Index {
+      get { return index_; }
     }
 
     /// <summary>
     /// Returns the constraint builder.
     /// </summary>
-    public ModelBuilderHelper Helper
-    {
-        get {
-            return helper_;
-        }
+    public ModelBuilderHelper Helper {
+      get { return helper_; }
     }
 
     /// <summary>
     /// The lower bound of the constraint.
     /// </summary>
-    public double LowerBound
-    {
-        get {
-            return helper_.ConstraintLowerBound(index_);
-        }
-        set {
-            helper_.SetConstraintLowerBound(index_, value);
-        }
+    public double LowerBound {
+      get { return helper_.ConstraintLowerBound(index_); }
+      set { helper_.SetConstraintLowerBound(index_, value); }
     }
 
     /// <summary>
     /// The upper bound of the constraint.
     /// </summary>
-    public double UpperBound
-    {
-        get {
-            return helper_.ConstraintUpperBound(index_);
-        }
-        set {
-            helper_.SetConstraintUpperBound(index_, value);
-        }
+    public double UpperBound {
+      get { return helper_.ConstraintUpperBound(index_); }
+      set { helper_.SetConstraintUpperBound(index_, value); }
     }
 
     /// <summary>
     /// The name of the variable given upon creation.
     /// </summary>
-    public String Name
-    {
-        get {
-            return helper_.ConstraintName(index_);
-        }
-        set {
-            helper_.SetConstraintName(index_, value);
-        }
+    public String Name {
+      get { return helper_.ConstraintName(index_); }
+      set { helper_.SetConstraintName(index_, value); }
     }
 
     /// <summary>
@@ -102,9 +77,8 @@ public class LinearConstraint
     /// </summary>
     /// <param name="var">the variable of the term to add</param>
     /// <param name="coeff">the coefficient of the term to add</param>
-    public void AddTerm(Variable var, double coeff)
-    {
-        helper_.SafeAddConstraintTerm(index_, var.Index, coeff);
+    public void AddTerm(Variable var, double coeff) {
+      helper_.SafeAddConstraintTerm(index_, var.Index, coeff);
     }
 
     /// <summary>
@@ -112,17 +86,15 @@ public class LinearConstraint
     /// </summary>
     /// <param name="var">the variable of the term to set</param>
     /// <param name="coeff">the coefficient of the term to set</param>
-    public void SetVariableCoefficient(Variable var, double coeff)
-    {
-        helper_.SetConstraintCoefficient(index_, var.Index, coeff);
+    public void SetVariableCoefficient(Variable var, double coeff) {
+      helper_.SetConstraintCoefficient(index_, var.Index, coeff);
     }
 
     /// <summary>
     /// Clear all terms of the constraint.
     /// </summary>
-    public void ClearTerms()
-    {
-        helper_.ClearConstraintTerms(index_);
+    public void ClearTerms() {
+      helper_.ClearConstraintTerms(index_);
     }
 
     /// <summary>
@@ -130,120 +102,85 @@ public class LinearConstraint
     /// </summary>
     /// <param name="name">the new name of the variable</param>
     /// <returns>this</returns>
-    public LinearConstraint WithName(String name)
-    {
-        Name = name;
-        return this;
+    public LinearConstraint WithName(String name) {
+      Name = name;
+      return this;
     }
 
     private readonly int index_;
     private ModelBuilderHelper helper_;
-}
+  }
 
-/// <summary>
-/// Wrapper around an enforced linear constraint stored in the ModelBuilderHelper instance.
-/// </summary>
-public class EnforcedLinearConstraint
-{
-    public EnforcedLinearConstraint(ModelBuilderHelper helper)
-    {
-        helper_ = helper;
-        index_ = helper_.AddEnforcedLinearConstraint();
+  /// <summary>
+  /// Wrapper around an enforced linear constraint stored in the ModelBuilderHelper instance.
+  /// </summary>
+  public class EnforcedLinearConstraint {
+    public EnforcedLinearConstraint(ModelBuilderHelper helper) {
+      helper_ = helper;
+      index_ = helper_.AddEnforcedLinearConstraint();
     }
 
-    public EnforcedLinearConstraint(ModelBuilderHelper helper, int index)
-    {
-        if (!helper.IsEnforcedConstraint(index))
-        {
-            throw new ArgumentException("the given index does not refer to an enforced linear constraint");
-        }
-        helper_ = helper;
-        index_ = index;
+    public EnforcedLinearConstraint(ModelBuilderHelper helper, int index) {
+      if (!helper.IsEnforcedConstraint(index)) {
+        throw new ArgumentException(
+            "the given index does not refer to an enforced linear constraint");
+      }
+      helper_ = helper;
+      index_ = index;
     }
 
     /// <summary>
     /// Returns the index of the constraint in the model.
     /// </summary>
-    public int Index
-    {
-        get {
-            return index_;
-        }
+    public int Index {
+      get { return index_; }
     }
 
     /// <summary>
     /// Returns the constraint builder.
     /// </summary>
-    public ModelBuilderHelper Helper
-    {
-        get {
-            return helper_;
-        }
+    public ModelBuilderHelper Helper {
+      get { return helper_; }
     }
 
     /// <summary>
     /// The lower bound of the constraint.
     /// </summary>
-    public double LowerBound
-    {
-        get {
-            return helper_.EnforcedConstraintLowerBound(index_);
-        }
-        set {
-            helper_.SetEnforcedConstraintLowerBound(index_, value);
-        }
+    public double LowerBound {
+      get { return helper_.EnforcedConstraintLowerBound(index_); }
+      set { helper_.SetEnforcedConstraintLowerBound(index_, value); }
     }
 
     /// <summary>
     /// The upper bound of the constraint.
     /// </summary>
-    public double UpperBound
-    {
-        get {
-            return helper_.EnforcedConstraintUpperBound(index_);
-        }
-        set {
-            helper_.SetEnforcedConstraintUpperBound(index_, value);
-        }
+    public double UpperBound {
+      get { return helper_.EnforcedConstraintUpperBound(index_); }
+      set { helper_.SetEnforcedConstraintUpperBound(index_, value); }
     }
 
     /// <summary>
     /// The indicator variable of the constraint.
     /// </summary>
-    public Variable IndicatorVariable
-    {
-        get {
-            return new Variable(helper_, helper_.EnforcedIndicatorVariableIndex(index_));
-        }
-        set {
-            helper_.SetEnforcedIndicatorVariableIndex(index_, value.Index);
-        }
+    public Variable IndicatorVariable {
+      get { return new Variable(helper_, helper_.EnforcedIndicatorVariableIndex(index_)); }
+      set { helper_.SetEnforcedIndicatorVariableIndex(index_, value.Index); }
     }
 
     /// <summary>
     /// The indicator value of the constraint.
     /// </summary>
-    public bool IndicatorValue
-    {
-        get {
-            return helper_.EnforcedIndicatorValue(index_);
-        }
-        set {
-            helper_.SetEnforcedIndicatorValue(index_, value);
-        }
+    public bool IndicatorValue {
+      get { return helper_.EnforcedIndicatorValue(index_); }
+      set { helper_.SetEnforcedIndicatorValue(index_, value); }
     }
 
     /// <summary>
     /// The name of the variable given upon creation.
     /// </summary>
-    public String Name
-    {
-        get {
-            return helper_.EnforcedConstraintName(index_);
-        }
-        set {
-            helper_.SetEnforcedConstraintName(index_, value);
-        }
+    public String Name {
+      get { return helper_.EnforcedConstraintName(index_); }
+      set { helper_.SetEnforcedConstraintName(index_, value); }
     }
 
     /// <summary>
@@ -251,9 +188,8 @@ public class EnforcedLinearConstraint
     /// </summary>
     /// <param name="var">the variable of the term to add</param>
     /// <param name="coeff">the coefficient of the term to add</param>
-    public void AddTerm(Variable var, double coeff)
-    {
-        helper_.SafeAddEnforcedConstraintTerm(index_, var.Index, coeff);
+    public void AddTerm(Variable var, double coeff) {
+      helper_.SafeAddEnforcedConstraintTerm(index_, var.Index, coeff);
     }
 
     /// <summary>
@@ -261,17 +197,15 @@ public class EnforcedLinearConstraint
     /// </summary>
     /// <param name="var">the variable of the term to set</param>
     /// <param name="coeff">the coefficient of the term to set</param>
-    public void SetVariableCoefficient(Variable var, double coeff)
-    {
-        helper_.SetEnforcedConstraintCoefficient(index_, var.Index, coeff);
+    public void SetVariableCoefficient(Variable var, double coeff) {
+      helper_.SetEnforcedConstraintCoefficient(index_, var.Index, coeff);
     }
 
     /// <summary>
     /// Clear all terms of the constraint.
     /// </summary>
-    public void ClearTerms()
-    {
-        helper_.ClearEnforcedConstraintTerms(index_);
+    public void ClearTerms() {
+      helper_.ClearEnforcedConstraintTerms(index_);
     }
 
     /// <summary>
@@ -279,14 +213,13 @@ public class EnforcedLinearConstraint
     /// </summary>
     /// <param name="name">The name to assign</param>
     /// <returns>this</returns>
-    public EnforcedLinearConstraint WithName(String name)
-    {
-        Name = name;
-        return this;
+    public EnforcedLinearConstraint WithName(String name) {
+      Name = name;
+      return this;
     }
 
     private readonly int index_;
     private ModelBuilderHelper helper_;
-}
+  }
 
-} // namespace Google.OrTools.ModelBuilder
+}  // namespace Google.OrTools.ModelBuilder

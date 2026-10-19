@@ -15,41 +15,39 @@
 using System;
 using Google.OrTools.Sat;
 
-public class AssumptionsSampleSat
-{
-    static void Main()
-    {
-        // Creates the model.
-        // [START model]
-        CpModel model = new CpModel();
-        // [END model]
+public class AssumptionsSampleSat {
+  static void Main() {
+    // Creates the model.
+    // [START model]
+    CpModel model = new CpModel();
+    // [END model]
 
-        // Creates the variables.
-        // [START variables]
-        IntVar x = model.NewIntVar(0, 10, "x");
-        IntVar y = model.NewIntVar(0, 10, "y");
-        IntVar z = model.NewIntVar(0, 10, "z");
-        ILiteral a = model.NewBoolVar("a");
-        ILiteral b = model.NewBoolVar("b");
-        ILiteral c = model.NewBoolVar("c");
-        // [END variables]
+    // Creates the variables.
+    // [START variables]
+    IntVar x = model.NewIntVar(0, 10, "x");
+    IntVar y = model.NewIntVar(0, 10, "y");
+    IntVar z = model.NewIntVar(0, 10, "z");
+    ILiteral a = model.NewBoolVar("a");
+    ILiteral b = model.NewBoolVar("b");
+    ILiteral c = model.NewBoolVar("c");
+    // [END variables]
 
-        // Creates the constraints.
-        // [START constraints]
-        model.Add(x > y).OnlyEnforceIf(a);
-        model.Add(y > z).OnlyEnforceIf(b);
-        model.Add(z > x).OnlyEnforceIf(c);
-        // [END constraints]
+    // Creates the constraints.
+    // [START constraints]
+    model.Add(x > y).OnlyEnforceIf(a);
+    model.Add(y > z).OnlyEnforceIf(b);
+    model.Add(z > x).OnlyEnforceIf(c);
+    // [END constraints]
 
-        // Add assumptions
-        model.AddAssumptions(new ILiteral[] { a, b, c });
+    // Add assumptions
+    model.AddAssumptions(new ILiteral[] { a, b, c });
 
-        // Creates a solver and solves the model.
-        // [START solve]
-        CpSolver solver = new CpSolver();
-        CpSolverStatus status = solver.Solve(model);
-        Console.WriteLine(solver.SufficientAssumptionsForInfeasibility());
-        // [END solve]
-    }
+    // Creates a solver and solves the model.
+    // [START solve]
+    CpSolver solver = new CpSolver();
+    CpSolverStatus status = solver.Solve(model);
+    Console.WriteLine(solver.SufficientAssumptionsForInfeasibility());
+    // [END solve]
+  }
 }
 // [END program]
