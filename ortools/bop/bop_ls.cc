@@ -38,8 +38,10 @@
 #include "ortools/bop/bop_solution.h"
 #include "ortools/bop/bop_types.h"
 #include "ortools/bop/bop_util.h"
+#include "ortools/sat/sat_assignment.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/sat_trail.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 

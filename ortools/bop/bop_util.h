@@ -18,6 +18,7 @@
 
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_solution.h"
+#include "ortools/sat/sat_assignment.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 
