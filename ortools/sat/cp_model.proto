@@ -485,12 +485,7 @@ message CpObjectiveProto {
   // domain on the sum of the objective terms only.
   repeated int64 domain = 5;
 
-  // Internal field. Do not set. When we scale a FloatObjectiveProto to an
-  // integer version, we set this to true if the scaling was exact (i.e. all
-  // original coeffs were integers for instance).
-  //
-  // TODO(user): Put the error bounds we computed instead?
-  bool scaling_was_exact = 6;
+  bool scaling_was_exact = 6 [deprecated = true];
 
   // Internal fields to recover a bound on the original integer objective from
   // the presolved one. Basically, initially the integer objective fits in an
