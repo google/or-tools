@@ -8,9 +8,9 @@ Note: the wrapper is being written and highly experimental.
 For now, only MathOpt is accessible through
 [its C API](/ortools/math_opt/core/c_api/).
 
-TODO(user): how to run this on my machine?
+TODO(tcuvelier): how to run this on my machine?
 
-TODO(user): generate the Julia files within CMake and export them manually
+TODO(tcuvelier): generate the Julia files within CMake and export them manually
 with Yggdrasil.
 
 ## Packages
@@ -125,7 +125,7 @@ and the script
 [`build_tarballs.jl`](https://github.com/JuliaPackaging/Yggdrasil/blob/master/O/ORTools/build_tarballs.jl)
 that build OR-Tools for Julia.
 
-If there is an update in the C API, use `scripts/TODO(user)` to update the
+If there is an update in the C API, use `scripts/TODO(tcuvelier)` to update the
 generated code to call the C functions.
 
 If there is an update in the MathOpt proto interface, use
