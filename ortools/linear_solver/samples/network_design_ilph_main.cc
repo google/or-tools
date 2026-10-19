@@ -11,13 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <string>
+
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/linear_solver/linear_solver.h"
@@ -25,7 +26,7 @@
 #include "ortools/routing/parsers/capacity_planning.pb.h"
 #include "ortools/routing/parsers/dow_parser.h"
 
-DEFINE_string(input, "", "File path of the problem.");
+ABSL_FLAG(std::string, input, "", "File path of the problem.");
 
 using operations_research::MPSolver;
 
