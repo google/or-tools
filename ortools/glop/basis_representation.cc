@@ -14,6 +14,7 @@
 #include "ortools/glop/basis_representation.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdlib>
 #include <vector>
 
@@ -646,7 +647,8 @@ double BasisFactorization::DeterministicTime() const {
          total_factorization_deterministic_time_;
 }
 
-int BasisFactorization::DeterministicTimeUnitsForSolve(int num_entries) const {
+int64_t BasisFactorization::DeterministicTimeUnitsForSolve(
+    int64_t num_entries) const {
   // TODO(user): Spend more time finding a good approximation here.
   if (compact_matrix_.num_rows().value() == 0) return 0;
   const double density =

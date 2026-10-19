@@ -14,6 +14,7 @@
 #ifndef ORTOOLS_GLOP_BASIS_REPRESENTATION_H_
 #define ORTOOLS_GLOP_BASIS_REPRESENTATION_H_
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -330,7 +331,7 @@ class BasisFactorization {
 
   // Returns the number of time_units for a solve operation with a vector having
   // this number of non-zero entries (it can be an approximation).
-  int DeterministicTimeUnitsForSolve(int num_entries) const;
+  int64_t DeterministicTimeUnitsForSolve(int64_t num_entries) const;
 
   // Stats about this class.
   struct Stats : public StatsGroup {
