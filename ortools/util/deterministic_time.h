@@ -83,7 +83,7 @@ class LinearDeterministicTimer {
   // Advances the deterministic time by time_units * spec.scale. If profiling is
   // enabled, this also records the elapsed wall time since the last call to
   // Start() and the corresponding time units.
-  void Stop(int time_units) {
+  void Stop(uint64_t time_units) {
 #ifndef NDEBUG
     CHECK(started_);
     started_ = false;
@@ -544,7 +544,7 @@ class LinearDeterministicTimer {
 
   void Start() { start_time_ = absl::GetCurrentTimeNanos(); }
 
-  void Stop(int time_units) {
+  void Stop(uint64_t time_units) {
     const uint64_t elapsed_time = absl::GetCurrentTimeNanos() - start_time_;
     time_units_ += time_units;
     stats_.AddSample(time_units, elapsed_time, spec.scale * time_units);
