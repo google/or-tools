@@ -134,56 +134,6 @@ void TightSum::MultiplyLastTerm() {
 
 namespace {
 
-std::pair<double, double> GetBoundsWhenOneIsNotFinite(
-    const absl::Span<const double> a, const absl::Span<const double> b) {
-  DCHECK(!std::isfinite(a[0]) || !std::isfinite(b[0]));
-  std::optional<std::strong_ordering> inf_sign = std::nullopt;
-  for (int i = 0; i < a.size(); ++i) {
-    if (!std::isfinite(a[i]) || !std::isfinite(b[i])) {
-      CHECK(!std::isnan(a[i]) && !std::isnan(b[i]))
-          << "NaN value not supported.";
-      CHECK(a[i] != 0.0 && b[i] != 0.0) << "NaN value obtained from 0 * inf";
-      const std::strong_ordering current_inf_sign =
-          (a[i] < 0.0) == (b[i] < 0.0) ? std::strong_ordering::greater
-                                       : std::strong_ordering::less;
-      if (!inf_sign.has_value()) {
-        inf_sign = current_inf_sign;
-      } else {
-        CHECK_EQ(*inf_sign, current_inf_sign)
-            << "Inconsistent infinite values found.";
-      }
-    }
-  }
-  return (*inf_sign == std::strong_ordering::greater)
-             ? std::make_pair(kInf, kInf)
-             : std::make_pair(-kInf, -kInf);
-}
-
-}  // namespace
-
-std::pair<double, double> GetLooseDotProductBounds(
-    const absl::Span<const double> a, const absl::Span<const double> b) {
-  // We could use DCHECK, but this is fast compared to the algorithm itself.
-  CHECK_EQ(a.size(), b.size());
-
-  double dp_ub = 0.0;
-  double dp_lb = 0.0;
-  for (int i = 0; i < a.size(); ++i) {
-    // Handle infinite values. This is a rare case, but it should be checked to
-    // avoid absurd NaN results. Also some downstream code assumes that infinite
-    // values have been filtered out here.
-    if (!std::isfinite(a[i]) || !std::isfinite(b[i])) {
-      return GetBoundsWhenOneIsNotFinite(a.subspan(i), b.subspan(i));
-    }
-    const double prod = a[i] * b[i];
-    dp_ub = FastStepUp(dp_ub + FastStepUp(prod));
-    dp_lb = FastStepDown(dp_lb + FastStepDown(prod));
-  }
-  return {dp_lb, dp_ub};
-}
-
-namespace {
-
 // Shift the given real number with its overflow to the right by the given
 // shift and adapt the exponent. Returns the comparison of the lost part with 0.
 // The overflow is meant to be added to r mantissa with a factor (1 << 128).
@@ -745,63 +695,6 @@ void TightSum::AddTermToBounds(const Term& term) const {
   lb_ = FastStepDown(lb_ + lb);
   ub_ = FastStepUp(ub_ + ub);
   tight_bounds_ = false;
-}
-
-std::strong_ordering ComputeSumSign(const absl::Span<const double> v) {
-  return TightSumOf(v) <=> 0.0;
-}
-
-bool SumIsPositive(const absl::Span<const double> v) {
-  return ComputeSumSign(v) == std::strong_ordering::greater;
-}
-
-bool SumIsNegative(const absl::Span<const double> v) {
-  return ComputeSumSign(v) == std::strong_ordering::less;
-}
-
-std::strong_ordering CmpDotProduct(const absl::Span<const double> a,
-                                   const absl::Span<const double> b,
-                                   const double bound) {
-  // We could use DCHECK, but this is fast compared to the algorithm itself.
-  CHECK_EQ(a.size(), b.size());
-
-  // Fast path.
-  // Compute a proven upper and lower bound for the dot product.
-  const auto [dp_lb, dp_ub] = GetLooseDotProductBounds(a, b);
-
-  // Note that if size == 0, we have dp_ub == 0.0 and dp_lb == 0.0 so that
-  // we do not enter the slow path.
-  if (dp_lb > bound) return std::strong_ordering::greater;
-  if (dp_ub < bound) return std::strong_ordering::less;
-  if (dp_ub == bound && dp_lb == bound) return std::strong_ordering::equal;
-
-  return TightDotProduct(a, b) <=> bound;
-}
-
-bool DotProductIsSmallerOrEqual(const absl::Span<const double> a,
-                                const absl::Span<const double> b,
-                                const double ub) {
-  // We could use DCHECK, but this is fast compared to the algorithm itself.
-  CHECK_EQ(a.size(), b.size());
-
-  return CmpDotProduct(a, b, ub) != std::strong_ordering::greater;
-}
-
-bool DotProductIsGreaterOrEqual(const absl::Span<const double> a,
-                                const absl::Span<const double> b,
-                                const double lb) {
-  // We could use DCHECK, but this is fast compared to the algorithm itself.
-  CHECK_EQ(a.size(), b.size());
-
-  return CmpDotProduct(a, b, lb) != std::strong_ordering::less;
-}
-
-bool DotProductIsEqual(const absl::Span<const double> a,
-                       const absl::Span<const double> b, const double res) {
-  // We could use DCHECK, but this is fast compared to the algorithm itself.
-  CHECK_EQ(a.size(), b.size());
-
-  return CmpDotProduct(a, b, res) == std::strong_ordering::equal;
 }
 
 std::pair<double, double> ProdBounds(const int64_t a, const int64_t b,

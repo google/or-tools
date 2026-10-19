@@ -16,6 +16,8 @@
 #include <stdint.h>
 
 #include <algorithm>
+#include <cmath>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -465,6 +467,61 @@ TEST(AffineExprTest, MinAndMaxEvaluation) {
   AffineExpr neg_expr{.var = 1, .coeff = -2, .offset = 1};
   EXPECT_EQ(GetAffineExprMin(neg_expr, model_proto), -5);
   EXPECT_EQ(GetAffineExprMax(neg_expr, model_proto), 11);
+}
+
+TEST(ComputeFloatObjectiveValueTest, DirectedRoundingForMinAndMax) {
+  // 1.0 + 2^-53 is halfway between 1.0 and nextafter(1.0, inf) and rounds to
+  // nearest-even (1.0) in standard double arithmetic.
+  FloatObjectiveProto proto;
+  proto.add_vars(0);
+  proto.add_vars(1);
+  proto.add_coeffs(1.0);
+  proto.add_coeffs(std::ldexp(1.0, -53));
+  const std::vector<int64_t> solution = {1, 1};
+
+  proto.set_maximize(false);
+  EXPECT_EQ(ComputeFloatObjectiveValue(proto, solution),
+            std::nextafter(1.0, std::numeric_limits<double>::infinity()));
+
+  proto.set_maximize(true);
+  EXPECT_EQ(ComputeFloatObjectiveValue(proto, solution), 1.0);
+}
+
+TEST(ComputeFloatObjectiveValueTest, DirectedRoundingForZeroPointOnePlusTwo) {
+  // In infinite precision, double(0.1) + double(0.2) lies strictly between
+  // nextafter(0.1 + 0.2, -inf) and (0.1 + 0.2).
+  FloatObjectiveProto proto;
+  proto.add_vars(0);
+  proto.add_vars(1);
+  proto.add_coeffs(0.1);
+  proto.add_coeffs(0.2);
+  const std::vector<int64_t> solution = {1, 1};
+
+  const double rounded_up = 0.1 + 0.2;
+  const double rounded_down =
+      std::nextafter(rounded_up, -std::numeric_limits<double>::infinity());
+
+  proto.set_maximize(false);
+  EXPECT_EQ(ComputeFloatObjectiveValue(proto, solution), rounded_up);
+
+  proto.set_maximize(true);
+  EXPECT_EQ(ComputeFloatObjectiveValue(proto, solution), rounded_down);
+}
+
+TEST(ComputeFloatObjectiveValueTest, ExactWithLargeInt64Solution) {
+  // (2^53 + 1) cannot be represented in double without losing the +1 bit.
+  FloatObjectiveProto proto;
+  proto.add_vars(0);
+  proto.add_vars(1);
+  proto.add_coeffs(1.0);
+  proto.add_coeffs(1.0);
+  const std::vector<int64_t> solution = {(1LL << 53) + 1, -(1LL << 53)};
+
+  proto.set_maximize(false);
+  EXPECT_EQ(ComputeFloatObjectiveValue(proto, solution), 1.0);
+
+  proto.set_maximize(true);
+  EXPECT_EQ(ComputeFloatObjectiveValue(proto, solution), 1.0);
 }
 
 }  // namespace

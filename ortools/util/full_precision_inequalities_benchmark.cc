@@ -73,7 +73,8 @@ void BM_GetLooseDotProductBounds(benchmark::State& state) {
   int i = 0;
   int j = 0;
   for (auto _ : state) {
-    auto bnds = GetLooseDotProductBounds(vectors[i], vectors[j]);
+    auto bnds =
+        TightDotProduct<double, double>(vectors[i], vectors[j]).LooseBounds();
     benchmark::DoNotOptimize(bnds);
     if (++j == num_vectors) {
       j = 0;
@@ -127,7 +128,7 @@ void BM_PrefixTightDotProductBounds(benchmark::State& state) {
   state.SetItemsProcessed(state.iterations());
 }
 
-BENCHMARK(BM_PrefixTightDotProductBounds)->RangeMultiplier(2)->Range(4, 1024);
+BENCHMARK_DEFAULT_ARGS(BM_PrefixTightDotProductBounds);
 
 void BM_DotProductIsSmallerOrEqual_FastPath(benchmark::State& state) {
   const int vector_size = state.range(0);
@@ -145,7 +146,7 @@ void BM_DotProductIsSmallerOrEqual_FastPath(benchmark::State& state) {
   int j = 0;
   for (auto _ : state) {
     benchmark::DoNotOptimize(
-        DotProductIsSmallerOrEqual(vectors[i], vectors[j], bounds[i]));
+        TightDotProduct<double, double>(vectors[i], vectors[j]) <= bounds[i]);
     if (++j == num_vectors) {
       j = 0;
       if (++i == num_vectors) i = 0;
@@ -163,8 +164,8 @@ void BM_DotProductIsSmallerOrEqual_SlowPath(benchmark::State& state) {
   const int num_vectors = vectors.size();
 
   // Precompute the floating-point dot product for each pair (i, j) so the bound
-  // falls inside GetLooseDotProductBounds(vectors[i], vectors[j]), forcing the
-  // full-precision slow path.
+  // falls inside TightDotProduct(vectors[i], vectors[j]).LooseBounds(), forcing
+  // the full-precision slow path.
   std::vector<std::vector<double>> bounds(num_vectors,
                                           std::vector<double>(num_vectors));
   for (int i = 0; i < num_vectors; ++i) {
@@ -177,8 +178,8 @@ void BM_DotProductIsSmallerOrEqual_SlowPath(benchmark::State& state) {
   int i = 0;
   int j = 0;
   for (auto _ : state) {
-    benchmark::DoNotOptimize(
-        DotProductIsSmallerOrEqual(vectors[i], vectors[j], bounds[i][j]));
+    benchmark::DoNotOptimize(TightDotProduct<double, double>(
+                                 vectors[i], vectors[j]) <= bounds[i][j]);
     if (++j == num_vectors) {
       j = 0;
       if (++i == num_vectors) i = 0;

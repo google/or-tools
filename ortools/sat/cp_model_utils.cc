@@ -38,6 +38,7 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_literal.h"
+#include "ortools/util/full_precision_inequalities.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -1210,11 +1211,12 @@ int64_t GetAffineExprMax(const AffineExpr& expr,
 
 double ComputeFloatObjectiveValue(const FloatObjectiveProto& proto,
                                   absl::Span<const int64_t> solution) {
-  double result = 0.0;
+  TightSum sum;
+  sum.Add(proto.offset());
   for (int i = 0; i < proto.vars_size(); ++i) {
-    result += proto.coeffs(i) * solution[proto.vars(i)];
+    sum.AddProd(proto.coeffs(i), solution[proto.vars(i)]);
   }
-  return proto.offset() + result;
+  return proto.maximize() ? sum.TightLowerBound() : sum.TightUpperBound();
 }
 
 }  // namespace sat

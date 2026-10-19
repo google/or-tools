@@ -243,6 +243,9 @@ or_cc_library(
     }),
     deps = [
         ":bitset",
+        ":full_precision_inequalities",
+        "//ortools/base:types",
+        "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],

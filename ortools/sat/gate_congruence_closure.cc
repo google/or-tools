@@ -207,7 +207,7 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
   for (LiteralIndex a(0); a < implication_graph_->literal_size(); ++a) {
     // TODO(user): If we know we have too many implications for the time limit
     // we would be better off not doing that loop at all.
-    if (logger.WorkLimitIsReached()) break;
+    if (logger.deterministic_time() >= 0.5 * logger.work_limit()) break;
     if (implication_graph_->IsRedundant(Literal(a))) continue;
     const absl::Span<const Literal> implied =
         implication_graph_->Implications(Literal(a));
@@ -338,7 +338,7 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
     }
 
     {
-      DeterministicTimer<{.scale = 1.6e-08, .offset = 1.5e-05}> timer(
+      DeterministicTimer<{.scale = 1.6e-08, .offset = 1.0e-08}> timer(
           time_limit_);
       uint64_t work_done = 0;
       for (const Literal target : candidates) {
