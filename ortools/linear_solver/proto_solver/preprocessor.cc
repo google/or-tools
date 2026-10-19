@@ -35,6 +35,7 @@
 #include "ortools/lp_data/sparse_column.h"
 #include "ortools/sat/lp_utils.h"
 #include "ortools/sat/mp_model_wrapper.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/fp_roundtrip_conv.h"
 #include "ortools/util/fp_utils.h"
@@ -529,32 +530,31 @@ glop::Preprocessor::Result ReduceCostOverExclusiveOrConstraintPreprocessor::Run(
 // ShiftVariableBounds
 // --------------------------------------------------------
 
-std::vector<double> ShiftVariableBounds(
-    const std::function<double(const MPVariableProto&)>& get_var_shift,
-    sat::MPModelProtoWrapper* model, SolverLogger* logger) {
+bool ShiftVariableBounds(absl::Span<const double> offsets,
+                         sat::MPModelProtoWrapper* model,
+                         SolverLogger* logger) {
   const int num_cols = model->num_variables();
-  std::vector<double> offsets(num_cols, 0.0);
+  CHECK_EQ(offsets.size(), num_cols);
   int num_shifted = 0;
   double max_shift = 0.0;
   glop::KahanSum objective_offset;
   for (int col = 0; col < num_cols; ++col) {
-    const MPVariableProto& var = model->variables(col);
-    const double offset = get_var_shift(var);
+    const double offset = offsets[col];
     if (offset != 0.0) {
+      const MPVariableProto& var = model->variables(col);
       // We should never shift an integer variable by a non-integer value, this
       // is not correct.
       CHECK(std::isfinite(offset));
       if (var.is_integer()) CHECK_EQ(offset, std::round(offset));
 
       ++num_shifted;
-      offsets[col] = offset;
       objective_offset.Add(var.objective_coefficient() * offset);
       max_shift = std::max(max_shift, std::abs(offset));
     }
   }
 
-  if (num_shifted == 0) return {};
-  if (!std::isfinite(objective_offset.Value())) return {};
+  if (num_shifted == 0) return false;
+  if (!std::isfinite(objective_offset.Value())) return false;
 
   const int num_rows = model->num_constraints();
   std::vector<double> row_offsets(num_rows, 0.0);
@@ -569,7 +569,7 @@ std::vector<double> ShiftVariableBounds(
         sum.Add(ct.coeffs(k) * offset);
       }
     }
-    if (!std::isfinite(sum.Value())) return {};
+    if (!std::isfinite(sum.Value())) return false;
     row_offsets[row] = sum.Value();
   }
 
@@ -624,6 +624,93 @@ std::vector<double> ShiftVariableBounds(
                ".");
   }
 
+  return true;
+}
+
+std::vector<double> ShiftVariableBounds(
+    const std::function<double(const MPVariableProto&)>& get_var_shift,
+    sat::MPModelProtoWrapper* model, SolverLogger* logger) {
+  const int num_cols = model->num_variables();
+  std::vector<double> offsets(num_cols, 0.0);
+  for (int col = 0; col < num_cols; ++col) {
+    offsets[col] = get_var_shift(model->variables(col));
+  }
+  if (!ShiftVariableBounds(offsets, model, logger)) return {};
+  return offsets;
+}
+
+std::vector<double> ShiftToZeroAndMarkAsIntegerUnusedVariables(
+    const sat::SatParameters& params, sat::MPModelProtoWrapper* model,
+    SolverLogger* logger) {
+  if (params.keep_all_feasible_solutions_in_presolve()) return {};
+
+  const int num_variables = model->num_variables();
+  std::vector<bool> is_used(num_variables, false);
+  const int num_constraints = model->num_constraints();
+  for (int c = 0; c < num_constraints; ++c) {
+    const sat::EnforcedLinearConstraint& ct = model->constraints(c);
+    if (ct.lower_bound() == -kInfinity && ct.upper_bound() == kInfinity) {
+      continue;
+    }
+    for (int i = 0; i < ct.num_terms(); ++i) {
+      if (ct.coeffs(i) != 0.0) {
+        is_used[ct.vars(i)] = true;
+      }
+    }
+    for (const int var : ct.enforcement_vars()) {
+      is_used[var] = true;
+    }
+  }
+
+  double max_shift = 0.0;
+  std::vector<int> vars_to_fix;
+  std::vector<double> offsets(num_variables, 0.0);
+  for (int v = 0; v < num_variables; ++v) {
+    if (is_used[v]) continue;
+    const MPVariableProto& var = model->variables(v);
+    if (var.lower_bound() == 0.0 && var.upper_bound() == 0.0 &&
+        var.is_integer() && var.objective_coefficient() == 0.0) {
+      continue;
+    }
+
+    double target = 0.0;
+    if (var.objective_coefficient() > 0.0) {
+      target = var.lower_bound();
+    } else if (var.objective_coefficient() < 0.0) {
+      target = var.upper_bound();
+    } else if (var.lower_bound() > 0.0) {
+      target = var.lower_bound();
+    } else if (var.upper_bound() < 0.0) {
+      target = var.upper_bound();
+    }
+    if (!std::isfinite(target)) continue;
+
+    vars_to_fix.push_back(v);
+    if (target != 0.0) {
+      offsets[v] = target;
+      max_shift = std::max(max_shift, std::abs(target));
+    }
+  }
+  if (vars_to_fix.empty()) return {};
+
+  if (max_shift > 0.0) {
+    if (!ShiftVariableBounds(offsets, model, /*logger=*/nullptr)) return {};
+  } else {
+    offsets.clear();
+  }
+
+  for (const int v : vars_to_fix) {
+    MPVariableProto* mutable_var = model->mutable_variables(v);
+    mutable_var->set_lower_bound(0.0);
+    mutable_var->set_upper_bound(0.0);
+    mutable_var->set_is_integer(true);
+    mutable_var->clear_objective_coefficient();
+  }
+  if (logger != nullptr) {
+    SOLVER_LOG(logger, "[UnusedVariables] Fixed to zero and marked as integer ",
+               FormatCounter(vars_to_fix.size()),
+               " unused variables with max shift magnitude ", max_shift, ".");
+  }
   return offsets;
 }
 
