@@ -383,5 +383,16 @@ class PyWrapLp(unittest.TestCase):
         self.assertIn("ExportMps", mps_str)
 
 
+    def test_export_mps_preserves_bound_precision(self):
+        solver = pywraplp.Solver.CreateSolver("GLOP")
+        self.assertIsNotNone(solver)
+        x = solver.NumVar(1234566, 1234568, "x")
+        solver.Minimize(x)
+
+        mps = solver.ExportModelAsMpsFormat(False, False)
+        bounds = mps.split("BOUNDS\\n", 1)[1].split("ENDATA\\n", 1)[0]
+        self.assertRegex(bounds, r"(?m)^\\s*LO\\s+BOUND\\s+x\\s+1234566\\s*$")
+        self.assertRegex(bounds, r"(?m)^\\s*UP\\s+BOUND\\s+x\\s+1234568\\s*$")
+
 if __name__ == "__main__":
     unittest.main()

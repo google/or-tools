@@ -386,11 +386,13 @@ void MPModelProtoExporter::AppendComments(const std::string& separator,
 
 namespace {
 
-std::string DoubleToStringWithForcedSign(double d) {
-  return absl::StrCat((d < 0 ? "" : "+"), (d));
+std::string DoubleToString(double d) {
+  return absl::StrFormat("%.*g", std::numeric_limits<double>::max_digits10, d);
 }
 
-std::string DoubleToString(double d) { return absl::StrCat((d)); }
+std::string DoubleToStringWithForcedSign(double d) {
+  return absl::StrCat((d < 0 ? "" : "+"), DoubleToString(d));
+}
 
 }  // namespace
 
