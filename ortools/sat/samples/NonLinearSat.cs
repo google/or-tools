@@ -17,36 +17,32 @@
 using System;
 using Google.OrTools.Sat;
 
-public class NonLinearSat
-{
-    public static void Main()
-    {
-        const int perimeter = 20;
+public class NonLinearSat {
+  public static void Main() {
+    const int perimeter = 20;
 
-        var model = new CpModel();
+    var model = new CpModel();
 
-        var x = model.NewIntVar(0, perimeter, "x");
-        var y = model.NewIntVar(0, perimeter, "y");
+    var x = model.NewIntVar(0, perimeter, "x");
+    var y = model.NewIntVar(0, perimeter, "y");
 
-        model.Add(2 * (x + y) == perimeter);
+    model.Add(2 * (x + y) == perimeter);
 
-        var area = model.NewIntVar(0, perimeter * perimeter, "s");
+    var area = model.NewIntVar(0, perimeter * perimeter, "s");
 
-        model.AddMultiplicationEquality(area, x, y);
+    model.AddMultiplicationEquality(area, x, y);
 
-        model.Maximize(area);
+    model.Maximize(area);
 
-        var solver = new CpSolver();
+    var solver = new CpSolver();
 
-        var status = solver.Solve(model);
+    var status = solver.Solve(model);
 
-        if (status == CpSolverStatus.Optimal || status == CpSolverStatus.Feasible)
-        {
-            Console.WriteLine($"x = {solver.Value(x)}");
-            Console.WriteLine($"y = {solver.Value(y)}");
-            Console.WriteLine($"s = {solver.Value(area)}");
-        }
-        else
-            Console.WriteLine("No solution found");
-    }
+    if (status == CpSolverStatus.Optimal || status == CpSolverStatus.Feasible) {
+      Console.WriteLine($"x = {solver.Value(x)}");
+      Console.WriteLine($"y = {solver.Value(y)}");
+      Console.WriteLine($"s = {solver.Value(area)}");
+    } else
+      Console.WriteLine("No solution found");
+  }
 }

@@ -18,68 +18,64 @@ using System;
 using Google.OrTools.ModelBuilder;
 // [END import]
 
-public class SimpleMipProgramMb
-{
-    static void Main()
-    {
-        // [START model]
-        // Create the model builder.
-        Model model = new Model();
-        // [END model]
+public class SimpleMipProgramMb {
+  static void Main() {
+    // [START model]
+    // Create the model builder.
+    Model model = new Model();
+    // [END model]
 
-        // [START variables]
-        // Create the variables x and y.
-        Variable x = model.NewIntVar(0.0, double.PositiveInfinity, "x");
-        Variable y = model.NewIntVar(0.0, double.PositiveInfinity, "y");
+    // [START variables]
+    // Create the variables x and y.
+    Variable x = model.NewIntVar(0.0, double.PositiveInfinity, "x");
+    Variable y = model.NewIntVar(0.0, double.PositiveInfinity, "y");
 
-        Console.WriteLine("Number of variables = " + model.VariablesCount());
-        // [END variables]
+    Console.WriteLine("Number of variables = " + model.VariablesCount());
+    // [END variables]
 
-        // [START constraints]
-        // x + 7 * y <= 17.5.
-        model.Add(x + 7 * y <= 17.5);
+    // [START constraints]
+    // x + 7 * y <= 17.5.
+    model.Add(x + 7 * y <= 17.5);
 
-        // x <= 3.5.
-        model.Add(x <= 3.5);
+    // x <= 3.5.
+    model.Add(x <= 3.5);
 
-        Console.WriteLine("Number of constraints = " + model.ConstraintsCount());
-        // [END constraints]
+    Console.WriteLine("Number of constraints = " + model.ConstraintsCount());
+    // [END constraints]
 
-        // [START objective]
-        // Maximize x + 10 * y.
-        model.Maximize(x + 10 * y);
-        // [END objective]
+    // [START objective]
+    // Maximize x + 10 * y.
+    model.Maximize(x + 10 * y);
+    // [END objective]
 
-        // [START solver]
-        // Create the model solver with the SCIP backend.
-        Solver solver = new Solver("SCIP");
-        if (!solver.SolverIsSupported())
-        {
-            return;
-        }
-        // [END solver]
-
-        // [START solve]
-        var resultStatus = solver.Solve(model);
-        // [END solve]
-
-        // [START print_solution]
-        // Check that the problem has an optimal solution.
-        if (resultStatus != SolveStatus.OPTIMAL)
-        {
-            Console.WriteLine("The problem does not have an optimal solution!");
-            return;
-        }
-        Console.WriteLine("Solution:");
-        Console.WriteLine("Objective value = " + solver.ObjectiveValue);
-        Console.WriteLine("x = " + solver.Value(x));
-        Console.WriteLine("y = " + solver.Value(y));
-        // [END print_solution]
-
-        // [START advanced]
-        Console.WriteLine("\nAdvanced usage:");
-        Console.WriteLine("Problem solved in " + solver.WallTime + " milliseconds");
-        // [END advanced]
+    // [START solver]
+    // Create the model solver with the SCIP backend.
+    Solver solver = new Solver("SCIP");
+    if (!solver.SolverIsSupported()) {
+      return;
     }
+    // [END solver]
+
+    // [START solve]
+    var resultStatus = solver.Solve(model);
+    // [END solve]
+
+    // [START print_solution]
+    // Check that the problem has an optimal solution.
+    if (resultStatus != SolveStatus.OPTIMAL) {
+      Console.WriteLine("The problem does not have an optimal solution!");
+      return;
+    }
+    Console.WriteLine("Solution:");
+    Console.WriteLine("Objective value = " + solver.ObjectiveValue);
+    Console.WriteLine("x = " + solver.Value(x));
+    Console.WriteLine("y = " + solver.Value(y));
+    // [END print_solution]
+
+    // [START advanced]
+    Console.WriteLine("\nAdvanced usage:");
+    Console.WriteLine("Problem solved in " + solver.WallTime + " milliseconds");
+    // [END advanced]
+  }
 }
 // [END program]
