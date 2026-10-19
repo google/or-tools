@@ -37,6 +37,7 @@
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/util/fp_roundtrip_conv.h"
 
 ABSL_RETIRED_FLAG(bool, lp_log_invalid_name, false, "DEPRECATED.");
 
@@ -386,12 +387,12 @@ void MPModelProtoExporter::AppendComments(const std::string& separator,
 
 namespace {
 
-std::string DoubleToString(double d) {
-  return absl::StrFormat("%.*g", std::numeric_limits<double>::max_digits10, d);
+std::string DoubleToStringWithForcedSign(double d) {
+  return absl::StrCat((d < 0 ? "" : "+"), RoundTripDoubleFormat(d));
 }
 
-std::string DoubleToStringWithForcedSign(double d) {
-  return absl::StrCat((d < 0 ? "" : "+"), DoubleToString(d));
+std::string DoubleToString(double d) {
+  return RoundTripDoubleFormat::ToString(d);
 }
 
 }  // namespace

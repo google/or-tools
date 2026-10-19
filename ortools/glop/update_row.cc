@@ -92,7 +92,7 @@ void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
   SCOPED_TIME_STAT(&stats_);
   deterministic_timer_.Start();
   int64_t num_operations = 0;
-  auto cleanup = absl::MakeCleanup([this, num_operations] {
+  auto cleanup = absl::MakeCleanup([this, &num_operations] {
     deterministic_timer_.Stop(num_operations);
     IF_STATS_ENABLED(stats_.update_row_density.Add(
         static_cast<double>(num_non_zeros_) /

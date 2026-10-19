@@ -2239,21 +2239,17 @@ SatSolver::Status IntegerSearchHelper::SolveIntegerProblem() {
       // once all the decisions are taken, because there might still be some
       // unassigned variables, or violated constraints. So do one round of full
       // propagation before accepting that solution.
-      if (parameters_.search_branching() == SatParameters::FIXED_SEARCH) {
-        LinearPropagator* linear_propagator =
-            model_->Mutable<LinearPropagator>();
-        if (linear_propagator != nullptr &&
-            (!linear_propagator->PropagateAll() ||
-             !sat_solver_->FinishPropagation())) {
-          // Should not happen, but restart if it does (PropagateAll() disables
-          // the incomplete propagation in the linear propagator, and is a no-op
-          // after that; hence this can only happen at most once).
-          sat_solver_->Backtrack(0);
-          if (!sat_solver_->FinishPropagation()) {
-            return sat_solver_->UnsatStatus();
-          }
-          continue;
+      LinearPropagator* linear_propagator = model_->Mutable<LinearPropagator>();
+      if (linear_propagator != nullptr && (!linear_propagator->PropagateAll() ||
+                                           !sat_solver_->FinishPropagation())) {
+        // Should not happen, but restart if it does (PropagateAll() disables
+        // the incomplete propagation in the linear propagator, and is a no-op
+        // after that; hence this can only happen at most once).
+        sat_solver_->Backtrack(0);
+        if (!sat_solver_->FinishPropagation()) {
+          return sat_solver_->UnsatStatus();
         }
+        continue;
       }
 
       // Save the current polarity of all Booleans in the solution. It will be

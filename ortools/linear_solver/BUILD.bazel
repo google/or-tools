@@ -713,6 +713,7 @@ or_cc_library(
     deps = [
         ":linear_solver_cc_proto",
         "//ortools/base:file",
+        "//ortools/util:fp_roundtrip_conv",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",

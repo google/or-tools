@@ -25,6 +25,7 @@
 #include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/pb_constraint.h"
+#include "ortools/sat/sat_assignment.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/simplification.h"

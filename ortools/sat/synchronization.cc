@@ -894,7 +894,7 @@ SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
   // Compute the post-solved response once.
   CpSolverResponse tmp_postsolved_response;
   if ((!search_log_callbacks_.empty() && logger_->LoggingIsEnabled()) ||
-      !callbacks_.empty()) {
+      !status_change_callbacks_.empty() || !callbacks_.empty()) {
     tmp_postsolved_response =
         GetResponseInternal(solution_values, solution_info);
 
@@ -931,6 +931,7 @@ SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
 
   // Call callbacks.
   // Note that we cannot call functions that try to get the mutex_ here.
+  tmp_postsolved_response.set_solution_info(solution_message);
   for (const auto& pair : callbacks_) {
     pair.second(tmp_postsolved_response);
   }

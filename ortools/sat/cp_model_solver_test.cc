@@ -5768,6 +5768,202 @@ TEST(SolveCpModelTest, CumulativeNegativeCapacity16Threads) {
               AnyOf(CpSolverStatus::INFEASIBLE, CpSolverStatus::UNKNOWN));
 }
 
+TEST(CpModelTest, RaceConditionOnLinearPropagator) {
+  const CpModelProto cp_model = ParseTestProto(
+      R"pb(
+        variables {
+          name: "start1"
+          domain: [ 48, 66 ]
+        }
+        variables {
+          name: "end1"
+          domain: [ 54, 72 ]
+        }
+        variables {
+          name: "start2"
+          domain: [ 58, 76 ]
+        }
+        variables {
+          name: "end2"
+          domain: [ 64, 82 ]
+        }
+        variables {
+          name: "start3"
+          domain: [ 68, 86 ]
+        }
+        variables {
+          name: "end3"
+          domain: [ 74, 92 ]
+        }
+        variables {
+          name: "arc12"
+          domain: [ 0, 1 ]
+        }
+        variables {
+          name: "gap12"
+          domain: [ 0, 22 ]
+        }
+        variables {
+          name: "arc13"
+          domain: [ 0, 1 ]
+        }
+        variables {
+          name: "gap13"
+          domain: [ 0, 32 ]
+        }
+        variables {
+          name: "arc21"
+          domain: [ 0, 1 ]
+        }
+        variables {
+          name: "gap21"
+          domain: [ 0, 2 ]
+        }
+        variables {
+          name: "arc23"
+          domain: [ 0, 1 ]
+        }
+        variables {
+          name: "gap23"
+          domain: [ 0, 22 ]
+        }
+        variables {
+          name: "arc32"
+          domain: [ 0, 1 ]
+        }
+        variables {
+          name: "gap32"
+          domain: [ 0, 2 ]
+        }
+        variables {
+          name: "arc01"
+          domain: [ 0, 1 ]
+        }
+        variables {
+          name: "arc02"
+          domain: [ 0, 1 ]
+        }
+        variables {
+          name: "arc20"
+          domain: [ 0, 1 ]
+        }
+        variables {
+          name: "arc30"
+          domain: [ 0, 1 ]
+        }
+        constraints {
+          name: "task1"
+          interval {
+            start {
+              vars: [ 0 ]
+              coeffs: [ 1 ]
+            }
+            end {
+              vars: [ 1 ]
+              coeffs: [ 1 ]
+            }
+            size { offset: 6 }
+          }
+        }
+        constraints {
+          name: "task2"
+          interval {
+            start {
+              vars: [ 2 ]
+              coeffs: [ 1 ]
+            }
+            end {
+              vars: [ 3 ]
+              coeffs: [ 1 ]
+            }
+            size { offset: 6 }
+          }
+        }
+        constraints {
+          name: "task3"
+          interval {
+            start {
+              vars: [ 4 ]
+              coeffs: [ 1 ]
+            }
+            end {
+              vars: [ 5 ]
+              coeffs: [ 1 ]
+            }
+            size { offset: 6 }
+          }
+        }
+        constraints {
+          enforcement_literal: [ 6 ]
+          linear {
+            vars: [ 1, 2, 7 ]
+            coeffs: [ 1, -1, 1 ]
+            domain: [ 0, 0 ]
+          }
+        }
+        constraints {
+          enforcement_literal: [ 8 ]
+          linear {
+            vars: [ 1, 4, 9 ]
+            coeffs: [ 1, -1, 1 ]
+            domain: [ 0, 0 ]
+          }
+        }
+        constraints {
+          enforcement_literal: [ 10 ]
+          linear {
+            vars: [ 0, 3, 11 ]
+            coeffs: [ -1, 1, 1 ]
+            domain: [ 0, 0 ]
+          }
+        }
+        constraints {
+          enforcement_literal: [ 12 ]
+          linear {
+            vars: [ 3, 4, 13 ]
+            coeffs: [ 1, -1, 1 ]
+            domain: [ 0, 0 ]
+          }
+        }
+        constraints {
+          enforcement_literal: [ 14 ]
+          linear {
+            vars: [ 2, 5, 15 ]
+            coeffs: [ -1, 1, 1 ]
+            domain: [ 0, 0 ]
+          }
+        }
+        constraints { no_overlap { intervals: [ 0, 1, 2 ] } }
+        constraints {
+          circuit {
+            tails: [ 1, 1, 2, 2, 3, 0, 0, 2, 3 ]
+            heads: [ 2, 3, 1, 3, 2, 1, 2, 0, 0 ]
+            literals: [ 6, 8, 10, 12, 14, 16, 17, 18, 19 ]
+          }
+        }
+        objective {
+          vars: [
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19
+          ]
+          scaling_factor: 1
+          coeffs: [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
+        }
+        solution_hint {
+          vars: [ 0, 1, 2, 3, 4, 5, 7, 9, 11, 13, 15 ]
+          values: [ 64, 70, 58, 64, 70, 76, 0, 0, 0, 0, 0 ]
+        }
+      )pb");
+
+  SatParameters params;
+  params.set_log_search_progress(true);
+  params.set_debug_crash_if_presolve_breaks_hint(true);
+  params.set_cp_model_presolve(true);
+  params.set_num_workers(6);
+
+  CpSolverResponse response = SolveWithParameters(cp_model, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+}
+
 #else
 static_assert(!operations_research::kTargetOsSupportsThreads);
 #endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)

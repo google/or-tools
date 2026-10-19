@@ -213,7 +213,8 @@ std::vector<int> PartitionGraph(
 // components with rational bounds/RHS or column scaling). In this case we
 // return a non-empty scaling vector.
 std::vector<double> MarkResidualTotallyUnimodularVariableAsInteger(
-    const SatParameters& params, MPModelProto* mp_model, SolverLogger* logger);
+    const SatParameters& params, MPModelProto* mp_model, SolverLogger* logger,
+    bool only_tighten_bounds = false);
 
 // Multiplies all continuous variables by the given scaling parameters and
 // changes the rest of the model accordingly. The returned vector contains the

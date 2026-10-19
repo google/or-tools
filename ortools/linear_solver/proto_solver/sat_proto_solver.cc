@@ -292,9 +292,39 @@ MPSolutionResponse SatSolveProtoInternal(
     return TimeLimitResponse(*logger);
   }
 
+  const int num_variables = mp_model_wrapper.num_variables();
+  std::vector<double> var_scaling(num_variables, 1.0);
+  const auto update_scaling = [&var_scaling](absl::Span<const double> scaling) {
+    for (int var = 0; var < scaling.size(); ++var) {
+      if (scaling[var] == 1.0) continue;
+
+      // We should only scale variable that are not already scaled.
+      CHECK_EQ(var_scaling[var], 1.0);
+      var_scaling[var] *= scaling[var];
+    }
+  };
+  const auto update_shifts = [&](absl::Span<const double> new_shifts) {
+    if (new_shifts.size() > var_shifts.size()) {
+      var_shifts.resize(num_variables);
+    }
+    for (int var = 0; var < new_shifts.size(); ++var) {
+      if (new_shifts[var] != 0) {
+        var_shifts[var] += new_shifts[var] / var_scaling[var];
+      }
+    }
+  };
+
   // We need to do that before the automatic detection of integers.
   RemoveNearZeroTerms(params, mp_model_wrapper.mutable_underlying_model(),
                       logger);
+
+  if (params.mip_presolve_level() > 0) {
+    update_shifts(ShiftToZeroAndMarkAsIntegerUnusedVariables(
+        params, &mp_model_wrapper, logger));
+    sat::MarkResidualTotallyUnimodularVariableAsInteger(
+        params, mp_model_wrapper.mutable_underlying_model(), logger,
+        /*only_tighten_bounds=*/true);
+  }
 
   // Clamp variable.
   int num_clamped = 0;
@@ -307,6 +337,8 @@ MPSolutionResponse SatSolveProtoInternal(
 
   // Redo a round of propagation after clamping.
   if (params.mip_presolve_level() > 0) {
+    update_shifts(ShiftToZeroAndMarkAsIntegerUnusedVariables(
+        params, &mp_model_wrapper, logger));
     if (!ExactPresolve(params, &mp_model_wrapper, logger)) {
       return InfeasibleResponse(
           *logger,
@@ -316,30 +348,6 @@ MPSolutionResponse SatSolveProtoInternal(
 
   // TODO(user): move into ExactPresolve().
   sat::ExtractEnforcementLiterals(params, &mp_model_wrapper, logger);
-
-  const int num_variables = mp_model_wrapper.num_variables();
-  std::vector<double> var_scaling(num_variables, 1.0);
-
-  const auto update_shifts = [&](absl::Span<const double> new_shifts) {
-    if (new_shifts.size() > var_shifts.size()) {
-      var_shifts.resize(num_variables);
-    }
-    for (int var = 0; var < new_shifts.size(); ++var) {
-      if (new_shifts[var] != 0) {
-        var_shifts[var] += new_shifts[var] / var_scaling[var];
-      }
-    }
-  };
-
-  const auto update_scaling = [&var_scaling](absl::Span<const double> scaling) {
-    for (int var = 0; var < scaling.size(); ++var) {
-      if (scaling[var] == 1.0) continue;
-
-      // We should only scale variable that are not already scaled.
-      CHECK_EQ(var_scaling[var], 1.0);
-      var_scaling[var] *= scaling[var];
-    }
-  };
 
   if (params.mip_automatically_scale_variables()) {
     // Note that this is more than "implied": it also detect variable that could
