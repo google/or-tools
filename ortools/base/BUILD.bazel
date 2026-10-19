@@ -81,17 +81,6 @@ or_cc_library(
 )
 
 or_cc_library(
-    name = "commandlineflags",
-    srcs = ["commandlineflags.cc"],
-    hdrs = ["commandlineflags.h"],
-    deps = [
-        "@abseil-cpp//absl/flags:flag",
-        "@abseil-cpp//absl/flags:parse",
-        "@abseil-cpp//absl/flags:usage",
-    ],
-)
-
-or_cc_library(
     name = "constant_divisor",
     srcs = ["constant_divisor.cc"],
     hdrs = ["constant_divisor.h"],
