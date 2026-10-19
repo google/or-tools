@@ -19,10 +19,14 @@
 #include <cstdint>
 #include <limits>
 #include <utility>
+#include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/full_precision_inequalities.h"
 
 // To enable floating-point traps on Android/Bionic or BSD platforms, extend
 // the preprocessor guard below with the corresponding platform macros (such as
@@ -265,21 +269,24 @@ int64_t ComputeGcdOfRoundedDoubles(absl::Span<const double> x,
 }
 
 void TightScalingErrorHelper::LoadUnscaledConstraint(
-    absl::Span<const double> input_coeffs, absl::Span<const double> input_lbs,
-    absl::Span<const double> input_ubs) {
+    absl::Span<const double> input_coeffs, absl::Span<const int64_t> input_lbs,
+    absl::Span<const int64_t> input_ubs) {
   // To simplify code, lets make all coefficient positive.
-  // Beeing super-fast here shouldn't matter that much since we will only
+  // Being super-fast here shouldn't matter that much since we will only
   // do that once per constraint.
   const int num_terms = input_coeffs.size();
+  DCHECK_EQ(input_lbs.size(), num_terms);
+  DCHECK_EQ(input_ubs.size(), num_terms);
   coeffs_.assign(input_coeffs.begin(), input_coeffs.end());
   lbs_.assign(input_lbs.begin(), input_lbs.end());
   ubs_.assign(input_ubs.begin(), input_ubs.end());
+  has_overflow_ = false;
   for (int i = 0; i < num_terms; ++i) {
-    // Bounds should only be integer.
-    // TODO(user): If we want to compute bound EXACTLY, take int64_t instead ?
-    CHECK_EQ(std::round(lbs_[i]), lbs_[i]);
-    CHECK_EQ(std::round(ubs_[i]), ubs_[i]);
+    DCHECK(std::isfinite(coeffs_[i]));
     CHECK_NE(coeffs_[i], 0.0);
+    DCHECK_GT(lbs_[i], kint64min);
+    DCHECK_LT(ubs_[i], kint64max);
+    DCHECK_LE(lbs_[i], ubs_[i]);
 
     // Canonicalized the domain and the coefficient.
     // We only care about the set of integer feasible solution.
@@ -294,25 +301,31 @@ void TightScalingErrorHelper::LoadUnscaledConstraint(
 
 void TightScalingErrorHelper::LoadBothConstraints(
     absl::Span<const double> scaled_coeffs,
-    absl::Span<const double> rounded_coeffs, absl::Span<const double> input_lbs,
-    absl::Span<const double> input_ubs) {
+    absl::Span<const double> rounded_coeffs,
+    absl::Span<const int64_t> input_lbs, absl::Span<const int64_t> input_ubs) {
   // To simplify code, lets make all coefficient positive.
-  // Beeing super-fast here shouldn't matter that much since we will only
+  // Being super-fast here shouldn't matter that much since we will only
   // do that once per constraint.
   const int num_terms = scaled_coeffs.size();
+  DCHECK_EQ(rounded_coeffs.size(), num_terms);
+  DCHECK_EQ(input_lbs.size(), num_terms);
+  DCHECK_EQ(input_ubs.size(), num_terms);
   scaled_coeffs_.assign(scaled_coeffs.begin(), scaled_coeffs.end());
   rounded_coeffs_.assign(rounded_coeffs.begin(), rounded_coeffs.end());
   lbs_.assign(input_lbs.begin(), input_lbs.end());
   ubs_.assign(input_ubs.begin(), input_ubs.end());
+  has_overflow_ = false;
   for (int i = 0; i < num_terms; ++i) {
-    // Bounds should only be integer.
-    CHECK_EQ(std::round(lbs_[i]), lbs_[i]);
-    CHECK_EQ(std::round(ubs_[i]), ubs_[i]);
-    CHECK_NE(scaled_coeffs[i], 0.0);
+    DCHECK(std::isfinite(scaled_coeffs[i]));
+    DCHECK(std::isfinite(rounded_coeffs[i]));
+    DCHECK_GT(input_lbs[i], kint64min);
+    DCHECK_LT(input_ubs[i], kint64max);
+    DCHECK_LE(input_lbs[i], input_ubs[i]);
 
-    // Canonicalized the domain and the coefficient.
-    // We only care about the set of integer feasible solution.
-    if (scaled_coeffs_[i] < 0) {
+    // Canonicalize the domain and the coefficient.
+    // We only care about the set of integer feasible solutions.
+    if (scaled_coeffs_[i] < 0.0 ||
+        (scaled_coeffs_[i] == 0.0 && rounded_coeffs_[i] < 0.0)) {
       std::swap(lbs_[i], ubs_[i]);
       lbs_[i] = -lbs_[i];
       ubs_[i] = -ubs_[i];
@@ -322,18 +335,148 @@ void TightScalingErrorHelper::LoadBothConstraints(
 
     // Coeff should be of the same sign!
     CHECK_GE(rounded_coeffs_[i], 0.0);
+    if (!std::isfinite(scaled_coeffs_[i] * kint64max) ||
+        !std::isfinite(rounded_coeffs_[i] * kint64max)) {
+      has_overflow_ = true;
+      return;
+    }
   }
 }
 
 void TightScalingErrorHelper::LoadScalingFactor(double scaling_factor) {
+  CHECK(std::isfinite(scaling_factor));
+  CHECK_GE(scaling_factor, 0.0);
   const int num_terms = coeffs_.size();
   scaled_coeffs_.resize(num_terms);
   rounded_coeffs_.resize(num_terms);
+  has_overflow_ = false;
   for (int i = 0; i < num_terms; ++i) {
     const double scaled = scaling_factor * coeffs_[i];
+    const double rounded = std::round(scaled);
+    if (!std::isfinite(rounded * kint64max)) {
+      has_overflow_ = true;
+      return;
+    }
     scaled_coeffs_[i] = scaled;
-    rounded_coeffs_[i] = std::round(scaled);
+    rounded_coeffs_[i] = rounded;
   }
 }
+
+template <bool is_ge_constraint, bool compute_error>
+double TightScalingErrorHelper::Optimize(absl::Span<const double> coeffs,
+                                         absl::Span<const double> new_coeffs,
+                                         TightSum& slack, double offset) {
+  constexpr double kInf = std::numeric_limits<double>::infinity();
+  constexpr double kWorstBound = is_ge_constraint ? -kInf : kInf;
+
+  if (has_overflow_ || !slack.IsFinite() || !std::isfinite(offset)) {
+    return kWorstBound;
+  }
+
+  // All coefficients have already been canonicalized to be non-negative:
+  // for >= constraints we start at the lower bound (x_i = lb_i + y_i) and
+  // greedily move variables toward their upper bound; the reverse for <=
+  // constraints (x_i = ub_i - y_i).
+  constexpr int64_t kSign = is_ge_constraint ? 1 : -1;
+  total_sum_.Clear();
+  total_sum_.Add(offset);
+
+  const int num_terms = coeffs.size();
+  items_.clear();
+  items_.reserve(num_terms);
+  for (int i = 0; i < num_terms; ++i) {
+    const double coeff = coeffs[i];
+    DCHECK_GE(coeff, 0);
+
+    // For >= constraint we start at the lower bound and greedily move
+    // variables to their upper bound. The reverse for the <= constraints.
+    const int64_t range = ubs_[i] - lbs_[i];
+    const int64_t initial_bound = is_ge_constraint ? lbs_[i] : ubs_[i];
+    const int64_t other_bound = is_ge_constraint ? ubs_[i] : lbs_[i];
+    slack.AddProd(-kSign * coeff, initial_bound);
+
+    const double delta = compute_error ? new_coeffs[i] - coeff : new_coeffs[i];
+    items_.push_back(KnapsackItem{
+        .coeff = coeff,
+        .delta = delta,
+        .range = range,
+        .initial_bound = initial_bound,
+        .other_bound = other_bound,
+    });
+  }
+
+  if (slack > 0.0) {
+    // Sort by relative efficiency (delta_i / coeff_i).
+    absl::c_stable_sort(items_, [](const KnapsackItem& u,
+                                   const KnapsackItem& w) {
+      if (u.coeff == 0.0 || w.coeff == 0.0) {
+        return w.coeff == 0.0 && u.coeff > 0.0;
+      }
+      return TightSum().AddProd(u.delta, w.coeff).AddProd(-w.delta, u.coeff) <
+             0.0;
+    });
+  }
+
+  // Greedily fill up to slack. Note that at optimality, a single variable is
+  // not at its lower/upper bound.
+  for (const KnapsackItem& item : items_) {
+    if (slack <= 0.0 || item.coeff == 0.0 || item.range == 0) {
+      total_sum_.AddProd(item.delta, item.initial_bound);
+      continue;
+    }
+    slack.AddProd(-item.coeff, item.range);
+    if (slack >= 0.0) {
+      // Slack remained positive after subtracting the item, take the entire
+      // item.
+      total_sum_.AddProd(item.delta, item.other_bound);
+      continue;
+    }
+    // Split item: put the item back and take the exact fractional amount.
+    slack.AddProd(item.coeff, item.range);
+    total_sum_.AddProd(item.delta, item.initial_bound);
+
+    if (item.delta == item.coeff) {
+      // Avoiding computing (x * slack)/x for the simple case where no rounding
+      // was done.
+      total_sum_.Add(is_ge_constraint ? slack.TightLowerBound()
+                                      : -slack.TightUpperBound());
+      slack.Clear();
+      continue;
+    }
+    // Precise division trick:
+    // q1 = rounded(slack / item.coeff)  (which way we round is not important)
+    // q2 = lb((slack - q1 * item.coeff) / item.coeff)
+    // So `q1 + q2` is a strict lower bound of `slack / item.coeff`, but with
+    // the error one would have with double-double precision!
+    const double step_delta = is_ge_constraint ? item.delta : -item.delta;
+    const double q1 = slack.TightLowerBound() / item.coeff;
+    total_sum_.AddProd(step_delta, q1);
+    slack.AddProd(-q1, item.coeff);
+    if ((step_delta > 0.0) == is_ge_constraint) {
+      const double rem_lb = slack.TightLowerBound();
+      if (rem_lb != 0.0) {
+        const double q2 = FastStepDown(rem_lb / item.coeff);
+        total_sum_.AddProd(step_delta, q2);
+      }
+    } else {
+      const double rem_ub = slack.TightUpperBound();
+      if (rem_ub != 0.0) {
+        const double q2 = FastStepUp(rem_ub / item.coeff);
+        total_sum_.AddProd(step_delta, q2);
+      }
+    }
+    slack.Clear();
+  }
+
+  return is_ge_constraint ? total_sum_.TightLowerBound()
+                          : total_sum_.TightUpperBound();
+}
+
+template double TightScalingErrorHelper::Optimize<true, true>(
+    absl::Span<const double>, absl::Span<const double>, TightSum&, double);
+template double TightScalingErrorHelper::Optimize<false, true>(
+    absl::Span<const double>, absl::Span<const double>, TightSum&, double);
+template double TightScalingErrorHelper::Optimize<true, false>(
+    absl::Span<const double>, absl::Span<const double>, TightSum&, double);
 
 }  // namespace operations_research

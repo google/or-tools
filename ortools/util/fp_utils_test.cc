@@ -493,8 +493,8 @@ TEST(TightScalingErrorHelperTest, BasicLowerBound) {
   // (gives activity 14.0, delta_sum = -0.4 * 10 = -4.0).
   // Indeed at (x0, x1) = (10, 0), scaled = 14.0 and rounded = 10.0.
   helper.LoadUnscaledConstraint(/*input_coeffs=*/{1.4, 0.7},
-                                /*input_lbs=*/{0.0, 0.0},
-                                /*input_ubs=*/{10.0, 10.0});
+                                /*input_lbs=*/{0, 0},
+                                /*input_ubs=*/{10, 10});
   helper.LoadScalingFactor(1.0);
   EXPECT_NEAR(helper.GetLowerBoundRoundingError(14.0), 4.0, 1e-10);
 
@@ -513,8 +513,8 @@ TEST(TightScalingErrorHelperTest, BasicUpperBound) {
   // At (x0, x1) = (10, 0), scaled activity is 6.0 <= 6.0, while rounded
   // activity is 1.0 * 10 + 1.0 * 0 = 10.0 (exceeds 6.0 by +4.0).
   helper.LoadUnscaledConstraint(/*input_coeffs=*/{0.6, 1.4},
-                                /*input_lbs=*/{0.0, 0.0},
-                                /*input_ubs=*/{10.0, 10.0});
+                                /*input_lbs=*/{0, 0},
+                                /*input_ubs=*/{10, 10});
   helper.LoadScalingFactor(1.0);
   EXPECT_NEAR(helper.GetUpperBoundRoundingError(6.0), 4.0, 1e-10);
 
@@ -531,8 +531,8 @@ TEST(TightScalingErrorHelperTest, NonZeroBoundsAndNegativeCoeffs) {
   // x0 = 10 satisfies 1.4 * 10 >= 14.0, and its rounded activity is 1.0 * 10 =
   // 10.0, so the rounding error at ct_lb = 14.0 is -4.0.
   helper.LoadUnscaledConstraint(/*input_coeffs=*/{1.4},
-                                /*input_lbs=*/{10.0},
-                                /*input_ubs=*/{20.0});
+                                /*input_lbs=*/{10},
+                                /*input_ubs=*/{20});
   helper.LoadScalingFactor(1.0);
   EXPECT_NEAR(helper.GetLowerBoundRoundingError(14.0), 4.0, 1e-10);
 
@@ -540,8 +540,8 @@ TEST(TightScalingErrorHelperTest, NonZeroBoundsAndNegativeCoeffs) {
   // [0, 10] (canonicalized to 0.6 * y0 >= -3.0 with y0 in [-10, 0]).
   // At x0 = 5, scaled = -3.0 >= -3.0, rounded = -1.0 * 5 = -5.0 (error = -2.0).
   helper.LoadUnscaledConstraint(/*input_coeffs=*/{-0.6},
-                                /*input_lbs=*/{0.0},
-                                /*input_ubs=*/{10.0});
+                                /*input_lbs=*/{0},
+                                /*input_ubs=*/{10});
   helper.LoadScalingFactor(1.0);
   EXPECT_NEAR(helper.GetLowerBoundRoundingError(-3.0), 2.0, 1e-10);
 }
@@ -551,8 +551,8 @@ TEST(TightScalingErrorHelperTest, BruteForceComparisonWithAllIntegerSolutions) {
   TightScalingErrorHelper helper;
   for (int trial = 0; trial < 50; ++trial) {
     std::vector<double> coeffs(3);
-    std::vector<double> lbs(3);
-    std::vector<double> ubs(3);
+    std::vector<int64_t> lbs(3);
+    std::vector<int64_t> ubs(3);
     for (int i = 0; i < 3; ++i) {
       coeffs[i] = absl::Uniform<double>(random, 0.2, 2.5) *
                   (absl::Bernoulli(random, 0.5) ? 1.0 : -1.0);

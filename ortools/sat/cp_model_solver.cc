@@ -3233,29 +3233,15 @@ void CpModelSolver::AddFloatingPointObjectiveResponsePostprocessor() {
                          response->best_objective_bound(),
                          " corrected_bound: ", lb,
                          " delta: ", response->best_objective_bound() - lb);
-
-              // To avoid small errors that can be confusing, we take the
-              // min/max with the objective value.
-              if (float_obj.maximize()) {
-                response->set_best_objective_bound(
-                    std::max(lb, response->objective_value()));
-              } else {
-                response->set_best_objective_bound(
-                    std::min(lb, response->objective_value()));
-              }
+              response->set_best_objective_bound(lb);
             }
           }
 
           if (response->solution().empty()) return;
 
           // Compute the true objective of the best returned solution.
-          double value = float_obj.offset();
-          const int num_terms = float_obj.vars().size();
-          for (int i = 0; i < num_terms; ++i) {
-            value += float_obj.coeffs(i) *
-                     static_cast<double>(response->solution(float_obj.vars(i)));
-          }
-          response->set_objective_value(value);
+          response->set_objective_value(
+              ComputeFloatObjectiveValue(float_obj, response->solution()));
 
           // Check the absolute gap, and display warning if needed.
           // TODO(user): Change status to IMPRECISE?

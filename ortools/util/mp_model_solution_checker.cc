@@ -183,13 +183,14 @@ absl::StatusOr<bool> SolutionIsFeasible(const sat::MPModelProtoWrapper& model,
           MaxPropagatesNan(MaxPropagatesNan(var.lower_bound() - v, 0.0),
                            MaxPropagatesNan(v - var.upper_bound(), 0.0)));
     }
-    if (var.is_integer() &&
-        (SumIsPositive({v, -std::round(v), -options.integer_tolerance}) ||
-         SumIsPositive({std::round(v), -v, -options.integer_tolerance}))) {
-      add_violation(
-          absl::StrCat("Variable ", var.name(), "(", i,
-                       ") is not an integer: ", RoundTripDoubleFormat(v)),
-          std::abs(v - std::round(v)));
+    if (var.is_integer()) {
+      // Note that for doubles, v - std::round(v) is always exact.
+      if (std::abs(v - std::round(v)) > options.integer_tolerance) {
+        add_violation(
+            absl::StrCat("Variable ", var.name(), "(", i,
+                         ") is not an integer: ", RoundTripDoubleFormat(v)),
+            std::abs(v - std::round(v)));
+      }
     }
   }
 

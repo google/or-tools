@@ -252,6 +252,7 @@ inline double UnscaleObjectiveValue(const CpObjectiveProto& proto,
 // offset and/or scaling. So this is not completely in the user-domain.
 inline int64_t PostsolveInnerObjectiveValue(const CpObjectiveProto& proto,
                                             int64_t value) {
+  if (value == kint64min || value == kint64max) return value;
   if (proto.integer_scaling_factor() == 0) {
     return value + proto.integer_before_offset();
   }

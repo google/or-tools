@@ -520,7 +520,7 @@ class CpModelTest(absltest.TestCase):
         self.assertFalse(solver.boolean_value(x))
         self.assertTrue(solver.boolean_value(x.negated()))
         self.assertEqual(-10, solver.value(-y))
-        self.assertEqual(16.1, solver.objective_value)
+        self.assertAlmostEqual(16.1, solver.objective_value, delta=1e-7)
 
     def test_natural_api_maximize_complex(self) -> None:
         model = cp_model.CpModel()

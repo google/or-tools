@@ -138,7 +138,10 @@ class ScopedTimeLogger {
   }
 
   // By default we want a limit of around 1 deterministic seconds.
-  bool WorkLimitIsReached() const { return deterministic_time() >= 1.0; }
+  double work_limit() const { return 1.0; }
+  bool WorkLimitIsReached() const {
+    return deterministic_time() >= work_limit();
+  }
 
   // Extra stats=value to display at the end.
   // We filter value of zero to have less clutter.

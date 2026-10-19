@@ -73,6 +73,10 @@ class TightSum {
     return 0 <=> a.CompareTo(x);
   }
 
+  friend bool operator==(const TightSum& a, const double x) {
+    return a.CompareTo(x) == std::strong_ordering::equal;
+  }
+
   friend std::strong_ordering operator<=>(const TightSum& a, const int64_t x) {
     return a.CompareTo(x);
   }
@@ -81,6 +85,25 @@ class TightSum {
     // 0 <=> ? defined as opposite for std::strong_ordering.
     return 0 <=> a.CompareTo(x);
   }
+
+  friend bool operator==(const TightSum& a, const int64_t x) {
+    return a.CompareTo(x) == std::strong_ordering::equal;
+  }
+
+  friend std::strong_ordering operator<=>(const TightSum& a, const int x) {
+    return a.CompareTo(int64_t{x});
+  }
+
+  friend std::strong_ordering operator<=>(const int x, const TightSum& a) {
+    return 0 <=> a.CompareTo(int64_t{x});
+  }
+
+  friend bool operator==(const TightSum& a, const int x) {
+    return a.CompareTo(int64_t{x}) == std::strong_ordering::equal;
+  }
+
+  // Returns true if no infinite terms have been added to the sum.
+  bool IsFinite() const { return inf_sign_ == std::strong_ordering::equal; }
 
   // Returns currently known bounds on the sum.
   std::pair<double, double> LooseBounds() const { return {lb_, ub_}; }
@@ -197,55 +220,6 @@ TightSum TightSumOf(absl::Span<const Number> v);
 template <typename Number1, typename Number2>
 TightSum TightDotProduct(absl::Span<const Number1> v,
                          absl::Span<const Number2> w);
-
-// TODO(user): All these function should be removed. However, keep them here
-// during the transition to the new API.
-
-// Here for computations in R, we use the standard injection from double to R: a
-// double is mapped to (-1)^sign * mantissa * 2^exponent (see
-// https://en.wikipedia.org/wiki/Double-precision_floating-point_format).
-// Crashes if a NaN is encountered or if a NaN would be produced (e.g. inf -
-// inf). infinite values are handled if they are sign consistent.
-
-// Returns the comparison between the sum of v and 0. Formally sum(v) <=> 0.0
-// where <=> has the semantics of the three way operator. NaN are not handled.
-std::strong_ordering ComputeSumSign(absl::Span<const double> v);
-
-// Returns true if the sum of v is strictly positive in R (full precision).
-// Crashes if a NaN is encountered. Infinite values are handled if they are sign
-// consistent.
-bool SumIsPositive(absl::Span<const double> v);
-
-// Returns true if the sum of v is strictly negative in R (full precision).
-// Crashes if a NaN is encountered. Infinite values are handled if they are sign
-// consistent.
-bool SumIsNegative(absl::Span<const double> v);
-
-// Returns a pair of lb, ub such that lb <= dot_product(a, b) <= ub provably,
-// for the actual dot product of a and b (in R). These bounds are not
-// necessarily tight and can be infinite.
-std::pair<double, double> GetLooseDotProductBounds(absl::Span<const double> a,
-                                                   absl::Span<const double> b);
-
-// Returns the comparison between dot product and bound. Formally a.b <=> bound
-// where <=> has the semantics of the three way operator. NaN are not handled.
-std::strong_ordering CmpDotProduct(absl::Span<const double> a,
-                                   absl::Span<const double> b, double bound);
-
-// Returns true if the dot product of a and b is smaller or equal to ub in R
-// (full precision).
-bool DotProductIsSmallerOrEqual(absl::Span<const double> a,
-                                absl::Span<const double> b, double ub);
-
-// Returns true if the dot product of a and b is greater or equal to lb in R
-// (full precision).
-bool DotProductIsGreaterOrEqual(absl::Span<const double> a,
-                                absl::Span<const double> b, double lb);
-
-// Returns true if the dot product of a and b is equal to res in R (full
-// precision).
-bool DotProductIsEqual(absl::Span<const double> a, absl::Span<const double> b,
-                       double res);
 
 // For any combination of int64_t, finite double and PowerOfTwo, ProdBounds(a,
 // b, p) returns a tight pair of bounds [lb, ub] such that lb <= a * b * p <= ub

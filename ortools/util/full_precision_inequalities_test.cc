@@ -47,7 +47,7 @@ using ComputeSumSignTest = testing::TestWithParam<ComputeSumSignTestCase>;
 
 TEST_P(ComputeSumSignTest, Pos) {
   const auto& param = GetParam();
-  EXPECT_EQ(ComputeSumSign(param.v), param.expected_sign);
+  EXPECT_EQ(TightSumOf<double>(param.v) <=> 0.0, param.expected_sign);
 }
 
 TEST_P(ComputeSumSignTest, Neg) {
@@ -55,7 +55,7 @@ TEST_P(ComputeSumSignTest, Neg) {
   // See https://en.cppreference.com/cpp/utility/compare/strong_ordering for the
   // definition of <=>.
   const std::strong_ordering opposite_sign = 0 <=> param.expected_sign;
-  EXPECT_EQ(ComputeSumSign(Negate(param.v)), opposite_sign);
+  EXPECT_EQ(TightSumOf<double>(Negate(param.v)) <=> 0.0, opposite_sign);
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -111,27 +111,29 @@ using IsDotProductCmpOrEqualTest =
 
 TEST_P(IsDotProductCmpOrEqualTest, PosPos) {
   auto param = GetParam();
-  EXPECT_EQ(DotProductIsSmallerOrEqual(param.a, param.b, param.bound),
+  EXPECT_EQ((TightDotProduct<double, double>(param.a, param.b) <= param.bound),
             param.expect_smaller_or_equal);
 }
 
 TEST_P(IsDotProductCmpOrEqualTest, PosNeg) {
   auto param = GetParam();
-  EXPECT_EQ(DotProductIsGreaterOrEqual(param.a, Negate(param.b), -param.bound),
+  EXPECT_EQ((TightDotProduct<double, double>(param.a, Negate(param.b)) >=
+             -param.bound),
             param.expect_smaller_or_equal);
 }
 
 TEST_P(IsDotProductCmpOrEqualTest, NegPos) {
   auto param = GetParam();
-  EXPECT_EQ(DotProductIsGreaterOrEqual(Negate(param.a), param.b, -param.bound),
+  EXPECT_EQ((TightDotProduct<double, double>(Negate(param.a), param.b) >=
+             -param.bound),
             param.expect_smaller_or_equal);
 }
 
 TEST_P(IsDotProductCmpOrEqualTest, NegNeg) {
   auto param = GetParam();
-  EXPECT_EQ(
-      DotProductIsSmallerOrEqual(Negate(param.a), Negate(param.b), param.bound),
-      param.expect_smaller_or_equal);
+  EXPECT_EQ((TightDotProduct<double, double>(Negate(param.a),
+                                             Negate(param.b)) <= param.bound),
+            param.expect_smaller_or_equal);
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -191,13 +193,16 @@ TEST(IsDotProductCmpOrEqualTest, VeryLongSum) {
   std::vector<double> w(1 << 23, 2.0);
   w.insert(w.end(), (1 << 24) - 1, -1.0);
 
-  EXPECT_EQ(CmpDotProduct(v, w, 0.0), std::strong_ordering::greater);
+  EXPECT_EQ((TightDotProduct<double, double>(v, w) <=> 0.0),
+            std::strong_ordering::greater);
   v.push_back(1.0);
   w.push_back(-1.0);
-  EXPECT_EQ(CmpDotProduct(v, w, 0.0), std::strong_ordering::equal);
+  EXPECT_EQ((TightDotProduct<double, double>(v, w) <=> 0.0),
+            std::strong_ordering::equal);
   v.push_back(1.0);
   w.push_back(-1.0);
-  EXPECT_EQ(CmpDotProduct(v, w, 0.0), std::strong_ordering::less);
+  EXPECT_EQ((TightDotProduct<double, double>(v, w) <=> 0.0),
+            std::strong_ordering::less);
 }
 
 struct GetTightDotProductBoundsTestCase {
@@ -726,6 +731,14 @@ TEST_P(TightSumComparisonTest, LValueAndRValueComparisons) {
   EXPECT_EQ(param.rhs <=> TightSumOf<double>(param.terms), reversed_ordering);
 
   // Synthesized relational operators.
+  EXPECT_EQ(sum == param.rhs,
+            param.expected_ordering == std::strong_ordering::equal);
+  EXPECT_EQ(sum != param.rhs,
+            param.expected_ordering != std::strong_ordering::equal);
+  EXPECT_EQ(param.rhs == sum,
+            param.expected_ordering == std::strong_ordering::equal);
+  EXPECT_EQ(param.rhs != sum,
+            param.expected_ordering != std::strong_ordering::equal);
   EXPECT_EQ(sum < param.rhs,
             param.expected_ordering == std::strong_ordering::less);
   EXPECT_EQ(sum <= param.rhs,
@@ -851,6 +864,14 @@ TEST_P(TightSumInt64ComparisonTest, LValueAndRValueComparisons) {
   EXPECT_EQ(param.rhs <=> TightSumOf<double>(param.terms), reversed_ordering);
 
   // Synthesized relational operators.
+  EXPECT_EQ(sum == param.rhs,
+            param.expected_ordering == std::strong_ordering::equal);
+  EXPECT_EQ(sum != param.rhs,
+            param.expected_ordering != std::strong_ordering::equal);
+  EXPECT_EQ(param.rhs == sum,
+            param.expected_ordering == std::strong_ordering::equal);
+  EXPECT_EQ(param.rhs != sum,
+            param.expected_ordering != std::strong_ordering::equal);
   EXPECT_EQ(sum < param.rhs,
             param.expected_ordering == std::strong_ordering::less);
   EXPECT_EQ(sum <= param.rhs,

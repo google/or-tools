@@ -14,8 +14,10 @@
 #include "ortools/sat/cp_model_solver.h"
 
 #include <atomic>
+#include <cmath>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -5962,6 +5964,119 @@ TEST(CpModelTest, RaceConditionOnLinearPropagator) {
 
   CpSolverResponse response = SolveWithParameters(cp_model, params);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+}
+
+TEST(SolveCpModelTest, ExactFloatingPointObjectiveBoundsAndValue) {
+  // At x = 1, y = 1, the infinite-precision objective value is
+  // double(0.1) + double(0.2), which is strictly between rounded_down and
+  // rounded_up = (0.1 + 0.2). The reported best_objective_bound and
+  // objective_value bracket the true infinite-precision value conservatively.
+  const double rounded_up = 0.1 + 0.2;
+  const double rounded_down =
+      std::nextafter(rounded_up, -std::numeric_limits<double>::infinity());
+
+  for (const bool maximize : {false, true}) {
+    for (const bool presolve : {false, true}) {
+      CpModelProto model_proto = ParseTestProto(R"pb(
+        variables { domain: [ 1, 10 ] }
+        variables { domain: [ 1, 10 ] }
+        constraints {
+          linear {
+            vars: [ 0, 1 ]
+            coeffs: [ 1, 1 ]
+            domain: [ 2, 2 ]
+          }
+        }
+        floating_point_objective {
+          vars: [ 0, 1 ]
+          coeffs: [ 0.1, 0.2 ]
+        }
+      )pb");
+      model_proto.mutable_floating_point_objective()->set_maximize(maximize);
+
+      SatParameters params;
+      params.set_cp_model_presolve(presolve);
+      const CpSolverResponse response =
+          SolveWithParameters(model_proto, params);
+      ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+      if (maximize) {
+        EXPECT_EQ(response.objective_value(), rounded_down);
+        EXPECT_EQ(response.best_objective_bound(), rounded_up);
+      } else {
+        EXPECT_EQ(response.objective_value(), rounded_up);
+        EXPECT_EQ(response.best_objective_bound(), rounded_down);
+      }
+    }
+  }
+}
+
+TEST(SolveCpModelTest, ExactFloatingPointObjectiveBoundWhenUnknownStatus) {
+  const double rounded_up = 0.1 + 0.2;
+  const double rounded_down =
+      std::nextafter(rounded_up, -std::numeric_limits<double>::infinity());
+
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 1, 10 ] }
+    variables { domain: [ 1, 10 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 2, 20 ]
+      }
+    }
+    floating_point_objective {
+      vars: [ 0, 1 ]
+      coeffs: [ 0.1, 0.2 ]
+      maximize: false
+    }
+  )pb");
+  SatParameters params;
+  params.set_cp_model_presolve(false);
+  params.set_stop_after_presolve(true);
+  const CpSolverResponse response = SolveWithParameters(model_proto, params);
+  ASSERT_EQ(response.status(), CpSolverStatus::UNKNOWN);
+  EXPECT_TRUE(response.solution().empty());
+  EXPECT_EQ(response.best_objective_bound(), rounded_down);
+}
+
+TEST(SolveCpModelTest, FloatingPointObjectiveWithFractionalOffset) {
+  // Offset 0.1 makes 1.0 + 0.1 round up in IEEE 754 double, so the response
+  // must bracket the true objective.
+  const double rounded_up = 1.0 + 0.1;
+  const double rounded_down =
+      std::nextafter(rounded_up, -std::numeric_limits<double>::infinity());
+
+  for (const bool maximize : {false, true}) {
+    for (const bool presolve : {false, true}) {
+      CpModelProto model_proto = ParseTestProto(R"pb(
+        variables { domain: [ 1, 100 ] }
+        floating_point_objective {
+          vars: [ 0 ]
+          coeffs: [ 1.0 ]
+          offset: 0.1
+        }
+      )pb");
+      if (maximize) {
+        model_proto.mutable_variables(0)->set_domain(0, -100);
+        model_proto.mutable_variables(0)->set_domain(1, 1);
+      }
+      model_proto.mutable_floating_point_objective()->set_maximize(maximize);
+
+      SatParameters params;
+      params.set_cp_model_presolve(presolve);
+      const CpSolverResponse response =
+          SolveWithParameters(model_proto, params);
+      ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+      if (maximize) {
+        EXPECT_EQ(response.objective_value(), rounded_down);
+        EXPECT_EQ(response.best_objective_bound(), rounded_up);
+      } else {
+        EXPECT_EQ(response.objective_value(), rounded_up);
+        EXPECT_EQ(response.best_objective_bound(), rounded_down);
+      }
+    }
+  }
 }
 
 #else
