@@ -742,5 +742,34 @@ TEST(ShiftVariableBoundsTest, NoShiftWhenAllDomainsContainZero) {
   ExpectLinearProgramMatches(linear_program, kLinearProgram);
 }
 
+TEST(ShiftToZeroAndMarkAsIntegerUnusedVariablesTest,
+     FixesShiftsAndMarksUnusedVariables) {
+  const std::string kLinearProgram =
+      "min: 2 x1 - 3 x2 + 0 x3 + x4 + x5;"
+      "1.5 <= x1 <= 10;"
+      "0 <= x2 <= 4.25;"
+      "2.5 <= x3 <= 5;"
+      "0 <= x4 <= 10;"
+      "0 <= x5 <= 10;"
+      "x4 + x5 >= 1;";
+  LinearProgram linear_program;
+  ASSERT_TRUE(ParseLp(kLinearProgram, &linear_program));
+  MPModelProto model_proto;
+  glop::LinearProgramToMPModelProto(linear_program, &model_proto);
+  sat::MPModelProtoWrapper wrapper(&model_proto, nullptr);
+  const std::vector<double> shifts = ShiftToZeroAndMarkAsIntegerUnusedVariables(
+      sat::SatParameters(), &wrapper);
+  EXPECT_THAT(shifts, ElementsAre(1.5, 4.25, 2.5, 0.0, 0.0));
+  for (int v : {0, 1, 2}) {
+    EXPECT_DOUBLE_EQ(model_proto.variable(v).lower_bound(), 0.0);
+    EXPECT_DOUBLE_EQ(model_proto.variable(v).upper_bound(), 0.0);
+    EXPECT_DOUBLE_EQ(model_proto.variable(v).objective_coefficient(), 0.0);
+    EXPECT_TRUE(model_proto.variable(v).is_integer());
+  }
+  EXPECT_FALSE(model_proto.variable(3).is_integer());
+  EXPECT_FALSE(model_proto.variable(4).is_integer());
+  EXPECT_DOUBLE_EQ(wrapper.objective_offset(), 2.0 * 1.5 - 3.0 * 4.25);
+}
+
 }  // namespace
 }  // namespace operations_research

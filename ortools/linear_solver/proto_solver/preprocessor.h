@@ -205,7 +205,7 @@ bool ExactPresolve(const sat::SatParameters& params,
 // --------------------------------------------------------
 
 // For each variable, compute a "shift" and applies it.
-// The two logic we currently use are defined below.
+// The logic we currently use are defined below.
 //
 // Returns a vector of offsets (empty if no variable was shifted) such that for
 // each variable i:
@@ -218,6 +218,20 @@ bool ExactPresolve(const sat::SatParameters& params,
 std::vector<double> ShiftVariableBounds(
     const std::function<double(const MPVariableProto&)>& get_var_shift,
     sat::MPModelProtoWrapper* model, SolverLogger* logger = nullptr);
+
+// Internal function used by ShiftVariableBounds(), return true if the given
+// shift was applied without issue. Otherwise does nothing and return false.
+bool ShiftVariableBounds(absl::Span<const double> offsets,
+                         sat::MPModelProtoWrapper* model,
+                         SolverLogger* logger = nullptr);
+
+// Fixes unused variables (not appearing in any constraint) whose optimal bound
+// in the objective direction is finite, shifts their domain to [0, 0], and
+// marks them as integer. Returns the per-variable shift offsets applied so that
+// initial_value[i] = new_value[i] + offsets[i].
+std::vector<double> ShiftToZeroAndMarkAsIntegerUnusedVariables(
+    const sat::SatParameters& params, sat::MPModelProtoWrapper* model,
+    SolverLogger* logger = nullptr);
 
 // This one moves domains that do not contain zero close to zero. It also only
 // use integer shifts, so that when we round to integer in CP-SAT we are using
