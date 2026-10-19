@@ -19,7 +19,7 @@ end
 function __init__()
   if Base.find_package("ORTools_jll") === nothing &&
      Base.find_package("ORToolsBinaries") === nothing
-    # TODO(user): update when we support remote solves, it should still be
+    # TODO(ochibobow): update when we support remote solves, it should still be
     # a warning, but the package will work (albeit only locally).
     @warn "Neither ORTools_jll nor ORToolsBinaries is installed. Install one " *
           "of them to use OR-Tools. ORTools.jl will not work without either. " *

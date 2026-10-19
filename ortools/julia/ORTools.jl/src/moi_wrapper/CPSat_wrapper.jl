@@ -89,11 +89,11 @@ end
 MOI.supports(optimizer::CPSATOptimizer, ::MOI.Name) = true
 
 function MOI.get(optimizer::CPSATOptimizer, ::MOI.Silent)
-    return !model.parameters.log_search_progress
+    return !optimizer.parameters.log_search_progress
 end
 
 function MOI.set(optimizer::CPSATOptimizer, ::MOI.Silent, silent::Bool)
-    model.parameters.log_search_progress = !silent
+    optimizer.parameters.log_search_progress = !silent
 
     return nothing
 end
@@ -101,15 +101,24 @@ end
 MOI.supports(optimizer::CPSATOptimizer, ::MOI.Silent) = true
 
 function MOI.get(optimizer::CPSATOptimizer, ::MOI.TimeLimitSec)
-    return optimizer.parameters.max_time_in_seconds
+    t = optimizer.parameters.max_time_in_seconds
+    if isinf(t)
+        return nothing
+    else
+        return t
+    end
 end
 
 function MOI.set(
-    model::CPSATOptimizer,
+    optimizer::CPSATOptimizer,
     ::MOI.TimeLimitSec,
     time_limit::Union{Nothing,Float64},
 )
-    optimizer.parameters.max_time_in_seconds = time_limit
+    if isnothing(time_limit)
+        optimizer.parameters.max_time_in_seconds = Float64(Inf)
+    else
+        optimizer.parameters.max_time_in_seconds = time_limit
+    end
 
     return nothing
 end
@@ -117,7 +126,7 @@ end
 MOI.supports(optimizer::CPSATOptimizer, ::MOI.TimeLimitSec) = true
 
 function MOI.get(optimizer::CPSATOptimizer, ::MOI.NumberOfThreads)
-    number_of_threads = model.parameters.num_workers
+    number_of_threads = optimizer.parameters.num_workers
     return number_of_threads == 0 ? nothing : number_of_threads
 end
 
@@ -126,7 +135,7 @@ function MOI.set(
     ::MOI.NumberOfThreads,
     number_of_threads::Union{Nothing,Int},
 )
-    model.parameters.num_workers =
+    optimizer.parameters.num_workers =
         isnothing(number_of_threads) ? zero(Int32) : Int32(number_of_threads)
 
     return nothing
@@ -187,7 +196,7 @@ MOI.supports(model::CPSATOptimizer, param::MOI.RawOptimizerAttribute) = true
 
 function MOI.add_variable(optimizer::CPSATOptimizer)
     throw(
-        AddVariableNotAllowed(
+        MOI.AddVariableNotAllowed(
             "CPSATOptimizer does not support adding nonconstrained variables. Use add_constrained_variable instead.",
         ),
     )
@@ -2329,7 +2338,7 @@ end
 
 function MOI.get(optimizer::CPSATOptimizer, ::MOI.SolveTimeSec)
     if isnothing(optimizer.solve_response)
-        throw(ArgumentError("The solve response is not set. Call optimize! first."))
+        return NaN
     end
 
     return optimizer.solve_response.wall_time

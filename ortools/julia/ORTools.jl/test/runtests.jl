@@ -2,7 +2,9 @@ using ORTools
 using Test
 
 @testset "ORTools.jl" begin
-    for file in readdir("moi")
-        include(joinpath("moi", file))
+    @testset "CP-SAT wrapper" begin
+        include(joinpath("moi", "MOI_wrapper.jl"))
+        include(joinpath("moi", "CPSat_wrapper.jl"))
+        include("cli_c_tests.jl")
     end
 end
