@@ -70,6 +70,7 @@ using PybindSolverCallback =
 using PybindSolverMessageCallback =
     std::function<void(std::vector<std::string>)>;
 
+namespace {
 // Wrapper for Solver::NonIncrementalSolve with flat arguments.
 absl::StatusOr<SolveResultProto> PybindSolve(
     const ModelProto& model, const SolverTypeProto solver_type,
@@ -102,6 +103,7 @@ PybindComputeInfeasibleSubsystem(
        .message_callback = std::move(message_callback),
        .interrupter = CppSolveInterrupter(std::move(interrupter))});
 }
+}  // namespace
 
 // Wrapper for the Solver class with flat arguments.
 class PybindSolver {

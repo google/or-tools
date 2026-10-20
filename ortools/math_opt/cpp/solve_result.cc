@@ -488,6 +488,7 @@ std::string SolveStats::ToString() const {
   return stream.str();
 }
 
+namespace {
 absl::Status CheckSolverSpecificOutputEmpty(const SolveResultProto& result) {
   if (result.solver_specific_output_case() ==
       SolveResultProto::SOLVER_SPECIFIC_OUTPUT_NOT_SET) {
@@ -497,6 +498,7 @@ absl::Status CheckSolverSpecificOutputEmpty(const SolveResultProto& result) {
          << "cannot set solver specific output twice, was already "
          << static_cast<int>(result.solver_specific_output_case());
 }
+}  // namespace
 
 absl::StatusOr<SolveResultProto> SolveResult::Proto() const {
   SolveResultProto result;

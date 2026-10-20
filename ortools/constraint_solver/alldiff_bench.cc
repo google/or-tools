@@ -35,6 +35,7 @@ ABSL_FLAG(
     "Max size of the problem. If equal to 0, will test few increasing sizes.");
 
 namespace operations_research {
+namespace {
 static int fact(int N) { return (N > 0) ? N * fact(N - 1) : 1; }
 
 void TestAllDiff(int size) {
@@ -81,7 +82,7 @@ void TestAllDiff(int size) {
     }
   }
 }
-
+}  // namespace
 }  // namespace operations_research
 
 int main(int argc, char** argv) {

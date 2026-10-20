@@ -612,6 +612,7 @@ absl::Status GScipSolver::AddSos2Constraints(
   return absl::OkStatus();
 }
 
+namespace {
 GScipParameters::MetaParamValue ConvertMathOptEmphasis(EmphasisProto emphasis) {
   switch (emphasis) {
     case EMPHASIS_OFF:
@@ -630,6 +631,7 @@ GScipParameters::MetaParamValue ConvertMathOptEmphasis(EmphasisProto emphasis) {
                  << " unknown, error setting gSCIP parameters";
   }
 }
+}  // namespace
 
 absl::StatusOr<GScipParameters> GScipSolver::MergeParameters(
     const SolveParametersProto& solve_parameters) {

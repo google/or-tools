@@ -478,6 +478,7 @@ void ExtractDirectTaskPrecedences(
 
 }  // namespace
 
+namespace {
 SchedulingProblem BuildSchedulingProblem(
     const std::vector<std::vector<int>>& machine_to_intervals,
     const std::vector<std::vector<int>>& task_to_intervals,
@@ -667,6 +668,7 @@ SchedulingProblem BuildSchedulingProblem(
 
   return problem;
 }
+}  // namespace
 
 std::vector<std::pair<int, int>> DetectIntervalPrecedences(
     const CpModelProto& model_proto,
@@ -1017,6 +1019,7 @@ SchedulingRelaxation DetectSchedulingProblems(const CpModelProto& model_proto) {
   return relaxation;
 }
 
+namespace {
 bool VerifySingleSchedulingProblem(const SchedulingProblem& problem,
                                    absl::Span<const int64_t> solution) {
   VLOG(2) << "Verifying Scheduling problem with " << problem.tasks.size()
@@ -1139,6 +1142,7 @@ bool VerifySingleSchedulingProblem(const SchedulingProblem& problem,
   VLOG(2) << "Scheduling problem verified.";
   return true;
 }
+}  // namespace
 
 CpModelProto BuildSchedulingModel(const SchedulingProblem& problem) {
   CpModelProto model_proto;

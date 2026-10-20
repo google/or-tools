@@ -402,6 +402,7 @@ testing::Matcher<std::vector<Solution>> IsNear(
 // Matchers for Solutions
 ////////////////////////////////////////////////////////////////////////////////
 
+namespace {
 Matcher<SolutionStatus> SolutionStatusIs(const SolutionStatus expected,
                                          const bool allow_undetermined) {
   if (allow_undetermined) {
@@ -409,6 +410,7 @@ Matcher<SolutionStatus> SolutionStatusIs(const SolutionStatus expected,
   }
   return Eq(expected);
 }
+}  // namespace
 
 Matcher<PrimalSolution> IsNear(PrimalSolution expected, const double tolerance,
                                const bool allow_undetermined) {

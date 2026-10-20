@@ -41,6 +41,7 @@ ABSL_FLAG(int, max_bins, -1,
           "Maximum number of bins: default = -1 meaning no limits");
 
 namespace operations_research {
+namespace {
 void ParseAndSolve(const std::string& filename, absl::string_view solver,
                    const std::string& params) {
   std::string problem_name = filename;
@@ -93,6 +94,7 @@ void ParseAndSolve(const std::string& filename, absl::string_view solver,
     }
   }
 }
+}  // namespace
 
 }  // namespace operations_research
 

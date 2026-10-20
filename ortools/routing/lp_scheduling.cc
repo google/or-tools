@@ -3377,6 +3377,7 @@ int64_t ComputeBestVehicleToResourceAssignment(
   return cost << cost_right_shift;
 }
 
+namespace {
 std::string Int64ToStr(int64_t number) {
   if (number == kint64min) return "-infty";
   if (number == kint64max) return "+infty";
@@ -3507,6 +3508,7 @@ std::string VariablesToString(
   }
   return s;
 }
+}  // namespace
 
 std::string CPSatWrapper::PrintModel() const {
   // Constraints you want to separate.

@@ -532,6 +532,7 @@ void TimesIntNegCstExpr::SetMax(int64_t m) {
 
 // ----- Utilities for product expression -----
 
+namespace {
 // Propagates set_min on left * right, left and right >= 0.
 void SetPosPosMinExpr(IntExpr* left, IntExpr* right, int64_t m) {
   DCHECK_GE(left->Min(), 0);
@@ -653,6 +654,7 @@ void TimesSetMin(IntExpr* left, IntExpr* right, IntExpr* minus_left,
     SetGenGenMinExpr(left, right, m);
   }
 }
+}  // namespace
 
 TimesIntExpr::TimesIntExpr(Solver* s, IntExpr* l, IntExpr* r)
     : BaseIntExpr(s),

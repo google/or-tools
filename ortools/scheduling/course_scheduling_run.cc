@@ -35,6 +35,7 @@ ABSL_FLAG(std::string, input, "",
 
 namespace operations_research {
 
+namespace {
 void Main() {
   CourseSchedulingModel input;
   const auto proto_status =
@@ -102,6 +103,7 @@ void Main() {
 
   LOG(INFO) << "Solved model in " << timer.GetDuration();
 }
+}  // namespace
 
 }  // namespace operations_research
 

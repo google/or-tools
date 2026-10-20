@@ -246,6 +246,7 @@ absl::Status ValidateDualRay(const DualRayProto& dual_ray,
 // Basis
 ////////////////////////////////////////////////////////////////////////////////
 
+namespace {
 absl::Status SparseBasisStatusVectorIsValid(
     const SparseVectorView<int>& status_vector_view) {
   ABSL_RETURN_IF_ERROR(CheckIdsAndValues(status_vector_view));
@@ -261,6 +262,7 @@ absl::Status SparseBasisStatusVectorIsValid(
   }
   return absl::OkStatus();
 }
+}  // namespace
 
 absl::Status ValidateBasis(const BasisProto& basis,
                            const ModelSummary& model_summary,

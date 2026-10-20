@@ -2037,6 +2037,7 @@ struct Rectangle32 {
 
 // Requires that rectangles are sorted by x_min and that sizes on both
 // dimensions are > 0.
+namespace {
 std::vector<std::pair<int, int>> FindPartialRectangleIntersectionsImpl(
     absl::Span<const Rectangle32> rectangles, int32_t y_max) {
   // We are going to use a sweep line algorithm to find the intersections.
@@ -2077,7 +2078,6 @@ std::vector<std::pair<int, int>> FindPartialRectangleIntersectionsImpl(
   return arcs;
 }
 
-namespace {
 struct PostProcessedResult {
   std::vector<Rectangle32> rectangles_sorted_by_x_min;
   std::pair<int32_t, int32_t> bounding_box;  // Always starting at (0,0).

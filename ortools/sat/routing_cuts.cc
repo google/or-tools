@@ -3041,6 +3041,7 @@ void SymmetrizeArcs(std::vector<ArcWithLpValue>* arcs) {
 
 // Processes each subset and adds any violated cut.
 // Returns the number of added cuts.
+namespace {
 int TryAllSubsets(std::string cut_name, absl::Span<const int> subset_data,
                   std::vector<absl::Span<const int>> subsets,
                   RoutingCutHelper& helper, LinearConstraintManager* manager) {
@@ -3177,8 +3178,6 @@ void SeparateSubtourInequalities(RoutingCutHelper& helper,
   }
 }
 
-namespace {
-
 // Returns for each literal its integer view, or the view of its negation.
 std::vector<IntegerVariable> GetAssociatedVariables(
     absl::Span<const Literal> literals, Model* model) {
@@ -3242,6 +3241,7 @@ CutGenerator CreateCVRPCutGenerator(
 
 // This is really similar to SeparateSubtourInequalities, see the reference
 // there.
+namespace {
 void SeparateFlowInequalities(
     int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
     absl::Span<const AffineExpression> arc_capacities,
@@ -3386,6 +3386,7 @@ void SeparateFlowInequalities(
     for (const int n : subset) in_subset[n] = false;
   }
 }
+}  // namespace
 
 CutGenerator CreateFlowCutGenerator(
     int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,

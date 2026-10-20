@@ -2096,6 +2096,7 @@ DecisionBuilder* Solver::MakePhase(IntVar* v0, IntVar* v1, IntVar* v2,
   return MakePhase(vars, var_str, val_str);
 }
 
+namespace {
 BaseAssignVariables::Mode ChooseMode(Solver::IntValueStrategy val_str) {
   BaseAssignVariables::Mode mode = BaseAssignVariables::ASSIGN;
   if (val_str == Solver::SPLIT_LOWER_HALF) {
@@ -2105,6 +2106,7 @@ BaseAssignVariables::Mode ChooseMode(Solver::IntValueStrategy val_str) {
   }
   return mode;
 }
+}  // namespace
 
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    Solver::IntVarStrategy var_str,

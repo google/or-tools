@@ -59,6 +59,7 @@ ABSL_FLAG(bool, sort_heads, false, "Sort outgoing arcs by head.");
 ABSL_FLAG(bool, detect_reverse_arcs, true, "Detect reverse arcs.");
 
 namespace operations_research {
+namespace {
 
 // See http://lpsolve.sourceforge.net/5.5/DIMACS_mcf.htm for the dimacs file
 // format of a min cost flow problem.
@@ -291,8 +292,11 @@ void SolveMaxFlow(const FlowModelProto& flow_model, double* loading_time,
   fflush(stdout);
 }
 
+}  // namespace
 }  // namespace operations_research
 
+using operations_research::ConvertDimacsToFlowModel;
+using operations_research::ConvertFlowModelToDimacs;
 using operations_research::FlowModelProto;
 using operations_research::SolveMaxFlow;
 using operations_research::SolveMinCostFlow;

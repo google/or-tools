@@ -136,6 +136,7 @@ struct DiffnEnergyEvent : DiffnBaseEvent {
   }
 };
 
+namespace {
 void GenerateNoOverlap2dEnergyCut(
     absl::Span<const std::vector<LiteralValueValue>> energies,
     absl::Span<const int> rectangles, absl::string_view cut_name, Model* model,
@@ -306,6 +307,7 @@ void GenerateNoOverlap2dEnergyCut(
   }
   top_n_cuts.TransferToManager(manager);
 }
+}  // namespace
 
 CutGenerator CreateNoOverlap2dEnergyCutGenerator(
     NoOverlap2DConstraintHelper* helper, Model* model) {
@@ -420,6 +422,7 @@ std::string DiffnCtEvent::DebugString() const {
 //   - we use a limited complexity subset-sum to compute reachable capacity
 //   - we look at a set of intervals starting after a given start_min, sorted by
 //     relative (end_lp - start_min).
+namespace {
 void GenerateNoOvelap2dCompletionTimeCuts(absl::string_view cut_name,
                                           std::vector<DiffnCtEvent> events,
                                           bool use_lifting, Model* model,
@@ -590,6 +593,7 @@ void GenerateNoOvelap2dCompletionTimeCuts(absl::string_view cut_name,
   }
   top_n_cuts.TransferToManager(manager);
 }
+}  // namespace
 
 CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
     NoOverlap2DConstraintHelper* helper, Model* model) {

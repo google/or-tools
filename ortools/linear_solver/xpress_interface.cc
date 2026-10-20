@@ -64,6 +64,7 @@
   } while (0)
 
 namespace operations_research {
+namespace {
 std::string getSolverVersion(XPRSprob const& prob) {
   // XPRS_VERSION gives the version number as MAJOR*100 + RELEASE.
   // It does not include the build number.
@@ -156,13 +157,7 @@ bool readParameter(XPRSprob const& prob, std::string const& name,
 
   return true;
 }
-
-void printError(const XPRSprob& lp, int line) {
-  char errmsg[512];
-  XPRSgetlasterror(lp, errmsg);
-  LOG(FATAL) << absl::StrFormat(
-      "Function line %d did not execute correctly: %s\n", line, errmsg);
-}
+}  // namespace
 
 void XPRS_CC XpressIntSolCallbackImpl(XPRSprob cb_prob, void* cbdata);
 
@@ -177,6 +172,7 @@ void XPRS_CC XpressIntSolCallbackImpl(XPRSprob cb_prob, void* cbdata);
 void XPRS_CC optimizermsg(XPRSprob prob, void* data, const char* msg, int len,
                           int nMsgLvl);
 
+namespace {
 int getnumcols(const XPRSprob& lp) {
   int num_cols = 0;
   XPRSgetintattrib(lp, XPRS_COLS, &num_cols);
@@ -225,6 +221,7 @@ void interruptXPRESS(XPRSprob& xprs_prob, CUSTOM_INTERRUPT_REASON reason) {
   // Reason values below 1000 are reserved by XPRESS
   XPRSinterrupt(xprs_prob, 1000 + reason);
 }
+}  // namespace
 
 // In case we need to return a double but don't have a value for that
 // we just return a NaN.
@@ -1737,6 +1734,7 @@ void XpressInterface::SetLpAlgorithm(int value) {
     CHECK_STATUS(XPRSsetintcontrol(lp_, XPRS_DEFAULTALG, alg));
   }
 }
+namespace {
 std::vector<int> XpressBasisStatusesFrom(
     const std::vector<MPSolver::BasisStatus>& statuses) {
   std::vector<int> result;
@@ -1744,6 +1742,7 @@ std::vector<int> XpressBasisStatusesFrom(
   absl::c_transform(statuses, result.begin(), MPSolverToXpressBasisStatus);
   return result;
 }
+}  // namespace
 
 void XpressInterface::SetStartingLpBasis(
     const std::vector<MPSolver::BasisStatus>& variable_statuses,
@@ -2130,10 +2129,12 @@ void splitMyString(const std::string& str, Container& cont, char delim = ' ') {
   }
 }
 
+namespace {
 bool stringToCharPtr(const std::string& var, const char** out) {
   *out = var.c_str();
   return true;
 }
+}  // namespace
 
 #define setParamIfPossible_MACRO(target_map, setter, converter, type)         \
   {                                                                           \

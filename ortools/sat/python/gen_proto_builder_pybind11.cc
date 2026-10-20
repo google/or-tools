@@ -22,6 +22,7 @@
 
 namespace operations_research::sat::python {
 
+namespace {
 void ParseAndGenerate() {
   absl::PrintF(
       R"(
@@ -36,6 +37,7 @@ void ParseAndGenerate() {
            ABSL_DIE_IF_NULL(CpSolverResponse::descriptor()),
            ABSL_DIE_IF_NULL(SatParameters::descriptor())}));
 }
+}  // namespace
 
 }  // namespace operations_research::sat::python
 

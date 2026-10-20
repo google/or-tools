@@ -156,6 +156,7 @@ IntegerLiteral SplitAroundLpValue(IntegerVariable var, Model* model) {
   return SplitAroundGivenValue(positive_var, value, model);
 }
 
+namespace {
 IntegerLiteral SplitUsingBestSolutionValueInRepository(
     IntegerVariable var, const SharedSolutionRepository<int64_t>& solution_repo,
     Model* model) {
@@ -176,6 +177,7 @@ IntegerLiteral SplitUsingBestSolutionValueInRepository(
       proto_var, /*solution_index=*/0));
   return SplitAroundGivenValue(positive_var, value, model);
 }
+}  // namespace
 
 // TODO(user): the complexity caused by the linear scan in this heuristic and
 // the one below is ok when search_branching is set to SAT_SEARCH because it is
@@ -306,6 +308,7 @@ UnassignedVarWithLowestMinAtItsMinHeuristic(
       };
 }
 
+namespace {
 std::function<BooleanOrIntegerLiteral()> ShaveModelIntegerVariableBounds(
     const std::vector<IntegerVariable>& vars, Model* model) {
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
@@ -376,6 +379,7 @@ std::function<BooleanOrIntegerLiteral()> ShaveModelBooleanVariables(
     return BooleanOrIntegerLiteral();
   };
 }
+}  // namespace
 
 std::function<BooleanOrIntegerLiteral()> SequentialSearch(
     const std::vector<std::function<BooleanOrIntegerLiteral()>>& heuristics) {
@@ -518,6 +522,7 @@ std::function<BooleanOrIntegerLiteral()> SatSolverHeuristic(Model* model) {
 
 // TODO(user): Do we need a mechanism to reduce the range of possible gaps
 // when nothing gets proven? This could be a parameter or some adaptive code.
+namespace {
 std::function<BooleanOrIntegerLiteral()> ShaveObjectiveLb(Model* model) {
   auto* objective_definition = model->GetOrCreate<ObjectiveDefinition>();
   const IntegerVariable obj_var = objective_definition->objective_var;
@@ -542,6 +547,7 @@ std::function<BooleanOrIntegerLiteral()> ShaveObjectiveLb(Model* model) {
     return result;
   };
 }
+}  // namespace
 
 std::function<BooleanOrIntegerLiteral()> PseudoCost(Model* model) {
   auto* objective = model->Get<ObjectiveDefinition>();
@@ -1428,6 +1434,7 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
   };
 }
 
+namespace {
 std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
     bool lns_mode, Model* model) {
   SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
@@ -1617,6 +1624,7 @@ std::function<BooleanOrIntegerLiteral()> AlternateTwoHeuristicsWithDecay(
     return use_start_heuristic ? start_heuristic() : end_heuristic();
   };
 }
+}  // namespace
 
 std::function<BooleanOrIntegerLiteral()> FollowHint(
     absl::Span<const BooleanOrIntegerVariable> vars,
@@ -1682,6 +1690,7 @@ std::function<bool()> RestartEveryKFailures(int k, SatSolver* solver) {
   };
 }
 
+namespace {
 std::function<bool()> RestartEveryKFailureThenGivenPolicy(
     int max_num_conflicts, int max_num_fixed_restarts,
     const std::function<bool()>& fallback_policy, Model* model) {
@@ -1703,6 +1712,7 @@ std::function<bool()> RestartEveryKFailureThenGivenPolicy(
     return reset_at_next_call;
   };
 }
+}  // namespace
 
 std::function<bool()> RestartAfterDeterministicTime(double deterministic_time,
                                                     TimeLimit* time_limit) {

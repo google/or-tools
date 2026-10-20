@@ -8047,6 +8047,20 @@ R"doc(This method returns 0. It is useful when 0 can be cast either as a
 pointer or as an integer value and thus lead to an ambiguous function
 call.)doc";
 
+static const char *mkd_doc_operations_research_internal_AcceptDelta = R"doc()doc";
+
+static const char *mkd_doc_operations_research_internal_AcceptNeighbor = R"doc()doc";
+
+static const char *mkd_doc_operations_research_internal_AcceptUncheckedNeighbor = R"doc()doc";
+
+static const char *mkd_doc_operations_research_internal_BuildLocalSearchProfiler = R"doc()doc";
+
+static const char *mkd_doc_operations_research_internal_ContinueAtLocalOptimum = R"doc()doc";
+
+static const char *mkd_doc_operations_research_internal_DeleteLocalSearchProfiler = R"doc()doc";
+
+static const char *mkd_doc_operations_research_internal_InstallLocalSearchProfiler = R"doc()doc";
+
 static const char *mkd_doc_operations_research_internal_addrval = R"doc()doc";
 
 static const char *mkd_doc_operations_research_internal_addrval_TPtr = R"doc()doc";

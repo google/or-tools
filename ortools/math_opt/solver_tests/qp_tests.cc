@@ -62,6 +62,7 @@ QpTestParameters::QpTestParameters(
       supports_qp_incrementalism(supports_qp_incrementalism),
       use_integer_variables(use_integer_variables) {}
 
+namespace {
 std::string ToString(QpSupportType qp_support) {
   switch (qp_support) {
     case QpSupportType::kNoQpSupport:
@@ -74,6 +75,7 @@ std::string ToString(QpSupportType qp_support) {
   LOG(FATAL) << "Invalid QpSupportType";
   return "";
 }
+}  // namespace
 
 std::ostream& operator<<(std::ostream& out, const QpTestParameters& params) {
   out << "{ solver_type: " << params.solver_type

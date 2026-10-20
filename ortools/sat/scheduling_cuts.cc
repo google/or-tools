@@ -337,6 +337,7 @@ std::vector<int64_t> FindPossibleDemands(const EnergyEvent& event,
 // In the region after the min of the makespan, we will use
 //    fixed_capacity * (makespan - makespan_min)
 // as the available energy.
+namespace {
 void GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
     absl::string_view cut_name,
     const util_intops::StrongVector<IntegerVariable, double>& lp_values,
@@ -602,6 +603,7 @@ void GenerateCumulativeEnergeticCuts(
     }
   }
 }
+}  // namespace
 
 CutGenerator CreateCumulativeEnergyCutGenerator(
     SchedulingConstraintHelper* helper, SchedulingDemandHelper* demands_helper,
@@ -899,6 +901,7 @@ struct CachedIntervalData {
   IntegerValue demand_min;
 };
 
+namespace {
 void GenerateCutsBetweenPairOfNonOverlappingTasks(
     absl::string_view cut_name, bool ignore_zero_size_intervals,
     const util_intops::StrongVector<IntegerVariable, double>& lp_values,
@@ -998,6 +1001,7 @@ void GenerateCutsBetweenPairOfNonOverlappingTasks(
     }
   }
 }
+}  // namespace
 
 CutGenerator CreateCumulativePrecedenceCutGenerator(
     SchedulingConstraintHelper* helper, SchedulingDemandHelper* demands_helper,
@@ -1426,6 +1430,7 @@ CompletionTimeExplorationStatus ComputeMinSumOfWeightedEndMins(
 // TODO(user): Improve performance
 //   - detect disjoint tasks (no need to crossover to the second part)
 //   - better caching of explored states
+namespace {
 [[nodiscard]] bool GenerateShortCompletionTimeCutsWithExactBound(
     absl::string_view cut_name,
     const util_intops::StrongVector<IntegerVariable, double>& lp_values,
@@ -1561,7 +1566,6 @@ CompletionTimeExplorationStatus ComputeMinSumOfWeightedEndMins(
   return true;
 }
 
-namespace {
 // Returns a copy of the event with the start time increased to time.
 // Energy (min and decomposed) are updated accordingly.
 void CopyAndTrimEventAfterAndAppendIfPositiveEnergy(
@@ -1675,6 +1679,7 @@ void AddEventDemandsToCapacitySubsetSum(
 //   - first, we loop on potential start times in increasing order.
 //   - second loop, we add tasks that must contribute after this start time
 //     ordered by increasing end time in the LP relaxation.
+namespace {
 void GenerateCompletionTimeCutsWithEnergy(
     absl::string_view cut_name,
     const util_intops::StrongVector<IntegerVariable, double>& lp_values,
@@ -1840,6 +1845,7 @@ void GenerateCompletionTimeCutsWithEnergy(
     }
   }
 }
+}  // namespace
 
 CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
     SchedulingConstraintHelper* helper, Model* model) {

@@ -106,8 +106,6 @@ ABSL_FLAG(bool, cp_disable_expression_optimization, false,
 ABSL_FLAG(bool, cp_share_int_consts, true,
           "Share IntConst's with the same value.");
 
-void ConstraintSolverFailsHere() { VLOG(3) << "Fail"; }
-
 #if defined(_MSC_VER)  // WINDOWS
 #pragma warning(disable : 4351 4355)
 #endif
@@ -115,6 +113,8 @@ void ConstraintSolverFailsHere() { VLOG(3) << "Fail"; }
 namespace operations_research {
 
 namespace {
+void ConstraintSolverFailsHere() { VLOG(3) << "Fail"; }
+
 // Converts a scoped enum to its underlying type.
 template <typename E>
 constexpr typename std::underlying_type<E>::type to_underlying(E e) {
@@ -164,11 +164,6 @@ ConstraintSolverParameters Solver::DefaultSolverParameters() {
 }
 
 ModelCache* Solver::Cache() const { return model_cache_.get(); }
-
-// ----- Forward Declarations and Profiling Support -----
-extern void InstallLocalSearchProfiler(LocalSearchProfiler* monitor);
-extern LocalSearchProfiler* BuildLocalSearchProfiler(Solver* solver);
-extern void DeleteLocalSearchProfiler(LocalSearchProfiler* monitor);
 
 // TODO(user): remove this complex logic.
 // We need the double test because parameters are set too late when using
@@ -817,6 +812,8 @@ void Search::Accept(ModelVisitor* const visitor) const {
 
 #undef CALL_EVENT_LISTENERS
 
+namespace internal {
+
 bool ContinueAtLocalOptimum(Search* search) {
   return search->ContinueAtLocalOptimum();
 }
@@ -830,6 +827,8 @@ void AcceptNeighbor(Search* search) { search->AcceptNeighbor(); }
 void AcceptUncheckedNeighbor(Search* search) {
   search->AcceptUncheckedNeighbor();
 }
+
+}  // namespace internal
 
 namespace {
 
@@ -905,7 +904,7 @@ Solver::Solver(const std::string& name,
       random_(CpRandomSeed()),
 
       use_fast_local_search_(true),
-      local_search_profiler_(BuildLocalSearchProfiler(this)) {
+      local_search_profiler_(internal::BuildLocalSearchProfiler(this)) {
   Init();
 }
 
@@ -915,7 +914,7 @@ Solver::Solver(const std::string& name)
       random_(CpRandomSeed()),
 
       use_fast_local_search_(true),
-      local_search_profiler_(BuildLocalSearchProfiler(this)) {
+      local_search_profiler_(internal::BuildLocalSearchProfiler(this)) {
   Init();
 }
 
@@ -977,7 +976,7 @@ Solver::~Solver() {
   DCHECK_EQ(info.int_info, SOLVER_CTOR_SENTINEL);
   gtl::STLDeleteElements(&searches_);
 
-  DeleteLocalSearchProfiler(local_search_profiler_);
+  internal::DeleteLocalSearchProfiler(local_search_profiler_);
 }
 
 std::string Solver::DebugString() const {
@@ -1308,7 +1307,7 @@ void Solver::NewSearch(DecisionBuilder* db,
 
   local_search_monitor_->Install();
   if (local_search_profiler_ != nullptr) {
-    InstallLocalSearchProfiler(local_search_profiler_);
+    internal::InstallLocalSearchProfiler(local_search_profiler_);
   }
 
   // Push monitors and enter search.

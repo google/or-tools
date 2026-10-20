@@ -500,6 +500,7 @@ bool BasicPresolveAndGetFullyEncodedDomains(
 }
 
 // Return false on unsat
+namespace {
 bool DetectEncodedComplexDomain(
     PresolveContext* context, int ct_index,
     VariableEncodingLocalModel& local_model,
@@ -873,6 +874,7 @@ bool DetectEncodedComplexDomain(
 
   return true;
 }
+}  // namespace
 
 bool DetectAllEncodedComplexDomain(PresolveContext* context,
                                    VariableEncodingLocalModel& local_model) {

@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/strings/string_view.h"
 #include "ortools/flatzinc/model.h"
 
 namespace operations_research {
@@ -99,8 +100,18 @@ struct LexerInfo {
   std::vector<VarRefOrValue>* var_or_value_array;
 };
 
+// Whether the given list of annotations contains the given identifier
+// (or function call).
+bool ContainsId(std::vector<Annotation>* annotations, absl::string_view id);
+bool AllDomainsHaveOneValue(const std::vector<Domain>& domains);
+
 // If the argument is an integer, return it as int64_t. Otherwise, die.
 int64_t ConvertAsIntegerOrDie(double d);
 }  // namespace fz
 }  // namespace operations_research
+
+void orfz_error(operations_research::fz::ParserContext* context,
+                operations_research::fz::Model* model, bool* ok, void* scanner,
+                const char* str);
+
 #endif  // ORTOOLS_FLATZINC_PARSER_UTIL_H_

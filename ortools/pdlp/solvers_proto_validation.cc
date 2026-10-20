@@ -30,6 +30,7 @@ using ::absl::OkStatus;
 const double kTinyDouble = 1.0e-50;
 const double kHugeDouble = 1.0e50;
 
+namespace {
 absl::Status CheckNonNegative(const double value,
                               const absl::string_view name) {
   if (std::isnan(value)) {
@@ -40,6 +41,7 @@ absl::Status CheckNonNegative(const double value,
   }
   return absl::OkStatus();
 }
+}  // namespace
 
 absl::Status ValidateTerminationCriteria(const TerminationCriteria& criteria) {
   if (criteria.optimality_norm() != OPTIMALITY_NORM_L_INF &&

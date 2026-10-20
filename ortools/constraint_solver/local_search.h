@@ -2389,6 +2389,25 @@ class LocalSearchMonitor : public SearchMonitor {
   void Install() override;
 };
 
+#ifndef SWIG
+namespace internal {
+void InstallLocalSearchProfiler(LocalSearchProfiler* monitor);
+LocalSearchProfiler* BuildLocalSearchProfiler(Solver* solver);
+void DeleteLocalSearchProfiler(LocalSearchProfiler* monitor);
+
+// Utility methods to ensure the communication between local search and the
+// search.
+// Returns true if the search must continue after reaching the local optimum.
+bool ContinueAtLocalOptimum(Search* search);
+// Returns true if the search accepts the delta (actually checking this by
+// calling AcceptDelta on the monitors of the search).
+bool AcceptDelta(Search* search, Assignment* delta, Assignment* deltadelta);
+// Notifies the search that a neighbor has been accepted by local search.
+void AcceptNeighbor(Search* search);
+void AcceptUncheckedNeighbor(Search* search);
+}  // namespace internal
+#endif  // SWIG
+
 class LocalSearchPhaseParameters : public BaseObject {
  public:
   LocalSearchPhaseParameters(IntVar* objective, SolutionPool* const pool,

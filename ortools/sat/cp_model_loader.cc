@@ -1584,6 +1584,7 @@ void LoadAllDiffConstraint(const ConstraintProto& ct, Model* m) {
   AddAllDifferentOnBounds(enforcement_literals, expressions, m);
 }
 
+namespace {
 void LoadAlwaysFalseConstraint(const ConstraintProto& ct, Model* m) {
   if (ct.enforcement_literal().empty()) {
     m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
@@ -1595,6 +1596,7 @@ void LoadAlwaysFalseConstraint(const ConstraintProto& ct, Model* m) {
   }
   LoadBoolOrConstraint(new_ct, m);
 }
+}  // namespace
 
 void LoadIntProdConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
@@ -1666,6 +1668,7 @@ void LoadIntDivConstraint(const ConstraintProto& ct, Model* m) {
   }
 }
 
+namespace {
 void LoadIntModConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
@@ -1679,6 +1682,7 @@ void LoadIntModConstraint(const ConstraintProto& ct, Model* m) {
   const IntegerValue fixed_modulo = integer_trail->FixedValue(mod);
   AddFixedModuloConstraint(enforcement_literals, expr, fixed_modulo, target, m);
 }
+}  // namespace
 
 void LoadLinMaxConstraint(const ConstraintProto& ct, Model* m) {
   if (ct.lin_max().exprs().empty()) {

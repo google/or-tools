@@ -21,6 +21,7 @@
 
 namespace operations_research::sat {
 
+namespace {
 void ParseAndGenerate() {
   absl::PrintF(
       R"(
@@ -90,6 +91,7 @@ void ParseAndGenerate() {
                   DecisionStrategyProto_DomainReductionStrategy_descriptor()),
           }));
 }
+}  // namespace
 
 }  // namespace operations_research::sat
 

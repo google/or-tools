@@ -98,6 +98,8 @@ enum class ScipSeparationResult {
   kDidNotFind
 };
 
+namespace {
+
 bool LinearConstraintIsViolated(const ScipConstraintHandlerContext& context,
                                 const LinearRange& constraint) {
   double a_times_x = 0;
@@ -211,6 +213,8 @@ ScipSeparationResult RunSeparation(internal::ScipCallbackRunner* runner,
   }
   return result;
 }
+
+}  // namespace
 
 struct CallbackSetup {
   SCIP_CONSHDLRDATA* scip_handler_data;

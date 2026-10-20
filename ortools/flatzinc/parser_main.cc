@@ -36,6 +36,7 @@ ABSL_FLAG(bool, statistics, false, "Print model statistics");
 
 namespace operations_research {
 namespace fz {
+namespace {
 void ParseFile(const std::string& filename) {
   WallTimer timer;
   timer.Start();
@@ -68,6 +69,7 @@ void ParseFile(const std::string& filename) {
     SOLVER_LOG(&logger, model.DebugString());
   }
 }
+}  // namespace
 }  // namespace fz
 }  // namespace operations_research
 

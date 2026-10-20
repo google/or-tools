@@ -247,6 +247,12 @@ IntVar* NewVarPlusInt(Solver* s, IntVar* var, int64_t value);
 IntVar* NewIntMinusVar(Solver* s, int64_t value, IntVar* var);
 IntVar* NewVarTimesInt(Solver* s, IntVar* var, int64_t value);
 
+void CleanVariableOnFail(IntVar* var);
+Constraint* SetIsEqual(IntVar* var, absl::Span<const int64_t> values,
+                       const std::vector<IntVar*>& vars);
+Constraint* SetIsGreaterOrEqual(IntVar* var, absl::Span<const int64_t> values,
+                                const std::vector<IntVar*>& vars);
+
 }  // namespace operations_research
 
 #endif  // ORTOOLS_CONSTRAINT_SOLVER_VARIABLES_H_

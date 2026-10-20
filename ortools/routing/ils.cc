@@ -1487,6 +1487,7 @@ class RuinAndRecreateDecisionBuilder : public DecisionBuilder {
   std::unique_ptr<RoutingFilteredHeuristic> recreate_;
 };
 
+namespace {
 DecisionBuilder* MakeRuinAndRecreateDecisionBuilder(
     IteratedLocalSearchEventManager* absl_nonnull event_manager,
     const RoutingSearchParameters& parameters, Model* absl_nonnull model,
@@ -1505,6 +1506,7 @@ DecisionBuilder* MakeRuinAndRecreateDecisionBuilder(
   return model->solver()->RevAlloc(new RuinAndRecreateDecisionBuilder(
       assignment, std::move(ruin), std::move(recreate)));
 }
+}  // namespace
 
 DecisionBuilder* absl_nullable MakePerturbationDecisionBuilder(
     const RoutingSearchParameters& parameters, Model* absl_nonnull model,
@@ -1525,6 +1527,7 @@ DecisionBuilder* absl_nullable MakePerturbationDecisionBuilder(
   }
 }
 
+namespace {
 std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
     const Model& model,
     IteratedLocalSearchEventManager* absl_nonnull event_manager,
@@ -1595,6 +1598,7 @@ std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
   event_manager->AddSubscriber(criterion.get());
   return criterion;
 }
+}  // namespace
 
 std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
     const Model& model,

@@ -861,6 +861,7 @@ void AddRoutesCutGenerator(const ConstraintProto& ct, Model* m,
 //
 // These properties ensure that all other intervals end before the start of
 // the makespan interval.
+namespace {
 std::optional<int> DetectMakespan(absl::Span<const IntervalVariable> intervals,
                                   absl::Span<const AffineExpression> demands,
                                   const AffineExpression& capacity,
@@ -895,8 +896,6 @@ std::optional<int> DetectMakespan(absl::Span<const IntervalVariable> intervals,
   }
   return std::nullopt;
 }
-
-namespace {
 
 std::optional<AffineExpression> DetectMakespanFromPrecedences(
     const SchedulingConstraintHelper& helper, Model* model) {
@@ -1222,6 +1221,7 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
   relaxation->linear_constraints.push_back(lc.Build());
 }
 
+namespace {
 void AppendNoOverlap2dRelaxationForComponent(
     absl::Span<const int> component, Model* model,
     NoOverlap2DConstraintHelper* no_overlap_helper,
@@ -1333,6 +1333,7 @@ void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
     return true;
   };
 }
+}  // namespace
 
 void AppendLinMaxRelaxationPart1(const ConstraintProto& ct, Model* model,
                                  LinearRelaxation* relaxation,
@@ -1380,6 +1381,7 @@ void AppendMaxAffineRelaxation(const ConstraintProto& ct, Model* model,
   }
 }
 
+namespace {
 void AddMaxAffineCutGenerator(const ConstraintProto& ct, Model* model,
                               LinearRelaxation* relaxation) {
   IntegerVariable var;
@@ -1399,6 +1401,7 @@ void AddMaxAffineCutGenerator(const ConstraintProto& ct, Model* model,
   relaxation->cut_generators.push_back(CreateMaxAffineCutGenerator(
       target_expr, var, affines, "AffineMax", model));
 }
+}  // namespace
 
 // Part 2: Encode upper bound on X.
 //
@@ -2010,27 +2013,6 @@ void AddAllDiffRelaxationAndCutGenerator(const ConstraintProto& ct,
   }
 }
 
-bool IntervalIsVariable(const IntervalVariable interval,
-                        IntervalsRepository* intervals_repository) {
-  // Ignore absent rectangles.
-  if (intervals_repository->IsAbsent(interval)) {
-    return false;
-  }
-
-  // Checks non-present intervals.
-  if (!intervals_repository->IsPresent(interval)) {
-    return true;
-  }
-
-  // Checks variable sized intervals.
-  if (intervals_repository->MinSize(interval) !=
-      intervals_repository->MaxSize(interval)) {
-    return true;
-  }
-
-  return false;
-}
-
 void AddCumulativeCutGenerator(const AffineExpression& capacity,
                                SchedulingConstraintHelper* helper,
                                SchedulingDemandHelper* demands_helper,
@@ -2203,6 +2185,7 @@ void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
 // TODO(user): We can do something similar with just an at most one, however
 // it is harder to detect that if all literals are false then none of the
 // implied values can be taken.
+namespace {
 void AppendElementEncodingRelaxation(Model* m, LinearRelaxation* relaxation) {
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   auto* element_encodings = m->GetOrCreate<ElementEncodings>();
@@ -2250,6 +2233,7 @@ void AppendElementEncodingRelaxation(Model* m, LinearRelaxation* relaxation) {
                num_exactly_one_elements);
   }
 }
+}  // namespace
 
 LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
                                          Model* m) {

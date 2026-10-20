@@ -1601,6 +1601,7 @@ bool CpConstraintPresolver::PropagateAndReduceIntAbs(ConstraintProto* ct) {
   return false;
 }
 
+namespace {
 Domain EvaluateImpliedIntProdDomain(const LinearArgumentProto& expr,
                                     const PresolveContext& context) {
   if (expr.exprs().size() == 2) {
@@ -1624,6 +1625,7 @@ Domain EvaluateImpliedIntProdDomain(const LinearArgumentProto& expr,
   }
   return implied;
 }
+}  // namespace
 
 bool CpConstraintPresolver::PresolveIntProd(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;

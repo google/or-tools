@@ -67,10 +67,12 @@ const char* kCapacity = "Capacity";
 const char* kFuel = "Fuel";
 
 // Returns true if node is a refueling node (based on node / refuel node ratio).
+namespace {
 bool IsRefuelNode(int64_t node) {
   const int64_t kRefuelNodeRatio = 10;
   return (node % kRefuelNodeRatio == 0);
 }
+}  // namespace
 
 int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);

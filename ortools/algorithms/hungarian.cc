@@ -642,6 +642,7 @@ void HungarianOptimizer::AugmentPath() {
   state_ = &HungarianOptimizer::PrimeZeroes;
 }
 
+namespace {
 bool InputContainsNan(absl::Span<const std::vector<double>> input) {
   for (const auto& subvector : input) {
     for (const auto& num : subvector) {
@@ -653,6 +654,7 @@ bool InputContainsNan(absl::Span<const std::vector<double>> input) {
   }
   return false;
 }
+}  // namespace
 
 void MinimizeLinearAssignment(
     absl::Span<const std::vector<double>> cost,
