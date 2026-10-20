@@ -204,7 +204,6 @@ or_cc_library(
         "//ortools/base:accurate_sum",
         "//ortools/base:base_export",
         "//ortools/base:map_util",
-        "//ortools/base:numbers",
         "//ortools/base:stl_util",
         "//ortools/base:threadpool",
         "//ortools/base/macros:os_support",

@@ -22,11 +22,11 @@
 #include "absl/log/log.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/match.h"
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/numbers.h"
 #include "ortools/base/path.h"
 #include "ortools/base/zipfile.h"
 #include "ortools/util/filelineiter.h"
@@ -86,10 +86,10 @@ bool SolomonParser::ParseFile(absl::string_view file_name) {
         case VEHICLE: {
           if (to_read_ == 1) {
             if (words.size() != 2) return false;
-            vehicles_ = strings::ParseLeadingInt32Value(words[0], -1);
-            if (vehicles_ < 0) return false;
-            capacity_ = strings::ParseLeadingInt32Value(words[1], -1);
-            if (capacity_ < 0) return false;
+            if (!absl::SimpleAtoi(words[0], &vehicles_) || vehicles_ < 0)
+              return false;
+            if (!absl::SimpleAtoi(words[1], &capacity_) || capacity_ < 0)
+              return false;
           }
           break;
         }
@@ -97,9 +97,9 @@ bool SolomonParser::ParseFile(absl::string_view file_name) {
           if (to_read_ < 2) {
             std::vector<int64_t> values;
             for (int i = 1; i < words.size(); ++i) {
-              const int64_t value =
-                  strings::ParseLeadingInt64Value(words[i], -1);
-              if (value < 0) return false;
+              int64_t value;
+              if (!absl::SimpleAtoi(words[i], &value) || value < 0)
+                return false;
               values.push_back(value);
             }
             coordinates_.push_back({values[0], values[1]});
@@ -174,7 +174,9 @@ bool SolomonSolutionParser::ParseFile(absl::string_view file_name) {
     routes_.push_back(std::vector<int>());
     for (const auto item :
          absl::StrSplit(value, absl::ByAnyChar(" \t"), absl::SkipEmpty())) {
-      routes_.back().push_back(strings::ParseLeadingInt32Value(item, -1));
+      int node = -1;
+      if (!absl::SimpleAtoi(item, &node)) node = -1;
+      routes_.back().push_back(node);
     }
   }
   return success;

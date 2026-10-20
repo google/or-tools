@@ -55,7 +55,6 @@ or_cc_library(
     deps = [
         ":simple_graph",
         "//ortools/base:map_util",
-        "//ortools/base:numbers",
         "//ortools/base:path",
         "//ortools/base:zipfile",
         "//ortools/util:filelineiter",
@@ -91,9 +90,7 @@ or_cc_library(
     deps = [
         ":simple_graph",
         "//ortools/base:file",
-        "//ortools/base:numbers",
         "//ortools/base:path",
-        "//ortools/base:types",
         "//ortools/base:zipfile",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/strings",
@@ -124,7 +121,6 @@ or_cc_library(
     hdrs = ["carp_parser.h"],
     deps = [
         ":simple_graph",
-        "//ortools/base:numbers",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:linked_hash_map",
@@ -170,7 +166,6 @@ or_cc_library(
     hdrs = ["nearp_parser.h"],
     deps = [
         ":simple_graph",
-        "//ortools/base:numbers",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:linked_hash_map",
@@ -235,7 +230,6 @@ or_cc_library(
         "//ortools/base:file",
         "//ortools/base:gzipfile",
         "//ortools/base:map_util",
-        "//ortools/base:numbers",
         "//ortools/base:path",
         "//ortools/base:status_builder",
         "//ortools/base:strtoint",
@@ -289,7 +283,6 @@ or_cc_library(
         ":simple_graph",
         "//ortools/base:gzipfile",
         "//ortools/base:mathutil",
-        "//ortools/base:numbers",
         "//ortools/base:path",
         "//ortools/base:zipfile",
         "//ortools/util:filelineiter",

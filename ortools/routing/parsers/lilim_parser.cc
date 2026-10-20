@@ -20,14 +20,14 @@
 #include <vector>
 
 #include "absl/strings/match.h"
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/file.h"
-#include "ortools/base/numbers.h"
 #include "ortools/base/options.h"
 #include "ortools/base/path.h"
-#include "ortools/base/types.h"
 #include "ortools/base/zipfile.h"
+#include "ortools/routing/parsers/simple_graph.h"
 #include "ortools/util/filelineiter.h"
 
 namespace operations_research::routing {
@@ -75,55 +75,49 @@ void LiLimParser::Initialize() {
   service_times_.clear();
 }
 
-#define PARSE_AND_RETURN_IF_NEGATIVE(str, dest_type, dest)   \
-  dest_type dest = strings::ParseLeadingInt32Value(str, -1); \
-  do {                                                       \
-    if (dest < 0) return false;                              \
-  } while (false)
-
 bool LiLimParser::ParseFile(absl::string_view file_name) {
-  const int64_t kInvalidDemand = kint64min;
-  bool vehicles_initialized = false;
   File* file = nullptr;
   if (!file::Open(file_name, "r", &file, file::Defaults()).ok()) {
     return false;
   }
+  const auto parse_non_negative = [](absl::string_view str, auto& dest) {
+    return absl::SimpleAtoi(str, &dest) && dest >= 0;
+  };
+  bool vehicles_initialized = false;
   for (const std::string& line :
        FileLines(file_name, file, FileLineIterator::REMOVE_INLINE_CR)) {
-    const std::vector<std::string> words =
+    const std::vector<absl::string_view> words =
         absl::StrSplit(line, absl::ByAnyChar(" :\t"), absl::SkipEmpty());
     // Skip blank lines
     if (words.empty()) continue;
     if (!vehicles_initialized) {
-      if (words.size() != 3) return false;
-      PARSE_AND_RETURN_IF_NEGATIVE(words[0], , vehicles_);
-      PARSE_AND_RETURN_IF_NEGATIVE(words[1], , capacity_);
-      PARSE_AND_RETURN_IF_NEGATIVE(words[2], , speed_);
+      if (words.size() != 3 || !parse_non_negative(words[0], vehicles_) ||
+          !parse_non_negative(words[1], capacity_) ||
+          !parse_non_negative(words[2], speed_)) {
+        return false;
+      }
       vehicles_initialized = true;
       continue;
     }
     // Reading node data.
-    if (words.size() != 9) return false;
-    PARSE_AND_RETURN_IF_NEGATIVE(words[1], const int64_t, x);
-    PARSE_AND_RETURN_IF_NEGATIVE(words[2], const int64_t, y);
-    coordinates_.push_back({x, y});
-    const int64_t demand =
-        strings::ParseLeadingInt64Value(words[3], kInvalidDemand);
-    if (demand == kInvalidDemand) return false;
-    demands_.push_back(demand);
-    PARSE_AND_RETURN_IF_NEGATIVE(words[4], const int64_t, open_time);
-    PARSE_AND_RETURN_IF_NEGATIVE(words[5], const int64_t, close_time);
-    time_windows_.push_back({open_time, close_time});
-    PARSE_AND_RETURN_IF_NEGATIVE(words[6], const int64_t, service_time);
-    service_times_.push_back(service_time);
-    PARSE_AND_RETURN_IF_NEGATIVE(words[7], const int64_t, pickup);
-    pickups_.push_back(pickup);
-    PARSE_AND_RETURN_IF_NEGATIVE(words[8], const int64_t, delivery);
-    deliveries_.push_back(delivery);
+    Coordinates2<int64_t>& coords = coordinates_.emplace_back();
+    int64_t& demand = demands_.emplace_back();
+    SimpleTimeWindow<int64_t>& tw = time_windows_.emplace_back();
+    int64_t& service_time = service_times_.emplace_back();
+    int& pickup = pickups_.emplace_back();
+    int& delivery = deliveries_.emplace_back();
+    if (words.size() != 9 || !parse_non_negative(words[1], coords.x) ||
+        !parse_non_negative(words[2], coords.y) ||
+        !absl::SimpleAtoi(words[3], &demand) ||
+        !parse_non_negative(words[4], tw.start) ||
+        !parse_non_negative(words[5], tw.end) ||
+        !parse_non_negative(words[6], service_time) ||
+        !parse_non_negative(words[7], pickup) ||
+        !parse_non_negative(words[8], delivery)) {
+      return false;
+    }
   }
   return vehicles_initialized;
 }
-
-#undef PARSE_AND_RETURN_IF_NEGATIVE
 
 }  // namespace operations_research::routing

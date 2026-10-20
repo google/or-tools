@@ -24,11 +24,11 @@
 #include "absl/algorithm/container.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/numbers.h"
 #include "ortools/routing/parsers/simple_graph.h"
 #include "ortools/util/filelineiter.h"
 
@@ -217,15 +217,13 @@ bool NearpParser::ParseMetadataLine(const std::vector<std::string>& words) {
   } else if (words[0] == "Optimal" && words[1] == "value") {
     comment_ = absl::StrJoin(words.begin() + 2, words.end(), " ");
   } else if (words[0] == "#Vehicles") {
-    num_vehicles_ = strings::ParseLeadingInt32Value(words[1], -1);
     // -1 indicates that the number of vehicles is unknown.
-    if (num_vehicles_ < -1) {
+    if (!absl::SimpleAtoi(words[1], &num_vehicles_) || num_vehicles_ < -1) {
       LOG(ERROR) << "Error when parsing the number of vehicles: " << words[1];
       return false;
     }
   } else if (words[0] == "Capacity") {
-    capacity_ = strings::ParseLeadingInt64Value(words[1], -1);
-    if (capacity_ <= 0) {
+    if (!absl::SimpleAtoi(words[1], &capacity_) || capacity_ <= 0) {
       LOG(ERROR) << "Error when parsing the capacity: " << words[1];
       return false;
     }
@@ -237,40 +235,37 @@ bool NearpParser::ParseMetadataLine(const std::vector<std::string>& words) {
     }
     depot_ = depot.value();
   } else if (words[0] == "#Nodes") {
-    num_nodes_ = strings::ParseLeadingInt32Value(words[1], -1);
-    if (num_nodes_ <= 0) {
+    if (!absl::SimpleAtoi(words[1], &num_nodes_) || num_nodes_ <= 0) {
       LOG(ERROR) << "Error when parsing the number of nodes: " << words[1];
       return false;
     }
   } else if (words[0] == "#Edges") {
-    num_edges_ = strings::ParseLeadingInt32Value(words[1], -1);
-    if (num_edges_ <= 0) {
+    if (!absl::SimpleAtoi(words[1], &num_edges_) || num_edges_ <= 0) {
       LOG(ERROR) << "Error when parsing the number of edges: " << words[1];
       return false;
     }
   } else if (words[0] == "#Arcs") {
-    num_arcs_ = strings::ParseLeadingInt32Value(words[1], -1);
-    if (num_arcs_ <= 0) {
+    if (!absl::SimpleAtoi(words[1], &num_arcs_) || num_arcs_ <= 0) {
       LOG(ERROR) << "Error when parsing the number of arcs: " << words[1];
       return false;
     }
   } else if (words[0] == "#Required" && words[1] == "N") {
-    num_nodes_with_servicing_ = strings::ParseLeadingInt32Value(words[2], -1);
-    if (num_nodes_with_servicing_ <= 0) {
+    if (!absl::SimpleAtoi(words[2], &num_nodes_with_servicing_) ||
+        num_nodes_with_servicing_ <= 0) {
       LOG(ERROR) << "Error when parsing the number of nodes with servicing: "
                  << words[1];
       return false;
     }
   } else if (words[0] == "#Required" && words[1] == "E") {
-    num_edges_with_servicing_ = strings::ParseLeadingInt32Value(words[2], -1);
-    if (num_edges_with_servicing_ <= 0) {
+    if (!absl::SimpleAtoi(words[2], &num_edges_with_servicing_) ||
+        num_edges_with_servicing_ <= 0) {
       LOG(ERROR) << "Error when parsing the number of edges with servicing: "
                  << words[1];
       return false;
     }
   } else if (words[0] == "#Required" && words[1] == "A") {
-    num_arcs_with_servicing_ = strings::ParseLeadingInt32Value(words[2], -1);
-    if (num_arcs_with_servicing_ <= 0) {
+    if (!absl::SimpleAtoi(words[2], &num_arcs_with_servicing_) ||
+        num_arcs_with_servicing_ <= 0) {
       LOG(ERROR) << "Error when parsing the number of arcs with servicing: "
                  << words[1];
       return false;
@@ -321,22 +316,22 @@ bool NearpParser::ParseNode(std::string_view line) {
       absl::StrSplit(line, absl::ByAnyChar(" :\t(),"), absl::SkipEmpty());
 
   // Parse the name and ID.
-  const int64_t id = strings::ParseLeadingInt64Value(words[0].substr(1), 0) - 1;
-  if (id < 0) {
+  int64_t id;
+  if (!absl::SimpleAtoi(words[0].substr(1), &id) || id <= 0) {
     LOG(ERROR) << "Error when parsing the node name: " << words[0];
     return false;
   }
+  --id;
 
   // Parse the servicing details if needed.
-  const int64_t servicing_demand =
-      strings::ParseLeadingInt64Value(words[1], -1);
-  if (servicing_demand < 0) {
+  int64_t servicing_demand;
+  if (!absl::SimpleAtoi(words[1], &servicing_demand) || servicing_demand < 0) {
     LOG(ERROR) << "Error when parsing the node servicing demand: " << words[1];
     return false;
   }
 
-  const int64_t servicing_cost = strings::ParseLeadingInt64Value(words[2], -1);
-  if (servicing_cost < 0) {
+  int64_t servicing_cost;
+  if (!absl::SimpleAtoi(words[2], &servicing_cost) || servicing_cost < 0) {
     LOG(ERROR) << "Error when parsing the node servicing cost: " << words[1];
     return false;
   }
@@ -350,8 +345,8 @@ bool NearpParser::ParseNode(std::string_view line) {
 
 namespace {
 std::optional<int64_t> ParseNodeIndex(std::string_view text) {
-  const int64_t node = strings::ParseLeadingInt64Value(text, -1);
-  if (node < 0) {
+  int64_t node;
+  if (!absl::SimpleAtoi(text, &node) || node < 0) {
     LOG(ERROR) << "Could not parse node index: " << text;
     return std::nullopt;
   }
@@ -386,8 +381,8 @@ std::optional<ArcOrEdge> ParseArcOrEdge(std::string_view line,
   }
 
   // Parse the traversing cost.
-  const int64_t traversing_cost = strings::ParseLeadingInt64Value(words[3], -1);
-  if (traversing_cost < 0) {
+  int64_t traversing_cost;
+  if (!absl::SimpleAtoi(words[3], &traversing_cost) || traversing_cost < 0) {
     LOG(ERROR) << "Error when parsing the traversing cost: " << words[3];
     return {};
   }
@@ -406,16 +401,15 @@ std::optional<ArcOrEdge> ParseArcOrEdge(std::string_view line,
                      /*servicing_demand=*/-1,
                      /*servicing_cost=*/-1};
   } else {
-    const int64_t servicing_demand =
-        strings::ParseLeadingInt64Value(words[4], -1);
-    if (servicing_demand < 0) {
+    int64_t servicing_demand;
+    if (!absl::SimpleAtoi(words[4], &servicing_demand) ||
+        servicing_demand < 0) {
       LOG(ERROR) << "Error when parsing the servicing demand: " << words[4];
       return {};
     }
 
-    const int64_t servicing_cost =
-        strings::ParseLeadingInt64Value(words[5], -1);
-    if (servicing_cost < 0) {
+    int64_t servicing_cost;
+    if (!absl::SimpleAtoi(words[5], &servicing_cost) || servicing_cost < 0) {
       LOG(ERROR) << "Error when parsing the servicing cost: " << words[5];
       return {};
     }
