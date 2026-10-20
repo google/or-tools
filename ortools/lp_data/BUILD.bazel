@@ -617,7 +617,6 @@ or_cc_library(
     deps = [
         ":lp_data",
         ":lp_types",
-        "//ortools/base:numbers",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/util:file_util",
         "@abseil-cpp//absl/container:flat_hash_map",

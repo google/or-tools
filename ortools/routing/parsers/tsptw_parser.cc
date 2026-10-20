@@ -14,16 +14,15 @@
 #include "ortools/routing/parsers/tsptw_parser.h"
 
 #include <cmath>
-#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "absl/strings/match.h"
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/mathutil.h"
-#include "ortools/base/numbers.h"
 #include "ortools/base/path.h"
 #include "ortools/base/zipfile.h"
 #include "ortools/routing/parsers/simple_graph.h"
@@ -43,8 +42,6 @@ double Euc2DDistance(const Coordinates2<double>& from,
                      const Coordinates2<double>& to) {
   return std::floor(DoubleEuc2DDistance(from, to));
 }
-
-constexpr double kInfinity = std::numeric_limits<double>::infinity();
 
 std::shared_ptr<zipfile::ZipArchive> OpenZipArchiveIfItExists(
     absl::string_view file_name) {
@@ -91,9 +88,8 @@ bool TspTWParser::ParseLopezIbanezBlum(absl::string_view file_name) {
     // Parsing comments.
     if (words[0] == "#") {
       if (absl::StrContains(line, "service times")) {
-        const double total_service_time =
-            strings::ParseLeadingDoubleValue(words.back(), kInfinity);
-        if (total_service_time != kInfinity) {
+        double total_service_time;
+        if (absl::SimpleAtod(words.back(), &total_service_time)) {
           total_service_time_ = MathUtil::FastInt64Round(total_service_time);
         }
       }
@@ -102,8 +98,7 @@ bool TspTWParser::ParseLopezIbanezBlum(absl::string_view file_name) {
     switch (section) {
       case 0: {  // Parsing size.
         if (words.size() != 1) return false;
-        size_ = strings::ParseLeadingInt32Value(words[0], -1);
-        if (size_ < 0) return false;
+        if (!absl::SimpleAtoi(words[0], &size_) || size_ < 0) return false;
         distance_matrix_.reserve(size_ * size_);
         ++section;
         entry_count = 0;
@@ -112,9 +107,8 @@ bool TspTWParser::ParseLopezIbanezBlum(absl::string_view file_name) {
       case 1: {  // Parsing distances.
         if (words.size() != size_) return false;
         for (const std::string& word : words) {
-          const double distance =
-              strings::ParseLeadingDoubleValue(word, kInfinity);
-          if (distance == kInfinity) return false;
+          double distance;
+          if (!absl::SimpleAtod(word, &distance)) return false;
           distance_matrix_.push_back(distance);
         }
         ++entry_count;
@@ -128,9 +122,8 @@ bool TspTWParser::ParseLopezIbanezBlum(absl::string_view file_name) {
         if (words.size() != 2) return false;
         std::vector<double> values;
         for (const std::string& word : words) {
-          const double value =
-              strings::ParseLeadingDoubleValue(word, kInfinity);
-          if (value == kInfinity) return false;
+          double value;
+          if (!absl::SimpleAtod(word, &value)) return false;
           values.push_back(value);
         }
         time_windows_.push_back({values[0], values[1]});
@@ -165,15 +158,14 @@ bool TspTWParser::ParseDaSilvaUrrutia(absl::string_view file_name) {
     if (words.size() != 7) return false;
     // Check that all field values are doubles, except first which must be a
     // positive integer.
-    const int value = strings::ParseLeadingInt32Value(words[0], -1);
-    if (value < 0) return false;
+    int value;
+    if (!absl::SimpleAtoi(words[0], &value) || value < 0) return false;
     // 999 represents the eof.
     if (value == 999) continue;
     std::vector<double> values;
     for (int i = 1; i < words.size(); ++i) {
-      const double value = strings::ParseLeadingDoubleValue(
-          words[i], std::numeric_limits<double>::infinity());
-      if (value == std::numeric_limits<double>::infinity()) return false;
+      double value;
+      if (!absl::SimpleAtod(words[i], &value)) return false;
       values.push_back(value);
     }
     coords_.push_back({values[0], values[1]});

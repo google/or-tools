@@ -29,6 +29,7 @@
 #include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/ascii.h"
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
@@ -36,7 +37,6 @@
 #include "absl/types/span.h"
 #include "ortools/base/file.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/numbers.h"
 #include "ortools/base/options.h"
 #include "ortools/base/path.h"
 #include "ortools/base/status_builder.h"
@@ -308,10 +308,10 @@ void TspLibParser::ParseNodeCoord(absl::Span<const std::string> words) {
   const int node(atoi32(words[0]) - 1);
   CHECK_LT(node, size_);
   CHECK_GE(node, 0);
-  coords_[node].x = strings::ParseLeadingDoubleValue(words[1].c_str(), 0);
-  coords_[node].y = strings::ParseLeadingDoubleValue(words[2].c_str(), 0);
+  if (!absl::SimpleAtod(words[1], &coords_[node].x)) coords_[node].x = 0;
+  if (!absl::SimpleAtod(words[2], &coords_[node].y)) coords_[node].y = 0;
   if (4 == words.size()) {
-    coords_[node].z = strings::ParseLeadingDoubleValue(words[3].c_str(), 0);
+    if (!absl::SimpleAtod(words[3], &coords_[node].z)) coords_[node].z = 0;
   } else {
     coords_[node].z = 0;
   }
@@ -656,13 +656,16 @@ void TspLibParser::ProcessNewLine(const std::string& line) {
             const int depot(size_ - 1);
             VLOG(2) << "Depot: " << depot;
             depot_ = depot;
-            coords_[depot].x =
-                strings::ParseLeadingDoubleValue(words[0].c_str(), 0);
-            coords_[depot].y =
-                strings::ParseLeadingDoubleValue(words[1].c_str(), 0);
+            if (!absl::SimpleAtod(words[0], &coords_[depot].x)) {
+              coords_[depot].x = 0;
+            }
+            if (!absl::SimpleAtod(words[1], &coords_[depot].y)) {
+              coords_[depot].y = 0;
+            }
             if (3 == words.size()) {
-              coords_[depot].z =
-                  strings::ParseLeadingDoubleValue(words[2].c_str(), 0);
+              if (!absl::SimpleAtod(words[2], &coords_[depot].z)) {
+                coords_[depot].z = 0;
+              }
             } else {
               coords_[depot].z = 0;
             }

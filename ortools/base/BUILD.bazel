@@ -250,16 +250,6 @@ or_cc_library(
 )
 
 or_cc_library(
-    name = "numbers",
-    srcs = ["numbers.cc"],
-    hdrs = ["numbers.h"],
-    deps = [
-        ":types",
-        "@abseil-cpp//absl/strings",
-    ],
-)
-
-or_cc_library(
     name = "parse_text_proto",
     hdrs = ["parse_text_proto.h"],
     deps = [

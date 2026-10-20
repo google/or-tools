@@ -22,11 +22,11 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/log/log.h"
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/numbers.h"
 #include "ortools/util/filelineiter.h"
 
 namespace operations_research::routing {
@@ -126,23 +126,21 @@ bool CarpParser::ParseMetadataLine(absl::Span<const std::string> words) {
   } else if (words[0] == "COMENTARIO") {
     comment_ = absl::StrJoin(words.begin() + 1, words.end(), " ");
   } else if (words[0] == "VERTICES") {
-    number_of_nodes_ = strings::ParseLeadingInt64Value(words[1], -1);
-    if (number_of_nodes_ <= 0) {
+    if (!absl::SimpleAtoi(words[1], &number_of_nodes_) ||
+        number_of_nodes_ <= 0) {
       LOG(ERROR) << "Error when parsing the number of nodes: " << words[1];
       return false;
     }
   } else if (words[0] == "ARISTAS_REQ") {
-    number_of_edges_with_servicing_ =
-        strings::ParseLeadingInt64Value(words[1], -1);
-    if (number_of_edges_with_servicing_ <= 0) {
+    if (!absl::SimpleAtoi(words[1], &number_of_edges_with_servicing_) ||
+        number_of_edges_with_servicing_ <= 0) {
       LOG(ERROR) << "Error when parsing the number of edges with servicing: "
                  << words[1];
       return false;
     }
   } else if (words[0] == "ARISTAS_NOREQ") {
-    number_of_edges_without_servicing_ =
-        strings::ParseLeadingInt64Value(words[1], -1);
-    if (number_of_edges_without_servicing_ < 0) {
+    if (!absl::SimpleAtoi(words[1], &number_of_edges_without_servicing_) ||
+        number_of_edges_without_servicing_ < 0) {
       // It is possible to have a valid instance with zero edges that have no
       // servicing (i.e. number_of_edges_without_servicing_ == 0).
       LOG(ERROR) << "Error when parsing the number of edges without servicing: "
@@ -150,14 +148,12 @@ bool CarpParser::ParseMetadataLine(absl::Span<const std::string> words) {
       return false;
     }
   } else if (words[0] == "VEHICULOS") {
-    n_vehicles_ = strings::ParseLeadingInt64Value(words[1], -1);
-    if (n_vehicles_ <= 0) {
+    if (!absl::SimpleAtoi(words[1], &n_vehicles_) || n_vehicles_ <= 0) {
       LOG(ERROR) << "Error when parsing the number of vehicles: " << words[1];
       return false;
     }
   } else if (words[0] == "CAPACIDAD") {
-    capacity_ = strings::ParseLeadingInt64Value(words[1], -1);
-    if (capacity_ <= 0) {
+    if (!absl::SimpleAtoi(words[1], &capacity_) || capacity_ <= 0) {
       LOG(ERROR) << "Error when parsing the capacity: " << words[1];
       return false;
     }
@@ -170,8 +166,8 @@ bool CarpParser::ParseMetadataLine(absl::Span<const std::string> words) {
       return false;
     }
   } else if (words[0] == "COSTE_TOTAL_REQ") {
-    total_servicing_cost_ = strings::ParseLeadingInt64Value(words[1], -1);
-    if (total_servicing_cost_ == -1) {
+    if (!absl::SimpleAtoi(words[1], &total_servicing_cost_) ||
+        total_servicing_cost_ < 0) {
       LOG(ERROR) << "Error when parsing the total servicing cost: " << words[1];
       return false;
     }
@@ -216,7 +212,8 @@ bool CarpParser::ParseEdge(std::string_view line, bool with_servicing) {
     LOG(ERROR) << "Unexpected keyword: " << words[2];
     return false;
   }
-  const int64_t cost = strings::ParseLeadingInt64Value(words[3], -1);
+  int64_t cost = -1;
+  if (!absl::SimpleAtoi(words[3], &cost)) cost = -1;
   traversing_costs_[{tail, head}] = cost;
 
   // Parse the servicing if needed.
@@ -225,7 +222,8 @@ bool CarpParser::ParseEdge(std::string_view line, bool with_servicing) {
       LOG(ERROR) << "Unexpected keyword: " << words[2];
       return false;
     }
-    const int64_t servicing = strings::ParseLeadingInt64Value(words[5], -1);
+    int64_t servicing = -1;
+    if (!absl::SimpleAtoi(words[5], &servicing)) servicing = -1;
     servicing_demands_[{tail, head}] = servicing;
   }
 
@@ -242,8 +240,8 @@ bool CarpParser::ParseEdge(std::string_view line, bool with_servicing) {
 
 namespace {
 std::optional<int64_t> ParseNodeIndex(std::string_view text) {
-  const int64_t node = strings::ParseLeadingInt64Value(text, -1);
-  if (node < 0) {
+  int64_t node;
+  if (!absl::SimpleAtoi(text, &node) || node < 0) {
     LOG(ERROR) << "Could not parse node index: " << text;
     return std::nullopt;
   }

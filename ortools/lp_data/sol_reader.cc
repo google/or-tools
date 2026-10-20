@@ -13,7 +13,6 @@
 
 #include "ortools/lp_data/sol_reader.h"
 
-#include <limits>
 #include <string>
 #include <vector>
 
@@ -21,10 +20,10 @@
 #include "absl/status/status.h"
 #include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/numbers.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
@@ -46,8 +45,6 @@ absl::StatusOr<MPSolutionResponse> ParseSolFile(absl::string_view file_name,
 
 absl::StatusOr<glop::DenseRow> ParseSolString(
     const std::string& solution, const glop::LinearProgram& model) {
-  constexpr double kInfinity = std::numeric_limits<double>::infinity();
-
   absl::flat_hash_map<std::string, glop::ColIndex> var_index_by_name;
   for (glop::ColIndex col(0); col < model.num_variables(); ++col) {
     var_index_by_name[model.GetVariableName(col)] = col;
@@ -81,9 +78,8 @@ absl::StatusOr<glop::DenseRow> ParseSolString(
     }
 
     const std::string var_name = fields[0];
-    const double var_value =
-        strings::ParseLeadingDoubleValue(fields[1], kInfinity);
-    if (var_value == kInfinity) {
+    double var_value;
+    if (!absl::SimpleAtod(fields[1], &var_value)) {
       return absl::InvalidArgumentError(
           absl::StrCat("Couldn't parse value on line '", line, "'."));
     }
@@ -103,8 +99,6 @@ absl::StatusOr<glop::DenseRow> ParseSolString(
 
 absl::StatusOr<MPSolutionResponse> ParseSolString(const std::string& solution,
                                                   const MPModelProto& model) {
-  constexpr double kInfinity = std::numeric_limits<double>::infinity();
-
   absl::flat_hash_map<std::string, int> var_index_by_name;
   for (int var_index = 0; var_index < model.variable_size(); ++var_index) {
     if (model.variable(var_index).name().empty()) {
@@ -141,9 +135,8 @@ absl::StatusOr<MPSolutionResponse> ParseSolString(const std::string& solution,
     }
 
     const std::string var_name = fields[0];
-    const double var_value =
-        strings::ParseLeadingDoubleValue(fields[1], kInfinity);
-    if (var_value == kInfinity) {
+    double var_value;
+    if (!absl::SimpleAtod(fields[1], &var_value)) {
       return absl::InvalidArgumentError(
           absl::StrCat("Couldn't parse value on line '", line, "'."));
     }
