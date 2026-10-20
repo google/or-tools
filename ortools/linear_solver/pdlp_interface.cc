@@ -20,7 +20,6 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
-#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/linear_solver/linear_solver.h"
