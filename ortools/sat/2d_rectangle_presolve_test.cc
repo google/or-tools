@@ -38,6 +38,7 @@
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/sat/2d_orthogonal_packing_testing.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer_base.h"
@@ -164,7 +165,7 @@ TEST(RectanglePresolve, RemoveOutsideBB) {
 
 TEST(RectanglePresolve, RandomTest) {
   constexpr int kFixedRectangleSize = 10;
-  constexpr int kNumRuns = 1000;
+  constexpr int kNumRuns = DEBUG_MODE ? 100 : 1000;
   absl::BitGen bit_gen;
 
   for (int run = 0; run < kNumRuns; ++run) {
@@ -1045,7 +1046,7 @@ std::array<std::vector<PolygonCut>, 4> GetPotentialPolygonCutsNaive(
 }
 
 TEST(GetPotentialPolygonCutsTest, Random) {
-  constexpr int kNumRuns = 1000;
+  constexpr int kNumRuns = DEBUG_MODE ? 100 : 1000;
   absl::BitGen bit_gen;
 
   for (int run = 0; run < kNumRuns; ++run) {
@@ -1182,7 +1183,7 @@ bool RectanglesCoverSameArea(absl::Span<const Rectangle> a,
 }
 
 TEST(ReduceNumberOfBoxes, RandomTestNoOptional) {
-  constexpr int kNumRuns = 1000;
+  constexpr int kNumRuns = DEBUG_MODE ? 100 : 1000;
   absl::BitGen bit_gen;
 
   for (int run = 0; run < kNumRuns; ++run) {
