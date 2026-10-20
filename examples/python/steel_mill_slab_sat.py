@@ -14,8 +14,6 @@
 
 """Solves the Stell Mill Slab problem with 4 different techniques."""
 
-# overloaded sum() clashes with pytype.
-
 import collections
 import time
 

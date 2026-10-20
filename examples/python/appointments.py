@@ -20,8 +20,6 @@ be fulfilled by a crew of installers while staying close to ideal
 ratio of appointment types.
 """
 
-# overloaded sum() clashes with pytype.
-
 # [START import]
 from absl import app, flags
 

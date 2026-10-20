@@ -23,8 +23,6 @@ The objective is to minimize the maximum completion time of all
 jobs. This is called the makespan.
 """
 
-# overloaded sum() clashes with pytype.
-
 import collections
 
 from ortools.sat.python import cp_model
