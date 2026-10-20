@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
+#include <initializer_list>
 #include <iterator>
 #include <memory>
 #include <string>
@@ -5175,7 +5176,8 @@ TEST(GlobalCheapestInsertionTest, SequentialRouteConstructionWithNodePenalty) {
       {145, 165, 150, 120, 0, 145, 165}};
 
   const int penalty_limit = 100;
-  for (int64_t penalty : {0L, 25L, 50L, 75L, 99L, 100L, 150L, 100000L, inf}) {
+  for (int64_t penalty : std::initializer_list<int64_t>{0, 25, 50, 75, 99, 100,
+                                                        150, 100000, inf}) {
     for (bool add_unperformed_entries : {true, false}) {
       SCOPED_TRACE(absl::StrCat(
           "penalty = ", penalty,
