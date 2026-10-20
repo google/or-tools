@@ -77,7 +77,6 @@ ortools_cxx_bintest(
   NAME bzl_py_example_chemical_balance_sat_py_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/chemical_balance_sat_py_test.bintest
   ENVIRONMENT BINTEST_chemical_balance_sat_py3=$<TARGET_FILE:bzl_py_example_chemical_balance_sat_py3>
-  DISABLED
 )
 
 add_python_binary(
@@ -101,7 +100,6 @@ ortools_cxx_bintest(
   NAME bzl_py_example_cover_rectangle_sat_py_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/cover_rectangle_sat_py_test.bintest
   ENVIRONMENT BINTEST_cover_rectangle_sat_py3=$<TARGET_FILE:bzl_py_example_cover_rectangle_sat_py3>
-  DISABLED
 )
 
 add_python_binary(
@@ -113,7 +111,6 @@ ortools_cxx_bintest(
   NAME bzl_py_example_flexible_job_shop_sat_py_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/flexible_job_shop_sat_py_test.bintest
   ENVIRONMENT BINTEST_flexible_job_shop_sat_py3=$<TARGET_FILE:bzl_py_example_flexible_job_shop_sat_py3>
-  DISABLED
 )
 
 add_python_binary(
@@ -137,7 +134,6 @@ ortools_cxx_bintest(
   NAME bzl_py_example_golomb_sat_py_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/golomb_sat_py_test.bintest
   ENVIRONMENT BINTEST_golomb_sat_py3=$<TARGET_FILE:bzl_py_example_golomb_sat_py3>
-  DISABLED
 )
 
 add_python_binary(
@@ -149,7 +145,6 @@ ortools_cxx_bintest(
   NAME bzl_py_example_hidato_sat_py_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/hidato_sat_py_test.bintest
   ENVIRONMENT BINTEST_hidato_sat_py3=$<TARGET_FILE:bzl_py_example_hidato_sat_py3>
-  DISABLED
 )
 
 add_python_binary(
@@ -161,7 +156,6 @@ ortools_cxx_bintest(
   NAME bzl_py_example_jobshop_ft06_distance_sat_py_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/jobshop_ft06_distance_sat_py_test.bintest
   ENVIRONMENT BINTEST_jobshop_ft06_distance_sat_py3=$<TARGET_FILE:bzl_py_example_jobshop_ft06_distance_sat_py3>
-  DISABLED
 )
 
 add_python_binary(
@@ -173,7 +167,6 @@ ortools_cxx_bintest(
   NAME bzl_py_example_jobshop_ft06_sat_py_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/jobshop_ft06_sat_py_test.bintest
   ENVIRONMENT BINTEST_jobshop_ft06_sat_py3=$<TARGET_FILE:bzl_py_example_jobshop_ft06_sat_py3>
-  DISABLED
 )
 
 add_python_binary(
@@ -185,7 +178,6 @@ ortools_cxx_bintest(
   NAME bzl_py_example_jobshop_with_maintenance_sat_py_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/jobshop_with_maintenance_sat_py_test.bintest
   ENVIRONMENT BINTEST_jobshop_with_maintenance_sat_py3=$<TARGET_FILE:bzl_py_example_jobshop_with_maintenance_sat_py3>
-  DISABLED
 )
 
 add_python_binary(
@@ -211,7 +203,6 @@ ortools_cxx_bintest(
   ENVIRONMENT
     BINTEST_line_balancing_sat_py3=$<TARGET_FILE:bzl_py_example_line_balancing_sat_py3>
     BINTEST_salbp_20_1.alb=${CMAKE_CURRENT_SOURCE_DIR}/testdata/salbp_20_1.alb
-  DISABLED
 )
 
 add_python_binary(
@@ -223,7 +214,6 @@ ortools_cxx_bintest(
   NAME bzl_py_example_maximize_combinations_sat_py_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/maximize_combinations_sat_py_test.bintest
   ENVIRONMENT BINTEST_maximize_combinations_sat_py3=$<TARGET_FILE:bzl_py_example_maximize_combinations_sat_py3>
-  DISABLED
 )
 
 add_python_binary(
@@ -235,7 +225,6 @@ ortools_cxx_bintest(
   NAME bzl_py_example_maze_escape_sat_py_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/maze_escape_sat_py_test.bintest
   ENVIRONMENT BINTEST_maze_escape_sat_py3=$<TARGET_FILE:bzl_py_example_maze_escape_sat_py3>
-  DISABLED
 )
 
 add_python_binary(
@@ -350,7 +339,6 @@ ortools_cxx_bintest(
   ENVIRONMENT
     BINTEST_rcpsp_sat_py3=$<TARGET_FILE:bzl_py_example_rcpsp_sat_py3>
     BINTEST_c1510_1.mm.txt=${CMAKE_SOURCE_DIR}/ortools/scheduling/testdata/c1510_1.mm.txt
-  DISABLED
 )
 
 ortools_cxx_bintest(
@@ -359,7 +347,6 @@ ortools_cxx_bintest(
   ENVIRONMENT
     BINTEST_rcpsp_sat_py3=$<TARGET_FILE:bzl_py_example_rcpsp_sat_py3>
     BINTEST_j301_1.sm=${CMAKE_SOURCE_DIR}/ortools/scheduling/testdata/j301_1.sm
-  DISABLED
 )
 
 add_python_binary(
@@ -376,7 +363,6 @@ ortools_cxx_bintest(
   NAME bzl_py_example_shift_scheduling_sat_py_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/shift_scheduling_sat_py_test.bintest
   ENVIRONMENT BINTEST_shift_scheduling_sat_py3=$<TARGET_FILE:bzl_py_example_shift_scheduling_sat_py3>
-  DISABLED
 )
 
 add_python_binary(
@@ -400,7 +386,6 @@ ortools_cxx_bintest(
   NAME bzl_py_example_spread_robots_sat_py_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/spread_robots_sat_py_test.bintest
   ENVIRONMENT BINTEST_spread_robots_sat_py3=$<TARGET_FILE:bzl_py_example_spread_robots_sat_py3>
-  DISABLED
 )
 
 add_python_binary(
@@ -424,7 +409,6 @@ ortools_cxx_bintest(
   NAME bzl_py_example_sudoku_sat_py_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/sudoku_sat_py_test.bintest
   ENVIRONMENT BINTEST_sudoku_sat_py3=$<TARGET_FILE:bzl_py_example_sudoku_sat_py3>
-  DISABLED
 )
 
 add_python_binary(
@@ -471,7 +455,6 @@ ortools_cxx_bintest(
   NAME bzl_py_example_test_scheduling_sat_py_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/test_scheduling_sat_py_test.bintest
   ENVIRONMENT BINTEST_test_scheduling_sat_py3=$<TARGET_FILE:bzl_py_example_test_scheduling_sat_py3>
-  DISABLED
 )
 
 add_python_binary(
@@ -495,7 +478,6 @@ ortools_cxx_bintest(
   NAME bzl_py_example_vendor_scheduling_sat_py_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/vendor_scheduling_sat_py_test.bintest
   ENVIRONMENT BINTEST_vendor_scheduling_sat_py3=$<TARGET_FILE:bzl_py_example_vendor_scheduling_sat_py3>
-  DISABLED
 )
 
 add_python_binary(
@@ -519,5 +501,4 @@ ortools_cxx_bintest(
   NAME bzl_py_example_zebra_sat_py_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/zebra_sat_py_test.bintest
   ENVIRONMENT BINTEST_zebra_sat_py3=$<TARGET_FILE:bzl_py_example_zebra_sat_py3>
-  DISABLED
 )
