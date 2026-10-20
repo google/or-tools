@@ -519,6 +519,513 @@ INSTANTIATE_TEST_SUITE_P(
                                            std::nextafter(0.0, 1.0),
                                        }}));
 
+struct ProdFloorCeilIntIntTestCase {
+  int64_t a;
+  int64_t b;
+  int exponent = 0;
+  std::pair<std::optional<int64_t>, std::optional<int64_t>> expected_bounds;
+};
+
+using ProdFloorCeilIntIntTest =
+    testing::TestWithParam<ProdFloorCeilIntIntTestCase>;
+
+TEST_P(ProdFloorCeilIntIntTest, FloorAndCeilMatchExpected) {
+  const auto param = GetParam();
+  const PowerOfTwo p(param.exponent);
+  EXPECT_EQ(ProdFloorCeil(param.a, param.b, p), param.expected_bounds);
+  EXPECT_EQ(ProdFloorCeil(param.b, param.a, p), param.expected_bounds);
+  if (param.exponent == 0) {
+    EXPECT_EQ(ProdFloorCeil(param.a, param.b), param.expected_bounds);
+    EXPECT_EQ(ProdFloorCeil(param.b, param.a), param.expected_bounds);
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    Values, ProdFloorCeilIntIntTest,
+    testing::Values(
+        ProdFloorCeilIntIntTestCase{.a = 0, .b = 0, .expected_bounds = {0, 0}},
+        ProdFloorCeilIntIntTestCase{.a = 0, .b = 7, .expected_bounds = {0, 0}},
+        ProdFloorCeilIntIntTestCase{
+            .a = 0, .b = -7, .exponent = -10, .expected_bounds = {0, 0}},
+        ProdFloorCeilIntIntTestCase{.a = 0,
+                                    .b = std::numeric_limits<int64_t>::min(),
+                                    .exponent = 10,
+                                    .expected_bounds = {0, 0}},
+        ProdFloorCeilIntIntTestCase{.a = 1, .b = 1, .expected_bounds = {1, 1}},
+        ProdFloorCeilIntIntTestCase{
+            .a = 3, .b = 4, .expected_bounds = {12, 12}},
+        ProdFloorCeilIntIntTestCase{
+            .a = -3, .b = 4, .expected_bounds = {-12, -12}},
+        ProdFloorCeilIntIntTestCase{
+            .a = -3, .b = -4, .expected_bounds = {12, 12}},
+        ProdFloorCeilIntIntTestCase{
+            .a = 3, .b = 4, .exponent = 2, .expected_bounds = {48, 48}},
+        ProdFloorCeilIntIntTestCase{
+            .a = -3, .b = 4, .exponent = 2, .expected_bounds = {-48, -48}},
+        ProdFloorCeilIntIntTestCase{
+            .a = 3, .b = 4, .exponent = -2, .expected_bounds = {3, 3}},
+        ProdFloorCeilIntIntTestCase{
+            .a = -3, .b = 4, .exponent = -2, .expected_bounds = {-3, -3}},
+        ProdFloorCeilIntIntTestCase{
+            .a = 3, .b = 5, .exponent = -2, .expected_bounds = {3, 4}},
+        ProdFloorCeilIntIntTestCase{
+            .a = -3, .b = 5, .exponent = -2, .expected_bounds = {-4, -3}},
+        ProdFloorCeilIntIntTestCase{
+            .a = -3, .b = -5, .exponent = -2, .expected_bounds = {3, 4}},
+        ProdFloorCeilIntIntTestCase{
+            .a = 1, .b = 1, .exponent = -1, .expected_bounds = {0, 1}},
+        ProdFloorCeilIntIntTestCase{
+            .a = -1, .b = 1, .exponent = -1, .expected_bounds = {-1, 0}},
+        ProdFloorCeilIntIntTestCase{
+            .a = 1, .b = 1, .exponent = -200, .expected_bounds = {0, 1}},
+        ProdFloorCeilIntIntTestCase{
+            .a = -1, .b = 1, .exponent = -200, .expected_bounds = {-1, 0}},
+        ProdFloorCeilIntIntTestCase{
+            .a = (int64_t{1} << 53) + 1,
+            .b = 1,
+            .expected_bounds = {(int64_t{1} << 53) + 1,
+                                (int64_t{1} << 53) + 1}},
+        ProdFloorCeilIntIntTestCase{
+            .a = -((int64_t{1} << 53) + 1),
+            .b = 1,
+            .expected_bounds = {-((int64_t{1} << 53) + 1),
+                                -((int64_t{1} << 53) + 1)}},
+        ProdFloorCeilIntIntTestCase{
+            .a = (int64_t{1} << 53) + 1,
+            .b = 3,
+            .exponent = -1,
+            .expected_bounds = {3 * (int64_t{1} << 52) + 1,
+                                3 * (int64_t{1} << 52) + 2}},
+        ProdFloorCeilIntIntTestCase{
+            .a = -((int64_t{1} << 53) + 1),
+            .b = 3,
+            .exponent = -1,
+            .expected_bounds = {-3 * (int64_t{1} << 52) - 2,
+                                -3 * (int64_t{1} << 52) - 1}},
+        ProdFloorCeilIntIntTestCase{
+            .a = (int64_t{1} << 40) + 1,
+            .b = (int64_t{1} << 40) + 1,
+            .exponent = -20,
+            .expected_bounds = {(int64_t{1} << 60) + (int64_t{1} << 21),
+                                (int64_t{1} << 60) + (int64_t{1} << 21) + 1}},
+        ProdFloorCeilIntIntTestCase{
+            .a = (int64_t{1} << 40) + 1,
+            .b = -((int64_t{1} << 40) + 1),
+            .exponent = -20,
+            .expected_bounds = {-(int64_t{1} << 60) - (int64_t{1} << 21) - 1,
+                                -(int64_t{1} << 60) - (int64_t{1} << 21)}},
+        ProdFloorCeilIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = 1,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::numeric_limits<int64_t>::max()}},
+        ProdFloorCeilIntIntTestCase{
+            .a = -std::numeric_limits<int64_t>::max(),
+            .b = 1,
+            .expected_bounds = {std::numeric_limits<int64_t>::min() + 1,
+                                std::numeric_limits<int64_t>::min() + 1}},
+        ProdFloorCeilIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = 2,
+            .exponent = -1,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::numeric_limits<int64_t>::max()}},
+        ProdFloorCeilIntIntTestCase{
+            .a = -std::numeric_limits<int64_t>::max(),
+            .b = 2,
+            .exponent = -1,
+            .expected_bounds = {std::numeric_limits<int64_t>::min() + 1,
+                                std::numeric_limits<int64_t>::min() + 1}},
+        // (2^32 - 1) * (2^32 + 1) * 2^-1 = 2^63 - 0.5 = kMaxInt + 0.5.
+        ProdFloorCeilIntIntTestCase{
+            .a = (int64_t{1} << 32) - 1,
+            .b = (int64_t{1} << 32) + 1,
+            .exponent = -1,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        // -(2^32 - 1) * (2^32 + 1) * 2^-1 = -2^63 + 0.5 = kMinInt + 0.5.
+        ProdFloorCeilIntIntTestCase{
+            .a = -((int64_t{1} << 32) - 1),
+            .b = (int64_t{1} << 32) + 1,
+            .exponent = -1,
+            .expected_bounds = {std::numeric_limits<int64_t>::min(),
+                                std::numeric_limits<int64_t>::min() + 1}},
+        // Exact 2^63 and -2^63 (kMinInt).
+        ProdFloorCeilIntIntTestCase{
+            .a = int64_t{1} << 62,
+            .b = 2,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        ProdFloorCeilIntIntTestCase{
+            .a = -(int64_t{1} << 62),
+            .b = 2,
+            .expected_bounds = {std::numeric_limits<int64_t>::min(),
+                                std::numeric_limits<int64_t>::min()}},
+        ProdFloorCeilIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = 1,
+            .expected_bounds = {std::numeric_limits<int64_t>::min(),
+                                std::numeric_limits<int64_t>::min()}},
+        ProdFloorCeilIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = 2,
+            .exponent = -1,
+            .expected_bounds = {std::numeric_limits<int64_t>::min(),
+                                std::numeric_limits<int64_t>::min()}},
+        ProdFloorCeilIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = -1,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        // -(2^63 + 0.5): 274177 * 67280421310721 = 2^64 + 1.
+        ProdFloorCeilIntIntTestCase{
+            .a = -274177,
+            .b = 67280421310721,
+            .exponent = -1,
+            .expected_bounds = {std::nullopt,
+                                std::numeric_limits<int64_t>::min()}},
+        ProdFloorCeilIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = 2,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        ProdFloorCeilIntIntTestCase{
+            .a = -std::numeric_limits<int64_t>::max(),
+            .b = 2,
+            .expected_bounds = {std::nullopt,
+                                std::numeric_limits<int64_t>::min()}},
+        ProdFloorCeilIntIntTestCase{
+            .a = int64_t{1} << 32,
+            .b = int64_t{1} << 32,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        ProdFloorCeilIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = std::numeric_limits<int64_t>::max(),
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        ProdFloorCeilIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = std::numeric_limits<int64_t>::max(),
+            .expected_bounds = {std::nullopt,
+                                std::numeric_limits<int64_t>::min()}},
+        ProdFloorCeilIntIntTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = std::numeric_limits<int64_t>::min(),
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}}));
+
+struct ProdFloorCeilIntDoubleTestCase {
+  int64_t a;
+  double b;
+  int exponent = 0;
+  std::pair<std::optional<int64_t>, std::optional<int64_t>> expected_bounds;
+};
+
+using ProdFloorCeilIntDoubleTest =
+    testing::TestWithParam<ProdFloorCeilIntDoubleTestCase>;
+
+TEST_P(ProdFloorCeilIntDoubleTest, FloorAndCeilMatchExpected) {
+  const auto param = GetParam();
+  const PowerOfTwo p(param.exponent);
+  EXPECT_EQ(ProdFloorCeil(param.a, param.b, p), param.expected_bounds);
+  EXPECT_EQ(ProdFloorCeil(param.b, param.a, p), param.expected_bounds);
+  if (param.exponent == 0) {
+    EXPECT_EQ(ProdFloorCeil(param.a, param.b), param.expected_bounds);
+    EXPECT_EQ(ProdFloorCeil(param.b, param.a), param.expected_bounds);
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    Values, ProdFloorCeilIntDoubleTest,
+    testing::Values(
+        ProdFloorCeilIntDoubleTestCase{
+            .a = 0, .b = 0.0, .expected_bounds = {0, 0}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = 0, .b = -3.5, .expected_bounds = {0, 0}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = -5, .b = 0.0, .expected_bounds = {0, 0}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = 5, .b = -0.0, .expected_bounds = {0, 0}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = 3, .b = 1.5, .expected_bounds = {4, 5}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = -3, .b = 1.5, .expected_bounds = {-5, -4}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = 3, .b = -1.5, .expected_bounds = {-5, -4}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = -3, .b = -1.5, .expected_bounds = {4, 5}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = 4, .b = 1.5, .expected_bounds = {6, 6}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = -4, .b = 1.5, .expected_bounds = {-6, -6}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = 3, .b = 1.5, .exponent = 1, .expected_bounds = {9, 9}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = -3, .b = 1.5, .exponent = 1, .expected_bounds = {-9, -9}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = 3, .b = 1.5, .exponent = -1, .expected_bounds = {2, 3}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = -3, .b = 1.5, .exponent = -1, .expected_bounds = {-3, -2}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = 1,
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {0, 1}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = -1,
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {-1, 0}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = 1,
+            .b = -std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {-1, 0}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = 3, .b = std::nextafter(1.0, 2.0), .expected_bounds = {3, 4}},
+        ProdFloorCeilIntDoubleTestCase{.a = -3,
+                                       .b = std::nextafter(1.0, 2.0),
+                                       .expected_bounds = {-4, -3}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = 3, .b = std::nextafter(1.0, 0.0), .expected_bounds = {2, 3}},
+        ProdFloorCeilIntDoubleTestCase{.a = -3,
+                                       .b = std::nextafter(1.0, 0.0),
+                                       .expected_bounds = {-3, -2}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = (int64_t{1} << 53) + 1,
+            .b = 0.5,
+            .expected_bounds = {int64_t{1} << 52, (int64_t{1} << 52) + 1}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = -((int64_t{1} << 53) + 1),
+            .b = 0.5,
+            .expected_bounds = {-(int64_t{1} << 52) - 1, -(int64_t{1} << 52)}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = (int64_t{1} << 52) + 1,
+            .b = 1.5,
+            .expected_bounds = {3 * (int64_t{1} << 51) + 1,
+                                3 * (int64_t{1} << 51) + 2}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = (int64_t{1} << 50) + 1,
+            .b = -1.5,
+            .exponent = 2,
+            .expected_bounds = {-3 * (int64_t{1} << 51) - 6,
+                                -3 * (int64_t{1} << 51) - 6}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = 1.0,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::numeric_limits<int64_t>::max()}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = -1.0,
+            .expected_bounds = {std::numeric_limits<int64_t>::min() + 1,
+                                std::numeric_limits<int64_t>::min() + 1}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = 0.5,
+            .expected_bounds = {std::numeric_limits<int64_t>::max() / 2,
+                                std::numeric_limits<int64_t>::max() / 2 + 1}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = -0.5,
+            .expected_bounds = {-std::numeric_limits<int64_t>::max() / 2 - 1,
+                                -std::numeric_limits<int64_t>::max() / 2}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = 1.0,
+            .expected_bounds = {std::numeric_limits<int64_t>::min(),
+                                std::numeric_limits<int64_t>::min()}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = -1.0,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = 0.5,
+            .expected_bounds = {std::numeric_limits<int64_t>::min() / 2,
+                                std::numeric_limits<int64_t>::min() / 2}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = 1,
+            .b = std::ldexp(1.0, 63),
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = -1,
+            .b = std::ldexp(1.0, 63),
+            .expected_bounds = {std::numeric_limits<int64_t>::min(),
+                                std::numeric_limits<int64_t>::min()}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = std::nextafter(1.0, 2.0),
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = std::nextafter(1.0, 2.0),
+            .expected_bounds = {std::nullopt,
+                                std::numeric_limits<int64_t>::min()}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::min(),
+            .b = std::nextafter(1.0, 0.0),
+            .expected_bounds = {std::numeric_limits<int64_t>::min() + 1024,
+                                std::numeric_limits<int64_t>::min() + 1024}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = std::numeric_limits<int64_t>::max(),
+            .b = 2.0,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = 1,
+            .b = 1e100,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        ProdFloorCeilIntDoubleTestCase{
+            .a = -1,
+            .b = 1e100,
+            .expected_bounds = {std::nullopt,
+                                std::numeric_limits<int64_t>::min()}}));
+
+struct ProdFloorCeilDoubleDoubleTestCase {
+  double a;
+  double b;
+  int exponent = 0;
+  std::pair<std::optional<int64_t>, std::optional<int64_t>> expected_bounds;
+};
+
+using ProdFloorCeilDoubleDoubleTest =
+    testing::TestWithParam<ProdFloorCeilDoubleDoubleTestCase>;
+
+TEST_P(ProdFloorCeilDoubleDoubleTest, FloorAndCeilMatchExpected) {
+  const auto param = GetParam();
+  const PowerOfTwo p(param.exponent);
+  EXPECT_EQ(ProdFloorCeil(param.a, param.b, p), param.expected_bounds);
+  EXPECT_EQ(ProdFloorCeil(param.b, param.a, p), param.expected_bounds);
+  if (param.exponent == 0) {
+    EXPECT_EQ(ProdFloorCeil(param.a, param.b), param.expected_bounds);
+    EXPECT_EQ(ProdFloorCeil(param.b, param.a), param.expected_bounds);
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    Values, ProdFloorCeilDoubleDoubleTest,
+    testing::Values(
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = 0.0, .b = 0.0, .expected_bounds = {0, 0}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = -0.0, .b = 3.5, .expected_bounds = {0, 0}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = 1.5, .b = 2.0, .expected_bounds = {3, 3}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = -1.5, .b = 2.0, .expected_bounds = {-3, -3}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = 1.5, .b = 2.5, .expected_bounds = {3, 4}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = -1.5, .b = 2.5, .expected_bounds = {-4, -3}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = -1.5, .b = -2.5, .expected_bounds = {3, 4}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = 1.5, .b = 2.5, .exponent = 2, .expected_bounds = {15, 15}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = -1.5, .b = 2.5, .exponent = 2, .expected_bounds = {-15, -15}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = 1.5, .b = 2.5, .exponent = -2, .expected_bounds = {0, 1}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = -1.5, .b = 2.5, .exponent = -2, .expected_bounds = {-1, 0}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = 1.0,
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {0, 1}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = -1.0,
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {-1, 0}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = std::numeric_limits<double>::denorm_min(),
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {0, 1}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = -std::numeric_limits<double>::denorm_min(),
+            .b = std::numeric_limits<double>::denorm_min(),
+            .expected_bounds = {-1, 0}},
+        ProdFloorCeilDoubleDoubleTestCase{.a = std::nextafter(1.0, 2.0),
+                                          .b = std::nextafter(1.0, 2.0),
+                                          .expected_bounds = {1, 2}},
+        ProdFloorCeilDoubleDoubleTestCase{.a = -std::nextafter(1.0, 2.0),
+                                          .b = std::nextafter(1.0, 2.0),
+                                          .expected_bounds = {-2, -1}},
+        ProdFloorCeilDoubleDoubleTestCase{.a = std::nextafter(1.0, 2.0),
+                                          .b = std::nextafter(1.0, 0.0),
+                                          .expected_bounds = {1, 2}},
+        ProdFloorCeilDoubleDoubleTestCase{.a = -std::nextafter(1.0, 2.0),
+                                          .b = std::nextafter(1.0, 0.0),
+                                          .expected_bounds = {-2, -1}},
+        ProdFloorCeilDoubleDoubleTestCase{.a = std::nextafter(1.0, 0.0),
+                                          .b = std::nextafter(1.0, 0.0),
+                                          .expected_bounds = {0, 1}},
+        ProdFloorCeilDoubleDoubleTestCase{.a = -std::nextafter(1.0, 0.0),
+                                          .b = std::nextafter(1.0, 0.0),
+                                          .expected_bounds = {-1, 0}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = std::ldexp(1.0, 30) + 1.0,
+            .b = std::ldexp(1.0, 30) + 1.0,
+            .expected_bounds = {(int64_t{1} << 60) + (int64_t{1} << 31) + 1,
+                                (int64_t{1} << 60) + (int64_t{1} << 31) + 1}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = std::ldexp(1.0, 30) + 1.0,
+            .b = std::ldexp(1.0, 30) + 0.5,
+            .expected_bounds = {(int64_t{1} << 60) + (int64_t{3} << 29),
+                                (int64_t{1} << 60) + (int64_t{3} << 29) + 1}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = std::ldexp(1.0, 30) + 1.0,
+            .b = -(std::ldexp(1.0, 30) + 0.5),
+            .expected_bounds = {-(int64_t{1} << 60) - (int64_t{3} << 29) - 1,
+                                -(int64_t{1} << 60) - (int64_t{3} << 29)}},
+        ProdFloorCeilDoubleDoubleTestCase{.a = std::ldexp(1.5, 500),
+                                          .b = std::ldexp(2.5, -500),
+                                          .expected_bounds = {3, 4}},
+        ProdFloorCeilDoubleDoubleTestCase{.a = -std::ldexp(1.5, 500),
+                                          .b = std::ldexp(2.5, -500),
+                                          .expected_bounds = {-4, -3}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = 1.0,
+            .b = std::ldexp(1.0, 63),
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = 1.0,
+            .b = -std::ldexp(1.0, 63),
+            .expected_bounds = {std::numeric_limits<int64_t>::min(),
+                                std::numeric_limits<int64_t>::min()}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = std::nextafter(1.0, 0.0),
+            .b = std::ldexp(1.0, 63),
+            .expected_bounds = {std::numeric_limits<int64_t>::max() - 1023,
+                                std::numeric_limits<int64_t>::max() - 1023}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = std::nextafter(1.0, 2.0),
+            .b = -std::ldexp(1.0, 63),
+            .expected_bounds = {std::nullopt,
+                                std::numeric_limits<int64_t>::min()}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = std::ldexp(1.0, 32),
+            .b = std::ldexp(1.0, 32),
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = -std::ldexp(1.0, 32),
+            .b = std::ldexp(1.0, 32),
+            .expected_bounds = {std::nullopt,
+                                std::numeric_limits<int64_t>::min()}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = std::numeric_limits<double>::max(),
+            .b = 2.0,
+            .expected_bounds = {std::numeric_limits<int64_t>::max(),
+                                std::nullopt}},
+        ProdFloorCeilDoubleDoubleTestCase{
+            .a = -std::numeric_limits<double>::max(),
+            .b = 2.0,
+            .expected_bounds = {std::nullopt,
+                                std::numeric_limits<int64_t>::min()}}));
+
 struct Int64DoubleBoundsTestCase {
   int64_t n;
   std::pair<double, double> expected_bounds;

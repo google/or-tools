@@ -480,6 +480,93 @@ std::pair<double, double> TermDoubleBounds(const TightSum::Term& t) {
                     : std::make_pair(lb_abs, ub_abs);
 }
 
+// Returns the floor and ceil of t as int64_t. If the result is not
+// representable as int64_t, returns {int64max, nullopt} or {nullopt, int64min}
+// depending on the sign.
+std::pair<std::optional<int64_t>, std::optional<int64_t>> TermFloorCeil(
+    const TightSum::Term& t) {
+  if (t.mantissa == 0) return {0, 0};
+
+  // Significand.
+  const int sig_bits = 128 - CountLZero(t.mantissa);
+  if (sig_bits + t.exponent <= 0) {
+    return t.negative ? std::make_pair(-1, 0) : std::make_pair(0, 1);
+  }
+  // Special case for min int64_t.
+  if (t.negative && sig_bits + t.exponent == 64 &&
+      t.mantissa == (absl::uint128{1} << (sig_bits - 1))) {
+    return {kint64min, kint64min};
+  }
+  if (sig_bits + t.exponent >= 64) {
+    if (t.negative) {
+      return {std::nullopt, kint64min};
+    } else {
+      return {kint64max, std::nullopt};
+    }
+  }
+  if (t.exponent >= 0) {
+    const int64_t val = static_cast<int64_t>(t.mantissa << t.exponent);
+    return t.negative ? std::make_pair(-val, -val) : std::make_pair(val, val);
+  }
+  const absl::uint128 lost_digits =
+      t.mantissa & ((absl::uint128{1} << -t.exponent) - 1);
+  const int64_t lb = static_cast<int64_t>(t.mantissa >> -t.exponent);
+  if (lost_digits == 0) {
+    return t.negative ? std::make_pair(-lb, -lb) : std::make_pair(lb, lb);
+  }
+  if (t.negative) {
+    return {-lb - 1, -lb};
+  }
+  if (lb == kint64max) {
+    return {kint64max, std::nullopt};
+  }
+  return {lb, lb + 1};
+}
+
+absl::uint128 AbsToUint128(const int64_t n) {
+  return n == kint64min ? absl::uint128{1} << 63
+                        : static_cast<absl::uint128>(std::abs(n));
+}
+
+TightSum::Term ProdAsTerm(const int64_t a, const int64_t b,
+                          const PowerOfTwo p) {
+  return {.mantissa = AbsToUint128(a) * AbsToUint128(b),
+          .negative = (a < 0) != (b < 0),
+          .exponent = p.exponent};
+}
+
+TightSum::Term ProdAsTerm(const int64_t a, const double b, const PowerOfTwo p) {
+  // Only deal with finite values. Could do infinite, but the case 0 x inf would
+  // be invalid anyway.
+  CHECK(std::isfinite(b));
+  int e;
+  const int64_t b_mantissa =
+      static_cast<int64_t>(std::ldexp(std::frexp(b, &e), 53));
+  return {.mantissa = AbsToUint128(a) *
+                      static_cast<absl::uint128>(std::abs(b_mantissa)),
+          .negative = (a < 0) != (b < 0.0),
+          .exponent = p.exponent + e - 53};
+}
+
+TightSum::Term ProdAsTerm(const double a, const int64_t b, const PowerOfTwo p) {
+  return ProdAsTerm(b, a, p);
+}
+
+TightSum::Term ProdAsTerm(const double a, const double b, const PowerOfTwo p) {
+  CHECK(std::isfinite(a));
+  CHECK(std::isfinite(b));
+  int e_a;
+  const int64_t a_mantissa =
+      static_cast<int64_t>(std::ldexp(std::frexp(a, &e_a), 53));
+  int e_b;
+  const int64_t b_mantissa =
+      static_cast<int64_t>(std::ldexp(std::frexp(b, &e_b), 53));
+  return {.mantissa = static_cast<absl::uint128>(std::abs(a_mantissa)) *
+                      static_cast<absl::uint128>(std::abs(b_mantissa)),
+          .negative = (a < 0.0) != (b < 0.0),
+          .exponent = p.exponent + e_a + e_b - 106};
+}
+
 // Returns a value strictly between a and b, which is as close as possible to
 // the middle ordinal-wise, with the aim to make dichotomy converge faster when
 // double are 64 bits IEC 559. In this case, the convergence takes at most 64
@@ -699,45 +786,42 @@ void TightSum::AddTermToBounds(const Term& term) const {
 
 std::pair<double, double> ProdBounds(const int64_t a, const int64_t b,
                                      const PowerOfTwo p) {
-  return TermDoubleBounds({.mantissa = static_cast<absl::uint128>(std::abs(a)) *
-                                       static_cast<absl::uint128>(std::abs(b)),
-                           .negative = (a < 0) != (b < 0),
-                           .exponent = p.exponent});
+  return TermDoubleBounds(ProdAsTerm(a, b, p));
 }
 
 std::pair<double, double> ProdBounds(const int64_t a, const double b,
                                      const PowerOfTwo p) {
-  // Only deal with finite values. Could do infinite, but the case 0 x inf would
-  // be invalid anyway.
-  CHECK(std::isfinite(b));
-  int e;
-  const int64_t b_mantissa =
-      static_cast<int64_t>(std::ldexp(std::frexp(b, &e), 53));
-  return TermDoubleBounds(
-      {.mantissa = static_cast<absl::uint128>(std::abs(a)) *
-                   static_cast<absl::uint128>(std::abs(b_mantissa)),
-       .negative = (a < 0) != (b < 0.0),
-       .exponent = p.exponent + e - 53});
+  return TermDoubleBounds(ProdAsTerm(a, b, p));
 }
 
 std::pair<double, double> ProdBounds(const double a, const int64_t b,
                                      const PowerOfTwo p) {
-  return ProdBounds(b, a, p);
+  return TermDoubleBounds(ProdAsTerm(a, b, p));
 }
 
 std::pair<double, double> ProdBounds(const double a, const double b,
                                      const PowerOfTwo p) {
-  int e_a;
-  const int64_t a_mantissa =
-      static_cast<int64_t>(std::ldexp(std::frexp(a, &e_a), 53));
-  int e_b;
-  const int64_t b_mantissa =
-      static_cast<int64_t>(std::ldexp(std::frexp(b, &e_b), 53));
-  return TermDoubleBounds(
-      {.mantissa = static_cast<absl::uint128>(std::abs(a_mantissa)) *
-                   static_cast<absl::uint128>(std::abs(b_mantissa)),
-       .negative = (a < 0.0) != (b < 0.0),
-       .exponent = p.exponent + e_a + e_b - 106});
+  return TermDoubleBounds(ProdAsTerm(a, b, p));
+}
+
+std::pair<std::optional<int64_t>, std::optional<int64_t>> ProdFloorCeil(
+    int64_t a, int64_t b, PowerOfTwo p) {
+  return TermFloorCeil(ProdAsTerm(a, b, p));
+}
+
+std::pair<std::optional<int64_t>, std::optional<int64_t>> ProdFloorCeil(
+    int64_t a, double b, PowerOfTwo p) {
+  return TermFloorCeil(ProdAsTerm(a, b, p));
+}
+
+std::pair<std::optional<int64_t>, std::optional<int64_t>> ProdFloorCeil(
+    double a, int64_t b, PowerOfTwo p) {
+  return TermFloorCeil(ProdAsTerm(a, b, p));
+}
+
+std::pair<std::optional<int64_t>, std::optional<int64_t>> ProdFloorCeil(
+    double a, double b, PowerOfTwo p) {
+  return TermFloorCeil(ProdAsTerm(a, b, p));
 }
 
 std::pair<double, double> Int64DoubleBounds(const int64_t n) {

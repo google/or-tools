@@ -233,6 +233,19 @@ std::pair<double, double> ProdBounds(double a, int64_t b,
 std::pair<double, double> ProdBounds(double a, double b,
                                      PowerOfTwo p = PowerOfTwo(0));
 
+// For any combination of int64_t, finite double and PowerOfTwo,
+// ProdFloorCeil(a, b, p) returns Floor(a * b * p) and Ceil(a * b * p) as
+// int64_t. If the result is not representable as int64_t, returns {nullopt,
+// int64min} or {int64max, nullopt} depending on the sign.
+std::pair<std::optional<int64_t>, std::optional<int64_t>> ProdFloorCeil(
+    int64_t a, int64_t b, PowerOfTwo p = PowerOfTwo(0));
+std::pair<std::optional<int64_t>, std::optional<int64_t>> ProdFloorCeil(
+    int64_t a, double b, PowerOfTwo p = PowerOfTwo(0));
+std::pair<std::optional<int64_t>, std::optional<int64_t>> ProdFloorCeil(
+    double a, int64_t b, PowerOfTwo p = PowerOfTwo(0));
+std::pair<std::optional<int64_t>, std::optional<int64_t>> ProdFloorCeil(
+    double a, double b, PowerOfTwo p = PowerOfTwo(0));
+
 // Returns a tight double interval containing n.
 std::pair<double, double> Int64DoubleBounds(int64_t n);
 
