@@ -490,7 +490,6 @@ bintest(
     size = "medium",
     srcs = [":network_routing_sat_test.bintest"],
     named_data = {"network_routing_sat": ":network_routing_sat"},
-    tags = ["noci"],
 )
 
 or_cc_binary(
@@ -576,7 +575,6 @@ bintest(
         "pdptw": ":pdptw",
         "lc102.txt": "testdata/lc102.txt",
     },
-    tags = ["noci"],
 )
 
 bintest(

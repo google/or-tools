@@ -134,7 +134,6 @@ bintest(
     size = "medium",
     srcs = [":chemical_balance_sat_py_test.bintest"],
     named_data = {"chemical_balance_sat_py3": ":chemical_balance_sat_py3"},
-    tags = ["noci"],
 )
 
 py_binary(
@@ -170,7 +169,6 @@ bintest(
     size = "medium",
     srcs = [":cover_rectangle_sat_py_test.bintest"],
     named_data = {"cover_rectangle_sat_py3": ":cover_rectangle_sat_py3"},
-    tags = ["noci"],
 )
 
 py_binary(
@@ -184,7 +182,6 @@ bintest(
     name = "flexible_job_shop_sat_py_test",
     srcs = [":flexible_job_shop_sat_py_test.bintest"],
     named_data = {"flexible_job_shop_sat_py3": ":flexible_job_shop_sat_py3"},
-    tags = ["noci"],
 )
 
 py_binary(
@@ -220,7 +217,6 @@ bintest(
     size = "medium",
     srcs = [":golomb_sat_py_test.bintest"],
     named_data = {"golomb_sat_py3": ":golomb_sat_py3"},
-    tags = ["noci"],
 )
 
 py_binary(
@@ -238,7 +234,6 @@ bintest(
     name = "hidato_sat_py_test",
     srcs = [":hidato_sat_py_test.bintest"],
     named_data = {"hidato_sat_py3": ":hidato_sat_py3"},
-    tags = ["noci"],
 )
 
 py_binary(
@@ -252,7 +247,6 @@ bintest(
     name = "jobshop_ft06_distance_sat_py_test",
     srcs = [":jobshop_ft06_distance_sat_py_test.bintest"],
     named_data = {"jobshop_ft06_distance_sat_py3": ":jobshop_ft06_distance_sat_py3"},
-    tags = ["noci"],
 )
 
 py_binary(
@@ -269,7 +263,6 @@ bintest(
     name = "jobshop_ft06_sat_py_test",
     srcs = [":jobshop_ft06_sat_py_test.bintest"],
     named_data = {"jobshop_ft06_sat_py3": ":jobshop_ft06_sat_py3"},
-    tags = ["noci"],
 )
 
 py_binary(
@@ -287,7 +280,6 @@ bintest(
     size = "medium",
     srcs = [":jobshop_with_maintenance_sat_py_test.bintest"],
     named_data = {"jobshop_with_maintenance_sat_py3": ":jobshop_with_maintenance_sat_py3"},
-    tags = ["noci"],
 )
 
 py_binary(
@@ -327,7 +319,6 @@ bintest(
         "line_balancing_sat_py3": ":line_balancing_sat_py3",
         "salbp_20_1.alb": "//examples/python/testdata:salbp_20_1.alb",
     },
-    tags = ["noci"],
 )
 
 py_binary(
@@ -345,7 +336,6 @@ bintest(
     size = "medium",
     srcs = [":maximize_combinations_sat_py_test.bintest"],
     named_data = {"maximize_combinations_sat_py3": ":maximize_combinations_sat_py3"},
-    tags = ["noci"],
 )
 
 py_binary(
@@ -362,7 +352,6 @@ bintest(
     name = "maze_escape_sat_py_test",
     srcs = [":maze_escape_sat_py_test.bintest"],
     named_data = {"maze_escape_sat_py3": ":maze_escape_sat_py3"},
-    tags = ["noci"],
 )
 
 py_binary(
@@ -533,7 +522,6 @@ bintest(
         "rcpsp_sat_py3": ":rcpsp_sat_py3",
         "c1510_1.mm.txt": "//ortools/scheduling/testdata:c1510_1.mm.txt",
     },
-    tags = ["noci"],
 )
 
 bintest(
@@ -543,7 +531,6 @@ bintest(
         "rcpsp_sat_py3": ":rcpsp_sat_py3",
         "j301_1.sm": "//ortools/scheduling/testdata:j301_1.sm",
     },
-    tags = ["noci"],
 )
 
 py_binary(
@@ -572,7 +559,6 @@ bintest(
     name = "shift_scheduling_sat_py_test",
     srcs = [":shift_scheduling_sat_py_test.bintest"],
     named_data = {"shift_scheduling_sat_py3": ":shift_scheduling_sat_py3"},
-    tags = ["noci"],
 )
 
 py_binary(
@@ -607,7 +593,6 @@ bintest(
     name = "spread_robots_sat_py_test",
     srcs = [":spread_robots_sat_py_test.bintest"],
     named_data = {"spread_robots_sat_py3": ":spread_robots_sat_py3"},
-    tags = ["noci"],
 )
 
 py_binary(
@@ -638,7 +623,6 @@ bintest(
     name = "sudoku_sat_py_test",
     srcs = [":sudoku_sat_py_test.bintest"],
     named_data = {"sudoku_sat_py3": ":sudoku_sat_py3"},
-    tags = ["noci"],
 )
 
 py_binary(
@@ -710,7 +694,6 @@ bintest(
     size = "medium",
     srcs = [":test_scheduling_sat_py_test.bintest"],
     named_data = {"test_scheduling_sat_py3": ":test_scheduling_sat_py3"},
-    tags = ["noci"],
 )
 
 py_binary(
@@ -743,7 +726,6 @@ bintest(
     size = "medium",
     srcs = [":vendor_scheduling_sat_py_test.bintest"],
     named_data = {"vendor_scheduling_sat_py3": ":vendor_scheduling_sat_py3"},
-    tags = ["noci"],
 )
 
 py_binary(
@@ -775,5 +757,4 @@ bintest(
     name = "zebra_sat_py_test",
     srcs = [":zebra_sat_py_test.bintest"],
     named_data = {"zebra_sat_py3": ":zebra_sat_py3"},
-    tags = ["noci"],
 )
