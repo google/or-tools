@@ -1738,7 +1738,7 @@ def bus_driver_scheduling(minimize_drivers: bool, max_num_drivers: int) -> int:
     elif _INSTANCE.value == 3:
         shifts = SAMPLE_SHIFTS_LARGE
 
-    num_shifts = len(shifts)
+    num_shifts = len(shifts)  # pyrefly: ignore[bad-argument-type]
 
     # All durations are in minutes.
     max_driving_time = 540  # 8 hours.
@@ -1751,11 +1751,13 @@ def bus_driver_scheduling(minimize_drivers: bool, max_num_drivers: int) -> int:
     cleanup_time = 15
 
     # Computed data.
-    total_driving_time = sum(shift[5] for shift in shifts)
+    total_driving_time = sum(
+        shift[5] for shift in shifts
+    )  # pyrefly: ignore[no-matching-overload, not-iterable]
     min_num_drivers = int(math.ceil(total_driving_time * 1.0 / max_driving_time))
     num_drivers = 2 * min_num_drivers if minimize_drivers else max_num_drivers
-    min_start_time = min(shift[3] for shift in shifts)
-    max_end_time = max(shift[4] for shift in shifts)
+    min_start_time = min(shift[3] for shift in shifts)  # pyrefly: ignore[not-iterable]
+    max_end_time = max(shift[4] for shift in shifts)  # pyrefly: ignore[not-iterable]
 
     print("Bus driver scheduling")
     print("  num shifts =", num_shifts)
@@ -1805,10 +1807,20 @@ def bus_driver_scheduling(minimize_drivers: bool, max_num_drivers: int) -> int:
 
     for d in range(num_drivers):
         start_times.append(
-            model.new_int_var(min_start_time - setup_time, max_end_time, "start_%i" % d)
+            model.new_int_var(
+                min_start_time - setup_time,
+                max_end_time,
+                "start_%i"
+                % d,  # pyrefly: ignore[bad-argument-type, unsupported-operation]
+            )
         )
         end_times.append(
-            model.new_int_var(min_start_time, max_end_time + cleanup_time, "end_%i" % d)
+            model.new_int_var(
+                min_start_time,
+                max_end_time + cleanup_time,
+                "end_%i"
+                % d,  # pyrefly: ignore[bad-argument-type, unsupported-operation]
+            )
         )
         driving_times.append(model.new_int_var(0, max_driving_time, "driving_%i" % d))
         working_times.append(
@@ -1832,7 +1844,7 @@ def bus_driver_scheduling(minimize_drivers: bool, max_num_drivers: int) -> int:
             performed[d, s] = model.new_bool_var("performed_%i_%i" % (d, s))
 
         for s in range(num_shifts):
-            shift = shifts[s]
+            shift = shifts[s]  # pyrefly: ignore[unsupported-operation]
             duration = shift[5]
 
             # Arc from source to shift.
@@ -1842,7 +1854,9 @@ def bus_driver_scheduling(minimize_drivers: bool, max_num_drivers: int) -> int:
             outgoing_source_literals.append(source_lit)
             incoming_literals[s].append(source_lit)
             shared_incoming_literals[s].append(source_lit)
-            model.add(start_times[d] == shift[3] - setup_time).only_enforce_if(
+            model.add(
+                start_times[d] == shift[3] - setup_time
+            ).only_enforce_if(  # pyrefly: ignore[unsupported-operation]
                 source_lit
             )
             model.add(total_driving[d, s] == duration).only_enforce_if(source_lit)
@@ -1856,7 +1870,11 @@ def bus_driver_scheduling(minimize_drivers: bool, max_num_drivers: int) -> int:
             outgoing_literals[s].append(sink_lit)
             shared_outgoing_literals[s].append(sink_lit)
             incoming_sink_literals.append(sink_lit)
-            model.add(end_times[d] == shift[4] + cleanup_time).only_enforce_if(sink_lit)
+            model.add(
+                end_times[d] == shift[4] + cleanup_time
+            ).only_enforce_if(  # pyrefly: ignore[unsupported-operation]
+                sink_lit
+            )
             model.add(driving_times[d] == total_driving[d, s]).only_enforce_if(sink_lit)
 
             # Node not performed
@@ -1872,16 +1890,20 @@ def bus_driver_scheduling(minimize_drivers: bool, max_num_drivers: int) -> int:
             # Node performed:
             #    - add upper bound on start_time
             #    - add lower bound on end_times
-            model.add(start_times[d] <= shift[3] - setup_time).only_enforce_if(
+            model.add(
+                start_times[d] <= shift[3] - setup_time
+            ).only_enforce_if(  # pyrefly: ignore[unsupported-operation]
                 performed[d, s]
             )
-            model.add(end_times[d] >= shift[4] + cleanup_time).only_enforce_if(
+            model.add(
+                end_times[d] >= shift[4] + cleanup_time
+            ).only_enforce_if(  # pyrefly: ignore[unsupported-operation]
                 performed[d, s]
             )
 
             for o in range(num_shifts):
-                other = shifts[o]
-                delay = other[3] - shift[4]
+                other = shifts[o]  # pyrefly: ignore[unsupported-operation]
+                delay = other[3] - shift[4]  # pyrefly: ignore[unsupported-operation]
                 if delay < min_delay_between_shifts:
                     continue
                 lit = model.new_bool_var("%i from %i to %i" % (d, s, o))
@@ -2003,7 +2025,7 @@ def bus_driver_scheduling(minimize_drivers: bool, max_num_drivers: int) -> int:
 
         first = True
         for s in range(num_shifts):
-            shift = shifts[s]
+            shift = shifts[s]  # pyrefly: ignore[unsupported-operation]
 
             if not solver.boolean_value(performed[d, s]):
                 continue

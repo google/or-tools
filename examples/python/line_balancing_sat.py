@@ -169,7 +169,7 @@ def solve_problem_greedily(problem: Dict[str, SectionInfo]) -> Dict[int, int]:
 
         candidates.remove(best)
         assignment[best] = current_pod
-        residual_capacity -= best_duration
+        residual_capacity -= best_duration  # pyrefly: ignore[unsupported-operation]
 
         for succ in successors[best]:
             weights[succ] -= 1
@@ -222,7 +222,9 @@ def solve_problem_with_boolean_model(
 
     # Total tasks assigned to one pod cannot exceed cycle time.
     for p in all_pods:
-        model.add(sum(assign[t, p] * durations[t] for t in all_tasks) <= cycle_time)
+        model.add(
+            sum(assign[t, p] * durations[t] for t in all_tasks) <= cycle_time
+        )  # pyrefly: ignore[unsupported-operation]
 
     # Maintain the possible variables:
     #   possible at pod p -> possible at any pod after p

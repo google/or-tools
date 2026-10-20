@@ -64,7 +64,7 @@ def build_data() -> tuple[pd.Series, int, int]:
 
     print(f"Container max_width:{max_width} max_height:{max_height}")
     print(f"#Items: {len(data.index)}")
-    return (data, max_height, max_width)
+    return (data, max_height, max_width)  # pyrefly: ignore[bad-return]
 
 
 def solve_with_duplicate_items(
@@ -163,7 +163,7 @@ def solve_with_duplicate_items(
     if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         used = {i for i in range(num_items) if solver.boolean_value(is_used[i])}
         data = pd.DataFrame(
-            {
+            {  # pyrefly: ignore[bad-assignment]
                 "x_start": [solver.value(x_starts[i]) for i in used],
                 "y_start": [solver.value(y_starts[i]) for i in used],
                 "item_width": [item_widths[i] for i in used],
@@ -265,7 +265,7 @@ def solve_with_duplicate_optional_items(
     if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         used = {i for i in range(num_items) if solver.boolean_value(is_used[i])}
         data = pd.DataFrame(
-            {
+            {  # pyrefly: ignore[bad-assignment]
                 "x_start": [solver.value(x_starts[i]) for i in used],
                 "y_start": [solver.value(y_starts[i]) for i in used],
                 "item_width": [item_widths[i] for i in used],
@@ -386,7 +386,7 @@ def solve_with_rotations(data: pd.Series, max_height: int, max_width: int):
     if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         used = {i for i in range(num_items) if solver.boolean_value(is_used[i])}
         data = pd.DataFrame(
-            {
+            {  # pyrefly: ignore[bad-assignment]
                 "x_start": [solver.value(x_starts[i]) for i in used],
                 "y_start": [solver.value(y_starts[i]) for i in used],
                 "item_width": [solver.value(x_sizes[i]) for i in used],
