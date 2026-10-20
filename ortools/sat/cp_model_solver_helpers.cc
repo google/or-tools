@@ -138,6 +138,7 @@ void LoadDebugSolution([[maybe_unused]] const CpModelProto& model_proto,
 
 // This both copies the "main" DebugSolution to a local_model and also caches
 // the value of the integer variables in that solution.
+namespace {
 void InitializeDebugSolution(const CpModelProto& model_proto, Model* model) {
   if (model->Get<SharedResponseManager>()->DebugSolution().empty()) return;
   DebugSolution* debug_solution = model->GetOrCreate<DebugSolution>();
@@ -194,8 +195,6 @@ std::vector<int64_t> GetSolutionValues(const CpModelProto& model_proto,
   }
   return solution;
 }
-
-namespace {
 
 IntegerVariable GetOrCreateVariableWithTightBound(
     absl::Span<const std::pair<IntegerVariable, int64_t>> terms, Model* model) {
@@ -1146,6 +1145,7 @@ void FillConditionalLinear2Bounds(const CpModelProto& model_proto,
 
 }  // namespace
 
+namespace {
 void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
   auto* shared_response_manager = model->GetOrCreate<SharedResponseManager>();
   CHECK(shared_response_manager != nullptr);
@@ -1277,6 +1277,7 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
       model->GetOrCreate<BinaryImplicationGraph>());
   model->GetOrCreate<TransitivePrecedencesEvaluator>()->Build();
 }
+}  // namespace
 
 void LoadFeasibilityPump(const CpModelProto& model_proto, Model* model) {
   LoadBaseModel(model_proto, model);
@@ -2039,6 +2040,7 @@ void MinimizeL1DistanceWithHint(const CpModelProto& model_proto, Model* model) {
 // the mapping_proto if we are careful about how we modify the variable domain
 // before postsolving it. Note that 'num_variables_in_original_model' refers to
 // the model before presolve.
+namespace {
 void PostsolveResponseWithFullSolver(int num_variables_in_original_model,
                                      CpModelProto mapping_proto,
                                      absl::Span<const int> postsolve_mapping,
@@ -2082,6 +2084,7 @@ void PostsolveResponseWithFullSolver(int num_variables_in_original_model,
       postsolve_response.solution().begin(),
       postsolve_response.solution().begin() + num_variables_in_original_model);
 }
+}  // namespace
 
 void PostsolveResponseWrapper(const SatParameters& params,
                               int num_variable_in_original_model,

@@ -25,7 +25,7 @@
 #include "ortools/base/filesystem.h"
 
 namespace file {
-
+namespace {
 std::string TempFile(absl::string_view prefix) {
   std::string path;
   if (prefix.empty()) {
@@ -36,6 +36,7 @@ std::string TempFile(absl::string_view prefix) {
   return path;
 }
 
+}  // namespace
 }  // namespace file
 
 TempPath::TempPath(absl::string_view prefix) : path_(file::TempFile(prefix)) {

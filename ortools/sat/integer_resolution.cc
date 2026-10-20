@@ -38,6 +38,7 @@
 
 namespace operations_research::sat {
 
+namespace {
 GlobalTrailIndex GlobalTrailIndexFromAssignmentInfo(
     const AssignmentInfo& info) {
   return GlobalTrailIndex{
@@ -45,6 +46,7 @@ GlobalTrailIndex GlobalTrailIndexFromAssignmentInfo(
       .level = static_cast<int>(info.level),
       .bool_index = info.trail_index};
 }
+}  // namespace
 
 IntegerConflictResolution::IntegerConflictResolution(Model* model)
     : trail_(model->GetOrCreate<Trail>()),

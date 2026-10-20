@@ -733,11 +733,13 @@ class Knapsack64ItemsSolver : public BaseKnapsackSolver {
 };
 
 // Comparator used to sort item in decreasing efficiency order
+namespace {
 bool CompareKnapsackItemWithEfficiencyInDecreasingEfficiencyOrder(
     const KnapsackItemWithEfficiency& item1,
     const KnapsackItemWithEfficiency& item2) {
   return item1.efficiency > item2.efficiency;
 }
+}  // namespace
 
 // ----- Knapsack64ItemsSolver -----
 Knapsack64ItemsSolver::Knapsack64ItemsSolver(absl::string_view solver_name)

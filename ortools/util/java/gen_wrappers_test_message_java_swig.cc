@@ -21,6 +21,7 @@
 
 namespace operations_research::util::java {
 
+namespace {
 void ParseAndGenerate() {
   absl::PrintF(
       R"(
@@ -39,6 +40,7 @@ void ParseAndGenerate() {
       GenerateJavaSwigCode({ABSL_DIE_IF_NULL(
           operations_research::util::WrappersTestMessage::descriptor())}));
 }
+}  // namespace
 
 }  // namespace operations_research::util::java
 

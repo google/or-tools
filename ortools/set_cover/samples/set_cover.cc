@@ -27,6 +27,7 @@
 
 namespace operations_research {
 
+namespace {
 void SimpleSetCoverProgram() {
   // [START data]
   SetCoverModel model;
@@ -59,6 +60,7 @@ void SimpleSetCoverProgram() {
   }
   // [END print_solution]
 }
+}  // namespace
 
 }  // namespace operations_research
 

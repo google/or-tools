@@ -79,6 +79,7 @@ std::shared_ptr<Type> Type::AttrValueType() {
 
 Type::~Type() = default;
 
+namespace {
 CodegenAttrTypeDescriptor::ValueType GetValueType(bool) {
   return CodegenAttrTypeDescriptor::ValueType::kBool;
 }
@@ -111,6 +112,7 @@ CodegenAttrTypeDescriptor MakeAttrTypeDescriptor() {
   }
   return descriptor;
 }
+}  // namespace
 
 constexpr absl::string_view kOpNames[static_cast<int>(AttrOp::kNumOps)] = {
     "Get", "Set", "IsNonDefault", "NumNonDefaults", "GetNonDefaults"};

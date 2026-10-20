@@ -104,6 +104,7 @@ void UnionOfSortedIntervals(absl::InlinedVector<ClosedInterval, 1>* intervals) {
 }  // namespace
 
 // TODO(user): Use MathUtil::CeilOfRatio / FloorOfRatio instead.
+namespace {
 int64_t CeilRatio(int64_t value, int64_t positive_coeff) {
   DCHECK_GT(positive_coeff, 0);
   const int64_t result = value / positive_coeff;
@@ -117,6 +118,7 @@ int64_t FloorRatio(int64_t value, int64_t positive_coeff) {
   const int64_t adjust = static_cast<int64_t>(result * positive_coeff > value);
   return result - adjust;
 }
+}  // namespace
 
 std::ostream& operator<<(std::ostream& out, const ClosedInterval& interval) {
   return out << interval.DebugString();

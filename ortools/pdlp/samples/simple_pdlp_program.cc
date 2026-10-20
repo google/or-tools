@@ -46,6 +46,7 @@ constexpr double kInfinity = std::numeric_limits<double>::infinity();
 //          -2 <= x_1 <= infinity
 //   -infinity <= x_2 <= 6
 //         2.5 <= x_3 <= 3.5
+namespace {
 pdlp::QuadraticProgram SimpleLp() {
   pdlp::QuadraticProgram lp(4, 4);
   // "<<" is Eigen's syntax for initialization.
@@ -63,6 +64,7 @@ pdlp::QuadraticProgram SimpleLp() {
   lp.objective_offset = -14;
   return lp;
 }
+}  // namespace
 
 int main(int argc, char* argv[]) {
   InitGoogle(argv[0], &argc, &argv, /*remove_flags=*/true);

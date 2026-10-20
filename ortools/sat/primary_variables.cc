@@ -49,6 +49,7 @@ namespace sat {
 // known. On the other hand, if everything is known except x, then we can't
 // deduce anything, since for some values of u, z and y, the constraint can be
 // simplified to x + 3 = x + 3.
+namespace {
 void GetRelationshipForConstraint(const ConstraintProto& ct,
                                   absl::btree_set<int>* deducible_vars,
                                   absl::btree_set<int>* input_vars,
@@ -207,6 +208,7 @@ bool IsObjectiveConstraining(const CpModelProto& model) {
   }
   return false;
 }
+}  // namespace
 
 VariableRelationships ComputeVariableRelationships(const CpModelProto& model) {
   VariableRelationships result;

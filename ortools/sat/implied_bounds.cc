@@ -314,6 +314,7 @@ ElementEncodings::GetElementEncodedVariables() const {
 // bounds repository. Because if we can reconcile an encoding, then any of the
 // literals in the at most one should imply a value on the boolean view used in
 // the size2 affine.
+namespace {
 std::vector<LiteralValueValue> TryToReconcileEncodings(
     const AffineExpression& size2_affine, const AffineExpression& affine,
     absl::Span<const ValueLiteralPair> affine_var_encoding,
@@ -403,6 +404,7 @@ std::vector<LiteralValueValue> TryToReconcileSize2Encodings(
 
   return terms;
 }
+}  // namespace
 
 std::vector<LiteralValueValue> ProductDecomposer::TryToDecompose(
     const AffineExpression& left, const AffineExpression& right) {

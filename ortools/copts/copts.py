@@ -61,7 +61,6 @@ ORTOOLS_GCC_FLAGS = [
     # or adopted as an official flag.
     # go/keep-sorted start prefix_order="-D,"-f,"-Wno-,"-W"
     "-Wno-float-conversion",  # Disables warnings for implicit conversions that reduce floating-point precision
-    "-Wno-missing-declarations",  # Disables warnings if a global function is defined without a previous declaration
     "-Wno-missing-field-initializers",  # Disables warnings when a class has uninitialized members
     "-Wno-sign-conversion",  # Disables warnings for implicit conversions that may change the sign of an integer value
     "-Wno-undef",  # Disables warnings when an undefined identifier is evaluated in an #if directive

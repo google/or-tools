@@ -74,6 +74,8 @@ using ::operations_research::mb::WeightedSumArray;
 
 namespace py = pybind11;
 
+namespace {
+
 void ThrowError(PyObject* py_exception, const std::string& message) {
   PyErr_SetString(py_exception, message.c_str());
   throw py::error_already_set();
@@ -383,6 +385,8 @@ std::shared_ptr<LinearExpr> WeightedSumArguments(py::sequence expressions,
     return std::make_shared<WeightedSumArray>(linear_exprs, coeffs, offset);
   }
 }
+
+}  // namespace
 
 // Google3 contains pybind11 version 3, which reduced the expected refcount
 // by 1 relative to earlier versions.

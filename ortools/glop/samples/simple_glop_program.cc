@@ -25,6 +25,7 @@
 // [END import]
 
 namespace operations_research::glop {
+namespace {
 int RunLinearExample() {
   LinearProgram lp;
   // Create the variables x and y.
@@ -70,6 +71,7 @@ int RunLinearExample() {
             << ", y = " << values[col_y] << std::endl;
   return EXIT_SUCCESS;
 }
+}  // namespace
 }  // namespace operations_research::glop
 
 int main(int argc, char** argv) {

@@ -220,6 +220,7 @@ std::function<void(int* majorP, int* minorP, int* technicalP)> GRBversion =
     nullptr;
 std::function<char*(void)> GRBplatform = nullptr;
 
+namespace {
 void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
   // This was generated with the parse_header.py script.
   // See the comment at the top of the script.
@@ -420,6 +421,7 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
 #endif
   return potential_paths;
 }
+}  // namespace
 
 absl::Status LoadGurobiDynamicLibrary(
     std::vector<absl::string_view> potential_paths) {

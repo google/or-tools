@@ -31,6 +31,7 @@
 namespace operations_research {
 namespace sat {
 
+namespace {
 bool TrySolution(const CpModelProto& model, absl::Span<const int64_t> solution,
                  absl::Span<const int64_t> new_solution,
                  absl::Span<const int64_t> base_solution,
@@ -46,6 +47,7 @@ bool TrySolution(const CpModelProto& model, absl::Span<const int64_t> solution,
   }
   return SolutionIsFeasible(model, *new_combined_solution);
 }
+}  // namespace
 
 std::optional<std::vector<int64_t>> FindCombinedSolution(
     const CpModelProto& model, absl::Span<const int64_t> new_solution,

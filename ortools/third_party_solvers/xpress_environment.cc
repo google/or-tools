@@ -149,6 +149,7 @@ std::function<int(XPRSprob prob, char rowtype, int norigcoefs, const int origcol
 // NOLINTEND(google3-runtime-global-variables)
 // NOLINTEND(whitespace/line_length)
 
+namespace {
 void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   // This was generated with the parse_header_xpress.py script.
   // See the comment at the top of the script.
@@ -271,6 +272,7 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   // clang-format on
   // NOLINTEND(whitespace/line_length)
 }
+}  // namespace
 
 void printXpressBanner(bool error) {
   char banner[XPRS_MAXBANNERLENGTH];
@@ -283,6 +285,7 @@ void printXpressBanner(bool error) {
   }
 }
 
+namespace {
 std::vector<std::string> XpressDynamicLibraryPotentialPaths() {
   std::vector<std::string> potential_paths;
 
@@ -323,6 +326,7 @@ std::vector<std::string> XpressDynamicLibraryPotentialPaths() {
 #endif
   return potential_paths;
 }
+}  // namespace
 
 absl::Status LoadXpressDynamicLibrary(std::string& xpresspath) {
   static std::string* xpress_lib_path = new std::string;

@@ -22,6 +22,7 @@
 
 namespace operations_research::util::python {
 
+namespace {
 void ParseAndGenerate() {
   absl::PrintF(
       R"(
@@ -34,6 +35,7 @@ void ParseAndGenerate() {
       GeneratePybindCode({ABSL_DIE_IF_NULL(
           ::operations_research::util::WrappersTestMessage::descriptor())}));
 }
+}  // namespace
 
 }  // namespace operations_research::util::python
 

@@ -181,6 +181,7 @@ void FourierSolver::RemoveDominatedConstraints() {
 
 // Converts |value| to uint64_t if it is an integer within the uint64_t range,
 // otherwise returns 1. Used to compute the gcd of coefficients and bounds.
+namespace {
 uint64_t ConvertToUint64OrOne(double value) {
   value = std::abs(value);  // Ignore the sign of `value`.
   const uint64_t u64_value = MathUtil::SafeCast<uint64_t>(value);
@@ -188,6 +189,7 @@ uint64_t ConvertToUint64OrOne(double value) {
              ? 1
              : u64_value;
 }
+}  // namespace
 
 double FourierSolver::RescaleConstraint(FourierSolver::Constraint& ct) {
   auto& [coefs, lb, ub, _combination] = ct;

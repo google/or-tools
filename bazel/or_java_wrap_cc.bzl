@@ -26,9 +26,9 @@ def or_java_wrap_cc(name, copts = [], deps = [], java_deps = [], **kwargs):
         name = name,
         copts = ORTOOLS_DEFAULT_COPTS + copts + select({
             "@rules_cc//cc/compiler:msvc-cl": [],
-            "@rules_cc//cc/compiler:clang-cl": ["/clang:-Wno-cast-qual"],
-            "@rules_cc//cc/compiler:clang": ["-Wno-cast-qual"],
-            "@rules_cc//cc/compiler:gcc": ["-Wno-cast-qual"],
+            "@rules_cc//cc/compiler:clang-cl": ["/clang:-Wno-cast-qual", "/clang:-Wno-missing-declarations"],
+            "@rules_cc//cc/compiler:clang": ["-Wno-cast-qual", "-Wno-missing-declarations"],
+            "@rules_cc//cc/compiler:gcc": ["-Wno-cast-qual", "-Wno-missing-declarations"],
             "//conditions:default": [],
         }),
         deps = deps,

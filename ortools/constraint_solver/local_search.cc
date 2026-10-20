@@ -66,20 +66,6 @@ ABSL_FLAG(int, cp_local_search_tsp_lns_size, 10,
 
 namespace operations_research {
 
-// Utility methods to ensure the communication between local search and the
-// search.
-
-// Returns true if the search must continue after reaching the local optimum.
-bool ContinueAtLocalOptimum(Search* search);
-
-// Returns true if the search accepts the delta (actually checking this by
-// calling AcceptDelta on the monitors of the search).
-bool AcceptDelta(Search* search, Assignment* delta, Assignment* deltadelta);
-
-// Notifies the search that a neighbor has been accepted by local search.
-void AcceptNeighbor(Search* search);
-void AcceptUncheckedNeighbor(Search* search);
-
 // ----- Base operator class for operators manipulating IntVars -----
 
 bool IntVarLocalSearchOperator::MakeNextNeighbor(Assignment* delta,
@@ -1878,7 +1864,7 @@ class PathLns : public PathOperator<ignore_path_vars> {
   bool HasFragments() const override { return true; }
 
  private:
-  inline bool ChainsAreFullPaths() const { return chunk_size_ == 0; }
+  bool ChainsAreFullPaths() const { return chunk_size_ == 0; }
   void DeactivateChain(int64_t node);
   void DeactivateUnactives();
 
@@ -3795,6 +3781,8 @@ DecisionBuilder* Solver::MakeProfiledDecisionBuilderWrapper(
   return db;
 }
 
+namespace internal {
+
 void InstallLocalSearchProfiler(LocalSearchProfiler* monitor) {
   monitor->Install();
 }
@@ -3807,6 +3795,8 @@ LocalSearchProfiler* BuildLocalSearchProfiler(Solver* solver) {
 }
 
 void DeleteLocalSearchProfiler(LocalSearchProfiler* monitor) { delete monitor; }
+
+}  // namespace internal
 
 std::string Solver::LocalSearchProfile() const {
   if (local_search_profiler_ != nullptr) {
@@ -4142,7 +4132,7 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
         // of them returned false.
         solver->GetLocalSearchMonitor()->BeginFilterNeighbor(ls_operator_);
         const bool mh_filter =
-            AcceptDelta(solver->ParentSearch(), delta, deltadelta);
+            internal::AcceptDelta(solver->ParentSearch(), delta, deltadelta);
         int64_t objective_min = kint64min;
         int64_t objective_max = kint64max;
         if (objective_) {
@@ -4208,7 +4198,7 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
           // checking.
           // TODO(user): support the case were limit_ accepts more than
           // one solution (e.g. best accept).
-          AcceptUncheckedNeighbor(solver->ParentSearch());
+          internal::AcceptUncheckedNeighbor(solver->ParentSearch());
           solver->IncrementUncheckedSolutionCounter();
           pool_->RegisterNewSolution(assignment_);
           SynchronizeAll(solver);
@@ -4251,7 +4241,7 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
             has_checked_assignment_ = true;
             return nullptr;
           }
-          AcceptNeighbor(solver->ParentSearch());
+          internal::AcceptNeighbor(solver->ParentSearch());
           // Keeping the code in case a performance problem forces us to
           // use the old code with a zero test on pool_.
           //          reference_assignment_->CopyIntersection(assignment_);
@@ -4667,7 +4657,7 @@ Decision* LocalSearch::Next(Solver* const solver) {
       // nested decision.
       const bool continue_at_local_optimum =
           nested_decision_index_ == nested_decisions_.size() - 1 &&
-          ContinueAtLocalOptimum(solver->ActiveSearch());
+          internal::ContinueAtLocalOptimum(solver->ActiveSearch());
       if (continue_at_local_optimum) {
         // A local optimum has been reached. The search will continue only if we
         // accept up-hill moves (due to metaheuristics). In this case we need to

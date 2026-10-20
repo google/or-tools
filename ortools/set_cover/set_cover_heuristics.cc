@@ -408,7 +408,9 @@ std::vector<size_t> ComputeSegmentStarts(
   segment_starts.push_back(elements_sorted_by_degree.size());
   return segment_starts;
 }
+}  // namespace internal
 
+namespace {
 // Shuffles each segment of `elements` as defined by `segment_starts`.
 void ShuffleSegments(const std::vector<size_t>& segment_starts,
                      std::vector<ElementIndex>* elements) {
@@ -472,7 +474,7 @@ void RunLazyElementDegreePass(
              << " num_uncovered_elements = " << inv->num_uncovered_elements();
   }
 }
-}  // namespace internal
+}  // namespace
 
 // LazyElementDegreeSolutionGenerator.
 // There is no need to use a priority queue here, as the ratios are computed
@@ -501,8 +503,7 @@ bool LazyElementDegreeSolutionGenerator::OptimizeImpl(
 
   const SubsetBoolVector initial_solution = inv()->is_selected();
 
-  internal::RunLazyElementDegreePass(degree_sorted_elements, in_focus, inv(),
-                                     &stats);
+  RunLazyElementDegreePass(degree_sorted_elements, in_focus, inv(), &stats);
   Cost best_cost = inv()->cost();
   SubsetBoolVector best_solution = inv()->is_selected();
 
@@ -511,10 +512,9 @@ bool LazyElementDegreeSolutionGenerator::OptimizeImpl(
     inv()->Recompute(CL::kCostAndCoverage);
 
     // Shuffle the elements with the same degree in each pass.
-    internal::ShuffleSegments(segment_starts, &degree_sorted_elements);
+    ShuffleSegments(segment_starts, &degree_sorted_elements);
 
-    internal::RunLazyElementDegreePass(degree_sorted_elements, in_focus, inv(),
-                                       &stats);
+    RunLazyElementDegreePass(degree_sorted_elements, in_focus, inv(), &stats);
     if (inv()->num_uncovered_elements() == 0 && inv()->cost() < best_cost) {
       best_cost = inv()->cost();
       best_solution = inv()->is_selected();
@@ -1163,7 +1163,7 @@ std::vector<SubsetIndex> ClearMostCoveredElements(
   return sampled_subsets;
 }
 
-namespace internal {
+namespace {
 // Performs a single pass of dual ascent with the given element permutation.
 // Returns the lower bound and the dual values.
 // The input SetCoverInvariant is not modified.
@@ -1222,10 +1222,6 @@ std::pair<Cost, ElementCostVector> PerformDualAscent(
   return {lower_bound, dual_values};
 }
 
-}  // namespace internal
-
-namespace {
-
 // Performs the Volume Algorithm to compute a lower bound and dual values.
 // Based on Barahona and Anbil, "The volume algorithm: producing primal
 // solutions with a subgradient method", Math. Program. 87(3):385-399, 2000.
@@ -1253,8 +1249,7 @@ std::pair<Cost, ElementCostVector> PerformVolumeMethodDualAscent(
   CHECK_GT(upper_bound, 0.0);  // Must have a non-empty feasible solution.
 
   // Step 0: warm-start pi_bar via greedy dual ascent.
-  auto [init_lb, pi_bar] =
-      internal::PerformDualAscent(inv, element_permutation);
+  auto [init_lb, pi_bar] = PerformDualAscent(inv, element_permutation);
 
   // Solve the Lagrangian subproblem with pi_bar to get x^0 and z_bar.
   // Reduced costs: r_j = c_j - sum_{i in j} pi_i.
@@ -1463,7 +1458,7 @@ bool DualAscentOptimizer::OptimizeImpl(absl::Span<const SubsetIndex> focus) {
   std::iota(element_permutation.begin(), element_permutation.end(),
             ElementIndex(0));
   auto [max_lower_bound, best_duals] =
-      internal::PerformDualAscent(*inv(), element_permutation);
+      PerformDualAscent(*inv(), element_permutation);
   inv()->ReportLowerBound(max_lower_bound, /*is_cost_consistent=*/false);
 
   absl::InsecureBitGen bit_gen;
@@ -1473,7 +1468,7 @@ bool DualAscentOptimizer::OptimizeImpl(absl::Span<const SubsetIndex> focus) {
       std::shuffle(element_permutation.begin(), element_permutation.end(),
                    bit_gen);
       const auto [lower_bound, duals] =
-          internal::PerformDualAscent(*inv(), element_permutation);
+          PerformDualAscent(*inv(), element_permutation);
       if (lower_bound > max_lower_bound) {
         max_lower_bound = lower_bound;
         best_duals = duals;
@@ -1499,7 +1494,7 @@ bool DualAscentOptimizer::OptimizeImpl(absl::Span<const SubsetIndex> focus) {
         prime = primes[prime_index];
       }
       const auto [lower_bound, duals] =
-          internal::PerformDualAscent(*inv(), element_permutation, prime);
+          PerformDualAscent(*inv(), element_permutation, prime);
       if (lower_bound > max_lower_bound) {
         max_lower_bound = lower_bound;
         best_duals = duals;

@@ -1470,6 +1470,7 @@ BinaryCircuit BuildColumnWiseLinearCombinationCircuit(
 // verification.
 
 // Helper to add two multi-bit integer vectors A and B.
+namespace {
 std::vector<int> AddIntegers(BinaryCircuit& circuit, const std::vector<int>& A,
                              const std::vector<int>& B) {
   constexpr uint8_t kAnd = 0b1000;
@@ -1553,6 +1554,7 @@ std::vector<int> TotalPopCount(BinaryCircuit& circuit,
 
   return current_terms[0];
 }
+}  // namespace
 
 // Computes output = sum_{i=0}^{n-1} (input[i] * constants[i]) mod 2^m
 // using explicit multi-bit integer popcounts per bit stage.
@@ -1616,6 +1618,7 @@ struct PrefixNode {
 
 // Adds two m-bit vectors A and B modulo 2^m using a Kogge-Stone Parallel Prefix
 // Adder. Depth: O(log m)
+namespace {
 std::vector<int> AddKoggeStone(BinaryCircuit& circuit,
                                const std::vector<int>& A,
                                const std::vector<int>& B, int m) {
@@ -1656,6 +1659,7 @@ std::vector<int> AddKoggeStone(BinaryCircuit& circuit,
 
   return sum;
 }
+}  // namespace
 
 // Computes output = sum_{i=0}^{n-1} (input[i] * constants[i]) mod 2^m
 // using a Dadda Tree reduction followed by a Kogge-Stone adder.

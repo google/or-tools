@@ -79,6 +79,7 @@ ABSL_FLAG(bool, ignore_symmetry_breaking_constraints, false,
 
 namespace operations_research {
 namespace fz {
+namespace {
 
 std::vector<char*> FixAndParseParameters(int* argc, char*** argv) {
   char all_param[] = "--search_all_solutions";
@@ -214,6 +215,7 @@ void LogInFlatzincFormat(const std::string& multi_line_input) {
   }
 }
 
+}  // namespace
 }  // namespace fz
 }  // namespace operations_research
 

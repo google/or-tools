@@ -3923,6 +3923,15 @@ class Dimension {
   friend class ModelInspector;
 };
 
+#if !defined(SWIG)
+// Makes a BinCapacities object from initialized dimensions.
+// Exposed mainly for testing.
+std::unique_ptr<BinCapacities> MakeBinCapacities(
+    const std::vector<Dimension*>& dimensions,
+    const PathsMetadata& paths_metadata);
+
+#endif  // !defined(SWIG)
+
 /// Attempts to solve the model using the cp-sat solver. As of 5/2019, will
 /// solve the TSP corresponding to the model if it has a single vehicle.
 /// Therefore the resulting solution might not actually be feasible. Will return

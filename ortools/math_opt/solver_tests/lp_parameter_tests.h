@@ -14,6 +14,8 @@
 #ifndef ORTOOLS_MATH_OPT_SOLVER_TESTS_LP_PARAMETER_TESTS_H_
 #define ORTOOLS_MATH_OPT_SOLVER_TESTS_LP_PARAMETER_TESTS_H_
 
+#include <ostream>
+
 #include "gtest/gtest.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
@@ -69,6 +71,9 @@ struct LpParameterTestParams {
   // Indicates if the SolveResult returned will say which limit was reached.
   bool reports_limits;
 };
+
+std::ostream& operator<<(std::ostream& out,
+                         const LpParameterTestParams& params);
 
 // A suite of unit tests to show that an LP solver handles parameters correctly.
 //

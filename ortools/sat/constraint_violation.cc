@@ -1252,6 +1252,7 @@ CompiledNoOverlapWithTwoIntervals<has_enforcement>::UsedVariables(
 
 // ----- CompiledNoOverlap2dConstraint -----
 
+namespace {
 // This assumes the intervals overlap.
 int64_t OverlapOfTwoIntervals(const IntegerValue start1,
                               const IntegerValue end1,
@@ -1298,6 +1299,7 @@ int64_t NoOverlap2dViolation(const Rectangle& r1, const Rectangle& r2) {
               OverlapOfTwoIntervals(r1.x_min, r1.x_max, r2.x_min, r2.x_max)),
       int64_t{0});
 }
+}  // namespace
 
 CompiledNoOverlap2dConstraint::CompiledNoOverlap2dConstraint(
     const ConstraintProto& ct_proto, const CpModelProto& cp_model)
@@ -1757,6 +1759,7 @@ int64_t CompiledCircuitConstraint::ViolationForCurrentGraph() {
   return violation;
 }
 
+namespace {
 void AddCircuitFlowConstraints(LinearIncrementalEvaluator& linear_evaluator,
                                const ConstraintProto& ct_proto) {
   const bool routes = ct_proto.has_routes();
@@ -1807,6 +1810,7 @@ void AddCircuitFlowConstraints(LinearIncrementalEvaluator& linear_evaluator,
     }
   }
 }
+}  // namespace
 
 // ----- LsEvaluator -----
 

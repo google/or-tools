@@ -21,6 +21,7 @@
 #include "ortools/graph/assignment.h"
 
 namespace operations_research {
+namespace {
 
 void BM_SimpleLinearSumAssignment(benchmark::State& state) {
   using CostValue = SimpleLinearSumAssignment::CostValue;
@@ -53,5 +54,6 @@ void BM_SimpleLinearSumAssignment(benchmark::State& state) {
   }
 }
 BENCHMARK(BM_SimpleLinearSumAssignment)->ArgPair(100, 2)->ArgPair(100, 20);
+}  // namespace
 
 }  // namespace operations_research

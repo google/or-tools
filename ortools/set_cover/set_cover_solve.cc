@@ -540,6 +540,7 @@ RunResult RunThriftyLNSAndReport(bool run_thrifty_lns, const RunResult& start,
 }
 }  // namespace
 
+namespace {
 double RunSolvers() {
   const auto& input = absl::GetFlag(FLAGS_input);
   const auto& input_format = ParseFileFormat(absl::GetFlag(FLAGS_input_fmt));
@@ -854,6 +855,7 @@ void SolveFromCommandLine() {
   // TODO(user): Add flag to output the solution, either as csv or as text
   // proto.
 }
+}  // namespace
 }  // namespace operations_research
 
 int main(int argc, char** argv) {

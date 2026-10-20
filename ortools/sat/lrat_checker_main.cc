@@ -50,6 +50,7 @@ ABSL_FLAG(std::string, lrat, "", "Input LRAT proof file to check");
 
 namespace operations_research {
 namespace sat {
+namespace {
 int Main() {
   Model model;
   LratChecker checker(&model);
@@ -198,6 +199,7 @@ int Main() {
     return EXIT_FAILURE;
   }
 }
+}  // namespace
 }  // namespace sat
 }  // namespace operations_research
 

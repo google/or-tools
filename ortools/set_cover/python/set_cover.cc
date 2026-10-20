@@ -84,6 +84,7 @@ namespace py = pybind11;
 using ::py::arg;
 using ::py::make_iterator;
 
+namespace {
 std::vector<SubsetIndex> VectorIntToVectorSubsetIndex(
     absl::Span<const BaseInt> ints) {
   std::vector<SubsetIndex> subs;
@@ -102,6 +103,7 @@ SubsetBoolVector BoolVectorToSubsetBoolVector(const std::vector<bool>& bools) {
   SubsetBoolVector bools_copy(bools.begin(), bools.end());
   return bools_copy;
 }
+}  // namespace
 
 class IntIterator {
  public:

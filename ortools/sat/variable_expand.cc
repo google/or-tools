@@ -410,6 +410,7 @@ void OrderEncoding::CollectAllOrderEncodingValues() {
   }
 }
 
+namespace {
 bool ProcessEncodingConstraints(
     int var, PresolveContext* context, ValueEncoding& values,
     OrderEncoding& order,
@@ -566,6 +567,7 @@ bool ProcessEncodingConstraints(
       push_down_when_unconstrained, has_le_ge_linear1);
   return true;
 }
+}  // namespace
 
 void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
                                        SolutionCrush& solution_crush) {

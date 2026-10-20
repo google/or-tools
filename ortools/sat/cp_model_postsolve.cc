@@ -38,6 +38,7 @@ namespace sat {
 //
 // Also, any "free" Boolean should be fixed to some value for the subsequent
 // postsolve steps.
+namespace {
 void PostsolveClause(const ConstraintProto& ct, std::vector<Domain>* domains) {
   const int size = ct.bool_or().literals_size();
   CHECK_NE(size, 0);
@@ -244,8 +245,6 @@ void PostsolveLinear(const ConstraintProto& ct, std::vector<Domain>* domains) {
   fix_unassigned_enforcement_to_true(ct);
 }
 
-namespace {
-
 // Note that if a domain is not fixed, we just take its Min() value.
 int64_t EvaluateLinearExpression(const LinearExpressionProto& expr,
                                  absl::Span<const Domain> domains) {
@@ -289,8 +288,6 @@ bool AffineExpressionCanTakeValue(const LinearExpressionProto& expr,
   *inner_var_value = var_value;
   return true;
 }
-
-}  // namespace
 
 // Compute the max of each expression, and assign it to the target expr. We only
 // support post-solving the case where whatever the value of all expressions,
@@ -417,7 +414,6 @@ void PostsolveIntProd(const ConstraintProto& ct, std::vector<Domain>* domains) {
   (*domains)[target.vars(0)] = Domain(target_value);
 }
 
-namespace {
 void CheckPostsolveFixedVariables(const ConstraintProto& ct,
                                   absl::Span<const Domain> domains) {
   if (DEBUG_MODE) {

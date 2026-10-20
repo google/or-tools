@@ -15,6 +15,7 @@
 #define ORTOOLS_MATH_OPT_SOLVER_TESTS_LP_INCOMPLETE_SOLVE_TESTS_H_
 
 #include <optional>
+#include <ostream>
 
 #include "gtest/gtest.h"
 #include "ortools/math_opt/cpp/math_opt.h"
@@ -70,6 +71,9 @@ struct LpIncompleteSolveTestParams {
   // (i.e. never returns an unspecified status).
   bool dual_solution_status_always_set;
 };
+
+std::ostream& operator<<(std::ostream& out,
+                         const LpIncompleteSolveTestParams& params);
 
 // A suite of unit tests to show that an LP solver handles incomplete solves
 // correctly.

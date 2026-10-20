@@ -79,6 +79,7 @@ std::string JoinPathImpl(bool honor_abs,
 // Return the parts of the basename of path, split on the final ".".
 // If there is no "." in the basename or "." is the final character in the
 // basename, the second value will be empty.
+namespace {
 std::pair<absl::string_view, absl::string_view> SplitBasename(
     absl::string_view path) {
   path = Basename(path);
@@ -89,6 +90,7 @@ std::pair<absl::string_view, absl::string_view> SplitBasename(
   return std::make_pair(path.substr(0, pos),
                         absl::ClippedSubstr(path, pos + 1));
 }
+}  // namespace
 
 }  // namespace internal
 
