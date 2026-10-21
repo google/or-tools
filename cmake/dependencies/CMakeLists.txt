@@ -18,10 +18,7 @@ cmake_minimum_required(VERSION 3.25)
 # ##############################################################################
 # SWIG (WIN32)
 # ##############################################################################
-if(WIN32
-   AND (BUILD_PYTHON
-        OR BUILD_JAVA
-        OR BUILD_DOTNET))
+if(WIN32 AND (BUILD_JAVA OR BUILD_DOTNET))
   message(CHECK_START "Fetching SWIG")
   list(APPEND CMAKE_MESSAGE_INDENT "  ")
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/SWIG.CMakeLists.txt.in

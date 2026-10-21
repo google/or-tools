@@ -25,25 +25,6 @@
 #define ABSL_DEPRECATED(msg)
 #define ABSL_MUST_USE_RESULT
 
-#ifdef SWIGPYTHON
-
-#pragma SWIG nowarn=312,451,454,503,362
-// 312 suppresses warnings about nested classes that SWIG doesn't currently
-// support.
-// 451 suppresses warnings about setting const char * variable may leak memory.
-// 454 suppresses setting global ptr/ref variables may leak memory warning
-// 503 suppresses warnings about identifiers that SWIG can't wrap without a
-// rename.  For example, an operator< in a class without a rename.
-// 362 is similar to 503 but for operator=.
-%{
-#include "ortools/base/python-swig.h"
-%}
-
-%include "exception.i"
-
-#endif // SWIGPYTHON
-
-
 #if defined(SWIGJAVA)
 // swig/java/typenames.i and swig/java/java.swg typemap C++ 'long int' as Java 'int'
 // but in C++ 'int64_t' is defined as "long int" and we have

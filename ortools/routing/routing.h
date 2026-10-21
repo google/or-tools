@@ -1036,7 +1036,6 @@ class OR_ROUTING_DLL Model {
     PenaltyCostBehavior soft_max_penalty_type =
         PenaltyCostBehavior::PENALIZE_ONCE;
   };
-#if !defined(SWIGPYTHON)
   /// Returns the variable indices of the nodes in the disjunction of index
   /// 'index'.
   const std::vector<int64_t>& GetDisjunctionNodeIndices(
@@ -1046,7 +1045,6 @@ class OR_ROUTING_DLL Model {
   const Disjunction& GetDisjunction(DisjunctionIndex index) const {
     return disjunctions_[index];
   }
-#endif  // !defined(SWIGPYTHON)
   /// Returns the maximum number of possible active nodes of the given
   /// disjunction.
   int64_t GetDisjunctionMaxCardinality(DisjunctionIndex index) const;
@@ -1937,7 +1935,6 @@ class OR_ROUTING_DLL Model {
   bool IsVehicleUsed(const operations_research::Assignment& assignment,
                      int vehicle) const;
 
-#if !defined(SWIGPYTHON)
   /// Returns all next variables of the model, such that Nexts(i) is the next
   /// variable of the node corresponding to i.
   const std::vector<operations_research::IntVar*>& Nexts() const {
@@ -1955,7 +1952,6 @@ class OR_ROUTING_DLL Model {
       int resource_group) const {
     return resource_vars_[resource_group];
   }
-#endif  /// !defined(SWIGPYTHON)
   /// Returns the next variable of the node corresponding to index. Note that
   /// NextVar(index) == index is equivalent to ActiveVar(index) == 0.
   operations_research::IntVar* NextVar(int64_t index) const {
@@ -3262,7 +3258,6 @@ class Dimension {
   /// Gets the current maximum of the cumul variable associated to index.
   int64_t GetCumulVarMax(int64_t index) const { return CumulVar(index)->Max(); }
 
-#if !defined(SWIGPYTHON)
   /// Like CumulVar(), TransitVar(), SlackVar() but return the whole variable
   /// vectors instead (indexed by int64_t var index).
   const std::vector<operations_research::IntVar*>& cumuls() const {
@@ -3383,7 +3378,6 @@ class Dimension {
     return vehicle_to_cumul_dependent_class_[vehicle];
   }
 #endif  // !defined(SWIGCSHARP) && !defined(SWIGJAVA)
-#endif  // !defined(SWIGPYTHON)
   /// Sets an upper bound on the dimension span on a given vehicle. This is the
   /// preferred way to limit the "length" of the route of a vehicle according to
   /// a dimension.
@@ -3500,12 +3494,9 @@ class Dimension {
   /// never we called on any (end, _). If pre_travel_evaluator or
   /// post_travel_evaluator is -1, it will be taken as a function that always
   /// returns 0.
-  // TODO(user): Remove if !defined when routing.swig is repaired.
-#if !defined(SWIGPYTHON)
   void SetBreakIntervalsOfVehicle(std::vector<IntervalVar*> breaks, int vehicle,
                                   int pre_travel_evaluator,
                                   int post_travel_evaluator);
-#endif  // !defined(SWIGPYTHON)
 
   /// Deprecated, sets pre_travel(i, j) = node_visit_transit[i].
   void SetBreakIntervalsOfVehicle(std::vector<IntervalVar*> breaks, int vehicle,
@@ -3537,7 +3528,6 @@ class Dimension {
   void InitializeBreaks();
   /// Returns true if any break interval or break distance was defined.
   bool HasBreakConstraints() const;
-#if !defined(SWIGPYTHON)
   /// Deprecated, sets pre_travel(i, j) = node_visit_transit[i]
   /// and post_travel(i, j) = delays(i, j).
   void SetBreakIntervalsOfVehicle(
@@ -3552,7 +3542,6 @@ class Dimension {
   /// constraints.
   const std::vector<std::pair<int64_t, int64_t>>&
   GetBreakDistanceDurationOfVehicle(int vehicle) const;
-#endif  // !defined(SWIGPYTHON)
   int GetPreTravelEvaluatorOfVehicle(int vehicle) const;
   int GetPostTravelEvaluatorOfVehicle(int vehicle) const;
 
