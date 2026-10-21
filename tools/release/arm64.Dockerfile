@@ -1,10 +1,5 @@
 # To build it on x86_64 please read
 # https://github.com/multiarch/qemu-user-static#getting-started
-
-# Use yum
-#FROM --platform=linux/arm64 centos:7 AS env
-#FROM quay.io/pypa/manylinux2014_aarch64:latest AS env
-# Use dnf
 FROM quay.io/pypa/manylinux_2_28_aarch64:latest AS env
 # note: CMake 3.31.2 and SWIG 4.3.0 are already installed
 
@@ -29,8 +24,6 @@ RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
 && chmod a+x dotnet-install.sh \
 && ./dotnet-install.sh -c 8.0 -i /usr/local/bin
 # Trigger first run experience by running arbitrary cmd
-#RUN objdump -p /lib64/libstdc++.so.6
-#RUN g++ --version
 RUN dotnet --info
 
 # Install Java 21 SDK
@@ -38,10 +31,10 @@ RUN dnf -y update \
 && dnf -y install java-21-openjdk java-21-openjdk-devel maven \
 && dnf clean all \
 && rm -rf /var/cache/dnf
-ENV JAVA_HOME=/usr/lib/jvm/java
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk
 
 # Update maven
-ARG MAVEN_VERSION=3.9.12
+ARG MAVEN_VERSION=3.10.0
 ADD https://dlcdn.apache.org/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz /usr/local
 RUN mkdir -p /usr/local/maven \
  && tar xzvf /usr/local/apache-maven-${MAVEN_VERSION}-bin.tar.gz --strip-components=1 -C /usr/local/maven \
