@@ -22,7 +22,7 @@ function help() {
 ${BOLD}NAME${RESET}
 \t$NAME - Build delivery using a ${BOLD}Manylinux 2.28 aarch64 docker image${RESET}.
 ${BOLD}SYNOPSIS${RESET}
-\t$NAME [-h|--help|help] [cpp|dotnet|java|julia|python X.Y|examples|reset]
+\t$NAME [-h|--help|help] [env|devel|cpp|dotnet|java|julia|python X.Y|reset]
 ${BOLD}DESCRIPTION${RESET}
 \tBuild Google OR-Tools deliveries.
 \tYou ${BOLD}MUST${RESET} define the following variables before running this script:
@@ -30,13 +30,13 @@ ${BOLD}DESCRIPTION${RESET}
 
 ${BOLD}OPTIONS${RESET}
 \t-h --help: display this help text (default)
+\tenv: build env stage
+\tdevel: build devel stage
 \tcpp: build C++ (CMake based) prebuilt archive
 \tdotnet: build all .Net packages
 \tjava: build all Java packages
 \tjulia: build Julia package
 \tpython <X.Y>: build Pyhon X.Y package
-\tarchive: build all (C++, .Net, Java) archives
-\texamples: build examples archives
 
 ${BOLD}EXAMPLES${RESET}
 Using export to define the ${BOLD}ORTOOLS_TOKEN${RESET} env and only building the Java packages:
@@ -62,28 +62,22 @@ function log() {
 }
 
 # shellcheck disable=SC2329
-function build_delivery() {
+function build_env() {
   assert_defined ARCH
+  assert_defined ORTOOLS_IMG
   assert_defined ORTOOLS_BRANCH
   assert_defined ORTOOLS_SHA1
-  assert_defined ORTOOLS_TOKEN
-  assert_defined ORTOOLS_DELIVERY
   assert_defined DOCKERFILE
-  assert_defined ORTOOLS_IMG
 
   # Enable docker over QEMU support
   if [[ ${ARCH} != "arm64" && ${ARCH} != "aarch64" ]]; then
     docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
   fi
+  cd "${RELEASE_DIR}" || exit 2
 
-  # Clean
-  log -n "Remove previous docker images..."
-  docker image rm -f "${ORTOOLS_IMG}":"${ORTOOLS_DELIVERY}" 2>/dev/null
-  docker image rm -f "${ORTOOLS_IMG}":devel 2>/dev/null
+  log -n "Remove previous docker image..."
   docker image rm -f "${ORTOOLS_IMG}":env 2>/dev/null
   log "DONE"
-
-  cd "${RELEASE_DIR}" || exit 2
 
   # Build env
   # https://github.com/containerd/containerd/blob/v1.4.3/platforms/platforms.go#L63
@@ -95,6 +89,17 @@ function build_delivery() {
     --target=env \
     -f "${DOCKERFILE}" .
   log "DONE"
+}
+
+# shellcheck disable=SC2329
+function build_devel() {
+  build_env
+
+  cd "${RELEASE_DIR}" || exit 2
+
+  log -n "Remove previous docker images..."
+  docker image rm -f "${ORTOOLS_IMG}":devel 2>/dev/null
+  log "DONE"
 
   # Build devel
   log -n "Build ${ORTOOLS_IMG}:devel..."
@@ -104,6 +109,21 @@ function build_delivery() {
     --build-arg ORTOOLS_GIT_SHA1="${ORTOOLS_SHA1}" \
     --target=devel \
     -f "${DOCKERFILE}" .
+  log "DONE"
+}
+
+# shellcheck disable=SC2329
+function build_delivery() {
+  build_env
+  build_devel
+
+  assert_defined ORTOOLS_TOKEN
+  assert_defined ORTOOLS_DELIVERY
+
+  cd "${RELEASE_DIR}" || exit 2
+
+  log -n "Remove previous docker images..."
+  docker image rm -f "${ORTOOLS_IMG}":"${ORTOOLS_DELIVERY}" 2>/dev/null
   log "DONE"
 
   # Build delivery
@@ -208,41 +228,6 @@ function build_python() {
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/arm64_python_build"
 }
 
-# Create Archive
-# shellcheck disable=SC2329
-function build_archive() {
-  if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/arm64_archive_build" -; then
-    log "build archive up to date!"
-    return 0
-  fi
-
-  local -r ORTOOLS_DELIVERY=archive
-  build_delivery
-
-  # copy archive to export
-  docker run --rm --init \
-  -w /root/or-tools \
-  -v "${ROOT_DIR}/export":/export \
-  -u "$(id -u "${USER}")":"$(id -g "${USER}")" \
-  -t "${ORTOOLS_IMG}":"${ORTOOLS_DELIVERY}" "cp export/*.tar.gz /export/"
- echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/arm64_archive_build"
-}
-
-# Build Examples
-# shellcheck disable=SC2317
-# shellcheck disable=SC2329
-function build_examples() {
-  if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/amd64_examples_build" -; then
-    log "build examples up to date!"
-    return 0
-  fi
-
-  local -r ORTOOLS_DELIVERY=examples
-  build_delivery
-
-  echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/arm64_examples_build"
-}
-
 # Cleaning everything
 function reset() {
   echo "Cleaning docker images..."
@@ -251,8 +236,6 @@ function reset() {
   docker image rm -f "${ORTOOLS_IMG}":dotnet 2>/dev/null
   docker image rm -f "${ORTOOLS_IMG}":java 2>/dev/null
   docker image rm -f "${ORTOOLS_IMG}":python 2>/dev/null
-  docker image rm -f "${ORTOOLS_IMG}":archive 2>/dev/null
-  docker image rm -f "${ORTOOLS_IMG}":examples 2>/dev/null
 
   docker image rm -f "${ORTOOLS_IMG}":devel 2>/dev/null
   docker image rm -f "${ORTOOLS_IMG}":env 2>/dev/null
@@ -305,7 +288,7 @@ function main() {
   mkdir -p "${ROOT_DIR}/export"
 
   case ${1} in
-    cpp|dotnet|java|julia|archive|examples)
+    env|devel|cpp|dotnet|java|julia)
       "build_$1"
       exit ;;
     python)

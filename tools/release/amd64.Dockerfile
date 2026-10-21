@@ -1,7 +1,3 @@
-# Use yum
-#FROM --platform=linux/amd64 centos:7 AS env
-#FROM quay.io/pypa/manylinux2014_x86_64:latest AS env
-# Use dnf
 FROM quay.io/pypa/manylinux_2_28_x86_64:latest AS env
 # note: CMake 3.31.2 and SWIG 4.3.0 are already installed
 
@@ -33,10 +29,10 @@ RUN dnf -y update \
 && dnf -y install java-21-openjdk java-21-openjdk-devel maven \
 && dnf clean all \
 && rm -rf /var/cache/dnf
-ENV JAVA_HOME=/usr/lib/jvm/java
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk
 
 # Update maven
-ARG MAVEN_VERSION=3.9.12
+ARG MAVEN_VERSION=3.10.0
 ADD https://dlcdn.apache.org/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz /usr/local
 RUN mkdir -p /usr/local/maven \
  && tar xzvf /usr/local/apache-maven-${MAVEN_VERSION}-bin.tar.gz --strip-components=1 -C /usr/local/maven \
