@@ -1811,28 +1811,6 @@ class Solver : public ReversibleEngine {
                                        int64_t initial_state,
                                        const std::vector<int>& final_states);
 
-#if defined(SWIGPYTHON)
-  /// Compatibility layer for Python API.
-  Constraint* MakeAllowedAssignments(
-      const std::vector<IntVar*>& vars,
-      const std::vector<std::vector<int64_t> /*keep for swig*/>& raw_tuples) {
-    IntTupleSet tuples(vars.size());
-    tuples.InsertAll(raw_tuples);
-    return MakeAllowedAssignments(vars, tuples);
-  }
-
-  Constraint* MakeTransitionConstraint(
-      const std::vector<IntVar*>& vars,
-      const std::vector<std::vector<int64_t> /*keep for swig*/>&
-          raw_transitions,
-      int64_t initial_state, const std::vector<int>& final_states) {
-    IntTupleSet transitions(3);
-    transitions.InsertAll(raw_transitions);
-    return MakeTransitionConstraint(vars, transitions, initial_state,
-                                    final_states);
-  }
-#endif
-
   /// This constraint states that all the boxes must not overlap.
   /// The coordinates of box i are:
   ///   (x_vars[i], y_vars[i]),

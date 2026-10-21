@@ -323,7 +323,22 @@ between breaks of size at least minimum_break_duration to be at most
 distance. This supposes that the time until route start and after
 route end are infinite breaks.)doc";
 
-static const char *mkd_doc_operations_research_routing_Dimension_SetBreakIntervalsOfVehicle = R"doc()doc";
+static const char *mkd_doc_operations_research_routing_Dimension_SetBreakIntervalsOfVehicle =
+R"doc(Sets the breaks for a given vehicle. Breaks are represented by
+IntervalVars. They may interrupt transits between nodes and increase
+the value of corresponding slack variables. A break may take place
+before the start of a vehicle, after the end of a vehicle, or during a
+travel i -> j.
+
+In that case, the interval [break.Start(), break.End()) must be a
+subset of [CumulVar(i) + pre_travel(i, j), CumulVar(j) -
+post_travel(i, j)). In other words, a break may not overlap any node
+n's visit, given by [CumulVar(n) - post_travel(_, n), CumulVar(n) +
+pre_travel(n, _)). This formula considers post_travel(_, start) and
+pre_travel(end, _) to be 0; pre_travel will never be called on any (_,
+start) and post_travel will never we called on any (end, _). If
+pre_travel_evaluator or post_travel_evaluator is -1, it will be taken
+as a function that always returns 0.)doc";
 
 static const char *mkd_doc_operations_research_routing_Dimension_SetBreakIntervalsOfVehicle_2 = R"doc(Deprecated, sets pre_travel(i, j) = node_visit_transit[i].)doc";
 
@@ -1661,9 +1676,8 @@ R"doc(Assignment inspection Returns the variable index of the node directly
 after the node corresponding to 'index' in 'assignment'.)doc";
 
 static const char *mkd_doc_operations_research_routing_Model_NextVar =
-R"doc(!defined(SWIGPYTHON) Returns the next variable of the node
-corresponding to index. Note that NextVar(index) == index is
-equivalent to ActiveVar(index) == 0.)doc";
+R"doc(Returns the next variable of the node corresponding to index. Note
+that NextVar(index) == index is equivalent to ActiveVar(index) == 0.)doc";
 
 static const char *mkd_doc_operations_research_routing_Model_Nexts =
 R"doc(Returns all next variables of the model, such that Nexts(i) is the

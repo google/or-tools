@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Simple unit tests for python/linear_solver.swig. Not exhaustive."""
+"""Simple unit tests for ortools.linear_solver.python.pywraplp.
+
+Not exhaustive.
+"""
 
 import unittest
 

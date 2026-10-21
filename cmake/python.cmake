@@ -22,35 +22,15 @@ else()
   set(PYTHON_RELEASE "rc1")
 endif()
 
-# Use latest UseSWIG module (3.14) and Python3 module (3.18)
+# Use latest Python3 module (3.18)
 cmake_minimum_required(VERSION 3.18)
 
 if(NOT TARGET ${PROJECT_NAMESPACE}::ortools)
   message(FATAL_ERROR "Python: missing ortools TARGET")
 endif()
 
-# Will need swig
-set(SWIG_SOURCE_FILE_EXTENSIONS ".i" ".swig")
-set(CMAKE_SWIG_FLAGS)
-find_package(SWIG REQUIRED)
-include(UseSWIG)
-
-if(${SWIG_VERSION} VERSION_GREATER_EQUAL 4)
-  list(APPEND CMAKE_SWIG_FLAGS "-doxygen")
-endif()
-
-if(UNIX AND NOT APPLE AND NOT (CMAKE_SYSTEM_NAME STREQUAL "OpenBSD"))
-  if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-    list(APPEND CMAKE_SWIG_FLAGS "-DSWIGWORDSIZE64")
-  else()
-    list(APPEND CMAKE_SWIG_FLAGS "-DSWIGWORDSIZE32")
-  endif()
-endif()
-list(APPEND CMAKE_SWIG_FLAGS "-DOR_DLL=" "-DOR_INIT_DLL=" "-DOR_ROUTING_DLL=")
-
 # Find Python 3
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
-list(APPEND CMAKE_SWIG_FLAGS "-py3" "-DPY3")
 
 # Find if the python module is available,
 # otherwise install it (PACKAGE_NAME) to the Python3 user install directory.
@@ -276,14 +256,12 @@ endfunction()
 #######################
 ##  PYTHON WRAPPERS  ##
 #######################
-list(APPEND CMAKE_SWIG_FLAGS "-I${PROJECT_SOURCE_DIR}")
-
 set(PYTHON_PROJECT ${PROJECT_NAME})
 message(STATUS "Python project: ${PYTHON_PROJECT}")
 set(PYTHON_PROJECT_DIR ${PROJECT_BINARY_DIR}/python/${PYTHON_PROJECT})
 message(STATUS "Python project build path: ${PYTHON_PROJECT_DIR}")
 
-# SWIG/Pybind11 wrap all libraries
+# Pybind11 wrap all libraries
 foreach(SUBPROJECT IN ITEMS
  init
  algorithms

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Simple unit tests for python/init.swig. Not exhaustive."""
+"""Simple unit tests for ortools.init.python.init. Not exhaustive."""
 
 from absl.testing import absltest
 
