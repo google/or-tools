@@ -113,9 +113,9 @@ class MosekSolver : public SolverInterface {
       bool skip_y_zeros, const std::vector<int64_t>& ordered_yx_ids,
       bool skip_yx_zeros);
 
-  void SparseDoubleMatrixToTril(const SparseDoubleMatrixProto& qdata,
-                                std::vector<int>& subi, std::vector<int>& subj,
-                                std::vector<double>& cof);
+  // void SparseDoubleMatrixToTril(const SparseDoubleMatrixProto& qdata,
+  //                               std::vector<int>& subi, std::vector<int>& subj,
+  //                               std::vector<double>& cof);
 
   MosekSolver(std::unique_ptr<Task_s,Task_deleter> && task);
 };
