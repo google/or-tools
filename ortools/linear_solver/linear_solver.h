@@ -1399,7 +1399,6 @@ class MPConstraint {
   friend class PdlpInterface;
   friend class HighsInterface;
   friend class KnapsackInterface;
-  friend class MosekInterface;
 
   // Constructor. A constraint points to a single MPSolverInterface
   // that is specified in the constructor. A constraint cannot belong
