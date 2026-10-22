@@ -109,7 +109,7 @@ enum SolverTypeProto {
   // returned).
   SOLVER_TYPE_SANTORINI = 11;
 
-  reserved 12;
+  SOLVER_TYPE_MOSEK = 12;
 
   // Fico XPRESS solver (third party).
   //
@@ -134,8 +134,6 @@ enum SolverTypeProto {
   //  * All variables and constraints must have integer bounds and costs.
   //  * The objective must be linear.
   SOLVER_TYPE_MIN_COST_FLOW = 14;
-
-  SOLVER_TYPE_MOSEK = 15;
 }
 
 // Selects an algorithm for solving linear programs.

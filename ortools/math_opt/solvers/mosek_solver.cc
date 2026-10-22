@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "mosek_solver.h"
-
 #include <absl/container/flat_hash_map.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -168,7 +166,7 @@ absl::Status MosekSolver::AddConstraints(const LinearConstraintsProto& cons,
     std::vector<int64_t> con_dom(add_num_con*2);
     std::vector<int64_t> con_rows(add_num_con*2);
     std::vector<double>  con_rhs(add_num_con*2);
-    std::vector<int64_t> con_nrows(add_num_con*2,1);
+    //std::vector<int64_t> con_nrows(add_num_con*2,1);
 
     int64_t dom_rminus, dom_rplus, dom_r;
     if (MSK::RES_OK != MSK::get_domain_rplus(task.get(),&dom_rplus) ||
@@ -1080,10 +1078,10 @@ absl::StatusOr<DualRayProto> MosekSolver::DualRay(
     return ray;
 }
 
-static void stream_cb(void * h, const char * msg) {
-    BufferedMessageCallback *bmsg_cb = (BufferedMessageCallback *) h;
-    bmsg_cb->OnMessage(msg);
-}
+// static void stream_cb(void * h, const char * msg) {
+//     BufferedMessageCallback *bmsg_cb = (BufferedMessageCallback *) h;
+//     bmsg_cb->OnMessage(msg);
+// }
 
 
 static void intsolution_cb(MSK::CallbackHandle h, int32_t len, double pobj, const double * xx) {
@@ -1181,9 +1179,9 @@ static int info_cb(
     return 0;
 }
 
-static void msgprn(void * h, const char * msg) {
-    fputs(msg, stderr);
-}
+// static void msgprn(void * h, const char * msg) {
+//     fputs(msg, stderr);
+// }
 
 absl::StatusOr<SolveResultProto> MosekSolver::Solve(
     const SolveParametersProto& parameters,  // solver settings
