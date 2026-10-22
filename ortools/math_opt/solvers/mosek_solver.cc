@@ -1075,8 +1075,8 @@ absl::StatusOr<DualRayProto> MosekSolver::DualRay(
             cdata.add_values(v);
             }
     }
-    *ray.mutable_dual_values() = xdata;
-    *ray.mutable_reduced_costs() = cdata;
+    *ray.mutable_dual_values()   = cdata;
+    *ray.mutable_reduced_costs() = xdata;
     return ray;
 }
 
