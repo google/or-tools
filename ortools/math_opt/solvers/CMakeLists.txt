@@ -344,7 +344,6 @@ if(USE_MOSEK)
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_multi_objective_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_status_tests>"
   )
-  # This test fail on windows and takes too long so we disable it.
   if(TARGET math_opt_solvers_mosek_solver_test)
     set_tests_properties(cxx_math_opt_solvers_mosek_solver_test
       PROPERTIES DISABLED TRUE)

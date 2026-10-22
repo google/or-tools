@@ -2,7 +2,6 @@
 
 #include "mosekstable12_environment.h"
 
-
 /* NOTES on compiling and linking:
  * To build the MOSEK Stable dymalic loader functions this file must be included in the final binary or library.
  * On Linux and OSX the final library or binary must be linked with libdl.
@@ -10,8 +9,7 @@
 
 namespace operations_research::MSK12 {
 
-
-#ifdef _WIN32
+#ifdef _WIN64
     #include <libloaderapi.h>
     static const char * libname = "mosekstable12.dll";
     static const char * platformname = "win64x86";
@@ -30,11 +28,11 @@ namespace operations_research::MSK12 {
         static const char * libname = "libmosekstable12.dylib";
         static const char * platformname = "osxaarch64";
         static const char   pathsep = '/';
-    #elif defined(__linux__) && __arm64__
-        stratic const char pathsep = '/';
+    #elif defined(__linux__) && (__arm64__ || __aarch64__)
+        static const char pathsep = '/';
         static const char * platformname = "linuxaarch64";
         static const char * libname = "libmosekstable12.so";
-    #elif defined(__linux__) && __x86_64__
+    #elif defined(__linux__) && (__x86_64__ || __amd64__)
         static const char   pathsep = '/';
         static const char * platformname = "linux64x86";
         static const char * libname = "libmosekstable12.so";
