@@ -315,7 +315,7 @@ TEST(HighsSolverEmptyModelsTest,
   model.AddLinearConstraint(/*lower_bound=*/3.0, /*upper_bound=*/3.0);
   ASSERT_OK_AND_ASSIGN(const SolveResult result,
                        Solve(model, SolverType::kHighs));
-  EXPECT_THAT(result, TerminatesWith(TerminatpionReason::kInfeasible));
+  EXPECT_THAT(result, TerminatesWith(TerminationReason::kInfeasible));
   EXPECT_DOUBLE_EQ(result.termination.objective_bounds.primal_bound, kInf);
   EXPECT_DOUBLE_EQ(result.termination.objective_bounds.dual_bound, kInf);
 }
