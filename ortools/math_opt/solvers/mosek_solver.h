@@ -1,4 +1,4 @@
-// Copyright 2024 Mosek
+/// Copyright 2024 Mosek
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -76,7 +76,6 @@ class MosekSolver : public SolverInterface {
 
   absl::Status ReplaceObjective(const ObjectiveProto& obj);
   absl::Status AddVariables(const VariablesProto& vars);
-  absl::Status AddConstraint(int64_t id, const QuadraticConstraintProto& cons);
   absl::Status AddConstraints(const LinearConstraintsProto& cons);
   absl::Status AddConstraints(const LinearConstraintsProto& cons,
                               const SparseDoubleMatrixProto& lincofupds);
