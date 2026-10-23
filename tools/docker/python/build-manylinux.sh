@@ -23,20 +23,23 @@ function assert_defined(){
   fi
 }
 
+function log() {
+  echo "$@" | tee -a "${ROOT_DIR}/build.log"
+}
+
 function usage() {
   local -r NAME=$(basename "$0")
   echo -e "$NAME - Build using a cross toolchain.
 
 SYNOPSIS
-\t$NAME [-h|--help] [build|test|all]
+\t$NAME [-h|--help|help] [build|test|all]
 
 DESCRIPTION
 \tBuild wheel artifacts.
 
 \tYou MUST define the following variables before running this script:
 \t* PLATFORM: x86_64 aarch64
-\t* PYTHON_VERSION: 3 39 310 311 312 313
-note: PYTHON_VERSION=3 will generate for all pythons which could take time...
+\t* PYTHON_VERSION: 310 311 312 313 314 314t 315 315t
 
 OPTIONS
 \t-h --help: show this help text
@@ -47,11 +50,11 @@ OPTIONS
 EXAMPLES
 * Using export
 export PLATFORM=x86_64
-export PYTHON_VERSION=39
+export PYTHON_VERSION=312
 $0 build
 
 * One-liner:
-PLATFORM=x86_64 PYTHON_VERSION=39 $0 build"
+PLATFORM=x86_64 PYTHON_VERSION=312 $0 build"
 }
 
 function contains_element() {
@@ -75,7 +78,7 @@ function build_wheel() {
   # Arguments:
   #   $1 the python root directory
   if [[ "$#" -ne 1 ]]; then
-    echo "$0 called with an illegal number of parameters"
+    log "$0 called with an illegal number of parameters"
     exit 1
   fi
 
@@ -89,17 +92,22 @@ function build_wheel() {
   pip install -U pip setuptools wheel absl-py  # absl-py is needed by make test_python
   pip install -U mypy mypy-protobuf  # need to generate protobuf mypy files
 
-  echo "current dir: $(pwd)"
+  log "current dir: $(pwd)"
 
   if [[ ! -e "CMakeLists.txt" ]] || [[ ! -d "cmake" ]]; then
     >&2 echo "Can't find project's CMakeLists.txt or cmake"
     exit 2
   fi
+  log -n "CMake configure..."
   cmake -S. -B"${BUILD_DIR}" \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_DEPS=ON -DBUILD_PYTHON=ON -DPython3_ROOT_DIR="$1" \
     -DBUILD_TESTING=OFF -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF #--debug-find
+  log "DONE"
+
+  log -n "CMake build..."
   cmake --build "${BUILD_DIR}" -v -j4
+  log "DONE"
 
   # Restore environment
   deactivate
@@ -112,7 +120,7 @@ function check_wheel() {
   # Arguments:
   #   $1 the python root directory
   if [[ "$#" -ne 1 ]]; then
-    echo "$0 called with an illegal number of parameters"
+    log "$0 called with an illegal number of parameters"
     exit 1
   fi
 
@@ -137,13 +145,12 @@ function check_wheel() {
   )
   for FILE in "${MYPY_FILES[@]}"; do
     if [[ ! -f "${BUILD_DIR}/python/${FILE}" ]]; then
-      echo "error: ${FILE} missing in the python project"
+      log "error: ${FILE} missing in the python project"
       exit 1
     fi
   done
 
   # Check all generated wheel packages
-  ROOT_DIR=$(pwd)
   pushd "${BUILD_DIR}/python/dist"
   for FILE in *.whl; do
     # if no files found do nothing
@@ -166,7 +173,7 @@ function test_wheel() {
   # Arguments:
   #   $1 the python root directory
   if [[ "$#" -ne 1 ]]; then
-    echo "$0 called with an illegal number of parameters"
+    log "$0 called with an illegal number of parameters"
     exit 1
   fi
 
@@ -182,7 +189,7 @@ function test_wheel() {
   # Install the wheel artifact
   #pwd
   local -r WHEEL_FILE=$(find "${BUILD_DIR}"/python/dist/*.whl | head -1)
-  echo "WHEEL file: ${WHEEL_FILE}"
+  log "WHEEL file: ${WHEEL_FILE}"
   pip install --no-cache-dir "$WHEEL_FILE"
   pip show ortools
 
@@ -201,7 +208,6 @@ function test_wheel() {
   )
 
   # Run all the specified test scripts using the current environment.
-  local -r ROOT_DIR=$(pwd)
   pushd "$(mktemp -d)" # ensure we are not importing something from $PWD
   python --version
   for TEST in "${TESTS[@]}"; do
@@ -214,66 +220,80 @@ function test_wheel() {
 }
 
 function build() {
-  # For each python platform provided by manylinux, build and test artifacts.
-  for PYROOT in /opt/python/cp"${PYTHON_VERSION}"*-cp"${PYTHON_VERSION}"*; do
-    # shellcheck disable=SC2155
-    PYTAG=$(basename "$PYROOT")
-    echo "Python: $PYTAG"
+  local -r PYROOT=$(echo /opt/python/cp3*-cp"${PYTHON_VERSION}")
+  log "PYROOT: $PYROOT"
+  local -r PYTAG=$(basename "$PYROOT")
+  log "PYTAG: $PYTAG"
 
-    # Check for platforms to be skipped
-    if contains_element "$PYTAG" "${SKIPS[@]}"; then
-      >&2 echo "skipping deprecated platform $PYTAG"
-      continue
-    fi
+  # Check for platforms to be skipped
+  if contains_element "$PYTAG" "${SKIPS[@]}"; then
+    log "skipping deprecated platform $PYTAG"
+    exit
+  fi
 
-    BUILD_DIR="build_${PYTAG}"
-    VENV_DIR="env_${PYTAG}"
-    build_wheel "$PYROOT"
-    check_wheel "$PYROOT"
-  done
+  BUILD_DIR="build_${PYTAG}"
+  VENV_DIR="env_${PYTAG}"
+  build_wheel "$PYROOT"
+  check_wheel "$PYROOT"
 }
 
 function tests() {
-  # For each python platform provided by manylinux, build and test artifacts.
-  for PYROOT in /opt/python/cp"${PYTHON_VERSION}"*-cp"${PYTHON_VERSION}"*; do
-    # shellcheck disable=SC2155
-    PYTAG=$(basename "$PYROOT")
-    echo "Python: $PYTAG"
+  local -r PYROOT=$(echo /opt/python/cp3*-cp"${PYTHON_VERSION}")
+  log "PYROOT: $PYROOT"
+  local -r PYTAG=$(basename "$PYROOT")
+  log "PYTAG: $PYTAG"
 
-    # Check for platforms to be skipped
-    if contains_element "$PYTAG" "${SKIPS[@]}"; then
-      >&2 echo "skipping deprecated platform $PYTAG"
-      continue
-    fi
+  # Check for platforms to be skipped
+  if contains_element "$PYTAG" "${SKIPS[@]}"; then
+    log "skipping deprecated platform $PYTAG"
+    continue
+  fi
 
-    BUILD_DIR="build_${PYTAG}"
-    TEST_DIR="test_${PYTAG}"
-    test_wheel "$PYROOT"
-  done
+  BUILD_DIR="build_${PYTAG}"
+  TEST_DIR="test_${PYTAG}"
+  test_wheel "$PYROOT"
 }
 
 # Main
 function main() {
   case ${1} in
-    -h | --help)
+    -h | --help | help)
       usage; exit ;;
   esac
 
+  local -r ROOT_DIR="$(pwd)"
+  log "ROOT_DIR: '${ROOT_DIR}'"
+
   assert_defined PLATFORM
+  log "PLATFORM: '${PLATFORM}'"
   assert_defined PYTHON_VERSION
+  log "PYTHON_VERSION: '${PYTHON_VERSION}'"
+
+  # shellcheck source=/dev/null
+  source "${ROOT_DIR}/Version.txt"
+  assert_defined OR_TOOLS_MAJOR
+  assert_defined OR_TOOLS_MINOR
+  log "ORTOOLS_VERSION: '${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}'"
+
+  local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  log "ORTOOLS_BRANCH: '${ORTOOLS_BRANCH}'"
+  local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
+  log "ORTOOLS_SHA1: '${ORTOOLS_SHA1}'"
 
   # Setup
-  declare -a SKIPS=( "cp38-cp38" )
+  declare -a SKIPS=( "cp38-cp38" "cp39-cp39" )
 
   case ${1} in
     build)
-      build ;;
-    test)
-      tests ;;
-    *)
       build
-      tests ;;
+      exit ;;
+    test)
+      tests
+      exit ;;
+    *)
+      >&2 echo "Target '${1}' unknown"
+      exit 1
   esac
 }
 
-main "${1:-all}"
+main "${1:-help}"
