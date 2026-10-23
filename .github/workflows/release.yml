@@ -286,7 +286,8 @@ jobs:
           311,
           312,
           313,
-          314
+          314,
+          315,
         ]
     name: Python(${{matrix.arch}}•${{matrix.distro}}•cp${{matrix.python}})
     runs-on: ubuntu-latest
