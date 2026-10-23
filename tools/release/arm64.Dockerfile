@@ -32,6 +32,7 @@ RUN dnf -y update \
 && dnf clean all \
 && rm -rf /var/cache/dnf
 ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+ENV PATH=/usr/lib/jvm/java-21-openjdk/bin:$PATH
 
 # Update maven
 ARG MAVEN_VERSION=3.10.0
