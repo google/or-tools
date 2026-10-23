@@ -59,24 +59,23 @@ function log() {
 # shellcheck disable=SC2329
 function publish_delivery() {
   assert_defined ARCH
+  assert_defined ORTOOLS_IMG
   assert_defined ORTOOLS_BRANCH
   assert_defined ORTOOLS_SHA1
+  assert_defined DOCKERFILE
+
   assert_defined ORTOOLS_TOKEN
   assert_defined ORTOOLS_DELIVERY
-  assert_defined DOCKERFILE
-  assert_defined ORTOOLS_IMG
 
   # Enable docker over QEMU support
   if [[ ${ARCH} != "arm64" && ${ARCH} != "aarch64" ]]; then
     docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
   fi
+  cd "${RELEASE_DIR}" || exit 2
 
-  # Clean
-  log -n "Remove previous docker images..."
+  log -n "Remove previous docker image..."
   docker image rm -f "${ORTOOLS_IMG}":"publish_${ORTOOLS_DELIVERY}" 2>/dev/null
   log "DONE"
-
-  cd "${RELEASE_DIR}" || exit 2
 
   # Publish delivery
   log -n "Build ${ORTOOLS_IMG}:publish_${ORTOOLS_DELIVERY}..."
@@ -138,7 +137,9 @@ function main() {
   log "RELEASE_DIR: '${RELEASE_DIR}'"
 
   local -r DOCKERFILE="arm64.Dockerfile"
+  log "DOCKERFILE: '${DOCKERFILE}'"
   local -r ORTOOLS_IMG="ortools/manylinux_delivery_arm64"
+  log "ORTOOLS_IMG: '${ORTOOLS_IMG}'"
 
   mkdir -p "${ROOT_DIR}/export"
 

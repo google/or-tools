@@ -188,8 +188,6 @@ function build_java() {
   -in tools/release/private-key.gpg.enc \
   -out private-key.gpg -d
   gpg --batch --import private-key.gpg
-  # Don't need to trust the key
-  #expect -c "spawn gpg --edit-key "corentinl@google.com" trust quit; send \"5\ry\r\"; expect eof"
 
   # Install the maven settings.xml having the GPG passphrase
   mkdir -p ~/.m2
@@ -221,8 +219,6 @@ function build_java() {
     otool -L temp_java/lib/libortools.dylib | grep -vqz "/Users"
     log "DONE"
   fi
-  #cmake --build temp_java --target test
-  #echo "cmake test: DONE" | tee -a build.log
 
   # copy jar to export
   if [[ "${OS}" == "Darwin" ]]; then

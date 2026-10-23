@@ -22,7 +22,7 @@ function help() {
 ${BOLD}NAME${RESET}
 \t$NAME - Publish delivery using the ${BOLD}local host system${RESET}.
 ${BOLD}SYNOPSIS${RESET}
-\t$NAME [-h|--help] [java|python]
+\t$NAME [-h|--help|help] [java|python]
 ${BOLD}DESCRIPTION${RESET}
 \tPublish Google OR-Tools deliveries.
 \tYou ${BOLD}MUST${RESET} define the following variables before running this script:
@@ -88,7 +88,7 @@ function publish_java() {
     OPENSSL_PRG=openssl11
   fi
   echo "check ${OPENSSL_PRG}..."
-  command -v "$OPENSSL_PRG" | xargs echo "openssl: " | tee -a publish.log
+  command -v "${OPENSSL_PRG}" | xargs echo "openssl: " | tee -a publish.log
   echo "check gpg..."
   command -v gpg | xargs echo "gpg: " | tee -a publish.log
 
