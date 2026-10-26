@@ -636,14 +636,24 @@ template <typename IndexT, typename T>
 class SVector {
   static_assert(alignof(T) <= alignof(std::max_align_t),
                 "SVector does not support over-aligned types.");
+  static_assert(std::numeric_limits<IndexT>::is_specialized);
+  static constexpr size_t kMaxCapacity =
+      static_cast<size_t>(std::numeric_limits<IndexT>::max());
+
   // Marked `NOINLINE` to keep the computation out of inlined `grow()` call
   // sites on the cold reallocation path, and `static` (taking
   // `current_capacity` by value) so the out-of-line call does not take `this`
   // or force `this` fields to memory.
   ABSL_ATTRIBUTE_NOINLINE static size_t GetNewCapacity(
       size_t current_capacity) {
-    return std::max(
-        {kMinCapacity, current_capacity * 13 / 10, current_capacity + 1});
+    static_assert(kMinCapacity * 13 / 10 > kMinCapacity,
+                  "kMinCapacity must be large enough for 1.3x growth.");
+    static_assert(kMaxCapacity >= kMinCapacity);
+    DCHECK_LT(current_capacity, kMaxCapacity);
+    const size_t grown = current_capacity * 13 / 10;
+    if (grown <= kMinCapacity) return kMinCapacity;
+    if (grown >= kMaxCapacity) return kMaxCapacity;
+    return grown;
   }
 
  public:

@@ -555,6 +555,41 @@ TEST(SvectorTest, SelfAssignment) {
   EXPECT_EQ(v[1], 40);
 }
 
+DEFINE_STRONG_INT_TYPE(StrongInt16, int16_t);
+
+template <typename IndexT>
+void TestGrowUntilCapacityAndSizeBoundaries() {
+  SVector<IndexT, char> s;
+  constexpr IndexT kMaxCapacity = std::numeric_limits<IndexT>::max();
+  while (s.size() < kMaxCapacity) {
+    s.grow('a', 'b');
+  }
+  EXPECT_EQ(s.size(), kMaxCapacity);
+  EXPECT_EQ(s.capacity(), kMaxCapacity);
+  EXPECT_EQ('a', s[-kMaxCapacity]);
+  EXPECT_EQ('b', s[kMaxCapacity - IndexT(1)]);
+  // Verify that the [] operators aren't flawed by changing the extremal values
+  // and verifying that only those appear changed.
+  s[-kMaxCapacity] = 'A';
+  s[kMaxCapacity - IndexT(1)] = 'B';
+  EXPECT_EQ('A', s[-kMaxCapacity]);
+  EXPECT_EQ('B', s[kMaxCapacity - IndexT(1)]);
+  for (IndexT i = -kMaxCapacity + IndexT(1); i < IndexT(0); ++i) {
+    EXPECT_EQ('a', s[i]);
+  }
+  for (IndexT i = IndexT(0); i < kMaxCapacity - IndexT(1); ++i) {
+    EXPECT_EQ('b', s[i]);
+  }
+}
+
+TEST(SvectorTest, GrowUntilCapacityAndSizeBoundaries) {
+  TestGrowUntilCapacityAndSizeBoundaries<int16_t>();
+}
+
+TEST(SvectorTest, GrowUntilCapacityAndSizeBoundariesWithStrongIndex) {
+  TestGrowUntilCapacityAndSizeBoundaries<StrongInt16>();
+}
+
 template <typename IndexType>
 class SVectorTest : public ::testing::Test {};
 
