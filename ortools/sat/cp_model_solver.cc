@@ -3224,11 +3224,19 @@ void CpModelSolver::AddFloatingPointObjectiveResponsePostprocessor() {
 
             // If requested, compute a correct lb from the one on the integer
             // objective.
-            if (params_.mip_compute_true_objective_bound()) {
+            //
+            // Tricky: Because the conversion happened after some domain
+            // tightening, it is important to take the tighter domains "after"
+            // presolve (stored in mapping_proto_) to compute this lower
+            // bound without making unnecessary mistakes.
+            if (params_.mip_compute_true_objective_bound() &&
+                (response->status() == CpSolverStatus::OPTIMAL ||
+                 response->status() == CpSolverStatus::FEASIBLE ||
+                 response->status() == CpSolverStatus::UNKNOWN)) {
               const int64_t integer_lb =
                   response->inner_objective_lower_bound();
               const double lb = ComputeTrueObjectiveLowerBound(
-                  model_proto_, integer_obj, integer_lb);
+                  model_proto_, *mapping_proto_, integer_lb);
               SOLVER_LOG(logger_, "[Scaling] scaled_objective_bound: ",
                          response->best_objective_bound(),
                          " corrected_bound: ", lb,

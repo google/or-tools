@@ -13,8 +13,10 @@
 
 #include "ortools/sat/cp_constraint_presolve.h"
 
+#include <cstdint>
 #include <string>
 
+#include "absl/random/random.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
@@ -23,6 +25,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -683,6 +686,168 @@ TEST(PresolveCpModelTest, DetectSimpleSum) {
                 coeffs: [ 1, 1, 1, 1 ]
                 domain: [ 0, 2 ]
               )pb"));
+}
+
+TEST(PresolveCpModelTest, DetectTwoTermTilting) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 5 ] }
+    variables { domain: [ 0, 5 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 17, 40 ]
+        domain: [ 0, 100 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto presolved = PresolveOneConstraint(initial_model, 0);
+  ASSERT_EQ(presolved.constraints_size(), 1);
+  const auto& lin = presolved.constraints(0).linear();
+  EXPECT_THAT(lin, testing::EqualsProto(R"pb(
+                vars: [ 0, 1 ]
+                coeffs: [ 1, 2 ]
+                domain: [ 0, 5 ]
+              )pb"));
+}
+
+TEST(PresolveCpModelTest, DetectTwoTermTiltingMixedSignsAndOffset) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 5 ] }
+    variables { domain: [ -5, 0 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 17, -40 ]
+        domain: [ -1000, 100 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto presolved = PresolveOneConstraint(initial_model, 0);
+  ASSERT_EQ(presolved.constraints_size(), 1);
+  const auto& lin = presolved.constraints(0).linear();
+  EXPECT_THAT(lin, testing::EqualsProto(R"pb(
+                vars: [ 0, 1 ]
+                coeffs: [ 1, -2 ]
+                domain: [ 0, 5 ]
+              )pb"));
+}
+
+TEST(PresolveCpModelTest, DetectTwoTermTiltingLargeDomain) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1000 ] }
+    variables { domain: [ 0, 1000 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 100001, 200003 ]
+        domain: [ 0, 200053000 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto presolved = PresolveOneConstraint(initial_model, 0);
+  ASSERT_EQ(presolved.constraints_size(), 1);
+  const auto& lin = presolved.constraints(0).linear();
+  EXPECT_THAT(lin, testing::EqualsProto(R"pb(
+                vars: [ 0, 1 ]
+                coeffs: [ 1, 2 ]
+                domain: [ 0, 2000 ]
+              )pb"));
+}
+
+TEST(PresolveCpModelTest, DetectTwoTermTiltingShiftedQuadrant) {
+  // Here a1 * R1 = 170 and a2 * R2 = 400, so B = 450 triggers both shifts:
+  // s1 = floor((450 - 400) / 17) = 2 and s2 = floor((450 - 170) / 40) = 7.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 17, 40 ]
+        domain: [ 0, 450 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto presolved = PresolveOneConstraint(initial_model, 0);
+  ASSERT_EQ(presolved.constraints_size(), 1);
+  const auto& lin = presolved.constraints(0).linear();
+  EXPECT_THAT(lin, testing::EqualsProto(R"pb(
+                vars: [ 0, 1 ]
+                coeffs: [ 2, 5 ]
+                domain: [ 0, 55 ]
+              )pb"));
+}
+
+TEST(PresolveCpModelTest, DetectTwoTermTiltingLowerBound) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 5 ] }
+    variables { domain: [ 0, 5 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 17, 40 ]
+        domain: [ 185, 285 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto presolved = PresolveOneConstraint(initial_model, 0);
+  ASSERT_EQ(presolved.constraints_size(), 1);
+  const auto& lin = presolved.constraints(0).linear();
+  EXPECT_THAT(lin, testing::EqualsProto(R"pb(
+                vars: [ 0, 1 ]
+                coeffs: [ 1, 2 ]
+                domain: [ 10, 15 ]
+              )pb"));
+}
+
+TEST(PresolveCpModelTest, DetectTwoTermTiltingRandom) {
+  absl::BitGen random;
+  for (int iter = 0; iter < 100; ++iter) {
+    const int64_t a = absl::Uniform<int64_t>(random, 1, 101);
+    const int64_t b = absl::Uniform<int64_t>(random, 1, 101);
+    const int64_t ub_x = absl::Uniform<int64_t>(random, 0, 101);
+    const int64_t ub_y = absl::Uniform<int64_t>(random, 0, 101);
+    const int64_t c = absl::Uniform<int64_t>(random, 0, 101);
+
+    CpModelProto model_proto;
+    FillDomainInProto(Domain(0, ub_x), model_proto.add_variables());
+    FillDomainInProto(Domain(0, ub_y), model_proto.add_variables());
+    LinearConstraintProto* lin =
+        model_proto.add_constraints()->mutable_linear();
+    lin->add_vars(0);
+    lin->add_vars(1);
+    lin->add_coeffs(a);
+    lin->add_coeffs(b);
+    FillDomainInProto(Domain(0, c), lin);
+
+    CpModelProto mapping_model;
+    Model model;
+    PresolveContext context(&model, &model_proto, &mapping_model);
+    CpConstraintPresolver presolver(&context);
+    context.InitializeNewDomains();
+    presolver.DetectTwoTermTilting(0, model_proto.mutable_constraints(0));
+
+    const auto& new_lin = model_proto.constraints(0).linear();
+    const Domain rhs_domain = ReadDomainFromProto(new_lin);
+    const int64_t new_a = new_lin.coeffs(0);
+    const int64_t new_b = new_lin.coeffs(1);
+    ASSERT_LE(new_a, a);
+    ASSERT_LE(new_b, b);
+
+    for (int64_t x = 0; x <= ub_x; ++x) {
+      for (int64_t y = 0; y <= ub_y; ++y) {
+        const bool orig_feasible = (a * x + b * y <= c);
+        const bool presolved_feasible =
+            rhs_domain.Contains(new_a * x + new_b * y);
+        ASSERT_EQ(orig_feasible, presolved_feasible);
+      }
+    }
+  }
 }
 
 }  // namespace

@@ -73,6 +73,13 @@ class CpConstraintPresolver {
   // Returns true if the constraint changed.
   bool DivideLinearByGcd(ConstraintProto* ct);
 
+  // Detects if a 2-term linear constraint (or constraint with 2 distinct
+  // coefficient magnitudes) can be tilted to strictly smaller integer
+  // coefficients using continued fraction convergents and Euclidean Algorithm.
+  // Returns true if the detection triggered and the constraint was rewritten.
+  // See go/cp-two-term-tilting for more details.
+  bool DetectTwoTermTilting(int c, ConstraintProto* ct);
+
   void TryToSimplifyDomain(int var);
 
   // Returns false on UNSAT.

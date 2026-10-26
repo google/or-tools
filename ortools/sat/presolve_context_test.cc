@@ -1052,6 +1052,133 @@ TEST(PresolveContextTest, ComputeMinMaxActivity) {
       context.ComputeMinMaxActivity(working_model.objective());
   EXPECT_EQ(min_activity, 2 * 0 + 4 * 3 - 2 * 7 - 4 * -2 - 2 * 11);
   EXPECT_EQ(max_activity, 2 * 8 + 4 * 3 - 2 * -2 - 4 * -2 - 2 * -4);
+
+  const PresolveContext::LinearStats stats =
+      context.ComputeLinearStats(working_model.objective());
+  EXPECT_EQ(stats.min_activity, min_activity);
+  EXPECT_EQ(stats.max_activity, max_activity);
+  EXPECT_EQ(stats.min_coeff_magnitude, 2);
+  EXPECT_EQ(stats.max_coeff_magnitude, 4);
+}
+
+TEST(PresolveContextTest, BuildMergedCanonicalLinearConstraint) {
+  Model model;
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 5 ] }
+    variables { domain: [ -3, 1 ] }
+    variables { domain: [ 2, 10 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 7, 10 ] }
+    variables { domain: [ 4, 4 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3, 4, 5 ]
+        coeffs: [ 10, -10, 3, 7, -3, 5 ]
+        domain: [ 0, 100 ]
+      }
+    }
+  )pb");
+
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+
+  // Ranges are [5, 4, 8, 2, 3, 0] with magnitudes [10, 10, 3, 7, 3, 5]:
+  //   magnitude 3  -> 8 + 3 = 11
+  //   magnitude 5  -> skipped (range == 0), absorbed into min_activity (+20)
+  //   magnitude 7  -> 2
+  //   magnitude 10 -> 5 + 4 = 9
+  // min_activity = 10*0 - 10*1 + 3*2 + 7*0 - 3*10 + 5*4 = -14.
+  const PresolveContext::MergedCanonicalLinearConstraint canonical =
+      context.BuildMergedCanonicalLinearConstraint(
+          working_model.constraints(0).linear());
+  EXPECT_THAT(canonical.terms,
+              testing::ElementsAre(
+                  PresolveContext::CanonicalTerm{.range = 11, .magnitude = 3},
+                  PresolveContext::CanonicalTerm{.range = 2, .magnitude = 7},
+                  PresolveContext::CanonicalTerm{.range = 9, .magnitude = 10}));
+  EXPECT_EQ(canonical.lb, 14);
+  EXPECT_EQ(canonical.ub, 114);
+
+  const LinearConstraintProto empty_proto =
+      ParseTestProto(R"pb(domain: [ 0, 0 ])pb");
+  const PresolveContext::MergedCanonicalLinearConstraint empty =
+      context.BuildMergedCanonicalLinearConstraint(empty_proto);
+  EXPECT_THAT(empty.terms, testing::IsEmpty());
+  EXPECT_EQ(empty.lb, 0);
+  EXPECT_EQ(empty.ub, 0);
+}
+
+TEST(PresolveContextTest, BuildMergedCanonicalLinearConstraintClampsBounds) {
+  Model model;
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 1, 4 ] }
+    variables { domain: [ -2, 3 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 2, -3 ]
+        domain: [ -100, 100 ]
+      }
+    }
+  )pb");
+
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+
+  // min_activity = 2*1 - 3*3 = -7, max_activity = 2*4 - 3*(-2) = 14.
+  // Bounds [-100, 100] are clamped to
+  // [0, max_activity - min_activity] = [0, 21].
+  const PresolveContext::MergedCanonicalLinearConstraint canonical =
+      context.BuildMergedCanonicalLinearConstraint(
+          working_model.constraints(0).linear());
+  EXPECT_THAT(canonical.terms,
+              testing::ElementsAre(
+                  PresolveContext::CanonicalTerm{.range = 3, .magnitude = 2},
+                  PresolveContext::CanonicalTerm{.range = 5, .magnitude = 3}));
+  EXPECT_EQ(canonical.lb, 0);
+  EXPECT_EQ(canonical.ub, 21);
+}
+
+TEST(PresolveContextTest, BuildMergedCanonicalLinearConstraintInfeasible) {
+  Model model;
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 1, 4 ] }
+    variables { domain: [ -2, 3 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 2, -3 ]
+        domain: [ 15, 20 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 2, -3 ]
+        domain: [ -20, -8 ]
+      }
+    }
+  )pb");
+
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+
+  // min_activity = -7, max_activity = 14.
+  // Constraint 0 has ct_lb = 15 > max_activity.
+  const PresolveContext::MergedCanonicalLinearConstraint above_max =
+      context.BuildMergedCanonicalLinearConstraint(
+          working_model.constraints(0).linear());
+  EXPECT_THAT(above_max.terms, testing::IsEmpty());
+  EXPECT_EQ(above_max.lb, 1);
+  EXPECT_EQ(above_max.ub, 0);
+
+  // Constraint 1 has ct_ub = -8 < min_activity.
+  const PresolveContext::MergedCanonicalLinearConstraint below_min =
+      context.BuildMergedCanonicalLinearConstraint(
+          working_model.constraints(1).linear());
+  EXPECT_THAT(below_min.terms, testing::IsEmpty());
+  EXPECT_EQ(below_min.lb, 1);
+  EXPECT_EQ(below_min.ub, 0);
 }
 
 TEST(PresolveContextTest, CanonicalizeLinearConstraint) {

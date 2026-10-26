@@ -348,7 +348,7 @@ void PresolveContext::AddImplyInDomain(int b, int x, const Domain& domain) {
   LinearConstraintProto* mutable_linear = imply->mutable_linear();
   mutable_linear->mutable_vars()->resize(1, x);
   mutable_linear->mutable_coeffs()->resize(1, 1);
-  FillDomainInProto(domain, mutable_linear);
+  FillDomainInProto(domain.IntersectionWith(DomainOf(x)), mutable_linear);
 }
 
 void PresolveContext::AddImplyInDomain(int b, const LinearExpressionProto& expr,
@@ -359,6 +359,7 @@ void PresolveContext::AddImplyInDomain(int b, const LinearExpressionProto& expr,
   LinearConstraintProto* mutable_linear = imply->mutable_linear();
   FillDomainInProto(domain, mutable_linear);
   AddLinearExpressionToLinearConstraint(expr, 1, imply->mutable_linear());
+  CanonicalizeLinearConstraint(imply);
 }
 
 bool PresolveContext::DomainIsEmpty(int ref) const {
@@ -2670,6 +2671,58 @@ bool LoadModelForPresolve(const CpModelProto& model_proto, SatParameters params,
   }
 
   return true;
+}
+
+PresolveContext::MergedCanonicalLinearConstraint
+PresolveContext::BuildMergedCanonicalLinearConstraint(
+    const LinearConstraintProto& linear) const {
+  std::vector<CanonicalTerm> terms;
+  int64_t min_activity = 0;
+  int64_t max_activity = 0;
+  const int num_terms = linear.vars().size();
+  for (int i = 0; i < num_terms; ++i) {
+    const int var = linear.vars(i);
+    const int64_t coeff = linear.coeffs(i);
+    const int64_t min_val = MinOf(var);
+    const int64_t max_val = MaxOf(var);
+    min_activity += (coeff > 0) ? coeff * min_val : coeff * max_val;
+    max_activity += (coeff > 0) ? coeff * max_val : coeff * min_val;
+    const int64_t range = max_val - min_val;
+    if (range == 0) continue;
+    const int64_t magnitude = std::abs(coeff);
+    if (!terms.empty() && magnitude == terms.back().magnitude) {
+      terms.back().range += range;
+    } else {
+      terms.push_back({range, magnitude});
+    }
+  }
+  if (!terms.empty()) {
+    std::sort(terms.begin(), terms.end(),
+              [](const CanonicalTerm& a, const CanonicalTerm& b) {
+                return a.magnitude < b.magnitude;
+              });
+
+    int new_size = 1;
+    for (int i = 1; i < terms.size(); ++i) {
+      if (terms[i].magnitude == terms[new_size - 1].magnitude) {
+        terms[new_size - 1].range += terms[i].range;
+      } else {
+        terms[new_size++] = terms[i];
+      }
+    }
+    terms.resize(new_size);
+  }
+
+  CHECK_EQ(linear.domain().size(), 2);
+  const int64_t ct_lb = linear.domain(0);
+  int64_t ct_ub = linear.domain(1);
+  if (ct_lb > max_activity || ct_ub < min_activity) return {.lb = 1, .ub = 0};
+  if (ct_ub > max_activity) ct_ub = max_activity;
+  return {
+      .terms = std::move(terms),
+      .lb = ct_lb > min_activity ? ct_lb - min_activity : 0,
+      .ub = ct_ub > min_activity ? ct_ub - min_activity : 0,
+  };
 }
 
 template <typename ProtoWithVarsAndCoeffs, typename PresolveContextT>

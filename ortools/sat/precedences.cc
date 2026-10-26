@@ -1792,9 +1792,10 @@ bool Linear2Bounds::EnqueueLowerOrEqual(
     const IntegerValue linear_slack = ub - min_activity;
     CHECK_GE(linear_slack, 0);  // Conflict should already be dealt with.
     for (int i = 0; i < 2; ++i) {
+      const IntegerValue lb = integer_trail_->LowerBound(expr.vars[i]);
       const IntegerValue div = linear_slack / expr.coeffs[i];
-      const IntegerValue new_ub =
-          integer_trail_->LowerBound(expr.vars[i]) + div;
+      if (div >= integer_trail_->UpperBound(expr.vars[i]) - lb) continue;
+      const IntegerValue new_ub = lb + div;
       const IntegerValue propagation_slack =
           (div + 1) * expr.coeffs[i] - linear_slack - 1;
       if (!integer_trail_->EnqueueWithLazyReason(

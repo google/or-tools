@@ -116,7 +116,8 @@ void AppendBinaryClausesFromTruthTable(
 }  // namespace
 
 void GateCongruenceClosure::EarlyGateDetection() {
-  ScopedTimeLogger logger("EarlyGateDetection", logger_, time_limit_);
+  ScopedTimeLogger logger("EarlyGateDetection", logger_, time_limit_,
+                          /*work_limit=*/4.0);
   logger.OverrideLogging(VLOG_IS_ON(2));
 
   // Allow to fill old_truth_tables_bitset_ with tight values.
@@ -212,7 +213,7 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
     const absl::Span<const Literal> implied =
         implication_graph_->Implications(Literal(a));
     {
-      DeterministicTimer<{.scale = 6.4e-08, .offset = 5.0e-08}> timer(
+      DeterministicTimer<{.scale = 6.9e-08, .offset = 7.8e-08}> timer(
           time_limit_, implied.size());
       for (const Literal b : implied) {
         if (implication_graph_->IsRedundant(b)) continue;
@@ -273,7 +274,7 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
     const int clause_size = clause->size();
     candidates.clear();
     {
-      DeterministicTimer<{.scale = 1.1e-08, .offset = 1.8e-07}> timer(
+      DeterministicTimer<{.scale = 2.0e-09, .offset = 2.4e-08}> timer(
           time_limit_, clause_size);
       for (const Literal l : clause->AsSpan()) {
         // TODO(user): using Implications() only considers pure binary
@@ -329,7 +330,7 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
       const absl::Span<const Literal> implications =
           implication_graph_->Implications(lit_with_less_implications);
       {
-        DeterministicTimer<{.scale = 1.6e-08, .offset = 6.2e-09}> timer(
+        DeterministicTimer<{.scale = 4.1e-09, .offset = 1.6e-08}> timer(
             time_limit_, implications.size());
         for (const Literal implied : implications) {
           is_potential_target->Set(implied.Negated());
@@ -338,7 +339,7 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
     }
 
     {
-      DeterministicTimer<{.scale = 1.6e-08, .offset = 1.0e-08}> timer(
+      DeterministicTimer<{.scale = 1.3e-09, .offset = 3.9e-07}> timer(
           time_limit_);
       uint64_t work_done = 0;
       for (const Literal target : candidates) {
@@ -1317,7 +1318,8 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   clause_manager_->AttachAllClauses();
 
-  ScopedTimeLogger logger("GateCongruenceClosure", logger_, time_limit_);
+  ScopedTimeLogger logger("GateCongruenceClosure", logger_, time_limit_,
+                          /*work_limit=*/4.0);
   logger.OverrideLogging(log_info || VLOG_IS_ON(2));
 
   // Let's release the memory on exit.

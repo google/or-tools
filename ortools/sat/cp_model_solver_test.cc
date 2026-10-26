@@ -6079,6 +6079,47 @@ TEST(SolveCpModelTest, FloatingPointObjectiveWithFractionalOffset) {
   }
 }
 
+TEST(SolveCpModelTest, PostsolveLinMaxWithVariableRemovedInSatPresolve) {
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 100 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 2 ] }
+    variables { domain: [ 0, 2 ] }
+    constraints {
+      lin_max {
+        target { vars: 0 coeffs: 1 }
+        exprs {
+          vars: [ 1, 2, 3 ]
+          coeffs: [ 6, -2, 5 ]
+          offset: -8
+        }
+        exprs {}
+      }
+    }
+    constraints { bool_or { literals: [ -3, 1, 3 ] } }
+    constraints { bool_or { literals: [ 2, 1, 3 ] } }
+    constraints { bool_or { literals: [ -2, -4, 4 ] } }
+    constraints { bool_or { literals: [ -5, 1, 3 ] } }
+    constraints {
+      linear {
+        vars: [ 5, 6 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 1, 2 ]
+      }
+    }
+  )pb");
+  SatParameters params;
+  params.set_cp_model_probing_level(0);
+  params.set_symmetry_level(0);
+  params.set_find_big_linear_overlap(false);
+  params.set_find_clauses_that_are_exactly_one(false);
+  const CpSolverResponse response = SolveWithParameters(model_proto, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+}
+
 #else
 static_assert(!operations_research::kTargetOsSupportsThreads);
 #endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)

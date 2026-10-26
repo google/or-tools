@@ -274,7 +274,8 @@ std::string ValidateLinearExpression(const CpModelProto& model,
 }
 
 std::string ValidateLinearConstraint(const CpModelProto& model,
-                                     const ConstraintProto& ct) {
+                                     const ConstraintProto& ct,
+                                     bool after_presolve) {
   if (!DomainInProtoIsValid(ct.linear())) {
     return absl::StrCat("Invalid domain in constraint : ",
                         ProtobufShortDebugString(ct));
@@ -293,6 +294,27 @@ std::string ValidateLinearConstraint(const CpModelProto& model,
   if (PossibleIntegerOverflow(model, arg.vars(), arg.coeffs())) {
     return "Possible integer overflow in constraint: " +
            ProtobufDebugString(ct);
+  }
+
+  if (after_presolve) {
+    // To avoid the need to check for overflow each time we do things like
+    // (max|min_rhs) (+|-) (max|min_activity), we assume that the constraints
+    // bounds can always be capped by the same bounds as the min/max activity of
+    // a constraint.
+    //
+    // Note(fdid): The design decision of using tight bound simplify overflow
+    // checking, but on another hand, to detect that a constraint is only one
+    // sided (>= or <=) it require recomputing the activity rather than relying
+    // on the bound to be canonicalized to +/- kint64max. So no clear winner
+    // here, but we prefered not assuming canonicalization and just recomputing
+    // the activity each time we need to decide if a constraint is only
+    // one-sided.
+    const int64_t min_rhs = ct.linear().domain(0);
+    const int64_t max_rhs = ct.linear().domain(ct.linear().domain().size() - 1);
+    if (min_rhs < -kint64max / 2 || max_rhs > kint64max / 2) {
+      return absl::StrCat("Linear constraint domain was not tightenned: ",
+                          ProtobufDebugString(ct));
+    }
   }
   return "";
 }
@@ -1191,7 +1213,8 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
       case ConstraintProto::ConstraintCase::kBoolXor:
         break;
       case ConstraintProto::ConstraintCase::kLinear:
-        RETURN_IF_NOT_EMPTY(ValidateLinearConstraint(model, ct));
+        RETURN_IF_NOT_EMPTY(
+            ValidateLinearConstraint(model, ct, after_presolve));
         break;
       case ConstraintProto::ConstraintCase::kLinMax: {
         RETURN_IF_NOT_EMPTY(

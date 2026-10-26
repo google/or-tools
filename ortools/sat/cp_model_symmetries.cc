@@ -1323,13 +1323,15 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
         const auto& obj = context->WorkingModel().objective();
         CHECK_EQ(num_objective_terms, obj.vars().size());
         for (int i = 1; i < num_objective_terms; ++i) {
-          auto* new_ct = context->AddConstraint()->mutable_linear();
+          ConstraintProto* ct = context->AddConstraint();
+          auto* new_ct = ct->mutable_linear();
           new_ct->add_vars(obj.vars(i - 1));
           new_ct->add_vars(obj.vars(i));
           new_ct->add_coeffs(1);
           new_ct->add_coeffs(-1);
           new_ct->add_domain(0);
           new_ct->add_domain(kint64max);
+          context->CanonicalizeLinearConstraint(ct);
         }
         context->UpdateRuleStats("symmetry: objective is one orbitope row.");
         context->solution_crush().SortOrbitopeColumns(orbitope, objective_row);
@@ -1710,6 +1712,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       ct->mutable_linear()->add_vars(orbitope[0][i + 1]);
       ct->mutable_linear()->add_domain(0);
       ct->mutable_linear()->add_domain(kint64max);
+      context->CanonicalizeLinearConstraint(ct);
       context->UpdateRuleStats("symmetry: added symmetry breaking inequality");
     }
   } else if (orbitope.size() > 1) {
@@ -1740,6 +1743,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       }
       arg->add_domain(0);
       arg->add_domain(kint64max);
+      context->CanonicalizeLinearConstraint(ct);
       DCHECK(!PossibleIntegerOverflow(context->WorkingModel(), arg->vars(),
                                       arg->coeffs()));
     }

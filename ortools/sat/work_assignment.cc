@@ -473,7 +473,8 @@ void SharedTreeEncoder::UpdateNode(
     ClausePtr clause;
     if (node->shared().is_root()) {
       ClauseUniquePtr owned_clause = NewImportedClause({});
-      DCHECK(owned_clause.get().GetType() == ClausePtr::kEmptyClause);
+      DCHECK(owned_clause.get() == kNullClausePtr ||
+             owned_clause.get().GetType() == ClausePtr::kEmptyClause);
       clause = owned_clause.release();
     } else {
       clause = prev_level_start->ReasonClauseOrNull(
@@ -1120,8 +1121,8 @@ bool SharedTreeWorker::SyncWithSharedTree() {
   // If we commit to this subtree, keep it for at least 1s of dtime.
   // This allows us to replace obviously bad subtrees quickly, and not replace
   // too frequently overall.
-  if (FinishedMinRestarts() && earliest_replacement_dtime_ >=
-                                   time_limit_->GetElapsedDeterministicTime()) {
+  if (FinishedMinRestarts() && time_limit_->GetElapsedDeterministicTime() >=
+                                   earliest_replacement_dtime_) {
     earliest_replacement_dtime_ =
         time_limit_->GetElapsedDeterministicTime() + 1;
     // Treat this as reassigning the same tree.

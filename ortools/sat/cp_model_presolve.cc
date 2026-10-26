@@ -500,16 +500,7 @@ void CpModelPresolver::ExtractAtMostOneFromLinear(ConstraintProto* ct) {
 
   const LinearConstraintProto& arg = ct->linear();
   const int num_vars = arg.vars_size();
-  int64_t min_sum = 0;
-  int64_t max_sum = 0;
-  for (int i = 0; i < num_vars; ++i) {
-    const int ref = arg.vars(i);
-    const int64_t coeff = arg.coeffs(i);
-    const int64_t term_a = coeff * context_->MinOf(ref);
-    const int64_t term_b = coeff * context_->MaxOf(ref);
-    min_sum += std::min(term_a, term_b);
-    max_sum += std::max(term_a, term_b);
-  }
+  const auto [min_sum, max_sum] = context_->ComputeMinMaxActivity(arg);
   for (const int type : {0, 1}) {
     std::vector<int> at_most_one;
     for (int i = 0; i < num_vars; ++i) {
@@ -682,9 +673,9 @@ void ExtractClausesToContext(absl::Span<const int> amo_or_exo_still_present,
   DCHECK(context->ConstraintVariableUsageIsConsistent());
 }
 
-void ExtractClausesToMappingModelProto(absl::Span<const int> index_mapping,
+bool ExtractClausesToMappingModelProto(absl::Span<const int> index_mapping,
                                        const SatPostsolver& container,
-                                       CpModelProto* proto,
+                                       PresolveContext* context,
                                        TimeLimit* time_limit) {
   DeterministicTimer<{.scale = 1.1e-07, .offset = 1.0e-08}> timer(
       time_limit, container.NumClauses());
@@ -697,15 +688,17 @@ void ExtractClausesToMappingModelProto(absl::Span<const int> index_mapping,
   // Important: however, we do not do that for the model used during postsolving
   // since the order of the constraints might be important there depending on
   // how we perform the postsolve.
+  std::vector<bool> in_postsolver(index_mapping.size(), false);
   for (int i = 0; i < container.NumClauses(); ++i) {
     const auto& clause = container.Clause(i);
     if (clause.empty()) continue;
-    ConstraintProto* ct = proto->add_constraints();
+    ConstraintProto* ct = context->mapping_model->add_constraints();
     if (!debug_name.empty()) {
       ct->set_name(debug_name);
     }
     ct->mutable_bool_or()->mutable_literals()->Reserve(clause.size());
     for (const Literal l : clause) {
+      in_postsolver[l.Variable().value()] = true;
       const int var = index_mapping[l.Variable().value()];
       if (l.IsPositive()) {
         ct->mutable_bool_or()->add_literals(var);
@@ -714,6 +707,25 @@ void ExtractClausesToMappingModelProto(absl::Span<const int> index_mapping,
       }
     }
   }
+
+  // We mark as removed any variables removed by the pure SAT presolve.
+  // This is mainly to discover or avoid bugs as we might have stale entries
+  // in our encoding hash-map for instance.
+  //
+  // Note that if a variable was removed without appearing in any postsolve
+  // clause (for instance, because all clauses containing it were subsumed), we
+  // must fix it now since MarkVariableAsRemoved() will skip the unused variable
+  // fixing at the end of presolve.
+  for (int i = 0; i < index_mapping.size(); ++i) {
+    const int var = index_mapping[i];
+    if (context->VarToConstraints(var).empty()) {
+      if (!in_postsolver[i] && !context->IsFixed(var)) {
+        if (!context->SetLiteralToFalse(var)) return false;
+      }
+      context->MarkVariableAsRemoved(var);
+    }
+  }
+  return true;
 }
 
 }  // namespace
@@ -1519,20 +1531,9 @@ bool CpModelPresolver::PresolvePureSatPart() {
   ExtractClausesToContext(amo_or_exo_still_present, new_to_old_index,
                           sat_presolver, context_);
 
-  // We mark as removed any variables removed by the pure SAT presolve.
-  // This is mainly to discover or avoid bugs as we might have stale entries
-  // in our encoding hash-map for instance.
-  for (int i = 0; i < num_variables; ++i) {
-    const int var = new_to_old_index[i];
-    if (context_->VarToConstraints(var).empty()) {
-      context_->MarkVariableAsRemoved(var);
-    }
-  }
-
   // Add the sat_postsolver clauses to mapping_model.
-  ExtractClausesToMappingModelProto(new_to_old_index, sat_postsolver,
-                                    context_->mapping_model, time_limit_);
-  return true;
+  return ExtractClausesToMappingModelProto(new_to_old_index, sat_postsolver,
+                                           context_, time_limit_);
 }
 
 namespace {
@@ -1645,18 +1646,8 @@ bool CpModelPresolver::PresolvePureSatProblem() {
   BasicClauseContainer clauses_container;
   if (!sat_solver->ExtractClauses(&clauses_container)) return false;
   ExtractClausesToContext({}, new_to_old_index, clauses_container, context_);
-  ExtractClausesToMappingModelProto(new_to_old_index, sat_postsolver,
-                                    context_->mapping_model, time_limit_);
-
-  // We mark as removed any variables removed by the pure SAT presolve.
-  // This is mainly to discover or avoid bugs as we might have stale entries
-  // in our encoding hash-map for instance.
-  for (int var = 0; var < num_variables; ++var) {
-    if (context_->VarToConstraints(var).empty()) {
-      context_->MarkVariableAsRemoved(var);
-    }
-  }
-  return true;
+  return ExtractClausesToMappingModelProto(new_to_old_index, sat_postsolver,
+                                           context_, time_limit_);
 }
 
 void CpModelPresolver::ShiftObjectiveWithExactlyOnes() {
@@ -7243,6 +7234,11 @@ CpSolverStatus CpModelPresolver::Presolve() {
     // objective is in terms of the original problem variables. We save it so
     // that we can expose to the user what exact objective we are actually
     // optimizing.
+    //
+    // Tricky: Note that our initial copy might have tightened the domains
+    // of some variables already, so variables fixed to zero that were present
+    // in the floating point objective might not even appear here. This needs
+    // to be taken into account when computing the true objective lower bound.
     *context_->mapping_model->mutable_objective() =
         context_->WorkingModel().objective();
   }
@@ -7262,7 +7258,9 @@ CpSolverStatus CpModelPresolver::Presolve() {
   //
   // TODO(user): Integrate this with first copy of the main model instead ? It
   // needs a bit more work since we don't currently canonicalize and remap at
-  // the same time.
+  // the same time. This will also break our computation of the true objective
+  // lower bound if the integer objective in the mapping model do not refer to
+  // original variable indices.
   std::vector<int> fixed_postsolve_mapping;
   if (!MaybeRemoveFixedVariables(&fixed_postsolve_mapping)) {
     return InfeasibleStatus();

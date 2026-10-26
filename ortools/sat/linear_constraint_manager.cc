@@ -313,10 +313,12 @@ bool LinearConstraintManager::MaybeRemoveSomeInactiveConstraints(
 // we regenerate identical cuts for some reason.
 LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
     LinearConstraint ct, bool* added, bool* folded) {
+  if (added != nullptr) *added = false;
   DCHECK_GT(ct.num_terms, 0);
-  DCHECK(!PossibleOverflow(integer_trail_, ct)) << ct.DebugString();
   DCHECK(NoDuplicateVariable(ct));
+  if (PossibleOverflow(integer_trail_, ct)) return kInvalidConstraintIndex;
   SimplifyConstraint(&ct);
+  if (ct.num_terms == 0) return kInvalidConstraintIndex;
   DivideByGCD(&ct);
   MakeAllVariablesPositive(&ct);
   MakeFirstCoefficientPositive(&ct);
@@ -548,10 +550,12 @@ void LinearConstraintManager::SetObjectiveCoefficient(IntegerVariable var,
 
 // TODO(user): Also consider partial gcd simplification? see presolve.
 bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
+  if (ct->num_terms == 0) return false;
   bool term_changed = false;
 
   IntegerValue min_sum(0);
   IntegerValue max_sum(0);
+  IntegerValue fixed_part(0);
   IntegerValue max_magnitude(0);
   IntegerValue min_magnitude = kMaxIntegerValue;
   int new_size = 0;
@@ -564,7 +568,10 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
 
     // For now we do not change ct, but just compute its new_size if we were
     // to remove a fixed term.
-    if (lb == ub) continue;
+    if (lb == ub) {
+      fixed_part += coeff * lb;
+      continue;
+    }
     ++new_size;
 
     const IntegerValue magnitude = IntTypeAbs(coeff);
@@ -579,8 +586,23 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
     }
   }
 
+  // Clear constraints that are always true.
+  // We rely on the deletion code to remove them eventually.
+  if (min_sum + fixed_part >= ct->lb && max_sum + fixed_part <= ct->ub) {
+    ct->resize(0);
+    ct->lb = 0;
+    ct->ub = 0;
+    return true;
+  }
+
+  // Do not simplify constraints that are infeasible at level zero, as the
+  // threshold computation below assumes ct->lb <= max_sum and ct->ub >=
+  // min_sum.
+  if (min_sum + fixed_part > ct->ub || max_sum + fixed_part < ct->lb) {
+    return false;
+  }
+
   // Shorten the constraint if needed.
-  IntegerValue fixed_part = 0;
   if (new_size < num_terms) {
     term_changed = true;
     ++num_shortened_constraints_;
@@ -590,24 +612,12 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
       const IntegerValue coeff = ct->coeffs[i];
       const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
       const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
-      if (lb == ub) {
-        fixed_part += coeff * lb;
-        continue;
-      }
+      if (lb == ub) continue;
       ct->vars[new_size] = var;
       ct->coeffs[new_size] = coeff;
       ++new_size;
     }
     ct->resize(new_size);
-  }
-
-  // Clear constraints that are always true.
-  // We rely on the deletion code to remove them eventually.
-  if (min_sum + fixed_part >= ct->lb && max_sum + fixed_part <= ct->ub) {
-    ct->resize(0);
-    ct->lb = 0;
-    ct->ub = 0;
-    return true;
   }
 
   // Make sure bounds are finite.

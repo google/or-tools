@@ -23,6 +23,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
+#include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/sat/clause.h"
@@ -166,7 +167,8 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
   //
   // TODO(user): Skip for the first AddToQueue() that corresponds to a conflict.
   // Or handle properly, for now, we never have !vars.empty() for conflicts.
-  IntegerValue slack = reason.slack;
+  CHECK_GE(reason.slack, 0);
+  absl::int128 slack = reason.slack.value();
   if (!reason.vars.empty() && reason.propagated_i_lit.IsValid()) {
     const IntegerLiteral propagated_i_lit = reason.propagated_i_lit;
     const IntegerVariable var = propagated_i_lit.var;
@@ -220,8 +222,8 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
 
       // Bump the slack !
       ++num_slack_relax_;
-      slack = CapAddI(slack,
-                      CapProdI(coeff, propagated_i_lit.bound - needed_bound));
+      slack += absl::int128(coeff.value()) *
+               absl::int128((propagated_i_lit.bound - needed_bound).value());
     }
   }
 
@@ -263,6 +265,7 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
     IntegerValue required_bound;
   };
   std::vector<Relax> relaxable;
+  absl::int128 max_slack_needed = 0;
 
   const int size = reason.vars.size();
   const IntegerVariable to_ignore =
@@ -289,13 +292,12 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
       // reason. In all cases, no need to add to the queue.
       if (data.settled_bound > required_bound) {
         ++num_slack_increase_;
-        slack = CapAddI(slack, CapProdI(reason.coeffs[i],
-                                        (data.settled_bound - required_bound)));
+        slack += absl::int128(reason.coeffs[i].value()) *
+                 absl::int128((data.settled_bound - required_bound).value());
       }
       continue;
     }
     CHECK_GE(required_bound, data.bound);
-    AddToQueueIfNotThere(data);
 
     // In all cases, we need the bound at the time.
     // In some rare cases, we have reason.index_at_propagation <
@@ -305,33 +307,56 @@ void IntegerConflictResolution::ExpandAndAddReasonToQueue(
       ++num_possibly_non_optimal_reason_;
     }
 
-    if (required_bound == data.bound) continue;
+    if (required_bound == data.bound) {
+      AddToQueueIfNotThere(data);
+      continue;
+    }
 
     // This might be relaxable, add for later processing.
     //
     // Tricky: the slack can be increased further during this loop, so we can't
     // use it here and need two passes.
+    max_slack_needed += absl::int128(reason.coeffs[i].value()) *
+                        absl::int128((required_bound - data.bound).value());
     relaxable.push_back({var, reason.coeffs[i], required_bound});
   }
 
-  // Delay the slack consumption.
-  //
-  // TODO(user): If all the slack can just be consumed up to the data.bound,
-  // we could avoid filling the more complex "slack" entries, and just relax
-  // the bound right away. Same if we just have a single relaxable entry.
+  // If all the slack can be consumed up to data.bound, or if there is only a
+  // single relaxable entry, we can relax the bound right away without filling
+  // the delayed slack entries.
+  if (slack >= max_slack_needed) {
+    if (!relaxable.empty()) ++num_slack_usage_;
+    return;
+  }
+  if (relaxable.size() == 1) {
+    const auto [var, coeff, required_bound] = relaxable[0];
+    IntegerVariableData& data = MutableIntData(var);
+    const IntegerValue delta(
+        static_cast<int64_t>(slack / absl::int128(coeff.value())));
+    if (delta > 0) ++num_slack_usage_;
+    data.bound = required_bound - delta;
+    AddToQueueIfNotThere(data);
+    return;
+  }
+
+  // Delay the slack consumption. If slack still overflows IntegerValue, do not
+  // propagate slack.
+  const IntegerValue int_slack(
+      slack >= kMaxIntegerValue.value() ? 0 : static_cast<int64_t>(slack));
   SlackIndex index(-1);
   for (const auto& [var, coeff, required_bound] : relaxable) {
     IntegerVariableData& data = MutableIntData(var);
+    AddToQueueIfNotThere(data);
 
     // Invariant checks.
     DCHECK_GT(required_bound, data.bound);
     DCHECK_GE(data.bound, data.settled_bound);
     DCHECK_GT(coeff, 0);
 
-    if (coeff <= slack) {
+    if (coeff <= int_slack) {
       if (index == -1) {  // Lazy initialization
         index = SlackIndex(linear_slacks_.size());
-        linear_slacks_.push_back(slack);
+        linear_slacks_.push_back(int_slack);
       }
       const SlackListIndex next(linked_list_buffer_.size());
       linked_list_buffer_.push_back({coeff, index, data.slack_ptr});

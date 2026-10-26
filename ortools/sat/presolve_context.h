@@ -14,7 +14,11 @@
 #ifndef ORTOOLS_SAT_PRESOLVE_CONTEXT_H_
 #define ORTOOLS_SAT_PRESOLVE_CONTEXT_H_
 
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
+#include <cstdlib>
+#include <limits>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -366,28 +370,73 @@ class PresolveContext {
   bool IsFixed(const LinearExpressionProto& expr) const;
   int64_t FixedValue(const LinearExpressionProto& expr) const;
 
-  // Accepts any proto with two parallel vector .vars() and .coeffs(), like
-  // LinearConstraintProto or ObjectiveProto or LinearExpressionProto but beware
-  // that this ignores any offset.
-  template <typename ProtoWithVarsAndCoeffs>
-  std::pair<int64_t, int64_t> ComputeMinMaxActivity(
-      const ProtoWithVarsAndCoeffs& proto) const {
+  struct LinearStats {
     int64_t min_activity = 0;
     int64_t max_activity = 0;
+    int64_t max_coeff_magnitude = 0;
+    int64_t min_coeff_magnitude = std::numeric_limits<int64_t>::max();
+  };
+
+  // Accepts any proto with two parallel vector .vars() and .coeffs(), like
+  // LinearConstraintProto or ObjectiveProto or LinearExpressionProto, but
+  // beware that this ignores any offset.
+  template <typename ProtoWithVarsAndCoeffs>
+  LinearStats ComputeLinearStats(const ProtoWithVarsAndCoeffs& proto) const {
+    LinearStats stats;
     const int num_vars = proto.vars().size();
     for (int i = 0; i < num_vars; ++i) {
       const int var = proto.vars(i);
       const int64_t coeff = proto.coeffs(i);
       if (coeff > 0) {
-        min_activity += coeff * MinOf(var);
-        max_activity += coeff * MaxOf(var);
+        stats.min_coeff_magnitude = std::min(stats.min_coeff_magnitude, coeff);
+        stats.max_coeff_magnitude = std::max(stats.max_coeff_magnitude, coeff);
+        stats.min_activity += coeff * MinOf(var);
+        stats.max_activity += coeff * MaxOf(var);
       } else {
-        min_activity += coeff * MaxOf(var);
-        max_activity += coeff * MinOf(var);
+        stats.min_coeff_magnitude = std::min(stats.min_coeff_magnitude, -coeff);
+        stats.max_coeff_magnitude = std::max(stats.max_coeff_magnitude, -coeff);
+        stats.min_activity += coeff * MaxOf(var);
+        stats.max_activity += coeff * MinOf(var);
       }
     }
-    return {min_activity, max_activity};
+    return stats;
   }
+
+  template <typename ProtoWithVarsAndCoeffs>
+  std::pair<int64_t, int64_t> ComputeMinMaxActivity(
+      const ProtoWithVarsAndCoeffs& proto) const {
+    const LinearStats stats = ComputeLinearStats(proto);
+    return {stats.min_activity, stats.max_activity};
+  }
+
+  struct CanonicalTerm {
+    int64_t range;
+    int64_t magnitude;
+
+    bool operator==(const CanonicalTerm& other) const {
+      return range == other.range && magnitude == other.magnitude;
+    }
+  };
+
+  // Canonicalizes a linear constraint into: lb <= sum_k magnitude_k * X_k <= ub
+  // with X_k in [0, range_k] (range_k > 0), sorted by increasing magnitude and
+  // with equal-magnitude terms merged. Terms with range == 0 are absorbed into
+  // `lb` and `ub` and omitted from `terms`. Additionally, `lb` and `ub` are
+  // clamped to [0, max_activity - min_activity].
+  struct MergedCanonicalLinearConstraint {
+    std::vector<CanonicalTerm> terms;
+    int64_t lb = 0;
+    int64_t ub = 0;
+  };
+
+  // Canonicalizes the given constraint into a MergedCanonicalLinearConstraint.
+  // Returns an infeasible constraint `lb = 1 < 0 = ub` if min/max activity
+  // proves infeasibility.
+  //
+  // Precondition: the rhs of the input constraint should be "simple" with a
+  // domain of size exactly 2.
+  MergedCanonicalLinearConstraint BuildMergedCanonicalLinearConstraint(
+      const LinearConstraintProto& linear) const;
 
   // Utility function.
   void CappedUpdateMinMaxActivity(int var, int64_t coeff, int64_t* min_activity,

@@ -14,6 +14,7 @@
 #include "ortools/sat/linear_constraint_manager.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -472,6 +473,38 @@ TEST(LinearConstraintManagerTest, AdvancedStrenghtening3) {
   EXPECT_EQ(1, manager.num_coeff_strenghtening());
   EXPECT_THAT(manager.AllConstraints()[index].constraint.DebugString(),
               StartsWith("5 <= 5*I0 5*I1 3*I2"));
+}
+
+TEST(LinearConstraintManagerTest, LargeDomainsDoNotCrashOnThresholdOverflow) {
+  Model model;
+  const int64_t kLarge = int64_t{5'000'000'000'000'000'000};
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, kLarge));
+  const IntegerVariable y = model.Add(NewIntegerVariable(-kLarge, 0));
+  LinearConstraintManager manager(&model);
+
+  // 1. Constraint where max_activity - min_activity overflows int64_t:
+  // rejected by PossibleOverflow() in Add().
+  {
+    LinearConstraintBuilder ct(IntegerValue(kLarge), kMaxIntegerValue);
+    ct.AddTerm(x, IntegerValue(1));
+    ct.AddTerm(y, IntegerValue(1));
+    bool added = true;
+    EXPECT_EQ(manager.Add(ct.Build(), &added), ConstraintIndex(-1));
+    EXPECT_FALSE(added);
+    EXPECT_TRUE(manager.AllConstraints().empty());
+  }
+
+  // 2. Constraint that passes PossibleOverflow() (activity in [-kLarge, 0]),
+  // but is infeasible at level zero (lb = kLarge) so lb - min_sum = 2 * kLarge
+  // would overflow int64_t in SimplifyConstraint().
+  {
+    LinearConstraintBuilder ct(IntegerValue(kLarge), kMaxIntegerValue);
+    ct.AddTerm(y, IntegerValue(1));
+    bool added = false;
+    EXPECT_EQ(manager.Add(ct.Build(), &added), ConstraintIndex(0));
+    EXPECT_TRUE(added);
+    EXPECT_EQ(manager.AllConstraints().size(), 1);
+  }
 }
 
 }  // namespace

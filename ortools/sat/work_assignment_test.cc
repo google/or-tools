@@ -103,6 +103,14 @@ TEST(SharedTreeEncoderTest, ImpliedNodeClosesSibling) {
   EXPECT_EQ(encoder.GetNode(NodeId(1))->shared().objective_lb, 10);
 }
 
+TEST(SharedTreeEncoderTest, ImportClosedRootNodeWithoutProofHandler) {
+  SharedTreeEncoder encoder(nullptr);
+  encoder.ImportNode(
+      {.id = NodeId(1), .decision = ProtoLiteral(), .objective_lb = 0});
+  encoder.ImportNode({.id = NodeId(1), .objective_lb = kMaxIntegerValue + 1});
+  EXPECT_TRUE(encoder.GetNode(NodeId(1))->shared().is_closed());
+}
+
 TEST(SharedTreeEncoderTest, ReasonLiterals) {
   SharedTreeEncoder encoder(nullptr);
   encoder.ImportNode(
