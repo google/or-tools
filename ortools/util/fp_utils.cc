@@ -438,8 +438,7 @@ double TightScalingErrorHelper::Optimize(absl::Span<const double> coeffs,
     if (item.delta == item.coeff) {
       // Avoiding computing (x * slack)/x for the simple case where no rounding
       // was done.
-      total_sum_.Add(is_ge_constraint ? slack.TightLowerBound()
-                                      : -slack.TightUpperBound());
+      total_sum_.AddProd(slack, /*negate=*/!is_ge_constraint);
       slack.Clear();
       continue;
     }

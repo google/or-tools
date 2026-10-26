@@ -129,16 +129,17 @@ class SolverLogger {
 class ScopedTimeLogger {
  public:
   ScopedTimeLogger(std::string name, SolverLogger* logger,
-                   TimeLimit* time_limit)
+                   TimeLimit* time_limit, double work_limit = 1.0)
       : name_(std::move(name)),
         dtime_at_start_(time_limit->GetElapsedDeterministicTime()),
+        work_limit_(work_limit),
         logger_(logger),
         time_limit_(time_limit) {
     timer_.Start();
   }
 
   // By default we want a limit of around 1 deterministic seconds.
-  double work_limit() const { return 1.0; }
+  double work_limit() const { return work_limit_; }
   bool WorkLimitIsReached() const {
     return deterministic_time() >= work_limit();
   }
@@ -171,6 +172,7 @@ class ScopedTimeLogger {
  private:
   const std::string name_;
   const double dtime_at_start_;
+  const double work_limit_;
 
   WallTimer timer_;
   SolverLogger* logger_;

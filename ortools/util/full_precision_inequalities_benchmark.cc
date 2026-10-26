@@ -64,27 +64,6 @@ std::vector<std::vector<double>> GenerateRandomVectors(const int vector_size,
   return vectors;
 }
 
-void BM_GetLooseDotProductBounds(benchmark::State& state) {
-  const int vector_size = state.range(0);
-  const std::vector<std::vector<double>> vectors =
-      GenerateRandomVectors(vector_size, std::ldexp(1.0, state.range(1)));
-  const int num_vectors = vectors.size();
-
-  int i = 0;
-  int j = 0;
-  for (auto _ : state) {
-    auto bnds =
-        TightDotProduct<double, double>(vectors[i], vectors[j]).LooseBounds();
-    benchmark::DoNotOptimize(bnds);
-    if (++j == num_vectors) {
-      j = 0;
-      if (++i == num_vectors) i = 0;
-    }
-  }
-  state.SetItemsProcessed(state.iterations());
-}
-BENCHMARK_DEFAULT_ARGS(BM_GetLooseDotProductBounds);
-
 void BM_GetTightDotProductBounds(benchmark::State& state) {
   const int vector_size = state.range(0);
   const std::vector<std::vector<double>> vectors =
@@ -237,28 +216,6 @@ BENCHMARK(BM_ProdBoundsViaTightSum<double, double>);
 BENCHMARK(BM_ProdBoundsViaTightSum<double, int64_t>);
 BENCHMARK(BM_ProdBoundsViaTightSum<int64_t, double>);
 BENCHMARK(BM_ProdBoundsViaTightSum<int64_t, int64_t>);
-
-void BM_IterativeSumBounds(benchmark::State& state) {
-  const int vector_size = state.range(0);
-  const double radius = std::ldexp(1.0, state.range(1));
-  std::vector<double> vector(vector_size);
-  std::mt19937 random(12345);
-  for (int k = 0; k < vector_size; ++k) {
-    vector[k] = absl::Uniform<double>(random, -radius, radius);
-  }
-
-  TightSum sum;
-
-  int i = 0;
-  for (auto _ : state) {
-    sum.Add(vector[i]);
-    benchmark::DoNotOptimize(sum.TightBounds());
-    if (++i == vector_size) i = 0;
-  }
-  state.SetItemsProcessed(state.iterations());
-}
-
-BENCHMARK_DEFAULT_ARGS(BM_IterativeSumBounds);
 
 }  // namespace
 }  // namespace operations_research

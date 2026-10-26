@@ -522,6 +522,14 @@ TEST(TightScalingErrorHelperTest, BasicUpperBound) {
   // Maximum scaled activity at x0 + x1 <= 10.0 is at (x0, x1) = (0, 10),
   // where rounded = 10.0 and scaled = 14.0 (exceeds 10.0 by +4.0).
   EXPECT_NEAR(helper.GetUpperBoundUnroundingError(10.0), 4.0, 1e-10);
+
+  // Regression test where delta == coeff (0.5) and slack requires > 53 bits of
+  // precision due to a large upper bound.
+  helper.LoadUnscaledConstraint(/*input_coeffs=*/{0.5},
+                                /*input_lbs=*/{-1},
+                                /*input_ubs=*/{2085585672099744623LL});
+  helper.LoadScalingFactor(1.0);
+  EXPECT_DOUBLE_EQ(helper.GetUpperBoundRoundingError(1.5), 1.5);
 }
 
 TEST(TightScalingErrorHelperTest, NonZeroBoundsAndNegativeCoeffs) {

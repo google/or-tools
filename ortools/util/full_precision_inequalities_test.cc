@@ -1988,5 +1988,77 @@ TEST(TightSumTest, InfiniteWorks) {
   EXPECT_EQ(TightSum().Add(-kInf).TightBounds(), std::make_pair(-kInf, -kInf));
 }
 
+TEST(TightSumTest, AddAndAddProdWithTightSum) {
+  // High-precision cancellation across two TightSums.
+  TightSum a;
+  a.Add(1e100).AddProd(0.5, int64_t{2085585672099744623LL});
+  TightSum b;
+  b.Add(1e100).AddProd(0.5, int64_t{2085585672099744620LL});
+
+  TightSum diff;
+  diff.Add(a).AddProd(b, /*negate=*/true);
+  EXPECT_EQ(diff.TightBounds(), std::make_pair(1.5, 1.5));
+
+  // Negative TightSum with negate=false, negate=true, and PowerOfTwo scaling.
+  TightSum neg_sum;
+  neg_sum.Add(-1e100).Add(3.25).Add(1e100).Add(-10.0);  // -6.75
+  EXPECT_EQ(TightSum().Add(neg_sum).TightBounds(),
+            std::make_pair(-6.75, -6.75));
+  EXPECT_EQ(TightSum().AddProd(neg_sum, /*negate=*/true).TightBounds(),
+            std::make_pair(6.75, 6.75));
+  EXPECT_EQ(TightSum()
+                .AddProd(neg_sum, /*negate=*/false, PowerOfTwo(2))
+                .TightBounds(),
+            std::make_pair(-27.0, -27.0));
+  EXPECT_EQ(TightSum()
+                .AddProd(neg_sum, /*negate=*/true, PowerOfTwo(-1))
+                .TightBounds(),
+            std::make_pair(3.375, 3.375));
+
+  // Negative power-of-two TightSum after TightBounds() pops all digits.
+  TightSum neg_pow2;
+  neg_pow2.Add(-4.0).Add(-std::ldexp(1.0, -256)).Add(std::ldexp(1.0, -256));
+  EXPECT_EQ(neg_pow2.TightBounds(), std::make_pair(-4.0, -4.0));
+  EXPECT_EQ(TightSum().Add(neg_pow2).TightBounds(), std::make_pair(-4.0, -4.0));
+  EXPECT_EQ(TightSum().AddProd(neg_pow2, /*negate=*/true).TightBounds(),
+            std::make_pair(4.0, 4.0));
+  EXPECT_EQ(TightSum().Add(5.0).Add(neg_pow2).TightBounds(),
+            std::make_pair(1.0, 1.0));
+  EXPECT_EQ(
+      TightSum().Add(5.0).AddProd(neg_pow2, /*negate=*/true).TightBounds(),
+      std::make_pair(9.0, 9.0));
+
+  // Self-addition and self-subtraction.
+  TightSum self_sum;
+  self_sum.Add(2.5);
+  EXPECT_EQ(self_sum.TightBounds(), std::make_pair(2.5, 2.5));
+  self_sum.Add(self_sum);
+  EXPECT_EQ(self_sum.TightBounds(), std::make_pair(5.0, 5.0));
+  self_sum.AddProd(self_sum, /*negate=*/true);
+  EXPECT_EQ(self_sum.TightBounds(), std::make_pair(0.0, 0.0));
+
+  // Infinite TightSums.
+  TightSum inf_sum;
+  inf_sum.Add(kInf);
+  EXPECT_EQ(TightSum().Add(1.0).Add(inf_sum).TightBounds(),
+            std::make_pair(kInf, kInf));
+  EXPECT_EQ(TightSum().Add(1.0).AddProd(inf_sum, /*negate=*/true).TightBounds(),
+            std::make_pair(-kInf, -kInf));
+}
+
+TEST(TightSumTest, Negate) {
+  EXPECT_EQ(TightSum().Negate().TightBounds(), std::make_pair(0.0, 0.0));
+  EXPECT_EQ(TightSum().Add(1.0).Add(-1.0).Negate().TightBounds(),
+            std::make_pair(0.0, 0.0));
+  EXPECT_EQ(TightSum().Add(3.25).Negate().TightBounds(),
+            std::make_pair(-3.25, -3.25));
+  EXPECT_EQ(TightSum().Add(-3.25).Negate().TightBounds(),
+            std::make_pair(3.25, 3.25));
+  EXPECT_EQ(TightSum().Add(kInf).Negate().TightBounds(),
+            std::make_pair(-kInf, -kInf));
+  EXPECT_EQ(TightSum().Add(-kInf).Negate().TightBounds(),
+            std::make_pair(kInf, kInf));
+}
+
 }  // namespace
 }  // namespace operations_research
