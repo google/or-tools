@@ -2187,7 +2187,6 @@ std::vector<std::pair<Literal, Literal>> SimplifyCircuit(
       BinaryCircuit lmp = extractor.Extract({complexity[i].a, complexity[i].b});
       AddNotEquivalentConstraint(complexity[i].a, complexity[i].b, &lmp);
       local_cp_model = ConstructCpModelFromBinaryCircuit(lmp);
-      const std::string info = absl::StrCat(lmp.num_vars, "_", lmp.num_inputs);
 
       bool proven_equiv = false;
       const CpSolverResponse response = solve(local_cp_model);

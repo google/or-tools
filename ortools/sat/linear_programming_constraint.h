@@ -265,8 +265,11 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // This api allows temporarily disabling the LP propagator which can be
   // costly during probing or other heavy propagation phases.
   void EnablePropagation(bool enable) {
+    if (enabled_ == enable) return;
     enabled_ = enable;
-    watcher_->CallOnNextPropagate(watcher_id_);
+    if (enable) {
+      watcher_->CallOnNextPropagate(watcher_id_);
+    }
   }
   bool PropagationIsEnabled() const { return enabled_; }
 

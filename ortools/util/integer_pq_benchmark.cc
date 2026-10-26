@@ -17,7 +17,6 @@
 
 #include "absl/random/random.h"
 #include "benchmark/benchmark.h"
-#include "ortools/base/adjustable_priority_queue-inl.h"
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/util/integer_pq.h"
 

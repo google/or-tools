@@ -736,7 +736,6 @@ or_cc_test(
         ":routing_test_utils",
         ":types",
         ":utils",
-        "//ortools/base:adjustable_priority_queue",
         "//ortools/base:gmock_main",
         "//ortools/base:log_severity",
         "//ortools/base:mathutil",

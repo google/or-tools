@@ -13,10 +13,11 @@
 
 #include "ortools/sat/c_api/cp_solver_c.h"
 
-#include <string>
+#include <cstddef>
+#include <cstdlib>
+#include <limits>
 
 #include "absl/log/check.h"
-#include "ortools/base/memutil.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
@@ -73,12 +74,12 @@ void SolveCpInterruptible(void* const cenv, const void* creq, int creq_len,
   operations_research::sat::CpSolverResponse res =
       SolveCpModel(req, &env->model);
 
-  std::string res_str;
-  CHECK(res.SerializeToString(&res_str));
-
-  *cres_len = static_cast<int>(res_str.size());
-  *cres = strings::memdup(res_str.data(), *cres_len);
+  const size_t res_size = res.ByteSizeLong();
+  CHECK_LE(res_size, std::numeric_limits<int>::max());
+  *cres_len = static_cast<int>(res_size);
+  *cres = malloc(*cres_len);
   CHECK(*cres != nullptr);
+  CHECK(res.SerializeToArray(*cres, *cres_len));
 }
 
 }  // extern "C"

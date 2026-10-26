@@ -14,4 +14,13 @@
 #ifndef ORTOOLS_BASE_OPTIONS_H_
 #define ORTOOLS_BASE_OPTIONS_H_
 
+namespace file {
+
+// A dummy Options class to match internal file API.
+using Options = int;
+
+inline Options Defaults() { return 0xBABA; }
+
+}  // namespace file
+
 #endif  // ORTOOLS_BASE_OPTIONS_H_

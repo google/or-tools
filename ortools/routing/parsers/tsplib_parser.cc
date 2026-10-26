@@ -40,7 +40,6 @@
 #include "ortools/base/options.h"
 #include "ortools/base/path.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/strtoint.h"
 #include "ortools/base/types.h"
 #include "ortools/base/zipfile.h"
 #include "ortools/routing/parsers/simple_graph.h"
@@ -165,6 +164,12 @@ std::shared_ptr<zipfile::ZipArchive> OpenZipArchiveIfItExists(
   }
 }
 
+int64_t ParseInt(absl::string_view word) {
+  int64_t value;
+  CHECK(absl::SimpleAtoi(word, &value));
+  return value;
+}
+
 }  // namespace
 
 TspLibParser::TspLibParser()
@@ -232,7 +237,7 @@ void TspLibParser::ParseExplicitFullMatrix(
     return;
   }
   for (const std::string& word : words) {
-    SetExplicitCost(edge_row_, edge_column_, atoi64(word));
+    SetExplicitCost(edge_row_, edge_column_, ParseInt(word));
     ++edge_column_;
     if (edge_column_ >= size_) {
       edge_column_ = 0;
@@ -245,8 +250,9 @@ void TspLibParser::ParseExplicitFullMatrix(
 void TspLibParser::ParseExplicitUpperRow(absl::Span<const std::string> words) {
   CHECK_LT(edge_row_, size_);
   for (const std::string& word : words) {
-    SetExplicitCost(edge_row_, edge_column_, atoi64(word));
-    SetExplicitCost(edge_column_, edge_row_, atoi64(word));
+    const int64_t cost = ParseInt(word);
+    SetExplicitCost(edge_row_, edge_column_, cost);
+    SetExplicitCost(edge_column_, edge_row_, cost);
     ++edge_column_;
     if (edge_column_ >= size_) {
       ++edge_row_;
@@ -260,8 +266,9 @@ void TspLibParser::ParseExplicitUpperRow(absl::Span<const std::string> words) {
 void TspLibParser::ParseExplicitLowerRow(absl::Span<const std::string> words) {
   CHECK_LT(edge_row_, size_);
   for (const std::string& word : words) {
-    SetExplicitCost(edge_row_, edge_column_, atoi64(word));
-    SetExplicitCost(edge_column_, edge_row_, atoi64(word));
+    const int64_t cost = ParseInt(word);
+    SetExplicitCost(edge_row_, edge_column_, cost);
+    SetExplicitCost(edge_column_, edge_row_, cost);
     ++edge_column_;
     if (edge_column_ >= edge_row_) {
       SetExplicitCost(edge_column_, edge_column_, 0);
@@ -276,8 +283,9 @@ void TspLibParser::ParseExplicitUpperDiagRow(
     absl::Span<const std::string> words) {
   CHECK_LT(edge_row_, size_);
   for (const std::string& word : words) {
-    SetExplicitCost(edge_row_, edge_column_, atoi64(word));
-    SetExplicitCost(edge_column_, edge_row_, atoi64(word));
+    const int64_t cost = ParseInt(word);
+    SetExplicitCost(edge_row_, edge_column_, cost);
+    SetExplicitCost(edge_column_, edge_row_, cost);
     ++edge_column_;
     if (edge_column_ >= size_) {
       ++edge_row_;
@@ -291,8 +299,9 @@ void TspLibParser::ParseExplicitLowerDiagRow(
     absl::Span<const std::string> words) {
   CHECK_LT(edge_row_, size_);
   for (const std::string& word : words) {
-    SetExplicitCost(edge_row_, edge_column_, atoi64(word));
-    SetExplicitCost(edge_column_, edge_row_, atoi64(word));
+    const int64_t cost = ParseInt(word);
+    SetExplicitCost(edge_row_, edge_column_, cost);
+    SetExplicitCost(edge_column_, edge_row_, cost);
     ++edge_column_;
     if (edge_column_ > edge_row_) {
       edge_column_ = 0;
@@ -305,7 +314,7 @@ void TspLibParser::ParseExplicitLowerDiagRow(
 void TspLibParser::ParseNodeCoord(absl::Span<const std::string> words) {
   CHECK_LE(3, words.size()) << words[0];
   CHECK_GE(4, words.size()) << words[4];
-  const int node(atoi32(words[0]) - 1);
+  const int node(ParseInt(words[0]) - 1);
   CHECK_LT(node, size_);
   CHECK_GE(node, 0);
   if (!absl::SimpleAtod(words[1], &coords_[node].x)) coords_[node].x = 0;
@@ -457,18 +466,18 @@ bool TspLibParser::ParseSections(absl::Span<const std::string> words) {
       break;
     }
     case DIMENSION: {
-      size_ = atoi32(last_word);
+      size_ = ParseInt(last_word);
       coords_.resize(size_);
       break;
     }
     case DISTANCE: {
       // This is non-standard but is supported as an upper bound on the length
       // of each route.
-      max_distance_ = atoi64(last_word);
+      max_distance_ = ParseInt(last_word);
       break;
     }
     case CAPACITY: {
-      capacity_ = atoi64(last_word);
+      capacity_ = ParseInt(last_word);
       break;
     }
     case EDGE_DATA_FORMAT: {
@@ -574,23 +583,23 @@ void TspLibParser::ProcessNewLine(const std::string& line) {
                 to_read_ = 0;
               } else {
                 CHECK_EQ(words.size(), 2);
-                const int from = atoi64(words[0]) - 1;
-                const int to = atoi64(words[1]) - 1;
+                const int from = ParseInt(words[0]) - 1;
+                const int to = ParseInt(words[1]) - 1;
                 edges_[std::min(from, to)].push_back(std::max(from, to));
               }
               break;
             }
             case ADJ_LIST: {
-              const int from = atoi64(words[0]) - 1;
+              const int from = ParseInt(words[0]) - 1;
               for (int i = 1; i < words.size(); ++i) {
-                const int to = atoi64(words[i]) - 1;
+                const int to = ParseInt(words[i]) - 1;
                 if (to != -2) {
                   edges_[std::min(from, to)].push_back(std::max(from, to));
                 } else {
                   CHECK_EQ(i, words.size() - 1);
                 }
               }
-              if (atoi64(words.back()) != -1) {
+              if (ParseInt(words.back()) != -1) {
                 LOG(WARNING) << "Missing -1 at the end of ADJ_LIST";
               }
               break;
@@ -629,12 +638,12 @@ void TspLibParser::ProcessNewLine(const std::string& line) {
         }
         case FIXED_EDGES_SECTION: {
           if (words.size() == 1) {
-            CHECK_EQ(-1, atoi64(words[0]));
+            CHECK_EQ(-1, ParseInt(words[0]));
             to_read_ = 0;
           } else {
             CHECK_EQ(2, words.size());
             fixed_edges_.insert(
-                std::make_pair(atoi64(words[0]) - 1, atoi64(words[1]) - 1));
+                std::make_pair(ParseInt(words[0]) - 1, ParseInt(words[1]) - 1));
           }
           break;
         }
@@ -644,7 +653,7 @@ void TspLibParser::ProcessNewLine(const std::string& line) {
         }
         case DEPOT_SECTION: {
           if (words.size() == 1) {
-            const int depot(atoi64(words[0]) - 1);
+            const int depot(ParseInt(words[0]) - 1);
             if (depot >= 0) {
               VLOG(2) << "Depot: " << depot;
               depot_ = depot;
@@ -673,8 +682,8 @@ void TspLibParser::ProcessNewLine(const std::string& line) {
           break;
         }
         case DEMAND_SECTION: {
-          const int64_t node = atoi64(words[0]) - 1;
-          demands_[node] = atoi64(words[1]);
+          const int64_t node = ParseInt(words[0]) - 1;
+          demands_[node] = ParseInt(words[1]);
           --to_read_;
           break;
         }
@@ -802,9 +811,9 @@ void TspLibTourParser::ProcessNewLine(const std::string& line) {
   if (word_size > 0) {
     if (section_ == TOUR_SECTION) {
       for (const std::string& word : words) {
-        const int node = atoi32(word);
+        const int node = ParseInt(word);
         if (node >= 0) {
-          tour_.push_back(atoi32(word) - 1);
+          tour_.push_back(node - 1);
         } else {
           section_ = UNDEFINED_SECTION;
         }
@@ -826,7 +835,7 @@ void TspLibTourParser::ProcessNewLine(const std::string& line) {
           break;
         }
         case DIMENSION:
-          size_ = atoi32(last_word);
+          size_ = ParseInt(last_word);
           break;
         case TOUR_SECTION:
           break;
@@ -871,14 +880,14 @@ void CVRPToursParser::ProcessNewLine(const std::string& line) {
   if (word_size > 0) {
     if (absl::AsciiStrToUpper(words[0]) == "COST") {
       CHECK_EQ(word_size, 2);
-      cost_ = atoi32(words[1]);
+      cost_ = ParseInt(words[1]);
       return;
     }
     if (absl::AsciiStrToUpper(words[0]) == "ROUTE") {
       CHECK_GT(word_size, 2);
       tours_.resize(tours_.size() + 1);
       for (int i = 2; i < word_size; ++i) {
-        tours_.back().push_back(atoi32(words[i]));
+        tours_.back().push_back(ParseInt(words[i]));
       }
       return;
     }

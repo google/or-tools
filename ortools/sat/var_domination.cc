@@ -795,7 +795,6 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
   absl::flat_hash_map<uint64_t, std::pair<int, int>> equiv_modified_constraints;
   std::vector<int64_t> temp_data;
   std::vector<int64_t> other_temp_data;
-  std::string s;
 
   // If there is only one blocking constraint, we can simplify the problem in
   // a few situations.

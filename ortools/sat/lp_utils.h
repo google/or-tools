@@ -94,7 +94,7 @@ double FindBestScalingAndComputeErrors(
     absl::Span<const double> lower_bounds,
     absl::Span<const double> upper_bounds, int64_t max_absolute_activity,
     double wanted_absolute_activity_precision, double* relative_coeff_error,
-    double* scaled_sum_error);
+    double* scaled_sum_error, double* max_scaling_factor = nullptr);
 
 // Helper to scale linear constraints with floating point coefficients to
 // CpModelProto::ConstraintProto. We use a class to reuse the temporary memory
@@ -246,6 +246,16 @@ std::vector<double> ScaleContinuousVariablesUpToMaxBound(
     const SatParameters& params, MPModelProto* mp_model, SolverLogger* logger,
     absl::Span<const double> current_vars_scaling = {});
 
+// For each constraint and the objective, computes the scaling factor that
+// allows to satisfy mip_wanted_precision and records the power-of-two headroom
+// left up to mip_max_activity_exponent. Then scales each continuous variable by
+// the minimum headroom across all constraints (and the objective) in which it
+// appears, capped by the maximum scaling needed for mip_wanted_precision and
+// the maximum valid CP-SAT variable domain.
+std::vector<double> ScaleContinuousVariablesForGivenPrecision(
+    const SatParameters& params, MPModelProto* mp_model, SolverLogger* logger,
+    absl::Span<const double> current_vars_scaling = {});
+
 // This simple step helps and should be done first. Returns false if the model
 // is trivially infeasible because of crossing bounds. The version with the
 // scaling, make the bound of the scaled variable integer.
@@ -330,7 +340,9 @@ struct LeftRightActivityBounds {
 // TODO(user): This should probably be done within a fixed-point loop and
 // mixed with bound propagation. Doing a single pass can still help remove
 // all [0, infinity) variables on models like uccase7.mps for instance.
-void RestrictBoundsWithDualReasoning(const SatParameters& params,
+// Returns true if at least one bound was restricted by more than
+// params.mip_tight_precision().
+bool RestrictBoundsWithDualReasoning(const SatParameters& params,
                                      const MPModelProtoWrapper& mp_model,
                                      absl::Span<double> var_lbs,
                                      absl::Span<double> var_ubs,
@@ -426,7 +438,7 @@ bool ScaleAndSetObjective(const SatParameters& params,
 // likely to be bad.
 double ComputeTrueObjectiveLowerBound(
     const CpModelProto& model_proto_with_floating_point_objective,
-    const CpObjectiveProto& integer_objective,
+    const CpModelProto& model_proto_with_integer_objective_and_domains,
     int64_t inner_integer_objective_lower_bound);
 
 }  // namespace sat

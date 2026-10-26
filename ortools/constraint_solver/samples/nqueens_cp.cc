@@ -21,6 +21,7 @@
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
 #include "absl/log/log.h"
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/log_severity.h"
@@ -111,7 +112,7 @@ int main(int argc, char* argv[]) {
   absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   int board_size = 8;
   if (argc > 1) {
-    board_size = std::atoi(argv[1]);
+    CHECK(absl::SimpleAtoi(argv[1], &board_size));
   }
   operations_research::NQueensCp(board_size);
   return EXIT_SUCCESS;

@@ -39,7 +39,6 @@
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
-#include "ortools/base/bitmap.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/types.h"
@@ -3889,7 +3888,7 @@ class GuidedLocalSearchPenaltiesMap {
   void Reset();
 
  private:
-  operations_research::Bitmap penalized_;
+  Bitset64<> penalized_;
   absl::flat_hash_map<VarValue, int64_t> penalties_;
 };
 
@@ -3904,12 +3903,12 @@ void GuidedLocalSearchPenaltiesMap::IncrementPenalty(
 
 void GuidedLocalSearchPenaltiesMap::Reset() {
   penalties_.clear();
-  penalized_.Clear();
+  penalized_.ClearAll();
 }
 
 int64_t GuidedLocalSearchPenaltiesMap::GetPenalty(
     const VarValue& var_value) const {
-  return (penalized_.Get(var_value.var))
+  return (penalized_.IsSet(var_value.var))
              ? gtl::FindWithDefault(penalties_, var_value)
              : 0;
 }

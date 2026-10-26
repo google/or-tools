@@ -25,7 +25,7 @@
 #include "absl/log/vlog_is_on.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/dynamic_partition.h"
-#include "ortools/base/adjustable_priority_queue-inl.h"
+#include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
@@ -749,7 +749,10 @@ bool SatPresolver::CrossProduct(Literal x) {
       clause_weight * num_clauses + sum_for_x + sum_for_not_x;
 
   // For the BCE, we prefer s2 to be small.
-  if (s1 < s2) x = x.Negated();
+  if (s1 < s2) {
+    x = x.Negated();
+    std::swap(sum_for_x, sum_for_not_x);
+  }
 
   // Test whether we should remove the x.Variable().
   int size = 0;
@@ -804,7 +807,8 @@ bool SatPresolver::CrossProduct(Literal x) {
   // instead of doing it many times.
   bool push_x_for_postsolve = true;
   bool push_not_x_for_postsolve = true;
-  if (parameters_.filter_sat_postsolve_clauses()) {
+  if (parameters_.filter_sat_postsolve_clauses() && sum_for_x > 0 &&
+      sum_for_not_x > 0) {
     if (sum_for_x <= sum_for_not_x) {
       push_not_x_for_postsolve = false;
     } else {

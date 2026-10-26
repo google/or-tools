@@ -48,7 +48,6 @@
 #include "absl/types/span.h"
 #include "google/protobuf/duration.pb.h"
 #include "gtest/gtest.h"
-#include "ortools/base/adjustable_priority_queue-inl.h"  // IWYU pragma: keep
 #include "ortools/base/gmock.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/base/mathutil.h"

@@ -13,10 +13,8 @@
 
 #include "ortools/sat/lrat_checker.h"
 
-#include <memory>
 #include <vector>
 
-#include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"

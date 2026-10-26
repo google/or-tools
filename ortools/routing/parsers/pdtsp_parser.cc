@@ -19,13 +19,23 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/mathutil.h"
-#include "ortools/base/strtoint.h"
 #include "ortools/util/filelineiter.h"
 
 namespace operations_research::routing {
+namespace {
+
+int64_t ParseInt(absl::string_view word) {
+  int64_t value;
+  CHECK(absl::SimpleAtoi(word, &value));
+  return value;
+}
+
+}  // namespace
 
 PdTspParser::PdTspParser() : section_(SIZE_SECTION) {}
 
@@ -53,7 +63,7 @@ void PdTspParser::ProcessNewLine(const std::string& line) {
   if (!words.empty()) {
     switch (section_) {
       case SIZE_SECTION: {
-        const int size = atoi64(words[0]);
+        const int size = ParseInt(words[0]);
         x_.resize(size, 0);
         y_.resize(size, 0);
         deliveries_.resize(size, -1);
@@ -61,23 +71,23 @@ void PdTspParser::ProcessNewLine(const std::string& line) {
         break;
       }
       case DEPOT_SECTION:
-        depot_ = atoi64(words[0]) - 1;
-        x_[depot_] = atoi64(words[1]);
-        y_[depot_] = atoi64(words[2]);
+        depot_ = ParseInt(words[0]) - 1;
+        x_[depot_] = ParseInt(words[1]);
+        y_[depot_] = ParseInt(words[2]);
         deliveries_[depot_] = -1;
         section_ = NODE_SECTION;
         break;
       case NODE_SECTION: {
         const int kEof = -999;
-        const int id = atoi64(words[0]) - 1;
+        const int id = ParseInt(words[0]) - 1;
         if (id + 1 == kEof) {
           section_ = EOF_SECTION;
         } else {
-          x_[id] = atoi64(words[1]);
-          y_[id] = atoi64(words[2]);
-          const bool is_pickup = atoi64(words[3]) == 0;
+          x_[id] = ParseInt(words[1]);
+          y_[id] = ParseInt(words[2]);
+          const bool is_pickup = ParseInt(words[3]) == 0;
           if (is_pickup) {
-            deliveries_[id] = atoi64(words[4]) - 1;
+            deliveries_[id] = ParseInt(words[4]) - 1;
           }
         }
         break;

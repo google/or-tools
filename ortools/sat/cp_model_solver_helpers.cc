@@ -583,7 +583,6 @@ void RegisterVariableBoundsLevelZeroExport(
   std::vector<int64_t> new_lower_bounds;
   std::vector<int64_t> new_upper_bounds;
   absl::flat_hash_set<int> visited_variables;
-  const std::string name = model->Name();
 
   auto broadcast_level_zero_bounds =
       [=](absl::Span<const IntegerVariable> modified_vars) mutable {
