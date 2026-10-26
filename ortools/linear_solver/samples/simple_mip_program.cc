@@ -83,7 +83,7 @@ void SimpleMipProgram() {
 
   // [START advanced]
   LOG(INFO) << "\nAdvanced usage:";
-  LOG(INFO) << "Problem solved in " << solver->wall_time() << " milliseconds";
+  LOG(INFO) << "Problem solved in " << solver->DurationSinceConstruction();
   LOG(INFO) << "Problem solved in " << solver->iterations() << " iterations";
   LOG(INFO) << "Problem solved in " << solver->nodes()
             << " branch-and-bound nodes";

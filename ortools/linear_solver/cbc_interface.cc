@@ -23,6 +23,7 @@
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/time/time.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
 
@@ -389,9 +390,9 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
   }
 
   // Time limit.
-  if (solver_->time_limit() != 0) {
-    VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
-    model.setMaximumSeconds(solver_->time_limit_in_secs());
+  if (solver_->TimeLimit() != absl::InfiniteDuration()) {
+    VLOG(1) << "Setting time limit = " << solver_->TimeLimit() << ".";
+    model.setMaximumSeconds(absl::ToDoubleSeconds(solver_->TimeLimit()));
   }
 
   // And solve.

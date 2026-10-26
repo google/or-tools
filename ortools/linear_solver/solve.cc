@@ -73,6 +73,7 @@
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
+#include "ortools/linear_solver/solve_mp_model.h"
 #include "ortools/lp_data/lp_parser.h"
 #include "ortools/lp_data/mps_reader.h"
 #include "ortools/lp_data/sol_reader.h"
@@ -203,7 +204,6 @@ MPSolutionResponse LocalSolve(const MPModelRequest& request_proto) {
     const MPSolverResponseStatus status =
         solver.LoadModelFromProtoWithUniqueNamesOrDie(request_proto.model(),
                                                       &error_message);
-    // Note, the underlying MPSolver treats time limit equal to 0 as no limit.
     if (status != MPSOLVER_MODEL_IS_VALID) {
       // NOTE(user): For SAT solves, when the model is invalid we directly exit
       // here.

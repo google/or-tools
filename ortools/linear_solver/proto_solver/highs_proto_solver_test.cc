@@ -367,5 +367,40 @@ TEST(HighsProtoSolverTest, DoesNotCrashForUnboundedFeasibility) {
   )pb"));
 }
 
+TEST(HighsProtoSolverTest, SolutionHint) {
+  EXPECT_THAT(HighsSolveProtoAndClearSolveInfo(ParseTextProtoOrDie(R"pb(
+                model {
+                  variable {
+                    lower_bound: 0
+                    upper_bound: 10
+                    objective_coefficient: 1
+                    is_integer: true
+                  }
+                  variable {
+                    lower_bound: 0
+                    upper_bound: 10
+                    objective_coefficient: 2
+                    is_integer: true
+                  }
+                  constraint {
+                    lower_bound: 5
+                    var_index: [ 0, 1 ]
+                    coefficient: [ 1, 1 ]
+                  }
+                  solution_hint {
+                    var_index: [ 0, 1 ]
+                    var_value: [ 5, 0 ]
+                  }
+                }
+                solver_type: HIGHS_MIXED_INTEGER_PROGRAMMING
+              )pb")),
+              EqualsProto(R"pb(
+                status: MPSOLVER_OPTIMAL
+                objective_value: 5
+                best_objective_bound: 5
+                variable_value: [ 5, 0 ]
+              )pb"));
+}
+
 }  // namespace
 }  // namespace operations_research

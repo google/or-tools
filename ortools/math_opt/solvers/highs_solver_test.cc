@@ -218,7 +218,7 @@ std::vector<StatusTestParameters> MakeStatusTestConfigs() {
           /*use_integer_variables=*/false,
           /*supports_node_limit=*/false,
           /*support_interrupter=*/false,
-          /*supports_one_thread=*/false));
+          /*supports_one_thread=*/true));
     }
   }
   // Now add MIP configuration:
@@ -231,7 +231,7 @@ std::vector<StatusTestParameters> MakeStatusTestConfigs() {
       /*use_integer_variables=*/true,
       /*supports_node_limit=*/true,
       /*support_interrupter=*/false,
-      /*supports_one_thread=*/false));
+      /*supports_one_thread=*/true));
   return test_parameters;
 }
 

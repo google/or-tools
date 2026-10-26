@@ -22,6 +22,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -44,6 +45,7 @@
 #include "io/HighsIO.h"
 #include "lp_data/HConst.h"
 #include "lp_data/HStruct.h"
+#include "lp_data/HighsCallback.h"
 #include "lp_data/HighsInfo.h"
 #include "lp_data/HighsLp.h"
 #include "lp_data/HighsModelUtils.h"
@@ -167,7 +169,7 @@ absl::StatusOr<std::unique_ptr<HighsOptions>> MakeOptions(
     result->log_to_console =
         parameters.highs().bool_options().at(kLogToConsole);
   } else {
-    result->log_to_console = result->output_flag;
+    result->log_to_console = parameters.enable_output() && !has_log_callback;
   }
   if (parameters.has_time_limit()) {
     OR_ASSIGN_OR_RETURN3(
@@ -224,12 +226,13 @@ absl::StatusOr<std::unique_ptr<HighsOptions>> MakeOptions(
     result->mip_max_improving_sols = parameters.solution_limit();
   }
   if (parameters.has_threads()) {
-    // Do not assign result.threads = parameters.threads() here, this is
-    // requires global synchronization. See
-    // highs/src/lp_data/Highs.cpp:607
-    return ortools::InvalidArgumentErrorBuilder()
-           << "threads not supported for HiGHS solver, this must be set using "
-              "globals, see HiGHS documentation";
+    // The parameters validators has ensured parameters.threads() >= 1, we must
+    // check that the result will fit in HighsOptions::threads. As of 2026-10 it
+    // is an HighsInt which is either `int` of `int64_t` so that should always
+    // match the `int32` of SolveParametersProto.threads.
+    static_assert(std::numeric_limits<decltype(result->threads)>::max() >=
+                  std::numeric_limits<decltype(parameters.threads())>::max());
+    result->threads = parameters.threads();
   }
   if (parameters.has_random_seed()) {
     result->random_seed = parameters.random_seed();
@@ -346,12 +349,16 @@ double DualObjective(const HighsInfo& highs_info, const bool is_integer) {
                     : highs_info.objective_function_value;
 }
 // Note that this is the expected/required function signature for highs logging
-// callbacks as set with Highs::setLogCallback().
-void HighsLogCallback(HighsLogType, const char* const message,
+// callbacks as set with Highs::setCallback().
+void HighsLogCallback(int callback_type, const std::string& message,
+                      const HighsCallbackOutput* const /*data_out*/,
+                      HighsCallbackInput* const /*data_in*/,
                       void* const log_callback_data) {
-  BufferedMessageCallback& buffered_callback =
-      *static_cast<BufferedMessageCallback*>(log_callback_data);
-  buffered_callback.OnMessage(message);
+  if (callback_type == kCallbackLogging) {
+    BufferedMessageCallback& buffered_callback =
+        *static_cast<BufferedMessageCallback*>(log_callback_data);
+    buffered_callback.OnMessage(message);
+  }
 }
 
 // highs_info must be valid. Does not fill in solve time.
@@ -572,6 +579,7 @@ absl::StatusOr<TerminationProto> HighsSolver::MakeTermination(
       }
     }
     case HighsModelStatus::kInterrupt:
+    case HighsModelStatus::kHighsInterrupt:
       return LimitTerminationProto(is_maximize, LIMIT_INTERRUPTED,
                                    optional_finite_primal_objective,
                                    optional_dual_objective);
@@ -971,8 +979,10 @@ absl::StatusOr<SolveResultProto> HighsSolver::Solve(
   BufferedMessageCallback buffered_message_callback(std::move(message_cb));
   if (buffered_message_callback.has_user_message_callback()) {
     ABSL_RETURN_IF_ERROR(ToStatus(
-        highs_->setLogCallback(&HighsLogCallback, &buffered_message_callback)))
+        highs_->setCallback(&HighsLogCallback, &buffered_message_callback)))
         << "failed to register logging callback";
+    ABSL_RETURN_IF_ERROR(ToStatus(highs_->startCallback(kCallbackLogging)))
+        << "failed to start logging callback";
   }
   auto message_cb_cleanup =
       absl::MakeCleanup([this, &buffered_message_callback]() {
@@ -984,7 +994,9 @@ absl::StatusOr<SolveResultProto> HighsSolver::Solve(
           // wrap the user callback in a new callback that is guarded by an
           // atomic bool that we disable here). Further, to propagate this
           // error, we need a class instead of absl::Cleanup.
-          CHECK_OK(ToStatus(highs_->setLogCallback(nullptr, nullptr)));
+          CHECK_OK(ToStatus(highs_->stopCallback(kCallbackLogging)));
+          CHECK_OK(ToStatus(highs_->setCallback(
+              HighsCallbackFunctionType(nullptr), nullptr)));
           buffered_message_callback.Flush();
         }
       });
@@ -1006,9 +1018,27 @@ absl::StatusOr<SolveResultProto> HighsSolver::Solve(
       MakeOptions(parameters,
                   buffered_message_callback.has_user_message_callback(),
                   is_integer));
+  // Note that Highs::run() will reuse any preexisting thread pool created by a
+  // previous call on the same thread. It would thus ignore options->threads
+  // value (including the guard value 0 that would require automatic sizing).
+  //
+  // To prevent this from happening, we make sure to release any preexisting
+  // thread pool. Note that the name and documentation of resetGlobalScheduler()
+  // are incorrect (https://github.com/ERGO-Code/HiGHS/discussions/3429) and
+  // resetGlobalScheduler() actually resets the thread pool associated to the
+  // calling thread with a thread_local.
+  Highs::resetGlobalScheduler(/*blocking=*/true);
+
+  // Cleanup the thread-pool before exiting. This frees resources and prevent
+  // other users of Highs from getting an unexpected thread-pool size if they
+  // use Highs on the same thread.
+  absl::Cleanup scheduler_cleanup = []() {
+    Highs::resetGlobalScheduler(/*blocking=*/true);
+  };
   ABSL_RETURN_IF_ERROR(ToStatus(highs_->passOptions(*options)));
   ABSL_RETURN_IF_ERROR(ToStatus(highs_->run()));
   std::move(message_cb_cleanup).Invoke();
+  std::move(scheduler_cleanup).Invoke();
   // When the model is empty, highs_->getInfo() is invalid, so we bail out.
   if (highs_->getModelStatus() == HighsModelStatus::kModelEmpty) {
     SolveResultProto result = ResultForHighsModelStatusModelEmpty(

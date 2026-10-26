@@ -41,6 +41,7 @@ class MPSolutionResponse;
 %{
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/model_exporter.h"
+#include "ortools/linear_solver/solve_mp_model.h"
 %}
 
 %typemap(javaimports) SWIGTYPE %{
@@ -172,9 +173,7 @@ PROTO2_RETURN(
    */
   static operations_research::MPSolutionResponse solveWithProto(
       const operations_research::MPModelRequest& model_request) {
-    operations_research::MPSolutionResponse response;
-    operations_research::MPSolver::SolveWithProto(model_request, &response);
-    return response;
+    return operations_research::SolveMPModel(model_request);
   }
 
   /**

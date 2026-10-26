@@ -20,6 +20,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/time/time.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/proto_solver/proto_utils.h"
@@ -121,10 +122,10 @@ MPSolver::ResultStatus SatInterface::Solve(const MPSolverParameters& param) {
       solver_->solver_specific_parameter_string_);
 
   // Time limit.
-  if (solver_->time_limit()) {
-    VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
+  if (solver_->TimeLimit() != absl::InfiniteDuration()) {
+    VLOG(1) << "Setting time limit = " << solver_->TimeLimit() << ".";
     parameters_.set_max_time_in_seconds(
-        static_cast<double>(solver_->time_limit()) / 1000.0);
+        absl::ToDoubleSeconds(solver_->TimeLimit()));
   }
 
   // Mark variables and constraints as extracted.

@@ -135,6 +135,7 @@ or_pybind_extension(
         "//ortools/linear_solver:linear_solver_lib",
         "//ortools/linear_solver:model_exporter",
         "//ortools/linear_solver:model_validator",
+        "//ortools/linear_solver:solve_mp_model",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:inlined_vector",
@@ -142,6 +143,7 @@ or_pybind_extension(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
         "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )

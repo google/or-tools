@@ -22,6 +22,7 @@
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
+#include "absl/time/time.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/proto_solver/highs_proto_solver.h"
@@ -129,9 +130,9 @@ MPSolver::ResultStatus HighsInterface::Solve(const MPSolverParameters& param) {
   request.set_enable_internal_solver_output(!quiet_);
   request.set_solver_specific_parameters(
       solver_->solver_specific_parameter_string_);
-  if (solver_->time_limit()) {
+  if (solver_->TimeLimit() != absl::InfiniteDuration()) {
     request.set_solver_time_limit_seconds(
-        static_cast<double>(solver_->time_limit()) / 1000.0);
+        absl::ToDoubleSeconds(solver_->TimeLimit()));
   }
 
   // Set parameters.

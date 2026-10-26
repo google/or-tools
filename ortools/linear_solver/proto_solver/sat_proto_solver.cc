@@ -19,7 +19,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -372,7 +371,13 @@ MPSolutionResponse SatSolveProtoInternal(
         *logger, "A detected integer variable has an empty domain");
   }
 
-  if (params.mip_scale_to_max_bound()) {
+  if (params.mip_scale_for_precision()) {
+    update_shifts(
+        ShiftVariableBounds(ShiftBeforeScaling(), &mp_model_wrapper, logger));
+    update_scaling(sat::ScaleContinuousVariablesForGivenPrecision(
+        params, mp_model_wrapper.mutable_underlying_model(), logger,
+        var_scaling));
+  } else if (params.mip_scale_to_max_bound()) {
     update_shifts(
         ShiftVariableBounds(ShiftBeforeScaling(), &mp_model_wrapper, logger));
     update_scaling(sat::ScaleContinuousVariablesUpToMaxBound(
@@ -381,17 +386,17 @@ MPSolutionResponse SatSolveProtoInternal(
   } else if (params.mip_var_scaling() != 1.0) {
     update_scaling(sat::ScaleContinuousVariables(
         params, mp_model_wrapper.mutable_underlying_model(), var_scaling));
-  }
 
-  // Clamp again now that we potentially scalled more some variable.
-  int num_extra_clamp = 0;
-  if (!sat::ClampVariableBounds(params,
-                                mp_model_wrapper.mutable_underlying_model(),
-                                logger, &num_extra_clamp)) {
-    return InvalidModelResponse(*logger,
-                                "Failed to convert model into CP-SAT model");
+    // Clamp again now that we potentially scalled more some variable.
+    int num_extra_clamp = 0;
+    if (!sat::ClampVariableBounds(params,
+                                  mp_model_wrapper.mutable_underlying_model(),
+                                  logger, &num_extra_clamp)) {
+      return InvalidModelResponse(*logger,
+                                  "Failed to convert model into CP-SAT model");
+    }
+    num_clamped += num_extra_clamp;
   }
-  num_clamped += num_extra_clamp;
 
   sat::DisplayVariableStatistics(*mp_model_wrapper.mutable_underlying_model(),
                                  logger);
@@ -437,13 +442,11 @@ MPSolutionResponse SatSolveProtoInternal(
       const int var = mp_model->solution_hint().var_index(i);
       if (var >= var_scaling.size()) continue;
 
-      // To handle weird hint input values, we cap any large value to +/-
-      // mip_max_bound() which is also the min/max value of any variable once
-      // scaled.
+      // To handle weird hint input values, we clamp the value to the variable
+      // bounds in the proto.
       double value = mp_model->solution_hint().var_value(i);
-      if (std::abs(value) > params.mip_max_bound()) {
-        value = value > 0 ? params.mip_max_bound() : -params.mip_max_bound();
-      }
+      value = std::max(value, mp_model->variable(var).lower_bound());
+      value = std::min(value, mp_model->variable(var).upper_bound());
 
       cp_model_hint->add_vars(var);
       cp_model_hint->add_values(static_cast<int64_t>(std::round(value)));

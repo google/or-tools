@@ -1218,10 +1218,11 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
   }
 
   // Time limit.
-  if (solver_->time_limit() != 0) {
-    VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
-    CheckedGurobiCall(GRBsetdblparam(GRBgetenv(model_), GRB_DBL_PAR_TIMELIMIT,
-                                     solver_->time_limit_in_secs()));
+  if (solver_->TimeLimit() != absl::InfiniteDuration()) {
+    VLOG(1) << "Setting time limit = " << solver_->TimeLimit() << ".";
+    CheckedGurobiCall(
+        GRBsetdblparam(GRBgetenv(model_), GRB_DBL_PAR_TIMELIMIT,
+                       absl::ToDoubleSeconds(solver_->TimeLimit())));
   }
 
   // We first set our internal MPSolverParameters from 'param' and then set

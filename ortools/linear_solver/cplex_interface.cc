@@ -18,6 +18,7 @@
 
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
+#include "absl/time/time.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
@@ -1129,10 +1130,10 @@ MPSolver::ResultStatus CplexInterface::Solve(MPSolverParameters const& param) {
   solver_->SetSolverSpecificParametersAsString(
       solver_->solver_specific_parameter_string_);
   SetParameters(param);
-  if (solver_->time_limit()) {
-    VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
-    CHECK_STATUS(
-        CPXXsetdblparam(mEnv, CPX_PARAM_TILIM, solver_->time_limit() * 1e-3));
+  if (solver_->TimeLimit() != absl::InfiniteDuration()) {
+    VLOG(1) << "Setting time limit = " << solver_->TimeLimit() << ".";
+    CHECK_STATUS(CPXXsetdblparam(mEnv, CPX_PARAM_TILIM,
+                                 absl::ToDoubleSeconds(solver_->TimeLimit())));
   }
 
   // Solve.

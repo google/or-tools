@@ -20,6 +20,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_format.h"
+#include "absl/time/time.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
 
@@ -426,9 +427,9 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
     VLOG(1) << absl::StrFormat("Model built in %.3f seconds.", timer.Get());
 
     // Time limit.
-    if (solver_->time_limit() != 0) {
-      VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
-      clp_->setMaximumSeconds(solver_->time_limit_in_secs());
+    if (solver_->TimeLimit() != absl::InfiniteDuration()) {
+      VLOG(1) << "Setting time limit = " << solver_->TimeLimit() << ".";
+      clp_->setMaximumSeconds(absl::ToDoubleSeconds(solver_->TimeLimit()));
     } else {
       clp_->setMaximumSeconds(-1.0);
     }

@@ -20,6 +20,7 @@
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/time/time.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/linear_solver/glop_utils.h"
@@ -134,10 +135,10 @@ MPSolver::ResultStatus GLOPInterface::Solve(const MPSolverParameters& param) {
   linear_program_.CleanUp();
 
   // Time limit.
-  if (solver_->time_limit()) {
-    VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
+  if (solver_->TimeLimit() != absl::InfiniteDuration()) {
+    VLOG(1) << "Setting time limit = " << solver_->TimeLimit() << ".";
     parameters_.set_max_time_in_seconds(
-        static_cast<double>(solver_->time_limit()) / 1000.0);
+        absl::ToDoubleSeconds(solver_->TimeLimit()));
   }
 
   solver_->SetSolverSpecificParametersAsString(
