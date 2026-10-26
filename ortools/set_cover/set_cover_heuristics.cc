@@ -29,8 +29,7 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/adjustable_k_ary_heap.h"
-#include "ortools/algorithms/multikey_radix_sort.h"
-#include "ortools/base/adjustable_priority_queue-inl.h"
+#include "ortools/algorithms/auto_radix_sort.h"
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_invariant.h"
@@ -590,6 +589,8 @@ bool LazySteepestSearch::OptimizeImpl(const SubsetBoolVector& in_focus) {
   DVLOG(1) << "Entering LazySteepestSearch::OptimizeImpl, num_iterations = "
            << num_iterations;
   const BaseInt num_selected_subsets = inv()->trace().size();
+  std::vector<SubsetIndex> cost_sorted_subsets;
+  cost_sorted_subsets.reserve(num_selected_subsets);
   std::vector<Cost> selected_costs;
   selected_costs.reserve(num_selected_subsets);
   // First part of the trick:
@@ -597,25 +598,16 @@ bool LazySteepestSearch::OptimizeImpl(const SubsetBoolVector& in_focus) {
   // selected and in_focus.
   const SubsetCostVector& costs = model()->subset_costs();
   for (const SetCoverDecision& decision : inv()->trace()) {
-    if (in_focus[decision.subset()]) {
-      selected_costs.push_back(costs[decision.subset()]);
+    const SubsetIndex subset = decision.subset();
+    if (in_focus[subset]) {
+      cost_sorted_subsets.push_back(subset);
+      selected_costs.push_back(costs[subset]);
     }
   }
-  std::vector<BaseInt> cost_permutation(selected_costs.size());
-  std::iota(cost_permutation.begin(), cost_permutation.end(), 0);
-  // TODO(user): use RadixSort with doubles and payloads.
-  std::sort(cost_permutation.begin(), cost_permutation.end(),
-            [&selected_costs](const BaseInt i, const BaseInt j) {
-              if (selected_costs[i] == selected_costs[j]) {
-                return i < j;
-              }
-              return selected_costs[i] > selected_costs[j];
-            });
-  std::vector<SubsetIndex> cost_sorted_subsets;
-  cost_sorted_subsets.reserve(num_selected_subsets);
-  for (const BaseInt i : cost_permutation) {
-    cost_sorted_subsets.push_back(inv()->trace()[i].subset());
-  }
+  ComputeAutoRadixSortPermutation<RadixSortDirection::kDecreasing>(
+      cost_sorted_subsets,
+      [&](const std::size_t i) { return selected_costs[i]; })
+      .ApplyTo(cost_sorted_subsets);
   for (const SubsetIndex subset : cost_sorted_subsets) {
     // Second part of the trick:
     // ComputeIsRedundant is expensive, but it is going to be called only once
