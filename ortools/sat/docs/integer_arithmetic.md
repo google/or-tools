@@ -247,29 +247,26 @@ public class RabbitsAndPheasantsSat {
 using System;
 using Google.OrTools.Sat;
 
-public class RabbitsAndPheasantsSat
-{
-    static void Main()
-    {
-        // Creates the model.
-        CpModel model = new CpModel();
-        // Creates the variables.
-        IntVar r = model.NewIntVar(0, 100, "r");
-        IntVar p = model.NewIntVar(0, 100, "p");
-        // 20 heads.
-        model.Add(r + p == 20);
-        // 56 legs.
-        model.Add(4 * r + 2 * p == 56);
+public class RabbitsAndPheasantsSat {
+  static void Main() {
+    // Creates the model.
+    CpModel model = new CpModel();
+    // Creates the variables.
+    IntVar r = model.NewIntVar(0, 100, "r");
+    IntVar p = model.NewIntVar(0, 100, "p");
+    // 20 heads.
+    model.Add(r + p == 20);
+    // 56 legs.
+    model.Add(4 * r + 2 * p == 56);
 
-        // Creates a solver and solves the model.
-        CpSolver solver = new CpSolver();
-        CpSolverStatus status = solver.Solve(model);
+    // Creates a solver and solves the model.
+    CpSolver solver = new CpSolver();
+    CpSolverStatus status = solver.Solve(model);
 
-        if (status == CpSolverStatus.Optimal)
-        {
-            Console.WriteLine(solver.Value(r) + " rabbits, and " + solver.Value(p) + " pheasants");
-        }
+    if (status == CpSolverStatus.Optimal) {
+      Console.WriteLine(solver.Value(r) + " rabbits, and " + solver.Value(p) + " pheasants");
     }
+  }
 }
 
 ```
@@ -624,70 +621,66 @@ using System;
 using Google.OrTools.Sat;
 using Google.OrTools.Util;
 
-public class VarArraySolutionPrinter : CpSolverSolutionCallback
-{
-    public VarArraySolutionPrinter(IntVar[] variables)
-    {
-        variables_ = variables;
-    }
+public class VarArraySolutionPrinter : CpSolverSolutionCallback {
+  public VarArraySolutionPrinter(IntVar[] variables) {
+    variables_ = variables;
+  }
 
-    public override void OnSolutionCallback()
+  public override void OnSolutionCallback() {
     {
-        {
-            foreach (IntVar v in variables_)
-            {
-                Console.Write(String.Format("{0}={1} ", v.ToString(), Value(v)));
-            }
-            Console.WriteLine();
-        }
+      foreach (IntVar v in variables_) {
+        Console.Write(String.Format("{0}={1} ", v.ToString(), Value(v)));
+      }
+      Console.WriteLine();
     }
+  }
 
-    private IntVar[] variables_;
+  private IntVar[] variables_;
 }
 
-public class EarlinessTardinessCostSampleSat
-{
-    static void Main()
-    {
-        long earliness_date = 5;
-        long earliness_cost = 8;
-        long lateness_date = 15;
-        long lateness_cost = 12;
+public class EarlinessTardinessCostSampleSat {
+  static void Main() {
+    long earliness_date = 5;
+    long earliness_cost = 8;
+    long lateness_date = 15;
+    long lateness_cost = 12;
 
-        // Create the CP-SAT model.
-        CpModel model = new CpModel();
+    // Create the CP-SAT model.
+    CpModel model = new CpModel();
 
-        // Declare our primary variable.
-        IntVar x = model.NewIntVar(0, 20, "x");
+    // Declare our primary variable.
+    IntVar x = model.NewIntVar(0, 20, "x");
 
-        // Create the expression variable and implement the piecewise linear
-        // function.
-        //
-        //  \        /
-        //   \______/
-        //   ed    ld
-        //
-        long large_constant = 1000;
-        IntVar expr = model.NewIntVar(0, large_constant, "expr");
+    // Create the expression variable and implement the piecewise linear
+    // function.
+    //
+    //  \        /
+    //   \______/
+    //   ed    ld
+    //
+    long large_constant = 1000;
+    IntVar expr = model.NewIntVar(0, large_constant, "expr");
 
-        // Link together expr and x through s1, s2, and s3.
-        model.AddMaxEquality(expr, new LinearExpr[] { earliness_cost * (earliness_date - x), model.NewConstant(0),
-                                                      lateness_cost * (x - lateness_date) });
+    // Link together expr and x through s1, s2, and s3.
+    model.AddMaxEquality(
+        expr, new LinearExpr[] { earliness_cost * (earliness_date - x), model.NewConstant(0),
+                                 lateness_cost * (x - lateness_date) });
 
-        // Search for x values in increasing order.
-        model.AddDecisionStrategy(new IntVar[] { x }, DecisionStrategyProto.Types.VariableSelectionStrategy.ChooseFirst,
-                                  DecisionStrategyProto.Types.DomainReductionStrategy.SelectMinValue);
+    // Search for x values in increasing order.
+    model.AddDecisionStrategy(new IntVar[] { x },
+                              DecisionStrategyProto.Types.VariableSelectionStrategy.ChooseFirst,
+                              DecisionStrategyProto.Types.DomainReductionStrategy.SelectMinValue);
 
-        // Create the solver.
-        CpSolver solver = new CpSolver();
+    // Create the solver.
+    CpSolver solver = new CpSolver();
 
-        // Force solver to follow the decision strategy exactly.
-        // Tell the solver to search for all solutions.
-        solver.StringParameters = "search_branching:FIXED_SEARCH, enumerate_all_solutions:true";
+    // Force solver to follow the decision strategy exactly.
+    // Tell the solver to search for all solutions.
+    solver.StringParameters = "search_branching:FIXED_SEARCH, enumerate_all_solutions:true";
 
-        VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, expr });
-        solver.Solve(model, cb);
-    }
+    VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, expr });
+    solver.Solve(model, cb);
+  }
 }
 ```
 
@@ -1087,84 +1080,80 @@ using System;
 using Google.OrTools.Sat;
 using Google.OrTools.Util;
 
-public class VarArraySolutionPrinter : CpSolverSolutionCallback
-{
-    public VarArraySolutionPrinter(IntVar[] variables)
-    {
-        variables_ = variables;
-    }
+public class VarArraySolutionPrinter : CpSolverSolutionCallback {
+  public VarArraySolutionPrinter(IntVar[] variables) {
+    variables_ = variables;
+  }
 
-    public override void OnSolutionCallback()
+  public override void OnSolutionCallback() {
     {
-        {
-            foreach (IntVar v in variables_)
-            {
-                Console.Write(String.Format("{0}={1} ", v.ToString(), Value(v)));
-            }
-            Console.WriteLine();
-        }
+      foreach (IntVar v in variables_) {
+        Console.Write(String.Format("{0}={1} ", v.ToString(), Value(v)));
+      }
+      Console.WriteLine();
     }
+  }
 
-    private IntVar[] variables_;
+  private IntVar[] variables_;
 }
 
-public class StepFunctionSampleSat
-{
-    static void Main()
-    {
-        // Create the CP-SAT model.
-        CpModel model = new CpModel();
+public class StepFunctionSampleSat {
+  static void Main() {
+    // Create the CP-SAT model.
+    CpModel model = new CpModel();
 
-        // Declare our primary variable.
-        IntVar x = model.NewIntVar(0, 20, "x");
+    // Declare our primary variable.
+    IntVar x = model.NewIntVar(0, 20, "x");
 
-        // Create the expression variable and implement the step function
-        // Note it is not defined for var == 2.
-        //
-        //        -               3
-        // -- --      ---------   2
-        //                        1
-        //      -- ---            0
-        // 0 ================ 20
-        //
-        IntVar expr = model.NewIntVar(0, 3, "expr");
+    // Create the expression variable and implement the step function
+    // Note it is not defined for var == 2.
+    //
+    //        -               3
+    // -- --      ---------   2
+    //                        1
+    //      -- ---            0
+    // 0 ================ 20
+    //
+    IntVar expr = model.NewIntVar(0, 3, "expr");
 
-        // expr == 0 on [5, 6] U [8, 10]
-        ILiteral b0 = model.NewBoolVar("b0");
-        model.AddLinearExpressionInDomain(x, Domain.FromValues(new long[] { 5, 6, 8, 9, 10 })).OnlyEnforceIf(b0);
-        model.Add(expr == 0).OnlyEnforceIf(b0);
+    // expr == 0 on [5, 6] U [8, 10]
+    ILiteral b0 = model.NewBoolVar("b0");
+    model.AddLinearExpressionInDomain(x, Domain.FromValues(new long[] { 5, 6, 8, 9, 10 }))
+        .OnlyEnforceIf(b0);
+    model.Add(expr == 0).OnlyEnforceIf(b0);
 
-        // expr == 2 on [0, 1] U [3, 4] U [11, 20]
-        ILiteral b2 = model.NewBoolVar("b2");
-        model
-            .AddLinearExpressionInDomain(
-                x,
-                Domain.FromIntervals(new long[][] { new long[] { 0, 1 }, new long[] { 3, 4 }, new long[] { 11, 20 } }))
-            .OnlyEnforceIf(b2);
-        model.Add(expr == 2).OnlyEnforceIf(b2);
+    // expr == 2 on [0, 1] U [3, 4] U [11, 20]
+    ILiteral b2 = model.NewBoolVar("b2");
+    model
+        .AddLinearExpressionInDomain(
+            x, Domain.FromIntervals(new long[][] { new long[] { 0, 1 }, new long[] { 3, 4 },
+                                                   new long[] { 11, 20 } }))
+        .OnlyEnforceIf(b2);
+    model.Add(expr == 2).OnlyEnforceIf(b2);
 
-        // expr == 3 when x == 7
-        ILiteral b3 = model.NewBoolVar("b3");
-        model.Add(x == 7).OnlyEnforceIf(b3);
-        model.Add(expr == 3).OnlyEnforceIf(b3);
+    // expr == 3 when x == 7
+    ILiteral b3 = model.NewBoolVar("b3");
+    model.Add(x == 7).OnlyEnforceIf(b3);
+    model.Add(expr == 3).OnlyEnforceIf(b3);
 
-        // At least one bi is true. (we could use a sum == 1).
-        model.AddBoolOr(new ILiteral[] { b0, b2, b3 });
+    // At least one bi is true. (we could use a sum == 1).
+    model.AddBoolOr(new ILiteral[] { b0, b2, b3 });
 
-        // Search for x values in increasing order.
-        model.AddDecisionStrategy(new IntVar[] { x }, DecisionStrategyProto.Types.VariableSelectionStrategy.ChooseFirst,
-                                  DecisionStrategyProto.Types.DomainReductionStrategy.SelectMinValue);
+    // Search for x values in increasing order.
+    model.AddDecisionStrategy(new IntVar[] { x },
+                              DecisionStrategyProto.Types.VariableSelectionStrategy.ChooseFirst,
+                              DecisionStrategyProto.Types.DomainReductionStrategy.SelectMinValue);
 
-        // Create the solver.
-        CpSolver solver = new CpSolver();
+    // Create the solver.
+    CpSolver solver = new CpSolver();
 
-        // Force solver to follow the decision strategy exactly.
-        // Tells the solver to enumerate all solutions.
-        solver.StringParameters = "search_branching:FIXED_SEARCH, enumerate_all_solutions:true";
+    // Force solver to follow the decision strategy exactly.
+    // Tells the solver to enumerate all solutions.
+    solver.StringParameters = "search_branching:FIXED_SEARCH, enumerate_all_solutions:true";
 
-        VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, expr });
-        solver.Solve(model, cb);
-    }
+    VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, expr });
+    solver.Solve(model, cb);
+  }
 }
 ```
 

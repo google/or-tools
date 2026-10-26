@@ -259,33 +259,31 @@ public class AssumptionsSampleSat {
 using System;
 using Google.OrTools.Sat;
 
-public class AssumptionsSampleSat
-{
-    static void Main()
-    {
-        // Creates the model.
-        CpModel model = new CpModel();
+public class AssumptionsSampleSat {
+  static void Main() {
+    // Creates the model.
+    CpModel model = new CpModel();
 
-        // Creates the variables.
-        IntVar x = model.NewIntVar(0, 10, "x");
-        IntVar y = model.NewIntVar(0, 10, "y");
-        IntVar z = model.NewIntVar(0, 10, "z");
-        ILiteral a = model.NewBoolVar("a");
-        ILiteral b = model.NewBoolVar("b");
-        ILiteral c = model.NewBoolVar("c");
+    // Creates the variables.
+    IntVar x = model.NewIntVar(0, 10, "x");
+    IntVar y = model.NewIntVar(0, 10, "y");
+    IntVar z = model.NewIntVar(0, 10, "z");
+    ILiteral a = model.NewBoolVar("a");
+    ILiteral b = model.NewBoolVar("b");
+    ILiteral c = model.NewBoolVar("c");
 
-        // Creates the constraints.
-        model.Add(x > y).OnlyEnforceIf(a);
-        model.Add(y > z).OnlyEnforceIf(b);
-        model.Add(z > x).OnlyEnforceIf(c);
+    // Creates the constraints.
+    model.Add(x > y).OnlyEnforceIf(a);
+    model.Add(y > z).OnlyEnforceIf(b);
+    model.Add(z > x).OnlyEnforceIf(c);
 
-        // Add assumptions
-        model.AddAssumptions(new ILiteral[] { a, b, c });
+    // Add assumptions
+    model.AddAssumptions(new ILiteral[] { a, b, c });
 
-        // Creates a solver and solves the model.
-        CpSolver solver = new CpSolver();
-        CpSolverStatus status = solver.Solve(model);
-        Console.WriteLine(solver.SufficientAssumptionsForInfeasibility());
-    }
+    // Creates a solver and solves the model.
+    CpSolver solver = new CpSolver();
+    CpSolverStatus status = solver.Solve(model);
+    Console.WriteLine(solver.SufficientAssumptionsForInfeasibility());
+  }
 }
 ```

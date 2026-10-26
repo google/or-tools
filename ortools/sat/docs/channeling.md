@@ -249,65 +249,60 @@ using System;
 using Google.OrTools.Sat;
 using Google.OrTools.Util;
 
-public class VarArraySolutionPrinter : CpSolverSolutionCallback
-{
-    public VarArraySolutionPrinter(IntVar[] variables)
-    {
-        variables_ = variables;
-    }
+public class VarArraySolutionPrinter : CpSolverSolutionCallback {
+  public VarArraySolutionPrinter(IntVar[] variables) {
+    variables_ = variables;
+  }
 
-    public override void OnSolutionCallback()
+  public override void OnSolutionCallback() {
     {
-        {
-            foreach (IntVar v in variables_)
-            {
-                Console.Write(String.Format("{0}={1} ", v.ToString(), Value(v)));
-            }
-            Console.WriteLine();
-        }
+      foreach (IntVar v in variables_) {
+        Console.Write(String.Format("{0}={1} ", v.ToString(), Value(v)));
+      }
+      Console.WriteLine();
     }
+  }
 
-    private IntVar[] variables_;
+  private IntVar[] variables_;
 }
 
-public class ChannelingSampleSat
-{
-    static void Main()
-    {
-        // Create the CP-SAT model.
-        CpModel model = new CpModel();
+public class ChannelingSampleSat {
+  static void Main() {
+    // Create the CP-SAT model.
+    CpModel model = new CpModel();
 
-        // Declare our two primary variables.
-        IntVar x = model.NewIntVar(0, 10, "x");
-        IntVar y = model.NewIntVar(0, 10, "y");
+    // Declare our two primary variables.
+    IntVar x = model.NewIntVar(0, 10, "x");
+    IntVar y = model.NewIntVar(0, 10, "y");
 
-        // Declare our intermediate boolean variable.
-        BoolVar b = model.NewBoolVar("b");
+    // Declare our intermediate boolean variable.
+    BoolVar b = model.NewBoolVar("b");
 
-        // Implement b == (x >= 5).
-        model.Add(x >= 5).OnlyEnforceIf(b);
-        model.Add(x < 5).OnlyEnforceIf(b.Not());
+    // Implement b == (x >= 5).
+    model.Add(x >= 5).OnlyEnforceIf(b);
+    model.Add(x < 5).OnlyEnforceIf(b.Not());
 
-        // Create our two half-reified constraints.
-        // First, b implies (y == 10 - x).
-        model.Add(y == 10 - x).OnlyEnforceIf(b);
-        // Second, not(b) implies y == 0.
-        model.Add(y == 0).OnlyEnforceIf(b.Not());
+    // Create our two half-reified constraints.
+    // First, b implies (y == 10 - x).
+    model.Add(y == 10 - x).OnlyEnforceIf(b);
+    // Second, not(b) implies y == 0.
+    model.Add(y == 0).OnlyEnforceIf(b.Not());
 
-        // Search for x values in increasing order.
-        model.AddDecisionStrategy(new IntVar[] { x }, DecisionStrategyProto.Types.VariableSelectionStrategy.ChooseFirst,
-                                  DecisionStrategyProto.Types.DomainReductionStrategy.SelectMinValue);
+    // Search for x values in increasing order.
+    model.AddDecisionStrategy(new IntVar[] { x },
+                              DecisionStrategyProto.Types.VariableSelectionStrategy.ChooseFirst,
+                              DecisionStrategyProto.Types.DomainReductionStrategy.SelectMinValue);
 
-        // Create the solver.
-        CpSolver solver = new CpSolver();
+    // Create the solver.
+    CpSolver solver = new CpSolver();
 
-        // Force solver to follow the decision strategy exactly.
-        // Tell the solver to search for all solutions.
-        solver.StringParameters = "search_branching:FIXED_SEARCH, enumerate_all_solutions:true";
+    // Force solver to follow the decision strategy exactly.
+    // Tell the solver to search for all solutions.
+    solver.StringParameters = "search_branching:FIXED_SEARCH, enumerate_all_solutions:true";
 
-        VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, y, b });
-        solver.Solve(model, cb);
-    }
+    VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, y, b });
+    solver.Solve(model, cb);
+  }
 }
 ```
 
@@ -804,107 +799,92 @@ public class BinPackingProblemSat {
 using System;
 using Google.OrTools.Sat;
 
-public class BinPackingProblemSat
-{
-    static void Main()
-    {
-        // Data.
-        int bin_capacity = 100;
-        int slack_capacity = 20;
-        int num_bins = 5;
+public class BinPackingProblemSat {
+  static void Main() {
+    // Data.
+    int bin_capacity = 100;
+    int slack_capacity = 20;
+    int num_bins = 5;
 
-        int[,] items = new int[,] { { 20, 6 }, { 15, 6 }, { 30, 4 }, { 45, 3 } };
-        int num_items = items.GetLength(0);
+    int[,] items = new int[,] { { 20, 6 }, { 15, 6 }, { 30, 4 }, { 45, 3 } };
+    int num_items = items.GetLength(0);
 
-        // Model.
-        CpModel model = new CpModel();
+    // Model.
+    CpModel model = new CpModel();
 
-        // Main variables.
-        IntVar[,] x = new IntVar[num_items, num_bins];
-        for (int i = 0; i < num_items; ++i)
-        {
-            int num_copies = items[i, 1];
-            for (int b = 0; b < num_bins; ++b)
-            {
-                x[i, b] = model.NewIntVar(0, num_copies, String.Format("x_{0}_{1}", i, b));
-            }
-        }
-
-        // Load variables.
-        IntVar[] load = new IntVar[num_bins];
-        for (int b = 0; b < num_bins; ++b)
-        {
-            load[b] = model.NewIntVar(0, bin_capacity, String.Format("load_{0}", b));
-        }
-
-        // Slack variables.
-        BoolVar[] slacks = new BoolVar[num_bins];
-        for (int b = 0; b < num_bins; ++b)
-        {
-            slacks[b] = model.NewBoolVar(String.Format("slack_{0}", b));
-        }
-
-        // Links load and x.
-        int[] sizes = new int[num_items];
-        for (int i = 0; i < num_items; ++i)
-        {
-            sizes[i] = items[i, 0];
-        }
-        for (int b = 0; b < num_bins; ++b)
-        {
-            IntVar[] tmp = new IntVar[num_items];
-            for (int i = 0; i < num_items; ++i)
-            {
-                tmp[i] = x[i, b];
-            }
-            model.Add(load[b] == LinearExpr.WeightedSum(tmp, sizes));
-        }
-
-        // Place all items.
-        for (int i = 0; i < num_items; ++i)
-        {
-            IntVar[] tmp = new IntVar[num_bins];
-            for (int b = 0; b < num_bins; ++b)
-            {
-                tmp[b] = x[i, b];
-            }
-            model.Add(LinearExpr.Sum(tmp) == items[i, 1]);
-        }
-
-        // Links load and slack.
-        int safe_capacity = bin_capacity - slack_capacity;
-        for (int b = 0; b < num_bins; ++b)
-        {
-            //  slack[b] => load[b] <= safe_capacity.
-            model.Add(load[b] <= safe_capacity).OnlyEnforceIf(slacks[b]);
-            // not(slack[b]) => load[b] > safe_capacity.
-            model.Add(load[b] > safe_capacity).OnlyEnforceIf(slacks[b].Not());
-        }
-
-        // Maximize sum of slacks.
-        model.Maximize(LinearExpr.Sum(slacks));
-
-        // Solves and prints out the solution.
-        CpSolver solver = new CpSolver();
-        CpSolverStatus status = solver.Solve(model);
-        Console.WriteLine(String.Format("Solve status: {0}", status));
-        if (status == CpSolverStatus.Optimal)
-        {
-            Console.WriteLine(String.Format("Optimal objective value: {0}", solver.ObjectiveValue));
-            for (int b = 0; b < num_bins; ++b)
-            {
-                Console.WriteLine(String.Format("load_{0} = {1}", b, solver.Value(load[b])));
-                for (int i = 0; i < num_items; ++i)
-                {
-                    Console.WriteLine(string.Format("  item_{0}_{1} = {2}", i, b, solver.Value(x[i, b])));
-                }
-            }
-        }
-        Console.WriteLine("Statistics");
-        Console.WriteLine(String.Format("  - conflicts : {0}", solver.NumConflicts()));
-        Console.WriteLine(String.Format("  - branches  : {0}", solver.NumBranches()));
-        Console.WriteLine(String.Format("  - wall time : {0} s", solver.WallTime()));
+    // Main variables.
+    IntVar[,] x = new IntVar[num_items, num_bins];
+    for (int i = 0; i < num_items; ++i) {
+      int num_copies = items[i, 1];
+      for (int b = 0; b < num_bins; ++b) {
+        x[i, b] = model.NewIntVar(0, num_copies, String.Format("x_{0}_{1}", i, b));
+      }
     }
+
+    // Load variables.
+    IntVar[] load = new IntVar[num_bins];
+    for (int b = 0; b < num_bins; ++b) {
+      load[b] = model.NewIntVar(0, bin_capacity, String.Format("load_{0}", b));
+    }
+
+    // Slack variables.
+    BoolVar[] slacks = new BoolVar[num_bins];
+    for (int b = 0; b < num_bins; ++b) {
+      slacks[b] = model.NewBoolVar(String.Format("slack_{0}", b));
+    }
+
+    // Links load and x.
+    int[] sizes = new int[num_items];
+    for (int i = 0; i < num_items; ++i) {
+      sizes[i] = items[i, 0];
+    }
+    for (int b = 0; b < num_bins; ++b) {
+      IntVar[] tmp = new IntVar[num_items];
+      for (int i = 0; i < num_items; ++i) {
+        tmp[i] = x[i, b];
+      }
+      model.Add(load[b] == LinearExpr.WeightedSum(tmp, sizes));
+    }
+
+    // Place all items.
+    for (int i = 0; i < num_items; ++i) {
+      IntVar[] tmp = new IntVar[num_bins];
+      for (int b = 0; b < num_bins; ++b) {
+        tmp[b] = x[i, b];
+      }
+      model.Add(LinearExpr.Sum(tmp) == items[i, 1]);
+    }
+
+    // Links load and slack.
+    int safe_capacity = bin_capacity - slack_capacity;
+    for (int b = 0; b < num_bins; ++b) {
+      //  slack[b] => load[b] <= safe_capacity.
+      model.Add(load[b] <= safe_capacity).OnlyEnforceIf(slacks[b]);
+      // not(slack[b]) => load[b] > safe_capacity.
+      model.Add(load[b] > safe_capacity).OnlyEnforceIf(slacks[b].Not());
+    }
+
+    // Maximize sum of slacks.
+    model.Maximize(LinearExpr.Sum(slacks));
+
+    // Solves and prints out the solution.
+    CpSolver solver = new CpSolver();
+    CpSolverStatus status = solver.Solve(model);
+    Console.WriteLine(String.Format("Solve status: {0}", status));
+    if (status == CpSolverStatus.Optimal) {
+      Console.WriteLine(String.Format("Optimal objective value: {0}", solver.ObjectiveValue));
+      for (int b = 0; b < num_bins; ++b) {
+        Console.WriteLine(String.Format("load_{0} = {1}", b, solver.Value(load[b])));
+        for (int i = 0; i < num_items; ++i) {
+          Console.WriteLine(string.Format("  item_{0}_{1} = {2}", i, b, solver.Value(x[i, b])));
+        }
+      }
+    }
+    Console.WriteLine("Statistics");
+    Console.WriteLine(String.Format("  - conflicts : {0}", solver.NumConflicts()));
+    Console.WriteLine(String.Format("  - branches  : {0}", solver.NumBranches()));
+    Console.WriteLine(String.Format("  - wall time : {0} s", solver.WallTime()));
+  }
 }
 ```
 
