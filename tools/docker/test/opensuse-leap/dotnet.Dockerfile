@@ -5,7 +5,7 @@ FROM opensuse/leap
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
 RUN zypper refresh \
-&& zypper install -y git gcc gcc-c++ \
+&& zypper install -y git make gcc gcc-c++ \
  wget which lsb-release util-linux pkgconfig autoconf libtool zlib-devel \
 && zypper clean -a
 ENV CC=gcc CXX=g++
@@ -26,6 +26,6 @@ RUN dotnet --info
 #RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 WORKDIR /root
-ADD or-tools_amd64_opensuse-leap_v*.tar.gz .
+ADD or-tools_amd64_opensuse-leap_dotnet_v*.tar.gz .
 
-RUN cd or-tools_*_v* && make test_dotnet
+RUN cd or-tools_*_v* && make test
