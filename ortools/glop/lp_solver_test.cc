@@ -1109,7 +1109,7 @@ TEST_P(LPSolverPrimalRayTest, Optimize) {
 
   // Check x signs.
   EXPECT_THAT(
-      solver.primal_ray(),
+      OptionalRefValue(solver.primal_ray()),
       Optional(ElementsAreArray(PrimalRaySignsMatchers(
           lp.variable_lower_bounds(), lp.variable_upper_bounds(), 1e-7))));
   // Check A.x signs.

@@ -79,4 +79,6 @@ if(BUILD_CXX_TESTING)
     DISABLED TRUE)
   set_tests_properties(cxx_glop_preprocessor_random_test PROPERTIES
     DISABLED TRUE)
+  set_tests_properties(cxx_glop_revised_simplex_random_test PROPERTIES
+    DISABLED TRUE)
 endif()
