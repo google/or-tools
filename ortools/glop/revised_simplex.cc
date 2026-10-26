@@ -772,90 +772,31 @@ RevisedSimplex::PendingStatus RevisedSimplex::DualPhaseI(
     reduced_costs_.PerturbCosts();
   }
 
-  if (parameters_.use_dedicated_dual_feasibility_algorithm()) {
-    variables_info_.MakeBoxedVariableRelevant(false);
-    PendingStatus pending_status =
-        DualMinimize(/*feasibility_phase=*/true, time_limit);
-    if (IsSolveStatus<SolveStatus::Abnormal>(pending_status)) {
-      return pending_status;
-    }
-
-    if (!IsSolveStatus<SolveStatus::DualInfeasible>(pending_status)) {
-      // NOTE(user): In most cases, the matrix will already be refactorized
-      // and both Refactorize() and PermuteBasis() will do nothing. However,
-      // if the time limit is reached during the first phase, this might not
-      // be the case and RecomputeBasicVariableValues() below DCHECKs that the
-      // matrix is refactorized. This is not required, but we currently only
-      // want to recompute values from scratch when the matrix was just
-      // refactorized to maximize precision.
-      GLOP_RETURN_IF_ABNORMAL(basis_factorization_.Refactorize());
-      PermuteBasis();
-
-      variables_info_.MakeBoxedVariableRelevant(true);
-      reduced_costs_.MakeReducedCostsPrecise();
-
-      // This is needed to display errors properly.
-      MakeBoxedVariableDualFeasible(variables_info_.GetNonBasicBoxedVariables(),
-                                    /*update_basic_values=*/false);
-      variable_values_.RecomputeBasicVariableValues();
-    }
-
-    return pending_status;
-  }
-
-  // Test initial dual infeasibility, ignoring boxed variables. We currently
-  // refactorize/recompute the reduced costs if not already done.
-  // TODO(user): Not ideal in an incremental setting.
-  reduced_costs_.MakeReducedCostsPrecise();
-  bool refactorize = reduced_costs_.NeedsBasisRefactorization();
-  GLOP_RETURN_IF_ABNORMAL(RefactorizeBasisIfNeeded(&refactorize));
-
-  const Fractional initial_infeasibility =
-      reduced_costs_.ComputeMaximumDualInfeasibilityOnNonBoxedVariables();
-  if (initial_infeasibility < reduced_costs_.GetDualFeasibilityTolerance()) {
-    SOLVER_LOG(logger_, "Initial basis is dual feasible.");
-    MakeBoxedVariableDualFeasible(variables_info_.GetNonBasicBoxedVariables(),
-                                  /*update_basic_values=*/false);
-    variable_values_.RecomputeBasicVariableValues();
-    return FeasibilityStatus::kDual;
-  }
-
-  // Transform problem and recompute variable values.
-  variables_info_.TransformToDualPhaseIProblem(
-      reduced_costs_.GetDualFeasibilityTolerance(),
-      reduced_costs_.GetReducedCosts());
-  DenseRow zero;  // We want the FREE variable at zero here.
-  variable_values_.ResetAllNonBasicVariableValues(zero);
-  variable_values_.RecomputeBasicVariableValues();
-
-  // Optimize.
-  DisplayErrors();
-  PendingStatus pending_status = PrimalMinimize(time_limit);
+  variables_info_.MakeBoxedVariableRelevant(false);
+  PendingStatus pending_status =
+      DualMinimize(/*feasibility_phase=*/true, time_limit);
   if (IsSolveStatus<SolveStatus::Abnormal>(pending_status)) {
     return pending_status;
   }
 
-  // Restore original problem and recompute variable values. Note that we
-  // need the reduced cost on the fixed positions here.
-  variables_info_.EndDualPhaseI(reduced_costs_.GetDualFeasibilityTolerance(),
-                                reduced_costs_.GetFullReducedCosts());
-  variable_values_.ResetAllNonBasicVariableValues(variable_starting_values_);
-  variable_values_.RecomputeBasicVariableValues();
+  if (!IsSolveStatus<SolveStatus::DualInfeasible>(pending_status)) {
+    // NOTE(user): In most cases, the matrix will already be refactorized
+    // and both Refactorize() and PermuteBasis() will do nothing. However,
+    // if the time limit is reached during the first phase, this might not
+    // be the case and RecomputeBasicVariableValues() below DCHECKs that the
+    // matrix is refactorized. This is not required, but we currently only
+    // want to recompute values from scratch when the matrix was just
+    // refactorized to maximize precision.
+    GLOP_RETURN_IF_ABNORMAL(basis_factorization_.Refactorize());
+    PermuteBasis();
 
-  // TODO(user): Note that if there was cost shifts, we just keep them
-  // until the end of the optim.
-  //
-  // TODO(user): What if slightly infeasible? we shouldn't really stop.
-  // Call primal ? use higher tolerance ? It seems we can always kind of
-  // continue and deal with the issue later. Find a way other than this +
-  // 1e-6 hack.
-  if (IsSolveStatus<SolveStatus::Optimal>(pending_status)) {
-    if (reduced_costs_.ComputeMaximumDualInfeasibility() <
-        reduced_costs_.GetDualFeasibilityTolerance() + 1e-6) {
-      return FeasibilityStatus::kDual;
-    }
-    SOLVER_LOG(logger_, "Infeasible after first phase.");
-    return DualInfeasibleSolveStatus();
+    variables_info_.MakeBoxedVariableRelevant(true);
+    reduced_costs_.MakeReducedCostsPrecise();
+
+    // This is needed to display errors properly.
+    MakeBoxedVariableDualFeasible(variables_info_.GetNonBasicBoxedVariables(),
+                                  /*update_basic_values=*/false);
+    variable_values_.RecomputeBasicVariableValues();
   }
 
   return pending_status;
@@ -4285,14 +4226,7 @@ void RevisedSimplex::DisplayIterationInfo(bool primal,
       std::string name;
       Fractional objective;
       if (parameters_.use_dual_simplex()) {
-        if (parameters_.use_dedicated_dual_feasibility_algorithm()) {
-          objective = reduced_costs_.ComputeSumOfDualInfeasibilities();
-        } else {
-          // The internal objective of the transformed problem is the negation
-          // of the sum of the dual infeasibility of the original problem.
-          objective = -PreciseScalarProduct(
-              objective_, Transpose(variable_values_.GetDenseRow()));
-        }
+        objective = reduced_costs_.ComputeSumOfDualInfeasibilities();
         name = "sum_dual_infeasibilities";
       } else {
         objective = variable_values_.ComputeSumOfPrimalInfeasibilities();
