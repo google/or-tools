@@ -182,10 +182,38 @@ function MOI.set(optimizer::CPSATOptimizer, param::MOI.RawOptimizerAttribute, va
 end
 
 function MOI.get(optimizer::CPSATOptimizer, param::MOI.RawOptimizerAttribute)
-    return getfield!(optimizer.parameters, Symbol(param.name))
+    return getfield(optimizer.parameters, Symbol(param.name))
 end
 
-MOI.supports(model::CPSATOptimizer, param::MOI.RawOptimizerAttribute) = true
+MOI.supports(optimizer::CPSATOptimizer, param::MOI.RawOptimizerAttribute) = true
+
+function has_objective(optimizer::CPSATOptimizer)
+    return !isnothing(optimizer.model.objective) ||
+           !isnothing(optimizer.model.floating_point_objective)
+end
+
+function MOI.get(optimizer::CPSATOptimizer, ::MOI.ListOfModelAttributesSet)
+    if MOI.is_empty(optimizer)
+        return MOI.AbstractModelAttribute[]
+    end
+
+    model_attributes_set = MOI.AbstractModelAttribute[]
+
+    if has_objective(optimizer)
+        F = MOI.get(optimizer, MOI.ObjectiveFunctionType())
+        if !isnothing(F)
+            push!(model_attributes_set, MOI.ObjectiveFunction{F}())
+        end
+        push!(model_attributes_set, MOI.ObjectiveSense())
+    end
+
+    model_name = MOI.get(optimizer, MOI.Name())
+    if !isempty(model_name)
+        push!(model_attributes_set, MOI.Name())
+    end
+
+    return model_attributes_set
+end
 
 
 """
@@ -254,9 +282,13 @@ function MOI.get(optimizer::CPSATOptimizer, ::MOI.VariableName, v::MOI.VariableI
 end
 
 function MOI.get(optimizer::CPSATOptimizer, ::Type{MOI.VariableIndex}, name::String)
-    variable_index = findfirst(x -> x.name == name, model.model.variables)
-    if !isnothing(variable_index)
-        return MOI.VariableIndex(variable_index)
+    if !MOI.is_empty(optimizer) && !isempty(name)
+        variable_indices = findall(x -> x.name == name, optimizer.model.variables)
+        length(variable_indices) > 1 &&
+            throw(ErrorException("Multiple variables with name \"$(name)\" exist."))
+        isempty(variable_indices) && return nothing
+
+        return MOI.VariableIndex(variable_indices[1] - 1)
     end
 
     return nothing
@@ -577,13 +609,13 @@ function MOI.set(
         )
     end
 
-    previous_fn = MOI.get(model, MOI.ConstraintFunction, c)
+    previous_fn = MOI.get(optimizer, MOI.ConstraintFunction(), c)
 
     if isnothing(previous_fn)
         throw(ArgumentError("There is no constraint with this index: $(c.value)."))
     end
 
-    linear_constraint = optimizer.model.constraints[c.value].value
+    linear_constraint = optimizer.model.constraints[c.value].constraint.linear
 
     # Clear the associated indices in the column ids and coefficients.
     empty!(linear_constraint.vars)
@@ -591,12 +623,16 @@ function MOI.set(
 
     terms_pairs = get_terms_pairs(terms)
 
-    for (variable_index, coefficient) in term_pairs
+    for (variable_index, coefficient) in terms_pairs
         push!(linear_constraint.vars, variable_index)
         push!(linear_constraint.coeffs, coefficient)
     end
 
     return nothing
+end
+
+function MOI.get(::CPSATOptimizer, ::MOI.ListOfConstraintAttributesSet{F,S}) where {F,S}
+    return MOI.AbstractConstraintAttribute[]
 end
 
 """
@@ -739,8 +775,6 @@ end
 function build_linear_expression(
     f::MOI.ScalarAffineFunction{T},
 )::CPSatLinearExpression where {T<:Int}
-    MOI.throw_if_scalar_and_constant_not_zero(f, typeof(c))
-
     terms = f.terms
     terms_pairs = get_terms_pairs(terms)
 
@@ -751,7 +785,7 @@ function build_linear_expression(
         push!(linear_expression.coeffs, coefficient)
     end
 
-    linear_expression.offset = f.offset
+    linear_expression.offset = f.constant
 
     return linear_expression
 end
@@ -939,7 +973,7 @@ struct ProductEquality <: LinearArgumentConstraint
     target::Union{MOI.VariableIndex,MOI.ScalarAffineFunction{Int}}
 
     ProductEquality(
-        dimenson::Int,
+        dimension::Int,
         target::Union{MOI.VariableIndex,MOI.ScalarAffineFunction{Int}},
     ) = new(dimension, target)
 end
@@ -988,9 +1022,9 @@ linear expressions.
 struct LinMax <: LinearArgumentConstraint
     dimension::Int
 
-    function LinMax(dimenson::Int)
+    function LinMax(dimension::Int)
         dimension < 2 && throw(ArgumentError("Dimension must be at least 2."))
-        new(dimension, target)
+        new(dimension)
     end
 end
 
@@ -1148,7 +1182,7 @@ function MOI.add_constraint(
     return MOI.ConstraintIndex{typeof(vi),typeof(c)}(constraint_index)
 end
 
-function supports_constraint(
+function MOI.supports_constraint(
     ::CPSATOptimizer,
     ::Type{MOI.VectorOfVariables},
     ::Type{MOI.Circuit},
@@ -1801,20 +1835,24 @@ function MOI.set(
 end
 
 function MOI.get(optimizer::CPSATOptimizer, ::MOI.ObjectiveSense)
+    !has_objective(optimizer) && return MOI.FEASIBILITY_SENSE
+
     if !isnothing(optimizer.model.objective)
         return optimizer.model.objective.scaling_factor == Float64(-1) ? MOI.MAX_SENSE :
                MOI.MIN_SENSE
-    elseif !isnothing(optimizer.model.floating_point_objective)
+    else
         return optimizer.model.floating_point_objective.maximize ? MOI.MAX_SENSE :
                MOI.MIN_SENSE
-    else
-        return MOI.FEASIBILITY_SENSE
     end
 end
 
 MOI.supports(optimizer::CPSATOptimizer, ::MOI.ObjectiveSense) = true
 
 function MOI.get(optimizer::CPSATOptimizer, ::MOI.ObjectiveFunctionType)
+    if !has_objective(optimizer)
+        return nothing
+    end
+
     if !isnothing(optimizer.model.objective)
         # Check if the objective function is just a single variable
         if optimizer.model.objective.offset == Float64(0) &&
@@ -1826,11 +1864,9 @@ function MOI.get(optimizer::CPSATOptimizer, ::MOI.ObjectiveFunctionType)
         end
 
         return MOI.ScalarAffineFunction{Integer}
-    elseif !isnothing(optimizer.model.floating_point_objective)
+    else
         # If this is set, it's a scalar affine function by default.
         return MOI.ScalarAffineFunction{Float64}
-    else
-        return nothing
     end
 end
 
@@ -1841,7 +1877,7 @@ the domain on the sum of the objective terms only.
 struct ObjectiveFunctionSumDomain <: MOI.AbstractModelAttribute end
 MOI.attribute_value_type(::ObjectiveFunctionSumDomain) = Union{Nothing,Vector{Int64}}
 
-function MOI.supports(::CPSATOptimizer, ::Type{ObjectiveFunctionSumDomain})
+function MOI.supports(::CPSATOptimizer, ::ObjectiveFunctionSumDomain)
     return true
 end
 
@@ -1918,16 +1954,14 @@ function MOI.get(
     optimizer::CPSATOptimizer,
     ::MOI.ObjectiveFunction{MOI.ScalarAffineFunction},
 )
-    try
-        return something(
-            MOI.get(optimizer, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Int64}}()),
-            MOI.get(optimizer, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}()),
-        )
-    catch error
-        throw(error)
-        # Argument error thrown when both objectives are not set.
+    if !has_objective(optimizer)
         return nothing
     end
+
+    return something(
+        MOI.get(optimizer, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Int64}}()),
+        MOI.get(optimizer, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}()),
+    )
 end
 
 """
@@ -1962,7 +1996,7 @@ function to_cp_sat_decision_strategy(
     else
         # VectorAffineFunction is converted to a LinearExpression proto.
         cp_sat_decision_strategy.exprs = build_linear_expressions(decision_stategy.vars)
-        empty!(cp_sat_decision_strategy.vars)
+        empty!(cp_sat_decision_strategy.variables)
     end
     cp_sat_decision_strategy.variable_selection_strategy =
         decision_stategy.variable_selection_strategy
@@ -1974,7 +2008,7 @@ end
 struct DecisionStrategyList <: MOI.AbstractModelAttribute end
 MOI.attribute_value_type(::DecisionStrategyList) = Vector{DecisionStrategy}
 
-function MOI.supports(::CPSATOptimizer, ::Type{DecisionStrategyList})
+function MOI.supports(::CPSATOptimizer, ::DecisionStrategyList)
     return true
 end
 
@@ -2052,7 +2086,7 @@ end
 struct Assumptions <: MOI.AbstractModelAttribute end
 MOI.attribute_value_type(::Assumptions) = Union{Nothing,MOI.VectorOfVariables}
 
-function MOI.supports(::CPSATOptimizer, ::Type{Assumptions})
+function MOI.supports(::CPSATOptimizer, ::Assumptions)
     return true
 end
 
@@ -2103,11 +2137,11 @@ function MOI.get(optimizer::CPSATOptimizer, ::MOI.TerminationStatus)
     elseif optimizer.solve_response.status == CpSolverStatus.FEASIBLE
         # If it is a feasibility problem and we've found a feasible solution,
         # then our solution is optimal.
-        if MOI.get(optimizer, MOI.ObjectiveSense) == MOI.FEASIBILITY_SENSE
+        if MOI.get(optimizer, MOI.ObjectiveSense()) == MOI.FEASIBILITY_SENSE
             return MOI.OPTIMAL
         else
             return MOI.OTHER_LIMIT
-        end 
+        end
     else
         # If the status is CpSolverStatus.UNKNOWN
         @info "The status of the model is still unknown. A search limit has been reached before the status could be determined."
@@ -2224,7 +2258,7 @@ MOI.is_set_by_optimize(::SufficientAssumptionsForInfeasibility) = true
 
 function MOI.get(optimizer::CPSATOptimizer, ::SufficientAssumptionsForInfeasibility)
     if isnothing(optimizer.solve_response) ||
-        empty(optimizer.solve_response.sufficient_assumptions_for_infeasibility)
+       isempty(optimizer.solve_response.sufficient_assumptions_for_infeasibility)
         return nothing
     end
 
@@ -2330,10 +2364,14 @@ end
 
 function MOI.get(optimizer::CPSATOptimizer, ::MOI.SimplexIterations)
     if isnothing(optimizer.solve_response)
-        throw(ArgumentError("The solve response is not set. Call optimize! first."))
+        return 0
     end
 
     return optimizer.solve_response.num_lp_iterations
+end
+
+function MOI.get(optimizer::CPSATOptimizer, ::MOI.BarrierIterations)
+    return 0
 end
 
 function MOI.get(optimizer::CPSATOptimizer, ::MOI.SolveTimeSec)
@@ -2382,7 +2420,7 @@ end
 
 function MOI.get(optimizer::CPSATOptimizer, ::MOI.RawStatusString)
     if isnothing(optimizer.solve_response)
-        throw(ArgumentError("The solve response is not set. Call optimize! first."))
+        return ""
     end
 
     return optimizer.solve_response.solution_info
@@ -2443,3 +2481,5 @@ function MOI.optimize!(optimizer::CPSATOptimizer)
 
     return nothing
 end
+
+MOI.supports_incremental_interface(::CPSATOptimizer) = true

@@ -2815,9 +2815,9 @@ function to_proto_struct(routes_constraint::RoutesConstraint)::Sat.RoutesConstra
     dimensions = to_proto_struct.(routes_constraint.dimensions)
 
     return Sat.RoutesConstraintProto(
-        tails,
-        heads,
-        literals,
+        routes_constraint.tails,
+        routes_constraint.heads,
+        routes_constraint.literals,
         Vector{Int32}(), # [Deprecated] demands
         zero(Int64), # [Deprecated] capacity
         dimensions,
@@ -2852,7 +2852,7 @@ function to_proto_struct(table_constraint::TableConstraint)::Sat.TableConstraint
     return Sat.TableConstraintProto(
         Vector{Int32}(), # [Deprecated] vars
         table_constraint.values,
-        table_constraint.exprs,
+        exprs,
         table_constraint.negated,
     )
 end
@@ -3193,16 +3193,16 @@ mutable struct CPSATDecisionStrategy
         variables = Vector{Int32}(),
         exprs = Vector{CPSatLinearExpression}(),
         variable_selection_strategy = CPSATVariableSelectionStrategy.CHOOSE_FIRST,
-        domain_selection_strategy = CPSATDomainReductionStrategy.SELECT_MIN_VALUE,
+        domain_reduction_strategy = CPSATDomainReductionStrategy.SELECT_MIN_VALUE,
     )
-        new(variables, exprs, variable_selection_strategy, domain_selection_strategy)
+        new(variables, exprs, variable_selection_strategy, domain_reduction_strategy)
     end
 end
 
 function to_proto_struct(
     decision_strategy::CPSATDecisionStrategy,
 )::Sat.DecisionStrategyProto
-    return Sat.CPSATDecisionStrategyProto(
+    return Sat.DecisionStrategyProto(
         decision_strategy.variables,
         to_proto_struct.(decision_strategy.exprs),
         decision_strategy.variable_selection_strategy,
