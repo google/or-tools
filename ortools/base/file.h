@@ -21,6 +21,7 @@
 
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
+#include "ortools/base/options.h"
 
 // This file defines some IO interfaces for compatibility with Google
 // IO specifications.
@@ -75,10 +76,6 @@ class File {
 };
 
 namespace file {
-
-using Options = int;
-
-inline Options Defaults() { return 0xBABA; }
 
 // As of 2016-01, these methods can only be used with flags = file::Defaults().
 

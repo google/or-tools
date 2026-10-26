@@ -453,7 +453,6 @@ int OptimizerSelector::NumCallsForOptimizer(
 }
 
 void OptimizerSelector::DebugPrint() const {
-  std::string str;
   for (int i = 0; i < run_infos_.size(); ++i) {
     const RunInfo& info = run_infos_[i];
     LOG(INFO) << "               " << info.name << "  " << info.total_gain

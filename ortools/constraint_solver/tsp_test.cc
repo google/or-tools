@@ -24,13 +24,13 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
-#include "ortools/base/strtoint.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -55,6 +55,12 @@ namespace {
 // ---------- Code Section ----------
 
 // TODO(user): move TSPLIB loader to a separate lib
+
+int64_t ParseInt(absl::string_view word) {
+  int64_t value;
+  CHECK(absl::SimpleAtoi(word, &value));
+  return value;
+}
 
 typedef int64_t (*Distance)(const routing::Coordinates3<double>& i,
                             const routing::Coordinates3<double>& j);
@@ -297,7 +303,7 @@ void TSPTest::ParseExplicitFullMatrix(absl::Span<const std::string> words) {
   CHECK_LT(edge_row_, size());
   const int word_size = words.size();
   for (int i = 0; i < word_size; ++i) {
-    arc_weights_[edge_row_][edge_column_] = atoi64(words[i]);
+    arc_weights_[edge_row_][edge_column_] = ParseInt(words[i]);
     ++edge_column_;
     if (edge_column_ >= size()) {
       edge_column_ = 0;
@@ -311,8 +317,9 @@ void TSPTest::ParseExplicitUpperRow(absl::Span<const std::string> words) {
   CHECK_LT(edge_row_, size());
   const int word_size = words.size();
   for (int i = 0; i < word_size; ++i) {
-    arc_weights_[edge_row_][edge_column_] = atoi64(words[i]);
-    arc_weights_[edge_column_][edge_row_] = atoi64(words[i]);
+    const int64_t weight = ParseInt(words[i]);
+    arc_weights_[edge_row_][edge_column_] = weight;
+    arc_weights_[edge_column_][edge_row_] = weight;
     ++edge_column_;
     if (edge_column_ >= size()) {
       ++edge_row_;
@@ -327,8 +334,9 @@ void TSPTest::ParseExplicitLowerRow(absl::Span<const std::string> words) {
   CHECK_LT(edge_row_, size());
   const int word_size = words.size();
   for (int i = 0; i < word_size; ++i) {
-    arc_weights_[edge_row_][edge_column_] = atoi64(words[i]);
-    arc_weights_[edge_column_][edge_row_] = atoi64(words[i]);
+    const int64_t weight = ParseInt(words[i]);
+    arc_weights_[edge_row_][edge_column_] = weight;
+    arc_weights_[edge_column_][edge_row_] = weight;
     ++edge_column_;
     if (edge_column_ >= edge_row_) {
       arc_weights_[edge_column_][edge_column_] = 0;
@@ -343,8 +351,9 @@ void TSPTest::ParseExplicitUpperDiagRow(absl::Span<const std::string> words) {
   CHECK_LT(edge_row_, size());
   const int word_size = words.size();
   for (int i = 0; i < word_size; ++i) {
-    arc_weights_[edge_row_][edge_column_] = atoi64(words[i]);
-    arc_weights_[edge_column_][edge_row_] = atoi64(words[i]);
+    const int64_t weight = ParseInt(words[i]);
+    arc_weights_[edge_row_][edge_column_] = weight;
+    arc_weights_[edge_column_][edge_row_] = weight;
     ++edge_column_;
     if (edge_column_ >= size()) {
       ++edge_row_;
@@ -358,8 +367,9 @@ void TSPTest::ParseExplicitLowerDiagRow(absl::Span<const std::string> words) {
   CHECK_LT(edge_row_, size());
   const int word_size = words.size();
   for (int i = 0; i < word_size; ++i) {
-    arc_weights_[edge_row_][edge_column_] = atoi64(words[i]);
-    arc_weights_[edge_column_][edge_row_] = atoi64(words[i]);
+    const int64_t weight = ParseInt(words[i]);
+    arc_weights_[edge_row_][edge_column_] = weight;
+    arc_weights_[edge_column_][edge_row_] = weight;
     ++edge_column_;
     if (edge_column_ > edge_row_) {
       edge_column_ = 0;
@@ -372,7 +382,7 @@ void TSPTest::ParseExplicitLowerDiagRow(absl::Span<const std::string> words) {
 void TSPTest::ParseNodeCoord(absl::Span<const std::string> words) {
   CHECK_LE(3, words.size());
   CHECK_GE(4, words.size());
-  const int node = atoi32(words[0]) - 1;
+  const int node = ParseInt(words[0]) - 1;
   coords_[node].x = strtod(words[1].c_str(), nullptr);
   coords_[node].y = strtod(words[2].c_str(), nullptr);
   if (4 == words.size()) {
@@ -430,7 +440,7 @@ void TSPTest::ProcessNewLine(absl::string_view line) {
         case COMMENT:
           break;
         case DIMENSION:
-          size_ = atoi32(last_word);
+          size_ = ParseInt(last_word);
           arc_weights_.assign(size(), std::vector<int64_t>(size() + 1, 0));
           coords_.resize(size_);
           break;
@@ -718,7 +728,7 @@ class MakeOptimalTour : public DecisionBuilder {
     const int word_size = words.size();
     if (word_size > 0) {
       if (last_node_ >= 0) {
-        int64_t next_node = atoi64(words[0]) - 1;
+        int64_t next_node = ParseInt(words[0]) - 1;
         const bool end_of_tour = next_node < 0;
         if (0 != next_node) {  // Not the first node in TSPLIB tour
           if (end_of_tour) next_node = 0;
@@ -742,7 +752,7 @@ class MakeOptimalTour : public DecisionBuilder {
             CHECK_EQ("TOUR", last_word);
             break;
           case DIMENSION:
-            CHECK_EQ(atoi32(last_word), vars_.size());
+            CHECK_EQ(ParseInt(last_word), vars_.size());
             break;
           case TOUR_SECTION:
             last_node_ = 0;

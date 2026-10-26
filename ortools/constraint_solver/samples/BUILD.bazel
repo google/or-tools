@@ -52,7 +52,6 @@ or_cc_test(
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
-        "//ortools/base:strtoint",
         "//ortools/constraint_solver:cp",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",

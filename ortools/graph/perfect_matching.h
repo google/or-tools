@@ -34,7 +34,6 @@
 
 #include "absl/base/attributes.h"
 #include "absl/log/check.h"
-#include "ortools/base/adjustable_priority_queue-inl.h"
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/util/strong_integers.h"

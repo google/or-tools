@@ -199,8 +199,8 @@ or_cc_library(
     deps = [
         "//ortools/base:gzipfile",
         "//ortools/base:mathutil",
-        "//ortools/base:strtoint",
         "//ortools/util:filelineiter",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -232,7 +232,6 @@ or_cc_library(
         "//ortools/base:map_util",
         "//ortools/base:path",
         "//ortools/base:status_builder",
-        "//ortools/base:strtoint",
         "//ortools/base:types",
         "//ortools/base:zipfile",
         "//ortools/util:filelineiter",

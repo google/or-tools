@@ -36,10 +36,7 @@ or_cc_test(
 
 or_cc_library(
     name = "adjustable_priority_queue",
-    hdrs = [
-        "adjustable_priority_queue.h",
-        "adjustable_priority_queue-inl.h",
-    ],
+    hdrs = ["adjustable_priority_queue.h"],
 )
 
 or_cc_library(
@@ -73,11 +70,6 @@ or_cc_library(
 or_cc_library(
     name = "base_export",
     hdrs = ["base_export.h"],
-)
-
-or_cc_library(
-    name = "bitmap",
-    hdrs = ["bitmap.h"],
 )
 
 or_cc_library(
@@ -126,10 +118,7 @@ or_cc_library(
 or_cc_library(
     name = "dump_vars",
     hdrs = ["dump_vars.h"],
-    deps = [
-        ":intops",
-        ":strong_int",
-    ],
+    deps = [":strong_int"],
 )
 
 or_cc_test(
@@ -208,16 +197,6 @@ or_cc_library(
 )
 
 or_cc_library(
-    name = "intops",
-    hdrs = ["strong_int.h"],
-    deps = [
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:str_format",
-        "@abseil-cpp//absl/strings:string_view",
-    ],
-)
-
-or_cc_library(
     name = "iterator_adaptors",
     hdrs = ["iterator_adaptors.h"],
 )
@@ -236,11 +215,6 @@ or_cc_library(
         "@abseil-cpp//absl/base",
         "@abseil-cpp//absl/log:check",
     ],
-)
-
-or_cc_library(
-    name = "memutil",
-    hdrs = ["memutil.h"],
 )
 
 or_cc_library(
@@ -389,30 +363,8 @@ or_cc_library(
     name = "strong_vector",
     hdrs = ["strong_vector.h"],
     deps = [
-        ":intops",
+        ":strong_int",
         "@abseil-cpp//absl/log:check",
-    ],
-)
-
-or_cc_library(
-    name = "strtoint",
-    srcs = ["strtoint.cc"],
-    hdrs = ["strtoint.h"],
-    deps = [
-        "@abseil-cpp//absl/base:core_headers",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/strings",
-    ],
-)
-
-or_cc_test(
-    name = "strtoint_test",
-    size = "small",
-    srcs = ["strtoint_test.cc"],
-    deps = [
-        ":gmock_main",
-        ":strtoint",
-        ":types",
     ],
 )
 

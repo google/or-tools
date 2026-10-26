@@ -248,7 +248,6 @@ or_cc_library(
         ":solver_parameters_cc_proto",
         ":utilities",
         "//ortools/base:base_export",
-        "//ortools/base:bitmap",
         "//ortools/base:file",
         "//ortools/base:iterator_adaptors",
         "//ortools/base:log_severity",
@@ -778,7 +777,6 @@ or_cc_test(
     deps = [
         ":cp",
         "//ortools/base:gmock_main",
-        "//ortools/base:strtoint",
         "//ortools/base:types",
         "//ortools/routing/parsers:simple_graph",
         "@abseil-cpp//absl/flags:flag",

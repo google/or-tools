@@ -37,6 +37,7 @@
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/util/fp_roundtrip_conv.h"
 
 ABSL_RETIRED_FLAG(bool, lp_log_invalid_name, false, "DEPRECATED.");
 
@@ -387,10 +388,8 @@ void MPModelProtoExporter::AppendComments(const std::string& separator,
 namespace {
 
 std::string DoubleToStringWithForcedSign(double d) {
-  return absl::StrCat((d < 0 ? "" : "+"), (d));
+  return absl::StrCat((d < 0 ? "" : "+"), RoundTripDoubleFormat(d));
 }
-
-std::string DoubleToString(double d) { return absl::StrCat((d)); }
 
 }  // namespace
 
@@ -413,7 +412,7 @@ bool MPModelProtoExporter::AppendConstraint(const MPConstraintProto& ct_proto,
   const double lb = ct_proto.lower_bound();
   const double ub = ct_proto.upper_bound();
   if (lb == ub) {
-    line_breaker.Append(absl::StrCat(" = ", DoubleToString(ub), "\n"));
+    line_breaker.Append(absl::StrCat(" = ", RoundTripDoubleFormat(ub), "\n"));
     absl::StrAppend(output, " ", name, ": ", line_breaker.GetOutput());
   } else {
     if (ub != +kInfinity) {
@@ -423,7 +422,7 @@ bool MPModelProtoExporter::AppendConstraint(const MPConstraintProto& ct_proto,
       }
       absl::StrAppend(output, " ", rhs_name, ": ", line_breaker.GetOutput());
       const std::string relation =
-          absl::StrCat(" <= ", DoubleToString(ub), "\n");
+          absl::StrCat(" <= ", RoundTripDoubleFormat(ub), "\n");
       // Here we have to make sure we do not add the relation to the contents
       // of line_breaker, which may be used in the subsequent clause.
       if (!line_breaker.WillFit(relation)) absl::StrAppend(output, "\n ");
@@ -436,7 +435,7 @@ bool MPModelProtoExporter::AppendConstraint(const MPConstraintProto& ct_proto,
       }
       absl::StrAppend(output, " ", lhs_name, ": ", line_breaker.GetOutput());
       const std::string relation =
-          absl::StrCat(" >= ", DoubleToString(lb), "\n");
+          absl::StrCat(" >= ", RoundTripDoubleFormat(lb), "\n");
       if (!line_breaker.WillFit(relation)) absl::StrAppend(output, "\n ");
       absl::StrAppend(output, relation);
     }
@@ -495,7 +494,7 @@ void UpdateMaxSize(absl::string_view new_string, int* size) {
 }
 
 void UpdateMaxSize(double new_number, int* size) {
-  UpdateMaxSize(DoubleToString(new_number), size);
+  UpdateMaxSize(RoundTripDoubleFormat::ToString(new_number), size);
 }
 }  // namespace
 
@@ -623,7 +622,7 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(
     const MPConstraintProto& ct_proto = proto_.constraint(cst_index);
     const std::string& name = exported_constraint_names_[cst_index];
     LineBreaker line_breaker(options.max_line_length);
-    const int kNumFormattingChars = 10;  // Overevaluated.
+    const int kNumFormattingChars = 10;  // Over-evaluated.
     // Account for the size of the constraint name + possibly "_rhs" +
     // the formatting characters here.
     line_breaker.Consume(kNumFormattingChars + name.size());
@@ -640,7 +639,7 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(
         proto_.general_constraint(cst_index);
     const std::string& name = exported_general_constraint_names_[cst_index];
     LineBreaker line_breaker(options.max_line_length);
-    const int kNumFormattingChars = 10;  // Overevaluated.
+    const int kNumFormattingChars = 10;  // Over-evaluated.
     // Account for the size of the constraint name + possibly "_rhs" +
     // the formatting characters here.
     line_breaker.Consume(kNumFormattingChars + name.size());
@@ -681,11 +680,11 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(
         absl::StrAppend(output, exported_variable_names_[var_index], " free");
       } else {
         if (lb != -kInfinity) {
-          absl::StrAppend(output, DoubleToString(lb), " <= ");
+          absl::StrAppend(output, RoundTripDoubleFormat(lb), " <= ");
         }
         absl::StrAppend(output, exported_variable_names_[var_index]);
         if (ub != kInfinity) {
-          absl::StrAppend(output, " <= ", DoubleToString(ub));
+          absl::StrAppend(output, " <= ", RoundTripDoubleFormat(ub));
         }
       }
       absl::StrAppend(output, "\n");
@@ -722,7 +721,8 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(
 
 void MPModelProtoExporter::AppendMpsPair(absl::string_view name, double value,
                                          std::string* output) const {
-  absl::StrAppendFormat(output, *mps_format_, name, DoubleToString(value));
+  absl::StrAppendFormat(output, *mps_format_, name,
+                        RoundTripDoubleFormat::ToString(value));
 }
 
 void MPModelProtoExporter::AppendMpsLineHeader(absl::string_view id,
