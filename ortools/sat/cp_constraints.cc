@@ -210,10 +210,10 @@ bool GreaterThanAtLeastOneOfPropagator::Propagate() {
     return false;
   }
 
-  // Note that we use id/propagation_slack for other purposes.
+  // Note that we use id for first_non_false.
   return integer_trail_->EnqueueWithLazyReason(
       IntegerLiteral::GreaterOrEqual(target_var_, target_min),
-      /*id=*/first_non_false, /*propagation_slack=*/target_min, this);
+      /*id=*/first_non_false, /*propagation_slack=*/IntegerValue(0), this);
 }
 
 void GreaterThanAtLeastOneOfPropagator::RegisterWith(

@@ -489,11 +489,11 @@ bool PossibleOverflow(const IntegerTrail& integer_trail,
     const IntegerValue lb = integer_trail.LevelZeroLowerBound(var);
     const IntegerValue ub = integer_trail.LevelZeroUpperBound(var);
     if (coeff > 0) {
-      if (!AddProductTo(lb, coeff, &min_activity)) return true;
-      if (!AddProductTo(ub, coeff, &max_activity)) return true;
+      if (lb < 0 && !AddProductTo(lb, coeff, &min_activity)) return true;
+      if (ub > 0 && !AddProductTo(ub, coeff, &max_activity)) return true;
     } else {
-      if (!AddProductTo(ub, coeff, &min_activity)) return true;
-      if (!AddProductTo(lb, coeff, &max_activity)) return true;
+      if (ub > 0 && !AddProductTo(ub, coeff, &min_activity)) return true;
+      if (lb < 0 && !AddProductTo(lb, coeff, &max_activity)) return true;
     }
   }
   return AtMinOrMaxInt64(CapSub(max_activity.value(), min_activity.value()));

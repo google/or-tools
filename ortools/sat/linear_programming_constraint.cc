@@ -2009,7 +2009,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
   std::shuffle(base_rows.begin(), base_rows.end(), random_);
 
   std::vector<double> weights;
-  util_intops::StrongVector<RowIndex, bool> used_rows;
+  SparseBitset<RowIndex> used_rows{RowIndex(num_rows)};
   std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers;
   const auto matrix = simplex_.MatrixWithSlack().view();
   for (const std::pair<RowIndex, IntegerValue>& entry : base_rows) {
@@ -2048,8 +2048,8 @@ void LinearProgrammingConstraint::AddMirCuts() {
       dense_cut[col] += coeff * multiplier;
     }
 
-    used_rows.assign(num_rows, false);
-    used_rows[entry.first] = true;
+    used_rows.ResetAllToFalse();
+    used_rows.Set(entry.first);
 
     // We will aggregate at most kMaxAggregation more rows.
     //
@@ -2097,7 +2097,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
         // eliminated (or are about to). This means that we choose rows that
         // form a "triangular" matrix on the position we choose to eliminate.
         if (used_rows[row]) continue;
-        used_rows[row] = true;
+        used_rows.Set(row);
 
         // Note that we consider all rows here, not only tight ones. This makes
         // a big difference on problem like blp-ic98.pb.gz. We can also use the

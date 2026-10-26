@@ -1001,6 +1001,7 @@ bool IntegerRoundingCutHelper::ComputeCut(
   // This should be better except it can mess up the norm and the divisors.
   cut_ = base_ct;
   if (options.use_ib_before_heuristic && ib_processor != nullptr) {
+    bool some_positive_ib = false;
     std::vector<CutTerm>* new_bool_terms =
         ib_processor->ClearedMutableTempTerms();
     for (CutTerm& term : cut_.terms) {
@@ -1014,6 +1015,7 @@ bool IntegerRoundingCutHelper::ComputeCut(
                 IntegerValue(1),
                 /*complement=*/true, &term, &cut_.rhs, new_bool_terms)) {
           ++total_num_initial_ibs_;
+          some_positive_ib = true;
           continue;
         }
         term.Complement(&cut_.rhs);
@@ -1030,6 +1032,7 @@ bool IntegerRoundingCutHelper::ComputeCut(
     // use_ib_before_heuristic, so that we can abort if no IB has been applied
     // since then we will redo the computation. This is not really clean.
     if (new_bool_terms->empty()) return false;
+    if (options.prefer_positive_ib && !some_positive_ib) return false;
     total_num_initial_merges_ +=
         ib_processor->MutableCutBuilder()->AddOrMergeBooleanTerms(
             absl::MakeSpan(*new_bool_terms), IntegerValue(1), &cut_);

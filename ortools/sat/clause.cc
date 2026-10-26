@@ -3015,6 +3015,8 @@ BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
   const int size = literals.size();
   for (int i = 0; i < size; ++i) {
     const Literal l = literals[i];
+    if (trail_->Assignment().LiteralIsAssigned(l)) continue;
+    if (is_redundant_[l]) continue;
     can_be_included[l] = true;
     can_be_included[l.NegatedIndex()] = true;
 

@@ -995,7 +995,7 @@ bool CpConstraintPresolver::PropagateAndReduceLinMax(ConstraintProto* ct) {
 
   const LinearExpressionProto& target = ct->lin_max().target();
 
-  // Compute the infered min/max of the target.
+  // Compute the inferred min/max of the target.
   // Update target domain (if it is not a complex expression).
   {
     int64_t infered_min = context_->MinOf(target);
@@ -1113,12 +1113,13 @@ bool CpConstraintPresolver::PresolveLinMax(int c, ConstraintProto* ct) {
     if (LinearExpressionProtosAreEqual(expr, target)) {
       for (const LinearExpressionProto& e : ct->lin_max().exprs()) {
         if (LinearExpressionProtosAreEqual(e, target)) continue;
-        LinearConstraintProto* prec =
-            context_->AddConstraint()->mutable_linear();
+        ConstraintProto* new_ct = context_->AddConstraint();
+        LinearConstraintProto* prec = new_ct->mutable_linear();
         prec->add_domain(0);
         prec->add_domain(kint64max);
         AddLinearExpressionToLinearConstraint(target, 1, prec);
         AddLinearExpressionToLinearConstraint(e, -1, prec);
+        context_->CanonicalizeLinearConstraint(new_ct);
       }
       context_->UpdateRuleStats("lin_max: x = max(x, ...)");
       return RemoveConstraint(ct);
@@ -1341,11 +1342,13 @@ bool CpConstraintPresolver::PresolveLinMax(int c, ConstraintProto* ct) {
           (context_->ObjectiveCoeff(target.vars(0)) > 0)) {
     context_->UpdateRuleStats("lin_max: rewrite with precedences");
     for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
-      LinearConstraintProto* prec = context_->AddConstraint()->mutable_linear();
+      ConstraintProto* new_ct = context_->AddConstraint();
+      LinearConstraintProto* prec = new_ct->mutable_linear();
       prec->add_domain(0);
       prec->add_domain(kint64max);
       AddLinearExpressionToLinearConstraint(target, 1, prec);
       AddLinearExpressionToLinearConstraint(expr, -1, prec);
+      context_->CanonicalizeLinearConstraint(new_ct);
     }
     context_->NewMappingConstraint(*ct, __FILE__, __LINE__);
     return RemoveConstraint(ct);
@@ -4615,87 +4618,30 @@ bool CpConstraintPresolver::DetectSimpleSum(int c, ConstraintProto* ct) {
   DeterministicTimer<{.scale = 1e-9, .offset = 0.0}> timer(time_limit_);
 
   // Compute basic constraint stats.
-  int64_t min_activity = 0;
-  int64_t max_activity = 0;
-  int64_t max_coeff_magnitude = 0;
-  int64_t min_coeff_magnitude = kint64max;
   const LinearConstraintProto& linear = ct->linear();
   const int initial_num_terms = linear.vars().size();
   if (initial_num_terms == 0) return false;
-  for (int i = 0; i < initial_num_terms; ++i) {
-    const int var = linear.vars(i);
-    const int64_t coeff = linear.coeffs(i);
-    if (coeff > 0) {
-      min_coeff_magnitude = std::min(min_coeff_magnitude, coeff);
-      max_coeff_magnitude = std::max(max_coeff_magnitude, coeff);
-      min_activity += coeff * context_->MinOf(var);
-      max_activity += coeff * context_->MaxOf(var);
-    } else {
-      min_coeff_magnitude = std::min(min_coeff_magnitude, -coeff);
-      max_coeff_magnitude = std::max(max_coeff_magnitude, -coeff);
-      min_activity += coeff * context_->MaxOf(var);
-      max_activity += coeff * context_->MinOf(var);
-    }
-  }
+  const PresolveContext::LinearStats ct_stats =
+      context_->ComputeLinearStats(linear);
   timer.Advance(initial_num_terms);
 
   // Optimization: abort early if the constraint is already a simple sum. It
   // will be simplified by its gcd later if the magnitude is not one.
-  if (min_coeff_magnitude == max_coeff_magnitude) {
+  if (ct_stats.min_coeff_magnitude == ct_stats.max_coeff_magnitude) {
     return false;
   }
 
   // Canonicalize the constraint to:
-  //    shifted_lb <= sum magnitude * X_i <= shifted_ub
+  //    lb <= sum magnitude * X_i <= ub
   // with each Xi in [0, range_i].
-  //
-  // TODO(user): many "coefficient" reductions could be tried on this
-  // canonicalized & sorted form, and it would make sense to do it once, and try
-  // various strategy.
-  struct Term {
-    int64_t range;
-    int64_t magnitude;
-  };
-  std::vector<Term> canonicalized;
-  for (int i = 0; i < initial_num_terms; ++i) {
-    const int var = linear.vars(i);
-    const int64_t magnitude = std::abs(linear.coeffs(i));
-    const int64_t range = context_->MaxOf(var) - context_->MinOf(var);
-    if (!canonicalized.empty() && magnitude == canonicalized.back().magnitude) {
-      // Optimization: canonicalized terms with same coeff can be merged. This
-      // is just best effort here, we can do a proper merge after the sort.
-      //
-      // TODO(user): alternatively, we could use hash_map, or do a quick scan as
-      // long as the number of terms is small. But this is not critical.
-      canonicalized.back().range += range;
-    } else {
-      canonicalized.push_back({range, magnitude});
-    }
-  }
-  const int64_t ct_lb = ct->linear().domain(0);
-  const int64_t ct_ub = ct->linear().domain(ct->linear().domain().size() - 1);
-  const int64_t shifted_ub = ct_ub - min_activity;
-  const int64_t shifted_lb = ct_lb - min_activity;
-
-  // Sort canonicalized by increasing magnitude.
-  absl::c_sort(canonicalized, [](const Term& a, const Term& b) {
-    return a.magnitude < b.magnitude;
-  });
-  const double n = static_cast<double>(canonicalized.size());
+  const PresolveContext::MergedCanonicalLinearConstraint canonical =
+      context_->BuildMergedCanonicalLinearConstraint(linear);
+  if (canonical.terms.empty()) return false;
+  const double n = static_cast<double>(canonical.terms.size());
   timer.Advance(static_cast<int64_t>(n * std::log(n)));
-
-  // Merge identicaly terms.
-  {
-    int new_size = 1;
-    for (int i = 1; i < canonicalized.size(); ++i) {
-      if (canonicalized[i].magnitude == canonicalized[new_size - 1].magnitude) {
-        canonicalized[new_size - 1].range += canonicalized[i].range;
-      } else {
-        canonicalized[new_size++] = canonicalized[i];
-      }
-    }
-    canonicalized.resize(new_size);
-  }
+  const bool has_ub =
+      canonical.ub < CapSub(ct_stats.max_activity, ct_stats.min_activity);
+  const bool has_lb = canonical.lb > 0;
 
   bool simplify = true;
   int64_t min_number_of_items = 0;
@@ -4703,11 +4649,11 @@ bool CpConstraintPresolver::DetectSimpleSum(int c, ConstraintProto* ct) {
 
   // Upper-bound side. We are trying to see if the constraint is equivalent to a
   // "simple sum" where all coefficients are one.
-  if (max_activity > ct_ub) {
+  if (has_ub) {
     // Compute max_number_of_items assuming constraint is satisfied.
     // I.e. constraint satisfied => (simple_sum <= max_number_of_items)
-    int64_t slack = shifted_ub;
-    for (const auto [range, magnitude] : canonicalized) {
+    int64_t slack = canonical.ub;
+    for (const auto [range, magnitude] : canonical.terms) {
       if (range * magnitude <= slack) {
         slack -= range * magnitude;
         max_number_of_items += range;
@@ -4720,8 +4666,8 @@ bool CpConstraintPresolver::DetectSimpleSum(int c, ConstraintProto* ct) {
     // What is the maximum reachable with max_number_of_items ?
     int64_t num_item_left = max_number_of_items;
     int64_t maximum_reachable = 0;
-    for (int i = canonicalized.size(); --i >= 0;) {  // By decreasing order.
-      const auto [range, magnitude] = canonicalized[i];
+    for (int i = canonical.terms.size(); --i >= 0;) {  // By decreasing order.
+      const auto [range, magnitude] = canonical.terms[i];
       if (range < num_item_left) {
         maximum_reachable += range * magnitude;
         num_item_left -= range;
@@ -4733,18 +4679,18 @@ bool CpConstraintPresolver::DetectSimpleSum(int c, ConstraintProto* ct) {
 
     // If maximum_reachable <= shifted_ub, then we have the other side!
     // (simple_sum <= max_number_of_items) => constraint is satisfied.
-    if (maximum_reachable > shifted_ub) {
+    if (maximum_reachable > canonical.ub) {
       simplify = false;
     }
   }
 
   // Lower-bound side.
-  if (simplify && shifted_lb > 0) {
+  if (simplify && has_lb) {
     // Compute min_number_of_items assuming constraint is satisfied.
     // I.e constraint => (simple_sum >= min_number_of_items)
-    int64_t slack = shifted_lb;
-    for (int i = canonicalized.size(); --i >= 0;) {  // By decreasing order.
-      const auto [range, magnitude] = canonicalized[i];
+    int64_t slack = canonical.lb;
+    for (int i = canonical.terms.size(); --i >= 0;) {  // By decreasing order.
+      const auto [range, magnitude] = canonical.terms[i];
       if (range * magnitude <= slack) {
         slack -= range * magnitude;
         min_number_of_items += range;
@@ -4757,7 +4703,7 @@ bool CpConstraintPresolver::DetectSimpleSum(int c, ConstraintProto* ct) {
     // What is the minimum reachable with min_number_of_items ?
     int64_t num_item_left = min_number_of_items;
     int64_t minimum_reachable = 0;
-    for (const auto [range, magnitude] : canonicalized) {
+    for (const auto [range, magnitude] : canonical.terms) {
       if (range < num_item_left) {
         minimum_reachable += range * magnitude;
         num_item_left -= range;
@@ -4766,7 +4712,7 @@ bool CpConstraintPresolver::DetectSimpleSum(int c, ConstraintProto* ct) {
         break;
       }
     }
-    if (minimum_reachable < shifted_lb) {
+    if (minimum_reachable < canonical.lb) {
       // TODO(user): If one side is simplifiable and not the other, it might
       // be worth splitting the constraint in two. This is a bit harder to
       // evaluate though, because it is not a "clearly good" change.
@@ -4778,25 +4724,17 @@ bool CpConstraintPresolver::DetectSimpleSum(int c, ConstraintProto* ct) {
     // Note that once we know this is equivalent to a simple sum, we can apply
     // the transformation easily directly on the initial constraint.
     context_->UpdateRuleStats("linear: detected simple sum in range");
-    int64_t simple_activity_min = 0;
-    int64_t simple_activity_max = 0;
     for (int i = 0; i < initial_num_terms; ++i) {
-      if (linear.coeffs(i) > 0) {
-        ct->mutable_linear()->set_coeffs(i, 1);
-        simple_activity_min += context_->MinOf(linear.vars(i));
-        simple_activity_max += context_->MaxOf(linear.vars(i));
-      } else {
-        ct->mutable_linear()->set_coeffs(i, -1);
-        simple_activity_min -= context_->MaxOf(linear.vars(i));
-        simple_activity_max -= context_->MinOf(linear.vars(i));
-      }
+      ct->mutable_linear()->set_coeffs(i, linear.coeffs(i) > 0 ? 1 : -1);
     }
+    const auto [simple_activity_min, simple_activity_max] =
+        context_->ComputeMinMaxActivity(ct->linear());
     ct->mutable_linear()->set_domain(
-        0, min_activity < ct_lb ? min_number_of_items + simple_activity_min
-                                : simple_activity_min);
+        0, has_lb ? min_number_of_items + simple_activity_min
+                  : simple_activity_min);
     ct->mutable_linear()->set_domain(
-        1, max_activity > ct_ub ? max_number_of_items + simple_activity_min
-                                : simple_activity_max);
+        1, has_ub ? max_number_of_items + simple_activity_min
+                  : simple_activity_max);
 
     // Special case: we don't want to output infeasible constraint as this will
     // cause check fail down the road.
@@ -4805,12 +4743,247 @@ bool CpConstraintPresolver::DetectSimpleSum(int c, ConstraintProto* ct) {
           ct, "linear: detected infeasible during simple sum rewrite.");
     }
     return true;
-  } else if (canonicalized.size() == 2) {
+  } else if (canonical.terms.size() == 2) {
     context_->UpdateRuleStats(
         "TODO linear: only two different coefficients, might be simplifiable.");
   }
 
   return false;
+}
+
+namespace {
+
+// Exact mathematical floor division: floor(num / den) for den > 0.
+absl::int128 FloorDiv128(absl::int128 num, absl::int128 den) {
+  if (num >= 0) return num / den;
+  return -((-num + den - 1) / den);
+}
+
+// Computes max_{x in [L, U]} (n * x + d * floor((B - a1 * x) / a2))
+// in O(log(min(a1, a2))) time using the Euclidean algorithm.
+// Assumes a1 >= 0, a2 > 0, and L <= U.
+absl::int128 MaxLinearFloor(absl::int128 n, absl::int128 d, absl::int128 a1,
+                            absl::int128 a2, absl::int128 B, absl::int128 L,
+                            absl::int128 U) {
+  const absl::int128 offset = n * L;
+  B -= a1 * L;
+  const absl::int128 N = U - L;
+
+  if (a1 == 0 || N == 0) {
+    return offset + d * FloorDiv128(B, a2) + std::max<absl::int128>(0, n * N);
+  }
+  if (n < 0) {
+    // Mirror x <- N - x so the linear slope (-n) becomes strictly positive.
+    return offset + n * N +
+           MaxLinearFloor(-n, -d, a1, a2, a1 * N - B + a2 - 1, 0, N);
+  }
+  if (a1 >= a2) {
+    const absl::int128 k = a1 / a2;
+    const absl::int128 r = a1 % a2;
+    return offset + MaxLinearFloor(n - d * k, d, r, a2, B, 0, N);
+  }
+
+  // Now n >= 0 and 0 < a1 < a2. Group by step height y = floor((B - a1*x)/a2):
+  // y = y_min is maximized at x = N, and each y in [y_min + 1, y_max] is
+  // maximized at its rightmost column x = floor((B - a2 * y) / a1).
+  const absl::int128 y_min = FloorDiv128(B - a1 * N, a2);
+  const absl::int128 y_max = FloorDiv128(B, a2);
+  if (y_min == y_max) {
+    return offset + n * N + d * y_min;
+  }
+  return offset + std::max(n * N + d * y_min,
+                           MaxLinearFloor(d, n, a2, a1, B, y_min + 1, y_max));
+}
+
+// Computes min_{x in [L, U]} (n * x + d * floor((B - a1 * x) / a2))
+// in O(log(min(a1, a2))) time.
+absl::int128 MinLinearFloor(absl::int128 n, absl::int128 d, absl::int128 a1,
+                            absl::int128 a2, absl::int128 B, absl::int128 L,
+                            absl::int128 U) {
+  return -MaxLinearFloor(-n, -d, a1, a2, B, L, U);
+}
+
+// Evaluates if (n, d) is a valid tilt for the shifted constraint by computing
+// max(n * x1' + d * x2') over feasible points (`max_feas`) and
+// min(n * x1' + d * x2') over infeasible points (`min_infeas`). If
+// `max_feas < min_infeas`, sets `*b_prime_out = max_feas` (the new B').
+bool EvaluateTiltCandidate(int64_t n, int64_t d, int64_t a1, int64_t a2,
+                           absl::int128 B_prime, absl::int128 U_prime,
+                           absl::int128 infeas_start, bool right_clamped,
+                           absl::int128* b_prime_out) {
+  if (n <= 0 || d <= 0) return false;
+  const absl::int128 max_feas =
+      MaxLinearFloor(n, d, a1, a2, B_prime, 0, U_prime);
+  absl::int128 min_infeas = absl::Int128Max();
+  if (infeas_start <= U_prime) {
+    min_infeas = std::min(
+        min_infeas,
+        MinLinearFloor(n, d, a1, a2, B_prime, infeas_start, U_prime) + d);
+  }
+  if (!right_clamped) {
+    min_infeas = std::min(min_infeas, absl::int128(n) * (U_prime + 1));
+  }
+  if (max_feas < min_infeas) {
+    *b_prime_out = max_feas;
+    return true;
+  }
+  return false;
+}
+
+}  // namespace
+
+bool CpConstraintPresolver::DetectTwoTermTilting(int c, ConstraintProto* ct) {
+  if (ct->constraint_case() != ConstraintProto::kLinear) return false;
+  if (ct->linear().domain().size() != 2) return false;
+  if (context_->ModelIsUnsat()) return false;
+  DeterministicTimer<{.scale = 1e-9, .offset = 0.0}> timer(time_limit_);
+
+  const LinearConstraintProto& linear = ct->linear();
+  const int initial_num_terms = linear.vars().size();
+  if (initial_num_terms == 0) return false;
+  const PresolveContext::LinearStats ct_stats =
+      context_->ComputeLinearStats(linear);
+  timer.Advance(initial_num_terms);
+
+  if (ct_stats.min_coeff_magnitude == ct_stats.max_coeff_magnitude) {
+    return false;
+  }
+
+  // Step 1: Canonicalize both UB and LB forms into
+  //   a1 * x1 + a2 * x2 <= B
+  // with x1 in [0, R1], x2 in [0, R2] (flipping x_i <- R_i - x_i when use_lb
+  // is true).
+  const PresolveContext::MergedCanonicalLinearConstraint canonical =
+      context_->BuildMergedCanonicalLinearConstraint(linear);
+  if (canonical.terms.empty()) return false;
+  const double n = static_cast<double>(canonical.terms.size());
+  timer.Advance(static_cast<int64_t>(n * std::log(n)));
+  if (canonical.terms.size() != 2) return false;
+
+  const auto [R1, a1] = canonical.terms[0];
+  const auto [R2, a2] = canonical.terms[1];
+  DCHECK_GT(a1, 0);
+  DCHECK_LT(a1, a2);
+  DCHECK_GT(R1, 0);
+  DCHECK_GT(R2, 0);
+
+  const absl::int128 max_canonical_activity =
+      absl::int128(a1) * R1 + absl::int128(a2) * R2;
+  const bool use_ub = (canonical.ub < max_canonical_activity);
+  const bool use_lb = (canonical.lb > 0);
+
+  // Tilting hyperplanes is only exact for one-sided inequalities.
+  if (use_ub == use_lb) return false;
+
+  const absl::int128 B = use_ub ? absl::int128(canonical.ub)
+                                : (max_canonical_activity - canonical.lb);
+
+  // Step 2: Transform the constraint so that the positive quadrant is only
+  // constrained by a1 * x1' + a2 * x2' = B'.
+  // Shift x1 and x2 by (s1, s2) so that if x1' < 0 there is no constraint on
+  // x2', and if x2' < 0 there is no constraint on x1'. The active problem
+  // reduces to the positive quadrant:
+  //   a1 * x1' + a2 * x2' <= B', with x1' in [0, U'], x2' >= 0.
+  const bool top_clamped = (B >= absl::int128(a2) * R2);
+  const bool right_clamped = (B >= absl::int128(a1) * R1);
+  const absl::int128 s1 = top_clamped ? ((B - absl::int128(a2) * R2) / a1) : 0;
+  const absl::int128 s2 =
+      right_clamped ? ((B - absl::int128(a1) * R1) / a2) : 0;
+  const absl::int128 B_prime = B - a1 * s1 - a2 * s2;
+  const absl::int128 U_prime = right_clamped ? (R1 - s1) : (B_prime / a1);
+  const absl::int128 infeas_start = top_clamped ? 1 : 0;
+
+  // Step 3: Minimize (n, d) and B' simultaneously in the positive quadrant by
+  // traversing the continued fraction expansion of a1 / a2 and binary searching
+  // the semi-convergents at the first valid quotient step.
+  //
+  // Step 3a: Advance through continued fraction stages of a1 / a2 until the
+  // stage endpoint (n_end, d_end) is a valid tilt. Starts at the 0th convergent
+  // (0, 1) (invalid) and always terminates at or before (a1 / gcd, a2 / gcd).
+  int64_t n_prev2 = 0;
+  int64_t n_prev1 = 1;
+  int64_t d_prev2 = 1;
+  int64_t d_prev1 = 0;
+  int64_t rem_num = a1;
+  int64_t rem_den = a2;
+  int64_t c_k = 0;
+  absl::int128 best_b_prime = 0;
+  int64_t n_end = 0;
+  int64_t d_end = 1;
+  while (!EvaluateTiltCandidate(n_end, d_end, a1, a2, B_prime, U_prime,
+                                infeas_start, right_clamped, &best_b_prime)) {
+    DCHECK_NE(rem_num, 0);
+    n_prev2 = n_prev1;
+    n_prev1 = n_end;
+    d_prev2 = d_prev1;
+    d_prev1 = d_end;
+
+    c_k = rem_den / rem_num;
+    const int64_t rem_next = rem_den % rem_num;
+    rem_den = rem_num;
+    rem_num = rem_next;
+
+    n_end = c_k * n_prev1 + n_prev2;
+    d_end = c_k * d_prev1 + d_prev2;
+  }
+
+  // Step 3b: Binary search semi-convergents m in (0, c_k] within that stage.
+  // Invariant: m = low is invalid (false), m = high is valid (true).
+  int64_t low = 0;
+  int64_t high = c_k;
+  while (high - low > 1) {
+    const int64_t mid = low + (high - low) / 2;
+    const int64_t n_mid = mid * n_prev1 + n_prev2;
+    const int64_t d_mid = mid * d_prev1 + d_prev2;
+    absl::int128 b_prime_mid = 0;
+    if (EvaluateTiltCandidate(n_mid, d_mid, a1, a2, B_prime, U_prime,
+                              infeas_start, right_clamped, &b_prime_mid)) {
+      high = mid;
+      best_b_prime = b_prime_mid;
+    } else {
+      low = mid;
+    }
+  }
+  const int64_t new_a1 = high * n_prev1 + n_prev2;
+  const int64_t new_a2 = high * d_prev1 + d_prev2;
+
+  if (new_a1 >= a1 && new_a2 >= a2) return false;
+
+  // Step 4: Transform back by removing the shift (s1, s2) and rewrite the
+  // constraint.
+  const absl::int128 best_ub =
+      best_b_prime + absl::int128(new_a1) * s1 + absl::int128(new_a2) * s2;
+  const int64_t new_shifted_ub = use_ub ? static_cast<int64_t>(best_ub) : 0;
+  const int64_t new_shifted_lb =
+      use_ub ? 0
+             : static_cast<int64_t>(absl::int128(new_a1) * R1 +
+                                    absl::int128(new_a2) * R2 - best_ub);
+
+  context_->UpdateRuleStats(
+      "linear: reduced coefficients with 2-term exact tilting");
+  for (int i = 0; i < initial_num_terms; ++i) {
+    const int64_t orig_coeff = linear.coeffs(i);
+    const int64_t orig_mag = std::abs(orig_coeff);
+    const int64_t new_mag = (orig_mag == a1) ? new_a1 : new_a2;
+    const int64_t new_coeff = (orig_coeff > 0) ? new_mag : -new_mag;
+    ct->mutable_linear()->set_coeffs(i, new_coeff);
+  }
+  const auto [new_activity_min, new_activity_max] =
+      context_->ComputeMinMaxActivity(ct->linear());
+
+  const int64_t final_lb =
+      use_lb ? (new_shifted_lb + new_activity_min) : new_activity_min;
+  const int64_t final_ub =
+      use_ub ? (new_shifted_ub + new_activity_min) : new_activity_max;
+
+  ct->mutable_linear()->set_domain(0, final_lb);
+  ct->mutable_linear()->set_domain(1, final_ub);
+
+  if (ct->linear().domain(0) > ct->linear().domain(1)) {
+    (void)MarkConstraintAsFalse(
+        ct, "linear: detected infeasible during 2-term tilt rewrite.");
+  }
+  return true;
 }
 
 // Identify Boolean variable that makes the constraint always true when set to
@@ -4834,26 +5007,9 @@ void CpConstraintPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   // We also do not want to split them in two.
   if (num_vars <= 1) return;
 
-  int64_t min_sum = 0;
-  int64_t max_sum = 0;
-  int64_t max_coeff_magnitude = 0;
-  int64_t min_coeff_magnitude = kint64max;
-  for (int i = 0; i < num_vars; ++i) {
-    const int ref = arg.vars(i);
-    const int64_t coeff = arg.coeffs(i);
-    if (coeff > 0) {
-      max_coeff_magnitude = std::max(max_coeff_magnitude, coeff);
-      min_coeff_magnitude = std::min(min_coeff_magnitude, coeff);
-      min_sum += coeff * context_->MinOf(ref);
-      max_sum += coeff * context_->MaxOf(ref);
-    } else {
-      max_coeff_magnitude = std::max(max_coeff_magnitude, -coeff);
-      min_coeff_magnitude = std::min(min_coeff_magnitude, -coeff);
-      min_sum += coeff * context_->MaxOf(ref);
-      max_sum += coeff * context_->MinOf(ref);
-    }
-  }
-  if (max_coeff_magnitude == 1) return;
+  const PresolveContext::LinearStats ct_stats =
+      context_->ComputeLinearStats(arg);
+  if (ct_stats.max_coeff_magnitude == 1) return;
 
   // We can only extract enforcement literals if the maximum coefficient
   // magnitude is large enough. Note that we handle complex domain.
@@ -4862,28 +5018,33 @@ void CpConstraintPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   // same. This is maybe not too important, we just don't split as often as we
   // could, but it is still unclear if splitting is good.
   const auto& domain = ct->linear().domain();
-  const int64_t ub_threshold = domain[domain.size() - 2] - min_sum;
-  const int64_t lb_threshold = max_sum - domain[1];
-  if (max_coeff_magnitude + min_coeff_magnitude <
+  const int64_t ub_threshold =
+      domain[domain.size() - 2] - ct_stats.min_activity;
+  const int64_t lb_threshold = ct_stats.max_activity - domain[1];
+  if (ct_stats.max_coeff_magnitude + ct_stats.min_coeff_magnitude <
       std::max(ub_threshold, lb_threshold)) {
     // We also have other kind of coefficient strengthening.
     // In something like 3x + 5y <= 6, the coefficient 5 can be changed to 6.
     // And in 5x + 12y <= 12, the coeff 5 can be changed to 6 (not sure how to
     // generalize this one).
-    if (domain.size() == 2 && min_coeff_magnitude > 1 &&
-        min_coeff_magnitude < max_coeff_magnitude) {
+    if (domain.size() == 2 && ct_stats.min_coeff_magnitude > 1 &&
+        ct_stats.min_coeff_magnitude < ct_stats.max_coeff_magnitude) {
       const int64_t rhs_min = domain[0];
       const int64_t rhs_max = domain[1];
-      if (min_sum >= rhs_min &&
-          max_coeff_magnitude + min_coeff_magnitude > rhs_max - min_sum) {
+      if (ct_stats.min_activity >= rhs_min &&
+          ct_stats.max_coeff_magnitude + ct_stats.min_coeff_magnitude >
+              rhs_max - ct_stats.min_activity) {
         LowerThanCoeffStrengthening(/*from_lower_bound=*/true,
-                                    min_coeff_magnitude, rhs_max - min_sum, ct);
+                                    ct_stats.min_coeff_magnitude,
+                                    rhs_max - ct_stats.min_activity, ct);
         return;
       }
-      if (max_sum <= rhs_max &&
-          max_coeff_magnitude + min_coeff_magnitude > max_sum - rhs_min) {
+      if (ct_stats.max_activity <= rhs_max &&
+          ct_stats.max_coeff_magnitude + ct_stats.min_coeff_magnitude >
+              ct_stats.max_activity - rhs_min) {
         LowerThanCoeffStrengthening(/*from_lower_bound=*/false,
-                                    min_coeff_magnitude, max_sum - rhs_min, ct);
+                                    ct_stats.min_coeff_magnitude,
+                                    ct_stats.max_activity - rhs_min, ct);
         return;
       }
     }
@@ -4903,15 +5064,17 @@ void CpConstraintPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   // to do anything special to trigger a new presolving of these constraints.
   // Try to improve if this becomes a problem.
   const Domain rhs_domain = ReadDomainFromProto(ct->linear());
-  const bool lower_bounded = min_sum < rhs_domain.Min();
-  const bool upper_bounded = max_sum > rhs_domain.Max();
+  const bool lower_bounded = ct_stats.min_activity < rhs_domain.Min();
+  const bool upper_bounded = ct_stats.max_activity > rhs_domain.Max();
   if (!lower_bounded && !upper_bounded) return;
   if (lower_bounded && upper_bounded) {
     // We disable this for now.
     if (true) return;
 
     // Lets not split except if we extract enforcement.
-    if (max_coeff_magnitude < std::max(ub_threshold, lb_threshold)) return;
+    if (ct_stats.max_coeff_magnitude < std::max(ub_threshold, lb_threshold)) {
+      return;
+    }
 
     context_->UpdateRuleStats("linear: split boxed constraint");
     ConstraintProto* new_ct1 = context_->AddConstraint();
@@ -4919,7 +5082,7 @@ void CpConstraintPresolver::ExtractEnforcementLiteralFromLinearConstraint(
     if (!ct->name().empty()) {
       new_ct1->set_name(absl::StrCat(ct->name(), " (part 1)"));
     }
-    FillDomainInProto(Domain(min_sum, rhs_domain.Max()),
+    FillDomainInProto(Domain(ct_stats.min_activity, rhs_domain.Max()),
                       new_ct1->mutable_linear());
 
     ConstraintProto* new_ct2 = context_->AddConstraint();
@@ -4927,8 +5090,9 @@ void CpConstraintPresolver::ExtractEnforcementLiteralFromLinearConstraint(
     if (!ct->name().empty()) {
       new_ct2->set_name(absl::StrCat(ct->name(), " (part 2)"));
     }
-    FillDomainInProto(rhs_domain.UnionWith(Domain(rhs_domain.Max(), max_sum)),
-                      new_ct2->mutable_linear());
+    FillDomainInProto(
+        rhs_domain.UnionWith(Domain(rhs_domain.Max(), ct_stats.max_activity)),
+        new_ct2->mutable_linear());
 
     ct->Clear();
     context_->UpdateConstraintVariableUsage(ct_index);
@@ -4948,7 +5112,7 @@ void CpConstraintPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   // what happens eventually when bound is even, but not if it is odd currently.
   int64_t second_threshold =
       std::max(MathUtil::CeilOfRatio(threshold, int64_t{2}),
-               threshold - min_coeff_magnitude);
+               threshold - ct_stats.min_coeff_magnitude);
 
   // Tricky: The second threshold only work if the domain is simple. If the
   // domain has holes, changing the coefficient might change whether the
@@ -7543,12 +7707,13 @@ bool CpConstraintPresolver::PresolveCumulative(ConstraintProto* ct) {
         const int64_t capacity_min = context_->MinOf(capacity_expr);
         for (const LinearExpressionProto& expr : proto->demands()) {
           if (capacity_min >= context_->MaxOf(expr)) continue;
-          LinearConstraintProto* fit =
-              context_->AddConstraint()->mutable_linear();
+          ConstraintProto* fit_ct = context_->AddConstraint();
+          LinearConstraintProto* fit = fit_ct->mutable_linear();
           fit->add_domain(0);
           fit->add_domain(kint64max);
           AddLinearExpressionToLinearConstraint(capacity_expr, 1, fit);
           AddLinearExpressionToLinearConstraint(expr, -1, fit);
+          context_->CanonicalizeLinearConstraint(fit_ct);
         }
       }
       return RemoveConstraint(ct);
@@ -7569,6 +7734,7 @@ bool CpConstraintPresolver::PresolveCumulative(ConstraintProto* ct) {
                                                 capacity_gt->mutable_linear());
           AddLinearExpressionToLinearConstraint(demand_expr, -1,
                                                 capacity_gt->mutable_linear());
+          context_->CanonicalizeLinearConstraint(capacity_gt);
         }
       }
 
@@ -8319,7 +8485,14 @@ bool CpConstraintPresolver::PresolveOneConstraint(int c) {
         context_->UpdateConstraintVariableUsage(c);
       }
 
+      // TODO(user): share the canonicalization of `ct` to do it just
+      // once for both DetectSimpleSum() and DetectTwoTermTilting(). Potentially
+      // find other reduction techniques for canonicalized form.
       if (DetectSimpleSum(c, ct)) {
+        return true;
+      }
+
+      if (DetectTwoTermTilting(c, ct)) {
         return true;
       }
 
