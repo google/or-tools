@@ -92,6 +92,31 @@ TEST(SetCoverHeuristicsTest, SteepestSearch) {
   EXPECT_TRUE(steepest.SetMaxIterations(10).Optimize());
 }
 
+TEST(SetCoverHeuristicsTest, LazySteepestSearch) {
+  SetCoverModel model = CreateSimpleModel();
+  SetCoverInvariant inv(&model);
+  TrivialSolutionGenerator trivial(&inv);
+  EXPECT_TRUE(trivial.Optimize());
+  EXPECT_DOUBLE_EQ(inv.cost(), 6.0);
+
+  LazySteepestSearch lazy_steepest(&inv);
+  EXPECT_TRUE(lazy_steepest.SetMaxIterations(10).Optimize());
+  EXPECT_DOUBLE_EQ(inv.cost(), 3.0);
+}
+
+TEST(SetCoverHeuristicsTest, LazySteepestSearchWithFocus) {
+  SetCoverModel model = CreateSimpleModel();
+  SetCoverInvariant inv(&model);
+  TrivialSolutionGenerator trivial(&inv);
+  EXPECT_TRUE(trivial.Optimize());
+  EXPECT_DOUBLE_EQ(inv.cost(), 6.0);
+
+  const std::vector<SubsetIndex> focus = {SubsetIndex(0), SubsetIndex(1)};
+  LazySteepestSearch lazy_steepest(&inv);
+  EXPECT_TRUE(lazy_steepest.SetMaxIterations(10).Optimize(focus));
+  EXPECT_DOUBLE_EQ(inv.cost(), 4.0);
+}
+
 TEST(SetCoverHeuristicsTest, GenerateFirstNPrimes) {
   const std::vector<int32_t> primes = internal::GenerateFirstNPrimes(1000);
   ASSERT_EQ(primes.size(), 1000);
