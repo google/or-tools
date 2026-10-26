@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <limits>
 #include <optional>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 
@@ -50,19 +51,54 @@ struct PowerOfTwo {
   int exponent;
 };
 
+namespace internal_full_precision_inequalities {
+class InternalTightSum;
+}  // namespace internal_full_precision_inequalities
+
 // Represents a sum of terms with full precision. The sum is not necessarily
-// representable as a double. This is not thread-safe.
+// representable as a double. This is not thread-safe, but is thread-compatible.
+//
+// * The amortized complexity of adding a term is:
+//  O(1 + exp_spread / num_terms)
+//  where exp_spread = log(abs(max_nonzero_term)) - log(abs(min_nonzero_term)).
+// * The complexity of getting the bounds is O(1).
+// So if one adds N terms and gets the bounds no more than O(N) times, the
+// complexity is O(N + exp_spread).
 class TightSum {
  public:
+  // Explicit constructor. It is fundamental to have it as it prevents to
+  // zero-initialize the object via memset, saving a huge time for very small
+  // computations. It saves ~40% of CPU time in
+  // `BM_ProdBoundsViaTightSum<double, double>`.
+  // See e.g. go/totw/146#user-declared-vs-user-provided-constructors. See also
+  //  cs/search?q=getMaxStoresPerMemset%20file:TargetLowering%5C.h
+  // that explains, why, depending on the alignment of the objects (here
+  // absl::int128), so its size, memset is not inlined anymore adding a
+  // significant cost.
+  TightSum() {};
+
+  TightSum(const TightSum& other) = default;
+  TightSum& operator=(const TightSum& other) = default;
+
   void Clear();
+
+  TightSum& Negate();
 
   // Adds the product of the given arguments to the sum. arguments can be of
   // type double, int64_t, or PowerOfTwo. Returns itself for chaining.
   // Two versions to simplify the implementation.
   template <typename Arg>
+    requires(!std::is_same_v<Arg, TightSum>)
   TightSum& Add(Arg arg);
+
+  TightSum& Add(const TightSum& other) { return AddProd(other); }
+
   template <typename Arg1, typename Arg2, typename... OtherArgs>
+    requires(!std::is_same_v<Arg1, TightSum>)
   TightSum& AddProd(Arg1 arg1, Arg2 arg2, OtherArgs... other_args);
+
+  TightSum& AddProd(const TightSum& other, bool negate = false,
+                    PowerOfTwo scaling = PowerOfTwo(0));
 
   friend std::strong_ordering operator<=>(const TightSum& a, const double x) {
     return a.CompareTo(x);
@@ -106,20 +142,23 @@ class TightSum {
   bool IsFinite() const { return inf_sign_ == std::strong_ordering::equal; }
 
   // Returns currently known bounds on the sum.
-  std::pair<double, double> LooseBounds() const { return {lb_, ub_}; }
+  ABSL_DEPRECATED("Use TightBounds() instead.")
+  std::pair<double, double> LooseBounds() const { return TightBounds(); }
 
-  double LooseLowerBound() const { return lb_; }
+  ABSL_DEPRECATED("Use TightLowerBound() instead.")
+  double LooseLowerBound() const { return TightLowerBound(); }
 
-  double LooseUpperBound() const { return ub_; }
+  ABSL_DEPRECATED("Use TightUpperBound() instead.")
+  double LooseUpperBound() const { return TightUpperBound(); }
 
   // Returns the tight bounds of the sum. In other words, returns [lb, ub]
   // such that lb <= sum <= ub and
   //  * if sum is representable as a double, then lb == ub == sum;
   //  * otherwise, ub = nextafter(lb, inf).
   std::pair<double, double> TightBounds() const {
-    if (tight_bounds_) return {lb_, ub_};
+    if (!bounds_updated_) UpdateBounds();
 
-    return SlowTightBounds();
+    return {lb_, ub_};
   }
 
   double TightLowerBound() const { return TightBounds().first; }
@@ -131,34 +170,34 @@ class TightSum {
   //   {std::numeric_limits<int64_t>::max(), nullopt}.
   // * If sum < std::numeric_limits<int64_t>::min(), returns
   //   {nullopt, std::numeric_limits<int64_t>::min()}.
-  std::pair<std::optional<int64_t>, std::optional<int64_t>> Int64Bounds() const;
+  std::pair<std::optional<int64_t>, std::optional<int64_t>> Int64Bounds()
+      const {
+    if (!bounds_updated_) UpdateBounds();
+
+    return {floor_, ceil_};
+  }
 
   std::optional<int64_t> Int64Floor() const { return Int64Bounds().first; }
 
   std::optional<int64_t> Int64Ceil() const { return Int64Bounds().second; }
 
-  // A term of the sum. This is public to be used in implementation functions.
-  // However, it is not part of the public API (it could be used only as a
-  // struct from outside as no member of TightSum give access to terms).
+ private:
+  // Internal representation of a number.
   // Note that a term needs not to be canonical: it is valid to represent 4.0 as
   // 1.0 * 2^2 or 2.0 * 2^1 or 4.0 * 2^0.
   struct Term {
-    // These are used as sentinels for infinite values exponents. A value with
-    // such an exponent is infinite with sign given by the negative field.
-    // mantissa must be 1.
-    constexpr static int kExpInf = std::numeric_limits<int>::max();
-
-    absl::uint128 mantissa ORTOOLS_REQUIRE_EXPLICIT_INIT;
-    bool negative ABSL_REQUIRE_EXPLICIT_INIT;
+    absl::int128 mantissa ORTOOLS_REQUIRE_EXPLICIT_INIT;
     int exponent ABSL_REQUIRE_EXPLICIT_INIT;
   };
 
- private:
   static Term ToTerm(double x);
   static Term ToTerm(float x);
   static Term ToTerm(int64_t n);
   static Term ToTerm(int n);
   static Term ToTerm(PowerOfTwo p);
+
+  // Exposes some internal details to the implementation.
+  friend class internal_full_precision_inequalities::InternalTightSum;
 
   // Returns the comparison between the sum and x. Formally sum <=> x where <=>
   // has the semantics of the three way operator. NaN are not handled.
@@ -166,31 +205,36 @@ class TightSum {
 
   std::strong_ordering CompareTo(int64_t x) const;
 
-  // Specialized for int64_t and double.
-  template <typename Number>
-  std::strong_ordering SlowCompareTo(Number x) const;
+  // Returns mantissa, exponent and exact such that
+  //       mantissa * 2^exponent <= sum < (mantissa + 1) * 2^exponent and
+  // mantissa < -2^62 or mantissa >= 2^62.
+  // exact is true if and only if the left bound is an equality.
+  std::tuple<int64_t, int, bool> ExtractSignificand() const;
 
-  std::pair<double, double> SlowTightBounds() const;
+  void UpdateBounds() const;
 
-  // Adds the given term to the sum and updates the bounds.
+  // Adds the given term to the sum.
   void AddTerm(const Term& term);
-
-  // Adds the given term to the bounds in a safe guaranteed way. Untight the
-  // bounds.
-  void AddTermToBounds(const Term& term) const;
-
-  void SortAndCompressIfNeeded() const;
 
   // Replaces TightSum by infinity if the incoming product is infinite. Crashes
   // if it would be NaN.
   template <typename Arg1, typename... OtherArgs>
   void SetInfIfNeeded(Arg1 arg1, OtherArgs... other_args);
 
-  // Multiplies the last term of the sum by the factors in factors_ and removes
-  // them from factors_.
-  void MultiplyLastTerm();
+  // Adds the product of term1 and the elements in factors and removes them from
+  // factors_.
+  void MultiplyTermsAndAdd(Term term1);
 
-  mutable absl::InlinedVector<Term, 16> terms_;
+  // The three fields below are used to store the sum in base 2^64. We use two
+  // complement encoding for negative numbers. More precisely, the sum is equal
+  // to:
+  //   sum_(i = 0..digits_.size() - 1) digits_[i] * 2^(exponent_ + 64 * i)
+  //       - negative_ * 2^(exponent_ + 64 * digits_.size())
+  mutable bool negative_ = false;
+
+  mutable int exponent_ = 0;
+
+  mutable absl::InlinedVector<uint64_t, 32> digits_;
 
   // Stores the factors to multiply the last term of the sum.
   absl::InlinedVector<Term, 6> factors_;
@@ -200,16 +244,15 @@ class TightSum {
   // the sum is finite.
   std::strong_ordering inf_sign_ = std::strong_ordering::equal;
 
-  // Terms are sorted in increasing order of exponent, then mantissa, up to one
-  // before this index.
-  mutable int terms_sorted_before_ = 0;
-
   // Known bounds on the sum.
   mutable double lb_ = 0.0;
   mutable double ub_ = 0.0;
 
+  mutable std::optional<int64_t> floor_ = 0;
+  mutable std::optional<int64_t> ceil_ = 0;
+
   // Whether the bounds are tight.
-  mutable bool tight_bounds_ = true;
+  mutable bool bounds_updated_ = true;
 };
 
 // Returns the sum of a vector of doubles or int64_t.
@@ -289,16 +332,54 @@ inline PowerOfTwo::PowerOfTwo(const int exponent) : exponent(exponent) {
   DCHECK_GE(exponent, -(1 << 30));
 }
 
+inline TightSum::Term TightSum::ToTerm(const double x) {
+  static_assert(std::numeric_limits<double>::is_iec559);
+  static_assert(std::numeric_limits<double>::radix == 2);
+  static_assert(sizeof(double) == sizeof(uint64_t), "double must be 64 bits.");
+
+  DCHECK(!std::isnan(x));
+  const int64_t bits = absl::bit_cast<int64_t>(x);
+  const bool negative = bits < 0;
+  int biased_exp = (bits >> 52) & 0x7ff;
+  int64_t mantissa = bits & ((int64_t{1} << 52) - 1);
+  if (biased_exp > 0) {
+    mantissa |= int64_t{1} << 52;
+  } else {
+    biased_exp = 1;
+  }
+  return {.mantissa = negative ? -mantissa : mantissa,
+          .exponent = biased_exp - 1075};
+}
+
+inline TightSum::Term TightSum::ToTerm(const float x) {
+  return ToTerm(static_cast<double>(x));
+}
+
+inline TightSum::Term TightSum::ToTerm(const int64_t n) {
+  return {.mantissa = n, .exponent = 0};
+}
+
+inline TightSum::Term TightSum::ToTerm(const int n) {
+  return ToTerm(static_cast<int64_t>(n));
+}
+
+inline TightSum::Term TightSum::ToTerm(const PowerOfTwo p) {
+  return {.mantissa = 1, .exponent = p.exponent};
+}
+
 inline void TightSum::Clear() {
-  terms_.clear();
+  negative_ = false;
+  digits_.clear();
   inf_sign_ = std::strong_ordering::equal;
-  terms_sorted_before_ = 0;
   lb_ = 0.0;
   ub_ = 0.0;
-  tight_bounds_ = true;
+  floor_ = 0;
+  ceil_ = 0;
+  bounds_updated_ = true;
 }
 
 template <typename Arg>
+  requires(!std::is_same_v<Arg, TightSum>)
 TightSum& TightSum::Add(Arg arg) {
   SetInfIfNeeded(arg);
   if (inf_sign_ != std::strong_ordering::equal) return *this;
@@ -308,6 +389,7 @@ TightSum& TightSum::Add(Arg arg) {
 }
 
 template <typename Arg1, typename Arg2, typename... OtherArgs>
+  requires(!std::is_same_v<Arg1, TightSum>)
 TightSum& TightSum::AddProd(Arg1 arg1, Arg2 arg2, OtherArgs... other_args) {
   SetInfIfNeeded(arg1, arg2, other_args...);
   if (inf_sign_ != std::strong_ordering::equal) return *this;
@@ -317,78 +399,33 @@ TightSum& TightSum::AddProd(Arg1 arg1, Arg2 arg2, OtherArgs... other_args) {
   const Term term2 = ToTerm(arg2);
   term1.mantissa *= term2.mantissa;
   term1.exponent += term2.exponent;
-  term1.negative ^= term2.negative;
   if constexpr (sizeof...(other_args) == 0) {
     AddTerm(term1);
     return *this;
   }
 
-  terms_.push_back(term1);
   (factors_.push_back(ToTerm(other_args)), ...);
-  const int end_before = terms_.size() - 1;
-  MultiplyLastTerm();
-  for (int i = end_before; i < terms_.size(); ++i) {
-    AddTermToBounds(terms_[i]);
-  }
+  MultiplyTermsAndAdd(term1);
   return *this;
-}
-
-inline TightSum::Term TightSum::ToTerm(const double x) {
-  static_assert(std::numeric_limits<double>::is_iec559);
-  static_assert(std::numeric_limits<double>::radix == 2);
-  static_assert(sizeof(double) == sizeof(uint64_t), "double must be 64 bits.");
-
-  CHECK(!std::isnan(x));
-  const int64_t bits = absl::bit_cast<int64_t>(x);
-  const bool negative = bits < 0;
-  int biased_exp = (bits >> 52) & 0x7ff;
-  if (biased_exp == 0x7ff) {
-    return {.mantissa = 1,
-            .negative = negative,
-            .exponent = TightSum::Term::kExpInf};
-  }
-  uint64_t mantissa = bits & ((uint64_t{1} << 52) - 1);
-  if (biased_exp > 0) {
-    mantissa |= uint64_t{1} << 52;
-  } else {
-    biased_exp = 1;
-  }
-  return {.mantissa = mantissa,
-          .negative = negative,
-          .exponent = biased_exp - 1075};
-}
-
-inline TightSum::Term TightSum::ToTerm(const float x) {
-  return ToTerm(static_cast<double>(x));
-}
-
-inline TightSum::Term TightSum::ToTerm(const int64_t n) {
-  const uint64_t mantissa =
-      n == std::numeric_limits<int64_t>::min()  // Avoid overflow of std::abs.
-          ? uint64_t{1} << 63
-          : static_cast<uint64_t>(std::abs(n));
-  return {.mantissa = mantissa, .negative = n < 0, .exponent = 0};
-}
-
-inline TightSum::Term TightSum::ToTerm(const int n) {
-  return ToTerm(static_cast<int64_t>(n));
-}
-
-inline TightSum::Term TightSum::ToTerm(const PowerOfTwo p) {
-  return {.mantissa = 1, .negative = false, .exponent = p.exponent};
 }
 
 template <typename Arg1, typename... OtherArgs>
 void TightSum::SetInfIfNeeded(Arg1 arg1, OtherArgs... other_args) {
-  auto isinf = [](auto arg) {
-    if constexpr (std::is_same_v<decltype(arg), double>) {
-      CHECK(!std::isnan(arg)) << "NaN not supported";
-      return !std::isfinite(arg);
-    } else {
-      return false;
+  auto isnan = [](auto arg) {
+    if constexpr (std::is_floating_point_v<decltype(arg)>) {
+      return std::isnan(arg);
     }
+    return false;
   };
-  if (!isinf(arg1) && (!isinf(other_args) && ...)) {
+  CHECK(!isnan(arg1) && (!isnan(other_args) && ...)) << "NaN not supported";
+
+  auto isfinite = [](auto arg) {
+    if constexpr (std::is_floating_point_v<decltype(arg)>) {
+      return std::isfinite(arg);
+    }
+    return true;
+  };
+  if (isfinite(arg1) && (isfinite(other_args) && ...)) {
     // No factor is infinite so the sum does not change.
     return;
   }
@@ -412,35 +449,40 @@ void TightSum::SetInfIfNeeded(Arg1 arg1, OtherArgs... other_args) {
   if (inf_sign_ == std::strong_ordering::equal) {
     inf_sign_ = prod_sign;
     // Clear the sum to represent it as inf.
-    terms_.clear();
+    digits_.clear();
     // Fix once and for all the bounds.
-    terms_sorted_before_ = 0;
-    tight_bounds_ = true;
+    bounds_updated_ = true;
     constexpr double kInf = std::numeric_limits<double>::infinity();
-    lb_ = inf_sign_ == std::strong_ordering::less ? -kInf : kInf;
-    ub_ = lb_;
+    if (inf_sign_ == std::strong_ordering::less) {
+      lb_ = -kInf;
+      ub_ = -kInf;
+      floor_ = std::nullopt;
+      ceil_ = std::numeric_limits<int64_t>::min();
+    } else {
+      lb_ = kInf;
+      ub_ = kInf;
+      floor_ = std::numeric_limits<int64_t>::max();
+      ceil_ = std::nullopt;
+    }
   } else {
     CHECK_EQ(inf_sign_, prod_sign) << "Inconsistent infinite values in sum";
   }
 }
 
 inline std::strong_ordering TightSum::CompareTo(const double x) const {
-  if (ub_ < x) return std::strong_ordering::less;
-  if (lb_ > x) return std::strong_ordering::greater;
+  if (!bounds_updated_) UpdateBounds();
+
   if (ub_ == x && lb_ == x) return std::strong_ordering::equal;
-  if (tight_bounds_) {
-    if (ub_ == x) return std::strong_ordering::less;
-    if (lb_ == x) return std::strong_ordering::greater;
-  }
-  return SlowCompareTo(x);
+  if (ub_ <= x) return std::strong_ordering::less;
+  return std::strong_ordering::greater;
 }
 
 inline std::strong_ordering TightSum::CompareTo(const int64_t x) const {
-  const auto [x_lb, x_ub] = Int64DoubleBounds(x);
-  if (ub_ < x_lb) return std::strong_ordering::less;
-  if (lb_ > x_ub) return std::strong_ordering::greater;
-  if (ub_ == x_lb && lb_ == x_ub) return std::strong_ordering::equal;
-  return SlowCompareTo(x);
+  if (!bounds_updated_) UpdateBounds();
+
+  if (ceil_ == x && floor_ == x) return std::strong_ordering::equal;
+  if (floor_ < x) return std::strong_ordering::less;
+  return std::strong_ordering::greater;
 }
 
 template <typename Number>

@@ -113,7 +113,6 @@ absl::Status StringToProto(absl::string_view data,
     VLOG(1) << "StringToProto(): input is a text proto";
     return absl::OkStatus();
   }
-  std::string json_error;
   absl::Status json_status =
       ::google::protobuf::util::JsonStringToMessage(data, proto);
   if (json_status.ok()) {

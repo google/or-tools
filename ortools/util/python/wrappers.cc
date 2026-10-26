@@ -428,8 +428,6 @@ class Generator {
 
   // Generates definitions for accessing fields of a message.
   void GenerateMessageFields(const google::protobuf::Descriptor& msg) {
-    const std::string msg_name = GetQualifiedCppName(msg);
-
     for (int i = 0; i < msg.field_count(); ++i) {
       const google::protobuf::FieldDescriptor& field =
           *ABSL_DIE_IF_NULL(msg.field(i));

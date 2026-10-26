@@ -195,11 +195,11 @@ class OR_DLL TimeLimit {
   State CurrentState();
 
   /**
-   * Returns the time left on this limit, or 0 if the limit was reached (it
-   * never returns a negative value). Note that it might return a positive
-   * value even though \c LimitReached() would return true; because the latter
-   * is conservative (see toplevel comment). If \c LimitReached() was actually
-   * called and did return \b true, though, this will always return 0.
+   * Returns the time left in seconds on this limit, or 0 if the limit was
+   * reached (it never returns a negative value). Note that it might return a
+   * positive value even though \c LimitReached() would return true; because the
+   * latter is conservative (see toplevel comment). If \c LimitReached() was
+   * actually called and did return \b true, though, this will always return 0.
    *
    * If the TimeLimit was constructed with \b infinity as the limit, this will
    * always return infinity.
