@@ -174,11 +174,14 @@ vbp::VectorBinPackingSolution SolveVectorBinPackingWithArcFlow(
 
   solver.EnableOutput();
   solver.SetSolverSpecificParametersAsString(mip_params);
-  solver.SetTimeLimit(absl::Seconds(time_limit));
+  if (time_limit > 0) {
+    solver.SetTimeLimit(absl::Seconds(time_limit));
+  }
   const MPSolver::ResultStatus result_status = solver.Solve();
 
   vbp::VectorBinPackingSolution solution;
-  solution.set_solve_time_in_seconds(solver.wall_time() / 1000.0);
+  solution.set_solve_time_in_seconds(
+      absl::ToDoubleSeconds(solver.DurationSinceConstruction()));
   solution.set_arc_flow_time_in_seconds(arc_flow_time);
   // Check that the problem has an optimal solution.
   if (result_status == MPSolver::OPTIMAL) {

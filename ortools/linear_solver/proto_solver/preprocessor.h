@@ -288,6 +288,9 @@ ShiftBeforeScaling() {
     if (!var.is_integer()) {
       if (std::isfinite(lb) && lb > 0.0) return lb;
       if (std::isfinite(ub) && ub < 0.0) return ub;
+    } else {
+      if (std::isfinite(lb) && lb > 0.0) return std::ceil(lb);
+      if (std::isfinite(ub) && ub < 0.0) return std::floor(ub);
     }
 
     return 0.0;

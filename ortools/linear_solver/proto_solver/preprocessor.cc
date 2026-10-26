@@ -769,32 +769,49 @@ bool ExactPresolve(const sat::SatParameters& params,
         mp_model_wrapper->mutable_constraints(c);
     saved_constraint_lb[c] = ct->lower_bound();
     saved_constraint_ub[c] = ct->upper_bound();
-    ct->set_lower_bound(
-        TightSum().Add(ct->lower_bound()).Add(-tolerance).TightLowerBound());
-    ct->set_upper_bound(
-        TightSum().Add(ct->upper_bound()).Add(+tolerance).TightUpperBound());
   }
 
-  const bool feasible =
-      PropagateBounds(*mp_model_wrapper, absl::MakeSpan(var_lbs),
-                      absl::MakeSpan(var_ubs), logger);
+  // PropagateBounds() reach a fix point by itself, but this is not the case of
+  // RestrictBoundsWithDualReasoning(). And also, if we restricted bounds with
+  // dual reasoning, we might in turn propagate more in PropagateBounds(). We do
+  // a few passes and abort early if nothing changed.
+  for (int iter = 0; iter < 3; ++iter) {
+    for (int c = 0; c < num_constraints; ++c) {
+      sat::EnforcedLinearConstraint* ct =
+          mp_model_wrapper->mutable_constraints(c);
+      ct->set_lower_bound(TightSum()
+                              .Add(saved_constraint_lb[c])
+                              .Add(-tolerance)
+                              .TightLowerBound());
+      ct->set_upper_bound(TightSum()
+                              .Add(saved_constraint_ub[c])
+                              .Add(+tolerance)
+                              .TightUpperBound());
+    }
 
-  // Restore constraint bounds.
-  for (int c = 0; c < num_constraints; ++c) {
-    sat::EnforcedLinearConstraint* ct =
-        mp_model_wrapper->mutable_constraints(c);
-    ct->set_lower_bound(saved_constraint_lb[c]);
-    ct->set_upper_bound(saved_constraint_ub[c]);
+    const bool feasible =
+        PropagateBounds(*mp_model_wrapper, absl::MakeSpan(var_lbs),
+                        absl::MakeSpan(var_ubs), logger);
+
+    // Restore constraint bounds.
+    for (int c = 0; c < num_constraints; ++c) {
+      sat::EnforcedLinearConstraint* ct =
+          mp_model_wrapper->mutable_constraints(c);
+      ct->set_lower_bound(saved_constraint_lb[c]);
+      ct->set_upper_bound(saved_constraint_ub[c]);
+    }
+    if (!feasible) return false;
+
+    // Note that we remove the constraint tolerance before this, so that we
+    // don't exclude points allowing to satisfy the initial constraint
+    // exactly. For instance if we just have X >= 1.5, this will propagate
+    // X <= 1.5, not X <= 1.5 - tolerance!
+    if (!sat::RestrictBoundsWithDualReasoning(
+            params, *mp_model_wrapper, absl::MakeSpan(var_lbs),
+            absl::MakeSpan(var_ubs), logger)) {
+      break;
+    }
   }
-  if (!feasible) return false;
-
-  // Note that we remove the constraint tolerance before this, so that we
-  // don't exclude points allowing to satisfy the initial constraint
-  // exactly. For instance if we just have X >= 1.5, this will propagate
-  // X <= 1.5, not X <= 1.5 - tolerance!
-  sat::RestrictBoundsWithDualReasoning(params, *mp_model_wrapper,
-                                       absl::MakeSpan(var_lbs),
-                                       absl::MakeSpan(var_ubs), logger);
 
   // Integrate the propagated bounds. Note that to keep things simple for
   // things like implied variable detection, we always enlarge them to the

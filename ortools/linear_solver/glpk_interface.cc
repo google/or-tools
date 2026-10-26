@@ -23,6 +23,7 @@
 #include "absl/base/attributes.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
+#include "absl/time/time.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/third_party_solvers/glpk/glpk_env_deleter.h"
@@ -862,9 +863,9 @@ void GLPKInterface::ConfigureGLPKParameters(const MPSolverParameters& param) {
   if (mip_) {
     glp_init_iocp(&mip_param_);
     // Time limit
-    if (solver_->time_limit()) {
-      VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
-      mip_param_.tm_lim = solver_->time_limit();
+    if (solver_->TimeLimit() != absl::InfiniteDuration()) {
+      VLOG(1) << "Setting time limit = " << solver_->TimeLimit() << ".";
+      mip_param_.tm_lim = absl::ToInt64Milliseconds(solver_->TimeLimit());
     }
     // Initialize structures related to the callback.
     mip_param_.cb_func = GLPKGatherInformationCallback;
@@ -877,9 +878,9 @@ void GLPKInterface::ConfigureGLPKParameters(const MPSolverParameters& param) {
   // solve the root LP in the MIP case.
   glp_init_smcp(&lp_param_);
   // Time limit
-  if (solver_->time_limit()) {
-    VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
-    lp_param_.tm_lim = solver_->time_limit();
+  if (solver_->TimeLimit() != absl::InfiniteDuration()) {
+    VLOG(1) << "Setting time limit = " << solver_->TimeLimit() << ".";
+    lp_param_.tm_lim = absl::ToInt64Milliseconds(solver_->TimeLimit());
   }
 
   // Should give a numerically better representation of the problem.

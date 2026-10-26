@@ -32,6 +32,7 @@
 #include "absl/time/time.h"
 #include "google/protobuf/repeated_field.h"
 #include "lp_data/HConst.h"
+#include "lp_data/HighsCallback.h"
 #include "lp_data/HighsInfo.h"
 #include "lp_data/HighsStatus.h"
 #include "ortools/base/timer.h"
@@ -147,14 +148,17 @@ MPSolutionResponse HighsSolveProto(
     // Hints.
     int num_hints = model.solution_hint().var_index_size();
     if (num_hints > 0) {
-      std::vector<HighsInt> hint_index(0, num_hints);
-      std::vector<double> hint_value(0, num_hints);
+      std::vector<HighsInt> hint_index;
+      std::vector<double> hint_value;
+      hint_index.reserve(num_hints);
+      hint_value.reserve(num_hints);
       for (int i = 0; i < num_hints; ++i) {
-        hint_index[i] = model.solution_hint().var_index(i);
-        hint_value[i] = model.solution_hint().var_value(i);
+        hint_index.push_back(model.solution_hint().var_index(i));
+        hint_value.push_back(model.solution_hint().var_value(i));
       }
       const int* hint_indices = &hint_index[0];
       const double* hint_values = &hint_value[0];
+      // TODO(user): Check and return error if status is not ok.
       highs.setSolution((HighsInt)num_hints, hint_indices, hint_values);
     }
   }
@@ -290,6 +294,7 @@ MPSolutionResponse HighsSolveProto(
     case HighsModelStatus::kTimeLimit:       // ABSL_FALLTHROUGH_INTENDED
     case HighsModelStatus::kIterationLimit:  // ABSL_FALLTHROUGH_INTENDED
     case HighsModelStatus::kInterrupt:       // ABSL_FALLTHROUGH_INTENDED
+    case HighsModelStatus::kHighsInterrupt:  // ABSL_FALLTHROUGH_INTENDED
     case HighsModelStatus::kSolutionLimit:   // ABSL_FALLTHROUGH_INTENDED
     case HighsModelStatus::kMemoryLimit: {
       const HighsInfo& info = highs.getInfo();

@@ -21,6 +21,7 @@
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
+#include "absl/time/time.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -125,10 +126,10 @@ MPSolver::ResultStatus PdlpInterface::Solve(const MPSolverParameters& param) {
       solver_->solver_specific_parameter_string_);
 
   // Time limit.
-  if (solver_->time_limit()) {
-    VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
+  if (solver_->TimeLimit() != absl::InfiniteDuration()) {
+    VLOG(1) << "Setting time limit = " << solver_->TimeLimit() << ".";
     parameters_.mutable_termination_criteria()->set_time_sec_limit(
-        static_cast<double>(solver_->time_limit()) / 1000.0);
+        absl::ToDoubleSeconds(solver_->TimeLimit()));
   }
 
   // Mark variables and constraints as extracted.

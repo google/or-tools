@@ -56,7 +56,7 @@ TEST(ModelProtoToLpTest, SimpleMIP) {
   const Variable x = model.AddIntegerVariable(0.0, 1.0, "x");
   const Variable y = model.AddIntegerVariable(-5.0, 3.0, "y");
   const Variable z = model.AddContinuousVariable(-2.0, kInf, "z");
-  model.AddLinearConstraint(3.4 <= x + 2 * y - z <= 8, "c");
+  model.AddLinearConstraint(3.125 <= x + 2 * y - z <= 8, "c");
   model.Maximize(2 * x + z);
   EXPECT_THAT(ModelProtoToLp(model.ExportModel()),
               IsOkAndHolds(
@@ -75,7 +75,7 @@ TEST(ModelProtoToLpTest, SimpleMIP) {
                   " Obj: +2 x +1 z \n"
                   "Subject to\n"
                   " c_rhs: +1 x +2 y -1 z  <= 8\n"
-                  " c_lhs: +1 x +2 y -1 z  >= 3.4\n"
+                  " c_lhs: +1 x +2 y -1 z  >= 3.125\n"
                   "Bounds\n"
                   " 0 <= x <= 1\n"
                   " -5 <= y <= 3\n"
@@ -90,7 +90,7 @@ TEST(ModelProtoToLpTest, SimpleMIP) {
 TEST(ModelProtoToLpTest, NotSupportedConstraint) {
   Model model;
   const Variable x = model.AddIntegerVariable(0.0, 1.0, "x");
-  model.AddQuadraticConstraint(3.4 <= x * x <= 8, "c");
+  model.AddQuadraticConstraint(3.125 <= x * x <= 8, "c");
   model.Maximize(-x);
   EXPECT_THAT(
       ModelProtoToLp(model.ExportModel()),

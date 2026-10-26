@@ -29,10 +29,12 @@
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "absl/time/time.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/linear_solver/model_validator.h"
+#include "ortools/linear_solver/solve_mp_model.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"
 #include "pybind11/stl.h"
@@ -472,15 +474,35 @@ PYBIND11_MODULE(pywraplp, m) {
       .def("VerifySolution", &MPSolver::VerifySolution, py::arg("tolerance"),
            py::arg("log_errors"))
       .def("InterruptSolve", &MPSolver::InterruptSolve)
-      .def("wall_time", &MPSolver::wall_time)
-      .def("WallTime", &MPSolver::wall_time)
+      .def("wall_time",
+           [](const MPSolver& self) {
+             return absl::ToInt64Milliseconds(self.DurationSinceConstruction());
+           })
+      .def("WallTime",
+           [](const MPSolver& self) {
+             return absl::ToInt64Milliseconds(self.DurationSinceConstruction());
+           })
       .def("iterations", &MPSolver::iterations)
       .def("Iterations", &MPSolver::iterations)
       .def("nodes", &MPSolver::nodes)
-      .def("set_time_limit", &MPSolver::set_time_limit,
-           py::arg("time_limit_milliseconds"))
-      .def("SetTimeLimit", &MPSolver::set_time_limit,
-           py::arg("time_limit_milliseconds"))
+      .def(
+          "set_time_limit",
+          [](MPSolver& self, int64_t time_limit_milliseconds) {
+            self.SetTimeLimit(
+                time_limit_milliseconds == 0
+                    ? absl::InfiniteDuration()
+                    : absl::Milliseconds(time_limit_milliseconds));
+          },
+          py::arg("time_limit_milliseconds"))
+      .def(
+          "SetTimeLimit",
+          [](MPSolver& self, int64_t time_limit_milliseconds) {
+            self.SetTimeLimit(
+                time_limit_milliseconds == 0
+                    ? absl::InfiniteDuration()
+                    : absl::Milliseconds(time_limit_milliseconds));
+          },
+          py::arg("time_limit_milliseconds"))
       .def("EnableOutput", &MPSolver::EnableOutput)
       .def("SuppressOutput", &MPSolver::SuppressOutput)
       .def("IsMip", &MPSolver::IsMIP)
@@ -638,7 +660,7 @@ PYBIND11_MODULE(pywraplp, m) {
             MPSolutionResponse solution_response;
             {
               py::gil_scoped_release release;
-              MPSolver::SolveWithProto(model_request, &solution_response);
+              solution_response = SolveMPModel(model_request);
             }
             if (response.has_value() && !response->is_none()) {
               response->attr("CopyFrom")(py::cast(solution_response));

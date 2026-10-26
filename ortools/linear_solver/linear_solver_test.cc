@@ -18,6 +18,7 @@
 #include "absl/time/time.h"
 #include "gtest/gtest.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/linear_solver/solve_mp_model.h"
 
 namespace operations_research {
 namespace {

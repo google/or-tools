@@ -316,6 +316,7 @@ or_cc_library(
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/time",
     ],
     alwayslink = 1,  # Important! Library is used via dependency injection.
 )
@@ -373,6 +374,7 @@ or_cc_library(
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/time",
     ],
     alwayslink = 1,  # Important! Library is used via dependency injection.
 )
@@ -396,6 +398,7 @@ or_cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
         "@clp",
         "@coinutils",
     ],
@@ -484,6 +487,7 @@ or_cc_library(
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
         "@glpk",
     ],
     alwayslink = 1,  # Important! Library is used via dependency injection.
@@ -508,6 +512,7 @@ or_cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
     ],
     alwayslink = 1,  # Important! Library is used via dependency injection.
 )
@@ -589,6 +594,7 @@ or_cc_library(
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/time",
         "@protobuf",
     ],
     alwayslink = 1,  # Important! Library is used via dependency injection.
@@ -614,6 +620,7 @@ or_cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/time",
     ],
     alwayslink = 1,  # Important! Library is used via dependency injection.
 )
@@ -637,6 +644,7 @@ or_cc_library(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
         "@protobuf",
     ],
     alwayslink = 1,  # Important! Library is used via dependency injection.
@@ -659,6 +667,7 @@ or_cc_library(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
     ],
     alwayslink = 1,  # Important! Library is used via dependency injection.
 )
@@ -760,6 +769,7 @@ or_cc_binary(
         ":linear_solver",
         ":linear_solver_cc_proto",
         ":model_exporter",
+        ":solve_mp_model",
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:recordio",
@@ -819,6 +829,7 @@ or_cc_test(
         ":linear_solver",
         ":linear_solver_cc_proto",
         ":linear_solver_glop",
+        ":solve_mp_model",
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/time",

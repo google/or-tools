@@ -44,6 +44,7 @@
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_format.h"
 #include "absl/synchronization/mutex.h"
+#include "absl/time/time.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_expr.h"
@@ -1859,13 +1860,14 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
   SetParameters(param);
   solver_->SetSolverSpecificParametersAsString(
       solver_->solver_specific_parameter_string_);
-  if (solver_->time_limit()) {
-    VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
+  if (solver_->TimeLimit() != absl::InfiniteDuration()) {
+    VLOG(1) << "Setting time limit = " << solver_->TimeLimit() << ".";
     // In Xpress, a time limit should usually have a negative sign. With a
     // positive sign, the solver will only stop when a solution has been found.
     CHECK_STATUS(XPRSsetintcontrol(
         lp_, XPRS_MAXTIME,
-        -1 * MathUtil::SafeRound<int>(solver_->time_limit_in_secs())));
+        -1 * MathUtil::SafeRound<int>(
+                 absl::ToDoubleSeconds(solver_->TimeLimit()))));
   }
 
   // Load basis if present

@@ -765,10 +765,10 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
   }
 
   // Time limit.
-  if (solver_->time_limit() != 0) {
-    VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
-    RETURN_ABNORMAL_IF_SCIP_ERROR(
-        SCIPsetRealParam(scip_, "limits/time", solver_->time_limit_in_secs()));
+  if (solver_->TimeLimit() != absl::InfiniteDuration()) {
+    VLOG(1) << "Setting time limit = " << solver_->TimeLimit() << ".";
+    RETURN_ABNORMAL_IF_SCIP_ERROR(SCIPsetRealParam(
+        scip_, "limits/time", absl::ToDoubleSeconds(solver_->TimeLimit())));
   } else {
     RETURN_ABNORMAL_IF_SCIP_ERROR(SCIPresetParam(scip_, "limits/time"));
   }

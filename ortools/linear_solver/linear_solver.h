@@ -520,7 +520,7 @@ class MPSolver {
    * Advanced usage: resets extracted model to solve from scratch.
    *
    * This won't reset the parameters that were set with
-   * SetSolverSpecificParametersAsString() or set_time_limit() or even clear the
+   * SetSolverSpecificParametersAsString() or SetTimeLimit() or even clear the
    * linear program. It will just make sure that next Solve() will be as if
    * everything was reconstructed from scratch.
    */
@@ -532,7 +532,7 @@ class MPSolver {
    * true regardless of whether there's an ongoing Solve() or not. The Solve()
    * call may still linger for a while depending on the conditions.  If
    * interruption is not supported; returns false and does nothing.
-   * MPSolver::SolverTypeSupportsInterruption can be used to check if
+   * SolverTypeSupportsInterruption() can be used to check if
    * interruption is supported for a given solver type.
    */
   bool InterruptSolve();
@@ -626,10 +626,9 @@ class MPSolver {
    \code
      MPSolver my_solver;
      ... add variables and constraints ...
-     MPModelProto model_proto;
-     my_solver.ExportModelToProto(&model_proto);
-     MPSolutionResponse solver_response;
-     MPSolver::SolveWithProto(model_proto, &solver_response);
+     MPModelRequest model_request;
+     my_solver.ExportModelToProto(model_request.mutable_model());
+     const MPSolutionResponse solver_response = SolveMPModel(model_request);
      if (solver_response.result_status() == MPSolutionResponse::OPTIMAL) {
        CHECK_OK(my_solver.LoadSolutionFromProto(solver_response));
        ... inspect the solution using the usual API: solution_value(), etc...
@@ -876,7 +875,9 @@ class MPSolver {
                      : absl::Milliseconds(time_limit_milliseconds));
   }
   double time_limit_in_secs() const {
-    return static_cast<double>(time_limit()) / 1000.0;
+    return time_limit_ == absl::InfiniteDuration()
+               ? 0.0
+               : absl::ToDoubleSeconds(time_limit_);
   }
 
   /// @deprecated Use DurationSinceConstruction() instead.
