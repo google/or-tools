@@ -347,7 +347,6 @@ jobs:
         os: ${{matrix.platform.os}}
         lang: ${{matrix.target.lang}}
         version: ${{matrix.target.version}}
-        build_deps: true
     - name: Build Unix ${{matrix.target.name}} Delivery
       if: ${{matrix.platform.os == 'linux' || matrix.platform.os == 'macos'}}
       run: ./tools/release/build_delivery_unix.sh ${{matrix.target.lang}} ${{matrix.target.version}}
