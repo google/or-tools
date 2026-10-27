@@ -88,8 +88,7 @@
       <artifactId>maven-javadoc-plugin</artifactId>
       <version>3.12.0</version>
       <configuration>
-        <detectJavaApiLink>false</detectJavaApiLink>
-        <additionalJOption>-Xdoclint:none</additionalJOption>
+        <skip>true</skip>
       </configuration>
       <executions>
         <execution>
