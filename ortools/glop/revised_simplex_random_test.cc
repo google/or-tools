@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -350,7 +349,6 @@ void RandomTestsOfIncrementalityOnSameProblem(
   absl::BitGen bit_gen;
   const absl::Time deadline = absl::Now() + test_duration;
   int test = 0;
-  int skipped = 0;
   for (; test == 0 || absl::Now() < deadline; ++test) {
     RandomWithFixableSeed fixable_seed(bit_gen);
     if (fixable_seed.seed.fixed && test >= 1) break;
@@ -361,15 +359,6 @@ void RandomTestsOfIncrementalityOnSameProblem(
     const ExpectedSolution solution =
         SolveRandomProblem(num_cols, num_rows, linear_program.get(),
                            fixable_seed, use_dual_simplex);
-    // Unscaled random equality LPs near the feasibility boundary can
-    // legitimately return IMPRECISE when calling RevisedSimplex directly
-    // without LPSolver's scaling/retry wrapper.
-    if (solution.status == ProblemStatus::IMPRECISE) {
-      VLOG(1) << "Skipping borderline random LP (continuous solve IMPRECISE);"
-              << err;
-      ++skipped;
-      continue;
-    }
     // Note that we've already run the preprocessor in SolveRandomProblem and
     // linear_program already has slack variables added to it. We don't need to
     // re-run it here again.
@@ -388,11 +377,15 @@ void RandomTestsOfIncrementalityOnSameProblem(
     parameters.set_max_number_of_iterations(1);
     simplex->SetParameters(parameters);
 
-    // Run the revised simplex 1 iteration at a time, for at least
-    // solution.num_iterations + 5 calls (so post-convergence re-checks are also
-    // exercised), and continue stepping if the 1-iteration warm-start path
-    // still hits the 1-iteration limit due to recomputed quantities taking a
-    // slightly longer pivot trajectory.
+    // Run the revised simplex 1 iteration at a time, for the same number of
+    // total iterations which is required when running simplex continuously.
+    //
+    // NOTE(user): It is possible that the number of iterations changes
+    // due to calling revised simplex incrementally, so we run it for 5 more
+    // iterations which is the lowest possible number to make the test pass as
+    // of 12/12/2016. Note that the incremental version may need less than
+    // solution.num_iterations, in which case the last few iterations will just
+    // re-check the solution.
     //
     // TODO(user): Investigate and fix as there is no good reason for this. This
     // is because we are not fully incremental and some quantities are
@@ -404,28 +397,14 @@ void RandomTestsOfIncrementalityOnSameProblem(
     //   due to "reoptimizations" (i.e., making the solution more precise to
     //   transform it from PRIMAL_FEASIBLE to OPTIMAL) not being triggered after
     //   hitting the iteration time limit in the last call of Solve().
-    const int64_t min_steps = solution.num_iterations + 5;
-    const int64_t max_steps = std::max<int64_t>(
-        2 * solution.num_iterations + 20, solution.num_iterations + 50);
     std::optional<SolveStatus> last_status;
-    for (int64_t i = 0;
-         i < max_steps &&
-         (i < min_steps ||
-          (last_status.has_value() && last_status->interruption_cause() ==
-                                          InterruptionCause::kIterationLimit));
-         ++i) {
+    for (int i = 0; i < solution.num_iterations + 5; ++i) {
       SolveStatus status = simplex->Solve(*linear_program, *time_limit);
       EXPECT_THAT(status, Not(SolveStatusWith<SolveStatus::Abnormal>(_)))
           << err;
       last_status = status;
     }
     ASSERT_NE(last_status, std::nullopt);
-    if (last_status->Is<SolveStatus::Imprecise>()) {
-      VLOG(1) << "Skipping borderline random LP (incremental solve IMPRECISE);"
-              << err;
-      ++skipped;
-      continue;
-    }
     EXPECT_EQ(solution.status, last_status->problem_status()) << err;
     // Validate final state.
     if (ProblemStatus::OPTIMAL == solution.status) {
@@ -438,7 +417,7 @@ void RandomTestsOfIncrementalityOnSameProblem(
     EXPECT_EQ(simplex->DeterministicTime(),
               time_limit->GetElapsedDeterministicTime());
   }
-  LOG(INFO) << "#tests=" << test << " (skipped=" << skipped << ")";
+  LOG(INFO) << "#tests=" << test;
 }
 
 TEST(RevisedSimplexTest, PrimalIsFullyIncrementalOnRandomTinyProblems) {
@@ -498,7 +477,6 @@ void RandomTestsOfBasisLoadOnSameProblem(const ColIndex num_cols,
   absl::BitGen bit_gen;
   const absl::Time deadline = absl::Now() + test_duration;
   int test = 0;
-  int skipped = 0;
   for (; test == 0 || absl::Now() < deadline; ++test) {
     RandomWithFixableSeed fixable_seed(bit_gen);
     if (fixable_seed.seed.fixed && test >= 1) break;
@@ -509,12 +487,6 @@ void RandomTestsOfBasisLoadOnSameProblem(const ColIndex num_cols,
     const ExpectedSolution solution =
         SolveRandomProblem(num_cols, num_rows, linear_program.get(),
                            fixable_seed, use_dual_simplex);
-    if (solution.status == ProblemStatus::IMPRECISE) {
-      VLOG(1) << "Skipping borderline random LP (continuous solve IMPRECISE);"
-              << err;
-      ++skipped;
-      continue;
-    }
     GlopParameters parameters;
     parameters.set_use_dual_simplex(use_dual_simplex);
     std::unique_ptr<RevisedSimplex> simplex(new RevisedSimplex);
@@ -525,30 +497,19 @@ void RandomTestsOfBasisLoadOnSameProblem(const ColIndex num_cols,
     // total iterations which is required when running simplex continuously.
     //
     // NOTE(user): Like in RandomTestsOfIncrementalityOnSameProblem(),
-    // the number of iterations can actually vary slightly, so we run at least 5
-    // extra iterations and continue if the 1-iteration limit is still reached.
-    // See the comment in that function for more details.
+    // the number of iterations can actually vary slighlty, so we go a bit
+    // further than the original number. See the comment in that function for
+    // more details.
     //
     // Note: we need to call each time simplex->SetParameters() to reset the
     // random seed, otherwise the iterations might be slightly different.
-    const int64_t min_steps = solution.num_iterations + 5;
-    const int64_t max_steps = std::max<int64_t>(
-        2 * solution.num_iterations + 20, solution.num_iterations + 50);
-    std::optional<SolveStatus> last_status;
-    for (int64_t i = 0;
-         i < max_steps &&
-         (i < min_steps ||
-          (last_status.has_value() && last_status->interruption_cause() ==
-                                          InterruptionCause::kIterationLimit));
-         ++i) {
+    for (int i = 0; i < solution.num_iterations + 5; ++i) {
       // Run 1 iteration of simplex to get the expected state after 1 iteration.
       const BasisState prev_state = simplex->GetState();
       simplex->SetParameters(parameters);
-      const SolveStatus step_status =
-          simplex->Solve(*linear_program, *time_limit);
-      EXPECT_THAT(step_status, Not(SolveStatusWith<SolveStatus::Abnormal>(_)))
+      EXPECT_THAT(simplex->Solve(*linear_program, *time_limit),
+                  Not(SolveStatusWith<SolveStatus::Abnormal>(_)))
           << err;
-      last_status = step_status;
       const BasisState expected_state = simplex->GetState();
 
       // Go back 1 iteration and run 1 iteration of simplex using the same
@@ -577,24 +538,17 @@ void RandomTestsOfBasisLoadOnSameProblem(const ColIndex num_cols,
           << err;
     }
 
-    if (simplex->GetProblemStatus() == ProblemStatus::IMPRECISE) {
-      VLOG(1) << "Skipping borderline random LP (incremental solve IMPRECISE);"
-              << err;
-      ++skipped;
-      continue;
-    }
-
     // Validate final state.
     EXPECT_EQ(solution.status, simplex->GetProblemStatus()) << err;
     if (ProblemStatus::OPTIMAL == solution.status) {
       // TODO(user): During warm-start we recompute some quantities, thus the
       // path and the exact value of the solution may differ when using
       // incrementality. Replace with a strict equality once this is fixed.
-      EXPECT_NEAR(solution.objective_value, simplex->GetObjectiveValue(), 1e-6)
+      EXPECT_NEAR(solution.objective_value, simplex->GetObjectiveValue(), 1e-10)
           << err;
     }
   }
-  LOG(INFO) << "#tests=" << test << " (skipped=" << skipped << ")";
+  LOG(INFO) << "#tests=" << test;
 }
 
 TEST(RevisedSimplexTest, PrimalSupportsLoadingBasisStateOnRandomTinyProblems) {
@@ -655,7 +609,6 @@ void RandomTestsOfPrimalEqualsDual(const ColIndex num_cols,
   absl::BitGen bit_gen;
   const absl::Time deadline = absl::Now() + test_duration;
   int test = 0;
-  int skipped = 0;
   for (; test == 0 || absl::Now() < deadline; ++test) {
     RandomWithFixableSeed fixable_seed(bit_gen);
     if (fixable_seed.seed.fixed && test >= 1) break;
@@ -674,14 +627,6 @@ void RandomTestsOfPrimalEqualsDual(const ColIndex num_cols,
     const SolveStatus status =
         simplex_dual->Solve(*linear_program, *time_limit);
     EXPECT_THAT(status, Not(SolveStatusWith<SolveStatus::Abnormal>(_))) << err;
-    if (solution_primal.status == ProblemStatus::IMPRECISE ||
-        status.Is<SolveStatus::Imprecise>()) {
-      VLOG(1) << "Skipping borderline random LP returning IMPRECISE (primal="
-              << solution_primal.status << ", dual=" << status.problem_status()
-              << ");" << err;
-      ++skipped;
-      continue;
-    }
     EXPECT_TRUE((solution_primal.status == ProblemStatus::OPTIMAL &&
                  status.problem_status() == ProblemStatus::OPTIMAL) ||
                 (solution_primal.status == ProblemStatus::PRIMAL_UNBOUNDED &&
@@ -694,11 +639,11 @@ void RandomTestsOfPrimalEqualsDual(const ColIndex num_cols,
         << " dual status: " << status.problem_status() << ';' << err;
     if (ProblemStatus::OPTIMAL == solution_primal.status) {
       EXPECT_NEAR(solution_primal.objective_value,
-                  simplex_dual->GetObjectiveValue(), 1e-6)
+                  simplex_dual->GetObjectiveValue(), 1e-8)
           << err;
     }
   }
-  LOG(INFO) << "#tests=" << test << " (skipped=" << skipped << ")";
+  LOG(INFO) << "#tests=" << test;
 }
 
 TEST(RevisedSimplexTest, PrimalAndDualGiveSameSolutionOnRandomSmallProblems) {
@@ -725,7 +670,6 @@ void RandomTestsOfIncrementalChanges(const ColIndex num_cols,
   absl::BitGen bit_gen;
   const absl::Time deadline = absl::Now() + test_duration;
   int test = 0;
-  int skipped = 0;
   for (; test == 0 || absl::Now() < deadline; ++test) {
     RandomWithFixableSeed fixable_seed(bit_gen);
     if (fixable_seed.seed.fixed && test >= 1) break;
@@ -783,24 +727,15 @@ void RandomTestsOfIncrementalChanges(const ColIndex num_cols,
     EXPECT_THAT(redo_status, Not(SolveStatusWith<SolveStatus::Abnormal>(_)))
         << err;
 
-    if (status.Is<SolveStatus::Imprecise>() ||
-        redo_status.Is<SolveStatus::Imprecise>()) {
-      VLOG(1) << "Skipping borderline random LP returning IMPRECISE "
-                 "(incremental="
-              << status << ", redo=" << redo_status << ");" << err;
-      ++skipped;
-      continue;
-    }
-
     EXPECT_EQ(status, redo_status) << err;
 
     if (ProblemStatus::OPTIMAL == simplex->GetProblemStatus()) {
       EXPECT_NEAR(simplex->GetObjectiveValue(),
-                  simplex_redo->GetObjectiveValue(), 1e-6)
+                  simplex_redo->GetObjectiveValue(), 1e-10)
           << err;
     }
   }
-  LOG(INFO) << "#tests=" << test << " (skipped=" << skipped << ")";
+  LOG(INFO) << "#tests=" << test;
 }
 
 TEST(RevisedSimplexTest, IncrementalRowAdditionsOnRandomTinyProblems) {
@@ -872,21 +807,18 @@ TEST(RevisedSimplexTest, BasisStateWithWrongNumberOfBasicElement) {
   RandomWithFixableSeed fixable_seed(bit_gen);
   SCOPED_TRACE(fixable_seed.seed);
 
-  BasisState saved_state;
-  int initial_num_iterations = 0;
-  for (int attempt = 0; attempt < 100; ++attempt) {
-    CreateRandomProblem(num_cols, num_rows, linear_program.get(), fixable_seed);
+  CreateRandomProblem(num_cols, num_rows, linear_program.get(), fixable_seed);
 
+  BasisState saved_state;
+  int initial_num_iterations;
+  {
     // Initial solve from scratch.
     std::unique_ptr<RevisedSimplex> simplex(new RevisedSimplex);
     std::unique_ptr<TimeLimit> time_limit = TimeLimit::Infinite();
-    const SolveStatus status = simplex->Solve(*linear_program, *time_limit);
-    EXPECT_THAT(status, Not(SolveStatusWith<SolveStatus::Abnormal>(_)));
+    EXPECT_THAT(simplex->Solve(*linear_program, *time_limit),
+                Not(SolveStatusWith<SolveStatus::Abnormal>(_)));
     initial_num_iterations = simplex->GetNumberOfIterations();
     saved_state = simplex->GetState();
-    if (status.Is<SolveStatus::Optimal>() && initial_num_iterations >= 20) {
-      break;
-    }
   }
 
   LOG(INFO) << "initial num iterations " << initial_num_iterations;
