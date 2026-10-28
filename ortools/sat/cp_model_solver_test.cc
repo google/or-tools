@@ -1955,6 +1955,106 @@ TEST(SolveCpModelTest, TriviallyInfeasibleNegatedAssumptions) {
               testing::ElementsAre(-2));
 }
 
+// Regression for issue #5141: a fixed circuit literal must not replace an
+// assumption with the same fixed value in the returned infeasibility core.
+TEST(SolveCpModelTest, AssumptionsKeepTheirIdentityWhenConstantsAreMerged) {
+  for (const bool presolve : {false, true}) {
+    for (const bool keep_all : {false, true}) {
+      for (const bool negate : {false, true}) {
+        for (const int assumption_mode : {0, 1, 2}) {
+          for (const bool permute : {false, true}) {
+            SCOPED_TRACE(testing::Message()
+                         << "presolve=" << presolve << " keep_all=" << keep_all
+                         << " negate=" << negate << " mode=" << assumption_mode
+                         << " permute=" << permute);
+            CpModelProto model_proto = ParseTestProto(R"pb(
+              variables {
+                name: "v"
+                domain: [ 0, 1 ]
+              }
+              variables {
+                name: "y"
+                domain: [ 0, 1 ]
+              }
+              variables {
+                name: "a"
+                domain: [ 0, 1 ]
+              }
+              variables {
+                name: "b"
+                domain: [ 0, 1 ]
+              }
+              variables { domain: [ 0, 1 ] }
+              variables { domain: [ 0, 1 ] }
+              variables { domain: [ 0, 1 ] }
+              variables { domain: [ 0, 1 ] }
+              variables {
+                name: "alias"
+                domain: [ 0, 1 ]
+              }
+              constraints {
+                circuit {
+                  tails: [ 0, 1, 0, 2, 1, 2, 99 ]
+                  heads: [ 1, 0, 2, 0, 1, 2, 99 ]
+                  literals: [ 4, 5, 6, 7, -3, -4, -1 ]
+                }
+              }
+              constraints {
+                linear {
+                  vars: [ 1, 8 ]
+                  coeffs: [ 1, -1 ]
+                  domain: [ 0, 0 ]
+                }
+              }
+            )pb");
+            if (negate) {
+              model_proto.mutable_constraints(0)
+                  ->mutable_circuit()
+                  ->set_literals(6, 0);
+            }
+            auto* fixed = model_proto.add_constraints()->mutable_linear();
+            fixed->add_vars(1);
+            fixed->add_coeffs(1);
+            fixed->add_domain(negate ? 1 : 0);
+            fixed->add_domain(negate ? 1 : 0);
+            const int assumption = negate ? -2 : 1;
+            model_proto.add_assumptions(assumption);
+            if (assumption_mode == 1) model_proto.add_assumptions(assumption);
+            if (assumption_mode == 2) {
+              model_proto.add_assumptions(negate ? -9 : 8);
+            }
+
+            SatParameters params;
+            params.set_num_workers(1);
+            params.set_cp_model_presolve(presolve);
+            params.set_keep_all_feasible_solutions_in_presolve(keep_all);
+            params.set_permute_variable_randomly(permute);
+            const CpSolverResponse response =
+                SolveWithParameters(model_proto, params);
+            ASSERT_EQ(response.status(), CpSolverStatus::INFEASIBLE);
+            const auto& core =
+                response.sufficient_assumptions_for_infeasibility();
+            ASSERT_FALSE(core.empty());
+            for (const int ref : core) {
+              EXPECT_THAT(model_proto.assumptions(), testing::Contains(ref));
+            }
+
+            // Check sufficiency using the original constraints without
+            // presolve.
+            *model_proto.mutable_assumptions() = core;
+            params.set_cp_model_presolve(false);
+            EXPECT_EQ(SolveWithParameters(model_proto, params).status(),
+                      CpSolverStatus::INFEASIBLE);
+            model_proto.clear_assumptions();
+            EXPECT_EQ(SolveWithParameters(model_proto, params).status(),
+                      CpSolverStatus::OPTIMAL);
+          }
+        }
+      }
+    }
+  }
+}
+
 TEST(SolveCpModelTest, AssumptionsAndInfeasibility) {
   const CpModelProto model_proto = ParseTestProto(R"pb(
     variables { domain: 0 domain: 1 }

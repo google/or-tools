@@ -7630,9 +7630,12 @@ CpSolverStatus CpModelPresolver::Presolve() {
       continue;
     }
 
-    // Merge identical constant. Note that the only place were constant are
-    // still left are in the circuit and route constraint for fixed arcs.
-    if (context_->IsFixed(i)) {
+    // Merge identical constants, except assumptions whose original identity
+    // must be preserved when mapping an infeasibility core back to the input.
+    // Other constants are still used in circuit and route constraints for
+    // fixed arcs.
+    if (context_->IsFixed(i) &&
+        !context_->VarToConstraints(i).contains(kAssumptionsConstraint)) {
       auto [it, inserted] = constant_to_index.insert(
           {context_->FixedValue(i), postsolve_mapping_->size()});
       if (!inserted) {
