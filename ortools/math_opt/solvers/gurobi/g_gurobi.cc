@@ -152,6 +152,7 @@ void GurobiFreeEnv::operator()(GRBenv* const env) const {
 
 absl::StatusOr<GRBenvUniquePtr> GurobiNewPrimaryEnv(
     const std::optional<GurobiIsvKey>& isv_key) {
+  ABSL_RETURN_IF_ERROR(LoadGurobiDynamicLibrary({}));
   if (isv_key.has_value()) {
     ABSL_ASSIGN_OR_RETURN(GRBenv* const naked_primary_env,
                           NewPrimaryEnvFromISVKey(*isv_key));
@@ -195,6 +196,7 @@ Gurobi::Gurobi(GRBenvUniquePtr optional_owned_primary_env,
 absl::StatusOr<std::unique_ptr<Gurobi>> Gurobi::New(
     GRBenvUniquePtr optional_owned_primary_env, GRBenv* const primary_env) {
   CHECK(primary_env != nullptr);
+  ABSL_RETURN_IF_ERROR(LoadGurobiDynamicLibrary({}));
   GRBmodel* model = nullptr;
   const int err = GRBnewmodel(primary_env, &model,
                               /*Pname=*/nullptr,
