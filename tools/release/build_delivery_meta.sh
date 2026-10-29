@@ -193,16 +193,16 @@ function build_java() {
   else
     GPG_EXTRA="-DGPG_ARGS=${GPG_ARGS}"
   fi
-
+  log "  CMake configure..."
   # shellcheck disable=SC2086 # cmake fail to parse empty string ""
   cmake -S. -Btemp_meta_java -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
  -DBUILD_JAVA=ON -DUNIVERSAL_JAVA_PACKAGE=ON \
  -DSKIP_GPG=OFF ${GPG_EXTRA}
-  cmake --build temp_meta_java --config Release
+  log "  DONE"
+  log "  CMake build..."
+  cmake --build temp_meta_java --config Release --target java_package
+  log "  DONE"
   log "DONE"
-  #cmake --build temp_meta_java --target test
-  #echo "cmake test: DONE" | tee -a build.log
-
   # copy meta jar to export
   cp temp_meta_java/java/ortools-java/target/*.jar* export_meta/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export_meta/meta_java_build"

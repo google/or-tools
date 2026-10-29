@@ -214,10 +214,8 @@ echo DONE | tee.exe -a build.log
 
 echo Build java: ... | tee.exe -a build.log
 cmake -S. -Btemp_java -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_JAVA=ON -DSKIP_GPG=OFF || exit 1
-cmake --build temp_java --config Release || exit 1
+cmake --build temp_java --config Release --target java_native_package java_package || exit 1
 echo DONE | tee.exe -a build.log
-REM cmake --build temp_java --config Release --target RUN_TEST || exit 1
-REM echo cmake test_java: DONE | tee.exe -a build.log
 
 FOR %%i IN (temp_java\java\ortools-win32-x86-64\target\*.jar*) do (
   echo Copy %%i to export... | tee.exe -a build.log
