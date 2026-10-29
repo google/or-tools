@@ -229,6 +229,17 @@ function build_java() {
     cp temp_java/java/ortools-linux-*/target/*.jar* export/
   fi
   cp temp_java/java/ortools-java/target/*.jar* export/
+
+  log "Generate native java bundle..."
+  cmake --build temp_java --config Release --target java_native_deploy
+  log "DONE"
+  # copy native zip bundle to export
+  if [[ "${OS}" == "Darwin" ]]; then
+    cp temp_java/java/ortools-darwin-*/target/central-publishing/*.zip export/
+  else
+    cp temp_java/java/ortools-linux-*/target/central-publishing/*.zip export/
+  fi
+
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/java_build"
 }
 

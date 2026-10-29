@@ -227,6 +227,16 @@ FOR %%i IN (temp_java\java\ortools-java\target\*.jar*) do (
   copy %%i export\.
   echo Copy %%i to export...DONE | tee.exe -a build.log
 )
+
+echo Generate native java bundle: ... | tee.exe -a build.log
+cmake --build temp_java --config Release --target java_native_deploy || exit 1
+echo DONE | tee.exe -a build.log
+FOR %%i IN (temp_java\java\ortools-win32-x86-64\target\central-publishing\*.zip) do (
+  echo Copy %%i to export... | tee.exe -a build.log
+  copy %%i export\.
+  echo Copy %%i to export...DONE | tee.exe -a build.log
+)
+
 echo %BRANCH% %SHA1%>build_java.log
 exit /B 0
 
