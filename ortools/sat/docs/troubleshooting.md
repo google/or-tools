@@ -9,7 +9,7 @@ CP-SAT supports extensive logging of its internals.
 To enable it, just set the parameter `log_search_progress` to true.
 
 A good explanation of the log can be found in the
-[cpsat-primer](https://github.com/d-krupke/cpsat-primer/blob/main/understanding_the_log.md).
+[cpsat-primer](https://d-krupke.github.io/cpsat-primer/understanding_the_log.html).
 
 ## Exporting the model
 
