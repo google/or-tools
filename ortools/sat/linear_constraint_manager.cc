@@ -433,6 +433,12 @@ bool LinearConstraintManager::AddCut(LinearConstraint ct, std::string type_name,
                                      std::string extra_info) {
   ++num_add_cut_calls_;
   if (ct.num_terms == 0) return false;
+  DivideByGCD(&ct);
+  if (PossibleOverflow(integer_trail_, ct)) return false;
+  if (SimplifyConstraint(&ct)) {
+    if (ct.num_terms == 0) return false;
+    DivideByGCD(&ct);
+  }
 
   const double activity = ComputeActivity(ct, expanded_lp_solution_);
   const double violation =
@@ -448,12 +454,6 @@ bool LinearConstraintManager::AddCut(LinearConstraint ct, std::string type_name,
             << " eff=" << violation / l2_norm << " " << extra_info;
     return false;
   }
-
-  // TODO(user): We could prevent overflow by dividing more. Note that this
-  // mainly happens with super large variable domains since we usually restrict
-  // the size of the generated coefficients in our cuts. So it shouldn't be that
-  // important.
-  if (PossibleOverflow(integer_trail_, ct)) return false;
 
   bool added = false;
   const ConstraintIndex ct_index = Add(std::move(ct), &added);

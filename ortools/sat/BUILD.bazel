@@ -3685,6 +3685,7 @@ or_cc_test(
     name = "cuts_test",
     srcs = ["cuts_test.cc"],
     deps = [
+        ":clause",
         ":cuts",
         ":implied_bounds",
         ":integer",

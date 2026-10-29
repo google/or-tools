@@ -28,6 +28,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -67,9 +68,7 @@ TEST(GetSuperAdditiveRoundingFunctionTest, AllSmallValues) {
               " max_scaling = ", max_scaling.value());
           const auto f = GetSuperAdditiveRoundingFunction(
               rhs_remainder, divisor,
-              std::min(max_t,
-                       GetFactorT(rhs_remainder, divisor, IntegerValue(100))),
-              max_scaling);
+              std::min(max_t, GetFactorT(rhs_remainder, divisor)), max_scaling);
           ASSERT_EQ(f(IntegerValue(0)), 0) << info;
           ASSERT_GE(f(divisor), 1) << info;
           ASSERT_LE(f(divisor), max_scaling * max_t) << info;
@@ -102,7 +101,12 @@ TEST(GetSuperAdditiveRoundingFunctionTest, AllSmallValues) {
 TEST(GetSuperAdditiveStrengtheningFunction, AllSmallValues) {
   for (const int64_t rhs : {13, 14}) {  // test odd/even
     for (int64_t min_magnitude = 1; min_magnitude <= rhs; ++min_magnitude) {
-      const auto f = GetSuperAdditiveStrengtheningFunction(rhs, min_magnitude);
+      const IntegerValue min_period =
+          3 * min_magnitude <= rhs ? IntegerValue(rhs + 2 * min_magnitude - 2)
+                                   : IntegerValue(2 * rhs - 2);
+      const auto f = ExtendNegativeFunction(
+          GetSuperAdditiveStrengtheningFunction(rhs, min_magnitude),
+          std::max(IntegerValue(rhs), min_period));
 
       // Check super additivity in -[50, 50]
       for (int a = -50; a <= 50; ++a) {
@@ -119,7 +123,13 @@ TEST(GetSuperAdditiveStrengtheningFunction, AllSmallValues) {
 TEST(GetSuperAdditiveStrengtheningMirFunction, AllSmallValues) {
   for (const int64_t rhs : {13, 14}) {  // test odd/even
     for (int64_t scaling = 1; scaling <= rhs; ++scaling) {
-      const auto f = GetSuperAdditiveStrengtheningMirFunction(rhs, scaling);
+      const IntegerValue min_period =
+          (scaling > 1 && scaling < rhs)
+              ? IntegerValue(rhs - 1) +
+                    CeilRatio(IntegerValue(rhs - 1), IntegerValue(scaling - 1))
+              : IntegerValue(rhs);
+      const auto f = ExtendNegativeFunction(
+          GetSuperAdditiveStrengtheningMirFunction(rhs, scaling), min_period);
 
       // Check super additivity in -[50, 50]
       for (int a = -50; a <= 50; ++a) {
@@ -353,6 +363,136 @@ TEST(IntegerRoundingCutTest, TestCaseUsedForDebugging) {
       RoundingOptions(), rhs, vars, coeffs, lp_values, &model);
 
   EXPECT_EQ(constraint.DebugString(), "-2*I0 -1*I1 -2*I2 -2*I3 2*I4 <= -2");
+}
+
+TEST(IntegerRoundingCutTest, NonRelevantNegativeAdjustPreservesBuckets) {
+  Model model;
+  const IntegerVariable x0 = model.Add(NewIntegerVariable(0, 2));
+  const IntegerVariable x1 = model.Add(NewIntegerVariable(0, 1));
+  const IntegerVariable x2 = model.Add(NewIntegerVariable(0, 1));
+  const IntegerVariable x3 = model.Add(NewIntegerVariable(0, 1));
+
+  // Divisor 1000, rhs = 500. Dominating f chooses max_scaling = 50, placing
+  // x0 (coeff 990) in bucket 49, which drops to 48 as soon as rhs_remainder
+  // exceeds 509 (exact slack budget = 9). Thus x1 (-9) is adjusted to 0 while
+  // x2 (-10) is kept so x0 loses zero LP violation.
+  const IntegerValue rhs(500);
+  const std::vector<IntegerVariable> vars = {x0, x1, x2, x3};
+  const std::vector<IntegerValue> coeffs =
+      IntegerValueVector({990, -9, -10, 1000});
+  const std::vector<double> lp_values = {0.8, 0.0, 0.0, 0.0};
+
+  RoundingOptions options;
+  options.max_scaling = 60;
+  const LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
+      options, rhs, vars, coeffs, lp_values, &model);
+  EXPECT_EQ(constraint.DebugString(), "49*I0 -1*I2 50*I3 <= 0");
+}
+
+TEST(IntegerRoundingCutTest, NonRelevantNegativeAdjustPreservesFactorT) {
+  Model model;
+  const IntegerVariable x0 = model.Add(NewIntegerVariable(0, 2));
+  const IntegerVariable x1 = model.Add(NewIntegerVariable(0, 1));
+  const IntegerVariable x2 = model.Add(NewIntegerVariable(0, 1));
+  const IntegerVariable x3 = model.Add(NewIntegerVariable(0, 1));
+
+  // Divisor 1000, rhs = 100 -> factor_t = 5 (r0 = 500) and 5 * 198 = 990.
+  // Exact scaled cap is 509, so slack_budget = (509 - 500) / 5 = 1: x1 (-1) is
+  // adjusted to 0 while x2 (-40) is not adjusted (preserving factor_t = 5).
+  const IntegerValue rhs(100);
+  const std::vector<IntegerVariable> vars = {x0, x1, x2, x3};
+  const std::vector<IntegerValue> coeffs =
+      IntegerValueVector({198, -1, -40, 1000});
+  const std::vector<double> lp_values = {0.8, 0.0, 0.0, 0.0};
+
+  RoundingOptions options;
+  options.max_scaling = 60;
+  const LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
+      options, rhs, vars, coeffs, lp_values, &model);
+  EXPECT_EQ(constraint.DebugString(), "49*I0 -20*I2 250*I3 <= 0");
+}
+
+TEST(GUBHelperTest, ZeroCoeffComplementedBooleanDoesNotBlockGubLifting) {
+  Model model;
+  model.GetOrCreate<SatParameters>()->set_at_most_one_max_expansion_size(2);
+  auto* integer_encoder = model.GetOrCreate<IntegerEncoder>();
+  auto* implications = model.GetOrCreate<BinaryImplicationGraph>();
+
+  const BooleanVariable b0 = model.Add(NewBooleanVariable());
+  const BooleanVariable b1 = model.Add(NewBooleanVariable());
+  const BooleanVariable b2 = model.Add(NewBooleanVariable());
+  const IntegerVariable x0 = model.Add(NewIntegerVariable(0, 1));
+  const IntegerVariable x1 = model.Add(NewIntegerVariable(0, 1));
+  const IntegerVariable x2 = model.Add(NewIntegerVariable(0, 1));
+  const IntegerVariable x3 = model.Add(NewIntegerVariable(0, 2));
+
+  integer_encoder->AssociateToIntegerEqualValue(Literal(b0, true), x0,
+                                                IntegerValue(1));
+  integer_encoder->AssociateToIntegerEqualValue(Literal(b1, true), x1,
+                                                IntegerValue(1));
+  integer_encoder->AssociateToIntegerEqualValue(Literal(b2, true), x2,
+                                                IntegerValue(1));
+  ASSERT_TRUE(implications->AddAtMostOne(
+      {Literal(b0, true), Literal(b1, true), Literal(b2, true)}));
+
+  CutData cut;
+  cut.rhs = 8;
+
+  // Complemented (1 - x0) with coeff == 0 (e.g. after coefficient adjustment).
+  CutTerm t0;
+  t0.coeff = 0;
+  t0.lp_value = 0.8;
+  t0.bound_diff = 1;
+  t0.expr_vars[0] = x0;
+  t0.expr_coeffs[0] = -1;
+  t0.expr_coeffs[1] = 0;
+  t0.expr_offset = 1;
+  cut.terms.push_back(t0);
+
+  // Complemented (1 - x1) with negative coeff -4 (f(-4) = -2).
+  CutTerm t1;
+  t1.coeff = -4;
+  t1.lp_value = 0.1;
+  t1.bound_diff = 1;
+  t1.expr_vars[0] = x1;
+  t1.expr_coeffs[0] = -1;
+  t1.expr_coeffs[1] = 0;
+  t1.expr_offset = 1;
+  cut.terms.push_back(t1);
+
+  // Uncomplemented x2 in the same AMO with coeff 5: f(5) = 0, but GUB lifting
+  // with t1 gives -f(-4) + f(5 - 4) = 2.
+  CutTerm t2;
+  t2.coeff = 5;
+  t2.lp_value = 0.0;
+  t2.bound_diff = 1;
+  t2.expr_vars[0] = x2;
+  t2.expr_coeffs[0] = 1;
+  t2.expr_coeffs[1] = 0;
+  t2.expr_offset = 0;
+  cut.terms.push_back(t2);
+
+  // Violated integer term so ApplyWithPostprocessing runs GUB lifting.
+  CutTerm t3;
+  t3.coeff = 10;
+  t3.lp_value = 0.9;
+  t3.bound_diff = 2;
+  t3.expr_vars[0] = x3;
+  t3.expr_coeffs[0] = 1;
+  t3.expr_coeffs[1] = 0;
+  t3.expr_offset = 0;
+  cut.terms.push_back(t3);
+
+  const auto f = GetSuperAdditiveRoundingFunction(
+      /*rhs_remainder=*/IntegerValue(8), /*divisor=*/IntegerValue(10),
+      /*t=*/IntegerValue(1), /*max_scaling=*/IntegerValue(2));
+  GUBHelper gub_helper(&model);
+  EXPECT_TRUE(gub_helper.ApplyWithPostprocessing(
+      f, IntegerValue(10), /*ib_processor=*/nullptr, &cut));
+
+  EXPECT_EQ(gub_helper.last_stats().num_gubs, 1);
+  ASSERT_EQ(cut.terms.size(), 3);
+  EXPECT_EQ(cut.terms[1].coeff, IntegerValue(2));
 }
 
 // The algo should find a "divisor" 2 when it leads to a good cut.
@@ -913,13 +1053,12 @@ TEST(ImpliedBoundsProcessorTest, PositiveBasicTest) {
   data.terms.push_back(X);
 
   processor.CacheDataForCut(IntegerVariable(100), &data);
-  const IntegerValue t(1);
   std::vector<CutTerm> new_terms;
   EXPECT_TRUE(processor.TryToExpandWithLowerImpliedbound(
-      t, /*complement=*/false, &data.terms[0], &data.rhs, &new_terms));
+      /*complement=*/false, &data.terms[0], &data.rhs, &new_terms));
 
   EXPECT_EQ(0, processor.MutableCutBuilder()->AddOrMergeBooleanTerms(
-                   absl::MakeSpan(new_terms), t, &data));
+                   absl::MakeSpan(new_terms), &data));
 
   EXPECT_EQ(data.terms.size(), 2);
   EXPECT_THAT(data.terms[0], CutDataIs(1, DoubleNear(0.0, 1.0e-6), 7));
@@ -968,12 +1107,11 @@ TEST(ImpliedBoundsProcessorTest, NegativeBasicTest) {
 
   processor.CacheDataForCut(IntegerVariable(100), &data);
 
-  const IntegerValue t(1);
   std::vector<CutTerm> new_terms;
   EXPECT_TRUE(processor.TryToExpandWithLowerImpliedbound(
-      t, /*complement=*/false, &data.terms[0], &data.rhs, &new_terms));
+      /*complement=*/false, &data.terms[0], &data.rhs, &new_terms));
   EXPECT_EQ(0, processor.MutableCutBuilder()->AddOrMergeBooleanTerms(
-                   absl::MakeSpan(new_terms), t, &data));
+                   absl::MakeSpan(new_terms), &data));
 
   EXPECT_EQ(data.terms.size(), 2);
   EXPECT_THAT(data.terms[0], CutDataIs(1, DoubleNear(0.0, 1.0e-6), 7));
@@ -1037,8 +1175,8 @@ TEST(ImpliedBoundsProcessorTest, DecompositionTest) {
   // X - 2 = 3 * B + slack;
   CutTerm bool_term;
   CutTerm slack_term;
-  EXPECT_TRUE(processor.DecomposeWithImpliedLowerBound(X, IntegerValue(1),
-                                                       bool_term, slack_term));
+  EXPECT_TRUE(
+      processor.DecomposeWithImpliedLowerBound(X, bool_term, slack_term));
   EXPECT_THAT(bool_term, CutDataIs(3, DoubleNear(0.666667, 1.0e-6), 1));
   EXPECT_THAT(slack_term, CutDataIs(1, DoubleNear(0.0, 1.0e-6), 7));
 
@@ -1047,14 +1185,14 @@ TEST(ImpliedBoundsProcessorTest, DecompositionTest) {
   absl::int128 unused;
   Y.Complement(&unused);
   Y.coeff = -Y.coeff;
-  EXPECT_TRUE(processor.DecomposeWithImpliedLowerBound(Y, IntegerValue(1),
-                                                       bool_term, slack_term));
+  EXPECT_TRUE(
+      processor.DecomposeWithImpliedLowerBound(Y, bool_term, slack_term));
   EXPECT_THAT(bool_term, CutDataIs(7, DoubleNear(0.5, 1.0e-6), 1));
   EXPECT_THAT(slack_term, CutDataIs(1, DoubleNear(1.5, 1.0e-6), 7));
 
   // X - 2 = 7 * (1 - C) - slack;
-  EXPECT_TRUE(processor.DecomposeWithImpliedUpperBound(X, IntegerValue(1),
-                                                       bool_term, slack_term));
+  EXPECT_TRUE(
+      processor.DecomposeWithImpliedUpperBound(X, bool_term, slack_term));
   EXPECT_THAT(bool_term, CutDataIs(7, DoubleNear(0.5, 1.0e-6), 1));
   EXPECT_THAT(slack_term, CutDataIs(-1, DoubleNear(1.5, 1.0e-6), 7));
 }
