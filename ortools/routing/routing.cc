@@ -7735,6 +7735,38 @@ void Dimension::CloseModel(bool use_light_propagation) {
       model_->AddVariableMinimizedByFinalizer(cumul);
     }
   }
+  if (HasPickupToDeliveryLimits()) {
+    const std::vector<PickupDeliveryPair>& pairs =
+        model_->GetPickupAndDeliveryPairs();
+    const int num_pairs = std::min(
+        pairs.size(), pickup_to_delivery_limits_per_pair_index_.size());
+    for (int pair_index = 0; pair_index < num_pairs; ++pair_index) {
+      if (pickup_to_delivery_limits_per_pair_index_[pair_index] == nullptr) {
+        continue;
+      }
+      const auto& [pickups, deliveries] = pairs[pair_index];
+      for (int p_index = 0; p_index < pickups.size(); ++p_index) {
+        const int64_t pickup_index = pickups[p_index];
+        for (int d_index = 0; d_index < deliveries.size(); ++d_index) {
+          const int64_t limit =
+              GetPickupToDeliveryLimitForPair(pair_index, p_index, d_index);
+          if (limit == kint64max) continue;
+          const int64_t delivery_index = deliveries[d_index];
+          // Add constraint under the condition that the pair is selected.
+          IntExpr* const pair_is_selected =
+              solver->MakeMin(model_->ActiveVar(pickup_index),
+                              model_->ActiveVar(delivery_index));
+          IntExpr* const cumul_difference = solver->MakeDifference(
+              CumulVar(delivery_index), CumulVar(pickup_index));
+          IntVar* const cumul_difference_le_limit =
+              solver->MakeIsLessOrEqualCstVar(cumul_difference, limit);
+          // pair_is_selected => cumul_difference <= limit.
+          solver->AddConstraint(solver->MakeLessOrEqual(
+              pair_is_selected->Var(), cumul_difference_le_limit));
+        }
+      }
+    }
+  }
 }
 
 int64_t Dimension::GetTransitValue(int64_t from_index, int64_t to_index,

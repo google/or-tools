@@ -3578,7 +3578,8 @@ class Dimension {
   /// each pickup (delivery) index is in a single pickup/delivery pair.first
   /// (pair.second).
   typedef std::function<int64_t(int, int)> PickupToDeliveryLimitFunction;
-
+  // TODO(user): Add simpler APIs that take a pair index and either a
+  // constant limit or a 2d vector of limits.
   void SetPickupToDeliveryLimitFunctionForPair(
       PickupToDeliveryLimitFunction limit_function, int pair_index);
 

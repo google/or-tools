@@ -207,12 +207,25 @@ TEST(ModelTest, NoFirstSolutionLocalOptimumNotReached) {
     model.AddDisjunction({node}, kPenalty);
   }
   parameters.set_first_solution_strategy(FirstSolutionStrategy::SAVINGS);
-  // Set a very small time limit to prevent the first solution heuristic
-  // from finding a solution.
-  const int32_t kTimeLimitNanos = kDebugMode || kAnyXsanEnabled ? 1e8 : 1e7;
-  parameters.mutable_time_limit()->set_nanos(kTimeLimitNanos);
+  parameters.set_solution_limit(1);
 
-  const int kNumAttempts = 100;
+  // Compute the average time it takes to find a first solution.
+  const int kSampleCount = 5;
+  CycleTimer timer;
+  for (int i = 0; i < kSampleCount; ++i) {
+    timer.Start();
+    const Assignment* solution = model.SolveWithParameters(parameters);
+    timer.Stop();
+    ASSERT_NE(solution, nullptr) << i;
+  }
+  // Set a very small time limit (1 tenth of the average time to find a first
+  // solution) to try and prevent the first solution heuristic from finding a
+  // solution.
+  int32_t time_limit_nanos =
+      absl::ToInt64Nanoseconds(timer.GetDuration()) / kSampleCount / 10;
+  parameters.mutable_time_limit()->set_nanos(time_limit_nanos);
+
+  const int kNumAttempts = 50;
   int num_attempts_no_solution;
   auto test_has_all_unperformed_solution = [&]() {
     int num_attempts_all_unperformed = 0;
@@ -233,17 +246,25 @@ TEST(ModelTest, NoFirstSolutionLocalOptimumNotReached) {
     return num_attempts_all_unperformed > 0;
   };
 
-  if (!test_has_all_unperformed_solution()) {
-    // We run the test again after adapting the time limit, to make sure that
-    // the test actually exercises the case where the first solution doesn't
-    // have time to come up with a solution.
-    if (num_attempts_no_solution > 3 * kNumAttempts / 4) {
-      parameters.mutable_time_limit()->set_nanos(kTimeLimitNanos * 2);
-    } else {
-      parameters.mutable_time_limit()->set_nanos(kTimeLimitNanos / 2);
+  bool success = false;
+  for (int retry = 0; retry < 10; ++retry) {
+    if (test_has_all_unperformed_solution()) {
+      success = true;
+      break;
     }
-    EXPECT_TRUE(test_has_all_unperformed_solution());
+    // We adapt the time limit before trying again, to make sure that the test
+    // actually exercises the case where the first solution doesn't have time to
+    // come up with a solution.
+    if (num_attempts_no_solution > 3 * kNumAttempts / 4) {
+      time_limit_nanos *= 2;
+    } else {
+      time_limit_nanos /= 2;
+    }
+    parameters.mutable_time_limit()->set_nanos(time_limit_nanos);
   }
+  EXPECT_TRUE(success)
+      << "Failed to find an all-unperformed solution, increase the number of "
+         "time limit adjustment retries.";
 }
 
 TEST(ModelTest, LocalOptimumReached) {
@@ -14211,6 +14232,50 @@ TEST(UnaryDimensionsTest, ManyTransitDimensionWithOptionalNodes) {
       }
     }
     EXPECT_EQ(num_active_nodes, 5);
+  }
+}
+
+TEST(RoutingTest, PickupToDeliveryLimitEnforcedInSolve) {
+  const IndexManager manager(/*num_nodes=*/5, /*num_vehicles=*/1, NodeIndex(0));
+  for (const int64_t limit : {3, 1, 0}) {
+    Model model(manager);
+    // Encourage interleaving 0 -> 1 -> 3 -> 4 -> 2 -> 0 if allowed by the
+    // pickup-to-delivery limit on pair (1, 2).
+    const int cost_index =
+        model.RegisterTransitCallback([](int64_t from_index, int64_t to_index) {
+          if ((from_index == 1 && to_index == 3) ||
+              (from_index == 4 && to_index == 2)) {
+            return 0;
+          }
+          return 10;
+        });
+    model.SetArcCostEvaluatorOfAllVehicles(cost_index);
+    model.AddConstantDimension(/*value=*/1, /*capacity=*/10,
+                               /*fix_start_cumul_to_zero=*/true, "time");
+    Dimension* const time_dimension = model.GetMutableDimension("time");
+    model.AddPickupAndDelivery(1, 2);
+    model.AddPickupAndDelivery(3, 4);
+    time_dimension->SetPickupToDeliveryLimitFunctionForPair(
+        [limit](int /*pickup*/, int /*delivery*/) { return limit; },
+        /*pair_index=*/0);
+
+    const Assignment* const solution = model.Solve();
+    if (limit == 0) {
+      EXPECT_EQ(solution, nullptr);
+    } else {
+      ASSERT_NE(solution, nullptr);
+      const int64_t pickup_cumul = solution->Value(time_dimension->CumulVar(1));
+      const int64_t delivery_cumul =
+          solution->Value(time_dimension->CumulVar(2));
+      EXPECT_LE(delivery_cumul - pickup_cumul, limit);
+      if (limit == 3) {
+        // Interleaved route 0 -> 1 -> 3 -> 4 -> 2 -> 0 is feasible and cheaper.
+        EXPECT_EQ(delivery_cumul - pickup_cumul, 3);
+      } else {
+        // Limit of 1 forces 2 immediately after 1.
+        EXPECT_EQ(delivery_cumul - pickup_cumul, 1);
+      }
+    }
   }
 }
 
