@@ -198,7 +198,7 @@ function build_java() {
   -w /root/or-tools \
   -v "${ROOT_DIR}/export":/export \
   -u "$(id -u "${USER}")":"$(id -g "${USER}")" \
-  -t "${ORTOOLS_IMG}":"${ORTOOLS_DELIVERY}" "cp export/*.jar* /export/"
+  -t "${ORTOOLS_IMG}":"${ORTOOLS_DELIVERY}" "cp export/*.jar* export/*.zip /export/"
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/arm64_java_build"
 }
 

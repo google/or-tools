@@ -205,6 +205,13 @@ function build_java() {
   log "DONE"
   # copy meta jar to export
   cp temp_meta_java/java/ortools-java/target/*.jar* export_meta/
+
+  log "Generate java bundle..."
+  cmake --build temp_meta_java --config Release --target java_deploy
+  log "DONE"
+  # copy zip bundle to export
+  cp temp_meta_java/java/ortools-java/target/central-publishing/*.zip export_meta/
+
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export_meta/meta_java_build"
 }
 
