@@ -39,7 +39,7 @@ using ::testing::status::StatusIs;
 TEST(IsSolutionFeasibleAndGetTightObjectiveBoundsTest, EmptyModel) {
   MPModelProto model;
   std::vector<double> solution;
-  const sat::MPModelProtoWrapper wrapper(&model);
+  const sat::MPModelProtoWrapper wrapper(std::move(model));
   EXPECT_THAT(SolutionIsFeasible(wrapper, solution, {}), IsOkAndHolds(true));
   EXPECT_THAT(GetTightObjectiveBounds(wrapper, solution),
               IsOkAndHolds(Pair(0.0, 0.0)));
@@ -107,8 +107,7 @@ TEST_P(IsSolutionFeasibleTest, FeasibleSolutionWithIndicatorConstraint) {
   logger.EnableLogging(true);
   int num_logs = 0;
   logger.AddInfoLoggingCallback([&](const std::string&) { ++num_logs; });
-  MPModelProto model = TestModel();
-  const sat::MPModelProtoWrapper wrapper(&model);
+  const sat::MPModelProtoWrapper wrapper(TestModel());
   EXPECT_THAT(SolutionIsFeasible(wrapper, test_case.sol, {.logger = &logger}),
               IsOkAndHolds(test_case.feas));
   if (test_case.feas) {
@@ -156,10 +155,10 @@ TEST(IsSolutionFeasibleTest, ConstraintTolerance) {
       upper_bound: 0.0
     }
   )pb");
+  const sat::MPModelProtoWrapper wrapper(std::move(model));
   // Usual sum would make the solution feasible.
   const std::vector<double> solution = {1e100, std::nextafter(0.0, 1.0),
                                         -1e100};
-  const sat::MPModelProtoWrapper wrapper(&model);
   EXPECT_THAT(
       SolutionIsFeasible(wrapper, solution, {.constraint_tolerance = 0.0}),
       IsOkAndHolds(false));
@@ -171,7 +170,7 @@ TEST(IsSolutionFeasibleTest, ConstraintTolerance) {
 
 TEST(IsSolutionFeasibleTest, NegativeConstraintTolerance) {
   MPModelProto model;
-  const sat::MPModelProtoWrapper wrapper(&model);
+  const sat::MPModelProtoWrapper wrapper(std::move(model));
   EXPECT_THAT(
       SolutionIsFeasible(wrapper, {}, {.constraint_tolerance = -0.1}),
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("negative")));
@@ -179,7 +178,7 @@ TEST(IsSolutionFeasibleTest, NegativeConstraintTolerance) {
 
 TEST(IsSolutionFeasibleTest, NegativeVariableTolerance) {
   MPModelProto model;
-  const sat::MPModelProtoWrapper wrapper(&model);
+  const sat::MPModelProtoWrapper wrapper(std::move(model));
   EXPECT_THAT(
       SolutionIsFeasible(wrapper, {}, {.variable_tolerance = -0.1}),
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("negative")));
@@ -187,15 +186,14 @@ TEST(IsSolutionFeasibleTest, NegativeVariableTolerance) {
 
 TEST(IsSolutionFeasibleTest, NegativeIntegerTolerance) {
   MPModelProto model;
-  const sat::MPModelProtoWrapper wrapper(&model);
+  const sat::MPModelProtoWrapper wrapper(std::move(model));
   EXPECT_THAT(
       SolutionIsFeasible(wrapper, {}, {.integer_tolerance = -0.1}),
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("negative")));
 }
 
 TEST(IsSolutionFeasibleTest, WrongSolutionSize) {
-  MPModelProto model = TestModel();
-  const sat::MPModelProtoWrapper wrapper(&model);
+  const sat::MPModelProtoWrapper wrapper(TestModel());
   EXPECT_THAT(SolutionIsFeasible(wrapper, {1.0, 2.0}, {}),
               StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("size")));
   EXPECT_THAT(GetTightObjectiveBounds(wrapper, {1.0, 2.0}),
@@ -206,7 +204,7 @@ TEST(IsSolutionFeasibleTest, WrongVarIndex) {
   MPModelProto model = ParseTextProtoOrDie(R"pb(
     constraint { var_index: 123 coefficient: 1.0 lower_bound: 0.0 }
   )pb");
-  const sat::MPModelProtoWrapper wrapper(&model);
+  const sat::MPModelProtoWrapper wrapper(std::move(model));
   EXPECT_THAT(
       SolutionIsFeasible(wrapper, {}, {}),
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("index 123")));

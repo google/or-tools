@@ -44,7 +44,7 @@ double FastStepUp(double v);
 double FastStepDown(double v);
 
 // Represents a power of two, i.e. 2^exponent. Used for the API of TightSum.
-// Supports between 2^-30 and 2^30 (the reason is to avoid overflows in the
+// Supports between 2^-15 and 2^15 (the reason is to avoid overflows in the
 // exponent).
 struct PowerOfTwo {
   PowerOfTwo(int exponent);
@@ -328,8 +328,8 @@ inline double FastStepDown(const double v) {
 // functions).
 
 inline PowerOfTwo::PowerOfTwo(const int exponent) : exponent(exponent) {
-  DCHECK_LE(exponent, 1 << 30);
-  DCHECK_GE(exponent, -(1 << 30));
+  DCHECK_LE(exponent, 1 << 15);
+  DCHECK_GE(exponent, -(1 << 15));
 }
 
 inline TightSum::Term TightSum::ToTerm(const double x) {

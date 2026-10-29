@@ -744,6 +744,7 @@ or_cc_test(
     deps = [
         ":fp_utils",
         ":fp_utils_testing",
+        ":full_precision_inequalities",
         "//ortools/base:gmock_main",
         "//ortools/base:types",
         "@abseil-cpp//absl/base",

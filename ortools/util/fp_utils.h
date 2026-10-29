@@ -25,7 +25,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <utility>
 #include <vector>
 
 #include "absl/log/check.h"
@@ -269,42 +268,94 @@ class TightScalingErrorHelper {
   // constraint lb (resp. the higher the constraint ub), the lower the error
   // will be.
   double GetLowerBoundRoundingError(double constraint_lb) {
-    bound_.Clear();
-    bound_.Add(constraint_lb);
-    return -Optimize<true>(scaled_coeffs_, rounded_coeffs_, bound_);
+    slack_.Clear();
+    slack_.Add(constraint_lb);
+    total_sum_.Clear();
+    return -Optimize<true>(scaled_coeffs_, rounded_coeffs_, slack_, total_sum_);
   }
   double GetLowerBoundUnroundingError(double constraint_lb) {
-    bound_.Clear();
-    bound_.Add(constraint_lb);
-    return -Optimize<true>(rounded_coeffs_, scaled_coeffs_, bound_);
+    slack_.Clear();
+    slack_.Add(constraint_lb);
+    total_sum_.Clear();
+    return -Optimize<true>(rounded_coeffs_, scaled_coeffs_, slack_, total_sum_);
   }
   double GetUpperBoundRoundingError(double constraint_ub) {
-    bound_.Clear();
-    bound_.Add(-constraint_ub);
-    return Optimize<false>(scaled_coeffs_, rounded_coeffs_, bound_);
+    slack_.Clear();
+    slack_.Add(-constraint_ub);
+    total_sum_.Clear();
+    return Optimize<false>(scaled_coeffs_, rounded_coeffs_, slack_, total_sum_);
   }
   double GetUpperBoundUnroundingError(double constraint_ub) {
-    bound_.Clear();
-    bound_.Add(-constraint_ub);
-    return Optimize<false>(rounded_coeffs_, scaled_coeffs_, bound_);
+    slack_.Clear();
+    slack_.Add(-constraint_ub);
+    total_sum_.Clear();
+    return Optimize<false>(rounded_coeffs_, scaled_coeffs_, slack_, total_sum_);
   }
 
   // Assuming ROUNDED_TERMS >= constraint_lb, returns a guaranteed lower bound
   // on SCALED_TERMS + scaled_offset.
   double GetScaledLowerBoundFromRoundedLowerBound(TightSum constraint_lb,
                                                   double scaled_offset = 0.0) {
-    return Optimize<true, /*compute_error=*/false>(
-        rounded_coeffs_, scaled_coeffs_, constraint_lb, scaled_offset);
+    total_sum_.Clear();
+    total_sum_.Add(scaled_offset);
+    return Optimize<true, /*minimize=*/true, /*compute_error=*/false>(
+        rounded_coeffs_, scaled_coeffs_, constraint_lb, total_sum_);
+  }
+
+  // Convenience wrappers around GetRoundingError() for the four combinations
+  // of constraint side (lower bound / upper bound) and discretization mode
+  // (relaxation / restriction).
+  const TightSum& GetRelaxationLowerBoundError(const TightSum& constraint_lb) {
+    return GetRoundingError</*is_ge_constraint=*/true,
+                            /*minimize_error=*/true>(constraint_lb);
+  }
+  const TightSum& GetRestrictionLowerBoundError(const TightSum& constraint_lb) {
+    return GetRoundingError</*is_ge_constraint=*/true,
+                            /*minimize_error=*/false>(constraint_lb);
+  }
+  const TightSum& GetRelaxationUpperBoundError(const TightSum& constraint_ub) {
+    return GetRoundingError</*is_ge_constraint=*/false,
+                            /*minimize_error=*/false>(constraint_ub);
+  }
+  const TightSum& GetRestrictionUpperBoundError(const TightSum& constraint_ub) {
+    return GetRoundingError</*is_ge_constraint=*/false,
+                            /*minimize_error=*/true>(constraint_ub);
   }
 
  private:
-  // Returns the minimum of (sum (new_coeffs[i] - coeffs[i]) * Xi) where:
-  // - Xi in [lbs_[i], ubs_[i]],
-  // - sum coeffs[i] * Xi >= slack (or <= -slack if is_ge_constraint is false).
+  // Let `OP` be `>=` if `is_ge_constraint` is true and `<=` if false.
+  // Returns `err` such that, for all xi in  [lbs[i], ubs[i]]:
+  //   - if `minimize_error == is_ge_constraint` (relaxation):
+  //       sum xi * scaled_coeffs[i] OP constraint_bound
+  //         =>  sum xi * rounded_coeffs[i] OP constraint_bound + err,
+  //   - otherwise (restriction):
+  //       sum xi * rounded_coeffs[i] OP constraint_bound + err
+  //         =>  sum xi * scaled_coeffs[i] OP constraint_bound.
   //
-  // If `compute_error` is false, returns a guaranteed lower bound on
-  // offset + (sum new_coeffs[i] * Xi) directly instead of subtracting
-  // `coeffs[i] * Xi`.
+  // The returned reference points to internal storage and is only valid until
+  // the next call to a method of this class.
+  template <bool is_ge_constraint, bool minimize_error>
+  const TightSum& GetRoundingError(const TightSum& constraint_bound) {
+    slack_ = constraint_bound;
+    if constexpr (!is_ge_constraint) {
+      slack_.Negate();
+    }
+    total_sum_.Clear();
+    Optimize<is_ge_constraint, minimize_error, /*compute_error=*/true>(
+        scaled_coeffs_, rounded_coeffs_, slack_, total_sum_);
+    return total_sum_;
+  }
+
+  // Optimizes (sum (new_coeffs[i] - coeffs[i]) * Xi) (minimizing if `minimize`
+  // is true, maximizing if `minimize` is false) where:
+  // - Xi in [lbs_[i], ubs_[i]],
+  // - sum coeffs[i] * Xi >= slack (or <= -slack if is_ge_constraint is false),
+  // adding the resulting terms into `result_sum` and returning the tight lower
+  // bound (if `minimize` is true) or upper bound (if `minimize` is false) of
+  // `result_sum`.
+  //
+  // If `compute_error` is false, optimizes (sum new_coeffs[i] * Xi) directly
+  // instead of subtracting `coeffs[i] * Xi`.
   //
   // If we declare that we have `ubs_[i] - lbs_[i]` items of cost
   // `new_coeffs[i]`, the problem we are solving can be seen as a knapsack
@@ -316,25 +367,25 @@ class TightScalingErrorHelper {
   // This is the same problem if we reformulate the constraint as distance
   // to the maximum activity.
   //
+  // By default, `minimize` is set to `is_ge_constraint` (minimizing for >=
+  // constraints and maximizing for <= constraints, which corresponds to
+  // relaxation bounds). Setting `minimize` explicitly overrides the
+  // optimization direction: when true, it minimizes the objective and returns a
+  // lower bound (`result_sum.TightLowerBound()`); when false, it maximizes the
+  // objective and returns an upper bound (`result_sum.TightUpperBound()`). When
+  // `minimize != is_ge_constraint` (used for restriction bounds), the greedy
+  // selection order is reversed and variables with `new_coeffs[i] == 0` are
+  // fixed at their initial bound.
+  //
   // Warning: modifies the passed slack.
   //
   // Note that since this shouldn't be used on an infeasible problem, we don't
   // explicitly detect infeasibility and still return something in this case.
-  template <bool is_ge_constraint, bool compute_error = true>
+  template <bool is_ge_constraint, bool minimize = is_ge_constraint,
+            bool compute_error = true>
   double Optimize(absl::Span<const double> coeffs,
                   absl::Span<const double> new_coeffs, TightSum& slack,
-                  double offset = 0.0);
-  // Temporary data for Optimize().
-  struct KnapsackItem {
-    double coeff;           // coeffs[i]
-    double delta;           // new_coeffs[i] - coeffs[i] (usually small)
-    int64_t range;          // upper_bounds[i] - lower_bounds[i]
-    int64_t initial_bound;  // lower_bounds[i] for >= constraint
-    int64_t other_bound;    // upper_bounds[i] for >= constraint
-  };
-  std::vector<KnapsackItem> items_;
-  TightSum total_sum_;
-  TightSum bound_;
+                  TightSum& result_sum);
 
   // Input constraint data. only change on LoadConstraint().
   std::vector<double> coeffs_;  // non-negative.
@@ -346,6 +397,20 @@ class TightScalingErrorHelper {
   std::vector<double> scaled_coeffs_;
   std::vector<double> rounded_coeffs_;
   bool has_overflow_ = false;
+
+  // Temporary data for Optimize().
+  struct KnapsackItem {
+    double coeff;           // coeffs[i]
+    double delta;           // new_coeffs[i] - coeffs[i] (usually small)
+    int64_t range;          // upper_bounds[i] - lower_bounds[i]
+    int64_t initial_bound;  // lower_bounds[i] for >= constraint
+    int64_t other_bound;    // upper_bounds[i] for >= constraint
+  };
+  std::vector<KnapsackItem> items_;
+
+  // Temporary data for Get*Error().
+  TightSum total_sum_;
+  TightSum slack_;
 };
 
 // Returns the Greatest Common Divisor of the numbers
