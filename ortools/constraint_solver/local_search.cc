@@ -4389,48 +4389,34 @@ class NestedSolveDecision : public Decision {
   // This enum is used internally to tag states in the local search tree.
   enum StateType { DECISION_PENDING, DECISION_FAILED, DECISION_FOUND };
 
-  NestedSolveDecision(DecisionBuilder* absl_nonnull db, bool restore,
+  NestedSolveDecision(DecisionBuilder* absl_nonnull db,
                       const std::vector<SearchMonitor*>& monitors);
-  NestedSolveDecision(DecisionBuilder* absl_nonnull db, bool restore);
+  explicit NestedSolveDecision(DecisionBuilder* absl_nonnull db);
   ~NestedSolveDecision() override {}
-  void Apply(Solver* solver) override;
+  void Apply(Solver* absl_nonnull solver) override;
   void Refute(Solver* solver) override;
   std::string DebugString() const override { return "NestedSolveDecision"; }
   int state() const { return state_; }
 
  private:
   DecisionBuilder* const db_;
-  const bool restore_;
   const std::vector<SearchMonitor*> monitors_;
   int state_;
 };
 
 NestedSolveDecision::NestedSolveDecision(
-    DecisionBuilder* absl_nonnull db, bool restore,
+    DecisionBuilder* absl_nonnull db,
     const std::vector<SearchMonitor*>& monitors)
-    : db_(db),
-      restore_(restore),
-      monitors_(monitors),
-      state_(DECISION_PENDING) {}
+    : db_(db), monitors_(monitors), state_(DECISION_PENDING) {}
 
-NestedSolveDecision::NestedSolveDecision(DecisionBuilder* absl_nonnull db,
-                                         bool restore)
-    : NestedSolveDecision(db, restore, {}) {}
+NestedSolveDecision::NestedSolveDecision(DecisionBuilder* absl_nonnull db)
+    : NestedSolveDecision(db, {}) {}
 
-void NestedSolveDecision::Apply(Solver* const solver) {
-  CHECK(nullptr != solver);
-  if (restore_) {
-    if (solver->Solve(db_, monitors_)) {
-      solver->SaveAndSetValue(&state_, static_cast<int>(DECISION_FOUND));
-    } else {
-      solver->SaveAndSetValue(&state_, static_cast<int>(DECISION_FAILED));
-    }
+void NestedSolveDecision::Apply(Solver* absl_nonnull const solver) {
+  if (solver->SolveAndCommit(db_, monitors_)) {
+    solver->SaveAndSetValue(&state_, static_cast<int>(DECISION_FOUND));
   } else {
-    if (solver->SolveAndCommit(db_, monitors_)) {
-      solver->SaveAndSetValue(&state_, static_cast<int>(DECISION_FOUND));
-    } else {
-      solver->SaveAndSetValue(&state_, static_cast<int>(DECISION_FAILED));
-    }
+    solver->SaveAndSetValue(&state_, static_cast<int>(DECISION_FAILED));
   }
 }
 
@@ -4709,7 +4695,7 @@ void LocalSearch::PushFirstSolutionDecision(DecisionBuilder* first_solution) {
   std::vector<SearchMonitor*> monitor;
   monitor.push_back(limit_);
   nested_decisions_.push_back(solver->RevAlloc(
-      new NestedSolveDecision(first_solution_and_store, false, monitor)));
+      new NestedSolveDecision(first_solution_and_store, monitor)));
 }
 
 void LocalSearch::PushLocalSearchDecision() {
@@ -4718,7 +4704,7 @@ void LocalSearch::PushLocalSearchDecision() {
       new FindOneNeighbor(assignment_, objective_, pool_, ls_operator_,
                           sub_decision_builder_, limit_, filter_manager_));
   nested_decisions_.push_back(
-      solver->RevAlloc(new NestedSolveDecision(find_neighbors_db_, false)));
+      solver->RevAlloc(new NestedSolveDecision(find_neighbors_db_)));
 }
 
 class DefaultSolutionPool : public SolutionPool {
