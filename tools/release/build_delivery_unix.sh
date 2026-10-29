@@ -208,31 +208,25 @@ function build_java() {
   else
     GPG_EXTRA="-DGPG_ARGS=${GPG_ARGS}"
   fi
+  log "  CMake configure..."
   # shellcheck disable=SC2086 # cmake fail to parse empty string ""
   cmake -S. -Btemp_java -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
  -DBUILD_JAVA=ON -DSKIP_GPG=OFF ${GPG_EXTRA}
-  cmake --build temp_java
+  log "  DONE"
+  log "  CMake build..."
+  cmake --build temp_java --config Release --target java_native_package java_package
+  log "  DONE"
   log "DONE"
-
   if [[ "${OS}" == "Darwin" ]]; then
     log -n "  Check libortools.dylib..."
     otool -L temp_java/lib/libortools.dylib | grep -vqz "/Users"
     log "DONE"
   fi
-
   # copy jar to export
   if [[ "${OS}" == "Darwin" ]]; then
-    if [[ ${ARCH} == "arm64" ]]; then
-      cp temp_java/java/ortools-darwin-aarch64/target/*.jar* export/
-    else
-      cp temp_java/java/ortools-darwin-x86-64/target/*.jar* export/
-    fi
+    cp temp_java/java/ortools-darwin-*/target/*.jar* export/
   else
-    if [[ ${ARCH} == "aarch64" ]]; then
-      cp temp_java/java/ortools-linux-aarch64/target/*.jar* export/
-    else
-      cp temp_java/java/ortools-linux-x86-64/target/*.jar* export/
-    fi
+    cp temp_java/java/ortools-linux-*/target/*.jar* export/
   fi
   cp temp_java/java/ortools-java/target/*.jar* export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/java_build"

@@ -249,7 +249,7 @@ function(add_java_test)
     DEPENDS
       ${JAVA_TEST_DIR}/pom.xml
       ${JAVA_TEST_DIR}/${JAVA_TEST_PATH}/${TEST_NAME}.java
-      java_package
+      java_install
     BYPRODUCTS
       ${JAVA_TEST_DIR}/target
     COMMENT "Compiling Java ${COMPONENT_NAME}/${TEST_NAME}.java (${JAVA_TEST_DIR}/timestamp)"
@@ -517,8 +517,6 @@ add_custom_command(
     $<TARGET_FILE:jni${JAVA_ARTIFACT}>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
 
-  COMMAND ${MAVEN_EXECUTABLE} compile -B
-  COMMAND ${MAVEN_EXECUTABLE} package -B $<$<BOOL:${BUILD_FAT_JAR}>:-Dfatjar=true>
   COMMAND ${MAVEN_EXECUTABLE} install -B $<$<BOOL:${SKIP_GPG}>:-Dgpg.skip=true>
   COMMAND ${CMAKE_COMMAND} -E touch ${JAVA_NATIVE_PROJECT_DIR}/timestamp
   DEPENDS
@@ -530,15 +528,20 @@ add_custom_command(
   COMMENT "Generate Java native package ${JAVA_NATIVE_PROJECT} (${JAVA_NATIVE_PROJECT_DIR}/timestamp)"
   WORKING_DIRECTORY ${JAVA_NATIVE_PROJECT_DIR})
 
-add_custom_target(java_native_package
+add_custom_target(java_native_install
   DEPENDS
     ${JAVA_NATIVE_PROJECT_DIR}/timestamp
   WORKING_DIRECTORY ${JAVA_NATIVE_PROJECT_DIR})
 
+add_custom_target(java_native_package
+  COMMAND ${MAVEN_EXECUTABLE} package -B $<$<BOOL:${BUILD_FAT_JAR}>:-Dfatjar=true>
+  WORKING_DIRECTORY ${JAVA_NATIVE_PROJECT_DIR})
+add_dependencies(java_native_package java_native_install)
+
 add_custom_target(java_native_deploy
   COMMAND ${MAVEN_EXECUTABLE} deploy
   WORKING_DIRECTORY ${JAVA_NATIVE_PROJECT_DIR})
-add_dependencies(java_native_deploy java_native_package)
+add_dependencies(java_native_deploy java_native_install)
 
 ##########################
 ##  Java Maven Package  ##
@@ -578,8 +581,6 @@ endforeach()
 
 add_custom_command(
   OUTPUT ${JAVA_PROJECT_DIR}/timestamp
-  COMMAND ${MAVEN_EXECUTABLE} compile -B
-  COMMAND ${MAVEN_EXECUTABLE} package -B $<$<BOOL:${BUILD_FAT_JAR}>:-Dfatjar=true>
   COMMAND ${MAVEN_EXECUTABLE} install -B $<$<BOOL:${SKIP_GPG}>:-Dgpg.skip=true>
   COMMAND ${CMAKE_COMMAND} -E touch ${JAVA_PROJECT_DIR}/timestamp
   DEPENDS
@@ -587,21 +588,26 @@ add_custom_command(
     ${JAVA_SRCS}
     Java${PROJECT_NAME}_proto
     ${JAVA_NATIVE_PROJECT_DIR}/timestamp
-    java_native_package
+    java_native_install
   BYPRODUCTS
     ${JAVA_PROJECT_DIR}/target
   COMMENT "Generate Java package ${JAVA_PROJECT} (${JAVA_PROJECT_DIR}/timestamp)"
   WORKING_DIRECTORY ${JAVA_PROJECT_DIR})
 
-add_custom_target(java_package ALL
+add_custom_target(java_install ALL
   DEPENDS
     ${JAVA_PROJECT_DIR}/timestamp
   WORKING_DIRECTORY ${JAVA_PROJECT_DIR})
 
+add_custom_target(java_package
+  COMMAND ${MAVEN_EXECUTABLE} package -B $<$<BOOL:${BUILD_FAT_JAR}>:-Dfatjar=true>
+  WORKING_DIRECTORY ${JAVA_PROJECT_DIR})
+add_dependencies(java_package java_install)
+
 add_custom_target(java_deploy
   COMMAND ${MAVEN_EXECUTABLE} deploy
   WORKING_DIRECTORY ${JAVA_PROJECT_DIR})
-add_dependencies(java_deploy java_package)
+add_dependencies(java_deploy java_install)
 
 #################
 ##  Java Test  ##
@@ -729,7 +735,7 @@ function(add_java_sample)
     DEPENDS
       ${SAMPLE_DIR}/pom.xml
       ${SAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME_LOWER}/samples/${SAMPLE_NAME}.java
-      java_package
+      java_install
     BYPRODUCTS
       ${SAMPLE_DIR}/target
     COMMENT "Compiling Java sample ${COMPONENT_NAME}/${SAMPLE_NAME}.java (${SAMPLE_DIR}/timestamp)"
@@ -819,7 +825,7 @@ if(NOT EXAMPLE_FILE_NAME)
     DEPENDS
       ${JAVA_EXAMPLE_DIR}/pom.xml
       ${JAVA_EXAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME}/${EXAMPLE_NAME}.java
-      java_package
+      java_install
     BYPRODUCTS
       ${JAVA_EXAMPLE_DIR}/target
     COMMENT "Compiling Java ${COMPONENT_NAME}/${EXAMPLE_NAME}.java (${JAVA_EXAMPLE_DIR}/timestamp)"
