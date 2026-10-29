@@ -39,6 +39,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/basis_representation.h"
@@ -174,6 +175,49 @@ void RevisedSimplex::SetStartingVariableValuesForNextSolve(
   variable_starting_values_ = values;
 }
 
+void RevisedSimplex::SetOldRowIndicesForNextSolve(
+    absl::Span<const RowIndex> old_row_of_new_row) {
+  old_row_of_new_row_.assign(old_row_of_new_row.begin(),
+                             old_row_of_new_row.end());
+}
+
+// Computes the dual edge squared norms of the new basis from the ones of the
+// previous basis. See SetOldRowIndicesForNextSolve(). The returned vector is
+// indexed by the new column indices, and a value of zero means unknown. It is
+// empty if the transfer is not possible.
+DenseRow RevisedSimplex::ComputeOldDualEdgeSquaredNormsByCol() const {
+  DenseRow result;
+  if (old_row_of_new_row_.empty()) return result;
+  if (old_row_of_new_row_.size() != num_rows_) return result;
+  if (!dual_edge_norms_.AreValid()) return result;
+
+  // Note that basis_ is still the basis of the previous problem here, and that
+  // because the structural columns are unchanged, the previous slack columns
+  // start at first_slack_col_ too.
+  const RowIndex old_num_rows = basis_.size();
+  const DenseColumn::ConstView old_norms = dual_edge_norms_.EdgeSquaredNorms();
+  if (old_norms.size() != old_num_rows) return result;
+  const ColIndex old_num_cols = first_slack_col_ + RowToColIndex(old_num_rows);
+  DenseRow old_norm_by_col(old_num_cols, 0.0);
+  for (RowIndex row(0); row < old_num_rows; ++row) {
+    const ColIndex col = basis_[row];
+    if (col.value() < 0 || col >= old_num_cols) return DenseRow();
+    old_norm_by_col[col] = old_norms[row];
+  }
+
+  result.assign(num_cols_, 0.0);
+  for (ColIndex col(0); col < first_slack_col_; ++col) {
+    result[col] = old_norm_by_col[col];
+  }
+  for (RowIndex row(0); row < num_rows_; ++row) {
+    const RowIndex old_row = old_row_of_new_row_[row.value()];
+    if (old_row.value() < 0 || old_row >= old_num_rows) continue;
+    result[first_slack_col_ + RowToColIndex(row)] =
+        old_norm_by_col[first_slack_col_ + RowToColIndex(old_row)];
+  }
+  return result;
+}
+
 SolveStatus RevisedSimplex::MinimizeFromTransposedMatrixWithSlack(
     const DenseRow& objective, Fractional objective_scaling_factor,
     Fractional objective_offset, TimeLimit& time_limit) {
@@ -253,6 +297,9 @@ SolveStatus RevisedSimplex::SolveInternalImpl(
   SCOPED_TIME_STAT(&function_stats_);
   Cleanup update_deterministic_time_on_return(
       [this, &time_limit]() { AdvanceDeterministicTime(time_limit); });
+
+  // This is only meaningful for the initialization of this solve.
+  old_row_of_new_row_.clear();
 
   SOLVER_LOG(logger_, "");
   primal_edge_norms_.SetTimeLimit(&time_limit);
@@ -638,9 +685,9 @@ SolveStatus RevisedSimplex::SolveInternalImpl(
                " infeasibility=", implied_lb);
     const Fractional tolerance = parameters_.solution_feasibility_tolerance();
     if (implied_lb < tolerance || error > tolerance) {
-      SOLVER_LOG(logger_,
-                 "DUAL_UNBOUNDED was reported, but the dual ray is not "
-                 "proving infeasibility with high enough tolerance");
+      SOLVER_LOG(logger_, GetSolveStatusString(solve_status),
+                 " was reported, but the dual ray is not proving infeasibility "
+                 "with high enough tolerance");
       if (parameters_.change_status_to_imprecise()) {
         solve_status = ImpreciseSolveStatus();
       }
@@ -1673,6 +1720,15 @@ AbnormalityStatus RevisedSimplex::Initialize(const LinearProgram& lp) {
 
 AbnormalityStatus RevisedSimplex::FinishInitialization(
     bool solve_from_scratch) {
+  // If requested, try to transfer the dual edge norms of the previous solve.
+  // This must be computed before we clear anything below.
+  DenseRow old_dual_norm_by_col;
+  if (solve_from_scratch && !solution_state_.IsEmpty() &&
+      !old_row_of_new_row_.empty()) {
+    old_dual_norm_by_col = ComputeOldDualEdgeSquaredNormsByCol();
+  }
+  old_row_of_new_row_.clear();
+
   // If we couldn't perform a "quick" warm start above, we can at least try to
   // reuse the variable statuses.
   if (solve_from_scratch && !solution_state_.IsEmpty()) {
@@ -1739,6 +1795,19 @@ AbnormalityStatus RevisedSimplex::FinishInitialization(
                    "RevisedSimplex is not using the warm start "
                    "basis because it is not factorizable.");
       }
+    }
+
+    // Transfer the old dual edge norms to the new basis. Note that basis_ was
+    // permuted by InitializeFirstBasis(), so we use the final basis here. The
+    // norms of the new basic variables (zero entries) will be computed exactly.
+    if (!solve_from_scratch && !old_dual_norm_by_col.empty() &&
+        parameters_.use_dual_simplex()) {
+      DCHECK_EQ(old_dual_norm_by_col.size(), num_cols_);
+      DenseColumn norms(num_rows_, 0.0);
+      for (RowIndex row(0); row < num_rows_; ++row) {
+        norms[row] = old_dual_norm_by_col[basis_[row]];
+      }
+      dual_edge_norms_.SetEdgeSquaredNorms(std::move(norms));
     }
   }
 

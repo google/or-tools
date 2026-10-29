@@ -65,6 +65,23 @@ class DualEdgeNorms {
   // these.
   void ResizeOnNewRows(RowIndex new_size);
 
+  // Returns true iff the norms are currently valid, that is the next call to
+  // GetEdgeSquaredNorms() will not trigger a full recomputation.
+  bool AreValid() const { return !recompute_edge_squared_norms_; }
+
+  // Returns the current norms without triggering any recomputation. These are
+  // only meaningful if AreValid() is true.
+  DenseColumn::ConstView EdgeSquaredNorms() const {
+    return edge_squared_norms_.const_view();
+  }
+
+  // Advanced usage. Replaces the current norms by the given ones, which must
+  // have one entry per row of the (refactorized) basis. Any entry that is not
+  // strictly positive is recomputed exactly. This is used to transfer the norms
+  // of a previous solve when the basis didn't change much, instead of paying
+  // for a full recomputation.
+  void SetEdgeSquaredNorms(DenseColumn norms);
+
   // If this is true, then the caller must re-factorize the basis before the
   // next call to GetEdgeSquaredNorms(). This is because the latter will
   // recompute the norms from scratch and therefore needs a hightened precision

@@ -578,12 +578,11 @@ void PrimalPrices::UpdateEnteringCandidates(const ColumnsToUpdate& cols) {
 
     // Optimization for speed (The function is about 30% faster than the code in
     // IsValidPrimalEnteringCandidate() or a switch() on variable_status[col]).
-    // This relies on the fact that (double1 > double2) returns a 1 or 0 result
-    // when converted to an int. It also uses an XOR (which appears to be
-    // faster) since the two conditions on the reduced cost are exclusive.
-    const bool is_dual_infeasible = Bitset64<ColIndex>::ConditionalXorOfTwoBits(
-        col, reduced_cost > tolerance, can_decrease, reduced_cost < -tolerance,
-        can_increase);
+    // It uses bitwise AND and XOR to avoid branches since the two conditions on
+    // the reduced cost are mutually exclusive.
+    const bool is_dual_infeasible =
+        ((reduced_cost > tolerance) & can_decrease[col]) ^
+        ((reduced_cost < -tolerance) & can_increase[col]);
     if (is_dual_infeasible) {
       DCHECK(reduced_costs_->IsValidPrimalEnteringCandidate(col));
       const Fractional price = Square(reduced_cost) / squared_norms[col];
