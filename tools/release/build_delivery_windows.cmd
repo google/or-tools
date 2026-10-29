@@ -126,6 +126,9 @@ echo Build cpp: ... | tee.exe -a build.log
 set Platform=any
 cmake -S. -Btemp_cpp -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DEPS=ON || exit 1
 cmake --build temp_cpp --config Release || exit 1
+cd temp_cpp
+cpack -B pack || exit 1
+cd ..
 echo DONE | tee.exe -a build.log
 
 FOR %%i IN (temp_cpp\pack\*.zip) do (
