@@ -23,6 +23,7 @@
 #include "absl/strings/string_view.h"
 #include "google/protobuf/message.h"
 #include "ortools/base/file.h"
+#include "ortools/base/options.h"
 
 namespace file {
 

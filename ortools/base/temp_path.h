@@ -20,6 +20,7 @@
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/file.h"
+#include "ortools/base/options.h"
 
 class TempPath {
  public:

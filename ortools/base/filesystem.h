@@ -20,6 +20,7 @@
 
 #include "absl/status/status.h"
 #include "ortools/base/file.h"
+#include "ortools/base/options.h"
 
 namespace file {
 
