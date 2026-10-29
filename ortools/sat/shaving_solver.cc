@@ -678,15 +678,17 @@ bool VariablesShavingSolver::ResetAndSolveModel(int64_t task_id, State* state,
   };
 
   bool has_no_overlap_2d = false;
+  bool unsat_during_copy = false;
   {
     absl::MutexLock lock(mutex_);
     if (!FindNextVar(state)) return false;
     if (!CopyModelConnectedToVar(state, local_model, shaving_proto,
                                  &has_no_overlap_2d)) {
-      return report_unsat();
+      unsat_during_copy = true;  // Report unsat after releasing lock.
     }
     ++num_vars_tried_;
   }
+  if (unsat_during_copy) return report_unsat();
 
   // Use the current best solution as hint.
   {
