@@ -444,12 +444,12 @@ bool CopyModel(const CpModelProto& in_proto, bool clear_internal_fields,
                CpModelProto* out_proto, Model* model);
 
 // Same as CopyModel() except that variable domains are read from domains and
-// constraints might be filtered.
-bool CopyModelAdvanced(const CpModelProto& in_proto, bool clear_internal_fields,
-                       absl::Span<const Domain> domains,
-                       std::function<bool(int)> active_constraints,
-                       std::vector<int>* interval_mapping,
-                       CpModelProto* out_proto, Model* model);
+// constraints might be filtered. Returns false if the model is infeasible.
+ABSL_MUST_USE_RESULT bool CopyModelAdvanced(
+    const CpModelProto& in_proto, bool clear_internal_fields,
+    absl::Span<const Domain> domains,
+    std::function<bool(int)> active_constraints,
+    std::vector<int>* interval_mapping, CpModelProto* out_proto, Model* model);
 
 // Accessing Domain can be expensive, so we maintain a vector of bool for the
 // hot spots.

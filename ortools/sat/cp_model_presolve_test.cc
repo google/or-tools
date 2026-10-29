@@ -378,7 +378,7 @@ TEST(PresolveCpModelTest, BasicLinearConstraintPresolve) {
   SolverLogger logger;
   CHECK(ClampVariableBounds(SatParameters(), &mp_model, &logger));
   ConvertMPModelProtoToCpModelProto(SatParameters(),
-                                    MPModelProtoWrapper(&mp_model),
+                                    MPModelProtoWrapper(std::move(mp_model)),
                                     /*num_clamped=*/0, &initial_model, &logger);
 
   const CpModelProto mapping_model = GetMappingModel(initial_model);
@@ -792,8 +792,8 @@ TEST(PresolveCpModelTest, LinMaxExprEqualTarget) {
     variables { domain: -16777224 domain: 1 }
     constraints {
       lin_max {
-        target { vars: -1 coeffs: 1 }
-        exprs { vars: -1 coeffs: 1 }
+        target { vars: 0 coeffs: -1 }
+        exprs { vars: 0 coeffs: -1 }
         exprs { vars: 0 coeffs: -10 offset: 1 }
       }
     }
@@ -8034,6 +8034,102 @@ TEST(PresolveCpModelTest, ModelWithoutVariables) {
 
   CpSolverResponse response = SolveWithParameters(cp_model, params);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+}
+
+// This mimics the structure of bab5.mps.gz: a few dense linear constraints
+// in which large groups of Booleans share the same coefficient. Each group
+// should be replaced by a single integer variable (its sum).
+//
+// Each Boolean also appears in a small cardinality constraint with 5 other
+// members of its group. Intersecting the common part with these used to split
+// each group into many small blocks.
+//
+// The first two Booleans have a "rare" coefficient pattern which coincides with
+// the one of the first group on half of the dense constraints only. Starting
+// the greedy search from them must not create a block mixing this group with
+// these two variables on just these constraints.
+TEST(PresolveCpModelTest, FindBigVerticalLinearOverlapWithRareColumns) {
+  constexpr int kNumGroups = 3;
+  constexpr int kGroupSize = 36;
+  constexpr int kSmallSize = 6;
+  constexpr int kNumRare = 2;
+  constexpr int kNumConstraints = 10;
+  constexpr int kNumVars = kNumRare + kNumGroups * kGroupSize;
+
+  for (int seed = 0; seed < 5; ++seed) {
+    CpModelProto initial_model;
+    for (int v = 0; v < kNumVars; ++v) {
+      IntegerVariableProto* var = initial_model.add_variables();
+      var->add_domain(0);
+      var->add_domain(1);
+    }
+    for (int c = 0; c < kNumConstraints; ++c) {
+      LinearConstraintProto* linear =
+          initial_model.add_constraints()->mutable_linear();
+      int64_t max_activity = 0;
+      const auto add_term = [&](int var, int64_t coeff) {
+        linear->add_vars(var);
+        linear->add_coeffs(coeff);
+        max_activity += coeff;
+      };
+      // Group g has coefficient 3 * (c + 1) + g, so the ratio between two
+      // constraints is different for each group.
+      for (int v = 0; v < kNumRare; ++v) {
+        add_term(v, c < kNumConstraints / 2 ? 3 * (c + 1) : 7 * (c + 1));
+      }
+      for (int g = 0; g < kNumGroups; ++g) {
+        for (int i = 0; i < kGroupSize; ++i) {
+          add_term(kNumRare + g * kGroupSize + i, 3 * (c + 1) + g);
+        }
+      }
+      linear->add_domain(0);
+      linear->add_domain(max_activity / 2);
+    }
+    for (int g = 0; g < kNumGroups; ++g) {
+      for (int start = 0; start < kGroupSize; start += kSmallSize) {
+        LinearConstraintProto* linear =
+            initial_model.add_constraints()->mutable_linear();
+        for (int i = start; i < start + kSmallSize; ++i) {
+          linear->add_vars(kNumRare + g * kGroupSize + i);
+          linear->add_coeffs(1);
+        }
+        linear->add_domain(0);
+        linear->add_domain(kSmallSize / 2);
+      }
+    }
+
+    SatParameters params;
+    params.set_random_seed(seed);
+    params.set_keep_all_feasible_solutions_in_presolve(true);
+    const CpModelProto presolved_model = PresolveForTest(initial_model, params);
+
+    // We should have exactly 3 new variables, one per group. Note that the
+    // upper bound of their domain can be reduced by propagation.
+    int num_integers = 0;
+    for (const IntegerVariableProto& var : presolved_model.variables()) {
+      if (var.domain(0) == 0 && var.domain(1) == 1) continue;
+      ++num_integers;
+      EXPECT_EQ(var.domain(0), 0) << "seed=" << seed;
+      EXPECT_GT(var.domain(1), kSmallSize) << "seed=" << seed;
+      EXPECT_LE(var.domain(1), kGroupSize) << "seed=" << seed;
+    }
+    EXPECT_EQ(num_integers, kNumGroups) << "seed=" << seed;
+
+    // And the dense constraints should now only contain the 3 sums and the 2
+    // rare variables. Note that the definitions of the sums are the only
+    // remaining constraints with more than kSmallSize terms.
+    int num_dense = 0;
+    for (const ConstraintProto& ct : presolved_model.constraints()) {
+      if (ct.constraint_case() != ConstraintProto::kLinear) continue;
+      if (ct.linear().domain(0) == 0 && ct.linear().domain(1) == 0) {
+        EXPECT_EQ(ct.linear().vars_size(), kGroupSize + 1) << "seed=" << seed;
+        continue;
+      }
+      EXPECT_LE(ct.linear().vars_size(), kSmallSize) << "seed=" << seed;
+      if (ct.linear().vars_size() == kNumGroups + kNumRare) ++num_dense;
+    }
+    EXPECT_EQ(num_dense, kNumConstraints) << "seed=" << seed;
+  }
 }
 
 }  // namespace

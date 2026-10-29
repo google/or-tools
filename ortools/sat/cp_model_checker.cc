@@ -1299,7 +1299,8 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
     }
   }
 
-  if (model.has_objective() && model.has_floating_point_objective()) {
+  if (!after_presolve && model.has_objective() &&
+      model.has_floating_point_objective()) {
     return "A model cannot have both an objective and a floating point "
            "objective.";
   }

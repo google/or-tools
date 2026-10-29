@@ -342,8 +342,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // propagation.
   bool PropagateLpConstraint(LinearConstraint ct);
 
-  // Returns number of non-basic variables with zero reduced costs.
-  int64_t CalculateDegeneracy();
+  // Returns the number of non-fixed non-basic variables with zero reduced costs
+  // and sets num_cols to the number of non-fixed columns in the LP.
+  int64_t CalculateDegeneracy(int64_t* num_cols = nullptr);
 
   // From a set of row multipliers (at CP scale), make them integer by
   // multiplying them by a power of two, rounding them, and dividing by their
@@ -444,6 +445,13 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   std::vector<double> col_factors_;
   std::vector<double> col_max_;
   std::vector<double> col_min_;
+
+  // True if the last call to ComputeIntegerLpScalingFactors() kept the column
+  // scaling factors of the previous LP, in which case the scaled rows that
+  // did not change are exactly the same as in the previous LP.
+  bool lp_scaling_is_incremental_ = false;
+  int num_rows_at_last_full_scaling_ = 0;
+  double max_row_ratio_at_last_full_scaling_ = 1.0;
 
   // This epsilon is related to the precision of the value/reduced_cost returned
   // by the LP once they have been scaled back into the CP domain. So for large

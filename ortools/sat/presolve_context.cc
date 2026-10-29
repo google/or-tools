@@ -2748,6 +2748,7 @@ bool CanonicalizeLinearExpressionInternal(
     int64_t new_coeff;
     {
       const int ref = proto->vars(i);
+      DCHECK(RefIsPositive(ref));
       const int var = PositiveRef(ref);
       const int64_t coeff =
           RefIsPositive(ref) ? proto->coeffs(i) : -proto->coeffs(i);

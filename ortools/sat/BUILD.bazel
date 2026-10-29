@@ -1736,6 +1736,7 @@ or_cc_library(
         "@abseil-cpp//absl/hash",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
@@ -3930,11 +3931,13 @@ or_cc_library(
     deps = [
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/util:logging",
+        "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:string_view",
         "@abseil-cpp//absl/types:span",
+        "@protobuf",
     ],
 )
 

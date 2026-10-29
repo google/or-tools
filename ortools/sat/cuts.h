@@ -428,6 +428,7 @@ class GUBHelper {
   std::vector<LiteralInCut> literals_;
   absl::flat_hash_set<Literal> already_seen_;
   absl::flat_hash_map<int, int> amo_count_;
+  absl::flat_hash_map<int, double> amo_score_;
 
   // Stats.
   int64_t num_improvements_ = 0;

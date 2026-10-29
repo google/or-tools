@@ -2407,10 +2407,16 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
   if (ct->enforcement_literal().empty()) {
     int num_fixed_variables = 0;
     for (int var_index = 0; var_index < num_exprs; ++var_index) {
-      CHECK(context->IntersectDomainWith(
-          vars[var_index],
-          Domain::FromValues({values_per_var[var_index].begin(),
-                              values_per_var[var_index].end()})));
+      if (!context->IntersectDomainWith(
+              vars[var_index],
+              Domain::FromValues({values_per_var[var_index].begin(),
+                                  values_per_var[var_index].end()}))) {
+        // Normally this would not happen since we canonicalize the table before
+        // calling ExpandCpModel. But the process of expand itself (for example
+        // of a previous constraint) can fix variables and/or create affine
+        // relationships that make the constraint not canonical anymore.
+        return;
+      }
       if (context->DomainOf(vars[var_index]).IsFixed()) {
         num_fixed_variables++;
       }

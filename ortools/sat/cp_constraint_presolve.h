@@ -35,6 +35,26 @@
 namespace operations_research {
 namespace sat {
 
+// Result of tilting a canonical 2-term linear inequality
+//   a1 * x1 + a2 * x2 <= B,  with x1 in [0, R1], x2 in [0, R2],
+// into the equivalent inequality new_a1 * x1 + new_a2 * x2 <= best_ub.
+struct TwoTermTilt {
+  int64_t new_a1;
+  int64_t new_a2;
+  int64_t best_ub;
+};
+
+// Finds the smallest positive integer coefficients (new_a1, new_a2) and
+// tightest right-hand side best_ub such that new_a1 * x1 + new_a2 * x2 <=
+// best_ub has the exact same integer solutions in [0, R1] x [0, R2] as
+// a1 * x1 + a2 * x2 <= B.
+//
+// Preconditions: 0 < a1 < a2, R1 > 0, R2 > 0, 0 <= B < a1 * R1 + a2 * R2, and
+// a1 * R1 + a2 * R2 fits in int64_t.
+// See go/cp-two-term-tilting for more details.
+TwoTermTilt TiltTwoTermConstraint(int64_t a1, int64_t a2, int64_t B, int64_t R1,
+                                  int64_t R2);
+
 // Presolves constraints of a CpModelProto one by one, in isolation.
 class CpConstraintPresolver {
  public:

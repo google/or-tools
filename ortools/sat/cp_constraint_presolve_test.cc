@@ -850,6 +850,49 @@ TEST(PresolveCpModelTest, DetectTwoTermTiltingRandom) {
   }
 }
 
+TEST(PresolveCpModelTest, TiltTwoTermConstraint) {
+  {
+    const TwoTermTilt tilt = TiltTwoTermConstraint(
+        /*a1=*/17, /*a2=*/40, /*B=*/100, /*R1=*/5, /*R2=*/5);
+    EXPECT_EQ(tilt.new_a1, 1);
+    EXPECT_EQ(tilt.new_a2, 2);
+    EXPECT_EQ(tilt.best_ub, 5);
+  }
+  {
+    const TwoTermTilt tilt = TiltTwoTermConstraint(
+        /*a1=*/17, /*a2=*/40, /*B=*/450, /*R1=*/10, /*R2=*/10);
+    EXPECT_EQ(tilt.new_a1, 2);
+    EXPECT_EQ(tilt.new_a2, 5);
+    EXPECT_EQ(tilt.best_ub, 55);
+  }
+
+  absl::BitGen random;
+  for (int iter = 0; iter < 500; ++iter) {
+    const int64_t a1 = absl::Uniform<int64_t>(random, 1, 100);
+    const int64_t a2 = absl::Uniform<int64_t>(random, a1 + 1, 200);
+    const int64_t R1 = absl::Uniform<int64_t>(random, 1, 50);
+    const int64_t R2 = absl::Uniform<int64_t>(random, 1, 50);
+    const int64_t B = absl::Uniform<int64_t>(random, 0, a1 * R1 + a2 * R2);
+
+    const TwoTermTilt tilt = TiltTwoTermConstraint(a1, a2, B, R1, R2);
+    ASSERT_GT(tilt.new_a1, 0);
+    ASSERT_GT(tilt.new_a2, 0);
+    ASSERT_LE(tilt.new_a1, a1);
+    ASSERT_LE(tilt.new_a2, a2);
+
+    bool tight = false;
+    for (int64_t x1 = 0; x1 <= R1; ++x1) {
+      for (int64_t x2 = 0; x2 <= R2; ++x2) {
+        const bool orig_feasible = (a1 * x1 + a2 * x2 <= B);
+        const int64_t tilted_lhs = tilt.new_a1 * x1 + tilt.new_a2 * x2;
+        ASSERT_EQ(orig_feasible, tilted_lhs <= tilt.best_ub);
+        if (orig_feasible && tilted_lhs == tilt.best_ub) tight = true;
+      }
+    }
+    EXPECT_TRUE(tight);
+  }
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

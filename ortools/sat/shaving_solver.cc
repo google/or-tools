@@ -524,7 +524,7 @@ bool VariablesShavingSolver::FindNextVar(State* state)
   return false;
 }
 
-void VariablesShavingSolver::CopyModelConnectedToVar(
+bool VariablesShavingSolver::CopyModelConnectedToVar(
     State* state, Model* local_model, CpModelProto* shaving_proto,
     bool* has_no_overlap_2d) ABSL_SHARED_LOCKS_REQUIRED(mutex_) {
   auto var_to_node = [](int var) { return var; };
@@ -579,9 +579,11 @@ void VariablesShavingSolver::CopyModelConnectedToVar(
   };
 
   std::vector<int> interval_mapping;
-  CopyModelAdvanced(model_proto_, /*clear_internal_fields=*/false, var_domains_,
-                    active_constraints, &interval_mapping, shaving_proto,
-                    local_model);
+  if (!CopyModelAdvanced(model_proto_, /*clear_internal_fields=*/false,
+                         var_domains_, active_constraints, &interval_mapping,
+                         shaving_proto, local_model)) {
+    return false;
+  }
 
   // Now copy the ignored constraints "partially".
   for (const int c : ignored_constraints) {
@@ -657,6 +659,8 @@ void VariablesShavingSolver::CopyModelConnectedToVar(
     FillDomainInProto(state->reduced_domain,
                       shaving_proto->mutable_variables(state->var_index));
   }
+
+  return true;
 }
 
 bool VariablesShavingSolver::ResetAndSolveModel(int64_t task_id, State* state,
@@ -666,12 +670,21 @@ bool VariablesShavingSolver::ResetAndSolveModel(int64_t task_id, State* state,
   *params = local_params_;
   params->set_random_seed(CombineSeed(local_params_.random_seed(), task_id));
 
+  auto report_unsat = [this, &state]() {
+    CpSolverResponse tmp_response;
+    tmp_response.set_status(CpSolverStatus::INFEASIBLE);
+    ProcessLocalResponse(tmp_response, *state);
+    return false;
+  };
+
   bool has_no_overlap_2d = false;
   {
     absl::MutexLock lock(mutex_);
     if (!FindNextVar(state)) return false;
-    CopyModelConnectedToVar(state, local_model, shaving_proto,
-                            &has_no_overlap_2d);
+    if (!CopyModelConnectedToVar(state, local_model, shaving_proto,
+                                 &has_no_overlap_2d)) {
+      return report_unsat();
+    }
     ++num_vars_tried_;
   }
 
@@ -718,10 +731,7 @@ bool VariablesShavingSolver::ResetAndSolveModel(int64_t task_id, State* state,
     const CpSolverStatus presolve_status =
         PresolveCpModel(context.get(), &postsolve_mapping);
     if (presolve_status == CpSolverStatus::INFEASIBLE) {
-      CpSolverResponse tmp_response;
-      tmp_response.set_status(CpSolverStatus::INFEASIBLE);
-      ProcessLocalResponse(tmp_response, *state);
-      return false;
+      return report_unsat();
     }
   }
 

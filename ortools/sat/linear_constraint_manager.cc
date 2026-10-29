@@ -296,11 +296,13 @@ bool LinearConstraintManager::MaybeRemoveSomeInactiveConstraints(
     }
 
     lp_constraints_[new_size] = constraint_index;
+    old_lp_row_of_lp_row_[new_size] = old_lp_row_of_lp_row_[i];
     solution_state->statuses[num_cols + glop::ColIndex(new_size)] = row_status;
     new_size++;
   }
   const int num_removed_constraints = lp_constraints_.size() - new_size;
   lp_constraints_.resize(new_size);
+  old_lp_row_of_lp_row_.resize(new_size);
   solution_state->statuses.resize(num_cols + glop::ColIndex(new_size));
   if (num_removed_constraints > 0) {
     VLOG(3) << "Removed " << num_removed_constraints << " constraints";
@@ -725,6 +727,13 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
   std::vector<double> new_constraints_efficacies;
   std::vector<double> new_constraints_orthogonalities;
 
+  // Start with the identity mapping, see OldLpRowOfLpRow(). This is updated
+  // by MaybeRemoveSomeInactiveConstraints() and when we add new constraints.
+  old_lp_row_of_lp_row_.resize(lp_constraints_.size());
+  for (int i = 0; i < lp_constraints_.size(); ++i) {
+    old_lp_row_of_lp_row_[i] = glop::RowIndex(i);
+  }
+
   const bool simplify_constraints =
       integer_trail_.num_level_zero_enqueues() > last_simplification_timestamp_;
   last_simplification_timestamp_ = integer_trail_.num_level_zero_enqueues();
@@ -734,6 +743,7 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
   // of potential new constraints.
   bool rescale_active_count = false;
   const double tolerance = 1e-6;
+  std::vector<bool> in_lp_constraint_simplified;
   {
     DeterministicTimer<{.scale = 1.7e-9}> timer(time_limit_);
     uint64_t work_done = 0;
@@ -756,7 +766,13 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
             ComputeL2Norm(constraint_infos_[i].constraint);
         FillDerivedFields(&constraint_infos_[i]);
 
-        if (constraint_infos_[i].is_in_lp) current_lp_is_changed_ = true;
+        if (constraint_infos_[i].is_in_lp) {
+          current_lp_is_changed_ = true;
+          if (in_lp_constraint_simplified.empty()) {
+            in_lp_constraint_simplified.assign(constraint_infos_.size(), false);
+          }
+          in_lp_constraint_simplified[i.value()] = true;
+        }
         equiv_constraints_.erase(constraint_infos_[i].hash);
         constraint_infos_[i].hash =
             ComputeHashOfTerms(constraint_infos_[i].constraint);
@@ -802,6 +818,13 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
       }
     }
     timer.Advance(work_done);
+  }
+  if (!in_lp_constraint_simplified.empty()) {
+    for (int i = 0; i < lp_constraints_.size(); ++i) {
+      if (in_lp_constraint_simplified[lp_constraints_[i].value()]) {
+        old_lp_row_of_lp_row_[i] = glop::kInvalidRow;
+      }
+    }
   }
 
   // Bump activities of active constraints in LP.
@@ -982,6 +1005,7 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
       ++num_added;
       current_lp_is_changed_ = true;
       lp_constraints_.push_back(best_candidate);
+      old_lp_row_of_lp_row_.push_back(glop::kInvalidRow);
       last_added_candidate = best_candidate;
     } else {
       // Abort the addition loop.

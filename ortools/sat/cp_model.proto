@@ -513,6 +513,12 @@ message FloatObjectiveProto {
 
   // The optimization direction. The default is to minimize.
   bool maximize = 4;
+
+  // Internal fields used by the solver. Do not set.
+  // The two vectors are of the same size as vars and contains the min and max
+  // of the domain of the variables at the time the objective was scaled.
+  repeated int64 domain_mins = 5;
+  repeated int64 domain_maxs = 6;
 }
 
 // Define the strategy to follow when the solver needs to take a new decision.

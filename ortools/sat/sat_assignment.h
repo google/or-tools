@@ -32,7 +32,43 @@ namespace sat {
 // Holds the current variable assignment of the solver.
 // Each variable can be unassigned or be assigned to true or false.
 class VariablesAssignment {
+ private:
+  template <typename ViewType>
+  class ViewImpl {
+   public:
+    explicit ViewImpl(const VariablesAssignment& assignment)
+        : view_(assignment.assignment_.const_view()) {}
+    explicit ViewImpl(VariablesAssignment* assignment)
+        : view_(assignment->assignment_.view()) {}
+
+    bool VariableIsAssigned(BooleanVariable var) const {
+      return LiteralIsAssigned(Literal(var, true));
+    }
+    bool LiteralIsTrue(Literal literal) const { return view_[literal.Index()]; }
+    bool LiteralIsFalse(Literal literal) const {
+      return view_[literal.NegatedIndex()];
+    }
+    bool LiteralIsAssigned(Literal literal) const {
+      return LiteralIsTrue(literal) || LiteralIsFalse(literal);
+    }
+    void AssignFromTrueLiteral(Literal literal) {
+      DCHECK(!VariableIsAssigned(literal.Variable()));
+      view_.Set(literal.Index());
+    }
+    void UnassignLiteral(Literal literal) {
+      DCHECK(VariableIsAssigned(literal.Variable()));
+      view_.Clear(literal.Index());
+      view_.Clear(literal.NegatedIndex());
+    }
+
+   private:
+    ViewType view_;
+  };
+
  public:
+  using ConstView = ViewImpl<Bitset64<LiteralIndex>::ConstView>;
+  using View = ViewImpl<Bitset64<LiteralIndex>::View>;
+
   VariablesAssignment() = default;
   explicit VariablesAssignment(int num_variables) { Resize(num_variables); }
 
@@ -55,7 +91,8 @@ class VariablesAssignment {
   // This can only be called on an assigned variable.
   void UnassignLiteral(Literal literal) {
     DCHECK(VariableIsAssigned(literal.Variable()));
-    assignment_.ClearTwoBits(literal.Index());
+    assignment_.Clear(literal.Index());
+    assignment_.Clear(literal.NegatedIndex());
   }
 
   // Literal getters. Note that both can be false, in which case the
@@ -67,12 +104,12 @@ class VariablesAssignment {
     return assignment_.IsSet(literal.Index());
   }
   bool LiteralIsAssigned(Literal literal) const {
-    return assignment_.AreOneOfTwoBitsSet(literal.Index());
+    return LiteralIsTrue(literal) || LiteralIsFalse(literal);
   }
 
   // Returns true iff the given variable is assigned.
   bool VariableIsAssigned(BooleanVariable var) const {
-    return assignment_.AreOneOfTwoBitsSet(LiteralIndex(var.value() << 1));
+    return LiteralIsAssigned(Literal(var, true));
   }
 
   // Returns the literal of the given variable that is assigned to true.
@@ -87,7 +124,8 @@ class VariablesAssignment {
 
   // Expose internal for performance critical code.
   // You should not use this in normal code.
-  Bitset64<LiteralIndex>::View GetBitsetView() { return assignment_.view(); }
+  View GetMutableView() { return View(this); }
+  ConstView GetConstView() const { return ConstView(*this); }
 
   std::string DebugString() const {
     std::string result;
@@ -108,26 +146,12 @@ class VariablesAssignment {
   // - assignment_.IsSet(literal.Index() ^ 1]) means literal is false.
   // - If both are false, then the variable (and the literal) is unassigned.
   Bitset64<LiteralIndex> assignment_;
-
-  friend class AssignmentView;
 };
 
 // For "hot" loop, it is better not to reload the Bitset64 pointer on each
 // check.
-class AssignmentView {
- public:
-  explicit AssignmentView(const VariablesAssignment& assignment)
-      : view_(assignment.assignment_.const_view()) {}
-
-  bool LiteralIsFalse(Literal literal) const {
-    return view_[literal.NegatedIndex()];
-  }
-
-  bool LiteralIsTrue(Literal literal) const { return view_[literal.Index()]; }
-
- private:
-  Bitset64<LiteralIndex>::ConstView view_;
-};
+using AssignmentView = VariablesAssignment::ConstView;
+using MutableAssignmentView = VariablesAssignment::View;
 
 // Information about a variable assignment.
 struct AssignmentInfo {

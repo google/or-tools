@@ -288,7 +288,12 @@ class CpModelPresolver {
   void FindAlmostIdenticalLinearConstraints();
   void FindBigAtMostOneAndLinearOverlap(ActivityBoundHelper* helper);
   void FindBigHorizontalLinearOverlap(ActivityBoundHelper* helper);
-  void FindBigVerticalLinearOverlap(ActivityBoundHelper* helper);
+
+  // Only blocks that reduce the number of non-zeros by at least min_saved_nz
+  // are considered. We call this function early in the presolve with a large
+  // threshold to catch big rectangles before other rules alter them.
+  void FindBigVerticalLinearOverlap(ActivityBoundHelper* helper,
+                                    int64_t min_saved_nz = 30);
 
   // Heuristic to merge clauses that differ in only one literal.
   // The idea is to regroup a bunch of clauses into a single bool_and.
