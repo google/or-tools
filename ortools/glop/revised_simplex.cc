@@ -641,6 +641,104 @@ SolveStatus RevisedSimplex::SolveInternalImpl(
     }
   }
 
+  // TODO: b/553095297 - Add DualInfeasible there when it returns a primal ray.
+  if (solve_status.Is<SolveStatus::PrimalUnbounded>()) {
+    // Validate the primal ray that proves dual infeasibility.
+    //
+    // Using the same notations as in Achim Koberstein, "The dual simplex
+    // method, techniques for a fast and stable implementation", PhD,
+    // Paderborn, Univ., 2005. (https://d-nb.info/978580478/34) (using b=0
+    // though):
+    //
+    // Primal and dual are:
+    //
+    //   min  c^T⋅x        max  l^T⋅v + u^T⋅w
+    //   s.t. A⋅x = 0      s.t. A^T⋅y + v + w = c
+    //        l ≤ x ≤ u         v ≥ 0
+    //                          w ≤ 0
+    //
+    // A primal ray is r such that:
+    //
+    //   A⋅r = 0                  (1)
+    //   c^T⋅r < 0                (2)
+    //   ∀ j / l_j > -∞, r_j ≥ 0  (3.a)
+    //   ∀ j / u_j < +∞, r_j ≤ 0  (3.b)
+    //   (note that x_j is boxed both (3.a) & (3.b) apply: r_j = 0)
+    //
+    // If we multiply the dual problem constraint by r we get:
+    //
+    //   y^T⋅A⋅r + (v + w)^T⋅r = c^T⋅r
+    //   y^T⋅0   + (v + w)^T⋅r = c^T⋅r < 0 (from (1) and (2))
+    //             (v + w)^T⋅r < 0
+    //
+    // This proves that the dual is infeasible as, if we assume (y, v, w) is
+    // feasible then:
+    //
+    // ∀ j:
+    //   * if l_j > -∞ ∧ u_j < +∞ (x_j is boxed):
+    //     r_j = 0 (from (3.a) & (3.b))
+    //     thus (v_j + w_j)⋅r_j = 0
+    //   * if l_j > -∞ ∧ u_j = +∞ (x_j is lower-bounded):
+    //     v_j + w_j ≥ 0 ∧ r_j ≥ 0 (from (3.a))
+    //     thus (v_j + w_j)⋅r_j ≥ 0
+    //   * if l_j = -∞ ∧ u_j < +∞ (x_j is upper-bounded):
+    //     v_j + w_j ≤ 0 ∧ r_j ≤ 0 (from (3.a))
+    //     thus (v_j + w_j)⋅r_j ≥ 0
+    //   * if l_j = -∞ ∧ u_j = +∞ (x_j is free):
+    //     v_j + w_j = 0
+    //     thus (v_j + w_j)⋅r_j = 0
+    //
+    // ⇒ ∀ j, v_j⋅r_j + w_j⋅r_j ≥ 0 ⇒ (v + w)^T⋅r ≥ 0
+    //
+    // So we have both:
+    //
+    //   (v + w)^T⋅r ≥ 0
+    //   (v + w)^T⋅r < 0
+    //
+    // This is impossible, hence the dual can't be feasible if we have a primal
+    // ray.
+    //
+    // The proof rely on (2), the contribution to the objective of the ray:
+    //
+    //   c^T⋅r < 0
+    //
+    // We evaluate the quality of the ray by computing this value and the
+    // maximum deviation to 0 for values with incorrect sign. Note that
+    // objective_ is negated when solving a maximization problem, thus we check
+    // the same sign as well.
+    const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
+    const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
+    Fractional objective_contribution = 0.0;
+    Fractional max_error = 0.0;
+    for (ColIndex col(0); col < num_cols_; ++col) {
+      const Fractional coeff = solution_primal_ray_[col];  // r_j
+      if (coeff > 0.0) {
+        if (upper_bounds[col] == kInfinity) {
+          objective_contribution += coeff * objective_[col];
+        } else {
+          max_error = std::max(max_error, coeff);
+        }
+      } else if (coeff < 0.0) {
+        if (lower_bounds[col] == -kInfinity) {
+          objective_contribution += coeff * objective_[col];
+        } else {
+          max_error = std::max(max_error, -coeff);
+        }
+      }
+    }
+    SOLVER_LOG(logger_, "Primal ray max error=", max_error,
+               " objective contribution=", objective_contribution);
+    const Fractional tolerance = parameters_.solution_feasibility_tolerance();
+    if (objective_contribution > -tolerance || max_error > tolerance) {
+      SOLVER_LOG(logger_, GetSolveStatusString(solve_status),
+                 " was reported, but the primal ray does not have a "
+                 "significant contribution to the objective");
+      if (parameters_.change_status_to_imprecise()) {
+        solve_status = ImpreciseSolveStatus();
+      }
+    }
+  }
+
   if (solve_status.Is<SolveStatus::DualUnbounded>()) {
     const Fractional tolerance = parameters_.solution_feasibility_tolerance();
     if (reduced_costs_.ComputeMaximumDualResidual() > tolerance ||
