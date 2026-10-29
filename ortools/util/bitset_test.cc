@@ -547,6 +547,23 @@ TEST(SparseBitset, ResetAllToFalse) {
   for (int i = 0; i < kSize; ++i) EXPECT_EQ(bitset[i], false);
 }
 
+TEST(SparseBitsetTest, CopyFrom) {
+  SparseBitset<TestIndex> src(TestIndex(100));
+  src.Set(TestIndex(7));
+  src.Set(TestIndex(70));
+
+  SparseBitset<TestIndex> dst(TestIndex(50));
+  dst.Set(TestIndex(3));
+  dst.CopyFrom(src);
+
+  EXPECT_EQ(dst.size(), TestIndex(100));
+  EXPECT_THAT(dst.PositionsSetAtLeastOnce(),
+              ElementsAre(TestIndex(7), TestIndex(70)));
+  for (TestIndex i(0); i < 100; ++i) {
+    EXPECT_EQ(dst[i], i == TestIndex(7) || i == TestIndex(70));
+  }
+}
+
 TEST(Bitset64Test, NegativeSize) {
   if (!DEBUG_MODE) {
     Bitset64<TestIndex> bitset(TestIndex(-10));
@@ -634,26 +651,13 @@ TEST(Bitset64Test, IntegerSpecialization) {
   for (int i = 0; i < 3 * kSize; ++i) EXPECT_FALSE(bitset.IsSet(i));
 }
 
-TEST(Bitset64Test, PushBack) {
-  Bitset64<TestIndex> bitset;
-  EXPECT_EQ(TestIndex(0), bitset.size());
-  const TestIndex kLarge(100000);
-  for (TestIndex i(0); i < kLarge; ++i) {
-    bitset.PushBack(i.value() % 2 ? true : false);
-    EXPECT_EQ(i + 1, bitset.size());
-  }
-  EXPECT_EQ(kLarge, bitset.size());
-  for (TestIndex i(0); i < kLarge; ++i) {
-    EXPECT_EQ(i.value() % 2 ? true : false, bitset.IsSet(i));
-  }
-}
-
 TEST(Bitset64Test, Resize) {
   Bitset64<TestIndex> bitset;
   EXPECT_EQ(TestIndex(0), bitset.size());
   const TestIndex kLarge(100000);
   for (TestIndex i(0); i < kLarge; ++i) {
-    bitset.PushBack(i.value() % 2 ? true : false);
+    bitset.Resize(i + 1);
+    bitset.Set(i, i.value() % 2 ? true : false);
     EXPECT_EQ(i + 1, bitset.size());
   }
   EXPECT_EQ(kLarge, bitset.size());
@@ -691,109 +695,20 @@ TEST(Bitset64Test, Iterator) {
   EXPECT_TRUE(it == next);
 }
 
-TEST(Bitset64Test, DebugString) {
-  const char* kExpectedBitset1 =
-      "100000010000001000000100000010000001000000100000010000001000000100000010"
-      "0000010000001000000100000010";
-  const char* kExpectedBitset2 =
-      "10010010010010010010010010010010010010010010010010";
-  const char* kExpectedBitset3 =
-      "10000000000000010000000000000010000000000000010000";
+TEST(Bitset64Test, CopyBucket) {
   Bitset64<TestIndex> bitset(TestIndex(100));
   Bitset64<TestIndex> bitset2(TestIndex(50));
-  Bitset64<TestIndex> bitset3(TestIndex(50));
   for (TestIndex i(0); i < 100; ++i) bitset.Set(i, (i % 7) == 0);
-  for (TestIndex i(0); i < 50; ++i) bitset2.Set(i, (i % 3) == 0);
-  for (TestIndex i(0); i < 50; ++i) bitset3.Set(i, (i % 15) == 0);
-  EXPECT_EQ(kExpectedBitset1, bitset.DebugString());
-  EXPECT_EQ(kExpectedBitset2, bitset2.DebugString());
-  EXPECT_EQ(kExpectedBitset3, bitset3.DebugString());
-}
-
-TEST(Bitset64Test, SetContentFromBitsetAcrossTypes) {
-  Bitset64<TestIndex> bitset(TestIndex(100));
-  {
-    Bitset64<int64_t> bitset2(50);
-    bitset2.Set(7);
-    bitset.SetContentFromBitset<int64_t>(bitset2);
-  }
-  for (TestIndex i(0); i < TestIndex(100); i++) {
-    SCOPED_TRACE(i.value());
-    if (i == TestIndex(7)) {
-      EXPECT_TRUE(bitset[i]);
-    } else {
-      EXPECT_FALSE(bitset[i]);
-    }
-  }
-}
-
-TEST(Bitset64Test, SetContentFromBitsetSameSizeAcrossTypes) {
-  Bitset64<TestIndex> bitset(TestIndex(100));
-  {
-    Bitset64<int64_t> bitset2(100);
-    bitset2.Set(7);
-    bitset.SetContentFromBitset<int64_t>(bitset2);
-  }
-  for (TestIndex i(0); i < TestIndex(100); i++) {
-    SCOPED_TRACE(i.value());
-    if (i == TestIndex(7)) {
-      EXPECT_TRUE(bitset[i]);
-    } else {
-      EXPECT_FALSE(bitset[i]);
-    }
-  }
-}
-
-TEST(Bitset64Test, SetContentFromBitset) {
-  Bitset64<TestIndex> bitset(TestIndex(100));
-  Bitset64<TestIndex> bitset2(TestIndex(50));
-  Bitset64<TestIndex> bitset3(TestIndex(50));
-  for (TestIndex i(0); i < 100; ++i) bitset.Set(i, (i % 7) == 0);
-  for (TestIndex i(0); i < 50; ++i) bitset2.Set(i, (i % 3) == 0);
-  for (TestIndex i(0); i < 50; ++i) bitset3.Set(i, (i % 15) == 0);
-  bitset.SetContentFromBitset(bitset2);
-  for (TestIndex i(0); i < 50; ++i) {
-    EXPECT_EQ(bitset[i], (i % 3) == 0);
-  }
-  for (TestIndex i(50); i < 100; ++i) {
-    EXPECT_EQ(bitset[i], (i % 7) == 0);
-  }
-  bitset3.SetContentFromBitset(bitset2);
-  for (TestIndex i(0); i < 50; ++i) {
-    EXPECT_EQ(bitset3[i], (i % 3) == 0);
-  }
-  for (TestIndex i(0); i < 50; ++i) bitset3.Set(i, (i % 15) == 0);
-  bitset3.SetContentFromBitsetOfSameSize(bitset2);
-  for (TestIndex i(0); i < 50; ++i) {
-    EXPECT_EQ(bitset3[i], (i % 3) == 0);
-  }
-  for (TestIndex i(0); i < 100; ++i) bitset.Set(i, (i % 7) == 0);
-  bitset2.SetContentFromBitset(bitset);
-  for (TestIndex i(0); i < 50; ++i) {
-    EXPECT_EQ(bitset2[i], (i % 7) == 0);
-  }
-  EXPECT_EQ(100, bitset.size());
-  EXPECT_EQ(50, bitset2.size());
-  EXPECT_EQ(50, bitset3.size());
   for (TestIndex i(0); i < 50; ++i) bitset2.Set(i, (i % 3) == 0);
   bitset.CopyBucket(bitset2, TestIndex(0));
   for (TestIndex i(0); i < 50; ++i) {
     EXPECT_EQ(bitset[i], (i % 3) == 0);
   }
+  for (TestIndex i(50); i < 64; ++i) {
+    EXPECT_FALSE(bitset[i]);
+  }
   for (TestIndex i(64); i < 100; ++i) {
     EXPECT_EQ(bitset[i], (i % 7) == 0);
-  }
-  for (TestIndex i(0); i < 100; ++i) {
-    for (TestIndex j(0); j < 100; ++j) bitset.Set(j, (j % 7) == 0);
-    Bitset64<TestIndex> other_bitset(i);
-    for (TestIndex j(0); j < i; ++j) other_bitset.Set(j, (j % 3) == 0);
-    bitset.SetContentFromBitset(other_bitset);
-    for (TestIndex j(0); j < i; ++j) {
-      EXPECT_EQ(bitset[j], (j % 3) == 0);
-    }
-    for (TestIndex j(i); j < 100; ++j) {
-      EXPECT_EQ(bitset[j], (j % 7) == 0);
-    }
   }
 }
 

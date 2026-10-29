@@ -16,16 +16,15 @@
 #ifndef ORTOOLS_UTIL_BITSET_H_
 #define ORTOOLS_UTIL_BITSET_H_
 
-#include <string.h>
-
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <iterator>
-#include <string>
 #include <tuple>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/log/check.h"
 
 namespace operations_research {
@@ -432,7 +431,6 @@ class Bitset64 {
   };
 
  public:
-  using value_type = IndexType;
   using ConstView = ViewImpl<const uint64_t>;
   using View = ViewImpl<uint64_t>;
 
@@ -446,13 +444,6 @@ class Bitset64 {
 
   // Returns how many bits this Bitset64 can hold.
   IndexType size() const { return size_; }
-
-  // Appends value at the end of the bitset.
-  void PushBack(bool value) {
-    ++size_;
-    data_.resize(BitLength64(Value(size_)), 0);
-    Set(size_ - 1, value);
-  }
 
   // Resizes the Bitset64 to the given number of bits. New bits are sets to 0.
   void resize(int size) { Resize(IndexType(size)); }
@@ -469,22 +460,19 @@ class Bitset64 {
     data_.resize(BitLength64(Value(size_)), 0);
   }
 
-  // Changes the number of bits the Bitset64 can hold and set all of them to 0.
+  // Resizes the bitset to `size` bits and resets all bits to 0.
   void ClearAndResize(IndexType size) {
     DCHECK_GE(Value(size), 0);
     size_ = Value(size) > 0 ? size : IndexType(0);
-
-    // Memset is 4x faster than data_.assign() as of 19/03/2014.
-    // TODO(user): Ideally if a realloc happens, we don't need to copy the old
-    // data...
-    const size_t bit_length = static_cast<size_t>(BitLength64(Value(size_)));
-    const size_t to_clear = std::min(data_.size(), bit_length);
-    data_.resize(bit_length, 0);
-    memset(data_.data(), 0, to_clear * sizeof(int64_t));
+    data_.resize(BitLength64(Value(size_)));
+    ClearAll();
   }
 
-  // Sets all bits to 0.
-  void ClearAll() { memset(data_.data(), 0, data_.size() * sizeof(int64_t)); }
+  // Resets all bits to 0.
+  void ClearAll() {
+    // Lowered by the compiler to a single `memset` call.
+    absl::c_fill(data_, uint64_t{0});
+  }
 
   // Sets the bit at position i to 0.
   void Clear(IndexType i) {
@@ -533,66 +521,34 @@ class Bitset64 {
     data_[offset] = other.data_[offset];
   }
 
-  // Copies "other" to "this". The bitsets do not have to be of the same size.
-  // If "other" is smaller, high order bits are not changed. If "other" is
-  // larger, its high order bits are ignored. In any case "this" is not resized.
-  template <typename OtherIndexType>
-  void SetContentFromBitset(const Bitset64<OtherIndexType>& other) {
-    const int64_t min_size = std::min(data_.size(), other.data_.size());
-    if (min_size == 0) return;
-    const uint64_t last_common_bucket = data_[min_size - 1];
-    memcpy(data_.data(), other.data_.data(), min_size * sizeof(uint64_t));
-    if (data_.size() >= other.data_.size()) {
-      const uint64_t bitmask = kAllBitsButLsb64
-                               << BitPos64(other.Value(other.size() - 1));
-      data_[min_size - 1] &= ~bitmask;
-      data_[min_size - 1] |= (bitmask & last_common_bucket);
-    }
+  // Replaces `*this` with the bitwise intersection of `*this` and `other`. The
+  // bitsets do not have to be the same size; if `other` is smaller,
+  // higher-order bits are cleared to 0.
+  void Intersection(const Bitset64& other) {
+    const auto it =
+        absl::c_transform(data_, other.data_, data_.begin(), std::bit_and<>{});
+    std::fill(it, data_.end(), uint64_t{0});
   }
 
-  // Same as SetContentFromBitset where "this" and "other" have the same size.
-  template <typename OtherIndexType>
-  void SetContentFromBitsetOfSameSize(const Bitset64<OtherIndexType>& other) {
-    DCHECK_EQ(Value(size()), other.Value(other.size()));
-    memcpy(data_.data(), other.data_.data(), data_.size() * sizeof(uint64_t));
-  }
-
-  // Sets "this" to be the intersection of "this" and "other". The
-  // bitsets do not have to be the same size. If other is smaller, all
-  // the higher order bits are assumed to be 0.
-  void Intersection(const Bitset64<IndexType>& other) {
-    const int min_size = std::min(data_.size(), other.data_.size());
-    uint64_t* const d = data_.data();
-    const uint64_t* const o = other.data_.data();
-    for (int i = 0; i < min_size; ++i) {
-      d[i] &= o[i];
-    }
-    for (int i = min_size; i < data_.size(); ++i) {
-      d[i] = 0;
-    }
-  }
-
-  // This one assume both given bitset to be of the same size.
-  void SetToIntersectionOf(const Bitset64<IndexType>& a,
-                           const Bitset64<IndexType>& b) {
+  // Sets `*this` to the bitwise intersection of `a` and `b`, which must have
+  // the same `size()`.
+  void SetToIntersectionOf(const Bitset64& a, const Bitset64& b) {
     DCHECK_EQ(a.size(), b.size());
     Resize(a.size());
-
-    // Copy buckets.
-    const int num_buckets = a.data_.size();
-    for (int i = 0; i < num_buckets; ++i) {
-      data_[i] = a.data_[i] & b.data_[i];
-    }
+    absl::c_transform(a.data_, b.data_, data_.begin(), std::bit_and<>{});
   }
 
-  // Sets "this" to be the union of "this" and "other". The
-  // bitsets do not have to be the same size. If other is smaller, all
-  // the higher order bits are assumed to be 0.
-  void Union(const Bitset64<IndexType>& other) {
-    const int min_size = std::min(data_.size(), other.data_.size());
-    for (int i = 0; i < min_size; ++i) {
-      data_[i] |= other.data_[i];
-    }
+  // Replaces `*this` with the bitwise union of `*this` and `other`. The bitsets
+  // do not have to be the same size; if `other` is smaller, higher-order bits
+  // of `*this` are unchanged, and if `other` is larger, its extra bits are
+  // ignored.
+  void Union(const Bitset64& other) {
+    absl::c_transform(data_, other.data_, data_.begin(), std::bit_or<>{});
+  }
+
+  // Returns true if all bits are 0.
+  bool IsAllFalse() const {
+    return absl::c_all_of(data_, [](uint64_t bucket) { return bucket == 0; });
   }
 
   // Class to iterate over the bit positions at 1 of a Bitset64.
@@ -674,20 +630,6 @@ class Bitset64 {
   Iterator begin() const { return Iterator(*this); }
   Iterator end() const { return Iterator::EndIterator(*this); }
 
-  // Returns a 0/1 string representing the bitset.
-  std::string DebugString() const {
-    std::string output;
-    for (IndexType i(0); i < size(); ++i) {
-      output += IsSet(i) ? "1" : "0";
-    }
-    return output;
-  }
-
-  bool IsAllFalse() const {
-    return std::all_of(data_.begin(), data_.end(),
-                       [](uint64_t v) { return v == 0; });
-  }
-
  private:
   // Returns the value of the index type.
   // This function is specialized below to work with IntType and int64_t.
@@ -695,9 +637,6 @@ class Bitset64 {
 
   IndexType size_;
   std::vector<uint64_t> data_;
-
-  template <class OtherIndexType>
-  friend class Bitset64;
 };
 
 // Specialized version of Bitset64 that allows to query the last bit set more
@@ -840,8 +779,7 @@ class SparseBitset {
   }
 
   void CopyFrom(const SparseBitset& other) {
-    bitset_.ClearAndResize(other.size());
-    bitset_.SetContentFromBitsetOfSameSize(other.bitset_);
+    bitset_ = other.bitset_;
     to_clear_.assign(other.to_clear_.begin(), other.to_clear_.end());
   }
 

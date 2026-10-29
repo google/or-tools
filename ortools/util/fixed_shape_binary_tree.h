@@ -177,9 +177,12 @@ class FixedShapeBinaryTree {
 
   // Given a range of values, return the largest node in the tree associated to
   // an interval [int_begin, int_end] that satisfies:
-  // - int_end == first_leaf
-  // - int_begin >= last_leaf.
-  // For example, GetNodeEndOfRange(0, largest_leaf_index) = Root().
+  // - int_end == last_leaf.
+  // - int_begin >= first_leaf.
+  // Note that unlike GetNodeStartOfRange(), this method does not round
+  // `largest_leaf_index_` up to the full binary tree capacity, so
+  // GetNodeEndOfRange(0, largest_leaf_index) = Root() holds only when the
+  // number of leaves (`largest_leaf_index + 1`) is a power of two.
   //
   // This corresponds to a last node (including all its descendants) to do a DFS
   // traversal to cover all intervals fully contained in the range [begin, end].
