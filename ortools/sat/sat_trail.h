@@ -110,10 +110,10 @@ class Trail {
         : trail_ptr_(trail_ptr),
           current_info_(current_info),
           info_ptr_(info_ptr),
-          bitset_(assignment->GetBitsetView()) {}
+          assignment_view_(assignment->GetMutableView()) {}
 
     void EnqueueAtLevel(Literal true_literal, int level) {
-      bitset_.Set(true_literal);
+      assignment_view_.AssignFromTrueLiteral(true_literal);
       AssignmentInfo* info = info_ptr_ + true_literal.Variable().value();
       *info = *current_info_;
       info->level = level;
@@ -121,7 +121,7 @@ class Trail {
     }
 
     void EnqueueWithUnitReason(Literal true_literal) {
-      bitset_.Set(true_literal);
+      assignment_view_.AssignFromTrueLiteral(true_literal);
       AssignmentInfo* info = info_ptr_ + true_literal.Variable().value();
       *info = *current_info_;
       info->level = 0;
@@ -130,17 +130,17 @@ class Trail {
     }
 
     bool LiteralIsTrue(Literal literal) const {
-      return bitset_[literal.Index()];
+      return assignment_view_.LiteralIsTrue(literal);
     }
     bool LiteralIsFalse(Literal literal) const {
-      return bitset_[literal.NegatedIndex()];
+      return assignment_view_.LiteralIsFalse(literal);
     }
 
    private:
     Literal* trail_ptr_;
     AssignmentInfo* current_info_;
     AssignmentInfo* info_ptr_;
-    Bitset64<LiteralIndex>::View bitset_;
+    MutableAssignmentView assignment_view_;
   };
   EnqueueHelper GetEnqueueHelper(int propagator_id) {
     current_info_.type = propagator_id;

@@ -21,6 +21,7 @@
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/util/logging.h"
 
@@ -120,18 +121,25 @@ class MPModelProtoWrapper {
   // Note that the given MPModelProto must pass
   // MPModelProtoValidationBeforeConversion(). This might crash if this is not
   // the case.
-  explicit MPModelProtoWrapper(MPModelProto* mp_model,
+  //
+  // The wrapper will take ownership of the MPModelProto taken by value. So the
+  // construction should be
+  //   MPModelProtoWrapper wrapper(std::move(mp_model), logger);
+  // in the usual case where we don't need the original MPModelProto anymore.
+  // Note that the (slightly modified) input model is still accessible via
+  // `mutable_underlying_model()`.
+  explicit MPModelProtoWrapper(MPModelProto mp_model,
                                SolverLogger* logger = nullptr);
 
-  absl::string_view name() const { return mp_model_->name(); }
+  absl::string_view name() const { return mp_model_.name(); }
 
-  // Variable. Same api for now, with the objective embbeded.
-  int num_variables() const { return mp_model_->variable().size(); }
+  // Variable. Same API for now, with the objective embedded.
+  int num_variables() const { return mp_model_.variable().size(); }
   const MPVariableProto& variables(int v) const {
-    return mp_model_->variable(v);
+    return mp_model_.variable(v);
   }
   MPVariableProto* mutable_variables(int v) {
-    return mp_model_->mutable_variable(v);
+    return mp_model_.mutable_variable(v);
   }
 
   // Constraints.
@@ -143,22 +151,32 @@ class MPModelProtoWrapper {
     return &constraints_[c];
   }
 
+  // Returns whether the underlying model has a non-constant objective. The
+  // possibly non-zero objective_offset() is not taken into account.
+  bool has_non_constant_objective() const {
+    return has_non_constant_objective_;
+  }
+
+  // Returns whether the original model was a maximization problem.
+  bool is_original_model_maximize() const { return objective_scaling_ < 0.0; }
+
   // We change the objective to minimization. The "original" objective will
   // always be (inner_objective + objective_offset()) * objective_scaling().
   // If it was a maximization, we will have scaling set to -1.
-  double objective_offset() const { return mp_model_->objective_offset(); }
+  double objective_offset() const { return mp_model_.objective_offset(); }
   void set_objective_offset(double value) {
-    mp_model_->set_objective_offset(value);
+    mp_model_.set_objective_offset(value);
   }
   double objective_scaling() const { return objective_scaling_; }
 
   // WARNING: This do not see "enforcement" and the model should be manipulated
   // with care. It is forbidden to change the number of variable or constraint.
-  MPModelProto* mutable_underlying_model() { return mp_model_; }
+  MPModelProto* mutable_underlying_model() { return &mp_model_; }
 
  private:
   double objective_scaling_;
-  MPModelProto* mp_model_;
+  bool has_non_constant_objective_;
+  MPModelProto mp_model_;
   std::vector<EnforcedLinearConstraint> constraints_;
 };
 

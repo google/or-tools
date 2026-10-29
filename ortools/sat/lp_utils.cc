@@ -2899,17 +2899,36 @@ double ComputeTrueObjectiveLowerBound(
   std::vector<double> rounded_coeffs(vars.size());
   std::vector<int64_t> lbs(vars.size());
   std::vector<int64_t> ubs(vars.size());
-  TightSum adjusted_lb;
-  adjusted_lb.Add(inner_integer_objective_lower_bound);
-  TightSum offset_sum;
-  offset_sum.Add(float_obj.maximize() ? -float_obj.offset()
-                                      : float_obj.offset());
   for (int i = 0; i < vars.size(); ++i) {
     const auto& domain =
         model_proto_with_integer_objective_and_domains.variables(vars[i])
             .domain();
     lbs[i] = domain[0];
     ubs[i] = domain[domain.size() - 1];
+  }
+  const FloatObjectiveProto& mapping_float_obj =
+      model_proto_with_integer_objective_and_domains.floating_point_objective();
+  if (!mapping_float_obj.domain_mins().empty()) {
+    DCHECK_EQ(mapping_float_obj.vars_size(),
+              mapping_float_obj.domain_mins_size());
+    DCHECK_EQ(mapping_float_obj.vars_size(),
+              mapping_float_obj.domain_maxs_size());
+    for (int i = 0; i < mapping_float_obj.vars_size(); ++i) {
+      const int var = mapping_float_obj.vars(i);
+      if (var < var_to_index.size() && var_to_index[var] != -1) {
+        const int idx = var_to_index[var];
+        lbs[idx] = mapping_float_obj.domain_mins(i);
+        ubs[idx] = mapping_float_obj.domain_maxs(i);
+      }
+    }
+  }
+
+  TightSum adjusted_lb;
+  adjusted_lb.Add(inner_integer_objective_lower_bound);
+  TightSum offset_sum;
+  offset_sum.Add(float_obj.maximize() ? -float_obj.offset()
+                                      : float_obj.offset());
+  for (int i = 0; i < vars.size(); ++i) {
     const auto [c_lb, c_ub] =
         float_coeffs[i].size() == 1
             ? std::make_pair(float_coeffs[i][0], float_coeffs[i][0])

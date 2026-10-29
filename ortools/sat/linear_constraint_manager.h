@@ -232,6 +232,15 @@ class LinearConstraintManager {
     return lp_constraints_;
   }
 
+  // For each row of the current LP (see LpConstraints()), the index of the
+  // same constraint in the LP before the last call to ChangeLp(), or
+  // glop::kInvalidRow if the constraint was added by this last call. This is
+  // only valid right after a call to ChangeLp() and is used to transfer
+  // information like the dual edge norms between consecutive LPs.
+  const std::vector<glop::RowIndex>& OldLpRowOfLpRow() const {
+    return old_lp_row_of_lp_row_;
+  }
+
   // To simplify CutGenerator api.
   const util_intops::StrongVector<IntegerVariable, double>& LpValues() {
     return expanded_lp_solution_;
@@ -337,6 +346,9 @@ class LinearConstraintManager {
 
   // The subset of constraints currently in the lp.
   std::vector<ConstraintIndex> lp_constraints_;
+
+  // See OldLpRowOfLpRow().
+  std::vector<glop::RowIndex> old_lp_row_of_lp_row_;
 
   // We keep a map from the hash of our constraint terms to their position in
   // constraints_. This is an optimization to detect duplicate constraints. We

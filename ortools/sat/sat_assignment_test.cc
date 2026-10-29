@@ -43,6 +43,29 @@ TEST(VariablesAssignmentTest, Api) {
   EXPECT_FALSE(assignment.LiteralIsTrue(Literal(var2, true)));
   EXPECT_TRUE(assignment.LiteralIsFalse(Literal(var2, true)));
   EXPECT_FALSE(assignment.LiteralIsFalse(Literal(var2, false)));
+  EXPECT_TRUE(assignment.LiteralIsAssigned(Literal(var2, true)));
+  EXPECT_EQ(assignment.GetTrueLiteralForAssignedVariable(var2),
+            Literal(var2, false));
+}
+
+TEST(VariablesAssignmentTest, Views) {
+  BooleanVariable var0(0);
+  BooleanVariable var1(1);
+
+  VariablesAssignment assignment(2);
+  MutableAssignmentView mutable_view = assignment.GetMutableView();
+  const AssignmentView const_view(assignment);
+
+  mutable_view.AssignFromTrueLiteral(Literal(var0, true));
+  EXPECT_TRUE(const_view.VariableIsAssigned(var0));
+  EXPECT_FALSE(const_view.VariableIsAssigned(var1));
+  EXPECT_TRUE(const_view.LiteralIsTrue(Literal(var0, true)));
+  EXPECT_TRUE(const_view.LiteralIsFalse(Literal(var0, false)));
+  EXPECT_FALSE(const_view.LiteralIsTrue(Literal(var1, true)));
+  EXPECT_FALSE(const_view.LiteralIsFalse(Literal(var1, true)));
+
+  mutable_view.UnassignLiteral(Literal(var0, true));
+  EXPECT_FALSE(const_view.VariableIsAssigned(var0));
 }
 
 }  // namespace

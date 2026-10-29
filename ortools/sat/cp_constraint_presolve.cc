@@ -4753,41 +4753,32 @@ bool CpConstraintPresolver::DetectSimpleSum(int c, ConstraintProto* ct) {
 
 namespace {
 
-// Exact mathematical floor division: floor(num / den) for den > 0.
-absl::int128 FloorDiv128(absl::int128 num, absl::int128 den) {
-  if (num >= 0) return num / den;
-  return -((-num + den - 1) / den);
-}
-
 // Computes max_{x in [L, U]} (n * x + d * floor((B - a1 * x) / a2))
 // in O(log(min(a1, a2))) time using the Euclidean algorithm.
-// Assumes a1 >= 0, a2 > 0, and L <= U.
-absl::int128 MaxLinearFloor(absl::int128 n, absl::int128 d, absl::int128 a1,
-                            absl::int128 a2, absl::int128 B, absl::int128 L,
-                            absl::int128 U) {
-  const absl::int128 offset = n * L;
+// Assumes n >= 0, d >= 0, a1 >= 0, a2 > 0, 0 <= L <= U, and a1 * U <= B.
+int64_t MaxLinearFloor(int64_t n, int64_t d, int64_t a1, int64_t a2, int64_t B,
+                       int64_t L, int64_t U) {
+  const int64_t offset = n * L;
   B -= a1 * L;
-  const absl::int128 N = U - L;
+  const int64_t N = U - L;
 
   if (a1 == 0 || N == 0) {
-    return offset + d * FloorDiv128(B, a2) + std::max<absl::int128>(0, n * N);
-  }
-  if (n < 0) {
-    // Mirror x <- N - x so the linear slope (-n) becomes strictly positive.
-    return offset + n * N +
-           MaxLinearFloor(-n, -d, a1, a2, a1 * N - B + a2 - 1, 0, N);
+    return offset + d * (B / a2) + n * N;
   }
   if (a1 >= a2) {
-    const absl::int128 k = a1 / a2;
-    const absl::int128 r = a1 % a2;
+    const int64_t k = a1 / a2;
+    const int64_t r = a1 % a2;
+    if (d > n / k) {
+      return offset + d * (B / a2);
+    }
     return offset + MaxLinearFloor(n - d * k, d, r, a2, B, 0, N);
   }
 
   // Now n >= 0 and 0 < a1 < a2. Group by step height y = floor((B - a1*x)/a2):
   // y = y_min is maximized at x = N, and each y in [y_min + 1, y_max] is
   // maximized at its rightmost column x = floor((B - a2 * y) / a1).
-  const absl::int128 y_min = FloorDiv128(B - a1 * N, a2);
-  const absl::int128 y_max = FloorDiv128(B, a2);
+  const int64_t y_min = (B - a1 * N) / a2;
+  const int64_t y_max = B / a2;
   if (y_min == y_max) {
     return offset + n * N + d * y_min;
   }
@@ -4796,11 +4787,36 @@ absl::int128 MaxLinearFloor(absl::int128 n, absl::int128 d, absl::int128 a1,
 }
 
 // Computes min_{x in [L, U]} (n * x + d * floor((B - a1 * x) / a2))
-// in O(log(min(a1, a2))) time.
-absl::int128 MinLinearFloor(absl::int128 n, absl::int128 d, absl::int128 a1,
-                            absl::int128 a2, absl::int128 B, absl::int128 L,
-                            absl::int128 U) {
-  return -MaxLinearFloor(-n, -d, a1, a2, B, L, U);
+// in O(log(min(a1, a2))) time using the Euclidean algorithm.
+// Assumes n >= 0, d >= 0, a1 >= 0, a2 > 0, 0 <= L <= U, and a1 * U <= B.
+int64_t MinLinearFloor(int64_t n, int64_t d, int64_t a1, int64_t a2, int64_t B,
+                       int64_t L, int64_t U) {
+  const int64_t offset = n * L;
+  B -= a1 * L;
+  const int64_t N = U - L;
+
+  if (a1 == 0 || N == 0) {
+    return offset + d * (B / a2);
+  }
+  if (a1 >= a2) {
+    const int64_t k = a1 / a2;
+    const int64_t r = a1 % a2;
+    if (d > n / k) {
+      return offset + n * N + d * ((B - a1 * N) / a2);
+    }
+    return offset + MinLinearFloor(n - d * k, d, r, a2, B, 0, N);
+  }
+
+  // Now n >= 0 and 0 < a1 < a2. Group by step height y = floor((B - a1*x)/a2):
+  // y = y_max is minimized at x = 0, and each y in [y_min, y_max - 1] is
+  // minimized at its leftmost column x = 1 + floor((B - a2 * (y + 1)) / a1).
+  const int64_t y_min = (B - a1 * N) / a2;
+  const int64_t y_max = B / a2;
+  if (y_min == y_max) {
+    return offset + d * y_max;
+  }
+  return offset + std::min(d * y_max, n + MinLinearFloor(d, n, a2, a1, B - a2,
+                                                         y_min, y_max - 1));
 }
 
 // Evaluates if (n, d) is a valid tilt for the shifted constraint by computing
@@ -4808,20 +4824,19 @@ absl::int128 MinLinearFloor(absl::int128 n, absl::int128 d, absl::int128 a1,
 // min(n * x1' + d * x2') over infeasible points (`min_infeas`). If
 // `max_feas < min_infeas`, sets `*b_prime_out = max_feas` (the new B').
 bool EvaluateTiltCandidate(int64_t n, int64_t d, int64_t a1, int64_t a2,
-                           absl::int128 B_prime, absl::int128 U_prime,
-                           absl::int128 infeas_start, bool right_clamped,
-                           absl::int128* b_prime_out) {
+                           int64_t B_prime, int64_t U_prime,
+                           int64_t infeas_start, bool right_clamped,
+                           int64_t* b_prime_out) {
   if (n <= 0 || d <= 0) return false;
-  const absl::int128 max_feas =
-      MaxLinearFloor(n, d, a1, a2, B_prime, 0, U_prime);
-  absl::int128 min_infeas = absl::Int128Max();
+  const int64_t max_feas = MaxLinearFloor(n, d, a1, a2, B_prime, 0, U_prime);
+  int64_t min_infeas = kint64max;
   if (infeas_start <= U_prime) {
     min_infeas = std::min(
         min_infeas,
         MinLinearFloor(n, d, a1, a2, B_prime, infeas_start, U_prime) + d);
   }
   if (!right_clamped) {
-    min_infeas = std::min(min_infeas, absl::int128(n) * (U_prime + 1));
+    min_infeas = std::min(min_infeas, n * (U_prime + 1));
   }
   if (max_feas < min_infeas) {
     *b_prime_out = max_feas;
@@ -4831,6 +4846,88 @@ bool EvaluateTiltCandidate(int64_t n, int64_t d, int64_t a1, int64_t a2,
 }
 
 }  // namespace
+
+TwoTermTilt TiltTwoTermConstraint(int64_t a1, int64_t a2, int64_t B, int64_t R1,
+                                  int64_t R2) {
+  DCHECK_GT(a1, 0);
+  DCHECK_LT(a1, a2);
+  DCHECK_GT(R1, 0);
+  DCHECK_GT(R2, 0);
+  DCHECK_GE(B, 0);
+  DCHECK_LT(B, a1 * R1 + a2 * R2);
+
+  // Transform the constraint so that the positive quadrant is only constrained
+  // by a1 * x1' + a2 * x2' = B'.
+  // Shift x1 and x2 by (s1, s2) so that if x1' < 0 there is no constraint on
+  // x2', and if x2' < 0 there is no constraint on x1'. The active problem
+  // reduces to the positive quadrant:
+  //   a1 * x1' + a2 * x2' <= B', with x1' in [0, U'], x2' >= 0.
+  const bool top_clamped = (B >= a2 * R2);
+  const bool right_clamped = (B >= a1 * R1);
+  const int64_t s1 = top_clamped ? ((B - a2 * R2) / a1) : 0;
+  const int64_t s2 = right_clamped ? ((B - a1 * R1) / a2) : 0;
+  const int64_t B_prime = B - a1 * s1 - a2 * s2;
+  const int64_t U_prime = right_clamped ? (R1 - s1) : (B_prime / a1);
+  const int64_t infeas_start = top_clamped ? 1 : 0;
+
+  // Minimize (n, d) and B' simultaneously in the positive quadrant by
+  // traversing the continued fraction expansion of a1 / a2 and binary searching
+  // the semi-convergents at the first valid quotient step.
+  //
+  // Advance through continued fraction stages of a1 / a2 until the stage
+  // endpoint (n_end, d_end) is a valid tilt. Starts at the 0th convergent
+  // (0, 1) (invalid) and always terminates at or before (a1 / gcd, a2 / gcd).
+  int64_t n_prev2 = 0;
+  int64_t n_prev1 = 1;
+  int64_t d_prev2 = 1;
+  int64_t d_prev1 = 0;
+  int64_t rem_num = a1;
+  int64_t rem_den = a2;
+  int64_t c_k = 0;
+  int64_t best_b_prime = 0;
+  int64_t n_end = 0;
+  int64_t d_end = 1;
+  while (!EvaluateTiltCandidate(n_end, d_end, a1, a2, B_prime, U_prime,
+                                infeas_start, right_clamped, &best_b_prime)) {
+    DCHECK_NE(rem_num, 0);
+    n_prev2 = n_prev1;
+    n_prev1 = n_end;
+    d_prev2 = d_prev1;
+    d_prev1 = d_end;
+
+    c_k = rem_den / rem_num;
+    const int64_t rem_next = rem_den % rem_num;
+    rem_den = rem_num;
+    rem_num = rem_next;
+
+    n_end = c_k * n_prev1 + n_prev2;
+    d_end = c_k * d_prev1 + d_prev2;
+  }
+
+  // Binary search semi-convergents m in (0, c_k] within that stage.
+  // Invariant: m = low is invalid (false), m = high is valid (true).
+  int64_t low = 0;
+  int64_t high = c_k;
+  while (high - low > 1) {
+    const int64_t mid = low + (high - low) / 2;
+    const int64_t n_mid = mid * n_prev1 + n_prev2;
+    const int64_t d_mid = mid * d_prev1 + d_prev2;
+    int64_t b_prime_mid = 0;
+    if (EvaluateTiltCandidate(n_mid, d_mid, a1, a2, B_prime, U_prime,
+                              infeas_start, right_clamped, &b_prime_mid)) {
+      high = mid;
+      best_b_prime = b_prime_mid;
+    } else {
+      low = mid;
+    }
+  }
+  const int64_t new_a1 = high * n_prev1 + n_prev2;
+  const int64_t new_a2 = high * d_prev1 + d_prev2;
+
+  // Transform back by removing the shift (s1, s2).
+  const int64_t best_ub = best_b_prime + new_a1 * s1 + new_a2 * s2;
+  return {new_a1, new_a2, best_ub};
+}
 
 bool CpConstraintPresolver::DetectTwoTermTilting(int c, ConstraintProto* ct) {
   if (ct->constraint_case() != ConstraintProto::kLinear) return false;
@@ -4867,97 +4964,24 @@ bool CpConstraintPresolver::DetectTwoTermTilting(int c, ConstraintProto* ct) {
   DCHECK_GT(R1, 0);
   DCHECK_GT(R2, 0);
 
-  const absl::int128 max_canonical_activity =
-      absl::int128(a1) * R1 + absl::int128(a2) * R2;
+  const int64_t max_canonical_activity = a1 * R1 + a2 * R2;
   const bool use_ub = (canonical.ub < max_canonical_activity);
   const bool use_lb = (canonical.lb > 0);
 
   // Tilting hyperplanes is only exact for one-sided inequalities.
   if (use_ub == use_lb) return false;
 
-  const absl::int128 B = use_ub ? absl::int128(canonical.ub)
-                                : (max_canonical_activity - canonical.lb);
+  const int64_t B =
+      use_ub ? canonical.ub : (max_canonical_activity - canonical.lb);
 
-  // Step 2: Transform the constraint so that the positive quadrant is only
-  // constrained by a1 * x1' + a2 * x2' = B'.
-  // Shift x1 and x2 by (s1, s2) so that if x1' < 0 there is no constraint on
-  // x2', and if x2' < 0 there is no constraint on x1'. The active problem
-  // reduces to the positive quadrant:
-  //   a1 * x1' + a2 * x2' <= B', with x1' in [0, U'], x2' >= 0.
-  const bool top_clamped = (B >= absl::int128(a2) * R2);
-  const bool right_clamped = (B >= absl::int128(a1) * R1);
-  const absl::int128 s1 = top_clamped ? ((B - absl::int128(a2) * R2) / a1) : 0;
-  const absl::int128 s2 =
-      right_clamped ? ((B - absl::int128(a1) * R1) / a2) : 0;
-  const absl::int128 B_prime = B - a1 * s1 - a2 * s2;
-  const absl::int128 U_prime = right_clamped ? (R1 - s1) : (B_prime / a1);
-  const absl::int128 infeas_start = top_clamped ? 1 : 0;
-
-  // Step 3: Minimize (n, d) and B' simultaneously in the positive quadrant by
-  // traversing the continued fraction expansion of a1 / a2 and binary searching
-  // the semi-convergents at the first valid quotient step.
-  //
-  // Step 3a: Advance through continued fraction stages of a1 / a2 until the
-  // stage endpoint (n_end, d_end) is a valid tilt. Starts at the 0th convergent
-  // (0, 1) (invalid) and always terminates at or before (a1 / gcd, a2 / gcd).
-  int64_t n_prev2 = 0;
-  int64_t n_prev1 = 1;
-  int64_t d_prev2 = 1;
-  int64_t d_prev1 = 0;
-  int64_t rem_num = a1;
-  int64_t rem_den = a2;
-  int64_t c_k = 0;
-  absl::int128 best_b_prime = 0;
-  int64_t n_end = 0;
-  int64_t d_end = 1;
-  while (!EvaluateTiltCandidate(n_end, d_end, a1, a2, B_prime, U_prime,
-                                infeas_start, right_clamped, &best_b_prime)) {
-    DCHECK_NE(rem_num, 0);
-    n_prev2 = n_prev1;
-    n_prev1 = n_end;
-    d_prev2 = d_prev1;
-    d_prev1 = d_end;
-
-    c_k = rem_den / rem_num;
-    const int64_t rem_next = rem_den % rem_num;
-    rem_den = rem_num;
-    rem_num = rem_next;
-
-    n_end = c_k * n_prev1 + n_prev2;
-    d_end = c_k * d_prev1 + d_prev2;
-  }
-
-  // Step 3b: Binary search semi-convergents m in (0, c_k] within that stage.
-  // Invariant: m = low is invalid (false), m = high is valid (true).
-  int64_t low = 0;
-  int64_t high = c_k;
-  while (high - low > 1) {
-    const int64_t mid = low + (high - low) / 2;
-    const int64_t n_mid = mid * n_prev1 + n_prev2;
-    const int64_t d_mid = mid * d_prev1 + d_prev2;
-    absl::int128 b_prime_mid = 0;
-    if (EvaluateTiltCandidate(n_mid, d_mid, a1, a2, B_prime, U_prime,
-                              infeas_start, right_clamped, &b_prime_mid)) {
-      high = mid;
-      best_b_prime = b_prime_mid;
-    } else {
-      low = mid;
-    }
-  }
-  const int64_t new_a1 = high * n_prev1 + n_prev2;
-  const int64_t new_a2 = high * d_prev1 + d_prev2;
+  const auto [new_a1, new_a2, best_ub] =
+      TiltTwoTermConstraint(a1, a2, B, R1, R2);
 
   if (new_a1 >= a1 && new_a2 >= a2) return false;
 
-  // Step 4: Transform back by removing the shift (s1, s2) and rewrite the
-  // constraint.
-  const absl::int128 best_ub =
-      best_b_prime + absl::int128(new_a1) * s1 + absl::int128(new_a2) * s2;
-  const int64_t new_shifted_ub = use_ub ? static_cast<int64_t>(best_ub) : 0;
+  const int64_t new_shifted_ub = use_ub ? best_ub : 0;
   const int64_t new_shifted_lb =
-      use_ub ? 0
-             : static_cast<int64_t>(absl::int128(new_a1) * R1 +
-                                    absl::int128(new_a2) * R2 - best_ub);
+      use_ub ? 0 : (new_a1 * R1 + new_a2 * R2 - best_ub);
 
   context_->UpdateRuleStats(
       "linear: reduced coefficients with 2-term exact tilting");

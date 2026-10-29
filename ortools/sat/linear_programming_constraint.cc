@@ -702,15 +702,71 @@ void LinearProgrammingConstraint::ComputeIntegerLpScalingFactors() {
   const int num_rows = integer_lp_.size();
   const int num_cols = integer_variables_.size();
 
-  // Assign vectors.
-  const double infinity = std::numeric_limits<double>::infinity();
-  row_factors_.assign(num_rows, 1.0);
-  col_factors_.assign(num_cols, 1.0);
-
   // Cache pointers to avoid refetching them.
   IntegerValue* coeffs = integer_lp_coeffs_.data();
   glop::ColIndex* cols = integer_lp_cols_.data();
+
+  // We only recompute the column scaling factors from scratch if the LP size
+  // changed a lot since the last time we did so. Otherwise, we keep them and
+  // just equilibrate the rows. This way, the scaled version of the rows that
+  // did not change is exactly the same as before, which allows the simplex to
+  // transfer more information (like the dual edge norms) between consecutive
+  // solves. This is also what most MIP solvers do when they add cuts.
+  const double infinity = std::numeric_limits<double>::infinity();
+  const auto& old_row_of_row = constraint_manager_.OldLpRowOfLpRow();
+  lp_scaling_is_incremental_ =
+      col_factors_.size() == num_cols && col_max_.size() == num_cols &&
+      old_row_of_row.size() == num_rows && !row_factors_.empty() &&
+      num_rows_at_last_full_scaling_ > 0 &&
+      num_rows <= 2 * num_rows_at_last_full_scaling_ &&
+      2 * num_rows >= num_rows_at_last_full_scaling_;
+  if (lp_scaling_is_incremental_) {
+    std::vector<double> new_row_factors(num_rows, 1.0);
+    const double* col_factors = col_factors_.data();
+    const double* col_max = col_max_.data();
+    const double max_allowed_ratio =
+        std::max(1e4, 2.0 * max_row_ratio_at_last_full_scaling_);
+    for (int row = 0; row < num_rows; ++row) {
+      const glop::RowIndex old_row = old_row_of_row[row];
+      if (old_row != glop::kInvalidRow &&
+          old_row.value() < row_factors_.size()) {
+        new_row_factors[row] = row_factors_[old_row.value()];
+        continue;
+      }
+      double max_scaled = 0.0;
+      double min_scaled = infinity;
+      const LinearConstraintInternal& ct = integer_lp_[RowIndex(row)];
+      for (int i = 0; i < ct.num_terms; ++i) {
+        const int index = ct.start_in_buffer + i;
+        const int col = cols[index].value();
+        if (col_max[col] == 0.0) {
+          lp_scaling_is_incremental_ = false;
+          break;
+        }
+        const double coeff = static_cast<double>(coeffs[index].value());
+        const double scaled = col_factors[col] * std::abs(coeff);
+        max_scaled = std::max(max_scaled, scaled);
+        min_scaled = std::min(min_scaled, scaled);
+      }
+      if (!lp_scaling_is_incremental_) break;
+      if (ct.num_terms == 0) continue;
+      if (max_scaled > max_allowed_ratio * min_scaled) {
+        lp_scaling_is_incremental_ = false;
+        break;
+      }
+      new_row_factors[row] = 1.0 / max_scaled;
+    }
+    if (lp_scaling_is_incremental_) {
+      row_factors_ = std::move(new_row_factors);
+      return;
+    }
+  }
+  num_rows_at_last_full_scaling_ = num_rows;
+
+  // Assign vectors.
+  row_factors_.assign(num_rows, 1.0);
   double* row_factors = row_factors_.data();
+  col_factors_.assign(num_cols, 1.0);
   double* col_factors = col_factors_.data();
 
   col_min_.assign(num_cols, infinity);
@@ -762,8 +818,10 @@ void LinearProgrammingConstraint::ComputeIntegerLpScalingFactors() {
   }
 
   // Now we equilibrate (i.e. just divide by the max) the row
+  max_row_ratio_at_last_full_scaling_ = 1.0;
   for (int row = 0; row < num_rows; ++row) {
     double max_scaled = 0.0;
+    double min_scaled = infinity;
     const LinearConstraintInternal& ct = integer_lp_[RowIndex(row)];
     for (int i = 0; i < ct.num_terms; ++i) {
       const int index = ct.start_in_buffer + i;
@@ -771,9 +829,14 @@ void LinearProgrammingConstraint::ComputeIntegerLpScalingFactors() {
       const double coeff = static_cast<double>(coeffs[index].value());
       const double scaled_magnitude = col_factors[col] * std::abs(coeff);
       max_scaled = std::max(max_scaled, scaled_magnitude);
+      min_scaled = std::min(min_scaled, scaled_magnitude);
     }
     if (ct.num_terms == 0) continue;
     row_factors[row] = 1.0 / max_scaled;
+    if (min_scaled > 0.0) {
+      max_row_ratio_at_last_full_scaling_ = std::max(
+          max_row_ratio_at_last_full_scaling_, max_scaled / min_scaled);
+    }
   }
 
   // And finally the columns.
@@ -2241,8 +2304,8 @@ void LinearProgrammingConstraint::AddZeroHalfCuts() {
 void LinearProgrammingConstraint::UpdateSimplexIterationLimit(
     const int64_t min_iter, const int64_t max_iter) {
   if (parameters_.linearization_level() < 2) return;
-  const int64_t num_degenerate_columns = CalculateDegeneracy();
-  const int64_t num_cols = simplex_.GetProblemNumCols().value();
+  int64_t num_cols = 0;
+  const int64_t num_degenerate_columns = CalculateDegeneracy(&num_cols);
   if (num_cols <= 0) {
     return;
   }
@@ -2253,13 +2316,15 @@ void LinearProgrammingConstraint::UpdateSimplexIterationLimit(
     // signal to increase the iterations or punish less for degeneracy compared
     // to the other part.
     if (is_degenerate_) {
-      next_simplex_iter_ /= std::max(int64_t{1}, decrease_factor);
+      next_simplex_iter_ =
+          (num_cols / 40) / std::max(int64_t{1}, decrease_factor);
     } else {
       next_simplex_iter_ *= 2;
     }
   } else if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
     if (is_degenerate_) {
-      next_simplex_iter_ /= std::max(int64_t{1}, 2 * decrease_factor);
+      next_simplex_iter_ =
+          (num_cols / 40) / std::max(int64_t{1}, 2 * decrease_factor);
     } else {
       // This is the most common case. We use the size of the problem to
       // determine the limit and ignore the previous limit.
@@ -2416,6 +2481,15 @@ bool LinearProgrammingConstraint::Propagate() {
       if (!CreateLpFromConstraintManager()) {
         sat_solver_->NotifyThatModelIsUnsat();
         return integer_trail_->ReportConflict({});
+      }
+
+      // If the scaling of the unchanged rows is the same as before, this
+      // allows the simplex to transfer the dual steepest edge norms of the
+      // previous solve instead of recomputing all of them, which can be the
+      // bottleneck on large LPs.
+      if (lp_scaling_is_incremental_) {
+        simplex_.SetOldRowIndicesForNextSolve(
+            constraint_manager_.OldLpRowOfLpRow());
       }
 
       // If we didn't add any new constraint, we delay the next Solve() since
@@ -2709,12 +2783,15 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
       //
       // Note that because we know that limit * abs_coeff will never overflow
       // because we used infinity_norms_[row] above.
+      const IntegerVariable var = integer_variables_[col.value()];
+      const IntegerValue lb = integer_trail_->LowerBound(var);
+      const IntegerValue ub = integer_trail_->UpperBound(var);
       const IntegerValue abs_coeff = IntTypeAbs(coeff);
       const IntegerValue current_magnitude = IntTypeAbs(current);
       const IntegerValue overflow_threshold =
           std::max(IntegerValue(0), kMaxWantedCoeff - current_magnitude);
       if ((current > 0) == (coeff > 0)) {  // Same sign.
-        if (negative_limit * abs_coeff > current_magnitude) {
+        if (lb != ub && negative_limit * abs_coeff > current_magnitude) {
           negative_limit = current_magnitude / abs_coeff;
           if (positive_limit == 0 && negative_limit == 0) break;
         }
@@ -2727,17 +2804,14 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
           negative_limit = overflow_threshold / abs_coeff;
           if (positive_limit == 0 && negative_limit == 0) break;
         }
-        if (positive_limit * abs_coeff > current_magnitude) {
+        if (lb != ub && positive_limit * abs_coeff > current_magnitude) {
           positive_limit = current_magnitude / abs_coeff;
           if (positive_limit == 0 && negative_limit == 0) break;
         }
       }
 
       // This is how diff changes.
-      const IntegerVariable var = integer_variables_[col.value()];
-      const IntegerValue implied = current > 0
-                                       ? integer_trail_->LowerBound(var)
-                                       : integer_trail_->UpperBound(var);
+      const IntegerValue implied = current > 0 ? lb : ub;
       if (implied != 0) {
         common_diff -= ToDouble(coeff) * ToDouble(implied);
       }
@@ -2988,16 +3062,23 @@ bool LinearProgrammingConstraint::PropagateExactDualRay() {
   return true;
 }
 
-int64_t LinearProgrammingConstraint::CalculateDegeneracy() {
-  int num_non_basic_with_zero_rc = 0;
+int64_t LinearProgrammingConstraint::CalculateDegeneracy(int64_t* num_cols) {
+  int64_t num_non_basic = 0;
+  int64_t num_non_basic_with_zero_rc = 0;
   const auto reduced_costs = simplex_.GetReducedCosts().const_view();
   for (const glop::ColIndex i : simplex_.GetNotBasicBitRow()) {
+    if (simplex_.GetVariableStatus(i) == glop::VariableStatus::FIXED_VALUE) {
+      continue;
+    }
+    ++num_non_basic;
     if (reduced_costs[i] == 0.0) {
-      num_non_basic_with_zero_rc++;
+      ++num_non_basic_with_zero_rc;
     }
   }
-  const int64_t num_cols = simplex_.GetProblemNumCols().value();
-  is_degenerate_ = num_non_basic_with_zero_rc >= 0.3 * num_cols;
+  const int64_t active_cols =
+      num_non_basic + simplex_.GetProblemNumRows().value();
+  if (num_cols != nullptr) *num_cols = active_cols;
+  is_degenerate_ = num_non_basic_with_zero_rc >= 0.3 * active_cols;
   return num_non_basic_with_zero_rc;
 }
 

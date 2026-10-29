@@ -16,6 +16,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/str_cat.h"
@@ -181,9 +182,10 @@ void CheckBoundPropagationPreprocessorBehavior(
   ASSERT_TRUE(ParseLp(input_problem, &linear_program));
   MPModelProto model_proto;
   glop::LinearProgramToMPModelProto(linear_program, &model_proto);
-  sat::MPModelProtoWrapper wrapper(&model_proto, nullptr);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
   EXPECT_TRUE(RunPropagateBounds(&wrapper));
-  glop::MPModelProtoToLinearProgram(model_proto, &linear_program);
+  glop::MPModelProtoToLinearProgram(*wrapper.mutable_underlying_model(),
+                                    &linear_program);
 
   ExpectLinearProgramMatches(linear_program, expected_preprocessed_problem);
 }
@@ -196,9 +198,10 @@ void CheckMakeBoundsIntegerBehavior(
   ASSERT_TRUE(ParseLp(input_problem, &linear_program));
   MPModelProto model_proto;
   glop::LinearProgramToMPModelProto(linear_program, &model_proto);
-  sat::MPModelProtoWrapper wrapper(&model_proto, nullptr);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
   EXPECT_TRUE(MakeBoundsInteger(integer_solution_tolerance, &wrapper));
-  glop::MPModelProtoToLinearProgram(model_proto, &linear_program);
+  glop::MPModelProtoToLinearProgram(*wrapper.mutable_underlying_model(),
+                                    &linear_program);
 
   ExpectLinearProgramMatches(linear_program, expected_preprocessed_problem);
 }
@@ -239,7 +242,7 @@ TEST(IntegerBoundsPreprocessorTest, MakeColBoundsInteger2) {
               &linear_program));
   MPModelProto model_proto;
   glop::LinearProgramToMPModelProto(linear_program, &model_proto);
-  sat::MPModelProtoWrapper wrapper(&model_proto, nullptr);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
   EXPECT_FALSE(MakeBoundsInteger(1e-6, &wrapper));
 }
 
@@ -275,7 +278,7 @@ TEST(IntegerBoundsPreprocessorTest, MakeRowBoundsInteger2) {
               &linear_program));
   MPModelProto model_proto;
   glop::LinearProgramToMPModelProto(linear_program, &model_proto);
-  sat::MPModelProtoWrapper wrapper(&model_proto, nullptr);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
   EXPECT_FALSE(MakeBoundsInteger(1e-6, &wrapper));
 }
 
@@ -284,7 +287,7 @@ TEST(BoundPropagationPreprocessorTest, InfeasibleMerge) {
   ASSERT_TRUE(ParseLp("x1 <= 10; r1: x1 >= 20;", &linear_program));
   MPModelProto model_proto;
   glop::LinearProgramToMPModelProto(linear_program, &model_proto);
-  sat::MPModelProtoWrapper wrapper(&model_proto, nullptr);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
   EXPECT_FALSE(RunPropagateBounds(&wrapper));
 }
 
@@ -301,9 +304,10 @@ TEST(BoundPropagationPreprocessorTest, AlmostInfeasibleMerge) {
   ASSERT_TRUE(ParseLp(kLinearProgram, &linear_program));
   MPModelProto model_proto;
   glop::LinearProgramToMPModelProto(linear_program, &model_proto);
-  sat::MPModelProtoWrapper wrapper(&model_proto, nullptr);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
   EXPECT_TRUE(ExactPresolve(sat::SatParameters(), &wrapper));
-  glop::MPModelProtoToLinearProgram(model_proto, &linear_program);
+  glop::MPModelProtoToLinearProgram(*wrapper.mutable_underlying_model(),
+                                    &linear_program);
   ExpectLinearProgramMatches(linear_program, kOutputProgram);
 }
 
@@ -317,7 +321,7 @@ TEST(BoundPropagationPreprocessorTest, ExactPresolveDualRestrictionOnIntegers) {
               &linear_program));
   MPModelProto model_proto;
   glop::LinearProgramToMPModelProto(linear_program, &model_proto);
-  sat::MPModelProtoWrapper wrapper(&model_proto, nullptr);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
   wrapper.mutable_constraints(0)->AddEnforcement(0, 1);
 
   EXPECT_TRUE(ExactPresolve(sat::SatParameters(), &wrapper));
@@ -370,7 +374,7 @@ TEST(BoundPropagationPreprocessorTest, EnforcedConstraintSkipped) {
               &linear_program));
   MPModelProto model_proto;
   glop::LinearProgramToMPModelProto(linear_program, &model_proto);
-  sat::MPModelProtoWrapper wrapper(&model_proto, nullptr);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
   // Constraint 0 (r1: x <= 3) is enforced by b == 1, so it is skipped.
   wrapper.mutable_constraints(0)->AddEnforcement(0, 1);
 
@@ -675,10 +679,11 @@ TEST(ShiftVariableBoundsTest, BoundShift) {
   ASSERT_TRUE(ParseLp(kLinearProgram, &linear_program));
   MPModelProto model_proto;
   glop::LinearProgramToMPModelProto(linear_program, &model_proto);
-  sat::MPModelProtoWrapper wrapper(&model_proto, nullptr);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
   EXPECT_THAT(ShiftVariableBounds(IntegerShifts(), &wrapper),
               ElementsAre(2.0, -3.0, 3.0, 0.0));
-  glop::MPModelProtoToLinearProgram(model_proto, &linear_program);
+  glop::MPModelProtoToLinearProgram(*wrapper.mutable_underlying_model(),
+                                    &linear_program);
   ExpectLinearProgramMatches(linear_program, kOutputProgram);
 }
 
@@ -698,11 +703,13 @@ TEST(ShiftVariableBoundsTest, UpdatesSolutionHint) {
   hint->add_var_index(1);
   hint->add_var_value(-3.0);
 
-  sat::MPModelProtoWrapper wrapper(&model_proto, nullptr);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
   EXPECT_THAT(ShiftVariableBounds(IntegerShifts(), &wrapper),
               ElementsAre(2.0, -2.0));
-  EXPECT_THAT(model_proto.solution_hint().var_index(), ElementsAre(0, 1));
-  EXPECT_THAT(model_proto.solution_hint().var_value(), ElementsAre(2.0, -1.0));
+  EXPECT_THAT(wrapper.mutable_underlying_model()->solution_hint().var_index(),
+              ElementsAre(0, 1));
+  EXPECT_THAT(wrapper.mutable_underlying_model()->solution_hint().var_value(),
+              ElementsAre(2.0, -1.0));
 }
 
 TEST(ShiftVariableBoundsTest, ShiftsEnforcementValues) {
@@ -715,7 +722,7 @@ TEST(ShiftVariableBoundsTest, ShiftsEnforcementValues) {
   ASSERT_TRUE(ParseLp(kLinearProgram, &linear_program));
   MPModelProto model_proto;
   glop::LinearProgramToMPModelProto(linear_program, &model_proto);
-  sat::MPModelProtoWrapper wrapper(&model_proto, nullptr);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
   wrapper.mutable_constraints(0)->AddEnforcement(0, 2);
   wrapper.mutable_constraints(0)->AddEnforcement(1, -2);
 
@@ -736,9 +743,10 @@ TEST(ShiftVariableBoundsTest, NoShiftWhenAllDomainsContainZero) {
   ASSERT_TRUE(ParseLp(kLinearProgram, &linear_program));
   MPModelProto model_proto;
   glop::LinearProgramToMPModelProto(linear_program, &model_proto);
-  sat::MPModelProtoWrapper wrapper(&model_proto, nullptr);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
   EXPECT_THAT(ShiftVariableBounds(IntegerShifts(), &wrapper), IsEmpty());
-  glop::MPModelProtoToLinearProgram(model_proto, &linear_program);
+  glop::MPModelProtoToLinearProgram(*wrapper.mutable_underlying_model(),
+                                    &linear_program);
   ExpectLinearProgramMatches(linear_program, kLinearProgram);
 }
 
@@ -756,18 +764,18 @@ TEST(ShiftToZeroAndMarkAsIntegerUnusedVariablesTest,
   ASSERT_TRUE(ParseLp(kLinearProgram, &linear_program));
   MPModelProto model_proto;
   glop::LinearProgramToMPModelProto(linear_program, &model_proto);
-  sat::MPModelProtoWrapper wrapper(&model_proto, nullptr);
+  sat::MPModelProtoWrapper wrapper(std::move(model_proto), nullptr);
   const std::vector<double> shifts = ShiftToZeroAndMarkAsIntegerUnusedVariables(
       sat::SatParameters(), &wrapper);
   EXPECT_THAT(shifts, ElementsAre(1.5, 4.25, 2.5, 0.0, 0.0));
   for (int v : {0, 1, 2}) {
-    EXPECT_DOUBLE_EQ(model_proto.variable(v).lower_bound(), 0.0);
-    EXPECT_DOUBLE_EQ(model_proto.variable(v).upper_bound(), 0.0);
-    EXPECT_DOUBLE_EQ(model_proto.variable(v).objective_coefficient(), 0.0);
-    EXPECT_TRUE(model_proto.variable(v).is_integer());
+    EXPECT_DOUBLE_EQ(wrapper.variables(v).lower_bound(), 0.0);
+    EXPECT_DOUBLE_EQ(wrapper.variables(v).upper_bound(), 0.0);
+    EXPECT_DOUBLE_EQ(wrapper.variables(v).objective_coefficient(), 0.0);
+    EXPECT_TRUE(wrapper.variables(v).is_integer());
   }
-  EXPECT_FALSE(model_proto.variable(3).is_integer());
-  EXPECT_FALSE(model_proto.variable(4).is_integer());
+  EXPECT_FALSE(wrapper.variables(3).is_integer());
+  EXPECT_FALSE(wrapper.variables(4).is_integer());
   EXPECT_DOUBLE_EQ(wrapper.objective_offset(), 2.0 * 1.5 - 3.0 * 4.25);
 }
 

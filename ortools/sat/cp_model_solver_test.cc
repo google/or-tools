@@ -20,6 +20,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
@@ -557,7 +558,7 @@ TEST(ConvertMPModelProtoToCpModelProtoTest, SimpleLinearExampleWithMaximize) {
   CpModelProto cp_model;
   SolverLogger logger;
   ConvertMPModelProtoToCpModelProto(SatParameters(),
-                                    MPModelProtoWrapper(&mp_model),
+                                    MPModelProtoWrapper(std::move(mp_model)),
                                     /*num_clamped=*/0, &cp_model, &logger);
   Model model;
   model.Add(NewSatParameters("cp_model_presolve:false"));
@@ -6118,6 +6119,37 @@ TEST(SolveCpModelTest, PostsolveLinMaxWithVariableRemovedInSatPresolve) {
   params.set_find_clauses_that_are_exactly_one(false);
   const CpSolverResponse response = SolveWithParameters(model_proto, params);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+}
+
+TEST(SolveCpModelTest,
+     FloatingPointObjectiveBoundWithRoundedToZeroCoefficient) {
+  // With mip_max_activity_exponent = 10, var 1's floating-point objective
+  // coefficient (1.0) rounds to 0 in the integer objective, and dual bound
+  // strengthening fixes var 1 to its upper bound (1000) during presolve.
+  // The true optimal objective is 1.0 (at var 0 = 0, var 1 = 1), so
+  // best_objective_bound must remain a valid lower bound (<= 1.0).
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1000 ] }
+    variables { domain: [ 0, 1000 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 1, 2000 ]
+      }
+    }
+    floating_point_objective {
+      vars: [ 0, 1 ]
+      coeffs: [ 1000000.0, 1.0 ]
+      maximize: false
+    }
+  )pb");
+  SatParameters params;
+  params.set_mip_max_activity_exponent(10);
+  params.set_mip_compute_true_objective_bound(true);
+  const CpSolverResponse response = SolveWithParameters(model_proto, params);
+  ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_LE(response.best_objective_bound(), 1.0);
 }
 
 #else

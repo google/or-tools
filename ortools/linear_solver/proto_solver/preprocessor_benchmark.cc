@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <utility>
 #include <vector>
 
 #include "absl/types/span.h"
@@ -91,7 +92,7 @@ void BM_Propagation(benchmark::State& state) {
       ct2->add_coefficient(1.0);
     }
   }
-  sat::MPModelProtoWrapper wrapper(&model, nullptr);
+  sat::MPModelProtoWrapper wrapper(std::move(model), nullptr);
   const int num_variables = wrapper.num_variables();
   std::vector<double> var_lbs(num_variables);
   std::vector<double> var_ubs(num_variables);

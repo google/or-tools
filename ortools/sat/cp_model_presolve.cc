@@ -37,6 +37,7 @@
 #include "absl/hash/hash.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/numeric/int128.h"
 #include "absl/random/distributions.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
@@ -5105,26 +5106,78 @@ void CpModelPresolver::FindBigAtMostOneAndLinearOverlap(
     }
   }
 
+  if (num_blocks > 0) {
+    helper->ClearAtMostOnes();
+    helper->AddAllAtMostOnes(context_->WorkingModel());
+  }
+
   logger.AddCounter("blocks", num_blocks);
   logger.AddCounter("saved_nz", nz_reduction);
   DCHECK(context_->ConstraintVariableUsageIsConsistent());
 }
 
 // This helps on neos-5045105-creuse.pb.gz for instance.
-void CpModelPresolver::FindBigVerticalLinearOverlap(
-    ActivityBoundHelper* helper) {
+void CpModelPresolver::FindBigVerticalLinearOverlap(ActivityBoundHelper* helper,
+                                                    int64_t min_saved_nz) {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
   if (context_->params().presolve_inclusion_work_limit() == 0) return;
   ScopedTimeLogger logger(__FUNCTION__, logger_, time_limit_);
 
+  // The current common part is stored in a dense vector (var -> coeff, zero if
+  // not in the common part) as this is a lot faster than a hash map when we
+  // scan big constraints. The non-zero positions are listed in common_vars.
+  std::vector<int64_t> var_to_coeff(context_->NumVariables(), 0);
+  std::vector<int> common_vars;
+  const auto clear_common_part = [&]() {
+    for (const int var : common_vars) var_to_coeff[var] = 0;
+    common_vars.clear();
+  };
+
+  // Temporary data for the intersection of the common part with a constraint.
+  // For each variable in both, we store its coefficient in the constraint and
+  // in the common part.
+  struct MatchedTerm {
+    int var;
+    int64_t coeff;         // In ct.
+    int64_t common_coeff;  // In the common part.
+  };
+  std::vector<MatchedTerm> matched;
+
+  // Returns the reduced ratio num / den with den > 0.
+  const auto reduced_ratio = [](int64_t num,
+                                int64_t den) -> std::pair<int64_t, int64_t> {
+    if (num == den) return {1, 1};
+    const int64_t gcd = std::gcd(std::abs(num), std::abs(den));
+    num /= gcd;
+    den /= gcd;
+    if (den < 0) {
+      num = -num;
+      den = -den;
+    }
+    return {num, den};
+  };
+
+  // Computing the exact ratio of each matched term requires a gcd, which is
+  // too slow on big constraints with many different coefficients. So we only
+  // do that on a sample of the terms to find a few candidate ratios, and then
+  // we count the exact size of each candidate class with a cheaper test.
+  constexpr int kSampleSize = 64;
+  constexpr int kMaxNumCandidates = 4;
+  std::vector<std::pair<std::pair<int64_t, int64_t>, int>> ratio_count;
+
+  std::vector<std::pair<int, int64_t>> block;
+  std::vector<std::pair<int, int64_t>> best_block;
+  std::vector<std::pair<int, int64_t>> best_common_part;
+  absl::flat_hash_map<int, int64_t> coeff_map;
+
   int64_t num_blocks = 0;
   int64_t nz_reduction = 0;
-  absl::flat_hash_map<int, int64_t> coeff_map;
   for (int x = 0; x < context_->NumVariables(); ++x) {
     if (logger.WorkLimitIsReached()) break;
 
     bool in_enforcement = false;
+    int64_t max_possible_saved_nz = 0;
     std::vector<int> linear_cts;
     {
       DeterministicTimer<{.scale = 5.8e-08, .offset = 1.1e-18}> timer(
@@ -5136,18 +5189,6 @@ void CpModelPresolver::FindBigVerticalLinearOverlap(
 
         const int num_terms = ct.linear().vars().size();
         if (num_terms < 2) continue;
-        bool is_canonical = true;
-        {
-          DeterministicTimer<{.scale = 1.1e-09, .offset = 4.5e-08}> timer(
-              time_limit_, num_terms);
-          for (int k = 0; k < num_terms; ++k) {
-            if (!RefIsPositive(ct.linear().vars(k))) {
-              is_canonical = false;
-              break;
-            }
-          }
-        }
-        if (!is_canonical) continue;
 
         // We don't care about enforcement literal, but we don't want x inside.
         {
@@ -5165,6 +5206,7 @@ void CpModelPresolver::FindBigVerticalLinearOverlap(
         // want work_done to be deterministic! so we do the work anyway.
         if (in_enforcement) continue;
         linear_cts.push_back(c);
+        max_possible_saved_nz += num_terms - 1;
       }
     }
 
@@ -5174,79 +5216,202 @@ void CpModelPresolver::FindBigVerticalLinearOverlap(
     if (in_enforcement) continue;
     if (linear_cts.size() < 10) continue;
 
+    // A block of b constraints with a common part of size m saves less than
+    // b * (m - 1) non-zeros, which is at most the sum of (size - 1) over the
+    // constraints. This allows to skip most variables cheaply when we are
+    // only looking for big blocks.
+    if (max_possible_saved_nz < min_saved_nz) continue;
+
     // For determinism.
     std::sort(linear_cts.begin(), linear_cts.end());
-    std::shuffle(linear_cts.begin(), linear_cts.end(), context_->random());
 
     // Now it is almost the same algo as for FindBigHorizontalLinearOverlap().
     // We greedily compute a "common" rectangle using the first constraint
-    // as a "base" one. Note that if an aX + bY appears in the majority of
-    // constraints, we have a good chance to find this block since we start by
-    // a random constraint.
-    coeff_map.clear();
-
-    std::vector<std::pair<int, int64_t>> block;
-    std::vector<std::pair<int, int64_t>> common_part;
+    // as a "base" one. We maintain the invariant that for each (c, multiple) in
+    // block, the coefficient of each variable of the common part in c is
+    // multiple * (its coefficient in the common part).
+    //
+    // When we intersect the current common part with a new constraint, the
+    // common variables appearing in it are partitioned by the ratio
+    // (coeff in ct) / (coeff in common part), and we keep the largest class.
+    // Note that we do not require x to be in this class: x is just used to
+    // collect candidate constraints. Using the class of x instead was quite bad
+    // on bab5.mps.gz, where a few variables have a "rare" coefficient pattern
+    // in the dense constraints (after other presolve reductions): starting from
+    // one of them, the block was a mix of unrelated columns that only coincide
+    // on a few constraints, and this destroyed the real large rectangles.
+    //
+    // Each subsequent constraint containing x can only shrink the common part,
+    // so we keep the prefix of the constraint sequence that maximizes the
+    // non-zero reduction rather than always using all of them.
+    //
+    // We try two orders:
+    // - A random one. If an aX + bY appears in the majority of constraints, we
+    //   have a good chance to find this block since we start by a random
+    //   constraint.
+    // - By decreasing constraint size. This is needed to detect large blocks
+    //   (many variables) common to just a few big constraints, which would be
+    //   destroyed by the intersection with the many small constraints
+    //   containing x. On bab5.mps.gz for instance, this detects the 4 groups of
+    //   ~2000 Booleans appearing with the same coefficient in 8 dense
+    //   constraints, and replacing each group by a single integer variable
+    //   makes the LP relaxation a lot stronger (the integrality of the sum is
+    //   exploited by the cuts), while splitting them into hundreds of small
+    //   blocks like before does not help.
+    int64_t best_saved_nz = 0;
+    best_block.clear();
+    best_common_part.clear();
     {
       DeterministicTimer2<{
           .scale1 = 1.2e-07, .scale2 = 9.6e-09, .offset = 1.2e-06}>
           timer(time_limit_);
       uint64_t work_done = 0;
-      for (const int c : linear_cts) {
-        const ConstraintProto& ct = context_->Constraint(c);
-        const int num_terms = ct.linear().vars().size();
-        work_done += num_terms;
+      const auto greedy_rectangle = [&](absl::Span<const int> cts) {
+        block.clear();
+        clear_common_part();
+        for (const int c : cts) {
+          const ConstraintProto& ct = context_->Constraint(c);
+          const int num_terms = ct.linear().vars().size();
+          work_done += num_terms;
 
-        // Compute the coeff of x.
-        const int64_t x_coeff = FindVarCoeff(x, ct);
-        if (x_coeff == 0) continue;
-
-        if (block.empty()) {
-          // This is our base constraint.
-          coeff_map.clear();
-          for (int k = 0; k < num_terms; ++k) {
-            coeff_map[ct.linear().vars(k)] = ct.linear().coeffs(k);
+          if (block.empty()) {
+            // This is our base constraint.
+            for (int k = 0; k < num_terms; ++k) {
+              const int64_t coeff = ct.linear().coeffs(k);
+              if (coeff == 0) continue;
+              var_to_coeff[ct.linear().vars(k)] = coeff;
+              common_vars.push_back(ct.linear().vars(k));
+            }
+            if (common_vars.size() < 2) {
+              clear_common_part();
+              continue;
+            }
+            block.push_back({c, 1});
+            continue;
           }
-          if (coeff_map.size() < 2) continue;
-          block.push_back({c, x_coeff});
-          continue;
+
+          // Collect the common variables appearing in this constraint.
+          matched.clear();
+          for (int k = 0; k < num_terms; ++k) {
+            const int var = ct.linear().vars(k);
+            const int64_t common_coeff = var_to_coeff[var];
+            if (common_coeff == 0) continue;
+            const int64_t coeff = ct.linear().coeffs(k);
+            if (coeff == 0) continue;
+            matched.push_back({var, coeff, common_coeff});
+          }
+          if (matched.size() < 2) continue;
+
+          // Partition a sample of the matched terms by ratio.
+          ratio_count.clear();
+          const int stride = std::max<int>(1, matched.size() / kSampleSize);
+          for (int i = 0; i < matched.size(); i += stride) {
+            const std::pair<int64_t, int64_t> ratio =
+                reduced_ratio(matched[i].coeff, matched[i].common_coeff);
+            bool found = false;
+            for (auto& [r, count] : ratio_count) {
+              if (r == ratio) {
+                ++count;
+                found = true;
+                break;
+              }
+            }
+            if (!found) ratio_count.push_back({ratio, 1});
+          }
+
+          // Keep the most frequent ratios (ties broken deterministically).
+          std::sort(ratio_count.begin(), ratio_count.end(),
+                    [](const std::pair<std::pair<int64_t, int64_t>, int>& a,
+                       const std::pair<std::pair<int64_t, int64_t>, int>& b) {
+                      if (a.second != b.second) return a.second > b.second;
+                      return a.first < b.first;
+                    });
+          if (ratio_count.size() > kMaxNumCandidates) {
+            ratio_count.resize(kMaxNumCandidates);
+          }
+
+          // Skip bad constraint. If all the sampled ratios are different, it is
+          // unlikely that a large class exists.
+          if (ratio_count[0].second < 2) continue;
+
+          // Compute the exact size of each candidate class. Note that num/den
+          // is irreducible, so coeff/common_coeff == num/den iff
+          // coeff * den == common_coeff * num.
+          std::pair<int64_t, int64_t> best_ratio = {0, 0};
+          int best_count = 0;
+          for (const auto& [ratio, unused] : ratio_count) {
+            const absl::int128 num = ratio.first;
+            const absl::int128 den = ratio.second;
+            int count = 0;
+            for (const MatchedTerm& term : matched) {
+              if (term.coeff * den == term.common_coeff * num) ++count;
+            }
+            if (count > best_count ||
+                (count == best_count && ratio < best_ratio)) {
+              best_ratio = ratio;
+              best_count = count;
+            }
+          }
+          if (best_count < 2) continue;
+
+          // Update the common part. For a variable v in the class, we have
+          // coeff_in_ct = num * t and common_coeff = den * t, and the new
+          // common coefficient is t. So the multiple of the previous
+          // constraints in the block is multiplied by den, and the multiple of
+          // this constraint is num.
+          //
+          // Note that this cannot overflow since the new multiple of a block
+          // constraint is the coefficient of v in it divided by t.
+          const auto [num, den] = best_ratio;
+          if (den != 1) {
+            for (auto& [unused, multiple] : block) multiple *= den;
+          }
+          block.push_back({c, num});
+          clear_common_part();
+          {
+            const absl::int128 num128 = num;
+            const absl::int128 den128 = den;
+            for (const MatchedTerm& term : matched) {
+              if (term.coeff * den128 != term.common_coeff * num128) continue;
+              var_to_coeff[term.var] = term.coeff / num;
+              common_vars.push_back(term.var);
+            }
+          }
+
+          // Keep the best prefix.
+          const int64_t saved_nz =
+              ComputeNonZeroReduction(block.size(), common_vars.size());
+          if (saved_nz > best_saved_nz) {
+            best_saved_nz = saved_nz;
+            best_block = block;
+            best_common_part.clear();
+            for (const int var : common_vars) {
+              best_common_part.push_back({var, var_to_coeff[var]});
+            }
+          }
         }
+        clear_common_part();
+      };
 
-        // We are looking for a common divisor of coeff_map and this constraint.
-        const int64_t gcd =
-            std::gcd(std::abs(coeff_map.at(x)), std::abs(x_coeff));
-        const int64_t multiple_base = coeff_map.at(x) / gcd;
-        const int64_t multiple_ct = x_coeff / gcd;
-        common_part.clear();
-        for (int k = 0; k < num_terms; ++k) {
-          const int64_t coeff = ct.linear().coeffs(k);
-          if (coeff % multiple_ct != 0) continue;
+      // Random order.
+      std::shuffle(linear_cts.begin(), linear_cts.end(), context_->random());
+      greedy_rectangle(linear_cts);
 
-          const auto it = coeff_map.find(ct.linear().vars(k));
-          if (it == coeff_map.end()) continue;
-          if (it->second % multiple_base != 0) continue;
-          if (it->second / multiple_base != coeff / multiple_ct) continue;
+      // Decreasing size order (and by index for determinism).
+      std::sort(linear_cts.begin(), linear_cts.end(), [this](int a, int b) {
+        const int size_a = context_->Constraint(a).linear().vars().size();
+        const int size_b = context_->Constraint(b).linear().vars().size();
+        if (size_a != size_b) return size_a > size_b;
+        return a < b;
+      });
+      greedy_rectangle(linear_cts);
 
-          common_part.push_back({ct.linear().vars(k), coeff / multiple_ct});
-        }
-
-        // Skip bad constraint.
-        if (common_part.size() < 2) continue;
-
-        // Update coeff_map.
-        block.push_back({c, x_coeff});
-        coeff_map.clear();
-        for (const auto [var, coeff] : common_part) {
-          coeff_map[var] = coeff;
-        }
-      }
-      timer.Advance(linear_cts.size(), work_done);
+      timer.Advance(2 * linear_cts.size(), work_done);
     }
 
     // We have a candidate.
-    const int64_t saved_nz =
-        ComputeNonZeroReduction(block.size(), coeff_map.size());
-    if (saved_nz < 30) continue;
+    const int64_t saved_nz = best_saved_nz;
+    if (saved_nz < min_saved_nz) continue;
 
     // When we have a wide range of coefficient, introducing a new variable can
     // hurt the linear relaxation cuts, because we lose a lot of information
@@ -5256,26 +5421,23 @@ void CpModelPresolver::FindBigVerticalLinearOverlap(
     // This avoids degrading the perf a lot on the bppc miplib problems.
     int64_t min_magnitude = kint64max;
     int64_t max_magnitude = 0;
-    for (const auto [unused, coeff] : coeff_map) {
+    for (const auto [unused, coeff] : best_common_part) {
       const int64_t magnitude = std::abs(coeff);
       min_magnitude = std::min(min_magnitude, magnitude);
       max_magnitude = std::max(max_magnitude, magnitude);
     }
     if (min_magnitude != max_magnitude && saved_nz < 1'000) continue;
 
-    // Fix multiples, currently this contains the coeff of x for each
-    // constraint.
-    const int64_t base_x = coeff_map.at(x);
-    for (auto& [c, multipier] : block) {
-      CHECK_EQ(multipier % base_x, 0);
-      multipier /= base_x;
-    }
-
-    // Introduce new_var = coeff_map and perform the substitution.
-    if (!RemoveCommonPart(coeff_map, block, helper)) continue;
+    // Introduce new_var = common part and perform the substitution.
+    coeff_map.clear();
+    for (const auto [var, coeff] : best_common_part) coeff_map[var] = coeff;
+    if (!RemoveCommonPart(coeff_map, best_block, helper)) continue;
     ++num_blocks;
     nz_reduction += saved_nz;
     context_->UpdateRuleStats("linear matrix: common vertical rectangle");
+
+    // RemoveCommonPart() might have created a new variable.
+    var_to_coeff.resize(context_->NumVariables(), 0);
   }
 
   logger.AddCounter("blocks", num_blocks);
@@ -7222,6 +7384,19 @@ CpSolverStatus CpModelPresolver::Presolve() {
   // the objective.
   if (context_->WorkingModel().has_floating_point_objective()) {
     context_->WriteVariableDomainsToProto();
+
+    FloatObjectiveProto* mapping_float_objective =
+        context_->mapping_model->mutable_floating_point_objective();
+    const FloatObjectiveProto& working_model_float_objective =
+        context_->WorkingModel().floating_point_objective();
+
+    *mapping_float_objective = working_model_float_objective;
+
+    for (int i = 0; i < working_model_float_objective.vars_size(); ++i) {
+      const int var = working_model_float_objective.vars(i);
+      mapping_float_objective->add_domain_mins(context_->MinOf(var));
+      mapping_float_objective->add_domain_maxs(context_->MaxOf(var));
+    }
     if (!ScaleFloatingPointObjective(context_->params(), logger_,
                                      context_->UnsafeMutableWorkingModel())) {
       SOLVER_LOG(logger_,
@@ -7441,6 +7616,22 @@ CpSolverStatus CpModelPresolver::Presolve() {
     //
     // TODO(user): revisit when different transformation appear.
     // TODO(user): merge this code instead of doing many passes?
+    //
+    // Some of the rules below (the coefficient reduction using an included
+    // exactly_one in ProcessSetPPC(), or the sparsification of a superset
+    // constraint in DetectDominatedLinearConstraints()) alter a few columns of
+    // big linear constraints, which prevents the detection of large common
+    // vertical rectangles afterwards. So we first look for the big ones only.
+    // See FindBigVerticalLinearOverlap() for the kind of structure this is
+    // important for.
+    if (context_->params().find_big_linear_overlap() &&
+        !context_->params().keep_symmetry_in_presolve()) {
+      ActivityBoundHelper activity_amo_helper;
+      activity_amo_helper.AddAllAtMostOnes(context_->WorkingModel());
+      FindBigAtMostOneAndLinearOverlap(&activity_amo_helper);
+      FindBigVerticalLinearOverlap(&activity_amo_helper,
+                                   /*min_saved_nz=*/1'000);
+    }
     ProcessAtMostOneAndLinear();
     DetectDuplicateConstraints();
     DetectDuplicateConstraintsWithDifferentEnforcements();
@@ -7705,7 +7896,8 @@ CpSolverStatus CpModelPresolver::LogAndValidatePresolvedModel() {
     }
   }
   {
-    const std::string error = ValidateCpModel(*context_->mapping_model);
+    const std::string error =
+        ValidateCpModel(*context_->mapping_model, /*after_presolve=*/true);
     if (!error.empty()) {
       SOLVER_LOG(logger_,
                  "Error while validating mapping_model model: ", error);

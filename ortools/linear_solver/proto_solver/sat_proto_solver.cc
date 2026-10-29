@@ -17,7 +17,6 @@
 #include <atomic>
 #include <cmath>
 #include <cstdint>
-#include <cstdlib>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -193,11 +192,9 @@ MPSolutionResponse SatSolveProtoInternal(
       std::move(optional_model).value().copy_or_move_as_unique_ptr();
 
   // To enable solution checking we do need to keep a copy of the input model :(
-  MPModelProto copy_for_solution_check_data;
   std::optional<sat::MPModelProtoWrapper> copy_for_solution_check;
   if (params.mip_verify_solution()) {
-    copy_for_solution_check_data = *mp_model;
-    copy_for_solution_check.emplace(&copy_for_solution_check_data, logger);
+    copy_for_solution_check.emplace(MPModelProto(*mp_model), logger);
   }
 
   // The request is no longer needed after this.
@@ -266,12 +263,14 @@ MPSolutionResponse SatSolveProtoInternal(
   const int old_num_variables = mp_model->variable().size();
   const int old_num_constraints = mp_model->constraint().size();
   const bool is_maximize = mp_model->maximize();
-  sat::MPModelProtoWrapper mp_model_wrapper(mp_model.get(), logger);
+  auto mp_model_wrapper =
+      std::make_unique<sat::MPModelProtoWrapper>(std::move(*mp_model), logger);
+  mp_model.reset();  // Prevent using empty mp_model.
 
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger, "Scaling to pure integer problem.");
 
-  if (!MakeBoundsInteger(params.mip_wanted_precision(), &mp_model_wrapper,
+  if (!MakeBoundsInteger(params.mip_wanted_precision(), mp_model_wrapper.get(),
                          logger)) {
     return InfeasibleResponse(
         *logger, "Problem proven infeasible in MakeBoundsInteger()");
@@ -279,19 +278,19 @@ MPSolutionResponse SatSolveProtoInternal(
 
   std::vector<double> var_shifts;
   if (params.mip_presolve_level() > 0) {
-    if (!ExactPresolve(params, &mp_model_wrapper, logger)) {
+    if (!ExactPresolve(params, mp_model_wrapper.get(), logger)) {
       return InfeasibleResponse(*logger,
                                 "Problem proven infeasible in ExactPresolve()");
     }
     var_shifts =
-        ShiftVariableBounds(IntegerShifts(), &mp_model_wrapper, logger);
+        ShiftVariableBounds(IntegerShifts(), mp_model_wrapper.get(), logger);
   }
 
   if (time_limit->LimitReached()) {
     return TimeLimitResponse(*logger);
   }
 
-  const int num_variables = mp_model_wrapper.num_variables();
+  const int num_variables = mp_model_wrapper->num_variables();
   std::vector<double> var_scaling(num_variables, 1.0);
   const auto update_scaling = [&var_scaling](absl::Span<const double> scaling) {
     for (int var = 0; var < scaling.size(); ++var) {
@@ -314,21 +313,21 @@ MPSolutionResponse SatSolveProtoInternal(
   };
 
   // We need to do that before the automatic detection of integers.
-  RemoveNearZeroTerms(params, mp_model_wrapper.mutable_underlying_model(),
+  RemoveNearZeroTerms(params, mp_model_wrapper->mutable_underlying_model(),
                       logger);
 
   if (params.mip_presolve_level() > 0) {
     update_shifts(ShiftToZeroAndMarkAsIntegerUnusedVariables(
-        params, &mp_model_wrapper, logger));
+        params, mp_model_wrapper.get(), logger));
     sat::MarkResidualTotallyUnimodularVariableAsInteger(
-        params, mp_model_wrapper.mutable_underlying_model(), logger,
+        params, mp_model_wrapper->mutable_underlying_model(), logger,
         /*only_tighten_bounds=*/true);
   }
 
   // Clamp variable.
   int num_clamped = 0;
   if (!sat::ClampVariableBounds(params,
-                                mp_model_wrapper.mutable_underlying_model(),
+                                mp_model_wrapper->mutable_underlying_model(),
                                 logger, &num_clamped)) {
     return InvalidModelResponse(*logger,
                                 "Failed to convert model into CP-SAT model");
@@ -337,8 +336,8 @@ MPSolutionResponse SatSolveProtoInternal(
   // Redo a round of propagation after clamping.
   if (params.mip_presolve_level() > 0) {
     update_shifts(ShiftToZeroAndMarkAsIntegerUnusedVariables(
-        params, &mp_model_wrapper, logger));
-    if (!ExactPresolve(params, &mp_model_wrapper, logger)) {
+        params, mp_model_wrapper.get(), logger));
+    if (!ExactPresolve(params, mp_model_wrapper.get(), logger)) {
       return InfeasibleResponse(
           *logger,
           "Problem proven infeasible in ExactPresolve() after clamping");
@@ -346,51 +345,51 @@ MPSolutionResponse SatSolveProtoInternal(
   }
 
   // TODO(user): move into ExactPresolve().
-  sat::ExtractEnforcementLiterals(params, &mp_model_wrapper, logger);
+  sat::ExtractEnforcementLiterals(params, mp_model_wrapper.get(), logger);
 
   if (params.mip_automatically_scale_variables()) {
     // Note that this is more than "implied": it also detect variable that could
     // always be made integer even if there are optimal solutions with such
     // variable at a non-integer value.
     update_scaling(
-        sat::DetectImpliedIntegers(params, &mp_model_wrapper, logger));
+        sat::DetectImpliedIntegers(params, mp_model_wrapper.get(), logger));
   }
 
   // Detects if at optimality some variable could always be made integer.
   update_scaling(sat::MarkResidualTotallyUnimodularVariableAsInteger(
-      params, mp_model_wrapper.mutable_underlying_model(), logger));
+      params, mp_model_wrapper->mutable_underlying_model(), logger));
 
   // Same as MakeBoundsInteger() but no need to scan the constraint again here
   // as that will be done in the scaling. Even this is redundant with what
   // happen in ConvertMPModelProtoToCpModelProto(), we should probably clean
   // that up.
   if (!sat::MakeBoundsOfIntegerVariablesInteger(
-          params, var_scaling, mp_model_wrapper.mutable_underlying_model(),
+          params, var_scaling, mp_model_wrapper->mutable_underlying_model(),
           logger)) {
     return InfeasibleResponse(
         *logger, "A detected integer variable has an empty domain");
   }
 
   if (params.mip_scale_for_precision()) {
-    update_shifts(
-        ShiftVariableBounds(ShiftBeforeScaling(), &mp_model_wrapper, logger));
+    update_shifts(ShiftVariableBounds(ShiftBeforeScaling(),
+                                      mp_model_wrapper.get(), logger));
     update_scaling(sat::ScaleContinuousVariablesForGivenPrecision(
-        params, mp_model_wrapper.mutable_underlying_model(), logger,
+        params, mp_model_wrapper->mutable_underlying_model(), logger,
         var_scaling));
   } else if (params.mip_scale_to_max_bound()) {
-    update_shifts(
-        ShiftVariableBounds(ShiftBeforeScaling(), &mp_model_wrapper, logger));
+    update_shifts(ShiftVariableBounds(ShiftBeforeScaling(),
+                                      mp_model_wrapper.get(), logger));
     update_scaling(sat::ScaleContinuousVariablesUpToMaxBound(
-        params, mp_model_wrapper.mutable_underlying_model(), logger,
+        params, mp_model_wrapper->mutable_underlying_model(), logger,
         var_scaling));
   } else if (params.mip_var_scaling() != 1.0) {
     update_scaling(sat::ScaleContinuousVariables(
-        params, mp_model_wrapper.mutable_underlying_model(), var_scaling));
+        params, mp_model_wrapper->mutable_underlying_model(), var_scaling));
 
-    // Clamp again now that we potentially scalled more some variable.
+    // Clamp again now that we potentially scaled more some variable.
     int num_extra_clamp = 0;
     if (!sat::ClampVariableBounds(params,
-                                  mp_model_wrapper.mutable_underlying_model(),
+                                  mp_model_wrapper->mutable_underlying_model(),
                                   logger, &num_extra_clamp)) {
       return InvalidModelResponse(*logger,
                                   "Failed to convert model into CP-SAT model");
@@ -398,14 +397,14 @@ MPSolutionResponse SatSolveProtoInternal(
     num_clamped += num_extra_clamp;
   }
 
-  sat::DisplayVariableStatistics(*mp_model_wrapper.mutable_underlying_model(),
+  sat::DisplayVariableStatistics(*mp_model_wrapper->mutable_underlying_model(),
                                  logger);
 
   // Abort if one only want to solve pure-IP model and we don't have one.
   if (params.only_solve_ip()) {
     bool all_integer = true;
     for (int i = 0; i < num_variables; ++i) {
-      if (!mp_model_wrapper.variables(i).is_integer()) {
+      if (!mp_model_wrapper->variables(i).is_integer()) {
         all_integer = false;
         break;
       }
@@ -423,30 +422,32 @@ MPSolutionResponse SatSolveProtoInternal(
   // Final shift before the conversion.
   update_shifts(
       ShiftVariableBounds(FinalCpSatShift(params.mip_wanted_precision()),
-                          &mp_model_wrapper, logger));
+                          mp_model_wrapper.get(), logger));
 
   sat::CpModelProto cp_model;
-  if (!ConvertMPModelProtoToCpModelProto(params, mp_model_wrapper, num_clamped,
+  if (!ConvertMPModelProtoToCpModelProto(params, *mp_model_wrapper, num_clamped,
                                          &cp_model, logger)) {
     return InvalidModelResponse(*logger,
                                 "Failed to convert model into CP-SAT model");
   }
+  const MPModelProto& underlying_model =
+      *mp_model_wrapper->mutable_underlying_model();
   DCHECK_EQ(cp_model.variables().size(), var_scaling.size());
-  DCHECK_EQ(cp_model.variables().size(), mp_model->variable().size());
+  DCHECK_EQ(cp_model.variables().size(), underlying_model.variable().size());
 
   // Copy the hint if there is one.
-  if (mp_model->has_solution_hint()) {
+  if (underlying_model.has_solution_hint()) {
     auto* cp_model_hint = cp_model.mutable_solution_hint();
-    const int size = mp_model->solution_hint().var_index().size();
+    const int size = underlying_model.solution_hint().var_index().size();
     for (int i = 0; i < size; ++i) {
-      const int var = mp_model->solution_hint().var_index(i);
+      const int var = underlying_model.solution_hint().var_index(i);
       if (var >= var_scaling.size()) continue;
 
       // To handle weird hint input values, we clamp the value to the variable
       // bounds in the proto.
-      double value = mp_model->solution_hint().var_value(i);
-      value = std::max(value, mp_model->variable(var).lower_bound());
-      value = std::min(value, mp_model->variable(var).upper_bound());
+      double value = underlying_model.solution_hint().var_value(i);
+      value = std::max(value, underlying_model.variable(var).lower_bound());
+      value = std::min(value, underlying_model.variable(var).upper_bound());
 
       cp_model_hint->add_vars(var);
       cp_model_hint->add_values(static_cast<int64_t>(std::round(value)));
@@ -454,7 +455,7 @@ MPSolutionResponse SatSolveProtoInternal(
   }
 
   // We no longer need the mp_model after this, reclaim its memory.
-  mp_model.reset();
+  mp_model_wrapper.reset();
 
   // Configure model.
   auto post_solve = [&](const sat::CpSolverResponse& sat_response) {

@@ -419,44 +419,21 @@ absl::int128 ApplyToInt128(const std::function<IntegerValue(IntegerValue)>& f,
 //   f(terms) <= f(b) * (1 - X) + f(b - a) * X
 // Which changes the final coeff of X from f(a) to [f(b) - f(b - a)].
 // This can only improve the cut since f(b) >= f(b - a) + f(a)
-int ApplyWithPotentialBump(const std::function<IntegerValue(IntegerValue)>& f,
-                           const IntegerValue divisor, CutData* cut) {
-  int bump_index = -1;
-  double bump_score = -1.0;
-  IntegerValue bump_coeff;
-  const IntegerValue remainder = PositiveRemainder(cut->rhs, divisor);
-  const IntegerValue f_remainder = f(remainder);
-  cut->rhs = ApplyToInt128(f, divisor, cut->rhs);
-  for (int i = 0; i < cut->terms.size(); ++i) {
-    CutTerm& entry = cut->terms[i];
-    const IntegerValue f_coeff = f(entry.coeff);
-    if (entry.bound_diff == 1) {
-      // TODO(user): we probably don't need int128 here, but we need
-      // t * (remainder - entry.coeff) not to overflow, and we can't really be
-      // sure.
-      const IntegerValue alternative =
-          entry.coeff > 0
-              ? f_remainder - f(remainder - entry.coeff)
-              : f_remainder - IntegerValue(static_cast<int64_t>(ApplyToInt128(
-                                  f, divisor,
-                                  absl::int128(remainder.value()) -
-                                      absl::int128(entry.coeff.value()))));
-      DCHECK_GE(alternative, f_coeff);
-      if (alternative > f_coeff) {
-        const double score = ToDouble(alternative - f_coeff) * entry.lp_value;
-        if (score > bump_score) {
-          bump_index = i;
-          bump_score = score;
-          bump_coeff = alternative;
-        }
-      }
-    }
-    entry.coeff = f_coeff;
+IntegerValue GetBumpedCoeff(const std::function<IntegerValue(IntegerValue)>& f,
+                            const IntegerValue divisor,
+                            const IntegerValue f_divisor,
+                            const IntegerValue remainder,
+                            const IntegerValue f_remainder,
+                            const IntegerValue coeff) {
+  if (coeff >= 0) return f_remainder - f(remainder - coeff);
+  IntegerValue k = -(coeff / divisor);
+  IntegerValue rest = (remainder - divisor) - coeff % divisor;
+  if (rest >= 0) {
+    ++k;
+  } else {
+    rest += divisor;
   }
-  if (bump_index >= 0) {
-    cut->terms[bump_index].coeff = bump_coeff;
-  }
-  return bump_index;
+  return f_remainder - k * f_divisor - f(rest);
 }
 
 }  // namespace
@@ -479,23 +456,18 @@ void GUBHelper::ApplyWithPotentialBumpAndGUB(
   last_num_lifts_ = 0;
   last_num_gubs_ = 0;
 
-  // Keep initial coeffs.
+  // Keep initial coeffs and apply f().
   const absl::int128 original_rhs = cut->rhs;
+  const IntegerValue f_divisor = f(divisor);
+  cut->rhs = ApplyToInt128(f, divisor, original_rhs);
+
   const int num_terms = cut->terms.size();
   initial_coeffs_.resize(num_terms);
   for (int i = 0; i < num_terms; ++i) {
-    const CutTerm& entry = cut->terms[i];
+    CutTerm& entry = cut->terms[i];
     initial_coeffs_[i] = entry.coeff;
-  }
-
-  // Apply f().
-  const int bump_index = ApplyWithPotentialBump(f, divisor, cut);
-  last_num_bumps_ += (bump_index >= 0);
-
-  // We consider a positive coeff staying positive a lift.
-  // TODO(user): adjust as needed.
-  for (int i = 0; i < num_terms; ++i) {
-    if (initial_coeffs_[i] > 0 && cut->terms[i].coeff > 0) ++last_num_lifts_;
+    entry.coeff = f(entry.coeff);
+    if (initial_coeffs_[i] > 0 && entry.coeff > 0) ++last_num_lifts_;
   }
 
   // Do not spend extra effort if we don't have a violated cut at this stage.
@@ -535,14 +507,15 @@ void GUBHelper::ApplyWithPotentialBumpAndGUB(
       absl::Span<const int> indices =
           implications_->AtMostOneIndices(Literal(literal_index));
       if (!indices.empty()) {
+        literals_.push_back(
+            {i, Literal(literal_index), initial_coeffs_[i], complemented});
         if (!complemented) {
           // Because currently we only "lift" uncomplemented terms in an amo
           // with one complemented term, as a heuristic we only count the
           // uncomplemented entries in each amo.
           for (const int index : indices) amo_count_[index]++;
+          initial_coeffs_[i] = 0;
         }
-        literals_.push_back(
-            {i, Literal(literal_index), initial_coeffs_[i], complemented});
       }
     }
   }
@@ -568,7 +541,6 @@ void GUBHelper::ApplyWithPotentialBumpAndGUB(
   // way :)
   bool rhs_changed_once = false;
   const int num_literals = literals_.size();
-  const IntegerValue f_divisor = f(divisor);
   for (int i = 0; i < num_literals; ++i) {
     int best = -1;
     int64_t best_sum = 0;
@@ -578,8 +550,7 @@ void GUBHelper::ApplyWithPotentialBumpAndGUB(
     // Corner case where sometimes we have a term and its complement.
     // Ideally they should be merged as it should be always beneficial to do
     // so ? Add a step for this.
-    if (already_seen_.contains(curr.literal)) continue;
-    already_seen_.insert(curr.literal);
+    if (!already_seen_.insert(curr.literal).second) continue;
 
     for (const int amo_index : implications_->AtMostOneIndices(curr.literal)) {
       const int64_t count_or_index = amo_count_[amo_index];
@@ -682,6 +653,81 @@ void GUBHelper::ApplyWithPotentialBumpAndGUB(
     // All future terms will try "lifting" with this entry on that AMO.
     if (curr.complemented && best != -1) {
       amo_count_[best] = -i - 1;
+      initial_coeffs_[curr.index] = 0;
+    }
+  }
+
+  // Bump all uncomplemented Booleans in one AMO simultaneously, or a single
+  // Boolean term.
+  const IntegerValue remainder = PositiveRemainder(original_rhs, divisor);
+  const IntegerValue f_remainder = f(remainder);
+  already_seen_.clear();
+  amo_score_.clear();
+  int best_amo = -1;
+  double best_score = 0.0;
+  for (LiteralInCut& curr : literals_) {
+    if (curr.complemented) {
+      already_seen_.insert(curr.literal);
+      continue;
+    }
+    if (!already_seen_.insert(curr.literal).second) {
+      curr.complemented = true;
+      continue;
+    }
+    const IntegerValue alternative = GetBumpedCoeff(
+        f, divisor, f_divisor, remainder, f_remainder, curr.original_coeff);
+    const IntegerValue gain = alternative - cut->terms[curr.index].coeff;
+    if (gain <= 0) {
+      curr.complemented = true;
+      continue;
+    }
+
+    // Hack: we "reuse" original_coeff to store the alternative.
+    curr.original_coeff = alternative;
+    const double score =
+        ToDouble(gain) * (cut->terms[curr.index].lp_value + 1e-9);
+    for (const int amo_index : implications_->AtMostOneIndices(curr.literal)) {
+      const double new_score = (amo_score_[amo_index] += score);
+      if (new_score > best_score) {
+        best_score = new_score;
+        best_amo = amo_index;
+      }
+    }
+  }
+
+  // See if a single bump outside AMO is better.
+  int bump_index = -1;
+  IntegerValue bump_coeff = 0;
+  for (int i = 0; i < num_terms; ++i) {
+    const CutTerm& entry = cut->terms[i];
+    if (entry.bound_diff != 1 || initial_coeffs_[i] == 0) continue;
+    const IntegerValue alternative = GetBumpedCoeff(
+        f, divisor, f_divisor, remainder, f_remainder, initial_coeffs_[i]);
+    if (alternative > entry.coeff) {
+      const double score = ToDouble(alternative - entry.coeff) * entry.lp_value;
+      if (score > best_score) {
+        best_score = score;
+        bump_index = i;
+        bump_coeff = alternative;
+      }
+    }
+  }
+
+  if (bump_index != -1) {
+    ++last_num_bumps_;
+    cut->terms[bump_index].coeff = bump_coeff;
+  } else if (best_amo != -1) {
+    for (const LiteralInCut& curr : literals_) {
+      if (curr.complemented) continue;
+      for (const int amo_index :
+           implications_->AtMostOneIndices(curr.literal)) {
+        if (amo_index == best_amo) {
+          ++last_num_bumps_;
+          ++num_improvements_;
+          cut->terms[curr.index].coeff = curr.original_coeff;
+          break;
+        }
+      }
     }
   }
 }
@@ -1707,14 +1753,6 @@ bool CoverCutHelper::TrySingleNodeFlow(const CutData& input_ct,
                        : GetSuperAdditiveStrengtheningFunction(positive_rhs,
                                                                min_magnitude);
 
-  if (ib_processor != nullptr) {
-    const auto [num_lb, num_ub, num_merges] =
-        ib_processor->PostprocessWithImpliedBound(f, /*factor_t=*/1, &cut_);
-    flow_stats_.num_lb_ibs += num_lb;
-    flow_stats_.num_ub_ibs += num_ub;
-    flow_stats_.num_merges += num_merges;
-  }
-
   // Lifting.
   IntegerValue period = positive_rhs;
   {
@@ -1737,6 +1775,14 @@ bool CoverCutHelper::TrySingleNodeFlow(const CutData& input_ct,
     }
 
     f = ExtendNegativeFunction(f, period);
+  }
+
+  if (ib_processor != nullptr) {
+    const auto [num_lb, num_ub, num_merges] =
+        ib_processor->PostprocessWithImpliedBound(f, /*factor_t=*/1, &cut_);
+    flow_stats_.num_lb_ibs += num_lb;
+    flow_stats_.num_ub_ibs += num_ub;
+    flow_stats_.num_merges += num_merges;
   }
 
   // Generate the cut.

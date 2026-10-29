@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/base/thread_annotations.h"
 #include "absl/synchronization/mutex.h"
 #include "google/protobuf/arena.h"
@@ -119,9 +120,11 @@ class VariablesShavingSolver : public SubSolver {
 
   bool FindNextVar(State* state) ABSL_SHARED_LOCKS_REQUIRED(mutex_);
 
-  void CopyModelConnectedToVar(State* state, Model* local_model,
-                               CpModelProto* shaving_proto,
-                               bool* has_no_overlap_2d)
+  // Returns false if the model is infeasible.
+  ABSL_MUST_USE_RESULT bool CopyModelConnectedToVar(State* state,
+                                                    Model* local_model,
+                                                    CpModelProto* shaving_proto,
+                                                    bool* has_no_overlap_2d)
       ABSL_SHARED_LOCKS_REQUIRED(mutex_);
 
   bool ResetAndSolveModel(int64_t task_id, State* state, Model* local_model,
