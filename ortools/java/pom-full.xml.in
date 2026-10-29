@@ -203,7 +203,9 @@
       <version>0.12.0</version>
       <extensions>true</extensions>
       <configuration>
+        <outputFilename>@JAVA_PROJECT@-bundle.zip</outputFilename>
         <publishingServerId>central</publishingServerId>
+        <skipUpload>true</skipUpload>
       </configuration>
     </plugin>
   </plugins>
