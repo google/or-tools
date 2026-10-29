@@ -2433,6 +2433,68 @@ TEST_P(PackCumulsOfOptimizerDimensionsFromAssignmentTest,
             kSoftUpperBound);
 }
 
+// Unit test for PackCumulsOfOptimizerDimensionsFromAssignment() that verifies
+// that packing with vehicle breaks properly propagates the new break start
+// and end times.
+// The example has a single vehicle with different start/end nodes, with an
+// empty route (but 'used_if_route_is_empty' set to true, so the vehicle is
+// considered as used). In the original solution passed to packing, the route
+// starts at 200, with one break scheduled from 290 to 295. With packing, the
+// route start time gets shifted to 0, so the break must occur from 0 to 5.
+TEST_P(PackCumulsOfOptimizerDimensionsFromAssignmentTest,
+       PackingWithVehicleBreak) {
+  const int kNumNodes = 2;
+  const int kNumVehicles = 1;
+  const IndexManager manager(kNumNodes, kNumVehicles,
+                             {{NodeIndex(0), NodeIndex(1)}});
+  Model model(manager);
+  model.SetVehicleUsedWhenEmpty(true, 0);
+
+  RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
+  parameters.set_continuous_scheduling_solver(GetParam());
+
+  const std::string kDimensionName = "time";
+  model.AddConstantDimensionWithSlack(100, kint64max, kint64max,
+                                      /*fix_start_cumul_to_zero*/ false,
+                                      kDimensionName);
+  Dimension* const time_dimension = model.GetMutableDimension(kDimensionName);
+
+  // Add two 5-second breaks to the vehicle, one that must start at 0 and
+  // another that must start at 300.
+  IntervalVar* const break_interval1 =
+      model.solver()->MakeFixedDurationIntervalVar(0, 0, 5, false, "break");
+  IntervalVar* const break_interval2 =
+      model.solver()->MakeFixedDurationIntervalVar(290, 295, 5, false, "break");
+  time_dimension->SetBreakIntervalsOfVehicle({break_interval1, break_interval2},
+                                             0, -1, -1);
+  model.CloseModelWithParameters(parameters);
+
+  // Make the vehicle start either at 0 or after 200.
+  time_dimension->CumulVar(model.Start(0))->SetRange(0, 500);
+  model.solver()->AddConstraint(model.solver()->MakeNotMemberCt(
+      time_dimension->CumulVar(model.Start(0)), std::vector<int64_t>{1},
+      std::vector<int64_t>{199}));
+
+  // Original solution: Start(t:200)->End(t:305), break happens from 290 to 295.
+  Assignment* original_solution = BuildAssignmentFromSolution(model, {1});
+  original_solution->Add(time_dimension->CumulVar(model.Start(0)))
+      ->SetValue(200);
+  original_solution->Add(time_dimension->CumulVar(model.End(0)))->SetValue(305);
+  original_solution->Add(break_interval1)->SetStartValue(0);
+  original_solution->Add(break_interval1)->SetEndValue(0);
+  original_solution->Add(break_interval2)->SetStartValue(290);
+  original_solution->Add(break_interval2)->SetEndValue(295);
+  const Assignment* solution =
+      model.PackCumulsOfOptimizerDimensionsFromAssignment(
+          original_solution, kPackCumulsDurationLimit);
+
+  ASSERT_NE(solution, nullptr);
+  EXPECT_EQ(solution->Value(time_dimension->CumulVar(model.Start(0))), 0);
+  EXPECT_EQ(solution->Value(time_dimension->CumulVar(model.End(0))), 105);
+  EXPECT_EQ(solution->StartValue(break_interval1), 0);
+  EXPECT_EQ(solution->EndValue(break_interval1), 5);
+}
+
 INSTANTIATE_TEST_SUITE_P(
     WithSolverType, PackCumulsOfOptimizerDimensionsFromAssignmentTest,
     ::testing::Values(RoutingSearchParameters::SCHEDULING_GLOP,
