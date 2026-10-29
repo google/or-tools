@@ -923,4 +923,15 @@ std::string DefaultPhaseStatString(DecisionBuilder* db) {
   return dis != nullptr ? dis->StatString() : "";
 }
 
+DecisionBuilder* Solver::MakeDefaultPhase(const std::vector<IntVar*>& vars) {
+  DefaultPhaseParameters parameters;
+  return MakeDefaultPhase(vars, parameters);
+}
+
+DecisionBuilder* Solver::MakeDefaultPhase(
+    const std::vector<IntVar*>& vars,
+    const DefaultPhaseParameters& parameters) {
+  return RevAlloc(new DefaultIntegerSearch(this, vars, parameters));
+}
+
 }  // namespace operations_research

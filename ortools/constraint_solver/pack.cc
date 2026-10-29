@@ -1280,7 +1280,6 @@ class CountAssignedItemsDimension : public Dimension {
                               int bins_count, IntVar* cost_var)
       : Dimension(s, p),
         vars_count_(vars_count),
-        bins_count_(bins_count),
         cost_var_(cost_var),
         first_unbound_backward_(0),
         assigned_count_(0),
@@ -1340,7 +1339,6 @@ class CountAssignedItemsDimension : public Dimension {
 
  private:
   const int vars_count_;
-  const int bins_count_;
   IntVar* const cost_var_;
   Rev<int> first_unbound_backward_;
   Rev<int> assigned_count_;
@@ -1365,7 +1363,6 @@ class CountUsedBinDimension : public Dimension {
   CountUsedBinDimension(Solver* s, Pack* p, int vars_count, int bins_count,
                         IntVar* count_var)
       : Dimension(s, p),
-        vars_count_(vars_count),
         bins_count_(bins_count),
         count_var_(count_var),
         used_(bins_count_),
@@ -1456,7 +1453,6 @@ class CountUsedBinDimension : public Dimension {
   }
 
  private:
-  const int vars_count_;
   const int bins_count_;
   IntVar* const count_var_;
   RevBitSet used_;
@@ -1608,6 +1604,10 @@ void Pack::AddCountAssignedItemsDimension(IntVar* count_var) {
   Dimension* const dim = s->RevAlloc(
       new CountAssignedItemsDimension(s, this, vars_.size(), bins_, count_var));
   dims_.push_back(dim);
+}
+
+Pack* Solver::MakePack(const std::vector<IntVar*>& vars, int number_of_bins) {
+  return RevAlloc(new Pack(this, vars, number_of_bins));
 }
 
 }  // namespace operations_research

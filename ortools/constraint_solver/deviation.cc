@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <string>
+#include <vector>
 
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
@@ -326,6 +327,11 @@ void Deviation::PruneBound(int var_index, int64_t bound, bool upper_bound) {
   } else {
     vars_[var_index]->SetMin(-bound);
   }
+}
+
+Constraint* Solver::MakeDeviation(const std::vector<IntVar*>& vars,
+                                  IntVar* deviation_var, int64_t total_sum) {
+  return RevAlloc(new Deviation(this, vars, deviation_var, total_sum));
 }
 
 }  // namespace operations_research

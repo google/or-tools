@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "ortools/constraint_solver/sched_search.h"
+
 #include <cstdint>
 #include <string>
 #include <utility>
@@ -473,47 +475,79 @@ class RankFirstIntervalVars : public DecisionBuilder {
 };
 }  // namespace
 
-Decision* Solver::MakeScheduleOrPostpone(IntervalVar* var, int64_t est,
-                                         int64_t* marker) {
+Decision* BuildScheduleOrPostpone(Solver* solver, IntervalVar* var, int64_t est,
+                                  int64_t* marker) {
   CHECK(var != nullptr);
   CHECK(marker != nullptr);
-  return RevAlloc(new ScheduleOrPostpone(var, est, marker));
+  return solver->RevAlloc(new ScheduleOrPostpone(var, est, marker));
 }
 
-Decision* Solver::MakeScheduleOrExpedite(IntervalVar* var, int64_t est,
-                                         int64_t* marker) {
+Decision* BuildScheduleOrExpedite(Solver* solver, IntervalVar* var, int64_t est,
+                                  int64_t* marker) {
   CHECK(var != nullptr);
   CHECK(marker != nullptr);
-  return RevAlloc(new ScheduleOrExpedite(var, est, marker));
+  return solver->RevAlloc(new ScheduleOrExpedite(var, est, marker));
 }
 
-DecisionBuilder* Solver::MakePhase(const std::vector<IntervalVar*>& intervals,
-                                   IntervalStrategy str) {
+DecisionBuilder* BuildIntervalPhase(Solver* solver,
+                                    const std::vector<IntervalVar*>& intervals,
+                                    Solver::IntervalStrategy str) {
   switch (str) {
     case Solver::INTERVAL_DEFAULT:
     case Solver::INTERVAL_SIMPLE:
     case Solver::INTERVAL_SET_TIMES_FORWARD:
-      return RevAlloc(new SetTimesForward(intervals));
+      return solver->RevAlloc(new SetTimesForward(intervals));
     case Solver::INTERVAL_SET_TIMES_BACKWARD:
-      return RevAlloc(new SetTimesBackward(intervals));
+      return solver->RevAlloc(new SetTimesBackward(intervals));
     default:
       LOG(FATAL) << "Unknown strategy " << str;
   }
 }
 
-Decision* Solver::MakeRankFirstInterval(SequenceVar* sequence, int index) {
+Decision* BuildRankFirstInterval(Solver* solver, SequenceVar* sequence,
+                                 int index) {
   CHECK(sequence != nullptr);
-  return RevAlloc(new RankFirst(sequence, index));
+  return solver->RevAlloc(new RankFirst(sequence, index));
+}
+
+Decision* BuildRankLastInterval(Solver* solver, SequenceVar* sequence,
+                                int index) {
+  CHECK(sequence != nullptr);
+  return solver->RevAlloc(new RankLast(sequence, index));
+}
+
+DecisionBuilder* BuildSequencePhase(Solver* solver,
+                                    const std::vector<SequenceVar*>& sequences,
+                                    Solver::SequenceStrategy str) {
+  return solver->RevAlloc(new RankFirstIntervalVars(sequences, str));
+}
+
+Decision* Solver::MakeScheduleOrPostpone(IntervalVar* var, int64_t est,
+                                         int64_t* marker) {
+  return BuildScheduleOrPostpone(this, var, est, marker);
+}
+
+Decision* Solver::MakeScheduleOrExpedite(IntervalVar* var, int64_t est,
+                                         int64_t* marker) {
+  return BuildScheduleOrExpedite(this, var, est, marker);
+}
+
+DecisionBuilder* Solver::MakePhase(const std::vector<IntervalVar*>& intervals,
+                                   IntervalStrategy str) {
+  return BuildIntervalPhase(this, intervals, str);
+}
+
+Decision* Solver::MakeRankFirstInterval(SequenceVar* sequence, int index) {
+  return BuildRankFirstInterval(this, sequence, index);
 }
 
 Decision* Solver::MakeRankLastInterval(SequenceVar* sequence, int index) {
-  CHECK(sequence != nullptr);
-  return RevAlloc(new RankLast(sequence, index));
+  return BuildRankLastInterval(this, sequence, index);
 }
 
 DecisionBuilder* Solver::MakePhase(const std::vector<SequenceVar*>& sequences,
                                    SequenceStrategy str) {
-  return RevAlloc(new RankFirstIntervalVars(sequences, str));
+  return BuildSequencePhase(this, sequences, str);
 }
 
 }  // namespace operations_research

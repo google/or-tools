@@ -648,7 +648,7 @@ std::string BasePathCumul::DebugString() const {
   for (int i = 0; i < size(); ++i) {
     out += nexts_[i]->DebugString() + " " + cumuls_[i]->DebugString();
   }
-  out += ")";
+  out += ')';
   return out;
 }
 
@@ -905,7 +905,7 @@ std::string DelayedPathCumul::DebugString() const {
   for (int i = 0; i < nexts_.size(); ++i) {
     out += nexts_[i]->DebugString() + " " + cumuls_[i]->DebugString();
   }
-  out += ")";
+  out += ')';
   return out;
 }
 
@@ -1468,6 +1468,114 @@ void PathEnergyCostConstraint::PropagatePath(int path) {
                  CapProd(energy_above_max, cost_per_unit_above)));
     }
   }
+}
+
+Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
+                                const std::vector<IntVar*>& active,
+                                Solver::IndexFilter1 sink_handler,
+                                bool assume_paths) {
+  CHECK_EQ(nexts.size(), active.size());
+  if (sink_handler == nullptr) {
+    const int64_t size = nexts.size();
+    sink_handler = [size](int64_t index) { return index >= size; };
+  }
+  return RevAlloc(
+      new NoCycle(this, nexts, active, std::move(sink_handler), assume_paths));
+}
+
+Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
+                                const std::vector<IntVar*>& active,
+                                Solver::IndexFilter1 sink_handler) {
+  return MakeNoCycle(nexts, active, std::move(sink_handler), true);
+}
+
+// TODO(user): Merge NoCycle and Circuit.
+Constraint* Solver::MakeCircuit(const std::vector<IntVar*>& nexts) {
+  return RevAlloc(new Circuit(this, nexts, false));
+}
+
+Constraint* Solver::MakeSubCircuit(const std::vector<IntVar*>& nexts) {
+  return RevAlloc(new Circuit(this, nexts, true));
+}
+
+Constraint* Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
+                                  const std::vector<IntVar*>& active,
+                                  const std::vector<IntVar*>& cumuls,
+                                  const std::vector<IntVar*>& transits) {
+  CHECK_EQ(nexts.size(), active.size());
+  CHECK_EQ(transits.size(), nexts.size());
+  return RevAlloc(new PathCumul(this, nexts, active, cumuls, transits));
+}
+
+Constraint* Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
+                                  const std::vector<IntVar*>& active,
+                                  const std::vector<IntVar*>& cumuls,
+                                  Solver::IndexEvaluator2 transit_evaluator) {
+  CHECK_EQ(nexts.size(), active.size());
+  return RevAlloc(new IndexEvaluator2PathCumul(this, nexts, active, cumuls,
+                                               std::move(transit_evaluator)));
+}
+
+Constraint* Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
+                                  const std::vector<IntVar*>& active,
+                                  const std::vector<IntVar*>& cumuls,
+                                  const std::vector<IntVar*>& slacks,
+                                  Solver::IndexEvaluator2 transit_evaluator) {
+  CHECK_EQ(nexts.size(), active.size());
+  return RevAlloc(new IndexEvaluator2SlackPathCumul(
+      this, nexts, active, cumuls, slacks, std::move(transit_evaluator)));
+}
+
+Constraint* Solver::MakeDelayedPathCumul(const std::vector<IntVar*>& nexts,
+                                         const std::vector<IntVar*>& active,
+                                         const std::vector<IntVar*>& cumuls,
+                                         const std::vector<IntVar*>& transits) {
+  CHECK_EQ(nexts.size(), active.size());
+  CHECK_EQ(transits.size(), nexts.size());
+  return RevAlloc(new DelayedPathCumul(this, nexts, active, cumuls, transits));
+}
+
+Constraint* Solver::MakePathConnected(std::vector<IntVar*> nexts,
+                                      std::vector<int64_t> sources,
+                                      std::vector<int64_t> sinks,
+                                      std::vector<IntVar*> status) {
+  return RevAlloc(new PathConnectedConstraint(
+      this, std::move(nexts), sources, std::move(sinks), std::move(status)));
+}
+
+Constraint* Solver::MakePathPrecedenceConstraint(
+    std::vector<IntVar*> nexts,
+    const std::vector<std::pair<int, int>>& precedences) {
+  return MakePathTransitPrecedenceConstraint(std::move(nexts), {}, precedences);
+}
+
+Constraint* Solver::MakePathPrecedenceConstraint(
+    std::vector<IntVar*> nexts,
+    const std::vector<std::pair<int, int>>& precedences,
+    absl::Span<const int> lifo_path_starts,
+    absl::Span<const int> fifo_path_starts) {
+  absl::flat_hash_map<int, PathTransitPrecedenceConstraint::PrecedenceType>
+      precedence_types;
+  for (int start : lifo_path_starts) {
+    precedence_types[start] = PathTransitPrecedenceConstraint::LIFO;
+  }
+  for (int start : fifo_path_starts) {
+    precedence_types[start] = PathTransitPrecedenceConstraint::FIFO;
+  }
+  return MakePathTransitTypedPrecedenceConstraint(
+      this, std::move(nexts), {}, precedences, std::move(precedence_types));
+}
+
+Constraint* Solver::MakePathTransitPrecedenceConstraint(
+    std::vector<IntVar*> nexts, std::vector<IntVar*> transits,
+    const std::vector<std::pair<int, int>>& precedences) {
+  return MakePathTransitTypedPrecedenceConstraint(
+      this, std::move(nexts), std::move(transits), precedences, {{}});
+}
+
+Constraint* Solver::MakePathEnergyCostConstraint(
+    PathEnergyCostConstraintSpecification specification) {
+  return RevAlloc(new PathEnergyCostConstraint(this, std::move(specification)));
 }
 
 }  // namespace operations_research

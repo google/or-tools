@@ -15,17 +15,22 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/model_cache.h"
@@ -3720,6 +3725,180 @@ bool IsVarProduct(IntExpr* expr, IntVar** inner_var, int64_t* coefficient) {
     return true;
   }
   return false;
+}
+
+IntVar* Solver::MakeIntVar(int64_t min, int64_t max, const std::string& name) {
+  if (min == max) {
+    return MakeIntConst(min, name);
+  }
+  if (min == 0 && max == 1) {
+    return RegisterIntVar(RevAlloc(new ConcreteBooleanVar(this, name)));
+  } else if (CapSub(max, min) == 1) {
+    const std::string inner_name = "inner_" + name;
+    return RegisterIntVar(
+        MakeSum(RevAlloc(new ConcreteBooleanVar(this, inner_name)), min)
+            ->VarWithName(name));
+  } else {
+    return RegisterIntVar(RevAlloc(new DomainIntVar(this, min, max, name)));
+  }
+}
+
+IntVar* Solver::MakeIntVar(int64_t min, int64_t max) {
+  return MakeIntVar(min, max, "");
+}
+
+IntVar* Solver::MakeBoolVar(const std::string& name) {
+  return RegisterIntVar(RevAlloc(new ConcreteBooleanVar(this, name)));
+}
+
+IntVar* Solver::MakeBoolVar() {
+  return RegisterIntVar(RevAlloc(new ConcreteBooleanVar(this, "")));
+}
+
+IntVar* Solver::MakeIntVar(const std::vector<int64_t>& values,
+                           const std::string& name) {
+  DCHECK(!values.empty());
+  // Fast-track the case where we have a single value.
+  if (values.size() == 1) return MakeIntConst(values[0], name);
+  // Sort and remove duplicates.
+  std::vector<int64_t> unique_sorted_values = values;
+  gtl::STLSortAndRemoveDuplicates(&unique_sorted_values);
+  // Case when we have a single value, after clean-up.
+  if (unique_sorted_values.size() == 1) return MakeIntConst(values[0], name);
+  // Case when the values are a dense interval of integers.
+  if (unique_sorted_values.size() ==
+      unique_sorted_values.back() - unique_sorted_values.front() + 1) {
+    return MakeIntVar(unique_sorted_values.front(), unique_sorted_values.back(),
+                      name);
+  }
+  // Compute the GCD: if it's not 1, we can express the variable's domain as
+  // the product of the GCD and of a domain with smaller values.
+  int64_t gcd = 0;
+  for (const int64_t v : unique_sorted_values) {
+    if (gcd == 0) {
+      gcd = std::abs(v);
+    } else {
+      gcd = std::gcd(gcd, std::abs(v));  // Supports v==0.
+    }
+    if (gcd == 1) {
+      // If it's 1, though, we can't do anything special, so we
+      // immediately return a new DomainIntVar.
+      return RegisterIntVar(
+          RevAlloc(new DomainIntVar(this, unique_sorted_values, name)));
+    }
+  }
+  DCHECK_GT(gcd, 1);
+  for (int64_t& v : unique_sorted_values) {
+    DCHECK_EQ(0, v % gcd);
+    v /= gcd;
+  }
+  const std::string new_name = name.empty() ? "" : "inner_" + name;
+  // Catch the case where the divided values are a dense set of integers.
+  IntVar* inner_intvar = nullptr;
+  if (unique_sorted_values.size() ==
+      unique_sorted_values.back() - unique_sorted_values.front() + 1) {
+    inner_intvar = MakeIntVar(unique_sorted_values.front(),
+                              unique_sorted_values.back(), new_name);
+  } else {
+    inner_intvar = RegisterIntVar(
+        RevAlloc(new DomainIntVar(this, unique_sorted_values, new_name)));
+  }
+  return MakeProd(inner_intvar, gcd)->Var();
+}
+
+IntVar* Solver::MakeIntVar(const std::vector<int64_t>& values) {
+  return MakeIntVar(values, "");
+}
+
+IntVar* Solver::MakeIntVar(const std::vector<int>& values,
+                           const std::string& name) {
+  return MakeIntVar(ToInt64Vector(values), name);
+}
+
+IntVar* Solver::MakeIntVar(const std::vector<int>& values) {
+  return MakeIntVar(values, "");
+}
+
+IntVar* Solver::MakeIntConst(int64_t val, const std::string& name) {
+  // If IntConst is going to be named after its creation,
+  // cp_share_int_consts should be set to false otherwise names can potentially
+  // be overwritten.
+  if (absl::GetFlag(FLAGS_cp_share_int_consts) && name.empty() &&
+      val >= MIN_CACHED_INT_CONST && val <= MAX_CACHED_INT_CONST) {
+    return cached_constants_[val - MIN_CACHED_INT_CONST];
+  }
+  return RevAlloc(new IntConst(this, val, name));
+}
+
+IntVar* Solver::MakeIntConst(int64_t val) { return MakeIntConst(val, ""); }
+
+namespace {
+std::string IndexedName(absl::string_view prefix, int index, int max_index) {
+#if 0
+#if defined(_MSC_VER)
+  const int digits = max_index > 0 ?
+      static_cast<int>(log(1.0L * max_index) / log(10.0L)) + 1 :
+      1;
+#else
+  const int digits = max_index > 0 ? static_cast<int>(log10(max_index)) + 1: 1;
+#endif
+  return absl::StrFormat("%s%0*d", prefix, digits, index);
+#else
+  return absl::StrCat(prefix, index);
+#endif
+}
+}  // namespace
+
+void Solver::MakeIntVarArray(int var_count, int64_t vmin, int64_t vmax,
+                             const std::string& name,
+                             std::vector<IntVar*>* vars) {
+  for (int i = 0; i < var_count; ++i) {
+    vars->push_back(MakeIntVar(vmin, vmax, IndexedName(name, i, var_count)));
+  }
+}
+
+void Solver::MakeIntVarArray(int var_count, int64_t vmin, int64_t vmax,
+                             std::vector<IntVar*>* vars) {
+  for (int i = 0; i < var_count; ++i) {
+    vars->push_back(MakeIntVar(vmin, vmax));
+  }
+}
+
+IntVar** Solver::MakeIntVarArray(int var_count, int64_t vmin, int64_t vmax,
+                                 const std::string& name) {
+  IntVar** vars = new IntVar*[var_count];
+  for (int i = 0; i < var_count; ++i) {
+    vars[i] = MakeIntVar(vmin, vmax, IndexedName(name, i, var_count));
+  }
+  return vars;
+}
+
+void Solver::MakeBoolVarArray(int var_count, const std::string& name,
+                              std::vector<IntVar*>* vars) {
+  for (int i = 0; i < var_count; ++i) {
+    vars->push_back(MakeBoolVar(IndexedName(name, i, var_count)));
+  }
+}
+
+void Solver::MakeBoolVarArray(int var_count, std::vector<IntVar*>* vars) {
+  for (int i = 0; i < var_count; ++i) {
+    vars->push_back(MakeBoolVar());
+  }
+}
+
+IntVar** Solver::MakeBoolVarArray(int var_count, const std::string& name) {
+  IntVar** vars = new IntVar*[var_count];
+  for (int i = 0; i < var_count; ++i) {
+    vars[i] = MakeBoolVar(IndexedName(name, i, var_count));
+  }
+  return vars;
+}
+
+void Solver::InitCachedIntConstants() {
+  for (int i = MIN_CACHED_INT_CONST; i <= MAX_CACHED_INT_CONST; ++i) {
+    cached_constants_[i - MIN_CACHED_INT_CONST] =
+        RevAlloc(new IntConst(this, i, ""));  // note the empty name
+  }
 }
 
 }  // namespace operations_research

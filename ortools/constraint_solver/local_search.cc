@@ -15,7 +15,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -28,7 +27,6 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/base/nullability.h"
-#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
@@ -36,20 +34,16 @@
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/log_severity.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/timer.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/search_stats.pb.h"
 #include "ortools/constraint_solver/sequence_var.h"
 #include "ortools/graph/hamiltonian_path.h"
 #include "ortools/util/bitset.h"
@@ -3443,375 +3437,6 @@ bool LocalSearchState::PropagateTighten(VariableDomainId domain_id) {
   return true;
 }
 
-// ----- LocalSearchProfiler -----
-
-class LocalSearchProfiler : public LocalSearchMonitor {
- public:
-  explicit LocalSearchProfiler(Solver* solver) : LocalSearchMonitor(solver) {}
-  std::string DebugString() const override { return "LocalSearchProfiler"; }
-  void RestartSearch() override {
-    operator_stats_.clear();
-    filter_stats_per_context_.clear();
-    last_operator_ = nullptr;
-  }
-  void ExitSearch() override {
-    // Update times for current operator when the search ends.
-    UpdateTime();
-    last_operator_ = nullptr;
-  }
-  template <typename Callback>
-  void ParseFirstSolutionStatistics(const Callback& callback) const {
-    for (ProfiledDecisionBuilder* db : profiled_decision_builders_) {
-      if (db->seconds() == 0) continue;
-      callback(db->name(), db->seconds());
-    }
-  }
-
-  template <typename Callback>
-  void ParseLocalSearchOperatorStatistics(const Callback& callback) const {
-    std::vector<const LocalSearchOperator*> operators;
-    for (const auto& stat : operator_stats_) {
-      operators.push_back(stat.first);
-    }
-    std::sort(
-        operators.begin(), operators.end(),
-        [this](const LocalSearchOperator* op1, const LocalSearchOperator* op2) {
-          return gtl::FindOrDie(operator_stats_, op1).neighbors >
-                 gtl::FindOrDie(operator_stats_, op2).neighbors;
-        });
-    for (const LocalSearchOperator* const op : operators) {
-      const OperatorStats& stats = gtl::FindOrDie(operator_stats_, op);
-      const std::string& label = op->DebugString();
-      // Skip operators with no name: these come from empty compound operators.
-      if (label.empty() &&
-          dynamic_cast<const CompoundOperator*>(op) != nullptr) {
-        continue;
-      }
-      callback(label, stats.neighbors, stats.filtered_neighbors,
-               stats.accepted_neighbors, stats.seconds,
-               stats.make_next_neighbor_seconds, stats.accept_neighbor_seconds);
-    }
-  }
-
-  template <typename Callback>
-  void ParseLocalSearchFilterStatistics(const Callback& callback) const {
-    for (const auto& [context, filter_stats] : filter_stats_per_context_) {
-      std::vector<const LocalSearchFilter*> filters;
-      for (const auto& [filter, stats] : filter_stats) {
-        filters.push_back(filter);
-      }
-      std::sort(
-          filters.begin(), filters.end(),
-          [filter_stats_ptr = &filter_stats](const LocalSearchFilter* filter1,
-                                             const LocalSearchFilter* filter2) {
-            return gtl::FindOrDie(*filter_stats_ptr, filter1).calls >
-                   gtl::FindOrDie(*filter_stats_ptr, filter2).calls;
-          });
-      for (const LocalSearchFilter* const filter : filters) {
-        const FilterStats& stats = gtl::FindOrDie(filter_stats, filter);
-        callback(context, filter->DebugString(), stats.calls, stats.rejects,
-                 stats.seconds);
-      }
-    }
-  }
-  LocalSearchStatistics ExportToLocalSearchStatistics() const {
-    LocalSearchStatistics statistics_proto;
-    ParseFirstSolutionStatistics(
-        [&statistics_proto](absl::string_view name, double duration_seconds) {
-          LocalSearchStatistics::FirstSolutionStatistics* const
-              first_solution_statistics =
-                  statistics_proto.add_first_solution_statistics();
-          first_solution_statistics->set_strategy(name);
-          first_solution_statistics->set_duration_seconds(duration_seconds);
-        });
-    ParseLocalSearchOperatorStatistics(
-        [&statistics_proto](
-            absl::string_view name, int64_t num_neighbors,
-            int64_t num_filtered_neighbors, int64_t num_accepted_neighbors,
-            double duration_seconds, double make_next_neighbor_duration_seconds,
-            double accept_neighbor_duration_seconds) {
-          LocalSearchStatistics::LocalSearchOperatorStatistics* const
-              local_search_operator_statistics =
-                  statistics_proto.add_local_search_operator_statistics();
-          local_search_operator_statistics->set_local_search_operator(name);
-          local_search_operator_statistics->set_num_neighbors(num_neighbors);
-          local_search_operator_statistics->set_num_filtered_neighbors(
-              num_filtered_neighbors);
-          local_search_operator_statistics->set_num_accepted_neighbors(
-              num_accepted_neighbors);
-          local_search_operator_statistics->set_duration_seconds(
-              duration_seconds);
-          local_search_operator_statistics
-              ->set_make_next_neighbor_duration_seconds(
-                  make_next_neighbor_duration_seconds);
-          local_search_operator_statistics
-              ->set_accept_neighbor_duration_seconds(
-                  accept_neighbor_duration_seconds);
-        });
-    ParseLocalSearchFilterStatistics([&statistics_proto](
-                                         absl::string_view context,
-                                         absl::string_view name,
-                                         int64_t num_calls, int64_t num_rejects,
-                                         double duration_seconds) {
-      LocalSearchStatistics::LocalSearchFilterStatistics* const
-          local_search_filter_statistics =
-              statistics_proto.add_local_search_filter_statistics();
-      local_search_filter_statistics->set_local_search_filter(name);
-      local_search_filter_statistics->set_num_calls(num_calls);
-      local_search_filter_statistics->set_num_rejects(num_rejects);
-      local_search_filter_statistics->set_duration_seconds(duration_seconds);
-      local_search_filter_statistics->set_num_rejects_per_second(
-          num_rejects / duration_seconds);
-      local_search_filter_statistics->set_context(context);
-    });
-    statistics_proto.set_total_num_neighbors(solver()->neighbors());
-    statistics_proto.set_total_num_filtered_neighbors(
-        solver()->filtered_neighbors());
-    statistics_proto.set_total_num_accepted_neighbors(
-        solver()->accepted_neighbors());
-    return statistics_proto;
-  }
-  std::string PrintOverview() const {
-    std::string overview;
-    size_t max_name_size = 0;
-    ParseFirstSolutionStatistics(
-        [&max_name_size](absl::string_view name, double) {
-          max_name_size = std::max(max_name_size, name.length());
-        });
-    if (max_name_size > 0) {
-      absl::StrAppendFormat(&overview,
-                            "First solution statistics:\n%*s | Time (s)\n",
-                            max_name_size, "");
-      ParseFirstSolutionStatistics(
-          [&overview, max_name_size](absl::string_view name,
-                                     double duration_seconds) {
-            absl::StrAppendFormat(&overview, "%*s | %7.2g\n", max_name_size,
-                                  name, duration_seconds);
-          });
-    }
-    max_name_size = 0;
-    ParseLocalSearchOperatorStatistics(
-        [&max_name_size](absl::string_view name, int64_t, int64_t, int64_t,
-                         double, double, double) {
-          max_name_size = std::max(max_name_size, name.length());
-        });
-    if (max_name_size > 0) {
-      absl::StrAppendFormat(
-          &overview,
-          "Local search operator statistics:\n%*s | Neighbors | Filtered "
-          "| Accepted | Time (s)\n",
-          max_name_size, "");
-      OperatorStats total_stats;
-      ParseLocalSearchOperatorStatistics(
-          [&overview, &total_stats, max_name_size](
-              absl::string_view name, int64_t num_neighbors,
-              int64_t num_filtered_neighbors, int64_t num_accepted_neighbors,
-              double duration_seconds,
-              double /*make_next_neighbor_duration_seconds*/,
-              double /*accept_neighbor_duration_seconds*/) {
-            // TODO(user): Add make_next_neighbor_duration_seconds and
-            // accept_neighbor_duration_seconds to stats.
-            absl::StrAppendFormat(
-                &overview, "%*s | %9ld | %8ld | %8ld | %7.2g\n", max_name_size,
-                name, num_neighbors, num_filtered_neighbors,
-                num_accepted_neighbors, duration_seconds);
-            total_stats.neighbors += num_neighbors;
-            total_stats.filtered_neighbors += num_filtered_neighbors;
-            total_stats.accepted_neighbors += num_accepted_neighbors;
-            total_stats.seconds += duration_seconds;
-          });
-      absl::StrAppendFormat(
-          &overview, "%*s | %9ld | %8ld | %8ld | %7.2g\n", max_name_size,
-          "Total", total_stats.neighbors, total_stats.filtered_neighbors,
-          total_stats.accepted_neighbors, total_stats.seconds);
-    }
-    max_name_size = 0;
-    ParseLocalSearchFilterStatistics(
-        [&max_name_size](absl::string_view, absl::string_view name, int64_t,
-                         int64_t, double) {
-          max_name_size = std::max(max_name_size, name.length());
-        });
-    if (max_name_size > 0) {
-      std::optional<std::string> filter_context;
-      FilterStats total_filter_stats;
-      ParseLocalSearchFilterStatistics(
-          [&overview, &filter_context, &total_filter_stats, max_name_size](
-              const std::string& context, const std::string& name,
-              int64_t num_calls, int64_t num_rejects, double duration_seconds) {
-            if (!filter_context.has_value() ||
-                filter_context.value() != context) {
-              if (filter_context.has_value()) {
-                absl::StrAppendFormat(
-                    &overview, "%*s | %9ld | %9ld | %7.2g  | %7.2g\n",
-                    max_name_size, "Total", total_filter_stats.calls,
-                    total_filter_stats.rejects, total_filter_stats.seconds,
-                    total_filter_stats.rejects / total_filter_stats.seconds);
-                total_filter_stats = {};
-              }
-              filter_context = context;
-              absl::StrAppendFormat(
-                  &overview,
-                  "Local search filter statistics%s:\n%*s |     Calls |  "
-                  " Rejects | Time (s) | Rejects/s\n",
-                  context.empty() ? "" : " (" + context + ")", max_name_size,
-                  "");
-            }
-            absl::StrAppendFormat(
-                &overview, "%*s | %9ld | %9ld | %7.2g  | %7.2g\n",
-                max_name_size, name, num_calls, num_rejects, duration_seconds,
-                num_rejects / duration_seconds);
-            total_filter_stats.calls += num_calls;
-            total_filter_stats.rejects += num_rejects;
-            total_filter_stats.seconds += duration_seconds;
-          });
-      absl::StrAppendFormat(
-          &overview, "%*s | %9ld | %9ld | %7.2g  | %7.2g\n", max_name_size,
-          "Total", total_filter_stats.calls, total_filter_stats.rejects,
-          total_filter_stats.seconds,
-          total_filter_stats.rejects / total_filter_stats.seconds);
-    }
-    return overview;
-  }
-  void BeginOperatorStart() override {}
-  void EndOperatorStart() override {}
-  void BeginMakeNextNeighbor(const LocalSearchOperator* op) override {
-    if (last_operator_ != op->Self()) {
-      UpdateTime();
-      last_operator_ = op->Self();
-    }
-    make_next_neighbor_timer_.Restart();
-  }
-  void EndMakeNextNeighbor(const LocalSearchOperator* op, bool neighbor_found,
-                           const Assignment*, const Assignment*) override {
-    // To be robust to multiple calls to EndMakeNextNeighbor, we only collect
-    // data if the timer was not stopped.
-    if (!make_next_neighbor_timer_.IsRunning()) return;
-    make_next_neighbor_timer_.Stop();
-    operator_stats_[op->Self()].make_next_neighbor_seconds +=
-        make_next_neighbor_timer_.Get();
-    if (neighbor_found) {
-      operator_stats_[op->Self()].neighbors++;
-    }
-  }
-  void BeginFilterNeighbor(const LocalSearchOperator*) override {}
-  void EndFilterNeighbor(const LocalSearchOperator* op,
-                         bool neighbor_found) override {
-    if (neighbor_found) {
-      operator_stats_[op->Self()].filtered_neighbors++;
-    }
-  }
-  void BeginAcceptNeighbor(const LocalSearchOperator*) override {
-    accept_neighbor_timer_.Restart();
-  }
-  void EndAcceptNeighbor(const LocalSearchOperator* op,
-                         bool neighbor_found) override {
-    accept_neighbor_timer_.Stop();
-    operator_stats_[op->Self()].accept_neighbor_seconds +=
-        accept_neighbor_timer_.Get();
-    if (neighbor_found) {
-      operator_stats_[op->Self()].accepted_neighbors++;
-    }
-  }
-  void BeginFiltering(const LocalSearchFilter* filter) override {
-    FilterStats& filter_stats =
-        filter_stats_per_context_[solver()->context()][filter];
-    filter_stats.calls++;
-    filter_timer_.Restart();
-  }
-  void EndFiltering(const LocalSearchFilter* filter, bool reject) override {
-    filter_timer_.Stop();
-    auto& stats = filter_stats_per_context_[solver()->context()][filter];
-    stats.seconds += filter_timer_.Get();
-    if (reject) {
-      stats.rejects++;
-    }
-  }
-  void AddFirstSolutionProfiledDecisionBuilder(
-      ProfiledDecisionBuilder* profiled_db) {
-    profiled_decision_builders_.push_back(profiled_db);
-  }
-  bool IsActive() const override { return true; }
-  void Install() override { SearchMonitor::Install(); }
-
- private:
-  void UpdateTime() {
-    if (last_operator_ != nullptr) {
-      timer_.Stop();
-      operator_stats_[last_operator_].seconds += timer_.Get();
-    }
-    timer_.Restart();
-  }
-
-  struct OperatorStats {
-    int64_t neighbors = 0;
-    int64_t filtered_neighbors = 0;
-    int64_t accepted_neighbors = 0;
-    double seconds = 0;
-    double make_next_neighbor_seconds = 0;
-    double accept_neighbor_seconds = 0;
-  };
-
-  struct FilterStats {
-    int64_t calls = 0;
-    int64_t rejects = 0;
-    double seconds = 0;
-  };
-  WallTimer timer_;
-  WallTimer make_next_neighbor_timer_;
-  WallTimer accept_neighbor_timer_;
-  WallTimer filter_timer_;
-  const LocalSearchOperator* last_operator_ = nullptr;
-  absl::btree_map<const LocalSearchOperator*, OperatorStats> operator_stats_;
-  absl::btree_map<std::string,
-                  absl::btree_map<const LocalSearchFilter*, FilterStats>>
-      filter_stats_per_context_;
-  // Profiled decision builders.
-  std::vector<ProfiledDecisionBuilder*> profiled_decision_builders_;
-};
-
-DecisionBuilder* Solver::MakeProfiledDecisionBuilderWrapper(
-    DecisionBuilder* db) {
-  if (IsLocalSearchProfilingEnabled()) {
-    ProfiledDecisionBuilder* profiled_db =
-        RevAlloc(new ProfiledDecisionBuilder(db));
-    local_search_profiler_->AddFirstSolutionProfiledDecisionBuilder(
-        profiled_db);
-    return profiled_db;
-  }
-  return db;
-}
-
-namespace internal {
-
-void InstallLocalSearchProfiler(LocalSearchProfiler* monitor) {
-  monitor->Install();
-}
-
-LocalSearchProfiler* BuildLocalSearchProfiler(Solver* solver) {
-  if (solver->IsLocalSearchProfilingEnabled()) {
-    return new LocalSearchProfiler(solver);
-  }
-  return nullptr;
-}
-
-void DeleteLocalSearchProfiler(LocalSearchProfiler* monitor) { delete monitor; }
-
-}  // namespace internal
-
-std::string Solver::LocalSearchProfile() const {
-  if (local_search_profiler_ != nullptr) {
-    return local_search_profiler_->PrintOverview();
-  }
-  return "";
-}
-
-LocalSearchStatistics Solver::GetLocalSearchStatistics() const {
-  if (local_search_profiler_ != nullptr) {
-    return local_search_profiler_->ExportToLocalSearchStatistics();
-  }
-  return LocalSearchStatistics();
-}
-
 void LocalSearchFilterManager::FindIncrementalEventEnd() {
   const int num_events = events_.size();
   incremental_events_end_ = num_events;
@@ -4889,19 +4514,6 @@ Assignment* Solver::RunUncheckedLocalSearch(
                                                   filter_manager, ls_operator,
                                                   monitors, limit, touched);
   }
-}
-
-// ---------- Local Search Monitor -----------
-LocalSearchMonitor::LocalSearchMonitor(Solver* const solver)
-    : SearchMonitor(solver) {}
-
-LocalSearchMonitor::~LocalSearchMonitor() {}
-
-// A local search monitor listens to search events as well as local search
-// events.
-void LocalSearchMonitor::Install() {
-  SearchMonitor::Install();
-  solver()->AddLocalSearchMonitor(this);
 }
 
 }  // namespace operations_research

@@ -22,6 +22,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/resource.h"
 #include "ortools/constraint_solver/utilities.h"
 #include "ortools/util/string_array.h"
 
@@ -242,7 +243,68 @@ Constraint* Diffn::MakeCumulativeConstraint(
   std::vector<IntervalVar*> intervals;
   solver()->MakeFixedDurationIntervalVarArray(positions, sizes, "interval",
                                               &intervals);
-  return solver()->MakeCumulative(intervals, demands, capacity, "cumul");
+  return BuildCumulativeConstraint(solver(), intervals, demands, capacity,
+                                   "cumul");
+}
+
+Constraint* Solver::MakeNonOverlappingBoxesConstraint(
+    const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
+    const std::vector<IntVar*>& x_size, const std::vector<IntVar*>& y_size) {
+  return RevAlloc(new Diffn(this, x_vars, y_vars, x_size, y_size, true));
+}
+
+Constraint* Solver::MakeNonOverlappingBoxesConstraint(
+    const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
+    absl::Span<const int64_t> x_size, absl::Span<const int64_t> y_size) {
+  std::vector<IntVar*> dx(x_size.size());
+  std::vector<IntVar*> dy(y_size.size());
+  for (int i = 0; i < x_size.size(); ++i) {
+    dx[i] = MakeIntConst(x_size[i]);
+    dy[i] = MakeIntConst(y_size[i]);
+  }
+  return RevAlloc(new Diffn(this, x_vars, y_vars, dx, dy, true));
+}
+
+Constraint* Solver::MakeNonOverlappingBoxesConstraint(
+    const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
+    absl::Span<const int> x_size, absl::Span<const int> y_size) {
+  std::vector<IntVar*> dx(x_size.size());
+  std::vector<IntVar*> dy(y_size.size());
+  for (int i = 0; i < x_size.size(); ++i) {
+    dx[i] = MakeIntConst(x_size[i]);
+    dy[i] = MakeIntConst(y_size[i]);
+  }
+  return RevAlloc(new Diffn(this, x_vars, y_vars, dx, dy, true));
+}
+
+Constraint* Solver::MakeNonOverlappingNonStrictBoxesConstraint(
+    const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
+    const std::vector<IntVar*>& x_size, const std::vector<IntVar*>& y_size) {
+  return RevAlloc(new Diffn(this, x_vars, y_vars, x_size, y_size, false));
+}
+
+Constraint* Solver::MakeNonOverlappingNonStrictBoxesConstraint(
+    const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
+    absl::Span<const int64_t> x_size, absl::Span<const int64_t> y_size) {
+  std::vector<IntVar*> dx(x_size.size());
+  std::vector<IntVar*> dy(y_size.size());
+  for (int i = 0; i < x_size.size(); ++i) {
+    dx[i] = MakeIntConst(x_size[i]);
+    dy[i] = MakeIntConst(y_size[i]);
+  }
+  return RevAlloc(new Diffn(this, x_vars, y_vars, dx, dy, false));
+}
+
+Constraint* Solver::MakeNonOverlappingNonStrictBoxesConstraint(
+    const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
+    absl::Span<const int> x_size, absl::Span<const int> y_size) {
+  std::vector<IntVar*> dx(x_size.size());
+  std::vector<IntVar*> dy(y_size.size());
+  for (int i = 0; i < x_size.size(); ++i) {
+    dx[i] = MakeIntConst(x_size[i]);
+    dy[i] = MakeIntConst(y_size[i]);
+  }
+  return RevAlloc(new Diffn(this, x_vars, y_vars, dx, dy, false));
 }
 
 }  // namespace operations_research

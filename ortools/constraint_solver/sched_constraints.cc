@@ -21,6 +21,8 @@
 //   var unperformed implies all intervals unperformed, cover var
 //   performed implis at least one interval performed).
 
+#include "ortools/constraint_solver/sched_constraints.h"
+
 #include <algorithm>
 #include <cstdint>
 #include <string>
@@ -584,17 +586,27 @@ class IntervalEquality : public Constraint {
 };
 }  // namespace
 
-Constraint* Solver::MakeCover(const std::vector<IntervalVar*>& vars,
-                              IntervalVar* target_var) {
+Constraint* BuildCoverConstraint(Solver* solver,
+                                 const std::vector<IntervalVar*>& vars,
+                                 IntervalVar* target_var) {
   CHECK(!vars.empty());
   if (vars.size() == 1) {
-    return MakeEquality(vars[0], target_var);
-  } else {
-    return RevAlloc(new CoverConstraint(this, vars, target_var));
+    return BuildIntervalEquality(solver, vars[0], target_var);
   }
+  return solver->RevAlloc(new CoverConstraint(solver, vars, target_var));
+}
+
+Constraint* BuildIntervalEquality(Solver* solver, IntervalVar* var1,
+                                  IntervalVar* var2) {
+  return solver->RevAlloc(new IntervalEquality(solver, var1, var2));
+}
+
+Constraint* Solver::MakeCover(const std::vector<IntervalVar*>& vars,
+                              IntervalVar* target_var) {
+  return BuildCoverConstraint(this, vars, target_var);
 }
 
 Constraint* Solver::MakeEquality(IntervalVar* var1, IntervalVar* var2) {
-  return RevAlloc(new IntervalEquality(this, var1, var2));
+  return BuildIntervalEquality(this, var1, var2);
 }
 }  // namespace operations_research

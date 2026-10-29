@@ -1126,4 +1126,31 @@ std::string TransitionConstraint::DebugString() const {
       absl::StrJoin(final_states_, ", "));
 }
 
+Constraint* Solver::MakeAllowedAssignments(const std::vector<IntVar*>& vars,
+                                           const IntTupleSet& tuples) {
+  if (HasCompactDomains(vars)) {
+    if (tuples.NumTuples() < kBitsInUint64 && parameters_.use_small_table()) {
+      return RevAlloc(
+          new SmallCompactPositiveTableConstraint(this, vars, tuples));
+    } else {
+      return RevAlloc(new CompactPositiveTableConstraint(this, vars, tuples));
+    }
+  }
+  return RevAlloc(new PositiveTableConstraint(this, vars, tuples));
+}
+
+Constraint* Solver::MakeTransitionConstraint(
+    const std::vector<IntVar*>& vars, const IntTupleSet& transition_table,
+    int64_t initial_state, const std::vector<int64_t>& final_states) {
+  return RevAlloc(new TransitionConstraint(this, vars, transition_table,
+                                           initial_state, final_states));
+}
+
+Constraint* Solver::MakeTransitionConstraint(
+    const std::vector<IntVar*>& vars, const IntTupleSet& transition_table,
+    int64_t initial_state, const std::vector<int>& final_states) {
+  return RevAlloc(new TransitionConstraint(this, vars, transition_table,
+                                           initial_state, final_states));
+}
+
 }  // namespace operations_research

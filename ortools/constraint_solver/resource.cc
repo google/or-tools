@@ -20,6 +20,8 @@
 // In addition, it implements the SequenceVar that allows ranking decisions
 // on a set of interval variables.
 
+#include "ortools/constraint_solver/resource.h"
+
 #include <algorithm>
 #include <cstdint>
 #include <functional>
@@ -1970,11 +1972,11 @@ class TimeTableSync : public Constraint {
   // Task state.
   enum State { NONE, READY, CHECK, CONFLICT };
 
-  inline int64_t NextScpTime() {
+  int64_t NextScpTime() {
     return !events_scp_.empty() ? events_scp_.top().first : kint64max;
   }
 
-  inline int64_t NextEventTime() {
+  int64_t NextEventTime() {
     int64_t time = kint64max;
     if (!events_pr_.empty()) {
       time = events_pr_.top().first;
@@ -2592,14 +2594,111 @@ void DisjunctiveConstraint::SetTransitionTime(
 
 // ---------- Factory methods ----------
 
+DisjunctiveConstraint* BuildDisjunctiveConstraint(
+    Solver* solver, const std::vector<IntervalVar*>& intervals,
+    const std::string& name) {
+  return solver->RevAlloc(
+      new FullDisjunctiveConstraint(solver, intervals, name, false));
+}
+
+DisjunctiveConstraint* BuildStrictDisjunctiveConstraint(
+    Solver* solver, const std::vector<IntervalVar*>& intervals,
+    const std::string& name) {
+  return solver->RevAlloc(
+      new FullDisjunctiveConstraint(solver, intervals, name, true));
+}
+
+Constraint* BuildCumulativeConstraint(
+    Solver* solver, const std::vector<IntervalVar*>& intervals,
+    const std::vector<int64_t>& demands, int64_t capacity,
+    const std::string& name) {
+  CHECK_EQ(intervals.size(), demands.size());
+  for (int i = 0; i < intervals.size(); ++i) {
+    CHECK_GE(demands[i], 0);
+  }
+  if (capacity == 1 && AreAllOnes(demands)) {
+    return BuildDisjunctiveConstraint(solver, intervals, name);
+  }
+  return solver->RevAlloc(new CumulativeConstraint(
+      solver, intervals, demands, solver->MakeIntConst(capacity), name));
+}
+
+Constraint* BuildCumulativeConstraint(
+    Solver* solver, const std::vector<IntervalVar*>& intervals,
+    const std::vector<int>& demands, int64_t capacity,
+    const std::string& name) {
+  return BuildCumulativeConstraint(solver, intervals, ToInt64Vector(demands),
+                                   capacity, name);
+}
+
+Constraint* BuildCumulativeConstraint(
+    Solver* solver, const std::vector<IntervalVar*>& intervals,
+    const std::vector<int64_t>& demands, IntVar* capacity,
+    absl::string_view name) {
+  CHECK_EQ(intervals.size(), demands.size());
+  for (int i = 0; i < intervals.size(); ++i) {
+    CHECK_GE(demands[i], 0);
+  }
+  return solver->RevAlloc(
+      new CumulativeConstraint(solver, intervals, demands, capacity, name));
+}
+
+Constraint* BuildCumulativeConstraint(
+    Solver* solver, const std::vector<IntervalVar*>& intervals,
+    const std::vector<int>& demands, IntVar* capacity,
+    const std::string& name) {
+  return BuildCumulativeConstraint(solver, intervals, ToInt64Vector(demands),
+                                   capacity, name);
+}
+
+Constraint* BuildCumulativeConstraint(
+    Solver* solver, const std::vector<IntervalVar*>& intervals,
+    const std::vector<IntVar*>& demands, int64_t capacity,
+    const std::string& name) {
+  CHECK_EQ(intervals.size(), demands.size());
+  for (int i = 0; i < intervals.size(); ++i) {
+    CHECK_GE(demands[i]->Min(), 0);
+  }
+  if (AreAllBound(demands)) {
+    std::vector<int64_t> fixed_demands(demands.size());
+    for (int i = 0; i < demands.size(); ++i) {
+      fixed_demands[i] = demands[i]->Value();
+    }
+    return BuildCumulativeConstraint(solver, intervals, fixed_demands, capacity,
+                                     name);
+  }
+  return solver->RevAlloc(new VariableDemandCumulativeConstraint(
+      solver, intervals, demands, solver->MakeIntConst(capacity), name));
+}
+
+Constraint* BuildCumulativeConstraint(
+    Solver* solver, const std::vector<IntervalVar*>& intervals,
+    const std::vector<IntVar*>& demands, IntVar* capacity,
+    const std::string& name) {
+  CHECK_EQ(intervals.size(), demands.size());
+  for (int i = 0; i < intervals.size(); ++i) {
+    CHECK_GE(demands[i]->Min(), 0);
+  }
+  if (AreAllBound(demands)) {
+    std::vector<int64_t> fixed_demands(demands.size());
+    for (int i = 0; i < demands.size(); ++i) {
+      fixed_demands[i] = demands[i]->Value();
+    }
+    return BuildCumulativeConstraint(solver, intervals, fixed_demands, capacity,
+                                     name);
+  }
+  return solver->RevAlloc(new VariableDemandCumulativeConstraint(
+      solver, intervals, demands, capacity, name));
+}
+
 DisjunctiveConstraint* Solver::MakeDisjunctiveConstraint(
     const std::vector<IntervalVar*>& intervals, const std::string& name) {
-  return RevAlloc(new FullDisjunctiveConstraint(this, intervals, name, false));
+  return BuildDisjunctiveConstraint(this, intervals, name);
 }
 
 DisjunctiveConstraint* Solver::MakeStrictDisjunctiveConstraint(
     const std::vector<IntervalVar*>& intervals, const std::string& name) {
-  return RevAlloc(new FullDisjunctiveConstraint(this, intervals, name, true));
+  return BuildStrictDisjunctiveConstraint(this, intervals, name);
 }
 
 // Demands are constant
@@ -2607,38 +2706,25 @@ DisjunctiveConstraint* Solver::MakeStrictDisjunctiveConstraint(
 Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
                                    const std::vector<int64_t>& demands,
                                    int64_t capacity, const std::string& name) {
-  CHECK_EQ(intervals.size(), demands.size());
-  for (int i = 0; i < intervals.size(); ++i) {
-    CHECK_GE(demands[i], 0);
-  }
-  if (capacity == 1 && AreAllOnes(demands)) {
-    return MakeDisjunctiveConstraint(intervals, name);
-  }
-  return RevAlloc(new CumulativeConstraint(this, intervals, demands,
-                                           MakeIntConst(capacity), name));
+  return BuildCumulativeConstraint(this, intervals, demands, capacity, name);
 }
 
 Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
                                    const std::vector<int>& demands,
                                    int64_t capacity, const std::string& name) {
-  return MakeCumulative(intervals, ToInt64Vector(demands), capacity, name);
+  return BuildCumulativeConstraint(this, intervals, demands, capacity, name);
 }
 
 Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
                                    const std::vector<int64_t>& demands,
                                    IntVar* capacity, absl::string_view name) {
-  CHECK_EQ(intervals.size(), demands.size());
-  for (int i = 0; i < intervals.size(); ++i) {
-    CHECK_GE(demands[i], 0);
-  }
-  return RevAlloc(
-      new CumulativeConstraint(this, intervals, demands, capacity, name));
+  return BuildCumulativeConstraint(this, intervals, demands, capacity, name);
 }
 
 Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
                                    const std::vector<int>& demands,
                                    IntVar* capacity, const std::string& name) {
-  return MakeCumulative(intervals, ToInt64Vector(demands), capacity, name);
+  return BuildCumulativeConstraint(this, intervals, demands, capacity, name);
 }
 
 // Demands are variable
@@ -2646,36 +2732,12 @@ Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
 Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
                                    const std::vector<IntVar*>& demands,
                                    int64_t capacity, const std::string& name) {
-  CHECK_EQ(intervals.size(), demands.size());
-  for (int i = 0; i < intervals.size(); ++i) {
-    CHECK_GE(demands[i]->Min(), 0);
-  }
-  if (AreAllBound(demands)) {
-    std::vector<int64_t> fixed_demands(demands.size());
-    for (int i = 0; i < demands.size(); ++i) {
-      fixed_demands[i] = demands[i]->Value();
-    }
-    return MakeCumulative(intervals, fixed_demands, capacity, name);
-  }
-  return RevAlloc(new VariableDemandCumulativeConstraint(
-      this, intervals, demands, MakeIntConst(capacity), name));
+  return BuildCumulativeConstraint(this, intervals, demands, capacity, name);
 }
 
 Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
                                    const std::vector<IntVar*>& demands,
                                    IntVar* capacity, const std::string& name) {
-  CHECK_EQ(intervals.size(), demands.size());
-  for (int i = 0; i < intervals.size(); ++i) {
-    CHECK_GE(demands[i]->Min(), 0);
-  }
-  if (AreAllBound(demands)) {
-    std::vector<int64_t> fixed_demands(demands.size());
-    for (int i = 0; i < demands.size(); ++i) {
-      fixed_demands[i] = demands[i]->Value();
-    }
-    return MakeCumulative(intervals, fixed_demands, capacity, name);
-  }
-  return RevAlloc(new VariableDemandCumulativeConstraint(
-      this, intervals, demands, capacity, name));
+  return BuildCumulativeConstraint(this, intervals, demands, capacity, name);
 }
 }  // namespace operations_research

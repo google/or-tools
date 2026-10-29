@@ -16,15 +16,20 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
+#include <numeric>
 #include <string>
 #include <vector>
 
 #include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/model_cache.h"
+#include "ortools/constraint_solver/trace.h"
 #include "ortools/constraint_solver/utilities.h"
 #include "ortools/constraint_solver/variables.h"
 #include "ortools/util/piecewise_linear_function.h"
@@ -2473,6 +2478,599 @@ int64_t IntPowerValue(int64_t value, int64_t power) {
 int64_t IntPowerOverflowLimit(int64_t power) {
   return static_cast<int64_t>(
       floor(exp(log(static_cast<double>(kint64max)) / power)));
+}
+
+IntExpr* Solver::MakeSum(IntExpr* left, IntExpr* right) {
+  CHECK_EQ(this, left->solver());
+  CHECK_EQ(this, right->solver());
+  if (right->Bound()) {
+    return MakeSum(left, right->Min());
+  }
+  if (left->Bound()) {
+    return MakeSum(right, left->Min());
+  }
+  if (left == right) {
+    return MakeProd(left, 2);
+  }
+  IntExpr* cache = model_cache_->FindExprExprExpression(
+      left, right, ModelCache::EXPR_EXPR_SUM);
+  if (cache == nullptr) {
+    cache = model_cache_->FindExprExprExpression(right, left,
+                                                 ModelCache::EXPR_EXPR_SUM);
+  }
+  if (cache != nullptr) {
+    return cache;
+  } else {
+    bool may_overflow = false;
+    may_overflow |= AddOverflows(left->Max(), right->Max());
+    may_overflow |= AddOverflows(left->Min(), right->Min());
+    if (!may_overflow) {
+      // The result itself would not overflow, but intermediate computations
+      // could, needing a safe implementation.
+      // For example: l in [kint64min, 0], r in [0, 5].
+      // sum->SetMax(4) implies r->SetMax(4 - left->Min()), which overflows.
+      const int64_t min_sum = left->Min() + right->Min();
+      const int64_t max_sum = left->Max() + right->Max();
+      may_overflow |= SubOverflows(max_sum, left->Min());
+      may_overflow |= SubOverflows(max_sum, right->Min());
+      may_overflow |= SubOverflows(min_sum, left->Max());
+      may_overflow |= SubOverflows(min_sum, right->Max());
+    }
+    IntExpr* const result =
+        may_overflow
+            ? RegisterIntExpr(RevAlloc(new SafePlusIntExpr(this, left, right)))
+            : RegisterIntExpr(RevAlloc(new PlusIntExpr(this, left, right)));
+    model_cache_->InsertExprExprExpression(result, left, right,
+                                           ModelCache::EXPR_EXPR_SUM);
+    return result;
+  }
+}
+
+IntExpr* Solver::MakeSum(IntExpr* expr, int64_t value) {
+  CHECK_EQ(this, expr->solver());
+  if (expr->Bound()) {
+    return MakeIntConst(CapAdd(expr->Min(), value));
+  }
+  if (value == 0) {
+    return expr;
+  }
+  IntExpr* result = Cache()->FindExprConstantExpression(
+      expr, value, ModelCache::EXPR_CONSTANT_SUM);
+  if (result == nullptr) {
+    if (expr->IsVar() && !AddOverflows(value, expr->Max()) &&
+        !AddOverflows(value, expr->Min())) {
+      result = NewVarPlusInt(this, expr->Var(), value);
+    } else {
+      result = RegisterIntExpr(RevAlloc(new PlusIntCstExpr(this, expr, value)));
+    }
+    Cache()->InsertExprConstantExpression(result, expr, value,
+                                          ModelCache::EXPR_CONSTANT_SUM);
+  }
+  return result;
+}
+
+IntExpr* Solver::MakeDifference(IntExpr* left, IntExpr* right) {
+  CHECK_EQ(this, left->solver());
+  CHECK_EQ(this, right->solver());
+  if (left->Bound()) {
+    return MakeDifference(left->Min(), right);
+  }
+  if (right->Bound()) {
+    return MakeSum(left, CapOpp(right->Min()));
+  }
+  IntExpr* sub_left = nullptr;
+  IntExpr* sub_right = nullptr;
+  int64_t left_coef = 1;
+  int64_t right_coef = 1;
+  if (IsExprProduct(left, &sub_left, &left_coef) &&
+      IsExprProduct(right, &sub_right, &right_coef)) {
+    const int64_t abs_left =
+        left_coef == kint64min ? kint64max : std::abs(left_coef);
+    const int64_t abs_right =
+        right_coef == kint64min ? kint64max : std::abs(right_coef);
+    const int64_t abs_gcd = std::gcd(abs_left, abs_right);
+    if (abs_gcd != 0 && abs_gcd != 1) {
+      return MakeProd(MakeDifference(MakeProd(sub_left, left_coef / abs_gcd),
+                                     MakeProd(sub_right, right_coef / abs_gcd)),
+                      abs_gcd);
+    }
+  }
+
+  IntExpr* result = Cache()->FindExprExprExpression(
+      left, right, ModelCache::EXPR_EXPR_DIFFERENCE);
+  if (result == nullptr) {
+    if (!SubOverflows(left->Min(), right->Max()) &&
+        !SubOverflows(left->Max(), right->Min())) {
+      result = RegisterIntExpr(RevAlloc(new SubIntExpr(this, left, right)));
+    } else {
+      result = RegisterIntExpr(RevAlloc(new SafeSubIntExpr(this, left, right)));
+    }
+    Cache()->InsertExprExprExpression(result, left, right,
+                                      ModelCache::EXPR_EXPR_DIFFERENCE);
+  }
+  return result;
+}
+
+// warning: this is 'value - expr'.
+IntExpr* Solver::MakeDifference(int64_t value, IntExpr* expr) {
+  CHECK_EQ(this, expr->solver());
+  if (expr->Bound()) {
+    return MakeIntConst(CapSub(value, expr->Min()));
+  }
+  if (value == 0) {
+    return MakeOpposite(expr);
+  }
+  IntExpr* result = Cache()->FindExprConstantExpression(
+      expr, value, ModelCache::EXPR_CONSTANT_DIFFERENCE);
+  if (result == nullptr) {
+    if (expr->IsVar() && expr->Min() != kint64min &&
+        !SubOverflows(value, expr->Min()) &&
+        !SubOverflows(value, expr->Max())) {
+      result = NewIntMinusVar(this, value, expr->Var());
+    } else {
+      result = RegisterIntExpr(RevAlloc(new SubIntCstExpr(this, expr, value)));
+    }
+    Cache()->InsertExprConstantExpression(result, expr, value,
+                                          ModelCache::EXPR_CONSTANT_DIFFERENCE);
+  }
+  return result;
+}
+
+IntExpr* Solver::MakeOpposite(IntExpr* expr) {
+  CHECK_EQ(this, expr->solver());
+  if (expr->Bound()) {
+    return MakeIntConst(CapOpp(expr->Min()));
+  }
+  IntExpr* result =
+      Cache()->FindExprExpression(expr, ModelCache::EXPR_OPPOSITE);
+  if (result == nullptr) {
+    if (expr->IsVar()) {
+      result = NewIntMinusVar(this, 0, expr->Var());
+    } else {
+      result = RegisterIntExpr(RevAlloc(new OppIntExpr(this, expr)));
+    }
+    Cache()->InsertExprExpression(result, expr, ModelCache::EXPR_OPPOSITE);
+  }
+  return result;
+}
+
+IntExpr* Solver::MakeProd(IntExpr* expr, int64_t value) {
+  CHECK_EQ(this, expr->solver());
+  IntExpr* result = Cache()->FindExprConstantExpression(
+      expr, value, ModelCache::EXPR_CONSTANT_PROD);
+  if (result != nullptr) {
+    return result;
+  } else {
+    IntExpr* m_expr = nullptr;
+    int64_t coefficient = 1;
+    if (IsExprProduct(expr, &m_expr, &coefficient)) {
+      coefficient = CapProd(coefficient, value);
+    } else {
+      m_expr = expr;
+      coefficient = value;
+    }
+    if (m_expr->Bound()) {
+      return MakeIntConst(CapProd(coefficient, m_expr->Min()));
+    } else if (coefficient == 1) {
+      return m_expr;
+    } else if (coefficient == -1) {
+      return MakeOpposite(m_expr);
+    } else if (coefficient > 0) {
+      if (m_expr->Max() > kint64max / coefficient ||
+          m_expr->Min() < kint64min / coefficient) {
+        result = RegisterIntExpr(
+            RevAlloc(new SafeTimesPosIntCstExpr(this, m_expr, coefficient)));
+      } else {
+        result = RegisterIntExpr(
+            RevAlloc(new TimesPosIntCstExpr(this, m_expr, coefficient)));
+      }
+    } else if (coefficient == 0) {
+      result = MakeIntConst(0);
+    } else {  // coefficient < 0.
+      result = RegisterIntExpr(
+          RevAlloc(new TimesIntNegCstExpr(this, m_expr, coefficient)));
+    }
+    if (m_expr->IsVar() &&
+        !absl::GetFlag(FLAGS_cp_disable_expression_optimization)) {
+      result = result->Var();
+    }
+    Cache()->InsertExprConstantExpression(result, expr, value,
+                                          ModelCache::EXPR_CONSTANT_PROD);
+    return result;
+  }
+}
+
+IntExpr* Solver::MakeProd(IntExpr* left, IntExpr* right) {
+  if (left->Bound()) {
+    return MakeProd(right, left->Min());
+  }
+
+  if (right->Bound()) {
+    return MakeProd(left, right->Min());
+  }
+
+  // ----- Discover squares and powers -----
+
+  IntExpr* tmp_left = left;
+  IntExpr* tmp_right = right;
+  int64_t left_exponant = 1;
+  int64_t right_exponant = 1;
+  IsExprPower(left, &tmp_left, &left_exponant);
+  IsExprPower(right, &tmp_right, &right_exponant);
+
+  if (tmp_left == tmp_right) {
+    return MakePower(tmp_left, left_exponant + right_exponant);
+  }
+
+  // ----- Discover nested products -----
+
+  tmp_left = left;
+  tmp_right = right;
+  int64_t coefficient = 1;
+
+  // Parse left.
+  for (;;) {
+    IntExpr* sub_expr = nullptr;
+    int64_t sub_coefficient = 1;
+    if (IsExprProduct(tmp_left, &sub_expr, &sub_coefficient)) {
+      coefficient = CapProd(coefficient, sub_coefficient);
+      tmp_left = sub_expr;
+    } else {
+      break;
+    }
+  }
+
+  // Parse right.
+  for (;;) {
+    IntExpr* sub_expr = nullptr;
+    int64_t sub_coefficient = 1;
+    if (IsExprProduct(tmp_right, &sub_expr, &sub_coefficient)) {
+      coefficient = CapProd(coefficient, sub_coefficient);
+      tmp_right = sub_expr;
+    } else {
+      break;
+    }
+  }
+
+  if (coefficient != 1) {
+    return MakeProd(MakeProd(tmp_left, tmp_right), coefficient);
+  }
+
+  // ----- Standard build -----
+
+  CHECK_EQ(this, left->solver());
+  CHECK_EQ(this, right->solver());
+  IntExpr* result = model_cache_->FindExprExprExpression(
+      left, right, ModelCache::EXPR_EXPR_PROD);
+  if (result == nullptr) {
+    result = model_cache_->FindExprExprExpression(right, left,
+                                                  ModelCache::EXPR_EXPR_PROD);
+  }
+  if (result != nullptr) {
+    return result;
+  }
+  if (left->IsVar() && left->Var()->VarType() == IntVar::BOOLEAN_VAR) {
+    if (right->Min() >= 0) {
+      result = RegisterIntExpr(RevAlloc(new TimesBooleanPosIntExpr(
+          this, reinterpret_cast<BooleanVar*>(left), right)));
+    } else {
+      result = RegisterIntExpr(RevAlloc(new TimesBooleanIntExpr(
+          this, reinterpret_cast<BooleanVar*>(left), right)));
+    }
+  } else if (right->IsVar() && reinterpret_cast<IntVar*>(right)->VarType() ==
+                                   IntVar::BOOLEAN_VAR) {
+    if (left->Min() >= 0) {
+      result = RegisterIntExpr(RevAlloc(new TimesBooleanPosIntExpr(
+          this, reinterpret_cast<BooleanVar*>(right), left)));
+    } else {
+      result = RegisterIntExpr(RevAlloc(new TimesBooleanIntExpr(
+          this, reinterpret_cast<BooleanVar*>(right), left)));
+    }
+  } else if (left->Min() >= 0 && right->Min() >= 0) {
+    if (CapProd(left->Max(), right->Max()) ==
+        kint64max) {  // Potential overflow.
+      result =
+          RegisterIntExpr(RevAlloc(new SafeTimesPosIntExpr(this, left, right)));
+    } else {
+      result =
+          RegisterIntExpr(RevAlloc(new TimesPosIntExpr(this, left, right)));
+    }
+  } else {
+    result = RegisterIntExpr(RevAlloc(new TimesIntExpr(this, left, right)));
+  }
+  model_cache_->InsertExprExprExpression(result, left, right,
+                                         ModelCache::EXPR_EXPR_PROD);
+  return result;
+}
+
+IntExpr* Solver::MakeDiv(IntExpr* numerator, IntExpr* denominator) {
+  CHECK(numerator != nullptr);
+  CHECK(denominator != nullptr);
+  if (denominator->Bound()) {
+    return MakeDiv(numerator, denominator->Min());
+  }
+  IntExpr* result = model_cache_->FindExprExprExpression(
+      numerator, denominator, ModelCache::EXPR_EXPR_DIV);
+  if (result != nullptr) {
+    return result;
+  }
+
+  if (denominator->Min() <= 0 && denominator->Max() >= 0) {
+    AddConstraint(MakeNonEquality(denominator, 0));
+  }
+
+  if (denominator->Min() >= 0) {
+    if (numerator->Min() >= 0) {
+      result = RevAlloc(new DivPosPosIntExpr(this, numerator, denominator));
+    } else {
+      result = RevAlloc(new DivPosIntExpr(this, numerator, denominator));
+    }
+  } else if (denominator->Max() <= 0) {
+    if (numerator->Max() <= 0) {
+      result = RevAlloc(new DivPosPosIntExpr(this, MakeOpposite(numerator),
+                                             MakeOpposite(denominator)));
+    } else {
+      result = MakeOpposite(RevAlloc(
+          new DivPosIntExpr(this, numerator, MakeOpposite(denominator))));
+    }
+  } else {
+    result = RevAlloc(new DivIntExpr(this, numerator, denominator));
+  }
+  model_cache_->InsertExprExprExpression(result, numerator, denominator,
+                                         ModelCache::EXPR_EXPR_DIV);
+  return result;
+}
+
+IntExpr* Solver::MakeDiv(IntExpr* expr, int64_t value) {
+  CHECK(expr != nullptr);
+  CHECK_EQ(this, expr->solver());
+  if (expr->Bound()) {
+    return MakeIntConst(expr->Min() / value);
+  } else if (value == 1) {
+    return expr;
+  } else if (value == -1) {
+    return MakeOpposite(expr);
+  } else if (value > 0) {
+    return RegisterIntExpr(RevAlloc(new DivPosIntCstExpr(this, expr, value)));
+  } else if (value == 0) {
+    LOG(FATAL) << "Cannot divide by 0";
+    return nullptr;
+  } else {
+    return RegisterIntExpr(
+        MakeOpposite(RevAlloc(new DivPosIntCstExpr(this, expr, -value))));
+    // TODO(user) : implement special case.
+  }
+}
+
+Constraint* Solver::MakeAbsEquality(IntVar* var, IntVar* abs_var) {
+  if (Cache()->FindExprExpression(var, ModelCache::EXPR_ABS) == nullptr) {
+    Cache()->InsertExprExpression(abs_var, var, ModelCache::EXPR_ABS);
+  }
+  return RevAlloc(new IntAbsConstraint(this, var, abs_var));
+}
+
+IntExpr* Solver::MakeAbs(IntExpr* e) {
+  CHECK_EQ(this, e->solver());
+  if (e->Min() >= 0) {
+    return e;
+  } else if (e->Max() <= 0) {
+    return MakeOpposite(e);
+  }
+  IntExpr* result = Cache()->FindExprExpression(e, ModelCache::EXPR_ABS);
+  if (result == nullptr) {
+    int64_t coefficient = 1;
+    IntExpr* expr = nullptr;
+    if (IsExprProduct(e, &expr, &coefficient)) {
+      result = MakeProd(MakeAbs(expr), std::abs(coefficient));
+    } else {
+      result = RegisterIntExpr(RevAlloc(new IntAbs(this, e)));
+    }
+    Cache()->InsertExprExpression(result, e, ModelCache::EXPR_ABS);
+  }
+  return result;
+}
+
+IntExpr* Solver::MakeSquare(IntExpr* expr) {
+  CHECK_EQ(this, expr->solver());
+  if (expr->Bound()) {
+    const int64_t v = expr->Min();
+    return MakeIntConst(v * v);
+  }
+  IntExpr* result = Cache()->FindExprExpression(expr, ModelCache::EXPR_SQUARE);
+  if (result == nullptr) {
+    if (expr->Min() >= 0) {
+      result = RegisterIntExpr(RevAlloc(new PosIntSquare(this, expr)));
+    } else {
+      result = RegisterIntExpr(RevAlloc(new IntSquare(this, expr)));
+    }
+    Cache()->InsertExprExpression(result, expr, ModelCache::EXPR_SQUARE);
+  }
+  return result;
+}
+
+IntExpr* Solver::MakePower(IntExpr* expr, int64_t n) {
+  CHECK_EQ(this, expr->solver());
+  CHECK_GE(n, 0);
+  if (expr->Bound()) {
+    const int64_t v = expr->Min();
+    if (v >= IntPowerOverflowLimit(n)) {  // Overflow.
+      return MakeIntConst(kint64max);
+    }
+    return MakeIntConst(IntPowerValue(v, n));
+  }
+  switch (n) {
+    case 0:
+      return MakeIntConst(1);
+    case 1:
+      return expr;
+    case 2:
+      return MakeSquare(expr);
+    default: {
+      IntExpr* result = nullptr;
+      if (n % 2 == 0) {  // even.
+        if (expr->Min() >= 0) {
+          result =
+              RegisterIntExpr(RevAlloc(new PosIntEvenPower(this, expr, n)));
+        } else {
+          result = RegisterIntExpr(RevAlloc(new IntEvenPower(this, expr, n)));
+        }
+      } else {
+        result = RegisterIntExpr(RevAlloc(new IntOddPower(this, expr, n)));
+      }
+      return result;
+    }
+  }
+}
+
+IntExpr* Solver::MakeMin(IntExpr* left, IntExpr* right) {
+  CHECK_EQ(this, left->solver());
+  CHECK_EQ(this, right->solver());
+  if (left->Bound()) {
+    return MakeMin(right, left->Min());
+  }
+  if (right->Bound()) {
+    return MakeMin(left, right->Min());
+  }
+  if (left->Min() >= right->Max()) {
+    return right;
+  }
+  if (right->Min() >= left->Max()) {
+    return left;
+  }
+  return RegisterIntExpr(RevAlloc(new MinIntExpr(this, left, right)));
+}
+
+IntExpr* Solver::MakeMin(IntExpr* expr, int64_t value) {
+  CHECK_EQ(this, expr->solver());
+  if (value <= expr->Min()) {
+    return MakeIntConst(value);
+  }
+  if (expr->Bound()) {
+    return MakeIntConst(std::min(expr->Min(), value));
+  }
+  if (expr->Max() <= value) {
+    return expr;
+  }
+  return RegisterIntExpr(RevAlloc(new MinCstIntExpr(this, expr, value)));
+}
+
+IntExpr* Solver::MakeMin(IntExpr* expr, int value) {
+  return MakeMin(expr, static_cast<int64_t>(value));
+}
+
+IntExpr* Solver::MakeMax(IntExpr* left, IntExpr* right) {
+  CHECK_EQ(this, left->solver());
+  CHECK_EQ(this, right->solver());
+  if (left->Bound()) {
+    return MakeMax(right, left->Min());
+  }
+  if (right->Bound()) {
+    return MakeMax(left, right->Min());
+  }
+  if (left->Min() >= right->Max()) {
+    return left;
+  }
+  if (right->Min() >= left->Max()) {
+    return right;
+  }
+  return RegisterIntExpr(RevAlloc(new MaxIntExpr(this, left, right)));
+}
+
+IntExpr* Solver::MakeMax(IntExpr* expr, int64_t value) {
+  CHECK_EQ(this, expr->solver());
+  if (expr->Bound()) {
+    return MakeIntConst(std::max(expr->Min(), value));
+  }
+  if (value <= expr->Min()) {
+    return expr;
+  }
+  if (expr->Max() <= value) {
+    return MakeIntConst(value);
+  }
+  return RegisterIntExpr(RevAlloc(new MaxCstIntExpr(this, expr, value)));
+}
+
+IntExpr* Solver::MakeMax(IntExpr* expr, int value) {
+  return MakeMax(expr, static_cast<int64_t>(value));
+}
+
+IntExpr* Solver::MakeConvexPiecewiseExpr(IntExpr* expr, int64_t early_cost,
+                                         int64_t early_date, int64_t late_date,
+                                         int64_t late_cost) {
+  return RegisterIntExpr(RevAlloc(new SimpleConvexPiecewiseExpr(
+      this, expr, early_cost, early_date, late_date, late_cost)));
+}
+
+IntExpr* Solver::MakeSemiContinuousExpr(IntExpr* expr, int64_t fixed_charge,
+                                        int64_t step) {
+  if (step == 0) {
+    if (fixed_charge == 0) {
+      return MakeIntConst(int64_t{0});
+    } else {
+      return RegisterIntExpr(
+          RevAlloc(new SemiContinuousStepZeroExpr(this, expr, fixed_charge)));
+    }
+  } else if (step == 1) {
+    return RegisterIntExpr(
+        RevAlloc(new SemiContinuousStepOneExpr(this, expr, fixed_charge)));
+  } else {
+    return RegisterIntExpr(
+        RevAlloc(new SemiContinuousExpr(this, expr, fixed_charge, step)));
+  }
+  // TODO(user) : benchmark with virtualization of
+  // PosIntDivDown and PosIntDivUp - or function pointers.
+}
+
+IntExpr* Solver::MakePiecewiseLinearExpr(IntExpr* expr,
+                                         const PiecewiseLinearFunction& f) {
+  return RegisterIntExpr(RevAlloc(new PiecewiseLinearExpr(this, expr, f)));
+}
+
+// ----- Conditional Expression -----
+
+IntExpr* Solver::MakeConditionalExpression(IntVar* condition, IntExpr* expr,
+                                           int64_t unperformed_value) {
+  if (condition->Min() == 1) {
+    return expr;
+  } else if (condition->Max() == 0) {
+    return MakeIntConst(unperformed_value);
+  } else {
+    IntExpr* cache = Cache()->FindExprExprConstantExpression(
+        condition, expr, unperformed_value,
+        ModelCache::EXPR_EXPR_CONSTANT_CONDITIONAL);
+    if (cache == nullptr) {
+      cache = RevAlloc(
+          new ExprWithEscapeValue(this, condition, expr, unperformed_value));
+      Cache()->InsertExprExprConstantExpression(
+          cache, condition, expr, unperformed_value,
+          ModelCache::EXPR_EXPR_CONSTANT_CONDITIONAL);
+    }
+    return cache;
+  }
+}
+
+// ----- Modulo -----
+
+IntExpr* Solver::MakeModulo(IntExpr* x, int64_t mod) {
+  IntVar* const result =
+      MakeDifference(x, MakeProd(MakeDiv(x, mod), mod))->Var();
+  if (mod >= 0) {
+    AddConstraint(MakeBetweenCt(result, 0, mod - 1));
+  } else {
+    AddConstraint(MakeBetweenCt(result, mod + 1, 0));
+  }
+  return result;
+}
+
+IntExpr* Solver::MakeModulo(IntExpr* x, IntExpr* mod) {
+  if (mod->Bound()) {
+    return MakeModulo(x, mod->Min());
+  }
+  IntVar* const result =
+      MakeDifference(x, MakeProd(MakeDiv(x, mod), mod))->Var();
+  AddConstraint(MakeLess(result, MakeAbs(mod)));
+  AddConstraint(MakeGreater(result, MakeOpposite(MakeAbs(mod))));
+  return result;
 }
 
 }  // namespace operations_research

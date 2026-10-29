@@ -1205,4 +1205,10 @@ std::ostream& operator<<(std::ostream& out, const Assignment& assignment) {
   return out << assignment.DebugString();
 }
 
+Assignment* Solver::MakeAssignment() { return RevAlloc(new Assignment(this)); }
+
+Assignment* Solver::MakeAssignment(const Assignment* const a) {
+  return RevAlloc(new Assignment(a));
+}
+
 }  // namespace operations_research

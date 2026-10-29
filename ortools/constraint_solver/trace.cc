@@ -1080,4 +1080,75 @@ void AppendPropagationMonitor(Solver* s, SearchMonitor* monitor) {
   }
 }
 
+// ---------- Search Trace ----------
+namespace {
+class SearchTrace : public SearchMonitor {
+ public:
+  SearchTrace(Solver* s, const std::string& prefix)
+      : SearchMonitor(s), prefix_(prefix) {}
+  ~SearchTrace() override {}
+
+  void EnterSearch() override {
+    LOG(INFO) << prefix_ << " EnterSearch(" << solver()->SolveDepth() << ")";
+  }
+  void RestartSearch() override {
+    LOG(INFO) << prefix_ << " RestartSearch(" << solver()->SolveDepth() << ")";
+  }
+  void ExitSearch() override {
+    LOG(INFO) << prefix_ << " ExitSearch(" << solver()->SolveDepth() << ")";
+  }
+  void BeginNextDecision(DecisionBuilder* b) override {
+    LOG(INFO) << prefix_ << " BeginNextDecision(" << b << ") ";
+  }
+  void EndNextDecision(DecisionBuilder* b, Decision* d) override {
+    if (d) {
+      LOG(INFO) << prefix_ << " EndNextDecision(" << b << ", " << d << ") ";
+    } else {
+      LOG(INFO) << prefix_ << " EndNextDecision(" << b << ") ";
+    }
+  }
+  void ApplyDecision(Decision* d) override {
+    LOG(INFO) << prefix_ << " ApplyDecision(" << d << ") ";
+  }
+  void RefuteDecision(Decision* d) override {
+    LOG(INFO) << prefix_ << " RefuteDecision(" << d << ") ";
+  }
+  void AfterDecision(Decision* d, bool apply) override {
+    LOG(INFO) << prefix_ << " AfterDecision(" << d << ", " << apply << ") ";
+  }
+  void BeginFail() override {
+    LOG(INFO) << prefix_ << " BeginFail(" << solver()->SearchDepth() << ")";
+  }
+  void EndFail() override {
+    LOG(INFO) << prefix_ << " EndFail(" << solver()->SearchDepth() << ")";
+  }
+  void BeginInitialPropagation() override {
+    LOG(INFO) << prefix_ << " BeginInitialPropagation()";
+  }
+  void EndInitialPropagation() override {
+    LOG(INFO) << prefix_ << " EndInitialPropagation()";
+  }
+  bool AtSolution() override {
+    LOG(INFO) << prefix_ << " AtSolution()";
+    return false;
+  }
+  bool AcceptSolution() override {
+    LOG(INFO) << prefix_ << " AcceptSolution()";
+    return true;
+  }
+  void NoMoreSolutions() override {
+    LOG(INFO) << prefix_ << " NoMoreSolutions()";
+  }
+
+  std::string DebugString() const override { return "SearchTrace"; }
+
+ private:
+  const std::string prefix_;
+};
+}  // namespace
+
+SearchMonitor* Solver::MakeSearchTrace(const std::string& prefix) {
+  return RevAlloc(new SearchTrace(this, prefix));
+}
+
 }  // namespace operations_research

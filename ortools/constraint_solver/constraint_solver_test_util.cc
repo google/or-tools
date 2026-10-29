@@ -30,7 +30,6 @@
 #include "gtest/gtest.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/local_search.h"
 
 namespace operations_research {
 

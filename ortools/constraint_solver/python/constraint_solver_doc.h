@@ -1189,6 +1189,24 @@ static const char *mkd_doc_operations_research_ExchangeAndMakeActive = R"doc()do
 
 static const char *mkd_doc_operations_research_ExchangePathStartEndsAndMakeActive = R"doc()doc";
 
+static const char *mkd_doc_operations_research_FalseConstraint = R"doc()doc";
+
+static const char *mkd_doc_operations_research_FalseConstraint_Accept = R"doc()doc";
+
+static const char *mkd_doc_operations_research_FalseConstraint_DebugString = R"doc()doc";
+
+static const char *mkd_doc_operations_research_FalseConstraint_FalseConstraint = R"doc()doc";
+
+static const char *mkd_doc_operations_research_FalseConstraint_FalseConstraint_2 = R"doc()doc";
+
+static const char *mkd_doc_operations_research_FalseConstraint_InitialPropagate = R"doc()doc";
+
+static const char *mkd_doc_operations_research_FalseConstraint_Post = R"doc()doc";
+
+static const char *mkd_doc_operations_research_FalseConstraint_Var = R"doc()doc";
+
+static const char *mkd_doc_operations_research_FalseConstraint_explanation = R"doc()doc";
+
 static const char *mkd_doc_operations_research_FixedDurationIntervalVar = R"doc()doc";
 
 static const char *mkd_doc_operations_research_FixedDurationIntervalVarStartSyncedOnEnd = R"doc()doc";
@@ -2465,7 +2483,23 @@ static const char *mkd_doc_operations_research_LinkStartVarIntervalVar_start = R
 
 static const char *mkd_doc_operations_research_LocalSearch = R"doc()doc";
 
-static const char *mkd_doc_operations_research_LocalSearchFilter = R"doc()doc";
+static const char *mkd_doc_operations_research_LocalSearchFilter =
+R"doc(Local Search Filters are used for fast neighbor pruning. Filtering a
+move is done in several phases:
+- in the Relax phase, filters determine which parts of their internals
+  will be changed by the candidate, and modify intermediary State
+- in the Accept phase, filters check that the candidate is feasible, -
+  if the Accept phase succeeds, the solver may decide to trigger a
+  Synchronize phase that makes filters change their internal
+  representation to the last candidate,
+- otherwise (Accept fails or the solver does not want to synchronize),
+  a Revert phase makes filters erase any intermediary State generated
+  by the Relax and Accept phases.
+A given filter has phases called with the following pattern:
+(Relax.Accept.Synchronize | Relax.Accept.Revert | Relax.Revert)*.
+Filters's Revert() is always called in the reverse order their
+Accept() was called, to allow late filters to use state done/undone by
+early filters' Accept()/Revert().)doc";
 
 static const char *mkd_doc_operations_research_LocalSearchFilter_2 =
 R"doc(Local Search Filters are used for fast neighbor pruning. Filtering a
@@ -2605,7 +2639,19 @@ static const char *mkd_doc_operations_research_LocalSearchMonitor_IsActive = R"d
 
 static const char *mkd_doc_operations_research_LocalSearchMonitor_LocalSearchMonitor = R"doc()doc";
 
-static const char *mkd_doc_operations_research_LocalSearchOperator = R"doc()doc";
+static const char *mkd_doc_operations_research_LocalSearchOperator =
+R"doc(The base class for all local search operators.
+
+A local search operator is an object that generates neighbors of the
+current solution.
+
+It has a Start() method which synchronizes the operator with the
+current assignment (solution). Then one can iterate over the neighbors
+using the MakeNextNeighbor method. This method returns an assignment
+which represents the incremental changes to the current solution. It
+also returns a second assignment representing the changes to the last
+solution defined by the neighborhood operator; this assignment is
+empty if the neighborhood operator cannot track this information.)doc";
 
 static const char *mkd_doc_operations_research_LocalSearchOperator_2 =
 R"doc(The base class for all local search operators.
@@ -7868,6 +7914,20 @@ static const char *mkd_doc_operations_research_TrailMarkerType_REVERSIBLE_ACTION
 static const char *mkd_doc_operations_research_TrailMarkerType_SENTINEL = R"doc()doc";
 
 static const char *mkd_doc_operations_research_TrailMarkerType_SIMPLE_MARKER = R"doc()doc";
+
+static const char *mkd_doc_operations_research_TrueConstraint = R"doc()doc";
+
+static const char *mkd_doc_operations_research_TrueConstraint_Accept = R"doc()doc";
+
+static const char *mkd_doc_operations_research_TrueConstraint_DebugString = R"doc()doc";
+
+static const char *mkd_doc_operations_research_TrueConstraint_InitialPropagate = R"doc()doc";
+
+static const char *mkd_doc_operations_research_TrueConstraint_Post = R"doc()doc";
+
+static const char *mkd_doc_operations_research_TrueConstraint_TrueConstraint = R"doc()doc";
+
+static const char *mkd_doc_operations_research_TrueConstraint_Var = R"doc()doc";
 
 static const char *mkd_doc_operations_research_UnsortedNullableRevBitset =
 R"doc(This class represents a reversible bitset. It is meant to represent a

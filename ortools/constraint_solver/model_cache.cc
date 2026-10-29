@@ -18,12 +18,13 @@
 #include <utility>
 #include <vector>
 
-#include "absl/flags/declare.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "ortools/base/stl_util.h"
 
-ABSL_DECLARE_FLAG(int, cache_initial_size);
+ABSL_FLAG(int, cache_initial_size, 1024,
+          "Initial size of the array of the hash "
+          "table of caches for objects of type Var(x == 3)");
 ABSL_FLAG(bool, cp_disable_cache, false, "Disable caching of model objects");
 
 namespace operations_research {

@@ -15,6 +15,8 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
+#include <numeric>
 #include <string>
 #include <vector>
 
@@ -24,9 +26,13 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/expressions.h"
+#include "ortools/constraint_solver/model_cache.h"
+#include "ortools/constraint_solver/trace.h"
+#include "ortools/constraint_solver/utilities.h"
 #include "ortools/constraint_solver/visitor.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/string_array.h"
@@ -2490,5 +2496,901 @@ void ExprLinearizer::PushMultiplier(int64_t multiplier) {
 
 void ExprLinearizer::PopMultiplier() { multipliers_.pop_back(); }
 #undef IS_TYPE
+
+namespace {
+void DeepLinearize(Solver* solver, const std::vector<IntVar*>& pre_vars,
+                   absl::Span<const int64_t> pre_coefs,
+                   std::vector<IntVar*>* vars, std::vector<int64_t>* coefs,
+                   int64_t* constant) {
+  CHECK(solver != nullptr);
+  CHECK(vars != nullptr);
+  CHECK(coefs != nullptr);
+  CHECK(constant != nullptr);
+  *constant = 0;
+  vars->reserve(pre_vars.size());
+  coefs->reserve(pre_coefs.size());
+  // Try linear scan of the variables to check if there is nothing to do.
+  bool need_linearization = false;
+  for (int i = 0; i < pre_vars.size(); ++i) {
+    IntVar* const variable = pre_vars[i];
+    const int64_t coefficient = pre_coefs[i];
+    if (variable->Bound()) {
+      *constant = CapAdd(*constant, CapProd(coefficient, variable->Min()));
+    } else if (solver->CastExpression(variable) == nullptr) {
+      vars->push_back(variable);
+      coefs->push_back(coefficient);
+    } else {
+      need_linearization = true;
+      vars->clear();
+      coefs->clear();
+      break;
+    }
+  }
+  if (need_linearization) {
+    // Introspect the variables to simplify the sum.
+    absl::flat_hash_map<IntVar*, int64_t> variables_to_coefficients;
+    ExprLinearizer linearizer(&variables_to_coefficients);
+    for (int i = 0; i < pre_vars.size(); ++i) {
+      linearizer.Visit(pre_vars[i], pre_coefs[i]);
+    }
+    *constant = linearizer.Constant();
+    for (const auto& variable_to_coefficient : variables_to_coefficients) {
+      if (variable_to_coefficient.second != 0) {
+        vars->push_back(variable_to_coefficient.first);
+        coefs->push_back(variable_to_coefficient.second);
+      }
+    }
+  }
+}
+
+Constraint* MakeScalProdEqualityFct(Solver* solver,
+                                    const std::vector<IntVar*>& pre_vars,
+                                    absl::Span<const int64_t> pre_coefs,
+                                    int64_t cst) {
+  int64_t constant = 0;
+  std::vector<IntVar*> vars;
+  std::vector<int64_t> coefs;
+  DeepLinearize(solver, pre_vars, pre_coefs, &vars, &coefs, &constant);
+  cst = CapSub(cst, constant);
+
+  const int size = vars.size();
+  if (size == 0 || AreAllNull(coefs)) {
+    return cst == 0 ? solver->MakeTrueConstraint()
+                    : solver->MakeFalseConstraint();
+  }
+  if (AreAllBoundOrNull(vars, coefs)) {
+    int64_t sum = 0;
+    for (int i = 0; i < size; ++i) {
+      sum = CapAdd(sum, CapProd(coefs[i], vars[i]->Min()));
+    }
+    return sum == cst ? solver->MakeTrueConstraint()
+                      : solver->MakeFalseConstraint();
+  }
+  if (AreAllOnes(coefs)) {
+    return solver->MakeSumEquality(vars, cst);
+  }
+  if (AreAllBooleans(vars) && size > 2) {
+    if (AreAllPositive(coefs)) {
+      return solver->RevAlloc(
+          new PositiveBooleanScalProdEqCst(solver, vars, coefs, cst));
+    }
+    if (AreAllNegative(coefs)) {
+      std::vector<int64_t> opp_coefs(coefs.size());
+      for (int i = 0; i < coefs.size(); ++i) {
+        opp_coefs[i] = -coefs[i];
+      }
+      return solver->RevAlloc(
+          new PositiveBooleanScalProdEqCst(solver, vars, opp_coefs, -cst));
+    }
+  }
+
+  // Simplications.
+  int constants = 0;
+  int positives = 0;
+  int negatives = 0;
+  for (int i = 0; i < size; ++i) {
+    if (coefs[i] == 0 || vars[i]->Bound()) {
+      constants++;
+    } else if (coefs[i] > 0) {
+      positives++;
+    } else {
+      negatives++;
+    }
+  }
+  if (positives > 0 && negatives > 0) {
+    std::vector<IntVar*> pos_terms;
+    std::vector<IntVar*> neg_terms;
+    int64_t rhs = cst;
+    for (int i = 0; i < size; ++i) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
+      } else if (coefs[i] > 0) {
+        pos_terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
+      } else {
+        neg_terms.push_back(solver->MakeProd(vars[i], -coefs[i])->Var());
+      }
+    }
+    if (negatives == 1) {
+      if (rhs != 0) {
+        pos_terms.push_back(solver->MakeIntConst(-rhs));
+      }
+      return solver->MakeSumEquality(pos_terms, neg_terms[0]);
+    } else if (positives == 1) {
+      if (rhs != 0) {
+        neg_terms.push_back(solver->MakeIntConst(rhs));
+      }
+      return solver->MakeSumEquality(neg_terms, pos_terms[0]);
+    } else {
+      if (rhs != 0) {
+        neg_terms.push_back(solver->MakeIntConst(rhs));
+      }
+      return solver->MakeEquality(solver->MakeSum(pos_terms),
+                                  solver->MakeSum(neg_terms));
+    }
+  } else if (positives == 1) {
+    IntExpr* pos_term = nullptr;
+    int64_t rhs = cst;
+    for (int i = 0; i < size; ++i) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
+      } else if (coefs[i] > 0) {
+        pos_term = solver->MakeProd(vars[i], coefs[i]);
+      } else {
+        LOG(FATAL) << "Should not be here";
+      }
+    }
+    return solver->MakeEquality(pos_term, rhs);
+  } else if (negatives == 1) {
+    IntExpr* neg_term = nullptr;
+    int64_t rhs = cst;
+    for (int i = 0; i < size; ++i) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
+      } else if (coefs[i] > 0) {
+        LOG(FATAL) << "Should not be here";
+      } else {
+        neg_term = solver->MakeProd(vars[i], -coefs[i]);
+      }
+    }
+    return solver->MakeEquality(neg_term, -rhs);
+  } else if (positives > 1) {
+    std::vector<IntVar*> pos_terms;
+    int64_t rhs = cst;
+    for (int i = 0; i < size; ++i) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
+      } else if (coefs[i] > 0) {
+        pos_terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
+      } else {
+        LOG(FATAL) << "Should not be here";
+      }
+    }
+    return solver->MakeSumEquality(pos_terms, rhs);
+  } else if (negatives > 1) {
+    std::vector<IntVar*> neg_terms;
+    int64_t rhs = cst;
+    for (int i = 0; i < size; ++i) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
+      } else if (coefs[i] > 0) {
+        LOG(FATAL) << "Should not be here";
+      } else {
+        neg_terms.push_back(solver->MakeProd(vars[i], -coefs[i])->Var());
+      }
+    }
+    return solver->MakeSumEquality(neg_terms, -rhs);
+  }
+  std::vector<IntVar*> terms;
+  for (int i = 0; i < size; ++i) {
+    terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
+  }
+  return solver->MakeSumEquality(terms, solver->MakeIntConst(cst));
+}
+
+Constraint* MakeScalProdEqualityVarFct(Solver* solver,
+                                       const std::vector<IntVar*>& pre_vars,
+                                       absl::Span<const int64_t> pre_coefs,
+                                       IntVar* target) {
+  int64_t constant = 0;
+  std::vector<IntVar*> vars;
+  std::vector<int64_t> coefs;
+  DeepLinearize(solver, pre_vars, pre_coefs, &vars, &coefs, &constant);
+
+  const int size = vars.size();
+  if (size == 0 || AreAllNull<int64_t>(coefs)) {
+    return solver->MakeEquality(target, constant);
+  }
+  if (AreAllOnes(coefs)) {
+    return solver->MakeSumEquality(vars,
+                                   solver->MakeSum(target, -constant)->Var());
+  }
+  if (AreAllBooleans(vars) && AreAllPositive<int64_t>(coefs)) {
+    // TODO(user) : bench BooleanScalProdEqVar with IntConst.
+    return solver->RevAlloc(new PositiveBooleanScalProdEqVar(
+        solver, vars, coefs, solver->MakeSum(target, -constant)->Var()));
+  }
+  std::vector<IntVar*> terms;
+  for (int i = 0; i < size; ++i) {
+    terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
+  }
+  return solver->MakeSumEquality(terms,
+                                 solver->MakeSum(target, -constant)->Var());
+}
+
+Constraint* MakeScalProdGreaterOrEqualFct(Solver* solver,
+                                          const std::vector<IntVar*>& pre_vars,
+                                          absl::Span<const int64_t> pre_coefs,
+                                          int64_t cst) {
+  int64_t constant = 0;
+  std::vector<IntVar*> vars;
+  std::vector<int64_t> coefs;
+  DeepLinearize(solver, pre_vars, pre_coefs, &vars, &coefs, &constant);
+  cst = CapSub(cst, constant);
+
+  const int size = vars.size();
+  if (size == 0 || AreAllNull<int64_t>(coefs)) {
+    return cst <= 0 ? solver->MakeTrueConstraint()
+                    : solver->MakeFalseConstraint();
+  }
+  if (AreAllOnes(coefs)) {
+    return solver->MakeSumGreaterOrEqual(vars, cst);
+  }
+  if (cst == 1 && AreAllBooleans(vars) && AreAllPositive(coefs)) {
+    // can move all coefs to 1.
+    std::vector<IntVar*> terms;
+    for (int i = 0; i < size; ++i) {
+      if (coefs[i] > 0) {
+        terms.push_back(vars[i]);
+      }
+    }
+    return solver->MakeSumGreaterOrEqual(terms, 1);
+  }
+  std::vector<IntVar*> terms;
+  for (int i = 0; i < size; ++i) {
+    terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
+  }
+  return solver->MakeSumGreaterOrEqual(terms, cst);
+}
+
+Constraint* MakeScalProdLessOrEqualFct(Solver* solver,
+                                       const std::vector<IntVar*>& pre_vars,
+                                       absl::Span<const int64_t> pre_coefs,
+                                       int64_t upper_bound) {
+  int64_t constant = 0;
+  std::vector<IntVar*> vars;
+  std::vector<int64_t> coefs;
+  DeepLinearize(solver, pre_vars, pre_coefs, &vars, &coefs, &constant);
+  upper_bound = CapSub(upper_bound, constant);
+
+  const int size = vars.size();
+  if (size == 0 || AreAllNull<int64_t>(coefs)) {
+    return upper_bound >= 0 ? solver->MakeTrueConstraint()
+                            : solver->MakeFalseConstraint();
+  }
+  // TODO(user) : compute constant on the fly.
+  if (AreAllBoundOrNull(vars, coefs)) {
+    int64_t cst = 0;
+    for (int i = 0; i < size; ++i) {
+      cst = CapAdd(cst, CapProd(vars[i]->Min(), coefs[i]));
+    }
+    return cst <= upper_bound ? solver->MakeTrueConstraint()
+                              : solver->MakeFalseConstraint();
+  }
+  if (AreAllOnes(coefs)) {
+    return solver->MakeSumLessOrEqual(vars, upper_bound);
+  }
+  if (AreAllBooleans(vars) && AreAllPositive<int64_t>(coefs)) {
+    return solver->RevAlloc(
+        new BooleanScalProdLessConstant(solver, vars, coefs, upper_bound));
+  }
+  // Some simplifications
+  int constants = 0;
+  int positives = 0;
+  int negatives = 0;
+  for (int i = 0; i < size; ++i) {
+    if (coefs[i] == 0 || vars[i]->Bound()) {
+      constants++;
+    } else if (coefs[i] > 0) {
+      positives++;
+    } else {
+      negatives++;
+    }
+  }
+  if (positives > 0 && negatives > 0) {
+    std::vector<IntVar*> pos_terms;
+    std::vector<IntVar*> neg_terms;
+    int64_t rhs = upper_bound;
+    for (int i = 0; i < size; ++i) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
+      } else if (coefs[i] > 0) {
+        pos_terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
+      } else {
+        neg_terms.push_back(solver->MakeProd(vars[i], -coefs[i])->Var());
+      }
+    }
+    if (negatives == 1) {
+      IntExpr* const neg_term = solver->MakeSum(neg_terms[0], rhs);
+      return solver->MakeLessOrEqual(solver->MakeSum(pos_terms), neg_term);
+    } else if (positives == 1) {
+      IntExpr* const pos_term = solver->MakeSum(pos_terms[0], -rhs);
+      return solver->MakeGreaterOrEqual(solver->MakeSum(neg_terms), pos_term);
+    } else {
+      if (rhs != 0) {
+        neg_terms.push_back(solver->MakeIntConst(rhs));
+      }
+      return solver->MakeLessOrEqual(solver->MakeSum(pos_terms),
+                                     solver->MakeSum(neg_terms));
+    }
+  } else if (positives == 1) {
+    IntExpr* pos_term = nullptr;
+    int64_t rhs = upper_bound;
+    for (int i = 0; i < size; ++i) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
+      } else if (coefs[i] > 0) {
+        pos_term = solver->MakeProd(vars[i], coefs[i]);
+      } else {
+        LOG(FATAL) << "Should not be here";
+      }
+    }
+    return solver->MakeLessOrEqual(pos_term, rhs);
+  } else if (negatives == 1) {
+    IntExpr* neg_term = nullptr;
+    int64_t rhs = upper_bound;
+    for (int i = 0; i < size; ++i) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
+      } else if (coefs[i] > 0) {
+        LOG(FATAL) << "Should not be here";
+      } else {
+        neg_term = solver->MakeProd(vars[i], -coefs[i]);
+      }
+    }
+    return solver->MakeGreaterOrEqual(neg_term, -rhs);
+  } else if (positives > 1) {
+    std::vector<IntVar*> pos_terms;
+    int64_t rhs = upper_bound;
+    for (int i = 0; i < size; ++i) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
+      } else if (coefs[i] > 0) {
+        pos_terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
+      } else {
+        LOG(FATAL) << "Should not be here";
+      }
+    }
+    return solver->MakeSumLessOrEqual(pos_terms, rhs);
+  } else if (negatives > 1) {
+    std::vector<IntVar*> neg_terms;
+    int64_t rhs = upper_bound;
+    for (int i = 0; i < size; ++i) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
+      } else if (coefs[i] > 0) {
+        LOG(FATAL) << "Should not be here";
+      } else {
+        neg_terms.push_back(solver->MakeProd(vars[i], -coefs[i])->Var());
+      }
+    }
+    return solver->MakeSumGreaterOrEqual(neg_terms, -rhs);
+  }
+  std::vector<IntVar*> terms;
+  for (int i = 0; i < size; ++i) {
+    terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
+  }
+  return solver->MakeLessOrEqual(solver->MakeSum(terms), upper_bound);
+}
+
+IntExpr* MakeSumArrayAux(Solver* solver, const std::vector<IntVar*>& vars,
+                         int64_t constant) {
+  const int size = vars.size();
+  DCHECK_GT(size, 2);
+  int64_t new_min = 0;
+  int64_t new_max = 0;
+  for (int i = 0; i < size; ++i) {
+    if (new_min != kint64min) {
+      new_min = CapAdd(vars[i]->Min(), new_min);
+    }
+    if (new_max != kint64max) {
+      new_max = CapAdd(vars[i]->Max(), new_max);
+    }
+  }
+  IntExpr* const cache =
+      solver->Cache()->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_SUM);
+  if (cache != nullptr) {
+    return solver->MakeSum(cache, constant);
+  } else {
+    const std::string name = absl::StrFormat("Sum([%s])", JoinNamePtr(vars));
+    IntVar* const sum_var = solver->MakeIntVar(new_min, new_max, name);
+    if (AreAllBooleans(vars)) {
+      solver->AddConstraint(
+          solver->RevAlloc(new SumBooleanEqualToVar(solver, vars, sum_var)));
+    } else if (size <= solver->parameters().array_split_size()) {
+      solver->AddConstraint(
+          solver->RevAlloc(new SmallSumConstraint(solver, vars, sum_var)));
+    } else {
+      solver->AddConstraint(
+          solver->RevAlloc(new SumConstraint(solver, vars, sum_var)));
+    }
+    solver->Cache()->InsertVarArrayExpression(sum_var, vars,
+                                              ModelCache::VAR_ARRAY_SUM);
+    return solver->MakeSum(sum_var, constant);
+  }
+}
+
+IntExpr* MakeSumAux(Solver* solver, const std::vector<IntVar*>& vars,
+                    int64_t constant) {
+  const int size = vars.size();
+  if (size == 0) {
+    return solver->MakeIntConst(constant);
+  } else if (size == 1) {
+    return solver->MakeSum(vars[0], constant);
+  } else if (size == 2) {
+    return solver->MakeSum(solver->MakeSum(vars[0], vars[1]), constant);
+  } else {
+    return MakeSumArrayAux(solver, vars, constant);
+  }
+}
+
+IntExpr* MakeScalProdAux(Solver* solver, const std::vector<IntVar*>& vars,
+                         const std::vector<int64_t>& coefs, int64_t constant) {
+  if (AreAllOnes(coefs)) {
+    return MakeSumAux(solver, vars, constant);
+  }
+
+  const int size = vars.size();
+  if (size == 0) {
+    return solver->MakeIntConst(constant);
+  } else if (size == 1) {
+    return solver->MakeSum(solver->MakeProd(vars[0], coefs[0]), constant);
+  } else if (size == 2) {
+    if (coefs[0] > 0 && coefs[1] < 0) {
+      return solver->MakeSum(
+          solver->MakeDifference(solver->MakeProd(vars[0], coefs[0]),
+                                 solver->MakeProd(vars[1], -coefs[1])),
+          constant);
+    } else if (coefs[0] < 0 && coefs[1] > 0) {
+      return solver->MakeSum(
+          solver->MakeDifference(solver->MakeProd(vars[1], coefs[1]),
+                                 solver->MakeProd(vars[0], -coefs[0])),
+          constant);
+    } else {
+      return solver->MakeSum(
+          solver->MakeSum(solver->MakeProd(vars[0], coefs[0]),
+                          solver->MakeProd(vars[1], coefs[1])),
+          constant);
+    }
+  } else {
+    if (AreAllBooleans(vars)) {
+      if (AreAllPositive(coefs)) {
+        if (vars.size() > 8) {
+          return solver->MakeSum(
+              RegisterIntExpr(solver->RevAlloc(new PositiveBooleanScalProd(
+                                  solver, vars, coefs)))
+                  ->Var(),
+              constant);
+        } else {
+          return solver->MakeSum(
+              RegisterIntExpr(solver->RevAlloc(
+                  new PositiveBooleanScalProd(solver, vars, coefs))),
+              constant);
+        }
+      } else {
+        // If some coefficients are non-positive, partition coefficients in two
+        // sets, one for the positive coefficients P and one for the negative
+        // ones N.
+        // Create two PositiveBooleanScalProd expressions, one on P (s1), the
+        // other on Opposite(N) (s2).
+        // The final expression is then s1 - s2.
+        // If P is empty, the expression is Opposite(s2).
+        std::vector<int64_t> positive_coefs;
+        std::vector<int64_t> negative_coefs;
+        std::vector<IntVar*> positive_coef_vars;
+        std::vector<IntVar*> negative_coef_vars;
+        for (int i = 0; i < size; ++i) {
+          const int64_t coef = coefs[i];
+          if (coef > 0) {
+            positive_coefs.push_back(coef);
+            positive_coef_vars.push_back(vars[i]);
+          } else if (coef < 0) {
+            negative_coefs.push_back(-coef);
+            negative_coef_vars.push_back(vars[i]);
+          }
+        }
+        CHECK_GT(negative_coef_vars.size(), 0);
+        IntExpr* const negatives =
+            MakeScalProdAux(solver, negative_coef_vars, negative_coefs, 0);
+        if (!positive_coef_vars.empty()) {
+          IntExpr* const positives = MakeScalProdAux(solver, positive_coef_vars,
+                                                     positive_coefs, constant);
+          return solver->MakeDifference(positives, negatives);
+        } else {
+          return solver->MakeDifference(constant, negatives);
+        }
+      }
+    }
+  }
+  std::vector<IntVar*> terms;
+  for (int i = 0; i < size; ++i) {
+    terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
+  }
+  return MakeSumArrayAux(solver, terms, constant);
+}
+
+IntExpr* MakeScalProdFct(Solver* solver, const std::vector<IntVar*>& pre_vars,
+                         absl::Span<const int64_t> pre_coefs) {
+  int64_t constant = 0;
+  std::vector<IntVar*> vars;
+  std::vector<int64_t> coefs;
+  DeepLinearize(solver, pre_vars, pre_coefs, &vars, &coefs, &constant);
+
+  if (vars.empty()) {
+    return solver->MakeIntConst(constant);
+  }
+  // Can we simplify using some gcd computation.
+  int64_t gcd = std::abs(coefs[0]);
+  for (int i = 1; i < coefs.size(); ++i) {
+    gcd = std::gcd(gcd, std::abs(coefs[i]));
+    if (gcd == 1) {
+      break;
+    }
+  }
+  if (constant != 0 && gcd != 1) {
+    gcd = std::gcd(gcd, std::abs(constant));
+  }
+  if (gcd > 1) {
+    for (int i = 0; i < coefs.size(); ++i) {
+      coefs[i] /= gcd;
+    }
+    return solver->MakeProd(
+        MakeScalProdAux(solver, vars, coefs, constant / gcd), gcd);
+  }
+  return MakeScalProdAux(solver, vars, coefs, constant);
+}
+
+IntExpr* MakeSumFct(Solver* solver, const std::vector<IntVar*>& pre_vars) {
+  absl::flat_hash_map<IntVar*, int64_t> variables_to_coefficients;
+  ExprLinearizer linearizer(&variables_to_coefficients);
+  for (int i = 0; i < pre_vars.size(); ++i) {
+    linearizer.Visit(pre_vars[i], 1);
+  }
+  const int64_t constant = linearizer.Constant();
+  std::vector<IntVar*> vars;
+  std::vector<int64_t> coefs;
+  for (const auto& variable_to_coefficient : variables_to_coefficients) {
+    if (variable_to_coefficient.second != 0) {
+      vars.push_back(variable_to_coefficient.first);
+      coefs.push_back(variable_to_coefficient.second);
+    }
+  }
+  return MakeScalProdAux(solver, vars, coefs, constant);
+}
+}  // namespace
+
+// ----- API -----
+
+IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
+  const int size = vars.size();
+  if (size == 0) {
+    return MakeIntConst(int64_t{0});
+  } else if (size == 1) {
+    return vars[0];
+  } else if (size == 2) {
+    return MakeSum(vars[0], vars[1]);
+  } else {
+    IntExpr* const cache =
+        model_cache_->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_SUM);
+    if (cache != nullptr) {
+      return cache;
+    } else {
+      int64_t new_min = 0;
+      int64_t new_max = 0;
+      for (int i = 0; i < size; ++i) {
+        if (new_min != kint64min) {
+          new_min = CapAdd(vars[i]->Min(), new_min);
+        }
+        if (new_max != kint64max) {
+          new_max = CapAdd(vars[i]->Max(), new_max);
+        }
+      }
+      IntExpr* sum_expr = nullptr;
+      const bool all_booleans = AreAllBooleans(vars);
+      if (all_booleans) {
+        const std::string name =
+            absl::StrFormat("BooleanSum([%s])", JoinNamePtr(vars));
+        sum_expr = MakeIntVar(new_min, new_max, name);
+        AddConstraint(
+            RevAlloc(new SumBooleanEqualToVar(this, vars, sum_expr->Var())));
+      } else if (new_min != kint64min && new_max != kint64max) {
+        sum_expr = MakeSumFct(this, vars);
+      } else {
+        const std::string name =
+            absl::StrFormat("Sum([%s])", JoinNamePtr(vars));
+        sum_expr = MakeIntVar(new_min, new_max, name);
+        AddConstraint(
+            RevAlloc(new SafeSumConstraint(this, vars, sum_expr->Var())));
+      }
+      model_cache_->InsertVarArrayExpression(sum_expr, vars,
+                                             ModelCache::VAR_ARRAY_SUM);
+      return sum_expr;
+    }
+  }
+}
+
+IntExpr* Solver::MakeMin(const std::vector<IntVar*>& vars) {
+  const int size = vars.size();
+  if (size == 0) {
+    LOG(WARNING) << "operations_research::Solver::MakeMin() was called with an "
+                    "empty list of variables. Was this intentional?";
+    return MakeIntConst(kint64max);
+  } else if (size == 1) {
+    return vars[0];
+  } else if (size == 2) {
+    return MakeMin(vars[0], vars[1]);
+  } else {
+    IntExpr* const cache =
+        model_cache_->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_MIN);
+    if (cache != nullptr) {
+      return cache;
+    } else {
+      if (AreAllBooleans(vars)) {
+        IntVar* const new_var = MakeBoolVar();
+        AddConstraint(RevAlloc(new ArrayBoolAndEq(this, vars, new_var)));
+        model_cache_->InsertVarArrayExpression(new_var, vars,
+                                               ModelCache::VAR_ARRAY_MIN);
+        return new_var;
+      } else {
+        int64_t new_min = kint64max;
+        int64_t new_max = kint64max;
+        for (int i = 0; i < size; ++i) {
+          new_min = std::min(new_min, vars[i]->Min());
+          new_max = std::min(new_max, vars[i]->Max());
+        }
+        IntVar* const new_var = MakeIntVar(new_min, new_max);
+        if (size <= parameters_.array_split_size()) {
+          AddConstraint(RevAlloc(new SmallMinConstraint(this, vars, new_var)));
+        } else {
+          AddConstraint(RevAlloc(new MinConstraint(this, vars, new_var)));
+        }
+        model_cache_->InsertVarArrayExpression(new_var, vars,
+                                               ModelCache::VAR_ARRAY_MIN);
+        return new_var;
+      }
+    }
+  }
+}
+
+IntExpr* Solver::MakeMax(const std::vector<IntVar*>& vars) {
+  const int size = vars.size();
+  if (size == 0) {
+    LOG(WARNING) << "operations_research::Solver::MakeMax() was called with an "
+                    "empty list of variables. Was this intentional?";
+    return MakeIntConst(kint64min);
+  } else if (size == 1) {
+    return vars[0];
+  } else if (size == 2) {
+    return MakeMax(vars[0], vars[1]);
+  } else {
+    IntExpr* const cache =
+        model_cache_->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_MAX);
+    if (cache != nullptr) {
+      return cache;
+    } else {
+      if (AreAllBooleans(vars)) {
+        IntVar* const new_var = MakeBoolVar();
+        AddConstraint(RevAlloc(new ArrayBoolOrEq(this, vars, new_var)));
+        model_cache_->InsertVarArrayExpression(new_var, vars,
+                                               ModelCache::VAR_ARRAY_MIN);
+        return new_var;
+      } else {
+        int64_t new_min = kint64min;
+        int64_t new_max = kint64min;
+        for (int i = 0; i < size; ++i) {
+          new_min = std::max(new_min, vars[i]->Min());
+          new_max = std::max(new_max, vars[i]->Max());
+        }
+        IntVar* const new_var = MakeIntVar(new_min, new_max);
+        if (size <= parameters_.array_split_size()) {
+          AddConstraint(RevAlloc(new SmallMaxConstraint(this, vars, new_var)));
+        } else {
+          AddConstraint(RevAlloc(new MaxConstraint(this, vars, new_var)));
+        }
+        model_cache_->InsertVarArrayExpression(new_var, vars,
+                                               ModelCache::VAR_ARRAY_MAX);
+        return new_var;
+      }
+    }
+  }
+}
+
+Constraint* Solver::MakeMinEquality(const std::vector<IntVar*>& vars,
+                                    IntVar* min_var) {
+  const int size = vars.size();
+  if (size > 2) {
+    if (AreAllBooleans(vars)) {
+      return RevAlloc(new ArrayBoolAndEq(this, vars, min_var));
+    } else if (size <= parameters_.array_split_size()) {
+      return RevAlloc(new SmallMinConstraint(this, vars, min_var));
+    } else {
+      return RevAlloc(new MinConstraint(this, vars, min_var));
+    }
+  } else if (size == 2) {
+    return MakeEquality(MakeMin(vars[0], vars[1]), min_var);
+  } else if (size == 1) {
+    return MakeEquality(vars[0], min_var);
+  } else {
+    LOG(WARNING) << "operations_research::Solver::MakeMinEquality() was called "
+                    "with an empty list of variables. Was this intentional?";
+    return MakeEquality(min_var, kint64max);
+  }
+}
+
+Constraint* Solver::MakeMaxEquality(const std::vector<IntVar*>& vars,
+                                    IntVar* max_var) {
+  const int size = vars.size();
+  if (size > 2) {
+    if (AreAllBooleans(vars)) {
+      return RevAlloc(new ArrayBoolOrEq(this, vars, max_var));
+    } else if (size <= parameters_.array_split_size()) {
+      return RevAlloc(new SmallMaxConstraint(this, vars, max_var));
+    } else {
+      return RevAlloc(new MaxConstraint(this, vars, max_var));
+    }
+  } else if (size == 2) {
+    return MakeEquality(MakeMax(vars[0], vars[1]), max_var);
+  } else if (size == 1) {
+    return MakeEquality(vars[0], max_var);
+  } else {
+    LOG(WARNING) << "operations_research::Solver::MakeMaxEquality() was called "
+                    "with an empty list of variables. Was this intentional?";
+    return MakeEquality(max_var, kint64min);
+  }
+}
+
+Constraint* Solver::MakeSumLessOrEqual(const std::vector<IntVar*>& vars,
+                                       int64_t cst) {
+  const int size = vars.size();
+  if (cst == 1LL && AreAllBooleans(vars) && size > 2) {
+    return RevAlloc(new SumBooleanLessOrEqualToOne(this, vars));
+  } else {
+    return MakeLessOrEqual(MakeSum(vars), cst);
+  }
+}
+
+Constraint* Solver::MakeSumGreaterOrEqual(const std::vector<IntVar*>& vars,
+                                          int64_t cst) {
+  const int size = vars.size();
+  if (cst == 1LL && AreAllBooleans(vars) && size > 2) {
+    return RevAlloc(new SumBooleanGreaterOrEqualToOne(this, vars));
+  } else {
+    return MakeGreaterOrEqual(MakeSum(vars), cst);
+  }
+}
+
+Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars,
+                                    int64_t cst) {
+  const int size = vars.size();
+  if (size == 0) {
+    return cst == 0 ? MakeTrueConstraint() : MakeFalseConstraint();
+  }
+  if (AreAllBooleans(vars) && size > 2) {
+    if (cst == 1) {
+      return RevAlloc(new SumBooleanEqualToOne(this, vars));
+    } else if (cst < 0 || cst > size) {
+      return MakeFalseConstraint();
+    } else {
+      return RevAlloc(new SumBooleanEqualToVar(this, vars, MakeIntConst(cst)));
+    }
+  } else {
+    if (vars.size() == 1) {
+      return MakeEquality(vars[0], cst);
+    } else if (vars.size() == 2) {
+      return MakeEquality(vars[0], MakeDifference(cst, vars[1]));
+    }
+    if (DetectSumOverflow(vars)) {
+      return RevAlloc(new SafeSumConstraint(this, vars, MakeIntConst(cst)));
+    } else if (size <= parameters_.array_split_size()) {
+      return RevAlloc(new SmallSumConstraint(this, vars, MakeIntConst(cst)));
+    } else {
+      return RevAlloc(new SumConstraint(this, vars, MakeIntConst(cst)));
+    }
+  }
+}
+
+Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars,
+                                    IntVar* var) {
+  const int size = vars.size();
+  if (size == 0) {
+    return MakeEquality(var, Zero());
+  }
+  if (AreAllBooleans(vars) && size > 2) {
+    return RevAlloc(new SumBooleanEqualToVar(this, vars, var));
+  } else if (size == 0) {
+    return MakeEquality(var, Zero());
+  } else if (size == 1) {
+    return MakeEquality(vars[0], var);
+  } else if (size == 2) {
+    return MakeEquality(MakeSum(vars[0], vars[1]), var);
+  } else {
+    if (DetectSumOverflow(vars)) {
+      return RevAlloc(new SafeSumConstraint(this, vars, var));
+    } else if (size <= parameters_.array_split_size()) {
+      return RevAlloc(new SmallSumConstraint(this, vars, var));
+    } else {
+      return RevAlloc(new SumConstraint(this, vars, var));
+    }
+  }
+}
+
+Constraint* Solver::MakeScalProdEquality(
+    const std::vector<IntVar*>& vars, const std::vector<int64_t>& coefficients,
+    int64_t cst) {
+  DCHECK_EQ(vars.size(), coefficients.size());
+  return MakeScalProdEqualityFct(this, vars, coefficients, cst);
+}
+
+Constraint* Solver::MakeScalProdEquality(const std::vector<IntVar*>& vars,
+                                         const std::vector<int>& coefficients,
+                                         int64_t cst) {
+  DCHECK_EQ(vars.size(), coefficients.size());
+  return MakeScalProdEqualityFct(this, vars, ToInt64Vector(coefficients), cst);
+}
+
+Constraint* Solver::MakeScalProdEquality(
+    const std::vector<IntVar*>& vars, const std::vector<int64_t>& coefficients,
+    IntVar* target) {
+  DCHECK_EQ(vars.size(), coefficients.size());
+  return MakeScalProdEqualityVarFct(this, vars, coefficients, target);
+}
+
+Constraint* Solver::MakeScalProdEquality(const std::vector<IntVar*>& vars,
+                                         const std::vector<int>& coefficients,
+                                         IntVar* target) {
+  DCHECK_EQ(vars.size(), coefficients.size());
+  return MakeScalProdEqualityVarFct(this, vars, ToInt64Vector(coefficients),
+                                    target);
+}
+
+Constraint* Solver::MakeScalProdGreaterOrEqual(
+    const std::vector<IntVar*>& vars, const std::vector<int64_t>& coeffs,
+    int64_t cst) {
+  DCHECK_EQ(vars.size(), coeffs.size());
+  return MakeScalProdGreaterOrEqualFct(this, vars, coeffs, cst);
+}
+
+Constraint* Solver::MakeScalProdGreaterOrEqual(const std::vector<IntVar*>& vars,
+                                               const std::vector<int>& coeffs,
+                                               int64_t cst) {
+  DCHECK_EQ(vars.size(), coeffs.size());
+  return MakeScalProdGreaterOrEqualFct(this, vars, ToInt64Vector(coeffs), cst);
+}
+
+Constraint* Solver::MakeScalProdLessOrEqual(
+    const std::vector<IntVar*>& vars, const std::vector<int64_t>& coefficients,
+    int64_t cst) {
+  DCHECK_EQ(vars.size(), coefficients.size());
+  return MakeScalProdLessOrEqualFct(this, vars, coefficients, cst);
+}
+
+Constraint* Solver::MakeScalProdLessOrEqual(
+    const std::vector<IntVar*>& vars, const std::vector<int>& coefficients,
+    int64_t cst) {
+  DCHECK_EQ(vars.size(), coefficients.size());
+  return MakeScalProdLessOrEqualFct(this, vars, ToInt64Vector(coefficients),
+                                    cst);
+}
+
+IntExpr* Solver::MakeScalProd(const std::vector<IntVar*>& vars,
+                              const std::vector<int64_t>& coefs) {
+  DCHECK_EQ(vars.size(), coefs.size());
+  return MakeScalProdFct(this, vars, coefs);
+}
+
+IntExpr* Solver::MakeScalProd(const std::vector<IntVar*>& vars,
+                              const std::vector<int>& coefs) {
+  DCHECK_EQ(vars.size(), coefs.size());
+  return MakeScalProdFct(this, vars, ToInt64Vector(coefs));
+}
 
 }  // namespace operations_research

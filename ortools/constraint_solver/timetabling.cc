@@ -338,4 +338,33 @@ void TemporalDisjunction::Accept(ModelVisitor* visitor) const {
   visitor->EndVisitConstraint(ModelVisitor::kIntervalDisjunction, this);
 }
 
+Constraint* Solver::MakeIntervalVarRelation(IntervalVar* const t,
+                                            Solver::UnaryIntervalRelation r,
+                                            int64_t d) {
+  return RevAlloc(new IntervalUnaryRelation(this, t, d, r));
+}
+
+Constraint* Solver::MakeIntervalVarRelation(IntervalVar* const t1,
+                                            Solver::BinaryIntervalRelation r,
+                                            IntervalVar* const t2) {
+  return RevAlloc(new IntervalBinaryRelation(this, t1, t2, r, 0));
+}
+
+Constraint* Solver::MakeIntervalVarRelationWithDelay(
+    IntervalVar* const t1, Solver::BinaryIntervalRelation r,
+    IntervalVar* const t2, int64_t delay) {
+  return RevAlloc(new IntervalBinaryRelation(this, t1, t2, r, delay));
+}
+
+Constraint* Solver::MakeTemporalDisjunction(IntervalVar* const t1,
+                                            IntervalVar* const t2,
+                                            IntVar* const alt) {
+  return RevAlloc(new TemporalDisjunction(this, t1, t2, alt));
+}
+
+Constraint* Solver::MakeTemporalDisjunction(IntervalVar* const t1,
+                                            IntervalVar* const t2) {
+  return RevAlloc(new TemporalDisjunction(this, t1, t2, nullptr));
+}
+
 }  // namespace operations_research
