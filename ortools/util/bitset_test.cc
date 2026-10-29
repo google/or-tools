@@ -884,27 +884,6 @@ TEST(Bitset64Test, IteratorOverEmptyBitSet) {
   EXPECT_EQ(num_bits, 0);
 }
 
-// Utility function for the SetBitFromOtherBitSets test below.
-int GetBit(TestIndex index, int bit_position) {
-  return (index.value() >> bit_position) & 1;
-}
-
-TEST(Bitset64Test, SetBitFromOtherBitSets) {
-  TestIndex kSetSize(1000);
-  Bitset64<TestIndex> bitset1(kSetSize);
-  Bitset64<TestIndex> bitset2(kSetSize);
-  for (TestIndex i(0); i < kSetSize; ++i) {
-    bitset1.Set(i, GetBit(i, 0));
-    bitset2.Set(i, GetBit(i, 1));
-  }
-  for (TestIndex i(0); i < kSetSize; ++i) {
-    ASSERT_EQ(static_cast<bool>(Bitset64<TestIndex>::ConditionalXorOfTwoBits(
-                  i, GetBit(i, 2), bitset1.const_view(), GetBit(i, 3),
-                  bitset2.const_view())),
-              (GetBit(i, 2) & GetBit(i, 0)) ^ (GetBit(i, 3) & GetBit(i, 1)));
-  }
-}
-
 TEST(Bitset64Test, IteratorOverRandomBitSet) {
   const TestIndex kSize(100 * 1000);
   Bitset64<TestIndex> bitset(kSize);

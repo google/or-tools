@@ -318,6 +318,11 @@ void TightScalingErrorHelper::LoadBothConstraints(
   for (int i = 0; i < num_terms; ++i) {
     DCHECK(std::isfinite(scaled_coeffs[i]));
     DCHECK(std::isfinite(rounded_coeffs[i]));
+    if (scaled_coeffs_[i] == 0.0 && rounded_coeffs_[i] == 0.0) {
+      lbs_[i] = 0;
+      ubs_[i] = 0;
+      continue;
+    }
     DCHECK_GT(input_lbs[i], kint64min);
     DCHECK_LT(input_ubs[i], kint64max);
     DCHECK_LE(input_lbs[i], input_ubs[i]);
@@ -362,14 +367,17 @@ void TightScalingErrorHelper::LoadScalingFactor(double scaling_factor) {
   }
 }
 
-template <bool is_ge_constraint, bool compute_error>
+template <bool is_ge_constraint, bool minimize, bool compute_error>
 double TightScalingErrorHelper::Optimize(absl::Span<const double> coeffs,
                                          absl::Span<const double> new_coeffs,
-                                         TightSum& slack, double offset) {
+                                         TightSum& slack,
+                                         TightSum& result_sum) {
   constexpr double kInf = std::numeric_limits<double>::infinity();
-  constexpr double kWorstBound = is_ge_constraint ? -kInf : kInf;
+  constexpr double kWorstBound = minimize ? -kInf : kInf;
 
-  if (has_overflow_ || !slack.IsFinite() || !std::isfinite(offset)) {
+  if (has_overflow_ || !slack.IsFinite() || !result_sum.IsFinite()) {
+    result_sum.Clear();
+    result_sum.Add(kWorstBound);
     return kWorstBound;
   }
 
@@ -378,8 +386,6 @@ double TightScalingErrorHelper::Optimize(absl::Span<const double> coeffs,
   // greedily move variables toward their upper bound; the reverse for <=
   // constraints (x_i = ub_i - y_i).
   constexpr int64_t kSign = is_ge_constraint ? 1 : -1;
-  total_sum_.Clear();
-  total_sum_.Add(offset);
 
   const int num_terms = coeffs.size();
   items_.clear();
@@ -390,16 +396,25 @@ double TightScalingErrorHelper::Optimize(absl::Span<const double> coeffs,
 
     // For >= constraint we start at the lower bound and greedily move
     // variables to their upper bound. The reverse for the <= constraints.
-    const int64_t range = ubs_[i] - lbs_[i];
     const int64_t initial_bound = is_ge_constraint ? lbs_[i] : ubs_[i];
     const int64_t other_bound = is_ge_constraint ? ubs_[i] : lbs_[i];
     slack.AddProd(-kSign * coeff, initial_bound);
 
     const double delta = compute_error ? new_coeffs[i] - coeff : new_coeffs[i];
+
+    // When maximizing the error on a >= constraint (or minimizing on a <=
+    // constraint) for restriction mode, variables with new_coeffs[i] == 0 are
+    // unconstrained in the rounded inequality: moving them increases the
+    // original activity without changing the rounded one, so they must stay at
+    // initial_bound and are not added as knapsack items.
+    if (is_ge_constraint != minimize && compute_error && new_coeffs[i] == 0.0) {
+      result_sum.AddProd(delta, initial_bound);
+      continue;
+    }
     items_.push_back(KnapsackItem{
         .coeff = coeff,
         .delta = delta,
-        .range = range,
+        .range = ubs_[i] - lbs_[i],
         .initial_bound = initial_bound,
         .other_bound = other_bound,
     });
@@ -412,8 +427,13 @@ double TightScalingErrorHelper::Optimize(absl::Span<const double> coeffs,
       if (u.coeff == 0.0 || w.coeff == 0.0) {
         return w.coeff == 0.0 && u.coeff > 0.0;
       }
-      return TightSum().AddProd(u.delta, w.coeff).AddProd(-w.delta, u.coeff) <
-             0.0;
+      if constexpr (is_ge_constraint == minimize) {
+        return TightSum().AddProd(u.delta, w.coeff).AddProd(-w.delta, u.coeff) <
+               0.0;
+      } else {
+        return TightSum().AddProd(u.delta, w.coeff).AddProd(-w.delta, u.coeff) >
+               0.0;
+      }
     });
   }
 
@@ -421,24 +441,24 @@ double TightScalingErrorHelper::Optimize(absl::Span<const double> coeffs,
   // not at its lower/upper bound.
   for (const KnapsackItem& item : items_) {
     if (slack <= 0.0 || item.coeff == 0.0 || item.range == 0) {
-      total_sum_.AddProd(item.delta, item.initial_bound);
+      result_sum.AddProd(item.delta, item.initial_bound);
       continue;
     }
     slack.AddProd(-item.coeff, item.range);
     if (slack >= 0.0) {
       // Slack remained positive after subtracting the item, take the entire
       // item.
-      total_sum_.AddProd(item.delta, item.other_bound);
+      result_sum.AddProd(item.delta, item.other_bound);
       continue;
     }
     // Split item: put the item back and take the exact fractional amount.
     slack.AddProd(item.coeff, item.range);
-    total_sum_.AddProd(item.delta, item.initial_bound);
+    result_sum.AddProd(item.delta, item.initial_bound);
 
     if (item.delta == item.coeff) {
       // Avoiding computing (x * slack)/x for the simple case where no rounding
       // was done.
-      total_sum_.AddProd(slack, /*negate=*/!is_ge_constraint);
+      result_sum.AddProd(slack, /*negate=*/!is_ge_constraint);
       slack.Clear();
       continue;
     }
@@ -449,33 +469,36 @@ double TightScalingErrorHelper::Optimize(absl::Span<const double> coeffs,
     // the error one would have with double-double precision!
     const double step_delta = is_ge_constraint ? item.delta : -item.delta;
     const double q1 = slack.TightLowerBound() / item.coeff;
-    total_sum_.AddProd(step_delta, q1);
+    result_sum.AddProd(step_delta, q1);
     slack.AddProd(-q1, item.coeff);
-    if ((step_delta > 0.0) == is_ge_constraint) {
+    if ((step_delta > 0.0) == minimize) {
       const double rem_lb = slack.TightLowerBound();
       if (rem_lb != 0.0) {
         const double q2 = FastStepDown(rem_lb / item.coeff);
-        total_sum_.AddProd(step_delta, q2);
+        result_sum.AddProd(step_delta, q2);
       }
     } else {
       const double rem_ub = slack.TightUpperBound();
       if (rem_ub != 0.0) {
         const double q2 = FastStepUp(rem_ub / item.coeff);
-        total_sum_.AddProd(step_delta, q2);
+        result_sum.AddProd(step_delta, q2);
       }
     }
     slack.Clear();
   }
 
-  return is_ge_constraint ? total_sum_.TightLowerBound()
-                          : total_sum_.TightUpperBound();
+  return minimize ? result_sum.TightLowerBound() : result_sum.TightUpperBound();
 }
 
-template double TightScalingErrorHelper::Optimize<true, true>(
-    absl::Span<const double>, absl::Span<const double>, TightSum&, double);
-template double TightScalingErrorHelper::Optimize<false, true>(
-    absl::Span<const double>, absl::Span<const double>, TightSum&, double);
-template double TightScalingErrorHelper::Optimize<true, false>(
-    absl::Span<const double>, absl::Span<const double>, TightSum&, double);
+template double TightScalingErrorHelper::Optimize<true, true, true>(
+    absl::Span<const double>, absl::Span<const double>, TightSum&, TightSum&);
+template double TightScalingErrorHelper::Optimize<true, false, true>(
+    absl::Span<const double>, absl::Span<const double>, TightSum&, TightSum&);
+template double TightScalingErrorHelper::Optimize<false, false, true>(
+    absl::Span<const double>, absl::Span<const double>, TightSum&, TightSum&);
+template double TightScalingErrorHelper::Optimize<false, true, true>(
+    absl::Span<const double>, absl::Span<const double>, TightSum&, TightSum&);
+template double TightScalingErrorHelper::Optimize<true, true, false>(
+    absl::Span<const double>, absl::Span<const double>, TightSum&, TightSum&);
 
 }  // namespace operations_research

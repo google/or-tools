@@ -30,6 +30,7 @@
 #include "ortools/base/gmock.h"
 #include "ortools/base/types.h"
 #include "ortools/util/fp_utils_testing.h"
+#include "ortools/util/full_precision_inequalities.h"
 
 namespace operations_research {
 namespace {
@@ -629,7 +630,100 @@ TEST(TightScalingErrorHelperTest, BruteForceComparisonWithAllIntegerSolutions) {
         EXPECT_LE(act.scaled, r_ub + ub_unround_err + 1e-9);
       }
     }
+
+    // Verify GetRoundingError for both relaxation and restriction modes.
+    TightSum lb_relax_sum;
+    lb_relax_sum.Add(ct_lb);
+    lb_relax_sum.Add(helper.GetRelaxationLowerBoundError(lb_relax_sum));
+    const int64_t lb_relax = lb_relax_sum.Int64Ceil().value();
+
+    TightSum lb_restrict_sum;
+    lb_restrict_sum.Add(ct_lb);
+    lb_restrict_sum.Add(helper.GetRestrictionLowerBoundError(lb_restrict_sum));
+    const int64_t lb_restrict = lb_restrict_sum.Int64Ceil().value();
+
+    TightSum ub_relax_sum;
+    ub_relax_sum.Add(ct_ub);
+    ub_relax_sum.Add(helper.GetRelaxationUpperBoundError(ub_relax_sum));
+    const int64_t ub_relax = ub_relax_sum.Int64Floor().value();
+
+    TightSum ub_restrict_sum;
+    ub_restrict_sum.Add(ct_ub);
+    ub_restrict_sum.Add(helper.GetRestrictionUpperBoundError(ub_restrict_sum));
+    const int64_t ub_restrict = ub_restrict_sum.Int64Floor().value();
+
+    for (const auto& act : activities) {
+      if (act.scaled >= ct_lb - 1e-12) {
+        EXPECT_GE(std::round(act.rounded), lb_relax);
+      }
+      if (std::round(act.rounded) >= lb_restrict) {
+        EXPECT_GE(act.scaled, ct_lb - 1e-9);
+      }
+      if (act.scaled <= ct_ub + 1e-12) {
+        EXPECT_LE(std::round(act.rounded), ub_relax);
+      }
+      if (std::round(act.rounded) <= ub_restrict) {
+        EXPECT_LE(act.scaled, ct_ub + 1e-9);
+      }
+    }
   }
+}
+
+TEST(TightScalingErrorHelperTest, GetRoundingErrorRestrictionIsTight) {
+  TightScalingErrorHelper helper;
+  // 1.4 * x0 + 0.6 * x1 >= 10.0 with x0 in [0, 10], x1 in [0, 20].
+  // Rounded coefficients (scaling = 1.0) are {1.0, 1.0}.
+  // On the hyperplane 1.4 * x0 + 0.6 * x1 = 10.0, the maximum of
+  // (1 - 1.4) * x0 + (1 - 0.6) * x1 = -0.4 * x0 + 0.4 * x1 is at
+  // (x0, x1) = (0, 10 / 0.6), where 10.0 + 0.4 * (10 / 0.6) = 16.666...,
+  // so the tightest valid integer restriction x0 + x1 >= L' is L' = 17.
+  helper.LoadUnscaledConstraint(/*input_coeffs=*/{1.4, 0.6},
+                                /*input_lbs=*/{0, 0},
+                                /*input_ubs=*/{10, 20});
+  helper.LoadScalingFactor(1.0);
+  TightSum lb_restrict_sum;
+  lb_restrict_sum.Add(10.0);
+  lb_restrict_sum.Add(helper.GetRestrictionLowerBoundError(lb_restrict_sum));
+  EXPECT_EQ(lb_restrict_sum.Int64Ceil(), 17);
+
+  TightSum lb_relax_sum;
+  lb_relax_sum.Add(10.0);
+  lb_relax_sum.Add(helper.GetRelaxationLowerBoundError(lb_relax_sum));
+  // Minimum is at (x0, x1) = (10 / 1.4, 0), where 10.0 - 0.4 * (10 / 1.4) =
+  // 7.1428..., whose ceiling is 8.
+  EXPECT_EQ(lb_relax_sum.Int64Ceil(), 8);
+}
+
+TEST(TightScalingErrorHelperTest, GetRoundingErrorDeltaEqualsCoeff) {
+  TightScalingErrorHelper helper;
+  // 0.5 * x in [2.3, 2.3] with x in [0, 10]. The rounded coefficient is
+  // round(0.5) = 1, so the rounding delta (1 - 0.5) equals the coefficient,
+  // which exercises the split-item fast path of Optimize(). On the hyperplane
+  // 0.5 * x = 2.3, x = 4.6, so the tightest integer bounds on the rounded
+  // activity x are x >= 5 and x <= 4, both for relaxation and restriction.
+  helper.LoadUnscaledConstraint(/*input_coeffs=*/{0.5}, /*input_lbs=*/{0},
+                                /*input_ubs=*/{10});
+  helper.LoadScalingFactor(1.0);
+
+  TightSum lb_restrict_sum;
+  lb_restrict_sum.Add(2.3);
+  lb_restrict_sum.Add(helper.GetRestrictionLowerBoundError(lb_restrict_sum));
+  EXPECT_EQ(lb_restrict_sum.Int64Ceil(), 5);
+
+  TightSum lb_relax_sum;
+  lb_relax_sum.Add(2.3);
+  lb_relax_sum.Add(helper.GetRelaxationLowerBoundError(lb_relax_sum));
+  EXPECT_EQ(lb_relax_sum.Int64Ceil(), 5);
+
+  TightSum ub_restrict_sum;
+  ub_restrict_sum.Add(2.3);
+  ub_restrict_sum.Add(helper.GetRestrictionUpperBoundError(ub_restrict_sum));
+  EXPECT_EQ(ub_restrict_sum.Int64Floor(), 4);
+
+  TightSum ub_relax_sum;
+  ub_relax_sum.Add(2.3);
+  ub_relax_sum.Add(helper.GetRelaxationUpperBoundError(ub_relax_sum));
+  EXPECT_EQ(ub_relax_sum.Int64Floor(), 4);
 }
 
 }  // namespace

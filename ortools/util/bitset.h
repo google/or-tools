@@ -401,11 +401,6 @@ int64_t UnsafeMostSignificantBitPosition64(const uint64_t* bitset,
 int32_t UnsafeMostSignificantBitPosition32(const uint32_t* bitset,
                                            uint32_t start, uint32_t end);
 
-// Returns a mask with the bits pos % 64 and (pos ^ 1) % 64 sets.
-inline uint64_t TwoBitsFromPos64(uint64_t pos) {
-  return uint64_t{3} << (pos & 62);
-}
-
 // This class is like an ITIVector<IndexType, bool> except that it provides a
 // more efficient way to iterate over the positions set to true. It achieves
 // this by caching the current uint64_t bucket in the Iterator and using
@@ -413,27 +408,12 @@ inline uint64_t TwoBitsFromPos64(uint64_t pos) {
 // bucket.
 template <typename IndexType = int64_t>
 class Bitset64 {
- public:
-  using value_type = IndexType;
-
   // When speed matter, caching the base pointer helps.
-  class ConstView {
+  template <typename DataType>
+  class ViewImpl {
    public:
-    explicit ConstView(const Bitset64* bitset) : data_(bitset->data_.data()) {}
-
-    bool operator[](IndexType i) const {
-      return data_[BitOffset64(Value(i))] & OneBit64(BitPos64(Value(i)));
-    }
-
-    const uint64_t* data() const { return data_; }
-
-   private:
-    const uint64_t* const data_;
-  };
-
-  class View {
-   public:
-    explicit View(Bitset64* bitset) : data_(bitset->data_.data()) {}
+    explicit ViewImpl(const Bitset64* bitset) : data_(bitset->data_.data()) {}
+    explicit ViewImpl(Bitset64* bitset) : data_(bitset->data_.data()) {}
 
     bool operator[](IndexType i) const {
       return data_[BitOffset64(Value(i))] & OneBit64(BitPos64(Value(i)));
@@ -448,8 +428,13 @@ class Bitset64 {
     }
 
    private:
-    uint64_t* const data_;
+    DataType* const data_;
   };
+
+ public:
+  using value_type = IndexType;
+  using ConstView = ViewImpl<const uint64_t>;
+  using View = ViewImpl<uint64_t>;
 
   Bitset64() : size_(), data_() {}
   explicit Bitset64(IndexType size)
@@ -513,20 +498,6 @@ class Bitset64 {
     DCHECK_GE(Value(i), 0);
     DCHECK_LT(Value(i), Value(size_));
     data_.data()[BitOffset64(Value(i))] = 0;
-  }
-
-  // Clears the bits at position i and i ^ 1.
-  void ClearTwoBits(IndexType i) {
-    DCHECK_GE(Value(i), 0);
-    DCHECK_LT(Value(i), Value(size_));
-    data_[BitOffset64(Value(i))] &= ~TwoBitsFromPos64(Value(i));
-  }
-
-  // Returns true if the bit at position i or the one at position i ^ 1 is set.
-  bool AreOneOfTwoBitsSet(IndexType i) const {
-    DCHECK_GE(Value(i), 0);
-    DCHECK_LT(Value(i), Value(size_));
-    return data_.data()[BitOffset64(Value(i))] & TwoBitsFromPos64(Value(i));
   }
 
   // Returns true if the bit at position i is set.
@@ -702,20 +673,6 @@ class Bitset64 {
   //   for (const IndexType index : bitset) {}
   Iterator begin() const { return Iterator(*this); }
   Iterator end() const { return Iterator::EndIterator(*this); }
-
-  // Cryptic function! This is just an optimized version of a given piece of
-  // code and has probably little general use.
-  static uint64_t ConditionalXorOfTwoBits(IndexType i, uint64_t use1,
-                                          Bitset64<IndexType>::ConstView set1,
-                                          uint64_t use2,
-                                          Bitset64<IndexType>::ConstView set2) {
-    DCHECK(use1 == 0 || use1 == 1);
-    DCHECK(use2 == 0 || use2 == 1);
-    const int bucket = BitOffset64(Value(i));
-    const int pos = BitPos64(Value(i));
-    return ((use1 << pos) & set1.data()[bucket]) ^
-           ((use2 << pos) & set2.data()[bucket]);
-  }
 
   // Returns a 0/1 string representing the bitset.
   std::string DebugString() const {
