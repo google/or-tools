@@ -27,37 +27,6 @@
 
 namespace operations_research {
 
-class TrueConstraint : public Constraint {
- public:
-  explicit TrueConstraint(Solver* s) : Constraint(s) {}
-  ~TrueConstraint() override = default;
-
-  void Post() override;
-  void InitialPropagate() override;
-  std::string DebugString() const override;
-
-  void Accept(ModelVisitor* visitor) const override;
-  IntVar* Var() override;
-};
-
-class FalseConstraint : public Constraint {
- public:
-  explicit FalseConstraint(Solver* s) : Constraint(s) {}
-  FalseConstraint(Solver* s, const std::string& explanation)
-      : Constraint(s), explanation_(explanation) {}
-  ~FalseConstraint() override = default;
-
-  void Post() override;
-  void InitialPropagate() override;
-  std::string DebugString() const override;
-
-  void Accept(ModelVisitor* visitor) const override;
-  IntVar* Var() override;
-
- private:
-  const std::string explanation_;
-};
-
 class MapDomain : public Constraint {
  public:
   MapDomain(Solver* s, IntVar* var, const std::vector<IntVar*>& actives)

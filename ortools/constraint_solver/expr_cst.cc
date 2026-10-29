@@ -18,20 +18,19 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/expressions.h"
+#include "ortools/constraint_solver/model_cache.h"
+#include "ortools/constraint_solver/utilities.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
-
-ABSL_FLAG(int, cache_initial_size, 1024,
-          "Initial size of the array of the hash "
-          "table of caches for objects of type Var(x == 3)");
 
 namespace operations_research {
 
@@ -746,6 +745,617 @@ void SortedDisjointForbiddenIntervalsConstraint::Accept(
   visitor->VisitIntegerArrayArgument(ModelVisitor::kStartsArgument, starts);
   visitor->VisitIntegerArrayArgument(ModelVisitor::kEndsArgument, ends);
   visitor->EndVisitConstraint(ModelVisitor::kNotMember, this);
+}
+
+Constraint* Solver::MakeEquality(IntExpr* e, int64_t v) {
+  CHECK_EQ(this, e->solver());
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
+  if (IsADifference(e, &left, &right)) {
+    return MakeEquality(left, MakeSum(right, v));
+  } else if (e->IsVar() && !e->Var()->Contains(v)) {
+    return MakeFalseConstraint();
+  } else if (e->Min() == e->Max() && e->Min() == v) {
+    return MakeTrueConstraint();
+  } else {
+    return RevAlloc(new EqualityExprCst(this, e, v));
+  }
+}
+
+Constraint* Solver::MakeEquality(IntExpr* e, int v) {
+  CHECK_EQ(this, e->solver());
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
+  if (IsADifference(e, &left, &right)) {
+    return MakeEquality(left, MakeSum(right, v));
+  } else if (e->IsVar() && !e->Var()->Contains(v)) {
+    return MakeFalseConstraint();
+  } else if (e->Min() == e->Max() && e->Min() == v) {
+    return MakeTrueConstraint();
+  } else {
+    return RevAlloc(new EqualityExprCst(this, e, v));
+  }
+}
+
+Constraint* Solver::MakeGreaterOrEqual(IntExpr* e, int64_t v) {
+  CHECK_EQ(this, e->solver());
+  if (e->Min() >= v) {
+    return MakeTrueConstraint();
+  } else if (e->Max() < v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new GreaterEqExprCst(this, e, v));
+  }
+}
+
+Constraint* Solver::MakeGreaterOrEqual(IntExpr* e, int v) {
+  CHECK_EQ(this, e->solver());
+  if (e->Min() >= v) {
+    return MakeTrueConstraint();
+  } else if (e->Max() < v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new GreaterEqExprCst(this, e, v));
+  }
+}
+
+Constraint* Solver::MakeGreater(IntExpr* e, int64_t v) {
+  CHECK_EQ(this, e->solver());
+  if (e->Min() > v) {
+    return MakeTrueConstraint();
+  } else if (e->Max() <= v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new GreaterEqExprCst(this, e, v + 1));
+  }
+}
+
+Constraint* Solver::MakeGreater(IntExpr* e, int v) {
+  CHECK_EQ(this, e->solver());
+  if (e->Min() > v) {
+    return MakeTrueConstraint();
+  } else if (e->Max() <= v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new GreaterEqExprCst(this, e, v + 1));
+  }
+}
+
+Constraint* Solver::MakeLessOrEqual(IntExpr* e, int64_t v) {
+  CHECK_EQ(this, e->solver());
+  if (e->Max() <= v) {
+    return MakeTrueConstraint();
+  } else if (e->Min() > v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new LessEqExprCst(this, e, v));
+  }
+}
+
+Constraint* Solver::MakeLessOrEqual(IntExpr* e, int v) {
+  CHECK_EQ(this, e->solver());
+  if (e->Max() <= v) {
+    return MakeTrueConstraint();
+  } else if (e->Min() > v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new LessEqExprCst(this, e, v));
+  }
+}
+
+Constraint* Solver::MakeLess(IntExpr* e, int64_t v) {
+  CHECK_EQ(this, e->solver());
+  if (e->Max() < v) {
+    return MakeTrueConstraint();
+  } else if (e->Min() >= v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new LessEqExprCst(this, e, v - 1));
+  }
+}
+
+Constraint* Solver::MakeLess(IntExpr* e, int v) {
+  CHECK_EQ(this, e->solver());
+  if (e->Max() < v) {
+    return MakeTrueConstraint();
+  } else if (e->Min() >= v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new LessEqExprCst(this, e, v - 1));
+  }
+}
+
+Constraint* Solver::MakeNonEquality(IntExpr* e, int64_t v) {
+  CHECK_EQ(this, e->solver());
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
+  if (IsADifference(e, &left, &right)) {
+    return MakeNonEquality(left, MakeSum(right, v));
+  } else if (e->IsVar() && !e->Var()->Contains(v)) {
+    return MakeTrueConstraint();
+  } else if (e->Bound() && e->Min() == v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new DiffCst(this, e->Var(), v));
+  }
+}
+
+Constraint* Solver::MakeNonEquality(IntExpr* e, int v) {
+  CHECK_EQ(this, e->solver());
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
+  if (IsADifference(e, &left, &right)) {
+    return MakeNonEquality(left, MakeSum(right, v));
+  } else if (e->IsVar() && !e->Var()->Contains(v)) {
+    return MakeTrueConstraint();
+  } else if (e->Bound() && e->Min() == v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new DiffCst(this, e->Var(), v));
+  }
+}
+
+IntVar* Solver::MakeIsEqualCstVar(IntExpr* var, int64_t value) {
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
+  if (IsADifference(var, &left, &right)) {
+    return MakeIsEqualVar(left, MakeSum(right, value));
+  }
+  if (CapSub(var->Max(), var->Min()) == 1) {
+    if (value == var->Min()) {
+      return MakeDifference(value + 1, var)->Var();
+    } else if (value == var->Max()) {
+      return MakeSum(var, -value + 1)->Var();
+    } else {
+      return MakeIntConst(0);
+    }
+  }
+  if (var->IsVar()) {
+    return var->Var()->IsEqual(value);
+  } else {
+    IntVar* const boolvar =
+        MakeBoolVar(absl::StrFormat("Is(%s == %d)", var->DebugString(), value));
+    AddConstraint(MakeIsEqualCstCt(var, value, boolvar));
+    return boolvar;
+  }
+}
+
+Constraint* Solver::MakeIsEqualCstCt(IntExpr* var, int64_t value,
+                                     IntVar* boolvar) {
+  CHECK_EQ(this, var->solver());
+  CHECK_EQ(this, boolvar->solver());
+  if (value == var->Min()) {
+    if (CapSub(var->Max(), var->Min()) == 1) {
+      return MakeEquality(MakeDifference(value + 1, var), boolvar);
+    }
+    return MakeIsLessOrEqualCstCt(var, value, boolvar);
+  }
+  if (value == var->Max()) {
+    if (CapSub(var->Max(), var->Min()) == 1) {
+      return MakeEquality(MakeSum(var, -value + 1), boolvar);
+    }
+    return MakeIsGreaterOrEqualCstCt(var, value, boolvar);
+  }
+  if (boolvar->Bound()) {
+    if (boolvar->Min() == 0) {
+      return MakeNonEquality(var, value);
+    } else {
+      return MakeEquality(var, value);
+    }
+  }
+  // TODO(user) : what happens if the constraint is not posted?
+  // The cache becomes tainted.
+  model_cache_->InsertExprConstantExpression(
+      boolvar, var, value, ModelCache::EXPR_CONSTANT_IS_EQUAL);
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
+  if (IsADifference(var, &left, &right)) {
+    return MakeIsEqualCt(left, MakeSum(right, value), boolvar);
+  } else {
+    return RevAlloc(new IsEqualCstCt(this, var->Var(), value, boolvar));
+  }
+}
+
+IntVar* Solver::MakeIsDifferentCstVar(IntExpr* var, int64_t value) {
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
+  if (IsADifference(var, &left, &right)) {
+    return MakeIsDifferentVar(left, MakeSum(right, value));
+  }
+  return var->Var()->IsDifferent(value);
+}
+
+Constraint* Solver::MakeIsDifferentCstCt(IntExpr* var, int64_t value,
+                                         IntVar* boolvar) {
+  CHECK_EQ(this, var->solver());
+  CHECK_EQ(this, boolvar->solver());
+  if (value == var->Min()) {
+    return MakeIsGreaterOrEqualCstCt(var, value + 1, boolvar);
+  }
+  if (value == var->Max()) {
+    return MakeIsLessOrEqualCstCt(var, value - 1, boolvar);
+  }
+  if (var->IsVar() && !var->Var()->Contains(value)) {
+    return MakeEquality(boolvar, int64_t{1});
+  }
+  if (var->Bound() && var->Min() == value) {
+    return MakeEquality(boolvar, Zero());
+  }
+  if (boolvar->Bound()) {
+    if (boolvar->Min() == 0) {
+      return MakeEquality(var, value);
+    } else {
+      return MakeNonEquality(var, value);
+    }
+  }
+  model_cache_->InsertExprConstantExpression(
+      boolvar, var, value, ModelCache::EXPR_CONSTANT_IS_NOT_EQUAL);
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
+  if (IsADifference(var, &left, &right)) {
+    return MakeIsDifferentCt(left, MakeSum(right, value), boolvar);
+  } else {
+    return RevAlloc(new IsDiffCstCt(this, var->Var(), value, boolvar));
+  }
+}
+
+IntVar* Solver::MakeIsGreaterOrEqualCstVar(IntExpr* var, int64_t value) {
+  if (var->Min() >= value) {
+    return MakeIntConst(int64_t{1});
+  }
+  if (var->Max() < value) {
+    return MakeIntConst(int64_t{0});
+  }
+  if (var->IsVar()) {
+    return var->Var()->IsGreaterOrEqual(value);
+  } else {
+    IntVar* const boolvar =
+        MakeBoolVar(absl::StrFormat("Is(%s >= %d)", var->DebugString(), value));
+    AddConstraint(MakeIsGreaterOrEqualCstCt(var, value, boolvar));
+    return boolvar;
+  }
+}
+
+IntVar* Solver::MakeIsGreaterCstVar(IntExpr* var, int64_t value) {
+  return MakeIsGreaterOrEqualCstVar(var, value + 1);
+}
+
+Constraint* Solver::MakeIsGreaterOrEqualCstCt(IntExpr* var, int64_t value,
+                                              IntVar* boolvar) {
+  if (boolvar->Bound()) {
+    if (boolvar->Min() == 0) {
+      return MakeLess(var, value);
+    } else {
+      return MakeGreaterOrEqual(var, value);
+    }
+  }
+  CHECK_EQ(this, var->solver());
+  CHECK_EQ(this, boolvar->solver());
+  model_cache_->InsertExprConstantExpression(
+      boolvar, var, value, ModelCache::EXPR_CONSTANT_IS_GREATER_OR_EQUAL);
+  return RevAlloc(new IsGreaterEqualCstCt(this, var, value, boolvar));
+}
+
+Constraint* Solver::MakeIsGreaterCstCt(IntExpr* v, int64_t c, IntVar* b) {
+  return MakeIsGreaterOrEqualCstCt(v, c + 1, b);
+}
+
+IntVar* Solver::MakeIsLessOrEqualCstVar(IntExpr* var, int64_t value) {
+  if (var->Max() <= value) {
+    return MakeIntConst(int64_t{1});
+  }
+  if (var->Min() > value) {
+    return MakeIntConst(int64_t{0});
+  }
+  if (var->IsVar()) {
+    return var->Var()->IsLessOrEqual(value);
+  } else {
+    IntVar* const boolvar =
+        MakeBoolVar(absl::StrFormat("Is(%s <= %d)", var->DebugString(), value));
+    AddConstraint(MakeIsLessOrEqualCstCt(var, value, boolvar));
+    return boolvar;
+  }
+}
+
+IntVar* Solver::MakeIsLessCstVar(IntExpr* var, int64_t value) {
+  return MakeIsLessOrEqualCstVar(var, value - 1);
+}
+
+Constraint* Solver::MakeIsLessOrEqualCstCt(IntExpr* var, int64_t value,
+                                           IntVar* boolvar) {
+  if (boolvar->Bound()) {
+    if (boolvar->Min() == 0) {
+      return MakeGreater(var, value);
+    } else {
+      return MakeLessOrEqual(var, value);
+    }
+  }
+  CHECK_EQ(this, var->solver());
+  CHECK_EQ(this, boolvar->solver());
+  model_cache_->InsertExprConstantExpression(
+      boolvar, var, value, ModelCache::EXPR_CONSTANT_IS_LESS_OR_EQUAL);
+  return RevAlloc(new IsLessEqualCstCt(this, var, value, boolvar));
+}
+
+Constraint* Solver::MakeIsLessCstCt(IntExpr* v, int64_t c, IntVar* b) {
+  return MakeIsLessOrEqualCstCt(v, c - 1, b);
+}
+
+Constraint* Solver::MakeBetweenCt(IntExpr* expr, int64_t l, int64_t u) {
+  DCHECK_EQ(this, expr->solver());
+  // Catch empty and singleton intervals.
+  if (l >= u) {
+    if (l > u) return MakeFalseConstraint();
+    return MakeEquality(expr, l);
+  }
+  int64_t emin = 0;
+  int64_t emax = 0;
+  expr->Range(&emin, &emax);
+  // Catch the trivial cases first.
+  if (emax < l || emin > u) return MakeFalseConstraint();
+  if (emin >= l && emax <= u) return MakeTrueConstraint();
+  // Catch one-sided constraints.
+  if (emax <= u) return MakeGreaterOrEqual(expr, l);
+  if (emin >= l) return MakeLessOrEqual(expr, u);
+  // Simplify the common factor, if any.
+  int64_t coeff = ExtractExprProductCoeff(&expr);
+  if (coeff != 1) {
+    CHECK_NE(coeff, 0);  // Would have been caught by the trivial cases already.
+    if (coeff < 0) {
+      std::swap(u, l);
+      u = -u;
+      l = -l;
+      coeff = -coeff;
+    }
+    return MakeBetweenCt(expr, PosIntDivUp(l, coeff), PosIntDivDown(u, coeff));
+  } else {
+    // No further reduction is possible.
+    return RevAlloc(new BetweenCt(this, expr, l, u));
+  }
+}
+
+Constraint* Solver::MakeNotBetweenCt(IntExpr* expr, int64_t l, int64_t u) {
+  DCHECK_EQ(this, expr->solver());
+  // Catch empty interval.
+  if (l > u) {
+    return MakeTrueConstraint();
+  }
+
+  int64_t emin = 0;
+  int64_t emax = 0;
+  expr->Range(&emin, &emax);
+  // Catch the trivial cases first.
+  if (emax < l || emin > u) return MakeTrueConstraint();
+  if (emin >= l && emax <= u) return MakeFalseConstraint();
+  // Catch one-sided constraints.
+  if (emin >= l) return MakeGreater(expr, u);
+  if (emax <= u) return MakeLess(expr, l);
+  // TODO(user): Add back simplification code if expr is constant *
+  // other_expr.
+  return RevAlloc(new NotBetweenCt(this, expr, l, u));
+}
+
+Constraint* Solver::MakeIsBetweenCt(IntExpr* expr, int64_t l, int64_t u,
+                                    IntVar* b) {
+  CHECK_EQ(this, expr->solver());
+  CHECK_EQ(this, b->solver());
+  // Catch empty and singleton intervals.
+  if (l >= u) {
+    if (l > u) return MakeEquality(b, Zero());
+    return MakeIsEqualCstCt(expr, l, b);
+  }
+  int64_t emin = 0;
+  int64_t emax = 0;
+  expr->Range(&emin, &emax);
+  // Catch the trivial cases first.
+  if (emax < l || emin > u) return MakeEquality(b, Zero());
+  if (emin >= l && emax <= u) return MakeEquality(b, 1);
+  // Catch one-sided constraints.
+  if (emax <= u) return MakeIsGreaterOrEqualCstCt(expr, l, b);
+  if (emin >= l) return MakeIsLessOrEqualCstCt(expr, u, b);
+  // Simplify the common factor, if any.
+  int64_t coeff = ExtractExprProductCoeff(&expr);
+  if (coeff != 1) {
+    CHECK_NE(coeff, 0);  // Would have been caught by the trivial cases already.
+    if (coeff < 0) {
+      std::swap(u, l);
+      u = -u;
+      l = -l;
+      coeff = -coeff;
+    }
+    return MakeIsBetweenCt(expr, PosIntDivUp(l, coeff), PosIntDivDown(u, coeff),
+                           b);
+  } else {
+    // No further reduction is possible.
+    return RevAlloc(new IsBetweenCt(this, expr, l, u, b));
+  }
+}
+
+IntVar* Solver::MakeIsBetweenVar(IntExpr* v, int64_t l, int64_t u) {
+  CHECK_EQ(this, v->solver());
+  IntVar* const b = MakeBoolVar();
+  AddConstraint(MakeIsBetweenCt(v, l, u, b));
+  return b;
+}
+
+Constraint* Solver::MakeMemberCt(IntExpr* expr,
+                                 const std::vector<int64_t>& values) {
+  const int64_t coeff = ExtractExprProductCoeff(&expr);
+  if (coeff == 0) {
+    return absl::c_find(values, 0) == values.end() ? MakeFalseConstraint()
+                                                   : MakeTrueConstraint();
+  }
+  std::vector<int64_t> copied_values = values;
+  // If the expression is a non-trivial product, we filter out the values that
+  // aren't multiples of "coeff", and divide them.
+  if (coeff != 1) {
+    int num_kept = 0;
+    for (const int64_t v : copied_values) {
+      if (v % coeff == 0) copied_values[num_kept++] = v / coeff;
+    }
+    copied_values.resize(num_kept);
+  }
+  // Filter out the values that are outside the [Min, Max] interval.
+  int num_kept = 0;
+  int64_t emin;
+  int64_t emax;
+  expr->Range(&emin, &emax);
+  for (const int64_t v : copied_values) {
+    if (v >= emin && v <= emax) copied_values[num_kept++] = v;
+  }
+  copied_values.resize(num_kept);
+  // Catch empty set.
+  if (copied_values.empty()) return MakeFalseConstraint();
+  // Sort and remove duplicates.
+  gtl::STLSortAndRemoveDuplicates(&copied_values);
+  // Special case for singleton.
+  if (copied_values.size() == 1) return MakeEquality(expr, copied_values[0]);
+  // Catch contiguous intervals.
+  if (copied_values.size() ==
+      copied_values.back() - copied_values.front() + 1) {
+    // Note: MakeBetweenCt() has a fast-track for trivially true constraints.
+    return MakeBetweenCt(expr, copied_values.front(), copied_values.back());
+  }
+  // If the set of values in [expr.Min(), expr.Max()] that are *not* in
+  // "values" is smaller than "values", then it's more efficient to use
+  // NotMemberCt. Catch that case here.
+  if (emax - emin < 2 * copied_values.size()) {
+    // Convert "copied_values" to list the values *not* allowed.
+    std::vector<bool> is_among_input_values(emax - emin + 1, false);
+    for (const int64_t v : copied_values)
+      is_among_input_values[v - emin] = true;
+    // We use the zero valued indices of is_among_input_values to build the
+    // complement of copied_values.
+    copied_values.clear();
+    for (int64_t v_off = 0; v_off < is_among_input_values.size(); ++v_off) {
+      if (!is_among_input_values[v_off]) copied_values.push_back(v_off + emin);
+    }
+    // The empty' case (all values in range [expr.Min(), expr.Max()] are in the
+    // "values" input) was caught earlier, by the "contiguous interval" case.
+    DCHECK_GE(copied_values.size(), 1);
+    if (copied_values.size() == 1) {
+      return MakeNonEquality(expr, copied_values[0]);
+    }
+    return RevAlloc(new NotMemberCt(this, expr->Var(), copied_values));
+  }
+  // Otherwise, just use MemberCt. No further reduction is possible.
+  return RevAlloc(new MemberCt(this, expr->Var(), copied_values));
+}
+
+Constraint* Solver::MakeMemberCt(IntExpr* expr,
+                                 const std::vector<int>& values) {
+  return MakeMemberCt(expr, ToInt64Vector(values));
+}
+
+Constraint* Solver::MakeNotMemberCt(IntExpr* expr,
+                                    const std::vector<int64_t>& values) {
+  const int64_t coeff = ExtractExprProductCoeff(&expr);
+  if (coeff == 0) {
+    return absl::c_find(values, 0) == values.end() ? MakeTrueConstraint()
+                                                   : MakeFalseConstraint();
+  }
+  std::vector<int64_t> copied_values = values;
+  // If the expression is a non-trivial product, we filter out the values that
+  // aren't multiples of "coeff", and divide them.
+  if (coeff != 1) {
+    int num_kept = 0;
+    for (const int64_t v : copied_values) {
+      if (v % coeff == 0) copied_values[num_kept++] = v / coeff;
+    }
+    copied_values.resize(num_kept);
+  }
+  // Filter out the values that are outside the [Min, Max] interval.
+  int num_kept = 0;
+  int64_t emin;
+  int64_t emax;
+  expr->Range(&emin, &emax);
+  for (const int64_t v : copied_values) {
+    if (v >= emin && v <= emax) copied_values[num_kept++] = v;
+  }
+  copied_values.resize(num_kept);
+  // Catch empty set.
+  if (copied_values.empty()) return MakeTrueConstraint();
+  // Sort and remove duplicates.
+  gtl::STLSortAndRemoveDuplicates(&copied_values);
+  // Special case for singleton.
+  if (copied_values.size() == 1) return MakeNonEquality(expr, copied_values[0]);
+  // Catch contiguous intervals.
+  if (copied_values.size() ==
+      copied_values.back() - copied_values.front() + 1) {
+    return MakeNotBetweenCt(expr, copied_values.front(), copied_values.back());
+  }
+  // If the set of values in [expr.Min(), expr.Max()] that are *not* in
+  // "values" is smaller than "values", then it's more efficient to use
+  // MemberCt. Catch that case here.
+  if (emax - emin < 2 * copied_values.size()) {
+    // Convert "copied_values" to a dense boolean vector.
+    std::vector<bool> is_among_input_values(emax - emin + 1, false);
+    for (const int64_t v : copied_values)
+      is_among_input_values[v - emin] = true;
+    // Use zero valued indices for is_among_input_values to build the
+    // complement of copied_values.
+    copied_values.clear();
+    for (int64_t v_off = 0; v_off < is_among_input_values.size(); ++v_off) {
+      if (!is_among_input_values[v_off]) copied_values.push_back(v_off + emin);
+    }
+    // The empty' case (all values in range [expr.Min(), expr.Max()] are in the
+    // "values" input) was caught earlier, by the "contiguous interval" case.
+    DCHECK_GE(copied_values.size(), 1);
+    if (copied_values.size() == 1) {
+      return MakeEquality(expr, copied_values[0]);
+    }
+    return RevAlloc(new MemberCt(this, expr->Var(), copied_values));
+  }
+  // Otherwise, just use NotMemberCt. No further reduction is possible.
+  return RevAlloc(new NotMemberCt(this, expr->Var(), copied_values));
+}
+
+Constraint* Solver::MakeNotMemberCt(IntExpr* expr,
+                                    const std::vector<int>& values) {
+  return MakeNotMemberCt(expr, ToInt64Vector(values));
+}
+
+Constraint* Solver::MakeIsMemberCt(IntExpr* expr,
+                                   const std::vector<int64_t>& values,
+                                   IntVar* boolvar) {
+  return BuildIsMemberCt(this, expr, values, boolvar);
+}
+
+Constraint* Solver::MakeIsMemberCt(IntExpr* expr,
+                                   const std::vector<int>& values,
+                                   IntVar* boolvar) {
+  return BuildIsMemberCt(this, expr, values, boolvar);
+}
+
+IntVar* Solver::MakeIsMemberVar(IntExpr* expr,
+                                const std::vector<int64_t>& values) {
+  IntVar* const b = MakeBoolVar();
+  AddConstraint(MakeIsMemberCt(expr, values, b));
+  return b;
+}
+
+IntVar* Solver::MakeIsMemberVar(IntExpr* expr, const std::vector<int>& values) {
+  IntVar* const b = MakeBoolVar();
+  AddConstraint(MakeIsMemberCt(expr, values, b));
+  return b;
+}
+
+Constraint* Solver::MakeNotMemberCt(IntExpr* expr, std::vector<int64_t> starts,
+                                    std::vector<int64_t> ends) {
+  return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
+      this, expr->Var(), {starts, ends}));
+}
+
+Constraint* Solver::MakeNotMemberCt(IntExpr* expr, std::vector<int> starts,
+                                    std::vector<int> ends) {
+  return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
+      this, expr->Var(), {starts, ends}));
+}
+
+Constraint* Solver::MakeNotMemberCt(IntExpr* expr,
+                                    SortedDisjointIntervalList intervals) {
+  return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
+      this, expr->Var(), std::move(intervals)));
 }
 
 }  // namespace operations_research

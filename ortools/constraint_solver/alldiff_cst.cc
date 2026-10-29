@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -529,6 +530,73 @@ void NullIntersectArrayExcept::Accept(ModelVisitor* visitor) const {
                                              second_vars_);
   visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, escape_value_);
   visitor->EndVisitConstraint(ModelVisitor::kNullIntersect, this);
+}
+
+Constraint* Solver::MakeAllDifferent(const std::vector<IntVar*>& vars) {
+  return MakeAllDifferent(vars, true);
+}
+
+Constraint* Solver::MakeAllDifferent(const std::vector<IntVar*>& vars,
+                                     bool stronger_propagation) {
+  const int size = vars.size();
+  for (int i = 0; i < size; ++i) {
+    CHECK_EQ(this, vars[i]->solver());
+  }
+  if (size < 2) {
+    return MakeTrueConstraint();
+  } else if (size == 2) {
+    return MakeNonEquality(vars[0], vars[1]);
+  } else {
+    if (stronger_propagation) {
+      return RevAlloc(new BoundsAllDifferent(this, vars));
+    } else {
+      return RevAlloc(new ValueAllDifferent(this, vars));
+    }
+  }
+}
+
+Constraint* Solver::MakeSortingConstraint(const std::vector<IntVar*>& vars,
+                                          const std::vector<IntVar*>& sorted) {
+  CHECK_EQ(vars.size(), sorted.size());
+  return RevAlloc(new SortConstraint(this, vars, sorted));
+}
+
+Constraint* Solver::MakeAllDifferentExcept(const std::vector<IntVar*>& vars,
+                                           int64_t escape_value) {
+  int escape_candidates = 0;
+  for (int i = 0; i < vars.size(); ++i) {
+    escape_candidates += (vars[i]->Contains(escape_value));
+  }
+  if (escape_candidates <= 1) {
+    return MakeAllDifferent(vars);
+  } else {
+    return RevAlloc(new AllDifferentExcept(this, vars, escape_value));
+  }
+}
+
+Constraint* Solver::MakeNullIntersect(const std::vector<IntVar*>& first_vars,
+                                      const std::vector<IntVar*>& second_vars) {
+  return RevAlloc(new NullIntersectArrayExcept(this, first_vars, second_vars));
+}
+
+Constraint* Solver::MakeNullIntersectExcept(
+    const std::vector<IntVar*>& first_vars,
+    const std::vector<IntVar*>& second_vars, int64_t escape_value) {
+  int first_escape_candidates = 0;
+  for (int i = 0; i < first_vars.size(); ++i) {
+    first_escape_candidates += (first_vars[i]->Contains(escape_value));
+  }
+  int second_escape_candidates = 0;
+  for (int i = 0; i < second_vars.size(); ++i) {
+    second_escape_candidates += (second_vars[i]->Contains(escape_value));
+  }
+  if (first_escape_candidates == 0 || second_escape_candidates == 0) {
+    return RevAlloc(
+        new NullIntersectArrayExcept(this, first_vars, second_vars));
+  } else {
+    return RevAlloc(new NullIntersectArrayExcept(this, first_vars, second_vars,
+                                                 escape_value));
+  }
 }
 
 }  // namespace operations_research

@@ -178,113 +178,450 @@ or_cc_library(
 )
 
 or_cc_library(
-    name = "cp",
+    name = "core",
     srcs = [
-        "alldiff_cst.cc",
         "assignment.cc",
         "constraint_solver.cc",
-        "constraint_solver_factory.cc",
-        "constraints.cc",
-        "count_cst.cc",
-        "default_search.cc",
-        "deviation.cc",
-        "diffn.cc",
-        "element.cc",
         "expr_array.cc",
         "expr_cst.cc",
         "expressions.cc",
-        "graph_constraints.cc",
         "interval.cc",
-        "local_search.cc",
-        "pack.cc",
         "range_cst.cc",
-        "resource.cc",
-        "sched_constraints.cc",
         "sched_expr.cc",
-        "sched_search.cc",
-        "search.cc",
         "sequence_var.cc",
-        "table.cc",
-        "timetabling.cc",
         "trace.cc",
         "variables.cc",
         "visitor.cc",
     ],
     hdrs = [
-        "alldiff_cst.h",
         "assignment.h",
         "constraint_solver.h",
-        "constraints.h",
-        "count_cst.h",
-        "default_search.h",
-        "deviation.h",
-        "diffn.h",
-        "element.h",
         "expr_array.h",
         "expr_cst.h",
         "expressions.h",
-        "graph_constraints.h",
+        "interval.h",
+        "range_cst.h",
+        "sched_expr.h",
+        "sequence_var.h",
+        "trace.h",
+        "variables.h",
+        "visitor.h",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":assignment_cc_proto",
+        ":model_cache",
+        ":reversible_data",
+        ":reversible_engine",
+        ":search_stats_cc_proto",
+        ":solver_parameters_cc_proto",
+        ":utilities",
+        "//ortools/base:base_export",
+        "//ortools/base:file",
+        "//ortools/base:log_severity",
+        "//ortools/base:map_util",
+        "//ortools/base:recordio",
+        "//ortools/base:safe_hash_map",
+        "//ortools/base:stl_util",
+        "//ortools/base:timer",
+        "//ortools/base:types",
+        "//ortools/port:sysinfo",
+        "//ortools/util:bitset",
+        "//ortools/util:piecewise_linear_function",
+        "//ortools/util:saturated_arithmetic",
+        "//ortools/util:sorted_interval_list",
+        "//ortools/util:string_array",
+        "//ortools/util:tuple_set",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/time:clock_interface",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+or_cc_library(
+    name = "alldiff_cst",
+    srcs = ["alldiff_cst.cc"],
+    hdrs = ["alldiff_cst.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":core",
+        ":reversible_data",
+        "//ortools/util:string_array",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+or_cc_library(
+    name = "constraints",
+    srcs = ["constraints.cc"],
+    hdrs = ["constraints.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":alldiff_cst",  # buildcleaner: keep
+        ":core",
+        ":reversible_data",
+        "//ortools/base:types",
+        "//ortools/util:saturated_arithmetic",
+        "//ortools/util:string_array",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+or_cc_library(
+    name = "count_cst",
+    srcs = ["count_cst.cc"],
+    hdrs = ["count_cst.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":core",
+        ":reversible_data",
+        ":utilities",
+        "//ortools/base:types",
+        "//ortools/util:string_array",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+or_cc_library(
+    name = "deviation",
+    srcs = ["deviation.cc"],
+    hdrs = ["deviation.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":core",
+        "//ortools/base:mathutil",
+        "//ortools/util:string_array",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+or_cc_library(
+    name = "element",
+    srcs = ["element.cc"],
+    hdrs = ["element.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":core",
+        ":model_cache",
+        ":utilities",
+        "//ortools/base:types",
+        "//ortools/util:range_minimum_query",
+        "//ortools/util:string_array",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+or_cc_library(
+    name = "pack",
+    srcs = ["pack.cc"],
+    hdrs = ["pack.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":core",
+        ":reversible_data",
+        ":reversible_engine",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+or_cc_library(
+    name = "table",
+    srcs = ["table.cc"],
+    hdrs = ["table.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":core",
+        ":reversible_data",
+        "//ortools/base:types",
+        "//ortools/util:bitset",
+        "//ortools/util:string_array",
+        "//ortools/util:tuple_set",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+or_cc_library(
+    name = "timetabling",
+    srcs = ["timetabling.cc"],
+    hdrs = ["timetabling.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":core",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+or_cc_library(
+    name = "graph_constraints",
+    srcs = ["graph_constraints.cc"],
+    hdrs = ["graph_constraints.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":alldiff_cst",  # buildcleaner: keep
+        ":core",
+        ":reversible_data",
+        "//ortools/util:bitset",
+        "//ortools/util:saturated_arithmetic",
+        "//ortools/util:string_array",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+or_cc_library(
+    name = "sched_constraints",
+    srcs = ["sched_constraints.cc"],
+    hdrs = ["sched_constraints.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":core",
+        ":reversible_data",
+        "//ortools/base:types",
+        "//ortools/util:string_array",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+or_cc_library(
+    name = "resource",
+    srcs = ["resource.cc"],
+    hdrs = ["resource.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":alldiff_cst",  # buildcleaner: keep
+        ":core",
+        ":graph_constraints",  # buildcleaner: keep
+        ":reversible_data",
+        ":solver_parameters_cc_proto",
+        ":timetabling",  # buildcleaner: keep
+        ":utilities",
+        "//ortools/base:mathutil",
+        "//ortools/base:stl_util",
+        "//ortools/base:types",
+        "//ortools/util:monoid_operation_tree",
+        "//ortools/util:saturated_arithmetic",
+        "//ortools/util:string_array",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+or_cc_library(
+    name = "diffn",
+    srcs = ["diffn.cc"],
+    hdrs = ["diffn.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":core",
+        ":resource",
+        ":utilities",
+        "//ortools/base:types",
+        "//ortools/util:string_array",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+or_cc_library(
+    name = "sched_search",
+    srcs = ["sched_search.cc"],
+    hdrs = ["sched_search.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":core",
+        ":reversible_data",
+        "//ortools/base:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+or_cc_library(
+    name = "search",
+    srcs = ["search.cc"],
+    hdrs = ["search.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":constraints",  # buildcleaner: keep
+        ":core",
+        ":element",  # buildcleaner: keep
+        ":reversible_data",
+        ":reversible_engine",
+        ":search_limit_cc_proto",
+        ":utilities",
+        "//ortools/base:map_util",
+        "//ortools/base:timer",
+        "//ortools/base:types",
+        "//ortools/util:bitset",
+        "//ortools/util:saturated_arithmetic",
+        "//ortools/util:stats",
+        "//ortools/util:string_array",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:vlog_is_on",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+or_cc_library(
+    name = "default_search",
+    srcs = ["default_search.cc"],
+    hdrs = ["default_search.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":core",
+        ":reversible_engine",
+        ":search",  # buildcleaner: keep
+        "//ortools/base:stl_util",
+        "//ortools/util:cached_log",
+        "//ortools/util:string_array",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+or_cc_library(
+    name = "local_search",
+    srcs = ["local_search.cc"],
+    hdrs = ["local_search.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":core",
+        ":reversible_engine",
+        ":search",  # buildcleaner: keep
+        "//ortools/base:base_export",
+        "//ortools/base:iterator_adaptors",
+        "//ortools/base:log_severity",
+        "//ortools/base:strong_int",
+        "//ortools/base:strong_vector",
+        "//ortools/base:types",
+        "//ortools/graph:hamiltonian_path",
+        "//ortools/util:bitset",
+        "//ortools/util:saturated_arithmetic",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+or_cc_library(
+    name = "cp",
+    hdrs = [
+        "assignment.h",
+        "constraint_solver.h",
+        "expressions.h",
         "interval.h",
         "local_search.h",
         "pack.h",
-        "range_cst.h",
-        "sched_expr.h",
         "search.h",
         "sequence_var.h",
-        "table.h",
-        "timetabling.h",
         "trace.h",
         "variables.h",
         "visitor.h",
     ],
     visibility = ["//visibility:public"],
     deps = [
-        ":assignment_cc_proto",
-        ":model_cache",
+        ":alldiff_cst",  # buildcleaner: keep
+        ":constraints",  # buildcleaner: keep
+        ":core",  # buildcleaner: keep
+        ":count_cst",  # buildcleaner: keep
+        ":default_search",  # buildcleaner: keep
+        ":deviation",  # buildcleaner: keep
+        ":diffn",  # buildcleaner: keep
+        ":element",  # buildcleaner: keep
+        ":graph_constraints",  # buildcleaner: keep
+        ":local_search",  # buildcleaner: keep
+        ":pack",  # buildcleaner: keep
+        ":resource",  # buildcleaner: keep
         ":reversible_data",
         ":reversible_engine",
-        ":search_limit_cc_proto",
+        ":sched_constraints",  # buildcleaner: keep
+        ":sched_search",  # buildcleaner: keep
+        ":search",  # buildcleaner: keep
         ":search_stats_cc_proto",
         ":solver_parameters_cc_proto",
-        ":utilities",
+        ":table",  # buildcleaner: keep
+        ":timetabling",  # buildcleaner: keep
         "//ortools/base:base_export",
-        "//ortools/base:file",
-        "//ortools/base:iterator_adaptors",
         "//ortools/base:log_severity",
-        "//ortools/base:map_util",
-        "//ortools/base:mathutil",
-        "//ortools/base:recordio",
-        "//ortools/base:safe_hash_map",
-        "//ortools/base:stl_util",
         "//ortools/base:strong_int",
         "//ortools/base:strong_vector",
         "//ortools/base:timer",
         "//ortools/base:types",
-        "//ortools/graph:hamiltonian_path",
-        "//ortools/port:sysinfo",
         "//ortools/util:bitset",
-        "//ortools/util:cached_log",
-        "//ortools/util:monoid_operation_tree",
         "//ortools/util:piecewise_linear_function",
-        "//ortools/util:range_minimum_query",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
-        "//ortools/util:stats",
-        "//ortools/util:string_array",
         "//ortools/util:tuple_set",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base:core_headers",
-        "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/flags:flag",
-        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/log:vlog_is_on",
         "@abseil-cpp//absl/random",
-        "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
         "@abseil-cpp//absl/time",
         "@abseil-cpp//absl/time:clock_interface",
         "@abseil-cpp//absl/types:span",
@@ -298,7 +635,7 @@ or_cc_library(
     hdrs = ["constraint_solver_test_util.h"],
     visibility = ["//visibility:public"],
     deps = [
-        ":cp",
+        ":core",
         "//ortools/base:gmock",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
@@ -312,8 +649,10 @@ or_cc_test(
     size = "small",
     srcs = ["alldiff_test.cc"],
     deps = [
+        ":alldiff_cst",  # buildcleaner: keep
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
+        ":search",  # buildcleaner: keep
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/strings",
     ],
@@ -325,12 +664,13 @@ or_cc_test(
     srcs = ["assignment_test.cc"],
     deps = [
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
+        ":resource",  # buildcleaner: keep
+        ":search",  # buildcleaner: keep
         "//ortools/base:gmock_main",
         "//ortools/base:path",
         "//ortools/base:types",
         "@abseil-cpp//absl/container:flat_hash_set",
-        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
 )
@@ -340,7 +680,7 @@ or_cc_binary(
     testonly = True,
     srcs = ["assignment_benchmark.cc"],
     deps = [
-        ":cp",
+        ":core",
         "@google_benchmark//:benchmark_main",
     ],
 )
@@ -352,7 +692,9 @@ or_cc_test(
     copts = ["-DUSE_COMPACT_TABLE"],
     deps = [
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
+        ":search",  # buildcleaner: keep
+        ":table",  # buildcleaner: keep
         "//ortools/base:gmock_main",
         "//ortools/util:tuple_set",
         "@abseil-cpp//absl/base:core_headers",
@@ -366,8 +708,11 @@ or_cc_test(
     size = "small",
     srcs = ["constraints_test.cc"],
     deps = [
+        ":alldiff_cst",  # buildcleaner: keep
         ":constraint_solver_test_util",
-        ":cp",
+        ":constraints",  # buildcleaner: keep
+        ":core",
+        ":search",  # buildcleaner: keep
         "//ortools/base:gmock_main",
         "//ortools/base:types",
     ],
@@ -379,7 +724,9 @@ or_cc_test(
     srcs = ["count_cst_test.cc"],
     deps = [
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
+        ":count_cst",  # buildcleaner: keep
+        ":search",  # buildcleaner: keep
         "//ortools/base:gmock_main",
     ],
 )
@@ -390,7 +737,8 @@ or_cc_test(
     srcs = ["diffn_test.cc"],
     deps = [
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
+        ":diffn",  # buildcleaner: keep
         "//ortools/base:gmock_main",
     ],
 )
@@ -400,7 +748,9 @@ or_cc_test(
     size = "small",
     srcs = ["default_search_test.cc"],
     deps = [
-        ":cp",
+        ":alldiff_cst",  # buildcleaner: keep
+        ":core",
+        ":default_search",  # buildcleaner: keep
         "//ortools/base:gmock_main",
     ],
 )
@@ -410,7 +760,7 @@ or_cc_test(
     size = "medium",
     srcs = ["domain_test.cc"],
     deps = [
-        ":cp",
+        ":core",
         "//ortools/base:gmock_main",
     ],
 )
@@ -421,7 +771,9 @@ or_cc_test(
     srcs = ["deviation_test.cc"],
     deps = [
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
+        ":deviation",  # buildcleaner: keep
+        ":search",  # buildcleaner: keep
         "//ortools/base:gmock_main",
     ],
 )
@@ -432,7 +784,8 @@ or_cc_test(
     srcs = ["element_test.cc"],
     deps = [
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
+        ":element",  # buildcleaner: keep
         "//ortools/base:gmock_main",
         "//ortools/base:types",
         "@abseil-cpp//absl/flags:flag",
@@ -448,7 +801,8 @@ or_cc_binary(
     testonly = True,
     srcs = ["element_benchmark.cc"],
     deps = [
-        ":cp",
+        ":core",
+        ":element",  # buildcleaner: keep
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random:distributions",
@@ -464,9 +818,10 @@ or_cc_test(
     shard_count = 50,
     deps = [
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
         ":reversible_data",
         ":reversible_engine",
+        ":search",  # buildcleaner: keep
         "//ortools/base:gmock_main",
         "//ortools/base:types",
         "//ortools/util:piecewise_linear_function",
@@ -485,7 +840,7 @@ or_cc_test(
     srcs = ["expr_array_test.cc"],
     deps = [
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
         ":solver_parameters_cc_proto",
         "//ortools/base:gmock_main",
         "//ortools/base:types",
@@ -500,7 +855,7 @@ or_cc_test(
     copts = ["-DSMALL_ARRAY"],
     deps = [
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
         ":solver_parameters_cc_proto",
         "//ortools/base:gmock_main",
         "//ortools/base:types",
@@ -514,7 +869,9 @@ or_cc_test(
     srcs = ["expr_cst_test.cc"],
     deps = [
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
+        ":element",  # buildcleaner: keep
+        ":search",  # buildcleaner: keep
         "//ortools/base:gmock_main",
         "//ortools/base:types",
         "//ortools/util:sorted_interval_list",
@@ -527,8 +884,11 @@ or_cc_test(
     size = "small",
     srcs = ["graph_constraints_test.cc"],
     deps = [
+        ":alldiff_cst",  # buildcleaner: keep
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
+        ":element",  # buildcleaner: keep
+        ":graph_constraints",  # buildcleaner: keep
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/container:flat_hash_map",
     ],
@@ -540,8 +900,11 @@ or_cc_test(
     srcs = ["graph_constraints_test.cc"],
     copts = ["-DDELAYED_PATH_CUMUL"],
     deps = [
+        ":alldiff_cst",  # buildcleaner: keep
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
+        ":element",  # buildcleaner: keep
+        ":graph_constraints",  # buildcleaner: keep
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/container:flat_hash_map",
     ],
@@ -553,7 +916,7 @@ or_cc_test(
     srcs = ["interval_test.cc"],
     deps = [
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
         "//ortools/base:gmock_main",
         "//ortools/base:types",
     ],
@@ -565,9 +928,10 @@ or_cc_test(
     srcs = ["constraint_solver_test.cc"],
     deps = [
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
         ":reversible_data",
         ":reversible_engine",
+        ":search",  # buildcleaner: keep
         "//ortools/base:gmock_main",
         "//ortools/base:gzipstring",
         "@abseil-cpp//absl/base",
@@ -586,7 +950,9 @@ or_cc_test(
     tags = ["noci"],
     deps = [
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
+        ":local_search",
+        ":search",  # buildcleaner: keep
         ":search_stats_cc_proto",
         ":solver_parameters_cc_proto",
         "//ortools/base:gmock_main",
@@ -608,8 +974,8 @@ or_cc_binary(
     testonly = True,
     srcs = ["local_search_benchmark.cc"],
     deps = [
-        ":cp",
-        "//ortools/base:types",
+        ":core",
+        ":local_search",
         "@abseil-cpp//absl/types:span",
         "@google_benchmark//:benchmark_main",
     ],
@@ -620,7 +986,7 @@ or_cc_test(
     size = "small",
     srcs = ["model_cache_test.cc"],
     deps = [
-        ":cp",
+        ":core",
         ":model_cache",
         "//ortools/base:gmock_main",
     ],
@@ -632,7 +998,8 @@ or_cc_test(
     srcs = ["pack_test.cc"],
     deps = [
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
+        ":pack",
         "//ortools/base:gmock_main",
     ],
 )
@@ -643,7 +1010,7 @@ or_cc_test(
     srcs = ["range_cst_test.cc"],
     deps = [
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
         "//ortools/base:gmock_main",
         "//ortools/base:types",
         "@abseil-cpp//absl/log",
@@ -656,7 +1023,10 @@ or_cc_test(
     srcs = ["resource_test.cc"],
     deps = [
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
+        ":resource",  # buildcleaner: keep
+        ":sched_search",  # buildcleaner: keep
+        ":search",  # buildcleaner: keep
         "//ortools/base:gmock_main",
         "//ortools/base:types",
         "@abseil-cpp//absl/flags:flag",
@@ -669,8 +1039,12 @@ or_cc_test(
     size = "small",
     srcs = ["search_test.cc"],
     deps = [
+        ":alldiff_cst",  # buildcleaner: keep
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
+        ":element",  # buildcleaner: keep
+        ":local_search",  # buildcleaner: keep
+        ":search",
         ":search_limit_cc_proto",
         "//ortools/base:gmock_main",
         "//ortools/base:types",
@@ -693,7 +1067,9 @@ or_cc_test(
     size = "small",
     srcs = ["sched_search_test.cc"],
     deps = [
-        ":cp",
+        ":core",
+        ":resource",  # buildcleaner: keep
+        ":sched_search",  # buildcleaner: keep
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/log",
     ],
@@ -705,7 +1081,9 @@ or_cc_test(
     srcs = ["sched_constraints_test.cc"],
     deps = [
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
+        ":resource",  # buildcleaner: keep
+        ":sched_constraints",  # buildcleaner: keep
         "//ortools/base:gmock_main",
     ],
 )
@@ -716,7 +1094,7 @@ or_cc_test(
     srcs = ["sched_expr_test.cc"],
     deps = [
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
         "//ortools/base:gmock_main",
     ],
 )
@@ -727,7 +1105,9 @@ or_cc_test(
     srcs = ["table_test.cc"],
     deps = [
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
+        ":search",  # buildcleaner: keep
+        ":table",  # buildcleaner: keep
         "//ortools/base:gmock_main",
         "//ortools/util:tuple_set",
         "@abseil-cpp//absl/base:core_headers",
@@ -742,7 +1122,8 @@ or_cc_test(
     srcs = ["timetabling_test.cc"],
     deps = [
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
+        ":timetabling",  # buildcleaner: keep
         "//ortools/base:gmock_main",
     ],
 )
@@ -753,7 +1134,7 @@ or_cc_test(
     srcs = ["reversible_data_test.cc"],
     deps = [
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
         ":reversible_data",
         "//ortools/base:gmock_main",
     ],
@@ -765,7 +1146,8 @@ or_cc_test(
     srcs = ["watcher_test.cc"],
     deps = [
         ":constraint_solver_test_util",
-        ":cp",
+        ":core",
+        ":search",  # buildcleaner: keep
         "//ortools/base:gmock_main",
     ],
 )
@@ -775,7 +1157,11 @@ or_cc_test(
     size = "small",
     srcs = ["tsp_test.cc"],
     deps = [
-        ":cp",
+        ":alldiff_cst",  # buildcleaner: keep
+        ":core",
+        ":element",  # buildcleaner: keep
+        ":local_search",  # buildcleaner: keep
+        ":search",  # buildcleaner: keep
         "//ortools/base:gmock_main",
         "//ortools/base:types",
         "//ortools/routing/parsers:simple_graph",
@@ -793,7 +1179,9 @@ or_cc_binary(
     name = "alldiff_bench",
     srcs = ["alldiff_bench.cc"],
     deps = [
-        ":cp",
+        ":alldiff_cst",  # buildcleaner: keep
+        ":core",
+        ":search",  # buildcleaner: keep
         "//ortools/base",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log:check",

@@ -16,13 +16,18 @@
 #include <algorithm>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/sched_expr.h"
+#include "ortools/constraint_solver/trace.h"
 #include "ortools/constraint_solver/variables.h"
 #include "ortools/util/saturated_arithmetic.h"
 
@@ -2115,6 +2120,234 @@ std::string FixedDurationIntervalVarStartSyncedOnEnd::DebugString() const {
   return absl::StrFormat(
       "IntervalStartSyncedOnEnd(%s, duration = %d, offset = %d)",
       t_->DebugString(), duration_, offset_);
+}
+
+// It's good to have the two extreme values being symmetrical around zero:
+// it makes mirroring easier.
+const int64_t IntervalVar::kMaxValidValue = kint64max >> 2;
+const int64_t IntervalVar::kMinValidValue = -kMaxValidValue;
+
+void IntervalVar::WhenAnything(Demon* d) {
+  WhenStartRange(d);
+  WhenDurationRange(d);
+  WhenEndRange(d);
+  WhenPerformedBound(d);
+}
+
+IntervalVar* Solver::MakeMirrorInterval(IntervalVar* interval_var) {
+  return RegisterIntervalVar(
+      RevAlloc(new MirrorIntervalVar(this, interval_var)));
+}
+
+IntervalVar* Solver::MakeIntervalRelaxedMax(IntervalVar* interval_var) {
+  if (interval_var->MustBePerformed()) {
+    return interval_var;
+  } else {
+    return RegisterIntervalVar(
+        RevAlloc(new IntervalVarRelaxedMax(interval_var)));
+  }
+}
+
+IntervalVar* Solver::MakeIntervalRelaxedMin(IntervalVar* interval_var) {
+  if (interval_var->MustBePerformed()) {
+    return interval_var;
+  } else {
+    return RegisterIntervalVar(
+        RevAlloc(new IntervalVarRelaxedMin(interval_var)));
+  }
+}
+
+IntervalVar* Solver::MakeFixedInterval(int64_t start, int64_t duration,
+                                       const std::string& name) {
+  return RevAlloc(new FixedInterval(this, start, duration, name));
+}
+
+IntervalVar* Solver::MakeFixedDurationIntervalVar(int64_t start_min,
+                                                  int64_t start_max,
+                                                  int64_t duration,
+                                                  bool optional,
+                                                  const std::string& name) {
+  if (start_min == start_max && !optional) {
+    return MakeFixedInterval(start_min, duration, name);
+  } else if (!optional) {
+    return RegisterIntervalVar(RevAlloc(new FixedDurationPerformedIntervalVar(
+        this, start_min, start_max, duration, name)));
+  }
+  return RegisterIntervalVar(RevAlloc(new FixedDurationIntervalVar(
+      this, start_min, start_max, duration, optional, name)));
+}
+
+void Solver::MakeFixedDurationIntervalVarArray(
+    int count, int64_t start_min, int64_t start_max, int64_t duration,
+    bool optional, absl::string_view name, std::vector<IntervalVar*>* array) {
+  CHECK_GT(count, 0);
+  CHECK(array != nullptr);
+  array->clear();
+  for (int i = 0; i < count; ++i) {
+    const std::string var_name = absl::StrCat(name, i);
+    array->push_back(MakeFixedDurationIntervalVar(
+        start_min, start_max, duration, optional, var_name));
+  }
+}
+
+IntervalVar* Solver::MakeFixedDurationIntervalVar(IntVar* start_variable,
+                                                  int64_t duration,
+                                                  const std::string& name) {
+  CHECK(start_variable != nullptr);
+  CHECK_GE(duration, 0);
+  return RegisterIntervalVar(RevAlloc(
+      new StartVarPerformedIntervalVar(this, start_variable, duration, name)));
+}
+
+// Creates an interval var with a fixed duration, and performed var.
+// The duration must be greater than 0.
+IntervalVar* Solver::MakeFixedDurationIntervalVar(IntVar* start_variable,
+                                                  int64_t duration,
+                                                  IntVar* performed_variable,
+                                                  const std::string& name) {
+  CHECK(start_variable != nullptr);
+  CHECK(performed_variable != nullptr);
+  CHECK_GE(duration, 0);
+  if (!performed_variable->Bound()) {
+    StartVarIntervalVar* const interval =
+        reinterpret_cast<StartVarIntervalVar*>(
+            RegisterIntervalVar(RevAlloc(new StartVarIntervalVar(
+                this, start_variable, duration, performed_variable, name))));
+    AddConstraint(RevAlloc(new LinkStartVarIntervalVar(
+        this, interval, start_variable, performed_variable)));
+    return interval;
+  } else if (performed_variable->Min() == 1) {
+    return RegisterIntervalVar(RevAlloc(new StartVarPerformedIntervalVar(
+        this, start_variable, duration, name)));
+  }
+  return nullptr;
+}
+
+void Solver::MakeFixedDurationIntervalVarArray(
+    const std::vector<IntVar*>& start_variables, int64_t duration,
+    absl::string_view name, std::vector<IntervalVar*>* array) {
+  CHECK(array != nullptr);
+  array->clear();
+  for (int i = 0; i < start_variables.size(); ++i) {
+    const std::string var_name = absl::StrCat(name, i);
+    array->push_back(
+        MakeFixedDurationIntervalVar(start_variables[i], duration, var_name));
+  }
+}
+
+// This method fills the vector with interval variables built with
+// the corresponding start variables.
+void Solver::MakeFixedDurationIntervalVarArray(
+    const std::vector<IntVar*>& start_variables,
+    absl::Span<const int64_t> durations, absl::string_view name,
+    std::vector<IntervalVar*>* array) {
+  CHECK(array != nullptr);
+  CHECK_EQ(start_variables.size(), durations.size());
+  array->clear();
+  for (int i = 0; i < start_variables.size(); ++i) {
+    const std::string var_name = absl::StrCat(name, i);
+    array->push_back(MakeFixedDurationIntervalVar(start_variables[i],
+                                                  durations[i], var_name));
+  }
+}
+
+void Solver::MakeFixedDurationIntervalVarArray(
+    const std::vector<IntVar*>& start_variables,
+    absl::Span<const int> durations, absl::string_view name,
+    std::vector<IntervalVar*>* array) {
+  CHECK(array != nullptr);
+  CHECK_EQ(start_variables.size(), durations.size());
+  array->clear();
+  for (int i = 0; i < start_variables.size(); ++i) {
+    const std::string var_name = absl::StrCat(name, i);
+    array->push_back(MakeFixedDurationIntervalVar(start_variables[i],
+                                                  durations[i], var_name));
+  }
+}
+
+void Solver::MakeFixedDurationIntervalVarArray(
+    const std::vector<IntVar*>& start_variables,
+    absl::Span<const int> durations,
+    const std::vector<IntVar*>& performed_variables, absl::string_view name,
+    std::vector<IntervalVar*>* array) {
+  CHECK(array != nullptr);
+  array->clear();
+  for (int i = 0; i < start_variables.size(); ++i) {
+    const std::string var_name = absl::StrCat(name, i);
+    array->push_back(MakeFixedDurationIntervalVar(
+        start_variables[i], durations[i], performed_variables[i], var_name));
+  }
+}
+
+void Solver::MakeFixedDurationIntervalVarArray(
+    const std::vector<IntVar*>& start_variables,
+    absl::Span<const int64_t> durations,
+    const std::vector<IntVar*>& performed_variables, absl::string_view name,
+    std::vector<IntervalVar*>* array) {
+  CHECK(array != nullptr);
+  array->clear();
+  for (int i = 0; i < start_variables.size(); ++i) {
+    const std::string var_name = absl::StrCat(name, i);
+    array->push_back(MakeFixedDurationIntervalVar(
+        start_variables[i], durations[i], performed_variables[i], var_name));
+  }
+}
+
+// Variable Duration Interval Var
+
+IntervalVar* Solver::MakeIntervalVar(int64_t start_min, int64_t start_max,
+                                     int64_t duration_min, int64_t duration_max,
+                                     int64_t end_min, int64_t end_max,
+                                     bool optional, const std::string& name) {
+  return RegisterIntervalVar(RevAlloc(new VariableDurationIntervalVar(
+      this, start_min, start_max, duration_min, duration_max, end_min, end_max,
+      optional, name)));
+}
+
+void Solver::MakeIntervalVarArray(int count, int64_t start_min,
+                                  int64_t start_max, int64_t duration_min,
+                                  int64_t duration_max, int64_t end_min,
+                                  int64_t end_max, bool optional,
+                                  absl::string_view name,
+                                  std::vector<IntervalVar*>* array) {
+  CHECK_GT(count, 0);
+  CHECK(array != nullptr);
+  array->clear();
+  for (int i = 0; i < count; ++i) {
+    const std::string var_name = absl::StrCat(name, i);
+    array->push_back(MakeIntervalVar(start_min, start_max, duration_min,
+                                     duration_max, end_min, end_max, optional,
+                                     var_name));
+  }
+}
+
+// Synced Interval Vars
+IntervalVar* Solver::MakeFixedDurationStartSyncedOnStartIntervalVar(
+    IntervalVar* interval_var, int64_t duration, int64_t offset) {
+  return RegisterIntervalVar(
+      RevAlloc(new FixedDurationIntervalVarStartSyncedOnStart(
+          interval_var, duration, offset)));
+}
+
+IntervalVar* Solver::MakeFixedDurationStartSyncedOnEndIntervalVar(
+    IntervalVar* interval_var, int64_t duration, int64_t offset) {
+  return RegisterIntervalVar(
+      RevAlloc(new FixedDurationIntervalVarStartSyncedOnEnd(interval_var,
+                                                            duration, offset)));
+}
+
+IntervalVar* Solver::MakeFixedDurationEndSyncedOnStartIntervalVar(
+    IntervalVar* interval_var, int64_t duration, int64_t offset) {
+  return RegisterIntervalVar(
+      RevAlloc(new FixedDurationIntervalVarStartSyncedOnStart(
+          interval_var, duration, CapSub(offset, duration))));
+}
+
+IntervalVar* Solver::MakeFixedDurationEndSyncedOnEndIntervalVar(
+    IntervalVar* interval_var, int64_t duration, int64_t offset) {
+  return RegisterIntervalVar(
+      RevAlloc(new FixedDurationIntervalVarStartSyncedOnEnd(
+          interval_var, duration, CapSub(offset, duration))));
 }
 
 }  // namespace operations_research

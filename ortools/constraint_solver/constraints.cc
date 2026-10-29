@@ -17,9 +17,9 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
-#include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "ortools/base/types.h"
@@ -28,28 +28,6 @@
 #include "ortools/util/string_array.h"
 
 namespace operations_research {
-
-void TrueConstraint::Post() {}
-void TrueConstraint::InitialPropagate() {}
-std::string TrueConstraint::DebugString() const { return "TrueConstraint()"; }
-
-void TrueConstraint::Accept(ModelVisitor* visitor) const {
-  visitor->BeginVisitConstraint(ModelVisitor::kTrueConstraint, this);
-  visitor->EndVisitConstraint(ModelVisitor::kTrueConstraint, this);
-}
-IntVar* TrueConstraint::Var() { return solver()->MakeIntConst(1); }
-
-void FalseConstraint::Post() {}
-void FalseConstraint::InitialPropagate() { solver()->Fail(); }
-std::string FalseConstraint::DebugString() const {
-  return absl::StrCat("FalseConstraint(", explanation_, ")");
-}
-
-void FalseConstraint::Accept(ModelVisitor* visitor) const {
-  visitor->BeginVisitConstraint(ModelVisitor::kFalseConstraint, this);
-  visitor->EndVisitConstraint(ModelVisitor::kFalseConstraint, this);
-}
-IntVar* FalseConstraint::Var() { return solver()->MakeIntConst(0); }
 
 void MapDomain::Post() {
   Demon* vd =
@@ -345,6 +323,68 @@ std::string IndexOfFirstMaxValue::DebugString() const {
 void IndexOfFirstMaxValue::Accept(
     [[maybe_unused]] ModelVisitor* visitor) const {
   // TODO(user): Implement me.
+}
+
+Constraint* Solver::MakeMapDomain(IntVar* var,
+                                  const std::vector<IntVar*>& actives) {
+  return RevAlloc(new MapDomain(this, var, actives));
+}
+
+Constraint* Solver::MakeLexicalLess(const std::vector<IntVar*>& left,
+                                    const std::vector<IntVar*>& right) {
+  std::vector<IntVar*> adjusted_left = left;
+  adjusted_left.push_back(MakeIntConst(1));
+  std::vector<IntVar*> adjusted_right = right;
+  adjusted_right.push_back(MakeIntConst(0));
+  return MakeLexicalLessOrEqualWithOffsets(
+      std::move(adjusted_left), std::move(adjusted_right),
+      std::vector<int64_t>(left.size() + 1, 1));
+}
+
+Constraint* Solver::MakeLexicalLessOrEqual(const std::vector<IntVar*>& left,
+                                           const std::vector<IntVar*>& right) {
+  return MakeLexicalLessOrEqualWithOffsets(
+      left, right, std::vector<int64_t>(left.size(), 1));
+}
+
+Constraint* Solver::MakeLexicalLessOrEqualWithOffsets(
+    std::vector<IntVar*> left, std::vector<IntVar*> right,
+    std::vector<int64_t> offsets) {
+  return RevAlloc(new LexicalLessOrEqual(this, std::move(left),
+                                         std::move(right), std::move(offsets)));
+}
+
+Constraint* Solver::MakeIsLexicalLessOrEqualWithOffsetsCt(
+    std::vector<IntVar*> left, std::vector<IntVar*> right,
+    std::vector<int64_t> offsets, IntVar* boolvar) {
+  std::vector<IntVar*> adjusted_left = std::move(left);
+  adjusted_left.insert(adjusted_left.begin(), boolvar);
+  std::vector<IntVar*> adjusted_right = std::move(right);
+  adjusted_right.insert(adjusted_right.begin(), MakeIntConst(1));
+  std::vector<int64_t> adjusted_offsets = std::move(offsets);
+  adjusted_offsets.insert(adjusted_offsets.begin(), 1);
+  return MakeLexicalLessOrEqualWithOffsets(std::move(adjusted_left),
+                                           std::move(adjusted_right),
+                                           std::move(adjusted_offsets));
+}
+
+Constraint* Solver::MakeInversePermutationConstraint(
+    const std::vector<IntVar*>& left, const std::vector<IntVar*>& right) {
+  return RevAlloc(new InversePermutationConstraint(this, left, right));
+}
+
+Constraint* Solver::MakeIndexOfFirstMaxValueConstraint(
+    IntVar* index, const std::vector<IntVar*>& vars) {
+  return RevAlloc(new IndexOfFirstMaxValue(this, index, vars));
+}
+
+Constraint* Solver::MakeIndexOfFirstMinValueConstraint(
+    IntVar* index, const std::vector<IntVar*>& vars) {
+  std::vector<IntVar*> opp_vars(vars.size());
+  for (int i = 0; i < vars.size(); ++i) {
+    opp_vars[i] = MakeOpposite(vars[i])->Var();
+  }
+  return RevAlloc(new IndexOfFirstMaxValue(this, index, opp_vars));
 }
 
 }  // namespace operations_research

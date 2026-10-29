@@ -18,11 +18,15 @@
 #include <algorithm>
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/utilities.h"
 #include "ortools/util/string_array.h"
 
 namespace operations_research {
@@ -754,6 +758,170 @@ void SetAllToZero::Accept(ModelVisitor* visitor) const {
   visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kCardsArgument,
                                              vars_);
   visitor->EndVisitConstraint(ModelVisitor::kDistribute, this);
+}
+
+Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64_t value,
+                              int64_t max_count) {
+  std::vector<IntVar*> tmp_sum;
+  for (int i = 0; i < vars.size(); ++i) {
+    if (vars[i]->Contains(value)) {
+      if (vars[i]->Bound()) {
+        max_count--;
+      } else {
+        tmp_sum.push_back(MakeIsEqualCstVar(vars[i], value));
+      }
+    }
+  }
+  return MakeSumEquality(tmp_sum, max_count);
+}
+
+Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64_t value,
+                              IntVar* max_count) {
+  if (max_count->Bound()) {
+    return MakeCount(vars, value, max_count->Min());
+  } else {
+    std::vector<IntVar*> tmp_sum;
+    int64_t num_vars_bound_to_v = 0;
+    for (int i = 0; i < vars.size(); ++i) {
+      if (vars[i]->Contains(value)) {
+        if (vars[i]->Bound()) {
+          ++num_vars_bound_to_v;
+        } else {
+          tmp_sum.push_back(MakeIsEqualCstVar(vars[i], value));
+        }
+      }
+    }
+    return MakeSumEquality(tmp_sum,
+                           MakeSum(max_count, -num_vars_bound_to_v)->Var());
+  }
+}
+
+Constraint* Solver::MakeAtMost(std::vector<IntVar*> vars, int64_t value,
+                               int64_t max_count) {
+  CHECK_GE(max_count, 0);
+  if (max_count >= vars.size()) {
+    return MakeTrueConstraint();
+  }
+  return RevAlloc(new AtMost(this, std::move(vars), value, max_count));
+}
+
+Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
+                                   const std::vector<int64_t>& values,
+                                   const std::vector<IntVar*>& cards) {
+  if (vars.empty()) {
+    return RevAlloc(new SetAllToZero(this, cards));
+  }
+  CHECK_EQ(values.size(), cards.size());
+  for (IntVar* var : vars) {
+    CHECK_EQ(this, var->solver());
+  }
+
+  // TODO(user) : we can sort values (and cards) before doing the test.
+  bool fast = true;
+  for (int i = 0; i < values.size(); ++i) {
+    if (values[i] != i) {
+      fast = false;
+      break;
+    }
+  }
+  for (IntVar* card : cards) {
+    CHECK_EQ(this, card->solver());
+  }
+  if (fast) {
+    return RevAlloc(new FastDistribute(this, vars, cards));
+  } else {
+    return RevAlloc(new Distribute(this, vars, values, cards));
+  }
+}
+
+Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
+                                   const std::vector<int>& values,
+                                   const std::vector<IntVar*>& cards) {
+  return MakeDistribute(vars, ToInt64Vector(values), cards);
+}
+
+Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
+                                   const std::vector<IntVar*>& cards) {
+  if (vars.empty()) {
+    return RevAlloc(new SetAllToZero(this, cards));
+  }
+  for (IntVar* var : vars) {
+    CHECK_EQ(this, var->solver());
+  }
+  for (IntVar* card : cards) {
+    CHECK_EQ(this, card->solver());
+  }
+  return RevAlloc(new FastDistribute(this, vars, cards));
+}
+
+Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
+                                   int64_t card_min, int64_t card_max,
+                                   int64_t card_size) {
+  const int vsize = vars.size();
+  CHECK_NE(vsize, 0);
+  for (IntVar* var : vars) {
+    CHECK_EQ(this, var->solver());
+  }
+  if (card_min == 0 && card_max >= vsize) {
+    return MakeTrueConstraint();
+  } else if (card_min > vsize || card_max < 0 || card_max < card_min) {
+    return MakeFalseConstraint();
+  } else {
+    std::vector<int64_t> mins(card_size, card_min);
+    std::vector<int64_t> maxes(card_size, card_max);
+    return RevAlloc(new BoundedFastDistribute(this, vars, mins, maxes));
+  }
+}
+
+Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
+                                   const std::vector<int64_t>& card_min,
+                                   const std::vector<int64_t>& card_max) {
+  const int vsize = vars.size();
+  CHECK_NE(vsize, 0);
+  int64_t cmax = kint64max;
+  int64_t cmin = kint64min;
+  for (int i = 0; i < card_max.size(); ++i) {
+    cmax = std::min(cmax, card_max[i]);
+    cmin = std::max(cmin, card_min[i]);
+  }
+  if (cmax < 0 || cmin > vsize) {
+    return MakeFalseConstraint();
+  } else if (cmax >= vsize && cmin == 0) {
+    return MakeTrueConstraint();
+  } else {
+    return RevAlloc(new BoundedFastDistribute(this, vars, card_min, card_max));
+  }
+}
+
+Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
+                                   const std::vector<int>& card_min,
+                                   const std::vector<int>& card_max) {
+  return MakeDistribute(vars, ToInt64Vector(card_min), ToInt64Vector(card_max));
+}
+
+Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
+                                   const std::vector<int64_t>& values,
+                                   const std::vector<int64_t>& card_min,
+                                   const std::vector<int64_t>& card_max) {
+  CHECK_NE(vars.size(), 0);
+  CHECK_EQ(card_min.size(), values.size());
+  CHECK_EQ(card_min.size(), card_max.size());
+  if (AreAllOnes(card_min) && AreAllOnes(card_max) &&
+      values.size() == vars.size() && IsIncreasingContiguous(values) &&
+      IsArrayInRange(vars, values.front(), values.back())) {
+    return MakeAllDifferent(vars);
+  } else {
+    return RevAlloc(
+        new BoundedDistribute(this, vars, values, card_min, card_max));
+  }
+}
+
+Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
+                                   const std::vector<int>& values,
+                                   const std::vector<int>& card_min,
+                                   const std::vector<int>& card_max) {
+  return MakeDistribute(vars, ToInt64Vector(values), ToInt64Vector(card_min),
+                        ToInt64Vector(card_max));
 }
 
 }  // namespace operations_research

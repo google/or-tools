@@ -16,18 +16,26 @@
 #include <algorithm>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/expressions.h"
+#include "ortools/constraint_solver/model_cache.h"
+#include "ortools/constraint_solver/trace.h"
+#include "ortools/constraint_solver/utilities.h"
 #include "ortools/util/range_minimum_query.h"
 #include "ortools/util/string_array.h"
+
+ABSL_DECLARE_FLAG(bool, cp_disable_element_cache);
 
 namespace operations_research {
 
@@ -1133,6 +1141,316 @@ void IntExprIndexOfCt::Accept(ModelVisitor* visitor) const {
   visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument, index_);
   visitor->VisitIntegerArgument(ModelVisitor::kTargetArgument, target_);
   visitor->EndVisitConstraint(ModelVisitor::kIndexOf, this);
+}
+
+namespace {
+// ----- Solver::MakeElement(int array, int var) -----
+IntExpr* BuildElement(Solver* solver, const std::vector<int64_t>& values,
+                      IntVar* index) {
+  // Various checks.
+  // Is array constant?
+  if (IsArrayConstant(values, values[0])) {
+    solver->AddConstraint(solver->MakeBetweenCt(index, 0, values.size() - 1));
+    return solver->MakeIntConst(values[0]);
+  }
+  // Is array built with booleans only?
+  // TODO(user): We could maintain the index of the first one.
+  if (IsArrayBoolean(values)) {
+    std::vector<int64_t> ones;
+    int first_zero = -1;
+    for (int i = 0; i < values.size(); ++i) {
+      if (values[i] == 1) {
+        ones.push_back(i);
+      } else {
+        first_zero = i;
+      }
+    }
+    if (ones.size() == 1) {
+      DCHECK_EQ(int64_t{1}, values[ones.back()]);
+      solver->AddConstraint(solver->MakeBetweenCt(index, 0, values.size() - 1));
+      return solver->MakeIsEqualCstVar(index, ones.back());
+    } else if (ones.size() == values.size() - 1) {
+      solver->AddConstraint(solver->MakeBetweenCt(index, 0, values.size() - 1));
+      return solver->MakeIsDifferentCstVar(index, first_zero);
+    } else if (ones.size() == ones.back() - ones.front() + 1) {  // contiguous.
+      solver->AddConstraint(solver->MakeBetweenCt(index, 0, values.size() - 1));
+      IntVar* b = solver->MakeBoolVar("ContiguousBooleanElementVar");
+      solver->AddConstraint(
+          solver->MakeIsBetweenCt(index, ones.front(), ones.back(), b));
+      return b;
+    } else {
+      IntVar* b = solver->MakeBoolVar("NonContiguousBooleanElementVar");
+      solver->AddConstraint(solver->MakeBetweenCt(index, 0, values.size() - 1));
+      solver->AddConstraint(solver->MakeIsMemberCt(index, ones, b));
+      return b;
+    }
+  }
+  IntExpr* cache = nullptr;
+  if (!absl::GetFlag(FLAGS_cp_disable_element_cache)) {
+    cache = solver->Cache()->FindVarConstantArrayExpression(
+        index, values, ModelCache::VAR_CONSTANT_ARRAY_ELEMENT);
+  }
+  if (cache != nullptr) {
+    return cache;
+  } else {
+    IntExpr* result = nullptr;
+    if (values.size() >= 2 && index->Min() == 0 && index->Max() == 1) {
+      result = solver->MakeSum(solver->MakeProd(index, values[1] - values[0]),
+                               values[0]);
+    } else if (values.size() == 2 && index->Contains(0) && index->Contains(1)) {
+      solver->AddConstraint(solver->MakeBetweenCt(index, 0, 1));
+      result = solver->MakeSum(solver->MakeProd(index, values[1] - values[0]),
+                               values[0]);
+    } else if (IsIncreasingContiguous(values)) {
+      result = solver->MakeSum(index, values[0]);
+    } else if (IsIncreasing(values)) {
+      result = RegisterIntExpr(solver->RevAlloc(
+          new IncreasingIntExprElement(solver, values, index)));
+    } else {
+      if (solver->parameters().use_element_rmq()) {
+        result = RegisterIntExpr(solver->RevAlloc(
+            new RangeMinimumQueryExprElement(solver, values, index)));
+      } else {
+        result = RegisterIntExpr(
+            solver->RevAlloc(new IntExprElement(solver, values, index)));
+      }
+    }
+    if (!absl::GetFlag(FLAGS_cp_disable_element_cache)) {
+      solver->Cache()->InsertVarConstantArrayExpression(
+          result, index, values, ModelCache::VAR_CONSTANT_ARRAY_ELEMENT);
+    }
+    return result;
+  }
+}
+
+// Factory helper.
+
+Constraint* MakeElementEqualityFunc(Solver* solver,
+                                    const std::vector<int64_t>& vals,
+                                    IntVar* index, IntVar* target) {
+  if (index->Bound()) {
+    const int64_t val = index->Min();
+    if (val < 0 || val >= vals.size()) {
+      return solver->MakeFalseConstraint();
+    } else {
+      return solver->MakeEquality(target, vals[val]);
+    }
+  } else {
+    if (IsIncreasingContiguous(vals)) {
+      return solver->MakeEquality(target, solver->MakeSum(index, vals[0]));
+    } else {
+      return solver->RevAlloc(
+          new IntElementConstraint(solver, vals, index, target));
+    }
+  }
+}
+}  // namespace
+
+Constraint* Solver::MakeIfThenElseCt(IntVar* condition, IntExpr* then_expr,
+                                     IntExpr* else_expr, IntVar* target_var) {
+  return RevAlloc(
+      new IfThenElseCt(this, condition, then_expr, else_expr, target_var));
+}
+
+IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* index) {
+  if (index->Bound()) {
+    return vars[index->Min()];
+  }
+  const int size = vars.size();
+  if (AreAllBound(vars)) {
+    std::vector<int64_t> values(size);
+    for (int i = 0; i < size; ++i) {
+      values[i] = vars[i]->Value();
+    }
+    return MakeElement(values, index);
+  }
+  if (index->Size() == 2 && index->Min() + 1 == index->Max() &&
+      index->Min() >= 0 && index->Max() < vars.size()) {
+    // Let's get the index between 0 and 1.
+    IntVar* scaled_index = MakeSum(index, -index->Min())->Var();
+    IntVar* zero = vars[index->Min()];
+    IntVar* one = vars[index->Max()];
+    const std::string name = absl::StrFormat("ElementVar([%s], %s)",
+                                             JoinNamePtr(vars), index->name());
+    IntVar* target = MakeIntVar(std::min(zero->Min(), one->Min()),
+                                std::max(zero->Max(), one->Max()), name);
+    AddConstraint(
+        RevAlloc(new IfThenElseCt(this, scaled_index, one, zero, target)));
+    return target;
+  }
+  int64_t emin = kint64max;
+  int64_t emax = kint64min;
+  std::unique_ptr<IntVarIterator> iterator(index->MakeDomainIterator(false));
+  for (const int64_t index_value : InitAndGetValues(iterator.get())) {
+    if (index_value >= 0 && index_value < size) {
+      emin = std::min(emin, vars[index_value]->Min());
+      emax = std::max(emax, vars[index_value]->Max());
+    }
+  }
+  const std::string vname =
+      size > 10 ? absl::StrFormat("ElementVar(var array of size %d, %s)", size,
+                                  index->DebugString())
+                : absl::StrFormat("ElementVar([%s], %s)", JoinNamePtr(vars),
+                                  index->name());
+  IntVar* element_var = MakeIntVar(emin, emax, vname);
+  AddConstraint(
+      RevAlloc(new IntExprArrayElementCt(this, vars, index, element_var)));
+  return element_var;
+}
+
+IntExpr* Solver::MakeElement(Int64ToIntVar vars, int64_t range_start,
+                             int64_t range_end, IntVar* argument) {
+  const std::string index_name =
+      !argument->name().empty() ? argument->name() : argument->DebugString();
+  const std::string vname = absl::StrFormat(
+      "ElementVar(%s, %s)",
+      StringifyInt64ToIntVar(vars, range_start, range_end), index_name);
+  IntVar* element_var = MakeIntVar(kint64min, kint64max, vname);
+  IntExprEvaluatorElementCt* evaluation_ct = new IntExprEvaluatorElementCt(
+      this, std::move(vars), range_start, range_end, argument, element_var);
+  AddConstraint(RevAlloc(evaluation_ct));
+  evaluation_ct->Propagate();
+  return element_var;
+}
+
+Constraint* Solver::MakeElementEquality(const std::vector<int64_t>& vals,
+                                        IntVar* index, IntVar* target) {
+  return MakeElementEqualityFunc(this, vals, index, target);
+}
+
+Constraint* Solver::MakeElementEquality(const std::vector<int>& vals,
+                                        IntVar* index, IntVar* target) {
+  return MakeElementEqualityFunc(this, ToInt64Vector(vals), index, target);
+}
+
+Constraint* Solver::MakeElementEquality(const std::vector<IntVar*>& vars,
+                                        IntVar* index, IntVar* target) {
+  if (AreAllBound(vars)) {
+    std::vector<int64_t> values(vars.size());
+    for (int i = 0; i < vars.size(); ++i) {
+      values[i] = vars[i]->Value();
+    }
+    return MakeElementEquality(values, index, target);
+  }
+  if (index->Bound()) {
+    const int64_t val = index->Min();
+    if (val < 0 || val >= vars.size()) {
+      return MakeFalseConstraint();
+    } else {
+      return MakeEquality(target, vars[val]);
+    }
+  } else {
+    if (target->Bound()) {
+      return RevAlloc(
+          new IntExprArrayElementCstCt(this, vars, index, target->Min()));
+    } else {
+      return RevAlloc(new IntExprArrayElementCt(this, vars, index, target));
+    }
+  }
+}
+
+Constraint* Solver::MakeElementEquality(const std::vector<IntVar*>& vars,
+                                        IntVar* index, int64_t target) {
+  if (AreAllBound(vars)) {
+    std::vector<int> valid_indices;
+    for (int i = 0; i < vars.size(); ++i) {
+      if (vars[i]->Value() == target) {
+        valid_indices.push_back(i);
+      }
+    }
+    return MakeMemberCt(index, valid_indices);
+  }
+  if (index->Bound()) {
+    const int64_t pos = index->Min();
+    if (pos >= 0 && pos < vars.size()) {
+      IntVar* var = vars[pos];
+      return MakeEquality(var, target);
+    } else {
+      return MakeFalseConstraint();
+    }
+  } else {
+    return RevAlloc(new IntExprArrayElementCstCt(this, vars, index, target));
+  }
+}
+
+Constraint* Solver::MakeIndexOfConstraint(const std::vector<IntVar*>& vars,
+                                          IntVar* index, int64_t target) {
+  if (index->Bound()) {
+    const int64_t pos = index->Min();
+    if (pos >= 0 && pos < vars.size()) {
+      IntVar* var = vars[pos];
+      return MakeEquality(var, target);
+    } else {
+      return MakeFalseConstraint();
+    }
+  } else {
+    return RevAlloc(new IntExprIndexOfCt(this, vars, index, target));
+  }
+}
+
+IntExpr* Solver::MakeIndexExpression(const std::vector<IntVar*>& vars,
+                                     int64_t value) {
+  IntExpr* cache = model_cache_->FindVarArrayConstantExpression(
+      vars, value, ModelCache::VAR_ARRAY_CONSTANT_INDEX);
+  if (cache != nullptr) {
+    return cache->Var();
+  } else {
+    const std::string name =
+        absl::StrFormat("Index(%s, %d)", JoinNamePtr(vars), value);
+    IntVar* index = MakeIntVar(0, vars.size() - 1, name);
+    AddConstraint(MakeIndexOfConstraint(vars, index, value));
+    model_cache_->InsertVarArrayConstantExpression(
+        index, vars, value, ModelCache::VAR_ARRAY_CONSTANT_INDEX);
+    return index;
+  }
+}
+
+IntExpr* Solver::MakeElement(const std::vector<int64_t>& values,
+                             IntVar* index) {
+  DCHECK(index);
+  DCHECK_EQ(this, index->solver());
+  if (index->Bound()) {
+    return MakeIntConst(values[index->Min()]);
+  }
+  return BuildElement(this, values, index);
+}
+
+IntExpr* Solver::MakeElement(const std::vector<int>& values, IntVar* index) {
+  DCHECK(index);
+  DCHECK_EQ(this, index->solver());
+  if (index->Bound()) {
+    return MakeIntConst(values[index->Min()]);
+  }
+  return BuildElement(this, ToInt64Vector(values), index);
+}
+
+IntExpr* Solver::MakeElement(Solver::IndexEvaluator1 values, IntVar* index) {
+  CHECK_EQ(this, index->solver());
+  return RegisterIntExpr(
+      RevAlloc(new IntExprFunctionElement(this, std::move(values), index)));
+}
+
+IntExpr* Solver::MakeMonotonicElement(Solver::IndexEvaluator1 values,
+                                      bool increasing, IntVar* index) {
+  CHECK_EQ(this, index->solver());
+  if (increasing) {
+    return RegisterIntExpr(RevAlloc(
+        new IncreasingIntExprFunctionElement(this, std::move(values), index)));
+  } else {
+    return RegisterIntExpr(
+        MakeOpposite(RevAlloc(new IncreasingIntExprFunctionElement(
+            this,
+            [values = std::move(values)](int64_t i) { return -values(i); },
+            index))));
+  }
+}
+
+IntExpr* Solver::MakeElement(Solver::IndexEvaluator2 values, IntVar* index1,
+                             IntVar* index2) {
+  CHECK_EQ(this, index1->solver());
+  CHECK_EQ(this, index2->solver());
+  return RegisterIntExpr(RevAlloc(
+      new IntIntExprFunctionElement(this, std::move(values), index1, index2)));
 }
 
 }  // namespace operations_research
