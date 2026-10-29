@@ -104,6 +104,7 @@
 #include "absl/log/die_if_null.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
+#include "absl/types/span.h"
 #include "ortools/base/base_export.h"
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/dual_edge_norms.h"
@@ -320,6 +321,23 @@ class RevisedSimplex {
   SolveStatus MinimizeFromTransposedMatrixWithSlack(
       const DenseRow& objective, Fractional objective_scaling_factor,
       Fractional objective_offset, TimeLimit& time_limit);
+
+  // Advanced usage. This can be called before
+  // MinimizeFromTransposedMatrixWithSlack() when the structural columns of the
+  // problem are unchanged, but some rows were added, removed or reordered since
+  // the last solve. For each row of the new problem, old_row_of_new_row[row]
+  // must be the index of the same row in the previous problem, or kInvalidRow
+  // if the row is new.
+  //
+  // When the given state (see LoadStateForNextSolve()) is used as the starting
+  // basis, this allows to transfer the dual steepest edge norms of the previous
+  // solve to the new problem instead of recomputing all of them from scratch.
+  // Only the norms of the new basic variables are computed exactly. Note that
+  // the transferred norms are exact if the new basis only differs from the old
+  // one by extra basic slack variables of the new rows, and are otherwise just
+  // approximations which is fine for the dual steepest edge pricing.
+  void SetOldRowIndicesForNextSolve(
+      absl::Span<const RowIndex> old_row_of_new_row);
 
  private:
   struct IterationStats : public StatsGroup {
@@ -544,6 +562,12 @@ class RevisedSimplex {
   // Entry point for the solver initialization.
   AbnormalityStatus Initialize(const LinearProgram& lp);
   AbnormalityStatus FinishInitialization(bool solve_from_scratch);
+
+  // See SetOldRowIndicesForNextSolve(). This must be called before the basis
+  // of the new problem is initialized. It returns the known dual edge squared
+  // norms indexed by the new column indices (zero if unknown), or an empty
+  // vector if the transfer is not possible.
+  DenseRow ComputeOldDualEdgeSquaredNormsByCol() const;
 
   // Saves the current variable statuses in solution_state_.
   void SaveState();
@@ -793,11 +817,17 @@ class RevisedSimplex {
   Fractional primal_objective_limit_;
   Fractional dual_objective_limit_;
 
-  // Current objective (feasibility for Phase-I, user-provided for Phase-II).
-  DenseRow current_objective_;
-
-  // Array of coefficients for the user-defined objective.
-  // Indexed by column number. Used in Phase-II.
+  // Current objective.
+  //
+  // Indexed by column number.
+  //
+  // Initialized from the LinearProgram objective. For maximization the opposite
+  // values are used (since we always minimize). Coefficients for constraints
+  // slack variables are 0.
+  //
+  // It is overridden by PrimalMinimize() at start of phase I by
+  // UpdatePrimalPhaseICosts(). The values are **not** restored by
+  // PrimalPhaseI() when the phase I is infeasible though.
   DenseRow objective_;
 
   // Objective offset and scaling factor of the linear program given to Solve().
@@ -841,6 +871,9 @@ class RevisedSimplex {
 
   // See MutableTransposedMatrixWithSlack().
   bool transpose_was_changed_ = false;
+
+  // See SetOldRowIndicesForNextSolve(). This is cleared after each solve.
+  std::vector<RowIndex> old_row_of_new_row_;
 
   // This is known as 'd' in the literature and is set during each pivot to the
   // right inverse of the basic entering column of A by ComputeDirection().

@@ -584,7 +584,7 @@ TEST(RevisedSimplexTest, DualSupportsLoadingBasisStateOnRandomSmallProblems) {
 }
 
 // TODO(user): This test fails on the 2nd of the 2 random problems.
-// The basises do not match.
+// The bases do not match.
 TEST(RevisedSimplexTest,
      DISABLED_PrimalSupportsLoadingBasisStateOnRandomMediumProblems) {
   RandomTestsOfBasisLoadOnSameProblem(

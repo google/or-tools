@@ -13,8 +13,10 @@
 
 #include "ortools/glop/dual_edge_norms.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <utility>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -40,6 +42,42 @@ void DualEdgeNorms::Clear() { recompute_edge_squared_norms_ = true; }
 
 void DualEdgeNorms::ResizeOnNewRows(RowIndex new_size) {
   edge_squared_norms_.resize(new_size, 1.0);
+}
+
+void DualEdgeNorms::SetEdgeSquaredNorms(DenseColumn norms) {
+  SCOPED_TIME_STAT(&stats_);
+  DCHECK(basis_factorization_.IsRefactorized());
+  DCHECK_EQ(norms.size(), basis_factorization_.GetNumberOfRows());
+  edge_squared_norms_ = std::move(norms);
+  const RowIndex num_rows = edge_squared_norms_.size();
+
+  // Safety net: we check the precision of a few of the given norms, and if one
+  // of them is too far off, we just recompute everything from scratch on the
+  // next GetEdgeSquaredNorms().
+  const int stride = std::max(1, num_rows.value() / 10);
+  for (RowIndex row(0); row < num_rows; row += stride) {
+    const Fractional given_norm = edge_squared_norms_[row];
+    if (given_norm <= 0.0) continue;
+    const Fractional exact_norm = basis_factorization_.DualEdgeSquaredNorm(row);
+    if (given_norm < 0.25 * exact_norm || given_norm > 4.0 * exact_norm) {
+      VLOG(1) << "Dual edge norms are not transferred, " << sqrt(given_norm)
+              << " vs precise version " << sqrt(exact_norm);
+      recompute_edge_squared_norms_ = true;
+      return;
+    }
+    edge_squared_norms_[row] = exact_norm;
+  }
+
+  // Compute exactly the unknown norms.
+  int num_recomputed = 0;
+  for (RowIndex row(0); row < num_rows; ++row) {
+    if (edge_squared_norms_[row] > 0.0) continue;
+    ++num_recomputed;
+    edge_squared_norms_[row] = basis_factorization_.DualEdgeSquaredNorm(row);
+  }
+  VLOG(2) << "Transferred dual edge norms. num_rows:" << num_rows
+          << " num_recomputed:" << num_recomputed;
+  recompute_edge_squared_norms_ = false;
 }
 
 DenseColumn::ConstView DualEdgeNorms::GetEdgeSquaredNorms() {
