@@ -1888,6 +1888,62 @@ class CpModelTest(absltest.TestCase):
         model.clear_assumptions()
         self.assertEmpty(model.proto.assumptions)
 
+    def test_assumptions_keep_identity_when_constants_are_merged(self) -> None:
+        # Regression for #5141: v is fixed by a circuit but is not an assumption.
+        for presolve in (False, True):
+            for keep_all in (False, True):
+                for negate in (False, True):
+                    for mode in ("single", "duplicate", "equivalent"):
+                        with self.subTest(
+                            presolve=presolve,
+                            keep_all=keep_all,
+                            negate=negate,
+                            mode=mode,
+                        ):
+                            model = cp_model.CpModel()
+                            v = model.new_bool_var("v")
+                            y = model.new_bool_var("y")
+                            a = model.new_bool_var("a")
+                            b = model.new_bool_var("b")
+                            arcs = [
+                                (0, 1, model.new_bool_var("arc_0_1")),
+                                (1, 0, model.new_bool_var("arc_1_0")),
+                                (0, 2, model.new_bool_var("arc_0_2")),
+                                (2, 0, model.new_bool_var("arc_2_0")),
+                                (1, 1, ~a),
+                                (2, 2, ~b),
+                                (99, 99, v if negate else ~v),
+                            ]
+                            model.add_circuit(arcs)
+                            model.add(y == int(negate))
+                            assumption = ~y if negate else y
+                            model.add_assumption(assumption)
+                            if mode == "duplicate":
+                                model.add_assumption(assumption)
+                            elif mode == "equivalent":
+                                alias = model.new_bool_var("alias")
+                                model.add(alias == y)
+                                model.add_assumption(~alias if negate else alias)
+                            assumptions = set(model.proto.assumptions)
+                            solver = cp_model.CpSolver()
+                            solver.parameters.num_workers = 1
+                            solver.parameters.cp_model_presolve = presolve
+                            solver.parameters.keep_all_feasible_solutions_in_presolve = (
+                                keep_all
+                            )
+                            self.assertEqual(cp_model.INFEASIBLE, solver.solve(model))
+                            core = solver.sufficient_assumptions_for_infeasibility()
+                            self.assertNotEmpty(core)
+                            self.assertTrue(set(core).issubset(assumptions), core)
+
+                            # Replay the returned core against the original model.
+                            model.clear_assumptions()
+                            model.proto.assumptions.extend(core)
+                            solver.parameters.cp_model_presolve = False
+                            self.assertEqual(cp_model.INFEASIBLE, solver.solve(model))
+                            model.clear_assumptions()
+                            self.assertEqual(cp_model.OPTIMAL, solver.solve(model))
+
     def test_stats(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 5, "x")
