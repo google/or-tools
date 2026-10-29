@@ -581,7 +581,9 @@ endforeach()
 
 add_custom_command(
   OUTPUT ${JAVA_PROJECT_DIR}/timestamp
-  COMMAND ${MAVEN_EXECUTABLE} install -B $<$<BOOL:${SKIP_GPG}>:-Dgpg.skip=true>
+  COMMAND ${MAVEN_EXECUTABLE} install -B
+    -DMaven.javadoc.skip=true
+    $<$<BOOL:${SKIP_GPG}>:-Dgpg.skip=true>
   COMMAND ${CMAKE_COMMAND} -E touch ${JAVA_PROJECT_DIR}/timestamp
   DEPENDS
     ${JAVA_PROJECT_DIR}/pom.xml
