@@ -14,6 +14,7 @@
 #ifndef ORTOOLS_SAT_LINEAR_PROGRAMMING_CONSTRAINT_H_
 #define ORTOOLS_SAT_LINEAR_PROGRAMMING_CONSTRAINT_H_
 
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -316,7 +317,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Second half of AddCutFromConstraints().
   bool PostprocessAndAddCut(const std::string& name, const std::string& info,
-                            IntegerVariable first_slack, const CutData& cut);
+                            IntegerVariable first_slack, const CutData& cut,
+                            int max_cut_size = 0);
 
   // Computes and adds the corresponding type of cuts.
   // This can currently only be called at the root node.
@@ -513,6 +515,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Temporary data for cuts.
   bool problem_proven_infeasible_by_cuts_ = false;
   CutData base_ct_;
+  std::array<CutData, 3> tmp_rounding_cuts_;
 
   ScatteredIntegerVector tmp_scattered_vector_;
 

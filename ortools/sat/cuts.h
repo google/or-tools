@@ -32,6 +32,7 @@
 #include "absl/functional/any_invocable.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/clause.h"
@@ -137,6 +138,7 @@ struct CutData {
   bool AllCoefficientsArePositive() const;
   void ComplementForPositiveCoefficients();
   void ComplementForSmallerLpValues();
+  void RemoveZeroTerms();
 
   // Computes and returns the cut violation.
   double ComputeViolation() const;
@@ -170,11 +172,10 @@ class CutDataBuilder {
   // is the only case we need.
   //
   // Return num_merges.
-  int AddOrMergeBooleanTerms(absl::Span<CutTerm> terms, IntegerValue t,
-                             CutData* cut);
+  int AddOrMergeBooleanTerms(absl::Span<CutTerm> terms, CutData* cut);
 
  private:
-  bool MergeIfPossible(IntegerValue t, CutTerm& to_add, CutTerm& target);
+  bool MergeIfPossible(CutTerm& to_add, CutTerm& target);
 
   absl::flat_hash_map<IntegerVariable, int> bool_index_;
   absl::flat_hash_map<IntegerVariable, int> secondary_bool_index_;
@@ -211,8 +212,7 @@ class ImpliedBoundsProcessor {
   //
   // If possible, returns true and expresses X = bool_term + slack_term.
   // If coeff of X is positive, then all coeffs will be positive here.
-  bool DecomposeWithImpliedLowerBound(const CutTerm& term,
-                                      IntegerValue factor_t, CutTerm& bool_term,
+  bool DecomposeWithImpliedLowerBound(const CutTerm& term, CutTerm& bool_term,
                                       CutTerm& slack_term);
 
   // This assumes the term is simple: expr[0] = var - LB / UB - var. We use
@@ -221,8 +221,7 @@ class ImpliedBoundsProcessor {
   // If possible, returns true and expresses X = bool_term + slack_term.
   // If coeff of X is positive, then bool_term will have a positive coeff but
   // slack_term will have a negative one.
-  bool DecomposeWithImpliedUpperBound(const CutTerm& term,
-                                      IntegerValue factor_t, CutTerm& bool_term,
+  bool DecomposeWithImpliedUpperBound(const CutTerm& term, CutTerm& bool_term,
                                       CutTerm& slack_term);
 
   // We are about to apply the super-additive function f() to the CutData. Use
@@ -231,16 +230,15 @@ class ImpliedBoundsProcessor {
   //
   // This should lead to stronger cuts even if the norms might be worse.
   std::tuple<int, int, int> PostprocessWithImpliedBound(
-      const std::function<IntegerValue(IntegerValue)>& f, IntegerValue factor_t,
-      CutData* cut);
+      const std::function<IntegerValue(IntegerValue)>& f, CutData* cut);
 
   // Precomputes quantities used by all cut generation.
   // This allows doing that once rather than 6 times.
   // Return false if there are no exploitable implied bounds.
   bool CacheDataForCut(IntegerVariable first_slack, CutData* cut);
 
-  bool TryToExpandWithLowerImpliedbound(IntegerValue factor_t, bool complement,
-                                        CutTerm* term, absl::int128* rhs,
+  bool TryToExpandWithLowerImpliedbound(bool complement, CutTerm* term,
+                                        absl::int128* rhs,
                                         std::vector<CutTerm>* new_bool_terms);
 
   // This can be used to share the hash-map memory.
@@ -337,8 +335,7 @@ class ImpliedBoundsProcessor {
 // And that there is no dominance relation between any of these functions. So
 // it could be nice to try to generate a cut using different values of
 // max_scaling.
-IntegerValue GetFactorT(IntegerValue rhs_remainder, IntegerValue divisor,
-                        IntegerValue max_magnitude);
+IntegerValue GetFactorT(IntegerValue rhs_remainder, IntegerValue divisor);
 std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
     IntegerValue rhs_remainder, IntegerValue divisor, IntegerValue t,
     IntegerValue max_scaling);
@@ -384,6 +381,39 @@ inline std::function<IntegerValue(IntegerValue)> ExtendNegativeFunction(
   };
 }
 
+struct CutPostprocessingStats {
+  int64_t num_lb_ibs = 0;
+  int64_t num_ub_ibs = 0;
+  int64_t num_merges = 0;
+  int64_t num_final_complements = 0;
+  int64_t num_lifts = 0;
+  int64_t num_gubs = 0;
+  int64_t num_bumps = 0;
+
+  void Add(const CutPostprocessingStats& other) {
+    num_lb_ibs += other.num_lb_ibs;
+    num_ub_ibs += other.num_ub_ibs;
+    num_merges += other.num_merges;
+    num_final_complements += other.num_final_complements;
+    num_lifts += other.num_lifts;
+    num_gubs += other.num_gubs;
+    num_bumps += other.num_bumps;
+  }
+
+  void AppendToStats(
+      absl::string_view prefix,
+      std::vector<std::pair<std::string, int64_t>>* stats) const {
+    stats->push_back({absl::StrCat(prefix, "num_implied_lb"), num_lb_ibs});
+    stats->push_back({absl::StrCat(prefix, "num_implied_ub"), num_ub_ibs});
+    stats->push_back({absl::StrCat(prefix, "num_merges"), num_merges});
+    stats->push_back(
+        {absl::StrCat(prefix, "num_final_complements"), num_final_complements});
+    stats->push_back({absl::StrCat(prefix, "num_lifting"), num_lifts});
+    stats->push_back({absl::StrCat(prefix, "num_gubs"), num_gubs});
+    stats->push_back({absl::StrCat(prefix, "num_bumps"), num_bumps});
+  }
+};
+
 // Exploit AtMostOne from the model to derive stronger cuts.
 // In the MIP community, using amo in this context is known as GUB (generalized
 // upper bound).
@@ -396,16 +426,51 @@ class GUBHelper {
         shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
   ~GUBHelper();
 
-  void ApplyWithPotentialBumpAndGUB(
+  // Applies implied-bound substitutions, complements terms when beneficial
+  // under f(), applies f() to all terms and the RHS, and strengthens the cut
+  // using GUB (at-most-one) lifting and Boolean bumping. Returns true if the
+  // resulting cut has violation >= kMinCutViolation.
+  bool ApplyWithPostprocessing(
       const std::function<IntegerValue(IntegerValue)>& f, IntegerValue divisor,
-      CutData* cut);
+      ImpliedBoundsProcessor* ib_processor, CutData* cut);
 
-  // Stats on the last call to ApplyWithPotentialBumpAndGUB().
-  int last_num_lifts() const { return last_num_lifts_; }
-  int last_num_bumps() const { return last_num_bumps_; }
-  int last_num_gubs() const { return last_num_gubs_; }
+  // Stats on the last call to ApplyWithPostprocessing().
+  const CutPostprocessingStats& last_stats() const { return last_stats_; }
 
  private:
+  // Greedily complements terms X -> (ub - lb) - X' when doing so strictly
+  // increases the LP violation of the rounded cut under the fixed function f().
+  void ComplementWithFixedF(const std::function<IntegerValue(IntegerValue)>& f,
+                            IntegerValue divisor, IntegerValue f_divisor,
+                            CutData* cut);
+
+  // Extracts simple Boolean terms that appear in at-most-one (AMO) constraints
+  // into literals_, counts uncomplemented occurrences per AMO in amo_count_,
+  // sorts complemented terms first (then by decreasing |original_coeff|), and
+  // deduplicates literals.
+  void ExtractAndSortAmoLiterals(const CutData& cut);
+
+  // Partitions AMO literals around a complemented "representative" 1 - X:
+  // if X + Y <= 1, we can rewrite -a(1 - X) + b*Y as -a(1 - X - Y) + (b - a)Y
+  // before applying f(), replacing f(b) with -f(-a) + f(b - a) >= f(b) by
+  // super-additivity. Also handles pairs of complemented literals in the same
+  // AMO by uncomplementing the second literal when beneficial.
+  void ApplyGubLifting(const std::function<IntegerValue(IntegerValue)>& f,
+                       IntegerValue divisor, IntegerValue f_divisor,
+                       absl::int128* original_rhs, CutData* cut);
+
+  // Strengthens the coefficient of a single Boolean term (or all Boolean terms
+  // in a single AMO simultaneously) by combining the two cuts derived from case
+  // analysis on X = 0 and X = 1:
+  //   terms + a * X <= b  =>  terms <= b (if X == 0), terms <= b - a (if X ==
+  //   1)
+  // Applying f() to both and recombining gives:
+  //   f(terms) + (f(b) - f(b - a)) * X <= f(b),
+  // which improves the coefficient of X from f(a) to f(b) - f(b - a) >= f(a).
+  void ApplyBump(const std::function<IntegerValue(IntegerValue)>& f,
+                 IntegerValue divisor, IntegerValue f_divisor,
+                 absl::int128 original_rhs, CutData* cut);
+
   BinaryImplicationGraph* implications_;
   IntegerEncoder* integer_encoder_;
   IntegerTrail* integer_trail_;
@@ -416,15 +481,17 @@ class GUBHelper {
     Literal literal;
     IntegerValue original_coeff;
     bool complemented;
+    bool can_bump = true;
+    int lifted_amo = -1;
+    IntegerValue bumped_coeff = 0;
   };
 
   // One call stats.
-  int last_num_lifts_;
-  int last_num_bumps_;
-  int last_num_gubs_;
+  CutPostprocessingStats last_stats_;
 
   // Tmp data.
   std::vector<IntegerValue> initial_coeffs_;
+  std::vector<bool> used_in_gub_;
   std::vector<LiteralInCut> literals_;
   absl::flat_hash_set<Literal> already_seen_;
   absl::flat_hash_map<int, int> amo_count_;
@@ -432,7 +499,8 @@ class GUBHelper {
 
   // Stats.
   int64_t num_improvements_ = 0;
-  int64_t num_todo_both_complements_ = 0;
+  int64_t num_duplicates_ = 0;
+  int64_t num_both_complements_ = 0;
 };
 
 // Given an upper bounded linear constraint, this function tries to transform it
@@ -509,17 +577,11 @@ class IntegerRoundingCutHelper {
 
   // Overall stats.
   int64_t total_num_dominating_f_ = 0;
-  int64_t total_num_pos_lifts_ = 0;
-  int64_t total_num_neg_lifts_ = 0;
   int64_t total_num_post_complements_ = 0;
-  int64_t total_num_overflow_abort_ = 0;
   int64_t total_num_coeff_adjust_ = 0;
-  int64_t total_num_merges_ = 0;
-  int64_t total_num_bumps_ = 0;
-  int64_t total_num_final_complements_ = 0;
-
   int64_t total_num_initial_ibs_ = 0;
   int64_t total_num_initial_merges_ = 0;
+  CutPostprocessingStats postprocessing_stats_;
 };
 
 // Helper to find knapsack cover cuts.
@@ -618,13 +680,8 @@ class CoverCutHelper {
   struct CutStats {
     int64_t num_cuts = 0;
     int64_t num_initial_ibs = 0;
-    int64_t num_lb_ibs = 0;
-    int64_t num_ub_ibs = 0;
-    int64_t num_merges = 0;
-    int64_t num_bumps = 0;
-    int64_t num_lifting = 0;
-    int64_t num_gubs = 0;
     int64_t num_overflow_aborts = 0;
+    CutPostprocessingStats postprocessing_stats;
   };
   CutStats flow_stats_;
   CutStats cover_stats_;

@@ -1637,6 +1637,33 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
   bool at_least_one_added = false;
   DCHECK(base_ct_.AllCoefficientsArePositive());
 
+  // We do not want to add cuts that are too dense compared to the LP, because
+  // they slow down all the subsequent simplex iterations. We allow cuts that
+  // are up to twice the size of the problem constraints they are derived from,
+  // and otherwise we limit the density relative to the LP size.
+  //
+  // TODO(user): Tune this, and maybe make it a parameter. Note that a limit as
+  // low as max(500, 10 * avg_row_size) prevents neos-520729.mps.gz from being
+  // closed, while no limit at all makes the LP of bab5.mps.gz way too dense.
+  int max_cut_size = 0;
+  if (!integer_multipliers.empty() && !integer_lp_.empty()) {
+    const double avg_row_size = static_cast<double>(integer_lp_cols_.size()) /
+                                static_cast<double>(integer_lp_.size());
+    int max_from_inputs = 0;
+    const auto& lp_constraints = constraint_manager_.LpConstraints();
+    const auto& all_constraints = constraint_manager_.AllConstraints();
+    for (const auto [row, _] : integer_multipliers) {
+      const int row_size = integer_lp_[row].num_terms;
+      const bool is_deletable =
+          all_constraints[lp_constraints[row.value()]].is_deletable;
+      max_from_inputs =
+          std::max(max_from_inputs, is_deletable ? row_size : 2 * row_size);
+    }
+    const int num_cols = integer_variables_.size();
+    max_cut_size = std::max({500, num_cols / 20, max_from_inputs,
+                             static_cast<int>(10.0 * avg_row_size)});
+  }
+
   // Try RLT cuts.
   //
   // TODO(user): try this for more than just "base" constraints?
@@ -1644,7 +1671,7 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
     if (rlt_cut_helper_.TrySimpleSeparation(base_ct_)) {
       at_least_one_added |= PostprocessAndAddCut(
           absl::StrCat(name, "_RLT"), rlt_cut_helper_.Info(), first_slack,
-          rlt_cut_helper_.cut());
+          rlt_cut_helper_.cut(), max_cut_size);
     }
   }
 
@@ -1663,12 +1690,12 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
     if (cover_cut_helper_.TrySingleNodeFlow(base_ct_, ib_processor)) {
       at_least_one_added |= PostprocessAndAddCut(
           absl::StrCat(name, "_FF"), cover_cut_helper_.Info(), first_slack,
-          cover_cut_helper_.cut());
+          cover_cut_helper_.cut(), max_cut_size);
     }
     if (cover_cut_helper_.TrySimpleKnapsack(base_ct_, ib_processor)) {
       at_least_one_added |= PostprocessAndAddCut(
           absl::StrCat(name, "_K"), cover_cut_helper_.Info(), first_slack,
-          cover_cut_helper_.cut());
+          cover_cut_helper_.cut(), max_cut_size);
     }
 
     // This one needs to be called after TrySimpleKnapsack() in order to reuse
@@ -1677,7 +1704,7 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
                                                        ib_processor)) {
       at_least_one_added |= PostprocessAndAddCut(
           absl::StrCat(name, "_KL"), cover_cut_helper_.Info(), first_slack,
-          cover_cut_helper_.cut());
+          cover_cut_helper_.cut(), max_cut_size);
     }
   }
 
@@ -1685,32 +1712,70 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
   {
     base_ct_.ComplementForSmallerLpValues();
 
+    struct RoundingCandidate {
+      absl::string_view suffix;
+      std::string info;
+      int slot = 0;
+      double efficacy = 0.0;
+    };
+    std::array<RoundingCandidate, 3> candidates;
+    int num_candidates = 0;
+    auto maybe_add_candidate = [&](absl::string_view suffix) {
+      const CutData& cut = integer_rounding_cut_helper_.cut();
+      double violation = -static_cast<double>(cut.rhs);
+      double norm = 0.0;
+      for (const CutTerm& term : cut.terms) {
+        const double coeff = static_cast<double>(term.coeff.value());
+        violation += term.lp_value * coeff;
+        norm += coeff * coeff;
+      }
+      if (violation < 1e-4 || norm == 0.0) {
+        ++num_bad_cuts_;
+        return;
+      }
+      const int slot = num_candidates++;
+      tmp_rounding_cuts_[slot] = cut;
+      candidates[slot] = {
+          suffix,
+          VLOG_IS_ON(2) ? integer_rounding_cut_helper_.Info() : std::string(),
+          slot, violation / std::sqrt(norm)};
+    };
+
     RoundingOptions options;
     options.max_scaling = parameters_.max_integer_rounding_scaling();
     options.use_ib_before_heuristic = false;
     if (integer_rounding_cut_helper_.ComputeCut(options, base_ct_,
                                                 ib_processor)) {
-      at_least_one_added |= PostprocessAndAddCut(
-          absl::StrCat(name, "_R"), integer_rounding_cut_helper_.Info(),
-          first_slack, integer_rounding_cut_helper_.cut());
+      maybe_add_candidate("_R");
     }
 
     options.use_ib_before_heuristic = true;
     options.prefer_positive_ib = false;
     if (ib_processor != nullptr && integer_rounding_cut_helper_.ComputeCut(
                                        options, base_ct_, ib_processor)) {
-      at_least_one_added |= PostprocessAndAddCut(
-          absl::StrCat(name, "_RB"), integer_rounding_cut_helper_.Info(),
-          first_slack, integer_rounding_cut_helper_.cut());
+      maybe_add_candidate("_RB");
     }
 
     options.use_ib_before_heuristic = true;
     options.prefer_positive_ib = true;
     if (ib_processor != nullptr && integer_rounding_cut_helper_.ComputeCut(
                                        options, base_ct_, ib_processor)) {
-      at_least_one_added |= PostprocessAndAddCut(
-          absl::StrCat(name, "_RBP"), integer_rounding_cut_helper_.Info(),
-          first_slack, integer_rounding_cut_helper_.cut());
+      maybe_add_candidate("_RBP");
+    }
+
+    std::stable_sort(
+        candidates.begin(), candidates.begin() + num_candidates,
+        [](const RoundingCandidate& a, const RoundingCandidate& b) {
+          return a.efficacy > b.efficacy;
+        });
+    for (int i = 0; i < num_candidates; ++i) {
+      const RoundingCandidate& cand = candidates[i];
+      if (PostprocessAndAddCut(absl::StrCat(name, cand.suffix), cand.info,
+                               first_slack, tmp_rounding_cuts_[cand.slot],
+                               max_cut_size)) {
+        at_least_one_added = true;
+        break;
+      }
     }
   }
 
@@ -1719,7 +1784,7 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
 
 bool LinearProgrammingConstraint::PostprocessAndAddCut(
     const std::string& name, const std::string& info,
-    IntegerVariable first_slack, const CutData& cut) {
+    IntegerVariable first_slack, const CutData& cut, int max_cut_size) {
   if (cut.rhs > absl::int128(kint64max) || cut.rhs < absl::int128(kint64min)) {
     VLOG(2) << "RHS overflow " << name << " " << info;
     ++num_cut_overflows_;
@@ -1787,6 +1852,9 @@ bool LinearProgrammingConstraint::PostprocessAndAddCut(
   LinearConstraint converted_cut =
       tmp_scattered_vector_.ConvertToLinearConstraint(
           extended_integer_variables_, cut_ub);
+  if (max_cut_size > 0 && converted_cut.num_terms > max_cut_size) {
+    return false;
+  }
 
   // TODO(user): We probably generate too many cuts, keep best one only?
   // Note that we do need duplicate removal and maybe some orthogonality here?
@@ -1835,12 +1903,20 @@ void LinearProgrammingConstraint::AddCGCuts() {
     const double score = fractionality * (1.0 - fractionality) / norms[index];
     sorted_columns.push_back({index, score});
   }
-  absl::c_sort(sorted_columns, [](const std::pair<RowIndex, double>& a,
-                                  const std::pair<RowIndex, double>& b) {
+  const auto by_descending_score = [](const std::pair<RowIndex, double>& a,
+                                      const std::pair<RowIndex, double>& b) {
     return a.second > b.second;
-  });
+  };
+  if (sorted_columns.size() > 50) {
+    std::partial_sort(sorted_columns.begin(), sorted_columns.begin() + 50,
+                      sorted_columns.end(), by_descending_score);
+    sorted_columns.resize(50);
+  } else {
+    absl::c_sort(sorted_columns, by_descending_score);
+  }
 
   int num_added = 0;
+  int64_t dtime_num_entries = 0;
   for (const auto [index, _] : sorted_columns) {
     if (time_limit_->LimitReached()) return;
     // We multiply by row_factors_ directly, which might be slightly more
@@ -1864,6 +1940,7 @@ void LinearProgrammingConstraint::AddCGCuts() {
       }
     }
 
+    dtime_num_entries += tmp_lp_multipliers_.size();
     // Size 1 is already done with MIR.
     if (tmp_lp_multipliers_.size() <= 1) continue;
 
@@ -1893,14 +1970,18 @@ void LinearProgrammingConstraint::AddCGCuts() {
                        /*take_objective_into_account=*/false,
                        &tmp_integer_multipliers_);
       if (!tmp_integer_multipliers_.empty()) {
+        for (const auto [row, _] : tmp_integer_multipliers_) {
+          dtime_num_entries += integer_lp_[row].num_terms;
+        }
         if (AddCutFromConstraints("CG", tmp_integer_multipliers_)) {
           ++num_added;
         }
       }
     }
 
-    // Stop if we already added more than 10 cuts this round.
-    if (num_added > 10) break;
+    // Stop if we already added more than 10 cuts this round, or if we spent too
+    // much effort.
+    if (num_added > 10 || dtime_num_entries > 100'000) break;
   }
 }
 
@@ -2035,15 +2116,38 @@ void LinearProgrammingConstraint::AddMirCuts() {
     const double activity = simplex_.GetConstraintActivity(row);
     const double ct_lb = -ub_with_slack[num_cols + row.value()];
     const double ct_ub = -lb_with_slack[num_cols + row.value()];
-    if (activity > ct_ub - 1e-4 ||
-        status == glop::ConstraintStatus::AT_UPPER_BOUND ||
-        status == glop::ConstraintStatus::FIXED_VALUE) {
-      base_rows.push_back({row, IntegerValue(1)});
-    }
-    if (activity < ct_lb + 1e-4 ||
-        status == glop::ConstraintStatus::AT_LOWER_BOUND ||
-        status == glop::ConstraintStatus::FIXED_VALUE) {
-      base_rows.push_back({row, IntegerValue(-1)});
+    const bool tight_ub = activity > ct_ub - 1e-4 ||
+                          status == glop::ConstraintStatus::AT_UPPER_BOUND ||
+                          status == glop::ConstraintStatus::FIXED_VALUE;
+    const bool tight_lb = activity < ct_lb + 1e-4 ||
+                          status == glop::ConstraintStatus::AT_LOWER_BOUND ||
+                          status == glop::ConstraintStatus::FIXED_VALUE;
+    if (tight_ub || tight_lb) {
+      // Skip tight rows whose variables are all integral at bounds: MIR_1 has
+      // zero violation on them, and MIR_n row aggregation only pivots on
+      // variables strictly away from their bounds (which includes degenerate
+      // basic variables at an interior integer value).
+      bool has_fractional_or_interior = false;
+      for (const ColIndex col : IntegerLpRowCols(row)) {
+        const double lp_val = lp_solution_[col.value()];
+        if (std::abs(lp_val - std::round(lp_val)) > 1e-4) {
+          has_fractional_or_interior = true;
+          break;
+        }
+        if (simplex_.GetVariableStatus(col) == glop::VariableStatus::BASIC) {
+          const IntegerVariable var = integer_variables_[col.value()];
+          const double lb = ToDouble(integer_trail_->LevelZeroLowerBound(var));
+          const double ub = ToDouble(integer_trail_->LevelZeroUpperBound(var));
+          if (std::min(ub - lp_val, lp_val - lb) > 1e-2) {
+            has_fractional_or_interior = true;
+            break;
+          }
+        }
+      }
+      if (has_fractional_or_interior) {
+        if (tight_ub) base_rows.push_back({row, IntegerValue(1)});
+        if (tight_lb) base_rows.push_back({row, IntegerValue(-1)});
+      }
     }
 
     // For now, we use the dual values for the row "weights".
@@ -2077,7 +2181,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
   const auto matrix = simplex_.MatrixWithSlack().view();
   for (const std::pair<RowIndex, IntegerValue>& entry : base_rows) {
     if (time_limit_->LimitReached()) break;
-    if (dtime_num_entries > 1e7) break;
+    if (dtime_num_entries > 1e6) break;
 
     const glop::RowIndex base_row = entry.first;
     const IntegerValue multiplier = entry.second;
@@ -2092,6 +2196,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
     integer_multipliers = {entry};
     if ((multiplier > 0 && !integer_lp_[base_row].ub_is_trivial) ||
         (multiplier < 0 && !integer_lp_[base_row].lb_is_trivial)) {
+      dtime_num_entries += integer_lp_[base_row].num_terms;
       if (AddCutFromConstraints("MIR_1", integer_multipliers)) continue;
     }
 
@@ -2152,6 +2257,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
       // What rows can we add to eliminate var_to_eliminate?
       std::vector<RowIndex> possible_rows;
       weights.clear();
+      dtime_num_entries += matrix.ColumnNumEntries(var_to_eliminate).value();
       for (const auto entry_index : matrix.Column(var_to_eliminate)) {
         const RowIndex row = matrix.EntryRow(entry_index);
         const glop::Fractional coeff = matrix.EntryCoefficient(entry_index);
