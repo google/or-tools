@@ -460,8 +460,10 @@ Domain PresolveContext::DomainSuperSetOf(
     const LinearExpressionProto& expr) const {
   Domain result(expr.offset());
   for (int i = 0; i < expr.vars_size(); ++i) {
-    result = result.AdditionWith(
-        DomainOf(expr.vars(i)).MultiplicationBy(expr.coeffs(i)));
+    result = result
+                 .AdditionWith(
+                     DomainOf(expr.vars(i)).MultiplicationBy(expr.coeffs(i)))
+                 .RelaxIfTooComplex();
   }
   return result;
 }
