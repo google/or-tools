@@ -219,7 +219,7 @@ public final class CpSolverTest {
     CpSolverStatus status = solver.solve(model);
 
     assertThat(status).isEqualTo(CpSolverStatus.OPTIMAL);
-    assertThat(cb.getBestBound()).isEqualTo(2.6);
+    assertThat(cb.getBestBound()).isWithin(1e-6).of(2.6);
   }
 
   static class BestBoundRuntimeExceptionCallback implements Consumer<Double> {
