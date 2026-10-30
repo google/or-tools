@@ -431,6 +431,80 @@ LinearProgrammingConstraint::~LinearProgrammingConstraint() {
   shared_stats_->AddStats(stats);
 }
 
+void LinearProgrammingConstraint::SubstituteEquivalentVariablesInObjective() {
+  if (constraint_manager_.SubstitutedVariables().empty()) return;
+
+  // Rewrite integer_objective_ in place using tmp_terms_ as a buffer.
+  bool need_substitution = false;
+  for (const auto [col, coeff] : integer_objective_) {
+    if (constraint_manager_.GetSubstitution(integer_variables_[col.value()],
+                                            nullptr)) {
+      need_substitution = true;
+      break;
+    }
+  }
+  if (!need_substitution) return;
+
+  tmp_terms_.clear();
+  for (const auto [col, coeff] : integer_objective_) {
+    const IntegerVariable var = integer_variables_[col.value()];
+    AffineExpression expr;
+    if (!constraint_manager_.GetSubstitution(var, &expr)) {
+      tmp_terms_.push_back({col, coeff});
+      continue;
+    }
+
+    // var == expr.var + expr.constant, with expr.var possibly negated.
+    integer_objective_offset_ += coeff * expr.constant;
+    const IntegerVariable rep = PositiveVariable(expr.var);
+    const glop::ColIndex rep_col = GetMirrorVariable(rep);
+    CHECK_NE(rep_col, glop::kInvalidCol);
+    tmp_terms_.push_back(
+        {rep_col, VariableIsPositive(expr.var) ? coeff : -coeff});
+  }
+
+  // Merge terms on the same column.
+  std::sort(tmp_terms_.begin(), tmp_terms_.end());
+  integer_objective_.clear();
+  for (const auto [col, coeff] : tmp_terms_) {
+    if (!integer_objective_.empty() && integer_objective_.back().first == col) {
+      integer_objective_.back().second += coeff;
+    } else {
+      integer_objective_.push_back({col, coeff});
+    }
+  }
+  int new_size = 0;
+  for (const auto& entry : integer_objective_) {
+    if (entry.second == 0) continue;
+    integer_objective_[new_size++] = entry;
+  }
+  integer_objective_.resize(new_size);
+}
+
+void LinearProgrammingConstraint::FillLpValuesOfSubstitutedVariables() {
+  for (const IntegerVariable var : constraint_manager_.SubstitutedVariables()) {
+    const glop::ColIndex col = GetMirrorVariable(var);
+    if (col == glop::kInvalidCol) continue;
+    AffineExpression expr;
+    CHECK(constraint_manager_.GetSubstitution(var, &expr));
+    const glop::ColIndex rep_col =
+        GetMirrorVariable(PositiveVariable(expr.var));
+    if (rep_col == glop::kInvalidCol) continue;
+
+    const double sign = VariableIsPositive(expr.var) ? 1.0 : -1.0;
+    const double value =
+        sign * lp_solution_[rep_col.value()] + ToDouble(expr.constant);
+    lp_solution_[col.value()] = value;
+    expanded_lp_solution_[var] = value;
+    expanded_lp_solution_[NegationOf(var)] = -value;
+
+    const double rc = sign * lp_reduced_cost_[rep_col.value()];
+    lp_reduced_cost_[col.value()] = rc;
+    expanded_reduced_costs_[var] = rc;
+    expanded_reduced_costs_[NegationOf(var)] = -rc;
+  }
+}
+
 void LinearProgrammingConstraint::AddLinearConstraint(LinearConstraint ct) {
   DCHECK(!lp_constraint_is_registered_);
   bool added = false;
@@ -479,6 +553,12 @@ void LinearProgrammingConstraint::RegisterWith(Model* model) {
   // Note that we always add LP constraint lazily if we have A LOT of them.
   // This is because currently on large problems with millions of constraints,
   // our LP is usually not fast enough anyway.
+  //
+  // Before that, we exploit any Boolean equivalences already detected during
+  // the loading of the model (i.e. by the initial probing).
+  if (constraint_manager_.UpdateBooleanEquivalences()) {
+    constraint_manager_.SimplifyAllConstraints();
+  }
   if (!parameters_.add_lp_constraints_lazily() &&
       constraint_manager_.num_constraints() < 1e6) {
     constraint_manager_.AddAllConstraintsToLp();
@@ -526,10 +606,11 @@ void LinearProgrammingConstraint::SetObjectiveCoefficient(IntegerVariable ivar,
   integer_objective_.push_back({GetMirrorVariable(pos_var), coeff});
 }
 
-// TODO(user): As the search progresses, some variables might get fixed. Exploit
-// this to reduce the number of variables in the LP and in the
-// ConstraintManager? We might also detect during the search that two variables
-// are equivalent.
+// TODO(user): As the search progresses, some variables might get fixed or
+// substituted by an equivalent one (see BooleanViewEquivalences). The
+// constraint manager already removes them from the constraints, but they are
+// still columns of the LP (empty ones). We should remove them from
+// integer_variables_ and re-index the local ColIndex to keep a dense indexing.
 //
 // TODO(user): On TSP/VRP with a lot of cuts, this can take 20% of the overall
 // running time. We should be able to almost remove most of this from the
@@ -585,7 +666,9 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
   }
 
   // We remove fixed variables from the objective. This should help the LP
-  // scaling, but also our integer reason computation.
+  // scaling, but also our integer reason computation. We also substitute
+  // equivalent variables, so that the substituted columns are empty.
+  SubstituteEquivalentVariablesInObjective();
   int new_size = 0;
   objective_infinity_norm_ = 0;
   for (const auto& entry : integer_objective_) {
@@ -1239,6 +1322,10 @@ bool LinearProgrammingConstraint::SolveLp() {
         expanded_reduced_costs_[NegationOf(var)] = -new_rc;
       }
     }
+
+    // Similarly, the variables substituted by equivalent ones have empty
+    // columns, so we need to fill their values from their representative.
+    FillLpValuesOfSubstitutedVariables();
 
     // Compute integrality.
     lp_solution_is_integer_ = true;

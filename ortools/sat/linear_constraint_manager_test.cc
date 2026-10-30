@@ -23,11 +23,14 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/variables_info.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_solver.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -144,6 +147,158 @@ TEST(LinearConstraintManagerTest, DuplicateDetectionCuts) {
   EXPECT_EQ(manager.AllConstraints().size(), 1);
   EXPECT_EQ(manager.AllConstraints().front().constraint.DebugString(),
             "0 <= 1*I0 <= 3");
+}
+
+TEST(LinearConstraintManagerTest, BooleanEquivalenceSubstitution) {
+  Model model;
+  LinearConstraintManager manager(&model);
+  auto* sat_solver = model.GetOrCreate<SatSolver>();
+  const Literal a(sat_solver->NewBooleanVariable(), true);
+  const Literal b(sat_solver->NewBooleanVariable(), true);
+  const Literal c(sat_solver->NewBooleanVariable(), true);
+  const IntegerVariable x = CreateNewIntegerVariableFromLiteral(a, &model);
+  const IntegerVariable y = CreateNewIntegerVariableFromLiteral(b, &model);
+  const IntegerVariable z = CreateNewIntegerVariableFromLiteral(c, &model);
+  const IntegerVariable w = model.Add(NewIntegerVariable(0, 10));
+
+  LinearConstraintBuilder ct_one(IntegerValue(0), IntegerValue(5));
+  ct_one.AddTerm(x, IntegerValue(1));
+  ct_one.AddTerm(y, IntegerValue(1));
+  ct_one.AddTerm(z, IntegerValue(1));
+  ct_one.AddTerm(w, IntegerValue(1));
+  manager.Add(ct_one.Build());
+
+  LinearConstraintBuilder ct_two(IntegerValue(0), IntegerValue(1));
+  ct_two.AddTerm(x, IntegerValue(1));
+  ct_two.AddTerm(z, IntegerValue(1));
+  manager.Add(ct_two.Build());
+  manager.AddAllConstraintsToLp();
+  ASSERT_EQ(manager.LpConstraints().size(), 2);
+
+  // Nothing to do yet.
+  glop::BasisState state;
+  state.statuses.resize(glop::ColIndex(2));
+  EXPECT_FALSE(manager.ChangeLp(&state));
+  EXPECT_TRUE(manager.SubstitutedVariables().empty());
+
+  // Now a <=> b and b <=> not(c).
+  auto* graph = model.GetOrCreate<BinaryImplicationGraph>();
+  graph->AddImplication(a, b);
+  graph->AddImplication(b, a);
+  graph->AddImplication(b, c.Negated());
+  graph->AddImplication(c.Negated(), b);
+  ASSERT_TRUE(graph->DetectEquivalences());
+
+  // y == x and z == 1 - x.
+  EXPECT_TRUE(manager.ChangeLp(&state));
+  EXPECT_THAT(manager.SubstitutedVariables(), ElementsAre(y, z));
+  AffineExpression expr;
+  EXPECT_FALSE(manager.GetSubstitution(x, &expr));
+  ASSERT_TRUE(manager.GetSubstitution(y, &expr));
+  EXPECT_EQ(expr, AffineExpression(x, IntegerValue(1), IntegerValue(0)));
+  ASSERT_TRUE(manager.GetSubstitution(z, &expr));
+  EXPECT_EQ(expr,
+            AffineExpression(NegationOf(x), IntegerValue(1), IntegerValue(1)));
+
+  // x + y + z + w <= 5 becomes x + x + (1 - x) + w <= 5, i.e. x + w <= 4.
+  LinearConstraintBuilder expected(IntegerValue(0), IntegerValue(4));
+  expected.AddTerm(x, IntegerValue(1));
+  expected.AddTerm(w, IntegerValue(1));
+  EXPECT_EQ(
+      manager.AllConstraints()[ConstraintIndex(0)].constraint.DebugString(),
+      expected.Build().DebugString());
+
+  // x + z <= 1 becomes 1 <= 1 which is always true. The constraint is cleared
+  // and removed from the LP.
+  EXPECT_EQ(manager.AllConstraints()[ConstraintIndex(1)].constraint.num_terms,
+            0);
+  EXPECT_THAT(manager.LpConstraints(), ElementsAre(ConstraintIndex(0)));
+
+  // A new constraint 2y + z + w <= 3 is directly rewritten as x + w <= 2,
+  // which is then merged with the first constraint.
+  LinearConstraintBuilder ct_three(IntegerValue(0), IntegerValue(3));
+  ct_three.AddTerm(y, IntegerValue(2));
+  ct_three.AddTerm(z, IntegerValue(1));
+  ct_three.AddTerm(w, IntegerValue(1));
+  manager.Add(ct_three.Build());
+  EXPECT_EQ(manager.AllConstraints().size(), 2);
+  expected.Clear();
+  expected.AddTerm(x, IntegerValue(1));
+  expected.AddTerm(w, IntegerValue(1));
+  EXPECT_EQ(
+      manager.AllConstraints()[ConstraintIndex(0)].constraint.DebugString(),
+      expected.BuildConstraint(IntegerValue(0), IntegerValue(2)).DebugString());
+}
+
+TEST(LinearConstraintManagerTest, BooleanEquivalenceCancelsObjective) {
+  Model model;
+  LinearConstraintManager manager(&model);
+  auto* sat_solver = model.GetOrCreate<SatSolver>();
+  const Literal a(sat_solver->NewBooleanVariable(), true);
+  const Literal b(sat_solver->NewBooleanVariable(), true);
+  const IntegerVariable x = CreateNewIntegerVariableFromLiteral(a, &model);
+  const IntegerVariable y = CreateNewIntegerVariableFromLiteral(b, &model);
+  const IntegerVariable w = model.Add(NewIntegerVariable(0, 10));
+  SetLpValue(x, 0.0, &model);
+  SetLpValue(y, 0.0, &model);
+  SetLpValue(w, 0.0, &model);
+
+  // The objective x - y will be empty once y == x.
+  manager.SetObjectiveCoefficient(x, IntegerValue(1));
+  manager.SetObjectiveCoefficient(y, IntegerValue(-1));
+
+  LinearConstraintBuilder ct(IntegerValue(1), kMaxIntegerValue);
+  ct.AddTerm(x, IntegerValue(1));
+  ct.AddTerm(y, IntegerValue(1));
+  ct.AddTerm(w, IntegerValue(1));
+  manager.Add(ct.Build());
+
+  auto* graph = model.GetOrCreate<BinaryImplicationGraph>();
+  graph->AddImplication(a, b);
+  graph->AddImplication(b, a);
+  ASSERT_TRUE(graph->DetectEquivalences());
+
+  // The constraint is violated by the LP solution, so ChangeLp() will score
+  // it using the (now empty) objective. This used to crash.
+  glop::BasisState state;
+  state.statuses.resize(glop::ColIndex(0));
+  EXPECT_TRUE(manager.ChangeLp(&state));
+  EXPECT_THAT(manager.LpConstraints(), ElementsAre(ConstraintIndex(0)));
+
+  // x + y + w >= 1 becomes 2x + w >= 1 which is strengthened to x + w >= 1.
+  EXPECT_EQ(
+      manager.AllConstraints()[ConstraintIndex(0)].constraint.DebugString(),
+      "1 <= 1*I0 1*I2 <= 11");
+}
+
+TEST(LinearConstraintManagerTest, SplitRangedConstraintForStrengthening) {
+  Model model;
+  LinearConstraintManager manager(&model);
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 1));
+  const IntegerVariable y = model.Add(NewIntegerVariable(0, 1));
+  const IntegerVariable z = model.Add(NewIntegerVariable(0, 1));
+
+  // 3 <= 20x + 3y + 3z <= 22. The thresholds are 3 for the lower bound and 4
+  // for the upper bound, and the coefficient 20 can be reduced to 3 or 4
+  // depending on the side, so this is split in two.
+  LinearConstraintBuilder ct(IntegerValue(3), IntegerValue(22));
+  ct.AddTerm(x, IntegerValue(20));
+  ct.AddTerm(y, IntegerValue(3));
+  ct.AddTerm(z, IntegerValue(3));
+  manager.Add(ct.Build());
+  ASSERT_EQ(manager.AllConstraints().size(), 2);
+  EXPECT_EQ(manager.num_split_constraints(), 1);
+
+  // Upper bound part: 20x + 3y + 3z <= 22 is strengthened to 4x + 2y + 2z <= 4
+  // and divided by its gcd.
+  EXPECT_EQ(
+      manager.AllConstraints()[ConstraintIndex(1)].constraint.DebugString(),
+      "0 <= 2*I0 1*I1 1*I2 <= 2");
+
+  // Lower bound part: 20x + 3y + 3z >= 3 is strengthened to 3x + 3y + 3z >= 3.
+  EXPECT_EQ(
+      manager.AllConstraints()[ConstraintIndex(0)].constraint.DebugString(),
+      "1 <= 1*I0 1*I1 1*I2 <= 3");
 }
 
 TEST(LinearConstraintManagerTest, DuplicateDetectionCauseLpChange) {

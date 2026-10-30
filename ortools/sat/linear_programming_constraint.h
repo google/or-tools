@@ -685,6 +685,15 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   double last_root_level_deterministic_duration_ = 0.0;
   double last_root_level_deterministic_time_ = 0.0;
 
+  // Fills the lp solution/reduced costs of the variables substituted by the
+  // constraint manager (see LinearConstraintManager::GetSubstitution()). Such
+  // columns are empty in the LP, so their values are not meaningful.
+  void FillLpValuesOfSubstitutedVariables();
+
+  // Rewrites integer_objective_ using the current substitution of the
+  // constraint manager, so that substituted columns have a zero cost.
+  void SubstituteEquivalentVariablesInObjective();
+
   int dump_index_ = 0;
 };
 

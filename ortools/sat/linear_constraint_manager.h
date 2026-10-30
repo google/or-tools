@@ -17,16 +17,19 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/variables_info.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
@@ -120,6 +123,103 @@ class LinearConstraintSymmetrizer {
   CompactVectorVector<int, IntegerVariable> orbits_;
 };
 
+// During the search, the SAT solver can detect that two Boolean variables are
+// equivalent (see BinaryImplicationGraph::DetectEquivalences()). This class
+// keeps track of these equivalences in terms of the [0, 1] IntegerVariables
+// that are "views" of these Booleans, so that we can substitute one by the
+// other in the LP relaxation.
+//
+// This is a Model singleton shared by all the LinearConstraintManager (one per
+// LP component) so that the work is only done once. Each client registers the
+// variables it cares about together with its component id, and we only
+// substitute a variable by another one from the same component since the
+// representative must be a column of the same LP.
+//
+// Important: Substitutions are only valid at level zero (they come from
+// equivalences that are level-zero facts) and can only grow. Clients should
+// check version() to know if the substitution map changed.
+class BooleanViewEquivalences {
+ public:
+  explicit BooleanViewEquivalences(Model* model);
+
+  // Returns a new component id to use with RegisterVariable().
+  int NewComponent() {
+    substituted_vars_by_component_.emplace_back();
+    return substituted_vars_by_component_.size() - 1;
+  }
+
+  // Registers a positive variable. Variables that are not in [0, 1] or that
+  // have no Boolean view will never be substituted, so it is fine to register
+  // all the variables of a component. Registering the same variable more than
+  // once is a no-op.
+  void RegisterVariable(int component, IntegerVariable positive_var);
+
+  // Recomputes the substitution map if new equivalences were detected or if
+  // new variables were registered. This is cheap if nothing changed. Returns
+  // true if the map changed (the version is incremented in this case).
+  bool Update();
+
+  // Incremented each time the substitution map changes.
+  int64_t version() const { return version_; }
+
+  // If the given positive variable is substituted, returns true and fills
+  // *expr with an affine expression such that var == expr. The expr.var is a
+  // (possibly negated) variable of the same component that is never
+  // substituted itself, expr.coeff is 1 and expr.constant is 0 or 1.
+  bool GetSubstitution(IntegerVariable positive_var,
+                       AffineExpression* expr) const {
+    DCHECK(VariableIsPositive(positive_var));
+    if (positive_var >= substitution_rep_.size()) return false;
+    const IntegerVariable rep = substitution_rep_[positive_var];
+    if (rep == kNoIntegerVariable) return false;
+    if (expr != nullptr) {
+      *expr = AffineExpression(rep, IntegerValue(1),
+                               substitution_offset_[positive_var]);
+    }
+    return true;
+  }
+
+  // The list of currently substituted (positive) variables of a component.
+  const std::vector<IntegerVariable>& SubstitutedVariables(
+      int component) const {
+    return substituted_vars_by_component_[component];
+  }
+
+  int64_t num_substituted_variables() const { return num_substituted_; }
+
+ private:
+  const SatParameters& params_;
+  const IntegerTrail& integer_trail_;
+  const IntegerEncoder& integer_encoder_;
+  const BinaryImplicationGraph& implication_graph_;
+  const LinearConstraintSymmetrizer& symmetrizer_;
+
+  // All the registered variables, in registration order.
+  std::vector<std::pair<int, IntegerVariable>> registered_vars_;
+  util_intops::StrongVector<IntegerVariable, bool> var_is_registered_;
+
+  // Cache of the literal associated to a [0, 1] variable (positive index).
+  // Note that we lazily recompute entries with kNoLiteralIndex since a literal
+  // might be associated to the variable later.
+  util_intops::StrongVector<IntegerVariable, LiteralIndex> literal_of_var_;
+
+  // If substitution_rep_[var] != kNoIntegerVariable, then we have
+  // var == substitution_rep_[var] + substitution_offset_[var].
+  util_intops::StrongVector<IntegerVariable, IntegerVariable> substitution_rep_;
+  util_intops::StrongVector<IntegerVariable, IntegerValue> substitution_offset_;
+  std::vector<std::vector<IntegerVariable>> substituted_vars_by_component_;
+  int64_t num_substituted_ = 0;
+
+  int64_t version_ = 0;
+  int64_t last_num_redundant_literals_ = 0;
+  int64_t last_num_registered_vars_ = 0;
+
+  // Temporary map: (class representative, component) -> (var, sign).
+  absl::flat_hash_map<std::pair<BooleanVariable, int>,
+                      std::pair<IntegerVariable, bool>>
+      tmp_class_to_var_;
+};
+
 // This class holds a list of globally valid linear constraints and has some
 // logic to decide which ones should be part of the LP relaxation. We want more
 // for a better relaxation, but for efficiency we do not want to have too many
@@ -173,7 +273,9 @@ class LinearConstraintManager {
         expanded_lp_solution_(*model->GetOrCreate<ModelLpValues>()),
         expanded_reduced_costs_(*model->GetOrCreate<ModelReducedCosts>()),
         model_(model),
-        symmetrizer_(model->GetOrCreate<LinearConstraintSymmetrizer>()) {}
+        symmetrizer_(model->GetOrCreate<LinearConstraintSymmetrizer>()),
+        equivalences_(model->GetOrCreate<BooleanViewEquivalences>()),
+        component_(equivalences_->NewComponent()) {}
   ~LinearConstraintManager();
 
   // Add a new constraint to the manager. Note that we canonicalize constraints
@@ -297,7 +399,52 @@ class LinearConstraintManager {
     reduced_cost_constraint_.CopyFrom(ct);
   }
 
+  // Boolean equivalences.
+  //
+  // During the search, the SAT solver can detect that two Boolean variables are
+  // equivalent (see BooleanViewEquivalences). If both have a [0, 1] integer
+  // view appearing in this manager, we only want to keep one of them in the
+  // LP. We do that by substituting the redundant one in all the constraints
+  // (see SimplifyConstraint()).
+  //
+  // UpdateBooleanEquivalences() updates the shared BooleanViewEquivalences and
+  // returns true if the substitution map changed since the last call. This is
+  // called by ChangeLp() but can also be called by the client before the LP is
+  // created, in which case SimplifyAllConstraints() should be called if it
+  // returned true.
+  bool UpdateBooleanEquivalences();
+
+  // Runs SimplifyConstraint() on all the constraints. This is automatically
+  // done by ChangeLp() when needed.
+  void SimplifyAllConstraints();
+
+  // Shortcuts to the BooleanViewEquivalences API for this manager component.
+  bool GetSubstitution(IntegerVariable positive_var,
+                       AffineExpression* expr) const {
+    return equivalences_->GetSubstitution(positive_var, expr);
+  }
+  const std::vector<IntegerVariable>& SubstitutedVariables() const {
+    return equivalences_->SubstitutedVariables(component_);
+  }
+
+  int64_t num_substitutions() const { return num_substitutions_; }
+
  private:
+  // Called by Add() and SetObjectiveCoefficient() to keep track of all the
+  // variables appearing in this manager.
+  void RegisterVariable(IntegerVariable var) {
+    equivalences_->RegisterVariable(component_, var);
+  }
+
+  // Rewrite the constraint using the current substitution map. Returns true if
+  // the constraint changed. The result is in canonical form.
+  bool SubstituteEquivalentVariables(LinearConstraint* ct);
+
+  // Must be called after SimplifyConstraint() returned true on the constraint
+  // at this index. Recomputes the derived fields and the hash, and merges the
+  // constraint with an identical one if there is one.
+  void OnConstraintSimplified(ConstraintIndex i);
+
   // Heuristic that decides which constraints we should remove from the current
   // LP. Note that such constraints can be added back later by the heuristic
   // responsible for adding new constraints from the pool.
@@ -310,11 +457,26 @@ class LinearConstraintManager {
   bool MaybeRemoveSomeInactiveConstraints(glop::BasisState* solution_state);
 
   // Apply basic inprocessing simplification rules:
+  //  - substitute Boolean variables equivalent to another one.
   //  - remove fixed variables
   //  - reduce large coefficients (i.e. coeff strengthening or big-M reduction).
   // This uses level-zero bounds.
   // Returns true if the terms of the constraint changed.
-  bool SimplifyConstraint(LinearConstraint* ct);
+  //
+  // If split is not nullptr and the constraint is a ranged constraint for
+  // which one of the side would benefit from a stronger coefficient
+  // strengthening, the constraint is split in two one-sided constraints: *ct
+  // will contain the upper bounded part and *split the lower bounded part.
+  // Otherwise *split will be empty (num_terms == 0).
+  bool SimplifyConstraint(LinearConstraint* ct,
+                          LinearConstraint* split = nullptr);
+
+  // Calls SimplifyConstraint() on the constraint at the given index, and deals
+  // with the consequences (rehash, merge, split). If the constraint was split
+  // and was in the LP, the other part is added to the LP too and the given
+  // solution_state (if not nullptr) is resized accordingly.
+  void SimplifyConstraintAtIndex(ConstraintIndex i,
+                                 glop::BasisState* solution_state);
 
   // Helper method to compute objective parallelism for a given constraint. This
   // also lazily computes objective norm.
@@ -342,6 +504,11 @@ class LinearConstraintManager {
   // Optimization to avoid calling SimplifyConstraint() when not needed.
   int64_t last_simplification_timestamp_ = 0;
 
+  // If the last call to Add() resulted in a split constraint (see
+  // SimplifyConstraint()), this is the index of the other part, otherwise this
+  // is kInvalidConstraintIndex.
+  ConstraintIndex last_split_index_ = ConstraintIndex(-1);
+
   util_intops::StrongVector<ConstraintIndex, ConstraintInfo> constraint_infos_;
 
   // The subset of constraints currently in the lp.
@@ -349,6 +516,11 @@ class LinearConstraintManager {
 
   // See OldLpRowOfLpRow().
   std::vector<glop::RowIndex> old_lp_row_of_lp_row_;
+
+  // The constraints that were in the LP and were simplified (or had their
+  // bounds tightened by a merge) since the beginning of the last call to
+  // ChangeLp(). Such rows cannot reuse the information from the old LP.
+  std::vector<ConstraintIndex> simplified_in_lp_constraints_;
 
   // We keep a map from the hash of our constraint terms to their position in
   // constraints_. This is an optimization to detect duplicate constraints. We
@@ -390,6 +562,13 @@ class LinearConstraintManager {
   ModelReducedCosts& expanded_reduced_costs_;
   Model* model_;
   LinearConstraintSymmetrizer* symmetrizer_;
+
+  // Boolean equivalences data. See UpdateBooleanEquivalences().
+  BooleanViewEquivalences* equivalences_;
+  const int component_;
+  int64_t last_equivalences_version_ = 0;
+  int64_t num_substitutions_ = 0;
+  LinearConstraintBuilder tmp_builder_;
 
   // We want to decay the active counts of all constraints at each call and
   // increase the active counts of active/violated constraints. However this can

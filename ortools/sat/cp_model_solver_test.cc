@@ -6152,6 +6152,86 @@ TEST(SolveCpModelTest,
   EXPECT_LE(response.best_objective_bound(), 1.0);
 }
 
+TEST(SolveCpModelTest,
+     FloatingPointObjectiveCallbacksReportTrueBoundsAndObjectives) {
+  // With mip_max_activity_exponent = 11 (max activity 2048), scaling_factor is
+  // 1.0, so var 1's coefficient (0.6) rounds up to 1 in the integer objective.
+  // At the optimal solution (var 0 = 0, var 1 = 1000), the raw integer-scaled
+  // objective bound is 1000.0, whereas the true floating-point objective is
+  // 600.0. Solution and best-bound callbacks must report corrected bounds and
+  // true floating-point objective values.
+  for (const bool maximize : {false, true}) {
+    for (const bool cp_model_presolve : {false, true}) {
+      CpModelProto model_proto = ParseTestProto(R"pb(
+        variables { domain: [ 0, 1 ] }
+        variables { domain: [ 0, 1000 ] }
+        constraints {
+          linear {
+            vars: [ 0, 1 ]
+            coeffs: [ 1000, 1 ]
+            domain: [ 1000, 2000 ]
+          }
+        }
+        floating_point_objective {
+          vars: [ 0, 1 ]
+          coeffs: [ 1200.0, 0.6 ]
+          maximize: false
+        }
+      )pb");
+      if (maximize) {
+        auto* float_obj = model_proto.mutable_floating_point_objective();
+        float_obj->set_maximize(true);
+        float_obj->set_coeffs(0, -1200.0);
+        float_obj->set_coeffs(1, -0.6);
+      }
+
+      Model model;
+      SatParameters* params = model.GetOrCreate<SatParameters>();
+      params->set_mip_max_activity_exponent(11);
+      params->set_mip_compute_true_objective_bound(true);
+      params->set_cp_model_presolve(cp_model_presolve);
+      params->set_num_workers(1);
+
+      int num_solution_callbacks = 0;
+      std::vector<double> best_bound_updates;
+      model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& resp) {
+        ++num_solution_callbacks;
+        EXPECT_TRUE(resp.has_integer_objective());
+        const double expected_obj =
+            (maximize ? -1.0 : 1.0) *
+            (1200.0 * resp.solution(0) + 0.6 * resp.solution(1));
+        EXPECT_DOUBLE_EQ(resp.objective_value(), expected_obj);
+        if (maximize) {
+          EXPECT_GE(resp.best_objective_bound(), -600.0);
+          EXPECT_GE(resp.best_objective_bound(), resp.objective_value());
+        } else {
+          EXPECT_LE(resp.best_objective_bound(), 600.0);
+          EXPECT_LE(resp.best_objective_bound(), resp.objective_value());
+        }
+      }));
+      model.Add(NewBestBoundCallback(
+          [&](double bound) { best_bound_updates.push_back(bound); }));
+
+      const CpSolverResponse response = SolveCpModel(model_proto, &model);
+      ASSERT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+      EXPECT_GT(num_solution_callbacks, 0);
+      if (maximize) {
+        EXPECT_DOUBLE_EQ(response.objective_value(), -600.0);
+        EXPECT_GE(response.best_objective_bound(), -600.0);
+        for (const double bound : best_bound_updates) {
+          EXPECT_GE(bound, -600.0);
+        }
+      } else {
+        EXPECT_DOUBLE_EQ(response.objective_value(), 600.0);
+        EXPECT_LE(response.best_objective_bound(), 600.0);
+        for (const double bound : best_bound_updates) {
+          EXPECT_LE(bound, 600.0);
+        }
+      }
+    }
+  }
+}
+
 #else
 static_assert(!operations_research::kTargetOsSupportsThreads);
 #endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)

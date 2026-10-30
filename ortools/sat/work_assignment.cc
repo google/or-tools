@@ -15,7 +15,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -26,6 +28,7 @@
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
@@ -117,6 +120,11 @@ bool NodeIdLess(const SharedTreeEncoder::Node* a,
                 const SharedTreeEncoder::Node* b) {
   return a->shared().id < b->shared().id;
 }
+
+void ClearAssignment(SharedTreeManager::SubtreeAssignment& assignment) {
+  assignment.leaf_id = kNoNodeId;
+  assignment.phase.clear();
+}
 }  // namespace
 
 SharedTreeEncoder::Node::Node(SharedTreeEncoder* encoder, NodeId id,
@@ -192,6 +200,10 @@ void SharedTreeEncoder::Node::SetObjectiveLowerBound(
   if (shared_.objective_lb >= objective_lb) return;
   shared_.objective_lb = objective_lb;
   encoder_->ProcessNewObjectiveBound(this);
+}
+
+void SharedTreeEncoder::Node::AddLbdSample(double lbd) {
+  shared_.lbd.AddData(lbd);
 }
 
 bool SharedTreeEncoder::Node::LiteralIsTrue(ProtoLiteral literal) {
@@ -502,6 +514,9 @@ void SharedTreeEncoder::UpdateNode(
     node->shared_.objective_lb = other.objective_lb;
     ProcessNewObjectiveBound(node);
   }
+  if (node->shared().lbd.NumRecords() < other.lbd.NumRecords()) {
+    node->shared_.lbd = other.lbd;
+  }
   if (other.var_lower_bounds.empty()) return;
   Node* level_start = node->GetLevelStart();
   SetProofToPropagateImpliedNodes(node);
@@ -800,7 +815,7 @@ SharedTreeManager::SharedTreeManager(Model* model)
       .decision = ProtoLiteral(),
       .objective_lb = shared_response_manager_->GetInnerObjectiveLowerBound(),
   });
-  unassigned_leaves_.emplace_back(root_, std::vector<ProtoLiteral>());
+  unassigned_leaves_.push_back({.leaf_id = root_});
 }
 
 int SharedTreeManager::NumNodes() const {
@@ -808,14 +823,23 @@ int SharedTreeManager::NumNodes() const {
   return tree_.Size();
 }
 
-bool SharedTreeManager::SyncTree(NodeId leaf_id, SharedTreeEncoder& encoder) {
+bool SharedTreeManager::SyncTree(SubtreeAssignment& assignment,
+                                 SharedTreeEncoder& encoder, bool replace) {
+  return SyncTree(assignment, encoder, replace,
+                  [](const SharedTreeNode& a, const SharedTreeNode& b) {
+                    return a.id < b.id;
+                  });
+}
+
+bool SharedTreeManager::SyncTree(
+    SubtreeAssignment& assignment, SharedTreeEncoder& encoder, bool replace,
+    absl::FunctionRef<bool(const SharedTreeNode&, const SharedTreeNode&)>
+        prefer) {
   absl::MutexLock mutex_lock(mu_);
   const int num_initially_closed = tree_.ClosedLeaves();
   const IntegerValue old_root_lb = tree_.GetNode(root_)->shared().objective_lb;
-  if (!IsValid(leaf_id)) {
-    encoder.Clear();
-  } else {
-    tree_.SyncNodesOnPath(leaf_id, encoder);
+  if (IsValid(assignment.leaf_id)) {
+    tree_.SyncNodesOnPath(assignment.leaf_id, encoder);
   }
   if (tree_.ClosedLeaves() > num_initially_closed) {
     shared_response_manager_->LogMessageWithThrottling(
@@ -829,6 +853,7 @@ bool SharedTreeManager::SyncTree(NodeId leaf_id, SharedTreeEncoder& encoder) {
     encoder.ImportNode(tree_.GetNode(root_)->shared());
     shared_response_manager_->NotifyThatImprovingProblemIsInfeasible(
         ShortStatus());
+    ClearAssignment(assignment);
     return false;
   }
 
@@ -845,56 +870,87 @@ bool SharedTreeManager::SyncTree(NodeId leaf_id, SharedTreeEncoder& encoder) {
   if (num_leaves_assigned_since_restart_ >= num_workers_ &&
       num_restarts_ < kNumInitialRestarts) {
     RestartLockHeld();
-    encoder.Clear();
   }
+  if (IsValid(assignment.leaf_id)) {
+    SharedTreeEncoder::Node* old_leaf = tree_.GetNode(assignment.leaf_id);
+    if (!old_leaf->shared().is_closed()) {
+      if (!replace) return true;
+      if (old_leaf->is_leaf()) {
+        VLOG(2) << "Returning leaf to be replaced";
+        unassigned_leaves_.push_back(std::move(assignment));
+      }
+    }
+  }
+
+  ClearAssignment(assignment);
+  encoder.Clear();
+  std::erase_if(unassigned_leaves_, [this](const SubtreeAssignment& a) {
+    mu_.AssertHeld();
+    return tree_.GetNode(a.leaf_id)->shared().is_closed();
+  });
+  if (unassigned_leaves_.empty()) return true;
+
+  auto best_it = absl::c_min_element(
+      unassigned_leaves_,
+      [&](const SubtreeAssignment& a, const SubtreeAssignment& b) {
+        mu_.AssertHeld();
+        return prefer(tree_.GetNode(a.leaf_id)->shared(),
+                      tree_.GetNode(b.leaf_id)->shared());
+      });
+  std::swap(*best_it, unassigned_leaves_.back());
+  assignment = std::move(unassigned_leaves_.back());
+  unassigned_leaves_.pop_back();
+  DCHECK(tree_.GetNode(assignment.leaf_id)->is_leaf());
+  num_leaves_assigned_since_restart_ += 1;
+  tree_.SyncNodesOnPath(assignment.leaf_id, encoder);
   return true;
 }
 
-NodeId SharedTreeManager::TrySplitTree(NodeId parent,
-                                       absl::Span<const ProtoLiteral> decisions,
-                                       SharedTreeEncoder& encoder) {
-  const int max_splits =
-      MaxPossibleLeafDepth(params_) - encoder.GetNode(parent)->GetLevel();
+bool SharedTreeManager::TrySplitTree(absl::Span<const ProtoLiteral> decisions,
+                                     SubtreeAssignment& assignment,
+                                     SharedTreeEncoder& encoder) {
+  const int max_splits = MaxPossibleLeafDepth(params_) -
+                         encoder.GetNode(assignment.leaf_id)->GetLevel();
   decisions = decisions.subspan(0, std::max(0, max_splits));
-  if (decisions.empty()) return parent;
+  if (decisions.empty()) return false;
   absl::MutexLock l(mu_);
+  bool changed = false;
   for (int i = 0; i < decisions.size(); ++i) {
-    NodeId child = TrySplitTreeLockHeld(parent, decisions[i], encoder);
-    if (child == kNoNodeId) break;
-    parent = child;
+    if (!TrySplitTreeLockHeld(decisions[i], assignment, encoder)) break;
+    changed = true;
   }
-  return parent;
+  return changed;
 }
 
-NodeId SharedTreeManager::TrySplitTreeLockHeld(NodeId parent,
-                                               ProtoLiteral decision,
-                                               SharedTreeEncoder& encoder) {
-  if (!IsValid(parent)) {
+bool SharedTreeManager::TrySplitTreeLockHeld(ProtoLiteral decision,
+                                             SubtreeAssignment& assignment,
+                                             SharedTreeEncoder& encoder) {
+  if (!IsValid(assignment.leaf_id)) {
     VLOG(2) << "Invalid parent node";
-    return kNoNodeId;
+    return false;
   }
   if (tree_.OpenLeaves() == 0) {
     VLOG(2) << "Problem is closed";
-    return kNoNodeId;
+    return false;
   }
   if (tree_.OpenLeaves() >=
       params_.shared_tree_open_leaves_per_worker() * num_workers_) {
     VLOG(2) << "Enough splits for now";
-    return kNoNodeId;
+    return false;
   }
   if (tree_.Size() >= max_nodes_ - 1) {
     VLOG(2) << "Too many nodes to accept split";
-    return kNoNodeId;
+    return false;
   }
 
-  SharedTreeEncoder::Node* parent_node = tree_.GetNode(parent);
+  SharedTreeEncoder::Node* parent_node = tree_.GetNode(assignment.leaf_id);
   if (parent_node->shared().is_closed()) {
     VLOG(2) << "Cannot split closed node";
-    return kNoNodeId;
+    return false;
   }
   if (!parent_node->is_leaf()) {
     VLOG(2) << "Cannot resplit previously split node";
-    return kNoNodeId;
+    return false;
   }
   int level = 0;
   int discrepancy = 0;
@@ -912,52 +968,25 @@ NodeId SharedTreeManager::TrySplitTreeLockHeld(NodeId parent,
     // This rule will allow twice as many leaves in the preferred subtree.
     if (discrepancy + level >= max_path_depth_) {
       VLOG(2) << "Too high discrepancy to accept split";
-      return kNoNodeId;
+      return false;
     }
   } else if (params_.shared_tree_split_strategy() ==
              SatParameters::SPLIT_STRATEGY_OBJECTIVE_LB) {
     if (parent_node->shared().objective_lb >
         tree_.GetNode(root_)->shared().objective_lb) {
       VLOG(2) << "Can only split nodes with minimum objective lb";
-      return kNoNodeId;
+      return false;
     }
   }
   VLOG_EVERY_N(2, 10) << unassigned_leaves_.size() << " unassigned leaves, "
                       << tree_.Size() << " subtrees, " << tree_.OpenLeaves()
                       << " open leaves";
-  tree_.SplitNode(parent, decision, next_node_id_);
-  encoder.SplitNode(parent, decision, next_node_id_);
-  unassigned_leaves_.emplace_back(next_node_id_ + 1,
-                                  std::vector<ProtoLiteral>());
+  tree_.SplitNode(assignment.leaf_id, decision, next_node_id_);
+  encoder.SplitNode(assignment.leaf_id, decision, next_node_id_);
+  unassigned_leaves_.push_back({.leaf_id = next_node_id_ + 1});
+  assignment.leaf_id = next_node_id_;
   next_node_id_ += 2;
-  return next_node_id_ - 2;
-}
-
-NodeId SharedTreeManager::ReplaceTree(NodeId old_leaf_id,
-                                      SharedTreeEncoder& encoder,
-                                      std::vector<ProtoLiteral>& phase) {
-  absl::MutexLock mutex_lock(mu_);
-  if (IsValid(old_leaf_id)) {
-    const SharedTreeEncoder::Node* old_leaf = tree_.GetNode(old_leaf_id);
-    if (!old_leaf->shared().is_closed() && old_leaf->is_leaf()) {
-      VLOG(2) << "Returning leaf to be replaced";
-      unassigned_leaves_.emplace_back(old_leaf_id, std::move(phase));
-    }
-  }
-  encoder.Clear();
-  while (!unassigned_leaves_.empty()) {
-    auto [new_leaf, new_phase] = std::move(unassigned_leaves_.front());
-    unassigned_leaves_.pop_front();
-    const SharedTreeEncoder::Node* leaf = tree_.GetNode(new_leaf);
-    if (leaf->shared().is_closed()) continue;
-    DCHECK(leaf->is_leaf());
-    num_leaves_assigned_since_restart_ += 1;
-    tree_.SyncNodesOnPath(new_leaf, encoder);
-    phase = std::move(new_phase);
-    return new_leaf;
-  }
-  VLOG(2) << "No unassigned leaves available";
-  return kNoNodeId;
+  return true;
 }
 
 void SharedTreeManager::RestartLockHeld() {
@@ -969,7 +998,7 @@ void SharedTreeManager::RestartLockHeld() {
   tree_.ImportNode(
       {.id = root_, .parent_id = kNoNodeId, .objective_lb = root_lb});
   unassigned_leaves_.clear();
-  unassigned_leaves_.emplace_back(root_, std::vector<ProtoLiteral>());
+  unassigned_leaves_.push_back({.leaf_id = root_});
   num_restarts_ += 1;
   num_leaves_assigned_since_restart_ = 0;
 }
@@ -1008,8 +1037,7 @@ SharedTreeWorker::SharedTreeWorker(Model* model)
       decision_policy_(model->GetOrCreate<SatDecisionPolicy>()),
       restart_policy_(model->GetOrCreate<RestartPolicy>()),
       reversible_int_repository_(model->GetOrCreate<RevIntRepository>()),
-      tree_(lrat_proof_handler_, mapping_, encoder_),
-      assigned_tree_lbds_(/*window_size=*/8) {}
+      tree_(lrat_proof_handler_, mapping_, encoder_) {}
 
 void SharedTreeWorker::MaybeProposeSplits() {
   if (assigned_nodes_.empty()) return;
@@ -1021,6 +1049,7 @@ void SharedTreeWorker::MaybeProposeSplits() {
   }
   next_split_dtime_ = time_limit_->GetElapsedDeterministicTime() +
                       parameters_->shared_tree_split_min_dtime();
+  tmp_splits_.clear();
   const int max_splits = manager_->MaxPathDepth() - assigned_nodes_.size() + 1;
   for (int i = sat_solver_->AssumptionLevel();
        i < sat_solver_->CurrentDecisionLevel(); ++i) {
@@ -1029,84 +1058,114 @@ void SharedTreeWorker::MaybeProposeSplits() {
     // If we can't encode a decision we can't split on it.
     if (!encoded.has_value()) continue;
     // TODO(user): This should be impossible, investigate.
-    SharedTreeEncoder::Node* leaf_node = tree_.GetNode(leaf_id_);
+    SharedTreeEncoder::Node* leaf_node = tree_.GetNode(assignment_.leaf_id);
     if (leaf_node->LiteralIsTrue(*encoded)) continue;
     if (leaf_node->LiteralIsTrue(encoded->Negated())) continue;
     tmp_splits_.push_back(*encoded);
     if (tmp_splits_.size() >= max_splits) break;
   }
-  const NodeId new_leaf_id =
-      manager_->TrySplitTree(leaf_id_, tmp_splits_, tree_);
-  tmp_splits_.clear();
-  if (new_leaf_id != leaf_id_) {
-    ResetAndEnqueueAssumptions(new_leaf_id);
+  if (manager_->TrySplitTree(tmp_splits_, assignment_, tree_)) {
+    ResetAndEnqueueAssumptions();
   }
+  tmp_splits_.clear();
 }
 
 bool SharedTreeWorker::ShouldReplaceSubtree() {
-  // If we have no assignment, try to get one.
-  if (tree_.Size() == 0) return true;
-  if (assigned_nodes_.empty() || assigned_nodes_.back()->shared().is_closed()) {
-    return true;
-  }
-
-  if (restart_policy_->NumRestarts() <
-          parameters_->shared_tree_worker_min_restarts_per_subtree() ||
-      time_limit_->GetElapsedDeterministicTime() <
-          earliest_replacement_dtime_) {
+  if (!FinishedMinRestarts() || time_limit_->GetElapsedDeterministicTime() <
+                                    earliest_replacement_dtime_) {
     return false;
   }
-  return assigned_tree_lbds_.WindowAverage() <
+  if (assigned_nodes_.empty()) return true;
+  // Note: This intentionally returns true when a leaf has no samples.
+  // Without this, a worker could keep a bad subtree indefinitely so long as the
+  // LBD keeps decreasing.
+  return assigned_nodes_.back()->shared().lbd.CurrentAverage() <
          restart_policy_->LbdAverageSinceReset();
+}
+
+void SharedTreeWorker::UpdateLeafScore() {
+  if (assignment_.leaf_id == kNoNodeId) return;
+  SharedTreeEncoder::Node* leaf = tree_.GetNode(assignment_.leaf_id);
+  const double lbd = restart_policy_->LbdAverageSinceReset();
+  leaf->AddLbdSample(lbd);
+  const double lbd_delta = leaf->shared().lbd.CurrentAverage() - lbd;
+  for (auto& [id, score] : node_reward_) {
+    score *= kRewardDecayFactor;
+  }
+  node_reward_[leaf->shared().id] += lbd_delta;
+  ++update_count_;
+  absl::erase_if(node_reward_, [](const auto& entry) {
+    return abs(entry.second) < kRewardDropoutThreshold;
+  });
+}
+
+double SharedTreeWorker::AssignmentPreference(
+    const SharedTreeNode& leaf) const {
+  const auto it = node_reward_.find(leaf.id);
+  const double score = (it == node_reward_.end()) ? 0.0 : it->second;
+  // Add a UCB1-like exploration term. Importantly, the denominator is the
+  // number of times the leaf has been selected by any worker.
+  const double exploration_score =
+      sqrt(2 * log(update_count_ + 1) / (leaf.lbd.NumRecords() + 1));
+  // Compute an affinity for this worker and this leaf.
+  // The only parameter that differs between shared_tree workers is random_seed,
+  // so use that to do rendezvous hashing.
+  const double affinity_ratio =
+      FingerprintSingleField(leaf.id.value(), parameters_->random_seed()) /
+      static_cast<double>(std::numeric_limits<uint64_t>::max());
+  return score + kExplorationFactor * exploration_score +
+         kAffinityFactor * affinity_ratio;
 }
 
 bool SharedTreeWorker::SyncWithSharedTree() {
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
-  if (!manager_->SyncTree(leaf_id_, tree_)) {
+  const NodeId old_leaf_id = assignment_.leaf_id;
+  const bool replace = ShouldReplaceSubtree();
+  if (replace && parameters_->shared_tree_worker_enable_phase_sharing() &&
+      // Only save the phase if we've done a non-trivial amount of work on
+      // this subtree.
+      FinishedMinRestarts() && !LeafIsClosed() &&
+      !decision_policy_->GetBestPartialAssignment().empty()) {
+    assignment_.phase.clear();
+    for (Literal lit : decision_policy_->GetBestPartialAssignment()) {
+      if (assignment_.phase.size() > kMaxPhaseSize) break;
+      // If `lit` was last assigned at the assumption level, it is implied in
+      // the tree, no need to share its phase.
+      if (trail_->Info(lit.Variable()).level <= 1) continue;
+      // Only set the phase for booleans to avoid creating literals on other
+      // workers.
+      auto encoded = tree_.EncodeLiteral(lit);
+      if (!encoded.has_value()) continue;
+      assignment_.phase.push_back(*encoded);
+    }
+  }
+  if (replace) UpdateLeafScore();
+  if (!manager_->SyncTree(
+          assignment_, tree_, replace,
+          [this](const SharedTreeNode& a, const SharedTreeNode& b) {
+            return AssignmentPreference(a) > AssignmentPreference(b);
+          })) {
     sat_solver_->NotifyThatModelIsUnsat();
     return false;
   }
-  NodeId new_leaf_id = leaf_id_;
-  if (ShouldReplaceSubtree()) {
+  if (assignment_.leaf_id != old_leaf_id) {
     ++num_trees_;
-    VLOG(2) << parameters_->name() << " acquiring tree #" << num_trees_
-            << " after " << restart_policy_->NumRestarts() << " restarts"
-            << " target: " << assigned_tree_lbds_.WindowAverage()
-            << " lbd: " << restart_policy_->LbdAverageSinceReset();
-    if (parameters_->shared_tree_worker_enable_phase_sharing() &&
-        // Only save the phase if we've done a non-trivial amount of work on
-        // this subtree.
-        FinishedMinRestarts() &&
-        !decision_policy_->GetBestPartialAssignment().empty()) {
-      phase_.clear();
-      for (Literal lit : decision_policy_->GetBestPartialAssignment()) {
-        if (phase_.size() > kMaxPhaseSize) break;
-        // Skip anything assigned at level 0.
-        if (trail_->Assignment().LiteralIsAssigned(lit)) continue;
-        // If `lit` was last assigned at a shared level, it is implied in the
-        // tree, no need to share its phase.
-        if (trail_->Info(lit.Variable()).level < assigned_nodes_.size()) {
-          continue;
-        }
-        // Only set the phase for booleans to avoid creating literals on other
-        // workers.
-        auto encoded = tree_.EncodeLiteral(lit);
-        if (!encoded.has_value()) continue;
-        phase_.push_back(*encoded);
-      }
-    }
-    new_leaf_id = manager_->ReplaceTree(leaf_id_, tree_, phase_);
-    assigned_tree_lbds_.Add(restart_policy_->LbdAverageSinceReset());
-    restart_policy_->Reset();
-    earliest_replacement_dtime_ = 0;
-    if (new_leaf_id != kNoNodeId) {
+    if (assignment_.leaf_id != kNoNodeId) {
+      VLOG(2)
+          << parameters_->name() << " acquiring tree #" << num_trees_
+          << " after " << restart_policy_->NumRestarts() << " restarts"
+          << " target: "
+          << tree_.GetNode(assignment_.leaf_id)->shared().lbd.CurrentAverage()
+          << " lbd: " << restart_policy_->LbdAverageSinceReset();
       next_split_dtime_ = time_limit_->GetElapsedDeterministicTime() +
                           parameters_->shared_tree_split_min_dtime();
     }
+    restart_policy_->Reset();
+    earliest_replacement_dtime_ = 0;
     if (parameters_->shared_tree_worker_enable_phase_sharing()) {
-      VLOG(2) << "Importing phase of length: " << phase_.size();
+      VLOG(2) << "Importing phase of length: " << assignment_.phase.size();
       decision_policy_->ClearBestPartialAssignment();
-      for (const ProtoLiteral& lit : phase_) {
+      for (const ProtoLiteral& lit : assignment_.phase) {
         decision_policy_->SetTargetPolarityIfUnassigned(tree_.Decode(lit));
       }
       decision_policy_->ResetActivitiesToFollowBestPartialAssignment();
@@ -1118,18 +1177,17 @@ bool SharedTreeWorker::SyncWithSharedTree() {
       decision_policy_->ClearBestPartialAssignment();
     }
   }
-  // If we commit to this subtree, keep it for at least 1s of dtime.
-  // This allows us to replace obviously bad subtrees quickly, and not replace
-  // too frequently overall.
-  if (FinishedMinRestarts() && time_limit_->GetElapsedDeterministicTime() >=
+  if (FinishedMinRestarts() && time_limit_->GetElapsedDeterministicTime() >
                                    earliest_replacement_dtime_) {
+    // If we commit to this subtree, keep it for at least 1s of dtime.
+    // This allows us to replace obviously bad subtrees quickly, and not replace
+    // too frequently overall.
     earliest_replacement_dtime_ =
         time_limit_->GetElapsedDeterministicTime() + 1;
-    // Treat this as reassigning the same tree.
-    assigned_tree_lbds_.Add(restart_policy_->LbdAverageSinceReset());
+    UpdateLeafScore();
   }
   DCHECK(tree_.CheckInvariants());
-  return ResetAndEnqueueAssumptions(new_leaf_id);
+  return ResetAndEnqueueAssumptions();
 }
 
 SatSolver::Status SharedTreeWorker::Search(
@@ -1202,10 +1260,15 @@ SharedTreeEncoder::Node* SharedTreeWorker::FixedByOrNull(Literal literal) {
 
 void SharedTreeWorker::ExportNewImplications() {
   fixed_by_.resize(2 * sat_solver_->NumVariables(), nullptr);
-  if (!parameters_->shared_tree_worker_enable_trail_sharing()) return;
   if (sat_solver_->ModelIsUnsat()) return;
   if (time_limit_->LimitReached()) return;
   DCHECK(sat_solver_->PropagationIsDone());
+  if (!assigned_nodes_.empty()) {
+    // The current lower bound is valid for the last assigned node.
+    assigned_nodes_.back()->SetObjectiveLowerBound(
+        CurrentObjectiveLowerBound());
+  }
+  if (!parameters_->shared_tree_worker_enable_trail_sharing()) return;
   const int binary_propagator_id = binary_propagator_->PropagatorId();
   DCHECK_GE(trail_->Index(), reversible_trail_index_);
   for (int i = reversible_trail_index_; i < trail_->Index(); ++i) {
@@ -1242,12 +1305,6 @@ void SharedTreeWorker::ExportNewImplications() {
       result->ExportInferredReasonClause(literal, GetProof(result, literal));
     }
   }
-  if (!assigned_nodes_.empty()) {
-    // We've reached the end of the trail, so the current lower bound is valid
-    // for the last assigned node.
-    assigned_nodes_.back()->SetObjectiveLowerBound(
-        CurrentObjectiveLowerBound());
-  }
   reversible_int_repository_->SaveState(&reversible_trail_index_);
   reversible_trail_index_ = trail_->Index();
 }
@@ -1273,8 +1330,7 @@ absl::Span<const ClausePtr> SharedTreeWorker::GetProof(
   return tmp_proof_clauses_;
 }
 
-bool SharedTreeWorker::ResetAndEnqueueAssumptions(NodeId leaf_id) {
-  leaf_id_ = leaf_id;
+bool SharedTreeWorker::ResetAndEnqueueAssumptions() {
   assigned_nodes_.clear();
   fixed_by_.assign(2 * sat_solver_->NumVariables(), nullptr);
   if (!sat_solver_->ResetToLevelZero()) return false;
@@ -1282,7 +1338,8 @@ bool SharedTreeWorker::ResetAndEnqueueAssumptions(NodeId leaf_id) {
   if (!helper_->BeforeTakingDecision()) return false;
   reversible_trail_index_ = trail_->Index();
   const VariablesAssignment& assignment = sat_solver_->Assignment();
-  for (SharedTreeEncoder::Node* node : tree_.GetLevelStartNodes(leaf_id)) {
+  for (SharedTreeEncoder::Node* node :
+       tree_.GetLevelStartNodes(assignment_.leaf_id)) {
     if (node->shared().is_closed()) return sat_solver_->ResetToLevelZero();
     tree_.NormalizeReasonClauses(node);
     if (node->shared().is_root()) {
