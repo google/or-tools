@@ -386,6 +386,7 @@ struct CutPostprocessingStats {
   int64_t num_ub_ibs = 0;
   int64_t num_merges = 0;
   int64_t num_final_complements = 0;
+  int64_t num_zero_loss_adjusts = 0;
   int64_t num_lifts = 0;
   int64_t num_gubs = 0;
   int64_t num_bumps = 0;
@@ -395,6 +396,7 @@ struct CutPostprocessingStats {
     num_ub_ibs += other.num_ub_ibs;
     num_merges += other.num_merges;
     num_final_complements += other.num_final_complements;
+    num_zero_loss_adjusts += other.num_zero_loss_adjusts;
     num_lifts += other.num_lifts;
     num_gubs += other.num_gubs;
     num_bumps += other.num_bumps;
@@ -408,6 +410,8 @@ struct CutPostprocessingStats {
     stats->push_back({absl::StrCat(prefix, "num_merges"), num_merges});
     stats->push_back(
         {absl::StrCat(prefix, "num_final_complements"), num_final_complements});
+    stats->push_back(
+        {absl::StrCat(prefix, "num_zero_loss_adjusts"), num_zero_loss_adjusts});
     stats->push_back({absl::StrCat(prefix, "num_lifting"), num_lifts});
     stats->push_back({absl::StrCat(prefix, "num_gubs"), num_gubs});
     stats->push_back({absl::StrCat(prefix, "num_bumps"), num_bumps});
@@ -427,9 +431,10 @@ class GUBHelper {
   ~GUBHelper();
 
   // Applies implied-bound substitutions, complements terms when beneficial
-  // under f(), applies f() to all terms and the RHS, and strengthens the cut
-  // using GUB (at-most-one) lifting and Boolean bumping. Returns true if the
-  // resulting cut has violation >= kMinCutViolation.
+  // under f(), adjusts negative terms up to multiples of divisor when doing so
+  // does not change the rounded RHS, applies f() to all terms and the RHS, and
+  // strengthens the cut using GUB (at-most-one) lifting and Boolean bumping.
+  // Returns true if the resulting cut has violation >= kMinCutViolation.
   bool ApplyWithPostprocessing(
       const std::function<IntegerValue(IntegerValue)>& f, IntegerValue divisor,
       ImpliedBoundsProcessor* ib_processor, CutData* cut);
@@ -443,6 +448,12 @@ class GUBHelper {
   void ComplementWithFixedF(const std::function<IntegerValue(IntegerValue)>& f,
                             IntegerValue divisor, IntegerValue f_divisor,
                             CutData* cut);
+
+  // Greedily relaxes negative terms k * divisor - eps up to k * divisor (0 when
+  // k == 0) within the RHS remainder plateau where f() stays constant, so the
+  // rounded RHS is unchanged and zero LP violation is lost.
+  void AdjustWithFixedF(const std::function<IntegerValue(IntegerValue)>& f,
+                        IntegerValue divisor, CutData* cut);
 
   // Extracts simple Boolean terms that appear in at-most-one (AMO) constraints
   // into literals_, counts uncomplemented occurrences per AMO in amo_count_,
@@ -493,6 +504,7 @@ class GUBHelper {
   std::vector<IntegerValue> initial_coeffs_;
   std::vector<bool> used_in_gub_;
   std::vector<LiteralInCut> literals_;
+  std::vector<std::pair<int, IntegerValue>> tmp_adjusts_;
   absl::flat_hash_set<Literal> already_seen_;
   absl::flat_hash_map<int, int> amo_count_;
   absl::flat_hash_map<int, double> amo_score_;
@@ -579,6 +591,7 @@ class IntegerRoundingCutHelper {
   int64_t total_num_dominating_f_ = 0;
   int64_t total_num_post_complements_ = 0;
   int64_t total_num_coeff_adjust_ = 0;
+  int64_t total_num_zero_loss_adjust_ = 0;
   int64_t total_num_initial_ibs_ = 0;
   int64_t total_num_initial_merges_ = 0;
   CutPostprocessingStats postprocessing_stats_;

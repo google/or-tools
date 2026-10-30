@@ -3089,8 +3089,8 @@ bool CpModelSolver::Presolve() {
   // Checks for hints early in case they are forced to be hard constraints.
   MaybeFixVariablesToHintValue(context.get());
 
-  // If the objective was a floating point one, do some postprocessing on the
-  // final response.
+  // If the objective was a floating point one, do some postprocessing on
+  // responses and best-bound callbacks.
   AddFloatingPointObjectiveResponsePostprocessor();
 
   // For the case where the assumptions are currently not supported, we just
@@ -3210,62 +3210,73 @@ bool CpModelSolver::FixAssumptionsIfNotSupported(PresolveContext* context) {
 }
 
 void CpModelSolver::AddFloatingPointObjectiveResponsePostprocessor() {
-  if (model_proto_.has_floating_point_objective()) {
-    shared_response_manager_->AddFinalResponsePostprocessor(
-        [&](CpSolverResponse* response) {
-          const auto& float_obj = model_proto_.floating_point_objective();
+  if (!model_proto_.has_floating_point_objective()) return;
 
-          // Also copy the scaled objective which must be in the mapping model.
-          // This can be useful for some client, like if they want to do
-          // multi-objective optimization in stages.
-          if (mapping_proto_->has_objective()) {
-            const CpObjectiveProto& integer_obj = mapping_proto_->objective();
-            *response->mutable_integer_objective() = integer_obj;
-
-            // If requested, compute a correct lb from the one on the integer
-            // objective.
-            //
-            // Tricky: Because the conversion happened after some domain
-            // tightening, it is important to take the tighter domains "after"
-            // presolve (stored in mapping_proto_) to compute this lower
-            // bound without making unnecessary mistakes.
-            if (params_.mip_compute_true_objective_bound() &&
-                (response->status() == CpSolverStatus::OPTIMAL ||
-                 response->status() == CpSolverStatus::FEASIBLE ||
-                 response->status() == CpSolverStatus::UNKNOWN)) {
-              const int64_t integer_lb =
-                  response->inner_objective_lower_bound();
-              const double lb = ComputeTrueObjectiveLowerBound(
-                  model_proto_, *mapping_proto_, integer_lb);
-              SOLVER_LOG(logger_, "[Scaling] scaled_objective_bound: ",
-                         response->best_objective_bound(),
-                         " corrected_bound: ", lb,
-                         " delta: ", response->best_objective_bound() - lb);
-              response->set_best_objective_bound(lb);
-            }
-          }
-
-          if (response->solution().empty()) return;
-
-          // Compute the true objective of the best returned solution.
-          response->set_objective_value(
-              ComputeFloatObjectiveValue(float_obj, response->solution()));
-
-          // Check the absolute gap, and display warning if needed.
-          // TODO(user): Change status to IMPRECISE?
-          if (response->status() == CpSolverStatus::OPTIMAL) {
-            const double gap = std::abs(response->objective_value() -
-                                        response->best_objective_bound());
-            if (gap > params_.absolute_gap_limit()) {
-              SOLVER_LOG(logger_,
-                         "[Scaling] Warning: OPTIMAL was reported, yet the "
-                         "objective gap (",
-                         gap, ") is greater than requested absolute limit (",
-                         params_.absolute_gap_limit(), ").");
-            }
-          }
+  if (params_.mip_compute_true_objective_bound()) {
+    shared_response_manager_->SetBestBoundPostprocessor(
+        [&](int64_t integer_lb) {
+          CHECK(mapping_proto_->has_objective());
+          // If requested, compute a correct lb from the one on the integer
+          // objective.
+          //
+          // Tricky: Because the conversion happened after some domain
+          // tightening, it is important to take the tighter domains "after"
+          // presolve (stored in mapping_proto_) to compute this lower
+          // bound without making unnecessary mistakes.
+          return ComputeTrueObjectiveLowerBound(model_proto_, *mapping_proto_,
+                                                integer_lb);
         });
   }
+  shared_response_manager_->AddResponsePostprocessor(
+      [&](CpSolverResponse* response) {
+        const auto& float_obj = model_proto_.floating_point_objective();
+
+        // Also copy the scaled objective which must be in the mapping model.
+        // This can be useful for some client, like if they want to do
+        // multi-objective optimization in stages.
+        if (mapping_proto_->has_objective()) {
+          const CpObjectiveProto& integer_obj = mapping_proto_->objective();
+          *response->mutable_integer_objective() = integer_obj;
+        }
+
+        if (!response->solution().empty()) {
+          // Compute the true objective of the returned solution.
+          response->set_objective_value(
+              ComputeFloatObjectiveValue(float_obj, response->solution()));
+        }
+      });
+  shared_response_manager_->AddFinalResponsePostprocessor(
+      [&](CpSolverResponse* response) {
+        if (mapping_proto_->has_objective() &&
+            params_.mip_compute_true_objective_bound() &&
+            (response->status() == CpSolverStatus::OPTIMAL ||
+             response->status() == CpSolverStatus::FEASIBLE ||
+             response->status() == CpSolverStatus::UNKNOWN)) {
+          const double scaled_bound =
+              ScaleObjectiveValue(mapping_proto_->objective(),
+                                  response->inner_objective_lower_bound());
+          const double lb = response->best_objective_bound();
+          SOLVER_LOG(logger_,
+                     "[Scaling] scaled_objective_bound: ", scaled_bound,
+                     " corrected_bound: ", lb, " delta: ", scaled_bound - lb);
+        }
+
+        if (response->solution().empty()) return;
+
+        // Check the absolute gap, and display warning if needed.
+        // TODO(user): Change status to IMPRECISE?
+        if (response->status() == CpSolverStatus::OPTIMAL) {
+          const double gap = std::abs(response->objective_value() -
+                                      response->best_objective_bound());
+          if (gap > params_.absolute_gap_limit()) {
+            SOLVER_LOG(logger_,
+                       "[Scaling] Warning: OPTIMAL was reported, yet the "
+                       "objective gap (",
+                       gap, ") is greater than requested absolute limit (",
+                       params_.absolute_gap_limit(), ").");
+          }
+        }
+      });
 }
 
 CpSolverStatus CpModelSolver::PresolveCpModel(PresolveContext* context) {
@@ -3413,11 +3424,6 @@ void CpModelSolver::AddSolutionPostsolveCallback() {
         const double objective_value = ScaleObjectiveValue(
             objective, ComputeInnerObjective(objective, response->solution()));
         response->set_objective_value(objective_value);
-      }
-      if (!response->solution().empty() &&
-          model_proto_.has_floating_point_objective()) {
-        response->set_objective_value(ComputeFloatObjectiveValue(
-            model_proto_.floating_point_objective(), response->solution()));
       }
     });
   } else {

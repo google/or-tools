@@ -416,6 +416,32 @@ absl::int128 ApplyToInt128(const std::function<IntegerValue(IntegerValue)>& f,
   return result;
 }
 
+// For a non-decreasing function f() on [0, divisor - 1] and 0 <= r_rhs <
+// divisor, returns the largest r_max in [r_rhs, divisor - 1] such that
+// f(r_max) == f(r_rhs). Any increase of cut->rhs by delta in [0, r_max - r_rhs]
+// preserves ApplyToInt128(f, divisor, cut->rhs).
+IntegerValue GetMaxZeroLossRhsRemainder(
+    const std::function<IntegerValue(IntegerValue)>& f, IntegerValue divisor,
+    IntegerValue r_rhs) {
+  if (r_rhs + 1 >= divisor) return r_rhs;
+  const IntegerValue f_rhs = f(r_rhs);
+  if (f(r_rhs + 1) != f_rhs) return r_rhs;
+  if (f(divisor - 1) == f_rhs) return divisor - 1;
+
+  // Invariant: f(low) == f_rhs and f(high) > f_rhs.
+  IntegerValue low = r_rhs + 1;
+  IntegerValue high = divisor - 1;
+  while (high - low > 1) {
+    const IntegerValue mid = low + (high - low) / 2;
+    if (f(mid) == f_rhs) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+  return low;
+}
+
 // Apply f() to the cut with a potential improvement for one Boolean:
 //
 // If we have a Boolean X, and a cut: terms + a * X <= b;
@@ -505,6 +531,49 @@ void GUBHelper::ComplementWithFixedF(
       }
     }
     if (last_stats_.num_final_complements == saved) break;
+  }
+}
+
+void GUBHelper::AdjustWithFixedF(
+    const std::function<IntegerValue(IntegerValue)>& f,
+    const IntegerValue divisor, CutData* cut) {
+  tmp_adjusts_.clear();
+  IntegerValue slack_budget(-1);
+  const int num_terms = cut->terms.size();
+  for (int i = 0; i < num_terms; ++i) {
+    const CutTerm& entry = cut->terms[i];
+    if (entry.coeff >= 0) continue;
+    const IntegerValue remainder = PositiveRemainder(entry.coeff, divisor);
+    if (remainder == 0) continue;
+    if (slack_budget < 0) {
+      const IntegerValue r_rhs = PositiveRemainder(cut->rhs, divisor);
+      slack_budget = GetMaxZeroLossRhsRemainder(f, divisor, r_rhs) - r_rhs;
+      if (slack_budget == 0) return;
+    }
+    const IntegerValue adjust = divisor - remainder;
+    const IntegerValue prod = CapProdI(adjust, entry.bound_diff);
+    if (prod > slack_budget) continue;
+    if (f(entry.coeff + adjust) <= f(entry.coeff)) continue;
+    tmp_adjusts_.push_back({i, prod});
+  }
+  if (tmp_adjusts_.empty()) return;
+
+  std::sort(tmp_adjusts_.begin(), tmp_adjusts_.end(),
+            [cut](const std::pair<int, IntegerValue>& a,
+                  const std::pair<int, IntegerValue>& b) {
+              if (a.second != b.second) return a.second < b.second;
+              const double lp_a = cut->terms[a.first].lp_value;
+              const double lp_b = cut->terms[b.first].lp_value;
+              if (lp_a != lp_b) return lp_a > lp_b;
+              return a.first < b.first;
+            });
+  for (const auto [index, prod] : tmp_adjusts_) {
+    if (prod > slack_budget) break;
+    slack_budget -= prod;
+    ++last_stats_.num_zero_loss_adjusts;
+    CutTerm& entry = cut->terms[index];
+    entry.coeff += divisor - PositiveRemainder(entry.coeff, divisor);
+    cut->rhs += absl::int128(prod.value());
   }
 }
 
@@ -811,6 +880,8 @@ bool GUBHelper::ApplyWithPostprocessing(
 
   const IntegerValue f_divisor = f(divisor);
   ComplementWithFixedF(f, divisor, f_divisor, cut);
+  AdjustWithFixedF(f, divisor, cut);
+  cut->RemoveZeroTerms();
 
   // Keep initial coeffs and apply f().
   absl::int128 original_rhs = cut->rhs;
@@ -1011,6 +1082,8 @@ IntegerRoundingCutHelper::~IntegerRoundingCutHelper() {
   stats.push_back(
       {"rounding_cut/num_post_complements", total_num_post_complements_});
   stats.push_back({"rounding_cut/num_adjusts", total_num_coeff_adjust_});
+  stats.push_back({"rounding_cut/num_initial_zero_loss_adjusts",
+                   total_num_zero_loss_adjust_});
   stats.push_back({"rounding_cut/num_dominating_f", total_num_dominating_f_});
   postprocessing_stats_.AppendToStats("rounding_cut/", &stats);
   shared_stats_->AddStats(stats);
@@ -1350,70 +1423,128 @@ bool IntegerRoundingCutHelper::ComputeCut(
     }
   }
 
-  // Also adjust negative coefficients in (-best_divisor, 0) on non-relevant
-  // positions to zero within the exact remainder budget that preserves f() on
-  // all relevant positions (and keeps at least half of the remaining slack).
-  // Because f(-c) <= -1 for any c > 0 while f(0) == 0, this strengthens,
-  // improves the L2 norm, and sparsifies the cut with zero LP violation loss.
+  // Adjust negative coefficients up to an exact multiple of best_divisor (0
+  // when coeff is in (-best_divisor, 0)) within the maximum RHS remainder
+  // budget that preserves f() on all unadjusted terms with non-zero LP value
+  // (and keeps at least half of the remaining fractional slack). Because
+  // f(k * best_divisor) > f(k * best_divisor - eps), this strengthens, reduces
+  // the L2 norm, and sparsifies the cut with zero LP violation loss.
+  int64_t num_initial_zero_loss_adjusts = 0;
   {
-    const IntegerValue r0 = factor_t * rhs_remainder;
-    const IntegerValue size = best_divisor - r0;
-    IntegerValue r_max = r0;
-    if (best_scaling == 1 || size > best_scaling) {
-      r_max = r0 + (best_divisor - 1 - r0) / 2;
-      if (best_scaling > 1) {
-        r_max = std::min(r_max, best_divisor - best_scaling - 1);
-        if (best_scaling.value() * r0.value() < best_divisor.value()) {
-          r_max = std::min(r_max, (best_divisor - 1) / best_scaling);
-        } else {
-          for (int i = 0; i < cut_.num_relevant_entries; ++i) {
-            const IntegerValue r_t = PositiveRemainder(
-                factor_t * PositiveRemainder(cut_.terms[i].coeff, best_divisor),
-                best_divisor);
-            if (r_t <= r0) continue;
-            const IntegerValue bucket =
-                CeilRatio((r_t - r0) * (best_scaling - 1), size);
-            const absl::int128 num =
-                absl::int128(r_t.value()) *
-                    absl::int128((best_scaling - 1).value()) -
-                absl::int128((bucket - 1).value()) *
-                    absl::int128(best_divisor.value()) -
-                1;
-            const IntegerValue cap(static_cast<int64_t>(
-                num / absl::int128((best_scaling - bucket).value())));
-            r_max = std::min(r_max, cap);
-            if (r_max <= r0) break;
-          }
-        }
+    const IntegerValue max_rem_cap =
+        rhs_remainder +
+        (best_divisor - 1 - factor_t * rhs_remainder) / (2 * factor_t);
+    bool has_adjustable_neg = false;
+    IntegerValue sum_active_neg_prod(0);
+    for (const CutTerm& entry : cut_.terms) {
+      if (entry.coeff >= 0) continue;
+      const IntegerValue remainder =
+          PositiveRemainder(entry.coeff, best_divisor);
+      if (remainder == 0) continue;
+      has_adjustable_neg = true;
+      if (entry.lp_value > 1e-6) {
+        const IntegerValue prod =
+            CapProdI(best_divisor - remainder, entry.bound_diff);
+        sum_active_neg_prod = CapAddI(sum_active_neg_prod, prod);
       }
     }
-    IntegerValue slack_budget = (r_max - r0) / factor_t;
-    if (slack_budget > 0) {
-      adjusted_coeffs_.clear();
-      for (int i = cut_.num_relevant_entries; i < cut_.terms.size(); ++i) {
-        const CutTerm& entry = cut_.terms[i];
-        if (entry.coeff >= 0 || -entry.coeff >= best_divisor) continue;
-        const IntegerValue prod = CapProdI(-entry.coeff, entry.bound_diff);
-        if (prod <= slack_budget) {
-          adjusted_coeffs_.push_back({i, prod});
+
+    if (has_adjustable_neg && max_rem_cap > rhs_remainder) {
+      const IntegerValue f_divisor = f(best_divisor);
+      const auto find_max_zero_loss_rem = [&](bool protect_negative_terms) {
+        remainders_.clear();
+        for (const CutTerm& entry : cut_.terms) {
+          if (entry.lp_value <= 1e-6) continue;
+          if (!protect_negative_terms && entry.coeff < 0) continue;
+          const IntegerValue r = PositiveRemainder(entry.coeff, best_divisor);
+          if (r > 0) remainders_.push_back(r);
         }
+        gtl::STLSortAndRemoveDuplicates(&remainders_);
+        best_rs_.clear();
+        for (const IntegerValue r : remainders_) {
+          best_rs_.push_back(f(r));
+        }
+
+        const auto preserves_f = [&](IntegerValue rem) {
+          const auto g = GetSuperAdditiveRoundingFunction(
+              rem, best_divisor, factor_t, best_scaling);
+          if (g(best_divisor) != f_divisor) return false;
+          for (int i = 0; i < remainders_.size(); ++i) {
+            if (g(remainders_[i]) != best_rs_[i]) return false;
+          }
+          return true;
+        };
+
+        if (!preserves_f(rhs_remainder + 1)) return rhs_remainder;
+        if (preserves_f(max_rem_cap)) return max_rem_cap;
+        IntegerValue low = rhs_remainder + 1;
+        IntegerValue high = max_rem_cap;
+        while (high - low > 1) {
+          const IntegerValue mid = low + (high - low) / 2;
+          if (preserves_f(mid)) {
+            low = mid;
+          } else {
+            high = mid;
+          }
+        }
+        return low;
+      };
+
+      IntegerValue slack_budget =
+          find_max_zero_loss_rem(/*protect_negative_terms=*/false) -
+          rhs_remainder;
+      const bool adjust_all_active_neg = sum_active_neg_prod <= slack_budget;
+      if (!adjust_all_active_neg && slack_budget > 0) {
+        slack_budget = find_max_zero_loss_rem(/*protect_negative_terms=*/true) -
+                       rhs_remainder;
       }
-      if (!adjusted_coeffs_.empty()) {
-        std::sort(adjusted_coeffs_.begin(), adjusted_coeffs_.end(),
-                  [](const std::pair<int, IntegerValue>& a,
-                     const std::pair<int, IntegerValue>& b) {
-                    return a.second < b.second;
-                  });
-        for (const auto [index, prod] : adjusted_coeffs_) {
-          if (prod > slack_budget) break;
-          slack_budget -= prod;
-          ++total_num_coeff_adjust_;
-          cut_.terms[index].coeff = 0;
-          cut_.rhs += absl::int128(prod.value());
+
+      if (slack_budget > 0) {
+        adjusted_coeffs_.clear();
+        for (int i = 0; i < cut_.terms.size(); ++i) {
+          const CutTerm& entry = cut_.terms[i];
+          if (entry.coeff >= 0) continue;
+          const IntegerValue remainder =
+              PositiveRemainder(entry.coeff, best_divisor);
+          if (remainder == 0) continue;
+          const IntegerValue adjust = best_divisor - remainder;
+          const IntegerValue prod = CapProdI(adjust, entry.bound_diff);
+          if (prod <= slack_budget) {
+            adjusted_coeffs_.push_back({i, prod});
+          }
         }
-        f = GetSuperAdditiveRoundingFunction(
-            PositiveRemainder(cut_.rhs, best_divisor), best_divisor, factor_t,
-            best_scaling);
+        if (!adjusted_coeffs_.empty()) {
+          std::sort(
+              adjusted_coeffs_.begin(), adjusted_coeffs_.end(),
+              [this, adjust_all_active_neg](
+                  const std::pair<int, IntegerValue>& a,
+                  const std::pair<int, IntegerValue>& b) {
+                if (adjust_all_active_neg) {
+                  const bool active_a = cut_.terms[a.first].lp_value > 1e-6;
+                  const bool active_b = cut_.terms[b.first].lp_value > 1e-6;
+                  if (active_a != active_b) return active_a;
+                }
+                if (a.second != b.second) return a.second < b.second;
+                const double lp_a = cut_.terms[a.first].lp_value;
+                const double lp_b = cut_.terms[b.first].lp_value;
+                if (lp_a != lp_b) return lp_a > lp_b;
+                return a.first < b.first;
+              });
+          for (const auto [index, prod] : adjusted_coeffs_) {
+            if (prod > slack_budget) break;
+            slack_budget -= prod;
+            ++num_initial_zero_loss_adjusts;
+            CutTerm& entry = cut_.terms[index];
+            entry.coeff +=
+                best_divisor - PositiveRemainder(entry.coeff, best_divisor);
+            cut_.rhs += absl::int128(prod.value());
+          }
+          if (num_initial_zero_loss_adjusts > 0) {
+            f = GetSuperAdditiveRoundingFunction(
+                PositiveRemainder(cut_.rhs, best_divisor), best_divisor,
+                factor_t, best_scaling);
+          }
+        }
       }
     }
   }
@@ -1422,6 +1553,7 @@ bool IntegerRoundingCutHelper::ComputeCut(
                                            &cut_)) {
     return false;
   }
+  total_num_zero_loss_adjust_ += num_initial_zero_loss_adjusts;
   const CutPostprocessingStats& last = gub_helper_.last_stats();
   postprocessing_stats_.Add(last);
   num_ib_used_ = last.num_lb_ibs + last.num_ub_ibs;

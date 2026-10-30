@@ -495,6 +495,131 @@ TEST(GUBHelperTest, ZeroCoeffComplementedBooleanDoesNotBlockGubLifting) {
   EXPECT_EQ(cut.terms[1].coeff, IntegerValue(2));
 }
 
+TEST(IntegerRoundingCutTest, ZeroLossAdjustProtectsSmallNonZeroLpTerms) {
+  Model model;
+  const IntegerVariable x0 = model.Add(NewIntegerVariable(0, 2));
+  const IntegerVariable x1 = model.Add(NewIntegerVariable(0, 1));
+  const IntegerVariable x2 = model.Add(NewIntegerVariable(0, 1));
+
+  // Adjusting -10*x2 to 0 would increase rhs from 500 to 510 and drop x1's MIR
+  // coefficient (for coeff 515) from 2 to 1. Even though x1 has lp_value =
+  // 0.005 < 1e-2 (below HasRelevantLpValue()), zero-loss adjustment protects
+  // all positive-LP terms (lp_value > 1e-6), so x2 is not adjusted.
+  const IntegerValue rhs(500);
+  const std::vector<IntegerVariable> vars = {x0, x1, x2};
+  const std::vector<IntegerValue> coeffs = {
+      IntegerValue(1000), IntegerValue(515), IntegerValue(-10)};
+  const std::vector<double> lp_values = {0.495, 0.005, 0.0};
+
+  const LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
+      RoundingOptions(), rhs, vars, coeffs, lp_values, &model);
+  EXPECT_EQ(constraint.DebugString(), "30*I0 1*I1 -1*I2 <= 0");
+}
+
+TEST(IntegerRoundingCutTest,
+     ZeroLossAdjustStrengthensLargeNegativeTermToMultipleOfDivisor) {
+  Model model;
+  const IntegerVariable x0 = model.Add(NewIntegerVariable(0, 4));
+  const IntegerVariable x1 = model.Add(NewIntegerVariable(0, 1));
+
+  // With best_divisor = 1000 and rhs_remainder = 900, x1 has coeff -2005 <
+  // -best_divisor. Zero-loss adjustment increases -2005 by +5 to -2000 (an
+  // exact multiple of 1000, shifting rhs to 1905), strengthening the cut from
+  // 20*I0 - 41*I1 <= 20 to 1*I0 - 2*I1 <= 1.
+  const IntegerValue rhs(1900);
+  const std::vector<IntegerVariable> vars = {x0, x1};
+  const std::vector<IntegerValue> coeffs = {IntegerValue(1000),
+                                            IntegerValue(-2005)};
+  const std::vector<double> lp_values = {1.9, 0.0};
+
+  const LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
+      RoundingOptions(), rhs, vars, coeffs, lp_values, &model);
+  EXPECT_EQ(constraint.DebugString(), "1*I0 -2*I1 <= 1");
+}
+
+TEST(IntegerRoundingCutTest, ZeroLossAdjustEliminatesRelevantNegativeTerm) {
+  Model model;
+  const IntegerVariable x0 = model.Add(NewIntegerVariable(0, 4));
+  const IntegerVariable x1 = model.Add(NewIntegerVariable(0, 4));
+  const IntegerVariable x2 = model.Add(NewIntegerVariable(0, 1));
+
+  // x2 has lp_value = 0.02 (a relevant entry), is not adjusted inside
+  // GetScaledViolation (adjust_threshold = 99 / 1000 = 0), and is not
+  // complemented during post-complementation. Zero-loss adjustment after
+  // selecting best_scaling = 8 adjusts -12*x2 to 0 (rhs: 700 -> 712) while
+  // preserving f(175) = 6, strengthening 8*I0 + 6*I1 - 1*I2 <= 24 to
+  // 4*I0 + 3*I1 <= 12.
+  const IntegerValue rhs(700);
+  const std::vector<IntegerVariable> vars = {x0, x1, x2};
+  const std::vector<IntegerValue> coeffs = {
+      IntegerValue(200), IntegerValue(175), IntegerValue(-12)};
+  const std::vector<double> lp_values = {1.9, 1.8, 0.02};
+
+  const LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
+      RoundingOptions(), rhs, vars, coeffs, lp_values, &model);
+  EXPECT_EQ(constraint.DebugString(), "4*I0 3*I1 <= 12");
+}
+
+TEST(IntegerRoundingCutTest, AdjustWithFixedFZeroesNegativeTermsWithinPlateau) {
+  Model model;
+  const IntegerVariable x0 = model.Add(NewIntegerVariable(0, 2));
+  const IntegerVariable x1 = model.Add(NewIntegerVariable(0, 2));
+  const IntegerVariable x2 = model.Add(NewIntegerVariable(0, 1));
+
+  // Pure Chvatal-Gomory f(v) = FloorRatio(v, 100) has f(r) = 0 on [50, 99], so
+  // slack_budget = 99 - 50 = 49. Both t1 (prod = 20 * 2 = 40) and t2 (prod =
+  // 15 * 1 = 15) fit individually, but 40 + 15 = 55 > 49. AdjustWithFixedF
+  // greedily picks the smaller prod first (t2), zeroing and removing t2 while
+  // leaving t1 with f(-20) = -1.
+  CutData cut;
+  cut.rhs = 50;
+
+  CutTerm t0;
+  t0.coeff = 100;
+  t0.lp_value = 0.6;
+  t0.bound_diff = 2;
+  t0.expr_vars[0] = x0;
+  t0.expr_coeffs[0] = 1;
+  t0.expr_coeffs[1] = 0;
+  t0.expr_offset = 0;
+  cut.terms.push_back(t0);
+
+  CutTerm t1;
+  t1.coeff = -20;
+  t1.lp_value = 0.0;
+  t1.bound_diff = 2;
+  t1.expr_vars[0] = x1;
+  t1.expr_coeffs[0] = 1;
+  t1.expr_coeffs[1] = 0;
+  t1.expr_offset = 0;
+  cut.terms.push_back(t1);
+
+  CutTerm t2;
+  t2.coeff = -15;
+  t2.lp_value = 0.0;
+  t2.bound_diff = 1;
+  t2.expr_vars[0] = x2;
+  t2.expr_coeffs[0] = 1;
+  t2.expr_coeffs[1] = 0;
+  t2.expr_offset = 0;
+  cut.terms.push_back(t2);
+
+  const auto f = GetSuperAdditiveRoundingFunction(
+      /*rhs_remainder=*/IntegerValue(50), /*divisor=*/IntegerValue(100),
+      /*t=*/IntegerValue(1), /*max_scaling=*/IntegerValue(1));
+  GUBHelper gub_helper(&model);
+  EXPECT_TRUE(gub_helper.ApplyWithPostprocessing(
+      f, IntegerValue(100), /*ib_processor=*/nullptr, &cut));
+
+  EXPECT_EQ(gub_helper.last_stats().num_zero_loss_adjusts, 1);
+  EXPECT_EQ(cut.rhs, absl::int128(0));
+  ASSERT_EQ(cut.terms.size(), 2);
+  EXPECT_EQ(cut.terms[0].expr_vars[0], x0);
+  EXPECT_EQ(cut.terms[0].coeff, IntegerValue(1));
+  EXPECT_EQ(cut.terms[1].expr_vars[0], x1);
+  EXPECT_EQ(cut.terms[1].coeff, IntegerValue(-1));
+}
+
 // The algo should find a "divisor" 2 when it leads to a good cut.
 //
 // TODO(user): Double check that such a divisor will always be found? Of course,

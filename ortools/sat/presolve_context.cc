@@ -2696,7 +2696,7 @@ PresolveContext::BuildMergedCanonicalLinearConstraint(
       terms.push_back({range, magnitude});
     }
   }
-  if (!terms.empty()) {
+  if (terms.size() > 1) {
     std::sort(terms.begin(), terms.end(),
               [](const CanonicalTerm& a, const CanonicalTerm& b) {
                 return a.magnitude < b.magnitude;
@@ -2722,6 +2722,7 @@ PresolveContext::BuildMergedCanonicalLinearConstraint(
       .terms = std::move(terms),
       .lb = ct_lb > min_activity ? ct_lb - min_activity : 0,
       .ub = ct_ub > min_activity ? ct_ub - min_activity : 0,
+      .max_variation = max_activity - min_activity,
   };
 }
 

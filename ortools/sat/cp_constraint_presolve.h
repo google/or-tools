@@ -98,7 +98,9 @@ class CpConstraintPresolver {
   // coefficients using continued fraction convergents and Euclidean Algorithm.
   // Returns true if the detection triggered and the constraint was rewritten.
   // See go/cp-two-term-tilting for more details.
-  bool DetectTwoTermTilting(int c, ConstraintProto* ct);
+  bool DetectTwoTermTilting(
+      ConstraintProto* ct,
+      const PresolveContext::MergedCanonicalLinearConstraint& canonical);
 
   void TryToSimplifyDomain(int var);
 
@@ -176,7 +178,9 @@ class CpConstraintPresolver {
   // For instance "10'001 X + 9'999 Y <= 105'000, with X, Y in [0, 100]" can
   // be rewritten as X + Y <= 10 ! This can easily happen after scaling to
   // integer coefficients in a floating-point constraint.
-  void TryToReduceCoefficientsOfLinearConstraint(int c, ConstraintProto* ct);
+  void TryToReduceCoefficientsOfLinearConstraint(
+      int c, ConstraintProto* ct,
+      const PresolveContext::MergedCanonicalLinearConstraint& canonical);
 
   // Detects if the given linear constraint is equivalent to sum vars \in
   // domain. This is a bit costly: O(n log n); but it does trigger often enough
@@ -187,7 +191,9 @@ class CpConstraintPresolver {
   // TODO(user): We could probably handle other simple coefficient reduction
   // case. In particular, look at the case of only two different coefficient
   // magnitude.
-  bool DetectSimpleSum(int c, ConstraintProto* ct);
+  bool DetectSimpleSum(
+      ConstraintProto* ct,
+      const PresolveContext::MergedCanonicalLinearConstraint& canonical);
 
   // Presolve a no_overlap_2d constraint where all the non-fixed rectangles are
   // framed by exactly four fixed rectangles and at most one single box can fit
@@ -233,14 +239,6 @@ class CpConstraintPresolver {
   CpModelProto tmp_model_;
 
   // Used by TryToReduceCoefficientsOfLinearConstraint().
-  struct RdEntry {
-    int64_t magnitude;
-    int64_t max_variation;
-    int index;
-  };
-  std::vector<RdEntry> rd_entries_;
-  std::vector<int> rd_vars_;
-  std::vector<int64_t> rd_coeffs_;
   std::vector<int64_t> rd_magnitudes_;
   std::vector<int64_t> rd_lbs_;
   std::vector<int64_t> rd_ubs_;

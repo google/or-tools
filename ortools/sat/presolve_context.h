@@ -421,12 +421,14 @@ class PresolveContext {
   // Canonicalizes a linear constraint into: lb <= sum_k magnitude_k * X_k <= ub
   // with X_k in [0, range_k] (range_k > 0), sorted by increasing magnitude and
   // with equal-magnitude terms merged. Terms with range == 0 are absorbed into
-  // `lb` and `ub` and omitted from `terms`. Additionally, `lb` and `ub` are
-  // clamped to [0, max_activity - min_activity].
+  // `lb` and `ub` and omitted from `terms`. Additionally, `max_variation` is
+  // `max_activity - min_activity`, and `lb` and `ub` are clamped to
+  // `[0, max_variation]`.
   struct MergedCanonicalLinearConstraint {
     std::vector<CanonicalTerm> terms;
     int64_t lb = 0;
     int64_t ub = 0;
+    int64_t max_variation = 0;
   };
 
   // Canonicalizes the given constraint into a MergedCanonicalLinearConstraint.
