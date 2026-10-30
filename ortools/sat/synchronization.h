@@ -493,7 +493,7 @@ class SharedResponseManager {
 
   // Registers a postprocessor that converts an outer integer objective lower
   // bound (from PostsolveInnerObjectiveValue()) into the objective bound passed
-  // to AddBestBoundCallback() callbacks.
+  // to callbacks and the final response.
   void SetBestBoundPostprocessor(std::function<double(int64_t)> postprocessor);
 
   // The "inner" objective is the CpModelProto objective without scaling/offset.

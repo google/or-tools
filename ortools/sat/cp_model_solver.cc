@@ -3089,10 +3089,6 @@ bool CpModelSolver::Presolve() {
   // Checks for hints early in case they are forced to be hard constraints.
   MaybeFixVariablesToHintValue(context.get());
 
-  // If the objective was a floating point one, do some postprocessing on
-  // responses and best-bound callbacks.
-  AddFloatingPointObjectiveResponsePostprocessor();
-
   // For the case where the assumptions are currently not supported, we just
   // assume they are fixed, and will always report all of them in the UNSAT
   // core if the problem turns out to be UNSAT.
@@ -3119,6 +3115,10 @@ bool CpModelSolver::Presolve() {
   // Delete the context as soon as the presolve is done. Note that only
   // postsolve_mapping_ and mapping_proto_ are needed for postsolve.
   context.reset(nullptr);
+
+  // If the objective was a floating point one, do some postprocessing on
+  // responses and best-bound callbacks.
+  AddFloatingPointObjectiveResponsePostprocessor();
 
   if (presolve_status != CpSolverStatus::UNKNOWN) {
     if (presolve_status == CpSolverStatus::INFEASIBLE &&
@@ -3212,7 +3212,8 @@ bool CpModelSolver::FixAssumptionsIfNotSupported(PresolveContext* context) {
 void CpModelSolver::AddFloatingPointObjectiveResponsePostprocessor() {
   if (!model_proto_.has_floating_point_objective()) return;
 
-  if (params_.mip_compute_true_objective_bound()) {
+  if (params_.mip_compute_true_objective_bound() &&
+      mapping_proto_->has_objective()) {
     shared_response_manager_->SetBestBoundPostprocessor(
         [&](int64_t integer_lb) {
           CHECK(mapping_proto_->has_objective());
