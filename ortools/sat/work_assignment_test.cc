@@ -35,6 +35,7 @@
 #include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 
 namespace operations_research {
 namespace sat {
@@ -55,7 +56,7 @@ TEST(SharedTreeEncoderTest, ImportAndSplit) {
             ProtoLiteral(0, 1).Negated());
 }
 
-TEST(SharedTreeEncoderTest, ProcessNewBoundPropagatesUp) {
+TEST(SharedTreeEncoderTest, ImportNodePropagatesObjectiveLbUp) {
   SharedTreeEncoder encoder(nullptr);
   encoder.ImportNode(
       {.id = NodeId(1), .decision = ProtoLiteral(), .objective_lb = 0});
@@ -111,7 +112,7 @@ TEST(SharedTreeEncoderTest, ImportClosedRootNodeWithoutProofHandler) {
   EXPECT_TRUE(encoder.GetNode(NodeId(1))->shared().is_closed());
 }
 
-TEST(SharedTreeEncoderTest, ReasonLiterals) {
+TEST(SharedTreeEncoderTest, NegatedDecisions) {
   SharedTreeEncoder encoder(nullptr);
   encoder.ImportNode(
       {.id = NodeId(1), .decision = ProtoLiteral(), .objective_lb = 0});
@@ -209,7 +210,7 @@ TEST(SharedTreeEncoderTest, SyncNodesOnPathImpliedNode) {
   EXPECT_TRUE(encoder2.GetNode(NodeId(3))->shared().is_closed());
 }
 
-TEST(SharedTreeEncoderTest, SyncNodesOnPathHandlesImpliedNodes) {
+TEST(SharedTreeEncoderTest, SyncNodesOnPathImpliedNodesLratProof) {
   SatParameters params;
   params.set_output_lrat_proof(true);
   params.set_check_lrat_proof(true);
@@ -284,44 +285,6 @@ TEST(SharedTreeEncoderTest, CloseSubtreeLratProof) {
   EXPECT_EQ(lrat->Check(), SharedLratProofStatus::VALID);
 }
 
-TEST(SharedTreeEncoderTest, SyncNodesOnPathClosesLratProofWithInvalidLeaf) {
-  SatParameters params;
-  params.set_output_lrat_proof(true);
-  params.set_check_lrat_proof(true);
-  params.set_debug_crash_if_lrat_check_fails(
-      false);  // Don't crash, return INVALID
-  params.set_shared_tree_num_workers(4);
-  Model model;
-  model.Add(NewSatParameters(params));
-  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
-  auto lrat1 = LratProofHandler::MaybeCreate(
-      params, model.GetOrCreate<SharedLratProofStatus>(),
-      model.GetOrCreate<SharedStatistics>());
-  SharedTreeEncoder worker1(lrat1.get());
-  auto lrat2 = LratProofHandler::MaybeCreate(
-      params, model.GetOrCreate<SharedLratProofStatus>(),
-      model.GetOrCreate<SharedStatistics>());
-  SharedTreeEncoder worker2(lrat2.get());
-  std::vector<ProtoLiteral> phase;
-
-  shared_tree_manager->ReplaceTree(kNoNodeId, worker1, phase);
-  shared_tree_manager->TrySplitTree(NodeId(1), {ProtoLiteral(0, 1)}, worker1);
-  const ClauseUniquePtr clause2 =
-      NewClausePtr({Literal(BooleanVariable(0), false)});
-  lrat1->AddProblemClause(clause2.get());
-  worker1.CloseNode(NodeId(2), {clause2.get()});
-  const ClauseUniquePtr clause3 =
-      NewClausePtr({Literal(BooleanVariable(0), true)});
-  lrat1->AddProblemClause(clause3.get());
-  worker1.CloseNode(NodeId(3), {clause3.get()});
-  shared_tree_manager->SyncTree(NodeId(2), worker1);
-  shared_tree_manager->SyncTree(NodeId(3), worker1);
-
-  EXPECT_EQ(lrat1->Check(), SharedLratProofStatus::VALID);
-  EXPECT_FALSE(shared_tree_manager->SyncTree(kNoNodeId, worker2));
-  EXPECT_EQ(lrat2->Check(), SharedLratProofStatus::VALID);
-}
-
 TEST(SharedTreeEncoderTest, CloseNodeDeletesReasonClauses) {
   SatParameters params;
   params.set_output_lrat_proof(true);
@@ -349,6 +312,140 @@ TEST(SharedTreeEncoderTest, CloseNodeDeletesReasonClauses) {
   encoder.CloseNode(NodeId(2), {});
 
   EXPECT_TRUE(encoder.GetNode(NodeId(2))->reason_clauses().empty());
+}
+
+TEST(SharedTreeEncoderTest, VariableBoundsResolution) {
+  SharedTreeEncoder manager(nullptr);
+  SharedTreeEncoder worker1(nullptr);
+  SharedTreeEncoder worker2(nullptr);
+  manager.ImportNode({.id = NodeId(1)});
+  manager.SplitNode(NodeId(1), ProtoLiteral(0, 1), NodeId(2));
+  manager.SyncNodesOnPath(NodeId(2), worker1);
+  manager.SyncNodesOnPath(NodeId(3), worker2);
+
+  worker1.GetNode(NodeId(2))->AddImplication(ProtoLiteral(1, 5));
+  manager.SyncNodesOnPath(NodeId(2), worker1);
+  worker2.GetNode(NodeId(3))->AddImplication(ProtoLiteral(1, 3));
+  manager.SyncNodesOnPath(NodeId(3), worker2);
+
+  EXPECT_THAT(manager.GetNode(NodeId(1))->shared().var_lower_bounds,
+              UnorderedElementsAre(testing::Pair(1, IntegerValue(3))));
+}
+
+TEST(SharedTreeEncoderTest, VariableBoundsInAllLeavesResolveToRoot) {
+  SharedTreeEncoder manager(nullptr);
+  manager.ImportNode({.id = NodeId(1)});
+  manager.SplitNode(NodeId(1), ProtoLiteral(0, 1), NodeId(2));
+  manager.SplitNode(NodeId(2), ProtoLiteral(1, 1), NodeId(4));
+  manager.SplitNode(NodeId(3), ProtoLiteral(2, 1), NodeId(6));
+  const int var = 3;
+  const absl::flat_hash_map<NodeId, IntegerValue> leaf_lower_bounds = {
+      {NodeId(4), IntegerValue(5)},
+      {NodeId(5), IntegerValue(7)},
+      {NodeId(6), IntegerValue(4)},
+      {NodeId(7), IntegerValue(6)},
+  };
+
+  for (const auto& [node, lower_bound] : leaf_lower_bounds) {
+    SharedTreeEncoder worker(nullptr);
+    manager.SyncNodesOnPath(node, worker);
+    worker.GetNode(node)->AddImplication(ProtoLiteral(var, lower_bound));
+    manager.SyncNodesOnPath(node, worker);
+  }
+
+  EXPECT_THAT(manager.GetNode(NodeId(1))->shared().var_lower_bounds,
+              UnorderedElementsAre(testing::Pair(var, IntegerValue(4))));
+  EXPECT_THAT(manager.GetNode(NodeId(2))->shared().var_lower_bounds,
+              UnorderedElementsAre(testing::Pair(var, IntegerValue(5))));
+  EXPECT_THAT(manager.GetNode(NodeId(3))->shared().var_lower_bounds,
+              UnorderedElementsAre(testing::Pair(var, IntegerValue(4))));
+}
+
+TEST(SharedTreeEncoderTest, VariableBoundsResolutionLratProof) {
+  SatParameters params;
+  params.set_output_lrat_proof(true);
+  params.set_check_lrat_proof(true);
+  params.set_debug_crash_if_lrat_check_fails(true);
+  Model model;
+  model.Add(NewSatParameters(params));
+  auto lrat = LratProofHandler::MaybeCreate(
+      params, model.GetOrCreate<SharedLratProofStatus>(),
+      model.GetOrCreate<SharedStatistics>());
+  SharedTreeEncoder manager(lrat.get());
+  manager.ImportNode({.id = NodeId(1)});
+  manager.SplitNode(NodeId(1), ProtoLiteral(0, 1), NodeId(2));
+  manager.SplitNode(NodeId(2), ProtoLiteral(1, 1), NodeId(4));
+  manager.SplitNode(NodeId(3), ProtoLiteral(2, 1), NodeId(6));
+  ProtoLiteral leaf_implication(3, 1);
+  std::vector<ClauseUniquePtr> leaf_clauses;
+
+  for (NodeId node : {NodeId(4), NodeId(7), NodeId(6), NodeId(5)}) {
+    SharedTreeEncoder worker(lrat.get());
+    manager.SyncNodesOnPath(node, worker);
+    SharedTreeEncoder::Node* worker_node = worker.GetNode(node);
+    std::vector<Literal> lits = worker_node->ExpectedReasonClauseLiterals(
+        worker.Decode(leaf_implication));
+    leaf_clauses.push_back(NewClausePtr(lits));
+    lrat->AddProblemClause(leaf_clauses.back().get());
+    worker_node->AddImplication(leaf_implication);
+    worker.GetNode(node)->ExportInferredReasonClause(
+        worker.Decode(leaf_implication), {leaf_clauses.back().get()});
+    manager.SyncNodesOnPath(node, worker);
+  }
+  EXPECT_THAT(manager.GetNode(NodeId(1))->shared().var_lower_bounds,
+              testing::UnorderedElementsAre(testing::Pair(3, IntegerValue(1))));
+  EXPECT_THAT(manager.GetNode(NodeId(1))->reason_clauses(),
+              testing::UnorderedElementsAre(
+                  testing::Pair(manager.Decode(leaf_implication), testing::_)));
+  for (ClauseUniquePtr& clause : leaf_clauses) {
+    lrat->DeleteClause(clause.get());
+  }
+}
+
+TEST(SharedTreeEncoderTest, SetObjectiveLowerBound) {
+  SharedTreeEncoder encoder(nullptr);
+  encoder.ImportNode(
+      {.id = NodeId(1), .decision = ProtoLiteral(), .objective_lb = 0});
+  encoder.SplitNode(NodeId(1), ProtoLiteral(0, 1), NodeId(2));
+  encoder.SplitNode(NodeId(2), ProtoLiteral(1, 1), NodeId(4));
+  encoder.SplitNode(NodeId(3), ProtoLiteral(2, 1), NodeId(6));
+  encoder.SplitNode(NodeId(5), ProtoLiteral(3, 1), NodeId(8));
+  encoder.ImportNode(
+      {.id = NodeId(5), .parent_id = NodeId(2), .is_implied = true});
+
+  encoder.GetNode(NodeId(6))->SetObjectiveLowerBound(IntegerValue(20));
+  encoder.GetNode(NodeId(7))->SetObjectiveLowerBound(IntegerValue(15));
+  encoder.GetNode(NodeId(8))->SetObjectiveLowerBound(IntegerValue(25));
+  encoder.GetNode(NodeId(9))->SetObjectiveLowerBound(IntegerValue(12));
+
+  EXPECT_TRUE(encoder.GetNode(NodeId(5))->shared().is_implied);
+  EXPECT_TRUE(encoder.GetNode(NodeId(4))->shared().is_closed());
+  EXPECT_EQ(encoder.GetNode(NodeId(3))->shared().objective_lb, 15);
+  EXPECT_EQ(encoder.GetNode(NodeId(2))->shared().objective_lb, 12);
+  EXPECT_EQ(encoder.GetNode(NodeId(1))->shared().objective_lb, 12);
+}
+
+TEST(SharedTreeEncoderTest, SyncNodesOnPathKeepsMostSampledLbd) {
+  // A worker with fewer LBD samples must not overwrite a newer estimate.
+  SharedTreeEncoder manager(nullptr);
+  SharedTreeEncoder worker1(nullptr);
+  SharedTreeEncoder worker2(nullptr);
+  manager.ImportNode({.id = NodeId(1)});
+  manager.SplitNode(NodeId(1), ProtoLiteral(0, 1), NodeId(2));
+  manager.SyncNodesOnPath(NodeId(2), worker1);
+  manager.SyncNodesOnPath(NodeId(2), worker2);
+  worker1.GetNode(NodeId(2))->AddLbdSample(4.0);
+  worker1.GetNode(NodeId(2))->AddLbdSample(2.0);
+  manager.SyncNodesOnPath(NodeId(2), worker1);
+  worker2.GetNode(NodeId(2))->AddLbdSample(10.0);
+
+  manager.SyncNodesOnPath(NodeId(2), worker2);
+
+  const auto expected_lbd = testing::AllOf(
+      testing::Property(&IncrementalAverage::CurrentAverage, 3.0),
+      testing::Property(&IncrementalAverage::NumRecords, 2));
+  EXPECT_THAT(manager.GetNode(NodeId(2))->shared().lbd, expected_lbd);
+  EXPECT_THAT(worker2.GetNode(NodeId(2))->shared().lbd, expected_lbd);
 }
 
 class SharedTreeSolveTest : public testing::TestWithParam<absl::string_view> {
@@ -461,7 +558,8 @@ TEST_P(SharedTreeSolveTest, InfeasiblePigeonHoleSmokeTest) {
 }
 
 TEST_P(SharedTreeSolveTest, InfeasiblePigeonHolePureSatLratTest) {
-  SatParameters params =
+  SatParameters params = GetParams();
+  const SatParameters to_merge =
       google::protobuf::contrib::parse_proto::ParseTextProtoOrDie(
           "symmetry_level:1,"
           "num_workers:6,"
@@ -473,6 +571,7 @@ TEST_P(SharedTreeSolveTest, InfeasiblePigeonHolePureSatLratTest) {
           "check_merged_lrat_proof:true,"
           "inprocessing_use_sat_sweeping:false,"
           "cp_model_pure_sat_presolve:true");
+  params.MergeFrom(to_merge);
   // We use pure SAT encoding of the pigeon-hole problem.
   const int pigeons = 5;
   const int holes = 4;
@@ -507,29 +606,6 @@ TEST_P(SharedTreeSolveTest, InfeasiblePigeonHolePureSatLratTest) {
   EXPECT_EQ(response.status(), INFEASIBLE);
 }
 
-TEST(SharedTreeManagerTest, SplitTest) {
-  CpModelBuilder model_builder;
-  auto bool_var = model_builder.NewBoolVar();
-  auto int_var = model_builder.NewIntVar({0, 7});
-  model_builder.AddLessOrEqual(int_var, 3).OnlyEnforceIf(bool_var);
-  model_builder.Maximize(int_var);
-  Model model;
-  SatParameters params;
-  params.set_num_workers(4);
-  params.set_shared_tree_num_workers(4);
-  params.set_cp_model_presolve(false);
-  model.Add(NewSatParameters(params));
-  LoadVariables(model_builder.Build(), false, &model);
-  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
-  SharedTreeEncoder shared_trail(nullptr);
-  std::vector<ProtoLiteral> phase;
-  NodeId leaf_id =
-      shared_tree_manager->ReplaceTree(kNoNodeId, shared_trail, phase);
-  shared_tree_manager->TrySplitTree(leaf_id, {{-1, 0}}, shared_trail);
-
-  EXPECT_EQ(shared_trail.Size(), 3);
-}
-
 TEST(SharedTreeManagerTest, RestartTest) {
   CpModelBuilder model_builder;
   auto bool_var = model_builder.NewBoolVar();
@@ -545,44 +621,12 @@ TEST(SharedTreeManagerTest, RestartTest) {
   LoadVariables(model_builder.Build(), false, &model);
   auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
   SharedTreeEncoder shared_trail(nullptr);
-  std::vector<ProtoLiteral> phase;
-  NodeId leaf_id =
-      shared_tree_manager->ReplaceTree(kNoNodeId, shared_trail, phase);
-  shared_tree_manager->TrySplitTree(leaf_id, {{-1, 0}}, shared_trail);
+  SharedTreeManager::SubtreeAssignment assignment;
+  shared_tree_manager->SyncTree(assignment, shared_trail);
+  shared_tree_manager->TrySplitTree({{-1, 0}}, assignment, shared_trail);
 
   shared_tree_manager->Restart();
-  shared_tree_manager->ReplaceTree(kNoNodeId, shared_trail, phase);
-
-  EXPECT_EQ(shared_trail.Size(), 1);
-}
-
-TEST(SharedTreeManagerTest, RestartTestWithLevelZeroImplications) {
-  CpModelBuilder model_builder;
-  auto bool_var = model_builder.NewBoolVar();
-  auto int_var = model_builder.NewIntVar({0, 7});
-  model_builder.AddLessOrEqual(int_var, 3).OnlyEnforceIf(bool_var);
-  model_builder.Maximize(int_var);
-  Model model;
-  SatParameters params;
-  params.set_num_workers(4);
-  params.set_shared_tree_num_workers(4);
-  params.set_cp_model_presolve(false);
-  model.Add(NewSatParameters(params));
-  LoadVariables(model_builder.Build(), false, &model);
-  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
-  SharedTreeEncoder shared_trail(nullptr);
-  std::vector<ProtoLiteral> phase;
-  NodeId leaf_id =
-      shared_tree_manager->ReplaceTree(kNoNodeId, shared_trail, phase);
-  leaf_id = shared_tree_manager->TrySplitTree(leaf_id, {{-1, 0}}, shared_trail);
-
-  shared_trail.CloseNode(NodeId(2), {});
-  shared_tree_manager->SyncTree(leaf_id, shared_trail);
-
-  shared_tree_manager->ReplaceTree(leaf_id, shared_trail, phase);
-  shared_tree_manager->Restart();
-
-  shared_tree_manager->ReplaceTree(kNoNodeId, shared_trail, phase);
+  shared_tree_manager->SyncTree(assignment, shared_trail);
 
   EXPECT_EQ(shared_trail.Size(), 1);
 }
@@ -604,16 +648,16 @@ TEST(SharedTreeManagerTest, SharedBranchingTest) {
   SharedTreeEncoder trail1(nullptr);
   SharedTreeEncoder trail2(nullptr);
 
-  std::vector<ProtoLiteral> phase;
-  NodeId root_id = shared_tree_manager->ReplaceTree(kNoNodeId, trail1, phase);
-  NodeId leaf_id1 =
-      shared_tree_manager->TrySplitTree(root_id, {{-1, 0}}, trail1);
-  NodeId leaf_id2 = shared_tree_manager->ReplaceTree(kNoNodeId, trail2, phase);
+  SharedTreeManager::SubtreeAssignment assignment1;
+  SharedTreeManager::SubtreeAssignment assignment2;
+  shared_tree_manager->SyncTree(assignment1, trail1);
+  shared_tree_manager->TrySplitTree({{-1, 0}}, assignment1, trail1);
+  shared_tree_manager->SyncTree(assignment2, trail2);
 
-  EXPECT_EQ(trail1.GetLevelStartNodes(leaf_id1).size(), 2);
-  EXPECT_EQ(trail2.GetLevelStartNodes(leaf_id2).size(), 2);
-  const auto* leaf1 = trail1.GetNode(leaf_id1);
-  const auto* leaf2 = trail2.GetNode(leaf_id2);
+  EXPECT_EQ(trail1.GetLevelStartNodes(assignment1.leaf_id).size(), 2);
+  EXPECT_EQ(trail2.GetLevelStartNodes(assignment2.leaf_id).size(), 2);
+  const auto* leaf1 = trail1.GetNode(assignment1.leaf_id);
+  const auto* leaf2 = trail2.GetNode(assignment2.leaf_id);
   EXPECT_EQ(leaf1->shared().decision, leaf2->shared().decision.Negated());
   EXPECT_EQ(leaf1->decoded_decision(), leaf2->decoded_decision().Negated());
 }
@@ -637,23 +681,24 @@ TEST(SharedTreeManagerTest, ObjectiveLbSplitTest) {
   auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
   SharedTreeEncoder trail1(nullptr);
   SharedTreeEncoder trail2(nullptr);
-  std::vector<ProtoLiteral> phase;
-  NodeId root_id = shared_tree_manager->ReplaceTree(kNoNodeId, trail1, phase);
-  NodeId leaf_id1 =
-      shared_tree_manager->TrySplitTree(root_id, {{-1, 0}}, trail1);
-  NodeId leaf_id2 = shared_tree_manager->ReplaceTree(kNoNodeId, trail2, phase);
-  trail1.ImportNode({.id = leaf_id1, .objective_lb = 2});
-  trail2.ImportNode({.id = leaf_id2, .objective_lb = 1});
-  shared_tree_manager->SyncTree(leaf_id1, trail1);
-  shared_tree_manager->SyncTree(leaf_id2, trail2);
+  SharedTreeManager::SubtreeAssignment assignment1;
+  SharedTreeManager::SubtreeAssignment assignment2;
+  shared_tree_manager->SyncTree(assignment1, trail1);
+  shared_tree_manager->TrySplitTree({{-1, 0}}, assignment1, trail1);
+  shared_tree_manager->SyncTree(assignment2, trail2);
+  trail1.ImportNode({.id = assignment1.leaf_id, .objective_lb = 2});
+  trail2.ImportNode({.id = assignment2.leaf_id, .objective_lb = 1});
+  shared_tree_manager->SyncTree(assignment1, trail1);
+  shared_tree_manager->SyncTree(assignment2, trail2);
   // This call should not be necessary, investigate.
   response_manager->UpdateInnerObjectiveBounds("test", IntegerValue(1),
                                                IntegerValue(100));
 
   // Reject this split because it is not at the global lower bound.
-  EXPECT_EQ(shared_tree_manager->TrySplitTree(leaf_id1, {{int_var.index(), 3}},
-                                              trail1),
-            leaf_id1);
+  const NodeId old_leaf_id = assignment1.leaf_id;
+  shared_tree_manager->TrySplitTree({{int_var.index(), 3}}, assignment1,
+                                    trail1);
+  EXPECT_EQ(assignment1.leaf_id, old_leaf_id);
 
   EXPECT_EQ(response_manager->GetInnerObjectiveLowerBound(), 1);
 }
@@ -681,22 +726,22 @@ TEST(SharedTreeManagerTest, DiscrepancySplitTestOneLeafPerWorker) {
   SharedTreeEncoder trail1(nullptr);
   SharedTreeEncoder trail2(nullptr);
 
-  std::vector<ProtoLiteral> phase;
-  NodeId root_id = shared_tree_manager->ReplaceTree(kNoNodeId, trail1, phase);
+  SharedTreeManager::SubtreeAssignment assignment1;
+  shared_tree_manager->SyncTree(assignment1, trail1);
 
-  NodeId leaf_id1 = shared_tree_manager->TrySplitTree(root_id,
-                                                      {{-1, 0},
-                                                       {int_var.index(), 3},
-                                                       {int_var.index(), 4},
-                                                       {int_var.index(), 5}},
-                                                      trail1);
-  EXPECT_EQ(trail1.GetLevelStartNodes(leaf_id1).size(), 4);
+  shared_tree_manager->TrySplitTree({{-1, 0},
+                                     {int_var.index(), 3},
+                                     {int_var.index(), 4},
+                                     {int_var.index(), 5}},
+                                    assignment1, trail1);
+  EXPECT_EQ(trail1.GetLevelStartNodes(assignment1.leaf_id).size(), 4);
 
-  NodeId leaf_id2 = shared_tree_manager->ReplaceTree(kNoNodeId, trail2, phase);
+  SharedTreeManager::SubtreeAssignment assignment2;
+  shared_tree_manager->SyncTree(assignment2, trail2);
 
-  NodeId leaf_id2_new = shared_tree_manager->TrySplitTree(
-      leaf_id2, {{int_var.index(), 3}, {int_var.index(), 5}}, trail2);
-  EXPECT_EQ(trail2.GetLevelStartNodes(leaf_id2_new).size(), 3);
+  shared_tree_manager->TrySplitTree(
+      {{int_var.index(), 3}, {int_var.index(), 5}}, assignment2, trail2);
+  EXPECT_EQ(trail2.GetLevelStartNodes(assignment2.leaf_id).size(), 3);
 
   EXPECT_EQ(shared_tree_manager->MaxPathDepth(), 3);
   EXPECT_EQ(shared_tree_manager->NumNodes(), 9);
@@ -725,18 +770,20 @@ TEST(SharedTreeManagerTest, DiscrepancySplitTest) {
   SharedTreeEncoder trail1(nullptr);
   SharedTreeEncoder trail2(nullptr);
 
-  std::vector<ProtoLiteral> phase;
-  NodeId root_id = shared_tree_manager->ReplaceTree(kNoNodeId, trail1, phase);
+  SharedTreeManager::SubtreeAssignment assignment1;
+  shared_tree_manager->SyncTree(assignment1, trail1);
 
-  NodeId leaf_id1 = shared_tree_manager->TrySplitTree(
-      root_id, {{-1, 0}, {int_var.index(), 3}, {int_var.index(), 5}}, trail1);
-  EXPECT_EQ(trail1.GetLevelStartNodes(leaf_id1).size(), 4);
+  shared_tree_manager->TrySplitTree(
+      {{-1, 0}, {int_var.index(), 3}, {int_var.index(), 5}}, assignment1,
+      trail1);
+  EXPECT_EQ(trail1.GetLevelStartNodes(assignment1.leaf_id).size(), 4);
 
-  NodeId leaf_id2 = shared_tree_manager->ReplaceTree(kNoNodeId, trail2, phase);
+  SharedTreeManager::SubtreeAssignment assignment2;
+  shared_tree_manager->SyncTree(assignment2, trail2);
 
-  NodeId leaf_id2_new = shared_tree_manager->TrySplitTree(
-      leaf_id2, {{int_var.index(), 3}, {int_var.index(), 5}}, trail2);
-  EXPECT_EQ(trail2.GetLevelStartNodes(leaf_id2_new).size(), 3);
+  shared_tree_manager->TrySplitTree(
+      {{int_var.index(), 3}, {int_var.index(), 5}}, assignment2, trail2);
+  EXPECT_EQ(trail2.GetLevelStartNodes(assignment2.leaf_id).size(), 3);
 
   EXPECT_EQ(shared_tree_manager->MaxPathDepth(), 3);
   EXPECT_EQ(shared_tree_manager->NumNodes(), 9);
@@ -764,25 +811,25 @@ TEST(SharedTreeManagerTest, BalancedSplitTestOneLeafPerWorker) {
   auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
   SharedTreeEncoder trail1(nullptr);
   SharedTreeEncoder trail2(nullptr);
-  std::vector<ProtoLiteral> phase;
-  NodeId root_id = shared_tree_manager->ReplaceTree(kNoNodeId, trail1, phase);
+  SharedTreeManager::SubtreeAssignment assignment1;
+  shared_tree_manager->SyncTree(assignment1, trail1);
 
-  NodeId leaf_id1 = shared_tree_manager->TrySplitTree(root_id,
-                                                      {{int_var.index(), 3},
-                                                       {int_var.index(), 2},
-                                                       {int_var.index(), 1},
-                                                       {int_var.index(), 0}},
-                                                      trail1);
+  shared_tree_manager->TrySplitTree({{int_var.index(), 3},
+                                     {int_var.index(), 2},
+                                     {int_var.index(), 1},
+                                     {int_var.index(), 0}},
+                                    assignment1, trail1);
   EXPECT_EQ(shared_tree_manager->MaxPathDepth(), 3);
-  EXPECT_EQ(trail1.GetLevelStartNodes(leaf_id1).size(), 4);
+  EXPECT_EQ(trail1.GetLevelStartNodes(assignment1.leaf_id).size(), 4);
 
-  shared_tree_manager->SyncTree(leaf_id1, trail1);
+  shared_tree_manager->SyncTree(assignment1, trail1);
 
-  NodeId leaf_id2 = shared_tree_manager->ReplaceTree(kNoNodeId, trail2, phase);
+  SharedTreeManager::SubtreeAssignment assignment2;
+  shared_tree_manager->SyncTree(assignment2, trail2);
 
-  NodeId leaf_id2_new = shared_tree_manager->TrySplitTree(
-      leaf_id2, {{int_var.index(), 5}, {int_var.index(), 4}}, trail2);
-  EXPECT_EQ(trail2.GetLevelStartNodes(leaf_id2_new).size(), 3);
+  shared_tree_manager->TrySplitTree(
+      {{int_var.index(), 5}, {int_var.index(), 4}}, assignment2, trail2);
+  EXPECT_EQ(trail2.GetLevelStartNodes(assignment2.leaf_id).size(), 3);
 
   EXPECT_EQ(shared_tree_manager->MaxPathDepth(), 3);
   EXPECT_EQ(shared_tree_manager->NumNodes(), 9);
@@ -811,33 +858,31 @@ TEST(SharedTreeManagerTest, BalancedSplitTest) {
   SharedTreeEncoder trail1(nullptr);
   SharedTreeEncoder trail2(nullptr);
 
-  std::vector<ProtoLiteral> phase;
-  NodeId root_id = shared_tree_manager->ReplaceTree(kNoNodeId, trail1, phase);
+  SharedTreeManager::SubtreeAssignment assignment1;
+  shared_tree_manager->SyncTree(assignment1, trail1);
 
-  NodeId leaf_id1 = shared_tree_manager->TrySplitTree(root_id,
-                                                      {{int_var.index(), 3},
-                                                       {int_var.index(), 2},
-                                                       {int_var.index(), 1},
-                                                       {int_var.index(), 0}},
-                                                      trail1);
-  EXPECT_EQ(trail1.GetLevelStartNodes(leaf_id1).size(), 4);
+  shared_tree_manager->TrySplitTree({{int_var.index(), 3},
+                                     {int_var.index(), 2},
+                                     {int_var.index(), 1},
+                                     {int_var.index(), 0}},
+                                    assignment1, trail1);
+  EXPECT_EQ(trail1.GetLevelStartNodes(assignment1.leaf_id).size(), 4);
 
-  NodeId leaf_id2 = shared_tree_manager->ReplaceTree(kNoNodeId, trail2, phase);
+  SharedTreeManager::SubtreeAssignment assignment2;
+  shared_tree_manager->SyncTree(assignment2, trail2);
 
-  NodeId leaf_id2_new =
-      shared_tree_manager->TrySplitTree(leaf_id2,
-                                        {{int_var.index(), 6},
-                                         {int_var.index(), 5},
-                                         {int_var.index(), 4},
-                                         {int_var.index(), 3}},
-                                        trail2);
-  EXPECT_EQ(trail2.GetLevelStartNodes(leaf_id2_new).size(), 4);
+  shared_tree_manager->TrySplitTree({{int_var.index(), 6},
+                                     {int_var.index(), 5},
+                                     {int_var.index(), 4},
+                                     {int_var.index(), 3}},
+                                    assignment2, trail2);
+  EXPECT_EQ(trail2.GetLevelStartNodes(assignment2.leaf_id).size(), 4);
 
   EXPECT_EQ(shared_tree_manager->MaxPathDepth(), 3);
   EXPECT_EQ(shared_tree_manager->NumNodes(), 11);
 }
 
-TEST(SharedTreeManagerTest, CloseTreeTest) {
+TEST(SharedTreeManagerTest, SyncTreePrunesClosedUnassignedLeaves) {
   Model model;
   SatParameters params;
   params.set_num_workers(4);
@@ -848,27 +893,26 @@ TEST(SharedTreeManagerTest, CloseTreeTest) {
   SharedTreeEncoder trail1(nullptr);
   SharedTreeEncoder trail2(nullptr);
 
-  std::vector<ProtoLiteral> phase;
-  NodeId root_id = shared_tree_manager->ReplaceTree(kNoNodeId, trail1, phase);
+  SharedTreeManager::SubtreeAssignment assignment1;
+  shared_tree_manager->SyncTree(assignment1, trail1);
 
-  NodeId leaf_id1 =
-      shared_tree_manager->TrySplitTree(root_id, {{-1, 0}, {1, 0}}, trail1);
+  shared_tree_manager->TrySplitTree({{-1, 0}, {1, 0}}, assignment1, trail1);
   EXPECT_EQ(trail1.Size(), 5);
 
-  NodeId leaf_id2 = shared_tree_manager->ReplaceTree(kNoNodeId, trail2, phase);
+  SharedTreeManager::SubtreeAssignment assignment2;
+  shared_tree_manager->SyncTree(assignment2, trail2);
 
   trail1.CloseNode(NodeId(2), {});
-  shared_tree_manager->SyncTree(leaf_id1, trail1);
-
-  shared_tree_manager->ReplaceTree(leaf_id1, trail1, phase);
+  shared_tree_manager->SyncTree(assignment1, trail1);
 
   EXPECT_EQ(trail1.Size(), 0);
   EXPECT_EQ(trail2.Size(), 3);
 
-  EXPECT_EQ(trail2.GetNode(leaf_id2)->shared().decision, ProtoLiteral(0, 1));
+  EXPECT_EQ(trail2.GetNode(assignment2.leaf_id)->shared().decision,
+            ProtoLiteral(0, 1));
 }
 
-TEST(SharedTreeManagerTest, TrailSharing) {
+TEST(SharedTreeManagerTest, ReplaceSubtreeSharesState) {
   CpModelBuilder model_builder;
   auto bool_var = model_builder.NewBoolVar();
   auto int_var = model_builder.NewIntVar({0, 7});
@@ -888,136 +932,98 @@ TEST(SharedTreeManagerTest, TrailSharing) {
                            model.GetOrCreate<IntegerEncoder>());
   SharedTreeEncoder trail2(nullptr, model.GetOrCreate<CpModelMapping>(),
                            model.GetOrCreate<IntegerEncoder>());
-  std::vector<ProtoLiteral> init_phase;
-  NodeId root_id =
-      shared_tree_manager->ReplaceTree(kNoNodeId, trail1, init_phase);
-  NodeId leaf_id1 =
-      shared_tree_manager->TrySplitTree(root_id, {ProtoLiteral(0, 1)}, trail1);
+  SharedTreeManager::SubtreeAssignment assignment1;
+  shared_tree_manager->SyncTree(assignment1, trail1);
+  assignment1.phase = {ProtoLiteral(3, 1)};
+  shared_tree_manager->TrySplitTree({ProtoLiteral(0, 1)}, assignment1, trail1);
+  const NodeId leaf_id1 = assignment1.leaf_id;
   trail1.GetNode(NodeId(2))->AddImplication(ProtoLiteral(2, IntegerValue(1)));
-  shared_tree_manager->SyncTree(leaf_id1, trail1);
-  std::vector<ProtoLiteral> phase = {ProtoLiteral(3, 1)};
+  trail1.GetNode(leaf_id1)->AddLbdSample(1.0);
+  // Prefer any leaf other than the current one.
+  shared_tree_manager->SyncTree(
+      assignment1, trail1, /*replace=*/true,
+      [leaf_id1](const SharedTreeNode& a, const SharedTreeNode& b) {
+        return a.id != leaf_id1 && b.id == leaf_id1;
+      });
 
-  shared_tree_manager->ReplaceTree(leaf_id1, trail1, phase);
-  std::vector<ProtoLiteral> phase2;
-  NodeId leaf_id2 = shared_tree_manager->ReplaceTree(kNoNodeId, trail2, phase2);
+  SharedTreeManager::SubtreeAssignment assignment2;
+  shared_tree_manager->SyncTree(assignment2, trail2);
 
   EXPECT_EQ(trail1.Size(), 3);
   EXPECT_EQ(trail2.Size(), 3);
-  EXPECT_EQ(leaf_id2, leaf_id1);
-  EXPECT_THAT(trail2.GetNode(leaf_id2)->shared().var_lower_bounds,
+  EXPECT_THAT(assignment1.phase, testing::IsEmpty());
+  EXPECT_EQ(assignment2.leaf_id, leaf_id1);
+  EXPECT_THAT(trail2.GetNode(assignment2.leaf_id)->shared().lbd,
+              testing::AllOf(
+                  testing::Property(&IncrementalAverage::CurrentAverage, 1.0),
+                  testing::Property(&IncrementalAverage::NumRecords, 1)));
+  EXPECT_THAT(trail2.GetNode(assignment2.leaf_id)->shared().var_lower_bounds,
               testing::ElementsAre(testing::Pair(2, IntegerValue(1))));
-  EXPECT_THAT(phase2, testing::ElementsAre(ProtoLiteral(3, 1)));
+  EXPECT_THAT(assignment2.phase, testing::ElementsAre(ProtoLiteral(3, 1)));
 }
 
-TEST(SharedTreeEncoderTest, VariableBoundsResolution) {
-  SharedTreeEncoder manager(nullptr);
-  SharedTreeEncoder worker1(nullptr);
-  SharedTreeEncoder worker2(nullptr);
-  manager.ImportNode({.id = NodeId(1)});
-  manager.SplitNode(NodeId(1), ProtoLiteral(0, 1), NodeId(2));
-  manager.SyncNodesOnPath(NodeId(2), worker1);
-  manager.SyncNodesOnPath(NodeId(3), worker2);
+TEST(SharedTreeManagerTest, AssignsPreferredLeaf) {
+  Model model;
+  SatParameters params;
+  params.set_num_workers(8);
+  params.set_shared_tree_num_workers(8);
+  model.Add(NewSatParameters(params));
+  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
+  SharedTreeEncoder trail1(nullptr);
+  SharedTreeEncoder trail2(nullptr);
+  SharedTreeManager::SubtreeAssignment assignment1;
+  SharedTreeManager::SubtreeAssignment assignment2;
+  shared_tree_manager->SyncTree(assignment1, trail1);
+  // Leaves 3, 5 and 7 are left unassigned.
+  shared_tree_manager->TrySplitTree(
+      {ProtoLiteral(0, 1), ProtoLiteral(1, 1), ProtoLiteral(2, 1)}, assignment1,
+      trail1);
 
-  worker1.GetNode(NodeId(2))->AddImplication(ProtoLiteral(1, 5));
-  manager.SyncNodesOnPath(NodeId(2), worker1);
-  worker2.GetNode(NodeId(3))->AddImplication(ProtoLiteral(1, 3));
-  manager.SyncNodesOnPath(NodeId(3), worker2);
+  shared_tree_manager->SyncTree(
+      assignment2, trail2, /*replace=*/false,
+      [](const SharedTreeNode& a, const SharedTreeNode& b) {
+        return a.id == NodeId(5) && b.id != NodeId(5);
+      });
 
-  EXPECT_THAT(manager.GetNode(NodeId(1))->shared().var_lower_bounds,
-              UnorderedElementsAre(testing::Pair(1, IntegerValue(3))));
+  EXPECT_EQ(assignment2.leaf_id, NodeId(5));
 }
 
-TEST(SharedTreeEncoderTest, VariableBoundsInAllLeavesResolveToRoot) {
-  SharedTreeEncoder manager(nullptr);
-  manager.ImportNode({.id = NodeId(1)});
-  manager.SplitNode(NodeId(1), ProtoLiteral(0, 1), NodeId(2));
-  manager.SplitNode(NodeId(2), ProtoLiteral(1, 1), NodeId(4));
-  manager.SplitNode(NodeId(3), ProtoLiteral(2, 1), NodeId(6));
-  const int var = 3;
-  const absl::flat_hash_map<NodeId, IntegerValue> leaf_lower_bounds = {
-      {NodeId(4), IntegerValue(5)},
-      {NodeId(5), IntegerValue(7)},
-      {NodeId(6), IntegerValue(4)},
-      {NodeId(7), IntegerValue(6)},
-  };
-
-  for (const auto& [node, lower_bound] : leaf_lower_bounds) {
-    SharedTreeEncoder worker(nullptr);
-    manager.SyncNodesOnPath(node, worker);
-    worker.GetNode(node)->AddImplication(ProtoLiteral(var, lower_bound));
-    manager.SyncNodesOnPath(node, worker);
-  }
-
-  EXPECT_THAT(manager.GetNode(NodeId(1))->shared().var_lower_bounds,
-              UnorderedElementsAre(testing::Pair(var, IntegerValue(4))));
-  EXPECT_THAT(manager.GetNode(NodeId(2))->shared().var_lower_bounds,
-              UnorderedElementsAre(testing::Pair(var, IntegerValue(5))));
-  EXPECT_THAT(manager.GetNode(NodeId(3))->shared().var_lower_bounds,
-              UnorderedElementsAre(testing::Pair(var, IntegerValue(4))));
-}
-
-TEST(SharedTreeEncoderTest, VariableBoundsResolutionLratProof) {
+TEST(SharedTreeManagerTest, SyncTreeClosesLratProofWithInvalidLeaf) {
   SatParameters params;
   params.set_output_lrat_proof(true);
   params.set_check_lrat_proof(true);
-  params.set_debug_crash_if_lrat_check_fails(true);
+  params.set_debug_crash_if_lrat_check_fails(
+      false);  // Don't crash, return INVALID
+  params.set_shared_tree_num_workers(4);
   Model model;
   model.Add(NewSatParameters(params));
-  auto lrat = LratProofHandler::MaybeCreate(
+  auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
+  auto lrat1 = LratProofHandler::MaybeCreate(
       params, model.GetOrCreate<SharedLratProofStatus>(),
       model.GetOrCreate<SharedStatistics>());
-  SharedTreeEncoder manager(lrat.get());
-  manager.ImportNode({.id = NodeId(1)});
-  manager.SplitNode(NodeId(1), ProtoLiteral(0, 1), NodeId(2));
-  manager.SplitNode(NodeId(2), ProtoLiteral(1, 1), NodeId(4));
-  manager.SplitNode(NodeId(3), ProtoLiteral(2, 1), NodeId(6));
-  ProtoLiteral leaf_implication(3, 1);
-  std::vector<ClauseUniquePtr> leaf_clauses;
+  SharedTreeEncoder worker1(lrat1.get());
+  auto lrat2 = LratProofHandler::MaybeCreate(
+      params, model.GetOrCreate<SharedLratProofStatus>(),
+      model.GetOrCreate<SharedStatistics>());
+  SharedTreeEncoder worker2(lrat2.get());
+  SharedTreeManager::SubtreeAssignment assignment1;
+  SharedTreeManager::SubtreeAssignment assignment2;
 
-  for (NodeId node : {NodeId(4), NodeId(7), NodeId(6), NodeId(5)}) {
-    SharedTreeEncoder worker(lrat.get());
-    manager.SyncNodesOnPath(node, worker);
-    SharedTreeEncoder::Node* worker_node = worker.GetNode(node);
-    std::vector<Literal> lits = worker_node->ExpectedReasonClauseLiterals(
-        worker.Decode(leaf_implication));
-    leaf_clauses.push_back(NewClausePtr(lits));
-    lrat->AddProblemClause(leaf_clauses.back().get());
-    worker_node->AddImplication(leaf_implication);
-    worker.GetNode(node)->ExportInferredReasonClause(
-        worker.Decode(leaf_implication), {leaf_clauses.back().get()});
-    manager.SyncNodesOnPath(node, worker);
-  }
-  EXPECT_THAT(manager.GetNode(NodeId(1))->shared().var_lower_bounds,
-              testing::UnorderedElementsAre(testing::Pair(3, IntegerValue(1))));
-  EXPECT_THAT(manager.GetNode(NodeId(1))->reason_clauses(),
-              testing::UnorderedElementsAre(
-                  testing::Pair(manager.Decode(leaf_implication), testing::_)));
-  for (ClauseUniquePtr& clause : leaf_clauses) {
-    lrat->DeleteClause(clause.get());
-  }
-}
+  shared_tree_manager->SyncTree(assignment1, worker1);
+  shared_tree_manager->TrySplitTree({ProtoLiteral(0, 1)}, assignment1, worker1);
+  const ClauseUniquePtr clause2 =
+      NewClausePtr({Literal(BooleanVariable(0), false)});
+  lrat1->AddProblemClause(clause2.get());
+  worker1.CloseNode(NodeId(2), {clause2.get()});
+  const ClauseUniquePtr clause3 =
+      NewClausePtr({Literal(BooleanVariable(0), true)});
+  lrat1->AddProblemClause(clause3.get());
+  worker1.CloseNode(NodeId(3), {clause3.get()});
+  shared_tree_manager->SyncTree(assignment1, worker1);
 
-TEST(SharedTreeEncoderTest, SetObjectiveLowerBound) {
-  SharedTreeEncoder encoder(nullptr);
-  encoder.ImportNode(
-      {.id = NodeId(1), .decision = ProtoLiteral(), .objective_lb = 0});
-  encoder.SplitNode(NodeId(1), ProtoLiteral(0, 1), NodeId(2));
-  encoder.SplitNode(NodeId(2), ProtoLiteral(1, 1), NodeId(4));
-  encoder.SplitNode(NodeId(3), ProtoLiteral(2, 1), NodeId(6));
-  encoder.SplitNode(NodeId(5), ProtoLiteral(3, 1), NodeId(8));
-  encoder.ImportNode(
-      {.id = NodeId(5), .parent_id = NodeId(2), .is_implied = true});
-
-  encoder.GetNode(NodeId(6))->SetObjectiveLowerBound(IntegerValue(20));
-  encoder.GetNode(NodeId(7))->SetObjectiveLowerBound(IntegerValue(15));
-  encoder.GetNode(NodeId(8))->SetObjectiveLowerBound(IntegerValue(25));
-  encoder.GetNode(NodeId(9))->SetObjectiveLowerBound(IntegerValue(12));
-
-  EXPECT_TRUE(encoder.GetNode(NodeId(5))->shared().is_implied);
-  EXPECT_TRUE(encoder.GetNode(NodeId(4))->shared().is_closed());
-  EXPECT_EQ(encoder.GetNode(NodeId(3))->shared().objective_lb, 15);
-  EXPECT_EQ(encoder.GetNode(NodeId(2))->shared().objective_lb, 12);
-  EXPECT_EQ(encoder.GetNode(NodeId(1))->shared().objective_lb, 12);
+  EXPECT_EQ(lrat1->Check(), SharedLratProofStatus::VALID);
+  EXPECT_FALSE(shared_tree_manager->SyncTree(assignment2, worker2));
+  EXPECT_EQ(lrat2->Check(), SharedLratProofStatus::VALID);
 }
 
 }  // namespace

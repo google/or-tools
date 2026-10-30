@@ -3711,7 +3711,8 @@ bool CpConstraintPresolver::PresolveDiophantine(ConstraintProto* ct) {
 // non-Boolean ones) before applying the algo here and then re-linearize the
 // non-Boolean terms.
 void CpConstraintPresolver::TryToReduceCoefficientsOfLinearConstraint(
-    int c, ConstraintProto* ct) {
+    int c, ConstraintProto* ct,
+    const PresolveContext::MergedCanonicalLinearConstraint& canonical) {
   if (ct->constraint_case() != ConstraintProto::kLinear) return;
   if (context_->ModelIsUnsat()) return;
 
@@ -3723,58 +3724,14 @@ void CpConstraintPresolver::TryToReduceCoefficientsOfLinearConstraint(
   DeterministicTimer<{.scale = 7.228e-08, .offset = 0.000e+00}> timer(
       time_limit_, lin.vars().size());
 
-  // Precompute a bunch of quantities and "canonicalize" the constraint.
-  int64_t lb_sum = 0;
-  int64_t ub_sum = 0;
-  int64_t max_variation = 0;
-
-  rd_entries_.clear();
-  rd_magnitudes_.clear();
-  rd_lbs_.clear();
-  rd_ubs_.clear();
-
-  int64_t max_magnitude = 0;
-  const int num_terms = lin.vars().size();
-  for (int i = 0; i < num_terms; ++i) {
-    const int64_t coeff = lin.coeffs(i);
-    const int64_t magnitude = std::abs(lin.coeffs(i));
-    if (magnitude == 0) continue;
-    max_magnitude = std::max(max_magnitude, magnitude);
-
-    int64_t lb;
-    int64_t ub;
-    if (coeff > 0) {
-      lb = context_->MinOf(lin.vars(i));
-      ub = context_->MaxOf(lin.vars(i));
-    } else {
-      lb = -context_->MaxOf(lin.vars(i));
-      ub = -context_->MinOf(lin.vars(i));
-    }
-    lb_sum += lb * magnitude;
-    ub_sum += ub * magnitude;
-
-    // Abort if fixed term, that might mess up code below.
-    if (lb == ub) return;
-
-    rd_lbs_.push_back(lb);
-    rd_ubs_.push_back(ub);
-    rd_magnitudes_.push_back(magnitude);
-    rd_entries_.push_back({magnitude, magnitude * (ub - lb), i});
-    max_variation += rd_entries_.back().max_variation;
-  }
-
-  // Mark trivially false constraint as such. This should have been already
-  // done, but we require non-negative quantity below.
-  const Domain rhs = ReadDomainFromProto(lin);
-  if (lb_sum > rhs.Max() || rhs.Min() > ub_sum) {
+  if (canonical.lb > canonical.ub) {
     (void)MarkConstraintAsFalse(ct, "linear: trivially false");
     context_->UpdateConstraintVariableUsage(c);
     return;
   }
-  const IntegerValue rhs_ub(CapSub(rhs.Max(), lb_sum));
-  const IntegerValue rhs_lb(CapSub(ub_sum, rhs.Min()));
-  const bool use_ub = max_variation > rhs_ub;
-  const bool use_lb = max_variation > rhs_lb;
+
+  const bool use_ub = canonical.ub < canonical.max_variation;
+  const bool use_lb = canonical.lb > 0;
   if (!use_ub && !use_lb) {
     context_->UpdateRuleStats("linear: trivially true");
     (void)RemoveConstraint(ct);
@@ -3782,60 +3739,49 @@ void CpConstraintPresolver::TryToReduceCoefficientsOfLinearConstraint(
     return;
   }
 
-  // No point doing more work for constraints with all coeffs at +/-1.
-  if (max_magnitude <= 1) return;
+  // No point doing more work if no terms or all coeffs have magnitude <= 1.
+  if (canonical.terms.empty() || canonical.terms.back().magnitude <= 1) return;
+
+  const int64_t rhs_ub = canonical.ub;
+  const int64_t rhs_lb = canonical.max_variation - canonical.lb;
 
   // TODO(user): All the lb/ub_feasible/infeasible class are updated in
   // exactly the same way. Find a more efficient algo?
   if (use_lb) {
-    lb_feasible_.Reset(rhs_lb.value());
-    lb_infeasible_.Reset(rhs.Min() - lb_sum - 1);
+    lb_feasible_.Reset(rhs_lb);
+    lb_infeasible_.Reset(canonical.lb - 1);
   }
   if (use_ub) {
-    ub_feasible_.Reset(rhs_ub.value());
-    ub_infeasible_.Reset(ub_sum - rhs.Max() - 1);
+    ub_feasible_.Reset(rhs_ub);
+    ub_infeasible_.Reset(canonical.max_variation - canonical.ub - 1);
   }
 
-  // Process entries by decreasing magnitude. Update max_error to correspond
-  // only to the sum of the not yet processed terms.
+  // Process canonical terms by decreasing magnitude. Update max_error to
+  // correspond only to the sum of the not yet processed terms.
   uint64_t gcd = 0;
-  int64_t max_error = max_variation;
-  std::stable_sort(rd_entries_.begin(), rd_entries_.end(),
-                   [](const RdEntry& a, const RdEntry& b) {
-                     return a.magnitude > b.magnitude;
-                   });
-  int64_t range = 0;
+  int64_t max_error = canonical.max_variation;
   rd_divisors_.clear();
-  for (int i = 0; i < rd_entries_.size(); ++i) {
-    const RdEntry& e = rd_entries_[i];
-    gcd = std::gcd(gcd, e.magnitude);
-    max_error -= e.max_variation;
+  // TODO(user): I am not sure it is the best heuristic to work on merged
+  // terms with the same coeff, but it should be rare if it ever happens.
+  for (int i = static_cast<int>(canonical.terms.size()) - 1; i >= 0; --i) {
+    const auto [range, magnitude] = canonical.terms[i];
+    gcd = std::gcd(gcd, magnitude);
+    max_error -= range * magnitude;
 
-    // We regroup all terms with the same coefficient into one.
-    //
-    // TODO(user): I am not sure there is no possible simplification across two
-    // terms with the same coeff, but it should be rare if it ever happens.
-    range += e.max_variation / e.magnitude;
-    if (i + 1 < rd_entries_.size() &&
-        e.magnitude == rd_entries_[i + 1].magnitude) {
-      continue;
-    }
-    const int64_t saved_range = range;
-    range = 0;
-
-    if (e.magnitude > 1) {
+    if (magnitude > 1) {
+      const IntegerValue mag(magnitude);
       if ((!use_ub ||
-           max_error <= PositiveRemainder(rhs_ub, IntegerValue(e.magnitude))) &&
+           max_error <= PositiveRemainder(IntegerValue(rhs_ub), mag)) &&
           (!use_lb ||
-           max_error <= PositiveRemainder(rhs_lb, IntegerValue(e.magnitude)))) {
-        rd_divisors_.push_back(e.magnitude);
+           max_error <= PositiveRemainder(IntegerValue(rhs_lb), mag))) {
+        rd_divisors_.push_back(magnitude);
       }
     }
 
     bool simplify_lb = false;
     if (use_lb) {
-      lb_feasible_.AddMultiples(e.magnitude, saved_range);
-      lb_infeasible_.AddMultiples(e.magnitude, saved_range);
+      lb_feasible_.AddMultiples(magnitude, range);
+      lb_infeasible_.AddMultiples(magnitude, range);
 
       // For a <= constraint, the max_feasible + error is still feasible.
       if (CapAdd(lb_feasible_.CurrentMax(), max_error) <=
@@ -3853,8 +3799,8 @@ void CpConstraintPresolver::TryToReduceCoefficientsOfLinearConstraint(
     }
     bool simplify_ub = false;
     if (use_ub) {
-      ub_feasible_.AddMultiples(e.magnitude, saved_range);
-      ub_infeasible_.AddMultiples(e.magnitude, saved_range);
+      ub_feasible_.AddMultiples(magnitude, range);
+      ub_infeasible_.AddMultiples(magnitude, range);
       if (CapAdd(ub_feasible_.CurrentMax(), max_error) <=
           ub_feasible_.Bound()) {
         simplify_ub = true;
@@ -3869,28 +3815,28 @@ void CpConstraintPresolver::TryToReduceCoefficientsOfLinearConstraint(
 
     if (max_error == 0) break;  // Last term.
     if (simplify_lb && simplify_ub) {
-      // We have a simplification since the second part can be ignored.
+      // We have a simplification since terms with smaller magnitude can be
+      // ignored.
       context_->UpdateRuleStats("linear: remove irrelevant part");
-      int64_t shift_lb = 0;
-      int64_t shift_ub = 0;
-      rd_vars_.clear();
-      rd_coeffs_.clear();
-      for (int j = 0; j <= i; ++j) {
-        const int index = rd_entries_[j].index;
-        const int64_t m = rd_magnitudes_[index];
-        shift_lb += rd_lbs_[index] * m;
-        shift_ub += rd_ubs_[index] * m;
-        rd_vars_.push_back(lin.vars(index));
-        rd_coeffs_.push_back(lin.coeffs(index));
-      }
+      int new_size = 0;
       LinearConstraintProto* mut_lin = ct->mutable_linear();
-      mut_lin->mutable_vars()->Assign(rd_vars_.begin(), rd_vars_.end());
-      mut_lin->mutable_coeffs()->Assign(rd_coeffs_.begin(), rd_coeffs_.end());
+      for (int k = 0; k < mut_lin->vars_size(); ++k) {
+        const int64_t coeff = mut_lin->coeffs(k);
+        if (std::abs(coeff) >= magnitude) {
+          mut_lin->set_vars(new_size, mut_lin->vars(k));
+          mut_lin->set_coeffs(new_size, coeff);
+          ++new_size;
+        }
+      }
+      mut_lin->mutable_vars()->Truncate(new_size);
+      mut_lin->mutable_coeffs()->Truncate(new_size);
 
-      // The constraint become:
+      // The constraint becomes:
       //   sum ci (X - lb) <= rhs_ub
       //   sum ci (ub - X) <= rhs_lb
       //   sum ci ub - rhs_lb <= sum ci X <= rhs_ub + sum ci lb.
+      const auto [shift_lb, shift_ub] =
+          context_->ComputeMinMaxActivity(*mut_lin);
       const int64_t new_rhs_lb =
           use_lb ? shift_ub - lb_feasible_.CurrentMax() : shift_lb;
       const int64_t new_rhs_ub =
@@ -3918,9 +3864,13 @@ void CpConstraintPresolver::TryToReduceCoefficientsOfLinearConstraint(
 
   // We didn't remove any irrelevant part, but we might be able to tighten
   // the constraint bound.
+  const Domain rhs = ReadDomainFromProto(lin);
   if ((use_lb && lb_feasible_.CurrentMax() < lb_feasible_.Bound()) ||
       (use_ub && ub_feasible_.CurrentMax() < ub_feasible_.Bound())) {
     context_->UpdateRuleStats("linear: reduce rhs with DP");
+    const int64_t lb_sum =
+        use_ub ? rhs.Max() - canonical.ub : rhs.Min() - canonical.lb;
+    const int64_t ub_sum = lb_sum + canonical.max_variation;
     const int64_t new_rhs_lb =
         use_lb ? ub_sum - lb_feasible_.CurrentMax() : lb_sum;
     const int64_t new_rhs_ub =
@@ -3934,30 +3884,33 @@ void CpConstraintPresolver::TryToReduceCoefficientsOfLinearConstraint(
   }
 
   // Limit the number of "divisor" we try for approximate gcd.
+  if (rd_divisors_.empty()) return;
   if (rd_divisors_.size() > 3) rd_divisors_.resize(3);
+
+  rd_magnitudes_.clear();
+  rd_lbs_.clear();
+  rd_ubs_.clear();
+  rd_magnitudes_.reserve(canonical.terms.size());
+  rd_lbs_.assign(canonical.terms.size(), 0);
+  rd_ubs_.reserve(canonical.terms.size());
+  for (const auto& term : canonical.terms) {
+    rd_magnitudes_.push_back(term.magnitude);
+    rd_ubs_.push_back(term.range);
+  }
+
   for (const int64_t divisor : rd_divisors_) {
-    // Try the <= side first.
-    int64_t new_ub;
-    if (!LinearInequalityCanBeReducedWithClosestMultiple(
-            divisor, rd_magnitudes_, rd_lbs_, rd_ubs_, rhs.Max(), &new_ub)) {
+    int64_t new_canonical_ub = 0;
+    if (use_ub && !LinearInequalityCanBeReducedWithClosestMultiple(
+                      divisor, rd_magnitudes_, rd_lbs_, rd_ubs_, canonical.ub,
+                      &new_canonical_ub)) {
       continue;
     }
 
-    // The other side.
-    int64_t minus_new_lb;
-    for (int i = 0; i < rd_lbs_.size(); ++i) {
-      std::swap(rd_lbs_[i], rd_ubs_[i]);
-      rd_lbs_[i] = -rd_lbs_[i];
-      rd_ubs_[i] = -rd_ubs_[i];
-    }
-    if (!LinearInequalityCanBeReducedWithClosestMultiple(
-            divisor, rd_magnitudes_, rd_lbs_, rd_ubs_, -rhs.Min(),
-            &minus_new_lb)) {
-      for (int i = 0; i < rd_lbs_.size(); ++i) {
-        std::swap(rd_lbs_[i], rd_ubs_[i]);
-        rd_lbs_[i] = -rd_lbs_[i];
-        rd_ubs_[i] = -rd_ubs_[i];
-      }
+    int64_t new_canonical_neg_ub = 0;
+    if (use_lb &&
+        !LinearInequalityCanBeReducedWithClosestMultiple(
+            divisor, rd_magnitudes_, rd_lbs_, rd_ubs_,
+            canonical.max_variation - canonical.lb, &new_canonical_neg_ub)) {
       continue;
     }
 
@@ -3975,7 +3928,14 @@ void CpConstraintPresolver::TryToReduceCoefficientsOfLinearConstraint(
     }
     mutable_linear->mutable_vars()->Truncate(new_size);
     mutable_linear->mutable_coeffs()->Truncate(new_size);
-    const Domain new_rhs = Domain(-minus_new_lb, new_ub);
+
+    const auto [new_min_activity, new_max_activity] =
+        context_->ComputeMinMaxActivity(*mutable_linear);
+    const int64_t new_rhs_lb =
+        use_lb ? (new_max_activity - new_canonical_neg_ub) : new_min_activity;
+    const int64_t new_rhs_ub =
+        use_ub ? (new_min_activity + new_canonical_ub) : new_max_activity;
+    const Domain new_rhs = Domain(new_rhs_lb, new_rhs_ub);
     if (new_rhs.IsEmpty()) {
       (void)MarkConstraintAsFalse(ct, "linear: false after approximate gcd");
     } else {
@@ -4611,36 +4571,20 @@ void CpConstraintPresolver::LowerThanCoeffStrengthening(bool from_lower_bound,
   }
 }
 
-bool CpConstraintPresolver::DetectSimpleSum(int c, ConstraintProto* ct) {
+bool CpConstraintPresolver::DetectSimpleSum(
+    ConstraintProto* ct,
+    const PresolveContext::MergedCanonicalLinearConstraint& canonical) {
   if (ct->constraint_case() != ConstraintProto::kLinear) return false;
   if (ct->linear().domain().size() != 2) return false;
   if (context_->ModelIsUnsat()) return false;
-  DeterministicTimer<{.scale = 1e-9, .offset = 0.0}> timer(time_limit_);
+  if (canonical.terms.size() <= 1) return false;
+  if (canonical.lb > canonical.ub) return false;
 
-  // Compute basic constraint stats.
   const LinearConstraintProto& linear = ct->linear();
   const int initial_num_terms = linear.vars().size();
   if (initial_num_terms == 0) return false;
-  const PresolveContext::LinearStats ct_stats =
-      context_->ComputeLinearStats(linear);
-  timer.Advance(initial_num_terms);
 
-  // Optimization: abort early if the constraint is already a simple sum. It
-  // will be simplified by its gcd later if the magnitude is not one.
-  if (ct_stats.min_coeff_magnitude == ct_stats.max_coeff_magnitude) {
-    return false;
-  }
-
-  // Canonicalize the constraint to:
-  //    lb <= sum magnitude * X_i <= ub
-  // with each Xi in [0, range_i].
-  const PresolveContext::MergedCanonicalLinearConstraint canonical =
-      context_->BuildMergedCanonicalLinearConstraint(linear);
-  if (canonical.terms.empty()) return false;
-  const double n = static_cast<double>(canonical.terms.size());
-  timer.Advance(static_cast<int64_t>(n * std::log(n)));
-  const bool has_ub =
-      canonical.ub < CapSub(ct_stats.max_activity, ct_stats.min_activity);
+  const bool has_ub = canonical.ub < canonical.max_variation;
   const bool has_lb = canonical.lb > 0;
 
   bool simplify = true;
@@ -4929,34 +4873,21 @@ TwoTermTilt TiltTwoTermConstraint(int64_t a1, int64_t a2, int64_t B, int64_t R1,
   return {new_a1, new_a2, best_ub};
 }
 
-bool CpConstraintPresolver::DetectTwoTermTilting(int c, ConstraintProto* ct) {
+bool CpConstraintPresolver::DetectTwoTermTilting(
+    ConstraintProto* ct,
+    const PresolveContext::MergedCanonicalLinearConstraint& canonical) {
   if (ct->constraint_case() != ConstraintProto::kLinear) return false;
   if (ct->linear().domain().size() != 2) return false;
   if (context_->ModelIsUnsat()) return false;
-  DeterministicTimer<{.scale = 1e-9, .offset = 0.0}> timer(time_limit_);
+  if (canonical.terms.size() != 2) return false;
+  if (canonical.lb > canonical.ub) return false;
 
   const LinearConstraintProto& linear = ct->linear();
   const int initial_num_terms = linear.vars().size();
   if (initial_num_terms == 0) return false;
-  const PresolveContext::LinearStats ct_stats =
-      context_->ComputeLinearStats(linear);
-  timer.Advance(initial_num_terms);
 
-  if (ct_stats.min_coeff_magnitude == ct_stats.max_coeff_magnitude) {
-    return false;
-  }
-
-  // Step 1: Canonicalize both UB and LB forms into
-  //   a1 * x1 + a2 * x2 <= B
-  // with x1 in [0, R1], x2 in [0, R2] (flipping x_i <- R_i - x_i when use_lb
-  // is true).
-  const PresolveContext::MergedCanonicalLinearConstraint canonical =
-      context_->BuildMergedCanonicalLinearConstraint(linear);
-  if (canonical.terms.empty()) return false;
-  const double n = static_cast<double>(canonical.terms.size());
-  timer.Advance(static_cast<int64_t>(n * std::log(n)));
-  if (canonical.terms.size() != 2) return false;
-
+  // Canonicalized constraint has the form: a1 * x1 + a2 * x2 <= B
+  // with x1 in [0, R1], x2 in [0, R2]
   const auto [R1, a1] = canonical.terms[0];
   const auto [R2, a2] = canonical.terms[1];
   DCHECK_GT(a1, 0);
@@ -4964,7 +4895,7 @@ bool CpConstraintPresolver::DetectTwoTermTilting(int c, ConstraintProto* ct) {
   DCHECK_GT(R1, 0);
   DCHECK_GT(R2, 0);
 
-  const int64_t max_canonical_activity = a1 * R1 + a2 * R2;
+  const int64_t max_canonical_activity = canonical.max_variation;
   const bool use_ub = (canonical.ub < max_canonical_activity);
   const bool use_lb = (canonical.lb > 0);
 
@@ -8509,18 +8440,29 @@ bool CpConstraintPresolver::PresolveOneConstraint(int c) {
         context_->UpdateConstraintVariableUsage(c);
       }
 
-      // TODO(user): share the canonicalization of `ct` to do it just
-      // once for both DetectSimpleSum() and DetectTwoTermTilting(). Potentially
-      // find other reduction techniques for canonicalized form.
-      if (DetectSimpleSum(c, ct)) {
-        return true;
+      if (ct->constraint_case() == ConstraintProto::kLinear &&
+          ct->linear().domain().size() == 2 && ct->linear().vars().size() > 1 &&
+          !context_->ModelIsUnsat()) {
+        DeterministicTimer<{.scale = 1e-9, .offset = 0.0}> timer(
+            time_limit_, ct->linear().vars().size());
+        const PresolveContext::MergedCanonicalLinearConstraint canonical =
+            context_->BuildMergedCanonicalLinearConstraint(ct->linear());
+        if (!canonical.terms.empty()) {
+          const double n = static_cast<double>(canonical.terms.size());
+          timer.Advance(static_cast<int64_t>(n * std::log(n)));
+        }
+
+        if (DetectSimpleSum(ct, canonical)) {
+          return true;
+        }
+
+        if (DetectTwoTermTilting(ct, canonical)) {
+          return true;
+        }
+
+        TryToReduceCoefficientsOfLinearConstraint(c, ct, canonical);
       }
 
-      if (DetectTwoTermTilting(c, ct)) {
-        return true;
-      }
-
-      TryToReduceCoefficientsOfLinearConstraint(c, ct);
       return false;
     }
     case ConstraintProto::kInterval:

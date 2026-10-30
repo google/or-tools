@@ -830,7 +830,9 @@ TEST(PresolveCpModelTest, DetectTwoTermTiltingRandom) {
     PresolveContext context(&model, &model_proto, &mapping_model);
     CpConstraintPresolver presolver(&context);
     context.InitializeNewDomains();
-    presolver.DetectTwoTermTilting(0, model_proto.mutable_constraints(0));
+    presolver.DetectTwoTermTilting(model_proto.mutable_constraints(0),
+                                   context.BuildMergedCanonicalLinearConstraint(
+                                       model_proto.constraints(0).linear()));
 
     const auto& new_lin = model_proto.constraints(0).linear();
     const Domain rhs_domain = ReadDomainFromProto(new_lin);
@@ -891,6 +893,62 @@ TEST(PresolveCpModelTest, TiltTwoTermConstraint) {
     }
     EXPECT_TRUE(tight);
   }
+}
+
+TEST(PresolveCpModelTest, DetectApproximateGCDWithMergedTerms) {
+  // 1000*x0 + 1000*x1 + 2001*x2 <= 5005 with x0, x1, x2 in [0, 5].
+  // x0 and x1 have equal magnitude 1000 and merge into a single canonical term
+  // with range = 10. With divisor 1000, this reduces to x0 + x1 + 2*x2 <= 5.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 5 ] }
+    variables { domain: [ 0, 5 ] }
+    variables { domain: [ 0, 5 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2 ]
+        coeffs: [ 1000, 1000, 2001 ]
+        domain: [ 0, 5005 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto presolved = PresolveOneConstraint(initial_model, 0);
+  ASSERT_EQ(presolved.constraints_size(), 1);
+  const auto& lin = presolved.constraints(0).linear();
+  EXPECT_THAT(lin, testing::EqualsProto(R"pb(
+                vars: [ 0, 1, 2 ]
+                coeffs: [ 1, 1, 2 ]
+                domain: [ 0, 5 ]
+              )pb"));
+}
+
+TEST(PresolveCpModelTest, DetectApproximateGCDWithMultipleDistinctMergedTerms) {
+  // 1000*x0 + 2000*x1 + 2999*x2 + 2999*x3 <= 13996 with x0, x1 in [0, 1] and
+  // x2, x3 in [0, 3]. x2 and x3 have equal magnitude 2999 and merge into a
+  // single canonical term of range 6. With divisor 1000, this reduces to
+  // x0 + 2*x1 + 3*x2 + 3*x3 <= 14.
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 3 ] }
+    variables { domain: [ 0, 3 ] }
+    constraints {
+      linear {
+        vars: [ 0, 1, 2, 3 ]
+        coeffs: [ 1000, 2000, 2999, 2999 ]
+        domain: [ 0, 13996 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto presolved = PresolveOneConstraint(initial_model, 0);
+  ASSERT_EQ(presolved.constraints_size(), 1);
+  const auto& lin = presolved.constraints(0).linear();
+  EXPECT_THAT(lin, testing::EqualsProto(R"pb(
+                vars: [ 0, 1, 2, 3 ]
+                coeffs: [ 1, 2, 3, 3 ]
+                domain: [ 0, 14 ]
+              )pb"));
 }
 
 }  // namespace

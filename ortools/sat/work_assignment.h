@@ -31,6 +31,7 @@
 #include "absl/base/thread_annotations.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/functional/function_ref.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
@@ -52,7 +53,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/sat_trail.h"
 #include "ortools/sat/synchronization.h"
-#include "ortools/util/running_stat.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
@@ -112,6 +113,9 @@ struct SharedTreeNode {
   // Always empty in closed or implied nodes.
   absl::flat_hash_map<int, IntegerValue> var_lower_bounds;
 
+  // The average LBD of clauses learned in this subtree, or 0 if unknown.
+  IncrementalAverage lbd;
+
   // Some convenience functions to make code more readable.
   bool is_root() const { return parent_id == kNoNodeId; }
   bool is_closed() const { return objective_lb > kMaxIntegerValue; }
@@ -166,6 +170,9 @@ class SharedTreeEncoder {
     // Sets the objective bound of this node.
     // This may also update the objective bounds of the ancestors of this node.
     void SetObjectiveLowerBound(IntegerValue objective_lb);
+
+    // Adds a sample to the cumulative mean LBD estimate for this node.
+    void AddLbdSample(double lbd);
 
     // Returns true if literal is a decision or implication of any decision node
     // on the path from the root to this node.
@@ -367,6 +374,11 @@ class SharedTreeEncoder {
 // "Scalable Parallelization of Learning Solvers".
 class SharedTreeManager {
  public:
+  struct SubtreeAssignment {
+    NodeId leaf_id = kNoNodeId;
+    std::vector<ProtoLiteral> phase;
+  };
+
   explicit SharedTreeManager(Model* model);
   SharedTreeManager(const SharedTreeManager&) = delete;
 
@@ -374,25 +386,28 @@ class SharedTreeManager {
   int NumNodes() const ABSL_LOCKS_EXCLUDED(mu_);
   int MaxPathDepth() const { return max_path_depth_; }
 
-  // Syncs the state of path with the shared search tree.
-  // Clears `encoder` if a restart has invalidated the leaf_id.
+  // Syncs the state of the path in `encoder` with the shared search tree.
+  // Replaces the assignment with a new leaf node if the old assignment is
+  // invalid, closed, or if `replace` is true.
+  // The new leaf is the unassigned leaf preferred by `prefer(a, b)` (which
+  // returns true if `a` is preferred to `b`).
   // Returns false if the problem is infeasible.
-  bool SyncTree(NodeId leaf_id, SharedTreeEncoder& encoder)
-      ABSL_LOCKS_EXCLUDED(mu_);
+  bool SyncTree(
+      SubtreeAssignment& assignment, SharedTreeEncoder& encoder, bool replace,
+      absl::FunctionRef<bool(const SharedTreeNode&, const SharedTreeNode&)>
+          prefer) ABSL_LOCKS_EXCLUDED(mu_);
 
-  // Assigns a new leaf node to the worker and ensures all nodes on the path
-  // are added to encoder.
-  // `phase` is expected to be the target phase for the old leaf, and will be
-  // filled with the phase for the new leaf.
-  NodeId ReplaceTree(NodeId leaf_id, SharedTreeEncoder& encoder,
-                     std::vector<ProtoLiteral>& phase);
+  // As above, but if a new leaf is needed, assigns the leaf with the lowest id.
+  bool SyncTree(SubtreeAssignment& assignment, SharedTreeEncoder& encoder,
+                bool replace = false) ABSL_LOCKS_EXCLUDED(mu_);
 
   // Attempts to split the tree repeatedly with the given decisions.
-  // `path` will be extended with the accepted splits, the opposite branches
-  // will be added as unassigned leaves.
-  // Returns the new leaf id assigned to the worker.
-  NodeId TrySplitTree(NodeId parent, absl::Span<const ProtoLiteral> decisions,
-                      SharedTreeEncoder& encoder) ABSL_LOCKS_EXCLUDED(mu_);
+  // `assignment` will be updated to the new leaf assigned to the worker, and
+  // the opposite branches will be added as unassigned leaves. Returns true if
+  // `assignment` was changed (i.e. at least one split succeeded).
+  bool TrySplitTree(absl::Span<const ProtoLiteral> decisions,
+                    SubtreeAssignment& assignment, SharedTreeEncoder& encoder)
+      ABSL_LOCKS_EXCLUDED(mu_);
 
   void Restart() {
     absl::MutexLock l(mu_);
@@ -406,11 +421,10 @@ class SharedTreeManager {
     return leaf_id != kNoNodeId && leaf_id >= root_;
   };
 
-  NodeId TrySplitTreeLockHeld(NodeId parent, ProtoLiteral decision,
-                              SharedTreeEncoder& encoder)
+  bool TrySplitTreeLockHeld(ProtoLiteral decision,
+                            SubtreeAssignment& assignment,
+                            SharedTreeEncoder& encoder)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
-
-  void ProcessNodeChanges() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
 
   void RestartLockHeld() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   std::string ShortStatus() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
@@ -424,9 +438,8 @@ class SharedTreeManager {
 
   // Stores the nodes in the search tree.
   SharedTreeEncoder tree_ ABSL_GUARDED_BY(mu_);
-  // Stores unassigned leaf nodes, along with their target phase.
-  std::deque<std::pair<NodeId, std::vector<ProtoLiteral>>> unassigned_leaves_
-      ABSL_GUARDED_BY(mu_);
+  // Stores unassigned leaf nodes, in no particular order.
+  std::vector<SubtreeAssignment> unassigned_leaves_ ABSL_GUARDED_BY(mu_);
   NodeId root_ ABSL_GUARDED_BY(mu_) = NodeId(1);
   NodeId next_node_id_ ABSL_GUARDED_BY(mu_) = NodeId(2);
 
@@ -449,7 +462,23 @@ class SharedTreeWorker {
       const std::function<void()>& feasible_solution_observer);
 
  private:
-  const int kMaxPhaseSize = 256;
+  static constexpr int kMaxPhaseSize = 256;
+  // Historical node rewards are decayed by kRewardDecayFactor each update.
+  static constexpr double kRewardDecayFactor = 0.95;
+  // Forget node rewards less than this value to garbage-collect rewards for
+  // nodes that have been closed, split or invalidated by a restart.
+  static constexpr double kRewardDropoutThreshold = 1e-3;
+  // How much to weight exploration in AssignmentPreference.
+  static constexpr double kExplorationFactor = 0.1;
+  // How much to weight affinity in AssignmentPreference.
+  static constexpr double kAffinityFactor = 0.01;
+
+  // Returns a preference score for the given leaf, greater is better.
+  double AssignmentPreference(const SharedTreeNode& leaf) const;
+
+  // Adds an LBD sample to the assigned leaf and updates the node reward.
+  void UpdateLeafScore();
+
   IntegerValue CurrentObjectiveLowerBound() const {
     if (objective_ == nullptr ||
         objective_->objective_var == kNoIntegerVariable) {
@@ -466,9 +495,9 @@ class SharedTreeWorker {
   // assignment, enqueues assumptions and finishes propagation.
   // Returns false if the problem is infeasible.
   bool SyncWithSharedTree();
-
-  void MaybeProposeSplits();
   bool ShouldReplaceSubtree();
+  void MaybeProposeSplits();
+
   bool FinishedMinRestarts() const {
     return tree_.Size() > 0 &&
            restart_policy_->NumRestarts() >=
@@ -492,13 +521,14 @@ class SharedTreeWorker {
   absl::Span<const ClausePtr> GetProof(SharedTreeEncoder::Node* implied_by,
                                        Literal literal);
 
-  // Sets sat_solver_'s assumptions to those on the path to `leaf_id`,
-  // propagates them, and adds any new implications to tree_.
+  // Sets sat_solver_'s assumptions to those on the path to
+  // `assignment_.leaf_id`, propagates them, and adds any new implications to
+  // tree_.
   // If there is a conflict in the assumptions it will close the appropriate
   // node, if any node's decision is propagated, it will close the appropriate
   // sibling node.
   // Returns false if the problem is infeasible.
-  bool ResetAndEnqueueAssumptions(NodeId leaf_id);
+  bool ResetAndEnqueueAssumptions();
 
   // Processes a conflict at or before the assumption level, closing the
   // appropriate node in the shared tree. Returns false if the problem is UNSAT.
@@ -537,17 +567,15 @@ class SharedTreeWorker {
   util_intops::StrongVector<LiteralIndex, SharedTreeEncoder::Node*> fixed_by_;
   // Stores the non-implied nodes in the assigned subtree.
   std::vector<SharedTreeEncoder::Node*> assigned_nodes_;
-  NodeId leaf_id_ = kNoNodeId;
-  std::vector<ProtoLiteral> phase_;
+  SharedTreeManager::SubtreeAssignment assignment_;
+  // Stores the average LBD of conflicts for each node assigned to this worker.
+  // Pruned when the shared tree restarts.
+  absl::flat_hash_map<NodeId, double> node_reward_;
+  int64_t update_count_ = 0;
 
   double next_split_dtime_ = 0;
 
   std::vector<ProtoLiteral> tmp_splits_;
-  // Stores the average LBD of learned clauses for each tree assigned since it
-  // was assigned.
-  // If a tree has worse LBD than the average over the last few trees we
-  // replace the tree.
-  RunningAverage assigned_tree_lbds_;
   double earliest_replacement_dtime_ = 0;
 
   // Stores the end of the literals implied by the assigned tree.

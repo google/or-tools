@@ -1098,6 +1098,7 @@ TEST(PresolveContextTest, BuildMergedCanonicalLinearConstraint) {
                   PresolveContext::CanonicalTerm{.range = 9, .magnitude = 10}));
   EXPECT_EQ(canonical.lb, 14);
   EXPECT_EQ(canonical.ub, 114);
+  EXPECT_EQ(canonical.max_variation, 137);
 
   const LinearConstraintProto empty_proto =
       ParseTestProto(R"pb(domain: [ 0, 0 ])pb");
@@ -1106,6 +1107,7 @@ TEST(PresolveContextTest, BuildMergedCanonicalLinearConstraint) {
   EXPECT_THAT(empty.terms, testing::IsEmpty());
   EXPECT_EQ(empty.lb, 0);
   EXPECT_EQ(empty.ub, 0);
+  EXPECT_EQ(empty.max_variation, 0);
 }
 
 TEST(PresolveContextTest, BuildMergedCanonicalLinearConstraintClampsBounds) {
@@ -1137,6 +1139,7 @@ TEST(PresolveContextTest, BuildMergedCanonicalLinearConstraintClampsBounds) {
                   PresolveContext::CanonicalTerm{.range = 5, .magnitude = 3}));
   EXPECT_EQ(canonical.lb, 0);
   EXPECT_EQ(canonical.ub, 21);
+  EXPECT_EQ(canonical.max_variation, 21);
 }
 
 TEST(PresolveContextTest, BuildMergedCanonicalLinearConstraintInfeasible) {
@@ -1171,6 +1174,7 @@ TEST(PresolveContextTest, BuildMergedCanonicalLinearConstraintInfeasible) {
   EXPECT_THAT(above_max.terms, testing::IsEmpty());
   EXPECT_EQ(above_max.lb, 1);
   EXPECT_EQ(above_max.ub, 0);
+  EXPECT_EQ(above_max.max_variation, 0);
 
   // Constraint 1 has ct_ub = -8 < min_activity.
   const PresolveContext::MergedCanonicalLinearConstraint below_min =
@@ -1179,6 +1183,7 @@ TEST(PresolveContextTest, BuildMergedCanonicalLinearConstraintInfeasible) {
   EXPECT_THAT(below_min.terms, testing::IsEmpty());
   EXPECT_EQ(below_min.lb, 1);
   EXPECT_EQ(below_min.ub, 0);
+  EXPECT_EQ(below_min.max_variation, 0);
 }
 
 TEST(PresolveContextTest, CanonicalizeLinearConstraint) {

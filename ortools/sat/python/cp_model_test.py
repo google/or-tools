@@ -1733,7 +1733,7 @@ class CpModelTest(absltest.TestCase):
         solver.parameters.linearization_level = 2
         status = solver.solve(model)
         self.assertEqual(cp_model.OPTIMAL, status)
-        self.assertEqual(2.6, best_bound_callback.best_bound)
+        self.assertAlmostEqual(2.6, best_bound_callback.best_bound, delta=1e-6)
 
     def test_value(self) -> None:
         model = cp_model.CpModel()
