@@ -3955,6 +3955,7 @@ or_cc_library(
         "//ortools/bop:__pkg__",
         "//ortools/linear_solver/proto_solver:__pkg__",
         "//ortools/routing:__pkg__",
+        "//ortools/sat:__subpackages__",
         "//visibility:public",
     ],
     deps = [
