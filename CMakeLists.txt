@@ -303,6 +303,11 @@ message(STATUS "Build GLPK: ${BUILD_GLPK}")
 option(USE_GUROBI "Use the Gurobi solver" ON)
 message(STATUS "Gurobi support: ${USE_GUROBI}")
 
+## MOSEK
+# Since it is dynamicaly loaded upon use, OFF is currently not supported.
+option(USE_MOSEK "Use the Mosek solver" ON)
+message(STATUS "Mosek support: ${USE_MOSEK}")
+
 ## HiGHS
 # see: https://github.com/ERGO-Code/HiGHS
 option(USE_HIGHS "Use the HiGHS solver" ON)

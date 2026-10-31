@@ -425,6 +425,7 @@ message MPModelRequest {
         101;                        // Commercial, needs a valid license. NOLINT
     CPLEX_LINEAR_PROGRAMMING = 10;  // Commercial, needs a valid license. NOLINT
     HIGHS_LINEAR_PROGRAMMING = 15;
+    MOSEK_LINEAR_PROGRAMMING = 105; // Commercial, needs a valid license.
 
     SCIP_MIXED_INTEGER_PROGRAMMING = 3;  // Recommended default for MIP models.
     GLPK_MIXED_INTEGER_PROGRAMMING = 4;
@@ -435,6 +436,7 @@ message MPModelRequest {
     CPLEX_MIXED_INTEGER_PROGRAMMING =
         11;  // Commercial, needs a valid license. NOLINT
     HIGHS_MIXED_INTEGER_PROGRAMMING = 16;
+    MOSEK_MIXED_INTEGER_PROGRAMMING = 106; // Commercial, needs a valid license.
     BOP_INTEGER_PROGRAMMING = 12;
 
     // WARNING: This solver will currently interpret all variables as integer,
