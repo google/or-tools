@@ -13,6 +13,7 @@
 
 #include "ortools/sat/shaving_solver.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -31,7 +32,6 @@
 #include "absl/synchronization/mutex.h"
 #include "google/protobuf/arena.h"
 #include "ortools/base/macros/buildenv.h"
-#include "ortools/graph/connected_components.h"
 #include "ortools/sat/cp_model_copy.h"
 #include "ortools/sat/cp_model_lns.h"
 #include "ortools/sat/cp_model_presolve.h"
@@ -283,13 +283,272 @@ bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
   return true;
 }
 
+VariablesShavingSolver::ShavingGraph::ShavingGraph(
+    const CpModelProto& model_proto)
+    : model_proto_(model_proto) {
+  const int num_variables = model_proto_.variables_size();
+  const int num_constraints = model_proto_.constraints_size();
+
+  CompactVectorVectorBuilder<int, int> var_to_constraints_builder;
+  CompactVectorVectorBuilder<int, int> constraint_to_variables_builder;
+  CompactVectorVectorBuilder<int, int> interval_to_constraints_builder;
+  CompactVectorVectorBuilder<int, int> constraint_to_intervals_builder;
+  CompactVectorVectorBuilder<int, int> interval_to_no_overlap_2d_pairs_builder;
+  CompactVectorVectorBuilder<int, int> no_overlap_2d_pair_to_variables_builder;
+  CompactVectorVectorBuilder<int, int>
+      constraint_to_no_overlap_2d_pairs_builder;
+
+  for (int c = 0; c < num_constraints; ++c) {
+    const ConstraintProto& ct = model_proto_.constraints(c);
+    if (ct.constraint_case() == ConstraintProto::kNoOverlap2D) {
+      const NoOverlap2DConstraintProto& no_overlap_2d = ct.no_overlap_2d();
+      DCHECK_EQ(no_overlap_2d.x_intervals_size(),
+                no_overlap_2d.y_intervals_size());
+      for (int i = 0; i < no_overlap_2d.x_intervals_size(); ++i) {
+        const int x_interval = no_overlap_2d.x_intervals(i);
+        const int y_interval = no_overlap_2d.y_intervals(i);
+        const int pair_id = no_overlap_2d_pairs_.size();
+        no_overlap_2d_pairs_.push_back({c, x_interval, y_interval});
+
+        // Count only this rectangle's variables and the shared enforcement
+        // literals, not those of every rectangle in the constraint.
+        std::vector<int> pair_variables;
+        for (const int interval : {x_interval, y_interval}) {
+          const std::vector<int> interval_variables =
+              UsedVariables(model_proto_.constraints(interval));
+          pair_variables.insert(pair_variables.end(),
+                                interval_variables.begin(),
+                                interval_variables.end());
+          interval_to_no_overlap_2d_pairs_builder.Add(interval, pair_id);
+        }
+        for (const int ref : ct.enforcement_literal()) {
+          pair_variables.push_back(PositiveRef(ref));
+        }
+        std::sort(pair_variables.begin(), pair_variables.end());
+        pair_variables.erase(
+            std::unique(pair_variables.begin(), pair_variables.end()),
+            pair_variables.end());
+        for (const int var : pair_variables) {
+          no_overlap_2d_pair_to_variables_builder.Add(pair_id, var);
+        }
+        constraint_to_no_overlap_2d_pairs_builder.Add(c, pair_id);
+      }
+      continue;
+    }
+
+    for (const int var : UsedVariables(ct)) {
+      constraint_to_variables_builder.Add(c, var);
+      var_to_constraints_builder.Add(var, c);
+    }
+
+    for (const int interval : UsedIntervals(ct)) {
+      constraint_to_intervals_builder.Add(c, interval);
+      interval_to_constraints_builder.Add(interval, c);
+    }
+  }
+
+  var_to_constraints_.ResetFromBuilder(std::move(var_to_constraints_builder),
+                                       num_variables);
+  constraint_to_variables_.ResetFromBuilder(
+      std::move(constraint_to_variables_builder), num_constraints);
+  interval_to_constraints_.ResetFromBuilder(
+      std::move(interval_to_constraints_builder), num_constraints);
+  constraint_to_intervals_.ResetFromBuilder(
+      std::move(constraint_to_intervals_builder), num_constraints);
+  interval_to_no_overlap_2d_pairs_.ResetFromBuilder(
+      std::move(interval_to_no_overlap_2d_pairs_builder), num_constraints);
+  no_overlap_2d_pair_to_variables_.ResetFromBuilder(
+      std::move(no_overlap_2d_pair_to_variables_builder),
+      no_overlap_2d_pairs_.size());
+  constraint_to_no_overlap_2d_pairs_.ResetFromBuilder(
+      std::move(constraint_to_no_overlap_2d_pairs_builder), num_constraints);
+
+  selected_variables_epoch_.resize(num_variables);
+  queued_variables_epoch_.resize(num_variables);
+  queued_intervals_epoch_.resize(num_constraints);
+  active_constraints_epoch_.resize(num_constraints);
+  active_no_overlap_2d_constraints_epoch_.resize(num_constraints);
+  active_no_overlap_2d_pairs_epoch_.resize(no_overlap_2d_pairs_.size());
+}
+
+bool VariablesShavingSolver::ShavingGraph::ConstraintIsInactive(
+    int c, const std::vector<Domain>& domains) const {
+  for (const int ref : model_proto_.constraints(c).enforcement_literal()) {
+    const int var = PositiveRef(ref);
+    if (domains[var].IsFixed() &&
+        domains[var].FixedValue() == (var == ref ? 0 : 1)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool VariablesShavingSolver::ShavingGraph::IsConstraintActive(
+    int c, const Neighborhood& neighborhood) const {
+  return active_constraints_epoch_[c] == neighborhood.epoch;
+}
+
+bool VariablesShavingSolver::ShavingGraph::IsNoOverlap2DConstraintActive(
+    int c, const Neighborhood& neighborhood) const {
+  return active_no_overlap_2d_constraints_epoch_[c] == neighborhood.epoch;
+}
+
+bool VariablesShavingSolver::ShavingGraph::IsNoOverlap2DPairActive(
+    int pair_id, const Neighborhood& neighborhood) const {
+  return active_no_overlap_2d_pairs_epoch_[pair_id] == neighborhood.epoch;
+}
+
+VariablesShavingSolver::ShavingGraph::Neighborhood
+VariablesShavingSolver::ShavingGraph::Extract(
+    int root_var, const std::vector<Domain>& domains, int max_variables,
+    int max_constraints) {
+  DCHECK_EQ(domains.size(), model_proto_.variables_size());
+  DCHECK_GE(root_var, 0);
+  DCHECK_LT(root_var, model_proto_.variables_size());
+  DCHECK(!domains[root_var].IsFixed());
+
+  if (++current_epoch_ == 0) {
+    std::fill(selected_variables_epoch_.begin(),
+              selected_variables_epoch_.end(), 0);
+    std::fill(queued_variables_epoch_.begin(), queued_variables_epoch_.end(),
+              0);
+    std::fill(queued_intervals_epoch_.begin(), queued_intervals_epoch_.end(),
+              0);
+    std::fill(active_constraints_epoch_.begin(),
+              active_constraints_epoch_.end(), 0);
+    std::fill(active_no_overlap_2d_constraints_epoch_.begin(),
+              active_no_overlap_2d_constraints_epoch_.end(), 0);
+    std::fill(active_no_overlap_2d_pairs_epoch_.begin(),
+              active_no_overlap_2d_pairs_epoch_.end(), 0);
+    current_epoch_ = 1;
+  }
+  active_no_overlap_2d_constraints_.clear();
+
+  Neighborhood result;
+  result.epoch = current_epoch_;
+  std::vector<std::pair<bool, int>> pending_nodes;
+
+  const auto add_variable = [&](int var, bool expand) {
+    if (domains[var].IsFixed()) return;
+    if (selected_variables_epoch_[var] != result.epoch) {
+      selected_variables_epoch_[var] = result.epoch;
+      ++result.num_active_variables;
+    }
+    if (expand && queued_variables_epoch_[var] != result.epoch) {
+      queued_variables_epoch_[var] = result.epoch;
+      pending_nodes.push_back({false, var});
+    }
+  };
+
+  const auto add_interval = [&](int interval) {
+    DCHECK_GE(interval, 0);
+    DCHECK_LT(interval, model_proto_.constraints_size());
+    if (queued_intervals_epoch_[interval] == result.epoch) return;
+    queued_intervals_epoch_[interval] = result.epoch;
+    pending_nodes.push_back({true, interval});
+  };
+
+  const auto fits_budget = [&](int new_variables, int new_constraints) {
+    return (max_variables == 0 ||
+            result.num_active_variables + new_variables <= max_variables) &&
+           (max_constraints == 0 ||
+            result.num_active_constraints + new_constraints <= max_constraints);
+  };
+
+  const auto add_constraint = [&](int c) {
+    DCHECK_NE(model_proto_.constraints(c).constraint_case(),
+              ConstraintProto::kNoOverlap2D);
+    if (IsConstraintActive(c, result) || ConstraintIsInactive(c, domains)) {
+      return;
+    }
+
+    int new_variables = 0;
+    for (const int var : constraint_to_variables_[c]) {
+      if (!domains[var].IsFixed() &&
+          selected_variables_epoch_[var] != result.epoch) {
+        ++new_variables;
+      }
+    }
+    if (!fits_budget(new_variables, 1)) return;
+
+    active_constraints_epoch_[c] = result.epoch;
+    ++result.num_active_constraints;
+    for (const int var : constraint_to_variables_[c]) {
+      add_variable(var, /*expand=*/true);
+    }
+    for (const int interval : constraint_to_intervals_[c]) {
+      add_interval(interval);
+    }
+    if (model_proto_.constraints(c).constraint_case() ==
+        ConstraintProto::kInterval) {
+      add_interval(c);
+    }
+  };
+
+  const auto add_no_overlap_2d_pair = [&](int pair_id) {
+    if (IsNoOverlap2DPairActive(pair_id, result)) return;
+    const NoOverlap2DPair& pair = no_overlap_2d_pairs_[pair_id];
+    if (ConstraintIsInactive(pair.constraint, domains)) return;
+
+    const bool new_constraint =
+        !IsNoOverlap2DConstraintActive(pair.constraint, result);
+    int new_variables = 0;
+    for (const int var : no_overlap_2d_pair_to_variables_[pair_id]) {
+      if (!domains[var].IsFixed() &&
+          selected_variables_epoch_[var] != result.epoch) {
+        ++new_variables;
+      }
+    }
+    if (!fits_budget(new_variables, new_constraint ? 1 : 0)) return;
+
+    active_no_overlap_2d_pairs_epoch_[pair_id] = result.epoch;
+    if (new_constraint) {
+      active_no_overlap_2d_constraints_epoch_[pair.constraint] = result.epoch;
+      active_no_overlap_2d_constraints_.push_back(pair.constraint);
+      ++result.num_active_constraints;
+    }
+
+    // Enforcement literals are copied with the partial constraint, but are
+    // boundary variables: expanding them would connect unrelated rectangles.
+    for (const int var : no_overlap_2d_pair_to_variables_[pair_id]) {
+      add_variable(var, /*expand=*/false);
+    }
+    add_interval(pair.x_interval);
+    add_interval(pair.y_interval);
+  };
+
+  add_variable(root_var, /*expand=*/true);
+  for (int next_node = 0; next_node < pending_nodes.size(); ++next_node) {
+    const auto [is_interval, index] = pending_nodes[next_node];
+
+    if (!is_interval) {
+      for (const int c : var_to_constraints_[index]) {
+        add_constraint(c);
+      }
+      continue;
+    }
+
+    // An interval is represented by its defining constraint node.
+    add_constraint(index);
+    for (const int c : interval_to_constraints_[index]) {
+      add_constraint(c);
+    }
+    for (const int pair_id : interval_to_no_overlap_2d_pairs_[index]) {
+      add_no_overlap_2d_pair(pair_id);
+    }
+  }
+
+  return result;
+}
+
 VariablesShavingSolver::VariablesShavingSolver(
     const SatParameters& local_parameters, SharedClasses* shared)
     : SubSolver(local_parameters.name(), INCOMPLETE),
       local_params_(local_parameters),
       shared_(shared),
       stop_current_chunk_(false),
-      model_proto_(shared->model_proto) {
+      model_proto_(shared->model_proto),
+      graph_(model_proto_) {
   if (shared_->bounds != nullptr) {
     shared_bounds_id_ = shared_->bounds->RegisterNewId(local_parameters.name());
   }
@@ -441,17 +700,6 @@ bool VariablesShavingSolver::VarIsFixed(int int_var) const
   return var_domains_[int_var].IsFixed();
 }
 
-bool VariablesShavingSolver::ConstraintIsInactive(int c) const
-    ABSL_SHARED_LOCKS_REQUIRED(mutex_) {
-  for (const int ref : model_proto_.constraints(c).enforcement_literal()) {
-    const int var = PositiveRef(ref);
-    if (VarIsFixed(var) && var_domains_[var].Min() == (var == ref ? 0 : 1)) {
-      return true;
-    }
-  }
-  return false;
-}
-
 bool VariablesShavingSolver::FindNextVar(State* state)
     ABSL_SHARED_LOCKS_REQUIRED(mutex_) {
   const int num_vars = var_domains_.size();
@@ -524,58 +772,20 @@ bool VariablesShavingSolver::FindNextVar(State* state)
   return false;
 }
 
-bool VariablesShavingSolver::CopyModelConnectedToVar(
-    State* state, Model* local_model, CpModelProto* shaving_proto,
-    bool* has_no_overlap_2d) ABSL_SHARED_LOCKS_REQUIRED(mutex_) {
-  auto var_to_node = [](int var) { return var; };
-  auto ct_to_node = [num_vars = model_proto_.variables_size()](int c) {
-    return c + num_vars;
-  };
-
-  // Heuristic: we will ignore some complex constraints and "RELAX" them.
-  const int root_index = var_to_node(state->var_index);
-  std::vector<int> ignored_constraints;
-
-  // Build the connected component graph.
-  //
-  // TODO(user): Add some kind of difficulty, and do a BFS instead so that
-  // we don't pull in the full model when everything is connected. We can
-  // reuse the helper_ graph for this.
-  DenseConnectedComponentsFinder cc_finder;
-  cc_finder.SetNumberOfNodes(model_proto_.constraints_size() +
-                             model_proto_.variables_size());
-  for (int c = 0; c < model_proto_.constraints_size(); ++c) {
-    if (ConstraintIsInactive(c)) continue;
-
-    const ConstraintProto& ct = model_proto_.constraints(c);
-    if (ct.constraint_case() == ConstraintProto::kNoOverlap2D) {
-      // Make sure x and y parts are connected.
-      *has_no_overlap_2d = true;
-      const int num_intervals = ct.no_overlap_2d().x_intervals().size();
-      for (int i = 0; i < num_intervals; ++i) {
-        const int x_interval = ct.no_overlap_2d().x_intervals(i);
-        const int y_interval = ct.no_overlap_2d().y_intervals(i);
-        cc_finder.AddEdge(ct_to_node(x_interval), ct_to_node(y_interval));
-      }
-      ignored_constraints.push_back(c);
-      continue;
-    }
-
-    const int ct_node = ct_to_node(c);
-    for (const int var : UsedVariables(ct)) {
-      if (VarIsFixed(var)) continue;
-      cc_finder.AddEdge(ct_node, var_to_node(var));
-    }
-    for (const int interval : UsedIntervals(ct)) {
-      cc_finder.AddEdge(ct_node, ct_to_node(interval));
-    }
-  }
-
+bool VariablesShavingSolver::CopyModelNeighborhood(State* state,
+                                                   Model* local_model,
+                                                   CpModelProto* shaving_proto,
+                                                   bool* has_no_overlap_2d)
+    ABSL_SHARED_LOCKS_REQUIRED(mutex_) {
   DCHECK(shaving_proto->variables().empty());
   DCHECK(shaving_proto->constraints().empty());
 
-  const auto active_constraints = [&cc_finder, root_index, &ct_to_node](int c) {
-    return cc_finder.Connected(root_index, ct_to_node(c));
+  const ShavingGraph::Neighborhood neighborhood = graph_.Extract(
+      state->var_index, var_domains_,
+      local_params_.variables_shaving_max_neighborhood_variables(),
+      local_params_.variables_shaving_max_neighborhood_constraints());
+  const auto active_constraints = [this, &neighborhood](int c) {
+    return graph_.IsConstraintActive(c, neighborhood);
   };
 
   std::vector<int> interval_mapping;
@@ -585,49 +795,47 @@ bool VariablesShavingSolver::CopyModelConnectedToVar(
     return false;
   }
 
-  // Now copy the ignored constraints "partially".
-  for (const int c : ignored_constraints) {
-    CHECK(!active_constraints(c));
+  // NoOverlap2D is copied separately to keep only complete rectangle pairs.
+  for (const int c : graph_.active_no_overlap_2d_constraints()) {
     const ConstraintProto& ct = model_proto_.constraints(c);
-
-    // We will only include non-ignored intervals there!
-    if (ct.constraint_case() == ConstraintProto::kNoOverlap2D) {
-      NoOverlap2DConstraintProto* new_no_overlap_2d =
-          shaving_proto->add_constraints()->mutable_no_overlap_2d();
-      const int num_intervals = ct.no_overlap_2d().x_intervals().size();
-      for (int i = 0; i < num_intervals; ++i) {
-        const int x_interval = ct.no_overlap_2d().x_intervals(i);
-        const int y_interval = ct.no_overlap_2d().y_intervals(i);
-        if (!active_constraints(x_interval)) continue;
-        if (!active_constraints(y_interval)) continue;
-        if (interval_mapping[x_interval] == -1) continue;
-        if (interval_mapping[y_interval] == -1) continue;
-
-        new_no_overlap_2d->add_x_intervals(interval_mapping[x_interval]);
-        new_no_overlap_2d->add_y_intervals(interval_mapping[y_interval]);
+    const auto pair_ids = graph_.constraint_to_no_overlap_2d_pairs()[c];
+    bool has_mapped_pair = false;
+    for (const int pair_id : pair_ids) {
+      if (!graph_.IsNoOverlap2DPairActive(pair_id, neighborhood)) continue;
+      const ShavingGraph::NoOverlap2DPair& pair =
+          graph_.no_overlap_2d_pairs()[pair_id];
+      if (interval_mapping[pair.x_interval] != -1 &&
+          interval_mapping[pair.y_interval] != -1) {
+        has_mapped_pair = true;
+        break;
       }
     }
+    if (!has_mapped_pair) continue;
+
+    ConstraintProto* new_ct = shaving_proto->add_constraints();
+    new_ct->mutable_enforcement_literal()->CopyFrom(ct.enforcement_literal());
+    NoOverlap2DConstraintProto* new_no_overlap_2d =
+        new_ct->mutable_no_overlap_2d();
+    for (const int pair_id : pair_ids) {
+      if (!graph_.IsNoOverlap2DPairActive(pair_id, neighborhood)) continue;
+      const ShavingGraph::NoOverlap2DPair& pair =
+          graph_.no_overlap_2d_pairs()[pair_id];
+      if (interval_mapping[pair.x_interval] == -1 ||
+          interval_mapping[pair.y_interval] == -1) {
+        continue;
+      }
+      new_no_overlap_2d->add_x_intervals(interval_mapping[pair.x_interval]);
+      new_no_overlap_2d->add_y_intervals(interval_mapping[pair.y_interval]);
+    }
+    *has_no_overlap_2d = true;
   }
 
   if (VLOG_IS_ON(2)) {
-    int num_active_variables = 0;
-    for (int i = 0; i < model_proto_.variables().size(); ++i) {
-      if (cc_finder.Connected(root_index, var_to_node(i))) {
-        ++num_active_variables;
-      }
-    }
-    int num_active_constraints = 0;
-    for (int c = 0; c < model_proto_.constraints().size(); ++c) {
-      if (cc_finder.Connected(root_index, ct_to_node(c))) {
-        ++num_active_constraints;
-      }
-    }
-
     LOG(INFO) << "#shaving_constraints:" << shaving_proto->constraints_size()
-              << " #active_constraints:" << num_active_constraints << "/"
-              << model_proto_.constraints_size()
-              << " #active_variables:" << num_active_variables << "/"
-              << model_proto_.variables_size();
+              << " #active_constraints:" << neighborhood.num_active_constraints
+              << "/" << model_proto_.constraints_size()
+              << " #active_variables:" << neighborhood.num_active_variables
+              << "/" << model_proto_.variables_size();
   }
 
   shaving_proto->clear_objective();
@@ -682,8 +890,8 @@ bool VariablesShavingSolver::ResetAndSolveModel(int64_t task_id, State* state,
   {
     absl::MutexLock lock(mutex_);
     if (!FindNextVar(state)) return false;
-    if (!CopyModelConnectedToVar(state, local_model, shaving_proto,
-                                 &has_no_overlap_2d)) {
+    if (!CopyModelNeighborhood(state, local_model, shaving_proto,
+                               &has_no_overlap_2d)) {
       unsat_during_copy = true;  // Report unsat after releasing lock.
     }
     ++num_vars_tried_;

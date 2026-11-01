@@ -1301,6 +1301,16 @@ message SatParameters {
   // value 0 disables it, and 1, 2, or 3 changes something.
   optional int32 variables_shaving_level = 289 [default = -1];
 
+  // Maximum number of non-fixed variables selected in a variables-shaving
+  // neighborhood. A value of 0 disables the limit.
+  optional int32 variables_shaving_max_neighborhood_variables = 375
+      [default = 0];
+
+  // Maximum number of constraints selected in a variables-shaving neighborhood.
+  // A value of 0 disables the limit.
+  optional int32 variables_shaving_max_neighborhood_constraints = 376
+      [default = 0];
+
   // The solver ignores the pseudo costs of variables with number of recordings
   // less than this threshold.
   optional int64 pseudo_cost_reliability_threshold = 123 [default = 100];
