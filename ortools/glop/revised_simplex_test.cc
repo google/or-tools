@@ -919,12 +919,7 @@ TEST_P(RevisedSimplexDualRayTest, Optimize) {
       std::get<RevisedSimplexDualRayTestModel>(GetParam()).lp_model, &lp));
   lp.SetMaximizationProblem(direction() == TestDirection::kMaximize);
 
-  // As of today (2026-09) rays can only be returned without pre-processing or
-  // scaling.
   GlopParameters parameters;
-  parameters.set_use_preprocessing(false);
-  parameters.set_use_scaling(false);
-
   parameters.set_use_dual_simplex(algorithm() == TestAlgorithm::kDualSimplex);
 
   RevisedSimplex solver;
