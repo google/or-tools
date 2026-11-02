@@ -26,12 +26,14 @@
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_literal.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/strong_integers.h"
@@ -313,6 +315,173 @@ TEST(LinearProgrammingConstraintTest, ReducedCostScalingColumns) {
   const auto& reduced_costs = *m.GetOrCreate<ModelReducedCosts>();
   CHECK_LE(std::abs(reduced_costs[x] - 64), 1e-6);
   CHECK_LE(std::abs(reduced_costs[y] - 32), 1e-6);
+}
+
+TEST(LinearProgrammingConstraintTest,
+     SubstitutedSingleVariableObjectiveDirectEquivalence) {
+  Model m;
+  m.GetOrCreate<SatParameters>()->set_add_lp_constraints_lazily(false);
+  auto* sat_solver = m.GetOrCreate<SatSolver>();
+  const Literal a(sat_solver->NewBooleanVariable(), true);
+  const Literal b(sat_solver->NewBooleanVariable(), true);
+  const IntegerVariable x = CreateNewIntegerVariableFromLiteral(a, &m);
+  const IntegerVariable y = CreateNewIntegerVariableFromLiteral(b, &m);
+  const IntegerVariable z = m.Add(NewIntegerVariable(0, 3));
+
+  LinearProgrammingConstraint* lp =
+      new LinearProgrammingConstraint(&m, {x, y, z});
+  m.TakeOwnership(lp);
+
+  // Register x first so y is substituted by x when a <=> b.
+  LinearConstraintBuilder ct1(IntegerValue(3), IntegerValue(6));
+  ct1.AddTerm(x, IntegerValue(3));
+  ct1.AddTerm(z, IntegerValue(1));
+  lp->AddLinearConstraint(ct1.Build());
+
+  LinearConstraintBuilder ct2(IntegerValue(0), IntegerValue(3));
+  ct2.AddTerm(y, IntegerValue(3));
+  ct2.AddTerm(z, IntegerValue(-1));
+  lp->AddLinearConstraint(ct2.Build());
+
+  // Single-variable objective y (which is part of the LP).
+  lp->SetObjectiveCoefficient(y, IntegerValue(1));
+  lp->SetMainObjectiveVariable(y);
+
+  auto* graph = m.GetOrCreate<BinaryImplicationGraph>();
+  graph->AddImplication(a, b);
+  graph->AddImplication(b, a);
+  ASSERT_TRUE(graph->DetectEquivalences());
+
+  lp->RegisterWith(&m);
+  EXPECT_TRUE(lp->Propagate());
+  EXPECT_NEAR(lp->GetSolutionValue(y), 0.5, 1e-6);
+  EXPECT_EQ(m.GetOrCreate<IntegerTrail>()->LowerBound(y), IntegerValue(1));
+}
+
+TEST(LinearProgrammingConstraintTest,
+     SubstitutedSingleVariableObjectiveNegatedEquivalence) {
+  Model m;
+  m.GetOrCreate<SatParameters>()->set_add_lp_constraints_lazily(false);
+  auto* sat_solver = m.GetOrCreate<SatSolver>();
+  const Literal a(sat_solver->NewBooleanVariable(), true);
+  const Literal b(sat_solver->NewBooleanVariable(), true);
+  const IntegerVariable x = CreateNewIntegerVariableFromLiteral(a, &m);
+  const IntegerVariable y = CreateNewIntegerVariableFromLiteral(b, &m);
+  const IntegerVariable z = m.Add(NewIntegerVariable(0, 3));
+
+  LinearProgrammingConstraint* lp =
+      new LinearProgrammingConstraint(&m, {x, y, z});
+  m.TakeOwnership(lp);
+
+  // Register x first so y is substituted by 1 - x when a <=> not(b).
+  LinearConstraintBuilder ct1(IntegerValue(0), IntegerValue(3));
+  ct1.AddTerm(x, IntegerValue(-3));
+  ct1.AddTerm(z, IntegerValue(1));
+  lp->AddLinearConstraint(ct1.Build());
+
+  LinearConstraintBuilder ct2(IntegerValue(0), IntegerValue(3));
+  ct2.AddTerm(y, IntegerValue(3));
+  ct2.AddTerm(z, IntegerValue(-1));
+  lp->AddLinearConstraint(ct2.Build());
+
+  // Single-variable objective y (which is part of the LP).
+  lp->SetObjectiveCoefficient(y, IntegerValue(1));
+  lp->SetMainObjectiveVariable(y);
+
+  auto* graph = m.GetOrCreate<BinaryImplicationGraph>();
+  graph->AddImplication(a, b.Negated());
+  graph->AddImplication(b.Negated(), a);
+  ASSERT_TRUE(graph->DetectEquivalences());
+
+  lp->RegisterWith(&m);
+  EXPECT_TRUE(lp->Propagate());
+  EXPECT_NEAR(lp->GetSolutionValue(y), 0.5, 1e-6);
+  EXPECT_EQ(m.GetOrCreate<IntegerTrail>()->LowerBound(y), IntegerValue(1));
+}
+
+TEST(LinearProgrammingConstraintTest,
+     SubstitutedSingleVariableNegatedObjective) {
+  Model m;
+  m.GetOrCreate<SatParameters>()->set_add_lp_constraints_lazily(false);
+  auto* sat_solver = m.GetOrCreate<SatSolver>();
+  const Literal a(sat_solver->NewBooleanVariable(), true);
+  const Literal b(sat_solver->NewBooleanVariable(), true);
+  const IntegerVariable x = CreateNewIntegerVariableFromLiteral(a, &m);
+  const IntegerVariable y = CreateNewIntegerVariableFromLiteral(b, &m);
+  const IntegerVariable z = m.Add(NewIntegerVariable(0, 3));
+
+  LinearProgrammingConstraint* lp =
+      new LinearProgrammingConstraint(&m, {x, y, z});
+  m.TakeOwnership(lp);
+
+  // Register x first so y is substituted by x when a <=> b.
+  // 3x - z <= 0 and 3y + z <= 3 => 6x <= 3 => x <= 0.5 => -y >= -0.5 => y <= 0.
+  LinearConstraintBuilder ct1(IntegerValue(-3), IntegerValue(0));
+  ct1.AddTerm(x, IntegerValue(3));
+  ct1.AddTerm(z, IntegerValue(-1));
+  lp->AddLinearConstraint(ct1.Build());
+
+  LinearConstraintBuilder ct2(IntegerValue(0), IntegerValue(3));
+  ct2.AddTerm(y, IntegerValue(3));
+  ct2.AddTerm(z, IntegerValue(1));
+  lp->AddLinearConstraint(ct2.Build());
+
+  // Single-variable objective -y.
+  lp->SetObjectiveCoefficient(y, IntegerValue(-1));
+  lp->SetMainObjectiveVariable(NegationOf(y));
+
+  auto* graph = m.GetOrCreate<BinaryImplicationGraph>();
+  graph->AddImplication(a, b);
+  graph->AddImplication(b, a);
+  ASSERT_TRUE(graph->DetectEquivalences());
+
+  lp->RegisterWith(&m);
+  EXPECT_TRUE(lp->Propagate());
+  EXPECT_NEAR(lp->GetSolutionValue(y), 0.5, 1e-6);
+  EXPECT_EQ(m.GetOrCreate<IntegerTrail>()->UpperBound(y), IntegerValue(0));
+}
+
+TEST(LinearProgrammingConstraintTest,
+     SubstitutedSingleVariableNegatedObjectiveNegatedEquivalence) {
+  Model m;
+  m.GetOrCreate<SatParameters>()->set_add_lp_constraints_lazily(false);
+  auto* sat_solver = m.GetOrCreate<SatSolver>();
+  const Literal a(sat_solver->NewBooleanVariable(), true);
+  const Literal b(sat_solver->NewBooleanVariable(), true);
+  const IntegerVariable x = CreateNewIntegerVariableFromLiteral(a, &m);
+  const IntegerVariable y = CreateNewIntegerVariableFromLiteral(b, &m);
+  const IntegerVariable z = m.Add(NewIntegerVariable(0, 3));
+
+  LinearProgrammingConstraint* lp =
+      new LinearProgrammingConstraint(&m, {x, y, z});
+  m.TakeOwnership(lp);
+
+  // Register x first so y is substituted by 1 - x when a <=> not(b).
+  // -3x - z <= -3 and 3y + z <= 3 (with y = 1 - x => -3x + z <= 0)
+  // => -6x <= -3 => x >= 0.5 => y <= 0.5 => -y >= -0.5 => y <= 0.
+  LinearConstraintBuilder ct1(IntegerValue(-6), IntegerValue(-3));
+  ct1.AddTerm(x, IntegerValue(-3));
+  ct1.AddTerm(z, IntegerValue(-1));
+  lp->AddLinearConstraint(ct1.Build());
+
+  LinearConstraintBuilder ct2(IntegerValue(0), IntegerValue(3));
+  ct2.AddTerm(y, IntegerValue(3));
+  ct2.AddTerm(z, IntegerValue(1));
+  lp->AddLinearConstraint(ct2.Build());
+
+  // Single-variable objective -y.
+  lp->SetObjectiveCoefficient(y, IntegerValue(-1));
+  lp->SetMainObjectiveVariable(NegationOf(y));
+
+  auto* graph = m.GetOrCreate<BinaryImplicationGraph>();
+  graph->AddImplication(a, b.Negated());
+  graph->AddImplication(b.Negated(), a);
+  ASSERT_TRUE(graph->DetectEquivalences());
+
+  lp->RegisterWith(&m);
+  EXPECT_TRUE(lp->Propagate());
+  EXPECT_NEAR(lp->GetSolutionValue(y), 0.5, 1e-6);
+  EXPECT_EQ(m.GetOrCreate<IntegerTrail>()->UpperBound(y), IntegerValue(0));
 }
 
 }  // namespace

@@ -444,6 +444,7 @@ void LinearProgrammingConstraint::SubstituteEquivalentVariablesInObjective() {
     }
   }
   if (!need_substitution) return;
+  objective_cp_is_part_of_lp_ = false;
 
   tmp_terms_.clear();
   for (const auto [col, coeff] : integer_objective_) {
@@ -3176,9 +3177,9 @@ bool LinearProgrammingConstraint::PropagateExactLpReason() {
           integer_variables_[col.value()] == PositiveVariable(objective_cp_)) {
         extra_term = std::nullopt;
 
-        // Otherwise we should have objective_cp_is_part_of_lp_.
-        CHECK(!VariableIsPositive(objective_cp_));
-        if (!tmp_scattered_vector_.Add(col, obj_scale)) {
+        const IntegerValue coeff =
+            VariableIsPositive(objective_cp_) ? -obj_scale : obj_scale;
+        if (!tmp_scattered_vector_.Add(col, coeff)) {
           return true;  // Overflow: abort.
         }
       }
