@@ -44,6 +44,7 @@ or_pybind_extension(
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:status_builder",
+        "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt/elemental",
         "//ortools/math_opt/elemental:arrays",
         "//ortools/math_opt/elemental:attr_key",
