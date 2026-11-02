@@ -44,15 +44,6 @@ jobs:
         run: |
           echo "$HOME/Library/Python/${{matrix.python.version}}/bin" >> $GITHUB_PATH
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-      # can't use brew swig (4.4) since Director python support is broken on macos
-      # see: https://github.com/swig/swig/issues/3279
-      - name: Install SWIG
-        run: |
-          wget -q https://downloads.sourceforge.net/project/swig/swig/swig-4.3.1/swig-4.3.1.tar.gz && tar xzvf swig-4.3.1.tar.gz && rm swig-4.3.1.tar.gz
-          cd swig-4.3.1 && ./configure --prefix=$HOME/.local && make -j 4 && make install
-          rm -rf swig-4.3.1
-      - name: Check SWIG
-        run: swig -version
 
       - name: Check CMake
         run: cmake --version
