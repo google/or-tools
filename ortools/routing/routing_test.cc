@@ -9189,6 +9189,45 @@ TEST(InsertNodesInAssignmentWithParametersTest, ConsistentFixedSolution) {
   EXPECT_EQ(solution->ObjectiveValue(), 4 + 2 + 1 + 2 + 2);
 }
 
+TEST(InsertNodesInAssignmentWithParametersTest, PickupDeliveryInsertion) {
+  const IndexManager manager(/*num_nodes=*/7, /*num_vehicles=*/1,
+                             /*depot=*/NodeIndex(0));
+  Model model(manager);
+  RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
+  model.AddPickupAndDelivery(1, 2);
+  model.AddPickupAndDelivery(3, 4);
+  model.AddPickupAndDelivery(5, 6);
+  // Insert pair(1,2) in 0->3->5->6->4->7 with (3,4) and (5,6) being pairs.
+  Assignment* assignment = model.solver()->MakeAssignment();
+  assignment->Add(model.NextVar(model.Start(0)))->SetValue(3);
+  assignment->Add(model.NextVar(3))->SetValue(5);
+  assignment->Add(model.NextVar(5))->SetValue(6);
+  assignment->Add(model.NextVar(6))->SetValue(4);
+  assignment->Add(model.NextVar(4))->SetValue(model.End(0));
+  // Choosing a cost function such that inserting 1 at its best position is not
+  // optimal.
+  const int vehicle_cost =
+      model.RegisterTransitCallback([](int64_t i, int64_t j) {
+        if (i == 0 && j == 1) return 1;
+        if (i == 3 && j == 1) return 1;
+        if (i == 5 && j == 1) {
+          return 0;  // best position for 1, after best positions for 2
+        }
+        if (i == 1 && j == 2) return 3;
+        if (i == 3 && j == 2) return 1;  // best position for 2
+        if (j == 2 || j == 1) return 3;
+        return 0;
+      });
+  model.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
+  const Assignment* solution =
+      model.InsertNodesInAssignmentWithParameters(*assignment, parameters);
+  EXPECT_NE(solution, nullptr);
+  EXPECT_EQ(model.status(), RoutingSearchStatus::ROUTING_SUCCESS);
+  EXPECT_TRUE(solution->Contains(model.NextVar(1)));
+  EXPECT_TRUE(solution->Contains(model.NextVar(2)));
+  EXPECT_EQ(solution->ObjectiveValue(), 2);
+}
+
 TEST(FastSolveFromAssignmentWithParameters, EmptySolution) {
   const IndexManager manager(/*num_nodes=*/2, /*num_vehicles=*/2,
                              /*depot=*/NodeIndex(0));
