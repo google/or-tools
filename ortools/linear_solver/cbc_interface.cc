@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <atomic>
 #include <cstdint>
 #include <limits>
 #include <memory>
@@ -39,6 +40,43 @@
 
 namespace operations_research {
 
+// Event handler used to interrupt the solve: when the interrupt flag is set, it
+// makes CbcModel::branchAndBound() terminate early with status 5.
+//
+// The check is coarse grained: CBC ignores the action returned for most events
+// and only acts on the return value of the per-node event fired by
+// CbcModel::doOneNode(). In particular the flag is not looked at while
+// presolve, the root LP or the heuristics of a node are running, so an
+// interruption is only observed at the next node boundary (which is still fast
+// for typical models, but can take a while for a single very expensive node).
+//
+// CbcModel::passInEventHandler() clones the handler, and the copies made by
+// CbcModel's copy constructor keep the clone, so we share the flag through a
+// pointer and override clone() to preserve it.
+class CbcInterruptEventHandler : public CbcEventHandler {
+ public:
+  explicit CbcInterruptEventHandler(std::atomic<bool>* interrupt_requested)
+      : interrupt_requested_(interrupt_requested) {}
+
+  CbcEventHandler* clone() const override {
+    return new CbcInterruptEventHandler(interrupt_requested_);
+  }
+
+  CbcAction event(CbcEvent whichEvent) override {
+    if (interrupt_requested_->load()) {
+      return CbcEventHandler::stop;
+    }
+    return CbcEventHandler::noAction;
+  }
+
+  CbcAction event(CbcEvent whichEvent, void* data) override {
+    return event(whichEvent);
+  }
+
+ private:
+  std::atomic<bool>* interrupt_requested_;
+};
+
 class CBCInterface : public MPSolverInterface {
  public:
   // Constructor that takes a name for the underlying glpk solver.
@@ -62,6 +100,9 @@ class CBCInterface : public MPSolverInterface {
   // ----- Solve -----
   // Solve the problem using the parameter values specified.
   MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
+
+  // Interrupt the solve, if one is running.
+  bool InterruptSolve() override;
 
   // TODO(user): separate the solve from the model extraction.
   virtual void ExtractModel() {}
@@ -144,6 +185,10 @@ class CBCInterface : public MPSolverInterface {
   void SetLpAlgorithm(int value) override;
 
   OsiClpSolverInterface osi_;
+  // Flag set by InterruptSolve() (from another thread) and checked by the
+  // CbcInterruptEventHandler while the solve is running.
+  std::atomic<bool> interrupt_requested_{false};
+  CbcInterruptEventHandler interrupt_event_handler_{&interrupt_requested_};
   // TODO(user): remove and query number of iterations directly from CbcModel
   int64_t iterations_;
   int64_t nodes_;
@@ -236,9 +281,20 @@ void CBCInterface::AddVariable(MPVariable* const var) {
   sync_status_ = MUST_RELOAD;
 }
 
+bool CBCInterface::InterruptSolve() {
+  interrupt_requested_ = true;
+  return true;
+}
+
 // Solve the LP/MIP. Returns true only if the optimal solution was revealed.
 // Returns the status of the search.
 MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
+  // Reset the interrupt flag: a previous interrupt (possibly of an earlier
+  // solve) must not stop this solve. If the user interrupts while we are
+  // still here, InterruptSolve() will set the flag again and the event
+  // handler will pick it up as soon as the search starts.
+  interrupt_requested_.store(false);
+
   // CBC requires unique variable and constraint names. By using Lookup*, we
   // generate variable and constraint indices and ensure the duplicate name
   // crash will happen here with a readable error message.
@@ -342,6 +398,10 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
 
   // Solve
   CbcModel model(osi_);
+  // Allow InterruptSolve() to stop the branch-and-bound early. The handler is
+  // cloned into every internal copy of the model made by callCbc, and all the
+  // clones share interrupt_requested_.
+  model.passInEventHandler(&interrupt_event_handler_);
 
   // Use the solution hint if any.
   if (!solver_->solution_hint_.empty()) {
@@ -452,6 +512,9 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
       }
       break;
     case 1:
+    case 5:
+      // Stopped: on maxnodes, maxsols, maxtime (1) or by the event handler
+      // (5), e.g. an interrupt. Report the best solution found so far, if any.
       if (model.bestSolution() != nullptr) {
         result_status_ = MPSolver::FEASIBLE;
       } else {

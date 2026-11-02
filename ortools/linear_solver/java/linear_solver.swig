@@ -380,7 +380,7 @@ PROTO2_RETURN(
 %rename (supportsProblemType) operations_research::MPSolver::SupportsProblemType;  // no test
 %rename (setSolverSpecificParametersAsString)
     operations_research::MPSolver::SetSolverSpecificParametersAsString;  // no test
-%rename (interruptSolve) operations_research::MPSolver::InterruptSolve;  // no test
+%rename (interruptSolve) operations_research::MPSolver::InterruptSolve;
 %rename (wallTime) operations_research::MPSolver::wall_time;
 %rename (clear) operations_research::MPSolver::Clear;  // no test
 %unignore operations_research::MPSolver::constraint;
