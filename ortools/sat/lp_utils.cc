@@ -1706,6 +1706,13 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
 
   if (!mp_constraint.IsEnforced()) return absl::OkStatus();
 
+  // If the constraint is trivially satisfied, there is no need to add any
+  // enforcement.
+  const LinearConstraintProto& linear = constraint->linear();
+  if (linear.vars().empty() && linear.domain(0) <= 0 && linear.domain(1) >= 0) {
+    return absl::OkStatus();
+  }
+
   bool has_integer_enforcement = false;
   for (int i = 0; i < num_enforcements; ++i) {
     const int var = mp_constraint.enforcement_vars()[i];
@@ -1727,7 +1734,6 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   if (!has_integer_enforcement) return absl::OkStatus();
 
   // Enforced constraint should only be of the form >= rhs.
-  const LinearConstraintProto& linear = constraint->linear();
   CHECK_EQ(linear.domain_size(), 2);
   CHECK_EQ(linear.domain(1), kint64max);
 
