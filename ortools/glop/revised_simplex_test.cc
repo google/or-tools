@@ -43,6 +43,7 @@
 #include "ortools/lp_data/lp_parser.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_types_testing.h"
+#include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse_row.h"
 #include "ortools/port/attributes.h"
@@ -759,60 +760,181 @@ TEST(RevisedSimplexTest, NoConstraints) {
             time_limit->GetElapsedDeterministicTime());
 }
 
-TEST(RevisedSimplexTest, PrimalUnbounded) {
-  std::unique_ptr<LinearProgram> lp(new LinearProgram);
-  const ColIndex a = lp->CreateNewVariable();
-  const ColIndex b = lp->CreateNewVariable();
-  lp->SetVariableBounds(a, 0.0, kInfinity);
-  lp->SetVariableBounds(b, -kInfinity, 0.0);
-  lp->SetConstraintBounds(RowIndex(0), 0.0, 0.0);
-  lp->SetObjectiveCoefficient(b, 1.0);
-  lp->SetCoefficient(RowIndex(0), a, 1.0);
-  lp->SetCoefficient(RowIndex(0), b, 1.0);
+// A test model for RevisedSimplexPrimalRayTest parametric test.
+struct RevisedSimplexPrimalRayTestModel {
+  // Name of the model. It is used as a part of the name of the test, thus it
+  // must only contains characters, numbers and underscores (NO spaces, commas,
+  // ...).
+  std::string name ORTOOLS_REQUIRE_EXPLICIT_INIT;
 
-  std::unique_ptr<RevisedSimplex> solver(new RevisedSimplex);
-  std::unique_ptr<TimeLimit> time_limit = TimeLimit::Infinite();
-  GlopParameters parameters;
-  AddSlackVariablesPreprocessor preprocessor(&parameters);
-  preprocessor.SetTimeLimit(time_limit.get());
-  EXPECT_THAT(preprocessor.Run(lp.get()),
-              PreprocessorResultIs(/*postsolve_is_needed=*/true,
-                                   /*status=*/std::nullopt));
+  // The model that will parsed by ParseLp().
+  //
+  // It can be either a maximization of a minimization. The objective direction
+  // and coefficients are overwritten by the test when testing the other
+  // direction.
+  std::string lp_model ORTOOLS_REQUIRE_EXPLICIT_INIT;
 
-  EXPECT_THAT(solver->Solve(*lp, *time_limit),
-              SolveStatusWith<SolveStatus::PrimalUnbounded>(_));
-  EXPECT_EQ(-kInfinity, solver->GetObjectiveValue());
+  // An exhaustive list of primal rays that can be produced by:
+  // * either the phase II of the primal simplex,
+  // * or the phase I of the dual simplex,
+  // when solving lp_model.
+  //
+  // For non trivial models, this list can be obtained by iterating on all
+  // non-singular basis. For each basis:
+  //
+  // * to generate dual simplex phase I ray:
+  //   - create a vector that contains for each non-basic variable:
+  //     * 0 for dual feasible reduced costs,
+  //     * +1 for all negative dual-infeasible reduced costs,
+  //     * -1 for all positive dual-infeasible reduced costs,
+  //   - compute a value for each basic variable using the non-basic values
+  //     above,
+  //   - keep the ray if valid.
+  //
+  // * to generate primal simplex phase II rays, do the same as for dual simplex
+  //   phase I but iterate on each infeasibility instead and one set one
+  //   non-basic to ±1.
+  std::vector<DenseRow> expected_primal_rays ORTOOLS_REQUIRE_EXPLICIT_INIT;
+};
 
-  DenseRow ray = solver->GetPrimalRay();
-  EXPECT_EQ(ColIndex(3), ray.size());
-  EXPECT_EQ(1.0, ray[ColIndex(0)]);
-  EXPECT_EQ(-1.0, ray[ColIndex(1)]);
-  EXPECT_EQ(solver->DeterministicTime(),
-            time_limit->GetElapsedDeterministicTime());
+std::ostream& operator<<(std::ostream& out,
+                         const RevisedSimplexPrimalRayTestModel& model) {
+  out << "{ name: " << model.name << ", lp_model: '"
+      << absl::CEscape(model.lp_model) << "', expected_primal_rays: [";
+  bool first_ray = true;
+  for (const auto& primal_ray : model.expected_primal_rays) {
+    if (first_ray) {
+      first_ray = false;
+    } else {
+      out << ", ";
+    }
+
+    out << '[';
+    bool first = true;
+    for (const Fractional value : primal_ray) {
+      if (first) {
+        first = false;
+      } else {
+        out << ", ";
+      }
+      out << RoundTripDoubleFormat(value);
+    }
+    out << ']';
+  }
+  out << "] }";
+  return out;
 }
 
-TEST(RevisedSimplexTest, PrimalUnboundedMaximization) {
-  const std::string kLinearProgram =
-      "max: 2x1 - x2;"
-      "x1 >= 0;"
-      "x2 >= 0;"
-      "x1 + x2 >= 1;";
+struct RevisedSimplexPrimalRayTest
+    : ::testing::TestWithParam<std::tuple<RevisedSimplexPrimalRayTestModel,
+                                          TestAlgorithm, TestDirection>> {
+ protected:
+  // Shortcuts to get parameters.
+  const RevisedSimplexPrimalRayTestModel& model() const {
+    return std::get<RevisedSimplexPrimalRayTestModel>(GetParam());
+  }
+  TestDirection direction() const {
+    return std::get<TestDirection>(GetParam());
+  }
+  TestAlgorithm algorithm() const {
+    return std::get<TestAlgorithm>(GetParam());
+  }
+};
+
+TEST_P(RevisedSimplexPrimalRayTest, Optimize) {
   LinearProgram lp;
-  ASSERT_TRUE(ParseLp(kLinearProgram, &lp));
+  ASSERT_TRUE(ParseLp(
+      std::get<RevisedSimplexPrimalRayTestModel>(GetParam()).lp_model, &lp));
+  if (const TestDirection current_direction = lp.IsMaximizationProblem()
+                                                  ? TestDirection::kMaximize
+                                                  : TestDirection::kMinimize;
+      direction() != current_direction) {
+    lp.SetMaximizationProblem(direction() == TestDirection::kMaximize);
+    DenseRow new_objective_coefficients = lp.objective_coefficients();
+    ChangeSign(&new_objective_coefficients);
+    for (ColIndex c = {}; c < new_objective_coefficients.size(); ++c) {
+      lp.SetObjectiveCoefficient(c, new_objective_coefficients[c]);
+    }
+  }
 
-  std::unique_ptr<RevisedSimplex> solver(new RevisedSimplex);
+  // As of today (2026-09) rays can only be returned without pre-processing or
+  // scaling.
+  GlopParameters parameters;
+  parameters.set_use_preprocessing(false);
+  parameters.set_use_scaling(false);
+
+  parameters.set_use_dual_simplex(algorithm() == TestAlgorithm::kDualSimplex);
+
+  RevisedSimplex solver;
+  solver.SetParameters(parameters);
+
   std::unique_ptr<TimeLimit> time_limit = TimeLimit::Infinite();
-  EXPECT_THAT(solver->Solve(lp, *time_limit),
-              SolveStatusWith<SolveStatus::PrimalUnbounded>(_));
-  EXPECT_EQ(kInfinity, solver->GetObjectiveValue());
+  const SolveStatus solve_status = solver.Solve(lp, *time_limit);
+  switch (algorithm()) {
+    case TestAlgorithm::kPrimalSimplex:
+      ASSERT_THAT(solve_status,
+                  SolveStatusWith<SolveStatus::PrimalUnbounded>(_));
+      break;
+    case TestAlgorithm::kDualSimplex:
+      ASSERT_THAT(solve_status,
+                  SolveStatusWith<SolveStatus::DualInfeasible>(_));
+      break;
+  }
 
-  DenseRow ray = solver->GetPrimalRay();
-  EXPECT_EQ(ColIndex(3), ray.size());
-  EXPECT_EQ(1.0, ray[ColIndex(0)]);
-  EXPECT_EQ(0.0, ray[ColIndex(1)]);
-  EXPECT_EQ(solver->DeterministicTime(),
-            time_limit->GetElapsedDeterministicTime());
+  EXPECT_THAT(solver.GetPrimalRay(), AnyOfArray(model().expected_primal_rays));
 }
+
+INSTANTIATE_TEST_SUITE_P(
+    All, RevisedSimplexPrimalRayTest,
+    testing::Combine(testing::Values(
+                         RevisedSimplexPrimalRayTestModel{
+                             .name = "basic_ray",
+                             .lp_model = ("min: 0 x1 + 1 x2;"
+                                          "x1 >= 0;"
+                                          "x2 <= 0;"
+                                          "c1: 0 <= 1 x1 + 1 x2 <= 0;"),
+                             .expected_primal_rays =
+                                 {
+                                     {1.0, -1.0, 0.0},
+                                 }},
+                         RevisedSimplexPrimalRayTestModel{
+                             .name = "multiple_rays",
+                             .lp_model = ("min: 1 x1 + 0.125 x2;"
+                                          "c1: -2 <= 1 x1 - 0.125 x2 <= 2;"),
+                             .expected_primal_rays =
+                                 {
+                                     {-1.0, -8.0, 0.0},
+                                     {-0.125, -1.0, 0.0},
+                                 }},
+                         RevisedSimplexPrimalRayTestModel{
+                             .name = "different_primal_and_dual_simplex_rays",
+                             .lp_model = ("min: -10 x1 + 8 x2 + 13 x3;"
+                                          "x1 >= 11;"
+                                          "x2 >= -14;"
+                                          "x3 <= 7;"
+                                          "c1: -2 x1 + 5 x2 <= 3;"
+                                          "c2: -15 <= -8 x2 <= 3;"),
+                             .expected_primal_rays =
+                                 {
+                                     // Primal simplex phase I rays.
+                                     {0.0, 0.0, -1.0, 0.0, 0.0},
+                                     {1.0, 0.0, 0.0, 2.0, 0.0},
+                                     // Dual simplex phase II rays.
+                                     {1.0, 0.0, -1.0, 2.0, 0.0},
+                                     {0.5, 0.0, -1.0, 1.0, 0.0},
+                                 }}),
+                     testing::Values(TestAlgorithm::kPrimalSimplex,
+                                     TestAlgorithm::kDualSimplex),
+                     testing::Values(TestDirection::kMinimize,
+                                     TestDirection::kMaximize)),
+    [](const testing::TestParamInfo<RevisedSimplexPrimalRayTest::ParamType>&
+           info) {
+      std::ostringstream oss;
+      oss << std::get<RevisedSimplexPrimalRayTestModel>(info.param).name << "__"
+          << std::get<TestAlgorithm>(info.param) << "__"
+          << std::get<TestDirection>(info.param);
+      return oss.str();
+    });
 
 // A test model for RevisedSimplexDualRayTest parametric test.
 struct RevisedSimplexDualRayTestModel {
@@ -929,11 +1051,11 @@ TEST_P(RevisedSimplexDualRayTest, Optimize) {
   const SolveStatus solve_status = solver.Solve(lp, *time_limit);
   switch (algorithm()) {
     case TestAlgorithm::kPrimalSimplex:
-      EXPECT_THAT(solve_status,
+      ASSERT_THAT(solve_status,
                   SolveStatusWith<SolveStatus::PrimalInfeasible>(_));
       break;
     case TestAlgorithm::kDualSimplex:
-      EXPECT_THAT(solve_status, SolveStatusWith<SolveStatus::DualUnbounded>(_));
+      ASSERT_THAT(solve_status, SolveStatusWith<SolveStatus::DualUnbounded>(_));
       break;
   }
 
