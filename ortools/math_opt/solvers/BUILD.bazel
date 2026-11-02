@@ -304,7 +304,7 @@ or_cc_test(
         # `--config=android_arm` and `--config=android_arm64` both timeout on
         # this test.
         "no_test_android",
-        "noci",
+        "noci",  # Disabled on OSS CI: too long (203.8s)
     ],
     deps = [
         ":cp_sat_solver",
@@ -558,7 +558,7 @@ or_cc_test(
     srcs = ["min_cost_flow_solver_test.cc"],
     tags = [
         "no_test_wasm",
-        "noci",
+        "noci",  # Disabled on OSS CI: too long (139.5s)
     ],
     deps = [
         ":glop_solver",
@@ -708,7 +708,7 @@ or_cc_test(
     # Highs fails to build with WASM in //third_party/zstr.
     tags = [
         "no_test_wasm",
-        "noci",
+        "noci",  # Disabled on OSS CI: failed / too long (209.9s)
     ],
     deps = [
         ":highs_cc_proto",

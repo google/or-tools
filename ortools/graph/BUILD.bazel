@@ -627,7 +627,7 @@ or_cc_test(
     name = "cliques_test",
     size = "medium",
     srcs = ["cliques_test.cc"],
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (89.2s)
     deps = [
         ":cliques",
         "//ortools/base:gmock_main",
@@ -678,7 +678,7 @@ or_cc_test(
     name = "hamiltonian_path_test",
     size = "medium",
     srcs = ["hamiltonian_path_test.cc"],
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (142.4s)
     deps = [
         ":hamiltonian_path",
         "//ortools/base:gmock_main",
@@ -858,7 +858,9 @@ or_cc_test(
     # NOTE(user): The limit for the sharding of a 'medium' test (timeout=5min)
     # in TAP is 36, because 36 * 5min = 3h.
     shard_count = 35,
-    tags = ["noci"],
+    tags = [
+        "noci",  # Disabled on OSS CI: too long (217.1s)
+    ],
     deps = [
         ":shortest_paths",
         "//ortools/base:gmock_main",
@@ -975,7 +977,7 @@ or_cc_test(
     name = "generic_max_flow_test",
     size = "medium",
     srcs = ["generic_max_flow_test.cc"],
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (52.3s)
     deps = [
         ":generic_max_flow",
         "//ortools/base:gmock_main",
@@ -1174,8 +1176,8 @@ or_cc_test(
     name = "linear_assignment_precision_test",
     size = "large",
     srcs = ["linear_assignment_test.cc"],
-    copts = ["-DLARGE"],
     deprecation = "This rule probably does not need to be depended on.",
+    local_defines = ["LARGE"],
     tags = ["manual"],
     deps = [
         ":linear_assignment",

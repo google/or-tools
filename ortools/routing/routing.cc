@@ -4105,7 +4105,7 @@ const Assignment* Model::SolveWithIteratedLocalSearch(
   const bool improve_perturbed_solution =
       ils_parameters.improve_perturbed_solution();
 
-  while (update_time_limits() &&
+  while (update_time_limits() && !interrupt_cp_ &&
          explored_solutions < parameters.solution_limit()) {
     solver_->Solve(perturbation_db, monitors_);
     explored_solutions += solver_->solutions();
@@ -4116,7 +4116,7 @@ const Assignment* Model::SolveWithIteratedLocalSearch(
       continue;
     }
 
-    if (improve_perturbed_solution && update_time_limits()) {
+    if (improve_perturbed_solution && !interrupt_cp_ && update_time_limits()) {
       assignment_->CopyIntersection(neighbor_solution);
 
       solver_->Solve(improve_db_, monitors_);

@@ -49,7 +49,7 @@ py_test(
         "//ortools/linear_solver/testdata:maximization.mps",
     ],
     tags = [
-        "noci",
+        "noci",  # Disabled on OSS CI: too long (50.3s)
         "not_build:arm",
         "not_run:arm",
     ],
@@ -96,7 +96,7 @@ py_test(
         "//ortools/linear_solver/testdata:small_model.lp",
     ],
     tags = [
-        "noci",
+        "noci",  # Disabled on OSS CI: too long (127.7s)
         "not_build:arm",
         "not_run:arm",
     ],

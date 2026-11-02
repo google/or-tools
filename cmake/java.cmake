@@ -103,32 +103,9 @@ endif()
 ##  PROTO FILE  ##
 ##################
 # Generate Protobuf java sources
+include(generated/protos)
 set(PROTO_JAVAS)
-file(GLOB_RECURSE proto_java_files RELATIVE ${PROJECT_SOURCE_DIR}
-  "ortools/algorithms/*.proto"
-  "ortools/bop/*.proto"
-  "ortools/constraint_solver/*.proto"
-  "ortools/glop/*.proto"
-  "ortools/graph/*.proto"
-  "ortools/linear_solver/*.proto"
-  "ortools/routing/*.proto"
-  "ortools/sat/sat_parameters.proto"
-  "ortools/util/*.proto"
-  )
-list(REMOVE_ITEM proto_java_files "ortools/constraint_solver/assignment.proto")
-list(REMOVE_ITEM proto_java_files "ortools/util/testdata/wrappers_test_message.proto")
-if(BUILD_MATH_OPT)
-  file(GLOB_RECURSE mathopt_proto_java_files RELATIVE ${PROJECT_SOURCE_DIR}
-    "ortools/math_opt/*.proto"
-    "ortools/math_opt/solvers/*.proto"
-  )
-  list(APPEND proto_java_files ${mathopt_proto_java_files})
-endif()
-if(USE_PDLP OR BUILD_MATH_OPT)
-  file(GLOB_RECURSE pdlp_proto_java_files RELATIVE ${PROJECT_SOURCE_DIR} "ortools/pdlp/*.proto")
-  list(APPEND proto_java_files ${pdlp_proto_java_files})
-endif()
-foreach(PROTO_FILE IN LISTS proto_java_files)
+foreach(PROTO_FILE IN LISTS ORTOOLS_JAVA_PROTOS)
   #message(STATUS "protoc proto(java): ${PROTO_FILE}")
   get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
   string(REGEX REPLACE "_" "" PROTO_DIR ${PROTO_DIR})
@@ -499,6 +476,8 @@ add_custom_command(
 
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:${is_ortools_shared},copy,true>
+    $<${need_unix_ortools_lib}:$<TARGET_SONAME_FILE:${PROJECT_NAMESPACE}::ortools_proto>>
+    $<${need_windows_ortools_lib}:$<TARGET_FILE:${PROJECT_NAMESPACE}::ortools_proto>>
     $<${need_unix_ortools_lib}:$<TARGET_SONAME_FILE:${PROJECT_NAMESPACE}::ortools_core>>
     $<${need_windows_ortools_lib}:$<TARGET_FILE:${PROJECT_NAMESPACE}::ortools_core>>
     $<${need_unix_ortools_lib}:$<TARGET_SONAME_FILE:${PROJECT_NAMESPACE}::ortools_math_opt>>

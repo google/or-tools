@@ -70,7 +70,7 @@ py_test(
     name = "assignment_groups_sat_py3",
     srcs = ["assignment_groups_sat.py"],
     main = "assignment_groups_sat.py",
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (31.0s)
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -356,7 +356,7 @@ py_test(
     name = "cumulative_variable_profile_sample_sat_py3",
     srcs = ["cumulative_variable_profile_sample_sat.py"],
     main = "cumulative_variable_profile_sample_sat.py",
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (46.2s)
     deps = [
         "//ortools/sat/python:cp_model",
         "@pip_deps//absl_py",
@@ -516,7 +516,7 @@ py_test(
     name = "multiple_knapsack_sat_py3",
     srcs = ["multiple_knapsack_sat.py"],
     main = "multiple_knapsack_sat.py",
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (39.4s)
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -575,7 +575,7 @@ py_test(
     name = "nqueens_sat_py3",
     srcs = ["nqueens_sat.py"],
     main = "nqueens_sat.py",
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (30.2s)
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -854,7 +854,7 @@ py_test(
     name = "sequences_in_no_overlap_sample_sat_py3",
     srcs = ["sequences_in_no_overlap_sample_sat.py"],
     main = "sequences_in_no_overlap_sample_sat.py",
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (34.4s)
     deps = ["//ortools/sat/python:cp_model"],
 )
 

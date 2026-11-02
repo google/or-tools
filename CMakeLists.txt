@@ -472,13 +472,10 @@ if(BUILD_SAMPLES)
   foreach(SAMPLES IN ITEMS
       algorithms
       graph
-      glop
       constraint_solver
       routing
       linear_solver
       model_builder
-      ${MATH_OPT_DIR}
-      ${PDLP_DIR}
       sat)
     add_subdirectory(ortools/${SAMPLES}/samples)
   endforeach()
@@ -486,9 +483,10 @@ endif()
 
 # Same for examples
 if(BUILD_EXAMPLES)
-  foreach(EXAMPLES IN ITEMS contrib cpp dotnet python)
+  foreach(EXAMPLES IN ITEMS contrib dotnet)
     add_subdirectory(examples/${EXAMPLES})
   endforeach()
+  include(generated/examples)
 endif()
 
 # Packing

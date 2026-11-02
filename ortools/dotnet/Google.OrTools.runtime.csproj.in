@@ -140,6 +140,8 @@
       $<@need_windows_scip_lib@:;$<TARGET_FILE:SCIP::libscip>>
 
 
+      $<@need_unix_ortools_lib@:;$<TARGET_SONAME_FILE:ortools_proto>>
+      $<@need_windows_ortools_lib@:;$<TARGET_FILE:ortools_proto>>
       $<@need_unix_ortools_lib@:;$<TARGET_SONAME_FILE:ortools_core>>
       $<@need_windows_ortools_lib@:;$<TARGET_FILE:ortools_core>>
       $<@need_unix_ortools_lib@:;$<TARGET_SONAME_FILE:ortools_math_opt>>

@@ -136,24 +136,9 @@ message(STATUS ".Net project build path: ${DOTNET_PROJECT_DIR}")
 ##  PROTO FILE  ##
 ##################
 # Generate Protobuf .Net sources
+include(generated/protos)
 set(PROTO_DOTNETS)
-file(GLOB_RECURSE proto_dotnet_files RELATIVE ${PROJECT_SOURCE_DIR}
-  "ortools/algorithms/*.proto"
-  "ortools/bop/*.proto"
-  "ortools/constraint_solver/*.proto"
-  "ortools/glop/*.proto"
-  "ortools/graph/*.proto"
-  "ortools/linear_solver/*.proto"
-  "ortools/routing/*.proto"
-  "ortools/sat/*.proto"
-  "ortools/util/*.proto"
-  )
-if(USE_PDLP)
-  file(GLOB_RECURSE pdlp_proto_dotnet_files RELATIVE ${PROJECT_SOURCE_DIR} "ortools/pdlp/*.proto")
-  list(APPEND proto_dotnet_files ${pdlp_proto_dotnet_files})
-endif()
-list(REMOVE_ITEM proto_dotnet_files "ortools/constraint_solver/assignment.proto")
-foreach(PROTO_FILE IN LISTS proto_dotnet_files)
+foreach(PROTO_FILE IN LISTS ORTOOLS_DOTNET_PROTOS)
   #message(STATUS "protoc proto(dotnet): ${PROTO_FILE}")
   get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
   get_filename_component(PROTO_NAME ${PROTO_FILE} NAME_WE)
@@ -169,7 +154,7 @@ foreach(PROTO_FILE IN LISTS proto_dotnet_files)
     "--csharp_out=${DOTNET_PROJECT_DIR}/${PROTO_DIR}"
     "--csharp_opt=file_extension=.pb.cs"
     ${PROTO_FILE}
-    DEPENDS ${PROTO_FILE} ${PROTOC_PRG}
+    DEPENDS ${PROJECT_SOURCE_DIR}/${PROTO_FILE} ${PROTOC_PRG}
     COMMENT "Generate C# protocol buffer for ${PROTO_FILE}"
     VERBATIM)
   list(APPEND PROTO_DOTNETS ${PROTO_DOTNET})

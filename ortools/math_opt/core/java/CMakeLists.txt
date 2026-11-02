@@ -44,7 +44,7 @@ target_include_directories(mathopt_java_jni_helper PUBLIC
 target_link_libraries(mathopt_java_jni_helper PRIVATE
   JNI::JNI
   JNI::JVM
-  ortools::math_opt_proto
+  ortools::ortools_proto
   absl::statusor
   protobuf::libprotobuf
 )

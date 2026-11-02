@@ -145,7 +145,7 @@ or_cc_test(
     tags = [
         "no_test_android",
         "no_test_wasm",
-        "noci",
+        "noci",  # Disabled on OSS CI: too long (124.3s)
     ],
     deps = [
         ":key_types",
@@ -698,11 +698,13 @@ or_cc_library(
 
 proto_library(
     name = "enums_test_proto",
+    testonly = True,
     srcs = ["enums_test.proto"],
 )
 
 cc_proto_library(
     name = "enums_test_cc_proto",
+    testonly = True,
     deps = [":enums_test_proto"],
 )
 

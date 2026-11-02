@@ -63,6 +63,7 @@ def _load_ortools_libs():
             for dll in ["z.dll", "bz2.dll",
                         "abseil_dll.dll", "utf8_validity.dll", "re2.dll", "libprotobuf.dll",
                         "highs.dll", "libscip.dll",
+                        "ortools_proto.dll",
                         "ortools_core.dll",
                         "ortools_math_opt.dll", "ortools_packing.dll", "ortools_routing.dll", "ortools_scheduling.dll",
                         "ortools.dll"]:

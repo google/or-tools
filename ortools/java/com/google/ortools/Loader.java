@@ -152,6 +152,7 @@ public class Loader {
             (new AbstractMap.SimpleEntry("libprotobuf", true)),
             (new AbstractMap.SimpleEntry("highs", false)),
             (new AbstractMap.SimpleEntry("libscip", false)),
+            (new AbstractMap.SimpleEntry("ortools_proto", true)),
             (new AbstractMap.SimpleEntry("ortools_core", true)),
             (new AbstractMap.SimpleEntry("ortools_math_opt", true)),
             (new AbstractMap.SimpleEntry("ortools_packing", true)),

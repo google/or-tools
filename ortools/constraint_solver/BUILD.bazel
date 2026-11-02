@@ -689,7 +689,7 @@ or_cc_test(
     name = "compact_table_test",
     size = "small",
     srcs = ["table_test.cc"],
-    copts = ["-DUSE_COMPACT_TABLE"],
+    local_defines = ["USE_COMPACT_TABLE"],
     deps = [
         ":constraint_solver_test_util",
         ":core",
@@ -852,7 +852,7 @@ or_cc_test(
     name = "small_expr_array_test",
     size = "small",
     srcs = ["expr_array_test.cc"],
-    copts = ["-DSMALL_ARRAY"],
+    local_defines = ["SMALL_ARRAY"],
     deps = [
         ":constraint_solver_test_util",
         ":core",
@@ -898,7 +898,7 @@ or_cc_test(
     name = "graph_delayed_constraints_test",
     size = "small",
     srcs = ["graph_constraints_test.cc"],
-    copts = ["-DDELAYED_PATH_CUMUL"],
+    local_defines = ["DELAYED_PATH_CUMUL"],
     deps = [
         ":alldiff_cst",  # buildcleaner: keep
         ":constraint_solver_test_util",
@@ -947,7 +947,7 @@ or_cc_test(
     name = "local_search_test",
     size = "medium",
     srcs = ["local_search_test.cc"],
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: failing - to investigate
     deps = [
         ":constraint_solver_test_util",
         ":core",

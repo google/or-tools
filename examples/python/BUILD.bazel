@@ -47,7 +47,7 @@ bintest(
     size = "medium",
     srcs = [":assignment_with_constraints_sat_py_test.bintest"],
     named_data = {"assignment_with_constraints_sat_py3": ":assignment_with_constraints_sat_py3"},
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (30.4s)
 )
 
 py_binary(
@@ -65,7 +65,7 @@ bintest(
     size = "medium",
     srcs = [":balance_group_sat_py_test.bintest"],
     named_data = {"balance_group_sat_py3": ":balance_group_sat_py3"},
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (30.3s)
 )
 
 py_binary(
@@ -83,7 +83,7 @@ bintest(
     size = "medium",
     srcs = [":bus_driver_scheduling_sat_py_test.bintest"],
     named_data = {"bus_driver_scheduling_sat_py3": ":bus_driver_scheduling_sat_py3"},
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (56.1s)
 )
 
 py_binary(
@@ -98,7 +98,7 @@ bintest(
     size = "medium",
     srcs = [":bus_driver_scheduling_flow_sat_py_test.bintest"],
     named_data = {"bus_driver_scheduling_flow_sat_py3": ":bus_driver_scheduling_flow_sat_py3"},
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (45.1s)
 )
 
 py_binary(
@@ -116,7 +116,7 @@ bintest(
     size = "small",
     srcs = [":car_sequencing_optimization_sat_py_test.bintest"],
     named_data = {"car_sequencing_optimization_sat_py3": ":car_sequencing_optimization_sat_py3"},
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (35.6s)
 )
 
 py_binary(
@@ -151,7 +151,7 @@ bintest(
     size = "medium",
     srcs = [":clustering_sat_py_test.bintest"],
     named_data = {"clustering_sat_py3": ":clustering_sat_py3"},
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (79.3s)
 )
 
 py_binary(
@@ -199,7 +199,7 @@ bintest(
     name = "gate_scheduling_sat_py_test",
     srcs = [":gate_scheduling_sat_py_test.bintest"],
     named_data = {"gate_scheduling_sat_py3": ":gate_scheduling_sat_py3"},
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (98.0s)
 )
 
 py_binary(
@@ -299,7 +299,7 @@ bintest(
     size = "medium",
     srcs = [":knapsack_2d_sat_py_test.bintest"],
     named_data = {"knapsack_2d_sat_py3": ":knapsack_2d_sat_py3"},
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (60.0s)
 )
 
 py_binary(
@@ -368,7 +368,7 @@ bintest(
     name = "music_playlist_sat_py_test",
     srcs = [":music_playlist_sat_py_test.bintest"],
     named_data = {"music_playlist_sat_py3": ":music_playlist_sat_py3"},
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (37.5s)
 )
 
 py_binary(
@@ -386,7 +386,7 @@ bintest(
     size = "medium",
     srcs = [":no_wait_baking_scheduling_sat_py_test.bintest"],
     named_data = {"no_wait_baking_scheduling_sat_py3": ":no_wait_baking_scheduling_sat_py3"},
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (39.5s)
 )
 
 py_binary(
@@ -404,7 +404,7 @@ bintest(
     size = "medium",
     srcs = [":pell_equation_sat_py_test.bintest"],
     named_data = {"pell_equation_sat_py3": ":pell_equation_sat_py3"},
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (149.9s)
 )
 
 py_binary(
@@ -422,7 +422,7 @@ bintest(
     size = "medium",
     srcs = [":pentominoes_sat_py_test.bintest"],
     named_data = {"pentominoes_sat_py3": ":pentominoes_sat_py3"},
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (54.1s)
 )
 
 py_binary(
@@ -440,7 +440,7 @@ bintest(
     size = "medium",
     srcs = [":prize_collecting_tsp_sat_py_test.bintest"],
     named_data = {"prize_collecting_tsp_sat_py3": ":prize_collecting_tsp_sat_py3"},
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (33.2s)
 )
 
 py_binary(
@@ -494,7 +494,7 @@ bintest(
     size = "medium",
     srcs = [":prize_collecting_vrp_sat_py_test.bintest"],
     named_data = {"prize_collecting_vrp_sat_py3": ":prize_collecting_vrp_sat_py3"},
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (48.0s)
 )
 
 py_binary(
@@ -512,7 +512,7 @@ bintest(
     size = "medium",
     srcs = [":qubo_sat_py_test.bintest"],
     named_data = {"qubo_sat_py3": ":qubo_sat_py3"},
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (41.9s)
 )
 
 bintest(
@@ -576,7 +576,7 @@ bintest(
     size = "medium",
     srcs = [":single_machine_scheduling_with_setup_release_due_dates_sat_py_test.bintest"],
     named_data = {"single_machine_scheduling_with_setup_release_due_dates_sat_py3": ":single_machine_scheduling_with_setup_release_due_dates_sat_py3"},
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (34.7s)
 )
 
 py_binary(
@@ -609,7 +609,7 @@ bintest(
     name = "steel_mill_slab_sat_py_test",
     srcs = [":steel_mill_slab_sat_py_test.bintest"],
     named_data = {"steel_mill_slab_sat_py3": ":steel_mill_slab_sat_py3"},
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (44.6s)
 )
 
 py_binary(
@@ -640,7 +640,7 @@ bintest(
     size = "medium",
     srcs = [":task_allocation_sat_py_test.bintest"],
     named_data = {"task_allocation_sat_py3": ":task_allocation_sat_py3"},
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (75.4s)
 )
 
 py_binary(
@@ -675,7 +675,7 @@ bintest(
     size = "medium",
     srcs = [":tasks_and_workers_assignment_sat_py_test.bintest"],
     named_data = {"tasks_and_workers_assignment_sat_py3": ":tasks_and_workers_assignment_sat_py3"},
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (59.7s)
 )
 
 py_binary(
@@ -708,7 +708,7 @@ bintest(
     size = "medium",
     srcs = [":tsp_sat_py_test.bintest"],
     named_data = {"tsp_sat_py3": ":tsp_sat_py3"},
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (30.8s)
 )
 
 py_binary(
@@ -743,7 +743,7 @@ bintest(
     size = "medium",
     srcs = [":wedding_optimal_chart_sat_py_test.bintest"],
     named_data = {"wedding_optimal_chart_sat_py3": ":wedding_optimal_chart_sat_py3"},
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (74.6s)
 )
 
 py_binary(
