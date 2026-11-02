@@ -301,6 +301,7 @@ class LinearConstraintBuilder {
   // Clears all added terms and constants. Keeps the original bounds.
   void Clear() {
     offset_ = IntegerValue(0);
+    is_overflowing_ = false;
     terms_.clear();
   }
 
@@ -309,6 +310,8 @@ class LinearConstraintBuilder {
     lb_ = lb;
     ub_ = ub;
   }
+
+  bool IsOverflowing() const { return is_overflowing_; }
 
   // Builds and returns the corresponding constraint in a canonical form.
   // All the IntegerVariable will be positive and appear in increasing index
@@ -322,14 +325,17 @@ class LinearConstraintBuilder {
   LinearConstraint Build();
   LinearConstraint BuildConstraint(IntegerValue lb, IntegerValue ub);
 
-  // Similar to BuildConstraint() but make sure we don't overflow while we merge
+  // Similar to Build() / BuildConstraint() but makes sure no arithmetic
+  // overflow occurred while adding terms, shifting bounds by offset, or merging
   // terms referring to the same variables.
+  bool BuildIntoConstraintAndCheckOverflow(LinearConstraint* ct);
   bool BuildIntoConstraintAndCheckOverflow(IntegerValue lb, IntegerValue ub,
                                            LinearConstraint* ct);
 
   // Returns the linear expression part of the constraint only, without the
   // bounds.
   LinearExpression BuildExpression();
+  bool BuildIntoExpressionAndCheckOverflow(LinearExpression* expr);
 
   int NumTerms() const { return terms_.size(); }
 
@@ -339,6 +345,7 @@ class LinearConstraintBuilder {
   IntegerValue ub_;
 
   IntegerValue offset_ = IntegerValue(0);
+  bool is_overflowing_ = false;
 
   // Initially we push all AddTerm() here, and during Build() we merge terms
   // on the same variable.

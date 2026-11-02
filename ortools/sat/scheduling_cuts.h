@@ -216,8 +216,8 @@ void AbslStringify(Sink& sink, const CompletionTimeExplorationStatus& status) {
 CompletionTimeExplorationStatus ComputeMinSumOfWeightedEndMins(
     absl::Span<CompletionTimeEvent*> events, IntegerValue capacity_max,
     double unweighted_threshold, double weighted_threshold,
-    CtExhaustiveHelper& helper, double& min_sum_of_ends,
-    double& min_sum_of_weighted_ends, bool& cut_use_precedences,
+    CtExhaustiveHelper& helper, IntegerValue& min_sum_of_ends,
+    IntegerValue& min_sum_of_weighted_ends, bool& cut_use_precedences,
     int& exploration_credit);
 
 // Splits the list of events into connected components. Two intervals are
