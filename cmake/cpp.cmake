@@ -45,7 +45,7 @@ endif()
 if(RELEASE)
   set(CXX_RELEASE "")
 else()
-  set(CXX_RELEASE "-rc.1")
+  set(CXX_RELEASE "-rc.${RC_VERSION}")
 endif()
 
 #############

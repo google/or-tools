@@ -19,7 +19,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 option(CMAKE_EXPORT_COMPILE_COMMANDS "Export compile command" ON)
 
 include(utils)
-set_version(VERSION RELEASE)
+set_version(VERSION RELEASE RC_VERSION)
 
 project(ortools
   VERSION ${VERSION}
@@ -27,10 +27,11 @@ project(ortools
   HOMEPAGE_URL "https://developers.google.com/optimization/"
   LANGUAGES CXX C)
 set(PROJECT_NAMESPACE ortools)
-message(STATUS "${PROJECT_NAME} version: ${PROJECT_VERSION} release: ${RELEASE}")
-#message(STATUS "major: ${PROJECT_VERSION_MAJOR}")
-#message(STATUS "minor: ${PROJECT_VERSION_MINOR}")
-#message(STATUS "patch: ${PROJECT_VERSION_PATCH}")
+if(RELEASE)
+  message(STATUS "${PROJECT_NAME} version: ${PROJECT_VERSION} release: ${RELEASE}")
+else()
+  message(STATUS "${PROJECT_NAME} version: ${PROJECT_VERSION}-rc.${RC_VERSION} release: ${RELEASE}")
+endif()
 
 # Enable SCCache if any
 include(sccache)

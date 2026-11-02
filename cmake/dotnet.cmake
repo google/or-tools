@@ -19,7 +19,7 @@ endif()
 if(RELEASE)
   set(DOTNET_RELEASE "")
 else()
-  set(DOTNET_RELEASE "-rc.1")
+  set(DOTNET_RELEASE "-rc.${RC_VERSION}")
 endif()
 
 if(NOT TARGET ${PROJECT_NAMESPACE}::ortools)
