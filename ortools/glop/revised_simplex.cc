@@ -641,8 +641,8 @@ SolveStatus RevisedSimplex::SolveInternalImpl(
     }
   }
 
-  // TODO: b/553095297 - Add DualInfeasible there when it returns a primal ray.
-  if (solve_status.Is<SolveStatus::PrimalUnbounded>()) {
+  if (solve_status.Is<SolveStatus::PrimalUnbounded>() ||
+      solve_status.Is<SolveStatus::DualInfeasible>()) {
     // Validate the primal ray that proves dual infeasibility.
     //
     // Using the same notations as in Achim Koberstein, "The dual simplex
@@ -1010,7 +1010,9 @@ ConstraintStatus RevisedSimplex::GetConstraintStatus(RowIndex row) const {
 
 const DenseRow& RevisedSimplex::GetPrimalRay() const {
   DCHECK(solve_status_.has_value());
-  DCHECK(solve_status_->Is<SolveStatus::PrimalUnbounded>()) << *solve_status_;
+  DCHECK(solve_status_->Is<SolveStatus::PrimalUnbounded>() ||
+         solve_status_->Is<SolveStatus::DualInfeasible>())
+      << *solve_status_;
   return solution_primal_ray_;
 }
 const DenseColumn& RevisedSimplex::GetDualRay() const {
@@ -3920,6 +3922,114 @@ RevisedSimplex::PendingStatus RevisedSimplex::DualMinimize(
         }
         VLOG(1) << "DUAL infeasible in dual phase I.";
         IF_STATS_ENABLED(timer.AlsoUpdate(&iteration_stats_.normal));
+
+        // Using the same notations as in Achim Koberstein, "The dual simplex
+        // method, techniques for a fast and stable implementation", PhD,
+        // Paderborn, Univ., 2005. (https://d-nb.info/978580478/34) (using b=0
+        // though):
+        //
+        // Primal and dual are:
+        //
+        //   min  c^T⋅x        max  l^T⋅v + u^T⋅w
+        //   s.t. A⋅x = 0      s.t. A^T⋅y + v + w = c
+        //        l ≤ x ≤ u         v ≥ 0
+        //                          w ≤ 0
+        //
+        //   * y: the dual values of the A⋅x = 0 constraints
+        //   * v: the dual values of the l ≤ x constraints
+        //   * w: the dual values of the x ≤ u constraints
+        //
+        // As explained in §4.2, "Minimizing the sum of dual infeasibilities",
+        // the dual simplex phase I minimizes the dual infeasibilities. Glop
+        // implements the §4.2.2 "Algorithmic approach".
+        //
+        // Given a dual infeasible basis we define two sets of dual infeasible
+        // non-basic columns:
+        //
+        //   d := c - A^T⋅y (the reduced costs)
+        //   P := {j / l_j = -∞ ∧ d_j > 0 }
+        //   M := {j / u_j = +∞ ∧ d_j < 0 }
+        //
+        // We consider the objective that we try to mazimize:
+        //
+        //   Z0 := sum_{j ∈ M} d_j - sum_{j ∈ P} d_j
+        //
+        // To find a column leaving the basis, we need to find one that would
+        // improve this objective. Defining:
+        //
+        //    B := the basic columns of A
+        //    N := the non-basic columns of A
+        //         ⎧  1 if j ∈ M
+        //    u := ⎨ -1 if j ∈ P
+        //         ⎩  0 else (d_j = 0)
+        //    f := B^-1⋅N⋅u
+        //
+        // we need to find a column k such that (dual simplex step):
+        //
+        //   * Z0 - t⋅f_k > Z0
+        //   * if f_k > 0, t < 0 ∧ l_k ≠ -∞
+        //   * if f_k < 0, t > 0 ∧ u_k ≠ -∞
+        //
+        // If we can't find a leaving column k, this means:
+        //
+        //   ∀ k, f_k > 0 ⇒ l_k = -∞
+        //        f_k < 0 ⇒ u_k = -∞
+        //        (f_k = 0 in some cases)
+        //
+        // As a consequence we can build a primal ray r:
+        //
+        //   r_n := u    (the non-basic values)
+        //   r_b := -f   (the basic values)
+        //
+        // This is a valid primal ray as:
+        //
+        // * c^T⋅r =  c^T_b⋅r_b      + c^T_n⋅r_n
+        //         = -c^T_b⋅f        + c^T_n⋅u
+        //         = -c^T_b⋅B^-1⋅N⋅u + c^T_n⋅u
+        //         = (c^T_n - c^T_b⋅B^-1⋅N)⋅u
+        //         = d_n^T⋅u
+        //   by definion of u:
+        //   * d_n_k < 0 ⇒ u_k =  1
+        //   * d_n_k > 0 ⇒ u_k = -1
+        //   thus:
+        //
+        //   ∀ k / d_n_k ≠ 0, d_n_k⋅u_k < 0
+        //
+        //   since we have dual infeasibilities, we know that at least one
+        //   product is non-zero, hence:
+        //
+        //   c^T⋅r = d_n^T⋅u < 0
+        //
+        // * A⋅r =  B⋅r_b      + N⋅r_n
+        //       = -B⋅f        + N⋅u
+        //       = -B⋅B^-1⋅N⋅u + N⋅u
+        //
+        //   thus:
+        //
+        //   A⋅r = 0
+        //
+        // * for non-basic columns:
+        //   r_j = u ⇒ r_j ⇒ r_j ≥ 0 when u_j = +∞
+        //                   r_j ≤ 0 when u_j = -∞
+        //   for basic columns:
+        //   r_j = -f ⇒ r_j ≥ 0 when u_j = +∞
+        //                  ≤ 0 when l_j = -∞
+        //   thus for any column:
+        //
+        //   ∀ j / u_j = +∞, r_j ≥ 0
+        //   ∀ j / l_j = -∞, r_j ≤ 0
+        //
+        // In Glop:
+        // * u is dual_infeasibility_improvement_direction_
+        // * f is dual_pricing_vector_
+        //
+        // Note about the sign: the objective function is the opposite in case
+        // of maximization, thus the signs are correct!
+        solution_primal_ray_ = dual_infeasibility_improvement_direction_;
+        for (RowIndex r = {}; r < num_rows_; ++r) {
+          solution_primal_ray_[basis_[r]] = -dual_pricing_vector_[r];
+        }
+
         return DualInfeasibleSolveStatus();
       }
       IF_STATS_ENABLED(timer.AlsoUpdate(&iteration_stats_.normal));
