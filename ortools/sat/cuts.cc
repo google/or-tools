@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -1819,8 +1820,8 @@ bool CoverCutHelper::TrySimpleKnapsack(const CutData& input_ct,
                                        ImpliedBoundsProcessor* ib_processor) {
   InitializeCut(input_ct);
 
-  // Tricky: This only works because the cut absl128 rhs is not changed by these
-  // operations.
+  // Tricky: This only works because the cut absl::int128 rhs is not changed by
+  // these operations.
   if (ib_processor != nullptr) {
     std::vector<CutTerm>* new_bool_terms =
         ib_processor->ClearedMutableTempTerms();
@@ -2576,6 +2577,11 @@ CutGenerator CreateSquareCutGenerator(AffineExpression y, AffineExpression x,
     // Check for potential overflows.
     if (x_ub > (int64_t{1} << 31)) return true;
     if (x_lb < -(int64_t{1} << 31)) return true;
+    if (IntTypeAbs(x.coeff) > (int64_t{1} << 29) ||
+        IntTypeAbs(x.constant) > (int64_t{1} << 29) ||
+        IntTypeAbs(y.constant) > (int64_t{1} << 60)) {
+      return true;
+    }
 
     manager->AddCut(ComputeHyperplanAboveSquare(x, y, x_lb, x_ub),
                     "SquareUpper");
@@ -2940,10 +2946,13 @@ IntegerValue SumOfAllDiffLowerBounder::SumOfMinDomainValues() {
   int count = 0;
   IntegerValue sum = 0;
   for (const IntegerValue value : min_values_) {
-    sum = CapAddI(sum, value);
-    if (++count >= expr_mins_.size()) return sum;
+    // Returns no bound on overflow.
+    if (AddIntoOverflow(value.value(), sum.mutable_value())) {
+      return kMinIntegerValue;
+    }
+    if (++count >= expr_mins_.size()) break;
   }
-  return sum;
+  return std::max(sum, kMinIntegerValue);
 }
 
 IntegerValue SumOfAllDiffLowerBounder::SumOfDifferentMins() {
@@ -2953,9 +2962,12 @@ IntegerValue SumOfAllDiffLowerBounder::SumOfDifferentMins() {
   for (const IntegerValue value : expr_mins_) {
     // Make sure values are different.
     tmp_value = std::max(tmp_value + 1, value);
-    result += tmp_value;
+    // Returns no bound on overflow.
+    if (AddIntoOverflow(tmp_value.value(), result.mutable_value())) {
+      return kMinIntegerValue;
+    }
   }
-  return result;
+  return std::max(result, kMinIntegerValue);
 }
 
 IntegerValue SumOfAllDiffLowerBounder::GetBestLowerBound(std::string& suffix) {
@@ -3018,9 +3030,12 @@ void TryToGenerateAllDiffCut(
       for (AffineExpression expr : current_set_exprs) {
         cut.AddTerm(expr, IntegerValue(1));
       }
-      top_n_cuts.AddCut(cut.Build(),
-                        absl::StrCat("AllDiff_", min_suffix, max_suffix),
-                        lp_values);
+      LinearConstraint ct;
+      if (cut.BuildIntoConstraintAndCheckOverflow(&ct)) {
+        top_n_cuts.AddCut(std::move(ct),
+                          absl::StrCat("AllDiff_", min_suffix, max_suffix),
+                          lp_values);
+      }
 
       // NOTE: We can extend the current set but it is more helpful to generate
       // the cut on a different set of variables so we reset the counters.
@@ -3100,7 +3115,9 @@ IntegerValue MaxCornerDifference(const IntegerVariable var,
 //                     = max corner difference for variable i,
 //                       target expr I(i), max expr k.
 // The coefficient of zk is Sum(i=1..n)(MPlusCoefficient_ki) + bk
-IntegerValue MPlusCoefficient(
+//
+// Returns nullopt if the computation overflows.
+std::optional<IntegerValue> MPlusCoefficient(
     absl::Span<const IntegerVariable> x_vars,
     absl::Span<const LinearExpression> exprs,
     const util_intops::StrongVector<IntegerVariable, int>& variable_partition,
@@ -3111,9 +3128,12 @@ IntegerValue MPlusCoefficient(
   for (const IntegerVariable var : x_vars) {
     const int target_index = variable_partition[var];
     if (max_index != target_index) {
-      coeff += MaxCornerDifference(
+      const IntegerValue corner_diff = MaxCornerDifference(
           var, GetCoefficientOfPositiveVar(var, exprs[target_index]),
           GetCoefficientOfPositiveVar(var, exprs[max_index]), integer_trail);
+      if (AddIntoOverflow(corner_diff.value(), coeff.mutable_value())) {
+        return std::nullopt;
+      }
     }
   }
   return coeff;
@@ -3152,7 +3172,8 @@ CutGenerator CreateLinMaxCutGenerator(const IntegerVariable target,
                                       Model* model) {
   CutGenerator result;
   std::vector<IntegerVariable> x_vars;
-  result.vars = {target};
+  result.vars.reserve(1 + exprs.size());
+  result.vars.push_back(PositiveVariable(target));
   const int num_exprs = exprs.size();
   for (int i = 0; i < num_exprs; ++i) {
     result.vars.push_back(z_vars[i]);
@@ -3206,15 +3227,19 @@ CutGenerator CreateLinMaxCutGenerator(const IntegerVariable target,
         }
         for (int expr_index = 0; expr_index < num_exprs; ++expr_index) {
           const IntegerVariable z_var = z_vars[expr_index];
-          const IntegerValue z_coeff = MPlusCoefficient(
+          const std::optional<IntegerValue> z_coeff = MPlusCoefficient(
               x_vars, exprs, variable_partition, expr_index, *integer_trail);
-          if (z_coeff != IntegerValue(0)) {
-            cut.AddTerm(z_var, z_coeff);
+          if (!z_coeff.has_value()) return true;
+          if (*z_coeff != IntegerValue(0)) {
+            cut.AddTerm(z_var, *z_coeff);
           }
-          violation -= ToDouble(z_coeff) * lp_values[z_var];
+          violation -= ToDouble(*z_coeff) * lp_values[z_var];
         }
         if (violation > 1e-2) {
-          manager->AddCut(cut.Build(), "LinMax");
+          LinearConstraint ct;
+          if (cut.BuildIntoConstraintAndCheckOverflow(&ct)) {
+            manager->AddCut(std::move(ct), "LinMax");
+          }
         }
         return true;
       };
@@ -3258,6 +3283,10 @@ bool BuildMaxAffineUpConstraint(
       ProdOverflow(delta_y, x_min) || ProdOverflow(delta_y, x_max)) {
     return false;
   }
+  IntegerValue rhs = delta_x * y_at_min;
+  if (AddIntoOverflow(-(delta_y * x_min).value(), rhs.mutable_value())) {
+    return false;
+  }
 
   // Checks target * delta_x for overflow.
   int64_t abs_magnitude = std::abs(target.offset.value());
@@ -3275,13 +3304,15 @@ bool BuildMaxAffineUpConstraint(
     return false;
   }
 
-  builder->ResetBounds(kMinIntegerValue, delta_x * y_at_min - delta_y * x_min);
+  builder->ResetBounds(kMinIntegerValue, rhs);
   builder->AddLinearExpression(target, delta_x);
   builder->AddTerm(var, -delta_y);
 
   // Prevent creating constraints that can overflow.
-  if (!ValidateLinearConstraintForOverflow(builder->Build(), *integer_trail)) {
-    VLOG(2) << "Linear constraint can cause overflow: " << builder->Build();
+  LinearConstraint ct;
+  if (!builder->BuildIntoConstraintAndCheckOverflow(&ct)) return false;
+  if (!ValidateLinearConstraintForOverflow(ct, *integer_trail)) {
+    VLOG(2) << "Linear constraint can cause overflow: " << ct;
 
     return false;
   }

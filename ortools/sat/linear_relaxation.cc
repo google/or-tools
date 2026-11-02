@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <numeric>
 #include <optional>
 #include <utility>
@@ -685,6 +686,11 @@ std::vector<Literal> CreateAlternativeLiteralsWithView(
     const IntegerVariable var2 = model->Add(NewIntegerVariable(0, 1));
     encoder->AssociateToIntegerEqualValue(lit.Negated(), var2, IntegerValue(1));
 
+    LinearConstraintBuilder lc_builder(model, IntegerValue(1), IntegerValue(1));
+    lc_builder.AddTerm(var, IntegerValue(1));
+    lc_builder.AddTerm(var2, IntegerValue(1));
+    relaxation->linear_constraints.push_back(lc_builder.Build());
+
     return {lit, lit.Negated()};
   }
 
@@ -1155,14 +1161,20 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
     if (integer_trail->IsFixed(capacity)) {
       const IntegerValue span = max_of_ends - min_of_starts;
       const IntegerValue fixed_capacity = integer_trail->FixedValue(capacity);
-      lc.AddConstant(
-          -MathUtil::FloorOfRatio(fixed_capacity.value(), demands_gcd) *
+      const IntegerValue cap_div(
+          -MathUtil::FloorOfRatio(fixed_capacity.value(), demands_gcd));
+      const IntegerValue span_div(
           MathUtil::FloorOfRatio(span.value(), sizes_gcd));
+      if (ProdOverflow(cap_div, span_div)) return;
+      lc.AddConstant(cap_div * span_div);
     } else {
       DCHECK_EQ(demands_gcd, 1);
       lc.AddTerm(capacity, -(max_of_ends - min_of_starts) / sizes_gcd);
     }
-    relaxation->linear_constraints.push_back(lc.Build());
+    LinearConstraint built_lc;
+    if (lc.BuildIntoConstraintAndCheckOverflow(&built_lc)) {
+      relaxation->linear_constraints.push_back(std::move(built_lc));
+    }
     return;
   }
 
@@ -1218,7 +1230,10 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
       makespan.has_value() ? makespan.value() : max_of_ends;
   lc.AddTerm(span_end, -integer_trail->UpperBound(capacity));
   lc.AddTerm(span_start, integer_trail->UpperBound(capacity));
-  relaxation->linear_constraints.push_back(lc.Build());
+  LinearConstraint built_lc;
+  if (lc.BuildIntoConstraintAndCheckOverflow(&built_lc)) {
+    relaxation->linear_constraints.push_back(std::move(built_lc));
+  }
 }
 
 namespace {
@@ -1250,7 +1265,7 @@ void AppendNoOverlap2dRelaxationForComponent(
   }
 
   const IntegerValue max_area = bounding_box->CapArea();
-  if (max_area == kMaxIntegerValue) return;
+  if (max_area >= kMaxIntegerValue) return;
 
   LinearConstraintBuilder lc(model, IntegerValue(0), max_area);
   for (const int b : component) {
@@ -1284,7 +1299,8 @@ void AppendNoOverlap2dRelaxationForComponent(
       }
     }
   }
-  LinearConstraint ct = lc.Build();
+  LinearConstraint ct;
+  if (!lc.BuildIntoConstraintAndCheckOverflow(&ct)) return;
   if (ct.num_terms == 0) return;
   manager->Add(std::move(ct));
 }
@@ -1412,7 +1428,6 @@ void AppendLinMaxRelaxationPart2(IntegerVariable target,
                                  absl::Span<const LinearExpression> exprs,
                                  Model* model, LinearRelaxation* relaxation) {
   const int num_exprs = exprs.size();
-  GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
 
   // First add the CP constraints.
   for (int i = 0; i < num_exprs; ++i) {
@@ -1421,11 +1436,9 @@ void AppendLinMaxRelaxationPart2(IntegerVariable target,
     local_expr.vars.push_back(target);
     local_expr.coeffs = exprs[i].coeffs;
     local_expr.coeffs.push_back(IntegerValue(1));
-    IntegerSumLE* upper_bound =
-        new IntegerSumLE({alternative_literals[i]}, local_expr.vars,
-                         local_expr.coeffs, exprs[i].offset, model);
-    upper_bound->RegisterWith(watcher);
-    model->TakeOwnership(upper_bound);
+    AddWeightedSumLowerOrEqual({alternative_literals[i]}, local_expr.vars,
+                               local_expr.coeffs, exprs[i].offset.value(),
+                               model);
   }
 
   // For the relaxation, we use different constraints with a stronger linear
@@ -1935,6 +1948,11 @@ void AppendSquareRelaxation(const ConstraintProto& ct, Model* m,
   // Check for potential overflows.
   if (x_ub > (int64_t{1} << 31)) return;
   if (x_lb < -(int64_t{1} << 31)) return;
+  if (IntTypeAbs(x.coeff) > (int64_t{1} << 29) ||
+      IntTypeAbs(x.constant) > (int64_t{1} << 29) ||
+      IntTypeAbs(square.constant) > (int64_t{1} << 60)) {
+    return;
+  }
 
   relaxation->linear_constraints.push_back(
       ComputeHyperplanAboveSquare(x, square, x_lb, x_ub));
@@ -2130,8 +2148,7 @@ void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
   // TODO(user): Support linearization of general target expression.
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   if (ct.lin_max().target().vars_size() != 1) return;
-  if (ct.lin_max().target().coeffs(0) != 1) return;
-  if (ct.lin_max().target().offset() != 0) return;
+  if (std::abs(ct.lin_max().target().coeffs(0)) != 1) return;
 
   // Skip if the target variable appears in one of the expressions, which
   // should only happen with presolve disabled.
@@ -2147,7 +2164,10 @@ void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
   }
 
   const IntegerVariable target =
-      mapping->Integer(ct.lin_max().target().vars(0));
+      ct.lin_max().target().coeffs(0) == 1
+          ? mapping->Integer(ct.lin_max().target().vars(0))
+          : NegationOf(mapping->Integer(ct.lin_max().target().vars(0)));
+  const IntegerValue target_offset(ct.lin_max().target().offset());
   std::vector<LinearExpression> exprs;
   exprs.reserve(ct.lin_max().exprs_size());
   for (int i = 0; i < ct.lin_max().exprs_size(); ++i) {
@@ -2155,6 +2175,7 @@ void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
     // vars.
     exprs.push_back(
         PositiveVarExpr(mapping->GetExprFromProto(ct.lin_max().exprs(i))));
+    exprs.back().offset -= target_offset;
   }
 
   const std::vector<Literal> alternative_literals =

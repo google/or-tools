@@ -54,14 +54,20 @@ void LinearConstraintBuilder::AddTerm(AffineExpression expr,
   // We can either add var or NegationOf(var), and we always choose the
   // positive one.
   if (expr.var != kNoIntegerVariable) {
+    const IntegerValue prod = CapProdI(coeff, expr.coeff);
+    if (AtMinOrMaxInt64I(prod)) {
+      is_overflowing_ = true;
+      return;
+    }
     if (VariableIsPositive(expr.var)) {
-      terms_.push_back({expr.var, coeff * expr.coeff});
+      terms_.push_back({expr.var, prod});
     } else {
-      terms_.push_back({NegationOf(expr.var), -coeff * expr.coeff});
+      terms_.push_back({NegationOf(expr.var), -prod});
     }
   }
-  DCHECK(!ProdOverflow(coeff, expr.constant));
-  offset_ += coeff * expr.constant;
+  if (expr.constant != 0) {
+    AddConstant(CapProdI(coeff, expr.constant));
+  }
 }
 
 void LinearConstraintBuilder::AddLinearExpression(
@@ -72,14 +78,21 @@ void LinearConstraintBuilder::AddLinearExpression(
 void LinearConstraintBuilder::AddLinearExpression(const LinearExpression& expr,
                                                   IntegerValue coeff) {
   for (int i = 0; i < expr.vars.size(); ++i) {
+    const IntegerValue prod = CapProdI(expr.coeffs[i], coeff);
+    if (AtMinOrMaxInt64I(prod)) {
+      is_overflowing_ = true;
+      return;
+    }
     // We must use positive variables.
     if (VariableIsPositive(expr.vars[i])) {
-      terms_.push_back({expr.vars[i], expr.coeffs[i] * coeff});
+      terms_.push_back({expr.vars[i], prod});
     } else {
-      terms_.push_back({NegationOf(expr.vars[i]), -expr.coeffs[i] * coeff});
+      terms_.push_back({NegationOf(expr.vars[i]), -prod});
     }
   }
-  offset_ += expr.offset * coeff;
+  if (expr.offset != 0) {
+    AddConstant(CapProdI(expr.offset, coeff));
+  }
 }
 
 [[nodiscard]] bool LinearConstraintBuilder::AddDecomposedProduct(
@@ -116,13 +129,19 @@ void LinearConstraintBuilder::AddQuadraticLowerBound(
     AddTerm(left, right_min);
     AddTerm(right, left_min);
     // Subtract the energy counted twice.
-    AddConstant(-left_min * right_min);
+    AddConstant(CapProdI(-left_min, right_min));
     if (is_quadratic != nullptr) *is_quadratic = true;
   }
 }
 
 void LinearConstraintBuilder::AddConstant(IntegerValue value) {
-  offset_ += value;
+  // Note that we never let offset_ reach kint64min/kint64max so that -offset_
+  // is always well defined.
+  if (AtMinOrMaxInt64I(value) ||
+      AddIntoOverflow(value.value(), offset_.mutable_value()) ||
+      AtMinOrMaxInt64I(offset_)) {
+    is_overflowing_ = true;
+  }
 }
 
 [[nodiscard]] bool LinearConstraintBuilder::AddLiteralTerm(Literal lit,
@@ -138,7 +157,7 @@ void LinearConstraintBuilder::AddConstant(IntegerValue value) {
     AddTerm(var, coeff);
   } else {
     AddTerm(var, -coeff);
-    offset_ += coeff;
+    AddConstant(coeff);
   }
   return true;
 }
@@ -149,6 +168,7 @@ LinearConstraint LinearConstraintBuilder::Build() {
 
 LinearConstraint LinearConstraintBuilder::BuildConstraint(IntegerValue lb,
                                                           IntegerValue ub) {
+  DCHECK(!is_overflowing_);
   LinearConstraint result;
   result.lb = lb > kMinIntegerValue ? lb - offset_ : lb;
   result.ub = ub < kMaxIntegerValue ? ub - offset_ : ub;
@@ -157,17 +177,45 @@ LinearConstraint LinearConstraintBuilder::BuildConstraint(IntegerValue lb,
 }
 
 bool LinearConstraintBuilder::BuildIntoConstraintAndCheckOverflow(
+    LinearConstraint* ct) {
+  return BuildIntoConstraintAndCheckOverflow(lb_, ub_, ct);
+}
+
+bool LinearConstraintBuilder::BuildIntoConstraintAndCheckOverflow(
     IntegerValue lb, IntegerValue ub, LinearConstraint* ct) {
-  ct->lb = lb > kMinIntegerValue ? lb - offset_ : lb;
-  ct->ub = ub < kMaxIntegerValue ? ub - offset_ : ub;
+  if (is_overflowing_) return false;
+  ct->lb = lb;
+  if (lb > kMinIntegerValue &&
+      AddIntoOverflow(-offset_.value(), ct->lb.mutable_value())) {
+    return false;
+  }
+  ct->ub = ub;
+  if (ub < kMaxIntegerValue &&
+      AddIntoOverflow(-offset_.value(), ct->ub.mutable_value())) {
+    return false;
+  }
   return MergePositiveVariableTermsAndCheckForOverflow(&terms_, ct);
 }
 
 LinearExpression LinearConstraintBuilder::BuildExpression() {
+  DCHECK(!is_overflowing_);
   LinearExpression result;
   CleanTermsAndFillConstraint(&terms_, &result);
   result.offset = offset_;
   return result;
+}
+
+bool LinearConstraintBuilder::BuildIntoExpressionAndCheckOverflow(
+    LinearExpression* expr) {
+  if (is_overflowing_) return false;
+  LinearConstraint ct;
+  if (!MergePositiveVariableTermsAndCheckForOverflow(&terms_, &ct)) {
+    return false;
+  }
+  expr->offset = offset_;
+  expr->vars.assign(ct.vars.get(), ct.vars.get() + ct.num_terms);
+  expr->coeffs.assign(ct.coeffs.get(), ct.coeffs.get() + ct.num_terms);
+  return true;
 }
 
 double LinearConstraint::NormalizedViolation(

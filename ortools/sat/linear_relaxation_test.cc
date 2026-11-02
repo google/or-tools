@@ -444,9 +444,43 @@ TEST(TryToLinearizeConstraint, LinMaxSmall) {
                            /*linearization_level=*/2, &model, &relaxation);
 
   // Take into account the constraints added by the cut generator.
-  EXPECT_GE(relaxation.linear_constraints.size(), 2);
+  ASSERT_EQ(relaxation.linear_constraints.size(), 5);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(), "1*I0 -1*I2 <= 0");
   EXPECT_EQ(relaxation.linear_constraints[1].DebugString(), "1*I1 -1*I2 <= 0");
+  EXPECT_EQ(relaxation.linear_constraints[2].DebugString(),
+            "1 <= 1*I3 1*I4 <= 1");
+  EXPECT_EQ(relaxation.linear_constraints[3].DebugString(),
+            "-1*I0 1*I2 7*I3 <= 7");
+  EXPECT_EQ(relaxation.linear_constraints[4].DebugString(),
+            "-1*I1 1*I2 -6*I3 <= 0");
+  EXPECT_EQ(relaxation.cut_generators.size(), 1);
+}
+
+TEST(TryToLinearizeConstraint, LinMaxNegativeAndOffsetTarget) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 5 ] }
+    variables { domain: [ 0, 7 ] }
+    variables { domain: [ -10, 10 ] }
+    constraints {
+      lin_max {
+        target: { vars: 2 coeffs: -1 offset: 3 }
+        exprs: { vars: 0 coeffs: -1 offset: 1 }
+        exprs: { vars: 1 coeffs: -1 offset: 2 }
+      }
+    }
+  )pb");
+
+  Model model;
+  LoadVariables(initial_model, true, &model);
+
+  LinearRelaxation relaxation;
+  TryToLinearizeConstraint(initial_model, initial_model.constraints(0),
+                           /*linearization_level=*/2, &model, &relaxation);
+
+  ASSERT_EQ(relaxation.linear_constraints.size(), 5);
+  EXPECT_EQ(relaxation.linear_constraints[2].DebugString(),
+            "1 <= 1*I3 1*I4 <= 1");
+  EXPECT_EQ(relaxation.cut_generators.size(), 1);
 }
 
 TEST(TryToLinearizeConstraint, IntSquare) {

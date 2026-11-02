@@ -1491,6 +1491,96 @@ TEST(ComputeHyperPlaneAboveSquare, Exhaustive) {
   }
 }
 
+TEST(CutsOverflowTest, SquareCutGeneratorSkipsLargeConstants) {
+  Model model;
+  const IntegerVariable y = model.Add(NewIntegerVariable(0, 10000));
+  const IntegerVariable v =
+      model.Add(NewIntegerVariable(1LL << 60, (1LL << 60) + 10));
+  InitializeLpValues({0.0, static_cast<double>(1LL << 60)}, &model);
+
+  // Shifted expression with small [0, 10] bounds but huge constant offset must
+  // be skipped without overflowing in LinearConstraintBuilder.
+  auto* manager = model.GetOrCreate<LinearConstraintManager>();
+  const AffineExpression shifted_x(v, IntegerValue(1),
+                                   IntegerValue(-(1LL << 60)));
+  CutGenerator square_shifted =
+      CreateSquareCutGenerator(y, shifted_x, 2, &model);
+  EXPECT_TRUE(square_shifted.generate_cuts(manager));
+  EXPECT_EQ(manager->num_cuts(), 0);
+}
+
+TEST(CutsOverflowTest, AllDiffCutGeneratorStickyOverflowDoesNotAddBogusBound) {
+  Model model;
+  const int64_t big = 1LL << 61;
+  const IntegerVariable x1 = model.Add(NewIntegerVariable(-big, big));
+  const IntegerVariable x2 = model.Add(NewIntegerVariable(-big, big));
+  const IntegerVariable x3 = model.Add(NewIntegerVariable(-big, big));
+  const IntegerVariable x4 = model.Add(NewIntegerVariable(-big, big));
+  const IntegerVariable x5 = model.Add(NewIntegerVariable(-big, 100));
+  InitializeLpValues({1e18, 1e18, 1e18, 1e18, 50.0}, &model);
+
+  CutGenerator all_diff =
+      CreateAllDifferentCutGenerator({x1, x2, x3, x4, x5}, &model);
+  auto* manager = model.GetOrCreate<LinearConstraintManager>();
+  EXPECT_TRUE(all_diff.generate_cuts(manager));
+  EXPECT_EQ(0, manager->num_cuts());
+}
+
+TEST(CutsOverflowTest, LinMaxCutGeneratorSkipsOverflowingCornerCoefficients) {
+  Model model;
+  const int64_t big = 1LL << 61;
+  const IntegerVariable x1 = model.Add(NewIntegerVariable(0, 1));
+  const IntegerVariable x2 = model.Add(NewIntegerVariable(0, 1));
+  const IntegerVariable x3 = model.Add(NewIntegerVariable(0, 1));
+  const IntegerVariable x4 = model.Add(NewIntegerVariable(0, 1));
+  const IntegerVariable target = model.Add(NewIntegerVariable(-big, big));
+  const IntegerVariable z0 = model.Add(NewIntegerVariable(0, 1));
+  const IntegerVariable z1 = model.Add(NewIntegerVariable(0, 1));
+  const IntegerVariable z2 = model.Add(NewIntegerVariable(0, 1));
+  const IntegerVariable z3 = model.Add(NewIntegerVariable(0, 1));
+  const IntegerVariable z4 = model.Add(NewIntegerVariable(0, 1));
+
+  LinearExpression f0;
+  LinearExpression f1;
+  f1.vars = {x1};
+  f1.coeffs = {IntegerValue(-big)};
+  LinearExpression f2;
+  f2.vars = {x2};
+  f2.coeffs = {IntegerValue(-big)};
+  LinearExpression f3;
+  f3.vars = {x3};
+  f3.coeffs = {IntegerValue(-big)};
+  LinearExpression f4;
+  f4.vars = {x4};
+  f4.coeffs = {IntegerValue(-big)};
+
+  CutGenerator max_cuts = CreateLinMaxCutGenerator(
+      target, {f0, f1, f2, f3, f4}, {z0, z1, z2, z3, z4}, &model);
+  auto* manager = model.GetOrCreate<LinearConstraintManager>();
+  InitializeLpValues({1.0, 1.0, 1.0, 1.0, 1e18, 0.5, 0.0, 0.0, 0.0, 0.0},
+                     &model);
+  EXPECT_TRUE(max_cuts.generate_cuts(manager));
+  EXPECT_EQ(0, manager->num_cuts());
+}
+
+TEST(CutsOverflowTest, MaxAffineUpConstraintRejectsOverflowingRhs) {
+  Model model;
+  const IntegerVariable x = model.Add(NewIntegerVariable(2, 6));
+  const IntegerVariable target = model.Add(NewIntegerVariable(0, 15LL << 58));
+  LinearExpression target_expr;
+  target_expr.vars = {target};
+  target_expr.coeffs = {IntegerValue(1)};
+
+  // Valid affine expression (max magnitude 15 * 2^58 < kint64max / 2) where
+  // delta_x * y_at_min (28 * 2^58) and -delta_y * x_min (8 * 2^58) each fit in
+  // int64_t, but their sum rhs = 36 * 2^58 overflows int64_t.
+  const std::vector<std::pair<IntegerValue, IntegerValue>> affines = {
+      {IntegerValue(-(1LL << 58)), IntegerValue(9LL << 58)}};
+  LinearConstraintBuilder builder(&model);
+  EXPECT_FALSE(
+      BuildMaxAffineUpConstraint(target_expr, x, affines, &model, &builder));
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

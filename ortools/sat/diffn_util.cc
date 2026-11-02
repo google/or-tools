@@ -780,8 +780,9 @@ IntegerValue CapacityProfile::GetBoundingArea() {
     const IntegerValue new_height =
         max_pq.IsEmpty() ? IntegerValue(0)
                          : max_pq.Top().value + min_pq.Top().value;
-    if (previous_height != 0) {
-      area += previous_height * (current_time - previous_time);
+    if (previous_height != 0 &&
+        !AddProductTo(previous_height, current_time - previous_time, &area)) {
+      return kMaxIntegerValue;
     }
     previous_time = current_time;
     previous_height = new_height;

@@ -1002,6 +1002,13 @@ bool SchedulingDemandHelper::CacheAllEnergyValues() {
       decomposed_energies_[t].resize(new_size);
     }
 
+    // We check the maximum energy first: if size_max * demand_max does not
+    // overflow, then none of the products in the decomposed energy can.
+    const IntegerValue simple_energy_max = SimpleEnergyMax(t);
+    if (!demands_.empty() && simple_energy_max >= kMaxIntegerValue) {
+      return false;
+    }
+
     cached_energies_min_[t] =
         std::max(SimpleEnergyMin(t), DecomposedEnergyMin(t));
     if (cached_energies_min_[t] <= kMinIntegerValue) return false;
@@ -1009,7 +1016,7 @@ bool SchedulingDemandHelper::CacheAllEnergyValues() {
         decomposed_energies_[t].empty() && !demands_.empty() &&
         !integer_trail_->IsFixed(demands_[t]) && !helper_->SizeIsFixed(t);
     cached_energies_max_[t] =
-        std::min(SimpleEnergyMax(t), DecomposedEnergyMax(t));
+        std::min(simple_energy_max, DecomposedEnergyMax(t));
     if (cached_energies_max_[t] >= kMaxIntegerValue) return false;
   }
 
