@@ -3711,6 +3711,12 @@ const Assignment* Model::InsertNodesInAssignmentWithParameters(
     DecisionBuilder* restore_preassignment =
         solver_->MakeRestoreAssignment(preassignment_);
     std::vector<DecisionBuilder*> first_solution_dbs;
+    LocalCheapestInsertionParameters lci_params =
+        parameters.local_cheapest_insertion_parameters();
+    // We want LCI to get the absolute best insertion positions for pickup and
+    // delivery pairs.
+    lci_params.set_pickup_delivery_strategy(
+        LocalCheapestInsertionParameters::BEST_PICKUP_DELIVERY_PAIR);
     for (bool filter_with_cp_solver : {false, true}) {
       first_solution_dbs.push_back(
           CreateRoutingFilteredDecisionBuilderWithRoutes<
@@ -3737,8 +3743,7 @@ const Assignment* Model::InsertNodesInAssignmentWithParameters(
                 }
                 return next;
               },
-              /*evaluator=*/nullptr,
-              parameters.local_cheapest_insertion_parameters(),
+              /*evaluator=*/nullptr, lci_params,
               GetOrCreateLocalSearchFilterManager(
                   parameters,
                   {/*filter_objective=*/true, filter_with_cp_solver}),
@@ -4105,7 +4110,7 @@ const Assignment* Model::SolveWithIteratedLocalSearch(
   const bool improve_perturbed_solution =
       ils_parameters.improve_perturbed_solution();
 
-  while (update_time_limits() &&
+  while (update_time_limits() && !interrupt_cp_ &&
          explored_solutions < parameters.solution_limit()) {
     solver_->Solve(perturbation_db, monitors_);
     explored_solutions += solver_->solutions();
@@ -4116,7 +4121,7 @@ const Assignment* Model::SolveWithIteratedLocalSearch(
       continue;
     }
 
-    if (improve_perturbed_solution && update_time_limits()) {
+    if (improve_perturbed_solution && !interrupt_cp_ && update_time_limits()) {
       assignment_->CopyIntersection(neighbor_solution);
 
       solver_->Solve(improve_db_, monitors_);
