@@ -3575,6 +3575,7 @@ or_cc_test(
     name = "linear_programming_constraint_test",
     srcs = ["linear_programming_constraint_test.cc"],
     deps = [
+        ":clause",
         ":cp_model_solver",
         ":integer",
         ":integer_base",
@@ -3582,6 +3583,7 @@ or_cc_test(
         ":linear_constraint",
         ":linear_programming_constraint",
         ":model",
+        ":sat_literal",
         ":sat_parameters_cc_proto",
         ":sat_solver",
         "//ortools/base:gmock_main",
