@@ -963,7 +963,7 @@ TEST(RouteConstraintTest, PartiallyPrecedenceConstrained) {
                                                                      {3, 2}};
     model.AddRouteConstraint(
         [&constrained_precedences](
-            const std::vector<int64_t>& route) -> std::optional<int64_t> {
+            absl::Span<const int64_t> route) -> std::optional<int64_t> {
           absl::flat_hash_set<int64_t> seen;
           for (int i = 0; i < route.size(); ++i) {
             int64_t sibling = -1;

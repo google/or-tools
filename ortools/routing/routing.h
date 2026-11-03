@@ -1427,11 +1427,11 @@ class OR_ROUTING_DLL Model {
   // The callback must always return the same value for a given route.
 #if !defined(SWIG)
   void AddRouteConstraint(
-      absl::AnyInvocable<std::optional<int64_t>(const std::vector<int64_t>&)>
+      absl::AnyInvocable<std::optional<int64_t>(absl::Span<const int64_t>)>
           route_evaluator,
       bool costs_are_homogeneous_across_vehicles = false);
 #endif  // !defined(SWIG)
-  std::optional<int64_t> GetRouteCost(const std::vector<int64_t>& route) const {
+  std::optional<int64_t> GetRouteCost(absl::Span<const int64_t> route) const {
     int64_t route_cost = 0;
     for (auto& evaluator : route_evaluators_) {
       std::optional<int64_t> cost = evaluator(route);
@@ -2762,7 +2762,7 @@ class OR_ROUTING_DLL Model {
   std::vector<int64_t> quadratic_cost_factor_of_vehicle_;
   bool vehicle_amortized_cost_factors_set_;
   mutable std::vector<
-      absl::AnyInvocable<std::optional<int64_t>(const std::vector<int64_t>&)>>
+      absl::AnyInvocable<std::optional<int64_t>(absl::Span<const int64_t>)>>
       route_evaluators_;
   /// vehicle_used_when_empty_[vehicle] determines if "vehicle" should be
   /// taken into account for costs (arc costs, span costs, etc.) and constraints

@@ -35,6 +35,7 @@
 #include "absl/types/span.h"
 #include "google/protobuf/duration.pb.h"
 #include "gtest/gtest.h"
+#include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/base/types.h"
@@ -1602,6 +1603,8 @@ TEST(FillDimensionValuesFromDimensionTest, GeneralBehavior) {
   };
 
   DimensionValues dimension_values(1, 4);
+  PathState path_state(4, {0}, {3});
+  const std::vector<int> path_class = {0};
 
   for (int s = 0; s < scenarios.size(); ++s) {
     dimension_values.Revert();
@@ -1609,11 +1612,13 @@ TEST(FillDimensionValuesFromDimensionTest, GeneralBehavior) {
     dimension_values.PushNode(1);
     dimension_values.PushNode(2);
     dimension_values.PushNode(3);
+    PathStateChangePaths(&path_state, {{0, 1, 2, 3}}, {});
     dimension_values.MakePathFromNewNodes(0);
     const Scenario& scenario = scenarios[s];
     const bool feasible = FillDimensionValuesFromDimension(
-        0, scenario.capacity, scenario.span_upper_bound, input_cumuls,
-        input_slacks, travel_evaluator, dimension_values);
+        0, &path_state, scenario.capacity, scenario.span_upper_bound,
+        path_class, input_cumuls, input_slacks, travel_evaluator,
+        dimension_values);
     EXPECT_EQ(feasible, scenario.expected_feasible);
     if (!feasible) continue;
     EXPECT_THAT(dimension_values.Travels(0),
@@ -1635,88 +1640,100 @@ TEST(FillDimensionValuesFromDimensionTest, GeneralBehavior) {
 }
 
 TEST(FillDimensionValuesFromDimensionTest, TravelCaching) {
-  DimensionValues dimension_values(1, 6);
-  using Interval = DimensionValues::Interval;
-  std::vector<Interval> cumuls(6, {.min = 0, .max = 100});
-  std::vector<Interval> slacks(6, {.min = 0, .max = kint64max});
-  int num_evaluator_calls = 0;
-  auto travel_evaluator = [&num_evaluator_calls](int64_t from,
-                                                 int64_t to) -> int64_t {
-    ++num_evaluator_calls;
-    return 10 * from + to;
-  };
-  // Make initial state.
-  const std::vector<int> initial_nodes = {1, 3, 0, 4, 2};
-  for (const int node : initial_nodes) {
-    dimension_values.PushNode(node);
-  }
-  dimension_values.MakePathFromNewNodes(0);
-  EXPECT_TRUE(FillDimensionValuesFromDimension(
-      0, 10000, 10000, cumuls, slacks, travel_evaluator, dimension_values));
-  EXPECT_THAT(dimension_values.Travels(0), ElementsAreArray({13, 30, 4, 42}));
-  dimension_values.Commit();
-  // Test changes to paths with various parts in common with initial path:
-  struct Scenario {
-    std::vector<int> nodes;
-    std::vector<int64_t> expected_travels;
-    int expected_num_evaluator_calls;
-  };
-  std::vector<Scenario> scenarios = {
-      // Same path.
-      {.nodes = {1, 3, 0, 4, 2},
-       .expected_travels = {13, 30, 4, 42},
-       .expected_num_evaluator_calls = 0},
-      // Removed one node.
-      {.nodes = {1, 0, 4, 2},
-       .expected_travels = {10, 4, 42},
-       .expected_num_evaluator_calls = 1},
-      {.nodes = {1, 3, 4, 2},
-       .expected_travels = {13, 34, 42},
-       .expected_num_evaluator_calls = 1},
-      {.nodes = {1, 3, 0, 2},
-       .expected_travels = {13, 30, 2},
-       .expected_num_evaluator_calls = 1},
-      // Added one node.
-      {.nodes = {1, 3, 0, 4, 2},
-       .expected_travels = {13, 30, 4, 42},
-       .expected_num_evaluator_calls = 0},
-      {.nodes = {1, 5, 3, 0, 4, 2},
-       .expected_travels = {15, 53, 30, 4, 42},
-       .expected_num_evaluator_calls = 2},
-      {.nodes = {1, 3, 5, 0, 4, 2},
-       .expected_travels = {13, 35, 50, 4, 42},
-       .expected_num_evaluator_calls = 2},
-      {.nodes = {1, 3, 0, 5, 4, 2},
-       .expected_travels = {13, 30, 5, 54, 42},
-       .expected_num_evaluator_calls = 2},
-      {.nodes = {1, 3, 0, 4, 5, 2},
-       .expected_travels = {13, 30, 4, 45, 52},
-       .expected_num_evaluator_calls = 2},
-      // Emptied path.
-      {.nodes = {1, 2},
-       .expected_travels = {12},
-       .expected_num_evaluator_calls = 1},
-      // Exchanged nodes.
-      {.nodes = {1, 4, 0, 3, 2},
-       .expected_travels = {14, 40, 3, 32},
-       .expected_num_evaluator_calls = 4},
-      // Moved a chain.
-      {.nodes = {1, 0, 4, 3, 2},
-       .expected_travels = {10, 4, 43, 32},
-       .expected_num_evaluator_calls = 4},
-  };
-  for (const Scenario& scenario : scenarios) {
-    dimension_values.Revert();
-    num_evaluator_calls = 0;
-    for (const int node : scenario.nodes) {
+  for (const bool use_path_state : {false, true}) {
+    DimensionValues dimension_values(1, 6);
+    PathState path_state(6, {1}, {2});
+    PathState* const maybe_path_state = use_path_state ? &path_state : nullptr;
+    const std::vector<int> path_class = {0};
+    using Interval = DimensionValues::Interval;
+    std::vector<Interval> cumuls(6, {.min = 0, .max = 100});
+    std::vector<Interval> slacks(6, {.min = 0, .max = kint64max});
+    int num_evaluator_calls = 0;
+    auto travel_evaluator = [&num_evaluator_calls](int64_t from,
+                                                   int64_t to) -> int64_t {
+      ++num_evaluator_calls;
+      return 10 * from + to;
+    };
+    // Make initial state.
+    const std::vector<int> initial_nodes = {1, 3, 0, 4, 2};
+    PathStateChangePaths(&path_state, {initial_nodes}, {});
+    for (const int node : initial_nodes) {
       dimension_values.PushNode(node);
     }
     dimension_values.MakePathFromNewNodes(0);
     EXPECT_TRUE(FillDimensionValuesFromDimension(
-        0, 10000, 10000, cumuls, slacks, travel_evaluator, dimension_values));
-    EXPECT_THAT(dimension_values.Travels(0),
-                ElementsAreArray(scenario.expected_travels));
-    EXPECT_EQ(num_evaluator_calls, scenario.expected_num_evaluator_calls);
+        0, maybe_path_state, 10000, 10000, path_class, cumuls, slacks,
+        travel_evaluator, dimension_values));
+    EXPECT_THAT(dimension_values.Travels(0), ElementsAreArray({13, 30, 4, 42}));
+    dimension_values.Commit();
+    path_state.Commit();
+    // Test changes to paths with various parts in common with initial path:
+    struct Scenario {
+      std::vector<int> nodes;
+      std::vector<int64_t> expected_travels;
+      int expected_num_evaluator_calls;
+    };
+    std::vector<Scenario> scenarios = {
+        // Same path.
+        {.nodes = {1, 3, 0, 4, 2},
+         .expected_travels = {13, 30, 4, 42},
+         .expected_num_evaluator_calls = 0},
+        // Removed one node.
+        {.nodes = {1, 0, 4, 2},
+         .expected_travels = {10, 4, 42},
+         .expected_num_evaluator_calls = 1},
+        {.nodes = {1, 3, 4, 2},
+         .expected_travels = {13, 34, 42},
+         .expected_num_evaluator_calls = 1},
+        {.nodes = {1, 3, 0, 2},
+         .expected_travels = {13, 30, 2},
+         .expected_num_evaluator_calls = 1},
+        // Added one node.
+        {.nodes = {1, 3, 0, 4, 2},
+         .expected_travels = {13, 30, 4, 42},
+         .expected_num_evaluator_calls = 0},
+        {.nodes = {1, 5, 3, 0, 4, 2},
+         .expected_travels = {15, 53, 30, 4, 42},
+         .expected_num_evaluator_calls = 2},
+        {.nodes = {1, 3, 5, 0, 4, 2},
+         .expected_travels = {13, 35, 50, 4, 42},
+         .expected_num_evaluator_calls = 2},
+        {.nodes = {1, 3, 0, 5, 4, 2},
+         .expected_travels = {13, 30, 5, 54, 42},
+         .expected_num_evaluator_calls = 2},
+        {.nodes = {1, 3, 0, 4, 5, 2},
+         .expected_travels = {13, 30, 4, 45, 52},
+         .expected_num_evaluator_calls = 2},
+        // Emptied path.
+        {.nodes = {1, 2},
+         .expected_travels = {12},
+         .expected_num_evaluator_calls = 1},
+        // Exchanged nodes.
+        {.nodes = {1, 4, 0, 3, 2},
+         .expected_travels = {14, 40, 3, 32},
+         .expected_num_evaluator_calls = 4},
+        // Moved a chain.
+        {.nodes = {1, 0, 4, 3, 2},
+         .expected_travels = {10, 4, 43, 32},
+         .expected_num_evaluator_calls = use_path_state ? 3 : 4},
+    };
+    for (const Scenario& scenario : scenarios) {
+      SCOPED_TRACE(DUMP_VARS(use_path_state, scenario.nodes));
+      dimension_values.Revert();
+      path_state.Revert();
+      PathStateChangePaths(&path_state, {scenario.nodes}, {});
+      num_evaluator_calls = 0;
+      for (const int node : scenario.nodes) {
+        dimension_values.PushNode(node);
+      }
+      dimension_values.MakePathFromNewNodes(0);
+      EXPECT_TRUE(FillDimensionValuesFromDimension(
+          0, maybe_path_state, 10000, 10000, path_class, cumuls, slacks,
+          travel_evaluator, dimension_values));
+      EXPECT_THAT(dimension_values.Travels(0),
+                  ElementsAreArray(scenario.expected_travels));
+      EXPECT_EQ(num_evaluator_calls, scenario.expected_num_evaluator_calls);
+    }
   }
 }
 
@@ -3196,6 +3213,99 @@ void MakeAssignment(const std::vector<int>& solution,
   MakeDelta(nullptr, solution.data(), nexts, assignment);
 }
 
+class FilterWithPathState : public LocalSearchFilter {
+ public:
+  FilterWithPathState(LocalSearchFilter* path_state_filter,
+                      LocalSearchFilter* filter)
+      : path_state_filter_(path_state_filter), filter_(filter) {}
+
+  void Relax(const Assignment* delta, const Assignment* deltadelta) override {
+    path_state_filter_->Relax(delta, deltadelta);
+    filter_->Relax(delta, deltadelta);
+  }
+
+  void Commit(const Assignment* assignment, const Assignment* delta) override {
+    filter_->Commit(assignment, delta);
+    path_state_filter_->Commit(assignment, delta);
+  }
+
+  bool Accept(const Assignment* delta, const Assignment* deltadelta,
+              int64_t objective_min, int64_t objective_max) override {
+    path_state_filter_->Relax(delta, deltadelta);
+    return filter_->Accept(delta, deltadelta, objective_min, objective_max);
+  }
+
+  bool IsIncremental() const override { return filter_->IsIncremental(); }
+
+  void Synchronize(const Assignment* assignment,
+                   const Assignment* delta) override {
+    if (delta == nullptr || delta->Empty()) {
+      path_state_filter_->Reset();
+      path_state_filter_->Relax(assignment, nullptr);
+    } else {
+      path_state_filter_->Relax(delta, nullptr);
+    }
+    filter_->Synchronize(assignment, delta);
+    path_state_filter_->Commit(assignment, delta);
+  }
+
+  void Revert() override {
+    filter_->Revert();
+    path_state_filter_->Revert();
+  }
+
+  void Reset() override {
+    filter_->Reset();
+    path_state_filter_->Reset();
+  }
+
+  int64_t GetSynchronizedObjectiveValue() const override {
+    return filter_->GetSynchronizedObjectiveValue();
+  }
+
+  int64_t GetAcceptedObjectiveValue() const override {
+    return filter_->GetAcceptedObjectiveValue();
+  }
+
+  std::string DebugString() const override { return filter_->DebugString(); }
+
+ private:
+  LocalSearchFilter* const path_state_filter_;
+  LocalSearchFilter* const filter_;
+};
+
+std::pair<const PathState*, LocalSearchFilter*> MakeTestPathStateAndFilter(
+    const Model& model) {
+  const int num_vehicles = model.vehicles();
+  std::vector<int> start_nodes(num_vehicles);
+  std::vector<int> end_nodes(num_vehicles);
+  for (int v = 0; v < num_vehicles; ++v) {
+    start_nodes[v] = model.Start(v);
+    end_nodes[v] = model.End(v);
+  }
+  auto path_state =
+      std::make_unique<PathState>(model.Size() + num_vehicles,
+                                  std::move(start_nodes), std::move(end_nodes));
+  const PathState* const path_state_ptr = path_state.get();
+  LocalSearchFilter* const path_state_filter =
+      MakePathStateFilter(model.solver(), std::move(path_state), model.Nexts());
+  return {path_state_ptr, path_state_filter};
+}
+
+LocalSearchFilter* MakePathCumulFilter(const Dimension& dimension,
+                                       bool propagate_own_objective_value,
+                                       bool filter_objective_cost,
+                                       bool may_use_optimizers) {
+  const Model& model = *dimension.model();
+  auto [path_state, path_state_filter] = MakeTestPathStateAndFilter(model);
+  LocalSearchFilter* const filter =
+      ::operations_research::routing::MakePathCumulFilter(
+          dimension, path_state, propagate_own_objective_value,
+          filter_objective_cost, may_use_optimizers);
+  return model.solver()->RevAlloc(
+      new FilterWithPathState(path_state_filter, filter));
+}
+
 using RoutingFilterTestWithUnaryCallbackAndSolverType =
     ::testing::TestWithParam<
         std::tuple<bool, RoutingSearchParameters::SchedulingSolver>>;
@@ -4279,11 +4389,14 @@ TEST_P(
   // The non-null objective callback ensures that local LP is used in the
   // PathCumulFilter.
   for (int upper_bound : kCostUpperBounds) {
+    auto [path_state, path_state_filter] = MakeTestPathStateAndFilter(model);
     std::vector<LocalSearchFilterManager::FilterEvent> filters;
-    AppendDimensionCumulFilters({dimension}, parameters,
+    AppendDimensionCumulFilters(path_state, {dimension}, parameters,
                                 /*filter_objective_cost=*/true,
                                 /*use_chain_cumul_filter=*/true, &filters);
     ASSERT_EQ(filters.size(), 2);
+    filters[0].filter = model.solver()->RevAlloc(
+        new FilterWithPathState(path_state_filter, filters[0].filter));
     Solver* const solver = model.solver();
     Assignment initial_solution(solver);
     MakeAssignment(kInitialSolution, model.Nexts(), &initial_solution);
@@ -4375,10 +4488,13 @@ class NodePrecedenceCumulFiltersTest
     }
 
     for (bool filter_objective : {false, true}) {
+      auto [path_state, path_state_filter] =
+          MakeTestPathStateAndFilter(*model_);
       std::vector<LocalSearchFilterManager::FilterEvent> filters;
-      AppendDimensionCumulFilters(
-          {time_dimension_}, DefaultRoutingSearchParameters(), filter_objective,
-          /*use_chain_cumul_filter*/ true, &filters);
+      AppendDimensionCumulFilters(path_state, {time_dimension_},
+                                  DefaultRoutingSearchParameters(),
+                                  filter_objective,
+                                  /*use_chain_cumul_filter*/ true, &filters);
       EXPECT_EQ(filters.size(), 2);
       LocalSearchFilter* const filter = filters[1].filter;
       filter->Synchronize(&initial_solution, nullptr);
@@ -4741,13 +4857,18 @@ TEST_P(RoutingFilterTestWithResources, NodePrecedenceAndResourcesFiltersTest) {
 
   std::vector<LocalSearchFilterManager::FilterEvent> filters;
   if (!resource_filter_setup.create_filters_independently) {
-    AppendDimensionCumulFilters({time_dimension},
+    auto [path_state, path_state_filter] = MakeTestPathStateAndFilter(model);
+    AppendDimensionCumulFilters(path_state, {time_dimension},
                                 DefaultRoutingSearchParameters(),
                                 filter_objective_cost,
                                 /*use_chain_cumul_filter=*/true, &filters);
     // There should be 3 filters:
     // Chain/PathCumulFilter, ResourceAssignmentFilter, LPCumulFilter.
     ASSERT_EQ(filters.size(), 3);
+    if (use_cp_sat) {
+      filters[0].filter = model.solver()->RevAlloc(
+          new FilterWithPathState(path_state_filter, filters[0].filter));
+    }
   } else {
     const auto kAccept = LocalSearchFilterManager::FilterEventType::kAccept;
     if (use_cp_sat) {
@@ -5050,10 +5171,14 @@ TEST_F(PickupToDeliveryLimitTest, FilterWithAndWithoutLPTest) {
 TEST_F(PickupToDeliveryLimitTest, AppendDimensionCumulFiltersTest) {
   Dimension* const dimension = CreateDimensionWithPickupDeliveryLimits();
 
+  auto [path_state, path_state_filter] = MakeTestPathStateAndFilter(*model_);
   std::vector<LocalSearchFilterManager::FilterEvent> filters;
-  AppendDimensionCumulFilters({dimension}, DefaultRoutingSearchParameters(),
+  AppendDimensionCumulFilters(path_state, {dimension},
+                              DefaultRoutingSearchParameters(),
                               /*filter_objective_cost=*/true,
                               /*use_chain_cumul_filter=*/true, &filters);
+  filters[0].filter = model_->solver()->RevAlloc(
+      new FilterWithPathState(path_state_filter, filters[0].filter));
   // The PathCumulFilter doesn't propagate its own objective value when called
   // before the global LPCumulFilter.
   const bool propagates_objective_value[] = {false, true};
