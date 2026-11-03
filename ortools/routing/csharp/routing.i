@@ -24,12 +24,14 @@ using System.Collections.Generic;
 %template(IntBoolPair) std::pair<int, bool>;
 %include "enumsimple.swg"
 %import "ortools/util/csharp/absl_string_view.i"
+%import "ortools/util/csharp/optional.i"
 %import "ortools/util/csharp/vector.i"
 
 %{
 #include <algorithm>
 %}
 
+STL_OPTIONAL(std::int64_t);
 %template(IntVector) std::vector<int>;
 %template(IntVectorVector) std::vector<std::vector<int> >;
 VECTOR_AS_CSHARP_ARRAY(int, int, int, IntVector);
@@ -367,7 +369,7 @@ using Domain = Google.OrTools.Util.Domain;
 %unignore operations_research::routing::RouteConstraintCallback;
 %unignore operations_research::routing::RouteConstraintCallback::RouteConstraintCallback;
 %unignore operations_research::routing::RouteConstraintCallback::~RouteConstraintCallback;
-%unignore operations_research::routing::RouteConstraintCallback::Evaluate;
+%unignore operations_research::routing::RouteConstraintCallback::Evaluate(const std::vector<int64_t>&);
 
 %unignore Model::Model;
 %unignore Model::~Model;
@@ -426,6 +428,7 @@ using Domain = Google.OrTools.Util.Domain;
 %unignore Model::GetNumberOfDecisionsInFirstSolution;
 %unignore Model::GetNumberOfRejectsInFirstSolution;
 %unignore Model::GetNumberOfDisjunctions;
+%unignore Model::GetRouteCost(const std::vector<int64_t>&);
 %unignore Model::GetVehicleClassCount;
 %unignore Model::GetVehicleClassesCount;
 %unignore Model::GetVisitType;
@@ -538,6 +541,10 @@ using Google.OrTools.ConstraintSolver;
     $self->ApplyLocks(absl::Span<const int64_t>(locks));
   }
 
+  std::optional<int64_t> GetRouteCost(const std::vector<int64_t>& route) {
+    return $self->GetRouteCost(absl::Span<const int64_t>(route));
+  }
+
   void SetAllowedVehiclesForIndex(const std::vector<int>& vehicles,
                                   int64_t index) {
     $self->SetAllowedVehiclesForIndex(absl::Span<const int>(vehicles), index);
@@ -547,12 +554,12 @@ using Google.OrTools.ConstraintSolver;
       operations_research::routing::RouteConstraintCallback* route_evaluator,
       bool costs_are_homogeneous_across_vehicles = false) {
     $self->AddRouteConstraint(
-        [route_evaluator](const std::vector<int64_t>& route)
-            -> std::optional<int64_t> {
-          const operations_research::routing::RouteConstraintResult result =
-              route_evaluator->Evaluate(route);
-          if (!result.is_satisfied) return std::nullopt;
-          return result.cost;
+        [route_evaluator](absl::Span<const int64_t> route)
+        -> std::optional<int64_t> {
+        const operations_research::routing::RouteConstraintResult result =
+        route_evaluator->Evaluate(std::vector<int64_t>(route.begin(), route.end()));
+        if (!result.is_satisfied) return std::nullopt;
+        return result.cost;
         },
         costs_are_homogeneous_across_vehicles);
   }
