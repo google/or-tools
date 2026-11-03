@@ -155,7 +155,7 @@ bintest(
     size = "large",
     srcs = ["cvrptw_with_resources_test.bintest"],
     named_data = {"cvrptw_with_resources": ":cvrptw_with_resources"},
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (71.8s)
 )
 
 or_cc_binary(
@@ -213,7 +213,7 @@ bintest(
     size = "large",
     srcs = ["cvrptw_with_refueling_test.bintest"],
     named_data = {"cvrptw_with_refueling": ":cvrptw_with_refueling"},
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (47.5s)
 )
 
 py_test(
@@ -260,7 +260,7 @@ py_test(
     size = "medium",
     srcs = ["cvrptw_break.py"],
     main = "cvrptw_break.py",
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (49.6s)
     deps = [
         "//ortools/constraint_solver/python:constraint_solver_py",
         "//ortools/routing:enums_py_pb2",
@@ -348,7 +348,7 @@ or_cc_test(
     name = "tsp_circuit_board_cc",
     size = "medium",
     srcs = ["tsp_circuit_board.cc"],
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (41.3s)
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
@@ -369,7 +369,7 @@ py_test(
     size = "medium",
     srcs = ["tsp_circuit_board.py"],
     main = "tsp_circuit_board.py",
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (102.2s)
     deps = [
         "//ortools/constraint_solver/python:constraint_solver_py",
         "//ortools/routing:enums_py_pb2",
@@ -496,7 +496,7 @@ or_cc_test(
     name = "vrp_breaks_cc",
     size = "medium",
     srcs = ["vrp_breaks.cc"],
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (42.4s)
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",

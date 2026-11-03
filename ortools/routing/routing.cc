@@ -1560,7 +1560,7 @@ void Model::SetAmortizedCostFactorsOfVehicle(int64_t linear_cost_factor,
 }
 
 void Model::AddRouteConstraint(
-    absl::AnyInvocable<std::optional<int64_t>(const std::vector<int64_t>&)>
+    absl::AnyInvocable<std::optional<int64_t>(absl::Span<const int64_t>)>
         route_evaluator,
     bool costs_are_homogeneous_across_vehicles) {
   costs_are_homogeneous_across_vehicles_ &=
@@ -5960,9 +5960,10 @@ Model::CreateLocalSearchFilters(const RoutingSearchParameters& parameters,
   {
     ++priority;
     const int first_dimension_filter_index = filter_events.size();
-    AppendDimensionCumulFilters(
-        GetDimensions(), parameters, options.filter_objective,
-        /* filter_light_weight_dimensions */ false, &filter_events);
+    AppendDimensionCumulFilters(path_state_reference, GetDimensions(),
+                                parameters, options.filter_objective,
+                                /* filter_light_weight_dimensions */ false,
+                                &filter_events);
     int max_priority = priority;
     for (int e = first_dimension_filter_index; e < filter_events.size(); ++e) {
       filter_events[e].priority += priority;

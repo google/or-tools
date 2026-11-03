@@ -128,7 +128,7 @@ py_test(
     name = "sat_test",
     size = "medium",
     srcs = ["sat_test.py"],
-    tags = ["noci"],
+    tags = ["noci"],  # Disabled on OSS CI: too long (77.2s)
     deps = [
         ":routing",
         "//ortools/constraint_solver/python:constraint_solver",  # buildcleaner: keep: OSS export
