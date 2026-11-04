@@ -772,12 +772,30 @@ add_custom_command(
   COMMAND ${stubgen_EXECUTABLE} -p ortools.util.python.piecewise_linear_function --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.util.python.sorted_interval_list --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.util.python.pybind_solve_interrupter --output .
+  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/annotate_stub_incomplete.py ortools.init.python.init
+  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/annotate_stub_incomplete.py ortools.algorithms.python.knapsack_solver
+  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/annotate_stub_incomplete.py ortools.graph.python.linear_sum_assignment
+  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/annotate_stub_incomplete.py ortools.graph.python.max_flow
+  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/annotate_stub_incomplete.py ortools.graph.python.min_cost_flow
+  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/annotate_stub_incomplete.py ortools.constraint_solver.python.constraint_solver
+  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/annotate_stub_incomplete.py ortools.linear_solver.python.pywraplp
+  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/annotate_stub_incomplete.py ortools.linear_solver.python.model_builder_helper
+  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/annotate_stub_incomplete.py ortools.math_opt.core.python.solver
+  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/annotate_stub_incomplete.py ortools.pdlp.python.pdlp
+  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/annotate_stub_incomplete.py ortools.routing.python.routing
+  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/annotate_stub_incomplete.py ortools.sat.python.cp_model_helper
+  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/annotate_stub_incomplete.py ortools.scheduling.python.rcpsp
+  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/annotate_stub_incomplete.py ortools.set_cover.python.set_cover
+  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/annotate_stub_incomplete.py ortools.util.python.piecewise_linear_function
+  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/annotate_stub_incomplete.py ortools.util.python.sorted_interval_list
+  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/annotate_stub_incomplete.py ortools.util.python.pybind_solve_interrupter
   COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/stub_timestamp
   MAIN_DEPENDENCY
     ortools/python/setup.py.in
   DEPENDS
     python/ortools_timestamp
     python/pybind11_timestamp
+    ${PROJECT_SOURCE_DIR}/tools/annotate_stub_incomplete.py
   WORKING_DIRECTORY python
   COMMAND_EXPAND_LISTS)
 endif()
