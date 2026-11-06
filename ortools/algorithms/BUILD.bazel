@@ -76,7 +76,7 @@ or_cc_test(
     name = "radix_sort_test",
     srcs = ["radix_sort_test.cc"],
     shard_count = 10,
-    tags = ["noci"],
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (140.9s)
     deps = [
         ":radix_sort",
         "//ortools/base:dump_vars",
@@ -140,7 +140,7 @@ or_cc_library(
 or_cc_test(
     name = "duplicate_remover_test",
     srcs = ["duplicate_remover_test.cc"],
-    tags = ["noci"],
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (30.3s)
     deps = [
         ":duplicate_remover",
         "//ortools/base:dump_vars",
@@ -566,6 +566,7 @@ or_cc_library(
 or_cc_test(
     name = "n_choose_k_test",
     srcs = ["n_choose_k_test.cc"],
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (31.7s)
     deps = [
         ":n_choose_k",
         "//ortools/base:dump_vars",
@@ -584,7 +585,7 @@ or_cc_test(
     name = "auto_radix_sort_test",
     srcs = ["auto_radix_sort_test.cc"],
     shard_count = 10,
-    tags = ["noci"],
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (201.7s)
     deps = [
         ":auto_radix_sort",
         ":radix_sort",

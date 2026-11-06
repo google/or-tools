@@ -17,7 +17,7 @@ package(default_visibility = ["//visibility:public"])
 
 java_library(
     name = "math_opt_proto_subject",
-    testonly = 1,
+    testonly = True,
     srcs = ["MathOptProtoSubject.java"],
     deps = [
         "@maven//:com_google_protobuf_protobuf_java",
@@ -28,7 +28,7 @@ java_library(
 
 java_library(
     name = "string_correspondences",
-    testonly = 1,
+    testonly = True,
     srcs = ["StringCorrespondences.java"],
     deps = [
         "@maven//:com_google_guava_guava",
@@ -38,7 +38,7 @@ java_library(
 
 java_library(
     name = "linear_constraint_subject",
-    testonly = 1,
+    testonly = True,
     srcs = ["LinearConstraintSubject.java"],
     deps = [
         "//ortools/java/com/google/ortools/mathopt:linear_constraint",

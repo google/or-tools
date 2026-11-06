@@ -12,20 +12,8 @@
 # limitations under the License.
 
 load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
-load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
-load("@protobuf//bazel:proto_library.bzl", "proto_library")
 
 package(default_visibility = ["//visibility:public"])
-
-proto_library(
-    name = "test_message_proto",
-    srcs = ["test_message.proto"],
-)
-
-java_proto_library(
-    name = "test_message_java_proto",
-    deps = [":test_message_proto"],
-)
 
 java_junit5_test(
     name = "StringCorrespondencesTest",
