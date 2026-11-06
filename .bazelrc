@@ -90,12 +90,12 @@ build:ci --notest_keep_going
 build:ci --test_output=errors
 
 # Skip tests that are too large to run on CI.
-build:ci --test_tag_filters=-noci
+build:ci --test_tag_filters=-oss:no_ci
 
 # Print information only about tests executed
 build:ci --test_summary=short
 
-# Options for nightly full test runs (includes slow tests tagged "noci").
+# Options for nightly full test runs (includes slow tests tagged "oss:no_ci").
 build:nightly --config=ci
 build:nightly --test_tag_filters=
 build:nightly --test_keep_going

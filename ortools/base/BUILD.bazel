@@ -59,10 +59,10 @@ or_cc_library(
     name = "version",
     srcs = ["version.cc"],
     hdrs = ["version.h"],
-    copts = [
-        "-DOR_TOOLS_MAJOR=10",
-        "-DOR_TOOLS_MINOR=0",
-        "-DOR_TOOLS_PATCH=9999",
+    local_defines = [
+        "OR_TOOLS_MAJOR=10",
+        "OR_TOOLS_MINOR=0",
+        "OR_TOOLS_PATCH=9999",
     ],
     deps = ["@abseil-cpp//absl/strings"],
 )

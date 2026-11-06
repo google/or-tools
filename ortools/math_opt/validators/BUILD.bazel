@@ -207,7 +207,7 @@ or_cc_test(
 
 or_cc_library(
     name = "enum_sets",
-    testonly = 1,
+    testonly = True,
     srcs = ["enum_sets.cc"],
     hdrs = ["enum_sets.h"],
     deps = [

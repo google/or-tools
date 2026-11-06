@@ -283,6 +283,7 @@ or_cc_library(
         ":solution_crush",
         ":synchronization",
         "//ortools/base:protobuf_util",
+        "//ortools/base:stl_util",
         "//ortools/base:types",
         "//ortools/base/macros:os_support",
         "//ortools/util:bitset",
@@ -1051,7 +1052,7 @@ or_cc_test(
     name = "cp_model_search_test",
     size = "medium",  # Dominated by BasicFixedSearchBehaviorTest.RandomHalfTest (~90% of runtime).
     srcs = ["cp_model_search_test.cc"],
-    tags = ["noci"],
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (60.1s)
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_solver",
@@ -1292,7 +1293,7 @@ or_cc_test(
     name = "cp_model_solver_test",
     size = "medium",
     srcs = ["cp_model_solver_test.cc"],
-    tags = ["noci"],
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (144.3s)
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_checker",
@@ -1467,6 +1468,7 @@ or_cc_library(
         ":util",
         "//ortools/base:base_export",
         "//ortools/base:log_severity",
+        "//ortools/base:stl_util",
         "//ortools/base:types",
         "//ortools/port:proto_utils",
         "//ortools/util:affine_relation",
@@ -1670,7 +1672,10 @@ or_cc_test(
         ":sat_parameters_cc_proto",
         "//ortools/base:gmock_main",
         "//ortools/base:parse_test_proto",
+        "//ortools/base:parse_text_proto",
+        "//ortools/util:affine_relation",
         "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
     ],
 )
@@ -1751,7 +1756,7 @@ or_cc_test(
     srcs = ["cp_model_presolve_test.cc"],
     tags = [
         "noautofuzz",
-        "noci",
+        "oss:no_ci",  # Disabled on OSS CI: too long (60.1s)
     ],
     deps = [
         ":cp_model_cc_proto",
@@ -1783,7 +1788,7 @@ or_cc_test(
     name = "cp_model_presolve_random_test",
     size = "medium",
     srcs = ["cp_model_presolve_random_test.cc"],
-    tags = ["noci"],
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (167.1s)
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_solver",
@@ -1870,7 +1875,7 @@ or_cc_test(
     size = "small",
     timeout = "moderate",
     srcs = ["cp_model_expand_test.cc"],
-    tags = ["noci"],
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (209.1s)
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_checker",
@@ -3007,7 +3012,7 @@ or_cc_test(
     size = "large",
     srcs = ["integer_expr_test.cc"],
     shard_count = 4,
-    tags = ["noci"],
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (235.1s)
     deps = [
         "cp_model_checker",
         "cp_model_solver",
@@ -3086,7 +3091,7 @@ or_cc_test(
     name = "linear_propagation_test",
     size = "medium",  # Dominated by AddWeightedSumLowerOrEqual.RandomTest (~99.9% of runtime).
     srcs = ["linear_propagation_test.cc"],
-    tags = ["noci"],
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (60.1s)
     deps = [
         ":integer",
         ":integer_base",
@@ -3844,7 +3849,7 @@ or_cc_library(
 or_cc_test(
     name = "scheduling_cuts_test",
     srcs = ["scheduling_cuts_test.cc"],
-    tags = ["noci"],
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (43.2s)
     deps = [
         ":cp_model",
         ":cp_model_cc_proto",
@@ -4123,7 +4128,7 @@ or_cc_library(
 or_cc_test(
     name = "util_test",
     srcs = ["util_test.cc"],
-    tags = ["noci"],
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (106.5s)
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_solver",
@@ -4471,7 +4476,7 @@ or_cc_test(
 
 or_cc_library(
     name = "2d_orthogonal_packing_testing",
-    testonly = 1,
+    testonly = True,
     srcs = ["2d_orthogonal_packing_testing.cc"],
     hdrs = ["2d_orthogonal_packing_testing.h"],
     deps = [
@@ -4489,7 +4494,7 @@ or_cc_test(
     size = "medium",
     srcs = ["2d_orthogonal_packing_test.cc"],
     shard_count = 4,
-    tags = ["noci"],
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (300.0s)
     deps = [
         ":2d_orthogonal_packing",
         ":2d_orthogonal_packing_testing",
@@ -4577,7 +4582,7 @@ or_cc_test(
     size = "medium",
     srcs = ["diffn_util_test.cc"],
     shard_count = 4,
-    tags = ["noci"],
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (48.1s)
     target_compatible_with = select({
         "@platforms//os:linux": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -4729,7 +4734,7 @@ or_cc_test(
     name = "circuit_test",
     size = "large",  # Dominated by CircuitConstraintTest.RandomCircuitConstraint (~99% of runtime).
     srcs = ["circuit_test.cc"],
-    tags = ["noci"],
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (300.0s)
     deps = [
         ":circuit",
         ":cp_model_cc_proto",
@@ -4843,7 +4848,7 @@ or_cc_test(
     name = "cp_model_lns_test",
     size = "medium",  # Dominated by GeneratorTest/3.BasicContract (~79% of runtime).
     srcs = ["cp_model_lns_test.cc"],
-    tags = ["noci"],
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (42.4s)
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_lns",

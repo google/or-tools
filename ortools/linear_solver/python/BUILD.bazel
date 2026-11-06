@@ -49,9 +49,9 @@ py_test(
         "//ortools/linear_solver/testdata:maximization.mps",
     ],
     tags = [
-        "noci",
         "not_build:arm",
         "not_run:arm",
+        "oss:no_ci",  # Disabled on OSS CI: too long (50.3s)
     ],
     deps = [
         ":model_builder_helper",
@@ -96,9 +96,9 @@ py_test(
         "//ortools/linear_solver/testdata:small_model.lp",
     ],
     tags = [
-        "noci",
         "not_build:arm",
         "not_run:arm",
+        "oss:no_ci",  # Disabled on OSS CI: too long (127.7s)
     ],
     deps = [
         ":model_builder",

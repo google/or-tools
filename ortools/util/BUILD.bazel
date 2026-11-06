@@ -16,6 +16,7 @@ load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_go//proto:def.bzl", "go_proto_library")
+load("//bazel:compilation_flags.bzl", "FP_ROUNDING_CODE")
 load("//bazel:or_cc_rules.bzl", "or_cc_binary", "or_cc_library", "or_cc_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -74,7 +75,9 @@ or_cc_library(
     name = "cached_log",
     srcs = ["cached_log.cc"],
     hdrs = ["cached_log.h"],
-    deps = ["@abseil-cpp//absl/log:check"],
+    deps = [
+        "@abseil-cpp//absl/log:check",
+    ],
 )
 
 or_cc_library(
@@ -237,11 +240,7 @@ or_cc_library(
     # -frounding-math is needed for code that uses IEEE-754 rounding modes.
     # You must also set this flag if you depend on this target and use its methods related to
     # IEEE-754 rounding modes.
-    copts = select({
-        "@rules_cc//cc/compiler:clang": ["-frounding-math"],
-        "@rules_cc//cc/compiler:gcc": ["-frounding-math"],
-        "//conditions:default": [],
-    }),
+    copts = FP_ROUNDING_CODE,
     deps = [
         ":bitset",
         ":full_precision_inequalities",
@@ -761,7 +760,7 @@ or_cc_test(
     size = "small",
     srcs = ["time_limit_test.cc"],
     flaky = 1,  # 2014-05-21: 102 failures over 10000 runs (forge, fastbuild).
-    tags = ["noci"],
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: flaky
     deps = [
         ":testing_utils",
         ":time_limit",
@@ -928,7 +927,7 @@ or_cc_library(
 or_cc_test(
     name = "random_subset_test",
     srcs = ["random_subset_test.cc"],
-    tags = ["noci"],
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (79.6s)
     deps = [
         ":random_engine",
         ":random_subset",
@@ -1052,7 +1051,7 @@ or_cc_test(
 or_cc_test(
     name = "full_precision_inequalities_test",
     srcs = ["full_precision_inequalities_test.cc"],
-    tags = ["noci"],
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (30.2s)
     deps = [
         ":full_precision_inequalities",
         "//ortools/base:gmock_main",
@@ -1268,7 +1267,7 @@ or_cc_test(
     name = "sort_test",
     size = "large",
     srcs = ["sort_test.cc"],
-    tags = ["noci"],
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (159.3s)
     deps = [
         ":sort",
         "//ortools/base:gmock_main",
@@ -1363,7 +1362,7 @@ or_cc_test(
 or_cc_test(
     name = "fixed_shape_binary_tree_test",
     srcs = ["fixed_shape_binary_tree_test.cc"],
-    tags = ["noci"],
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (169.0s)
     deps = [
         ":fixed_shape_binary_tree",
         "//ortools/base:gmock_main",

@@ -17,7 +17,7 @@ package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
 or_cc_library(
     name = "base_solver_test",
-    testonly = 1,
+    testonly = True,
     srcs = ["base_solver_test.cc"],
     hdrs = ["base_solver_test.h"],
     deps = [
@@ -29,7 +29,7 @@ or_cc_library(
 
 or_cc_library(
     name = "callback_tests",
-    testonly = 1,
+    testonly = True,
     srcs = ["callback_tests.cc"],
     hdrs = ["callback_tests.h"],
     data = [
@@ -66,7 +66,7 @@ or_cc_library(
 
 or_cc_library(
     name = "status_tests",
-    testonly = 1,
+    testonly = True,
     srcs = ["status_tests.cc"],
     hdrs = ["status_tests.h"],
     data = [
@@ -92,7 +92,7 @@ or_cc_library(
 
 or_cc_library(
     name = "lp_tests",
-    testonly = 1,
+    testonly = True,
     srcs = ["lp_tests.cc"],
     hdrs = ["lp_tests.h"],
     deps = [
@@ -112,7 +112,7 @@ or_cc_library(
 
 or_cc_library(
     name = "min_cost_flow_tests",
-    testonly = 1,
+    testonly = True,
     srcs = ["min_cost_flow_tests.cc"],
     hdrs = ["min_cost_flow_tests.h"],
     deps = [
@@ -131,7 +131,7 @@ or_cc_library(
 
 or_cc_library(
     name = "lp_incomplete_solve_tests",
-    testonly = 1,
+    testonly = True,
     srcs = ["lp_incomplete_solve_tests.cc"],
     hdrs = ["lp_incomplete_solve_tests.h"],
     deps = [
@@ -152,7 +152,7 @@ or_cc_library(
 
 or_cc_library(
     name = "invalid_input_tests",
-    testonly = 1,
+    testonly = True,
     srcs = ["invalid_input_tests.cc"],
     hdrs = ["invalid_input_tests.h"],
     deps = [
@@ -193,7 +193,7 @@ or_cc_test(
 
 or_cc_library(
     name = "mip_tests",
-    testonly = 1,
+    testonly = True,
     srcs = ["mip_tests.cc"],
     hdrs = ["mip_tests.h"],
     deps = [
@@ -210,7 +210,7 @@ or_cc_library(
 
 or_cc_library(
     name = "ip_model_solve_parameters_tests",
-    testonly = 1,
+    testonly = True,
     srcs = ["ip_model_solve_parameters_tests.cc"],
     hdrs = ["ip_model_solve_parameters_tests.h"],
     deps = [
@@ -229,7 +229,7 @@ or_cc_library(
 
 or_cc_library(
     name = "ip_multiple_solutions_tests",
-    testonly = 1,
+    testonly = True,
     srcs = ["ip_multiple_solutions_tests.cc"],
     hdrs = ["ip_multiple_solutions_tests.h"],
     deps = [
@@ -245,7 +245,7 @@ or_cc_library(
 
 or_cc_library(
     name = "lp_model_solve_parameters_tests",
-    testonly = 1,
+    testonly = True,
     srcs = ["lp_model_solve_parameters_tests.cc"],
     hdrs = ["lp_model_solve_parameters_tests.h"],
     deps = [
@@ -262,7 +262,7 @@ or_cc_library(
 
 or_cc_library(
     name = "lp_parameter_tests",
-    testonly = 1,
+    testonly = True,
     srcs = ["lp_parameter_tests.cc"],
     hdrs = ["lp_parameter_tests.h"],
     deps = [
@@ -283,7 +283,7 @@ or_cc_library(
 
 or_cc_library(
     name = "lp_initial_basis_tests",
-    testonly = 1,
+    testonly = True,
     srcs = ["lp_initial_basis_tests.cc"],
     hdrs = ["lp_initial_basis_tests.h"],
     deps = [
@@ -300,7 +300,7 @@ or_cc_library(
 
 or_cc_library(
     name = "ip_parameter_tests",
-    testonly = 1,
+    testonly = True,
     srcs = ["ip_parameter_tests.cc"],
     hdrs = ["ip_parameter_tests.h"],
     data = [
@@ -332,7 +332,7 @@ or_cc_library(
 
 or_cc_library(
     name = "multi_objective_tests",
-    testonly = 1,
+    testonly = True,
     srcs = ["multi_objective_tests.cc"],
     hdrs = ["multi_objective_tests.h"],
     data = [
@@ -361,7 +361,7 @@ or_cc_library(
 
 or_cc_library(
     name = "qp_tests",
-    testonly = 1,
+    testonly = True,
     srcs = ["qp_tests.cc"],
     hdrs = ["qp_tests.h"],
     deps = [
@@ -380,7 +380,7 @@ or_cc_library(
 
 or_cc_library(
     name = "qc_tests",
-    testonly = 1,
+    testonly = True,
     srcs = ["qc_tests.cc"],
     hdrs = ["qc_tests.h"],
     deps = [
@@ -398,7 +398,7 @@ or_cc_library(
 
 or_cc_library(
     name = "second_order_cone_tests",
-    testonly = 1,
+    testonly = True,
     srcs = ["second_order_cone_tests.cc"],
     hdrs = ["second_order_cone_tests.h"],
     deps = [
@@ -416,7 +416,7 @@ or_cc_library(
 
 or_cc_library(
     name = "logical_constraint_tests",
-    testonly = 1,
+    testonly = True,
     srcs = ["logical_constraint_tests.cc"],
     hdrs = ["logical_constraint_tests.h"],
     deps = [
@@ -436,7 +436,7 @@ or_cc_library(
 
 or_cc_library(
     name = "test_models",
-    testonly = 1,
+    testonly = True,
     srcs = ["test_models.cc"],
     hdrs = ["test_models.h"],
     deps = [
@@ -500,7 +500,7 @@ or_cc_library(
 
 or_cc_library(
     name = "infeasible_subsystem_tests",
-    testonly = 1,
+    testonly = True,
     srcs = ["infeasible_subsystem_tests.cc"],
     hdrs = ["infeasible_subsystem_tests.h"],
     deps = [

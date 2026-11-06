@@ -21,10 +21,10 @@ or_cc_library(
     name = "model_builder_helper",
     srcs = ["model_builder_helper.cc"],
     hdrs = ["model_builder_helper.h"],
-    copts = [
-        "-DUSE_HIGHS",
-        "-DUSE_PDLP",
-        "-DUSE_SCIP",
+    local_defines = [
+        "USE_HIGHS",
+        "USE_PDLP",
+        "USE_SCIP",
     ],
     tags = [
         "not_build:arm",

@@ -653,7 +653,7 @@ or_cc_test(
     name = "filters_test",
     srcs = ["filters_test.cc"],
     shard_count = 20,
-    tags = ["noci"],  # Disabled on OSS CI: too long (149.6s)
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (149.6s)
     deps = [
         ":enums_cc_proto",
         ":filter_committables",
@@ -723,7 +723,7 @@ or_cc_test(
     timeout = "long",
     srcs = ["routing_test.cc"],
     shard_count = 20,
-    tags = ["noci"],  # Disabled on OSS CI: too long (331.5s)
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (331.5s)
     deps = [
         ":enums_cc_proto",
         ":heuristic_parameters_cc_proto",
@@ -863,7 +863,7 @@ or_cc_test(
     size = "small",
     timeout = "moderate",
     srcs = ["sat_test.cc"],
-    tags = ["noci"],  # Disabled on OSS CI: too long (39.5s)
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (39.5s)
     deps = [
         ":index_manager",
         ":parameters",
@@ -935,7 +935,7 @@ or_cc_binary(
 or_cc_test(
     name = "lp_scheduling_test",
     srcs = ["lp_scheduling_test.cc"],
-    tags = ["noci"],  # Disabled on OSS CI: too long (48.2s)
+    tags = ["oss:no_ci"],  # Disabled on OSS CI: too long (48.2s)
     deps = [
         ":index_manager",
         ":lp_scheduling",

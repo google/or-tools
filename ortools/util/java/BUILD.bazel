@@ -120,7 +120,7 @@ or_cc_library(
 
 or_cc_binary(
     name = "gen_wrappers_test_message_java_swig",
-    testonly = 1,
+    testonly = True,
     srcs = ["gen_wrappers_test_message_java_swig.cc"],
     tags = ["manual"],
     deps = [
@@ -136,7 +136,7 @@ or_cc_binary(
 
 genrule(
     name = "run_gen_wrappers_test_message_java_swig",
-    testonly = 1,
+    testonly = True,
     outs = ["wrappers_test_message.swig"],
     cmd = "$(location :gen_wrappers_test_message_java_swig) > $@",
     tags = ["manual"],
