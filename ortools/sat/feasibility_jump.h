@@ -429,8 +429,7 @@ class FeasibilityJumpSolver : public SubSolver {
   // If VLOG_IS_ON(1), it will export a bunch of statistics.
   ~FeasibilityJumpSolver() override;
 
-  // No synchronization needed for TaskIsAvailable().
-  void Synchronize() final {}
+  void Synchronize() final;
 
   // Shall we delete this subsolver?
   bool IsDone() final {
@@ -454,8 +453,11 @@ class FeasibilityJumpSolver : public SubSolver {
   std::function<void()> GenerateTask(int64_t /*task_id*/) final;
 
  private:
+  friend class FeasibilityJumpSolverTestPeer;
+
   void ImportState();
   void ReleaseState();
+  bool CheckNewSolution();
 
   // Return false if we could not initialize the evaluator in the time limit.
   bool Initialize();
@@ -578,6 +580,7 @@ class FeasibilityJumpSolver : public SubSolver {
   std::vector<double> for_weight_update_;
 
   // The current state we work on, based on the `dense_model_` variables.
+  // In interleaved search it stays reserved until the next Synchronize().
   LsState* state_ = nullptr;
 
   // A list of `dense_model_` variables that might be relevant to check for

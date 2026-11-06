@@ -128,12 +128,23 @@ SharedLsStates::~SharedLsStates() {
 }
 
 FeasibilityJumpSolver::~FeasibilityJumpSolver() {
+  ReleaseState();
   stat_tables_->AddTimingStat(*this);
 }
 
+void FeasibilityJumpSolver::Synchronize() {
+  if (!params_.interleave_search()) return;
+  // The batch barrier has completed. States must not become available to
+  // other tasks in the same batch as a function of their completion order.
+  ReleaseState();
+  task_generated_ = false;
+}
+
 void FeasibilityJumpSolver::ImportState() {
-  state_ = states_->GetNextState(dense_model_.bounds_timestamp(),
-                                 dense_model_.equivalences_timestamp());
+  if (!params_.interleave_search()) {
+    state_ = states_->GetNextState(dense_model_.bounds_timestamp(),
+                                   dense_model_.equivalences_timestamp());
+  }
   const int num_variables = dense_model_.var_domains().size();
   if (state_->move == nullptr ||
       state_->move->NumVariables() != num_variables) {
@@ -142,11 +153,18 @@ void FeasibilityJumpSolver::ImportState() {
 }
 
 void FeasibilityJumpSolver::ReleaseState() {
-  if (!state_->solution.empty()) {
-    state_->input_solution = dense_model_.ReverseMapSolution(state_->solution);
-  }
+  if (state_ == nullptr) return;
   states_->Release(state_);
   state_ = nullptr;
+}
+
+bool FeasibilityJumpSolver::CheckNewSolution() {
+  if (type() != SubSolver::INCOMPLETE) return false;
+  const int64_t best = shared_response_->GetBestSolutionObjective().value();
+  if (best >= state_->last_solution_rank) return false;
+  states_->ResetLubyCounter();
+  state_->last_solution_rank = best;
+  return true;
 }
 
 bool FeasibilityJumpSolver::Initialize() {
@@ -380,9 +398,25 @@ std::string FeasibilityJumpSolver::OneLineStats() const {
 std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
   task_generated_ = true;  // Atomic.
 
-  return [this] {
-    state_ = nullptr;
-    const auto cleanup = absl::MakeCleanup([this] {
+  bool new_best_solution_was_found = false;
+  bool change_options = false;
+  if (params_.interleave_search()) {
+    // DeterministicLoop() prepares the whole batch sequentially. Reserve both
+    // the search state and its restart budget here, before dispatching tasks.
+    // A task that rebuilds its dense model will remap and resize this state.
+    state_ = states_->GetNextState(dense_model_.bounds_timestamp(),
+                                   dense_model_.equivalences_timestamp());
+    new_best_solution_was_found = CheckNewSolution();
+    change_options =
+        new_best_solution_was_found || state_->num_batches_before_change <= 0;
+    if (change_options && state_->options.use_restart) {
+      states_->ConfigureNextLubyRestart(state_);
+    }
+  }
+
+  return [this, new_best_solution_was_found, change_options]() mutable {
+    bool state_imported = false;
+    const auto cleanup = absl::MakeCleanup([this, &state_imported] {
       // TODO(user): Find better names. DeterministicTime() is maintained by
       // this class while deterministic_time() is the one saved in the
       // SubSolver base class.
@@ -397,10 +431,16 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
         shared_time_limit_->AdvanceDeterministicTime(delta);
       }
 
-      if (state_ != nullptr) {
-        ReleaseState();
+      // Keep conversion parallel and only use the mapping after ImportState().
+      // An early exit before import must leave the reserved state untouched.
+      if (state_imported && !state_->solution.empty()) {
+        state_->input_solution =
+            dense_model_.ReverseMapSolution(state_->solution);
       }
-      task_generated_ = false;  // Atomic.
+      if (!params_.interleave_search()) {
+        ReleaseState();
+        task_generated_ = false;  // Atomic.
+      }
     });
 
     // We delay initialization to the first task as it might be a bit slow
@@ -432,6 +472,7 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
 
     // Load the next state to work on.
     ImportState();
+    state_imported = true;
 
     bool reset_weights = false;
     if (state_->bounds_timestamp != dense_model_.bounds_timestamp() ||
@@ -454,17 +495,13 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
 
     // If we found a new best solution, we will restart all violation ls (we
     // still finish each batch though). We will also reset the luby sequence.
-    bool new_best_solution_was_found = false;
-    if (type() == SubSolver::INCOMPLETE) {
-      const int64_t best = shared_response_->GetBestSolutionObjective().value();
-      if (best < state_->last_solution_rank) {
-        states_->ResetLubyCounter();
-        new_best_solution_was_found = true;
-        state_->last_solution_rank = best;
-      }
+    if (!params_.interleave_search()) {
+      new_best_solution_was_found = CheckNewSolution();
+      change_options =
+          new_best_solution_was_found || state_->num_batches_before_change <= 0;
     }
 
-    if (new_best_solution_was_found || state_->num_batches_before_change <= 0) {
+    if (change_options) {
       reset_weights = true;
       if (state_->options.use_restart) {
         states_->CollectStatistics(*state_);
@@ -508,7 +545,9 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
 
       if (state_->options.use_restart) {
         ++state_->num_restarts;
-        states_->ConfigureNextLubyRestart(state_);
+        if (!params_.interleave_search()) {
+          states_->ConfigureNextLubyRestart(state_);
+        }
       } else {
         // TODO(user): Tune the improvement constant, maybe use luby.
         ++state_->counters.num_perturbations;
