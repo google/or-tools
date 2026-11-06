@@ -319,6 +319,15 @@ MPSolutionResponse SatSolveProtoInternal(
   if (params.mip_presolve_level() > 0) {
     update_shifts(ShiftToZeroAndMarkAsIntegerUnusedVariables(
         params, mp_model_wrapper.get(), logger));
+    // Note that it is valid to ignore constraint enforcement here and below:
+    // for any fixed assignment of the external integer variables, inactive
+    // enforced constraints simply drop rows from the residual LP, and any
+    // row-submatrix of a TUM (or 2-modular) matrix preserves its modularity,
+    // vertex integrality, and the top-n Cramer's rule bound in
+    // TightenComponentBounds(). This relies on all enforcement variables being
+    // treated as external, which holds here even with include_large_integers
+    // because only Boolean [0, 1] indicator enforcements exist before
+    // ExtractEnforcementLiterals().
     sat::MarkResidualTotallyUnimodularVariableAsInteger(
         params, mp_model_wrapper->mutable_underlying_model(), logger,
         /*only_tighten_bounds=*/true);
@@ -356,6 +365,9 @@ MPSolutionResponse SatSolveProtoInternal(
   }
 
   // Detects if at optimality some variable could always be made integer.
+  // Ignoring constraint enforcement is still valid after
+  // ExtractEnforcementLiterals() because all extracted enforcement variables
+  // are integer and therefore external when only_tighten_bounds is false.
   update_scaling(sat::MarkResidualTotallyUnimodularVariableAsInteger(
       params, mp_model_wrapper->mutable_underlying_model(), logger));
 
