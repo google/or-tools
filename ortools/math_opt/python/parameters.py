@@ -77,6 +77,8 @@ class SolverType(enum.Enum):
       do not use in production.
     XPRESS: FICO Xpress solver (third party). Supports LP, MIP, and QP/MIQP
       problems. Requires a local Xpress installation with XPRESSDIR set.
+    MOSEK: MOSEK solver (third party). Supports LP and MIP. Requires a MOSEK to
+      be installed and in the load path.
     MIN_COST_FLOW: Google's Min-Cost Flow solver. Uses a specialized solver for
       Min-Cost Flow problems (see
       https://developers.google.com/optimization/flow/mincostflow). Supports LP
@@ -105,6 +107,7 @@ class SolverType(enum.Enum):
     HIGHS = math_opt_parameters_pb2.SOLVER_TYPE_HIGHS
     SANTORINI = math_opt_parameters_pb2.SOLVER_TYPE_SANTORINI
     XPRESS = math_opt_parameters_pb2.SOLVER_TYPE_XPRESS
+    MOSEK = math_opt_parameters_pb2.SOLVER_TYPE_MOSEK
     MIN_COST_FLOW = math_opt_parameters_pb2.SOLVER_TYPE_MIN_COST_FLOW
 
 

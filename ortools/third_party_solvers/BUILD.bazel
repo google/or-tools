@@ -45,6 +45,22 @@ or_cc_library(
 )
 
 or_cc_library(
+    name = "mosek_environment",
+    srcs = ["mosekstable12_environment.cc"],
+    hdrs = ["mosekstable12_environment.h"],
+    deps = [
+        ":dynamic_library",
+        "//ortools/base:base_export",
+        "@abseil-cpp//absl/base:no_destructor",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
+    ],
+)
+
+or_cc_library(
     name = "xpress_environment",
     srcs = ["xpress_environment.cc"],
     hdrs = ["xpress_environment.h"],

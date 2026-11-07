@@ -41,7 +41,6 @@ def _init_args(
         gurobi=init_arguments.StreamableGurobiInitArguments(isv_key=gurobi_key)
     )
 
-
 class SolveTest(absltest.TestCase):
 
     def test_callback(self) -> None:

@@ -24,6 +24,7 @@ import "ortools/math_opt/solvers/gurobi.proto";
 import "ortools/math_opt/solvers/highs.proto";
 import "ortools/math_opt/solvers/osqp.proto";
 import "ortools/math_opt/solvers/xpress.proto";
+import "ortools/math_opt/solvers/mosek.proto";
 import "ortools/pdlp/solvers.proto";
 import "ortools/sat/sat_parameters.proto";
 
@@ -108,7 +109,7 @@ enum SolverTypeProto {
   // returned).
   SOLVER_TYPE_SANTORINI = 11;
 
-  reserved 12;
+  SOLVER_TYPE_MOSEK = 12;
 
   // Fico XPRESS solver (third party).
   //
@@ -391,6 +392,8 @@ message SolveParametersProto {
   HighsOptionsProto highs = 27;
 
   XpressParametersProto xpress = 28;
+
+  MosekParametersProto mosek = 29;
 
   reserved 11;  // Deleted
 }

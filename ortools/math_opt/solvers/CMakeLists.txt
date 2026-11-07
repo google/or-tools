@@ -27,6 +27,11 @@ if(NOT USE_GUROBI)
   list(FILTER _SRCS EXCLUDE REGEX "/gurobi_.*.h$")
   list(FILTER _SRCS EXCLUDE REGEX "/gurobi_.*.cc$")
 endif()
+if(NOT USE_MOSEK)
+  list(FILTER _SRCS EXCLUDE REGEX "/msoek/")
+  list(FILTER _SRCS EXCLUDE REGEX "/mosek_.*.h$")
+  list(FILTER _SRCS EXCLUDE REGEX "/msoek_.*.cc$")
+endif()
 if(NOT USE_HIGHS)
   list(FILTER _SRCS EXCLUDE REGEX "/highs_.*.h$")
   list(FILTER _SRCS EXCLUDE REGEX "/highs_.*.cc$")
@@ -247,6 +252,7 @@ if(USE_GLPK)
   )
 endif()
 
+
 if(USE_HIGHS)
   ortools_cxx_test(
     NAME
@@ -309,4 +315,37 @@ if(USE_XPRESS)
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_second_order_cone_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_qc_tests>"
   )
+endif()
+
+
+if(USE_MOSEK)
+  ortools_cxx_test(
+    NAME
+      math_opt_solvers_mosek_solver_test
+    SOURCES
+      "mosek_solver_test.cc"
+    LINK_LIBRARIES
+      ortools::base_gmock
+      GTest::gmock_main
+      absl::status
+      ortools::math_opt_matchers
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_callback_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_generic_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_infeasible_subsystem_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_ip_model_solve_parameters_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_ip_parameter_tests>"
+      #"$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_logical_constraint_tests>"
+      #"$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_incomplete_solve_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_model_solve_parameters_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_parameter_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_min_cost_flow_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_mip_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_multi_objective_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_status_tests>"
+  )
+  if(TARGET math_opt_solvers_mosek_solver_test)
+    set_tests_properties(cxx_math_opt_solvers_mosek_solver_test
+      PROPERTIES DISABLED TRUE)
+  endif()
 endif()
