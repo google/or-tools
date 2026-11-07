@@ -24,6 +24,7 @@
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/ascii.h"
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
@@ -267,6 +268,24 @@ bool LPParser::SetVariableBounds(ColIndex col, Fractional lb, Fractional ub) {
   return true;
 }
 
+// Returns true if `c` can continue a variable name (see kAddandPattern).
+bool IsNameChar(char c) {
+  return absl::ascii_isalnum(c) || c == '_' || c == '[' || c == ']' ||
+         c == ')';
+}
+
+// Like RE2::Consume(), but only accepts a match that ends a word, so that a
+// keyword such as "int" or "inf" is not matched as the prefix of a variable
+// name like "interest" or "inflow".
+template <typename... Args>
+bool ConsumeKeyword(StringPiece* sp, const RE2& pattern, Args*... args) {
+  StringPiece rest = *sp;
+  if (!RE2::Consume(&rest, pattern, args...)) return false;
+  if (!rest.empty() && IsNameChar(rest[0])) return false;
+  *sp = rest;
+  return true;
+}
+
 TokenType ConsumeToken(StringPiece* sp, std::string* consumed_name,
                        Fractional* consumed_coeff) {
   DCHECK(consumed_name != nullptr);
@@ -284,11 +303,15 @@ TokenType ConsumeToken(StringPiece* sp, std::string* consumed_name,
   // Return NAME if the next token is a line name, or integer variable list
   // indicator.
   static const LazyRE2 kNamePattern1 = {R"(\s*(\w[\w[\]]*):)"};
-  static const LazyRE2 kNamePattern2 = {R"((?i)\s*(int)\s*:?)"};
-  static const LazyRE2 kNamePattern3 = {R"((?i)\s*(bin)\s*:?)"};
+  static const LazyRE2 kNamePattern2 = {R"((?i)\s*(int))"};
+  static const LazyRE2 kNamePattern3 = {R"((?i)\s*(bin))"};
+  static const LazyRE2 kOptionalColonPattern = {R"(\s*:?)"};
   if (RE2::Consume(sp, *kNamePattern1, consumed_name)) return TokenType::NAME;
-  if (RE2::Consume(sp, *kNamePattern2, consumed_name)) return TokenType::NAME;
-  if (RE2::Consume(sp, *kNamePattern3, consumed_name)) return TokenType::NAME;
+  if (ConsumeKeyword(sp, *kNamePattern2, consumed_name) ||
+      ConsumeKeyword(sp, *kNamePattern3, consumed_name)) {
+    RE2::Consume(sp, *kOptionalColonPattern);
+    return TokenType::NAME;
+  }
 
   // Return SIGN_* if the next token is a relation sign.
   static const LazyRE2 kLePattern = {R"(\s*<=?)"};
@@ -311,8 +334,8 @@ TokenType ConsumeToken(StringPiece* sp, std::string* consumed_name,
   }
 
   // Return INF if the next token is an infinite value.
-  static const LazyRE2 kInfPattern = {R"((?i)\s*inf)"};
-  if (RE2::Consume(sp, *kInfPattern)) {
+  static const LazyRE2 kInfPattern = {R"((?i)\s*inf(?:inity)?)"};
+  if (ConsumeKeyword(sp, *kInfPattern)) {
     *consumed_coeff = minus_count % 2 == 0 ? kInfinity : -kInfinity;
     return TokenType::INF;
   }
