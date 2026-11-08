@@ -43,6 +43,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"
 #include "pybind11/stl.h"
+#include "pybind11/typing.h"
 
 namespace operations_research::sat::python {
 
@@ -897,6 +898,9 @@ void DefinePybindWrapperForConstraints(py::module& m) {
   Returns:
     self.)doc";
 
+  using BooleanLiteral = py::typing::Union<std::shared_ptr<Literal>, py::bool_,
+                                           py::int_, py::numpy_scalar<bool>>;
+
   py::class_<Constraint, std::shared_ptr<Constraint>>(m, "Constraint",
                                                       kConstraintDoc)
       .def(py::init<std::shared_ptr<CpBaseModel>, int>())
@@ -940,15 +944,18 @@ void DefinePybindWrapperForConstraints(py::module& m) {
       .def(
           "only_enforce_if",
           [](std::shared_ptr<Constraint> self,
-             const std::vector<std::shared_ptr<Literal>>& literals) {
-            for (const std::shared_ptr<Literal>& literal : literals) {
-              self->proto()->add_enforcement_literal(literal->index());
+             const std::vector<BooleanLiteral>& literals) {
+            for (const auto& literal : literals) {
+              self->proto()->add_enforcement_literal(
+                  self->model()->GetOrMakeBooleanIndex(literal));
             }
+            return self;
           },
           py::arg("literals"), kConstraintOnlyEnforceIfDoc)
       .def(
           "only_enforce_if",
-          [](std::shared_ptr<Constraint> self, py::args literals) {
+          [](std::shared_ptr<Constraint> self,
+             py::Args<BooleanLiteral> literals) {
             if (literals.size() == 1 &&
                 py::isinstance<py::sequence>(literals[0])) {
               py::sequence seq = literals[0].cast<py::sequence>();
@@ -962,6 +969,7 @@ void DefinePybindWrapperForConstraints(py::module& m) {
                     self->model()->GetOrMakeBooleanIndex(literal));
               }
             }
+            return self;
           },
           kConstraintOnlyEnforceIfDoc)
       // Pre PEP8 compatibility.
@@ -977,8 +985,17 @@ void DefinePybindWrapperForConstraints(py::module& m) {
              }
              return self;
            })
+      .def("OnlyEnforceIf",
+           [](std::shared_ptr<Constraint> self,
+              const std::vector<BooleanLiteral>& literals) {
+             for (const auto& literal : literals) {
+               self->proto()->add_enforcement_literal(
+                   self->model()->GetOrMakeBooleanIndex(literal));
+             }
+             return self;
+           })
       .def("OnlyEnforceIf", [](std::shared_ptr<Constraint> self,
-                               py::args literals) {
+                               py::Args<BooleanLiteral> literals) {
         if (literals.size() == 1 && py::isinstance<py::sequence>(literals[0])) {
           py::sequence seq = literals[0].cast<py::sequence>();
           for (const auto& literal : seq) {
@@ -991,6 +1008,7 @@ void DefinePybindWrapperForConstraints(py::module& m) {
                 self->model()->GetOrMakeBooleanIndex(literal));
           }
         }
+        return self;
       });
 
   static const char* kIntervalVarDoc = R"doc(
