@@ -32,6 +32,13 @@ class GurobiISVKeyTest(absltest.TestCase, compare_proto.MathOptProtoAssertions):
         self.assert_protos_equiv(isv.to_proto(), proto_isv)
         self.assertEqual(init_arguments.gurobi_isv_key_from_proto(proto_isv), isv)
 
+    def test_repr(self) -> None:
+        secret = "should not be visible"
+        isv = init_arguments.GurobiISVKey(
+            name="cat", application_name="hat", expiration=4, key=secret
+        )
+        self.assertNotIn(secret, repr(isv))
+
 
 class StreamableGurobiInitArgumentsTest(
     absltest.TestCase, compare_proto.MathOptProtoAssertions
