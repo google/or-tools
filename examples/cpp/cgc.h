@@ -35,8 +35,8 @@
 //      cgc.PrintSolution();
 //    }
 
-#ifndef ORTOOLS_EXAMPLES_CGC_H_
-#define ORTOOLS_EXAMPLES_CGC_H_
+#ifndef ORTOOLS_EXAMPLES_CPP_CGC_H_
+#define ORTOOLS_EXAMPLES_CPP_CGC_H_
 
 #include <algorithm>
 #include <memory>
@@ -90,4 +90,4 @@ class ConstrainedGuillotineCutting {
 
 }  // namespace operations_research
 
-#endif  // ORTOOLS_EXAMPLES_CGC_H_
+#endif  // ORTOOLS_EXAMPLES_CPP_CGC_H_

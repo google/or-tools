@@ -17,11 +17,13 @@
 #define ORTOOLS_UTIL_BITSET_H_
 
 #include <algorithm>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <iterator>
 #include <tuple>
+#include <type_traits>
 #include <vector>
 
 #include "absl/algorithm/container.h"
@@ -40,248 +42,181 @@ static const uint32_t kAllBits32 = 0xFFFFFFFFU;
 inline uint64_t OneBit64(int pos) { return uint64_t{1} << pos; }
 inline uint32_t OneBit32(int pos) { return 1U << pos; }
 
-// Returns the number of bits set in n.
-inline uint64_t BitCount64(uint64_t n) {
-  const uint64_t m1 = uint64_t{0x5555555555555555};
-  const uint64_t m2 = uint64_t{0x3333333333333333};
-  const uint64_t m4 = uint64_t{0x0F0F0F0F0F0F0F0F};
-  const uint64_t h01 = uint64_t{0x0101010101010101};
-  n -= (n >> 1) & m1;
-  n = (n & m2) + ((n >> 2) & m2);
-  n = (n + (n >> 4)) & m4;
-  n = (n * h01) >> 56;
-  return n;
-}
-inline uint32_t BitCount32(uint32_t n) {
-  n -= (n >> 1) & 0x55555555UL;
-  n = (n & 0x33333333) + ((n >> 2) & 0x33333333UL);
-  n = (n + (n >> 4)) & 0x0F0F0F0FUL;
-  n = n + (n >> 8);
-  n = n + (n >> 16);
-  return n & 0x0000003FUL;
-}
-
-// Returns a word with only the least significant bit of n set.
+// Returns the word with only the least significant bit of n set.
 inline uint64_t LeastSignificantBitWord64(uint64_t n) { return n & ~(n - 1); }
 inline uint32_t LeastSignificantBitWord32(uint32_t n) { return n & ~(n - 1); }
 
+namespace internal {
+
+// Performance comparison of LSB/MSB implementations (BM_BitIndex on x86-64):
+//
+// Operation | Implementation      | Scalar (kNo)  | Vectorizable loop (kYes)
+// ----------+---------------------+---------------+-------------------------
+// LSB 32    | kBasic (bsearch)    | ~238M items/s | ~438M items/s
+//           | kDeBruijn (lookup)  | ~1.07G items/s| ~3.15G items/s
+//           | kStd (countr_zero)  | ~1.08G items/s| ~1.59G items/s
+// ----------+---------------------+---------------+-------------------------
+// LSB 64    | kBasic (bsearch)    | ~201M items/s | ~365M items/s
+//           | kDeBruijn (lookup)  | ~1.08G items/s| ~3.18G items/s
+//           | kStd (countr_zero)  | ~1.08G items/s| ~1.07G items/s
+// ----------+---------------------+---------------+-------------------------
+// MSB 32    | kBasic (bsearch)    | ~247M items/s | ~462M items/s
+//           | kStd (countl_zero)  | ~643M items/s | ~800M items/s
+// ----------+---------------------+---------------+-------------------------
+// MSB 64    | kBasic (bsearch)    | ~207M items/s | ~356M items/s
+//           | kStd (countl_zero)  | ~427M items/s | ~639M items/s
+
+// Implementation notes:
+// Alternative algorithms are retained here to allow performance evaluation in
+// benchmarks across platforms, though the default implementation (kStd) is
+// usually the best choice.
+// - kStd (C++20 <bit>): Portable and compiles down to hardware bit-scan
+//   instructions (tzcnt/bsf and lzcnt/bsr). Guarding n == 0 in
+//   MostSignificantBitPosition matches the contract of kBasic and allows the
+//   compiler to fold `31 - (31 ^ bsr(n))` into `bsr(n)` on baseline x86-64
+//   targets without LZCNT.
+// - kDeBruijn (De Bruijn multiplication + 64/32-entry table lookup): Matches
+//   hardware instruction latency in scalar dependency chains and achieves ~2x
+//   higher throughput in tight independent loops because the
+//   multiply-shift-load sequence pipelines across multiple execution ports, at
+//   the cost of a static lookup table in L1 cache.
+// - kBasic (binary search / shift-and-mask fallback): ~3-5x slower than
+//   hardware bit-scan or De Bruijn implementations due to sequential
+//   conditional masks and shifts.
+enum class BitScanAlgorithm {
+  kStd,
+  kDeBruijn,
+  kBasic,
+};
+
+template <BitScanAlgorithm algo = BitScanAlgorithm::kStd, typename T>
+inline int LeastSignificantBitPosition(T n) {
+  static_assert(std::is_same_v<T, uint32_t> || std::is_same_v<T, uint64_t>,
+                "Unsupported integer type");
+  if constexpr (algo == BitScanAlgorithm::kStd) {
+    return std::countr_zero(n);
+  } else if constexpr (algo == BitScanAlgorithm::kDeBruijn) {
+    if constexpr (std::is_same_v<T, uint64_t>) {
+      static constexpr uint64_t kSeq = uint64_t{0x0218a392dd5fb34f};
+      static constexpr int kTab[64] = {
+          // initialized by 'kTab[(kSeq << i) >> 58] = i
+          0,  1,  2,  7,  3,  13, 8,  19, 4,  25, 14, 28, 9,  52, 20, 58,
+          5,  17, 26, 56, 15, 38, 29, 40, 10, 49, 53, 31, 21, 34, 59, 42,
+          63, 6,  12, 18, 24, 27, 51, 57, 16, 55, 37, 39, 48, 30, 33, 41,
+          62, 11, 23, 50, 54, 36, 47, 32, 61, 22, 35, 46, 60, 45, 44, 43,
+      };
+      return kTab[((n & (~n + 1)) * kSeq) >> 58];
+    } else {
+      static constexpr uint32_t kSeq = 0x077CB531U;  // de Bruijn sequence
+      static constexpr int kTab[32] = {
+          // initialized by 'kTab[(kSeq << i) >> 27] = i
+          0,  1,  28, 2,  29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4,  8,
+          31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6,  11, 5,  10, 9};
+      return kTab[((n & (~n + 1)) * kSeq) >> 27];
+    }
+  } else if constexpr (algo == BitScanAlgorithm::kBasic) {
+    DCHECK_NE(n, 0);
+    int pos = sizeof(T) * 8 - 1;
+    if constexpr (std::is_same_v<T, uint64_t>) {
+      if (n & 0x00000000FFFFFFFFLL) {
+        pos -= 32;
+      } else {
+        n >>= 32;
+      }
+    }
+    if (n & 0x0000FFFFL) {
+      pos -= 16;
+    } else {
+      n >>= 16;
+    }
+    if (n & 0x000000FFL) {
+      pos -= 8;
+    } else {
+      n >>= 8;
+    }
+    if (n & 0x0000000FL) {
+      pos -= 4;
+    } else {
+      n >>= 4;
+    }
+    if (n & 0x00000003L) {
+      pos -= 2;
+    } else {
+      n >>= 2;
+    }
+    if (n & 0x00000001L) {
+      pos -= 1;
+    }
+    return pos;
+  } else {
+    static_assert(algo == BitScanAlgorithm::kStd, "Unsupported algorithm");
+  }
+}
+
+template <BitScanAlgorithm algo = BitScanAlgorithm::kStd, typename T>
+inline int MostSignificantBitPosition(T n) {
+  static_assert(std::is_same_v<T, uint32_t> || std::is_same_v<T, uint64_t>,
+                "Unsupported integer type");
+  static_assert(algo != BitScanAlgorithm::kDeBruijn,
+                "DeBruijn is not implemented for MostSignificantBitPosition");
+  if constexpr (algo == BitScanAlgorithm::kStd) {
+    constexpr int kMaxBit = sizeof(T) * 8 - 1;
+    return n == 0 ? 0 : (kMaxBit - std::countl_zero(n));
+  } else if constexpr (algo == BitScanAlgorithm::kBasic) {
+    constexpr T kAllBits = ~T{0};
+    int b = 0;
+    if constexpr (std::is_same_v<T, uint64_t>) {
+      if (0 != (n & (kAllBits << (1 << 5)))) {
+        b |= (1 << 5);
+        n >>= (1 << 5);
+      }
+    }
+    if (0 != (n & (kAllBits << (1 << 4)))) {
+      b |= (1 << 4);
+      n >>= (1 << 4);
+    }
+    if (0 != (n & (kAllBits << (1 << 3)))) {
+      b |= (1 << 3);
+      n >>= (1 << 3);
+    }
+    if (0 != (n & (kAllBits << (1 << 2)))) {
+      b |= (1 << 2);
+      n >>= (1 << 2);
+    }
+    if (0 != (n & (kAllBits << (1 << 1)))) {
+      b |= (1 << 1);
+      n >>= (1 << 1);
+    }
+    if (0 != (n & (kAllBits << (1 << 0)))) {
+      b |= (1 << 0);
+    }
+    return b;
+  } else {
+    static_assert(algo == BitScanAlgorithm::kStd, "Unsupported algorithm");
+  }
+}
+
+}  // namespace internal
+
 // Returns the least significant bit position in n.
-// Discussion around lsb computation:
-// De Bruijn is almost as fast as the bsr/bsf-instruction-based intrinsics.
-// Both are always much faster than the Default algorithm.
-#define USE_DEBRUIJN true  // if true, use de Bruijn bit forward scanner.
-#if defined(__GNUC__) || defined(__llvm__)
-#define ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT \
-  true  // if true, use fast lsb.
-#endif
-
-#if defined(ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT)
-inline int LeastSignificantBitPosition64Fast(uint64_t n) {
-  return __builtin_ctzll(n);
-}
-#endif
-
-inline int LeastSignificantBitPosition64DeBruijn(uint64_t n) {
-  static const uint64_t kSeq = uint64_t{0x0218a392dd5fb34f};
-  static const int kTab[64] = {
-      // initialized by 'kTab[(kSeq << i) >> 58] = i
-      0,  1,  2,  7,  3,  13, 8,  19, 4,  25, 14, 28, 9,  52, 20, 58,
-      5,  17, 26, 56, 15, 38, 29, 40, 10, 49, 53, 31, 21, 34, 59, 42,
-      63, 6,  12, 18, 24, 27, 51, 57, 16, 55, 37, 39, 48, 30, 33, 41,
-      62, 11, 23, 50, 54, 36, 47, 32, 61, 22, 35, 46, 60, 45, 44, 43,
-  };
-  return kTab[((n & (~n + 1)) * kSeq) >> 58];
-}
-
-inline int LeastSignificantBitPosition64Default(uint64_t n) {
-  DCHECK_NE(n, 0);
-  int pos = 63;
-  if (n & 0x00000000FFFFFFFFLL) {
-    pos -= 32;
-  } else {
-    n >>= 32;
-  }
-  if (n & 0x000000000000FFFFLL) {
-    pos -= 16;
-  } else {
-    n >>= 16;
-  }
-  if (n & 0x00000000000000FFLL) {
-    pos -= 8;
-  } else {
-    n >>= 8;
-  }
-  if (n & 0x000000000000000FLL) {
-    pos -= 4;
-  } else {
-    n >>= 4;
-  }
-  if (n & 0x0000000000000003LL) {
-    pos -= 2;
-  } else {
-    n >>= 2;
-  }
-  if (n & 0x0000000000000001LL) {
-    pos -= 1;
-  }
-  return pos;
-}
-
 inline int LeastSignificantBitPosition64(uint64_t n) {
   DCHECK_NE(n, 0);
-#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
-  return LeastSignificantBitPosition64Fast(n);
-#elif defined(USE_DEBRUIJN)
-  return LeastSignificantBitPosition64DeBruijn(n);
-#else
-  return LeastSignificantBitPosition64Default(n);
-#endif
-}
-
-#if defined(ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT)
-inline int LeastSignificantBitPosition32Fast(uint32_t n) {
-  return __builtin_ctzl(n);
-}
-#endif
-
-inline int LeastSignificantBitPosition32DeBruijn(uint32_t n) {
-  static const uint32_t kSeq = 0x077CB531U;  // de Bruijn sequence
-  static const int kTab[32] = {// initialized by 'kTab[(kSeq << i) >> 27] = i
-                               0,  1,  28, 2,  29, 14, 24, 3,  30, 22, 20,
-                               15, 25, 17, 4,  8,  31, 27, 13, 23, 21, 19,
-                               16, 7,  26, 12, 18, 6,  11, 5,  10, 9};
-  return kTab[((n & (~n + 1)) * kSeq) >> 27];
-}
-
-inline int LeastSignificantBitPosition32Default(uint32_t n) {
-  DCHECK_NE(n, 0);
-  int pos = 31;
-  if (n & 0x0000FFFFL) {
-    pos -= 16;
-  } else {
-    n >>= 16;
-  }
-  if (n & 0x000000FFL) {
-    pos -= 8;
-  } else {
-    n >>= 8;
-  }
-  if (n & 0x0000000FL) {
-    pos -= 4;
-  } else {
-    n >>= 4;
-  }
-  if (n & 0x00000003L) {
-    pos -= 2;
-  } else {
-    n >>= 2;
-  }
-  if (n & 0x00000001L) {
-    pos -= 1;
-  }
-  return pos;
+  return internal::LeastSignificantBitPosition(n);
 }
 
 inline int LeastSignificantBitPosition32(uint32_t n) {
   DCHECK_NE(n, 0);
-#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
-  return LeastSignificantBitPosition32Fast(n);
-#elif defined(USE_DEBRUIJN)
-  return LeastSignificantBitPosition32DeBruijn(n);
-#else
-  return LeastSignificantBitPosition32Default(n);
-#endif
+  return internal::LeastSignificantBitPosition(n);
 }
 
 // Returns the most significant bit position in n.
-#if ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
-inline int MostSignificantBitPosition64Fast(uint64_t n) {
-  // __builtin_clzll(1) should always return 63. There is no penalty in
-  // using offset, and the code looks more like its uint32_t counterpart.
-  const int offset = __builtin_clzll(1);
-  return n == 0 ? 0 : (offset - __builtin_clzll(n));
-}
-#endif
-
-inline int MostSignificantBitPosition64Default(uint64_t n) {
-  int b = 0;
-  if (0 != (n & (kAllBits64 << (1 << 5)))) {
-    b |= (1 << 5);
-    n >>= (1 << 5);
-  }
-  if (0 != (n & (kAllBits64 << (1 << 4)))) {
-    b |= (1 << 4);
-    n >>= (1 << 4);
-  }
-  if (0 != (n & (kAllBits64 << (1 << 3)))) {
-    b |= (1 << 3);
-    n >>= (1 << 3);
-  }
-  if (0 != (n & (kAllBits64 << (1 << 2)))) {
-    b |= (1 << 2);
-    n >>= (1 << 2);
-  }
-  if (0 != (n & (kAllBits64 << (1 << 1)))) {
-    b |= (1 << 1);
-    n >>= (1 << 1);
-  }
-  if (0 != (n & (kAllBits64 << (1 << 0)))) {
-    b |= (1 << 0);
-  }
-  return b;
-}
-
 inline int MostSignificantBitPosition64(uint64_t n) {
-#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
-  return MostSignificantBitPosition64Fast(n);
-#else
-  return MostSignificantBitPosition64Default(n);
-#endif
-}
-
-#if ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
-inline int MostSignificantBitPosition32Fast(uint32_t n) {
-  // The constant here depends on whether we are on a 32-bit or 64-bit machine.
-  // __builtin_clzl(1) returns 63 on a 64-bit machine and 31 on a 32-bit
-  // machine.
-  const int offset = __builtin_clzl(1);
-  return n == 0 ? 0 : (offset - __builtin_clzl(n));
-}
-#endif
-
-inline int MostSignificantBitPosition32Default(uint32_t n) {
-  int b = 0;
-  if (0 != (n & (kAllBits32 << (1 << 4)))) {
-    b |= (1 << 4);
-    n >>= (1 << 4);
-  }
-  if (0 != (n & (kAllBits32 << (1 << 3)))) {
-    b |= (1 << 3);
-    n >>= (1 << 3);
-  }
-  if (0 != (n & (kAllBits32 << (1 << 2)))) {
-    b |= (1 << 2);
-    n >>= (1 << 2);
-  }
-  if (0 != (n & (kAllBits32 << (1 << 1)))) {
-    b |= (1 << 1);
-    n >>= (1 << 1);
-  }
-  if (0 != (n & (kAllBits32 << (1 << 0)))) {
-    b |= (1 << 0);
-  }
-  return b;
+  return internal::MostSignificantBitPosition(n);
 }
 
 inline int MostSignificantBitPosition32(uint32_t n) {
-#ifdef ORTOOLS_BITSET_USE_FAST_LEAST_SIGNIFICANT_BIT
-  return MostSignificantBitPosition32Fast(n);
-#else
-  return MostSignificantBitPosition32Default(n);
-#endif
+  return internal::MostSignificantBitPosition(n);
 }
-
-#undef USE_DEBRUIJN
 
 // Returns a word with bits from s to e set.
 inline uint64_t OneRange64(uint64_t s, uint64_t e) {
@@ -411,33 +346,34 @@ class Bitset64 {
   template <typename DataType>
   class ViewImpl {
    public:
-    explicit ViewImpl(const Bitset64* bitset) : data_(bitset->data_.data()) {}
-    explicit ViewImpl(Bitset64* bitset) : data_(bitset->data_.data()) {}
+    explicit ViewImpl(const Bitset64* bitset)
+        : buckets_(bitset->buckets_.data()) {}
+    explicit ViewImpl(Bitset64* bitset) : buckets_(bitset->buckets_.data()) {}
 
     bool operator[](IndexType i) const {
-      return data_[BitOffset64(Value(i))] & OneBit64(BitPos64(Value(i)));
+      return buckets_[BitOffset64(Value(i))] & OneBit64(BitPos64(Value(i)));
     }
 
     void Clear(IndexType i) {
-      data_[BitOffset64(Value(i))] &= ~OneBit64(BitPos64(Value(i)));
+      buckets_[BitOffset64(Value(i))] &= ~OneBit64(BitPos64(Value(i)));
     }
 
     void Set(IndexType i) {
-      data_[BitOffset64(Value(i))] |= OneBit64(BitPos64(Value(i)));
+      buckets_[BitOffset64(Value(i))] |= OneBit64(BitPos64(Value(i)));
     }
 
    private:
-    DataType* const data_;
+    DataType* const buckets_;
   };
 
  public:
   using ConstView = ViewImpl<const uint64_t>;
   using View = ViewImpl<uint64_t>;
 
-  Bitset64() : size_(), data_() {}
+  Bitset64() : size_(), buckets_() {}
   explicit Bitset64(IndexType size)
       : size_(Value(size) > 0 ? size : IndexType(0)),
-        data_(BitLength64(Value(size_))) {}
+        buckets_(BitLength64(Value(size_))) {}
 
   ConstView const_view() const { return ConstView(this); }
   View view() { return View(this); }
@@ -451,48 +387,49 @@ class Bitset64 {
     DCHECK_GE(Value(size), 0);
     IndexType new_size = Value(size) > 0 ? size : IndexType(0);
     if (new_size < size_ && Value(new_size) > 0) {
-      const int64_t new_data_size = BitLength64(Value(new_size));
+      const int64_t new_buckets_size = BitLength64(Value(new_size));
       const uint64_t bitmask = kAllBitsButLsb64
                                << BitPos64(Value(new_size) - 1);
-      data_[new_data_size - 1] &= ~bitmask;
+      buckets_[new_buckets_size - 1] &= ~bitmask;
     }
     size_ = new_size;
-    data_.resize(BitLength64(Value(size_)), 0);
+    buckets_.resize(BitLength64(Value(size_)), 0);
   }
 
   // Resizes the bitset to `size` bits and resets all bits to 0.
   void ClearAndResize(IndexType size) {
     DCHECK_GE(Value(size), 0);
     size_ = Value(size) > 0 ? size : IndexType(0);
-    data_.resize(BitLength64(Value(size_)));
+    buckets_.resize(BitLength64(Value(size_)));
     ClearAll();
   }
 
   // Resets all bits to 0.
   void ClearAll() {
     // Lowered by the compiler to a single `memset` call.
-    absl::c_fill(data_, uint64_t{0});
+    absl::c_fill(buckets_, uint64_t{0});
   }
 
   // Sets the bit at position i to 0.
   void Clear(IndexType i) {
     DCHECK_GE(Value(i), 0);
     DCHECK_LT(Value(i), Value(size_));
-    data_.data()[BitOffset64(Value(i))] &= ~OneBit64(BitPos64(Value(i)));
+    buckets_.data()[BitOffset64(Value(i))] &= ~OneBit64(BitPos64(Value(i)));
   }
 
   // Sets bucket containing bit i to 0.
   void ClearBucket(IndexType i) {
     DCHECK_GE(Value(i), 0);
     DCHECK_LT(Value(i), Value(size_));
-    data_.data()[BitOffset64(Value(i))] = 0;
+    buckets_.data()[BitOffset64(Value(i))] = 0;
   }
 
   // Returns true if the bit at position i is set.
   bool IsSet(IndexType i) const {
     DCHECK_GE(Value(i), 0);
     DCHECK_LT(Value(i), Value(size_));
-    return data_.data()[BitOffset64(Value(i))] & OneBit64(BitPos64(Value(i)));
+    return buckets_.data()[BitOffset64(Value(i))] &
+           OneBit64(BitPos64(Value(i)));
   }
 
   // Same as IsSet().
@@ -503,7 +440,7 @@ class Bitset64 {
     DCHECK_GE(Value(i), 0);
     DCHECK_LT(Value(i), Value(size_));
     // The c++ hardening is costly here, so we disable it.
-    data_.data()[BitOffset64(Value(i))] |= OneBit64(BitPos64(Value(i)));
+    buckets_.data()[BitOffset64(Value(i))] |= OneBit64(BitPos64(Value(i)));
   }
 
   // If value is true, sets the bit at position i to 1, sets it to 0 otherwise.
@@ -518,16 +455,16 @@ class Bitset64 {
   // Copies bucket containing bit i from "other" to "this".
   void CopyBucket(const Bitset64<IndexType>& other, IndexType i) {
     const uint64_t offset = BitOffset64(Value(i));
-    data_[offset] = other.data_[offset];
+    buckets_[offset] = other.buckets_[offset];
   }
 
   // Replaces `*this` with the bitwise intersection of `*this` and `other`. The
   // bitsets do not have to be the same size; if `other` is smaller,
   // higher-order bits are cleared to 0.
   void Intersection(const Bitset64& other) {
-    const auto it =
-        absl::c_transform(data_, other.data_, data_.begin(), std::bit_and<>{});
-    std::fill(it, data_.end(), uint64_t{0});
+    const auto it = absl::c_transform(buckets_, other.buckets_,
+                                      buckets_.begin(), std::bit_and<>{});
+    std::fill(it, buckets_.end(), uint64_t{0});
   }
 
   // Sets `*this` to the bitwise intersection of `a` and `b`, which must have
@@ -535,7 +472,8 @@ class Bitset64 {
   void SetToIntersectionOf(const Bitset64& a, const Bitset64& b) {
     DCHECK_EQ(a.size(), b.size());
     Resize(a.size());
-    absl::c_transform(a.data_, b.data_, data_.begin(), std::bit_and<>{});
+    absl::c_transform(a.buckets_, b.buckets_, buckets_.begin(),
+                      std::bit_and<>{});
   }
 
   // Replaces `*this` with the bitwise union of `*this` and `other`. The bitsets
@@ -543,12 +481,14 @@ class Bitset64 {
   // of `*this` are unchanged, and if `other` is larger, its extra bits are
   // ignored.
   void Union(const Bitset64& other) {
-    absl::c_transform(data_, other.data_, data_.begin(), std::bit_or<>{});
+    absl::c_transform(buckets_, other.buckets_, buckets_.begin(),
+                      std::bit_or<>{});
   }
 
   // Returns true if all bits are 0.
   bool IsAllFalse() const {
-    return absl::c_all_of(data_, [](uint64_t bucket) { return bucket == 0; });
+    return absl::c_all_of(buckets_,
+                          [](uint64_t bucket) { return bucket == 0; });
   }
 
   // Class to iterate over the bit positions at 1 of a Bitset64.
@@ -559,7 +499,7 @@ class Bitset64 {
    public:
     // Make this iterator a std::forward_iterator, so it works with std::sample,
     // std::max_element, etc.
-    Iterator() : data_(nullptr), size_(0) {}
+    Iterator() : buckets_(nullptr), size_(0) {}
     Iterator(Iterator&& other) = default;
     Iterator(const Iterator& other) = default;
     Iterator& operator=(const Iterator& other) = default;
@@ -571,15 +511,15 @@ class Bitset64 {
     using pointer = value_type*;
 
     explicit Iterator(const Bitset64& bitset)
-        : data_(bitset.data_.data()), size_(bitset.data_.size()) {
-      if (!bitset.data_.empty()) {
-        current_ = data_[0];
+        : buckets_(bitset.buckets_.data()), size_(bitset.buckets_.size()) {
+      if (!bitset.buckets_.empty()) {
+        current_ = buckets_[0];
         this->operator++();
       }
     }
 
     static Iterator EndIterator(const Bitset64& bitset) {
-      return Iterator(bitset.data_.data());
+      return Iterator(bitset.buckets_.data());
     }
 
     bool operator==(const Iterator& other) const { return !(*this != other); }
@@ -607,7 +547,7 @@ class Bitset64 {
           size_ = 0;
           return *this;
         }
-        current_ = data_[bucket];
+        current_ = buckets_[bucket];
       }
 
       // Computes the index and clear the least significant bit of current_.
@@ -617,9 +557,9 @@ class Bitset64 {
     }
 
    private:
-    explicit Iterator(const uint64_t* data) : data_(data), size_(0) {}
+    explicit Iterator(const uint64_t* buckets) : buckets_(buckets), size_(0) {}
 
-    const uint64_t* data_;
+    const uint64_t* buckets_;
     int size_;
     int index_ = 0;
     uint64_t current_ = 0;
@@ -636,7 +576,7 @@ class Bitset64 {
   static int Value(IndexType input);
 
   IndexType size_;
-  std::vector<uint64_t> data_;
+  std::vector<uint64_t> buckets_;
 };
 
 // Specialized version of Bitset64 that allows to query the last bit set more

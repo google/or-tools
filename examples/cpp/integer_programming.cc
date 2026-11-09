@@ -71,7 +71,7 @@ void RunIntegerProgrammingExample(const std::string& solver_id) {
   LOG(INFO) << "Optimal objective value = " << objective->Value();
   LOG(INFO) << "";
   LOG(INFO) << "Advanced usage:";
-  LOG(INFO) << "Problem solved in " << solver->wall_time() << " milliseconds";
+  LOG(INFO) << "Problem solved in " << solver->DurationSinceConstruction();
   LOG(INFO) << "Problem solved in " << solver->iterations() << " iterations";
   LOG(INFO) << "Problem solved in " << solver->nodes()
             << " branch-and-bound nodes";
