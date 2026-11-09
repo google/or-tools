@@ -29,6 +29,7 @@
 // The purpose of the example is to demonstrates how to write local
 // search operators and local search filters.
 
+#include <bit>
 #include <cstdint>
 #include <cstdlib>
 #include <random>
@@ -466,7 +467,7 @@ class DobbleFilter : public IntVarLocalSearchFilter {
     }
     for (int card1 = 0; card1 < num_cards_; ++card1) {
       for (int card2 = 0; card2 < num_cards_; ++card2) {
-        violation_costs_[card1][card2] = ViolationCost(BitCount64(
+        violation_costs_[card1][card2] = ViolationCost(std::popcount(
             symbol_bitmask_per_card_[card1] & symbol_bitmask_per_card_[card2]));
       }
     }
@@ -561,8 +562,8 @@ class DobbleFilter : public IntVarLocalSearchFilter {
       const std::vector<int>& row_cost = violation_costs_[touched];
       for (int other_card = 0; other_card < num_cards_; ++other_card) {
         if (!IsBitSet64(&temporary_bitset_, other_card)) {
-          cost_delta += ViolationCost(
-              BitCount64(card_bitset & symbol_bitmask_per_card_[other_card]));
+          cost_delta += ViolationCost(std::popcount(
+              card_bitset & symbol_bitmask_per_card_[other_card]));
           cost_delta -= row_cost[other_card];
         }
       }
@@ -615,9 +616,9 @@ class DobbleFilter : public IntVarLocalSearchFilter {
   // num_symbols_per_card symbols on it.
   bool CheckCards() {
     for (int i = 0; i < num_cards_; ++i) {
-      if (num_symbols_per_card_ != BitCount64(symbol_bitmask_per_card_[i])) {
+      if (num_symbols_per_card_ != std::popcount(symbol_bitmask_per_card_[i])) {
         VLOG(1) << "card " << i << " has bitset of size "
-                << BitCount64(symbol_bitmask_per_card_[i]);
+                << std::popcount(symbol_bitmask_per_card_[i]);
         return false;
       }
     }
