@@ -140,10 +140,8 @@ std::string Model::RouteDimensionTravelInfo::TransitionInfo::DebugString(
 
 void Model::AppendDecisionBuildersForPackingCumuls(
     std::vector<DecisionBuilder*>* decision_builders) const {
-  if (search_parameters_
-          .disable_scheduling_beware_this_may_degrade_performance()) {
-    return;
-  }
+  DCHECK(!search_parameters_
+              .disable_scheduling_beware_this_may_degrade_performance());
   DCHECK(!local_dimension_optimizers_info_.optimizers.empty() ||
          !global_dimension_optimizers_info_.optimizers.empty());
   for (auto& [lp_optimizer, mp_optimizer] :
@@ -170,10 +168,8 @@ void Model::AppendDecisionBuilderForOptimizingCumulsWithDimensionTravelInfo(
     std::vector<DecisionBuilder*>* decision_builders) {
   DCHECK_NE(dimension, nullptr);
   DCHECK_EQ(dimension->model(), this);
-  if (search_parameters_
-          .disable_scheduling_beware_this_may_degrade_performance()) {
-    return;
-  }
+  DCHECK(!search_parameters_
+              .disable_scheduling_beware_this_may_degrade_performance());
   // NOTE: We disable the packing steps when optimizing for cumul-dependent
   // transits to avoid failures due to precision errors for this complex
   // optimizer objective function.
@@ -194,30 +190,63 @@ void Model::AppendDecisionBuilderForOptimizingCumulsWithDimensionTravelInfo(
   }
 }
 
+void Model::AppendDecisionBuildersForOptimizingCumulsWithTransitTargets(
+    const Dimension* dimension,
+    std::vector<TransitTargetInfo> transit_target_info_per_route,
+    std::vector<DecisionBuilder*>* decision_builders) {
+  DCHECK_NE(dimension, nullptr);
+  DCHECK_EQ(dimension->model(), this);
+  DCHECK(!search_parameters_
+              .disable_scheduling_beware_this_may_degrade_performance());
+  const auto [lp_optimizer, mp_optimizer] =
+      GetOrCreateLocalCumulOptimizers(*dimension);
+  decision_builders->push_back(MakeSetCumulsFromLocalDimensionCosts(
+      solver_.get(), lp_optimizer, mp_optimizer,
+      std::move(transit_target_info_per_route)));
+}
+
 const Assignment* Model::OptimizeCumulsFromAssignmentInternal(
     const Assignment* original_assignment, absl::Duration duration_limit,
     const Dimension* dimension,
     std::vector<RouteDimensionTravelInfo> dimension_travel_info_per_route,
+    std::vector<TransitTargetInfo> transit_target_info_per_route,
     bool* time_limit_was_reached) {
   DCHECK(closed_);
   if (search_parameters_
           .disable_scheduling_beware_this_may_degrade_performance()) {
     return original_assignment;
   }
-
-  const bool has_dim_travel_info = !dimension_travel_info_per_route.empty();
-  DCHECK_EQ(has_dim_travel_info, dimension != nullptr);
-  if (has_dim_travel_info) {
-    DCHECK_EQ(dimension->model(), this);
-  }
   if (original_assignment == nullptr) return nullptr;
+
+  enum OptimizationMode {
+    OPTIMIZATION_MODE_CLASSIC,
+    OPTIMIZATION_MODE_TRANSIT_TARGETS,
+    OPTIMIZATION_MODE_DIMENSION_TRAVEL_INFO
+  };
+  DCHECK(dimension_travel_info_per_route.empty() ||
+         transit_target_info_per_route.empty());
+  const OptimizationMode optimization_mode =
+      !dimension_travel_info_per_route.empty()
+          ? OPTIMIZATION_MODE_DIMENSION_TRAVEL_INFO
+      : !transit_target_info_per_route.empty()
+          ? OPTIMIZATION_MODE_TRANSIT_TARGETS
+          : OPTIMIZATION_MODE_CLASSIC;
+  if (optimization_mode == OPTIMIZATION_MODE_CLASSIC) {
+    if (global_dimension_optimizers_info_.optimizers.empty() &&
+        local_dimension_optimizers_info_.optimizers.empty()) {
+      return original_assignment;
+    }
+  } else {
+    DCHECK_NE(dimension, nullptr);
+    DCHECK_EQ(dimension->model(), this);
+    if (optimization_mode == OPTIMIZATION_MODE_TRANSIT_TARGETS &&
+        dimension->variable_transits().empty()) {
+      return original_assignment;
+    }
+  }
+
   if (duration_limit <= absl::ZeroDuration()) {
     if (time_limit_was_reached) *time_limit_was_reached = true;
-    return original_assignment;
-  }
-  if (!has_dim_travel_info &&
-      global_dimension_optimizers_info_.optimizers.empty() &&
-      local_dimension_optimizers_info_.optimizers.empty()) {
     return original_assignment;
   }
 
@@ -241,14 +270,15 @@ const Assignment* Model::OptimizeCumulsFromAssignmentInternal(
         optimized_assignment->Add(resource_vars_[rg_index]);
       }
     };
-    if (has_dim_travel_info) {
-      add_resource_vars(dimension);
-    } else {
+    if (optimization_mode == OPTIMIZATION_MODE_CLASSIC) {
       for (const Dimension* const dim : dimensions_) {
         add_resource_vars(dim);
       }
+    } else {
+      add_resource_vars(dimension);
     }
   }  // local scope
+
   optimized_assignment->CopyIntersection(original_assignment);
 
   std::vector<DecisionBuilder*> decision_builders;
@@ -256,12 +286,23 @@ const Assignment* Model::OptimizeCumulsFromAssignmentInternal(
   decision_builders.push_back(
       solver_->MakeRestoreAssignment(optimized_assignment));
 
-  if (!has_dim_travel_info) {
-    AppendDecisionBuildersForPackingCumuls(&decision_builders);
-  } else {
-    AppendDecisionBuilderForOptimizingCumulsWithDimensionTravelInfo(
-        dimension, std::move(dimension_travel_info_per_route),
-        &decision_builders);
+  switch (optimization_mode) {
+    case OPTIMIZATION_MODE_CLASSIC:
+      AppendDecisionBuildersForPackingCumuls(&decision_builders);
+      break;
+    case OPTIMIZATION_MODE_DIMENSION_TRAVEL_INFO:
+      AppendDecisionBuilderForOptimizingCumulsWithDimensionTravelInfo(
+          dimension, std::move(dimension_travel_info_per_route),
+          &decision_builders);
+      break;
+    case OPTIMIZATION_MODE_TRANSIT_TARGETS:
+      AppendDecisionBuildersForOptimizingCumulsWithTransitTargets(
+          dimension, std::move(transit_target_info_per_route),
+          &decision_builders);
+      break;
+    default:
+      LOG(DFATAL) << "Unknown optimization mode: " << optimization_mode;
+      break;
   }
   decision_builders.push_back(finalizer_variables_->CreateFinalizer());
 
@@ -285,6 +326,12 @@ const Assignment* Model::OptimizeCumulsFromAssignmentInternal(
   }
 
   optimized_assignment->Copy(original_assignment);
+  if (optimization_mode == OPTIMIZATION_MODE_TRANSIT_TARGETS) {
+    // If the original assignment (and thus the optimized assignment) doesn't
+    // contain the variable transit vars, the CopyIntersection() below will not
+    // properly reflect the optimized variable transit values.
+    DCHECK(optimized_assignment->Contains(dimension->VariableTransitVar(0)));
+  }
   optimized_assignment->CopyIntersection(
       optimized_dimensions_assignment_collector_->solution(0));
 
@@ -296,7 +343,20 @@ const Assignment* Model::PackCumulsOfOptimizerDimensionsFromAssignment(
     bool* time_limit_was_reached) {
   return OptimizeCumulsFromAssignmentInternal(
       original_assignment, duration_limit, /*dimension=*/nullptr,
-      /*dimension_travel_info_per_route=*/{}, time_limit_was_reached);
+      /*dimension_travel_info_per_route=*/{},
+      /*transit_target_info_per_route=*/{}, time_limit_was_reached);
+}
+
+const Assignment*
+Model::OptimizeCumulsOfDimensionFromAssignmentWithTransitTargetInfo(
+    const Dimension* dimension, const Assignment* original_assignment,
+    std::vector<TransitTargetInfo> transit_target_info_per_route,
+    absl::Duration duration_limit) {
+  return OptimizeCumulsFromAssignmentInternal(
+      original_assignment, duration_limit, dimension,
+      /*dimension_travel_info_per_route=*/{},
+      std::move(transit_target_info_per_route),
+      /*time_limit_was_reached=*/nullptr);
 }
 
 void Model::SetSweepArranger(SweepArranger* sweep_arranger) {
@@ -5975,7 +6035,8 @@ Model::CreateLocalSearchFilters(const RoutingSearchParameters& parameters,
   if (!route_evaluators_.empty()) {
     ++priority;
     filter_events.push_back(
-        {MakeRouteConstraintFilter(*this), kAccept, priority});
+        {MakeRouteConstraintFilter(*this, path_state_reference), kAccept,
+         priority});
   }
 
   if (!extra_filters_.empty()) {
@@ -6169,6 +6230,7 @@ void Model::StoreDimensionCumulOptimizers(
   // optimized_dimensions_collector_assignment to make sure the necessary
   // propagations on these variables after packing/optimizing are correctly
   // stored.
+  // These include but are not limited to vehicle breaks and variable transits.
   for (IntVar* const extra_var : extra_vars_) {
     optimized_dimensions_collector_assignment->Add(extra_var);
   }
@@ -7312,9 +7374,9 @@ void Dimension::InitializeTransitVariables(int64_t slack_max,
     if (has_variable_transits) {
       variable_transits_[i] = solver->MakeIntVar(
           0, kint64max, absl::StrCat(variable_transit_name, i));
+      model_->AddToAssignment(variable_transits_[i]);
+      model_->AddVariableTargetToFinalizer(variable_transits_[i], 0);
       transit_expr = solver->MakeSum(variable_transits_[i], transit_expr);
-    } else {
-      variable_transits_[i] = solver->MakeIntConst(0);
     }
 
     transits_[i] = transit_expr->Var();
@@ -7333,7 +7395,9 @@ void Dimension::InitializeTransits(
   transits_.resize(size, nullptr);
   fixed_transits_.resize(size, nullptr);
   slacks_.resize(size, nullptr);
-  variable_transits_.resize(size, nullptr);
+  if (has_variable_transits) {
+    variable_transits_.resize(size, nullptr);
+  }
   dependent_transits_.resize(size, nullptr);
   ComputeTransitClasses(transit_evaluators, &class_evaluators_,
                         &vehicle_to_class_);

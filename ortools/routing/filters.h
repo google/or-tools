@@ -72,9 +72,6 @@ bool PropagateLightweightVehicleBreaks(
     absl::Span<const std::pair<int64_t, int64_t>> interbreaks,
     bool breaks_are_ordered = false);
 
-/// Returns a filter tracking route constraints.
-IntVarLocalSearchFilter* MakeRouteConstraintFilter(const Model& routing_model);
-
 /// Returns a filter ensuring that max active vehicles constraints are enforced.
 IntVarLocalSearchFilter* MakeMaxActiveVehiclesFilter(
     const Model& routing_model);
@@ -155,6 +152,10 @@ LocalSearchFilter* MakePathCumulFilter(const Dimension& dimension,
                                        bool propagate_own_objective_value,
                                        bool filter_objective_cost,
                                        bool may_use_optimizers);
+
+/// Returns a filter tracking route constraints.
+LocalSearchFilter* MakeRouteConstraintFilter(const Model& routing_model,
+                                             const PathState* path_state);
 
 // This checker enforces dimension requirements.
 // A dimension requires that there is some valuation of

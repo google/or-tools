@@ -24,8 +24,10 @@
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "ortools/base/types.h"
+#include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/filters.h"
+#include "ortools/routing/path_state.h"
 
 namespace operations_research::routing {
 namespace {

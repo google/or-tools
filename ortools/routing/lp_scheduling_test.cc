@@ -1644,9 +1644,10 @@ class ScheduleRouteWithTransitTargets
       solver = mp_solver_.get();
     }
     return optimizer.OptimizeSingleRouteWithTransitTargets(
-        0, /*solve_duration_ratio=*/1.0, next_accessor_, transit_targets_,
-        {transit_target_threshold_ratio, kTransitSoftCostBelowThreshold,
-         kTransitSoftCostAboveThreshold},
+        0, /*solve_duration_ratio=*/1.0, next_accessor_,
+        {transit_targets_,
+         {transit_target_threshold_ratio, kTransitSoftCostBelowThreshold,
+          kTransitSoftCostAboveThreshold}},
         solver, variable_transits, cumuls, nullptr);
   }
 
@@ -1659,9 +1660,10 @@ class ScheduleRouteWithTransitTargets
                 : RoutingSearchParameters::SCHEDULING_CP_SAT,
         nullptr);
     return optimizer.ComputeRouteCumulsWithTransitTargets(
-        0, /*solve_duration_ratio=*/1.0, next_accessor_, transit_targets_,
-        {transit_target_threshold_ratio, kTransitSoftCostBelowThreshold,
-         kTransitSoftCostAboveThreshold},
+        0, /*solve_duration_ratio=*/1.0, next_accessor_,
+        {transit_targets_,
+         {transit_target_threshold_ratio, kTransitSoftCostBelowThreshold,
+          kTransitSoftCostAboveThreshold}},
         variable_transits, cumuls, nullptr);
   }
 

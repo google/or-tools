@@ -638,6 +638,7 @@ or_cc_binary(
     testonly = True,
     srcs = ["filters_benchmark.cc"],
     deps = [
+        ":path_state",
         ":routing",
         "//ortools/base:types",
         "//ortools/constraint_solver:cp",
@@ -737,6 +738,7 @@ or_cc_test(
         ":routing_test_utils",
         ":types",
         ":utils",
+        "//ortools/base:dump_vars",
         "//ortools/base:gmock_main",
         "//ortools/base:log_severity",
         "//ortools/base:mathutil",
@@ -748,6 +750,7 @@ or_cc_test(
         "//ortools/constraint_solver:assignment_cc_proto",
         "//ortools/constraint_solver:cp",
         "//ortools/constraint_solver:search_stats_cc_proto",
+        "//ortools/graph",
         "//ortools/graph:bounded_dijkstra",
         "//ortools/util:optional_boolean_cc_proto",
         "//ortools/util:piecewise_linear_function",
