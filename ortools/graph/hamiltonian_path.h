@@ -229,11 +229,6 @@ inline int Set<uint64_t>::SmallestElement() const {
   return std::countr_zero(value_);
 }
 
-template <>
-inline int Set<uint64_t>::Cardinality() const {
-  return std::popcount(value_);
-}
-
 // An iterator for sets of increasing corresponding values that have the same
 // cardinality. For example, the sets with cardinality 3 will be listed as
 // ...00111, ...01011, ...01101, ...1110, etc...
