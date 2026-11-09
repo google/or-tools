@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef THIRD_PARTY_ORTOOLS_EXAMPLES_CPP_JOBSHOP_SAT_MODEL_H_
-#define THIRD_PARTY_ORTOOLS_EXAMPLES_CPP_JOBSHOP_SAT_MODEL_H_
+#ifndef ORTOOLS_EXAMPLES_CPP_JOBSHOP_SAT_MODEL_H_
+#define ORTOOLS_EXAMPLES_CPP_JOBSHOP_SAT_MODEL_H_
 
 #include <cstdint>
 #include <vector>
@@ -64,4 +64,4 @@ JobshopModelMapping CreateJobshopModel(
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // THIRD_PARTY_ORTOOLS_EXAMPLES_CPP_JOBSHOP_SAT_MODEL_H_
+#endif  // ORTOOLS_EXAMPLES_CPP_JOBSHOP_SAT_MODEL_H_

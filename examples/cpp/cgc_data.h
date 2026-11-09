@@ -29,8 +29,8 @@
 //    - //ortools/examples/testdata/cgc contains examples
 //        of input files.
 
-#ifndef ORTOOLS_EXAMPLES_CGC_DATA_H_
-#define ORTOOLS_EXAMPLES_CGC_DATA_H_
+#ifndef ORTOOLS_EXAMPLES_CPP_CGC_DATA_H_
+#define ORTOOLS_EXAMPLES_CPP_CGC_DATA_H_
 
 #include <string>
 #include <vector>
@@ -67,4 +67,4 @@ class ConstrainedGuillotineCuttingData {
 
 }  // namespace operations_research
 
-#endif  // ORTOOLS_EXAMPLES_CGC_DATA_H_
+#endif  // ORTOOLS_EXAMPLES_CPP_CGC_DATA_H_

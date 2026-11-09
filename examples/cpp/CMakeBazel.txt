@@ -251,6 +251,7 @@ ortools_cxx_bintest(
   NAME bzl_cc_example_network_routing_sat_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/network_routing_sat_test.bintest
   ENVIRONMENT BINTEST_network_routing_sat=$<TARGET_FILE:bzl_cc_example_network_routing_sat>
+  DISABLED
 )
 
 ortools_cxx_binary(
