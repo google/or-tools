@@ -47,7 +47,6 @@ target_link_libraries(${NAME} PRIVATE
 if(BUILD_CXX_TESTING)
   # Test
   file(GLOB _TEST_SRCS "*_test.cc")
-  list(FILTER _TEST_SRCS EXCLUDE REGEX "/stats_nc_test.cc")
   list(FILTER _TEST_SRCS EXCLUDE REGEX "/piecewise_linear_function_test.cc")
   foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
     get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
